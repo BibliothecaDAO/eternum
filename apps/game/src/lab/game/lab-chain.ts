@@ -7,11 +7,7 @@ import { answerLabBuildOrders } from "@/shell/lab/lab-build-orders";
 import { gameChatZoneId } from "@/ui/features/world/containers/hud-chat-window";
 import { L2_LEDGER, l2Provider } from "@/runtime/l2-rpc";
 import { getShardRpcProvider } from "@/utils/shard-rpc-provider";
-import {
-  dayOf,
-  nativeGameModeOfFamily,
-  readExpeditionRules,
-} from "@bibliothecadao/eternum";
+import { dayOf, nativeGameModeOfFamily, readExpeditionRules } from "@bibliothecadao/eternum";
 import { NativeFactStore, ordinaryHash, type PlayFrame } from "@bibliothecadao/eternum/game-client";
 import {
   deriveGameSyncScope,
@@ -20,11 +16,7 @@ import {
   rowInGameSyncScope,
   scopeInputKeys,
 } from "@bibliothecadao/eternum/game-sync";
-import {
-  aspects,
-  type NativeWorldBindings,
-  type WorldChatMessage,
-} from "@bibliothecadao/types";
+import { aspects, type NativeWorldBindings, type WorldChatMessage } from "@bibliothecadao/types";
 import type { AccountInterface, Call } from "starknet";
 
 import { LAB_CHAIN_ID } from "./lab-shard";
@@ -350,9 +342,7 @@ const answerDirectory = (
   window.fetch = (input, init) => {
     const url = new URL(input instanceof Request ? input.url : String(input), window.location.origin);
     if (url.pathname === "/api/guardian") return json(LAB_GUARDIAN);
-    // The lab's season has no Blitz: no slot open, none scheduled.
-    if (url.pathname === "/api/slots") return json({ slots: [] });
-    if (url.pathname === "/api/factory/calendar") return json({ phases: [], nextBlitz: null });
+    if (url.pathname === "/api/factory/calendar") return json({ phases: [] });
     if (url.pathname === "/api/directory")
       return json({ shard: { url: LAB_GAME.url, chainId: LAB_GAME.chainId, games: [game], manifest } });
     if (url.host !== shard.host) return network(input, init);

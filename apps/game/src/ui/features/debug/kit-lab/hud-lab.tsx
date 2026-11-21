@@ -4,9 +4,8 @@ import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
 import { Tooltip } from "@/ui/design-system/molecules/tooltip";
 import { FeedLine } from "@/ui/features/event-feed/feed-line";
 
-import { canonicalRealm } from "@bibliothecadao/eternum";
 import { BuildingType } from "@bibliothecadao/types";
-import type { AlertsAsk, AlertsPopupAsk } from "@/shell/profile/alerts-ask";
+import type { AlertsPopupAsk } from "@/shell/profile/alerts-ask";
 import { GameProvider } from "@/hooks/context/game-context";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { transferTrainedArmies, TRANSFER_TAPPED } from "@/ui/features/frontier/army/transfer-fixture";

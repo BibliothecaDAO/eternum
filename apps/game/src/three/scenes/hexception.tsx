@@ -1826,8 +1826,7 @@ export default class HexceptionScene extends HexagonScene {
       if (level > this.structureStage) this.newRingRadius = buildableRadius(level);
       this.removeCastleFromScene();
     }
-    if (level !== undefined || changes.some((change) => this.changesShownGround(change)))
-      this.redrawStaleGrid();
+    if (level !== undefined || changes.some((change) => this.changesShownGround(change))) this.redrawStaleGrid();
   }
 
   /** The shown structure's new level, when the change is one to its level. */

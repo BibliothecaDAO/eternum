@@ -42,9 +42,7 @@ describe("the day's end", () => {
       `Clear today's ${frontierSiteName(StructureType.Camp)} · Show`,
       "Your army can explore · Select",
     ]);
-    expect(dayEndItems({ camp: null, armyCanExplore: true }).map(({ key }) => key)).toEqual([
-      "explore",
-    ]);
+    expect(dayEndItems({ camp: null, armyCanExplore: true }).map(({ key }) => key)).toEqual(["explore"]);
     expect(dayEndItems({ camp: null, armyCanExplore: false })).toEqual([]);
   });
 

@@ -21,7 +21,7 @@ export type AlertsAsk = { kind: "remind" | "install"; busy: boolean; act: () => 
  * this device on (its permission asked inside the tap) and lifts an Off level to Important, the level Settings offers
  * for the day's push. An iPhone's browser installs first; a device that blocks alerts or cannot show them is not asked.
  */
-export const useAlertsAsk = (): AlertsAsk => {
+const useAlertsAsk = (): AlertsAsk => {
   const owner = notificationOwnerOf(useIdentitySession().session);
   const preferences = useNotificationPreferences(owner);
   const device = useThisDevice(owner);

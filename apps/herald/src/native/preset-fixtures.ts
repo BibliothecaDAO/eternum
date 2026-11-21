@@ -22,11 +22,7 @@ export function presetRelease(
 
 export const PRESET_FIXTURE_DURATION_SECONDS = 864000;
 
-export function presetLaunch(
-  preset: ReturnType<typeof presetRelease>,
-  gameId: number,
-  timestamp: number,
-) {
+export function presetLaunch(preset: ReturnType<typeof presetRelease>, gameId: number, timestamp: number) {
   const game = String(gameId);
   const overrides = {
     registration_start: timestamp,

@@ -27,7 +27,6 @@ const { ActorType, Direction } = await import("@bibliothecadao/types");
 
 const { ARMY_DEPLOYMENT_SURFACE_ID } = await import("@/ui/features/military/utils/open-army-deployment");
 
-
 const ARMY = 7;
 /** The army's tile and the unexplored tile beside it, as the scene's hexes. */
 const ARMY_HEX = { col: 4, row: 5 };

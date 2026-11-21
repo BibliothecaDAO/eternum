@@ -58,7 +58,11 @@ describe("where troops come from, once a realm has none", () => {
     const game = store.require("GameRegistry", { game_id: 1 });
     // Arena games have no BoardRules, so no board deployment charge.
     store.applyFacts([
-      { model: "GameRegistry", key: store.wireKeyOf("GameRegistry", game)!, value: { ...game, family: GAME_FAMILIES.blitz } },
+      {
+        model: "GameRegistry",
+        key: store.wireKeyOf("GameRegistry", game)!,
+        value: { ...game, family: GAME_FAMILIES.blitz },
+      },
       { model: "BoardRules", key: "0xa", value: null },
     ]);
     // Blitz Knight T1: ten trained from 2 wheat and 0.8 copper; no labor-paid path.

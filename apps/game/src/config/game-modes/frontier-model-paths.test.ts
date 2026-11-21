@@ -61,7 +61,8 @@ it("selects all five painted tiers while retaining the central keep and the exis
         { stage: 0, structureId: 1, wonder: false, frontier: true },
       );
       expect(
-        selected.tierPath ?? getGameModeConfig(GAME_FAMILIES.frontier).assets.buildingModelPaths[BUILDINGS_GROUPS.BUILDINGS][type],
+        selected.tierPath ??
+          getGameModeConfig(GAME_FAMILIES.frontier).assets.buildingModelPaths[BUILDINGS_GROUPS.BUILDINGS][type],
       ).toBe(frontierPaintedBuildingPath(type, tier));
     }
   }

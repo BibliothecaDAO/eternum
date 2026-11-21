@@ -267,13 +267,7 @@ const FrontierHudBody = ({
       worldTab={layers ? layerTab(layers) : undefined}
       realm={
         shown && (
-          <FrontierRealmPanel
-            rules={rules}
-            realm={shown}
-            own={own}
-            storeCards={storeCards}
-            onSurface={setSurface}
-          />
+          <FrontierRealmPanel rules={rules} realm={shown} own={own} storeCards={storeCards} onSurface={setSurface} />
         )
       }
       armies={dock}
@@ -491,13 +485,7 @@ const PendingOrder = ({
 };
 
 /** The Menu page over the game: each row opens its way and closes the menu; Exit leaves for the app. */
-const HudMenu = ({
-  onOpen,
-  onClose,
-}: {
-  onOpen: (surface: HudSurface | null) => void;
-  onClose: () => void;
-}) => {
+const HudMenu = ({ onOpen, onClose }: { onOpen: (surface: HudSurface | null) => void; onClose: () => void }) => {
   const navigate = useNavigate();
   const rank = useSeasonRank();
   const guide = useHowToPlay();

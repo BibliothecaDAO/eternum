@@ -59,15 +59,7 @@ export const DoorwayScreen = ({
   const loadingMap = view.steps.some(({ step, state }) => (step === "map" || step === "play") && state === "running");
   const progress = !asking && <EntryProgress view={view} />;
   const comingUp = game?.mode === "frontier" && player && loadingMap && view.blocker === null && <ComingUp />;
-  const hold = (
-    <Hold
-      view={view}
-      onRetry={onRetry}
-      onOpenRealm={onOpenRealm}
-      onSignIn={onSignIn}
-      results={results}
-    />
-  );
+  const hold = <Hold view={view} onRetry={onRetry} onOpenRealm={onOpenRealm} onSignIn={onSignIn} results={results} />;
   return (
     // The shell's surface from the window's edge, so the ground behind the frame is the shell's too.
     <div data-surface="shell" className="fixed inset-0 z-50 overflow-y-auto bg-app-ground">

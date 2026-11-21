@@ -72,13 +72,7 @@ export const ChosenLab = () => {
         <Surface name="home">
           <div className="home-picker__strip">
             {HOME_CHOICES.map(({ choice, picked }) => (
-              <ChoiceButton
-                key={choice.realmId}
-                choice={choice}
-                picked={picked}
-                onPick={noop}
-                disabled={false}
-              />
+              <ChoiceButton key={choice.realmId} choice={choice} picked={picked} onPick={noop} disabled={false} />
             ))}
           </div>
         </Surface>

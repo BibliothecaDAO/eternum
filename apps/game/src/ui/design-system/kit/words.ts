@@ -1230,12 +1230,8 @@ export const withdrawalUnknown = (amount: string) => `No answer yet for these ${
 export const DEVCON = "Devcon";
 /** The phone's own time zone: the server words a push's times by this clock. */
 export const deviceTimeZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
-/** The claimed sheet's ask for a push when the next game day opens, on this device, and its state once on. */
-export const REMIND_ME = "Remind me";
-export const REMINDER_ON = "Reminder on";
 /** The same ask on an iPhone in its browser, which sends push only to the installed app. */
 export const ADD_TO_HOME_SCREEN = "Add to Home Screen";
-export const TURNING_ALERTS_ON = "Turning on";
 /** The popup that asks for alerts (useAlertsPopup): what this device would get, then the tap. */
 export const ALERTS_POPUP = {
   title: "Know when to come back",
@@ -1794,48 +1790,6 @@ export const VALUE_WORDS = {
   depositTitle: (amount: string) => `Deposit ${amount} LORDS`,
 } as const;
 
-/** A paid Blitz's entry, in its lobby. */
-export const ENTRY_WORDS = {
-  entry: "Entry",
-  seat: "Seat",
-  seatEffect: "Entry",
-  sword: "Sword",
-  swordEffect: "Win ×2",
-  shield: "Shield",
-  shieldEffect: "Loss ½",
-  total: "Total",
-  payAndJoin: "Pay & join",
-  needMore: (amount: string) => `Need ${amount} more LORDS`,
-  paidFromWallet: "Entry is paid from your payout wallet",
-  registered: "Registered",
-  /** The slot is listed and the ledger does not hold it yet: a moment, not a failure. */
-  openingLine: "Entry opens in a moment",
-  registeredLine: "Your seat is drawn when entry closes.",
-  /** Past the close, until a game's roster names the wallet. */
-  drawingLine: "Entry closed. Drawing seats.",
-  seated: "Seated",
-  yourGame: "Your game",
-  notSeated: "Not seated",
-  paid: "Paid",
-  credit: "Credit",
-  credits: (count: number) => `Credit ×${count}`,
-  cancelled: "Cancelled",
-  takeRefund: "Take refund",
-  lords: "LORDS",
-  swordCredit: "Sword credit",
-  shieldCredit: "Shield credit",
-  back: "Back",
-  refunded: "Refunded",
-  closed: "Entry closed",
-  closedLine: "This slot takes no more players",
-  refundedLine: "Back in your wallet",
-  unreadable: "This game's entry could not be read",
-  whereItGoes: "Season pool, chests and treasury",
-} as const;
-
-/** A ledger's test token, minted to the wallet that pays. */
-export const mintTestTokenWord = (amount: string) => `Mint ${amount} test tokens`;
-
 /** After a paid Blitz: the rating's change and the chest the result minted. */
 export const REWARD_WORDS = {
   unreadable: "This game's reward could not be read.",
@@ -1865,25 +1819,6 @@ export const REWARD_WORDS = {
   /** Under an opened chest's multiple: "4×" of the entry. */
   theEntry: "the entry",
   noLords: "No LORDS now",
-} as const;
-
-/** The Blitz season's prize, on Blitz's rating board. */
-export const SEASON_PRIZE_WORDS = {
-  unreadable: "The season's prize could not be read.",
-  pool: "Prize pool",
-  ends: (date: string) => `Ends ${date}`,
-  final: "Final",
-  paysToday: "If the season ended now",
-  placesPaid: (count: number) => `${formatCount(count, "place")} paid`,
-  noPlaces: "No place is paid before ranking.",
-  yourShare: "Your share",
-  review: "Claims open in",
-  held: "The list is being checked",
-  claimed: "Claimed to your seat's wallet",
-  /** The ledger takes no claim while its payouts are paused. */
-  paused: "Payouts are paused",
-  notPaid: "Outside the paid places this season",
-  claim: "Claim",
 } as const;
 
 /** The three alert levels (ruled). */

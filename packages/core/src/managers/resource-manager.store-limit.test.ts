@@ -55,7 +55,8 @@ const boardRealm = (wheat: bigint) => {
 };
 
 describe("a board realm's store limits", () => {
-  const settlementLimit = 2n * BigInt(release.definition.rules.troop_limit_config.settlement_deployment_cap) * PRECISION;
+  const settlementLimit =
+    2n * BigInt(release.definition.rules.troop_limit_config.settlement_deployment_cap) * PRECISION;
 
   it("gives wheat and troops the board's base, labor the release's settlement store, and Essence none", () => {
     const { manager } = boardRealm(0n);

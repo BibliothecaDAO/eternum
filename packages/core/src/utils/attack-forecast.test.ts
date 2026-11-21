@@ -63,7 +63,11 @@ function frontier() {
     game_id: GAME_ID,
     day_unit_seconds: DAY,
     battle_config: { ...release.definition.rules.battle_config, regular_immunity_ticks: 0 },
-    troop_stamina_config: { ...release.definition.rules.troop_stamina_config, stamina_attack_req: 10, stamina_defense_req: 0 },
+    troop_stamina_config: {
+      ...release.definition.rules.troop_stamina_config,
+      stamina_attack_req: 10,
+      stamina_defense_req: 0,
+    },
   });
   ClientConfigManager.instance().setStore(store);
   write("SettlementRules", {

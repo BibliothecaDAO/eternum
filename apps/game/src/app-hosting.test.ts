@@ -114,9 +114,6 @@ describe("hosting files", () => {
         "/",
       );
     }
-    // A lobby under the old list's address stays a page of its own.
-    expect(servesShell("/blitz/slot-blitz-1")).toBe(true);
-    expect(isPage("/blitz/slot-blitz-1")).toBe(true);
   });
 
   it("serve the shell for nothing that is not a page, so missing assets stay 404s", () => {

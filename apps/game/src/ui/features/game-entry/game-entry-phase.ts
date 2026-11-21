@@ -1,12 +1,6 @@
 type GameEntryBootstrapStatus = "idle" | "pending-world" | "loading" | "ready" | "error";
 
-export type GameEntryModalPhase =
-  | "loading"
-  | "account"
-  | "settlement-waiting"
-  | "settlement"
-  | "ready"
-  | "error";
+export type GameEntryModalPhase = "loading" | "account" | "settlement-waiting" | "settlement" | "ready" | "error";
 
 interface ResolveGameEntryBlockingErrorInput {
   worldAvailabilityErrorMessage: string | null;

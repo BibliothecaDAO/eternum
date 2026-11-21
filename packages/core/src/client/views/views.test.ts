@@ -143,7 +143,11 @@ const seedStructure = (
 /** A Frontier game's rules: hour-long day units from `startMainAt`, regions `spacing` tiles wide. */
 const seedFrontierRules = (store: NativeFactStore, input: { startMainAt: number; spacing: number }) =>
   store.applyFacts([
-    { model: "SliceRules", key: "0x100", value: { ...release.definition.rules, game_id: GAME_ID, day_unit_seconds: 3600 } },
+    {
+      model: "SliceRules",
+      key: "0x100",
+      value: { ...release.definition.rules, game_id: GAME_ID, day_unit_seconds: 3600 },
+    },
     {
       model: "SettlementRules",
       key: "0x101",

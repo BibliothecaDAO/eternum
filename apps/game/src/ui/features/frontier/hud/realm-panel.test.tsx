@@ -51,15 +51,7 @@ const named = () => [...host.querySelectorAll("[aria-label]")].map((element) => 
 it("reads the player's realm as Blitz's card reads a holding: name, rank, a ring per store and its LORDS", () => {
   const onWithdraw = vi.fn();
   act(() =>
-    root.render(
-      <RealmPanel
-        name="Duskbite"
-        level={1}
-        stores={STORES}
-        lords={1_240}
-        onWithdraw={onWithdraw}
-      />,
-    ),
+    root.render(<RealmPanel name="Duskbite" level={1} stores={STORES} lords={1_240} onWithdraw={onWithdraw} />),
   );
   const panel = host.querySelector('section[aria-label="Realm"]')!;
   expect(panel.textContent).toMatch(/^Duskbite.*City/);

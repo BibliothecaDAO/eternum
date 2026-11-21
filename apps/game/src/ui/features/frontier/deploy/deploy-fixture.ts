@@ -68,7 +68,9 @@ export const frontierDay = () => {
       created_release_id: NATIVE_RELEASES.frontier.release,
     }),
     set("0x7", "Structure", realm),
-    ...release.definition.resources.resources.map((rule) => set(`0x5${rule.resource_type}`, "ResourceRule", { ...rule, game_id: 1 })),
+    ...release.definition.resources.resources.map((rule) =>
+      set(`0x5${rule.resource_type}`, "ResourceRule", { ...rule, game_id: 1 }),
+    ),
     set("0x6", "ResourceWeight", { game_id: 1, entity_id: 7, capacity: "100000000000000", weight: "0" }),
     set("0x8", "ResourceBalance", {
       game_id: 1,

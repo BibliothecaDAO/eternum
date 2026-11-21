@@ -27,7 +27,7 @@ export const clockLine = (prefix: ClockPrefix | null, at: number | undefined, no
 };
 
 /** A moment alone, with no time left: its local clock time within a day ("16:30"), else its date too ("14 Oct, 18:00"). */
-export const clockAt = (at: number | undefined, now: number): string =>
+const clockAt = (at: number | undefined, now: number): string =>
   at === undefined || isWithinADay(at, now) ? formatClockTime(at) : `${formatDate(at, now)}, ${formatClockTime(at)}`;
 
 type ClockMoment = { prefix: ClockPrefix | null; at: number | undefined; now: number };

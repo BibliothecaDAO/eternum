@@ -44,7 +44,8 @@ describe("native immutable configuration", () => {
     const { manager, write } = fixture();
     // The chain configures exactly 58 resource rules and recipes and 40 building rules; relics carry zero rows.
     const isRelic = (resource: number) => (resource >= 39 && resource <= 56) || resource === 58;
-    for (const rule of release.definition.resources.resources) write("ResourceRule", [54, rule.resource_type], { ...rule, game_id: 54 });
+    for (const rule of release.definition.resources.resources)
+      write("ResourceRule", [54, rule.resource_type], { ...rule, game_id: 54 });
     for (let resource = 1; resource <= 58; resource++)
       write("ProductionRecipe", [54, resource], {
         game_id: 54,
@@ -104,7 +105,9 @@ describe("native immutable configuration", () => {
   it("reads tick and capacity values directly from the native rules", () => {
     const { manager } = fixture();
     expect(manager.getTick(TickIds.Armies)).toBe(Number(release.definition.rules.tick_config.armies_tick_in_seconds));
-    expect(manager.getTick(TickIds.Delivery)).toBe(Number(release.definition.rules.tick_config.delivery_tick_in_seconds));
+    expect(manager.getTick(TickIds.Delivery)).toBe(
+      Number(release.definition.rules.tick_config.delivery_tick_in_seconds),
+    );
     expect(manager.getCapacityConfigKg(CapacityConfig.Donkey)).toBe(
       Number(release.definition.rules.capacity_config.donkey_capacity) / 1000,
     );
@@ -143,7 +146,11 @@ describe("native immutable configuration", () => {
     const base = release.definition.rules.mode_rules & ~nativeRuleConstants.REVEAL_SUPPLIES;
     write("SliceRules", [54], { ...release.definition.rules, game_id: 54, mode_rules: base });
     expect(manager.paysRevealSupplies()).toBe(false);
-    write("SliceRules", [54], { ...release.definition.rules, game_id: 54, mode_rules: base | nativeRuleConstants.REVEAL_SUPPLIES });
+    write("SliceRules", [54], {
+      ...release.definition.rules,
+      game_id: 54,
+      mode_rules: base | nativeRuleConstants.REVEAL_SUPPLIES,
+    });
     expect(manager.paysRevealSupplies()).toBe(true);
   });
 

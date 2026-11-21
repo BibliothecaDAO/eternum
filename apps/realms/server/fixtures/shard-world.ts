@@ -86,7 +86,6 @@ export const snapshot = (
   neighbour: ArmyState | null,
   owner: string | null,
   members: string[],
-  homeSource: "realm" | "campaign" | "golden" | null,
   second: ArmyState | null,
 ): HeraldGameSnapshot => ({
   confirmed_block: 10,
@@ -115,34 +114,8 @@ export const snapshot = (
       })),
     },
     {
-      model: "LaborRules",
-      rows: [
-        {
-          key: "0x1",
-          value: { game_id: GAME_ID, amount: 1000, campaign_essence: 1000, golden_amount: 2000, golden_essence: 2000 },
-        },
-      ],
-    },
-    {
       model: "SettledRealm",
-      rows: homeSource === "realm" ? [{ key: "0x2c7", value: { game_id: GAME_ID, realm_id: 711, home: HOME } }] : [],
-    },
-    {
-      model: "CampaignHome",
-      rows:
-        homeSource === "golden" || homeSource === "campaign"
-          ? [
-              {
-                key: "0x5",
-                value: {
-                  game_id: GAME_ID,
-                  home: HOME,
-                  campaign_id: "0x646576636f6e2d32303236",
-                  tier: homeSource === "golden" ? 2 : 1,
-                },
-              },
-            ]
-          : [],
+      rows: [{ key: "0x2c7", value: { game_id: GAME_ID, realm_id: 711, home: HOME } }],
     },
     {
       model: "PlayerEntry",

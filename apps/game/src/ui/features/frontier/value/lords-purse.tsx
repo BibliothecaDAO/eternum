@@ -4,7 +4,6 @@ import { HudPill } from "@/ui/design-system/kit/hud-elements";
 import { SHOP_WORDS } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
 
-
 /**
  * Under the phone's strip, at its right: the realm's LORDS count (it opens Withdraw where one exists)
  * and, while the player's Realms have labor waiting today, the Realms chip beside it (the phone's Menu always has
@@ -71,4 +70,3 @@ export const LordsPurse = ({
     ]}
   </HudPill>
 );
-

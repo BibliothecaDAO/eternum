@@ -19,7 +19,7 @@ import {
 
 import { nativeTilePackingConstants } from "../../../../../contracts/l3/world-native/schema/client.gen";
 import { frontierSeasonOnePreset as frontierPreset } from "../../../../../config/source/frontier/season-one";
-import { LAB_GAME, LAB_GAME_ENDS_AT, type LabFact, type LabScenario, wire } from "./lab-chain";
+import { LAB_GAME_ENDS_AT, type LabFact, type LabScenario, wire } from "./lab-chain";
 
 /** A revealed tile's packed data: its biome alone. */
 const tileData = (biome: BiomeType) => BigInt(BiomeTypeToId[biome]) * BigInt(nativeTilePackingConstants.BIOME_SCALE);

@@ -15,12 +15,7 @@ import { aspectOfOrder } from "./aspect-picker";
 import { Icon } from "@/ui/design-system/icon";
 import { mintedResourceMeaning, orderMeaning } from "@/ui/design-system/icon-meaning";
 import { HudLoading } from "@/ui/design-system/kit/hud-elements";
-import {
-  HELD_REALMS_UNREADABLE,
-  HOME_STEP_WORDS,
-  TRY_AGAIN,
-  numberedRealm,
-} from "@/ui/design-system/kit/words";
+import { HELD_REALMS_UNREADABLE, HOME_STEP_WORDS, TRY_AGAIN, numberedRealm } from "@/ui/design-system/kit/words";
 
 export function HomeSourcePicker({
   registered,

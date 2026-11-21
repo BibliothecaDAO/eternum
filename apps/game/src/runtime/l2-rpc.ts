@@ -34,12 +34,6 @@ export const L2_CHAIN = { name: ENVIRONMENT_L2.chain, ...L2_CHAINS[ENVIRONMENT_L
  */
 export const L2_LEDGER = ENVIRONMENT_L2.ledger;
 
-/**
- * About one Starknet block (11 blocks took 19 s on mainnet, reports/chest-open-1.md): how often a screen reads the
- * ledger while a result it waits for is due, so it shows in the block it lands in.
- */
-export const L2_BLOCK_MS = 2_000;
-
 /** Whether a chain id, as a wallet or a payload gives it, is this build's L2. */
 export const isL2Chain = (chainId: bigint | string): boolean => BigInt(chainId) === BigInt(L2_CHAIN.id);
 

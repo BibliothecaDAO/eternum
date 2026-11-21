@@ -84,7 +84,7 @@ it("never lists deployment check games or counts them as Frontier seasons", () =
     receipt([
       gameRegistryEvent({
         name: String(name),
-          start_settling_at: "10",
+        start_settling_at: "10",
         start_main_at: "20",
         scheduled_end_at: "200",
         end_at: "200",

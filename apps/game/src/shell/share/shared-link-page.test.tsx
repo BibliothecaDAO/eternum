@@ -21,7 +21,6 @@ vi.mock("../season-calendar", async (original) => ({
 import { IdentityRequestError } from "@realms-world/identity";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 
-
 import { setViewportWidth } from "../frame/test-viewport";
 import { SharedLinkPage } from "./shared-link-page";
 

@@ -21,7 +21,6 @@ const gameOfItem = (item) => {
 };
 
 const gamePath = (item) => `/g/${gameOfItem(item).chain}/${gameOfItem(item).game}`;
-const lobbyPath = (item) => `/blitz/${item.replaceAll(":", "-")}`;
 const resultsPath = (item) => `/results/${gameOfItem(item).chain}-${gameOfItem(item).game}`;
 
 /** What a press that signs the player in reaches: the Connect window over the page, the address unchanged. */
@@ -37,9 +36,6 @@ const DESTINATIONS = {
   Resume: gamePath,
   Enter: gamePath,
   Watch: (item) => `${gamePath(item)}?spectate=true`,
-  Join: lobbyPath,
-  "Take refund": lobbyPath,
-  Lobby: lobbyPath,
   Results: resultsPath,
 };
 

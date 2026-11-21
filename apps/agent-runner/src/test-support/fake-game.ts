@@ -51,7 +51,11 @@ export const createFakeGame = (signer: AccountInterface | null = PLAYER_SIGNER):
     timestamp: Math.floor(Date.now() / 1_000),
   });
   let snapshotTimestamp = Math.floor(Date.now() / 1_000);
-  writeFact(store, "SliceRules", [GAME_ID], { ...release.definition.rules, game_id: GAME_ID, map_center_offset: 2147483646 });
+  writeFact(store, "SliceRules", [GAME_ID], {
+    ...release.definition.rules,
+    game_id: GAME_ID,
+    map_center_offset: 2147483646,
+  });
   writeFact(store, "SettlementRules", [GAME_ID], {
     game_id: GAME_ID,
     registration_start: 0,

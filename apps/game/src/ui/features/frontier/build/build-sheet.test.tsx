@@ -317,7 +317,9 @@ describe("the build sheet", () => {
   it("offers Build for a Workshop on a realm whose own resources make no labor, as the contract allows on a board", () => {
     const { store, realm } = realmBoard();
     labor(store, 50_000n);
-    const workshop = release.definition.structures.buildings.find(({ category }) => category === BuildingType.ResourceLabor)!;
+    const workshop = release.definition.structures.buildings.find(
+      ({ category }) => category === BuildingType.ResourceLabor,
+    )!;
     store.applyFacts([
       fact(`0x6${BuildingType.ResourceLabor}`, "BuildingRule", {
         ...workshop.rule,

@@ -163,7 +163,7 @@ export const SeasonRecap = ({
 };
 
 /** The LORDS a player's place on the podium pays, once a pool is published: the ledger's award, else the place held. */
-export const prizeOf = (board: HeraldFrontierLeaderboard, entry: Entry): number | undefined =>
+const prizeOf = (board: HeraldFrontierLeaderboard, entry: Entry): number | undefined =>
   seasonPodium(board)?.find(
     ({ holder }) => typeof holder === "object" && isSameStarknetAddress(holder.address, entry.address),
   )?.lords;

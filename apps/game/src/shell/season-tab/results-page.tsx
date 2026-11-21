@@ -192,4 +192,3 @@ const FrontierResult = ({
     </ResultsFrame>
   );
 };
-

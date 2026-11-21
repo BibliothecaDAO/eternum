@@ -159,19 +159,16 @@ describe.each([1440, 390])("Holdings on the player's own card, at %i px", (width
   it.each([
     { tier: "regular" as const, cell: "DevconTicket", face: "opened" },
     { tier: "golden" as const, cell: "DevconGolden ticket", face: "golden" },
-  ])(
-    "shows a $tier Devcon ticket, and in its sheet the ticket",
-    async ({ tier, cell, face }) => {
-      signedIn.wallet = "0x269c";
-      relay(() => held());
-      ticket(tier);
-      const you = await openYou(width);
-      await vi.waitFor(() => expect(you.strip()).toEqual(["0Realms", cell]));
-      await you.press(cell);
-      const sheet = you.sheet()!;
-      expect(sheet.querySelector(".app-ticket")?.getAttribute("data-face")).toBe(face);
-    },
-  );
+  ])("shows a $tier Devcon ticket, and in its sheet the ticket", async ({ tier, cell, face }) => {
+    signedIn.wallet = "0x269c";
+    relay(() => held());
+    ticket(tier);
+    const you = await openYou(width);
+    await vi.waitFor(() => expect(you.strip()).toEqual(["0Realms", cell]));
+    await you.press(cell);
+    const sheet = you.sheet()!;
+    expect(sheet.querySelector(".app-ticket")?.getAttribute("data-face")).toBe(face);
+  });
 });
 
 it("says the Realms could not be read, and reads them again on Try again", async () => {

@@ -31,7 +31,9 @@ export const realmBoard = () => {
       release_id: NATIVE_RELEASES.frontier.release,
       created_release_id: NATIVE_RELEASES.frontier.release,
     }),
-    ...release.definition.resources.resources.map((rule) => set(`0x5${rule.resource_type}`, "ResourceRule", { ...rule, game_id: 1 })),
+    ...release.definition.resources.resources.map((rule) =>
+      set(`0x5${rule.resource_type}`, "ResourceRule", { ...rule, game_id: 1 }),
+    ),
     ...release.definition.structures.buildings.map(({ category, rule }) =>
       set(`0x6${category}`, "BuildingRule", { ...rule, category, game_id: 1 }),
     ),

@@ -18,7 +18,7 @@ import { releaseLine } from "../../../packages/core/src/test-support/releases";
 
 async function heldMine(now: number) {
   const { decoder, fold, native } = setup();
-  const facts = siteSnapshot(snapshot(null, null, null, [PLAYER_ACCOUNT], "realm", null), {
+  const facts = siteSnapshot(snapshot(null, null, null, [PLAYER_ACCOUNT], null), {
     troops: siteGuardTroops(1),
     aspect: 2,
     lore: true,

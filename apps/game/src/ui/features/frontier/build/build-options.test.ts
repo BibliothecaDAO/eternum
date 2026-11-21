@@ -26,11 +26,13 @@ describe("Frontier's build options", () => {
     expect(options.get(BuildingType.ResourceLabor)?.effect).toMatchObject({ resource: ResourcesIds.Labor });
     expect((options.get(BuildingType.ResourceLabor)?.effect as { perHour: number }).perHour).toBeCloseTo(50, 0);
     expect(options.has(BuildingType.Storehouse)).toBe(false);
-    const hut = release.definition.structures.buildings.find(({ category }) => category === BuildingType.WorkersHut)!.rule.capacity_grant;
+    const hut = release.definition.structures.buildings.find(({ category }) => category === BuildingType.WorkersHut)!
+      .rule.capacity_grant;
     expect(options.get(BuildingType.WorkersHut)?.effect).toEqual({ kind: "population", amount: hut });
     expect(options.get(BuildingType.ResourceWheat)?.cost.length).toBeGreaterThan(0);
     expect(options.get(BuildingType.ResourceWheat)?.populationCost).toBe(
-      release.definition.structures.buildings.find(({ category }) => category === BuildingType.ResourceWheat)!.rule.population_cost,
+      release.definition.structures.buildings.find(({ category }) => category === BuildingType.ResourceWheat)!.rule
+        .population_cost,
     );
   });
 

@@ -201,13 +201,7 @@ const LabHomeStep = () => {
   const [value, setValue] = useState("");
   return (
     <>
-      <HomeSourcePicker
-        registered={null}
-        value={value}
-        onChange={setValue}
-        onSettled={noop}
-        disabled={false}
-      />
+      <HomeSourcePicker registered={null} value={value} onChange={setValue} onSettled={noop} disabled={false} />
       <PlaysAs />
     </>
   );

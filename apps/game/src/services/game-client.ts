@@ -3,10 +3,7 @@ import { createGameClient } from "@bibliothecadao/eternum";
 import { installFreshGameSyncRuntime } from "@bibliothecadao/eternum/game-sync";
 import { getPlayerDisplayName } from "@/services/identity/player-profiles";
 
-type BrowserGameInput = Pick<
-  Parameters<typeof createGameClient>[0],
-  "shard" | "gameId" | "observer" | "authHandler"
->;
+type BrowserGameInput = Pick<Parameters<typeof createGameClient>[0], "shard" | "gameId" | "observer" | "authHandler">;
 
 /**
  * Renderer boot and settlement use the same deployment and Herald store; actions are the connected gameplay account's

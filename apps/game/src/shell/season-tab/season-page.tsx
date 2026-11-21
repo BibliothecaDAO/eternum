@@ -2,14 +2,7 @@ import { formatAmount, formatDate } from "@bibliothecadao/types";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { isGameOver } from "@/runtime/world/directory";
-import {
-  AppButton,
-  AppChip,
-  AppEmpty,
-  AppFigure,
-  AppPanel,
-  AppRow,
-} from "@/ui/design-system/kit/app-elements";
+import { AppButton, AppChip, AppEmpty, AppFigure, AppPanel, AppRow } from "@/ui/design-system/kit/app-elements";
 import { HudPlaceMedal } from "@/ui/design-system/kit/hud-elements";
 import { RowThumb } from "@/ui/design-system/kit/list-row";
 import { PlayerName } from "@/ui/design-system/kit/player-name";

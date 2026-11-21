@@ -1,7 +1,6 @@
 /** The services the app reads; a failure names the one that did not answer. */
 export type Service =
   | "directory"
-  | "slots"
   | "season"
   | "results"
   | "world"
@@ -15,7 +14,6 @@ export type Service =
 /** One line per service, in the glossary's shape ("Season did not answer."). */
 const FAILURE_LINES: Record<Service, string> = {
   directory: "Games did not answer.",
-  slots: "Blitz did not answer.",
   season: "Season did not answer.",
   results: "Results did not answer.",
   /** Entering a match: the shard, its world or its scene did not open. */

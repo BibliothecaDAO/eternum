@@ -102,7 +102,11 @@ describe("game actions", () => {
 const createHarness = (signer: AccountInterface | null) => {
   ClientConfigManager.instance().setActiveGame(GAME_ID);
   const store = new NativeFactStore();
-  write(store, "SliceRules", [GAME_ID], { ...release.definition.rules, game_id: GAME_ID, map_center_offset: 2147483646 });
+  write(store, "SliceRules", [GAME_ID], {
+    ...release.definition.rules,
+    game_id: GAME_ID,
+    map_center_offset: 2147483646,
+  });
   ClientConfigManager.instance().setStore(store);
   const systemCalls = {
     explorer_create: vi.fn(async () => ({ transaction_hash: "0x3" })),

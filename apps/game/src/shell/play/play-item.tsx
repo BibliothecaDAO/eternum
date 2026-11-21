@@ -55,8 +55,7 @@ const verbOf = (item: PlayItem, signedIn: boolean): ItemVerb | null => {
 
 const titleOf = (item: PlayItem): string => (item.verb === "results" ? gameTitle(item.game) : ageOf(item.mode).name);
 
-const startOf = (item: PlayItem): string | undefined =>
-  item.verb === "results" ? gameStart(item.game) : undefined;
+const startOf = (item: PlayItem): string | undefined => (item.verb === "results" ? gameStart(item.game) : undefined);
 
 const ItemFacts = ({ item, now, firstVisit }: { item: PlayItem; now: number; firstVisit: boolean }) => {
   const { game } = item;

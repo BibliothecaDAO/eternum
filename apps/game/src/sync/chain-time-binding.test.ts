@@ -83,7 +83,11 @@ it("keeps chain time where Herald's head put it while a realm's production waits
       output_amount_left: 10n,
       last_settled_at: HEAD_SECONDS - 60,
     }),
-    fact("0x2", "SliceRules", { ...release.definition.rules, game_id: 1, mode_rules: nativeRuleConstants.PRODUCTION_START }),
+    fact("0x2", "SliceRules", {
+      ...release.definition.rules,
+      game_id: 1,
+      mode_rules: nativeRuleConstants.PRODUCTION_START,
+    }),
     fact(
       "0x2",
       "GameRegistry",
