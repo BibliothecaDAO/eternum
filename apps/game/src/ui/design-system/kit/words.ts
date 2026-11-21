@@ -1425,9 +1425,6 @@ export const SIGN_IN_WORDS = {
   continueInBrowser: "Continue in browser",
 } as const;
 
-export const JOIN_WORDS = {
-} as const;
-
 /** Blitz's rows and lobby: the steps on Join, the seat's cost, and what stands where an action cannot. */
 export const BLITZ_WORDS = {
   /**

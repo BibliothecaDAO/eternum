@@ -72,9 +72,6 @@
       "VITRIOL": 14,
       "ANGER": 15,
       "ENLIGHTENMENT": 16,
-      "RED": 11537,
-      "BLUE": 53288,
-      "GOLD": 710,
       "REROLLED": 4096
     },
     "research": {
@@ -1685,6 +1682,22 @@
       },
       {
         "type": "function",
+        "name": "credit_fragments",
+        "inputs": [
+          {
+            "name": "game_id",
+            "type": "core::integer::u32"
+          },
+          {
+            "name": "credit",
+            "type": "world_native::fragments::FragmentCredit"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "external"
+      },
+      {
+        "type": "function",
         "name": "register_entitlement",
         "inputs": [
           {
@@ -2395,6 +2408,39 @@
         "value": "zero",
         "meaning": "No empty player reveals in this expedition yet."
       }
+    },
+    {
+      "name": "FragmentCredit",
+      "identity": "0x467261676d656e74437265646974",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "id",
+          "type": "core::felt252",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "account",
+          "type": "core::starknet::contract_address::ContractAddress",
+          "id": "0x6163636f756e74",
+          "feltLength": 1
+        },
+        {
+          "name": "amount",
+          "type": "core::integer::u128",
+          "id": "0x616d6f756e74",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": 2
     },
     {
       "name": "Fragments",
@@ -6553,7 +6599,7 @@
           "type": "()"
         },
         {
-          "name": "FarEye",
+          "name": "StaminaRegen",
           "type": "()"
         }
       ]
@@ -7787,6 +7833,24 @@
         {
           "name": "fragments",
           "type": "core::integer::u64"
+        }
+      ]
+    },
+    "world_native::fragments::FragmentCredit": {
+      "type": "struct",
+      "name": "world_native::fragments::FragmentCredit",
+      "members": [
+        {
+          "name": "id",
+          "type": "core::felt252"
+        },
+        {
+          "name": "account",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "amount",
+          "type": "core::integer::u128"
         }
       ]
     },
@@ -10513,5 +10577,5 @@
       ]
     }
   },
-  "identity": "7086271615cfcc76864ab63afe61478be3f03bd6e9493504585c4ab20d0b6091"
+  "identity": "816cc7d626e05c381a2c0255fd28770e8a1402c96e927b35cb61e2bd9a122420"
 }

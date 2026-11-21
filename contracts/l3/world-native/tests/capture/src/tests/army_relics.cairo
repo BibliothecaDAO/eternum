@@ -234,7 +234,9 @@ fn stamina_regen_army(oaths: u16) -> (super::Deployment, ExplorerKey) {
         d.games,
         || {
             let army = crate::logic::army_slots::resolve(key, crate::logic::troops::explorer(key).unwrap(), None);
-            let empty = crate::troops::Stamina { amount: 0, settled_at: regen_start().try_into().unwrap(), remainder: 0 };
+            let empty = crate::troops::Stamina {
+                amount: 0, settled_at: regen_start().try_into().unwrap(), remainder: 0,
+            };
             let drained = crate::troops::ExplorerTroops {
                 troops: crate::troops::Troops { stamina: crate::troops::StaminaSource::Inline(empty), ..army.troops },
                 ..army,

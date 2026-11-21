@@ -4,7 +4,7 @@ export const nativeRuleConstants = {
   "RELIC_WARD_BPS": 500,
   "RELIC_PLUNDER_BPS": 2000,
   "RELIC_SECONDS_PER_RANK": 1800,
-  "RELIC_TILES_PER_RANK": 6,
+  "STAMINA_REGEN_RELIC_STEP_PERCENT": 20,
   "ATTRIBUTE_CAP": 5,
   "SCOUT_EXPLORE_STAMINA": 10,
   "FRONTIER_LIGHT_DAMAGE_PERCENT": 75,
@@ -90,9 +90,6 @@ export const nativeOathConstants = {
   "VITRIOL": 14,
   "ANGER": 15,
   "ENLIGHTENMENT": 16,
-  "RED": 11537,
-  "BLUE": 53288,
-  "GOLD": 710,
   "VITRIOL_LOSS_PER_TICK": 100,
   "PASS_STAMINA": 20,
   "POWER_DAMAGE_PERCENT": 20,
@@ -168,4 +165,4 @@ export const nativeStructureConstants = {
     100000
   ]
 } as const;
-export const nativeBalanceIdentity = "ebfe86fda60e5296037a0bc8d8d3336dcd62da488fe2bf6b34fe71d704b16543";
+export const nativeBalanceIdentity = "2b90ae89ddfb2ed67e9cd4b60444cd55cbca089372ef5e671152d94bb43b5cf8";

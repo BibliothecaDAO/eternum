@@ -2,8 +2,8 @@ use starknet::storage::StorageMapReadAccess;
 use crate::fragments::{BuyStamina, FragmentCredit};
 use crate::stamina::StaminaSourceTrait;
 use crate::troops::{ExplorerRecordTrait, StaminaSource};
-use super::play_fixture::FIXTURE_START;
 use super::entry::IHomeGrantsSafeDispatcherTrait;
+use super::play_fixture::FIXTURE_START;
 
 #[feature("safe_dispatcher")]
 fn credit(d: super::Deployment, game_id: u32, credit: FragmentCredit) -> bool {
