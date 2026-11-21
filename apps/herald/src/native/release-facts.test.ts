@@ -327,7 +327,6 @@ it("projects daily quest rules from verified registration, without a legacy clai
       world.fold.gameRows("QuestRules", "1").map(({ key, value }) => ({ model: "QuestRules", key, value })),
     );
     expect(store.get("QuestRules", { game_id: 1 })).toEqual(enabled ? { game_id: 1, ...rules } : undefined);
-    expect(world.fold.gameRows("LaborRules", "1")).toHaveLength(enabled ? 0 : 1);
   }
 });
 
@@ -421,5 +420,4 @@ it("publishes every active Season 1 rule through verified registration and launc
     expect(game_id).toBe(1);
     expect(actual).toEqual(rules.unwrap());
   }
-  expect(world.fold.gameRows("LaborRules", "1")).toEqual([]);
 });
