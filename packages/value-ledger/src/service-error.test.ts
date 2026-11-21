@@ -82,6 +82,17 @@ it("keeps the HTTP status and stage when the failed response is not JSON", async
   expect(failure).toMatchObject({ status: 502, stage: "relay_device_approval_refused", code: "invalid_service_error" });
 });
 
+it("keeps the host of a failing URL and drops the path, query and login that can hold its key", () => {
+  const stored = (text: string) => serviceFailure(new Error(text), [], "fallback", []).message;
+  expect(stored("HTTP 429 from https://rpc.provider.test/v2/shortkey1 (rate limited)")).toBe(
+    "HTTP 429 from https://rpc.provider.test/[redacted] (rate limited)",
+  );
+  expect(stored("fetch failed: http://user:pass@127.0.0.1:8545?apikey=k1")).toBe(
+    "fetch failed: http://127.0.0.1:8545/[redacted]",
+  );
+  expect(stored("unreachable https://herald.test")).toBe("unreachable https://herald.test");
+});
+
 it("recognizes only a leading legacy code before diagnostic text", () => {
   const error = new Error("ledger_head_unconfirmed: Bearer secret-value");
   expect(serviceFailure(error, ["ledger_head_unconfirmed"], "fallback", [])).toEqual({
