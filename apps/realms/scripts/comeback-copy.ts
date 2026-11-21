@@ -38,7 +38,7 @@ export const FIGURES = [
 ] as const;
 export type Figures = Record<(typeof FIGURES)[number], string>;
 
-export type Block =
+type Block =
   | { kind: "text"; text: string; style: "plain" | "bold" | "callout" }
   | { kind: "link"; text: string; path: string }
   | { kind: "prizes" }
