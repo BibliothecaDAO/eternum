@@ -54,6 +54,10 @@ pub fn initialize(game_id: u32) {
     save_cursor(game_id, tick);
 }
 
+#[cfg(feature: "blitz")]
+pub fn settle(_game_id: u32, _context: ExecutionContext) {}
+
+#[cfg(not(feature: "blitz"))]
 pub fn settle(game_id: u32, context: ExecutionContext) {
     let game = context.game.unbox();
     if context.timestamp < game.start_main_at {

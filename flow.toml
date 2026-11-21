@@ -4,6 +4,9 @@ setup = "git sparse-checkout disable && pnpm install --frozen-lockfile --prefer-
 [kind.build]
 cmd = "bash contracts/l3/check-native.sh build"
 
+[kind.build-blitz]
+cmd = "bash contracts/l3/check-native.sh build-blitz"
+
 [kind.sizes]
 cmd = "bash contracts/l3/check-native.sh sizes"
 paths = "contracts/ .tool-versions"

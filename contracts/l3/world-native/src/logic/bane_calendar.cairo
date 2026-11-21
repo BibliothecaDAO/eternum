@@ -1,4 +1,6 @@
-use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
+use starknet::storage::StorageMapReadAccess;
+#[cfg(not(feature: "blitz"))]
+use starknet::storage::StorageMapWriteAccess;
 
 pub fn prepare(game_id: u32, context: crate::commands::ActionContext) {
     let context = crate::commands::execution_context(game_id, context);
@@ -13,6 +15,10 @@ pub fn initialize(game_id: u32) {
     prepare_at(game_id, game, unit, game.start_main_at, 0);
 }
 
+#[cfg(feature: "blitz")]
+fn prepare_at(_game_id: u32, _game: crate::game::GameRegistry, _unit: u32, _timestamp: u64, _raw_root: u256) {}
+
+#[cfg(not(feature: "blitz"))]
 fn prepare_at(game_id: u32, game: crate::game::GameRegistry, unit: u32, timestamp: u64, raw_root: u256) {
     if timestamp < game.start_main_at {
         return;
@@ -42,6 +48,12 @@ fn prepare_at(game_id: u32, game: crate::game::GameRegistry, unit: u32, timestam
     state.banes.next_chance.write(game_id, chance);
 }
 
+#[cfg(feature: "blitz")]
+pub fn kind(_game_id: u32, _day: u64) -> Option<u8> {
+    None
+}
+
+#[cfg(not(feature: "blitz"))]
 pub fn kind(game_id: u32, day: u64) -> Option<u8> {
     if world_stopped(game_id, day) {
         return None;

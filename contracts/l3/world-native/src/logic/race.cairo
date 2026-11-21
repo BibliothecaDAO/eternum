@@ -3,6 +3,12 @@ use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
 use crate::race::{AspectHyperstructure, AspectKey, RaceMember, RaceResult, RaceRules, TriumphKey};
 use crate::resources::ResourceKey;
 
+#[cfg(feature: "blitz")]
+pub fn rules() -> RaceRules {
+    panic!("this family has no race")
+}
+
+#[cfg(not(feature: "blitz"))]
 pub fn rules() -> RaceRules {
     crate::balance::race::RACE_RULES
 }
@@ -45,6 +51,10 @@ pub fn result(game_id: u32) -> Option<RaceResult> {
         )
 }
 
+#[cfg(feature: "blitz")]
+fn initialize(_game_id: u32) {}
+
+#[cfg(not(feature: "blitz"))]
 fn initialize(game_id: u32) {
     validate_game(game_id);
     for aspect in 1_u8..5 {
@@ -210,6 +220,10 @@ fn schedule_triumph(key: AspectKey, before: u32, height: u32, timestamp: u64) {
     emit('TriumphDay', key, day.index + 1);
 }
 
+#[cfg(feature: "blitz")]
+pub fn finish_expired(_game_id: u32, _timestamp: u64) {}
+
+#[cfg(not(feature: "blitz"))]
 pub fn finish_expired(game_id: u32, timestamp: u64) {
     if result(game_id).is_some() {
         return;

@@ -110,6 +110,7 @@ pub fn kind_at(draw: u256, place: u8) -> u8 {
     kind.try_into().unwrap()
 }
 
+#[cfg(not(feature: "blitz"))]
 pub fn assert_layout_fits() {
     let spacing = crate::logic::settlement::spacing();
     let middle = center(spacing);

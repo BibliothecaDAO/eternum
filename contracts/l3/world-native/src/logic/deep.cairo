@@ -2,6 +2,12 @@ use crate::commands::ExecutionContext;
 use crate::geometry::tile_key;
 use crate::troops::{Coord, ExplorerKey, IBattleResolutionDispatcherTrait};
 
+#[cfg(feature: "blitz")]
+pub fn contains(_game_id: u32, _coord: Coord) -> bool {
+    false
+}
+
+#[cfg(not(feature: "blitz"))]
 pub fn contains(game_id: u32, coord: Coord) -> bool {
     crate::logic::game::game_exists(game_id) && crate::deep::contains(coord, crate::logic::settlement::spacing())
 }

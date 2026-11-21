@@ -29,6 +29,7 @@ const world = new URL("../", import.meta.url);
 const GAME_OVERRIDES = new Set(["biome_climate_config", "map_center_offset"]);
 const SWITCHES = new Set(["command_mask", "mode_rules", "day_unit_seconds", "entry_rule"]);
 const RULE_SCALARS: Record<string, string> = { spire_travel_essence_cost: "u128" };
+const FRONTIER_ALONE = new Set(["quests", "banes", "deep", "race"]);
 
 export function balanceModules(definition: PresetDefinition): Record<string, string> {
   assertPayWithinStage(definition.economy);
@@ -57,13 +58,15 @@ function writeBalanceModules(definition: PresetDefinition): void {
   const modules = balanceModules(definition);
   mkdirSync(new URL("src/balance/", world), { recursive: true });
   const paths = [
-    writeModule(
-      "src/balance.cairo",
-      Object.keys(modules).map((group) => `pub mod ${group};`),
-    ),
+    writeModule("src/balance.cairo", Object.keys(modules).flatMap(moduleDeclaration)),
     ...Object.entries(modules).map(([group, body]) => writeModule(`src/balance/${group}.cairo`, [body])),
   ];
   for (const path of paths) execFileSync("scarb", ["fmt", path], { cwd: fileURLToPath(world), encoding: "utf8" });
+}
+
+function moduleDeclaration(group: string): string[] {
+  const declaration = `pub mod ${group};`;
+  return FRONTIER_ALONE.has(group) ? ['#[cfg(not(feature: "blitz"))]', declaration] : [declaration];
 }
 
 function writeModule(path: string, lines: string[]): string {

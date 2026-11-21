@@ -1,18 +1,38 @@
-use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess};
+use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
+#[cfg(not(feature: "blitz"))]
+use starknet::storage::{StoragePathEntry, StoragePointerReadAccess};
 use crate::commands::ExecutionContext;
 use crate::deep::{DeepBeast, DeepRing, DeepSettings, DeepSite};
 use crate::guards::{Guard, GuardKey};
 use crate::resources::ResourceKey;
 use crate::troops::ExplorerKey;
 
+#[cfg(feature: "blitz")]
+pub fn rules() -> DeepSettings {
+    panic!("this family has no Deep")
+}
+
+#[cfg(not(feature: "blitz"))]
 pub fn rules() -> DeepSettings {
     crate::balance::deep::DEEP_SETTINGS
 }
 
+#[cfg(feature: "blitz")]
+pub fn ring(_ring: u8) -> DeepRing {
+    panic!("this family has no Deep")
+}
+
+#[cfg(not(feature: "blitz"))]
 pub fn ring(ring: u8) -> DeepRing {
     *crate::balance::deep::DEEP_RINGS.span().at(ring.into())
 }
 
+#[cfg(feature: "blitz")]
+pub fn beast(_kind: u8) -> DeepBeast {
+    panic!("this family has no Deep")
+}
+
+#[cfg(not(feature: "blitz"))]
 pub fn beast(kind: u8) -> DeepBeast {
     *crate::balance::deep::DEEP_BEASTS.span().at(kind.into())
 }
@@ -96,6 +116,10 @@ pub fn reward_beast_clear(key: ExplorerKey, home: u64, cleared: ResourceKey, tim
     );
 }
 
+#[cfg(feature: "blitz")]
+fn initialize(_game_id: u32) {}
+
+#[cfg(not(feature: "blitz"))]
 fn initialize(game_id: u32) {
     let state = crate::state::write();
     crate::logic::deep_ticks::initialize(game_id);
@@ -120,6 +144,12 @@ fn initialize(game_id: u32) {
     }
 }
 
+#[cfg(feature: "blitz")]
+pub fn rollover(_game_id: u32, _context: ExecutionContext) -> bool {
+    true
+}
+
+#[cfg(not(feature: "blitz"))]
 pub fn rollover(game_id: u32, context: ExecutionContext) -> bool {
     let game = context.game.unbox();
     if context.timestamp < game.start_main_at || (game.end_at != 0 && context.timestamp >= game.end_at) {

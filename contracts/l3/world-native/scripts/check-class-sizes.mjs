@@ -12,7 +12,7 @@ export const classSizeReport = (directory, schema) =>
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const root = new URL("../", import.meta.url);
   const schema = JSON.parse(await readFile(new URL("schema/schema.json", root), "utf8"));
-  const report = await classSizeReport(fileURLToPath(new URL("target/dev/", root)), schema);
+  const report = await classSizeReport(fileURLToPath(new URL(`${process.argv[2] ?? "target/dev"}/`, root)), schema);
   process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
   if (!report.passed) process.exitCode = 1;
 }

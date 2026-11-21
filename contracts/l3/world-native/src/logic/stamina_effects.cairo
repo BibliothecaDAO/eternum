@@ -48,6 +48,12 @@ pub fn refill(
     settle_with_wind(ref stamina, ref boosts, maximum, request, request.timestamp, rate_bps, wind);
 }
 
+#[cfg(feature: "blitz")]
+fn second_wind(_home: ResourceKey) -> Option<Wind> {
+    None
+}
+
+#[cfg(not(feature: "blitz"))]
 fn second_wind(home: ResourceKey) -> Option<Wind> {
     let rules = crate::logic::race::rules();
     let period = crate::logic::triumphs::period(home, crate::race::SECOND_WIND_STAGE)?;

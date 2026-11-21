@@ -7,6 +7,21 @@ pub fn read(home: ResourceKey, day: u64) -> QuestProgress {
     QuestProgress { progress, completed_level }
 }
 
+#[cfg(feature: "blitz")]
+fn reward(_bonus: bool, _level: u8) -> (u128, u128) {
+    panic!("daily quests are disabled")
+}
+
+#[cfg(not(feature: "blitz"))]
+fn reward(bonus: bool, level: u8) -> (u128, u128) {
+    let percent = if bonus {
+        crate::balance::quests::BONUS_PERCENT
+    } else {
+        100
+    };
+    crate::quests::reward(crate::balance::quests::LABOR_AMOUNT, crate::balance::quests::ESSENCE_AMOUNT, percent, level)
+}
+
 pub fn labor_bonus(home: ResourceKey, owner: starknet::ContractAddress) -> bool {
     let state = crate::state::read();
     state.entry.seals.read((home.game_id, owner)).is_some() || holds_realm(home, owner)
@@ -147,14 +162,7 @@ pub mod QuestState {
             level: u8,
             context: crate::commands::ExecutionContext,
         ) -> crate::entry::LaborGrant {
-            let bonus = if super::labor_bonus(home, actor) {
-                crate::balance::quests::BONUS_PERCENT
-            } else {
-                100
-            };
-            let (labor, essence) = crate::quests::reward(
-                crate::balance::quests::LABOR_AMOUNT, crate::balance::quests::ESSENCE_AMOUNT, bonus, level,
-            );
+            let (labor, essence) = super::reward(super::labor_bonus(home, actor), level);
             let resources = IResourceOperationsLibraryDispatcher {
                 class_hash: crate::logic::release::class_of(home.game_id, crate::slots::RESOURCES),
             };

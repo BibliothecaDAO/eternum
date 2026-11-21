@@ -32,6 +32,12 @@ pub fn effects(home: ResourceKey, timestamp: u64) -> crate::race::ExpeditionEffe
         .expedition_effects(home, timestamp)
 }
 
+#[cfg(feature: "blitz")]
+pub fn read_effects(_home: ResourceKey, _timestamp: u64) -> crate::race::ExpeditionEffects {
+    crate::race::ExpeditionEffects { find_percent: 100, beast_bps: 10000, spoils_percent: 100 }
+}
+
+#[cfg(not(feature: "blitz"))]
 pub fn read_effects(home: ResourceKey, timestamp: u64) -> crate::race::ExpeditionEffects {
     let rules = crate::logic::race::rules();
     let mut effects = crate::race::ExpeditionEffects {

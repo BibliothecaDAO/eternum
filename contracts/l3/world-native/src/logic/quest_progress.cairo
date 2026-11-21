@@ -1,7 +1,13 @@
+#[cfg(not(feature: "blitz"))]
 use starknet::storage::StorageMapReadAccess;
+#[cfg(not(feature: "blitz"))]
 use crate::quests::IQuestProgressDispatcherTrait;
 use crate::resources::ResourceKey;
 
+#[cfg(feature: "blitz")]
+pub fn record(_home: ResourceKey, _kind: u8, _amount: u128, _timestamp: u64) {}
+
+#[cfg(not(feature: "blitz"))]
 pub fn record(home: ResourceKey, kind: u8, amount: u128, timestamp: u64) {
     if amount == 0 {
         return;

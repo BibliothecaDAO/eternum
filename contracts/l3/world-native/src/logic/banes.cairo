@@ -1,6 +1,8 @@
 use starknet::Event;
 use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess};
-use crate::banes::{BaneEffects, BaneProgress, BaneWindow, IBaneEffectsDispatcherTrait, IBaneEffectsLibraryDispatcher};
+#[cfg(not(feature: "blitz"))]
+use crate::banes::BaneWindow;
+use crate::banes::{BaneEffects, BaneProgress, IBaneEffectsDispatcherTrait, IBaneEffectsLibraryDispatcher};
 use crate::resources::ResourceKey;
 
 pub fn effects(home: ResourceKey, from: u64, until: u64) -> BaneEffects {
@@ -22,6 +24,12 @@ pub fn quest_kind(home: ResourceKey, day: u64) -> u8 {
     crate::quests::daily_quest(crate::state::read().games.games.entry(home.game_id).seed.read(), day)
 }
 
+#[cfg(feature: "blitz")]
+pub fn target(_kind: u8, _level: u8) -> u128 {
+    panic!("daily quests are disabled")
+}
+
+#[cfg(not(feature: "blitz"))]
 pub fn target(kind: u8, level: u8) -> u128 {
     if kind < crate::quests::QUEST_COUNT {
         let count = *crate::balance::quests::BASE_COUNTS.span().at(kind.into());
@@ -31,6 +39,12 @@ pub fn target(kind: u8, level: u8) -> u128 {
     *crate::balance::banes::QUEST_COUNTS.span().at(((kind - crate::quests::STAND) * 4 + level - 1).into())
 }
 
+#[cfg(feature: "blitz")]
+pub fn required(_game_id: u32, _aspect: u8, _day: u64) -> u32 {
+    panic!("this family has no Banes")
+}
+
+#[cfg(not(feature: "blitz"))]
 pub fn required(game_id: u32, aspect: u8, day: u64) -> u32 {
     let active = if day == 0 {
         0
@@ -79,6 +93,12 @@ pub fn complete(home: ResourceKey, day: u64, timestamp: u64) {
     );
 }
 
+#[cfg(feature: "blitz")]
+pub fn read_effects(_home: ResourceKey, _from: u64, _until: u64) -> BaneEffects {
+    BaneEffects { windows: array![].span(), beast_percent: 100, stamina_percent: 100, production_percent: 100 }
+}
+
+#[cfg(not(feature: "blitz"))]
 pub fn read_effects(home: ResourceKey, from: u64, until: u64) -> BaneEffects {
     let effects = BaneEffects {
         windows: array![].span(),

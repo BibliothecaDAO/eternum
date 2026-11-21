@@ -31,9 +31,22 @@ build_world() {
   (cd "$world" && scarb build)
 }
 
+build_blitz() {
+  (cd "$world" && scarb --target-dir target/blitz build --features blitz)
+}
+
+assert_families_share_games() {
+  cmp "$world/target/dev/world_native_Games.contract_class.json" \
+    "$world/target/blitz/dev/world_native_Games.contract_class.json" ||
+    { echo "The Blitz build changes the Games class: both families run under one Games" >&2; exit 1; }
+}
+
 check_sizes() {
   build_world
   node "$world/scripts/check-class-sizes.mjs"
+  build_blitz
+  node "$world/scripts/check-class-sizes.mjs" target/blitz/dev
+  assert_families_share_games
 }
 
 check_world() {
@@ -77,6 +90,7 @@ case "${1:-all}" in
   prelude) prelude ;;
   vrf) verify_randomness ;;
   build) build_world ;;
+  build-blitz) build_blitz ;;
   sizes) check_sizes ;;
   world) check_world ;;
   events) check_events ;;
