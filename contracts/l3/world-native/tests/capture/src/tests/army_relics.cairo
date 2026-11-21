@@ -1,17 +1,17 @@
 use crate::army_relics::{ArmyRelic, RelicKind};
 use super::registrar::*;
+const START: u64 = super::play_fixture::FIXTURE_START;
 
 fn relic_game() -> (
     super::Deployment, u32, u64, u64, ExplorerKey, crate::expeditions::FrontierDiscoveryRules, ChestTiers,
 ) {
-    let (_, preset) = super::preset_projection::current_definition("frontier-check");
-    let (d, game_id) = create_open_frontier(1, preset, BAG_SECONDS);
+    let (d, game_id) = setup_open_frontier();
     assert!(
         execute_in_game(
             d,
             game_id,
             Command::SettleSeason(crate::realms::SettleSeason { selected_realm: None, order: Some(aspect_order(1)) }),
-            360,
+            START + 240,
         ),
     );
     let home_id = snforge_std::interact_with_state(d.games, || crate::entity_ids::home_for_actor(game_id, d.actor));
@@ -33,7 +33,7 @@ fn ruins_fill_replace_and_activate_an_armys_relics_through_commands() {
     let resources = IResourceOperationsDispatcher { contract_address: d.games };
     let lords = ResourceSlot { game_id, entity_id: home_id, resource_type: crate::resources::LORDS };
     for index in 0_u8..4 {
-        let timestamp = 400 + Into::<u8, u64>::into(index) * 30;
+        let timestamp = START + 280 + Into::<u8, u64>::into(index) * 30;
         let kind = match index {
             0 => RelicKind::Blade,
             1 => RelicKind::FarEye,
@@ -97,8 +97,8 @@ fn ruins_fill_replace_and_activate_an_armys_relics_through_commands() {
             entity_id: explorer_id, relic_id: 1, recipient: crate::relics::Recipient::ArmySlot(0),
         },
     );
-    assert!(execute_in_game(d, game_id, activate, 520));
-    assert!(!execute_in_game(d, game_id, activate, 520));
+    assert!(execute_in_game(d, game_id, activate, START + 400));
+    assert!(!execute_in_game(d, game_id, activate, START + 400));
     assert_eq!(resources.resource_balance(essence), essence_before);
     assert_eq!(read_loadout(d, key).first, None);
     assert_eq!(
@@ -108,9 +108,9 @@ fn ruins_fill_replace_and_activate_an_armys_relics_through_commands() {
                 crate::army_relics::ArmyRelicEffectKey { game_id, explorer_id, kind: RelicKind::Blade },
             ),
         ),
-        Some(crate::army_relics::ArmyRelicEffect { rank: 1, expires_at: 2320 }),
+        Some(crate::army_relics::ArmyRelicEffect { rank: 1, expires_at: START + 400 + crate::rules::RELIC_SECONDS_PER_RANK.into() }),
     );
-    let site = discover_relic(d, key, discovery, chest, ArmyRelic { kind: RelicKind::FarEye, rank: 1 }, false, 550);
+    let site = discover_relic(d, key, discovery, chest, ArmyRelic { kind: RelicKind::FarEye, rank: 1 }, false, START + 430);
     assert!(
         execute_in_game(
             d,
@@ -118,7 +118,7 @@ fn ruins_fill_replace_and_activate_an_armys_relics_through_commands() {
             Command::BattleGuard(
                 crate::commands::Battle { attacker_id: explorer_id, defender_id: site.entity_id, relic_slot: None },
             ),
-            551,
+            START + 431,
         ),
     );
     let receipt = snforge_std::interact_with_state(
@@ -136,7 +136,7 @@ fn ruins_fill_replace_and_activate_an_armys_relics_through_commands() {
                     entity_id: explorer_id, relic_id: 16, recipient: crate::relics::Recipient::ArmySlot(0),
                 },
             ),
-            552,
+            START + 432,
         ),
     );
     let mut revealed = array![];
@@ -163,7 +163,7 @@ fn ruins_fill_replace_and_activate_an_armys_relics_through_commands() {
 fn a_ruin_cache_pays_its_fragments_to_the_army_owner_and_leaves_the_relics() {
     let (d, game_id, _, explorer_id, key, discovery, chest) = relic_game();
     let cache = ArmyRelic { kind: RelicKind::Blade, rank: 1 };
-    let site = discover_relic(d, key, discovery, chest, cache, true, 560);
+    let site = discover_relic(d, key, discovery, chest, cache, true, START + 440);
     assert_eq!(read_cache(d, site), 10);
     let loadout = read_loadout(d, key);
     assert!(
@@ -173,7 +173,7 @@ fn a_ruin_cache_pays_its_fragments_to_the_army_owner_and_leaves_the_relics() {
             Command::BattleGuard(
                 crate::commands::Battle { attacker_id: explorer_id, defender_id: site.entity_id, relic_slot: None },
             ),
-            561,
+            START + 441,
         ),
     );
     assert_eq!(read_loadout(d, key), loadout);

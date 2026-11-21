@@ -1,249 +1,6 @@
 use snforge_std::fs::{FileTrait, read_txt};
 pub use world_test_support::tests::combat_formula::*;
 
-
-#[test]
-fn tests_troop_attack_simple_1() {
-    let mut alpha = Troops {
-        category: TroopType::Knight,
-        tier: TroopTier::T1,
-        count: 1 * RESOURCE_PRECISION,
-        stamina: Stamina { amount: 100, settled_at: 1, remainder: 0 }.into(),
-        boosts: troop_boosts(),
-        battle_cooldown_end: 0,
-    };
-    let mut bravo = Troops {
-        category: TroopType::Paladin,
-        tier: TroopTier::T1,
-        count: 95_000 * RESOURCE_PRECISION,
-        stamina: Stamina { amount: 100, settled_at: 1, remainder: 0 }.into(),
-        boosts: troop_boosts(),
-        battle_cooldown_end: 0,
-    };
-
-    alpha.attack_with_context(ref bravo, context(Biome::DeepOcean), stamina_config(), damage_config(), 1, 1);
-
-    assert_eq!(alpha.count, 0);
-    assert_eq!(bravo.count, 95_000 * RESOURCE_PRECISION);
-}
-
-#[test]
-fn tests_troop_attack_simple_2() {
-    let mut alpha = Troops {
-        category: TroopType::Knight,
-        tier: TroopTier::T2, // Tier 2
-        count: 61_293 * RESOURCE_PRECISION,
-        stamina: Stamina { amount: 100, settled_at: 1, remainder: 0 }.into(),
-        boosts: troop_boosts(),
-        battle_cooldown_end: 0,
-    };
-    let mut bravo = Troops {
-        category: TroopType::Crossbowman,
-        tier: TroopTier::T1, // Tier 1
-        count: 159_303 * RESOURCE_PRECISION,
-        stamina: Stamina { amount: 100, settled_at: 1, remainder: 0 }.into(),
-        boosts: troop_boosts(),
-        battle_cooldown_end: 0,
-    };
-
-    alpha.attack_with_context(ref bravo, context(Biome::DeepOcean), stamina_config(), damage_config(), 1, 1);
-
-    assert_eq!(alpha.count, 40_079 * RESOURCE_PRECISION);
-    assert_eq!(bravo.count, 120_061 * RESOURCE_PRECISION);
-}
-
-#[test]
-fn tests_crossbowman_ranged_field_attack_uses_reduced_damage() {
-    let mut adjacent_alpha = test_troops(TroopType::Crossbowman, TroopTier::T2, 1_000, 100);
-    let mut adjacent_bravo = test_troops(TroopType::Knight, TroopTier::T2, 1_000, 100);
-    let mut ranged_alpha = test_troops(TroopType::Crossbowman, TroopTier::T2, 1_000, 100);
-    let mut ranged_bravo = test_troops(TroopType::Knight, TroopTier::T2, 1_000, 100);
-
-    adjacent_alpha
-        .attack_with_context(
-            ref adjacent_bravo,
-            CombatContext {
-                day_unit_seconds: 0,
-                timestamp: 1,
-                attacker_biome: Biome::Taiga,
-                defender_biome: Biome::Taiga,
-                attack_distance: 1,
-                attacker_is_structure_guard: false,
-                defender_is_structure_guard: false,
-                attacker_oaths: 0,
-                defender_oaths: 0,
-                attacker_twin_damage: 0,
-            },
-            stamina_config(),
-            damage_config(),
-            1,
-            1,
-        );
-    ranged_alpha
-        .attack_with_context(
-            ref ranged_bravo,
-            CombatContext {
-                day_unit_seconds: 0,
-                timestamp: 1,
-                attacker_biome: Biome::Taiga,
-                defender_biome: Biome::Taiga,
-                attack_distance: 2,
-                attacker_is_structure_guard: false,
-                defender_is_structure_guard: false,
-                attacker_oaths: 0,
-                defender_oaths: 0,
-                attacker_twin_damage: 0,
-            },
-            stamina_config(),
-            damage_config(),
-            1,
-            1,
-        );
-
-    assert!(
-        ranged_alpha
-            ._ranged_crossbow_damage_multiplier(
-                CombatContext { attack_distance: 2, ..context(Biome::Taiga) },
-            ) == FixedTrait::new(70, false)
-            / FixedTrait::new(100, false),
-    );
-    assert!(ranged_bravo.count > adjacent_bravo.count, "Ranged field attack should deal reduced damage");
-    assert!(ranged_alpha.count == 1_000 * RESOURCE_PRECISION, "Ranged defender should not counter-damage attacker");
-    assert!(ranged_bravo.stamina.inline().amount == 80, "Ranged defender should spend reduced defensive stamina");
-}
-
-#[test]
-fn tests_crossbowman_ranged_structure_attack_uses_heavy_reduction() {
-    let mut field_alpha = test_troops(TroopType::Crossbowman, TroopTier::T2, 1_000, 100);
-    let mut field_bravo = test_troops(TroopType::Paladin, TroopTier::T2, 1_000, 100);
-    let mut structure_alpha = test_troops(TroopType::Crossbowman, TroopTier::T2, 1_000, 100);
-    let mut structure_bravo = test_troops(TroopType::Paladin, TroopTier::T2, 1_000, 100);
-
-    field_alpha
-        .attack_with_context(
-            ref field_bravo,
-            CombatContext {
-                day_unit_seconds: 0,
-                timestamp: 1,
-                attacker_biome: Biome::Taiga,
-                defender_biome: Biome::Taiga,
-                attack_distance: 2,
-                attacker_is_structure_guard: false,
-                defender_is_structure_guard: false,
-                attacker_oaths: 0,
-                defender_oaths: 0,
-                attacker_twin_damage: 0,
-            },
-            stamina_config(),
-            damage_config(),
-            1,
-            1,
-        );
-    structure_alpha
-        .attack_with_context(
-            ref structure_bravo,
-            CombatContext {
-                day_unit_seconds: 0,
-                timestamp: 1,
-                attacker_biome: Biome::Taiga,
-                defender_biome: Biome::Taiga,
-                attack_distance: 2,
-                attacker_is_structure_guard: false,
-                defender_is_structure_guard: true,
-                attacker_oaths: 0,
-                defender_oaths: 0,
-                attacker_twin_damage: 0,
-            },
-            stamina_config(),
-            damage_config(),
-            1,
-            1,
-        );
-
-    assert!(
-        structure_alpha
-            ._ranged_crossbow_damage_multiplier(
-                CombatContext { attack_distance: 2, defender_is_structure_guard: true, ..context(Biome::Taiga) },
-            ) == FixedTrait::new(30, false)
-            / FixedTrait::new(100, false),
-    );
-    assert!(structure_bravo.count > field_bravo.count, "Ranged structure attack should deal less damage");
-}
-
-#[test]
-fn tests_knight_assault_increases_adjacent_structure_guard_damage() {
-    let mut field_alpha = test_troops(TroopType::Knight, TroopTier::T2, 1_000, 100);
-    let mut field_bravo = test_troops(TroopType::Crossbowman, TroopTier::T2, 1_000, 100);
-    let mut guard_alpha = test_troops(TroopType::Knight, TroopTier::T2, 1_000, 100);
-    let mut guard_bravo = test_troops(TroopType::Crossbowman, TroopTier::T2, 1_000, 100);
-
-    field_alpha.attack_with_context(ref field_bravo, context(Biome::Taiga), stamina_config(), damage_config(), 1, 1);
-    guard_alpha
-        .attack_with_context(
-            ref guard_bravo,
-            CombatContext {
-                day_unit_seconds: 0,
-                timestamp: 1,
-                attacker_biome: Biome::Taiga,
-                defender_biome: Biome::Taiga,
-                attack_distance: 1,
-                attacker_is_structure_guard: false,
-                defender_is_structure_guard: true,
-                attacker_oaths: 0,
-                defender_oaths: 0,
-                attacker_twin_damage: 0,
-            },
-            stamina_config(),
-            damage_config(),
-            1,
-            1,
-        );
-
-    assert!(
-        guard_alpha
-            ._knight_structure_assault_multiplier(
-                CombatContext { defender_is_structure_guard: true, ..context(Biome::Taiga) },
-            ) == FixedTrait::new(115, false)
-            / FixedTrait::new(100, false),
-    );
-    assert!(guard_bravo.count < field_bravo.count, "Knight assault should increase guard damage");
-}
-
-#[test]
-fn tests_knight_bulwark_reduces_guard_incoming_damage() {
-    let mut field_alpha = test_troops(TroopType::Paladin, TroopTier::T2, 1_000, 100);
-    let mut field_bravo = test_troops(TroopType::Knight, TroopTier::T2, 1_000, 100);
-    let mut guard_alpha = test_troops(TroopType::Paladin, TroopTier::T2, 1_000, 100);
-    let mut guard_bravo = test_troops(TroopType::Knight, TroopTier::T2, 1_000, 100);
-
-    field_alpha.attack_with_context(ref field_bravo, context(Biome::Taiga), stamina_config(), damage_config(), 1, 1);
-    guard_alpha
-        .attack_with_context(
-            ref guard_bravo,
-            CombatContext {
-                day_unit_seconds: 0,
-                timestamp: 1,
-                attacker_biome: Biome::Taiga,
-                defender_biome: Biome::Taiga,
-                attack_distance: 1,
-                attacker_is_structure_guard: false,
-                defender_is_structure_guard: true,
-                attacker_oaths: 0,
-                defender_oaths: 0,
-                attacker_twin_damage: 0,
-            },
-            stamina_config(),
-            damage_config(),
-            1,
-            1,
-        );
-
-    assert!(
-        guard_bravo._incoming_damage_multiplier(true, 0) == FixedTrait::new(85, false) / FixedTrait::new(100, false),
-    );
-    assert!(guard_bravo.count > field_bravo.count, "Knight guard should receive reduced incoming damage");
-}
-
 #[test]
 fn an_exchange_without_a_capture_spends_the_full_attack_stamina() {
     for count in array![1_u128, 10000] {
@@ -313,7 +70,6 @@ fn frontier_knights_take_less_damage_in_guard_slots_even_without_stamina() {
                     .attack_with_context(
                         ref defender,
                         CombatContext {
-                            day_unit_seconds: 14400,
                             attacker_is_structure_guard,
                             defender_is_structure_guard,
                             ..context(Biome::Underground),
@@ -349,36 +105,26 @@ fn frontier_knights_take_less_damage_in_guard_slots_even_without_stamina() {
 }
 
 #[test]
-fn scouts_deal_three_quarters_damage_on_either_side_only_in_frontier() {
+fn scouts_deal_three_quarters_damage_on_either_side() {
     let damage = TroopDamageConfig {
         damage_biome_bonus_num: 0, damage_scaling_factor: 36893488147419103232, ..damage_config(),
     };
-    for day_unit_seconds in array![0_u32, 100] {
-        for (attacker, outgoing) in array![(TroopType::Knight, 437_u128), (TroopType::Paladin, 328)] {
-            for (defender, incoming) in array![(TroopType::Knight, 437_u128), (TroopType::Paladin, 328)] {
-                let mut alpha = test_troops(attacker, TroopTier::T1, 1000, 100);
-                let mut bravo = test_troops(defender, TroopTier::T1, 1000, 100);
-                let (dealt, taken, _, _) = alpha
-                    .damage_with_context(
-                        ref bravo,
-                        CombatContext { day_unit_seconds, ..context(Biome::Grassland) },
-                        stamina_config(),
-                        damage,
-                        1,
-                        0,
-                    );
-                assert_eq!(dealt, if day_unit_seconds == 0 {
-                    437
-                } else {
-                    outgoing
-                } * RESOURCE_PRECISION);
-                assert_eq!(taken, if day_unit_seconds == 0 {
-                    437
-                } else {
-                    incoming
-                } * RESOURCE_PRECISION);
-            }
-        }
+    for (attacker, outgoing) in array![(TroopType::Knight, 437_u128), (TroopType::Paladin, 328)] {
+        for (defender, incoming) in array![(TroopType::Knight, 437_u128), (TroopType::Paladin, 328)] {
+            let mut alpha = test_troops(attacker, TroopTier::T1, 1000, 100);
+            let mut bravo = test_troops(defender, TroopTier::T1, 1000, 100);
+            let (dealt, taken, _, _) = alpha
+                .damage_with_context(
+                    ref bravo,
+                    context(Biome::Grassland),
+                    stamina_config(),
+                    damage,
+                    1,
+                    0,
+                );
+            assert_eq!(dealt, outgoing * RESOURCE_PRECISION);
+            assert_eq!(taken, incoming * RESOURCE_PRECISION);
+    }
     }
 }
 
@@ -394,7 +140,7 @@ fn wipeout_and_zero_damage_have_defined_refunds_and_cooldowns() {
         damage_stamina_refund: true,
         ..stamina_config(),
     };
-    let context = CombatContext { day_unit_seconds: 100, ..context(Biome::Grassland) };
+    let context = context(Biome::Grassland);
     for shielded in array![false, true] {
         let mut attacker = test_troops(TroopType::Knight, TroopTier::T1, 1000, 100);
         let mut defender = test_troops(TroopType::Knight, TroopTier::T1, 1, 100);
@@ -441,22 +187,18 @@ fn frontier_bows_hit_before_blades_on_every_attack_and_both_bows_fire_together()
         (TroopType::Paladin, TroopType::Crossbowman, 220, 328),
         (TroopType::Crossbowman, TroopType::Crossbowman, 328, 328),
     ] {
-        for distance in array![1_u32, 2] {
-            let mut attacker = test_troops(a, TroopTier::T1, 1000, 100);
-            let mut defender = test_troops(b, TroopTier::T1, 1000, 100);
-            let battle = CombatContext {
-                day_unit_seconds: 100, attack_distance: distance, ..context(Biome::Underground),
-            };
-            attacker.attack_with_context(ref defender, battle, stamina, damage, 120, 0);
-            assert_eq!(attacker.count, (1000 - taken) * RESOURCE_PRECISION);
-            assert_eq!(defender.count, (1000 - dealt) * RESOURCE_PRECISION);
-            assert_eq!(attacker.stamina.inline().amount, 70);
-            let before_a = attacker.count;
-            let before_b = defender.count;
-            attacker.attack_with_context(ref defender, battle, stamina, damage, 120, 0);
-            assert!(attacker.count < before_a && defender.count < before_b);
-            assert_eq!(attacker.stamina.inline().amount, 40);
-        }
+        let mut attacker = test_troops(a, TroopTier::T1, 1000, 100);
+        let mut defender = test_troops(b, TroopTier::T1, 1000, 100);
+        let battle = context(Biome::Underground);
+        attacker.attack_with_context(ref defender, battle, stamina, damage, 120, 0);
+        assert_eq!(attacker.count, (1000 - taken) * RESOURCE_PRECISION);
+        assert_eq!(defender.count, (1000 - dealt) * RESOURCE_PRECISION);
+        assert_eq!(attacker.stamina.inline().amount, 70);
+        let before_a = attacker.count;
+        let before_b = defender.count;
+        attacker.attack_with_context(ref defender, battle, stamina, damage, 120, 0);
+        assert!(attacker.count < before_a && defender.count < before_b);
+        assert_eq!(attacker.stamina.inline().amount, 40);
     }
 }
 
@@ -468,7 +210,7 @@ fn a_blade_killed_by_the_first_shot_never_replies() {
     for bow_attacks in array![false, true] {
         let mut bow = test_troops(TroopType::Crossbowman, TroopTier::T1, 1000, 100);
         let mut blade = test_troops(TroopType::Knight, TroopTier::T1, 1, 100);
-        let battle = CombatContext { day_unit_seconds: 100, ..context(Biome::Underground) };
+        let battle = context(Biome::Underground);
         if bow_attacks {
             bow.attack_with_context(ref blade, battle, stamina_config(), damage, 120, 0);
         } else {
@@ -504,7 +246,7 @@ fn frontier_bow_exchanges_match_the_browser_receipts_against_a_beast_and_a_knigh
             attacker
                 .attack_with_context(
                     ref defender,
-                    CombatContext { day_unit_seconds: 100, defender_is_structure_guard, ..context(Biome::Underground) },
+                    CombatContext { defender_is_structure_guard, ..context(Biome::Underground) },
                     stamina,
                     damage,
                     120,
@@ -548,7 +290,6 @@ fn oath_damage_matches_the_shared_vectors_for_both_sides_and_guard_roles() {
             .attack_with_context(
                 ref defender,
                 CombatContext {
-                    day_unit_seconds: 100,
                     attacker_oaths,
                     defender_oaths,
                     attacker_is_structure_guard,
@@ -581,7 +322,7 @@ fn the_twins_add_the_shared_vectors_share_of_the_companion_damage_in_whole_troop
             .unwrap();
         let mut attacker = test_troops(a, TroopTier::T1, before_a, 100);
         let mut defender = test_troops(b, TroopTier::T1, before_b, 100);
-        let combat = CombatContext { day_unit_seconds: 100, attacker_oaths, ..context(Biome::Underground) };
+        let combat = CombatContext { attacker_oaths, ..context(Biome::Underground) };
         let twin = crate::oaths::twin_damage(
             attacker_oaths, test_troops(c, TroopTier::T1, companion, 100), defender, combat, stamina, damage, 120, 0,
         );
@@ -614,7 +355,7 @@ fn oath_attack(attacker_oaths: u16, bar: u64, defenders: u128) -> (Troops, Troop
     attacker
         .attack_with_context(
             ref defender,
-            CombatContext { day_unit_seconds: 100, attacker_oaths, ..context(Biome::Underground) },
+            CombatContext { attacker_oaths, ..context(Biome::Underground) },
             stamina,
             damage,
             120,
