@@ -14,7 +14,12 @@ fn every_draw_offers_three_distinct_oaths_the_army_does_not_hold_and_fewer_only_
         ^ crate::oaths::bit(crate::oaths::SKILL)
         ^ crate::oaths::bit(crate::oaths::FOX)
         ^ crate::oaths::bit(crate::oaths::RAGE);
-    for oaths in array![0_u16, crate::oaths::bit(crate::oaths::POWER), crate::oaths::RED, 0x0f0f, thirteen] {
+    let five = crate::oaths::bit(crate::oaths::GIANTS)
+        | crate::oaths::bit(crate::oaths::PERFECTION)
+        | crate::oaths::bit(crate::oaths::FURY)
+        | crate::oaths::bit(crate::oaths::SKILL)
+        | crate::oaths::bit(crate::oaths::POWER);
+    for oaths in array![0_u16, crate::oaths::bit(crate::oaths::POWER), five, 0x0f0f, thirteen] {
         for seed in 0_u64..64 {
             let offered = cards(draw(oaths, seed.into()));
             assert_eq!(offered.len(), 3);
