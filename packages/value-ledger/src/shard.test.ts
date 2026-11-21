@@ -1,7 +1,7 @@
 import { gameRegistryRow } from "../../core/src/test-support/game-registry";
 import { gamesAbi as abi, gamesEvent, response } from "../test-support/abi";
 import { beforeEach, expect, it, vi } from "vitest";
-import { shortString, ec, CallData, RpcError } from "starknet";
+import { shortString, ec, CallData } from "starknet";
 import { ShardOperator } from "./shard";
 import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
 import { encodeNativeCommand } from "@bibliothecadao/provider";
@@ -49,7 +49,6 @@ beforeEach(() => {
             "game",
             gameRegistryRow({
               name: "0",
-              preset_id: 2,
               ready: false,
               start_settling_at: "0",
               start_main_at: "0",
@@ -78,8 +77,7 @@ it("uses the fixed ordinary v3 play frame and a native three-felt device signatu
     accountAddress: "0x20",
     privateKey: device,
   });
-  expect(await operator.sendSeat(await operator.pins(7), 3n)).toBe("0xabc");
-  expect(rpc.receipt).not.toHaveBeenCalled();
+  await operator.markGameSettled(7);
   expect(rpc.execute).toHaveBeenCalledWith(
     {
       contractAddress: "0x10",
@@ -88,11 +86,10 @@ it("uses the fixed ordinary v3 play frame and a native three-felt device signatu
         "7",
         "2",
         "1",
-        ...encodeNativeCommand(bindings.commandAbi, { kind: "SettleBlitzRoster", value: undefined }),
+        ...encodeNativeCommand(bindings.commandAbi, { kind: "MarkGameSettled", value: undefined }),
       ],
     },
     expect.objectContaining({
-      nonce: 3n,
       tip: 0,
       paymasterData: [],
       accountDeploymentData: [],
@@ -107,28 +104,12 @@ it("uses the fixed ordinary v3 play frame and a native three-felt device signatu
     new CallData(abi).compile("play", {
       game_id: 7,
       release_id: 2,
-      command: encodeNativeCommand(bindings.commandAbi, { kind: "SettleBlitzRoster", value: undefined }),
+      command: encodeNativeCommand(bindings.commandAbi, { kind: "MarkGameSettled", value: undefined }),
     }),
   );
   const signed = await (rpc.signer as { signRaw(hash: string): Promise<string[]> }).signRaw("0x123");
   expect(signed).toHaveLength(3);
   expect(signed[0]).toBe(ec.starkCurve.getStarkKey(device));
-});
-it("encodes MarkGameSettled from the generated routes without a runtime Command enum", async () => {
-  const operator = new ShardOperator({
-    chainId: "0x1",
-    rpcUrl: "https://shard.test",
-    gamesAddress: "0x10",
-    accountAddress: "0x20",
-    privateKey: "0x1",
-  });
-  await operator.markGameSettled(7);
-  expect(rpc.execute.mock.calls[0]![0].calldata).toEqual([
-    "7",
-    "2",
-    "1",
-    ...encodeNativeCommand(bindings.commandAbi, { kind: "MarkGameSettled", value: undefined }),
-  ]);
 });
 
 it("rejects a successful invoke carrying the generated GameplayRejected event", async () => {
@@ -145,7 +126,7 @@ it("rejects a successful invoke carrying the generated GameplayRejected event", 
           actor: "0x20",
           tx_hash: "0xabc",
           status_class: shortString.encodeShortString("domain"),
-          reason: "roster not ready",
+          reason: "game not ended",
         }),
       },
     ],
@@ -157,15 +138,11 @@ it("rejects a successful invoke carrying the generated GameplayRejected event", 
     accountAddress: "0x20",
     privateKey: "0x1",
   });
-  expect(await operator.seatOutcome(7, "0xabc")).toBe("spent");
+  await expect(operator.markGameSettled(7)).rejects.toThrow("gameplay_refused:game not ended");
 });
 
-it("reads a seat once pre-confirmed, while results still wait for a closed block", async () => {
-  const progress = {
-    from_address: "0x10",
-    ...gamesEvent("BatchProgress", { game_id: 7, actor: "0x20", tx_hash: "0xabc", remaining: 4 }),
-  };
-  const preConfirmed = { finality_status: "PRE_CONFIRMED", isReverted: () => false, events: [progress] };
+it("waits past a pre-confirmed receipt for the closed block", async () => {
+  const preConfirmed = { finality_status: "PRE_CONFIRMED", isReverted: () => false, events: [] };
   const accepted = { block_number: 11, finality_status: "ACCEPTED_ON_L2", isReverted: () => false, events: [] };
   const operator = new ShardOperator({
     chainId: "0x1",
@@ -174,30 +151,9 @@ it("reads a seat once pre-confirmed, while results still wait for a closed block
     accountAddress: "0x20",
     privateKey: "0x1",
   });
-  rpc.receipt.mockResolvedValueOnce(preConfirmed);
-  expect(await operator.seatOutcome(7, "0xabc")).toEqual({ remaining: 4n });
-  expect(rpc.receipt).toHaveBeenCalledTimes(1);
-  rpc.receipt.mockClear();
   rpc.receipt.mockResolvedValueOnce(preConfirmed).mockResolvedValueOnce(accepted);
   await operator.markGameSettled(7);
   expect(rpc.receipt).toHaveBeenCalledTimes(2);
-});
-
-it("tells a seat the RPC refused from one it forwarded without a readable reply", async () => {
-  const operator = new ShardOperator({
-    chainId: "0x1",
-    rpcUrl: "https://shard.test",
-    gamesAddress: "0x10",
-    accountAddress: "0x20",
-    privateKey: "0x1",
-  });
-  const pins = await operator.pins(7);
-  const reply = (code: number, data?: unknown) =>
-    new RpcError({ code, message: "proxy", ...(data ? { data } : {}) } as never, "starknet_addInvokeTransaction", []);
-  rpc.execute.mockRejectedValueOnce(reply(-32010));
-  await expect(operator.sendSeat(pins, 4n)).rejects.toThrow("shard_seat_refused");
-  rpc.execute.mockRejectedValueOnce(reply(-32011, { transaction_hash: "0x777" }));
-  expect(await operator.sendSeat(pins, 4n)).toBe("0x777");
 });
 
 it("sweeps one structure's LORDS through the generated Games ABI with its full u64 id", async () => {
@@ -243,7 +199,6 @@ it("settles an ended game one batch at a time until it reads settled, and sends 
       "game",
       gameRegistryRow({
         name: "0",
-        preset_id: 7,
         settled,
         start_settling_at: "0",
         start_main_at: "0",
