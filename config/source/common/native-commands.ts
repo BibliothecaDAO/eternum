@@ -49,12 +49,8 @@ export const arenaCommandMask = commandBits(allCommands) & ~commandBits(arenaClo
 const blitzCommandsWithoutRoute = [
   "SettleBlitzRoster",
   "CreateReservedHyperstructure",
-  "InitializeHyperstructure",
-  "ContributeHyperstructure",
   "AllocateHyperstructureShares",
-  "SetConstructionAccess",
   "OpenRelicChest",
-  "CloseSeason",
   "RecordBlitzResults",
   "CraftRelic",
 ];
