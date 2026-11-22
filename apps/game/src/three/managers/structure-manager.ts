@@ -1,9 +1,16 @@
 import { GUARD_MODELS } from "@bibliothecadao/eternum/game-client";
-import { FrontierModel, frontierModelKind } from "../structures/frontier-model";
+import { FrontierModel, frontierModelKind, type BeastLayer } from "../structures/frontier-model";
 import { nextFrameOrTimeout } from "@/utils/frame-or-timeout";
 import { realmModelIndex, isWonderModelPath } from "../structures/realm-design";
 import { MineKinds, structureName, troopTierIndex } from "@bibliothecadao/types";
-import { configManager, siteDisplayName, siteKindOf, type SiteKind } from "@bibliothecadao/eternum";
+import {
+  configManager,
+  expeditionDepth,
+  readExpeditionRules,
+  siteDisplayName,
+  siteKindOf,
+  type SiteKind,
+} from "@bibliothecadao/eternum";
 import {
   FALLEN_REALM_RUIN_MODEL_INDEX,
   frontierBeastModelIndex,
@@ -1602,11 +1609,22 @@ export class StructureManager {
         composition.beastZ,
         composition.beastY,
       );
-      if (beast && beastModel instanceof FrontierModel)
+      if (beast && beastModel instanceof FrontierModel) {
         beastModel.setIdleAt(beast.instanceIndex, structure.frontierBeast.idle);
+        beastModel.setLayerAt(beast.instanceIndex, this.beastLayerOf(structure));
+      }
       bindings.push(beast);
     }
     return bindings.filter(isBoundStructureInstance);
+  }
+
+  private beastLayerOf(structure: StructureInfo): BeastLayer {
+    if (!this.store) return 0;
+    const gameId = configManager.getActiveGameId();
+    const rules = readExpeditionRules(this.store, gameId);
+    const site = this.store.get("ExpeditionSite", { game_id: gameId, entity_id: structure.entityId });
+    const depth = rules && site ? expeditionDepth(rules, { y: site.row }) : 0;
+    return (depth <= 0 ? 0 : depth >= 3 ? 3 : depth) as BeastLayer;
   }
 
   /** Compose both models in the site's local coordinates, restoring the common instance transform afterward. */

@@ -1,7 +1,7 @@
 import { DEEP_SITE_FACES } from "@/ui/features/frontier/deep/deep-site-faces";
 import { DEEP_WORDS } from "@/ui/design-system/kit/words";
 import type { IconMeaning } from "@/ui/design-system/icon";
-import { configManager, dayOf, readDefaultTick, readExpeditionRules } from "@bibliothecadao/eternum";
+import { DEEP_DEPTH, configManager, dayOf, readDefaultTick, readExpeditionRules } from "@bibliothecadao/eternum";
 import {
   deepGateTiles,
   readDeepBeastTroops,
@@ -208,7 +208,10 @@ export class MapSiteManager {
       const previous = model.getCount();
       hexes.forEach((hex, index) => {
         model.setMatrixAt(index, this.placement(hex, site.scale, site.front));
-        if (site.idle && model instanceof FrontierModel) model.setIdleAt(index, site.idle);
+        if (site.idle && model instanceof FrontierModel) {
+          model.setIdleAt(index, site.idle);
+          model.setLayerAt(index, DEEP_DEPTH);
+        }
       });
       for (let index = hexes.length; index < previous; index += 1) model.removeInstance(index);
       model.setCount(hexes.length);
