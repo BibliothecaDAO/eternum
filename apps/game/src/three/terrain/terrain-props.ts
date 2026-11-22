@@ -529,7 +529,7 @@ function resolveHalfEdgePlacement(
   };
 }
 
-function resolveLayerFloraAppearance(biome: LayerBiome, tintVariation: number): TerrainPropAppearance {
+export function resolveLayerFloraAppearance(biome: LayerBiome, tintVariation: number): TerrainPropAppearance {
   const shade = 0.9 + tintVariation * 0.1;
   return {
     glow: LAYER_BIOME_GLOW[biome],
@@ -944,6 +944,12 @@ function resolveScorchedCoverage(context: TerrainPropDensityContext): number {
     (weight, influence) => weight + (influence.biome === BiomeType.Scorched ? influence.weight : 0),
     0,
   );
+}
+
+export function getTerrainPropBiomes(archetype: TerrainPropArchetypeId): BiomeType[] {
+  return (Object.entries(BIOME_PROP_PROFILES) as [BiomeType, BiomePropProfile][])
+    .filter(([, profile]) => profile.weights.some((weight) => weight.archetype === archetype))
+    .map(([biome]) => biome);
 }
 
 export function resolveEffectiveTerrainPropDensity(

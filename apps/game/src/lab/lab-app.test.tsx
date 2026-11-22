@@ -21,6 +21,8 @@ vi.mock("../ui/features/debug/procedural-terrain-debug-view", () => ({
   ProceduralTerrainDebugView: () => <Tool name="terrain" />,
 }));
 vi.mock("../ui/features/debug/model-lab-view", () => ({ ModelLabView: () => <Tool name="models" /> }));
+vi.mock("../ui/features/debug/map-life-lab-view", () => ({ MapLifeLabView: () => <Tool name="life" /> }));
+vi.mock("../ui/features/debug/wildlife-lab-view", () => ({ WildlifeLabView: () => <Tool name="wildlife" /> }));
 vi.mock("./endgame-mist/view", () => ({ EndgameMistLabView: () => <Tool name="endgame" /> }));
 vi.mock("./day-end/view", () => ({ DayEndLabView: () => <Tool name="day-end" /> }));
 vi.mock("../ui/features/debug/world-fx-gym-view", () => ({ WorldFxGymView: () => <Tool name="fx" /> }));
@@ -162,6 +164,8 @@ it.each([
   ["/lab/endgame?variation=tide&mode=frontier", "endgame", "Game", "Game end"],
   ["/lab/map-labels?zoom=close&hover=28", "map-labels", "Game", "Map labels & sites"],
   ["/lab/terrain?mode=frontier", "terrain", "Art", "Terrain"],
+  ["/lab/life", "life", "Art", "Terrain"],
+  ["/lab/wildlife?species=moose&view=map", "wildlife", "Art", "Terrain"],
   ["/lab/chunks", "chunks", "Art", "Bench"],
   ["/lab/data?view=balance", "data", "Data", "Balance & data"],
   ["/lab/data/usage?mode=blitz", "ui-usage", "Data", "UI usage"],

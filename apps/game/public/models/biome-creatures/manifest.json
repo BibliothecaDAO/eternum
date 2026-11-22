@@ -1,151 +1,132 @@
 {
-  "sourceVersion": "4.0.0",
-  "sourceManifestSha256": "0748b57c11332190ed7db576d4817b40616c301d87790f30dfcee4eb7f401382",
-  "lod": 2,
   "creatures": [
     {
       "id": "lantern-anglerfish",
-      "biome": "deep-ocean",
       "profile": "angler",
       "file": "lantern-anglerfish.glb",
-      "triangles": 3345,
-      "bytes": 529324,
-      "sha256": "374a77527c4fbc86c9a52af320d4327b706b1d3bc10ffdfd7ed856130d2ee214"
+      "triangles": 5000,
+      "bytes": 223076,
+      "sha256": "94ad32ed6d2b5776b20efe2ecef8bd6d1c791ec25a710201f2dfc49e3cf775ee"
     },
     {
       "id": "green-sea-turtle",
-      "biome": "ocean",
       "profile": "turtle",
       "file": "green-sea-turtle.glb",
-      "triangles": 4150,
-      "bytes": 512824,
-      "sha256": "60965dfa60f83143ceb670dc10d1da341f4831eff86052d699864a4ab94888a6"
+      "triangles": 5000,
+      "bytes": 223336,
+      "sha256": "d21cb74707a2687708cea62ec2a7809a64ba9989900663b15cc079e19036ab27"
     },
     {
       "id": "shore-crab",
-      "biome": "beach",
       "profile": "crab",
       "file": "shore-crab.glb",
-      "triangles": 2494,
-      "bytes": 489116,
-      "sha256": "901748e213db9783fb4926320ee0d42803d849feebd5eaea075f581c1ccd4a79"
+      "triangles": 3998,
+      "bytes": 182332,
+      "sha256": "8bacea4c1e09657594572201c8c43621a14f0b663cb8221130c8695080e67352"
     },
     {
       "id": "fire-beetle",
-      "biome": "scorched",
       "profile": "beetle",
       "file": "fire-beetle.glb",
-      "triangles": 2891,
-      "bytes": 493480,
-      "sha256": "022e29d26e9a8332603474e9a66387ddd542d19708608f694796263f5d4cbd3f"
+      "triangles": 3998,
+      "bytes": 180760,
+      "sha256": "ec66ebcdcc3a888919eeecb1485d2c73948b8445c464d4f13db6a1139ec2eeb8"
     },
     {
       "id": "mountain-goat",
-      "biome": "bare",
       "profile": "goat",
       "file": "mountain-goat.glb",
-      "triangles": 4916,
-      "bytes": 721544,
-      "sha256": "004ddc19152a87ee9c683a67760296ffbec5a900d88cf4554d1b9b86bd083b40"
+      "triangles": 6000,
+      "bytes": 268204,
+      "sha256": "b8336ccef63138fce9a1c7c255197bcdbf49e181a2ee41a29fe9ddea4e85ee83"
     },
     {
       "id": "arctic-fox",
-      "biome": "tundra",
       "profile": "fox",
       "file": "arctic-fox.glb",
-      "triangles": 5275,
-      "bytes": 717796,
-      "sha256": "bb0f07e8a30e3a63b00b88a46791de822a8a7be52ba1625538e6d0d1e15faa4e"
+      "triangles": 6000,
+      "bytes": 268756,
+      "sha256": "5d9487d5326fd0315ab16c700dd71b191dc4275d884632198b1d446b014ab506"
     },
     {
       "id": "emperor-penguin",
-      "biome": "snow",
       "profile": "penguin",
       "file": "emperor-penguin.glb",
-      "triangles": 2685,
-      "bytes": 482204,
-      "sha256": "4c8cce5404fa981a003870da0181892a54752453f7ce3e6d03b48f0885b28f84"
+      "triangles": 5000,
+      "bytes": 223100,
+      "sha256": "c305096071a015d443a1c62b7696d88dcfe993bf73e065ab19976dedbb160c53"
     },
     {
       "id": "jackrabbit",
-      "biome": "temperate-desert",
       "profile": "rabbit",
       "file": "jackrabbit.glb",
-      "triangles": 5070,
-      "bytes": 671016,
-      "sha256": "c7556d31082f715a77ab38ff34a981dfe1c416280b8ab2b9cf94f5893476d89c"
+      "triangles": 6000,
+      "bytes": 268124,
+      "sha256": "2f62e6749f7489d7f75f005333c6da1d19ed1a711347b8ad17235d1f6b6de223"
     },
     {
       "id": "mediterranean-tortoise",
-      "biome": "shrubland",
       "profile": "tortoise",
       "file": "mediterranean-tortoise.glb",
-      "triangles": 4094,
-      "bytes": 563784,
-      "sha256": "e58d1dbd4cec66cbd52cdd564b582262aea0b08386a0da1277d76565cc551ad2"
+      "triangles": 5000,
+      "bytes": 224576,
+      "sha256": "2a640cec12cbaf3dd72acdbeee2ad5773ce78dbcba4f032454272ebc7418e8da"
     },
     {
       "id": "moose",
-      "biome": "taiga",
       "profile": "moose",
       "file": "moose.glb",
-      "triangles": 4577,
-      "bytes": 664392,
-      "sha256": "0dbe96486d36fa6f9aed67160e8eafd954fb5351a393fda3c58fdac9eb84478c"
+      "triangles": 6000,
+      "bytes": 268028,
+      "sha256": "fa1871e8531111e8388b69710fbb68533d7114ffb3d2ba2b05ff5f0297c685fa"
     },
     {
       "id": "plains-zebra",
-      "biome": "grassland",
       "profile": "zebra",
       "file": "plains-zebra.glb",
-      "triangles": 5185,
-      "bytes": 640032,
-      "sha256": "98bb1fed400bd6c80ad2537db8462ead886a81d4183cf50af304e3bd85c00925"
+      "triangles": 6000,
+      "bytes": 306564,
+      "sha256": "b75e0adcde2ce3c6e3b9377720cddbf54f28bc30f54188b6690642a96c38b434"
     },
     {
       "id": "red-deer",
-      "biome": "temperate-deciduous-forest",
       "profile": "deer",
       "file": "red-deer.glb",
-      "triangles": 4443,
-      "bytes": 641884,
-      "sha256": "13b7910c77448e41448f84be8bf211c589933e2b830cb6bfc35273eafddaf66a"
+      "triangles": 6000,
+      "bytes": 268312,
+      "sha256": "5c54ef6797e9ba52488248729effd4cf8caa613d6e1efa9cca41380c924e3d51"
     },
     {
       "id": "red-backed-salamander",
-      "biome": "temperate-rain-forest",
       "profile": "salamander",
       "file": "red-backed-salamander.glb",
-      "triangles": 2826,
-      "bytes": 506264,
-      "sha256": "e5eeb25ff31510bc4d6f0395f203f75834ccfeeac833a2e60d237436938fd205"
+      "triangles": 3998,
+      "bytes": 180948,
+      "sha256": "d174518b42645fc41b1d8592c5fddc329ae7bbec7f3542dd3efd3c962e6d6f86"
     },
     {
       "id": "desert-scorpion",
-      "biome": "subtropical-desert",
       "profile": "scorpion",
       "file": "desert-scorpion.glb",
-      "triangles": 3060,
-      "bytes": 524004,
-      "sha256": "d0d003414ce3fdc8ad9fdb2012039cb0c57d781ec4e4096d8eabdda2c2879cca"
+      "triangles": 4000,
+      "bytes": 183456,
+      "sha256": "06772e4403f643df37f00326df831b485069e73e61ec4f83c328c841c6003d0c"
     },
     {
       "id": "bengal-tiger",
-      "biome": "tropical-seasonal-forest",
       "profile": "tiger",
       "file": "bengal-tiger.glb",
-      "triangles": 5595,
-      "bytes": 683024,
-      "sha256": "68b17a6d2da173699881e00b7646bdecfd45a5dd38d9814e72863c714f3b09c1"
+      "triangles": 6000,
+      "bytes": 303888,
+      "sha256": "5c3b4157569bdf6905634aab28175de17a0436830879efcc649c82fec5131d12"
     },
     {
       "id": "keel-billed-toucan",
-      "biome": "tropical-rain-forest",
       "profile": "toucan",
       "file": "keel-billed-toucan.glb",
-      "triangles": 3171,
-      "bytes": 522160,
-      "sha256": "cd82ef964db43359dd3ea323b4ec6a9e77effc8940be51408a1218211fbee92b"
+      "triangles": 3998,
+      "bytes": 177952,
+      "sha256": "b467b8719e35e8878b107ef95141ca9d6d67d53233f272e3592f2eab6e85e830"
     }
   ]
 }

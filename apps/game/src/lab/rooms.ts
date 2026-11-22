@@ -404,6 +404,18 @@ export const ROOMS: LabRoom[] = [
             "ethereal-depths",
             load(() => import("./ethereal-depths/view"), "EtherealDepthLabView"),
           ),
+          view(
+            "Life",
+            "/lab/life",
+            "life",
+            load(() => import("../ui/features/debug/map-life-lab-view"), "MapLifeLabView"),
+          ),
+          view(
+            "Wildlife",
+            "/lab/wildlife",
+            "wildlife",
+            load(() => import("../ui/features/debug/wildlife-lab-view"), "WildlifeLabView"),
+          ),
         ],
       },
       {
