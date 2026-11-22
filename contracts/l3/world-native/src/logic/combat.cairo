@@ -584,17 +584,7 @@ pub fn combat_context(
 #[cfg(feature: "blitz")]
 #[inline(always)]
 fn at_range(combat: CombatContext, attacker: Coord, defender: Coord) -> CombatContext {
-    let attack_distance = if attacker.alt != defender.alt {
-        1
-    } else {
-        let stride = if attacker.alt {
-            15
-        } else {
-            1
-        };
-        (distance(attacker, defender) / stride).try_into().unwrap()
-    };
-    CombatContext { attack_distance, ..combat }
+    CombatContext { attack_distance: distance(attacker, defender).try_into().unwrap(), ..combat }
 }
 
 #[cfg(not(feature: "blitz"))]

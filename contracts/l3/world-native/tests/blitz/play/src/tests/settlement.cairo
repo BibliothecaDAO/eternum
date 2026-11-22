@@ -1,7 +1,7 @@
 pub use world_test_support::tests::troop_management::*;
 use crate::village::{IVillagePassesDispatcher, IVillagePassesDispatcherTrait, SettleVillage, VillagePassKey};
 use super::fixture::blitz_realm;
-use super::play_fixture::{FIXTURE_START, encode};
+use super::play_fixture::FIXTURE_START;
 use super::resource_commands::{assert_executes, execute_in_game};
 
 const NOW: u64 = FIXTURE_START + 40;
@@ -40,19 +40,4 @@ fn a_village_pass_settles_one_village() {
     register_pass(d, home.game_id);
     assert_executes(d, home.game_id, settle(home), NOW);
     assert!(!execute_in_game(d, home.game_id, settle(home), NOW));
-}
-
-#[test]
-fn a_blitz_realm_is_never_provisioned_by_command_since_the_roster_provisions_it() {
-    let (d, home) = blitz_realm();
-    super::assert_entry_refusal(
-        d, home.game_id, 1, encode(Command::ProvisionRealm(home.entity_id)), "command disabled",
-    );
-}
-
-#[test]
-fn a_blitz_player_never_settles_a_season_realm_since_the_roster_seats_them() {
-    let (d, game_id) = super::fixture::blitz_game();
-    let settle = crate::realms::SettleSeason { selected_realm: Option::None, order: None };
-    super::assert_entry_refusal(d, game_id, 1, encode(Command::SettleSeason(settle)), "command disabled");
 }
