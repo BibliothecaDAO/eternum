@@ -1,4 +1,5 @@
 import { NEUTRAL_BIOME_CLIMATE } from "@bibliothecadao/eternum";
+import { Biome } from "@bibliothecadao/eternum/biome";
 import { BiomeType, StructureType } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
 
@@ -31,19 +32,20 @@ describe("prepareTerrainPage", () => {
     expect(Array.from(page.buffers.waterDepth).every((depth) => depth === 0)).toBe(true);
   });
 
-  it("clips an organic shoreline into the adjacent beach and preserves bathymetry", () => {
-    const ocean = cell(0, 0, BiomeType.Ocean);
-    const beach = cell(1, 0, BiomeType.Beach);
-    const inland = cell(2, 0, BiomeType.Grassland);
-    const page = prepareTerrainPage(createRequest([ocean, beach, inland]));
-    const water = page.waterBuffers!;
-    const oceanEdge = Math.max(...terrainHexCorners(ocean.col, ocean.row).map(({ x }) => x));
+  it("draws the shore where the seed's climate crosses the waterline between an ocean and its beach", () => {
+    const [ocean, beach] = [seeded(650, 48), seeded(651, 48)];
+    expect([ocean.biome, beach.biome]).toEqual([BiomeType.Ocean, BiomeType.Beach]);
+    const water = prepareTerrainPage(createRequest([ocean, beach])).waterBuffers!;
+    const shoreline = Array.from(water.waterDepth.keys())
+      .filter((index) => water.waterDepth[index] <= 0.002_001)
+      .map((index) => water.positions[index * 3]);
 
-    expect(water.waterDepth.length).toBe(water.positions.length / 3);
     expect(Math.min(...water.waterDepth)).toBeCloseTo(0.002);
-    expect(Math.max(...water.waterDepth)).toBeGreaterThan(0.1);
-    expect(Math.max(...readAxis(water.positions, 0))).toBeGreaterThan(oceanEdge + 0.05);
-    expect(Array.from(water.waterDepth).filter((depth) => depth <= 0.002_001).length).toBeGreaterThan(2);
+    expect(Math.max(...water.waterDepth)).toBeGreaterThan(0.05);
+    expect(shoreline.length).toBeGreaterThan(2);
+    const sharedEdge = Math.max(...terrainHexCorners(ocean.col, ocean.row).map(({ x }) => x));
+    const offEdge = shoreline.map((x) => x - sharedEdge);
+    expect(Math.max(...offEdge) - Math.min(...offEdge)).toBeGreaterThan(0.02);
   });
 
   it("is independent of input traversal order and changes identity with occupancy", () => {
@@ -82,11 +84,9 @@ describe("prepareTerrainPage", () => {
     expect(hidden.shroudInstances[0].frontier).toBe(false);
     expect(hidden.diagnostics.fogTerrainCells).toBe(1);
     expect(hidden.buffers.positions.length).toBe(0);
-    expect(Array.from(hidden.buffers.explored).every((value) => value === 0)).toBe(true);
     expect(frontier.shroudInstances[0].frontier).toBe(true);
     expect(frontier.diagnostics.fogTerrainCells).toBe(1);
     expect(frontier.buffers.positions.length).toBe(0);
-    expect(Array.from(frontier.buffers.explored).every((value) => value === 0)).toBe(true);
     expect(frontier.fingerprint).not.toBe(hidden.fingerprint);
   });
 
@@ -102,7 +102,7 @@ describe("prepareTerrainPage", () => {
 
     expect(page.diagnostics.fogTerrainCells).toBe(3);
     expect(page.diagnostics.frontierEdges).toBe(6);
-    expect(new Set(page.buffers.explored)).toEqual(new Set([1]));
+    expect(page.buffers.positions.length).toBeGreaterThan(0);
     expect(page.waterBuffers).toBeNull();
   });
 
@@ -166,8 +166,6 @@ describe("prepareTerrainPage", () => {
         position[1],
         ...readAttribute(page.buffers.colors, vertex, 3),
         ...readAttribute(page.buffers.uvs, vertex, 2),
-        ...readAttribute(page.buffers.groundWeights0, vertex, 4),
-        ...readAttribute(page.buffers.groundWeights1, vertex, 4),
         ...readAttribute(page.buffers.shore, vertex, 1),
       ];
       const existing = attributesByPosition.get(key);
@@ -186,18 +184,6 @@ describe("prepareTerrainPage", () => {
 
     expect(page.diagnostics.exploredSurfaceSamples).toBeGreaterThan(0);
     expect(page.diagnostics.exploredSurfaceSamples).toBeLessThan(page.diagnostics.vertices / 2);
-  });
-
-  it("packs every continuous ground recipe into eight normalized bytes", () => {
-    const page = prepareTerrainPage(createAllBiomesTerrainRequest());
-
-    for (let vertex = 0; vertex < page.buffers.positions.length / 3; vertex += 1) {
-      const packedWeights = [
-        ...readAttribute(page.buffers.groundWeights0, vertex, 4),
-        ...readAttribute(page.buffers.groundWeights1, vertex, 4),
-      ];
-      expect(packedWeights.reduce((total, weight) => total + weight, 0)).toBe(255);
-    }
   });
 
   it("warps absolute ground coordinates continuously to break visible material repetition", () => {
@@ -240,10 +226,8 @@ function readAttribute(buffer: Float32Array | Uint8Array, vertex: number, itemSi
   return Array.from(buffer.subarray(vertex * itemSize, vertex * itemSize + itemSize));
 }
 
-function readAxis(positions: Float32Array, offset: 0 | 1 | 2): number[] {
-  const values: number[] = [];
-  for (let index = offset; index < positions.length; index += 3) values.push(positions[index]);
-  return values;
+function seeded(col: number, row: number): TerrainCellInput {
+  return cell(col, row, Biome.getBiome(col, row, NEUTRAL_BIOME_CLIMATE));
 }
 
 function cell(col: number, row: number, biome: BiomeType): TerrainCellInput {

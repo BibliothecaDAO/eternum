@@ -1,3 +1,5 @@
+import type { GroundLights } from "./ground-lights";
+import { MAP_MARKS } from "../map-marks";
 import type { EtherealSurface } from "./ethereal-depths";
 import type { GameModeId } from "@/config/game-modes";
 import { NEUTRAL_BIOME_CLIMATE, type BiomeClimateConfig } from "@bibliothecadao/eternum";
@@ -227,6 +229,10 @@ class SupersededPresentationError extends Error {
 export class WorldmapProceduralTerrain {
   readonly object3d: Group;
   private readonly terrain: ProceduralTerrain;
+
+  get groundLights(): GroundLights {
+    return this.terrain.groundLights;
+  }
   /** The latest prepared version of each page, by page key, with the signature it was prepared for. */
   private readonly preparedByPageKey = new Map<string, { signature: string; page: PreparedTerrainPage }>();
   private readonly pendingBySignature = new Map<string, Promise<PreparedTerrainPage>>();
@@ -250,6 +256,7 @@ export class WorldmapProceduralTerrain {
 
   constructor(gameMode: GameModeId = "blitz") {
     this.terrain = new ProceduralTerrain({ streaming: true, gameMode });
+    this.terrain.setGridAtRest(MAP_MARKS.grid.surfaceAtRest);
     this.object3d = this.terrain.object3d;
     this.object3d.name = "worldmap-procedural-terrain";
   }
@@ -279,15 +286,22 @@ export class WorldmapProceduralTerrain {
     return this.terrain.loadProps();
   }
 
-  async loadGroundTextures(): Promise<void> {
-    await this.terrain.loadGroundTextures();
-    if (this.disposed) return;
-    this.terrain.setSurfacePresentation(this.surfacePresentation);
-  }
-
   setSurfacePresentation(presentation: "world" | "ethereal"): void {
     this.surfacePresentation = presentation;
     this.terrain.setSurfacePresentation(presentation);
+    this.terrain.setGridAtRest(presentation === "world" ? MAP_MARKS.grid.surfaceAtRest : MAP_MARKS.grid.deepAtRest);
+  }
+
+  setGridFocus(cursor: TerrainWorldCoordinate | null, army: TerrainWorldCoordinate | null): void {
+    this.terrain.setGridFocus(cursor, army);
+  }
+
+  setGroundLightStrength(strength: number): void {
+    this.terrain.groundLights.setStrength(strength);
+  }
+
+  setPropsVisible(visible: boolean): void {
+    this.terrain.setPropsVisible(visible);
   }
 
   setPropLod(lod: TerrainPropLod): void {
@@ -958,7 +972,7 @@ function buildWorldmapTerrainPageRequest(
     roadSegments: resolvePageRoadSegments(bounds, roadSegments),
     settlementAnchors: resolvePageSettlementAnchors(bounds, input.settlementAnchors ?? []),
     strictBiomeParity: false,
-    subdivisions: input.subdivisions ?? 2,
+    subdivisions: input.subdivisions ?? 3,
   };
 }
 

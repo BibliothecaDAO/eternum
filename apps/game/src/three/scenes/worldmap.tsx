@@ -187,6 +187,7 @@ import { playerColorManager } from "@/three/systems/player-colors";
 import { resolveWorldmapContentLadder, type WorldmapContentLadder } from "./worldmap-content-ladder";
 import type { TerrainUploadMetrics } from "@/three/terrain/procedural-terrain";
 import type { TerrainRoadAnchor, TerrainSettlementAnchor } from "@/three/terrain/terrain-types";
+import type { GroundLights } from "@/three/terrain/ground-lights";
 import type { TerrainSurface } from "@/three/terrain/terrain-surface";
 import type { TerrainMovementInteraction } from "@/three/terrain/terrain-movement-effects";
 import { env } from "../../../env";
@@ -599,6 +600,7 @@ type WorldmapChunkDiagnosticsDebugWindow = Window & {
   getStrategicMarkers?: () => StrategicMarkerLayer;
   getTerrainUploadMetrics?: () => TerrainUploadMetrics;
   getTerrainPresentMetrics?: () => TerrainPresentMetrics;
+  setTerrainPropsVisible?: (visible: boolean) => void;
   getWorldmapTerrainCoverage?: () => {
     groundBounds: ReturnType<typeof resolveWorldmapCameraGroundBounds>;
     camera: number[];
@@ -889,6 +891,7 @@ export default class WorldmapScene extends WarpTravel {
   private battleDirectionManager!: BattleDirectionManager;
 
   private selectedHexManager!: SelectedHexManager;
+  private gridCursor: { x: number; z: number } | null = null;
   /** The tile the order at hand goes to (markOrderTarget), apart from the pointer's own hover ring. */
   private orderTargetRing!: HoverHexManager;
   private ownershipRings!: OwnershipRingLayer;
@@ -1154,6 +1157,10 @@ export default class WorldmapScene extends WarpTravel {
     return this.proceduralTerrain;
   }
 
+  public override getGroundLights(): GroundLights {
+    return this.proceduralTerrain.groundLights;
+  }
+
   private registerWorldmapRecoveryHandle(): void {
     this.unregisterWorldmapRecoveryHandle = registerActiveWorldmapRecoveryHandle({
       refreshAfterReconnect: () => this.refreshAfterReconnect(),
@@ -1187,9 +1194,6 @@ export default class WorldmapScene extends WarpTravel {
     this.resourceFXManager = new ResourceFXManager(this.scene, 1.2);
     void this.proceduralTerrain.loadProps().catch((error) => {
       console.warn("[WorldMap] Optional procedural terrain props failed to load", error);
-    });
-    void this.proceduralTerrain.loadGroundTextures().catch((error) => {
-      console.warn("[WorldMap] Procedural ground textures failed; retaining flat terrain", error);
     });
 
     if (MEMORY_MONITORING_ENABLED) {
@@ -1312,6 +1316,7 @@ export default class WorldmapScene extends WarpTravel {
       this.getTerrainSurface(),
       this.markLabelsDirty,
       this.compilePipelines,
+      this.getGroundLights(),
     );
     this.mapSiteManager = new MapSiteManager(
       this.scene,
@@ -1707,6 +1712,14 @@ export default class WorldmapScene extends WarpTravel {
    * The selected thing's plate stays open in its token's place: the army taking orders, else what stands on the selected
    * hex (a structure is selected by its hex alone).
    */
+  private syncTerrainGridFocus(): void {
+    const selectedHex = useUIStore.getState().selectedHex;
+    const armyHex =
+      selectedHex && this.getHexagonEntity(sceneHexOf(selectedHex))?.army ? sceneHexOf(selectedHex) : null;
+    const army = armyHex ? getWorldPositionForHex(armyHex) : null;
+    this.proceduralTerrain.setGridFocus(this.gridCursor, army && { x: army.x, z: army.z });
+  }
+
   private refreshSelectedPlate(): void {
     const selectedHex = useUIStore.getState().selectedHex;
     const onSelectedHex = selectedHex ? this.getHexagonEntity(sceneHexOf(selectedHex)) : undefined;
@@ -2255,6 +2268,7 @@ export default class WorldmapScene extends WarpTravel {
 
   // methods needed to add worldmap specific behavior to the click events
   protected onHexagonMouseMove(hex: { hexCoords: HexPosition; position: Vector3 } | null): void {
+    this.gridCursor = hex ? { x: hex.position.x, z: hex.position.z } : null;
     const nextHexCoords = hex?.hexCoords ?? null;
     const hoverPalette = this.resolveContextualHoverPalette(nextHexCoords);
     const nextHoverReconciliation: WorldmapHoverReconciliationSnapshot = {
@@ -7972,6 +7986,7 @@ export default class WorldmapScene extends WarpTravel {
     this.mapPlates.update(this.camera, window.innerWidth, window.innerHeight);
     this.structureManager.updateAnimations(deltaTime, animationContext, this.animationsPaused);
     this.spireManager.update(this.animationsPaused ? 0 : deltaTime, this.camera);
+    this.syncTerrainGridFocus();
     if (!this.animationsPaused) {
       this.syncTerrainMovementInteractions();
       this.proceduralTerrain.update(deltaTime);
@@ -8266,6 +8281,7 @@ export default class WorldmapScene extends WarpTravel {
     debugWindow.getStrategicMarkers = () => this.strategicMarkers;
     debugWindow.getTerrainUploadMetrics = () => this.proceduralTerrain.getUploadMetrics();
     debugWindow.getTerrainPresentMetrics = () => this.proceduralTerrain.getPresentMetrics();
+    debugWindow.setTerrainPropsVisible = (visible) => this.proceduralTerrain.setPropsVisible(visible);
     debugWindow.getWorldmapTerrainCoverage = () => {
       const presentedPageKeys = this.proceduralTerrain.getPresentedPageKeys();
       const criticalPageKeys = this.visualTerrainWindow?.criticalPageKeys ?? [];
@@ -8308,6 +8324,7 @@ export default class WorldmapScene extends WarpTravel {
     debugWindow.getStrategicMarkers = undefined;
     debugWindow.getTerrainUploadMetrics = undefined;
     debugWindow.getTerrainPresentMetrics = undefined;
+    debugWindow.setTerrainPropsVisible = undefined;
     debugWindow.getWorldmapTerrainCoverage = undefined;
     debugWindow.resetWorldmapRenderDiagnostics = undefined;
     debugWindow.captureWorldmapChunkBaseline = undefined;

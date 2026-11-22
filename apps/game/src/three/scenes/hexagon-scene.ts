@@ -5,6 +5,7 @@ import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-stor
 import { burstParticles, momentSpeed, type Intensity } from "@/ui/motion/motion-scale";
 import { placeKeyLight } from "@/three/effects/key-light";
 import { configureWorldSunShadows, fitSunShadowToView } from "@/three/effects/world-sun-shadows";
+import type { GroundLights } from "@/three/terrain/ground-lights";
 import { useUIStore, type AppStore } from "@/hooks/store/use-ui-store";
 import { TERRAIN_DEEP_FOG_COLOR } from "@/three/terrain/terrain-fog-style";
 import { CAMERA_CONFIG, FOG_CONFIG } from "@/three/constants";
@@ -759,6 +760,10 @@ export abstract class HexagonScene {
     return FLAT_TERRAIN_SURFACE;
   }
 
+  public getGroundLights(): GroundLights | null {
+    return null;
+  }
+
   public getThunderBoltManager(): ThunderBoltManager {
     return this.thunderBoltManager;
   }
@@ -1072,6 +1077,7 @@ export abstract class HexagonScene {
     }
 
     this.updateShadowRefresh(deltaTime);
+    this.getGroundLights()?.follow(this.controls.target.x, this.controls.target.z);
 
     PerformanceMonitor.end("scene.update");
   }

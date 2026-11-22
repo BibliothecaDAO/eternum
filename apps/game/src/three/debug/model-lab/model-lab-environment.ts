@@ -60,7 +60,7 @@ export class ModelLabEnvironment {
     const signature = `${settings.family === "ships"}:${settings.biome}`;
     const generation = ++this.generation;
     if (signature === this.signature) return;
-    this.assets ??= Promise.all([this.terrain.loadProps(), this.terrain.loadGroundTextures()]).then(() => undefined);
+    this.assets ??= this.terrain.loadProps();
     await this.assets;
     if (this.disposed || generation !== this.generation) return;
     const page = await this.terrain.preparePageAsync(createModelLabTerrainRequest(settings));

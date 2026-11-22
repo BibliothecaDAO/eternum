@@ -1,6 +1,6 @@
 import type { EtherealSurface } from "./ethereal-depths";
 import type { BiomeClimateConfig } from "@bibliothecadao/eternum";
-import type { BiomeType, StructureType } from "@bibliothecadao/types";
+import type { BiomeType, HexPosition, StructureType } from "@bibliothecadao/types";
 import type { TerrainPropArchetypeId } from "./terrain-prop-catalog";
 
 export const PROCEDURAL_TERRAIN_STYLE_VERSION = 30;
@@ -60,13 +60,10 @@ export interface TerrainSurfaceSample {
 
 export interface TerrainGeometryBuffers {
   basaltWeights?: Float32Array;
-  biomeIds: Float32Array;
   bounds: TerrainGeometryBounds;
+  climate: Float32Array;
   colors: Float32Array;
-  explored: Float32Array;
-  groundWeights0: Uint8Array;
-  groundWeights1: Uint8Array;
-  heights: Float32Array;
+  tints: Float32Array;
   indices: Uint32Array;
   normals: Float32Array;
   positions: Float32Array;
@@ -98,12 +95,9 @@ export function getTerrainGeometryBufferViews(
 ): Array<Float32Array | Uint8Array | Uint32Array> {
   return [
     ...(buffers.basaltWeights ? [buffers.basaltWeights] : []),
-    buffers.biomeIds,
+    buffers.climate,
     buffers.colors,
-    buffers.explored,
-    buffers.groundWeights0,
-    buffers.groundWeights1,
-    buffers.heights,
+    buffers.tints,
     buffers.indices,
     buffers.normals,
     buffers.positions,
@@ -133,6 +127,7 @@ export interface TerrainPageDiagnostics {
 }
 
 export interface PreparedTerrainPage {
+  origin: HexPosition;
   /** Three floats per explored ethereal-layer tile: world X, world Z, depth (0 is Eternum’s original surface). */
   basaltInstances?: Float32Array | null;
   borderBuffers?: TerrainBorderBuffers | null;

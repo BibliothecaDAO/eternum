@@ -1,6 +1,7 @@
+import type { GroundLights } from "./ground-lights";
 import { applyEndgameFrost } from "../effects/endgame/field";
 import { mapAnimationTime as time } from "../effects/endgame/state";
-import { NormalRGPacking } from "three";
+import { Color, Vector4, type Texture } from "three";
 import type Node from "three/src/nodes/core/Node.js";
 import type UniformNode from "three/src/nodes/core/UniformNode.js";
 import {
@@ -10,35 +11,42 @@ import {
   color,
   float,
   fwidth,
-  int,
+  max,
   mix,
-  normalMap,
   normalLocal,
+  output,
   positionLocal,
   positionWorld,
   positionViewDirection,
   smoothstep,
-  step,
   texture,
   transformNormalToView,
   uniform,
-  uv,
   vec2,
   vec3,
   vec4,
 } from "three/tsl";
 import { MeshPhysicalNodeMaterial, MeshStandardNodeMaterial } from "three/webgpu";
 
-import { createBasaltSurface } from "./terrain-ethereal-material";
-import { terrainHexEdgeDistance } from "./terrain-hex-node";
-import type { TerrainGroundTextures } from "./terrain-ground-textures";
+import { MAP_MARKS } from "../map-marks";
+import { nearestHexLocalPosition, terrainHexEdgeDistance } from "./terrain-hex-node";
+import { terrainDetailTile, terrainWaveTile } from "./terrain-detail-tile";
+import { groundSurface, hexReach } from "./terrain-ground-node";
 import {
   TERRAIN_DEEP_WATER_DEPTH,
   TERRAIN_MIN_RENDERED_WATER_DEPTH,
   TERRAIN_SHALLOW_WATER_DEPTH,
 } from "./terrain-water";
 
+export interface TerrainGrid {
+  rest: UniformNode<"float", number>;
+  focus: UniformNode<"vec4", Vector4>;
+}
+
+export const TERRAIN_GRID_NO_FOCUS = 1e6;
+
 export interface TerrainMaterials {
+  grid: TerrainGrid;
   flatLand: MeshStandardNodeMaterial;
   land: MeshStandardNodeMaterial;
   water: MeshStandardNodeMaterial;
@@ -47,18 +55,26 @@ export interface TerrainMaterials {
 }
 
 export function createTerrainMaterials(): TerrainMaterials {
-  const flatLand = createVertexColorMaterial("terrain-land-flat", 0.95);
+  const grid: TerrainGrid = {
+    rest: uniform(MAP_MARKS.grid.deepAtRest, "float"),
+    focus: uniform(new Vector4().setScalar(TERRAIN_GRID_NO_FOCUS), "vec4"),
+  };
+  const flatLand = createVertexColorMaterial("terrain-land-flat", 0.95, grid);
   const waterMotion = uniform(1, "float");
   return {
+    grid,
     flatLand,
     land: flatLand,
-    water: createTerrainWaterMaterial(waterMotion),
+    water: createTerrainWaterMaterial(waterMotion, grid),
     waterMotion,
     groundMotion: uniform(1, "float"),
   };
 }
 
-function createTerrainWaterMaterial(waterMotion: UniformNode<"float", number>): MeshStandardNodeMaterial {
+function createTerrainWaterMaterial(
+  waterMotion: UniformNode<"float", number>,
+  grid: TerrainGrid,
+): MeshStandardNodeMaterial {
   const material = new MeshPhysicalNodeMaterial({ metalness: 0, roughness: 0.42, ior: 1.333, specularIntensity: 0.42 });
   material.name = "terrain-water";
   const shore = attribute<"float">("terrainShore", "float");
@@ -71,8 +87,7 @@ function createTerrainWaterMaterial(waterMotion: UniformNode<"float", number>): 
     .add(0.25);
   const waves = createTerrainWaterWaves(waterDepth, depthMotion, waterMotion);
   material.positionNode = positionLocal.add(vec3(0, waves.height, 0));
-  // Analytic slopes are in terrain object space, independent of the water mesh UV tangent basis.
-  const waveNormalView = transformNormalToView(waves.normal);
+  const waveNormalView = transformNormalToView(waves.normal.add(createRippleSlope(waterMotion)).normalize());
   material.normalNode = waveNormalView;
 
   // Emerald shelf water and blue offshore water remain identifiable without relying on sun glare.
@@ -82,7 +97,8 @@ function createTerrainWaterMaterial(waterMotion: UniformNode<"float", number>): 
   const fresnel = waveNormalView.dot(positionViewDirection).clamp(0, 1).oneMinus().pow(4).mul(depthMotion);
   const reflectiveColor = mix(shorelineColor, color("#b6d8e2"), fresnel.mul(0.14));
   const foam = createTerrainWaterFoam(shore, waterDepth, waterMotion);
-  material.colorNode = shadeTerrainSurface(mix(reflectiveColor, color("#dce8de"), foam.mul(0.7)));
+  const lit = reflectiveColor.add(createShallowBedLight(waterDepth, waterMotion));
+  material.colorNode = shadeTerrainSurface(mix(lit, color("#dce8de"), foam.mul(0.7)), grid);
   const waterRoughness = mix(0.5, 0.42, depthBlend).add(shore.mul(shallowEdge).mul(0.08));
   material.roughnessNode = mix(waterRoughness, 0.78, foam).clamp(0.18, 0.78);
   return material;
@@ -143,6 +159,26 @@ function createTerrainWaterWaves(
   return { height, normal: vec3(slopeX.negate(), 1, slopeZ.negate()).normalize() };
 }
 
+function createRippleSlope(waterMotion: UniformNode<"float", number>): Node<"vec3"> {
+  const drift = time.mul(waterMotion);
+  const at = positionLocal.xz;
+  const one = texture(terrainWaveTile(), at.mul(0.23).add(vec2(drift.mul(0.021), drift.mul(0.013)))).rg.sub(0.5);
+  const two = texture(terrainWaveTile(), at.yx.mul(0.37).sub(vec2(drift.mul(0.017), drift.mul(-0.024)))).rg.sub(0.5);
+  const ripple = one.add(two).mul(waterMotion.mul(0.5).add(0.5));
+  return vec3(ripple.x.mul(-0.5), 0, ripple.y.mul(-0.5));
+}
+
+function createShallowBedLight(waterDepth: Node<"float">, waterMotion: UniformNode<"float", number>): Node<"vec3"> {
+  const drift = time.mul(waterMotion);
+  const net = (scale: number, flow: Node<"vec2">) =>
+    texture(terrainWaveTile(), positionLocal.xz.mul(scale).add(flow)).a;
+  const crossing = net(0.23, vec2(drift.mul(0.021), drift.mul(0.013))).mul(
+    net(0.37, vec2(drift.mul(-0.017), drift.mul(0.024))),
+  );
+  const shallow = smoothstep(TERRAIN_DEEP_WATER_DEPTH, TERRAIN_MIN_RENDERED_WATER_DEPTH, waterDepth);
+  return vec3(0.3, 0.38, 0.26).mul(crossing).mul(shallow.mul(shallow)).mul(1.4);
+}
+
 function createTerrainWaterFoam(
   shore: Node<"float">,
   waterDepth: Node<"float">,
@@ -166,216 +202,142 @@ function createTerrainWaterFoam(
   return shore.mul(surfZone.mul(breakerBand).mul(breakup).add(shorelineWash)).clamp(0, 1);
 }
 
+const LIGHT_HUE_KEPT = 0.06;
+
+function groundLightPool(albedo: Node<"vec3">, light: Node<"vec3">): Node<"vec3"> {
+  return albedo.add(LIGHT_HUE_KEPT).mul(light);
+}
+
 export function createTerrainGroundMaterial(
-  textures: TerrainGroundTextures,
+  biomeMap: Texture,
+  groundLights: GroundLights,
   groundMotion: UniformNode<"float", number>,
+  grid: TerrainGrid,
 ): MeshStandardNodeMaterial {
   const material = new MeshStandardNodeMaterial({ metalness: 0, roughness: 0.95 });
-  material.name = "terrain-land-ground-textured";
-  const absoluteWorldUv = uv();
-  const worldUv = absoluteWorldUv.mul(0.34);
-  const groundWeights0 = attribute<"vec4">("terrainGroundWeights0", "vec4");
-  const groundWeights1 = attribute<"vec4">("terrainGroundWeights1", "vec4");
-  const pair = selectStrongestGroundPair(groundWeights0, groundWeights1);
-  const primaryAlbedoHeight = texture(textures.albedoHeight, worldUv).depth(int(pair.z));
-  const secondaryAlbedoHeight = texture(textures.albedoHeight, worldUv).depth(int(pair.w));
-  const primaryNormalMaterial = texture(textures.normalMaterial, worldUv).depth(int(pair.z));
-  const secondaryNormalMaterial = texture(textures.normalMaterial, worldUv).depth(int(pair.w));
-  const primaryPriority = pair.x.add(primaryAlbedoHeight.a.sub(0.5).mul(0.18));
-  const secondaryPriority = pair.y.add(secondaryAlbedoHeight.a.sub(0.5).mul(0.18));
-  const primaryBlend = smoothstep(-0.12, 0.12, primaryPriority.sub(secondaryPriority));
-  const sampledAlbedo = mix(secondaryAlbedoHeight.rgb, primaryAlbedoHeight.rgb, primaryBlend);
-  const terrainColor = attribute<"vec3">("terrainColor", "vec3");
-  const terrainTint = terrainColor.mul(1.75);
-  const detail = createGroundSurfaceDetail(groundWeights0, groundWeights1, groundMotion);
-  // Powder buries sharp stone detail; otherwise snow reads as a pale cracked pavement.
-  const snowCover = smoothstep(0.35, 0.85, groundWeights1.z);
-  const groundColor = mix(sampledAlbedo.mul(terrainTint), terrainColor, snowCover.mul(0.22).add(0.12)).mul(
-    detail.shade,
-  );
-  const volcanic = createScorchedSurface(
-    sampledAlbedo,
-    mix(secondaryAlbedoHeight.a, primaryAlbedoHeight.a, primaryBlend),
-    groundMotion,
-  );
-  const ashCoverage = smoothstep(0.05, 0.5, groundWeights1.w);
-  material.colorNode = shadeWithSurfaceBasalt(
-    mix(groundColor, volcanic.color, ashCoverage),
-    smoothstep(0.25, 0.55, groundWeights0.w),
-  );
-  material.emissiveNode = volcanic.embers
-    .mul(ashCoverage)
-    .mul(attribute<"float">("terrainBasaltWeight", "float").oneMinus());
-  const sampledNormalMaterial = mix(secondaryNormalMaterial, primaryNormalMaterial, primaryBlend);
-  material.roughnessNode = mix(
-    sampledNormalMaterial.b.mul(attribute<"float">("terrainRoughness", "float")).clamp(0.7, 1),
-    0.94,
-    snowCover,
-  );
-  material.aoNode = mix(1, sampledNormalMaterial.a, 0.35);
-  const detailedNormal = normalMap(
-    vec3(sampledNormalMaterial.rg.add(detail.rippleNormal), sampledNormalMaterial.b),
-    vec2(snowCover.mul(-0.3).add(0.55).mul(attribute<"float">("terrainBasaltWeight", "float").oneMinus())),
-  );
-  detailedNormal.unpackNormalMode = NormalRGPacking;
-  material.normalNode = detailedNormal;
+  material.name = "terrain-land-ground";
+  const surface = groundSurface({
+    biomeMap,
+    detail: terrainDetailTile(),
+    at: positionLocal.xz,
+    world: positionWorld,
+    meshColour: attribute<"vec3">("terrainColor", "vec3"),
+    meshTint: attribute<"vec3">("terrainTint", "vec3"),
+    top: smoothstep(0.45, 0.72, normalLocal.y),
+    climate: attribute<"vec3">("terrainClimate", "vec3"),
+    time: time.mul(groundMotion),
+  });
+  const notBasalt = attribute<"float">("terrainBasaltWeight", "float").oneMinus();
+  const albedo = surface.get("albedo") as Node<"vec3">;
+  const gloss = surface.get("gloss") as Node<"float">;
+  const glow = surface.get("glow") as Node<"vec3">;
+  const slope = (surface.get("slope") as Node<"vec2">).mul(notBasalt);
+  material.colorNode = withSpireStone(drawHexGrid(albedo, grid), (stone) => applyEndgameFrost(stone.colour));
+  material.roughnessNode = mix(attribute<"float">("terrainRoughness", "float").clamp(0.7, 1), 0.35, gloss);
+  material.emissiveNode = withSpireStone(glow, (stone) => stone.glow);
+  material.outputNode = output.add(vec4(groundLightPool(albedo, groundLights.at(positionWorld)), 0));
+  material.normalNode = transformNormalToView(normalLocal.add(vec3(slope.x.negate(), 0, slope.y.negate())).normalize());
   return material;
 }
 
-// The lava network stays fixed in world space; only heat and cooling crust travel through it.
-// Lava is a ground treatment, so it does not alter buildability or army movement space.
-function createScorchedSurface(
-  albedo: Node<"vec3">,
-  height: Node<"float">,
-  motion: UniformNode<"float", number>,
-): { color: Node<"vec3">; embers: Node<"vec3"> } {
-  const ground = positionLocal.xz;
-  const broadWarp = ground.x.mul(0.27).add(ground.y.mul(0.18)).sin().mul(1.5);
-  const veinPhase = ground.x.mul(0.85).add(ground.y.mul(0.75).sin().mul(1.2)).add(broadWarp);
-  const branchPhase = ground.y.mul(0.9).add(ground.x.mul(0.68).sin().mul(1.6)).sub(broadWarp);
-  const veinDistance = veinPhase.sin().abs();
-  const branchDistance = branchPhase.sin().abs().add(0.035);
-  const junction = float(0.08).sub(veinDistance.sub(branchDistance).abs()).max(0).div(0.08);
-  const channelDistance = veinDistance
-    .min(branchDistance)
-    .sub(junction.mul(junction).mul(0.02))
-    .add(height.sub(0.5).mul(0.07));
-  const edgeWidth = fwidth(channelDistance).max(0.01);
-  const molten = smoothstep(float(0.09).sub(edgeWidth), edgeWidth.add(0.09), channelDistance).oneMinus();
-  const bank = smoothstep(0.09, 0.24, channelDistance).oneMinus();
-  const ashDrift = ground.x.mul(0.72).add(ground.y.mul(0.41)).add(broadWarp).sin();
-  const ash = smoothstep(0.7, 0.98, ashDrift).mul(smoothstep(0.5, 0.8, height));
-  // Burnt red basalt and sparse oxidized crust keep the biome volcanic even in cool moonlight.
-  const mineral = mix(color("#452924"), color("#784536"), ash);
-  const grain = albedo
-    .dot(vec3(0.2126, 0.7152, 0.0722))
-    .mul(1.1)
-    .add(0.6);
-  const magmaTime = time.mul(4).mul(step(0.001, motion));
-  const flow = ground.x.mul(7.8).add(ground.y.mul(3.3)).add(broadWarp).add(height.mul(8)).sub(magmaTime);
-  const heat = flow.sin().mul(0.5).add(0.5);
-  const driftingCrust = smoothstep(0.25, 0.75, flow.mul(0.43).add(height.mul(8)).sin());
-  const coolingCrust = smoothstep(0.4, 0.78, height).mul(0.32).add(driftingCrust.mul(0.62));
-  const lavaColor = mix(color("#922009"), color("#ffac25"), heat);
-  const banks = mix(mineral.mul(grain), color("#63291c"), bank.mul(0.5));
-  const bankGlow = color("#ba300b").mul(bank).mul(molten.oneMinus()).mul(0.24);
-  return {
-    color: mix(banks, color("#582317"), molten),
-    embers: lavaColor.mul(molten).mul(coolingCrust.oneMinus()).mul(1.7).add(bankGlow),
-  };
+function shadeTerrainSurface(baseColor: Node<"vec3">, grid: TerrainGrid): Node<"vec3"> {
+  return drawHexGrid(liftDarkSurface(baseColor), grid);
 }
 
-// Wind ripples and derivative filtering adapted from James Addison’s Inkwell WebGPU Sand (MIT).
-// See inkwell-LICENSE. World-space signals stay continuous across page and biome boundaries.
-function createGroundSurfaceDetail(
-  weights0: Node<"vec4">,
-  weights1: Node<"vec4">,
-  motion: UniformNode<"float", number>,
-): { shade: Node<"float">; rippleNormal: Node<"vec2"> } {
-  const ground = positionLocal.xz;
-  const wind = vec2(0.93, 0.37).normalize();
-  const warp = ground.x.mul(0.27).sin().add(ground.y.mul(0.19).sin()).mul(0.7);
-  const phase = ground.dot(wind).mul(17).add(warp);
-  const confidence = smoothstep(0.42, 1.36, fwidth(phase)).oneMinus();
-  // Trace sand only where it forms the surface; a little sand mixed into hardpan must not give both deserts dunes.
-  const looseSand = smoothstep(0.25, 0.7, weights0.x);
-  const looseGround = looseSand.add(weights1.z.mul(0.65)).clamp(0, 1);
-  const ripples = phase.sin().mul(confidence).mul(looseGround);
-  const gust = ground.dot(vec2(0.72, 0.28)).mul(0.8).sub(time.mul(0.55));
-  const meadowShade = gust.sin().mul(0.025).mul(weights0.w).mul(motion);
-  const windblown = createWindblownGroundDetail(ground, looseSand, weights1.z, motion);
-  return {
-    shade: float(1).add(ripples.mul(0.08)).add(meadowShade).add(windblown.shade),
-    rippleNormal: wind.mul(phase.cos().mul(confidence).mul(looseGround).mul(0.045)).add(windblown.normal),
-  };
-}
-
-function createWindblownGroundDetail(
-  ground: Node<"vec2">,
-  sand: Node<"float">,
-  snow: Node<"float">,
-  motion: UniformNode<"float", number>,
-): { shade: Node<"float">; normal: Node<"vec2"> } {
-  // Stable wind-carved banks carry moving powder; the surface itself never slides under units.
-  const looseCover = sand.add(snow).clamp(0, 1);
-  const direction = vec2(0.86, 0.51);
-  const acrossWind = ground.dot(direction);
-  const bankPhase = acrossWind.mul(2.4).add(ground.y.mul(0.53).sin().mul(0.85));
-  const bankFilter = smoothstep(0.6, 2.1, fwidth(bankPhase)).oneMinus();
-  const bankShade = bankPhase
-    .sin()
-    .mul(sand.mul(0.075).add(snow.mul(0.035)))
-    .mul(bankFilter);
-  const windTime = time.mul(0.7).mul(step(0.001, motion));
-  const powderPhase = acrossWind.mul(5.2).sub(windTime).add(ground.y.mul(1.7).sin());
-  const powderFilter = smoothstep(0.5, 1.8, fwidth(powderPhase)).oneMinus();
-  const streaks = smoothstep(0.68, 0.98, powderPhase.sin());
-  const gusts = ground.x.mul(0.43).add(ground.y.mul(0.31)).sub(windTime.mul(0.3)).sin().mul(0.5).add(0.5);
-  return {
-    shade: bankShade.add(streaks.mul(gusts).mul(powderFilter).mul(looseCover).mul(0.045)),
-    normal: direction.mul(bankPhase.cos().mul(bankFilter).mul(looseCover).mul(0.024)),
-  };
-}
-
-// Two offset rectangular lattices describe the same point-up hexes as terrainHexToWorld.
-// Drawing the border in the surface shader keeps it on the actual terrain and water heights.
-function shadeTerrainSurface(baseColor: Node<"vec3">, grassContrast: Node<"float"> = float(0)): Node<"vec3"> {
-  // Lift dark albedo across land and water while retaining hue and bright snow/sand highlights.
-  // This keeps explored ground readable against unlit fog without flattening directional shadows.
+function liftDarkSurface(baseColor: Node<"vec3">): Node<"vec3"> {
   const baseLuminance = baseColor.dot(vec3(0.2126, 0.7152, 0.0722)).clamp(0.001, 1);
-  const surfaceColor = baseColor.mul(baseLuminance.pow(-0.3));
+  return baseColor.mul(baseLuminance.pow(-0.3));
+}
+
+function drawHexGrid(surfaceColor: Node<"vec3">, grid: TerrainGrid): Node<"vec3"> {
   const edgeDistance = terrainHexEdgeDistance(positionLocal.xz);
   const pixelWidth = fwidth(edgeDistance).max(0.001);
-  const border = smoothstep(0.008, pixelWidth.mul(1.2).add(0.008), edgeDistance).oneMinus();
+  const border = smoothstep(0.004, pixelWidth.mul(MAP_MARKS.grid.widthPixels).add(0.004), edgeDistance).oneMinus();
   const luminance = surfaceColor.dot(vec3(0.2126, 0.7152, 0.0722));
-  const darkSurface = smoothstep(0.025, 0.12, luminance).oneMinus();
-  const originalBorderColor = mix(surfaceColor.mul(0.45), vec3(0.14), darkSurface);
-  // Grass needs a muted lighter edge; other surfaces retain the subtle original grid.
-  const borderColor = mix(originalBorderColor, vec3(0.22, 0.26, 0.19), grassContrast.mul(0.65));
-  return applyEndgameFrost(mix(surfaceColor, borderColor, border.mul(0.42).mul(normalLocal.y.abs())));
+  const darkSurface = smoothstep(0.1, 0.03, luminance);
+  const borderColor = mix(
+    surfaceColor.mul(MAP_MARKS.grid.darkLine),
+    mix(surfaceColor, vec3(1), MAP_MARKS.grid.lightLine),
+    darkSurface,
+  );
+  const near = (point: Node<"vec2">) =>
+    smoothstep(MAP_MARKS.grid.focusOuter, MAP_MARKS.grid.focusInner, positionWorld.xz.distance(point));
+  const strength = mix(grid.rest, 1, max(near(grid.focus.xy), near(grid.focus.zw)));
+  return applyEndgameFrost(mix(surfaceColor, borderColor, border.mul(strength).mul(normalLocal.y.abs())));
 }
 
-function selectStrongestGroundPair(weights0: Node<"vec4">, weights1: Node<"vec4">): Node<"vec4"> {
-  return Fn(() => {
-    const primaryWeight = float(-1).toVar("groundPrimaryWeight");
-    const secondaryWeight = float(-1).toVar("groundSecondaryWeight");
-    const primaryIndex = int(0).toVar("groundPrimaryIndex");
-    const secondaryIndex = int(0).toVar("groundSecondaryIndex");
-    const weights = [weights0.x, weights0.y, weights0.z, weights0.w, weights1.x, weights1.y, weights1.z, weights1.w];
-
-    weights.forEach((weight, index) => {
-      If(weight.greaterThan(primaryWeight), () => {
-        secondaryWeight.assign(primaryWeight);
-        secondaryIndex.assign(primaryIndex);
-        primaryWeight.assign(weight);
-        primaryIndex.assign(index);
-      }).ElseIf(weight.greaterThan(secondaryWeight), () => {
-        secondaryWeight.assign(weight);
-        secondaryIndex.assign(index);
-      });
-    });
-
-    return vec4(primaryWeight, secondaryWeight.max(0), float(primaryIndex), float(secondaryIndex));
-  })();
-}
-
-function createVertexColorMaterial(name: string, fallbackRoughness: number): MeshStandardNodeMaterial {
+function createVertexColorMaterial(
+  name: string,
+  fallbackRoughness: number,
+  grid: TerrainGrid,
+): MeshStandardNodeMaterial {
   const material = new MeshStandardNodeMaterial({ metalness: 0, roughness: fallbackRoughness });
   material.name = name;
-  material.colorNode = shadeWithSurfaceBasalt(attribute("terrainColor", "vec3"));
+  material.colorNode = withSpireStone(shadeTerrainSurface(attribute("terrainColor", "vec3"), grid), (stone) =>
+    applyEndgameFrost(stone.colour),
+  );
   material.roughnessNode = attribute("terrainRoughness", "float");
   return material;
 }
 
-function shadeWithSurfaceBasalt(ground: Node<"vec3">, grassContrast: Node<"float"> = float(0)): Node<"vec3"> {
+function withSpireStone(
+  ground: Node<"vec3">,
+  stonePart: (stone: ReturnType<typeof spireStone>) => Node<"vec3">,
+): Node<"vec3"> {
   return Fn(() => {
-    const result = shadeTerrainSurface(ground, grassContrast).toVar();
+    const result = ground.toVar();
     const weight = attribute<"float">("terrainBasaltWeight", "float");
     If(weight.greaterThan(0), () => {
-      const basalt = createBasaltSurface(positionWorld.xz);
-      const coverage = weight.mul(mix(basalt.softEdge, 1, smoothstep(0.55, 1, weight)));
-      result.assign(mix(result, applyEndgameFrost(basalt.color), coverage));
+      const stone = spireStone(positionWorld.xz, weight);
+      result.assign(mix(result, stonePart(stone), stone.coverage));
     });
     return result;
   })();
+}
+
+const VEIL_INK = "#4a3a52";
+const STILLSTONE = { ground: "#8c8f9c", shade: "#585a68", glow: "#c6a8ff" };
+
+function spireStone(
+  at: Node<"vec2">,
+  weight: Node<"float">,
+): { coverage: Node<"float">; colour: Node<"vec3">; glow: Node<"vec3"> } {
+  const threshold = softNoise(at.mul(1.7)).mul(0.5).add(0.25);
+  return {
+    coverage: smoothstep(threshold.sub(0.12), threshold.add(0.12), weight),
+    colour: veilGround(at, rgb(STILLSTONE.shade), rgb(STILLSTONE.ground)),
+    glow: rgb(STILLSTONE.glow).mul(motes(at)),
+  };
+}
+
+function rgb(hex: string): Node<"vec3"> {
+  const { r, g, b } = new Color(hex);
+  return vec3(r, g, b);
+}
+
+function veilGround(at: Node<"vec2">, shade: Node<"vec3">, ground: Node<"vec3">): Node<"vec3"> {
+  const powder = mix(shade, ground, softNoise(at.mul(0.45)).mul(0.55).add(0.45));
+  const rippled = mix(powder, color("#ffffff"), ripples(at).mul(0.12));
+  const edge = smoothstep(0.8, 0.86, hexReach(nearestHexLocalPosition(at)));
+  return mix(rippled, color(VEIL_INK), edge.mul(0.16));
+}
+
+function softNoise(at: Node<"vec2">): Node<"float"> {
+  const a = at.x.add(at.y.mul(0.6).sin().mul(1.4)).sin();
+  const b = at.y.mul(1.3).add(at.x.mul(0.8).cos().mul(1.1)).sin();
+  return a.mul(b).mul(0.5).add(0.5);
+}
+
+function ripples(at: Node<"vec2">): Node<"float"> {
+  const wave = at.x.mul(2.1).add(at.y.mul(0.9)).add(at.y.mul(0.5).sin().mul(2.2)).sin();
+  return smoothstep(0.86, 0.98, wave);
+}
+
+function motes(at: Node<"vec2">): Node<"float"> {
+  const cell = at.mul(3.1).floor();
+  const lot = cell.x.mul(12.9898).add(cell.y.mul(78.233)).sin().mul(43758.5453).fract();
+  const spot = at.mul(3.1).fract().sub(0.5).length();
+  return smoothstep(0.08, 0.02, spot)
+    .mul(smoothstep(0.93, 0.97, lot))
+    .mul(float(0.9));
 }

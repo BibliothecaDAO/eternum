@@ -103,8 +103,6 @@ export function evaluateTerrainGalleryResults(results, options = {}) {
     if (result.snapshot?.revealProgress !== result.revealProgress) {
       reasons.push(`${label}: snapshot reveal progress did not match request`);
     }
-    if (result.snapshot?.groundTextureLayers !== 8) reasons.push(`${label}: expected eight ground texture layers`);
-    if (!(result.snapshot?.groundTextureBytes > 0)) reasons.push(`${label}: expected measured ground texture bytes`);
     if (enforceTiming) {
       if (!(result.snapshot?.frameSampleCount >= 30)) {
         reasons.push(`${label}: expected at least 30 stable frame samples`);
@@ -302,8 +300,6 @@ export function evaluateTerrainGalleryResults(results, options = {}) {
         metric.fogOpacity !== reference.fogOpacity ||
         metric.fogTerrainCells !== reference.fogTerrainCells ||
         metric.preparedFrontierCells !== reference.preparedFrontierCells ||
-        metric.groundTextureBytes !== reference.groundTextureBytes ||
-        metric.groundTextureLayers !== reference.groundTextureLayers ||
         metric.groundCoverInstances !== reference.groundCoverInstances ||
         metric.propInstances !== reference.propInstances ||
         metric.roadSegments !== reference.roadSegments ||

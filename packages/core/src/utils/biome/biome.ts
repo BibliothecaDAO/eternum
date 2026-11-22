@@ -1,6 +1,7 @@
 import { BiomeType } from "@bibliothecadao/types/terrain";
 import { Fixed, FixedTrait } from "./fixed-point";
 import { noise as snoise } from "./simplex-noise";
+import { noiseFloat } from "./simplex-noise-float";
 import { Vec3 } from "./vec3";
 
 const MAP_AMPLITUDE = FixedTrait.fromInt(24n);
@@ -36,6 +37,12 @@ export interface BiomeEnvironmentSample {
   moisture: number;
 }
 
+export interface BiomeClimateField {
+  elevation: number;
+  moisture: number;
+  landform: number;
+}
+
 export const NEUTRAL_BIOME_CLIMATE: BiomeClimateConfig = {
   elevation_scale_bps: 10_000,
   moisture_scale_bps: 10_000,
@@ -46,6 +53,23 @@ export const NEUTRAL_BIOME_CLIMATE: BiomeClimateConfig = {
 };
 
 const CLIMATE_BPS_DENOMINATOR = 10_000n;
+
+const fixedToNumber = (value: Fixed): number => Number(value.value) / Number(FixedTrait.ONE_64x64);
+const FIELD = {
+  amplitude: fixedToNumber(MAP_AMPLITUDE),
+  moistureOctave: fixedToNumber(MOISTURE_OCTAVE),
+  octaves: ELEVATION_OCTAVES.map(fixedToNumber),
+  octaveSum: fixedToNumber(ELEVATION_OCTAVES_SUM),
+};
+
+export const BIOME_ELEVATION_LEVELS = {
+  deepOcean: fixedToNumber(LEVEL.DEEP_OCEAN),
+  ocean: fixedToNumber(LEVEL.OCEAN),
+  sand: fixedToNumber(LEVEL.SAND),
+  forest: fixedToNumber(LEVEL.FOREST),
+  desert: fixedToNumber(LEVEL.DESERT),
+  mountain: fixedToNumber(LEVEL.MOUNTAIN),
+};
 
 export class Biome {
   static getBiome(col: number, row: number, climate: BiomeClimateConfig = NEUTRAL_BIOME_CLIMATE): BiomeType {
@@ -87,8 +111,47 @@ export class Biome {
     };
   }
 
+  static sampleField(col: number, row: number, climate: BiomeClimateConfig = NEUTRAL_BIOME_CLIMATE): BiomeClimateField {
+    const elevationSeed = Biome.resolveClimateSeed(climate.elevation_seed);
+    const moistureSeed = Biome.resolveClimateSeed(climate.moisture_seed);
+    const elevationAt = (octave: number) =>
+      (noiseFloat(
+        (col + elevationSeed) / octave / FIELD.amplitude,
+        0,
+        (row + elevationSeed) / octave / FIELD.amplitude,
+      ) +
+        1) /
+      2;
+    let elevation = 0;
+    for (const octave of FIELD.octaves) elevation += octave * elevationAt(octave);
+    const moisture =
+      (noiseFloat(
+        (FIELD.moistureOctave * (col + moistureSeed)) / FIELD.amplitude,
+        0,
+        (FIELD.moistureOctave * (row + moistureSeed)) / FIELD.amplitude,
+      ) +
+        1) /
+      2;
+    return {
+      elevation: Biome.applyClimateFloat(
+        elevation / FIELD.octaveSum,
+        climate.elevation_scale_bps,
+        climate.elevation_bias_bps,
+      ),
+      moisture: Biome.applyClimateFloat(moisture, climate.moisture_scale_bps, climate.moisture_bias_bps),
+      landform: elevationAt(FIELD.octaves[0]),
+    };
+  }
+
+  private static applyClimateFloat(value: number, scaleBps: number, biasBps: number): number {
+    const denominator = Number(CLIMATE_BPS_DENOMINATOR);
+    const scale = Biome.resolveClimateBps(scaleBps) / denominator;
+    const bias = (Biome.resolveClimateBps(biasBps) - denominator) / denominator;
+    return Math.min(1, Math.max(0, value * scale + bias));
+  }
+
   private static toNormalizedNumber(value: Fixed): number {
-    return Number(value.value) / Number(FixedTrait.ONE_64x64);
+    return fixedToNumber(value);
   }
 
   private static applyClimateAdjustment(value: Fixed, scaleBps: number, biasBps: number): Fixed {

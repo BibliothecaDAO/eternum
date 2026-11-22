@@ -1,4 +1,5 @@
 import type { EtherealLayer } from "@bibliothecadao/eternum";
+import { Biome } from "@bibliothecadao/eternum/biome";
 import { createDepthMaterial } from "./ethereal-depth-material";
 import { createDepthMineralResources, createDepthMinerals, writeDepthMinerals } from "./ethereal-depth-minerals";
 import type { GameModeId } from "@/config/game-modes";
@@ -23,13 +24,19 @@ import { createInstancedMesh } from "../utils/create-instanced-mesh";
 import { MeshBasicNodeMaterial, MeshStandardNodeMaterial } from "three/webgpu";
 
 import { BASALT_SUPPORT_HEIGHT, buildBasaltShell } from "./terrain-basalt";
-import { findNearestTerrainHex } from "./terrain-coordinates";
+import { findNearestTerrainHex, type TerrainWorldCoordinate } from "./terrain-coordinates";
 import { TerrainField } from "./terrain-field";
 import { createEtherealBorderMaterial } from "./terrain-ethereal-border-material";
 import { createEtherealTerrainMaterial } from "./terrain-ethereal-material";
 import type { TerrainFogMask } from "./terrain-fog-mask";
-import { acquireTerrainGroundTextures, type TerrainGroundTextureHandle } from "./terrain-ground-textures";
-import { createTerrainGroundMaterial, createTerrainMaterials, type TerrainMaterials } from "./terrain-material";
+import { TerrainBiomeMap } from "./terrain-biome-map";
+import { GroundLights } from "./ground-lights";
+import {
+  createTerrainGroundMaterial,
+  createTerrainMaterials,
+  TERRAIN_GRID_NO_FOCUS,
+  type TerrainMaterials,
+} from "./terrain-material";
 import { TerrainPageWorkerClient } from "./terrain-page-worker-client";
 import { isTerrainPropFootprintClear } from "./terrain-prop-footprint";
 import { TerrainPropPools, type TerrainPropPoolStats } from "./terrain-prop-pools";
@@ -76,12 +83,6 @@ export interface TerrainPresentationDiagnostics {
   vertices: number;
 }
 
-export interface TerrainGroundTextureStats {
-  bytes: number;
-  layerCount: number;
-  loaded: boolean;
-}
-
 /** Cumulative upload work, except `propPoolPaddingInstances`, which is the padding drawn right now. */
 export interface TerrainUploadMetrics {
   fogMaskFullRebuilds: number;
@@ -101,15 +102,15 @@ export class ProceduralTerrain {
   private readonly pages = new Map<string, PresentedTerrainPage>();
   private readonly presentationGroup = new Group();
   private groundTextureDetailEnabled = true;
-  private groundTextureMaterial: TerrainMaterials["land"] | null = null;
+  private readonly groundTextureMaterial: TerrainMaterials["land"];
   private readonly etherealMaterial = createEtherealTerrainMaterial();
   private readonly depthMaterials = new Map<EtherealLayer, MeshStandardNodeMaterial>();
   private readonly depthMinerals = new Map<EtherealLayer, ReturnType<typeof createDepthMineralResources>>();
   private basaltGeometry: BufferGeometry | null = null;
   private readonly etherealBorders = createEtherealBorderMaterial();
   private surfacePresentation: "world" | "ethereal" = "world";
-  private groundTextureHandle: TerrainGroundTextureHandle | null = null;
-  private groundTexturesPromise: Promise<TerrainGroundTextureHandle> | null = null;
+  private readonly biomeMap = new TerrainBiomeMap();
+  readonly groundLights = new GroundLights();
   private propLod: TerrainPropLod = "near";
   private qualityTier: TerrainQualityTier = "detail";
   private propPools: TerrainPropPools | null = null;
@@ -122,8 +123,8 @@ export class ProceduralTerrain {
   private isPropTileOccupied: (col: number, row: number) => boolean = () => false;
   private readonly releaseAppearance: () => void;
 
-  constructor({ streaming = false, gameMode = "blitz" }: { streaming?: boolean; gameMode?: GameModeId } = {}) {
-    this.fogField = new TerrainFogField(gameMode);
+  constructor({ streaming = false }: { streaming?: boolean; gameMode?: GameModeId } = {}) {
+    this.fogField = new TerrainFogField();
     if (streaming) this.fogField.enableStreaming();
     this.object3d.name = "procedural-terrain";
     this.presentationGroup.name = "procedural-terrain-pages";
@@ -137,11 +138,19 @@ export class ProceduralTerrain {
     this.object3d.add(this.fogField.object3d);
     this.object3d.add(this.movementEffects.object3d);
     this.materials = createTerrainMaterials();
+    this.groundTextureMaterial = createTerrainGroundMaterial(
+      this.biomeMap.texture,
+      this.groundLights,
+      this.materials.groundMotion,
+      this.materials.grid,
+    );
+    this.fogField.applyRevealToMaterial(this.groundTextureMaterial);
     this.fogField.applyRevealToMaterial(this.materials.flatLand);
     this.fogField.applyRevealToMaterial(this.materials.water);
     this.fogField.applyRevealToMaterial(this.etherealMaterial);
     this.fogField.applyRevealToMaterial(this.etherealBorders.material);
     this.setQualityTier(this.qualityTier);
+    this.refreshGroundMaterial();
     this.releaseAppearance = useWorldAppearanceStore.subscribe(() => this.applyAppearance());
   }
 
@@ -189,21 +198,6 @@ export class ProceduralTerrain {
     materials.forEach((material) => this.fogField.applyRevealToMaterial(material));
   }
 
-  async loadGroundTextures(): Promise<void> {
-    this.requireActive();
-    this.groundTexturesPromise ??= acquireTerrainGroundTextures();
-    const handle = await this.groundTexturesPromise;
-    if (this.disposed) {
-      handle.release();
-      return;
-    }
-    if (this.groundTextureHandle) return;
-    this.groundTextureHandle = handle;
-    this.groundTextureMaterial = createTerrainGroundMaterial(handle.textures, this.materials.groundMotion);
-    this.fogField.applyRevealToMaterial(this.groundTextureMaterial);
-    this.refreshGroundMaterial();
-  }
-
   setPropLod(lod: TerrainPropLod): void {
     this.propLod = lod;
     this.propPools?.setLod(lod);
@@ -248,6 +242,7 @@ export class ProceduralTerrain {
     this.propPools?.setWindStrength(profile.windStrength * motion);
     this.materials.waterMotion.value = profile.waterMotion * motion;
     this.materials.groundMotion.value = profile.windStrength * motion;
+    this.groundLights.setFlickering(!reducedMotion);
     const worldSurface = this.surfacePresentation === "world";
     if (this.propPools) this.propPools.object3d.visible = worldSurface;
     this.movementEffects.object3d.visible = worldSurface;
@@ -270,14 +265,6 @@ export class ProceduralTerrain {
     return this.propPools !== null;
   }
 
-  getGroundTextureStats(): TerrainGroundTextureStats {
-    return {
-      bytes: this.groundTextureHandle?.textures.bytes ?? 0,
-      layerCount: this.groundTextureHandle?.textures.layerCount ?? 0,
-      loaded: this.groundTextureHandle !== null,
-    };
-  }
-
   getShroudStats(): TerrainFogFieldStats {
     return this.fogField.getStats();
   }
@@ -294,6 +281,19 @@ export class ProceduralTerrain {
       propPoolPaddingInstances: props.paddingInstances,
       propPoolPageWrites: props.pageWrites,
     };
+  }
+
+  setPropsVisible(visible: boolean): void {
+    if (this.propPools) this.propPools.object3d.visible = visible;
+  }
+
+  setGridAtRest(strength: number): void {
+    this.materials.grid.rest.value = strength;
+  }
+
+  setGridFocus(cursor: TerrainWorldCoordinate | null, army: TerrainWorldCoordinate | null): void {
+    const far = TERRAIN_GRID_NO_FOCUS;
+    this.materials.grid.focus.value.set(cursor?.x ?? far, cursor?.z ?? far, army?.x ?? far, army?.z ?? far);
   }
 
   setMovementInteractions(interactions: readonly TerrainMovementInteraction[]): void {
@@ -531,9 +531,8 @@ export class ProceduralTerrain {
         this.etherealBorders.material,
       ].filter(Boolean),
     ).forEach((material) => material!.dispose());
-    this.groundTextureHandle?.release();
-    this.groundTextureHandle = null;
-    this.groundTextureMaterial = null;
+    this.biomeMap.dispose();
+    this.groundLights.dispose();
   }
 
   private stagePresentedPages(
@@ -553,6 +552,10 @@ export class ProceduralTerrain {
     const pageKey = preparedPage.request.pageKey;
     this.writeVisibleProps(pageKey, presented);
     this.fogField.setPage(pageKey, preparedPage.shroudInstances);
+    const { cells, climate, halo, mapCenter } = preparedPage.request;
+    this.biomeMap.write([...cells, ...halo], preparedPage.origin, (col, row) =>
+      Biome.sampleField(col + mapCenter, row + mapCenter, climate),
+    );
   }
 
   private installPageGeometry(preparedPage: PreparedTerrainPage, presented: PresentedTerrainPage): void {
@@ -782,11 +785,8 @@ function createTerrainMesh(
     geometry.setAttribute("terrainColor", new BufferAttribute(buffers.colors, 3));
     geometry.setAttribute("terrainRoughness", new BufferAttribute(buffers.roughness, 1));
     geometry.setAttribute("terrainShore", new BufferAttribute(buffers.shore, 1));
-    geometry.setAttribute("terrainBiomeId", new BufferAttribute(buffers.biomeIds, 1));
-    geometry.setAttribute("terrainExplored", new BufferAttribute(buffers.explored, 1));
-    geometry.setAttribute("terrainGroundWeights0", new BufferAttribute(buffers.groundWeights0, 4, true));
-    geometry.setAttribute("terrainGroundWeights1", new BufferAttribute(buffers.groundWeights1, 4, true));
-    geometry.setAttribute("terrainHeight", new BufferAttribute(buffers.heights, 1));
+    geometry.setAttribute("terrainClimate", new BufferAttribute(buffers.climate, 3));
+    geometry.setAttribute("terrainTint", new BufferAttribute(buffers.tints, 3));
     geometry.setAttribute("terrainWaterDepth", new BufferAttribute(buffers.waterDepth, 1));
     geometry.boundingBox = new Box3(new Vector3(...buffers.bounds.boxMin), new Vector3(...buffers.bounds.boxMax));
     geometry.boundingSphere = new Sphere(new Vector3(...buffers.bounds.sphereCenter), buffers.bounds.sphereRadius);

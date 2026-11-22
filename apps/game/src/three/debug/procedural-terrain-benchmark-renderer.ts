@@ -282,7 +282,6 @@ function createControls(camera: PerspectiveCamera, canvas: HTMLCanvasElement, lo
 async function loadBenchmarkAssets(runtime: TerrainBenchmarkRuntime): Promise<void> {
   const config = resolveTerrainBenchmarkVariant(runtime.variant);
   const loads: Promise<void>[] = [];
-  if (config.texturedGround) loads.push(runtime.terrain.loadGroundTextures());
   if (config.props) loads.push(runtime.terrain.loadProps());
   await Promise.all(loads);
   runtime.terrain.setQualityTier("balanced");
@@ -624,7 +623,6 @@ function reserveAssetRequestTimeline(): void {
 function readAssetRequestCounts(): TerrainBenchmarkSnapshot["assets"] {
   const resourceNames = performance.getEntriesByType("resource").map(({ name }) => name);
   return {
-    groundArrayRequests: resourceNames.filter((name) => name.includes("/textures/procedural-terrain/ground-")).length,
     propCatalogRequests: resourceNames.filter((name) => name.endsWith("/biome-kit-props.glb")).length,
   };
 }

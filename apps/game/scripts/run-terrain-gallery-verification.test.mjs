@@ -293,8 +293,6 @@ function result(rendererMode, activeMode, groundMode) {
       frameP95Ms: 16.7,
       frameWorstMs: 18,
       frameSampleCount: 72,
-      groundTextureBytes: 3_406_477,
-      groundTextureLayers: 8,
       groundCoverInstances: 12,
       prepareMs: 20,
       propInstances: 39,
