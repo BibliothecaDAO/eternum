@@ -121,7 +121,10 @@ pub mod SeasonLogic {
                     crate::commands::Rejection { status_class: 'GAMEPLAY_REJECTED', reason: "ANSWER_OATH_FIRST" },
                 );
             }
-            let result = dispatch(route, game_id, actor, payload, context).map_err(|error| domain_rejection(error))?;
+            let result = match dispatch(route, game_id, actor, payload, context) {
+                Result::Ok(result) => result,
+                Result::Err(error) => { return Err(domain_rejection(error)); },
+            };
             if route.batch {
                 let mut output = result;
                 let remaining: u64 = Serde::deserialize(ref output).expect('missing batch result');

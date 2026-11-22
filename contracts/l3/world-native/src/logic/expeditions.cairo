@@ -66,15 +66,12 @@ pub fn depth_rules(depth: u8) -> DepthRules {
 pub fn discovery(key: ExpeditionDiscoveryKey) -> Option<ExpeditionDiscovery> {
     let state = crate::state::read();
     let storage_key = (key.game_id, key.structure_id, key.epoch);
-    state
-        .map_rules
-        .empty_reveals
-        .read(storage_key)
-        .map(
-            |
-                empty_reveals,
-            | ExpeditionDiscovery { empty_reveals, ruin_cleared: state.map_rules.ruin_cleared.read(ruin_key(key)) },
-        )
+    match state.map_rules.empty_reveals.read(storage_key) {
+        Option::Some(empty_reveals) => Option::Some(
+            ExpeditionDiscovery { empty_reveals, ruin_cleared: state.map_rules.ruin_cleared.read(ruin_key(key)) },
+        ),
+        Option::None => Option::None,
+    }
 }
 
 pub fn ruin_key(key: ExpeditionDiscoveryKey) -> (u32, u64, u64) {

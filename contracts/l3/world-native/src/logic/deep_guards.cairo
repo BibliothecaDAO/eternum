@@ -127,12 +127,12 @@ pub fn next(site: ResourceKey) -> Option<ExplorerKey> {
                 },
             );
     }
-    crate::logic::guards::GuardState::next_slot(counts.span())
-        .map(
-            |
-                slot,
-            | ExplorerKey {
+    match crate::logic::guards::GuardState::next_slot(counts.span()) {
+        Option::Some(slot) => Option::Some(
+            ExplorerKey {
                 game_id: site.game_id, explorer_id: state.deep.slots.read((site.game_id, site.entity_id, slot)),
             },
-        )
+        ),
+        Option::None => Option::None,
+    }
 }
