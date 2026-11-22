@@ -2,10 +2,10 @@ pub use world_test_support::tests::progression::*;
 use super::play_fixture::FIXTURE_START;
 
 #[test]
-fn logistics_tiers_set_the_maximum_stamina_by_the_ruled_table() {
+fn each_logistics_tier_adds_a_fifth_of_the_bar() {
     let rules = crate::balance::rules::TROOP_STAMINA_CONFIG;
     let base: u64 = rules.stamina_knight_max.into();
-    for (logistics, added) in array![(0_u8, 0_u64), (1, 20), (2, 45), (3, 75), (4, 110), (5, 150)] {
+    for (logistics, added) in array![(0_u8, 0_u64), (1, 36), (2, 72), (3, 108), (4, 144), (5, 180)] {
         let progress = ArmyProgress { logistics, oath_slots: 1, ..Default::default() };
         assert_eq!(crate::progression::stamina_max(progress, crate::troops::TroopType::Knight, rules), base + added);
     }
@@ -18,7 +18,7 @@ fn added_stamina_stops_at_the_armys_own_maximum() {
     let maximum = crate::progression::stamina_max(
         ArmyProgress { logistics: 3, oath_slots: 1, ..Default::default() }, crate::troops::TroopType::Knight, rules,
     );
-    assert_eq!(maximum, base + 75);
+    assert_eq!(maximum, base + 108);
     let mut boosts: crate::troops::TroopBoosts = Default::default();
     let mut bar = crate::troops::Stamina { amount: base - 10, settled_at: 5, remainder: 0 };
     bar.add(ref boosts, maximum, rules, 25, 120, 5);
@@ -46,7 +46,7 @@ fn an_armys_own_maximum_reads_its_logistics_tier_and_a_troops_without_progress()
             )
         },
     );
-    assert_eq!(own, crate::stamina::StaminaImpl::max(troops.category, crate::troops::TroopTier::T1, rules) + 75);
+    assert_eq!(own, crate::stamina::StaminaImpl::max(troops.category, crate::troops::TroopTier::T1, rules) + 108);
     assert_eq!(other, crate::stamina::StaminaImpl::max(troops.category, troops.tier, rules));
 }
 

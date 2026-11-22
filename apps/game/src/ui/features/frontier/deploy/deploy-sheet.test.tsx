@@ -580,8 +580,8 @@ describe("the Deploy sheet", () => {
           value: { game_id: 1, structure_id: 7, learned: String(1n << 27n) },
         },
       ],
-      number: "170/170",
-      meter: [170, 170],
+      number: "180/180",
+      meter: [180, 180],
     },
   ])("shows the stamina bar the new army starts on, its slot's: $case", ({ facts, number, meter }) => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;

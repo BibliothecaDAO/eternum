@@ -155,7 +155,7 @@ describe("the Deep site's live native binding", () => {
         />,
       );
       expect(hud.host.querySelector("[data-stamina-line]")?.textContent).toContain(
-        `${refilled}/${rules.troop_stamina_config.stamina_knight_max + 20}`,
+        `${refilled}/${rules.troop_stamina_config.stamina_knight_max * 1.2}`,
       );
     } finally {
       hud.unmount();

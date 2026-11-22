@@ -153,7 +153,7 @@ it("shows a training building's one figure, what every new army starts with, now
   draw(research.ROW_SUPPLY_YARD, { standing: 1 });
   expect(card().textContent).toContain("1 building");
   expect(card().textContent).not.toContain("1 buildings");
-  expect(rows()).toEqual([["Logistics", "Every new army", "+20 max stamina", "→", "+45 max stamina"]]);
+  expect(rows()).toEqual([["Logistics", "Every new army", "+36 max stamina", "→", "+72 max stamina"]]);
   expect(button(/^Research$/)).toBeDefined();
   // Common is I on the card and current column; the next tier is II.
   expect(gems()).toEqual(["I", "I", "II"]);

@@ -160,8 +160,8 @@ it("confirms the loss of stronger Logistics in a 500 into 1,500 merge", async ()
     ["Army 3", "2,000"],
   ]);
   expect(amount()).toBe("500");
-  expect(host.textContent).toContain("5/225");
-  expect(host.textContent).toContain("15/200→5");
+  expect(host.textContent).toContain("5/252");
+  expect(host.textContent).toContain("15/216→5");
   expect(host.textContent).toContain("Army 1 loses its Logistics, Oath slots and held Oaths.");
   expect(host.querySelector("s")).toBeNull();
   await act(async () => button("Merge into Army 3")!.click());
@@ -349,7 +349,7 @@ it.each([2, 3, 4])(
       ["Army 2", "1,100"],
     ]);
     // Army 2 holds 100 stamina; the merge leaves it Army 1's 7.
-    expect(host.textContent).toContain(`100/${180 + [0, 20, 45, 75, 110, 150][tappedLogistics]!}→7`);
+    expect(host.textContent).toContain(`100/${180 + [0, 36, 72, 108, 144, 180][tappedLogistics]!}→7`);
     expect(swap).not.toHaveBeenCalled();
     await act(async () => button("Merge into Army 2")!.click());
     expect(button("Confirm merge into Army 2")).toBeDefined();
