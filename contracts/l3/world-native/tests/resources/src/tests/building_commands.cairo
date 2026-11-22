@@ -241,7 +241,7 @@ fn a_row_opens_with_its_first_building_and_sells_each_tier_once_in_order_at_its_
     for side in 0_u8..2 {
         for tier in 1_u8..6 {
             let price = crate::logic::research::price(crate::research::ROW_FARM, tier);
-            let (e, l) = *array![(500_u128, 500_u128), (1000, 1000), (4000, 3000), (12000, 8000), (30000, 20000)]
+            let (e, l) = *array![(500_u128, 500_u128), (1000, 1000), (2500, 2500), (5000, 5000), (10000, 10000)]
                 .at((tier - 1).into());
             assert_eq!(price.essence, e * crate::rules::RESOURCE_PRECISION);
             assert_eq!(price.labor, l * crate::rules::RESOURCE_PRECISION);
@@ -502,7 +502,7 @@ fn workshop_sides_follow_their_exact_ladder() {
         (
             crate::research::ROW_WORKSHOP,
             crate::research::WORKSHOP,
-            array![(1000_u128, 1000_u128), (2000, 2000), (8000, 6000), (24000, 16000), (60000, 40000)].span(),
+            array![(500_u128, 500_u128), (1000, 1000), (2500, 2500), (5000, 5000), (10000, 10000)].span(),
         ),
     ];
     for (row, category, prices) in ladders {
@@ -559,13 +559,13 @@ fn construction_grants_common_once_and_the_next_purchase_costs_uncommon(category
     let essence_before = resources.resource_balance(essence);
     let construction_labor_before = resources.resource_balance(labor);
     assert!(execute(d, Command::CreateBuilding(command), FIXTURE_START + 40));
-    assert_eq!(essence_before - resources.resource_balance(essence), 6000 * crate::rules::RESOURCE_PRECISION);
-    assert_eq!(construction_labor_before - resources.resource_balance(labor), 1500 * crate::rules::RESOURCE_PRECISION);
+    assert_eq!(essence_before - resources.resource_balance(essence), 5000 * crate::rules::RESOURCE_PRECISION);
+    assert_eq!(construction_labor_before - resources.resource_balance(labor), 1000 * crate::rules::RESOURCE_PRECISION);
     assert_eq!(crate::research::tier(learned(d, home), row), 1);
     let price = crate::logic::research::price(row, 2);
     assert_eq!(
         (price.essence, price.labor),
-        (16000 * crate::rules::RESOURCE_PRECISION, 3000 * crate::rules::RESOURCE_PRECISION),
+        (10000 * crate::rules::RESOURCE_PRECISION, 2500 * crate::rules::RESOURCE_PRECISION),
     );
     let essence_before = resources.resource_balance(essence);
     let labor_before = resources.resource_balance(labor);
