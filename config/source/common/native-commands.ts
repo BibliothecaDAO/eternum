@@ -35,6 +35,7 @@ const blitzReturnedCommands: NativeCommand[] = [
   "SetGuildWhitelist",
   "RemoveGuildMember",
   "SetEntityName",
+  "LevelUp",
 ];
 
 export const arenaCommandMask = commandBits(allCommands) & ~commandBits(arenaClosedCommands);

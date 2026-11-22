@@ -9,7 +9,7 @@ pub mod ConstructionLogic {
     use crate::logic::release::ReleaseState;
     use crate::logic::structures::StructureState;
     use crate::map::TileKey;
-    use crate::ownership::{Story, StoryEvent};
+    use crate::ownership::StoryEvent;
     use crate::resources::{IResourceOperationsDispatcherTrait, IResourceOperationsLibraryDispatcher, ResourceKey};
     use crate::structures::StructureBase;
     use crate::troops::Coord;
@@ -219,63 +219,23 @@ pub mod ConstructionLogic {
             assert_playing(context.game.unbox(), context.timestamp);
             let key = ResourceKey { game_id, entity_id: structure_id };
             let record = crate::logic::structures::record(key);
-            assert!(record.owner == actor, "actor does not own structure");
-            assert!(
-                record.base.category == crate::taxonomy::REALM_CATEGORY
-                    || record.base.category == crate::taxonomy::VILLAGE_CATEGORY,
-                "structure is not a realm or village",
-            );
-            let limits = crate::logic::upgrades::limits();
-            let maximum = if record.base.category == crate::taxonomy::REALM_CATEGORY {
-                limits.realm_max
-            } else {
-                limits.village_max
-            };
-            assert!(record.base.level < maximum, "structure is already at max level");
-            let next_level = record.base.level + 1;
+            let next_level = crate::logic::upgrades::next_level(record, actor);
             self
                 .resources_dispatcher(game_id)
                 .settle_production(key, context.timestamp, crate::commands::resource_context(context));
-            for cost in crate::logic::upgrades::recipe(next_level).costs {
-                self
-                    .spend(
-                        key,
-                        *cost.resource_type,
-                        *cost.amount,
-                        context.timestamp,
-                        crate::commands::resource_context(context),
-                    );
-            }
+            crate::logic::upgrades::pay(key, next_level, context);
             crate::logic::structures::StructureState::upgrade(
                 key, record.base, context.rules.unbox().troop_limit_config,
             );
             if record.base.category == crate::taxonomy::REALM_CATEGORY && self.has_castle(key) {
                 self.raise_castle_labor(key, record.base.level, next_level, context);
             }
-            self.emit_structure_upgrade(key, actor, next_level, context.timestamp);
+            crate::logic::upgrades::emit_level_up(key, actor, next_level, context.timestamp);
             ()
         }
     }
     #[generate_trait]
     impl Internal of InternalTrait {
-        fn emit_structure_upgrade(
-            ref self: ContractState, key: ResourceKey, actor: ContractAddress, next_level: u8, timestamp: u64,
-        ) {
-            self
-                .emit(
-                    StoryEvent {
-                        version: 2,
-                        game_id: key.game_id,
-                        owner: Some(actor),
-                        entity_id: Some(key.entity_id),
-                        tx_hash: starknet::get_tx_info().unbox().transaction_hash,
-                        story: Story::StructureLevelUpStory(
-                            crate::ownership::StructureLevelUpStory { new_level: next_level },
-                        ),
-                        timestamp,
-                    },
-                );
-        }
         fn erect_building(
             ref self: ContractState,
             key: ResourceKey,

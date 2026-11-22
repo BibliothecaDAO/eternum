@@ -147,6 +147,29 @@ pub mod ConstructionLogic {
         }
     }
 
+    #[abi(embed_v0)]
+    impl Upgrades of crate::upgrades::IStructureUpgrades<ContractState> {
+        fn level_up(
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            structure_id: u64,
+            context: crate::commands::ActionContext,
+        ) -> () {
+            let context = crate::commands::execution_context(game_id, context);
+            crate::game::assert_playing(context.game.unbox(), context.timestamp);
+            let key = ResourceKey { game_id, entity_id: structure_id };
+            let record = crate::logic::structures::record(key);
+            let next_level = crate::logic::upgrades::next_level(record, actor);
+            crate::logic::upgrades::pay(key, next_level, context);
+            StructureState::upgrade(key, record.base, context.rules.unbox().troop_limit_config);
+            if record.base.category == crate::taxonomy::REALM_CATEGORY {
+                raise_realm_tile(key, record.metadata.has_wonder, next_level);
+            }
+            crate::logic::upgrades::emit_level_up(key, actor, next_level, context.timestamp);
+        }
+    }
+
     #[generate_trait]
     impl Internal of InternalTrait {
         fn erect_building(
@@ -222,5 +245,12 @@ pub mod ConstructionLogic {
             };
             emit_building_change(key, actor, command.coord, building.category, change, context.timestamp);
         }
+    }
+
+    fn raise_realm_tile(key: ResourceKey, wonder: bool, level: u8) {
+        let coord = crate::structures::structure_coord(key);
+        crate::logic::map::MapState::upgrade_realm(
+            TileKey { game_id: key.game_id, alt: coord.alt, col: coord.x, row: coord.y }, key.entity_id, wonder, level,
+        );
     }
 }

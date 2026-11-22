@@ -194,6 +194,26 @@ pub mod MapState {
         };
     }
 
+    #[cfg(feature: "blitz")]
+    pub fn upgrade_realm(key: TileKey, entity_id: u64, wonder: bool, level: u8) {
+        let previous = crate::logic::map::occupancy(key).expect('missing realm tile');
+        assert!(!key.alt && previous.is_structure, "not a surface structure");
+        assert!(previous.entity_id == entity_id, "occupier mismatch");
+        assert!(
+            previous.category >= crate::taxonomy::REALM_REGULAR_LEVEL_1_OCCUPIER
+                && previous.category <= crate::taxonomy::REALM_WONDER_LEVEL_4_OCCUPIER,
+            "not a realm tile",
+        );
+        assert!(level <= 3, "invalid realm level");
+        let category = level
+            + if wonder {
+                crate::taxonomy::REALM_WONDER_LEVEL_1_OCCUPIER
+            } else {
+                crate::taxonomy::REALM_REGULAR_LEVEL_1_OCCUPIER
+            };
+        write_occupancy(key, Some(TileOccupancy { category, ..previous }));
+    }
+
     #[cfg(feature: "test_support")]
     pub fn relocate_fixture(
         key: crate::resources::ResourceKey, coord: crate::troops::Coord, category: u8, is_structure: bool,
