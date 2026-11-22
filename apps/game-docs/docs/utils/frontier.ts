@@ -10,6 +10,7 @@ import {
   nativeResearchConstants as research,
   nativeRuleConstants as rule,
 } from "../../../../contracts/l3/world-native/schema/balance.gen";
+import { logisticsStamina } from "../../../../packages/core/src/utils/attribute-tiers";
 import { LAYER_NAMES, beastOf, TIER_WORDS, resourceName } from "@bibliothecadao/types";
 import { ETERNUM_CONFIG } from "./config";
 import { playableDepths } from "./playable-depths.mjs";
@@ -99,7 +100,7 @@ export const FRONTIER = {
     attack: n(stamina.staminaAttackReq),
     wheatPerTroop: n(stamina.staminaExploreWheatCost),
     well: `${n(rule.WELL_REFILL_PERCENT)}% of its maximum`,
-    logisticsMax: n((stamina.staminaKnightMax * rule.LOGISTICS_STEP_PERCENT * rule.ATTRIBUTE_CAP) / 100),
+    logisticsMax: n(logisticsStamina(stamina.staminaKnightMax, rule.ATTRIBUTE_CAP)),
   },
   discovery: {
     beasts: pct(frontierPreset.discovery.beastsBps),
