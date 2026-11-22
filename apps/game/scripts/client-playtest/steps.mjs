@@ -3539,12 +3539,6 @@ function viewWentIntoTheEtherealBelow({ played, seen }) {
   return completed(played);
 }
 
-/**
- * The map's layers as a player switches them (the lab's spire game, Ethereal I and II researched; owner, 4 November
- * 2026, desktop design 1 and phone B): the switch that names the layer shown opens the world and each Ethereal layer (a
- * phone's Realm too); Ethereal II takes the camera two regions down at the same spot, World back up, and from Ethereal II
- * the list takes a phone to its realm and the World tab or switch back to the map.
- */
 const LAB_LAYERS_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
   { name: "into-ethereal-ii", play: chooseLayer("Hollow"), settleMs: 0, verify: cameraInLayer(2) },
@@ -3589,17 +3583,12 @@ const VIEW_SWITCH_WORD = `JSON.stringify(document.querySelector('[data-surface-d
 const LAB_LAYERS = LAYER_NAMES.slice(0, 3);
 const REGION_ROWS = 100;
 
-/**
- * The camera moved by regions only, to the same spot of `layer`, and the switch names that layer; the list it opened
- * held the world and each Ethereal layer, a phone's with its Realm first, the layer it left checked.
- */
 function cameraInLayer(layer) {
   return ({ played, seen }) => {
     const scene = inScene("map")({ seen });
     if (scene.status !== "completed") return failed(`choosing ${played.word} left the map: ${scene.reason}`, played);
     const words = played.choices.map((choice) => choice.word);
-    const listed = words[0] === "Realm" ? words.slice(1) : words;
-    if (JSON.stringify(listed) !== JSON.stringify(LAB_LAYERS))
+    if (JSON.stringify(words) !== JSON.stringify(LAB_LAYERS))
       return failed(`the views listed are ${JSON.stringify(words)}, not ${JSON.stringify(LAB_LAYERS)}`, played);
     if (played.choices.filter((choice) => choice.shown).length !== 1)
       return failed("the list did not check exactly the view shown", played);
