@@ -196,6 +196,14 @@ pnpm --dir apps/game playtest --port 4174 --player <email>
 pnpm --dir apps/game playtest --base-url https://127.0.0.1:4174 --iterations 1   # a client you already serve
 ```
 
+Every landing plays the lab scenarios listed in `LANDING_SCENARIOS` (`scripts/run-landing-playtest.mjs`) through one
+flow kind, `build.sh playtest-landing`: `pnpm --dir apps/game playtest:landing` builds and serves the client once, then
+plays each scenario at 1920x1080 and 390x844, each in its own fresh browser by the playtest above, its evidence in
+`<run>/<scenario>/<viewport>/` and every verdict in `<run>/verdicts.json`. It fails naming each scenario and viewport
+that failed (128 when every failure only refused the machine's load). Scenario names play those alone:
+`pnpm --dir apps/game playtest:landing lab-oath-slots`. The kind runs on every landing, so a proof every landing needs
+only joins `LANDING_SCENARIOS`.
+
 Options: `--channel web|play|app-store` (default web: the app the client is played in, launched as that app launches the
 site, `src/runtime/distribution-channel.ts`: `play` opens the run's page with `?channel=play`, `app-store` appends
 `RealmsApp/ios` to the browser's user agent before any page opens and fails the run unless the booted page carries it
@@ -549,50 +557,49 @@ A founded free home's daily source is self-serve at game entry → Choose a dail
 uses the same linked-wallet holdings as founding.
 
 The discovered-Spire path is `/lab/game?scenario=discovered-spire`: select Army 1, open Spire, then Enter Ethereal II.
-`build.sh playtest-spire-discovery` drives that path at desktop and phone sizes, asserts that only the next layer is
-offered and checks the command, new occupancy and camera arrival. The army panel then shows the new layer’s next-reveal
-Spire chance, read from its home/day/layer counter. Evidence stays in the flow result directory.
+`pnpm --dir apps/game playtest:landing lab-discovered-spire` drives that path at desktop and phone sizes, asserts that
+only the next layer is offered and checks the command, new occupancy and camera arrival. The army panel then shows the
+new layer’s next-reveal Spire chance, read from its home/day/layer counter.
 
 The stamina effects paths are `/lab/game?scenario=stamina-mist` and `stamina-wind`: select Army 1, open its panel, read
-its bar and Full in timer. `build.sh playtest-stamina-effects` drives both recorded-effect fixtures at desktop and phone
-sizes. Native lifecycle tests prove Explore settlement and quorum timing.
+its bar and Full in timer. `pnpm --dir apps/game playtest:landing lab-stamina-mist lab-stamina-wind` drives both
+recorded-effect fixtures at desktop and phone sizes. Native lifecycle tests prove Explore settlement and quorum timing.
 
 Supply posts: `/lab/game?scenario=supply-post`, select the cleared camp beside Army 1, choose Reinforce Army 1, then Max
-and Reinforce. `build.sh playtest-supply-post` checks the signed camp ID and resulting army and home balances on desktop
-and phone, retaining the camp banner, reinforcement sheet and response evidence.
+and Reinforce. `lab-supply-post` checks the signed camp ID and resulting army and home balances on desktop and phone,
+retaining the camp banner, reinforcement sheet and response evidence.
 
 Scouts are raised in Deploy by selecting Scouts from the troop choices, then a count and an open army slot. The Scouts'
 Lodge opens at City and produces the separate Scout stock; it has no Scouting research. `--steps lab-scouts` uses
 `/lab/game?scenario=scouts` to choose and deploy 400 Scouts, retaining the submitted command, army and balance changes
 on desktop and phone. Native tests prove the ten-stamina reveal and combat damage.
 
-Exact combat: `/lab/game?scenario=battle-target` puts Knights beside a camp. `build.sh playtest-battle-target` selects
-and attacks twice through the card, recording each command, army, guard and last-target fact on desktop and phone.
-`build.sh playtest-deep-battle-target` checks the same path against a rival Deep guard. Native tests check both
-exchanges, rejection and removal. The die, Charge and Battle skill no longer modify either forecast or settlement.
+Exact combat: `/lab/game?scenario=battle-target` puts Knights beside a camp. `lab-battle-target` selects and attacks
+twice through the card, recording each command, army, guard and last-target fact on desktop and phone.
+`lab-deep-battle-target` checks the same path against a rival Deep guard. Native tests check both exchanges, rejection
+and removal. The die, Charge and Battle skill no longer modify either forecast or settlement.
 
 Oath capacity is researched at Barracks, Range and Scouts' Lodge, with two free slots and three purchases per troop.
 Deploy shows the current troop's capacity; an army's panel keeps its capacity from creation.
-`/lab/game?scenario=oath-slots` and `build.sh playtest-oath-slots` buy the third Knight slot through Research, check the
-exact price and deploy an army with three slots on desktop and phone. These are lab proofs; native tests cover immutable
-army capacity.
+`/lab/game?scenario=oath-slots` and `lab-oath-slots` buy the third Knight slot through Research, check the exact price
+and deploy an army with three slots on desktop and phone. These are lab proofs; native tests cover immutable army
+capacity.
 
 An earned Oath opens three cards at once, drawn at random from the Oaths the army does not hold, and blocks that army's
 commands until answered. Choose a card; with full slots, choose the held Oath it replaces, or Pass for the stamina shown
 on the button, capped at the army's maximum. The pick cannot be dismissed by Escape, Back or an outside press. One
 Redraw a pick swaps the card it is under for an Oath neither held nor shown, for the Fragments its button shows (none in
-the Deep); the playtest redraws the first card before it chooses. `build.sh playtest-oath-pick` plays
-`/lab/game?scenario=oath-pick` and `oath-replace` on desktop and phone, recording the signed choice and resulting held
-Oath. Each path opens Delete, checks the Oath loss warning, cancels to retain the army, then confirms and checks the
-army and Oath record disappear. The freed slot retains its stamina. Native tests cover Shrine reveals, persistence,
-deletion and remustering with an empty Oath record; these browser proofs use recorded offers.
-`build.sh playtest-oath-vitriol` also runs `lab-oath-decline` and `lab-oath-pass-capped` to check the pass reward,
-including overflow at the maximum.
+the Deep); the playtest redraws the first card before it chooses. `lab-actions-oath-pick` and `lab-actions-oath-replace`
+play `/lab/game?scenario=oath-pick` and `oath-replace` on desktop and phone, recording the signed choice and resulting
+held Oath. Each path opens Delete, checks the Oath loss warning, cancels to retain the army, then confirms and checks
+the army and Oath record disappear. The freed slot retains its stamina. Native tests cover Shrine reveals, persistence,
+deletion and remustering with an empty Oath record; these browser proofs use recorded offers. `lab-oath-decline` and
+`lab-oath-pass-capped` check the pass reward, including overflow at the maximum.
 
 Vitriol changes the Deep's field and guard loss to its generated rule value. `/lab/game?scenario=oath-vitriol` and
-`build.sh playtest-oath-vitriol` choose it through the Oath panel, read the reduced field drain, and join the Ethereal
-mine on desktop and phone. Native command tests prove the old rate settles before a choice or replacement and the new
-rate applies only to later ticks; shared vectors check exact troop counts in the contract and client.
+`lab-oath-vitriol` choose it through the Oath panel, read the reduced field drain, and join the Ethereal mine on desktop
+and phone. Native command tests prove the old rate settles before a choice or replacement and the new rate applies only
+to later ticks; shared vectors check exact troop counts in the contract and client.
 
 The prize and stamina Oaths act where their card says, and the client reads each from the same generated rule: Detection
 finds more often and raises the Spire chance on the army's panel, Brilliance raises a reveal's pay, Rage a cleared

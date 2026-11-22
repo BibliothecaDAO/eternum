@@ -56,8 +56,9 @@ tribe fixture is removed.
 
 `/lab/game?scenario=deep` opens beside the allied Ethereal mine. Select Army 1, open the mine, Join, then close the site
 card and reopen Army 1 from the dock. Its panel keeps the slot's refilling stamina after the army leaves its personal
-tile. `build.sh playtest-deep` drives this path on desktop and phone and records the site's visible tick payment, the
-joined guard and its visible stamina bar. The site's payment reads DeepRules/RaceRules and the holder's AltarBar.
+tile. `pnpm --dir apps/game playtest:landing lab-deep-join` drives this path on desktop and phone and records the site's
+visible tick payment, the joined guard and its visible stamina bar. The site's payment reads DeepRules/RaceRules and the
+holder's AltarBar.
 
 With Important notifications enabled, a rival-held Deep site can send one opportunity alert per site and game day.
 Opening it selects the site's map coordinate. `build.sh test-deep-alerts` drives the real notifier worker through a
@@ -290,21 +291,22 @@ pnpm --dir apps/game prove:studio --port 4199 --out <fresh-evidence-directory>
 `--game frontier` uses Frontier's light; `--takes battle,explore` rolls only those.
 
 `/lab/game?scenario=battle-target` sends Crossbows through two attacks on a blade beast; `deep-battle-target` faces
-Knights in a guard slot. Select the army, open the site card and Attack twice. `build.sh playtest-battle-target` and
-`build.sh playtest-deep-battle-target` drive those paths on desktop and phone, compare the exact preview and resulting
-facts with the native-tested `frontier-marks.txt` receipts, and retain screenshots. Site cards show the guard's
-Blade/Bow mark from its troop fact. These are lab proofs.
+Knights in a guard slot. Select the army, open the site card and Attack twice. The landing playtest's
+`lab-battle-target` and `lab-deep-battle-target` drive those paths on desktop and phone, compare the exact preview and
+resulting facts with the native-tested `frontier-marks.txt` receipts, and retain screenshots. Site cards show the
+guard's Blade/Bow mark from its troop fact. These are lab proofs.
 
 Frontier town: open the Realm, tap a free plot and choose Range or Conscription Camp from City, or Rations Depot from
 Kingdom. The Range produces Crossbows for Deploy. Tap the Camp or Depot to buy its next tier: Camp increases all troop
 buildings’ output; Depot reduces deployment and reinforcement wheat. Each is unique and construction buys its first
 tier. Logistics remains on the Supply Yard. The painted-buildings lab includes every town building.
 
-`build.sh playtest-town` opens `/lab/game?scenario=town` on desktop and phone, selects Crossbows in Deploy, then
-deploys 400. It checks the new army, the 200 Crossbows left, and the 280 wheat left after the first Depot tier. This is
-a lab proof; the native command suite proves Range production and both town research ladders.
+The landing playtest's `lab-town` opens `/lab/game?scenario=town` on desktop and phone, selects Crossbows in Deploy,
+then deploys 400. It checks the new army, the 200 Crossbows left, and the 280 wheat left after the first Depot tier.
+This is a lab proof; the native command suite proves Range production and both town research ladders.
 
 `/lab/game?scenario=oath-battle-target` and `oath-deep-battle-target` repeat those two attacks with Power and Giants.
-The Deep guard holds Power, Giants and Protection. `build.sh playtest-oath-damage` checks both previews and both results
-against `oath-damage.txt` on desktop and phone, retaining screenshots. The ordinary Oath pick and held slots show the
-three effects from generated contract constants. These are lab proofs.
+The Deep guard holds Power, Giants and Protection. The landing playtest's `lab-oath-battle-target` and
+`lab-oath-deep-battle-target` check both previews and both results against `oath-damage.txt` on desktop and phone,
+retaining screenshots. The ordinary Oath pick and held slots show the three effects from generated contract constants.
+These are lab proofs.

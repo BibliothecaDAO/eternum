@@ -75,8 +75,11 @@ paths = "apps/game/scripts/prove-season-one.mjs"
 source = "contracts/l3/check-native-plan.sh"
 kinds = "gate-prelude gate-vrf gate-world gate-drift gate-events test-capture test-combat test-discovery test-economy test-lifecycle test-registration test-resources test-world test-blitz"
 
+[kind.playtest-landing]
+cmd = 'cp /home/djizus/projects/eternum-lanes/showcase/apps/game/.env.local apps/game/.env.local && pnpm run build:packages && pnpm --dir apps/game playtest:landing --out "$FLOW_TMP/playtest"'
+
 [land]
-kinds = "sizes gate-prelude gate-vrf gate-world gate-events gate-drift test-capture test-combat test-discovery test-economy test-lifecycle test-registration test-resources test-world test-blitz test-native-plan workflow-parity playtest-supply-post playtest-scouts playtest-town playtest-oath-slots playtest-oath-pick playtest-oath-vitriol playtest-oath-damage playtest-battle-target playtest-deep-battle-target ci-static-knip ci-client-test-client ci-herald-history-and-stream ci-services-workers ci-portal-portal ci-native-service-class-sizes-realms_vrf_verifier ci-native-game-ledger ci-native-player-account ci-native-native-deployer ci-native-native-stamping ci-native-native-provider ci-runtime-offline-tests-runner ci-runtime-offline-tests-harness ci-runtime-offline-tests-sandbox-proxy ci-amm-test-ammv2 ci-collectibles-test-collectibles ci-mmr-test-mmr ci-season_pass-test-season-pass ci-contract_scripts-runtime-tests ci-docs-docs"
+kinds = "sizes gate-prelude gate-vrf gate-world gate-events gate-drift test-capture test-combat test-discovery test-economy test-lifecycle test-registration test-resources test-world test-blitz test-native-plan workflow-parity playtest-landing ci-static-knip ci-client-test-client ci-herald-history-and-stream ci-services-workers ci-portal-portal ci-native-service-class-sizes-realms_vrf_verifier ci-native-game-ledger ci-native-player-account ci-native-native-deployer ci-native-native-stamping ci-native-native-provider ci-runtime-offline-tests-runner ci-runtime-offline-tests-harness ci-runtime-offline-tests-sandbox-proxy ci-amm-test-ammv2 ci-collectibles-test-collectibles ci-mmr-test-mmr ci-season_pass-test-season-pass ci-contract_scripts-runtime-tests ci-docs-docs"
 forbid = "co-authored-by|claude|anthropic|codex|openai|generated with|session"
 
 [kind.test-client-retirement]
@@ -94,9 +97,6 @@ cmd = 'cd contracts/l2/ledger && scarb build && node generate-abi.mjs && git add
 [kind.format-write]
 cmd = 'pnpm run format && (cd contracts/l3/world-native && scarb fmt) && (cd contracts/l3/world-native/tests && scarb fmt) && git diff --binary > "$FLOW_TMP/format.patch"'
 
-[kind.playtest-client-retirement]
-cmd = 'cp /home/djizus/projects/eternum-lanes/showcase/apps/game/.env.local apps/game/.env.local && pnpm run build:packages && pnpm --dir apps/game playtest --port 4184 --steps lab-actions --iterations 1 --renderer-modes webgpu-force-webgl --out "$FLOW_TMP/playtest"'
-
 [kind.test-map-retirement]
 cmd = "pnpm run build:packages && pnpm --dir apps/game test src/ui/features/world/containers/left-facets/use-structure-actions.test.ts src/ui/features/world/components/bottom-right-panel/minimap-markers.test.ts"
 
@@ -110,35 +110,14 @@ paths = "flow.toml contracts/l3/"
 [kind.generate-native-retirement]
 cmd = '''trap 'git diff --binary > "$FLOW_TMP/generated.patch"' EXIT; node contracts/l3/world-native/scripts/generate-story-serde.mjs && bash contracts/l3/check-native.sh build && pnpm run schema:native && pnpm --dir config run config:generate && pnpm run fixtures:native && (cd contracts/l3/world-native && scarb fmt) && (cd contracts/l3/world-native/tests && scarb fmt) && pnpm run format && git diff --binary > "$FLOW_TMP/generated.patch"'''
 
-[kind.playtest-economy]
-cmd = 'cp /home/djizus/projects/eternum-lanes/showcase/apps/game/.env.local apps/game/.env.local && pnpm run build:packages && pnpm --dir apps/game playtest --port 4185 --steps lab-economy --iterations 1 --renderer-modes webgpu-force-webgl --out "$FLOW_TMP/playtest"'
-
 [kind.test-retirement-boundaries]
 cmd = "pnpm run build:packages && pnpm --dir packages/value-ledger test && pnpm --dir apps/value-relay typecheck && bun test config/deployer/clean/tests/native-preset.test.ts deploy/first/box-deploy.test.ts && pnpm --dir apps/game test src/lab/game src/ui/features/frontier src/shell/profile/notifications.test.tsx"
-
-[kind.playtest-no-lords]
-cmd = 'cp /home/djizus/projects/eternum-lanes/showcase/apps/game/.env.local apps/game/.env.local && pnpm run build:packages && pnpm --dir apps/game playtest --port 4186 --steps lab-no-lords --iterations 1 --renderer-modes webgpu-force-webgl --out "$FLOW_TMP/playtest"'
-
-[kind.playtest-relic-forecasts]
-cmd = 'cp /home/djizus/projects/eternum-lanes/showcase/apps/game/.env.local apps/game/.env.local && pnpm run build:packages && pnpm --dir apps/game playtest --port 4187 --steps lab-relic-forecasts --iterations 1 --renderer-modes webgpu-force-webgl --out "$FLOW_TMP/playtest"'
 
 [kind.test-relic-forecasts]
 cmd = "pnpm run build:packages && pnpm --dir apps/game test src/ui/features/frontier/sites/site-effects.test.ts src/ui/features/frontier/sites/site-receipt.test.tsx src/three/managers/structure-manager.guard-stamina.test.ts src/ui/features/event-feed/feed-line.test.tsx src/ui/features/frontier/log/day-line.test.ts src/ui/features/frontier/sites/site-card-plan.test.ts src/ui/features/frontier/sites/tile-card.test.tsx src/ui/features/military/battle/quick-attack-preview.test.tsx src/ui/features/frontier/relics/ruin-relic-attack.test.tsx src/ui/features/frontier/frontier-selection-sheet.test.tsx && pnpm --dir apps/game verify:assets scripts/client-playtest/steps.test.mjs"
 
 [kind.test-native-wire]
 cmd = "pnpm run build:packages && pnpm --dir packages/provider test && pnpm --dir packages/core test && pnpm --dir apps/herald exec vitest run src/native && bun test config/deployer/clean/tests/native-preset.test.ts"
-
-[kind.playtest-army-lifetime]
-cmd = 'cp /home/djizus/projects/eternum-lanes/showcase/apps/game/.env.local apps/game/.env.local && pnpm run build:packages && pnpm --dir apps/game playtest --port 4189 --steps lab-actions-deploy --iterations 1 --renderer-modes webgpu-force-webgl --out "$FLOW_TMP/deploy" && pnpm --dir apps/game playtest --port 4189 --steps lab-day-turn --iterations 1 --renderer-modes webgpu-force-webgl --out "$FLOW_TMP/rollover"'
-
-[kind.playtest-aspect-founding]
-cmd = 'cp /home/djizus/projects/eternum-lanes/showcase/apps/game/.env.local apps/game/.env.local && pnpm run build:packages && exec 8>"${FLOW_JOB%/running/*}/playtest-port-4188.lock" && flock 8 && for viewport in 1920x1080 390x844; do pnpm --dir apps/game playtest --port 4188 --steps lab-aspect-settle --iterations 1 --renderer-modes webgpu-force-webgl --viewport "$viewport" --out "$FLOW_TMP/playtest/$viewport" || exit $?; done'
-
-[kind.playtest-daily-quest]
-cmd = 'cp /home/djizus/projects/eternum-lanes/showcase/apps/game/.env.local apps/game/.env.local && pnpm run build:packages && exec 8>"${FLOW_JOB%/running/*}/playtest-port-4188.lock" && flock 8 && for viewport in 1920x1080 390x844; do pnpm --dir apps/game playtest --port 4188 --steps lab-daily-quest --iterations 1 --renderer-modes webgpu-force-webgl --viewport "$viewport" --out "$FLOW_TMP/playtest/$viewport" || exit $?; done'
-
-[kind.playtest-deep]
-cmd = 'cp /home/djizus/projects/eternum-lanes/showcase/apps/game/.env.local apps/game/.env.local && pnpm run build:packages && exec 8>"${FLOW_JOB%/running/*}/playtest-port-4191.lock" && flock 8 && for steps in lab-deep-join lab-deep-closed; do for viewport in 1920x1080 390x844; do pnpm --dir apps/game playtest --port 4191 --steps "$steps" --iterations 1 --renderer-modes webgpu-force-webgl --viewport "$viewport" --out "$FLOW_TMP/playtest/$steps/$viewport" || exit $?; done; done'
 
 [kind.test-deep-stamina]
 cmd = "pnpm run build:packages && pnpm --dir apps/game test src/ui/features/frontier/deep/deep-site-card.test.tsx && pnpm --dir apps/game verify:assets scripts/client-playtest/steps.test.mjs"
@@ -152,38 +131,17 @@ cmd = "bash contracts/l3/test-native.sh --package world_tests_lifecycle* ::tests
 [kind.test-deep-alerts]
 cmd = "pnpm run build:packages && pnpm --dir apps/realms typecheck && pnpm --dir packages/notifications test && pnpm --dir packages/core test src/sync/subscription-scope.test.ts && (cd apps/herald && pnpm exec vitest run src/game-subscription.test.ts src/deep-site-watch.test.ts) && pnpm --dir apps/game test src/ui/features/frontier/deep/deep-site-alert.test.ts src/ui/features/frontier/deep/deep-site-card.test.tsx src/shell/profile/notifications.test.tsx src/pwa && pnpm --dir apps/realms test server/shard-notifier.test.ts server/deep-site-watch.test.ts -t 'Deep site opportunity'"
 
-[kind.playtest-banes]
-cmd = 'cp /home/djizus/projects/eternum-lanes/showcase/apps/game/.env.local apps/game/.env.local && pnpm run build:packages && exec 8>"${FLOW_JOB%/running/*}/playtest-port-4188.lock" && flock 8 && for scenario in world again late team; do for viewport in 1920x1080 390x844; do pnpm --dir apps/game playtest --port 4188 --steps "lab-bane-$scenario" --iterations 1 --renderer-modes webgpu-force-webgl --viewport "$viewport" --out "$FLOW_TMP/playtest/$scenario/$viewport" || exit $?; done; done'
-
 [kind.test-banes]
 cmd = "bash contracts/l3/test-native.sh --package world_tests_lifecycle* ::tests::banes::"
 
 [kind.test-calendar-consumers]
 cmd = "pnpm run build:packages && pnpm --dir apps/realms test server/day-open.test.ts server/shard-notifier.test.ts && pnpm --dir apps/value-relay typecheck"
 
-[kind.playtest-race]
-cmd = 'cp /home/djizus/projects/eternum-lanes/showcase/apps/game/.env.local apps/game/.env.local && pnpm run build:packages && exec 8>"${FLOW_JOB%/running/*}/playtest-port-4188.lock" && flock 8 && for scenario in race race-finished race-expired; do for viewport in 1920x1080 390x844; do pnpm --dir apps/game playtest --port 4188 --steps "lab-$scenario" --iterations 1 --renderer-modes webgpu-force-webgl --viewport "$viewport" --out "$FLOW_TMP/playtest/$scenario/$viewport" || exit $?; done; done'
-
-[kind.playtest-s1-client]
-cmd = 'cp /home/djizus/projects/eternum-lanes/showcase/apps/game/.env.local apps/game/.env.local && pnpm run build:packages && exec 8>"${FLOW_JOB%/running/*}/playtest-port-4191.lock" && flock 8 && keep=/home/djizus/.local/state/flow/eternum/scratch/s1-client-proofs && trap "rm -rf $keep/last; mkdir -p $keep; cp -r $FLOW_TMP/playtest $keep/last" EXIT && for scenario in deep-join race aspect-settle-invited; do for viewport in 1920x1080 390x844; do pnpm --dir apps/game playtest --port 4191 --steps "lab-$scenario" --iterations 1 --renderer-modes webgpu-force-webgl --viewport "$viewport" --out "$FLOW_TMP/playtest/$scenario/$viewport" || exit $?; done; done'
-
 [kind.test-race-consumers]
 cmd = "pnpm run build:packages && pnpm --dir apps/game test src/shell/season-tab/season-over.test.tsx src/ui/features/frontier/aspect src/ui/features/frontier/hud/menu-page.test.tsx src/ui/features/frontier/frontier-selection-sheet.test.tsx && pnpm --dir apps/game verify:assets scripts/client-playtest/steps.test.mjs"
 
-[kind.playtest-spire-discovery]
-cmd = 'cp /home/djizus/projects/eternum-lanes/showcase/apps/game/.env.local apps/game/.env.local && pnpm run build:packages && exec 8>"${FLOW_JOB%/running/*}/playtest-port-4192.lock" && flock 8 && for viewport in 1920x1080 390x844; do pnpm --dir apps/game playtest --port 4192 --steps lab-discovered-spire --iterations 1 --renderer-modes webgpu-force-webgl --viewport "$viewport" --out "$FLOW_TMP/playtest/$viewport" || exit $?; done'
-
 [kind.test-spire-consumers]
 cmd = "pnpm run build:packages && pnpm --dir apps/game test src/ui/features/frontier/spire-card.test.tsx src/ui/features/frontier/army/frontier-army.test.tsx src/three/scenes/worldmap-spire-dive.test.ts && pnpm --dir apps/game verify:assets scripts/client-playtest"
-
-[kind.playtest-clear-mist]
-cmd = 'cp /home/djizus/projects/eternum-lanes/showcase/apps/game/.env.local apps/game/.env.local && pnpm run build:packages && exec 8>"${FLOW_JOB%/running/*}/playtest-port-4192.lock" && flock 8 && for viewport in 1920x1080 390x844; do pnpm --dir apps/game playtest --port 4192 --steps lab-clear-mist --iterations 1 --renderer-modes webgpu-force-webgl --viewport "$viewport" --out "$FLOW_TMP/playtest/$viewport" || exit $?; done'
-
-[kind.playtest-site-effects]
-cmd = 'cp /home/djizus/projects/eternum-lanes/showcase/apps/game/.env.local apps/game/.env.local && pnpm run build:packages && exec 8>"${FLOW_JOB%/running/*}/playtest-port-4192.lock" && flock 8 && for viewport in 1920x1080 390x844; do pnpm --dir apps/game playtest --port 4192 --steps lab-site-effects --iterations 1 --renderer-modes webgpu-force-webgl --viewport "$viewport" --out "$FLOW_TMP/playtest/$viewport" || exit $?; done'
-
-[kind.playtest-stamina-effects]
-cmd = 'cp /home/djizus/projects/eternum-lanes/showcase/apps/game/.env.local apps/game/.env.local && pnpm run build:packages && exec 8>"${FLOW_JOB%/running/*}/playtest-port-4192.lock" && flock 8 && for effect in mist wind; do for viewport in 1920x1080 390x844; do pnpm --dir apps/game playtest --port 4192 --steps "lab-stamina-$effect" --iterations 1 --renderer-modes webgpu-force-webgl --viewport "$viewport" --out "$FLOW_TMP/playtest/$effect/$viewport" || exit $?; done; done'
 
 [kind.test-rpc-integration]
 cmd = "pnpm run build:packages && pnpm --dir packages/chain test && pnpm --dir packages/value-ledger typecheck && pnpm --dir packages/value-ledger test && pnpm --dir apps/value-relay typecheck && pnpm --dir apps/value-relay test && pnpm --dir apps/status-monitor typecheck && pnpm --dir apps/status-monitor test && pnpm --dir apps/realms typecheck && pnpm --dir apps/realms test server/rating-reader.test.ts server/rating-top.test.ts server/ratings-worker.test.ts && pnpm --dir apps/herald exec vitest run src/value-readers.test.ts && pnpm --dir apps/game test build/env-boundary.test.ts env.test.ts"
@@ -197,30 +155,14 @@ cmd = "bash contracts/l3/test-native.sh --package world_tests_lifecycle* ::tests
 [kind.test-ruin-effects]
 cmd = "bash contracts/l3/test-native.sh --package world_tests_resources* fixture_grants_preserve_the_existing_production_clock && bash contracts/l3/test-native.sh --package world_tests_lifecycle* spoils_"
 
-[kind.playtest-supply-post]
-paths = "apps/game/src/ui/features/frontier/army/reinforce apps/game/src/ui/features/frontier/sites/site-receipt apps/game/src/ui/features/frontier/sites/supply-post apps/game/src/lab/game/supply-post apps/game/src/lab/game/reinforce apps/game/scripts/client-playtest/steps.mjs packages/core/src/utils/expeditions.ts packages/provider/src/index.ts contracts/l3/world-native/src/troop_management.cairo"
-cmd = 'cp /home/djizus/projects/eternum-lanes/showcase/apps/game/.env.local apps/game/.env.local && pnpm run build:packages && exec 8>"${FLOW_JOB%/running/*}/playtest-port-4192.lock" && flock 8 && for viewport in 1920x1080 390x844; do pnpm --dir apps/game playtest --port 4192 --steps lab-supply-post --iterations 1 --renderer-modes webgpu-force-webgl --viewport "$viewport" --out "$FLOW_TMP/playtest/$viewport" || exit $?; done'
-
 [kind.test-surface-sites]
 cmd = "bash contracts/l3/test-native.sh --package world_tests_lifecycle* ::tests::supply_posts:: && bash contracts/l3/test-native.sh --package world_tests_capture* clear_pays && bash contracts/l3/test-native.sh --package world_tests_capture* clips_wheat"
-
-[kind.playtest-scouts]
-cmd = 'cp /home/djizus/projects/eternum-lanes/showcase/apps/game/.env.local apps/game/.env.local && pnpm run build:packages && for view in 1920x1080 390x844; do pnpm --dir apps/game playtest --port 4193 --steps lab-scouts --iterations 1 --renderer-modes webgpu-force-webgl --viewport "$view" --out "$FLOW_TMP/playtest/$view" || exit; done'
-paths = "apps/game/src/lab/game/scouts-scenario apps/game/src/lab/game/actions-scenario apps/game/src/ui/features/frontier/deploy packages/core/src/utils/explore-stamina.ts"
-
-[kind.playtest-battle-target]
-cmd = 'cp /home/djizus/projects/eternum-lanes/showcase/apps/game/.env.local apps/game/.env.local && pnpm run build:packages && for view in 1920x1080 390x844; do pnpm --dir apps/game playtest --port 4194 --steps lab-battle-target --iterations 1 --renderer-modes webgpu-force-webgl --viewport "$view" --out "$FLOW_TMP/playtest/$view" || exit; done'
-paths = "apps/game/src/lab/game/battle-target-scenario apps/game/src/ui/features/frontier/sites/site-card-plan.ts packages/core/src/utils/combat-exchange.ts"
 
 [kind.test-battle-target]
 cmd = "bash contracts/l3/test-native.sh --package world_tests_lifecycle* last_target"
 
 [kind.test-army-callers]
 cmd = "pnpm run build:packages && pnpm --dir apps/game test src/ui/features/frontier/army/army-opens.test.tsx src/ui/features/frontier/army/army-panel.test.tsx src/ui/features/frontier/army/frontier-army.test.tsx src/ui/features/frontier/building/building-card.test.tsx src/ui/features/frontier/hud/realm-panel.test.tsx src/ui/features/frontier/production/frontier-store-card.test.tsx src/ui/features/frontier/production/store-makers.test.ts src/ui/features/frontier/research/research-panel.test.tsx src/ui/features/frontier/research/research-tree.test.ts src/ui/features/military/components/army-deployment-picker.test.tsx && pnpm --dir packages/types exec vitest run && pnpm --dir packages/chain test && pnpm --dir packages/ammv2-sdk test"
-
-[kind.playtest-deep-battle-target]
-cmd = 'cp /home/djizus/projects/eternum-lanes/showcase/apps/game/.env.local apps/game/.env.local && pnpm run build:packages && for view in 1920x1080 390x844; do pnpm --dir apps/game playtest --port 4195 --steps lab-deep-battle-target --iterations 1 --renderer-modes webgpu-force-webgl --viewport "$view" --out "$FLOW_TMP/playtest/$view" || exit; done'
-paths = "apps/game/src/lab/game/battle-target-scenario apps/game/src/ui/features/frontier/deep/deep-site-card apps/game/src/ui/features/frontier/deep/deep-site-view apps/game/src/ui/features/frontier/sites/site-card-plan.ts packages/core/src/utils/combat-exchange.ts"
 
 [kind.render-model-master]
 cmd = '''cp /home/djizus/projects/eternum-lanes/showcase/apps/game/.env.local apps/game/.env.local && pnpm run build:packages && exec 8>"${FLOW_JOB%/running/*}/playtest-port-4193.lock" && flock 8 && keep=/home/djizus/.local/state/flow/eternum/scratch/model-masters && rm -rf "$keep" && mkdir -p "$keep" && vite=node_modules/vite/bin/vite.js && { (cd apps/game && exec node $vite --host 127.0.0.1 --port 4193 --strictPort) > "$FLOW_TMP/preview.log" 2>&1 & echo $! > "$FLOW_TMP/preview.pid"; } && trap 'kill $(cat "$FLOW_TMP/preview.pid")' EXIT && until curl -ksf https://127.0.0.1:4193/ > /dev/null; do sleep 1; done && node scripts/icons/render-models.mjs https://127.0.0.1:4193 "$FLOW_TMP/evidence" hyperstructure && pnpm icons:build hyperstructure && cp -r --parents apps/game/asset-sources/facets/masters/hyperstructure.png apps/game/asset-sources/facets/catalog.json apps/game/public/icons/facets/64/hyperstructure.webp apps/game/public/icons/facets/128/hyperstructure.webp apps/game/public/icons/facets/256/hyperstructure.webp "$keep" && cp -r "$FLOW_TMP/evidence" "$keep"'''
@@ -239,30 +181,6 @@ cmd = 'pnpm run knip'
 
 [kind.test-army-updates]
 cmd = "pnpm run build:packages && pnpm --dir packages/core test && pnpm --dir apps/game test src/lab/data/research-balance/research-balance-lab.test.tsx src/lab/game/relics-scenario.test.ts src/lab/game/research-scenario.test.ts src/lab/game/stamina-scenario.test.ts src/lab/game/upkeep-scenario.test.ts src/three/managers/map-site-manager.test.ts src/ui/features/event-feed/feed-line.test.tsx src/ui/features/frontier/army/army-delete.test.tsx src/ui/features/frontier/army/army-opens.test.tsx src/ui/features/frontier/army/transfer-troops.test.tsx src/ui/features/frontier/build/build-options.test.ts src/ui/features/frontier/build/build-sheet.test.tsx src/ui/features/frontier/building/building-card.test.tsx src/ui/features/frontier/deep/deep-site-alert.test.ts src/ui/features/frontier/deep/deep-site-card.test.tsx src/ui/features/frontier/deploy/deploy-plan.test.ts src/ui/features/frontier/deploy/deploy-sheet.test.tsx src/ui/features/frontier/frontier-selection-sheet.test.tsx src/ui/features/frontier/hud/army-dock.test.tsx src/ui/features/frontier/hud/hud.test.tsx src/ui/features/frontier/log/day-line.test.ts src/ui/features/frontier/relics/army-relic-slots.test.tsx src/ui/features/frontier/research/research-panel.test.tsx src/ui/features/frontier/rollover/rollover.test.tsx src/ui/features/frontier/sites/site-card-plan.test.ts src/ui/features/frontier/sites/site-card-view.test.tsx src/ui/features/frontier/sites/site-clear.test.ts src/ui/features/frontier/sites/site-receipt.test.tsx src/ui/features/frontier/sites/tile-card.test.tsx src/ui/features/military/battle/battle-lab/battle-share-names.test.tsx"
-
-[kind.playtest-oath-slots]
-cmd = 'cp /home/djizus/projects/eternum-lanes/showcase/apps/game/.env.local apps/game/.env.local && pnpm run build:packages && for view in 1920x1080 390x844; do pnpm --dir apps/game playtest --port 4197 --steps lab-oath-slots --iterations 1 --renderer-modes webgpu-force-webgl --viewport "$view" --out "$FLOW_TMP/playtest/$view" || exit; done'
-paths = "apps/game/src/lab/game/oath-slots-scenario.ts apps/game/src/ui/features/frontier/research/ apps/game/src/ui/features/frontier/army/oath-slots.tsx apps/game/src/ui/features/frontier/deploy/ packages/core/src/utils/realm-research.ts"
-
-[kind.playtest-town]
-cmd = 'cp /home/djizus/projects/eternum-lanes/showcase/apps/game/.env.local apps/game/.env.local && pnpm run build:packages && for view in 1920x1080 390x844; do pnpm --dir apps/game playtest --port 4196 --steps lab-town --iterations 1 --renderer-modes webgpu-force-webgl --viewport "$view" --out "$FLOW_TMP/playtest/$view" || exit; done'
-paths = "apps/game/src/lab/game/town-scenario.ts apps/game/src/ui/features/frontier/build/ apps/game/src/ui/features/frontier/research/ apps/game/src/ui/features/frontier/deploy/ packages/core/src/utils/troop-raise-cost.ts"
-
-[kind.playtest-shop]
-cmd = 'cp /home/djizus/projects/eternum-lanes/showcase/apps/game/.env.local apps/game/.env.local && pnpm run build:packages && exec 8>"${FLOW_JOB%/running/*}/playtest-port-4201.lock" && flock 8 && for view in 1920x1080 390x844; do pnpm --dir apps/game playtest --port 4201 --steps lab-actions-shop --iterations 3 --renderer-modes webgpu-force-webgl --viewport "$view" --out "$FLOW_TMP/playtest/$view/lab-actions-shop" || exit $?; done'
-paths = "apps/game/src/ui/features/frontier/shop/ apps/game/src/ui/features/frontier/army/army-refill.tsx apps/game/src/ui/features/frontier/army/refill.tsx apps/game/src/ui/features/frontier/value/fragments.ts apps/game/src/lab/game/shop-scenario.ts"
-
-[kind.playtest-oath-pick]
-cmd = 'cp /home/djizus/projects/eternum-lanes/showcase/apps/game/.env.local apps/game/.env.local && pnpm run build:packages && exec 8>"${FLOW_JOB%/running/*}/playtest-port-4198.lock" && flock 8 && proof_failed=0 && for view in 1920x1080 390x844; do for scenario in lab-actions-oath-pick lab-actions-oath-replace; do pnpm --dir apps/game playtest --port 4198 --steps "$scenario" --iterations 3 --renderer-modes webgpu-force-webgl --viewport "$view" --out "$FLOW_TMP/playtest/$view/$scenario" || proof_failed=$(($? == 128 && proof_failed != 1 ? 128 : 1)); done; done && exit "$proof_failed"'
-paths = "apps/game/src/ui/features/frontier/army/ apps/game/src/lab/game/oath-pick-scenario.ts packages/core/src/utils/oaths.ts"
-
-[kind.playtest-oath-vitriol]
-cmd = 'cp /home/djizus/projects/eternum-lanes/showcase/apps/game/.env.local apps/game/.env.local && pnpm run build:packages && exec 8>"${FLOW_JOB%/running/*}/playtest-port-4199.lock" && flock 8 && proof_failed=0 && for view in 1920x1080 390x844; do for scenario in lab-oath-vitriol lab-oath-decline lab-oath-pass-capped; do pnpm --dir apps/game playtest --port 4199 --steps "$scenario" --iterations 1 --renderer-modes webgpu-force-webgl --viewport "$view" --out "$FLOW_TMP/playtest/$view/$scenario" || proof_failed=$(($? == 128 && proof_failed != 1 ? 128 : 1)); done; done && exit "$proof_failed"'
-paths = "apps/game/src/ui/features/frontier/army/ apps/game/src/ui/features/frontier/deep/ apps/game/src/lab/game/oath-pick-scenario.ts packages/core/src/utils/deep.ts packages/core/src/utils/deep-army-life.ts packages/core/src/utils/oaths.ts"
-
-[kind.playtest-oath-damage]
-cmd = 'cp /home/djizus/projects/eternum-lanes/showcase/apps/game/.env.local apps/game/.env.local && pnpm run build:packages && exec 8>"${FLOW_JOB%/running/*}/playtest-port-4200.lock" && flock 8 && proof_failed=0 && for view in 1920x1080 390x844; do for scenario in lab-oath-battle-target lab-oath-deep-battle-target; do pnpm --dir apps/game playtest --port 4200 --steps "$scenario" --iterations 1 --renderer-modes webgpu-force-webgl --viewport "$view" --out "$FLOW_TMP/playtest/$view/$scenario" || proof_failed=$(($? == 128 && proof_failed != 1 ? 128 : 1)); done; done && exit "$proof_failed"'
-paths = "contracts/l3/world-native/src/oaths.cairo contracts/l3/world-native/src/combat.cairo contracts/l3/world-native/tests/fixtures/oath-damage.txt packages/core/src/utils/oaths.ts packages/core/src/utils/combat-exchange.ts packages/core/src/client/views/deep-sites.ts apps/game/src/ui/features/frontier/deep/ apps/game/src/ui/features/frontier/sites/ apps/game/src/ui/features/military/battle/ apps/game/src/lab/game/battle-target-scenario.ts apps/game/src/lab/game/lab-games.ts apps/game/scripts/client-playtest/steps.mjs"
 
 [kind.test-p3-deployer]
 cmd = 'pnpm run build:packages && s=0 && { pnpm exec tsc -p deploy/athanor/tsconfig.json || s=1; } && { pnpm exec tsc -p config/tsconfig.json --noEmit || s=1; } && { bun test deploy/first/*.test.ts deploy/athanor/cosigner/*.test.ts || s=1; } && { bun test ./deploy/release || s=1; } && { bun test ./config || s=1; } && { python3 -m unittest discover -s deploy/athanor/scripts -p "test_*.py" || s=1; } && { pnpm --dir apps/launch-service test || s=1; } && { pnpm --dir apps/launch-service typecheck || s=1; } && exit $s'

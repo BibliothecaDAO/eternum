@@ -373,7 +373,7 @@ each closed by its cross, a tap outside, a swipe down or `Escape`. A right-click
   a rival site on the map when the player's largest army outside the Deep can clear its remaining guards, at most once
   per site per game day. A foreground device stays quiet. `build.sh test-deep-alerts` exercises the confirmed watcher,
   timed wake, retry cancellation and restart through the real notifier. The site card's payment and join path are at
-  `/lab/game?scenario=deep`; `build.sh playtest-deep` drives desktop and phone views.
+  `/lab/game?scenario=deep`; `pnpm --dir apps/game playtest:landing lab-deep-join` drives desktop and phone views.
 
 ### Play
 
@@ -1081,8 +1081,8 @@ labor bonus. Published presets keep quests disabled until their action producers
 
 `/lab/game?scenario=quest` opens a completed quest on the real HUD. The canonical
 `pnpm playtest --steps lab-daily-quest` run presses Collect, checks the provider's home/day payload, the receipt and
-both resource balances, then captures the collected state. Run the flow kind `playtest-daily-quest` for desktop and
-phone evidence.
+both resource balances, then captures the collected state. Run `pnpm --dir apps/game playtest:landing lab-daily-quest`
+for desktop and phone evidence.
 
 Bane quest collection uses the existing day banner. The confirmed day, Aspect completion count and exact reward receipts
 come from the native fact store.
@@ -1133,15 +1133,17 @@ around the centre, each ring one Hyperstructure archive, one Essence core, one E
 more kinds drawn each day. Ring 1 opens with the day, each later ring when the Realms entered today reach its count; a
 closed site's card says so and refuses Attack and Join; on the map it stands dormant, its building and no beast, pinned
 with a lock in place of its kind, its plate reading "Opens at N Realms today" (`/lab/game?scenario=deep-closed`, checked
-by `build.sh playtest-deep`). The map draws the archive as a hyperstructure's bare foundation, the core as a rift, the
-mine as a fragment mine and the altar as a Shrine (`DEEP_SITE_LOOKS`, `src/three/managers/map-site-manager.ts`). While
-an open site's beast guards it, that beast stands alone on the tile at its row's size and idle, the building hidden as a
-camp's is (`DEEP_BEASTS`: the archive's Colossus, the core's Warlock, the mine's Balrog, the altar's Basilisk on its own
-model); the building returns once armies hold the site. Each site's plate stays over its model.
+by `pnpm --dir apps/game playtest:landing lab-deep-closed`). The map draws the archive as a hyperstructure's bare
+foundation, the core as a rift, the mine as a fragment mine and the altar as a Shrine (`DEEP_SITE_LOOKS`,
+`src/three/managers/map-site-manager.ts`). While an open site's beast guards it, that beast stands alone on the tile at
+its row's size and idle, the building hidden as a camp's is (`DEEP_BEASTS`: the archive's Colossus, the core's Warlock,
+the mine's Balrog, the altar's Basilisk on its own model); the building returns once armies hold the site. Each site's
+plate stays over its model.
 
 Each Aspect’s tower height appears on **Season, Aspects**. The towers have no map entities.
 
 - Exact combat preview: select Knights, then a guarded site or rival Deep site. Both fight panels show survivors for the
-  next attack. Run `build.sh playtest-battle-target` and `build.sh playtest-deep-battle-target` for desktop and phone
-  evidence of two attacks: 1,000 troops become 563, then 287, on each side. The lab records commands, resulting troops
-  and the attacker’s last target. These are lab proofs; the real-chain rehearsal follows the completed slices.
+  next attack. Every landing's `build.sh playtest-landing` plays `lab-battle-target` and `lab-deep-battle-target` for
+  desktop and phone evidence of two attacks: 1,000 troops become 563, then 287, on each side. The lab records commands,
+  resulting troops and the attacker’s last target. These are lab proofs; the real-chain rehearsal follows the completed
+  slices.

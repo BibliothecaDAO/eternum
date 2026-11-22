@@ -275,7 +275,7 @@ export function finish({ options, output, owner, results, runDir }) {
       : 1;
 }
 
-const LOAD_REFUSED_STATUS = 128;
+export const LOAD_REFUSED_STATUS = 128;
 
 const isRefusedOnlyForLoad = ({ options, output, owner, gateFailures }) =>
   !options?.comparePath &&
