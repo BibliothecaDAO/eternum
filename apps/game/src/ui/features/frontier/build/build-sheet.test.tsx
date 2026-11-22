@@ -12,7 +12,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { toast } from "@/ui/features/event-feed/notify";
 import { disposeGameSyncSession, installActiveGameClient } from "@/sync/active-game-client";
 import { configManager, type GameClient, setBlockTimestampSource } from "@bibliothecadao/eternum";
-import { type GameClientSetup } from "@bibliothecadao/eternum/game-client";
+import { type GameClientSetup, nativeResearchConstants } from "@bibliothecadao/eternum/game-client";
 import { buildingName, BuildingType, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import release from "../../../../../../../contracts/l3/world-native/schema/release-definition.json";
 import { buildingCounts, realmBoard } from "./build-fixture";
