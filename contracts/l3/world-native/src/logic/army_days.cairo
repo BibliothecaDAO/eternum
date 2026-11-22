@@ -1,8 +1,25 @@
 use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
 use crate::troops::ExplorerKey;
 
+#[cfg(not(feature: "blitz"))]
+#[inline(always)]
+pub fn today(game: crate::game::GameRegistry, timestamp: u64) -> u64 {
+    crate::days::day_of(game, crate::balance::rules::SWITCHES.day_unit_seconds, timestamp).index
+}
+
+#[cfg(feature: "blitz")]
+pub fn today(_game: crate::game::GameRegistry, _timestamp: u64) -> u64 {
+    0
+}
+
+#[cfg(not(feature: "blitz"))]
 pub fn require(key: ExplorerKey) -> u64 {
     crate::state::read().troops.army_days.read((key.game_id, key.explorer_id)).expect('missing army day')
+}
+
+#[cfg(feature: "blitz")]
+pub fn require(_key: ExplorerKey) -> u64 {
+    0
 }
 
 pub fn create(key: ExplorerKey, day: u64) {

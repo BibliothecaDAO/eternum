@@ -33,6 +33,18 @@ pub fn write(key: ResourceKey, value: RealmKnowledge) {
 }
 
 #[cfg(feature: "blitz")]
+pub fn ration_discount(_key: ResourceKey, _per_troops: u128) -> u128 {
+    0
+}
+
+#[cfg(not(feature: "blitz"))]
+#[inline(always)]
+pub fn ration_discount(key: ResourceKey, per_troops: u128) -> u128 {
+    let rations: u128 = crate::research::tier(learned(key), crate::research::ROW_RATIONS).into();
+    crate::logic::buildings::board().ration_step * rations * per_troops
+}
+
+#[cfg(feature: "blitz")]
 pub fn price(row: u8, tier: u8) -> ResearchPrice {
     panic!("Blitz has no research")
 }

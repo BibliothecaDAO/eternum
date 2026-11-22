@@ -321,15 +321,11 @@ pub mod ResourcesLogic {
             let per_troops: u128 = recipe.simple_output.into();
             let denominator = per_troops * crate::rules::RESOURCE_PRECISION;
             let now: u32 = timestamp.try_into().unwrap();
-            let board = crate::logic::buildings::board();
-            let rations: u128 = crate::research::tier(
-                crate::logic::research::learned(key), crate::research::ROW_RATIONS,
-            )
-                .into();
+            let rations = crate::logic::research::ration_discount(key, per_troops);
             for input in recipe.simple_inputs {
                 let unit_weight = crate::logic::resources::rule(*input.resource_type).unit_weight;
                 let discount = if *input.resource_type == crate::resources::WHEAT {
-                    board.ration_step * rations * per_troops
+                    rations
                 } else {
                     0
                 };
