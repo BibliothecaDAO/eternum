@@ -1,10 +1,11 @@
 import {
   buildingCostRise,
+  buildingOpensAtLevel,
   isOathResearch,
+  isOnePerRealm,
   getBuildingCosts,
   getBuildingQuantity,
   realmLearned,
-  researchRowCategory,
   researchRowOf,
   researchTier,
   ResourceManager,
@@ -15,21 +16,13 @@ import {
   type NativeFactStore,
   type NativeRows,
 } from "@bibliothecadao/eternum/game-client";
-import { BuildingType, getProducedResource, ResourcesIds } from "@bibliothecadao/types";
+import { BuildingType, FRONTIER_BUILDING_TYPES, getProducedResource, ResourcesIds } from "@bibliothecadao/types";
 
 import { RESEARCH_TREE } from "@/ui/design-system/kit/words";
 import { type BuildingOutput, buildingOutput } from "@/ui/shared/lib/building-output";
 
 import { madePicks } from "../production/store-makers";
 import { madeStoreOf, type MadeResource } from "../stores";
-
-/**
- * What Frontier's build sheet needs for one plot, read from facts with no UI of its own: each building the realm may
- * raise there, its type's tier, its price, what it gives (with its type's tiers, as the contract's board_output and
- * hut_bonus apply them), its population cost and the realm's wheat an hour after it stands. Unknown while the realm's
- * research is.
- */
-const FRONTIER_BUILDINGS = [...(Object.values(researchRowCategory) as BuildingType[]), BuildingType.Storehouse];
 
 /** Each training building and the attribute it trains every new army in. */
 const TRAINS: Partial<Record<BuildingType, "Logistics">> = {
@@ -75,7 +68,7 @@ export const readBuildOptions = (
   if (learned === undefined) return undefined;
   const wheat = new ResourceManager(store, safeInteger(realm.entity_id)).wheatPerHour(tick);
   const options: BuildOption[] = [];
-  for (const category of FRONTIER_BUILDINGS) {
+  for (const category of FRONTIER_BUILDING_TYPES) {
     const cost = getBuildingCosts(safeInteger(realm.entity_id), store, category, useSimpleCost);
     if (cost === undefined) return undefined;
     const rule = store.require("BuildingRule", { game_id: realm.game_id, category });
@@ -104,27 +97,12 @@ export const readBuildOptions = (
 const isTraining = (category: BuildingType) =>
   Boolean(TRAINS[category]) || category === BuildingType.ConscriptionCamp || category === BuildingType.RationsDepot;
 
-const isOnePerRealm = (category: BuildingType) => isTraining(category) || category === BuildingType.Storehouse;
-
 const buildingStanding = (
   store: NativeFactStore,
   realm: NativeRows["Structure"],
   category: BuildingType,
 ): BuildOption["standing"] => {
-  const minimum =
-    category === BuildingType.ScoutsLodge
-      ? nativeResearchConstants.SCOUTS_LODGE_LEVEL
-      : category === BuildingType.ResourceCrossbowmanT1
-        ? nativeResearchConstants.RANGE_LEVEL
-        : category === BuildingType.ConscriptionCamp
-          ? nativeResearchConstants.CONSCRIPTION_CAMP_LEVEL
-          : category === BuildingType.RationsDepot
-            ? nativeResearchConstants.RATIONS_DEPOT_LEVEL
-            : category === BuildingType.Storehouse
-              ? nativeResearchConstants.STOREROOM_LEVEL
-              : category === BuildingType.SupplyYard
-                ? nativeResearchConstants.SUPPLY_YARD_LEVEL
-                : 0;
+  const minimum = buildingOpensAtLevel(category);
   if (realm.base.level < minimum) return { level: minimum };
   if (!isOnePerRealm(category)) return "open";
   if (getBuildingQuantity(safeInteger(realm.entity_id), category, store) > 0) return "built";

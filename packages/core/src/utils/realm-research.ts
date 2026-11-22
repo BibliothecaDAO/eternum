@@ -72,6 +72,20 @@ export const researchRowCategory: Readonly<Partial<Record<number, number>>> = {
   [research.ROW_CROSSBOW_OATHS]: research.RANGE,
 };
 
+export function buildingOpensAtLevel(category: number): number {
+  const name = Object.entries(research).find(([key, value]) => value === category && `${key}_LEVEL` in research)?.[0];
+  return name === undefined ? 0 : research[`${name}_LEVEL` as keyof typeof research];
+}
+
+const ONE_PER_REALM = new Set<number>([
+  research.SUPPLY_YARD,
+  research.CONSCRIPTION_CAMP,
+  research.RATIONS_DEPOT,
+  research.STOREROOM,
+]);
+
+export const isOnePerRealm = (category: number): boolean => ONE_PER_REALM.has(category);
+
 /** The building model's tier: unresearched 0 and Common I share the first of five models. */
 export function buildingTypeTier(
   store: Pick<NativeFactStore, "get">,

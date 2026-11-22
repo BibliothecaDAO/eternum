@@ -11,7 +11,7 @@ import {
   nativeRuleConstants as rule,
 } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import { logisticsStamina } from "../../../../packages/core/src/utils/attribute-tiers";
-import { LAYER_NAMES, beastOf, rankName, TIER_WORDS, resourceName } from "@bibliothecadao/types";
+import { LAYER_NAMES, beastOf, buildingName, rankName, TIER_WORDS, resourceName } from "@bibliothecadao/types";
 import { ETERNUM_CONFIG } from "./config";
 import { playableDepths } from "./playable-depths.mjs";
 import { CONTRACT } from "./contract-constants";
@@ -130,24 +130,29 @@ export const FRONTIER = {
       count: range(...previewRuinGuardBounds(depth + place + 1, depth)),
     })),
   ),
-  buildings: [
-    ["Farm", research.FARM, "Wheat"],
-    ["Barracks", research.BARRACKS, "Troops"],
-    ["Workshop", research.WORKSHOP, "Labor"],
-    ["Workers' hut", research.HUT, "Population"],
-    ["Supply yard", research.SUPPLY_YARD, "Logistics training"],
-    ["Scouts' lodge", research.SCOUTS_LODGE, "Scouts"],
-    ["Storeroom", research.STOREROOM, "Wheat and labor storage"],
-  ].map(([name, id, makes]) => ({
-    name: name as string,
-    makes: makes as string,
-    price: priceOf(config.buildings.simpleBuildingCost[id as number]),
-    // A hut takes no population: a page says so in words rather than as a zero.
-    population:
-      config.buildings.buildingPopulation[id as number] === 0
-        ? "None"
-        : n(config.buildings.buildingPopulation[id as number]),
+  buildings: (
+    [
+      [research.FARM, "Wheat"],
+      [research.BARRACKS, "Troops"],
+      [research.WORKSHOP, "Labor"],
+      [research.HUT, "Population"],
+      [research.SUPPLY_YARD, "Logistics training"],
+      [research.SCOUTS_LODGE, "Scouts"],
+      [research.STOREROOM, "Wheat and labor storage"],
+    ] as const
+  ).map(([id, makes]) => ({
+    name: buildingName(id, true),
+    makes,
+    price: priceOf(config.buildings.simpleBuildingCost[id]),
+    population: config.buildings.buildingPopulation[id] === 0 ? "None" : n(config.buildings.buildingPopulation[id]),
   })),
+  names: {
+    farm: buildingName(research.FARM, true),
+    workshop: buildingName(research.WORKSHOP, true),
+    hut: buildingName(research.HUT, true),
+    supplyYard: buildingName(research.SUPPLY_YARD, true),
+    storeroom: buildingName(research.STOREROOM, true),
+  },
   storeroom: {
     opens: rankName(research.STOREROOM_LEVEL),
     storageStep: pct(frontierPreset.board.storageStepBps),

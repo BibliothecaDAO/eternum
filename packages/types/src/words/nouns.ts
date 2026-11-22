@@ -122,28 +122,30 @@ export const structurePlural = (type: StructureType, mineKind?: number): string 
 };
 
 /** The buildings Frontier raises, by Frontier's names: its barracks trains knights, its hut houses workers. */
-const FRONTIER_BUILDINGS: Partial<Record<BuildingType, string>> = {
-  [BuildingType.ResourceWheat]: "Farm",
-  [BuildingType.ResourceLabor]: "Workshop",
-  [BuildingType.ResourceKnightT1]: "Barracks",
-  [BuildingType.WorkersHut]: "Hut",
-  [BuildingType.RationsDepot]: BuildingTypeToString[BuildingType.RationsDepot],
-  [BuildingType.ResourceCrossbowmanT1]: "Range",
-  [BuildingType.SupplyYard]: "Supply yard",
-  [BuildingType.ScoutsLodge]: "Scouts' lodge",
-  [BuildingType.Storehouse]: "Storeroom",
-  [BuildingType.ConscriptionCamp]: BuildingTypeToString[BuildingType.ConscriptionCamp],
-};
+const FRONTIER_BUILDINGS = new Map<BuildingType, string>([
+  [BuildingType.ResourceWheat, "Farm"],
+  [BuildingType.ResourceLabor, "Workshop"],
+  [BuildingType.WorkersHut, "Hut"],
+  [BuildingType.ConscriptionCamp, BuildingTypeToString[BuildingType.ConscriptionCamp]],
+  [BuildingType.RationsDepot, BuildingTypeToString[BuildingType.RationsDepot]],
+  [BuildingType.SupplyYard, "Supply yard"],
+  [BuildingType.ResourceKnightT1, "Barracks"],
+  [BuildingType.ScoutsLodge, "Scouts' lodge"],
+  [BuildingType.ResourceCrossbowmanT1, "Range"],
+  [BuildingType.Storehouse, "Storeroom"],
+]);
+
+export const FRONTIER_BUILDING_TYPES: readonly BuildingType[] = [...FRONTIER_BUILDINGS.keys()];
 
 /** Whether Frontier raises this building. */
-export const isFrontierBuilding = (category: number): boolean => category in FRONTIER_BUILDINGS;
+export const isFrontierBuilding = (category: number): boolean => FRONTIER_BUILDINGS.has(category as BuildingType);
 
 /**
  * A building as its game's player reads it, the one name every list, panel and story uses: Frontier's own name where
  * Frontier raises it ("Barracks"), else the game's table ("Knight T1", "Farm"). Unknown is a dash.
  */
 export const buildingName = (category: BuildingType | number, frontier: boolean): string =>
-  (frontier ? FRONTIER_BUILDINGS[category as BuildingType] : undefined) ??
+  (frontier ? FRONTIER_BUILDINGS.get(category as BuildingType) : undefined) ??
   BuildingTypeToString[category as BuildingType] ??
   UNKNOWN;
 

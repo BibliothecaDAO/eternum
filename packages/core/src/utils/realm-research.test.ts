@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { BuildingType } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
 import { nativeResearchConstants as research } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import { buildingTypeTier, learnResearch, realmLearned, reachableDepth, researchTier } from "./realm-research";
@@ -70,4 +72,31 @@ it("keeps all troop slot ladders independent with two free slots and three purch
   for (const row of RESEARCH_ROWS.filter((row) => !Object.values(oathResearchRow).some((oath) => oath === row)))
     expect(researchTier(value, row)).toBe(0);
   expect(value).toBe((3n << 30n) + (3n << 32n) + (3n << 34n));
+});
+
+const researchSource = readFileSync(
+  new URL("../../../../contracts/l3/world-native/src/research.cairo", import.meta.url),
+  "utf8",
+);
+const cairoFunction = (name: string) => researchSource.match(new RegExp(`pub fn ${name}\\b[\\s\\S]*?\\n}`))![0];
+const categoriesNamed = (body: string) => [...body.matchAll(/category == ([A-Z_]+)/g)].map(([, name]) => name!);
+const buildingTypes = Object.values(BuildingType).filter((value): value is BuildingType => typeof value === "number");
+const constant = (name: string) => research[name as keyof typeof research];
+
+it("opens each building at the level research.cairo's opens_at_level gives it", () => {
+  const levels = new Map(
+    [...cairoFunction("opens_at_level").matchAll(/category == ([A-Z_]+) \{\s*([A-Z_]+)\s*\}/g)].map(
+      ([, category, level]) => [constant(category!), constant(level!)],
+    ),
+  );
+  expect(levels.size).toBeGreaterThan(0);
+  for (const category of buildingTypes) expect(buildingOpensAtLevel(category)).toBe(levels.get(category) ?? 0);
+});
+
+it("holds one per realm exactly the buildings research.cairo's one_per_realm does", () => {
+  const onePerRealm = new Set(
+    [...categoriesNamed(cairoFunction("is_training")), ...categoriesNamed(cairoFunction("one_per_realm"))].map(constant),
+  );
+  expect(onePerRealm.size).toBe(4);
+  for (const category of buildingTypes) expect(isOnePerRealm(category)).toBe(onePerRealm.has(category));
 });
