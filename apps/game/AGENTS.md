@@ -170,7 +170,8 @@ on SwiftShader), and releases everything it started. Run it from a stopped clien
   The host founds and copies their Aspect's invite link; the friend opens it, founds in that Aspect (its card tagged
   Invited only for an account made after its browser opened the link, recorded as `tagged`), reads it as their own and
   sends an army into the mist; the host builds a Barracks, sends an army into the mist, attacks a site beside one of its
-  armies (revealing up to six tiles to find one), enters the Deep through its Spire once the realm knows Spire lore,
+  armies (revealing up to six tiles to find one) and chooses the first card of an Oath pick the fight opens (one left
+  standing by an earlier run is answered first), enters the Deep through its Spire once the realm knows Spire lore,
   attacks an open site's beast and so holds it. The host then measures the Deep's catch-up: three Moves of a surface
   army, the cheaper of the last two being a play with nothing to settle (T0); the tick's pay read on the site's card and
   the Season board; four ticks passed on the slot's clock with no command; one more Move (T1), which settles them, since

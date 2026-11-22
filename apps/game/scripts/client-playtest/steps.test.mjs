@@ -1292,6 +1292,7 @@ describe("the Season 1 rehearsal", () => {
   it("plays the friend's founding and Deep turns in the second account's page and everything else in the host's", () => {
     expect(steps.map(({ name, as }) => (as ? `${as}:${name}` : name))).toEqual([
       "found-the-host-realm",
+      "answer-a-standing-oath",
       "host-on-map",
       "copy-the-invite-link",
       "ally:ally-founds-from-the-invite",

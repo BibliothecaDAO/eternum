@@ -5980,24 +5980,25 @@ function armyManagementSteps() {
   ];
 }
 
+const BARRACKS = "Barracks";
 const BUILD_BARRACKS_STEP = {
   name: "build-barracks",
   play: async ({ browser }) => {
-    const built = await buildOnAnOpenPlot({ browser }, "Barracks");
+    const built = await buildOnAnOpenPlot({ browser }, BARRACKS);
     if (!built.plot) return built;
     await readUntil(() => browser.read(SHEET_NAME) !== "Build", Boolean, ORDER_OUTCOME_WAIT_MS);
     browser.press("Escape");
     browser.tap(built.plot);
     const sheet = await readUntil(
       () => browser.read(SHEET_NAME),
-      (name) => name === "Barracks",
+      (name) => name === BARRACKS,
       SHEET_WAIT_MS,
     );
     return { ...built, sheet };
   },
   settleMs: 3_000,
   verify: ({ played }) =>
-    played.sheet === "Barracks" ? completed(played) : failed("Barracks did not appear on the chosen plot", played),
+    played.sheet === BARRACKS ? completed(played) : failed("Barracks did not appear on the chosen plot", played),
 };
 
 export const REHEARSAL_WORDS = {
@@ -6184,6 +6185,7 @@ function s1RehearsalSteps() {
   };
   return [
     rehearsalStep({ name: "found-the-host-realm", play: (context) => foundHostRealm(context, shared) }),
+    rehearsalStep({ name: "answer-a-standing-oath", play: answerAStandingOath, sends: 0 }),
     { ...FRONTIER_MAP.opening[0], name: "host-on-map", play: goTo("Map", "map") },
     rehearsalStep({ name: "copy-the-invite-link", play: (context) => copyInviteLink(context, shared), sends: 0 }),
     rehearsalStep({
@@ -6204,7 +6206,7 @@ function s1RehearsalSteps() {
       sends: 0,
     }),
     { name: "open-realm", play: goTo("Realm", "hex"), settleMs: 3_000, verify: inScene("hex") },
-    rehearsalStep({ name: "build-barracks", play: (context) => BUILD_BARRACKS_STEP.play(context) }),
+    rehearsalStep({ name: "build-barracks", play: buildABarracksOnce }),
     { ...FRONTIER_MAP.opening[0], name: "back-on-map", play: goTo("Map", "map") },
     rehearsalStep({
       name: "send-an-army",
@@ -6555,11 +6557,50 @@ async function sendOneMove(context, shared) {
 
 const SITE_SEARCH_REVEALS = 6;
 
+async function buildABarracksOnce(context) {
+  const built = await BUILD_BARRACKS_STEP.play(context);
+  const stands = !built.plot && built.tapped?.some(({ sheet }) => sheet === BARRACKS);
+  return stands ? { ...built, already: "the realm holds a Barracks built in this game earlier" } : built;
+}
+
+const OATH_PICK = "[data-oath-pick]";
+const OATH_CARD = "[data-oath-id]";
+
+async function chooseAnOfferedOath(context) {
+  const { browser, extraScreenshot } = context;
+  const pick = await readUntil(() => browser.read(elementAt(OATH_PICK)), Boolean, SHEET_WAIT_MS);
+  if (!pick) return null;
+  extraScreenshot("oath-pick");
+  const before = browser.read(SENT_ACTIONS);
+  browser.tap(browser.read(elementAt(OATH_CARD)).offset);
+  const receipt = await receiptOfTheNextAction(context, before);
+  const closed = await readUntil(() => browser.read(elementAt(OATH_PICK)) === null, Boolean, ORDER_OUTCOME_WAIT_MS);
+  return { receipt, closed };
+}
+
+const oathRefusal = (oath) => {
+  if (oath === null) return null;
+  if (!oath.receipt?.applied) return "the chain did not apply the Oath choice";
+  return oath.closed ? null : "the Oath pick stayed open after its choice";
+};
+
+async function answerAStandingOath(context) {
+  const oath = await chooseAnOfferedOath(context);
+  const refused = oathRefusal(oath);
+  if (refused) return { oath, failed: refused };
+  return oath ? { oath } : { none: "no Oath pick stands over the map" };
+}
+
 async function fightOnTheSurface(context) {
   const reveals = [];
   for (let reveal = 0; ; reveal += 1) {
     const fight = await attackBesideAnArmy(context);
-    if (fight.receipt || fight.failed) return { reveals, ...fight };
+    if (fight.failed) return { reveals, ...fight };
+    if (fight.receipt) {
+      const oath = await chooseAnOfferedOath(context);
+      const refused = oathRefusal(oath);
+      return refused ? { reveals, ...fight, oath, failed: refused } : { reveals, ...fight, oath };
+    }
     if (reveal === SITE_SEARCH_REVEALS)
       return { reveals, ...fight, blocked: `no army stands beside a site to attack after ${reveal} reveals` };
     const revealed = await sendOneOrder(context, REHEARSAL_WORDS.explore);
