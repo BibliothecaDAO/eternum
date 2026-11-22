@@ -18,6 +18,7 @@ import {
   priceRaised,
   ROOM_ASK,
   startsNewArmies,
+  storesMore,
   type RankedWords,
   takesPopulation,
 } from "@/ui/design-system/kit/words";
@@ -40,6 +41,7 @@ import {
   formatAmount,
   formatCharge,
   formatGain,
+  formatPercent,
   formatRate,
   getHexDistance,
   type HexPosition,
@@ -312,7 +314,9 @@ const buildingLine = (option: BuildOption): RankedWords => {
         ? startsNewArmies(effect.attribute, option.tier)
         : effect.kind === "research"
           ? [effect.line]
-          : [`${formatGain(effect.amount)} ${POPULATION}`];
+          : effect.kind === "stores"
+            ? [storesMore(storageShare(effect.shareBps))]
+            : [`${formatGain(effect.amount)} ${POPULATION}`];
   const takes = option.populationCost > 0 ? `, ${takesPopulation(formatCharge(option.populationCost))}` : "";
   return [`${buildingName(option.category)}: `, ...does, ...(takes ? [takes] : [])];
 };
@@ -321,9 +325,10 @@ const buildingLine = (option: BuildOption): RankedWords => {
 const riseLine = (option: BuildOption): string | undefined =>
   option.rise.times > 1 ? priceRaised(formatAmount(option.rise.standing)) : undefined;
 
-/** Each independent research side wears its rank, from 0 through V. */
-const gemsOf = ({ sides, tier }: BuildOption): BuildTile["gems"] =>
-  sides ? sides.map(({ icon, picks }) => ({ side: icon, tier: picks })) : [{ tier }];
+const gemsOf = ({ effect, tier }: BuildOption): BuildTile["gems"] =>
+  effect.kind === "stores" ? [] : [{ tier }];
+
+const storageShare = (bps: number) => formatPercent(bps / 10_000, { signed: true });
 
 /** What one more gives: what it makes a minute, the population room it adds, or the attribute new armies start in. */
 const givesOf = ({ effect }: BuildOption): BuildTile["gives"] =>
@@ -333,7 +338,9 @@ const givesOf = ({ effect }: BuildOption): BuildTile["gives"] =>
       ? { icon: "stamina" }
       : effect.kind === "research"
         ? { icon: effect.icon }
-        : { icon: "person", value: formatGain(effect.amount) };
+        : effect.kind === "stores"
+          ? { icon: "storehouse", value: storageShare(effect.shareBps) }
+          : { icon: "person", value: formatGain(effect.amount) };
 
 /** A realm's plot, as the actions in flight name it. */
 

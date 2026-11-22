@@ -22,7 +22,6 @@ import { type BuildingOutput, buildingOutput } from "@/ui/shared/lib/building-ou
 
 import { madePicks } from "../production/store-makers";
 import { madeStoreOf, type MadeResource } from "../stores";
-import { type SidePick, sidePicks } from "../research/sides-taken";
 
 /**
  * What Frontier's build sheet needs for one plot, read from facts with no UI of its own: each building the realm may
@@ -30,8 +29,7 @@ import { type SidePick, sidePicks } from "../research/sides-taken";
  * hut_bonus apply them), its population cost and the realm's wheat an hour after it stands. Unknown while the realm's
  * research is.
  */
-/** A Frontier board's buildings: one per building row of the castle's tree, as research.cairo's row_category names them. */
-const FRONTIER_BUILDINGS = Object.values(researchRowCategory) as BuildingType[];
+const FRONTIER_BUILDINGS = [...(Object.values(researchRowCategory) as BuildingType[]), BuildingType.Storehouse];
 
 /** Each training building and the attribute it trains every new army in. */
 const TRAINS: Partial<Record<BuildingType, "Logistics">> = {
@@ -47,14 +45,13 @@ export type BuildEffect =
   | { kind: "produces"; resource: Product; perHour: number; output: BuildingOutput }
   | { kind: "population"; amount: number }
   | { kind: "trains"; attribute: "Logistics" }
+  | { kind: "stores"; shareBps: number }
   | { kind: "research"; line: string; icon: "troops" | "wheat" };
 
 export interface BuildOption {
   category: BuildingType;
   /** Its type's tier, 1 (common) to 5 (legendary): tiers apply to every building of the type. */
   tier: 0 | 1 | 2 | 3 | 4 | 5;
-  /** Each side of a choosing row (Farm, Workshop) with the tiers bought on it, make side first. */
-  sides?: SidePick[];
   cost: { resource: number; amount: number }[];
   /** How the price has risen: the copies already standing and what they multiply the base price by (1 with none). */
   rise: { standing: number; times: number };
@@ -93,7 +90,6 @@ export const readBuildOptions = (
             isTraining(category) || isOathResearch(row) ? 1 : 0,
             researchTier(learned, row),
           )) as BuildOption["tier"],
-      sides: row === undefined ? undefined : sidePicks(learned, row),
       cost,
       rise: buildingCostRise(safeInteger(realm.entity_id), category, store),
       effect,
@@ -107,6 +103,8 @@ export const readBuildOptions = (
 
 const isTraining = (category: BuildingType) =>
   Boolean(TRAINS[category]) || category === BuildingType.ConscriptionCamp || category === BuildingType.RationsDepot;
+
+const isOnePerRealm = (category: BuildingType) => isTraining(category) || category === BuildingType.Storehouse;
 
 const buildingStanding = (
   store: NativeFactStore,
@@ -122,9 +120,13 @@ const buildingStanding = (
           ? nativeResearchConstants.CONSCRIPTION_CAMP_LEVEL
           : category === BuildingType.RationsDepot
             ? nativeResearchConstants.RATIONS_DEPOT_LEVEL
-            : 0;
+            : category === BuildingType.Storehouse
+              ? nativeResearchConstants.STOREROOM_LEVEL
+              : category === BuildingType.SupplyYard
+                ? nativeResearchConstants.SUPPLY_YARD_LEVEL
+                : 0;
   if (realm.base.level < minimum) return { level: minimum };
-  if (!isTraining(category)) return "open";
+  if (!isOnePerRealm(category)) return "open";
   if (getBuildingQuantity(safeInteger(realm.entity_id), category, store) > 0) return "built";
   return "open";
 };
@@ -147,6 +149,8 @@ const readBuildingEffect = (
   const trains = TRAINS[category];
   if (trains) return { kind: "trains", attribute: trains };
   if (category === BuildingType.WorkersHut) return { kind: "population", amount: nextHutGrant(store, realm, learned) };
+  if (category === BuildingType.Storehouse)
+    return { kind: "stores", shareBps: store.require("BoardRules", { game_id: realm.game_id }).storage_step_bps };
   const resource = getProducedResource(category);
   if (!isProduct(resource)) throw new Error(`Building ${category} makes nothing a Frontier realm stores`);
   const output = buildingOutput(store, realm, category, madePicks(resource, learned));

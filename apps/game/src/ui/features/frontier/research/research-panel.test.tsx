@@ -34,7 +34,7 @@ afterEach(() => {
 
 const nodes = readResearchTree({
   ...MID_REALM,
-  learned: { ...MID_REALM.learned, [research.ROW_SUPPLY_YARD]: { tier: 4, sides: [0, 0, 0, 0] } },
+  learned: { ...MID_REALM.learned, [research.ROW_SUPPLY_YARD]: { tier: 4 } },
 });
 const draw = (picked: string | null, onResearch = vi.fn(), onPick = vi.fn(), onFix = vi.fn(), onClose = vi.fn()) =>
   act(() =>
@@ -80,17 +80,16 @@ it("names each of the castle card's compact tiles on the tile itself, which a ph
   expect(castle.map(({ key }) => key)).toEqual(["well", "shrine", "spire"]);
 });
 
-it("researches the Farm's next tier with the side picked", () => {
+it("researches the Farm's next tier", () => {
   const onResearch = vi.fn();
   draw("row-0", onResearch);
-  act(() => button(/^Granary/)!.click());
-  act(() => button(/^Research Granary$/)!.click());
-  expect(onResearch).toHaveBeenCalledWith(expect.objectContaining<Partial<TreeNode>>({ key: "row-0", row: 0 }), 1);
+  act(() => button(/^Research Farm/)!.click());
+  expect(onResearch).toHaveBeenCalledWith(expect.objectContaining<Partial<TreeNode>>({ key: "row-0", row: 0 }));
 });
 
 it("holds a locked node's verb, says why, and offers the step that opens it", () => {
   const onFix = vi.fn();
-  const limited = readResearchTree({ ...MID_REALM, learned: { ...MID_REALM.learned, 5: { tier: 4, sides: [] } } });
+  const limited = readResearchTree({ ...MID_REALM, learned: { ...MID_REALM.learned, 5: { tier: 4 } } });
   act(() =>
     root.render(
       <ResearchPanel
@@ -121,7 +120,7 @@ describe("the picked building's choice, at the panel's foot (the owner's pick C)
     expect(choice()!.textContent).toContain("Armies find Shrines · Open");
     const legendaryHut = readResearchTree({
       ...MID_REALM,
-      learned: { ...MID_REALM.learned, 3: { tier: 5, sides: [] } },
+      learned: { ...MID_REALM.learned, 3: { tier: 5 } },
     });
     act(() =>
       root.render(
@@ -148,7 +147,7 @@ describe("the picked building's choice, at the panel's foot (the owner's pick C)
     expect(choice()!.textContent).toContain("Farm");
     expect(choice()!.querySelector(".ui-tier-step")?.getAttribute("aria-label")).toBe("I → II");
     expect([...choice()!.querySelectorAll(".ui-tier")].map((gem) => gem.textContent)).toEqual(["I", "II"]);
-    expect(button(/^Research Fields$/)).toBeDefined();
+    expect(button(/^Research Farm/)).toBeDefined();
     const price = nodes
       .find(({ key }) => key === "row-0")!
       .needs.filter(({ kind }) => kind === "essence" || kind === "labor");
@@ -170,26 +169,11 @@ describe("the picked building's choice, at the panel's foot (the owner's pick C)
   });
 });
 
-it("shows the chosen research shares without a production formula", () => {
-  act(() =>
-    root.render(
-      <ResearchPanel
-        nodes={nodes}
-        picked="row-0"
-        onPick={vi.fn()}
-        sending={new Set()}
-        fixFor={() => undefined}
-        onResearch={vi.fn()}
-        onClose={() => undefined}
-      />,
-    ),
-  );
-  expect(button(/^Fields/)!.textContent).toBe("FieldsFarm wheat+20% → +40%");
-  expect(button(/^Fields/)!.hasAttribute("title")).toBe(false);
-  expect(button(/^Granary/)!.textContent).not.toContain("Each Farm");
-  // The choice reads from its cards: no line explaining the sides or that they are kept.
+it("shows the Farm's output step without a production formula", () => {
+  draw("row-0");
   const lines = [...host.querySelectorAll("[data-lab='node-choice'] > span")].map((line) => line.textContent);
-  expect(lines).toEqual([]);
+  expect(lines).toEqual(["Farm wheat · +20% → +40%"]);
+  expect(host.querySelector("[data-lab='node-choice'] [title]")).toBeNull();
 });
 
 it("keeps the chosen Research action outside the tree scroll on every pick, including the initial Farm", () => {
@@ -227,7 +211,7 @@ it.each([
 ] as const)("shows the Supply yard's exact stamina gain at rank %s", (tier, label) => {
   const ranked = readResearchTree({
     ...MID_REALM,
-    learned: { ...MID_REALM.learned, 5: { tier, sides: [] } },
+    learned: { ...MID_REALM.learned, 5: { tier } },
   });
   act(() =>
     root.render(
@@ -269,17 +253,4 @@ it("renders every generated research row", () => {
     .map(([, row]) => row);
   expect([...new Set(renderedRows)].sort((a, b) => a - b)).toEqual(catalogRows.sort((a, b) => a - b));
   expect(new Set(renderedRows).size).toBe(catalogRows.length);
-});
-
-it("says on every side of every row what it does, in sight on the side, never only on a hover", () => {
-  const sided = nodes.filter((node) => node.sides);
-  expect(sided.map(({ key }) => key)).toEqual(["row-0", "row-1"]);
-  for (const node of sided) {
-    draw(node.key);
-    const choice = host.querySelector("[data-lab='node-choice']")!;
-    const shown = [...choice.querySelectorAll("button[aria-pressed]")].map((side) => side.textContent);
-    expect(shown).toHaveLength(node.sides!.length);
-    node.sides!.forEach((side, index) => expect(shown[index]).toContain(`${side.name}${side.line}`));
-    expect(choice.querySelector("[title]")).toBeNull();
-  }
 });

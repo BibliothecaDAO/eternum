@@ -23,6 +23,7 @@ Tap an open plot to build there. Each building's price, in labor, and Essence fo
 | {FRONTIER.buildings[3].name} | {FRONTIER.buildings[3].makes} | {FRONTIER.buildings[3].price} | {FRONTIER.buildings[3].population} |
 | {FRONTIER.buildings[4].name} | {FRONTIER.buildings[4].makes} | {FRONTIER.buildings[4].price} | {FRONTIER.buildings[4].population} |
 | {FRONTIER.buildings[5].name} | {FRONTIER.buildings[5].makes} | {FRONTIER.buildings[5].price} | {FRONTIER.buildings[5].population} |
+| {FRONTIER.buildings[6].name} | {FRONTIER.buildings[6].makes} | {FRONTIER.buildings[6].price} | {FRONTIER.buildings[6].population} |
 
 Each workers' hut houses {FRONTIER.realm.hutHouses}, and every other building takes the population shown. Each further
 copy of a building costs more than the last, and pulling one down returns {FRONTIER.realm.demolitionRefund} of its
@@ -49,10 +50,9 @@ at once and stores more wheat and labor:
 
 ## Research
 
-At the castle, each research side climbs from 0 to Common I through Legendary V, paid in Essence and labor. A tier lifts
-every building of its type at once. Farms and workshops have independent output and storage sides:
-{FRONTIER.research.outputStep} more output or {FRONTIER.research.storageStep} more storage per tier. Each Hut tier
-houses {FRONTIER.research.populationStep} more workers.
+At the castle, each research row climbs from 0 to Common I through Legendary V, paid in Essence and labor. A tier lifts
+every building of its type at once. Each Farm and Workshop tier adds {FRONTIER.research.outputStep} more output. Each
+Hut tier houses {FRONTIER.research.populationStep} more workers.
 
 | Type         | Common I                                                                                     | Uncommon II                                                                                  | Rare III                                                                                     | Epic IV                                                                                      | Legendary V                                                                                  |
 | ------------ | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
@@ -61,7 +61,10 @@ houses {FRONTIER.research.populationStep} more workers.
 | Workers' hut | {FRONTIER.research.hut[0].essence} Essence, {FRONTIER.research.hut[0].labor} labor           | {FRONTIER.research.hut[1].essence} Essence, {FRONTIER.research.hut[1].labor} labor           | {FRONTIER.research.hut[2].essence} Essence, {FRONTIER.research.hut[2].labor} labor           | {FRONTIER.research.hut[3].essence} Essence, {FRONTIER.research.hut[3].labor} labor           | {FRONTIER.research.hut[4].essence} Essence, {FRONTIER.research.hut[4].labor} labor           |
 | Supply yard  | {FRONTIER.research.training[0].essence} Essence, {FRONTIER.research.training[0].labor} labor | {FRONTIER.research.training[1].essence} Essence, {FRONTIER.research.training[1].labor} labor | {FRONTIER.research.training[2].essence} Essence, {FRONTIER.research.training[2].labor} labor | {FRONTIER.research.training[3].essence} Essence, {FRONTIER.research.training[3].labor} labor | {FRONTIER.research.training[4].essence} Essence, {FRONTIER.research.training[4].labor} labor |
 
-**Supply yards.** Construction includes Logistics rank I for new armies. Research raises that starting rank to II–V.
+**Storerooms** open at {FRONTIER.storeroom.opens}, one per realm. A Storeroom adds {FRONTIER.storeroom.storageStep}
+to the wheat and labor your castle stores.
+
+**Supply yards** open at {FRONTIER.supplyYardOpens}, one per realm. Construction includes Logistics rank I for new armies. Research raises that starting rank to II–V.
 Rebuilding grants no extra rank.
 
 **Scouts’ lodges** open at City and can be built more than once. Each produces its own Scouts.

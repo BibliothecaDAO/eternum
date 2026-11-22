@@ -28,14 +28,7 @@ import { buildingsMake, standingBuildings } from "../production/store-makers";
 import { RefusedVerb } from "../refused-verb";
 import { useResearchActions } from "../research/research-actions";
 import { useResearchTree } from "../research/research-facts";
-import {
-  researchSideNode,
-  researchSideChoice,
-  firstMissing,
-  type Need,
-  needLine,
-  type TreeNode,
-} from "../research/research-tree";
+import { firstMissing, type Need, needLine, type TreeNode } from "../research/research-tree";
 import type { TappedBuilding } from "../research/selected-building";
 import { CompareRows } from "./compare-rows";
 
@@ -70,7 +63,7 @@ export const BuildingCard = ({
   const orders: BuildingOrders = {
     sending: node !== undefined && actions.sending(node),
     fix: (need) => (node && tree ? actions.fixFor(need, node, tree.nodes) : undefined),
-    onResearch: (side) => node && actions.research(node, side),
+    onResearch: () => node && actions.research(node),
     demolish: (
       <DestroyBuildingButton
         key={`${building.innerCol}:${building.innerRow}`}
@@ -119,15 +112,10 @@ const cardMakes = (makes: ReturnType<typeof buildingsMake>): CardMakes | undefin
 type BuildingOrders = {
   sending: boolean;
   fix: (need: Need) => Fix | undefined;
-  onResearch: (side: number) => unknown;
+  onResearch: () => unknown;
   demolish: ReactNode;
 };
 
-/**
- * The card as drawn: its painting, how many stand and its tier; what they make; the research's figures now. With the
- * player's orders, Delete, the figures at the next tier with a side picked by its row, and Research in the foot, or why
- * it cannot run yet with its fix.
- */
 export const BuildingCardView = ({
   name,
   icon,
@@ -147,10 +135,7 @@ export const BuildingCardView = ({
   orders?: BuildingOrders;
   onClose: () => void;
 }) => {
-  const [side, setSide] = useState(0);
-  const chosen = node && researchSideNode(node, side);
-  const choice = node && researchSideChoice(node, side);
-  const next = orders && chosen && choice !== undefined && chosen.state !== "done" ? chosen : undefined;
+  const next = orders && node && node.state !== "done" ? node : undefined;
   return (
     <HudSheet label={name} onClose={onClose}>
       <div data-building-card className="flex flex-col gap-3">
@@ -181,7 +166,7 @@ export const BuildingCardView = ({
         {node && (
           <CompareRows
             now={
-              isOathResearch(node.row) ? <HudRanked words={node.gives.now} /> : <HudTier tier={tierOf(chosen!.tier)} />
+              isOathResearch(node.row) ? <HudRanked words={node.gives.now} /> : <HudTier tier={tierOf(node.tier)} />
             }
             next={
               next?.nextTier ? (
@@ -192,30 +177,23 @@ export const BuildingCardView = ({
                 )
               ) : undefined
             }
-            rows={node.figures.map((figure, index) => ({
+            rows={node.figures.map((figure) => ({
               icon: figure.icon,
               word: figure.name,
               line: figure.line,
               now: figure.now,
               next: orders && figure.next,
-              grows: orders !== undefined && (!node.sides || index === side),
-              onPick: orders && node.sides ? () => setSide(index) : undefined,
+              grows: orders !== undefined,
             }))}
           />
         )}
         {next && orders && (
           <ResearchFoot
             node={next}
-            verb={
-              isOathResearch(next.row)
-                ? RESEARCH_TREE.research(RESEARCH_TREE.oaths)
-                : next.sides?.[side]
-                  ? RESEARCH_TREE.research(next.sides[side].name)
-                  : RESEARCH
-            }
+            verb={isOathResearch(next.row) ? RESEARCH_TREE.research(RESEARCH_TREE.oaths) : RESEARCH}
             sending={orders.sending}
             fix={orders.fix}
-            onResearch={() => choice !== undefined && orders.onResearch(choice)}
+            onResearch={() => orders.onResearch()}
           />
         )}
       </div>

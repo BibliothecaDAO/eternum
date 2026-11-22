@@ -11,7 +11,7 @@ import {
   nativeRuleConstants as rule,
 } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import { logisticsStamina } from "../../../../packages/core/src/utils/attribute-tiers";
-import { LAYER_NAMES, beastOf, TIER_WORDS, resourceName } from "@bibliothecadao/types";
+import { LAYER_NAMES, beastOf, rankName, TIER_WORDS, resourceName } from "@bibliothecadao/types";
 import { ETERNUM_CONFIG } from "./config";
 import { playableDepths } from "./playable-depths.mjs";
 import { CONTRACT } from "./contract-constants";
@@ -86,7 +86,6 @@ export const FRONTIER = {
     demolitionRefund: pct(frontierPreset.board.demolitionRefundBps),
     hutHouses: n(config.buildings.buildingCapacity[1]),
     deployWheat: n(config.resources.productionBySimpleRecipe[26][0].amount),
-    /** The wheat and labor a realm stores at each castle level, before Granary and Storeroom research. */
     storage: frontierPreset.board.resourceStoreCaps.map(n),
   },
   stamina: {
@@ -138,6 +137,7 @@ export const FRONTIER = {
     ["Workers' hut", research.HUT, "Population"],
     ["Supply yard", research.SUPPLY_YARD, "Logistics training"],
     ["Scouts' lodge", research.SCOUTS_LODGE, "Scouts"],
+    ["Storeroom", research.STOREROOM, "Wheat and labor storage"],
   ].map(([name, id, makes]) => ({
     name: name as string,
     makes: makes as string,
@@ -148,6 +148,11 @@ export const FRONTIER = {
         ? "None"
         : n(config.buildings.buildingPopulation[id as number]),
   })),
+  storeroom: {
+    opens: rankName(research.STOREROOM_LEVEL),
+    storageStep: pct(frontierPreset.board.storageStepBps),
+  },
+  supplyYardOpens: rankName(research.SUPPLY_YARD_LEVEL),
   research: {
     farm: researchRow(research.ROW_FARM),
     workshop: researchRow(research.ROW_WORKSHOP),
@@ -155,7 +160,6 @@ export const FRONTIER = {
     training: researchRow(research.ROW_SUPPLY_YARD),
     lore: researchRow(research.ROW_LORE),
     outputStep: pct(frontierPreset.board.outputStepBps),
-    storageStep: pct(frontierPreset.board.storageStepBps),
     troopWheat: n(wheatPerTroop),
     populationStep: pct(frontierPreset.board.populationStepBps),
   },

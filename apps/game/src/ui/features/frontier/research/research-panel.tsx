@@ -1,6 +1,6 @@
-import { researchHasIndependentSides, isOathResearch } from "@bibliothecadao/eternum";
+import { isOathResearch } from "@bibliothecadao/eternum";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { Icon, IconGroup, type IconMeaning } from "@/ui/design-system/icon";
+import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { HudButton, HudPage, HudRanked, HudTier, HudTierStep } from "@/ui/design-system/kit/hud-elements";
 import type { Fix } from "@/ui/design-system/kit/refusal";
 import {
@@ -10,17 +10,10 @@ import {
   RESEARCHING,
   type Rank,
   type RankedWords,
-  tierNumeral,
 } from "@/ui/design-system/kit/words";
 import { formatAmount, formatExact } from "@bibliothecadao/types";
-import { useState } from "react";
-
-import { useLayout } from "@/shell/frame/layout";
-
 import {
   type Branch,
-  researchSideNode,
-  researchSideChoice,
   firstMissing,
   type Need,
   needLine,
@@ -28,14 +21,6 @@ import {
   type TreeNode,
 } from "./research-tree";
 
-/**
- * Research as a tree (the owner's pick, 20 October: "Branches"): three branches side by side, Economy, Army and Castle;
- * each node a tile with its painting, its tier’s gem or price, and its state; a line where one node opens another
- * (Barracks at its gate tier to the four training buildings, Reach I to II to III). The picked node's choice stands at
- * the panel's foot, over the tree's lower tiles (the owner's pick, 26 October: "I think C work well"): its sides, what
- * the next tier costs against what the realm holds, the first thing missing with its fix, and Research, all in view
- * whatever the tree scrolls to; its X puts it away, and a tile tapped brings it back.
- */
 export const ResearchPanel = ({
   nodes,
   picked,
@@ -53,8 +38,7 @@ export const ResearchPanel = ({
   sending: ReadonlySet<number>;
   /** The step that clears a missing need, where there is one. */
   fixFor: (need: Need, node: TreeNode) => Fix | undefined;
-  /** Research the node's next tier, with the side picked (0 where it has none). */
-  onResearch: (node: TreeNode, side: number) => unknown;
+  onResearch: (node: TreeNode) => unknown;
   /** Puts the page away, as every panel closes: its X, Escape or back. */
   onClose: () => void;
 }) => {
@@ -86,7 +70,7 @@ export const ResearchPanel = ({
           node={node}
           sending={sending.has(node.row)}
           fix={(need) => fixFor(need, node)}
-          onResearch={(side) => onResearch(node, side)}
+          onResearch={() => onResearch(node)}
           onClose={() => onPick(null)}
         />
       )}
@@ -133,22 +117,7 @@ export const NodeTile = ({
       <HudRanked words={node.gives.now} />
     </span>
   ) : node.maxTier === 5 ? (
-    researchHasIndependentSides(node.row) && node.sides ? (
-      <span className="flex gap-2">
-        {node.sides.map((side) => (
-          <span
-            key={side.name}
-            className="flex items-center gap-0.5"
-            aria-label={`${side.name} ${tierNumeral(side.tier as Rank)}`}
-          >
-            <IconGroup name={side.icon} size={14} />
-            <HudTier tier={side.tier as Rank} />
-          </span>
-        ))}
-      </span>
-    ) : (
-      <HudTier tier={tierOf(node)} />
-    )
+    <HudTier tier={tierOf(node)} />
   ) : (
     <span className="text-hud-label tabular-nums text-hud-muted">
       {node.state === "done" ? RESEARCH_TREE.states.done : RESEARCH_TREE.price(formatAmount(node.price?.essence))}
@@ -184,9 +153,8 @@ export const NodeTile = ({
 const tileTip = (node: TreeNode) =>
   `${node.name} · ${node.state === "done" ? RESEARCH_TREE.states.done : RESEARCH_TREE.price(formatAmount(node.price?.essence))}`;
 
-/** The picked node's choice, at the panel's foot: what its next tier gives or which side it takes, its price, Research. */
 const NodeChoice = ({
-  node: rowNode,
+  node,
   sending,
   fix,
   onResearch,
@@ -195,24 +163,16 @@ const NodeChoice = ({
   node: TreeNode;
   sending: boolean;
   fix: (need: Need) => Fix | undefined;
-  onResearch: (side: number) => unknown;
+  onResearch: () => unknown;
   onClose: () => void;
 }) => {
-  const [side, setSide] = useState(() =>
-    Math.max(0, rowNode.sides?.findIndex((option) => option.state !== "done") ?? 0),
-  );
-  const node = researchSideNode(rowNode, side);
-  const desktop = useLayout() === "desktop";
-  const choice = researchSideChoice(rowNode, side);
   const missing = firstMissing(node);
   const fixing = missing && fix(missing);
-  const verb: RankedWords | string =
-    node.sides?.[side]?.name ??
-    (isOathResearch(node.row)
-      ? RESEARCH_TREE.oaths
-      : node.nextTier
-        ? [`${node.name} `, { rank: node.nextTier }]
-        : node.name);
+  const verb: RankedWords | string = isOathResearch(node.row)
+    ? RESEARCH_TREE.oaths
+    : node.nextTier
+      ? [`${node.name} `, { rank: node.nextTier }]
+      : node.name;
   const price = node.needs.filter(isPrice);
   return (
     <div
@@ -229,39 +189,6 @@ const NodeChoice = ({
           <Icon name="close" size={18} />
         </button>
       </div>
-      {node.sides ? (
-        // Three sides stand in a column on a phone: three across leave no room for a side's name, line or figure.
-        <div
-          className={cn(
-            "grid gap-2",
-            node.sides.length === 3 ? (desktop ? "grid-cols-3" : "grid-cols-1") : "grid-cols-2",
-          )}
-        >
-          {node.sides.map((option, index) => (
-            <button
-              key={option.name}
-              type="button"
-              onClick={() => setSide(index)}
-              aria-pressed={side === index}
-              className={cn(
-                "ui-pick flex flex-col items-center gap-1 rounded-md border border-hud-line px-2 py-1.5 text-center",
-                side !== index && "hover:bg-hud-hover",
-              )}
-            >
-              <IconGroup name={option.icon} size={28} />
-              <span className="flex min-w-0 flex-col">
-                <span className="truncate text-hud-strong text-hud-ink">{option.name}</span>
-                <span className="text-hud-label leading-tight text-hud-muted">{option.line}</span>
-                <span className="truncate text-hud-label tabular-nums text-hud-good">
-                  <HudRanked
-                    words={option.state === "done" ? option.now : RESEARCH_TREE.step(option.now, option.next)}
-                  />
-                </span>
-              </span>
-            </button>
-          ))}
-        </div>
-      ) : (
         <span className="text-hud-body text-hud-ink">
           {node.gives.line}
           {" · "}
@@ -269,7 +196,6 @@ const NodeChoice = ({
             <HudRanked words={node.gives.next ? RESEARCH_TREE.step(node.gives.now, node.gives.next) : node.gives.now} />
           </span>
         </span>
-      )}
       {missing && !isPrice(missing) && (
         <span className="flex items-center gap-2 text-hud-label text-hud-bad">
           <Icon name={needIcon(missing)} size={16} />
@@ -300,9 +226,9 @@ const NodeChoice = ({
           ) : (
             <HudButton
               kind="primary"
-              disabled={node.state !== "ready" || choice === undefined}
+              disabled={node.state !== "ready"}
               busy={sending ? RESEARCHING : undefined}
-              onClick={() => choice !== undefined && onResearch(choice)}
+              onClick={() => onResearch()}
             >
               <HudRanked words={RESEARCH_TREE.research(verb)} />
             </HudButton>

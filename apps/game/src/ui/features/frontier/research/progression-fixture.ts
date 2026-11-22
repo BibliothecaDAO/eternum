@@ -20,9 +20,7 @@ const realmOn = (
   labor: number,
   standing: Partial<Record<number, number>>,
   learned: RealmResearchFacts["learned"],
-): RealmResearchFacts => {
-  const storeroomPicks = (learned[research.ROW_WORKSHOP]?.sides ?? []).filter((side) => side === 1).length;
-  return {
+): RealmResearchFacts => ({
     castleLevel,
     essence,
     labor,
@@ -31,18 +29,14 @@ const realmOn = (
     price,
     board: {
       outputStepBps: preset.board.outputStepBps,
-      storageStepBps: preset.board.storageStepBps,
       populationStepBps: preset.board.populationStepBps,
       rationStep: preset.board.rationStep,
       wheatPerTroop: Number(frontierBaseConfig.resources!.productionBySimpleRecipe![ResourcesIds.Knight]![0]!.amount),
       troopsPerHour: preset.balance.resources.productionByComplexRecipeOutputs[ResourcesIds.Knight] * 3600,
       staminaBar: preset.balance.troop.stamina.staminaKnightMax,
     },
-    laborStore: (level) =>
-      (nativeStructureConstants.LABOR_STORES[level]! * (10_000 + storeroomPicks * preset.board.storageStepBps)) /
-      10_000,
-  };
-};
+  laborStore: (level) => nativeStructureConstants.LABOR_STORES[level]!,
+});
 
 /** The owner's realm on 20 October: a Settlement, nothing researched, short of everything. */
 export const EARLY_REALM = realmOn(0, 300, 718, { [research.ROW_FARM]: 2, [research.ROW_HUT]: 1 }, {});
@@ -58,11 +52,11 @@ export const MID_REALM = realmOn(
     [research.ROW_SUPPLY_YARD]: 1,
   },
   {
-    [research.ROW_FARM]: { tier: 1, sides: [0, 1] },
-    [research.ROW_WORKSHOP]: { tier: 1, sides: [0] },
-    [research.ROW_HUT]: { tier: 1, sides: [] },
-    [research.ROW_SUPPLY_YARD]: { tier: 1, sides: [] },
-    [research.ROW_LORE]: { tier: research.LORE_SHRINES, sides: [] },
+    [research.ROW_FARM]: { tier: 1 },
+    [research.ROW_WORKSHOP]: { tier: 1 },
+    [research.ROW_HUT]: { tier: 1 },
+    [research.ROW_SUPPLY_YARD]: { tier: 1 },
+    [research.ROW_LORE]: { tier: research.LORE_SHRINES },
   },
 );
 

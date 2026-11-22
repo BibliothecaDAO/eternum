@@ -59,7 +59,6 @@ import { buildingIcon, buildingName } from "@/ui/features/frontier/build/buildin
 import { nativeResearchConstants as research, nativeStructureConstants } from "@bibliothecadao/eternum/game-client";
 import { readResearchTree } from "@/ui/features/frontier/research/research-tree";
 import { StoreCard, type StoreLine } from "@/ui/features/frontier/production/store-card";
-import { sidePicks } from "@/ui/features/frontier/research/sides-taken";
 import { MADE_STORES } from "@/ui/features/frontier/stores";
 import { PlaceNav } from "@/ui/features/frontier/hud/place-nav";
 import { StatusStrip, type StoreReading } from "@/ui/features/frontier/hud/status-strip";
@@ -324,10 +323,7 @@ const tile = (
   takes: number,
   standing: LabTile["standing"],
 ): LabTile => ({ key, icon, name, tip: "", gives, gems, takes, standing });
-/** A row's one gem, or its two sides' (make side first). */
 const gem = (tier: Rank): LabTile["gems"] => [{ tier }];
-const sides = (make: [LabTile["icon"], Rank], other: [LabTile["icon"], Rank]): LabTile["gems"] =>
-  [make, other].map(([side, tier]) => ({ side, tier }));
 const price = (labor: number, short?: Extract<LabTile["standing"], { kind: "price" }>["short"], raised?: string) =>
   ({ kind: "price", prices: [{ of: "labor", amount: labor, short: short?.of === "labor" }], short, raised }) as const;
 
@@ -347,18 +343,13 @@ const essenceShortPrice: LabTile["standing"] = {
   ],
   short: { of: "essence", wait: undefined },
 };
-/**
- * A city's build sheet, as the owner's realm stood on 27 October: Farm and Workshop researched twice on their make
- * side, Barracks once on Drill, the War hall and ConscriptionCamp already standing, a fifth farm at 6,800 labor, and a second
- * Workshop at 34,000, raised by the one standing and 16 hours from held.
- */
 const BUILD_TILES: LabTile[] = [
   tile(
     "farm",
     "farm",
     "Farm",
     { icon: "wheat", value: "+6.3/min" },
-    sides(["fields", 2], ["granary", 0]),
+    gem(2),
     1,
     price(6_800),
   ),
@@ -367,7 +358,7 @@ const BUILD_TILES: LabTile[] = [
     "workshop",
     "Workshop",
     { icon: "labor", value: "+0.83/min" },
-    sides(["tools", 2], ["storehouse", 0]),
+    gem(2),
     1,
     price(34_000, { of: "labor", wait: 16 * HOUR }, "Costs more with each one standing: 1"),
   ),
@@ -376,7 +367,7 @@ const BUILD_TILES: LabTile[] = [
     "barracks",
     "Barracks",
     { icon: "troops", value: "+13/min" },
-    sides(["drill", 1], ["rations", 1]),
+    gem(1),
     3,
     price(6_800),
   ),
@@ -411,13 +402,13 @@ const FULL_TILES: LabTile[] = BUILD_TILES.map((card) =>
 const FULL_POPULATION = { used: 18, total: 18 };
 /** A fresh realm with its first building prices. */
 const EARLY_TILES: LabTile[] = [
-  tile("farm", "farm", "Farm", { icon: "wheat", value: "+5/min" }, sides(["fields", 0], ["granary", 0]), 1, price(800)),
+  tile("farm", "farm", "Farm", { icon: "wheat", value: "+5/min" }, gem(0), 1, price(800)),
   tile(
     "workshop",
     "workshop",
     "Workshop",
     { icon: "labor", value: "+0.83/min" },
-    sides(["tools", 0], ["storehouse", 0]),
+    gem(0),
     1,
     price(2_000),
   ),
@@ -426,7 +417,7 @@ const EARLY_TILES: LabTile[] = [
     "barracks",
     "Barracks",
     { icon: "troops", value: "+1.7/min" },
-    sides(["drill", 0], ["rations", 0]),
+    gem(0),
     3,
     price(800),
   ),
@@ -463,11 +454,6 @@ type LabArmySheet = {
   ethereal?: EtherealLayer;
 };
 
-/**
- * A city's three stores, 18,000 a store, each with its research row's two sides as the realm's knowledge packs them
- * (research.cairo's three-bit side counts): Fields V and Granary V (the owner's wheat, 6 November), Tools III and
- * Storehouse I, Drill I.
- */
 const line = (overrides: Partial<StoreLine> & Pick<StoreLine, "kind">): StoreLine => ({
   perHour: undefined,
   held: undefined,
@@ -481,7 +467,7 @@ const STORE_LINES: StoreLine[] = [
   line({
     kind: "wheat",
     perHour: 1_500,
-    sides: sidePicks(5n + (5n << 3n), research.ROW_FARM),
+    tier: 5,
     held: 4_410,
     fullIn: 9 * HOUR + 4 * 60,
     makers: ["9 Farms · +25/min"],
@@ -489,7 +475,7 @@ const STORE_LINES: StoreLine[] = [
   line({
     kind: "labor",
     perHour: 500,
-    sides: sidePicks((3n << 7n) + (1n << 10n), research.ROW_WORKSHOP),
+    tier: 3,
     held: 9_640,
     fullIn: 16 * HOUR + 44 * 60,
   }),
@@ -1623,7 +1609,7 @@ type LabBuilding = {
 const LabBuildingCard = ({ building }: { building: keyof typeof LAB_BUILDINGS }) => {
   const { category, row, standing, makes, essence = MID_REALM.essence, tier }: LabBuilding = LAB_BUILDINGS[building];
   const learned =
-    row === undefined || tier === undefined ? MID_REALM.learned : { ...MID_REALM.learned, [row]: { tier, sides: [] } };
+    row === undefined || tier === undefined ? MID_REALM.learned : { ...MID_REALM.learned, [row]: { tier } };
   const node = readResearchTree({ ...MID_REALM, essence, learned }).find(
     (each) => each.row === row && each.maxTier === 5,
   );

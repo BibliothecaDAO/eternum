@@ -97,10 +97,6 @@ const upgradeOrder = (
   };
 };
 
-/**
- * The castle at a level: the plots its ring opens, its army slots, what it stores of each store (before the Granary and
- * Storeroom) and its deploy cap, from the preset.
- */
 const castleSide = (store: NativeFactStore, gameId: number, level: number, hasWonder = false): CastleSide => {
   const art = realmMeaning(level, hasWonder);
   if (!art) throw new Error(`No castle art for level ${level}`);

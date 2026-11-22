@@ -687,6 +687,7 @@ export const priceRaised = (standing: string) => `Costs more with each one stand
 /** What a building does, in one line on its card's tooltip: "Wheat +5/min". */
 export const makes = (noun: string, rate: string) => `${noun} ${rate}`;
 export const takesPopulation = (amount: string) => `takes ${amount} ${POPULATION}`;
+export const storesMore = (share: string) => `${WHEAT} and ${LABOR.toLowerCase()} ${STORAGE.toLowerCase()} ${share}`;
 /** What a training building gives, by its tier: "new armies start with Battle [II]". */
 export const startsNewArmies = (attribute: string, tier: number): RankedWords => [
   `new armies start with ${attribute} `,
@@ -2035,13 +2036,10 @@ export const RESEARCH_TREE = {
   onItsWay: "The research tree is on its way",
   branches: { economy: "Economy", army: ARMY, castle: CASTLE },
   states: { ready: "Can research", short: "Saving up", done: "Researched", locked: "Locked" },
-  sides: {
+  outputs: {
     fields: ["Fields", "Farm wheat"],
-    granary: ["Granary", "Wheat storage"],
     tools: ["Tools", "Workshop labor"],
-    storeroom: ["Storeroom", "Labor storage"],
   },
-  sidesLine: (made: string) => `Improve ${made} output and storage separately`,
   hutLine: "Hut population",
   oaths: "Oath slots",
   oathSlots: (count: number) => `${count} Oath ${count === 1 ? "slot" : "slots"}`,

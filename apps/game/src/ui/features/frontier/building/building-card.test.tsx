@@ -90,17 +90,11 @@ it("says what all the Farms make as one number, and their research only as gems"
   expect(card().textContent).not.toMatch(/×|\(\d|\d \+ \d/);
 });
 
-it("reads each side now against the next tier, picks a side by its row, and researches the side picked", () => {
+it("reads the Farm's output now against the next tier, and researches it", () => {
   const { onResearch } = draw(research.ROW_FARM);
-  expect(rows()).toEqual([
-    ["Fields", "Farm wheat", "+20%", "→", "+40%"],
-    ["Granary", "Wheat storage", "+40%", "→", "+80%"],
-  ]);
-  expect(button(/^Research Fields$/)).toBeDefined();
-  act(() => button(/^Granary/)!.click());
-  expect(button(/^Granary/)!.getAttribute("aria-pressed")).toBe("true");
-  act(() => button(/^Research Granary$/)!.click());
-  expect(onResearch).toHaveBeenCalledWith(1);
+  expect(rows()).toEqual([["Fields", "Farm wheat", "+20%", "→", "+40%"]]);
+  act(() => button(/^Research$/)!.click());
+  expect(onResearch).toHaveBeenCalledWith();
   // The tier is its gem, never its word: a Rare Farm holds II, its next tier III.
   expect(gems()).toEqual(["I", "I", "II"]);
   expect(card().textContent).not.toMatch(/Common|Uncommon|Rare|Epic|Legendary/);
@@ -110,7 +104,7 @@ it("keeps Research, dimmed, when the labor storage cannot hold the tier's price,
   const { onResearch, onFix } = draw(research.ROW_SUPPLY_YARD, {
     realm: {
       ...MID_REALM,
-      learned: { ...MID_REALM.learned, [research.ROW_SUPPLY_YARD]: { tier: 4, sides: [0, 0, 0, 0] } },
+      learned: { ...MID_REALM.learned, [research.ROW_SUPPLY_YARD]: { tier: 4 } },
     },
   });
   const verb = button(/^Research$/)!;
@@ -142,10 +136,10 @@ it("says the Essence the Workshops need against what is held, beside Research di
       />,
     ),
   );
-  const verb = button(/^Research Tools$/)!;
+  const verb = button(/^Research$/)!;
   expect(verb.disabled).toBe(true);
   const foot = verb.closest(".ui-window__foot")!;
-  expect(foot.textContent).toMatch(/^Needs [\d,.K]+ Essence, have 500Research Tools$/);
+  expect(foot.textContent).toMatch(/^Needs [\d,.K]+ Essence, have 500Research$/);
   expect(foot.querySelectorAll("button")).toHaveLength(1);
 });
 
@@ -162,13 +156,10 @@ it("shows a training building's one figure, what every new army starts with, now
 it("at Legendary shows what research gave, with no next column and no Research", () => {
   const legendary: RealmResearchFacts = {
     ...MID_REALM,
-    learned: { ...MID_REALM.learned, [research.ROW_FARM]: { tier: 5, sides: [0, 0, 0, 0, 0, 1, 1, 1, 1, 1] } },
+    learned: { ...MID_REALM.learned, [research.ROW_FARM]: { tier: 5 } },
   };
   draw(research.ROW_FARM, { realm: legendary });
-  expect(rows()).toEqual([
-    ["Fields", "Farm wheat", "+100%"],
-    ["Granary", "Wheat storage", "+200%"],
-  ]);
+  expect(rows()).toEqual([["Fields", "Farm wheat", "+100%"]]);
   expect(button(/^Research/)).toBeUndefined();
   expect(gems()).toEqual(["V", "V"]);
 });
@@ -177,10 +168,7 @@ it("reads a viewer's building as it stands: what it makes and its tier, with not
   draw(research.ROW_FARM, { viewer: true, makes: { icon: "wheat", rate: "+25/min" } });
   expect(card().textContent).toContain("+25/min");
   expect(card().textContent).toContain("4 buildings");
-  expect(rows()).toEqual([
-    ["Fields", "Farm wheat", "+20%"],
-    ["Granary", "Wheat storage", "+40%"],
-  ]);
+  expect(rows()).toEqual([["Fields", "Farm wheat", "+20%"]]);
   expect(gems()).toEqual(["I", "I"]);
   // The sheet's close is its one control.
   expect([...host.querySelectorAll("button")].map((each) => each.getAttribute("aria-label"))).toEqual(["Close"]);
@@ -190,19 +178,6 @@ it("reads a viewer's building as it stands: what it makes and its tier, with not
 
 /** The lab's realm with the Essence and labor for a Scouts' lodge tier. */
 const RICH: RealmResearchFacts = { ...MID_REALM, essence: 1_000_000, labor: 15_000 };
-
-it("lets the owner choose the other research side after the first reaches V", () => {
-  const realm: RealmResearchFacts = {
-    ...RICH,
-    learned: { ...RICH.learned, [research.ROW_FARM]: { tier: 5, sides: [0, 0, 0, 0, 0] } },
-  };
-  const { onResearch } = draw(research.ROW_FARM, { realm });
-  expect(button(/^Research Fields$/)).toBeUndefined();
-  act(() => button(/^Granary/)!.click());
-  expect(button(/^Research Granary$/)).toBeDefined();
-  act(() => button(/^Research Granary$/)!.click());
-  expect(onResearch).toHaveBeenCalledWith(1);
-});
 
 it("says under every research figure, on every building's card, what the figure does", () => {
   const buildings = readResearchTree(MID_REALM).filter((node) => researchRowCategory[node.row] !== undefined);
@@ -226,6 +201,6 @@ for (const row of [research.ROW_KNIGHT_OATHS, research.ROW_SCOUT_OATHS, research
     expect(card().textContent).toContain("3 Oath slots");
     expect(card().textContent).not.toContain("Untrained");
     act(() => button(/^Research Oath slots$/)!.click());
-    expect(onResearch).toHaveBeenCalledWith(0);
+    expect(onResearch).toHaveBeenCalledWith();
   });
 }

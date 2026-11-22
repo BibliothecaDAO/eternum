@@ -48,39 +48,17 @@ describe("the castle's tree as the contract rules it", () => {
     expect(canResearchNow(readResearchTree(MID_REALM))).toBe(true);
   });
 
-  it("gives a Farm tier's two sides their figures now and with one more pick", () => {
-    // Fields and Granary taken once each: +25% wheat and +50% store; one more of either adds a step.
-    expect(node(MID_REALM, "row-0").sides?.map(({ name, now, next }) => [name, now, next])).toEqual([
-      ["Fields", "+20%", "+40%"],
-      ["Granary", "+40%", "+80%"],
-    ]);
+  it("gives a Farm tier its output figure now and with the next tier", () => {
+    const farm = node(MID_REALM, "row-0");
+    expect(farm.gives).toEqual({ line: "Farm wheat", now: "+20%", next: "+40%" });
+    expect(farm.figures).toEqual([{ icon: "fields", name: "Fields", line: "Farm wheat", now: "+20%", next: "+40%" }]);
   });
 
-  it("says what a finished Farm's picks give, read from its two sides", () => {
-    // Both Farm sides are complete: four Fields picks and four Granary picks.
-    const legendary = {
-      ...MID_REALM,
-      learned: { ...MID_REALM.learned, 0: { tier: 5, sides: [0, 0, 0, 0, 0, 1, 1, 1, 1, 1] } },
-    };
-    const farm = node(legendary, "row-0");
-    expect(farm.state).toBe("done");
-    expect(farm.sides?.map((side) => side.state)).toEqual(["done", "done"]);
-    expect(farm.gives).toEqual({ line: "Fields +100%", now: "Granary +200%" });
+  it("says what a finished Farm gives, with nothing left to buy", () => {
+    const farm = node({ ...MID_REALM, learned: { ...MID_REALM.learned, 0: { tier: 5 } } }, "row-0");
+    expect([farm.state, farm.price, farm.nextTier]).toEqual(["done", undefined, undefined]);
+    expect(farm.gives).toEqual({ line: "Farm wheat", now: "+100%", next: undefined });
   });
-});
-
-it("keeps the cheaper side open after the other reaches Legendary and displays the highest tier", () => {
-  const realm = { ...MID_REALM, learned: { ...MID_REALM.learned, 0: { tier: 5, sides: [0, 0, 0, 0, 0] } } };
-  const farm = node(realm, "row-0");
-  expect(farm).toMatchObject({ tier: 5, state: "ready", price: { essence: 500, labor: 500 } });
-  expect(farm.sides?.map(({ tier, state }) => [tier, state])).toEqual([
-    [5, "done"],
-    [0, "ready"],
-  ]);
-  expect(
-    node({ ...realm, learned: { ...realm.learned, 0: { tier: 5, sides: [0, 0, 0, 0, 0, 1, 1, 1, 1, 1] } } }, "row-0")
-      .state,
-  ).toBe("done");
 });
 
 it("requires construction for the first training level, with no separate research purchase", () => {
@@ -94,12 +72,10 @@ it("requires construction for the first training level, with no separate researc
   }
 });
 
-// Owner, 30 October 2026: "bit loo long on mobile as well". A side's or figure's line stands on one line in a phone's
-// side button (measured at 390 px: "Barracks troops" and "Wheat per troop" fit), the gate's in one short line.
 it("keeps every research line short enough for one line on a phone", () => {
   for (const realm of [EARLY_REALM, MID_REALM]) {
     for (const each of readResearchTree(realm)) {
-      for (const line of [...(each.sides ?? []), ...each.figures].map((figure) => figure.line))
+      for (const line of each.figures.map((figure) => figure.line))
         expect(line.length, line).toBeLessThanOrEqual(16);
     }
   }
@@ -112,8 +88,8 @@ it("offers independent Camp and Depot upgrades with their exact next output and 
     standing: { ...MID_REALM.standing, [research.ROW_CONSCRIPTION]: 1, [research.ROW_RATIONS]: 1 },
     learned: {
       ...MID_REALM.learned,
-      [research.ROW_CONSCRIPTION]: { tier: 1, sides: [] },
-      [research.ROW_RATIONS]: { tier: 3, sides: [] },
+      [research.ROW_CONSCRIPTION]: { tier: 1 },
+      [research.ROW_RATIONS]: { tier: 3 },
     },
   };
   expect(node(realm, `row-${research.ROW_CONSCRIPTION}`)).toMatchObject({
@@ -142,7 +118,7 @@ it("shows only Knight slots at Settlement and each troop's three exact purchases
   for (const row of rows) {
     const realm = { ...MID_REALM, essence: 200000, labor: 40000, laborStore: () => 80000, standing: { [row]: 1 } };
     for (let tier = 0; tier <= 3; tier++) {
-      const result = node({ ...realm, learned: { [row]: { tier, sides: [] } } }, `row-${row}`);
+      const result = node({ ...realm, learned: { [row]: { tier } } }, `row-${row}`);
       expect(result.maxTier).toBe(3);
       expect(result.gives.now).toBe(`${tier + 2} Oath slots`);
       expect(result.gives.next).toBe(tier === 3 ? undefined : `${tier + 3} Oath slots`);

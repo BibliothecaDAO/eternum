@@ -24,7 +24,7 @@ describe("Frontier's build options", () => {
     });
     expect(options.get(BuildingType.ResourceLabor)?.effect).toMatchObject({ resource: ResourcesIds.Labor });
     expect((options.get(BuildingType.ResourceLabor)?.effect as { perHour: number }).perHour).toBeCloseTo(50, 0);
-    expect(options.has(BuildingType.Storehouse)).toBe(false);
+    expect(options.get(BuildingType.Storehouse)?.effect).toEqual({ kind: "stores", shareBps: 5000 });
     const hut = release.definition.structures.buildings.find(({ category }) => category === BuildingType.WorkersHut)!
       .rule.capacity_grant;
     expect(options.get(BuildingType.WorkersHut)?.effect).toEqual({ kind: "population", amount: hut });
@@ -46,19 +46,18 @@ describe("Frontier's build options", () => {
     expect(barracks.wheat.after).toBeCloseTo(300, 3);
   });
 
-  it("gives each Fields pick a quarter more output, and the next Hut its grant and the bonus its tiers add, at no extra price", () => {
+  it("gives each Farm tier a quarter more output, and the next Hut its grant and the bonus its tiers add, at no extra price", () => {
     const { store, realm } = realmBoard();
     const option = (category: BuildingType) =>
       readBuildOptions(store, realm, true, 350)!.find((candidate) => candidate.category === category)!;
     const farm = option(BuildingType.ResourceWheat);
     const hut = option(BuildingType.WorkersHut);
     expect(farm.tier).toBe(0);
-    // One upgrade on each Farm side; Hut epic at bit 21.
     store.applyFacts([
       {
         model: "RealmKnowledge",
         key: "0x77",
-        value: { game_id: 1, structure_id: 7, learned: 1n | (1n << 3n) | (3n << 21n) },
+        value: { game_id: 1, structure_id: 7, learned: 1n | (3n << 21n) },
       },
     ] as never);
     const farmAfter = option(BuildingType.ResourceWheat);
@@ -84,7 +83,6 @@ describe("Frontier's build options", () => {
       .filter(
         ([name]) =>
           !name.startsWith("ROW_") &&
-          !name.startsWith("CHOICE_") &&
           !name.startsWith("OATH_SLOTS_") &&
           !name.startsWith("LORE_") &&
           !name.endsWith("_LEVEL"),
@@ -101,11 +99,14 @@ describe("Frontier's build options", () => {
     expect(readBuildOptions(store, realm, true, 350)).toBeUndefined();
   });
 
-  it("offers Logistics training without a Barracks research gate", () => {
+  it("opens Logistics training at Kingdom without a Barracks research gate", () => {
     const { store, realm } = realmBoard();
-    const supplyYard = () =>
-      readBuildOptions(store, realm, true, 350)!.find(({ category }) => category === BuildingType.SupplyYard)!;
-    expect(supplyYard()).toMatchObject({
+    const supplyYard = (level: number) =>
+      readBuildOptions(store, { ...realm, base: { ...realm.base, level } }, true, 350)!.find(
+        ({ category }) => category === BuildingType.SupplyYard,
+      )!;
+    expect(supplyYard(1).standing).toEqual({ level: 2 });
+    expect(supplyYard(2)).toMatchObject({
       standing: "open",
       effect: { kind: "trains", attribute: "Logistics" },
       tier: 1,
@@ -150,4 +151,23 @@ it("opens the Range and Camp at City, the Depot at Kingdom, and keeps each resea
   ] as never);
   expect(options(2).get(BuildingType.ConscriptionCamp)?.standing).toBe("built");
   expect(options(2).get(BuildingType.RationsDepot)?.standing).toBe("built");
+});
+
+it("opens one Storeroom a Realm at City", () => {
+  const { store, realm } = realmBoard();
+  const storeroom = (level: number) =>
+    readBuildOptions(store, { ...realm, base: { ...realm.base, level } }, true, 350)!.find(
+      ({ category }) => category === BuildingType.Storehouse,
+    )!;
+  expect(storeroom(0).standing).toEqual({ level: 1 });
+  expect(storeroom(1).standing).toBe("open");
+  const counts = store.require("StructureBuildings", { game_id: 1, entity_id: 7 });
+  store.applyFacts([
+    {
+      model: "StructureBuildings",
+      key: store.wireKeyOf("StructureBuildings", { game_id: 1, entity_id: 7 })!,
+      value: { ...counts, packed_counts_1: counts.packed_counts_1 | (1n << 8n) },
+    },
+  ] as never);
+  expect(storeroom(1).standing).toBe("built");
 });

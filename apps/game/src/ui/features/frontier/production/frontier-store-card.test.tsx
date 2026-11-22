@@ -81,7 +81,7 @@ it("keeps an open barracks figure fixed until the chain-proven floor advances", 
   }
 });
 
-it("shows each side of the Farm row's research with its own rank gem, as the realm's knowledge holds them", () => {
+it("shows the Farm row's research tier as its rank gem, as the realm's knowledge holds it", () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const { store, row } = frontierDay();
   context.store = store;
@@ -89,12 +89,9 @@ it("shows each side of the Farm row's research with its own rank gem, as the rea
   const host = document.createElement("div");
   document.body.append(host);
   const root = createRoot(host);
-  const sides = () =>
-    [...host.querySelector("[data-store-card='wheat']")!.closest("section")!.querySelectorAll("[data-side]")].map(
-      (side) => [
-        side.querySelector("[data-icon]")!.getAttribute("data-icon"),
-        side.querySelector(".ui-tier")!.getAttribute("aria-label"),
-      ],
+  const gems = () =>
+    [...host.querySelector("[data-store-card='wheat']")!.querySelectorAll(".ui-tier")].map((gem) =>
+      gem.getAttribute("aria-label"),
     );
   const learn = (learned: bigint) =>
     store.applyFacts([
@@ -106,21 +103,9 @@ it("shows each side of the Farm row's research with its own rank gem, as the rea
     ]);
   try {
     act(() => root.render(<FrontierStoreCard realm={row} rules={rules} store="wheat" onDone={() => {}} />));
-    expect(sides()).toEqual([
-      ["fields", "Untrained"],
-      ["granary", "Untrained"],
-    ]);
-    // Fields 3 and Granary 5, in the Farm row's two three-bit fields: each side keeps its own rank.
-    act(() => learn(3n + (5n << 3n)));
-    expect(sides()).toEqual([
-      ["fields", "III"],
-      ["granary", "V"],
-    ]);
-    act(() => learn(2n));
-    expect(sides()).toEqual([
-      ["fields", "II"],
-      ["granary", "Untrained"],
-    ]);
+    expect(gems()).toEqual(["Untrained"]);
+    act(() => learn(3n));
+    expect(gems()).toEqual(["III"]);
   } finally {
     act(() => root.unmount());
     host.remove();

@@ -131,6 +131,7 @@ const FRONTIER_BUILDINGS: Partial<Record<BuildingType, string>> = {
   [BuildingType.ResourceCrossbowmanT1]: "Range",
   [BuildingType.SupplyYard]: "Supply yard",
   [BuildingType.ScoutsLodge]: "Scouts' lodge",
+  [BuildingType.Storehouse]: "Storeroom",
   [BuildingType.ConscriptionCamp]: BuildingTypeToString[BuildingType.ConscriptionCamp],
 };
 

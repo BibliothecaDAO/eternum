@@ -17,6 +17,7 @@ import {
   HudCost,
   HudNotice,
   HudSheet,
+  HudTier,
   HudWindowFoot,
   rankedTip,
 } from "@/ui/design-system/kit/hud-elements";
@@ -35,14 +36,7 @@ import { PRICE_FACES, costLine, type Price } from "@/ui/design-system/kit/price-
 import type { ReactNode } from "react";
 import { reasonLine } from "@/ui/design-system/kit/reasons";
 import type { RealmPopulation } from "../realm/realm-population";
-import { SideRank } from "../research/side-rank";
 
-/**
- * One building on the build sheet (the owner's pick, option B · Cards): its painting and name with the population it
- * takes in the card's corner, what one more gives, its research as gems (one per side of a row that has sides), and a
- * band for where it stands: its resource prices, with the wait while the realm holds too little or the population it
- * lacks, a lock with the Barracks research purchases bought against its gate ("1/2 research"), or a tick when the realm already holds its one copy.
- */
 export type BuildTile = {
   key: string;
   icon: IconMeaning;
@@ -52,11 +46,7 @@ export type BuildTile = {
   tip: RankedWords | string;
   /** What one more gives: a production rate or population; a training building's attribute alone (its gem is the tier). */
   gives: { icon: IconMeaning; value?: ReactNode };
-  /**
-   * Its research as gems, never words (owner, 27 October: "why no gems instead of the text ?"): each side of a row that
-   * has two (Fields and Granary) with its mark and its gem, else its type's one gem, the research tile's.
-   */
-  gems: { side?: IconMeaning; tier: Rank }[];
+  gems: { tier: Rank }[];
   /** The population it takes; 0 takes none. */
   takes: number;
   standing:
@@ -264,7 +254,7 @@ const Gives = ({ tile }: { tile: BuildTile }) => (
     </span>
     <span className="flex items-center justify-center gap-x-1.5 whitespace-nowrap">
       {tile.gems.map((gem, index) => (
-        <SideRank key={gem.side ?? index} icon={gem.side} rank={gem.tier} />
+        <HudTier key={index} tier={gem.tier} />
       ))}
     </span>
   </span>

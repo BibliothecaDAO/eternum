@@ -5,8 +5,6 @@ import {
   getBalance,
   realmLearned,
   RESEARCH_ROWS,
-  researchHasIndependentSides,
-  researchPicks,
   researchRowCategory,
   researchTier,
   ResourceManager,
@@ -79,7 +77,7 @@ const readResearchFacts = (
   const wheat = recipe.simple_inputs.find((input) => input.resource_type === ResourcesIds.Wheat);
   if (!wheat || recipe.simple_output === 0n) throw new Error("Missing troop wheat recipe");
   const rows = decodeLearned(learned);
-  const storeroomPicks = (rows[research.ROW_WORKSHOP]?.sides ?? []).filter((side) => side === 1).length;
+  const storerooms = standingBuildings(store, entity, research.STOREROOM);
   return {
     castleLevel: realm.base.level,
     essence,
@@ -93,7 +91,6 @@ const readResearchFacts = (
     },
     board: {
       outputStepBps: board.output_step_bps,
-      storageStepBps: board.storage_step_bps,
       populationStepBps: board.population_step_bps,
       rationStep: Number(board.ration_step) / RESOURCE_PRECISION,
       wheatPerTroop: Number(wheat.amount) / Number(recipe.simple_output),
@@ -103,22 +100,13 @@ const readResearchFacts = (
     laborStore: (level) => {
       const base = ResourceManager.castleStoreLimit(store, realm.game_id, level, ResourcesIds.Labor);
       if (base === undefined) throw new Error(`No castle store at level ${level}`);
-      return (whole(base) * (10_000 + storeroomPicks * board.storage_step_bps)) / 10_000;
+      return (whole(base) * (10_000 + storerooms * board.storage_step_bps)) / 10_000;
     },
   };
 };
 
-/** Each row's highest tier and bought sides; only Scouts retains purchase order. */
 const decodeLearned = (learned: bigint): Partial<Record<number, LearnedRow>> =>
-  Object.fromEntries(
-    RESEARCH_ROWS.map((row) => {
-      const tier = researchTier(learned, row);
-      const sides = researchHasIndependentSides(row)
-        ? [0, 1].flatMap((side) => Array.from({ length: researchPicks(learned, row, side) }, () => side))
-        : [];
-      return [row, { tier, sides }];
-    }),
-  );
+  Object.fromEntries(RESEARCH_ROWS.map((row) => [row, { tier: researchTier(learned, row) }]));
 
 /** The buildings standing of each building row's type (standingBuildings: the castle's labor is no Workshop). */
 const standingByRow = (store: NativeFactStore, entity: number): Partial<Record<number, number>> =>
