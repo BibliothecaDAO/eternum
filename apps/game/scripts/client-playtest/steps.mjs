@@ -6293,14 +6293,18 @@ async function foundHostRealm({ browser }, shared) {
   shared.game = gameShardOf(browser);
   if (!orders) return { already: "the host founded in this game earlier", game: shared.game };
   shared.aspect = cards[0].label.slice(JOIN_PREFIX.length);
-  const armies = await readUntil(
+  const armies = await startingArmies(browser);
+  if (armies.length === 0) return { orders, failed: FOUNDED_WITHOUT_ARMIES };
+  return { aspect: shared.aspect, orders, armies, game: shared.game };
+}
+
+const FOUNDED_WITHOUT_ARMIES = "the founded realm docks no starting army";
+const startingArmies = (browser) =>
+  readUntil(
     () => browser.armies(),
     (docked) => docked.length > 0,
     PLAYABLE_WAIT_MS,
   );
-  if (armies.length === 0) return { orders, failed: "the founded realm docks no starting army" };
-  return { aspect: shared.aspect, orders, armies, game: shared.game };
-}
 
 async function chooseAspect(browser, label) {
   browser.click(label);
@@ -6381,7 +6385,9 @@ async function foundFromInvite({ browser, owner, extraScreenshot }, shared) {
   const tagged = cards[0] === hosts && hosts.invite === REHEARSAL_WORDS.invited;
   const orders = await chooseAspect(browser, hosts.label);
   await waitFor(browser, (seen) => seen.playable, PLAYABLE_WAIT_MS);
-  return { landing, cards, invited, tagged, orders };
+  const armies = await startingArmies(browser);
+  if (armies.length === 0) return { landing, cards, invited, tagged, orders, failed: FOUNDED_WITHOUT_ARMIES };
+  return { landing, cards, invited, tagged, orders, armies };
 }
 
 async function readOwnAspect({ browser }, shared) {
