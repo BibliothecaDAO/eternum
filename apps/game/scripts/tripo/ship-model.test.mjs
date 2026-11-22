@@ -281,4 +281,58 @@ describe("ship-model pipeline", () => {
     const glbJson = JSON.parse(secondBytes.toString("utf8", 20, 20 + glbJsonLength));
     expect(glbJson.images[0].extras?.eternumContentHash).toMatch(/^[0-9a-f]{64}$/);
   });
+
+  it("keeps shipped Frontier board building models within building budget, grounded and inside the unit hex", async () => {
+    const io = await createReader();
+    const budget = MODEL_BUDGETS.building;
+    const apothem = Math.sqrt(3) / 2;
+
+    for (const name of ["storeroom", "rations-depot", "crossbow-range"]) {
+      const modelPath = fileURLToPath(new URL(`../../public/models/frontier/buildings/${name}.glb`, import.meta.url));
+      const bytes = readFileSync(modelPath);
+      expect(bytes.length, name).toBeLessThanOrEqual(budget.maxBytes);
+
+      const doc = await io.read(modelPath);
+      const root = doc.getRoot();
+      const extensions = root.listExtensionsUsed().map((extension) => extension.extensionName);
+      expect(extensions, name).toEqual(expect.arrayContaining(["KHR_draco_mesh_compression", "KHR_texture_basisu"]));
+
+      const primitives = root.listMeshes().flatMap((mesh) => mesh.listPrimitives());
+      expect(primitives.length, name).toBeGreaterThan(0);
+      expect(primitives.length, name).toBeLessThanOrEqual(budget.maxDraws);
+
+      const triangles = primitives.reduce((sum, primitive) => sum + primitive.getIndices().getCount() / 3, 0);
+      expect(triangles, name).toBeGreaterThan(0);
+      expect(triangles, name).toBeLessThanOrEqual(budget.maxTriangles);
+
+      for (const texture of root.listTextures()) {
+        expect(texture.getMimeType(), name).toBe("image/ktx2");
+        const image = texture.getImage();
+        const view = new DataView(image.buffer, image.byteOffset, image.byteLength);
+        expect(view.getUint32(20, true), name).toBeLessThanOrEqual(budget.maxColorTexture);
+        expect(view.getUint32(24, true), name).toBeLessThanOrEqual(budget.maxColorTexture);
+      }
+
+      for (const node of root.listNodes()) {
+        expect(node.getTranslation(), name).toEqual([0, 0, 0]);
+        expect(node.getRotation(), name).toEqual([0, 0, 0, 1]);
+        expect(node.getScale(), name).toEqual([1, 1, 1]);
+      }
+
+      let minY = Infinity;
+      for (const primitive of primitives) {
+        const positions = primitive.getAttribute("POSITION");
+        for (let i = 0; i < positions.getCount(); i++) {
+          const [x, y, z] = positions.getElement(i, [0, 0, 0]);
+          minY = Math.min(minY, y);
+          for (let side = 0; side < 6; side++) {
+            const angle = (side * Math.PI) / 3;
+            expect(x * Math.cos(angle) + z * Math.sin(angle), name).toBeLessThanOrEqual(apothem + 0.001);
+          }
+        }
+      }
+      expect(minY, name).toBeGreaterThanOrEqual(budget.minGroundY);
+      expect(minY, name).toBeLessThanOrEqual(budget.maxGroundY);
+    }
+  });
 });

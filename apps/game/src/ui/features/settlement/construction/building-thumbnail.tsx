@@ -44,7 +44,7 @@ const BUILDING_IMAGES_PATH = {
   [BuildingType.WorkersHut]: `${BUILD_IMAGES_PREFIX}workers_hut.png`,
   [BuildingType.Storehouse]: `${BUILD_IMAGES_PREFIX}storehouse.png`,
   [BuildingType.ResourceResearch]: `${BUILD_IMAGES_PREFIX}castle.png`,
-  [BuildingType.RationsDepot]: `${BUILD_IMAGES_PREFIX}storehouse.png`,
+  [BuildingType.RationsDepot]: `${BUILD_IMAGES_PREFIX}rations-depot.png`,
   [BuildingType.SupplyYard]: `${BUILD_IMAGES_PREFIX}market.png`,
   [BuildingType.ScoutsLodge]: `${BUILD_IMAGES_PREFIX}stable.png`,
   [BuildingType.ConscriptionCamp]: `${BUILD_IMAGES_PREFIX}barracks.png`,
