@@ -86,7 +86,7 @@ export const paintedBuildingsScenario = (ground?: LabGround): LabScenario => {
     },
     ...types.map((category, index) => ({
       model: "Building",
-      key: `0x1ab8${index}`,
+      key: `0x1abb${index}`,
       value: {
         game_id: 1,
         structure_id: "7",

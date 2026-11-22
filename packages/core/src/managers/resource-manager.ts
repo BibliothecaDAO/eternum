@@ -246,9 +246,7 @@ export class ResourceManager {
       return BigInt(cap) * BigInt(board.troop_store_deploys) * BigInt(RESOURCE_PRECISION);
     }
     const base = ResourceManager.castleStoreLimit(this.store, this.gameId, structure.base.level, resourceId)!;
-    const storerooms = this.storerooms();
-    if (storerooms === undefined) return undefined;
-    return (base * BigInt(10_000 + storerooms * board.storage_step_bps)) / 10_000n;
+    return (base * BigInt(10_000 + this.storerooms() * board.storage_step_bps)) / 10_000n;
   }
 
   /**
@@ -267,14 +265,13 @@ export class ResourceManager {
     return {
       capacityKg: gramToKg(divideByPrecision(Number(weight.capacity))),
       capacityUsedKg: gramToKg(Math.max(0, divideByPrecision(Number(weight.weight)))),
-      quantity: this.storerooms() ?? 0,
+      quantity: this.storerooms(),
     };
   }
 
-  private storerooms(): number | undefined {
+  private storerooms(): number {
     const buildings = this.store.get("StructureBuildings", { game_id: this.gameId, entity_id: this.entityId });
-    if (!buildings) return undefined;
-    const counts = [buildings.packed_counts_1, buildings.packed_counts_2, buildings.packed_counts_3];
+    const counts = [buildings?.packed_counts_1 ?? 0n, buildings?.packed_counts_2 ?? 0n, buildings?.packed_counts_3 ?? 0n];
     return getBuildingCount(research.STOREROOM, counts);
   }
 

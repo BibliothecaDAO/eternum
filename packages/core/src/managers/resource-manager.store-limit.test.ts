@@ -88,10 +88,10 @@ describe("a board realm's store limits", () => {
     expect(manager.storeLimit(ResourcesIds.Knight)).toBe(settlementLimit);
   });
 
-  it("does not know the limit before it knows the realm's buildings", () => {
+  it("counts no Storeroom on a realm whose buildings were never written, as the chain reads it", () => {
     const { store, manager } = boardRealm(0n);
     store.applyFacts([{ model: "StructureBuildings", key: "0x6", value: null }]);
-    expect(manager.storeLimit(ResourcesIds.Wheat)).toBeUndefined();
+    expect(manager.storeLimit(ResourcesIds.Wheat)).toBe(settlementLimit);
   });
 
   it("raises the limits with the castle's level", () => {

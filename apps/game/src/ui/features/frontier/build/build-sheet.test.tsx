@@ -564,6 +564,7 @@ describe("the build sheet", () => {
 it("reds only the price lines the realm holds less of, so a training building short of Essence keeps its Labor white", () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const { store, realm } = realmBoard();
+  const kingdom = { ...realm, base: { ...realm.base, level: nativeResearchConstants.SUPPLY_YARD_LEVEL } };
   const balance = (resource: number, amount: bigint) => ({
     model: "ResourceBalance",
     // The fixture's own row keys: one per resource balance of the realm.
@@ -600,7 +601,7 @@ it("reds only the price lines the realm holds less of, so a training building sh
     act(() =>
       root.render(
         <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: "0x111" } as never}>
-          <BuildSheet realm={realm} plot={{ col: 11, row: 10 }} onClose={() => undefined} />
+          <BuildSheet realm={kingdom} plot={{ col: 11, row: 10 }} onClose={() => undefined} />
         </GameProvider>,
       ),
     );
