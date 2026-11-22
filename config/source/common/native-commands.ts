@@ -20,6 +20,8 @@ const arenaClosedCommands: NativeCommand[] = [
   "ChooseOath",
   "RerollOath",
   "ClaimDailyQuest",
+  "ProvisionRealm",
+  "ProvisionAndUpgradeRealm",
 ];
 const blitzReturnedCommands: NativeCommand[] = [
   "CreateBuilding",
@@ -46,6 +48,7 @@ const blitzReturnedCommands: NativeCommand[] = [
   "BattleGuard",
   "Battle",
   "GuardAttack",
+  "SettleVillage",
 ];
 
 export const arenaCommandMask = commandBits(allCommands) & ~commandBits(arenaClosedCommands);
