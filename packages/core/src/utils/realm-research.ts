@@ -2,10 +2,6 @@ import { TroopType } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import { nativeResearchConstants as research } from "../../../../contracts/l3/world-native/schema/balance.gen";
 
-/**
- * Where each research row keeps its tier in RealmKnowledge.learned, exactly as research.cairo packs it: the field's
- * bit offset and width. Farm and Workshop keep two three-bit side counts.
- */
 export const RESEARCH_ROWS = Object.entries(research)
   .filter(([name]) => name.startsWith("ROW_"))
   .map(([, row]) => row);
@@ -27,50 +23,20 @@ const field = (learned: bigint, offset: bigint, width: bigint) => Number((learne
 export function researchTier(learned: bigint, row: number): number {
   const slot = tierFields[row];
   if (!slot) throw new Error(`Unknown research row ${row}`);
-  return researchHasIndependentSides(row)
-    ? Math.max(field(learned, ...slot), field(learned, slot[0] + 3n, 3n))
-    : field(learned, ...slot);
-}
-
-export function researchHasIndependentSides(row: number): boolean {
-  return row === research.ROW_FARM || row === research.ROW_WORKSHOP;
-}
-
-/** Upgrades on one side. */
-export function researchPicks(learned: bigint, row: number, side: number): number {
-  const slot = tierFields[row];
-  if (!slot) throw new Error(`Unknown research row ${row}`);
-  const count = researchHasIndependentSides(row) ? 2 : 1;
-  if (!Number.isInteger(side) || side < 0 || side >= count) throw new Error(`Invalid research side ${side}`);
-  if (researchHasIndependentSides(row)) return field(learned, slot[0] + BigInt(side) * 3n, 3n);
-  return researchTier(learned, row);
-}
-
-/** Total purchases, including both economy sides. */
-export function researchPurchases(learned: bigint, row: number): number {
-  return researchHasIndependentSides(row)
-    ? researchPicks(learned, row, 0) + researchPicks(learned, row, 1)
-    : researchTier(learned, row);
+  return field(learned, ...slot);
 }
 
 export const OATH_SLOTS_MAX = research.OATH_SLOTS_BASE + research.OATH_SLOTS_STEPS;
 
-/**
- * The knowledge after a row's next tier is learned, with `side` the choice at that tier on a row that has one, as
- * research.cairo's learn packs it. Throws for a side the row does not offer.
- */
-export function learnResearch(learned: bigint, row: number, side: number): bigint {
+export function learnResearch(learned: bigint, row: number): bigint {
   const offset = tierFields[row]?.[0];
   if (offset === undefined) throw new Error(`Unknown research row ${row}`);
-  const picks = researchPicks(learned, row, side);
-  const next = (researchHasIndependentSides(row) ? picks : researchTier(learned, row)) + 1;
   const maximum = isOathResearch(row)
     ? research.OATH_SLOTS_STEPS
     : row === research.ROW_LORE
       ? research.LORE_SPIRES
       : 5;
-  if (next > maximum) throw new Error("Research side is complete");
-  if (researchHasIndependentSides(row)) return learned + (1n << (offset + BigInt(side) * 3n));
+  if (researchTier(learned, row) >= maximum) throw new Error("Research row is complete");
   return learned + (1n << offset);
 }
 
@@ -125,8 +91,8 @@ export function researchRowOf(category: number): number | undefined {
 }
 
 export function buildingMakePicks(learned: bigint, category: number): number {
-  if (category === research.FARM) return researchPicks(learned, research.ROW_FARM, research.CHOICE_MAKE);
-  if (category === research.WORKSHOP) return researchPicks(learned, research.ROW_WORKSHOP, research.CHOICE_MAKE);
+  if (category === research.FARM) return researchTier(learned, research.ROW_FARM);
+  if (category === research.WORKSHOP) return researchTier(learned, research.ROW_WORKSHOP);
   if (category === research.BARRACKS || category === research.RANGE || category === research.SCOUTS_LODGE)
     return researchTier(learned, research.ROW_CONSCRIPTION);
   return 0;

@@ -1,4 +1,4 @@
-import { learnResearch, researchTier, researchPicks, researchHasIndependentSides } from "@bibliothecadao/eternum";
+import { learnResearch, researchTier } from "@bibliothecadao/eternum";
 import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
@@ -47,19 +47,12 @@ const essenceHeld = (store: NativeFactStore): LabFact => {
   };
 };
 
-/** The row's next tier learned with the side chosen, and that tier's price paid from the realm's stores. */
 const learnTheRow = (command: LabCommand, chain: NativeFactStore): LabFact[] => {
   const structureId = BigInt(command.fields.structure_id);
   const row = Number(command.fields.row);
   const [key, knowledge] = [...chain.entries("RealmKnowledge")].find(([, held]) => held.structure_id === structureId)!;
-  const learned = learnResearch(knowledge.learned, row, Number(command.fields.choice));
-  const price = chain.require("ResearchPrice", {
-    game_id: 1,
-    row,
-    tier: researchHasIndependentSides(row)
-      ? researchPicks(learned, row, Number(command.fields.choice))
-      : researchTier(learned, row),
-  });
+  const learned = learnResearch(knowledge.learned, row);
+  const price = chain.require("ResearchPrice", { game_id: 1, row, tier: researchTier(learned, row) });
   return [
     { model: "RealmKnowledge", key, value: wire({ ...knowledge, learned }) },
     ...balancesPaid(chain, structureId, [

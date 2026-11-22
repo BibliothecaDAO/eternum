@@ -91,16 +91,9 @@ export class Counts {
   holdingsTotal = (mode: Mode) => this.holdings.filter((h) => h.mode === mode).length;
 }
 
-const research = (c: Counts, row: string, side: string | null = null) =>
-  c.count("frontier", "Research", (o) => o.row === row && (side === null || o.side === side));
+const research = (c: Counts, row: string) => c.count("frontier", "Research", (o) => o.row === row);
 function researchEvidence(counts: Counts): string {
-  const rows = researchRows.map(({ name, sides }) => {
-    const purchases = sides.map((side) => {
-      const label = side.name === null ? "" : `${side.name} `;
-      return `${label}${research(counts, name, side.name)}`;
-    });
-    return `${name}: ${purchases.join(", ")}`;
-  });
+  const rows = researchRows.map(({ name }) => `${name}: ${research(counts, name)}`);
   return `${n(counts.count("frontier", "Research"))} researches. ${rows.join(". ")}.`;
 }
 
@@ -246,10 +239,10 @@ const FINDINGS: Finding[] = [
     shot: "season.png",
   },
   {
-    title: "Research purchases by row and side",
+    title: "Research purchases by row",
     modes: ["frontier"],
     kind: "rules",
-    where: "Research → a row → its side.",
+    where: "Research → a row.",
     evidence: researchEvidence,
     replace: "A question for the rules lane and the research balance study (Data → Balance & data).",
     risk: "Changes the game; owner and rules lane.",

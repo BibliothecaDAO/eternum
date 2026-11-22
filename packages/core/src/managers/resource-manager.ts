@@ -1,5 +1,4 @@
 import { currentResourceWeight } from "../utils/deep";
-import { researchPicks } from "../utils/realm-research";
 import {
   nativeResearchConstants as research,
   nativeStructureConstants as structures,
@@ -10,7 +9,6 @@ import { nativeBaneConstants } from "../../../../contracts/l3/world-native/schem
 import { productionOutput } from "../utils/production-output";
 import { isModeRuleEnabled } from "../utils/mode-rules";
 import {
-  BuildingType,
   ID,
   ResourcesIds,
   RESOURCE_PRECISION,
@@ -209,9 +207,6 @@ export class ResourceManager {
     };
   }
 
-  /**
-   * A board realm's base wheat/labor capacity before Granary and Storeroom research. Undefined in a game without a realm board.
-   */
   public static castleStoreLimit(
     store: NativeFactStore,
     gameId: number,
@@ -257,10 +252,9 @@ export class ResourceManager {
       return BigInt(cap) * BigInt(board.troop_store_deploys) * BigInt(RESOURCE_PRECISION);
     }
     const base = ResourceManager.castleStoreLimit(this.store, this.gameId, structure.base.level, resourceId)!;
-    const row = resourceId === ResourcesIds.Wheat ? research.ROW_FARM : research.ROW_WORKSHOP;
-    const learned = this.store.require("RealmKnowledge", { game_id: this.gameId, structure_id: this.entityId }).learned;
-    const stores = researchPicks(learned, row, research.CHOICE_STORE);
-    return (base * BigInt(10_000 + stores * board.storage_step_bps)) / 10_000n;
+    const storerooms = this.storerooms();
+    if (storerooms === undefined) return undefined;
+    return (base * BigInt(10_000 + storerooms * board.storage_step_bps)) / 10_000n;
   }
 
   /**
@@ -276,19 +270,18 @@ export class ResourceManager {
   public getStoreCapacityKg(): { capacityKg: number; capacityUsedKg: number; quantity: number } | undefined {
     const weight = this.weight();
     if (!weight) return undefined;
-    const structureBuildings = this.store.get("StructureBuildings", { game_id: this.gameId, entity_id: this.entityId });
-    const packBuildingCounts = [
-      structureBuildings?.packed_counts_1 || 0n,
-      structureBuildings?.packed_counts_2 || 0n,
-      structureBuildings?.packed_counts_3 || 0n,
-    ];
-    const quantity = structureBuildings ? getBuildingCount(BuildingType.Storehouse, packBuildingCounts) || 0 : 0;
-
     return {
       capacityKg: gramToKg(divideByPrecision(Number(weight.capacity))),
       capacityUsedKg: gramToKg(Math.max(0, divideByPrecision(Number(weight.weight)))),
-      quantity,
+      quantity: this.storerooms() ?? 0,
     };
+  }
+
+  private storerooms(): number | undefined {
+    const buildings = this.store.get("StructureBuildings", { game_id: this.gameId, entity_id: this.entityId });
+    if (!buildings) return undefined;
+    const counts = [buildings.packed_counts_1, buildings.packed_counts_2, buildings.packed_counts_3];
+    return getBuildingCount(research.STOREROOM, counts);
   }
 
   /** The stored balance; undefined when this client holds no resource owner for the entity (unknown, never zero). */

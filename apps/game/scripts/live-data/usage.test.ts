@@ -73,22 +73,22 @@ describe("naming a transaction by what it wrote", () => {
   });
 
   it.each([
-    [0n, 0x1000000n, "Rations", 1, null],
-    [0n, 0x40000000n, "Knight Oaths", 1, null],
-    [0x40000000n, 0x80000000n, "Knight Oaths", 2, null],
-    [0x80000000n, 0xc0000000n, "Knight Oaths", 3, null],
-    [0n, 0x100000000n, "Scout Oaths", 1, null],
-    [0x100000000n, 0x200000000n, "Scout Oaths", 2, null],
-    [0x200000000n, 0x300000000n, "Scout Oaths", 3, null],
-    [0n, 0x400000000n, "Crossbow Oaths", 1, null],
-    [0x400000000n, 0x800000000n, "Crossbow Oaths", 2, null],
-    [0x800000000n, 0xc00000000n, "Crossbow Oaths", 3, null],
-    [5n, 13n, "Farm", 1, "Store"],
-    [13n, 21n, "Farm", 2, "Store"],
-    [0n, 0x1000000000000n, "Lore", 1, null],
-  ])("names current knowledge %s → %s as %s purchase %s", (before, after, row, tier, side) => {
+    [0n, 0x1000000n, "Rations", 1],
+    [0n, 0x40000000n, "Knight Oaths", 1],
+    [0x40000000n, 0x80000000n, "Knight Oaths", 2],
+    [0x80000000n, 0xc0000000n, "Knight Oaths", 3],
+    [0n, 0x100000000n, "Scout Oaths", 1],
+    [0x100000000n, 0x200000000n, "Scout Oaths", 2],
+    [0x200000000n, 0x300000000n, "Scout Oaths", 3],
+    [0n, 0x400000000n, "Crossbow Oaths", 1],
+    [0x400000000n, 0x800000000n, "Crossbow Oaths", 2],
+    [0x800000000n, 0xc00000000n, "Crossbow Oaths", 3],
+    [0n, 1n, "Farm", 1],
+    [1n, 2n, "Farm", 2],
+    [0n, 0x1000000000000n, "Lore", 1],
+  ])("names current knowledge %s → %s as %s purchase %s", (before, after, row, tier) => {
     const rows = named([...tx(1, structure("0x1", PLAYER), learn(before)), ...tx(1, learn(after))]);
-    expect(rows.at(-1)).toMatchObject({ command: "Research", player: PLAYER, options: { row, tier, side } });
+    expect(rows.at(-1)).toMatchObject({ command: "Research", player: PLAYER, options: { row, tier } });
   });
 
   it("refuses a historical interpretation even when its rows have the current wire shape", () => {
@@ -98,7 +98,7 @@ describe("naming a transaction by what it wrote", () => {
     );
   });
 
-  it("counts every current research row and side in the published findings", () => {
+  it("counts every current research row in the published findings", () => {
     const rows = named([
       ...tx(1, learn(0n)),
       ...tx(1, learn(0x1000000n)),
@@ -107,7 +107,7 @@ describe("naming a transaction by what it wrote", () => {
       ...tx(1, learn(0x541000000n)),
     ]);
     const finding = usageReport(new Counts(rows, [], []), "", 100).findings.find(
-      ({ title }) => title === "Research purchases by row and side",
+      ({ title }) => title === "Research purchases by row",
     )!;
     expect(finding.evidence).toContain("Rations: 1");
     expect(finding.evidence).toContain("Knight Oaths: 1");

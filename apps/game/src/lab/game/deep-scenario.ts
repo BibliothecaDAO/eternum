@@ -137,7 +137,7 @@ export const deepScenario = (closedRing = false): LabScenario => {
   const knowledge = store.require("RealmKnowledge", { game_id: 1, structure_id: army.owner });
   let learned = knowledge.learned;
   while (researchTier(learned, nativeResearchConstants.ROW_LORE) < nativeResearchConstants.LORE_SPIRES)
-    learned = learnResearch(learned, nativeResearchConstants.ROW_LORE, 0);
+    learned = learnResearch(learned, nativeResearchConstants.ROW_LORE);
   facts.push({
     model: "RealmKnowledge",
     key: store.wireKeyOf("RealmKnowledge", knowledge)!,

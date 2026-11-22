@@ -1,12 +1,25 @@
 import release from "../../../../contracts/l3/world-native/schema/release-definition.json";
 import { ResourcesIds } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
-import { nativeStructureConstants } from "../../../../contracts/l3/world-native/schema/balance.gen";
+import {
+  nativeResearchConstants as research,
+  nativeStructureConstants,
+} from "../../../../contracts/l3/world-native/schema/balance.gen";
 import { NativeFactStore } from "../client/native-fact-store";
 import type { GameSyncFact } from "../sync/game-sync-types";
+import { setBuildingCount } from "../utils/packed-data";
 import { ResourceManager } from "./resource-manager";
 
 const PRECISION = 1_000_000_000n;
+const storerooms = (count: number) => ({
+  StructureBuildings: {
+    game_id: 1,
+    entity_id: 7,
+    packed_counts_1: setBuildingCount(research.STOREROOM, [0n, 0n, 0n], count)[0]!,
+    packed_counts_2: 0n,
+    packed_counts_3: 0n,
+  },
+});
 const upsert = (key: string, models: Record<string, Record<string, unknown>>): GameSyncFact[] =>
   Object.entries(models).map(([model, value]) => ({ model, key, value }));
 const realm = (level: number) => ({
@@ -47,7 +60,7 @@ const boardRealm = (wheat: bigint) => {
       },
     }),
     ...upsert("0x3", { Structure: realm(0) }),
-    ...upsert("0x6", { RealmKnowledge: { game_id: 1, structure_id: 7, learned: 0n } }),
+    ...upsert("0x6", storerooms(0)),
     ...upsert("0x4", { ResourceWeight: { game_id: 1, entity_id: 7, capacity: (1n << 128n) - 1n, weight: 0n } }),
     ...upsert("0x5", { ResourceBalance: { game_id: 1, entity_id: 7, resource_type: 35, balance: wheat } }),
   ]);
@@ -67,17 +80,18 @@ describe("a board realm's store limits", () => {
     expect(manager.storeLimit(ResourcesIds.Lords)).toBeUndefined();
   });
 
-  it("adds half the castle base per store choice, independently of troop storage", () => {
+  it("adds half the castle base for a Storeroom, independently of troop storage", () => {
     const { store, manager } = boardRealm(0n);
-    // One upgrade on each Farm and Workshop side.
-    store.applyFacts(
-      upsert("0x6", {
-        RealmKnowledge: { game_id: 1, structure_id: 7, learned: 1n | (1n << 3n) | (1n << 7n) | (1n << 10n) },
-      }),
-    );
+    store.applyFacts(upsert("0x6", storerooms(1)));
     expect(manager.storeLimit(ResourcesIds.Wheat)).toBe((settlementLimit * 3n) / 2n);
     expect(manager.storeLimit(ResourcesIds.Labor)).toBe((5_000n * PRECISION * 3n) / 2n);
     expect(manager.storeLimit(ResourcesIds.Knight)).toBe(settlementLimit);
+  });
+
+  it("does not know the limit before it knows the realm's buildings", () => {
+    const { store, manager } = boardRealm(0n);
+    store.applyFacts([{ model: "StructureBuildings", key: "0x6", value: null }]);
+    expect(manager.storeLimit(ResourcesIds.Wheat)).toBeUndefined();
   });
 
   it("raises the limits with the castle's level", () => {
@@ -86,7 +100,7 @@ describe("a board realm's store limits", () => {
     expect(manager.storeLimit(ResourcesIds.Wheat)).toBe(18000n * PRECISION);
   });
 
-  it("applies the exact S2 caps at every realm level and storage count, leaving troop caps unchanged", () => {
+  it("applies the exact S2 caps at every realm level with and without a Storeroom, leaving troop caps unchanged", () => {
     const { store, manager } = boardRealm(0n);
     store.applyFacts(
       upsert("0x1", {
@@ -107,16 +121,12 @@ describe("a board realm's store limits", () => {
     );
     for (let level = 0; level < 4; level++) {
       store.applyFacts(upsert("0x3", { Structure: realm(level) }));
-      for (let picks = 0; picks <= 4; picks++) {
-        store.applyFacts(
-          upsert("0x6", {
-            RealmKnowledge: { game_id: 1, structure_id: 7, learned: (BigInt(picks) << 3n) | (BigInt(picks) << 10n) },
-          }),
-        );
-        const cap = (BigInt([6000, 18000, 40000, 80000][level]!) * PRECISION * BigInt(2 + picks)) / 2n;
+      for (const count of [0, 1]) {
+        store.applyFacts(upsert("0x6", storerooms(count)));
+        const cap = (BigInt([6000, 18000, 40000, 80000][level]!) * PRECISION * BigInt(2 + count)) / 2n;
         expect(manager.storeLimit(ResourcesIds.Wheat)).toBe(cap);
         expect(manager.storeLimit(ResourcesIds.Labor)).toBe(
-          (BigInt([5_000, 15_000, 50_000, 100_000][level]!) * PRECISION * BigInt(2 + picks)) / 2n,
+          (BigInt([5_000, 15_000, 50_000, 100_000][level]!) * PRECISION * BigInt(2 + count)) / 2n,
         );
         expect(manager.storeLimit(ResourcesIds.Knight)).toBe(BigInt([6000, 18000, 50000, 120000][level]!) * PRECISION);
       }

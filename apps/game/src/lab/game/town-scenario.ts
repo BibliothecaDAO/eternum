@@ -12,11 +12,7 @@ export function townScenario(): LabScenario {
   const knowledge = store.require("RealmKnowledge", { game_id: 1, structure_id: 7 });
   const board = store.require("BoardRules", { game_id: 1 });
   const recipe = store.require("ProductionRecipe", { game_id: 1, resource_type: ResourcesIds.Knight });
-  const learned = learnResearch(
-    learnResearch(knowledge.learned, research.ROW_CONSCRIPTION, 0),
-    research.ROW_RATIONS,
-    0,
-  );
+  const learned = learnResearch(learnResearch(knowledge.learned, research.ROW_CONSCRIPTION), research.ROW_RATIONS);
   store.applyFacts([
     {
       model: "Structure",

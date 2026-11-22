@@ -123,9 +123,9 @@ export const nativeResearchConstants = {
   "LORE_WELLS": 1,
   "LORE_SHRINES": 2,
   "LORE_SPIRES": 3,
-  "CHOICE_MAKE": 0,
-  "CHOICE_STORE": 1,
   "HUT": 1,
+  "STOREROOM": 2,
+  "STOREROOM_LEVEL": 1,
   "WORKSHOP": 25,
   "BARRACKS": 28,
   "RANGE": 31,
@@ -136,6 +136,7 @@ export const nativeResearchConstants = {
   "RATIONS_DEPOT_LEVEL": 2,
   "FARM": 37,
   "SUPPLY_YARD": 42,
+  "SUPPLY_YARD_LEVEL": 2,
   "SCOUTS_LODGE": 43,
   "SCOUTS_LODGE_LEVEL": 1
 } as const;

@@ -1,6 +1,6 @@
 import { nativeFactSchemaIdentity } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { nativeResearchConstants as research } from "../../../../contracts/l3/world-native/schema/balance.gen";
-import { researchHasIndependentSides, researchPicks } from "../../../../packages/core/src/utils/realm-research";
+import { researchTier } from "../../../../packages/core/src/utils/realm-research";
 
 /**
  * Every game transaction named by the command that sent it, with the options it used, its game and its player.
@@ -40,15 +40,7 @@ const TROOPS = ["Knight", "Crossbowman", "Paladin"];
 const TIERS = ["T1", "T2", "T3"];
 export const researchRows = Object.entries(research)
   .filter(([name]) => name.startsWith("ROW_"))
-  .map(([name, row]) => ({
-    row,
-    name: researchLabel(name),
-    sides: researchHasIndependentSides(row)
-      ? Object.entries(research)
-          .filter(([name]) => name.startsWith("CHOICE_"))
-          .map(([name, choice]) => ({ name: researchLabel(name), choice }))
-      : [{ name: null, choice: 0 }],
-  }));
+  .map(([name, row]) => ({ row, name: researchLabel(name) }));
 const BUILDING_CHANGE: Record<string, string> = {
   Created: "Build",
   Destroyed: "Demolish building",
@@ -370,21 +362,17 @@ function nameStoryless(t: Transaction, owners: Owners, knowledge: Map<string, bi
   return null;
 }
 
-/** The row, tier and side one research command learned, from the bitfield before and after. */
-function researchStep(before: bigint, after: bigint): { row: string | null; tier: number | null; side: string | null } {
-  for (const { name, row, sides } of researchRows) {
-    for (const side of sides) {
-      const reached = researchPicks(after, row, side.choice);
-      if (reached !== researchPicks(before, row, side.choice) + 1) continue;
-      return { row: name, tier: reached, side: side.name };
-    }
+function researchStep(before: bigint, after: bigint): { row: string | null; tier: number | null } {
+  for (const { name, row } of researchRows) {
+    const reached = researchTier(after, row);
+    if (reached === researchTier(before, row) + 1) return { row: name, tier: reached };
   }
-  return { row: null, tier: null, side: null };
+  return { row: null, tier: null };
 }
 
 function researchLabel(name: string): string {
   return name
-    .replace(/^(ROW|CHOICE)_/, "")
+    .replace(/^ROW_/, "")
     .toLowerCase()
     .replace(/(^|_)([a-z])/g, (_, gap, letter) => `${gap ? " " : ""}${letter.toUpperCase()}`);
 }

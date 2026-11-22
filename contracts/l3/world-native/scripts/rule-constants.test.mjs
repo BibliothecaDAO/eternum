@@ -51,6 +51,8 @@ const HASHED_QUANTITIES = [
   "research.CONSCRIPTION_CAMP_LEVEL",
   "research.RATIONS_DEPOT_LEVEL",
   "research.SCOUTS_LODGE_LEVEL",
+  "research.STOREROOM_LEVEL",
+  "research.SUPPLY_YARD_LEVEL",
 ];
 
 test("every constant is either a hashed identifier or a tunable number, and a quantity-named identifier is named here", async () => {

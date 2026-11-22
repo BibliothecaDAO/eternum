@@ -47,6 +47,7 @@ const buildingNames = {
   hut: research.HUT,
   farm: research.FARM,
   workshop: research.WORKSHOP,
+  storeroom: research.STOREROOM,
   barracks: research.BARRACKS,
   range: research.RANGE,
   scoutsLodge: research.SCOUTS_LODGE,
@@ -100,6 +101,7 @@ function generatedSeasonOne(): Design {
       upgradeLabor: definition.structures.upgrades.map(({ costs }) => amountOf(costs, ResourcesIds.Labor)),
       laborStore: [...structures.LABOR_STORES],
       castleLaborPerHour: realmRatePerHour(ResourcesIds.Labor),
+      storeroomStorePercent: percent(board.storage_step_bps),
     },
     start: {
       knights: amountOf(definition.settlement.realms.resources, ResourcesIds.Knight),
@@ -129,7 +131,9 @@ function generatedSeasonOne(): Design {
       range: research.RANGE_LEVEL,
       scoutsLodge: research.SCOUTS_LODGE_LEVEL,
       conscriptionCamp: research.CONSCRIPTION_CAMP_LEVEL,
+      storeroom: research.STOREROOM_LEVEL,
       rationsDepot: research.RATIONS_DEPOT_LEVEL,
+      supplyYard: research.SUPPLY_YARD_LEVEL,
     },
     research: researchPrices(),
     armies: {

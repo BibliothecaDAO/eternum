@@ -16,12 +16,14 @@ export const seasonOneDesign = {
     upgradeLabor: [2500, 15000, 50000],
     laborStore: [5000, 15000, 50000, 100000],
     castleLaborPerHour: 100,
+    storeroomStorePercent: 100,
   },
   start: { knights: 3000, wheat: 6000, labor: 2000 },
   buildings: {
     hut: price(0, 300),
     farm: price(0, 500),
     workshop: price(0, 1000),
+    storeroom: price(0, 10000),
     barracks: price(0, 500),
     range: price(0, 500),
     scoutsLodge: price(0, 500),
@@ -41,7 +43,7 @@ export const seasonOneDesign = {
     rationStepWheat: 0.2,
     wheatPerTroopMade: 2,
   },
-  opensAtLevel: { range: 1, scoutsLodge: 1, conscriptionCamp: 1, rationsDepot: 2 },
+  opensAtLevel: { range: 1, scoutsLodge: 1, conscriptionCamp: 1, storeroom: 1, rationsDepot: 2, supplyYard: 2 },
   research: {
     fields: fieldsAndTools,
     tools: fieldsAndTools,

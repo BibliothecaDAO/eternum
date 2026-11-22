@@ -5,17 +5,10 @@ import {
   learnResearch,
   realmLearned,
   reachableDepth,
-  researchPicks,
-  researchPurchases,
   researchTier,
 } from "./realm-research";
 
-// Matches the Cairo packing test, with independent Farm side counts.
-const learned =
-  1n + // Farm Fields uncommon
-  (1n << 3n) + // Farm Granary uncommon
-  (1n << 7n) + // Workshop uncommon, Tools
-  (2n << 48n);
+const learned = 1n + (1n << 7n) + (2n << 48n);
 
 const store = (value: bigint | undefined) =>
   ({ get: () => (value === undefined ? undefined : { game_id: 7, structure_id: 9, learned: value }) }) as never;
@@ -28,20 +21,9 @@ describe("realm research", () => {
     expect(researchTier(learned, research.ROW_LORE)).toBe(research.LORE_SHRINES);
   });
 
-  it("reads the choice made at each learned tier", () => {
-    expect([0, 1].map((side) => researchPicks(learned, research.ROW_FARM, side))).toEqual([1, 1]);
-    expect(researchPurchases(learned, research.ROW_FARM)).toBe(2);
-  });
-
-  it("uses the higher side for building display and retains all ten purchases", () => {
-    for (let make = 0; make <= 5; make++)
-      for (let other = 0; other <= 5; other++) {
-        const value = BigInt(make) | (BigInt(other) << 3n);
-        expect(buildingTypeTier(store(value), 7, 9, research.FARM)).toBe(Math.max(1, make, other));
-        expect(researchPurchases(value, research.ROW_FARM)).toBe(make + other);
-        expect(researchPicks(value, research.ROW_FARM, 0)).toBe(make);
-        expect(researchPicks(value, research.ROW_FARM, 1)).toBe(other);
-      }
+  it("shows a building at its row's tier, and never below the first model", () => {
+    for (let tier = 0; tier <= 5; tier++)
+      expect(buildingTypeTier(store(BigInt(tier)), 7, 9, research.FARM)).toBe(Math.max(1, tier));
   });
 
   it("keeps unknown knowledge unknown", () => {
@@ -49,19 +31,17 @@ describe("realm research", () => {
     expect(reachableDepth(store(undefined), 7, 9)).toBeUndefined();
     expect(reachableDepth(store(0n), 7, 9)).toBe(0);
     expect(reachableDepth(store(learned), 7, 9)).toBe(0);
-    expect(reachableDepth(store(learnResearch(learned, research.ROW_LORE, 0)), 7, 9)).toBe(3);
+    expect(reachableDepth(store(learnResearch(learned, research.ROW_LORE)), 7, 9)).toBe(3);
   });
 
-  it("learns a row's next tier with its side, as the chain packs it", () => {
-    const farmRare = learnResearch(learned, research.ROW_FARM, research.CHOICE_STORE);
-    expect(researchPicks(farmRare, research.ROW_FARM, research.CHOICE_MAKE)).toBe(1);
-    expect(researchPicks(farmRare, research.ROW_FARM, research.CHOICE_STORE)).toBe(2);
-    expect(farmRare - learned).toBe(1n << 3n);
-    const spires = learnResearch(learned, research.ROW_LORE, 0);
+  it("learns a row's next tier as the chain packs it", () => {
+    const farm = learnResearch(learned, research.ROW_FARM);
+    expect(researchTier(farm, research.ROW_FARM)).toBe(2);
+    expect(farm - learned).toBe(1n);
+    const spires = learnResearch(learned, research.ROW_LORE);
     expect(researchTier(spires, research.ROW_LORE)).toBe(research.LORE_SPIRES);
     expect(spires - learned).toBe(1n << 48n);
-    expect(() => learnResearch(learned, research.ROW_LORE, 1)).toThrow("Invalid research side");
-    expect(() => learnResearch(spires, research.ROW_LORE, 0)).toThrow("Research side is complete");
+    expect(() => learnResearch(spires, research.ROW_LORE)).toThrow("Research row is complete");
   });
 });
 
@@ -69,8 +49,8 @@ it("keeps both town rows independent of every other packed research field", () =
   for (let camp = 0; camp <= 5; camp++)
     for (let depot = 0; depot <= 5; depot++) {
       let value = learned;
-      for (let i = 0; i < camp; i++) value = learnResearch(value, research.ROW_CONSCRIPTION, 0);
-      for (let i = 0; i < depot; i++) value = learnResearch(value, research.ROW_RATIONS, 0);
+      for (let i = 0; i < camp; i++) value = learnResearch(value, research.ROW_CONSCRIPTION);
+      for (let i = 0; i < depot; i++) value = learnResearch(value, research.ROW_RATIONS);
       expect(researchTier(value, research.ROW_CONSCRIPTION)).toBe(camp);
       expect(researchTier(value, research.ROW_RATIONS)).toBe(depot);
       expect(researchTier(value, research.ROW_FARM)).toBe(1);
@@ -87,10 +67,10 @@ it("keeps all troop slot ladders independent with two free slots and three purch
     expect(troopOathSlots(value, troop)).toBe(2);
     for (let count = 3; count <= 5; count++) {
       expect(oathSlotResearchTier(count - 1)).toBe(researchTier(value, oathResearchRow[troop]) + 1);
-      value = learnResearch(value, oathResearchRow[troop], 0);
+      value = learnResearch(value, oathResearchRow[troop]);
       expect(troopOathSlots(value, troop)).toBe(count);
     }
-    expect(() => learnResearch(value, oathResearchRow[troop], 0)).toThrow("Research side is complete");
+    expect(() => learnResearch(value, oathResearchRow[troop])).toThrow("Research row is complete");
   }
   expect(TROOP_TYPES.map((troop) => troopOathSlots(value, troop))).toEqual([5, 5, 5]);
   for (const row of RESEARCH_ROWS.filter((row) => !Object.values(oathResearchRow).some((oath) => oath === row)))

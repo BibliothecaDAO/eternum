@@ -1,5 +1,5 @@
 import { nativeIdentifiers } from "../../contracts/l3/world-native/schema/client.gen";
 
 export const NATIVE_RELEASES = {
-  frontier: { family: nativeIdentifiers.family.FRONTIER, release: 14, since: 14 },
+  frontier: { family: nativeIdentifiers.family.FRONTIER, release: 15, since: 15 },
 } as const;
