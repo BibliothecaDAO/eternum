@@ -1,12 +1,6 @@
 const price = (essence: number, labor: number) => ({ essence, labor });
 const fieldsAndTools = [price(500, 500), price(1000, 1000), price(2500, 2500), price(5000, 5000), price(10000, 10000)];
-const campAndDepot = [
-  price(2500, 500),
-  price(5000, 1000),
-  price(12500, 2500),
-  price(25000, 5000),
-  price(50000, 12500),
-];
+const campAndDepot = [price(2500, 500), price(5000, 1000), price(12500, 2500), price(25000, 5000), price(50000, 12500)];
 const oathSlots = [price(5000, 1000), price(35000, 7500), price(150000, 35000)];
 
 export const seasonOneDesign = {

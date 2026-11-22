@@ -115,7 +115,7 @@ it("keeps Research, dimmed, when the labor storage cannot hold the tier's price,
   });
   const verb = button(/^Research$/)!;
   expect(verb.disabled).toBe(true);
-  expect(host.querySelector('[role="status"]')!.textContent).toBe("Labor storage 15,000 / 60,000 · Empire");
+  expect(host.querySelector('[role="status"]')!.textContent).toBe("Labor storage 15,000 / 25,000 · Kingdom");
   act(() => verb.click());
   expect(onResearch).not.toHaveBeenCalled();
   act(() => button(/^Level up the castle$/)!.click());
@@ -131,7 +131,7 @@ it("says the Essence the Workshops need against what is held, beside Research di
         icon="workshop"
         standing={3}
         makes={undefined}
-        node={nodeOf({ ...MID_REALM, essence: 1_000 }, research.ROW_WORKSHOP)}
+        node={nodeOf({ ...MID_REALM, essence: 500 }, research.ROW_WORKSHOP)}
         orders={{
           sending: false,
           fix: () => undefined,
@@ -145,7 +145,7 @@ it("says the Essence the Workshops need against what is held, beside Research di
   const verb = button(/^Research Tools$/)!;
   expect(verb.disabled).toBe(true);
   const foot = verb.closest(".ui-window__foot")!;
-  expect(foot.textContent).toMatch(/^Needs [\d,.K]+ Essence, have 1,000Research Tools$/);
+  expect(foot.textContent).toMatch(/^Needs [\d,.K]+ Essence, have 500Research Tools$/);
   expect(foot.querySelectorAll("button")).toHaveLength(1);
 });
 

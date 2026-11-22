@@ -104,7 +104,7 @@ it("holds a locked node's verb, says why, and offers the step that opens it", ()
       />,
     ),
   );
-  expect(host.textContent).toContain("Labor storage 15,000 / 60,000 · Empire");
+  expect(host.textContent).toContain("Labor storage 15,000 / 25,000 · Kingdom");
   expect(button(/^Research /)).toBeUndefined();
   expect(
     [...host.querySelectorAll<HTMLButtonElement>("[data-research-footer] button")].map((each) => each.textContent),

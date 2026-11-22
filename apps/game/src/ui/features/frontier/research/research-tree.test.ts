@@ -35,7 +35,7 @@ describe("the castle's tree as the contract rules it", () => {
 
   it("prices Logistics from the active preset without a Barracks prerequisite", () => {
     const supplyYard = node(MID_REALM, "row-5");
-    expect([supplyYard.state, supplyYard.price]).toEqual(["ready", { essence: 16_000, labor: 3_000 }]);
+    expect([supplyYard.state, supplyYard.price]).toEqual(["ready", { essence: 10_000, labor: 2_500 }]);
     expect([node(MID_REALM, "row-0").state, node(MID_REALM, "row-0").price]).toEqual([
       "ready",
       { essence: 1_000, labor: 1_000 },
