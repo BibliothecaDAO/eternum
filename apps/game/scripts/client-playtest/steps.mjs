@@ -724,12 +724,15 @@ const TOWN_DEPLOY_STEPS = [
   ),
 ];
 
+const DEPLOY_TROOPS_INPUT = '[data-kit-sheet] input[aria-label="Troops"]';
+const DEPLOY_TROOPS = `JSON.stringify(document.querySelector(${JSON.stringify(DEPLOY_TROOPS_INPUT)})?.value ?? null)`;
+
 const DEPLOY_ACTION_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
   clickToResultStep("deploy", "CreateExplorer", deployFromTheDock, armyDeployed),
 ];
 
-async function deployFromTheDock({ browser }, amount, troopName) {
+async function deployFromTheDock({ browser }, amount, troopName, atMost = Infinity) {
   const before = Object.keys(browser.read(ARMY_TILES));
   browser.click("Deploy");
   const sheet = await readUntil(
@@ -740,7 +743,9 @@ async function deployFromTheDock({ browser }, amount, troopName) {
   if (sheet !== "Deploy") return { sheet };
   if (troopName) browser.click(troopName);
   if (amount === undefined) browser.click("Max");
-  else browser.run(["fill", '[data-kit-sheet] input[aria-label="Troops"]', String(amount)]);
+  else browser.run(["fill", DEPLOY_TROOPS_INPUT, String(amount)]);
+  if (Number(String(browser.read(DEPLOY_TROOPS)).replace(/,/g, "")) > atMost)
+    browser.run(["fill", DEPLOY_TROOPS_INPUT, String(atMost)]);
   const deploy = await readUntil(() => browser.read(sheetButton("^Deploy$")), Boolean, SHEET_WAIT_MS);
   if (!deploy) return { sheet, deploy };
   browser.tap(deploy.offset);
@@ -6557,11 +6562,13 @@ async function sendOneOrder(context, verb) {
   return { deployed, army: order.armyId, receipt };
 }
 
+const REHEARSAL_ARMY_TROOPS = 500;
+
 async function deployWhenTheDockIsEmpty(context) {
   const { browser, extraScreenshot } = context;
   if (browser.armies().length > 0) return null;
   const before = browser.read(SENT_ACTIONS);
-  const deploy = await deployFromTheDock(context);
+  const deploy = await deployFromTheDock(context, undefined, undefined, REHEARSAL_ARMY_TROOPS);
   extraScreenshot("deploy");
   if (!deploy.locate) return { deploy, blocked: "the dock offers no Deploy sheet with troops to send" };
   const receipt = await receiptOfTheNextAction(context, before);
