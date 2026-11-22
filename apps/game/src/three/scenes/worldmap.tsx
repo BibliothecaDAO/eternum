@@ -54,6 +54,7 @@ import { CombatPresentationCoordinator } from "@/three/combat/combat-presentatio
 import { BattleDirectionManager } from "@/three/managers/battle-direction-manager";
 import { HoverHexManager } from "@/three/managers/hover-hex-manager";
 import { SelectedHexManager } from "@/three/managers/selected-hex-manager";
+import { hearthStrength } from "@/utils/cycle-progress";
 import { OwnershipRingLayer } from "@/three/managers/ownership-ring-layer";
 import { bindOwnershipRings } from "./worldmap-ownership-rings";
 import { bindMapSelection } from "./worldmap-map-selection";
@@ -7989,6 +7990,7 @@ export default class WorldmapScene extends WarpTravel {
     this.syncTerrainGridFocus();
     if (!this.animationsPaused) {
       this.syncTerrainMovementInteractions();
+      this.proceduralTerrain.setGroundLightStrength(hearthStrength(this.worldAtmosphereController.shownProgress));
       this.proceduralTerrain.update(deltaTime);
       this.combatPresentation?.update(deltaTime);
       this.fxManager.update(deltaTime);

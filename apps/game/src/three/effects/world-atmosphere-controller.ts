@@ -1,5 +1,5 @@
 import type { GameModeId } from "@/config/game-modes";
-import { FRONTIER_EMBER_COLORS, WORLD_ATMOSPHERE_PRESETS, type TimeOfDayColors } from "./world-atmosphere-presets";
+import { WORLD_ATMOSPHERE_PRESETS, type TimeOfDayColors } from "./world-atmosphere-presets";
 import { DAY_PHASE_PROGRESS, resolveDayPhase } from "@/utils/cycle-progress";
 import { placeKeyLight } from "./key-light";
 import type GUI from "lil-gui";
@@ -48,7 +48,6 @@ const WEATHER_LIMITS = {
   maxKeyLightDimming: 0.2,
 } as const;
 
-const PREVIEW_SNAP_PROGRESS_THRESHOLD = 1.5;
 const WORLD_ORIGIN = new Vector3();
 
 export class WorldAtmosphereController {
@@ -113,7 +112,7 @@ export class WorldAtmosphereController {
     hemisphereLight: HemisphereLight,
     ambientLight: AmbientLight,
     fog: Fog,
-    private readonly gameMode: GameModeId = "blitz",
+    _gameMode: GameModeId = "blitz",
   ) {
     this.scene = scene;
     this.directionalLight = directionalLight;
@@ -162,9 +161,6 @@ export class WorldAtmosphereController {
     // Get target colors for current time, then grade nighttime toward cooler tones
     const interpolatedColors = this.getInterpolatedTimeColors(progressFrame.progress);
     const targetColors = this.applyNightTemperatureGrading(interpolatedColors, progressFrame.progress);
-    if (this.gameMode === "frontier" && this.environment === "world") {
-      Object.assign(targetColors, FRONTIER_EMBER_COLORS);
-    }
 
     // Smoothly transition current colors toward target colors
     this.currentColors = progressFrame.snapVisualState
@@ -186,9 +182,13 @@ export class WorldAtmosphereController {
     this.updateMoonLighting(progressFrame.progress);
   }
 
+  get shownProgress(): number {
+    return (MathUtils.euclideanModulo(this.currentAngle, this.fullRotation) / this.fullRotation) * 100;
+  }
+
   private resolveAtmosphereProgress(adjustedProgress: number, forceSnap: boolean): AtmosphereProgressFrame {
     const targetAngle = (adjustedProgress / 100) * this.fullRotation;
-    const shouldSnap = forceSnap || !this.isProgressInitialized || this.shouldSnapToProgress(targetAngle);
+    const shouldSnap = forceSnap || !this.isProgressInitialized;
 
     if (shouldSnap) {
       this.currentAngle = targetAngle;
@@ -197,17 +197,7 @@ export class WorldAtmosphereController {
       this.currentAngle = this.lerpAngle(this.currentAngle, targetAngle, this.params.progressSmoothing);
     }
 
-    const normalizedAngle = MathUtils.euclideanModulo(this.currentAngle, this.fullRotation);
-    return {
-      progress: (normalizedAngle / this.fullRotation) * 100,
-      snapVisualState: shouldSnap,
-    };
-  }
-
-  private shouldSnapToProgress(targetAngle: number): boolean {
-    const delta = Math.abs(this.getShortestAngleDelta(this.currentAngle, targetAngle));
-    const progressDelta = (delta / this.fullRotation) * 100;
-    return progressDelta >= PREVIEW_SNAP_PROGRESS_THRESHOLD;
+    return { progress: this.shownProgress, snapVisualState: shouldSnap };
   }
 
   /**

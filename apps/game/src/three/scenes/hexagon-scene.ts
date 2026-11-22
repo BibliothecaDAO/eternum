@@ -104,6 +104,7 @@ export abstract class HexagonScene {
   protected visibilityManager!: CentralizedVisibilityManager;
   protected thunderBoltManager!: ThunderBoltManager;
   protected worldAtmosphereController!: WorldAtmosphereController;
+  private lastCycleOverride: number | null = null;
   protected GUIFolder!: any;
   protected state!: AppStore;
   protected fog!: Fog;
@@ -1147,9 +1148,11 @@ export abstract class HexagonScene {
 
     // Update world atmosphere with camera target for proper light positioning
     const cameraTarget = this.controls.target;
+    const override = this.state.debugCycleProgressOverride;
     this.worldAtmosphereController.update(cycleProgress, cameraTarget, {
-      snap: this.state.debugCycleProgressOverride !== null,
+      snap: override !== null || override !== this.lastCycleOverride,
     });
+    this.lastCycleOverride = override;
 
     const weatherState = this.weatherAtmosphereState;
     const stormDepth = weatherState ? Math.max(weatherState.intensity, weatherState.stormIntensity) : 0;
