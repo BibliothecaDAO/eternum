@@ -1,3 +1,4 @@
+import type Node from "three/src/nodes/core/Node.js";
 import {
   AdditiveBlending,
   Box3,
@@ -58,15 +59,7 @@ const BEAST_PHOENIX_LAYER_RAMPS = {
 const EMBER_QUADS_PER_BEAST = 10;
 const TAU = Math.PI * 2;
 
-export interface BeastShaderUniforms {
-  time: ReturnType<typeof uniform<number>>;
-  actionIndex: ReturnType<typeof uniform<number>>;
-  layer: ReturnType<typeof uniform<number>>;
-  phoenixEnabled: ReturnType<typeof uniform<number>>;
-  phaseSpread: ReturnType<typeof uniform<number>>;
-}
-
-export function createBeastShaderUniforms(): BeastShaderUniforms {
+export function createBeastShaderUniforms() {
   return {
     time: uniform(0),
     actionIndex: uniform(0),
@@ -76,7 +69,9 @@ export function createBeastShaderUniforms(): BeastShaderUniforms {
   };
 }
 
-function selectLayerNumber(layerNode: ReturnType<typeof float>, values: Record<BeastMotionLayer, number>) {
+export type BeastShaderUniforms = ReturnType<typeof createBeastShaderUniforms>;
+
+function selectLayerNumber(layerNode: Node<"float">, values: Record<BeastMotionLayer, number>) {
   return select(
     layerNode.greaterThan(2.5),
     float(values[3]),
@@ -88,7 +83,7 @@ function selectLayerNumber(layerNode: ReturnType<typeof float>, values: Record<B
   );
 }
 
-function layerColour(layerNode: ReturnType<typeof float>, stop: "low" | "mid" | "hot") {
+function layerColour(layerNode: Node<"float">, stop: "low" | "mid" | "hot") {
   return select(
     layerNode.greaterThan(2.5),
     color(new Color(BEAST_PHOENIX_LAYER_RAMPS[3][stop])),
@@ -104,7 +99,7 @@ function layerColour(layerNode: ReturnType<typeof float>, stop: "low" | "mid" | 
   );
 }
 
-function createPhoenixGlowNode(uniforms: BeastShaderUniforms, phaseOffset: ReturnType<typeof float>) {
+function createPhoenixGlowNode(uniforms: BeastShaderUniforms, phaseOffset: Node<"float">) {
   const layerNode = float(uniforms.layer);
   const rim = normalView.dot(positionViewDirection).abs().clamp(0, 1).oneMinus().pow(2.4);
   const flameSample = vec3(
@@ -143,7 +138,7 @@ export function createPureMathsBeastMaterial(
   const material = new FrostedStandardNodeMaterial();
   copyStandardProps(material, source);
 
-  const phaseOffset = float(instanceIndex).mul(2.399963).mul(uniforms.phaseSpread);
+  const phaseOffset = float(instanceIndex).mul(2.399963).mul(float(uniforms.phaseSpread));
   const cycle = uniforms.time.add(phaseOffset).div(BEAST_MOTION_CYCLE_SECONDS).fract();
   const phase = cycle.mul(TAU);
 

@@ -59,8 +59,7 @@ function readInitialState(params: URLSearchParams): BeastMotionState {
   const phoenix = params.get("phoenix") !== "0";
   const paused = params.get("paused") === "1";
   const rawCamera = params.get("camera");
-  const camera: BeastMotionCamera =
-    rawCamera === "phoneMap" || rawCamera === "close" ? rawCamera : "threeQuarter";
+  const camera: BeastMotionCamera = rawCamera === "phoneMap" || rawCamera === "close" ? rawCamera : "threeQuarter";
   return { mode, way, count, action, layer, phoenix, paused, camera };
 }
 

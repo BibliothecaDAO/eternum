@@ -302,11 +302,7 @@ interface BonePose {
   rot?: readonly [number, number, number];
 }
 
-function evaluateFullRigBonePose(
-  boneName: string,
-  action: BeastMotionAction,
-  sample: BeastMotionSample,
-): BonePose {
+function evaluateFullRigBonePose(boneName: string, action: BeastMotionAction, sample: BeastMotionSample): BonePose {
   const walkActive = action === "walk" ? 1 : 0;
   const death = sample.deathProgress;
   const flinch = sample.hitFlinch;
@@ -366,11 +362,7 @@ function evaluateFullRigBonePose(
       };
     case "tail0":
       return {
-        rot: [
-          -sample.breath * 0.08 + lunge * 0.2 - death * 0.2,
-          sample.tailYaw * 0.32 * (1 - death),
-          0,
-        ],
+        rot: [-sample.breath * 0.08 + lunge * 0.2 - death * 0.2, sample.tailYaw * 0.32 * (1 - death), 0],
       };
     case "tail1":
       return {
@@ -469,15 +461,7 @@ export function poseHybridWyvernRig(
   const lunge = sample.attackLunge;
   const coil = sample.attackCoil;
 
-  const setBone = (
-    name: string,
-    rx: number,
-    ry: number,
-    rz: number,
-    ox = 0,
-    oy = 0,
-    oz = 0,
-  ) => {
+  const setBone = (name: string, rx: number, ry: number, rz: number, ox = 0, oy = 0, oz = 0) => {
     const bone = rig.boneMap[name];
     const rest = rig.restPositions[name];
     if (!bone || !rest) return;
@@ -494,24 +478,9 @@ export function poseHybridWyvernRig(
     sample.walkBob * 0.055 * walkActive - death * 0.18,
     sample.walkOffsetZ + lunge * 0.42 - coil * 0.18 - flinch * 0.24,
   );
-  setBone(
-    "spine",
-    -coil * 0.22 + lunge * 0.34 - flinch * 0.26,
-    0,
-    -Math.sin(sample.walkPhase) * 0.04 * walkActive,
-  );
-  setBone(
-    "neck",
-    -coil * 0.3 + lunge * 0.48 - flinch * 0.34 + death * 0.35,
-    sample.headYaw * 0.14 * (1 - death),
-    0,
-  );
-  setBone(
-    "head",
-    lunge * 0.24 - flinch * 0.32 + death * 0.28,
-    sample.headYaw * 0.16 * (1 - death),
-    0,
-  );
+  setBone("spine", -coil * 0.22 + lunge * 0.34 - flinch * 0.26, 0, -Math.sin(sample.walkPhase) * 0.04 * walkActive);
+  setBone("neck", -coil * 0.3 + lunge * 0.48 - flinch * 0.34 + death * 0.35, sample.headYaw * 0.14 * (1 - death), 0);
+  setBone("head", lunge * 0.24 - flinch * 0.32 + death * 0.28, sample.headYaw * 0.16 * (1 - death), 0);
   setBone(
     "wingL",
     -coil * 0.25 + lunge * 0.35 - flinch * 0.3,

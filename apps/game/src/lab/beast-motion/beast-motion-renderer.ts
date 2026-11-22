@@ -25,7 +25,7 @@ import {
   Vector3,
 } from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import { env } from "@/env";
+import { env } from "../../../env";
 import {
   ProceduralCharacterPerformanceEvaluator,
   type ProceduralCharacterPerformanceEvaluation,

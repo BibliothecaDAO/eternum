@@ -4,8 +4,7 @@ import { join } from "node:path";
 import { createBrowserSession } from "./client-playtest/browser-session.mjs";
 import { withDevClient } from "./lib/dev-client.mjs";
 
-const option = (key, fallback) =>
-  process.argv.includes(key) ? process.argv[process.argv.indexOf(key) + 1] : fallback;
+const option = (key, fallback) => (process.argv.includes(key) ? process.argv[process.argv.indexOf(key) + 1] : fallback);
 
 const out = option("--out", join(tmpdir(), "beast-motion-proof-" + Date.now()));
 const port = option("--port", "4425");
@@ -15,24 +14,94 @@ const warmupFrames = Number(option("--warmup", "20"));
 mkdirSync(out, { recursive: true });
 
 const STILLS = [
-  { file: "compare-idle-surface", width: "1280", height: "720", state: { mode: "compare", action: "idle", layer: 0, phoenix: true, camera: "threeQuarter" }, seek: 0.6 },
-  { file: "compare-idle-hollow", width: "1280", height: "720", state: { mode: "compare", action: "idle", layer: 2, phoenix: true, camera: "threeQuarter" }, seek: 0.6 },
-  { file: "compare-idle-deep", width: "1280", height: "720", state: { mode: "compare", action: "idle", layer: 3, phoenix: true, camera: "threeQuarter" }, seek: 0.6 },
-  { file: "compare-walk-a", width: "1280", height: "720", state: { mode: "compare", action: "walk", layer: 2, phoenix: true, camera: "threeQuarter" }, seek: 0.6 },
-  { file: "compare-walk-b", width: "1280", height: "720", state: { mode: "compare", action: "walk", layer: 2, phoenix: true, camera: "threeQuarter" }, seek: 1.8 },
-  { file: "compare-attack-coil", width: "1280", height: "720", state: { mode: "compare", action: "attack", layer: 2, phoenix: true, camera: "threeQuarter" }, seek: 0.56 },
-  { file: "compare-attack-lunge", width: "1280", height: "720", state: { mode: "compare", action: "attack", layer: 2, phoenix: true, camera: "threeQuarter" }, seek: 1.08 },
-  { file: "compare-hit-flinch", width: "1280", height: "720", state: { mode: "compare", action: "hit", layer: 2, phoenix: true, camera: "threeQuarter" }, seek: 0.34 },
-  { file: "compare-death-fall", width: "1280", height: "720", state: { mode: "compare", action: "death", layer: 2, phoenix: true, camera: "threeQuarter" }, seek: 1.65 },
-  { file: "compare-phone-idle", width: "390", height: "844", state: { mode: "compare", action: "idle", layer: 2, phoenix: true, camera: "phoneMap" }, seek: 0.6 },
-  { file: "compare-phone-attack", width: "390", height: "844", state: { mode: "compare", action: "attack", layer: 2, phoenix: true, camera: "phoneMap" }, seek: 1.08 },
+  {
+    file: "compare-idle-surface",
+    width: "1280",
+    height: "720",
+    state: { mode: "compare", action: "idle", layer: 0, phoenix: true, camera: "threeQuarter" },
+    seek: 0.6,
+  },
+  {
+    file: "compare-idle-hollow",
+    width: "1280",
+    height: "720",
+    state: { mode: "compare", action: "idle", layer: 2, phoenix: true, camera: "threeQuarter" },
+    seek: 0.6,
+  },
+  {
+    file: "compare-idle-deep",
+    width: "1280",
+    height: "720",
+    state: { mode: "compare", action: "idle", layer: 3, phoenix: true, camera: "threeQuarter" },
+    seek: 0.6,
+  },
+  {
+    file: "compare-walk-a",
+    width: "1280",
+    height: "720",
+    state: { mode: "compare", action: "walk", layer: 2, phoenix: true, camera: "threeQuarter" },
+    seek: 0.6,
+  },
+  {
+    file: "compare-walk-b",
+    width: "1280",
+    height: "720",
+    state: { mode: "compare", action: "walk", layer: 2, phoenix: true, camera: "threeQuarter" },
+    seek: 1.8,
+  },
+  {
+    file: "compare-attack-coil",
+    width: "1280",
+    height: "720",
+    state: { mode: "compare", action: "attack", layer: 2, phoenix: true, camera: "threeQuarter" },
+    seek: 0.56,
+  },
+  {
+    file: "compare-attack-lunge",
+    width: "1280",
+    height: "720",
+    state: { mode: "compare", action: "attack", layer: 2, phoenix: true, camera: "threeQuarter" },
+    seek: 1.08,
+  },
+  {
+    file: "compare-hit-flinch",
+    width: "1280",
+    height: "720",
+    state: { mode: "compare", action: "hit", layer: 2, phoenix: true, camera: "threeQuarter" },
+    seek: 0.34,
+  },
+  {
+    file: "compare-death-fall",
+    width: "1280",
+    height: "720",
+    state: { mode: "compare", action: "death", layer: 2, phoenix: true, camera: "threeQuarter" },
+    seek: 1.65,
+  },
+  {
+    file: "compare-phone-idle",
+    width: "390",
+    height: "844",
+    state: { mode: "compare", action: "idle", layer: 2, phoenix: true, camera: "phoneMap" },
+    seek: 0.6,
+  },
+  {
+    file: "compare-phone-attack",
+    width: "390",
+    height: "844",
+    state: { mode: "compare", action: "attack", layer: 2, phoenix: true, camera: "phoneMap" },
+    seek: 1.08,
+  },
 ];
 
 const BENCH_WAYS = ["maths", "rig", "hybrid"];
 const BENCH_COUNTS = [1, 20, 100];
 
 function summarizeRuns(runs) {
-  const pick = (key) => runs.map((r) => r[key]).filter((v) => typeof v === "number").sort((a, b) => a - b);
+  const pick = (key) =>
+    runs
+      .map((r) => r[key])
+      .filter((v) => typeof v === "number")
+      .sort((a, b) => a - b);
   const stats = (values) => {
     if (values.length === 0) return null;
     const mid = values[Math.floor(values.length / 2)];
@@ -69,7 +138,11 @@ await withDevClient({ base: option("--base-url", null), port, out }, async (base
   try {
     browser.run(["set", "viewport", "1280", "720"]);
     browser.run(["open", `${baseUrl}/lab/beast-motion?capture=1&layer=2`]);
-    browser.run(["wait", "--fn", "document.querySelector('[data-beast-motion-ready=\"true\"]') !== null && Boolean(window.__beastMotionLab)"]);
+    browser.run([
+      "wait",
+      "--fn",
+      "document.querySelector('[data-beast-motion-ready=\"true\"]') !== null && Boolean(window.__beastMotionLab)",
+    ]);
 
     let currentSize = "1280x720";
     for (const still of STILLS) {

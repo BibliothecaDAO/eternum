@@ -16,14 +16,8 @@ import {
 function wyvernSampleGeometry(): BufferGeometry {
   const geometry = new BufferGeometry();
   const points = [
-    0, 0.42, 0.05,
-    0, 0.98, 0.18,
-    0, 1.12, 0.14,
-    -0.44, 0.72, -0.02,
-    0.44, 0.72, -0.02,
-    0.26, 0.14, -0.34,
-    -0.2, 0.05, 0.06,
-    0.2, 0.05, 0.06,
+    0, 0.42, 0.05, 0, 0.98, 0.18, 0, 1.12, 0.14, -0.44, 0.72, -0.02, 0.44, 0.72, -0.02, 0.26, 0.14, -0.34, -0.2, 0.05,
+    0.06, 0.2, 0.05, 0.06,
   ];
   geometry.setAttribute("position", new Float32BufferAttribute(points, 3));
   return geometry;
