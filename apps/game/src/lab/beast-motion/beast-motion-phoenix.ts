@@ -33,11 +33,7 @@ import {
 import brandPalette from "@/brand/palette.json";
 import { FrostedStandardNodeMaterial } from "@/three/effects/game-map-material-library";
 import { DEEP_PALETTE } from "@/three/terrain/deep-floor-material";
-import {
-  BEAST_MOTION_CYCLE_SECONDS,
-  BEAST_MOTION_HEX_STRIDE,
-  type BeastMotionLayer,
-} from "./beast-motion-model";
+import { BEAST_MOTION_CYCLE_SECONDS, BEAST_MOTION_HEX_STRIDE, type BeastMotionLayer } from "./beast-motion-model";
 
 type LayerRamp = {
   readonly low: string;
@@ -148,23 +144,39 @@ export function createPureMathsBeastMaterial(
   const absX = abs(gx);
 
   const planted = smoothstep(0.06, 0.28, gy);
-  const wingMask = smoothstep(0.16, 0.32, absX).mul(smoothstep(0.22, 0.42, gy)).mul(smoothstep(0.18, 0.02, gz));
+  const wingMask = smoothstep(0.16, 0.32, absX)
+    .mul(smoothstep(0.22, 0.42, gy))
+    .mul(smoothstep(0.18, 0.02, gz));
   const wingSpan = absX.sub(0.14).max(0);
   const wingSide = select(gx.lessThan(0), float(-1), float(1));
-  const neckHeadMask = smoothstep(0.46, 0.84, gy).mul(smoothstep(0.24, 0.1, absX)).mul(wingMask.oneMinus());
-  const tailMask = smoothstep(-0.14, -0.26, gz).mul(smoothstep(0.44, 0.22, gy)).mul(wingMask.oneMinus());
-  const legZone = smoothstep(0.36, 0.16, gy).mul(smoothstep(-0.18, -0.05, gz)).mul(wingMask.oneMinus());
+  const neckHeadMask = smoothstep(0.46, 0.84, gy)
+    .mul(smoothstep(0.24, 0.1, absX))
+    .mul(wingMask.oneMinus());
+  const tailMask = smoothstep(-0.14, -0.26, gz)
+    .mul(smoothstep(0.44, 0.22, gy))
+    .mul(wingMask.oneMinus());
+  const legZone = smoothstep(0.36, 0.16, gy)
+    .mul(smoothstep(-0.18, -0.05, gz))
+    .mul(wingMask.oneMinus());
   const leftLegMask = legZone.mul(smoothstep(-0.04, -0.14, gx));
   const rightLegMask = legZone.mul(smoothstep(0.04, 0.14, gx));
-  const torsoMask = smoothstep(0.24, 0.56, gy).mul(smoothstep(0.74, 0.52, gy)).mul(wingMask.oneMinus());
+  const torsoMask = smoothstep(0.24, 0.56, gy)
+    .mul(smoothstep(0.74, 0.52, gy))
+    .mul(wingMask.oneMinus());
 
   const breath = sin(phase.mul(2)).mul(0.5).add(0.5);
   const weightShift = sin(phase);
-  const headSwayX = sin(phase.add(0.6)).mul(0.07).add(sin(phase.mul(2).add(1.1)).mul(0.035));
+  const headSwayX = sin(phase.add(0.6))
+    .mul(0.07)
+    .add(sin(phase.mul(2).add(1.1)).mul(0.035));
   const headNodY = sin(phase.mul(2).sub(0.5)).mul(0.03);
-  const tailWhipX = sin(phase.mul(2).sub(1.2)).mul(0.11).add(sin(phase.mul(3).add(0.4)).mul(0.035));
+  const tailWhipX = sin(phase.mul(2).sub(1.2))
+    .mul(0.11)
+    .add(sin(phase.mul(3).add(0.4)).mul(0.035));
   const wingBeat = sin(phase.mul(2).add(0.3));
-  const livingNoise = mx_noise_float(vec3(gx.mul(3.5), gy.mul(3.5), uniforms.time.mul(1.4).add(phaseOffset))).mul(0.012);
+  const livingNoise = mx_noise_float(vec3(gx.mul(3.5), gy.mul(3.5), uniforms.time.mul(1.4).add(phaseOffset))).mul(
+    0.012,
+  );
 
   const idleDx = weightShift
     .mul(0.045)
@@ -198,10 +210,7 @@ export function createPureMathsBeastMaterial(
     .add(leftStepY.mul(leftLegMask))
     .add(rightStepY.mul(rightLegMask))
     .add(sin(walkPhase).mul(0.24).mul(wingSpan).mul(wingMask));
-  const walkDz = idleDz
-    .add(walkStride)
-    .add(leftStepZ.mul(leftLegMask))
-    .add(rightStepZ.mul(rightLegMask));
+  const walkDz = idleDz.add(walkStride).add(leftStepZ.mul(leftLegMask)).add(rightStepZ.mul(rightLegMask));
 
   const coilUp = smoothstep(0.0, 0.26, cycle).mul(smoothstep(0.44, 0.26, cycle));
   const lungeIn = smoothstep(0.26, 0.44, cycle);
@@ -214,22 +223,25 @@ export function createPureMathsBeastMaterial(
   const aRelZ = gz;
   const aRotY = aRelY.mul(cosA).sub(aRelZ.mul(sinA)).add(0.32);
   const aRotZ = aRelY.mul(sinA).add(aRelZ.mul(cosA));
-  const attackDx = idleDx
-    .mul(0.35)
-    .add(wingSide.mul(coilUp.mul(0.24).sub(lunge.mul(0.2))).mul(wingSpan).mul(wingMask));
-  const attackDy = aRotY
-    .sub(gy)
-    .add(coilUp.mul(0.35).sub(lunge.mul(0.25)).mul(wingSpan).mul(wingMask));
-  const attackDz = aRotZ
-    .sub(gz)
-    .add(lunge.mul(0.38))
-    .sub(coilUp.mul(0.16))
-    .sub(lunge.mul(0.22).mul(wingMask));
+  const attackDx = idleDx.mul(0.35).add(
+    wingSide
+      .mul(coilUp.mul(0.24).sub(lunge.mul(0.2)))
+      .mul(wingSpan)
+      .mul(wingMask),
+  );
+  const attackDy = aRotY.sub(gy).add(coilUp.mul(0.35).sub(lunge.mul(0.25)).mul(wingSpan).mul(wingMask));
+  const attackDz = aRotZ.sub(gz).add(lunge.mul(0.38)).sub(coilUp.mul(0.16)).sub(lunge.mul(0.22).mul(wingMask));
 
   const flinch = smoothstep(0.0, 0.14, cycle).mul(smoothstep(0.55, 0.14, cycle));
-  const tremor = sin(cycle.mul(TAU * 9)).mul(0.025).mul(flinch);
+  const tremor = sin(cycle.mul(TAU * 9))
+    .mul(0.025)
+    .mul(flinch);
   const hitDx = tremor.mul(planted).add(wingSide.mul(flinch.mul(0.28)).mul(wingSpan).mul(wingMask));
-  const hitDy = flinch.mul(0.12).mul(neckHeadMask).sub(flinch.mul(0.06).mul(torsoMask)).add(flinch.mul(0.32).mul(wingSpan).mul(wingMask));
+  const hitDy = flinch
+    .mul(0.12)
+    .mul(neckHeadMask)
+    .sub(flinch.mul(0.06).mul(torsoMask))
+    .add(flinch.mul(0.32).mul(wingSpan).mul(wingMask));
   const hitDz = flinch.mul(-0.26).mul(planted).sub(flinch.mul(0.16).mul(neckHeadMask));
 
   const death = smoothstep(0.08, 0.56, cycle);
@@ -288,11 +300,19 @@ export function createHybridBeastMaterial(
   const absX = abs(gx);
 
   const planted = smoothstep(0.08, 0.3, gy);
-  const wingTip = smoothstep(0.24, 0.44, absX).mul(smoothstep(0.26, 0.46, gy)).mul(smoothstep(0.16, 0.0, gz));
+  const wingTip = smoothstep(0.24, 0.44, absX)
+    .mul(smoothstep(0.26, 0.46, gy))
+    .mul(smoothstep(0.16, 0.0, gz));
   const tailMask = smoothstep(-0.14, -0.26, gz).mul(smoothstep(0.42, 0.22, gy));
-  const chestMask = smoothstep(0.26, 0.54, gy).mul(smoothstep(0.72, 0.5, gy)).mul(smoothstep(0.26, 0.12, absX));
+  const chestMask = smoothstep(0.26, 0.54, gy)
+    .mul(smoothstep(0.72, 0.5, gy))
+    .mul(smoothstep(0.26, 0.12, absX));
 
-  const alive = select(float(uniforms.actionIndex).greaterThan(3.5), smoothstep(0.5, 0.08, uniforms.time.div(BEAST_MOTION_CYCLE_SECONDS).fract()), float(1));
+  const alive = select(
+    float(uniforms.actionIndex).greaterThan(3.5),
+    smoothstep(0.5, 0.08, uniforms.time.div(BEAST_MOTION_CYCLE_SECONDS).fract()),
+    float(1),
+  );
   const breath = sin(phase.mul(2)).mul(0.5).add(0.5);
   const wingFlutter = sin(phase.mul(2).add(0.3).add(absX.mul(4.5)));
   const tailWave = sin(phase.mul(2).sub(1.2).add(gz.mul(6))).mul(0.11);
@@ -307,11 +327,7 @@ export function createHybridBeastMaterial(
   return material;
 }
 
-export function createSharedEmberPool(
-  bounds: Box3,
-  capacity: number,
-  uniforms: BeastShaderUniforms,
-): InstancedMesh {
+export function createSharedEmberPool(bounds: Box3, capacity: number, uniforms: BeastShaderUniforms): InstancedMesh {
   const top = Math.max(0.45, bounds.isEmpty() ? 0.85 : bounds.max.y);
   const span = Math.max(
     0.24,

@@ -275,12 +275,7 @@ export async function mountBeastMotionRenderer(input: MountBeastMotionInput): Pr
     throw new Error("Wyvern mesh not found in beast-wyvern.glb");
   }
 
-  const stage = new BeastMotionStage(
-    input,
-    rendererRuntime,
-    sourceMesh as Mesh,
-    new Box3().setFromObject(gltf.scene),
-  );
+  const stage = new BeastMotionStage(input, rendererRuntime, sourceMesh as Mesh, new Box3().setFromObject(gltf.scene));
   try {
     await stage.init();
     input.signal.throwIfAborted();
@@ -516,10 +511,7 @@ class BeastMotionStage implements BeastMotionRendererHandle {
   }
 
   private rebuildStage(): void {
-    const signature =
-      this.state.mode === "compare"
-        ? "compare"
-        : `bench:${this.state.way}:${this.state.count}`;
+    const signature = this.state.mode === "compare" ? "compare" : `bench:${this.state.way}:${this.state.count}`;
     if (signature === this.stageSignature) return;
     this.stageSignature = signature;
     this.clearStageActors();
@@ -849,7 +841,9 @@ class BeastMotionStage implements BeastMotionRendererHandle {
       return WYVERN_FULL_RIG_SPECS.length + WYVERN_HYBRID_RIG_SPECS.length;
     }
     if (this.state.way === "maths") return 0;
-    return this.state.count * (this.state.way === "rig" ? WYVERN_FULL_RIG_SPECS.length : WYVERN_HYBRID_RIG_SPECS.length);
+    return (
+      this.state.count * (this.state.way === "rig" ? WYVERN_FULL_RIG_SPECS.length : WYVERN_HYBRID_RIG_SPECS.length)
+    );
   }
 
   private emitLabels(): void {
