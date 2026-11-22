@@ -6546,13 +6546,30 @@ async function receiptOfTheNextAction({ browser, owner }, before) {
 }
 
 async function sendOneOrder(context, verb) {
+  const deployed = await deployWhenTheDockIsEmpty(context);
+  if (deployed?.blocked || deployed?.failed) return deployed;
   const before = context.browser.read(SENT_ACTIONS);
   const order = await orderBesideArmy(context, verb);
-  if (!order.army) return { order, blocked: "the dock holds no army to send: the day's armies are gone" };
-  if (!order.target) return { order, blocked: `nothing beside the readiest army offers ${verb}` };
+  if (!order.army) return { deployed, order, blocked: "the dock holds no army to send" };
+  if (!order.target) return { deployed, order, blocked: `nothing beside the readiest army offers ${verb}` };
   const receipt = await receiptOfTheNextAction(context, before);
-  if (!receipt?.applied) return { order, receipt, failed: `the chain did not apply the ${verb}` };
-  return { army: order.armyId, receipt };
+  if (!receipt?.applied) return { deployed, order, receipt, failed: `the chain did not apply the ${verb}` };
+  return { deployed, army: order.armyId, receipt };
+}
+
+async function deployWhenTheDockIsEmpty(context) {
+  const { browser, extraScreenshot } = context;
+  if (browser.armies().length > 0) return null;
+  const before = browser.read(SENT_ACTIONS);
+  const deploy = await deployFromTheDock(context);
+  extraScreenshot("deploy");
+  if (!deploy.locate) return { deploy, blocked: "the dock offers no Deploy sheet with troops to send" };
+  const receipt = await receiptOfTheNextAction(context, before);
+  if (!receipt)
+    return { offers: browser.read(SHEET_BUTTONS), blocked: "the Deploy sheet sent nothing: no troops at home" };
+  if (!receipt.applied) return { receipt, failed: "the chain did not apply the Deploy" };
+  const docked = await readUntil(() => browser.armies().length, Boolean, ORDER_OUTCOME_WAIT_MS);
+  return docked ? { receipt } : { receipt, failed: "the deployed army did not reach the dock" };
 }
 
 async function sendOneMove(context, shared) {
