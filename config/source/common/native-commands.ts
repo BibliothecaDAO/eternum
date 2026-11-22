@@ -36,6 +36,11 @@ const blitzReturnedCommands: NativeCommand[] = [
   "RemoveGuildMember",
   "SetEntityName",
   "LevelUp",
+  "SendResources",
+  "OffloadArrival",
+  "BurnStructureResources",
+  "TransferExplorerResources",
+  "TransferExplorerResourcesToStructure",
 ];
 
 export const arenaCommandMask = commandBits(allCommands) & ~commandBits(arenaClosedCommands);

@@ -13,7 +13,7 @@ pub fn blitz_game() -> (super::Deployment, u32) {
 pub const WOOD: u8 = 3;
 pub const GRASSLAND: u8 = 11;
 pub const REALM_COORD: crate::troops::Coord = crate::troops::Coord { alt: false, x: 2000, y: 2000 };
-const RIVAL_COORD: crate::troops::Coord = crate::troops::Coord { alt: false, x: 2020, y: 2000 };
+pub const SECOND_COORD: crate::troops::Coord = crate::troops::Coord { alt: false, x: 2020, y: 2000 };
 const STORE_CAPACITY: u128 = 1000000 * crate::rules::RESOURCE_PRECISION * 1000;
 
 pub fn blitz_realm() -> (super::Deployment, crate::resources::ResourceKey) {
@@ -27,9 +27,15 @@ pub fn rival_realm(
     deployment: super::Deployment, home: crate::resources::ResourceKey,
 ) -> (starknet::ContractAddress, crate::resources::ResourceKey) {
     let (rival, _) = super::deploy_player(3, super::GUARDIAN);
-    let rival_home = crate::resources::ResourceKey { game_id: home.game_id, entity_id: 2 };
-    found_realm(deployment, rival_home, rival, RIVAL_COORD);
-    (rival, rival_home)
+    (rival, second_realm(deployment, home, rival))
+}
+
+pub fn second_realm(
+    deployment: super::Deployment, home: crate::resources::ResourceKey, owner: starknet::ContractAddress,
+) -> crate::resources::ResourceKey {
+    let second = crate::resources::ResourceKey { game_id: home.game_id, entity_id: 2 };
+    found_realm(deployment, second, owner, SECOND_COORD);
+    second
 }
 
 fn found_realm(
