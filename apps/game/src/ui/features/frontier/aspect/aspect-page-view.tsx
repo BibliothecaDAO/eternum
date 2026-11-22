@@ -3,9 +3,9 @@ import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { Icon } from "@/ui/design-system/icon";
 import { HudChip, HudMeter, HudPage, HudRow } from "@/ui/design-system/kit/hud-elements";
 import { ASPECT_PAGE_WORDS as WORDS } from "@/ui/design-system/kit/words";
-import { aspectName, formatExact, formatShort, type AspectId } from "@bibliothecadao/types";
+import { aspectName, formatShort, type AspectId } from "@bibliothecadao/types";
 import type { ReactNode } from "react";
-import { AspectRaceCanvas } from "./aspect-race-canvas";
+import { AspectStandings } from "./aspect-standings";
 
 export interface AspectStanding {
   aspectId: AspectId;
@@ -69,52 +69,9 @@ const Race = ({ race }: { race: NonNullable<AspectPageProps["race"]> }) => (
   <section data-aspect-race className="flex flex-col gap-2">
     <Heading>{WORDS.race}</Heading>
     {race.result && <Muted>{race.result.winner === null ? WORDS.noFinisher : WORDS.won(race.result.winner)}</Muted>}
-    <AspectRaceCanvas standings={race.standings} finishHeight={race.finishHeight} />
-    <div className="ui-race-columns">
-      {race.standings.map((standing) => (
-        <StandingColumn key={standing.aspectId} standing={standing} race={race} />
-      ))}
-    </div>
+    <AspectStandings standings={race.standings} finishHeight={race.finishHeight} stages={race.stages} />
   </section>
 );
-
-const StandingColumn = ({
-  standing,
-  race,
-}: {
-  standing: AspectStanding;
-  race: NonNullable<AspectPageProps["race"]>;
-}) => {
-  const height = WORDS.height(standing.height, race.finishHeight);
-  const stageText = standing.finished ? WORDS.finished : WORDS.stage(standing.stage, race.stages);
-  return (
-    <div
-      data-aspect-col={standing.aspectId}
-      data-aspect-id={standing.aspectId}
-      data-own={standing.own || undefined}
-      className="ui-race-col"
-    >
-      <div className="ui-race-col__head">
-        <AspectMark aspect={standing.aspectId} size={22} decorative />
-        <span className="ui-race-col__name">{aspectName(standing.aspectId)}</span>
-      </div>
-      <span className="ui-race-col__height tabular-nums">{formatExact(standing.height)}</span>
-      <div className="ui-race-segments" role="progressbar" aria-label={height} aria-valuenow={standing.height}>
-        {Array.from({ length: race.stages }, (_, index) => {
-          const stageIndex = index + 1;
-          const active = standing.finished || stageIndex <= standing.stage;
-          return <span key={stageIndex} className="ui-race-segment" data-active={active || undefined} />;
-        })}
-      </div>
-      <span className="ui-race-col__stage">
-        {stageText} · {height}
-      </span>
-      <HudChip icons={["lords"]} label={WORDS.worth}>
-        {formatShort(standing.lords)}
-      </HudChip>
-    </div>
-  );
-};
 
 const YourAspect = ({ own }: { own: OwnAspect }) => (
   <section data-aspect-own className="flex flex-col gap-2">

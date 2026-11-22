@@ -1,7 +1,7 @@
-import { aspectName, formatExact, formatShort, type AspectId } from "@bibliothecadao/types";
+import { formatShort, type AspectId } from "@bibliothecadao/types";
 import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-import { HudButton, HudChip, HudMeter, HudNotice, HudPanel } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudChip, HudNotice, HudPanel } from "@/ui/design-system/kit/hud-elements";
 import {
   ARMIES_ENDED,
   ASPECT_PAGE_WORDS,
@@ -15,6 +15,8 @@ import {
   TROOPS,
   tomorrowLasts,
 } from "@/ui/design-system/kit/words";
+
+import { AspectStandings } from "../aspect/aspect-standings";
 
 import { DayEnds } from "../day-ends";
 import type { DayClock } from "../hud/day-clock";
@@ -112,28 +114,7 @@ export const DayDoneCard = ({
 const RaceStandings = ({ race }: { race: DayDoneRace }) => (
   <div data-day-race className="ui-day-race">
     <span className="text-hud-label uppercase tracking-wider text-hud-muted">{ASPECT_PAGE_WORDS.race}</span>
-    <div className="flex flex-col gap-2">
-      {race.standings.map((row) => {
-        const label = aspectName(row.aspectId);
-        return (
-          <div
-            key={row.aspectId}
-            data-aspect-id={row.aspectId}
-            data-own={row.own || undefined}
-            className="ui-day-race__row"
-          >
-            <AspectMark aspect={row.aspectId} size={22} decorative />
-            <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-              <div className="flex items-baseline justify-between gap-2 text-hud-label">
-                <span className={row.own ? "text-hud-strong text-hud-gold" : "text-hud-ink"}>{label}</span>
-                <span className="tabular-nums text-hud-muted">{formatExact(row.height)}</span>
-              </div>
-              <HudMeter label={label} share={race.finishHeight > 0 ? row.height / race.finishHeight : 0} />
-            </div>
-          </div>
-        );
-      })}
-    </div>
+    <AspectStandings standings={race.standings} finishHeight={race.finishHeight} />
   </div>
 );
 
