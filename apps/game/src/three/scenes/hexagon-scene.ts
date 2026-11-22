@@ -10,7 +10,7 @@ import { useUIStore, type AppStore } from "@/hooks/store/use-ui-store";
 import { TERRAIN_DEEP_FOG_COLOR } from "@/three/terrain/terrain-fog-style";
 import { CAMERA_CONFIG, FOG_CONFIG } from "@/three/constants";
 import { runWithFrameWorkOwner } from "@/three/frame-work-owner";
-import { WorldAtmosphereController } from "@/three/effects/world-atmosphere-controller";
+import { type AtmosphereEnvironment, WorldAtmosphereController } from "@/three/effects/world-atmosphere-controller";
 import { type WeatherState } from "@/three/managers/weather-manager";
 import { HighlightHexManager } from "@/three/managers/highlight-hex-manager";
 import { InputManager } from "@/three/managers/input-manager";
@@ -1050,13 +1050,20 @@ export abstract class HexagonScene {
     this.worldFx.emit({ kind: "burst", count, position, seed: Date.now() >>> 0 });
   }
 
+  protected atmosphereEnvironment(): AtmosphereEnvironment {
+    return "world";
+  }
+
   update(deltaTime: number): void {
     PerformanceMonitor.recordFrame();
     PerformanceMonitor.begin("scene.update");
     this.visibilityManager?.beginFrame();
 
     if (this.animationsPaused) {
-      this.worldAtmosphereController.update(this.frozenCycleProgress, this.controls.target, { snap: true });
+      this.worldAtmosphereController.update(this.frozenCycleProgress, this.controls.target, {
+        snap: true,
+        environment: this.atmosphereEnvironment(),
+      });
       this.updateLights();
       this.updateShadowRefresh(deltaTime);
       PerformanceMonitor.end("scene.update");
@@ -1151,6 +1158,7 @@ export abstract class HexagonScene {
     const override = this.state.debugCycleProgressOverride;
     this.worldAtmosphereController.update(cycleProgress, cameraTarget, {
       snap: override !== null || override !== this.lastCycleOverride,
+      environment: this.atmosphereEnvironment(),
     });
     this.lastCycleOverride = override;
 

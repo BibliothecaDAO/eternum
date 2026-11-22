@@ -37,14 +37,15 @@ describe("ProceduralTerrain", () => {
     });
     expect(meshes.map((mesh) => mesh.userData.surfaceDepth).sort()).toEqual([0, 1, 2, 3]);
     expect(meshes.map((mesh) => mesh.count)).toEqual([1, 1, 1, 1]);
-    expect(new Set(meshes.map((mesh) => mesh.material)).size).toBe(4);
+    expect(new Set(meshes.map((mesh) => mesh.material)).size).toBe(3);
     expect(new Set(meshes.map((mesh) => mesh.geometry)).size).toBe(1);
     expect(frontier.waterBuffers).toBeNull();
     expect(frontier.propInstances).toEqual([]);
-    for (const depth of [1, 2, 3]) {
-      const mesh = meshes.find((mesh) => mesh.userData.surfaceDepth === depth)!;
+    const materials = { 1: "terrain-layer-floor-1", 2: "terrain-layer-floor-2", 3: "terrain-layer-floor-2" };
+    for (const [depth, name] of Object.entries(materials)) {
+      const mesh = meshes.find((mesh) => mesh.userData.surfaceDepth === Number(depth))!;
       expect(Array.isArray(mesh.material)).toBe(false);
-      expect((mesh.material as { name: string }).name).toBe(`terrain-ethereal-depth-${depth}`);
+      expect((mesh.material as { name: string }).name).toBe(name);
     }
     const original = meshes.find((mesh) => mesh.userData.surfaceDepth === 0)!.material;
     terrain.present([eternum]);

@@ -14,7 +14,7 @@ export function createEtherealTerrainMaterial(): MeshStandardNodeMaterial {
   return material;
 }
 
-export function createBasaltSurface(ground: Node<"vec2">): {
+function createBasaltSurface(ground: Node<"vec2">): {
   color: Node<"vec3">;
   slab: Node<"float">;
 } {

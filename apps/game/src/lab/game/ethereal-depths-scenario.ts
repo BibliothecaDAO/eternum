@@ -1,6 +1,5 @@
 import { readExpeditionRules } from "@bibliothecadao/eternum";
 import { BiomeType, getHexesWithinRadius, TileOccupier } from "@bibliothecadao/types";
-import looks from "@/three/terrain/ethereal-depths.json";
 import { SPIRE_ARMY } from "@/ui/features/frontier/spire-fixture";
 import { spireScenario, revealedTile } from "./spire-scenario";
 import { wire, type LabFact, type LabScenario } from "./lab-chain";
@@ -21,7 +20,7 @@ export function etherealDepthsScenario(): LabScenario {
       },
     },
   ];
-  for (const depth of Object.keys(looks).map(Number)) {
+  for (const depth of [1, 2, 3]) {
     const arrival = { col: army.col, row: army.row + depth * rules.spacing };
     const cells = [arrival, ...getHexesWithinRadius(arrival.col, arrival.row, 7)];
     cells.forEach((hex, index) =>

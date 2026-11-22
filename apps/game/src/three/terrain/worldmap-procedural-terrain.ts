@@ -1,6 +1,8 @@
 import type { GroundLights } from "./ground-lights";
 import { MAP_MARKS } from "../map-marks";
 import type { EtherealSurface } from "./ethereal-depths";
+import type { LayerPlace } from "./layer-biomes";
+import type { DeepZone } from "@bibliothecadao/eternum/game-client";
 import type { GameModeId } from "@/config/game-modes";
 import { NEUTRAL_BIOME_CLIMATE, type BiomeClimateConfig } from "@bibliothecadao/eternum";
 import { BiomeType, getNeighborHexes } from "@bibliothecadao/types";
@@ -36,6 +38,7 @@ import type { TerrainMovementInteraction } from "./terrain-movement-effects";
 
 interface WorldmapProceduralCell {
   surfacePresentation?: EtherealSurface;
+  deepZone?: DeepZone;
   biomeKey: string;
   col: number;
   occupied: boolean;
@@ -290,6 +293,10 @@ export class WorldmapProceduralTerrain {
     this.surfacePresentation = presentation;
     this.terrain.setSurfacePresentation(presentation);
     this.terrain.setGridAtRest(presentation === "world" ? MAP_MARKS.grid.surfaceAtRest : MAP_MARKS.grid.deepAtRest);
+  }
+
+  setLayerMist(place: LayerPlace | null): void {
+    this.terrain.setLayerMist(place);
   }
 
   setGridFocus(cursor: TerrainWorldCoordinate | null, army: TerrainWorldCoordinate | null): void {
@@ -1082,6 +1089,7 @@ function toTerrainCell(cell: WorldmapProceduralCell): TerrainCellInput {
   const biome = resolveBiomeKey(cell.biomeKey);
   return {
     ...(cell.surfacePresentation ? { surfacePresentation: cell.surfacePresentation } : {}),
+    ...(cell.deepZone ? { deepZone: cell.deepZone } : {}),
     biome,
     col: cell.col,
     explored: biome !== null,

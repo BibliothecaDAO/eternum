@@ -1,5 +1,6 @@
 import { BiomeType } from "@bibliothecadao/types";
 import { worldOrigin } from "@/three/world-origin";
+import { surfaceCode, type EtherealSurface } from "./ethereal-depths";
 
 import { BASALT_SHELL_TRIANGLES, BASALT_SHELL_VERTICES } from "./terrain-basalt";
 import type { SurfaceBasaltTransition } from "./terrain-basalt-transition";
@@ -118,10 +119,11 @@ export function prepareTerrainPage(request: TerrainPageRequest): PreparedTerrain
 
   for (const cell of canonicalCells(request.cells)) {
     if (cell.explored && cell.biome) {
-      if (request.surfacePresentation === "ethereal" || typeof cell.surfacePresentation === "number") {
+      if (request.surfacePresentation === "ethereal" || isLayerSurface(cell.surfacePresentation)) {
         const center = terrainHexToWorld(cell.col, cell.row);
-        basalt.push(center.x, center.z, typeof cell.surfacePresentation === "number" ? cell.surfacePresentation : 0);
-        appendBorderCell(borders, buildEtherealBorderCell(cell.col, cell.row));
+        basalt.push(center.x, center.z, surfaceCode(cell.surfacePresentation));
+        if (surfaceCode(cell.surfacePresentation) === 0)
+          appendBorderCell(borders, buildEtherealBorderCell(cell.col, cell.row));
         continue;
       }
       appendCellPatch(land, vertexSampler, cell, subdivisions, spireStoneAt(field.basaltTransition, cell));
@@ -293,6 +295,9 @@ function appendWaterVertex(target: GeometryAccumulator, vertex: SampledWaterVert
 type StoneAt = (point: TerrainWorldCoordinate) => number;
 
 const NO_STONE = (): number => 0;
+
+const isLayerSurface = (surface: EtherealSurface | undefined): boolean =>
+  typeof surface === "number" || surface === "deep";
 
 function spireStoneAt(transition: SurfaceBasaltTransition, cell: TerrainCellInput): StoneAt {
   return transition.affects(cell) ? (point) => transition.stoneWeight(point.x, point.z, cell) : NO_STONE;

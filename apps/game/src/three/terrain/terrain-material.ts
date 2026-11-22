@@ -1,7 +1,7 @@
 import type { GroundLights } from "./ground-lights";
 import { applyEndgameFrost } from "../effects/endgame/field";
 import { mapAnimationTime as time } from "../effects/endgame/state";
-import { Color, Vector4, type Texture } from "three";
+import { Vector4, type Texture } from "three";
 import type Node from "three/src/nodes/core/Node.js";
 import type UniformNode from "three/src/nodes/core/UniformNode.js";
 import {
@@ -29,9 +29,10 @@ import {
 import { MeshPhysicalNodeMaterial, MeshStandardNodeMaterial } from "three/webgpu";
 
 import { MAP_MARKS } from "../map-marks";
-import { nearestHexLocalPosition, terrainHexEdgeDistance } from "./terrain-hex-node";
+import { spireStone } from "./layer-floor-material";
+import { terrainHexEdgeDistance } from "./terrain-hex-node";
 import { terrainDetailTile, terrainWaveTile } from "./terrain-detail-tile";
-import { groundSurface, hexReach } from "./terrain-ground-node";
+import { groundSurface } from "./terrain-ground-node";
 import {
   TERRAIN_DEEP_WATER_DEPTH,
   TERRAIN_MIN_RENDERED_WATER_DEPTH,
@@ -293,51 +294,4 @@ function withSpireStone(
     });
     return result;
   })();
-}
-
-const VEIL_INK = "#4a3a52";
-const STILLSTONE = { ground: "#8c8f9c", shade: "#585a68", glow: "#c6a8ff" };
-
-function spireStone(
-  at: Node<"vec2">,
-  weight: Node<"float">,
-): { coverage: Node<"float">; colour: Node<"vec3">; glow: Node<"vec3"> } {
-  const threshold = softNoise(at.mul(1.7)).mul(0.5).add(0.25);
-  return {
-    coverage: smoothstep(threshold.sub(0.12), threshold.add(0.12), weight),
-    colour: veilGround(at, rgb(STILLSTONE.shade), rgb(STILLSTONE.ground)),
-    glow: rgb(STILLSTONE.glow).mul(motes(at)),
-  };
-}
-
-function rgb(hex: string): Node<"vec3"> {
-  const { r, g, b } = new Color(hex);
-  return vec3(r, g, b);
-}
-
-function veilGround(at: Node<"vec2">, shade: Node<"vec3">, ground: Node<"vec3">): Node<"vec3"> {
-  const powder = mix(shade, ground, softNoise(at.mul(0.45)).mul(0.55).add(0.45));
-  const rippled = mix(powder, color("#ffffff"), ripples(at).mul(0.12));
-  const edge = smoothstep(0.8, 0.86, hexReach(nearestHexLocalPosition(at)));
-  return mix(rippled, color(VEIL_INK), edge.mul(0.16));
-}
-
-function softNoise(at: Node<"vec2">): Node<"float"> {
-  const a = at.x.add(at.y.mul(0.6).sin().mul(1.4)).sin();
-  const b = at.y.mul(1.3).add(at.x.mul(0.8).cos().mul(1.1)).sin();
-  return a.mul(b).mul(0.5).add(0.5);
-}
-
-function ripples(at: Node<"vec2">): Node<"float"> {
-  const wave = at.x.mul(2.1).add(at.y.mul(0.9)).add(at.y.mul(0.5).sin().mul(2.2)).sin();
-  return smoothstep(0.86, 0.98, wave);
-}
-
-function motes(at: Node<"vec2">): Node<"float"> {
-  const cell = at.mul(3.1).floor();
-  const lot = cell.x.mul(12.9898).add(cell.y.mul(78.233)).sin().mul(43758.5453).fract();
-  const spot = at.mul(3.1).fract().sub(0.5).length();
-  return smoothstep(0.08, 0.02, spot)
-    .mul(smoothstep(0.93, 0.97, lot))
-    .mul(float(0.9));
 }

@@ -1,20 +1,10 @@
 import { expeditionDepth, isEtherealTile, type EtherealLayer, type ExpeditionRules } from "@bibliothecadao/eternum";
-import looks from "./ethereal-depths.json";
 
-interface EtherealDepthLook {
-  title: string;
-  stone: string;
-  shadow: string;
-  energy: string;
-  scale: number;
-  veins: number;
-  shape: string;
-  height: number;
-  density: number;
-}
+export type EtherealSurface = "ethereal" | EtherealLayer | "deep";
 
-export const ETHEREAL_DEPTH_LOOKS: Readonly<Record<EtherealLayer, EtherealDepthLook>> = looks;
-export type EtherealSurface = "ethereal" | EtherealLayer;
+export const DEEP_SURFACE_CODE = 4;
+export const surfaceCode = (surface: EtherealSurface | undefined): number =>
+  surface === "deep" ? DEEP_SURFACE_CODE : typeof surface === "number" ? surface : 0;
 
 /** Frontier's contract row selects its depth; Eternum's alternate layer and surface Spires retain their basalt. */
 export function etherealSurfaceAt(

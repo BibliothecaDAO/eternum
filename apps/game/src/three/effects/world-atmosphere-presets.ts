@@ -1,3 +1,8 @@
+import { Color } from "three";
+import { MIST_COLOURS } from "../terrain/terrain-mist-node";
+
+const MIST_AIR = new Color().setRGB(...MIST_COLOURS.top).getHex();
+
 export interface TimeOfDayColors {
   skyColor: number;
   groundColor: number;
@@ -13,6 +18,42 @@ export interface TimeOfDayColors {
 
 // The world controller and biome lab edit and read this one table.
 export const WORLD_ATMOSPHERE_PRESETS: Record<string, TimeOfDayColors> = {
+  veilLayer: {
+    skyColor: 0x5d6a7a,
+    groundColor: 0x2a2f3a,
+    sunColor: 0xb8c6e0,
+    ambientColor: 0x6a7484,
+    fogColor: MIST_AIR,
+    hemisphereIntensity: 0.9,
+    sunIntensity: 1.6,
+    ambientIntensity: 0.45,
+    fogNear: 26,
+    fogFar: 80,
+  },
+  hollowLayer: {
+    skyColor: 0x8f8a6a,
+    groundColor: 0x3a2c3a,
+    sunColor: 0xffc88a,
+    ambientColor: 0x9a7a60,
+    fogColor: MIST_AIR,
+    hemisphereIntensity: 1.5,
+    sunIntensity: 2.8,
+    ambientIntensity: 0.75,
+    fogNear: 26,
+    fogFar: 80,
+  },
+  deepArena: {
+    skyColor: 0x4a6aa8,
+    groundColor: 0x2a4a8c,
+    sunColor: 0xffd391,
+    ambientColor: 0x3d5aa0,
+    fogColor: MIST_AIR,
+    hemisphereIntensity: 1.15,
+    sunIntensity: 2.9,
+    ambientIntensity: 0.6,
+    fogNear: 30,
+    fogFar: 90,
+  },
   deepNight: {
     // 0, 100. Fill sits low so the moon light keeps shading on units and roofs; labels stay readable on the cooler sky.
     skyColor: 0x3a4d70,

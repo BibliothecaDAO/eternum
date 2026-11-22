@@ -11,7 +11,7 @@ const BIOME_NUMBERS: readonly BiomeType[] = Object.values(BiomeType);
 export const biomeNumber = (biome: BiomeType): number => BIOME_NUMBERS.indexOf(biome);
 export const groundNumber = (ground: TerrainGround): number => TERRAIN_GROUNDS.indexOf(ground);
 
-function biomeMapTexel(col: number, row: number): number {
+export function biomeMapTexel(col: number, row: number): number {
   const wrap = (value: number) => ((value % BIOME_MAP_SIZE) + BIOME_MAP_SIZE) % BIOME_MAP_SIZE;
   return wrap(row) * BIOME_MAP_SIZE + wrap(col);
 }

@@ -19,7 +19,6 @@ import {
   ordersOfAspect,
   type AspectId,
   deepSites,
-  MineKinds,
   TileOccupier,
   type BeastIdle,
   type BeastModel,
@@ -30,7 +29,8 @@ import { PLATE_CLEARANCE } from "./structure-visible-presentation";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { presentResult } from "@/three/presented-results";
 import { activeMapLayer } from "@/three/map-layer";
-import { frontierPaintedPath } from "../structures/frontier-painted-buildings";
+import { deepLandmark } from "../structures/deep-landmarks";
+import { DEEP_GATEWAY_HEIGHT } from "./deep-arena-manager";
 import { FRONTIER_BEASTS } from "../structures/frontier-beast";
 import { FrontierModel } from "../structures/frontier-model";
 import InstancedModel from "@/three/managers/instanced-model";
@@ -45,18 +45,6 @@ import { FLAT_TERRAIN_SURFACE, placePositionOnTerrain, type TerrainSurface } fro
 import { getWorldPositionForHex } from "../utils";
 import { gltfLoader } from "../utils/utils";
 import { publishMapSelection } from "@/observability/map-selection";
-import { HYPERSTRUCTURE_BASE_HEIGHT } from "../structures/hyperstructure-design";
-import { HyperstructureModel } from "../structures/hyperstructure-model";
-
-/** How a Deep site stands on the map: the hyperstructure's own foundation, or a model's file. */
-type DeepSiteLook = { kind: "hyperstructure-foundation" } | { kind: "model"; path: () => string };
-
-const DEEP_SITE_LOOKS = {
-  foundation: { kind: "hyperstructure-foundation" },
-  core: { kind: "model", path: () => MineKinds[1].model },
-  mine: { kind: "model", path: () => MineKinds[2].model },
-  altar: { kind: "model", path: () => frontierPaintedPath("shrine") },
-} as const satisfies Record<(typeof deepSites)[number]["key"], DeepSiteLook>;
 
 /** A site the manager draws: which tiles it stands on, and the model it loads once a tile of it is seen. */
 type DrawnSite = {
@@ -65,9 +53,13 @@ type DrawnSite = {
   stands: (tile: TileSpatialRenderable) => boolean;
   model: () => Promise<{ model: InstancedModel; height: number }>;
   scale: number;
+  front: number;
   idle?: BeastIdle;
 };
 type SiteHex = { col: number; row: number };
+
+const LANDMARK_UNDER_BEAST = false;
+const BEAST_FRONT = LANDMARK_UNDER_BEAST ? 0.55 : 0;
 type PlacedSite = SiteHex & { entityId: number };
 
 /**
@@ -86,30 +78,35 @@ export class MapSiteManager {
   private modelVisible = true;
   private destroyed = false;
   private readonly sites: DrawnSite[] = [
-    ...deepSites.map((kind) => {
-      const look: DeepSiteLook = DEEP_SITE_LOOKS[kind.key];
-      return {
-        key: `deep:${kind.key}`,
-        name: kind.name,
-        stands: (tile: TileSpatialRenderable) =>
-          tile.occupierType === TileOccupier.DeepSite &&
-          this.deepKindOf(tile.occupierId) === kind.id &&
-          !this.beastStands(tile.occupierId),
-        model: () => (look.kind === "model" ? modelOf(look.path(), kind.name) : Promise.resolve(foundationModel())),
-        scale: 1,
-      };
-    }),
+    ...deepSites.map((kind) => ({
+      key: `deep:${kind.key}`,
+      name: kind.name,
+      stands: (tile: TileSpatialRenderable) =>
+        this.isDeepSiteOf(tile, kind.id) &&
+        this.closedRing(tile.occupierId) === undefined &&
+        (LANDMARK_UNDER_BEAST || !this.beastGuards(tile.occupierId)),
+      model: () => Promise.resolve(landmarkModel(kind.key, kind.name, ACTIVE)),
+      scale: 1,
+      front: 0,
+    })),
+    ...deepSites.map((kind) => ({
+      key: `deep-dormant:${kind.key}`,
+      name: kind.name,
+      stands: (tile: TileSpatialRenderable) =>
+        this.isDeepSiteOf(tile, kind.id) && this.closedRing(tile.occupierId) !== undefined,
+      model: () => Promise.resolve(landmarkModel(kind.key, kind.name, DORMANT)),
+      scale: 1,
+      front: 0,
+    })),
     ...deepSites.map((kind) => {
       const beast = DEEP_BEASTS[kind.key];
       return {
         key: `deep-beast:${kind.key}`,
         name: beast.name,
-        stands: (tile: TileSpatialRenderable) =>
-          tile.occupierType === TileOccupier.DeepSite &&
-          this.deepKindOf(tile.occupierId) === kind.id &&
-          this.beastStands(tile.occupierId),
+        stands: (tile: TileSpatialRenderable) => this.isDeepSiteOf(tile, kind.id) && this.beastStands(tile.occupierId),
         model: () => beastModelOf(beastModel(beast)),
         scale: beast.scale,
+        front: BEAST_FRONT,
         idle: beast.idle,
       };
     }),
@@ -210,11 +207,8 @@ export class MapSiteManager {
       }
       const previous = model.getCount();
       hexes.forEach((hex, index) => {
-        model.setMatrixAt(index, this.placement(hex, site.scale));
+        model.setMatrixAt(index, this.placement(hex, site.scale, site.front));
         if (site.idle && model instanceof FrontierModel) model.setIdleAt(index, site.idle);
-        // The Foundation is a hyperstructure's foundation alone: no Aspect builds this one.
-        if (model instanceof HyperstructureModel)
-          model.setConstructionAt(index, { entityId: hex.entityId, progress: 0, completed: false });
       });
       for (let index = hexes.length; index < previous; index += 1) model.removeInstance(index);
       model.setCount(hexes.length);
@@ -226,7 +220,10 @@ export class MapSiteManager {
   private drawnKinds(): Record<string, number> {
     const drawn = (key: string) => this.models.get(key)?.getCount() ?? 0;
     return Object.fromEntries(
-      deepSites.map(({ key }) => [`deep:${key}`, drawn(`deep:${key}`) + drawn(`deep-beast:${key}`)]),
+      deepSites.map(({ key }) => [
+        `deep:${key}`,
+        drawn(`deep:${key}`) + drawn(`deep-beast:${key}`) + drawn(`deep-dormant:${key}`),
+      ]),
     );
   }
 
@@ -267,7 +264,7 @@ export class MapSiteManager {
     const own = viewerAspects(this.store, configManager.getActiveGameId(), accountAddress() ?? null);
     for (const gate of gates) {
       const position = getWorldPositionForHex({ col: gate.col - FELT_CENTER(), row: gate.row - FELT_CENTER() });
-      placePositionOnTerrain(position, this.terrain, PLATE_CLEARANCE);
+      placePositionOnTerrain(position, this.terrain, DEEP_GATEWAY_HEIGHT + PLATE_CLEARANCE);
       this.gates.setLabel({ entityId: gate.aspect, position, plate: gatePlate(gate.aspect, own.has(gate.aspect)) });
     }
     this.gates.retainOnly(aspects.map(({ id }) => id));
@@ -291,8 +288,7 @@ export class MapSiteManager {
       col: tile.hexCoords.col - FELT_CENTER(),
       row: tile.hexCoords.row - FELT_CENTER(),
     });
-    const standing = this.beastStands(tile.occupierId) ? `deep-beast:${kind.key}` : `deep:${kind.key}`;
-    placePositionOnTerrain(position, this.terrain, (this.heights.get(standing) ?? 0) + PLATE_CLEARANCE);
+    placePositionOnTerrain(position, this.terrain, this.plateHeight(tile.occupierId, kind.key) + PLATE_CLEARANCE);
     return {
       entityId: tile.occupierId,
       position,
@@ -332,6 +328,17 @@ export class MapSiteManager {
       .filter((tile) => site.stands(tile))
       .slice(0, SITE_CAPACITY)
       .map(({ hexCoords, occupierId }) => ({ col: hexCoords.col, row: hexCoords.row, entityId: occupierId }));
+  }
+
+  private plateHeight(entityId: number, key: (typeof deepSites)[number]["key"]): number {
+    const landmark = this.heights.get(this.closedRing(entityId) ? `deep-dormant:${key}` : `deep:${key}`) ?? 0;
+    if (!this.beastStands(entityId)) return landmark;
+    const beast = this.heights.get(`deep-beast:${key}`) ?? 0;
+    return LANDMARK_UNDER_BEAST ? Math.max(landmark, beast) : beast;
+  }
+
+  private isDeepSiteOf(tile: TileSpatialRenderable, kind: number): boolean {
+    return tile.occupierType === TileOccupier.DeepSite && this.deepKindOf(tile.occupierId) === kind;
   }
 
   /** A Deep site's kind, from its DeepSite row; none while that row is on its way. */
@@ -374,9 +381,10 @@ export class MapSiteManager {
     return guard !== undefined && this.deepKindOf(safeInteger(guard.structure_id)) !== undefined;
   }
 
-  private placement(hex: SiteHex, scale: number) {
+  private placement(hex: SiteHex, scale: number, front: number) {
     const position = getWorldPositionForHex({ col: hex.col - FELT_CENTER(), row: hex.row - FELT_CENTER() });
     this.dummy.position.copy(placePositionOnTerrain(position, this.terrain));
+    this.dummy.position.z += front;
     this.dummy.scale.setScalar(scale);
     this.dummy.updateMatrix();
     return this.dummy.matrix;
@@ -386,12 +394,14 @@ export class MapSiteManager {
 /** Sites a day's map can hold at once; the draw spaces them far below this. */
 const SITE_CAPACITY = 64;
 
-/** A site's model from its file, and how tall it stands, for the plate over it. */
-const modelOf = async (path: string, name: string) => {
-  const gltf = await gltfLoader.loadAsync(path);
+const ACTIVE = 1;
+const DORMANT = 0;
+
+const landmarkModel = (key: (typeof deepSites)[number]["key"], name: string, activation: number) => {
+  const landmark = deepLandmark(key, activation);
   return {
-    model: new InstancedModel(gltf, SITE_CAPACITY, false, name),
-    height: new Box3().setFromObject(gltf.scene).max.y,
+    model: new InstancedModel(landmark, SITE_CAPACITY, false, name),
+    height: new Box3().setFromObject(landmark.scene).max.y,
   };
 };
 
@@ -399,9 +409,6 @@ const beastModelOf = async (species: BeastModel) => {
   const gltf = await gltfLoader.loadAsync(FRONTIER_BEASTS[species].path);
   return { model: new FrontierModel(gltf, SITE_CAPACITY, species), height: new Box3().setFromObject(gltf.scene).max.y };
 };
-
-/** The Foundation's model: a hyperstructure's own, standing at its foundation, its plate just over that base. */
-const foundationModel = () => ({ model: new HyperstructureModel(SITE_CAPACITY), height: HYPERSTRUCTURE_BASE_HEIGHT });
 
 const isMapSite = (occupier: number | undefined): boolean => occupier === TileOccupier.DeepSite;
 

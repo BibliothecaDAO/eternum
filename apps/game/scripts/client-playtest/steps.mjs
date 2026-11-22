@@ -9,7 +9,6 @@ import {
   ResourcesIds,
   RESOURCE_PRECISION,
 } from "@bibliothecadao/types";
-import depthLooks from "../../src/three/terrain/ethereal-depths.json" with { type: "json" };
 import iconMeanings from "../../asset-sources/facets/semantic-map.json" with { type: "json" };
 import release from "../../../../contracts/l3/world-native/schema/release-definition.json" with { type: "json" };
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
@@ -3283,6 +3282,8 @@ async function openASiteCard(browser) {
   return { card: null, offered };
 }
 
+const ETHEREAL_DEPTHS = LAYER_NAMES.slice(1).map((_, index) => index + 1);
+
 /** Each proof starts on the surface and uses the same Spire entry as a Frontier player. */
 function etherealDepthSteps(depth) {
   const label = layerName(depth);
@@ -3294,7 +3295,7 @@ function etherealDepthSteps(depth) {
       settleMs: 0,
       verify: ({ played }) =>
         played.state.depths.every((row) => row.button === "Enter" && row.enabled) &&
-        played.state.depths.length === Object.keys(depthLooks).length
+        played.state.depths.length === ETHEREAL_DEPTHS.length
           ? completed(played)
           : failed("The Spire does not offer all researched depths", played),
     },
@@ -3336,7 +3337,7 @@ function etherealDepthSteps(depth) {
             alternateLayer: window.__eternumMapSelection?.layer,
           };
         })())`);
-        return { before, after, camera, terrain, subjects, label, look: depthLooks[depth].title };
+        return { before, after, camera, terrain, subjects, label, look: label };
       },
       verify: ({ played }) => {
         const { before, after, camera, terrain, subjects } = played;
@@ -6057,9 +6058,9 @@ export const STEP_SETS = {
   "lab-stamina-wind": { game: { ...LAB_SPIRE, lab: "stamina-wind" }, steps: staminaEffectSteps(true) },
   "lab-layers": { game: LAB_SPIRE, steps: LAB_LAYERS_STEPS },
   ...Object.fromEntries(
-    Object.keys(depthLooks).map((depth) => [
+    ETHEREAL_DEPTHS.map((depth) => [
       `lab-ethereal-${depth}`,
-      { game: { ...LAB_SPIRE, lab: "ethereal-depths" }, steps: etherealDepthSteps(Number(depth)) },
+      { game: { ...LAB_SPIRE, lab: "ethereal-depths" }, steps: etherealDepthSteps(depth) },
     ]),
   ),
   "lab-merge-loses-training": {

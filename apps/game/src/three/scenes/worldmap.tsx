@@ -12,6 +12,10 @@ import { SelectedArmyOrders } from "./worldmap-selected-army-orders";
 import { TileOccupier } from "@bibliothecadao/types";
 import { SpireManager } from "../managers/spire-manager";
 import { MapSiteManager } from "../managers/map-site-manager";
+import type { AtmosphereEnvironment } from "../effects/world-atmosphere-controller";
+import { layerOfSurface, type LayerPlace } from "../terrain/layer-biomes";
+import { MIST_FOCUS } from "../terrain/terrain-mist-node";
+import { DeepArenaManager } from "../managers/deep-arena-manager";
 import { activeMapLayer } from "@/three/map-layer";
 import type { ReactNode } from "react";
 import { isMapPreviewAction } from "./worldmap-action-preview-policy";
@@ -137,6 +141,8 @@ import {
 } from "@/observability/client-action-latency";
 import {
   currentArmy,
+  deepZoneAt,
+  type DeepZone,
   safeInteger,
   type GameClientSetup as SetupResult,
   type NativeRows,
@@ -1091,6 +1097,7 @@ export default class WorldmapScene extends WarpTravel {
   private veilCheckedAt = -1;
   private expeditionGridOf: { gameId: number; rules: ExpeditionRules | null } | null = null;
   private mapSiteManager!: MapSiteManager;
+  private deepArenaManager!: DeepArenaManager;
   private spireLabelsGroup!: Group;
 
   private renderedMapLayer?: boolean;
@@ -1327,6 +1334,7 @@ export default class WorldmapScene extends WarpTravel {
       this.mapPlates.createScope("deep-gate"),
       this.getTerrainSurface(),
     );
+    this.deepArenaManager = new DeepArenaManager(this.scene, this.game.store, this.getTerrainSurface());
 
     // Bootstrap applyRenderVisualProfile may have run before these managers existed; apply the
     // fixed visual limits now that the managers are available.
@@ -4295,11 +4303,39 @@ export default class WorldmapScene extends WarpTravel {
     const hex = { alt: activeMapLayer(), col: col + center, row: row + center };
     const tile = this.worldSpatialProjection.getTileAtHex(hex);
     const spire = tile?.occupierType === TileOccupier.Spire;
+    const deepZone = this.deepZoneOf(hex);
     return {
       projectedBiome: tile ? requireBiomeTypeFromId(tile.biome) : undefined,
-      surfacePresentation: etherealSurfaceAt(this.expeditionGrid(), hex, spire),
+      surfacePresentation: deepZone ? "deep" : etherealSurfaceAt(this.expeditionGrid(), hex, spire),
+      deepZone,
       occupied: spire || this.worldSpatialProjection.getStructuresAtHex(hex).length > 0,
     };
+  }
+
+  protected override atmosphereEnvironment(): AtmosphereEnvironment {
+    const place = this.cameraLayerPlace();
+    this.proceduralTerrain.setLayerMist(place);
+    if (place) MIST_FOCUS.value.copy(this.controls.target);
+    return place ?? "world";
+  }
+
+  private cameraLayerPlace(): LayerPlace | null {
+    const hex = { ...contractHexOf(this.getCameraTargetHex()), alt: activeMapLayer() };
+    const surface = etherealSurfaceAt(this.expeditionGrid(), hex, false);
+    if (this.deepZoneOf(hex) || (surface === 3 && this.hasSharedDeep())) return "deep";
+    const layer = layerOfSurface(surface);
+    return layer === 1 ? "veil" : layer === 2 ? "hollow" : null;
+  }
+
+  private hasSharedDeep(): boolean {
+    return this.game.store.get("DeepRules", { game_id: configManager.getActiveGameId() }) !== undefined;
+  }
+
+  private deepZoneOf(hex: { col: number; row: number; alt: boolean }): DeepZone | undefined {
+    const rules = this.expeditionGrid();
+    const deep = this.game.store.get("DeepRules", { game_id: configManager.getActiveGameId() });
+    if (!rules || !deep || hex.alt) return undefined;
+    return deepZoneAt(rules.spacing, deep, hex) ?? undefined;
   }
 
   /** The game's expedition grid, read once per game: the terrain asks it of every cell it draws. */
@@ -6194,6 +6230,7 @@ export default class WorldmapScene extends WarpTravel {
     this.structureManager.refreshTerrainPlacement();
     this.spireManager.refreshTerrainPlacement();
     this.mapSiteManager.refreshTerrainPlacement();
+    this.deepArenaManager.refreshTerrainPlacement();
     this.armyManager.refreshTerrainPlacement();
     this.ownershipRings.refreshTerrainPlacement();
     this.highlightHexManager.refreshTerrainPlacement();
@@ -7990,7 +8027,9 @@ export default class WorldmapScene extends WarpTravel {
     this.syncTerrainGridFocus();
     if (!this.animationsPaused) {
       this.syncTerrainMovementInteractions();
-      this.proceduralTerrain.setGroundLightStrength(hearthStrength(this.worldAtmosphereController.shownProgress));
+      this.proceduralTerrain.setGroundLightStrength(
+        this.cameraLayerPlace() === null ? hearthStrength(this.worldAtmosphereController.shownProgress) : 0,
+      );
       this.proceduralTerrain.update(deltaTime);
       this.combatPresentation?.update(deltaTime);
       this.fxManager.update(deltaTime);
@@ -8392,6 +8431,7 @@ export default class WorldmapScene extends WarpTravel {
       structureManager: this.structureManager,
       spireManager: this.spireManager,
       mapSiteManager: this.mapSiteManager,
+      deepArenaManager: this.deepArenaManager,
       fxManager: this.fxManager,
       resourceFXManager: this.resourceFXManager,
     });

@@ -1,7 +1,7 @@
 import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import { aspects, type AspectId } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
-import { surfaceNeighborAtDistance } from "./travel";
+import { journeyDistance, surfaceNeighborAtDistance } from "./travel";
 
 export function deepCenter(spacing: number): { col: number; row: number } {
   if (spacing < nativeRuleConstants.DEEP_MAP_SIZE * 2) throw new Error("Deep needs a full expedition region");
@@ -55,4 +55,29 @@ export function deepViewFor(
 
 export function deepGateTiles(gateDistance: number, spacing: number): { aspect: AspectId; col: number; row: number }[] {
   return aspects.map(({ id }) => ({ aspect: id, ...deepGate(spacing, gateDistance, id) }));
+}
+
+export type DeepZone = "plaza" | "ring" | "field" | "rim";
+
+const DEEP_RIM_MARGIN = 1;
+
+type DeepZoneRules = { rings: readonly { radius: number }[] };
+
+export function deepZoneBounds(rules: DeepZoneRules): { plazaBelow: number; ringRadii: number[]; rimBeyond: number } {
+  const ringRadii = [...new Set(rules.rings.map(({ radius }) => radius))].sort((a, b) => a - b);
+  return {
+    plazaBelow: nativeRuleConstants.DEEP_PLAZA_RADIUS + 1,
+    ringRadii,
+    rimBeyond: Math.max(...ringRadii) + DEEP_RIM_MARGIN,
+  };
+}
+
+export function deepZoneAt(spacing: number, rules: DeepZoneRules, hex: { col: number; row: number }): DeepZone | null {
+  if (!isDeepTile(spacing, { ...hex, alt: false })) return null;
+  const center = deepCenter(spacing);
+  const distance = journeyDistance({ x: center.col, y: center.row }, { x: hex.col, y: hex.row });
+  const bounds = deepZoneBounds(rules);
+  if (distance < bounds.plazaBelow) return "plaza";
+  if (bounds.ringRadii.includes(distance)) return "ring";
+  return distance > bounds.rimBeyond ? "rim" : "field";
 }

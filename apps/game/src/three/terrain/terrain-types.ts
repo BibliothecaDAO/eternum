@@ -1,4 +1,5 @@
 import type { EtherealSurface } from "./ethereal-depths";
+import type { DeepZone } from "@bibliothecadao/eternum/game-client";
 import type { BiomeClimateConfig } from "@bibliothecadao/eternum";
 import type { BiomeType, HexPosition, StructureType } from "@bibliothecadao/types";
 import type { TerrainPropArchetypeId } from "./terrain-prop-catalog";
@@ -7,6 +8,7 @@ export const PROCEDURAL_TERRAIN_STYLE_VERSION = 30;
 
 export interface TerrainCellInput {
   surfacePresentation?: EtherealSurface;
+  deepZone?: DeepZone;
   biome: BiomeType | null;
   col: number;
   explored: boolean;

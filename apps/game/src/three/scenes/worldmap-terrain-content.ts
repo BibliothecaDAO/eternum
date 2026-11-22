@@ -1,4 +1,5 @@
 import type { EtherealSurface } from "../terrain/ethereal-depths";
+import type { DeepZone } from "@bibliothecadao/eternum/game-client";
 import { resolveWorldmapVisualTerrainPageKeyForHex } from "./worldmap-terrain-presentation-runtime";
 /** The biome a terrain cell draws while its tile is unexplored: its outline. */
 export const UNEXPLORED_TERRAIN_BIOME = "Outline";
@@ -14,6 +15,7 @@ export interface TerrainCellFacts {
   projectedBiome: string | undefined;
   occupied: boolean;
   surfacePresentation: EtherealSurface | undefined;
+  deepZone?: DeepZone;
 }
 
 interface CaptureTerrainContentInput {
@@ -24,7 +26,7 @@ interface CaptureTerrainContentInput {
 }
 
 interface TerrainContentSnapshot {
-  cells: Array<TerrainCoverageCell & { occupied: boolean; surfacePresentation?: EtherealSurface }>;
+  cells: Array<TerrainCoverageCell & { occupied: boolean; surfacePresentation?: EtherealSurface; deepZone?: DeepZone }>;
   commitMode: "atomic" | "ambient";
   revision: number;
 }
@@ -49,6 +51,7 @@ export class WorldmapTerrainContent {
           col: cell.col,
           occupied: facts.occupied,
           surfacePresentation: facts.surfacePresentation,
+          deepZone: facts.deepZone,
           row: cell.row,
         };
       }),

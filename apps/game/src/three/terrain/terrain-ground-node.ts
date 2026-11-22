@@ -81,7 +81,7 @@ const strewn = (at: Node<"vec2">, fine: number, share: Node<"float"> | number, s
   return vec2(inside, hash3(lot.mul(7.7)).mul(inside));
 };
 
-const biomeTexelAt = (biomeMap: Texture, point: Node<"vec2">) => {
+export const biomeTexelAt = (biomeMap: Texture, point: Node<"vec2">) => {
   const middle = point.sub(nearestHexLocalPosition(point));
   const row = middle.y.div(TERRAIN_HEX_VERTICAL_SPACING).round();
   const odd = abs(row).mod(2);
