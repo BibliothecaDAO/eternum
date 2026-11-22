@@ -271,7 +271,11 @@ export class ResourceManager {
 
   private storerooms(): number {
     const buildings = this.store.get("StructureBuildings", { game_id: this.gameId, entity_id: this.entityId });
-    const counts = [buildings?.packed_counts_1 ?? 0n, buildings?.packed_counts_2 ?? 0n, buildings?.packed_counts_3 ?? 0n];
+    const counts = [
+      buildings?.packed_counts_1 ?? 0n,
+      buildings?.packed_counts_2 ?? 0n,
+      buildings?.packed_counts_3 ?? 0n,
+    ];
     return getBuildingCount(research.STOREROOM, counts);
   }
 
