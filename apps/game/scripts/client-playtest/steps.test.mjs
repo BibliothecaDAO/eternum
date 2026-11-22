@@ -1276,7 +1276,6 @@ describe("the Season 1 rehearsal", () => {
     expect(REHEARSAL_WORDS.take).toBe(DEEP_WORDS.take);
     expect(REHEARSAL_WORDS.beast("Balrog", 900)).toBe(DEEP_WORDS.beast("Balrog", 900));
     expect(REHEARSAL_WORDS.open).toBe(DEEP_WORDS.open);
-    expect(REHEARSAL_WORDS.heldBy("Chaos")).toBe(DEEP_WORDS.heldBy("Chaos"));
     expect(REHEARSAL_WORDS.lasts(14, "28m")).toBe(DEEP_WORDS.lasts(14, "28m"));
     expect(REHEARSAL_WORDS.share(40)).toBe(DEEP_WORDS.share(40));
     expect(REHEARSAL_WORDS.glory(6)).toBe(DEEP_WORDS.glory(6));

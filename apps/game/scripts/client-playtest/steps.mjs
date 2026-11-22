@@ -6022,7 +6022,6 @@ export const REHEARSAL_WORDS = {
   take: "Take",
   beast: (name, troops) => `Today's beast: ${name}, ${troops} troops`,
   open: "No guard: the next army takes it",
-  heldBy: (aspect) => `Held by ${aspect}`,
   lasts: (ticks, time) => `${ticks} ticks left (${time})`,
   share: (percent) => `${percent}% of each tick`,
   glory: (amount) => `${amount} Glory`,
@@ -6128,6 +6127,7 @@ const DEEP_SITE_CARD = `JSON.stringify((() => {
   return {
     name: sheet?.getAttribute("aria-label") ?? null,
     text: sheet?.textContent ?? "",
+    holder: sheet?.querySelector("[data-aspect-holder]")?.dataset.side ?? null,
     pay: [...(sheet?.querySelectorAll("[data-deep-pay] .ui-chip") ?? [])].map((chip) => chip.textContent.trim()),
     mine: sheet?.querySelector("[data-deep-slots] [data-deep-slot][data-mine]")?.getAttribute("aria-label") ?? null,
     buttons: [...(sheet?.querySelectorAll("button:not([disabled])") ?? [])].map((button) => button.getAttribute("aria-label") || button.textContent.trim()),
@@ -6243,7 +6243,7 @@ function s1RehearsalSteps() {
     rehearsalStep({
       name: "ally-fights-a-guard",
       as: "ally",
-      play: (context) => actAtADeepSite(context, shared, "allyDeepArmy", rivalSite(shared)),
+      play: (context) => actAtADeepSite(context, shared, "allyDeepArmy", RIVAL_SITE),
     }),
     rehearsalStep({
       name: "ally-takes-an-empty-site",
@@ -6417,18 +6417,17 @@ async function enterTheDeep({ browser, extraScreenshot }, shared, slot) {
 }
 
 const BEAST_PREFIX = REHEARSAL_WORDS.beast("", "").split(":")[0];
-const HELD_BY = new RegExp(escapeRegExp(REHEARSAL_WORDS.heldBy("§")).replace("§", "(\\p{L}+)"), "u");
 
 const BEAST_SITE = {
   verb: REHEARSAL_WORDS.attack,
   matches: (card) => card.text.includes(BEAST_PREFIX),
   missing: `no ${DEEP_LAYER} site in view holds today's beast`,
 };
-const rivalSite = (shared) => ({
+const RIVAL_SITE = {
   verb: REHEARSAL_WORDS.attack,
-  matches: (card) => HELD_BY.test(card.text) && HELD_BY.exec(card.text)[1] !== shared.aspect,
+  matches: (card) => card.holder === "rival",
   missing: `no rival Aspect holds a ${DEEP_LAYER} site in view`,
-});
+};
 const EMPTY_SITE = {
   verb: REHEARSAL_WORDS.take,
   matches: (card) => card.text.includes(REHEARSAL_WORDS.open),
