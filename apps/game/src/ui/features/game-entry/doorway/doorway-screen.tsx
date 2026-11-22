@@ -34,6 +34,7 @@ export const DoorwayScreen = ({
   onSignIn,
   results,
   asking = false,
+  wide = false,
   verb,
   children,
 }: {
@@ -49,6 +50,7 @@ export const DoorwayScreen = ({
   results?: string;
   /** The step asks the player to choose (the Realm step's homes): what they choose from stands in the bar's place. */
   asking?: boolean;
+  wide?: boolean;
   /** The asking step's one verb: in the foot row on a phone, under what it acts on on a desktop. */
   verb?: ReactNode;
   /** A mode's own control at the realm step, kept inside the doorway's frame. */
@@ -71,7 +73,7 @@ export const DoorwayScreen = ({
       >
         {desktop ? (
           <div className="flex min-h-[calc(100dvh-12rem)] items-center justify-center">
-            <AppPanel className="w-column">
+            <AppPanel className={wide ? "w-full max-w-5xl" : "w-column"}>
               <div className="flex flex-col items-stretch gap-5">
                 {realm && <RealmRising realm={realm} />}
                 {progress}

@@ -55,7 +55,7 @@ export const AspectPageView = ({ race, own, fights, invite, onClose }: AspectPag
     {race === null ? (
       <Muted>{WORDS.reading}</Muted>
     ) : (
-      <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto">
+      <div className="mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col gap-3 overflow-y-auto">
         <Race race={race} />
         {own ? <YourAspect own={own} /> : <Muted>{WORDS.noAspect}</Muted>}
         {own && fights}

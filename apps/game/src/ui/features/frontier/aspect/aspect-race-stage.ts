@@ -71,6 +71,7 @@ export class AspectRaceStage implements LabStage {
   private hyperstructures: HyperstructureModel | null = null;
   private entries: readonly RaceTowerEntry[];
   private finishHeight: number;
+  private lastAspect = 0;
   private disposed = false;
 
   constructor(entries: readonly RaceTowerEntry[], finishHeight: number) {
@@ -101,6 +102,9 @@ export class AspectRaceStage implements LabStage {
 
   update(delta: number): void {
     this.hyperstructures?.updateAnimations(delta);
+    if (this.context && Math.abs(this.context.camera.aspect - this.lastAspect) > 0.01) {
+      this.frameCamera(this.context.camera, this.context.controls);
+    }
   }
 
   dispose(): void {
@@ -140,12 +144,18 @@ export class AspectRaceStage implements LabStage {
       RACE_TOWER_HEXES[RACE_TOWER_HEXES.length - 1].col,
       RACE_TOWER_HEXES[RACE_TOWER_HEXES.length - 1].row,
     );
-    const center = new Vector3((first.x + last.x) / 2, 1.4, (first.z + last.z) / 2);
-    const span = Math.abs(last.x - first.x) + 3.2;
+    const center = new Vector3((first.x + last.x) / 2, 1.25, (first.z + last.z) / 2);
+    const aspect = Math.max(camera.aspect, 1);
+    this.lastAspect = camera.aspect;
+    if (camera.fov !== 30) {
+      camera.fov = 30;
+      camera.updateProjectionMatrix();
+    }
     const halfFovRad = (camera.fov * Math.PI) / 360;
-    const horizHalfFov = Math.atan(Math.tan(halfFovRad) * Math.max(camera.aspect, 1.2));
-    const distance = Math.max(9.5, (span / (2 * Math.tan(horizHalfFov))) * 1.08);
-    camera.position.set(center.x, center.y + distance * 0.52, center.z + distance * 0.86);
+    const idealHorizSpan = Math.abs(last.x - first.x) / 0.75;
+    const vertSpan = Math.max(4.4, idealHorizSpan / aspect);
+    const distance = vertSpan / (2 * Math.tan(halfFovRad));
+    camera.position.set(center.x, center.y + distance * 0.42, center.z + distance * 0.91);
     controls.target.copy(center);
     controls.enabled = false;
     camera.lookAt(center);
