@@ -2674,6 +2674,8 @@ button.ui-card__choose:disabled {
   flex-wrap: wrap;
   align-items: center;
   gap: theme(spacing[1.5]);
+  border-left: 3px solid rgb(var(--hud-aspect));
+  padding-left: theme(spacing.2);
   font-size: var(--hud-text-body);
   line-height: var(--hud-leading-body);
 }
@@ -3061,6 +3063,9 @@ button.ui-realm-tile:hover {
   align-items: center;
   gap: theme(spacing.2);
 }
+.ui-day-race__row .ui-meter > i {
+  background: rgb(var(--hud-aspect));
+}
 
 .ui-race-stage {
   position: relative;
@@ -3109,15 +3114,16 @@ button.ui-realm-tile:hover {
   flex-direction: column;
   align-items: center;
   gap: theme(spacing.1);
-  border: 1px solid var(--hud-line);
+  border: 1px solid rgb(var(--hud-aspect) / 0.45);
   border-radius: var(--hud-radius-control);
   background: var(--hud-well);
+  box-shadow: inset 0 3px 0 rgb(var(--hud-aspect));
   padding: theme(spacing.2);
   text-align: center;
 }
 .ui-race-col[data-own] {
-  border-color: rgb(var(--hud-gold));
-  background: color-mix(in srgb, rgb(var(--hud-gold)) 10%, var(--hud-well));
+  border-color: rgb(var(--hud-aspect));
+  background: rgb(var(--hud-aspect) / 0.14);
 }
 .ui-race-col__head {
   display: flex;
@@ -3148,7 +3154,7 @@ button.ui-realm-tile:hover {
   background: var(--hud-divider);
 }
 .ui-race-segment[data-active] {
-  background: rgb(var(--hud-accent));
+  background: rgb(var(--hud-aspect));
 }
 
 .ui-frontier-topbar {
@@ -3244,9 +3250,6 @@ button.ui-realm-tile:hover {
 .ui-depth-switch__btn[aria-pressed="true"] {
   background: var(--hud-chosen);
   color: rgb(var(--hud-gold));
-}
-.ui-race-col[data-own] .ui-race-segment[data-active] {
-  background: rgb(var(--hud-gold));
 }
 .ui-race-col__stage {
   color: var(--hud-muted);

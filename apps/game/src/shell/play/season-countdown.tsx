@@ -27,7 +27,7 @@ export const SeasonCountdown = ({ opening, now }: { opening: SeasonOpening; now:
 const AspectCrests = () => (
   <ul className="app-countdown-aspects">
     {aspects.map(({ id, name }) => (
-      <li key={id} data-aspect={name} className="app-countdown-aspect">
+      <li key={id} data-aspect={name} data-aspect-id={id} className="app-countdown-aspect">
         <AspectMark aspect={id} size={72} decorative />
         <span className="app-countdown-aspect__name">{name}</span>
         <span className="flex items-center justify-center gap-1.5">

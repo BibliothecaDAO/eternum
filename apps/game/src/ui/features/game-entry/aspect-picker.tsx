@@ -169,6 +169,7 @@ const AspectCard = ({
   <button
     type="button"
     className="aspect-picker__card"
+    data-aspect-id={aspect}
     data-chosen={chosen || undefined}
     aria-busy={joining || undefined}
     aria-label={joining ? ASPECT_STEP_WORDS.joining(name) : ASPECT_STEP_WORDS.join(name)}

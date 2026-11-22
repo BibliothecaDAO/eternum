@@ -121,7 +121,7 @@ const AspectRacePreview = () => (
   >
     <ul className="app-play-aspects">
       {aspects.map(({ id, name }) => (
-        <li key={id} className="app-play-aspect">
+        <li key={id} data-aspect-id={id} className="app-play-aspect">
           <AspectMark aspect={id} size={44} decorative />
           <span className="text-app-label text-app-ink">{name}</span>
         </li>

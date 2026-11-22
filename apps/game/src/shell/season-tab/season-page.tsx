@@ -170,6 +170,7 @@ const FrontierBoard = ({ rows }: { rows: number }) => {
             <button
               key={id}
               type="button"
+              data-aspect-id={id}
               aria-pressed={active}
               className="app-aspect-filter__pill"
               onClick={() => setAspectFilter(active ? null : id)}

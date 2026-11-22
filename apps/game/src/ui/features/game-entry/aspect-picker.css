@@ -49,7 +49,9 @@
   justify-content: flex-start;
   overflow: hidden;
   padding: 0;
+  border-color: rgb(var(--hud-aspect) / 0.45);
   background: var(--app-ground, var(--hud-surface));
+  box-shadow: inset 0 3px 0 rgb(var(--hud-aspect));
 }
 .aspect-picker__art {
   display: block;
@@ -79,12 +81,15 @@
   gap: 0.35rem;
   padding: 0.5rem 0.5rem 0.75rem;
 }
-.aspect-picker__card:not(:disabled):hover,
-.aspect-picker__card[data-chosen],
 .aspect-picker__order:not(:disabled):hover,
 .aspect-picker__order[data-chosen] {
   border-color: rgb(var(--hud-gold));
   background: var(--hud-chosen);
+}
+.aspect-picker__card:not(:disabled):hover,
+.aspect-picker__card[data-chosen] {
+  border-color: rgb(var(--hud-aspect));
+  background: rgb(var(--hud-aspect) / 0.14);
 }
 .aspect-picker__card:disabled:not([data-chosen]),
 .aspect-picker__order:disabled:not([data-chosen]) {

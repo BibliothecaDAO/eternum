@@ -7,8 +7,10 @@ import {
   HUD_COLOR_CLASSES,
   APP_COLOR_CLASSES,
   APP_TYPE,
+  ASPECT_HEX,
   appAgeVariables,
   appVariables,
+  aspectVariables,
   HUD_COLORS,
   HUD_FINISH,
   HUD_LAYERS,
@@ -381,6 +383,9 @@ export default {
         '[data-hud-device="phone"]': phone,
         // The age a game shows in the app, on its card or page.
         ...Object.fromEntries(Object.keys(HUD_MODES).map((age) => [`[data-age="${age}"]`, appAgeVariables(age)])),
+        ...Object.fromEntries(
+          Object.keys(ASPECT_HEX).map((id) => [`[data-aspect-id="${id}"]`, aspectVariables(Number(id))]),
+        ),
         "@media (pointer: coarse)": { ":root": phone },
       });
     }),
