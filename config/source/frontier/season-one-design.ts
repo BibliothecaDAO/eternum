@@ -19,6 +19,7 @@ export const seasonOneDesign = {
   },
   start: { knights: 3000, wheat: 6000, labor: 2000 },
   buildings: {
+    hut: price(0, 300),
     farm: price(0, 500),
     workshop: price(0, 1000),
     barracks: price(0, 500),
@@ -44,6 +45,7 @@ export const seasonOneDesign = {
   research: {
     fields: fieldsAndTools,
     tools: fieldsAndTools,
+    hut: [price(250, 250), price(500, 500), price(2000, 1500), price(6000, 4000), price(15000, 10000)],
     conscription: campAndDepot,
     rations: campAndDepot,
     logistics: [price(5000, 1000), price(10000, 2500), price(25000, 5000), price(50000, 10000), price(100000, 25000)],
@@ -102,6 +104,7 @@ export const seasonOneDesign = {
       [60, 30, 10, 0, 0],
       [0, 60, 30, 10, 0],
       [0, 0, 60, 30, 10],
+      [0, 0, 0, 64, 36],
     ],
   },
   exploration: {
@@ -114,13 +117,13 @@ export const seasonOneDesign = {
     wellPercent: 3,
     emptyRevealsBeforeFind: 7,
     spireFoundByReveal: 10,
-    revealPayPercentByLayer: [10, 15, 20],
+    revealPayPercentByLayer: [10, 15, 20, 25],
     revealTroopsCounted: 10000,
   },
   beasts: {
-    herdByLayer: [350, 700, 1400],
-    bandByLayer: [450, 900, 1800],
-    campByLayer: [1300, 2600, 5200],
+    herdByLayer: [350, 700, 1400, 2800],
+    bandByLayer: [450, 900, 1800, 3600],
+    campByLayer: [1300, 2600, 5200, 10400],
     spreadPercent: 10,
   },
   fragments: {

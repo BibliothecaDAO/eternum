@@ -24,7 +24,7 @@ const seasonRace = definition.economy.race.Some;
 const stamina = definition.rules.troop_stamina_config;
 const limits = definition.rules.troop_limit_config;
 const damage = definition.rules.troop_damage_config;
-const layers = definition.settlement.depths.slice(0, seasonOneDesign.relics.oddsPercentByLayer.length);
+const layers = definition.settlement.depths;
 
 const FIXED_ONE = 2n ** 64n;
 const SECONDS_PER_HOUR = 3600;
@@ -41,13 +41,45 @@ const priceOf = (amounts: Amount[]) => ({
   essence: amountOf(amounts, ResourcesIds.Essence),
   labor: amountOf(amounts, ResourcesIds.Labor),
 });
-const buildingPrice = (category: number) =>
-  priceOf(definition.structures.buildings.find((building) => building.category === category)!.rule.simple_cost);
-const researchRow = (row: number) =>
-  definition.structures.research
-    .filter((step) => step.row === row)
-    .sort((a, b) => a.tier - b.tier)
-    .map(({ price }) => ({ essence: whole(price.essence), labor: whole(price.labor) }));
+const named = <Name extends string>(names: Record<Name, number>, id: number) =>
+  (Object.keys(names) as Name[]).find((name) => names[name] === id) ?? `unnamed ${id}`;
+const buildingNames = {
+  hut: research.HUT,
+  farm: research.FARM,
+  workshop: research.WORKSHOP,
+  barracks: research.BARRACKS,
+  range: research.RANGE,
+  scoutsLodge: research.SCOUTS_LODGE,
+  conscriptionCamp: research.CONSCRIPTION_CAMP,
+  rationsDepot: research.RATIONS_DEPOT,
+  supplyYard: research.SUPPLY_YARD,
+};
+const researchNames = {
+  fields: research.ROW_FARM,
+  tools: research.ROW_WORKSHOP,
+  hut: research.ROW_HUT,
+  conscription: research.ROW_CONSCRIPTION,
+  rations: research.ROW_RATIONS,
+  logistics: research.ROW_SUPPLY_YARD,
+  knightOaths: research.ROW_KNIGHT_OATHS,
+  scoutOaths: research.ROW_SCOUT_OATHS,
+  crossbowOaths: research.ROW_CROSSBOW_OATHS,
+  lore: research.ROW_LORE,
+};
+const buildingPrices = () =>
+  Object.fromEntries(
+    definition.structures.buildings
+      .filter(({ rule }) => rule.simple_cost.length > 0)
+      .map(({ category, rule }) => [named(buildingNames, category), priceOf(rule.simple_cost)]),
+  ) as Record<keyof typeof buildingNames, ReturnType<typeof priceOf>>;
+const researchPrices = () => {
+  const rows = {} as Record<keyof typeof researchNames, { essence: number; labor: number }[]>;
+  for (const step of definition.structures.research.toSorted((a, b) => a.tier - b.tier)) {
+    const name = named(researchNames, step.row) as keyof typeof researchNames;
+    rows[name] = [...(rows[name] ?? []), { essence: whole(step.price.essence), labor: whole(step.price.labor) }];
+  }
+  return rows;
+};
 const realmRatePerHour = (resource: ResourcesIds) =>
   perHour(definition.resources.resources.find(({ resource_type }) => resource_type === resource)!.realm_rate);
 const centre = (lower: number, upper: number) => (lower + upper) / 2;
@@ -75,14 +107,7 @@ function generatedSeasonOne(): Design {
       labor: amountOf(definition.settlement.realms.resources, ResourcesIds.Labor),
     },
     buildings: {
-      farm: buildingPrice(research.FARM),
-      workshop: buildingPrice(research.WORKSHOP),
-      barracks: buildingPrice(research.BARRACKS),
-      range: buildingPrice(research.RANGE),
-      scoutsLodge: buildingPrice(research.SCOUTS_LODGE),
-      conscriptionCamp: buildingPrice(research.CONSCRIPTION_CAMP),
-      rationsDepot: buildingPrice(research.RATIONS_DEPOT),
-      supplyYard: buildingPrice(research.SUPPLY_YARD),
+      ...buildingPrices(),
       copySurchargePercent: percent(definition.rules.building_config.base_cost_percent_increase),
       demolitionRefundPercent: percent(board.demolition_refund_bps),
     },
@@ -106,17 +131,7 @@ function generatedSeasonOne(): Design {
       conscriptionCamp: research.CONSCRIPTION_CAMP_LEVEL,
       rationsDepot: research.RATIONS_DEPOT_LEVEL,
     },
-    research: {
-      fields: researchRow(research.ROW_FARM),
-      tools: researchRow(research.ROW_WORKSHOP),
-      conscription: researchRow(research.ROW_CONSCRIPTION),
-      rations: researchRow(research.ROW_RATIONS),
-      logistics: researchRow(research.ROW_SUPPLY_YARD),
-      knightOaths: researchRow(research.ROW_KNIGHT_OATHS),
-      scoutOaths: researchRow(research.ROW_SCOUT_OATHS),
-      crossbowOaths: researchRow(research.ROW_CROSSBOW_OATHS),
-      lore: researchRow(research.ROW_LORE),
-    },
+    research: researchPrices(),
     armies: {
       countByLevel: [limits.settlement_armies, limits.city_armies, limits.kingdom_armies, limits.empire_armies],
       largestByLevel: [
