@@ -26,7 +26,7 @@ describe("SurfaceDeepSwitch", () => {
     act(() => root.render(<SurfaceDeepSwitch layers={{ layers: [0], shown: 0, go }} />));
     expect(host.querySelector("[data-surface-deep-switch]")).toBeNull();
 
-    act(() => root.render(<SurfaceDeepSwitch layers={{ layers: [0, "deep"], shown: null, go }} />));
+    act(() => root.render(<SurfaceDeepSwitch layers={null} />));
     expect(host.querySelector("[data-surface-deep-switch]")).toBeNull();
   });
 

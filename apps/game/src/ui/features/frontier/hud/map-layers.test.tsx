@@ -4,7 +4,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
-import { openPlace } from "@/play/navigation/open-place";
 import { requestLayerView } from "@/three/scenes/worldmap-layer-request";
 import {
   type ExpeditionRules,
@@ -25,7 +24,6 @@ const context = vi.hoisted(() => ({
 }));
 vi.mock("@/hooks/context/game-context", () => ({ useGame: () => ({ setup: { store: context.store } }) }));
 vi.mock("@/hooks/helpers/use-query", () => ({ useQuery: () => ({ isMapView: context.mapView }) }));
-vi.mock("@/play/navigation/open-place", () => ({ openPlace: vi.fn() }));
 vi.mock("@/three/scenes/worldmap-layer-request", () => ({ requestLayerView: vi.fn() }));
 
 let host: HTMLDivElement;
@@ -132,7 +130,6 @@ describe("the layer switch over the real layers", () => {
     context.mapView = false;
     act(() => root.render(<LayerSwitch rules={unlocked.rules} realm={unlocked.realm} />));
     expect(host.querySelector("[data-surface-deep-switch]")).toBeNull();
-    expect(openPlace).not.toHaveBeenCalled();
   });
 });
 

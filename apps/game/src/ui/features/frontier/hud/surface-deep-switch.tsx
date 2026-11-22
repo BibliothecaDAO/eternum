@@ -4,12 +4,12 @@ import { layerChoices, layerMark, layerWord, type MapLayers, selectLayer } from 
 
 export const SurfaceDeepSwitch = ({ layers, onSwitch }: { layers: MapLayers | null; onSwitch?: () => void }) => {
   const depthLayers = layers ? layers.layers.filter((layer) => layer !== 0) : [];
-  const activeDepth = layers && layers.shown !== null && layers.shown !== 0 ? layers.shown : null;
+  const activeDepth = layers && layers.shown !== 0 ? layers.shown : null;
   const targetDepth = activeDepth ?? depthLayers[depthLayers.length - 1] ?? null;
   const depthLabel = targetDepth ? layerWord(targetDepth) : layerWord("deep");
   const { triggerProps, list } = useHudList(depthLabel);
 
-  if (!layers || layers.shown === null || depthLayers.length === 0 || targetDepth === null) return null;
+  if (!layers || depthLayers.length === 0 || targetDepth === null) return null;
 
   const depthMenu = depthLayers.length > 1 ? layerChoices(layers, onSwitch) : null;
 
