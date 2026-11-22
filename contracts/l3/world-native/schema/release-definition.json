@@ -1,5 +1,5 @@
 {
-  "release": 14,
+  "release": 15,
   "definition": {
     "rules": {
       "battle_config": {
@@ -1037,7 +1037,7 @@
           "demolition_refund_bps": 5000,
           "workshop_rate": "55555556",
           "output_step_bps": 2000,
-          "storage_step_bps": 4000,
+          "storage_step_bps": 10000,
           "population_step_bps": 2000,
           "ration_step": "200000000",
           "troop_store_deploys": 2,
@@ -1405,7 +1405,12 @@
           "rule": {
             "population_cost": 2,
             "capacity_grant": 0,
-            "simple_cost": [],
+            "simple_cost": [
+              {
+                "resource_type": 23,
+                "amount": "10000000000000"
+              }
+            ],
             "complex_cost": []
           }
         },

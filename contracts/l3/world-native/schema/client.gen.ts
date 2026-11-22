@@ -4,7 +4,7 @@ export const NativeTroopType = {
   "Paladin": "Paladin",
   "Crossbowman": "Crossbowman"
 } as const;
-export const nativeFactSchemaIdentity = "816cc7d626e05c381a2c0255fd28770e8a1402c96e927b35cb61e2bd9a122420";
+export const nativeFactSchemaIdentity = "8835a0928a7987d53445c27d29edbf6c0c27f4814994fe62bb104af87dbc57fb";
 export const nativeIdentifiers = {
   "rule": {
     "ENTRY_ENTITLEMENT": 0,
@@ -94,9 +94,9 @@ export const nativeIdentifiers = {
     "LORE_WELLS": 1,
     "LORE_SHRINES": 2,
     "LORE_SPIRES": 3,
-    "CHOICE_MAKE": 0,
-    "CHOICE_STORE": 1,
     "HUT": 1,
+    "STOREROOM": 2,
+    "STOREROOM_LEVEL": 1,
     "WORKSHOP": 25,
     "BARRACKS": 28,
     "RANGE": 31,
@@ -107,6 +107,7 @@ export const nativeIdentifiers = {
     "RATIONS_DEPOT_LEVEL": 2,
     "FARM": 37,
     "SUPPLY_YARD": 42,
+    "SUPPLY_YARD_LEVEL": 2,
     "SCOUTS_LODGE": 43,
     "SCOUTS_LODGE_LEVEL": 1
   },
