@@ -45,28 +45,25 @@ describe("building occupancy errors", () => {
   });
 });
 
-it("uses the highest production side for Farms and Workshops and the Logistics tier for Supply yards", () => {
-  for (const [category, offset, independentSides] of [
-    [research.FARM, 0n, true],
-    [research.WORKSHOP, 7n, true],
-    [research.SUPPLY_YARD, 27n, false],
+it("draws Farms, Workshops and Supply yards at their row's tier", () => {
+  for (const [category, offset] of [
+    [research.FARM, 0n],
+    [research.WORKSHOP, 7n],
+    [research.SUPPLY_YARD, 27n],
   ] as const) {
-    for (let a = 0; a <= 5; a++)
-      for (let b = 0; b <= 5; b++) {
-        const store = {
-          require: () => ({ entity_id: 1 }),
-          get: (model: string, key: { inner_col?: number; inner_row?: number }) =>
-            model === "RealmKnowledge"
-              ? { learned: (BigInt(a) << offset) | (BigInt(b) << (offset + 3n)) }
-              : model === "Building" && key.inner_col === BUILDINGS_CENTER[0] && key.inner_row === BUILDINGS_CENTER[1]
-                ? { inner_col: key.inner_col, inner_row: key.inner_row, category, paused: false }
-                : undefined,
-        } as unknown as NativeFactStore;
-        const manager = TileManager.forStructure(store, {} as SystemCalls, 1);
-        expect(manager.existingBuildings()).toEqual([
-          expect.objectContaining({ category, tier: independentSides ? Math.max(1, a, b) : Math.max(1, a) }),
-        ]);
-      }
+    for (let tier = 0; tier <= 5; tier++) {
+      const store = {
+        require: () => ({ entity_id: 1 }),
+        get: (model: string, key: { inner_col?: number; inner_row?: number }) =>
+          model === "RealmKnowledge"
+            ? { learned: BigInt(tier) << offset }
+            : model === "Building" && key.inner_col === BUILDINGS_CENTER[0] && key.inner_row === BUILDINGS_CENTER[1]
+              ? { inner_col: key.inner_col, inner_row: key.inner_row, category, paused: false }
+              : undefined,
+      } as unknown as NativeFactStore;
+      const manager = TileManager.forStructure(store, {} as SystemCalls, 1);
+      expect(manager.existingBuildings()).toEqual([expect.objectContaining({ category, tier: Math.max(1, tier) })]);
+    }
   }
 });
 

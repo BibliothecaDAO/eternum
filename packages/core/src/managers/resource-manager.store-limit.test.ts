@@ -18,6 +18,7 @@ const storerooms = (count: number) => ({
     packed_counts_1: setBuildingCount(research.STOREROOM, [0n, 0n, 0n], count)[0]!,
     packed_counts_2: 0n,
     packed_counts_3: 0n,
+    population: { current: 0, max: 0 },
   },
 });
 const upsert = (key: string, models: Record<string, Record<string, unknown>>): GameSyncFact[] =>
