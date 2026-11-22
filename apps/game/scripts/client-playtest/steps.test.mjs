@@ -1343,11 +1343,11 @@ describe("the Season 1 rehearsal", () => {
     expect(
       readTickPay([DEEP_WORDS.glory(6), DEEP_WORDS.height(3), DEEP_WORDS.essence(1500), DEEP_WORDS.bar(2, 1200, 5000)]),
     ).toEqual({ glory: 6, height: 3, essence: 1500, bar: 2 });
-    expect(readHeldSlot(`Ashfall${DEEP_WORDS.lasts(14, "28m")} · ${DEEP_WORDS.share(100)}2,800`)).toEqual({
-      ticks: 14,
-      share: 100,
-      troops: 2800,
-    });
+    expect(
+      readHeldSlot(
+        `Ashfall · ${DEEP_WORDS.facesNext} · 2,800 · ${DEEP_WORDS.drainTick(70)} · ${DEEP_WORDS.lasts(14, "28m")} · ${DEEP_WORDS.share(100)}`,
+      ),
+    ).toEqual({ ticks: 14, share: 100, troops: 2800 });
     expect(
       readAspectTally({
         height: `1Might${ASPECT_PAGE_WORDS.stage(1, 5)} · ${ASPECT_PAGE_WORDS.height(1240, 9000)}`,

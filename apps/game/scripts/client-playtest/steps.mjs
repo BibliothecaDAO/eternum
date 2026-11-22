@@ -1834,11 +1834,12 @@ const buttonLabelled = (pattern) => `JSON.stringify((() => {
 
 /** A button in the sheet `selector` names, whose text matches `pattern`: its name and where it is. */
 const buttonIn = (selector, pattern) => `JSON.stringify((() => {
+  const nameOf = (candidate) => candidate.getAttribute("aria-label") || candidate.textContent.trim();
   const button = [...(document.querySelector(${JSON.stringify(selector)})?.querySelectorAll("button") ?? [])]
-    .find((candidate) => new RegExp(${JSON.stringify(pattern)}).test(candidate.textContent.trim()));
+    .find((candidate) => new RegExp(${JSON.stringify(pattern)}).test(nameOf(candidate)));
   if (!button) return null;
   const rect = button.getBoundingClientRect();
-  return { name: button.textContent.trim(), offset: [Math.round(rect.left + rect.width / 2 - innerWidth / 2), Math.round(rect.top + rect.height / 2 - innerHeight / 2)] };
+  return { name: nameOf(button), offset: [Math.round(rect.left + rect.width / 2 - innerWidth / 2), Math.round(rect.top + rect.height / 2 - innerHeight / 2)] };
 })())`;
 
 /** The army the lab's chain removed in the merge, leaving the map from its tile. */
@@ -6060,7 +6061,7 @@ const PAY_PATTERNS = {
 const SLOT_PATTERNS = {
   ticks: wordPattern(REHEARSAL_WORDS.lasts, "n", "any"),
   share: wordPattern(REHEARSAL_WORDS.share, "n"),
-  troops: /([\d,]+)$/,
+  troops: /(?:^| · )([\d,]+)(?: · |$)/,
 };
 const TALLY_PATTERNS = {
   height: new RegExp(`· ${wordPattern(REHEARSAL_WORDS.standingHeight, "n", "any").source}`),
@@ -6082,7 +6083,7 @@ export function readHeldSlot(text) {
   return {
     ticks: numberIn(text, SLOT_PATTERNS.ticks),
     share: numberIn(text, SLOT_PATTERNS.share),
-    troops: numberIn(text.trim(), SLOT_PATTERNS.troops),
+    troops: numberIn(text, SLOT_PATTERNS.troops),
   };
 }
 
@@ -6128,13 +6129,13 @@ const DEEP_SITE_CARD = `JSON.stringify((() => {
     name: sheet?.getAttribute("aria-label") ?? null,
     text: sheet?.textContent ?? "",
     pay: [...(sheet?.querySelectorAll("[data-deep-pay] .ui-chip") ?? [])].map((chip) => chip.textContent.trim()),
-    mine: sheet?.querySelector('[data-deep-slots] [aria-selected="true"]')?.textContent ?? null,
-    buttons: [...(sheet?.querySelectorAll("button:not([disabled])") ?? [])].map((button) => button.textContent.trim()),
+    mine: sheet?.querySelector("[data-deep-slots] [data-deep-slot][data-mine]")?.getAttribute("aria-label") ?? null,
+    buttons: [...(sheet?.querySelectorAll("button:not([disabled])") ?? [])].map((button) => button.getAttribute("aria-label") || button.textContent.trim()),
   };
 })())`;
 
 const ASPECT_TALLY = `JSON.stringify({
-  height: document.querySelector('[data-aspect-race] [aria-selected="true"]')?.textContent ?? null,
+  height: document.querySelector("[data-aspect-race] [data-own]")?.textContent ?? null,
   glory: document.querySelector('[data-aspect-members] [aria-selected="true"] [aria-label^="${REHEARSAL_WORDS.gloryChip} "]')?.getAttribute("aria-label") ?? null,
   bar: document.querySelector("[data-aspect-bane]")?.textContent ?? null,
 })`;
