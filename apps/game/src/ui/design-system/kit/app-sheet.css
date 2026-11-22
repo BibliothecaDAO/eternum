@@ -1358,9 +1358,10 @@ button.app-board__row:is(:hover, [data-state="hover"]) {
   flex-direction: column;
   align-items: center;
   gap: theme(spacing.1);
-  border: 1px solid var(--app-line);
+  border: 1px solid rgb(var(--app-aspect) / 0.45);
   border-radius: var(--app-radius-control);
   background: var(--app-well);
+  box-shadow: inset 0 2px 0 rgb(var(--app-aspect));
   padding: theme(spacing.2);
   text-align: center;
 }
@@ -1384,21 +1385,24 @@ button.app-board__row:is(:hover, [data-state="hover"]) {
   flex-direction: column;
   justify-content: flex-start;
   overflow: hidden;
-  border: 2px solid var(--app-line);
+  border: 2px solid rgb(var(--app-aspect) / 0.45);
   border-radius: var(--app-radius-panel);
   background: var(--app-ground);
+  box-shadow: inset 0 3px 0 rgb(var(--app-aspect));
   text-align: center;
   transition:
     border-color var(--app-fast) var(--app-ease),
     transform var(--app-fast) var(--app-ease);
 }
 .app-aspect-card:is(:hover, [data-state="hover"]):not(:disabled) {
-  border-color: var(--app-line-strong);
+  border-color: rgb(var(--app-aspect) / 0.85);
   transform: translateY(-2px);
 }
 .app-aspect-card[aria-pressed="true"] {
-  border-color: rgb(var(--app-gold));
-  box-shadow: 0 0 0 1px rgb(var(--app-gold));
+  border-color: rgb(var(--app-aspect));
+  box-shadow:
+    0 0 0 1px rgb(var(--app-aspect)),
+    inset 0 3px 0 rgb(var(--app-aspect));
 }
 .app-aspect-card .app-choice__tag {
   top: theme(spacing.2);
@@ -1535,12 +1539,12 @@ button.app-board__row:is(:hover, [data-state="hover"]) {
   line-height: var(--app-leading-label);
 }
 .app-aspect-filter__pill:hover {
-  border-color: var(--app-line-strong);
+  border-color: rgb(var(--app-aspect) / 0.7);
   color: var(--app-ink);
 }
 .app-aspect-filter__pill[aria-pressed="true"] {
-  border-color: rgb(var(--app-gold));
-  background: var(--app-chosen);
+  border-color: rgb(var(--app-aspect));
+  background: rgb(var(--app-aspect) / 0.16);
   color: var(--app-ink);
 }
 
@@ -1579,9 +1583,10 @@ button.app-board__row:is(:hover, [data-state="hover"]) {
   flex-direction: column;
   align-items: center;
   gap: theme(spacing.2);
-  border: 1px solid var(--app-line);
+  border: 1px solid rgb(var(--app-aspect) / 0.45);
   border-radius: var(--app-radius-panel);
   background: color-mix(in srgb, var(--app-surface) 88%, transparent);
+  box-shadow: inset 0 3px 0 rgb(var(--app-aspect));
   padding: theme(spacing.4) theme(spacing.3);
 }
 .app-countdown-aspect__name {

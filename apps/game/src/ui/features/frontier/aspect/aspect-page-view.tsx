@@ -88,7 +88,12 @@ const StandingColumn = ({
   const height = WORDS.height(standing.height, race.finishHeight);
   const stageText = standing.finished ? WORDS.finished : WORDS.stage(standing.stage, race.stages);
   return (
-    <div data-aspect-col={standing.aspectId} data-own={standing.own || undefined} className="ui-race-col">
+    <div
+      data-aspect-col={standing.aspectId}
+      data-aspect-id={standing.aspectId}
+      data-own={standing.own || undefined}
+      className="ui-race-col"
+    >
       <div className="ui-race-col__head">
         <AspectMark aspect={standing.aspectId} size={22} decorative />
         <span className="ui-race-col__name">{aspectName(standing.aspectId)}</span>

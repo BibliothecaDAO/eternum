@@ -104,6 +104,7 @@ export const DeepSiteView = ({ site, pay, guard, fight, attackerName, order, onC
             <div
               className="ui-deep-holder"
               data-aspect-holder={guard.aspectId}
+              data-aspect-id={guard.aspectId}
               data-side={guard.ally ? "ally" : "rival"}
             >
               <span className="text-hud-muted">{DEEP_WORDS.heldByPrefix}</span>

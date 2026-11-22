@@ -116,7 +116,12 @@ const RaceStandings = ({ race }: { race: DayDoneRace }) => (
       {race.standings.map((row) => {
         const label = aspectName(row.aspectId);
         return (
-          <div key={row.aspectId} data-own={row.own || undefined} className="ui-day-race__row">
+          <div
+            key={row.aspectId}
+            data-aspect-id={row.aspectId}
+            data-own={row.own || undefined}
+            className="ui-day-race__row"
+          >
             <AspectMark aspect={row.aspectId} size={22} decorative />
             <div className="flex min-w-0 flex-1 flex-col gap-0.5">
               <div className="flex items-baseline justify-between gap-2 text-hud-label">

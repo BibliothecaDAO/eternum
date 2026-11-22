@@ -19,6 +19,7 @@
  * - /lab/kit/tokens draws every value from this file; /lab/app and /lab/kit show it in place.
  */
 
+import type { AspectId } from "@bibliothecadao/types";
 import KIT from "./brand/palette.json";
 
 /** The brand kit's colours (Realms Brand Kit v3 `03-Colors/palette.json`), lower-cased as the rest of this file. */
@@ -969,3 +970,18 @@ export const appAgeVariables = (age: HudMode): Record<string, string> => ({
   "--app-age-from": HUD_MODES[age]["surface-from"],
   "--app-age-to": HUD_MODES[age]["surface-to"],
 });
+
+export const ASPECT_HEX = {
+  1: KIT.aspects.prowess.gem.toLowerCase(),
+  2: KIT.aspects.luminary.gem.toLowerCase(),
+  3: KIT.aspects.havoc.gem.toLowerCase(),
+  4: KIT.aspects.insight.gem.toLowerCase(),
+} as const satisfies Record<AspectId, string>;
+
+export const aspectVariables = (aspect: AspectId): Record<string, string> => {
+  const value = channels(ASPECT_HEX[aspect]);
+  return {
+    "--hud-aspect": value,
+    "--app-aspect": value,
+  };
+};
