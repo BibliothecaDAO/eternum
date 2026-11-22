@@ -4,19 +4,12 @@ import { useCompactLane } from "@/hooks/helpers/use-compact-hud";
 import { HudPill } from "@/ui/design-system/kit/hud-elements";
 import { HudHeaderLayout } from "./hud-header-layout";
 import { MapViewControls, type WorldTab } from "./map-view-controls";
-import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { useGoToStructure } from "@/hooks/helpers/use-navigate";
-import { useUIStore } from "@/hooks/store/use-ui-store";
-import { Position } from "@bibliothecadao/eternum";
-
-import { useUISound } from "@/audio/hooks/useUISound";
 import { SecondaryMenuItems } from "@/ui/features/world";
 import { GameClock } from "./game-clock";
 import { AttentionPill } from "./attention-pill";
 import { IdentityChip, type SeasonGoal } from "./identity-chip";
-import { useGame } from "@/hooks/context/game-context";
-import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
-import { memo, type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
+import { useTopBarNavigation } from "./use-top-bar-navigation";
+import { memo, type ReactNode } from "react";
 
 type TopHeaderProps = { season?: SeasonGoal; clock?: ReactNode; worldTab?: WorldTab };
 
@@ -27,73 +20,16 @@ type TopHeaderProps = { season?: SeasonGoal; clock?: ReactNode; worldTab?: World
  */
 export const TopHeader = memo(({ season, clock, worldTab }: TopHeaderProps) => {
   const lane = useCompactLane();
-  const { setup } = useGame();
-
-  const playClick = useUISound("ui.click");
-
-  const structureEntityId = useUIStore((state) => state.structureEntityId);
-  const isSpectating = useUIStore((state) => state.isSpectating);
-  const mode = useGameModeConfig();
-
-  const isFollowingArmy = useUIStore((state) => state.isFollowingArmy);
-  const followingArmyMessage = useUIStore((state) => state.followingArmyMessage);
-  // Read again when the structure's facts arrive.
-  const structures = useNativeFacts(["Structure"]);
-  const entityInfo = useMemo(
-    // Only the position is read here, so no viewer is needed.
-    () => mode.structure.getEntityInfo(structureEntityId, null, structures.store),
-    [structureEntityId, structures, mode],
-  );
-
-  // With nothing selected there is no structure to open: LOCAL is disabled rather than aimed at a default hex.
-  const selectedStructurePosition = useMemo(
-    () => (entityInfo?.position ? Position.fromContract(entityInfo.position) : null),
-    [entityInfo],
-  );
-  const [currentPathname, setCurrentPathname] = useState(() =>
-    typeof window !== "undefined" ? window.location.pathname : "/play/hex",
-  );
-
-  const goToStructure = useGoToStructure(setup);
-  const isLocalView = currentPathname.includes("/hex");
-  const mapLayer = useUIStore((state) => state.mapLayer);
-  const setMapLayer = useUIStore((state) => state.setMapLayer);
-  // Blitz presets have no spires, so their maps have one layer.
-  const showLayerSwitch = mode.id === "eternum" && !isLocalView;
-
-  useEffect(() => {
-    const updatePathname = () => {
-      setCurrentPathname(window.location.pathname);
-    };
-
-    updatePathname();
-    window.addEventListener("urlChanged", updatePathname);
-    window.addEventListener("popstate", updatePathname);
-
-    return () => {
-      window.removeEventListener("urlChanged", updatePathname);
-      window.removeEventListener("popstate", updatePathname);
-    };
-  }, []);
-
-  const switchLayer = useCallback(
-    (alt: boolean) => {
-      if (alt === mapLayer) return;
-      playClick();
-      setMapLayer(alt);
-    },
-    [mapLayer, playClick, setMapLayer],
-  );
-
-  const navigateToView = useCallback(
-    (world: boolean) => {
-      if (!selectedStructurePosition) return;
-      playClick();
-      // One realm both ways: the one the view shows, where it stands, watched or played as it is (a visit stays one).
-      goToStructure(structureEntityId, selectedStructurePosition, world, { spectator: isSpectating });
-    },
-    [goToStructure, isSpectating, playClick, selectedStructurePosition, structureEntityId],
-  );
+  const {
+    isLocalView,
+    canOpenLocal,
+    mapLayer,
+    showLayerSwitch,
+    isFollowingArmy,
+    followingArmyMessage,
+    navigateToView,
+    switchLayer,
+  } = useTopBarNavigation();
 
   return (
     <>
@@ -109,7 +45,7 @@ export const TopHeader = memo(({ season, clock, worldTab }: TopHeaderProps) => {
           <MapViewControls
             compact={lane !== null}
             isLocalView={isLocalView}
-            canOpenLocal={selectedStructurePosition !== null}
+            canOpenLocal={canOpenLocal}
             mapLayer={mapLayer}
             showLayerSwitch={showLayerSwitch}
             worldTab={worldTab}

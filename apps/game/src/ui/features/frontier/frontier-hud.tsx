@@ -44,6 +44,7 @@ import { ChatPage } from "./hud/chat-page";
 import { type DockArmy, useDockArmies } from "./hud/dock-armies";
 import { FrontierNav, type HudSurface } from "./hud/frontier-nav";
 import { layerTab, type MapLayers, useMapLayers } from "./hud/map-layers";
+import { SurfaceDeepSwitch } from "./hud/surface-deep-switch";
 import { useOnePanel, useOrderSettledReturnsToTheArmy } from "./hud/one-panel";
 import { FrontierDayClock } from "./hud/day-pill";
 import { DayEndBlock, DayEndNotice, useDayEnd } from "./day-end/day-end";
@@ -291,11 +292,14 @@ const FrontierHudBody = ({
     </>
   );
 
+  const depthSwitch = <SurfaceDeepSwitch layers={layers} onSwitch={close} />;
+
   return desktop ? (
     <FrontierDesktop
       season={aspectsOpen ? { rank: seasonRank, onOpen: () => setSurface("season") } : undefined}
       clock={<FrontierDayClock rules={rules} onOpenToday={() => setSurface("today")} />}
       worldTab={layers ? layerTab(layers) : undefined}
+      depthSwitch={depthSwitch}
       realm={realmPanel}
       armies={dock}
       page={page}
@@ -323,6 +327,7 @@ const FrontierHudBody = ({
       realm={realm}
       board={shown}
       layers={layers}
+      depthSwitch={depthSwitch}
       visiting={visit !== null}
       surface={surface}
       onSurface={setSurface}
@@ -349,6 +354,7 @@ const FrontierPhoneHud = ({
   realm,
   board,
   layers,
+  depthSwitch,
   visiting,
   surface,
   onSurface,
@@ -363,6 +369,7 @@ const FrontierPhoneHud = ({
   /** The realm the dock reads: the player's, or the one visited. */
   board: NativeRows["Structure"] | null;
   layers: MapLayers | null;
+  depthSwitch?: ReactNode;
   visiting: boolean;
   surface: HudSurface | null;
   onSurface: (surface: HudSurface | null) => void;
@@ -381,6 +388,7 @@ const FrontierPhoneHud = ({
     <HudBands
       {...bands}
       strip={strip}
+      depthSwitch={depthSwitch}
       purse={purse}
       page={
         surface === "chat" ? (

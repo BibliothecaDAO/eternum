@@ -43,6 +43,7 @@ const PAGES = [
   { file: "hud-build", url: "/lab/kit/hud/build", shown: "[data-build-sheet]" },
   { file: "hud-research", url: "/lab/kit/hud/research", shown: 'section[aria-label="Research"]' },
   { file: "hud-day-done", url: "/lab/kit/hud/day-done", shown: ".ui-day-done" },
+  { file: "hud-map", url: "/lab/kit/unified/frontier-army", shown: 'header[aria-label="Game controls"], [aria-label="Frontier HUD"]' },
   { file: "fragments-packs", url: FRAGMENTS_URL, shown: "[data-fragment-packs]" },
   {
     file: "fragments-pay",
