@@ -2,7 +2,15 @@ import { readFileSync } from "node:fs";
 import { BuildingType } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
 import { nativeResearchConstants as research } from "../../../../contracts/l3/world-native/schema/balance.gen";
-import { buildingTypeTier, learnResearch, realmLearned, reachableDepth, researchTier } from "./realm-research";
+import {
+  buildingOpensAtLevel,
+  buildingTypeTier,
+  isOnePerRealm,
+  learnResearch,
+  realmLearned,
+  reachableDepth,
+  researchTier,
+} from "./realm-research";
 
 const learned = 1n + (1n << 7n) + (2n << 48n);
 

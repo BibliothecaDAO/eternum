@@ -725,7 +725,7 @@ function planUpgrade(client: GameClient, player: Player): Action | undefined {
     if (price && price.essence <= essence && price.labor <= labor)
       candidates.push({
         cost: price.essence,
-        action: { kind: "Research", value: { structure_id: player.realmId, row, choice: 0 } },
+        action: { kind: "Research", value: { structure_id: player.realmId, row } },
         type: TransactionType.RESEARCH,
       });
   }

@@ -39,6 +39,7 @@ NATIVE_FACT_SCHEMA = [
     "contracts/l3/world-native/schema/**",
     "contracts/l3/world-native/src/combat.cairo",
     "contracts/l3/world-native/src/logic/quests.cairo",
+    "contracts/l3/world-native/src/research.cairo",
 ]
 AREAS = {
     "client": [
