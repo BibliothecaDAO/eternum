@@ -9,7 +9,13 @@ import { nativeResearchConstants as research } from "../../../../contracts/l3/wo
 import { nativeCommandBits } from "../../../../contracts/l3/world-native/schema/commands.gen";
 import { blitzPendingCommandMask } from "../../../source/common/native-commands";
 import { applyDeploymentConfigOverrides } from "../config/config-loader";
-import { blitzReleaseDefinition, buildNativePreset, seasonOneReleaseDefinition } from "../config/native-preset";
+import {
+  blitzExplorationRules,
+  blitzReleaseDefinition,
+  buildNativePreset,
+  seasonOneReleaseDefinition,
+} from "../config/native-preset";
+import { blitzExplorationRewards } from "../../../source/blitz/balance";
 import { balanceModules, blitzBalanceModules } from "../../../../contracts/l3/world-native/scripts/balance-modules";
 import {
   FRONTIER_ACCELERATED_PRESET_ID,
@@ -1073,7 +1079,9 @@ test("preset 7 activates the complete Slice 1 rules while fixtures and historica
 
 test("the Blitz balance holds its own switches and spacing, and none of the tables only the Frontier reads", () => {
   const modules = blitzBalanceModules(blitzReleaseDefinition());
-  expect(Object.keys(modules)).toEqual(["resources", "structures", "rules", "settlement"]);
+  expect(Object.keys(modules)).toEqual(["resources", "structures", "rules", "settlement", "exploration"]);
+  expect(modules.exploration).toContain(`pub const EXPLORE_POINTS: u128 = ${blitzExplorationRules().explore_points};`);
+  expect(modules.exploration).toContain(`EXPLORATION_REWARDS: [ExplorationReward; ${blitzExplorationRewards.length}]`);
   expect(modules.rules).toContain("day_unit_seconds: 0");
   expect(modules.rules).toContain("entry_rule: 2");
   expect(modules.rules).toContain(`pub const PENDING_COMMANDS: u128 = ${blitzPendingCommandMask};`);

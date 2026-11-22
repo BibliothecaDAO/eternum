@@ -3,6 +3,12 @@ use crate::geometry::tile_key;
 use crate::map::TileKey;
 use crate::troops::Coord;
 
+#[cfg(feature: "blitz")]
+pub fn biome(key: TileKey, game_context: crate::commands::BiomeContext) -> u8 {
+    crate::biome::get_biome_with_climate(key.alt, key.col.into(), key.row.into(), game_context.climate).into()
+}
+
+#[cfg(not(feature: "blitz"))]
 pub fn biome(key: TileKey, game_context: crate::commands::BiomeContext) -> u8 {
     let climate = crate::expeditions::climate(
         game_context.climate,

@@ -303,6 +303,12 @@ pub fn max_army_size(config: crate::rules::TroopLimitConfig, level: u8, tier: Tr
     cap * modifier.into() / (strength.into() * 100)
 }
 
+#[cfg(feature: "blitz")]
+pub fn explore_stamina_cost(_category: TroopType, rules: crate::rules::SliceRules, _oaths: u16) -> u16 {
+    rules.troop_stamina_config.stamina_explore_stamina_cost
+}
+
+#[cfg(not(feature: "blitz"))]
 pub fn explore_stamina_cost(category: TroopType, rules: crate::rules::SliceRules, oaths: u16) -> u16 {
     let base = rules.troop_stamina_config.stamina_explore_stamina_cost;
     let cost = if category == TroopType::Paladin {
@@ -404,6 +410,21 @@ fn rift_guard_bound(camp: u16, step: u32) -> u32 {
     // Round the stronger guard to the same inclusive preset grid.
     let scaled: u32 = Into::<u16, u32>::into(camp) * RIFT_GUARD_PERCENT;
     (scaled + step * 50) / (step * 100) * step
+}
+
+#[cfg(feature: "blitz")]
+pub fn light_guard(seed: u256, rules: crate::rules::SliceRules, timestamp: u64) -> Troops {
+    let limits = rules.troop_limit_config;
+    let lower: u128 = limits.light_guard_lower_bound.into();
+    let upper: u128 = limits.light_guard_upper_bound.into();
+    let category = match crate::random::range(seed, 2, 3) {
+        0 => TroopType::Knight,
+        1 => TroopType::Paladin,
+        _ => TroopType::Crossbowman,
+    };
+    discovered_guard(
+        category, TroopTier::T1, lower + crate::random::range(seed, 1, upper - lower + 1), rules, timestamp,
+    )
 }
 
 fn discovered_guard(

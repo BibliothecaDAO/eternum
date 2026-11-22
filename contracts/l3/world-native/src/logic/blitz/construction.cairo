@@ -36,6 +36,7 @@ pub mod ConstructionLogic {
         BuildingEvent: BuildingState::Event,
         StoryEvent: StoryEvent,
         RowSet: RowSet,
+        PointsAwarded: crate::game::PointsAwarded,
     }
 
     #[abi(embed_v0)]
@@ -65,7 +66,9 @@ pub mod ConstructionLogic {
             seed: u256,
             context: crate::commands::ActionContext,
         ) -> crate::discovery::Discovery {
-            crate::logic::discovery::reveal(key, explorer_id, seed, context)
+            let (found, points) = crate::logic::blitz::discovery::reveal(key, explorer_id, seed, context);
+            self.emit(points);
+            found
         }
     }
     #[abi(embed_v0)]

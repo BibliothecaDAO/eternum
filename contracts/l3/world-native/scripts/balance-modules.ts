@@ -2,6 +2,7 @@ import { execFileSync } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import {
+  blitzExplorationRules,
   blitzReleaseDefinition,
   type buildNativePreset,
   seasonOneReleaseDefinition,
@@ -60,6 +61,7 @@ export function blitzBalanceModules(definition: PresetDefinition): Record<string
       number("PENDING_COMMANDS", "u128", blitzPendingCommandMask),
     ].join("\n\n"),
     settlement: blitzSettlementModule(definition.settlement),
+    exploration: blitzExplorationModule(blitzExplorationRules()),
   };
 }
 
@@ -151,6 +153,16 @@ function structuresModule(structures: PresetDefinition["structures"], labor: rea
     ...buildingTables(structures),
     table("RESEARCH_PRICES", "ResearchPrice", researchPrices(structures.research)),
     ...growthTables(structures),
+  ].join("\n\n");
+}
+
+function blitzExplorationModule({ explore_points, rewards }: ReturnType<typeof blitzExplorationRules>): string {
+  if (rewards.length === 0 || rewards.some(({ weight }) => weight <= 0))
+    throw new Error("A Blitz reveal pays from a pool of weighted rows");
+  return [
+    "use crate::exploration_rewards::ExplorationReward;",
+    number("EXPLORE_POINTS", "u128", explore_points),
+    table("EXPLORATION_REWARDS", "ExplorationReward", rewards),
   ].join("\n\n");
 }
 

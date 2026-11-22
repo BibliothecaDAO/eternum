@@ -65,6 +65,51 @@ pub fn reveal_reward(
         amount: reward_strength(troops, limits) * percent.into() / 100,
     }
 }
+#[cfg(feature: "blitz")]
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct ExplorationReward {
+    pub resource_type: u8,
+    pub percent: u128,
+    pub weight: u128,
+}
+
+#[cfg(feature: "blitz")]
+pub fn pool_reward(
+    rewards: Span<ExplorationReward>,
+    troops: crate::troops::Troops,
+    limits: crate::rules::TroopLimitConfig,
+    timestamp: u64,
+    seed: u256,
+) -> crate::resources::ResourceAmount {
+    let drawn = draw(rewards, seed);
+    let amount = reward_strength(troops, limits) * drawn.percent / 100;
+    let boosts = troops.boosts;
+    crate::resources::ResourceAmount {
+        resource_type: drawn.resource_type,
+        amount: if crate::relics::bonus_active(boosts.incr_explore_reward_end_at, timestamp) {
+            amount + amount * boosts.incr_explore_reward_percent_num.into() / 10000
+        } else {
+            amount
+        },
+    }
+}
+
+#[cfg(feature: "blitz")]
+fn draw(rewards: Span<ExplorationReward>, seed: u256) -> ExplorationReward {
+    let mut total: u128 = 0;
+    for reward in rewards {
+        total += *reward.weight;
+    }
+    let mut roll = crate::random::range(seed, 18, total);
+    for reward in rewards {
+        if roll < *reward.weight {
+            return *reward;
+        }
+        roll -= *reward.weight;
+    }
+    panic!("invalid exploration draw")
+}
+
 pub fn receiver(explorer_id: u64, home: u64, resource_type: u8) -> u64 {
     if resource_type >= 39 && resource_type <= 56 {
         explorer_id
