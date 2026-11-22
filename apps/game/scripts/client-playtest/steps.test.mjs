@@ -14,6 +14,7 @@ import {
   CLOSE,
   DEEP_WORDS,
   INVITE_WORDS,
+  EXPLORE,
   MOVE,
   EVENTS_WORDS,
   MENU,
@@ -1270,6 +1271,7 @@ describe("the Season 1 rehearsal", () => {
     expect(REHEARSAL_WORDS.invited).toBe(ASPECT_STEP_WORDS.invited);
     expect(REHEARSAL_WORDS.enter).toBe(SPIRE_WORDS.enter);
     expect(REHEARSAL_WORDS.move).toBe(MOVE);
+    expect(REHEARSAL_WORDS.explore).toBe(EXPLORE);
     expect(REHEARSAL_WORDS.attack).toBe(DEEP_WORDS.attack);
     expect(REHEARSAL_WORDS.take).toBe(DEEP_WORDS.take);
     expect(REHEARSAL_WORDS.beast("Balrog", 900)).toBe(DEEP_WORDS.beast("Balrog", 900));
@@ -1294,9 +1296,12 @@ describe("the Season 1 rehearsal", () => {
       "copy-the-invite-link",
       "ally:ally-founds-from-the-invite",
       "ally:ally-shares-the-aspect",
+      "ally:ally-sends-an-army",
       "open-realm",
       "build-barracks",
       "back-on-map",
+      "send-an-army",
+      "fight-on-the-surface",
       "enter-the-deep",
       "fight-a-beast",
       "catch-up-t0",

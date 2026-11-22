@@ -6008,6 +6008,7 @@ export const REHEARSAL_WORDS = {
   invited: "Invited",
   enter: "Enter",
   move: "Move",
+  explore: "Explore",
   attack: "Attack",
   take: "Take",
   beast: (name, troops) => `Today's beast: ${name}, ${troops} troops`,
@@ -6196,9 +6197,21 @@ function s1RehearsalSteps() {
       play: (context) => readOwnAspect(context, shared),
       sends: 0,
     }),
+    rehearsalStep({
+      name: "ally-sends-an-army",
+      as: "ally",
+      play: (context) => sendOneOrder(context, REHEARSAL_WORDS.explore),
+      sends: 0,
+    }),
     { name: "open-realm", play: goTo("Realm", "hex"), settleMs: 3_000, verify: inScene("hex") },
     rehearsalStep({ name: "build-barracks", play: (context) => BUILD_BARRACKS_STEP.play(context) }),
     { ...FRONTIER_MAP.opening[0], name: "back-on-map", play: goTo("Map", "map") },
+    rehearsalStep({
+      name: "send-an-army",
+      play: (context) => sendOneOrder(context, REHEARSAL_WORDS.explore),
+      sends: 0,
+    }),
+    rehearsalStep({ name: "fight-on-the-surface", play: fightOnTheSurface, sends: 0 }),
     rehearsalStep({ name: "enter-the-deep", play: (context) => enterTheDeep(context, shared, "deepArmy") }),
     rehearsalStep({
       name: "fight-a-beast",
@@ -6349,11 +6362,12 @@ async function foundFromInvite({ browser, owner, extraScreenshot }, shared) {
   const invited = browser.read(INVITED_LINE);
   extraScreenshot("invited-aspect-step");
   if (cards.length !== 4) return { landing, already: "the friend founded in this game earlier" };
-  if (cards[0].label !== REHEARSAL_WORDS.join(shared.aspect) || cards[0].invite !== REHEARSAL_WORDS.invited)
-    return { landing, cards, invited, failed: `the friend was not offered ${shared.aspect} first, tagged Invited` };
-  const orders = await chooseAspect(browser, cards[0].label);
+  const hosts = cards.find(({ label }) => label === REHEARSAL_WORDS.join(shared.aspect));
+  if (!hosts) return { landing, cards, invited, failed: `the friend was not offered ${shared.aspect}` };
+  const tagged = cards[0] === hosts && hosts.invite === REHEARSAL_WORDS.invited;
+  const orders = await chooseAspect(browser, hosts.label);
   await waitFor(browser, (seen) => seen.playable, PLAYABLE_WAIT_MS);
-  return { landing, cards, invited, orders };
+  return { landing, cards, invited, tagged, orders };
 }
 
 async function readOwnAspect({ browser }, shared) {
@@ -6513,21 +6527,75 @@ async function readTheTickPay({ browser, extraScreenshot }, shared) {
   return { pay, slot, tally, crossed };
 }
 
-async function sendOneMove(context, shared) {
-  const { browser, owner } = context;
-  const before = browser.read(SENT_ACTIONS);
-  const move = await orderBesideArmy(context, "Move");
-  if (!move.target) return { move, blocked: "nothing beside the readiest army offers Move" };
-  if (move.armyId === shared.deepArmy)
-    return { move, blocked: "the readiest army is the Deep guard, not a surface army" };
+async function receiptOfTheNextAction({ browser, owner }, before) {
   const sent = await readUntil(
     () => sentSince(before, browser.read(SENT_ACTIONS)),
     (actions) => actions.length > 0,
     ORDER_OUTCOME_WAIT_MS,
   );
   const [receipt] = await receiptsOf(owner, gameShardOf(browser), sent.slice(-1));
-  if (!receipt?.applied) return { move, receipt, failed: "the measured Move was not applied" };
-  return { army: move.armyId, receipt };
+  return receipt ?? null;
+}
+
+async function sendOneOrder(context, verb) {
+  const before = context.browser.read(SENT_ACTIONS);
+  const order = await orderBesideArmy(context, verb);
+  if (!order.target) return { order, blocked: `nothing beside the readiest army offers ${verb}` };
+  const receipt = await receiptOfTheNextAction(context, before);
+  if (!receipt?.applied) return { order, receipt, failed: `the chain did not apply the ${verb}` };
+  return { army: order.armyId, receipt };
+}
+
+async function sendOneMove(context, shared) {
+  const play = await sendOneOrder(context, REHEARSAL_WORDS.move);
+  if (play.army !== undefined && play.army === shared.deepArmy)
+    return { ...play, blocked: "the readiest army is the Deep guard, not a surface army" };
+  return play;
+}
+
+const SITE_SEARCH_REVEALS = 6;
+
+async function fightOnTheSurface(context) {
+  const reveals = [];
+  for (let reveal = 0; ; reveal += 1) {
+    const fight = await attackBesideAnArmy(context);
+    if (fight.receipt || fight.failed) return { reveals, ...fight };
+    if (reveal === SITE_SEARCH_REVEALS)
+      return { reveals, ...fight, blocked: `no army stands beside a site to attack after ${reveal} reveals` };
+    const revealed = await sendOneOrder(context, REHEARSAL_WORDS.explore);
+    if (!revealed.receipt?.applied) return { reveals, ...revealed };
+    reveals.push(revealed.receipt);
+  }
+}
+
+async function attackBesideAnArmy(context) {
+  const { browser, extraScreenshot } = context;
+  const offered = [];
+  for (const { label } of browser.armies()) {
+    await pickArmy(browser, label);
+    const army = browser.observe().selection?.army?.id ?? null;
+    const armyAt = armyOnScreen(browser, army);
+    if (!armyAt) continue;
+    const target = await findTheAttack(browser, armyAt);
+    offered.push({ army, offered: target.offered });
+    if (!target.offset) continue;
+    const before = browser.read(SENT_ACTIONS);
+    if (onADesktop()) browser.rightClick(target.offset);
+    else if (!target.opened) browser.tap(target.offset);
+    const attack = await readUntil(
+      () => browser.read(buttonIn("[data-kit-sheet]", `^${REHEARSAL_WORDS.attack}$`)),
+      Boolean,
+      SHEET_WAIT_MS,
+    );
+    extraScreenshot("attack-offered");
+    if (!attack) return { army, offered, failed: "the site beside the army opened no card offering Attack" };
+    browser.tap(attack.offset);
+    const receipt = await receiptOfTheNextAction(context, before);
+    extraScreenshot("after-attack");
+    if (!receipt?.applied) return { army, offered, receipt, failed: "the chain did not apply the attack" };
+    return { army, offered, receipt };
+  }
+  return { offered };
 }
 
 async function measureTheIdlePlay(context, shared) {
