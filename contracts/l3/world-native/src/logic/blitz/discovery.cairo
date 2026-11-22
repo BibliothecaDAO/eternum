@@ -1,21 +1,19 @@
 use starknet::storage::{StoragePathEntry, StoragePointerReadAccess};
 use crate::discovery::Discovery;
-use crate::game::{PointActivity, PointsAwarded};
+use crate::game::PointActivity;
 use crate::map::TileKey;
 use crate::resources::ResourceKey;
 use crate::troops::Coord;
 
-pub fn reveal(
-    key: TileKey, explorer_id: u64, seed: u256, context: crate::commands::ActionContext,
-) -> (Discovery, PointsAwarded) {
+pub fn reveal(key: TileKey, explorer_id: u64, seed: u256, context: crate::commands::ActionContext) -> Discovery {
     let execution = crate::commands::execution_context(key.game_id, context);
     crate::logic::map::MapState::reveal(key, crate::logic::map::biome(key, crate::commands::biome_context(execution)));
     let home = crate::state::read().troops.explorers.entry((key.game_id, explorer_id)).owner.read();
-    let points = crate::logic::blitz::points::award(
+    crate::logic::blitz::points::award(
         key.game_id,
         crate::logic::structures::owner(ResourceKey { game_id: key.game_id, entity_id: home }),
         PointActivity::Exploration,
-        crate::balance::exploration::EXPLORE_POINTS,
+        crate::balance::points::EXPLORE_POINTS,
     );
     let found = if key.alt {
         Discovery::None
@@ -36,7 +34,7 @@ pub fn reveal(
             context,
         );
     }
-    (found, points)
+    found
 }
 
 pub fn surface(config: crate::rules::MapConfig, mode_rules: u32, seed: u256) -> Discovery {

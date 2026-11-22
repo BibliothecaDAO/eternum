@@ -35,6 +35,7 @@ pub struct GameOverrides {
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub enum PointActivity {
     Exploration,
+    StructureCapture,
 }
 
 #[cfg(feature: "blitz")]

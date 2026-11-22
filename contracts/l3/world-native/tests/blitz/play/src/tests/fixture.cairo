@@ -15,7 +15,6 @@ pub const GRASSLAND: u8 = 11;
 pub const REALM_COORD: crate::troops::Coord = crate::troops::Coord { alt: false, x: 2000, y: 2000 };
 pub const SECOND_COORD: crate::troops::Coord = crate::troops::Coord { alt: false, x: 2020, y: 2000 };
 const STORE_CAPACITY: u128 = 1000000 * crate::rules::RESOURCE_PRECISION * 1000;
-const KNIGHT_T1: u8 = 26;
 pub const EAST: u8 = 0;
 pub const RAISED_AT: u64 = FIXTURE_START + 40;
 pub const RESTED_AT: u64 = FIXTURE_START + 86400;
@@ -29,15 +28,24 @@ pub fn blitz_realm() -> (super::Deployment, crate::resources::ResourceKey) {
 }
 
 pub fn blitz_army() -> (super::Deployment, crate::resources::ResourceKey, u64) {
+    blitz_army_of(0, ARMY_UNITS)
+}
+
+pub fn blitz_army_of(tier: u8, units: u128) -> (super::Deployment, crate::resources::ResourceKey, u64) {
     let (d, home) = blitz_realm();
-    grant(d, home, KNIGHT_T1, ARMY_UNITS * crate::rules::RESOURCE_PRECISION);
+    grant(
+        d,
+        home,
+        crate::troops::troop_resource(crate::troops::TroopType::Knight, tier),
+        units * crate::rules::RESOURCE_PRECISION,
+    );
     let raise = super::Command::CreateExplorer(
         crate::commands::CreateExplorer {
             slot: 0,
             structure_id: home.entity_id,
             category: 0,
-            tier: 0,
-            amount: ARMY_UNITS * crate::rules::RESOURCE_PRECISION,
+            tier,
+            amount: units * crate::rules::RESOURCE_PRECISION,
             direction: EAST,
         },
     );
@@ -57,8 +65,16 @@ pub fn step_east(from: crate::troops::Coord, steps: u32) -> crate::troops::Coord
 pub fn rival_realm(
     deployment: super::Deployment, home: crate::resources::ResourceKey,
 ) -> (starknet::ContractAddress, crate::resources::ResourceKey) {
+    rival_realm_at(deployment, home, SECOND_COORD)
+}
+
+pub fn rival_realm_at(
+    deployment: super::Deployment, home: crate::resources::ResourceKey, coord: crate::troops::Coord,
+) -> (starknet::ContractAddress, crate::resources::ResourceKey) {
     let (rival, _) = super::deploy_player(3, super::GUARDIAN);
-    (rival, second_realm(deployment, home, rival))
+    let realm = crate::resources::ResourceKey { game_id: home.game_id, entity_id: 2 };
+    found_realm(deployment, realm, rival, coord);
+    (rival, realm)
 }
 
 pub fn second_realm(
@@ -112,6 +128,9 @@ fn found_realm(
 fn reveal_surroundings(deployment: super::Deployment, game_id: u32, coord: crate::troops::Coord) {
     let map = crate::map::IMapLogicDispatcher { contract_address: deployment.games };
     for direction in 0_u8..6 {
-        map.reveal(crate::geometry::tile_key(game_id, crate::geometry::neighbor(coord, direction)), GRASSLAND);
+        let key = crate::geometry::tile_key(game_id, crate::geometry::neighbor(coord, direction));
+        if map.tile(key).map(|tile| tile.data / crate::map::BIOME_SCALE % crate::map::BYTE_RANGE == 0).unwrap_or(true) {
+            map.reveal(key, GRASSLAND);
+        }
     }
 }

@@ -66,9 +66,7 @@ pub mod ConstructionLogic {
             seed: u256,
             context: crate::commands::ActionContext,
         ) -> crate::discovery::Discovery {
-            let (found, points) = crate::logic::blitz::discovery::reveal(key, explorer_id, seed, context);
-            self.emit(points);
-            found
+            crate::logic::blitz::discovery::reveal(key, explorer_id, seed, context)
         }
     }
     #[abi(embed_v0)]

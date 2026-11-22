@@ -2,11 +2,12 @@ import { execFileSync } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import {
-  blitzExplorationRules,
+  blitzPointRules,
   blitzReleaseDefinition,
   type buildNativePreset,
   seasonOneReleaseDefinition,
 } from "../../../../config/deployer/clean/config/native-preset";
+import { blitzExplorationRewards } from "../../../../config/source/blitz/balance";
 import { blitzPendingCommandMask } from "../../../../config/source/common/native-commands";
 import { FRONTIER_S1_PRESET_ID } from "../../../../config/source/common/native-preset-modes";
 import { nativePresetForId } from "../../../../config/source/native";
@@ -61,7 +62,8 @@ export function blitzBalanceModules(definition: PresetDefinition): Record<string
       number("PENDING_COMMANDS", "u128", blitzPendingCommandMask),
     ].join("\n\n"),
     settlement: blitzSettlementModule(definition.settlement),
-    exploration: blitzExplorationModule(blitzExplorationRules()),
+    points: blitzPointsModule(blitzPointRules()),
+    exploration: blitzExplorationModule(blitzExplorationRewards),
   };
 }
 
@@ -156,12 +158,17 @@ function structuresModule(structures: PresetDefinition["structures"], labor: rea
   ].join("\n\n");
 }
 
-function blitzExplorationModule({ explore_points, rewards }: ReturnType<typeof blitzExplorationRules>): string {
+function blitzPointsModule({ explore_points, capture_points }: ReturnType<typeof blitzPointRules>): string {
+  return [number("EXPLORE_POINTS", "u128", explore_points), number("CAPTURE_POINTS", "u128", capture_points)].join(
+    "\n\n",
+  );
+}
+
+function blitzExplorationModule(rewards: typeof blitzExplorationRewards): string {
   if (rewards.length === 0 || rewards.some(({ weight }) => weight <= 0))
     throw new Error("A Blitz reveal pays from a pool of weighted rows");
   return [
     "use crate::exploration_rewards::ExplorationReward;",
-    number("EXPLORE_POINTS", "u128", explore_points),
     table("EXPLORATION_REWARDS", "ExplorationReward", rewards),
   ].join("\n\n");
 }

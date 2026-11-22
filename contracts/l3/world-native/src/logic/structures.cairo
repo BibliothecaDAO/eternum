@@ -138,6 +138,23 @@ pub mod StructureState {
         );
     }
 
+    #[cfg(feature: "blitz")]
+    pub fn transfer_owner(key: ResourceKey, owner: starknet::ContractAddress) {
+        assert!(crate::logic::structures::exists(key), "missing structure");
+        crate::state::write().structures.structures.entry((key.game_id, key.entity_id)).owner.write(owner);
+        emit(
+            Event::RowMemberSet(
+                RowMemberSet {
+                    version: 1,
+                    model: 'Structure',
+                    member: 'owner',
+                    keys: array![key.game_id.into(), key.entity_id.into()].span(),
+                    values: array![owner.into()].span(),
+                },
+            ),
+        );
+    }
+
     pub fn upgrade(
         key: ResourceKey, mut base: crate::structures::StructureBase, config: crate::rules::TroopLimitConfig,
     ) {

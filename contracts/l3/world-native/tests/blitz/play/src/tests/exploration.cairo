@@ -14,7 +14,7 @@ fn explore_wheat() -> u128 {
     crate::balance::rules::TROOP_STAMINA_CONFIG.stamina_explore_wheat_cost.into() * ARMY_UNITS
 }
 
-fn find_root(game_id: u32, expected: Discovery, from: u64) -> u256 {
+pub fn find_root(game_id: u32, expected: Discovery, from: u64) -> u256 {
     for sample in from..10000 {
         let raw_root: u256 = sample.into();
         let mut root = raw_root;
@@ -68,7 +68,7 @@ fn revealed(d: super::Deployment, game_id: u32, coord: Coord) -> bool {
         .unwrap_or(false)
 }
 
-fn site_at(d: super::Deployment, game_id: u32, coord: Coord) -> (ResourceKey, crate::structures::Structure) {
+pub fn site_at(d: super::Deployment, game_id: u32, coord: Coord) -> (ResourceKey, crate::structures::Structure) {
     let occupied = map(d).occupancy(crate::geometry::tile_key(game_id, coord)).expect('no site on the tile');
     assert!(occupied.is_structure);
     let key = ResourceKey { game_id, entity_id: occupied.entity_id };
@@ -86,7 +86,7 @@ fn assert_light_guard(d: super::Deployment, site: ResourceKey) {
     assert!(guard.troops.count <= Into::<u16, u128>::into(limits.light_guard_upper_bound) * RESOURCE_PRECISION);
 }
 
-fn points(d: super::Deployment, game_id: u32) -> (u128, u128) {
+pub fn points(d: super::Deployment, game_id: u32) -> (u128, u128) {
     interact_with_state(
         d.games,
         || {
@@ -96,7 +96,7 @@ fn points(d: super::Deployment, game_id: u32) -> (u128, u128) {
     )
 }
 
-fn awarded(ref spy: snforge_std::EventSpy, games: starknet::ContractAddress) -> Array<crate::game::PointsAwarded> {
+pub fn awarded(ref spy: snforge_std::EventSpy, games: starknet::ContractAddress) -> Array<crate::game::PointsAwarded> {
     let mut awards = array![];
     for (_, event) in spy.get_events().emitted_by(games).events.span() {
         if *event.keys.at(0) == selector!("PointsAwarded") {
@@ -120,7 +120,7 @@ fn an_army_steps_onto_the_tile_it_reveals_and_scores_exploration_points() {
     assert_eq!(army(d, home, id).coord, step_east(REALM_COORD, 3));
     assert!(revealed(d, home.game_id, step_east(REALM_COORD, 3)));
     assert_eq!(balance(d, home, WHEAT), 0);
-    let earned = crate::balance::exploration::EXPLORE_POINTS;
+    let earned = crate::balance::points::EXPLORE_POINTS;
     assert_eq!(points(d, home.game_id), (2 * earned, 2 * earned));
     let awards = awarded(ref spy, d.games);
     assert_eq!(awards.len(), 2);
@@ -166,8 +166,7 @@ fn an_army_that_finds_a_mine_stays_beside_a_guarded_mine_that_produces() {
     assert!(!revealed(d, home.game_id, step_east(REALM_COORD, 3)));
     assert_eq!(balance(d, home, DONKEY), before);
     assert_eq!(
-        points(d, home.game_id),
-        (crate::balance::exploration::EXPLORE_POINTS, crate::balance::exploration::EXPLORE_POINTS),
+        points(d, home.game_id), (crate::balance::points::EXPLORE_POINTS, crate::balance::points::EXPLORE_POINTS),
     );
 }
 

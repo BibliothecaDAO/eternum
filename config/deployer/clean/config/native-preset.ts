@@ -19,7 +19,6 @@ import {
   buildTroopStaminaConfig,
 } from "../registrar/preset";
 import { villageResourcePool, withdrawalRetention } from "../../../source/common/native-data";
-import { blitzExplorationRewards } from "../../../source/blitz/balance";
 
 function required<T>(values: Record<number, T> | Record<string, T>, key: number, name: string): T {
   const value = (values as Record<number, T | undefined>)[key];
@@ -317,9 +316,12 @@ export function blitzReleaseDefinition() {
   return buildNativePreset(loadNativePresetConfiguration("madara.blitz", presetId), presetId);
 }
 
-export function blitzExplorationRules() {
-  const config = loadNativePresetConfiguration("madara.blitz", nativePresetIdFor("blitz"));
-  return { explore_points: BigInt(config.victoryPoints.pointsForTileExploration), rewards: blitzExplorationRewards };
+export function blitzPointRules() {
+  const { victoryPoints } = loadNativePresetConfiguration("madara.blitz", nativePresetIdFor("blitz"));
+  return {
+    explore_points: BigInt(victoryPoints.pointsForTileExploration),
+    capture_points: BigInt(victoryPoints.pointsForNonHyperstructureClaimAgainstBandits),
+  };
 }
 
 export function buildNativePreset(config: Config, presetId: number) {

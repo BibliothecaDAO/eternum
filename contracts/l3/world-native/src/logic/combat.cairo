@@ -62,6 +62,21 @@ pub fn battle_guard(game_id: u32, actor: ContractAddress, command: Battle, conte
     }
 }
 
+#[cfg(feature: "blitz")]
+fn guard_target(
+    key: ResourceKey, actor: ContractAddress, _attacker: ExplorerTroops, context: ExecutionContext,
+) -> GuardTarget {
+    let rules = context.rules.unbox();
+    let structure = crate::logic::structures::structure(key).expect('missing guarded structure');
+    if rules.mode_rules & crate::rules::UNOWNED_TARGETS != 0 {
+        assert!(structure.owner == 0.try_into().unwrap(), "target must be unowned");
+    }
+    assert!(structure.owner != actor, "actor owns defender");
+    assert_battle_immunity(key.game_id, key.entity_id, rules, context.timestamp, context);
+    GuardTarget { key, coord: crate::structures::structure_coord(key), structure: Some(structure) }
+}
+
+#[cfg(not(feature: "blitz"))]
 fn guard_target(
     key: ResourceKey, actor: ContractAddress, attacker: ExplorerTroops, context: ExecutionContext,
 ) -> GuardTarget {
@@ -115,6 +130,12 @@ fn guard_defender(
     }
 }
 
+#[cfg(feature: "blitz")]
+fn beast_bps(_target: GuardTarget, _home: u64, _timestamp: u64) -> u32 {
+    10000
+}
+
+#[cfg(not(feature: "blitz"))]
 fn beast_bps(target: GuardTarget, home: u64, timestamp: u64) -> u32 {
     crate::race::IRaceDispatcherTrait::site_beast_bps(
         crate::race::IRaceLibraryDispatcher {
@@ -126,6 +147,23 @@ fn beast_bps(target: GuardTarget, home: u64, timestamp: u64) -> u32 {
     )
 }
 
+#[cfg(feature: "blitz")]
+fn fight_guard(key: ExplorerKey, ref attacker: ExplorerTroops, ref defender: GuardDefender, context: ExecutionContext) {
+    let combat = CombatContext {
+        defender_is_structure_guard: true, ..combat_context(key.game_id, attacker, defender.army, context),
+    };
+    let attacker_before = attacker.troops.count;
+    let defender_before = defender.army.troops.count;
+    let (attacker_after, defender_after) = resolve_battle(
+        key.game_id, attacker.troops, defender.army.troops, combat, context,
+    );
+    attacker.troops = attacker_after;
+    defender.army.troops = defender_after;
+    combat_troops(key.game_id).finish_battle(key, attacker, attacker_before, crate::commands::action_context(context));
+    save_guard_defender(defender, defender_before, context);
+}
+
+#[cfg(not(feature: "blitz"))]
 fn fight_guard(key: ExplorerKey, ref attacker: ExplorerTroops, ref defender: GuardDefender, context: ExecutionContext) {
     let target = match defender.source {
         GuardSource::Army(key) => key.explorer_id,
@@ -401,6 +439,31 @@ fn assert_army_opponents(game_id: u32, attacker: ExplorerTroops, defender: Explo
 }
 
 
+#[cfg(feature: "blitz")]
+pub fn try_capture(
+    _explorer_key: ExplorerKey,
+    explorer: ExplorerTroops,
+    key: ResourceKey,
+    target: Structure,
+    _relic_slot: Option<u8>,
+    _clean: bool,
+    context: ExecutionContext,
+) {
+    let rules = context.rules.unbox();
+    if explorer.troops.count == 0
+        || (rules.mode_rules & crate::rules::UNOWNED_TARGETS != 0 && target.owner != 0.try_into().unwrap())
+        || (target.base.category == crate::taxonomy::VILLAGE_CATEGORY
+            && rules.mode_rules & crate::rules::CAPTURE_VILLAGES == 0) {
+        return;
+    }
+    if !crate::geometry::adjacent(explorer.coord, crate::structures::structure_coord(key))
+        || crate::logic::guards::GuardState::next(key, target.base.troop_max_guard_count).is_some() {
+        return;
+    }
+    crate::logic::blitz::capture::capture(key, explorer.owner, target, context.timestamp);
+}
+
+#[cfg(not(feature: "blitz"))]
 pub fn try_capture(
     explorer_key: ExplorerKey,
     explorer: ExplorerTroops,
@@ -565,6 +628,28 @@ fn twin_damage(
     )
 }
 
+#[cfg(feature: "blitz")]
+pub fn resolve_battle(
+    game_id: u32,
+    mut attacker: Troops,
+    mut defender: Troops,
+    context: CombatContext,
+    game_context: crate::commands::ExecutionContext,
+) -> (Troops, Troops) {
+    let rules = game_context.rules.unbox();
+    attacker
+        .attack_with_context(
+            ref defender,
+            context,
+            rules.troop_stamina_config,
+            rules.troop_damage_config,
+            rules.tick_config.armies_tick_in_seconds,
+            rules.battle_config.cooldown_seconds,
+        );
+    (attacker, defender)
+}
+
+#[cfg(not(feature: "blitz"))]
 pub fn resolve_battle(
     game_id: u32,
     mut attacker: Troops,
