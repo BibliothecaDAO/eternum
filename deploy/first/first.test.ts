@@ -166,16 +166,18 @@ test("dry run inspects every step, including unavailable ones, and never calls a
 test.each([0, 1, 2, 3, 4])("rerun after boundary %s skips observed results", async (interrupted) => {
   const done = Array.from({ length: 5 }, (_, index) => index < interrupted);
   const writes: number[] = [];
-  const steps = done.map((_, index): Step => ({
-    name: String(index),
-    payer: "none",
-    cost: "0",
-    inspect: async () => ({ done: done[index]!, detail: "checked remotely" }),
-    apply: async () => {
-      done[index] = true;
-      writes.push(index);
-    },
-  }));
+  const steps = done.map(
+    (_, index): Step => ({
+      name: String(index),
+      payer: "none",
+      cost: "0",
+      inspect: async () => ({ done: done[index]!, detail: "checked remotely" }),
+      apply: async () => {
+        done[index] = true;
+        writes.push(index);
+      },
+    }),
+  );
   await runSteps(steps, true, () => {});
   await runSteps(steps, true, () => {});
   expect(writes).toEqual([0, 1, 2, 3, 4].slice(interrupted));

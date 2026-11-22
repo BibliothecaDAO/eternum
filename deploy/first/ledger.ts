@@ -2,8 +2,7 @@ import mainnetAddresses from "../../contracts/common/addresses/mainnet.json";
 import { readFileSync, writeFileSync, renameSync } from "node:fs";
 import { join } from "node:path";
 import { Account, byteArray, CallData, hash, json, num, type Call, type RpcProvider } from "starknet";
-import { chestPresetFor } from "../../config/deployer/clean/ledger/economics";
-import { awardableCosmetics } from "../../contracts/l2/ledger/scripts/chest-preset.js";
+import { awardableCosmetics, chestPresets } from "../../contracts/l2/ledger/scripts/chest-preset.js";
 import { addressBook, root, type Environment, type Inputs, type Target } from "./settings";
 import { classAt, isMissing, confirm, send } from "./chain";
 import { PublicError } from "./errors";
@@ -201,9 +200,14 @@ const call = (contractAddress: string, entrypoint: string, values: Parameters<ty
   entrypoint,
   calldata: CallData.compile(values),
 });
+function chestPresetFor(target: Target) {
+  const build = chestPresets[target.chests as keyof typeof chestPresets];
+  if (!build) throw new Error(`Unknown chest preset ${target.chests}`);
+  return build();
+}
 export function setupCalls(target: Target, assets: Assets, pauser: string) {
   assertProductionLords(target, assets.lords);
-  const chests = chestPresetFor(target.environment as Environment);
+  const chests = chestPresetFor(target);
   const metadata = (collection: string, attributes: number) =>
     call(collection, "set_attrs_raw_to_ipfs_cid", [attributes, byteArray.byteArrayFromString(target.picture), false]);
   return [
