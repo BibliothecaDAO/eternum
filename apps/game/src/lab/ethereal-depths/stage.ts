@@ -106,7 +106,6 @@ export class EtherealDepthStage implements LabStage {
             tier: TroopTier.T1,
             entityId: 1,
             isNaval: false,
-            isMoving: false,
             primaryColor: "#75b5c7",
             distanceToCameraSquared: 0,
             position: subjectPoint(ARMY_HEX, 0),

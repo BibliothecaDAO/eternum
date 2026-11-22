@@ -94,3 +94,31 @@ describe("an army through its spire", () => {
     );
   });
 });
+
+describe("an army's pace", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it("runs to a tile the player sent it to explore, then walks to one it is moved to", async () => {
+    vi.spyOn(configManager, "getActiveGameId").mockReturnValue(GAME);
+    const manager = managerWithArmyBesideSpire();
+    const pace = () => manager.armyModel.startMovement.mock.lastCall?.[5];
+
+    manager.expectOrderedRoute(ARMY, { hexes: [tile(25, 46), tile(26, 46)], pace: "run" });
+    await manager.moveArmy(ARMY, tile(26, 46));
+    expect(pace()).toBe("run");
+
+    manager.expectOrderedRoute(ARMY, { hexes: [tile(26, 46), tile(27, 46)], pace: "walk" });
+    await manager.moveArmy(ARMY, tile(27, 46));
+    expect(pace()).toBe("walk");
+  });
+
+  it("walks when its facts move it somewhere other than where the explore was sent", async () => {
+    vi.spyOn(configManager, "getActiveGameId").mockReturnValue(GAME);
+    const manager = managerWithArmyBesideSpire();
+
+    manager.expectOrderedRoute(ARMY, { hexes: [tile(25, 46), tile(26, 46)], pace: "run" });
+    await manager.moveArmy(ARMY, tile(25, 47));
+
+    expect(manager.armyModel.startMovement.mock.lastCall?.[5]).toBe("walk");
+  });
+});

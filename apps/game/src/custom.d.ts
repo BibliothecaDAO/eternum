@@ -27,12 +27,15 @@ declare module "three/webgpu" {
   import { Renderer } from "three";
   import type { RendererParameters } from "three/addons/renderers/common/Renderer.js";
   import PostProcessingClass from "three/src/renderers/common/PostProcessing.js";
+  import RenderPipelineClass from "three/src/renderers/common/RenderPipeline.js";
 
   export interface WebGPURendererParameters extends RendererParameters {
     forceWebGL?: boolean;
   }
 
   export const PostProcessing: typeof PostProcessingClass;
+  export const RenderPipeline: typeof RenderPipelineClass;
+  export type RenderPipeline = RenderPipelineClass;
 
   export class WebGPURenderer extends Renderer {
     constructor(parameters?: WebGPURendererParameters);

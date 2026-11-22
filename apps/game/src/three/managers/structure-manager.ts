@@ -787,8 +787,7 @@ export class StructureManager {
   }
 
   private updateShadowFlags(): void {
-    const shadowsEnabled = this.hexagonScene?.getShadowsEnabled() ?? true;
-    const enableCasting = this.currentCameraView === CameraView.Close && shadowsEnabled;
+    const enableCasting = this.hexagonScene?.getShadowsEnabled() ?? true;
     const enableContactShadows = !enableCasting;
 
     this.forEachStructureModel((model) => {
