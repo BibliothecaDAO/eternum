@@ -244,7 +244,7 @@ const FINDINGS: Finding[] = [
     kind: "rules",
     where: "Research → a row.",
     evidence: researchEvidence,
-    replace: "A question for the rules lane and the research balance study (Data → Balance & data).",
+    replace: "A question for the rules lane.",
     risk: "Changes the game; owner and rules lane.",
     shot: "research.png",
   },

@@ -43,7 +43,7 @@ restore their network and identity overrides when you leave them.
 | Art    | Characters                              | `/lab/characters`                                                                                                 | Art; `capture:character-animation`, `smoke:character-gym` |
 | Art    | Effects                                 | `/lab/world-fx`                                                                                                   | Art                                                       |
 | Art    | Bench                                   | Characters `/lab/character-benchmark`, World `/lab/world`, Chunks `/lab/chunks`, Terrain `/lab/terrain-benchmark` | The runners below                                         |
-| Data   | Balance & data                          | `/lab/data` (`view` live or balance, `mode`): see Balance & data below                                            | Owner; perf, rules                                        |
+| Data   | Balance & data                          | `/lab/data` (`mode`): see Balance & data below                                                                    | Owner; perf, rules                                        |
 | Studio | Set                                     | `/lab/studio`: see Film studio below                                                                              | Reels; `prove:studio`                                     |
 | Studio | Footage                                 | `/lab/footage`: the footage and marketing pages the showcase serves beside the lab                                | Owner                                                     |
 
@@ -78,10 +78,7 @@ construction cards, deploy, panels, area D, windows, chat). The picked one (`sho
 
 Data → Balance & data reads perf's newest pull at `/live-data/analysis.md`: the output of `live-data.py all` (in
 `evidence/perf/frontier-live-data-1`), which `showcase.sh` links from the newest analysis. Frontier shows Frontier's
-tables, Blitz shows Blitz's, both the value ledger; a server without a pull says how to make one. On Frontier, the
-second tab is next season's research balance study (`view=balance`, `part` storage, tree or beasts): storage, research
-paths and beast labor with their options, played on the research panel; nothing sends a game command.
-`scripts/frontier/prove-research-balance.playwright.js` drives it through the Playwright connection.
+tables, Blitz shows Blitz's, both the value ledger; a server without a pull says how to make one.
 
 The in-game battle calculator stays in the player interface. Physics behavior is unchanged.
 
