@@ -1,16 +1,7 @@
 import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/balance.gen";
 
-const LOGISTICS_STAMINA = [
-  0,
-  nativeRuleConstants.LOGISTICS_COMMON_STAMINA,
-  nativeRuleConstants.LOGISTICS_UNCOMMON_STAMINA,
-  nativeRuleConstants.LOGISTICS_RARE_STAMINA,
-  nativeRuleConstants.LOGISTICS_EPIC_STAMINA,
-  nativeRuleConstants.LOGISTICS_LEGENDARY_STAMINA,
-];
-
-export const logisticsStamina = (tier: number): number => {
-  const stamina = LOGISTICS_STAMINA[tier];
-  if (!Number.isInteger(tier) || stamina === undefined) throw new Error(`Invalid Logistics tier ${tier}`);
-  return stamina;
+export const logisticsStamina = (bar: number, tier: number): number => {
+  if (!Number.isInteger(tier) || tier < 0 || tier > nativeRuleConstants.ATTRIBUTE_CAP)
+    throw new Error(`Invalid Logistics tier ${tier}`);
+  return Math.floor((bar * nativeRuleConstants.LOGISTICS_STEP_PERCENT * tier) / 100);
 };

@@ -38,6 +38,7 @@ export interface RealmResearchFacts {
     rationStep: number;
     wheatPerTroop: number;
     troopsPerHour: number;
+    staminaBar: number;
   };
   /** The castle's labor store at a level, with the realm's Storeroom picks. */
   laborStore: (level: number) => number;
@@ -345,10 +346,15 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
         research.ROW_SUPPLY_YARD,
         BuildingType.SupplyYard,
         "army",
-        (tier) => ({ line: RESEARCH_TREE.newArmiesStart("Logistics"), ...logisticsStep(tier) }),
+        (tier) => ({ line: RESEARCH_TREE.newArmiesStart("Logistics"), ...logisticsStep(tier, realm.board) }),
         {
           figures: (tier) => [
-            { icon: "stamina", name: "Logistics", line: RESEARCH_TREE.everyNewArmy, ...logisticsStep(tier) },
+            {
+              icon: "stamina",
+              name: "Logistics",
+              line: RESEARCH_TREE.everyNewArmy,
+              ...logisticsStep(tier, realm.board),
+            },
           ],
         },
       ),
@@ -483,9 +489,9 @@ const rationsStep = (tier: number, board: RealmResearchFacts["board"]): Pick<Fig
   const at = (rank: number) => RESEARCH_TREE.effects.rations(wheatATroopAt(rank, board));
   return { now: at(tier), next: tier < 5 ? at(tier + 1) : undefined };
 };
-const logisticsStep = (tier: number): Pick<Figure, "now" | "next"> => {
+const logisticsStep = (tier: number, board: RealmResearchFacts["board"]): Pick<Figure, "now" | "next"> => {
   const effect = (level: number) =>
-    RESEARCH_TREE.effects.logistics(formatFigure(logisticsStamina(level), { signed: true }));
+    RESEARCH_TREE.effects.logistics(formatFigure(logisticsStamina(board.staminaBar, level), { signed: true }));
   return { now: effect(tier), next: tier < 5 ? effect(tier + 1) : undefined };
 };
 

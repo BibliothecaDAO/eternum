@@ -7,26 +7,11 @@ pub const ATTRIBUTE_CAP: u8 = 5;
 pub const SCOUT_EXPLORE_STAMINA: u8 = 10;
 pub const FRONTIER_LIGHT_DAMAGE_PERCENT: u8 = 75;
 pub const FRONTIER_KNIGHT_GUARD_DAMAGE_PERCENT: u8 = 75;
-// Rank 0 is untrained; Common I through Legendary V retain the original ceilings.
+pub const LOGISTICS_STEP_PERCENT: u8 = 20;
 
-pub const LOGISTICS_COMMON_STAMINA: u32 = 20;
-pub const LOGISTICS_UNCOMMON_STAMINA: u32 = 45;
-pub const LOGISTICS_RARE_STAMINA: u32 = 75;
-pub const LOGISTICS_EPIC_STAMINA: u32 = 110;
-pub const LOGISTICS_LEGENDARY_STAMINA: u32 = 150;
-
-pub fn logistics_stamina(tier: u8) -> u32 {
-    match tier {
-        0 => 0,
-        1 => LOGISTICS_COMMON_STAMINA,
-        2 => LOGISTICS_UNCOMMON_STAMINA,
-        3 => LOGISTICS_RARE_STAMINA,
-        4 => LOGISTICS_EPIC_STAMINA,
-        5 => LOGISTICS_LEGENDARY_STAMINA,
-        _ => panic!("invalid attribute tier"),
-    }
+pub fn logistics_stamina(bar: u64, tier: u8) -> u64 {
+    bar * LOGISTICS_STEP_PERCENT.into() * tier.into() / 100
 }
-
 
 pub const RESOURCE_PRECISION: u128 = 1000000000;
 

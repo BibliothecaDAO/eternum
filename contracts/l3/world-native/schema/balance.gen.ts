@@ -9,11 +9,7 @@ export const nativeRuleConstants = {
   "SCOUT_EXPLORE_STAMINA": 10,
   "FRONTIER_LIGHT_DAMAGE_PERCENT": 75,
   "FRONTIER_KNIGHT_GUARD_DAMAGE_PERCENT": 75,
-  "LOGISTICS_COMMON_STAMINA": 20,
-  "LOGISTICS_UNCOMMON_STAMINA": 45,
-  "LOGISTICS_RARE_STAMINA": 75,
-  "LOGISTICS_EPIC_STAMINA": 110,
-  "LOGISTICS_LEGENDARY_STAMINA": 150,
+  "LOGISTICS_STEP_PERCENT": 20,
   "ENTRY_ENTITLEMENT": 0,
   "ENTRY_OPEN": 1,
   "ENTRY_ROSTER": 2,
@@ -165,4 +161,4 @@ export const nativeStructureConstants = {
     100000
   ]
 } as const;
-export const nativeBalanceIdentity = "2b90ae89ddfb2ed67e9cd4b60444cd55cbca089372ef5e671152d94bb43b5cf8";
+export const nativeBalanceIdentity = "8c6ff6dc73b116b66397779845aa2fbec29b66b56a453c66d34f51688b40b0ef";

@@ -160,6 +160,7 @@ function generatedSeasonOne(): Design {
       defence: stamina.stamina_defense_req,
       wellPercent: rules.WELL_REFILL_PERCENT,
       perFragment: fragments.STAMINA_PER_FRAGMENT,
+      logisticsStepPercent: rules.LOGISTICS_STEP_PERCENT,
     },
     oaths: {
       count: definition.settlement.order_aspects.length,

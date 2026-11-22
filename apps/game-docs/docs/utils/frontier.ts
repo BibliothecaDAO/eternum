@@ -99,7 +99,7 @@ export const FRONTIER = {
     attack: n(stamina.staminaAttackReq),
     wheatPerTroop: n(stamina.staminaExploreWheatCost),
     well: `${n(rule.WELL_REFILL_PERCENT)}% of its maximum`,
-    logisticsMax: n(rule.LOGISTICS_LEGENDARY_STAMINA),
+    logisticsMax: n((stamina.staminaKnightMax * rule.LOGISTICS_STEP_PERCENT * rule.ATTRIBUTE_CAP) / 100),
   },
   discovery: {
     beasts: pct(frontierPreset.discovery.beastsBps),

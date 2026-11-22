@@ -196,7 +196,7 @@ export function resolveExplorerTroops(
     boosts:
       regen.incr_stamina_regen_seconds_left > 0 ? { ...explorer.troops.boosts, ...regen } : explorer.troops.boosts,
     stamina: result.known.stamina,
-    staminaMax: base + logisticsStamina(progress.logistics) + oathStaminaBonus(progress.oaths),
+    staminaMax: base + logisticsStamina(base, progress.logistics) + oathStaminaBonus(progress.oaths),
     staminaEffects: effects.known,
   };
 }
@@ -275,8 +275,8 @@ export function musterStamina(
     return { amount: Math.min(staminaInitial, staminaMax), max: staminaMax };
   }
   // A new slot occupant starts at its realm's trained Logistics, regardless of its troop tier.
-  const staminaMax =
-    troopStaminaLimits(rules, troop.category, TroopTier.T1).staminaMax + logisticsStamina(trainedLogistics);
+  const base = troopStaminaLimits(rules, troop.category, TroopTier.T1).staminaMax;
+  const staminaMax = base + logisticsStamina(base, trainedLogistics);
   // A slot's first army of the day starts full at its own maximum.
   if (!slot.inherited) return { amount: staminaMax, max: staminaMax };
   const newArmy: Troops = {

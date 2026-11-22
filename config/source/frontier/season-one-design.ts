@@ -70,7 +70,7 @@ export const seasonOneDesign = {
     knightGuardDamageTakenPercent: 75,
     scoutRevealStamina: 10,
   },
-  stamina: { reveal: 20, move: 10, attack: 30, defence: 0, wellPercent: 40, perFragment: 2 },
+  stamina: { reveal: 20, move: 10, attack: 30, defence: 0, wellPercent: 40, perFragment: 2, logisticsStepPercent: 20 },
   oaths: {
     count: 16,
     passStamina: 20,

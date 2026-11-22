@@ -85,13 +85,7 @@ fn training_starts_only_later_armies_at_their_realms_tiers_and_full_at_their_log
         troops.stamina.inline().amount,
         crate::progression::stamina_max(progress, troops.category, crate::balance::rules::TROOP_STAMINA_CONFIG),
     );
-    assert_eq!(
-        troops.stamina.inline().amount,
-        crate::stamina::StaminaImpl::max(
-            troops.category, crate::troops::TroopTier::T1, crate::balance::rules::TROOP_STAMINA_CONFIG,
-        )
-            + crate::rules::logistics_stamina(1).into(),
-    );
+    assert_eq!(troops.stamina.inline().amount, 216);
 }
 
 #[test]

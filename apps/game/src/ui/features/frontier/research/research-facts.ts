@@ -98,6 +98,7 @@ const readResearchFacts = (
       rationStep: Number(board.ration_step) / RESOURCE_PRECISION,
       wheatPerTroop: Number(wheat.amount) / Number(recipe.simple_output),
       troopsPerHour: buildingOutput(store, realm, BuildingType.ResourceKnightT1, 0).base * 3600,
+      staminaBar: store.require("SliceRules", { game_id: realm.game_id }).troop_stamina_config.stamina_knight_max,
     },
     laborStore: (level) => {
       const base = ResourceManager.castleStoreLimit(store, realm.game_id, level, ResourcesIds.Labor);
