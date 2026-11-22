@@ -167,11 +167,10 @@ const READ_BUILD_CARDS = `(() => [...document.querySelectorAll(".ui-card")].map(
   };
 }))()`;
 
-const UNRESEARCHED = new Set(["Storeroom"]);
 const buildCardProblems = (cards) => {
   if (cards.length === 0) return ["no build card drawn"];
   return cards.flatMap(({ name, gems, clipped }) => [
-    ...(gems === (UNRESEARCHED.has(name) ? 0 : 1) ? [] : [`${name} shows ${gems} gems`]),
+    ...(gems === 1 ? [] : [`${name} shows ${gems} gems`]),
     ...clipped.map((part) => `${name}: "${part}" is clipped`),
   ]);
 };
