@@ -19,6 +19,7 @@ const blitzReturnedCommands: NativeCommand[] = [
   "ResumeBuildingProduction",
   "CreateExplorer",
   "ManageTroops",
+  "Move",
 ];
 
 export const arenaCommandMask = commandBits(allCommands) & ~commandBits(arenaClosedCommands);

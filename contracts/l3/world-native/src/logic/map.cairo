@@ -12,6 +12,22 @@ pub fn biome(key: TileKey, game_context: crate::commands::BiomeContext) -> u8 {
     crate::settlement::ITerrainDerivationDispatcherTrait::biome(terrain(key.game_id), key, game_context)
 }
 
+#[cfg(feature: "blitz")]
+pub fn raise_destination(_key: TileKey, _context: crate::commands::BiomeContext) -> bool {
+    false
+}
+
+#[cfg(not(feature: "blitz"))]
+pub fn raise_destination(key: TileKey, context: crate::commands::BiomeContext) -> bool {
+    if !crate::expeditions::is_home_ring(
+        crate::troops::Coord { alt: key.alt, x: key.col, y: key.row }, crate::logic::settlement::spacing(),
+    ) {
+        return false;
+    }
+    raise_expedition_home(key, context);
+    true
+}
+
 pub fn raise_expedition_home(key: TileKey, context: crate::commands::BiomeContext) {
     crate::settlement::ITerrainDerivationDispatcherTrait::raise_expedition_home(terrain(key.game_id), key, context);
 }
@@ -296,12 +312,9 @@ pub mod MapLogic {
             if stored.map(|tile| tile.data / BIOME_SCALE % BYTE_RANGE != 0).unwrap_or(false) {
                 return stored;
             }
-            if !crate::expeditions::is_home_ring(
-                Coord { alt: key.alt, x: key.col, y: key.row }, crate::logic::settlement::spacing(),
-            ) {
+            if !crate::logic::map::raise_destination(key, game_context) {
                 return stored;
             }
-            crate::logic::map::raise_expedition_home(key, game_context);
             crate::logic::map::tile(key)
         }
 

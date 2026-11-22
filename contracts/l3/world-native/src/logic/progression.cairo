@@ -13,9 +13,15 @@ pub fn require(key: ExplorerKey) -> ArmyProgress {
     read(key).expect('missing army progress')
 }
 
+#[cfg(not(feature: "blitz"))]
 #[inline(never)]
 pub fn held_oaths(key: ExplorerKey, context: crate::commands::ExecutionContext) -> u16 {
     require(key).oaths
+}
+
+#[cfg(feature: "blitz")]
+pub fn held_oaths(_key: ExplorerKey, _context: crate::commands::ExecutionContext) -> u16 {
+    0
 }
 
 pub fn create(key: ExplorerKey, learned: u64, category: crate::troops::TroopType) -> ArmyProgress {

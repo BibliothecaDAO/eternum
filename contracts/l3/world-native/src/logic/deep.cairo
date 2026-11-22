@@ -12,6 +12,10 @@ pub fn contains(game_id: u32, coord: Coord) -> bool {
     crate::logic::game::game_exists(game_id) && crate::deep::contains(coord, crate::logic::settlement::spacing())
 }
 
+#[cfg(feature: "blitz")]
+pub fn assert_step(_game_id: u32, _origin: Coord, _destination: Coord) {}
+
+#[cfg(not(feature: "blitz"))]
 pub fn assert_step(game_id: u32, origin: Coord, destination: Coord) {
     let spacing = crate::logic::settlement::spacing();
     if contains(game_id, origin) {
