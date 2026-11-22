@@ -59,6 +59,7 @@ export const frontierSeasonOnePreset = {
         [research.BARRACKS]: [{ resource: ResourcesIds.Labor, amount: 500 }],
         [research.SCOUTS_LODGE]: [{ resource: ResourcesIds.Labor, amount: 500 }],
         [research.WORKSHOP]: [{ resource: ResourcesIds.Labor, amount: 1000 }],
+        [research.STOREROOM]: [{ resource: ResourcesIds.Labor, amount: 10000 }],
         [research.SUPPLY_YARD]: [
           { resource: ResourcesIds.Essence, amount: 5000 },
           { resource: ResourcesIds.Labor, amount: 1000 },
@@ -88,7 +89,10 @@ export const frontierSeasonOnePreset = {
     beastStrongUpper: 495 * 2 ** index,
     chest: layerRuinOdds[index] ?? depth.chest,
   })),
-  board: { ...frontierPreset.board!, workshopRate: 200 / 3600, laborStoreCaps: [5000, 15000, 50000, 100000] },
+  board: {
+    ...frontierPreset.board!,
+    workshopRate: 200 / 3600,
+    storageStepBps: 10000, laborStoreCaps: [5000, 15000, 50000, 100000] },
   research: frontierPreset.research.map((price) => ({ ...price, ...researchPrices[price.row]?.[price.tier - 1] })),
   labor: null,
   discovery: { ...frontierPreset.discovery, beastsBps: 900 },

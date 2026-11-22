@@ -1,6 +1,5 @@
 use crate::resources::ResourceKey;
 
-// Two-sided rows store independent three-bit counts; other rows store their tier.
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct RealmKnowledge {
     pub learned: u64,
@@ -22,13 +21,11 @@ pub const LORE_WELLS: u8 = 1;
 pub const LORE_SHRINES: u8 = 2;
 pub const LORE_SPIRES: u8 = 3;
 
-// Farm and Workshop tiers make more (Fields, Tools) or store more (Granary, Storeroom).
-pub const CHOICE_MAKE: u8 = 0;
-pub const CHOICE_STORE: u8 = 1;
-
 
 // Building categories used by construction and research.
 pub const HUT: u8 = 1;
+pub const STOREROOM: u8 = 2;
+pub const STOREROOM_LEVEL: u8 = 1;
 pub const WORKSHOP: u8 = 25;
 pub const BARRACKS: u8 = 28;
 pub const RANGE: u8 = 31;
@@ -39,6 +36,7 @@ pub const CONSCRIPTION_CAMP_LEVEL: u8 = 1;
 pub const RATIONS_DEPOT_LEVEL: u8 = 2;
 pub const FARM: u8 = 37;
 pub const SUPPLY_YARD: u8 = 42;
+pub const SUPPLY_YARD_LEVEL: u8 = 2;
 pub const SCOUTS_LODGE: u8 = 43;
 pub const SCOUTS_LODGE_LEVEL: u8 = 1;
 
@@ -49,7 +47,6 @@ pub struct ResearchPrice {
     pub labor: u128,
 }
 
-// Buys the next tier. `choice` selects the Farm or Workshop side; every other row takes 0.
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct Research {
     pub structure_id: u64,
@@ -87,6 +84,28 @@ pub fn is_training(category: u8) -> bool {
     category == SUPPLY_YARD || category == CONSCRIPTION_CAMP || category == RATIONS_DEPOT
 }
 
+pub fn one_per_realm(category: u8) -> bool {
+    is_training(category) || category == STOREROOM
+}
+
+pub fn opens_at_level(category: u8) -> u8 {
+    if category == SCOUTS_LODGE {
+        SCOUTS_LODGE_LEVEL
+    } else if category == RANGE {
+        RANGE_LEVEL
+    } else if category == CONSCRIPTION_CAMP {
+        CONSCRIPTION_CAMP_LEVEL
+    } else if category == STOREROOM {
+        STOREROOM_LEVEL
+    } else if category == RATIONS_DEPOT {
+        RATIONS_DEPOT_LEVEL
+    } else if category == SUPPLY_YARD {
+        SUPPLY_YARD_LEVEL
+    } else {
+        0
+    }
+}
+
 pub const ROWS: [u8; 10] = [
     ROW_FARM, ROW_WORKSHOP, ROW_CONSCRIPTION, ROW_HUT, ROW_RATIONS, ROW_SUPPLY_YARD, ROW_KNIGHT_OATHS, ROW_SCOUT_OATHS,
     ROW_CROSSBOW_OATHS, ROW_LORE,
@@ -122,14 +141,6 @@ pub fn max_tier(row: u8) -> u8 {
     }
 }
 
-// Farm and Workshop have two independent sides.
-pub fn choice_count(row: u8) -> u8 {
-    match row {
-        0 | 1 => 2,
-        _ => 1,
-    }
-}
-
 // Where a row's tier sits in `learned`: its scale and its field size.
 fn tier_slot(row: u8) -> (u64, u64) {
     match row {
@@ -147,45 +158,16 @@ fn tier_slot(row: u8) -> (u64, u64) {
     }
 }
 
-
-pub fn independent_sides(row: u8) -> bool {
-    row <= ROW_WORKSHOP
-}
-
 pub fn tier(learned: u64, row: u8) -> u8 {
     let (scale, size) = tier_slot(row);
-    let first = (learned / scale % size).try_into().unwrap();
-    if independent_sides(row) {
-        let second = (learned / (scale * size) % size).try_into().unwrap();
-        core::cmp::max(first, second)
-    } else {
-        first
-    }
+    (learned / scale % size).try_into().unwrap()
 }
 
-
-// The upgrades bought on one side.
-pub fn picks(learned: u64, row: u8, side: u8) -> u8 {
-    assert!(side < choice_count(row), "invalid research choice");
-    if independent_sides(row) {
-        let (scale, _) = tier_slot(row);
-        let scale = if side == 0 {
-            scale
-        } else {
-            scale * 8
-        };
-        (learned / scale % 8).try_into().unwrap()
-    } else {
-        tier(learned, row)
-    }
-}
-
-// The Fields or Tools picks of a building type; a type without a make-or-store row has none.
 pub fn make_picks(learned: u64, category: u8) -> u8 {
     if category == FARM {
-        picks(learned, ROW_FARM, CHOICE_MAKE)
+        tier(learned, ROW_FARM)
     } else if category == WORKSHOP {
-        picks(learned, ROW_WORKSHOP, CHOICE_MAKE)
+        tier(learned, ROW_WORKSHOP)
     } else if category == BARRACKS || category == RANGE || category == SCOUTS_LODGE {
         tier(learned, ROW_CONSCRIPTION)
     } else {
@@ -193,37 +175,10 @@ pub fn make_picks(learned: u64, category: u8) -> u8 {
     }
 }
 
-// Total purchases across a row, including independent economy sides.
-pub fn purchases(learned: u64, row: u8) -> u8 {
-    if independent_sides(row) {
-        picks(learned, row, 0) + picks(learned, row, 1)
-    } else {
-        tier(learned, row)
-    }
-}
-
-pub fn side_tier(learned: u64, row: u8, side: u8) -> u8 {
-    if independent_sides(row) {
-        picks(learned, row, side)
-    } else {
-        tier(learned, row)
-    }
-}
-
-// Adds one upgrade to the chosen side.
-pub fn learn(learned: u64, row: u8, side: u8) -> u64 {
-    assert!(side < choice_count(row), "invalid research choice");
-
-    let next = side_tier(learned, row, side) + 1;
-    assert!(next <= max_tier(row), "research side is complete");
+pub fn learn(learned: u64, row: u8, choice: u8) -> u64 {
+    assert!(choice == 0, "invalid research choice");
+    assert!(tier(learned, row) < max_tier(row), "research row is complete");
     let (scale, _) = tier_slot(row);
-    if independent_sides(row) {
-        return learned + if side == 0 {
-            scale
-        } else {
-            scale * 8
-        };
-    }
     learned + scale
 }
 

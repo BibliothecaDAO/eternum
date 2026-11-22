@@ -86,6 +86,7 @@ pub mod ConstructionLogic {
             let rule = self.buildings.rule(crate::buildings::BuildingRuleKey { game_id, category: command.category });
             let board = crate::logic::buildings::board();
             self.assert_board_category(key, command.category, board);
+            self.settle_stores_before_storeroom(key, command.category, context);
             self.erect_building(key, actor, base, location, coord, command.category, rule, context.timestamp, context);
             self.change_board_building(key, base, command.category, board, true, context);
             let mut count = crate::buildings::category_count(
@@ -134,6 +135,7 @@ pub mod ConstructionLogic {
                 "cannot destroy labor building",
             );
             let rule = self.buildings.rule(crate::buildings::BuildingRuleKey { game_id, category: building.category });
+            self.settle_stores_before_storeroom(key, building.category, context);
             self.buildings.remove(location, building, rule, context.rules.unbox().building_config.base_population);
             let board = crate::logic::buildings::board();
             self.change_board_building(key, base, building.category, board, false, context);
@@ -190,12 +192,9 @@ pub mod ConstructionLogic {
             self
                 .pay_research(
                     key,
-                    crate::logic::research::price(
-                        command.row, crate::research::side_tier(learned, command.row, command.choice),
-                    ),
+                    crate::logic::research::price(command.row, crate::research::tier(learned, command.row)),
                     context,
                 );
-            self.settle_store_choice(key, command, context);
             crate::logic::research::write(key, crate::research::RealmKnowledge { learned });
             self.apply_research(key, base, command.row, crate::logic::buildings::board(), before, learned, context);
         }
@@ -301,23 +300,12 @@ pub mod ConstructionLogic {
         fn assert_board_category(
             self: @ContractState, key: ResourceKey, category: u8, board: crate::buildings::BoardRules,
         ) {
-            let minimum = if category == crate::research::SCOUTS_LODGE {
-                crate::research::SCOUTS_LODGE_LEVEL
-            } else if category == crate::research::RANGE {
-                crate::research::RANGE_LEVEL
-            } else if category == crate::research::CONSCRIPTION_CAMP {
-                crate::research::CONSCRIPTION_CAMP_LEVEL
-            } else if category == crate::research::RATIONS_DEPOT {
-                crate::research::RATIONS_DEPOT_LEVEL
-            } else {
-                0
-            };
             let level = self.data.structures.structures.entry((key.game_id, key.entity_id)).base.read().level;
-            assert!(level >= minimum, "building needs a higher realm level");
-            if !crate::research::is_training(category) {
+            assert!(level >= crate::research::opens_at_level(category), "building needs a higher realm level");
+            if !crate::research::one_per_realm(category) {
                 return;
             }
-            assert!(self.standing(key, category) == 0, "training building is unique");
+            assert!(self.standing(key, category) == 0, "realm holds one of this building");
         }
         // The buildings of a type standing on a realm board; the castle's own labor producer is not a workshop.
         fn standing(self: @ContractState, key: ResourceKey, category: u8) -> u8 {
@@ -334,26 +322,16 @@ pub mod ConstructionLogic {
             let category = crate::research::row_category(row);
             assert!(category == 0 || self.standing(key, category) != 0, "research row needs a standing building");
         }
-        // A store choice enlarges its limit only after production settles under the old knowledge.
-        fn settle_store_choice(
-            ref self: ContractState,
-            key: ResourceKey,
-            command: crate::research::Research,
-            context: crate::commands::ExecutionContext,
+        fn settle_stores_before_storeroom(
+            ref self: ContractState, key: ResourceKey, category: u8, context: crate::commands::ExecutionContext,
         ) {
-            if command.choice != crate::research::CHOICE_STORE {
+            if category != crate::research::STOREROOM {
                 return;
             }
-            let resource = if command.row == crate::research::ROW_FARM {
-                crate::resources::WHEAT
-            } else if command.row == crate::research::ROW_WORKSHOP {
-                crate::resources::LABOR
-            } else {
-                return;
-            };
-            self
-                .resources_dispatcher(key.game_id)
-                .spend_resource(key, resource, 0, context.timestamp, crate::commands::resource_context(context));
+            let resources = self.resources_dispatcher(key.game_id);
+            let resource_context = crate::commands::resource_context(context);
+            resources.spend_resource(key, crate::resources::WHEAT, 0, context.timestamp, resource_context);
+            resources.spend_resource(key, crate::resources::LABOR, 0, context.timestamp, resource_context);
         }
         fn pay_research(
             ref self: ContractState,

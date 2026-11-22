@@ -193,26 +193,18 @@ fn castle_ring_limit_accepts_four_and_rejects_five() {
 }
 
 #[test]
-fn realm_knowledge_packs_each_row_tier_and_choice_where_the_client_reads_them() {
+fn realm_knowledge_packs_each_row_tier_where_the_client_reads_them() {
     let mut learned = 0;
-    learned = crate::research::learn(learned, crate::research::ROW_FARM, crate::research::CHOICE_MAKE);
-    learned = crate::research::learn(learned, crate::research::ROW_FARM, crate::research::CHOICE_STORE);
-    learned = crate::research::learn(learned, crate::research::ROW_WORKSHOP, crate::research::CHOICE_MAKE);
+    learned = crate::research::learn(learned, crate::research::ROW_FARM, 0);
+    learned = crate::research::learn(learned, crate::research::ROW_WORKSHOP, 0);
     learned = crate::research::learn(learned, crate::research::ROW_LORE, 0);
     learned = crate::research::learn(learned, crate::research::ROW_LORE, 0);
-    assert_eq!(learned, 562949953421449);
-    assert_eq!(crate::research::picks(learned, crate::research::ROW_FARM, crate::research::CHOICE_STORE), 1);
-    // Both independent sides and all other rows fit without changing neighboring fields.
+    assert_eq!(learned, 562949953421441);
     let mut full = 0;
     for row_ref in crate::research::ROWS.span() {
         let row = *row_ref;
-        if crate::research::independent_sides(row) {
-            for _ in 0_u8..5 {
-                full = crate::research::learn(full, row, 0);
-            }
-        }
         for _ in 0..crate::research::max_tier(row) {
-            full = crate::research::learn(full, row, crate::research::choice_count(row) - 1);
+            full = crate::research::learn(full, row, 0);
         }
     }
     for row_ref in crate::research::ROWS.span() {
@@ -231,14 +223,14 @@ fn a_row_opens_with_its_first_building_and_sells_each_tier_once_in_order_at_its_
     let labor = ResourceSlot { resource_type: crate::resources::LABOR, ..essence };
     // No farm stands, and the castle's own labor building is not a workshop.
     assert_terminal_rejection(
-        d, research(home, crate::research::ROW_FARM, crate::research::CHOICE_MAKE), FIXTURE_START + 40,
+        d, research(home, crate::research::ROW_FARM, 0), FIXTURE_START + 40,
     );
     assert_terminal_rejection(
-        d, research(home, crate::research::ROW_WORKSHOP, crate::research::CHOICE_MAKE), FIXTURE_START + 40,
+        d, research(home, crate::research::ROW_WORKSHOP, 0), FIXTURE_START + 40,
     );
     assert!(execute(d, build_toward(home, crate::research::FARM, 0), FIXTURE_START + 40));
-    assert_terminal_rejection(d, research(home, crate::research::ROW_FARM, 2), FIXTURE_START + 40);
-    for side in 0_u8..2 {
+    assert_terminal_rejection(d, research(home, crate::research::ROW_FARM, 1), FIXTURE_START + 40);
+    {
         for tier in 1_u8..6 {
             let price = crate::logic::research::price(crate::research::ROW_FARM, tier);
             let (e, l) = *array![(500_u128, 500_u128), (1000, 1000), (2500, 2500), (5000, 5000), (10000, 10000)]
@@ -248,14 +240,13 @@ fn a_row_opens_with_its_first_building_and_sells_each_tier_once_in_order_at_its_
             let (essence_before, labor_before) = (
                 resources.resource_balance(essence), resources.resource_balance(labor),
             );
-            assert!(execute(d, research(home, crate::research::ROW_FARM, side), FIXTURE_START + 40));
+            assert!(execute(d, research(home, crate::research::ROW_FARM, 0), FIXTURE_START + 40));
             assert_eq!(essence_before - resources.resource_balance(essence), price.essence);
             assert_eq!(labor_before - resources.resource_balance(labor), price.labor);
-            assert_eq!(crate::research::picks(learned(d, home), crate::research::ROW_FARM, side), tier);
+            assert_eq!(crate::research::tier(learned(d, home), crate::research::ROW_FARM), tier);
         }
-        assert_terminal_rejection(d, research(home, crate::research::ROW_FARM, side), FIXTURE_START + 40);
+        assert_terminal_rejection(d, research(home, crate::research::ROW_FARM, 0), FIXTURE_START + 40);
     }
-    assert_eq!(crate::research::purchases(learned(d, home), crate::research::ROW_FARM), 10);
     // The castle rows need no building and charge Essence alone.
     let before = resources.resource_balance(labor);
     for _ in 0..crate::research::LORE_SPIRES {
@@ -277,12 +268,9 @@ fn a_make_pick_adds_a_fifth_of_the_base_to_every_building_of_the_type_standing_o
     assert!(execute(d, build_toward(home, crate::research::FARM, 1), FIXTURE_START + 40));
     let base = rate(d, home, wheat) / 2;
     let fields = stepped(base, 1);
-    assert!(execute(d, research(home, crate::research::ROW_FARM, crate::research::CHOICE_MAKE), FIXTURE_START + 40));
+    assert!(execute(d, research(home, crate::research::ROW_FARM, 0), FIXTURE_START + 40));
     assert_eq!(rate(d, home, wheat), 2 * fields);
     assert!(execute(d, build_toward(home, crate::research::FARM, 2), FIXTURE_START + 40));
-    assert_eq!(rate(d, home, wheat), 3 * fields);
-    // Granary stores more and makes nothing more.
-    assert!(execute(d, research(home, crate::research::ROW_FARM, crate::research::CHOICE_STORE), FIXTURE_START + 40));
     assert_eq!(rate(d, home, wheat), 3 * fields);
     assert!(execute(d, Command::DestroyBuilding(change(home)), FIXTURE_START + 40));
     assert_eq!(rate(d, home, wheat), 2 * fields);
@@ -293,7 +281,7 @@ fn a_make_pick_adds_a_fifth_of_the_base_to_every_building_of_the_type_standing_o
     assert!(execute(d, build_toward(home, crate::research::WORKSHOP, 3), FIXTURE_START + 40));
     assert_eq!(rate(d, home, labor), castle + workshop);
     assert!(
-        execute(d, research(home, crate::research::ROW_WORKSHOP, crate::research::CHOICE_MAKE), FIXTURE_START + 40),
+        execute(d, research(home, crate::research::ROW_WORKSHOP, 0), FIXTURE_START + 40),
     );
     assert_eq!(rate(d, home, labor), castle + stepped(workshop, 1));
 }
@@ -341,7 +329,7 @@ fn a_tier_the_realm_cannot_pay_in_labor_is_refused_and_changes_nothing() {
     assert!(execute(d, build_toward(home, crate::research::FARM, 0), FIXTURE_START + 40));
     for _ in 0..3_u8 {
         assert!(
-            execute(d, research(home, crate::research::ROW_FARM, crate::research::CHOICE_MAKE), FIXTURE_START + 40),
+            execute(d, research(home, crate::research::ROW_FARM, 0), FIXTURE_START + 40),
         );
     }
     let resources = IResourceOperationsDispatcher { contract_address: d.games };
@@ -367,7 +355,7 @@ fn a_tier_the_realm_cannot_pay_in_labor_is_refused_and_changes_nothing() {
     let before = resource_facts(d, home);
     let knowledge = learned(d, home);
     assert_terminal_rejection(
-        d, research(home, crate::research::ROW_FARM, crate::research::CHOICE_MAKE), FIXTURE_START + 40,
+        d, research(home, crate::research::ROW_FARM, 0), FIXTURE_START + 40,
     );
     assert_eq!(resource_facts(d, home), before);
     assert_eq!(learned(d, home), knowledge);
@@ -391,7 +379,7 @@ fn a_copy_costs_its_base_times_one_plus_the_square_of_the_copies_before_it() {
 }
 
 #[test]
-fn granary_settles_overflow_under_the_old_limit_before_enlarging_it() {
+fn a_storeroom_doubles_the_wheat_and_labor_stores_after_settling_under_the_old_limit() {
     let (d, home) = research_world();
     let resources = IResourceOperationsDispatcher { contract_address: d.games };
     let wheat = ResourceSlot {
@@ -402,13 +390,16 @@ fn granary_settles_overflow_under_the_old_limit_before_enlarging_it() {
     let troops = ResourceSlot { resource_type: 26, ..wheat };
     super::resource_commands::grant(d, home, 26, 10000000 * crate::rules::RESOURCE_PRECISION);
     let troop_base = resources.resource_balance(troops);
-    assert!(base > 0 && troop_base > 0);
+    let labor = ResourceSlot { resource_type: crate::resources::LABOR, ..wheat };
+    let labor_base = resources.resource_balance(labor);
+    assert!(base > 0 && troop_base > 0 && labor_base > 0);
     assert!(execute(d, build_toward(home, crate::research::FARM, 0), FIXTURE_START + 40));
-    assert!(execute(d, research(home, crate::research::ROW_FARM, crate::research::CHOICE_STORE), FIXTURE_START + 100));
+    assert!(execute(d, build_toward(home, crate::research::STOREROOM, 1), FIXTURE_START + 100));
+    assert_terminal_rejection(d, build_toward(home, crate::research::STOREROOM, 2), FIXTURE_START + 100);
     // Enlarging a full store cannot recover any earlier overflow.
     assert_eq!(resources.resource_balance(wheat), base);
     start_cheat_caller_address(d.games, d.games);
-    for resource in array![crate::resources::WHEAT, 26] {
+    for resource in array![crate::resources::WHEAT, crate::resources::LABOR, 26] {
         crate::resources::IResourceOperationsDispatcherTrait::grant_resource(
             resources,
             home,
@@ -419,7 +410,8 @@ fn granary_settles_overflow_under_the_old_limit_before_enlarging_it() {
         );
     }
     stop_cheat_caller_address(d.games);
-    assert_eq!(resources.resource_balance(wheat), base * 7 / 5);
+    assert_eq!(resources.resource_balance(wheat), base * 2);
+    assert_eq!(resources.resource_balance(labor), labor_base * 2);
     assert_eq!(resources.resource_balance(troops), troop_base);
 }
 
@@ -428,19 +420,7 @@ fn frontier_storage_grants_clip_at_each_exact_s2_cap_without_changing_troops() {
     let (d, home) = building_world();
     let resources = IResourceOperationsDispatcher { contract_address: d.games };
     for level in 0_u32..4 {
-        for picks in 0_u8..6 {
-            let mut knowledge = 0;
-            for _ in 0..picks {
-                knowledge = crate::research::learn(knowledge, crate::research::ROW_FARM, 1);
-                knowledge = crate::research::learn(knowledge, crate::research::ROW_WORKSHOP, 1);
-            }
-            let knowledge = knowledge;
-            snforge_std::interact_with_state(
-                d.games,
-                || {
-                    crate::logic::research::write(home, crate::research::RealmKnowledge { learned: knowledge });
-                },
-            );
+        {
             let board = crate::balance::structures::BOARD;
             let wheat_store: u128 = (*array![
                 board.settlement_resource_cap, board.city_resource_cap, board.kingdom_resource_cap,
@@ -462,7 +442,7 @@ fn frontier_storage_grants_clip_at_each_exact_s2_cap_without_changing_troops() {
                 let cap = if resource_type == 26 {
                     troop_cap
                 } else {
-                    store * (10000 + Into::<u8, u128>::into(picks) * board.storage_step_bps.into()) / 10000
+                    store
                 };
                 // Clear prior stock before testing each grant, so larger stores cannot mask clipping.
                 set_fixture(
@@ -497,7 +477,7 @@ fn frontier_storage_grants_clip_at_each_exact_s2_cap_without_changing_troops() {
 }
 
 #[test]
-fn workshop_sides_follow_their_exact_ladder() {
+fn workshop_tiers_follow_their_exact_ladder() {
     let ladders = array![
         (
             crate::research::ROW_WORKSHOP,
@@ -513,7 +493,7 @@ fn workshop_sides_follow_their_exact_ladder() {
         };
         let labor = ResourceSlot { resource_type: crate::resources::LABOR, ..essence };
         assert!(execute(d, build_toward(home, category, 0), FIXTURE_START + 40));
-        for side in 0_u8..crate::research::choice_count(row) {
+        {
             for at in 0_u32..5 {
                 start_cheat_caller_address(d.games, d.games);
                 crate::resources::IResourceOperationsDispatcherTrait::grant_resource(
@@ -527,7 +507,7 @@ fn workshop_sides_follow_their_exact_ladder() {
                 stop_cheat_caller_address(d.games);
                 let before_e = resources.resource_balance(essence);
                 let before_l = resources.resource_balance(labor);
-                assert!(execute(d, research(home, row, side), FIXTURE_START + 40));
+                assert!(execute(d, research(home, row, 0), FIXTURE_START + 40));
                 let (expected_essence, expected_labor) = *prices.at(at);
                 assert_eq!(
                     before_e - resources.resource_balance(essence), expected_essence * crate::rules::RESOURCE_PRECISION,
@@ -535,11 +515,10 @@ fn workshop_sides_follow_their_exact_ladder() {
                 assert_eq!(
                     before_l - resources.resource_balance(labor), expected_labor * crate::rules::RESOURCE_PRECISION,
                 );
-                assert_eq!(crate::research::picks(learned(d, home), row, side), at.try_into().unwrap() + 1_u8);
+                assert_eq!(crate::research::tier(learned(d, home), row), at.try_into().unwrap() + 1_u8);
             }
-            assert_terminal_rejection(d, research(home, row, side), FIXTURE_START + 40);
+            assert_terminal_rejection(d, research(home, row, 0), FIXTURE_START + 40);
         }
-        assert_eq!(crate::research::purchases(learned(d, home), row), 5 * crate::research::choice_count(row));
     }
 }
 
@@ -681,11 +660,14 @@ fn camp_and_depot_charge_their_own_exact_ladder_once_and_preserve_it_after_rebui
 }
 
 #[test]
-fn range_and_camp_open_at_city_and_depot_at_kingdom() {
+fn range_camp_and_storeroom_open_at_city_and_depot_and_supply_yard_at_kingdom() {
     let (d, home) = building_world();
     grant_population(d, home, 40);
     super::resource_commands::grant(d, home, crate::resources::ESSENCE, 100000 * crate::rules::RESOURCE_PRECISION);
-    for category in array![crate::research::RANGE, crate::research::CONSCRIPTION_CAMP, crate::research::RATIONS_DEPOT] {
+    for category in array![
+        crate::research::RANGE, crate::research::CONSCRIPTION_CAMP, crate::research::STOREROOM,
+        crate::research::RATIONS_DEPOT, crate::research::SUPPLY_YARD,
+    ] {
         assert_terminal_rejection(d, build_toward(home, category, 0), FIXTURE_START + 40);
     }
     level_up(d, home, FIXTURE_START + 40);
@@ -693,9 +675,13 @@ fn range_and_camp_open_at_city_and_depot_at_kingdom() {
     assert!(execute(d, build_toward(home, crate::research::RANGE, 0), FIXTURE_START + 40));
     assert!(execute(d, build_toward(home, crate::research::CONSCRIPTION_CAMP, 1), FIXTURE_START + 40));
     assert_terminal_rejection(d, build_toward(home, crate::research::RATIONS_DEPOT, 2), FIXTURE_START + 40);
+    assert_terminal_rejection(d, build_toward(home, crate::research::SUPPLY_YARD, 2), FIXTURE_START + 40);
+    super::resource_commands::grant(d, home, crate::resources::LABOR, 100000 * crate::rules::RESOURCE_PRECISION);
+    assert!(execute(d, build_toward(home, crate::research::STOREROOM, 3), FIXTURE_START + 40));
     level_up(d, home, FIXTURE_START + 40);
     super::resource_commands::grant(d, home, crate::resources::LABOR, 100000 * crate::rules::RESOURCE_PRECISION);
     assert!(execute(d, build_toward(home, crate::research::RATIONS_DEPOT, 2), FIXTURE_START + 40));
+    assert!(execute(d, build_toward(home, crate::research::SUPPLY_YARD, 4), FIXTURE_START + 40));
     assert_eq!(crate::research::tier(learned(d, home), crate::research::ROW_CONSCRIPTION), 1);
     assert_eq!(crate::research::tier(learned(d, home), crate::research::ROW_RATIONS), 1);
 }

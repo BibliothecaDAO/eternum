@@ -71,13 +71,10 @@ pub fn store_limit(key: ResourceKey, resource_type: u8) -> Option<u128> {
             * Into::<u8, u128>::into(board.troop_store_deploys)
     };
     let castle_base = cap * crate::rules::RESOURCE_PRECISION;
-    let stores = if resource_type == crate::resources::WHEAT {
-        crate::research::picks(
-            crate::logic::research::learned(key), crate::research::ROW_FARM, crate::research::CHOICE_STORE,
-        )
-    } else if resource_type == crate::resources::LABOR {
-        crate::research::picks(
-            crate::logic::research::learned(key), crate::research::ROW_WORKSHOP, crate::research::CHOICE_STORE,
+    let stores = if resource_type == crate::resources::WHEAT || resource_type == crate::resources::LABOR {
+        crate::buildings::category_count(
+            crate::state::read().buildings.structure_buildings.read((key.game_id, key.entity_id)),
+            crate::research::STOREROOM,
         )
     } else {
         0
