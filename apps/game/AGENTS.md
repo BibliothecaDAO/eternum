@@ -198,11 +198,11 @@ pnpm --dir apps/game playtest --base-url https://127.0.0.1:4174 --iterations 1  
 
 Every landing plays the lab scenarios listed in `LANDING_SCENARIOS` (`scripts/run-landing-playtest.mjs`) through one
 flow kind, `build.sh playtest-landing`: `pnpm --dir apps/game playtest:landing` builds and serves the client once, then
-plays each scenario at 1920x1080 and 390x844, each in its own fresh browser by the playtest above, its evidence in
-`<run>/<scenario>/<viewport>/` and every verdict in `<run>/verdicts.json`. It fails naming each scenario and viewport
-that failed (128 when every failure only refused the machine's load). Scenario names play those alone:
-`pnpm --dir apps/game playtest:landing lab-oath-slots`. The kind runs on every landing, so a proof every landing needs
-only joins `LANDING_SCENARIOS`.
+plays each scenario at 1920x1080 and 390x844, each in its own fresh browser by the playtest above, `--width` runs at
+once (default one for every four cores), its evidence and `run.log` in `<run>/<scenario>/<viewport>/` and every verdict
+in `<run>/verdicts.json`. It fails naming each scenario and viewport that failed (128 when every failure only refused
+the machine's load). Scenario names play those alone: `pnpm --dir apps/game playtest:landing lab-oath-slots`. The kind
+runs on every landing, so a proof every landing needs only joins `LANDING_SCENARIOS`.
 
 Options: `--channel web|play|app-store` (default web: the app the client is played in, launched as that app launches the
 site, `src/runtime/distribution-channel.ts`: `play` opens the run's page with `?channel=play`, `app-store` appends

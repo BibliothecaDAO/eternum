@@ -352,7 +352,7 @@ async function playRun(context) {
   const releaseProfile = player
     ? () => {}
     : owner.adopt(`profile ${profile}`, () => rmSync(profile, { recursive: true, force: true }));
-  const browser = createBrowserSession(`playtest-${label}-${Date.now().toString(36)}`, {
+  const browser = createBrowserSession(`playtest-${label}-${process.pid}-${Date.now().toString(36)}`, {
     chromeArgs: MEMORY_ARGS,
     executablePath: context.integratedGpu?.launcher,
     headed: context.headed,

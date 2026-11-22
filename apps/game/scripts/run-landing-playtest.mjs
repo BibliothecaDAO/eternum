@@ -1,5 +1,6 @@
 import { spawn } from "node:child_process";
-import { writeFileSync } from "node:fs";
+import { closeSync, mkdirSync, openSync, writeFileSync } from "node:fs";
+import { availableParallelism } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -9,13 +10,13 @@ import { STEP_SETS } from "./client-playtest/steps.mjs";
 import { allocateRunDirectory, LOAD_REFUSED_STATUS } from "./run-client-playtest.mjs";
 
 export const LANDING_SCENARIOS = [
+  "lab-oath-vitriol",
   "lab-supply-post",
   "lab-scouts",
   "lab-town",
   "lab-oath-slots",
   "lab-actions-oath-pick",
   "lab-actions-oath-replace",
-  "lab-oath-vitriol",
   "lab-oath-decline",
   "lab-oath-pass-capped",
   "lab-oath-battle-target",
@@ -31,23 +32,55 @@ const SCRIPTS_DIR = dirname(fileURLToPath(import.meta.url));
 const RUNNER = join(SCRIPTS_DIR, "run-client-playtest.mjs");
 const DEFAULT_OUT = resolve(SCRIPTS_DIR, "../../../.context/playtest");
 const STOP_GRACE_MS = 5_000;
+const CORES_PER_RUN = 4;
+
+export const defaultWidth = (cores = availableParallelism()) => Math.max(1, Math.floor(cores / CORES_PER_RUN));
 
 export function readLandingOptions(argv, callerDir = process.cwd()) {
   const named = [];
   let port = DEFAULT_PORT;
   let outRoot = DEFAULT_OUT;
+  let width = defaultWidth();
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
     if (argument === "--port") port = Number(argv[++index]);
     else if (argument === "--out") outRoot = resolve(callerDir, argv[++index]);
+    else if (argument === "--width") width = Number(argv[++index]);
     else if (argument.startsWith("--"))
-      throw new Error(`playtest:landing takes scenario names, --port and --out, not ${argument}`);
+      throw new Error(`playtest:landing takes scenario names, --port, --out and --width, not ${argument}`);
     else named.push(argument);
   }
   if (!Number.isInteger(port) || port < 1) throw new Error("--port must be a port number");
+  if (!Number.isInteger(width) || width < 1) throw new Error("--width must be a whole number of runs, at least 1");
   const unknown = named.filter((scenario) => !STEP_SETS[scenario]);
   if (unknown.length > 0) throw new Error(`no playtest step list is named ${unknown.join(", ")}`);
-  return { scenarios: named.length > 0 ? named : LANDING_SCENARIOS, port, outRoot };
+  return { scenarios: named.length > 0 ? named : LANDING_SCENARIOS, port, outRoot, width };
+}
+
+export const landingRuns = (scenarios, runDir) =>
+  scenarios.flatMap((scenario) =>
+    VIEWPORTS.map((viewport) => ({ scenario, viewport, out: join(runDir, scenario, viewport) })),
+  );
+
+const playOnce = (play, run) =>
+  Promise.resolve()
+    .then(() => play(run))
+    .catch((error) => {
+      console.error(`${run.scenario} at ${run.viewport} did not play: ${error.message}`);
+      return 1;
+    });
+
+export async function playEach(runs, width, play, shouldStop = () => false) {
+  const verdicts = [];
+  let next = 0;
+  const lane = async () => {
+    while (next < runs.length && !shouldStop()) {
+      const index = next++;
+      verdicts[index] = { ...runs[index], status: await playOnce(play, runs[index]) };
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(width, runs.length) }, lane));
+  return verdicts.filter(Boolean);
 }
 
 export function judgeLanding(verdicts) {
@@ -62,22 +95,13 @@ async function main(argv) {
   const owner = createRunOwner();
   for (const signal of ["SIGINT", "SIGTERM"]) process.on(signal, () => owner.cancel(signal));
   const runDir = allocateRunDirectory(options.outRoot, "landing");
-  const verdicts = [];
+  let verdicts = [];
   let stopped = null;
   try {
     const client = await startClient({ owner, port: options.port, runDir });
-    for (const scenario of options.scenarios) {
-      for (const viewport of VIEWPORTS) {
-        owner.throwIfCancelled();
-        const out = join(runDir, scenario, viewport);
-        verdicts.push({
-          scenario,
-          viewport,
-          out,
-          status: await playScenario({ owner, client, scenario, viewport, out }),
-        });
-      }
-    }
+    const play = (run) => playScenario({ owner, client, ...run });
+    verdicts = await playEach(landingRuns(options.scenarios, runDir), options.width, play, () => owner.cancelledBy);
+    owner.throwIfCancelled();
   } catch (error) {
     stopped = error.message;
   } finally {
@@ -89,8 +113,15 @@ async function main(argv) {
 function playScenario({ owner, client, scenario, viewport, out }) {
   const args = [RUNNER, "--base-url", client.baseUrl, "--steps", scenario, "--viewport", viewport];
   args.push("--iterations", "1", "--renderer-modes", RENDERER_MODE, "--out", out);
-  const child = spawn(process.execPath, args, { stdio: "inherit" });
-  const exited = new Promise((resolveExit) => child.once("exit", (code) => resolveExit(code ?? 1)));
+  mkdirSync(out, { recursive: true });
+  const log = openSync(join(out, "run.log"), "w");
+  const startedAt = Date.now();
+  const child = spawn(process.execPath, args, { stdio: ["ignore", log, log] });
+  closeSync(log);
+  const exited = new Promise((resolveExit) => child.once("exit", (code) => resolveExit(code ?? 1))).then((status) => {
+    console.log(`${scenario} at ${viewport}: exit ${status} in ${Math.round((Date.now() - startedAt) / 1000)} s`);
+    return status;
+  });
   const stop = () => {
     if (child.exitCode !== null || child.signalCode !== null) return exited;
     const kill = setTimeout(() => child.kill("SIGKILL"), STOP_GRACE_MS);
@@ -109,7 +140,14 @@ function writeLandingVerdict({ options, runDir, stopped, verdicts }) {
   const judged = judgeLanding(verdicts);
   const failures = stopped ? [`stopped: ${stopped}`, ...judged.failures] : judged.failures;
   const status = stopped ? 1 : judged.status;
-  const verdict = { scenarios: options.scenarios, viewports: VIEWPORTS, verdicts, failures, status };
+  const verdict = {
+    scenarios: options.scenarios,
+    viewports: VIEWPORTS,
+    width: options.width,
+    verdicts,
+    failures,
+    status,
+  };
   writeFileSync(join(runDir, "verdicts.json"), `${JSON.stringify(verdict, null, 2)}\n`);
   console.log(JSON.stringify({ runDir, ok: status === 0, failures }, null, 2));
   process.exitCode = status;
