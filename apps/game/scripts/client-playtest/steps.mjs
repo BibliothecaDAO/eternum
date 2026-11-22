@@ -6542,6 +6542,7 @@ async function receiptOfTheNextAction({ browser, owner }, before) {
 async function sendOneOrder(context, verb) {
   const before = context.browser.read(SENT_ACTIONS);
   const order = await orderBesideArmy(context, verb);
+  if (!order.army) return { order, blocked: "the dock holds no army to send: the day's armies are gone" };
   if (!order.target) return { order, blocked: `nothing beside the readiest army offers ${verb}` };
   const receipt = await receiptOfTheNextAction(context, before);
   if (!receipt?.applied) return { order, receipt, failed: `the chain did not apply the ${verb}` };

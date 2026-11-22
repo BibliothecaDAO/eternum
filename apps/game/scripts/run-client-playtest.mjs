@@ -395,7 +395,8 @@ async function playRun(context) {
         const base = join(runDir, `${label}-${String(first + index + 1).padStart(2, "0")}-${step.name}`);
         const stepPage = step.as === "ally" ? ally : page;
         const answered = await answerStandingPrompts(stepPage.browser, owner);
-        if (answered.wallet || answered.alerts) record.answeredPrompts.push({ step: step.name, ...answered });
+        if (answered.wallet || answered.alerts || answered.day)
+          record.answeredPrompts.push({ step: step.name, ...answered });
         const result = await playStep({
           ...stepPage,
           captureResults: context.captureResults,

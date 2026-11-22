@@ -120,7 +120,28 @@ export const ALERTS_PROMPT = '[role="dialog"][aria-label="Know when to come back
  * invitation closed and the alerts popup declined. Returns which were shown.
  */
 export async function answerStandingPrompts(browser, owner) {
-  return { wallet: await continueWithoutWallet(browser, owner), alerts: await declineAlerts(browser, owner) };
+  return {
+    wallet: await continueWithoutWallet(browser, owner),
+    alerts: await declineAlerts(browser, owner),
+    day: await continueIntoTheOpenDay(browser, owner),
+  };
+}
+
+const DAY_SUMMARY = "[data-day-end]";
+
+async function continueIntoTheOpenDay(browser, owner) {
+  const offered = () =>
+    browser.read(
+      `[...document.querySelectorAll(${JSON.stringify(`${DAY_SUMMARY} button`)})].some((button) => button.textContent.trim() === "Continue")`,
+    );
+  if (!offered()) return false;
+  browser.click("Continue");
+  await waitUntil(
+    owner,
+    () => !browser.read(`Boolean(document.querySelector(${JSON.stringify(DAY_SUMMARY)}))`),
+    "the day's summary did not lift after Continue",
+  );
+  return true;
 }
 
 /** Declines the alerts popup over a player's clear map: Escape is its Not now. Returns whether it was shown. */

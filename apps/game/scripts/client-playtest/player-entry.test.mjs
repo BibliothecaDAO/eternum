@@ -136,6 +136,23 @@ describe("the optional wallet invitation", () => {
   });
 });
 
+describe("a turned day's summary over the map", () => {
+  it("is continued and reported as shown", async () => {
+    const dom = page('<div data-day-end="summary"><button>Share your day</button><button>Continue</button></div>');
+    const click = vi.fn((name) => {
+      expect(name).toBe("Continue");
+      dom.window.document.querySelector("[data-day-end]").remove();
+    });
+    const browser = { read: (expression) => dom.window.eval(expression), run: vi.fn(), press: vi.fn(), click };
+    expect(await answerStandingPrompts(browser, { sleep: vi.fn() })).toEqual({
+      wallet: false,
+      alerts: false,
+      day: true,
+    });
+    expect(click).toHaveBeenCalledOnce();
+  });
+});
+
 describe("the alerts popup over a clear map", () => {
   const popup = `<section role="dialog" aria-label="${ALERTS_POPUP.title}"><button>Not now</button></section>`;
   const pageWith = (html) => {
@@ -149,14 +166,22 @@ describe("the alerts popup over a clear map", () => {
 
   it("is declined with Escape and reported as shown", async () => {
     const { dom, browser } = pageWith(popup);
-    expect(await answerStandingPrompts(browser, { sleep: vi.fn() })).toEqual({ wallet: false, alerts: true });
+    expect(await answerStandingPrompts(browser, { sleep: vi.fn() })).toEqual({
+      wallet: false,
+      alerts: true,
+      day: false,
+    });
     expect(browser.press).toHaveBeenCalledOnce();
     expect(dom.window.document.querySelector('[role="dialog"]')).toBeNull();
   });
 
   it("leaves a page without standing prompts untouched", async () => {
     const { dom, browser } = pageWith('<section role="dialog" aria-label="Army 1"></section>');
-    expect(await answerStandingPrompts(browser, { sleep: vi.fn() })).toEqual({ wallet: false, alerts: false });
+    expect(await answerStandingPrompts(browser, { sleep: vi.fn() })).toEqual({
+      wallet: false,
+      alerts: false,
+      day: false,
+    });
     expect(browser.press).not.toHaveBeenCalled();
     expect(dom.window.document.querySelector('[role="dialog"]')).not.toBeNull();
   });
