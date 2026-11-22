@@ -168,21 +168,22 @@ on SwiftShader), and releases everything it started. Run it from a stopped clien
   friend, in the Frontier game the dev calendar's phase made (preset 7):
   `pnpm --dir apps/game playtest --steps s1-rehearsal --player <host> --ally <friend> --chain-id <dev chain> --game-id <game> --base-url https://play.dev-realms.party --client-at-origin --iterations 1 --renderer-modes webgpu-force-webgl`.
   The host founds and copies their Aspect's invite link; the friend opens it, founds in that Aspect (its card tagged
-  Invited only for an account made after its browser opened the link, recorded as `tagged`), reads it as their own and
-  sends an army into the mist; the host builds a Barracks, sends an army into the mist, attacks a site beside one of its
-  armies (revealing up to six tiles to find one) and chooses the first card of an Oath pick the fight opens (one left
-  standing by an earlier run is answered first), enters the Deep through its Spire once the realm knows Spire lore,
-  attacks an open site's beast and so holds it. The host then measures the Deep's catch-up: three Moves of a surface
-  army, the cheaper of the last two being a play with nothing to settle (T0); the tick's pay read on the site's card and
-  the Season board; four ticks passed on the slot's clock with no command; one more Move (T1), which settles them, since
-  the chain settles the Deep only at the next command. T1 must be applied (the chain refuses a play over its event or
-  gas limit) and emit its rows once each, not once per tick; Glory, height and the bane bar must rise by whole ticks of
-  the card's pay; Essence and labor are read from the card only. The friend then enters the Deep, attacks a rival's
-  guard and takes an empty site, which exist only when another Aspect holds a site or a site's guards died. Without
-  Spire lore the Deep steps are blocked with the Spire's own row. An action passes only when its receipt from the
-  chain's node is confirmed, succeeded and not refused by the game (`scripts/client-playtest/chain-receipts.mjs`, which
-  also records each play's l2 gas and event count); what the game does not offer yet is blocked with what the page said,
-  and a rerun in the same game passes the foundings already made.
+  Invited, recorded as `tagged`), reads it as their own, sends an army into the mist, attacks a site beside it as the
+  host does below and builds a Barracks (the Build sheet's offers and their prices are recorded as `offers`); the host
+  builds a Barracks, sends an army into the mist, attacks a site beside one of its armies (revealing up to six tiles to
+  find one) and chooses the first card of an Oath pick the fight opens (one left standing by an earlier run is answered
+  first), enters the Deep through its Spire once the realm knows Spire lore, attacks an open site's beast and so holds
+  it. The host then measures the Deep's catch-up: three Moves of a surface army, the cheaper of the last two being a
+  play with nothing to settle (T0); the tick's pay read on the site's card and the Season board; four ticks passed on
+  the slot's clock with no command; one more Move (T1), which settles them, since the chain settles the Deep only at the
+  next command. T1 must be applied (the chain refuses a play over its event or gas limit) and emit its rows once each,
+  not once per tick; Glory, height and the bane bar must rise by whole ticks of the card's pay; Essence and labor are
+  read from the card only. The friend then enters the Deep, attacks a rival's guard and takes an empty site, which exist
+  only when another Aspect holds a site or a site's guards died. Without Spire lore the Deep steps are blocked with the
+  Spire's own row. An action passes only when its receipt from the chain's node is confirmed, succeeded and not refused
+  by the game (`scripts/client-playtest/chain-receipts.mjs`, which also records each play's l2 gas and event count);
+  what the game does not offer yet is blocked with what the page said, and a rerun in the same game passes the foundings
+  already made.
 - **Signing in.** Each player keeps a profile under `.context/playtest-profiles/<email>`; agent-browser is handed it on
   every command (it relaunches on a temporary profile for a command that omits it). Each run opens the home page first:
   a signed-in player's bar shows them and the run goes on at once; a signed-out one presses Connect and signs in as a

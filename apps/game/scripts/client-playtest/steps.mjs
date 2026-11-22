@@ -1856,6 +1856,7 @@ const REALM_LEVELS = ["Settlement", "City", "Kingdom", "Empire"];
 const CASTLE_SHEET_TEXT = `document.querySelector('[data-kit-sheet][aria-label="Castle"]')?.textContent ?? ""`;
 const SHEET_NAME = `JSON.stringify(document.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null)`;
 const SHEET_WAIT_MS = 3_000;
+const SHEET_BUTTONS = `JSON.stringify([...document.querySelectorAll("[data-kit-sheet] button")].map((button) => button.textContent.trim()))`;
 
 /**
  * Taps the keep at the realm's centre for its Castle sheet, which names the level now and the next, then presses
@@ -1904,13 +1905,14 @@ async function buildOnAnOpenPlot({ browser }, building) {
     );
     tapped.push({ offset, sheet });
     if (sheet === "Build") {
+      const offers = browser.read(SHEET_BUTTONS);
       if (building) {
         const choice = browser.read(sheetButton(`^${building}`));
         if (!choice) throw new Error(`No ${building} in the Build sheet`);
         browser.tap(choice.offset);
       }
       browser.click("Build");
-      return { tapped, plot: offset, region: tileRegion(offset) };
+      return { tapped, offers, plot: offset, region: tileRegion(offset) };
     }
     if (sheet !== null) browser.press("Escape");
   }
@@ -6205,6 +6207,10 @@ function s1RehearsalSteps() {
       play: (context) => sendOneOrder(context, REHEARSAL_WORDS.explore),
       sends: 0,
     }),
+    rehearsalStep({ name: "ally-fights-on-the-surface", as: "ally", play: fightOnTheSurface, sends: 0 }),
+    { name: "ally-opens-realm", as: "ally", play: goTo("Realm", "hex"), settleMs: 3_000, verify: inScene("hex") },
+    rehearsalStep({ name: "ally-builds-a-barracks", as: "ally", play: buildABarracksOnce }),
+    { ...FRONTIER_MAP.opening[0], name: "ally-back-on-map", as: "ally", play: goTo("Map", "map") },
     { name: "open-realm", play: goTo("Realm", "hex"), settleMs: 3_000, verify: inScene("hex") },
     rehearsalStep({ name: "build-barracks", play: buildABarracksOnce }),
     { ...FRONTIER_MAP.opening[0], name: "back-on-map", play: goTo("Map", "map") },
