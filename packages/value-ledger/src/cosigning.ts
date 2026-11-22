@@ -16,14 +16,6 @@ export interface PayoutTerms {
   rank: number;
   count: number;
 }
-export interface SettlementTerms {
-  kind: "settle";
-  shard: string;
-  season: number;
-  chest: string;
-  prize: string;
-  treasuryAmount: string;
-}
 export interface RacePostTerms {
   kind: "race-post";
   shard: string;
@@ -39,7 +31,7 @@ export interface RacePayTerms {
   amount: string;
 }
 export type RaceTerms = RacePostTerms | RacePayTerms;
-export type CosignRequest = PayoutTerms | SettlementTerms | RaceTerms;
+export type CosignRequest = PayoutTerms | RaceTerms;
 export interface RaceCosigningDomain {
   chainId: string;
   rewards: string;
@@ -51,17 +43,19 @@ export interface Cosignature {
 }
 
 /** Same domain-separated Poseidon message as GameLedger; a rotation invalidates every old signature. */
-export function cosigningHash(domain: CosigningDomain, request: PayoutTerms | SettlementTerms): string {
+export function cosigningHash(domain: CosigningDomain, request: PayoutTerms): string {
   return hash.computePoseidonHashOnElements([
-    shortString.encodeShortString(request.kind === "pay" ? "ETERNUM_PAY_V1" : "ETERNUM_SETTLE_V2"),
+    shortString.encodeShortString("ETERNUM_PAY_V1"),
     domain.chainId,
     domain.ledger,
     domain.epoch,
     request.shard,
     request.season,
-    ...(request.kind === "pay"
-      ? [request.claim, request.wallet, ...u256Parts(request.amount), request.rank, request.count]
-      : [...u256Parts(request.chest), ...u256Parts(request.prize), ...u256Parts(request.treasuryAmount)]),
+    request.claim,
+    request.wallet,
+    ...u256Parts(request.amount),
+    request.rank,
+    request.count,
   ]);
 }
 export function raceCosigningHash(domain: RaceCosigningDomain, request: RaceTerms): string {
@@ -125,15 +119,6 @@ export function decodeCosignRequest(input: unknown): CosignRequest {
       throw new Error("invalid_cosigning_payment");
     return { kind: "pay", shard, season, claim: felt("claim"), wallet: felt("wallet"), amount: value, rank, count };
   }
-  if (row.kind === "settle" && Object.keys(row).length === 6)
-    return {
-      kind: "settle",
-      shard,
-      season,
-      chest: amount("chest"),
-      prize: amount("prize"),
-      treasuryAmount: amount("treasuryAmount"),
-    };
   if (row.kind === "race-post" && Object.keys(row).length === 4)
     return { kind: "race-post", shard, season, total: amount("total") };
   if (row.kind === "race-pay" && Object.keys(row).length === 6)

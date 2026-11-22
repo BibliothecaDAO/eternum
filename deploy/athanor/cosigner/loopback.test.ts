@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { ec, hash } from "starknet";
-import { cosigningHash, type PayoutTerms, type SettlementTerms } from "../../../packages/value-ledger/src/cosigning";
+import { cosigningHash, type PayoutTerms } from "../../../packages/value-ledger/src/cosigning";
 import { gamesAbi, gamesEventAbi, withdrawalEvent } from "../../../packages/value-ledger/test-support/abi";
 import { createCosigner, handleCosignRequest, type CosignerConfig } from "../../../apps/value-relay/src/cosigner";
 import { openCosignerWallets } from "./wallets";
@@ -19,14 +19,6 @@ const payment: PayoutTerms = {
   amount,
   rank: 0,
   count: 0,
-};
-const settlement: SettlementTerms = {
-  kind: "settle",
-  shard: "0x2",
-  season: 7,
-  chest: amount,
-  prize: "0",
-  treasuryAmount: String(83n * 10n ** 18n),
 };
 const header = {
   block_number: 10,
@@ -99,7 +91,7 @@ function rpcAnswer(ledger: boolean, method: string, params: { request?: { entry_
 }
 
 for (const hostname of ["127.0.0.1", "::1"]) {
-  test(`co-signs payment and settlement through actual HTTP RPC and Herald on ${hostname}`, async () => {
+  test(`co-signs payment through actual HTTP RPC and Herald on ${hostname}`, async () => {
     const directory = mkdtempSync(join(tmpdir(), "cosigner-loopback-"));
     const wallets = openCosignerWallets(join(directory, "wallets.sqlite"), () => 1000);
     const requests: string[] = [];
@@ -150,7 +142,7 @@ for (const hostname of ["127.0.0.1", "::1"]) {
       requestToken: "request-token",
       shards: [{ chainId: "0x2", gamesAddress: "0x20", firstRelease: 1, rpcUrl: `${origin}/rpc`, heraldUrl: origin }],
     };
-    const send = (terms: PayoutTerms | SettlementTerms) =>
+    const send = (terms: PayoutTerms) =>
       fetch(`${origin}/sign`, {
         method: "POST",
         headers: { authorization: "Bearer request-token" },
@@ -158,7 +150,7 @@ for (const hostname of ["127.0.0.1", "::1"]) {
       });
     try {
       signer = createCosigner(config, key, wallets);
-      for (const terms of [payment, settlement]) {
+      for (const terms of [payment]) {
         requests.length = 0;
         const response = await send(terms);
         expect(response.status).toBe(200);
@@ -184,9 +176,6 @@ for (const hostname of ["127.0.0.1", "::1"]) {
         pool = 100;
       }
       expect(targetReads).toBe(0);
-      const wrongRemainder = await send({ ...settlement, treasuryAmount: "1" });
-      expect(wrongRemainder.status).toBe(503);
-      expect(await wrongRemainder.json()).toEqual({ error: "cosigning_refused" });
       const health = async () => {
         const response = await fetch(`${origin}/health`);
         expect(response.headers.get("cache-control")).toBe("no-store");

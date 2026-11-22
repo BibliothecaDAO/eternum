@@ -139,8 +139,6 @@ def restart_unfinished(directory, inputs, release, report_stage):
         return
     if differences != [INCOMPLETE]:
         raise DeploymentRefused("Shard cannot be reinitialized: " + "; ".join(differences))
-    from deposit_retirement import require_deposit_retirement
-    require_deposit_retirement(inputs, directory)
     report_stage("restart unfinished shard")
     subprocess.run([*compose(directory), "down", "--volumes"], check=True, stdout=sys.stdout, stderr=sys.stderr)
     for path in directory.iterdir():

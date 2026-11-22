@@ -1,29 +1,33 @@
-// Public Games writes share one endpoint; their owner/launcher/ledger-operator authorization lives in the contract.
-// Roster permutation and other draws execute through play, never through an unstamped administrative route.
-// The shard proxy admits only these (deploy/athanor/vrf/transaction.ts), and ShardOperator sends only these, so a
-// write the proxy would refuse does not compile.
-export const GAME_ENTRYPOINTS = [
-  { name: "play", stamp: true },
-  { name: "create_game", stamp: false },
-  { name: "apply_release", stamp: false },
-  { name: "open_release", stamp: false },
-  { name: "register_release", stamp: false },
-  { name: "register_preset", stamp: false },
-  { name: "set_launcher", stamp: false },
-  { name: "set_ledger_operator", stamp: false },
-  { name: "grant_seal", stamp: false },
-  { name: "credit_fragments", stamp: false },
-  { name: "publish_frontier_pool", stamp: false },
-  { name: "deliver_deposit", stamp: false },
-  { name: "post_frontier_top", stamp: false },
-  { name: "award_frontier_prize", stamp: false },
-  { name: "sweep_lords", stamp: false },
-  { name: "register_entitlement", stamp: false },
-  { name: "register_village_pass", stamp: false },
-] as const;
+import { nativeGamesWrites } from "../../../contracts/l3/world-native/schema/commands.gen";
 
-type GameEntrypoint = (typeof GAME_ENTRYPOINTS)[number];
+type GamesWrite = (typeof nativeGamesWrites)[number];
+type Route = "stamped" | "admin" | "refused";
+
+const ROUTES = {
+  play: "stamped",
+  create_game: "admin",
+  apply_release: "admin",
+  open_release: "admin",
+  register_release: "admin",
+  set_launcher: "admin",
+  set_ledger_operator: "admin",
+  grant_seal: "admin",
+  credit_fragments: "admin",
+  register_entitlement: "admin",
+  register_village_pass: "admin",
+  authority_call: "refused",
+  initialize_realm_traits: "refused",
+  deliver_deposit: "refused",
+  sweep_lords: "refused",
+} as const satisfies Record<GamesWrite, Route>;
+
+type Routed<R extends Route> = { [Name in GamesWrite]: (typeof ROUTES)[Name] extends R ? Name : never }[GamesWrite];
+
 /** A Games write the proxy forwards: `play`, which it stamps, or an administrative call. */
-export type GameEntrypointName = GameEntrypoint["name"];
+export type GameEntrypointName = Routed<"stamped" | "admin">;
 /** An administrative Games write the proxy forwards unstamped. */
-export type AdminEntrypointName = Extract<GameEntrypoint, { stamp: false }>["name"];
+export type AdminEntrypointName = Routed<"admin">;
+
+export const GAME_ENTRYPOINTS = nativeGamesWrites
+  .filter((name): name is GameEntrypointName => ROUTES[name] !== "refused")
+  .map((name) => ({ name, stamp: ROUTES[name] === "stamped" }));

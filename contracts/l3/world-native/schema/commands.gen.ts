@@ -42,6 +42,23 @@ export const nativeCommandBits = {
   "Research": "147573952589676412928",
   "InteractSite": "590295810358705651712"
 } as const;
+export const nativeGamesWrites = [
+  "authority_call",
+  "deliver_deposit",
+  "set_ledger_operator",
+  "sweep_lords",
+  "grant_seal",
+  "credit_fragments",
+  "register_entitlement",
+  "register_release",
+  "open_release",
+  "apply_release",
+  "set_launcher",
+  "play",
+  "create_game",
+  "initialize_realm_traits",
+  "register_village_pass"
+] as const;
 export interface NativeCommandPayloads {
   BuySeal: undefined;
   BuyStamina: { readonly explorer_id: BigNumberish; readonly fragments: BigNumberish };

@@ -55,8 +55,7 @@ class TeardownBoundaryTest(unittest.TestCase):
         return run
 
     def boundaries(self, root, commands, copy=None):
-        return [patch.object(teardown, "require_deposit_retirement"), patch.object(teardown.shard, "ROOT", root), patch.object(teardown, "LOGS", root / "logs"),
-                patch.object(teardown.deploy, "load_inputs", return_value={}),
+        return [patch.object(teardown.shard, "ROOT", root), patch.object(teardown, "LOGS", root / "logs"),
                 patch.object(teardown.shard, "isolated_stack_lock", return_value=nullcontext()),
                 patch.object(teardown.subprocess, "run", side_effect=commands),
                 patch.object(teardown.shutil, "copyfile", side_effect=copy or shutil.copyfile)]
@@ -232,9 +231,8 @@ class TeardownBoundaryTest(unittest.TestCase):
             settings = root / "deploy/first"
             settings.mkdir(parents=True)
             (settings / "environments.json").write_text(json.dumps({"dev": {"runDirectory": str(run), "environment": "dev"}}))
-            with patch.object(teardown.shard, "ROOT", root), patch.object(teardown.deploy, "load_inputs", return_value={}), \
+            with patch.object(teardown.shard, "ROOT", root), \
                     patch.object(teardown.shard, "isolated_stack_lock", return_value=nullcontext()), \
-                    patch.object(teardown, "require_deposit_retirement"), \
                     patch.object(teardown, "LOGS", root / "logs"):
                 for _ in range(2):
                     teardown.teardown(["dev"], lambda stage: None)

@@ -5,7 +5,6 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./deposits": "./src/deposits.ts",
     "./shard": "./src/shard.ts",
     "./codecs": "./src/codecs.ts",
     "./blitz-slots": "./src/blitz-slots.ts",

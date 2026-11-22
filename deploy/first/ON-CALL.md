@@ -57,10 +57,10 @@ failed run is not retried by itself.
 
 ## relay — value relay
 
-The value relay is halted on a row, its Frontier funding failed, or it has not checked in for five minutes. Rewards and
+The value relay is halted on a row, one of its shard jobs failed, or it has not checked in for five minutes. Rewards and
 chest payouts are not being relayed.
 
-1. `curl -s https://play.dev-realms.party/api/value/health`: each shard's `halted` row and `funding_error`.
+1. `curl -s https://play.dev-realms.party/api/value/health`: each shard's `halted` row and `job_failures`.
 2. `pnpm --dir apps/value-relay exec wrangler tail realms-value-relay-staging`: why it halted.
 3. After fixing the cause, `POST /api/value/operator/reset` with the operator token and `{chainId,row,reason}`
    (`apps/value-relay/README.md`). Reset requires a confirmed paused ledger and refuses if any discarded claim was paid

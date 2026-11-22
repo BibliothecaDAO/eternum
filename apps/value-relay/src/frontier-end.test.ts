@@ -39,12 +39,13 @@ beforeEach(() => {
 });
 
 it("settles every Frontier game whose end has passed and is not settled, so a season with no finisher ends at its end", async () => {
-  await settleEndedFrontierGames(target, "https://herald.test");
+  expect(await settleEndedFrontierGames(target, "https://herald.test")).toEqual([]);
   expect(calls.settle.mock.calls).toEqual([[2], [3]]);
 });
 
-it("settles the other ended games when one fails, then reports the failure for the next run", async () => {
-  calls.settle.mockRejectedValueOnce(new Error("shard_receipt_unavailable"));
-  await expect(settleEndedFrontierGames(target, "https://herald.test")).rejects.toThrow("shard_receipt_unavailable");
+it("settles the other ended games when one fails, and returns the failed game with its error", async () => {
+  const error = new Error("shard_receipt_unavailable");
+  calls.settle.mockRejectedValueOnce(error);
+  expect(await settleEndedFrontierGames(target, "https://herald.test")).toEqual([{ game: 2, error }]);
   expect(calls.settle.mock.calls).toEqual([[2], [3]]);
 });

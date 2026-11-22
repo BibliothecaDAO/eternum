@@ -1,112 +1,81 @@
-import { depositStructure } from "../../value-relay/test-support/deposit-structure";
-vi.mock("../../../packages/value-ledger/src/shard-abi", () => ({
-  readShardAbi: async () => [{ type: "interface", items: [{ name: "deposit_source" }] }],
-}));
-import { Effect } from "effect";
-import { CairoCustomEnum, CairoOption, CairoOptionVariant } from "starknet";
+import { CairoOption, CairoOptionVariant } from "starknet";
 import { beforeEach, expect, it, vi } from "vitest";
-import { ResourcesIds, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { createHeraldRequestHandler } from "./http";
 import { LiveWorld } from "./live-world";
 import type { MadaraRpc } from "./madara-rpc";
-import {
-  gameRegistryEvent,
-  receipt,
-  rowEvent,
-  rulesEvent,
-  seedDerivedRows,
-  setup,
-  shardManifest,
-} from "./native/fixtures";
+import { NativeDecoder } from "./native/decoder";
+import { gameRegistryEvent, manifest, receipt, rowEvent, schema, shardManifest } from "./native/fixtures";
+import { NativeIngestion } from "./native/ingestion";
+import { RELEASE_DEFINITIONS } from "./native/release-definition";
+import type { DecodedRecord } from "./types";
+import { WorldFold } from "./world-fold";
+import { releaseLine } from "../../../packages/core/src/test-support/releases";
 import { memoryFinalFacts } from "../../value-relay/src/final-facts";
-import { memoryObligations } from "../../value-relay/src/obligations";
-import { frontierSettlementEvidence, sweepFrontierLords } from "../../value-relay/src/frontier-sweep";
-import { shardConservationPort } from "../../value-relay/src/shard-conservation";
+import { settleEndedFrontierGames } from "../../value-relay/src/frontier-end";
+import { settleFinishedRaces } from "../../value-relay/src/race-rewards";
+import { runShardJobs } from "../../value-relay/src/shard-jobs";
 
-/** Only the L2 ledger and the shard's RPC are stood in for: every season fact comes from Herald's real snapshot route. */
-const season = vi.hoisted(() => ({ start: 1_800_000_000, end: 1_800_000_000 + 4 * 14_400 }));
-const calls = vi.hoisted(() => ({ admin: vi.fn(), funding: vi.fn(), settle: vi.fn() }));
-vi.mock("@realms-world/value-ledger", async (original) => ({
-  ...(await original<typeof import("@realms-world/value-ledger")>()),
-  rpcAt: vi.fn(),
-  readFrontierFunding: calls.funding,
-  readConfirmedLedgerHead: async () => ({ number: 10, time: season.end }),
+const shardNode = vi.hoisted(() => ({ time: 0, settleGame: vi.fn() }));
+vi.mock("../../../packages/value-ledger/src/rpc", async (original) => ({
+  ...(await original<typeof import("../../../packages/value-ledger/src/rpc")>()),
+  rpcAt: () => ({
+    getChainId: async () => "0x1",
+    getBlock: async (id: number | "latest") => ({
+      block_number: id === "latest" ? 10 : id,
+      block_hash: "0xa",
+      parent_hash: "0x9",
+      timestamp: shardNode.time,
+      status: "ACCEPTED_ON_L2",
+    }),
+  }),
 }));
 vi.mock("@realms-world/value-ledger/shard", () => ({
   ShardOperator: class {
-    admin = calls.admin;
+    settleGame = shardNode.settleGame;
   },
-}));
-vi.mock("../../value-relay/src/shard-rpc", async (original) => ({
-  ...(await original<typeof import("../../value-relay/src/shard-rpc")>()),
-  ShardReader: class {
-    header = async () => ({ timestamp: season.end });
-  },
-}));
-vi.mock("../../value-relay/src/frontier-games", async (original) => ({
-  ...(await original<typeof import("../../value-relay/src/frontier-games")>()),
-  readFrontierGames: async () => ({ confirmedBlock: 10, games: [{ game_id: 1, clock: { end_at: season.end } }] }),
 }));
 
 const heraldUrl = "https://herald.test";
-const shard = { chainId: "0x1", rpcUrl: "https://shard.test", gamesAddress: "0x10", firstRelease: 1 };
-let ledger = {
-  rpcUrl: "https://ledger.test",
-  address: "0x30",
-  finals: memoryFinalFacts(),
-  obligations: memoryObligations(),
-  proofs: true,
+const target = {
+  chainId: "0x1",
+  rpcUrl: "https://shard.test",
+  gamesAddress: "0x10",
+  firstRelease: 1,
+  accountAddress: "0x20",
+  privateKey: "0x1",
 };
-const winner = 0xan;
-const realm = "5";
-const wei = (lords: number) => String(BigInt(lords) * 10n ** 18n);
-const lords = (amount: number) => ({ balance: BigInt(amount) * BigInt(RESOURCE_PRECISION) });
+const season = { start: 1_800_000_000, end: 1_800_000_000 + 4 * 14_400 };
+const ledgerSettlesRace = vi.fn();
 
-/**
- * An ended Frontier season with daily expeditions: 700 LORDS of chests (40 opened into one realm) and a 300 prize the
- * relay awarded to the realm's owner, served by a Herald whose confirmed head is past the end.
- */
-async function endedSeason() {
-  const { native, decoder, fold } = setup();
-  const apply = (events: ReturnType<typeof rowEvent>[]) =>
-    native.applyReceipt(fold, receipt(seedDerivedRows(fold, decoder, events)), 9, 0);
-  apply([
-    rulesEvent("1", "14400"),
+const [release, definition] = [...RELEASE_DEFINITIONS][0]!;
+
+function seasonOneLaunch() {
+  return [
     gameRegistryEvent({
       start_settling_at: String(season.start),
       start_main_at: String(season.start),
       scheduled_end_at: String(season.end),
       end_at: String(season.end),
-      seed: "7",
     }),
-    rowEvent("SettlementRules", ["1"], {
-      registration_start: 0n,
-      registration_limit: 0n,
-      mode: new CairoCustomEnum({ Single: {} }),
-      spacing: 100n,
+    rowEvent("GameOverrides", ["1"], {
+      registration_start: season.start,
+      biome_climate: (definition.rules as DecodedRecord).biome_climate_config,
+      map: new CairoOption(CairoOptionVariant.None),
+      map_center_offset: 0,
     }),
-    rowEvent("ChestRules", ["1"], {
-      price_ceiling: 50n,
-      shares: { common: 1n, uncommon: 2n, rare: 4n, epic: 10n, legendary: 20n },
-      claim_window_seconds: 604800n,
-      pool_bps: 7000,
-      top_n: 3,
-    }),
-    rowEvent("LordsBudget", ["1"], {
-      pool: 700n,
-      pool_left: 660n,
-      open: 0n,
-      day: 3n,
-      price: 50n,
-      rolled_shares: 0n,
-      yesterday_shares: 0n,
-      yesterday_ticks: 0n,
-    }),
-    rowEvent("FrontierPrize", ["1"], { pool: 300n, issued: 300n, count: new CairoOption(CairoOptionVariant.Some, 1) }),
-    rowEvent("LordsWithdrawal", ["1", "0x101"], { account: winner, amount: 300n, prize_rank: 1, prize_count: 1 }),
-    rowEvent("ResourceBalance", ["1", realm, String(ResourcesIds.Lords)], lords(40)),
-  ]);
-  const head = { block_number: 10, timestamp: season.end, transactions: [] };
+    rowEvent("GameRelease", ["1"], { release_id: release, created_release_id: release }),
+  ];
+}
+
+async function heraldServingSeasonOne(timestamp: number) {
+  const decoder = new NativeDecoder({
+    ...manifest,
+    native: { ...manifest.native, releaseId: release, releases: releaseLine(schema.identity, [release]) },
+  });
+  const fold = new WorldFold(decoder.registry);
+  const native = new NativeIngestion(decoder);
+  native.applyReceipt(fold, receipt(seasonOneLaunch()), 9, 0);
+  const head = { block_number: 10, timestamp, transactions: [] };
   const live = new LiveWorld({
     native,
     registry: decoder.registry,
@@ -123,10 +92,10 @@ async function endedSeason() {
   });
   await live.acceptSubscribedHead(head);
   const handler = createHeraldRequestHandler({
-    chain: "madara",
+    chain: target.chainId,
     manifest: shardManifest,
     schemas: {},
-    worldAddress: shard.gamesAddress,
+    worldAddress: target.gamesAddress,
     confirmedBlock: () => live.confirmedBlock,
     chainTimestamp: () => live.chainTimestamp,
     decodedModelCount: 0,
@@ -140,84 +109,43 @@ async function endedSeason() {
     undecodableEventCount: () => 0,
     nodeHealth: () => null,
   });
-  // The shard's sweep: the realm's LORDS leave it as a chest receipt in the same transaction.
-  const sweep = () =>
-    apply([
-      rowEvent("ResourceBalance", ["1", realm, String(ResourcesIds.Lords)], lords(0)),
-      rowEvent("LordsWithdrawal", ["1", "0x102"], { account: winner, amount: 40n, prize_rank: 0, prize_count: 0 }),
-    ]);
-  const network = ((url: string | URL | Request) => handler(new Request(String(url)))) as typeof fetch;
-  return { network, sweep, apply };
+  return ((url: string | URL | Request) => handler(new Request(String(url)))) as typeof fetch;
 }
 
-const funding = (chestPaid: number) => ({
-  claimDeadline: season.end + 604800,
-  closed: false,
-  pool: wei(700),
-  prizePool: wei(300),
-  paid: wei(chestPaid),
-  prizePaid: wei(300),
-});
+async function servedRows(herald: typeof fetch, model: string) {
+  const response = await herald(`${heraldUrl}/games/1/snapshot?models=${model}`);
+  const snapshot = (await response.json()) as { models: { model: string; rows: unknown[] }[] };
+  return snapshot.models.find((served) => served.model === model)!.rows;
+}
+
+const runTickJobs = () =>
+  runShardJobs(
+    {
+      "settle ended games": () => settleEndedFrontierGames(target, heraldUrl),
+      "pay race rewards": () => settleFinishedRaces(target, heraldUrl, memoryFinalFacts(), ledgerSettlesRace),
+    },
+    [],
+  );
 
 beforeEach(() => {
-  vi.resetAllMocks();
+  vi.clearAllMocks();
   vi.unstubAllGlobals();
-  ledger = { ...ledger, finals: memoryFinalFacts(), obligations: memoryObligations() };
 });
 
-it("sweeps the season's realm LORDS and settles it once every receipt is paid, from Herald's snapshot", async () => {
-  const herald = await endedSeason();
-  vi.stubGlobal("fetch", herald.network);
-  calls.admin.mockImplementation(async () => herald.sweep());
-  calls.funding.mockResolvedValue(funding(0));
-  const tick = () =>
-    sweepFrontierLords({ ...shard, accountAddress: "0x20", privateKey: "0x1" }, heraldUrl, ledger, calls.settle);
+it.each([
+  ["live", season.start + 3_600, []],
+  ["ended", season.end, [[1]]],
+])(
+  "runs both shard jobs without a failure on a %s Season 1 game whose rules Herald derived from the release",
+  async (_, timestamp, settledGames) => {
+    shardNode.time = timestamp;
+    const herald = await heraldServingSeasonOne(timestamp);
+    vi.stubGlobal("fetch", herald);
+    expect(await servedRows(herald, "RaceRules")).toHaveLength(1);
+    expect(await servedRows(herald, "ChestRules")).toEqual([]);
 
-  await tick();
-  expect(calls.admin.mock.calls).toEqual([["sweep_lords", { game_id: 1, structure_id: realm }]]);
-  expect(calls.settle).not.toHaveBeenCalled();
-
-  // The relay pays the sweep's receipt on L2; the next tick closes the season with the exact paid totals.
-  calls.funding.mockResolvedValue(funding(40));
-  await tick();
-  const settlement = { chainId: shard.chainId, gameId: 1, chestWithdrawn: wei(40), prizeWithdrawn: wei(300) };
-  expect(calls.settle.mock.calls).toEqual([[settlement]]);
-  expect(calls.admin).toHaveBeenCalledTimes(1);
-
-  // The co-signer accepts that settlement and its 660-LORDS treasury return from the same confirmed facts.
-  expect(await frontierSettlementEvidence(shard, heraldUrl, settlement, ledger, wei(660))).toBeNull();
-
-  // The monitor counts both receipts against what the season issued.
-  const conservation = await Effect.runPromise(shardConservationPort(shard, heraldUrl, herald.network)());
-  expect(conservation).toEqual([
-    { chainId: shard.chainId, gameId: 1, confirmedBlock: 10, pool: "700", receipts: "340", netIssued: "340" },
-  ]);
-});
-
-it("selects a deposit-only Realm from Herald's actual nested native Structure wire row", async () => {
-  const herald = await endedSeason();
-  vi.stubGlobal("fetch", herald.network);
-  const { game_id: _, entity_id: __, ...structure } = depositStructure("0xa");
-  herald.apply([
-    rowEvent("ResourceBalance", ["1", realm, String(ResourcesIds.Lords)], lords(0)),
-    rowEvent("LordsWithdrawal", ["1", "0x102"], { account: winner, amount: 40n, prize_rank: 0, prize_count: 0 }),
-    rowEvent("Structure", ["1", "17"], structure),
-    rowEvent("SpendLords", ["1", String(winner)], { available: 40n, consumed: 10n, swept: 0n }),
-  ]);
-  calls.funding.mockResolvedValue(funding(40));
-  calls.admin.mockImplementation(async () =>
-    herald.apply([
-      rowEvent("SpendLords", ["1", String(winner)], { available: 0n, consumed: 10n, swept: 40n }),
-      rowEvent("PrincipalWithdrawal", ["1", String(winner)], { amount: 40n }),
-    ]),
-  );
-  const pay = vi.fn();
-  const tick = () =>
-    sweepFrontierLords({ ...shard, accountAddress: "0x20", privateKey: "0x1" }, heraldUrl, ledger, calls.settle, pay);
-  await tick();
-  expect(calls.admin.mock.calls).toEqual([["sweep_lords", { game_id: 1, structure_id: "17" }]]);
-  expect(pay).not.toHaveBeenCalled();
-  calls.funding.mockResolvedValue({ ...funding(40), closed: true });
-  await tick();
-  expect(pay).toHaveBeenCalledWith({ chainId: "0x1", gameId: 1, account: String(winner), amount: "40" });
-});
+    expect(await runTickJobs()).toEqual([]);
+    expect(shardNode.settleGame.mock.calls).toEqual(settledGames);
+    expect(ledgerSettlesRace).not.toHaveBeenCalled();
+  },
+);

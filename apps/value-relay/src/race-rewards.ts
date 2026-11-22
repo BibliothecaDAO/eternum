@@ -14,6 +14,7 @@ import type { RaceCosigner } from "./cosigner-client";
 import { closedRace, type FinalEvidence, type FinalFacts } from "./final-facts";
 import { readFrontierGames } from "./frontier-games";
 import { readFinishedRace, type FinishedRace, type OwedRaceReward } from "./race-facts";
+import { forEachGame } from "./shard-jobs";
 import type { ShardConnection } from "./shard-rpc";
 import { optionalRow, readConfirmedSnapshot } from "./shard-snapshot";
 
@@ -60,15 +61,7 @@ export async function settleFinishedRaces(
   settle: (settlement: RaceSettlement) => Promise<FinalEvidence | null>,
 ) {
   const { games } = await readFrontierGames(connection, heraldUrl);
-  let unavailable: unknown;
-  for (const game of games) {
-    try {
-      await settleGameRace(connection, heraldUrl, finals, game.game_id, settle);
-    } catch (error) {
-      unavailable ??= error;
-    }
-  }
-  if (unavailable) throw unavailable;
+  return forEachGame(games, (game) => settleGameRace(connection, heraldUrl, finals, game.game_id, settle));
 }
 
 async function settleGameRace(

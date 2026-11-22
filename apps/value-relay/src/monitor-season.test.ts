@@ -10,7 +10,6 @@ const calls = vi.hoisted(() => ({
   pause: vi.fn(),
   balance: vi.fn(),
   season: vi.fn(),
-  custody: vi.fn<typeof import("./deposit-conservation").auditDepositCustody>(),
 }));
 vi.mock("cloudflare:workers", () => ({
   WorkerEntrypoint: class {},
@@ -26,10 +25,6 @@ vi.mock("./ledger-chain", () => ({
 }));
 vi.mock("./season-tops", () => ({ processSeasonTops: calls.season }));
 vi.mock("./monitor-balance", () => ({ readMonitorFeeBalance: calls.balance }));
-vi.mock("./deposit-conservation", async (original) => ({
-  ...(await original<typeof import("./deposit-conservation")>()),
-  auditDepositCustody: calls.custody,
-}));
 vi.mock("./chain", () => ({ ledgerPauserAdapter: () => calls.pause }));
 vi.mock("./ledger", () => ({
   ledgerMonitorReads: () => ({
@@ -51,7 +46,6 @@ vi.mock("./ledger", () => ({
 beforeEach(() => {
   vi.clearAllMocks();
   calls.pause.mockReturnValue(Effect.void);
-  calls.custody.mockResolvedValue(null);
   calls.balance.mockResolvedValue({
     account: "0x9",
     token: "0x10",
@@ -106,31 +100,6 @@ it("reports pending season checks as red health without pausing value", async ()
   calls.season.mockReturnValue(Effect.succeed(null));
   await worker.tick();
   expect((await worker.health()).success).toBe(true);
-  expect(calls.pause).not.toHaveBeenCalled();
-});
-
-it("keeps health red until an unavailable deposit audit recovers without pausing value", async () => {
-  calls.season.mockReturnValue(Effect.succeed(null));
-  calls.custody.mockRejectedValueOnce(new Error("deposit receipt unavailable"));
-  const worker = monitor();
-  await worker.tick();
-  expect(await worker.health()).toMatchObject({
-    success: false,
-    deposits: null,
-    deposit_error: "audit deposited LORDS",
-    value_error: null,
-    season_error: null,
-  });
-  expect(calls.custody).toHaveBeenCalledWith(
-    { rpcUrl: "https://ledger.test", address: "0x10", chainId: "0x1" },
-    expect.objectContaining({ get: expect.any(Function), put: expect.any(Function) }),
-  );
-  await worker.tick();
-  expect(await worker.health()).toMatchObject({
-    success: true,
-    deposits: { enabled: false, games: [] },
-    deposit_error: null,
-  });
   expect(calls.pause).not.toHaveBeenCalled();
 });
 

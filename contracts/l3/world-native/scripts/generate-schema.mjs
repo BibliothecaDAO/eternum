@@ -504,12 +504,16 @@ const command = types.get("world_native::commands::Command");
 const commandBits = Object.fromEntries(
   command.variants.map(({ name, wireId }) => [name, (1n << BigInt(wireId)).toString()]),
 );
+const gamesWrites = schema.games.entrypoints
+  .filter((entry) => entry.state_mutability === "external")
+  .map((entry) => entry.name);
 await writeText(
   "schema/commands.gen.ts",
   [
     "// Generated from command routes and production payload ABIs. Run the native schema generator to update.",
     'import type { BigNumberish } from "starknet";',
     `export const nativeCommandBits = ${JSON.stringify(commandBits, null, 2)} as const;`,
+    `export const nativeGamesWrites = ${JSON.stringify(gamesWrites, null, 2)} as const;`,
     "export interface NativeCommandPayloads {",
     ...command.variants.map(({ name, type }) => `  ${name}: ${commandType(type)};`),
     "}",

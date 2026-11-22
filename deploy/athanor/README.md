@@ -53,16 +53,12 @@ The shard manifest is served at `/manifest` and the directory at `/games`. Compa
 Herald restart. Incompatible schemas are explicit ingestion faults and require a planned release. Historical replay must
 use the matching codec.
 
-## Season opening and settlement runbook
+## Season rewards runbook
 
-Set the Frontier calendar, wait for the game to be created, then fund it at once with the operator's whole-LORDS amount
-using the [environment's funding command](../../contracts/l2/ledger/README.md#fund-a-frontier-season). The relay checks
-that deposit and publishes the pool to the shard. No ruin chest exists before publication; confirm the positive pool in
-Herald's `LordsBudget` row. The preset carries no pool.
-
-For automatic payouts, settlement and treasury returns, follow the ledger's
-[Frontier settlement and treasury returns](../../contracts/l2/ledger/README.md#frontier-settlement-and-treasury-returns)
-procedure, including its compatible-deployment rehearsal requirement and existing dev-ledger limitation.
+Season 1 rewards leave through the RaceRewards class alone. Each minute the relay runs two shard jobs, one after the
+other and each on its own: it settles a game that has ended, and it posts a finished race's total and pays its homes. A
+job that fails does not stop the other. `GET /api/value/health` lists every failure under `shard.job_failures` with its
+job, game, code and cause.
 
 ## Independent payout co-signer
 
@@ -195,41 +191,3 @@ troop and each explore or step exactly its food per troop, and that no submitted
 Latency is reported, not gated. A day lasts a day there, so the multi-day gates stay with the design run.
 
 Preserve the baseline image and chain data until final acceptance and the approved cutover.
-
-## LORDS deposit activation and source retirement
-
-Deposits require a new Games root and matching native schema. An existing root is immutable. Upgrade the L2 ledger with
-its additive deposit storage and keep the reward season's funding separate. Wallet ingress is `deposit_lords` on that
-ledger. The existing public Games RPC admits `deliver_deposit` and `sweep_lords`; contract roles and the independent
-signature remain required.
-
-Prepare the owner's exact calls without signing or submitting:
-
-```sh
-pnpm deposits:operations prepare /absolute/path/deposit-deployment.json /absolute/path/deposit-owner-calls.json
-```
-
-The input contains `shard` (`chainId`, `rpcUrl`, `gamesAddress`, `firstRelease`, `heraldUrl`), `ledger` (`rpcUrl`,
-`chainId`, `address`), `gameId` and the reviewed `ledgerClassHash`. The output binds the ledger upgrade and immutable
-destination. Resolve these values from the new manifests and reviewed build; never reuse the existing dev root or invent
-an address. S1's funded calendar starts no earlier than 15 November. Chain and ledger binding stay immutable. Preserve
-co-signer wallet history and canonical block anchors across restart and rotation.
-
-The relay discovers receipts independently of delivery progress. A failed receipt stays pending while later receipts
-continue. Known invalid destinations require an irreversible native cancellation before refund to the original payer. At
-season end the existing `sweep_lords` debits unused principal and emits `PrincipalWithdrawal`. Its separate L2 payment
-uses the existing verified payout-wallet identity and wallet-change hold. Principal needs no reward publication and
-remains payable after reward closure or its claim deadline. A missing wallet keeps principal pending while eligible
-reward settlement continues. Spent principal remains reserved custody; reward payment and treasury settlement cannot
-consume it.
-
-Official teardown and unfinished-shard reinitialization call the authenticated relay route
-`POST /api/value/operator/deposit-retirement` with the chain id and its Herald URL before stopping or deleting state, so
-a chain the directory does not list can still be retired. The relay reads that chain's connections from its Herald
-manifest, refused unless the manifest names that chain, rejects live enabled seasons, and requires terminal L2 receipts,
-matching confirmed native balances, and payment of every principal withdrawal. Outage or lag refuses retirement. The
-gate records `deposit-retirement.json`; teardown preserves that evidence outside the removed directory. Keep the source
-and its co-signer routing available until the gate passes.
-
-The dev deposit rehearsal procedure was removed with the shard runner; it is rewritten for the deployed dev shard when
-that rehearsal runs again.

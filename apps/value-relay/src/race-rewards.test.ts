@@ -280,13 +280,12 @@ it("settles no race while Herald is unavailable, and one game's failure does not
   );
   expect(settle).not.toHaveBeenCalled();
   shard.games.mockResolvedValue({ confirmedBlock: 10, games: [{ game_id: 7 }, { game_id: 8 }] });
+  const error = new Error("herald_unavailable");
   shard.snapshot.mockImplementation(async (_connection, _herald, gameId) => {
-    if (gameId === 7) throw new Error("herald_unavailable");
+    if (gameId === 7) throw error;
     return resultSnapshot(true);
   });
   shard.race.mockResolvedValue(race);
-  await expect(settleFinishedRaces(connection, "http://127.0.0.1:8081", finals, settle)).rejects.toThrow(
-    "herald_unavailable",
-  );
+  expect(await settleFinishedRaces(connection, "http://127.0.0.1:8081", finals, settle)).toEqual([{ game: 7, error }]);
   expect(settle.mock.calls).toEqual([[{ ...settlement, gameId: 8 }]]);
 });

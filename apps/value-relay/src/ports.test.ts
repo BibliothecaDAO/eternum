@@ -48,13 +48,10 @@ it.each([
   "shard_abi_unavailable",
   "frontier_funding_missing",
   "frontier_funding_differs_from_game",
-  "invalid_frontier_deposit",
-  "frontier_snapshot_behind_directory",
-  "frontier_pool_confirmation_pending",
   "frontier_pool_differs_from_ledger",
-])("exposes the fixed pool failure %s in the health observation", async (code) => {
+])("keeps the declared failure %s as the operation", async (code) => {
   const failure = await Effect.runPromise(
-    relayOperation("publish Frontier pools", async () => {
+    relayOperation("read ledger payment", async () => {
       throw new Error(code);
     }).pipe(Effect.flip),
   );

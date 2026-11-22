@@ -34,7 +34,7 @@ class ServiceTransportTest(unittest.TestCase):
             shard.validate_shard_identity(config)
 
     def test_authenticated_requests_never_follow_even_same_origin_redirects(self):
-        route = "https://identity.test/api/value/operator/deposit-retirement"
+        route = "https://identity.test/api/value/operator/reset"
         for target in ("https://identity.test/elsewhere", "https://other.test/steal", "http://other.test/steal"):
             for operation in (lambda: service_json(route, {"chainId": "0x1"}), lambda: service_json(route, authenticated=True)):
                 with self.subTest(target=target):

@@ -39,25 +39,23 @@ test("only one canonical V3 Games.play with the manifest bounds is admitted", ()
 });
 
 test("only the single data-listed Games entries admit administrative invokes", () => {
-  expect(GAME_ENTRYPOINTS.map((entry) => entry.name)).toEqual([
-    "play",
-    "create_game",
+  expect(GAME_ENTRYPOINTS.map((entry) => entry.name).sort()).toEqual([
     "apply_release",
+    "create_game",
+    "credit_fragments",
+    "grant_seal",
     "open_release",
+    "play",
+    "register_entitlement",
     "register_release",
-    "register_preset",
+    "register_village_pass",
     "set_launcher",
     "set_ledger_operator",
-    "grant_seal",
-    "credit_fragments",
-    "publish_frontier_pool",
-    "deliver_deposit",
-    "post_frontier_top",
-    "award_frontier_prize",
-    "sweep_lords",
-    "register_entitlement",
-    "register_village_pass",
   ]);
+  for (const refused of ["authority_call", "initialize_realm_traits", "deliver_deposit", "sweep_lords"]) {
+    const calldata = ["0x1", identity.games, hash.getSelectorFromName(refused), "0x1", "0x1"];
+    expect(gameInvoke({ ...invoke(), signature: ["0x2", "0x3"], calldata }, identity)).toBeUndefined();
+  }
   for (const entry of GAME_ENTRYPOINTS.filter((entry) => !entry.stamp)) {
     const tx = {
       ...invoke(),

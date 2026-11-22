@@ -181,14 +181,6 @@ export default {fetch(){return new Response(null,{status:404})}};`,
     expect((await ask("41", { ...page, origin: "https://elsewhere.test" })).status).toBe(403);
     expect((await ask("41", { origin: page.origin })).status).toBe(401);
     expect((await ask("0x29", page)).status).toBe(400);
-    const deliver = (chainId: string, headers: Record<string, string>) =>
-      mf.dispatchFetch(`https://play.dev-realms.party/api/value/deposits/deliver?chainId=${chainId}`, {
-        method: "POST",
-        headers,
-      });
-    expect((await deliver("0x1", { ...page, origin: "https://elsewhere.test" })).status).toBe(403);
-    expect((await deliver("0x1", { origin: page.origin })).status).toBe(401);
-    expect((await deliver("one", page)).status).toBe(400);
     const receipt = (query: string) =>
       mf.dispatchFetch(`https://play.dev-realms.party/api/value/race-receipt?${query}`);
     expect((await receipt("chainId=one&gameId=7")).status).toBe(400);

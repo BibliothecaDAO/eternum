@@ -17,9 +17,9 @@ const payment = {
   prizeRank: 1,
   prizeCount: 3,
 };
-const settlement = { chainId: "0x1", gameId: 7, chestWithdrawn: "42", prizeWithdrawn: "99", treasuryAmount: "123" };
+const race = { shard: "0x1", season: 7, total: "30" };
 
-it.each(["pay", "settle"] as const)(
+it.each(["pay", "race-post"] as const)(
   "delivers exact %s terms through workerd and never follows a redirect",
   async (kind) => {
     const requests: { url: string; auth: string | null; body: unknown }[] = [];
@@ -34,7 +34,7 @@ it.each(["pay", "settle"] as const)(
       try {
         const { kind, terms } = await request.json();
         const client = cosignerClient("https://signer.test", "request-token");
-        return Response.json(await (kind === "pay" ? client.pay(terms, "0x123") : client.settle(terms)));
+        return Response.json(await (kind === "pay" ? client.pay(terms, "0x123") : client.postRace(terms)));
       } catch (error) { return Response.json({ error: error.message }, { status: 503 }); }
     } };`,
       outboundService: async (request: Request) => {
@@ -50,7 +50,7 @@ it.each(["pay", "settle"] as const)(
     const send = () =>
       worker.dispatchFetch("https://relay.test", {
         method: "POST",
-        body: JSON.stringify({ kind, terms: kind === "pay" ? payment : settlement }),
+        body: JSON.stringify({ kind, terms: kind === "pay" ? payment : race }),
       });
     try {
       const good = await send();
@@ -68,7 +68,7 @@ it.each(["pay", "settle"] as const)(
               rank: 1,
               count: 3,
             }
-          : { kind, shard: "0x1", season: 7, chest: "42", prize: "99", treasuryAmount: "123" };
+          : { kind, ...race };
       expect(requests).toEqual([{ url: "https://signer.test/sign", auth: "Bearer request-token", body }]);
       for (status of [301, 302, 303, 307, 308]) {
         const refused = await send();

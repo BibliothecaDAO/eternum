@@ -106,3 +106,17 @@ it("recognizes only a leading legacy code before diagnostic text", () => {
     message: "ledger_head_unconfirmed: [redacted]",
   });
 });
+
+it("keeps a long lower-case error code readable while a long key beside it is redacted", () => {
+  const error = new Error("confirmed_herald_read_unavailable_for_this_game key 0123456789abcdefABCDEF0123456789abcdef");
+  expect(serviceFailure(error, [], "fallback", []).message).toBe(
+    "confirmed_herald_read_unavailable_for_this_game key [redacted]",
+  );
+});
+
+it("redacts a long key whose first segment is lower-case", () => {
+  const error = new Error(
+    "fetch failed key abcdefghijklmn+OPQRSTUVWXYZ0123456789ab and abcdefghijklmnop-QRSTUVWXYZ0123456789",
+  );
+  expect(serviceFailure(error, [], "fallback", []).message).toBe("fetch failed key [redacted] and [redacted]");
+});

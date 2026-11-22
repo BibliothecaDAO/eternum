@@ -57,7 +57,9 @@ export function serviceFailure(error: unknown, codes: readonly string[], fallbac
         /\b(?:token|secret|password|private[_-]?key|authorization)["']?\s*[:=]\s*["']?[^\s"',;}]+/gi,
         "[redacted]",
       )
-      .replace(/0x[0-9a-f]{32,}|\b[A-Za-z0-9_+\/-]{32,}={0,2}\b/gi, "[redacted]");
+      .replace(/0x[0-9a-f]{32,}|\b[A-Za-z0-9_+\/-]{32,}={0,2}\b/g, (token) =>
+        /^[a-z_]+$/.test(token) ? token : "[redacted]",
+      );
   };
   return {
     code: declaredCode(chain, codes, fallback),

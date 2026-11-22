@@ -155,7 +155,7 @@ it("waits past a pre-confirmed receipt for the closed block", async () => {
   expect(rpc.receipt).toHaveBeenCalledTimes(2);
 });
 
-it("sweeps one structure's LORDS through the generated Games ABI with its full u64 id", async () => {
+it("grants a Seal through the generated Games ABI", async () => {
   const operator = new ShardOperator({
     chainId: "0x1",
     rpcUrl: "https://shard.test",
@@ -163,12 +163,12 @@ it("sweeps one structure's LORDS through the generated Games ABI with its full u
     accountAddress: "0x20",
     privateKey: "0x1",
   });
-  await operator.admin("sweep_lords", { game_id: 7, structure_id: 2n ** 55n + 9n });
+  await operator.admin("grant_seal", { game_id: 7, account: "0x123" });
   expect(rpc.execute).toHaveBeenCalledTimes(1);
   expect(rpc.execute.mock.calls[0]![0]).toEqual({
     contractAddress: "0x10",
-    entrypoint: "sweep_lords",
-    calldata: ["7", "36028797018963977"],
+    entrypoint: "grant_seal",
+    calldata: ["7", "291"],
   });
 });
 

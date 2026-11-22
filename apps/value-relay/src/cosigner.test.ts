@@ -13,7 +13,6 @@ const calls = vi.hoisted(() => ({
   read: vi.fn(),
   receipt: vi.fn(),
   funding: vi.fn(),
-  settlement: vi.fn(),
   race: vi.fn(),
   rewards: vi.fn(),
 }));
@@ -28,7 +27,6 @@ vi.mock("./shard-rpc", () => ({
 }));
 vi.mock("./frontier-binding", () => ({ frontierReceiptBindings: calls.funding }));
 vi.mock("./shard-withdrawals", () => ({ shardWithdrawalPorts: () => ({ withdrawalReceipt: calls.receipt }) }));
-vi.mock("./frontier-sweep", () => ({ frontierSettlementEvidence: calls.settlement }));
 vi.mock("./race-facts", () => ({ readFinishedRace: calls.race }));
 vi.mock("@realms-world/chain", async (original) => ({
   ...(await original<typeof import("@realms-world/chain")>()),
@@ -64,8 +62,6 @@ const payment: PayoutTerms = {
 };
 const identity = vi.fn<typeof fetch>();
 const wallets = {
-  getAnchor: async () => undefined,
-  putAnchor: async () => {},
   assertWallet: vi.fn(),
   pendingChanges: () => ({ count: 0, oldestSince: null }),
 };
@@ -112,7 +108,6 @@ beforeEach(() => {
       confirmedAt: 1000,
     }),
   );
-  calls.settlement.mockResolvedValue(null);
   calls.rewards.mockReturnValue("0x30");
   calls.race.mockResolvedValue({
     total: 30n,
@@ -196,26 +191,6 @@ it("refuses paid or conflicting ledger reports", async () => {
     calls.read.mockImplementation((query) => (query.entrypoint === "get_payment" ? fields : read(query)));
     await expect(run()).rejects.toThrow("cosigner_report_differs");
   }
-});
-it("independently verifies settlement and signs only its exact totals", async () => {
-  const terms = { kind: "settle" as const, shard: "0x2", season: 7, chest: "17", prize: "3", treasuryAmount: "980" };
-  const signature = await run(terms);
-  expect(calls.settlement).toHaveBeenCalledExactlyOnceWith(
-    config.shards[0],
-    "http://127.0.0.1:8081",
-    { chainId: "0x2", gameId: 7, chestWithdrawn: "17", prizeWithdrawn: "3" },
-    { rpcUrl: config.l2RpcUrl, address: config.ledgerAddress },
-    "980",
-  );
-  expect(
-    ec.starkCurve.verify(
-      new ec.starkCurve.Signature(BigInt(signature.r), BigInt(signature.s)),
-      cosigningHash({ chainId: "0x1", ledger: "0x10", epoch: 2 }, terms),
-      ec.starkCurve.getPublicKey(key),
-    ),
-  ).toBe(true);
-  calls.settlement.mockResolvedValue("unpaid_receipts");
-  await expect(run(terms)).rejects.toThrow("cosigner_settlement_differs");
 });
 it("rejects unauthenticated HTTP requests before reading game state", async () => {
   const response = await handleCosignRequest(

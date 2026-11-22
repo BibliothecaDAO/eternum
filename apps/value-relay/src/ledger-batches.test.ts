@@ -1,4 +1,4 @@
-const testCosigner = { pay: async () => testSignature, settle: async () => testSignature };
+const testCosigner = { pay: async () => testSignature };
 const testSignature = { r: "0x123", s: "0x456" };
 import { ledgerCall } from "../../../packages/value-ledger/test-support/ledger-abi";
 import { Effect } from "effect";
