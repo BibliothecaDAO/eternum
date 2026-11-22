@@ -20,7 +20,7 @@ export const MenuPage = ({
   onExit,
   onClose,
 }: {
-  rank: string;
+  rank: string | null;
   onToday: () => void;
   onSeason: () => void;
   onSettings: () => void;
@@ -33,7 +33,11 @@ export const MenuPage = ({
     <nav className="flex flex-col">
       <MenuRow icon="clock" onClick={onToday} />
       <OpeningPartGate part="aspects">
-        <MenuRow icon="victory" badge={<span className="text-hud-body tabular-nums">{rank}</span>} onClick={onSeason} />
+        <MenuRow
+          icon="victory"
+          badge={<span className="text-hud-body tabular-nums">{rank ?? "—"}</span>}
+          onClick={onSeason}
+        />
       </OpeningPartGate>
       <MenuRow icon="settings" onClick={onSettings} />
       <HowToPlayRow guide={guide} />

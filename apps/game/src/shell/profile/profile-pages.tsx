@@ -183,13 +183,15 @@ const OwnProfile = ({ account }: { account: string }) => {
       </div>
     );
   return (
-    <div className="grid grid-cols-[theme(width.rail)_minmax(0,1fr)] items-start gap-6">
-      <div className="flex flex-col gap-5">
+    <div className="app-you-grid">
+      <div className="flex min-w-0 flex-col gap-5">
         <PlayerCard account={account} own />
-        <Rows />
       </div>
       <div className="flex min-w-0 flex-col gap-5">
         <SharedDaysPanel />
+        <Rows />
+      </div>
+      <div className="flex min-w-0 flex-col gap-5">
         <RecentGames account={account} own />
       </div>
     </div>

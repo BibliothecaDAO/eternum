@@ -187,8 +187,11 @@ export interface Position {
 
 export type AspectId = 1 | 2 | 3 | 4;
 
+export type OathJob = "fight" | "stamina" | "prize";
+
 export interface IOrder {
   aspect: AspectId | null;
+  oathJob: OathJob | null;
   orderId: number;
   orderName: string;
   fullOrderName: string;

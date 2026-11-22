@@ -3,7 +3,7 @@ import "./home-source-picker.css";
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { canonicalRealm } from "@bibliothecadao/eternum";
-import { orders, type AspectId } from "@bibliothecadao/types";
+import { catalogOrder, type AspectId } from "@bibliothecadao/types";
 import type { HeldRealm } from "@realms-world/identity";
 
 import { useHeldRealms } from "@/hooks/use-holdings";
@@ -12,6 +12,7 @@ import { linkWalletHref } from "@/shell/profile/settings-route";
 import { returnPathOf } from "@/shell/return-path";
 import { HomeArt } from "@/ui/shared/components/home-art";
 import { aspectOfOrder } from "./aspect-picker";
+import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { Icon } from "@/ui/design-system/icon";
 import { mintedResourceMeaning, orderMeaning } from "@/ui/design-system/icon-meaning";
 import { HudLoading } from "@/ui/design-system/kit/hud-elements";
@@ -292,12 +293,16 @@ const ChoiceArt = ({ choice, eager = false }: { choice: Choice; eager?: boolean 
   <HomeArt map={choice.map} icon="realm" size={72} eager={eager} />
 );
 
-const OrderName = ({ order }: { order: number }) => (
-  <span className="home-picker__order">
-    <Icon name={orderMeaning(order)} size={20} />
-    {orders.find((entry) => entry.orderId === order)?.fullOrderName}
-  </span>
-);
+const OrderName = ({ order }: { order: number }) => {
+  const entry = catalogOrder(order);
+  return (
+    <span className="home-picker__order">
+      {entry.aspect && <AspectMark aspect={entry.aspect} size={20} decorative />}
+      <Icon name={orderMeaning(order)} size={20} />
+      {entry.fullOrderName}
+    </span>
+  );
+};
 
 const Resources = ({ resources }: { resources: string[] }) => (
   <span className="home-picker__resources">

@@ -1216,100 +1216,100 @@
       "orderId": 0
     },
     "order-giants": {
-      "art": "order-giants",
       "label": "Order of Giants",
       "family": "Orders",
-      "orderId": 1
+      "orderId": 1,
+      "oathBadge": "giants"
     },
     "order-perfection": {
-      "art": "order-perfection",
       "label": "Order of Perfection",
       "family": "Orders",
-      "orderId": 2
+      "orderId": 2,
+      "oathBadge": "perfection"
     },
     "order-rage": {
-      "art": "order-rage",
       "label": "Order of Rage",
       "family": "Orders",
-      "orderId": 3
+      "orderId": 3,
+      "oathBadge": "rage"
     },
     "order-fox": {
-      "art": "order-fox",
       "label": "Order of the Fox",
       "family": "Orders",
-      "orderId": 4
+      "orderId": 4,
+      "oathBadge": "fox"
     },
     "order-twins": {
-      "art": "order-twins",
       "label": "Order of the Twins",
       "family": "Orders",
-      "orderId": 5
+      "orderId": 5,
+      "oathBadge": "twins"
     },
     "order-fury": {
-      "art": "order-fury",
       "label": "Order of Fury",
       "family": "Orders",
-      "orderId": 6
+      "orderId": 6,
+      "oathBadge": "fury"
     },
     "order-reflection": {
-      "art": "order-reflection",
       "label": "Order of Reflection",
       "family": "Orders",
-      "orderId": 7
+      "orderId": 7,
+      "oathBadge": "reflection"
     },
     "order-detection": {
-      "art": "order-detection",
       "label": "Order of Detection",
       "family": "Orders",
-      "orderId": 8
+      "orderId": 8,
+      "oathBadge": "detection"
     },
     "order-skill": {
-      "art": "order-skill",
       "label": "Order of Skill",
       "family": "Orders",
-      "orderId": 9
+      "orderId": 9,
+      "oathBadge": "skill"
     },
     "order-brilliance": {
-      "art": "order-brilliance",
       "label": "Order of Brilliance",
       "family": "Orders",
-      "orderId": 10
+      "orderId": 10,
+      "oathBadge": "brilliance"
     },
     "order-protection": {
-      "art": "order-protection",
       "label": "Order of Protection",
       "family": "Orders",
-      "orderId": 11
+      "orderId": 11,
+      "oathBadge": "protection"
     },
     "order-power": {
-      "art": "order-power",
       "label": "Order of Power",
       "family": "Orders",
-      "orderId": 12
+      "orderId": 12,
+      "oathBadge": "power"
     },
     "order-titans": {
-      "art": "order-titans",
       "label": "Order of Titans",
       "family": "Orders",
-      "orderId": 13
+      "orderId": 13,
+      "oathBadge": "titans"
     },
     "order-vitriol": {
-      "art": "order-vitriol",
       "label": "Order of Vitriol",
       "family": "Orders",
-      "orderId": 14
+      "orderId": 14,
+      "oathBadge": "vitriol"
     },
     "order-anger": {
-      "art": "order-anger",
       "label": "Order of Anger",
       "family": "Orders",
-      "orderId": 15
+      "orderId": 15,
+      "oathBadge": "anger"
     },
     "order-enlightenment": {
-      "art": "order-enlightenment",
       "label": "Order of Enlightenment",
       "family": "Orders",
-      "orderId": 16
+      "orderId": 16,
+      "oathBadge": "enlightenment"
     },
     "discord": {
       "art": "discord",
@@ -1454,6 +1454,16 @@
     "brand-coingecko": {
       "token": "brand-coingecko",
       "label": "CoinGecko",
+      "family": "Brands"
+    },
+    "brand-eth": {
+      "token": "brand-eth",
+      "label": "ETH",
+      "family": "Brands"
+    },
+    "brand-usdc": {
+      "token": "brand-usdc",
+      "label": "USDC",
       "family": "Brands"
     },
     "brand-google": {

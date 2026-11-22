@@ -13,8 +13,10 @@ import {
   oathSitePay,
   siteHoldsOath,
   siteKindOf,
+  resolveFirstStrike,
   type AttackForecast,
   type AttackRefusal,
+  type FirstStrikeSide,
 } from "@bibliothecadao/eternum";
 import {
   readSiteReward,
@@ -61,6 +63,7 @@ export interface SiteCardPlan {
   attackStamina: number;
   /** Whether the selected army's troops reach the target from where they stand: Attack now, or Move first. */
   inReach: boolean;
+  firstStrike: FirstStrikeSide;
   fight: SiteFight | undefined;
   blocked: AttackRefusal | undefined;
   holdsOath: boolean;
@@ -142,6 +145,9 @@ export const readArmyCard = (
 export interface DeepSiteFight {
   army: number;
   defender: number;
+  attackerTroops: Pick<Troops, "category" | "tier">;
+  defenderTroops: Pick<Troops, "category" | "tier">;
+  firstStrike: FirstStrikeSide;
   result: SiteFight | undefined;
 }
 
@@ -152,11 +158,15 @@ export function readDeepSiteFight(
   attack: SiteAttack,
 ): DeepSiteFight | undefined {
   const { forecast } = forecastFrom(store, attack, site.id);
-  const sides = forecast?.sides;
+  if (!forecast) return undefined;
+  const sides = forecast.sides;
   if (!sides?.defender) return undefined;
   return {
     army: Number(sides.attacker.troops.count / PRECISION),
     defender: Number(sides.defender.troops.count / PRECISION),
+    attackerTroops: { category: sides.attacker.troops.category, tier: sides.attacker.troops.tier },
+    defenderTroops: { category: sides.defender.troops.category, tier: sides.defender.troops.tier },
+    firstStrike: forecastFirstStrike(forecast),
     result: siteFight(forecast),
   };
 }
@@ -205,12 +215,13 @@ const REACH_REFUSALS: ReadonlySet<AttackRefusal> = new Set([
 
 const planAttack = (
   planned: ReturnType<typeof forecastFrom> | undefined,
-): Pick<SiteCardPlan, "inReach" | "fight" | "blocked"> => {
-  if (!planned) return { inReach: false, fight: undefined, blocked: undefined };
+): Pick<SiteCardPlan, "inReach" | "firstStrike" | "fight" | "blocked"> => {
+  if (!planned) return { inReach: false, firstStrike: null, fight: undefined, blocked: undefined };
   const { inReach, forecast } = planned;
   const refusal = forecast?.outcome === "refused" ? forecast.refusal : undefined;
   return {
     inReach,
+    firstStrike: forecastFirstStrike(forecast),
     fight: siteFight(forecast),
     blocked: refusal === undefined || refusal === "insufficient-stamina" ? undefined : refusal,
   };
@@ -231,11 +242,20 @@ const clearsCleanly = (forecast: AttackForecast | undefined, guardsLeft: number)
   forecast.exchange.defender.count === 0n &&
   isCleanWin(forecast.exchange.attacker.count + forecast.exchange.attackerLoss, forecast.exchange.attacker.count);
 
+const forecastFirstStrike = (forecast: AttackForecast | undefined): FirstStrikeSide => {
+  if (!forecast) return null;
+  if (forecast.outcome === "fights") return forecast.exchange.firstStrike;
+  return forecast.sides?.defender
+    ? resolveFirstStrike(forecast.sides.attacker.troops.category, forecast.sides.defender.troops.category)
+    : null;
+};
+
 const siteFight = (forecast: AttackForecast | undefined): SiteFight | undefined => {
-  if (forecast?.outcome === "fights")
+  if (forecast?.outcome === "fights") {
     return {
       troopsLost: Number(forecast.exchange.attackerLoss / PRECISION),
       guardLeft: Number(forecast.exchange.defender.count / PRECISION),
     };
+  }
   return forecast?.outcome === "refused" && forecast.sides?.defender ? { refused: true } : undefined;
 };

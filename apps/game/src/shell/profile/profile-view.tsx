@@ -1,9 +1,10 @@
 import { PROFILE_WORDS, SEASON_WORDS } from "@/ui/design-system/kit/words";
-import { formatAmount } from "@bibliothecadao/types";
+import { aspectName, catalogOrder, formatAmount } from "@bibliothecadao/types";
 import { useIdentitySession } from "@/hooks/context/identity-session";
 import { usePlayerProfile } from "@/hooks/use-player-profile";
 import { profileOfIdentityUser } from "@realms-world/identity";
 
+import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
 import { PlayerName } from "@/ui/design-system/kit/player-name";
 import { findOwnEntry } from "@/ui/features/frontier/board/standings";
@@ -71,6 +72,8 @@ export const PlayerCard = ({ account, own }: { account: string; own: boolean }) 
   const profile = useCardProfile(account, own);
   const { own: standing, field } = useSeasonStanding(account);
   const frontier = ageOf("frontier");
+  const standingOrder = standing ? catalogOrder(standing.order) : undefined;
+  const standingAspect = standingOrder?.aspect ?? null;
   return (
     <AppPanel
       title={frontier.name}
@@ -78,6 +81,7 @@ export const PlayerCard = ({ account, own }: { account: string; own: boolean }) 
       cue={
         standing ? (
           <span className="flex items-center gap-1.5">
+            {standingAspect && <AspectMark aspect={standingAspect} size={20} decorative />}
             <OrderEmblem order={standing.order} size={20} />
             <b className="text-app-gold">{`#${standing.rank}`}</b>
             {SEASON_WORDS.of} {formatAmount(field)}
@@ -95,6 +99,20 @@ export const PlayerCard = ({ account, own }: { account: string; own: boolean }) 
         <h2 className="max-w-full text-app-title text-app-ink">
           <PlayerName account={account} profile={profile.known ? profile : undefined} />
         </h2>
+        {standing && standingOrder && (
+          <div className="app-profile-crests">
+            {standingAspect && (
+              <span className="app-profile-crest">
+                <AspectMark aspect={standingAspect} size={32} decorative />
+                <span className="text-app-label text-app-ink">{aspectName(standingAspect)}</span>
+              </span>
+            )}
+            <span className="app-profile-crest">
+              <OrderEmblem order={standingOrder.orderId} size={32} />
+              <span className="text-app-label text-app-ink">{standingOrder.orderName}</span>
+            </span>
+          </div>
+        )}
         {!standing && <p className="text-app-label text-app-muted">{SEASON_WORDS.notOnBoard}</p>}
         {own && <OwnRatingLine />}
       </div>

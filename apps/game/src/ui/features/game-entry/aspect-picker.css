@@ -44,6 +44,46 @@
   background: var(--hud-hover);
   transition: border-color var(--hud-fast) var(--hud-ease);
 }
+.aspect-picker__card {
+  min-height: 14rem;
+  justify-content: flex-end;
+  overflow: hidden;
+  padding: 0;
+}
+@media (min-width: 720px) {
+  .aspect-picker__card {
+    min-height: 19rem;
+  }
+}
+.aspect-picker__art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+}
+.aspect-picker__card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    transparent 18%,
+    color-mix(in srgb, var(--hud-surface) 78%, transparent) 62%,
+    var(--hud-surface) 100%
+  );
+}
+.aspect-picker__card-body {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.75rem 0.5rem;
+}
 .aspect-picker__card:not(:disabled):hover,
 .aspect-picker__card[data-chosen],
 .aspect-picker__order:not(:disabled):hover,
@@ -79,10 +119,11 @@
 /* A friend's invite rides the card's top edge, so the invited card keeps its siblings' size. */
 .aspect-picker__invite {
   position: absolute;
-  top: 0;
+  top: 0.5rem;
   left: 50%;
+  z-index: 2;
   white-space: nowrap;
-  transform: translate(-50%, -50%);
+  transform: translateX(-50%);
   padding: 0.1rem 0.5rem;
   border-radius: var(--hud-radius-chip);
   background: rgb(var(--hud-gold));

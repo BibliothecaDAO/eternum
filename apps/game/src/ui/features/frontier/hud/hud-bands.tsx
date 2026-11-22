@@ -57,7 +57,7 @@ const UprightBands = ({ strip, purse, page, notices, action, dock, nav, children
   return (
     <div
       aria-label="Frontier HUD"
-      className="pointer-events-none fixed inset-x-0 top-0 bottom-hud-keyboard z-30 flex flex-col gap-1.5 font-sans [&:has([data-kit-sheet])_[data-under-sheet]]:hidden [&:has([data-kit-sheet],[data-page])_[data-top-row]]:hidden [&:has([data-page-fills])_[data-map-band]]:hidden"
+      className="pointer-events-none fixed inset-x-0 top-0 bottom-hud-keyboard z-30 flex flex-col gap-1.5 font-sans [&:has([data-kit-sheet])_[data-under-sheet]]:hidden [&:has([data-kit-sheet],[data-page])_[data-opening-notice]]:hidden [&:has([data-kit-sheet],[data-page])_[data-top-row]]:hidden [&:has([data-page-fills])_[data-map-band]]:hidden"
       style={{ ...SAFE_AREA, "--hud-phone-foot": `${foot}px`, "--hud-phone-top": `${top}px` } as CSSProperties}
     >
       <div ref={topBand} {...HUD_TOP_MARK} data-keyboard-hides className="flex flex-col gap-1.5">
@@ -90,7 +90,7 @@ const SidewaysBands = ({ strip, purse, page, notices, action, dock, nav, childre
   return (
     <div
       aria-label="Frontier HUD"
-      className="pointer-events-none fixed inset-x-0 top-0 bottom-hud-keyboard z-30 flex gap-1.5 font-sans [&:has([data-kit-sheet])_[data-under-sheet]]:hidden [&:has([data-kit-sheet],[data-page])_[data-top-row]]:hidden"
+      className="pointer-events-none fixed inset-x-0 top-0 bottom-hud-keyboard z-30 flex gap-1.5 font-sans [&:has([data-kit-sheet])_[data-under-sheet]]:hidden [&:has([data-kit-sheet],[data-page])_[data-opening-notice]]:hidden [&:has([data-kit-sheet],[data-page])_[data-top-row]]:hidden"
       style={{ ...SAFE_AREA, "--hud-sheet-top": `${sheetTop}px` } as CSSProperties}
     >
       <div {...HUD_COLUMN_MARK} className="flex">

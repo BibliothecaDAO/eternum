@@ -1,7 +1,7 @@
 import "@/ui/design-system/kit/app-sheet.css";
 import "./season-recap.css";
 
-import { formatAmount, formatExact, formatShort, layerName, LORDS } from "@bibliothecadao/types";
+import { formatAmount, formatExact, formatShort, layerName, LORDS, orderAspect } from "@bibliothecadao/types";
 import type { HeraldFrontierLeaderboard, HeraldFrontierLeaderboardEntry } from "@bibliothecadao/eternum/game-sync";
 import type { GameRef } from "@bibliothecadao/eternum/shard";
 import { isSameStarknetAddress } from "@realms-world/identity";
@@ -19,6 +19,7 @@ import { createPortal } from "react-dom";
 import { usePlayerDisplayName, usePlayerNames, usePlayerProfile } from "@/hooks/use-player-profile";
 import { distributionChannel } from "@/runtime/distribution-channel";
 import { playerPortraitUrl } from "@/services/identity/player-portrait";
+import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { Icon } from "@/ui/design-system/icon";
 import { AppButton, AppGameName, AppPortrait } from "@/ui/design-system/kit/app-elements";
 import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
@@ -372,12 +373,13 @@ const Card = ({ name, alone = false, children }: { name: CardName; alone?: boole
 const PlaceCard = ({ own, field, prize }: { own: Entry; field: number; prize: number | undefined }) => {
   const profile = usePlayerProfile(own.address);
   const name = usePlayerDisplayName(own.address)!;
+  const aspect = orderAspect(own.order);
   return (
     <Card name="place">
       <span className="season-card__who">
         <AppPortrait src={playerPortraitUrl(own.address, profile.portrait)} name={name} size="fill" own />
         <span className="season-card__order">
-          <OrderEmblem order={own.order} size={56} />
+          {aspect ? <AspectMark aspect={aspect} size={56} decorative /> : <OrderEmblem order={own.order} size={56} />}
         </span>
       </span>
       <b className="season-card__rank">#{formatAmount(own.rank)}</b>

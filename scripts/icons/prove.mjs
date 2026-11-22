@@ -179,7 +179,7 @@ export async function proveIcons(b, out, records, baseUrl, onlyLayout, onlyPages
           const url = element.getAttribute(html ? 'src' : 'href');
           const meaning = element.dataset.icon, entry = meanings[meaning];
           const pixels = url?.split('/')[3] ?? '64';
-          const expected = entry?.token ? '/tokens/'+entry.token+'.svg' : entry?.rewardChest ? '/images/blitz-chests/'+entry.rewardChest+'.webp' : '/icons/facets/'+pixels+'/'+entry?.art+'.webp';
+          const expected = entry?.token ? '/tokens/'+entry.token+'.svg' : entry?.rewardChest ? '/images/blitz-chests/'+entry.rewardChest+'.webp' : entry?.oathBadge ? '/images/oaths/'+entry.oathBadge+(url?.endsWith('-64.png')?'-badge-64.png':'-badge.png') : '/icons/facets/'+pixels+'/'+entry?.art+'.webp';
           const result = {meaning, kind: html ? 'html' : 'svg', url, expected, loaded: false, utility: utilityMeanings.includes(meaning)};
           try {
             if (!url) throw new Error('Missing artwork URL');

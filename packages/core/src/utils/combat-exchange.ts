@@ -66,10 +66,24 @@ interface ExchangeContext {
 
 export type ExchangeRefusal = "no-troops" | "cooldown" | "insufficient-stamina";
 
+export type FirstStrikeSide = "attacker" | "defender" | null;
+
+export const resolveFirstStrike = (
+  attacker: ExchangeTroops["category"],
+  defender: ExchangeTroops["category"],
+): FirstStrikeSide => {
+  const attackerBow = attacker === "Crossbowman";
+  const defenderBow = defender === "Crossbowman";
+  if (attackerBow && !defenderBow) return "attacker";
+  if (defenderBow && !attackerBow) return "defender";
+  return null;
+};
+
 type ExchangeResult =
   | { ok: false; refusal: ExchangeRefusal }
   | {
       ok: true;
+      firstStrike: FirstStrikeSide;
       attackerLoss: bigint;
       defenderLoss: bigint;
       attacker: ExchangeTroops;
@@ -136,6 +150,7 @@ export const resolveExchange = (
   }
   return {
     ok: true,
+    firstStrike: damage.firstStrike,
     attackerLoss,
     defenderLoss,
     attacker: afterExchange(
@@ -223,14 +238,13 @@ const exchangeDamage = (
     defenderDamage,
     oathDamageMultiplier(context.defenderOaths, context.attackerOaths, context.attackerIsStructureGuard),
   );
-  const attackerBow = attacker.category === "Crossbowman";
-  const defenderBow = defender.category === "Crossbowman";
-  if (attackerBow && !defenderBow) {
+  const firstStrike = resolveFirstStrike(attacker.category, defender.category);
+  if (firstStrike === "attacker") {
     defenderDamage = mul(defenderDamage, survivingFraction(defenderTroops, attackerDamage));
-  } else if (defenderBow && !attackerBow) {
+  } else if (firstStrike === "defender") {
     attackerDamage = mul(attackerDamage, survivingFraction(attackerTroops, defenderDamage));
   }
-  return { attacker: attackerDamage, defender: defenderDamage };
+  return { attacker: attackerDamage, defender: defenderDamage, firstStrike };
 };
 
 const survivingFraction = (troops: Fixed, damage: Fixed): Fixed =>
@@ -317,6 +331,7 @@ export type FightForecast =
   | { outcome: "refused"; refusal: ExchangeRefusal }
   | {
       outcome: "wins" | "loses" | "stalls";
+      firstStrike?: FirstStrikeSide;
       exchanges: number;
       stoppedBy?: ExchangeRefusal;
       /** What the first exchange alone costs each side: the one attack a player sends, as its result reads. */
@@ -361,6 +376,7 @@ export const forecastFight = (
   const outcome = state.attacker.count === 0n ? "loses" : state.defender.count === 0n ? "wins" : "stalls";
   return {
     outcome,
+    firstStrike: first.firstStrike,
     exchanges,
     stoppedBy,
     firstExchange: { attackerLoss: first.attackerLoss, defenderLoss: first.defenderLoss },

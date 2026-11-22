@@ -383,7 +383,6 @@ const FULL_TILES: LabTile[] = BUILD_TILES.map((card) =>
     ? { ...card, standing: { ...card.standing, short: { of: "population" } } }
     : card,
 );
-const FULL_POPULATION = { used: 18, total: 18 };
 /** A fresh realm with its first building prices. */
 const EARLY_TILES: LabTile[] = [
   tile("farm", "farm", "Farm", { icon: "wheat", value: "+5/min" }, gem(0), 1, price(800)),
@@ -1331,13 +1330,6 @@ export const HudLab = () => {
           lab.realmView === "build-full" ||
           lab.realmView === "build-training") && (
           <BuildView
-            population={
-              lab.realmView === "build-early"
-                ? { used: 0, total: 6 }
-                : lab.realmView === "build-full"
-                  ? FULL_POPULATION
-                  : LAB_POPULATION
-            }
             tiles={
               lab.realmView === "build-early"
                 ? EARLY_TILES
@@ -1640,7 +1632,6 @@ const LabBands = ({ desktop, lab, ...slots }: ComponentProps<typeof HudBands> & 
               name={LAB_REALM_NAME}
               level={lab.realm?.level ?? 1}
               highest={3}
-              population={lab.realm?.population ?? LAB_POPULATION}
               stores={[...lab.stores]}
               onHome={noop}
               {...(!lab.visiting && {
@@ -1680,7 +1671,6 @@ const LabBands = ({ desktop, lab, ...slots }: ComponentProps<typeof HudBands> & 
 const LAB_REALM_NAME = "Duskbite";
 const LAB_LORDS = 320;
 /** The fixture realm's population: what its buildings take of what its castle and Huts give. */
-const LAB_POPULATION = { used: 9, total: 18 };
 
 /** The place a lab state has open, as the desktop's round places light it. */
 const labSurface = (lab: LabState): HudSurface | null =>

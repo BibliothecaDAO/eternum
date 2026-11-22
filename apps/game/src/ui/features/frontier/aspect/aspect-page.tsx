@@ -4,7 +4,7 @@ import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { ASPECT_PAGE_WORDS } from "@/ui/design-system/kit/words";
 import { configManager, getStructureName } from "@bibliothecadao/eternum";
 import { RACE_MODELS, readRaceBoard, nativeRaceConstants, type RaceBoard } from "@bibliothecadao/eternum/game-client";
-import { aspectLordsWorth, aspects, RESOURCE_PRECISION } from "@bibliothecadao/types";
+import { aspectLordsWorth, aspects, catalogAspectId, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { useFrontierRealm } from "../frontier-home";
 import { AspectInvite } from "../invite/aspect-invite";
 import { AspectFeedView } from "./aspect-feed-view";
@@ -44,7 +44,7 @@ export function aspectPage(
   return {
     race: {
       standings: board.standings.map((row) => ({
-        aspect: aspectName(row.aspect),
+        aspectId: catalogAspectId(row.aspect),
         rank: row.rank,
         height: row.height,
         stage: row.stage,
@@ -57,7 +57,7 @@ export function aspectPage(
       result: board.result && { winner: board.result.winner === null ? null : aspectName(board.result.winner) },
     },
     own: board.own && {
-      aspect: aspectName(board.own.aspect),
+      aspectId: catalogAspectId(board.own.aspect),
       bar: board.own.bar,
       triumphs: board.own.triumphs.map(({ stage, day }) => ({
         stage: triumphStage(stage),

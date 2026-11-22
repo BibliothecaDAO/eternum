@@ -4,10 +4,11 @@ import { isShareChannel, sharedMomentOf, type OpenedShare } from "@realms-world/
 import { useParams, useSearchParams } from "react-router-dom";
 
 import { identityClient, useIdentitySession } from "@/hooks/context/identity-session";
-import { AGE_LOCKUP } from "@/ui/design-system/icon-meaning";
+import { AspectMark } from "@/ui/design-system/aspect-mark";
+import { Icon } from "@/ui/design-system/icon";
+import { AGE_LOCKUP, orderMeaning } from "@/ui/design-system/icon-meaning";
 import { AppButton, AppNotice } from "@/ui/design-system/kit/app-elements";
 import { AppCountdownChip } from "@/ui/design-system/kit/clock-chip";
-import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
 import { ASPECT_STEP_WORDS, SHARED_LINK_WORDS } from "@/ui/design-system/kit/words";
 
 import { useSeasonCalendar } from "../season-calendar";
@@ -67,17 +68,19 @@ export const SharedLinkPage = () => {
 };
 
 const InviteCard = ({ invite }: { invite: Invite }) => {
-  const aspectOrders = ordersOfAspect(catalogAspectId(invite.moment));
+  const aspect = catalogAspectId(invite.moment);
+  const aspectOrders = ordersOfAspect(aspect);
   return (
     <section data-shared-invite className="app-well flex w-full items-center gap-3 p-4 text-left">
-      <span className="grid shrink-0 grid-cols-2 gap-1">
-        {aspectOrders.map(({ orderId }) => (
-          <OrderEmblem key={orderId} order={orderId} size={32} />
-        ))}
-      </span>
-      <span className="flex min-w-0 flex-col">
+      <AspectMark aspect={aspect} size={64} decorative />
+      <span className="flex min-w-0 flex-col gap-1">
         <span className="text-app-label text-app-muted">{SHARED_LINK_WORDS.invites(invite.name)}</span>
         <h1 className="text-app-title text-app-ink">{ASPECT_STEP_WORDS.join(aspectName(invite.moment))}</h1>
+        <span className="flex items-center gap-1.5">
+          {aspectOrders.map(({ orderId }) => (
+            <Icon key={orderId} name={orderMeaning(orderId)} size={20} />
+          ))}
+        </span>
         <span className="text-app-label text-app-muted">
           {[
             ...(invite.members === null ? [] : [ASPECT_STEP_WORDS.members(invite.members)]),

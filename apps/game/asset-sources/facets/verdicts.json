@@ -671,66 +671,6 @@
     "verdict": "equal",
     "reason": "Well: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
   },
-  "faceted/order-giants": {
-    "verdict": "equal",
-    "reason": "Order of Giants: original emblem silhouette and identifying colour remain readable at 24 and 32 px, with painted depth and no gilded frame."
-  },
-  "faceted/order-perfection": {
-    "verdict": "equal",
-    "reason": "Order of Perfection: original emblem silhouette and identifying colour remain readable at 24 and 32 px, with painted depth and no gilded frame."
-  },
-  "faceted/order-rage": {
-    "verdict": "equal",
-    "reason": "Order of Rage: original emblem silhouette and identifying colour remain readable at 24 and 32 px, with painted depth and no gilded frame."
-  },
-  "faceted/order-fox": {
-    "verdict": "equal",
-    "reason": "Order of the Fox: original emblem silhouette and identifying colour remain readable at 24 and 32 px, with painted depth and no gilded frame."
-  },
-  "faceted/order-twins": {
-    "verdict": "equal",
-    "reason": "Order of the Twins: original emblem silhouette and identifying colour remain readable at 24 and 32 px, with painted depth and no gilded frame."
-  },
-  "faceted/order-fury": {
-    "verdict": "equal",
-    "reason": "Order of Fury: original emblem silhouette and identifying colour remain readable at 24 and 32 px, with painted depth and no gilded frame."
-  },
-  "faceted/order-reflection": {
-    "verdict": "equal",
-    "reason": "Order of Reflection: original emblem silhouette and identifying colour remain readable at 24 and 32 px, with painted depth and no gilded frame."
-  },
-  "faceted/order-detection": {
-    "verdict": "equal",
-    "reason": "Order of Detection: original emblem silhouette and identifying colour remain readable at 24 and 32 px, with painted depth and no gilded frame."
-  },
-  "faceted/order-brilliance": {
-    "verdict": "equal",
-    "reason": "Order of Brilliance: original emblem silhouette and identifying colour remain readable at 24 and 32 px, with painted depth and no gilded frame."
-  },
-  "faceted/order-protection": {
-    "verdict": "equal",
-    "reason": "Order of Protection: original emblem silhouette and identifying colour remain readable at 24 and 32 px, with painted depth and no gilded frame."
-  },
-  "faceted/order-power": {
-    "verdict": "equal",
-    "reason": "Order of Power: original emblem silhouette and identifying colour remain readable at 24 and 32 px, with painted depth and no gilded frame."
-  },
-  "faceted/order-titans": {
-    "verdict": "equal",
-    "reason": "Order of Titans: original emblem silhouette and identifying colour remain readable at 24 and 32 px, with painted depth and no gilded frame."
-  },
-  "faceted/order-vitriol": {
-    "verdict": "equal",
-    "reason": "Order of Vitriol: original emblem silhouette and identifying colour remain readable at 24 and 32 px, with painted depth and no gilded frame."
-  },
-  "faceted/order-anger": {
-    "verdict": "equal",
-    "reason": "Order of Anger: original emblem silhouette and identifying colour remain readable at 24 and 32 px, with painted depth and no gilded frame."
-  },
-  "faceted/order-enlightenment": {
-    "verdict": "equal",
-    "reason": "Order of Enlightenment: original emblem silhouette and identifying colour remain readable at 24 and 32 px, with painted depth and no gilded frame."
-  },
   "faceted/beasts": {
     "verdict": "equal",
     "reason": "Beasts: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
@@ -902,10 +842,6 @@
   "faceted/order-gods": {
     "verdict": "equal",
     "reason": "Order of Gods: repaint preserves the original emblem silhouette and colour at 24 and 32 px. The rejected wheat motif is removed."
-  },
-  "faceted/order-skill": {
-    "verdict": "equal",
-    "reason": "Order of Skill: repaint preserves the original emblem silhouette and colour at 24 and 32 px. The rejected wheat motif is removed."
   },
   "faceted/strk": {
     "verdict": "equal",

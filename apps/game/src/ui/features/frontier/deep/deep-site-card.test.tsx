@@ -65,7 +65,7 @@ const draw = (now?: number, scenario = deepScenario()) => {
     );
   render();
   const button = (name: string) =>
-    [...host.querySelectorAll<HTMLButtonElement>("button")].find((button) => button.textContent === name);
+    [...host.querySelectorAll<HTMLButtonElement>("button")].find((button) => button.textContent?.startsWith(name));
   return { scenario, store, host, join, attack, button, render, unmount: () => act(() => root.unmount()) };
 };
 
@@ -113,7 +113,8 @@ describe("the Deep site's live native binding", () => {
   it("keeps the joined slot army's refilled stamina and panel after vacating its tile", async () => {
     const hud = draw();
     try {
-      expect(hud.host.textContent).toContain("Held by Prowess");
+      expect(hud.host.textContent).toContain("Held by");
+      expect(hud.host.textContent).toContain("Prowess");
       expect(hud.button("Join")?.disabled).toBe(false);
       await act(async () => hud.button("Join")!.click());
       const site = readDeepSites(hud.store, hud.scenario.startsAt, 1).find(
@@ -137,7 +138,7 @@ describe("the Deep site's live native binding", () => {
       expect(hud.store.require("DeepGuard", { game_id: 1, explorer_id: 201 }).slot).toBe(1);
       expect(hud.button("Join")).toBeUndefined();
       expect(hud.host.textContent).toContain("Already guarding");
-      expect(hud.host.querySelectorAll("[data-deep-slots] .ui-row")).toHaveLength(4);
+      expect(hud.host.querySelectorAll("[data-deep-slot]")).toHaveLength(4);
       const army = hud.store.require("ExplorerTroops", { game_id: 1, explorer_id: 201 });
       expect(army.troops.stamina).toEqual({ Slot: 0 });
       const resolved = resolveExplorerTroops(hud.store, army, hud.scenario.startsAt);
@@ -234,8 +235,11 @@ it("counts only actual army-tick boundaries before a day ending between ticks", 
       ]),
     );
     hud.render();
-    expect(hud.host.textContent).toContain("5 ticks left");
-    expect(hud.host.textContent).not.toContain("6 ticks left");
+    const tips = [...hud.host.querySelectorAll('[data-deep-slot="filled"]')].map(
+      (node) => node.getAttribute("data-tip") ?? "",
+    );
+    expect(tips.join(" ")).toContain("5 ticks left");
+    expect(tips.join(" ")).not.toContain("6 ticks left");
   } finally {
     hud.unmount();
   }
@@ -347,8 +351,11 @@ it("shows each guard's share of the next tick from the troops it keeps after the
   ] as never);
   const hud = draw(undefined, scenario);
   try {
-    expect(hud.host.textContent).toContain("75% of each tick");
-    expect(hud.host.textContent).toContain("25% of each tick");
+    const tips = [...hud.host.querySelectorAll('[data-deep-slot="filled"]')].map(
+      (node) => node.getAttribute("data-tip") ?? "",
+    );
+    expect(tips.join(" ")).toContain("75% of each tick");
+    expect(tips.join(" ")).toContain("25% of each tick");
   } finally {
     hud.unmount();
   }

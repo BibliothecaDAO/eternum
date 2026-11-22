@@ -1,29 +1,27 @@
 import { OpeningPartGate } from "../opening/opening-context";
+import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { Icon } from "@/ui/design-system/icon";
 import { HudChip, HudMeter, HudPage, HudRow } from "@/ui/design-system/kit/hud-elements";
 import { ASPECT_PAGE_WORDS as WORDS } from "@/ui/design-system/kit/words";
-import { formatExact, formatShort } from "@bibliothecadao/types";
+import { aspectName, formatExact, formatShort, type AspectId } from "@bibliothecadao/types";
 import type { ReactNode } from "react";
+import { AspectRaceCanvas } from "./aspect-race-canvas";
 
-/** One Aspect's hyperstructure in the race: its place, name, height and the stage being built. */
 export interface AspectStanding {
-  aspect: string;
+  aspectId: AspectId;
   rank: number;
   height: number;
   stage: number;
   finished: boolean;
   own: boolean;
-  /** What its height is worth in whole LORDS (and the finish bonus, for the Aspect that finished first): shown, never paid here. */
   lords: number;
 }
 
-/** A Triumph of the player's Aspect: its stage (1 to 4), and the game day it falls on, shown as given; null while its stage is unbuilt. */
 export interface AspectTriumph {
   stage: keyof typeof WORDS.triumph;
   day: number | null;
 }
 
-/** A member of the player's Aspect: its realm, its Glory and the Deep site its army guards today, if any. */
 export interface AspectMember {
   id: string;
   realm: string;
@@ -33,36 +31,25 @@ export interface AspectMember {
 }
 
 export interface OwnAspect {
-  aspect: string;
+  aspectId: AspectId;
   triumphs: readonly AspectTriumph[];
   bar: { charge: number; threshold: number } | null;
-  /** Ranked by Glory, the highest first. */
   members: readonly AspectMember[];
 }
 
 export interface AspectPageProps {
-  /** Null while the race's facts are not settled. */
   race: {
     standings: readonly AspectStanding[];
     finishHeight: number;
     stages: number;
-    /** The Aspect that finished first and ended the age. */
     result: { winner: string | null } | null;
   } | null;
-  /** The player's own Aspect; null for a player with none. */
   own: OwnAspect | null;
-  /** The Aspect's fights, under its members. */
   fights?: ReactNode;
-  /** The player's invite of a friend to their Aspect, under the fights. */
   invite?: ReactNode;
   onClose: () => void;
 }
 
-/**
- * The Aspect page (one job: how the Aspects stand in the race, and what the player's own is doing): the hyperstructures
- * ranked, each with its height and stage; then the player's Aspect, its Triumphs, its bane bar and its members by Glory
- * with the site each guards today.
- */
 export const AspectPageView = ({ race, own, fights, invite, onClose }: AspectPageProps) => (
   <HudPage label={WORDS.title} icon="hyperstructure" onClose={onClose} bodyClassName="gap-3">
     {race === null ? (
@@ -79,42 +66,59 @@ export const AspectPageView = ({ race, own, fights, invite, onClose }: AspectPag
 );
 
 const Race = ({ race }: { race: NonNullable<AspectPageProps["race"]> }) => (
-  <section data-aspect-race className="flex flex-col gap-1">
+  <section data-aspect-race className="flex flex-col gap-2">
     <Heading>{WORDS.race}</Heading>
     {race.result && <Muted>{race.result.winner === null ? WORDS.noFinisher : WORDS.won(race.result.winner)}</Muted>}
-    {race.standings.map((standing) => (
-      <StandingRow key={standing.aspect} standing={standing} race={race} />
-    ))}
+    <AspectRaceCanvas standings={race.standings} finishHeight={race.finishHeight} />
+    <div className="ui-race-columns">
+      {race.standings.map((standing) => (
+        <StandingColumn key={standing.aspectId} standing={standing} race={race} />
+      ))}
+    </div>
   </section>
 );
 
-const StandingRow = ({ standing, race }: { standing: AspectStanding; race: NonNullable<AspectPageProps["race"]> }) => {
+const StandingColumn = ({
+  standing,
+  race,
+}: {
+  standing: AspectStanding;
+  race: NonNullable<AspectPageProps["race"]>;
+}) => {
   const height = WORDS.height(standing.height, race.finishHeight);
+  const stageText = standing.finished ? WORDS.finished : WORDS.stage(standing.stage, race.stages);
   return (
-    <HudRow
-      lead={<span className="w-6 text-center text-hud-strong text-hud-ink">{formatExact(standing.rank)}</span>}
-      title={standing.aspect}
-      selected={standing.own}
-      trail={
-        <HudChip icons={["lords"]} label={WORDS.worth}>
-          {formatShort(standing.lords)}
-        </HudChip>
-      }
-      detail={
-        <span className="flex flex-col gap-0.5">
-          <span>
-            {standing.finished ? WORDS.finished : WORDS.stage(standing.stage, race.stages)} · {height}
-          </span>
-          <HudMeter label={height} share={standing.height / race.finishHeight} />
-        </span>
-      }
-    />
+    <div data-aspect-col={standing.aspectId} data-own={standing.own || undefined} className="ui-race-col">
+      <div className="ui-race-col__head">
+        <AspectMark aspect={standing.aspectId} size={22} decorative />
+        <span className="ui-race-col__name">{aspectName(standing.aspectId)}</span>
+      </div>
+      <span className="ui-race-col__height tabular-nums">{formatExact(standing.height)}</span>
+      <div className="ui-race-segments" role="progressbar" aria-label={height} aria-valuenow={standing.height}>
+        {Array.from({ length: race.stages }, (_, index) => {
+          const stageIndex = index + 1;
+          const active = standing.finished || stageIndex <= standing.stage;
+          return <span key={stageIndex} className="ui-race-segment" data-active={active || undefined} />;
+        })}
+      </div>
+      <span className="ui-race-col__stage">
+        {stageText} · {height}
+      </span>
+      <HudChip icons={["lords"]} label={WORDS.worth}>
+        {formatShort(standing.lords)}
+      </HudChip>
+    </div>
   );
 };
 
 const YourAspect = ({ own }: { own: OwnAspect }) => (
   <section data-aspect-own className="flex flex-col gap-2">
-    <Heading>{WORDS.yours(own.aspect)}</Heading>
+    <Heading>
+      <span className="inline-flex items-center gap-2">
+        <AspectMark aspect={own.aspectId} size={24} decorative />
+        {WORDS.yours(aspectName(own.aspectId))}
+      </span>
+    </Heading>
     <div data-aspect-triumphs className="flex flex-wrap items-center gap-1">
       <Muted>{WORDS.triumphs}:</Muted>
       {own.triumphs.map(({ stage, day }) => (

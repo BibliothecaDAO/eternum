@@ -111,6 +111,7 @@ describe("the status strip", () => {
     const clock = { ...day, secondsLeft: 24 * 3_600, tomorrowSeconds: 24 * 3_600 };
     const markup = renderToStaticMarkup(<StatusStrip clock={clock} stores={[store("essence", 1)]} />);
     expect(markup).toContain(`aria-label="Day ${day.day} · 24h left"`);
+    expect(markup).toContain(">24h</span>");
     expect(markup).not.toMatch(/\b1d\b/);
   });
 

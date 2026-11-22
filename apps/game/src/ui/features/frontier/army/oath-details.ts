@@ -1,5 +1,7 @@
 import { nativeOathConstants as oaths, nativeRuleConstants as rules } from "@bibliothecadao/eternum/game-client";
-import { layerName, orders } from "@bibliothecadao/types";
+import { layerName, orderOathJob, orders } from "@bibliothecadao/types";
+
+export const oathJob = orderOathJob;
 
 export function oathName(id: number): string {
   const order = orders.find(({ orderId }) => orderId === id);

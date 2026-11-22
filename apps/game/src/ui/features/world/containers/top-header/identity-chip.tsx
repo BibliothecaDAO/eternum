@@ -55,7 +55,7 @@ const useIdentityChipState = (): IdentityChipState => {
  * What a mode whose players are ranked over a season (Frontier) puts in the chip in place of the game's points goal:
  * the player's place on the season's board, and the way to that board.
  */
-export type SeasonGoal = { rank: string; onOpen: () => void };
+export type SeasonGoal = { rank: string | null; onOpen: () => void };
 
 /**
  * Player identity opens the leaderboard (or, given a `season`, the season's board), a session without a name opens the
@@ -88,7 +88,7 @@ export const IdentityChip = ({ compact = false, season }: { compact?: boolean; s
 /** A season's player's chip: their name and place on the season's board, which it opens. */
 const SeasonChip = ({ name, season }: { name: string; season: SeasonGoal }) => (
   <HudPill
-    label={`${name}, ${SEASON} ${season.rank}`}
+    label={season.rank ? `${name}, ${SEASON} ${season.rank}` : `${name}, ${SEASON}`}
     onPress={season.onOpen}
     className="pointer-events-auto min-w-0 max-w-full whitespace-nowrap"
   >
@@ -98,9 +98,6 @@ const SeasonChip = ({ name, season }: { name: string; season: SeasonGoal }) => (
         <span className="max-w-36 truncate">{name}</span>
       </span>,
       ...(season.rank ? [<span key="rank">{season.rank}</span>] : []),
-      <span key="goal" className="text-hud-muted">
-        {SEASON}
-      </span>,
     ]}
   </HudPill>
 );

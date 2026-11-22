@@ -35,12 +35,14 @@ jobs:
             apps/game/asset-sources/rss-icons/selected
             apps/game/asset-sources/workshops
             apps/game/public/icons/facets
+            apps/game/public/images/aspects
             apps/game/public/images/blitz-chests
             apps/game/public/images/buildings/construction
             apps/game/public/images/covers/link-preview-54d58004.png
             apps/game/public/images/festival
             apps/game/public/images/landscapes
             apps/game/public/images/logos
+            apps/game/public/images/oaths
             apps/game/public/models/characters/quaternius
             apps/game/public/models/characters/t1-knight-default
             apps/game/public/models/ethereal

@@ -20,7 +20,6 @@ import {
   startsNewArmies,
   storesMore,
   type RankedWords,
-  takesPopulation,
 } from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
 import { knownAmount } from "@/ui/utils/utils";
@@ -39,7 +38,6 @@ import {
   BUILDINGS_CENTER,
   BuildingType,
   formatAmount,
-  formatCharge,
   formatGain,
   formatPercent,
   formatRate,
@@ -232,7 +230,6 @@ export const BuildSheet = ({
   };
   return (
     <BuildView
-      population={population}
       tiles={options.map((candidate) => buildTile(candidate, holdings))}
       chosen={chosen}
       onChoose={(index) => choose(options[index]!.category)}
@@ -317,8 +314,7 @@ const buildingLine = (option: BuildOption): RankedWords => {
           : effect.kind === "stores"
             ? [storesMore(storageShare(effect.shareBps))]
             : [`${formatGain(effect.amount)} ${POPULATION}`];
-  const takes = option.populationCost > 0 ? `, ${takesPopulation(formatCharge(option.populationCost))}` : "";
-  return [`${buildingName(option.category)}: `, ...does, ...(takes ? [takes] : [])];
+  return [`${buildingName(option.category)}: `, ...does];
 };
 
 /** Why a price is above its first: the copies standing raise it. None when no copy stands yet. */

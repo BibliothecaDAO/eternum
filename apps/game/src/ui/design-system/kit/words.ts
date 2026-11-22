@@ -394,6 +394,7 @@ export const dayLeft = (secondsLeft: number | undefined): ClockPhrase => ({
   reading: dayLength(secondsLeft),
   readingFirst: true,
 });
+export const dayLeftCompact = (secondsLeft: number | undefined): string => dayLength(secondsLeft).split(" ")[0] ?? "";
 export const tomorrowLasts = (seconds: number | undefined): ClockPhrase => ({
   words: "Tomorrow lasts",
   reading: dayLength(seconds),
@@ -686,9 +687,7 @@ export const PRICE_UP = "price raised";
 export const priceRaised = (standing: string) => `Costs more with each one standing: ${standing}`;
 /** What a building does, in one line on its card's tooltip: "Wheat +5/min". */
 export const makes = (noun: string, rate: string) => `${noun} ${rate}`;
-export const takesPopulation = (amount: string) => `takes ${amount} ${POPULATION}`;
 export const storesMore = (share: string) => `${WHEAT} and ${LABOR.toLowerCase()} ${STORAGE.toLowerCase()} ${share}`;
-/** What a training building gives, by its tier: "new armies start with Battle [II]". */
 export const startsNewArmies = (attribute: string, tier: number): RankedWords => [
   `new armies start with ${attribute} `,
   { rank: tier },
@@ -737,6 +736,7 @@ export const FIGHT_WORDS = {
   earns: "This attack earns",
   clears: "This attack clears it",
   holds: "The guard holds",
+  hitsFirst: "Hits first",
 } as const;
 /**
  * What an attack costs a side, under its bar (a player: "# of troops lost, % lost/remaining"; owner, 3 November 2026:
@@ -818,12 +818,15 @@ export const DEEP_WORDS = {
     `+${formatExact(perTick)} on the bane bar: ${formatExact(charge)} of ${formatExact(threshold)}`,
   beast: (name: string, troops: number) => `Today's beast: ${name}, ${formatExact(troops)} troops`,
   open: "No guard: the next army takes it",
-  heldBy: (aspect: string) => `Held by ${aspect}`,
+  heldByPrefix: "Held by",
+  guardsCount: (filled: number, total: number) => `${formatExact(filled)} / ${formatExact(total)} Guards`,
+  drainTick: (troops: number) => `−${formatExact(troops)} / tick`,
   freeSlot: "Free slot",
-  foughtInOrder: "An attacker fights them one after the other, from the top",
   facesNext: "fought next",
   /** What holding a site costs: the troops its army loses at each tick. */
   drain: (troops: string) => `${troops} troops lost a tick`,
+  drainShort: (troops: string, ticks: number, time: string) =>
+    `−${troops}/tick · ${formatExact(ticks)} ticks (${time})`,
   /** How long a guard's troops last: its army ticks, and the time until the last of them. */
   lasts: (ticks: number, time: string) => `${formatExact(ticks)} ticks left (${time})`,
   /** What the army panel's chip of those ticks counts. */

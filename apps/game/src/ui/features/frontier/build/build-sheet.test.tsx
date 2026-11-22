@@ -24,6 +24,11 @@ afterEach(() => {
   useUIStore.getState().setPreviewBuilding(null);
 });
 
+const atKingdom = (realm: ReturnType<typeof realmBoard>["realm"]) => ({
+  ...realm,
+  base: { ...realm.base, level: nativeResearchConstants.SUPPLY_YARD_LEVEL },
+});
+
 describe("the build sheet", () => {
   it("stands the chosen building on the plot as a ghost, builds it there and takes the ghost away", async () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -305,12 +310,38 @@ describe("the build sheet", () => {
     later.close();
   });
 
-  it("keeps the realm's population in its head, used of all it can hold", () => {
+  it("shows no population chip in the build sheet header or card corners", () => {
     const { store, realm } = realmBoard();
-    const total = 6 + configManager.getBasePopulationCapacity();
     population(store, 4);
     const sheet = open(store, realm);
-    expect(sheet.host.querySelector(`[aria-label="population 4/${total}"]`)).not.toBeNull();
+    expect(sheet.host.querySelector('.ui-panel__head [aria-label^="population"]')).toBeNull();
+    expect(sheet.host.querySelector('.ui-card__corner [aria-label^="population"]')).toBeNull();
+    sheet.close();
+  });
+
+  it("separates higher-tier unlocks from the build grid and summarizes the chosen building", () => {
+    const { store, realm } = realmBoard();
+    const sheet = open(store, realm);
+    const gridTitles = [...sheet.host.querySelectorAll("[data-build-grid] .ui-card__title")].map(
+      (title) => title.textContent,
+    );
+    expect(gridTitles).toContain("Farm");
+    expect(gridTitles).toContain("Barracks");
+    expect(gridTitles).not.toContain("Scouts' lodge");
+    expect(gridTitles).not.toContain("Range");
+    expect(gridTitles).not.toContain("Rations depot");
+    expect(sheet.host.querySelector("[data-build-chosen]")?.textContent).toMatch(/^Farm: Wheat \+/);
+
+    const lockedButtons = [...sheet.host.querySelectorAll<HTMLButtonElement>("[data-build-locked] button")];
+    const rangeButton = lockedButtons.find((button) => button.textContent?.includes("Range"))!;
+    expect(rangeButton).toBeDefined();
+    expect(sheet.host.querySelector("[data-build-locked]")?.textContent).toContain("City");
+    expect(sheet.host.querySelector("[data-build-locked]")?.textContent).toContain("Kingdom");
+
+    act(() => rangeButton.click());
+    expect(rangeButton.getAttribute("aria-pressed")).toBe("true");
+    expect(sheet.host.querySelector("[data-build-chosen]")?.textContent).toContain("Range:");
+    expect(sheet.host.querySelector('[role="status"]')?.textContent).toBe("Requires City");
     sheet.close();
   });
 
@@ -361,19 +392,15 @@ describe("the build sheet", () => {
     );
 
   it("keeps the player's pick with no free population, and Build asks, offering the Hut on this plot", () => {
-    const { sheet, total, placeBuilding } = fullRealm();
+    const { sheet, placeBuilding } = fullRealm();
     act(() => sheet.card("Barracks").click());
-    // The pick stands and Build is offered: nothing is chosen for the player, nothing refuses yet.
     expect(pressed(sheet)).toEqual(["Barracks"]);
     expect(sheet.button("Build")!.textContent).toBe("Build");
     act(() => sheet.button("Build")!.click());
     const ask = sheet.host.querySelector('[role="alertdialog"]')!;
     expect(ask.getAttribute("aria-label")).toBe("Population full");
-    const cost = configManager.getBuildingCategoryConfig(BuildingType.ResourceKnightT1).population_cost;
-    expect(ask.querySelector(`[aria-label="population ${total}/${total}"]`)).not.toBeNull();
-    expect(ask.querySelector(`[aria-label="Barracks population ${cost}"]`)).not.toBeNull();
-    expect(ask.querySelector('[aria-label^="Hut population +"]')).not.toBeNull();
-    // The ask stands where the grid stood; nothing was sent by pressing Build.
+    expect(ask.textContent).toContain("Barracks");
+    expect(ask.textContent).toContain("Hut");
     expect(sheet.host.querySelector(".ui-card__choose")).toBeNull();
     expect(placeBuilding).not.toHaveBeenCalled();
     sheet.close();
@@ -404,14 +431,13 @@ describe("the build sheet", () => {
 
   it("says on each card what the building does, and marks a risen price with the rule that raised it", () => {
     const { store, realm } = realmBoard();
-    const sheet = open(store, realm);
-    const farm = configManager.getBuildingCategoryConfig(BuildingType.ResourceWheat).population_cost;
+    const sheet = open(store, atKingdom(realm));
     expect(sheet.card("Farm").closest("[data-tip]")!.getAttribute("data-tip")).toMatch(
-      new RegExp(`^Farm: Wheat \\+[\\d,.]+/(?:s|min), takes ${farm} population$`),
+      /^Farm: Wheat \+[\d,.]+\/(?:s|min)$/,
     );
     expect(sheet.card("Hut").closest("[data-tip]")!.getAttribute("data-tip")).toMatch(/^Hut: \+\d+ population$/);
-    expect(sheet.card("Supply yard").closest("[data-tip]")!.getAttribute("data-tip")).toMatch(
-      /^Supply yard: new armies start with Logistics I(, takes \d+ population)?$/,
+    expect(sheet.card("Supply yard").closest("[data-tip]")!.getAttribute("data-tip")).toBe(
+      "Supply yard: new armies start with Logistics I",
     );
     // The tier is the tooltip's gem, not a numeral in the words.
     const ranks = JSON.parse(sheet.card("Supply yard").closest("[data-tip]")!.getAttribute("data-tip-ranks")!);
@@ -458,14 +484,8 @@ describe("the build sheet", () => {
       }),
     ] as never);
     const band = (sheet: ReturnType<typeof open>, name: string) => sheet.card(name).querySelector(".ui-chip")!;
-    const sheet = open(store, realm);
-    const farm = configManager.getBuildingCategoryConfig(BuildingType.ResourceWheat).population_cost;
-    // What one more Farm makes, the population it takes, then its price in red with the wait at a glance ("7m").
+    const sheet = open(store, atKingdom(realm));
     expect(sheet.card("Farm").textContent).toMatch(/\+[\d,.]+\/(?:s|min)/);
-    // The population it takes stands in the card's corner, beside its painting.
-    expect(
-      sheet.card("Farm").closest(".ui-card")!.querySelector(`.ui-card__corner [aria-label="population ${farm}"]`),
-    ).not.toBeNull();
     expect(band(sheet, "Farm").getAttribute("data-tone")).toBe("bad");
     expect(band(sheet, "Farm").textContent).toMatch(/\d+[mhd]$/);
     // Training names its purchases against the gate instead of a building rarity.
@@ -489,7 +509,7 @@ describe("the build sheet", () => {
         population: { current: 2, max: 6 },
       }),
     ] as never);
-    const built = open(store, { ...realm, base: { ...realm.base, level: nativeResearchConstants.SUPPLY_YARD_LEVEL } });
+    const built = open(store, atKingdom(realm));
     expect(band(built, "Supply yard").getAttribute("data-tone")).toBe("good");
     expect(band(built, "Supply yard").querySelector('[data-icon="check"]')).not.toBeNull();
     built.close();
@@ -504,7 +524,7 @@ describe("the build sheet", () => {
       [...sheet.card(name).querySelectorAll(".ui-tier")].map((gem) =>
         gem.getAttribute("data-tier") === "0" ? "Untrained" : gem.textContent,
       );
-    const sheet = open(store, realm);
+    const sheet = open(store, atKingdom(realm));
     expect(gems(sheet, "Farm")).toEqual(["II"]);
     expect(gems(sheet, "Workshop")).toEqual(["Untrained"]);
     expect(gems(sheet, "Barracks")).toEqual(["I"]);
@@ -564,7 +584,7 @@ describe("the build sheet", () => {
 it("reds only the price lines the realm holds less of, so a training building short of Essence keeps its Labor white", () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const { store, realm } = realmBoard();
-  const kingdom = { ...realm, base: { ...realm.base, level: nativeResearchConstants.SUPPLY_YARD_LEVEL } };
+  const kingdom = atKingdom(realm);
   const balance = (resource: number, amount: bigint) => ({
     model: "ResourceBalance",
     // The fixture's own row keys: one per resource balance of the realm.

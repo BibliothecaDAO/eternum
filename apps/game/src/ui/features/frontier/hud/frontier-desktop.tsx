@@ -61,7 +61,7 @@ export const FrontierDesktop = ({
       </HudColumn>
       <FrontierRail page={page} onPanel={setPanel} />
       <HudFoot>
-        <div className="pointer-events-none flex flex-col items-center gap-2">
+        <div className="pointer-events-none flex flex-col items-center gap-3">
           {foot}
           {places}
         </div>

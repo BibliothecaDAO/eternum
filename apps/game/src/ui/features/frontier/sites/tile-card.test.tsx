@@ -182,7 +182,7 @@ describe("the tile card", () => {
       expect(button("Attack")).toBeUndefined();
 
       act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: null }));
-      expect(card!.querySelectorAll('[data-icon="beast-troll"]')).toHaveLength(2);
+      expect(card!.querySelectorAll('[data-icon="beast-troll"]')).toHaveLength(1);
       expect(button("Attack")?.disabled).toBe(false);
       await act(async () => button("Attack")!.click());
       expect(attack).toHaveBeenCalledWith(expect.objectContaining({ explorer_id: 201, structure_id: SITE }));
@@ -240,7 +240,8 @@ describe("the tile card", () => {
     // Owner, 31 October 2026: "I should still have the projection even if I'm too far I think". The attack its army
     // would send from beside the site, and its headline; only Attack waits for the army to get there.
     expect(fightSides(host)).toEqual(FORECAST);
-    expect(host.querySelector(".ui-frame__body header")?.textContent).toBe("BladeThe guard holds+825+1 site");
+    expect(host.querySelector(".ui-fight-vs")?.textContent).toContain("The guard holds");
+    expect(host.querySelector(".ui-fight-spoils")?.textContent).toBe("+825+1 site");
     expect(button("Attack")?.disabled).toBe(true);
     expect(button("Move")).toBeUndefined();
     expect(host.querySelector('[role="status"]')?.textContent).toBe("Too far from the Golem");
@@ -300,8 +301,8 @@ describe("the tile card", () => {
     act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: null }));
     expect(host.querySelector('section[aria-label="Army"]')).not.toBeNull();
     // The other army stands where a guard does: its 300 troops before this attack, on the guard's side.
-    const sides = [...host.querySelectorAll(".ui-frame__body > .flex.gap-2 > *")].map((side) => side.textContent);
-    expect(sides[1]).toMatch(/^300 →/);
+    const sides = fightSides(host);
+    expect(sides[1]).toMatch(/^Troops 300 →/);
     const button = [...host.querySelectorAll("button")].find((candidate) => candidate.textContent?.includes("Attack"))!;
     await act(async () => button.click());
     expect(attack).toHaveBeenCalledWith(

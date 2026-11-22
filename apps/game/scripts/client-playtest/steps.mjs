@@ -1260,7 +1260,7 @@ function oathPickSteps(full, layer = "Map") {
           locked,
           cards: browser.read("document.querySelectorAll('[data-oath-id]').length"),
           visible: browser.read(`(() => {
-            const nodes = [...document.querySelectorAll('[data-oath-id], [data-oath-pick] > button')];
+            const nodes = [...document.querySelectorAll('[data-oath-id], [data-oath-pick] [data-oath-pass]')];
             return nodes.length === 4 && nodes.every(node => {
               const box = node.getBoundingClientRect();
               return box.width > 0 && box.height > 0 && box.top >= 0 && box.bottom <= innerHeight &&

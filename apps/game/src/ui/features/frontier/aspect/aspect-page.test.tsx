@@ -39,11 +39,11 @@ describe("the race board from native facts", () => {
       { home: 7n, glory: 1250n * precision, contribution: 1300n * precision, mine: true, guards: [] },
     ]);
     const page = aspectPage(board, (home) => getStructureName(home, store).name);
-    expect(page.race?.standings.map((row) => [row.aspect, row.own])).toEqual([
-      ["Luminary", false],
-      ["Prowess", true],
-      ["Havoc", false],
-      ["Insight", false],
+    expect(page.race?.standings.map((row) => [row.aspectId, row.own])).toEqual([
+      [2, false],
+      [1, true],
+      [3, false],
+      [4, false],
     ]);
     expect(page.own?.triumphs).toEqual([
       { stage: 1, day: 2 },

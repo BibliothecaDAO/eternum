@@ -1,8 +1,10 @@
-import { formatShort } from "@bibliothecadao/types";
+import { aspectName, formatExact, formatShort, type AspectId } from "@bibliothecadao/types";
+import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-import { HudButton, HudChip, HudNotice, HudPanel } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudChip, HudMeter, HudNotice, HudPanel } from "@/ui/design-system/kit/hud-elements";
 import {
   ARMIES_ENDED,
+  ASPECT_PAGE_WORDS,
   CONTINUE,
   DAY,
   DAY_DONE,
@@ -19,12 +21,11 @@ import type { DayClock } from "../hud/day-clock";
 import { type DayTotals, DayTotalsGrid } from "../log/day-totals";
 import type { DayHistory } from "../log/player-day";
 
-/**
- * The day-done card (wireframe 11), over the map at the day's end (DayEndScreen places it): the day done and the realm
- * kept, when the new day ends and how long tomorrow lasts, the ended day's totals (and why they are unknown, when the
- * player's history cannot give them), the rank it moved to, and the troops the ended armies took with them. Share your day (once the day's totals are whole) opens the day's card to post; Continue goes on
- * into the new day.
- */
+export type DayDoneRace = {
+  finishHeight: number;
+  standings: readonly { aspectId: AspectId; height: number; own: boolean }[];
+};
+
 export const DayDoneCard = ({
   endedDay,
   clock,
@@ -32,56 +33,70 @@ export const DayDoneCard = ({
   history,
   onRetry,
   rank,
+  aspect,
+  race,
   armies,
   troopsLost,
   onShare,
   onContinue,
 }: {
   endedDay: number;
-  /** The day now open: its number, when it ends, the time left, and how long the day after lasts. */
   clock: Pick<DayClock, "day" | "endsAt" | "secondsLeft" | "tomorrowSeconds" | "tone">;
   totals: DayTotals;
-  /** How much of the day the player's history gives; the totals are unknown unless it is the whole day. */
   history: Exclude<DayHistory, "waiting">;
   onRetry: () => void;
-  /** The closing rank change, from Herald's record of the ended day. */
   rank?: { from: number; to: number } | null;
-  /** How many armies ended with the day. */
+  aspect?: AspectId;
+  race?: DayDoneRace;
   armies: number;
   troopsLost: number;
-  /** Opens the day's card to share; none while the day's totals are not whole. */
   onShare?: () => void;
   onContinue: () => void;
 }) => (
   <HudPanel
     label={`${DAY} ${endedDay} ${DAY_DONE}`}
     collapsible={false}
-    bodyClassName="flex flex-col items-center gap-2 overflow-y-auto"
+    className="ui-day-done"
+    bodyClassName="flex flex-col gap-3 overflow-y-auto p-4 lg:p-5"
   >
-    <h2 className="text-hud-display">
-      {DAY} {endedDay} {DAY_DONE}
-    </h2>
-    <p className="text-hud-strong">
-      {REALM_KEPT} · {DAY} {clock.day} {DAY_OPEN}
-    </p>
-    <DayEnds endsAt={clock.endsAt} secondsLeft={clock.secondsLeft} tone={clock.tone} />
-    <p className="flex items-center justify-center gap-1 text-hud-strong">
-      <SemanticIcon name="hourglass" size={18} />
-      <span>{tomorrowLasts(clock.tomorrowSeconds).words}</span>
-      <b className="tabular-nums">{tomorrowLasts(clock.tomorrowSeconds).reading}</b>
-    </p>
-    <div className="w-full">
-      <DayTotalsGrid totals={totals} />
+    <div className="flex items-start justify-between gap-3">
+      <div className="flex flex-col gap-0.5">
+        <h2 className="text-hud-display text-hud-ink">
+          {DAY} {endedDay} {DAY_DONE}
+        </h2>
+        <p className="text-hud-strong text-hud-muted">
+          {REALM_KEPT} · {DAY} {clock.day} {DAY_OPEN}
+        </p>
+      </div>
+      {aspect && <AspectMark aspect={aspect} size={44} decorative />}
     </div>
-    {history === "short" && <HudNotice line={DAY_TOTALS_UNKNOWN} />}
-    {history === "failed" && <HudNotice tone="bad" line={DAY_TOTALS_UNKNOWN} retry={onRetry} />}
-    {rank && (
-      <p className="flex items-center gap-1.5 text-hud-title tabular-nums">
-        <SemanticIcon name="victory" size={24} />#{rank.from} → #{rank.to}
-      </p>
-    )}
-    {armies > 0 && <ArmiesLine armies={armies} troopsLost={troopsLost} />}
-    <div className="grid w-full gap-2">
+    <div className={race ? "ui-day-done__grid" : "flex flex-col gap-3"}>
+      <div className="flex flex-col gap-2.5">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-hud-label text-hud-muted">
+          <DayEnds endsAt={clock.endsAt} secondsLeft={clock.secondsLeft} tone={clock.tone} />
+          <p className="flex items-center gap-1 text-hud-label">
+            <SemanticIcon name="hourglass" size={14} />
+            <span>{tomorrowLasts(clock.tomorrowSeconds).words}</span>
+            <b className="tabular-nums text-hud-ink">{tomorrowLasts(clock.tomorrowSeconds).reading}</b>
+          </p>
+        </div>
+        <div className="w-full">
+          <DayTotalsGrid totals={totals} />
+        </div>
+        {history === "short" && <HudNotice line={DAY_TOTALS_UNKNOWN} />}
+        {history === "failed" && <HudNotice tone="bad" line={DAY_TOTALS_UNKNOWN} retry={onRetry} />}
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          {rank && (
+            <p className="flex items-center gap-1.5 text-hud-title tabular-nums">
+              <SemanticIcon name="victory" size={22} />#{rank.from} → #{rank.to}
+            </p>
+          )}
+          {armies > 0 && <ArmiesLine armies={armies} troopsLost={troopsLost} />}
+        </div>
+      </div>
+      {race && <RaceStandings race={race} />}
+    </div>
+    <div className="flex w-full items-center justify-end gap-2 border-t border-hud-divider pt-3">
       {onShare && (
         <HudButton kind="secondary" icon="share" onClick={onShare}>
           {DAY_SHARE_WORDS.share}
@@ -92,6 +107,29 @@ export const DayDoneCard = ({
       </HudButton>
     </div>
   </HudPanel>
+);
+
+const RaceStandings = ({ race }: { race: DayDoneRace }) => (
+  <div data-day-race className="ui-day-race">
+    <span className="text-hud-label uppercase tracking-wider text-hud-muted">{ASPECT_PAGE_WORDS.race}</span>
+    <div className="flex flex-col gap-2">
+      {race.standings.map((row) => {
+        const label = aspectName(row.aspectId);
+        return (
+          <div key={row.aspectId} data-own={row.own || undefined} className="ui-day-race__row">
+            <AspectMark aspect={row.aspectId} size={22} decorative />
+            <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+              <div className="flex items-baseline justify-between gap-2 text-hud-label">
+                <span className={row.own ? "text-hud-strong text-hud-gold" : "text-hud-ink"}>{label}</span>
+                <span className="tabular-nums text-hud-muted">{formatExact(row.height)}</span>
+              </div>
+              <HudMeter label={label} share={race.finishHeight > 0 ? row.height / race.finishHeight : 0} />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  </div>
 );
 
 /**

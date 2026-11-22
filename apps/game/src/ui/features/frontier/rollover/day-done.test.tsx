@@ -23,10 +23,36 @@ const herald = vi.hoisted(() => ({
   game: { end_at: "1793439960" },
 }));
 /** The game's facts as the HUD and the day's turn read them: its registry, and realm 7 owned by the player. */
+const raceFacts = vi.hoisted(() => ({
+  rules: undefined as { game_id: number; stage_height: number } | undefined,
+  deepRules: undefined as { game_id: number; altar_threshold: number; rings: readonly unknown[] } | undefined,
+  heights: new Map<number, { game_id: number; aspect: number; height: number }>(),
+  ownAspect: undefined as { game_id: number; home: bigint; aspect: number } | undefined,
+  members: undefined as { game_id: number; aspect: number; members: number } | undefined,
+}));
 const facts = vi.hoisted(() => ({
-  get: (model: string) => (model === "GameRegistry" ? herald.game : undefined),
+  get: (model: string, key?: { aspect?: number; home?: bigint; entity_id?: bigint }) => {
+    if (model === "GameRegistry")
+      return { ...herald.game, start_main_at: 0, scheduled_end_at: herald.scheduledEndAt, seed: 1n };
+    if (model === "SliceRules") return { day_unit_seconds: 4 * 3_600 };
+    if (model === "SettlementRules") return { spacing: 100 };
+    if (model === "RaceRules") return raceFacts.rules;
+    if (model === "DeepRules") return raceFacts.deepRules;
+    if (model === "AspectHyperstructure" && key?.aspect !== undefined) return raceFacts.heights.get(key.aspect);
+    if (model === "HomeAspect" && key?.home === 7n) return raceFacts.ownAspect;
+    if (model === "AspectMembers" && key?.aspect === raceFacts.members?.aspect) return raceFacts.members;
+    if (model === "Structure" && key?.entity_id === 7n) return REALM_7;
+    return undefined;
+  },
   // A game whose complete snapshot holds no race rules ranks players by the sites they cleared.
   absenceKnown: () => ({ known: {} }),
+  requireOrAbsent: (model: string) =>
+    model === "RaceMember"
+      ? { known: { glory: 0n, contribution: 0n } }
+      : model === "AltarBar"
+        ? { known: { charge: 0 } }
+        : { known: {} },
+  inGame: (model: string) => (model === "HomeAspect" && raceFacts.ownAspect ? [raceFacts.ownAspect] : []),
   structuresOwnedBy: () => [{ entity_id: 7 }],
 }));
 
@@ -720,6 +746,34 @@ describe("a device arriving in a new day", () => {
     expect(host.querySelector(SUMMARY)).toBeNull();
     expect(phase()).toBe("day");
     expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it("shows the player's Aspect Facet and race standings when race facts are synchronized", async () => {
+    raceFacts.rules = { game_id: 1, stage_height: 2_000 };
+    raceFacts.deepRules = { game_id: 1, altar_threshold: 1_500, rings: [] };
+    raceFacts.heights = new Map([
+      [1, { game_id: 1, aspect: 1, height: 6_400 }],
+      [2, { game_id: 1, aspect: 2, height: 5_200 }],
+      [3, { game_id: 1, aspect: 3, height: 2_800 }],
+      [4, { game_id: 1, aspect: 4, height: 900 }],
+    ]);
+    raceFacts.ownAspect = { game_id: 1, home: 7n, aspect: 2 };
+    raceFacts.members = { game_id: 1, aspect: 2, members: 1 };
+    try {
+      await openTheGameHere();
+      expect(host.querySelector("[data-aspect-mark='2']")).not.toBeNull();
+      const race = host.querySelector("[data-day-race]");
+      expect(race).not.toBeNull();
+      expect(race?.textContent).toContain("Prowess");
+      expect(race?.textContent).toContain("Luminary");
+      expect(race?.querySelector("[data-own='true']")?.textContent).toContain("Luminary");
+    } finally {
+      raceFacts.rules = undefined;
+      raceFacts.deepRules = undefined;
+      raceFacts.heights = new Map();
+      raceFacts.ownAspect = undefined;
+      raceFacts.members = undefined;
+    }
   });
 });
 

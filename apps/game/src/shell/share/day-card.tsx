@@ -1,11 +1,12 @@
 import "@/shell/season-tab/season-recap.css";
 import "./day-card.css";
 
-import { formatAmount, formatShort, LORDS } from "@bibliothecadao/types";
+import { formatAmount, formatShort, LORDS, orderAspect } from "@bibliothecadao/types";
 import type { Ref } from "react";
 
 import { usePlayerDisplayName, usePlayerProfile } from "@/hooks/use-player-profile";
 import { playerPortraitUrl } from "@/services/identity/player-portrait";
+import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { AGE_LOCKUP, iconDefinition, orderMeaning } from "@/ui/design-system/icon-meaning";
 import { paintingFile } from "@/ui/design-system/kit/paintings";
@@ -71,17 +72,22 @@ export const DayCard = ({
 const Player = ({ shared }: { shared: SharedDay }) => {
   const profile = usePlayerProfile(shared.player);
   const name = usePlayerDisplayName(shared.player) ?? "";
+  const aspect = shared.realm.order !== undefined ? orderAspect(shared.realm.order) : null;
   return (
     <div className="day-card__who">
       <span className="season-card__who">
         <img className="day-card__portrait" src={playerPortraitUrl(shared.player, profile.portrait)} alt={name} />
         {shared.realm.order !== undefined && (
           <span className="season-card__order">
-            <Icon
-              name={orderMeaning(shared.realm.order)}
-              size={56}
-              alt={iconDefinition(orderMeaning(shared.realm.order)).label}
-            />
+            {aspect ? (
+              <AspectMark aspect={aspect} size={56} decorative />
+            ) : (
+              <Icon
+                name={orderMeaning(shared.realm.order)}
+                size={56}
+                alt={iconDefinition(orderMeaning(shared.realm.order)).label}
+              />
+            )}
           </span>
         )}
       </span>

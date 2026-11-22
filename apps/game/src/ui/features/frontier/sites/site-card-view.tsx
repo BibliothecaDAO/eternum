@@ -1,5 +1,6 @@
 import type { FrontierBeast } from "@/three/structures/frontier-beast";
-import { type Troops, formatExact } from "@bibliothecadao/types";
+import { type FirstStrikeSide } from "@bibliothecadao/eternum";
+import { type Troops, formatCharge, formatShort } from "@bibliothecadao/types";
 import { beastMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -38,15 +39,11 @@ import { type AttackTargetKind, TARGET_MARKS, attackTargetName } from "./site-ma
 import type { ArmyRelic } from "../relics/relic-catalog";
 import { RelicPay } from "../relics/relic-replacement";
 
-/** The step under the outcome: Attack (the same tap whatever the forecast), Move until the army is in reach, or
- * Attack held back, by the stamina the army lacks or by a site too far for one order, which the foot then says. */
 export type SiteVerb =
   | {
       kind: "attack";
       stamina: number;
-      /** The army's order in flight, this attack or another: the step cannot be pressed until its outcome arrives. */
       inFlight?: OrderInFlight;
-      /** Why the army's last attack here did not happen, in one line. */
       refused?: string;
       onAttack: () => void;
     }
@@ -62,6 +59,7 @@ export const SiteCardView = ({
   army,
   guard,
   fight,
+  firstStrike = null,
   pay,
   relic,
   holdsOath = false,
@@ -73,38 +71,29 @@ export const SiteCardView = ({
   onClose,
 }: {
   site: AttackTargetKind;
-  /** The site's own name, the one its map plate and every list give it: the card's title with its kind, as the hover. */
   name?: string;
   beast: (Pick<FrontierBeast, "beast" | "name"> & { combatClass: Troops["category"] }) | undefined;
-  army: { art: IconMeaning; troops: number } | null;
+  army: { art: IconMeaning; troops: number; category?: Troops["category"] } | null;
   guard: number | null | undefined;
   fight: SiteFight | undefined;
-  /** What a camp or rift pays: the full amount, and what fits when the store would overflow. */
+  firstStrike?: FirstStrikeSide;
   pay: { icon: IconMeaning; amount: number; fits?: number } | null;
-  /** A Season 1 ruin's relic, rolled when it was found: the clearing army carries it. */
   relic?: ArmyRelic;
   holdsOath?: boolean;
   cache?: number;
-  /** Before a full army clears a ruin: the relic it replaces, chosen there. */
   replacement?: ReactNode;
   verb: SiteVerb | null;
   receipt?: ReactNode;
-  /** The way to make room when the payout does not all fit. */
   onRealm?: () => void;
   onClose: () => void;
 }) => {
   const { icon } = TARGET_MARKS[site];
   const word = attackTargetName(site, beast);
   const title = name ? siteTitle(name, word, beast?.name) : word;
-  // With no army selected the card says what the site is and pays, and its guard (owner, 28 October 2026: "agree with
-  // no picker"); selecting an army, then the site, gives the fight.
   const armyless = army === null;
   const guardIcon = beast ? beastMeaning(beast.beast) : "troops";
-  // The army against a guard of known size, with this attack's forecast: what option A reads, side by side.
   const facing = facingOf(army, guard, fight);
   const lost = facing !== undefined && isArmyLost(facing);
-  // Every guarded site an army clears counts one on the Season board (Herald's frontier-leaderboard.ts creditSiteClear);
-  // an army is no site.
   const countsOnBoard = site !== "Army";
   const reward =
     cache !== undefined || relic || pay || countsOnBoard ? (
@@ -128,27 +117,36 @@ export const SiteCardView = ({
         )}
       </Reward>
     ) : null;
-  // What the site is, in the words the title has not said: its beast.
   const what = beast?.name !== title ? beast?.name : undefined;
   return (
     <HudSheet label={title} onClose={onClose}>
-      <header className="flex items-center gap-3">
-        {typeof guard === "number" ? (
-          <GuardToken label={beast?.name ?? TROOPS} art={guardIcon} troops={armyless ? guard : undefined} />
-        ) : (
-          <SiteMark icon={beast ? beastMeaning(beast.beast) : icon} />
-        )}
-        <span className="flex min-w-0 flex-1 flex-col gap-1.5">
-          {beast && <CombatMark category={beast.combatClass} />}
-          {facing ? (
-            <Outcome facing={facing} earns={reward !== null} />
+      {armyless ? (
+        <header className="flex items-center gap-3">
+          {typeof guard === "number" ? (
+            <GuardToken label={beast?.name ?? TROOPS} art={guardIcon} troops={guard} />
           ) : (
-            what && <span className="text-hud-label text-hud-muted">{what}</span>
+            <SiteMark icon={beast ? beastMeaning(beast.beast) : icon} />
           )}
-          {reward}
-        </span>
-      </header>
-      {!armyless && <FightPanel army={army} guard={guard} facing={facing} beast={beast} guardIcon={guardIcon} />}
+          <span className="flex min-w-0 flex-1 flex-col gap-1.5">
+            {beast && <CombatMark category={beast.combatClass} />}
+            {what && <span className="text-hud-label text-hud-muted">{what}</span>}
+            {reward}
+          </span>
+        </header>
+      ) : (
+        <>
+          <FightPanel
+            army={army}
+            guard={guard}
+            facing={facing}
+            firstStrike={firstStrike}
+            beast={beast}
+            guardIcon={guardIcon}
+            earns={reward !== null}
+          />
+          {reward && <div className="ui-fight-spoils">{reward}</div>}
+        </>
+      )}
       {receipt}
       {replacement}
       <Verb
@@ -175,20 +173,12 @@ const armyLeft = ({ army, fight }: Facing) => Math.max(0, army.troops - fight.tr
 const isArmyLost = (facing: Facing) => armyLeft(facing) === 0;
 const clears = (facing: Facing) => !isArmyLost(facing) && facing.fight.guardLeft === 0;
 
-/** What this attack comes to, in the card's title words: what it earns when it clears the site (its reward under it). */
-const Outcome = ({ facing, earns }: { facing: Facing; earns: boolean }) => (
-  <span className={cn("text-hud-title", isArmyLost(facing) ? "text-hud-bad" : "text-hud-ink")}>
-    {outcomeWord(facing, earns)}
-  </span>
-);
-
 const outcomeWord = (facing: Facing, earns: boolean): string => {
   if (isArmyLost(facing)) return FIGHT_WORDS.armyLost;
   if (!clears(facing)) return FIGHT_WORDS.holds;
   return earns ? FIGHT_WORDS.earns : FIGHT_WORDS.clears;
 };
 
-/** What the clear pays, in the headline; dimmed when this attack does not clear the site. */
 const CachePay = ({ fragments }: { fragments: number }) => (
   <span data-ruin-cache>
     <HudChip icons={["fragment"]}>{RELIC_WORDS.cache(fragments)}</HudChip>
@@ -199,64 +189,99 @@ const Reward = ({ dimmed, children }: { dimmed: boolean; children: ReactNode }) 
   <span className={cn("flex flex-wrap items-center gap-2", dimmed && "opacity-50")}>{children}</span>
 );
 
-/** A site's painting at the head of its card; `children` marks it (a won fight's flag). */
 const SiteMark = ({ icon, children }: { icon: IconMeaning; children?: ReactNode }) => (
-  <span className="relative flex size-16 shrink-0 items-center justify-center rounded-xl border border-hud-line bg-hud-surface">
+  <span
+    className={cn(
+      "relative flex size-16 shrink-0 items-center justify-center rounded-xl border border-hud-line bg-hud-surface",
+    )}
+  >
     <SemanticIcon name={icon} size={36} />
     {children}
   </span>
 );
 
-/**
- * The fight's two sides, in every state of the card (owner, 10-27: "this panel doesnt match at all our new battle
- * panels"): each side's troops now and what this attack leaves it, near or far; refused, the same sides with a dash
- * where no forecast is known. The state itself is the line under them and the held step.
- */
+const firstStrikeTag = (side: FirstStrikeSide | undefined, target: "attacker" | "defender") =>
+  side === target ? <span className="text-hud-gold">{`· ${FIGHT_WORDS.hitsFirst}`}</span> : null;
+
 const FightPanel = ({
   army,
   guard,
   facing,
+  firstStrike,
   beast,
   guardIcon,
+  earns,
 }: {
-  army: { art: IconMeaning; troops: number } | null;
+  army: { art: IconMeaning; troops: number; category?: Troops["category"] } | null;
   guard: number | null | undefined;
   facing: Facing | undefined;
+  firstStrike: FirstStrikeSide;
   beast: (Pick<FrontierBeast, "beast" | "name"> & { combatClass: Troops["category"] }) | undefined;
   guardIcon: IconMeaning;
-}) =>
-  army || guard !== null ? (
-    <div className="flex gap-2">
+  earns: boolean;
+}) => {
+  if (!army && guard === null) return null;
+  return (
+    <div className="ui-fight-arena">
       {army && (
         <FightSide
           label={ARMY}
-          mark={<SemanticIcon name={army.art} size={26} />}
+          mark={<SemanticIcon name={army.art} size={96} className="size-full" />}
+          subtitle={
+            army.category ? (
+              <>
+                <CombatMark category={army.category} size={14} />
+                {firstStrikeTag(firstStrike, "attacker")}
+              </>
+            ) : (
+              firstStrikeTag(firstStrike, "attacker")
+            )
+          }
           before={army.troops}
           kept={facing && armyLeft(facing)}
           side="ours"
         />
       )}
+      <div className="ui-fight-vs">
+        <span className="ui-fight-vs__word" aria-hidden="true">
+          VS
+        </span>
+        {facing && (
+          <HudChip tone={isArmyLost(facing) ? "bad" : clears(facing) ? "good" : undefined}>
+            {outcomeWord(facing, earns)}
+          </HudChip>
+        )}
+      </div>
       {guard !== null && (
         <FightSide
           label={beast?.name ?? TROOPS}
-          mark={<SemanticIcon name={guardIcon} size={26} />}
+          mark={<SemanticIcon name={guardIcon} size={96} className="size-full" />}
+          subtitle={
+            beast ? (
+              <>
+                <CombatMark category={beast.combatClass} size={14} />
+                {firstStrikeTag(firstStrike, "defender")}
+              </>
+            ) : (
+              firstStrikeTag(firstStrike, "defender")
+            )
+          }
           before={guard}
           kept={facing?.fight.guardLeft}
           side="theirs"
         />
       )}
     </div>
-  ) : null;
+  );
+};
 
-/** What a clear pays home: what fits, marked Full, as the fight's result marks it, when the store cannot take it all. */
 const Pay = ({ pay }: { pay: { icon: IconMeaning; amount: number; fits?: number } }) => {
   const short = pay.fits !== undefined && pay.fits < pay.amount;
   return (
     <span className="flex items-center gap-1.5">
-      <SemanticIcon name={pay.icon} size={22} />
-      <span className="text-hud-title leading-none tabular-nums text-hud-gold">
-        +{formatExact(short ? pay.fits : pay.amount)}
-      </span>
+      <HudChip icons={[pay.icon]} tone="good">
+        {formatShort(short ? pay.fits : pay.amount, { signed: true })}
+      </HudChip>
       {short && (
         <HudChip label={STORAGE} tone="bad">
           {REST_DID_NOT_FIT}
@@ -274,12 +299,10 @@ const Verb = ({
 }: {
   verb: SiteVerb | null;
   site: string;
-  /** This attack leaves the army no troops, as the headline says: Attack still runs, in red. */
   armyLost: boolean;
   onRealm: (() => void) | undefined;
 }) => {
   const warns = verb?.kind === "attack" && armyLost;
-  // Enter confirms the attack the forecast wins or stalls; one that loses the army takes a deliberate tap.
   useEnterConfirms(verb?.kind === "attack" && !verb.inFlight && !warns ? verb.onAttack : undefined);
   if (!verb) return null;
   return (
@@ -296,7 +319,6 @@ const Verb = ({
             {MOVE}
           </HudButton>
         ) : (
-          // A losing attack uses the shared danger action.
           <HudButton
             kind={warns ? "danger" : "primary"}
             icon="attack"
@@ -305,6 +327,12 @@ const Verb = ({
             onClick={verb.kind === "attack" ? verb.onAttack : undefined}
           >
             {ATTACK}
+            {verb.kind === "attack" && (
+              <span className="ui-button__cost" data-attack-stamina={verb.stamina}>
+                · {formatCharge(verb.stamina)}
+                <SemanticIcon name="stamina" size={14} />
+              </span>
+            )}
           </HudButton>
         )}
       </HudWindowFoot>
@@ -312,10 +340,6 @@ const Verb = ({
   );
 };
 
-/**
- * The one line under the step: why an attack did not happen, in red, as the news; or, under Move, that the site is out
- * of reach. An attack that loses the army says so in the headline, from the same figures as the sides.
- */
 const inFlightWord = (inFlight: OrderInFlight | undefined, own: OrderInFlight, word: string) =>
   inFlight && (inFlight === own ? word : ON_ITS_WAY);
 
@@ -325,25 +349,18 @@ const verbLine = (verb: SiteVerb, site: string): { line: string | undefined; war
   return { line: verb.kind === "move" ? tooFarFrom(site) : undefined, warns: false };
 };
 
-/**
- * Beside the step, what it costs; or, while Attack is held back, why, in the place of its cost: the stamina line says
- * the cost already, so the card says it once (owner, 28 October 2026: "the need 30 stamina line can actually replace
- * the 30 stamina below it it just makes more sense, and we save space").
- */
 const FootNote = ({ verb, site }: { verb: SiteVerb; site: string }) => {
   switch (verb.kind) {
     case "attack":
-      return <HudCost line={costLine([{ of: "stamina", amount: verb.stamina }])} />;
-    case "move":
-      return <HudCost line={costLine(verb.prices)} />;
     case "blocked":
       return null;
+    case "move":
+      return <HudCost line={costLine(verb.prices)} />;
     default:
       return <HudNotice tone="warn" line={reasonLine(heldBack(verb, site))} />;
   }
 };
 
-/** Why Attack is held back: the stamina missing and when it is back, or the site out of reach. */
 const heldBack = (verb: Extract<SiteVerb, { kind: "short" | "far" }>, site: string): Reason => {
   if (verb.kind === "far") return { kind: "failed", line: tooFarFrom(site) };
   const { cost, held, wait } = verb.stamina;

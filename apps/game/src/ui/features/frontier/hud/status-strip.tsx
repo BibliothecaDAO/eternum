@@ -3,7 +3,7 @@ import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HudDial, HudMeter, HudPanel } from "@/ui/design-system/kit/hud-elements";
 import type { Tone } from "@/ui/design-system/kit/tone";
-import { DAY, FULL, FULL_IN, OF, TODAY, dayLeft, phraseText } from "@/ui/design-system/kit/words";
+import { DAY, FULL, FULL_IN, OF, TODAY, dayLeft, dayLeftCompact, phraseText } from "@/ui/design-system/kit/words";
 import { useLandedValue, useLandingDelta } from "@/ui/motion/landing-hold";
 import { EASE } from "@/ui/motion/motion-scale";
 import { useReducedMotion } from "@/ui/motion/motion-settings";
@@ -61,20 +61,28 @@ export const StatusStrip = ({
           tone={STORE_TONES[clock.tone].meter}
           label={dialLabel(clock)}
         />
+        {clock.secondsLeft !== undefined && (
+          <span
+            aria-hidden
+            data-dial-left
+            className={cn("whitespace-nowrap text-hud-badge tabular-nums", STORE_TONES[clock.tone].text)}
+          >
+            {dayLeftCompact(clock.secondsLeft)}
+          </span>
+        )}
       </DayDialSlot>
       <Stores stores={stores} cards={storeCards} />
     </div>
   </HudPanel>
 );
 
-/** The day's dial in its place at the strip's start: a press opens Today where the host gives the way. */
 const DayDialSlot = ({ onOpen, children }: { onOpen?: () => void; children: ReactNode }) =>
   onOpen ? (
-    <button type="button" aria-label={TODAY} onClick={onOpen} className="flex w-11 shrink-0 justify-center">
+    <button type="button" aria-label={TODAY} onClick={onOpen} className="flex shrink-0 items-center gap-1">
       {children}
     </button>
   ) : (
-    <span className="flex w-11 shrink-0 justify-center">{children}</span>
+    <span className="flex shrink-0 items-center gap-1">{children}</span>
   );
 
 /** What the dial says it is: the day, and the time left of it ("Day 5 · 7h 14m left"); before the season, Day alone. */

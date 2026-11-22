@@ -1,4 +1,4 @@
-import { aspectLordsWorth, deepSites } from "@bibliothecadao/types";
+import { aspectLordsWorth, aspects, deepSites, type AspectId } from "@bibliothecadao/types";
 
 import type { AspectMember, AspectPageProps, AspectStanding, AspectTriumph, OwnAspect } from "./aspect-page-view";
 
@@ -11,11 +11,13 @@ const TRIUMPH_STAGES = [1, 2, 3, 4] as const;
 const BANE_THRESHOLD = 1_500;
 
 /** Four Aspects ranked by height: the stage being built follows from the height, and an Aspect is finished at 10,000. */
+const aspectIdByName = (name: string): AspectId => aspects.find((each) => each.name === name)!.id;
+
 const standings = (heights: Record<string, number>, own: string, winner?: string): AspectStanding[] =>
   Object.entries(heights)
     .toSorted(([, a], [, b]) => b - a)
     .map(([aspect, height], index) => ({
-      aspect,
+      aspectId: aspectIdByName(aspect),
       rank: index + 1,
       height,
       stage: Math.min(STAGES, Math.floor(height / STAGE) + 1),
@@ -41,7 +43,7 @@ const member = (id: string, realm: string, glory: number, guards: string | null,
 const [foundation, core, mine, altar] = deepSites.map(({ name }) => name);
 
 const luminary = (height: number, charge: number): OwnAspect => ({
-  aspect: "Luminary",
+  aspectId: 2,
   triumphs: triumphs(height, { 1: 12, 2: 19, 3: 26, 4: 33 }),
   bar: { charge, threshold: BANE_THRESHOLD },
   members: [

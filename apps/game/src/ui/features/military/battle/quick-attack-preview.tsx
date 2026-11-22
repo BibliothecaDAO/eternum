@@ -295,14 +295,14 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
               <div className="flex gap-2">
                 <FightSide
                   label="Your forces"
-                  mark={attackerTroops && <Icon name={troopMeaning(attackerTroops)} size={24} />}
+                  mark={attackerTroops && <Icon name={troopMeaning(attackerTroops)} size={64} className="size-full" />}
                   before={attackerTroops ? attackerTroopsTotal : undefined}
                   kept={attackerKept}
                   side="ours"
                 />
                 <FightSide
                   label={isStructureTarget ? "Active guard" : "Enemy army"}
-                  mark={<Icon name={troopMeaning(defenderTroops)} size={24} />}
+                  mark={<Icon name={troopMeaning(defenderTroops)} size={64} className="size-full" />}
                   before={defenderTroopsTotal}
                   kept={defenderKept}
                   side="theirs"
