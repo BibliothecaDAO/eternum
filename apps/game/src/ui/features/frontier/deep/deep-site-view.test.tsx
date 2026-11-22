@@ -143,6 +143,7 @@ describe("a Deep site's card", () => {
     expect(sides[1]!.querySelector('[data-icon="knight-t1"]')).not.toBeNull();
     expect(sides[1]!.textContent).toContain("Aldor");
     expect(document.querySelector("[data-attack-stamina='30']")).not.toBeNull();
+    expect(document.querySelector("button[aria-label='Attack']")).not.toBeNull();
     expect(document.querySelectorAll("[data-deep-slot]")).toHaveLength(4);
   });
 });

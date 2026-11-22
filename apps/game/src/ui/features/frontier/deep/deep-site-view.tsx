@@ -316,6 +316,7 @@ const OrderFoot = ({ order }: { order: DeepOrder | DeepBlock }) => {
         <HudButton
           kind="primary"
           icon={order.verb === "attack" ? "attack" : undefined}
+          aria-label={order.busy ? undefined : DEEP_WORDS[order.verb]}
           busy={order.busy}
           onClick={order.onAct}
         >

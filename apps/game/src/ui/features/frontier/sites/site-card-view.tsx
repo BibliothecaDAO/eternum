@@ -322,6 +322,7 @@ const Verb = ({
           <HudButton
             kind={warns ? "danger" : "primary"}
             icon="attack"
+            aria-label={verb.kind === "attack" && !verb.inFlight ? ATTACK : undefined}
             busy={verb.kind === "attack" ? inFlightWord(verb.inFlight, "attack", ATTACKING) : undefined}
             disabled={verb.kind !== "attack"}
             onClick={verb.kind === "attack" ? verb.onAttack : undefined}
