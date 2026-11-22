@@ -4655,11 +4655,10 @@ function labMergeSteps(confirm) {
 const LAB_REALM = 7;
 const ARMY_BEFORE_REINFORCE = 1_498;
 const AT_THE_CHAIN = 1_000_000_000n;
-/** All 420 knights at home go, for 840 of the 1,000 wheat: the army, the knights' stock (26) and the wheat (35) after. */
 const REINFORCED = {
-  troops: String(1_918n * AT_THE_CHAIN),
-  26: "0",
-  35: String(160n * AT_THE_CHAIN),
+  troops: String(1_902n * AT_THE_CHAIN),
+  26: String(16n * AT_THE_CHAIN),
+  35: String(192n * AT_THE_CHAIN),
 };
 /** How far below its token a realm's tile may lie at the map's zoom: the realm's token stands lower than an army's. */
 const REALM_TILE_BELOW_TOKEN_PX = [70, 50, 90];

@@ -362,6 +362,7 @@ export const HudTroopAmount = ({
   art,
   value,
   most,
+  max = most,
   held,
   disabled = false,
   onChange,
@@ -372,6 +373,7 @@ export const HudTroopAmount = ({
   value: number;
   /** The most that can go: the troops on hand within the army's room. */
   most: number;
+  max?: number;
   /** How many are on hand; when fewer fit, the count reads "of N that fit". */
   held: number;
   disabled?: boolean;
@@ -388,7 +390,7 @@ export const HudTroopAmount = ({
             +{QUICK_ADD}
           </HudButton>
         )}
-        <HudButton kind="secondary" disabled={full} onClick={() => onChange(most)}>
+        <HudButton kind="secondary" disabled={disabled || value === max} onClick={() => onChange(max)}>
           Max
         </HudButton>
         <span className="ui-amount__of">

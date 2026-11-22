@@ -14,7 +14,7 @@ import {
   type TroopType,
 } from "@bibliothecadao/types";
 
-import { readTroopRaise, troopRange, type TroopRaise, type TroopRange } from "../deploy/deploy-plan";
+import { type March, readTroopRaise, troopRange, type TroopRaise, type TroopRange } from "../deploy/deploy-plan";
 
 export interface ReinforcePlan {
   current: number;
@@ -47,7 +47,8 @@ export const readReinforcePlan = (
 };
 
 /** The most the army can take: the realm's stock, the room under its cap and the wheat, whichever runs out first. */
-export const reinforceRange = (plan: ReinforcePlan): TroopRange => troopRange(roomFor(plan), plan.raise);
+export const reinforceRange = (plan: ReinforcePlan, march: March): TroopRange =>
+  troopRange(roomFor(plan), plan.raise, march);
 
 /** The troops that could go before the wheat: the realm's stock, within the room under the army's cap. */
 const roomFor = ({ current, cap, stock }: Pick<ReinforcePlan, "current" | "cap" | "stock">): number =>

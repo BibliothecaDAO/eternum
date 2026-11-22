@@ -18,7 +18,7 @@ import { useRealmStores } from "../realm-stores";
 import { madeStoreOf } from "../stores";
 import { secondsUntilHeld } from "../hud/army-order";
 import { armyArt } from "../hud/dock-armies";
-import { deployArmy, deployDirection, deployRange, previewDeploy, wheatStopsAt } from "./deploy-plan";
+import { deployArmy, deployDirection, deployRange, marchOn, previewDeploy, wheatStopsAt } from "./deploy-plan";
 import { TroopOathSlots } from "../army/oath-slots";
 import { DeployView } from "./deploy-view";
 import { useDeployPlan } from "./use-deploy-plan";
@@ -42,14 +42,10 @@ export const DeploySheet = ({
   const defaultTick = useCurrentDefaultTick();
   const [troopType, setTroopType] = useState<TroopType>();
   const plan = useDeployPlan(realm, troopType);
-  const range = plan ? deployRange(plan) : { troopsMax: 0, wheatMax: 0, max: 0 };
   const [count, setCount] = useState<number | "max" | null>(null);
   // The sheet opens at no troops, so +500 gives exactly 500 (owner, 26 October 2026: "it should be 0 so I can press 500
   // and get 500"); Max is one tap away. A count being set survives fact revisions, and a count at the most stays at the
   // most as the farms raise it: the label and the count read the one figure.
-  const shown = count === "max" ? range.max : Math.min(count ?? 0, range.max);
-  const preview = plan ? previewDeploy(plan, shown) : null;
-  const wheatStop = wheatStopsAt(range, shown);
   const { center, ring } = useDeployRing(realm);
   const ordered = useUIStore((state) => state.pendingMilitaryAction?.direction ?? null);
   const direction = deployDirection(ring, ordered);
@@ -57,6 +53,11 @@ export const DeploySheet = ({
   // has since filled leaves none, never another the player did not choose.
   const pickedSlot = useUIStore((state) => state.pendingMilitaryAction?.slot);
   const start = pickedSlot === undefined ? plan?.open[0] : plan?.open.find((slot) => slot.slot === pickedSlot);
+  const march = start?.start && marchOn(start.start, 0);
+  const range = plan ? deployRange(plan, march) : { troopsMax: 0, wheatMax: 0, max: 0 };
+  const shown = count === "max" ? range.max : Math.min(count ?? 0, range.wheatMax);
+  const preview = plan ? previewDeploy(plan, march, shown) : null;
+  const wheatStop = wheatStopsAt(range, shown);
   const pickSlot = (slot: number) =>
     openArmyDeployment({
       structureId: safeInteger(realm.entity_id),
@@ -119,8 +120,12 @@ export const DeploySheet = ({
       art={plan?.troops ? armyArt({ category: plan.troops.type, tier: plan.troops.tier }) : undefined}
       troopsAtHome={plan ? (plan.troops?.atHome ?? 0) : undefined}
       count={preview?.count}
-      amount={{ most: range.max, held: range.wheatMax < range.troopsMax ? range.max : (plan?.troops?.atHome ?? 0) }}
-      onCount={(next) => setCount(range.max > 0 && next >= range.max ? "max" : next)}
+      amount={{
+        most: range.wheatMax,
+        max: range.max,
+        held: range.wheatMax < range.troopsMax ? range.wheatMax : (plan?.troops?.atHome ?? 0),
+      }}
+      onCount={(next) => setCount(range.max > 0 && next === range.max ? "max" : next)}
       start={start}
       slots={{ open: plan?.open, onPick: pickSlot }}
       troopsWait={nextTroopIn}
@@ -130,12 +135,12 @@ export const DeploySheet = ({
       sending={deploying}
       onDeploy={() => void deploy()}
       wheatLimit={
-        plan?.raise && wheatStop
+        plan?.raise && march && wheatStop
           ? {
               ...wheatStop,
               held: plan.raise.wheat,
-              perTroop: plan.raise.wheatFor(1),
-              wait: secondsUntilHeld(plan.raise.wheat, plan.raise.wheatFor(1), wheatPerHour),
+              perTroop: plan.raise.wheatToGo(1, march),
+              wait: secondsUntilHeld(plan.raise.wheat, plan.raise.wheatToGo(1, march), wheatPerHour),
             }
           : undefined
       }

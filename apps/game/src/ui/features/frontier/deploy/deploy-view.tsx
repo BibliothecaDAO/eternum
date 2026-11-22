@@ -75,7 +75,7 @@ export const DeployView = ({
   troopsAtHome: number | undefined;
   count: number | undefined;
   /** The most that can go, and the troops it is counted from: more than the most reads "that fit". */
-  amount: { most: number; held: number };
+  amount: { most: number; max: number; held: number };
   onCount: (count: number) => void;
   /** The slot the army fills and the bar it starts on there; none while every slot holds an army or it is unknown. */
   start: SlotStart | undefined;
@@ -119,6 +119,7 @@ export const DeployView = ({
       art={art}
       value={count ?? 0}
       most={amount.most}
+      max={amount.max}
       held={amount.held}
       disabled={amount.most === 0}
       onChange={onCount}
