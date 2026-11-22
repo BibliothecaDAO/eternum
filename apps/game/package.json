@@ -20,6 +20,7 @@
     "coverage:three": "vitest run --coverage src/three",
     "compress:weather": "node ./scripts/compress-weather-textures.mjs",
     "compress:models": "node ./scripts/compress-models.mjs",
+    "ship:model": "node ./scripts/tripo/ship-model.mjs",
     "verify:structures": "node ./scripts/realms/export-realms.mjs --verify && node ./scripts/optimize-structure-models.mjs --verify ethereal/spire.glb",
     "verify:t1-knight-default": "node ./scripts/validate-t1-knight-default-exports.mjs",
     "optimize:realms": "node ./scripts/realms/export-realms.mjs",
