@@ -1,0 +1,916 @@
+import { NEUTRAL_BIOME_CLIMATE } from "@bibliothecadao/eternum";
+import { BiomeType } from "@bibliothecadao/types";
+import {
+  AmbientLight,
+  AnimationAction,
+  AnimationClip,
+  AnimationMixer,
+  Box3,
+  BufferGeometry,
+  Color,
+  DirectionalLight,
+  Fog,
+  Group,
+  HemisphereLight,
+  InstancedMesh,
+  Line,
+  LineBasicMaterial,
+  Matrix4,
+  Mesh,
+  MeshStandardMaterial,
+  PCFShadowMap,
+  PerspectiveCamera,
+  Scene,
+  SkinnedMesh,
+  Vector3,
+} from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { env } from "@/env";
+import {
+  ProceduralCharacterPerformanceEvaluator,
+  type ProceduralCharacterPerformanceEvaluation,
+} from "@/three/characters/benchmark/procedural-character-performance-evaluation";
+import { ProceduralCharacterGpuTimer } from "@/three/characters/benchmark/procedural-character-gpu-timer";
+import { HEX_SIZE } from "@/three/constants/scene-constants";
+import { WorldAtmosphereController, type AtmosphereEnvironment } from "@/three/effects/world-atmosphere-controller";
+import { configureWorldSunShadows } from "@/three/effects/world-sun-shadows";
+import type { RendererSurfaceLike } from "@/three/renderer-backend";
+import { initializeRendererBackendRuntime } from "@/three/renderer-backend-runtime";
+import { configureRendererColorOutput } from "@/three/renderer-color-output";
+import { getRendererDiagnosticActiveMode } from "@/three/renderer-diagnostics";
+import { ProceduralTerrain } from "@/three/terrain/procedural-terrain";
+import { terrainHexCorners, terrainHexToWorld } from "@/three/terrain/terrain-coordinates";
+import type { TerrainCellInput, TerrainPageRequest } from "@/three/terrain/terrain-types";
+import { configureGltfTextureSupport, gltfLoader } from "@/three/utils/gltf-loader";
+import { isCoarsePointer } from "@/utils/pointer";
+import {
+  BEAST_MOTION_ACTION_INDEX,
+  BEAST_MOTION_PATH,
+  WYVERN_FULL_RIG_SPECS,
+  WYVERN_HYBRID_RIG_SPECS,
+  applyWyvernSpatialSkinning,
+  buildWyvernRigClips,
+  computeHexFormationOffsets,
+  createWyvernSkeleton,
+  poseHybridWyvernRig,
+  type BeastMotionAction,
+  type BeastMotionLayer,
+  type BeastMotionState,
+  type BeastMotionWay,
+  type BuiltWyvernRig,
+} from "./beast-motion-model";
+import {
+  createBeastShaderUniforms,
+  createHybridBeastMaterial,
+  createPureMathsBeastMaterial,
+  createRigBeastMaterial,
+  createSharedEmberPool,
+  type BeastShaderUniforms,
+} from "./beast-motion-phoenix";
+
+export interface BeastMotionStats {
+  rendererMode: string;
+  drawCalls: number;
+  triangles: number;
+  beastCount: number;
+  activeBones: number;
+  fps: number;
+  averageFrameMs: number;
+  p95FrameMs: number;
+  animationCpuMs: number;
+  renderCpuMs: number;
+  totalCpuMs: number;
+  gpuFrameMs: number | null;
+  bottleneck: string;
+  performance: ProceduralCharacterPerformanceEvaluation;
+  seconds: number;
+}
+
+export interface BeastMotionMeasurement {
+  way: BeastMotionWay;
+  count: number;
+  action: BeastMotionAction;
+  layer: BeastMotionLayer;
+  rendererMode: string;
+  viewport: { width: number; height: number; pixelRatio: number };
+  sampleCount: number;
+  frameMedianMs: number;
+  frameMinMs: number;
+  frameMaxMs: number;
+  frameAverageMs: number;
+  frameP95Ms: number;
+  frameP99Ms: number;
+  animationCpuAvgMs: number;
+  animationCpuP95Ms: number;
+  renderCpuAvgMs: number;
+  renderCpuP95Ms: number;
+  totalCpuAvgMs: number;
+  totalCpuP95Ms: number;
+  gpuFrameAvgMs: number | null;
+  gpuFrameP95Ms: number | null;
+  drawCalls: number;
+  triangles: number;
+  activeBones: number;
+  bottleneck: string;
+}
+
+export interface BeastMotionRendererHandle {
+  updateState(next: BeastMotionState): void;
+  seek(seconds: number): void;
+  resetCamera(): void;
+  measure(samples?: number, warmup?: number): Promise<BeastMotionMeasurement>;
+  getStats(): BeastMotionStats;
+  dispose(): void;
+}
+
+interface MountBeastMotionInput {
+  container: HTMLElement;
+  initialState: BeastMotionState;
+  signal: AbortSignal;
+  onStats(stats: BeastMotionStats): void;
+  onLabels(labels: Array<{ way: BeastMotionWay; x: number; y: number; visible: boolean }>): void;
+}
+
+interface LoopRenderer extends RendererSurfaceLike {
+  getContext?(): WebGLRenderingContext;
+  setAnimationLoop(callback: (() => void) | null): void;
+}
+
+interface RigActor {
+  mesh: SkinnedMesh;
+  rig: BuiltWyvernRig;
+  mixer: AnimationMixer;
+  actions: Record<BeastMotionAction, AnimationAction>;
+  phaseOffset: number;
+}
+
+interface HybridActor {
+  mesh: SkinnedMesh;
+  rig: BuiltWyvernRig;
+  phaseOffset: number;
+}
+
+interface PendingMeasurement {
+  evaluator: ProceduralCharacterPerformanceEvaluator;
+  frameSamples: number[];
+  resolve(result: BeastMotionMeasurement): void;
+}
+
+const COMPARE_SLOTS: ReadonlyArray<{ way: BeastMotionWay; x: number; z: number }> = [
+  { way: "maths", x: -2.2, z: 0 },
+  { way: "rig", x: 0, z: 0 },
+  { way: "hybrid", x: 2.2, z: 0 },
+];
+
+const LAYER_ENVIRONMENTS: Record<BeastMotionLayer, AtmosphereEnvironment> = {
+  0: "world",
+  1: "veil",
+  2: "hollow",
+  3: "deep",
+};
+
+const COMPARE_ANCHOR_POS = new Vector3();
+const MATRIX_TMP = new Matrix4();
+const LAYER_BG: Record<BeastMotionLayer, number> = {
+  0: 0x819997,
+  1: 0x263140,
+  2: 0x1b1526,
+  3: 0x15223d,
+};
+
+function createTerrainRequest(): TerrainPageRequest {
+  const cells: TerrainCellInput[] = [];
+  const halo: TerrainCellInput[] = [];
+  for (let row = -14; row <= 14; row++) {
+    for (let col = -14; col <= 14; col++) {
+      const cell = {
+        col,
+        row,
+        biome: BiomeType.Grassland,
+        previewBiome: BiomeType.Grassland,
+        explored: true,
+        occupied: false,
+      };
+      (Math.abs(row) <= 12 && Math.abs(col) <= 12 ? cells : halo).push(cell);
+    }
+  }
+  return {
+    cells,
+    halo,
+    climate: { ...NEUTRAL_BIOME_CLIMATE, elevation_seed: 137, moisture_seed: 991 },
+    mapCenter: 0,
+    pageKey: "beast-motion-lab:grassland",
+    roadSegments: [],
+    settlementAnchors: [],
+  };
+}
+
+class BeastMotionEnvironment {
+  readonly terrain = new ProceduralTerrain();
+  private readonly atmosphere: WorldAtmosphereController;
+  private readonly sun = new DirectionalLight();
+  private readonly ambient = new AmbientLight();
+  private readonly hemisphere = new HemisphereLight();
+  private readonly scene: Scene;
+
+  constructor(scene: Scene) {
+    this.scene = scene;
+    configureWorldSunShadows(this.sun, true, 2048);
+    scene.add(this.terrain.object3d, this.sun, this.sun.target, this.ambient, this.hemisphere);
+    this.atmosphere = new WorldAtmosphereController(scene, this.sun, this.hemisphere, this.ambient, new Fog(0x819997));
+    this.terrain.setQualityTier("detail");
+    this.terrain.setGroundTextureDetailEnabled(true);
+  }
+
+  async init(): Promise<void> {
+    await this.terrain.loadProps();
+    const page = await this.terrain.preparePageAsync(createTerrainRequest());
+    const fog = await this.terrain.prepareFogMaskAsync([page]);
+    this.terrain.present([page], fog);
+    this.terrain.refreshPropOccupancy((col, row) => {
+      const { x, z } = terrainHexToWorld(col, row);
+      return Math.abs(x) < 18 && Math.abs(z) < 18;
+    });
+  }
+
+  frame(delta: number, target: Vector3, layer: BeastMotionLayer): void {
+    this.terrain.update(delta);
+    this.scene.background = new Color(LAYER_BG[layer]);
+    this.atmosphere.update(42, target, { snap: true, environment: LAYER_ENVIRONMENTS[layer] });
+  }
+
+  dispose(): void {
+    this.terrain.dispose();
+    this.terrain.object3d.removeFromParent();
+    this.atmosphere.dispose();
+    this.sun.shadow.dispose();
+    [this.sun, this.sun.target, this.ambient, this.hemisphere].forEach((light) => light.removeFromParent());
+  }
+}
+
+export async function mountBeastMotionRenderer(input: MountBeastMotionInput): Promise<BeastMotionRendererHandle> {
+  const rendererRuntime = await initializeRendererBackendRuntime({
+    envBuildMode: env.VITE_PUBLIC_RENDERER_BUILD_MODE,
+    isMobileDevice: isCoarsePointer(),
+    pixelRatio: Math.min(window.devicePixelRatio || 1, 1.5),
+    search: window.location.search,
+  });
+  if (input.signal.aborted) {
+    rendererRuntime.backend.dispose();
+    input.signal.throwIfAborted();
+  }
+  configureGltfTextureSupport(rendererRuntime.renderer as Parameters<typeof configureGltfTextureSupport>[0]);
+  const gltf = await gltfLoader.loadAsync(BEAST_MOTION_PATH);
+  if (input.signal.aborted) {
+    rendererRuntime.backend.dispose();
+    input.signal.throwIfAborted();
+  }
+
+  let sourceMesh: Mesh | null = null;
+  gltf.scene.traverse((node) => {
+    if (!sourceMesh && node instanceof Mesh) sourceMesh = node;
+  });
+  if (!sourceMesh) {
+    rendererRuntime.backend.dispose();
+    throw new Error("Wyvern mesh not found in beast-wyvern.glb");
+  }
+
+  const stage = new BeastMotionStage(
+    input,
+    rendererRuntime,
+    sourceMesh as Mesh,
+    new Box3().setFromObject(gltf.scene),
+  );
+  try {
+    await stage.init();
+    input.signal.throwIfAborted();
+    return stage;
+  } catch (error) {
+    stage.dispose();
+    throw error;
+  }
+}
+
+class BeastMotionStage implements BeastMotionRendererHandle {
+  private readonly scene = new Scene();
+  private readonly stageGroup = new Group();
+  private readonly hexOutlineGroup = new Group();
+  private readonly camera = new PerspectiveCamera(37, 1, 0.1, 220);
+  private readonly renderer: LoopRenderer;
+  private readonly controls: OrbitControls;
+  private readonly observer: ResizeObserver;
+  private readonly environment: BeastMotionEnvironment;
+  private readonly gpuTimer: ProceduralCharacterGpuTimer;
+  private readonly uniforms: BeastShaderUniforms;
+  private readonly baseGeometry: BufferGeometry;
+  private readonly fullSkinnedGeometry: BufferGeometry;
+  private readonly hybridSkinnedGeometry: BufferGeometry;
+  private readonly mathsMaterial: ReturnType<typeof createPureMathsBeastMaterial>;
+  private readonly rigMaterial: ReturnType<typeof createRigBeastMaterial>;
+  private readonly hybridMaterial: ReturnType<typeof createHybridBeastMaterial>;
+  private readonly rigClips: Record<BeastMotionAction, AnimationClip>;
+  private readonly emberPool: InstancedMesh;
+  private readonly bounds: Box3;
+
+  private state: BeastMotionState;
+  private stageSignature = "";
+  private activeMathsMesh: InstancedMesh | null = null;
+  private rigActors: RigActor[] = [];
+  private hybridActors: HybridActor[] = [];
+  private activeAction: BeastMotionAction;
+  private seconds = 0;
+  private lastFrameMs = performance.now();
+  private lastStatsMs = this.lastFrameMs;
+  private frames = 0;
+  private fps = 0;
+  private lastDrawCalls = 0;
+  private lastTriangles = 0;
+  private disposed = false;
+  private continuousEvaluator = new ProceduralCharacterPerformanceEvaluator(30, 120);
+  private pendingMeasurement: PendingMeasurement | null = null;
+
+  constructor(
+    private readonly input: MountBeastMotionInput,
+    private readonly rendererRuntime: Awaited<ReturnType<typeof initializeRendererBackendRuntime>>,
+    sourceMesh: Mesh,
+    bounds: Box3,
+  ) {
+    this.state = { ...input.initialState };
+    this.activeAction = this.state.action;
+    this.bounds = bounds;
+    this.renderer = rendererRuntime.renderer as LoopRenderer;
+    configureRendererColorOutput(this.renderer);
+    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = PCFShadowMap;
+    this.gpuTimer = new ProceduralCharacterGpuTimer(this.renderer);
+    this.continuousEvaluator.setGpuTimerSupported(this.gpuTimer.supported);
+
+    this.scene.background = new Color(LAYER_BG[this.state.layer]);
+    this.scene.add(this.stageGroup, this.hexOutlineGroup);
+    this.environment = new BeastMotionEnvironment(this.scene);
+
+    this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+    this.controls.enableDamping = true;
+    this.controls.minDistance = 1.8;
+    this.controls.maxDistance = 85;
+    this.controls.maxPolarAngle = Math.PI * 0.47;
+    this.renderer.domElement.setAttribute("aria-label", "Beast motion comparison stage");
+    input.container.append(this.renderer.domElement);
+
+    this.uniforms = createBeastShaderUniforms();
+    this.baseGeometry = sourceMesh.geometry.clone();
+    this.baseGeometry.computeBoundingBox();
+    this.baseGeometry.boundingBox?.expandByScalar(1.2);
+    this.baseGeometry.computeBoundingSphere();
+    if (this.baseGeometry.boundingSphere) this.baseGeometry.boundingSphere.radius += 1.2;
+
+    this.fullSkinnedGeometry = applyWyvernSpatialSkinning(this.baseGeometry, "full");
+    this.hybridSkinnedGeometry = applyWyvernSpatialSkinning(this.baseGeometry, "hybrid");
+
+    const sourceMaterial = Array.isArray(sourceMesh.material)
+      ? (sourceMesh.material[0] as MeshStandardMaterial)
+      : (sourceMesh.material as MeshStandardMaterial);
+    this.mathsMaterial = createPureMathsBeastMaterial(sourceMaterial, this.uniforms);
+    this.rigMaterial = createRigBeastMaterial(sourceMaterial, this.uniforms);
+    this.hybridMaterial = createHybridBeastMaterial(sourceMaterial, this.uniforms);
+
+    const templateRig = createWyvernSkeleton("full");
+    this.rigClips = buildWyvernRigClips(templateRig.restPositions);
+    templateRig.skeleton.dispose();
+
+    this.emberPool = createSharedEmberPool(this.bounds, 100, this.uniforms);
+    this.scene.add(this.emberPool);
+
+    this.observer = new ResizeObserver(() => this.resize());
+    this.observer.observe(input.container);
+    this.resize();
+  }
+
+  async init(): Promise<void> {
+    await this.environment.init();
+    if (this.disposed) return;
+    this.rebuildStage();
+    this.resetCamera();
+    this.syncUniforms();
+    this.stepActors(0);
+    this.renderer.setAnimationLoop(() => this.frame());
+  }
+
+  updateState(next: BeastMotionState): void {
+    const previous = this.state;
+    this.state = { ...next };
+    const topologyChanged =
+      previous.mode !== next.mode ||
+      (next.mode === "bench" && (previous.way !== next.way || previous.count !== next.count));
+    const cameraChanged = topologyChanged || previous.camera !== next.camera;
+    const actionChanged = previous.action !== next.action;
+
+    if (topologyChanged) {
+      this.rebuildStage();
+      this.continuousEvaluator.reset();
+    }
+    if (actionChanged) {
+      this.activeAction = next.action;
+      this.seconds = 0;
+      this.switchRigClips(next.action);
+    }
+    if (cameraChanged) {
+      this.resetCamera();
+    }
+    this.syncUniforms();
+    if (this.state.paused) {
+      this.stepActors(0);
+    }
+  }
+
+  seek(seconds: number): void {
+    this.seconds = Math.max(0, seconds);
+    this.state.paused = true;
+    this.syncUniforms();
+    this.stepActors(0);
+    this.renderSingleFrame();
+  }
+
+  resetCamera(): void {
+    const groundY = this.environment.terrain.sampleSurface(0, 0).height;
+    if (this.state.mode === "bench") {
+      const dist = this.state.count === 100 ? 25 : this.state.count === 20 ? 12.5 : 4.2;
+      this.controls.target.set(0, groundY + 0.55, 0);
+      this.camera.position.set(dist * 0.35, groundY + dist * 0.72, dist * 0.82);
+    } else if (this.state.camera === "phoneMap") {
+      this.controls.target.set(0, groundY + 0.55, 0);
+      this.camera.position.set(0, groundY + 13.5, 11.2);
+    } else if (this.state.camera === "close") {
+      this.controls.target.set(0, groundY + 0.58, 0);
+      this.camera.position.set(0, groundY + 2.3, 4.4);
+    } else {
+      this.controls.target.set(0, groundY + 0.55, 0);
+      this.camera.position.set(0.4, groundY + 3.2, 6.4);
+    }
+    this.controls.update();
+  }
+
+  measure(samples = 90, warmup = 25): Promise<BeastMotionMeasurement> {
+    this.state.paused = false;
+    return new Promise((resolve) => {
+      const evaluator = new ProceduralCharacterPerformanceEvaluator(warmup, samples);
+      evaluator.setGpuTimerSupported(this.gpuTimer.supported);
+      this.gpuTimer.reset();
+      this.pendingMeasurement = { evaluator, frameSamples: [], resolve };
+    });
+  }
+
+  getStats(): BeastMotionStats {
+    const perf = this.continuousEvaluator.getSnapshot();
+    const beastCount = this.state.mode === "compare" ? 3 : this.state.count;
+    const activeBones = this.computeActiveBones();
+    return {
+      rendererMode: getRendererDiagnosticActiveMode() ?? "unknown",
+      drawCalls: this.lastDrawCalls,
+      triangles: this.lastTriangles,
+      beastCount,
+      activeBones,
+      fps: this.fps,
+      averageFrameMs: perf.frameMs.average,
+      p95FrameMs: perf.frameMs.p95,
+      animationCpuMs: perf.animationCpuMs.average,
+      renderCpuMs: perf.renderCpuMs.average,
+      totalCpuMs: perf.totalCpuMs.average,
+      gpuFrameMs: perf.gpuFrameMs?.average ?? null,
+      bottleneck: resolveBottleneck(
+        this.state.mode === "compare" ? "hybrid" : this.state.way,
+        beastCount,
+        perf.animationCpuMs.average,
+        perf.renderCpuMs.average,
+        perf.gpuFrameMs?.average ?? null,
+        this.lastDrawCalls,
+        this.lastTriangles,
+      ),
+      performance: perf,
+      seconds: this.seconds,
+    };
+  }
+
+  dispose(): void {
+    if (this.disposed) return;
+    this.disposed = true;
+    this.renderer.setAnimationLoop(null);
+    this.observer.disconnect();
+    this.controls.dispose();
+    this.clearStageActors();
+    this.clearHexOutlines();
+    this.emberPool.geometry.dispose();
+    (this.emberPool.material as { dispose(): void }).dispose();
+    this.emberPool.dispose();
+    this.emberPool.removeFromParent();
+    this.baseGeometry.dispose();
+    this.fullSkinnedGeometry.dispose();
+    this.hybridSkinnedGeometry.dispose();
+    this.mathsMaterial.dispose();
+    this.rigMaterial.dispose();
+    this.hybridMaterial.dispose();
+    this.gpuTimer.dispose();
+    this.environment.dispose();
+    this.rendererRuntime.backend.dispose();
+    this.renderer.domElement.remove();
+  }
+
+  private rebuildStage(): void {
+    const signature =
+      this.state.mode === "compare"
+        ? "compare"
+        : `bench:${this.state.way}:${this.state.count}`;
+    if (signature === this.stageSignature) return;
+    this.stageSignature = signature;
+    this.clearStageActors();
+    this.clearHexOutlines();
+
+    if (this.state.mode === "compare") {
+      this.uniforms.phaseSpread.value = 0;
+      const placements = COMPARE_SLOTS.map((slot) => ({
+        ...slot,
+        y: this.environment.terrain.sampleSurface(slot.x, slot.z).height,
+      }));
+      this.addHexOutlines(placements);
+
+      const mathsSlot = placements[0];
+      this.spawnPureMaths([mathsSlot]);
+      const rigSlot = placements[1];
+      this.spawnRigActors([rigSlot], false);
+      const hybridSlot = placements[2];
+      this.spawnHybridActors([hybridSlot], false);
+      this.placeEmbers(placements);
+    } else {
+      this.uniforms.phaseSpread.value = this.state.count > 1 ? 1 : 0;
+      const offsets = computeHexFormationOffsets(this.state.count);
+      const placements = offsets.map(({ x, z }) => ({
+        x,
+        z,
+        y: this.environment.terrain.sampleSurface(x, z).height,
+      }));
+      this.addHexOutlines(placements.slice(0, 20));
+      if (this.state.way === "maths") {
+        this.spawnPureMaths(placements);
+      } else if (this.state.way === "rig") {
+        this.spawnRigActors(placements, this.state.count > 1);
+      } else {
+        this.spawnHybridActors(placements, this.state.count > 1);
+      }
+      this.placeEmbers(placements);
+    }
+    this.switchRigClips(this.activeAction);
+  }
+
+  private spawnPureMaths(placements: ReadonlyArray<{ x: number; y: number; z: number }>): void {
+    const mesh = new InstancedMesh(this.baseGeometry, this.mathsMaterial, placements.length);
+    mesh.name = "Beast motion pure maths";
+    mesh.frustumCulled = false;
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    for (let i = 0; i < placements.length; i++) {
+      const p = placements[i];
+      MATRIX_TMP.makeTranslation(p.x, p.y, p.z);
+      mesh.setMatrixAt(i, MATRIX_TMP);
+    }
+    mesh.instanceMatrix.needsUpdate = true;
+    mesh.count = placements.length;
+    this.activeMathsMesh = mesh;
+    this.stageGroup.add(mesh);
+  }
+
+  private spawnRigActors(placements: ReadonlyArray<{ x: number; y: number; z: number }>, stagger: boolean): void {
+    for (let i = 0; i < placements.length; i++) {
+      const p = placements[i];
+      const rig = createWyvernSkeleton("full");
+      const mesh = new SkinnedMesh(this.fullSkinnedGeometry, this.rigMaterial);
+      mesh.name = `Beast motion rig ${i}`;
+      mesh.frustumCulled = false;
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      mesh.position.set(p.x, p.y, p.z);
+      mesh.add(rig.rootBone);
+      mesh.bind(rig.skeleton);
+
+      const mixer = new AnimationMixer(rig.rootBone);
+      const actions = {
+        idle: mixer.clipAction(this.rigClips.idle),
+        walk: mixer.clipAction(this.rigClips.walk),
+        attack: mixer.clipAction(this.rigClips.attack),
+        hit: mixer.clipAction(this.rigClips.hit),
+        death: mixer.clipAction(this.rigClips.death),
+      };
+      this.stageGroup.add(mesh);
+      this.rigActors.push({
+        mesh,
+        rig,
+        mixer,
+        actions,
+        phaseOffset: stagger ? i * 2.399963 : 0,
+      });
+    }
+  }
+
+  private spawnHybridActors(placements: ReadonlyArray<{ x: number; y: number; z: number }>, stagger: boolean): void {
+    for (let i = 0; i < placements.length; i++) {
+      const p = placements[i];
+      const rig = createWyvernSkeleton("hybrid");
+      const mesh = new SkinnedMesh(this.hybridSkinnedGeometry, this.hybridMaterial);
+      mesh.name = `Beast motion hybrid ${i}`;
+      mesh.frustumCulled = false;
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      mesh.position.set(p.x, p.y, p.z);
+      mesh.add(rig.rootBone);
+      mesh.bind(rig.skeleton);
+      this.stageGroup.add(mesh);
+      this.hybridActors.push({
+        mesh,
+        rig,
+        phaseOffset: stagger ? i * 2.399963 : 0,
+      });
+    }
+  }
+
+  private placeEmbers(placements: ReadonlyArray<{ x: number; y: number; z: number }>): void {
+    const count = Math.min(placements.length, 100);
+    for (let i = 0; i < count; i++) {
+      const p = placements[i];
+      MATRIX_TMP.makeTranslation(p.x, p.y, p.z);
+      this.emberPool.setMatrixAt(i, MATRIX_TMP);
+    }
+    this.emberPool.instanceMatrix.needsUpdate = true;
+    this.emberPool.count = count;
+  }
+
+  private addHexOutlines(placements: ReadonlyArray<{ x: number; y: number; z: number }>): void {
+    const corners = terrainHexCorners(0, 0).map(({ x, z }) => new Vector3(x * HEX_SIZE, 0, z * HEX_SIZE));
+    corners.push(corners[0].clone());
+    const geometry = new BufferGeometry().setFromPoints(corners);
+    const material = new LineBasicMaterial({
+      color: 0xe4c483,
+      transparent: true,
+      opacity: 0.45,
+      depthWrite: false,
+    });
+    for (const p of placements) {
+      const line = new Line(geometry, material);
+      line.position.set(p.x, p.y + 0.025, p.z);
+      this.hexOutlineGroup.add(line);
+    }
+  }
+
+  private clearHexOutlines(): void {
+    const geometries = new Set<BufferGeometry>();
+    const materials = new Set<LineBasicMaterial>();
+    for (const child of this.hexOutlineGroup.children) {
+      if (child instanceof Line) {
+        geometries.add(child.geometry);
+        materials.add(child.material as LineBasicMaterial);
+      }
+    }
+    geometries.forEach((g) => g.dispose());
+    materials.forEach((m) => m.dispose());
+    this.hexOutlineGroup.clear();
+  }
+
+  private clearStageActors(): void {
+    if (this.activeMathsMesh) {
+      this.activeMathsMesh.removeFromParent();
+      this.activeMathsMesh.dispose();
+      this.activeMathsMesh = null;
+    }
+    for (const actor of this.rigActors) {
+      actor.mixer.stopAllAction();
+      actor.mixer.uncacheRoot(actor.rig.rootBone);
+      actor.rig.skeleton.dispose();
+      actor.mesh.removeFromParent();
+    }
+    this.rigActors = [];
+    for (const actor of this.hybridActors) {
+      actor.rig.skeleton.dispose();
+      actor.mesh.removeFromParent();
+    }
+    this.hybridActors = [];
+  }
+
+  private switchRigClips(action: BeastMotionAction): void {
+    for (const actor of this.rigActors) {
+      actor.mixer.stopAllAction();
+      const clipAction = actor.actions[action];
+      clipAction.reset();
+      clipAction.play();
+      actor.mixer.setTime(this.seconds + actor.phaseOffset);
+    }
+  }
+
+  private syncUniforms(): void {
+    this.uniforms.time.value = this.seconds;
+    this.uniforms.actionIndex.value = BEAST_MOTION_ACTION_INDEX[this.state.action];
+    this.uniforms.layer.value = this.state.layer;
+    this.uniforms.phoenixEnabled.value = this.state.phoenix ? 1 : 0;
+  }
+
+  private stepActors(delta: number): void {
+    for (const actor of this.rigActors) {
+      if (delta === 0) {
+        actor.mixer.setTime(this.seconds + actor.phaseOffset);
+      } else {
+        actor.mixer.update(delta);
+      }
+    }
+    for (const actor of this.hybridActors) {
+      poseHybridWyvernRig(actor.rig, this.state.action, this.seconds, actor.phaseOffset);
+    }
+  }
+
+  private renderSingleFrame(): void {
+    this.environment.frame(0, this.controls.target, this.state.layer);
+    this.controls.update();
+    this.renderer.info.reset();
+    this.renderer.render(this.scene, this.camera);
+    this.lastDrawCalls = this.renderer.info.render.drawCalls ?? this.renderer.info.render.calls;
+    this.lastTriangles = this.renderer.info.render.triangles;
+    this.emitLabels();
+  }
+
+  private frame(): void {
+    if (this.disposed) return;
+    const frameStart = performance.now();
+    const frameMs = Math.max(0.1, frameStart - this.lastFrameMs);
+    const delta = Math.min(frameMs / 1000, 0.05);
+    this.lastFrameMs = frameStart;
+    this.frames++;
+
+    const animStart = performance.now();
+    if (!this.state.paused) {
+      this.seconds += delta;
+      this.syncUniforms();
+      this.stepActors(delta);
+    } else {
+      this.syncUniforms();
+    }
+    const animationCpuMs = performance.now() - animStart;
+
+    this.environment.frame(this.state.paused ? 0 : delta, this.controls.target, this.state.layer);
+    this.controls.update();
+
+    const renderStart = performance.now();
+    this.renderer.info.reset();
+    this.gpuTimer.begin();
+    this.renderer.render(this.scene, this.camera);
+    this.gpuTimer.end();
+    const renderCpuMs = performance.now() - renderStart;
+    const totalCpuMs = performance.now() - frameStart;
+
+    this.lastDrawCalls = this.renderer.info.render.drawCalls ?? this.renderer.info.render.calls;
+    this.lastTriangles = this.renderer.info.render.triangles;
+
+    const gpuSamples = this.gpuTimer.readAvailable();
+    const sample = { animationCpuMs, collisionCpuMs: 0, frameMs, renderCpuMs, totalCpuMs };
+    this.continuousEvaluator.recordFrame(sample);
+    for (const gpuMs of gpuSamples) this.continuousEvaluator.recordGpuFrame(gpuMs);
+    if (this.continuousEvaluator.state === "complete") {
+      this.continuousEvaluator.reset();
+    }
+
+    if (this.pendingMeasurement) {
+      const pending = this.pendingMeasurement;
+      const wasSampling = pending.evaluator.state === "sampling";
+      pending.evaluator.recordFrame(sample);
+      if (wasSampling) pending.frameSamples.push(frameMs);
+      for (const gpuMs of gpuSamples) pending.evaluator.recordGpuFrame(gpuMs);
+      if (pending.evaluator.state === "complete") {
+        this.pendingMeasurement = null;
+        pending.resolve(this.buildMeasurementResult(pending));
+      }
+    }
+
+    this.emitLabels();
+
+    if (frameStart - this.lastStatsMs >= 250) {
+      this.fps = Math.round((this.frames * 1000) / (frameStart - this.lastStatsMs));
+      this.lastStatsMs = frameStart;
+      this.frames = 0;
+      this.input.onStats(this.getStats());
+    }
+  }
+
+  private buildMeasurementResult(pending: PendingMeasurement): BeastMotionMeasurement {
+    const snap = pending.evaluator.getSnapshot();
+    const sorted = [...pending.frameSamples].sort((a, b) => a - b);
+    const min = sorted[0] ?? 0;
+    const max = sorted[sorted.length - 1] ?? 0;
+    const median = sorted[Math.floor(sorted.length / 2)] ?? 0;
+    const beastCount = this.state.mode === "compare" ? 3 : this.state.count;
+    const way = this.state.mode === "compare" ? "hybrid" : this.state.way;
+    const rect = this.input.container.getBoundingClientRect();
+    return {
+      way,
+      count: beastCount,
+      action: this.state.action,
+      layer: this.state.layer,
+      rendererMode: getRendererDiagnosticActiveMode() ?? "unknown",
+      viewport: {
+        width: Math.round(rect.width),
+        height: Math.round(rect.height),
+        pixelRatio: Math.min(window.devicePixelRatio || 1, 1.5),
+      },
+      sampleCount: snap.sampleCount,
+      frameMedianMs: round2(median),
+      frameMinMs: round2(min),
+      frameMaxMs: round2(max),
+      frameAverageMs: round2(snap.frameMs.average),
+      frameP95Ms: round2(snap.frameMs.p95),
+      frameP99Ms: round2(snap.frameMs.p99),
+      animationCpuAvgMs: round2(snap.animationCpuMs.average),
+      animationCpuP95Ms: round2(snap.animationCpuMs.p95),
+      renderCpuAvgMs: round2(snap.renderCpuMs.average),
+      renderCpuP95Ms: round2(snap.renderCpuMs.p95),
+      totalCpuAvgMs: round2(snap.totalCpuMs.average),
+      totalCpuP95Ms: round2(snap.totalCpuMs.p95),
+      gpuFrameAvgMs: snap.gpuFrameMs ? round2(snap.gpuFrameMs.average) : null,
+      gpuFrameP95Ms: snap.gpuFrameMs ? round2(snap.gpuFrameMs.p95) : null,
+      drawCalls: this.lastDrawCalls,
+      triangles: this.lastTriangles,
+      activeBones: this.computeActiveBones(),
+      bottleneck: resolveBottleneck(
+        way,
+        beastCount,
+        snap.animationCpuMs.average,
+        snap.renderCpuMs.average,
+        snap.gpuFrameMs?.average ?? null,
+        this.lastDrawCalls,
+        this.lastTriangles,
+      ),
+    };
+  }
+
+  private computeActiveBones(): number {
+    if (this.state.mode === "compare") {
+      return WYVERN_FULL_RIG_SPECS.length + WYVERN_HYBRID_RIG_SPECS.length;
+    }
+    if (this.state.way === "maths") return 0;
+    return this.state.count * (this.state.way === "rig" ? WYVERN_FULL_RIG_SPECS.length : WYVERN_HYBRID_RIG_SPECS.length);
+  }
+
+  private emitLabels(): void {
+    if (this.state.mode !== "compare") {
+      this.input.onLabels([]);
+      return;
+    }
+    const width = this.input.container.clientWidth;
+    const height = this.input.container.clientHeight;
+    const projected = COMPARE_SLOTS.map((slot) => {
+      const groundY = this.environment.terrain.sampleSurface(slot.x, slot.z).height;
+      COMPARE_ANCHOR_POS.set(slot.x, groundY + 1.32, slot.z).project(this.camera);
+      return {
+        way: slot.way,
+        x: ((COMPARE_ANCHOR_POS.x + 1) / 2) * width,
+        y: ((1 - COMPARE_ANCHOR_POS.y) / 2) * height,
+        visible: Math.abs(COMPARE_ANCHOR_POS.z) <= 1,
+      };
+    });
+    this.input.onLabels(projected);
+  }
+
+  private resize(): void {
+    const { width, height } = this.input.container.getBoundingClientRect();
+    if (!width || !height) return;
+    this.renderer.setSize(width, height);
+    this.camera.aspect = width / height;
+    this.camera.updateProjectionMatrix();
+  }
+}
+
+function round2(value: number): number {
+  return Math.round(value * 100) / 100;
+}
+
+function resolveBottleneck(
+  way: BeastMotionWay,
+  count: number,
+  animationCpuMs: number,
+  renderCpuMs: number,
+  gpuFrameMs: number | null,
+  drawCalls: number,
+  triangles: number,
+): string {
+  if (way === "maths") {
+    if (count >= 100 || triangles > 1_000_000) {
+      return "GPU vertex & shadow rasterization (1 instanced draw, 0 CPU anim)";
+    }
+    return "Display / scene baseline (1 instanced draw, ~0 ms CPU anim)";
+  }
+  if (animationCpuMs > renderCpuMs && animationCpuMs > 1.5) {
+    return way === "rig"
+      ? `CPU AnimationMixer + ${count} skeletons (${drawCalls} draws)`
+      : `CPU bone posing + ${count} skeletons (${drawCalls} draws)`;
+  }
+  if (gpuFrameMs !== null && gpuFrameMs > animationCpuMs + renderCpuMs && gpuFrameMs > 8) {
+    return `GPU vertex skinning + shadows (${triangles.toLocaleString()} tris, ${drawCalls} draws)`;
+  }
+  if (drawCalls > 40) {
+    return `CPU draw-call submission + bone matrix upload (${drawCalls} draws, ${count} SkinnedMeshes)`;
+  }
+  return `Display / scene baseline (${drawCalls} draws, ${count} SkinnedMesh)`;
+}
