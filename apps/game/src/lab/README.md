@@ -43,7 +43,7 @@ restore their network and identity overrides when you leave them.
 | Art    | Characters                              | `/lab/characters`                                                                                                 | Art; `capture:character-animation`, `smoke:character-gym` |
 | Art    | Effects                                 | `/lab/world-fx`                                                                                                   | Art                                                       |
 | Art    | Bench                                   | Characters `/lab/character-benchmark`, World `/lab/world`, Chunks `/lab/chunks`, Terrain `/lab/terrain-benchmark` | The runners below                                         |
-| Data   | Balance & data                          | `/lab/data` (`view` live or balance, `mode`): see Balance & data below                                            | Owner; perf, rules                                        |
+| Data   | Balance & data                          | `/lab/data` (`mode`): see Balance & data below                                                                    | Owner; perf, rules                                        |
 | Studio | Set                                     | `/lab/studio`: see Film studio below                                                                              | Reels; `prove:studio`                                     |
 | Studio | Footage                                 | `/lab/footage`: the footage and marketing pages the showcase serves beside the lab                                | Owner                                                     |
 
