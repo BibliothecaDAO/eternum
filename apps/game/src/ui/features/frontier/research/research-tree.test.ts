@@ -75,8 +75,7 @@ it("requires construction for the first training level, with no separate researc
 it("keeps every research line short enough for one line on a phone", () => {
   for (const realm of [EARLY_REALM, MID_REALM]) {
     for (const each of readResearchTree(realm)) {
-      for (const line of each.figures.map((figure) => figure.line))
-        expect(line.length, line).toBeLessThanOrEqual(16);
+      for (const line of each.figures.map((figure) => figure.line)) expect(line.length, line).toBeLessThanOrEqual(16);
     }
   }
 });

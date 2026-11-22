@@ -8,13 +8,7 @@ import { SCOPE_INPUT_MODELS } from "../sync/model-manifest";
 import { nativeBaneConstants } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import { productionOutput } from "../utils/production-output";
 import { isModeRuleEnabled } from "../utils/mode-rules";
-import {
-  ID,
-  ResourcesIds,
-  RESOURCE_PRECISION,
-  StructureType,
-  type Resource,
-} from "@bibliothecadao/types";
+import { ID, ResourcesIds, RESOURCE_PRECISION, StructureType, type Resource } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { divideByPrecision, gramToKg } from "../utils/utils";

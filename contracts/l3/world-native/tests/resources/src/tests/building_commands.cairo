@@ -222,12 +222,8 @@ fn a_row_opens_with_its_first_building_and_sells_each_tier_once_in_order_at_its_
     };
     let labor = ResourceSlot { resource_type: crate::resources::LABOR, ..essence };
     // No farm stands, and the castle's own labor building is not a workshop.
-    assert_terminal_rejection(
-        d, research(home, crate::research::ROW_FARM, 0), FIXTURE_START + 40,
-    );
-    assert_terminal_rejection(
-        d, research(home, crate::research::ROW_WORKSHOP, 0), FIXTURE_START + 40,
-    );
+    assert_terminal_rejection(d, research(home, crate::research::ROW_FARM, 0), FIXTURE_START + 40);
+    assert_terminal_rejection(d, research(home, crate::research::ROW_WORKSHOP, 0), FIXTURE_START + 40);
     assert!(execute(d, build_toward(home, crate::research::FARM, 0), FIXTURE_START + 40));
     assert_terminal_rejection(d, research(home, crate::research::ROW_FARM, 1), FIXTURE_START + 40);
     {
@@ -280,9 +276,7 @@ fn a_make_pick_adds_a_fifth_of_the_base_to_every_building_of_the_type_standing_o
     let workshop = crate::balance::structures::BOARD.workshop_rate;
     assert!(execute(d, build_toward(home, crate::research::WORKSHOP, 3), FIXTURE_START + 40));
     assert_eq!(rate(d, home, labor), castle + workshop);
-    assert!(
-        execute(d, research(home, crate::research::ROW_WORKSHOP, 0), FIXTURE_START + 40),
-    );
+    assert!(execute(d, research(home, crate::research::ROW_WORKSHOP, 0), FIXTURE_START + 40));
     assert_eq!(rate(d, home, labor), castle + stepped(workshop, 1));
 }
 
@@ -328,9 +322,7 @@ fn a_tier_the_realm_cannot_pay_in_labor_is_refused_and_changes_nothing() {
     let (d, home) = research_world();
     assert!(execute(d, build_toward(home, crate::research::FARM, 0), FIXTURE_START + 40));
     for _ in 0..3_u8 {
-        assert!(
-            execute(d, research(home, crate::research::ROW_FARM, 0), FIXTURE_START + 40),
-        );
+        assert!(execute(d, research(home, crate::research::ROW_FARM, 0), FIXTURE_START + 40));
     }
     let resources = IResourceOperationsDispatcher { contract_address: d.games };
     let labor = ResourceSlot {
@@ -354,9 +346,7 @@ fn a_tier_the_realm_cannot_pay_in_labor_is_refused_and_changes_nothing() {
     stop_cheat_caller_address(d.games);
     let before = resource_facts(d, home);
     let knowledge = learned(d, home);
-    assert_terminal_rejection(
-        d, research(home, crate::research::ROW_FARM, 0), FIXTURE_START + 40,
-    );
+    assert_terminal_rejection(d, research(home, crate::research::ROW_FARM, 0), FIXTURE_START + 40);
     assert_eq!(resource_facts(d, home), before);
     assert_eq!(learned(d, home), knowledge);
 }

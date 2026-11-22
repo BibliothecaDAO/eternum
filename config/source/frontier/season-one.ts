@@ -92,7 +92,9 @@ export const frontierSeasonOnePreset = {
   board: {
     ...frontierPreset.board!,
     workshopRate: 200 / 3600,
-    storageStepBps: 10000, laborStoreCaps: [5000, 15000, 50000, 100000] },
+    storageStepBps: 10000,
+    laborStoreCaps: [5000, 15000, 50000, 100000],
+  },
   research: frontierPreset.research.map((price) => ({ ...price, ...researchPrices[price.row]?.[price.tier - 1] })),
   labor: null,
   discovery: { ...frontierPreset.discovery, beastsBps: 900 },

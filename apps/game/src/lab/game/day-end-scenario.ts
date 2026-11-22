@@ -51,7 +51,10 @@ const STANDING: BuildingType[] = [
 ];
 const BARRACKS = 2;
 
-const LEARNED = learnResearch(learnResearch(learnResearch(0n, research.ROW_FARM), research.ROW_WORKSHOP), research.ROW_WORKSHOP);
+const LEARNED = learnResearch(
+  learnResearch(learnResearch(0n, research.ROW_FARM), research.ROW_WORKSHOP),
+  research.ROW_WORKSHOP,
+);
 
 export const dayEndScenario = (): LabScenario => {
   const spire = spireScenario();

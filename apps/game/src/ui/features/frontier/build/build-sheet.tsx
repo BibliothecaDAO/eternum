@@ -325,8 +325,7 @@ const buildingLine = (option: BuildOption): RankedWords => {
 const riseLine = (option: BuildOption): string | undefined =>
   option.rise.times > 1 ? priceRaised(formatAmount(option.rise.standing)) : undefined;
 
-const gemsOf = ({ effect, tier }: BuildOption): BuildTile["gems"] =>
-  effect.kind === "stores" ? [] : [{ tier }];
+const gemsOf = ({ effect, tier }: BuildOption): BuildTile["gems"] => (effect.kind === "stores" ? [] : [{ tier }]);
 
 const storageShare = (bps: number) => formatPercent(bps / 10_000, { signed: true });
 

@@ -165,9 +165,7 @@ export const BuildingCardView = ({
         </div>
         {node && (
           <CompareRows
-            now={
-              isOathResearch(node.row) ? <HudRanked words={node.gives.now} /> : <HudTier tier={tierOf(node.tier)} />
-            }
+            now={isOathResearch(node.row) ? <HudRanked words={node.gives.now} /> : <HudTier tier={tierOf(node.tier)} />}
             next={
               next?.nextTier ? (
                 isOathResearch(node.row) ? (

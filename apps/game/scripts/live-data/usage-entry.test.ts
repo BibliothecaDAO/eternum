@@ -103,9 +103,7 @@ it("publishes current troop and Depot research from raw events", async () => {
   );
   await expect(writeUsage(pull, raw)).resolves.toBe(5);
   const report = JSON.parse(readFileSync(join(pull, "usage.json"), "utf8"));
-  const finding = report.findings.find(
-    (finding: { title: string }) => finding.title === "Research purchases by row",
-  );
+  const finding = report.findings.find((finding: { title: string }) => finding.title === "Research purchases by row");
   for (const name of ["Rations", "Knight Oaths", "Scout Oaths", "Crossbow Oaths"])
     expect(finding.evidence).toContain(`${name}: 1`);
 });

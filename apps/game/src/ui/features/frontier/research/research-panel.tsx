@@ -3,23 +3,9 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { HudButton, HudPage, HudRanked, HudTier, HudTierStep } from "@/ui/design-system/kit/hud-elements";
 import type { Fix } from "@/ui/design-system/kit/refusal";
-import {
-  CLOSE,
-  RESEARCH,
-  RESEARCH_TREE,
-  RESEARCHING,
-  type Rank,
-  type RankedWords,
-} from "@/ui/design-system/kit/words";
+import { CLOSE, RESEARCH, RESEARCH_TREE, RESEARCHING, type Rank, type RankedWords } from "@/ui/design-system/kit/words";
 import { formatAmount, formatExact } from "@bibliothecadao/types";
-import {
-  type Branch,
-  firstMissing,
-  type Need,
-  needLine,
-  type NodeState,
-  type TreeNode,
-} from "./research-tree";
+import { type Branch, firstMissing, type Need, needLine, type NodeState, type TreeNode } from "./research-tree";
 
 export const ResearchPanel = ({
   nodes,
@@ -189,13 +175,13 @@ const NodeChoice = ({
           <Icon name="close" size={18} />
         </button>
       </div>
-        <span className="text-hud-body text-hud-ink">
-          {node.gives.line}
-          {" · "}
-          <span className="tabular-nums text-hud-good">
-            <HudRanked words={node.gives.next ? RESEARCH_TREE.step(node.gives.now, node.gives.next) : node.gives.now} />
-          </span>
+      <span className="text-hud-body text-hud-ink">
+        {node.gives.line}
+        {" · "}
+        <span className="tabular-nums text-hud-good">
+          <HudRanked words={node.gives.next ? RESEARCH_TREE.step(node.gives.now, node.gives.next) : node.gives.now} />
         </span>
+      </span>
       {missing && !isPrice(missing) && (
         <span className="flex items-center gap-2 text-hud-label text-hud-bad">
           <Icon name={needIcon(missing)} size={16} />

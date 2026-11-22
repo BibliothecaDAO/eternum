@@ -344,15 +344,7 @@ const essenceShortPrice: LabTile["standing"] = {
   short: { of: "essence", wait: undefined },
 };
 const BUILD_TILES: LabTile[] = [
-  tile(
-    "farm",
-    "farm",
-    "Farm",
-    { icon: "wheat", value: "+6.3/min" },
-    gem(2),
-    1,
-    price(6_800),
-  ),
+  tile("farm", "farm", "Farm", { icon: "wheat", value: "+6.3/min" }, gem(2), 1, price(6_800)),
   tile(
     "workshop",
     "workshop",
@@ -362,15 +354,7 @@ const BUILD_TILES: LabTile[] = [
     1,
     price(34_000, { of: "labor", wait: 16 * HOUR }, "Costs more with each one standing: 1"),
   ),
-  tile(
-    "barracks",
-    "barracks",
-    "Barracks",
-    { icon: "troops", value: "+13/min" },
-    gem(1),
-    3,
-    price(6_800),
-  ),
+  tile("barracks", "barracks", "Barracks", { icon: "troops", value: "+13/min" }, gem(1), 3, price(6_800)),
   tile("hut", "workers-hut", "Hut", { icon: "person", value: "+6" }, gem(1), 0, price(5_100)),
   tile(
     "supply",
@@ -403,24 +387,8 @@ const FULL_POPULATION = { used: 18, total: 18 };
 /** A fresh realm with its first building prices. */
 const EARLY_TILES: LabTile[] = [
   tile("farm", "farm", "Farm", { icon: "wheat", value: "+5/min" }, gem(0), 1, price(800)),
-  tile(
-    "workshop",
-    "workshop",
-    "Workshop",
-    { icon: "labor", value: "+0.83/min" },
-    gem(0),
-    1,
-    price(2_000),
-  ),
-  tile(
-    "barracks",
-    "barracks",
-    "Barracks",
-    { icon: "troops", value: "+1.7/min" },
-    gem(0),
-    3,
-    price(800),
-  ),
+  tile("workshop", "workshop", "Workshop", { icon: "labor", value: "+0.83/min" }, gem(0), 1, price(2_000)),
+  tile("barracks", "barracks", "Barracks", { icon: "troops", value: "+1.7/min" }, gem(0), 3, price(800)),
   tile("hut", "workers-hut", "Hut", { icon: "person", value: "+6" }, gem(1), 0, price(300)),
   tile(
     "supply",
