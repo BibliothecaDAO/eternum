@@ -1,8 +1,8 @@
 import { IDENTITY_PORTRAITS, IdentityRequestError, type Session, type SocialProvider } from "@realms-world/identity";
-import { act } from "react";
+import { act, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
-import { MemoryRouter, useLocation } from "react-router-dom";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { Link, MemoryRouter, useLocation } from "react-router-dom";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // The identity client binds fetch when its module loads; nothing in these tests reaches the network.
 vi.hoisted(() => vi.stubGlobal("fetch", async () => new Response(null, { status: 401 })));
@@ -26,6 +26,9 @@ import { pageNavigation } from "@/utils/page-navigation";
 import { setViewportWidth } from "../frame/test-viewport";
 import { useRequestSignIn, useConnectStore } from "./connect";
 import { TabBar } from "../frame/tabs";
+import { AccountCard } from "../profile/account-card";
+import { linkWalletHref, SETTINGS_PATH } from "../profile/settings-route";
+import { accountAnswers, deviceLastPlayedBeforeTheAnswer, leaveThePage } from "../standing-prompts-fixture";
 import { ConnectFlow } from "./connect-flow";
 import { APP_WAIT_MS, discordAndroidIntent, discordAppUrl } from "./discord-app";
 import { forgetSocialStart, pendingSocialStart, rememberSocialStart } from "./social-pending";
@@ -62,7 +65,18 @@ const Page = ({ next }: { next?: string }) => {
   );
 };
 
-const mount = async (path: string, next?: string, bar = false) => {
+const WalletAsk = ({ session }: { session: Session }) => {
+  const { pathname, search } = useLocation();
+  return pathname === SETTINGS_PATH ? (
+    <AccountCard session={session} />
+  ) : (
+    <Link data-testid="needs-wallet" to={linkWalletHref(`${pathname}${search}`)}>
+      Link a wallet to pay
+    </Link>
+  );
+};
+
+const mount = async (path: string, next?: string, bar = false, page?: ReactNode) => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   setViewportWidth(390);
   const container = document.createElement("div");
@@ -73,6 +87,7 @@ const mount = async (path: string, next?: string, bar = false) => {
       <MemoryRouter initialEntries={[path]}>
         {bar && <TabBar />}
         <Page next={next} />
+        {page}
       </MemoryRouter>,
     ),
   );
@@ -99,11 +114,18 @@ const mount = async (path: string, next?: string, bar = false) => {
 /** The identity Worker's answer to a sent code: when it stops working, seconds from now. */
 const sentCode = (seconds: number) => ({ success: true as const, expires_at: Date.now() / 1000 + seconds });
 
-afterEach(() => {
+let answers = accountAnswers();
+beforeEach(() => {
+  answers = accountAnswers();
+  vi.spyOn(identityClient, "addOpeningProgress").mockImplementation((additions) => answers.add(additions));
+});
+
+afterEach(async () => {
+  await leaveThePage("another");
   vi.restoreAllMocks();
   app.channel = "web";
   useIdentitySessionStore.setState({ status: "anonymous", session: null });
-  useConnectStore.setState({ request: null, nameDismissed: false, walletDismissed: false });
+  useConnectStore.setState({ request: null, nameDismissed: false });
   forgetSocialStart();
 });
 
@@ -406,14 +428,66 @@ describe("Your wallet", () => {
     }
   });
 
-  it("closes for the visit when the player closes it", async () => {
+  const closeTheInvitation = (ui: Awaited<ReturnType<typeof mount>>) =>
+    act(async () => ui.query<HTMLButtonElement>('[role="dialog"] button[aria-label="Close"]')!.click());
+
+  it("invites an account once: closed, it stays closed when the page loads again, on this device and on another", async () => {
     named();
+    vi.spyOn(identityClient, "readDefaultWallet").mockResolvedValue(null);
+    const first = await mount("/");
+    expect(first.window()?.getAttribute("aria-label")).toBe("Your wallet");
+    await closeTheInvitation(first);
+    expect(first.window()).toBeNull();
+    await first.unmount();
+    for (const device of ["same", "another"] as const) {
+      await leaveThePage(device);
+      const again = await mount("/");
+      expect(again.window()).toBeNull();
+      await again.unmount();
+    }
+    expect([...answers.seen]).toEqual(["wallet-invitation"]);
+  });
+
+  it("stays closed on a device that last played before the account was invited on another", async () => {
+    named();
+    vi.spyOn(identityClient, "readDefaultWallet").mockResolvedValue(null);
+    answers.seen.add("wallet-invitation");
+    deviceLastPlayedBeforeTheAnswer("0x7");
+    const ui = await mount("/");
+    try {
+      expect(ui.window()).toBeNull();
+    } finally {
+      await ui.unmount();
+    }
+  });
+
+  it("opens the wallet for a declined account when a page that needs one sends the player to link it", async () => {
+    named();
+    vi.spyOn(identityClient, "readDefaultWallet").mockResolvedValue(null);
+    vi.spyOn(identityClient, "listSignInProviders").mockResolvedValue([]);
+    const first = await mount("/");
+    await closeTheInvitation(first);
+    await first.unmount();
+    await leaveThePage();
+    const session = useIdentitySessionStore.getState().session!;
+    const settings = await mount("/shop/fragments", undefined, false, <WalletAsk session={session} />);
+    try {
+      expect(settings.window()).toBeNull();
+      await act(async () => settings.query<HTMLAnchorElement>('[data-testid="needs-wallet"]')!.click());
+      expect(settings.window()?.getAttribute("aria-label")).toBe("Payout wallet");
+      expect(settings.window()?.textContent).toContain("Create my wallet");
+    } finally {
+      await settings.unmount();
+    }
+  });
+
+  it("stays closed while the account's answers cannot be read", async () => {
+    named();
+    answers.down = true;
     vi.spyOn(identityClient, "readDefaultWallet").mockResolvedValue(null);
     const ui = await mount("/");
     try {
-      await act(async () => ui.query<HTMLButtonElement>('[role="dialog"] button[aria-label="Close"]')!.click());
       expect(ui.window()).toBeNull();
-      expect(useConnectStore.getState().walletDismissed).toBe(true);
     } finally {
       await ui.unmount();
     }
@@ -517,7 +591,7 @@ describe("Connect with a provider", () => {
     await press(before, "Continue with Apple");
     await before.unmount();
     // A reload: the page and its memory are gone; only what the browser keeps is left.
-    useConnectStore.setState({ request: null, nameDismissed: false, walletDismissed: false });
+    useConnectStore.setState({ request: null, nameDismissed: false });
     const after = await mount("/");
     try {
       expect(after.window()?.getAttribute("aria-label")).toBe("Apple");

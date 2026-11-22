@@ -93,11 +93,9 @@ it("shows the linked payout wallet by its address, changed only with a code, and
 
   const unlinked = await mount(session);
   try {
-    expect(payoutRow(unlinked.container).textContent).toContain("Link wallet");
-    // The whole row is the target: "Link wallet" itself opens the wallet's step.
-    const linkWallet = payoutRow(unlinked.container).querySelector<HTMLElement>(".app-setting__value")!;
-    expect(linkWallet.textContent).toBe("Link wallet");
-    await act(async () => linkWallet.click());
+    const noWallet = payoutRow(unlinked.container).querySelector<HTMLElement>(".app-setting__value")!;
+    expect(noWallet.textContent).toBe("No wallet set");
+    await act(async () => noWallet.click());
     expect(document.querySelector('[role="dialog"][aria-label="Payout wallet"]')?.textContent).toContain(
       "I have a wallet",
     );

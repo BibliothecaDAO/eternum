@@ -336,11 +336,13 @@ each closed by its cross, a tap outside, a swipe down or `Escape`. A right-click
   its row, Portrait and Payout wallet open in the app's sheet, and a destructive step (sign out, remove a device) asks
   first in the sheet's dialog over the page (`AppDialog`), Keep or Escape its way out.
 - **Your wallet** (the Connect window, any page): a signed-in, named account with no payout wallet meets it, a new
-  account right after its name, an older one at each visit until it has one or closes it (closed for that visit).
-  **Create my wallet** makes a passkey (face, fingerprint or screen lock) that owns the account's Realms wallet, a Ready
-  0.5 account with the Realms guardian, and writes it as the payout wallet; a sign-in older than ten minutes is asked
-  for the emailed code first. **I have a wallet** links one as before. The same two choices open from Settings, **Payout
-  wallet** with none linked (`shell/profile/payout-wallet-panel.tsx`).
+  account right after its name, an older one at its next visit: once for the account, on any device (the account's
+  answered prompts, `shell/standing-prompts.ts`, kept with its told lines at `/api/opening`). After that the wallet
+  opens from a page that needs one (Fragments' **Link a wallet to pay**, the You card's holdings) or from Settings,
+  whose **Payout wallet** row reads "No wallet set". **Create my wallet** makes a passkey (face, fingerprint or screen
+  lock) that owns the account's Realms wallet, a Ready 0.5 account with the Realms guardian, and writes it as the payout
+  wallet; a sign-in older than ten minutes is asked for the emailed code first. **I have a wallet** links one as before.
+  The same two choices open from Settings, **Payout wallet** with none linked (`shell/profile/payout-wallet-panel.tsx`).
 - **Realms wallet** (Settings, **Payout wallet**): its LORDS and **Send** (address and amount; the network fee is priced
   as the form opens and shown, **Max** is the balance less the most the fee may take, and a balance short of the fee
   says how much it needs; **Review**, the send's own fee shown again, then **Confirm with your passkey**). The wallet
@@ -884,11 +886,11 @@ holds a story of theirs after the day's end, from any device, a device arriving 
 Once no day's end is owed, on the player's own map while a next day is coming, a device that would not get the day's
 push gets the alerts popup over the dimmed map: a painting with the bell, "Know when to come back", what the Important
 level pushes from the same notification-kind catalog as Settings, then **Not now** and **Turn on alerts** (an iPhone's
-browser is told to put Realms on its Home Screen first, with **Add to Home Screen**). It shows at most once a week on a
-device, counted from the last time it showed, stands on its page until answered, and three Not nows end it
-(`useAlertsPopup`, `shell/profile/alerts-ask.ts`; `frontier/alerts-popup.tsx`; lab: `/lab/kit/hud/alerts-popup`,
-`alerts-popup-install`). Code: `hooks/store/use-day-end-store.ts`, `ExpeditionRollover`, `rollover/day-done.tsx` and
-`day-end-screen.tsx`.
+browser is told to put Realms on its Home Screen first, with **Add to Home Screen**). It shows once for the account, on
+any device (the same answered prompts as Your wallet), and stands on its page until answered; after that Settings keeps
+the switch (`useAlertsPopup`, `shell/profile/alerts-ask.ts`; `frontier/alerts-popup.tsx`; lab:
+`/lab/kit/hud/alerts-popup`, `alerts-popup-install`). Code: `hooks/store/use-day-end-store.ts`, `ExpeditionRollover`,
+`rollover/day-done.tsx` and `day-end-screen.tsx`.
 
 **Share your day**, on the day-done card, and on Today's page of an earlier day the player played (the dial opens Today,
 ← steps back; a day missed at its end is shared from there), once the day's totals are whole: the day's card in the

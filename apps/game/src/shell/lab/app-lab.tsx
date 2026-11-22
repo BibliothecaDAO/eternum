@@ -11,6 +11,7 @@ import { PageAddress } from "../frame/page-address";
 import { CreditsPage, PrivacyPage, TermsPage } from "../legal";
 import { WhatsNewPage } from "../news/news";
 import { NotFoundPage } from "../not-found";
+import { STANDING_PROMPTS } from "../standing-prompts";
 import { PlayPage } from "../play/play-page";
 import { SharedLinkPage } from "../share/shared-link-page";
 import { FragmentsPage } from "../shop/fragments-page";
@@ -272,6 +273,7 @@ const answerIdentity = (screen: LabScreen) => {
   identityClient.fragmentPayment = async () => ({ state: "delivered", fragments: 1_000 });
   // The lab's player has made no Realms wallet, so the payout window offers Create my wallet.
   identityClient.readDefaultWallet = async () => null;
+  identityClient.addOpeningProgress = async () => ({ reached: [], seen: STANDING_PROMPTS });
   answerLabBuildOrders();
   Object.assign(identityClient, {
     unlinkWallet: spend,

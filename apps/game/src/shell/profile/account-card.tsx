@@ -67,7 +67,7 @@ export const AccountCard = ({ session }: { session: Session }) => {
         <AppSetting
           icon="backpack"
           name={WALLET_WORDS.payoutWallet}
-          value={payout ? shortAddress(payout) : PROFILE_WORDS.linkWallet}
+          value={payout ? shortAddress(payout) : <span data-payout-wallet="none">{PROFILE_WORDS.noWallet}</span>}
           onClick={() => setOpen("payout")}
         />
       </AppPanel>

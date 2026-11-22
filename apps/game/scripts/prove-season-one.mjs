@@ -38,6 +38,7 @@ const PAGES = [
     url: `/lab/app/wallet-ready/doorway/${state}?capture=1`,
     shown,
   })),
+  { file: "settings-no-wallet", url: "/lab/app/home/profile/settings?capture=1", shown: "[data-payout-wallet=none]" },
   { file: "fragments-packs", url: FRAGMENTS_URL, shown: "[data-fragment-packs]" },
   {
     file: "fragments-pay",

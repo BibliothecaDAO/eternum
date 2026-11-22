@@ -4,7 +4,7 @@ import { notifyManager, QueryClient, QueryClientProvider } from "@tanstack/react
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { DAY_END_TIMING, RESTING, useDayEndStore } from "@/hooks/store/use-day-end-store";
-import { useAskMemory } from "@/shell/profile/alerts-ask";
+import { accountAnswers, leaveThePage } from "@/shell/standing-prompts-fixture";
 import { dayOf, Position } from "@bibliothecadao/eternum";
 
 import { endedDay } from "../hud/day-clock";
@@ -61,7 +61,10 @@ const SIGNED_IN = vi.hoisted(() => ({ session: { user: { realmsId: "0xa11ce" } }
 vi.mock("@/hooks/context/identity-session", () => ({
   useIdentitySession: () => SIGNED_IN,
   notificationOwnerOf: () => alerts.owner,
-  identityClient: shares,
+  identityClient: {
+    ...shares,
+    addOpeningProgress: (additions: { seen?: string[] }) => answers.add(additions),
+  },
 }));
 vi.mock("@/hooks/use-notification-preferences", () => ({
   useNotificationPreferences: () => ({ status: "ready", saved: { level: "off", revision: 1 }, save: vi.fn() }),
@@ -146,6 +149,7 @@ const SUMMARY = "section[aria-label='Day 2 done']";
 
 let host: HTMLDivElement;
 let root: Root;
+let answers = accountAnswers();
 
 /** Day 2's summary is the player's until they play on in day 3: the game as it stood a minute before they did. */
 const BEFORE_PLAYING_ON = {
@@ -164,15 +168,16 @@ beforeEach(() => {
   herald.game = { end_at: "1793439960" };
   alerts.owner = null;
   for (const call of Object.values(shares)) call.mockClear();
-  useAskMemory.setState({ notNows: 0, shownAt: null });
+  answers = accountAnswers();
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
 });
 
-afterEach(() => {
+afterEach(async () => {
   act(() => root.unmount());
   host.remove();
+  await leaveThePage("another");
   useDayEndStore.setState(RESTING);
   notifyManager.setNotifyFunction((notify) => notify());
 });
@@ -390,7 +395,7 @@ describe("the alerts popup, which waits for the day's end", () => {
     await openTheGame();
     expect(host.querySelector(SUMMARY)).not.toBeNull();
     expect(popup()).toBeNull();
-    expect(useAskMemory.getState().shownAt).toBeNull();
+    expect(answers.seen.size).toBe(0);
   });
 
   it("opens over the player's own map once the day's end is gone through", async () => {
@@ -403,10 +408,10 @@ describe("the alerts popup, which waits for the day's end", () => {
     expect(popup()?.textContent).toContain(
       "A push for each day's opening, Deep sites you can take, rested armies, fights, results and messages.",
     );
-    expect(useAskMemory.getState().shownAt).not.toBeNull();
+    expect([...answers.seen]).toEqual(["alerts-popup"]);
   });
 
-  it("gives the screen to a day's end that begins while it stands unanswered, counting no Not now", async () => {
+  it("gives the screen to a day's end that begins while it stands unanswered", async () => {
     alerts.owner = "0x7";
     day2Seen();
     client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -417,7 +422,6 @@ describe("the alerts popup, which waits for the day's end", () => {
     await act(async () => useDayEndStore.getState().begin("live"));
     expect(phase()).toBe("veil");
     expect(popup()).toBeNull();
-    expect(useAskMemory.getState()).toMatchObject({ notNows: 0, shownAt: expect.any(Number) });
   });
 
   it("opens nothing on another player's realm", async () => {

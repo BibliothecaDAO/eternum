@@ -29,12 +29,12 @@ export const useOpeningStore = create<OpeningStore>(() => ({
   onDevice: false,
 }));
 
-const cacheKey = (owner: string) => `eternum:opening:${owner}`;
+export const openingCacheKey = (owner: string) => `eternum:opening:${owner}`;
 
 /** What this device kept for the account: its sets and its unsent changes; empty where there is none or it cannot be read. */
 const kept = (owner: string): { sets: Sets; unsent: Sets; onDevice: boolean } => {
   try {
-    const stored = JSON.parse(localStorage.getItem(cacheKey(owner)) ?? "null") as {
+    const stored = JSON.parse(localStorage.getItem(openingCacheKey(owner)) ?? "null") as {
       reached: string[];
       seen: string[];
       unsent: { reached: string[]; seen: string[] };
@@ -57,7 +57,7 @@ const keep = (): void => {
   if (!owner) return;
   try {
     localStorage.setItem(
-      cacheKey(owner),
+      openingCacheKey(owner),
       JSON.stringify({
         reached: [...reached],
         seen: [...seen],
