@@ -98,7 +98,7 @@ export interface NativeCommandPayloads {
   ProvisionAndUpgradeRealm: BigNumberish;
   SetEntityName: { readonly entity_id: BigNumberish; readonly name: BigNumberish };
   EnterDepth: { readonly explorer_id: BigNumberish; readonly depth: BigNumberish };
-  Research: { readonly structure_id: BigNumberish; readonly row: BigNumberish; readonly choice: BigNumberish };
+  Research: { readonly structure_id: BigNumberish; readonly row: BigNumberish };
   InteractSite: { readonly explorer_id: BigNumberish; readonly coord: { readonly alt: boolean; readonly x: BigNumberish; readonly y: BigNumberish } };
 }
 export type NativeCommand = { [K in keyof NativeCommandPayloads]: { kind: K; value: NativeCommandPayloads[K] } }[keyof NativeCommandPayloads];

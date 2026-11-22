@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "8835a0928a7987d53445c27d29edbf6c0c27f4814994fe62bb104af87dbc57fb",
+  "schemaIdentity": "f63924284e76feac5562a910df1c45d425c5ca5ce0f1d94e089dd0c822e0bd0e",
   "commandAbi": [
     {
       "type": "interface",
@@ -945,10 +945,6 @@
         },
         {
           "name": "row",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "choice",
           "type": "core::integer::u8"
         }
       ]
