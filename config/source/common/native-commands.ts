@@ -22,6 +22,7 @@ const arenaClosedCommands: NativeCommand[] = [
   "ClaimDailyQuest",
   "ProvisionRealm",
   "ProvisionAndUpgradeRealm",
+  "SettleSeason",
 ];
 const blitzReturnedCommands: NativeCommand[] = [
   "CreateBuilding",

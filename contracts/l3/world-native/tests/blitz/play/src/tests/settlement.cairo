@@ -49,3 +49,10 @@ fn a_blitz_realm_is_never_provisioned_by_command_since_the_roster_provisions_it(
         d, home.game_id, 1, encode(Command::ProvisionRealm(home.entity_id)), "command disabled",
     );
 }
+
+#[test]
+fn a_blitz_player_never_settles_a_season_realm_since_the_roster_seats_them() {
+    let (d, game_id) = super::fixture::blitz_game();
+    let settle = crate::realms::SettleSeason { selected_realm: Option::None, order: None };
+    super::assert_entry_refusal(d, game_id, 1, encode(Command::SettleSeason(settle)), "command disabled");
+}
