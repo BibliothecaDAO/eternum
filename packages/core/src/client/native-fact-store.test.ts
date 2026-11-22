@@ -560,7 +560,7 @@ describe("declared fact absence", () => {
     ]);
     expect(resolveExplorerTroops(store, army)?.stamina).toEqual({ amount: 7n, settled_at: 17, remainder: 0 });
     expect(resolveExplorerTroops(store, army)?.staminaMax).toBe(
-      Number(release.definition.rules.troop_stamina_config.stamina_knight_max) + 75,
+      Number(release.definition.rules.troop_stamina_config.stamina_knight_max) * 1.6,
     );
     expect(resolveExplorerTroops(store, army)?.boosts).toEqual(army.troops.boosts);
     store.applyFacts([set("0x70", "ArmySlot", { ...occupied, explorer_id: army.explorer_id + 1n })]);
