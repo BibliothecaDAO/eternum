@@ -29,6 +29,12 @@ const blitzReturnedCommands: NativeCommand[] = [
   "CreateExplorer",
   "ManageTroops",
   "Move",
+  "CreateGuild",
+  "JoinGuild",
+  "LeaveGuild",
+  "SetGuildWhitelist",
+  "RemoveGuildMember",
+  "SetEntityName",
 ];
 
 export const arenaCommandMask = commandBits(allCommands) & ~commandBits(arenaClosedCommands);
