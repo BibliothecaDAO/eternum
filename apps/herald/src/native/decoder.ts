@@ -1,6 +1,6 @@
 import { type GameSyncModelDefinition } from "@bibliothecadao/eternum/game-sync-models";
 import { normalizeFelt, type ModelCodec, type ModelRegistry } from "../model-registry";
-import type { DecodedWorldEvent, RawWorldEvent, RpcEvent } from "../types";
+import type { DecodedRecord, DecodedWorldEvent, RawWorldEvent, RpcEvent } from "../types";
 import { nativeRowKey } from "./row-key";
 import { decodeMembers } from "./serde";
 import {
@@ -79,6 +79,20 @@ export class NativeDecoder {
       value: decodeMembers(this.schema, row.members, [...values]),
       position: { blockNumber: null, transactionHash: "0x0", transactionIndex: 0, eventIndex: 0 },
     };
+  }
+  derivedRuleModels(): string[] {
+    return this.schema.models.filter(({ derivedFrom }) => derivedFrom === "preset").map(({ name }) => name);
+  }
+  deleteDerivedRow(
+    model: string,
+    entityId: string,
+    row: DecodedRecord,
+    position: DecodedWorldEvent["position"],
+  ): DecodedWorldEvent {
+    const schemaModel = this.schema.models.find((candidate) => candidate.name === model);
+    if (!schemaModel?.derivedFrom) throw new Error(`Native model ${model} is not derived`);
+    const key = Object.fromEntries(schemaModel.keys.map(({ name }) => [name, row[name]]));
+    return { kind: "delete", model: definition(schemaModel.name, schemaModel.scope), entityId, key, position };
   }
   decode(event: NativeRawEvent): DecodedWorldEvent {
     if (!this.owns(event.from_address)) throw new Error(`Foreign native emitter ${event.from_address}`);

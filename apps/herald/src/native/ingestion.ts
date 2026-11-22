@@ -1,4 +1,4 @@
-import { deriveReleaseFacts } from "./release-facts";
+import { deriveReleaseFacts, type ReleaseRulesGame } from "./release-facts";
 import { RELEASE_DEFINITIONS, releaseDefinition, type ReleaseDefinitions } from "./release-definition";
 import { nativeRowKey } from "./row-key";
 import { gameplayRejection } from "@bibliothecadao/provider";
@@ -47,6 +47,18 @@ const sameEvents = (left: readonly RpcEvent[], right: readonly RpcEvent[]) =>
   );
 
 const REPLAY_EVENT_BUDGET = 16_384;
+
+function releaseRuleChanges(decoded: DecodedWorldEvent[]): ReleaseRulesGame[] {
+  const games = new Map<string, ReleaseRulesGame>();
+  for (const event of decoded) {
+    if (event.model.name === "GameOverrides" && event.kind !== "set")
+      throw new Error("GameOverrides must be an immutable launch fact");
+    const changesRules =
+      event.kind === "set" && (event.model.name === "GameOverrides" || event.model.name === "GameRelease");
+    if (changesRules) games.set(String(event.key.game_id), { gameId: event.key.game_id, position: event.position });
+  }
+  return [...games.values()];
+}
 
 export class NativeIngestion {
   receiptFailures = 0;
@@ -205,21 +217,42 @@ export class NativeIngestion {
     if (receipt.execution_status === "REVERTED") return { events: [], decoded: [] };
     const decoded = this.decodeReceipt(receipt, blockNumber, transactionIndex, earlier);
     decoded.forEach((event) => fold.apply(event));
-    const derived = decoded.flatMap((event) =>
-      event.model.name === "GameOverrides" ? this.gameConfiguration(fold, event) : [],
-    );
+    const derived = releaseRuleChanges(decoded).flatMap((game) => this.releaseRules(fold, game));
     derived.forEach((event) => fold.apply(event));
     return { events: [...decoded, ...derived], decoded };
   }
 
-  private gameConfiguration(fold: WorldFold, launch: DecodedWorldEvent): DecodedWorldEvent[] {
-    if (launch.kind !== "set") throw new Error("GameOverrides must be an immutable launch fact");
-    const key = nativeRowKey([String(launch.key.game_id)]);
+  restoreReleaseRules(fold: WorldFold, confirmedBlock: number): void {
+    const position = { blockNumber: confirmedBlock, transactionHash: "0x0", transactionIndex: 0, eventIndex: 0 };
+    for (const { value } of fold.modelRows("GameRelease")) {
+      if (!this.definitions.has(Number(value.release_id))) continue;
+      this.releaseRules(fold, { gameId: value.game_id, position }).forEach((event) => fold.apply(event));
+    }
+  }
+
+  private releaseRules(fold: WorldFold, game: ReleaseRulesGame): DecodedWorldEvent[] {
+    const key = nativeRowKey([String(game.gameId)]);
+    const overrides = fold.currentRow("GameOverrides", key)?.value;
+    if (!overrides) return [];
     const release = fold.currentRow("GameRelease", key)?.value;
     if (!release) throw new Error("GameOverrides requires GameRelease");
     const definition = releaseDefinition(this.definitions, Number(release.release_id));
-    const overrides = fold.currentRow("GameOverrides", key)!.value;
-    return deriveReleaseFacts(this.decoder, definition, overrides, launch);
+    const rows = deriveReleaseFacts(this.decoder, definition, overrides, game);
+    return [...this.rowsLeftByEarlierRelease(fold, game, rows), ...rows];
+  }
+
+  private rowsLeftByEarlierRelease(
+    fold: WorldFold,
+    game: ReleaseRulesGame,
+    rows: DecodedWorldEvent[],
+  ): DecodedWorldEvent[] {
+    const derived = new Set(rows.map((row) => `${row.model.name}:${row.entityId}`));
+    return this.decoder.derivedRuleModels().flatMap((model) =>
+      fold
+        .gameRows(model, String(game.gameId))
+        .filter(({ key }) => !derived.has(`${model}:${key}`))
+        .map(({ key, value }) => this.decoder.deleteDerivedRow(model, key, value, game.position)),
+    );
   }
 
   /**

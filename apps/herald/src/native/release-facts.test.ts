@@ -5,7 +5,14 @@ import {
 } from "../../../../config/source/common/native-preset-modes";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { NativeFactStore } from "../../../../packages/core/src/client/native-fact-store";
-import { RESOURCE_PRECISION, TroopTier, TroopType, type Troops } from "@bibliothecadao/types";
+import {
+  BuildingType,
+  RESOURCE_PRECISION,
+  ResourcesIds,
+  TroopTier,
+  TroopType,
+  type Troops,
+} from "@bibliothecadao/types";
 import { ClientConfigManager } from "../../../../packages/core/src/managers/config-manager";
 import { affordableAt, musterStamina, staminaAt } from "../../../../packages/core/src/managers/troop-stamina";
 import { describe, expect, it, vi } from "vitest";
@@ -15,7 +22,11 @@ import { LiveWorld } from "../live-world";
 import type { MadaraRpc } from "../madara-rpc";
 import { WorldFold } from "../world-fold";
 import type { RpcEvent } from "../types";
-import { gameRegistryEvent, receipt, rowEvent, schema, setup } from "./fixtures";
+import { gameRegistryEvent, manifest, receipt, rowEvent, schema, setup } from "./fixtures";
+import { NativeDecoder } from "./decoder";
+import { NativeIngestion } from "./ingestion";
+import { loadNativeWorld } from "./load";
+import { releaseLine } from "../../../../packages/core/src/test-support/releases";
 import { presetRelease } from "./preset-fixtures";
 import { readReleaseDefinitions, releaseDefinitionText } from "./release-definition";
 
@@ -420,4 +431,100 @@ it("publishes every active Season 1 rule through verified registration and launc
     expect(game_id).toBe(1);
     expect(actual).toEqual(rules.unwrap());
   }
+});
+
+const barracksAt = (labor: number) => (definition: ReturnType<typeof buildNativePreset>) => {
+  const barracks = definition.structures.buildings.find(({ category }) => category === BuildingType.ResourceKnightT1)!;
+  barracks.rule.simple_cost = [
+    { resource_type: ResourcesIds.Labor, amount: BigInt(labor) * BigInt(RESOURCE_PRECISION) },
+  ];
+};
+
+function twoReleases() {
+  const launched = presetRelease(5, 1, barracksAt(400));
+  const upgraded = presetRelease(5, 2, (definition) => {
+    barracksAt(500)(definition);
+    definition.structures.upgrades.pop();
+  });
+  const released = structuredClone(manifest);
+  released.native.releases = releaseLine(schema.identity, [1, 2]);
+  const definitions = new Map([...launched.definitions, ...upgraded.definitions]);
+  const world = () => {
+    const decoder = new NativeDecoder(released);
+    return { decoder, fold: new WorldFold(decoder.registry), native: new NativeIngestion(decoder, definitions) };
+  };
+  const upgrade = rowEvent("GameRelease", ["1"], { release_id: 2, created_release_id: 1 });
+  const launchedOn = (preset: typeof upgraded) => {
+    const direct = world();
+    direct.native.applyReceipt(direct.fold, receipt(launch(preset)), 11, 0);
+    return direct.fold;
+  };
+  return { launched, upgraded, world, upgrade, launchedOn };
+}
+
+function clientBarracksPrice(fold: WorldFold) {
+  const store = new NativeFactStore();
+  for (const model of ["SliceRules", "BuildingRule"] as const) {
+    store.applyFacts(fold.gameRows(model, "1").map(({ key, value }) => ({ model, key, value })));
+  }
+  const manager = new ClientConfigManager();
+  manager.setActiveGame(1);
+  manager.setStore(store);
+  return manager.getBuildingCosts(BuildingType.ResourceKnightT1, true);
+}
+
+const ruleRows = (fold: WorldFold) =>
+  ["BuildingRule", "ResearchPrice", "UpgradeRecipe", "SliceRules"].map((model) => fold.gameRows(model, "1"));
+
+describe("a game's rule rows follow its release", () => {
+  it("shows the new release's Barracks price once a launched game moves to it", () => {
+    const { launched, world, upgrade } = twoReleases();
+    const live = world();
+    live.native.applyReceipt(live.fold, receipt(launch(launched)), 11, 0);
+    expect(clientBarracksPrice(live.fold)).toEqual([{ resource: ResourcesIds.Labor, amount: 400 }]);
+    const levels = live.fold.gameRows("UpgradeRecipe", "1").length;
+    live.native.applyReceipt(live.fold, receipt([upgrade]), 12, 0);
+    expect(clientBarracksPrice(live.fold)).toEqual([{ resource: ResourcesIds.Labor, amount: 500 }]);
+    expect(live.fold.gameRows("UpgradeRecipe", "1")).toHaveLength(levels - 1);
+  });
+
+  it("ends a replay from genesis on the rows of a game launched on the new release", async () => {
+    const { launched, upgraded, world, upgrade, launchedOn } = twoReleases();
+    const blocks = [launch(launched), [upgrade]].map((events, index) => ({
+      block_number: 11 + index,
+      timestamp: 2160,
+      transactions: [{ receipt: receipt(events, `0x${(11 + index).toString(16)}`), transaction: { type: "INVOKE" } }],
+    }));
+    const replayed = world();
+    const rpc = { readBlock: vi.fn(async (number: number) => blocks[number - 11]) };
+    await replayed.native.replay({ fold: replayed.fold, rpc, fromBlock: 11, toBlock: 12 });
+    expect(ruleRows(replayed.fold)).toEqual(ruleRows(launchedOn(upgraded)));
+    expect(clientBarracksPrice(replayed.fold)).toEqual([{ resource: ResourcesIds.Labor, amount: 500 }]);
+  });
+
+  it("takes a restored checkpoint's rule rows from each game's current release", async () => {
+    const { launched, upgraded, world, launchedOn } = twoReleases();
+    const saved = world();
+    saved.native.applyReceipt(saved.fold, receipt(launch(launched)), 11, 0);
+    const pinned = saved.decoder.decodeRowSet("GameRelease", ["0x1"], ["0x2", "0x1"]);
+    saved.fold.apply({
+      ...pinned,
+      position: { blockNumber: 12, transactionHash: "0x12", transactionIndex: 0, eventIndex: 0 },
+    });
+    expect(clientBarracksPrice(saved.fold)).toEqual([{ resource: ResourcesIds.Labor, amount: 400 }]);
+    const restarted = world();
+    const checkpointStore = {
+      initialize: vi.fn(),
+      load: vi.fn(async () => ({
+        fold: WorldFold.restore(restarted.decoder.registry, saved.fold.checkpoint()),
+        confirmedBlock: 12,
+      })),
+      save: vi.fn(),
+    };
+    const rpc = { blockNumber: vi.fn(async () => 12), readBlock: vi.fn() } as unknown as MadaraRpc;
+    const history = { frontierHistory: async () => [], appendEvents: vi.fn(), historyProgress: vi.fn(async () => 12) };
+    const loaded = await loadNativeWorld({ chain: "madara", checkpointStore, history, native: restarted.native, rpc });
+    expect(clientBarracksPrice(loaded.fold)).toEqual([{ resource: ResourcesIds.Labor, amount: 500 }]);
+    expect(ruleRows(loaded.fold)).toEqual(ruleRows(launchedOn(upgraded)));
+  });
 });

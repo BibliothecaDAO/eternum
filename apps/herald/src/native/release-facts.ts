@@ -5,6 +5,7 @@ import type { NativeDecoder } from "./decoder";
 import { encodeMembers } from "./serde";
 
 type PresetRecord = Record<string, unknown>;
+export type ReleaseRulesGame = { gameId: unknown; position: DecodedWorldEvent["position"] };
 type EmitRule = (model: string, value: PresetRecord, key?: PresetRecord) => void;
 const record = (value: unknown) => value as PresetRecord;
 const records = (value: unknown) => value as PresetRecord[];
@@ -17,11 +18,11 @@ export function deriveReleaseFacts(
   decoder: NativeDecoder,
   definition: DecodedRecord,
   overrides: DecodedRecord,
-  launch: DecodedWorldEvent,
+  game: ReleaseRulesGame,
 ): DecodedWorldEvent[] {
   const rows: DecodedWorldEvent[] = [];
   const emit: EmitRule = (name, value, keys = {}) => {
-    rows.push(derivedRow(decoder, launch, name, value, keys));
+    rows.push(derivedRow(decoder, game, name, value, keys));
   };
   deriveGameRules(emit, definition, overrides);
   deriveResources(emit, record(definition.resources));
@@ -33,7 +34,7 @@ export function deriveReleaseFacts(
 
 function derivedRow(
   decoder: NativeDecoder,
-  launch: DecodedWorldEvent,
+  game: ReleaseRulesGame,
   name: string,
   value: PresetRecord,
   keys: PresetRecord,
@@ -43,10 +44,10 @@ function derivedRow(
   if (!model) throw new Error(`Release rule model ${name} is absent from the schema`);
   const row = decoder.decodeRowSet(
     name,
-    encodeMembers(schema, model.keys, { game_id: launch.key.game_id, ...keys }),
+    encodeMembers(schema, model.keys, { game_id: game.gameId, ...keys }),
     encodeMembers(schema, model.members, value),
   );
-  return { ...row, position: launch.position };
+  return { ...row, position: game.position };
 }
 
 function deriveGameRules(emit: EmitRule, definition: DecodedRecord, overrides: DecodedRecord) {
