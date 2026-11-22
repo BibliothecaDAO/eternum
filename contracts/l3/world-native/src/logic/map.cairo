@@ -240,6 +240,27 @@ pub mod MapLogic {
     component!(path: DeepSites, storage: deep_sites, event: DeepSiteEvent);
     #[abi(embed_v0)]
     impl DiscoveryGuards of crate::guards::IGuardInitialization<ContractState> {
+        #[cfg(feature: "blitz")]
+        fn initialize_structure_guards(
+            ref self: ContractState,
+            key: crate::resources::ResourceKey,
+            seed: u256,
+            timestamp: u64,
+            rules: crate::rules::SliceRules,
+        ) {
+            let category = crate::logic::structures::record(key).base.category;
+            assert!(
+                category == crate::taxonomy::MINE_CATEGORY || category == crate::taxonomy::CAMP_CATEGORY,
+                "invalid guarded structure category",
+            );
+            let guard_key = crate::guards::GuardKey { game_id: key.game_id, structure_id: key.entity_id, slot: 0 };
+            assert!(crate::logic::guards::guard(guard_key) == Default::default(), "guards already initialized");
+            crate::logic::guards::GuardState::save(
+                guard_key,
+                crate::guards::Guard { troops: crate::troops::light_guard(seed, rules, timestamp), destroyed_tick: 0 },
+            );
+        }
+        #[cfg(not(feature: "blitz"))]
         fn initialize_structure_guards(
             ref self: ContractState,
             key: crate::resources::ResourceKey,

@@ -128,6 +128,40 @@ pub trait IStructureOperations<T> {
     ) -> u64;
 }
 
+#[cfg(feature: "blitz")]
+pub fn discovered_structure(
+    coord: Coord,
+    discovery: crate::discovery::Discovery,
+    capacities: crate::rules::StructureCapacityConfig,
+    camp_armies: u16,
+    timestamp: u64,
+) -> (StructureRecord, u8, u128) {
+    let (category, occupier, capacity, explorers) = match discovery {
+        Discovery::Mine => (
+            crate::taxonomy::MINE_CATEGORY, crate::taxonomy::MINE_OCCUPIER, capacities.fragment_mine_capacity, 0,
+        ),
+        Discovery::Camp => (
+            crate::taxonomy::CAMP_CATEGORY, crate::taxonomy::CAMP_OCCUPIER, capacities.camp_capacity, camp_armies,
+        ),
+        _ => panic!("discovery is not a Blitz structure"),
+    };
+    assert!(!coord.alt, "invalid discovery layer");
+    let base = StructureBase {
+        troop_max_guard_count: 1,
+        troop_max_explorer_count: explorers,
+        created_at: timestamp.try_into().unwrap(),
+        category,
+        level: 0,
+        starting_troops_granted: false,
+    };
+    (
+        StructureRecord { owner: 0.try_into().unwrap(), base, resources_packed: 0, metadata: Default::default() },
+        occupier,
+        capacity.into(),
+    )
+}
+
+#[cfg(not(feature: "blitz"))]
 pub fn discovered_structure(
     coord: Coord,
     discovery: crate::discovery::Discovery,

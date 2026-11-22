@@ -1,3 +1,4 @@
+#[cfg(not(feature: "blitz"))]
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub enum Discovery {
     None,
@@ -8,6 +9,20 @@ pub enum Discovery {
     Shrine,
     Well,
     Spire,
+}
+
+#[cfg(feature: "blitz")]
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub enum Discovery {
+    None,
+    Camp,
+    Rift,
+    Ruin: crate::army_relics::ArmyRelic,
+    Beasts,
+    Shrine,
+    Well,
+    Spire,
+    Mine,
 }
 
 // One categorical draw per reveal. After `empty_reveal_limit` empty reveals in a row the draw covers only the kinds

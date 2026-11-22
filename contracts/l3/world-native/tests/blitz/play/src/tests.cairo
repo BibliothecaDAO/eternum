@@ -1,6 +1,7 @@
 pub use world_test_support::tests::*;
 mod armies;
 mod construction;
+mod exploration;
 mod fixture;
 mod guilds;
 mod levels;

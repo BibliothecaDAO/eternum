@@ -512,6 +512,103 @@ pub mod StructuresLogic {
                     base_population,
                 );
         }
+        #[cfg(feature: "blitz")]
+        fn place_discovery(
+            ref self: ContractState,
+            game_id: u32,
+            home_id: u64,
+            coord: Coord,
+            discovery: Discovery,
+            seed: u256,
+            timestamp: u64,
+            game_context: crate::commands::ExecutionContext,
+        ) -> u64 {
+            let rules = game_context.rules.unbox();
+            let id = crate::entity_ids::allocate_home(game_id, home_id);
+            let key = ResourceKey { game_id, entity_id: id };
+            let (mut record, occupier, capacity) = crate::structures::discovered_structure(
+                coord, discovery, rules.structure_capacity_config, rules.troop_limit_config.camp_armies, timestamp,
+            );
+            self.reveal_structure_tile(game_id, coord, game_context);
+            if discovery == Discovery::Camp {
+                crate::logic::structure_actions::map_dispatcher(game_id)
+                    .reveal_structure_surroundings(game_id, coord, crate::commands::biome_context(game_context));
+            }
+            crate::logic::structure_actions::resources_dispatcher(game_id)
+                .initialize_resources(key, capacity * RESOURCE_PRECISION);
+            if discovery == Discovery::Mine {
+                record.metadata.mine_kind = self.open_mine(key, seed, timestamp, game_context);
+            } else {
+                self.stock_camp(key, timestamp, game_context);
+            }
+            crate::logic::structures::StructureState::create(key, record);
+            crate::logic::map::MapState::occupy(tile_key(game_id, coord), id, occupier, true);
+            crate::guards::IGuardInitializationDispatcherTrait::initialize_structure_guards(
+                crate::guards::IGuardInitializationLibraryDispatcher {
+                    class_hash: crate::logic::release::class_of(game_id, crate::slots::MAP),
+                },
+                key,
+                seed,
+                timestamp,
+                rules,
+            );
+            id
+        }
+        #[cfg(feature: "blitz")]
+        fn open_mine(
+            ref self: ContractState,
+            key: ResourceKey,
+            seed: u256,
+            timestamp: u64,
+            game_context: crate::commands::ExecutionContext,
+        ) -> u8 {
+            let (kind, config, cap) = crate::mines::IMineRulesDispatcherTrait::mine_draw(
+                crate::mines::IMineRulesLibraryDispatcher {
+                    class_hash: crate::logic::release::class_of(key.game_id, crate::slots::PRODUCTION),
+                },
+                crate::mines::MinePoolKey { game_id: key.game_id },
+                seed,
+            );
+            self
+                .create_producer(
+                    key,
+                    cap,
+                    config.production_rate,
+                    config.resource_type,
+                    config.building_category,
+                    game_context.rules.unbox().building_config.base_population,
+                    timestamp,
+                    game_context,
+                );
+            kind
+        }
+        #[cfg(feature: "blitz")]
+        fn stock_camp(
+            ref self: ContractState, key: ResourceKey, timestamp: u64, game_context: crate::commands::ExecutionContext,
+        ) {
+            for grant in crate::balance::structures::CAMP_GRANTS.span() {
+                crate::logic::structure_actions::resources_dispatcher(key.game_id)
+                    .grant_resource(
+                        key,
+                        *grant.resource_type,
+                        *grant.amount,
+                        timestamp,
+                        crate::commands::resource_context(game_context),
+                    );
+            }
+            self
+                .create_producer(
+                    key,
+                    crate::resources::UNLIMITED_OUTPUT,
+                    crate::balance::structures::CAMP_LABOR_RATE,
+                    crate::resources::LABOR,
+                    crate::research::WORKSHOP,
+                    game_context.rules.unbox().building_config.base_population,
+                    timestamp,
+                    game_context,
+                );
+        }
+        #[cfg(not(feature: "blitz"))]
         fn place_discovery(
             ref self: ContractState,
             game_id: u32,

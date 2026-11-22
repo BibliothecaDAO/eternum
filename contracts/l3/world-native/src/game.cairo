@@ -31,6 +31,27 @@ pub struct GameOverrides {
     pub map_center_offset: u32,
 }
 
+#[cfg(feature: "blitz")]
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub enum PointActivity {
+    Exploration,
+}
+
+#[cfg(feature: "blitz")]
+#[derive(Drop, starknet::Event)]
+pub struct PointsAwarded {
+    #[key]
+    pub version: u8,
+    #[key]
+    pub game_id: u32,
+    #[key]
+    pub player: starknet::ContractAddress,
+    pub activity: PointActivity,
+    pub points: u128,
+    pub player_points: u128,
+    pub season_points: u128,
+}
+
 #[starknet::interface]
 pub trait IGame<T> {
     fn game(self: @T, game_id: u32) -> GameRegistry;

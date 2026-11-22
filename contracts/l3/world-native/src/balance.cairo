@@ -2,7 +2,7 @@
 #[cfg(feature: "blitz")]
 mod blitz;
 #[cfg(feature: "blitz")]
-pub use blitz::{resources, rules, settlement, structures};
+pub use blitz::{exploration, resources, rules, settlement, structures};
 #[cfg(not(feature: "blitz"))]
 pub mod banes;
 #[cfg(not(feature: "blitz"))]

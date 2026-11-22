@@ -42,6 +42,7 @@ const blitzReturnedCommands: NativeCommand[] = [
   "TransferExplorerResources",
   "TransferExplorerResourcesToStructure",
   "BurnResourceForResourceProduction",
+  "Explore",
 ];
 
 export const arenaCommandMask = commandBits(allCommands) & ~commandBits(arenaClosedCommands);

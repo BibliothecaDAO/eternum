@@ -83,6 +83,15 @@ const blitzStartingResources = buildArenaStartingResources({
   [ResourcesIds.Donkey]: 500,
 });
 
+export const blitzExplorationRewards: { resource_type: number; percent: number; weight: number }[] = [
+  { resource_type: ResourcesIds.Essence, percent: 5, weight: 3_500 },
+  { resource_type: ResourcesIds.Essence, percent: 10, weight: 2_500 },
+  { resource_type: ResourcesIds.Essence, percent: 20, weight: 1_500 },
+  { resource_type: ResourcesIds.Labor, percent: 10, weight: 1_500 },
+  { resource_type: ResourcesIds.Labor, percent: 20, weight: 500 },
+  { resource_type: ResourcesIds.Donkey, percent: 10, weight: 500 },
+];
+
 function buildBlitzResourceOutputs() {
   return {
     ...buildOfficialArenaResourceOutputs(2),
