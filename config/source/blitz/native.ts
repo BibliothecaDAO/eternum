@@ -4,10 +4,6 @@ import { realmResourcePool } from "../common/native-data";
 import { arenaModeRules, arenaCommandMask } from "../common/native-commands";
 
 export const blitzPreset: NativePreset = {
-  ledger: {
-    protocolCutBps: 1000,
-    mmrEnabled: true,
-  },
   orderAspects: [],
   deep: null,
   race: null,

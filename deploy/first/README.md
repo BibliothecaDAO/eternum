@@ -107,10 +107,11 @@ lockfiles and compiler versions key Docker's Cairo layers; changes to Herald or 
    production pays LORDS only (`contracts/l2/ledger/scripts/chest-preset.js`), so its cosmetics collection exists for
    the ledger's constructor but gets no metadata and mints nothing. Publish only public contract addresses to the
    environment book, retaining the Realms collection and unrelated fields.
-6. Read roles, metadata events and presets, and prepare only missing setup calls. Metadata scans begin at each
-   collection’s deployment block, found from historical class reads once per collection per run. Presence reads run in
-   parallel during both inspection and apply. An environment with a cold admin writes public unsigned calls to
-   `cold-setup.json` and waits for the cold wallet to execute them; its cold key never enters the command.
+6. Read roles and metadata events, and prepare only missing setup calls; setup registers no ledger preset. Metadata
+   scans begin at each collection’s deployment block, found from historical class reads once per collection per run.
+   Presence reads run in parallel during both inspection and apply. An environment with a cold admin writes public
+   unsigned calls to `cold-setup.json` and waits for the cold wallet to execute them; its cold key never enters the
+   command.
 7. Reuse the saved service credentials, or generate them once for a new environment. An existing box token requires the
    original private directory; comparison runs on the box and returns only a match result. If the guardian Worker
    already holds `GUARDIAN_PRIVATE_KEY`, keep it even if this directory has no copy. Never rotate it.

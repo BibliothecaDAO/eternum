@@ -26,10 +26,6 @@ export interface NativePreset {
   balance?: ConfigPatch;
   gameType: GameType;
   environmentGameType: GameType;
-  ledger: {
-    protocolCutBps: number;
-    mmrEnabled: boolean;
-  };
   /** One troop type per biome; empty for a fixed roster, which deals each player one type per realm. */
   startingTroops: readonly ("Knight" | "Paladin" | "Crossbowman")[];
   realmResources: readonly number[];

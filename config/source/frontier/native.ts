@@ -28,10 +28,6 @@ const buildingRows = [
 ];
 
 export const frontierPreset = {
-  ledger: {
-    protocolCutBps: 0,
-    mmrEnabled: false,
-  },
   orderAspects: [],
   deep: null,
   race: null,

@@ -5,7 +5,7 @@ import { afterEach, expect, mock, test } from "bun:test";
 import { chmodSync, existsSync, lstatSync, mkdtempSync, mkdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Account, CallData, hash, num, type RpcProvider } from "starknet";
+import { Account, hash, num, type RpcProvider } from "starknet";
 import { PrivateStore } from "./private-store";
 import { runSteps, type Step } from "./run";
 import { addressBook, environments, ledgerAdmin, ACCOUNT_CLASS, WEI, root, type Inputs, type Target } from "./settings";
@@ -26,12 +26,6 @@ import { preparationSteps, type Deployment } from "./main";
 import { validateDates } from "./dates";
 import { artifactFiles } from "./box";
 import { buildLordsChestPreset, buildMysteryChestPreset } from "../../contracts/l2/ledger/scripts/chest-preset.js";
-import {
-  buildLedgerEconomicPreset,
-  buildRegisterLedgerPresetCalldata,
-} from "../../config/deployer/clean/ledger/economics";
-import { LEDGER_PRESET_FIELD_COUNT } from "../../packages/value-ledger/src/codecs";
-import { presetIdForEnvironment } from "../../config/deployer/clean/constants";
 
 const temporary: string[] = [];
 const fetchBefore = globalThis.fetch;
@@ -172,18 +166,16 @@ test("dry run inspects every step, including unavailable ones, and never calls a
 test.each([0, 1, 2, 3, 4])("rerun after boundary %s skips observed results", async (interrupted) => {
   const done = Array.from({ length: 5 }, (_, index) => index < interrupted);
   const writes: number[] = [];
-  const steps = done.map(
-    (_, index): Step => ({
-      name: String(index),
-      payer: "none",
-      cost: "0",
-      inspect: async () => ({ done: done[index]!, detail: "checked remotely" }),
-      apply: async () => {
-        done[index] = true;
-        writes.push(index);
-      },
-    }),
-  );
+  const steps = done.map((_, index): Step => ({
+    name: String(index),
+    payer: "none",
+    cost: "0",
+    inspect: async () => ({ done: done[index]!, detail: "checked remotely" }),
+    apply: async () => {
+      done[index] = true;
+      writes.push(index);
+    },
+  }));
   await runSteps(steps, true, () => {});
   await runSteps(steps, true, () => {});
   expect(writes).toEqual([0, 1, 2, 3, 4].slice(interrupted));
@@ -358,66 +350,37 @@ test("fixed salt deploy resumes after a lost acknowledgement without declaring o
   );
 });
 
-test("setup keeps only missing role calls and registers Season 1's ledger preset in both environments", async () => {
-  const seasonOne = presetIdForEnvironment("madara.frontier");
-  const dev = setupCalls(environments.dev, assets, "0x33");
-  expect(
-    dev.filter((call) => call.entrypoint === "register_preset").map((call) => (call.calldata as string[])[0]),
-  ).toEqual([String(seasonOne)]);
-  const production = setupCalls(environments.production, { ...assets, lords: mainnetAddresses.lords }, "0x33");
-  expect(
-    production.filter((call) => call.entrypoint === "register_preset").map((call) => (call.calldata as string[])[0]),
-  ).toEqual([String(seasonOne)]);
+test("setup prepares no ledger preset call for Season 1 and keeps only missing role calls", async () => {
+  for (const target of [environments.dev, environments.production]) {
+    const ledgerCalls = setupOf(target).filter((call) => call.contractAddress === assets.ledger);
+    expect(ledgerCalls.map((call) => [call.entrypoint, BigInt(registered(call)[0]!)])).toEqual([
+      ["grant_role", BigInt(hash.getSelectorFromName("PAUSER_ROLE"))],
+    ]);
+  }
+  const role = setupOf(environments.dev)[0]!;
   const provider = { callContract: async () => ["0x1"] } as unknown as RpcProvider;
-  expect(await setupPresenceReader(provider)(dev[0]!, 10)).toBe(true);
+  expect(await setupPresenceReader(provider)(role, 10)).toBe(true);
   provider.callContract = async () => ["0x0"];
-  expect(await setupPresenceReader(provider)(dev[0]!, 10)).toBe(false);
+  expect(await setupPresenceReader(provider)(role, 10)).toBe(false);
 });
 
-const setupOf = (target: Target, entrypoint: string) =>
+const setupOf = (target: Target, entrypoint?: string) =>
   setupCalls(
     target,
     { ...assets, lords: target.environment === "production" ? mainnetAddresses.lords : assets.lords },
     "0x33",
-  ).filter((call) => call.entrypoint === entrypoint);
+  ).filter((call) => !entrypoint || call.entrypoint === entrypoint);
 const registered = (call: { calldata: unknown }) => call.calldata as string[];
 
-test("setup refuses a registered preset whose fields differ instead of pretending to update it", async () => {
-  const [operation] = setupOf(environments.dev, "register_preset");
-  const recorded = registered(operation!).slice(1, 1 + LEDGER_PRESET_FIELD_COUNT);
-  recorded[0] = (BigInt(recorded[0]!) + 1n).toString();
-  const callContract = mock(async () => recorded);
-  const provider = { callContract } as unknown as RpcProvider;
-  await expect(setupPresenceReader(provider)(operation!, 10)).rejects.toThrow("Registered preset differs");
-  expect(callContract).toHaveBeenCalledTimes(1);
-  expect(callContract).toHaveBeenCalledWith(
-    {
-      contractAddress: assets.ledger,
-      entrypoint: "get_preset",
-      calldata: [String(presetIdForEnvironment("madara.frontier"))],
-    },
-    10,
-  );
-});
-
-test("dev registers its mystery chests and their cosmetics metadata exactly as before", () => {
+test("dev writes metadata for its mystery chests and every cosmetic they award", () => {
   const mystery = buildMysteryChestPreset();
-  expect(setupOf(environments.dev, "register_preset").map(registered)).toEqual([
-    buildRegisterLedgerPresetCalldata(
-      presetIdForEnvironment("madara.frontier"),
-      buildLedgerEconomicPreset("frontier", { presetId: presetIdForEnvironment("madara.frontier") }),
-      mystery,
-    ),
-  ]);
   const cosmetics = setupOf(environments.dev, "set_attrs_raw_to_ipfs_cid").filter(
     (call) => call.contractAddress === assets.cosmetics,
   );
   expect(cosmetics.map((call) => BigInt(registered(call)[0]!))).toEqual(mystery.items.flat().map(BigInt));
 });
 
-test("production's chests pay one entry of LORDS from a 90% reserve and award no cosmetic", () => {
-  const [frontier, ...more] = setupOf(environments.production, "register_preset").map(registered);
-  expect(more).toEqual([]);
+test("production's chests pay one entry of LORDS and award no cosmetic", () => {
   const lords = buildLordsChestPreset();
   for (const band of lords.bands) {
     expect(band.lords_shares).toBe(1);
@@ -426,36 +389,9 @@ test("production's chests pay one entry of LORDS from a 90% reserve and award no
     ]);
     expect(band.odds.lords + band.odds.sword + band.odds.shield).toBe(10000);
   }
-  const economics = buildLedgerEconomicPreset("blitz", { environment: "production", chests: lords });
-  expect(economics.chest_lords_bps).toBe(9000);
-  // The ledger pays the reserve out of the pool left after its protocol cut; more would fail every result.
-  expect(economics.chest_lords_bps + economics.protocol_cut_bps).toBeLessThanOrEqual(10000);
-  expect(frontier).toEqual(
-    buildRegisterLedgerPresetCalldata(
-      presetIdForEnvironment("madara.frontier"),
-      buildLedgerEconomicPreset("frontier", { chests: lords, presetId: presetIdForEnvironment("madara.frontier") }),
-      lords,
-    ),
-  );
   const metadata = setupOf(environments.production, "set_attrs_raw_to_ipfs_cid");
   expect(metadata.every((call) => call.contractAddress === assets.chests)).toBe(true);
   expect(metadata).toHaveLength(5);
-});
-
-test("setup reads registered chest rewards back against its own call; mystery chests on production's ledger refuse", async () => {
-  const [call] = setupOf(environments.production, "register_preset");
-  const readsBack = (chests: ReturnType<typeof buildMysteryChestPreset>) =>
-    ({
-      callContract: async ({ entrypoint, calldata }: { entrypoint: string; calldata: string[] }) => {
-        if (entrypoint === "get_preset") return registered(call!).slice(1, 1 + LEDGER_PRESET_FIELD_COUNT);
-        if (entrypoint === "get_chest_band") return CallData.compile(chests.bands[Number(calldata[1])]!);
-        return CallData.compile([chests.items[Number(calldata[1])]!]);
-      },
-    }) as unknown as RpcProvider;
-  expect(await setupPresenceReader(readsBack(buildLordsChestPreset()))(call!, 10)).toBe(true);
-  await expect(setupPresenceReader(readsBack(buildMysteryChestPreset()))(call!, 10)).rejects.toThrow(
-    "Registered chest rewards differ",
-  );
 });
 
 test("metadata presence follows all confirmed event pages; differing metadata refuses", async () => {

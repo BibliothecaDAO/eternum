@@ -1,25 +1,7 @@
 import { expect, test } from "bun:test";
-import { type RpcProvider } from "starknet";
 import { isContractRevert } from "./chain";
-import { setupCalls, setupPresenceReader } from "./ledger";
-import { environments } from "./settings";
 
-const assets = { ledger: "0x10", lords: "0x11", mmr: "0x12", chests: "0x13", cosmetics: "0x14" };
 const refused = (reason: string, code = 40) => ({ code, message: "Contract error", data: { revert_error: reason } });
-test("a fresh ledger's preset read reports missing on an RPC contract error", async () => {
-  const reason = "Ledger: unknown preset";
-  const operation = setupCalls(environments.dev, assets, "0x33").find((call) => call.entrypoint === "register_preset")!;
-  const provider = {
-    callContract: async () => {
-      throw refused(reason);
-    },
-  } as unknown as RpcProvider;
-  expect(await setupPresenceReader(provider)(operation, 5)).toBe(false);
-  provider.callContract = async () => {
-    throw refused(reason, 41);
-  };
-  await expect(setupPresenceReader(provider)(operation, 5)).rejects.toEqual(refused(reason, 41));
-});
 test("the unfunded Frontier read uses the same contract error and exact refusal", async () => {
   const reason = "Ledger: unknown Frontier season";
   const read = async () => {

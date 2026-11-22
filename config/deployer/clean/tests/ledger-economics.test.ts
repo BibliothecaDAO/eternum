@@ -1,72 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { CallData } from "starknet";
-import ledgerAbi from "../../../../contracts/l2/ledger/schema/abi.json";
 import { buildMysteryChestPreset } from "../../../../contracts/l2/ledger/scripts/chest-preset.js";
-import { buildLedgerEconomicPreset, buildRegisterLedgerPresetCalldata } from "../ledger/economics";
-
-describe("ledger economics", () => {
-  it("registers effective day units for normal, Devcon and accelerated Frontier clocks", () => {
-    for (const [presetId, dayUnit] of [
-      [5, 14_400],
-      [6, 7_200],
-      [101, 120],
-    ]) {
-      const preset = buildLedgerEconomicPreset("frontier", { presetId });
-      expect(preset.day_unit_seconds).toBe(dayUnit);
-      expect(buildRegisterLedgerPresetCalldata(presetId, preset)[17]).toBe(String(dayUnit));
-    }
-    expect(buildLedgerEconomicPreset("blitz").day_unit_seconds).toBe(0);
-    expect(() => buildLedgerEconomicPreset("blitz", { presetId: 5 })).toThrow("game type differs");
-  });
-  it("reads the same claim-window preset as the shard without a second override", async () => {
-    const { nativePresetForId } = await import("../../../source/native");
-    for (const presetId of [5, 101]) {
-      const preset = buildLedgerEconomicPreset("frontier", { presetId });
-      expect(preset.claim_window_seconds).toBe(nativePresetForId(presetId).chests!.claimWindowSeconds);
-      expect(buildRegisterLedgerPresetCalldata(presetId, preset)[18]).toBe(String(preset.claim_window_seconds));
-    }
-    expect(buildLedgerEconomicPreset("blitz").claim_window_seconds).toBe(0);
-  });
-
-  it("builds the approved Blitz preset", () => {
-    const preset = buildLedgerEconomicPreset("blitz");
-
-    expect(preset).toMatchObject({
-      protocol_cut_bps: 1_000,
-      paid_fraction_bps: 2_000,
-      decay_bps: 9_600,
-    });
-    expect(preset.mmr).toEqual({ enabled: true, mean: 1_500, spread: 450, max_delta: 45, k: 50, regression_bps: 150 });
-    expect(BigInt(preset.entry_fee.low)).toBe(100_000_000_000_000_000_000n);
-    expect(buildRegisterLedgerPresetCalldata(1, preset).length).toBe(83);
-    expect(buildRegisterLedgerPresetCalldata(1, preset)[21]).toBe("5");
-  });
-
-  it("serializes each mode's economic preset exactly as the ledger ABI", () => {
-    const codec = new CallData(ledgerAbi);
-    const chest = buildMysteryChestPreset();
-    for (const [gameType, presetId] of [
-      ["blitz", 2],
-      ["frontier", 5],
-      ["frontier", 6],
-    ] as const) {
-      const preset = buildLedgerEconomicPreset(gameType, { presetId });
-      expect(buildRegisterLedgerPresetCalldata(presetId, preset, chest)).toEqual(
-        codec.compile("register_preset", { preset_id: presetId, preset, bands: chest.bands, items: chest.items }),
-      );
-    }
-  });
-
-  it("keeps the Frontier preset free of treasury cuts", () => {
-    expect(buildLedgerEconomicPreset("frontier").protocol_cut_bps).toBe(0);
-  });
-
-  it("serializes the chest LORDS share as an admin preset", () => {
-    const preset = buildLedgerEconomicPreset("blitz");
-    expect(preset.chest_lords_bps).toBe(1000);
-    expect(buildRegisterLedgerPresetCalldata(1, preset).slice(3, 5)).toEqual(["1000", "1000"]);
-  });
-});
 
 describe("mystery chest economics", () => {
   it("prices rewards as entry shares and keeps every band's odds at 100 percent", () => {
@@ -78,19 +11,6 @@ describe("mystery chest economics", () => {
       expect(band).not.toHaveProperty("lords_amount");
     }
     expect(chest.bands.reduce((sum, band) => sum + band.lords_shares * band.odds.lords, 0) / 5 / 10000).toBe(0.1);
-    for (const [environment, entry] of [
-      ["dev", 100],
-      ["production", 100],
-    ] as const) {
-      const preset = buildLedgerEconomicPreset("blitz", { environment });
-      for (const price of [preset.entry_fee, preset.sword_price, preset.shield_price]) {
-        expect(BigInt(price.low)).toBe(BigInt(entry) * 10n ** 18n);
-        expect(BigInt(price.high)).toBe(0n);
-      }
-      expect(preset.protocol_cut_bps).toBe(1000);
-      expect(preset.chest_lords_bps).toBe(1000);
-      expect(chest.bands.slice(0, 3).map((band) => band.lords_shares * entry)).toEqual([4 * entry, 2 * entry, entry]);
-    }
   });
   it("preserves non-token proportions to within one basis point", () => {
     const previous = [
@@ -110,19 +30,5 @@ describe("mystery chest economics", () => {
         expect(Math.abs(actual[position]! - (weight * (10000 - band.odds.lords)) / total)).toBeLessThan(1),
       );
     });
-  });
-});
-
-it("funds historical Frontier chests at 70 percent and reserves the remainder for the top ten", () => {
-  const preset = buildLedgerEconomicPreset("frontier", { presetId: 5 });
-  expect(preset.frontier_chest_bps).toBe(7000);
-  expect(preset.frontier_top_n).toBe(10);
-});
-
-it("the current Frontier preset carries no retired chest pool or claim deadline", () => {
-  expect(buildLedgerEconomicPreset("frontier")).toMatchObject({
-    frontier_chest_bps: 0,
-    frontier_top_n: 0,
-    claim_window_seconds: 0,
   });
 });

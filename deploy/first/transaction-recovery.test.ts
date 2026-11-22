@@ -3,7 +3,6 @@ import { mkdtempSync, mkdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Account, Call } from "starknet";
-import { presetIdForEnvironment } from "../../config/deployer/clean/constants";
 import { send, transactionIntentName } from "./chain";
 import { configureLedger } from "./ledger";
 import { PrivateStore } from "./private-store";
@@ -125,23 +124,14 @@ test("a changed unsent setup sends the newly computed calls with the current non
     getBlockWithTxHashes: async () => ({ block_number: 5, timestamp: 1 }),
     getEvents: async () => ({ events: [] }),
     getClassHashAt: async () => "0x1",
-    callContract: async ({ entrypoint }: { entrypoint: string }) => {
-      if (entrypoint === "has_role") return ["1"];
-      throw {
-        code: 40,
-        message: "Contract error",
-        data: { revert_error: "Ledger: unknown preset" },
-      };
-    },
+    callContract: async () => ["1"],
   } as unknown as Account;
   const assets = { ledger: "0x10", lords: "0x11", mmr: "0x12", chests: "0x13", cosmetics: "0x14" };
   await configureLedger(provider, environments.dev, assets, "0x33", input, files, () => {});
   const [calls, options] = rpc.execute.mock.calls[0]!;
   expect(options).toEqual({ nonce: "12" });
   expect(rpc.getNonce.mock.calls).toEqual([[5]]);
-  expect(
-    calls.filter((call) => call.entrypoint === "register_preset").map((call) => (call.calldata as string[])[0]),
-  ).toEqual([String(presetIdForEnvironment("madara.frontier"))]);
+  expect(calls.map((call) => call.entrypoint)).toEqual(Array(10).fill("set_attrs_raw_to_ipfs_cid"));
   expect(calls.some((call) => call.contractAddress === "0xbad")).toBe(false);
 });
 

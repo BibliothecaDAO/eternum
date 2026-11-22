@@ -1,6 +1,5 @@
 import { frontierSeasonOnePreset } from "../../../source/frontier/season-one";
 import { buildingIds } from "../../../source/frontier/native";
-import { buildLedgerEconomicPreset } from "../ledger/economics";
 import { findRegistrarGame } from "../registrar/calls";
 import { nativePresets } from "../../../source/native";
 import { describe, expect, test, mock } from "bun:test";
@@ -605,7 +604,7 @@ describe("scaled Frontier presets", () => {
     }
   });
 
-  test("world and ledger registration agree on every Frontier preset's effective day and real claim window", () => {
+  test("world registration gives every Frontier preset its effective day", () => {
     for (const [presetId, dayUnit] of [
       [FRONTIER_PRESET_ID, 14_400],
       [FRONTIER_DEVCON_PRESET_ID, 7_200],
@@ -614,11 +613,7 @@ describe("scaled Frontier presets", () => {
       [FRONTIER_PLAYGROUND_PRESET_ID, 14_400],
     ]) {
       const world = buildNativePreset(loadNativePresetConfiguration("madara.frontier", presetId), presetId);
-      const ledger = buildLedgerEconomicPreset("frontier", { presetId });
       expect(world.rules.day_unit_seconds).toBe(dayUnit);
-      expect(ledger.day_unit_seconds).toBe(dayUnit);
-      const historical = presetId !== FRONTIER_FIXTURE_PRESET_ID && presetId !== FRONTIER_PLAYGROUND_PRESET_ID;
-      expect(ledger.claim_window_seconds).toBe(historical ? 604_800 : 0);
     }
   });
 
@@ -666,12 +661,6 @@ describe("Devcon's fast Frontier preset", () => {
       golden_essence: 2_000n,
     });
     expect(fast.structures.research).toEqual(normal.structures.research);
-  });
-
-  test("registers Devcon's 70-percent chest split and top three on the ledger without changing normal Frontier", () => {
-    const ledger = (presetId: number) => buildLedgerEconomicPreset("frontier", { presetId });
-    expect(ledger(FRONTIER_PRESET_ID)).toMatchObject({ frontier_chest_bps: 7000, frontier_top_n: 10 });
-    expect(ledger(FRONTIER_DEVCON_PRESET_ID)).toMatchObject({ frontier_chest_bps: 7000, frontier_top_n: 3 });
   });
 
   test("every seeded bag has five 4–12-hour days while activity stays at three times normal", () => {
