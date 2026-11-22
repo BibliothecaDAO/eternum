@@ -77,6 +77,29 @@ describe("a receipt from the shard's node", () => {
     expect({ l2Gas: measured.l2Gas, events: measured.events }).toEqual({ l2Gas: 50_000_000, events: 3 });
   });
 
+  it("is judged on its confirmed block, not on the pre-confirmed one the node answers first", async () => {
+    const answers = [receipt("0xf", { finality_status: "PRE_CONFIRMED" }), receipt("0xf")];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response(JSON.stringify({ result: answers.length > 1 ? answers.shift() : answers[0] }))),
+    );
+    const [confirmed] = await receiptsOf(owner, shard, [{ operation: "explore", hash: "0xf" }]);
+    expect({ finality: confirmed.finality, applied: confirmed.applied }).toEqual({
+      finality: "ACCEPTED_ON_L2",
+      applied: true,
+    });
+  });
+
+  it("left pre-confirmed past the wait is not applied, and says so", async () => {
+    nodeAnswering({ "0x10": receipt("0x10", { finality_status: "PRE_CONFIRMED" }) });
+    vi.spyOn(Date, "now").mockReturnValueOnce(0).mockReturnValueOnce(0).mockReturnValue(120_000);
+    const [pending] = await receiptsOf(owner, shard, [{ operation: "attack", hash: "0x10" }]);
+    expect({ applied: pending.applied, why: pending.why }).toEqual({
+      applied: false,
+      why: "not confirmed: PRE_CONFIRMED",
+    });
+  });
+
   it("that never confirms is not applied", async () => {
     nodeAnswering({});
     vi.spyOn(Date, "now").mockReturnValueOnce(0).mockReturnValueOnce(0).mockReturnValue(120_000);

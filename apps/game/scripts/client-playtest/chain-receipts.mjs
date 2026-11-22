@@ -5,6 +5,7 @@ import { nodeRpc } from "./node-rpc.mjs";
 const RECEIPT_WAIT_MS = 60_000;
 const RECEIPT_POLL_MS = 1_000;
 const NOT_FOUND = 29;
+const CONFIRMED = ["ACCEPTED_ON_L2", "ACCEPTED_ON_L1"];
 
 export const SENT_ACTIONS = `JSON.stringify((globalThis.__clientActionLatencyMeasurements ?? [])
   .filter(({ transactionHash }) => transactionHash)
@@ -51,21 +52,23 @@ export const allApplied = (receipts) => receipts.length > 0 && receipts.every(({
 
 async function readReceipt(owner, shard, hash) {
   const end = Date.now() + RECEIPT_WAIT_MS;
+  let seen = null;
   while (Date.now() < end) {
     owner.throwIfCancelled();
     const reply = await nodeRpc(shard.rpcUrl, "starknet_getTransactionReceipt", { transaction_hash: hash });
     if (reply.error && reply.error.code !== NOT_FOUND)
       throw new Error(`Receipt of ${hash}: ${JSON.stringify(reply.error)}`);
-    if (Number.isSafeInteger(reply.result?.block_number)) return reply.result;
+    if (Number.isSafeInteger(reply.result?.block_number)) seen = reply.result;
+    if (seen && (CONFIRMED.includes(seen.finality_status) || seen.execution_status === "REVERTED")) return seen;
     await owner.sleep(RECEIPT_POLL_MS);
   }
-  return null;
+  return seen;
 }
 
 function judgeReceipt(action, receipt, shard) {
   if (!receipt) return { ...action, applied: false, why: "no confirmed receipt" };
   const rejection = gameplayRejection(receipt.events ?? [], shard.games, action.hash);
-  const confirmed = ["ACCEPTED_ON_L2", "ACCEPTED_ON_L1"].includes(receipt.finality_status);
+  const confirmed = CONFIRMED.includes(receipt.finality_status);
   const succeeded = receipt.execution_status === "SUCCEEDED";
   return {
     ...action,
@@ -76,6 +79,8 @@ function judgeReceipt(action, receipt, shard) {
     l2Gas: Number(receipt.execution_resources?.l2_gas ?? NaN),
     events: receipt.events?.length ?? 0,
     applied: confirmed && succeeded && !rejection,
-    why: rejection ? `refused: ${rejection.reason || rejection.statusClass}` : (receipt.revert_reason ?? null),
+    why: rejection
+      ? `refused: ${rejection.reason || rejection.statusClass}`
+      : (receipt.revert_reason ?? (confirmed ? null : `not confirmed: ${receipt.finality_status}`)),
   };
 }
