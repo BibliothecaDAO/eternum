@@ -15,8 +15,7 @@ army disappears. `--steps lab-reinforce` records the reinforcement command and r
 The optional `--steps army-stock` preparation builds a Barracks through the realm board when the saved home needs
 reserve troops.
 
-Research balance: `/lab/data?mode=frontier&view=balance` retains the historical storage and beast-reward study. Farm and
-Workshop plans read current research prices. The ruin card (`/lab/kit/hud/site-ruin`) shows the carried relic awarded on
+The ruin card (`/lab/kit/hud/site-ruin`) shows the carried relic awarded on
 victory. Season 1 ruins award relics and exploration has no cash chests.
 
 Frontier fight cards and Events share **Victory**, **Army lost** and **Guard holds**. Events, the Log and Today name a

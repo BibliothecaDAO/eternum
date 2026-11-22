@@ -165,7 +165,7 @@ it.each([
   ["/lab/terrain?mode=frontier", "terrain", "Art", "Terrain"],
   ["/lab/terrain-props", "props", "Art", "Terrain"],
   ["/lab/chunks", "chunks", "Art", "Bench"],
-  ["/lab/data?view=balance", "data", "Data", "Balance & data"],
+  ["/lab/data?mode=frontier", "data", "Data", "Balance & data"],
   ["/lab/data/usage?mode=blitz", "ui-usage", "Data", "UI usage"],
   ["/lab/studio?take=battle&mode=frontier", "studio", "Studio", "Set"],
   ["/lab/footage", "footage", "Studio", "Footage"],
