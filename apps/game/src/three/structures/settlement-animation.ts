@@ -2,7 +2,7 @@ import { BufferAttribute, BufferGeometry, DynamicDrawUsage, Mesh, type Object3D 
 import type { WeatherState } from "../managers/weather-manager";
 import { SettlementAtmosphere } from "./settlement-atmosphere";
 
-type Motion = "banner" | "flame" | "spin" | "foliage";
+type Motion = "banner" | "flame" | "spin";
 interface AnimatedSurface {
   mesh: Mesh;
   original: BufferGeometry;
@@ -27,7 +27,7 @@ export class SettlementAnimation {
     this.atmosphere = new SettlementAtmosphere(source, instances);
     const motions = new Map<string, Motion>();
     source.traverse((node) => {
-      if (node instanceof Mesh && ["banner", "flame", "spin", "foliage"].includes(node.userData.settlementMotion)) {
+      if (node instanceof Mesh && ["banner", "flame", "spin"].includes(node.userData.settlementMotion)) {
         motions.set(node.geometry.uuid, node.userData.settlementMotion);
       }
     });
@@ -81,7 +81,6 @@ export class SettlementAnimation {
     for (const surface of this.surfaces) {
       if (surface.motion === "banner") this.waveBanner(surface, this.clothWind);
       else if (surface.motion === "flame") this.flickerFlame(surface, wind);
-      else if (surface.motion === "foliage") this.swayFoliage(surface, wind);
       else this.spinGem(surface);
       surface.geometry.getAttribute("position").needsUpdate = true;
       surface.geometry.computeVertexNormals();
@@ -141,19 +140,6 @@ export class SettlementAnimation {
         y + Math.abs(sway) * free * 0.2,
         z + sway + wind.windZ * free * 0.045 * clothScale,
       );
-    }
-  }
-
-  private swayFoliage(surface: AnimatedSurface, wind: Pick<WeatherState, "windX" | "windZ">): void {
-    const positions = surface.geometry.getAttribute("position") as BufferAttribute;
-    const phase = surface.centerX * 13 + surface.centerZ * 9;
-    const sway = Math.sin(this.seconds * 1.8 + phase) * 0.009;
-    for (let i = 0; i < positions.count; i++) {
-      const x = surface.rest[i * 3];
-      const y = surface.rest[i * 3 + 1];
-      const z = surface.rest[i * 3 + 2];
-      const free = (y - surface.minY) / surface.height;
-      positions.setXYZ(i, x + free * (sway + wind.windX * 0.014), y, z + free * (sway * 0.6 + wind.windZ * 0.014));
     }
   }
 

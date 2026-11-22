@@ -3,10 +3,12 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  resolveDayPhase,
   clampCycleProgress,
-  resolveDebuggableCycleProgress,
-  resolveDayCycleProgress,
+  dayLightProgress,
+  DAY_PHASE_PROGRESS,
+  hearthStrength,
+  resolveDayPhase,
+  SURFACE_MOOD_PROGRESS,
 } from "./cycle-progress";
 
 describe("cycle progress debug helpers", () => {
@@ -20,21 +22,12 @@ describe("cycle progress debug helpers", () => {
     expect(clampCycleProgress(Number.NaN)).toBe(0);
     expect(clampCycleProgress(Number.POSITIVE_INFINITY)).toBe(0);
   });
-
-  it("uses live progress when no debug override is active", () => {
-    expect(resolveDebuggableCycleProgress(63, null)).toBe(63);
-  });
-
-  it("uses and clamps the debug override when it is active", () => {
-    expect(resolveDebuggableCycleProgress(63, 18)).toBe(18);
-    expect(resolveDebuggableCycleProgress(63, 180)).toBe(100);
-  });
 });
 
-it("preserves the six-tick atmospheric cycle independently of header phases", () => {
-  expect(resolveDayCycleProgress(180, 60)).toBe(50);
-  expect(resolveDayCycleProgress(360, 60)).toBe(0);
-  expect(() => resolveDayCycleProgress(10, 0)).toThrow("Army tick duration is unavailable");
+it("lights the Surface at one late golden afternoon, past the day's middle and before dusk", () => {
+  expect(resolveDayPhase(SURFACE_MOOD_PROGRESS).name).toBe("Day");
+  expect(SURFACE_MOOD_PROGRESS).toBeGreaterThan(50);
+  expect(resolveDayPhase(SURFACE_MOOD_PROGRESS + 100 / 12).name).toBe("Dusk");
 });
 
 it("splits the day into six tick-long phases and wraps midnight", () => {
@@ -42,4 +35,19 @@ it("splits the day into six tick-long phases and wraps midnight", () => {
   expect(resolveDayPhase(50)).toEqual({ name: "Day", index: 3, progress: 0 });
   expect(resolveDayPhase(60)).toEqual({ name: "Day", index: 3, progress: expect.closeTo(60) });
   expect(resolveDayPhase(100)).toEqual({ name: "Night", index: 0, progress: 0 });
+});
+
+it("runs the Surface's day from morning through midday and the golden afternoon to dusk", () => {
+  expect(dayLightProgress(0)).toBeCloseTo(DAY_PHASE_PROGRESS.morning, 6);
+  expect(dayLightProgress(0.25)).toBeCloseTo(125 / 3, 6);
+  expect(dayLightProgress(0.5)).toBe(50);
+  expect(dayLightProgress(0.9)).toBeCloseTo((175 / 3 + 200 / 3) / 2, 6);
+  expect(dayLightProgress(1)).toBeCloseTo(DAY_PHASE_PROGRESS.dusk, 6);
+});
+
+it("lights the hearths weakest at midday and strongest at dusk", () => {
+  expect(hearthStrength(DAY_PHASE_PROGRESS.morning)).toBeCloseTo(0.8, 6);
+  expect(hearthStrength(50)).toBeCloseTo(0.6, 6);
+  expect(hearthStrength((50 + DAY_PHASE_PROGRESS.dusk) / 2)).toBeCloseTo(0.9, 6);
+  expect(hearthStrength(DAY_PHASE_PROGRESS.dusk)).toBeCloseTo(1.2, 6);
 });

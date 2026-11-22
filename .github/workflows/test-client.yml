@@ -43,13 +43,14 @@ jobs:
             apps/game/public/images/landscapes
             apps/game/public/images/logos
             apps/game/public/images/oaths
+            apps/game/public/models/biome-creatures
             apps/game/public/models/characters/quaternius
             apps/game/public/models/characters/t1-knight-default
             apps/game/public/models/ethereal
             apps/game/public/models/frontier
             apps/game/public/models/new-buildings-opt
             apps/game/public/models/outposts
-            apps/game/public/models/procedural-terrain
+            apps/game/public/models/terrain-flora
             apps/game/public/models/realms
             apps/game/public/models/reward-tiles
             apps/game/public/models/ships

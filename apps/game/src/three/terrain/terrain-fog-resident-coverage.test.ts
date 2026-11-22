@@ -21,16 +21,15 @@ describe("resident fog coverage", () => {
           return { x: (corner.x + next.x) / 2, z: (corner.z + next.z) / 2 };
         });
         for (const point of [center, ...corners, ...edges]) {
-          const vertices = Array.from(page.buffers.explored.keys()).filter((index) => {
-            const x = page.buffers.positions[index * 3];
-            const z = page.buffers.positions[index * 3 + 2];
-            return Math.abs(x - point.x) < 0.000_002 && Math.abs(z - point.z) < 0.000_002;
-          });
+          const vertices = Array.from({ length: page.buffers.positions.length / 3 }, (_, index) => index).filter(
+            (index) => {
+              const x = page.buffers.positions[index * 3];
+              const z = page.buffers.positions[index * 3 + 2];
+              return Math.abs(x - point.x) < 0.000_002 && Math.abs(z - point.z) < 0.000_002;
+            },
+          );
           expect(vertices.length).toBeGreaterThan(0);
-          expect(vertices.every((index) => page.buffers.explored[index] === 1)).toBe(true);
         }
-        expect(new Set(page.buffers.explored)).toEqual(new Set([1]));
-        if (page.waterBuffers) expect(new Set(page.waterBuffers.explored)).toEqual(new Set([1]));
       }
     },
   );
@@ -42,7 +41,7 @@ describe("resident fog coverage", () => {
     expect(hidden.buffers.positions).toHaveLength(0);
     expect(hidden.waterBuffers).toBeNull();
     expect(hidden.shroudInstances).toHaveLength(1);
-    expect(new Set(after.buffers.explored)).toEqual(new Set([1]));
+    expect(after.buffers.positions.length).toBeGreaterThan(0);
   });
 });
 

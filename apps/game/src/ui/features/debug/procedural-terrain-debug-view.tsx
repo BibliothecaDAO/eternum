@@ -34,7 +34,7 @@ const typedEntityId = (value: string): number | undefined =>
 const EMPTY_STATS: ProceduralTerrainDebugStats = {
   gameMode: "blitz",
   preparedFrontierCells: 0,
-  wildlife: { count: 0, loaded: 0, pending: 0, failed: [], visible: true, creatures: [] },
+  wildlife: { count: 0, cap: 0, loaded: 0, pending: 0, failed: [], visible: true, creatures: [] },
   activeMode: "webgpu",
   biomeCount: 0,
   buildingInstances: 0,
@@ -56,8 +56,6 @@ const EMPTY_STATS: ProceduralTerrainDebugStats = {
   frameP95Ms: 0,
   frameWorstMs: 0,
   frameSampleCount: 0,
-  groundTextureBytes: 0,
-  groundTextureLayers: 0,
   groundCoverInstances: 0,
   prepareMs: 0,
   propInstances: 0,
@@ -768,8 +766,6 @@ function TerrainLabMetrics({
         <DebugMetric label="Fog KB" value={Math.round(stats.fogMaskBytes / 1024).toLocaleString()} />
         <DebugMetric label="Fog opacity" value={`${Math.round(stats.fogOpacity * 100)}%`} />
         <DebugMetric label="Active reveal" value={stats.shroudActiveReveals.toLocaleString()} />
-        <DebugMetric label="Ground" value={`${stats.groundTextureLayers || "--"} layers`} />
-        <DebugMetric label="Ground KB" value={Math.round(stats.groundTextureBytes / 1024).toLocaleString()} />
         <DebugMetric label="Frame p50" value={`${stats.frameP50Ms.toFixed(1)} ms`} />
         <DebugMetric label="Frame p95" value={`${stats.frameP95Ms.toFixed(1)} ms`} />
         <DebugMetric label="Frame worst" value={`${stats.frameWorstMs.toFixed(1)} ms`} />

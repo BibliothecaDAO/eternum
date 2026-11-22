@@ -1,7 +1,6 @@
 import { NEUTRAL_BIOME_CLIMATE } from "@bibliothecadao/eternum";
 import { BiomeType } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
-import { SurfaceBasaltTransition, visitSurfaceBasaltSlabs } from "./terrain-basalt-transition";
 import { terrainHexToWorld } from "./terrain-coordinates";
 import { TerrainField } from "./terrain-field";
 import { prepareTerrainPage } from "./terrain-page-builder";
@@ -29,34 +28,21 @@ const source = (cells: TerrainCellInput[], halo: TerrainCellInput[] = []): Terra
 const spire = cell(0, { surfacePresentation: "ethereal", occupied: true });
 
 describe("surface basalt margins", () => {
-  it("partitions the full tile once and completes boundary slabs with identical weights in the neighbour", () => {
-    const transition = new SurfaceBasaltTransition(source([spire, cell(1)]));
-    const weights = new Map<string, number>();
-    let shared = 0;
-    let fadingShared = 0;
-    for (const owner of [spire, cell(1)]) {
-      let area = 0;
-      visitSurfaceBasaltSlabs(owner, (polygon, center) => {
-        for (let i = 1; i < polygon.length - 1; i++) {
-          const a = polygon[0],
-            b = polygon[i],
-            c = polygon[i + 1];
-          area += Math.abs((b.x - a.x) * (c.z - a.z) - (b.z - a.z) * (c.x - a.x)) / 2;
-        }
-        const key = `${center.x}:${center.z}`;
-        const weight = transition.slabWeight(center.x, center.z, owner);
-        if (weights.has(key)) {
-          expect(weight).toBe(weights.get(key));
-          expect(weight).toBeGreaterThan(0);
-          if (weight < 1) fadingShared++;
-          shared++;
-        }
-        weights.set(key, weight);
-      });
-      expect(area).toBeCloseTo((3 * Math.sqrt(3)) / 2, 5);
-    }
-    expect(shared).toBeGreaterThan(0);
-    expect(fadingShared).toBeGreaterThan(0);
+  it("fades the stone on the ground from the spire's whole hex to nothing at the first ring's outer edge", () => {
+    const page = prepareTerrainPage(source([spire, cell(1), cell(2)]));
+    const weightsAt = (x: number) => {
+      const weights: number[] = [];
+      for (let i = 0; i < page.buffers.positions.length; i += 3)
+        if (Math.abs(page.buffers.positions[i] - x) < 2e-6 && page.buffers.normals[i + 1] > 0.5)
+          weights.push(page.buffers.basaltWeights![i / 3]);
+      return weights;
+    };
+    expect(weightsAt(0).length).toBeGreaterThan(0);
+    expect(weightsAt(0)).toEqual(weightsAt(0).map(() => 1));
+    expect(weightsAt(Math.sqrt(3) * 1.5).length).toBeGreaterThan(0);
+    expect(weightsAt(Math.sqrt(3) * 1.5).every((weight) => weight === 0)).toBe(true);
+    const between = weightsAt(Math.sqrt(3) * (1 / 2 + 1 / 3));
+    expect(between.some((weight) => weight > 0 && weight < 1)).toBe(true);
   });
 
   it("matches height across independently prepared page boundaries", () => {
@@ -67,8 +53,6 @@ describe("surface basalt margins", () => {
       const result = new Map<string, number>();
       for (let i = 0; i < page.buffers.positions.length; i += 3) {
         if (Math.abs(page.buffers.positions[i] - boundary) > 2e-6 || page.buffers.normals[i + 1] < 0.5) continue;
-        // A boundary can coincide with a joint between differently faded slabs. Shared
-        // slabs retain identical weights (above); heights must match even across joints.
         result.set(page.buffers.positions[i + 2].toFixed(5), page.buffers.positions[i + 1]);
       }
       return result;

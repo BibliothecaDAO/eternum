@@ -44,7 +44,7 @@ import {
   isShipModel,
   TROOP_TO_SHIP_MODEL,
 } from "@/three/constants/army-constants";
-import { ModelType } from "@/three/types/army";
+import { type ArmyPace, ModelType } from "@/three/types/army";
 import { GRAPHICS_DEV_GUI_ENABLED, createGuiFolder } from "@/three/utils/gui-manager";
 import { isAddressEqualToAccount } from "@/three/utils/utils";
 import { getExplorerStaminaSnapshot } from "@/utils/explorer-stamina";
@@ -154,6 +154,12 @@ export interface ArmyMovementPlan {
   worldPath: Vector3[];
   armyCategory: TroopType;
   armyTier: TroopTier;
+  pace: ArmyPace;
+}
+
+interface OrderedRoute {
+  hexes: Position[];
+  pace: ArmyPace;
 }
 
 export interface ProceduralArmyProductionStats extends ProceduralArmyCharacterLayerStats {
@@ -244,7 +250,7 @@ export class ArmyManager {
   private activeArmyAttachmentEntities: Set<number> = new Set();
   private armyAttachmentTransformScratch = new Map<string, AttachmentTransform>();
   /** The route each of the player's armies was last ordered along, held until its facts move it (expectOrderedRoute). */
-  private orderedRoutes = new Map<ID, Position[]>();
+  private orderedRoutes = new Map<ID, OrderedRoute>();
   private chunkStride: number;
   private isDestroyed = false;
   private layerRevision = 0;
@@ -287,17 +293,9 @@ export class ArmyManager {
     this.worldSpatialProjection = worldSpatialProjection;
     this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
     this.contentLadder = resolveWorldmapContentLadder(this.currentCameraView);
-    this.armyModel = new ArmyModel(
-      scene,
-      (col, row) => this.groundBiomeOrLand(col, row),
-      this.currentCameraView,
-      compilePipelines,
-    );
+    this.armyModel = new ArmyModel(scene, (col, row) => this.groundBiomeOrLand(col, row), compilePipelines);
     this.armyModel.setModelsVisible(this.contentLadder.armyModels);
     this.proceduralArmyCharacterLayer = new ProceduralArmyCharacterLayer(scene);
-    this.proceduralArmyCharacterLayer.setShadowsEnabled(
-      this.currentCameraView === CameraView.Close && (hexagonScene?.getShadowsEnabled() ?? true),
-    );
     this.scale = new Vector3().setScalar(ARMY_MODEL_SCALE);
     this.renderChunkSize = renderChunkSize;
     // Keep chunk stride aligned with world chunk size so visibility/fetch math matches.
@@ -1845,15 +1843,15 @@ export class ArmyManager {
    * walks this route at once instead of asking the path worker for it again, a round trip behind the tile updates the
    * same facts queued there.
    */
-  public expectOrderedRoute(entityId: ID, route: Position[]): void {
+  public expectOrderedRoute(entityId: ID, route: OrderedRoute): void {
     this.orderedRoutes.set(entityId, route);
   }
 
-  /** The ordered route, once, if it runs from where the army stands to where its facts now put it. */
-  private takeOrderedRoute(entityId: ID, from: Position, to: Position): Position[] | null {
-    const route = this.orderedRoutes.get(entityId);
+  private takeOrderedRoute(entityId: ID, from: Position, to: Position): OrderedRoute | null {
+    const ordered = this.orderedRoutes.get(entityId);
     this.orderedRoutes.delete(entityId);
-    return orderedRouteFor(route, from, to);
+    const hexes = orderedRouteFor(ordered?.hexes, from, to);
+    return ordered && hexes ? { hexes, pace: ordered.pace } : null;
   }
 
   public async computeMovementPlan(entityId: ID, hexCoords: Position): Promise<ArmyMovementPlan | null> {
@@ -1890,7 +1888,7 @@ export class ArmyManager {
     }
 
     const route =
-      orderedRoute ??
+      orderedRoute?.hexes ??
       (shouldUseWorkerPath && maxHex !== undefined
         ? await gameWorkerManager.findPath(armyData.hexCoords, hexCoords, maxHex)
         : null);
@@ -1906,6 +1904,7 @@ export class ArmyManager {
       worldPath,
       armyCategory: armyData.category,
       armyTier: armyData.tier,
+      pace: orderedRoute?.pace ?? "walk",
     };
   }
 
@@ -1949,7 +1948,7 @@ export class ArmyManager {
       : undefined;
     if (walkingFrom) worldPath[0] = walkingFrom;
     this.armyModel.setMovementCompleteCallback(numericEntityId, undefined);
-    this.armyModel.startMovement(numericEntityId, worldPath, matrixIndex, plan.armyCategory, plan.armyTier);
+    this.armyModel.startMovement(numericEntityId, worldPath, matrixIndex, plan.armyCategory, plan.armyTier, plan.pace);
     if (armyData.isMine) presentResult(`walk:${numericEntityId}`);
     this.armyModel.setMovementCompleteCallback(numericEntityId, () => {
       if (!this.armyPresentations.has(entityId)) return;
@@ -2452,7 +2451,6 @@ export class ArmyManager {
         distanceToCameraSquared: this.hexagonScene?.getCamera().position.distanceToSquared(instance.position),
         entityId,
         isNaval: isShipModel(modelType),
-        isMoving: false,
         isSelected: this.selectedArmyId === army.entityId,
         position: instance.position,
         primaryColor: army.color,
@@ -2465,7 +2463,7 @@ export class ArmyManager {
     presentation.category = army.category;
     presentation.distanceToCameraSquared = this.hexagonScene?.getCamera().position.distanceToSquared(instance.position);
     presentation.isNaval = isShipModel(modelType);
-    presentation.isMoving = this.armyModel.isEntityMoving(entityId);
+    presentation.pace = this.armyModel.getEntityPace(entityId);
     presentation.isSelected = this.selectedArmyId === army.entityId;
     presentation.position = instance.position;
     presentation.primaryColor = army.color;
@@ -2629,7 +2627,7 @@ export class ArmyManager {
   }
 
   private requestMovingArmyShadowRefresh(): void {
-    if (this.currentCameraView !== CameraView.Close || !this.hasMovingArmies()) {
+    if (!this.hasMovingArmies()) {
       return;
     }
 
@@ -2856,21 +2854,13 @@ export class ArmyManager {
 
   private handleCameraViewChange = (view: CameraView) => {
     const shadowsEnabled = this.hexagonScene?.getShadowsEnabled() ?? true;
-    const enableRealShadows = view === CameraView.Close && shadowsEnabled;
-    const enableContactShadows = !enableRealShadows;
-
-    // Keep shadow flags in sync when the scene reapplies its visual profile.
-    this.armyModel.setShadowsEnabled(enableRealShadows);
-    this.armyModel.setContactShadowsEnabled(enableContactShadows);
-    this.proceduralArmyCharacterLayer.setShadowsEnabled(enableRealShadows);
+    this.armyModel.setShadowsEnabled(shadowsEnabled);
+    this.proceduralArmyCharacterLayer.setShadowsEnabled(shadowsEnabled);
 
     if (this.currentCameraView === view) {
       return;
     }
     this.currentCameraView = view;
-
-    // Update the ArmyModel's camera view
-    this.armyModel.setCurrentCameraView(view);
     this.applyContentLadder(resolveWorldmapContentLadder(view));
   };
 

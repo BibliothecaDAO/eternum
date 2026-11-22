@@ -105,6 +105,7 @@ interface UIStore {
   setFollowingArmyMessage: (message: string | null) => void;
   // cycle timing for storm effects
   cycleProgress: number;
+  dayCycleProgress: number;
   setCycleProgress: (progress: number) => void;
   debugCycleProgressOverride: DebugCycleProgressOverride;
   setDebugCycleProgressOverride: (progress: DebugCycleProgressOverride) => void;
@@ -250,16 +251,16 @@ export const useUIStore = create(
     },
     // cycle timing for storm effects
     cycleProgress: 0,
-    setCycleProgress: (progress: number) => set({ cycleProgress: clampCycleProgress(progress) }),
+    dayCycleProgress: 0,
+    setCycleProgress: (progress: number) =>
+      set((state) => ({
+        dayCycleProgress: clampCycleProgress(progress),
+        cycleProgress: state.debugCycleProgressOverride ?? clampCycleProgress(progress),
+      })),
     debugCycleProgressOverride: null,
     setDebugCycleProgressOverride: (progress: DebugCycleProgressOverride) => {
-      if (progress === null) {
-        set({ debugCycleProgressOverride: null });
-        return;
-      }
-
-      const clampedProgress = clampCycleProgress(progress);
-      set({ cycleProgress: clampedProgress, debugCycleProgressOverride: clampedProgress });
+      const override = progress === null ? null : clampCycleProgress(progress);
+      set((state) => ({ debugCycleProgressOverride: override, cycleProgress: override ?? state.dayCycleProgress }));
     },
   })),
 );

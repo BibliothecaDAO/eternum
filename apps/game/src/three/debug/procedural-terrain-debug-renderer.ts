@@ -93,8 +93,6 @@ export interface ProceduralTerrainDebugStats {
   frameP95Ms: number;
   frameWorstMs: number;
   frameSampleCount: number;
-  groundTextureBytes: number;
-  groundTextureLayers: number;
   groundCoverInstances: number;
   prepareMs: number;
   propInstances: number;
@@ -429,7 +427,7 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
   positionCamera(camera, controls, cameraFrame);
 
   const terrain = new ProceduralTerrain({ streaming: true, gameMode: input.gameMode });
-  await Promise.all([terrain.loadProps(), terrain.loadGroundTextures()]);
+  await terrain.loadProps();
   terrain.setQualityTier(input.qualityTier);
   let prepared = await terrain.preparePageAsync(request);
   let fogMask = await terrain.prepareFogMaskAsync([prepared]);
@@ -451,7 +449,6 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
   }
   const propStats = terrain.getPropStats();
   const shroudStats = terrain.getShroudStats();
-  const groundTextureStats = terrain.getGroundTextureStats();
   const realmModel = await createSettlementRealmModel(input.sceneId, terrain);
   const realmGeometry = measureInstancedModelGeometry(realmModel);
   const ecologyTransects = measureTerrainEcologyTransects(request);
@@ -470,8 +467,6 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
     fogMaskBytes: shroudStats.maskBytes,
     fogMaskHeight: shroudStats.maskHeight,
     fogMaskWidth: shroudStats.maskWidth,
-    groundTextureBytes: groundTextureStats.bytes,
-    groundTextureLayers: groundTextureStats.layerCount,
     groundCoverInstances: propStats.groundCoverInstances,
     prepareMs: prepared.diagnostics.prepareMs,
     propInstances: propStats.instances,

@@ -1,5 +1,6 @@
 import type { GameModeId } from "@/config/game-modes";
-import { FRONTIER_EMBER_COLORS, WORLD_ATMOSPHERE_PRESETS, type TimeOfDayColors } from "./world-atmosphere-presets";
+import { WORLD_ATMOSPHERE_PRESETS, type TimeOfDayColors } from "./world-atmosphere-presets";
+import type { LayerPlace } from "../terrain/layer-biomes";
 import { DAY_PHASE_PROGRESS, resolveDayPhase } from "@/utils/cycle-progress";
 import { placeKeyLight } from "./key-light";
 import type GUI from "lil-gui";
@@ -27,8 +28,16 @@ interface WorldAtmosphereParams {
 
 interface WorldAtmosphereUpdateOptions {
   snap?: boolean;
-  environment?: "world" | "ethereal";
+  environment?: AtmosphereEnvironment;
 }
+
+const LAYER_LIGHTS = {
+  veil: WORLD_ATMOSPHERE_PRESETS.veilLayer,
+  hollow: WORLD_ATMOSPHERE_PRESETS.hollowLayer,
+  deep: WORLD_ATMOSPHERE_PRESETS.deepArena,
+} as const satisfies Record<LayerPlace, TimeOfDayColors>;
+
+export type AtmosphereEnvironment = "world" | "ethereal" | LayerPlace;
 
 interface AtmosphereProgressFrame {
   progress: number;
@@ -48,7 +57,6 @@ const WEATHER_LIMITS = {
   maxKeyLightDimming: 0.2,
 } as const;
 
-const PREVIEW_SNAP_PROGRESS_THRESHOLD = 1.5;
 const WORLD_ORIGIN = new Vector3();
 
 export class WorldAtmosphereController {
@@ -91,7 +99,7 @@ export class WorldAtmosphereController {
   private isProgressInitialized: boolean = false;
   private readonly fullRotation: number = Math.PI * 2;
   private isDisposed = false;
-  private environment: "world" | "ethereal" = "world";
+  private environment: AtmosphereEnvironment = "world";
 
   // Store original lighting values to restore when disabled
   private originalLightingState: {
@@ -113,7 +121,7 @@ export class WorldAtmosphereController {
     hemisphereLight: HemisphereLight,
     ambientLight: AmbientLight,
     fog: Fog,
-    private readonly gameMode: GameModeId = "blitz",
+    _gameMode: GameModeId = "blitz",
   ) {
     this.scene = scene;
     this.directionalLight = directionalLight;
@@ -160,11 +168,10 @@ export class WorldAtmosphereController {
     const progressFrame = this.resolveAtmosphereProgress(adjustedProgress, options.snap === true || environmentChanged);
 
     // Get target colors for current time, then grade nighttime toward cooler tones
-    const interpolatedColors = this.getInterpolatedTimeColors(progressFrame.progress);
-    const targetColors = this.applyNightTemperatureGrading(interpolatedColors, progressFrame.progress);
-    if (this.gameMode === "frontier" && this.environment === "world") {
-      Object.assign(targetColors, FRONTIER_EMBER_COLORS);
-    }
+    const layerLight = this.layerLight();
+    const targetColors =
+      layerLight ??
+      this.applyNightTemperatureGrading(this.getInterpolatedTimeColors(progressFrame.progress), progressFrame.progress);
 
     // Smoothly transition current colors toward target colors
     this.currentColors = progressFrame.snapVisualState
@@ -183,12 +190,23 @@ export class WorldAtmosphereController {
 
     // Update sun position (relative to camera target if provided)
     this.updateSunPosition(cameraTarget, progressFrame.snapVisualState);
-    this.updateMoonLighting(progressFrame.progress);
+    this.updateMoonLighting(layerLight ? DAY_PHASE_PROGRESS.afternoon : progressFrame.progress);
+  }
+
+  private layerLight(): TimeOfDayColors | null {
+    const environment = this.environment;
+    return environment === "veil" || environment === "hollow" || environment === "deep"
+      ? LAYER_LIGHTS[environment]
+      : null;
+  }
+
+  get shownProgress(): number {
+    return (MathUtils.euclideanModulo(this.currentAngle, this.fullRotation) / this.fullRotation) * 100;
   }
 
   private resolveAtmosphereProgress(adjustedProgress: number, forceSnap: boolean): AtmosphereProgressFrame {
     const targetAngle = (adjustedProgress / 100) * this.fullRotation;
-    const shouldSnap = forceSnap || !this.isProgressInitialized || this.shouldSnapToProgress(targetAngle);
+    const shouldSnap = forceSnap || !this.isProgressInitialized;
 
     if (shouldSnap) {
       this.currentAngle = targetAngle;
@@ -197,17 +215,7 @@ export class WorldAtmosphereController {
       this.currentAngle = this.lerpAngle(this.currentAngle, targetAngle, this.params.progressSmoothing);
     }
 
-    const normalizedAngle = MathUtils.euclideanModulo(this.currentAngle, this.fullRotation);
-    return {
-      progress: (normalizedAngle / this.fullRotation) * 100,
-      snapVisualState: shouldSnap,
-    };
-  }
-
-  private shouldSnapToProgress(targetAngle: number): boolean {
-    const delta = Math.abs(this.getShortestAngleDelta(this.currentAngle, targetAngle));
-    const progressDelta = (delta / this.fullRotation) * 100;
-    return progressDelta >= PREVIEW_SNAP_PROGRESS_THRESHOLD;
+    return { progress: this.shownProgress, snapVisualState: shouldSnap };
   }
 
   /**
@@ -364,7 +372,9 @@ export class WorldAtmosphereController {
     const readableTimeColors = this.applyVisibilityFloors(timeColors);
 
     // Update scene background (sky)
-    (this.scene.background as Color).setHex(readableTimeColors.skyColor);
+    (this.scene.background as Color).setHex(
+      this.layerLight() ? readableTimeColors.fogColor : readableTimeColors.skyColor,
+    );
 
     // Update directional light (sun/moon)
     this.directionalLight.color.setHex(readableTimeColors.sunColor);
@@ -430,7 +440,7 @@ export class WorldAtmosphereController {
    * @param ambientBoost - How much weather should brighten shadows (0-1)
    */
   applyWeatherModulation(skyDarkness: number, fogDensity: number, sunOcclusion: number = 0, ambientBoost = 0): void {
-    if (!this.params.enabled || this.environment === "ethereal") return;
+    if (!this.params.enabled || this.environment !== "world") return;
 
     const haze = MathUtils.clamp(fogDensity, 0, WEATHER_LIMITS.maxHaze);
     const keyLightDimming = MathUtils.clamp(sunOcclusion, 0, 1) * WEATHER_LIMITS.maxKeyLightDimming;

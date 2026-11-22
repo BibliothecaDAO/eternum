@@ -11,12 +11,6 @@ export const clampCycleProgress = (progress: number): number => {
   return Math.min(Math.max(progress, MIN_CYCLE_PROGRESS), MAX_CYCLE_PROGRESS);
 };
 
-export const resolveDebuggableCycleProgress = (
-  liveProgress: number,
-  debugOverride: DebugCycleProgressOverride,
-): number => clampCycleProgress(debugOverride ?? liveProgress);
-
-/** Six army ticks remain the renderer's day/night cycle; they are not HUD phases. */
 export function resolveDayCycleProgress(timestamp: number, armyTickSeconds: number): number {
   if (!Number.isFinite(armyTickSeconds) || armyTickSeconds <= 0) throw new Error("Army tick duration is unavailable");
   const daySeconds = armyTickSeconds * 6;
@@ -31,6 +25,31 @@ export const DAY_PHASE_PROGRESS = {
   dusk: (100 / 6) * 4,
   evening: (100 / 6) * 5,
 } as const;
+
+export const SURFACE_MOOD_PROGRESS = DAY_PHASE_PROGRESS.lateAfternoon;
+
+const SURFACE_DAY_LIGHT: ReadonlyArray<readonly [number, number]> = [
+  [0, DAY_PHASE_PROGRESS.morning],
+  [0.5, DAY_PHASE_PROGRESS.afternoon],
+  [0.8, DAY_PHASE_PROGRESS.lateAfternoon],
+  [1, DAY_PHASE_PROGRESS.dusk],
+];
+
+export function dayLightProgress(daySpent: number): number {
+  const spent = Math.min(1, Math.max(0, daySpent));
+  const upper = SURFACE_DAY_LIGHT.findIndex(([share]) => share >= spent);
+  if (upper <= 0) return SURFACE_DAY_LIGHT[0][1];
+  const [lowShare, lowProgress] = SURFACE_DAY_LIGHT[upper - 1];
+  const [highShare, highProgress] = SURFACE_DAY_LIGHT[upper];
+  return lowProgress + ((spent - lowShare) / (highShare - lowShare)) * (highProgress - lowProgress);
+}
+
+export function hearthStrength(cycleProgress: number): number {
+  const midday = DAY_PHASE_PROGRESS.afternoon;
+  if (cycleProgress <= midday)
+    return 0.8 - ((cycleProgress - DAY_PHASE_PROGRESS.morning) / (midday - DAY_PHASE_PROGRESS.morning)) * 0.2;
+  return 0.6 + Math.min(1, (cycleProgress - midday) / (DAY_PHASE_PROGRESS.dusk - midday)) * 0.6;
+}
 
 /** The renderer's day: six phases, one per army tick, so a phase's length is the tick length. */
 const DAY_PHASES = [

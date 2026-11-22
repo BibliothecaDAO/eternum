@@ -12,11 +12,10 @@ import { STUDIO_TAKES, isStudioTake } from "./takes";
 /** Times of day by name, as the game's day names them. */
 export const STUDIO_LIGHTS = {
   night: 0,
-  dawn: DAY_PHASE_PROGRESS.dawn,
   morning: DAY_PHASE_PROGRESS.morning,
   noon: DAY_PHASE_PROGRESS.afternoon,
+  afternoon: DAY_PHASE_PROGRESS.lateAfternoon,
   dusk: DAY_PHASE_PROGRESS.dusk,
-  evening: DAY_PHASE_PROGRESS.evening,
 } as const;
 
 export const STUDIO_TROOPS = {

@@ -1,11 +1,10 @@
 import { Scene, Group, Mesh, BoxGeometry, MeshBasicMaterial } from "three";
 import { describe, expect, it, vi } from "vitest";
 
-const { load, models, mode, foundations, beasts, beastTroops, openings, clock, publish, viewer } = vi.hoisted(() => ({
+const { load, models, mode, beasts, beastTroops, openings, clock, publish, viewer } = vi.hoisted(() => ({
   mode: { id: "frontier" },
   load: vi.fn(),
-  models: [] as Array<{ name: string; count: number; setCount: (count: number) => void }>,
-  foundations: [] as Array<{ entityId: number; progress: number; completed: boolean }>,
+  models: [] as Array<{ name: string; scene: string; count: number; setCount: (count: number) => void }>,
   beasts: [] as Array<{ species: string; count: number; scales: number[]; idles: unknown[] }>,
   beastTroops: new Map<number, bigint>(),
   openings: new Map<number, unknown>(),
@@ -65,12 +64,14 @@ vi.mock("@/three/managers/instanced-model", () => ({
   default: class {
     group = new Group();
     count = 0;
+    scene: string;
     constructor(
-      _gltf: unknown,
+      gltf: { scene: { name: string } },
       _capacity: number,
       _raycast: boolean,
       public name: string,
     ) {
+      this.scene = gltf.scene.name;
       models.push(this);
     }
     getCount = () => this.count;
@@ -82,25 +83,7 @@ vi.mock("@/three/managers/instanced-model", () => ({
   },
 }));
 
-vi.mock("../structures/hyperstructure-model", async () => {
-  const { Group } = await import("three");
-  return {
-    HyperstructureModel: class {
-      group = new Group();
-      count = 0;
-      getCount = () => this.count;
-      setCount = (count: number) => void (this.count = count);
-      setMatrixAt = () => {};
-      setConstructionAt = (_index: number, construction: (typeof foundations)[number]) =>
-        void foundations.push(construction);
-      removeInstance = () => {};
-      needsUpdate = () => {};
-      dispose = () => {};
-    },
-  };
-});
-
-import { aspects, DEEP_BEASTS, deepSites, MineKinds, ordersOfAspect, TileOccupier } from "@bibliothecadao/types";
+import { aspects, DEEP_BEASTS, deepSites, ordersOfAspect, TileOccupier } from "@bibliothecadao/types";
 import { deepGateTiles } from "@bibliothecadao/eternum/game-client";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { FRONTIER_BEASTS } from "../structures/frontier-beast";
@@ -123,15 +106,10 @@ const tile = (col: number, occupierType: number) => ({
 });
 
 describe("the Deep's sites on the map", () => {
-  it("draws each site by its kind: the archive a hyperstructure's bare foundation, the core a rift, the mine a fragment mine, the altar a Shrine", async () => {
+  it("draws each site kind as its own landmark, once per site, from no model file", async () => {
     mode.id = "frontier";
     models.length = 0;
-    foundations.length = 0;
     load.mockReset();
-    load.mockImplementation(async (path: string) => ({
-      path,
-      scene: new Mesh(new BoxGeometry(1, 2, 1), new MeshBasicMaterial()),
-    }));
     const tiles = deepSites.map((_, index) => tile(10 + index, TileOccupier.DeepSite));
     const projection = { getTiles: () => tiles, subscribeTiles: () => () => {} };
     const plates = { setLabel: vi.fn(), retainOnly: vi.fn(), dispose: vi.fn(), setHover: vi.fn(), clearHover: vi.fn() };
@@ -148,17 +126,9 @@ describe("the Deep's sites on the map", () => {
       plates as never,
       noGates() as never,
     );
-    await vi.waitFor(() =>
-      expect(models.map(({ name }) => name).toSorted()).toEqual(["Bane altar", "Essence core", "Ethereal mine"]),
-    );
-    expect(load).toHaveBeenCalledWith(MineKinds[1].model);
-    expect(load).toHaveBeenCalledWith(MineKinds[2].model);
-    expect(load).toHaveBeenCalledWith("/models/frontier/painted/shrine.glb");
-    // Drawn again at each refresh, always the same bare foundation of entity 10.
-    await vi.waitFor(() => expect(foundations.length).toBeGreaterThan(0));
-    expect(new Set(foundations.map((each) => JSON.stringify(each)))).toEqual(
-      new Set([JSON.stringify({ entityId: 10, progress: 0, completed: false })]),
-    );
+    await vi.waitFor(() => expect(models.map(({ name }) => name).toSorted()).toEqual(ALL_KIND_NAMES));
+    expect(models.map(({ count }) => count)).toEqual([1, 1, 1, 1]);
+    expect(load).not.toHaveBeenCalled();
     manager.destroy();
   });
 
@@ -220,8 +190,9 @@ describe("the Deep's sites on the map", () => {
     manager.destroy();
   });
 
-  it("pins a closed ring's site with a lock and says on its plate when it opens; an open one, or one whose entries are still arriving, keeps its kind's look", () => {
+  it("pins a closed ring's site with a lock, draws its landmark dormant and says on its plate when it opens; an open one, or one whose entries are still arriving, keeps its kind's look", async () => {
     mode.id = "frontier";
+    models.length = 0;
     load.mockReset();
     load.mockImplementation(async (path: string) => ({
       path,
@@ -255,20 +226,21 @@ describe("the Deep's sites on the map", () => {
     expect(look(10)).toEqual({ icon: "lock", reward: "Opens at 30 Realms today" });
     expect(look(11)).toEqual({ icon: DEEP_SITE_FACES.core.icon, reward: undefined });
     expect(look(12)).toEqual({ icon: DEEP_SITE_FACES.mine.icon, reward: undefined });
+    await vi.waitFor(() =>
+      expect(drawnScenes()).toEqual(["deep-landmark-core", "deep-landmark-foundation-dormant", "deep-landmark-mine"]),
+    );
     manager.destroy();
   });
 
   it("draws every site's building with its kind's look, and no beast, while chain time is not known yet, then each open site's guarding beast and a closed ring's site dormant, its building under a lock, once a head binds it", async () => {
     const core = 10 + deepSites.findIndex(({ key }) => key === "core");
     const { manager, plates } = guardedSites(undefined, [], ["core"]);
-    await vi.waitFor(() =>
-      expect(models.map(({ name }) => name).toSorted()).toEqual(["Bane altar", "Essence core", "Ethereal mine"]),
-    );
+    await vi.waitFor(() => expect(models.map(({ name }) => name).toSorted()).toEqual(ALL_KIND_NAMES));
     expect(beasts).toEqual([]);
     expect(plates.setLabel.mock.calls.map(([plate]) => plate.plate.icon)).not.toContain("lock");
     headAt(100);
     await vi.waitFor(() => expect(standingBeasts()).toEqual(["basilisk", "troll", "troll"]));
-    expect(models.find(({ name }) => name === "Essence core")!.count).toBe(1);
+    await vi.waitFor(() => expect(drawnScenes()).toEqual(["deep-landmark-core-dormant"]));
     expect(plates.setLabel.mock.calls.findLast(([plate]) => plate.entityId === core)![0].plate.icon).toBe("lock");
     manager.destroy();
   });
@@ -363,6 +335,14 @@ function headAt(tick: number) {
   clock.tick = tick;
   useChainTimeStore.setState({ executionFloorMs: tick * 1000 });
 }
+
+const ALL_KIND_NAMES = deepSites.map(({ name }) => name).toSorted();
+
+const drawnScenes = () =>
+  models
+    .filter(({ count }) => count > 0)
+    .map(({ scene }) => scene)
+    .toSorted();
 
 const standingBeasts = () =>
   beasts

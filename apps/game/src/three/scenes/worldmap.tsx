@@ -12,6 +12,10 @@ import { SelectedArmyOrders } from "./worldmap-selected-army-orders";
 import { TileOccupier } from "@bibliothecadao/types";
 import { SpireManager } from "../managers/spire-manager";
 import { MapSiteManager } from "../managers/map-site-manager";
+import type { AtmosphereEnvironment } from "../effects/world-atmosphere-controller";
+import { layerOfSurface, type LayerPlace } from "../terrain/layer-biomes";
+import { MIST_FOCUS } from "../terrain/terrain-mist-node";
+import { DeepArenaManager } from "../managers/deep-arena-manager";
 import { activeMapLayer } from "@/three/map-layer";
 import type { ReactNode } from "react";
 import { isMapPreviewAction } from "./worldmap-action-preview-policy";
@@ -54,6 +58,7 @@ import { CombatPresentationCoordinator } from "@/three/combat/combat-presentatio
 import { BattleDirectionManager } from "@/three/managers/battle-direction-manager";
 import { HoverHexManager } from "@/three/managers/hover-hex-manager";
 import { SelectedHexManager } from "@/three/managers/selected-hex-manager";
+import { hearthStrength } from "@/utils/cycle-progress";
 import { OwnershipRingLayer } from "@/three/managers/ownership-ring-layer";
 import { bindOwnershipRings } from "./worldmap-ownership-rings";
 import { bindMapSelection } from "./worldmap-map-selection";
@@ -136,6 +141,8 @@ import {
 } from "@/observability/client-action-latency";
 import {
   currentArmy,
+  deepZoneAt,
+  type DeepZone,
   safeInteger,
   type GameClientSetup as SetupResult,
   type NativeRows,
@@ -187,6 +194,7 @@ import { playerColorManager } from "@/three/systems/player-colors";
 import { resolveWorldmapContentLadder, type WorldmapContentLadder } from "./worldmap-content-ladder";
 import type { TerrainUploadMetrics } from "@/three/terrain/procedural-terrain";
 import type { TerrainRoadAnchor, TerrainSettlementAnchor } from "@/three/terrain/terrain-types";
+import type { GroundLights } from "@/three/terrain/ground-lights";
 import type { TerrainSurface } from "@/three/terrain/terrain-surface";
 import type { TerrainMovementInteraction } from "@/three/terrain/terrain-movement-effects";
 import { env } from "../../../env";
@@ -599,6 +607,7 @@ type WorldmapChunkDiagnosticsDebugWindow = Window & {
   getStrategicMarkers?: () => StrategicMarkerLayer;
   getTerrainUploadMetrics?: () => TerrainUploadMetrics;
   getTerrainPresentMetrics?: () => TerrainPresentMetrics;
+  setTerrainPropsVisible?: (visible: boolean) => void;
   getWorldmapTerrainCoverage?: () => {
     groundBounds: ReturnType<typeof resolveWorldmapCameraGroundBounds>;
     camera: number[];
@@ -889,6 +898,7 @@ export default class WorldmapScene extends WarpTravel {
   private battleDirectionManager!: BattleDirectionManager;
 
   private selectedHexManager!: SelectedHexManager;
+  private gridCursor: { x: number; z: number } | null = null;
   /** The tile the order at hand goes to (markOrderTarget), apart from the pointer's own hover ring. */
   private orderTargetRing!: HoverHexManager;
   private ownershipRings!: OwnershipRingLayer;
@@ -1087,6 +1097,7 @@ export default class WorldmapScene extends WarpTravel {
   private veilCheckedAt = -1;
   private expeditionGridOf: { gameId: number; rules: ExpeditionRules | null } | null = null;
   private mapSiteManager!: MapSiteManager;
+  private deepArenaManager!: DeepArenaManager;
   private spireLabelsGroup!: Group;
 
   private renderedMapLayer?: boolean;
@@ -1154,6 +1165,10 @@ export default class WorldmapScene extends WarpTravel {
     return this.proceduralTerrain;
   }
 
+  public override getGroundLights(): GroundLights {
+    return this.proceduralTerrain.groundLights;
+  }
+
   private registerWorldmapRecoveryHandle(): void {
     this.unregisterWorldmapRecoveryHandle = registerActiveWorldmapRecoveryHandle({
       refreshAfterReconnect: () => this.refreshAfterReconnect(),
@@ -1187,9 +1202,6 @@ export default class WorldmapScene extends WarpTravel {
     this.resourceFXManager = new ResourceFXManager(this.scene, 1.2);
     void this.proceduralTerrain.loadProps().catch((error) => {
       console.warn("[WorldMap] Optional procedural terrain props failed to load", error);
-    });
-    void this.proceduralTerrain.loadGroundTextures().catch((error) => {
-      console.warn("[WorldMap] Procedural ground textures failed; retaining flat terrain", error);
     });
 
     if (MEMORY_MONITORING_ENABLED) {
@@ -1312,6 +1324,7 @@ export default class WorldmapScene extends WarpTravel {
       this.getTerrainSurface(),
       this.markLabelsDirty,
       this.compilePipelines,
+      this.getGroundLights(),
     );
     this.mapSiteManager = new MapSiteManager(
       this.scene,
@@ -1321,6 +1334,7 @@ export default class WorldmapScene extends WarpTravel {
       this.mapPlates.createScope("deep-gate"),
       this.getTerrainSurface(),
     );
+    this.deepArenaManager = new DeepArenaManager(this.scene, this.game.store, this.getTerrainSurface());
 
     // Bootstrap applyRenderVisualProfile may have run before these managers existed; apply the
     // fixed visual limits now that the managers are available.
@@ -1707,6 +1721,14 @@ export default class WorldmapScene extends WarpTravel {
    * The selected thing's plate stays open in its token's place: the army taking orders, else what stands on the selected
    * hex (a structure is selected by its hex alone).
    */
+  private syncTerrainGridFocus(): void {
+    const selectedHex = useUIStore.getState().selectedHex;
+    const armyHex =
+      selectedHex && this.getHexagonEntity(sceneHexOf(selectedHex))?.army ? sceneHexOf(selectedHex) : null;
+    const army = armyHex ? getWorldPositionForHex(armyHex) : null;
+    this.proceduralTerrain.setGridFocus(this.gridCursor, army && { x: army.x, z: army.z });
+  }
+
   private refreshSelectedPlate(): void {
     const selectedHex = useUIStore.getState().selectedHex;
     const onSelectedHex = selectedHex ? this.getHexagonEntity(sceneHexOf(selectedHex)) : undefined;
@@ -2255,6 +2277,7 @@ export default class WorldmapScene extends WarpTravel {
 
   // methods needed to add worldmap specific behavior to the click events
   protected onHexagonMouseMove(hex: { hexCoords: HexPosition; position: Vector3 } | null): void {
+    this.gridCursor = hex ? { x: hex.position.x, z: hex.position.z } : null;
     const nextHexCoords = hex?.hexCoords ?? null;
     const hoverPalette = this.resolveContextualHoverPalette(nextHexCoords);
     const nextHoverReconciliation: WorldmapHoverReconciliationSnapshot = {
@@ -3132,10 +3155,10 @@ export default class WorldmapScene extends WarpTravel {
     if (actionPath.length > 0) {
       playUnitCommandSoundForWorldmapAction(actionType);
       if (actionType === ActionType.Move || actionType === ActionType.Explore) {
-        this.armyManager.expectOrderedRoute(
-          selectedEntityId,
-          actionPath.map(({ hex }) => Position.fromContract({ x: hex.col, y: hex.row })),
-        );
+        this.armyManager.expectOrderedRoute(selectedEntityId, {
+          hexes: actionPath.map(({ hex }) => Position.fromContract({ x: hex.col, y: hex.row })),
+          pace: actionType === ActionType.Explore ? "run" : "walk",
+        });
       }
 
       // Get the target position for the effect
@@ -4280,11 +4303,39 @@ export default class WorldmapScene extends WarpTravel {
     const hex = { alt: activeMapLayer(), col: col + center, row: row + center };
     const tile = this.worldSpatialProjection.getTileAtHex(hex);
     const spire = tile?.occupierType === TileOccupier.Spire;
+    const deepZone = this.deepZoneOf(hex);
     return {
       projectedBiome: tile ? requireBiomeTypeFromId(tile.biome) : undefined,
-      surfacePresentation: etherealSurfaceAt(this.expeditionGrid(), hex, spire),
+      surfacePresentation: deepZone ? "deep" : etherealSurfaceAt(this.expeditionGrid(), hex, spire),
+      deepZone,
       occupied: spire || this.worldSpatialProjection.getStructuresAtHex(hex).length > 0,
     };
+  }
+
+  protected override atmosphereEnvironment(): AtmosphereEnvironment {
+    const place = this.cameraLayerPlace();
+    this.proceduralTerrain.setLayerMist(place);
+    if (place) MIST_FOCUS.value.copy(this.controls.target);
+    return place ?? "world";
+  }
+
+  private cameraLayerPlace(): LayerPlace | null {
+    const hex = { ...contractHexOf(this.getCameraTargetHex()), alt: activeMapLayer() };
+    const surface = etherealSurfaceAt(this.expeditionGrid(), hex, false);
+    if (this.deepZoneOf(hex) || (surface === 3 && this.hasSharedDeep())) return "deep";
+    const layer = layerOfSurface(surface);
+    return layer === 1 ? "veil" : layer === 2 ? "hollow" : null;
+  }
+
+  private hasSharedDeep(): boolean {
+    return this.game.store.get("DeepRules", { game_id: configManager.getActiveGameId() }) !== undefined;
+  }
+
+  private deepZoneOf(hex: { col: number; row: number; alt: boolean }): DeepZone | undefined {
+    const rules = this.expeditionGrid();
+    const deep = this.game.store.get("DeepRules", { game_id: configManager.getActiveGameId() });
+    if (!rules || !deep || hex.alt) return undefined;
+    return deepZoneAt(rules.spacing, deep, hex) ?? undefined;
   }
 
   /** The game's expedition grid, read once per game: the terrain asks it of every cell it draws. */
@@ -6179,6 +6230,7 @@ export default class WorldmapScene extends WarpTravel {
     this.structureManager.refreshTerrainPlacement();
     this.spireManager.refreshTerrainPlacement();
     this.mapSiteManager.refreshTerrainPlacement();
+    this.deepArenaManager.refreshTerrainPlacement();
     this.armyManager.refreshTerrainPlacement();
     this.ownershipRings.refreshTerrainPlacement();
     this.highlightHexManager.refreshTerrainPlacement();
@@ -7972,8 +8024,12 @@ export default class WorldmapScene extends WarpTravel {
     this.mapPlates.update(this.camera, window.innerWidth, window.innerHeight);
     this.structureManager.updateAnimations(deltaTime, animationContext, this.animationsPaused);
     this.spireManager.update(this.animationsPaused ? 0 : deltaTime, this.camera);
+    this.syncTerrainGridFocus();
     if (!this.animationsPaused) {
       this.syncTerrainMovementInteractions();
+      this.proceduralTerrain.setGroundLightStrength(
+        this.cameraLayerPlace() === null ? hearthStrength(this.worldAtmosphereController.shownProgress) : 0,
+      );
       this.proceduralTerrain.update(deltaTime);
       this.combatPresentation?.update(deltaTime);
       this.fxManager.update(deltaTime);
@@ -8266,6 +8322,7 @@ export default class WorldmapScene extends WarpTravel {
     debugWindow.getStrategicMarkers = () => this.strategicMarkers;
     debugWindow.getTerrainUploadMetrics = () => this.proceduralTerrain.getUploadMetrics();
     debugWindow.getTerrainPresentMetrics = () => this.proceduralTerrain.getPresentMetrics();
+    debugWindow.setTerrainPropsVisible = (visible) => this.proceduralTerrain.setPropsVisible(visible);
     debugWindow.getWorldmapTerrainCoverage = () => {
       const presentedPageKeys = this.proceduralTerrain.getPresentedPageKeys();
       const criticalPageKeys = this.visualTerrainWindow?.criticalPageKeys ?? [];
@@ -8308,6 +8365,7 @@ export default class WorldmapScene extends WarpTravel {
     debugWindow.getStrategicMarkers = undefined;
     debugWindow.getTerrainUploadMetrics = undefined;
     debugWindow.getTerrainPresentMetrics = undefined;
+    debugWindow.setTerrainPropsVisible = undefined;
     debugWindow.getWorldmapTerrainCoverage = undefined;
     debugWindow.resetWorldmapRenderDiagnostics = undefined;
     debugWindow.captureWorldmapChunkBaseline = undefined;
@@ -8373,6 +8431,7 @@ export default class WorldmapScene extends WarpTravel {
       structureManager: this.structureManager,
       spireManager: this.spireManager,
       mapSiteManager: this.mapSiteManager,
+      deepArenaManager: this.deepArenaManager,
       fxManager: this.fxManager,
       resourceFXManager: this.resourceFXManager,
     });

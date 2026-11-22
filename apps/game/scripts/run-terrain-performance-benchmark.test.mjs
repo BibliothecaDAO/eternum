@@ -140,7 +140,7 @@ function passingResult(rendererMode, variant) {
     variant,
     snapshot: {
       activeMode: rendererMode === "webgpu-auto" ? "webgpu" : "webgl2-fallback",
-      assets: { groundArrayRequests: textured ? 2 : 0, propCatalogRequests: props ? 1 : 0 },
+      assets: { propCatalogRequests: props ? 1 : 0 },
       chunks: {
         builtPages: 30,
         cachePages: 100,

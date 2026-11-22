@@ -108,7 +108,6 @@ export class EndgameFixtureScene {
           tier: TroopTier.T1,
           entityId: i * 2 + j + 1,
           isNaval: false,
-          isMoving: false,
           position: new Vector3(w.x, terrain.sampleSurface(w.x, w.z).height, w.z),
           rotation: new Euler(0, i, 0),
           primaryColor: i % 2 ? "#a33b39" : "#e1b955",

@@ -7,6 +7,7 @@ import { useUIStore } from "./use-ui-store";
 const resetCycleProgressState = () => {
   useUIStore.setState({
     cycleProgress: 0,
+    dayCycleProgress: 0,
     debugCycleProgressOverride: null,
   });
 };
@@ -38,11 +39,16 @@ describe("useUIStore cycle progress debug override", () => {
     expect(useUIStore.getState().cycleProgress).toBe(0);
   });
 
-  it("clears the debug override without changing the current visible progress", () => {
+  it("holds the day's moment under an override and shows it again the moment the override clears", () => {
+    useUIStore.getState().setCycleProgress(45);
     useUIStore.getState().setDebugCycleProgressOverride(37);
+    useUIStore.getState().setCycleProgress(48);
+
+    expect(useUIStore.getState().cycleProgress).toBe(37);
+
     useUIStore.getState().setDebugCycleProgressOverride(null);
 
     expect(useUIStore.getState().debugCycleProgressOverride).toBeNull();
-    expect(useUIStore.getState().cycleProgress).toBe(37);
+    expect(useUIStore.getState().cycleProgress).toBe(48);
   });
 });

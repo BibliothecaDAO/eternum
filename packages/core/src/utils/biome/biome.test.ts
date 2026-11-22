@@ -110,3 +110,30 @@ describe("Biome climate", () => {
     }
   });
 });
+
+describe("Biome climate field", () => {
+  const climate = { ...NEUTRAL_BIOME_CLIMATE, elevation_seed: 3_917, moisture_seed: 811 };
+  const hexes = Array.from({ length: 1_200 }, (_, index) => ({
+    col: 600 + (index % 40),
+    row: 20 + Math.floor(index / 40),
+  }));
+
+  it("reads each hex's own elevation and moisture, within the chain's rounding", () => {
+    const misses = hexes.filter(({ col, row }) => {
+      const hex = Biome.sampleEnvironment(col, row, climate);
+      const field = Biome.sampleField(col, row, climate);
+      return Math.abs(field.elevation - hex.elevation) > 0.08 || Math.abs(field.moisture - hex.moisture) > 0.08;
+    });
+    expect(misses).toEqual([]);
+  });
+
+  it("runs on between hexes without a step", () => {
+    const steps = Array.from({ length: 200 }, (_, index) => {
+      const col = 610 + index / 20;
+      const here = Biome.sampleField(col, 35.5, climate);
+      const next = Biome.sampleField(col + 0.05, 35.5, climate);
+      return Math.abs(next.elevation - here.elevation);
+    });
+    expect(Math.max(...steps)).toBeLessThan(0.02);
+  });
+});

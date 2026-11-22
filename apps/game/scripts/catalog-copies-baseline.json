@@ -13,7 +13,7 @@
   "apps/game/src/three/terrain/terrain-biome-art-direction.ts": 1,
   "apps/game/src/three/terrain/terrain-ground-profile.ts": 1,
   "apps/game/src/three/terrain/terrain-palette.ts": 2,
-  "apps/game/src/three/terrain/terrain-props.ts": 2,
+  "apps/game/src/three/terrain/terrain-props.ts": 1,
   "apps/game/src/ui/design-system/kit/paintings.ts": 1,
   "apps/game/src/ui/features/economy/resources/entity-resource-table/utils.ts": 1,
   "apps/game/src/ui/features/frontier/build/build-options.ts": 1,
