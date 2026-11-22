@@ -71,7 +71,7 @@ fn training_starts_only_later_armies_at_their_realms_tiers_and_full_at_their_log
     let untrained = deploy(d, home, category, 2, FIXTURE_START + 1);
     assert_eq!(read_progress(d, untrained), ArmyProgress { logistics: 0, oath_slots: 2, ..Default::default() });
 
-    let learned = crate::research::learn(0, crate::research::ROW_SUPPLY_YARD, 0);
+    let learned = crate::research::learn(0, crate::research::ROW_SUPPLY_YARD);
     snforge_std::interact_with_state(
         d.games, || crate::logic::research::write(home, crate::research::RealmKnowledge { learned }),
     );
@@ -144,7 +144,7 @@ fn deployed_armies_keep_their_troops_oath_count_after_home_research_changes() {
         );
         assert!(
             super::resource_commands::execute_in_game(
-                d, game_id, super::building_commands::research(home, row, 0), FIXTURE_START + 1,
+                d, game_id, super::building_commands::research(home, row), FIXTURE_START + 1,
             ),
         );
         assert!(

@@ -75,8 +75,8 @@ pub fn research_world() -> (super::Deployment, ResourceKey) {
     super::resource_commands::grant(d, home, crate::resources::ESSENCE, 10000000 * crate::rules::RESOURCE_PRECISION);
     (d, home)
 }
-pub fn research(home: ResourceKey, row: u8, choice: u8) -> Command {
-    Command::Research(crate::research::Research { structure_id: home.entity_id, row, choice })
+pub fn research(home: ResourceKey, row: u8) -> Command {
+    Command::Research(crate::research::Research { structure_id: home.entity_id, row })
 }
 pub fn build_toward(home: ResourceKey, category: u8, direction: u8) -> Command {
     Command::CreateBuilding(

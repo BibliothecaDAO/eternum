@@ -122,7 +122,7 @@ pub fn typed_commands() -> Array<Command> {
         Command::ProvisionAndUpgradeRealm(999999),
         Command::SetEntityName(crate::names::SetEntityName { entity_id: 999999, name: 'route' }),
         Command::EnterDepth(crate::commands::EnterDepth { explorer_id: 999999, depth: 0 }),
-        Command::Research(crate::research::Research { structure_id: 999999, row: 0, choice: 0 }),
+        Command::Research(crate::research::Research { structure_id: 999999, row: 0 }),
         Command::InteractSite(
             crate::relics::InteractSite {
                 explorer_id: 999999, coord: crate::troops::Coord { alt: false, x: 2000000, y: 2000000 },

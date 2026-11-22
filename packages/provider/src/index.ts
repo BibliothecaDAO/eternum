@@ -665,13 +665,12 @@ export class EternumProvider extends EventEmitter {
     );
   }
 
-  /** Buys a research row's next tier at the realm's castle; `choice` is the tier's side or Scouts' lodge kind. */
-  public async research(props: SystemProps.SystemSigner & { structureId: number; row: number; choice: number }) {
+  public async research(props: SystemProps.SystemSigner & { structureId: number; row: number }) {
     return this.submitCommand(
       props.signer,
       {
         kind: "Research",
-        value: { structure_id: props.structureId, row: props.row, choice: props.choice },
+        value: { structure_id: props.structureId, row: props.row },
       },
       TransactionType.RESEARCH,
     );

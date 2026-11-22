@@ -187,7 +187,7 @@ pub mod ConstructionLogic {
             let base = crate::logic::buildings::assert_building_command(key, actor, context.timestamp, context);
             assert!(base.category == crate::taxonomy::REALM_CATEGORY, "research requires a realm board");
             let before = crate::logic::research::require(key).learned;
-            let learned = crate::research::learn(before, command.row, command.choice);
+            let learned = crate::research::learn(before, command.row);
             self.assert_row_open(key, command.row);
             self
                 .pay_research(
@@ -292,7 +292,7 @@ pub mod ConstructionLogic {
             if crate::research::tier(before, row) != 0 {
                 return;
             }
-            let after = crate::research::learn(before, row, 0);
+            let after = crate::research::learn(before, row);
             crate::logic::research::write(key, crate::research::RealmKnowledge { learned: after });
             self.apply_research(key, base, row, board, before, after, context);
         }

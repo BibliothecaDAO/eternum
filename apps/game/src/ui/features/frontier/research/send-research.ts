@@ -23,7 +23,6 @@ export const sendResearch = (
       signer: signer as unknown as Account,
       structureId: realm.entity_id,
       row,
-      choice: 0,
     });
     onSent();
     return sent;

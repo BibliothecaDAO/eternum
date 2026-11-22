@@ -78,7 +78,7 @@ it("answers a research with the row's next tier learned and its price paid", () 
   const game = researchScenario();
   const essence = held(game, ResourcesIds.Essence);
   const facts = game.answer(
-    command("Research", { structure_id: "7", row: String(research.ROW_HUT), choice: "0" }),
+    command("Research", { structure_id: "7", row: String(research.ROW_HUT) }),
     chainOf(game),
     game.startsAt,
   );

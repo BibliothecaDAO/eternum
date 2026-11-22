@@ -267,7 +267,7 @@ fn range_produces_deployable_crossbows_and_depot_prices_deployment_and_reinforce
         } else if tier > 1 {
             assert!(
                 execute(
-                    d, super::building_commands::research(home, crate::research::ROW_RATIONS, 0), FIXTURE_START + 100,
+                    d, super::building_commands::research(home, crate::research::ROW_RATIONS), FIXTURE_START + 100,
                 ),
             );
         }

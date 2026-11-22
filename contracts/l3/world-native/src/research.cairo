@@ -51,7 +51,6 @@ pub struct ResearchPrice {
 pub struct Research {
     pub structure_id: u64,
     pub row: u8,
-    pub choice: u8,
 }
 
 pub fn row_category(row: u8) -> u8 {
@@ -175,8 +174,7 @@ pub fn make_picks(learned: u64, category: u8) -> u8 {
     }
 }
 
-pub fn learn(learned: u64, row: u8, choice: u8) -> u64 {
-    assert!(choice == 0, "invalid research choice");
+pub fn learn(learned: u64, row: u8) -> u64 {
     assert!(tier(learned, row) < max_tier(row), "research row is complete");
     let (scale, _) = tier_slot(row);
     learned + scale

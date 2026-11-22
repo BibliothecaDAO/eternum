@@ -195,16 +195,16 @@ fn castle_ring_limit_accepts_four_and_rejects_five() {
 #[test]
 fn realm_knowledge_packs_each_row_tier_where_the_client_reads_them() {
     let mut learned = 0;
-    learned = crate::research::learn(learned, crate::research::ROW_FARM, 0);
-    learned = crate::research::learn(learned, crate::research::ROW_WORKSHOP, 0);
-    learned = crate::research::learn(learned, crate::research::ROW_LORE, 0);
-    learned = crate::research::learn(learned, crate::research::ROW_LORE, 0);
+    learned = crate::research::learn(learned, crate::research::ROW_FARM);
+    learned = crate::research::learn(learned, crate::research::ROW_WORKSHOP);
+    learned = crate::research::learn(learned, crate::research::ROW_LORE);
+    learned = crate::research::learn(learned, crate::research::ROW_LORE);
     assert_eq!(learned, 562949953421441);
     let mut full = 0;
     for row_ref in crate::research::ROWS.span() {
         let row = *row_ref;
         for _ in 0..crate::research::max_tier(row) {
-            full = crate::research::learn(full, row, 0);
+            full = crate::research::learn(full, row);
         }
     }
     for row_ref in crate::research::ROWS.span() {
@@ -222,10 +222,9 @@ fn a_row_opens_with_its_first_building_and_sells_each_tier_once_in_order_at_its_
     };
     let labor = ResourceSlot { resource_type: crate::resources::LABOR, ..essence };
     // No farm stands, and the castle's own labor building is not a workshop.
-    assert_terminal_rejection(d, research(home, crate::research::ROW_FARM, 0), FIXTURE_START + 40);
-    assert_terminal_rejection(d, research(home, crate::research::ROW_WORKSHOP, 0), FIXTURE_START + 40);
+    assert_terminal_rejection(d, research(home, crate::research::ROW_FARM), FIXTURE_START + 40);
+    assert_terminal_rejection(d, research(home, crate::research::ROW_WORKSHOP), FIXTURE_START + 40);
     assert!(execute(d, build_toward(home, crate::research::FARM, 0), FIXTURE_START + 40));
-    assert_terminal_rejection(d, research(home, crate::research::ROW_FARM, 1), FIXTURE_START + 40);
     {
         for tier in 1_u8..6 {
             let price = crate::logic::research::price(crate::research::ROW_FARM, tier);
@@ -236,24 +235,22 @@ fn a_row_opens_with_its_first_building_and_sells_each_tier_once_in_order_at_its_
             let (essence_before, labor_before) = (
                 resources.resource_balance(essence), resources.resource_balance(labor),
             );
-            assert!(execute(d, research(home, crate::research::ROW_FARM, 0), FIXTURE_START + 40));
+            assert!(execute(d, research(home, crate::research::ROW_FARM), FIXTURE_START + 40));
             assert_eq!(essence_before - resources.resource_balance(essence), price.essence);
             assert_eq!(labor_before - resources.resource_balance(labor), price.labor);
             assert_eq!(crate::research::tier(learned(d, home), crate::research::ROW_FARM), tier);
         }
-        assert_terminal_rejection(d, research(home, crate::research::ROW_FARM, 0), FIXTURE_START + 40);
+        assert_terminal_rejection(d, research(home, crate::research::ROW_FARM), FIXTURE_START + 40);
     }
     // The castle rows need no building and charge Essence alone.
     let before = resources.resource_balance(labor);
     for _ in 0..crate::research::LORE_SPIRES {
-        assert!(execute(d, research(home, crate::research::ROW_LORE, 0), FIXTURE_START + 40));
+        assert!(execute(d, research(home, crate::research::ROW_LORE), FIXTURE_START + 40));
     }
     assert_eq!(resources.resource_balance(labor), before);
-    assert_terminal_rejection(d, research(home, crate::research::ROW_LORE, 0), FIXTURE_START + 40);
-    // A hut row has no choice.
+    assert_terminal_rejection(d, research(home, crate::research::ROW_LORE), FIXTURE_START + 40);
     assert!(execute(d, build_toward(home, crate::research::HUT, 1), FIXTURE_START + 40));
-    assert_terminal_rejection(d, research(home, crate::research::ROW_HUT, 1), FIXTURE_START + 40);
-    assert!(execute(d, research(home, crate::research::ROW_HUT, 0), FIXTURE_START + 40));
+    assert!(execute(d, research(home, crate::research::ROW_HUT), FIXTURE_START + 40));
 }
 
 #[test]
@@ -264,7 +261,7 @@ fn a_make_pick_adds_a_fifth_of_the_base_to_every_building_of_the_type_standing_o
     assert!(execute(d, build_toward(home, crate::research::FARM, 1), FIXTURE_START + 40));
     let base = rate(d, home, wheat) / 2;
     let fields = stepped(base, 1);
-    assert!(execute(d, research(home, crate::research::ROW_FARM, 0), FIXTURE_START + 40));
+    assert!(execute(d, research(home, crate::research::ROW_FARM), FIXTURE_START + 40));
     assert_eq!(rate(d, home, wheat), 2 * fields);
     assert!(execute(d, build_toward(home, crate::research::FARM, 2), FIXTURE_START + 40));
     assert_eq!(rate(d, home, wheat), 3 * fields);
@@ -276,7 +273,7 @@ fn a_make_pick_adds_a_fifth_of_the_base_to_every_building_of_the_type_standing_o
     let workshop = crate::balance::structures::BOARD.workshop_rate;
     assert!(execute(d, build_toward(home, crate::research::WORKSHOP, 3), FIXTURE_START + 40));
     assert_eq!(rate(d, home, labor), castle + workshop);
-    assert!(execute(d, research(home, crate::research::ROW_WORKSHOP, 0), FIXTURE_START + 40));
+    assert!(execute(d, research(home, crate::research::ROW_WORKSHOP), FIXTURE_START + 40));
     assert_eq!(rate(d, home, labor), castle + stepped(workshop, 1));
 }
 
@@ -289,7 +286,7 @@ fn each_hut_tier_adds_a_fifth_of_every_huts_population() {
     assert!(execute(d, build_toward(home, crate::research::HUT, 1), FIXTURE_START + 40));
     assert_eq!(structures.structure_buildings(home).population.max, before + 12);
     for _ in 0..3_u8 {
-        assert!(execute(d, research(home, crate::research::ROW_HUT, 0), FIXTURE_START + 40));
+        assert!(execute(d, research(home, crate::research::ROW_HUT), FIXTURE_START + 40));
     }
     // Two huts of 6 at Rare: 12 + 12 * 3 * 20%, rounded down once for the type.
     assert_eq!(structures.structure_buildings(home).population.max, before + 12 + 7);
@@ -322,7 +319,7 @@ fn a_tier_the_realm_cannot_pay_in_labor_is_refused_and_changes_nothing() {
     let (d, home) = research_world();
     assert!(execute(d, build_toward(home, crate::research::FARM, 0), FIXTURE_START + 40));
     for _ in 0..3_u8 {
-        assert!(execute(d, research(home, crate::research::ROW_FARM, 0), FIXTURE_START + 40));
+        assert!(execute(d, research(home, crate::research::ROW_FARM), FIXTURE_START + 40));
     }
     let resources = IResourceOperationsDispatcher { contract_address: d.games };
     let labor = ResourceSlot {
@@ -346,7 +343,7 @@ fn a_tier_the_realm_cannot_pay_in_labor_is_refused_and_changes_nothing() {
     stop_cheat_caller_address(d.games);
     let before = resource_facts(d, home);
     let knowledge = learned(d, home);
-    assert_terminal_rejection(d, research(home, crate::research::ROW_FARM, 0), FIXTURE_START + 40);
+    assert_terminal_rejection(d, research(home, crate::research::ROW_FARM), FIXTURE_START + 40);
     assert_eq!(resource_facts(d, home), before);
     assert_eq!(learned(d, home), knowledge);
 }
@@ -497,7 +494,7 @@ fn workshop_tiers_follow_their_exact_ladder() {
                 stop_cheat_caller_address(d.games);
                 let before_e = resources.resource_balance(essence);
                 let before_l = resources.resource_balance(labor);
-                assert!(execute(d, research(home, row, 0), FIXTURE_START + 40));
+                assert!(execute(d, research(home, row), FIXTURE_START + 40));
                 let (expected_essence, expected_labor) = *prices.at(at);
                 assert_eq!(
                     before_e - resources.resource_balance(essence), expected_essence * crate::rules::RESOURCE_PRECISION,
@@ -507,14 +504,14 @@ fn workshop_tiers_follow_their_exact_ladder() {
                 );
                 assert_eq!(crate::research::tier(learned(d, home), row), at.try_into().unwrap() + 1_u8);
             }
-            assert_terminal_rejection(d, research(home, row, 0), FIXTURE_START + 40);
+            assert_terminal_rejection(d, research(home, row), FIXTURE_START + 40);
         }
     }
 }
 
 #[test]
-#[test_case(42, 0, name: "supply_yard")]
-fn construction_grants_common_once_and_the_next_purchase_costs_uncommon(category: u8, kind: u8) {
+#[test_case(42, name: "supply_yard")]
+fn construction_grants_common_once_and_the_next_purchase_costs_uncommon(category: u8) {
     let (d, home) = research_world();
     let row = crate::research::ROW_SUPPLY_YARD;
     let command = CreateBuilding {
@@ -538,7 +535,7 @@ fn construction_grants_common_once_and_the_next_purchase_costs_uncommon(category
     );
     let essence_before = resources.resource_balance(essence);
     let labor_before = resources.resource_balance(labor);
-    assert!(execute(d, research(home, row, kind), FIXTURE_START + 40));
+    assert!(execute(d, research(home, row), FIXTURE_START + 40));
     assert_eq!(essence_before - resources.resource_balance(essence), price.essence);
     assert_eq!(labor_before - resources.resource_balance(labor), price.labor);
     assert_eq!(crate::research::tier(learned(d, home), row), 2);
@@ -584,7 +581,7 @@ fn camp_research_settles_and_raises_every_troop_building_while_rations_is_indepe
         assert_eq!(balance(d, home, resource_type), base.into() * 60);
     }
     assert_eq!(crate::research::tier(learned(d, home), crate::research::ROW_RATIONS), 0);
-    assert!(execute(d, research(home, crate::research::ROW_CONSCRIPTION, 0), FIXTURE_START + 160));
+    assert!(execute(d, research(home, crate::research::ROW_CONSCRIPTION), FIXTURE_START + 160));
     assert!(execute(d, build_toward(home, crate::research::RATIONS_DEPOT, 4), FIXTURE_START + 160));
     for resource_type in array![26_u8, 29, 32] {
         let base = crate::logic::resources::rule(resource_type).realm_rate;
@@ -632,7 +629,7 @@ fn camp_and_depot_charge_their_own_exact_ladder_once_and_preserve_it_after_rebui
             let command = if at == 0 {
                 build_toward(home, category, 0)
             } else {
-                research(home, row, 0)
+                research(home, row)
             };
             assert!(execute(d, command, FIXTURE_START + 40));
             let (cost_e, cost_l) = *prices.at(at);
@@ -640,10 +637,9 @@ fn camp_and_depot_charge_their_own_exact_ladder_once_and_preserve_it_after_rebui
             assert_eq!(before_l - resources.resource_balance(labor), cost_l * crate::rules::RESOURCE_PRECISION);
             assert_eq!(crate::research::tier(learned(d, home), row), at.try_into().unwrap() + 1_u8);
         }
-        assert_terminal_rejection(d, research(home, row, 0), FIXTURE_START + 40);
-        assert_terminal_rejection(d, research(home, row, 1), FIXTURE_START + 40);
+        assert_terminal_rejection(d, research(home, row), FIXTURE_START + 40);
         assert!(execute(d, Command::DestroyBuilding(change(home)), FIXTURE_START + 40));
-        assert_terminal_rejection(d, research(home, row, 0), FIXTURE_START + 40);
+        assert_terminal_rejection(d, research(home, row), FIXTURE_START + 40);
         assert!(execute(d, build_toward(home, category, 0), FIXTURE_START + 40));
         assert_eq!(crate::research::tier(learned(d, home), row), 5);
     }
@@ -705,14 +701,14 @@ fn buys_three_oath_slots(row: u8, category: u8, troop: crate::troops::TroopType)
     };
     let labor = ResourceSlot { resource_type: crate::resources::LABOR, ..essence };
     assert_eq!(crate::research::oath_slots(learned(d, home), troop), 2);
-    assert_terminal_rejection(d, research(home, row, 0), FIXTURE_START + 40);
+    assert_terminal_rejection(d, research(home, row), FIXTURE_START + 40);
     assert!(execute(d, build_toward(home, category, 0), FIXTURE_START + 40));
     assert_eq!(crate::research::oath_slots(learned(d, home), troop), 2);
     let prices = array![(5000_u128, 1000_u128), (35000, 7500), (150000, 35000)];
     for at in 0_u32..3 {
         let before_e = resources.resource_balance(essence);
         let before_l = resources.resource_balance(labor);
-        assert!(execute(d, research(home, row, 0), FIXTURE_START + 40));
+        assert!(execute(d, research(home, row), FIXTURE_START + 40));
         let (cost_e, cost_l) = *prices.at(at);
         assert_eq!(before_e - resources.resource_balance(essence), cost_e * crate::rules::RESOURCE_PRECISION);
         assert_eq!(before_l - resources.resource_balance(labor), cost_l * crate::rules::RESOURCE_PRECISION);
@@ -725,8 +721,7 @@ fn buys_three_oath_slots(row: u8, category: u8, troop: crate::troops::TroopType)
             }
         }
     }
-    assert_terminal_rejection(d, research(home, row, 0), FIXTURE_START + 40);
-    assert_terminal_rejection(d, research(home, row, 1), FIXTURE_START + 40);
+    assert_terminal_rejection(d, research(home, row), FIXTURE_START + 40);
     assert!(execute(d, Command::DestroyBuilding(change(home)), FIXTURE_START + 40));
     assert!(execute(d, build_toward(home, category, 0), FIXTURE_START + 40));
     assert_eq!(crate::research::oath_slots(learned(d, home), troop), 5);

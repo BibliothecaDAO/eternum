@@ -11,11 +11,6 @@ import { balancesPaid } from "./spire-scenario";
 /** Essence enough for every tier the realm can research today (2,000 a tier on the day-end lab's prices). */
 const ESSENCE_HELD = 20_000n * BigInt(RESOURCE_PRECISION);
 
-/**
- * The actions game with its research priced and Essence to pay (/lab/game?scenario=research). The chain answers
- * Research as construction.cairo's research applies it: the row's next tier learned with the side chosen, its Essence
- * and labor paid.
- */
 export const researchScenario = (): LabScenario => {
   const actions = actionsScenario();
   const knowledge = actions.store.require("RealmKnowledge", { game_id: 1, structure_id: 7 });

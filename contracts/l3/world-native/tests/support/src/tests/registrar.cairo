@@ -52,7 +52,7 @@ pub fn bag_seconds() -> u64 {
 pub fn lore(tier: u8) -> u64 {
     let mut learned = 0;
     for _ in 0..tier {
-        learned = crate::research::learn(learned, crate::research::ROW_LORE, 0);
+        learned = crate::research::learn(learned, crate::research::ROW_LORE);
     }
     learned
 }
@@ -74,7 +74,7 @@ pub fn learn_spire_lore(d: super::Deployment, home: crate::resources::ResourceKe
     super::resource_commands::grant(d, home, crate::resources::ESSENCE, budget);
     for _ in learned..crate::research::LORE_SPIRES {
         let buy = Command::Research(
-            crate::research::Research { structure_id: home.entity_id, row: crate::research::ROW_LORE, choice: 0 },
+            crate::research::Research { structure_id: home.entity_id, row: crate::research::ROW_LORE },
         );
         assert!(execute_in_game(d, home.game_id, buy, timestamp), "Spire lore purchase refused");
     }
