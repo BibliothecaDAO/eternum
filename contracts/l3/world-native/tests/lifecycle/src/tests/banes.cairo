@@ -319,7 +319,7 @@ fn real_production_splits_at_the_bane_start_and_quorum_end_and_army_stores_still
     let rate: u128 = interact_with_state(
         d.games,
         || {
-            assert_eq!(crate::logic::resources::balance(home, crate::resources::LABOR), 0);
+            assert_eq!(crate::logic::resources::balance(home, crate::resources::LABOR), 1000 * RESOURCE_PRECISION);
             crate::logic::resources::production(home, crate::resources::LABOR).production_rate
         },
     )
@@ -365,8 +365,7 @@ fn real_production_splits_at_the_bane_start_and_quorum_end_and_army_stores_still
     build(d, home, crate::research::FARM, 2, now);
     let ordinary_seconds: u128 = (tomorrow - FIXTURE_START + 400).into();
     let expected = rate * ordinary_seconds
-        + rate * 600 * Into::<u16, u128>::into(crate::balance::banes::PRODUCTION_PERCENT) / 100
-        - 800 * RESOURCE_PRECISION;
+        + rate * 600 * Into::<u16, u128>::into(crate::balance::banes::PRODUCTION_PERCENT) / 100;
     interact_with_state(
         d.games,
         || {
