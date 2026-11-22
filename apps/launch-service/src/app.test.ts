@@ -155,20 +155,19 @@ test("health names the dependency it could not read, and every dependency when a
   const healthy = await app.request("/api/factory/health");
   expect(healthy.status).toBe(200);
   expect(serviceDependencies((await healthy.json()) as { dependencies?: unknown })).toEqual([
-    { name: "store", ok: true, since: null, code: null },
-    { name: "registrar", ok: true, since: null, code: null },
+    { name: "store", ok: true, code: null },
+    { name: "registrar", ok: true, code: null },
   ]);
   joinFailure.mockRejectedValue(new Error("Durable Object reset at https://internal.test/key"));
-  const before = Math.floor(Date.now() / 1000);
   const failing = await app.request("/api/factory/health");
   expect(failing.status).toBe(503);
   const body = (await failing.json()) as { dependencies?: unknown; failedRuns?: unknown };
   expect(body.failedRuns).toBeUndefined();
   expect(JSON.stringify(body)).not.toContain("internal.test");
-  const [store, registrar] = serviceDependencies(body);
-  expect(store).toEqual({ name: "store", ok: true, since: null, code: null });
-  expect(registrar).toMatchObject({ name: "registrar", ok: false, code: "registrar_unavailable" });
-  expect(registrar!.since).toBeGreaterThanOrEqual(before);
+  expect(serviceDependencies(body)).toEqual([
+    { name: "store", ok: true, code: null },
+    { name: "registrar", ok: false, code: "registrar_unavailable" },
+  ]);
 });
 
 test("public health names a failed join before any run has failed", async () => {

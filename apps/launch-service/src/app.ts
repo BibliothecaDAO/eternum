@@ -88,8 +88,8 @@ const deleteRun = async (context: Context, store: LaunchServiceStore, name: stri
     : context.json({ error: "Run is missing, active, complete, or a calendar season." }, 409);
 };
 
-const readHealthDependency = <Value>(name: string, now: number, read: () => Promise<Value>) =>
-  readThroughDependency(name, Math.floor(now / 1000), read, (error) => {
+const readHealthDependency = <Value>(name: string, read: () => Promise<Value>) =>
+  readThroughDependency(name, read, (error) => {
     console.error("factory_health_dependency_failed", name, error);
     return `${name}_unavailable`;
   });
@@ -123,10 +123,8 @@ export const createLaunchApp = (dependencies: LaunchAppDependencies) => {
   app.get("/api/factory/health", async (context) => {
     const now = Date.now();
     const [runs, registrar] = await Promise.all([
-      readHealthDependency("store", now, () =>
-        Promise.all([dependencies.store.failed(), dependencies.store.pending()]),
-      ),
-      readHealthDependency("registrar", now, () =>
+      readHealthDependency("store", () => Promise.all([dependencies.store.failed(), dependencies.store.pending()])),
+      readHealthDependency("registrar", () =>
         Promise.all([dependencies.registrar.joinFailure(), dependencies.registrar.wakeAt()]),
       ),
     ]);

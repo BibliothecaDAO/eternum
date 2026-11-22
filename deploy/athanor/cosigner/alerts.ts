@@ -5,12 +5,6 @@ import { privateFile, readConfig } from "./config";
 import { PAYOUT_WALLET_CHANGE_SECONDS } from "../../../packages/value-ledger/src/payout-wallet";
 import { COSIGNER_WALLETS, readWalletRecords, type WalletRecord } from "./wallets";
 
-/**
- * Tells the owner's private Discord channel, from the box and off Cloudflare, when a payout safeguard trips: a wallet
- * change held, a paused ledger, or a co-signer that stopped answering, and again when each clears. A systemd
- * timer runs `check` every minute. Delivery is at least once: each change is written to an outbox before it is sent and
- * leaves it only when Discord accepts its message, so no alert is dropped; a crash or a lost answer can repeat one.
- */
 const ALERT_STATE = "/var/lib/payout-cosigner/alerts.json";
 /** Discord refuses a message over 2,000 characters. */
 const MESSAGE_LIMIT = 2_000;
@@ -18,7 +12,6 @@ const HEADER = "Production payouts:";
 /** A Realms ID with more accounts names this many and counts the rest, so one alert always fits one message. */
 const ACCOUNTS_SHOWN = 3;
 
-/** One minute's reading of the box. A source that could not be read is null. */
 interface PayoutSnapshot {
   cosignerAnswers: boolean;
   ledgerPaused: boolean | null;
@@ -35,30 +28,39 @@ interface Alert {
   wires?: string;
 }
 interface Source {
+  heard: string;
   silentSeconds: number;
   silent: (since: string) => string;
   back: (since: string) => string;
 }
 const SOURCES = {
   cosigner: {
+    heard: "when the co-signer stops answering",
     silentSeconds: 3 * 60,
     silent: (since) =>
       `The co-signer has not answered on the box since ${since}. Withdrawals and prizes wait until it is back.`,
     back: (since) => `The co-signer answers again; it was silent from ${since}.`,
   },
   ledger: {
+    heard: "when the ledger RPC cannot be read",
     silentSeconds: 10 * 60,
     silent: (since) =>
       `The box has not read the ledger RPC since ${since}. A pause would go unseen, and the co-signer signs nothing it cannot check.`,
     back: (since) => `The ledger RPC reads again; it was unreadable from ${since}.`,
   },
   wallets: {
+    heard: "when the wallet history cannot be read",
     silentSeconds: 10 * 60,
     silent: (since) => `The box has not read its wallet history since ${since}. A held wallet change would go unseen.`,
     back: (since) => `The wallet history reads again; it was unreadable from ${since}.`,
   },
 } satisfies Record<string, Source>;
 type SourceName = keyof typeof SOURCES;
+const HEARD = [
+  "when a wallet change is held",
+  "when the ledger is paused",
+  ...Object.values(SOURCES).map((source) => source.heard),
+];
 type Silences = Partial<Record<SourceName, { since: number; announced: boolean }>>;
 interface AlertState {
   held: Record<string, { wallet: string; since: number }>;
@@ -80,7 +82,9 @@ const QUIET: AlertState = {
 };
 
 export const channelOf = (webhook: string, ledger: string): Channel => ({
-  id: createHash("sha256").update(webhook).digest("hex"),
+  id: createHash("sha256")
+    .update([webhook, ...HEARD].join("\n"))
+    .digest("hex"),
   ledger,
 });
 
@@ -106,8 +110,8 @@ const wiring = (state: AlertState, channel: Channel): Alert[] =>
     : [
         {
           text:
-            `Payout alerts are wired for ledger ${channel.ledger}. This channel hears when a wallet change is held, ` +
-            "when the ledger is paused, and when the co-signer stops answering, then again when each clears.",
+            `Payout alerts are wired for ledger ${channel.ledger}. This channel hears ` +
+            `${HEARD.join(", ")}, then again when each clears.`,
           wires: channel.id,
         },
       ];
