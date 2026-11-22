@@ -50,7 +50,7 @@ import { DESKTOP_MIN_WIDTH, judgeHudLayout, MAP_LEAST_SHARE } from "./hud-layout
  * evidence for what they name.
  */
 
-const T2_KNIGHT_STAMINA_MAX = release.definition.rules.troop_stamina_config.stamina_knight_max + 20;
+const T2_KNIGHT_STAMINA_MAX = release.definition.rules.troop_stamina_config.stamina_knight_max * 1.2;
 const SCENE_WAIT_MS = 15_000;
 const SCENE_HOLD_MS = 3_000;
 const PLACE_PRESSES = 2;
