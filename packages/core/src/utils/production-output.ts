@@ -1,12 +1,11 @@
 import { nativeBaneConstants } from "../../../../contracts/l3/world-native/schema/balance.gen";
-
-type Window = { kind: number; start: number; end: number };
+import type { BaneWindow } from "../client/views/banes";
 
 /** Raw output before storage and budget limits, retaining hundredths across settlements. */
 export function productionOutput(
   production: { last_settled_at: number; production_rate: bigint; remainder: number },
   timestamp: number,
-  windows: readonly Window[],
+  windows: readonly BaneWindow[],
   productionPercent: number,
 ): { amount: bigint; remainder: number } {
   const since = production.last_settled_at;
@@ -26,7 +25,7 @@ export function productionOutput(
     )
       throw new Error("Invalid production windows");
     previousEnd = window.end;
-    if (window.kind !== nativeBaneConstants.ASH_FALL) continue;
+    if (!window.kinds.includes(nativeBaneConstants.ASH_FALL)) continue;
     const seconds = Math.max(0, Math.min(timestamp, window.end) - Math.max(since, window.start));
     scaledSeconds -= BigInt(seconds) * BigInt(100 - productionPercent);
   }

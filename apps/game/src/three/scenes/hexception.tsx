@@ -1043,18 +1043,20 @@ export default class HexceptionScene extends HexagonScene {
     );
     const producedResource = getProducedResource(building.category as BuildingType);
 
-    if (producedResource) {
-      const productionManager = new ResourceManager(this.game.store, this.shownRealmId);
-      const currentTick = getBlockTimestamp().currentDefaultTick;
-      const isActive = productionManager.isProducingAt(producedResource as ResourcesIds, currentTick);
-      const producedName = resourceName(producedResource as ResourcesIds);
+    const production =
+      producedResource &&
+      new ResourceManager(this.game.store, this.shownRealmId).productionData(
+        producedResource as ResourcesIds,
+        getBlockTimestamp().currentDefaultTick,
+      );
 
+    if (production) {
       this.hoverLabelManager.update(position, {
         kind: "resource",
         buildingName,
         resourceId: producedResource as ResourcesIds,
-        resourceName: producedName,
-        isActive: !!isActive,
+        resourceName: resourceName(producedResource as ResourcesIds),
+        isActive: production.isProducing,
       });
       return;
     }

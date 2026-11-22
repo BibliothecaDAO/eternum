@@ -49,7 +49,7 @@ export function readStaminaEffects(
   const periods: { start: number; end: number; rateBps: number }[] = [
     regen,
     ...windows
-      .filter((window) => window.kind === nativeBaneConstants.MIST_TIDE)
+      .filter((window) => window.kinds.includes(nativeBaneConstants.MIST_TIDE))
       .map((window) => ({ start: window.start, end: window.end, rateBps: staminaPercent * 100 })),
   ];
   if (race.known.row) {

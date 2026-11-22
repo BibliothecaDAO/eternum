@@ -61,7 +61,7 @@ export function readSiteEffects(
     if (spoils.known.period && at >= spoils.known.period.start && at < spoils.known.period.end)
       spoilsPercent = race.known.row.spoils_percent;
   }
-  const blood = bane.known.windows.some((window) => window.kind === nativeBaneConstants.BLOOD_MOON);
+  const blood = bane.known.windows.some((window) => window.kinds.includes(nativeBaneConstants.BLOOD_MOON));
   return { known: { beastBps: moon * (blood ? bane.known.beastPercent : 100), spoilsPercent } };
 }
 

@@ -55,7 +55,7 @@ it("matches the native vectors across ordinary output, bane edges and carried fr
     const remainder = Number(next());
     const percent = Number(next());
     const windows = Array.from({ length: Number(next()) }, () => ({
-      kind: Number(next()),
+      kinds: [Number(next())],
       start: Number(next()),
       end: Number(next()),
     }));

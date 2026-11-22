@@ -41,7 +41,7 @@ const STRUCTURE_OWNERS = new Map([
   [NEIGHBOUR_HOME, "0x7e1"],
 ]);
 
-export function mistFacts(endedAt: number | undefined) {
+export function mistFacts(endedAt: number | undefined, rolled: number | null = nativeBaneConstants.MIST_TIDE) {
   if (endedAt === undefined) return [];
   return [
     {
@@ -68,7 +68,7 @@ export function mistFacts(endedAt: number | undefined) {
     },
     {
       model: "WorldBane",
-      rows: [{ key: "0xb04", value: { game_id: GAME_ID, day: TODAY, kind: nativeBaneConstants.MIST_TIDE } }],
+      rows: rolled === null ? [] : [{ key: "0xb04", value: { game_id: GAME_ID, day: TODAY, kind: rolled } }],
     },
     {
       model: "BaneProgress",

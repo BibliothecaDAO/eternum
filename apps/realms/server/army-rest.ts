@@ -178,7 +178,7 @@ function earliestRestCheck(
   if (!reading.known) throw new Error(reading.unknown);
   const { staminaPercent } = reading.known;
   const mist = reading.known.windows.find(
-    (window) => window.kind === nativeBaneConstants.MIST_TIDE && window.start <= now,
+    (window) => window.kinds.includes(nativeBaneConstants.MIST_TIDE) && window.start <= now,
   );
   if (!mist) return affordableAt(troops, now, rules, tickSeconds, maximum);
   const boundaries = [

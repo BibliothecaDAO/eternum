@@ -17,7 +17,7 @@ import {
   TODAY,
 } from "./fixtures/shard-world";
 import { dayOf } from "@bibliothecadao/eternum/expeditions";
-import { nativeRuleConstants } from "@bibliothecadao/eternum/game-client";
+import { nativeBaneConstants, nativeRuleConstants } from "@bibliothecadao/eternum/game-client";
 import type { HeraldHistoryEvent } from "@bibliothecadao/eternum/game-sync";
 import type { PushEnvelope } from "@bibliothecadao/notifications";
 import { Response as SocketResponse, WebSocketPair } from "miniflare";
@@ -102,6 +102,7 @@ const createHerald = () => {
     gamesReads: 0,
     manifestFailures: 0,
     mistEndedAt: undefined as number | undefined,
+    todayBane: nativeBaneConstants.MIST_TIDE as number | null,
     requestedModels: [] as string[],
     seasonStart: SEASON_START,
     /** The season's end, when a test ends it early; else 420 day units after its start. */
@@ -176,7 +177,7 @@ const createHerald = () => {
         state.secondArmy,
       );
       const scoped = siteSnapshot(
-        { ...read, models: [...read.models, ...mistFacts(state.mistEndedAt)] },
+        { ...read, models: [...read.models, ...mistFacts(state.mistEndedAt, state.todayBane)] },
         state.site,
         url.searchParams.get("owner"),
       );
@@ -763,6 +764,26 @@ describe.concurrent("shard notifications", () => {
       expect(
         herald.state.requestedModels.some((models) => models.includes("BaneProgress") && models.includes("TriumphDay")),
       ).toBe(true);
+    } finally {
+      await worker.dispose();
+    }
+  }, 100_000);
+
+  it("rechecks a day no command has rolled yet at its earliest and alerts once the rate the roll gave fills the bar", async () => {
+    const { herald, push, worker } = await createHarness("important");
+    try {
+      await worker.runCron();
+      await pause(polls(5));
+      herald.state.todayBane = null;
+      herald.state.mistEndedAt = 0;
+      herald.act(0);
+      const spentAt = herald.state.army!.settledAt;
+      await pause(ticks(1));
+      herald.state.todayBane = 0;
+      await waitUntil(() => push.received.length > 0, 45_000);
+      expect(Date.now() / 1000).toBeGreaterThanOrEqual(spentAt + REST_TICKS * ARMIES_TICK_SECONDS);
+      expect(Date.now() / 1000).toBeLessThan(spentAt + 2 * REST_TICKS * ARMIES_TICK_SECONDS);
+      expect(await push.words()).toEqual(["Your army is rested / Frontier: its stamina is full."]);
     } finally {
       await worker.dispose();
     }

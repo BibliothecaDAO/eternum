@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { readBaneDay, readBaneEffects } from "./banes";
 import { describe, expect, it } from "vitest";
 import release from "../../../../../contracts/l3/world-native/schema/release-definition.json";
-import { RESOURCE_PRECISION } from "@bibliothecadao/types";
+import { RESOURCE_PRECISION, worldBanes } from "@bibliothecadao/types";
 import { nativeBaneConstants, nativeQuestConstants } from "../../../../../contracts/l3/world-native/schema/balance.gen";
 import { dayOf } from "../../utils/days";
 import { NativeFactStore } from "../native-fact-store";
@@ -325,7 +325,7 @@ describe("recorded bane quest rewards", () => {
   it("leaves the whole quest unknown when its recorded roll or second receipt is not known", () => {
     const { store, read, finish, win, receipt } = worldQuestFixture();
     store.applyFacts([{ model: "WorldBane", key: "0xd003", value: null }]);
-    expect(read()?.reading).toEqual({ unknown: "MISSING_WORLD_BANE_DAY" });
+    expect(read()?.reading).toEqual({ unknown: "UNROLLED_WORLD_DAY" });
     store.applyFacts([
       { model: "WorldBane", key: "0xd003", value: { game_id: 1, day: 1, kind: nativeBaneConstants.ASH_FALL } },
     ]);
@@ -452,20 +452,30 @@ it("reads the recorded bane and ceiling quorum, keeping its quest after the effe
       productionPercent: 50,
       staminaPercent: 50,
       beastPercent: 150,
-      windows: [{ kind: nativeBaneConstants.ASH_FALL, start: secondDay.start, end: secondDay.start + 60 }],
+      windows: [{ kinds: [nativeBaneConstants.ASH_FALL], start: secondDay.start, end: secondDay.start + 60 }],
     },
   });
 });
 
-it("never turns an unknown roll or missing scope evidence into an ordinary day", () => {
+it("leaves the quest of a day no command has rolled yet unknown while its effects span the whole day", () => {
   const store = baneFixture();
   store.applyFacts([{ model: "WorldBane", key: "1:1", value: null }]);
-  expect(readBaneDay(store, 1, 7, secondDay)).toEqual({ unknown: "MISSING_WORLD_BANE_DAY" });
-  expect(readBaneEffects(store, 1, 7, secondDay.start, secondDay.start + 1)).toEqual({
-    unknown: "MISSING_WORLD_BANE_DAY",
-  });
+  expect(readBaneDay(store, 1, 7, secondDay)).toEqual({ unknown: "UNROLLED_WORLD_DAY" });
+  const effects = readBaneEffects(store, 1, 7, secondDay.start + 10, thirdDay.start + 1);
+  const anyBane = worldBanes.map(({ id }) => id);
+  expect(effects.known?.windows).toEqual([
+    { kinds: anyBane, start: secondDay.start + 10, end: secondDay.end },
+    { kinds: anyBane, start: thirdDay.start, end: thirdDay.start + 1 },
+  ]);
   store.setSnapshot({ gameId: 1, actor: "0x111", complete: false, timestamp: secondDay.start });
-  expect(readBaneDay(store, 1, 7, secondDay).unknown).toContain("INCOMPLETE_SNAPSHOT: FirstTeamBane");
+  expect(readBaneDay(store, 1, 7, secondDay).unknown).toContain("INCOMPLETE_SNAPSHOT");
+  expect(readBaneEffects(store, 1, 7, secondDay.start, secondDay.start + 1).unknown).toContain("INCOMPLETE_SNAPSHOT");
+});
+
+it("reads the day after a world bane as ordinary before its roll, as the chain's chance is then zero", () => {
+  const store = baneFixture();
+  expect(readBaneDay(store, 1, 7, thirdDay)).toEqual({ known: { bane: null } });
+  expect(readBaneEffects(store, 1, 7, thirdDay.start, thirdDay.start + 1).known?.windows).toEqual([]);
 });
 
 it("ends a zero-quorum effect at day start while retaining the bane quest", () => {

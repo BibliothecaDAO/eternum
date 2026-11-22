@@ -58,7 +58,7 @@ describe("Frontier rules at real speed", () => {
     const after = { balance: 1036n, production: { ...production, last_settled_at: 1013, remainder: 50 } };
     expect(
       wheatCharged(before, after, {
-        windows: [{ kind: nativeBaneConstants.ASH_FALL, start: 1003, end: 1010 }],
+        windows: [{ kinds: [nativeBaneConstants.ASH_FALL], start: 1003, end: 1010 }],
         productionPercent: 50,
       }),
     ).toBe(30n);

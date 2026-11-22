@@ -1,7 +1,7 @@
 import type { NativeRows } from "../../../../../contracts/l3/world-native/schema/client.gen";
 import type { NativeFactResult, NativeFactStore, ReadKeys } from "../native-fact-store";
 
-type OptionalSeasonModel = "BaneRules" | "FirstTeamBane" | "TeamBane" | "RaceRules" | "TriumphDay";
+type OptionalSeasonModel = "BaneRules" | "WorldBane" | "FirstTeamBane" | "TeamBane" | "RaceRules" | "TriumphDay";
 
 /** Optional season state is absent only after its complete snapshot proves that absence. */
 export function readOptionalSeasonRow<M extends OptionalSeasonModel>(

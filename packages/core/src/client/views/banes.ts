@@ -13,6 +13,12 @@ export const BANE_MODELS = [
   "AspectActivity",
 ] as const;
 
+const NO_WORLD_BANE = 0;
+const UNROLLED_WORLD_DAY = "UNROLLED_WORLD_DAY";
+const ANY_WORLD_BANE: readonly number[] = worldBanes.map((bane) => bane.id);
+
+export type BaneWindow = { kinds: readonly number[]; start: number; end: number };
+
 type BaneIdentity = { type: "world"; kind: number; quest: number } | { type: "team"; source: number; quest: number };
 
 export type BaneDay = BaneIdentity & {
@@ -71,12 +77,12 @@ function readBaneIdentity(
   if (!first.known) return first;
   const team = readOptionalSeasonRow(store, "TeamBane", { game_id: gameId, aspect, day });
   if (!team.known) return team;
-  const stopped = first.known.row && day > Number(first.known.row.issued_day);
-  const world = store.get("WorldBane", { game_id: gameId, day });
-  if (!stopped && !world) return { unknown: "MISSING_WORLD_BANE_DAY" };
-  const kind = stopped ? 0 : world!.kind;
-  if (kind !== 0 && team.known.row) throw new Error("An Aspect cannot have world and team banes together");
-  if (kind !== 0) return { known: { bane: { type: "world", kind, quest: worldQuest(kind) } } };
+  const stopped = first.known.row !== undefined && day > Number(first.known.row.issued_day);
+  const world = readWorldKind(store, gameId, day, stopped);
+  if (!world.known) return world;
+  const kind = world.known.kind;
+  if (kind !== NO_WORLD_BANE && team.known.row) throw new Error("An Aspect cannot have world and team banes together");
+  if (kind !== NO_WORLD_BANE) return { known: { bane: { type: "world", kind, quest: worldQuest(kind) } } };
   if (team.known.row)
     return {
       known: {
@@ -88,6 +94,24 @@ function readBaneIdentity(
       },
     };
   return { known: { bane: null } };
+}
+
+function readWorldKind(
+  store: NativeFactStore,
+  gameId: number,
+  day: number,
+  stopped: boolean,
+): NativeFactResult<{ kind: number }> {
+  if (stopped || followsWorldBane(store, gameId, day)) return { known: { kind: NO_WORLD_BANE } };
+  const rolled = readOptionalSeasonRow(store, "WorldBane", { game_id: gameId, day });
+  if (!rolled.known) return rolled;
+  if (!rolled.known.row) return { unknown: UNROLLED_WORLD_DAY };
+  return { known: { kind: rolled.known.row.kind } };
+}
+
+function followsWorldBane(store: NativeFactStore, gameId: number, day: number) {
+  const yesterday = day > 0 ? store.get("WorldBane", { game_id: gameId, day: day - 1 }) : undefined;
+  return yesterday !== undefined && yesterday.kind !== NO_WORLD_BANE;
 }
 
 function worldQuest(kind: number): number {
@@ -116,7 +140,7 @@ export function readBaneEffects(
   from: number,
   until: number,
 ): NativeFactResult<{
-  windows: { kind: number; start: number; end: number }[];
+  windows: BaneWindow[];
   productionPercent: number;
   staminaPercent: number;
   beastPercent: number;
@@ -124,7 +148,7 @@ export function readBaneEffects(
   const ruleReading = readOptionalSeasonRow(store, "BaneRules", { game_id: gameId });
   if (!ruleReading.known) return ruleReading;
   const rules = ruleReading.known.row;
-  const windows: { kind: number; start: number; end: number }[] = [];
+  const windows: BaneWindow[] = [];
   if (!rules) return { known: { windows, productionPercent: 100, staminaPercent: 100, beastPercent: 100 } };
   const structure = store.get("Structure", { game_id: gameId, entity_id: home });
   if (!structure) return { unknown: "MISSING_PRODUCTION_STRUCTURE" };
@@ -144,11 +168,16 @@ export function readBaneEffects(
     const day = dayOf(calendar, cursor);
     if (!day) throw new Error("Bane interval is outside the season");
     const read = readBaneDay(store, gameId, home, day);
+    if (read.unknown === UNROLLED_WORLD_DAY) {
+      windows.push({ kinds: ANY_WORLD_BANE, start: cursor, end: Math.min(end, day.end) });
+      cursor = day.end;
+      continue;
+    }
     if (!read.known) return read;
     const bane = read.known.bane;
     if (bane?.type === "world") {
       const stop = Math.min(end, day.end, bane.endedAt || day.end);
-      if (cursor < stop) windows.push({ kind: bane.kind, start: cursor, end: stop });
+      if (cursor < stop) windows.push({ kinds: [bane.kind], start: cursor, end: stop });
     }
     cursor = day.end;
   }

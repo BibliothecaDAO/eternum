@@ -111,12 +111,28 @@ it("settles the old and reduced rate separately and refreshes both balance and r
   expect(manager.balance(3)).toBe(0n);
 });
 
-it("does not forecast an ordinary rate or balance through an unknown recorded day", () => {
+it("shows no more than Ash Fall allows through a day no command has rolled yet, then the roll's own rate", () => {
   const { store, manager, now } = baneProduction();
   store.applyFacts([{ model: "WorldBane", key: "0xd006", value: null }]);
+  expect(manager.balanceWithProduction(now, 3)).toMatchObject({ balance: 108, amountProduced: 108n });
+  expect(manager.productionData(3, now)).toMatchObject({ productionPerSecond: 3.5 / 1e9, isProducing: true });
+  store.applyFacts([{ model: "WorldBane", key: "0xd006", value: { game_id: 1, day: 1, kind: 0 } }]);
+  expect(manager.balanceWithProduction(now, 3)).toMatchObject({ balance: 147, amountProduced: 147n });
+  expect(manager.productionData(3, now)).toMatchObject({ productionPerSecond: 7 / 1e9, isProducing: true });
+  store.applyFacts([{ model: "WorldBane", key: "0xd006", value: null }]);
+  store.setSnapshot({ gameId: 1, complete: false, actor: "0x111", timestamp: now });
   expect(manager.balanceWithProduction(now, 3)).toBeUndefined();
   expect(manager.productionData(3, now)).toBeUndefined();
-  expect(manager.balance(3)).toBe(0n);
+});
+
+it("produces at the full rate before the roll on the day after a world bane, whose chance is then zero", () => {
+  const { store, manager, now } = baneProduction();
+  store.applyFacts([
+    { model: "WorldBane", key: "0xd005", value: { game_id: 1, day: 0, kind: nativeBaneConstants.ASH_FALL } },
+    { model: "WorldBane", key: "0xd006", value: null },
+  ]);
+  expect(manager.balanceWithProduction(now, 3)).toMatchObject({ balance: 147, amountProduced: 147n });
+  expect(manager.productionData(3, now)).toMatchObject({ productionPerSecond: 7 / 1e9, isProducing: true });
 });
 
 it("exhausts finite production at the slowed rate, carrying the fraction into the remaining-time estimate", () => {

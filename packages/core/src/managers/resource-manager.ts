@@ -331,7 +331,8 @@ export class ResourceManager {
     const { windows, productionPercent } = effects.known;
     const output = productionOutput(production, timestamp, windows, productionPercent);
     const ash = windows.some(
-      (window) => window.kind === nativeBaneConstants.ASH_FALL && window.start <= timestamp && timestamp < window.end,
+      (window) =>
+        window.kinds.includes(nativeBaneConstants.ASH_FALL) && window.start <= timestamp && timestamp < window.end,
     );
     return { ...output, rateNumerator: production.production_rate * BigInt(ash ? productionPercent : 100) };
   }

@@ -122,13 +122,16 @@ it("multiplies Second Wind and Mist Tide, then restores the Triumph rate at the 
   expect(readStaminaEffects(store, 1, 7, 1n, day.start, 3, 0)).toEqual({ known: { until: day.end, windows: [] } });
 });
 
-it("does not invent a neutral day while its roll or optional Triumph absence remains unknown", () => {
+it("regenerates no faster than Mist Tide allows through a day no command has rolled yet, and at the roll's own rate once rolled", () => {
   const store = fixture();
+  store.applyFacts([{ model: "WorldBane", key: "1:1", value: null }]);
+  expect(readStaminaEffects(store, 1, 7, 1n, day.start, 0, 0)).toEqual({
+    known: { until: day.end, windows: [{ start: day.start, end: day.end, rateBps: 5_000 }] },
+  });
+  store.applyFacts([{ model: "WorldBane", key: "1:1", value: { game_id: 1, day: 1, kind: 0 } }]);
+  expect(readStaminaEffects(store, 1, 7, 1n, day.start, 0, 0)).toEqual({ known: { until: day.end, windows: [] } });
   store.setSnapshot({ gameId: 1, actor: "0x111", complete: false, timestamp: day.start });
   expect(readStaminaEffects(store, 1, 7, 1n, day.start, 0, 0).unknown).toContain("INCOMPLETE_SNAPSHOT");
-  store.setSnapshot({ gameId: 1, actor: "0x111", complete: true, timestamp: day.start });
-  store.applyFacts([{ model: "WorldBane", key: "1:1", value: null }]);
-  expect(readStaminaEffects(store, 1, 7, 1n, day.start, 0, 0)).toEqual({ unknown: "MISSING_WORLD_BANE_DAY" });
 });
 
 it("ignores a scheduled Triumph after an early finish without changing its calendar identity", () => {
