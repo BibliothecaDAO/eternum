@@ -16,7 +16,7 @@ import { useUnreadImportantCount } from "@/ui/features/event-feed/quick-feed";
 import { SettingsPanel } from "@/ui/modules/settings/settings";
 import { configManager, resolveUseSimpleCost } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
-import { aspects, BuildingType, formatRate, StructureType } from "@bibliothecadao/types";
+import { BuildingType, catalogAspectId, formatRate, StructureType } from "@bibliothecadao/types";
 import { useLayout } from "@/shell/frame/layout";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { type ComponentProps, type ComponentType, type ReactNode, useEffect, useState } from "react";
@@ -572,7 +572,7 @@ const FrontierRealmPanel = ({
   const goToPlace = useGoToFrontierPlace(realm);
   const fragments = useFragmentsChip();
   const aspectId = facts.store.get("HomeAspect", { game_id: realm.game_id, home: realm.entity_id })?.aspect;
-  const aspect = aspects.find((candidate) => candidate.id === aspectId)?.id;
+  const aspect = aspectId !== undefined ? catalogAspectId(aspectId) : undefined;
   const options = facts.store.get("BoardRules", { game_id: realm.game_id })
     ? (readBuildOptions(facts.store, realm, useSimpleCost, tick) ?? [])
     : [];

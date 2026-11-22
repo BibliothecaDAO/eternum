@@ -9,7 +9,10 @@ const canMountRenderer = (): boolean => {
   if (typeof window === "undefined" || typeof ResizeObserver === "undefined") return false;
   try {
     const probe = document.createElement("canvas");
-    return Boolean(probe.getContext("webgl2") || probe.getContext("webgl"));
+    const context = probe.getContext("webgl2") || probe.getContext("webgl");
+    if (!context) return false;
+    context.getExtension("WEBGL_lose_context")?.loseContext();
+    return true;
   } catch {
     return false;
   }

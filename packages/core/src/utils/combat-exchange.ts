@@ -331,7 +331,6 @@ export type FightForecast =
   | { outcome: "refused"; refusal: ExchangeRefusal }
   | {
       outcome: "wins" | "loses" | "stalls";
-      firstStrike?: FirstStrikeSide;
       exchanges: number;
       stoppedBy?: ExchangeRefusal;
       /** What the first exchange alone costs each side: the one attack a player sends, as its result reads. */
@@ -376,7 +375,6 @@ export const forecastFight = (
   const outcome = state.attacker.count === 0n ? "loses" : state.defender.count === 0n ? "wins" : "stalls";
   return {
     outcome,
-    firstStrike: first.firstStrike,
     exchanges,
     stoppedBy,
     firstExchange: { attackerLoss: first.attackerLoss, defenderLoss: first.defenderLoss },
