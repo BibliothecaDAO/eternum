@@ -3574,7 +3574,7 @@ async function cameraAtRest(browser) {
 }
 
 /** What the switch that opens the views says: the view shown. */
-const VIEW_SWITCH_WORD = `JSON.stringify(document.querySelector('nav[aria-label="Places"] [data-switch], [aria-label="Map view"] [role="tab"][aria-selected="true"]')?.textContent.trim() ?? null)`;
+const VIEW_SWITCH_WORD = `JSON.stringify(document.querySelector('[data-surface-deep-switch] button[aria-pressed="true"]')?.textContent.trim() ?? null)`;
 
 /** The views a lab realm with Ethereal I and II lists, and the region's rows (Frontier's spacing). */
 const LAB_LAYERS = LAYER_NAMES.slice(0, 3);

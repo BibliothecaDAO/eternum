@@ -1,7 +1,7 @@
 import { StructureType, structureName, eternumMapName } from "@bibliothecadao/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { WORLD } from "@/ui/design-system/kit/words";
-import { HudButton, HudPill, HudTabs, type MenuItem } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudPill, HudTabs } from "@/ui/design-system/kit/hud-elements";
 
 interface MapViewControlsProps {
   compact: boolean;
@@ -9,16 +9,9 @@ interface MapViewControlsProps {
   canOpenLocal: boolean;
   mapLayer: boolean;
   showLayerSwitch: boolean;
-  worldTab?: WorldTab;
   onNavigate: (world: boolean) => void;
   onLayerChange: (alt: boolean) => void;
 }
-
-/**
- * What the World tab shows on the map where a mode has layers below it (Frontier's Ethereal layers): the layer shown,
- * opening the list of every layer (owner, 4 November 2026: "disagree here since we'll have more depth layers").
- */
-export type WorldTab = { label: string; menu?: readonly MenuItem[] };
 
 /** Primary map navigation, with one space-saving layer toggle in the mobile HUD. */
 export function MapViewControls({
@@ -27,19 +20,12 @@ export function MapViewControls({
   canOpenLocal,
   mapLayer,
   showLayerSwitch,
-  worldTab,
   onNavigate,
   onLayerChange,
 }: MapViewControlsProps) {
   return (
     <div className="flex min-w-0 items-center gap-2">
-      <MapViewSwitch
-        compact={compact}
-        isLocalView={isLocalView}
-        canOpenLocal={canOpenLocal}
-        worldTab={worldTab}
-        onNavigate={onNavigate}
-      />
+      <MapViewSwitch compact={compact} isLocalView={isLocalView} canOpenLocal={canOpenLocal} onNavigate={onNavigate} />
       {showLayerSwitch &&
         (compact ? (
           <CompactLayerSwitch mapLayer={mapLayer} onLayerChange={onLayerChange} />
@@ -54,13 +40,11 @@ const MapViewSwitch = ({
   compact,
   isLocalView,
   canOpenLocal,
-  worldTab,
   onNavigate,
 }: {
   compact: boolean;
   isLocalView: boolean;
   canOpenLocal: boolean;
-  worldTab?: WorldTab;
   onNavigate: (world: boolean) => void;
 }) => (
   <HudPill label="Map view" role="group" className={cn("pointer-events-auto", compact ? "px-1" : "px-2")}>
@@ -74,7 +58,7 @@ const MapViewSwitch = ({
             disabled: !canOpenLocal,
             title: canOpenLocal ? undefined : "Select a structure first",
           },
-          { key: "world", label: worldTab?.label ?? WORLD, menu: worldTab?.menu },
+          { key: "world", label: WORLD },
         ]}
         size="sm"
         value={isLocalView ? "realm" : "world"}

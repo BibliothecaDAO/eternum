@@ -8,7 +8,6 @@ import { useGoToFrontierPlace } from "../frontier-home";
 import { realmDot, useRealmStores } from "../realm-stores";
 import { useResearchTree } from "../research/research-facts";
 import { canResearchNow } from "../research/research-tree";
-import { layerViews, type MapLayers } from "./map-layers";
 import { type Place, PlaceNav } from "./place-nav";
 
 /** What the HUD has open over the map: a nav page, the Menu, or a way the Menu opens. */
@@ -37,7 +36,6 @@ export const FrontierNav = ({
   rules,
   realm,
   board,
-  layers,
   surface,
   onSurface,
   events,
@@ -48,8 +46,6 @@ export const FrontierNav = ({
   realm: NativeRows["Structure"] | null;
   /** The realm the Realm slot goes to: the player's own, or the one a spectator watches. */
   board: NativeRows["Structure"] | null;
-  /** The map's layers (useMapLayers); none on the board or before Ethereal I. */
-  layers: MapLayers | null;
   surface: HudSurface | null;
   onSurface: (surface: HudSurface | null) => void;
   /** Events arrived since the Feed was last read. */
@@ -81,7 +77,6 @@ export const FrontierNav = ({
   return (
     <PlaceNav
       realmIcon={realmIcon}
-      views={layers && layerViews(layers, { icon: realmIcon, go: () => go("realm") }, putPageAway)}
       place={place}
       onRealm={!isMapView}
       onGo={go}

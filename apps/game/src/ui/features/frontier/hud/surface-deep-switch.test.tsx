@@ -60,9 +60,9 @@ describe("SurfaceDeepSwitch", () => {
 
     act(() => buttons[1]!.click());
     const items = [...document.querySelectorAll<HTMLButtonElement>('[role="menu"] [role^="menuitem"]')];
-    expect(items.map((item) => item.textContent)).toEqual(["Veil", "Hollow", "Deep"]);
+    expect(items.map((item) => item.textContent)).toEqual(["Surface", "Veil", "Hollow", "Deep"]);
 
-    act(() => items[2]!.click());
+    act(() => items[3]!.click());
     expect(go).toHaveBeenCalledWith("deep");
   });
 });

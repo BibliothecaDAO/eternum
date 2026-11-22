@@ -7,7 +7,6 @@ import { EVENTS_WORDS, REALM, RESEARCH, SEASON } from "@/ui/design-system/kit/wo
 import { FeedToasts, useUnreadImportantCount } from "@/ui/features/event-feed/quick-feed";
 import { HudChatWindow } from "@/ui/features/world/containers/hud-chat-window";
 import type { SeasonGoal } from "@/ui/features/world/containers/top-header/identity-chip";
-import type { WorldTab } from "@/ui/features/world/containers/top-header/map-view-controls";
 import { HudColumn, HudFoot } from "@/ui/features/world/hud/desktop-hud";
 import { HudMinimap } from "@/ui/features/world/hud/minimap";
 import { formatAmount } from "@bibliothecadao/types";
@@ -28,7 +27,6 @@ import { useHudScale } from "./hud-scale";
 export const FrontierDesktop = ({
   season,
   clock,
-  worldTab,
   depthSwitch,
   realm,
   armies,
@@ -41,8 +39,6 @@ export const FrontierDesktop = ({
   season?: SeasonGoal;
   /** The day, in the top bar's clock place. */
   clock: ReactNode;
-  /** The top bar's World tab on the map once the realm has an Ethereal layer: the layer shown, opening every layer. */
-  worldTab?: WorldTab;
   depthSwitch?: ReactNode;
   realm?: ReactNode;
   armies?: ReactNode;
@@ -57,7 +53,7 @@ export const FrontierDesktop = ({
   const [panel, setPanel] = useState<HTMLElement | null>(null);
   return (
     <div style={{ zoom: useHudScale() }}>
-      <FrontierTopBar season={season} places={places} worldTab={worldTab} depthSwitch={depthSwitch} clock={clock} />
+      <FrontierTopBar season={season} places={places} depthSwitch={depthSwitch} clock={clock} />
       <HudColumn label={REALM}>
         {realm}
         <div className="flex shrink-0 flex-col">{armies}</div>

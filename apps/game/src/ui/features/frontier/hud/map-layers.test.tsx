@@ -6,20 +6,18 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { openPlace } from "@/play/navigation/open-place";
 import { requestLayerView } from "@/three/scenes/worldmap-layer-request";
-import { MapViewControls } from "@/ui/features/world/containers/top-header/map-view-controls";
 import {
   type ExpeditionRules,
   expeditionDayEndsAt,
   readExpeditionRules,
-  seasonDay,
   setBlockTimestampSource,
 } from "@bibliothecadao/eternum";
 import { deepCenter, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
 
 import { campBeside } from "../sites/site-fixture";
 
-import { layerTab, layerViews, type MapLayers, useMapLayers } from "./map-layers";
-import { PlaceNav } from "./place-nav";
+import { type MapLayers, useMapLayers } from "./map-layers";
+import { SurfaceDeepSwitch } from "./surface-deep-switch";
 
 const context = vi.hoisted(() => ({
   store: null as NativeFactStore | null,
@@ -47,7 +45,6 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-/** The open list's choices, each by its word and whether it is the one shown. */
 const openList = () =>
   [...document.querySelectorAll('[role="menu"] [role^="menuitem"]')].map((item) => [
     item.textContent,
@@ -60,76 +57,36 @@ const choose = (word: string) =>
       .click(),
   );
 
-// A realm with Ethereal I and II researched, the camera in Ethereal II.
 const layersShowingII = (go: MapLayers["go"]): MapLayers => ({ layers: [0, 1, 2], shown: 2, go });
 
 describe("the map's layers", () => {
-  it("on a phone, the view slot names the layer shown and opens Realm, the world and each Ethereal layer", () => {
+  it("shows Surface beside the active depth and opens every unlocked layer in one list", () => {
     const go = vi.fn();
-    const onGo = vi.fn();
     const layers = layersShowingII(go);
-    const views = layerViews(layers, { icon: "realm", go: () => onGo("realm") }, () => {});
-    act(() => root.render(<PlaceNav place={null} onRealm={false} onGo={onGo} views={views} events={0} unread={0} />));
-    const slot = host.querySelector<HTMLButtonElement>("[data-switch]")!;
-    expect(slot.textContent).toBe("Hollow");
-    expect(slot.querySelector("img")?.getAttribute("src")).toContain("depth-2");
+    act(() => root.render(<SurfaceDeepSwitch layers={layers} />));
+    const buttons = [...host.querySelectorAll<HTMLButtonElement>("[data-surface-deep-switch] button")];
+    expect(buttons.map((button) => [button.textContent, button.getAttribute("aria-pressed")])).toEqual([
+      ["Surface", "false"],
+      ["Hollow", "true"],
+    ]);
+    expect(buttons[1]!.querySelector("img")?.getAttribute("src")).toContain("depth-2");
 
-    act(() => slot.click());
+    act(() => buttons[1]!.click());
     expect(openList()).toEqual([
-      ["Realm", "false"],
       ["Surface", "false"],
       ["Veil", "false"],
       ["Hollow", "true"],
     ]);
-    expect(onGo).not.toHaveBeenCalled();
     choose("Veil");
     expect(go).toHaveBeenCalledWith(1);
     expect(openList()).toEqual([]);
 
-    act(() => slot.click());
+    act(() => buttons[1]!.click());
     choose("Hollow");
     expect(go).toHaveBeenCalledTimes(1);
-    act(() => slot.click());
-    choose("Realm");
-    expect(onGo).toHaveBeenCalledWith("realm");
-  });
 
-  it("on a desktop, the World tab names the layer shown and opens the same layers, Realm staying its own tab", () => {
-    const go = vi.fn();
-    const onNavigate = vi.fn();
-    const layers = layersShowingII(go);
-    act(() =>
-      root.render(
-        <MapViewControls
-          compact={false}
-          isLocalView={false}
-          canOpenLocal
-          mapLayer={false}
-          showLayerSwitch={false}
-          worldTab={layerTab(layers)}
-          onNavigate={onNavigate}
-          onLayerChange={vi.fn()}
-        />,
-      ),
-    );
-    const tabs = [...host.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
-    expect(tabs.map((tab) => [tab.textContent, tab.getAttribute("aria-selected")])).toEqual([
-      ["Realm", "false"],
-      ["Hollow", "true"],
-    ]);
-
-    act(() => tabs[1].click());
-    expect(openList()).toEqual([
-      ["Surface", "false"],
-      ["Veil", "false"],
-      ["Hollow", "true"],
-    ]);
-    expect(onNavigate).not.toHaveBeenCalled();
-    choose("Surface");
-    expect(go).toHaveBeenCalledWith(0);
-
-    act(() => tabs[0].click());
-    expect(onNavigate).toHaveBeenCalledWith(false);
+    act(() => buttons[0]!.click());
+    expect(go).toHaveBeenLastCalledWith(0);
   });
 });
 
@@ -142,15 +99,10 @@ const researchedDay = (researched = 3n) => {
   const rules = readExpeditionRules(store, 1)!;
   const realm = store.require("Structure", { game_id: 1, entity_id: 7 });
   const now = expeditionDayEndsAt(rules, rules.startMainAt) + 10;
-  const today = seasonDay(rules, now)!;
   clockAt(store, now);
-  return { store, realm, rules, today };
+  return { store, realm, rules };
 };
 
-/**
- * The chain's clock at `seconds`, as the HUD reads it (useNowSeconds), the realm's site is placed by, and Herald's
- * snapshot scopes the store at: realm 7's player, so the store holds what that player's subscription holds.
- */
 const clockAt = (store: NativeFactStore, seconds: number) =>
   act(() => {
     useChainTimeStore.getState().anchor({ timestamp: seconds * 1_000 });
@@ -158,43 +110,9 @@ const clockAt = (store: NativeFactStore, seconds: number) =>
     store.setSnapshot({ gameId: 1, complete: true, actor: "0x111", timestamp: seconds });
   });
 
-/** The switch of the HUD over the real layers: the desktop's World tab, or a phone's view slot. */
-const LayerSwitch = ({
-  rules,
-  realm,
-  phone,
-  toRealm = () => {},
-  chosen = () => {},
-}: {
-  rules: ExpeditionRules;
-  realm: NativeRows["Structure"];
-  phone?: boolean;
-  toRealm?: () => void;
-  chosen?: () => void;
-}) => {
+const LayerSwitch = ({ rules, realm }: { rules: ExpeditionRules; realm: NativeRows["Structure"] }) => {
   const layers = useMapLayers(rules, realm, realm);
-  if (!layers) return null;
-  return phone ? (
-    <PlaceNav
-      place={null}
-      onRealm={!context.mapView}
-      onGo={() => {}}
-      views={layerViews(layers, { icon: "realm", go: toRealm }, chosen)}
-      events={0}
-      unread={0}
-    />
-  ) : (
-    <MapViewControls
-      compact={false}
-      isLocalView={!context.mapView}
-      canOpenLocal
-      mapLayer={false}
-      showLayerSwitch={false}
-      worldTab={layerTab(layers)}
-      onNavigate={() => {}}
-      onLayerChange={() => {}}
-    />
-  );
+  return <SurfaceDeepSwitch layers={layers} />;
 };
 
 const listRows = () =>
@@ -204,67 +122,17 @@ const listRows = () =>
   ]);
 
 describe("the layer switch over the real layers", () => {
-  it.each([
-    ["a desktop", false],
-    ["a phone", true],
-  ])("on %s before Veil, the switch stays Realm / World with no list", (_, phone) => {
+  it("stays absent before Veil and while on the realm board", () => {
     const { rules, realm } = researchedDay(0n);
     context.mapView = true;
-    act(() => root.render(<LayerSwitch rules={rules} realm={realm} phone={phone} />));
-    expect(host.querySelector("[aria-haspopup]")).toBeNull();
-  });
-
-  it("opens the same list from the realm's view, where a layer opens the map at the realm's site in it", () => {
-    const { realm, rules, today } = researchedDay();
-    context.mapView = false;
     act(() => root.render(<LayerSwitch rules={rules} realm={realm} />));
-    const tabs = [...host.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
-    expect(tabs.map((tab) => [tab.textContent, tab.getAttribute("aria-selected")])).toEqual([
-      ["Realm", "true"],
-      ["Surface", "false"],
-    ]);
+    expect(host.querySelector("[data-surface-deep-switch]")).toBeNull();
 
-    act(() => tabs[1]!.click());
-    expect(listRows()).toEqual([
-      ["Surface", "false"],
-      ["Veil", "false"],
-      ["Hollow", "false"],
-      ["Deep", "false"],
-    ]);
-    choose("Hollow");
-    expect(requestLayerView).not.toHaveBeenCalled();
-    expect(openPlace).toHaveBeenCalledTimes(1);
-    const [scene, position] = vi.mocked(openPlace).mock.calls[0]!;
-    const { y } = position.getContract();
-    expect([scene, Math.floor(y / rules.spacing) % 4, Math.floor(Math.floor(y / rules.spacing) / 4)]).toEqual([
-      "map",
-      2,
-      today,
-    ]);
-  });
-
-  it("on a phone in the realm's view, the view slot lists Realm checked, then each layer", () => {
-    const { realm, rules } = researchedDay();
+    const unlocked = researchedDay(3n);
     context.mapView = false;
-    const toRealm = vi.fn();
-    const chosen = vi.fn();
-    act(() => root.render(<LayerSwitch rules={rules} realm={realm} phone toRealm={toRealm} chosen={chosen} />));
-    const slot = host.querySelector<HTMLButtonElement>("[data-switch]")!;
-    expect(slot.textContent).toBe("Surface");
-
-    act(() => slot.click());
-    expect(listRows()).toEqual([
-      ["Realm", "true"],
-      ["Surface", "false"],
-      ["Veil", "false"],
-      ["Hollow", "false"],
-      ["Deep", "false"],
-    ]);
-    choose("Realm");
-    expect([toRealm.mock.calls.length, chosen.mock.calls.length]).toEqual([0, 1]);
-    act(() => slot.click());
-    choose("Veil");
-    expect(openPlace).toHaveBeenCalledTimes(1);
+    act(() => root.render(<LayerSwitch rules={unlocked.rules} realm={unlocked.realm} />));
+    expect(host.querySelector("[data-surface-deep-switch]")).toBeNull();
+    expect(openPlace).not.toHaveBeenCalled();
   });
 });
 
@@ -300,14 +168,15 @@ describe("the shared Deep in the map layer menu", () => {
     context.mapView = true;
     useUIStore.setState({ cameraTargetHex: { col: 512, row: 512 } });
     act(() => root.render(<LayerSwitch rules={rules} realm={realm} />));
-    const open = () => act(() => [...host.querySelectorAll<HTMLButtonElement>('[role="tab"]')][1]!.click());
+    const open = () =>
+      act(() => [...host.querySelectorAll<HTMLButtonElement>("[data-surface-deep-switch] button")][1]!.click());
     open();
     expect(listRows().map(([label]) => label)).toEqual(["Surface", "Veil", "Hollow", "Deep"]);
     choose("Deep");
     expect(requestLayerView).toHaveBeenCalledTimes(1);
     expect(requestLayerView).toHaveBeenCalledWith(deepCenter(rules.spacing));
     act(() => useUIStore.setState({ cameraTargetHex: deepCenter(rules.spacing) }));
-    expect([...host.querySelectorAll('[role="tab"]')][1]!.textContent).toBe("Deep");
+    expect([...host.querySelectorAll("[data-surface-deep-switch] button")][1]!.textContent).toBe("Deep");
     open();
     expect(listRows().at(-1)?.[1]).toBe("true");
   });
@@ -327,7 +196,7 @@ describe("the shared Deep in the map layer menu", () => {
     context.mapView = true;
     useUIStore.setState({ cameraTargetHex: { col: 512, row: 512 } });
     act(() => root.render(<LayerSwitch rules={rules} realm={realm} />));
-    act(() => [...host.querySelectorAll<HTMLButtonElement>('[role="tab"]')][1]!.click());
+    act(() => [...host.querySelectorAll<HTMLButtonElement>("[data-surface-deep-switch] button")][1]!.click());
     choose("Deep");
     expect(requestLayerView).toHaveBeenLastCalledWith({ col: 516, row: 3584 });
   });

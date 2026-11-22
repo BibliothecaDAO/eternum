@@ -191,7 +191,7 @@ const placeSlotExpression = (word) => `JSON.stringify((() => {
  */
 const VIEW_SWITCH_EXPRESSION = `JSON.stringify((() => {
   const rect = document
-    .querySelector('nav[aria-label="Places"] [data-switch][aria-haspopup], [aria-label="Map view"] [role="tab"][aria-haspopup]')
+    .querySelector('[data-surface-deep-switch] [aria-haspopup]')
     ?.getBoundingClientRect();
   return rect ? { x: Math.round(rect.left + rect.width / 2), y: Math.round(rect.top + rect.height / 2) } : null;
 })())`;
@@ -225,8 +225,8 @@ const OBSERVE_EXPRESSION = `JSON.stringify({
   selection: window.__eternumMapSelection ?? null,
   place:
     document.querySelector('nav[aria-label="Places"] [aria-current="page"]')?.textContent.trim() ??
+    document.querySelector('[data-surface-deep-switch] button[aria-pressed="true"]')?.textContent.trim() ??
     document.querySelector('[aria-label="Map view"] [role="tab"][aria-selected="true"]')?.textContent.trim() ??
-    document.querySelector('nav[aria-label="Places"] [data-switch][aria-haspopup] > span:nth-of-type(2)')?.textContent.trim() ??
     ({ world: "Realm", realm: "Map" })[document.querySelector('nav[aria-label="Places"] [data-switch]')?.dataset.switch] ??
     null,
   dialogs: [...document.querySelectorAll('[role="dialog"]')].map((dialog) => dialog.getAttribute("aria-label")),

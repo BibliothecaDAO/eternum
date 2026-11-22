@@ -5,8 +5,6 @@ import { openPlace } from "@/play/navigation/open-place";
 import { requestLayerView } from "@/three/scenes/worldmap-layer-request";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import type { MenuItem } from "@/ui/design-system/kit/hud-elements";
-import { REALM } from "@/ui/design-system/kit/words";
-import type { WorldTab } from "@/ui/features/world/containers/top-header/map-view-controls";
 import {
   type EtherealLayer,
   type ExpeditionRules,
@@ -84,44 +82,19 @@ const realmSite = (store: Parameters<typeof structureMapPosition>[0], realm: Nat
   return site && { col: site.x, row: site.y };
 };
 
-const layerWord = (layer: MapLayer): string => layerName(layer === "deep" ? 3 : layer);
+export const layerWord = (layer: MapLayer): string => layerName(layer === "deep" ? 3 : layer);
 
-/** A layer's painting: the world map's, or the depth's own mark. */
-const layerMark = (layer: MapLayer): IconMeaning => (layer === 0 ? "map" : reachMark(layer === "deep" ? 3 : layer));
+export const layerMark = (layer: MapLayer): IconMeaning => (layer === 0 ? "map" : reachMark(layer === "deep" ? 3 : layer));
 
-/** One view in a list of views, by its word and painting: a layer, or a phone's Realm. */
-const viewChoice = (label: string, icon: IconMeaning, checked: boolean, onSelect: () => void): MenuItem => ({
-  label,
-  lead: <Icon name={icon} size={22} />,
-  checked,
-  onSelect,
-});
-
-/**
- * The layers as a list's choices, each with its painting, the one shown checked. A choice goes to its layer, the one
- * shown staying put, and then runs `chosen` (a phone puts its open page away, so any choice shows the map).
- */
-const layerChoices = ({ layers, shown, go }: MapLayers, chosen: () => void = () => {}): MenuItem[] =>
-  layers.map((layer) =>
-    viewChoice(layerWord(layer), layerMark(layer), layer === shown, () => {
-      if (layer !== shown) go(layer);
-      chosen();
-    }),
-  );
-
-export const layerViews = (layers: MapLayers, realm: { icon: IconMeaning; go: () => void }, chosen: () => void) => {
-  if (layers.layers.length === 1) return null;
-  return {
-    icon: layerMark(layers.shown ?? 0),
-    word: layerWord(layers.shown ?? 0),
-    items: [
-      viewChoice(REALM, realm.icon, layers.shown === null, () => (layers.shown === null ? chosen() : realm.go())),
-      ...layerChoices(layers, chosen),
-    ],
-  };
+export const selectLayer = ({ shown, go }: MapLayers, layer: MapLayer, chosen: () => void = () => {}) => {
+  if (layer !== shown) go(layer);
+  chosen();
 };
 
-export const layerTab = (layers: MapLayers): WorldTab => ({
-  label: layerWord(layers.shown ?? 0),
-  menu: layers.layers.length > 1 ? layerChoices(layers) : undefined,
-});
+export const layerChoices = (mapLayers: MapLayers, chosen: () => void = () => {}): MenuItem[] =>
+  mapLayers.layers.map((layer) => ({
+    label: layerWord(layer),
+    lead: <Icon name={layerMark(layer)} size={22} />,
+    checked: layer === mapLayers.shown,
+    onSelect: () => selectLayer(mapLayers, layer, chosen),
+  }));
