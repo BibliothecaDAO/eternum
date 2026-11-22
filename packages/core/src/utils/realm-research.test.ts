@@ -95,7 +95,9 @@ it("opens each building at the level research.cairo's opens_at_level gives it", 
 
 it("holds one per realm exactly the buildings research.cairo's one_per_realm does", () => {
   const onePerRealm = new Set(
-    [...categoriesNamed(cairoFunction("is_training")), ...categoriesNamed(cairoFunction("one_per_realm"))].map(constant),
+    [...categoriesNamed(cairoFunction("is_training")), ...categoriesNamed(cairoFunction("one_per_realm"))].map(
+      constant,
+    ),
   );
   expect(onePerRealm.size).toBe(4);
   for (const category of buildingTypes) expect(isOnePerRealm(category)).toBe(onePerRealm.has(category));
