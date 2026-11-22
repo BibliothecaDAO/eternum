@@ -46,8 +46,23 @@ const blitzReturnedCommands: NativeCommand[] = [
 
 export const arenaCommandMask = commandBits(allCommands) & ~commandBits(arenaClosedCommands);
 
-export const blitzPendingCommands = allCommands.filter(
+const blitzCommandsWithoutRoute = [
+  "SettleBlitzRoster",
+  "CreateReservedHyperstructure",
+  "InitializeHyperstructure",
+  "ContributeHyperstructure",
+  "AllocateHyperstructureShares",
+  "SetConstructionAccess",
+  "OpenRelicChest",
+  "CloseSeason",
+  "RecordBlitzResults",
+  "CraftRelic",
+];
+
+const blitzPendingRoutedCommands = allCommands.filter(
   (command) => !arenaClosedCommands.includes(command) && !blitzReturnedCommands.includes(command),
 );
 
-export const blitzPendingCommandMask = commandBits(blitzPendingCommands);
+export const blitzPendingCommands = [...blitzPendingRoutedCommands, ...blitzCommandsWithoutRoute];
+
+export const blitzPendingCommandMask = commandBits(blitzPendingRoutedCommands);
