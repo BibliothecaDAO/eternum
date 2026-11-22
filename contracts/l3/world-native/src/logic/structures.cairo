@@ -138,7 +138,6 @@ pub mod StructureState {
         );
     }
 
-    #[cfg(feature: "blitz")]
     pub fn transfer_owner(key: ResourceKey, owner: starknet::ContractAddress) {
         assert!(crate::logic::structures::exists(key), "missing structure");
         crate::state::write().structures.structures.entry((key.game_id, key.entity_id)).owner.write(owner);

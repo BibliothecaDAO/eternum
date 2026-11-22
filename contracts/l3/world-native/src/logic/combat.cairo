@@ -13,6 +13,8 @@ use crate::troops::{
     Coord, ExplorerKey, ExplorerTroops, IBattleResolutionDispatcherTrait, IBattleResolutionLibraryDispatcher, Troops,
 };
 
+const GUARDS_REST: bool = crate::balance::rules::SWITCHES.day_unit_seconds != 0;
+
 #[derive(Copy, Drop)]
 struct GuardTarget {
     key: ResourceKey,
@@ -62,38 +64,28 @@ pub fn battle_guard(game_id: u32, actor: ContractAddress, command: Battle, conte
     }
 }
 
-#[cfg(feature: "blitz")]
-fn guard_target(
-    key: ResourceKey, actor: ContractAddress, _attacker: ExplorerTroops, context: ExecutionContext,
-) -> GuardTarget {
-    let rules = context.rules.unbox();
-    let structure = crate::logic::structures::structure(key).expect('missing guarded structure');
-    if rules.mode_rules & crate::rules::UNOWNED_TARGETS != 0 {
-        assert!(structure.owner == 0.try_into().unwrap(), "target must be unowned");
-    }
-    assert!(structure.owner != actor, "actor owns defender");
-    assert_battle_immunity(key.game_id, key.entity_id, rules, context.timestamp, context);
-    GuardTarget { key, coord: crate::structures::structure_coord(key), structure: Some(structure) }
-}
-
-#[cfg(not(feature: "blitz"))]
 fn guard_target(
     key: ResourceKey, actor: ContractAddress, attacker: ExplorerTroops, context: ExecutionContext,
 ) -> GuardTarget {
     let rules = context.rules.unbox();
-    if let Some(site) = crate::logic::deep_sites::site(key) {
-        let day = crate::days::day_of(
-            context.game.unbox(), crate::balance::rules::SWITCHES.day_unit_seconds, context.timestamp,
-        );
-        assert!(site.day == day.index, "Deep is settling, try again");
-        crate::logic::deep_sites::assert_open(key.game_id, site);
-        let coord = crate::logic::map::entity_coord(key).expect('missing Deep site position');
-        assert!(crate::geometry::adjacent(attacker.coord, coord), "Deep site requires adjacency");
-        return GuardTarget { key, coord, structure: None };
+    if crate::rules::DEEP_IN_PLAY {
+        if let Some(site) = crate::logic::deep_sites::site(key) {
+            let day = crate::days::day_of(
+                context.game.unbox(), crate::balance::rules::SWITCHES.day_unit_seconds, context.timestamp,
+            );
+            assert!(site.day == day.index, "Deep is settling, try again");
+            crate::logic::deep_sites::assert_open(key.game_id, site);
+            let coord = crate::logic::map::entity_coord(key).expect('missing Deep site position');
+            assert!(crate::geometry::adjacent(attacker.coord, coord), "Deep site requires adjacency");
+            return GuardTarget { key, coord, structure: None };
+        }
     }
     let structure = crate::logic::structures::structure(key).expect('missing guarded structure');
-
-    assert!(structure.owner == 0.try_into().unwrap(), "target must be unowned");
+    if crate::rules::ONLY_UNOWNED_TARGETS {
+        assert!(structure.owner == 0.try_into().unwrap(), "target must be unowned");
+    } else {
+        assert!(structure.owner != actor, "actor owns defender");
+    }
     assert_battle_immunity(key.game_id, key.entity_id, rules, context.timestamp, context);
     GuardTarget { key, coord: crate::structures::structure_coord(key), structure: Some(structure) }
 }
@@ -130,40 +122,21 @@ fn guard_defender(
     }
 }
 
-#[cfg(feature: "blitz")]
-fn beast_bps(_target: GuardTarget, _home: u64, _timestamp: u64) -> u32 {
-    10000
-}
-
-#[cfg(not(feature: "blitz"))]
 fn beast_bps(target: GuardTarget, home: u64, timestamp: u64) -> u32 {
-    crate::race::IRaceDispatcherTrait::site_beast_bps(
-        crate::race::IRaceLibraryDispatcher {
-            class_hash: crate::logic::release::class_of(target.key.game_id, crate::slots::ECONOMY),
-        },
-        target.key,
-        home,
-        timestamp,
-    )
+    if crate::rules::DEEP_IN_PLAY {
+        crate::race::IRaceDispatcherTrait::site_beast_bps(
+            crate::race::IRaceLibraryDispatcher {
+                class_hash: crate::logic::release::class_of(target.key.game_id, crate::slots::ECONOMY),
+            },
+            target.key,
+            home,
+            timestamp,
+        )
+    } else {
+        10000
+    }
 }
 
-#[cfg(feature: "blitz")]
-fn fight_guard(key: ExplorerKey, ref attacker: ExplorerTroops, ref defender: GuardDefender, context: ExecutionContext) {
-    let combat = CombatContext {
-        defender_is_structure_guard: true, ..combat_context(key.game_id, attacker, defender.army, context),
-    };
-    let attacker_before = attacker.troops.count;
-    let defender_before = defender.army.troops.count;
-    let (attacker_after, defender_after) = resolve_battle(
-        key.game_id, attacker.troops, defender.army.troops, combat, context,
-    );
-    attacker.troops = attacker_after;
-    defender.army.troops = defender_after;
-    combat_troops(key.game_id).finish_battle(key, attacker, attacker_before, crate::commands::action_context(context));
-    save_guard_defender(defender, defender_before, context);
-}
-
-#[cfg(not(feature: "blitz"))]
 fn fight_guard(key: ExplorerKey, ref attacker: ExplorerTroops, ref defender: GuardDefender, context: ExecutionContext) {
     let target = match defender.source {
         GuardSource::Army(key) => key.explorer_id,
@@ -177,7 +150,11 @@ fn fight_guard(key: ExplorerKey, ref attacker: ExplorerTroops, ref defender: Gua
             GuardSource::Army(key) => crate::logic::progression::held_oaths(key, context),
             _ => 0,
         },
-        defender_is_structure_guard: defender.actor != 0.try_into().unwrap(),
+        defender_is_structure_guard: if crate::rules::ONLY_UNOWNED_TARGETS {
+            defender.actor != 0.try_into().unwrap()
+        } else {
+            true
+        },
         ..combat_context(key.game_id, attacker, defender.army, context),
     };
     let combat = CombatContext {
@@ -427,47 +404,20 @@ pub fn explorer_owner(key: ExplorerKey, explorer: ExplorerTroops) -> ContractAdd
     crate::logic::structures::owner(ResourceKey { game_id: key.game_id, entity_id: explorer.owner })
 }
 
-#[cfg(feature: "blitz")]
-fn assert_army_opponents(_game_id: u32, _attacker: ExplorerTroops, _defender: ExplorerTroops, _rules: SliceRules) {}
-
-#[cfg(not(feature: "blitz"))]
 fn assert_army_opponents(game_id: u32, attacker: ExplorerTroops, defender: ExplorerTroops, rules: SliceRules) {
-    let spacing = crate::logic::settlement::spacing();
-    assert!(
-        crate::deep::contains(attacker.coord, spacing) && crate::deep::contains(defender.coord, spacing),
-        "army combat requires Deep",
-    );
-    let attacker_aspect = crate::logic::aspects::home_aspect(ResourceKey { game_id, entity_id: attacker.owner });
-    let defender_aspect = crate::logic::aspects::home_aspect(ResourceKey { game_id, entity_id: defender.owner });
-    assert!(attacker_aspect != defender_aspect, "cannot attack an allied army");
+    if crate::rules::DEEP_IN_PLAY {
+        let spacing = crate::logic::settlement::spacing();
+        assert!(
+            crate::deep::contains(attacker.coord, spacing) && crate::deep::contains(defender.coord, spacing),
+            "army combat requires Deep",
+        );
+        let attacker_aspect = crate::logic::aspects::home_aspect(ResourceKey { game_id, entity_id: attacker.owner });
+        let defender_aspect = crate::logic::aspects::home_aspect(ResourceKey { game_id, entity_id: defender.owner });
+        assert!(attacker_aspect != defender_aspect, "cannot attack an allied army");
+    }
 }
 
 
-#[cfg(feature: "blitz")]
-pub fn try_capture(
-    _explorer_key: ExplorerKey,
-    explorer: ExplorerTroops,
-    key: ResourceKey,
-    target: Structure,
-    _relic_slot: Option<u8>,
-    _clean: bool,
-    context: ExecutionContext,
-) {
-    let rules = context.rules.unbox();
-    if explorer.troops.count == 0
-        || (rules.mode_rules & crate::rules::UNOWNED_TARGETS != 0 && target.owner != 0.try_into().unwrap())
-        || (target.base.category == crate::taxonomy::VILLAGE_CATEGORY
-            && rules.mode_rules & crate::rules::CAPTURE_VILLAGES == 0) {
-        return;
-    }
-    if !crate::geometry::adjacent(explorer.coord, crate::structures::structure_coord(key))
-        || crate::logic::guards::GuardState::next(key, target.base.troop_max_guard_count).is_some() {
-        return;
-    }
-    crate::logic::blitz::capture::capture(key, explorer.owner, target, context.timestamp);
-}
-
-#[cfg(not(feature: "blitz"))]
 pub fn try_capture(
     explorer_key: ExplorerKey,
     explorer: ExplorerTroops,
@@ -478,14 +428,42 @@ pub fn try_capture(
     context: ExecutionContext,
 ) {
     if explorer.troops.count == 0
-        || target.owner != 0.try_into().unwrap()
-        || target.base.category == crate::taxonomy::VILLAGE_CATEGORY {
+        || (crate::rules::ONLY_UNOWNED_TARGETS && target.owner != 0.try_into().unwrap())
+        || (crate::rules::NO_VILLAGE_CAPTURE && target.base.category == crate::taxonomy::VILLAGE_CATEGORY) {
         return;
     }
     if !crate::geometry::adjacent(explorer.coord, crate::structures::structure_coord(key))
         || crate::logic::guards::GuardState::next(key, target.base.troop_max_guard_count).is_some() {
         return;
     }
+    capture(explorer_key, explorer, key, target, relic_slot, clean, context);
+}
+
+#[cfg(feature: "blitz")]
+#[inline(always)]
+fn capture(
+    _explorer_key: ExplorerKey,
+    explorer: ExplorerTroops,
+    key: ResourceKey,
+    target: Structure,
+    _relic_slot: Option<u8>,
+    _clean: bool,
+    context: ExecutionContext,
+) {
+    crate::logic::blitz::capture::capture(key, explorer.owner, target, context.timestamp);
+}
+
+#[cfg(not(feature: "blitz"))]
+#[inline(always)]
+fn capture(
+    explorer_key: ExplorerKey,
+    _explorer: ExplorerTroops,
+    key: ResourceKey,
+    _target: Structure,
+    relic_slot: Option<u8>,
+    clean: bool,
+    context: ExecutionContext,
+) {
     crate::relics::ICaptureRewardsDispatcherTrait::grant_capture_rewards(
         crate::relics::ICaptureRewardsLibraryDispatcher {
             class_hash: crate::logic::release::class_of(key.game_id, crate::slots::RELICS),
@@ -591,53 +569,38 @@ pub fn assert_battle_range(game_id: u32, mut attacker: ExplorerTroops, defender:
     assert!(within, "explorers out of range");
 }
 
-#[cfg(feature: "blitz")]
 pub fn combat_context(
     game_id: u32, attacker: ExplorerTroops, defender: ExplorerTroops, context: ExecutionContext,
 ) -> CombatContext {
     let biome: crate::biome::Biome = map_dispatcher(game_id)
         .biome(tile_key(game_id, defender.coord), crate::commands::biome_context(context))
         .into();
-    let attack_distance = if attacker.coord.alt != defender.coord.alt {
+    let combat = CombatContext {
+        timestamp: context.timestamp, attacker_biome: biome, defender_biome: biome, ..Default::default(),
+    };
+    at_range(combat, attacker.coord, defender.coord)
+}
+
+#[cfg(feature: "blitz")]
+#[inline(always)]
+fn at_range(combat: CombatContext, attacker: Coord, defender: Coord) -> CombatContext {
+    let attack_distance = if attacker.alt != defender.alt {
         1
     } else {
-        let stride = if attacker.coord.alt {
+        let stride = if attacker.alt {
             15
         } else {
             1
         };
-        (distance(attacker.coord, defender.coord) / stride).try_into().unwrap()
+        (distance(attacker, defender) / stride).try_into().unwrap()
     };
-    CombatContext {
-        timestamp: context.timestamp,
-        attacker_biome: biome,
-        defender_biome: biome,
-        attack_distance,
-        attacker_is_structure_guard: false,
-        defender_is_structure_guard: false,
-        attacker_oaths: 0,
-        defender_oaths: 0,
-        attacker_twin_damage: 0,
-    }
+    CombatContext { attack_distance, ..combat }
 }
 
 #[cfg(not(feature: "blitz"))]
-pub fn combat_context(
-    game_id: u32, attacker: ExplorerTroops, defender: ExplorerTroops, context: ExecutionContext,
-) -> CombatContext {
-    let biome: crate::biome::Biome = map_dispatcher(game_id)
-        .biome(tile_key(game_id, defender.coord), crate::commands::biome_context(context))
-        .into();
-    CombatContext {
-        timestamp: context.timestamp,
-        attacker_biome: biome,
-        defender_biome: biome,
-        attacker_is_structure_guard: false,
-        defender_is_structure_guard: false,
-        attacker_oaths: 0,
-        defender_oaths: 0,
-        attacker_twin_damage: 0,
-    }
+#[inline(always)]
+fn at_range(combat: CombatContext, _attacker: Coord, _defender: Coord) -> CombatContext {
+    combat
 }
 
 fn twin_damage(
@@ -663,7 +626,6 @@ fn twin_damage(
     )
 }
 
-#[cfg(feature: "blitz")]
 pub fn resolve_battle(
     game_id: u32,
     mut attacker: Troops,
@@ -672,28 +634,7 @@ pub fn resolve_battle(
     game_context: crate::commands::ExecutionContext,
 ) -> (Troops, Troops) {
     let rules = game_context.rules.unbox();
-    attacker
-        .attack_with_context(
-            ref defender,
-            context,
-            rules.troop_stamina_config,
-            rules.troop_damage_config,
-            rules.tick_config.armies_tick_in_seconds,
-            rules.battle_config.cooldown_seconds,
-        );
-    (attacker, defender)
-}
-
-#[cfg(not(feature: "blitz"))]
-pub fn resolve_battle(
-    game_id: u32,
-    mut attacker: Troops,
-    mut defender: Troops,
-    context: CombatContext,
-    game_context: crate::commands::ExecutionContext,
-) -> (Troops, Troops) {
-    let rules = game_context.rules.unbox();
-    if context.attacker_is_structure_guard {
+    if GUARDS_REST && context.attacker_is_structure_guard {
         attacker
             .stamina
             .refill(
@@ -705,7 +646,7 @@ pub fn resolve_battle(
                 context.timestamp,
             );
     }
-    if context.defender_is_structure_guard {
+    if GUARDS_REST && context.defender_is_structure_guard {
         defender
             .stamina
             .refill(
@@ -751,10 +692,8 @@ fn emit<T, +starknet::event::Event<T>, +Into<T, crate::logic::combat_domain::Com
     starknet::syscalls::emit_event_syscall(keys.span(), data.span()).unwrap();
 }
 
-#[cfg(feature: "blitz")]
-fn record_target(_key: ExplorerKey, _target: u64, _context: ExecutionContext) {}
-
-#[cfg(not(feature: "blitz"))]
 fn record_target(key: ExplorerKey, target: u64, context: ExecutionContext) {
-    crate::logic::army_combat::record_target(key, target);
+    if crate::rules::DEEP_IN_PLAY {
+        crate::logic::army_combat::record_target(key, target);
+    }
 }
