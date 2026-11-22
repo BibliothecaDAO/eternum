@@ -100,7 +100,7 @@ pub const SPEED_CONFIG: crate::rules::SpeedConfig = crate::rules::SpeedConfig {
 };
 
 pub const SWITCHES: crate::rules::ReleaseSwitches = crate::rules::ReleaseSwitches {
-    command_mask: 146450998045786752122207, mode_rules: 131395, day_unit_seconds: 0, entry_rule: 2,
+    command_mask: 57637076827750497631, mode_rules: 131395, day_unit_seconds: 0, entry_rule: 2,
 };
 
-pub const PENDING_COMMANDS: u128 = 146450421585034417241430;
+pub const PENDING_COMMANDS: u128 = 57060616075415616854;

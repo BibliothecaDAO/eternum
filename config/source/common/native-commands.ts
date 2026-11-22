@@ -11,7 +11,16 @@ function commandBits(commands: NativeCommand[]): bigint {
 }
 
 const allCommands = Object.keys(nativeCommandBits) as NativeCommand[];
-const arenaClosedCommands: NativeCommand[] = ["EnterDepth", "Research", "InteractSite"];
+const arenaClosedCommands: NativeCommand[] = [
+  "EnterDepth",
+  "Research",
+  "InteractSite",
+  "BuySeal",
+  "BuyStamina",
+  "ChooseOath",
+  "RerollOath",
+  "ClaimDailyQuest",
+];
 const blitzReturnedCommands: NativeCommand[] = [
   "CreateBuilding",
   "DestroyBuilding",
