@@ -56,6 +56,22 @@ export interface SharerReport extends ShareFunnel {
   name: string | null;
 }
 
+const INVITE: ShareKind = "aspect";
+
+const NAMED_LINK = `l."kind", l."chain_id" AS "chainId", l."game_id" AS "gameId", l."moment", u."id", u."name", u."image"`;
+type NamedLinkRow = ShareMoment & { id: string; name: string; image: string | null };
+
+const namedLink = (row: NamedLinkRow | null) =>
+  row
+    ? {
+        kind: row.kind,
+        chainId: row.chainId,
+        gameId: row.gameId,
+        moment: row.moment,
+        name: profileOfIdentityUser(row).name,
+      }
+    : null;
+
 /** A new code takes another try only when it collides with another link's; eight letters make that rare. */
 const CODE_ATTEMPTS = 4;
 
@@ -158,23 +174,25 @@ export function createShareStore(db: D1Database) {
   const joinedLink = (friend: string) =>
     db
       .prepare(
-        `SELECT l."kind", l."chain_id" AS "chainId", l."game_id" AS "gameId", l."moment", u."id", u."name", u."image"
-         FROM "share_joins" j JOIN "share_links" l ON l."code" = j."code"
+        `SELECT ${NAMED_LINK} FROM "share_joins" j JOIN "share_links" l ON l."code" = j."code"
          JOIN "user" u ON u."realmsId" = l."sharer" WHERE j."friend" = ?`,
       )
       .bind(friend)
-      .first<ShareMoment & { id: string; name: string; image: string | null }>()
-      .then((row) =>
-        row
-          ? {
-              kind: row.kind,
-              chainId: row.chainId,
-              gameId: row.gameId,
-              moment: row.moment,
-              name: profileOfIdentityUser(row).name,
-            }
-          : null,
-      );
+      .first<NamedLinkRow>()
+      .then(namedLink);
+
+  const openedInvite = (account: string) =>
+    db
+      .prepare(
+        `SELECT ${NAMED_LINK} FROM "share_visits" v JOIN "share_links" l ON l."code" = v."code"
+         JOIN "account_browsers" b ON b."browser" = v."browser"
+         JOIN "user" u ON u."realmsId" = l."sharer"
+         WHERE b."realmsId" = ?1 AND l."sharer" <> ?1 AND l."kind" = ?2
+         ORDER BY julianday(v."at") DESC LIMIT 1`,
+      )
+      .bind(account, INVITE)
+      .first<NamedLinkRow>()
+      .then(namedLink);
 
   /** The browser's first visit to the link, with the channel it came through; a later one keeps the first. */
   const recordVisit = (code: string, browser: string, via: ShareChannel | null) =>
@@ -353,6 +371,7 @@ export function createShareStore(db: D1Database) {
     markPosted,
     sharedLink,
     joinedLink,
+    openedInvite,
     recordVisit,
     settleJoins,
     pendingJoins,

@@ -77,7 +77,7 @@ export async function handleJoinedShare(request: Request, auth: IdentityAuth, db
   if (typeof friend !== "string") return friend;
   const store = createShareStore(db);
   await store.settleJoins();
-  return json(await store.joinedLink(friend));
+  return json((await store.joinedLink(friend)) ?? (await store.openedInvite(friend)));
 }
 
 /** POST /api/shares/<code>/posted: the sharer opened the post with their link. */

@@ -3473,6 +3473,35 @@ describe("shared links", () => {
     expect((await createBrowser().request("/api/shares/joined")).status).toBe(401);
   });
 
+  it("offers an account made before it opened a friend's invite that invite's Aspect, the latest it opened, and counts no join for it", async () => {
+    const sharer = await player("inviter-of-old-hand");
+    await env.DB.prepare(`UPDATE "user" SET "name" = 'Maren' WHERE "realmsId" = ?`).bind(sharer.realmsId).run();
+    publishAspects(sharer.account, 2);
+    const code = ((await (await invite(sharer, 2)).json()) as { code: string }).code;
+    const oldHand = await player("old-hand");
+    expect(await (await oldHand.browser.request("/api/shares/joined")).json()).toBeNull();
+    await visit(sharer.browser, code);
+    expect(await (await sharer.browser.request("/api/shares/joined")).json()).toBeNull();
+    await visit(oldHand.browser, code);
+    const offered = { kind: "aspect", chainId, gameId, moment: 2, name: "Maren" };
+    expect(await (await oldHand.browser.request("/api/shares/joined")).json()).toEqual(offered);
+    expect(await sharer.tally()).toMatchObject({ visits: 1, joined: 0 });
+
+    const later = await player("later-inviter-of-old-hand");
+    await env.DB.prepare(`UPDATE "user" SET "name" = 'Corin' WHERE "realmsId" = ?`).bind(later.realmsId).run();
+    publishAspects(later.account, 4);
+    const laterCode = ((await (await invite(later, 4)).json()) as { code: string }).code;
+    await visit(oldHand.browser, laterCode);
+    const future = `UPDATE "share_visits" SET "at" = '2099-01-01T00:00:00.000Z' WHERE "code" = ?`;
+    await env.DB.prepare(future).bind(laterCode).run();
+    expect(await sharer.tally()).toMatchObject({ visits: 1, joined: 0 });
+    expect(await (await oldHand.browser.request("/api/shares/joined")).json()).toEqual({
+      ...offered,
+      moment: 4,
+      name: "Corin",
+    });
+  });
+
   it("unfurls an invite as the sharer inviting to their Aspect", async () => {
     const sharer = await player("inviter-unfurl");
     await env.DB.prepare(`UPDATE "user" SET "name" = 'Orrin' WHERE "realmsId" = ?`).bind(sharer.realmsId).run();
