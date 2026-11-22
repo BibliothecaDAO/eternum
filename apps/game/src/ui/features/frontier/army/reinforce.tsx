@@ -22,7 +22,7 @@ import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { formatExact, formatShortChange } from "@bibliothecadao/types";
 import { useState } from "react";
 
-import { wheatStopsAt } from "../deploy/deploy-plan";
+import { type March, marchOn, wheatStopsAt } from "../deploy/deploy-plan";
 import { type DockArmy, useDockArmies } from "../hud/dock-armies";
 import { reinforcementSource, readReinforcePlan, type ReinforcePlan, reinforceRange } from "./reinforce-plan";
 
@@ -83,7 +83,8 @@ export const ReinforceSheet = ({
   const defaultTick = useCurrentDefaultTick();
   useNativeRevision(REINFORCE_MODELS);
   const plan = readReinforcePlan(setup.store, realm, army.explorerId, defaultTick);
-  const range = plan ? reinforceRange(plan) : { troopsMax: 0, wheatMax: 0, max: 0 };
+  const march = plan && army.stamina && marchOn(army.stamina, plan.current);
+  const range = plan && march ? reinforceRange(plan, march) : { troopsMax: 0, wheatMax: 0, max: 0 };
   const [count, setCount] = useState<number | "max">(0);
   const shown = count === "max" ? range.max : Math.min(count, range.max);
   const wheatStop = wheatStopsAt(range, shown);
@@ -130,7 +131,7 @@ export const ReinforceSheet = ({
           </HudChip>
         </div>
       )}
-      {plan && <ReinforceLimit plan={plan} wheatStop={wheatStop} />}
+      {plan && march && <ReinforceLimit plan={plan} march={march} wheatStop={wheatStop} />}
       {plan && range.max > 0 && (
         <HudWindowFoot note={<HudCost line={costLine([{ of: "wheat", amount: plan.raise.wheatFor(shown) }])} />}>
           <HudButton
@@ -149,7 +150,15 @@ export const ReinforceSheet = ({
 };
 
 /** Why the count stops where it does: no such troops at home, the army at its cap, or the wheat at the most. */
-const ReinforceLimit = ({ plan, wheatStop }: { plan: ReinforcePlan; wheatStop: ReturnType<typeof wheatStopsAt> }) => {
+const ReinforceLimit = ({
+  plan,
+  march,
+  wheatStop,
+}: {
+  plan: ReinforcePlan;
+  march: March;
+  wheatStop: ReturnType<typeof wheatStopsAt>;
+}) => {
   if (plan.current >= plan.cap) return <HudNotice tone="warn" line={TRANSFER_TROOPS.cap(plan.cap)} />;
   if (plan.stock === 0) return <HudNotice tone="warn" line={NO_TROOPS_AT_HOME} />;
   if (!wheatStop) return null;
@@ -159,7 +168,7 @@ const ReinforceLimit = ({ plan, wheatStop }: { plan: ReinforcePlan; wheatStop: R
           kind: "short",
           of: "wheat",
           held: plan.raise.wheat,
-          need: plan.raise.wheatFor(1),
+          need: plan.raise.wheatToGo(1, march),
           wait: undefined,
         })
       : wheatForOnly(formatExact(wheatStop.troops), formatExact(wheatStop.of));

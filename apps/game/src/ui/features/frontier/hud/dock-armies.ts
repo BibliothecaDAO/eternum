@@ -72,18 +72,7 @@ export const useDockArmies = (realm: NativeRows["Structure"] | null): DockArmy[]
   );
   return armies.map((army, index) => {
     const explorerId = safeInteger(army.explorer_id);
-    const snapshot = getExplorerStaminaSnapshot({
-      timestamp,
-      liveTroops: resolveExplorerTroops(setup.store, army, timestamp),
-    });
-    const stamina = snapshot
-      ? buildStaminaDisplayModel({
-          committedCurrent: snapshot.current,
-          committedMax: snapshot.max,
-          timestamp,
-          troops: snapshot.troops,
-        })
-      : null;
+    const { stamina, secondsToFull } = armyBar(setup.store, army, timestamp);
     const number = armyNumber(army) ?? index + 1;
     return {
       explorerId,
@@ -91,19 +80,39 @@ export const useDockArmies = (realm: NativeRows["Structure"] | null): DockArmy[]
       troopsFact: army.troops,
       label: armyName(setup.store, explorerId, number),
       art: armyArt(army.troops),
-      stamina: stamina
-        ? {
-            current: stamina.committedCurrent,
-            max: stamina.committedMax,
-            perExplore: exploreStaminaOf(setup.store, army.game_id, army.troops.category, armyOaths(setup.store, army)),
-          }
-        : undefined,
-      secondsToFull: stamina?.secondsUntilFull,
+      stamina,
+      secondsToFull,
       troops: Number(army.troops.count / BigInt(RESOURCE_PRECISION)),
       ethereal: armyEtherealLayer(setup.store, army.game_id, explorerId),
       drain: armyDrain(setup.store, army, timestamp),
     };
   });
+};
+
+export const armyBar = (
+  store: NativeFactStore,
+  army: NativeRows["ExplorerTroops"],
+  timestamp: number,
+): Pick<DockArmy, "stamina" | "secondsToFull"> => {
+  const snapshot = getExplorerStaminaSnapshot({ timestamp, liveTroops: resolveExplorerTroops(store, army, timestamp) });
+  const stamina = snapshot
+    ? buildStaminaDisplayModel({
+        committedCurrent: snapshot.current,
+        committedMax: snapshot.max,
+        timestamp,
+        troops: snapshot.troops,
+      })
+    : null;
+  return {
+    stamina: stamina
+      ? {
+          current: stamina.committedCurrent,
+          max: stamina.committedMax,
+          perExplore: exploreStaminaOf(store, army.game_id, army.troops.category, armyOaths(store, army)),
+        }
+      : undefined,
+    secondsToFull: stamina?.secondsUntilFull,
+  };
 };
 
 export const armyArt = troopMeaning;

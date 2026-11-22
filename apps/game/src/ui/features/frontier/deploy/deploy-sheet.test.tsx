@@ -416,12 +416,11 @@ describe("the Deploy sheet", () => {
       {
         model: "ResourceBalance",
         key: "0xc",
-        value: { game_id: 1, entity_id: 7, resource_type: 35, balance: String(100n * 1_000_000_000n) },
+        value: { game_id: 1, entity_id: 7, resource_type: 35, balance: String(108n * 1_000_000_000n) },
       },
     ] as never);
     const { host, root } = render(store, row);
     click(host.querySelector('button[aria-label="Army 2"]')!);
-    // 100 wheat deploys 50 of the 420 troops: the count reads out of 50, not "that fit", since the castle has room.
     // At no troops nothing names the wheat (owner, 1 November: "not at 0 its confusing").
     expect([outOf(host), countField(host).value, wheatLine(host)]).toEqual(["of 50", "0", null]);
     // Below the cap the price is all: 30 troops for 60 wheat.
@@ -443,7 +442,7 @@ describe("the Deploy sheet", () => {
   });
 
   it.each([
-    ["eight Wheat deploys four troops", 8, "of 4", "8 WheatDeploy"],
+    ["nine Wheat deploys four troops", 9, "of 4", "8 WheatDeploy"],
     ["four and a half Wheat deploys two", 4.5, "of 2", null],
   ])("prices Max on the whole batch at the recipe cost: %s", (_case, wheat, most, price) => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -472,12 +471,11 @@ describe("the Deploy sheet", () => {
   it("says at Max that the wheat caps the count, offers Get Wheat on the line, and keeps Max at the most as the farms fill", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     const { store, row } = frontierDay();
-    // dev-playtest-2 (10-31): 16 wheat at 2 a troop holds 420 knights at home to 8; farms make 720 wheat an hour.
     store.applyFacts([
       {
         model: "ResourceBalance",
         key: "0xc",
-        value: { game_id: 1, entity_id: 7, resource_type: 35, balance: String(16n * BigInt(RESOURCE_PRECISION)) },
+        value: { game_id: 1, entity_id: 7, resource_type: 35, balance: String(18n * BigInt(RESOURCE_PRECISION)) },
       },
       {
         model: "ResourceProduction",

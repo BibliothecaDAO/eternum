@@ -174,6 +174,30 @@ it("stops Max where the wheat runs out, and says so in one line", async () => {
   expect(host.textContent).toContain("Wheat for only 50 of 420 troops");
 });
 
+it("stops Max where the wheat left still feeds the whole army revealing its bar", async () => {
+  const fixture = armyBesideHome();
+  fixture.holdWheat(100);
+  fixture.store.applyFacts([
+    {
+      model: "ArmySlot",
+      key: "0x9",
+      value: {
+        game_id: 1,
+        structure_id: 7,
+        epoch: "0",
+        slot: 0,
+        explorer_id: 201,
+        stamina: { amount: "100", settled_at: "350", remainder: 0 },
+      },
+    },
+  ] as never);
+  render(fixture);
+  await press("Max");
+  expect(troops()).toBe("600 → 619");
+  expect(host.textContent).toContain("38 Wheat");
+  expect(host.textContent).toContain("Wheat for only 19 of 420 troops");
+});
+
 it("offers nothing to raise into an army at its cap", () => {
   const fixture = armyBesideHome();
   const army = fixture.store.require("ExplorerTroops", { game_id: 1, explorer_id: 201 });

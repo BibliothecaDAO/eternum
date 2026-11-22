@@ -1,6 +1,7 @@
 import { exploreStaminaOf } from "@/lib/army-stamina/explore-stamina";
 import type { StaminaBar } from "@/ui/design-system/kit/hud-elements";
 import {
+  computeExploreFoodCosts,
   configManager,
   type GameActions,
   getBalance,
@@ -67,9 +68,19 @@ export interface TroopRaise {
   wheat: number;
   /** The wheat a batch of `count` troops costs, exact. */
   wheatFor: (count: number) => number;
-  /** The most troops, up to the most that could go, whose raise the realm can pay. */
-  paysFor: number;
+  wheatToGo: (count: number, march: March) => number;
+  paysFor: (march: March) => number;
 }
+
+export interface March {
+  alongside: number;
+  reveals: number;
+}
+
+export const marchOn = (bar: StaminaBar, alongside: number): March => ({
+  alongside,
+  reveals: Math.floor(bar.current / bar.perExplore),
+});
 
 /**
  * The realm's deploy today; unknown while any slot, troop or wheat balance, or the realm's research, is. Troops at home
@@ -163,11 +174,23 @@ export const readTroopRaise = (
   const wheat = getBalance(realmId, ResourcesIds.Wheat, defaultTick, store).balance;
   if (wheat === undefined || priceOf(0) === undefined) return undefined;
   const wheatOf = (count: number) => priceOf(count)?.find(({ resource }) => resource === ResourcesIds.Wheat)?.amount;
+  const toGo = (count: number, march: March) =>
+    (wheatOf(count) ?? 0n) + marchWheat(troops.type, march.alongside + count, march.reveals);
   return {
     wheat: Number(wheat) / RESOURCE_PRECISION,
     wheatFor: (count) => Number(wheatOf(count) ?? 0n) / RESOURCE_PRECISION,
-    paysFor: mostThatPays(most, (count) => canPayTroopRaise(priceOf(count))),
+    wheatToGo: (count, march) => Number(toGo(count, march)) / RESOURCE_PRECISION,
+    paysFor: (march) =>
+      mostThatPays(
+        most,
+        (count) => canPayTroopRaise(priceOf(count)) && toGo(count, march) <= BigInt(Math.floor(wheat)),
+      ),
   };
+};
+
+const marchWheat = (category: TroopType, troops: number, reveals: number): bigint => {
+  const perReveal = computeExploreFoodCosts({ category, count: BigInt(troops) * BigInt(RESOURCE_PRECISION) });
+  return BigInt(Math.round(perReveal.wheatPayAmount * reveals * RESOURCE_PRECISION));
 };
 
 /** The largest count from 0 to `most` that `pays`, which pays for every count below one it pays for. */
@@ -189,14 +212,13 @@ export interface TroopRange {
 }
 
 /** The most one army can take: the troops at home, the castle's cap and the wheat, whichever runs out first. */
-export const deployRange = (plan: DeployPlan): TroopRange =>
-  plan.troops && plan.raise
-    ? troopRange(Math.min(plan.troops.atHome, plan.troops.cap), plan.raise)
+export const deployRange = (plan: DeployPlan, march: March | undefined): TroopRange =>
+  plan.troops && plan.raise && march
+    ? troopRange(Math.min(plan.troops.atHome, plan.troops.cap), plan.raise, march)
     : { troopsMax: 0, wheatMax: 0, max: 0 };
 
-/** The troops that could go, held to what their raise pays for. */
-export const troopRange = (troopsMax: number, raise: TroopRaise): TroopRange => {
-  const wheatMax = Math.min(troopsMax, raise.paysFor);
+export const troopRange = (troopsMax: number, raise: TroopRaise, march: March): TroopRange => {
+  const wheatMax = Math.min(troopsMax, raise.paysFor(march));
   return { troopsMax, wheatMax, max: wheatMax };
 };
 
@@ -210,8 +232,12 @@ export const wheatStopsAt = (range: TroopRange, count: number): { troops: number
   count === range.max && range.wheatMax < range.troopsMax ? { troops: range.max, of: range.troopsMax } : undefined;
 
 /** The army a count makes: the whole troops that go and what they cost in wheat. */
-export const previewDeploy = (plan: DeployPlan, count: number): { count: number; wheatCost: number } => {
-  const whole = Math.max(0, Math.min(Math.floor(count), deployRange(plan).max));
+export const previewDeploy = (
+  plan: DeployPlan,
+  march: March | undefined,
+  count: number,
+): { count: number; wheatCost: number } => {
+  const whole = Math.max(0, Math.min(Math.floor(count), deployRange(plan, march).max));
   return { count: whole, wheatCost: plan.raise?.wheatFor(whole) ?? 0 };
 };
 
