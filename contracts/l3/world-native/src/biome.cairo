@@ -3,8 +3,9 @@ use eternum_cubit::f128::types::fixed::{Fixed, FixedTrait};
 use eternum_cubit::f128::types::vec3::Vec3Trait;
 use crate::fixed_constants as fc;
 use crate::rules::BiomeClimateConfig;
-#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+#[derive(Copy, Drop, Serde, Debug, PartialEq, Default)]
 pub enum Biome {
+    #[default]
     None,
     DeepOcean,
     Ocean,

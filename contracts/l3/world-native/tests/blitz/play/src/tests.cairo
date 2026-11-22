@@ -1,6 +1,7 @@
 pub use world_test_support::tests::*;
 mod armies;
 mod capture;
+mod combat;
 mod construction;
 mod exploration;
 mod fixture;

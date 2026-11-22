@@ -5,16 +5,7 @@ pub use crate::rules::{RESOURCE_PRECISION, TroopDamageConfig, TroopStaminaConfig
 pub use crate::stamina::StaminaSourceTrait;
 pub use crate::troops::{Stamina, TroopBoosts, TroopTier, TroopType, Troops};
 pub fn context(biome: Biome) -> CombatContext {
-    CombatContext {
-        timestamp: 1,
-        attacker_biome: biome,
-        defender_biome: biome,
-        attacker_is_structure_guard: false,
-        defender_is_structure_guard: false,
-        attacker_oaths: 0,
-        defender_oaths: 0,
-        attacker_twin_damage: 0,
-    }
+    CombatContext { timestamp: 1, attacker_biome: biome, defender_biome: biome, ..Default::default() }
 }
 pub const KNIGHT_MAX_STAMINA: u16 = 120;
 pub const CROSSBOWMAN_MAX_STAMINA: u16 = 120;

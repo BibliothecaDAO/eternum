@@ -427,6 +427,10 @@ pub fn explorer_owner(key: ExplorerKey, explorer: ExplorerTroops) -> ContractAdd
     crate::logic::structures::owner(ResourceKey { game_id: key.game_id, entity_id: explorer.owner })
 }
 
+#[cfg(feature: "blitz")]
+fn assert_army_opponents(_game_id: u32, _attacker: ExplorerTroops, _defender: ExplorerTroops, _rules: SliceRules) {}
+
+#[cfg(not(feature: "blitz"))]
 fn assert_army_opponents(game_id: u32, attacker: ExplorerTroops, defender: ExplorerTroops, rules: SliceRules) {
     let spacing = crate::logic::settlement::spacing();
     assert!(
@@ -587,6 +591,37 @@ pub fn assert_battle_range(game_id: u32, mut attacker: ExplorerTroops, defender:
     assert!(within, "explorers out of range");
 }
 
+#[cfg(feature: "blitz")]
+pub fn combat_context(
+    game_id: u32, attacker: ExplorerTroops, defender: ExplorerTroops, context: ExecutionContext,
+) -> CombatContext {
+    let biome: crate::biome::Biome = map_dispatcher(game_id)
+        .biome(tile_key(game_id, defender.coord), crate::commands::biome_context(context))
+        .into();
+    let attack_distance = if attacker.coord.alt != defender.coord.alt {
+        1
+    } else {
+        let stride = if attacker.coord.alt {
+            15
+        } else {
+            1
+        };
+        (distance(attacker.coord, defender.coord) / stride).try_into().unwrap()
+    };
+    CombatContext {
+        timestamp: context.timestamp,
+        attacker_biome: biome,
+        defender_biome: biome,
+        attack_distance,
+        attacker_is_structure_guard: false,
+        defender_is_structure_guard: false,
+        attacker_oaths: 0,
+        defender_oaths: 0,
+        attacker_twin_damage: 0,
+    }
+}
+
+#[cfg(not(feature: "blitz"))]
 pub fn combat_context(
     game_id: u32, attacker: ExplorerTroops, defender: ExplorerTroops, context: ExecutionContext,
 ) -> CombatContext {
@@ -716,6 +751,10 @@ fn emit<T, +starknet::event::Event<T>, +Into<T, crate::logic::combat_domain::Com
     starknet::syscalls::emit_event_syscall(keys.span(), data.span()).unwrap();
 }
 
+#[cfg(feature: "blitz")]
+fn record_target(_key: ExplorerKey, _target: u64, _context: ExecutionContext) {}
+
+#[cfg(not(feature: "blitz"))]
 fn record_target(key: ExplorerKey, target: u64, context: ExecutionContext) {
     crate::logic::army_combat::record_target(key, target);
 }

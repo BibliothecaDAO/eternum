@@ -1,5 +1,5 @@
-use super::play_fixture::{FIXTURE_START, caller, create_game, fixture_params};
-use super::resource_commands::{execute_in_game, grant, set_fixture};
+use super::play_fixture::{FIXTURE_START, TestAction, caller, create_game, fixture_params, play};
+use super::resource_commands::{grant, set_fixture};
 use super::state::{MapObservationTrait, StructureObservationTrait};
 
 pub fn blitz_game() -> (super::Deployment, u32) {
@@ -33,25 +33,31 @@ pub fn blitz_army() -> (super::Deployment, crate::resources::ResourceKey, u64) {
 
 pub fn blitz_army_of(tier: u8, units: u128) -> (super::Deployment, crate::resources::ResourceKey, u64) {
     let (d, home) = blitz_realm();
-    grant(
-        d,
-        home,
-        crate::troops::troop_resource(crate::troops::TroopType::Knight, tier),
-        units * crate::rules::RESOURCE_PRECISION,
-    );
-    let raise = super::Command::CreateExplorer(
-        crate::commands::CreateExplorer {
-            slot: 0,
-            structure_id: home.entity_id,
-            category: 0,
-            tier,
-            amount: units * crate::rules::RESOURCE_PRECISION,
-            direction: EAST,
-        },
-    );
-    assert!(execute_in_game(d, home.game_id, raise, RAISED_AT));
-    let id = *crate::structures::IStructureOperationsDispatcher { contract_address: d.games }.home_armies(home).at(0);
+    let id = raise(d, d.actor, home, crate::troops::TroopType::Knight, tier, units, EAST);
     (d, home, id)
+}
+
+pub fn raise(
+    d: super::Deployment,
+    owner: starknet::ContractAddress,
+    home: crate::resources::ResourceKey,
+    category: crate::troops::TroopType,
+    tier: u8,
+    units: u128,
+    direction: u8,
+) -> u64 {
+    let amount = units * crate::rules::RESOURCE_PRECISION;
+    grant(d, home, crate::troops::troop_resource(category, tier), amount);
+    let category = match category {
+        crate::troops::TroopType::Knight => 0,
+        crate::troops::TroopType::Paladin => 1,
+        crate::troops::TroopType::Crossbowman => 2,
+    };
+    let command = super::Command::CreateExplorer(
+        crate::commands::CreateExplorer { slot: 0, structure_id: home.entity_id, category, tier, amount, direction },
+    );
+    assert!(play(d.games, TestAction { game_id: home.game_id, actor: owner, command }, 987654321, RAISED_AT));
+    *crate::structures::IStructureOperationsDispatcher { contract_address: d.games }.home_armies(home).at(0)
 }
 
 pub fn step_east(from: crate::troops::Coord, steps: u32) -> crate::troops::Coord {
