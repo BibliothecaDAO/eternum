@@ -207,19 +207,24 @@ export function createPureMathsBeastMaterial(
   const lungeIn = smoothstep(0.26, 0.44, cycle);
   const lungeOut = smoothstep(0.92, 0.56, cycle);
   const lunge = lungeIn.mul(lungeOut);
+  const attackPitch = lunge.mul(0.58).sub(coilUp.mul(0.32)).mul(planted);
+  const cosA = cos(attackPitch);
+  const sinA = sin(attackPitch);
+  const aRelY = gy.sub(0.32);
+  const aRelZ = gz;
+  const aRotY = aRelY.mul(cosA).sub(aRelZ.mul(sinA)).add(0.32);
+  const aRotZ = aRelY.mul(sinA).add(aRelZ.mul(cosA));
   const attackDx = idleDx
     .mul(0.35)
-    .add(wingSide.mul(coilUp.mul(0.22).sub(lunge.mul(0.16))).mul(wingSpan).mul(wingMask));
-  const attackDy = idleDy
-    .mul(0.35)
-    .add(coilUp.mul(0.09).mul(planted))
-    .sub(lunge.mul(0.16).mul(neckHeadMask))
-    .add(coilUp.mul(0.42).sub(lunge.mul(0.28)).mul(wingSpan).mul(wingMask));
-  const attackDz = lunge
-    .mul(0.42)
-    .sub(coilUp.mul(0.18))
-    .add(lunge.mul(0.32).mul(neckHeadMask))
-    .sub(coilUp.mul(0.18).mul(wingMask));
+    .add(wingSide.mul(coilUp.mul(0.24).sub(lunge.mul(0.2))).mul(wingSpan).mul(wingMask));
+  const attackDy = aRotY
+    .sub(gy)
+    .add(coilUp.mul(0.35).sub(lunge.mul(0.25)).mul(wingSpan).mul(wingMask));
+  const attackDz = aRotZ
+    .sub(gz)
+    .add(lunge.mul(0.38))
+    .sub(coilUp.mul(0.16))
+    .sub(lunge.mul(0.22).mul(wingMask));
 
   const flinch = smoothstep(0.0, 0.14, cycle).mul(smoothstep(0.55, 0.14, cycle));
   const tremor = sin(cycle.mul(TAU * 9)).mul(0.025).mul(flinch);

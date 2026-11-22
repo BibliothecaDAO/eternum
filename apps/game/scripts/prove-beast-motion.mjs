@@ -192,6 +192,37 @@ await withDevClient({ base: option("--base-url", null), port, out }, async (base
       }
     }
     const loadAfter = loadavg();
+    const webglGpuBenchmarks = [];
+    browser.run(["open", `${baseUrl}/lab/beast-motion?capture=1&layer=2&rendererMode=webgpu-force-webgl`]);
+    browser.run([
+      "wait",
+      "--fn",
+      "document.querySelector('[data-beast-motion-ready=\"true\"]') !== null && Boolean(window.__beastMotionLab)",
+    ]);
+    for (const way of BENCH_WAYS) {
+      for (const count of BENCH_COUNTS) {
+        browser.run([
+          "eval",
+          `window.__beastMotionLab.setState(${JSON.stringify({
+            mode: "bench",
+            way,
+            count,
+            action: "walk",
+            layer: 2,
+            phoenix: true,
+            paused: false,
+            camera: "threeQuarter",
+          })})`,
+        ]);
+        browser.run(["wait", "250"]);
+        browser.run([
+          "eval",
+          `window.__bmMeasure = null; window.__beastMotionLab.measure(${samplesPerRun}, ${warmupFrames}).then((r) => { window.__bmMeasure = r; });`,
+        ]);
+        browser.run(["wait", "--fn", "window.__bmMeasure !== null"]);
+        webglGpuBenchmarks.push(browser.read("window.__bmMeasure"));
+      }
+    }
     const errors = browser.run(["errors"]);
     if (errors.trim()) throw new Error(errors);
 
@@ -206,6 +237,7 @@ await withDevClient({ base: option("--base-url", null), port, out }, async (base
           loadBefore,
           loadAfter,
           benchmarks,
+          webglGpuBenchmarks,
         },
         null,
         2,

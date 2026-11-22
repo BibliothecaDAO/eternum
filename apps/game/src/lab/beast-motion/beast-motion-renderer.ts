@@ -439,7 +439,7 @@ class BeastMotionStage implements BeastMotionRendererHandle {
       this.camera.position.set(dist * 0.35, groundY + dist * 0.72, dist * 0.82);
     } else if (this.state.camera === "phoneMap") {
       this.controls.target.set(0, groundY + 0.55, 0);
-      this.camera.position.set(0, groundY + 13.5, 11.2);
+      this.camera.position.set(0, groundY + 15.8, 13.6);
     } else if (this.state.camera === "close") {
       this.controls.target.set(0, groundY + 0.58, 0);
       this.camera.position.set(0, groundY + 2.3, 4.4);
@@ -548,7 +548,6 @@ class BeastMotionStage implements BeastMotionRendererHandle {
         z,
         y: this.environment.terrain.sampleSurface(x, z).height,
       }));
-      this.addHexOutlines(placements.slice(0, 20));
       if (this.state.way === "maths") {
         this.spawnPureMaths(placements);
       } else if (this.state.way === "rig") {
@@ -860,12 +859,14 @@ class BeastMotionStage implements BeastMotionRendererHandle {
     }
     const width = this.input.container.clientWidth;
     const height = this.input.container.clientHeight;
+    const pad = Math.min(62, width * 0.16);
     const projected = COMPARE_SLOTS.map((slot) => {
       const groundY = this.environment.terrain.sampleSurface(slot.x, slot.z).height;
       COMPARE_ANCHOR_POS.set(slot.x, groundY + 1.32, slot.z).project(this.camera);
+      const rawX = ((COMPARE_ANCHOR_POS.x + 1) / 2) * width;
       return {
         way: slot.way,
-        x: ((COMPARE_ANCHOR_POS.x + 1) / 2) * width,
+        x: Math.max(pad, Math.min(width - pad, rawX)),
         y: ((1 - COMPARE_ANCHOR_POS.y) / 2) * height,
         visible: Math.abs(COMPARE_ANCHOR_POS.z) <= 1,
       };

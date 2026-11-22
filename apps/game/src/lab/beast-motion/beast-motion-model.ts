@@ -314,7 +314,7 @@ function evaluateFullRigBonePose(boneName: string, action: BeastMotionAction, sa
       return {
         posOffset: [
           sample.weightShift * 0.03 * (1 - death),
-          sample.walkBob * 0.055 * walkActive - death * 0.16,
+          sample.walkBob * 0.055 * walkActive + death * 0.14,
           sample.walkOffsetZ + lunge * 0.42 - coil * 0.18 - flinch * 0.24,
         ],
         rot: [
