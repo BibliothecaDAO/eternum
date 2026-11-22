@@ -821,6 +821,7 @@ export const DEEP_WORDS = {
   heldByPrefix: "Held by",
   guardsCount: (filled: number, total: number) => `${formatExact(filled)} / ${formatExact(total)} Guards`,
   drainTick: (troops: number) => `−${formatExact(troops)} / tick`,
+  drainRange: (min: number, max: number) => `−${formatExact(min)}–${formatExact(max)} / tick`,
   freeSlot: "Free slot",
   facesNext: "fought next",
   /** What holding a site costs: the troops its army loses at each tick. */

@@ -49,6 +49,7 @@ export interface DeepSlot {
   tier: Troops["tier"];
   realm: string;
   troops: number;
+  lossPerTick: number;
   ticks: { left: number; time: string };
   share: number;
   mine: boolean;
@@ -60,7 +61,6 @@ export type DeepGuard =
       kind: "held";
       aspectId: AspectId;
       ally: boolean;
-      lossPerTick: number;
       slots: readonly DeepSlot[];
       next: number;
     }
@@ -93,7 +93,6 @@ const siteName = (key: DeepSiteProps["site"]) => deepSites.find((each) => each.k
 
 export const DeepSiteView = ({ site, pay, guard, fight, attackerName, order, onClose }: DeepSiteProps) => {
   const face = DEEP_SITE_FACES[site];
-  const onJoinSlot = typeof order === "object" && order.kind === "act" && order.verb === "join" ? order.onAct : null;
   return (
     <HudSheet label={siteName(site)} onClose={onClose}>
       <div className="ui-deep-head">
@@ -123,7 +122,7 @@ export const DeepSiteView = ({ site, pay, guard, fight, attackerName, order, onC
         </div>
       </div>
       {fight && <FightPreview site={site} fight={fight} guard={guard} attackerName={attackerName} />}
-      <GuardStrip site={site} guard={guard} onJoin={onJoinSlot} />
+      <GuardStrip site={site} guard={guard} />
       {pay && <TickPay pay={pay} />}
       <OrderFoot order={order} />
       {typeof order === "object" && order.kind === "short" && <HudNotice tone="warn" line={order.line} />}
@@ -208,21 +207,22 @@ const slotTip = (slot: DeepSlot, next: boolean): string => {
   return [
     next ? `${slot.realm} · ${DEEP_WORDS.facesNext}` : slot.realm,
     formatExact(slot.troops),
+    DEEP_WORDS.drainTick(slot.lossPerTick),
     DEEP_WORDS.lasts(slot.ticks.left, slot.ticks.time),
     DEEP_WORDS.share(slot.share),
     ...oaths,
   ].join(" · ");
 };
 
-const GuardStrip = ({
-  site,
-  guard,
-  onJoin,
-}: {
-  site: DeepSiteProps["site"];
-  guard: DeepGuard;
-  onJoin: (() => void) | null;
-}) => {
+const guardDrainLabel = (slots: readonly DeepSlot[]): string | null => {
+  if (slots.length === 0) return null;
+  const losses = slots.map((slot) => slot.lossPerTick);
+  const min = Math.min(...losses);
+  const max = Math.max(...losses);
+  return min === max ? DEEP_WORDS.drainTick(min) : DEEP_WORDS.drainRange(min, max);
+};
+
+const GuardStrip = ({ site, guard }: { site: DeepSiteProps["site"]; guard: DeepGuard }) => {
   if (guard.kind === "beast")
     return (
       <HudRow
@@ -268,36 +268,24 @@ const GuardStrip = ({
               </span>
             );
           })}
-          {free.map((slot) =>
-            onJoin ? (
-              <button
-                key={slot}
-                type="button"
-                data-deep-slot="empty"
-                aria-label={DEEP_WORDS.freeSlot}
-                data-tip={DEEP_WORDS.join}
-                className="ui-deep-guard-empty"
-                onClick={onJoin}
-              >
-                <Icon name="plus" size={16} />
-              </button>
-            ) : (
-              <span
-                key={slot}
-                data-deep-slot="empty"
-                aria-label={DEEP_WORDS.freeSlot}
-                data-tip={DEEP_WORDS.freeSlot}
-                className="ui-deep-guard-empty"
-              >
-                <Icon name="plus" size={16} />
-              </span>
-            ),
-          )}
+          {free.map((slot) => (
+            <span
+              key={slot}
+              data-deep-slot="empty"
+              aria-label={DEEP_WORDS.freeSlot}
+              data-tip={DEEP_WORDS.freeSlot}
+              className="ui-deep-guard-empty"
+            >
+              <Icon name="plus" size={16} />
+            </span>
+          ))}
         </div>
-        <span data-deep-drain className="ui-deep-drain">
-          <Icon name="attack" size={16} />
-          <span className="tabular-nums text-hud-bad">{DEEP_WORDS.drainTick(guard.lossPerTick)}</span>
-        </span>
+        {guardDrainLabel(guard.slots) && (
+          <span data-deep-drain className="ui-deep-drain">
+            <Icon name="attack" size={16} />
+            <span className="tabular-nums text-hud-bad">{guardDrainLabel(guard.slots)}</span>
+          </span>
+        )}
       </div>
       {frontGuard && (
         <div data-guard-oaths={frontGuard.oaths} className="flex flex-wrap items-center gap-1.5 empty:hidden">

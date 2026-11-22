@@ -86,17 +86,38 @@ describe("a Deep site's card", () => {
     expect(text()).toContain("Another Aspect holds it");
   });
 
-  it("offers Join on the button and each empty + slot of the player's own Aspect", () => {
+  it("offers one Join action and draws free slots as non-interactive indicators", () => {
     const onAct = vi.fn();
     const fixture = DEEP_SITE_CASES["Ethereal mine held by the player's Aspect, a free slot to join"];
     draw({ ...fixture, order: { kind: "act", verb: "join", onAct } });
-    expect(labels(["Join"])).toHaveLength(1);
-    const emptyBtn = document.querySelector<HTMLButtonElement>('button[data-deep-slot="empty"]')!;
-    expect(emptyBtn).not.toBeNull();
-    act(() => emptyBtn.click());
+    const [join] = labels(["Join"]);
+    expect(join).toBeDefined();
+    expect(document.querySelectorAll('button[data-deep-slot="empty"]')).toHaveLength(0);
+    expect(document.querySelectorAll('span[data-deep-slot="empty"]')).toHaveLength(3);
+    act(() => join!.click());
     expect(onAct).toHaveBeenCalledTimes(1);
     const filledTip = document.querySelector('[data-deep-slot="filled"]')?.getAttribute("data-tip") ?? "";
     expect(filledTip).toContain("100% of each tick");
+  });
+
+  it("reads per-guard drain from each slot and shows a range when a guard loses more per tick", () => {
+    const fixture = DEEP_SITE_CASES["Foundation held, two slots filled"];
+    const [first, second] = fixture.guard.slots;
+    draw({
+      ...fixture,
+      guard: {
+        ...fixture.guard,
+        slots: [first!, { ...second!, lossPerTick: first!.lossPerTick + 150 }],
+      },
+    });
+    expect(document.querySelector("[data-deep-drain]")?.textContent).toBe(
+      `−${first!.lossPerTick}–${first!.lossPerTick + 150} / tick`,
+    );
+    const tips = [...document.querySelectorAll('[data-deep-slot="filled"]')].map(
+      (slot) => slot.getAttribute("data-tip") ?? "",
+    );
+    expect(tips[0]).toContain(`−${first!.lossPerTick} / tick`);
+    expect(tips[1]).toContain(`−${first!.lossPerTick + 150} / tick`);
   });
 
   it("renders facing portraits, Bow first-strike cue from core, stamina cost on Attack, and 4 guard slots", () => {

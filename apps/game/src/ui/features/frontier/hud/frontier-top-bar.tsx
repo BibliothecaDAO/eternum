@@ -1,6 +1,5 @@
-import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-import { HudPill } from "@/ui/design-system/kit/hud-elements";
 import { SecondaryMenuItems } from "@/ui/features/world";
+import { FollowingArmyPill } from "@/ui/features/world/containers/top-header/following-army-pill";
 import { IdentityChip, type SeasonGoal } from "@/ui/features/world/containers/top-header/identity-chip";
 import { MapViewControls, type WorldTab } from "@/ui/features/world/containers/top-header/map-view-controls";
 import { useTopBarNavigation } from "@/ui/features/world/containers/top-header/use-top-bar-navigation";
@@ -20,16 +19,7 @@ export const FrontierTopBar = memo(
     depthSwitch?: ReactNode;
     clock: ReactNode;
   }) => {
-    const {
-      isLocalView,
-      canOpenLocal,
-      mapLayer,
-      showLayerSwitch,
-      isFollowingArmy,
-      followingArmyMessage,
-      navigateToView,
-      switchLayer,
-    } = useTopBarNavigation();
+    const { isLocalView, canOpenLocal, mapLayer, showLayerSwitch, navigateToView, switchLayer } = useTopBarNavigation();
 
     return (
       <>
@@ -54,22 +44,7 @@ export const FrontierTopBar = memo(
             <SecondaryMenuItems />
           </div>
         </header>
-
-        {isFollowingArmy && (
-          <div className="pointer-events-none fixed left-1/2 top-16 z-50 -translate-x-1/2">
-            <HudPill>
-              {[
-                <span key="following" className="flex items-center gap-2">
-                  <SemanticIcon
-                    name={followingArmyMessage?.toLowerCase().includes("combat") ? "military" : "eye"}
-                    className="h-4 w-4 animate-pulse"
-                  />
-                  {followingArmyMessage ?? "Following Army"}
-                </span>,
-              ]}
-            </HudPill>
-          </div>
-        )}
+        <FollowingArmyPill />
       </>
     );
   },

@@ -13,8 +13,6 @@ export function useTopBarNavigation() {
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const isSpectating = useUIStore((state) => state.isSpectating);
   const mode = useGameModeConfig();
-  const isFollowingArmy = useUIStore((state) => state.isFollowingArmy);
-  const followingArmyMessage = useUIStore((state) => state.followingArmyMessage);
   const structures = useNativeFacts(["Structure"]);
   const entityInfo = useMemo(
     () => mode.structure.getEntityInfo(structureEntityId, null, structures.store),
@@ -69,8 +67,6 @@ export function useTopBarNavigation() {
     canOpenLocal: selectedStructurePosition !== null,
     mapLayer,
     showLayerSwitch,
-    isFollowingArmy,
-    followingArmyMessage,
     navigateToView,
     switchLayer,
   };
