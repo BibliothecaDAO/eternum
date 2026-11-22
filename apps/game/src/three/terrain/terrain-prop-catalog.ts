@@ -1,8 +1,10 @@
+import floraManifest from "../../../public/models/terrain-flora/manifest.json";
+
 export type TerrainPropLod = "near" | "far";
 
-export const TERRAIN_PROP_CATALOG_PATH = "/models/procedural-terrain/biome-kit-props.glb";
+export const TERRAIN_FLORA_MANIFEST_PATH = "/models/terrain-flora/manifest.json";
 
-export const TERRAIN_PROP_ARCHETYPE_IDS = Object.freeze([
+export const SURFACE_PROP_IDS = Object.freeze([
   "broadleaf",
   "birch",
   "rainforest-canopy",
@@ -20,31 +22,78 @@ export const TERRAIN_PROP_ARCHETYPE_IDS = Object.freeze([
   "wildflower",
 ] as const);
 
-export type TerrainPropArchetypeId = (typeof TERRAIN_PROP_ARCHETYPE_IDS)[number];
+export const LAYER_PROP_IDS = Object.freeze([
+  "glowcap",
+  "root-arch",
+  "bloom-coral",
+  "hollow-fern",
+  "standing-stone",
+  "drift-banner",
+  "frost-tuft",
+] as const);
 
-/**
- * Instances one terrain page holds per archetype: the size of its slot in the prop pools, and the most the generator
- * places on one page, so no page can outgrow its slot. Set at 1.5× the per-page maximum measured 2026-09-07 at
- * production density (the balanced benchmark fixture, homogeneous 3×3-page blocks of every biome, eight climate seed
- * pairs), rounded up to a multiple of 16, so the cap thins only a page denser than any measured.
- */
+export const TERRAIN_PROP_ARCHETYPE_IDS = Object.freeze([...SURFACE_PROP_IDS, ...LAYER_PROP_IDS]);
+
+export type SurfacePropId = (typeof SURFACE_PROP_IDS)[number];
+export type LayerPropId = (typeof LAYER_PROP_IDS)[number];
+export type TerrainPropArchetypeId = SurfacePropId | LayerPropId;
+
 export const TERRAIN_PROP_PAGE_SLOT_CAPACITY: Readonly<Record<TerrainPropArchetypeId, number>> = Object.freeze({
-  birch: 112, // measured 65
-  boulder: 144, // measured 88
-  broadleaf: 208, // measured 135
-  cactus: 112, // measured 73
-  conifer: 320, // measured 209
-  "dead-tree": 48, // measured 25
-  "fallen-log": 64, // measured 33
-  fern: 208, // measured 136
-  "grass-tuft": 160, // measured 103
-  palm: 176, // measured 109
-  cycad: 96, // measured 55
-  shrub: 176, // measured 111
-  mushroom: 32, // measured 17
-  wildflower: 96, // measured 63
-  "rainforest-canopy": 144, // measured 87
+  birch: 232,
+  boulder: 432,
+  broadleaf: 488,
+  cactus: 384,
+  conifer: 696,
+  "dead-tree": 96,
+  "fallen-log": 104,
+  fern: 992,
+  "grass-tuft": 568,
+  palm: 296,
+  cycad: 272,
+  shrub: 568,
+  mushroom: 64,
+  glowcap: 328,
+  "root-arch": 1952,
+  "bloom-coral": 192,
+  "hollow-fern": 432,
+  "standing-stone": 704,
+  "drift-banner": 160,
+  "frost-tuft": 888,
+  wildflower: 320,
+  "rainforest-canopy": 288,
 });
+export const TERRAIN_PROP_PALETTE_SHIFT: Readonly<Record<SurfacePropId, number>> = Object.freeze({
+  birch: 0.25,
+  boulder: 0.25,
+  broadleaf: 0.25,
+  cactus: 0.25,
+  conifer: 0.07,
+  cycad: 0.25,
+  "dead-tree": 0.25,
+  "fallen-log": 0.25,
+  fern: 0.25,
+  "grass-tuft": 0.25,
+  mushroom: 0.25,
+  palm: 0.25,
+  "rainforest-canopy": 0.25,
+  shrub: 0.25,
+  wildflower: 0.25,
+});
+const FLORA_FOOTPRINT_RADIUS = Object.fromEntries(
+  TERRAIN_PROP_ARCHETYPE_IDS.map((archetype) => {
+    const row = floraManifest.species.find(({ id }) => id === archetype);
+    if (!row) throw new Error(`The flora manifest has no species for terrain prop ${archetype}`);
+    return [archetype, row.radius];
+  }),
+) as Record<TerrainPropArchetypeId, number>;
+
+const SPACING_SHARE: Readonly<Record<TerrainPropPlacementLayer, number>> = Object.freeze({
+  canopy: 0.55,
+  debris: 0.8,
+  groundcover: 0,
+  understory: 0.8,
+});
+
 export type TerrainPropRole = "canopy" | "groundcover" | "rigid" | "understory";
 export type TerrainPropPlacementLayer = "canopy" | "debris" | "groundcover" | "understory";
 
@@ -54,18 +103,25 @@ const CANOPY_ARCHETYPES = new Set<TerrainPropArchetypeId>([
   "rainforest-canopy",
   "conifer",
   "palm",
+  "standing-stone",
 ]);
-const UNDERSTORY_ARCHETYPES = new Set<TerrainPropArchetypeId>(["shrub"]);
-const GROUND_COVER_ARCHETYPES = new Set<TerrainPropArchetypeId>(["fern", "grass-tuft", "cycad", "wildflower"]);
-const DEBRIS_ARCHETYPES = new Set<TerrainPropArchetypeId>(["boulder", "dead-tree", "fallen-log", "mushroom"]);
-const CANOPY_EXCLUSION_RADIUS: Partial<Record<TerrainPropArchetypeId, number>> = Object.freeze({
-  birch: 0.28,
-  broadleaf: 0.3,
-  conifer: 0.34,
-  palm: 0.42,
-  "rainforest-canopy": 0.48,
-});
-const SUCCESSION_AFFINITY: Readonly<Record<TerrainPropArchetypeId, number>> = Object.freeze({
+const UNDERSTORY_ARCHETYPES = new Set<TerrainPropArchetypeId>(["shrub", "drift-banner"]);
+const GROUND_COVER_ARCHETYPES = new Set<TerrainPropArchetypeId>([
+  "fern",
+  "grass-tuft",
+  "cycad",
+  "wildflower",
+  "hollow-fern",
+  "frost-tuft",
+]);
+const DEBRIS_ARCHETYPES = new Set<TerrainPropArchetypeId>([
+  "boulder",
+  "dead-tree",
+  "fallen-log",
+  "mushroom",
+  "glowcap",
+]);
+const SUCCESSION_AFFINITY: Readonly<Record<SurfacePropId, number>> = Object.freeze({
   birch: 1,
   boulder: 0,
   broadleaf: 0.25,
@@ -82,7 +138,7 @@ const SUCCESSION_AFFINITY: Readonly<Record<TerrainPropArchetypeId, number>> = Ob
   cycad: 1,
   wildflower: 0.95,
 });
-const DISTURBANCE_AFFINITY: Readonly<Record<TerrainPropArchetypeId, number>> = Object.freeze({
+const DISTURBANCE_AFFINITY: Readonly<Record<SurfacePropId, number>> = Object.freeze({
   birch: 1,
   boulder: 0,
   broadleaf: 0.1,
@@ -100,7 +156,7 @@ const DISTURBANCE_AFFINITY: Readonly<Record<TerrainPropArchetypeId, number>> = O
   wildflower: 1,
 });
 
-const WETLAND_AFFINITY: Readonly<Record<TerrainPropArchetypeId, number>> = Object.freeze({
+const WETLAND_AFFINITY: Readonly<Record<SurfacePropId, number>> = Object.freeze({
   birch: 0.35,
   boulder: 0.2,
   broadleaf: 0.45,
@@ -118,6 +174,22 @@ const WETLAND_AFFINITY: Readonly<Record<TerrainPropArchetypeId, number>> = Objec
   "rainforest-canopy": 1,
 });
 
+type LayerPropAnchor = "scatter" | "edge" | "corner";
+
+const LAYER_PROP_ANCHOR: Readonly<Record<LayerPropId, LayerPropAnchor>> = Object.freeze({
+  glowcap: "scatter",
+  "root-arch": "edge",
+  "bloom-coral": "scatter",
+  "hollow-fern": "scatter",
+  "standing-stone": "corner",
+  "drift-banner": "scatter",
+  "frost-tuft": "scatter",
+});
+
+export function getLayerPropAnchor(archetype: LayerPropId): LayerPropAnchor {
+  return LAYER_PROP_ANCHOR[archetype];
+}
+
 export function getTerrainPropRole(archetype: TerrainPropArchetypeId): TerrainPropRole {
   if (CANOPY_ARCHETYPES.has(archetype)) return "canopy";
   if (GROUND_COVER_ARCHETYPES.has(archetype)) return "groundcover";
@@ -132,21 +204,23 @@ export function getTerrainPropPlacementLayer(archetype: TerrainPropArchetypeId):
   return "understory";
 }
 
-export function getTerrainPropCanopyExclusionRadius(archetype: TerrainPropArchetypeId): number {
-  const radius = CANOPY_EXCLUSION_RADIUS[archetype];
-  if (radius === undefined) throw new Error(`${archetype} is not a canopy terrain prop`);
-  return radius;
+export function getTerrainPropFootprintRadius(archetype: TerrainPropArchetypeId): number {
+  return FLORA_FOOTPRINT_RADIUS[archetype];
 }
 
-export function getTerrainPropSuccessionAffinity(archetype: TerrainPropArchetypeId): number {
+export function getTerrainPropSpacingRadius(archetype: TerrainPropArchetypeId): number {
+  return FLORA_FOOTPRINT_RADIUS[archetype] * SPACING_SHARE[getTerrainPropPlacementLayer(archetype)];
+}
+
+export function getTerrainPropSuccessionAffinity(archetype: SurfacePropId): number {
   return SUCCESSION_AFFINITY[archetype];
 }
 
-export function getTerrainPropDisturbanceAffinity(archetype: TerrainPropArchetypeId): number {
+export function getTerrainPropDisturbanceAffinity(archetype: SurfacePropId): number {
   return DISTURBANCE_AFFINITY[archetype];
 }
 
-export function getTerrainPropWetlandAffinity(archetype: TerrainPropArchetypeId): number {
+export function getTerrainPropWetlandAffinity(archetype: SurfacePropId): number {
   return WETLAND_AFFINITY[archetype];
 }
 
@@ -157,12 +231,3 @@ export function isTerrainGroundCover(archetype: TerrainPropArchetypeId): boolean
 export function isTerrainPropVisibleAtLod(archetype: TerrainPropArchetypeId, lod: TerrainPropLod): boolean {
   return lod === "near" || !isTerrainGroundCover(archetype);
 }
-
-export const getTerrainPropMeshName = (archetype: TerrainPropArchetypeId, lod: TerrainPropLod): string =>
-  `${archetype}-${lod}`;
-
-export const getRequiredTerrainPropMeshNames = (): string[] =>
-  TERRAIN_PROP_ARCHETYPE_IDS.flatMap((archetype) => [
-    getTerrainPropMeshName(archetype, "near"),
-    getTerrainPropMeshName(archetype, "far"),
-  ]);

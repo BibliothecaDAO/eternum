@@ -20,8 +20,6 @@ import { MeshStandardNodeMaterial } from "three/webgpu";
 import {
   attribute,
   color,
-  float,
-  instanceIndex,
   mix,
   normalGeometry,
   positionLocal,
@@ -37,7 +35,6 @@ import { loadTerrainPropCatalog } from "./terrain-prop-asset-cache";
 import {
   TERRAIN_PROP_ARCHETYPE_IDS,
   getTerrainPropRole,
-  getTerrainPropMeshName,
   isTerrainGroundCover,
   isTerrainPropVisibleAtLod,
   TERRAIN_PROP_PAGE_SLOT_CAPACITY,
@@ -50,7 +47,13 @@ import type { TerrainPropInstance } from "./terrain-types";
 export const TERRAIN_PROP_POOL_PAGE_SLOTS = WORLD_CHUNK_CONFIG.visualPresentation.maxCompositePages;
 
 const TERRAIN_PROP_ECOLOGY_ATTRIBUTE = "terrainPropEcology";
-const VEC3_FLOATS = 3;
+const ECOLOGY_FLOATS = 4;
+const TERRAIN_PROP_GLOW_ATTRIBUTE = "terrainPropGlow";
+const TERRAIN_PROP_PLANT_ATTRIBUTE = "terrainPropPlant";
+const BAKED_PLANT_ATTRIBUTES = ["_wind_bend", "_wind_weight", "_glow"] as const;
+const GLOW_FLOATS = 3;
+const GLOW_INTENSITY = 1.2;
+const WIND_SWAY_SHARE = 0.05;
 const EMPTY_INSTANCES: readonly TerrainPropInstance[] = Object.freeze([]);
 
 export interface TerrainPropPoolStats {
@@ -77,7 +80,8 @@ interface PropPoolSlot {
 interface PropPool {
   catalogRadius: number;
   ecology: InstancedBufferAttribute;
-  geometries: Record<TerrainPropLod, BufferGeometry>;
+  glow: InstancedBufferAttribute;
+  geometry: BufferGeometry;
   mesh: InstancedMesh;
   slotCapacity: number;
   slots: PropPoolSlot[];
@@ -128,7 +132,6 @@ export class TerrainPropPools {
     if (lod === this.lod) return;
     this.lod = lod;
     this.pools.forEach((pool, archetype) => {
-      pool.mesh.geometry = pool.geometries[lod];
       pool.mesh.castShadow = lod === "near" && getTerrainPropRole(archetype) === "canopy";
       pool.mesh.visible = pool.mesh.count > 0 && isTerrainPropVisibleAtLod(archetype, lod);
     });
@@ -165,8 +168,7 @@ export class TerrainPropPools {
   dispose(): void {
     this.pools.forEach((pool) => {
       pool.mesh.dispose();
-      pool.geometries.near.dispose();
-      pool.geometries.far.dispose();
+      pool.geometry.dispose();
     });
     this.pools.clear();
     this.object3d.clear();
@@ -177,13 +179,12 @@ export class TerrainPropPools {
   private createPool(archetype: TerrainPropArchetypeId): void {
     const slotCapacity = TERRAIN_PROP_PAGE_SLOT_CAPACITY[archetype];
     const capacity = slotCapacity * TERRAIN_PROP_POOL_PAGE_SLOTS;
-    const ecology = new InstancedBufferAttribute(new Float32Array(capacity * VEC3_FLOATS), VEC3_FLOATS);
-    const geometries = {
-      near: createOwnedPropGeometry(this.requireCatalogMesh(archetype, "near").geometry, ecology),
-      far: createOwnedPropGeometry(this.requireCatalogMesh(archetype, "far").geometry, ecology),
-    };
+    const ecology = new InstancedBufferAttribute(new Float32Array(capacity * ECOLOGY_FLOATS), ECOLOGY_FLOATS);
+    const source = this.requireCatalogMesh(archetype);
+    const glow = new InstancedBufferAttribute(new Float32Array(capacity * GLOW_FLOATS), GLOW_FLOATS);
+    const geometry = createOwnedPropGeometry(source.geometry, ecology, glow);
     const material = getTerrainPropRole(archetype) === "rigid" ? this.rigidMaterial : this.windMaterial;
-    const mesh = createInstancedMesh(geometries[this.lod], material, capacity);
+    const mesh = createInstancedMesh(geometry, material, capacity);
     mesh.name = `terrain-prop-pool:${archetype}`;
     mesh.count = 0;
     mesh.visible = false;
@@ -192,9 +193,10 @@ export class TerrainPropPools {
     mesh.receiveShadow = true;
     mesh.raycast = disablePropRaycast;
     this.pools.set(archetype, {
-      catalogRadius: this.resolveMaximumCatalogMeshRadius(archetype),
+      catalogRadius: resolveCatalogMeshRadius(source),
       ecology,
-      geometries,
+      geometry,
+      glow,
       mesh,
       slotCapacity,
       slots: Array.from({ length: TERRAIN_PROP_POOL_PAGE_SLOTS }, createEmptySlot),
@@ -229,7 +231,7 @@ export class TerrainPropPools {
     instances: readonly TerrainPropInstance[],
   ): number {
     const { mesh } = pool;
-    const source = this.requireCatalogMesh(archetype, this.lod);
+    const source = this.requireCatalogMesh(archetype);
     source.updateMatrix();
     slot.bounds.makeEmpty();
     slot.radius = 0;
@@ -244,7 +246,14 @@ export class TerrainPropPools {
       mesh.setMatrixAt(index, this.matrix);
       this.tint.setRGB(...instance.appearance.tint);
       mesh.setColorAt(index, this.tint);
-      pool.ecology.setXYZ(index, instance.appearance.windAmplitude, instance.appearance.moss, instance.appearance.snow);
+      pool.ecology.setXYZW(
+        index,
+        instance.appearance.windAmplitude,
+        instance.appearance.moss,
+        instance.appearance.snow,
+        resolveWindPhase(instance.worldX, instance.worldZ),
+      );
+      pool.glow.setXYZ(index, ...instance.appearance.glow);
       slot.radius = Math.max(slot.radius, pool.catalogRadius * instance.scale);
     });
     const written = instances.length;
@@ -253,6 +262,7 @@ export class TerrainPropPools {
     if (instances.length > 0) {
       queueInstanceUpdate(requireInstanceColor(mesh), start, instances.length);
       queueInstanceUpdate(pool.ecology, start, instances.length);
+      queueInstanceUpdate(pool.glow, start, instances.length);
     }
     return written;
   }
@@ -280,18 +290,10 @@ export class TerrainPropPools {
     return pool;
   }
 
-  private requireCatalogMesh(archetype: TerrainPropArchetypeId, lod: TerrainPropLod): Mesh {
-    const name = getTerrainPropMeshName(archetype, lod);
-    const object = this.catalogScene.getObjectByName(name);
-    if (!(object instanceof Mesh)) throw new Error(`Terrain prop catalog mesh is unavailable: ${name}`);
+  private requireCatalogMesh(archetype: TerrainPropArchetypeId): Mesh {
+    const object = this.catalogScene.getObjectByName(archetype);
+    if (!(object instanceof Mesh)) throw new Error(`Terrain prop catalog mesh is unavailable: ${archetype}`);
     return object;
-  }
-
-  private resolveMaximumCatalogMeshRadius(archetype: TerrainPropArchetypeId): number {
-    return Math.max(
-      resolveCatalogMeshRadius(this.requireCatalogMesh(archetype, "near")),
-      resolveCatalogMeshRadius(this.requireCatalogMesh(archetype, "far")),
-    );
   }
 }
 
@@ -300,7 +302,7 @@ function moveFollowingInstances(pool: PropPool, start: number, previousCount: nu
   const destination = start + nextCount;
   const count = pool.mesh.count - source;
   if (source === destination || count === 0) return 0;
-  for (const attribute of [pool.mesh.instanceMatrix, requireInstanceColor(pool.mesh), pool.ecology]) {
+  for (const attribute of [pool.mesh.instanceMatrix, requireInstanceColor(pool.mesh), pool.ecology, pool.glow]) {
     const size = attribute.itemSize;
     attribute.array.copyWithin(destination * size, source * size, (source + count) * size);
     queueInstanceUpdate(attribute, destination, count);
@@ -357,22 +359,40 @@ function requireInstanceColor(mesh: InstancedMesh): InstancedBufferAttribute {
   return mesh.instanceColor;
 }
 
-function createOwnedPropGeometry(source: BufferGeometry, ecology: InstancedBufferAttribute): BufferGeometry {
+function createOwnedPropGeometry(
+  source: BufferGeometry,
+  ecology: InstancedBufferAttribute,
+  glow: InstancedBufferAttribute,
+): BufferGeometry {
   // World and local scenes share the catalog, but own their instance attributes and GPU buffer lifetimes.
   const geometry = source.clone();
   geometry.computeBoundingBox();
   const bounds = geometry.boundingBox!;
   const height = bounds.max.y - bounds.min.y;
   if (!(height > 0)) throw new Error(`Terrain prop geometry ${source.name} has no measurable height`);
-  const positions = geometry.getAttribute("position");
-  const bend = new Float32Array(positions.count * 2);
-  for (let index = 0; index < positions.count; index++) {
-    bend[index * 2] = (positions.getY(index) - bounds.min.y) / height;
-    bend[index * 2 + 1] = height;
-  }
-  geometry.setAttribute("terrainPropBend", new Float32BufferAttribute(bend, 2));
+  geometry.setAttribute(TERRAIN_PROP_PLANT_ATTRIBUTE, packBakedPlant(source, height));
+  for (const name of BAKED_PLANT_ATTRIBUTES) geometry.deleteAttribute(name);
   geometry.setAttribute(TERRAIN_PROP_ECOLOGY_ATTRIBUTE, ecology);
+  geometry.setAttribute(TERRAIN_PROP_GLOW_ATTRIBUTE, glow);
   return geometry;
+}
+
+function packBakedPlant(source: BufferGeometry, height: number): Float32BufferAttribute {
+  const [bend, foliage, glow] = BAKED_PLANT_ATTRIBUTES.map((name) => {
+    const baked = source.getAttribute(name);
+    if (!baked) throw new Error(`Terrain prop geometry ${source.name} has no baked ${name}`);
+    return baked;
+  });
+  const plant = new Float32Array(bend.count * 4);
+  for (let index = 0; index < bend.count; index++) {
+    plant.set([bend.getX(index), height, foliage.getX(index), glow.getX(index)], index * 4);
+  }
+  return new Float32BufferAttribute(plant, 4);
+}
+
+function resolveWindPhase(worldX: number, worldZ: number): number {
+  const wave = Math.sin(worldX * 12.9898 + worldZ * 78.233) * 43758.5453;
+  return wave - Math.floor(wave);
 }
 
 function createTerrainPropMaterial(
@@ -380,9 +400,9 @@ function createTerrainPropMaterial(
   windStrength: UniformNode<"float", number> = uniform(0, "float"),
 ): MeshStandardNodeMaterial {
   const material = new FrostedStandardNodeMaterial({ metalness: 0, roughness: 1 });
-  const foliageWeight = attribute<"float">("_wind_weight", "float").clamp(0, 1);
-  const plant = attribute<"vec2">("terrainPropBend", "vec2");
-  const ecology = attribute<"vec3">("terrainPropEcology", "vec3").clamp(0, 1);
+  const plant = attribute<"vec4">(TERRAIN_PROP_PLANT_ATTRIBUTE, "vec4");
+  const foliageWeight = plant.z.clamp(0, 1);
+  const ecology = attribute<"vec4">("terrainPropEcology", "vec4").clamp(0, 1);
   const verticality = normalGeometry.y.mul(normalGeometry.y).oneMinus().clamp(0, 1);
   const snowMask = ecology.z
     .mul(smoothstep(0.05, 0.85, normalGeometry.y))
@@ -393,18 +413,20 @@ function createTerrainPropMaterial(
   const canopyLight = foliageWeight.mul(smoothstep(0.1, 0.85, normalGeometry.y)).mul(0.18);
   const foliageColor = mix(mossyColor, color("#afc675"), canopyLight);
   material.colorNode = mix(foliageColor, color("#d8e0df"), snowMask.mul(0.78));
+  material.emissiveNode = attribute<"vec3">(TERRAIN_PROP_GLOW_ATTRIBUTE, "vec3")
+    .mul(plant.w.clamp(0, 1))
+    .mul(GLOW_INTENSITY);
   if (!animated) return material;
 
-  const heightMask = smoothstep(0.05, 0.95, plant.x);
-  const amplitude = plant.y.mul(0.2).min(0.095);
+  const amplitude = plant.y.mul(WIND_SWAY_SHARE);
   const phase = time
     .mul(0.72)
     .add(positionLocal.x.mul(0.41))
     .add(positionLocal.z.mul(0.57))
-    .add(float(instanceIndex).mul(2.399));
+    .add(ecology.w.mul(Math.PI * 2));
   const mainSway = phase.sin().mul(amplitude);
   const detailSway = phase.mul(1.73).add(plant.x.mul(2.4)).sin().mul(amplitude).mul(0.35);
-  const displacement = heightMask.mul(foliageWeight).mul(ecology.x).mul(windStrength);
+  const displacement = plant.x.mul(ecology.x).mul(windStrength);
   material.positionNode = positionLocal.add(vec3(mainSway.mul(displacement), 0, detailSway.mul(displacement)));
   return material;
 }

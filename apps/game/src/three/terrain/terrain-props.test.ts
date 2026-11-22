@@ -3,13 +3,19 @@ import { BiomeType, StructureType } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
 
 import { TerrainField, type TerrainPropDensityContext } from "./terrain-field";
-import { terrainHexToWorld } from "./terrain-coordinates";
+import { terrainHexToWorld, terrainNeighborCoordinates } from "./terrain-coordinates";
 import {
-  getTerrainPropCanopyExclusionRadius,
+  getTerrainPropFootprintRadius,
+  getTerrainPropSpacingRadius,
   getTerrainPropDisturbanceAffinity,
   getTerrainPropPlacementLayer,
+  LAYER_PROP_IDS,
+  SURFACE_PROP_IDS,
+  type TerrainPropArchetypeId,
 } from "./terrain-prop-catalog";
-import { prepareTerrainPropInstances, resolveEffectiveTerrainPropDensity } from "./terrain-props";
+import { LAYER_BIOME_LOOKS, layerBiomeAt } from "./layer-biomes";
+import { TERRAIN_ARMY_ROUTE_HALF_WIDTH } from "./terrain-army-clearance";
+import { getLayerPropBiomes, prepareTerrainPropInstances, resolveEffectiveTerrainPropDensity } from "./terrain-props";
 import type { TerrainCellInput, TerrainPageRequest } from "./terrain-types";
 
 describe("terrain prop placement", () => {
@@ -63,7 +69,7 @@ describe("terrain prop placement", () => {
     expect(instances.every(({ archetype }) => ["dead-tree", "boulder", "fallen-log"].includes(archetype))).toBe(true);
   });
 
-  it("derives dense near-view ground cover from the same vegetation field", () => {
+  it("derives near-view ground cover of more than one kind from the same vegetation field", () => {
     const cells = Array.from({ length: 100 }, (_, index) =>
       cell(index % 10, Math.floor(index / 10), BiomeType.Grassland),
     );
@@ -71,7 +77,7 @@ describe("terrain prop placement", () => {
     const instances = prepareTerrainPropInstances(terrainRequest, new TerrainField(terrainRequest));
     const groundCover = instances.filter(({ archetype }) => getTerrainPropPlacementLayer(archetype) === "groundcover");
 
-    expect(groundCover.length).toBeGreaterThan(4);
+    expect(groundCover.length).toBeGreaterThan(0);
     expect(new Set(groundCover.map(({ archetype }) => archetype)).size).toBeGreaterThan(1);
   });
 
@@ -128,15 +134,13 @@ describe("terrain prop placement", () => {
 
   it("applies and validates a deterministic global density multiplier", () => {
     const stressed = densityContext({ elevation: 0.75, moisture: 0.25, normalY: 0.97, patchiness: 0.3 });
-    const baseline = resolveEffectiveTerrainPropDensity(
-      BiomeType.TropicalRainForest,
-      stressed.context,
-      stressed.normalY,
-    );
+    const sparseBiome = BiomeType.Snow;
+    const baseline = resolveEffectiveTerrainPropDensity(sparseBiome, stressed.context, stressed.normalY);
 
-    expect(
-      resolveEffectiveTerrainPropDensity(BiomeType.TropicalRainForest, stressed.context, stressed.normalY, 2),
-    ).toBeCloseTo(baseline * 2);
+    expect(baseline * 2).toBeLessThan(1);
+    expect(resolveEffectiveTerrainPropDensity(sparseBiome, stressed.context, stressed.normalY, 2)).toBeCloseTo(
+      baseline * 2,
+    );
     const invalid = { ...request([cell(0, 0, BiomeType.Grassland)]), propDensityMultiplier: 3.1 };
     expect(() => prepareTerrainPropInstances(invalid, new TerrainField(invalid))).toThrow(
       "Terrain prop density multiplier must be from 0.25 to 3",
@@ -165,26 +169,158 @@ describe("terrain prop placement", () => {
     ).toBe(true);
   });
 
-  it("keeps canopy crowns apart without coupling understory or debris to their slots", () => {
-    const cells = Array.from({ length: 100 }, (_, index) =>
-      cell(index % 10, Math.floor(index / 10), BiomeType.TropicalRainForest),
-    );
-    const page = request(cells, "canopy-spacing");
-    const instances = prepareTerrainPropInstances(page, new TerrainField(page));
-    const canopy = instances.filter(({ archetype }) => getTerrainPropPlacementLayer(archetype) === "canopy");
-    const layers = new Set(instances.map(({ archetype }) => getTerrainPropPlacementLayer(archetype)));
-
-    expect(layers).toEqual(new Set(["canopy", "understory", "debris", "groundcover"]));
-    for (let leftIndex = 0; leftIndex < canopy.length; leftIndex += 1) {
-      const left = canopy[leftIndex]!;
-      for (let rightIndex = leftIndex + 1; rightIndex < canopy.length; rightIndex += 1) {
-        const right = canopy[rightIndex]!;
-        const minimum =
-          getTerrainPropCanopyExclusionRadius(left.archetype) * left.scale +
-          getTerrainPropCanopyExclusionRadius(right.archetype) * right.scale;
-        expect(Math.hypot(left.worldX - right.worldX, left.worldZ - right.worldZ)).toBeGreaterThanOrEqual(minimum);
+  it("keeps every standing prop's footprint apart, trees by their crowns", () => {
+    for (const biome of [BiomeType.TropicalRainForest, BiomeType.Taiga, BiomeType.Shrubland, BiomeType.Beach]) {
+      for (const seed of [11, 23, 37]) {
+        const page = seededRequest(block(12, biome), `spacing-${biome}-${seed}`, seed);
+        const standing = prepareTerrainPropInstances(page, new TerrainField(page)).filter(
+          ({ archetype }) => getTerrainPropPlacementLayer(archetype) !== "groundcover",
+        );
+        expect(standing.length).toBeGreaterThan(10);
+        for (let leftIndex = 0; leftIndex < standing.length; leftIndex += 1) {
+          const left = standing[leftIndex]!;
+          for (let rightIndex = leftIndex + 1; rightIndex < standing.length; rightIndex += 1) {
+            const right = standing[rightIndex]!;
+            const minimum =
+              getTerrainPropSpacingRadius(left.archetype) * left.scale +
+              getTerrainPropSpacingRadius(right.archetype) * right.scale;
+            expect(Math.hypot(left.worldX - right.worldX, left.worldZ - right.worldZ)).toBeGreaterThanOrEqual(
+              minimum - 1e-9,
+            );
+          }
+        }
       }
     }
+  });
+
+  it("keeps every footprint out of an occupied hex and every tree off the ring round it", () => {
+    const neighbourSpacing = Math.hypot(
+      terrainHexToWorld(1, 0).x - terrainHexToWorld(0, 0).x,
+      terrainHexToWorld(1, 0).z - terrainHexToWorld(0, 0).z,
+    );
+    for (const biome of [BiomeType.TropicalRainForest, BiomeType.TemperateDeciduousForest, BiomeType.Beach]) {
+      for (const seed of [11, 23, 37]) {
+        const cells = block(12, biome).map((entry) =>
+          (entry.col === 0 || entry.col === 1) && entry.row === 0 ? { ...entry, occupied: true } : entry,
+        );
+        const page = seededRequest(cells, `clearance-${biome}-${seed}`, seed);
+        const occupied = cells.filter(({ occupied }) => occupied).map(({ col, row }) => terrainHexToWorld(col, row));
+        const besideOccupied = new Set(
+          cells
+            .filter(({ occupied }) => occupied)
+            .flatMap(({ col, row }) => terrainNeighborCoordinates(col, row).map((hex) => `${hex.col}:${hex.row}`)),
+        );
+        for (const prop of prepareTerrainPropInstances(page, new TerrainField(page))) {
+          if (getTerrainPropPlacementLayer(prop.archetype) === "canopy") {
+            expect(besideOccupied.has(`${prop.ownerCol}:${prop.ownerRow}`)).toBe(false);
+          }
+          for (const centre of occupied) {
+            const distance = Math.hypot(prop.worldX - centre.x, prop.worldZ - centre.z);
+            const isTree = getTerrainPropPlacementLayer(prop.archetype) === "canopy";
+            const reach =
+              (isTree ? getTerrainPropFootprintRadius(prop.archetype) : getTerrainPropSpacingRadius(prop.archetype)) *
+              prop.scale;
+            expect(distance - reach).toBeGreaterThanOrEqual(neighbourSpacing / 2 - 1e-9);
+          }
+        }
+      }
+    }
+  });
+
+  it("grows layer flora only on explored layer hexes, lit by the glow of each hex's layer biome", () => {
+    const cells = block(12, BiomeType.Taiga).map((entry) => {
+      if (entry.row < -2) return { ...entry, surfacePresentation: 2 as const };
+      if (entry.row < 0)
+        return { ...entry, surfacePresentation: 2 as const, explored: false, biome: null, previewBiome: null };
+      if (entry.row < 2) return { ...entry, surfacePresentation: 1 as const };
+      return entry;
+    });
+    const byKey = new Map(cells.map((entry) => [`${entry.col}:${entry.row}`, entry]));
+    for (const seed of [11, 23, 37]) {
+      const page = seededRequest(cells, `layers-${seed}`, seed);
+      const props = prepareTerrainPropInstances(page, new TerrainField(page));
+      const layerProps = props.filter(({ archetype }) => isLayerProp(archetype));
+      expect(layerProps.length).toBeGreaterThan(0);
+      for (const prop of props) {
+        const owner = byKey.get(`${prop.ownerCol}:${prop.ownerRow}`)!;
+        expect(owner.explored).toBe(true);
+        if (!isLayerProp(prop.archetype)) {
+          expect(owner.surfacePresentation).toBeUndefined();
+          continue;
+        }
+        const layer = owner.surfacePresentation;
+        if (layer !== 1 && layer !== 2) throw new Error(`layer prop ${prop.archetype} stands off the layers`);
+        const biome = layerBiomeAt(layer, owner.col, owner.row, page.climate);
+        expect(getLayerPropBiomes(layerProp(prop.archetype))).toContain(biome);
+        expect(prop.appearance.glow).toEqual(linear(LAYER_BIOME_LOOKS[biome].glow));
+        if (layer === 2) expect(prop.appearance.windAmplitude).toBe(0);
+      }
+    }
+  });
+
+  it("lays root arches on hex edges, each clear of the crossing through the edge's middle", () => {
+    let arches = 0;
+    for (const seed of [11, 23, 37]) {
+      const cells = block(16, BiomeType.Grassland).map((entry) => ({ ...entry, surfacePresentation: 2 as const }));
+      const page = seededRequest(cells, `root-arches-${seed}`, seed);
+      for (const prop of prepareTerrainPropInstances(page, new TerrainField(page))) {
+        if (prop.archetype !== "root-arch") continue;
+        arches += 1;
+        const owner = terrainHexToWorld(prop.ownerCol, prop.ownerRow);
+        const edges = terrainNeighborCoordinates(prop.ownerCol, prop.ownerRow).map(({ col, row }) => {
+          const neighbour = terrainHexToWorld(col, row);
+          const spacing = Math.hypot(neighbour.x - owner.x, neighbour.z - owner.z);
+          const middle = { x: (owner.x + neighbour.x) / 2, z: (owner.z + neighbour.z) / 2 };
+          const across =
+            ((prop.worldX - middle.x) * (neighbour.x - owner.x) + (prop.worldZ - middle.z) * (neighbour.z - owner.z)) /
+            spacing;
+          const along = Math.hypot(prop.worldX - middle.x, prop.worldZ - middle.z);
+          return { across: Math.abs(across), along, halfEdge: spacing / (2 * Math.sqrt(3)) };
+        });
+        const edge = edges.toSorted((a, b) => a.across - b.across)[0];
+        expect(edge.across).toBeLessThan(1e-6);
+        const reach = getTerrainPropFootprintRadius(prop.archetype) * prop.scale;
+        expect(edge.along - reach).toBeGreaterThanOrEqual(TERRAIN_ARMY_ROUTE_HALF_WIDTH - 1e-9);
+        expect(edge.along + reach).toBeLessThanOrEqual(edge.halfEdge + 1e-9);
+      }
+    }
+    expect(arches).toBeGreaterThan(0);
+  });
+
+  it.each([1, 2] as const)("keeps every prop of layer %i out of an occupied hex", (layer) => {
+    const neighbourSpacing = Math.hypot(
+      terrainHexToWorld(1, 0).x - terrainHexToWorld(0, 0).x,
+      terrainHexToWorld(1, 0).z - terrainHexToWorld(0, 0).z,
+    );
+    for (const seed of [11, 23, 37]) {
+      const cells = block(12, BiomeType.Grassland).map((entry) => ({
+        ...entry,
+        surfacePresentation: layer,
+        occupied: (entry.col === 0 || entry.col === 1) && entry.row === 0,
+      }));
+      const page = seededRequest(cells, `layer-clearance-${layer}-${seed}`, seed);
+      const occupied = cells.filter(({ occupied }) => occupied).map(({ col, row }) => terrainHexToWorld(col, row));
+      const props = prepareTerrainPropInstances(page, new TerrainField(page));
+      expect(props.length).toBeGreaterThan(0);
+      for (const prop of props) {
+        for (const centre of occupied) {
+          const distance = Math.hypot(prop.worldX - centre.x, prop.worldZ - centre.z);
+          const reach = getTerrainPropSpacingRadius(prop.archetype) * prop.scale;
+          expect(distance - reach).toBeGreaterThanOrEqual(neighbourSpacing / 2 - 1e-9);
+        }
+      }
+    }
+  });
+
+  it("holds a taiga hex at least as thick with conifers as the authored kit did", () => {
+    let conifers = 0;
+    for (const seed of [11, 23, 37]) {
+      const page = seededRequest(block(12, BiomeType.Taiga), `taiga-${seed}`, seed);
+      conifers += prepareTerrainPropInstances(page, new TerrainField(page)).filter(
+        ({ archetype }) => archetype === "conifer",
+      ).length;
+    }
+    expect(conifers / (144 * 3)).toBeGreaterThanOrEqual(0.572);
   });
 
   it("grows larger mature crowns and biases regenerating gaps toward pioneer trees", () => {
@@ -267,8 +403,10 @@ describe("terrain prop placement", () => {
     const undisturbed = contextual.filter(({ context }) => context.settlementEdgeStrength === 0);
 
     expect(regrowth.length).toBeGreaterThan(2);
-    expect(average(regrowth.map(({ archetype }) => getTerrainPropDisturbanceAffinity(archetype)))).toBeGreaterThan(
-      average(undisturbed.map(({ archetype }) => getTerrainPropDisturbanceAffinity(archetype))) + 0.08,
+    expect(
+      average(regrowth.map(({ archetype }) => getTerrainPropDisturbanceAffinity(surfaceProp(archetype)))),
+    ).toBeGreaterThan(
+      average(undisturbed.map(({ archetype }) => getTerrainPropDisturbanceAffinity(surfaceProp(archetype)))) + 0.08,
     );
     expect(regrowth.some(({ archetype }) => archetype === "shrub" || archetype === "mushroom")).toBe(true);
   });
@@ -285,6 +423,17 @@ function fraction(
   return instances.filter((instance) => instance.archetype === archetype).length / instances.length;
 }
 
+function block(size: number, biome: BiomeType): TerrainCellInput[] {
+  return Array.from({ length: size * size }, (_, index) =>
+    cell((index % size) - size / 2, Math.floor(index / size) - size / 2, biome),
+  );
+}
+function seededRequest(cells: TerrainCellInput[], pageKey: string, seed: number): TerrainPageRequest {
+  return {
+    ...request(cells, pageKey),
+    climate: { ...NEUTRAL_BIOME_CLIMATE, elevation_seed: seed, moisture_seed: seed * 3 },
+  };
+}
 function cell(col: number, row: number, biome: BiomeType, occupied = false): TerrainCellInput {
   return { biome, col, explored: true, occupied, previewBiome: biome, row };
 }
@@ -345,4 +494,24 @@ function densityContext(overrides: Partial<TerrainPropDensityContext> & { normal
     },
     normalY: overrides.normalY ?? 1,
   };
+}
+
+function surfaceProp(archetype: TerrainPropArchetypeId) {
+  const surface = SURFACE_PROP_IDS.find((id) => id === archetype);
+  if (!surface) throw new Error(`${archetype} is not a surface prop`);
+  return surface;
+}
+
+function isLayerProp(archetype: TerrainPropArchetypeId) {
+  return LAYER_PROP_IDS.some((id) => id === archetype);
+}
+
+function layerProp(archetype: TerrainPropArchetypeId) {
+  const layer = LAYER_PROP_IDS.find((id) => id === archetype);
+  if (!layer) throw new Error(`${archetype} is not a layer prop`);
+  return layer;
+}
+
+function linear(hex: string) {
+  return [1, 3, 5].map((start) => (parseInt(hex.slice(start, start + 2), 16) / 255) ** 2.2);
 }

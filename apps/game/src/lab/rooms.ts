@@ -404,12 +404,6 @@ export const ROOMS: LabRoom[] = [
             "ethereal-depths",
             load(() => import("./ethereal-depths/view"), "EtherealDepthLabView"),
           ),
-          view(
-            "Props",
-            "/lab/terrain-props",
-            "terrain-props",
-            load(() => import("../ui/features/debug/terrain-prop-debug-view"), "TerrainPropDebugView"),
-          ),
         ],
       },
       {

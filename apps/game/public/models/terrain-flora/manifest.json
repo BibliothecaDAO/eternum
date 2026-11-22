@@ -1,0 +1,291 @@
+{
+  "builder": "scripts/terrain-flora/build-flora.mjs",
+  "species": [
+    {
+      "id": "birch",
+      "file": "birch.glb",
+      "height": 1.6,
+      "radius": 0.463,
+      "triangles": [
+        171,
+        179,
+        180
+      ],
+      "bytes": 24848,
+      "sha256": "fd8ea8d33f3922794e5b7a4956b134d80ae3b2a3c7a63d6a41cd46f0f6c533e4"
+    },
+    {
+      "id": "bloom-coral",
+      "file": "bloom-coral.glb",
+      "height": 0.46,
+      "radius": 0.337,
+      "triangles": [
+        252,
+        336,
+        252
+      ],
+      "bytes": 27184,
+      "sha256": "4dd7fafe9ed5e1f9042f9a580ee8bb5c019e5cd8430eeff087780dc286969b6b"
+    },
+    {
+      "id": "boulder",
+      "file": "boulder.glb",
+      "height": 0.3,
+      "radius": 0.35,
+      "triangles": [
+        54,
+        53,
+        52
+      ],
+      "bytes": 10268,
+      "sha256": "92dc9cdb33b2bebb9f40a52c507f97a02d757ca4e2d21af13afcf968bf980341"
+    },
+    {
+      "id": "broadleaf",
+      "file": "broadleaf.glb",
+      "height": 1.5,
+      "radius": 0.738,
+      "triangles": [
+        245,
+        253,
+        248
+      ],
+      "bytes": 33448,
+      "sha256": "2ec31155ba1d4d5366fcc738334e6a84b53baa1870cd1c99a66f2c4f76d1f6bb"
+    },
+    {
+      "id": "cactus",
+      "file": "cactus.glb",
+      "height": 0.75,
+      "radius": 0.194,
+      "triangles": [
+        60,
+        84,
+        84
+      ],
+      "bytes": 10300,
+      "sha256": "1972810bb475cce6c92a98c927e24c4f7e8277e4a024cf5c0aac983cf149b900"
+    },
+    {
+      "id": "conifer",
+      "file": "conifer.glb",
+      "height": 1.9,
+      "radius": 0.523,
+      "triangles": [
+        282,
+        366,
+        282
+      ],
+      "bytes": 40844,
+      "sha256": "ede8b942ed9b3952fbd99d67de40daae810e8f6dd2b81dbac378583bde42ac7b"
+    },
+    {
+      "id": "cycad",
+      "file": "cycad.glb",
+      "height": 0.42,
+      "radius": 0.412,
+      "triangles": [
+        63,
+        71,
+        79
+      ],
+      "bytes": 14056,
+      "sha256": "4a18b8c5d81e97205070de3cf037311ada1e506af7e2b78ba8ff4bb8dbc05c71"
+    },
+    {
+      "id": "dead-tree",
+      "file": "dead-tree.glb",
+      "height": 1.3,
+      "radius": 0.447,
+      "triangles": [
+        51,
+        63,
+        75
+      ],
+      "bytes": 10164,
+      "sha256": "ff528363ebbaa94fcdaa85f7c3c26ab0213fe57f1044f0f34039a760b2096669"
+    },
+    {
+      "id": "drift-banner",
+      "file": "drift-banner.glb",
+      "height": 0.7,
+      "radius": 0.21,
+      "triangles": [
+        57,
+        69,
+        57
+      ],
+      "bytes": 11372,
+      "sha256": "604c9fc9dc83941888b78708962967d77c6e1603c40255f543b74482d6b3d50b"
+    },
+    {
+      "id": "fallen-log",
+      "file": "fallen-log.glb",
+      "height": 0.16,
+      "radius": 0.416,
+      "triangles": [
+        36,
+        36,
+        36
+      ],
+      "bytes": 7608,
+      "sha256": "9e77a1a30eda62b0f83c189c191f4e5a61848a3f36817c91a46fc0339f45e00c"
+    },
+    {
+      "id": "fern",
+      "file": "fern.glb",
+      "height": 0.28,
+      "radius": 0.439,
+      "triangles": [
+        32,
+        40,
+        48
+      ],
+      "bytes": 12604,
+      "sha256": "8bf3420763e8e1a5e38c40a588cc3e85844ed8462f78e924fee944a90d336621"
+    },
+    {
+      "id": "frost-tuft",
+      "file": "frost-tuft.glb",
+      "height": 0.14,
+      "radius": 0.063,
+      "triangles": [
+        10,
+        12,
+        14
+      ],
+      "bytes": 9176,
+      "sha256": "9db3ea2b87d580b967e41e7920a257a5daab47b0fc2b26768931e578ab6935ac"
+    },
+    {
+      "id": "glowcap",
+      "file": "glowcap.glb",
+      "height": 0.42,
+      "radius": 0.293,
+      "triangles": [
+        172,
+        220,
+        268
+      ],
+      "bytes": 23124,
+      "sha256": "37eff2dab73b5c2f1894f449c1b15aa9a3bc55f4a4677cccb697d5a6362c36e6"
+    },
+    {
+      "id": "grass-tuft",
+      "file": "grass-tuft.glb",
+      "height": 0.16,
+      "radius": 0.099,
+      "triangles": [
+        12,
+        12,
+        12
+      ],
+      "bytes": 6936,
+      "sha256": "bc9577241b7dffb64cee3f5318eb053da1be590ee82e0705e5f780a542aa2791"
+    },
+    {
+      "id": "hollow-fern",
+      "file": "hollow-fern.glb",
+      "height": 0.3,
+      "radius": 0.418,
+      "triangles": [
+        80,
+        136,
+        80
+      ],
+      "bytes": 15580,
+      "sha256": "8bc3eaffe2ef81d506bf58e23cd6878a0008f821094e60fbb5e56792ee008125"
+    },
+    {
+      "id": "mushroom",
+      "file": "mushroom.glb",
+      "height": 0.26,
+      "radius": 0.175,
+      "triangles": [
+        54,
+        81,
+        27
+      ],
+      "bytes": 9464,
+      "sha256": "be5fb0a79c609e446d3c1c23b09455a7dec6109b23643c2ff0658f30229a27a1"
+    },
+    {
+      "id": "palm",
+      "file": "palm.glb",
+      "height": 1.6,
+      "radius": 0.966,
+      "triangles": [
+        188,
+        172,
+        172
+      ],
+      "bytes": 21280,
+      "sha256": "6b39c541bccdcb2cbb28ecd686a640af3a39a5c009ae76cb4005dcd5d61da193"
+    },
+    {
+      "id": "rainforest-canopy",
+      "file": "rainforest-canopy.glb",
+      "height": 2,
+      "radius": 1.112,
+      "triangles": [
+        207,
+        208,
+        210
+      ],
+      "bytes": 29728,
+      "sha256": "e8f2a610465871cc23c11a604717d21dea31a0ad187f36fed00156cf958a5737"
+    },
+    {
+      "id": "root-arch",
+      "file": "root-arch.glb",
+      "height": 0.18,
+      "radius": 0.19,
+      "triangles": [
+        272,
+        424,
+        408
+      ],
+      "bytes": 32496,
+      "sha256": "aa66f7c81a2eb47687088d67fada5d853372087c5d7f96af8f9809f0a09687ec"
+    },
+    {
+      "id": "shrub",
+      "file": "shrub.glb",
+      "height": 0.5,
+      "radius": 0.38,
+      "triangles": [
+        66,
+        65,
+        67
+      ],
+      "bytes": 16144,
+      "sha256": "9ffd869e2a0bef889e09bab060ba43c1a32cdf6eaf295990e8ee9c8def1e7b9e"
+    },
+    {
+      "id": "standing-stone",
+      "file": "standing-stone.glb",
+      "height": 0.9,
+      "radius": 0.265,
+      "triangles": [
+        60,
+        90,
+        30
+      ],
+      "bytes": 10216,
+      "sha256": "24aa1208025858c20353cb05b201c44a87fe34a6bfdc2a7f3a0ae2dcf1ccd819"
+    },
+    {
+      "id": "wildflower",
+      "file": "wildflower.glb",
+      "height": 0.18,
+      "radius": 0.072,
+      "triangles": [
+        21,
+        28,
+        14
+      ],
+      "bytes": 9936,
+      "sha256": "bde1d17160df97c9f413e5d4e720d60bdfe4c33ca9b544cfb90586924cdd21fa"
+    }
+  ]
+}

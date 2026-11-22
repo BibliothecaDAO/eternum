@@ -167,6 +167,7 @@ export interface TerrainPropInstance {
 }
 
 export interface TerrainPropAppearance {
+  glow: readonly [number, number, number];
   moss: number;
   snow: number;
   tint: readonly [number, number, number];

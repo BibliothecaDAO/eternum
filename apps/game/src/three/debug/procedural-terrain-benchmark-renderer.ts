@@ -623,7 +623,7 @@ function reserveAssetRequestTimeline(): void {
 function readAssetRequestCounts(): TerrainBenchmarkSnapshot["assets"] {
   const resourceNames = performance.getEntriesByType("resource").map(({ name }) => name);
   return {
-    propCatalogRequests: resourceNames.filter((name) => name.endsWith("/biome-kit-props.glb")).length,
+    propCatalogRequests: resourceNames.filter((name) => name.includes("/terrain-flora/")).length,
   };
 }
 

@@ -47,7 +47,7 @@ jobs:
             apps/game/public/models/frontier
             apps/game/public/models/new-buildings-opt
             apps/game/public/models/outposts
-            apps/game/public/models/procedural-terrain
+            apps/game/public/models/terrain-flora
             apps/game/public/models/realms
             apps/game/public/models/reward-tiles
             apps/game/public/models/ships
