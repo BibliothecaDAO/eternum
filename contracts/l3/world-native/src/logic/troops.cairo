@@ -972,37 +972,26 @@ pub mod troop_helpers {
     }
 }
 
-#[cfg(not(feature: "blitz"))]
 fn army_home(home: ResourceKey, context: crate::commands::ExecutionContext) -> crate::troops::Coord {
-    let today = crate::logic::army_days::today(context.game.unbox(), context.timestamp);
-    crate::expeditions::site(
-        crate::logic::settlement::spacing(), crate::entity_ids::namespace(home.entity_id), today, 0,
-    )
+    if crate::rules::DAYS_IN_PLAY {
+        let today = crate::logic::army_days::today(context.game.unbox(), context.timestamp);
+        crate::expeditions::site(
+            crate::logic::settlement::spacing(), crate::entity_ids::namespace(home.entity_id), today, 0,
+        )
+    } else {
+        crate::structures::structure_coord(home)
+    }
 }
 
-#[cfg(feature: "blitz")]
-fn army_home(home: ResourceKey, _context: crate::commands::ExecutionContext) -> crate::troops::Coord {
-    crate::structures::structure_coord(home)
-}
-
-#[cfg(not(feature: "blitz"))]
 #[inline(always)]
 fn open_deployment(
     game_id: u32, origin: crate::troops::Coord, coord: crate::troops::Coord, context: crate::commands::ExecutionContext,
 ) {
-    crate::logic::map::raise_expedition_home(
-        crate::geometry::tile_key(game_id, origin), crate::commands::biome_context(context),
-    );
-    assert_deployable(game_id, coord);
-}
-
-#[cfg(feature: "blitz")]
-fn open_deployment(
-    game_id: u32,
-    _origin: crate::troops::Coord,
-    coord: crate::troops::Coord,
-    _context: crate::commands::ExecutionContext,
-) {
+    if crate::rules::DAYS_IN_PLAY {
+        crate::logic::map::raise_expedition_home(
+            crate::geometry::tile_key(game_id, origin), crate::commands::biome_context(context),
+        );
+    }
     assert_deployable(game_id, coord);
 }
 
@@ -1051,12 +1040,11 @@ fn deployed_stamina(
     initial
 }
 
-#[cfg(not(feature: "blitz"))]
 #[inline(always)]
-fn tire_reinforced(ref _troops: crate::troops::Troops, _rules: crate::rules::SliceRules, _timestamp: u64) {}
-
-#[cfg(feature: "blitz")]
 fn tire_reinforced(ref troops: crate::troops::Troops, rules: crate::rules::SliceRules, timestamp: u64) {
+    if crate::rules::DAYS_IN_PLAY {
+        return;
+    }
     crate::stamina::StaminaSourceTrait::revert_initial_amount(
         ref troops.stamina, rules.troop_stamina_config, timestamp,
     );

@@ -177,7 +177,7 @@ pub mod ProductionLogic {
             let source = crate::logic::structures::structure(from).expect('missing sending structure');
             let destination = crate::logic::structures::structure(to).expect('missing recipient structure');
             let rules = game_context.rules.unbox();
-            super::assert_transfer_owners(rules, source.owner, destination.owner);
+            super::assert_transfer_owners(source.owner, destination.owner);
             let travel_time = crate::transport::travel_time(
                 crate::structures::structure_coord(from),
                 crate::structures::structure_coord(to),
@@ -472,18 +472,9 @@ pub mod ProductionLogic {
     }
 }
 
-#[cfg(not(feature: "blitz"))]
 #[inline(always)]
-fn assert_transfer_owners(
-    _rules: crate::rules::SliceRules, _source: starknet::ContractAddress, _destination: starknet::ContractAddress,
-) {}
-
-#[cfg(feature: "blitz")]
-fn assert_transfer_owners(
-    rules: crate::rules::SliceRules, source: starknet::ContractAddress, destination: starknet::ContractAddress,
-) {
-    assert!(
-        (rules.mode_rules & crate::rules::SAME_OWNER_TRANSFER) == 0 || source == destination,
-        "transfers require the same owner",
-    );
+fn assert_transfer_owners(source: starknet::ContractAddress, destination: starknet::ContractAddress) {
+    if crate::rules::SAME_OWNER_TRANSFERS {
+        assert!(source == destination, "transfers require the same owner");
+    }
 }

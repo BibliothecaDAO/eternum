@@ -13,8 +13,6 @@ use crate::troops::{
     Coord, ExplorerKey, ExplorerTroops, IBattleResolutionDispatcherTrait, IBattleResolutionLibraryDispatcher, Troops,
 };
 
-const GUARDS_REST: bool = crate::balance::rules::SWITCHES.day_unit_seconds != 0;
-
 #[derive(Copy, Drop)]
 struct GuardTarget {
     key: ResourceKey,
@@ -624,7 +622,7 @@ pub fn resolve_battle(
     game_context: crate::commands::ExecutionContext,
 ) -> (Troops, Troops) {
     let rules = game_context.rules.unbox();
-    if GUARDS_REST && context.attacker_is_structure_guard {
+    if crate::rules::DAYS_IN_PLAY && context.attacker_is_structure_guard {
         attacker
             .stamina
             .refill(
@@ -636,7 +634,7 @@ pub fn resolve_battle(
                 context.timestamp,
             );
     }
-    if GUARDS_REST && context.defender_is_structure_guard {
+    if crate::rules::DAYS_IN_PLAY && context.defender_is_structure_guard {
         defender
             .stamina
             .refill(
