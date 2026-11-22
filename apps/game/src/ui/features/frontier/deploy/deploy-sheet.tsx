@@ -55,7 +55,7 @@ export const DeploySheet = ({
   const start = pickedSlot === undefined ? plan?.open[0] : plan?.open.find((slot) => slot.slot === pickedSlot);
   const march = start?.start && marchOn(start.start, 0);
   const range = plan ? deployRange(plan, march) : { troopsMax: 0, wheatMax: 0, max: 0 };
-  const shown = count === "max" ? range.max : Math.min(count ?? 0, range.max);
+  const shown = count === "max" ? range.max : Math.min(count ?? 0, range.wheatMax);
   const preview = plan ? previewDeploy(plan, march, shown) : null;
   const wheatStop = wheatStopsAt(range, shown);
   const pickSlot = (slot: number) =>
@@ -120,8 +120,12 @@ export const DeploySheet = ({
       art={plan?.troops ? armyArt({ category: plan.troops.type, tier: plan.troops.tier }) : undefined}
       troopsAtHome={plan ? (plan.troops?.atHome ?? 0) : undefined}
       count={preview?.count}
-      amount={{ most: range.max, held: range.wheatMax < range.troopsMax ? range.max : (plan?.troops?.atHome ?? 0) }}
-      onCount={(next) => setCount(range.max > 0 && next >= range.max ? "max" : next)}
+      amount={{
+        most: range.wheatMax,
+        max: range.max,
+        held: range.wheatMax < range.troopsMax ? range.wheatMax : (plan?.troops?.atHome ?? 0),
+      }}
+      onCount={(next) => setCount(range.max > 0 && next === range.max ? "max" : next)}
       start={start}
       slots={{ open: plan?.open, onPick: pickSlot }}
       troopsWait={nextTroopIn}

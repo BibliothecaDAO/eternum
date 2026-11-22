@@ -198,6 +198,37 @@ it("stops Max where the wheat left still feeds the whole army revealing its bar"
   expect(host.textContent).toContain("Wheat for only 19 of 420 troops");
 });
 
+it("still sends a count above Max that the wheat pays for, as the contract takes it", async () => {
+  const fixture = armyBesideHome();
+  fixture.holdWheat(50);
+  fixture.store.applyFacts([
+    {
+      model: "ArmySlot",
+      key: "0x9",
+      value: {
+        game_id: 1,
+        structure_id: 7,
+        epoch: "0",
+        slot: 0,
+        explorer_id: 201,
+        stamina: { amount: "100", settled_at: "350", remainder: 0 },
+      },
+    },
+  ] as never);
+  const { add } = render(fixture);
+  await press("Max");
+  expect(troops()).toBe("600 → 600");
+  const field = host.querySelector<HTMLInputElement>(".ui-amount input")!;
+  act(() => {
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(field, "25");
+    field.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+  expect(troops()).toBe("600 → 625");
+  expect(host.textContent).toContain("50 Wheat");
+  await press("Reinforce");
+  expect(add.mock.calls[0][0]).toMatchObject({ to_explorer_id: 201, amount: 25 * RESOURCE_PRECISION });
+});
+
 it("offers nothing to raise into an army at its cap", () => {
   const fixture = armyBesideHome();
   const army = fixture.store.require("ExplorerTroops", { game_id: 1, explorer_id: 201 });

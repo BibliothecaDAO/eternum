@@ -47,7 +47,7 @@ describe("Frontier's deploy", () => {
     expect(rangeOf(plan)).toMatchObject({ troopsMax: Math.min(420, plan.troops!.cap) });
     expect(rangeOf({ ...plan, troops: { ...plan.troops!, cap: 300 } }).max).toBe(300);
     holdWheat(store, 100);
-    expect(rangeOf(planOf(store, row)!)).toMatchObject({ wheatMax: 46, max: 46 });
+    expect(rangeOf(planOf(store, row)!)).toMatchObject({ wheatMax: 50, max: 46 });
     expect(rangeOf({ ...plan, troops: null }).max).toBe(0);
     expect(deployRange(plan, undefined).max).toBe(0);
   });
@@ -56,7 +56,7 @@ describe("Frontier's deploy", () => {
     const { store, row } = frontierDay();
     holdWheat(store, 8);
     const plan = planOf(store, row)!;
-    expect(rangeOf(plan)).toMatchObject({ wheatMax: 3, max: 3 });
+    expect(rangeOf(plan)).toMatchObject({ wheatMax: 4, max: 3 });
     expect(plan.raise!.wheatFor(4)).toBe(8);
     holdWheat(store, 4.5);
     expect(rangeOf(planOf(store, row)!).max).toBe(2);
@@ -82,7 +82,7 @@ describe("Frontier's deploy", () => {
     const bar = plan.open[0]!.start!;
     const reveals = Math.floor(bar.current / bar.perExplore);
     const range = deployRange(plan, marchOn(bar, 0));
-    expect([reveals, range.troopsMax, range.max]).toEqual([7, 2_970, 2_775]);
+    expect([reveals, range.troopsMax, range.wheatMax, range.max]).toEqual([7, 2_970, 2_970, 2_775]);
     const left = plan.raise!.wheat - previewDeploy(plan, marchOn(bar, 0), range.max).wheatCost;
     const perReveal = (troops: number) =>
       computeExploreFoodCosts({ category: TroopType.Knight, count: BigInt(troops) * BigInt(RESOURCE_PRECISION) })
@@ -90,6 +90,7 @@ describe("Frontier's deploy", () => {
     expect(left).toBe(390);
     expect(left).toBeGreaterThanOrEqual(perReveal(range.max) * reveals);
     expect(plan.raise!.wheat - plan.raise!.wheatFor(range.max + 1)).toBeLessThan(perReveal(range.max + 1) * reveals);
+    expect(previewDeploy(plan, marchOn(bar, 0), 2_970)).toEqual({ count: 2_970, wheatCost: 5_940 });
   });
 
   it("deploys onto the picked tile while it stays open, else the first open one, never onto unknown or taken ground", () => {

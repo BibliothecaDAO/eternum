@@ -422,15 +422,14 @@ describe("the Deploy sheet", () => {
     const { host, root } = render(store, row);
     click(host.querySelector('button[aria-label="Army 2"]')!);
     // At no troops nothing names the wheat (owner, 1 November: "not at 0 its confusing").
-    expect([outOf(host), countField(host).value, wheatLine(host)]).toEqual(["of 50", "0", null]);
+    expect([outOf(host), countField(host).value, wheatLine(host)]).toEqual(["of 54", "0", null]);
     // Below the cap the price is all: 30 troops for 60 wheat.
     typeCount(host, 30);
     expect([wheatLine(host), foot(host)]).toEqual([null, "60 WheatDeploy"]);
-    // Past it, the count stops at 50 and one red line says the wheat is why.
     typeCount(host, 300);
-    expect(countField(host).value).toBe("50");
-    expect(wheatLine(host)).toEqual({ line: "Wheat for only 50 of 420 troops", press: "Get Wheat" });
-    expect(foot(host)).toBe("100 WheatDeploy");
+    expect(countField(host).value).toBe("54");
+    expect(wheatLine(host)).toEqual({ line: "Wheat for only 54 of 420 troops", press: "Get Wheat" });
+    expect(foot(host)).toBe("108 WheatDeploy");
     expect(deployButton(host)?.disabled).toBe(false);
     // One under the cap, the line goes; Max brings it back.
     typeCount(host, 49);
@@ -496,22 +495,22 @@ describe("the Deploy sheet", () => {
     const onClose = vi.fn();
     const { host, root, draw } = render(store, row, onClose);
     click(host.querySelector('button[aria-label="Army 2"]')!);
-    expect([outOf(host), wheatLine(host)]).toEqual(["of 8", null]);
+    expect([outOf(host), wheatLine(host)]).toEqual(["of 9", null]);
     press(host, "Max");
-    expect([countField(host).value, outOf(host), foot(host)]).toEqual(["8", "of 8", "16 WheatDeploy"]);
+    expect([countField(host).value, outOf(host), foot(host)]).toEqual(["8", "of 9", "16 WheatDeploy"]);
     expect(wheatLine(host)).toEqual({ line: "Wheat for only 8 of 420 troops", press: "Get Wheat" });
 
     // Ten seconds of farming: 2 more wheat, one more troop. Max meant the most, so the count moves with the label.
     clock.tick = 13;
     draw();
-    expect([countField(host).value, outOf(host), foot(host)]).toEqual(["9", "of 9", "18 WheatDeploy"]);
+    expect([countField(host).value, outOf(host), foot(host)]).toEqual(["9", "of 10", "18 WheatDeploy"]);
     expect(wheatLine(host)?.line).toBe("Wheat for only 9 of 420 troops");
 
     // A count set below the most stays where it was set, and names no wheat.
     typeCount(host, 5);
     clock.tick = 23;
     draw();
-    expect([countField(host).value, outOf(host), wheatLine(host)]).toEqual(["5", "of 10", null]);
+    expect([countField(host).value, outOf(host), wheatLine(host)]).toEqual(["5", "of 11", null]);
 
     // No Build anywhere: Get Wheat on the line, back at Max, takes the player to the realm, where farms are built.
     expect([...host.querySelectorAll("button")].some((button) => button.textContent === "Build")).toBe(false);

@@ -20,7 +20,7 @@ it("raises the troops into the army beside home, its realm paying them from its 
   expect(before.current).toBe(1_498);
   const bar = armyBar(chain, chain.require("ExplorerTroops", ARMY), game.startsAt).stamina!;
   expect([bar.current, bar.perExplore]).toEqual([100, 20]);
-  expect(reinforceRange(before, marchOn(bar, before.current))).toEqual({ troopsMax: 420, wheatMax: 404, max: 404 });
+  expect(reinforceRange(before, marchOn(bar, before.current))).toEqual({ troopsMax: 420, wheatMax: 420, max: 404 });
 
   const amount = 100n;
   chain.applyFacts(

@@ -86,7 +86,7 @@ export const ReinforceSheet = ({
   const march = plan && army.stamina && marchOn(army.stamina, plan.current);
   const range = plan && march ? reinforceRange(plan, march) : { troopsMax: 0, wheatMax: 0, max: 0 };
   const [count, setCount] = useState<number | "max">(0);
-  const shown = count === "max" ? range.max : Math.min(count, range.max);
+  const shown = count === "max" ? range.max : Math.min(count, range.wheatMax);
   const wheatStop = wheatStopsAt(range, shown);
   const sending = useInFlight("army", army.explorerId) !== undefined;
 
@@ -119,10 +119,11 @@ export const ReinforceSheet = ({
         name={TROOPS}
         art={army.art}
         value={shown}
-        most={range.max}
-        held={range.wheatMax < range.troopsMax ? range.max : (plan?.stock ?? 0)}
-        disabled={range.max === 0 || sending}
-        onChange={(next) => setCount(range.max > 0 && next >= range.max ? "max" : next)}
+        most={range.wheatMax}
+        max={range.max}
+        held={range.wheatMax < range.troopsMax ? range.wheatMax : (plan?.stock ?? 0)}
+        disabled={range.wheatMax === 0 || sending}
+        onChange={(next) => setCount(range.max > 0 && next === range.max ? "max" : next)}
       />
       {plan && (
         <div className="flex justify-center">
@@ -132,7 +133,7 @@ export const ReinforceSheet = ({
         </div>
       )}
       {plan && march && <ReinforceLimit plan={plan} march={march} wheatStop={wheatStop} />}
-      {plan && range.max > 0 && (
+      {plan && range.wheatMax > 0 && (
         <HudWindowFoot note={<HudCost line={costLine([{ of: "wheat", amount: plan.raise.wheatFor(shown) }])} />}>
           <HudButton
             kind="primary"

@@ -1480,7 +1480,7 @@ const LabDeploySheet = ({
       art={troopsAtHome === 0 ? undefined : ("knight-t1" as const)}
       troopsAtHome={troopsAtHome}
       count={count}
-      amount={{ most, held: most < troopsAtHome ? most : troopsAtHome }}
+      amount={{ most, max: most, held: most < troopsAtHome ? most : troopsAtHome }}
       onCount={setCount}
       start={start}
       slots={{ open, onPick: setSlot }}

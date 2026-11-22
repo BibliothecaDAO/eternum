@@ -204,7 +204,6 @@ const mostThatPays = (most: number, pays: (count: number) => boolean): number =>
   return low;
 };
 
-/** How many troops could go by what is home and fits, how many their raise pays for, and the fewer of the two. */
 export interface TroopRange {
   troopsMax: number;
   wheatMax: number;
@@ -217,9 +216,11 @@ export const deployRange = (plan: DeployPlan, march: March | undefined): TroopRa
     ? troopRange(Math.min(plan.troops.atHome, plan.troops.cap), plan.raise, march)
     : { troopsMax: 0, wheatMax: 0, max: 0 };
 
+const STANDING: March = { alongside: 0, reveals: 0 };
+
 export const troopRange = (troopsMax: number, raise: TroopRaise, march: March): TroopRange => {
-  const wheatMax = Math.min(troopsMax, raise.paysFor(march));
-  return { troopsMax, wheatMax, max: wheatMax };
+  const wheatMax = Math.min(troopsMax, raise.paysFor(STANDING));
+  return { troopsMax, wheatMax, max: Math.min(wheatMax, raise.paysFor(march)) };
 };
 
 /**
@@ -229,7 +230,9 @@ export const troopRange = (troopsMax: number, raise: TroopRaise, march: March): 
  * pays for no troop, the one 0 the wheat explains (owner, the same day).
  */
 export const wheatStopsAt = (range: TroopRange, count: number): { troops: number; of: number } | undefined =>
-  count === range.max && range.wheatMax < range.troopsMax ? { troops: range.max, of: range.troopsMax } : undefined;
+  (count === range.max || count === range.wheatMax) && count < range.troopsMax
+    ? { troops: count, of: range.troopsMax }
+    : undefined;
 
 /** The army a count makes: the whole troops that go and what they cost in wheat. */
 export const previewDeploy = (
@@ -237,7 +240,7 @@ export const previewDeploy = (
   march: March | undefined,
   count: number,
 ): { count: number; wheatCost: number } => {
-  const whole = Math.max(0, Math.min(Math.floor(count), deployRange(plan, march).max));
+  const whole = Math.max(0, Math.min(Math.floor(count), deployRange(plan, march).wheatMax));
   return { count: whole, wheatCost: plan.raise?.wheatFor(whole) ?? 0 };
 };
 
