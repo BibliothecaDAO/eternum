@@ -1,9 +1,10 @@
 import { aspects, formatLongDate, ordersOfAspect } from "@bibliothecadao/types";
 
-import { AGE_LOCKUP } from "@/ui/design-system/icon-meaning";
+import { AspectMark } from "@/ui/design-system/aspect-mark";
+import { Icon } from "@/ui/design-system/icon";
+import { AGE_LOCKUP, orderMeaning } from "@/ui/design-system/icon-meaning";
 import { AppButton } from "@/ui/design-system/kit/app-elements";
 import { AppCountdownChip } from "@/ui/design-system/kit/clock-chip";
-import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
 import { COUNTDOWN_WORDS } from "@/ui/design-system/kit/words";
 
 import { StageFrame } from "../frame/stage-frame";
@@ -12,10 +13,10 @@ import type { SeasonOpening } from "../season";
 import { useRequestSignIn } from "../sign-in/connect";
 
 export const SeasonCountdown = ({ opening, now }: { opening: SeasonOpening; now: number }) => (
-  <StageFrame verb={<CreateAccount />}>
-    <div data-season-countdown className="flex flex-col items-center gap-5">
+  <StageFrame wide verb={<CreateAccount />}>
+    <div data-season-countdown className="flex flex-col items-center gap-5 text-center">
       <img src={AGE_LOCKUP.frontier} alt={ageOf("frontier").name} className="h-28 w-auto" />
-      <h1 className="text-app-title text-app-ink">{COUNTDOWN_WORDS.opens(formatLongDate(opening.startsAt, now))}</h1>
+      <h1 className="text-app-display text-app-ink">{COUNTDOWN_WORDS.opens(formatLongDate(opening.startsAt, now))}</h1>
       <AppCountdownChip prefix="starts" at={opening.startsAt} now={now} />
       <p className="text-app-body text-app-muted">{COUNTDOWN_WORDS.line(aspects.length, opening.seasonDays)}</p>
       <AspectCrests />
@@ -24,15 +25,16 @@ export const SeasonCountdown = ({ opening, now }: { opening: SeasonOpening; now:
 );
 
 const AspectCrests = () => (
-  <ul className="grid w-full grid-cols-4 gap-2">
+  <ul className="app-countdown-aspects">
     {aspects.map(({ id, name }) => (
-      <li key={id} data-aspect={name} className="flex flex-col items-center gap-1">
-        <span className="grid grid-cols-2 gap-1">
+      <li key={id} data-aspect={name} className="app-countdown-aspect">
+        <AspectMark aspect={id} size={72} decorative />
+        <span className="app-countdown-aspect__name">{name}</span>
+        <span className="flex items-center justify-center gap-1.5">
           {ordersOfAspect(id).map(({ orderId }) => (
-            <OrderEmblem key={orderId} order={orderId} size={32} />
+            <Icon key={orderId} name={orderMeaning(orderId)} size={22} />
           ))}
         </span>
-        <span className="text-app-label text-app-ink">{name}</span>
       </li>
     ))}
   </ul>

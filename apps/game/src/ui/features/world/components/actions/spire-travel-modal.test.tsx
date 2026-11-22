@@ -43,7 +43,6 @@ const mapSwitch = (compact: boolean, mapLayer: boolean) =>
         canOpenLocal
         mapLayer={mapLayer}
         showLayerSwitch
-        worldTab={{ label: "World" }}
         onNavigate={vi.fn()}
         onLayerChange={vi.fn()}
       />,

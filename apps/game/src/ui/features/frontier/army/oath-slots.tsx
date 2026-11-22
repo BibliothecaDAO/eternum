@@ -1,7 +1,7 @@
 import { heldOaths } from "@bibliothecadao/eternum";
 import { Icon } from "@/ui/design-system/icon";
 import { orderMeaning } from "@/ui/design-system/icon-meaning";
-import { oathEffectDescription, oathName } from "./oath-details";
+import { oathEffectDescription, oathJob, oathName } from "./oath-details";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { HudCost } from "@/ui/design-system/kit/hud-elements";
 import { costLine } from "@/ui/design-system/kit/price-faces";
@@ -14,6 +14,29 @@ import {
   troopOathSlots,
 } from "@bibliothecadao/eternum";
 import { RESOURCE_PRECISION, type TroopType } from "@bibliothecadao/types";
+
+export function OathSlotPips({ held, slots }: { held: readonly number[]; slots: number }) {
+  return (
+    <div className="ui-oath-pips" aria-label={`Slots ${held.length} of ${slots}`}>
+      <div className="ui-oath-pips__row">
+        {Array.from({ length: slots }, (_, index) => {
+          const oath = held[index];
+          return (
+            <span
+              key={index}
+              className="ui-oath-pip"
+              data-filled={oath ? "" : undefined}
+              data-oath-job={oath ? oathJob(oath) : undefined}
+              title={oath ? `${oathName(oath)} — ${oathEffectDescription(oath)}` : RESEARCH_TREE.oathOpen}
+            >
+              {oath && <Icon name={orderMeaning(oath)} size={20} />}
+            </span>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 export function TroopOathSlots({
   category,
@@ -52,8 +75,9 @@ export function TroopOathSlots({
           return (
             <div
               key={index}
+              data-oath-job={oath ? oathJob(oath) : undefined}
               aria-label={`${RESEARCH_TREE.oathSlots(index + 1)} · ${open ? RESEARCH_TREE.oathOpen : RESEARCH_TREE.oathLocked}`}
-              className="flex flex-col gap-1 rounded border border-hud-line p-1 text-hud-label text-hud-muted"
+              className="ui-oath-slot flex flex-col gap-1 rounded border border-hud-line p-1 text-hud-label text-hud-muted"
             >
               {oath ? (
                 <>

@@ -1,7 +1,9 @@
 import { SIGN_IN_WORDS } from "@/ui/design-system/kit/words";
+import { aspects } from "@bibliothecadao/types";
 import type { SocialProvider } from "@realms-world/identity";
 import { useState, type FormEvent } from "react";
 
+import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { AppButton, AppField } from "@/ui/design-system/kit/app-elements";
 
 import { FailureLine } from "./failure-line";
@@ -90,6 +92,11 @@ export const StartStep = ({
         </AppButton>
       </form>
       <p className="text-app-label text-app-muted">{SIGN_IN_WORDS.firstSignIn}</p>
+      <div className="flex items-center justify-center gap-3 pt-1" aria-hidden="true">
+        {aspects.map(({ id }) => (
+          <AspectMark key={id} aspect={id} size={28} decorative />
+        ))}
+      </div>
       <FailureLine line={error} />
     </div>
   );

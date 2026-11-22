@@ -35,6 +35,7 @@ export const useStoreReadings = (realm: NativeRows["Structure"] | null, rules: E
   const shown: Partial<Record<StoreKind, boolean>> = {
     troops: usePartShown("troops-store"),
     essence: usePartShown("essence-store"),
+    crossbows: realm !== null && realm.base.level >= nativeResearchConstants.RANGE_LEVEL,
     scouts: realm !== null && realm.base.level >= nativeResearchConstants.SCOUTS_LODGE_LEVEL,
   };
   return STORE_KINDS.filter((kind) => shown[kind] ?? true).map((kind) => {

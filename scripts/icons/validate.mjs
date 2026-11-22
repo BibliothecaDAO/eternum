@@ -6,8 +6,24 @@ export function validateIcons({ icons, meanings, resources, verdicts }) {
   if (paintings.has("lords")) throw new Error("Remove the painted LORDS asset from the Facets catalog.");
   for (const [name, entry] of Object.entries(meanings)) {
     if (entry.rewardChest) {
-      if (!/^reward-chest(?:-[0-4](?:-opened)?)?$/.test(name) || "art" in entry || "token" in entry)
+      if (
+        !/^reward-chest(?:-[0-4](?:-opened)?)?$/.test(name) ||
+        "art" in entry ||
+        "token" in entry ||
+        "oathBadge" in entry
+      )
         throw new Error(`Invalid reward chest meaning: ${name}`);
+      continue;
+    }
+    if (entry.oathBadge) {
+      if (
+        !/^order-[a-z]+$/.test(name) ||
+        !entry.orderId ||
+        "art" in entry ||
+        "token" in entry ||
+        "rewardChest" in entry
+      )
+        throw new Error(`Invalid oath badge meaning: ${name}`);
       continue;
     }
     if (entry.token) {

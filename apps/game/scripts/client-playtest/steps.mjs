@@ -472,7 +472,16 @@ function battleTargetSteps(attack, place, withOaths = false) {
 
 const ORDER_ART = Object.fromEntries(
   Object.values(iconMeanings).flatMap((meaning) =>
-    meaning.orderId === undefined ? [] : [[meaning.orderId, meaning.art]],
+    meaning.orderId === undefined
+      ? []
+      : [
+          [
+            meaning.orderId,
+            meaning.oathBadge
+              ? [`/images/oaths/${meaning.oathBadge}-badge-64.png`, `/images/oaths/${meaning.oathBadge}-badge.png`]
+              : [`/${meaning.art}.webp`],
+          ],
+        ],
   ),
 );
 
@@ -1260,7 +1269,7 @@ function oathPickSteps(full, layer = "Map") {
           locked,
           cards: browser.read("document.querySelectorAll('[data-oath-id]').length"),
           visible: browser.read(`(() => {
-            const nodes = [...document.querySelectorAll('[data-oath-id], [data-oath-pick] > button')];
+            const nodes = [...document.querySelectorAll('[data-oath-id], [data-oath-pick] [data-oath-pass]')];
             return nodes.length === 4 && nodes.every(node => {
               const box = node.getBoundingClientRect();
               return box.width > 0 && box.height > 0 && box.top >= 0 && box.bottom <= innerHeight &&
@@ -3530,12 +3539,6 @@ function viewWentIntoTheEtherealBelow({ played, seen }) {
   return completed(played);
 }
 
-/**
- * The map's layers as a player switches them (the lab's spire game, Ethereal I and II researched; owner, 4 November
- * 2026, desktop design 1 and phone B): the switch that names the layer shown opens the world and each Ethereal layer (a
- * phone's Realm too); Ethereal II takes the camera two regions down at the same spot, World back up, and from Ethereal II
- * the list takes a phone to its realm and the World tab or switch back to the map.
- */
 const LAB_LAYERS_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
   { name: "into-ethereal-ii", play: chooseLayer("Hollow"), settleMs: 0, verify: cameraInLayer(2) },
@@ -3574,23 +3577,18 @@ async function cameraAtRest(browser) {
 }
 
 /** What the switch that opens the views says: the view shown. */
-const VIEW_SWITCH_WORD = `JSON.stringify(document.querySelector('nav[aria-label="Places"] [data-switch], [aria-label="Map view"] [role="tab"][aria-selected="true"]')?.textContent.trim() ?? null)`;
+const VIEW_SWITCH_WORD = `JSON.stringify(document.querySelector('[data-surface-deep-switch] button[aria-pressed="true"]')?.textContent.trim() ?? null)`;
 
 /** The views a lab realm with Ethereal I and II lists, and the region's rows (Frontier's spacing). */
 const LAB_LAYERS = LAYER_NAMES.slice(0, 3);
 const REGION_ROWS = 100;
 
-/**
- * The camera moved by regions only, to the same spot of `layer`, and the switch names that layer; the list it opened
- * held the world and each Ethereal layer, a phone's with its Realm first, the layer it left checked.
- */
 function cameraInLayer(layer) {
   return ({ played, seen }) => {
     const scene = inScene("map")({ seen });
     if (scene.status !== "completed") return failed(`choosing ${played.word} left the map: ${scene.reason}`, played);
     const words = played.choices.map((choice) => choice.word);
-    const listed = words[0] === "Realm" ? words.slice(1) : words;
-    if (JSON.stringify(listed) !== JSON.stringify(LAB_LAYERS))
+    if (JSON.stringify(words) !== JSON.stringify(LAB_LAYERS))
       return failed(`the views listed are ${JSON.stringify(words)}, not ${JSON.stringify(LAB_LAYERS)}`, played);
     if (played.choices.filter((choice) => choice.shown).length !== 1)
       return failed("the list did not check exactly the view shown", played);
@@ -4039,7 +4037,10 @@ const namesItsBeast = (line, beast) =>
 const DEEP_JOIN_STATE = `JSON.stringify({
   sheet: document.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null,
   text: document.querySelector("[data-kit-sheet]")?.textContent ?? "",
-  slots: document.querySelector("[data-deep-slots]")?.textContent ?? "",
+  slots: [
+    document.querySelector("[data-deep-slots]")?.textContent ?? "",
+    ...[...document.querySelectorAll("[data-deep-slots] [data-deep-slot]")].map((slot) => slot.getAttribute("aria-label") ?? ""),
+  ].join(" "),
   pay: (() => {
     const node = document.querySelector('[data-deep-pay]');
     const rect = node?.getBoundingClientRect();
@@ -4333,7 +4334,7 @@ async function attackFromTheDeepCard({ browser, extraScreenshot }) {
         return shown && box.width > 0 && box.height > 0;
       });
       const painted = visible.filter(image =>
-        (image.currentSrc || image.src).endsWith("/" + art[image.closest("[data-oath]").dataset.oath] + ".webp"),
+        art[image.closest("[data-oath]").dataset.oath].some(suffix => (image.currentSrc || image.src).endsWith(suffix)),
       );
       const mask = Number(node.dataset.guardOaths);
       const shownMask = painted.reduce((bits, image) => bits | (1 << (Number(image.closest("[data-oath]").dataset.oath) - 1)), 0);
@@ -4361,7 +4362,7 @@ async function attackFromTheDeepCard({ browser, extraScreenshot }) {
     const theirs = rows.find(({ value }) => Number(value.explorer_id) !== ${armyId});
     const count = (row) => (BigInt(row.value.troops.count) / 1000000000n).toLocaleString("en-US");
     return ours && theirs && document.querySelector('.mp-at[data-key="army:${armyId}"] .mp-count')?.textContent === count(ours)
-      && document.querySelector('[data-deep-slots]')?.textContent.includes(count(theirs));
+      && [...document.querySelectorAll('[data-deep-slots] [data-deep-slot="filled"]')].some((slot) => (slot.getAttribute('aria-label') ?? '').includes(count(theirs)));
   })()`,
   );
   browser.click("Attack");
@@ -4665,7 +4666,7 @@ const REALM_TILE_BELOW_TOKEN_PX = [70, 50, 90];
 const REINFORCE_STATE = `JSON.stringify({
   sheet: document.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null,
   text: document.querySelector("[data-kit-sheet]")?.textContent ?? null,
-  buttons: [...(document.querySelector("[data-kit-sheet]")?.querySelectorAll("button") ?? [])].map((button) => button.textContent.trim()),
+  buttons: [...(document.querySelector("[data-kit-sheet]")?.querySelectorAll("button") ?? [])].map((button) => button.getAttribute("aria-label") || button.textContent.trim()),
   sent: (window.__labChain?.sent ?? []).map(({ command }) => command.kind),
   armyToken: document.querySelector('.mp-at[data-key="army:${PICKED_ARMY}"]')?.textContent ?? null,
   structure: window.__eternumMapSelection?.structure?.id ?? null,
@@ -4898,7 +4899,7 @@ const FIGHT_STATE = `JSON.stringify({
   camera: window.__eternumMapSelection?.camera ?? null,
   army: window.__eternumMapSelection?.army ?? null,
   sheet: document.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null,
-  buttons: [...(document.querySelector("[data-kit-sheet]")?.querySelectorAll("button") ?? [])].map((button) => button.textContent.trim()),
+  buttons: [...(document.querySelector("[data-kit-sheet]")?.querySelectorAll("button") ?? [])].map((button) => button.getAttribute("aria-label") || button.textContent.trim()),
   attackHeld: [...(document.querySelector("[data-kit-sheet]")?.querySelectorAll("button") ?? [])].every((button) => !button.textContent.trim().startsWith("Attack") || button.disabled),
   sides: [...(document.querySelector("[data-kit-sheet]")?.querySelectorAll('[role="img"][aria-label*="→"]') ?? [])].map((side) => side.getAttribute("aria-label")),
   sent: (window.__labChain?.sent ?? []).map(({ command }) => command.kind),
@@ -5260,7 +5261,7 @@ function armiesAnswerAtEveryZoom({ played }) {
 // The open card and its buttons, the commands the lab's chain has been sent, and the army a merge's answer destroyed.
 const MERGE_STATE = `JSON.stringify({
   sheet: document.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null,
-  buttons: [...(document.querySelector("[data-kit-sheet]")?.querySelectorAll("button") ?? [])].map((button) => button.textContent.trim()),
+  buttons: [...(document.querySelector("[data-kit-sheet]")?.querySelectorAll("button") ?? [])].map((button) => button.getAttribute("aria-label") || button.textContent.trim()),
   sent: (window.__labChain?.sent ?? []).map(({ command }) => command.kind),
   destroyed: (window.__labChain?.sent ?? []).flatMap(({ answered }) =>
     answered.filter(({ model, value }) => model === "ExplorerTroops" && value === null).map(({ key }) => Number(key.split(":")[1]))),

@@ -887,3 +887,20 @@ it("lights a plot on the player's own board for its first build, the Barracks, a
   expect(useUIStore.getState().firstBuild).toBe(own);
   expect(own).toBe(BuildingType.ResourceKnightT1);
 });
+
+it.each([1440, 390])("hides the map armies dock in the Realm view and shows it on the map at %i px", async (width) => {
+  viewport.set(width);
+  const route = window.location.pathname + window.location.search;
+  window.history.replaceState(null, "", "/g/0x1ab9/1/map?col=1&row=1");
+  try {
+    await renderHud();
+    expect(host.querySelector('[aria-label="Armies"]')).not.toBeNull();
+    await act(async () => {
+      window.history.replaceState(null, "", "/g/0x1ab9/1/hex?col=1&row=1");
+      window.dispatchEvent(new Event("urlChanged"));
+    });
+    expect(host.querySelector('[aria-label="Armies"]')).toBeNull();
+  } finally {
+    window.history.replaceState(null, "", route);
+  }
+});

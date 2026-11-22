@@ -686,6 +686,7 @@ export const GameEntryModal = ({
       onSignIn={() => requestSignIn()}
       results={resultsHref(game)}
       asking={choosingHome}
+      wide={choosingHome && !warnsOfSide && choosesAspect && !choosingSource}
       verb={
         choosingHome && !tapsAspect && !warnsOfSide ? (
           <FoundButton

@@ -190,19 +190,34 @@ export const SlotRing = ({ pulse, filling }: { pulse: boolean; filling?: string 
  * What a Deep guard's site costs it: its troops fall each tick, so the chip says how many ticks it holds and its bar
  * how much of the day those troops last for. On a desktop's row, where there is room, in words.
  */
-export const DeepDrain = ({ drain, words = false }: { drain: DeepArmyLife; words?: boolean }) => {
-  const line = `${DEEP_WORDS.drain(formatExact(Number(drain.lossPerTick) / RESOURCE_PRECISION))}; ${DEEP_WORDS.lasts(drain.ticksLeft, formatDuration(drain.secondsLeft))}`;
+export const DeepDrain = ({
+  drain,
+  words = false,
+  compact = false,
+}: {
+  drain: DeepArmyLife;
+  words?: boolean;
+  compact?: boolean;
+}) => {
+  const loss = formatExact(Number(drain.lossPerTick) / RESOURCE_PRECISION);
+  const time = formatDuration(drain.secondsLeft);
+  const line = `${DEEP_WORDS.drain(loss)}; ${DEEP_WORDS.lasts(drain.ticksLeft, time)}`;
+  const shown = compact
+    ? DEEP_WORDS.drainShort(loss, drain.ticksLeft, time)
+    : words
+      ? line
+      : formatExact(drain.ticksLeft);
   return (
     <span
       data-deep-drain
       role="img"
       aria-label={line}
-      data-tip={words ? undefined : line}
-      className="flex shrink-0 flex-col gap-0.5 self-stretch text-hud-label leading-none text-hud-bad tabular-nums"
+      data-tip={words && !compact ? undefined : line}
+      className="flex min-w-0 shrink-0 flex-col gap-0.5 self-stretch text-hud-label leading-none text-hud-bad tabular-nums"
     >
-      <span className="flex items-center gap-1">
+      <span className="flex min-w-0 items-center gap-1">
         <SemanticIcon name="flame" size={16} />
-        {words ? line : formatExact(drain.ticksLeft)}
+        <span className={cn(compact && "truncate whitespace-nowrap")}>{shown}</span>
       </span>
       <HudMeter label={line} tone="warn" share={drain.ticksInDay === 0 ? 0 : drain.ticksToEmpty / drain.ticksInDay} />
     </span>

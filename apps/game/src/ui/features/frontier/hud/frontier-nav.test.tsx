@@ -6,6 +6,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 
 import { FrontierNav, type HudSurface } from "./frontier-nav";
 import { useOnePanel } from "./one-panel";
+import { SurfaceDeepSwitch } from "./surface-deep-switch";
 
 vi.mock("@/hooks/helpers/use-query", () => ({ useQuery: () => ({ isMapView: true }) }));
 vi.mock("../frontier-home", () => ({ useGoToFrontierPlace: () => vi.fn() }));
@@ -38,11 +39,11 @@ function PhoneHud({ open }: { open: HudSurface }) {
   return (
     <>
       <output data-page>{surface ?? "map"}</output>
+      <SurfaceDeepSwitch layers={{ layers: [0, 1, 2], shown: 2, go }} onSwitch={() => openSurface(null)} />
       <FrontierNav
         rules={{} as never}
         realm={null}
         board={null}
-        layers={{ layers: [0, 1, 2], shown: 2, go }}
         surface={surface}
         onSurface={openSurface}
         events={0}

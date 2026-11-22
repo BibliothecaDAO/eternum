@@ -28,6 +28,7 @@ export function teamBaneHead(source: number): DayHead {
     eyebrow: WORDS.baneFrom(aspect.name),
     name: WORDS.rivalBane(aspect.name),
     rule: WORDS.heightBlocked,
+    aspectId: aspect.id,
     crests: ordersOfAspect(aspect.id).map(({ orderId }) => orderMeaning(orderId)),
   };
 }

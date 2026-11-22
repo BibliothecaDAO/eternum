@@ -325,7 +325,7 @@ describe("the season's countdown, while its first day is ahead and Play has no g
         aspect.textContent,
         aspect.querySelectorAll("img").length,
       ]),
-    ).toEqual(aspects.map(({ name }) => [name, 4]));
+    ).toEqual(aspects.map(({ name }) => [name, 5]));
     expect(page.container.querySelector("[data-play-item]")).toBeNull();
     expect(page.text()).toContain("Free to play");
     await press(page.container, "Create your account");

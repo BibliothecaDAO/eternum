@@ -1,17 +1,13 @@
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { openPlace } from "@/play/navigation/open-place";
 import { requestLayerView } from "@/three/scenes/worldmap-layer-request";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import type { MenuItem } from "@/ui/design-system/kit/hud-elements";
-import { REALM } from "@/ui/design-system/kit/words";
-import type { WorldTab } from "@/ui/features/world/containers/top-header/map-view-controls";
 import {
   type EtherealLayer,
   type ExpeditionRules,
   expeditionDepth,
-  Position,
   reachableDepth,
   structureMapPosition,
   viewInLayer,
@@ -29,8 +25,7 @@ export type MapLayer = 0 | EtherealLayer | "deep";
 export type MapLayers = {
   /** The world, then each Ethereal layer the realm has researched, in order down. */
   layers: readonly MapLayer[];
-  /** The layer the camera looks at; none in the realm's view, where no layer is shown. */
-  shown: MapLayer | null;
+  shown: MapLayer;
   go: (layer: MapLayer) => void;
 };
 
@@ -45,9 +40,9 @@ export const useMapLayers = (
   const camera = useUIStore((state) => state.cameraTargetHex);
   const { isMapView } = useQuery();
   const deepest = realm ? (reachableDepth(facts.store, realm.game_id, realm.entity_id) ?? 0) : 0;
-  if (!realm) return null;
+  if (!realm || !isMapView) return null;
   const site = realmSite(facts.store, realm);
-  const from = isMapView ? (camera ?? site) : site;
+  const from = camera ?? site;
   const sharedDeep = facts.store.get("DeepRules", { game_id: realm.game_id }) !== undefined;
   return {
     layers: [
@@ -57,13 +52,11 @@ export const useMapLayers = (
         (_, index): MapLayer => (index === 2 && sharedDeep ? "deep" : ((index + 1) as EtherealLayer)),
       ),
     ],
-    shown: !isMapView
-      ? null
-      : from
-        ? sharedDeep && isDeepTile(rules.spacing, { ...from, alt: false })
-          ? "deep"
-          : (expeditionDepth(rules, { y: from.row }) as MapLayer)
-        : 0,
+    shown: from
+      ? sharedDeep && isDeepTile(rules.spacing, { ...from, alt: false })
+        ? "deep"
+        : (expeditionDepth(rules, { y: from.row }) as MapLayer)
+      : 0,
     go: (layer) => {
       if (!from) return;
       const fromDeep = sharedDeep && isDeepTile(rules.spacing, { ...from, alt: false });
@@ -73,8 +66,7 @@ export const useMapLayers = (
         layer === "deep"
           ? deepViewFor(facts.store, realm.game_id, player?.entity_id ?? null, rules.spacing)
           : viewInLayer(rules, origin, layer);
-      if (isMapView) requestLayerView(to);
-      else openPlace("map", Position.fromContract({ x: to.col, y: to.row }));
+      requestLayerView(to);
     },
   };
 };
@@ -84,44 +76,20 @@ const realmSite = (store: Parameters<typeof structureMapPosition>[0], realm: Nat
   return site && { col: site.x, row: site.y };
 };
 
-const layerWord = (layer: MapLayer): string => layerName(layer === "deep" ? 3 : layer);
+export const layerWord = (layer: MapLayer): string => layerName(layer === "deep" ? 3 : layer);
 
-/** A layer's painting: the world map's, or the depth's own mark. */
-const layerMark = (layer: MapLayer): IconMeaning => (layer === 0 ? "map" : reachMark(layer === "deep" ? 3 : layer));
+export const layerMark = (layer: MapLayer): IconMeaning =>
+  layer === 0 ? "map" : reachMark(layer === "deep" ? 3 : layer);
 
-/** One view in a list of views, by its word and painting: a layer, or a phone's Realm. */
-const viewChoice = (label: string, icon: IconMeaning, checked: boolean, onSelect: () => void): MenuItem => ({
-  label,
-  lead: <Icon name={icon} size={22} />,
-  checked,
-  onSelect,
-});
-
-/**
- * The layers as a list's choices, each with its painting, the one shown checked. A choice goes to its layer, the one
- * shown staying put, and then runs `chosen` (a phone puts its open page away, so any choice shows the map).
- */
-const layerChoices = ({ layers, shown, go }: MapLayers, chosen: () => void = () => {}): MenuItem[] =>
-  layers.map((layer) =>
-    viewChoice(layerWord(layer), layerMark(layer), layer === shown, () => {
-      if (layer !== shown) go(layer);
-      chosen();
-    }),
-  );
-
-export const layerViews = (layers: MapLayers, realm: { icon: IconMeaning; go: () => void }, chosen: () => void) => {
-  if (layers.layers.length === 1) return null;
-  return {
-    icon: layerMark(layers.shown ?? 0),
-    word: layerWord(layers.shown ?? 0),
-    items: [
-      viewChoice(REALM, realm.icon, layers.shown === null, () => (layers.shown === null ? chosen() : realm.go())),
-      ...layerChoices(layers, chosen),
-    ],
-  };
+export const selectLayer = ({ shown, go }: MapLayers, layer: MapLayer, chosen: () => void = () => {}) => {
+  if (layer !== shown) go(layer);
+  chosen();
 };
 
-export const layerTab = (layers: MapLayers): WorldTab => ({
-  label: layerWord(layers.shown ?? 0),
-  menu: layers.layers.length > 1 ? layerChoices(layers) : undefined,
-});
+export const layerChoices = (mapLayers: MapLayers, chosen: () => void = () => {}): MenuItem[] =>
+  mapLayers.layers.map((layer) => ({
+    label: layerWord(layer),
+    lead: <Icon name={layerMark(layer)} size={22} />,
+    checked: layer === mapLayers.shown,
+    onSelect: () => selectLayer(mapLayers, layer, chosen),
+  }));

@@ -67,18 +67,18 @@ const useSeasonPodium = (own: string | undefined): SeasonPodiumPlace[] | null | 
 export const useSeasonViewer = () => useAccountStore((state) => state.account?.address ?? null);
 
 /** The player's season rank as the Menu's Season row shows it: "—" while unknown, none for a viewer without a realm. */
-export const useSeasonRank = (): string => {
+export const useSeasonRank = (): string | null => {
   const race = useAspectBoard();
   const legacy = useSeasonBoard();
   const viewer = useSeasonViewer();
-  if (!race.known) return "—";
+  if (!race.known) return null;
   if (race.known.race) {
     const board = race.known.race;
     const rank = board.standings.find((row) => row.aspect === board.own?.aspect)?.rank;
     return rank === undefined ? "" : `#${rank}`;
   }
   const rank = ownRank(legacy.data, viewer);
-  return rank === undefined ? "—" : rank === null ? "" : `#${rank}`;
+  return rank === undefined ? null : rank === null ? "" : `#${rank}`;
 };
 
 export const FrontierSeason = ({

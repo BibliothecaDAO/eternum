@@ -283,30 +283,31 @@
 }
 .season-card[data-card="place"] {
   background: radial-gradient(
-    circle at 50% 35%,
-    color-mix(in srgb, rgb(var(--app-gold)) 35%, var(--app-surface)),
-    var(--app-surface) 70%
+    circle at 50% 25%,
+    color-mix(in srgb, rgb(var(--app-gold)) 26%, var(--app-surface)),
+    var(--app-surface) 74%
   );
+  border-color: rgb(var(--app-gold) / 0.45);
 }
 .season-card[data-card="podium"] {
   background: radial-gradient(
     circle at 50% 20%,
-    color-mix(in srgb, var(--app-age-to) 60%, var(--app-surface)),
-    var(--app-surface) 70%
+    color-mix(in srgb, rgb(var(--app-gold)) 18%, var(--app-surface)),
+    var(--app-surface) 74%
   );
 }
 .season-card[data-card="sites"] {
   background: radial-gradient(
-    circle at 50% 30%,
-    color-mix(in srgb, var(--app-good) 30%, var(--app-surface)),
-    var(--app-surface) 72%
+    circle at 50% 22%,
+    color-mix(in srgb, rgb(var(--app-gold)) 16%, var(--app-surface)),
+    var(--app-surface) 74%
   );
 }
 .season-card[data-card="haul"] {
   background: radial-gradient(
-    circle at 50% 30%,
-    color-mix(in srgb, rgb(var(--app-accent)) 25%, var(--app-surface)),
-    var(--app-surface) 72%
+    circle at 50% 22%,
+    color-mix(in srgb, rgb(var(--app-gold)) 20%, var(--app-surface)),
+    var(--app-surface) 74%
   );
 }
 .season-card__step {

@@ -24,8 +24,9 @@ import {
   type DeepSiteView as Site,
   type NativeFactStore,
 } from "@bibliothecadao/eternum/game-client";
-import { aspects, deepSites, formatDuration, RESOURCE_PRECISION } from "@bibliothecadao/types";
+import { catalogAspectId, deepSites, formatDuration, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { isCovered, useArmyStamina, useOrderAt } from "../hud/army-order";
+import { armyLabel } from "../hud/dock-armies";
 import { useApproachTile } from "../sites/approach";
 import { readDeepSiteFight } from "../sites/site-card-plan";
 import { STAMINA_MODELS } from "@bibliothecadao/eternum/troop-stamina";
@@ -93,7 +94,13 @@ export function DeepSiteCard({ site, onClose }: { site: Site; onClose: () => voi
     : (block ??
       (adjacent
         ? stamina && isCovered(stamina)
-          ? { kind: "act", verb, busy, onAct: act }
+          ? {
+              kind: "act",
+              verb,
+              stamina: need > 0 ? need : undefined,
+              busy,
+              onAct: act,
+            }
           : { kind: "short", verb: "attack", line: staminaShortfall(stamina?.held, need, stamina?.wait) }
         : approach
           ? {
@@ -116,6 +123,7 @@ export function DeepSiteCard({ site, onClose }: { site: Site; onClose: () => voi
           ? readDeepSiteFight(setup.store, site, { army: selected.army, timestamp: now })
           : undefined
       }
+      attackerName={userId !== null ? armyLabel(setup.store, userId) : undefined}
       order={order}
       onClose={onClose}
     />
@@ -181,11 +189,14 @@ function guardView(store: NativeFactStore, game_id: number, site: Site, selected
   const paid = ({ army, life }: (typeof guards)[number]) =>
     army.troops.count > life.lossPerTick ? army.troops.count - life.lossPerTick : 0n;
   const total = guards.reduce((sum, guard) => sum + paid(guard), 0n);
-  const holder = aspects.find((candidate) => candidate.id === homeAspect(store, game_id, next.army.owner));
-  if (!holder) throw new Error("Unknown Deep holder Aspect");
+  const holderId = homeAspect(store, game_id, next.army.owner);
+  if (holderId === undefined) throw new Error("Unknown Deep holder Aspect");
+  const aspectId = catalogAspectId(holderId);
+  const viewerAspect = selected ? homeAspect(store, game_id, selected.army.owner) : undefined;
   return {
     kind: "held",
-    aspect: holder.name,
+    aspectId,
+    ally: viewerAspect !== undefined && viewerAspect === aspectId,
     next: safeInteger(next.army.explorer_id),
     slots: guards.map((guard) => {
       const { slot, army, life } = guard;
@@ -195,8 +206,10 @@ function guardView(store: NativeFactStore, game_id: number, site: Site, selected
         armyId: safeInteger(army.explorer_id),
         oaths: armyOaths(store, army),
         category: army.troops.category,
+        tier: army.troops.tier,
         realm: getStructureName(home, store).name,
         troops: Number(army.troops.count) / RESOURCE_PRECISION,
+        lossPerTick: Number(life.lossPerTick) / RESOURCE_PRECISION,
         ticks: { left: life.ticksLeft, time: formatDuration(life.secondsLeft) },
         share: total === 0n ? 0 : Number((paid(guard) * 100n) / total),
         mine: selected !== null && army.owner === selected.army.owner,

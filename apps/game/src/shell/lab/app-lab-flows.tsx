@@ -153,6 +153,7 @@ export const LabDoorway = () => {
         state === "aspect-kept" ||
         state === "realm-side"
       }
+      wide={state === "aspect" || state === "aspect-realm" || state === "aspect-kept"}
       verb={state === "home" ? <FoundButton founding={false} ready onFound={noop} /> : undefined}
     >
       {/* The entry's own chips at the realm step, as game-entry-modal passes them. */}

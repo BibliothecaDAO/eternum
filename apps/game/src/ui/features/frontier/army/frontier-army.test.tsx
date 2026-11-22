@@ -154,18 +154,19 @@ it("shows the army's captured Oath capacity rather than later home research", ()
   expect(host.querySelector("[data-oath-slots]")?.textContent).not.toContain("Locked");
 });
 
-it("draws every offered Oath alike, from the one bag, by its Order crest and its line", async () => {
+it("draws each offered Oath with its Order crest, effect line, job colour, army header and held slot pips", async () => {
   const { FrontierOathPick } = await import("./oath-pick");
   const { nativeOathConstants: oaths } = await import("@bibliothecadao/eternum/game-client");
-  game.progress.oath_slots = 1;
-  game.progress.oaths = 0;
+  game.progress.oath_slots = 2;
+  game.progress.oaths = 1 << (oaths.GIANTS - 1);
   game.progress.oath_pick = oaths.POWER - 1 + ((oaths.FOX - 1) << 4) + ((oaths.RAGE - 1) << 8);
   act(() => root.render(<FrontierOathPick realm={{ game_id: 1 } as never} />));
   const cards = [...host.querySelectorAll<HTMLElement>("[data-oath-id]")];
-  const look = (card: HTMLElement) => [card, ...card.querySelectorAll("*")].map((part) => part.getAttribute("class"));
   expect(cards).toHaveLength(3);
-  expect(cards.map(look)).toEqual([look(cards[0]!), look(cards[0]!), look(cards[0]!)]);
+  expect(cards.map((card) => card.dataset.oathJob)).toEqual(["fight", "stamina", "prize"]);
   expect(cards.every((card) => card.querySelector("img, svg") !== null)).toBe(true);
+  expect(host.textContent).toContain("Army 1 · 1,500 Knights");
+  expect(host.querySelector('[aria-label="Slots 1 of 2"]')).not.toBeNull();
 });
 
 it("opens the earned pick without a selection and keeps it through Escape and outside presses", async () => {
@@ -244,9 +245,9 @@ it("redraws the card at its place for its Fragments, once a pick, never short of
     ["1", false],
     ["2", false],
   ]);
-  expect(host.querySelector(`[data-oath-id="${oaths.RAGE}"] [data-reroll-oath]`)!.textContent).toBe(
-    `Redraw: ${formatCount(price, FRAGMENT, FRAGMENTS)}`,
-  );
+  const rageRedraw = host.querySelector(`[data-oath-id="${oaths.RAGE}"] [data-reroll-oath]`)!;
+  expect(rageRedraw.getAttribute("aria-label")).toBe(`Redraw Rage for ${formatCount(price, FRAGMENT, FRAGMENTS)}`);
+  expect(rageRedraw.textContent).toBe(`Redraw · ${price}`);
   await act(async () => redraws()[2]!.click());
   expect(game.rerollOath).toHaveBeenCalledWith({
     signer: game.signer,

@@ -1,7 +1,9 @@
-import { formatAmount, formatDate } from "@bibliothecadao/types";
+import { aspects, formatAmount, formatDate, orderAspect, type AspectId } from "@bibliothecadao/types";
+import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { isGameOver } from "@/runtime/world/directory";
+import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { AppButton, AppChip, AppEmpty, AppFigure, AppPanel, AppRow } from "@/ui/design-system/kit/app-elements";
 import { HudPlaceMedal } from "@/ui/design-system/kit/hud-elements";
 import { RowThumb } from "@/ui/design-system/kit/list-row";
@@ -38,8 +40,10 @@ export const SeasonPage = () => {
     <PageFrame title={WORDS.season} painting="season-citadel">
       <div className="flex flex-col gap-6">
         {phone && <h1 className="text-app-title text-app-ink">{WORDS.season}</h1>}
-        <Standing />
-        <FrontierPanel rows={phone ? BOARD_ROWS.phone : BOARD_ROWS.desktop} />
+        <div className="app-season-grid">
+          <FrontierPanel rows={phone ? BOARD_ROWS.phone : BOARD_ROWS.desktop} />
+          <SeasonAside />
+        </div>
       </div>
     </PageFrame>
   );
@@ -101,24 +105,30 @@ const Standing = () => {
   );
 };
 
-/** Frontier's board under Frontier's painting, with its season and day, or the day it ended; the seasons past under it. */
+const SeasonAside = () => {
+  const { past } = useSeason();
+  return (
+    <div className="flex min-w-0 flex-col gap-6">
+      <Standing />
+      {past.length > 0 && <PastSeasons seasons={past} />}
+    </div>
+  );
+};
+
 const FrontierPanel = ({ rows }: { rows: number }) => {
-  const { season, past } = useSeason();
+  const { season } = useSeason();
   const frontier = ageOf("frontier");
   return (
-    <div className="flex flex-col gap-6">
-      <div data-age="frontier">
-        <AppPanel
-          title={frontier.name}
-          icon="leaderboard"
-          painting={frontier.painting}
-          cue={season && (isGameOver(season) ? <SeasonEnded season={season} /> : <FrontierDay season={season} />)}
-          flush
-        >
-          <FrontierBoard rows={rows} />
-        </AppPanel>
-      </div>
-      {past.length > 0 && <PastSeasons seasons={past} />}
+    <div data-age="frontier" className="min-w-0">
+      <AppPanel
+        title={frontier.name}
+        icon="leaderboard"
+        painting={frontier.painting}
+        cue={season && (isGameOver(season) ? <SeasonEnded season={season} /> : <FrontierDay season={season} />)}
+        flush
+      >
+        <FrontierBoard rows={rows} />
+      </AppPanel>
     </div>
   );
 };
@@ -126,8 +136,8 @@ const FrontierPanel = ({ rows }: { rows: number }) => {
 /** An ended season and the day it ended, "Playtest · Ended 31 Oct", on the calendar. */
 const SeasonEnded = ({ season }: { season: DirectoryGame }) => <AppChip icon="calendar">{seasonEnded(season)}</AppChip>;
 
-/** Frontier's board: its podium, then every realm's row, the player's own lit (AppBoard's one rule). */
 const FrontierBoard = ({ rows }: { rows: number }) => {
+  const [aspectFilter, setAspectFilter] = useState<AspectId | null>(null);
   const { season, failure } = useSeason();
   const { data: player } = useRealmsPlayer();
   const board = useLeaderboard(season ? gameRefOf(season) : null);
@@ -149,10 +159,28 @@ const FrontierBoard = ({ rows }: { rows: number }) => {
         }
       />
     );
+  const shown = aspectFilter === null ? entries : entries.filter((entry) => orderAspect(entry.order) === aspectFilter);
   return (
     <div>
       {frontier && <SeasonPodium board={frontier} own={own?.address} over={isGameOver(season)} />}
-      <FrontierRows entries={entries} own={own} rows={rows} />
+      <div className="app-aspect-filter" role="group" aria-label={WORDS.season}>
+        {aspects.map(({ id, name }) => {
+          const active = aspectFilter === id;
+          return (
+            <button
+              key={id}
+              type="button"
+              aria-pressed={active}
+              className="app-aspect-filter__pill"
+              onClick={() => setAspectFilter(active ? null : id)}
+            >
+              <AspectMark aspect={id} size={18} decorative />
+              <span>{name}</span>
+            </button>
+          );
+        })}
+      </div>
+      <FrontierRows entries={shown} own={own} rows={rows} />
     </div>
   );
 };

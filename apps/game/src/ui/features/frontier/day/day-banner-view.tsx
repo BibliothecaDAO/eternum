@@ -1,9 +1,10 @@
+import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { Icon } from "@/ui/design-system/icon";
 import type { IconMeaning } from "@/ui/design-system/icon-meaning";
 import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { HudButton, HudChip, HudLoading, HudMeter, HudPanel } from "@/ui/design-system/kit/hud-elements";
 import { DAY_BANNER_WORDS as WORDS } from "@/ui/design-system/kit/words";
-import { formatAmount, formatShort, ResourcesIds } from "@bibliothecadao/types";
+import { formatAmount, formatShort, ResourcesIds, type AspectId } from "@bibliothecadao/types";
 import { useState } from "react";
 
 type Tone = "good" | "bad" | "warn";
@@ -16,6 +17,7 @@ export interface DayHead {
   eyebrow: string;
   name: string;
   rule: string;
+  aspectId?: AspectId;
   /** A rival Aspect's crests, for a team bane. */
   crests?: readonly IconMeaning[];
 }
@@ -177,6 +179,7 @@ const HeadRow = ({ head }: { head: DayHead }) => (
     <span className="flex min-w-0 flex-1 flex-col">
       <span className="text-hud-label">{head.eyebrow}</span>
       <span className="flex items-center gap-2">
+        {head.aspectId && <AspectMark aspect={head.aspectId} size={20} decorative />}
         <span className="text-hud-strong">{head.name}</span>
         {head.crests?.map((crest) => (
           <Icon key={crest} name={crest} size={18} />

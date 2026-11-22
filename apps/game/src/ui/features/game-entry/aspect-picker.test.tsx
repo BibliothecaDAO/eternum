@@ -64,7 +64,8 @@ describe("AspectPicker", () => {
       "1 member",
       "0 members",
     ]);
-    expect(cards[0]!.querySelectorAll("img")).toHaveLength(4);
+    expect(cards[0]!.querySelector('[data-aspect-mark="1"]')).not.toBeNull();
+    expect(cards[0]!.querySelectorAll('[data-icon^="order-"]')).toHaveLength(4);
   });
 
   it("chooses the Aspect tapped and founds nothing until an Order is tapped", () => {

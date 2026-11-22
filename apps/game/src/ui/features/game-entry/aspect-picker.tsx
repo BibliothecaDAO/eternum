@@ -1,8 +1,18 @@
 import "./aspect-picker.css";
 
-import { aspectName, aspects, catalogAspectId, orders, ordersOfAspect, type AspectId } from "@bibliothecadao/types";
+import {
+  aspectName,
+  aspects,
+  catalogAspectId,
+  catalogOrder,
+  orderAspect,
+  ordersOfAspect,
+  type AspectId,
+} from "@bibliothecadao/types";
 import type { JoinedShare } from "@realms-world/identity";
 
+import { AspectMark } from "@/ui/design-system/aspect-mark";
+import { aspectArtUrl } from "@/ui/design-system/icon-meaning";
 import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
 import { ASPECT_STEP_WORDS, PRESEASON_WORDS } from "@/ui/design-system/kit/words";
 
@@ -42,8 +52,8 @@ export function AspectPicker({
   onChoose: (aspect: AspectId) => void;
   onFound: (order: number) => void;
 }) {
-  const realm = realmOrder === null ? null : orderOf(realmOrder);
-  const kept = realm === null && keptOrder !== null ? orderOf(keptOrder) : null;
+  const realm = realmOrder === null ? null : catalogOrder(realmOrder);
+  const kept = realm === null && keptOrder !== null ? catalogOrder(keptOrder) : null;
   const fixedOrder = realm ?? kept;
   const fixed = fixedOrder === null ? null : aspectOfOrder(fixedOrder.orderId);
   const ordersOf = kept === null ? (fixed === null ? chosen : null) : fixed;
@@ -165,27 +175,24 @@ const AspectCard = ({
     disabled={disabled}
     onClick={onJoin}
   >
+    <img src={aspectArtUrl(aspect, "card")} alt="" aria-hidden className="aspect-picker__art" />
     {invited && <span className="aspect-picker__invite">{ASPECT_STEP_WORDS.invited}</span>}
-    <span className="aspect-picker__crests">
-      {ordersOfAspect(aspect).map(({ orderId }) => (
-        <OrderEmblem key={orderId} order={orderId} size={40} />
-      ))}
+    <span className="aspect-picker__card-body">
+      <AspectMark aspect={aspect} size={56} decorative />
+      <span className="aspect-picker__name">{name}</span>
+      <span className="flex items-center justify-center gap-1">
+        {ordersOfAspect(aspect).map(({ orderId }) => (
+          <OrderEmblem key={orderId} order={orderId} size={22} />
+        ))}
+      </span>
+      {members !== null && <span className="aspect-picker__members">{ASPECT_STEP_WORDS.members(members)}</span>}
+      {joining && <span className="ui-spinner" aria-hidden="true" />}
     </span>
-    <span className="aspect-picker__name">{name}</span>
-    {members !== null && <span className="aspect-picker__members">{ASPECT_STEP_WORDS.members(members)}</span>}
-    {joining && <span className="ui-spinner" aria-hidden="true" />}
   </button>
 );
 
-const orderOf = (orderId: number) => {
-  const order = orders.find((entry) => entry.orderId === orderId);
-  if (!order) throw new Error(`Unknown Order ${orderId}`);
-  return order;
-};
-
-/** A held Realm's Aspect is its Order's; an Order in no Aspect (the Order of Gods) throws. */
 export const aspectOfOrder = (orderId: number): AspectId => {
-  const aspect = orderOf(orderId).aspect;
+  const aspect = orderAspect(orderId);
   if (aspect === null) throw new Error(`Order ${orderId} belongs to no Aspect`);
   return aspect;
 };

@@ -4,15 +4,15 @@ import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { type DaySummary, useDayEndStore } from "@/hooks/store/use-day-end-store";
 import { configManager, type readExpeditionRules } from "@bibliothecadao/eternum";
-import type { NativeRows } from "@bibliothecadao/eternum/game-client";
-import { RESOURCE_PRECISION } from "@bibliothecadao/types";
+import { nativeRaceConstants, readRaceBoard, type NativeRows } from "@bibliothecadao/eternum/game-client";
+import { catalogAspectId, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { AlertsPopup } from "../alerts-popup";
 import { endedHomeArmies } from "../frontier-home";
 import { dayClock, dayToRecap, endedDay, nextDayOf } from "../hud/day-clock";
 import { useOwnActs, usePlayerDay } from "../log/player-day";
-import { DayDoneCard } from "./day-done-card";
+import { DayDoneCard, type DayDoneRace } from "./day-done-card";
 import { useDayShare } from "./day-share-sheet";
 import { DayEndScreen } from "./day-end-screen";
 import { useClosingRankChange } from "./day-ranks";
@@ -74,6 +74,18 @@ export const DayDone = ({
     // Only a whole history says the day was not played; one that failed or stops short shows the card with dashes.
     if (played.history === "whole" && gone.length === 0 && played.stories.length === 0) return null;
     const taken = gone.reduce((sum, army) => sum + Number(army.troops.count / BigInt(RESOURCE_PRECISION)), 0);
+    const raceBoard = readRaceBoard(setup.store, gameId, realm.entity_id, now).known?.race;
+    const raceSummary: DayDoneRace | undefined = raceBoard
+      ? {
+          finishHeight: raceBoard.rules.stage_height * nativeRaceConstants.STAGE_COUNT,
+          standings: raceBoard.standings.map((row) => ({
+            aspectId: catalogAspectId(row.aspect),
+            height: row.height,
+            own: row.aspect === raceBoard.own?.aspect,
+          })),
+        }
+      : undefined;
+    const ownAspect = raceBoard?.own ? catalogAspectId(raceBoard.own.aspect) : undefined;
     return (
       <DayDoneCard
         endedDay={recap.day}
@@ -82,6 +94,8 @@ export const DayDone = ({
         history={played.history}
         onRetry={played.retry}
         rank={rank}
+        aspect={ownAspect}
+        race={raceSummary}
         armies={gone.length}
         troopsLost={taken}
         onShare={onShare}

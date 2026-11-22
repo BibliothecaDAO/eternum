@@ -54,7 +54,7 @@ export const ArmyRow = ({
     detail={
       <span className="flex flex-col gap-1 tabular-nums">
         <RowLine words={troops === undefined ? "—" : troopCount(troops)} figure={<RowStamina stamina={stamina} />} />
-        {drain && <DeepDrain drain={drain} words />}
+        {drain && <DeepDrain drain={drain} words compact />}
       </span>
     }
     // The trail is the card fan while a level is affordable now: the row itself opens the panel that buys it.

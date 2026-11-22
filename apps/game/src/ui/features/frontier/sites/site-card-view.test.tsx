@@ -49,9 +49,8 @@ describe("a guarded site's card", () => {
         />,
       ),
     );
-    expect(document.querySelector(".ui-frame__body header")?.textContent).toBe(
-      "BladeThis attack earns+5,000Full: the rest did not fit+1 site",
-    );
+    expect(document.querySelector(".ui-fight-vs")?.textContent).toContain("This attack earns");
+    expect(document.querySelector(".ui-fight-spoils")?.textContent).toBe("+5KFull: the rest did not fit+1 site");
   });
 
   it("heads the attack with what it earns, and reads each side before and after as numbers alone", () => {
@@ -74,21 +73,18 @@ describe("a guarded site's card", () => {
       ),
     );
     const card = document.querySelector("section[aria-label='Troll']")!;
-    // The owner, 26 October 2026: "moving the clear rewards in the 'this attack clears it' -> This attack earns xxx".
-    expect(card.querySelector(".ui-frame__body header")?.textContent).toBe("BladeThis attack earns+550+1 site");
-    // Owner, 28 October 2026 ("v1 token header yes"): the guard heads the card as a token; with an army its strength is
-    // the fight's to say, once.
-    expect(card.querySelector("header [role='img']")?.getAttribute("aria-label")).toBe("Troll");
-    // Its strength is said once; "−1,100" under its bar is what the attack takes of it.
+    expect(card.querySelector(".ui-fight-vs")?.textContent).toContain("This attack earns");
     expect(card.textContent?.match(/(?<!−)1,100/g)).toHaveLength(1);
-    expect(card.querySelector(".ui-frame__body header .opacity-50")).toBeNull();
-    const sides = [...card.querySelectorAll(".ui-frame__body > .flex.gap-2 > *")].map((side) => side.textContent);
-    expect(sides).toEqual(["5,000 →4,820−180 · 4% lost", "1,100 →0−1,100 · 100% lost"]);
+    expect(card.querySelector(".ui-fight-spoils .opacity-50")).toBeNull();
+    const sides = [...card.querySelectorAll('.ui-fight-arena [role="img"]')].map((side) =>
+      side.getAttribute("aria-label"),
+    );
+    expect(sides).toEqual(["Army 5,000 → 4,820, −180 · 4% lost", "Troll 1,100 → 0, −1,100 · 100% lost"]);
     expect(card.textContent).not.toContain("When cleared");
     expect(card.textContent).toContain("+550");
     const attack = buttons().find((button) => button.textContent?.startsWith("Attack"))!;
-    expect(attack.textContent).toBe("Attack");
-    expect(card.querySelector(".ui-cost")?.textContent).toBe("30 stamina");
+    expect(attack.textContent).toContain("Attack");
+    expect(attack.querySelector('[data-attack-stamina="30"]')).not.toBeNull();
     act(() => attack.click());
     expect(onAttack).toHaveBeenCalled();
   });
@@ -114,9 +110,9 @@ describe("a guarded site's card", () => {
     );
     const foot = document.querySelector("section[role=dialog] footer.ui-actions")!;
     const words = [...foot.querySelectorAll("button")].map((button) => button.textContent);
-    // The way out on the left, Attack last: the shared actions rule puts the last alone on the right.
-    expect(words).toEqual(["Realm", "Attack"]);
-    expect(foot.lastElementChild?.textContent).toBe("Attack");
+    expect(words[0]).toBe("Realm");
+    expect(words[1]).toMatch(/^Attack/);
+    expect(foot.lastElementChild?.textContent).toMatch(/^Attack/);
     expect(document.body.textContent).not.toContain("Details");
     expect(document.body.textContent).not.toContain("The whole fight");
     expect(document.querySelector("section[role=dialog] dl")).toBeNull();
@@ -141,22 +137,19 @@ describe("a guarded site's card", () => {
       ),
     );
     const card = document.querySelector("section[aria-label='Ruin']")!;
-    expect(card.querySelectorAll('[data-icon="beast-ammit"]')).toHaveLength(2);
-    expect(card.querySelector(".ui-frame__body header")?.textContent).toBe("BladeYour army is lost+1 site");
-    expect(card.querySelector(".ui-frame__body header .opacity-50")?.textContent).toBe("+1 site");
+    expect(card.querySelectorAll('[data-icon="beast-ammit"]')).toHaveLength(1);
+    expect(card.querySelector(".ui-fight-vs")?.textContent).toContain("Your army is lost");
+    expect(card.querySelector(".ui-fight-spoils .opacity-50")?.textContent).toBe("+1 site");
     expect(card.querySelector('[data-icon="troops"]')).toBeNull();
     expect(card.querySelector('[data-combat-mark="Blade"]')?.textContent).toBe("Blade");
     expect(card.textContent).toContain("2,300");
     const attack = buttons().find((button) => button.textContent?.startsWith("Attack"))!;
     expect(attack.disabled).toBe(false);
     expect(attack.dataset.kind).toBe("danger");
-    // The headline already says it: no line under Attack says it again.
     expect(document.querySelector('[role="status"]')).toBeNull();
   });
 
   it("reads the owner's Blightglow Rift as this attack leaves it: 794 → 193 against 1,400 → 1,033, and warns of no loss", () => {
-    // Prod, 3 November 2026: this attack leaves the army 193, and the card said "Army will be lost" of a second attack
-    // it does not send (owner: "the army will be lost shouldnt be shown either ?").
     const onAttack = vi.fn();
     act(() =>
       root.render(
@@ -174,21 +167,20 @@ describe("a guarded site's card", () => {
       ),
     );
     const card = document.querySelector("section[aria-label='Blightglow Rift']")!;
-    const header = card.querySelector(".ui-frame__body header")!;
-    expect(header.textContent).toBe("BladeThe guard holds+4,200+1 site");
-    expect(header.querySelector(".opacity-50")?.textContent).toBe("+4,200+1 site");
+    expect(card.querySelector(".ui-fight-vs")?.textContent).toContain("The guard holds");
+    expect(card.querySelector(".ui-fight-spoils .opacity-50")?.textContent).toBe("+4.2K+1 site");
     expect(card.textContent).toContain("794");
     expect(card.textContent).toContain("193");
     expect(card.textContent).toContain("1,400");
     expect(card.textContent).toContain("1,033");
     expect(card.textContent).not.toContain("Army will be lost");
     expect(document.querySelector('[role="status"]')).toBeNull();
-    // Under each side's bar, what this attack costs it, in troops and in share (owner, 3 November 2026: layout A).
-    const sides = [...card.querySelectorAll(".ui-frame__body > .flex.gap-2 > *")].map((side) => side.textContent);
-    expect(sides).toEqual(["794 →193−601 · 76% lost", "1,400 →1,033−367 · 26% lost"]);
+    const sides = [...card.querySelectorAll('.ui-fight-arena [role="img"]')].map((side) =>
+      side.getAttribute("aria-label"),
+    );
+    expect(sides).toEqual(["Army 794 → 193, −601 · 76% lost", "Wyvern 1,400 → 1,033, −367 · 26% lost"]);
     const attack = buttons().find((button) => button.textContent?.startsWith("Attack"))!;
     expect(attack.dataset.kind).toBe("primary");
-    // An attack the army survives is confirmed by Enter, as any other.
     act(() => void document.body.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true })));
     expect(onAttack).toHaveBeenCalledOnce();
   });
@@ -211,8 +203,7 @@ describe("a guarded site's card", () => {
         />,
       ),
     );
-    expect(document.querySelector(".ui-frame__body header")?.textContent).toBe("BladeThis attack earns+1 site");
-    // The chip says what the board ranks by on its tip.
+    expect(document.querySelector(".ui-fight-vs")?.textContent).toContain("This attack earns");
     expect(document.querySelector('[aria-label="Sites cleared +1 site"]')?.getAttribute("data-tip")).toBe(
       "Ranked by sites cleared, then deepest depth",
     );
@@ -230,7 +221,7 @@ describe("a guarded site's card", () => {
         />,
       ),
     );
-    expect(document.querySelector(".ui-frame__body header")?.textContent).toBe("This attack clears it");
+    expect(document.querySelector(".ui-fight-vs")?.textContent).toContain("This attack clears it");
   });
 
   it("earns what fits, marked Full, when the store would overflow, with Realm to make room; never blocks the attack", () => {
@@ -253,10 +244,9 @@ describe("a guarded site's card", () => {
         />,
       ),
     );
-    const header = document.querySelector(".ui-frame__body header")!;
-    expect(header.textContent).toBe("BladeThis attack earns+120Full: the rest did not fit+1 site");
-    // The loss is said in sight on the chip, never only on a hover a phone has not got.
-    expect(header.querySelector('[data-tip*="did not fit"]')).toBeNull();
+    const spoils = document.querySelector(".ui-fight-spoils")!;
+    expect(spoils.textContent).toBe("+120Full: the rest did not fit+1 site");
+    expect(spoils.querySelector('[data-tip*="did not fit"]')).toBeNull();
     act(() =>
       buttons()
         .find((button) => button.textContent === "Realm")!
@@ -394,7 +384,7 @@ describe("a guarded site's card with no army chosen", () => {
       ),
     );
     const card = document.querySelector("section[data-kit-sheet]")!;
-    expect(card.querySelector(".ui-frame__body header")?.textContent).toBe("1,100BowFairy+3,300+1 site");
+    expect(card.querySelector(".ui-frame__body header")?.textContent).toBe("1,100BowFairy+3.3K+1 site");
     expect(card.querySelectorAll(".ui-row")).toHaveLength(0);
     expect(card.querySelectorAll("button")).toHaveLength(1);
     expect(card.textContent).not.toContain("Pick an army");
@@ -503,6 +493,43 @@ it("titles a single roaming Wraith by its species", () => {
   expect(host.querySelector("[data-combat-mark]")?.textContent).toBe("Bow");
 });
 
+it("shows who hits first only when the core forecast reports it", () => {
+  act(() =>
+    root.render(
+      <SiteCardView
+        site="Camp"
+        beast={{ name: "Troll", beast: "troll", combatClass: "Knight" }}
+        army={{ art: "crossbowman-t1", troops: 1_000, category: "Crossbowman" }}
+        guard={1_000}
+        fight={{ troopsLost: 200, guardLeft: 600 }}
+        firstStrike="attacker"
+        pay={null}
+        verb={{ kind: "attack", stamina: 30, onAttack: () => {} }}
+        onClose={() => {}}
+      />,
+    ),
+  );
+  const sides = [...document.querySelectorAll(".ui-fight-side")];
+  expect(sides[0]?.textContent).toContain("Hits first");
+  expect(sides[1]?.textContent).not.toContain("Hits first");
+  act(() =>
+    root.render(
+      <SiteCardView
+        site="Camp"
+        beast={{ name: "Troll", beast: "troll", combatClass: "Knight" }}
+        army={{ art: "knight-t1", troops: 1_000, category: "Knight" }}
+        guard={1_000}
+        fight={{ troopsLost: 200, guardLeft: 600 }}
+        firstStrike={null}
+        pay={null}
+        verb={{ kind: "attack", stamina: 30, onAttack: () => {} }}
+        onClose={() => {}}
+      />,
+    ),
+  );
+  expect(document.body.textContent).not.toContain("Hits first");
+});
+
 describe("one fight panel for every state of every target (owner, 10-27: 'this panel doesnt match at all')", () => {
   const holds: SiteFight = { troopsLost: 180, guardLeft: 740 };
   const clears: SiteFight = { troopsLost: 180, guardLeft: 0 };
@@ -584,15 +611,14 @@ describe("one fight panel for every state of every target (owner, 10-27: 'this p
             />,
           ),
         );
-        const sides = [
-          ...document.querySelectorAll('section[role=dialog] .ui-frame__body > .flex.gap-2 [role="img"]'),
-        ].map((side) => side.getAttribute("aria-label"));
-        // Each side as heard, with what the attack costs it where the fight is known.
+        const sides = [...document.querySelectorAll('section[role=dialog] .ui-fight-arena [role="img"]')].map((side) =>
+          side.getAttribute("aria-label"),
+        );
         const heard = (said: string, lost: string | undefined) => (lost ? `${said}, ${lost}` : said);
         expect(sides).toEqual([heard(`Army 5,000 → ${kept[0]}`, lost[0]), heard(`Troops 1,100 → ${kept[1]}`, lost[1])]);
         expect(document.querySelector('[role="status"]')?.textContent).toBe(line(TARGET_MARKS[target].word));
-        expect(buttons().find((button) => button.textContent?.startsWith("Attack"))?.disabled).toBe(!attacks);
-        // Attack's stamina is said once: its cost beside it, or why it is held back in the cost's place.
-        expect(document.querySelector(".ui-cost")?.textContent).toBe(attacks ? "30 stamina" : undefined);
+        const attackBtn = buttons().find((button) => button.textContent?.startsWith("Attack"));
+        expect(attackBtn?.disabled).toBe(!attacks);
+        expect(attackBtn?.querySelector('[data-attack-stamina="30"]') !== null).toBe(attacks);
       });
 });

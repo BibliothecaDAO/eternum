@@ -80,8 +80,8 @@ const Choose = ({ game, onPriced }: { game: ShopGame; onPriced: (paying: Paying)
       onSuccess: ({ fragments: priced, cents, quote }) => quote && onPriced({ fragments: priced, cents, quote }),
     });
   return (
-    <div className="flex flex-col gap-4">
-      <div className="grid grid-cols-3 gap-2" data-fragment-packs>
+    <div className="flex flex-col gap-5">
+      <div className="app-shop-packs" data-fragment-packs>
         {PACKS.map((pack) => (
           <AppChoice
             key={pack}
@@ -97,15 +97,18 @@ const Choose = ({ game, onPriced }: { game: ShopGame; onPriced: (paying: Paying)
       {price.data && !price.data.quote && <AppNotice tone="warn" line={FRAGMENTS_PAGE_WORDS.noPrice} />}
       {isDailyCap(price.error) && <AppNotice tone="warn" line={FRAGMENTS_PAGE_WORDS.dailyCap} />}
       {price.isError && !isDailyCap(price.error) && <ServiceFailure service="season" error={price.error} retry={pay} />}
-      <AppButton
-        kind="primary"
-        size="lg"
-        icon="fragment"
-        busy={price.isPending ? FRAGMENTS_PAGE_WORDS.pricing : undefined}
-        onClick={pay}
-      >
-        {FRAGMENTS_PAGE_WORDS.pay(fragments)}
-      </AppButton>
+      <div className="flex justify-end">
+        <AppButton
+          kind="primary"
+          size="lg"
+          icon="fragment"
+          className="w-full lg:w-auto"
+          busy={price.isPending ? FRAGMENTS_PAGE_WORDS.pricing : undefined}
+          onClick={pay}
+        >
+          {FRAGMENTS_PAGE_WORDS.pay(fragments)}
+        </AppButton>
+      </div>
     </div>
   );
 };

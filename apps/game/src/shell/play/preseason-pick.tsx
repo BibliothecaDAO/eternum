@@ -13,7 +13,9 @@ import {
 import { IdentityRequestError, type OrderIntent } from "@realms-world/identity";
 
 import { identityClient } from "@/hooks/context/identity-session";
+import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { Icon } from "@/ui/design-system/icon";
+import { aspectArtUrl } from "@/ui/design-system/icon-meaning";
 import { AppButton, AppNotice } from "@/ui/design-system/kit/app-elements";
 import { AppCountdownChip } from "@/ui/design-system/kit/clock-chip";
 import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
@@ -87,6 +89,7 @@ const OrderPick = ({
   };
   return (
     <StageFrame
+      wide
       notice={
         choose.isError && chosen ? (
           <ServiceFailure service="season" error={choose.error} retry={() => choose.mutate(chosen.orderId)} />
@@ -159,7 +162,7 @@ const AspectCards = ({
   offered: AspectOffer | null;
   onPick: (aspect: AspectId) => void;
 }) => (
-  <ul className="grid grid-cols-2 gap-3 pt-2">
+  <ul className="app-aspect-grid">
     {invitedFirst(offered).map(({ id, name }) => {
       const count = aspectMembers(members, id);
       return (
@@ -167,36 +170,38 @@ const AspectCards = ({
           <button
             type="button"
             data-aspect={name}
+            data-aspect-id={id}
             aria-pressed={chosen === id}
             onClick={() => onPick(id)}
-            className="app-choice w-full"
+            className="app-aspect-card"
           >
+            <img src={aspectArtUrl(id, "card")} alt="" aria-hidden className="app-aspect-card__art" />
             {offered?.aspect === id && (
               <span data-aspect-invited className="app-choice__tag">
                 {ASPECT_STEP_WORDS.invitedBy(offered.sender)}
               </span>
             )}
-            <span className="flex w-full items-center gap-2">
-              <span className="grid shrink-0 grid-cols-2 gap-0.5">
+            <span className="app-aspect-card__body">
+              <span className="app-aspect-card__name">{name}</span>
+              <span className="app-aspect-card__orders">
                 {ordersOfAspect(id).map(({ orderId }) => (
-                  <OrderEmblem key={orderId} order={orderId} size={24} />
+                  <OrderEmblem key={orderId} order={orderId} size={28} />
                 ))}
               </span>
-              <span className="flex min-w-0 flex-col text-left">
-                <span className="text-app-heading text-app-ink">{name}</span>
+              <span className="app-aspect-card__meta">
                 <span className="text-app-label text-app-muted">{ASPECT_STEP_WORDS.members(count)}</span>
+                {aspectLords !== null && (
+                  <span className="flex flex-col">
+                    <span className="text-app-strong text-app-gold">
+                      {PRESEASON_WORDS.average(formatShort(aspectLords / (count + 1)))}
+                    </span>
+                    <span className="text-app-label text-app-muted">
+                      {PRESEASON_WORDS.ofTotal(formatShort(aspectLords))}
+                    </span>
+                  </span>
+                )}
               </span>
             </span>
-            {aspectLords !== null && (
-              <span className="flex flex-col">
-                <span className="text-app-strong text-app-gold">
-                  {PRESEASON_WORDS.average(formatShort(aspectLords / (count + 1)))}
-                </span>
-                <span className="text-app-label text-app-muted">
-                  {PRESEASON_WORDS.ofTotal(formatShort(aspectLords))}
-                </span>
-              </span>
-            )}
           </button>
         </li>
       );
@@ -218,7 +223,7 @@ const OrderRows = ({
   <section className="flex flex-col gap-2" aria-label={PRESEASON_WORDS.orderTitle}>
     <h2 className="text-app-heading text-app-ink">{PRESEASON_WORDS.orderTitle}</h2>
     <p className="text-app-label text-app-muted">{PRESEASON_WORDS.orderLine(aspectName(aspect))}</p>
-    <ul className="flex flex-col gap-2">
+    <ul className="app-aspect-orders">
       {ordersOfAspect(aspect).map(({ orderId, fullOrderName }) => (
         <li key={orderId}>
           <button
@@ -228,8 +233,8 @@ const OrderRows = ({
             onClick={() => onPick(orderId)}
             className="app-choice w-full"
           >
-            <span className="flex w-full items-center gap-3 text-left">
-              <OrderEmblem order={orderId} size={40} />
+            <span className="flex w-full flex-col items-center gap-2 text-center">
+              <OrderEmblem order={orderId} size={48} />
               <span className="flex flex-col">
                 <span className="text-app-heading text-app-ink">{fullOrderName}</span>
                 <span className="text-app-label text-app-muted">
@@ -260,11 +265,7 @@ const SeasonWaiting = ({
   return (
     <StageFrame verb={<CopySeasonInvite invite={invite} />}>
       <div data-preseason-step="waiting" className="flex w-full flex-col items-center gap-4">
-        <span className="grid grid-cols-2 gap-2">
-          {ordersOfAspect(chosen.aspect).map(({ orderId }) => (
-            <OrderEmblem key={orderId} order={orderId} size={48} />
-          ))}
-        </span>
+        <AspectMark aspect={chosen.aspect} size={88} decorative />
         <h1 className="text-app-title text-app-ink">{PRESEASON_WORDS.youreIn(aspectName(chosen.aspect))}</h1>
         <p className="text-app-body text-app-muted">
           {PRESEASON_WORDS.waiting(chosen.fullOrderName, formatDate(opening.startsAt, now))}

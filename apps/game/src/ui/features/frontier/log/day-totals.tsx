@@ -35,9 +35,13 @@ type TotalCell = { total: keyof DayTotals; icon: IconMeaning; name: string; valu
  * ("Reveals"), and one image named with its figure ("Reveals 31") for a screen reader.
  */
 const TotalsGrid = ({ cells }: { cells: readonly TotalCell[] }) => (
-  <HudPanel collapsible={false} bodyClassName="grid grid-cols-3 justify-items-center gap-x-1 gap-y-2">
+  <HudPanel collapsible={false} bodyClassName="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
     {cells.map((cell) => (
-      <span key={cell.icon} data-total={cell.icon} className="flex flex-col items-center gap-0.5">
+      <span
+        key={cell.icon}
+        data-total={cell.icon}
+        className="flex flex-col items-center justify-center gap-1 rounded border border-hud-divider bg-hud-well p-2"
+      >
         <HudChip icons={[cell.icon]} label={cell.name}>
           {cell.value}
         </HudChip>

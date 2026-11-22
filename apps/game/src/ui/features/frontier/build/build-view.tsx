@@ -1,13 +1,6 @@
 import { rankName } from "@bibliothecadao/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import {
-  formatExact,
-  formatCharge,
-  formatPopulation,
-  formatPopulationInWords,
-  formatShort,
-  formatShortDuration,
-} from "@bibliothecadao/types";
+import { formatExact, formatCharge, formatShort, formatShortDuration } from "@bibliothecadao/types";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import {
   HudButton,
@@ -16,26 +9,18 @@ import {
   HudConfirm,
   HudCost,
   HudNotice,
+  HudRanked,
   HudSheet,
   HudTier,
   HudWindowFoot,
   rankedTip,
 } from "@/ui/design-system/kit/hud-elements";
 import type { Refusal } from "@/ui/design-system/kit/refusal";
-import {
-  BUILD,
-  BUILDING,
-  POPULATION,
-  PRICE_UP,
-  type Rank,
-  type RankedWords,
-  ROOM_ASK,
-} from "@/ui/design-system/kit/words";
+import { BUILD, BUILDING, PRICE_UP, type Rank, type RankedWords, ROOM_ASK } from "@/ui/design-system/kit/words";
 
 import { PRICE_FACES, costLine, type Price } from "@/ui/design-system/kit/price-faces";
 import type { ReactNode } from "react";
 import { reasonLine } from "@/ui/design-system/kit/reasons";
-import type { RealmPopulation } from "../realm/realm-population";
 
 export type BuildTile = {
   key: string;
@@ -73,7 +58,6 @@ export type BuildTile = {
  * population for asks instead, in the grid's place (RoomAsk): the Hut on this plot, or another pick.
  */
 export const BuildView = ({
-  population,
   tiles,
   chosen,
   onChoose,
@@ -84,8 +68,6 @@ export const BuildView = ({
   onClose,
   ask,
 }: {
-  /** The realm's population, used of all it can hold; unknown is left out. */
-  population: RealmPopulation | undefined;
   tiles: BuildTile[];
   chosen: number;
   onChoose: (index: number) => void;
@@ -97,20 +79,25 @@ export const BuildView = ({
   /** Build was pressed on the chosen building with no free population: the ask stands where the grid stood. */
   ask?: RoomAskChoices;
 }) => {
-  const chosenStanding = tiles[chosen]?.standing;
-  // Why the chosen building's price has risen, in sight under its price, never only on its arrow's hover.
+  const chosenTile = tiles[chosen];
+  const chosenStanding = chosenTile?.standing;
+  const indexed = tiles.map((tile, index) => ({ tile, index }));
+  const unlocked = indexed.filter(({ tile }) => tile.standing.kind !== "level");
+  const locked = indexed.filter(({ tile }) => tile.standing.kind === "level");
   const raised = chosenStanding?.kind === "price" && chosenStanding.raised && (
     <span data-price-raised className="text-hud-label text-hud-warn">
       {chosenStanding.raised}
     </span>
   );
   const choice = (
-    <>
-      <div className="grid grid-cols-3 gap-1.5">
-        {tiles.map((tile, index) => (
+    <div data-build-sheet className="ui-build-sheet">
+      <div data-build-grid className="grid grid-cols-3 gap-1.5 lg:gap-2">
+        {unlocked.map(({ tile, index }) => (
           <TileButton key={tile.key} tile={tile} chosen={index === chosen} onChoose={() => onChoose(index)} />
         ))}
       </div>
+      {chosenTile && <ChosenSummary tile={chosenTile} />}
+      {locked.length > 0 && <LockedUnlocks items={locked} chosen={chosen} onChoose={onChoose} />}
       {refusal ? (
         <HudWindowFoot
           note={
@@ -140,25 +127,79 @@ export const BuildView = ({
           </HudButton>
         </HudWindowFoot>
       )}
-    </>
+    </div>
   );
   return (
     <HudSheet label={BUILD} onClose={onClose}>
-      {population && (
-        <header className="flex items-center justify-end">
-          <HudChip
-            icons={["person"]}
-            label={POPULATION}
-            tip={formatPopulationInWords(population.used, population.total)}
-          >
-            {formatPopulation(population.used, population.total)}
-          </HudChip>
-        </header>
-      )}
-      {ask && population ? <RoomAsk population={population} building={tiles[chosen]!} choices={ask} /> : choice}
+      {ask ? <RoomAsk building={tiles[chosen]!} choices={ask} /> : choice}
     </HudSheet>
   );
 };
+
+type IndexedTile = { tile: BuildTile; index: number };
+
+const ChosenSummary = ({ tile }: { tile: BuildTile }) => {
+  const hasTip = typeof tile.tip === "string" ? tile.tip.trim().length > 0 : tile.tip.length > 0;
+  return (
+    <div data-build-chosen className="ui-build-chosen">
+      <SemanticIcon name={tile.icon} size={18} />
+      <span className="min-w-0 flex-1 truncate">
+        {hasTip ? (
+          <HudRanked words={tile.tip} />
+        ) : (
+          <span className="inline-flex items-center gap-1.5">
+            <span className="text-hud-ink">{tile.name}</span>
+            {tile.gives.value !== undefined && <span className="text-hud-muted">{tile.gives.value}</span>}
+          </span>
+        )}
+      </span>
+    </div>
+  );
+};
+
+const groupLockedByLevel = (items: readonly IndexedTile[]): [number, IndexedTile[]][] => {
+  const groups = new Map<number, IndexedTile[]>();
+  for (const item of items) {
+    if (item.tile.standing.kind !== "level") continue;
+    const list = groups.get(item.tile.standing.level) ?? [];
+    list.push(item);
+    groups.set(item.tile.standing.level, list);
+  }
+  return [...groups.entries()].toSorted(([left], [right]) => left - right);
+};
+
+const LockedUnlocks = ({
+  items,
+  chosen,
+  onChoose,
+}: {
+  items: readonly IndexedTile[];
+  chosen: number;
+  onChoose: (index: number) => void;
+}) => (
+  <div data-build-locked className="ui-build-locked">
+    {groupLockedByLevel(items).map(([level, group]) => (
+      <div key={level} className="ui-build-locked__group">
+        <HudChip icons={["lock"]}>{rankName(level)}</HudChip>
+        <span className="ui-build-locked__items">
+          {group.map(({ tile, index }) => (
+            <span key={tile.key} {...rankedTip(tile.tip)}>
+              <HudButton
+                kind="secondary"
+                size="sm"
+                icon={tile.icon}
+                aria-pressed={index === chosen}
+                onClick={() => onChoose(index)}
+              >
+                {tile.name}
+              </HudButton>
+            </span>
+          ))}
+        </span>
+      </div>
+    ))}
+  </div>
+);
 
 /** The ask's two choices: the Hut on this plot (or, when it cannot be paid yet, picking it), or another building. */
 export type RoomAskChoices = { hut: BuildTile; hutVerb: string; onHut: () => unknown; onAnother: () => void };
@@ -168,11 +209,9 @@ export type RoomAskChoices = { hut: BuildTile; hutVerb: string; onHut: () => unk
  * the realm full, what the chosen building takes, what a Hut adds, and the choice, never made for the player.
  */
 const RoomAsk = ({
-  population,
   building,
   choices: { hut, hutVerb, onHut, onAnother },
 }: {
-  population: RealmPopulation;
   building: BuildTile;
   choices: RoomAskChoices;
 }) => (
@@ -186,16 +225,11 @@ const RoomAsk = ({
     <span className="flex items-center gap-3">
       <SemanticIcon name={hut.icon} size={64} />
       <span className="flex flex-col items-start gap-1.5">
-        <HudChip tone="bad" icons={["person"]} label={POPULATION}>
-          {formatPopulation(population.used, population.total)}
-        </HudChip>
         <AskLine tile={building}>
-          <HudChip icons={["person"]} label={`${building.name} ${POPULATION}`}>
-            {formatShort(building.takes)}
-          </HudChip>
+          <HudChip icons={["person"]}>{formatShort(building.takes)}</HudChip>
         </AskLine>
         <AskLine tile={hut}>
-          <HudChip tone="good" icons={["person"]} label={`${hut.name} ${POPULATION}`}>
+          <HudChip tone="good" icons={["person"]}>
             {hut.gives.value}
           </HudChip>
         </AskLine>
@@ -229,7 +263,6 @@ const TileButton = ({ tile, chosen, onChoose }: { tile: BuildTile; chosen: boole
       size="sm"
       title={tile.name}
       picture={<SemanticIcon name={tile.icon} size={26} />}
-      corner={tile.takes > 0 ? <Takes takes={tile.takes} /> : undefined}
       detail={
         <span className="flex w-full flex-col items-center gap-1">
           <Gives tile={tile} />
@@ -242,10 +275,6 @@ const TileButton = ({ tile, chosen, onChoose }: { tile: BuildTile; chosen: boole
   </span>
 );
 
-/**
- * What one more gives, then its research's gems: two short lines, so a card three to a 360-wide phone's row holds them
- * whole.
- */
 const Gives = ({ tile }: { tile: BuildTile }) => (
   <span className="flex flex-col items-center gap-0.5">
     <span className="flex items-center gap-1 whitespace-nowrap tabular-nums">
@@ -257,18 +286,6 @@ const Gives = ({ tile }: { tile: BuildTile }) => (
         <HudTier key={index} tier={gem.tier} />
       ))}
     </span>
-  </span>
-);
-
-/** The population one more takes, in the card's corner beside its painting. */
-const Takes = ({ takes }: { takes: number }) => (
-  <span
-    className="flex items-center gap-0.5 text-hud-label tabular-nums text-hud-muted"
-    role="img"
-    aria-label={`${POPULATION} ${formatCharge(takes)}`}
-  >
-    <SemanticIcon name="person" size={12} />
-    {formatCharge(takes)}
   </span>
 );
 
@@ -308,7 +325,7 @@ const Band = ({ standing }: { standing: BuildTile["standing"] }) => (
  */
 const Price = ({ standing }: { standing: Extract<BuildTile["standing"], { kind: "price" }> }) => (
   <>
-    <span className="flex flex-col gap-0.5">
+    <span className="flex flex-wrap items-center justify-center gap-x-1.5 gap-y-0.5">
       {standing.prices.map(({ of, amount, short }) => (
         <span
           key={of}

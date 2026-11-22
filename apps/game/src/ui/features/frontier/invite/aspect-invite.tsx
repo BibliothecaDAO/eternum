@@ -2,13 +2,14 @@ import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { getActiveGame } from "@/runtime/world";
 import { useShareLink } from "@/shell/share/own-shares";
+import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { Icon } from "@/ui/design-system/icon";
 import { orderMeaning } from "@/ui/design-system/icon-meaning";
 import { HudButton, HudNotice, HudPanel } from "@/ui/design-system/kit/hud-elements";
 import { INVITE_WORDS } from "@/ui/design-system/kit/words";
 import { openXPost } from "@/utils/x-post";
 import { type NativeRows } from "@bibliothecadao/eternum/game-client";
-import { aspectName, aspects, type AspectId, ordersOfAspect } from "@bibliothecadao/types";
+import { aspectName, aspects, ordersOfAspect, type AspectId } from "@bibliothecadao/types";
 import { useState } from "react";
 
 const INVITE_MODELS = ["HomeAspect"] as const;
@@ -44,13 +45,16 @@ const InviteToAspect = ({ aspect, chainId, gameId }: { aspect: AspectId; chainId
     );
   return (
     <HudPanel label={INVITE_WORDS.title(name)} collapsible={false} bodyClassName="flex flex-col gap-2">
-      <span className="flex items-center gap-2">
-        <span className="flex shrink-0 items-center gap-0.5">
-          {ordersOfAspect(aspect).map(({ orderId }) => (
-            <Icon key={orderId} name={orderMeaning(orderId)} size={24} />
-          ))}
+      <span className="flex items-center gap-2.5">
+        <AspectMark aspect={aspect} size={36} decorative />
+        <span className="flex min-w-0 flex-1 flex-col gap-1">
+          <span className="text-hud-strong text-hud-ink">{INVITE_WORDS.title(name)}</span>
+          <span className="flex items-center gap-1.5">
+            {ordersOfAspect(aspect).map(({ orderId }) => (
+              <Icon key={orderId} name={orderMeaning(orderId)} size={20} />
+            ))}
+          </span>
         </span>
-        <span className="text-hud-strong text-hud-ink">{INVITE_WORDS.title(name)}</span>
       </span>
       <span className="flex gap-2">
         <HudButton

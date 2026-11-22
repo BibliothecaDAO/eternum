@@ -683,6 +683,7 @@ export const hudVariables = (): Record<string, string> =>
       [`--hud-weight-${role}`, weight],
     ]),
     ["--hud-font", FONTS.body],
+    ["--hud-font-display", FONTS.display],
   ]);
 
 /** CSS variables from their names and values, each name written once: two meanings never share a variable. */

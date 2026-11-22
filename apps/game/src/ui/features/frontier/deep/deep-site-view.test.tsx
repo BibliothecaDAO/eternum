@@ -23,7 +23,8 @@ afterEach(() => {
 const draw = (props: DeepSiteProps) => act(() => root.render(<DeepSiteView {...props} />));
 const text = () => document.body.textContent ?? "";
 const buttons = () => [...document.querySelectorAll<HTMLButtonElement>("section[role=dialog] button")];
-const labels = (names: string[]) => buttons().filter((button) => names.includes(button.textContent ?? ""));
+const labels = (names: string[]) =>
+  buttons().filter((button) => names.some((name) => button.textContent?.startsWith(name)));
 
 describe("a Deep site's card", () => {
   it("names the site, what a tick pays and the beast, and Attack sends", () => {
@@ -60,29 +61,89 @@ describe("a Deep site's card", () => {
     expect(onMove).toHaveBeenCalledTimes(1);
   });
 
-  it("lists a held site's four slots from the top, marks the one fought next and leaves free slots free", () => {
+  it("draws a held site's holder Facet, 4 guard portraits in one row with detail in tooltips, and single drain", () => {
     const fixture = DEEP_SITE_CASES["Foundation held, two slots filled"];
     draw(fixture);
-    expect(text()).toContain("Held by Prowess");
-    const rows = document.querySelector("[data-deep-slots]")!.textContent!;
-    expect(rows.indexOf("Aldor · fought next")).toBeGreaterThan(-1);
-    expect(rows.indexOf("Aldor")).toBeLessThan(rows.indexOf("Brek"));
-    expect(rows.match(/Free slot/g)).toHaveLength(2);
-    for (const slot of fixture.guard.slots) {
-      expect(rows).toContain(`${slot.ticks.left} ticks left (${slot.ticks.time})`);
+    const holder = document.querySelector("[data-aspect-holder='1']")!;
+    expect(holder.textContent).toContain("Held by");
+    expect(holder.textContent).toContain("Prowess");
+    expect(holder.querySelector("[data-aspect-mark='1']")).not.toBeNull();
+    const slots = [...document.querySelectorAll("[data-deep-slot]")];
+    expect(slots).toHaveLength(4);
+    const filled = slots.filter((slot) => slot.getAttribute("data-deep-slot") === "filled");
+    const empty = slots.filter((slot) => slot.getAttribute("data-deep-slot") === "empty");
+    expect(filled).toHaveLength(2);
+    expect(empty).toHaveLength(2);
+    const tips = filled.map((slot) => slot.getAttribute("data-tip") ?? "");
+    expect(tips[0]).toContain("Aldor · fought next");
+    expect(tips[0]).toContain("75% of each tick");
+    expect(tips[1]).toContain("Brek");
+    expect(tips[1]).toContain("25% of each tick");
+    for (const [index, slot] of fixture.guard.slots.entries()) {
+      expect(tips[index]).toContain(`${slot.ticks.left} ticks left (${slot.ticks.time})`);
     }
-    expect(rows).toContain("75% of each tick");
-    expect(rows).toContain("25% of each tick");
+    expect(document.querySelector("[data-deep-drain]")?.textContent).toContain("/ tick");
     expect(text()).toContain("Another Aspect holds it");
   });
 
-  it("offers Join on a free slot of the player's own Aspect", () => {
+  it("offers one Join action and draws free slots as non-interactive indicators", () => {
+    const onAct = vi.fn();
     const fixture = DEEP_SITE_CASES["Ethereal mine held by the player's Aspect, a free slot to join"];
-    draw(fixture);
-    expect(labels(["Join"])).toHaveLength(1);
-    for (const slot of fixture.guard.slots) {
-      expect(text()).toContain(`${slot.ticks.left} ticks left (${slot.ticks.time})`);
-    }
-    expect(text()).toContain("100% of each tick");
+    draw({ ...fixture, order: { kind: "act", verb: "join", onAct } });
+    const [join] = labels(["Join"]);
+    expect(join).toBeDefined();
+    expect(document.querySelectorAll('button[data-deep-slot="empty"]')).toHaveLength(0);
+    expect(document.querySelectorAll('span[data-deep-slot="empty"]')).toHaveLength(3);
+    act(() => join!.click());
+    expect(onAct).toHaveBeenCalledTimes(1);
+    const filledTip = document.querySelector('[data-deep-slot="filled"]')?.getAttribute("data-tip") ?? "";
+    expect(filledTip).toContain("100% of each tick");
+  });
+
+  it("reads per-guard drain from each slot and shows a range when a guard loses more per tick", () => {
+    const fixture = DEEP_SITE_CASES["Foundation held, two slots filled"];
+    const [first, second] = fixture.guard.slots;
+    draw({
+      ...fixture,
+      guard: {
+        ...fixture.guard,
+        slots: [first!, { ...second!, lossPerTick: first!.lossPerTick + 150 }],
+      },
+    });
+    expect(document.querySelector("[data-deep-drain]")?.textContent).toBe(
+      `−${first!.lossPerTick}–${first!.lossPerTick + 150} / tick`,
+    );
+    const tips = [...document.querySelectorAll('[data-deep-slot="filled"]')].map(
+      (slot) => slot.getAttribute("data-tip") ?? "",
+    );
+    expect(tips[0]).toContain(`−${first!.lossPerTick} / tick`);
+    expect(tips[1]).toContain(`−${first!.lossPerTick + 150} / tick`);
+  });
+
+  it("renders facing portraits, Bow first-strike cue from core, stamina cost on Attack, and 4 guard slots", () => {
+    const fixture = DEEP_SITE_CASES["Foundation held, two slots filled"];
+    draw({
+      ...fixture,
+      attackerName: "Army 1",
+      fight: {
+        army: 1_000,
+        defender: 6_000,
+        attackerTroops: { category: "Crossbowman", tier: "T1" },
+        defenderTroops: { category: "Knight", tier: "T1" },
+        firstStrike: "attacker",
+        result: { troopsLost: 330, guardLeft: 5_246 },
+      },
+      order: { kind: "act", verb: "attack", stamina: 30, onAct: () => {} },
+    });
+    const sides = [...document.querySelectorAll(".ui-fight-side")];
+    expect(sides).toHaveLength(2);
+    expect(sides[0]!.querySelector('[data-icon="crossbowman-t1"]')).not.toBeNull();
+    expect(sides[0]!.textContent).toContain("Army 1");
+    expect(sides[0]!.textContent).toContain("Hits first");
+    expect(sides[1]!.querySelector('[data-icon="knight-t1"]')).not.toBeNull();
+    expect(sides[1]!.textContent).toContain("Aldor");
+    expect(document.querySelector("[data-attack-stamina='30']")).not.toBeNull();
+    expect(document.querySelector("button[aria-label='Attack']")).not.toBeNull();
+    expect(document.querySelectorAll("[data-deep-slot]")).toHaveLength(4);
   });
 });

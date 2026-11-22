@@ -118,6 +118,7 @@ describe("the day's end", () => {
     expect(host.textContent).toBe("Skip");
     show("summary");
     expect(host.textContent).toBe("the summary");
+    expect(host.querySelector<HTMLElement>("[data-day-end-scrim]")!.style.opacity).toBe("0.6");
     expect(black()).toBe("0");
     show("nightfall");
     expect(host.textContent).toBe("");

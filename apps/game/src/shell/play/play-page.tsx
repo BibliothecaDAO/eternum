@@ -1,7 +1,9 @@
-import { BLITZ_WORDS, LORE_LINE, WORDS } from "@/ui/design-system/kit/words";
-import type { CSSProperties, ReactNode } from "react";
+import { aspects } from "@bibliothecadao/types";
+import { ASPECT_PAGE_WORDS, BLITZ_WORDS, LORE_LINE, WORDS } from "@/ui/design-system/kit/words";
+import type { ReactNode } from "react";
 
-import { AppAgeColumn, AppButton, AppGameCard } from "@/ui/design-system/kit/app-elements";
+import { AspectMark } from "@/ui/design-system/aspect-mark";
+import { AppAgeColumn, AppButton, AppGameCard, AppLink, AppPanel } from "@/ui/design-system/kit/app-elements";
 import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
 
 import { PageFrame } from "../frame/page-frame";
@@ -39,18 +41,19 @@ export const PlayPage = () => {
           {LORE_LINE}
         </h1>
       )}
-      <div
-        className="grid grid-cols-1 gap-6 lg:min-h-[40rem] lg:[grid-template-columns:var(--play-columns)]"
-        style={{ "--play-columns": `minmax(0,1.5fr) repeat(${ages.length}, minmax(0,1fr))` } as CSSProperties}
-      >
+      <div className="app-play-grid">
         <section className="flex min-w-0 flex-col gap-3">
           <LeadOrState facts={facts} />
           {facts.board && <SourceGaps gaps={facts.gaps} />}
         </section>
-        {facts.board &&
-          ages.map((mode) => (
-            <AgeColumn key={mode} mode={mode} facts={facts} items={(facts.board as PlayBoard).ages[mode]} />
-          ))}
+        {facts.board && (
+          <div className="app-play-side">
+            {facts.board.lead?.mode === "frontier" && <AspectRacePreview />}
+            {ages.map((mode) => (
+              <AgeColumn key={mode} mode={mode} facts={facts} items={(facts.board as PlayBoard).ages[mode]} />
+            ))}
+          </div>
+        )}
       </div>
     </PageFrame>
   );
@@ -105,6 +108,27 @@ const SourceGaps = ({ gaps }: { gaps: readonly SourceGap[] }) =>
       )}
     </div>
   );
+
+const AspectRacePreview = () => (
+  <AppPanel
+    title={ASPECT_PAGE_WORDS.race}
+    icon="crown"
+    cue={
+      <AppLink to="/season" className="text-app-label text-app-gold">
+        {WORDS.season}
+      </AppLink>
+    }
+  >
+    <ul className="app-play-aspects">
+      {aspects.map(({ id, name }) => (
+        <li key={id} className="app-play-aspect">
+          <AspectMark aspect={id} size={44} decorative />
+          <span className="text-app-label text-app-ink">{name}</span>
+        </li>
+      ))}
+    </ul>
+  </AppPanel>
+);
 
 const AgeColumn = ({
   mode,

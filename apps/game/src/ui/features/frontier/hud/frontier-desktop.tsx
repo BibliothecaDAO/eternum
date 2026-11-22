@@ -1,18 +1,19 @@
 import { usePartShown } from "../opening/opening-context";
 import { HUD_COLUMN_MARK } from "@/three/utils/labels/hud-clearance";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { HudBubble, SheetDock } from "@/ui/design-system/kit/hud-elements";
+import { Icon, type IconMeaning } from "@/ui/design-system/icon";
+import { HudPill, SheetDock } from "@/ui/design-system/kit/hud-elements";
 import { EVENTS_WORDS, REALM, RESEARCH, SEASON } from "@/ui/design-system/kit/words";
 import { FeedToasts, useUnreadImportantCount } from "@/ui/features/event-feed/quick-feed";
 import { HudChatWindow } from "@/ui/features/world/containers/hud-chat-window";
 import type { SeasonGoal } from "@/ui/features/world/containers/top-header/identity-chip";
-import type { WorldTab } from "@/ui/features/world/containers/top-header/map-view-controls";
-import { TopHeader } from "@/ui/features/world/containers/top-header/top-header";
 import { HudColumn, HudFoot } from "@/ui/features/world/hud/desktop-hud";
 import { HudMinimap } from "@/ui/features/world/hud/minimap";
+import { formatAmount } from "@bibliothecadao/types";
 import { type ReactNode, useState } from "react";
 
 import type { HudSurface } from "./frontier-nav";
+import { FrontierTopBar } from "./frontier-top-bar";
 import { useHudScale } from "./hud-scale";
 
 /**
@@ -26,7 +27,7 @@ import { useHudScale } from "./hud-scale";
 export const FrontierDesktop = ({
   season,
   clock,
-  worldTab,
+  depthSwitch,
   realm,
   armies,
   page,
@@ -38,8 +39,7 @@ export const FrontierDesktop = ({
   season?: SeasonGoal;
   /** The day, in the top bar's clock place. */
   clock: ReactNode;
-  /** The top bar's World tab on the map once the realm has an Ethereal layer: the layer shown, opening every layer. */
-  worldTab?: WorldTab;
+  depthSwitch?: ReactNode;
   realm?: ReactNode;
   armies?: ReactNode;
   /** A nav page (the Feed, Research, the Season's board): it stands in the rail's panel. */
@@ -53,7 +53,7 @@ export const FrontierDesktop = ({
   const [panel, setPanel] = useState<HTMLElement | null>(null);
   return (
     <div style={{ zoom: useHudScale() }}>
-      <TopHeader season={season} clock={clock} worldTab={worldTab} />
+      <FrontierTopBar season={season} places={places} depthSwitch={depthSwitch} clock={clock} />
       <HudColumn label={REALM}>
         {realm}
         <div className="flex shrink-0 flex-col">{armies}</div>
@@ -61,10 +61,7 @@ export const FrontierDesktop = ({
       </HudColumn>
       <FrontierRail page={page} onPanel={setPanel} />
       <HudFoot>
-        <div className="pointer-events-none flex flex-col items-center gap-2">
-          {foot}
-          {places}
-        </div>
+        <div className="pointer-events-none flex flex-col items-center gap-3">{foot}</div>
       </HudFoot>
       <SheetDock.Provider value={panel}>{children}</SheetDock.Provider>
     </div>
@@ -127,23 +124,29 @@ export const FrontierPlaces = ({
   const unread = useUnreadImportantCount(surface === "feed");
   const researchOpen = usePartShown("research");
   const aspectsOpen = usePartShown("aspects");
-  const bubble = (to: HudSurface, icon: Parameters<typeof HudBubble>[0]["icon"], word: string, count?: number) => (
-    <HudBubble
+  const item = (to: HudSurface, icon: IconMeaning, word: string, count?: number) => (
+    <button
       key={to}
-      icon={icon}
-      word={word}
-      count={count}
-      countTone="good"
-      pressed={surface === to}
+      type="button"
       aria-label={word}
+      aria-pressed={surface === to}
       onClick={() => onSurface(surface === to ? null : to)}
-    />
+      className="ui-topbar-place"
+    >
+      <Icon name={icon} size={16} />
+      <span>{word}</span>
+      {count !== undefined && count > 0 && <span className="ui-topbar-place__count">{formatAmount(count)}</span>}
+    </button>
   );
   return (
-    <nav aria-label="Places" className="pointer-events-auto flex items-start gap-3">
-      {research !== undefined && researchOpen && bubble("research", "research", RESEARCH, research ? 1 : undefined)}
-      {bubble("feed", "chronicles", EVENTS_WORDS.feed, unread > 0 ? unread : undefined)}
-      {aspectsOpen && bubble("season", "victory", SEASON)}
-    </nav>
+    <HudPill label="Places" className="ui-topbar-places pointer-events-auto">
+      {[
+        <nav key="places" aria-label="Places" className="ui-topbar-places__nav">
+          {research !== undefined && researchOpen && item("research", "research", RESEARCH, research ? 1 : undefined)}
+          {item("feed", "chronicles", EVENTS_WORDS.feed, unread > 0 ? unread : undefined)}
+          {aspectsOpen && item("season", "victory", SEASON)}
+        </nav>,
+      ]}
+    </HudPill>
   );
 };

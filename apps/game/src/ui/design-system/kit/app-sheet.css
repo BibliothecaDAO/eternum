@@ -1325,3 +1325,268 @@ button.app-board__row:is(:hover, [data-state="hover"]) {
     animation: none;
   }
 }
+
+.app-play-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: theme(spacing.5);
+}
+@media (min-width: 1024px) {
+  .app-play-grid {
+    min-height: 38rem;
+    grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr);
+    gap: theme(spacing.6);
+  }
+}
+.app-play-side {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: theme(spacing.4);
+}
+.app-play-side .app-age-column {
+  min-height: 13rem;
+  flex: 1;
+}
+.app-play-aspects {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: theme(spacing.2);
+}
+.app-play-aspect {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: theme(spacing.1);
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-radius-control);
+  background: var(--app-well);
+  padding: theme(spacing.2);
+  text-align: center;
+}
+
+.app-aspect-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: theme(spacing[2.5]);
+  padding-top: theme(spacing.1);
+}
+@media (min-width: 1024px) {
+  .app-aspect-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: theme(spacing.4);
+  }
+}
+.app-aspect-card {
+  position: relative;
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  justify-content: flex-start;
+  overflow: hidden;
+  border: 2px solid var(--app-line);
+  border-radius: var(--app-radius-panel);
+  background: var(--app-ground);
+  text-align: center;
+  transition:
+    border-color var(--app-fast) var(--app-ease),
+    transform var(--app-fast) var(--app-ease);
+}
+.app-aspect-card:is(:hover, [data-state="hover"]):not(:disabled) {
+  border-color: var(--app-line-strong);
+  transform: translateY(-2px);
+}
+.app-aspect-card[aria-pressed="true"] {
+  border-color: rgb(var(--app-gold));
+  box-shadow: 0 0 0 1px rgb(var(--app-gold));
+}
+.app-aspect-card .app-choice__tag {
+  top: theme(spacing.2);
+  z-index: 2;
+  transform: translateX(-50%);
+}
+.app-aspect-card__art {
+  display: block;
+  width: 100%;
+  height: 4.5rem;
+  flex: none;
+  object-fit: cover;
+  object-position: center 22%;
+  mask-image: linear-gradient(180deg, black 72%, transparent 100%);
+}
+@media (min-width: 1024px) {
+  .app-aspect-card__art {
+    height: 15.5rem;
+    object-fit: cover;
+    object-position: center 22%;
+    mask-image: linear-gradient(180deg, black 72%, transparent 100%);
+  }
+}
+.app-aspect-card__body {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: 100%;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 2px theme(spacing.2) theme(spacing.2);
+}
+@media (min-width: 1024px) {
+  .app-aspect-card__body {
+    gap: theme(spacing.2);
+    padding: theme(spacing.2) theme(spacing.3) theme(spacing.4);
+  }
+}
+.app-aspect-card__name {
+  font-family: var(--app-face-title);
+  font-size: var(--app-text-heading);
+  line-height: var(--app-leading-heading);
+  color: var(--app-ink);
+}
+@media (min-width: 1024px) {
+  .app-aspect-card__name {
+    font-size: var(--app-text-title);
+    line-height: var(--app-leading-title);
+  }
+}
+.app-aspect-card__orders {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: theme(spacing.1);
+}
+.app-aspect-card__meta {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  align-items: center;
+  gap: theme(spacing[0.5]);
+}
+.app-aspect-orders {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: theme(spacing[2.5]);
+}
+@media (min-width: 1024px) {
+  .app-aspect-orders {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.app-you-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: theme(spacing.6);
+}
+@media (min-width: 1024px) {
+  .app-you-grid {
+    grid-template-columns: 20rem minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+.app-profile-crests {
+  display: grid;
+  width: 100%;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: theme(spacing.2);
+  padding-top: theme(spacing.2);
+}
+.app-profile-crest {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: theme(spacing.1);
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-radius-control);
+  background: var(--app-well);
+  padding: theme(spacing.2);
+}
+
+.app-season-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: theme(spacing.6);
+}
+@media (min-width: 1024px) {
+  .app-season-grid {
+    grid-template-columns: minmax(0, 1.8fr) minmax(0, 1fr);
+  }
+}
+.app-aspect-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: theme(spacing[1.5]);
+  padding: theme(spacing.3) theme(spacing.4);
+  border-bottom: 1px solid var(--app-line);
+}
+.app-aspect-filter__pill {
+  display: inline-flex;
+  align-items: center;
+  gap: theme(spacing[1.5]);
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-radius-chip);
+  background: var(--app-well);
+  padding: theme(spacing.1) theme(spacing[2.5]);
+  color: var(--app-muted);
+  font-size: var(--app-text-label);
+  line-height: var(--app-leading-label);
+}
+.app-aspect-filter__pill:hover {
+  border-color: var(--app-line-strong);
+  color: var(--app-ink);
+}
+.app-aspect-filter__pill[aria-pressed="true"] {
+  border-color: rgb(var(--app-gold));
+  background: var(--app-chosen);
+  color: var(--app-ink);
+}
+
+.app-shop-packs {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: theme(spacing.3);
+}
+@media (min-width: 1024px) {
+  .app-shop-packs {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: theme(spacing.5);
+  }
+  .app-shop-packs .app-choice {
+    min-height: 18rem;
+    justify-content: center;
+    gap: theme(spacing.3);
+    padding: theme(spacing.6) theme(spacing.5);
+  }
+}
+
+.app-countdown-aspects {
+  display: grid;
+  width: 100%;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: theme(spacing.3);
+}
+@media (min-width: 1024px) {
+  .app-countdown-aspects {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: theme(spacing.4);
+  }
+}
+.app-countdown-aspect {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: theme(spacing.2);
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-radius-panel);
+  background: color-mix(in srgb, var(--app-surface) 88%, transparent);
+  padding: theme(spacing.4) theme(spacing.3);
+}
+.app-countdown-aspect__name {
+  font-family: var(--app-face-title);
+  font-size: var(--app-text-heading);
+  line-height: var(--app-leading-heading);
+  color: var(--app-ink);
+}

@@ -18,6 +18,7 @@ const BAND_GAP = 6;
 /** Every slot of a phone's HUD, as Frontier fills them. */
 type Bands = {
   strip: ReactNode;
+  depthSwitch?: ReactNode;
   /** The realm's LORDS and its Realms' labor, under the strip at its right. */
   purse?: ReactNode;
   /** A nav page, standing on the place bar; one marked `data-page-fills` (Chat) takes the band up to the strip. */
@@ -46,7 +47,7 @@ type Bands = {
  */
 export const HudBands = (bands: Bands) => (useSideways() ? <SidewaysBands {...bands} /> : <UprightBands {...bands} />);
 
-const UprightBands = ({ strip, purse, page, notices, action, dock, nav, children }: Bands) => {
+const UprightBands = ({ strip, depthSwitch, purse, page, notices, action, dock, nav, children }: Bands) => {
   const bar = useRef<HTMLDivElement>(null);
   // A sheet stands on the place bar: its top, from the screen's bottom. The box measured holds the bar and keeps its
   // place at the band's foot while the bar steps aside for the keyboard, so a sheet then stands on the keyboard.
@@ -57,12 +58,12 @@ const UprightBands = ({ strip, purse, page, notices, action, dock, nav, children
   return (
     <div
       aria-label="Frontier HUD"
-      className="pointer-events-none fixed inset-x-0 top-0 bottom-hud-keyboard z-30 flex flex-col gap-1.5 font-sans [&:has([data-kit-sheet])_[data-under-sheet]]:hidden [&:has([data-kit-sheet],[data-page])_[data-top-row]]:hidden [&:has([data-page-fills])_[data-map-band]]:hidden"
+      className="pointer-events-none fixed inset-x-0 top-0 bottom-hud-keyboard z-30 flex flex-col gap-1.5 font-sans [&:has([data-kit-sheet])_[data-under-sheet]]:hidden [&:has([data-kit-sheet],[data-page])_[data-opening-notice]]:hidden [&:has([data-kit-sheet],[data-page])_[data-top-row]]:hidden [&:has([data-page-fills])_[data-map-band]]:hidden"
       style={{ ...SAFE_AREA, "--hud-phone-foot": `${foot}px`, "--hud-phone-top": `${top}px` } as CSSProperties}
     >
       <div ref={topBand} {...HUD_TOP_MARK} data-keyboard-hides className="flex flex-col gap-1.5">
         <div className="relative">{strip}</div>
-        <TopRow purse={purse} />
+        <TopRow depthSwitch={depthSwitch} purse={purse} />
       </div>
       <div data-map-band className="relative min-h-0 flex-1" />
       <div {...HUD_FOOT_MARK} className="flex min-h-0 flex-col gap-1.5 [&:has([data-page-fills])]:flex-1">
@@ -83,14 +84,14 @@ const UprightBands = ({ strip, purse, page, notices, action, dock, nav, children
   );
 };
 
-const SidewaysBands = ({ strip, purse, page, notices, action, dock, nav, children }: Bands) => {
+const SidewaysBands = ({ strip, depthSwitch, purse, page, notices, action, dock, nav, children }: Bands) => {
   const top = useRef<HTMLDivElement>(null);
   // A sheet stands in the column under the strip and the purse.
   const sheetTop = useEdge(top, (rect) => rect.bottom + BAND_GAP);
   return (
     <div
       aria-label="Frontier HUD"
-      className="pointer-events-none fixed inset-x-0 top-0 bottom-hud-keyboard z-30 flex gap-1.5 font-sans [&:has([data-kit-sheet])_[data-under-sheet]]:hidden [&:has([data-kit-sheet],[data-page])_[data-top-row]]:hidden"
+      className="pointer-events-none fixed inset-x-0 top-0 bottom-hud-keyboard z-30 flex gap-1.5 font-sans [&:has([data-kit-sheet])_[data-under-sheet]]:hidden [&:has([data-kit-sheet],[data-page])_[data-opening-notice]]:hidden [&:has([data-kit-sheet],[data-page])_[data-top-row]]:hidden"
       style={{ ...SAFE_AREA, "--hud-sheet-top": `${sheetTop}px` } as CSSProperties}
     >
       <div {...HUD_COLUMN_MARK} className="flex">
@@ -100,7 +101,7 @@ const SidewaysBands = ({ strip, purse, page, notices, action, dock, nav, childre
       <div {...HUD_COLUMN_MARK} className="flex min-h-0 w-hud-column flex-col gap-1.5">
         <div ref={top} data-keyboard-hides className="flex flex-col gap-1.5">
           <div className="relative">{strip}</div>
-          <TopRow purse={purse} />
+          <TopRow depthSwitch={depthSwitch} purse={purse} />
         </div>
         <div className="flex flex-col gap-1.5">{notices}</div>
         {page ? <PageBand className="flex-1">{page}</PageBand> : <UnderSheet action={action} dock={dock} />}
@@ -111,9 +112,10 @@ const SidewaysBands = ({ strip, purse, page, notices, action, dock, nav, childre
 };
 
 /** Under the strip: the purse at its right; folded away while a sheet or a page is open. */
-const TopRow = ({ purse }: { purse: ReactNode }) => (
-  <div data-top-row className="flex items-start justify-end gap-1.5">
-    {purse}
+const TopRow = ({ depthSwitch, purse }: { depthSwitch?: ReactNode; purse: ReactNode }) => (
+  <div data-top-row className="flex items-start justify-between gap-1.5 empty:hidden">
+    <div className="flex items-start gap-1.5">{depthSwitch}</div>
+    <div className="ml-auto flex items-start gap-1.5">{purse}</div>
   </div>
 );
 

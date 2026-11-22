@@ -105,7 +105,7 @@ it.each(["Deep", "Hollow"])(
   "observes the phone's visible %s layer rather than inferring Map from its switch",
   (layer) => {
     const dom = new JSDOM(
-      `<nav aria-label="Places"><button data-switch="realm" aria-haspopup="listbox"><span>0</span><span>${layer}</span><div>3 chests</div></button></nav>`,
+      `<div data-surface-deep-switch><button aria-pressed="false">Surface</button><button aria-pressed="true" aria-haspopup="menu">${layer}</button></div><nav aria-label="Places"><button data-switch="realm">Realm</button></nav>`,
       {
         url: "https://play.test/game/map",
         runScripts: "outside-only",

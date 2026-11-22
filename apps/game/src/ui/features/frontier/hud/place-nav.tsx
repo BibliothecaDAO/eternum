@@ -1,7 +1,7 @@
 import { formatAmount, layerName } from "@bibliothecadao/types";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { HudPanel, type MenuItem, useHudList } from "@/ui/design-system/kit/hud-elements";
+import { HudPanel } from "@/ui/design-system/kit/hud-elements";
 import { useSideways } from "@/shell/frame/layout";
 
 import { CHAT, EVENTS_WORDS, MENU, REALM, RESEARCH } from "@/ui/design-system/kit/words";
@@ -32,7 +32,6 @@ export const PlaceNav = ({
   onGo,
   realmDot,
   realmIcon = "realm",
-  views,
   researchDot,
   events,
   unread,
@@ -43,7 +42,6 @@ export const PlaceNav = ({
   onGo: (place: Place) => void;
   realmDot?: Dot;
   realmIcon?: IconMeaning;
-  views?: { icon?: IconMeaning; word?: string; items?: readonly MenuItem[] } | null;
   /** Whether Research has a node to buy; none leaves the slot out, for a player with no realm to research. */
   researchDot?: boolean;
   /** Events arrived since the Feed was last read. */
@@ -69,10 +67,9 @@ export const PlaceNav = ({
         <Slot
           switchTo={onRealm ? "world" : "realm"}
           lit={false}
-          icon={views?.icon ?? (onRealm ? "map" : realmIcon)}
-          word={views?.word ?? (onRealm ? layerName(0) : REALM)}
+          icon={onRealm ? "map" : realmIcon}
+          word={onRealm ? layerName(0) : REALM}
           badge={realmDot && <i className={cn("size-2 rounded-full", DOTS[realmDot])} />}
-          menu={views?.items}
           onClick={() => onGo("realm")}
         />
         {researchDot !== undefined &&
@@ -91,7 +88,6 @@ const Slot = ({
   icon,
   word,
   badge,
-  menu,
   onClick,
 }: {
   /** The Realm / World switch's destination, for what reads where the player is (the playtest); none for a place. */
@@ -100,31 +96,23 @@ const Slot = ({
   icon: IconMeaning;
   word: string;
   badge: ReactNode;
-  /** The choices a press opens (useHudList), in place of the slot's own press. */
-  menu?: readonly MenuItem[];
   onClick: () => void;
-}) => {
-  const { triggerProps, list } = useHudList(word);
-  return (
-    <>
-      <button
-        {...(menu ? triggerProps : { onClick })}
-        type="button"
-        aria-current={lit ? "page" : undefined}
-        data-switch={switchTo}
-        className={cn(
-          "flex min-h-11 min-w-11 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-1 text-hud-strong",
-          "border-b-2",
-          lit ? "border-hud-gold bg-hud-divider text-hud-gold" : "border-transparent text-hud-muted",
-        )}
-      >
-        <span className="flex items-center gap-0.5 text-hud-gold">
-          <SemanticIcon name={icon} size={22} />
-          {badge}
-        </span>
-        <span>{word}</span>
-      </button>
-      {menu && list(menu)}
-    </>
-  );
-};
+}) => (
+  <button
+    onClick={onClick}
+    type="button"
+    aria-current={lit ? "page" : undefined}
+    data-switch={switchTo}
+    className={cn(
+      "flex min-h-11 min-w-11 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-1 text-hud-strong",
+      "border-b-2",
+      lit ? "border-hud-gold bg-hud-divider text-hud-gold" : "border-transparent text-hud-muted",
+    )}
+  >
+    <span className="flex items-center gap-0.5 text-hud-gold">
+      <SemanticIcon name={icon} size={22} />
+      {badge}
+    </span>
+    <span>{word}</span>
+  </button>
+);
