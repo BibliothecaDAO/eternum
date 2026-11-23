@@ -197,27 +197,6 @@ pub mod BuildingState {
             self.write_building(key, building);
             self.write_counts(key.game_id, key.structure_id, counts);
         }
-        #[cfg(feature: "blitz")]
-        fn house(
-            ref self: ComponentState<TContractState>,
-            key: BuildingKey,
-            rule: BuildingRule,
-            adding: bool,
-            base_population: u32,
-        ) {
-            let mut counts = self.data.buildings.structure_buildings.read((key.game_id, key.structure_id));
-            if adding {
-                counts.population.current += rule.population_cost.into();
-                counts.population.max += rule.capacity_grant.into();
-            } else {
-                counts.population.current -= rule.population_cost.into();
-                counts.population.max -= rule.capacity_grant.into();
-            }
-            assert!(
-                counts.population.current <= counts.population.max + base_population, "population exceeds capacity",
-            );
-            self.write_counts(key.game_id, key.structure_id, counts);
-        }
         fn remove(ref self: ComponentState<TContractState>, key: BuildingKey, building: Building) {
             let mut counts = self.data.buildings.structure_buildings.read((key.game_id, key.structure_id));
             change_count(ref counts, building.category, false);

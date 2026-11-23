@@ -124,7 +124,7 @@ pub mod ConstructionLogic {
             }
             let rule = self.buildings.rule(crate::buildings::BuildingRuleKey { game_id, category: building.category });
             self.buildings.remove(location, building);
-            self.buildings.house(location, rule, false, context.rules.unbox().building_config.base_population);
+            self.house(location, rule, false, context.rules.unbox().building_config.base_population);
             emit_building_change(
                 key, actor, command.coord, building.category, BuildingChange::Destroyed, context.timestamp,
             );
@@ -174,6 +174,26 @@ pub mod ConstructionLogic {
 
     #[generate_trait]
     impl Internal of InternalTrait {
+        fn house(
+            ref self: ContractState,
+            key: BuildingKey,
+            rule: crate::buildings::BuildingRule,
+            adding: bool,
+            base_population: u32,
+        ) {
+            let mut counts = self.data.buildings.structure_buildings.read((key.game_id, key.structure_id));
+            if adding {
+                counts.population.current += rule.population_cost.into();
+                counts.population.max += rule.capacity_grant.into();
+            } else {
+                counts.population.current -= rule.population_cost.into();
+                counts.population.max -= rule.capacity_grant.into();
+            }
+            assert!(
+                counts.population.current <= counts.population.max + base_population, "population exceeds capacity",
+            );
+            self.buildings.write_counts(key.game_id, key.structure_id, counts);
+        }
         fn erect_building(
             ref self: ContractState,
             key: ResourceKey,
@@ -185,7 +205,7 @@ pub mod ConstructionLogic {
         ) {
             let building = Building { category, paused: false, labor_paid: 0 };
             self.buildings.create(location, building);
-            self.buildings.house(location, rule, true, context.rules.unbox().building_config.base_population);
+            self.house(location, rule, true, context.rules.unbox().building_config.base_population);
             self.change_building_production(key, category, base, true, context);
             let resources = self.data.structures.structures.entry((key.game_id, key.entity_id)).resources_packed.read();
             assert!(crate::buildings::can_produce(category, resources), "structure cannot produce building resource");
