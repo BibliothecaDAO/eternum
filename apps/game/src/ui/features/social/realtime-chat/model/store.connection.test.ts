@@ -129,3 +129,13 @@ it("joins only the rooms the player has: a game the account may read but is not 
   expect(useRealtimeChatStore.getState().unreadWorldTotal).toBe(0);
   expect(useRealtimeChatStore.getState().worldZones["game:7"]).toBeUndefined();
 });
+
+it("keeps the rooms the server grants the player at connect, their Aspect's among them", () => {
+  const actions = useRealtimeChatStore.getState().actions;
+  actions.initializeClient({ baseUrl: "https://chat.test", rooms: ["world:global"] });
+  mock.options!.onMessage!(
+    { type: "connected", playerId: "0xa", channels: ["world:global", "aspect:0x52:8:2"] },
+    {} as MessageEvent,
+  );
+  expect(useRealtimeChatStore.getState().grantedRooms).toEqual(["world:global", "aspect:0x52:8:2"]);
+});
