@@ -8,6 +8,7 @@ import {
 } from "@bibliothecadao/types";
 
 import type { LabFact, LabScenario } from "./lab-chain";
+import { wire } from "./lab-chain";
 import { raceScenario } from "./race-scenario";
 import { seasonOneResearchPrices } from "./season-one-research";
 import { balancesPaid, spireScenario } from "./spire-scenario";
@@ -128,6 +129,12 @@ export const realmWorldScenario = (): LabScenario => {
       balance: String(amount * BigInt(RESOURCE_PRECISION)),
     },
   });
+  const knightRecipe = race.store.require("ProductionRecipe", { game_id: 1, resource_type: ResourcesIds.Knight });
+  const troopRecipeFact = (resourceType: ResourcesIds, fallbackKey: string): LabFact => ({
+    model: "ProductionRecipe",
+    key: race.store.wireKeyOf("ProductionRecipe", { game_id: 1, resource_type: resourceType }) ?? fallbackKey,
+    value: wire({ ...knightRecipe, resource_type: resourceType }),
+  });
   race.store.applyFacts([
     ...plots.map(({ col, row }, index) => ({
       model: "Building",
@@ -144,9 +151,14 @@ export const realmWorldScenario = (): LabScenario => {
     })),
     ...castleRecipes(),
     ...seasonOneResearchPrices(race.store),
+    troopRecipeFact(ResourcesIds.Crossbowman, "0x1ac95"),
+    troopRecipeFact(ResourcesIds.Paladin, "0x1ac96"),
     balanceFact(ResourcesIds.Labor, 3_400n, "0x1ac90"),
     balanceFact(ResourcesIds.Wheat, 1_900n, "0x1ac91"),
     balanceFact(ResourcesIds.Essence, 420n, "0x1ac92"),
+    balanceFact(ResourcesIds.Knight, 1_200n, "0x1ac97"),
+    balanceFact(ResourcesIds.Crossbowman, 900n, "0x1ac98"),
+    balanceFact(ResourcesIds.Paladin, 400n, "0x1ac99"),
     {
       model: "StructureBuildings",
       key: race.store.wireKeyOf("StructureBuildings", { game_id: 1, entity_id: 7 })!,

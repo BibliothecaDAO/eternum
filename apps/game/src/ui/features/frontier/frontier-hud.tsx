@@ -2,6 +2,7 @@ import { useCurrentBlockTimestamp, useCurrentDefaultTick } from "@/hooks/helpers
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { openArmyDeployment } from "@/ui/features/military/utils/open-army-deployment";
 import { useQuery } from "@/hooks/helpers/use-query";
+import { LeftView } from "@/types";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { canIssueOrders, isWatching } from "@/utils/can-issue-orders";
 import { useRealmVisit } from "@/sync/active-game-client";
@@ -199,6 +200,7 @@ const FrontierHudBody = ({
   const modeConfig = useGameModeConfig();
   const goToPlace = useGoToFrontierPlace(shown);
   const feedUnread = useUnreadImportantCount(surface === "feed");
+  const leftView = useUIStore((state) => state.leftNavigationView);
   const shownName = shown ? modeConfig.structure.getName(shown).name : null;
   const shownAspectId = shown
     ? headerFacts.store.get("HomeAspect", { game_id: shown.game_id, home: shown.entity_id })?.aspect
@@ -299,7 +301,9 @@ const FrontierHudBody = ({
       <RealmVisitFoot home={realm} />
     </>
   );
-  const replaceRealmWithSheet = desktop && !isMapView && showsCard && card !== null && isRealmBoardCard(card.kind);
+  const deployOpen = Boolean(own) && leftView === LeftView.MilitaryView;
+  const replaceRealmWithSheet =
+    desktop && (deployOpen || (!isMapView && showsCard && card !== null && isRealmBoardCard(card.kind)));
   const realmVisible = Boolean(shown) && realmOpen && !replaceRealmWithSheet;
   const realmPanel = shown && (
     <FrontierRealmPanel

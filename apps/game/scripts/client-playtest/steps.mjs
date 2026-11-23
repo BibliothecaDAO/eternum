@@ -758,10 +758,12 @@ async function deployFromTheDock({ browser }, amount, troopName, atMost = Infini
   );
   if (sheet !== "Deploy") return { sheet };
   if (troopName) browser.click(troopName);
-  if (amount === undefined) browser.click("Max");
-  else browser.run(["fill", DEPLOY_TROOPS_INPUT, String(amount)]);
-  if (Number(String(browser.read(DEPLOY_TROOPS)).replace(/,/g, "")) > atMost)
-    browser.run(["fill", DEPLOY_TROOPS_INPUT, String(atMost)]);
+  if (amount !== undefined || Number.isFinite(atMost)) {
+    browser.click("Adjust size");
+    if (amount !== undefined) browser.run(["fill", DEPLOY_TROOPS_INPUT, String(amount)]);
+    if (Number(String(browser.read(DEPLOY_TROOPS)).replace(/,/g, "")) > atMost)
+      browser.run(["fill", DEPLOY_TROOPS_INPUT, String(atMost)]);
+  }
   const deploy = await readUntil(() => browser.read(sheetButton("^Deploy$")), Boolean, SHEET_WAIT_MS);
   if (!deploy) return { sheet, deploy };
   browser.tap(deploy.offset);
@@ -6944,6 +6946,47 @@ export const STEP_SETS = {
           played.sheet === "Build" && played.inRealmSlot && !played.realmPanelShown
             ? completed(played)
             : failed("Pressing an empty plot must replace the Realm panel with Build in place", played),
+      },
+      {
+        name: "deploy-sheet",
+        settleMs: 1_500,
+        play: async ({ browser, extraScreenshot }) => {
+          browser.press("Escape");
+          const hasDeploy = await readUntil(
+            () =>
+              browser.read(
+                `Boolean(document.querySelector('section[aria-label="Realm"] .realm-foot button[data-kind="primary"]'))`,
+              ),
+            Boolean,
+            SHEET_WAIT_MS,
+          );
+          if (hasDeploy) browser.click("Deploy");
+          const sheet = await readUntil(
+            () => browser.read(SHEET_NAME),
+            (name) => name === "Deploy",
+            PLAYABLE_WAIT_MS,
+          );
+          await sleep(1_000);
+          const deployHud = browser.read(`(() => ({
+            troopCards: [...document.querySelectorAll('[data-kit-sheet] [aria-label="Troop type"] button')].map((b) => b.getAttribute("aria-label")),
+            hasAdjust: [...document.querySelectorAll('[data-kit-sheet] button')].some((b) => b.textContent?.trim() === "Adjust size"),
+            deployEnabled: Boolean(document.querySelector('[data-kit-sheet] .ui-window__foot button[data-kind="primary"]:not([disabled])')),
+            inRealmSlot: Boolean(document.querySelector('[data-realm-slot] [data-kit-sheet][aria-label="Deploy"]')),
+          }))()`);
+          return {
+            sheet,
+            deployHud,
+            shot: extraScreenshot("deploy"),
+          };
+        },
+        verify: ({ played }) =>
+          played.sheet === "Deploy" &&
+          played.deployHud.troopCards.length >= 3 &&
+          played.deployHud.hasAdjust &&
+          played.deployHud.deployEnabled &&
+          (!onADesktop() || played.deployHud.inRealmSlot)
+            ? completed(played)
+            : failed("Deploy sheet must open at full stack with troop cards, Adjust size and enabled Deploy", played),
       },
     ],
   },

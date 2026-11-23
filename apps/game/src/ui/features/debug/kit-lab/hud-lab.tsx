@@ -4,7 +4,7 @@ import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
 import { Tooltip } from "@/ui/design-system/molecules/tooltip";
 import { FeedLine } from "@/ui/features/event-feed/feed-line";
 
-import { BuildingType, rankName } from "@bibliothecadao/types";
+import { BuildingType, FRONTIER_TROOP_NAMES, rankName, TroopType } from "@bibliothecadao/types";
 import type { AlertsPopupAsk } from "@/shell/profile/alerts-ask";
 import { GameProvider } from "@/hooks/context/game-context";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -17,6 +17,7 @@ import { HudIconButton, HudNotice, HudSheet } from "@/ui/design-system/kit/hud-e
 import {
   ARMY,
   ARMY_MANAGEMENT,
+  DEPLOY_WORDS,
   EVENTS_WORDS,
   LINK_WALLET_FOR_LORDS,
   OFFLINE,
@@ -1372,9 +1373,30 @@ const LabDeploySheet = ({
   const wheatStop = wheatStopsAt({ troopsMax: troopsAtHome, wheatMax, max: most }, count);
   return (
     <DeployView
+      troopSelection={{
+        choices:
+          troopsAtHome > 0
+            ? [
+                {
+                  category: TroopType.Knight,
+                  name: FRONTIER_TROOP_NAMES[TroopType.Knight],
+                  art: "knight-t1",
+                  role: DEPLOY_WORDS.troopRoles[TroopType.Knight](),
+                  atHome: troopsAtHome,
+                  displayCount: count,
+                  displayWheat: count * 2,
+                  isCustom: count !== most,
+                },
+              ]
+            : [],
+        selected: troopsAtHome > 0 ? TroopType.Knight : undefined,
+        onPick: noop,
+      }}
       art={troopsAtHome === 0 ? undefined : ("knight-t1" as const)}
       troopsAtHome={troopsAtHome}
       count={count}
+      isFullStack={count === most}
+      allowedSlots={3}
       amount={{ most, max: most, held: most < troopsAtHome ? most : troopsAtHome }}
       onCount={setCount}
       start={start}

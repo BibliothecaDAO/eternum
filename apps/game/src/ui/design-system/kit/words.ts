@@ -354,6 +354,7 @@ import {
   formatHeldAgainst,
   layerName,
   tierNumeral as rankNumeral,
+  TroopType,
   asRanked,
   type RankedWords,
 } from "@bibliothecadao/types";
@@ -1011,6 +1012,19 @@ export const wheatForOnly = (troops: string, of: string) => `${WHEAT} for only $
 /** Where wheat short for a deploy is made: the realm, where Farms are built. */
 export const GET_WHEAT = `Get ${WHEAT}`;
 export const DEPLOYING = "Deploying…";
+export const DEPLOY_WORDS = {
+  slotOf: (slot: number, total: number) => `Slot ${formatExact(slot)} of ${formatExact(total)}`,
+  fullStack: "Full stack",
+  fullStackReady: "Full stack ready",
+  adjustSize: "Adjust size",
+  hideSize: "Hide size",
+  customSize: (count: string) => `Custom · ${count}`,
+  troopRoles: {
+    [TroopType.Knight]: () => "Blade · Hold sites",
+    [TroopType.Crossbowman]: () => "Bow · Strikes first",
+    [TroopType.Paladin]: (exploreStamina: number) => `Fast reveal · ${formatExact(exploreStamina)} stam`,
+  } satisfies Record<TroopType, (exploreStamina: number) => string>,
+} as const;
 export const BUILD = "Build";
 
 /** Default army names: "Army" and its place. */

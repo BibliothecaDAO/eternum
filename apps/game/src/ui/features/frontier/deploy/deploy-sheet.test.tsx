@@ -103,8 +103,9 @@ const slotButton = (host: HTMLElement, name: string) =>
 const startReading = (host: HTMLElement) => {
   const chosen = host.querySelector('[aria-label="Army slots"] [aria-pressed="true"]');
   const meter = chosen?.querySelector<HTMLElement>('[role="meter"][aria-label="stamina"]');
+  const sub = host.querySelector(".deploy-sheet__stamina")?.textContent ?? null;
   return {
-    number: meter?.parentElement?.parentElement?.lastElementChild?.textContent ?? null,
+    number: sub,
     meter: meter ? [Number(meter.getAttribute("aria-valuenow")), Number(meter.getAttribute("aria-valuemax"))] : null,
   };
 };
@@ -170,23 +171,21 @@ describe("the Deploy sheet", () => {
     } as unknown as GameClient);
     const { host, root } = render(store, row);
     try {
-      // Army 1 is out, so its slot is not offered; Deploy opened from the map named no slot, so the first open one is
-      // chosen and Deploy stands (owner's pick A, 30 October; before, nothing was chosen and Deploy never showed).
       expect(slotsOffered(host)).toEqual([
         ["Army 2", "true"],
         ["Army 3", "false"],
       ]);
-      expect(slotButton(host, "Army 2").textContent).toContain("7/150");
-      expect(slotButton(host, "Army 3").textContent).toContain("150/150");
+      expect(host.querySelector(".deploy-sheet__sub")?.textContent).toContain("Slot 2 of 3");
+      expect(host.querySelector(".deploy-sheet__sub")?.textContent).toContain("7/150");
       expect(deployButton(host)).toBeDefined();
-      // One stamina bar a slot: no second bar for the start apart from the slots.
       expect(host.querySelectorAll('[role="meter"][aria-label="stamina"]')).toHaveLength(2);
       act(() => slotButton(host, "Army 3").click());
       expect(slotsOffered(host)).toEqual([
         ["Army 2", "false"],
         ["Army 3", "true"],
       ]);
-      press(host, "Max");
+      expect(host.querySelector(".deploy-sheet__sub")?.textContent).toContain("Slot 3 of 3");
+      expect(host.querySelector(".deploy-sheet__sub")?.textContent).toContain("150/150");
       await act(async () => deployButton(host)!.click());
       expect(createExplorerArmy).toHaveBeenCalledWith(expect.objectContaining({ slot: 2 }));
     } finally {
@@ -253,9 +252,8 @@ describe("the Deploy sheet", () => {
       openArmyDeployment({ structureId: 7, isExplorer: true, direction: Direction.WEST });
       const { host, root } = render(store, row);
       try {
-        expect(slotsOffered(host)).toEqual([["Army 3", "true"]]);
+        expect(host.querySelector(".deploy-sheet__sub")?.textContent).toContain("Slot 3 of 3");
         expect(deployButton(host)).toBeDefined();
-        press(host, "Max");
         await act(async () => deployButton(host)!.click());
         expect(createExplorerArmy).toHaveBeenCalledWith(
           expect.objectContaining({ slot: 2, spawnDirection: Direction.WEST }),
@@ -316,7 +314,7 @@ describe("the Deploy sheet", () => {
     }
   });
 
-  it("opens at no troops, with Max and a slider for the count, and deploys the count typed", async () => {
+  it("opens at full stack, expands Adjust size for custom counts, and deploys the count typed", async () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     const { store, row } = frontierDay();
     const createExplorerArmy = vi.fn(() => Promise.resolve({ transaction_hash: "0x1" }));
@@ -330,30 +328,22 @@ describe("the Deploy sheet", () => {
     const onClose = vi.fn();
     const { host, root } = render(store, row, onClose);
     click(host.querySelector('button[aria-label="Army 2"]')!);
-    // 420 knights at home and 1,000 wheat at 2 a troop: all 420 can go, and nothing but the price names the wheat.
-    expect(outOf(host)).toBe("of 420");
     expect(host.querySelector(".ui-notice")).toBeNull();
-    // No troops yet, so nothing to deploy; with 420 at most, +500 would only be Max.
-    expect(countField(host).value).toBe("0");
-    expect(deployButton(host)?.disabled).toBe(true);
-    press(host, "Max");
-    // At the most the troops at home stop it, not the wheat: still no line.
+    expect(deployButton(host)?.disabled).toBe(false);
+    expect(host.querySelector(".deploy-troop-card")?.textContent).toContain("420");
+    press(host, "Adjust size");
+    expect(outOf(host)).toBe("of 420");
     expect([countField(host).value, host.querySelector(".ui-notice")]).toEqual(["420", null]);
     typeCount(host, 120);
-    // Deploy in the foot beside its price, and nothing else.
     expect(deployButton(host)?.textContent).toBe("Deploy");
     expect(foot(host)).toBe("240 WheatDeploy");
     expect(host.textContent!.replace(foot(host), "")).not.toMatch(/wheat/i);
-    // The window shows the decision only: the count's slider over the same range, no stamina, attribute marks or day
-    // clock.
     const slider = host.querySelector<HTMLInputElement>("input[type=range]");
     expect([slider?.getAttribute("aria-label"), slider?.max, slider?.value]).toEqual([
       "Troops: how many go",
       "420",
       "120",
     ]);
-    // The day's clock is the top bar's; the stamina the army starts on is the sheet's bar and its number, with no line
-    // explaining either (the owner: "good UI/UX doesnt need subtext").
     expect(host.textContent).not.toMatch(/Day ends/i);
     expect(startReading(host)).toEqual({ number: "150/150", meter: [150, 150] });
     expect(host.textContent).not.toMatch(/starts|its slot|Leaves|Steps out/);
@@ -387,17 +377,14 @@ describe("the Deploy sheet", () => {
     const refused = vi.spyOn(toast, "error").mockImplementation(() => "");
     const onClose = vi.fn();
     const { host, root } = render(store, row, onClose);
-    press(host, "Max");
     click(host.querySelector('button[aria-label="Army 2"]')!);
     await act(async () => {
       deployButton(host)!.click();
       deployButton(host)!.click();
     });
     expect(createExplorerArmy).toHaveBeenCalledTimes(1);
-    // The sheet closed as the command left; the wait is the dock slot's from here.
     expect(onClose).toHaveBeenCalledOnce();
     expect(inFlight("deploy", 7)).toBe(1);
-    // Opened again before the outcome, it cannot send a second army.
     expect([...host.querySelectorAll("button")].find((button) => button.textContent === "Deploying…")?.disabled).toBe(
       true,
     );
@@ -409,7 +396,7 @@ describe("the Deploy sheet", () => {
     host.remove();
   });
 
-  it("caps the count where the wheat runs out and names the wheat only at that cap, never at 0 or below it", () => {
+  it("caps the count where the wheat runs out and names the wheat only at that cap, never below it", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     const { store, row } = frontierDay();
     store.applyFacts([
@@ -421,9 +408,9 @@ describe("the Deploy sheet", () => {
     ] as never);
     const { host, root } = render(store, row);
     click(host.querySelector('button[aria-label="Army 2"]')!);
-    // At no troops nothing names the wheat (owner, 1 November: "not at 0 its confusing").
-    expect([outOf(host), countField(host).value, wheatLine(host)]).toEqual(["of 54", "0", null]);
-    // Below the cap the price is all: 30 troops for 60 wheat.
+    expect(wheatLine(host)).toEqual({ line: "Wheat for only 50 of 420 troops", press: "Get Wheat" });
+    press(host, "Adjust size");
+    expect([outOf(host), countField(host).value]).toEqual(["of 54", "50"]);
     typeCount(host, 30);
     expect([wheatLine(host), foot(host)]).toEqual([null, "60 WheatDeploy"]);
     typeCount(host, 300);
@@ -431,7 +418,6 @@ describe("the Deploy sheet", () => {
     expect(wheatLine(host)).toEqual({ line: "Wheat for only 54 of 420 troops", press: "Get Wheat" });
     expect(foot(host)).toBe("108 WheatDeploy");
     expect(deployButton(host)?.disabled).toBe(false);
-    // One under the cap, the line goes; Max brings it back.
     typeCount(host, 49);
     expect(wheatLine(host)).toBeNull();
     press(host, "Max");
@@ -460,7 +446,7 @@ describe("the Deploy sheet", () => {
     ] as never);
     const { host, root } = render(store, row);
     click(host.querySelector('button[aria-label="Army 2"]')!);
-    press(host, "Max");
+    press(host, "Adjust size");
     expect(outOf(host)).toBe(most);
     if (price) expect(foot(host)).toBe(price);
     act(() => root.unmount());
@@ -495,24 +481,20 @@ describe("the Deploy sheet", () => {
     const onClose = vi.fn();
     const { host, root, draw } = render(store, row, onClose);
     click(host.querySelector('button[aria-label="Army 2"]')!);
-    expect([outOf(host), wheatLine(host)]).toEqual(["of 9", null]);
-    press(host, "Max");
+    press(host, "Adjust size");
     expect([countField(host).value, outOf(host), foot(host)]).toEqual(["8", "of 9", "16 WheatDeploy"]);
     expect(wheatLine(host)).toEqual({ line: "Wheat for only 8 of 420 troops", press: "Get Wheat" });
 
-    // Ten seconds of farming: 2 more wheat, one more troop. Max meant the most, so the count moves with the label.
     clock.tick = 13;
     draw();
     expect([countField(host).value, outOf(host), foot(host)]).toEqual(["9", "of 10", "18 WheatDeploy"]);
     expect(wheatLine(host)?.line).toBe("Wheat for only 9 of 420 troops");
 
-    // A count set below the most stays where it was set, and names no wheat.
     typeCount(host, 5);
     clock.tick = 23;
     draw();
     expect([countField(host).value, outOf(host), wheatLine(host)]).toEqual(["5", "of 11", null]);
 
-    // No Build anywhere: Get Wheat on the line, back at Max, takes the player to the realm, where farms are built.
     expect([...host.querySelectorAll("button")].some((button) => button.textContent === "Build")).toBe(false);
     press(host, "Max");
     act(() => host.querySelector<HTMLButtonElement>(".ui-notice__fix button")!.click());
@@ -533,8 +515,6 @@ describe("the Deploy sheet", () => {
     ] as never);
     const { host, root } = render(store, row);
     click(host.querySelector('button[aria-label="Army 2"]')!);
-    // The most is 0 and the wheat is why: this 0 is the cap, so the line says so (owner, 1 November).
-    expect(outOf(host)).toBe("of 0");
     expect(wheatLine(host)).toEqual({ line: "Needs 2 Wheat, have 1", press: "Get Wheat" });
     expect(deployButton(host)?.disabled).toBe(true);
     act(() => root.unmount());
@@ -690,10 +670,8 @@ describe("the Deploy sheet", () => {
     expect(host.textContent).not.toMatch(/tile/i);
     // The taken tile is passed over: the map marks the first open one.
     expect(map.asked.at(-1)).toEqual({ structureId: 7, direction: ringDirection(store, row, 1) });
-    // A tap on another lit tile orders again (openArmyDeployment), and the map marks that one.
     act(() => openArmyDeployment({ structureId: 7, isExplorer: true, direction: Direction.WEST }));
     expect(map.asked.at(-1)).toEqual({ structureId: 7, direction: Direction.WEST });
-    press(host, "Max");
     await act(async () => deployButton(host)!.click());
     expect(createExplorerArmy).toHaveBeenCalledWith(expect.objectContaining({ spawnDirection: Direction.WEST }));
 
