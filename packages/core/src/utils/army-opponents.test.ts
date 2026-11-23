@@ -1,21 +1,21 @@
 import { expect, it } from "vitest";
 import type { NativeFactStore } from "../client/native-fact-store";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
-import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/balance.gen";
+import { nativeCommandBits } from "../../../../contracts/l3/world-native/schema/commands.gen";
 import { armyCombatRefusal, isAspectAlly } from "./army-opponents";
 
-it("refuses every army target where the game has the Deep, and none where it has not", () => {
+it("refuses every army target where the game leaves the army battle out, and none where it has it", () => {
   const army = { game_id: 7, explorer_id: 11n, owner: 1n } as NativeRows["ExplorerTroops"];
   const enemy = { ...army, explorer_id: 12n, owner: 2n };
-  let modeRules = nativeRuleConstants.DEPTH_CONTENTS;
+  let commandMask = 0n;
   const store = {
     require: (model: string) => {
-      if (model === "SliceRules") return { mode_rules: modeRules };
+      if (model === "SliceRules") return { command_mask: commandMask };
       throw new Error(`Unexpected fact ${model}`);
     },
   } as unknown as NativeFactStore;
-  expect(armyCombatRefusal(store, army, enemy)).toBe("in-the-open");
-  modeRules = 0;
+  expect(armyCombatRefusal(store, army, enemy)).toBe("no-attack");
+  commandMask = BigInt(nativeCommandBits.Battle);
   expect(armyCombatRefusal(store, army, enemy)).toBeUndefined();
   expect(armyCombatRefusal(store, army, { ...enemy, game_id: 8 })).toBe("no-attack");
 });

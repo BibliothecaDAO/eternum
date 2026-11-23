@@ -1,21 +1,23 @@
 import type { NativeFactStore } from "../client/native-fact-store";
-import { isModeRuleEnabled } from "./mode-rules";
+import type { nativeCommandBits } from "../../../../contracts/l3/world-native/schema/commands.gen";
+import { isCommandEnabled } from "./mode-rules";
 
 /** The same Frontier boundary for the map's order and the selected target's card. */
 export function armyCombatRefusal(
   store: Pick<NativeFactStore, "require">,
   attacker: { game_id: number; explorer_id: number | bigint },
   defender: { game_id: number; explorer_id: number | bigint },
-): "no-attack" | "in-the-open" | undefined {
+): "no-attack" | undefined {
   if (attacker.game_id !== defender.game_id) return "no-attack";
-  return openFieldRefusal(store, attacker.game_id);
+  return commandRefusal(store, attacker.game_id, "Battle");
 }
 
-export const openFieldRefusal = (
+export const commandRefusal = (
   store: Pick<NativeFactStore, "require">,
   game_id: number,
-): "in-the-open" | undefined =>
-  isModeRuleEnabled(store.require("SliceRules", { game_id }), "DEPTH_CONTENTS") ? "in-the-open" : undefined;
+  command: keyof typeof nativeCommandBits,
+): "no-attack" | undefined =>
+  isCommandEnabled(store.require("SliceRules", { game_id }), command) ? undefined : "no-attack";
 
 export function rivalGuardRefusal(
   store: Pick<NativeFactStore, "require">,

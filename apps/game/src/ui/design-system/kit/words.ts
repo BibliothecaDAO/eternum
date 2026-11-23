@@ -774,7 +774,7 @@ export const ATTACK_REFUSAL_WORDS = {
   "deep-ring-closed": "This ring has not opened today",
   "target-must-be-unowned": "Only unclaimed structures can be attacked",
   "own-target": "You hold it",
-  "in-the-open": "Armies in the open cannot be attacked",
+  "no-attack": "This game allows no attack here",
   allied: "Allied armies cannot attack each other",
   "season-immunity": "Under season immunity",
   "village-immunity": "The village is under immunity",

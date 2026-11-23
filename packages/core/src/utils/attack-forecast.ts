@@ -15,7 +15,7 @@ import { readDeepSite, readDeepSiteDefender } from "../client/views/deep-sites";
 import { resolveExplorerCombatTroops, resolveExplorerTroops, staminaAt } from "../managers/troop-stamina";
 import { STAMINA_MODELS } from "../client/views/stamina";
 import { getDefendingGuards, getGuardsByStructure, GUARD_MODELS } from "./army";
-import { openFieldRefusal, rivalGuardRefusal } from "./army-opponents";
+import { commandRefusal, rivalGuardRefusal } from "./army-opponents";
 import {
   forecastFight,
   isCombatGuard,
@@ -52,7 +52,7 @@ export type AttackRefusal =
   | "deep-ring-closed"
   | "target-must-be-unowned"
   | "own-target"
-  | "in-the-open"
+  | "no-attack"
   | "allied"
   | "season-immunity"
   | "village-immunity"
@@ -296,7 +296,7 @@ function armyDefence(scene: Scene, attacker: Combatant, army: NativeRows["Explor
   const sides = { attacker, defender, queued: [] };
   const refusal =
     defendingArmyRefusal(scene, army.explorer_id) ??
-    openFieldRefusal(scene.store, scene.gameId) ??
+    commandRefusal(scene.store, scene.gameId, "Battle") ??
     ownTargetRefusal(scene, attacker.home, homeOwner(scene, defender.home)) ??
     immunityRefusal(scene, attacker.home) ??
     immunityRefusal(scene, defender.home) ??
@@ -386,7 +386,7 @@ function guardAttack(scene: Scene, structureId: bigint, targetId: bigint): Defen
     (isAdjacent(tile, defender.tile) ? undefined : "out-of-range") ??
     immunityRefusal(scene, structureId) ??
     immunityRefusal(scene, defender.home) ??
-    openFieldRefusal(store, gameId);
+    commandRefusal(store, gameId, "GuardAttack");
   return refusal ? refused(refusal, sides) : { sides };
 }
 

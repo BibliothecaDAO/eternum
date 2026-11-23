@@ -366,10 +366,10 @@ describe("one attack forecast for every combat surface", () => {
     const field = { col: 100, row: 100 };
     game.army(10, 1, field);
     game.army(20, 2, beside(field));
-    expect(refusalOf(game.forecast(10, 20))).toBe("in-the-open");
+    expect(refusalOf(game.forecast(10, 20))).toBe("no-attack");
     game.army(10, 1, beside(DEEP, 3));
     game.army(20, 2, beside(DEEP, 4));
-    expect(refusalOf(game.forecast(10, 20))).toBe("in-the-open");
+    expect(refusalOf(game.forecast(10, 20))).toBe("no-attack");
   });
 
   it("judges the attacker's cooldown at the chain second it is given (addd1a)", () => {
@@ -410,7 +410,7 @@ describe("one attack forecast for every combat surface", () => {
     game.army(20, 2, beside(DEEP, 2));
     expect(refusalOf(game.forecast(70, 20))).toBe("out-of-range");
     game.army(20, 2, beside(DEEP));
-    expect(refusalOf(game.forecast(70, 20))).toBe("in-the-open");
+    expect(refusalOf(game.forecast(70, 20))).toBe("no-attack");
   });
 
   it("counts the attacking army's active Blade in its damage (44985b)", () => {

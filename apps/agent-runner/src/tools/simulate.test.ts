@@ -192,7 +192,7 @@ it.each([4, 5, 6, 7, 8, 9])("refuses a field fight in the open and reports a gar
     });
   }
   if (!defenderGuard) {
-    expect((await simulate(defendingId)).content).toEqual([{ type: "text", text: "Attack refused: in-the-open." }]);
+    expect((await simulate(defendingId)).content).toEqual([{ type: "text", text: "Attack refused: no-attack." }]);
     return;
   }
   const result = await simulate(defendingId);
