@@ -1,4 +1,4 @@
-import { logisticsStamina, isOathResearch } from "@bibliothecadao/eternum";
+import { buildingOpensAtLevel, isOathResearch, logisticsStamina } from "@bibliothecadao/eternum";
 import type { IconMeaning, IconMark } from "@/ui/design-system/icon";
 import { RESEARCH_TREE, SHRINE, SPIRE, STAMINA, type RankedWords, type Tier, WELL } from "@/ui/design-system/kit/words";
 import { nativeResearchConstants as research, nativeRuleConstants } from "@bibliothecadao/eternum/game-client";
@@ -45,6 +45,7 @@ export type NodeState = keyof typeof RESEARCH_TREE.states;
 
 /** One thing a node's next tier needs, and whether the realm has it. */
 export type Need =
+  | { kind: "level"; met: boolean; level: string }
   | { kind: "stands"; met: boolean; building: string; icon: IconMeaning }
   | { kind: "tier"; met: boolean; node: string; icon: IconMeaning }
   | { kind: "store"; met: boolean; limit: number; need: number; level: string }
@@ -103,12 +104,23 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
     return rankName(level ?? 3);
   };
 
-  /** What every tier of a building row needs: the building, the labor store's room, the Essence and labor. */
-  const buildingNeeds = (row: number, name: string, icon: IconMeaning, tier: number, extra: Need[]): Need[] => {
+  const buildingNeeds = (
+    row: number,
+    category: BuildingType,
+    name: string,
+    icon: IconMeaning,
+    tier: number,
+    extra: Need[],
+  ): Need[] => {
     const price = realm.price(row, tier);
+    const standing = (realm.standing[row] ?? 0) > 0;
+    const opensAt = buildingOpensAtLevel(category);
+    const levelNeed: Need[] =
+      opensAt > 0 && !standing ? [{ kind: "level", met: realm.castleLevel >= opensAt, level: rankName(opensAt) }] : [];
     return [
       ...extra,
-      { kind: "stands", met: (realm.standing[row] ?? 0) > 0, building: name, icon },
+      ...levelNeed,
+      { kind: "stands", met: standing, building: name, icon },
       ...(price.labor > store
         ? [{ kind: "store", met: false, limit: store, need: price.labor, level: levelFor(price.labor) } as const]
         : []),
@@ -138,8 +150,10 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
     const maximum = isOathResearch(row) ? research.OATH_SLOTS_STEPS : 5;
     const next = tier < maximum ? tier + 1 : undefined;
     const nextNeeds = (at: number) => {
-      const needs = buildingNeeds(row, name, icon, at, options.extra ?? []);
-      return constructionGrant ? needs.filter((need) => need.kind === "stands" || need.kind === "tier") : needs;
+      const needs = buildingNeeds(row, category, name, icon, at, options.extra ?? []);
+      return constructionGrant
+        ? needs.filter((need) => need.kind === "level" || need.kind === "stands" || need.kind === "tier")
+        : needs;
     };
     const needs = next === undefined ? [] : nextNeeds(next);
     return {
@@ -395,7 +409,12 @@ const logisticsStep = (tier: number, board: RealmResearchFacts["board"]): Pick<F
 /** A node's state from its needs: a missing step locks it; held short of Essence or labor, it waits on them. */
 const stateOf = (done: boolean, needs: Need[]): NodeState => {
   if (done) return "done";
-  if (needs.some((need) => !need.met && (need.kind === "stands" || need.kind === "tier" || need.kind === "store")))
+  if (
+    needs.some(
+      (need) =>
+        !need.met && (need.kind === "level" || need.kind === "stands" || need.kind === "tier" || need.kind === "store"),
+    )
+  )
     return "locked";
   return needs.every((need) => need.met) ? "ready" : "short";
 };
@@ -403,22 +422,21 @@ const stateOf = (done: boolean, needs: Need[]): NodeState => {
 /** The first thing a node waits on: the one line a locked or short node shows, and the step its fix takes. */
 export const firstMissing = (node: TreeNode): Need | undefined => node.needs.find((need) => !need.met);
 
-/** A need in a player's words: "Build a Workshop", "Barracks 1/2 purchases first", "Essence 300 / 1,000". */
 export const needLine = (need: Need): string => {
   switch (need.kind) {
+    case "level":
+      return RESEARCH_TREE.needsLevel(need.level);
     case "stands":
-      return need.met ? RESEARCH_TREE.stands(need.building) : RESEARCH_TREE.build(need.building);
+      return need.met ? RESEARCH_TREE.stands(need.building) : RESEARCH_TREE.needsBuilding(need.building);
     case "tier":
-      return need.met ? need.node : RESEARCH_TREE.first(need.node);
+      return need.met ? need.node : RESEARCH_TREE.needsFirst(need.node);
     case "store":
       return RESEARCH_TREE.store(formatExact(need.limit), formatExact(need.need), need.level);
     case "essence":
     case "labor":
-      return RESEARCH_TREE.held(
-        RESEARCH_TREE.nouns[need.kind],
-        formatExact(Math.floor(need.have)),
-        formatExact(need.need),
-      );
+      return need.met
+        ? RESEARCH_TREE.held(RESEARCH_TREE.nouns[need.kind], formatExact(Math.floor(need.have)), formatExact(need.need))
+        : RESEARCH_TREE.needsResource(formatExact(need.need), RESEARCH_TREE.nouns[need.kind]);
   }
 };
 

@@ -86,6 +86,7 @@ export const ResearchPanel = ({
 
 const ResearchRow = ({ node, picked, onPick }: { node: TreeNode; picked: boolean; onPick: () => void }) => {
   const look = STATE_LOOK[node.state];
+  const missing = firstMissing(node);
   const price = node.needs.filter(isPrice);
   const badge = isOathResearch(node.row) ? (
     <span className="text-hud-label">
@@ -121,31 +122,41 @@ const ResearchRow = ({ node, picked, onPick }: { node: TreeNode; picked: boolean
             {badge}
           </span>
         }
-        detail={<span className="block truncate">{node.gives.line}</span>}
-        trail={
-          <span className="flex flex-col items-end gap-0.5">
-            {node.state === "done" ? (
-              <span className="inline-flex items-center gap-1 text-hud-label text-hud-good">
-                <Icon name="check" size={14} />
-                {RESEARCH_TREE.states.done}
+        detail={
+          <span className="flex flex-col gap-0.5">
+            <span className="block truncate">{node.gives.line}</span>
+            {(node.state === "locked" || node.state === "short") && missing && (
+              <span data-lock-reason className="inline-flex items-center gap-1 text-hud-label text-hud-bad">
+                <Icon name={needIcon(missing)} size={13} />
+                <span className="truncate">{needLine(missing)}</span>
               </span>
-            ) : node.state === "locked" ? (
-              <Icon name="lock" size={16} />
-            ) : (
-              price.map((need) => (
-                <span
-                  key={need.kind}
-                  className={cn(
-                    "inline-flex items-center gap-0.5 text-hud-label tabular-nums",
-                    need.met ? "text-hud-ink" : "text-hud-bad",
-                  )}
-                >
-                  <Icon name={need.kind} size={13} />
-                  {formatShort(need.need)}
-                </span>
-              ))
             )}
           </span>
+        }
+        trail={
+          node.state === "locked" || node.state === "short" ? undefined : (
+            <span className="flex flex-col items-end gap-0.5">
+              {node.state === "done" ? (
+                <span className="inline-flex items-center gap-1 text-hud-label text-hud-good">
+                  <Icon name="check" size={14} />
+                  {RESEARCH_TREE.states.done}
+                </span>
+              ) : (
+                price.map((need) => (
+                  <span
+                    key={need.kind}
+                    className={cn(
+                      "inline-flex items-center gap-0.5 text-hud-label tabular-nums",
+                      need.met ? "text-hud-ink" : "text-hud-bad",
+                    )}
+                  >
+                    <Icon name={need.kind} size={13} />
+                    {formatShort(need.need)}
+                  </span>
+                ))
+              )}
+            </span>
+          )
         }
       />
     </div>
@@ -247,8 +258,8 @@ const NodeChoice = ({
           <HudRanked words={node.gives.next ? RESEARCH_TREE.step(node.gives.now, node.gives.next) : node.gives.now} />
         </span>
       </span>
-      {missing && !isPrice(missing) && (
-        <span className="flex items-center gap-2 text-hud-label text-hud-bad">
+      {missing && (
+        <span data-lock-reason className="flex items-center gap-2 text-hud-label text-hud-bad">
           <Icon name={needIcon(missing)} size={16} />
           {needLine(missing)}
         </span>
@@ -294,8 +305,20 @@ const NodeChoice = ({
 const isPrice = (need: Need): need is Extract<Need, { kind: "essence" | "labor" }> =>
   need.kind === "essence" || need.kind === "labor";
 
-const needIcon = (need: Need): IconMeaning =>
-  need.kind === "essence" ? "essence" : need.kind === "labor" ? "labor" : "lock";
+const needIcon = (need: Need): IconMeaning => {
+  switch (need.kind) {
+    case "essence":
+      return "essence";
+    case "labor":
+      return "labor";
+    case "level":
+    case "store":
+      return "realm";
+    case "stands":
+    case "tier":
+      return need.icon;
+  }
+};
 
 /** The node's tier and its next as gems, complete at Legendary, or a one-off node's price. */
 const LevelLine = ({ node }: { node: TreeNode }) => {

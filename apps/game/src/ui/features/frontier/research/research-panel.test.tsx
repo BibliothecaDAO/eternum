@@ -12,7 +12,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { nativeResearchConstants as research } from "@bibliothecadao/eternum/game-client";
 
-import { MID_REALM } from "./progression-fixture";
+import { EARLY_REALM, MID_REALM } from "./progression-fixture";
 import { ResearchPanel } from "./research-panel";
 import { CastleResearch } from "../upgrade/castle-view";
 import { needLine, readResearchTree, type TreeNode } from "./research-tree";
@@ -110,6 +110,74 @@ it("holds a locked node's verb, says why, and offers the step that opens it", ()
   ).toEqual(["Level up the castle"]);
   act(() => button(/Level up the castle/)!.click());
   expect(onFix).toHaveBeenCalledOnce();
+});
+
+it("states why each locked or short row is held back in plain words without repeating its button", () => {
+  const early = readResearchTree(EARLY_REALM);
+  const fixFor = (need: TreeNode["needs"][number]) => {
+    if (need.kind === "level") return { icon: "realm" as const, word: "Level up the castle", onFix: vi.fn() };
+    if (need.kind === "stands") return { icon: need.icon, word: `Build a ${need.building}`, onFix: vi.fn() };
+    if (need.kind === "tier") return { icon: need.icon, word: need.node, onFix: vi.fn() };
+    return undefined;
+  };
+  act(() =>
+    root.render(
+      <ResearchPanel
+        nodes={early}
+        picked={`row-${research.ROW_CONSCRIPTION}`}
+        onPick={vi.fn()}
+        sending={new Set()}
+        fixFor={fixFor}
+        onResearch={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    ),
+  );
+  const campRow = host.querySelector(`[data-node='row-${research.ROW_CONSCRIPTION}']`)!;
+  expect(campRow.querySelector("[data-lock-reason]")?.textContent).toBe("Needs the Realm at City");
+  const campChoice = host.querySelector("[data-lab='node-choice']")!;
+  const campReason = campChoice.querySelector("[data-lock-reason]")!.textContent;
+  const campButton = campChoice.querySelector<HTMLButtonElement>("[data-research-footer] button")!.textContent;
+  expect(campReason).toBe("Needs the Realm at City");
+  expect(campButton).toBe("Level up the castle");
+  expect(campReason).not.toBe(campButton);
+
+  const city = readResearchTree({ ...EARLY_REALM, castleLevel: 1 });
+  act(() =>
+    root.render(
+      <ResearchPanel
+        nodes={city}
+        picked={`row-${research.ROW_CONSCRIPTION}`}
+        onPick={vi.fn()}
+        sending={new Set()}
+        fixFor={fixFor}
+        onResearch={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    ),
+  );
+  const standingReason = host.querySelector("[data-lab='node-choice'] [data-lock-reason]")!.textContent;
+  const buildButton = host.querySelector<HTMLButtonElement>(
+    "[data-lab='node-choice'] [data-research-footer] button",
+  )!.textContent;
+  expect(standingReason).toBe("Needs a Conscription Camp standing");
+  expect(buildButton).toBe("Build a Conscription Camp");
+  expect(standingReason).not.toBe(buildButton);
+
+  act(() =>
+    root.render(
+      <ResearchPanel
+        nodes={early}
+        picked="well"
+        onPick={vi.fn()}
+        sending={new Set()}
+        fixFor={fixFor}
+        onResearch={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    ),
+  );
+  expect(host.querySelector("[data-lab='node-choice'] [data-lock-reason]")!.textContent).toBe("Needs 2,500 Essence");
 });
 
 describe("the picked building's choice, at the panel's foot (the owner's pick C)", () => {
