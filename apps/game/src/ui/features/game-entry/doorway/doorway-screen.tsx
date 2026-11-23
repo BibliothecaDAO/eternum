@@ -14,7 +14,7 @@ import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { AGE_LOCKUP, REALMS_MARK } from "@/ui/design-system/icon-meaning";
 import { AppButton, AppNotice, AppPanel } from "@/ui/design-system/kit/app-elements";
 import { paintingSources, type Painting } from "@/ui/design-system/kit/paintings";
-import { DAY, DOORWAY_WORDS, TRY_AGAIN, WORDS } from "@/ui/design-system/kit/words";
+import { ASPECT_STEP_WORDS, DAY, DOORWAY_WORDS, TRY_AGAIN, WORDS } from "@/ui/design-system/kit/words";
 
 import type { DoorwayView } from "./doorway-view";
 import { EntryProgress } from "./entry-progress";
@@ -154,7 +154,7 @@ const LoadingStage = ({
         )}
         {realm && (
           <div className="doorway-stage__identity">
-            <h1 className="doorway-stage__heading">{`Entering ${realm.name}`}</h1>
+            <h1 className="doorway-stage__heading">{DOORWAY_WORDS.enteringRealm(realm.name)}</h1>
             {meta && <p className="doorway-stage__meta">{meta}</p>}
           </div>
         )}
@@ -170,7 +170,7 @@ const LoadingStage = ({
 const buildStageMeta = (aspect: AspectId | null, day: number | null, desktop: boolean): string | null => {
   const parts: string[] = [];
   if (aspect !== null) {
-    parts.push(desktop ? `Aspect of ${aspectName(aspect)}` : aspectName(aspect));
+    parts.push(desktop ? ASPECT_STEP_WORDS.aspectOf(aspectName(aspect)) : aspectName(aspect));
   }
   if (day !== null) {
     parts.push(`${DAY} ${day}`);

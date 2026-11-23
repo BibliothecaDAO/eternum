@@ -69,7 +69,13 @@ const Holding = ({
 );
 
 /** The linked wallet's Realms, each by its number and name; the Market sells and buys them. */
-const RealmsSheet = ({ held, onClose }: { held: ReturnType<typeof useHeldRealms>["held"]; onClose: () => void }) => (
+export const RealmsSheet = ({
+  held,
+  onClose,
+}: {
+  held: ReturnType<typeof useHeldRealms>["held"];
+  onClose: () => void;
+}) => (
   <ShellWindow title={YOUR_REALMS} onClose={onClose}>
     <div className="flex flex-col gap-4">
       {held.isError ? (

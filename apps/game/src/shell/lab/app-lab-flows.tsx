@@ -128,8 +128,8 @@ export const LabConnect = () => {
       <PlayPage />
       <SignInStage
         title={shown.title}
-        heading={isStart ? "Enter the Frontier" : undefined}
-        subtitle={isStart ? "Free to play · No wallet required" : undefined}
+        heading={isStart ? SIGN_IN_WORDS.enterHeading : undefined}
+        subtitle={isStart ? SIGN_IN_WORDS.enterSubtitle : undefined}
         onClose={noop}
       >
         {shown.body}

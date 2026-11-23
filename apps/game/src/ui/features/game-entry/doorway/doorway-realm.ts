@@ -17,6 +17,15 @@ export const doorwayRealmOf = (structure: NativeRows["Structure"], store: Native
   };
 };
 
+export const toPaddedFeltAddress = (address: string | null | undefined): string | null => {
+  if (!address) return null;
+  try {
+    return `0x${BigInt(address).toString(16).padStart(64, "0")}`;
+  } catch {
+    return null;
+  }
+};
+
 export const doorwayRealmFromId = (realmId: number): DoorwayRealm | null => {
   const realm = canonicalRealm(realmId);
   if (!realm) return null;

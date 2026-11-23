@@ -146,3 +146,14 @@ it("says a linked wallet holding no Realm holds none", async () => {
   await you.press("0Realms");
   expect(you.sheet()!.textContent).toContain("Your linked wallet holds no Realm");
 });
+
+it("uses numberedRealm in the desktop showcase and opens the shared sheet for all Realms beyond nine", async () => {
+  signedIn.wallet = "0x269c";
+  const twelve = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+  relay(() => held(...twelve));
+  const you = await openYou(1440);
+  await vi.waitFor(() => expect(you.container.querySelectorAll(".profile-realm-tile")).toHaveLength(9));
+  expect(you.container.querySelector(".profile-realm-tile__name")?.textContent).toBe(named(1));
+  await you.press("All 12");
+  expect(you.sheet()!.querySelectorAll("li")).toHaveLength(12);
+});

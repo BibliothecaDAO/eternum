@@ -1,7 +1,6 @@
 import { pageNavigation } from "@/utils/page-navigation";
 import { configManager } from "@bibliothecadao/eternum";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
-import { StructureType } from "@bibliothecadao/types";
 import { useMemo, useSyncExternalStore } from "react";
 import { useLocation } from "react-router-dom";
 
@@ -12,22 +11,15 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useGameEntry } from "@/hooks/use-game-entry";
 import { parsePlayRoute } from "@/play/navigation/play-route";
 import type { DirectoryGame } from "@/shell/herald";
+import { seasonRealmId } from "@/shell/season";
 import { resultsHref } from "@/shell/season-tab/results-link";
 import { useRequestSignIn } from "@/shell/sign-in/connect";
 import { modelPreparationShare, subscribeModelPreparation } from "@/three/model-preparation";
 import { BootDebugPanel } from "@/ui/debug/boot-debug-panel";
 
-import { doorwayRealmFromId, doorwayRealmOf } from "./doorway-realm";
+import { doorwayRealmFromId, doorwayRealmOf, toPaddedFeltAddress } from "./doorway-realm";
 import { DoorwayScreen, type DoorwayRealm } from "./doorway-screen";
 import { type DoorwayAudience, doorwayView, type GameRefusal } from "./doorway-view";
-
-const toPaddedFeltAddress = (address: string): string | null => {
-  try {
-    return `0x${BigInt(address).toString(16).padStart(64, "0")}`;
-  } catch {
-    return null;
-  }
-};
 
 export const PlayRouteDoorway = ({
   phase,
@@ -86,7 +78,7 @@ const openRealmWithoutMap = () =>
 
 const useRouteGame = (route: ReturnType<typeof parsePlayRoute>) => {
   const address = useAccountStore((state) => state.account?.address ?? null);
-  const player = useMemo(() => (address ? toPaddedFeltAddress(address) : null), [address]);
+  const player = useMemo(() => toPaddedFeltAddress(address), [address]);
   return (
     useGameEntry(route ?? { chainId: "", gameId: 0 }, { enabled: route !== null, player, refetchIntervalMs: 0 }).data ??
     null
@@ -94,9 +86,8 @@ const useRouteGame = (route: ReturnType<typeof parsePlayRoute>) => {
 };
 
 const directoryRealmOf = (entry: Pick<DirectoryGame, "player_state"> | null): DoorwayRealm | null => {
-  const structure = entry?.player_state?.structures.find((item) => item.category === StructureType.Realm);
-  const realmId = structure?.realm_id ?? entry?.player_state?.held_realm_id ?? null;
-  return realmId != null ? doorwayRealmFromId(realmId) : null;
+  const realmId = seasonRealmId(entry);
+  return realmId !== null ? doorwayRealmFromId(realmId) : null;
 };
 
 const useOwnRealm = (

@@ -23,6 +23,7 @@ import { nextOf } from "../return-path";
 import { lordsOf } from "../value/ledger";
 import { WalletUnread } from "../value/wallet-unread";
 import { followPayment, forgetPayment, rememberPayment, sentPaymentOf, type SentPayment } from "./fragment-payment";
+import { MAINNET_PAY_TOKENS, PAY_TOKEN_ICONS } from "./pay-tokens";
 import { PayWith } from "./pay-with";
 
 const PACKS = Object.values(STORE_PRODUCTS).map(({ fragments }) => fragments);
@@ -113,10 +114,11 @@ const Choose = ({ game, onPriced }: { game: ShopGame; onPriced: (paying: Paying)
       <div className="shop-foot">
         <div className="shop-methods">
           <span className="shop-methods__icons" aria-hidden="true">
-            <Icon name="lords" size={20} />
-            <Icon name="trade" size={18} />
+            {MAINNET_PAY_TOKENS.map(({ key }) => (
+              <Icon key={key} name={PAY_TOKEN_ICONS[key]} size={20} />
+            ))}
           </span>
-          <span>LORDS · USDC · ETH · Gas sponsored</span>
+          <span>{FRAGMENTS_PAGE_WORDS.payWithTokens(MAINNET_PAY_TOKENS.map(({ symbol }) => symbol))}</span>
         </div>
         <AppButton
           kind="primary"

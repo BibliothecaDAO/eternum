@@ -97,6 +97,7 @@ const frontier = (withRealm: boolean) =>
     day_index: 11,
     day_ends_at: NOW + LEFT_TODAY,
     next_day_length: DAY,
+    expedition: { day_unit_seconds: DAY, seed: "7" },
     season_number: 3,
     clock: {
       start_settling_at: NOW - 12 * DAY + LEFT_TODAY,

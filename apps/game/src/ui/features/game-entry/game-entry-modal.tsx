@@ -1,7 +1,7 @@
 import { AspectPicker, aspectOfOrder, aspectOffer } from "./aspect-picker";
 import { isRealmElsewhere, RealmSideWarning, seasonSide, sideAspect } from "./realm-side-warning";
 import { canonicalRealm } from "@bibliothecadao/eternum";
-import { StructureType, type AspectId } from "@bibliothecadao/types";
+import type { AspectId } from "@bibliothecadao/types";
 import { pageNavigation } from "@/utils/page-navigation";
 import { isRealmNumber, registerHomeSource } from "@/services/realm-entry";
 import { AppButton } from "@/ui/design-system/kit/app-elements";
@@ -33,8 +33,9 @@ import { fetchSettlementSnapshot, type SettlementSnapshot } from "@/runtime/worl
 import { isGameOver } from "@/runtime/world/directory";
 import { markGameEntryMilestone } from "@/ui/layouts/game-entry-timeline";
 import { resultsHref } from "@/shell/season-tab/results-link";
+import { seasonRealm } from "@/shell/season";
 import { ClockChip } from "@/ui/design-system/kit/clock-chip";
-import { doorwayRealmFromId } from "./doorway/doorway-realm";
+import { doorwayRealmFromId, toPaddedFeltAddress } from "./doorway/doorway-realm";
 import { DoorwayScreen } from "./doorway/doorway-screen";
 import { doorwayView } from "./doorway/doorway-view";
 
@@ -82,8 +83,6 @@ const deriveSettlementStatus = ({
   };
 };
 
-const toPaddedFeltAddress = (address: string): string => `0x${BigInt(address).toString(16).padStart(64, "0")}`;
-
 interface GameEntryModalProps {
   isOpen: boolean;
   game: GameRef;
@@ -126,14 +125,7 @@ export const GameEntryModal = ({
     if (!account?.address) return null;
     return createAutoSettleEntryKey({ ...game, walletAddress: account.address });
   }, [account?.address, game]);
-  const playerFeltAddress = useMemo(() => {
-    if (!account?.address) return null;
-    try {
-      return toPaddedFeltAddress(account.address);
-    } catch {
-      return null;
-    }
-  }, [account?.address]);
+  const playerFeltAddress = useMemo(() => toPaddedFeltAddress(account?.address), [account?.address]);
 
   const joinedShare = useJoinedShare();
   const keptIntent = useOrderIntent();
@@ -634,9 +626,7 @@ export const GameEntryModal = ({
     phase === "settlement" &&
     isSeasonMode &&
     ((!foundsOnItsOwn && settleStage === "idle") || (isFrontierMode && settleStage === "error"));
-  const foundedRealm = worldMeta?.player_state?.structures.find(
-    (structure) => structure.category === StructureType.Realm,
-  )?.realm_id;
+  const foundedRealm = worldMeta ? seasonRealm(worldMeta)?.realm_id : undefined;
   const homeAspect =
     choosesAspect && foundedRealm !== undefined ? aspectOfOrder(canonicalRealm(foundedRealm).order) : null;
   const homeRealm = registeredRealmId ?? (heldRealmNumber !== "" && validHeldRealm ? Number(heldRealmNumber) : null);

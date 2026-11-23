@@ -111,6 +111,7 @@ it("offers the store's packs in dollars, the Ancient Seal's chosen, and pays its
     "1,000 FragmentsThe Ancient Seal$10.00",
   ]);
   expect(packs.map((pack) => pack.getAttribute("aria-pressed"))).toEqual(["false", "false", "true"]);
+  expect(page.textContent).toContain("Pay with LORDS · ETH · STRK · USDC");
   await press(page, "Pay $10.00");
   expect(price).toHaveBeenCalledWith(GAME, 1_000);
   expect(page.textContent).toContain("The treasury receives 2,750 LORDS");

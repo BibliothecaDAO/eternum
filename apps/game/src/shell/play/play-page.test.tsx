@@ -210,6 +210,28 @@ it.each([
   expect(page.text()).not.toMatch(/\b1 [Pp]layers\b/);
 });
 
+it("draws no race bars when aspect counts are unknown, and draws no bar for an Aspect with zero members", async () => {
+  reads.directory = answered({ games: [ownSeason] });
+  reads.history = answered({ games: [], next: null, failures: [] });
+  const unknown = await mount();
+  expect(unknown.container.querySelectorAll(".play-aspect__column")).toHaveLength(0);
+  await cleanup?.();
+
+  reads.directory = answered({
+    games: [
+      game({
+        ...ownSeason,
+        aspect_members: { 1: 100, 2: 50, 3: 0, 4: 0 },
+      }),
+    ],
+  });
+  const known = await mount();
+  const heights = [...known.container.querySelectorAll("[data-aspect-id]")].map(
+    (node) => node.querySelector<HTMLElement>(".play-aspect__column")?.style.height ?? "none",
+  );
+  expect(heights).toEqual(["100%", "50%", "none", "none"]);
+});
+
 it("keeps Blitz on Play once an ended Blitz's results were seen, idle and saying none is scheduled (live-qa-night-1 P3-12)", async () => {
   const ended = game({ game_id: 2, mode: "blitz", status: "Ended", name: "test-qa-fresh-1" } as Partial<DirectoryGame>);
   reads.directory = answered({ games: [ownSeason] });

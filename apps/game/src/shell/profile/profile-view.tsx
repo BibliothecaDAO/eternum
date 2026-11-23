@@ -3,7 +3,7 @@ import "./profile-view.css";
 import { canonicalRealm } from "@bibliothecadao/eternum";
 import { aspectName, catalogOrder, formatAmount, type AspectId } from "@bibliothecadao/types";
 import { profileOfIdentityUser } from "@realms-world/identity";
-import type { CSSProperties } from "react";
+import { useState, type CSSProperties } from "react";
 import { useLocation } from "react-router-dom";
 
 import { useIdentitySession } from "@/hooks/context/identity-session";
@@ -15,20 +15,25 @@ import { aspectVariables } from "@/tokens";
 import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { Icon } from "@/ui/design-system/icon";
 import { shortAddress } from "@/ui/design-system/kit/address";
-import { AppButton, AppPanel, AppPortrait, AppSetting } from "@/ui/design-system/kit/app-elements";
+import { AppButton, AppEmpty, AppPanel, AppPortrait, AppSetting } from "@/ui/design-system/kit/app-elements";
 import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
 import { PlayerName } from "@/ui/design-system/kit/player-name";
 import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
 import {
   FRAGMENTS_PAGE_WORDS,
+  HELD_REALMS_UNREADABLE,
+  HOME_STEP_WORDS,
   INVITE_WORDS,
   LORDS_EARNED,
+  NO_HELD_REALMS,
   PROFILE_WORDS,
   RANK,
   SEASON_WORDS,
   SITES_CLEARED,
+  TRY_AGAIN,
   WALLET_WORDS,
   YOUR_REALMS,
+  numberedRealm,
 } from "@/ui/design-system/kit/words";
 import { findOwnEntry } from "@/ui/features/frontier/board/standings";
 import { realmTierIcon } from "@/ui/features/game-entry/home-source-picker";
@@ -45,7 +50,7 @@ import { chooseSeason } from "../season";
 import { HistoryRow } from "../season-tab/history-row";
 import { fragmentsHref } from "../shop/fragments-route";
 import { useNowSeconds } from "../use-now";
-import { HoldingsStrip } from "./holdings-strip";
+import { HoldingsStrip, RealmsSheet } from "./holdings-strip";
 import { linkWalletHref, SETTINGS_PATH } from "./settings-route";
 
 const useCardProfile = (account: string, own: boolean) => {
@@ -233,32 +238,69 @@ export const WalletPanel = () => {
   );
 };
 
+const SHOWCASE_REALMS = 9;
+
 export const RealmsShowcase = () => {
-  const { held } = useHeldRealms();
-  const realms = held.data ?? [];
-  if (realms.length === 0) return null;
+  const { wallet, held } = useHeldRealms();
+  const [allOpen, setAllOpen] = useState(false);
+  if (wallet === null) return null;
+  if (held.isError)
+    return (
+      <AppPanel title={YOUR_REALMS} icon="realm">
+        <AppEmpty
+          icon="realm"
+          line={HELD_REALMS_UNREADABLE}
+          action={
+            <AppButton kind="secondary" onClick={() => void held.refetch()}>
+              {TRY_AGAIN}
+            </AppButton>
+          }
+        />
+      </AppPanel>
+    );
+  const realms = held.data;
+  if (!realms) return null;
+  if (realms.length === 0)
+    return (
+      <AppPanel title={YOUR_REALMS} icon="realm">
+        <AppEmpty icon="realm" line={NO_HELD_REALMS} />
+      </AppPanel>
+    );
   return (
-    <AppPanel title={`${YOUR_REALMS} (${realms.length})`} icon="realm">
-      <ul className="profile-realms-grid">
-        {realms.slice(0, 9).map(({ realmId, map }) => {
-          const info = canonicalRealm(realmId);
-          const order = info && info.order !== 0 ? catalogOrder(info.order) : null;
-          const icon = info ? realmTierIcon(info) : "realm";
-          return (
-            <li key={realmId} className="profile-realm-tile">
-              <HomeArt map={map} icon={icon} size={64} />
-              <span className="profile-realm-tile__name">{info?.name ?? `#${realmId}`}</span>
-              {order && (
-                <span className="profile-realm-tile__order">
-                  <OrderEmblem order={order.orderId} size={16} />
-                  {order.orderName}
-                </span>
-              )}
-            </li>
-          );
-        })}
-      </ul>
-    </AppPanel>
+    <>
+      <AppPanel
+        title={HOME_STEP_WORDS.yourRealmsCount(realms.length)}
+        icon="realm"
+        cue={
+          realms.length > SHOWCASE_REALMS ? (
+            <AppButton kind="secondary" onClick={() => setAllOpen(true)}>
+              {HOME_STEP_WORDS.all(realms.length)}
+            </AppButton>
+          ) : undefined
+        }
+      >
+        <ul className="profile-realms-grid">
+          {realms.slice(0, SHOWCASE_REALMS).map(({ realmId, map }) => {
+            const info = canonicalRealm(realmId);
+            const order = info && info.order !== 0 ? catalogOrder(info.order) : null;
+            const icon = info ? realmTierIcon(info) : "realm";
+            return (
+              <li key={realmId} className="profile-realm-tile">
+                <HomeArt map={map} icon={icon} size={64} />
+                <span className="profile-realm-tile__name">{numberedRealm(realmId, info?.name)}</span>
+                {order && (
+                  <span className="profile-realm-tile__order">
+                    <OrderEmblem order={order.orderId} size={16} />
+                    {order.orderName}
+                  </span>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      </AppPanel>
+      {allOpen && <RealmsSheet held={held} onClose={() => setAllOpen(false)} />}
+    </>
   );
 };
 

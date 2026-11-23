@@ -18,6 +18,7 @@ import { mintedResourceMeaning, orderMeaning, type IconMeaning } from "@/ui/desi
 import { HudLoading } from "@/ui/design-system/kit/hud-elements";
 import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
 import {
+  ASPECT_STEP_WORDS,
   HELD_REALMS_UNREADABLE,
   HOME_STEP_WORDS,
   REALM_SIDE_WORDS,
@@ -36,7 +37,7 @@ export function HomeSourcePicker({
   onChange,
   onSettled,
   disabled,
-  title = "Found Your Home",
+  title = HOME_STEP_WORDS.title,
   takenRealmIds = [],
   onSourceAvailable,
   requireSource = false,
@@ -82,9 +83,7 @@ export function HomeSourcePicker({
           <div className="home-picker__titles">
             <h2>{title}</h2>
             {registered === null && choices.length > 0 && (
-              <p className="home-picker__subtitle">
-                {`Pick one of your ${HOME_STEP_WORDS.count(choices.length)} for its quest bonus.`}
-              </p>
+              <p className="home-picker__subtitle">{HOME_STEP_WORDS.pickForBonus(choices.length)}</p>
             )}
           </div>
           {registered === null && choices.length > 0 && (
@@ -115,6 +114,7 @@ export function HomeSourcePicker({
         {showChoices && (
           <Choices
             title={splitDesktop ? title : undefined}
+            stripLabel={title}
             choices={choices}
             value={value}
             onChange={onChange}
@@ -190,7 +190,7 @@ function Featured({
     <div className="home-picker__featured" data-kind="realm" style={aspectStyle}>
       {split && (
         <div className="home-picker__selected-head">
-          <span className="home-picker__eyebrow">Selected Realm</span>
+          <span className="home-picker__eyebrow">{HOME_STEP_WORDS.selectedRealm}</span>
           <span className="home-picker__order-pill">
             <OrderEmblem order={choice.order} size={18} />
             {entry.orderName}
@@ -218,7 +218,7 @@ function Featured({
                 {aspect !== null && (
                   <>
                     {" · "}
-                    <span className="home-picker__aspect-label">{`Aspect of ${aspectName(aspect)}`}</span>
+                    <span className="home-picker__aspect-label">{ASPECT_STEP_WORDS.aspectOf(aspectName(aspect))}</span>
                   </>
                 )}
               </span>
@@ -255,8 +255,18 @@ function Featured({
 
 const choiceLabel = (choice: Choice) => numberedRealm(choice.realmId, choice.name);
 
+const aspectCountsOf = (choices: readonly Choice[]) =>
+  aspects
+    .map((item) => ({
+      id: item.id,
+      name: item.name,
+      count: choices.filter((choice) => catalogOrder(choice.order).aspect === item.id).length,
+    }))
+    .filter((item) => item.count > 0);
+
 function Choices({
   title,
+  stripLabel,
   choices,
   value,
   onChange,
@@ -264,6 +274,7 @@ function Choices({
   desktop,
 }: {
   title?: string;
+  stripLabel: string;
   choices: Choice[];
   value: string;
   onChange: (value: string) => void;
@@ -281,25 +292,17 @@ function Choices({
   };
   const visible = inlineVault ? choices.filter((choice) => matchesFilter(choice, aspectFilter, query)) : choices;
   const shown = inlineVault ? visible : choices.length > strip + 1 ? choices.slice(0, strip) : choices;
-  const countsByAspect = aspects
-    .map((item) => ({
-      id: item.id,
-      name: item.name,
-      count: choices.filter((choice) => catalogOrder(choice.order).aspect === item.id).length,
-    }))
-    .filter((item) => item.count > 0);
+  const countsByAspect = aspectCountsOf(choices);
   return (
     <div className="home-picker__vault">
       <div className="home-picker__vault-head">
         {title ? (
           <div className="home-picker__titles">
             <h2>{title}</h2>
-            <p className="home-picker__subtitle">
-              {`Your Order decides your Aspect · ${HOME_STEP_WORDS.count(choices.length)}`}
-            </p>
+            <p className="home-picker__subtitle">{HOME_STEP_WORDS.orderDecidesAspect(choices.length)}</p>
           </div>
         ) : (
-          <span className="home-picker__eyebrow">{`Your Realms (${choices.length})`}</span>
+          <span className="home-picker__eyebrow">{HOME_STEP_WORDS.yourRealmsCount(choices.length)}</span>
         )}
         {inlineVault && <SearchBox count={choices.length} iconSize={18} value={query} onChange={setQuery} />}
       </div>
@@ -314,7 +317,7 @@ function Choices({
       {shown.length === 0 ? (
         <p className="home-picker__sub">{HOME_STEP_WORDS.noMatch}</p>
       ) : (
-        <div className="home-picker__strip" role="group" aria-label={HOME_STEP_WORDS.title}>
+        <div className="home-picker__strip" role="group" aria-label={stripLabel}>
           {shown.map((choice) => (
             <ChoiceButton
               key={valueOf(choice)}
@@ -378,14 +381,14 @@ const AspectFilters = ({
   chosen: AspectId | null;
   onChoose: (aspect: AspectId | null) => void;
 }) => (
-  <div className="home-picker__filters" role="group" aria-label="Filter by Aspect">
+  <div className="home-picker__filters" role="group" aria-label={ASPECT_STEP_WORDS.filterByAspect}>
     <button
       type="button"
       className="app-tabs__tab home-picker__filter"
       aria-pressed={chosen === null}
       onClick={() => onChoose(null)}
     >
-      {`All (${total})`}
+      {HOME_STEP_WORDS.filterAll(total)}
     </button>
     {counts.map(({ id, name, count }) => (
       <button
@@ -397,7 +400,7 @@ const AspectFilters = ({
         onClick={() => onChoose(chosen === id ? null : id)}
       >
         <AspectMark aspect={id} size={16} decorative />
-        {`${name} (${count})`}
+        {HOME_STEP_WORDS.filterAspect(name, count)}
       </button>
     ))}
   </div>
@@ -417,13 +420,7 @@ function AllChoices({
   const [query, setQuery] = useState("");
   const [aspectFilter, setAspectFilter] = useState<AspectId | null>(null);
   const realms = choices.length;
-  const countsByAspect = aspects
-    .map((item) => ({
-      id: item.id,
-      name: item.name,
-      count: choices.filter((choice) => catalogOrder(choice.order).aspect === item.id).length,
-    }))
-    .filter((item) => item.count > 0);
+  const countsByAspect = aspectCountsOf(choices);
   const found = choices.filter((choice) => matchesFilter(choice, aspectFilter, query));
   return (
     <div className="home-picker__allgrid">

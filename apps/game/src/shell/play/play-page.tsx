@@ -1,6 +1,7 @@
 import "./play-page.css";
 
-import { aspects, formatAmount, questCatalog, type AspectId } from "@bibliothecadao/types";
+import { questWeek } from "@bibliothecadao/eternum/game-client";
+import { aspects, formatAmount, questCatalog, type AspectId, type QuestId } from "@bibliothecadao/types";
 import {
   ASPECT_PAGE_WORDS,
   BLITZ_WORDS,
@@ -113,7 +114,8 @@ const SourceGaps = ({ gaps }: { gaps: readonly SourceGap[] }) =>
   );
 
 const AspectRacePreview = ({ members }: { members: Readonly<Record<AspectId, number>> | null }) => {
-  const maxMembers = members ? Math.max(1, ...aspects.map(({ id }) => members[id] ?? 0)) : 1;
+  const maxMembers = members ? Math.max(0, ...aspects.map(({ id }) => members[id] ?? 0)) : 0;
+  const showBars = members !== null && maxMembers > 0;
   return (
     <AppPanel
       title={ASPECT_PAGE_WORDS.race}
@@ -127,12 +129,14 @@ const AspectRacePreview = ({ members }: { members: Readonly<Record<AspectId, num
       <ul className="play-aspects">
         {aspects.map(({ id, name }) => {
           const count = members?.[id] ?? null;
-          const share = count === null ? 65 : Math.max(20, Math.round((count / maxMembers) * 100));
+          const share = count !== null && maxMembers > 0 ? Math.round((count / maxMembers) * 100) : 0;
           return (
             <li key={id} data-aspect-id={id} style={aspectVariables(id) as CSSProperties} className="play-aspect">
-              <div className="play-aspect__tower" aria-hidden="true">
-                <div className="play-aspect__column" style={{ height: `${share}%` }} />
-              </div>
+              {showBars && (
+                <div className="play-aspect__tower" aria-hidden="true">
+                  {share > 0 && <div className="play-aspect__column" style={{ height: `${share}%` }} />}
+                </div>
+              )}
               <AspectMark aspect={id} size={38} decorative />
               <span className="play-aspect__name">{name}</span>
               {count !== null && <span className="play-aspect__count">{formatAmount(count)}</span>}
@@ -144,21 +148,23 @@ const AspectRacePreview = ({ members }: { members: Readonly<Record<AspectId, num
   );
 };
 
+const todayQuestIdOf = (game: DirectoryGame): QuestId | null => {
+  if (!game.expedition || game.day_index == null || game.day_index < 0) return null;
+  const entry = questWeek(BigInt(game.expedition.seed), game.day_index).find(({ day }) => day === game.day_index);
+  return entry ? (questCatalog.find(({ id }) => id === entry.quest)?.id ?? null) : null;
+};
+
 const TodayQuestPanel = ({ game, now }: { game: DirectoryGame; now: number }) => {
   const day = directoryDay(game, now);
-  const index = Math.max(0, (day.day ?? 1) - 1) % questCatalog.length;
-  const quest = questCatalog[index]!;
-  const face = dayQuestFace(quest.id);
+  const questId = todayQuestIdOf(game);
+  if (day.day === undefined || questId === null) return null;
+  const face = dayQuestFace(questId);
   const hasRealm = seasonRealm(game) !== null;
   return (
     <AppPanel
       title={DAY_BANNER_WORDS.today}
       icon="hourglass"
-      cue={
-        day.day !== undefined ? (
-          <AppChip icon="hourglass">{`${DAY} ${day.day} · ${dayLeftCompact(day.secondsLeft)}`}</AppChip>
-        ) : undefined
-      }
+      cue={<AppChip icon="hourglass">{`${DAY} ${day.day} · ${dayLeftCompact(day.secondsLeft)}`}</AppChip>}
       className="play-today"
     >
       <div className="play-today__quest" data-play-today>
@@ -166,13 +172,8 @@ const TodayQuestPanel = ({ game, now }: { game: DirectoryGame; now: number }) =>
           <Icon name={face.icon} size={34} />
         </span>
         <div className="play-today__body">
-          <div className="play-today__row">
-            <span className="play-today__name">{face.name}</span>
-            <span className="play-today__unit">{face.unit}</span>
-          </div>
-          <div className="play-today__track" aria-hidden="true">
-            <div className="play-today__fill" />
-          </div>
+          <span className="play-today__name">{face.name}</span>
+          <span className="play-today__unit">{face.unit}</span>
         </div>
       </div>
       <div className="play-today__foot">

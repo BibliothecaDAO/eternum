@@ -223,8 +223,8 @@ const AnonymousConnect = ({
   return (
     <SignInStage
       title={WORDS.connect}
-      heading="Enter the Frontier"
-      subtitle="Free to play · No wallet required"
+      heading={SIGN_IN_WORDS.enterHeading}
+      subtitle={SIGN_IN_WORDS.enterSubtitle}
       onClose={onClose}
     >
       <StartStep

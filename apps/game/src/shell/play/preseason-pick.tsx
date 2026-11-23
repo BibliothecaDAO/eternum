@@ -137,7 +137,7 @@ const OrderPick = ({
         >
           <span className="inline-flex items-center gap-2">
             <AspectMark aspect={aspect} size={24} decorative />
-            {`Pledge to ${aspectLabel}`}
+            {PRESEASON_WORDS.pledge(aspectLabel)}
           </span>
         </AppButton>
       }

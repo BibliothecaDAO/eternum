@@ -1,11 +1,11 @@
 import { canonicalRealm } from "@bibliothecadao/eternum";
-import { aspectName, catalogOrder, formatCount, layerName, orderAspect } from "@bibliothecadao/types";
+import { aspectName, catalogOrder, formatCount, orderAspect } from "@bibliothecadao/types";
 import type { CSSProperties } from "react";
 
 import { primeGameEntry } from "@/game-entry-preload";
 import { aspectVariables } from "@/tokens";
 import { AspectMark } from "@/ui/design-system/aspect-mark";
-import { Icon, type IconMeaning } from "@/ui/design-system/icon";
+import type { IconMeaning } from "@/ui/design-system/icon";
 import { AGE_LOCKUP } from "@/ui/design-system/icon-meaning";
 import { AppButton, AppChip, AppGameCard, AppGameName, AppRow } from "@/ui/design-system/kit/app-elements";
 import { AppClockChip, clockLine } from "@/ui/design-system/kit/clock-chip";
@@ -26,7 +26,7 @@ import {
 
 import { entryHref } from "../game-links";
 import { type DirectoryGame, gameRefOf } from "../herald";
-import { directoryDay, seasonRealm } from "../season";
+import { directoryDay, seasonRealmId } from "../season";
 import { gameStart, gameTitle } from "../season-tab/history-row";
 import { resultsHref } from "../season-tab/results-link";
 import { useRequestSignIn } from "../sign-in/connect";
@@ -63,7 +63,7 @@ const ItemFacts = ({ item, now, firstVisit }: { item: PlayItem; now: number; fir
     return <AppChip icon="victory">{`${PLAY_WORDS.ended} ${clockLine(null, game.clock.end_at, now)}`}</AppChip>;
   if (firstVisit) return <p className="text-app-body text-app-ink">{PITCH}</p>;
   if (game.status !== "Live") return <AppClockChip prefix="starts" at={game.clock.start_main_at} now={now} />;
-  return <SeasonDay game={game} now={now} withPlayers={item.verb === "play"} />;
+  return <SeasonDay game={game} now={now} withPlayers={item.verb === "play" || item.mode === "frontier"} />;
 };
 
 const SeasonDay = ({ game, now, withPlayers }: { game: DirectoryGame; now: number; withPlayers: boolean }) => {
@@ -134,7 +134,7 @@ export const LeadCard = ({ item, now, signedIn, className }: ItemProps & { class
 const FrontierHeroCard = ({ item, now, signedIn, className }: ItemProps & { className?: string }) => {
   const age = ageOf("frontier");
   const firstVisit = !signedIn && item.verb === "play";
-  const realmId = seasonRealm(item.game)?.realm_id ?? item.game.player_state?.held_realm_id ?? null;
+  const realmId = seasonRealmId(item.game);
   const realm = realmId !== null ? canonicalRealm(realmId) : null;
   const order = realm && realm.order !== 0 ? catalogOrder(realm.order) : null;
   const aspect = order ? orderAspect(order.orderId) : null;
@@ -176,31 +176,6 @@ const FrontierHeroCard = ({ item, now, signedIn, className }: ItemProps & { clas
               {item.game.status === "Live" && day.day !== undefined && (
                 <AppChip icon="hourglass">{`${DAY} ${day.day} · ${dayLeftCompact(day.secondsLeft)}`}</AppChip>
               )}
-            </div>
-          )}
-          {realm && item.game.status === "Live" && (
-            <div className="play-hero__tiles">
-              <div className="play-hero__tile">
-                <span className="play-hero__tile-label">{DAY}</span>
-                <span className="play-hero__tile-value">
-                  <Icon name="sun" size={16} />
-                  {day.day ?? "—"}
-                </span>
-              </div>
-              <div className="play-hero__tile">
-                <span className="play-hero__tile-label">{layerName(3)}</span>
-                <span className="play-hero__tile-value">
-                  <Icon name="portal" size={16} />
-                  {WORDS.live}
-                </span>
-              </div>
-              <div className="play-hero__tile">
-                <span className="play-hero__tile-label">{PLAY_WORDS.player}</span>
-                <span className="play-hero__tile-value">
-                  <Icon name="people" size={16} />
-                  {item.game.player_count}
-                </span>
-              </div>
             </div>
           )}
           <div className="play-hero__chips">

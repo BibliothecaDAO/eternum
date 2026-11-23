@@ -14,7 +14,7 @@ export const NothingHere = () => (
           <Icon name="warning" size={40} />
         </span>
         <h1 className="text-app-title text-app-gold">{APP_STATE_WORDS.nothingHere}</h1>
-        <p className="text-app-body text-app-muted">This trail leads into the mist. Return to Play to continue.</p>
+        <p className="text-app-body text-app-muted">{APP_STATE_WORDS.nothingHereLine}</p>
         <AppButton kind="primary" size="lg" icon="play" to="/" step className="mt-1 w-full">
           {WORDS.play}
         </AppButton>

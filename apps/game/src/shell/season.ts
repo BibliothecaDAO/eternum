@@ -16,6 +16,9 @@ import { ARCHIVED_SEASONS, archivedSeason } from "./season-tab/archive/archive";
 export const seasonRealm = (season: Pick<DirectoryGame, "player_state">) =>
   season.player_state?.structures.find((structure) => isRealmCategory(structure.category));
 
+export const seasonRealmId = (season: Pick<DirectoryGame, "player_state"> | null | undefined): number | null =>
+  (season ? seasonRealm(season)?.realm_id : undefined) ?? season?.player_state?.held_realm_id ?? null;
+
 /**
  * The Frontier season a screen shows: the player's own, where their realm stands, else a live one. Among several, the
  * latest to start, then the lowest game id, so the choice never rests on the directory's order.
