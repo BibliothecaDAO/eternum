@@ -6,15 +6,14 @@ import { DOORWAY_WORDS } from "@/ui/design-system/kit/words";
 
 import type { DoorwayView } from "./doorway-view";
 
-export const EntryProgress = ({ view, tip }: { view: DoorwayView; tip?: "first" | "deep" | null }) => {
+export const EntryProgress = ({ view, showTip = false }: { view: DoorwayView; showTip?: boolean }) => {
   const running = view.steps.find(({ state }) => state !== "done") ?? view.steps[view.steps.length - 1];
   const percent = useNeverBack(view.percent);
   const left = useSecondsLeft(percent);
   return (
     <section aria-label={DOORWAY_WORDS.entering} className="doorway-progress">
       <div className="doorway-progress__header">
-        {tip === "deep" && <DoorwayTip icon="portal" title={DOORWAY_WORDS.deepTip} />}
-        {tip === "first" && (
+        {showTip && (
           <DoorwayTip icon="barracks" title={DOORWAY_WORDS.firstTitle} detail={DOORWAY_WORDS.firstDetail} />
         )}
         <div className="doorway-progress__status">

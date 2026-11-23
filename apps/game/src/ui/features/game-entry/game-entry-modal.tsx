@@ -689,7 +689,6 @@ export const GameEntryModal = ({
       view={view}
       realm={doorwayRealm}
       game={worldMeta ?? undefined}
-      firstEntry={createdRealmRef.current}
       onRetry={
         accountError
           ? () => pageNavigation.reload()

@@ -1,13 +1,11 @@
-import { aspectName, layerName, orderAspect } from "@bibliothecadao/types";
+import { aspectName, orderAspect } from "@bibliothecadao/types";
 import { renderToStaticMarkup } from "react-dom/server";
 import { MemoryRouter } from "react-router-dom";
 import { expect, it, vi } from "vitest";
 
 vi.mock("@/hooks/context/identity-session", () => ({ useIdentitySession: () => ({ status: "anonymous" }) }));
 
-import { parsePlayRoute } from "@/play/navigation/play-route";
 import type { DirectoryGame } from "@/shell/herald";
-import { resolveGameEntryTarget } from "@/ui/features/game-entry/game-entry-navigation";
 
 import { DoorwayScreen } from "./doorway-screen";
 import { doorwayView } from "./doorway-view";
@@ -65,46 +63,26 @@ it("gives the bar's place to a step that asks the player to choose", () => {
   expect(page.querySelector('[role="progressbar"]')).toBeNull();
 });
 
-it("carries first-entry intent from resolveGameEntryTarget to PlayRouteDoorway through resumeScene", () => {
+it("renders the Frontier lockup, Aspect Facet, Entering Realm heading, day subtitle and first-minutes tip when the realm is known", () => {
   const aspect = orderAspect(2)!;
-  const targetFor = (realmFirst: boolean) => {
-    const { url } = resolveGameEntryTarget({
-      chainId: "0x52",
-      gameId: 7,
-      structureEntityId: 1,
-      worldMapReturnPosition: null,
-      isSpectateMode: false,
-      realmFirst,
-    });
-    const parsed = new URL(url, "https://realms.world");
-    return parsePlayRoute({ pathname: parsed.pathname, search: parsed.search });
-  };
-  const renderFor = (realmFirst: boolean) =>
-    new DOMParser().parseFromString(
-      renderToStaticMarkup(
-        <MemoryRouter>
-          <DoorwayScreen
-            view={loadingMap()}
-            realm={{ name: "Temtinos", emblem: null, aspect }}
-            game={{ mode: "frontier", day_index: 5 }}
-            firstEntry={targetFor(realmFirst)?.resumeScene === "hex"}
-            onRetry={() => {}}
-            onSignIn={() => {}}
-          />
-        </MemoryRouter>,
-      ),
-      "text/html",
-    ).body;
-
-  const first = renderFor(true);
-  expect(first.textContent).toContain("Entering Temtinos");
-  expect(first.textContent).toContain("First: build a Barracks");
-
-  const returning = renderFor(false);
-  expect(returning.querySelector("[data-doorway-loading]")).not.toBeNull();
-  expect(returning.querySelector(`[data-aspect-mark="${aspect}"]`)).not.toBeNull();
-  expect(returning.textContent).toContain("Entering Temtinos");
-  expect(returning.textContent).toContain(aspectName(aspect));
-  expect(returning.textContent).toContain("Day 6");
-  expect(returning.textContent).toContain(`Hold ${layerName(3)} sites before rollover`);
+  const page = new DOMParser().parseFromString(
+    renderToStaticMarkup(
+      <MemoryRouter>
+        <DoorwayScreen
+          view={loadingMap()}
+          realm={{ name: "Temtinos", emblem: null, aspect }}
+          game={{ mode: "frontier", day_index: 5 }}
+          onRetry={() => {}}
+          onSignIn={() => {}}
+        />
+      </MemoryRouter>,
+    ),
+    "text/html",
+  ).body;
+  expect(page.querySelector("[data-doorway-loading]")).not.toBeNull();
+  expect(page.querySelector(`[data-aspect-mark="${aspect}"]`)).not.toBeNull();
+  expect(page.textContent).toContain("Entering Temtinos");
+  expect(page.textContent).toContain(aspectName(aspect));
+  expect(page.textContent).toContain("Day 6");
+  expect(page.textContent).toContain("First: build a Barracks");
 });

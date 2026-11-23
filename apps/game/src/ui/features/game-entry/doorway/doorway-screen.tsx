@@ -44,7 +44,6 @@ export const DoorwayScreen = ({
   onOpenRealm,
   onSignIn,
   results,
-  firstEntry = true,
   asking = false,
   wide = false,
   verb,
@@ -57,7 +56,6 @@ export const DoorwayScreen = ({
   onOpenRealm?: () => void;
   onSignIn: () => void;
   results?: string;
-  firstEntry?: boolean;
   asking?: boolean;
   wide?: boolean;
   verb?: ReactNode;
@@ -67,22 +65,17 @@ export const DoorwayScreen = ({
   const desktop = layout === "desktop";
   const player = view.steps.some(({ step }) => step === "account");
   const loadingMap = view.steps.some(({ step, state }) => (step === "map" || step === "play") && state === "running");
-  const tip =
-    game?.mode === "frontier" && player && loadingMap && view.blocker === null
-      ? firstEntry || realm === null
-        ? "first"
-        : "deep"
-      : null;
+  const showTip = game?.mode === "frontier" && player && loadingMap && view.blocker === null;
 
   if (!asking && view.blocker === null && view.spectating === null) {
     return (
-      <LoadingStage layout={layout} view={view} realm={realm} game={game} tip={tip}>
+      <LoadingStage layout={layout} view={view} realm={realm} game={game} showTip={showTip}>
         {children}
       </LoadingStage>
     );
   }
 
-  const progress = !asking && <EntryProgress view={view} tip={tip} />;
+  const progress = !asking && <EntryProgress view={view} showTip={showTip} />;
   const hold = <Hold view={view} onRetry={onRetry} onOpenRealm={onOpenRealm} onSignIn={onSignIn} results={results} />;
   return (
     <div data-surface="shell" className="fixed inset-0 z-50 overflow-y-auto bg-app-ground">
@@ -122,14 +115,14 @@ const LoadingStage = ({
   view,
   realm,
   game,
-  tip,
+  showTip,
   children,
 }: {
   layout: "phone" | "desktop";
   view: DoorwayView;
   realm: DoorwayRealm | null;
   game?: DoorwayGame;
-  tip: "first" | "deep" | null;
+  showTip: boolean;
   children?: ReactNode;
 }) => {
   const desktop = layout === "desktop";
@@ -163,7 +156,7 @@ const LoadingStage = ({
         {children}
       </main>
       <footer data-band="foot" className="doorway-stage__foot">
-        <EntryProgress view={view} tip={tip} />
+        <EntryProgress view={view} showTip={showTip} />
       </footer>
     </div>
   );

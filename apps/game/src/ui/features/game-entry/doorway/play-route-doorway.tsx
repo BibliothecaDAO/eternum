@@ -63,7 +63,6 @@ export const PlayRouteDoorway = ({
       view={view}
       realm={realm}
       game={entry ?? undefined}
-      firstEntry={route?.resumeScene === "hex"}
       onRetry={phase === "error" ? retry : () => pageNavigation.reload()}
       onOpenRealm={openRealmWithoutMap}
       onSignIn={() => requestSignIn()}
