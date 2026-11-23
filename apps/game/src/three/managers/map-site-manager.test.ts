@@ -299,11 +299,18 @@ describe("the Deep's sites on the map", () => {
           ? { gate_distance: 4, rings: [{ radius: 5, realms: 0 }] }
           : model === "SliceRules"
             ? { day_unit_seconds: clock.day, tick_config: { armies_tick_in_seconds: 60n } }
-            : model === "GameRegistry"
-              ? { start_main_at: 10n, scheduled_end_at: BigInt(clock.day * 5), end_at: BigInt(clock.day * 5), seed: 1n }
-              : model === "HomeAspect" && key.home === 9n
-                ? { aspect: 2 }
-                : undefined,
+            : model === "SettlementRules"
+              ? { spacing: 1024 }
+              : model === "GameRegistry"
+                ? {
+                    start_main_at: 10n,
+                    scheduled_end_at: BigInt(clock.day * 5),
+                    end_at: BigInt(clock.day * 5),
+                    seed: 1n,
+                  }
+                : model === "HomeAspect" && key.home === 9n
+                  ? { aspect: 2 }
+                  : undefined,
       require: (model: string) => (model === "SettlementRules" ? { spacing: 1024 } : undefined),
       inGame: () => [],
       structuresOwnedBy: (_game: number, owner: bigint) => (owner === 0x111n ? [{ entity_id: 9n }] : []),
@@ -559,15 +566,17 @@ describe("the Deep's sites on the map", () => {
           ? { game_id: gameId, gate_distance: 4, rings: [{ radius: 5, realms: 0 }] }
           : model === "SliceRules"
             ? { game_id: gameId, day_unit_seconds: clock.day, tick_config: { armies_tick_in_seconds: 60n } }
-            : model === "GameRegistry"
-              ? {
-                  game_id: gameId,
-                  start_main_at: 0n,
-                  scheduled_end_at: BigInt(clock.day * 5),
-                  end_at: BigInt(clock.day * 5),
-                  seed: 1n,
-                }
-              : undefined,
+            : model === "SettlementRules"
+              ? { game_id: gameId, spacing: 1024 }
+              : model === "GameRegistry"
+                ? {
+                    game_id: gameId,
+                    start_main_at: 0n,
+                    scheduled_end_at: BigInt(clock.day * 5),
+                    end_at: BigInt(clock.day * 5),
+                    seed: 1n,
+                  }
+                : undefined,
       require: (model: string) => (model === "SettlementRules" ? { spacing: 1024 } : undefined),
       inGame: (model: string) =>
         model === "DeepSite" ? [{ game_id: gameId, entity_id: 10n, kind: 0, ring: 0, day: 0n }] : [],
