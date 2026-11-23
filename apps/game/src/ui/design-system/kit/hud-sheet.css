@@ -2906,48 +2906,6 @@ button.ui-realm-tile:hover {
   font-size: var(--hud-text-strong);
   line-height: var(--hud-leading-strong);
 }
-.ui-realm-buildings {
-  display: flex;
-  flex-direction: column;
-  gap: theme(spacing[1.5]);
-}
-.ui-realm-building {
-  display: flex;
-  align-items: center;
-  gap: theme(spacing[2.5]);
-  border: 1px solid var(--hud-divider);
-  border-radius: var(--hud-radius-control);
-  background: var(--hud-well);
-  padding: theme(spacing[1.5]) theme(spacing.2);
-}
-.ui-realm-building__art {
-  display: inline-flex;
-  width: 36px;
-  height: 36px;
-  flex: none;
-  align-items: center;
-  justify-content: center;
-}
-.ui-realm-building__info {
-  display: flex;
-  min-width: 0;
-  flex: 1 1 auto;
-  flex-direction: column;
-  gap: theme(spacing[0.5]);
-}
-.ui-realm-building__title {
-  display: flex;
-  align-items: center;
-  gap: theme(spacing[1.5]);
-}
-.ui-realm-building__rate {
-  display: inline-flex;
-  align-items: center;
-  gap: theme(spacing.1);
-  color: var(--hud-muted);
-  font-size: var(--hud-text-label);
-  line-height: var(--hud-leading-label);
-}
 .ui-realm-foot {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -3094,46 +3052,4 @@ button.ui-realm-tile:hover {
   min-width: 0;
   align-items: center;
   gap: theme(spacing.2);
-}
-.ui-research-row {
-  display: flex;
-  width: 100%;
-  align-items: center;
-  gap: theme(spacing[2.5]);
-  border: 1px solid var(--hud-line);
-  border-radius: var(--hud-radius-control);
-  background: var(--hud-well);
-  padding: theme(spacing.2) theme(spacing[2.5]);
-  text-align: left;
-}
-.ui-research-row__art {
-  display: flex;
-  width: 2.5rem;
-  height: 2.5rem;
-  flex: none;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--hud-divider);
-  border-radius: var(--hud-radius-control);
-  background: var(--hud-surface);
-}
-.ui-research-row__info {
-  display: flex;
-  min-width: 0;
-  flex: 1;
-  flex-direction: column;
-  gap: theme(spacing[0.5]);
-}
-.ui-research-row__head {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  gap: theme(spacing[1.5]);
-}
-.ui-research-row__trail {
-  display: flex;
-  flex: none;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: theme(spacing[0.5]);
 }

@@ -32,7 +32,7 @@ import type { ReactNode } from "react";
 import { useEnterConfirms } from "../hud/enter-confirms";
 import type { Cost } from "../hud/army-order";
 import { GuardToken } from "../hud/army-token";
-import { FightSide } from "./fight-side";
+import { FightArena } from "./fight-side";
 import { CombatMark } from "./combat-mark";
 import type { SiteFight } from "./site-card-plan";
 import { type AttackTargetKind, TARGET_MARKS, attackTargetName } from "./site-marks";
@@ -200,9 +200,6 @@ const SiteMark = ({ icon, children }: { icon: IconMeaning; children?: ReactNode 
   </span>
 );
 
-const firstStrikeTag = (side: FirstStrikeSide | undefined, target: "attacker" | "defender") =>
-  side === target ? <span className="text-hud-gold">{`· ${FIGHT_WORDS.hitsFirst}`}</span> : null;
-
 const FightPanel = ({
   army,
   guard,
@@ -219,61 +216,41 @@ const FightPanel = ({
   beast: (Pick<FrontierBeast, "beast" | "name"> & { combatClass: Troops["category"] }) | undefined;
   guardIcon: IconMeaning;
   earns: boolean;
-}) => {
-  if (!army && guard === null) return null;
-  return (
-    <div className="ui-fight-arena">
-      {army && (
-        <FightSide
-          label={ARMY}
-          mark={<SemanticIcon name={army.art} size={96} className="size-full" />}
-          subtitle={
-            army.category ? (
-              <>
-                <CombatMark category={army.category} size={14} />
-                {firstStrikeTag(firstStrike, "attacker")}
-              </>
-            ) : (
-              firstStrikeTag(firstStrike, "attacker")
-            )
+}) => (
+  <FightArena
+    ours={
+      army
+        ? {
+            label: ARMY,
+            mark: <SemanticIcon name={army.art} size={96} className="size-full" />,
+            category: army.category,
+            hitsFirst: firstStrike === "attacker",
+            before: army.troops,
+            kept: facing && armyLeft(facing),
           }
-          before={army.troops}
-          kept={facing && armyLeft(facing)}
-          side="ours"
-        />
-      )}
-      <div className="ui-fight-vs">
-        <span className="ui-fight-vs__word" aria-hidden="true">
-          VS
-        </span>
-        {facing && (
-          <HudChip tone={isArmyLost(facing) ? "bad" : clears(facing) ? "good" : undefined}>
-            {outcomeWord(facing, earns)}
-          </HudChip>
-        )}
-      </div>
-      {guard !== null && (
-        <FightSide
-          label={beast?.name ?? TROOPS}
-          mark={<SemanticIcon name={guardIcon} size={96} className="size-full" />}
-          subtitle={
-            beast ? (
-              <>
-                <CombatMark category={beast.combatClass} size={14} />
-                {firstStrikeTag(firstStrike, "defender")}
-              </>
-            ) : (
-              firstStrikeTag(firstStrike, "defender")
-            )
+        : undefined
+    }
+    theirs={
+      guard !== null
+        ? {
+            label: beast?.name ?? TROOPS,
+            mark: <SemanticIcon name={guardIcon} size={96} className="size-full" />,
+            category: beast?.combatClass,
+            hitsFirst: firstStrike === "defender",
+            before: guard,
+            kept: facing?.fight.guardLeft,
           }
-          before={guard}
-          kept={facing?.fight.guardLeft}
-          side="theirs"
-        />
-      )}
-    </div>
-  );
-};
+        : undefined
+    }
+    outcome={
+      facing && (
+        <HudChip tone={isArmyLost(facing) ? "bad" : clears(facing) ? "good" : undefined}>
+          {outcomeWord(facing, earns)}
+        </HudChip>
+      )
+    }
+  />
+);
 
 const Pay = ({ pay }: { pay: { icon: IconMeaning; amount: number; fits?: number } }) => {
   const short = pay.fits !== undefined && pay.fits < pay.amount;

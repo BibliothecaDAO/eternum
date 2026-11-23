@@ -13,7 +13,7 @@ import {
   HudSheet,
   HudWindowFoot,
 } from "@/ui/design-system/kit/hud-elements";
-import { ARMY, DEEP_WORDS, FIGHT_WORDS, MOVE, TROOPS } from "@/ui/design-system/kit/words";
+import { ARMY, DEEP_WORDS, MOVE, TROOPS } from "@/ui/design-system/kit/words";
 import {
   aspectName,
   type AspectId,
@@ -27,7 +27,7 @@ import {
 import { beastMeaning, troopMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { nativeRuleConstants } from "../../../../../../../contracts/l3/world-native/schema/balance.gen";
 
-import { FightSide } from "../sites/fight-side";
+import { FightArena } from "../sites/fight-side";
 import { CombatMark } from "../sites/combat-mark";
 import type { DeepSiteFight } from "../sites/site-card-plan";
 
@@ -149,41 +149,26 @@ const FightPreview = ({
   const defenderArt =
     guard.kind === "beast" ? beastMeaning(beastModel(DEEP_BEASTS[site])) : troopMeaning(fight.defenderTroops);
   return (
-    <div className="ui-fight-arena">
-      <FightSide
-        label={attackerLabel}
-        mark={<Icon name={troopMeaning(fight.attackerTroops)} size={96} className="size-full" />}
-        heading={attackerLabel}
-        subtitle={
-          <>
-            <CombatMark category={fight.attackerTroops.category} size={14} />
-            {fight.firstStrike === "attacker" && <span className="text-hud-gold">{`· ${FIGHT_WORDS.hitsFirst}`}</span>}
-          </>
-        }
-        before={fight.army}
-        kept={result && fight.army - result.troopsLost}
-        side="ours"
-      />
-      <div className="ui-fight-vs">
-        <span className="ui-fight-vs__word" aria-hidden="true">
-          VS
-        </span>
-      </div>
-      <FightSide
-        label={defenderLabel}
-        mark={<Icon name={defenderArt} size={96} className="size-full" />}
-        heading={defenderLabel}
-        subtitle={
-          <>
-            <CombatMark category={fight.defenderTroops.category} size={14} />
-            {fight.firstStrike === "defender" && <span className="text-hud-gold">{`· ${FIGHT_WORDS.hitsFirst}`}</span>}
-          </>
-        }
-        before={fight.defender}
-        kept={result?.guardLeft}
-        side="theirs"
-      />
-    </div>
+    <FightArena
+      ours={{
+        label: attackerLabel,
+        mark: <Icon name={troopMeaning(fight.attackerTroops)} size={96} className="size-full" />,
+        heading: attackerLabel,
+        category: fight.attackerTroops.category,
+        hitsFirst: fight.firstStrike === "attacker",
+        before: fight.army,
+        kept: result && fight.army - result.troopsLost,
+      }}
+      theirs={{
+        label: defenderLabel,
+        mark: <Icon name={defenderArt} size={96} className="size-full" />,
+        heading: defenderLabel,
+        category: fight.defenderTroops.category,
+        hitsFirst: fight.firstStrike === "defender",
+        before: fight.defender,
+        kept: result?.guardLeft,
+      }}
+    />
   );
 };
 

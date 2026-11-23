@@ -11,7 +11,7 @@ import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { homeIcon, HOME_KINDS, type HomeKind } from "@/ui/design-system/home-icons";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { orderMeaning } from "@/ui/design-system/icon-meaning";
-import { HudButton, HudPanel, HudTier } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudPanel, HudRow, HudTier } from "@/ui/design-system/kit/hud-elements";
 import {
   ARMY,
   DEPLOY,
@@ -183,29 +183,33 @@ export const RealmPanel = ({
       </ul>
       {storeCards?.open && storeCards.card}
       {buildings && buildings.length > 0 && (
-        <ul data-realm-buildings className="ui-realm-buildings">
+        <ul data-realm-buildings className="flex flex-col gap-1.5">
           {buildings.map((building) => (
-            <li key={building.key} className="ui-realm-building">
-              <span className="ui-realm-building__art">
-                <SemanticIcon name={building.icon} size={32} />
-              </span>
-              <span className="ui-realm-building__info">
-                <span className="ui-realm-building__title">
-                  <span className="truncate text-hud-strong text-hud-ink">{building.name}</span>
-                  <HudTier tier={building.tier} />
-                </span>
-                {building.rate && (
-                  <span className="ui-realm-building__rate tabular-nums">
-                    {building.rateIcon && <SemanticIcon name={building.rateIcon} size={13} />}
-                    {building.rate}
+            <li key={building.key} className="rounded-md border border-hud-divider bg-hud-well">
+              <HudRow
+                lead={<SemanticIcon name={building.icon} size={32} />}
+                title={
+                  <span className="flex items-center gap-1.5">
+                    <span className="truncate text-hud-strong text-hud-ink">{building.name}</span>
+                    <HudTier tier={building.tier} />
                   </span>
-                )}
-              </span>
-              {building.onUpgrade && (
-                <HudButton kind="secondary" size="sm" onClick={building.onUpgrade}>
-                  {UPGRADE}
-                </HudButton>
-              )}
+                }
+                detail={
+                  building.rate && (
+                    <span className="inline-flex items-center gap-1 tabular-nums">
+                      {building.rateIcon && <SemanticIcon name={building.rateIcon} size={13} />}
+                      {building.rate}
+                    </span>
+                  )
+                }
+                controls={
+                  building.onUpgrade && (
+                    <HudButton kind="secondary" size="sm" onClick={building.onUpgrade}>
+                      {UPGRADE}
+                    </HudButton>
+                  )
+                }
+              />
             </li>
           ))}
         </ul>

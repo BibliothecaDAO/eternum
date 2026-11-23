@@ -1130,6 +1130,7 @@ export const HudRow = ({
   tip,
   onClick,
   href,
+  ...data
 }: {
   lead?: ReactNode;
   /** The name of the button that chooses the row, where its words say more than its name (an army's figures). */
@@ -1154,7 +1155,7 @@ export const HudRow = ({
   onClick?: () => void;
   /** An address the row opens in a new tab (a guide on the docs site): the row is then a link, not a button. */
   href?: string;
-}) => {
+} & { [key: `data-${string}`]: string | undefined }) => {
   const face = (
     <>
       <span className="ui-row__words">
@@ -1167,6 +1168,7 @@ export const HudRow = ({
   if (controls !== undefined) {
     return (
       <div
+        {...data}
         className="ui-row"
         aria-selected={selected ?? false}
         aria-disabled={disabled}
@@ -1195,13 +1197,22 @@ export const HudRow = ({
   }
   if (href)
     return (
-      <a className="ui-row" href={href} target="_blank" rel="noopener noreferrer" data-state={state} data-tip={tip}>
+      <a
+        {...data}
+        className="ui-row"
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        data-state={state}
+        data-tip={tip}
+      >
         {lead}
         {face}
       </a>
     );
   return onClick ? (
     <button
+      {...data}
       type="button"
       className="ui-row"
       aria-label={label}
@@ -1217,6 +1228,7 @@ export const HudRow = ({
     </button>
   ) : (
     <div
+      {...data}
       className="ui-row"
       role="option"
       aria-selected={selected ?? false}

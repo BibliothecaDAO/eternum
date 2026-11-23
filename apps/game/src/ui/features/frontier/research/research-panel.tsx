@@ -1,7 +1,15 @@
 import { isOathResearch } from "@bibliothecadao/eternum";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
-import { HudButton, HudPage, HudRanked, HudTabs, HudTier, HudTierStep } from "@/ui/design-system/kit/hud-elements";
+import {
+  HudButton,
+  HudPage,
+  HudRanked,
+  HudRow,
+  HudTabs,
+  HudTier,
+  HudTierStep,
+} from "@/ui/design-system/kit/hud-elements";
 import type { Fix } from "@/ui/design-system/kit/refusal";
 import { CLOSE, RESEARCH, RESEARCH_TREE, RESEARCHING, type Rank, type RankedWords } from "@/ui/design-system/kit/words";
 import { formatAmount, formatExact, formatShort } from "@bibliothecadao/types";
@@ -91,51 +99,56 @@ const ResearchRow = ({ node, picked, onPick }: { node: TreeNode; picked: boolean
     )
   ) : null;
   return (
-    <button
-      type="button"
-      onClick={onPick}
-      aria-pressed={picked}
-      data-node={node.key}
-      data-state={node.state}
+    <div
       className={cn(
-        "ui-pick ui-research-row",
+        "rounded-md border bg-hud-well",
         node.state === "locked" && node.tier > 0 ? "border-hud-divider" : look.frame,
       )}
     >
-      <span className="ui-research-row__art">
-        <Icon name={node.icon} size={34} />
-      </span>
-      <span className="ui-research-row__info">
-        <span className="ui-research-row__head">
-          <span className={cn("truncate text-hud-strong", look.text)}>{node.name}</span>
-          {badge}
-        </span>
-        <span className="truncate text-hud-label text-hud-muted">{node.gives.line}</span>
-      </span>
-      <span className="ui-research-row__trail">
-        {node.state === "done" ? (
-          <span className="inline-flex items-center gap-1 text-hud-label text-hud-good">
-            <Icon name="check" size={14} />
-            {RESEARCH_TREE.states.done}
+      <HudRow
+        data-node={node.key}
+        state={node.state}
+        selected={picked}
+        onClick={onPick}
+        lead={
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-md border border-hud-divider bg-hud-surface">
+            <Icon name={node.icon} size={34} />
           </span>
-        ) : node.state === "locked" ? (
-          <Icon name="lock" size={16} />
-        ) : (
-          price.map((need) => (
-            <span
-              key={need.kind}
-              className={cn(
-                "inline-flex items-center gap-0.5 text-hud-label tabular-nums",
-                need.met ? "text-hud-ink" : "text-hud-bad",
-              )}
-            >
-              <Icon name={need.kind} size={13} />
-              {formatShort(need.need)}
-            </span>
-          ))
-        )}
-      </span>
-    </button>
+        }
+        title={
+          <span className="flex min-w-0 items-center gap-1.5">
+            <span className={cn("truncate text-hud-strong", look.text)}>{node.name}</span>
+            {badge}
+          </span>
+        }
+        detail={<span className="block truncate">{node.gives.line}</span>}
+        trail={
+          <span className="flex flex-col items-end gap-0.5">
+            {node.state === "done" ? (
+              <span className="inline-flex items-center gap-1 text-hud-label text-hud-good">
+                <Icon name="check" size={14} />
+                {RESEARCH_TREE.states.done}
+              </span>
+            ) : node.state === "locked" ? (
+              <Icon name="lock" size={16} />
+            ) : (
+              price.map((need) => (
+                <span
+                  key={need.kind}
+                  className={cn(
+                    "inline-flex items-center gap-0.5 text-hud-label tabular-nums",
+                    need.met ? "text-hud-ink" : "text-hud-bad",
+                  )}
+                >
+                  <Icon name={need.kind} size={13} />
+                  {formatShort(need.need)}
+                </span>
+              ))
+            )}
+          </span>
+        }
+      />
+    </div>
   );
 };
 
@@ -161,49 +174,26 @@ const BranchHead = ({ branch }: { branch: Branch }) => (
  * tile (a row of them on the castle's card) keeps its painting, mark and name, which a phone cannot hover for (audit
  * 10-27: the castle's five tiles had no names); its price is on its hover and on the Research page it opens.
  */
-export const NodeTile = ({
-  node,
-  picked,
-  compact = false,
-  onPick,
-}: {
-  node: TreeNode;
-  picked: boolean;
-  compact?: boolean;
-  onPick: () => void;
-}) => {
+export const NodeTile = ({ node, onPick }: { node: TreeNode; onPick: () => void }) => {
   const look = STATE_LOOK[node.state];
-  const reading = isOathResearch(node.row) ? (
-    <span className="text-hud-label">
-      <HudRanked words={node.gives.now} />
-    </span>
-  ) : node.maxTier === 5 ? (
-    <HudTier tier={tierOf(node)} />
-  ) : (
-    <span className="text-hud-label tabular-nums text-hud-muted">
-      {node.state === "done" ? RESEARCH_TREE.states.done : RESEARCH_TREE.price(formatAmount(node.price?.essence))}
-    </span>
-  );
   return (
     <button
       type="button"
       onClick={onPick}
-      aria-pressed={picked}
-      data-tip={compact ? tileTip(node) : undefined}
+      data-tip={tileTip(node)}
       data-node={node.key}
       data-state={node.state}
       className={cn(
-        "ui-pick relative flex flex-col items-center gap-0.5 rounded-md border px-1 py-1.5 text-center",
+        "relative flex flex-col items-center gap-0.5 rounded-md border px-1 py-1.5 text-center",
         // A row locked above the tiers it holds keeps its look: only what it waits on is locked.
         node.state === "locked" && node.tier > 0 ? "border-hud-divider" : look.frame,
       )}
     >
-      <Icon name={node.icon} size={compact ? 32 : 36} />
-      <span className={cn("text-hud-label leading-tight", compact && "break-words", look.text)}>{node.name}</span>
-      {!compact && reading}
+      <Icon name={node.icon} size={32} />
+      <span className={cn("break-words text-hud-label leading-tight", look.text)}>{node.name}</span>
       {look.icon && (
-        <span className={cn("absolute", compact ? "right-0.5 top-0.5" : "right-1 top-1")}>
-          <Icon name={look.icon} size={compact ? 12 : 16} />
+        <span className="absolute right-0.5 top-0.5">
+          <Icon name={look.icon} size={12} />
         </span>
       )}
     </button>

@@ -119,7 +119,7 @@ const castleRows = (now: CastleSide, next: CastleSide | null) => {
 export const CastleResearch = ({ nodes, onOpen }: { nodes: readonly TreeNode[]; onOpen: (node: string) => void }) => (
   <div className="grid grid-flow-col auto-cols-fr gap-1.5">
     {nodes.map((node) => (
-      <NodeTile key={node.key} node={node} picked={false} compact onPick={() => onOpen(node.key)} />
+      <NodeTile key={node.key} node={node} onPick={() => onOpen(node.key)} />
     ))}
   </div>
 );

@@ -1,11 +1,74 @@
-import { formatExact, formatShort } from "@bibliothecadao/types";
+import { formatExact, formatShort, type Troops } from "@bibliothecadao/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HudPanel } from "@/ui/design-system/kit/hud-elements";
-import { fightLost, NONE_LOST } from "@/ui/design-system/kit/words";
+import { FIGHT_WORDS, fightLost, NONE_LOST } from "@/ui/design-system/kit/words";
+import { CombatMark } from "./combat-mark";
 
 import type { ReactNode } from "react";
 
 export type Kept = number | undefined;
+
+type FightArenaSide = {
+  label: string;
+  mark: ReactNode;
+  heading?: ReactNode;
+  category?: Troops["category"];
+  hitsFirst?: boolean;
+  before: number | undefined;
+  kept: Kept;
+};
+
+const arenaSubtitle = ({ category, hitsFirst }: FightArenaSide) =>
+  category || hitsFirst ? (
+    <>
+      {category && <CombatMark category={category} size={14} />}
+      {hitsFirst && <span className="text-hud-gold">{`· ${FIGHT_WORDS.hitsFirst}`}</span>}
+    </>
+  ) : undefined;
+
+export const FightArena = ({
+  ours,
+  theirs,
+  outcome,
+}: {
+  ours?: FightArenaSide;
+  theirs?: FightArenaSide;
+  outcome?: ReactNode;
+}) => {
+  if (!ours && !theirs) return null;
+  return (
+    <div className="ui-fight-arena">
+      {ours && (
+        <FightSide
+          label={ours.label}
+          mark={ours.mark}
+          heading={ours.heading}
+          subtitle={arenaSubtitle(ours)}
+          before={ours.before}
+          kept={ours.kept}
+          side="ours"
+        />
+      )}
+      <div className="ui-fight-vs">
+        <span className="ui-fight-vs__word" aria-hidden="true">
+          VS
+        </span>
+        {outcome}
+      </div>
+      {theirs && (
+        <FightSide
+          label={theirs.label}
+          mark={theirs.mark}
+          heading={theirs.heading}
+          subtitle={arenaSubtitle(theirs)}
+          before={theirs.before}
+          kept={theirs.kept}
+          side="theirs"
+        />
+      )}
+    </div>
+  );
+};
 
 export const FightSide = ({
   label,
@@ -15,7 +78,6 @@ export const FightSide = ({
   before,
   kept,
   side,
-  tip,
 }: {
   label: string;
   mark: ReactNode;
@@ -24,7 +86,6 @@ export const FightSide = ({
   before: number | undefined;
   kept: Kept;
   side: "ours" | "theirs";
-  tip?: string;
 }) => {
   const figures = fightFigures(before, kept);
   const title = heading ?? label;
@@ -32,7 +93,6 @@ export const FightSide = ({
     <span
       role="img"
       aria-label={[`${label} ${formatExact(before)} → ${formatExact(kept)}`, figures.lost].filter(Boolean).join(", ")}
-      data-tip={tip}
       className="flex min-w-0 flex-1 basis-0"
     >
       <HudPanel
