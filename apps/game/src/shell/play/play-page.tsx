@@ -68,7 +68,7 @@ export const PlayPage = () => {
                 />
               )}
               {hasActiveRealm && leadFrontier && <TodayQuestPanel game={leadFrontier} now={facts.now} />}
-              {playerAspect !== null && <PlayInviteStrip aspect={playerAspect} />}
+              {playerAspect !== null && <PlayInviteStrip />}
               {facts.board.rehearsals.map((item) => (
                 <RehearsalCard key={item.key} item={item} now={facts.now} signedIn={facts.signedIn} />
               ))}
@@ -220,15 +220,17 @@ const UnseenResultsPanel = ({ items }: { items: readonly PlayItem[] }) => (
   </AppPanel>
 );
 
-const PlayInviteStrip = ({ aspect }: { aspect: AspectId }) => {
-  const invite = useSeasonInvite(aspect);
+const PlayInviteStrip = () => {
+  const invite = useSeasonInvite();
   const tally = useShareTally();
   return (
     <AppPanel title={SEASON_INVITE_WORDS.title} icon="people">
       <div className="flex flex-col gap-3" data-play-invite>
         <div className="play-invite">
           <div className="play-invite__text">
-            <p className="text-app-label text-app-ink">{SEASON_INVITE_WORDS.line(aspectName(aspect))}</p>
+            {invite.aspect !== null && (
+              <p className="text-app-label text-app-ink">{SEASON_INVITE_WORDS.line(aspectName(invite.aspect))}</p>
+            )}
             {tally && tally.friendsPaid > 0 && (
               <p className="text-app-label text-app-gold">
                 {`${SHARED_DAYS_WORDS.friendsPaid}: ${SHARED_DAYS_WORDS.ofLimit(tally.friendsPaid)}`}

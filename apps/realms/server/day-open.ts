@@ -2,6 +2,7 @@ import { fetchHeraldGameSnapshot, NativeFactStore } from "@bibliothecadao/eternu
 import type { HeraldGameDirectoryEntry } from "@bibliothecadao/eternum/game-sync";
 import { dayOf } from "@bibliothecadao/eternum/expeditions";
 import type { PushGame } from "@bibliothecadao/notifications";
+import { isSeasonGame } from "@bibliothecadao/types";
 
 export type DayOpenGame = Pick<HeraldGameDirectoryEntry, "game_id" | "mode" | "status" | "expedition"> & {
   clock: Pick<HeraldGameDirectoryEntry["clock"], "start_main_at" | "end_at" | "scheduled_end_at">;
@@ -62,9 +63,13 @@ export function runningFrontierGameIds(games: readonly DayOpenGame[], now: numbe
     .map((game) => game.game_id);
 }
 
-export function openFrontierGameIds(games: readonly DayOpenGame[], now: number): number[] {
+export function openSeasonGameIds(
+  games: readonly (DayOpenGame & Pick<HeraldGameDirectoryEntry, "name">)[],
+  now: number,
+): number[] {
   return games
-    .filter((game) => game.mode === "frontier" && game.status !== "Ended" && game.status !== "Settled")
+    .filter((game) => game.mode === "frontier" && isSeasonGame(game.name))
+    .filter((game) => game.status !== "Ended" && game.status !== "Settled")
     .filter((game) => game.clock.end_at === 0 || now < game.clock.end_at)
     .map((game) => game.game_id);
 }

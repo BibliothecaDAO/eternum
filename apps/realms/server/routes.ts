@@ -46,6 +46,8 @@ import {
   handleShareReport,
   handleSharePosted,
   handleShareTally,
+  handleCreateInvite,
+  handleShareFriends,
   handleShareVisit,
   shareWorldOf,
 } from "./shares";
@@ -247,6 +249,10 @@ const routeShares = async (
   }
   if (pathname === "/api/shares" && request.method === "POST")
     return handleCreateShare(request, auth, shareWorldOf(env, platform.fetchShard));
+  if (pathname === "/api/shares/invite" && request.method === "POST")
+    return handleCreateInvite(request, auth, shareWorldOf(env, platform.fetchShard));
+  if (pathname === "/api/shares/friends" && request.method === "GET")
+    return handleShareFriends(request, auth, shareWorldOf(env, platform.fetchShard));
   if (pathname === "/api/shares/joined" && request.method === "GET") return handleJoinedShare(request, auth, env.DB);
   if (pathname === "/api/shares" && request.method === "GET")
     return handleShareTally(request, auth, shareWorldOf(env, platform.fetchShard));

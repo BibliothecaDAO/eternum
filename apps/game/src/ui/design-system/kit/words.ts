@@ -324,6 +324,7 @@ import {
   PRINTED_CODE_LENGTH,
   SHARED_MOMENT_WORDS,
   sharerName,
+  type InvitedFriendState,
   type SealCodeRefusal,
   type SocialProvider,
 } from "@realms-world/identity";
@@ -1202,6 +1203,17 @@ export const SHARED_DAYS_WORDS = {
   fragmentsEarned: `${FRAGMENTS} earned`,
   ofLimit: (paid: number) => `${formatExact(paid)}/${formatExact(FRIENDS_LIMIT)}`,
   friendRule: `A friend who joins by your Aspect link and reaches ${formatExact(FRIEND_GLORY)} ${ASPECT_PAGE_WORDS.glory} pays you ${formatCount(FRIEND_FRAGMENTS, FRAGMENT, FRAGMENTS)}. Your ${formatOrdinal(FRIENDS_LIMIT)} adds ${formatExact(FRIENDS_BONUS_FRAGMENTS)}.`,
+} as const;
+
+export const INVITED_FRIENDS_WORDS = {
+  title: "Friends you brought",
+  unnamed: "A friend",
+  glory: DEEP_WORDS.glory,
+  states: {
+    joined: "Joined",
+    reached: SHARED_DAYS_WORDS.steps.activated,
+    paid: `Paid you ${formatCount(FRIEND_FRAGMENTS, FRAGMENT, FRAGMENTS)}`,
+  } satisfies Record<InvitedFriendState, string>,
 } as const;
 
 /** A shared link's landing: who shared which day, and the way into Frontier. */

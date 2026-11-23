@@ -1,6 +1,6 @@
 import type { IdentityAuth } from "./auth";
 import { spendsFragments } from "@bibliothecadao/eternum/game-client";
-import { openFrontierGameIds, readEnrolledAccounts, runningFrontierGameIds } from "./day-open";
+import { openSeasonGameIds, readEnrolledAccounts, runningFrontierGameIds } from "./day-open";
 import { directoryShard, directoryShardOf, fetchShardGames, gamesUrl } from "./directory";
 import type { IdentityEnv } from "./env";
 import { readGameFacts, readReleaseCatalogue } from "./game-facts";
@@ -39,20 +39,20 @@ export const enteredGamesOf = (
   return async (realmsId) => {
     const account = await accountOf(realmsId);
     const entered: NamedGame[] = [];
-    for (const { shardUrl, ...game } of await openFrontierGames(env, fetchShard, now()))
+    for (const { shardUrl, ...game } of await openSeasonGames(env, fetchShard, now()))
       if (await isEnrolled(shardUrl, game.gameId, account)) entered.push(game);
     return entered;
   };
 };
 
-export async function openFrontierGames(
+export async function openSeasonGames(
   env: Pick<IdentityEnv, "DB">,
   fetchShard: typeof fetch,
   now: number,
 ): Promise<(NamedGame & { shardUrl: string })[]> {
   const shard = await directoryShard(env.DB);
   if (!shard) return [];
-  return openFrontierGameIds(await fetchShardGames(shard, gamesUrl(shard, null), fetchShard), now).map((gameId) => ({
+  return openSeasonGameIds(await fetchShardGames(shard, gamesUrl(shard, null), fetchShard), now).map((gameId) => ({
     chainId: gameKey(shard.chainId),
     gameId,
     shardUrl: shard.url,

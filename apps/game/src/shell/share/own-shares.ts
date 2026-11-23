@@ -1,14 +1,18 @@
 import {
   sharePathVia,
+  type InvitedFriends,
   type JoinedShare,
   type ShareChannel,
-  type ShareMoment,
+  type DayShareMoment,
   type ShareTally,
 } from "@realms-world/identity";
+import { catalogAspectId } from "@bibliothecadao/types";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 
 import { identityClient, useIdentitySession } from "@/hooks/context/identity-session";
+
+import { useOrderIntent } from "../play/order-intent";
 
 /**
  * A player's shared links, and what they brought, are their account's alone. Every read of them keys its cache by the
@@ -31,17 +35,19 @@ const useShareOwner = (): string | null => {
  * again gets the same one. `posted` records the post; `publish` hands identity the card the link then unfurls as;
  * `failed` says identity refused or could not make it, and `retry` asks again.
  */
-export const useShareLink = (moment: ShareMoment) => {
+const useMadeLink = <Made extends { code: string }>(key: readonly unknown[], make: () => Promise<Made>) => {
   const owner = useShareOwner();
   const made = useQuery({
-    queryKey: [OWN_SHARES, owner, "link", moment.kind, moment.chainId, moment.gameId, moment.moment],
-    queryFn: () => identityClient.createShare(moment),
+    queryKey: [OWN_SHARES, owner, ...key],
+    queryFn: make,
     enabled: owner !== null,
     staleTime: Number.POSITIVE_INFINITY,
     retry: 1,
   });
-  const code = owner === null ? undefined : made.data;
+  const link = owner === null ? undefined : made.data;
+  const code = link?.code;
   return {
+    link,
     code,
     url: (via: ShareChannel) => new URL(code ? sharePathVia(code, via) : "/", window.location.origin).href,
     // A post that cannot be recorded is still posted; the tally misses it, the player does not.
@@ -50,6 +56,20 @@ export const useShareLink = (moment: ShareMoment) => {
     failed: owner !== null && made.isError,
     retry: () => void made.refetch(),
   };
+};
+
+export const useShareLink = (moment: DayShareMoment) =>
+  useMadeLink(["link", moment.kind, moment.chainId, moment.gameId, moment.moment], async () => ({
+    code: await identityClient.createShare(moment),
+  }));
+
+export const useOwnInvite = () => {
+  const pledged = useOrderIntent().intent.data?.order ?? null;
+  const invite = useMadeLink(["invite", pledged], async () => {
+    const made = await identityClient.createInvite();
+    return { ...made, aspect: catalogAspectId(made.aspect) };
+  });
+  return { ...invite, aspect: invite.link?.aspect ?? null };
 };
 
 /** What the account's shared links brought; null without an account, while it is read, or when identity cannot say. */
@@ -62,6 +82,17 @@ export const useShareTally = (): ShareTally | null => {
     retry: false,
   });
   return owner !== null && tally.status === "success" ? tally.data : null;
+};
+
+export const useInvitedFriends = (): InvitedFriends["friends"] | null => {
+  const owner = useShareOwner();
+  const friends = useQuery({
+    queryKey: [OWN_SHARES, owner, "friends"],
+    queryFn: () => identityClient.invitedFriends(),
+    enabled: owner !== null,
+    retry: false,
+  });
+  return owner !== null && friends.status === "success" ? friends.data.friends : null;
 };
 
 /** What is known of the link the account came by: being read, unreadable (with a way to ask again), or read. */

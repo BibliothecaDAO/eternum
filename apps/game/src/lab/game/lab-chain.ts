@@ -393,6 +393,12 @@ const signInLabPlayer = (wallet: string | undefined, joined: JoinedShare) => {
   identityClient.readDefaultWallet = async () => null;
   identityClient.joinedShare = async () => joined;
   identityClient.createShare = async ({ kind, gameId, moment }) => `lab-${kind}-${gameId}-${moment}`;
+  identityClient.createInvite = async () => ({
+    code: `lab-aspect-${LAB_GAME.gameId}`,
+    aspect: 1,
+    chainId: LAB_GAME.chainId,
+    gameId: LAB_GAME.gameId,
+  });
   identityClient.sharePosted = async () => undefined;
   identityClient.getOrderIntent = async () => ({ order: null, members: {} });
   answerLabOpening();

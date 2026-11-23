@@ -21,9 +21,12 @@ it("lets no route open the game before the tab answers the lab's directory, howe
   const board = await (await window.fetch(`${LAB_GAME.url}/games/${LAB_GAME.gameId}/leaderboard`)).json();
   expect(board).toEqual({ game_id: String(LAB_GAME.gameId), mode: "frontier", entries: second.board });
   expect(board.entries.map((entry: { structure_id: string }) => entry.structure_id)).toHaveLength(2);
-  expect(
-    await identityClient.createShare({ kind: "aspect", chainId: LAB_GAME.chainId, gameId: LAB_GAME.gameId, moment: 1 }),
-  ).toBe(`lab-aspect-${LAB_GAME.gameId}-1`);
+  expect(await identityClient.createInvite()).toEqual({
+    code: `lab-aspect-${LAB_GAME.gameId}`,
+    aspect: 1,
+    chainId: LAB_GAME.chainId,
+    gameId: LAB_GAME.gameId,
+  });
 });
 
 it("serializes /games and /api/directory cleanly when RaceRules and QuestRules are present", async () => {

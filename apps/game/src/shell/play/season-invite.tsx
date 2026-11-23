@@ -1,14 +1,15 @@
 import type { AspectId } from "@bibliothecadao/types";
 import { useState } from "react";
 
-import { useShareLink } from "@/shell/share/own-shares";
+import { useOwnInvite } from "@/shell/share/own-shares";
 import type { IconMeaning } from "@/ui/design-system/icon";
 import { AppButton, AppNotice } from "@/ui/design-system/kit/app-elements";
 import { INVITE_WORDS, SEASON_INVITE_WORDS, TRY_AGAIN } from "@/ui/design-system/kit/words";
 
-export const useSeasonInvite = (aspect: AspectId) => {
-  const link = useShareLink({ kind: "aspect", chainId: null, gameId: null, moment: aspect });
-  const [copied, setCopied] = useState<{ aspect: AspectId; state: "copied" | "failed" } | null>(null);
+export const useSeasonInvite = () => {
+  const link = useOwnInvite();
+  const aspect = link.aspect;
+  const [copied, setCopied] = useState<{ aspect: AspectId | null; state: "copied" | "failed" } | null>(null);
   const copy = () =>
     navigator.clipboard.writeText(link.url("system")).then(
       () => setCopied({ aspect, state: "copied" }),
