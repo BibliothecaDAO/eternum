@@ -55,6 +55,37 @@ const ORDER_CELLS = new Map(orders.map((order, index) => [order.orderId, index])
 
 const NEUTRAL_CLOTH = new Color(SLATE_HEX);
 
+type SharedSignumAtlas = {
+  texture: CanvasTexture;
+  refs: number;
+  preparation?: Promise<void>;
+};
+
+let sharedSignumAtlas: SharedSignumAtlas | null = null;
+
+function acquireSignumAtlas(): SharedSignumAtlas {
+  if (!sharedSignumAtlas) {
+    sharedSignumAtlas = { texture: createSignumAtlas(), refs: 0 };
+  }
+  sharedSignumAtlas.refs += 1;
+  return sharedSignumAtlas;
+}
+
+function prepareSignumAtlas(entry: SharedSignumAtlas): Promise<void> {
+  return (entry.preparation ??= loadOrderArtwork().then((images) => {
+    if (sharedSignumAtlas !== entry) return;
+    paintSignumAtlas(entry.texture, images);
+  }));
+}
+
+function releaseSignumAtlas(entry: SharedSignumAtlas): void {
+  entry.refs -= 1;
+  if (entry.refs <= 0 && sharedSignumAtlas === entry) {
+    entry.texture.dispose();
+    sharedSignumAtlas = null;
+  }
+}
+
 export class OrderStandard {
   readonly group = new Group();
   readonly body: InstancedMesh;
@@ -64,8 +95,7 @@ export class OrderStandard {
   private readonly aspectAttr: InstancedBufferAttribute;
   private readonly clothColorAttr: InstancedBufferAttribute;
   private readonly orderCellAttr: InstancedBufferAttribute;
-  private readonly atlas: CanvasTexture;
-  private preparation?: Promise<void>;
+  private readonly sharedAtlas: SharedSignumAtlas;
   private disposed = false;
 
   constructor(
@@ -92,7 +122,7 @@ export class OrderStandard {
       this.body = createInstancedMeshWithSharedMatrices(bodyGeometry, signumBodyMaterial(offset), placement);
     }
     this.body.name = "Order signum stone";
-    this.body.castShadow = true;
+    this.body.castShadow = false;
     this.body.receiveShadow = true;
     this.body.raycast = () => {};
 
@@ -104,12 +134,12 @@ export class OrderStandard {
     this.cloth.receiveShadow = true;
     this.cloth.raycast = () => {};
 
-    this.atlas = createSignumAtlas();
+    this.sharedAtlas = acquireSignumAtlas();
     const emblemGeometry = signumEmblemGeometry(offset);
     emblemGeometry.setAttribute("signumOrderCell", this.orderCellAttr);
     this.emblem = createInstancedMeshWithSharedMatrices(
       emblemGeometry,
-      signumEmblemMaterial(this.atlas),
+      signumEmblemMaterial(this.sharedAtlas.texture),
       this.placement,
     );
     this.emblem.name = "Order signum emblem";
@@ -139,10 +169,7 @@ export class OrderStandard {
   }
 
   prepare(): Promise<void> {
-    return (this.preparation ??= loadOrderArtwork().then((images) => {
-      if (this.disposed) return;
-      paintSignumAtlas(this.atlas, images);
-    }));
+    return prepareSignumAtlas(this.sharedAtlas);
   }
 
   setOrderAt(index: number, orderId: number | undefined): void {
@@ -180,7 +207,7 @@ export class OrderStandard {
       (mesh.material as MeshStandardNodeMaterial | MeshBasicNodeMaterial).dispose();
       mesh.dispose();
     }
-    this.atlas.dispose();
+    releaseSignumAtlas(this.sharedAtlas);
     this.group.removeFromParent();
   }
 }

@@ -1,5 +1,4 @@
 import { createInstancedMesh } from "../utils/create-instanced-mesh";
-import { CameraView } from "@/three/scenes/hexagon-scene";
 import { gltfLoader } from "@/three/utils/utils";
 import { FELT_CENTER } from "@/ui/config";
 import { SHIP_WORLD_SCALE } from "@/three/characters/ships/ship-design";
@@ -150,7 +149,6 @@ export class ArmyModel {
   private readonly movingInstances: Map<number, MovementData> = new Map();
   private readonly instanceData: Map<number, ArmyInstanceData> = new Map();
   private readonly matrixIndexOwners: Map<number, number> = new Map();
-  private currentCameraView: CameraView = CameraView.Medium;
   private movementCompleteCallbacks: Map<number, () => void> = new Map();
 
   // Cosmetic model management
@@ -1238,8 +1236,7 @@ export class ArmyModel {
       return;
     }
 
-    const updateInterval = this.getAnimationUpdateIntervalMs(modelData.animationUpdateInterval);
-    if (now - modelData.lastAnimationUpdate < updateInterval) {
+    if (now - modelData.lastAnimationUpdate < modelData.animationUpdateInterval) {
       return;
     }
 
@@ -1268,7 +1265,6 @@ export class ArmyModel {
       let needsMovingWeights = false;
       for (let i = 0; i < instanceCount; i++) {
         const state = this.animationStates[i];
-        if (this.shouldSkipAnimation(state)) continue;
         if (state === ANIMATION_STATE_IDLE) needsIdleWeights = true;
         else if (state === ANIMATION_STATE_MOVING) needsMovingWeights = true;
         if (needsIdleWeights && needsMovingWeights) break;
@@ -1337,7 +1333,6 @@ export class ArmyModel {
             const i = indices[idx];
             if (i >= instanceCount) continue;
             const state = this.animationStates[i];
-            if (this.shouldSkipAnimation(state)) continue;
 
             let sourceWeights: Float32Array | null = null;
             let sourceOffset = 0;
@@ -1370,24 +1365,6 @@ export class ArmyModel {
     }
   }
 
-  public setCameraView(cameraView: CameraView): void {
-    this.currentCameraView = cameraView;
-  }
-
-  private shouldSkipAnimation(animationState: number): boolean {
-    return this.currentCameraView === CameraView.Far && animationState === ANIMATION_STATE_IDLE;
-  }
-
-  private getAnimationUpdateIntervalMs(baseInterval: number): number {
-    if (this.currentCameraView === CameraView.Medium) {
-      return baseInterval * 1.25;
-    }
-    if (this.currentCameraView === CameraView.Far) {
-      return baseInterval * 1.6;
-    }
-    return baseInterval;
-  }
-
   private getAnimationUpdateFrequency(instanceCount: number): number {
     let updateFrequency = 1;
 
@@ -1396,12 +1373,6 @@ export class ArmyModel {
     if (instanceCount > 80) updateFrequency = 4;
     if (instanceCount > 150) updateFrequency = 5;
 
-    if (this.currentCameraView === CameraView.Medium) {
-      updateFrequency = Math.min(updateFrequency + 1, 10);
-    } else if (this.currentCameraView === CameraView.Far) {
-      updateFrequency = Math.min(updateFrequency + 2, 10);
-    }
-
     return updateFrequency;
   }
 
@@ -1409,11 +1380,6 @@ export class ArmyModel {
     let stride = 1;
     if (instanceCount > 150) stride = 2;
     if (instanceCount > 300) stride = 4;
-
-    if (this.currentCameraView === CameraView.Far) {
-      stride = Math.min(stride * 2, this.ANIMATION_BUCKETS);
-    }
-
     return stride;
   }
 

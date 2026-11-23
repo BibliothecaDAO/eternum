@@ -2866,7 +2866,6 @@ export class ArmyManager {
 
   private applyContentLadder(ladder: WorldmapContentLadder): void {
     this.contentLadder = ladder;
-    this.armyModel.setCameraView(ladder.band);
     this.armyModel.setModelsVisible(ladder.armyModels);
     this.resyncVisibleArmyCompactLabels();
   }

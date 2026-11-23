@@ -65,6 +65,7 @@ describe("order stone signum", () => {
     const signum = new OrderStandard(host);
     const totalTriangles = triangleCount(signum.body) + triangleCount(signum.cloth) + triangleCount(signum.emblem);
     expect(totalTriangles).toBeLessThanOrEqual(600);
+    expect(signum.body.castShadow).toBe(false);
     expect(signum.body.instanceMatrix).toBe(host.instanceMatrix);
     expect(signum.cloth.instanceMatrix).toBe(host.instanceMatrix);
     expect(signum.emblem.instanceMatrix).toBe(host.instanceMatrix);
@@ -146,5 +147,30 @@ describe("order stone signum", () => {
     standards.cloth.getMatrixAt(0, read);
     expect(read.elements).toEqual(matrix.elements);
     standards.dispose();
+  });
+
+  it("shares one painted Facet atlas across every OrderStandard and disposes it when the last owner disposes", async () => {
+    const createCanvas = vi.fn(() => {
+      const context = { fillRect: vi.fn(), drawImage: vi.fn(), fillStyle: "" };
+      return { width: 0, height: 0, getContext: () => context };
+    });
+    vi.stubGlobal("document", { createElement: createCanvas });
+    vi.spyOn(ImageLoader.prototype, "loadAsync").mockResolvedValue({ width: 256, height: 256 } as HTMLImageElement);
+    const first = OrderStandard.standalone(2);
+    const second = OrderStandard.standalone(2);
+    expect(createCanvas).toHaveBeenCalledTimes(1);
+    await Promise.all([first.prepare(), second.prepare()]);
+    const firstContext = createCanvas.mock.results[0]!.value.getContext();
+    expect(firstContext.drawImage).toHaveBeenCalledTimes(orders.length);
+
+    first.dispose();
+    const third = OrderStandard.standalone(2);
+    expect(createCanvas).toHaveBeenCalledTimes(1);
+    second.dispose();
+    third.dispose();
+
+    const fresh = OrderStandard.standalone(2);
+    expect(createCanvas).toHaveBeenCalledTimes(2);
+    fresh.dispose();
   });
 });

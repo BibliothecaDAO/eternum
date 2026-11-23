@@ -5,7 +5,6 @@ import type Node from "three/src/nodes/core/Node.js";
 import {
   dot,
   emissive,
-  hash,
   mix,
   mrt,
   output,
@@ -18,6 +17,7 @@ import {
   vec4,
 } from "three/tsl";
 import { RenderPipeline, type WebGPURenderer } from "three/webgpu";
+import { cellHash } from "./terrain/terrain-cell-hash";
 
 const GLOW = { strength: 0.35, radius: 0.3, threshold: 0.15 };
 const SHADE_TINT = vec3(0.94, 0.98, 1.06);
@@ -57,7 +57,7 @@ function createFinish(renderer: WebGPURenderer, scene: Object3D, camera: Camera)
   const lit = colour.add(asColour(glow));
   const toned = renderOutput(vec4(afternoon(lit.rgb), 1));
   const smoothed = smaa(toned);
-  const dither = hash(screenCoordinate.xy).sub(0.5).div(255);
+  const dither = cellHash(screenCoordinate.xy, 7).sub(0.5).div(255);
   const pipeline = new RenderPipeline(renderer as unknown as ConstructorParameters<typeof RenderPipeline>[0]);
   pipeline.outputColorTransform = false;
   pipeline.outputNode = asColour(smoothed).add(vec4(dither, dither, dither, 0));

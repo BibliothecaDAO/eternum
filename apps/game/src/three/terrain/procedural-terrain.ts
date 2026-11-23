@@ -1,4 +1,5 @@
 import type { EtherealLayer } from "@bibliothecadao/eternum";
+import { Biome } from "@bibliothecadao/eternum/biome";
 import type { LayerPlace } from "@bibliothecadao/types";
 import { createDeepFloorMaterial } from "./deep-floor-material";
 import { layerOfSurface, type PersonalLayer } from "./layer-biomes";
@@ -541,7 +542,9 @@ export class ProceduralTerrain {
     this.fogField.setPage(pageKey, preparedPage.shroudInstances);
     const { cells, climate, halo, mapCenter } = preparedPage.request;
     const allCells = [...cells, ...halo];
-    this.biomeMap.write(allCells, preparedPage.origin);
+    this.biomeMap.write(allCells, preparedPage.origin, (col, row) =>
+      Biome.sampleField(col + mapCenter, row + mapCenter, climate),
+    );
     this.biomeMap.writeLayers(allCells, preparedPage.origin, mapCenter, climate);
   }
 

@@ -1,10 +1,11 @@
 import { LAYER_PLACES } from "@bibliothecadao/types";
 import type Node from "three/src/nodes/core/Node.js";
 import { Color, type Texture } from "three";
-import { color, float, hash, int, mix, normalWorld, positionWorld, smoothstep, uniformArray, vec2 } from "three/tsl";
+import { color, float, int, mix, normalWorld, positionWorld, smoothstep, uniformArray, vec2 } from "three/tsl";
 import { MeshStandardNodeMaterial } from "three/webgpu";
 import { applyEndgameFrost } from "../effects/endgame/field";
 import { EVERY_LAYER_BIOME, LAYER_BIOME_LOOKS, LAYER_DEPTHS, type PersonalLayer } from "./layer-biomes";
+import { cellHash } from "./terrain-cell-hash";
 import { layerFloorAir } from "./terrain-mist-node";
 import { LAYER_BIOME_OFFSET } from "./terrain-biome-map";
 import { biomeTexelAt, hexReach } from "./terrain-ground-node";
@@ -124,7 +125,7 @@ function softNoise(at: Node<"vec2">): Node<"float"> {
 
 function motes(at: Node<"vec2">, fine: number, rarity: number): Node<"float"> {
   const cell = at.mul(fine).floor();
-  const lot = hash(cell);
+  const lot = cellHash(cell, 5);
   const spot = at.mul(fine).fract().sub(0.5).length();
   return smoothstep(0.1, 0.03, spot).mul(smoothstep(rarity, rarity + 0.02, lot));
 }
