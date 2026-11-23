@@ -27,6 +27,7 @@ pub mod discovery;
 pub mod economy;
 pub mod entry;
 pub mod expeditions;
+pub mod extraction;
 pub mod fragments;
 pub mod frontier_combat;
 pub mod game;
@@ -39,6 +40,7 @@ pub mod movement;
 pub mod oath_commands;
 pub mod oaths;
 pub mod placement;
+#[cfg(not(feature: "blitz"))]
 pub mod prizes;
 pub mod production;
 pub mod production_domain;

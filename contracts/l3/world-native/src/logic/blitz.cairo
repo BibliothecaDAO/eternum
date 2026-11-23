@@ -5,4 +5,5 @@ pub mod discovery;
 pub mod guards;
 pub mod hyperstructures;
 pub mod points;
+pub mod prizes;
 pub mod roster;
