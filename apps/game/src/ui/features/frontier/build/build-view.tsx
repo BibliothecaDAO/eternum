@@ -2,13 +2,12 @@ import "./build-view.css";
 
 import { rankName } from "@bibliothecadao/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { formatExact, formatCharge, formatShort, formatShortDuration } from "@bibliothecadao/types";
+import { formatExact, formatCharge, formatShortDuration } from "@bibliothecadao/types";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import {
   HudButton,
   HudCard,
   HudChip,
-  HudConfirm,
   HudCost,
   HudNotice,
   HudRanked,
@@ -18,7 +17,7 @@ import {
   rankedTip,
 } from "@/ui/design-system/kit/hud-elements";
 import type { Refusal } from "@/ui/design-system/kit/refusal";
-import { BUILD, BUILDING, PRICE_UP, type Rank, type RankedWords, ROOM_ASK } from "@/ui/design-system/kit/words";
+import { BUILD, BUILDING, PRICE_UP, type Rank, type RankedWords } from "@/ui/design-system/kit/words";
 
 import { PRICE_FACES, costLine, type Price } from "@/ui/design-system/kit/price-faces";
 import type { ReactNode } from "react";
@@ -31,11 +30,8 @@ export type BuildTile = {
   /** What the building does, in one line, on the card's tooltip. */
   /** Its hover line ("War hall: new armies start with Battle [I]"), a rank in it as its gem. */
   tip: RankedWords | string;
-  /** What one more gives: a production rate or population; a training building's attribute alone (its gem is the tier). */
   gives: { icon: IconMeaning; value?: ReactNode };
   gems: { tier: Rank }[];
-  /** The population it takes; 0 takes none. */
-  takes: number;
   standing:
     | {
         kind: "price";
@@ -43,22 +39,12 @@ export type BuildTile = {
         prices: readonly (Price & { short: boolean })[];
         /** Why the price is above its base, when it is. */
         raised?: string;
-        /** The missing resource and its wait (unknown when nothing fills it), or population. */
-        short?: { of: Price["of"]; wait: number | undefined } | { of: "population" };
+        short?: { of: Price["of"]; wait: number | undefined };
       }
     | { kind: "built" }
     | { kind: "level"; level: number };
 };
 
-/**
- * The build sheet (wireframe 02): the realm's population in its head, the grid of building cards, each saying what it
- * gives and where it stands, and Build in the sheet's foot with the chosen one's price (the copy surcharge included; an
- * arrow marks a price that has risen, and the chosen one's foot says why in one line), so the verb never scrolls out of
- * view however many cards there are. When the
- * building cannot rise, the foot says what it needs against what there is, and its gold button carries the fix: the Hut
- * that houses it, the map that pays it, the Research that opens it. Build pressed on a building the realm has no free
- * population for asks instead, in the grid's place (RoomAsk): the Hut on this plot, or another pick.
- */
 export const BuildView = ({
   tiles,
   chosen,
@@ -68,7 +54,6 @@ export const BuildView = ({
   sending,
   onBuild,
   onClose,
-  ask,
 }: {
   tiles: BuildTile[];
   chosen: number;
@@ -78,8 +63,6 @@ export const BuildView = ({
   sending: boolean;
   onBuild: () => void;
   onClose: () => void;
-  /** Build was pressed on the chosen building with no free population: the ask stands where the grid stood. */
-  ask?: RoomAskChoices;
 }) => {
   const chosenTile = tiles[chosen];
   const chosenStanding = chosenTile?.standing;
@@ -133,7 +116,7 @@ export const BuildView = ({
   );
   return (
     <HudSheet label={BUILD} onClose={onClose}>
-      {ask ? <RoomAsk building={tiles[chosen]!} choices={ask} /> : choice}
+      {choice}
     </HudSheet>
   );
 };
@@ -203,55 +186,6 @@ const LockedUnlocks = ({
   </div>
 );
 
-/** The ask's two choices: the Hut on this plot (or, when it cannot be paid yet, picking it), or another building. */
-export type RoomAskChoices = { hut: BuildTile; hutVerb: string; onHut: () => unknown; onAnother: () => void };
-
-/**
- * Build pressed with no free population (Devcon feedback, 4 November 2026: the sheet swapped to a Hut with no word):
- * the realm full, what the chosen building takes, what a Hut adds, and the choice, never made for the player.
- */
-const RoomAsk = ({
-  building,
-  choices: { hut, hutVerb, onHut, onAnother },
-}: {
-  building: BuildTile;
-  choices: RoomAskChoices;
-}) => (
-  <HudConfirm
-    question={ROOM_ASK.question}
-    verb={hutVerb}
-    cancel={ROOM_ASK.another}
-    onConfirm={onHut}
-    onCancel={onAnother}
-  >
-    <span className="flex items-center gap-3">
-      <SemanticIcon name={hut.icon} size={64} />
-      <span className="flex flex-col items-start gap-1.5">
-        <AskLine tile={building}>
-          <HudChip icons={["person"]}>{formatShort(building.takes)}</HudChip>
-        </AskLine>
-        <AskLine tile={hut}>
-          <HudChip tone="good" icons={["person"]}>
-            {hut.gives.value}
-          </HudChip>
-        </AskLine>
-      </span>
-    </span>
-  </HudConfirm>
-);
-
-const AskLine = ({ tile, children }: { tile: BuildTile; children: ReactNode }) => (
-  <span className="flex items-center gap-1.5 text-hud-body text-hud-ink">
-    <SemanticIcon name={tile.icon} size={22} />
-    {tile.name}
-    {children}
-  </span>
-);
-
-/**
- * Why the building cannot rise, in the foot where Build would stand, over the price of the way past it (the Hut that
- * houses it, the map that pays it), whose verb stands beside it.
- */
 const RefusalNote = ({ refusal }: { refusal: Refusal }) => (
   <span className="flex flex-col items-start gap-1">
     <HudNotice line={reasonLine(refusal.reason)} />
@@ -291,15 +225,8 @@ const Gives = ({ tile }: { tile: BuildTile }) => (
   </span>
 );
 
-/** The tone of a card's band: red while a resource is short, amber while population is, green once built. */
 const bandTone = (standing: BuildTile["standing"]) =>
-  standing.kind === "built"
-    ? "good"
-    : standing.kind === "price" && standing.short
-      ? standing.short.of !== "population"
-        ? "bad"
-        : "warn"
-      : undefined;
+  standing.kind === "built" ? "good" : standing.kind === "price" && standing.short ? "bad" : undefined;
 
 /**
  * Where a building stands, along its card's foot: its price and what it lacks, the Barracks purchases it waits for (its
@@ -320,11 +247,6 @@ const Band = ({ standing }: { standing: BuildTile["standing"] }) => (
   </HudChip>
 );
 
-/**
- * Every resource price, each in red only while the realm holds less of it (owner, 4 November: "white if the player has
- * sufficient amount of that resource"), the arrow of a price that has risen, and the wait at a glance ("3h"; the chosen
- * building's line under the grid says it whole) or the population the realm lacks.
- */
 const Price = ({ standing }: { standing: Extract<BuildTile["standing"], { kind: "price" }> }) => (
   <>
     <span className="flex flex-wrap items-center justify-center gap-x-1.5 gap-y-0.5">
@@ -345,12 +267,11 @@ const Price = ({ standing }: { standing: Extract<BuildTile["standing"], { kind: 
         ↑
       </span>
     )}
-    {standing.short && standing.short.of !== "population" && standing.short.wait !== undefined && (
+    {standing.short?.wait !== undefined && (
       <span className="flex items-center gap-0.5">
         <SemanticIcon name="hourglass" size={12} />
         {formatShortDuration(standing.short.wait)}
       </span>
     )}
-    {standing.short?.of === "population" && <SemanticIcon name="person" size={12} />}
   </>
 );

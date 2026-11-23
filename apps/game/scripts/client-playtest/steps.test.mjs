@@ -400,7 +400,7 @@ describe("a neighbour's realm visited, left, and visited and left again (lab-vis
   const card = (title, controls = ["Close"]) => ({ title, controls });
   const building = (hover, opened) => ({ offset: [0, 0], hover, card: opened });
   const plot = (opened) => ({ offset: [0, 0], hover: null, card: opened });
-  const found = ["Barracks", "Farm", "Hut", "Castle"];
+  const found = ["Barracks", "Farm", "Storeroom", "Castle"];
   const visitTaps = [...found.map((name) => building(name, card(name))), plot(null)];
 
   it("runs the visit and Leave twice, each board swept", () => {
@@ -440,9 +440,9 @@ describe("a neighbour's realm visited, left, and visited and left again (lab-vis
   });
 
   it("fails a sweep that found too few buildings to judge", () => {
-    expect(verify("visit-plots")({ played: { taps: [building("Hut", card("Hut"))], signed: 0 } }).status).toBe(
-      "failed",
-    );
+    expect(
+      verify("visit-plots")({ played: { taps: [building("Storeroom", card("Storeroom"))], signed: 0 } }).status,
+    ).toBe("failed");
   });
 
   it("passes home when each building's card is its hover's and an open plot opens Build", () => {

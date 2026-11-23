@@ -334,8 +334,6 @@ import {
   FRAGMENT_CENTS,
   FRAGMENTS,
   ANCIENT_SEAL,
-  BuildingType,
-  buildingName,
   formatAmount,
   formatDollars,
   formatExact,
@@ -651,14 +649,7 @@ export const NAME_UNAVAILABLE = "Name unavailable";
 /** A player whose name identity has not answered yet: an ellipsis, named so for a screen reader, never the stand-in. */
 export const NAME_WAITING = "Name on its way";
 
-/** A realm's room for buildings: every building takes some, a Hut gives some. */
-export const POPULATION = "population";
-/**
- * Why a verb cannot run yet, in one line that names what is counted: against what the realm holds, against what is
- * free, or against a store's own limit, which no wait fills. A shortfall that fills by itself says when.
- */
 export const needsHave = (need: string, noun: string, have: string) => `Needs ${need} ${noun}, have ${have}`;
-export const needsFree = (need: string, noun: string, free: string) => `Needs ${need} ${noun}, ${free} free`;
 export const needsOverLimit = (need: string, noun: string, limit: string) =>
   `Needs ${need} ${noun}, storage holds ${limit}`;
 export const inTime = (duration: string) => `in ${duration}`;
@@ -750,7 +741,6 @@ export const UPGRADE = "Upgrade";
 
 /** The realm: its castle and levels, its buildings, and the row that counts a full realm's common buildings. */
 export const CASTLE = "Castle";
-const HUT = buildingName(BuildingType.WorkersHut, true);
 /** The castle rows that unlock the three depths beyond the spire. */
 export const LAYER = "Layer";
 
@@ -978,8 +968,6 @@ export const BUILDING_FIGURES = {
   castleMakes: (noun: string) => `${noun} the castle makes`,
   /** How many of a type stand on the realm: "1 building", "6 buildings" (owner, 27 October: not "6 standing"). */
   standing: (count: number) => formatCount(count, "building"),
-  eachAdds: `${POPULATION} each adds`,
-  eachTakes: `${POPULATION} each takes`,
   startsAt: (attribute: string) => `${attribute} new armies start at`,
 } as const;
 
@@ -1021,17 +1009,6 @@ export const wheatForOnly = (troops: string, of: string) => `${WHEAT} for only $
 export const GET_WHEAT = `Get ${WHEAT}`;
 export const DEPLOYING = "Deploying…";
 export const BUILD = "Build";
-/**
- * Build pressed on a building the realm has no free population for (Devcon feedback, 4 November 2026: the sheet
- * swapped the player's pick to a Hut with no word): the ask, with the Hut on the same plot as a choice, never as a swap.
- * When the Hut itself cannot be paid yet, the choice picks it, so its price and wait show.
- */
-export const ROOM_ASK = {
-  question: "Population full",
-  buildHut: `${BUILD} a ${HUT} here`,
-  chooseHut: `Choose the ${HUT}`,
-  another: "Choose another",
-} as const;
 
 /** Default army names: "Army" and its place. */
 export const ARMY = "Army";
@@ -2044,7 +2021,6 @@ export const RESEARCH_TREE = {
     fields: ["Fields", "Farm wheat"],
     tools: ["Tools", "Workshop labor"],
   },
-  hutLine: "Hut population",
   oaths: "Oath slots",
   oathSlots: (count: number) => `${count} Oath ${count === 1 ? "slot" : "slots"}`,
   oathOpen: "Open",
@@ -2056,7 +2032,6 @@ export const RESEARCH_TREE = {
   atEach: (building: string) => `At each ${building}`,
   wheatATroop: "Wheat a troop",
   onEachDeploy: "On each deploy",
-  population: "Population",
   newArmiesStart: (attribute: string) => `New armies start with ${attribute}`,
   /** A training building's figure, under the attribute's name on its card: what that level is given to. */
   everyNewArmy: "Every new army",

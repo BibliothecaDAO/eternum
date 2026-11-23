@@ -4,7 +4,6 @@ const TIERED_MODELS: Partial<Record<BuildingType, string>> = {
   [BuildingType.ResourceWheat]: "farm",
   [BuildingType.ResourceKnightT1]: "barracks",
   [BuildingType.Storehouse]: "storehouse",
-  [BuildingType.WorkersHut]: "workers-hut",
 };
 
 /**

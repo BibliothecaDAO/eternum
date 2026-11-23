@@ -60,12 +60,7 @@ it("gives every Frontier building its own distinct model without changing other 
 });
 
 it("selects all five painted tiers while keeping Storeroom on its own model and retaining Blitz tier policy", () => {
-  for (const type of [
-    BuildingType.ResourceWheat,
-    BuildingType.ResourceLabor,
-    BuildingType.ResourceKnightT1,
-    BuildingType.WorkersHut,
-  ]) {
+  for (const type of [BuildingType.ResourceWheat, BuildingType.ResourceLabor, BuildingType.ResourceKnightT1]) {
     for (const tier of [1, 2, 3, 4, 5]) {
       const selected = resolveBuildingModelSelection(
         { category: type, col: BUILDINGS_CENTER[0] + 1, row: BUILDINGS_CENTER[1], tier },

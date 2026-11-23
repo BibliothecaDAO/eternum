@@ -38,8 +38,8 @@ describe("the day log's line for a story", () => {
     const { store } = campBeside();
     const farm = { category: BuildingType.ResourceWheat };
     expect(dayLogLine(story("BuildingPaymentStory", { ...farm, cost: [] }), store)).toBe("Farm built");
-    expect(dayLogLine(story("BuildingPaymentStory", { category: BuildingType.WorkersHut, cost: [] }), store)).toBe(
-      "Hut built",
+    expect(dayLogLine(story("BuildingPaymentStory", { category: BuildingType.Storehouse, cost: [] }), store)).toBe(
+      "Storeroom built",
     );
     expect(
       dayLogLine(story("BuildingPlacementStory", { ...farm, change: "Destroyed" }, "Demolished: Farm"), store),

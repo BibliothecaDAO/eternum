@@ -20,7 +20,6 @@ import {
   LINK_WALLET_FOR_LORDS,
   OFFLINE,
   PAYOUTS_PAUSED,
-  ROOM_ASK,
   type Rank,
   WITHDRAWALS_CLOSED,
   YOU,
@@ -313,16 +312,14 @@ const THIN_DAY_SHARE: SharedDay = {
 };
 
 type LabTile = Parameters<typeof BuildView>[0]["tiles"][number];
-/** A building card for the lab: its painting and name, what it gives, its gems, what it takes, where it stands. */
 const tile = (
   key: string,
   icon: LabTile["icon"],
   name: string,
   gives: LabTile["gives"],
   gems: LabTile["gems"],
-  takes: number,
   standing: LabTile["standing"],
-): LabTile => ({ key, icon, name, tip: "", gives, gems, takes, standing });
+): LabTile => ({ key, icon, name, tip: "", gives, gems, standing });
 const gem = (tier: Rank): LabTile["gems"] => [{ tier }];
 const price = (labor: number, short?: Extract<LabTile["standing"], { kind: "price" }>["short"], raised?: string) =>
   ({ kind: "price", prices: [{ of: "labor", amount: labor, short: short?.of === "labor" }], short, raised }) as const;
@@ -344,60 +341,28 @@ const essenceShortPrice: LabTile["standing"] = {
   short: { of: "essence", wait: undefined },
 };
 const BUILD_TILES: LabTile[] = [
-  tile("farm", "farm", "Farm", { icon: "wheat", value: "+6.3/min" }, gem(2), 1, price(6_800)),
+  tile("farm", "farm", "Farm", { icon: "wheat", value: "+6.3/min" }, gem(2), price(6_800)),
   tile(
     "workshop",
     "workshop",
     "Workshop",
     { icon: "labor", value: "+0.83/min" },
     gem(2),
-    1,
     price(34_000, { of: "labor", wait: 16 * HOUR }, "Costs more with each one standing: 1"),
   ),
-  tile("barracks", "barracks", "Barracks", { icon: "troops", value: "+13/min" }, gem(1), 3, price(6_800)),
-  tile("hut", "workers-hut", "Hut", { icon: "person", value: "+6" }, gem(1), 0, price(5_100)),
-  tile(
-    "supply",
-    "supply-yard",
-    buildingName(BuildingType.SupplyYard),
-    { icon: "order-skill" },
-    gem(1),
-    2,
-    trainingPrice,
-  ),
+  tile("barracks", "barracks", "Barracks", { icon: "troops", value: "+13/min" }, gem(1), price(6_800)),
+  tile("supply", "supply-yard", buildingName(BuildingType.SupplyYard), { icon: "order-skill" }, gem(1), trainingPrice),
 ];
-/**
- * The owner's realm on 3 November: every training building's Essence short while its Labor is held, and the Hut's Labor
- * 13 minutes short.
- */
 const SHORT_TILES: LabTile[] = BUILD_TILES.map((card) =>
-  card.key === "hut"
-    ? { ...card, standing: price(5_100, { of: "labor", wait: 13 * 60 }) }
-    : card.key === "farm" || card.key === "workshop" || card.key === "barracks"
-      ? card
-      : { ...card, standing: essenceShortPrice },
+  card.key === "farm" || card.key === "workshop" || card.key === "barracks"
+    ? card
+    : { ...card, standing: essenceShortPrice },
 );
-/** The realm at 18 of 18 population: every card that takes population stands short of it. */
-const FULL_TILES: LabTile[] = BUILD_TILES.map((card) =>
-  card.takes > 0 && card.standing.kind === "price"
-    ? { ...card, standing: { ...card.standing, short: { of: "population" } } }
-    : card,
-);
-/** A fresh realm with its first building prices. */
 const EARLY_TILES: LabTile[] = [
-  tile("farm", "farm", "Farm", { icon: "wheat", value: "+5/min" }, gem(0), 1, price(800)),
-  tile("workshop", "workshop", "Workshop", { icon: "labor", value: "+0.83/min" }, gem(0), 1, price(2_000)),
-  tile("barracks", "barracks", "Barracks", { icon: "troops", value: "+1.7/min" }, gem(0), 3, price(800)),
-  tile("hut", "workers-hut", "Hut", { icon: "person", value: "+6" }, gem(1), 0, price(300)),
-  tile(
-    "supply",
-    "supply-yard",
-    buildingName(BuildingType.SupplyYard),
-    { icon: "order-skill" },
-    gem(1),
-    2,
-    trainingPrice,
-  ),
+  tile("farm", "farm", "Farm", { icon: "wheat", value: "+5/min" }, gem(0), price(800)),
+  tile("workshop", "workshop", "Workshop", { icon: "labor", value: "+0.83/min" }, gem(0), price(2_000)),
+  tile("barracks", "barracks", "Barracks", { icon: "troops", value: "+1.7/min" }, gem(0), price(800)),
+  tile("supply", "supply-yard", buildingName(BuildingType.SupplyYard), { icon: "order-skill" }, gem(1), trainingPrice),
 ];
 const CASTLE_SIDE = (level: number, wheatStore: number) => ({
   level,
@@ -843,8 +808,6 @@ const STATES = {
   "build-training": { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "build-training" },
   "build-early": { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "build-early" },
   "build-short": { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "build-short" },
-  // Build pressed on Barracks with all 18 housed: the sheet asks, the Hut offered on the same plot.
-  "build-full": { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "build-full" },
   castle: { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "castle" },
   "castle-short": { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "castle-short" },
   "building-farm": { clock: CLOCK, stores: STORES, armies: ARMIES, building: "farm" },
@@ -857,7 +820,6 @@ const STATES = {
   "building-barracks": { clock: CLOCK, stores: STORES, armies: ARMIES, building: "barracks" },
   "building-conscription-camp": { clock: CLOCK, stores: STORES, armies: ARMIES, building: "conscription-camp" },
   "building-rations-depot": { clock: CLOCK, stores: STORES, armies: ARMIES, building: "rations-depot" },
-  "building-hut": { clock: CLOCK, stores: STORES, armies: ARMIES, building: "hut" },
   "building-scouts-lodge": { clock: CLOCK, stores: STORES, armies: ARMIES, building: "scouts-lodge" },
   "realm-full": { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "full" },
   // In the realm with its labor store full (audit 10-27): the strip's ring says so.
@@ -1116,15 +1078,7 @@ type LabState = {
    * realm holding 500 LORDS.
    */
   picked?: "owner" | "rested" | "pay";
-  realmView?:
-    | "build-training"
-    | "build"
-    | "build-early"
-    | "build-short"
-    | "build-full"
-    | "castle"
-    | "castle-short"
-    | "full";
+  realmView?: "build-training" | "build" | "build-early" | "build-short" | "castle" | "castle-short" | "full";
   /** A building tapped on the realm's board: its own card. */
   building?: keyof typeof LAB_BUILDINGS;
   dayDone?: Parameters<typeof DayDoneCard>[0];
@@ -1150,8 +1104,7 @@ type LabState = {
   /** Chat open: a page on a phone, docked on desktop. Its controls are there to be measured for touch. */
   chat?: boolean;
   purse?: { lords: number; gain?: number };
-  /** The realm's rank and population, in place of the lab's City at 9/18. */
-  realm?: { level: number; population: { used: number; total: number } };
+  realm?: { level: number };
   withdraw?: LabWithdraw;
 };
 
@@ -1327,7 +1280,6 @@ export const HudLab = () => {
         {(lab.realmView === "build" ||
           lab.realmView === "build-early" ||
           lab.realmView === "build-short" ||
-          lab.realmView === "build-full" ||
           lab.realmView === "build-training") && (
           <BuildView
             tiles={
@@ -1335,11 +1287,9 @@ export const HudLab = () => {
                 ? EARLY_TILES
                 : lab.realmView === "build-short"
                   ? SHORT_TILES
-                  : lab.realmView === "build-full"
-                    ? FULL_TILES
-                    : BUILD_TILES
+                  : BUILD_TILES
             }
-            chosen={lab.realmView === "build-training" ? 5 : lab.realmView === "build" ? 0 : 2}
+            chosen={lab.realmView === "build-training" ? 3 : lab.realmView === "build" ? 0 : 2}
             onChoose={noop}
             prices={
               lab.realmView === "build-training"
@@ -1353,16 +1303,6 @@ export const HudLab = () => {
             sending={false}
             onBuild={noop}
             onClose={noop}
-            ask={
-              lab.realmView === "build-full"
-                ? {
-                    hut: FULL_TILES.find(({ key }) => key === "hut")!,
-                    hutVerb: ROOM_ASK.buildHut,
-                    onHut: noop,
-                    onAnother: noop,
-                  }
-                : undefined
-            }
           />
         )}
         {(lab.realmView === "castle" || lab.realmView === "castle-short") && (
@@ -1552,7 +1492,6 @@ const LAB_BUILDINGS = {
     tier: 1,
   },
   "rations-depot": { category: BuildingType.RationsDepot, row: research.ROW_RATIONS, standing: 1, tier: 1 },
-  hut: { category: BuildingType.WorkersHut, row: research.ROW_HUT, standing: 2, makes: undefined },
   "scouts-lodge": { category: BuildingType.ScoutsLodge, standing: 1, makes: undefined },
 } satisfies Record<string, LabBuilding>;
 
@@ -1670,7 +1609,6 @@ const LabBands = ({ desktop, lab, ...slots }: ComponentProps<typeof HudBands> & 
 /** The lab realm's name and its LORDS where a state names none, as the desktop's realm panel reads them. */
 const LAB_REALM_NAME = "Duskbite";
 const LAB_LORDS = 320;
-/** The fixture realm's population: what its buildings take of what its castle and Huts give. */
 
 /** The place a lab state has open, as the desktop's round places light it. */
 const labSurface = (lab: LabState): HudSurface | null =>

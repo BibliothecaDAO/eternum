@@ -51,15 +51,15 @@ it("loads the models a realm's keep and buildings draw, each once and at its tie
     { col: BUILDINGS_CENTER[0] + 1, row: BUILDINGS_CENTER[1], category: BuildingType.ResourceWheat },
     { col: BUILDINGS_CENTER[0] - 1, row: BUILDINGS_CENTER[1], category: BuildingType.ResourceWheat },
     { col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1] + 1, category: BuildingType.ResourceWheat, tier: 3 },
-    { col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1] - 1, category: BuildingType.WorkersHut },
+    { col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1] - 1, category: BuildingType.ResourceKnightT1 },
   ]);
 
   await board.scene.loadLaidOutModels(StructureType.Realm);
 
   expect(board.requested.toSorted()).toEqual([
+    "/models/frontier/painted/barracks-1.glb",
     "/models/frontier/painted/farm-1.glb",
     "/models/frontier/painted/farm-3.glb",
-    "/models/frontier/painted/workers-hut-1.glb",
     "/models/realms/settlement.glb",
   ]);
 });

@@ -108,7 +108,6 @@ const realmProducing = (store: NativeFactStore): LabFact[] => {
         packed_counts_1: String(packed[0]),
         packed_counts_2: String(packed[1]),
         packed_counts_3: String(packed[2]),
-        population: { current: 10, max: 12 },
       },
     },
     production(store, ResourcesIds.Labor, 3, true),

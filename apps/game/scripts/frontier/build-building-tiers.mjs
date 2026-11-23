@@ -89,35 +89,6 @@ const families = {
       ],
     ],
   },
-  "workers-hut": {
-    source: "workers_hut",
-    roof: [
-      [
-        [0.6053, 1.0833, 0.319],
-        [0.602, 1.0851, -0.4663],
-      ],
-      [
-        [0.7282, 0.8129, 0.3221],
-        [0.7289, 0.813, -0.3849],
-      ],
-      [
-        [-0.264, 1.0847, 0.6139],
-        [0.4271, 1.0829, 0.5725],
-      ],
-      [
-        [-0.2058, 0.8129, 0.7444],
-        [0.3614, 0.8126, 0.7401],
-      ],
-      [
-        [0.4762, 1.0942, -0.5733],
-        [0.3348, 0.8107, -0.4893],
-      ],
-      [
-        [0.621, 1.0942, -0.5733],
-        [0.7625, 0.8107, -0.4893],
-      ],
-    ],
-  },
 };
 const requestedFamily = process.argv[2];
 if (requestedFamily && !families[requestedFamily]) throw new Error(`Unknown building family: ${requestedFamily}`);
@@ -189,13 +160,6 @@ function addExtension(parts, name, tier) {
   } else if (name === "storehouse") {
     addGabledRoom(parts, [-0.44, 0.1, -0.39], [0.38, 0.47, 0.39]);
     if (tier === 3) addGabledRoom(parts, [-0.18, 0.69, 0.44], [0.36, 0.42, 0.34]);
-  } else if (name === "workers-hut") {
-    addPorch(parts);
-    if (tier === 3) {
-      addBox(parts, [-0.14, 1.22, 0.54], [0.19, 0.7, 0.2], { surface: "stone" });
-      addBox(parts, [-0.14, 1.57, 0.54], [0.24, 0.055, 0.25], { surface: "stone" });
-      addBox(parts, [-0.14, 1.6, 0.54], [0.13, 0.015, 0.14], { color: "#1b1207" });
-    }
   }
 }
 
@@ -229,20 +193,11 @@ function addWatchtower(parts, [x, base, z], top) {
   for (const dz of [-0.165, 0.165]) addBox(parts, [x, top - 0.2, z + dz], [0.065, 0.15, 0.012], { color: "#1b1207" });
 }
 
-function addPorch(parts) {
-  for (const x of [-0.47, -0.06]) {
-    for (const z of [-0.43, -0.1]) addBox(parts, [x, 0.31, z], [0.055, 0.44, 0.055], { surface: "wood" });
-  }
-  add(parts, gable(0.53, 0.18, 0.46).translate(-0.265, 0.53, -0.265), { surface: "roof" });
-  addBox(parts, [-0.265, 0.12, -0.265], [0.48, 0.075, 0.41], { surface: "stone" });
-}
-
 function addRoofBanner(parts, name, tier, trim) {
   const anchors = {
     farm: [0.478, 1.52, -0.203],
     barracks: [-0.15, 1.0, 0.43],
     storehouse: [-0.15, 0.78, 0.48],
-    "workers-hut": [0.49, 1.1, -0.25],
   };
   if (name === "storehouse" && tier === 3) anchors[name] = [-0.18, 1.32, 0.44];
   const [x, y, z] = anchors[name];

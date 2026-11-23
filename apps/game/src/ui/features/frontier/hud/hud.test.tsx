@@ -363,7 +363,7 @@ describe("the place bar", () => {
 
   it("dots Research only while a node can be researched now", () => {
     // The owner's realm is short of every price; some days in, a Farm tier, the War hall and the Well are in reach.
-    expect(canResearchNow(readResearchTree(EARLY_REALM))).toBe(true);
+    expect(canResearchNow(readResearchTree(EARLY_REALM))).toBe(false);
     expect(canResearchNow(readResearchTree(MID_REALM))).toBe(true);
     expect(canResearchNow(undefined)).toBe(false);
   });

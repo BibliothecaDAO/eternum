@@ -33,7 +33,6 @@ const BOARD_TYPES: Partial<Record<string, BuildingType>> = {
   farm: BuildingType.ResourceWheat,
   workshop: BuildingType.ResourceLabor,
   barracks: BuildingType.ResourceKnightT1,
-  "workers-hut": BuildingType.WorkersHut,
   "supply-yard": BuildingType.SupplyYard,
   "scouts-lodge": BuildingType.ScoutsLodge,
 };

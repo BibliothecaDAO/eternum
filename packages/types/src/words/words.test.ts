@@ -281,8 +281,10 @@ describe("nouns", () => {
     for (const type of [BuildingType.RationsDepot, BuildingType.ConscriptionCamp])
       expect(buildingName(type, true)).toBe(BuildingTypeToString[type]);
     expect(buildingName(BuildingType.ResourceCrossbowmanT1, true)).toBe("Range");
-    expect(buildingName(BuildingType.WorkersHut, true)).toBe("Hut");
-    expect(buildingName(BuildingType.WorkersHut, false)).toBe("Workers Hut");
+    expect([true, false].map((frontier) => buildingName(BuildingType.WorkersHut, frontier))).toEqual([
+      "Workers Hut",
+      "Workers Hut",
+    ]);
     expect([true, false].map((frontier) => buildingName(BuildingType.ResourceLabor, frontier))).toEqual([
       "Workshop",
       "Workshop",

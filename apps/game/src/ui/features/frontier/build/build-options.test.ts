@@ -2,7 +2,6 @@ import { setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { nativeResearchConstants } from "@bibliothecadao/eternum/game-client";
 import { BuildingType, ResourcesIds } from "@bibliothecadao/types";
 import { afterEach, describe, expect, it } from "vitest";
-import release from "../../../../../../../contracts/l3/world-native/schema/release-definition.json";
 import { HOUR, realmBoard } from "./build-fixture";
 import { readBuildOptions } from "./build-options";
 
@@ -25,14 +24,8 @@ describe("Frontier's build options", () => {
     expect(options.get(BuildingType.ResourceLabor)?.effect).toMatchObject({ resource: ResourcesIds.Labor });
     expect((options.get(BuildingType.ResourceLabor)?.effect as { perHour: number }).perHour).toBeCloseTo(50, 0);
     expect(options.get(BuildingType.Storehouse)?.effect).toEqual({ kind: "stores", shareBps: 5000 });
-    const hut = release.definition.structures.buildings.find(({ category }) => category === BuildingType.WorkersHut)!
-      .rule.capacity_grant;
-    expect(options.get(BuildingType.WorkersHut)?.effect).toEqual({ kind: "population", amount: hut });
+    expect(options.has(BuildingType.WorkersHut)).toBe(false);
     expect(options.get(BuildingType.ResourceWheat)?.cost.length).toBeGreaterThan(0);
-    expect(options.get(BuildingType.ResourceWheat)?.populationCost).toBe(
-      release.definition.structures.buildings.find(({ category }) => category === BuildingType.ResourceWheat)!.rule
-        .population_cost,
-    );
   });
 
   it("forecasts the realm's wheat once a building stands: a farm adds, a barracks takes none", () => {
@@ -46,18 +39,17 @@ describe("Frontier's build options", () => {
     expect(barracks.wheat.after).toBeCloseTo(300, 3);
   });
 
-  it("gives each Farm tier a quarter more output, and the next Hut its grant and the bonus its tiers add, at no extra price", () => {
+  it("gives each Farm tier a quarter more output at no extra price", () => {
     const { store, realm } = realmBoard();
     const option = (category: BuildingType) =>
       readBuildOptions(store, realm, true, 350)!.find((candidate) => candidate.category === category)!;
     const farm = option(BuildingType.ResourceWheat);
-    const hut = option(BuildingType.WorkersHut);
     expect(farm.tier).toBe(0);
     store.applyFacts([
       {
         model: "RealmKnowledge",
         key: "0x77",
-        value: { game_id: 1, structure_id: 7, learned: 1n | (3n << 21n) },
+        value: { game_id: 1, structure_id: 7, learned: 1n },
       },
     ] as never);
     const farmAfter = option(BuildingType.ResourceWheat);
@@ -67,12 +59,6 @@ describe("Frontier's build options", () => {
       6,
     );
     expect(farmAfter.cost).toEqual(farm.cost);
-    // No Hut stands: the first adds its grant and its share of the epic tier's bonus, rounded down as the contract
-    // rounds it (6 + floor(6 × 3 × 2,500 / 10,000) = 6 + 4), never a fraction.
-    const grant = (hut.effect as { amount: number }).amount;
-    expect((option(BuildingType.WorkersHut).effect as { amount: number }).amount).toBe(
-      grant + Math.floor((grant * 3 * 2_500) / 10_000),
-    );
   });
 
   it("offers every building the contract's tree names for a board, from its generated constants", () => {

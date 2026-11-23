@@ -78,13 +78,13 @@ it("answers a research with the row's next tier learned and its price paid", () 
   const game = researchScenario();
   const essence = held(game, ResourcesIds.Essence);
   const facts = game.answer(
-    command("Research", { structure_id: "7", row: String(research.ROW_HUT) }),
+    command("Research", { structure_id: "7", row: String(research.ROW_FARM) }),
     chainOf(game),
     game.startsAt,
   );
 
   const knowledge = facts.find(({ model }) => model === "RealmKnowledge")!.value as { learned: string };
-  expect(researchTier(BigInt(knowledge.learned), research.ROW_HUT)).toBe(1);
+  expect(researchTier(BigInt(knowledge.learned), research.ROW_FARM)).toBe(1);
   expect(BigInt(balance(facts, ResourcesIds.Essence)!.balance)).toBe(essence - BigInt(whole(2_000)));
 });
 

@@ -144,8 +144,8 @@ describe("the build sheet", () => {
     const refused = vi.spyOn(toast, "error").mockImplementation(() => "");
     const { build, draw, unmount, settle } = buildInFlight();
     await act(async () => build()!.click());
-    await settle({ hash: "0x1", block: 9, status: "REJECTED", revertReason: "Not enough population" });
-    expect(refused.mock.lastCall?.[0]).toBe("Not enough population");
+    await settle({ hash: "0x1", block: 9, status: "REJECTED", revertReason: "Not enough labor" });
+    expect(refused.mock.lastCall?.[0]).toBe("Not enough labor");
     expect(ghost()).toBeNull();
     draw(true);
     expect(build()?.disabled).toBe(false);
@@ -252,17 +252,6 @@ describe("the build sheet", () => {
         balance: String(amount * BigInt(RESOURCE_PRECISION)),
       }),
     ] as never);
-  const population = (store: ReturnType<typeof realmBoard>["store"], current: number) =>
-    store.applyFacts([
-      fact("0x72", "StructureBuildings", {
-        game_id: 1,
-        entity_id: 7,
-        packed_counts_1: "0",
-        packed_counts_2: "0",
-        packed_counts_3: "0",
-        population: { current, max: 6 },
-      }),
-    ] as never);
 
   const countsWith = buildingCounts;
 
@@ -308,15 +297,6 @@ describe("the build sheet", () => {
     const later = open(store, realm);
     expect(pressedOn(later)).toEqual(["Farm"]);
     later.close();
-  });
-
-  it("shows no population chip in the build sheet header or card corners", () => {
-    const { store, realm } = realmBoard();
-    population(store, 4);
-    const sheet = open(store, realm);
-    expect(sheet.host.querySelector('.ui-panel__head [aria-label^="population"]')).toBeNull();
-    expect(sheet.host.querySelector('.ui-card__corner [aria-label^="population"]')).toBeNull();
-    sheet.close();
   });
 
   it("separates higher-tier unlocks from the build grid and summarizes the chosen building", () => {
@@ -370,72 +350,12 @@ describe("the build sheet", () => {
     sheet.close();
   });
 
-  /** The realm full: every person housed, Labor enough for any building, and the build actions recorded. */
-  const fullRealm = () => {
-    const { store, realm } = realmBoard();
-    labor(store, 50_000n);
-    const total = 6 + configManager.getBasePopulationCapacity();
-    population(store, total);
-    const placeBuilding = vi.fn(() => Promise.resolve({ transaction_hash: "0x1" }));
-    installActiveGameClient({
-      connect() {},
-      disconnect() {},
-      dispose() {},
-      actions: { placeBuilding },
-      waitForAction: () => Promise.resolve({ hash: "0x1", block: 9, status: "SUCCEEDED" }),
-    } as unknown as GameClient);
-    return { sheet: open(store, realm), total, placeBuilding };
-  };
-  const pressed = (sheet: ReturnType<typeof open>) =>
-    [...sheet.host.querySelectorAll<HTMLButtonElement>('.ui-card__choose[aria-pressed="true"]')].map(
-      (card) => card.querySelector(".ui-card__title")?.textContent,
-    );
-
-  it("keeps the player's pick with no free population, and Build asks, offering the Hut on this plot", () => {
-    const { sheet, placeBuilding } = fullRealm();
-    act(() => sheet.card("Barracks").click());
-    expect(pressed(sheet)).toEqual(["Barracks"]);
-    expect(sheet.button("Build")!.textContent).toBe("Build");
-    act(() => sheet.button("Build")!.click());
-    const ask = sheet.host.querySelector('[role="alertdialog"]')!;
-    expect(ask.getAttribute("aria-label")).toBe("Population full");
-    expect(ask.textContent).toContain("Barracks");
-    expect(ask.textContent).toContain("Hut");
-    expect(sheet.host.querySelector(".ui-card__choose")).toBeNull();
-    expect(placeBuilding).not.toHaveBeenCalled();
-    sheet.close();
-  });
-
-  it("builds the Hut on the same plot from the ask, in one press", async () => {
-    const { sheet, placeBuilding } = fullRealm();
-    act(() => sheet.card("Barracks").click());
-    act(() => sheet.button("Build")!.click());
-    await act(async () => sheet.button("Build a Hut here")!.click());
-    expect(placeBuilding).toHaveBeenCalledOnce();
-    expect(placeBuilding).toHaveBeenCalledWith(
-      expect.objectContaining({ structureId: 7, buildingType: BuildingType.WorkersHut, hex: { col: 11, row: 10 } }),
-    );
-    sheet.close();
-  });
-
-  it("goes back to the grid on Choose another, the player's pick still chosen and nothing sent", () => {
-    const { sheet, placeBuilding } = fullRealm();
-    act(() => sheet.card("Barracks").click());
-    act(() => sheet.button("Build")!.click());
-    act(() => sheet.button("Choose another")!.click());
-    expect(sheet.host.querySelector('[role="alertdialog"]')).toBeNull();
-    expect(pressed(sheet)).toEqual(["Barracks"]);
-    expect(placeBuilding).not.toHaveBeenCalled();
-    sheet.close();
-  });
-
   it("says on each card what the building does, and marks a risen price with the rule that raised it", () => {
     const { store, realm } = realmBoard();
     const sheet = open(store, atKingdom(realm));
     expect(sheet.card("Farm").closest("[data-tip]")!.getAttribute("data-tip")).toMatch(
       /^Farm: Wheat \+[\d,.]+\/(?:s|min)$/,
     );
-    expect(sheet.card("Hut").closest("[data-tip]")!.getAttribute("data-tip")).toMatch(/^Hut: \+\d+ population$/);
     expect(sheet.card("Supply yard").closest("[data-tip]")!.getAttribute("data-tip")).toBe(
       "Supply yard: new armies start with Logistics I",
     );
@@ -466,7 +386,7 @@ describe("the build sheet", () => {
     risen.close();
   });
 
-  it("says on each card what one more gives, the population it takes, and its price with the wait or the lack", () => {
+  it("says on each card what one more gives and its price with the wait or the lack", () => {
     const { store, realm } = realmBoard();
     // No labor yet, growing 100 an hour.
     labor(store, 0n);
@@ -492,14 +412,6 @@ describe("the build sheet", () => {
     expect(band(sheet, "Supply yard").textContent).not.toContain("research");
     sheet.close();
 
-    // Labor for all; the population full: a building that takes some says so in amber, the Hut stands ready.
-    labor(store, 1_000_000n);
-    population(store, 6 + configManager.getBasePopulationCapacity());
-    const full = open(store, realm);
-    expect(band(full, "Farm").getAttribute("data-tone")).toBe("warn");
-    expect(band(full, "Hut").getAttribute("data-tone")).toBeNull();
-    full.close();
-
     // A training building standing: a tick on a green band.
     store.applyFacts([
       fact("0x72", "StructureBuildings", {
@@ -517,9 +429,7 @@ describe("the build sheet", () => {
 
   it("shows each type's one gem and never words for it, and no gem on the Storeroom, which has no research", () => {
     const { store, realm } = realmBoard();
-    store.applyFacts([
-      fact("0x77", "RealmKnowledge", { game_id: 1, structure_id: 7, learned: String(2n | (3n << 21n)) }),
-    ] as never);
+    store.applyFacts([fact("0x77", "RealmKnowledge", { game_id: 1, structure_id: 7, learned: String(2n) })] as never);
     const gems = (sheet: ReturnType<typeof open>, name: string) =>
       [...sheet.card(name).querySelectorAll(".ui-tier")].map((gem) =>
         gem.getAttribute("data-tier") === "0" ? "Untrained" : gem.textContent,
@@ -528,43 +438,10 @@ describe("the build sheet", () => {
     expect(gems(sheet, "Farm")).toEqual(["II"]);
     expect(gems(sheet, "Workshop")).toEqual(["Untrained"]);
     expect(gems(sheet, "Barracks")).toEqual(["I"]);
-    expect(gems(sheet, "Hut")).toEqual(["III"]);
     expect(gems(sheet, "Supply yard")).toEqual(["I"]);
     expect(gems(sheet, "Storeroom")).toEqual([]);
     expect(sheet.host.textContent).not.toMatch(/ from (Fields|Tools)/);
     sheet.close();
-  });
-
-  it("says on the Hut's card what the chain grants for one more: its grant and the change in the rounded bonus", () => {
-    const { store, realm } = realmBoard();
-    const grant = configManager.getBuildingCategoryConfig(BuildingType.WorkersHut).capacity_grant;
-    // The Hut row at its first tier (research.cairo: bit 21), on the fixture board's 2,500 bps step.
-    store.applyFacts([
-      fact("0x77", "RealmKnowledge", { game_id: 1, structure_id: 7, learned: String(1n << 21n) }),
-    ] as never);
-    const hutGives = (standing: number) => {
-      store.applyFacts([
-        fact("0x72", "StructureBuildings", {
-          game_id: 1,
-          entity_id: 7,
-          ...countsWith(BuildingType.WorkersHut, standing),
-          population: { current: 0, max: 6 },
-        }),
-      ] as never);
-      const sheet = open(store, realm);
-      // What one more gives stands beside its painting (a Hut takes no population, so the only person mark).
-      const gives = sheet
-        .card("Hut")
-        .querySelector('[data-icon="person"]')!
-        .parentElement!.textContent!.replace("+", "");
-      sheet.close();
-      return Number(gives);
-    };
-    // buildings.cairo's hut_bonus over all standing Huts, the difference granted: floor(2 × 6 × 0.25) − floor(6 × 0.25)
-    // = 3 − 1 with one standing, floor(3 × 6 × 0.25) − floor(2 × 6 × 0.25) = 4 − 3 with two.
-    expect(grant).toBe(6);
-    expect(hutGives(1)).toBe(6 + 2);
-    expect(hutGives(2)).toBe(6 + 1);
   });
 
   it("says how much labor a building needs against what is held, and sends nobody to the map for it", () => {
@@ -606,7 +483,6 @@ it("reds only the price lines the realm holds less of, so a training building sh
       key: `0x6${BuildingType.SupplyYard}`,
       value: {
         ...supplyYard,
-        population_cost: 0,
         simple_cost: [
           { resource_type: ResourcesIds.Essence, amount: 6000n * BigInt(RESOURCE_PRECISION) },
           { resource_type: ResourcesIds.Labor, amount: 1500n * BigInt(RESOURCE_PRECISION) },

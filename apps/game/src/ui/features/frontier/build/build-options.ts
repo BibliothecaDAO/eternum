@@ -10,12 +10,7 @@ import {
   researchTier,
   ResourceManager,
 } from "@bibliothecadao/eternum";
-import {
-  safeInteger,
-  nativeResearchConstants,
-  type NativeFactStore,
-  type NativeRows,
-} from "@bibliothecadao/eternum/game-client";
+import { safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { BuildingType, FRONTIER_BUILDING_TYPES, getProducedResource, ResourcesIds } from "@bibliothecadao/types";
 
 import { RESEARCH_TREE } from "@/ui/design-system/kit/words";
@@ -36,7 +31,6 @@ const isProduct = (resource: ResourcesIds | undefined): resource is Product => m
 
 export type BuildEffect =
   | { kind: "produces"; resource: Product; perHour: number; output: BuildingOutput }
-  | { kind: "population"; amount: number }
   | { kind: "trains"; attribute: "Logistics" }
   | { kind: "stores"; shareBps: number }
   | { kind: "research"; line: string; icon: "troops" | "wheat" };
@@ -49,7 +43,6 @@ export interface BuildOption {
   /** How the price has risen: the copies already standing and what they multiply the base price by (1 with none). */
   rise: { standing: number; times: number };
   effect: BuildEffect;
-  populationCost: number;
   /**
    * Whether it can rise now: Supply yard is unique, while Scout production requires City.
    */
@@ -71,7 +64,6 @@ export const readBuildOptions = (
   for (const category of FRONTIER_BUILDING_TYPES) {
     const cost = getBuildingCosts(safeInteger(realm.entity_id), store, category, useSimpleCost);
     if (cost === undefined) return undefined;
-    const rule = store.require("BuildingRule", { game_id: realm.game_id, category });
     const effect = readBuildingEffect(store, realm, category, learned);
     const change = wheatChange(effect);
     const row = researchRowOf(category);
@@ -86,7 +78,6 @@ export const readBuildOptions = (
       cost,
       rise: buildingCostRise(safeInteger(realm.entity_id), category, store),
       effect,
-      populationCost: rule.population_cost,
       standing: buildingStanding(store, realm, category),
       wheat: { change, after: wheat === undefined ? undefined : wheat + change },
     });
@@ -109,11 +100,6 @@ const buildingStanding = (
   return "open";
 };
 
-/**
- * What one building of a type gives at the realm with the given research, as the contract's board_output and
- * hut_bonus compute it: each Fields, Tools or Drill pick adds a share of the base output; one more Hut adds what
- * nextHutGrant says. The one reading of it, for the build sheet and research's gains.
- */
 const readBuildingEffect = (
   store: NativeFactStore,
   realm: NativeRows["Structure"],
@@ -126,29 +112,12 @@ const readBuildingEffect = (
     return { kind: "research", line: RESEARCH_TREE.rationsLine, icon: "wheat" };
   const trains = TRAINS[category];
   if (trains) return { kind: "trains", attribute: trains };
-  if (category === BuildingType.WorkersHut) return { kind: "population", amount: nextHutGrant(store, realm, learned) };
   if (category === BuildingType.Storehouse)
     return { kind: "stores", shareBps: store.require("BoardRules", { game_id: realm.game_id }).storage_step_bps };
   const resource = getProducedResource(category);
   if (!isProduct(resource)) throw new Error(`Building ${category} makes nothing a Frontier realm stores`);
   const output = buildingOutput(store, realm, category, madePicks(resource, learned));
   return { kind: "produces", resource, perHour: output.total * 3600, output };
-};
-
-/**
- * The population one more Hut grants the realm, as the contract applies it (construction.cairo's
- * change_board_building, buildings.cairo's hut_bonus): its rule's capacity_grant, plus the change in the realm's whole
- * Hut bonus from the Huts standing to one more. That bonus is every standing Hut's grant × the Hut row's tier × the
- * board's step, rounded down over them all, so the next Hut's share alternates (+8, then +7 at the first tier).
- */
-const nextHutGrant = (store: NativeFactStore, realm: NativeRows["Structure"], learned: bigint): number => {
-  const rule = store.require("BuildingRule", { game_id: realm.game_id, category: BuildingType.WorkersHut });
-  const board = store.require("BoardRules", { game_id: realm.game_id });
-  const tier = researchTier(learned, nativeResearchConstants.ROW_HUT);
-  const huts = getBuildingQuantity(safeInteger(realm.entity_id), BuildingType.WorkersHut, store);
-  const bonus = (standing: number) =>
-    Math.floor((standing * rule.capacity_grant * tier * board.population_step_bps) / 10_000);
-  return rule.capacity_grant + bonus(huts + 1) - bonus(huts);
 };
 
 /** A farm adds its wheat; nothing a building produces consumes any (armies pay theirs when they deploy). */

@@ -1,7 +1,7 @@
 import catalogue from "./frontier-painted-buildings.json";
 import { BuildingType } from "@bibliothecadao/types";
 
-export type FrontierPaintedGroup = "realms" | "farm" | "workshop" | "barracks" | "workers-hut" | "training" | "sites";
+export type FrontierPaintedGroup = "realms" | "farm" | "workshop" | "barracks" | "training" | "sites";
 
 export interface FrontierPaintedBuilding {
   id: string;
@@ -29,7 +29,7 @@ export const FRONTIER_PAINTED_REALMS = ["settlement", "city", "kingdom", "empire
 
 const FRONTIER_BUILDING_MODELS = {
   [BuildingType.None]: null,
-  [BuildingType.WorkersHut]: { kind: "tiered", family: "workers-hut" },
+  [BuildingType.WorkersHut]: null,
   [BuildingType.Storehouse]: { kind: "model", path: "/models/frontier/buildings/storeroom.glb" },
   [BuildingType.ResourceStone]: null,
   [BuildingType.ResourceCoal]: null,
@@ -88,7 +88,6 @@ export const FRONTIER_PAINTED_GROUPS: readonly { group: FrontierPaintedGroup; la
   { group: "farm", label: "Farm I–V" },
   { group: "workshop", label: "Workshop I–V" },
   { group: "barracks", label: "Barracks I–V" },
-  { group: "workers-hut", label: "Workers' hut I–V" },
   { group: "training", label: "Training buildings" },
   { group: "sites", label: "Map sites" },
 ];
