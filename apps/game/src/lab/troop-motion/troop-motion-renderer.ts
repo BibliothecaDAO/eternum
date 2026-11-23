@@ -13,44 +13,11 @@ import {
   MeshStandardMaterial,
   PCFShadowMap,
   PerspectiveCamera,
-  Quaternion,
   Scene,
   Vector3,
 } from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { env } from "../../../env";
-import { ProceduralCharacterAvatar } from "@/three/characters/procedural-character-avatar";
-import { resolveProceduralCharacterAppearance } from "@/three/characters/procedural-character-appearance";
-import {
-  applyProceduralCharacterConfigPatch,
-  createDefaultProceduralCharacterConfig,
-  type ProceduralCharacterConfig,
-} from "@/three/characters/procedural-character-config";
-import { ProceduralCharacterPoseFilter } from "@/three/characters/procedural-character-pose-filter";
-import {
-  resolveProceduralCharacterPose,
-  type ProceduralCharacterPose,
-} from "@/three/characters/procedural-character-pose";
-import {
-  applyCharacterRigLimbLengths,
-  resolveCharacterRig,
-  type ResolvedCharacterRig,
-} from "@/three/characters/procedural-character-rig";
-import {
-  advanceProceduralCharacterGaitPhase,
-  resolveInitialProceduralCharacterPhase,
-  resolveProceduralCharacterStrideLength,
-  type CharacterFootId,
-} from "@/three/characters/procedural-character-gait";
-import { ProceduralPlantController } from "@/three/characters/procedural-plant-controller";
-import { ProceduralContactReactionController } from "@/three/characters/collision/procedural-contact-reaction";
-import {
-  applyProceduralMeleeConfigPatch,
-  createDefaultProceduralMeleeConfig,
-} from "@/three/characters/melee/procedural-melee-config";
-import { ProceduralMeleeController } from "@/three/characters/melee/procedural-melee-controller";
-import { applyProceduralMeleeHitReaction } from "@/three/characters/melee/procedural-melee-pose";
-import { T1_KNIGHT_DEFAULT_HUMANOID_RIG_ADAPTER } from "@/three/characters/t1-knight-default-humanoid-rig-adapter";
 import {
   applyProceduralUnitConfigPatch,
   createDefaultProceduralUnitConfig,
@@ -114,16 +81,6 @@ interface LoopRenderer extends RendererSurfaceLike {
   setAnimationLoop(callback: (() => void) | null): void;
 }
 
-interface BaselineKnightHandle {
-  root: Group;
-  setMode(mode: "idle" | "walk"): void;
-  attack(target: Vector3): void;
-  hit(): void;
-  reset(): void;
-  update(deltaSeconds: number): void;
-  dispose(): void;
-}
-
 interface StaticTroopReference {
   kind: AnimatedTroopKind;
   staticRoot: Group;
@@ -150,14 +107,6 @@ function createHexOutline(centerX: number, centerZ: number, groundY: number): Li
   const line = new Line(geometry, material);
   line.renderOrder = 6;
   return line;
-}
-
-function setShadows(root: Group): void {
-  root.traverse((object) => {
-    if (!(object instanceof Mesh)) return;
-    object.castShadow = true;
-    object.receiveShadow = true;
-  });
 }
 
 async function createStaticTroopReference(kind: AnimatedTroopKind): Promise<StaticTroopReference> {
@@ -204,172 +153,6 @@ async function createStaticTroopReference(kind: AnimatedTroopKind): Promise<Stat
       ownedGeometries.forEach((g) => g.dispose());
       ownedMaterials.forEach((m) => m.dispose());
       staticRoot.removeFromParent();
-    },
-  };
-}
-
-async function createBaselineShippedKnight(baseUrl: string): Promise<BaselineKnightHandle> {
-  const cleanBase = baseUrl.replace(/\/+$/, "");
-  const [skinGltf, swordGltf, shieldGltf] = await Promise.all([
-    gltfLoader.loadAsync(`${cleanBase}/skin.glb`),
-    gltfLoader.loadAsync(`${cleanBase}/sword.glb`),
-    gltfLoader.loadAsync(`${cleanBase}/shield.glb`),
-  ]);
-
-  const appearance = resolveProceduralCharacterAppearance("t1-knight-default");
-  let config: ProceduralCharacterConfig = applyProceduralCharacterConfigPatch(
-    createDefaultProceduralCharacterConfig(),
-    {
-      animationMode: "idle",
-      appearanceId: "t1-knight-default",
-      renderDetail: "hero",
-      seed: 1337,
-      tier: 1,
-    },
-  );
-  let rig: ResolvedCharacterRig = resolveCharacterRig(config);
-  const avatar = new ProceduralCharacterAvatar(
-    {
-      adapter: T1_KNIGHT_DEFAULT_HUMANOID_RIG_ADAPTER,
-      adapterId: "t1-knight-default",
-      appearanceId: "t1-knight-default",
-      appearanceLabel: "Shipped Knight",
-      gltf: skinGltf,
-      id: "t1-knight-default-near",
-      label: "Shipped Knight near",
-      materials: appearance.materials,
-      tier: 1,
-      url: `${cleanBase}/skin.glb`,
-    },
-    rig,
-    config,
-  );
-  rig = applyCharacterRigLimbLengths(rig, avatar.measureActiveLimbLengths());
-  avatar.rebuild(rig, config);
-
-  const root = new Group();
-  root.name = "shipped-knight-baseline";
-  root.add(avatar.group);
-
-  const sword = new Group();
-  sword.add(swordGltf.scene);
-  setShadows(sword);
-  const shield = new Group();
-  shield.add(shieldGltf.scene);
-  setShadows(shield);
-  avatar.group.add(sword, shield);
-
-  const meleeConfig = applyProceduralMeleeConfigPatch(createDefaultProceduralMeleeConfig("knight"), {
-    offhandId: "t1-knight-default-shield",
-    weaponId: "t1-knight-default-sword",
-  });
-  const melee = new ProceduralMeleeController(meleeConfig, false, config.seed);
-  const plant = new ProceduralPlantController<CharacterFootId>();
-  const filter = new ProceduralCharacterPoseFilter();
-  const reaction = new ProceduralContactReactionController();
-  const socketPos = new Vector3();
-  const socketQuat = new Quaternion();
-  const invRootQuat = new Quaternion();
-  let gaitPhase = resolveInitialProceduralCharacterPhase(config.seed);
-  let elapsed = 0;
-  let pose: ProceduralCharacterPose = resolveProceduralCharacterPose(
-    rig,
-    config,
-    0,
-    undefined,
-    gaitPhase,
-    undefined,
-    undefined,
-    undefined,
-  );
-
-  const syncSockets = () => {
-    avatar.group.updateMatrixWorld(true);
-    avatar.group.getWorldQuaternion(invRootQuat).invert();
-    if (avatar.writeSocketWorldTransform("gripRight", socketPos, socketQuat)) {
-      avatar.group.worldToLocal(socketPos);
-      sword.position.copy(socketPos);
-      sword.quaternion.copy(invRootQuat).multiply(socketQuat).normalize();
-    }
-    if (avatar.writeSocketWorldTransform("forearmLeft", socketPos, socketQuat)) {
-      avatar.group.worldToLocal(socketPos);
-      shield.position.copy(socketPos);
-      shield.quaternion.copy(invRootQuat).multiply(socketQuat).normalize();
-    }
-  };
-
-  const applyFrame = (deltaSeconds: number) => {
-    plant.beginFrame(avatar.group, deltaSeconds);
-    const reactionPose = reaction.update(deltaSeconds);
-    const motion = config.animationMode === "walk" ? "walking" : "standing";
-    const baseAction = melee.update(deltaSeconds, avatar.group, motion);
-    const action = reactionPose ? applyProceduralMeleeHitReaction(baseAction, reactionPose.weight) : baseAction;
-    avatar.setUpperBodyAction(action);
-    gaitPhase = advanceProceduralCharacterGaitPhase(
-      gaitPhase,
-      config,
-      deltaSeconds,
-      plant.getFrameTravelDistance(),
-      resolveProceduralCharacterStrideLength(config, rig.morphology.scale),
-    );
-    elapsed += deltaSeconds;
-    pose = filter.apply(
-      resolveProceduralCharacterPose(
-        rig,
-        config,
-        elapsed,
-        plant.resolveTarget,
-        gaitPhase,
-        action,
-        reactionPose,
-        pose.parts.chest.quaternion,
-      ),
-      deltaSeconds,
-      config.secondaryMotion,
-    );
-    avatar.applyPose(pose);
-    syncSockets();
-  };
-
-  applyFrame(1 / 60);
-
-  return {
-    root,
-    setMode(mode) {
-      if (config.animationMode === mode) return;
-      config = applyProceduralCharacterConfigPatch(config, { animationMode: mode });
-      avatar.updateConfig(config);
-    },
-    attack(target) {
-      melee.attack(target);
-    },
-    hit() {
-      reaction.trigger({
-        localDirectionX: 0.12,
-        localDirectionY: 0,
-        localDirectionZ: -1,
-        source: "melee",
-        strength: 1,
-      });
-    },
-    reset() {
-      melee.reset();
-      plant.reset();
-      filter.reset();
-      reaction.reset();
-      avatar.resetPoseHistory();
-      gaitPhase = resolveInitialProceduralCharacterPhase(config.seed);
-      elapsed = 0;
-      applyFrame(1 / 60);
-    },
-    update(deltaSeconds) {
-      applyFrame(deltaSeconds);
-    },
-    dispose() {
-      avatar.dispose();
-      sword.removeFromParent();
-      shield.removeFromParent();
-      root.removeFromParent();
     },
   };
 }
@@ -455,14 +238,6 @@ export async function mountTroopMotionLab(input: MountTroopMotionInput): Promise
   ]);
   scene.add(scoutRef.staticRoot, crossbowRef.staticRoot);
 
-  let shippedKnight: BaselineKnightHandle | null = null;
-  if (input.initialState.shippedBaseUrl) {
-    shippedKnight = await createBaselineShippedKnight(input.initialState.shippedBaseUrl);
-    shippedKnight.root.scale.setScalar(T1_KNIGHT_WORLD_SCALE);
-    shippedKnight.root.rotation.y = FACING_YAW;
-    scene.add(shippedKnight.root);
-  }
-
   const stageGroup = new Group();
   scene.add(stageGroup);
   const hexOutlines: Line[] = [];
@@ -478,8 +253,7 @@ export async function mountTroopMotionLab(input: MountTroopMotionInput): Promise
 
   const animatedTroopPos = new Vector3();
 
-  const isComparing = () =>
-    state.troop === "knight" ? Boolean(shippedKnight && state.compareShipped) : state.compareShipped;
+  const isComparing = () => state.troop !== "knight" && state.compareShipped;
 
   const activeTroopBinding = () =>
     state.troop === "scout"
@@ -514,13 +288,11 @@ export async function mountTroopMotionLab(input: MountTroopMotionInput): Promise
     }
     const compare = isComparing();
     newKnightRoot.visible = state.troop === "knight";
-    if (shippedKnight) shippedKnight.root.visible = state.troop === "knight" && compare;
     scoutRef.staticRoot.visible = state.troop === "scout" && compare;
     crossbowRef.staticRoot.visible = state.troop === "crossbow" && compare;
 
     const rightX = compare ? COMPARE_RIGHT_X : 0;
     newKnightRoot.position.set(rightX, groundY, 0);
-    if (shippedKnight) shippedKnight.root.position.set(COMPARE_LEFT_X, groundY, 0);
     scoutRef.staticRoot.position.set(COMPARE_LEFT_X, groundY, 0);
     crossbowRef.staticRoot.position.set(COMPARE_LEFT_X, groundY, 0);
 
@@ -571,7 +343,6 @@ export async function mountTroopMotionLab(input: MountTroopMotionInput): Promise
   const applyActionMode = (nextAction: Exclude<TroopMotionAction, "reel">, forceReset: boolean) => {
     if (forceReset) {
       newKnight.reset();
-      shippedKnight?.reset();
       actionClock = 0;
       lastTriggerIndex = -1;
       deathTriggered = false;
@@ -585,7 +356,6 @@ export async function mountTroopMotionLab(input: MountTroopMotionInput): Promise
         humanoid: { ...baseKnightConfig.humanoid, animationMode: locomotion },
       }),
     );
-    shippedKnight?.setMode(locomotion);
 
     if (activeTroopBinding()) {
       armyModel.playTroopAction(troopSlot, nextAction === "march" ? "march" : "idle");
@@ -594,7 +364,6 @@ export async function mountTroopMotionLab(input: MountTroopMotionInput): Promise
     const compare = isComparing();
     const rightX = compare ? COMPARE_RIGHT_X : 0;
     newKnightRoot.position.set(rightX, groundY, 0);
-    if (shippedKnight) shippedKnight.root.position.set(COMPARE_LEFT_X, groundY, 0);
     scoutRef.staticRoot.position.set(COMPARE_LEFT_X, groundY, 0);
     crossbowRef.staticRoot.position.set(COMPARE_LEFT_X, groundY, 0);
     syncAnimatedTroopPose(rightX, 0);
@@ -619,7 +388,6 @@ export async function mountTroopMotionLab(input: MountTroopMotionInput): Promise
 
   const labelPos = new Vector3();
   const attackTargetNew = new Vector3();
-  const attackTargetShipped = new Vector3();
 
   const projectLabels = () => {
     const width = input.container.clientWidth;
@@ -630,31 +398,18 @@ export async function mountTroopMotionLab(input: MountTroopMotionInput): Promise
     const binding = activeTroopBinding();
     const entries: Array<{ id: string; text: string; pos: Vector3 }> =
       state.troop === "knight"
-        ? compare
-          ? [
-              {
-                id: "shipped",
-                text: "Shipped Knight",
-                pos: new Vector3(shippedKnight!.root.position.x, labelY, shippedKnight!.root.position.z),
-              },
-              {
-                id: "new",
-                text: "New Knight · Redone",
-                pos: new Vector3(newKnightRoot.position.x, labelY, newKnightRoot.position.z),
-              },
-            ]
-          : [
-              {
-                id: "new",
-                text: `New Knight · ${actionLabel}`,
-                pos: new Vector3(newKnightRoot.position.x, labelY, newKnightRoot.position.z),
-              },
-            ]
+        ? [
+            {
+              id: "knight",
+              text: `Knight · ${actionLabel}`,
+              pos: new Vector3(newKnightRoot.position.x, labelY, newKnightRoot.position.z),
+            },
+          ]
         : compare && binding
           ? [
               {
                 id: "static",
-                text: `Shipped ${state.troop === "scout" ? "Scout" : "Crossbow"} (Static)`,
+                text: `Static ${state.troop === "scout" ? "Scout" : "Crossbow"}`,
                 pos: new Vector3(binding.ref.staticRoot.position.x, labelY, binding.ref.staticRoot.position.z),
               },
               {
@@ -706,7 +461,6 @@ export async function mountTroopMotionLab(input: MountTroopMotionInput): Promise
     if (activeAction === "march") {
       const zTravel = ((actionClock * MARCH_SPEED) % (MARCH_HALF_SPAN * 2)) - MARCH_HALF_SPAN;
       newKnightRoot.position.z = zTravel;
-      if (shippedKnight) shippedKnight.root.position.z = zTravel;
       if (binding) {
         binding.ref.staticRoot.position.z = zTravel;
         syncAnimatedTroopPose(isComparing() ? COMPARE_RIGHT_X : 0, zTravel);
@@ -718,14 +472,6 @@ export async function mountTroopMotionLab(input: MountTroopMotionInput): Promise
         if (state.troop === "knight") {
           attackTargetNew.set(newKnightRoot.position.x + 0.35, groundY + 0.62, newKnightRoot.position.z + 1.45);
           newKnight.attack(attackTargetNew);
-          if (shippedKnight) {
-            attackTargetShipped.set(
-              shippedKnight.root.position.x + 0.35,
-              groundY + 0.62,
-              shippedKnight.root.position.z + 1.45,
-            );
-            shippedKnight.attack(attackTargetShipped);
-          }
         } else if (binding) {
           armyModel.playTroopAction(binding.slot, "attack");
         }
@@ -742,7 +488,6 @@ export async function mountTroopMotionLab(input: MountTroopMotionInput): Promise
             source: "melee",
             strength: 1,
           });
-          shippedKnight?.hit();
         } else if (binding) {
           armyModel.playTroopAction(binding.slot, "hit");
         }
@@ -752,7 +497,6 @@ export async function mountTroopMotionLab(input: MountTroopMotionInput): Promise
         deathTriggered = true;
         if (state.troop === "knight") {
           newKnight.playDeath?.();
-          shippedKnight?.hit();
         } else if (binding) {
           armyModel.playTroopAction(binding.slot, "death");
         }
@@ -763,7 +507,6 @@ export async function mountTroopMotionLab(input: MountTroopMotionInput): Promise
 
     if (state.troop === "knight") {
       runtime.update(deltaSeconds);
-      shippedKnight?.update(deltaSeconds);
     } else if (binding) {
       armyModel.updateAnimations(deltaSeconds);
     }
@@ -838,7 +581,6 @@ export async function mountTroopMotionLab(input: MountTroopMotionInput): Promise
       scoutRef.dispose();
       crossbowRef.dispose();
       armyModel.dispose();
-      shippedKnight?.dispose();
       newKnight.dispose();
       runtime.dispose();
       environment.dispose();

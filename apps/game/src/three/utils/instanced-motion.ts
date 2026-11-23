@@ -88,6 +88,7 @@ export class InstancedMotionController<TAction extends string> {
   private readonly positions: Float32Array;
   private readonly capacity: number;
   private readonly activeOneShots = new Map<number, number>();
+  private readonly loopActions = new Map<number, TAction>();
   private currentTime = 0;
 
   constructor(config: InstancedMotionConfig<TAction>, capacity: number) {
@@ -113,6 +114,7 @@ export class InstancedMotionController<TAction extends string> {
     if (index < 0 || index >= this.capacity) return;
     const idleCode = this.config.actionCodes[this.config.idleAction];
     const wasCleared = this.activeOneShots.delete(index);
+    this.loopActions.delete(index);
     const alreadyClean =
       Math.round(this.attribute.getX(index)) === idleCode &&
       this.attribute.getY(index) === 0 &&
@@ -139,11 +141,23 @@ export class InstancedMotionController<TAction extends string> {
       this.activeOneShots.set(index, nowSeconds + oneShotDuration);
     } else {
       this.activeOneShots.delete(index);
+      if (persistentDuration === undefined) {
+        if (action === this.config.idleAction) {
+          this.loopActions.delete(index);
+        } else {
+          this.loopActions.set(index, action);
+        }
+      }
     }
   }
 
   public setLoopActionAt(index: number, action: TAction): void {
     if (index < 0 || index >= this.capacity) return;
+    if (action === this.config.idleAction) {
+      this.loopActions.delete(index);
+    } else {
+      this.loopActions.set(index, action);
+    }
     if (this.activeOneShots.has(index)) return;
     const currentCode = Math.round(this.attribute.getX(index));
     const currentAction = this.config.codeToAction[currentCode];
@@ -176,7 +190,8 @@ export class InstancedMotionController<TAction extends string> {
 
     for (const [slot, endTime] of this.activeOneShots) {
       if (this.currentTime >= endTime) {
-        this.attribute.setXYZ(slot, this.config.actionCodes[this.config.idleAction], 0, 1);
+        const resumeAction = this.loopActions.get(slot) ?? this.config.idleAction;
+        this.attribute.setXYZ(slot, this.config.actionCodes[resumeAction], 0, 1);
         this.activeOneShots.delete(slot);
         dirty = true;
       }
@@ -193,7 +208,8 @@ export class InstancedMotionController<TAction extends string> {
         if (visible !== prevActive) {
           this.attribute.setW(index, visible ? 1 : 0);
           if (!visible && this.activeOneShots.has(index)) {
-            this.attribute.setXYZ(index, this.config.actionCodes[this.config.idleAction], 0, 1);
+            const resumeAction = this.loopActions.get(index) ?? this.config.idleAction;
+            this.attribute.setXYZ(index, this.config.actionCodes[resumeAction], 0, 1);
             this.activeOneShots.delete(index);
           }
           dirty = true;

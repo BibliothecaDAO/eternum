@@ -85,7 +85,6 @@ import {
 import {
   BEAST_FAMILY_LABELS,
   BEAST_FAMILY_SHOWCASE_IDS,
-  BEAST_FAMILY_SHOWCASE_LAYERS,
   BeastFamilyStage,
   resolveFamilyMembers,
   type BeastFamilyShowcaseId,
@@ -572,24 +571,28 @@ class BeastMotionStage implements BeastMotionRendererHandle {
   }
 
   getMeta(): BeastMotionMeta {
+    const roster = BEAST_FAMILY_SHOWCASE_IDS.map((id) => {
+      const members = resolveFamilyMembers(id).map((member) => ({
+        species: member.species,
+        name: member.name,
+        layer: member.layer,
+        path: FRONTIER_BEASTS[member.species].path,
+      }));
+      return {
+        id,
+        label: BEAST_FAMILY_LABELS[id],
+        layer: members[0]?.layer ?? 0,
+        members,
+      };
+    });
     return {
       modelPath: this.activeAsset.path,
       trianglesPerBeast: this.activeAsset.trianglesPerBeast,
       actions: BEAST_MOTION_ACTIONS,
       ways: BEAST_MOTION_WAYS,
       counts: BEAST_MOTION_COUNTS,
-      families: BEAST_FAMILY_SHOWCASE_IDS.map((id) => ({ id, layer: BEAST_FAMILY_SHOWCASE_LAYERS[id] })),
-      roster: BEAST_FAMILY_SHOWCASE_IDS.map((id) => ({
-        id,
-        label: BEAST_FAMILY_LABELS[id],
-        layer: BEAST_FAMILY_SHOWCASE_LAYERS[id],
-        members: resolveFamilyMembers(id).map((member) => ({
-          species: member.species,
-          name: member.name,
-          layer: member.layer,
-          path: FRONTIER_BEASTS[member.species].path,
-        })),
-      })),
+      families: roster.map(({ id, layer }) => ({ id, layer })),
+      roster,
     };
   }
 

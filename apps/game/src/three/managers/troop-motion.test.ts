@@ -63,20 +63,33 @@ describe("Pure-maths Scout and Crossbow motion module", () => {
       controller.playActionAt(0, "attack", 2);
       expect(controller.getStateAt(0, 2).action).toBe("attack");
       for (let i = 1; i <= 30; i++) controller.update(2 + i * 0.04, [0]);
-      expect(controller.getStateAt(0, 3.2).action).toBe("idle");
+      expect(controller.getStateAt(0, 3.2).action).toBe("march");
       expect(controller.getStateAt(0, 3.2).progress).toBe(0);
 
-      controller.playActionAt(0, "death", 3.5);
+      controller.setLoopActionAt(0, "idle");
+      expect(controller.getStateAt(0, 3.2).action).toBe("idle");
+      controller.playActionAt(0, "attack", 3.2);
+      controller.setLoopActionAt(0, "march");
+      expect(controller.getStateAt(0, 3.3).action).toBe("attack");
+      controller.update(4.1, [0]);
+      expect(controller.getStateAt(0, 4.1).action).toBe("march");
+
+      controller.setLoopActionAt(0, "idle");
+      controller.playActionAt(0, "attack", 4.1);
       controller.update(5, [0]);
-      expect(controller.getStateAt(0, 5).action).toBe("death");
-      expect(controller.getStateAt(0, 5).progress).toBe(1);
+      expect(controller.getStateAt(0, 5).action).toBe("idle");
+
+      controller.playActionAt(0, "death", 5.1);
+      controller.update(6.6, [0]);
+      expect(controller.getStateAt(0, 6.6).action).toBe("death");
+      expect(controller.getStateAt(0, 6.6).progress).toBe(1);
 
       controller.resetSlot(0);
-      expect(controller.getStateAt(0, 5).action).toBe("idle");
-      expect(controller.getStateAt(0, 5).progress).toBe(0);
-      expect(controller.getStateAt(0, 5).active).toBe(true);
+      expect(controller.getStateAt(0, 6.6).action).toBe("idle");
+      expect(controller.getStateAt(0, 6.6).progress).toBe(0);
+      expect(controller.getStateAt(0, 6.6).active).toBe(true);
       controller.setLoopActionAt(0, "march");
-      expect(controller.getStateAt(0, 5).action).toBe("march");
+      expect(controller.getStateAt(0, 6.6).action).toBe("march");
 
       const offscreenContext: AnimationVisibilityContext = {
         cameraPosition: new Vector3(0, 10, 10),

@@ -48,23 +48,6 @@ const appIdentityHtml = (identity: ReturnType<typeof appIdentity>): Plugin => ({
       .replaceAll("%APP_ADDRESS%", APP_ADDRESS),
 });
 
-const labShippedKnightMiddleware = (): Plugin => ({
-  name: "lab-shipped-knight-middleware",
-  apply: "serve",
-  configureServer(server) {
-    server.middlewares.use("/__lab-shipped-knight", (req, res, next) => {
-      const dir = process.env.LAB_SHIPPED_KNIGHT_DIR;
-      if (!dir || !req.url) return next();
-      const file = path.basename(req.url.split("?")[0]);
-      if (!file.endsWith(".glb")) return next();
-      const fullPath = path.join(dir, file);
-      if (!fs.existsSync(fullPath)) return next();
-      res.setHeader("Content-Type", "model/gltf-binary");
-      fs.createReadStream(fullPath).pipe(res);
-    });
-  },
-});
-
 // https://vitejs.dev/config/
 export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
   const isServe = command === "serve";
@@ -89,7 +72,6 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
     llmTxtPlugin(),
     refuseRetiredVariables(),
     labArtwork(isDevEnvironment(appEnv.VITE_PUBLIC_ENVIRONMENT)),
-    labShippedKnightMiddleware(),
     hashedModels(),
     assetLinks(),
     appIdentityHtml(identity),
