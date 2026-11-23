@@ -6,13 +6,14 @@ import { resolveHorseRigRequiredBoneNames } from "./horse-rig-adapter";
 import type { LoadedProceduralHorseAssetTemplate, ProceduralHorseAssetDefinition } from "./procedural-horse-assets";
 import { QUATERNIUS_HORSE_RIG_ADAPTER } from "./quaternius-horse-rig-adapter";
 import { gltfLoader } from "@/three/utils/gltf-loader";
+import { modelPath } from "@/three/utils/model-url";
 
 const QUATERNIUS_HORSE_ASSET = {
   adapterId: QUATERNIUS_HORSE_RIG_ADAPTER.id,
   id: "quaternius-horse",
   label: "Quaternius horse",
   scale: 0.52,
-  url: "/models/characters/quaternius-horse/horse.glb",
+  url: modelPath("characters/quaternius-horse/horse.glb"),
 } as const satisfies ProceduralHorseAssetDefinition;
 
 const QUATERNIUS_HORSE_REFERENCE_CLIPS = [

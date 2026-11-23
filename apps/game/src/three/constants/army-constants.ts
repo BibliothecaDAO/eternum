@@ -1,5 +1,6 @@
 import { TroopTier, TroopType } from "@bibliothecadao/types";
 import { type ArmyPace, ModelType } from "../types/army";
+import { modelPath } from "../utils/model-url";
 
 export const MAX_INSTANCES = 1000;
 /** The scale every army model is drawn at on the world map (and in the lab's studio, which draws them the same way). */
@@ -85,5 +86,5 @@ export const MODEL_TYPE_TO_FILE: Record<ModelType, string> = {
 };
 
 export const buildArmyModelAssetPath = (modelType: ModelType): string => {
-  return `/models/${MODEL_TYPE_TO_FILE[modelType]}`;
+  return modelPath(MODEL_TYPE_TO_FILE[modelType]);
 };

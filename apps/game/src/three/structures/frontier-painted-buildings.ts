@@ -1,5 +1,6 @@
 import catalogue from "./frontier-painted-buildings.json";
 import { BuildingType } from "@bibliothecadao/types";
+import { modelPath } from "../utils/model-url";
 
 export type FrontierPaintedGroup = "realms" | "farm" | "workshop" | "barracks" | "training" | "sites";
 
@@ -30,7 +31,7 @@ export const FRONTIER_PAINTED_REALMS = ["settlement", "city", "kingdom", "empire
 const FRONTIER_BUILDING_MODELS = {
   [BuildingType.None]: null,
   [BuildingType.WorkersHut]: null,
-  [BuildingType.Storehouse]: { kind: "model", path: "/models/frontier/buildings/storeroom.glb" },
+  [BuildingType.Storehouse]: { kind: "model", path: modelPath("frontier/buildings/storeroom.glb") },
   [BuildingType.ResourceStone]: null,
   [BuildingType.ResourceCoal]: null,
   [BuildingType.ResourceWood]: null,
@@ -59,7 +60,7 @@ const FRONTIER_BUILDING_MODELS = {
   [BuildingType.ResourceKnightT1]: { kind: "tiered", family: "barracks" },
   [BuildingType.ResourceKnightT2]: null,
   [BuildingType.ResourceKnightT3]: null,
-  [BuildingType.ResourceCrossbowmanT1]: { kind: "model", path: "/models/frontier/buildings/crossbow-range.glb" },
+  [BuildingType.ResourceCrossbowmanT1]: { kind: "model", path: modelPath("frontier/buildings/crossbow-range.glb") },
   [BuildingType.ResourceCrossbowmanT2]: null,
   [BuildingType.ResourceCrossbowmanT3]: null,
   [BuildingType.ResourcePaladinT1]: null,
@@ -69,7 +70,7 @@ const FRONTIER_BUILDING_MODELS = {
   [BuildingType.ResourceFish]: null,
   [BuildingType.ResourceEssence]: null,
   [BuildingType.ResourceResearch]: null,
-  [BuildingType.RationsDepot]: { kind: "model", path: "/models/frontier/buildings/rations-depot.glb" },
+  [BuildingType.RationsDepot]: { kind: "model", path: modelPath("frontier/buildings/rations-depot.glb") },
   [BuildingType.SupplyYard]: { kind: "painted", id: "supply-yard" },
   [BuildingType.ScoutsLodge]: { kind: "painted", id: "scouts-lodge" },
   [BuildingType.ConscriptionCamp]: { kind: "painted", id: "camp" },

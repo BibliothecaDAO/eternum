@@ -1,3 +1,4 @@
+import { fetchModel } from "@/three/utils/model-url";
 import { gltfLoader } from "@/three/utils/utils";
 import { Group, type Object3D } from "three";
 
@@ -38,7 +39,7 @@ export function requireCompleteTerrainPropCatalog(catalog: TerrainPropCatalog): 
 }
 
 async function loadFloraCatalog(): Promise<TerrainPropCatalog> {
-  const response = await fetch(TERRAIN_FLORA_MANIFEST_PATH);
+  const response = await fetchModel(TERRAIN_FLORA_MANIFEST_PATH);
   if (!response.ok) throw new Error(`${TERRAIN_FLORA_MANIFEST_PATH} answered ${response.status}`);
   const manifest = (await response.json()) as FloraManifest;
   const scene = new Group();

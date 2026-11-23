@@ -1,6 +1,7 @@
 import { StructureType, TroopTier, TroopType } from "@bibliothecadao/types";
 import { MODEL_TYPE_TO_FILE, TROOP_TO_MODEL } from "../constants/army-constants";
 import { getStructureModelPaths } from "../constants/scene-constants";
+import { modelPath } from "../utils/model-url";
 import { CosmeticRegistryEntry, CosmeticTraitType } from "./types";
 
 /**
@@ -13,20 +14,14 @@ let seeded = false;
 const ARMY_TROOP_TYPES = Object.values(TroopType) as TroopType[];
 const ARMY_TIERS = Object.values(TroopTier) as TroopTier[];
 const STRUCTURE_TYPES = Object.values(StructureType).filter((value) => typeof value === "number") as StructureType[];
-// Absolute so deep routes like /play/<chain>/<world>/map resolve assets from
-// the site root instead of relative to the current URL.
-const COSMETIC_ROOT = "/models/cosmetics";
-
-// Only using low-res models now - files are named by attributesRaw (e.g., 0x305020701.glb)
-const lowResPath = (attributesRaw: string) => `${COSMETIC_ROOT}/low-res/${attributesRaw}.glb`;
+const lowResPath = (attributesRaw: string) => modelPath(`cosmetics/low-res/${attributesRaw}.glb`);
 
 /**
  * Normalises asset paths so loaders can resolve both relative and absolute entries.
  */
 function normalizeAssetPath(path: string): string {
   if (path.startsWith("/")) return path;
-  if (path.startsWith("models/")) return `/${path}`;
-  return `/models/${path}`;
+  return modelPath(path);
 }
 
 /**

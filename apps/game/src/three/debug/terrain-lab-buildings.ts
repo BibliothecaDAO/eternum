@@ -7,6 +7,7 @@ import {
 import { FALLEN_REALM_RUIN_PATH, FRONTIER_BEAST_PATHS } from "../structures/frontier-beast";
 import { StructureType } from "@bibliothecadao/types";
 import { HYPERSTRUCTURE_MODEL_PATH } from "../structures/hyperstructure-design";
+import { modelPath } from "../utils/model-url";
 
 export interface TerrainLabBuilding {
   col: number;
@@ -38,8 +39,8 @@ export const TERRAIN_LAB_BUILDINGS = [
     ...SHARED_BUILDING_MODEL_PATHS,
     ...FRONTIER_BEAST_PATHS,
     FALLEN_REALM_RUIN_PATH,
-    "/models/outposts/shrine.glb",
-    "/models/outposts/well.glb",
+    modelPath("outposts/shrine.glb"),
+    modelPath("outposts/well.glb"),
     SPIRE_MODEL_PATH,
   ]),
 ].map((path) => {

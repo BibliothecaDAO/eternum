@@ -3,6 +3,7 @@ import { findCosmeticById } from "@/three/cosmetics/registry";
 import { Box3, Group, Mesh, SkinnedMesh, Vector3 } from "three";
 import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
 import { gltfLoader } from "@/three/utils/gltf-loader";
+import { modelPath } from "@/three/utils/model-url";
 
 import { disposeSkinnedSceneTemplates } from "../skinned-asset-resources";
 
@@ -29,8 +30,8 @@ type FittedGearId = ProceduralMeleeWeaponId | ProceduralMeleeOffhandId;
 
 /** Asset data: the file of each piece of gear the catalog marks as fitted to a rig. */
 const FITTED_GEAR_FILES: Readonly<Partial<Record<FittedGearId, string>>> = {
-  "t1-knight-default-sword": "/models/characters/t1-knight-default/near/sword.glb",
-  "t1-knight-default-shield": "/models/characters/t1-knight-default/near/shield.glb",
+  "t1-knight-default-sword": modelPath("characters/t1-knight-default/near/sword.glb"),
+  "t1-knight-default-shield": modelPath("characters/t1-knight-default/near/shield.glb"),
 };
 const FITTED_GEAR_IDS: readonly FittedGearId[] = [...PROCEDURAL_MELEE_WEAPONS, ...PROCEDURAL_MELEE_OFFHANDS]
   .filter(({ fittedRigAdapterId }) => fittedRigAdapterId !== undefined)

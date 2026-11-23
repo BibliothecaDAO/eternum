@@ -1,6 +1,7 @@
 import { Bone, SkinnedMesh } from "three";
 import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
 import { gltfLoader } from "@/three/utils/gltf-loader";
+import { modelPath } from "@/three/utils/model-url";
 
 import { resolveHumanoidRigRequiredBoneNames } from "./humanoid-rig-adapter";
 import { T1_KNIGHT_DEFAULT_HUMANOID_RIG_ADAPTER } from "./t1-knight-default-humanoid-rig-adapter";
@@ -14,14 +15,14 @@ const T1_KNIGHT_DEFAULT_NEAR = {
   adapterId: "t1-knight-default",
   id: "t1-knight-default-near",
   label: "T1 Knight Default near",
-  url: "/models/characters/t1-knight-default/near/skin.glb",
+  url: modelPath("characters/t1-knight-default/near/skin.glb"),
 } as const satisfies ProceduralCharacterAssetDefinition;
 
 const T1_KNIGHT_DEFAULT_MID = {
   ...T1_KNIGHT_DEFAULT_NEAR,
   id: "t1-knight-default-mid",
   label: "T1 Knight Default mid",
-  url: "/models/characters/t1-knight-default/mid/skin.glb",
+  url: modelPath("characters/t1-knight-default/mid/skin.glb"),
 } as const satisfies ProceduralCharacterAssetDefinition;
 
 export async function loadT1KnightDefaultCharacterAssetTemplate(

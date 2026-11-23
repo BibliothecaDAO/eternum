@@ -15,18 +15,19 @@ import { MeshStandardNodeMaterial } from "three/webgpu";
 import InstancedModel from "../managers/instanced-model";
 import { DEEP_PALETTE } from "../terrain/deep-floor-material";
 import { MaterialPool } from "../utils/material-pool";
+import { modelPath } from "../utils/model-url";
 import { gltfLoader } from "../utils/utils";
 
 type DeepSiteKey = (typeof deepSites)[number]["key"];
 
 export const DEEP_SITE_MODELS = {
-  foundation: "/models/frontier/deep/archive.glb",
-  core: "/models/frontier/deep/core.glb",
-  mine: "/models/frontier/deep/mine.glb",
-  altar: "/models/frontier/deep/altar.glb",
+  foundation: modelPath("frontier/deep/archive.glb"),
+  core: modelPath("frontier/deep/core.glb"),
+  mine: modelPath("frontier/deep/mine.glb"),
+  altar: modelPath("frontier/deep/altar.glb"),
 } as const satisfies Record<DeepSiteKey, string>;
 
-const deepGateModel = (aspect: AspectId) => `/models/frontier/deep/gate-${aspectName(aspect).toLowerCase()}.glb`;
+const deepGateModel = (aspect: AspectId) => modelPath(`frontier/deep/gate-${aspectName(aspect).toLowerCase()}.glb`);
 
 export const DEEP_GATE_MODELS = {
   1: deepGateModel(1),

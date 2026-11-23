@@ -20,6 +20,7 @@ import { clone as cloneWithSkeleton } from "three/addons/utils/SkeletonUtils.js"
 import { WebGPURenderer } from "three/webgpu";
 
 import { T1_KNIGHT_WORLD_SCALE } from "@/three/constants/army-constants";
+import { fetchModel, modelPath } from "@/three/utils/model-url";
 import type { RendererSurfaceLike } from "@/three/renderer-backend";
 import { configureRendererColorOutput } from "@/three/renderer-color-output";
 import { loadBiomeCreature } from "@/three/terrain/creatures/biome-creature-assets";
@@ -153,8 +154,8 @@ type WildlifeLabWindow = Window & {
   };
 };
 
-const CREATURE_MANIFEST_PATH = "/models/biome-creatures/manifest.json";
-const KNIGHT_PATH = "/models/characters/t1-knight-default/near/skin.glb";
+const CREATURE_MANIFEST_PATH = modelPath("biome-creatures/manifest.json");
+const KNIGHT_PATH = modelPath("characters/t1-knight-default/near/skin.glb");
 const FLORA_SLOT = 3.4;
 const CREATURE_SLOT = 2.6;
 const CREATURE_ROW_Z = -4.5;
@@ -504,7 +505,7 @@ function countMeshes(object: Object3D): number {
 }
 
 async function fetchJson(path: string): Promise<unknown> {
-  const response = await fetch(path);
+  const response = await fetchModel(path);
   if (!response.ok) throw new Error(`${path} answered ${response.status}`);
   return response.json();
 }

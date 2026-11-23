@@ -1,11 +1,12 @@
 import floraManifest from "../../../public/models/terrain-flora/manifest.json";
+import { modelPath } from "../utils/model-url";
 
 export type TerrainPropLod = "near" | "far";
 export type TerrainPropRole = "canopy" | "groundcover" | "rigid" | "understory";
 export type TerrainPropPlacementLayer = "canopy" | "debris" | "groundcover" | "understory";
 type LayerPropAnchor = "scatter" | "edge" | "corner";
 
-export const TERRAIN_FLORA_MANIFEST_PATH = "/models/terrain-flora/manifest.json";
+export const TERRAIN_FLORA_MANIFEST_PATH = modelPath("terrain-flora/manifest.json");
 
 export const SURFACE_PROP_IDS = Object.freeze([
   "broadleaf",

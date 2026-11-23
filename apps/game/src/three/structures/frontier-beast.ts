@@ -9,30 +9,31 @@ import {
   type BeastModel,
 } from "@bibliothecadao/types";
 import type { FrontierSpecies, FrontierBeast } from "@bibliothecadao/eternum";
+import { modelPath } from "../utils/model-url";
 export { beastBand, frontierBeast, type FrontierSpecies, type FrontierBeast } from "@bibliothecadao/eternum";
 
-export const FALLEN_REALM_RUIN_PATH = "/models/outposts/ruin.glb";
+export const FALLEN_REALM_RUIN_PATH = modelPath("outposts/ruin.glb");
 
 export const FRONTIER_BEASTS = {
-  troll: { path: "/models/frontier/beast-troll.glb" },
-  wyvern: { path: "/models/frontier/beast-wyvern.glb" },
-  hydra: { path: "/models/frontier/beast-hydra.glb" },
-  wraith: { path: "/models/frontier/beast-wraith.glb" },
-  cyclops: { path: "/models/frontier/beast-cyclops.glb" },
-  ammit: { path: "/models/frontier/beast-ammit.glb" },
-  basilisk: { path: "/models/frontier/beast-basilisk.glb" },
-  "dark-fey": { path: "/models/frontier/beast-dark-fey.glb" },
-  balrog: { path: "/models/frontier/beast-balrog.glb" },
-  colossus: { path: "/models/frontier/beast-colossus.glb" },
-  warlock: { path: "/models/frontier/beast-warlock.glb" },
-  banshee: { path: "/models/frontier/beast-banshee.glb" },
-  golem: { path: "/models/frontier/beast-golem.glb" },
-  kappa: { path: "/models/frontier/beast-kappa.glb" },
-  tarrasque: { path: "/models/frontier/beast-tarrasque.glb" },
-  lich: { path: "/models/frontier/beast-lich.glb" },
-  ettin: { path: "/models/frontier/beast-ettin.glb" },
-  kitsune: { path: "/models/frontier/beast-kitsune.glb" },
-  minotaur: { path: "/models/frontier/beast-minotaur.glb" },
+  troll: { path: modelPath("frontier/beast-troll.glb") },
+  wyvern: { path: modelPath("frontier/beast-wyvern.glb") },
+  hydra: { path: modelPath("frontier/beast-hydra.glb") },
+  wraith: { path: modelPath("frontier/beast-wraith.glb") },
+  cyclops: { path: modelPath("frontier/beast-cyclops.glb") },
+  ammit: { path: modelPath("frontier/beast-ammit.glb") },
+  basilisk: { path: modelPath("frontier/beast-basilisk.glb") },
+  "dark-fey": { path: modelPath("frontier/beast-dark-fey.glb") },
+  balrog: { path: modelPath("frontier/beast-balrog.glb") },
+  colossus: { path: modelPath("frontier/beast-colossus.glb") },
+  warlock: { path: modelPath("frontier/beast-warlock.glb") },
+  banshee: { path: modelPath("frontier/beast-banshee.glb") },
+  golem: { path: modelPath("frontier/beast-golem.glb") },
+  kappa: { path: modelPath("frontier/beast-kappa.glb") },
+  tarrasque: { path: modelPath("frontier/beast-tarrasque.glb") },
+  lich: { path: modelPath("frontier/beast-lich.glb") },
+  ettin: { path: modelPath("frontier/beast-ettin.glb") },
+  kitsune: { path: modelPath("frontier/beast-kitsune.glb") },
+  minotaur: { path: modelPath("frontier/beast-minotaur.glb") },
 } as const satisfies Record<FrontierSpecies, { path: string }>;
 
 export const largestBeastScale = (species: BeastModel): number => {

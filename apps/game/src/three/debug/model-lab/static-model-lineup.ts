@@ -13,7 +13,7 @@ import type { BeastIdle } from "@bibliothecadao/types";
 import { FrontierModel, frontierModelKind } from "../../structures/frontier-model";
 import { RewardTileModel } from "../../rewards/reward-tile-model";
 import { SettlementModel } from "../../structures/settlement-model";
-import { HEX_SIZE, isRealmModelPath, isSettlementModelPath } from "../../constants/scene-constants";
+import { HEX_SIZE, RiftModelPath, isRealmModelPath, isSettlementModelPath } from "../../constants/scene-constants";
 import { bakeLineupTransforms } from "./bake-lineup-transforms";
 import {
   resolveWorldmapCameraFieldOfViewDegrees,
@@ -172,7 +172,7 @@ export async function mountStaticLineup(
           const kind = frontierModelKind(part.path);
           const model = kind
             ? new FrontierModel(gltf, capacity, kind)
-            : part.path === "/models/reward-tiles/rift.glb"
+            : part.path === RiftModelPath
               ? new RewardTileModel(gltf, capacity)
               : isSettlementModelPath(part.path)
                 ? new SettlementModel(gltf, capacity, isRealmModelPath(part.path) ? "realm" : "village")
