@@ -6,6 +6,7 @@ import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-stor
 import {
   type ExpeditionRules,
   DAILY_QUEST_MODELS,
+  fragmentsSold,
   getBuildingQuantity,
   readDailyQuest,
   researchTier,
@@ -168,7 +169,7 @@ function useOpeningHeld(rules: ExpeditionRules, realm: NativeRows["Structure"] |
   return {
     barracks: getBuildingQuantity(home, FIRST_BUILD, setup.store) > 0,
     oath,
-    shop: outOfStamina,
+    shop: fragmentsSold(setup.store, realm.game_id) && outOfStamina,
     relic,
     city: realm.base.level >= RealmLevels.City,
     essence: (essence ?? 0) > 0,

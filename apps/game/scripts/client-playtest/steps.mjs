@@ -568,7 +568,7 @@ async function attackFromTheSiteCard({ browser }) {
   if (!sheet.buttons.includes("Attack")) return { army, offered: target.offered, target: target.offset, sheet };
   const token = browser.read(armyToken(army));
   const forecast = browser.read(
-    `Array.from(document.querySelectorAll('[data-kit-sheet] [role="img"][aria-label*="→"]'), node => node.getAttribute('aria-label'))`,
+    `Array.from(document.querySelectorAll('[data-kit-sheet] [data-fight-side]'), node => node.getAttribute('aria-label'))`,
   );
   watchFor(browser, "fought", tokensShowTheChainsCounts(browser, "BattleGuard"));
   browser.click("Attack");
@@ -4297,7 +4297,7 @@ async function attackFromTheDeepCard({ browser, extraScreenshot }) {
   );
   if (!opened.buttons.includes("Attack")) return { before, opened };
   const forecast = browser.read(
-    `Array.from(document.querySelectorAll('[data-kit-sheet] [role="img"][aria-label*="→"]'), node => node.getAttribute('aria-label'))`,
+    `Array.from(document.querySelectorAll('[data-kit-sheet] [data-fight-side]'), node => node.getAttribute('aria-label'))`,
   );
   const guardOaths = browser.read(
     `Array.from(document.querySelectorAll("[data-guard-oaths]"), node => {
@@ -4875,7 +4875,7 @@ const FIGHT_STATE = `JSON.stringify({
   sheet: document.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null,
   buttons: [...(document.querySelector("[data-kit-sheet]")?.querySelectorAll("button") ?? [])].map((button) => button.getAttribute("aria-label") || button.textContent.trim()),
   attackHeld: [...(document.querySelector("[data-kit-sheet]")?.querySelectorAll("button") ?? [])].every((button) => !button.textContent.trim().startsWith("Attack") || button.disabled),
-  sides: [...(document.querySelector("[data-kit-sheet]")?.querySelectorAll('[role="img"][aria-label*="→"]') ?? [])].map((side) => side.getAttribute("aria-label")),
+  sides: [...(document.querySelector("[data-kit-sheet]")?.querySelectorAll("[data-fight-side]") ?? [])].map((side) => side.getAttribute("aria-label")),
   sent: (window.__labChain?.sent ?? []).map(({ command }) => command.kind),
   armyToken: document.querySelector('.mp-at[data-key="army:${PICKED_ARMY}"]')?.textContent ?? null,
   ruinToken: (() => {

@@ -19,7 +19,7 @@ import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-clien
 import { BUILDINGS_CENTER, catalogAspectId, formatRate, rankName, ResourcesIds } from "@bibliothecadao/types";
 import { useLayout } from "@/shell/frame/layout";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { type ComponentProps, type ComponentType, type ReactNode, useEffect, useState } from "react";
+import { type ComponentProps, type ComponentType, type ReactNode, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { RealmVisitFoot, useRealmVisitNavigation, useVisitedRealm } from "./board/realm-visit";
 import { FrontierSeason, useSeasonRank } from "./board/season-board";
@@ -185,9 +185,13 @@ const FrontierHudBody = ({
   const layers = useMapLayers(rules, shown, visit ? null : realm);
   const [openStore, setOpenStore] = useState<CardStore | null>(null);
   const [realmOpen, setRealmOpen] = useState(() => !isMapView);
+  const previousMapView = useRef(isMapView);
   useEffect(() => {
+    if (previousMapView.current === isMapView) return;
+    previousMapView.current = isMapView;
     setRealmOpen(!isMapView);
-  }, [isMapView]);
+    setSurface(null);
+  }, [isMapView, setSurface]);
   const chat = useGameChat(surface === "chat");
   const chatPane = useChatKey(() => setSurface("chat"));
   const headerStores = useStoreReadings(shown, rules);
@@ -300,15 +304,29 @@ const FrontierHudBody = ({
     </>
   );
   const deployOpen = Boolean(own) && leftView === LeftView.MilitaryView;
-  const leftSurfaceSheet =
-    surface === "army" ||
-    surface === "army-lost" ||
-    surface === "shop" ||
-    surface === "settings" ||
-    surface === "today";
+  const leftSheet =
+    surface === "army" && realm && !visit ? (
+      <FrontierArmy realm={realm} onClose={close} />
+    ) : surface === "army-lost" ? (
+      <ArmyLostSheet onClose={close} />
+    ) : surface === "shop" && own ? (
+      <ShopSheet realm={own} onClose={close} />
+    ) : surface === "settings" ? (
+      <HudSheet label={SETTINGS} onClose={close}>
+        <SettingsPanel />
+      </HudSheet>
+    ) : surface === "today" ? (
+      <FrontierToday
+        rules={rules}
+        realm={realm ?? visited}
+        dayEnd={own && <DayEndBlock dayEnd={dayEnd} />}
+        own={Boolean(own)}
+        onClose={close}
+      />
+    ) : null;
   const replaceRealmWithSheet =
     desktop &&
-    (deployOpen || leftSurfaceSheet || (!isMapView && showsCard && card !== null && isRealmBoardCard(card.kind)));
+    (deployOpen || leftSheet !== null || (!isMapView && showsCard && card !== null && isRealmBoardCard(card.kind)));
   const realmVisible = Boolean(shown) && realmOpen && !replaceRealmWithSheet && !page;
   const realmPanel = shown && (
     <FrontierRealmPanel
@@ -334,23 +352,7 @@ const FrontierHudBody = ({
     <>
       <FrontierSurfaces realm={realm} rules={rules} />
       {showsCard && card?.sheet}
-      {surface === "army" && realm && !visit && <FrontierArmy realm={realm} onClose={close} />}
-      {surface === "army-lost" && <ArmyLostSheet onClose={close} />}
-      {surface === "shop" && own && <ShopSheet realm={own} onClose={close} />}
-      {surface === "settings" && (
-        <HudSheet label={SETTINGS} onClose={close}>
-          <SettingsPanel />
-        </HudSheet>
-      )}
-      {surface === "today" && (
-        <FrontierToday
-          rules={rules}
-          realm={realm ?? visited}
-          dayEnd={own && <DayEndBlock dayEnd={dayEnd} />}
-          own={Boolean(own)}
-          onClose={close}
-        />
-      )}
+      {leftSheet}
       {surface !== "season" && <SeasonOver />}
       {realm && <DayDone rules={rules} realm={realm} visiting={Boolean(visit)} />}
       <BuildingsInFlight />

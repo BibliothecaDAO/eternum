@@ -87,6 +87,7 @@ button.realm-tile:hover {
 @media (max-width: 1023px) {
   .realm-panel--sheet {
     max-height: 54dvh;
+    overflow: hidden;
   }
   .realm-tiles {
     gap: theme(spacing.1);
