@@ -37,16 +37,29 @@ pub fn claim_id(game_id: u32) -> ResourceKey {
     ResourceKey { game_id, entity_id }
 }
 
-pub fn change_hands(key: ResourceKey, holder: ContractAddress, timestamp: u64) {
+pub fn pay_holder(key: ResourceKey, holder: ContractAddress, until: u64) {
     let state = crate::state::write();
     if holder != 0.try_into().unwrap() {
-        let held: u128 = (timestamp - state.hyperstructures.held_since.read((key.game_id, key.entity_id))).into();
+        let held: u128 = (until - state.hyperstructures.held_since.read((key.game_id, key.entity_id))).into();
         let points = held * crate::balance::points::HOLD_POINTS_PER_SECOND * multiplier(key);
         if points != 0 {
             crate::logic::blitz::points::award(key.game_id, holder, PointActivity::HyperstructureHolding, points);
         }
     }
-    state.hyperstructures.held_since.write((key.game_id, key.entity_id), timestamp);
+    state.hyperstructures.held_since.write((key.game_id, key.entity_id), until);
+}
+
+pub fn pay_final_holders(game_id: u32, end_at: u64) -> u32 {
+    let state = crate::state::write();
+    let count = state.hyperstructures.counts.read(game_id);
+    let start = state.hyperstructures.paid_at_end.read(game_id);
+    let end = core::cmp::min(count, start + 8);
+    for index in start..end {
+        let key = ResourceKey { game_id, entity_id: (crate::entity_ids::MAX_HOME_NAMESPACE - index).into() };
+        pay_holder(key, crate::logic::structures::owner(key), end_at);
+    }
+    state.hyperstructures.paid_at_end.write(game_id, end);
+    count - end
 }
 
 pub fn multiplier(key: ResourceKey) -> u128 {

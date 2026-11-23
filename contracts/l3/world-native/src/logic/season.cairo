@@ -46,6 +46,31 @@ pub mod SeasonLogic {
         BatchProgress: crate::commands::BatchProgress,
     }
 
+    #[cfg(feature: "blitz")]
+    #[abi(embed_v0)]
+    impl GameSettlement of crate::registrar::IGameSettlement<ContractState> {
+        fn mark_game_settled(
+            ref self: ContractState, game_id: u32, actor: ContractAddress, context: crate::commands::ActionContext,
+        ) -> u64 {
+            let context = crate::commands::execution_context(game_id, context);
+            let mut game = context.game.unbox();
+            if game.settled {
+                return (0);
+            }
+            assert!(
+                crate::game::status_at(game, context.timestamp) == crate::game::GameStatus::Ended, "game has not ended",
+            );
+            let remaining = crate::logic::blitz::hyperstructures::pay_final_holders(game_id, game.end_at);
+            if remaining != 0 {
+                return (remaining.into());
+            }
+            game.settled = true;
+            crate::logic::game::write_game(game_id, game);
+            (0)
+        }
+    }
+
+    #[cfg(not(feature: "blitz"))]
     #[abi(embed_v0)]
     impl GameSettlement of crate::registrar::IGameSettlement<ContractState> {
         fn mark_game_settled(

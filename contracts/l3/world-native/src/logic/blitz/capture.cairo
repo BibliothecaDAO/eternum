@@ -10,7 +10,7 @@ pub fn capture(key: ResourceKey, capturing_home: u64, target: Structure, timesta
     crate::logic::structures::StructureState::transfer_owner(key, owner);
     let hyperstructure = target.base.category == crate::taxonomy::HYPERSTRUCTURE_CATEGORY;
     if hyperstructure {
-        crate::logic::blitz::hyperstructures::change_hands(key, target.owner, timestamp);
+        crate::logic::blitz::hyperstructures::pay_holder(key, target.owner, timestamp);
     }
     if target.owner == 0.try_into().unwrap() {
         let points = if hyperstructure {

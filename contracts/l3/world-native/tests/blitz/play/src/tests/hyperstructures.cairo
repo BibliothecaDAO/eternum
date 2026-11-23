@@ -150,19 +150,7 @@ fn a_rival_capture_pays_the_holder_for_each_second_held_per_neighbouring_realm()
     let (d, game_id, rival, key, coord) = unguarded_hyperstructure();
     let mine = army_beside(d, game_id, d.actor, 100, west_of(coord, 2), EAST);
     let theirs = army_beside(d, game_id, rival, 101, east_of(coord, 2), WEST);
-    let neighbours = snforge_std::interact_with_state(
-        d.games, || crate::logic::blitz::hyperstructures::multiplier(key),
-    );
-    let mut placed = 0_u128;
-    let mut id = 200_u64;
-    for point in crate::logic::blitz::hyperstructures::watch_points(coord) {
-        if placed < 2 && occupier(d, game_id, *point).is_none() {
-            found_realm(d, ResourceKey { game_id, entity_id: id }, rival, *point);
-            placed += 1;
-            id += 1;
-        }
-    }
-    assert_eq!(placed, 2);
+    let realms = two_more_watching_realms(d, key, coord, rival);
     assert_executes(d, game_id, attack(mine, key), RESTED_AT);
     let held = player_points(d, game_id, d.actor);
     assert!(
@@ -171,6 +159,44 @@ fn a_rival_capture_pays_the_holder_for_each_second_held_per_neighbouring_realm()
     assert!(IStructureOperationsDispatcher { contract_address: d.games }.structure(key).unwrap().owner == rival);
     assert_eq!(
         player_points(d, game_id, d.actor) - held,
-        HELD.into() * crate::balance::points::HOLD_POINTS_PER_SECOND * (neighbours + 2),
+        HELD.into() * crate::balance::points::HOLD_POINTS_PER_SECOND * realms,
     );
+}
+
+#[test]
+fn settling_the_game_pays_the_holder_up_to_the_end_and_settles_it() {
+    let (d, game_id, rival, key, coord) = unguarded_hyperstructure();
+    let mine = army_beside(d, game_id, d.actor, 100, west_of(coord, 2), EAST);
+    let realms = two_more_watching_realms(d, key, coord, rival);
+    assert_executes(d, game_id, attack(mine, key), RESTED_AT);
+    let held = player_points(d, game_id, d.actor);
+    let end_at = game(d, game_id).end_at;
+    assert!(!execute_in_game(d, game_id, super::Command::MarkGameSettled(()), end_at - 1));
+    assert_executes(d, game_id, super::Command::MarkGameSettled(()), end_at + 600);
+    assert_eq!(
+        player_points(d, game_id, d.actor) - held,
+        (end_at - RESTED_AT).into() * crate::balance::points::HOLD_POINTS_PER_SECOND * realms,
+    );
+    assert!(game(d, game_id).settled, "a settled Blitz game is marked settled");
+}
+
+fn game(d: super::Deployment, game_id: u32) -> crate::game::GameRegistry {
+    snforge_std::interact_with_state(d.games, || crate::logic::game::game(game_id))
+}
+
+fn two_more_watching_realms(
+    d: super::Deployment, key: ResourceKey, coord: Coord, owner: starknet::ContractAddress,
+) -> u128 {
+    let before = snforge_std::interact_with_state(d.games, || crate::logic::blitz::hyperstructures::multiplier(key));
+    let mut placed = 0_u128;
+    let mut id = 200_u64;
+    for point in crate::logic::blitz::hyperstructures::watch_points(coord) {
+        if placed < 2 && occupier(d, key.game_id, *point).is_none() {
+            found_realm(d, ResourceKey { game_id: key.game_id, entity_id: id }, owner, *point);
+            placed += 1;
+            id += 1;
+        }
+    }
+    assert_eq!(placed, 2);
+    before + placed
 }

@@ -51,6 +51,7 @@ const blitzReturnedCommands: NativeCommand[] = [
   "Battle",
   "GuardAttack",
   "SettleVillage",
+  "MarkGameSettled",
 ];
 
 const blitzOnlyCommandMask = Object.values(nativeBlitzCommandBits).reduce((mask, bit) => mask | BigInt(bit), 0n);

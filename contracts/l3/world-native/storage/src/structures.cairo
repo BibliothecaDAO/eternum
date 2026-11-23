@@ -15,4 +15,5 @@ pub struct StructuresDomainStorage {
 pub struct HyperstructureStorage {
     pub counts: Map<u32, u32>,
     pub held_since: Map<(u32, u64), u64>,
+    pub paid_at_end: Map<u32, u32>,
 }
