@@ -9,7 +9,7 @@ import { existsSync, readFileSync, rmSync } from "node:fs";
 const POLL_MS = 500;
 const PAGE_WAIT_MS = 30_000;
 // The day's summary shows as the game's HUD mounts, or not at all.
-const DAY_SUMMARY_WAIT_MS = 3_000;
+const DAY_SUMMARY = "[data-day-end]";
 // A sign-in code stops working ten minutes after it is sent.
 const SIGN_IN_CODE_WAIT_MS = 10 * 60_000;
 const EMAIL_FIELD = 'input[type="email"]';
@@ -112,39 +112,16 @@ export async function findHomeCardEntry(browser, owner, timeoutMs, { card, game 
   }
 }
 
-/** The alerts popup as the page names it: words.ts ALERTS_POPUP.title, which player-entry.test.mjs holds it to. */
 export const ALERTS_PROMPT = '[role="dialog"][aria-label="Know when to come back"]';
 
-/**
- * The prompts that stand over a player's page until answered, answered as a player who plays on does: the wallet
- * invitation closed and the alerts popup declined. Returns which were shown.
- */
 export async function answerStandingPrompts(browser, owner) {
   return {
     wallet: await continueWithoutWallet(browser, owner),
     alerts: await declineAlerts(browser, owner),
-    day: await continueIntoTheOpenDay(browser, owner),
+    day: await continuePastTheDaySummary(browser, owner),
   };
 }
 
-const DAY_SUMMARY = "[data-day-end]";
-
-async function continueIntoTheOpenDay(browser, owner) {
-  const offered = () =>
-    browser.read(
-      `[...document.querySelectorAll(${JSON.stringify(`${DAY_SUMMARY} button`)})].some((button) => button.textContent.trim() === "Continue")`,
-    );
-  if (!offered()) return false;
-  browser.click("Continue");
-  await waitUntil(
-    owner,
-    () => !browser.read(`Boolean(document.querySelector(${JSON.stringify(DAY_SUMMARY)}))`),
-    "the day's summary did not lift after Continue",
-  );
-  return true;
-}
-
-/** Declines the alerts popup over a player's clear map: Escape is its Not now. Returns whether it was shown. */
 async function declineAlerts(browser, owner) {
   const shown = () => browser.read(`Boolean(document.querySelector(${JSON.stringify(ALERTS_PROMPT)}))`);
   if (!shown()) return false;
@@ -171,14 +148,17 @@ export async function continueWithoutWallet(browser, owner) {
  * was shown.
  */
 export async function continuePastTheDaySummary(browser, owner) {
-  const shown = () =>
-    browser.read(`[...document.querySelectorAll("button")].some((button) => button.textContent.trim() === "Continue")`);
-  const startedAt = Date.now();
-  while (!shown()) {
-    if (Date.now() - startedAt > DAY_SUMMARY_WAIT_MS) return false;
-    await owner.sleep(POLL_MS);
-  }
+  const offered = () =>
+    browser.read(
+      `[...document.querySelectorAll(${JSON.stringify(`${DAY_SUMMARY} button`)})].some((button) => button.textContent.trim() === "Continue")`,
+    );
+  if (!offered()) return false;
   browser.click("Continue");
+  await waitUntil(
+    owner,
+    () => !browser.read(`Boolean(document.querySelector(${JSON.stringify(DAY_SUMMARY)}))`),
+    "the day's summary did not lift after Continue",
+  );
   return true;
 }
 
