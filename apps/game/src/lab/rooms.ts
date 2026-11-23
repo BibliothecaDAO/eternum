@@ -424,6 +424,28 @@ export const ROOMS: LabRoom[] = [
         ],
       },
       {
+        title: "Beast motion",
+        views: [
+          view(
+            "Beast motion",
+            "/lab/beast-motion",
+            "beast-motion",
+            load(() => import("./beast-motion/beast-motion-view"), "BeastMotionView"),
+          ),
+        ],
+      },
+      {
+        title: "Troop motion",
+        views: [
+          view(
+            "Troop motion",
+            "/lab/troop-motion",
+            "troop-motion",
+            load(() => import("./troop-motion/troop-motion-view"), "TroopMotionView"),
+          ),
+        ],
+      },
+      {
         title: "Characters",
         views: [
           view(

@@ -22,10 +22,10 @@ import { parseTextureFreeGlb } from "../../../test-support/parse-texture-free-gl
 
 const PREFIX = "/models/characters/t1-knight-default/";
 const EXPORT_HASHES = {
-  "near/skin.glb": "8b2611cd72da2d48ce08a823db6e8b17fa466c718ea77e0ce8cadb14ce6ac912",
-  "mid/skin.glb": "c8ec804ca73679f7dc05f239934d2e55979a416557f6babefd48d6f26afde273",
-  "near/sword.glb": "44890d8b7104dbf00a3cebc42316ecf8fa99479b316d1675e1bb9b4536ad5ef0",
-  "near/shield.glb": "84cbd1730d84090ebd90ebdcc7cc92bee00709c61354bd84fac772010901d1c1",
+  "near/skin.glb": "8f56b2220c6712c3e103ce714c91399f2229b08e2d847031fba54943d5d5e0ab",
+  "mid/skin.glb": "7653f537829c09156801a6ce064848f9bcc885a009f83790ff0b706cb2a88fbb",
+  "near/sword.glb": "f13265680a50cc47a063a6c4b201a297677300b05feeef25d3234b4a7bd84c17",
+  "near/shield.glb": "7d6372b22d86cc5d7b9da9fc4eaf4e7a413eafc97f62df7f119d46a8041319b7",
 } as const;
 const SKIN_JOINT_COUNT = 31;
 

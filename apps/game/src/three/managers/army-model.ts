@@ -50,6 +50,17 @@ import { MaterialPool } from "../utils/material-pool";
 import { MemoryMonitor } from "../utils/memory-monitor";
 import { createPooledInstancedMaterial, releasePooledInstancedMaterial } from "./army-model-materials";
 import { ArmyContactShadows } from "./army-contact-shadow";
+import { float, positionLocal } from "three/tsl";
+import { FrostedStandardNodeMaterial } from "../effects/game-map-material-library";
+import { mapAnimationTime } from "../effects/endgame/state";
+import {
+  createTroopMotionController,
+  createTroopMotionNode,
+  resolveAnimatedTroopKind,
+  type AnimatedTroopKind,
+  type TroopMotionController,
+  type TroopShaderAction,
+} from "./troop-motion";
 import type { ResolvedCosmeticSkin } from "../cosmetics/types";
 import { resolvePrimarySkinGltf } from "../cosmetics/skin-asset-source";
 import {
@@ -75,7 +86,6 @@ import type { PipelineCompiler } from "../pipeline-compiler";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
 
-// One upload range over the touched slot span, so a one-army write never re-uploads every buffer.
 const flushArmyModelSlotUploads = (modelData: ModelData): void => {
   flushSlotDirtyRange(modelData.dirtySlots, [
     ...modelData.instancedMeshes.flatMap((mesh) => [mesh.instanceMatrix, mesh.instanceColor]),
@@ -272,7 +282,7 @@ export class ArmyModel {
         async (gltf) => {
           try {
             if (isShipModel(modelType)) bakeShipWorldScale(gltf.scene);
-            const modelData = this.createModelData(gltf);
+            const modelData = this.createModelData(gltf, true, modelType);
             await this.compilePipelines?.(modelData.group, this.scene);
             this.scene.add(modelData.group);
             this.models.set(modelType, modelData);
@@ -411,12 +421,14 @@ export class ArmyModel {
     });
   }
 
-  private createModelData(gltf: any, ownsGeometry: boolean = true): ModelData {
+  private createModelData(gltf: any, ownsGeometry: boolean = true, modelType?: ModelType): ModelData {
     const group = new Group();
     const instancedMeshes: AnimatedInstancedMesh[] = [];
     const baseMeshes: Mesh[] = [];
+    const troopKind = modelType ? resolveAnimatedTroopKind(modelType) : undefined;
+    const troopMotion = troopKind ? createTroopMotionController(troopKind, this.ARMY_INSTANCE_CAPACITY) : undefined;
 
-    this.processGLTFScene(gltf, group, instancedMeshes, baseMeshes);
+    this.processGLTFScene(gltf, group, instancedMeshes, baseMeshes, troopKind, troopMotion);
 
     group.visible = this.modelsVisible;
 
@@ -439,6 +451,7 @@ export class ArmyModel {
       lastAnimationUpdate: 0,
       animationUpdateInterval: this.MODEL_ANIMATION_UPDATE_INTERVAL,
       ownsGeometry,
+      ...(troopMotion && { troopMotion }),
     };
   }
 
@@ -447,12 +460,14 @@ export class ArmyModel {
     group: Group,
     instancedMeshes: AnimatedInstancedMesh[],
     baseMeshes: Mesh[],
+    troopKind?: AnimatedTroopKind,
+    troopMotion?: TroopMotionController,
   ): void {
     let meshIndex = 0;
 
     gltf.scene.traverse((child: Object3D) => {
       if (child instanceof Mesh) {
-        const instancedMesh = this.createInstancedMesh(child, gltf.animations, meshIndex);
+        const instancedMesh = this.createInstancedMesh(child, gltf.animations, meshIndex, troopKind, troopMotion);
         group.add(instancedMesh);
         instancedMeshes.push(instancedMesh);
         baseMeshes.push(child);
@@ -461,9 +476,29 @@ export class ArmyModel {
     });
   }
 
-  private createInstancedMesh(mesh: Mesh, animations: any[], meshIndex: number): AnimatedInstancedMesh {
-    const geometry = mesh.geometry;
+  private createInstancedMesh(
+    mesh: Mesh,
+    animations: any[],
+    meshIndex: number,
+    troopKind?: AnimatedTroopKind,
+    troopMotion?: TroopMotionController,
+  ): AnimatedInstancedMesh {
+    const geometry = troopMotion ? mesh.geometry.clone() : mesh.geometry;
     const pooledMaterial = createPooledInstancedMaterial(mesh.material);
+    if (troopKind && troopMotion) {
+      geometry.setAttribute("troopMotion", troopMotion.attribute);
+      geometry.computeBoundingBox();
+      geometry.boundingBox?.expandByScalar(0.28);
+      geometry.computeBoundingSphere();
+      if (geometry.boundingSphere) geometry.boundingSphere.radius += 0.28;
+      const materials = Array.isArray(pooledMaterial.material) ? pooledMaterial.material : [pooledMaterial.material];
+      const displacement = createTroopMotionNode(troopKind, float(mapAnimationTime));
+      for (const material of materials) {
+        if (material instanceof FrostedStandardNodeMaterial) {
+          material.positionNode = positionLocal.add(displacement);
+        }
+      }
+    }
     const instancedMesh = createInstancedMesh(
       geometry,
       pooledMaterial.material,
@@ -518,6 +553,12 @@ export class ArmyModel {
     }
   }
 
+  private resetTroopMotionSlot(slot: number): void {
+    this.models.forEach((modelData) => {
+      modelData.troopMotion?.resetSlot(slot);
+    });
+  }
+
   private clearInstanceSlot(matrixIndex: number): void {
     const entityId = this.matrixIndexOwners.get(matrixIndex);
 
@@ -527,6 +568,7 @@ export class ArmyModel {
       this.clearSlotFromEveryRenderable(matrixIndex);
     }
 
+    this.resetTroopMotionSlot(matrixIndex);
     this.shadows.clear(matrixIndex);
     this.setAnimationState(matrixIndex, false);
   }
@@ -720,6 +762,7 @@ export class ArmyModel {
     if (reusedSlot !== undefined) {
       this.freeSlotSet.delete(reusedSlot);
     }
+    this.resetTroopMotionSlot(slot);
     this.matrixIndexOwners.set(slot, entityId);
     return slot;
   }
@@ -944,6 +987,7 @@ export class ArmyModel {
   public purgeDrawnSlot(slot: number): void {
     this.clearMovementStateForSlot(slot);
     this.clearSlotFromEveryRenderable(slot);
+    this.resetTroopMotionSlot(slot);
     this.shadows.clear(slot);
     this.matrixIndexOwners.delete(slot);
     this.setAnimationState(slot, false);
@@ -1112,16 +1156,19 @@ export class ArmyModel {
       mesh.userData.entityIdMap.set(index, entityId);
     });
 
+    modelData.troopMotion?.setPlacementAt(index, this.dummyObject.matrix);
     markSlotDirty(modelData.dirtySlots, index);
   }
 
-  // Animation Methods
-  public updateAnimations(_deltaTime: number, visibility?: AnimationVisibilityContext): void {
+  public updateAnimations(deltaTime: number, visibility?: AnimationVisibilityContext): void {
     if (!this.modelsVisible) return;
     const now = performance.now();
     const time = now * 0.001;
 
     this.models.forEach((modelData) => {
+      if (modelData.troopMotion) {
+        modelData.troopMotion.update(mapAnimationTime.value, modelData.activeInstances, visibility);
+      }
       if (!this.shouldAnimateModel(modelData, visibility)) {
         return;
       }
@@ -2169,6 +2216,21 @@ export class ArmyModel {
 
   public setAnimationState(index: number, isWalking: boolean): void {
     this.animationStates[index] = isWalking ? ANIMATION_STATE_MOVING : ANIMATION_STATE_IDLE;
+    const entityId = this.matrixIndexOwners.get(index);
+    if (entityId !== undefined) {
+      const modelType = this.activeBaseModelByEntity.get(entityId) ?? this.entityModelMap.get(entityId);
+      if (modelType) {
+        this.models.get(modelType)?.troopMotion?.setLoopActionAt(index, isWalking ? "march" : "idle");
+      }
+    }
+  }
+
+  public playTroopAction(index: number, action: TroopShaderAction): void {
+    const entityId = this.matrixIndexOwners.get(index);
+    if (entityId === undefined) return;
+    const modelType = this.activeBaseModelByEntity.get(entityId) ?? this.entityModelMap.get(entityId);
+    if (!modelType) return;
+    this.models.get(modelType)?.troopMotion?.playActionAt(index, action, mapAnimationTime.value);
   }
 
   public requestBoundsUpdate(): void {
