@@ -48,7 +48,7 @@ import {
   formatMoment,
   formatShortDuration,
 } from "./time";
-import { VOICE_RULES } from "./voice";
+import { BANNED_WORDS, PLAIN_WORDS, VOICE_RULES } from "./voice";
 
 describe("numbers", () => {
   it("writes an amount held but under a unit as <1, never as nothing", () => {
@@ -319,6 +319,27 @@ describe("the voice rules", () => {
       expect(refused(words)).toEqual({ words, refused: true });
     for (const words of ["+66/min", "points +120/min", "FP rate", "then per minute", "a second press", "3/4 · 13m"])
       expect(refused(words)).toEqual({ words, refused: false });
+  });
+
+  it("matches every banned word on its bad example and passes its good one", () => {
+    expect(BANNED_WORDS[0]?.banned).toBe("found (a Realm)");
+    expect(BANNED_WORDS[0]?.use).toBe("create");
+    expect(BANNED_WORDS[0]?.bad).toBe("Found your home");
+    expect(BANNED_WORDS[0]?.good).toBe("Create your Realm");
+    expect(BANNED_WORDS[0]?.zeroTolerance).toBe(true);
+    expect(BANNED_WORDS.find((entry) => entry.banned === "Far-Eye")?.zeroTolerance).toBe(true);
+    for (const { banned, bad, good, pattern } of BANNED_WORDS) {
+      expect({ banned, bad: pattern.test(bad) }).toEqual({ banned, bad: true });
+      expect({ banned, good: pattern.test(good) }).toEqual({ banned, good: false });
+    }
+    const foundRule = BANNED_WORDS[0]!;
+    for (const allowed of ["Not found", "Sites are found at 100%", "No Realm found", "Create your Realm"])
+      expect({ allowed, refused: foundRule.pattern.test(allowed) }).toEqual({ allowed, refused: false });
+    for (const entry of PLAIN_WORDS) {
+      expect(entry.concept.length).toBeGreaterThan(0);
+      expect(entry.word.length).toBeGreaterThan(0);
+      expect(entry.not.length).toBeGreaterThan(0);
+    }
   });
 });
 

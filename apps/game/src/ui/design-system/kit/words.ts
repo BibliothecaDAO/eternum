@@ -1274,7 +1274,7 @@ export const HELD_REALMS_UNREADABLE = "Your Realms cannot be read right now";
 export const INVALID_REALM_NUMBER = "Enter a Realm number from 1–8,000.";
 /** The Realm step: its one job, the home the player founds, and what it offers to found it with. */
 export const HOME_STEP_WORDS = {
-  title: "Found your home",
+  title: "Create your Realm",
   /** The step's one verb, and what it says while the home is founded. */
   found: "Create your realm",
   founding: "Creating your realm…",
@@ -2144,7 +2144,7 @@ export const ASPECT_STEP_WORDS = {
   members: (count: number) => formatCount(count, "member"),
   join: (aspect: string) => `Join ${aspect}`,
   joining: (aspect: string) => `Joining ${aspect}…`,
-  foundingAs: (order: string) => `Founding as ${order}…`,
+  foundingAs: (order: string) => `Creating Realm as ${order}…`,
   /** A held Realm's home: its Aspect is its Order's, so the step shows it and asks nothing. */
   realmsAspect: (order: string, aspect: string) => `Your Realm's ${order} plays for ${aspect}`,
   keptAspect: (aspect: string) => `You chose ${aspect} before the season. Choose your Order in it.`,

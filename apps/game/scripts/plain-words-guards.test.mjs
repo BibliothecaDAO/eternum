@@ -1,0 +1,102 @@
+import { readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { BANNED_WORDS } from "@bibliothecadao/types";
+import { ESLint } from "eslint";
+import tseslint from "typescript-eslint";
+import { describe, expect, it } from "vitest";
+
+import {
+  PLAIN_WORDS_RULE,
+  PLAIN_WORDS_STRICT_RULE,
+  plainWordsGuardConfigs,
+  readBannedWords,
+} from "./plain-words-guards.mjs";
+
+const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
+const BASE = {
+  files: ["**/*.{ts,tsx}"],
+  languageOptions: { parser: tseslint.parser },
+  linterOptions: { noInlineConfig: true, reportUnusedDisableDirectives: "off" },
+};
+const guard = new ESLint({ cwd: REPO, overrideConfigFile: true, overrideConfig: [BASE, ...plainWordsGuardConfigs] });
+
+const hits = async (path, source) => {
+  const [result] = await guard.lintText(source, { filePath: resolve(REPO, path) });
+  return result.messages
+    .filter((message) => message.fatal || message.severity === 2)
+    .map((message) => ({
+      ruleId: message.ruleId,
+      message: message.message,
+    }));
+};
+
+const SCREEN = "apps/game/src/ui/features/world/zz-plain-words-probe.tsx";
+const CORE = "packages/core/src/systems/zz-plain-words-probe.ts";
+
+describe("plain-words guard reads one source of truth", () => {
+  it("parses BANNED_WORDS directly from packages/types/src/words/voice.ts", () => {
+    expect(readBannedWords()).toEqual(
+      BANNED_WORDS.map(({ banned, use, pattern, zeroTolerance }) => ({
+        banned,
+        use,
+        pattern,
+        zeroTolerance: Boolean(zeroTolerance),
+      })),
+    );
+  });
+});
+
+describe("plain-words guard refuses banned words in player-facing text", () => {
+  it.each([
+    ["Found your home in a literal", `export const TITLE = "Found your home";`, PLAIN_WORDS_STRICT_RULE],
+    ["Founding as in a template", "export const msg = (o: string) => `Founding as ${o}…`;", PLAIN_WORDS_STRICT_RULE],
+    ["Tribe founded in JSX", `export const A = () => <p>Tribe founded</p>;`, PLAIN_WORDS_STRICT_RULE],
+    ["Far-Eye in JSX", `export const A = () => <span>Far-Eye</span>;`, PLAIN_WORDS_STRICT_RULE],
+    ["far-eye lowercase in string", `export const label = "Use far-eye relic";`, PLAIN_WORDS_STRICT_RULE],
+    ["Pledge in string", `export const cta = "Pledge to Luminary";`, PLAIN_WORDS_RULE],
+    ["Redeem in JSX", `export const A = () => <button>Redeem</button>;`, PLAIN_WORDS_RULE],
+    ["Army disbanded in template", "export const msg = (a: string) => `${a} disbanded`;", PLAIN_WORDS_RULE],
+    ["did not answer in string", `export const err = "Season did not answer.";`, PLAIN_WORDS_RULE],
+    ["data-tip tooltip", `export const A = () => <span data-tip="Switch on" />;`, PLAIN_WORDS_RULE],
+  ])("refuses %s", async (_, source, expectedRule) => {
+    const found = await hits(SCREEN, source);
+    expect(found).toEqual([{ ruleId: expectedRule, message: expect.stringMatching(/^Plain words:/) }]);
+  });
+
+  it("refuses banned words in shared packages too", async () => {
+    const found = await hits(CORE, "export const title = (r: string) => `${r} founded`;");
+    expect(found).toEqual([{ ruleId: PLAIN_WORDS_STRICT_RULE, message: expect.stringMatching(/^Plain words:/) }]);
+  });
+
+  it.each([
+    ["Create your Realm", `export const TITLE = "Create your Realm";`],
+    ["Not found error screen", `export const A = () => <p>Not found</p>;`],
+    ["Sites are found while exploring", `export const A = () => <p>Sites are found at 100%</p>;`],
+    ["property key named founding", `export const WORDS = { founding: "Creating your Realm…" };`],
+    ["thrown Error message", `export const fail = () => { throw new Error("founding failed"); };`],
+    ["console log", `export const log = () => console.warn("Realm founded");`],
+    ["equality check against discriminator", `export const isProv = (k: string) => k === "provision";`],
+    ["CSS className", `export const A = () => <div className="founding-step far-eye" />;`],
+    ["import path", `import { x } from "@/ui/realm-provision-runner"; export const y = x;`],
+  ])("allows %s", async (_, source) => {
+    expect(await hits(SCREEN, source)).toEqual([]);
+  });
+
+  it.each([
+    ["voice.ts itself", "packages/types/src/words/voice.ts"],
+    ["patch notes", "apps/game/src/shell/generated/patch-notes.ts"],
+    ["a test file", "apps/game/src/ui/features/world/zz-probe.test.tsx"],
+    ["a debug lab", "apps/game/src/ui/features/debug/zz-probe.tsx"],
+  ])("leaves %s alone", async (_, path) => {
+    expect(await hits(path, `export const TITLE = "Found your home";`)).toEqual([]);
+  });
+
+  it("counts only existing files with positive counts in plain-words-baseline.json", () => {
+    const baseline = JSON.parse(readFileSync(resolve(REPO, "apps/game/scripts/plain-words-baseline.json"), "utf8"));
+    for (const [file, count] of Object.entries(baseline)) {
+      expect(() => readFileSync(resolve(REPO, file)), file).not.toThrow();
+      expect(count, file).toBeGreaterThan(0);
+    }
+  });
+});

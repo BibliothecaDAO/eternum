@@ -398,8 +398,8 @@ it("leads a story's own words with who did it where they name no one", async () 
 
 it("names the player once where a story's own words already name them, in gold when they are the player's", async () => {
   const row = story(DJIZUS, "RealmCreatedStory", { coord: { x: 2147483650, y: 2147483652, alt: false } });
-  expect(row.presentation.title).toBe("djizus founded a realm");
-  expect(await draw(row, true)).toEqual({ words: "djizus founded a realm", reward: null, gold: true });
+  expect(row.presentation.title).toBe("djizus created a Realm");
+  expect(await draw(row, true)).toEqual({ words: "djizus created a Realm", reward: null, gold: true });
   expect(named()).toEqual(["djizus"]);
 });
 

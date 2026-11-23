@@ -13,6 +13,7 @@ import { findUnownedKitSheetClasses } from "./kit-sheet-guards.mjs";
 import { modelUrlGuardConfigs } from "./model-url-guards.mjs";
 import { nameGuardConfigs } from "./name-guards.mjs";
 import { noBackGuardConfigs } from "./no-back-guards.mjs";
+import { PLAIN_WORDS_RULE, plainWordsGuardConfigs } from "./plain-words-guards.mjs";
 import { threeDebugGuardConfigs } from "./three-debug-guards.mjs";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
@@ -260,6 +261,7 @@ const eslint = new ESLint({
     ...threeDebugGuardConfigs,
     ...modelUrlGuardConfigs,
     ...catalogGuardConfigs,
+    ...plainWordsGuardConfigs,
   ],
 });
 
@@ -271,31 +273,43 @@ const errors = results.flatMap((result) =>
 );
 const line = ({ file, message }) => `${file}:${message.line}:${message.column} ${message.message}`;
 const isCatalogCopy = ({ message }) => message.ruleId === CATALOG_RULE;
+const isPlainWords = ({ message }) => message.ruleId === PLAIN_WORDS_RULE;
 
-// The catalog copies that stood when the guard came, a count per file: a file may hold no more than its count, and
-// once one is removed --write-catalog-baseline lowers the count. It writes nothing while any file holds more than its
-// count or is new to the baseline, so the copies only ever fall.
-const BASELINE = resolve(dirname(fileURLToPath(import.meta.url)), "catalog-copies-baseline.json");
-const copiesByFile = new Map();
-for (const copy of errors.filter(isCatalogCopy))
-  copiesByFile.set(copy.file, [...(copiesByFile.get(copy.file) ?? []), copy]);
-const counts = Object.fromEntries([...copiesByFile].map(([file, copies]) => [file, copies.length]));
-const baseline = JSON.parse(readFileSync(BASELINE, "utf8"));
-const { additions, unlowered, write } = planCatalogBaseline(counts, baseline, {
-  lowering: process.argv.includes("--write-catalog-baseline"),
-});
-if (write) writeFileSync(BASELINE, `${JSON.stringify(write, null, 2)}\n`);
-const catalogHits = [
-  ...additions.flatMap((file) => copiesByFile.get(file).map(line)),
-  ...unlowered.map(
-    (file) =>
-      `${file} holds ${counts[file] ?? 0} catalog copies, under its baseline of ${baseline[file]}: run --write-catalog-baseline`,
-  ),
-];
+const checkBaseline = (matched, baselineName, flag, noun) => {
+  const baselinePath = resolve(dirname(fileURLToPath(import.meta.url)), baselineName);
+  const byFile = new Map();
+  for (const hit of matched) byFile.set(hit.file, [...(byFile.get(hit.file) ?? []), hit]);
+  const counts = Object.fromEntries([...byFile].map(([file, items]) => [file, items.length]));
+  const baseline = JSON.parse(readFileSync(baselinePath, "utf8"));
+  const { additions, unlowered, write } = planCatalogBaseline(counts, baseline, {
+    lowering: process.argv.includes(flag),
+  });
+  if (write) writeFileSync(baselinePath, `${JSON.stringify(write, null, 2)}\n`);
+  return [
+    ...additions.flatMap((file) => byFile.get(file).map(line)),
+    ...unlowered.map(
+      (file) => `${file} holds ${counts[file] ?? 0} ${noun}, under its baseline of ${baseline[file]}: run ${flag}`,
+    ),
+  ];
+};
+
+const catalogHits = checkBaseline(
+  errors.filter(isCatalogCopy),
+  "catalog-copies-baseline.json",
+  "--write-catalog-baseline",
+  "catalog copies",
+);
+const plainWordsHits = checkBaseline(
+  errors.filter(isPlainWords),
+  "plain-words-baseline.json",
+  "--write-plain-words-baseline",
+  "banned words",
+);
 
 const hits = [
-  ...errors.filter((error) => !isCatalogCopy(error)).map(line),
+  ...errors.filter((error) => !isCatalogCopy(error) && !isPlainWords(error)).map(line),
   ...catalogHits,
+  ...plainWordsHits,
   ...findUnownedKitSheetClasses(),
 ];
 for (const hit of hits) console.log(hit);

@@ -18,8 +18,10 @@ import {
   formatPoints,
   formatRate,
   formatWait,
+  BANNED_WORDS,
   GUARD_SLOT_ORDER,
   guardSlotName,
+  PLAIN_WORDS,
   RealmLevels,
   rankName,
   readTypedNumber,
@@ -49,6 +51,8 @@ export const WordsLab = () => (
       the story text write it.
     </p>
     <Voice />
+    <PlainWords />
+    <BannedWords />
     <Numbers />
     <Times />
     <Nouns />
@@ -111,6 +115,57 @@ const Voice = () => (
           <tr key={rule} className="border-b border-white/5 align-top">
             <td className="px-3 py-1 font-semibold">{rule}</td>
             <td className="max-w-[40ch] px-3 py-1 text-[#b9ab8e]">{instead}</td>
+            <td className="px-3 py-1 text-red-300 line-through">{bad}</td>
+            <td className="px-3 py-1 text-emerald-300">{good}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </Section>
+);
+
+const PlainWords = () => (
+  <Section title="One word per action" note="One plain word for each game action and thing.">
+    <table className="border-collapse">
+      <thead>
+        <tr className="text-left text-[#b9ab8e]">
+          {["Action or thing", "Use", "Not"].map((cell) => (
+            <th key={cell} className="border-b border-white/15 px-3 py-1 font-normal">
+              {cell}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {PLAIN_WORDS.map(({ concept, word, not }) => (
+          <tr key={concept} className="border-b border-white/5 align-top">
+            <td className="px-3 py-1 font-semibold">{concept}</td>
+            <td className="px-3 py-1 text-emerald-300">{word}</td>
+            <td className="px-3 py-1 text-red-300 line-through">{not.join(", ")}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </Section>
+);
+
+const BannedWords = () => (
+  <Section title="Banned words" note="Refused in player-facing strings by pnpm --dir apps/game lint:guards.">
+    <table className="border-collapse">
+      <thead>
+        <tr className="text-left text-[#b9ab8e]">
+          {["Banned", "Use", "Not", "But"].map((cell) => (
+            <th key={cell} className="border-b border-white/15 px-3 py-1 font-normal">
+              {cell}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {BANNED_WORDS.map(({ banned, use, bad, good }) => (
+          <tr key={banned} className="border-b border-white/5 align-top">
+            <td className="px-3 py-1 font-semibold">{banned}</td>
+            <td className="px-3 py-1 text-emerald-300">{use}</td>
             <td className="px-3 py-1 text-red-300 line-through">{bad}</td>
             <td className="px-3 py-1 text-emerald-300">{good}</td>
           </tr>
