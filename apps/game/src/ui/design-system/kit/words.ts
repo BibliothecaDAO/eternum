@@ -505,11 +505,11 @@ export const REALM = "Realm";
 export const WORLD = "World";
 /** The realm's way home from its card's header: the map centred on it. */
 export const SHOW_MY_REALM = "Show my realm";
-/** A realm's place on its ranks' ladder, as its steps say it: "City, rank 2 of 4". */
-export const rankStep = (rank: string, step: number, of: number) => `${rank}, rank ${step} of ${of}`;
 export const RESEARCH = "Research";
 export const CHAT = "Chat";
 export const MENU = "Menu";
+export const unreadChatMessages = (count: number) => `Unread chat messages: ${count}`;
+export const unreadFeedEvents = (count: number) => `Unread feed events: ${count}`;
 
 /** The Menu's rows and its two buttons. */
 export const TODAY = "Today";
@@ -1050,8 +1050,6 @@ export const REINFORCE = {
 export const ARMIES = "Armies";
 /** The day-done card's count of the armies that ended with the day. */
 export const ARMIES_ENDED = "Armies ended with the day";
-/** How many troops an army holds: "1 troop", "5,000 troops". */
-export const troopCount = (count: number) => formatCount(count, "troop");
 /** The sources of a store's production, each with its combined rate. */
 export const MADE_BY = "Made by";
 export const STORE_MAKERS = {

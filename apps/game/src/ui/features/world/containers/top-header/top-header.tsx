@@ -10,13 +10,16 @@ import { useTopBarNavigation } from "./use-top-bar-navigation";
 import { memo, type ReactNode } from "react";
 
 type TopHeaderProps = {
+  identity?: ReactNode;
   season?: SeasonGoal;
   places?: ReactNode;
+  quest?: ReactNode;
+  stores?: ReactNode;
   depthSwitch?: ReactNode;
   clock?: ReactNode;
 };
 
-export const TopHeader = memo(({ season, places, depthSwitch, clock }: TopHeaderProps) => {
+export const TopHeader = memo(({ identity, season, places, quest, stores, depthSwitch, clock }: TopHeaderProps) => {
   const lane = useCompactLane();
   const { isLocalView, canOpenLocal, mapLayer, showLayerSwitch, navigateToView, switchLayer } = useTopBarNavigation();
 
@@ -24,8 +27,10 @@ export const TopHeader = memo(({ season, places, depthSwitch, clock }: TopHeader
     <>
       <HudHeaderLayout
         lane={lane}
-        identity={<IdentityChip season={season} compact={lane !== null} />}
+        identity={identity ?? <IdentityChip season={season} compact={lane !== null} />}
         places={places}
+        quest={quest}
+        stores={stores}
         depthSwitch={depthSwitch}
         clock={clock ?? <GameClock compact={lane !== null} />}
         // On a desktop Next up, atop the rail, is the one queue of what needs the player (the owner's ruling, 16

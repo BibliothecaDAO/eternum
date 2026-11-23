@@ -33,7 +33,7 @@ import type { LabScenario } from "./lab-chain";
 import { mergeScenario } from "./merge-scenario";
 import { paintedBuildingsScenario } from "./painted-buildings-scenario";
 import { realmHeightScenario } from "./realm-height-scenario";
-import { realmScenario } from "./realm-scenario";
+import { realmScenario, realmWorldScenario } from "./realm-scenario";
 import { supplyPostScenario } from "./supply-post-scenario";
 import { reinforceScenario } from "./reinforce-scenario";
 import { researchScenario } from "./research-scenario";
@@ -76,6 +76,7 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   "high-ground": highGroundScenario,
   "day-end": dayEndScenario,
   realm: realmScenario,
+  "realm-world": realmWorldScenario,
   "realm-height": realmHeightScenario,
   "merge-loses-training": mergeScenario("picked"),
   "merge-keeps-tapped": mergeScenario("tapped"),

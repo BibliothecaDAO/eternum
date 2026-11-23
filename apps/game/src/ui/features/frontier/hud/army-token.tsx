@@ -166,10 +166,11 @@ export const OpenSlot = ({
     disabled={filling !== undefined}
     data-tip={filling === undefined ? start?.words : undefined}
     onClick={onDeploy}
-    className={cn("ui-pick", TOKEN_LOOK)}
+    className={cn("ui-pick", TOKEN_LOOK, "border-dashed")}
   >
     <SlotRing pulse={pulse} filling={filling} />
     {start && filling === undefined && <TokenStamina stamina={start.bar} />}
+    <span className="text-hud-label leading-none text-hud-muted">{filling ?? label}</span>
   </button>
 );
 

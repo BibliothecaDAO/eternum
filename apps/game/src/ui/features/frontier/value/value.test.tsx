@@ -3,7 +3,6 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { type WithdrawStep, WithdrawSheet } from "./withdraw-sheet";
-import { LordsPurse } from "./lords-purse";
 import { SeasonPayoutRow } from "./season-payout";
 import { withdrawalRefusal, withdrawalsCloseAt, withdrawStepOf } from "./withdrawal";
 
@@ -167,15 +166,4 @@ describe("the realm's LORDS on the season-over card", () => {
     show(undefined);
     expect(host.textContent).toBe("");
   });
-});
-
-it("marks a phone's purse while the account has no linked wallet, its name saying why; plain with one", () => {
-  const line = "Link a wallet to receive your LORDS";
-  act(() => root.render(<LordsPurse lords={1_240} linkWalletLine={line} onOpen={() => undefined} />));
-  const purse = host.querySelector("button")!;
-  expect(purse.getAttribute("aria-label")).toBe(`LORDS 1,240. ${line}`);
-  expect(purse.querySelector('[data-icon="warning"]')).not.toBeNull();
-  act(() => root.render(<LordsPurse lords={1_240} onOpen={() => undefined} />));
-  expect(host.querySelector("button")!.getAttribute("aria-label")).toBe("LORDS 1,240");
-  expect(host.querySelector('[data-icon="warning"]')).toBeNull();
 });

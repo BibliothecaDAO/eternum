@@ -4,7 +4,7 @@ import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
 import { Tooltip } from "@/ui/design-system/molecules/tooltip";
 import { FeedLine } from "@/ui/features/event-feed/feed-line";
 
-import { BuildingType } from "@bibliothecadao/types";
+import { BuildingType, rankName } from "@bibliothecadao/types";
 import type { AlertsPopupAsk } from "@/shell/profile/alerts-ask";
 import { GameProvider } from "@/hooks/context/game-context";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -12,6 +12,7 @@ import { transferTrainedArmies, TRANSFER_TAPPED } from "@/ui/features/frontier/a
 import { TransferTroopsSheet, useSelectedTransfer } from "@/ui/features/frontier/army/transfer-troops";
 import { useGame } from "@/hooks/context/game-context";
 import { realmMeaning } from "@/ui/design-system/domain-icon-meaning";
+import { homeIcon } from "@/ui/design-system/home-icons";
 import { HudIconButton, HudNotice, HudSheet } from "@/ui/design-system/kit/hud-elements";
 import {
   ARMY,
@@ -24,12 +25,15 @@ import {
   WITHDRAWALS_CLOSED,
   YOU,
 } from "@/ui/design-system/kit/words";
-import { ArmyList, ArmyRow, OpenSlotRow } from "@/ui/features/frontier/hud/army-row";
+import { ArmyCard, ArmyCardDock, OpenSlotCard } from "@/ui/features/frontier/hud/army-row";
 import { ArmyToken, OpenSlot } from "@/ui/features/frontier/hud/army-token";
 import type { DayClock } from "@/ui/features/frontier/hud/day-clock";
+import { HeaderStores } from "@/ui/features/frontier/hud/header-stores";
 import { HudBands } from "@/ui/features/frontier/hud/hud-bands";
 import { FrontierDesktop, FrontierPlaces } from "@/ui/features/frontier/hud/frontier-desktop";
-import type { HudSurface } from "@/ui/features/frontier/hud/frontier-nav";
+import { PhoneWorldActions, type HudSurface } from "@/ui/features/frontier/hud/frontier-nav";
+import { PhoneTopBarView } from "@/ui/features/frontier/hud/phone-top-bar";
+import { RealmHeaderChip } from "@/ui/features/frontier/hud/realm-header-chip";
 import { LabGame, useLabPlayer } from "./lab-game";
 import { useHudMode } from "@/hooks/use-hud-mode";
 import { HOW_TO_PLAY_BY_MODE } from "@/shell/community";
@@ -59,8 +63,7 @@ import { nativeResearchConstants as research, nativeStructureConstants } from "@
 import { readResearchTree } from "@/ui/features/frontier/research/research-tree";
 import { StoreCard, type StoreLine } from "@/ui/features/frontier/production/store-card";
 import { MADE_STORES } from "@/ui/features/frontier/stores";
-import { PlaceNav } from "@/ui/features/frontier/hud/place-nav";
-import { StatusStrip, type StoreReading } from "@/ui/features/frontier/hud/status-strip";
+import { type StoreReading } from "@/ui/features/frontier/hud/status-strip";
 import { useParams, useSearchParams } from "react-router-dom";
 import { type SlotStart, wheatStopsAt } from "@/ui/features/frontier/deploy/deploy-plan";
 import { slotStartLine } from "@/ui/features/frontier/deploy/slot-start";
@@ -86,7 +89,6 @@ import {
   RefillPrice,
   StaminaRefill,
 } from "@/ui/features/frontier/army/refill";
-import { LordsPurse, PurseRow } from "@/ui/features/frontier/value/lords-purse";
 import { ShopCodeField, ShopView } from "@/ui/features/frontier/shop/shop-sheet";
 import { DayPill } from "@/ui/features/frontier/hud/day-pill";
 import { RealmPanel } from "@/ui/features/frontier/hud/realm-panel";
@@ -590,7 +592,7 @@ const STATES = {
   picked: { clock: CLOCK, stores: STORES, armies: ARMIES, selected: 1, picked: "owner" },
   "picked-rested": { clock: CLOCK, stores: STORES, armies: ARMIES, selected: 1, picked: "rested" },
   "picked-pay": { clock: CLOCK, stores: STORES, armies: ARMIES, selected: 1, picked: "pay" },
-  full: { clock: CLOCK, stores: FULL_STORES, armies: ARMIES, realmDot: "ember" as const },
+  full: { clock: CLOCK, stores: FULL_STORES, armies: ARMIES },
   offline: { clock: UNKNOWN_CLOCK, stores: UNKNOWN_STORES, armies: UNKNOWN_ARMIES, offline: true },
   menu: { clock: CLOCK, stores: STORES, armies: ARMIES, menu: true },
   chat: { clock: CLOCK, stores: STORES, armies: ARMIES, chat: true },
@@ -891,7 +893,6 @@ const STATES = {
     clock: CLOCK,
     stores: FULL_STORES,
     armies: ARMIES,
-    realmDot: "ember",
     storeCard: { ...STORE_LINES[1], held: 18_000, tone: "ember" },
   },
   // Labor's card filling at 500 an hour: a rate under ten a minute, as a store's rate reads it.
@@ -1098,7 +1099,6 @@ type LabState = {
   stores: readonly StoreReading[];
   armies: readonly LabArmy[];
   selected?: number;
-  realmDot?: "ember";
   offline?: boolean;
   menu?: boolean;
   /** Chat open: a page on a phone, docked on desktop. Its controls are there to be measured for touch. */
@@ -1156,22 +1156,15 @@ export const HudLab = () => {
         desktop={desktop}
         lab={lab}
         strip={
-          <>
-            <StatusStrip clock={lab.clock} stores={[...lab.stores]} />
-            {!desktop && lab.storeCard && <StoreCard line={lab.storeCard} onSpend={noop} onBuild={noop} />}
-          </>
-        }
-        purse={
-          lab.purse && (
-            <PurseRow>
-              <LordsPurse
-                lords={lab.purse.lords}
-                gain={lab.purse.gain}
-                linkWalletLine={lab.noWallet ? LINK_WALLET_FOR_LORDS : null}
-                onOpen={noop}
-              />
-            </PurseRow>
-          )
+          <PhoneTopBarView
+            realm={{ icon: homeIcon("realm", lab.realm?.level ?? 1), label: rankName(lab.realm?.level ?? 1) }}
+            stores={[...lab.stores]}
+            clock={<DayPill clock={lab.clock} />}
+            isMapView={lab.realmView === undefined}
+            storeCard={lab.storeCard && <StoreCard line={lab.storeCard} onSpend={noop} onBuild={noop} />}
+            onOpenRealm={noop}
+            onSwitchView={noop}
+          />
         }
         page={
           chat && !desktop ? (
@@ -1181,6 +1174,15 @@ export const HudLab = () => {
           ) : lab.menu ? (
             <MenuPage
               rank="#12"
+              onResearch={noop}
+              onFeed={noop}
+              onChat={noop}
+              onRelics={noop}
+              onShop={noop}
+              researchReady={!lab.offline}
+              events={lab.offline ? 0 : 2}
+              chatUnread={lab.offline ? 0 : 3}
+              fragments={240}
               onToday={noop}
               onSeason={noop}
               onSettings={noop}
@@ -1242,15 +1244,22 @@ export const HudLab = () => {
             {lab.visiting && <VisitFoot label="Aldric" order={2} name="Aldric" arriving={false} onLeave={noop} />}
           </>
         }
-        dock={(desktop || (!lab.order && lab.selected === undefined)) && <LabDock lab={lab} />}
+        dock={(desktop || !lab.order) && <LabDock lab={lab} />}
         nav={
           !lab.visiting && (
-            <PlaceNav
-              place={lab.chat && !desktop ? "chat" : lab.menu || lab.season ? "menu" : lab.research ? "research" : null}
-              onRealm={inTheRealm(lab)}
-              onGo={noop}
-              realmDot={lab.realmDot}
-              researchDot={!lab.offline}
+            <PhoneWorldActions
+              surface={
+                lab.chat && !desktop
+                  ? "chat"
+                  : lab.menu
+                    ? "menu"
+                    : lab.season
+                      ? "season"
+                      : lab.research
+                        ? "research"
+                        : null
+              }
+              onSurface={noop}
               events={lab.offline ? 0 : 2}
               unread={lab.offline ? 0 : 3}
             />
@@ -1552,9 +1561,6 @@ const LabResearch = () => {
   );
 };
 
-/** Whether the lab state stands in the realm view (its board, castle or a building's card), as the place bar reads it. */
-const inTheRealm = (lab: LabState): boolean => lab.realmView !== undefined || lab.building !== undefined;
-
 /**
  * The HUD's slots in the lab as the game composes them: on a phone today's bands; on a desktop the HUD every mode
  * shares (FrontierDesktop) on the lab's game, its top bar, rail and minimap the game's own, Frontier's panels the lab's.
@@ -1564,15 +1570,19 @@ const LabBands = ({ desktop, lab, ...slots }: ComponentProps<typeof HudBands> & 
     <LabGame mode="frontier">
       {() => (
         <FrontierDesktop
+          identity={
+            <RealmHeaderChip owner="0x1" name={LAB_REALM_NAME} level={lab.realm?.level ?? 1} expanded onPress={noop} />
+          }
           season={{ rank: "#12", onOpen: noop }}
           clock={<DayPill clock={lab.clock} />}
+          stores={<HeaderStores stores={lab.stores} showPopoverCard={false} />}
           realm={
             <RealmPanel
               name={LAB_REALM_NAME}
               level={lab.realm?.level ?? 1}
-              highest={3}
               stores={[...lab.stores]}
               onHome={noop}
+              onClose={noop}
               {...(!lab.visiting && {
                 lords: lab.purse?.lords ?? LAB_LORDS,
                 linkWalletLine: lab.noWallet ? LINK_WALLET_FOR_LORDS : null,
@@ -1625,20 +1635,18 @@ const labSurface = (lab: LabState): HudSurface | null =>
  * deploy, or a desktop's list of rows with one Deploy (the header counts the slots).
  */
 const LabDock = ({ lab }: { lab: LabState }) => {
-  const open = lab.visiting ? 0 : (lab.slots ?? SLOTS) - lab.armies.length;
   const armyArt = (army: LabArmy) => (army.troops === undefined ? undefined : ("knight-t1" as const));
   const stamina = (army: LabArmy) =>
     army.stamina === undefined ? undefined : { current: army.stamina, max: 150, perExplore: LAB_EXPLORE };
   if (useLayout() === "desktop")
     return (
-      <ArmyList used={lab.armies.length} allowed={lab.armies.length + open}>
+      <ArmyCardDock>
         {lab.armies.map((army, index) => (
-          <ArmyRow
+          <ArmyCard
             key={index}
             label={`Army ${index + 1}`}
             number={index + 1}
             art={armyArt(army)}
-            troops={army.troops}
             stamina={stamina(army)}
             ethereal={army.ethereal}
             selected={lab.selected === index}
@@ -1646,9 +1654,9 @@ const LabDock = ({ lab }: { lab: LabState }) => {
           />
         ))}
         {labSlots(lab).map((slot) => (
-          <OpenSlotRow key={slot.number} label="Deploy" onDeploy={noop} {...slot} />
+          <OpenSlotCard key={slot.number} label="Deploy" onDeploy={noop} {...slot} />
         ))}
-      </ArmyList>
+      </ArmyCardDock>
     );
   return (
     <nav aria-label="Armies" className="pointer-events-auto flex gap-1.5">

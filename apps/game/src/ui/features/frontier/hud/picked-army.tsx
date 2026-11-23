@@ -1,17 +1,20 @@
-import { HudPanel } from "@/ui/design-system/kit/hud-elements";
-import { PICKED_ARMY } from "@/ui/design-system/kit/words";
+import "./phone-hud.css";
+
+import { HudPanel, HudPortrait } from "@/ui/design-system/kit/hud-elements";
+import { PICKED_ARMY, TROOPS } from "@/ui/design-system/kit/words";
+import { formatAmount, troopPlural } from "@bibliothecadao/types";
 import type { ReactNode } from "react";
 
-import { ArmyToken } from "./army-token";
+import { DeepDrain, EtherealMark, StaminaReading } from "./army-token";
 import type { DockArmy } from "./dock-armies";
 
-/** What the picked army's row reads of an army: the dock's own, so the lab draws it on its fiction. */
 export type PickedArmyView = Pick<
   DockArmy,
   "explorerId" | "label" | "number" | "art" | "stamina" | "secondsToFull" | "troops" | "ethereal" | "drain"
->;
+> & {
+  troopsFact?: DockArmy["troopsFact"];
+};
 
-/** A phone's selected army: tap its token for details, with refill and Spire actions beside it. */
 export const PickedArmy = ({
   army,
   refill,
@@ -19,27 +22,45 @@ export const PickedArmy = ({
   onDetails,
 }: {
   army: PickedArmyView;
-  /** The army's stamina as its refill's button. */
   refill: ReactNode;
-  /** Its next-reveal Spire chance, or the nearby discovered Spire's card. */
   spire?: ReactNode;
   onDetails: () => void;
-}) => (
-  <HudPanel collapsible={false} className="pointer-events-auto" bodyClassName="flex items-center gap-3 pt-3">
-    <ArmyToken
-      label={PICKED_ARMY.details(army.label)}
-      number={army.number}
-      art={army.art}
-      stamina={army.stamina}
-      troops={army.troops}
-      ethereal={army.ethereal}
-      drain={army.drain}
-      selected
-      onPick={onDetails}
-    />
-    <span className="grid w-24 shrink-0 gap-1.5">
-      {refill}
-      {spire}
-    </span>
-  </HudPanel>
-);
+}) => {
+  const category = army.troopsFact?.category;
+  const heading = (category && troopPlural(category)) ?? army.label;
+  const title = army.troops === undefined ? heading : `${heading} · ${formatAmount(army.troops)}`;
+  return (
+    <HudPanel collapsible={false} className="pointer-events-auto" bodyClassName="frontier-picked-army pt-3">
+      <button
+        type="button"
+        aria-label={PICKED_ARMY.details(army.label)}
+        onClick={onDetails}
+        className="frontier-picked-army__main"
+      >
+        <span className="frontier-picked-army__portrait">
+          {army.art ? (
+            <HudPortrait icon={army.art} label={TROOPS} />
+          ) : (
+            <HudPortrait initial={String(army.number ?? "")} label={army.label} />
+          )}
+          <EtherealMark layer={army.ethereal} />
+        </span>
+        <span className="frontier-picked-army__body">
+          <span className="frontier-picked-army__title">{title}</span>
+          {army.stamina && (
+            <span className="flex items-center text-hud-label text-hud-muted tabular-nums">
+              <StaminaReading stamina={army.stamina} />
+            </span>
+          )}
+          {army.drain && <DeepDrain drain={army.drain} words compact />}
+        </span>
+      </button>
+      {(refill || spire) && (
+        <span className="frontier-picked-army__actions">
+          {refill}
+          {spire}
+        </span>
+      )}
+    </HudPanel>
+  );
+};

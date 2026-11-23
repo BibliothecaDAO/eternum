@@ -56,6 +56,14 @@ describe("playEach", () => {
     ]);
   });
 
+  it("gives lab-realm-world all three target viewports", () => {
+    expect(landingRuns(["lab-realm-world"], "/run").map(({ out }) => out)).toEqual([
+      "/run/lab-realm-world/1440x900",
+      "/run/lab-realm-world/1920x1080",
+      "/run/lab-realm-world/390x844",
+    ]);
+  });
+
   it("plays each run once, never more than the width at a time, and answers in the runs' order", async () => {
     const played = [];
     let playing = 0;

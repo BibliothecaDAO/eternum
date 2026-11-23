@@ -427,6 +427,7 @@ export const SCREENS = {
  * named by its role. A HUD text takes a role (`text-hud-body`), never a size.
  */
 export const HUD_TYPE = {
+  hero: { size: "28px", line: "32px", weight: "700" },
   /** A window's title, a figure that is the point of its panel. */
   display: { size: "20px", line: "26px", weight: "700" },
   /** A panel's or a tab's title, a place's own name. */
@@ -572,9 +573,9 @@ export const HUD_MODES = {
   },
   /** Frontier: the title's violet on Frontier's ground. */
   frontier: {
-    accent: channels(GAME("frontier", "title")),
-    "surface-from": tint(GAME("frontier", "ground"), GAME("frontier", "title"), 0.06),
-    "surface-to": GAME("frontier", "ground"),
+    accent: channels(BRAND["action-gold"]),
+    "surface-from": BRAND.plate,
+    "surface-to": BRAND.hearth,
   },
   /** Eternum (`eternum-restoration`): the restored tower's gold over warm stone. */
   eternum: { accent: "230 194 122", "surface-from": "#27211a", "surface-to": "#16120d" },
@@ -585,6 +586,7 @@ export type HudMode = keyof typeof HUD_MODES;
 /** What a phone changes: touch targets, and the reading roles a step up; every element keeps its shape. */
 export const HUD_PHONE = {
   control: "44px",
+  "text-hero": "24px",
   "text-title": "17px",
   "text-body": "15px",
   "text-strong": "15px",

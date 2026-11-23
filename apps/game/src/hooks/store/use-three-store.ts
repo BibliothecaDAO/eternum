@@ -142,8 +142,9 @@ export const createThreeStoreSlice = (
   setAsidePick: null,
   setTileAsideForSurface: () => {
     const picked = get().mapSelection;
+    const keep = picked ?? get().setAsidePick;
     get().closeSelectedTile();
-    set({ setAsidePick: picked });
+    set({ setAsidePick: keep });
   },
   deselectEntity: () => {
     if (get().mapSelection?.kind !== "hex") get().selectOnMap(null);

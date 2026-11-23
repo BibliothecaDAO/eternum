@@ -26,7 +26,7 @@ import {
 
 import { useLayout } from "@/shell/frame/layout";
 
-import { OpenSlotRow } from "../hud/army-row";
+import { OpenSlotCard } from "../hud/army-row";
 import { OpenSlot } from "../hud/army-token";
 import type { SlotStart } from "./deploy-plan";
 import { slotStartLine } from "./slot-start";
@@ -187,9 +187,9 @@ const DeploySlots = ({
   onPick: (slot: number) => void;
 }) => {
   const desktop = useLayout() === "desktop";
-  const Slot = desktop ? OpenSlotRow : OpenSlot;
+  const Slot = desktop ? OpenSlotCard : OpenSlot;
   return (
-    <div role="group" aria-label="Army slots" className={desktop ? "flex flex-col" : "flex gap-1.5"}>
+    <div role="group" aria-label="Army slots" className={desktop ? "flex flex-col gap-1.5" : "flex gap-1.5"}>
       {open.map((slot) => {
         const line = slotStartLine(slot);
         return (

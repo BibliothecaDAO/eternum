@@ -8,11 +8,14 @@ import { openArmyDeployment } from "@/ui/features/military/utils/open-army-deplo
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { DEPLOY, DEPLOYING } from "@/ui/design-system/kit/words";
 
+import { troopPlural, TroopTier } from "@bibliothecadao/types";
+import type { Rank } from "@/ui/design-system/kit/words";
+
 import type { SlotStart } from "../deploy/deploy-plan";
 import { slotStartLine } from "../deploy/slot-start";
 import { useDeployPlan } from "../deploy/use-deploy-plan";
 import { useWellRefill } from "../sites/well-refill";
-import { ArmyList, ArmyRow, OpenSlotRow } from "./army-row";
+import { ArmyCard, ArmyCardDock, OpenSlotCard } from "./army-row";
 import { ArmyToken, OpenSlot } from "./army-token";
 import type { DockArmy } from "./dock-armies";
 
@@ -70,10 +73,10 @@ export const ArmyDock = ({
     ));
   if (desktop)
     return (
-      <ArmyList used={armies.length} allowed={armies.length + openCount}>
+      <ArmyCardDock>
         {entries}
         {pending}
-      </ArmyList>
+      </ArmyCardDock>
     );
   return (
     <nav aria-label="Armies" className="pointer-events-auto flex gap-1.5">
@@ -122,6 +125,9 @@ const DockToken = ({
   );
 };
 
+const troopRankOf = (tier: string | undefined): Rank | undefined =>
+  tier === TroopTier.T3 ? 3 : tier === TroopTier.T2 ? 2 : tier === TroopTier.T1 ? 1 : undefined;
+
 const DockArmyRow = ({
   army,
   pickable,
@@ -132,13 +138,15 @@ const DockArmyRow = ({
   onOpenArmy?: (explorerId: number) => void;
 }) => {
   const { selected, stamina, onPick } = useDockArmy(army, pickable, onOpenArmy);
+  const category = army.troopsFact?.category;
   return (
-    <ArmyRow
+    <ArmyCard
       label={army.label}
+      title={(category && troopPlural(category)) ?? army.label}
+      tier={troopRankOf(army.troopsFact?.tier)}
       drain={army.drain}
       number={army.number}
       art={army.art}
-      troops={army.troops}
       stamina={stamina}
       ethereal={army.ethereal}
       selected={selected}
@@ -172,7 +180,7 @@ const DeploySlot = ({
 }) => {
   const deploying = useInFlight("deploy", safeInteger(realm.entity_id));
   const line = slot && slotStartLine(slot);
-  const Slot = wide ? OpenSlotRow : OpenSlot;
+  const Slot = wide ? OpenSlotCard : OpenSlot;
   return (
     <Slot
       label={DEPLOY}

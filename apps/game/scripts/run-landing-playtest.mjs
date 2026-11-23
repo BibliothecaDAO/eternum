@@ -23,9 +23,13 @@ export const LANDING_SCENARIOS = [
   "lab-oath-deep-battle-target",
   "lab-battle-target",
   "lab-deep-battle-target",
+  "lab-realm-world",
 ];
 
 const VIEWPORTS = ["1920x1080", "390x844"];
+const SCENARIO_VIEWPORTS = {
+  "lab-realm-world": ["1440x900", "1920x1080", "390x844"],
+};
 const RENDERER_MODE = "webgpu-force-webgl";
 const DEFAULT_PORT = 4188;
 const SCRIPTS_DIR = dirname(fileURLToPath(import.meta.url));
@@ -59,7 +63,11 @@ export function readLandingOptions(argv, callerDir = process.cwd()) {
 
 export const landingRuns = (scenarios, runDir) =>
   scenarios.flatMap((scenario) =>
-    VIEWPORTS.map((viewport) => ({ scenario, viewport, out: join(runDir, scenario, viewport) })),
+    (SCENARIO_VIEWPORTS[scenario] ?? VIEWPORTS).map((viewport) => ({
+      scenario,
+      viewport,
+      out: join(runDir, scenario, viewport),
+    })),
   );
 
 const playOnce = (play, run) =>

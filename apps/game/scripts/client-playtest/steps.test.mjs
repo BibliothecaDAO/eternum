@@ -775,8 +775,9 @@ describe("the HUD's layout on the map", () => {
     expect(judged({ parts }).status).toBe("completed");
   });
 
-  it("fails a desktop with no minimap", () => {
+  it("fails a desktop with no minimap, except on Frontier where no minimap is drawn", () => {
     expect(judged({ parts, minimap: null }).reason).toBe("not drawn: the minimap");
+    expect(judged({ parts, frontier: true, minimap: null }).status).toBe("completed");
   });
 
   it("fails a part pushed off the page, two parts over each other, or a control drawn over", () => {

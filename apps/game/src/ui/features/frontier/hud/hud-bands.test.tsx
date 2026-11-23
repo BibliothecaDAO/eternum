@@ -34,7 +34,6 @@ const draw = (page?: boolean) =>
     root.render(
       <HudBands
         strip={<i data-part="strip" />}
-        purse={<i data-part="purse" />}
         page={page ? <i data-part="page" /> : undefined}
         action={<i data-part="action" />}
         dock={<i data-part="dock" />}
@@ -57,25 +56,25 @@ const parts = () =>
     return `${part.getAttribute("data-part")}:${kind}`;
   });
 
-it("stands upright as bands: the strip and the purse over the map, the action row, the dock and the places under it", () => {
+it("stands upright as bands: the strip over the map, the action row, the dock and the places under it", () => {
   holdPhone(false);
   draw();
-  expect(parts()).toEqual(["strip:top", "purse:top", "action:foot", "dock:foot", "nav:foot"]);
+  expect(parts()).toEqual(["strip:top", "action:foot", "dock:foot", "nav:foot"]);
 });
 
 it("stands sideways as a rail of places at the left and one column at the right, the map between them", () => {
   holdPhone(true);
   draw();
-  expect(parts()).toEqual(["nav:column", "strip:column", "purse:column", "action:column", "dock:column"]);
+  expect(parts()).toEqual(["nav:column", "strip:column", "action:column", "dock:column"]);
 });
 
 it("puts a nav page where the action row and the dock stood, held either way, and keeps the map", () => {
   holdPhone(false);
   draw(true);
-  expect(parts()).toEqual(["strip:top", "purse:top", "page:foot", "nav:foot"]);
+  expect(parts()).toEqual(["strip:top", "page:foot", "nav:foot"]);
   holdPhone(true);
   draw(true);
-  expect(parts()).toEqual(["nav:column", "strip:column", "purse:column", "page:column"]);
+  expect(parts()).toEqual(["nav:column", "strip:column", "page:column"]);
 });
 
 it("tells a sheet where the strip ends, as it tells it where the place bar starts, so the map keeps its least share", () => {

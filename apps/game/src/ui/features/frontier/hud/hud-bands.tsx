@@ -18,10 +18,6 @@ const BAND_GAP = 6;
 /** Every slot of a phone's HUD, as Frontier fills them. */
 type Bands = {
   strip: ReactNode;
-  depthSwitch?: ReactNode;
-  /** The realm's LORDS and its Realms' labor, under the strip at its right. */
-  purse?: ReactNode;
-  /** A nav page, standing on the place bar; one marked `data-page-fills` (Chat) takes the band up to the strip. */
   page?: ReactNode;
   notices?: ReactNode;
   action?: ReactNode;
@@ -30,29 +26,11 @@ type Bands = {
   children?: ReactNode;
 };
 
-/**
- * Frontier's HUD on a phone (owner, 22 October 2026: mobile direction A, the map first). Held upright, in bands: the
- * strip and the purse on top, the map in the middle, and the foot read upward from the place bar: the dock, the action
- * row, the notices. Held sideways, the places stand in a rail at the left and the rest in one column at the right, the
- * map between them. A nav page (Research, the Log, Chat, the season) stands where the action row and the dock stood, and
- * the map stays clear of it; a sheet stands in the same place (`--hud-phone-foot` upright, `--hud-sheet-top` sideways,
- * which hud-sheet.css reads), as tall as what it holds up to the phone panel's height, which also keeps the map 40% of
- * the screen between the strip and the place bar (`--hud-phone-top`, `--hud-phone-foot`). While either is open, the action
- * row and the dock step aside under it and the purse's row folds away, so the map keeps what they took (owner, 26 October
- * 2026: layout A); the notices stay. A page that marks itself `data-page-fills` (Chat) takes the whole band from the strip
- * to the place bar, the map hidden behind it: a page read and written in, not glanced at over the map. The page says
- * so itself, so wherever it is drawn (the game, the lab) it stands the same. While the on-screen keyboard is up, the
- * strip and the purse step aside with the place bar (`data-keyboard-hides`), so what is typed in has the screen above the
- * keyboard (owner, 3 November 2026: Chat's history was gone while typing). A desktop has the HUD every mode shares (FrontierDesktop).
- */
 export const HudBands = (bands: Bands) => (useSideways() ? <SidewaysBands {...bands} /> : <UprightBands {...bands} />);
 
-const UprightBands = ({ strip, depthSwitch, purse, page, notices, action, dock, nav, children }: Bands) => {
+const UprightBands = ({ strip, page, notices, action, dock, nav, children }: Bands) => {
   const bar = useRef<HTMLDivElement>(null);
-  // A sheet stands on the place bar: its top, from the screen's bottom. The box measured holds the bar and keeps its
-  // place at the band's foot while the bar steps aside for the keyboard, so a sheet then stands on the keyboard.
   const foot = useEdge(bar, (rect) => window.innerHeight - rect.top + BAND_GAP);
-  // Where the strip ends: the phone panel's cap keeps the map its least share between this and the place bar.
   const topBand = useRef<HTMLDivElement>(null);
   const top = useEdge(topBand, (rect) => rect.bottom + BAND_GAP);
   return (
@@ -63,7 +41,6 @@ const UprightBands = ({ strip, depthSwitch, purse, page, notices, action, dock, 
     >
       <div ref={topBand} {...HUD_TOP_MARK} data-keyboard-hides className="flex flex-col gap-1.5">
         <div className="relative">{strip}</div>
-        <TopRow depthSwitch={depthSwitch} purse={purse} />
       </div>
       <div data-map-band className="relative min-h-0 flex-1" />
       <div {...HUD_FOOT_MARK} className="flex min-h-0 flex-col gap-1.5 [&:has([data-page-fills])]:flex-1">
@@ -84,9 +61,8 @@ const UprightBands = ({ strip, depthSwitch, purse, page, notices, action, dock, 
   );
 };
 
-const SidewaysBands = ({ strip, depthSwitch, purse, page, notices, action, dock, nav, children }: Bands) => {
+const SidewaysBands = ({ strip, page, notices, action, dock, nav, children }: Bands) => {
   const top = useRef<HTMLDivElement>(null);
-  // A sheet stands in the column under the strip and the purse.
   const sheetTop = useEdge(top, (rect) => rect.bottom + BAND_GAP);
   return (
     <div
@@ -101,7 +77,6 @@ const SidewaysBands = ({ strip, depthSwitch, purse, page, notices, action, dock,
       <div {...HUD_COLUMN_MARK} className="flex min-h-0 w-hud-column flex-col gap-1.5">
         <div ref={top} data-keyboard-hides className="flex flex-col gap-1.5">
           <div className="relative">{strip}</div>
-          <TopRow depthSwitch={depthSwitch} purse={purse} />
         </div>
         <div className="flex flex-col gap-1.5">{notices}</div>
         {page ? <PageBand className="flex-1">{page}</PageBand> : <UnderSheet action={action} dock={dock} />}
@@ -110,14 +85,6 @@ const SidewaysBands = ({ strip, depthSwitch, purse, page, notices, action, dock,
     </div>
   );
 };
-
-/** Under the strip: the purse at its right; folded away while a sheet or a page is open. */
-const TopRow = ({ depthSwitch, purse }: { depthSwitch?: ReactNode; purse: ReactNode }) => (
-  <div data-top-row className="flex items-start justify-between gap-1.5 empty:hidden">
-    <div className="flex items-start gap-1.5">{depthSwitch}</div>
-    <div className="ml-auto flex items-start gap-1.5">{purse}</div>
-  </div>
-);
 
 /** A nav page's place: as tall as its band gives, scrolling inside. */
 const PageBand = ({ className, children }: { className: string; children: ReactNode }) => (

@@ -96,16 +96,14 @@ it("marks the LORDS of an account with no linked wallet, its name and hover sayi
   expect(host.querySelector('[aria-label="LORDS 1,240"] [data-icon="warning"]')).toBeNull();
 });
 
-it("takes the map home from its whole header, which never folds, with the rank's steps beside the name", () => {
+it("takes the map home from its whole header, which never folds", () => {
   const onHome = vi.fn();
-  act(() => root.render(<RealmPanel name="Duskbite" level={1} highest={3} stores={STORES} onHome={onHome} />));
+  act(() => root.render(<RealmPanel name="Duskbite" level={1} stores={STORES} onHome={onHome} />));
   const head = host.querySelector<HTMLButtonElement>('button[aria-label="Show my realm"]')!;
   expect(head.textContent).toContain("Duskbite");
-  expect(host.querySelector('[aria-label="City, rank 2 of 4"]')).not.toBeNull();
   act(() => head.click());
   act(() => head.click());
   expect(onHome).toHaveBeenCalledTimes(2);
-  // Pressing the header never folds the stores away.
   expect(named()).toContain("Essence 18,250");
 });
 
@@ -148,8 +146,7 @@ it("says the day and the time left in the top bar, and when the day ends and how
   );
   act(() => root.render(<DayPill clock={clock} />));
   const pill = host.querySelector('[aria-label="Day clock"]')!;
-  expect(pill.textContent).toContain(`Day ${clock.day}`);
-  expect(pill.textContent).toContain("left");
+  expect(pill.textContent).toContain(`Day ${clock.day} ·`);
   expect(pill.getAttribute("data-tip")).toMatch(/^Day ends \d\d:\d\d · Tomorrow lasts /);
 });
 
@@ -160,31 +157,32 @@ it("reads a 24-hour day in hours on the top bar and its hover, as Play does (liv
   );
   act(() => root.render(<DayPill clock={{ ...day, secondsLeft: 24 * 3_600, tomorrowSeconds: 24 * 3_600 }} />));
   const pill = host.querySelector('[aria-label="Day clock"]')!;
-  expect(pill.textContent).toContain("24h left");
+  expect(pill.textContent).toContain(`Day ${day.day} · 24h`);
   expect(pill.getAttribute("data-tip")).toMatch(/ · Tomorrow lasts 24h$/);
 });
 
-it("offers a desktop's places, Research, the Feed and the Season, each a panel its press opens and a second press closes", () => {
+it("offers a desktop's five places in order, each a panel its press opens and a second press closes", () => {
   const onSurface = vi.fn();
-  const places = (surface: "research" | "feed" | "season" | null) => {
+  const places = (surface: "research" | "feed" | "season" | "chat" | "relics" | null) => {
     act(() => root.render(<FrontierPlaces surface={surface} onSurface={onSurface} research={false} />));
     return [...host.querySelectorAll("nav button")] as HTMLButtonElement[];
   };
   const closed = places(null);
   expect(closed.map((button) => [button.getAttribute("aria-label"), button.getAttribute("aria-selected")])).toEqual([
+    ["Season", "false"],
     ["Research", "false"],
     ["Feed", "false"],
-    ["Season", "false"],
+    ["Chat", "false"],
+    ["Relics", "false"],
   ]);
-  // Closed, the Feed counts what is unread, as a phone's place bar does.
-  expect(closed[1].textContent).toContain("2");
-  act(() => closed[1].click());
+  expect(closed[2].textContent).toContain("2");
+  act(() => closed[2].click());
   expect(onSurface).toHaveBeenLastCalledWith("feed");
   const feed = places("feed");
-  expect(feed[1].getAttribute("aria-selected")).toBe("true");
-  expect(feed[1].textContent).not.toContain("2");
-  act(() => feed[1].click());
-  expect(onSurface).toHaveBeenLastCalledWith(null);
+  expect(feed[2].getAttribute("aria-selected")).toBe("true");
+  expect(feed[2].textContent).not.toContain("2");
   act(() => feed[2].click());
+  expect(onSurface).toHaveBeenLastCalledWith(null);
+  act(() => feed[0].click());
   expect(onSurface).toHaveBeenLastCalledWith("season");
 });

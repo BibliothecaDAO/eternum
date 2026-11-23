@@ -78,7 +78,15 @@ export const HUD_LAYOUT_EXPRESSION = `JSON.stringify((() => {
     const homes = [...document.querySelectorAll(selector)].filter((home) => shown(home));
     if (homes.length > 0) regions[region] = outermost.filter((element) => homes.some((home) => home.contains(element))).length;
   }
-  return { viewport: { width: innerWidth, height: innerHeight }, parts, minimap: minimap ? box(minimap) : null, covered, spilled, regions };
+  return {
+    viewport: { width: innerWidth, height: innerHeight },
+    frontier: document.documentElement.classList.contains("frontier-hud"),
+    parts,
+    minimap: minimap ? box(minimap) : null,
+    covered,
+    spilled,
+    regions,
+  };
 })())`;
 
 /** The desktop width the HUD lays out its left column from (DESKTOP_MIN_PX); narrower is a phone. */
@@ -93,10 +101,18 @@ const MOST_PARTS_IN_A_REGION = 7;
  * clicks; and no region holds more than seven parts.
  */
 export function judgeHudLayout(layout) {
-  const { viewport, parts = {}, minimap = null, covered = [], spilled = [], regions = {} } = layout ?? {};
+  const {
+    viewport,
+    frontier = false,
+    parts = {},
+    minimap = null,
+    covered = [],
+    spilled = [],
+    regions = {},
+  } = layout ?? {};
   if (!viewport) return blocked("the HUD's layout was not read");
   if (Object.keys(parts).length === 0) return failed("no HUD part drawn", { layout });
-  if (viewport.width >= DESKTOP_MIN_WIDTH && !minimap) return failed("not drawn: the minimap", { layout });
+  if (viewport.width >= DESKTOP_MIN_WIDTH && !frontier && !minimap) return failed("not drawn: the minimap", { layout });
   const drawn = Object.entries(parts);
   const outside = drawn.filter(
     ([, box]) => box.left < 0 || box.top < 0 || box.right > viewport.width || box.bottom > viewport.height,

@@ -214,6 +214,7 @@ const StateHeads = () => (
 const TODAY_SIZES = [8, 9, 10, 11, 12, 13, 13.2, 14, 15, 15.6, 16, 17, 18, 20, 22, 24, 34] as const;
 /** Each role's class, written out so Tailwind generates it. */
 const ROLE_CLASS: Record<keyof typeof HUD_TYPE, string> = {
+  hero: "text-hud-hero",
   display: "text-hud-display",
   title: "text-hud-title",
   body: "text-hud-body",
@@ -222,6 +223,7 @@ const ROLE_CLASS: Record<keyof typeof HUD_TYPE, string> = {
   badge: "text-hud-badge",
 };
 const ROLE_SAMPLES: Record<keyof typeof HUD_TYPE, string> = {
+  hero: "Temtinos",
   display: "Military",
   title: "Structure Tile · Guards",
   body: "Sacred Hyperstructure of Destiny, held by The Vanguard",
