@@ -54,7 +54,11 @@ let launchDirectory: {
 } = { chains: [] };
 let seasonPhases: { phase: "frontier"; startsAt: string; endsAt: string }[] = [];
 const seasonFrom = (startsAt: number) => [
-  { phase: "frontier" as const, startsAt: new Date(startsAt).toISOString(), endsAt: new Date(startsAt + 86_400_000).toISOString() },
+  {
+    phase: "frontier" as const,
+    startsAt: new Date(startsAt).toISOString(),
+    endsAt: new Date(startsAt + 86_400_000).toISOString(),
+  },
 ];
 const fetchShard = (async (input: RequestInfo | URL, init?: RequestInit) => {
   const body = heralds.get(new URL(input instanceof Request ? input.url : input).href);
