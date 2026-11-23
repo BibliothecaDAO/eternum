@@ -95,7 +95,7 @@ const oathDamage = readFileSync(
   .split(/\s+/)
   .map(Number);
 
-it.each([4, 5, 6, 7, 8, 9])("reports the field or garrison survivors from Knight exchange %i", async (index) => {
+it.each([4, 5, 6, 7, 8, 9])("refuses a field fight in the open and reports a garrison's survivors from Knight exchange %i", async (index) => {
   const [, , attackerOaths, defenderOaths, attackerGuard, defenderGuard, attackers, defenders, afterA, afterB] =
     oathDamage.slice(index * 10, (index + 1) * 10);
   const game = createFakeGame();
@@ -191,13 +191,9 @@ it.each([4, 5, 6, 7, 8, 9])("reports the field or garrison survivors from Knight
       slot: 0,
     });
   }
-  if (index === 4) {
-    const blade = { game_id: gameId, explorer_id: 101, kind: "Blade", rank: 1, expires_at: now + 60 };
-    writeFact(game.store, "ArmyRelicEffect", [gameId, 101, 0], blade);
-    expect((await simulate(defendingId)).content).toEqual([
-      { type: "text", text: expect.stringContaining(`Survivors: attacker ${afterA}, defender 423.`) },
-    ]);
-    writeFact(game.store, "ArmyRelicEffect", [gameId, 101, 0], { ...blade, expires_at: now });
+  if (!defenderGuard) {
+    expect((await simulate(defendingId)).content).toEqual([{ type: "text", text: "Attack refused: in-the-open." }]);
+    return;
   }
   const result = await simulate(defendingId);
   expect(result.content).toEqual([
