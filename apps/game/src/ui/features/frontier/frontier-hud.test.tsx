@@ -210,12 +210,12 @@ it("treats the desktop's Feed as any other panel: closed at start, opened from i
   try {
     // Nothing stands in the rail until the player opens it.
     expect(panel().childElementCount).toBe(0);
-    expect(place("Feed").getAttribute("aria-pressed")).toBe("false");
+    expect(place("Feed").getAttribute("aria-selected")).toBe("false");
     await press("Feed");
-    expect([open("Feed"), place("Feed").getAttribute("aria-pressed")]).toEqual([true, "true"]);
+    expect([open("Feed"), place("Feed").getAttribute("aria-selected")]).toEqual([true, "true"]);
     // The Season replaces it, and closing the Season leaves nothing: the Feed does not come back.
     await press("Season");
-    expect([open("Feed"), open("Season"), place("Feed").getAttribute("aria-pressed")]).toEqual([false, true, "false"]);
+    expect([open("Feed"), open("Season"), place("Feed").getAttribute("aria-selected")]).toEqual([false, true, "false"]);
     await press("Season");
     expect(panel().childElementCount).toBe(0);
     // Its place closes it, as Research's and the Season's close theirs; so does its ×.
@@ -233,7 +233,7 @@ it("treats the desktop's Feed as any other panel: closed at start, opened from i
         selectedBuildingHex: { structureId: 7, innerCol: BUILDINGS_CENTER[0] + 1, innerRow: BUILDINGS_CENTER[1] },
       }),
     );
-    expect([open("Feed"), open("Build"), place("Feed").getAttribute("aria-pressed")]).toEqual([false, true, "false"]);
+    expect([open("Feed"), open("Build"), place("Feed").getAttribute("aria-selected")]).toEqual([false, true, "false"]);
   } finally {
     window.history.replaceState(null, "", route);
     await act(async () => useUIStore.setState({ selectedBuildingHex }));

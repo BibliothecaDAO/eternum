@@ -801,9 +801,9 @@ const STARTING_ARMY_BUTTONS = `JSON.stringify([...document.querySelectorAll('but
 }))`;
 
 /** The Aspect step's cards in the order drawn: each one's label, invite tag and whether it can be tapped. */
-const ASPECT_CARDS = `JSON.stringify([...document.querySelectorAll(".aspect-picker__card")].map((card) => ({
+const ASPECT_CARDS = `JSON.stringify([...document.querySelectorAll(".app-aspect-card")].map((card) => ({
   label: card.getAttribute("aria-label"),
-  invite: card.querySelector(".aspect-picker__invite")?.textContent ?? null,
+  invite: card.querySelector("[data-aspect-invited]")?.textContent ?? null,
   open: !card.disabled,
 })))`;
 const ORDER_CHOICES = `JSON.stringify([...document.querySelectorAll(".aspect-picker__order")].map((order) => ({
@@ -881,11 +881,11 @@ const ASPECT_SETTLE_STEPS = [
     play: async ({ browser, owner, extraScreenshot, devTools }) => {
       await playFromTheHomeCard({ browser, owner });
       await waitUntil(
-        () => browser.read('document.querySelectorAll(".aspect-picker__card:not(:disabled)").length') === 4,
+        () => browser.read('document.querySelectorAll(".app-aspect-card:not(:disabled)").length') === 4,
         PLAYABLE_WAIT_MS,
       );
       const choice = browser.read(`JSON.stringify({
-        cards: [...document.querySelectorAll(".aspect-picker__card")].map(card => card.getAttribute("aria-label")),
+        cards: [...document.querySelectorAll(".app-aspect-card")].map(card => card.getAttribute("aria-label")),
         sent: (window.__labChain?.sent ?? []).filter(({command}) => command.kind === "SettleSeason").length,
       })`);
       const choosing = extraScreenshot("aspect-choice");
@@ -1327,7 +1327,8 @@ const OATH_SLOTS_STEPS = [
     "research-oath-slot",
     "Research",
     async ({ browser }) => {
-      browser.click("Research");
+      if (onADesktop()) browser.clickTab("Research");
+      else browser.click("Research");
       await readUntil(() => browser.read(elementAt('[data-node="row-6"]')), Boolean, SHEET_WAIT_MS);
       browser.read(
         `(() => { document.querySelector('[data-node="row-6"]')?.scrollIntoView({ block: "nearest" }); return true; })()`,
@@ -1464,7 +1465,8 @@ const OATH_SLOTS_STEPS = [
 const WELL_LORE_NODE = '[data-node="well"]';
 
 async function researchWellLore({ browser }) {
-  browser.click("Research");
+  if (onADesktop()) browser.clickTab("Research");
+  else browser.click("Research");
   const node = await readUntil(() => browser.read(elementAt(WELL_LORE_NODE)), Boolean, SHEET_WAIT_MS);
   if (!node || node.state !== "ready") return { node };
   browser.tap(node.offset);
@@ -2162,10 +2164,10 @@ function recordedStill(onMap) {
 async function readTheSeason(input) {
   if (!onADesktop()) return { desktop: false, ...(await readTheSeasonInTheMenu(input)) };
   const { browser } = input;
-  browser.click(HUD_WORDS.season);
+  browser.clickTab(HUD_WORDS.season);
   await sleep(2_000);
   const opened = browser.observe();
-  browser.click(HUD_WORDS.season);
+  browser.clickTab(HUD_WORDS.season);
   await sleep(1_000);
   return { desktop: true, opened, closed: browser.observe() };
 }
@@ -2294,7 +2296,7 @@ async function visitRow(browser, index) {
 
 /** The Season's board row at `index` opened and Visit pressed, as a player does; null when the board has no such row. */
 async function visitFromTheBoard(browser, index) {
-  if (onADesktop()) browser.click(HUD_WORDS.season);
+  if (onADesktop()) browser.clickTab(HUD_WORDS.season);
   else {
     browser.click(HUD_WORDS.menu);
     await sleep(1_500);
@@ -3544,10 +3546,15 @@ const LAB_LAYERS_STEPS = [
 function chooseLayer(word) {
   return async ({ browser }) => {
     const before = browser.read(MAP_CAMERA);
-    browser.openViews();
-    await sleep(LIST_SETTLE_MS);
-    const choices = browser.viewChoices();
-    browser.chooseView(word);
+    let choices = null;
+    if (word === LAYER_NAMES[0]) {
+      browser.clickTab(word);
+    } else {
+      browser.openViews();
+      await sleep(LIST_SETTLE_MS);
+      choices = browser.viewChoices();
+      browser.chooseView(word);
+    }
     const moved = (camera) => camera !== null && hexesApart(camera, before) > FRAMED_WITHIN_HEXES;
     await readUntil(() => browser.read(MAP_CAMERA), moved, SPIRE_WAIT_MS);
     // The dive passes through the spire on its way: the camera counts once it has come to rest.
@@ -3569,23 +3576,26 @@ async function cameraAtRest(browser) {
 }
 
 /** What the switch that opens the views says: the view shown. */
-const VIEW_SWITCH_WORD = `JSON.stringify(document.querySelector('[data-surface-deep-switch] button[aria-pressed="true"]')?.textContent.trim() ?? null)`;
+const VIEW_SWITCH_WORD = `JSON.stringify(document.querySelector('[data-surface-deep-switch] [role="tab"][aria-selected="true"]')?.textContent.trim() ?? null)`;
 
 /** The views a lab realm with Ethereal I and II lists, and the region's rows (Frontier's spacing). */
-const LAB_LAYERS = LAYER_NAMES.slice(0, 3);
+const LAB_LAYERS = LAYER_NAMES.slice(1, 3);
 const REGION_ROWS = 100;
 
 function cameraInLayer(layer) {
   return ({ played, seen }) => {
     const scene = inScene("map")({ seen });
     if (scene.status !== "completed") return failed(`choosing ${played.word} left the map: ${scene.reason}`, played);
-    const words = played.choices.map((choice) => choice.word);
-    if (JSON.stringify(words) !== JSON.stringify(LAB_LAYERS))
-      return failed(`the views listed are ${JSON.stringify(words)}, not ${JSON.stringify(LAB_LAYERS)}`, played);
-    if (played.choices.filter((choice) => choice.shown).length !== 1)
-      return failed("the list did not check exactly the view shown", played);
     const { before, after } = played;
     if (before === null || after === null) return failed("the camera was not read", played);
+    if (played.choices !== null) {
+      const words = played.choices.map((choice) => choice.word);
+      if (JSON.stringify(words) !== JSON.stringify(LAB_LAYERS))
+        return failed(`the views listed are ${JSON.stringify(words)}, not ${JSON.stringify(LAB_LAYERS)}`, played);
+      const expectedChecked = Math.floor(before.row / REGION_ROWS) % 4 === 0 ? 0 : 1;
+      if (played.choices.filter((choice) => choice.shown).length !== expectedChecked)
+        return failed("the list did not check the active depth", played);
+    }
     const rows = after.row - before.row;
     if (after.col !== before.col || rows % REGION_ROWS !== 0 || Math.floor(after.row / REGION_ROWS) % 4 !== layer)
       return failed(
@@ -4171,11 +4181,13 @@ function raceBoardSteps(result) {
       name: "read-aspect-race",
       play: async ({ browser, extraScreenshot }) => {
         if (result === null) {
-          if (!onADesktop()) {
+          if (onADesktop()) {
+            browser.clickTab(HUD_WORDS.season);
+          } else {
             browser.click(HUD_WORDS.menu);
             await sleep(500);
+            browser.click(HUD_WORDS.season);
           }
-          browser.click(HUD_WORDS.season);
         }
         const race = await readUntil(
           () => browser.read(RACE_BOARD_STATE),
@@ -5082,7 +5094,7 @@ async function readTheFeedAfterTheClear({ browser }) {
 /** The Feed opened as a player opens it: a desktop's Feed place, a phone's place bar. */
 async function openTheFeed(browser) {
   if (!onADesktop()) return tapTheFeed(browser);
-  browser.click(HUD_WORDS.feed);
+  browser.clickTab(HUD_WORDS.feed);
   await sleep(1_500);
   return browser.observe().panels.includes(HUD_WORDS.feed);
 }

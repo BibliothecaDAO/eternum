@@ -72,12 +72,21 @@ it.each(["research", "feed", "chat", "menu"] as const)(
     press("Open page");
     expect(page()).toBe(open);
     press("Hollow");
-    choose("Surface");
-    expect(go).toHaveBeenCalledWith(0);
+    choose("Veil");
+    expect(go).toHaveBeenCalledWith(1);
     expect(document.querySelector('[role="menu"]')).toBeNull();
     expect(page()).toBe("map");
   },
 );
+
+it("pressing Surface puts the open page away and returns to Surface", () => {
+  go.mockClear();
+  act(() => root.render(<PhoneHud open="research" />));
+  press("Open page");
+  press("Surface");
+  expect(go).toHaveBeenCalledWith(0);
+  expect(page()).toBe("map");
+});
 
 it("choosing the layer already shown puts the page away without moving the map", () => {
   go.mockClear();

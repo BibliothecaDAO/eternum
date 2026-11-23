@@ -4,7 +4,15 @@ import { useLocation, useNavigate } from "react-router-dom";
 
 import { isGameOver } from "@/runtime/world/directory";
 import { AspectMark } from "@/ui/design-system/aspect-mark";
-import { AppButton, AppChip, AppEmpty, AppFigure, AppPanel, AppRow } from "@/ui/design-system/kit/app-elements";
+import {
+  AppButton,
+  AppChip,
+  AppEmpty,
+  AppFigure,
+  AppPanel,
+  AppRow,
+  AppTabs,
+} from "@/ui/design-system/kit/app-elements";
 import { HudPlaceMedal } from "@/ui/design-system/kit/hud-elements";
 import { RowThumb } from "@/ui/design-system/kit/list-row";
 import { PlayerName } from "@/ui/design-system/kit/player-name";
@@ -163,23 +171,18 @@ const FrontierBoard = ({ rows }: { rows: number }) => {
   return (
     <div>
       {frontier && <SeasonPodium board={frontier} own={own?.address} over={isGameOver(season)} />}
-      <div className="app-aspect-filter" role="group" aria-label={WORDS.season}>
-        {aspects.map(({ id, name }) => {
-          const active = aspectFilter === id;
-          return (
-            <button
-              key={id}
-              type="button"
-              data-aspect-id={id}
-              aria-pressed={active}
-              className="app-aspect-filter__pill"
-              onClick={() => setAspectFilter(active ? null : id)}
-            >
-              <AspectMark aspect={id} size={18} decorative />
-              <span>{name}</span>
-            </button>
-          );
-        })}
+      <div className="border-b border-app-line px-4 py-3">
+        <AppTabs
+          label={WORDS.season}
+          value={aspectFilter}
+          onChange={(id) => setAspectFilter(aspectFilter === id ? null : id)}
+          tabs={aspects.map(({ id, name }) => ({
+            key: id,
+            label: name,
+            lead: <AspectMark aspect={id} size={18} decorative />,
+            aspectId: id,
+          }))}
+        />
       </div>
       <FrontierRows entries={shown} own={own} rows={rows} />
     </div>

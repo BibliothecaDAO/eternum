@@ -225,7 +225,7 @@ const OBSERVE_EXPRESSION = `JSON.stringify({
   selection: window.__eternumMapSelection ?? null,
   place:
     document.querySelector('nav[aria-label="Places"] [aria-current="page"]')?.textContent.trim() ??
-    document.querySelector('[data-surface-deep-switch] button[aria-pressed="true"]')?.textContent.trim() ??
+    document.querySelector('[data-surface-deep-switch] [role="tab"][aria-selected="true"]')?.textContent.trim() ??
     document.querySelector('[aria-label="Map view"] [role="tab"][aria-selected="true"]')?.textContent.trim() ??
     ({ world: "Realm", realm: "Map" })[document.querySelector('nav[aria-label="Places"] [data-switch]')?.dataset.switch] ??
     null,
@@ -233,7 +233,7 @@ const OBSERVE_EXPRESSION = `JSON.stringify({
   panels: [...document.querySelectorAll("section.ui-panel[aria-label]")]
     .filter((panel) => panel.checkVisibility({ visibilityProperty: true }))
     .map((panel) => panel.getAttribute("aria-label")),
-  pressed: [...document.querySelectorAll('button[aria-pressed="true"]')].map((button) => button.getAttribute("aria-label")),
+  pressed: [...document.querySelectorAll('button[aria-pressed="true"], nav[aria-label="Places"] [role="tab"][aria-selected="true"]')].map((button) => button.getAttribute("aria-label")),
   worldmapDistance: JSON.parse(localStorage.getItem("eternum-camera-zoom") ?? "null")?.state?.worldmapDistance ?? null,
   playable: (window.__eternumGameEntryTimeline ?? []).some((milestone) => milestone.name === "world-interactive"),
   timeOrigin: performance.timeOrigin,

@@ -659,9 +659,9 @@ describe("a friend's Aspect invite at a Season 1 home's founding", () => {
     return vi.spyOn(identityClient, "joinedShare").mockResolvedValue(joined);
   };
   const cards = (host: HTMLElement) =>
-    [...host.querySelectorAll<HTMLButtonElement>(".aspect-picker__card")].map((card) => ({
+    [...host.querySelectorAll<HTMLButtonElement>(".app-aspect-card")].map((card) => ({
       label: card.getAttribute("aria-label"),
-      invite: card.querySelector(".aspect-picker__invite")?.textContent ?? null,
+      invite: card.querySelector("[data-aspect-invited]")?.textContent ?? null,
     }));
   /** Taps an Aspect's card once a player could: drawn and open. */
   const join = async (host: HTMLElement, aspect: string) => {
@@ -671,7 +671,7 @@ describe("a friend's Aspect invite at a Season 1 home's founding", () => {
         expect(found?.disabled).toBe(false);
         return found!;
       });
-    const card = await open(`.aspect-picker__card[aria-label="Join ${aspect}"]`);
+    const card = await open(`.app-aspect-card[aria-label="Join ${aspect}"]`);
     await act(async () => card.click());
     const order = await open(".aspect-picker__order");
     await act(async () => order.click());
@@ -714,7 +714,7 @@ describe("a friend's Aspect invite at a Season 1 home's founding", () => {
       expect(entry.host.textContent).toContain("You chose Prowess before the season. Choose your Order in it.");
       expect(cards(entry.host)).toEqual(plainOrder);
       expect(
-        [...entry.host.querySelectorAll<HTMLButtonElement>(".aspect-picker__card")].every((card) => card.disabled),
+        [...entry.host.querySelectorAll<HTMLButtonElement>(".app-aspect-card")].every((card) => card.disabled),
       ).toBe(true);
       const titans = await vi.waitFor(() => {
         const found = entry.host.querySelector<HTMLButtonElement>('.aspect-picker__order[data-order="13"]');
@@ -739,7 +739,7 @@ describe("a friend's Aspect invite at a Season 1 home's founding", () => {
         expect(entry.host.textContent).toContain("Your Aspect for the season could not be read. Try again."),
       );
       const shut = () =>
-        [...entry.host.querySelectorAll<HTMLButtonElement>(".aspect-picker__card")].map((card) => card.disabled);
+        [...entry.host.querySelectorAll<HTMLButtonElement>(".app-aspect-card")].map((card) => card.disabled);
       expect(shut()).toEqual([true, true, true, true]);
       read.mockResolvedValue({ order: null, members: {} });
       await entry.press("Try again");
@@ -880,9 +880,7 @@ describe("a friend's Aspect invite at a Season 1 home's founding", () => {
       // The home step is done and the cards are drawn, but the invite is on its way: none can found yet.
       await vi.waitFor(() => expect(cards(entry.host)).toHaveLength(4));
       await new Promise((later) => setTimeout(later, 300));
-      const shut = [...entry.host.querySelectorAll<HTMLButtonElement>(".aspect-picker__card")].map(
-        (card) => card.disabled,
-      );
+      const shut = [...entry.host.querySelectorAll<HTMLButtonElement>(".app-aspect-card")].map((card) => card.disabled);
       expect(shut).toEqual([true, true, true, true]);
       expect(settlement.calls).toEqual([]);
       await act(async () => answer(invite(GAME)));

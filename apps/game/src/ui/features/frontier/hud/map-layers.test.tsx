@@ -63,7 +63,7 @@ describe("the map's layers", () => {
     const layers = layersShowingII(go);
     act(() => root.render(<SurfaceDeepSwitch layers={layers} />));
     const buttons = [...host.querySelectorAll<HTMLButtonElement>("[data-surface-deep-switch] button")];
-    expect(buttons.map((button) => [button.textContent, button.getAttribute("aria-pressed")])).toEqual([
+    expect(buttons.map((button) => [button.textContent, button.getAttribute("aria-selected")])).toEqual([
       ["Surface", "false"],
       ["Hollow", "true"],
     ]);
@@ -71,7 +71,6 @@ describe("the map's layers", () => {
 
     act(() => buttons[1]!.click());
     expect(openList()).toEqual([
-      ["Surface", "false"],
       ["Veil", "false"],
       ["Hollow", "true"],
     ]);
@@ -168,7 +167,7 @@ describe("the shared Deep in the map layer menu", () => {
     const open = () =>
       act(() => [...host.querySelectorAll<HTMLButtonElement>("[data-surface-deep-switch] button")][1]!.click());
     open();
-    expect(listRows().map(([label]) => label)).toEqual(["Surface", "Veil", "Hollow", "Deep"]);
+    expect(listRows().map(([label]) => label)).toEqual(["Veil", "Hollow", "Deep"]);
     choose("Deep");
     expect(requestLayerView).toHaveBeenCalledTimes(1);
     expect(requestLayerView).toHaveBeenCalledWith(deepCenter(rules.spacing));

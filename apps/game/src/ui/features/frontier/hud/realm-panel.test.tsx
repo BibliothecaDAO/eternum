@@ -171,7 +171,7 @@ it("offers a desktop's places, Research, the Feed and the Season, each a panel i
     return [...host.querySelectorAll("nav button")] as HTMLButtonElement[];
   };
   const closed = places(null);
-  expect(closed.map((button) => [button.getAttribute("aria-label"), button.getAttribute("aria-pressed")])).toEqual([
+  expect(closed.map((button) => [button.getAttribute("aria-label"), button.getAttribute("aria-selected")])).toEqual([
     ["Research", "false"],
     ["Feed", "false"],
     ["Season", "false"],
@@ -181,7 +181,7 @@ it("offers a desktop's places, Research, the Feed and the Season, each a panel i
   act(() => closed[1].click());
   expect(onSurface).toHaveBeenLastCalledWith("feed");
   const feed = places("feed");
-  expect(feed[1].getAttribute("aria-pressed")).toBe("true");
+  expect(feed[1].getAttribute("aria-selected")).toBe("true");
   expect(feed[1].textContent).not.toContain("2");
   act(() => feed[1].click());
   expect(onSurface).toHaveBeenLastCalledWith(null);

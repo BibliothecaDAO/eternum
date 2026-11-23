@@ -37,7 +37,7 @@ const draw = (props: Partial<Parameters<typeof AspectPicker>[0]> = {}) => {
   return {
     onChoose,
     onFound,
-    cards: [...host.querySelectorAll<HTMLButtonElement>(".aspect-picker__card")],
+    cards: [...host.querySelectorAll<HTMLButtonElement>(".app-aspect-card")],
     orders: [...host.querySelectorAll<HTMLButtonElement>(".aspect-picker__order")],
   };
 };
@@ -79,7 +79,7 @@ describe("AspectPicker", () => {
   it("offers the chosen Aspect's four Orders and founds in the Order tapped", () => {
     const havoc = ordersOfAspect(3);
     const { onFound, cards, orders } = draw({ chosen: 3 });
-    expect(cards.map((card) => card.hasAttribute("data-chosen"))).toEqual([false, false, true, false]);
+    expect(cards.map((card) => card.getAttribute("aria-pressed") === "true")).toEqual([false, false, true, false]);
     expect(orders.map((order) => order.getAttribute("aria-label"))).toEqual(
       havoc.map(({ fullOrderName }) => `Play as ${fullOrderName}`),
     );
@@ -108,7 +108,7 @@ describe("AspectPicker", () => {
     expect(host!.querySelector(".aspect-picker__head p")?.textContent).toBe(
       "Your Realm's Order of the Fox plays for Insight",
     );
-    expect(cards.map((card) => card.hasAttribute("data-chosen"))).toEqual([false, false, false, true]);
+    expect(cards.map((card) => card.getAttribute("aria-pressed") === "true")).toEqual([false, false, false, true]);
     expect(cards.every((card) => card.disabled)).toBe(true);
   });
 
@@ -125,7 +125,7 @@ describe("AspectPicker", () => {
       "Join Luminary",
       "Join Insight",
     ]);
-    expect(cards.map((card) => card.querySelector(".aspect-picker__invite")?.textContent ?? null)).toEqual([
+    expect(cards.map((card) => card.querySelector("[data-aspect-invited]")?.textContent ?? null)).toEqual([
       "Invited",
       null,
       null,
@@ -150,9 +150,9 @@ describe("AspectPicker", () => {
       "Join Havoc",
       "Join Insight",
     ]);
-    expect(host!.querySelector(".aspect-picker__invite")).toBeNull();
+    expect(host!.querySelector("[data-aspect-invited]")).toBeNull();
     expect(host!.querySelector(".aspect-picker__invited")).toBeNull();
-    expect(cards.map((card) => card.hasAttribute("data-chosen"))).toEqual([false, false, false, true]);
+    expect(cards.map((card) => card.getAttribute("aria-pressed") === "true")).toEqual([false, false, false, true]);
   });
 });
 

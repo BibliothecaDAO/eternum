@@ -161,7 +161,7 @@ it("asks a Season 1 free home for its Aspect, then its Order, and founds in the 
   const { host, close } = await openEntry("settle");
   try {
     await act(async () => vi.advanceTimersByTimeAsync(100));
-    const cards = [...host.querySelectorAll<HTMLButtonElement>(".aspect-picker__card")];
+    const cards = [...host.querySelectorAll<HTMLButtonElement>(".app-aspect-card")];
     expect(cards.map((card) => card.getAttribute("aria-label"))).toEqual([
       "Join Prowess",
       "Join Luminary",

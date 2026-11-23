@@ -1,15 +1,13 @@
 import { usePartShown } from "../opening/opening-context";
 import { HUD_COLUMN_MARK } from "@/three/utils/labels/hud-clearance";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { Icon, type IconMeaning } from "@/ui/design-system/icon";
-import { HudPill, SheetDock } from "@/ui/design-system/kit/hud-elements";
+import { HudPill, HudTabs, SheetDock } from "@/ui/design-system/kit/hud-elements";
 import { EVENTS_WORDS, REALM, RESEARCH, SEASON } from "@/ui/design-system/kit/words";
 import { FeedToasts, useUnreadImportantCount } from "@/ui/features/event-feed/quick-feed";
 import { HudChatWindow } from "@/ui/features/world/containers/hud-chat-window";
 import type { SeasonGoal } from "@/ui/features/world/containers/top-header/identity-chip";
 import { HudColumn, HudFoot } from "@/ui/features/world/hud/desktop-hud";
 import { HudMinimap } from "@/ui/features/world/hud/minimap";
-import { formatAmount } from "@bibliothecadao/types";
 import { type ReactNode, useState } from "react";
 
 import type { HudSurface } from "./frontier-nav";
@@ -124,27 +122,38 @@ export const FrontierPlaces = ({
   const unread = useUnreadImportantCount(surface === "feed");
   const researchOpen = usePartShown("research");
   const aspectsOpen = usePartShown("aspects");
-  const item = (to: HudSurface, icon: IconMeaning, word: string, count?: number) => (
-    <button
-      key={to}
-      type="button"
-      aria-label={word}
-      aria-pressed={surface === to}
-      onClick={() => onSurface(surface === to ? null : to)}
-      className="ui-topbar-place"
-    >
-      <Icon name={icon} size={16} />
-      <span>{word}</span>
-      {count !== undefined && count > 0 && <span className="ui-topbar-place__count">{formatAmount(count)}</span>}
-    </button>
-  );
+  const tabs = [
+    ...(research !== undefined && researchOpen
+      ? [
+          {
+            key: "research" as const,
+            label: RESEARCH,
+            icon: "research" as const,
+            ariaLabel: RESEARCH,
+            count: research ? 1 : undefined,
+            countTone: "good" as const,
+          },
+        ]
+      : []),
+    {
+      key: "feed" as const,
+      label: EVENTS_WORDS.feed,
+      icon: "chronicles" as const,
+      ariaLabel: EVENTS_WORDS.feed,
+      count: unread > 0 ? unread : undefined,
+    },
+    ...(aspectsOpen ? [{ key: "season" as const, label: SEASON, icon: "victory" as const, ariaLabel: SEASON }] : []),
+  ];
   return (
-    <HudPill label="Places" className="ui-topbar-places pointer-events-auto">
+    <HudPill label="Places" className="pointer-events-auto px-2">
       {[
-        <nav key="places" aria-label="Places" className="ui-topbar-places__nav">
-          {research !== undefined && researchOpen && item("research", "research", RESEARCH, research ? 1 : undefined)}
-          {item("feed", "chronicles", EVENTS_WORDS.feed, unread > 0 ? unread : undefined)}
-          {aspectsOpen && item("season", "victory", SEASON)}
+        <nav key="places" aria-label="Places">
+          <HudTabs<HudSurface>
+            size="sm"
+            tabs={tabs}
+            value={surface}
+            onChange={(to) => onSurface(surface === to ? null : to)}
+          />
         </nav>,
       ]}
     </HudPill>

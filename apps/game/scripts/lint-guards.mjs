@@ -124,12 +124,28 @@ const CHOSEN_IS_THE_KIT_PICK = [
 // one of the kit's own chosen forms (`ui-row`, `ui-tab`…), written on the element itself. A border or fill of its own
 // left four pickers on their own looks after the kit's one was made (review, 31 October: a guard slot, a resource card,
 // a transfer slot's Balance, a phone's action tile).
-const KIT_CLASS = "/(^|\\s)ui-/";
+const KIT_SHEETS = [
+  resolve(REPO, "apps/game/src/ui/design-system/kit/hud-sheet.css"),
+  resolve(REPO, "apps/game/src/ui/design-system/kit/app-sheet.css"),
+];
+const KIT_CHOSEN_CLASSES = [
+  ...new Set(
+    KIT_SHEETS.flatMap((file) =>
+      [
+        ...readFileSync(file, "utf8")
+          .replace(/\/\*[\s\S]*?\*\//g, "")
+          .matchAll(
+            /\.((?:ui|app)-[a-z0-9_-]+)(?:\[[^\]]*\])*(?:\[(?:aria-pressed|aria-selected)="true"\]|\[data-selected\]|:is\([^)]*(?:aria-pressed="true"|aria-selected="true"|data-selected)[^)]*\))/g,
+          ),
+      ].map((match) => match[1]),
+    ),
+  ),
+];
+const KIT_CLASS = `/(^|\\s)(${KIT_CHOSEN_CLASSES.join("|")})(\\s|$)/`;
 const CHOSEN_STATE_IS_THE_KIT = [
   {
     selector: `JSXOpeningElement[name.name=/^[a-z]/]:has(JSXAttribute[name.name=/^(aria-pressed|aria-selected|data-selected)$/]):not(:has(JSXAttribute[name.name='className'] :matches(Literal[value=${KIT_CLASS}], TemplateElement[value.raw=${KIT_CLASS}])))`,
-    message:
-      "An element that says it is chosen wears the kit's chosen look: put `ui-pick` (or the kit's ui- class) in its className, not a border or fill of its own.",
+    message: `An element that says it is chosen wears the kit's chosen look: put a kit chosen class (${KIT_CHOSEN_CLASSES.map((name) => `\`${name}\``).join(", ")}) in its className, not a border or fill of its own.`,
   },
 ];
 
@@ -212,7 +228,7 @@ const eslint = new ESLint({
       rules: TEXT_VALUES,
     },
     {
-      files: ["apps/game/src/ui/features/**/*.{ts,tsx}"],
+      files: ["apps/game/src/ui/features/**/*.{ts,tsx}", "apps/game/src/shell/**/*.{ts,tsx}"],
       ignores: ["apps/game/src/ui/features/debug/**", "**/*.test.{ts,tsx}"],
       rules: {
         "no-restricted-syntax": [

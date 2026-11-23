@@ -11,8 +11,7 @@ import {
 } from "@bibliothecadao/types";
 import type { JoinedShare } from "@realms-world/identity";
 
-import { AspectMark } from "@/ui/design-system/aspect-mark";
-import { aspectCardUrl } from "@/ui/design-system/icon-meaning";
+import { AppAspectCard } from "@/ui/design-system/kit/aspect-card";
 import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
 import { ASPECT_STEP_WORDS, PRESEASON_WORDS } from "@/ui/design-system/kit/words";
 
@@ -77,21 +76,29 @@ export function AspectPicker({
               : ASPECT_STEP_WORDS.line}
         </p>
       </header>
-      <ul className="aspect-picker__cards">
-        {invitedFirst(invite).map(({ id, name }) => (
-          <li key={id}>
-            <AspectCard
-              aspect={id}
-              name={name}
-              invited={invite?.aspect === id}
-              members={members?.[id] ?? null}
-              chosen={(fixed ?? chosen) === id}
-              joining={foundingAspect === id}
-              disabled={waiting || fixed !== null || joining !== null}
-              onJoin={() => onChoose(id)}
-            />
-          </li>
-        ))}
+      <ul className="app-aspect-grid">
+        {invitedFirst(invite).map(({ id, name }) => {
+          const isJoining = foundingAspect === id;
+          const memberCount = members?.[id] ?? null;
+          return (
+            <li key={id}>
+              <AppAspectCard
+                aspect={id}
+                name={name}
+                invited={invite?.aspect === id ? ASPECT_STEP_WORDS.invited : undefined}
+                chosen={(fixed ?? chosen) === id}
+                busy={isJoining}
+                disabled={waiting || fixed !== null || joining !== null}
+                label={isJoining ? ASPECT_STEP_WORDS.joining(name) : ASPECT_STEP_WORDS.join(name)}
+                onClick={() => onChoose(id)}
+              >
+                {memberCount !== null && (
+                  <span className="aspect-picker__members">{ASPECT_STEP_WORDS.members(memberCount)}</span>
+                )}
+              </AppAspectCard>
+            </li>
+          );
+        })}
       </ul>
       {ordersOf !== null && (
         <OrderChoices aspect={ordersOf} joining={joining} disabled={waiting || joining !== null} onFound={onFound} />
@@ -146,51 +153,6 @@ export const invitedFirst = (invite: AspectOffer | null) =>
   invite === null
     ? aspects
     : [...aspects.filter(({ id }) => id === invite.aspect), ...aspects.filter(({ id }) => id !== invite.aspect)];
-
-const AspectCard = ({
-  aspect,
-  name,
-  invited,
-  members,
-  chosen,
-  joining,
-  disabled,
-  onJoin,
-}: {
-  aspect: AspectId;
-  name: string;
-  invited: boolean;
-  members: number | null;
-  chosen: boolean;
-  joining: boolean;
-  disabled: boolean;
-  onJoin: () => void;
-}) => (
-  <button
-    type="button"
-    className="aspect-picker__card"
-    data-aspect-id={aspect}
-    data-chosen={chosen || undefined}
-    aria-busy={joining || undefined}
-    aria-label={joining ? ASPECT_STEP_WORDS.joining(name) : ASPECT_STEP_WORDS.join(name)}
-    disabled={disabled}
-    onClick={onJoin}
-  >
-    <img src={aspectCardUrl(aspect)} alt="" aria-hidden className="aspect-picker__art" />
-    {invited && <span className="aspect-picker__invite">{ASPECT_STEP_WORDS.invited}</span>}
-    <span className="aspect-picker__card-body">
-      <AspectMark aspect={aspect} size={56} decorative />
-      <span className="aspect-picker__name">{name}</span>
-      <span className="flex items-center justify-center gap-1">
-        {ordersOfAspect(aspect).map(({ orderId }) => (
-          <OrderEmblem key={orderId} order={orderId} size={22} />
-        ))}
-      </span>
-      {members !== null && <span className="aspect-picker__members">{ASPECT_STEP_WORDS.members(members)}</span>}
-      {joining && <span className="ui-spinner" aria-hidden="true" />}
-    </span>
-  </button>
-);
 
 export const aspectOfOrder = (orderId: number): AspectId => {
   const aspect = orderAspect(orderId);

@@ -28,7 +28,6 @@
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
-.aspect-picker__card,
 .aspect-picker__order {
   position: relative;
   display: flex;
@@ -44,93 +43,21 @@
   background: var(--hud-hover);
   transition: border-color var(--hud-fast) var(--hud-ease);
 }
-.aspect-picker__card {
-  min-height: 0;
-  justify-content: flex-start;
-  overflow: hidden;
-  padding: 0;
-  border-color: rgb(var(--hud-aspect) / 0.45);
-  background: var(--app-ground, var(--hud-surface));
-  box-shadow: inset 0 3px 0 rgb(var(--hud-aspect));
-}
-.aspect-picker__art {
-  display: block;
-  width: 100%;
-  height: 4.75rem;
-  flex: none;
-  object-fit: cover;
-  object-position: center 22%;
-  mask-image: linear-gradient(180deg, black 72%, transparent 100%);
-}
-@media (min-width: 720px) {
-  .aspect-picker__art {
-    height: 14rem;
-    object-fit: cover;
-    object-position: center 22%;
-    mask-image: linear-gradient(180deg, black 72%, transparent 100%);
-  }
-}
-.aspect-picker__card-body {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  width: 100%;
-  flex: 1;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.5rem 0.5rem 0.75rem;
-}
 .aspect-picker__order:not(:disabled):hover,
 .aspect-picker__order[data-chosen] {
   border-color: rgb(var(--hud-gold));
   background: var(--hud-chosen);
 }
-.aspect-picker__card:not(:disabled):hover,
-.aspect-picker__card[data-chosen] {
-  border-color: rgb(var(--hud-aspect));
-  background: rgb(var(--hud-aspect) / 0.14);
-}
-.aspect-picker__card:disabled:not([data-chosen]),
 .aspect-picker__order:disabled:not([data-chosen]) {
   opacity: 0.45;
 }
-.aspect-picker__card:focus-visible,
 .aspect-picker__order:focus-visible {
   box-shadow: var(--hud-focus);
-}
-.aspect-picker__crests {
-  display: grid;
-  grid-template-columns: repeat(2, auto);
-  gap: 0.25rem;
-}
-.aspect-picker__name {
-  color: rgb(var(--hud-ink));
-  font-family: var(--font-display, "Cinzel", serif);
-  font-size: var(--hud-text-display);
-  line-height: var(--hud-leading-display);
-  font-weight: var(--hud-weight-display);
 }
 .aspect-picker__members {
   color: var(--hud-muted);
   font-size: var(--hud-text-label);
   line-height: var(--hud-leading-label);
-}
-/* A friend's invite rides the card's top edge, so the invited card keeps its siblings' size. */
-.aspect-picker__invite {
-  position: absolute;
-  top: 0.5rem;
-  left: 50%;
-  z-index: 2;
-  white-space: nowrap;
-  transform: translateX(-50%);
-  padding: 0.1rem 0.5rem;
-  border-radius: var(--hud-radius-chip);
-  background: rgb(var(--hud-gold));
-  color: rgb(var(--hud-dark));
-  font-size: var(--hud-text-label);
-  line-height: var(--hud-leading-label);
-  font-weight: 600;
 }
 .aspect-picker__invited {
   color: rgb(var(--hud-gold));
