@@ -1290,7 +1290,7 @@ export class StructureManager {
           structure.level,
           structure.hasWonder,
           structure.entityId,
-          structure.realmOrder ? orderAspect(structure.realmOrder) : null,
+          this.mode.id === "frontier" && structure.realmOrder ? orderAspect(structure.realmOrder) : null,
         )
       : structure.stage;
   }

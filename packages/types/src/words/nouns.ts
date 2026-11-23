@@ -184,7 +184,7 @@ export type BeastModel =
   | "minotaur";
 export type BeastFamily = "herd" | "band" | "camp" | "rift" | "ruin";
 export type BeastIdle = { motion: "breath" | "lift"; speed: number; height: number } | { motion: "hover" };
-type BeastLook = { model: BeastModel; fallback?: never } | { model?: never; fallback: BeastModel };
+type BeastLook = { model: BeastModel };
 export type BeastRow = {
   name: string;
   family: BeastFamily;
@@ -232,7 +232,7 @@ export const DEEPLESS_FOURTH_LAYER_BEASTS = {
   ruin: { ...BEASTS.hydra, family: "ruin", layer: 3, scale: 1.2 },
 } as const satisfies Record<BeastFamily, BeastRow>;
 
-export const beastModel = (beast: BeastLook): BeastModel => beast.model ?? beast.fallback;
+export const beastModel = (beast: BeastLook): BeastModel => beast.model;
 
 export const beastOfModel = (model: BeastModel) =>
   [...Object.values<DeepBeastRow>(BEASTS), ...Object.values<DeepBeastRow>(DEEP_BEASTS)].find(

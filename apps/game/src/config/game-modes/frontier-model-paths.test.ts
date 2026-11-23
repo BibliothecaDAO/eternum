@@ -98,4 +98,14 @@ it("selects all five painted tiers while keeping Storeroom on its own model and 
   expect(getGameModeConfig(GAME_FAMILIES.frontier).assets.buildingModelPaths[BUILDINGS_GROUPS.REALMS].Kingdom).toBe(
     buildingModelPaths()[BUILDINGS_GROUPS.REALMS].Kingdom,
   );
+  const frontierWonder = resolveBuildingModelSelection(
+    { category: BuildingType.ResourceLabor, col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1], tier: 1 },
+    { stage: 2, structureId: 1003, wonder: true, aspect: 1, frontier: true },
+  );
+  expect(frontierWonder.tierPath).toBe("/models/realms/wonder-prowess.glb");
+  const blitzWonder = resolveBuildingModelSelection(
+    { category: BuildingType.ResourceLabor, col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1], tier: 1 },
+    { stage: 2, structureId: 1003, wonder: true, aspect: 1, frontier: false },
+  );
+  expect(blitzWonder.tierPath).toBe("/models/realms/twin-guardians.glb");
 });

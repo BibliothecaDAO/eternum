@@ -128,7 +128,7 @@ export function resolveBuildingModelSelection(
 
   const tierPath =
     group === BUILDINGS_GROUPS.REALMS && wonder
-      ? REALM_PATHS[realmModelIndex(stage, true, structureId, context.aspect)]
+      ? REALM_PATHS[realmModelIndex(stage, true, structureId, context.frontier ? context.aspect : null)]
       : group === BUILDINGS_GROUPS.BUILDINGS
         ? context.frontier
           ? (building.tier ?? 1) > 1

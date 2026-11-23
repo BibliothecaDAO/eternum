@@ -55,6 +55,7 @@ export const MODEL_BUDGETS = Object.freeze({
     maxBones: 0,
     minGroundY: -0.05,
     maxGroundY: 0.05,
+    maxHeight: 2.9,
   },
   deepBuilding: {
     maxTriangles: 12_000,
@@ -65,6 +66,7 @@ export const MODEL_BUDGETS = Object.freeze({
     maxBones: 0,
     minGroundY: -0.05,
     maxGroundY: 0.05,
+    maxHeight: 1.42,
   },
   deepGate: {
     maxTriangles: 6_000,
@@ -75,6 +77,7 @@ export const MODEL_BUDGETS = Object.freeze({
     maxBones: 0,
     minGroundY: -0.05,
     maxGroundY: 0.05,
+    maxHeight: 1.42,
   },
   beast: BEAST_BUDGET,
 });
@@ -447,6 +450,9 @@ function assertHexFootprint(document, kind, budget) {
       `Fitted ${kind} minY=${min[1].toFixed(4)} is outside ground range [${budget.minGroundY}, ${budget.maxGroundY}]`,
     );
   }
+  if (budget.maxHeight !== undefined && max[1] > budget.maxHeight) {
+    throw new Error(`Fitted ${kind} maxY=${max[1].toFixed(4)} exceeds height limit ${budget.maxHeight}`);
+  }
   return {
     min: min.map(round3),
     max: max.map(round3),
@@ -598,7 +604,10 @@ function inspectGlbTextureProfile(glbPath) {
   };
 }
 
-async function assertDeliveredAsset(io, deliveredPath, kind, budget) {
+export async function assertDeliveredAsset(io, deliveredPath, kind, budget = MODEL_BUDGETS[kind]) {
+  if (!budget) {
+    throw new Error(`Unknown model kind "${kind}". Expected one of: ${Object.keys(MODEL_BUDGETS).join(", ")}`);
+  }
   const bytes = statSync(deliveredPath).size;
   if (bytes > budget.maxBytes) {
     throw new Error(`Compressed ${kind} model is ${bytes} bytes, exceeding budget of ${budget.maxBytes} bytes`);
@@ -618,7 +627,19 @@ async function assertDeliveredAsset(io, deliveredPath, kind, budget) {
       throw new Error(`Delivered ${kind} model contains non-KTX2 texture (${texture.getMimeType()})`);
     }
   }
-  assertTextureBudgets(root, kind, budget);
+  const metrics = assertSourceBudget(document, kind, budget);
+  const meshNodes = root.listNodes().filter((node) => node.getMesh());
+  if (meshNodes.length === 0 || !meshNodes.every((node) => node.getExtras()?.assetKind === kind)) {
+    throw new Error(`Delivered ${kind} model is missing assetKind="${kind}" on its mesh node`);
+  }
+  for (const material of root.listMaterials()) {
+    if (!material.getDoubleSided()) {
+      throw new Error(`Delivered ${kind} material "${material.getName() || "unnamed"}" is not double-sided`);
+    }
+    if (material.getExtras()?.tripoMaterial !== true) {
+      throw new Error(`Delivered ${kind} material "${material.getName() || "unnamed"}" is missing tripoMaterial tag`);
+    }
+  }
   for (const node of root.listNodes()) {
     const t = node.getTranslation();
     const r = node.getRotation();
@@ -631,8 +652,13 @@ async function assertDeliveredAsset(io, deliveredPath, kind, budget) {
       throw new Error(`Delivered ${kind} model retains non-identity node transform on "${node.getName()}"`);
     }
   }
+  const bounds = assertHexFootprint(document, kind, budget);
   return {
     bytes,
+    document,
+    root,
+    bounds,
+    ...metrics,
     textures: textures.map((texture) => ({
       name: texture.getName(),
       mimeType: texture.getMimeType(),

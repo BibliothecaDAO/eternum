@@ -18,7 +18,7 @@ import {
 } from "../../src/three/structures/frontier-painted-buildings";
 import { DEEP_GATE_MODELS, DEEP_SITE_MODELS } from "../../src/three/structures/deep-landmarks";
 import { ASPECT_WONDER_PATHS } from "../../src/three/structures/realm-design";
-import { MODEL_BUDGETS, readHexFit, shipTripoModel } from "./ship-model.mjs";
+import { MODEL_BUDGETS, assertDeliveredAsset, readHexFit, shipTripoModel } from "./ship-model.mjs";
 
 const CLI = fileURLToPath(new URL("./ship-model.mjs", import.meta.url));
 const WELL_MODEL = fileURLToPath(new URL("../../public/models/frontier/painted/well.glb", import.meta.url));
@@ -225,6 +225,12 @@ describe("ship-model pipeline", () => {
     await expect(
       shipTripoModel({ input: validRaw, fit: outsideHexFit, kind: "building", out: join(dir, "out5.glb") }),
     ).rejects.toThrow("leaves the unit pointy hex");
+
+    const tooTallRaw = join(dir, "too-tall.glb");
+    await writeSyntheticGlb(tooTallRaw, { width: 0.5, depth: 0.5, height: MODEL_BUDGETS.deepGate.maxHeight + 0.2 });
+    await expect(
+      shipTripoModel({ input: tooTallRaw, fit, kind: "deepGate", out: join(dir, "out6.glb") }),
+    ).rejects.toThrow("exceeds height limit");
   });
 
   it("bakes hex fit, compresses with repo tools and is safe to run twice via CLI", async () => {
@@ -298,8 +304,6 @@ describe("ship-model pipeline", () => {
 
   it("keeps every standalone Frontier building model within building budget, grounded, normalized and inside the unit hex", async () => {
     const io = await createReader();
-    const budget = MODEL_BUDGETS.building;
-    const apothem = Math.sqrt(3) / 2;
     const paintedPaths = new Set(FRONTIER_PAINTED_BUILDINGS.map((entry) => entry.path));
     const shippedPaths = [
       ...new Set(
@@ -312,64 +316,12 @@ describe("ship-model pipeline", () => {
 
     for (const publicPath of shippedPaths) {
       const modelPath = fileURLToPath(new URL(`../../public${publicPath}`, import.meta.url));
-      const bytes = readFileSync(modelPath);
-      expect(bytes.length, publicPath).toBeLessThanOrEqual(budget.maxBytes);
-
-      const doc = await io.read(modelPath);
-      const root = doc.getRoot();
-      const extensions = root.listExtensionsUsed().map((extension) => extension.extensionName);
-      expect(extensions, publicPath).toEqual(
-        expect.arrayContaining(["KHR_draco_mesh_compression", "KHR_texture_basisu"]),
-      );
-
-      const primitives = root.listMeshes().flatMap((mesh) => mesh.listPrimitives());
-      expect(primitives.length, publicPath).toBeGreaterThan(0);
-      expect(primitives.length, publicPath).toBeLessThanOrEqual(budget.maxDraws);
-
-      const triangles = primitives.reduce((sum, primitive) => sum + primitive.getIndices().getCount() / 3, 0);
-      expect(triangles, publicPath).toBeGreaterThan(0);
-      expect(triangles, publicPath).toBeLessThanOrEqual(budget.maxTriangles);
-
-      for (const material of root.listMaterials()) {
-        expect(material.getDoubleSided(), publicPath).toBe(true);
-        expect(material.getExtras().tripoMaterial, publicPath).toBe(true);
-      }
-
-      for (const texture of root.listTextures()) {
-        expect(texture.getMimeType(), publicPath).toBe("image/ktx2");
-        const image = texture.getImage();
-        const view = new DataView(image.buffer, image.byteOffset, image.byteLength);
-        expect(view.getUint32(20, true), publicPath).toBeLessThanOrEqual(budget.maxColorTexture);
-        expect(view.getUint32(24, true), publicPath).toBeLessThanOrEqual(budget.maxColorTexture);
-      }
-
-      for (const node of root.listNodes()) {
-        expect(node.getTranslation(), publicPath).toEqual([0, 0, 0]);
-        expect(node.getRotation(), publicPath).toEqual([0, 0, 0, 1]);
-        expect(node.getScale(), publicPath).toEqual([1, 1, 1]);
-      }
-
-      let minY = Infinity;
-      for (const primitive of primitives) {
-        const positions = primitive.getAttribute("POSITION");
-        for (let i = 0; i < positions.getCount(); i++) {
-          const [x, y, z] = positions.getElement(i, [0, 0, 0]);
-          minY = Math.min(minY, y);
-          for (let side = 0; side < 6; side++) {
-            const angle = (side * Math.PI) / 3;
-            expect(x * Math.cos(angle) + z * Math.sin(angle), publicPath).toBeLessThanOrEqual(apothem + 0.001);
-          }
-        }
-      }
-      expect(minY, publicPath).toBeGreaterThanOrEqual(budget.minGroundY);
-      expect(minY, publicPath).toBeLessThanOrEqual(budget.maxGroundY);
+      await assertDeliveredAsset(io, modelPath, "building", MODEL_BUDGETS.building);
     }
   });
 
   it("keeps every shipped Tripo troop model within troop budget, grounded, ownership-clothed and inside the unit hex", async () => {
     const io = await createReader();
-    const budget = MODEL_BUDGETS.troop;
-    const apothem = Math.sqrt(3) / 2;
     const candidateFiles = [...new Set(Object.values(MODEL_TYPE_TO_FILE))];
     const shippedTroops = [];
 
@@ -381,195 +333,40 @@ describe("ship-model pipeline", () => {
         .listNodes()
         .find((node) => node.getMesh());
       if (meshNode?.getExtras()?.assetKind !== "troop") continue;
-      shippedTroops.push({ file, modelPath, doc });
+      shippedTroops.push({ file, modelPath });
     }
 
     expect(shippedTroops.length).toBeGreaterThanOrEqual(2);
 
-    for (const { file, modelPath, doc } of shippedTroops) {
-      const bytes = readFileSync(modelPath);
-      expect(bytes.length, file).toBeLessThanOrEqual(budget.maxBytes);
-
-      const root = doc.getRoot();
-      const extensions = root.listExtensionsUsed().map((extension) => extension.extensionName);
-      expect(extensions, file).toEqual(expect.arrayContaining(["KHR_draco_mesh_compression", "KHR_texture_basisu"]));
-
-      const primitives = root.listMeshes().flatMap((mesh) => mesh.listPrimitives());
-      expect(primitives.length, file).toBeGreaterThan(0);
-      expect(primitives.length, file).toBeLessThanOrEqual(budget.maxDraws);
-
-      const triangles = primitives.reduce((sum, primitive) => sum + primitive.getIndices().getCount() / 3, 0);
-      expect(triangles, file).toBeGreaterThan(0);
-      expect(triangles, file).toBeLessThanOrEqual(budget.maxTriangles);
-
+    for (const { file, modelPath } of shippedTroops) {
+      const { root } = await assertDeliveredAsset(io, modelPath, "troop", MODEL_BUDGETS.troop);
       for (const material of root.listMaterials()) {
-        expect(material.getDoubleSided(), file).toBe(true);
-        expect(material.getExtras().tripoMaterial, file).toBe(true);
         expect(material.getExtras().ownershipCloth, file).toBe(true);
       }
-
-      for (const texture of root.listTextures()) {
-        expect(texture.getMimeType(), file).toBe("image/ktx2");
-        const image = texture.getImage();
-        const view = new DataView(image.buffer, image.byteOffset, image.byteLength);
-        expect(view.getUint32(20, true), file).toBeLessThanOrEqual(budget.maxColorTexture);
-        expect(view.getUint32(24, true), file).toBeLessThanOrEqual(budget.maxColorTexture);
-      }
-
-      for (const node of root.listNodes()) {
-        expect(node.getTranslation(), file).toEqual([0, 0, 0]);
-        expect(node.getRotation(), file).toEqual([0, 0, 0, 1]);
-        expect(node.getScale(), file).toEqual([1, 1, 1]);
-      }
-
-      let minY = Infinity;
-      for (const primitive of primitives) {
-        const positions = primitive.getAttribute("POSITION");
-        for (let i = 0; i < positions.getCount(); i++) {
-          const [x, y, z] = positions.getElement(i, [0, 0, 0]);
-          minY = Math.min(minY, y);
-          for (let side = 0; side < 6; side++) {
-            const angle = (side * Math.PI) / 3;
-            expect(x * Math.cos(angle) + z * Math.sin(angle), file).toBeLessThanOrEqual(apothem + 0.001);
-          }
-        }
-      }
-      expect(minY, file).toBeGreaterThanOrEqual(budget.minGroundY);
-      expect(minY, file).toBeLessThanOrEqual(budget.maxGroundY);
     }
   });
 
   it("keeps every Aspect Wonder within wonder budget, grounded, normalized and inside the unit hex", async () => {
     const io = await createReader();
-    const budget = MODEL_BUDGETS.wonder;
-    const apothem = Math.sqrt(3) / 2;
     expect(ASPECT_WONDER_PATHS.length).toBe(4);
 
     for (const publicPath of ASPECT_WONDER_PATHS) {
       const modelPath = fileURLToPath(new URL(`../../public${publicPath}`, import.meta.url));
-      const bytes = readFileSync(modelPath);
-      expect(bytes.length, publicPath).toBeLessThanOrEqual(budget.maxBytes);
-
-      const doc = await io.read(modelPath);
-      const root = doc.getRoot();
-      const extensions = root.listExtensionsUsed().map((extension) => extension.extensionName);
-      expect(extensions, publicPath).toEqual(
-        expect.arrayContaining(["KHR_draco_mesh_compression", "KHR_texture_basisu"]),
-      );
-
-      const primitives = root.listMeshes().flatMap((mesh) => mesh.listPrimitives());
-      expect(primitives.length, publicPath).toBeGreaterThan(0);
-      expect(primitives.length, publicPath).toBeLessThanOrEqual(budget.maxDraws);
-
-      const triangles = primitives.reduce((sum, primitive) => sum + primitive.getIndices().getCount() / 3, 0);
-      expect(triangles, publicPath).toBeGreaterThan(0);
-      expect(triangles, publicPath).toBeLessThanOrEqual(budget.maxTriangles);
-
-      for (const material of root.listMaterials()) {
-        expect(material.getDoubleSided(), publicPath).toBe(true);
-        expect(material.getExtras().tripoMaterial, publicPath).toBe(true);
-      }
-
-      for (const texture of root.listTextures()) {
-        expect(texture.getMimeType(), publicPath).toBe("image/ktx2");
-        const image = texture.getImage();
-        const view = new DataView(image.buffer, image.byteOffset, image.byteLength);
-        expect(view.getUint32(20, true), publicPath).toBeLessThanOrEqual(budget.maxColorTexture);
-        expect(view.getUint32(24, true), publicPath).toBeLessThanOrEqual(budget.maxColorTexture);
-      }
-
-      for (const node of root.listNodes()) {
-        expect(node.getTranslation(), publicPath).toEqual([0, 0, 0]);
-        expect(node.getRotation(), publicPath).toEqual([0, 0, 0, 1]);
-        expect(node.getScale(), publicPath).toEqual([1, 1, 1]);
-      }
-
-      let minY = Infinity;
-      let maxY = -Infinity;
-      for (const primitive of primitives) {
-        const positions = primitive.getAttribute("POSITION");
-        for (let i = 0; i < positions.getCount(); i++) {
-          const [x, y, z] = positions.getElement(i, [0, 0, 0]);
-          minY = Math.min(minY, y);
-          maxY = Math.max(maxY, y);
-          for (let side = 0; side < 6; side++) {
-            const angle = (side * Math.PI) / 3;
-            expect(x * Math.cos(angle) + z * Math.sin(angle), publicPath).toBeLessThanOrEqual(apothem + 0.001);
-          }
-        }
-      }
-      expect(minY, publicPath).toBeGreaterThanOrEqual(budget.minGroundY);
-      expect(minY, publicPath).toBeLessThanOrEqual(budget.maxGroundY);
-      expect(maxY, publicPath).toBeLessThanOrEqual(2.9);
+      await assertDeliveredAsset(io, modelPath, "wonder", MODEL_BUDGETS.wonder);
     }
   });
 
-  it("keeps every Deep building and Deep gate within its budget, grounded, <= 1.4 tall and inside the unit hex", async () => {
+  it("keeps every Deep building and Deep gate within its budget, grounded, <= 1.42 tall and inside the unit hex", async () => {
     const io = await createReader();
-    const apothem = Math.sqrt(3) / 2;
     const entries = [
-      ...Object.values(DEEP_SITE_MODELS).map((publicPath) => ({ publicPath, budget: MODEL_BUDGETS.deepBuilding })),
-      ...Object.values(DEEP_GATE_MODELS).map((publicPath) => ({ publicPath, budget: MODEL_BUDGETS.deepGate })),
+      ...Object.values(DEEP_SITE_MODELS).map((publicPath) => ({ publicPath, kind: "deepBuilding" })),
+      ...Object.values(DEEP_GATE_MODELS).map((publicPath) => ({ publicPath, kind: "deepGate" })),
     ];
     expect(entries.length).toBe(8);
 
-    for (const { publicPath, budget } of entries) {
+    for (const { publicPath, kind } of entries) {
       const modelPath = fileURLToPath(new URL(`../../public${publicPath}`, import.meta.url));
-      const bytes = readFileSync(modelPath);
-      expect(bytes.length, publicPath).toBeLessThanOrEqual(budget.maxBytes);
-
-      const doc = await io.read(modelPath);
-      const root = doc.getRoot();
-      const extensions = root.listExtensionsUsed().map((extension) => extension.extensionName);
-      expect(extensions, publicPath).toContain("KHR_draco_mesh_compression");
-      if (root.listTextures().length > 0) {
-        expect(extensions, publicPath).toContain("KHR_texture_basisu");
-      }
-
-      const primitives = root.listMeshes().flatMap((mesh) => mesh.listPrimitives());
-      expect(primitives.length, publicPath).toBeGreaterThan(0);
-      expect(primitives.length, publicPath).toBeLessThanOrEqual(budget.maxDraws);
-
-      const triangles = primitives.reduce((sum, primitive) => sum + primitive.getIndices().getCount() / 3, 0);
-      expect(triangles, publicPath).toBeGreaterThan(0);
-      expect(triangles, publicPath).toBeLessThanOrEqual(budget.maxTriangles);
-
-      for (const material of root.listMaterials()) {
-        expect(material.getDoubleSided(), publicPath).toBe(true);
-        expect(material.getExtras().tripoMaterial, publicPath).toBe(true);
-      }
-
-      for (const texture of root.listTextures()) {
-        expect(texture.getMimeType(), publicPath).toBe("image/ktx2");
-        const image = texture.getImage();
-        const view = new DataView(image.buffer, image.byteOffset, image.byteLength);
-        expect(view.getUint32(20, true), publicPath).toBeLessThanOrEqual(budget.maxColorTexture);
-        expect(view.getUint32(24, true), publicPath).toBeLessThanOrEqual(budget.maxColorTexture);
-      }
-
-      for (const node of root.listNodes()) {
-        expect(node.getTranslation(), publicPath).toEqual([0, 0, 0]);
-        expect(node.getRotation(), publicPath).toEqual([0, 0, 0, 1]);
-        expect(node.getScale(), publicPath).toEqual([1, 1, 1]);
-      }
-
-      let minY = Infinity;
-      let maxY = -Infinity;
-      for (const primitive of primitives) {
-        const positions = primitive.getAttribute("POSITION");
-        for (let i = 0; i < positions.getCount(); i++) {
-          const [x, y, z] = positions.getElement(i, [0, 0, 0]);
-          minY = Math.min(minY, y);
-          maxY = Math.max(maxY, y);
-          for (let side = 0; side < 6; side++) {
-            const angle = (side * Math.PI) / 3;
-            expect(x * Math.cos(angle) + z * Math.sin(angle), publicPath).toBeLessThanOrEqual(apothem + 0.001);
-          }
-        }
-      }
-      expect(minY, publicPath).toBeGreaterThanOrEqual(budget.minGroundY);
-      expect(minY, publicPath).toBeLessThanOrEqual(budget.maxGroundY);
-      expect(maxY, publicPath).toBeLessThanOrEqual(1.42);
+      await assertDeliveredAsset(io, modelPath, kind, MODEL_BUDGETS[kind]);
     }
   });
 });

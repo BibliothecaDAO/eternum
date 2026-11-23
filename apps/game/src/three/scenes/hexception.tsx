@@ -1550,7 +1550,7 @@ export default class HexceptionScene extends HexagonScene {
       structureId: this.shownRealmId,
       mainStructureType,
       wonder: !!this.tileManager.getWonder(this.shownRealmId),
-      aspect: orderId ? orderAspect(orderId) : null,
+      aspect: this.mode.id === "frontier" && orderId ? orderAspect(orderId) : null,
       frontier: this.mode.id === "frontier",
     });
   }

@@ -4,10 +4,12 @@ import {
   deepGateTiles,
   deepZoneBounds,
   nativeRuleConstants,
+  viewerAspects,
   type NativeFactStore,
 } from "@bibliothecadao/eternum/game-client";
 import { aspects, type AspectId } from "@bibliothecadao/types";
-import { ASPECT_HEX } from "@/tokens";
+import { accountAddress } from "@/hooks/store/use-account-store";
+import { ASPECT_HEX, SIDE_HEX } from "@/tokens";
 import { FELT_CENTER } from "@/ui/config";
 import {
   AdditiveBlending,
@@ -108,13 +110,14 @@ export class DeepArenaManager {
     writeZoneBounds(deepZoneBounds(rules));
     const gates = deepGateTiles(rules.gate_distance, settlement.spacing);
     this.writeFloorEdges(deepCenter(settlement.spacing), center, gates);
+    const own = viewerAspects(this.store, gameId, accountAddress() ?? null);
     gates.forEach((gate, index) => {
       const at = this.worldAt(gate);
       this.dummy.position.copy(placePositionOnTerrain(at, this.terrain));
       this.dummy.updateMatrix();
       this.gates[gate.aspect].position.copy(this.dummy.position);
       this.veil.setMatrixAt(index, this.dummy.matrix);
-      this.veil.setColorAt(index, new Color(ASPECT_HEX[gate.aspect]));
+      this.veil.setColorAt(index, new Color(own.has(gate.aspect) ? SIDE_HEX.own : ASPECT_HEX[gate.aspect]));
     });
     this.veil.instanceMatrix.needsUpdate = true;
     if (this.veil.instanceColor) this.veil.instanceColor.needsUpdate = true;
