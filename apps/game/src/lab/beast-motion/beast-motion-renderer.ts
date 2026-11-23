@@ -91,14 +91,14 @@ import {
   type BeastFamilyShowcaseId,
 } from "./beast-family-stage";
 
-export interface BeastRosterEntry {
+interface BeastRosterEntry {
   readonly species: FrontierSpecies;
   readonly name: string;
   readonly layer: BeastMotionLayer;
   readonly path: string;
 }
 
-export interface BeastRosterFamily {
+interface BeastRosterFamily {
   readonly id: BeastFamilyShowcaseId;
   readonly label: string;
   readonly layer: BeastMotionLayer;
@@ -245,17 +245,17 @@ const COMPARE_SLOTS: ReadonlyArray<{ way: BeastMotionWay; x: number; z: number }
 ];
 
 const LAYER_ENVIRONMENTS: Record<BeastMotionLayer, AtmosphereEnvironment> = {
-  0: "day",
+  0: "world",
   1: "veil",
   2: "hollow",
   3: "deep",
 };
 
 const LAYER_BG: Record<BeastMotionLayer, number> = {
-  0: 0x8da6a2,
-  1: 0x625a7c,
-  2: 0x3b3556,
-  3: 0x1e1930,
+  0: 0x819997,
+  1: 0x263140,
+  2: 0x1b1526,
+  3: 0x15223d,
 };
 
 const COMPARE_ANCHOR_POS = new Vector3();
@@ -264,24 +264,28 @@ const BOUNDS_SIZE_TMP = new Vector3();
 
 function createTerrainRequest(): TerrainPageRequest {
   const cells: TerrainCellInput[] = [];
-  for (let row = -18; row <= 18; row++) {
-    for (let col = -18; col <= 18; col++) {
-      cells.push({
+  const halo: TerrainCellInput[] = [];
+  for (let row = -14; row <= 14; row++) {
+    for (let col = -14; col <= 14; col++) {
+      const cell = {
         col,
         row,
         biome: BiomeType.Grassland,
+        previewBiome: BiomeType.Grassland,
         explored: true,
-        climate: NEUTRAL_BIOME_CLIMATE,
-      });
+        occupied: false,
+      };
+      (Math.abs(row) <= 12 && Math.abs(col) <= 12 ? cells : halo).push(cell);
     }
   }
   return {
-    id: "beast-motion-page",
-    colMin: -18,
-    colMax: 18,
-    rowMin: -18,
-    rowMax: 18,
     cells,
+    halo,
+    climate: { ...NEUTRAL_BIOME_CLIMATE, elevation_seed: 137, moisture_seed: 991 },
+    mapCenter: 0,
+    pageKey: "beast-motion-lab:grassland",
+    roadSegments: [],
+    settlementAnchors: [],
   };
 }
 
@@ -1156,7 +1160,9 @@ class BeastMotionStage implements BeastMotionRendererHandle {
       return WYVERN_FULL_RIG_SPECS.length + BEAST_MOTION_HYBRID_BONE_COUNT;
     }
     if (this.state.way === "maths") return 0;
-    return this.state.count * (this.state.way === "rig" ? WYVERN_FULL_RIG_SPECS.length : BEAST_MOTION_HYBRID_BONE_COUNT);
+    return (
+      this.state.count * (this.state.way === "rig" ? WYVERN_FULL_RIG_SPECS.length : BEAST_MOTION_HYBRID_BONE_COUNT)
+    );
   }
 
   private emitLabels(): void {

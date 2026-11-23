@@ -138,7 +138,9 @@ await withDevClient({ base: parseOption("--base-url", null), port, out }, async 
         2,
       ) + "\n",
     );
-    console.log(`Beast roster proof complete: ${results.length * ways.length} clips across ${results.length} beasts in ${out}`);
+    console.log(
+      `Beast roster proof complete: ${results.length * ways.length} clips across ${results.length} beasts in ${out}`,
+    );
   } finally {
     browser.close();
     rmSync(profile, { recursive: true, force: true });

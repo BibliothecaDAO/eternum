@@ -61,7 +61,7 @@ export const BEAST_MOTION_WAYS: readonly BeastMotionWay[] = ["maths", "rig", "hy
 export const BEAST_MOTION_COUNTS: readonly BeastMotionCount[] = [1, 20, 100];
 export const BEAST_MOTION_LAYERS: readonly BeastMotionLayer[] = [0, 1, 2, 3];
 export const BEAST_MOTION_SPECIES_LIST = Object.keys(FRONTIER_BEASTS) as readonly FrontierSpecies[];
-export const BEAST_MOTION_SPECIES: FrontierSpecies = "wyvern";
+const BEAST_MOTION_SPECIES: FrontierSpecies = "wyvern";
 export const BEAST_MOTION_CYCLE_SECONDS = 2.4;
 const BEAST_MOTION_HEX_STRIDE = HEX_SIZE * 1.5;
 
@@ -369,7 +369,8 @@ function assignHybridWeights(
   if (archetype === "serpentine") {
     const tailMask = smoothstep(-0.18, -0.46, nz) * smoothstep(0.68, 0.34, ny);
     const tailTip = smoothstep(-0.5, -0.82, nz);
-    const legMask = smoothstep(0.32, 0.14, ny) * smoothstep(-0.3, 0.08, nz) * smoothstep(0.2, 0.45, absX) * (1 - tailMask);
+    const legMask =
+      smoothstep(0.32, 0.14, ny) * smoothstep(-0.3, 0.08, nz) * smoothstep(0.2, 0.45, absX) * (1 - tailMask);
     const frontMask = (smoothstep(0.46, 0.72, ny) + smoothstep(0.24, 0.58, nz) * 0.65) * (1 - tailMask);
     const headMask = clamp01(frontMask) * smoothstep(0.66, 0.88, Math.max(ny, (nz + 1) * 0.5));
     const neckMask = clamp01(frontMask) * (1 - headMask);
@@ -602,7 +603,9 @@ function evaluateFullRigBonePose(boneName: string, action: BeastMotionAction, sa
   }
 }
 
-export function buildFullBeastRigClips(restPositions: Record<string, Vector3>): Record<BeastMotionAction, AnimationClip> {
+export function buildFullBeastRigClips(
+  restPositions: Record<string, Vector3>,
+): Record<BeastMotionAction, AnimationClip> {
   const frames = 24;
   const times = Array.from({ length: frames + 1 }, (_, i) => (i / frames) * BEAST_MOTION_CYCLE_SECONDS);
   const clips = {} as Record<BeastMotionAction, AnimationClip>;
@@ -777,8 +780,18 @@ export function poseBeastHybridRig(
       coil * 0.35 - lunge * 0.25,
       -(0.14 + sample.breath * 0.1) * alive - coil * 0.45 + flinch * 0.3 + death * 0.4,
     );
-    setBone("robeL", -walkActive * 0.24 + sample.tailYaw * 0.14 * alive + death * 0.45, 0, sample.weightShift * 0.12 * alive);
-    setBone("robeR", -walkActive * 0.24 - sample.tailYaw * 0.14 * alive + death * 0.4, 0, sample.weightShift * 0.12 * alive);
+    setBone(
+      "robeL",
+      -walkActive * 0.24 + sample.tailYaw * 0.14 * alive + death * 0.45,
+      0,
+      sample.weightShift * 0.12 * alive,
+    );
+    setBone(
+      "robeR",
+      -walkActive * 0.24 - sample.tailYaw * 0.14 * alive + death * 0.4,
+      0,
+      sample.weightShift * 0.12 * alive,
+    );
     return;
   }
 
@@ -792,7 +805,12 @@ export function poseBeastHybridRig(
     sample.walkOffsetZ + lunge * 0.42 - coil * 0.18 - flinch * 0.22,
   );
   setBone("spine", -coil * 0.24 + lunge * 0.38 - flinch * 0.24, sample.headYaw * 0.12 * alive, -stride * 0.05);
-  setBone("head", sample.headPitch * 0.12 * alive + lunge * 0.2 - flinch * 0.26 + death * 0.24, sample.headYaw * 0.22 * alive, 0);
+  setBone(
+    "head",
+    sample.headPitch * 0.12 * alive + lunge * 0.2 - flinch * 0.26 + death * 0.24,
+    sample.headYaw * 0.22 * alive,
+    0,
+  );
   setBone(
     "armL",
     -stride * 0.45 - coil * 0.62 + lunge * 0.68 - flinch * 0.3 + death * 0.35,
@@ -805,7 +823,12 @@ export function poseBeastHybridRig(
     coil * 0.22 - lunge * 0.18,
     -0.1 * alive - coil * 0.28 + death * 0.35,
   );
-  setBone("tail0", -sample.breath * 0.1 * alive + lunge * 0.28 - coil * 0.18 - death * 0.25, sample.tailYaw * 0.44 * alive, 0);
+  setBone(
+    "tail0",
+    -sample.breath * 0.1 * alive + lunge * 0.28 - coil * 0.18 - death * 0.25,
+    sample.tailYaw * 0.44 * alive,
+    0,
+  );
   setBone("legL", stride * 0.56 - coil * 0.2 + lunge * 0.26 - flinch * 0.14 + death * 0.42, 0, death * 0.22);
   setBone("legR", -stride * 0.56 - coil * 0.2 + lunge * 0.26 - flinch * 0.14 + death * 0.34, 0, -death * 0.22);
 }

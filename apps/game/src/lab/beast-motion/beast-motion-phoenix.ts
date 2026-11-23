@@ -119,7 +119,11 @@ export function createHybridBeastMaterial(
 
   const secDx = gx.mul(breath.mul(0.065)).mul(chestMask).add(tailWave.mul(tailMask)).add(noise.mul(planted)).mul(alive);
   const secDy = breath.mul(0.028).mul(planted).add(wingFlutter.mul(wingAmp).mul(wingTip)).mul(alive);
-  const secDz = breath.mul(0.022).mul(chestMask).add(wingFlutter.mul(wingAmp * 0.45).mul(wingTip)).mul(alive);
+  const secDz = breath
+    .mul(0.022)
+    .mul(chestMask)
+    .add(wingFlutter.mul(wingAmp * 0.45).mul(wingTip))
+    .mul(alive);
 
   material.positionNode = positionLocal.add(vec3(secDx, secDy, secDz));
   return material;
