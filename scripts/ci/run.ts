@@ -1,4 +1,4 @@
-import { readFileSync, mkdtempSync, symlinkSync, writeFileSync } from "node:fs";
+import { readFileSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { delimiter, join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import {
@@ -42,6 +42,18 @@ function installRuntime(pin: NonNullable<ReturnType<typeof runtimePin>>, env: En
   const actual = command([pin.name, "--version"], env, root, true);
   if (!runtimeMatches(pin.version, actual)) throw new Error(`${pin.name}: wanted ${pin.version}, got ${actual}`);
   console.log(JSON.stringify({ runtime: pin.name, requested: pin.version, actual }));
+}
+
+function removeBuiltPackagesAFreshCheckoutLacks(env: Environment) {
+  const ignored = command(
+    ["git", "ls-files", "--others", "--ignored", "--exclude-standard", "--directory", "--", "packages"],
+    env,
+    root,
+    true,
+  );
+  for (const path of ignored.split("\n").filter((entry) => entry.endsWith("/dist/"))) {
+    rmSync(resolve(root, path), { recursive: true, force: true });
+  }
 }
 
 function hideToolchainsUntilSetUp(env: Environment) {
@@ -163,6 +175,7 @@ async function runJob(id: string) {
   if (job.job["runs-on"] !== "ubuntu-latest") throw new Error(`Unsupported validation platform: ${job.job["runs-on"]}`);
   const env: Environment = { ...inherited, ...stepEnvironment(job.job.env, { matrix: job.matrix }), CI: "true" };
   env.RUNNER_TEMP ??= mkdtempSync(join(env.FLOW_TMP ?? tmpdir(), "ci-"));
+  removeBuiltPackagesAFreshCheckoutLacks(env);
   hideToolchainsUntilSetUp(env);
   const stop = await startPostgres(job, env);
   const interrupted = () => {
