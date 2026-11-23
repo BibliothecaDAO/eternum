@@ -22,8 +22,8 @@ export const FrontierRelics = ({ realm, onClose }: { realm: NativeRows["Structur
         <HudNotice icon="relics" line={RELIC_WORDS.empty} />
       ) : (
         withRelics.map(({ army }) => (
-          <div key={army.explorerId} className="flex flex-col gap-1.5">
-            <p className="text-hud-label text-hud-muted">{army.label}</p>
+          <div key={army.explorerId} className="flex flex-col gap-2">
+            <p className="text-hud-label uppercase tracking-wide text-hud-muted">{army.label}</p>
             <ArmyRelicSlots explorerId={army.explorerId} />
           </div>
         ))

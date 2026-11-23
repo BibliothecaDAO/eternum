@@ -229,7 +229,9 @@ async function createRenderer(
 async function createWorldTerrain(): Promise<ProceduralTerrain> {
   const terrain = new ProceduralTerrain({ streaming: false, gameMode: "frontier" });
   try {
-    await terrain.loadProps();
+    await terrain.loadProps().catch((error: unknown) => {
+      console.warn("[AspectRace] Optional procedural terrain props failed to load", error);
+    });
     const request = createAspectRaceTerrainRequest();
     const prepared = await terrain.preparePageAsync(request);
     const fogMask = await terrain.prepareFogMaskAsync([prepared]);

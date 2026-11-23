@@ -10,6 +10,8 @@ import {
   expeditionDayEndsAt,
   readExpeditionRules,
   setBlockTimestampSource,
+  structureMapPosition,
+  viewInLayer,
 } from "@bibliothecadao/eternum";
 import { deepCenter, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
 
@@ -195,5 +197,33 @@ describe("the shared Deep in the map layer menu", () => {
     act(() => [...host.querySelectorAll<HTMLButtonElement>("[data-surface-deep-switch] button")][1]!.click());
     choose("Deep");
     expect(requestLayerView).toHaveBeenLastCalledWith({ col: 516, row: 3584 });
+  });
+
+  it("recognizes a Deep camera tile even when the watched realm has not reached depth 3 and returns to the realm site on Surface", () => {
+    const { store, realm } = researchedDay(1n);
+    store.applyFacts([
+      {
+        model: "SettlementRules",
+        key: "0x2",
+        value: { ...store.require("SettlementRules", { game_id: 1 }), spacing: 1024 },
+      },
+      { model: "DeepRules", key: "0xdeef", value: DEEP_RULES },
+    ] as never);
+    const rules = readExpeditionRules(store, 1)!;
+    const site = structureMapPosition(store, realm)!;
+    expect(site.x).not.toBe(deepCenter(rules.spacing).col);
+    context.mapView = true;
+    useUIStore.setState({ cameraTargetHex: deepCenter(rules.spacing) });
+    const seen: { current: MapLayers | null } = { current: null };
+    const Probe = () => {
+      seen.current = useMapLayers(rules, realm, realm);
+      return null;
+    };
+    act(() => root.render(<Probe />));
+    expect(seen.current?.shown).toBe("deep");
+    expect(seen.current?.layers).toEqual([0]);
+    act(() => seen.current!.go(0));
+    expect(requestLayerView).toHaveBeenCalledTimes(1);
+    expect(requestLayerView).toHaveBeenCalledWith(viewInLayer(rules, { col: site.x, row: site.y }, 0));
   });
 });

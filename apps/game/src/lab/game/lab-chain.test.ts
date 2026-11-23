@@ -27,4 +27,7 @@ it("lets no route open the game before the tab answers the lab's directory, howe
   const book = { orders: [], active: null };
   expect(await identityClient.saveBuildOrders({ ...saved, book })).toEqual({ ...saved, book, revision: 4 });
   expect(await identityClient.getBuildOrders()).toEqual({ ...saved, book, revision: 4 });
+  expect(
+    await identityClient.createShare({ kind: "aspect", chainId: LAB_GAME.chainId, gameId: LAB_GAME.gameId, moment: 1 }),
+  ).toBe(`lab-aspect-${LAB_GAME.gameId}-1`);
 });

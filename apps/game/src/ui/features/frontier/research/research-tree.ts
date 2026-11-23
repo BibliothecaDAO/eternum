@@ -77,7 +77,7 @@ export interface TreeNode {
   price?: { essence: number; labor: number };
   needs: Need[];
   /** What the node does, one line, and its figure now and after the next tier. */
-  gives: { line: string; now: RankedWords | string; next?: RankedWords | string };
+  gives: { line: string; now: RankedWords | string; next?: RankedWords | string; direction?: "higher" | "lower" };
   job?: string;
   figures: Figure[];
   /** The nodes this one leads to (the tree's lines). */
@@ -92,7 +92,7 @@ const ROWS = {
 
 type ResearchRow = Extract<keyof typeof research, `ROW_${string}`>;
 
-const percent = (bps: number) => formatPercent(bps / 10_000, { signed: true });
+const totalPercent = (bps: number) => formatPercent(1 + bps / 10_000);
 export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
   const learned = (row: number) => realm.learned[row] ?? { tier: 0 };
   const store = realm.laborStore(realm.castleLevel);
@@ -173,8 +173,8 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
   };
 
   const outputStep = (tier: number) => ({
-    now: percent(tier * realm.board.outputStepBps),
-    next: tier < 5 ? percent((tier + 1) * realm.board.outputStepBps) : undefined,
+    now: totalPercent(tier * realm.board.outputStepBps),
+    next: tier < 5 ? totalPercent((tier + 1) * realm.board.outputStepBps) : undefined,
   });
   const outputRow = (row: number, category: BuildingType, icon: IconMeaning, [name, line]: readonly [string, string]) =>
     buildingNode(row, category, "economy", (tier) => ({ line, ...outputStep(tier) }), {
@@ -254,13 +254,22 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
   return Object.values(rows).flat();
 
   function loreLadder(): TreeNode[] {
-    const ladder: { key: string; site: string; icon: IconMeaning; tier: number; line: string; next: string }[] = [
+    const ladder: {
+      key: string;
+      site: string;
+      icon: IconMeaning;
+      tier: number;
+      line: string;
+      now: string;
+      next: string;
+    }[] = [
       {
         key: "well",
         site: WELL,
         icon: "well",
         tier: research.LORE_WELLS,
         line: RESEARCH_TREE.armiesFind(WELL),
+        now: RESEARCH_TREE.none,
         next: RESEARCH_TREE.each(`${formatExact(nativeRuleConstants.WELL_REFILL_PERCENT)}% max ${STAMINA}`),
       },
       {
@@ -269,6 +278,7 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
         icon: "shrine",
         tier: research.LORE_SHRINES,
         line: RESEARCH_TREE.armiesFind(SHRINE),
+        now: RESEARCH_TREE.closed,
         next: RESEARCH_TREE.opens,
       },
       {
@@ -277,6 +287,7 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
         icon: "spire",
         tier: research.LORE_SPIRES,
         line: RESEARCH_TREE.opensLayers,
+        now: RESEARCH_TREE.closed,
         next: RESEARCH_TREE.opens,
       },
     ];
@@ -297,7 +308,7 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
         ROWS.lore,
         RESEARCH_TREE.lore(step.site),
         step.icon,
-        { line: step.line, now: "—", next: step.next },
+        { line: step.line, now: step.now, next: step.next },
         step.tier,
         before,
         ladder[index + 1] ? [ladder[index + 1]!.key] : [],
@@ -374,13 +385,16 @@ const conscriptionStep = (tier: number, board: RealmResearchFacts["board"]): Pic
   const at = (rank: number) => RESEARCH_TREE.effects.troops(troopsAnHourAt(rank, board));
   return { now: at(tier), next: tier < 5 ? at(tier + 1) : undefined };
 };
-const rationsStep = (tier: number, board: RealmResearchFacts["board"]): Pick<Figure, "now" | "next"> => {
+const rationsStep = (
+  tier: number,
+  board: RealmResearchFacts["board"],
+): Pick<TreeNode["gives"], "now" | "next" | "direction"> => {
   const at = (rank: number) => RESEARCH_TREE.effects.rations(wheatATroopAt(rank, board));
-  return { now: at(tier), next: tier < 5 ? at(tier + 1) : undefined };
+  return { now: at(tier), next: tier < 5 ? at(tier + 1) : undefined, direction: "lower" };
 };
 const logisticsStep = (tier: number, board: RealmResearchFacts["board"]): Pick<Figure, "now" | "next"> => {
   const effect = (level: number) =>
-    RESEARCH_TREE.effects.logistics(formatFigure(logisticsStamina(board.staminaBar, level), { signed: true }));
+    RESEARCH_TREE.effects.logistics(formatFigure(board.staminaBar + logisticsStamina(board.staminaBar, level)));
   return { now: effect(tier), next: tier < 5 ? effect(tier + 1) : undefined };
 };
 
@@ -421,3 +435,25 @@ export const needLine = (need: Need): string => {
 /** Whether the realm can research anything now: the nav's Research dot. */
 export const canResearchNow = (nodes: readonly TreeNode[] | undefined): boolean =>
   nodes?.some(({ state }) => state === "ready") ?? false;
+
+export const researchVerb = (row: number): string =>
+  isOathResearch(row) ? `${RESEARCH_TREE.upgrade} ${RESEARCH_TREE.oaths}` : RESEARCH_TREE.upgrade;
+
+export const researchActionName = (node: Pick<TreeNode, "row" | "name">): string =>
+  isOathResearch(node.row)
+    ? `${RESEARCH_TREE.upgrade} ${node.name} ${RESEARCH_TREE.oaths}`
+    : `${RESEARCH_TREE.upgrade} ${node.name}`;
+
+const formatPickEffectStep = (
+  now: RankedWords | string,
+  next?: RankedWords | string,
+  direction: "higher" | "lower" = "higher",
+): RankedWords | string => {
+  if (!next) return now;
+  const step = RESEARCH_TREE.step(now, next);
+  if (direction !== "lower") return step;
+  return typeof step === "string" ? `${step} ${RESEARCH_TREE.less}` : [...step, ` ${RESEARCH_TREE.less}`];
+};
+
+export const researchEffectLine = (node: Pick<TreeNode, "gives">): RankedWords | string =>
+  formatPickEffectStep(node.gives.now, node.gives.next, node.gives.direction);

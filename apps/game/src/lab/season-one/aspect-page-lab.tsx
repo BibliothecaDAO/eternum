@@ -18,7 +18,11 @@ export function AspectPageLab() {
           </button>
         ))}
       </nav>
-      <AspectPageView {...ASPECT_PAGE_CASES[NAMES[index]!]} onClose={() => setParams({ case: "0" })} />
+      <AspectPageView
+        {...ASPECT_PAGE_CASES[NAMES[index]!]}
+        onGoToDeep={() => undefined}
+        onClose={() => setParams({ case: "0" })}
+      />
     </div>
   );
 }

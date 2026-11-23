@@ -5,14 +5,7 @@ import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { HudButton, HudCost, HudRanked, HudSheet, HudTier, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
 import { costLine, type Price } from "@/ui/design-system/kit/price-faces";
 import type { Fix, Refusal } from "@/ui/design-system/kit/refusal";
-import {
-  BUILDING_FIGURES,
-  RESEARCH,
-  RESEARCH_TREE,
-  RESEARCHING,
-  type Rank,
-  type RankedWords,
-} from "@/ui/design-system/kit/words";
+import { BUILDING_FIGURES, RESEARCHING, type Rank, type RankedWords } from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
 import { DestroyBuildingButton } from "@/ui/features/world/components/bottom-right-panel/destroy-building-button";
 import { requireActiveGameClient } from "@/sync/active-game-client";
@@ -28,7 +21,7 @@ import { buildingsMake, standingBuildings } from "../production/store-makers";
 import { RefusedVerb } from "../refused-verb";
 import { useResearchActions } from "../research/research-actions";
 import { useResearchTree } from "../research/research-facts";
-import { firstMissing, type Need, needLine, type TreeNode } from "../research/research-tree";
+import { firstMissing, type Need, needLine, researchVerb, type TreeNode } from "../research/research-tree";
 import type { TappedBuilding } from "../research/selected-building";
 import { CompareRows } from "./compare-rows";
 
@@ -96,7 +89,7 @@ const useDemolish = (realm: NativeRows["Structure"], building: TappedBuilding) =
         hex: { col: building.innerCol, row: building.innerRow },
       });
     } catch (error) {
-      toast.failed(error, "The building could not be demolished.");
+      toast.failed(error, "Could not delete the building.");
     } finally {
       setBusy(false);
     }
@@ -188,7 +181,7 @@ export const BuildingCardView = ({
         {next && orders && (
           <ResearchFoot
             node={next}
-            verb={isOathResearch(next.row) ? RESEARCH_TREE.research(RESEARCH_TREE.oaths) : RESEARCH}
+            verb={researchVerb(next.row)}
             sending={orders.sending}
             fix={orders.fix}
             onResearch={() => orders.onResearch()}

@@ -1,11 +1,21 @@
 import { useGame } from "@/hooks/context/game-context";
 import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { useQuery } from "@/hooks/helpers/use-query";
+import { openPlace } from "@/play/navigation/open-place";
+import { requestLayerView } from "@/three/scenes/worldmap-layer-request";
 import { ASPECT_PAGE_WORDS } from "@/ui/design-system/kit/words";
-import { configManager, getStructureName } from "@bibliothecadao/eternum";
-import { RACE_MODELS, readRaceBoard, nativeRaceConstants, type RaceBoard } from "@bibliothecadao/eternum/game-client";
+import { configManager, getStructureName, Position } from "@bibliothecadao/eternum";
+import {
+  deepViewFor,
+  RACE_MODELS,
+  readRaceBoard,
+  nativeRaceConstants,
+  type RaceBoard,
+} from "@bibliothecadao/eternum/game-client";
 import { aspectLordsWorth, aspects, catalogAspectId, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { useFrontierRealm } from "../frontier-home";
+import { realmLayers } from "../hud/map-layers";
 import { AspectInvite } from "../invite/aspect-invite";
 import { AspectFeedView } from "./aspect-feed-view";
 import { useAspectFights } from "./use-aspect-fights";
@@ -21,17 +31,33 @@ export function useAspectBoard() {
 
 export function FrontierAspectPage({ onClose }: { onClose: () => void }) {
   const { setup } = useGame();
+  const { isMapView } = useQuery();
   const reading = useAspectBoard();
   const board = reading.known?.race;
   const home = useFrontierRealm();
   const fights = useAspectFights(board?.own?.members.map((member) => member.home.owner) ?? []);
   const now = useNowSeconds();
+  useNativeRevision(["DeepRules", "RealmKnowledge", "SettlementRules"]);
   if (!board) return <AspectPageView race={null} own={null} onClose={onClose} />;
+  const gameId = configManager.getActiveGameId();
+  const canEnterDeep = home !== null && realmLayers(setup.store, home).includes("deep");
+  const settlementRules = setup.store.get("SettlementRules", { game_id: gameId });
+  const gameOver = board.result !== null || configManager.isGameOver();
+  const onGoToDeep =
+    !gameOver && canEnterDeep && settlementRules
+      ? () => {
+          const target = deepViewFor(setup.store, gameId, home.entity_id, settlementRules.spacing);
+          if (isMapView) requestLayerView(target);
+          else openPlace("map", Position.fromContract({ x: target.col, y: target.row }));
+          onClose();
+        }
+      : undefined;
   return (
     <AspectPageView
       {...aspectPage(board, (home) => getStructureName(home, setup.store).name)}
       fights={<AspectFeedView reading={fights} now={now} />}
       invite={home && <AspectInvite realm={home} />}
+      onGoToDeep={onGoToDeep}
       onClose={onClose}
     />
   );

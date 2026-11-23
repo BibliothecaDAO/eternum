@@ -13,6 +13,7 @@ import { deepScenario } from "./deep-scenario";
 import { expiredRaceScenario, raceScenario } from "./race-scenario";
 import { actionsScenario } from "./actions-scenario";
 import { economyScenario } from "./economy-scenario";
+import { panelsScenario } from "./panels-scenario";
 import { relicsScenario } from "./relics-scenario";
 import { etherealDepthsScenario } from "./ethereal-depths-scenario";
 import { dayEndScenario } from "./day-end-scenario";
@@ -58,6 +59,7 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   "race-finished": () => raceScenario(true),
   "race-expired": expiredRaceScenario,
   economy: economyScenario,
+  panels: panelsScenario,
   relics: relicsScenario,
   "ethereal-depths": etherealDepthsScenario,
   /** The spire's game opened on the home page, entered by its card's Resume: a way back home there is the app's own. */

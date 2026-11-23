@@ -36,8 +36,8 @@ export const RACE_DAYLIGHT_PROGRESS = 54;
 const COLUMNS = 23;
 const ROWS = 11;
 const CAMERA_FOV = 30;
-const TOWER_TARGET_Y = 1.75;
-const PLATE_Z_OFFSET = 1.15;
+const TOWER_TARGET_Y = 1.65;
+const PLATE_Z_OFFSET = 1.05;
 
 export function createAspectRaceTerrainRequest(): TerrainPageRequest {
   const occupied = new Set(RACE_TOWER_HEXES.map(({ col, row }) => `${col}:${row}`));
@@ -45,13 +45,14 @@ export function createAspectRaceTerrainRequest(): TerrainPageRequest {
     const col = index % COLUMNS;
     const row = Math.floor(index / COLUMNS);
     const biome = raceBiomeAt(col, row);
+    const inForegroundClearance = row >= 5 && row <= 8 && col >= 5 && col <= 17;
     return {
       col,
       row,
       biome,
       previewBiome: biome,
       explored: true,
-      occupied: occupied.has(`${col}:${row}`),
+      occupied: occupied.has(`${col}:${row}`) || inForegroundClearance,
     };
   });
   return {
@@ -68,9 +69,9 @@ export function createAspectRaceTerrainRequest(): TerrainPageRequest {
 }
 
 function raceBiomeAt(col: number, row: number): BiomeType {
-  if (row >= 4 && row <= 6 && col >= 5 && col <= 17) return BiomeType.TemperateDesert;
+  if (row >= 4 && row <= 8 && col >= 5 && col <= 17) return BiomeType.TemperateDesert;
   if (row <= 2) return (col + row) % 3 === 0 ? BiomeType.TemperateDeciduousForest : BiomeType.Grassland;
-  if (row >= 8) return (col + row) % 2 === 0 ? BiomeType.SubtropicalDesert : BiomeType.Shrubland;
+  if (row >= 9) return (col + row) % 2 === 0 ? BiomeType.SubtropicalDesert : BiomeType.Shrubland;
   return (col + row) % 3 === 0 ? BiomeType.Shrubland : BiomeType.Grassland;
 }
 
@@ -87,10 +88,10 @@ export function frameAspectRaceCamera(camera: PerspectiveCamera): Vector3 {
   }
   const halfFovRad = (camera.fov * Math.PI) / 360;
   const aspect = Math.max(camera.aspect, 0.5);
-  const idealHorizSpan = Math.abs(last.x - first.x) / 0.72;
-  const vertSpan = Math.max(5.4, idealHorizSpan / aspect);
+  const idealHorizSpan = Math.abs(last.x - first.x) / 0.78;
+  const vertSpan = Math.max(4.4, idealHorizSpan / aspect);
   const distance = vertSpan / (2 * Math.tan(halfFovRad));
-  camera.position.set(center.x, center.y + distance * 0.26, center.z + distance * 0.96);
+  camera.position.set(center.x, center.y + distance * 0.25, center.z + distance * 0.96);
   camera.lookAt(center);
   camera.updateMatrixWorld();
   return center;

@@ -1,7 +1,7 @@
 .race-stage {
   position: relative;
   width: 100%;
-  height: 13.5rem;
+  height: 9.5rem;
   overflow: hidden;
   border: 1px solid var(--hud-line);
   border-radius: var(--hud-radius-panel);
@@ -10,7 +10,9 @@
 
 @media (min-width: 1024px) {
   .race-stage {
-    height: 22rem;
+    height: 44vh;
+    min-height: 22rem;
+    max-height: 34rem;
   }
 }
 

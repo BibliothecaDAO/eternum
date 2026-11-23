@@ -63,7 +63,7 @@ describe("the Aspect page", () => {
 
   it("names the Aspect that finished first once the age is won, and finished rows say so", () => {
     draw(ASPECT_PAGE_CASES["Age won by another Aspect"]);
-    expect(part("data-aspect-race")).toContain("Prowess finished first and won the age");
+    expect(part("data-aspect-race")).toContain("Prowess finished 1st and won the season");
     expect(part("data-aspect-race")).toContain("Finished · 10,000 of 10,000");
     const triumphs = part("data-aspect-triumphs");
     expect(triumphs).toContain("Clear Mist · day 12");
@@ -99,6 +99,48 @@ describe("the Aspect page", () => {
     expect(document.body.textContent).toContain("Join an Aspect to see its members");
     expect(document.body.querySelector("[data-aspect-own]")).toBeNull();
     draw(ASPECT_PAGE_CASES["Facts not settled"]);
-    expect(document.body.textContent).toContain("Reading the race…");
+    expect(document.body.textContent).toContain("Loading scores…");
+  });
+
+  it("shows the reward rate and Go to Deep in the footer when reachable", () => {
+    let deepClicked = 0;
+    act(() =>
+      root.render(
+        <AspectPageView
+          {...ASPECT_PAGE_CASES["Mid-season, the player's Aspect second"]}
+          onGoToDeep={() => {
+            deepClicked += 1;
+          }}
+          onClose={() => {}}
+        />,
+      ),
+    );
+    expect(document.body.textContent).toContain("10 / pt · +100K");
+    const buttons = [...document.body.querySelectorAll("button")];
+    const goDeep = buttons.find((button) => button.textContent?.includes("Go to Deep"));
+    expect(goDeep).toBeDefined();
+    act(() => goDeep!.click());
+    expect(deepClicked).toBe(1);
+
+    for (const endedOrNoAspect of [
+      ASPECT_PAGE_CASES["Age won by another Aspect"],
+      ASPECT_PAGE_CASES["No Aspect"],
+      ASPECT_PAGE_CASES["Facts not settled"],
+    ]) {
+      act(() =>
+        root.render(
+          <AspectPageView
+            {...endedOrNoAspect}
+            onGoToDeep={() => {
+              deepClicked += 1;
+            }}
+            onClose={() => {}}
+          />,
+        ),
+      );
+      expect(
+        [...document.body.querySelectorAll("button")].find((button) => button.textContent?.includes("Go to Deep")),
+      ).toBeUndefined();
+    }
   });
 });

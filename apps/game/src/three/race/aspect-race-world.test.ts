@@ -31,6 +31,8 @@ describe("the Aspect race 3D world layout", () => {
       const cell = request.cells.find((each) => each.col === hex.col && each.row === hex.row);
       expect(cell?.explored).toBe(true);
       expect(cell?.occupied).toBe(true);
+      const inFront = request.cells.find((each) => each.col === hex.col && each.row === hex.row + 1);
+      expect(inFront?.occupied).toBe(true);
     }
     expect(new Set(request.cells.map((cell) => cell.biome)).size).toBeGreaterThanOrEqual(4);
   });

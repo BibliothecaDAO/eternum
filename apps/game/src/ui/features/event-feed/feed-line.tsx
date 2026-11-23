@@ -29,25 +29,40 @@ export const FeedLine = ({ story, own = false }: { story: ProcessedStoryEvent; o
   const reading = readFeedStory(story, store);
   const words = (
     <>
-      <span className="ui-event__time">{formatClockTime(story.timestampMs / 1000)}</span>
-      <Icon name={storyMeaning(story.story)} size={16} className="ui-event__icon" />
-      <span className="ui-event__text">
-        {"words" in reading ? (
-          <OwnWordsLine words={reading.words} named={reading.named} name={reading.actor && names.text(reading.actor)} />
-        ) : (
-          <>
-            <Name text={names.text(reading.actor)} /> {reading.verb}
-            {reading.object && <ObjectWords object={reading.object} names={names.text} />}
-            {reading.outcome && <span className={OUTCOME_TONES[reading.outcome.tone]}> · {reading.outcome.word}</span>}
-          </>
-        )}
+      <span className="flex size-9 shrink-0 items-center justify-center rounded-md border border-hud-divider bg-hud-surface">
+        <Icon name={storyMeaning(story.story)} size={24} className="ui-event__icon" />
+      </span>
+      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span className="ui-event__text">
+          {"words" in reading ? (
+            <OwnWordsLine
+              words={reading.words}
+              named={reading.named}
+              name={reading.actor && names.text(reading.actor)}
+            />
+          ) : (
+            <>
+              <Name text={names.text(reading.actor)} /> {reading.verb}
+              {reading.object && <ObjectWords object={reading.object} names={names.text} />}
+              {reading.outcome && (
+                <span className={OUTCOME_TONES[reading.outcome.tone]}> · {reading.outcome.word}</span>
+              )}
+            </>
+          )}
+        </span>
+        <span className="ui-event__time">{formatClockTime(story.timestampMs / 1000)}</span>
       </span>
     </>
   );
   return (
-    <div className="ui-event ui-feed-line" data-feed-line data-story={story.story} data-own={own || undefined}>
+    <div
+      className="ui-event ui-feed-line items-center py-2"
+      data-feed-line
+      data-story={story.story}
+      data-own={own || undefined}
+    >
       {open ? (
-        <button type="button" className="ui-event__open" onClick={open}>
+        <button type="button" className="ui-event__open items-center" onClick={open}>
           {words}
         </button>
       ) : (

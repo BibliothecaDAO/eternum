@@ -22,10 +22,12 @@ export const FrontierFeed = ({ onClose }: { onClose: () => void }) => {
     <HudPage
       label={EVENTS_WORDS.feed}
       icon="chronicles"
-      cue={<LensSwitch lens={lens} onLens={setLens} words={FEED_LENSES} />}
       onClose={onClose}
-      bodyClassName="gap-0 overflow-x-hidden scrollbar-thin"
+      bodyClassName="gap-2.5 overflow-x-hidden scrollbar-thin"
     >
+      <div className="shrink-0 border-b border-hud-divider pb-2">
+        <LensSwitch lens={lens} onLens={setLens} words={FEED_LENSES} />
+      </div>
       <FeedStories lens={lens} />
     </HudPage>
   );
@@ -38,7 +40,7 @@ const FeedStories = ({ lens }: { lens: FeedLens }) => {
   if (events.isError) return <HudNotice tone="bad" line={EVENTS_WORDS.failed} retry={events.retry} />;
   if (events.stories.length === 0) return <p className="text-hud-label text-hud-muted">{EVENTS_WORDS.nothingYet}</p>;
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col divide-y divide-hud-divider">
       {events.stories.map((event) => (
         <FeedLine key={event.id} story={event} own={involvesPlayer(event, address)} />
       ))}

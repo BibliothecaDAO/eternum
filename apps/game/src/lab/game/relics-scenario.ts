@@ -16,6 +16,11 @@ const CARRIED: [ArmyRelic, ArmyRelic, ArmyRelic] = [
   { kind: "Plunder", rank: 3 },
 ];
 
+export const seedArmyRelics = (startsAt: number): LabFact[] => [
+  armyRelics(CARRIED),
+  effect({ kind: "Ward", rank: 3 }, startsAt + 1_200),
+];
+
 export const relicsScenario = (): LabScenario => {
   const spire = spireScenario();
   const { store, startsAt } = spire;
@@ -24,8 +29,7 @@ export const relicsScenario = (): LabScenario => {
   store.applyFacts([
     ...siteAt(store, ruinTile, { ...army.troops, count: 10_000n * PRECISION }, StructureType.Ruin),
     { model: "RuinRelic", key: "0x1abf0", value: { game_id: 1, entity_id: SITE, kind: "Blade", rank: 4 } },
-    armyRelics(CARRIED),
-    effect({ kind: "Ward", rank: 3 }, startsAt + 1_200),
+    ...seedArmyRelics(startsAt),
   ] as never);
   return {
     ...spire,

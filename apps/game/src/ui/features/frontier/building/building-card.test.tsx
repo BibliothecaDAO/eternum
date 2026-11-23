@@ -49,7 +49,7 @@ const draw = (
             ? undefined
             : {
                 sending: false,
-                fix: () => ({ icon: "realm", word: "Level up the castle", onFix }),
+                fix: () => ({ icon: "realm", word: "Upgrade the Castle", onFix }),
                 onResearch,
                 demolish: <button type="button">Delete</button>,
               }
@@ -92,8 +92,8 @@ it("says what all the Farms make as one number, and their research only as gems"
 
 it("reads the Farm's output now against the next tier, and researches it", () => {
   const { onResearch } = draw(research.ROW_FARM);
-  expect(rows()).toEqual([["Fields", "Farm wheat", "+20%", "→", "+40%"]]);
-  act(() => button(/^Research$/)!.click());
+  expect(rows()).toEqual([["Fields", "Farm wheat", "120%", "→", "140%"]]);
+  act(() => button(/^Upgrade$/)!.click());
   expect(onResearch).toHaveBeenCalledWith();
   // The tier is its gem, never its word: a Rare Farm holds II, its next tier III.
   expect(gems()).toEqual(["I", "I", "II"]);
@@ -107,12 +107,12 @@ it("keeps Research, dimmed, when the labor storage cannot hold the tier's price,
       learned: { ...MID_REALM.learned, [research.ROW_SUPPLY_YARD]: { tier: 4 } },
     },
   });
-  const verb = button(/^Research$/)!;
+  const verb = button(/^Upgrade$/)!;
   expect(verb.disabled).toBe(true);
   expect(host.querySelector('[role="status"]')!.textContent).toBe("Labor storage 15,000 / 25,000 · Kingdom");
   act(() => verb.click());
   expect(onResearch).not.toHaveBeenCalled();
-  act(() => button(/^Level up the castle$/)!.click());
+  act(() => button(/^Upgrade the Castle$/)!.click());
   expect(onFix).toHaveBeenCalled();
 });
 
@@ -136,10 +136,10 @@ it("says the Essence the Workshops need against what is held, beside Research di
       />,
     ),
   );
-  const verb = button(/^Research$/)!;
+  const verb = button(/^Upgrade$/)!;
   expect(verb.disabled).toBe(true);
   const foot = verb.closest(".ui-window__foot")!;
-  expect(foot.textContent).toMatch(/^Needs [\d,.K]+ Essence, have 500Research$/);
+  expect(foot.textContent).toMatch(/^Needs [\d,.K]+ Essence, have 500Upgrade$/);
   expect(foot.querySelectorAll("button")).toHaveLength(1);
 });
 
@@ -147,8 +147,8 @@ it("shows a training building's one figure, what every new army starts with, now
   draw(research.ROW_SUPPLY_YARD, { standing: 1 });
   expect(card().textContent).toContain("1 building");
   expect(card().textContent).not.toContain("1 buildings");
-  expect(rows()).toEqual([["Logistics", "Every new army", "+36 max stamina", "→", "+72 max stamina"]]);
-  expect(button(/^Research$/)).toBeDefined();
+  expect(rows()).toEqual([["Logistics", "Every new army", "216 max stamina", "→", "252 max stamina"]]);
+  expect(button(/^Upgrade$/)).toBeDefined();
   // Common is I on the card and current column; the next tier is II.
   expect(gems()).toEqual(["I", "I", "II"]);
 });
@@ -159,8 +159,8 @@ it("at Legendary shows what research gave, with no next column and no Research",
     learned: { ...MID_REALM.learned, [research.ROW_FARM]: { tier: 5 } },
   };
   draw(research.ROW_FARM, { realm: legendary });
-  expect(rows()).toEqual([["Fields", "Farm wheat", "+100%"]]);
-  expect(button(/^Research/)).toBeUndefined();
+  expect(rows()).toEqual([["Fields", "Farm wheat", "200%"]]);
+  expect(button(/^Upgrade/)).toBeUndefined();
   expect(gems()).toEqual(["V", "V"]);
 });
 
@@ -168,7 +168,7 @@ it("reads a viewer's building as it stands: what it makes and its tier, with not
   draw(research.ROW_FARM, { viewer: true, makes: { icon: "wheat", rate: "+25/min" } });
   expect(card().textContent).toContain("+25/min");
   expect(card().textContent).toContain("4 buildings");
-  expect(rows()).toEqual([["Fields", "Farm wheat", "+20%"]]);
+  expect(rows()).toEqual([["Fields", "Farm wheat", "120%"]]);
   expect(gems()).toEqual(["I", "I"]);
   // The sheet's close is its one control.
   expect([...host.querySelectorAll("button")].map((each) => each.getAttribute("aria-label"))).toEqual(["Close"]);
@@ -200,7 +200,7 @@ for (const row of [research.ROW_KNIGHT_OATHS, research.ROW_SCOUT_OATHS, research
     expect(card().textContent).toContain("2 Oath slots");
     expect(card().textContent).toContain("3 Oath slots");
     expect(card().textContent).not.toContain("Untrained");
-    act(() => button(/^Research Oath slots$/)!.click());
+    act(() => button(/^Upgrade Oath slots$/)!.click());
     expect(onResearch).toHaveBeenCalledWith();
   });
 }

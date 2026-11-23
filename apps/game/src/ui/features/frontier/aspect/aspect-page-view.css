@@ -1,0 +1,29 @@
+.aspect-race-page {
+  display: flex;
+  min-height: 0;
+  width: 100%;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: theme(spacing.4);
+  overflow-y: auto;
+}
+
+.aspect-race-page__hero {
+  display: flex;
+  flex-direction: column;
+  gap: theme(spacing.3);
+}
+
+.aspect-race-page__board {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: theme(spacing.4);
+  border-top: 1px solid var(--hud-divider);
+  padding-top: theme(spacing.3);
+}
+
+@media (min-width: 1024px) {
+  .aspect-race-page__board {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
