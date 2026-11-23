@@ -96,7 +96,7 @@ const visitingRealm2 = (streamed: typeof REALMS) => {
 const pressWorld = async () => {
   const host = document.createElement("div");
   const root = createRoot(host);
-  await act(async () => root.render(<TopHeader clock={<span />} />));
+  await act(async () => root.render(<TopHeader />));
   started.push(() => act(() => root.unmount()));
   const world = [...host.querySelectorAll("button")].find((button) => button.textContent === "World");
   await act(async () => world!.click());

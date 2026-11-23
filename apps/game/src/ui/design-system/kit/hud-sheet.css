@@ -3033,23 +3033,3 @@ button.ui-realm-tile:hover {
 .ui-race-row .ui-meter > i {
   background: rgb(var(--hud-aspect));
 }
-
-.ui-frontier-topbar {
-  pointer-events: none;
-  position: fixed;
-  inset-inline: 0;
-  top: 0;
-  z-index: 20;
-  display: flex;
-  height: theme(spacing.11);
-  align-items: center;
-  justify-content: space-between;
-  gap: theme(spacing.2);
-  padding-inline: theme(spacing.3);
-}
-.ui-frontier-topbar__group {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  gap: theme(spacing.2);
-}

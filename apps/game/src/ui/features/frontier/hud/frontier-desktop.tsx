@@ -6,22 +6,14 @@ import { EVENTS_WORDS, REALM, RESEARCH, SEASON } from "@/ui/design-system/kit/wo
 import { FeedToasts, useUnreadImportantCount } from "@/ui/features/event-feed/quick-feed";
 import { HudChatWindow } from "@/ui/features/world/containers/hud-chat-window";
 import type { SeasonGoal } from "@/ui/features/world/containers/top-header/identity-chip";
+import { TopHeader } from "@/ui/features/world/containers/top-header/top-header";
 import { HudColumn, HudFoot } from "@/ui/features/world/hud/desktop-hud";
 import { HudMinimap } from "@/ui/features/world/hud/minimap";
 import { type ReactNode, useState } from "react";
 
 import type { HudSurface } from "./frontier-nav";
-import { FrontierTopBar } from "./frontier-top-bar";
 import { useHudScale } from "./hud-scale";
 
-/**
- * Frontier on the one desktop HUD every mode shares (the owner, 19 October 2026: "A unified hud, with elements that can
- * differ a bit"; issue 5067): the shared top bar, the left column, the rail and the foot, with Frontier's own panels in
- * them. The top bar's clock is the day's, Frontier's one day timer. The left column holds one panel for the realm (its
- * stores and LORDS as rings, as Blitz's realm card reads a holding), one for its armies, and the minimap; the rail is the
- * one home for everything (FrontierRail); the foot the selected army's state over the round places. An order goes from
- * the map itself, as in Blitz. The whole HUD draws bigger on a bigger screen (useHudScale).
- */
 export const FrontierDesktop = ({
   season,
   clock,
@@ -51,7 +43,7 @@ export const FrontierDesktop = ({
   const [panel, setPanel] = useState<HTMLElement | null>(null);
   return (
     <div style={{ zoom: useHudScale() }}>
-      <FrontierTopBar season={season} places={places} depthSwitch={depthSwitch} clock={clock} />
+      <TopHeader season={season} places={places} depthSwitch={depthSwitch} clock={clock} />
       <HudColumn label={REALM}>
         {realm}
         <div className="flex shrink-0 flex-col">{armies}</div>
@@ -102,13 +94,6 @@ const FrontierRail = ({
   );
 };
 
-/**
- * Frontier's places as the shared HUD's round bubbles, each a surface pressed while it stands and closed by a second
- * press: Research (lit while a node can be bought), the Feed (counting what is unread and important, as a phone's place
- * bar does), and the Season. Today opens from the top bar's day. A desktop has no Menu: Map and Realm are the top bar's
- * Realm / World, chat the rail's strip, the Realms' labor the realm panel's chip, and leaving the game Settings' Leave
- * game.
- */
 export const FrontierPlaces = ({
   surface,
   onSurface,

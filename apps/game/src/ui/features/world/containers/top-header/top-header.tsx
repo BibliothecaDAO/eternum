@@ -5,13 +5,18 @@ import { SecondaryMenuItems } from "@/ui/features/world";
 import { GameClock } from "./game-clock";
 import { AttentionPill } from "./attention-pill";
 import { FollowingArmyPill } from "./following-army-pill";
-import { IdentityChip } from "./identity-chip";
+import { IdentityChip, type SeasonGoal } from "./identity-chip";
 import { useTopBarNavigation } from "./use-top-bar-navigation";
 import { memo, type ReactNode } from "react";
 
-type TopHeaderProps = { clock?: ReactNode };
+type TopHeaderProps = {
+  season?: SeasonGoal;
+  places?: ReactNode;
+  depthSwitch?: ReactNode;
+  clock?: ReactNode;
+};
 
-export const TopHeader = memo(({ clock }: TopHeaderProps) => {
+export const TopHeader = memo(({ season, places, depthSwitch, clock }: TopHeaderProps) => {
   const lane = useCompactLane();
   const { isLocalView, canOpenLocal, mapLayer, showLayerSwitch, navigateToView, switchLayer } = useTopBarNavigation();
 
@@ -19,7 +24,9 @@ export const TopHeader = memo(({ clock }: TopHeaderProps) => {
     <>
       <HudHeaderLayout
         lane={lane}
-        identity={<IdentityChip compact={lane !== null} />}
+        identity={<IdentityChip season={season} compact={lane !== null} />}
+        places={places}
+        depthSwitch={depthSwitch}
         clock={clock ?? <GameClock compact={lane !== null} />}
         // On a desktop Next up, atop the rail, is the one queue of what needs the player (the owner's ruling, 16
         // October 2026); the phone, which has no Next up yet, keeps the pill.
