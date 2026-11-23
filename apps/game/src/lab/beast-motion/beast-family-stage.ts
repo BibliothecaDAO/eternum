@@ -1,9 +1,4 @@
-import {
-  DEEP_BEASTS,
-  beastsOfFamily,
-  type BeastFamily,
-  type BeastIdle,
-} from "@bibliothecadao/types";
+import { DEEP_BEASTS, beastsOfFamily, type BeastFamily, type BeastIdle } from "@bibliothecadao/types";
 import { BufferGeometry, Group, Line, LineBasicMaterial, Matrix4, Quaternion, Vector3 } from "three";
 import { FRONTIER_BEASTS, type FrontierSpecies } from "@/three/structures/frontier-beast";
 import { FrontierModel, type BeastLayer } from "@/three/structures/frontier-model";
@@ -98,7 +93,9 @@ export class BeastFamilyStage {
   ): Promise<void> {
     const token = ++this.generation;
     const members = resolveFamilyMembers(family);
-    const gltfs = await Promise.all(members.map((member) => gltfLoader.loadAsync(FRONTIER_BEASTS[member.species].path)));
+    const gltfs = await Promise.all(
+      members.map((member) => gltfLoader.loadAsync(FRONTIER_BEASTS[member.species].path)),
+    );
     if (token !== this.generation) return;
 
     this.clear();

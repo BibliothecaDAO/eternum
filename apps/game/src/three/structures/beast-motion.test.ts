@@ -1,13 +1,18 @@
-import { BoxGeometry, Group, InstancedBufferAttribute, Matrix4, Mesh, MeshStandardMaterial, Texture, Vector3 } from "three";
+import {
+  BoxGeometry,
+  Group,
+  InstancedBufferAttribute,
+  Matrix4,
+  Mesh,
+  MeshStandardMaterial,
+  Texture,
+  Vector3,
+} from "three";
 import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
 import { describe, expect, it } from "vitest";
 
 import type { AnimationVisibilityContext } from "../types/animation";
-import {
-  BEAST_MOTION_PROFILES,
-  BeastMotionController,
-  evaluateBeastMotionDisplacement,
-} from "./beast-motion";
+import { BEAST_MOTION_PROFILES, BeastMotionController, evaluateBeastMotionDisplacement } from "./beast-motion";
 import { FRONTIER_BEASTS, type FrontierSpecies } from "./frontier-beast";
 import { FrontierModel } from "./frontier-model";
 

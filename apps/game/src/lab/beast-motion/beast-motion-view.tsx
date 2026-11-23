@@ -24,11 +24,7 @@ import {
   type BeastMotionRendererHandle,
   type BeastMotionStats,
 } from "./beast-motion-renderer";
-import {
-  BEAST_FAMILY_LABELS,
-  BEAST_FAMILY_SHOWCASE_IDS,
-  type BeastFamilyShowcaseId,
-} from "./beast-family-stage";
+import { BEAST_FAMILY_LABELS, BEAST_FAMILY_SHOWCASE_IDS, type BeastFamilyShowcaseId } from "./beast-family-stage";
 
 interface BeastMotionDebugBridge {
   setState(patch: Partial<BeastMotionState>): void;

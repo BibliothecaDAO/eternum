@@ -89,7 +89,10 @@ try {
       const compareQuery = hasShippedKnight ? "&compare=1&shippedUrl=/.tmp-shipped-knight" : "&compare=0";
 
       browser.run(["set", "viewport", "1280", "720"]);
-      browser.run(["open", `${baseUrl}/lab/troop-motion?capture=1&troop=knight&action=idle&camera=desktop${compareQuery}`]);
+      browser.run([
+        "open",
+        `${baseUrl}/lab/troop-motion?capture=1&troop=knight&action=idle&camera=desktop${compareQuery}`,
+      ]);
       browser.run([
         "wait",
         "--fn",
@@ -138,7 +141,11 @@ try {
       const stats = JSON.parse(browser.run(["eval", "JSON.stringify(window.__troopMotionLab.getStats())"]));
       writeFileSync(
         join(out, "summary.json"),
-        JSON.stringify({ capturedAt: new Date().toISOString(), comparedWithShipped: hasShippedKnight, clips, stats }, null, 2),
+        JSON.stringify(
+          { capturedAt: new Date().toISOString(), comparedWithShipped: hasShippedKnight, clips, stats },
+          null,
+          2,
+        ),
       );
       console.log(`Troop motion proof complete: ${clips.length} clips in ${out}`);
     } finally {

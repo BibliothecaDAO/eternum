@@ -26,8 +26,15 @@ import {
   type ProceduralCharacterConfig,
 } from "@/three/characters/procedural-character-config";
 import { ProceduralCharacterPoseFilter } from "@/three/characters/procedural-character-pose-filter";
-import { resolveProceduralCharacterPose, type ProceduralCharacterPose } from "@/three/characters/procedural-character-pose";
-import { applyCharacterRigLimbLengths, resolveCharacterRig, type ResolvedCharacterRig } from "@/three/characters/procedural-character-rig";
+import {
+  resolveProceduralCharacterPose,
+  type ProceduralCharacterPose,
+} from "@/three/characters/procedural-character-pose";
+import {
+  applyCharacterRigLimbLengths,
+  resolveCharacterRig,
+  type ResolvedCharacterRig,
+} from "@/three/characters/procedural-character-rig";
 import {
   advanceProceduralCharacterGaitPhase,
   resolveInitialProceduralCharacterPhase,
@@ -36,22 +43,24 @@ import {
 } from "@/three/characters/procedural-character-gait";
 import { ProceduralPlantController } from "@/three/characters/procedural-plant-controller";
 import { ProceduralContactReactionController } from "@/three/characters/collision/procedural-contact-reaction";
-import { applyProceduralMeleeConfigPatch, createDefaultProceduralMeleeConfig } from "@/three/characters/melee/procedural-melee-config";
+import {
+  applyProceduralMeleeConfigPatch,
+  createDefaultProceduralMeleeConfig,
+} from "@/three/characters/melee/procedural-melee-config";
 import { ProceduralMeleeController } from "@/three/characters/melee/procedural-melee-controller";
 import { applyProceduralMeleeHitReaction } from "@/three/characters/melee/procedural-melee-pose";
 import { T1_KNIGHT_DEFAULT_HUMANOID_RIG_ADAPTER } from "@/three/characters/t1-knight-default-humanoid-rig-adapter";
-import { applyProceduralUnitConfigPatch, createDefaultProceduralUnitConfig } from "@/three/characters/procedural-unit-config";
+import {
+  applyProceduralUnitConfigPatch,
+  createDefaultProceduralUnitConfig,
+} from "@/three/characters/procedural-unit-config";
 import { ProceduralUnitRuntime, type ProceduralUnitActor } from "@/three/characters/procedural-unit-runtime";
 import { T1_KNIGHT_WORLD_SCALE, buildArmyModelAssetPath } from "@/three/constants/army-constants";
 import { ModelLabEnvironment } from "@/three/debug/model-lab/model-lab-environment";
 import { readModelLabSettings } from "@/three/debug/model-lab/model-lab-settings";
 import { mapAnimationTime } from "@/three/effects/endgame/state";
 import { createTripoModelMaterial } from "@/three/materials/tripo-model-material";
-import {
-  TroopMotionController,
-  createTroopMotionNode,
-  type AnimatedTroopKind,
-} from "@/three/managers/troop-motion";
+import { TroopMotionController, createTroopMotionNode, type AnimatedTroopKind } from "@/three/managers/troop-motion";
 import { ModelType } from "@/three/types/army";
 import type { RendererSurfaceLike } from "@/three/renderer-backend";
 import { initializeRendererBackendRuntime } from "@/three/renderer-backend-runtime";
@@ -108,12 +117,15 @@ interface BaselineKnightHandle {
   dispose(): void;
 }
 
+const createTroopDrivenUniform = () => uniform(1);
+type TroopDrivenUniform = ReturnType<typeof createTroopDrivenUniform>;
+
 interface InstancedTroopPair {
   kind: AnimatedTroopKind;
   animatedRoot: Group;
   staticRoot: Group;
   controller: TroopMotionController;
-  driven: ReturnType<typeof uniform>;
+  driven: TroopDrivenUniform;
   dispose(): void;
 }
 
@@ -150,7 +162,7 @@ async function createInstancedTroopPair(kind: AnimatedTroopKind): Promise<Instan
   const gltf = await gltfLoader.loadAsync(buildArmyModelAssetPath(modelType));
   const controller = new TroopMotionController(kind, 1);
   controller.setPlacementAt(0, IDENTITY_MATRIX);
-  const driven = uniform(1);
+  const driven = createTroopDrivenUniform();
   const displacement = createTroopMotionNode(kind, float(mapAnimationTime), float(driven));
 
   const animatedRoot = new Group();
@@ -176,7 +188,10 @@ async function createInstancedTroopPair(kind: AnimatedTroopKind): Promise<Instan
     animMesh.castShadow = true;
     animMesh.receiveShadow = true;
     animMesh.frustumCulled = false;
-    animMesh.instanceColor = new InstancedBufferAttribute(new Float32Array([SIDE_OWN_COLOR.r, SIDE_OWN_COLOR.g, SIDE_OWN_COLOR.b]), 3);
+    animMesh.instanceColor = new InstancedBufferAttribute(
+      new Float32Array([SIDE_OWN_COLOR.r, SIDE_OWN_COLOR.g, SIDE_OWN_COLOR.b]),
+      3,
+    );
     animMesh.setMatrixAt(0, IDENTITY_MATRIX);
     animMesh.instanceMatrix.needsUpdate = true;
     animMesh.count = 1;
@@ -188,7 +203,10 @@ async function createInstancedTroopPair(kind: AnimatedTroopKind): Promise<Instan
     staticMesh.castShadow = true;
     staticMesh.receiveShadow = true;
     staticMesh.frustumCulled = false;
-    staticMesh.instanceColor = new InstancedBufferAttribute(new Float32Array([SIDE_OWN_COLOR.r, SIDE_OWN_COLOR.g, SIDE_OWN_COLOR.b]), 3);
+    staticMesh.instanceColor = new InstancedBufferAttribute(
+      new Float32Array([SIDE_OWN_COLOR.r, SIDE_OWN_COLOR.g, SIDE_OWN_COLOR.b]),
+      3,
+    );
     staticMesh.setMatrixAt(0, IDENTITY_MATRIX);
     staticMesh.instanceMatrix.needsUpdate = true;
     staticMesh.count = 1;
@@ -525,7 +543,11 @@ export async function mountTroopMotionLab(input: MountTroopMotionInput): Promise
     const targetY = groundY + (isScout ? 0.64 : 0.54);
     if (state.camera === "phone") {
       camera.fov = compare ? 38 : 34;
-      camera.position.set(0, groundY + (compare ? (isScout ? 2.1 : 1.82) : 1.56), compare ? (isScout ? 5.5 : 4.85) : 3.65);
+      camera.position.set(
+        0,
+        groundY + (compare ? (isScout ? 2.1 : 1.82) : 1.56),
+        compare ? (isScout ? 5.5 : 4.85) : 3.65,
+      );
       controls.target.set(0, targetY, 0);
     } else if (compare) {
       camera.fov = 33;

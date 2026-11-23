@@ -84,7 +84,9 @@ import type { PipelineCompiler } from "../pipeline-compiler";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
 
-// One upload range over the touched slot span, so a one-army write never re-uploads every buffer.
+const createTroopMotionDrivenUniform = () => uniform(0);
+type TroopMotionDrivenUniform = ReturnType<typeof createTroopMotionDrivenUniform>;
+
 const flushArmyModelSlotUploads = (modelData: ModelData): void => {
   flushSlotDirtyRange(modelData.dirtySlots, [
     ...modelData.instancedMeshes.flatMap((mesh) => [mesh.instanceMatrix, mesh.instanceColor]),
@@ -426,7 +428,7 @@ export class ArmyModel {
     const baseMeshes: Mesh[] = [];
     const troopKind = modelType ? resolveAnimatedTroopKind(modelType) : undefined;
     const troopMotion = troopKind ? new TroopMotionController(troopKind, this.ARMY_INSTANCE_CAPACITY) : undefined;
-    const troopMotionDriven = troopKind ? uniform(0) : undefined;
+    const troopMotionDriven = troopKind ? createTroopMotionDrivenUniform() : undefined;
 
     this.processGLTFScene(gltf, group, instancedMeshes, baseMeshes, troopKind, troopMotion, troopMotionDriven);
 
@@ -463,7 +465,7 @@ export class ArmyModel {
     baseMeshes: Mesh[],
     troopKind?: AnimatedTroopKind,
     troopMotion?: TroopMotionController,
-    troopMotionDriven?: ReturnType<typeof uniform>,
+    troopMotionDriven?: TroopMotionDrivenUniform,
   ): void {
     let meshIndex = 0;
 
@@ -491,7 +493,7 @@ export class ArmyModel {
     meshIndex: number,
     troopKind?: AnimatedTroopKind,
     troopMotion?: TroopMotionController,
-    troopMotionDriven?: ReturnType<typeof uniform>,
+    troopMotionDriven?: TroopMotionDrivenUniform,
   ): AnimatedInstancedMesh {
     const geometry = troopMotion ? mesh.geometry.clone() : mesh.geometry;
     const pooledMaterial = createPooledInstancedMaterial(mesh.material);

@@ -19,7 +19,7 @@ import { isAnimationPositionVisible } from "../utils/animation-visibility";
 import type { FrontierSpecies } from "./frontier-beast";
 
 export type BeastMotionAction = "idle" | "attack" | "hit" | "death";
-export type BeastMotionArchetype = "winged" | "serpentine" | "floating" | "brute" | "tails";
+type BeastMotionArchetype = "winged" | "serpentine" | "floating" | "brute" | "tails";
 
 export interface BeastMotionProfile {
   readonly archetype: BeastMotionArchetype;
@@ -42,7 +42,7 @@ export interface BeastMotionSlotState {
   readonly active: boolean;
 }
 
-export const BEAST_ACTION_CODES = {
+const BEAST_ACTION_CODES = {
   idle: 0,
   attack: 1,
   hit: 2,
@@ -591,20 +591,25 @@ export function createBeastMotionNode(
   const attackPitch = windup.mul(-0.24).add(strike.mul(0.42));
   const pivotY = max(float(0), pos.y.sub(0.12));
   const attackDz = pivotY.mul(sin(attackPitch)).add(strike.mul(0.24)).sub(windup.mul(0.1)).mul(grounded);
-  const attackDy = pivotY
-    .mul(cos(attackPitch).sub(1))
-    .add(windup.mul(0.08))
-    .sub(strike.mul(0.04))
-    .mul(grounded);
+  const attackDy = pivotY.mul(cos(attackPitch).sub(1)).add(windup.mul(0.08)).sub(strike.mul(0.04)).mul(grounded);
   const attackDx = strike.mul(0.045).mul(upper);
 
   const flinch = sin(progress.mul(Math.PI)).mul(progress.mul(-1.4).exp());
   const hitDz = flinch.mul(-0.18).mul(grounded);
   const hitDy = flinch.mul(-0.045).mul(upper);
-  const hitDx = sin(progress.mul(Math.PI * 6)).mul(flinch).mul(0.032).mul(grounded);
+  const hitDx = sin(progress.mul(Math.PI * 6))
+    .mul(flinch)
+    .mul(0.032)
+    .mul(grounded);
 
-  const aliveDx = baseDx.add(archDx).add(select(isAttack, attackDx, float(0))).add(select(isHit, hitDx, float(0)));
-  const aliveDy = baseDy.add(archDy).add(select(isAttack, attackDy, float(0))).add(select(isHit, hitDy, float(0)));
+  const aliveDx = baseDx
+    .add(archDx)
+    .add(select(isAttack, attackDx, float(0)))
+    .add(select(isHit, hitDx, float(0)));
+  const aliveDy = baseDy
+    .add(archDy)
+    .add(select(isAttack, attackDy, float(0)))
+    .add(select(isHit, hitDy, float(0)));
   const aliveDz = archDz.add(select(isAttack, attackDz, float(0))).add(select(isHit, hitDz, float(0)));
 
   const fall = smoothstep(0, 0.78, progress);
@@ -618,9 +623,5 @@ export function createBeastMotionNode(
   const deathDy = rotY.sub(fallPivot).mul(grounded).sub(fall.mul(0.06).mul(grounded)).add(settle.mul(grounded));
   const deathDz = rotZ.sub(pos.z).mul(grounded).sub(fall.mul(0.1).mul(grounded));
 
-  return vec3(
-    select(isDeath, deathDx, aliveDx),
-    select(isDeath, deathDy, aliveDy),
-    select(isDeath, deathDz, aliveDz),
-  );
+  return vec3(select(isDeath, deathDx, aliveDx), select(isDeath, deathDy, aliveDy), select(isDeath, deathDz, aliveDz));
 }

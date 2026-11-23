@@ -43,11 +43,7 @@ import { mapAnimationTime as time } from "../effects/endgame/state";
 import { DEEP_PALETTE } from "../terrain/deep-floor-material";
 import { createInstancedMeshWithSharedMatrices } from "../utils/create-instanced-mesh";
 import { MaterialPool } from "../utils/material-pool";
-import {
-  BeastMotionController,
-  createBeastMotionNode,
-  type BeastMotionSlotState,
-} from "./beast-motion";
+import { BeastMotionController, createBeastMotionNode, type BeastMotionSlotState } from "./beast-motion";
 import { FALLEN_REALM_RUIN_PATH, FRONTIER_BEASTS, type FrontierSpecies } from "./frontier-beast";
 import { frontierPaintedPath } from "./frontier-painted-buildings";
 

@@ -27,7 +27,7 @@ export interface TroopMotionSlotState {
   readonly active: boolean;
 }
 
-export const TROOP_ACTION_CODES = {
+const TROOP_ACTION_CODES = {
   idle: 0,
   march: 1,
   attack: 2,
@@ -44,7 +44,7 @@ interface TroopMotionProfile {
   readonly deathDuration: number;
 }
 
-export const TROOP_MOTION_PROFILES = {
+const TROOP_MOTION_PROFILES = {
   scout: {
     height: 1.276,
     attackDuration: 0.78,
@@ -103,7 +103,11 @@ export class TroopMotionController {
   public setLocomotionAt(index: number, moving: boolean): void {
     if (index < 0 || index >= this.capacity) return;
     const current = Math.round(this.attribute.getX(index));
-    if (current === TROOP_ACTION_CODES.attack || current === TROOP_ACTION_CODES.hit || current === TROOP_ACTION_CODES.death) {
+    if (
+      current === TROOP_ACTION_CODES.attack ||
+      current === TROOP_ACTION_CODES.hit ||
+      current === TROOP_ACTION_CODES.death
+    ) {
       return;
     }
     const desired = moving ? TROOP_ACTION_CODES.march : TROOP_ACTION_CODES.idle;
@@ -134,11 +138,7 @@ export class TroopMotionController {
     };
   }
 
-  public update(
-    deltaSeconds: number,
-    activeSlots: Iterable<number>,
-    visibility?: AnimationVisibilityContext,
-  ): number {
+  public update(deltaSeconds: number, activeSlots: Iterable<number>, visibility?: AnimationVisibilityContext): number {
     const dt = Number.isFinite(deltaSeconds) ? Math.min(Math.max(0, deltaSeconds), 0.1) : 0;
     let visibleCount = 0;
     let dirty = false;
@@ -371,7 +371,11 @@ function createScoutMotionNode(actionCode: Node<"float">, progress: Node<"float"
     .mul(0.02)
     .mul(grounded)
     .add(sin(t.mul(2.4).add(0.6)).mul(0.026).mul(horseNeck))
-    .add(cos(t.mul(2.8).sub(pos.z.mul(3.8))).mul(0.016).mul(cloakTail));
+    .add(
+      cos(t.mul(2.8).sub(pos.z.mul(3.8)))
+        .mul(0.016)
+        .mul(cloakTail),
+    );
   const idleDz = sin(t.mul(2.1)).mul(0.016).mul(horseNeck);
 
   const gallop = t.mul(9.2);
@@ -400,17 +404,16 @@ function createScoutMotionNode(actionCode: Node<"float">, progress: Node<"float"
     .mul(grounded)
     .add(rear.mul(0.06).mul(riderUpper))
     .sub(lunge.mul(0.03).mul(grounded));
-  const attackDz = rear
-    .mul(-0.08)
-    .mul(grounded)
-    .add(lunge.mul(0.26).mul(grounded))
-    .add(lunge.mul(0.1).mul(riderUpper));
+  const attackDz = rear.mul(-0.08).mul(grounded).add(lunge.mul(0.26).mul(grounded)).add(lunge.mul(0.1).mul(riderUpper));
   const attackDx = lunge.mul(0.04).mul(riderUpper);
 
   const flinch = sin(progress.mul(Math.PI)).mul(progress.mul(-1.4).exp());
   const hitDz = flinch.mul(-0.16).mul(grounded);
   const hitDy = flinch.mul(0.04).mul(horseNeck).sub(flinch.mul(0.03).mul(riderUpper));
-  const hitDx = sin(progress.mul(Math.PI * 6)).mul(flinch).mul(0.035).mul(grounded);
+  const hitDx = sin(progress.mul(Math.PI * 6))
+    .mul(flinch)
+    .mul(0.035)
+    .mul(grounded);
 
   const aliveDx = idleDx
     .add(select(isMarch, marchDx, float(0)))
@@ -436,11 +439,7 @@ function createScoutMotionNode(actionCode: Node<"float">, progress: Node<"float"
   const deathDy = rotY.sub(pivotY).mul(grounded).sub(fall.mul(0.04).mul(grounded)).add(settle.mul(grounded));
   const deathDz = fall.mul(-0.08).mul(riderUpper);
 
-  return vec3(
-    select(isDeath, deathDx, aliveDx),
-    select(isDeath, deathDy, aliveDy),
-    select(isDeath, deathDz, aliveDz),
-  );
+  return vec3(select(isDeath, deathDx, aliveDx), select(isDeath, deathDy, aliveDy), select(isDeath, deathDz, aliveDz));
 }
 
 function createCrossbowMotionNode(actionCode: Node<"float">, progress: Node<"float">, t: Node<"float">) {
@@ -476,11 +475,7 @@ function createCrossbowMotionNode(actionCode: Node<"float">, progress: Node<"flo
   const aim = smoothstep(0, 0.26, progress).mul(smoothstep(0.32, 0.44, progress).oneMinus());
   const recoil = smoothstep(0.3, 0.42, progress).mul(smoothstep(0.46, 0.85, progress).oneMinus());
   const reloadDip = smoothstep(0.55, 0.78, progress).mul(smoothstep(0.82, 0.98, progress).oneMinus());
-  const attackDz = aim
-    .mul(0.045)
-    .mul(upper)
-    .sub(recoil.mul(0.14).mul(upper))
-    .sub(recoil.mul(0.08).mul(weaponFront));
+  const attackDz = aim.mul(0.045).mul(upper).sub(recoil.mul(0.14).mul(upper)).sub(recoil.mul(0.08).mul(weaponFront));
   const attackDy = aim
     .mul(0.025)
     .mul(weaponFront)
@@ -490,7 +485,10 @@ function createCrossbowMotionNode(actionCode: Node<"float">, progress: Node<"flo
   const flinch = sin(progress.mul(Math.PI)).mul(progress.mul(-1.4).exp());
   const hitDz = flinch.mul(-0.17).mul(grounded);
   const hitDy = flinch.mul(-0.04).mul(upper);
-  const hitDx = sin(progress.mul(Math.PI * 6)).mul(flinch).mul(0.03).mul(grounded);
+  const hitDx = sin(progress.mul(Math.PI * 6))
+    .mul(flinch)
+    .mul(0.03)
+    .mul(grounded);
 
   const aliveDx = idleDx.add(select(isMarch, marchDx, float(0))).add(select(isHit, hitDx, float(0)));
   const aliveDy = idleDy
@@ -513,9 +511,5 @@ function createCrossbowMotionNode(actionCode: Node<"float">, progress: Node<"flo
   const deathDy = rotY.sub(pivotY).mul(grounded).sub(fall.mul(0.05).mul(grounded)).add(settle.mul(grounded));
   const deathDz = rotZ.sub(pos.z).mul(grounded).sub(fall.mul(0.09).mul(grounded));
 
-  return vec3(
-    select(isDeath, deathDx, aliveDx),
-    select(isDeath, deathDy, aliveDy),
-    select(isDeath, deathDz, aliveDz),
-  );
+  return vec3(select(isDeath, deathDx, aliveDx), select(isDeath, deathDy, aliveDy), select(isDeath, deathDz, aliveDz));
 }

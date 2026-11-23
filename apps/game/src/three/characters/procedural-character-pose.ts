@@ -25,11 +25,7 @@ import {
 } from "./procedural-motion-curves";
 import type { ProceduralPlantTargetResolver } from "./procedural-plant-controller";
 import { CHARACTER_PART_IDS, type CharacterPartId, type ResolvedCharacterRig } from "./procedural-character-rig";
-import {
-  resolveKnightDeathPose,
-  resolveKnightLiveCadence,
-  type KnightLiveCadence,
-} from "./knight-motion";
+import { resolveKnightDeathPose, resolveKnightLiveCadence, type KnightLiveCadence } from "./knight-motion";
 
 export interface ProceduralCharacterPoseOptions {
   deathProgress?: number;
@@ -568,9 +564,7 @@ function resolveDeclaredMeleeTorso(
     new Euler(action.aimPitchRadians * 0.46, action.aimYawRadians * 0.56, 0),
   );
   const headRotation = declaredHead.clone().slerp(declaredHead.clone().multiply(headAim), action.actionWeight);
-  const chestPosition = liveCadence
-    ? torso.chest.clone().add(new Vector3(0, liveCadence.chestLift, 0))
-    : torso.chest;
+  const chestPosition = liveCadence ? torso.chest.clone().add(new Vector3(0, liveCadence.chestLift, 0)) : torso.chest;
   return placeTorsoOnChest(rig, torso, chestPosition, chestRotation, headRotation);
 }
 
@@ -691,10 +685,7 @@ function placeDeclaredArm(
   wristDelta?: Vector3Tuple,
   elbowDelta?: Vector3Tuple,
 ): MeleeArmGuide {
-  const place = (
-    [left, up, forward]: readonly [number, number, number],
-    delta?: Vector3Tuple,
-  ) =>
+  const place = ([left, up, forward]: readonly [number, number, number], delta?: Vector3Tuple) =>
     shoulder
       .clone()
       .addScaledVector(frame.lateralLeft, left + (delta?.[0] ?? 0) - shoulderLeft)

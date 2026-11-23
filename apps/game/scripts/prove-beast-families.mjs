@@ -73,7 +73,10 @@ function recordFamilyReel(browser, family, camera, suffix, fps = 24) {
   browser.run(["record", "start", webmPath, "--fps", String(fps)]);
   try {
     for (const step of FAMILY_ACTIONS) {
-      browser.run(["eval", `window.__beastMotionLab.setState(${JSON.stringify({ action: step.action, paused: false })})`]);
+      browser.run([
+        "eval",
+        `window.__beastMotionLab.setState(${JSON.stringify({ action: step.action, paused: false })})`,
+      ]);
       browser.run(["wait", String(step.durationMs)]);
     }
   } finally {
@@ -106,10 +109,7 @@ await withDevClient({ base: option("--base-url", null), port, out }, async (base
       clips.push(recordFamilyReel(browser, family, "phoneMap", "phone"));
     }
 
-    writeFileSync(
-      join(out, "summary.json"),
-      JSON.stringify({ capturedAt: new Date().toISOString(), clips }, null, 2),
-    );
+    writeFileSync(join(out, "summary.json"), JSON.stringify({ capturedAt: new Date().toISOString(), clips }, null, 2));
     console.log(`Beast family proof complete: ${clips.length} clips in ${out}`);
   } finally {
     browser.close();

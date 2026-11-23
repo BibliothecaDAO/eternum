@@ -1,10 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
-import {
-  mountTroopMotionLab,
-  type TroopMotionRendererHandle,
-  type TroopMotionStats,
-} from "./troop-motion-renderer";
+import { mountTroopMotionLab, type TroopMotionRendererHandle, type TroopMotionStats } from "./troop-motion-renderer";
 import {
   TROOP_MOTION_ACTIONS,
   TROOP_MOTION_KINDS,

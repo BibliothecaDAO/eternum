@@ -464,7 +464,8 @@ class RuntimeProceduralCharacterActor implements ProceduralCharacterActor {
       this.deathElapsedSeconds !== undefined
         ? Math.min(1, Math.max(0.001, this.deathElapsedSeconds / KNIGHT_DEATH_DURATION_SECONDS))
         : undefined;
-    const action = deathProgress !== undefined ? undefined : applyDeclaredHitReaction(this.upperBodyAction, this.reactionPose);
+    const action =
+      deathProgress !== undefined ? undefined : applyDeclaredHitReaction(this.upperBodyAction, this.reactionPose);
     this.avatar.setUpperBodyAction(action);
     const nextPose = resolveProceduralCharacterPose(
       this.rig,
