@@ -1,8 +1,13 @@
 import { JSDOM } from "jsdom";
 import { describe, expect, it, vi } from "vitest";
 
+import { ALERTS_POPUP } from "../../src/ui/design-system/kit/words";
 import {
+  ALERTS_PROMPT,
+  answerStandingPrompts,
+  continuePastTheDaySummary,
   continueWithoutWallet,
+  ENTRY_DAY_SUMMARY_WAIT_MS,
   findHomeCardEntry,
   CONNECT_PLACE,
   markHomeCardEntryExpression,
@@ -129,6 +134,78 @@ describe("the optional wallet invitation", () => {
     const browser = { read: (expression) => dom.window.eval(expression), run: vi.fn() };
     expect(await continueWithoutWallet(browser, { sleep: vi.fn() })).toBe(false);
     expect(browser.run).not.toHaveBeenCalled();
+    expect(dom.window.document.querySelector('[role="dialog"]')).not.toBeNull();
+  });
+});
+
+describe("a turned day's summary over the map", () => {
+  it("is continued and reported as shown", async () => {
+    const dom = page('<div data-day-end="summary"><button>Share your day</button><button>Continue</button></div>');
+    const click = vi.fn((name) => {
+      expect(name).toBe("Continue");
+      dom.window.document.querySelector("[data-day-end]").remove();
+    });
+    const browser = { read: (expression) => dom.window.eval(expression), run: vi.fn(), press: vi.fn(), click };
+    expect(await answerStandingPrompts(browser, { sleep: vi.fn() })).toEqual({
+      wallet: false,
+      alerts: false,
+      day: true,
+    });
+    expect(click).toHaveBeenCalledOnce();
+  });
+
+  it("is waited for at entry, where it rises once the player's history answers", async () => {
+    const dom = page("<main></main>");
+    const historyAnswers = vi.fn(() => {
+      dom.window.document.body.innerHTML = '<div data-day-end="summary"><button>Continue</button></div>';
+    });
+    const click = vi.fn(() => dom.window.document.querySelector("[data-day-end]").remove());
+    const browser = { read: (expression) => dom.window.eval(expression), run: vi.fn(), press: vi.fn(), click };
+    expect(await continuePastTheDaySummary(browser, { sleep: historyAnswers }, ENTRY_DAY_SUMMARY_WAIT_MS)).toBe(true);
+    expect(historyAnswers).toHaveBeenCalledOnce();
+    expect(click).toHaveBeenCalledWith("Continue");
+  });
+
+  it("is not waited for before a step, where the page shows none", async () => {
+    const dom = page("<main></main>");
+    const sleep = vi.fn();
+    const browser = { read: (expression) => dom.window.eval(expression), run: vi.fn(), press: vi.fn(), click: vi.fn() };
+    expect(await continuePastTheDaySummary(browser, { sleep })).toBe(false);
+    expect(sleep).not.toHaveBeenCalled();
+    expect(browser.click).not.toHaveBeenCalled();
+  });
+});
+
+describe("the alerts popup over a clear map", () => {
+  const popup = `<section role="dialog" aria-label="${ALERTS_POPUP.title}"><button>Not now</button></section>`;
+  const pageWith = (html) => {
+    const dom = page(html);
+    const press = vi.fn((key) => {
+      expect(key).toBe("Escape");
+      dom.window.document.querySelector(ALERTS_PROMPT)?.remove();
+    });
+    return { dom, browser: { read: (expression) => dom.window.eval(expression), run: vi.fn(), press } };
+  };
+
+  it("is declined with Escape and reported as shown", async () => {
+    const { dom, browser } = pageWith(popup);
+    expect(await answerStandingPrompts(browser, { sleep: vi.fn() })).toEqual({
+      wallet: false,
+      alerts: true,
+      day: false,
+    });
+    expect(browser.press).toHaveBeenCalledOnce();
+    expect(dom.window.document.querySelector('[role="dialog"]')).toBeNull();
+  });
+
+  it("leaves a page without standing prompts untouched", async () => {
+    const { dom, browser } = pageWith('<section role="dialog" aria-label="Army 1"></section>');
+    expect(await answerStandingPrompts(browser, { sleep: vi.fn() })).toEqual({
+      wallet: false,
+      alerts: false,
+      day: false,
+    });
+    expect(browser.press).not.toHaveBeenCalled();
     expect(dom.window.document.querySelector('[role="dialog"]')).not.toBeNull();
   });
 });

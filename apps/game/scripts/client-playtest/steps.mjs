@@ -36,7 +36,8 @@ import {
   nativeRuleConstants as rules,
 } from "../../../../contracts/l3/world-native/schema/balance.gen.ts";
 import { openOrderSendGate, touchAt, VIEWPORT } from "./browser-session.mjs";
-import { ENTRY_BUTTON, findHomeCardEntry } from "./player-entry.mjs";
+import { answerStandingPrompts, ENTRY_BUTTON, findHomeCardEntry } from "./player-entry.mjs";
+import { allApplied, gameShardOf, receiptsOf, SENT_ACTIONS, sentSince } from "./chain-receipts.mjs";
 import { judgeClickToResult, measureClickToResult } from "./click-latency.mjs";
 import { proveResultOnScreen, startResultCapture } from "./result-capture.mjs";
 import { measureFrameChanges, recordFrames } from "./frames.mjs";
@@ -107,9 +108,25 @@ export const HUD_WORDS = {
   menu: "Menu",
   season: "Season",
   feed: "Feed",
+  research: "Research",
   close: "Close",
   chat: "Chat",
 };
+
+const PHONE_PLACE_PRESSES = {
+  [HUD_WORDS.research]: (browser) => browser.click(HUD_WORDS.research),
+  [HUD_WORDS.feed]: (browser) => browser.tapPlace(HUD_WORDS.feed),
+  [HUD_WORDS.season]: async (browser) => {
+    browser.click(HUD_WORDS.menu);
+    await sleep(1_500);
+    browser.click(HUD_WORDS.season);
+  },
+};
+
+async function openPlace(browser, word) {
+  if (onADesktop()) browser.clickTab(word);
+  else await PHONE_PLACE_PRESSES[word](browser);
+}
 
 // A game's card on Play takes its step by the verb's name (`data-play-verb`, src/shell/play/play-item.tsx).
 const FRONTIER = { mode: "frontier", card: { verbs: ["resume", "play"] } };
@@ -723,12 +740,15 @@ const TOWN_DEPLOY_STEPS = [
   ),
 ];
 
+const DEPLOY_TROOPS_INPUT = '[data-kit-sheet] input[aria-label="Troops"]';
+const DEPLOY_TROOPS = `JSON.stringify(document.querySelector(${JSON.stringify(DEPLOY_TROOPS_INPUT)})?.value ?? null)`;
+
 const DEPLOY_ACTION_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
   clickToResultStep("deploy", "CreateExplorer", deployFromTheDock, armyDeployed),
 ];
 
-async function deployFromTheDock({ browser }, amount, troopName) {
+async function deployFromTheDock({ browser }, amount, troopName, atMost = Infinity) {
   const before = Object.keys(browser.read(ARMY_TILES));
   browser.click("Deploy");
   const sheet = await readUntil(
@@ -739,7 +759,9 @@ async function deployFromTheDock({ browser }, amount, troopName) {
   if (sheet !== "Deploy") return { sheet };
   if (troopName) browser.click(troopName);
   if (amount === undefined) browser.click("Max");
-  else browser.run(["fill", '[data-kit-sheet] input[aria-label="Troops"]', String(amount)]);
+  else browser.run(["fill", DEPLOY_TROOPS_INPUT, String(amount)]);
+  if (Number(String(browser.read(DEPLOY_TROOPS)).replace(/,/g, "")) > atMost)
+    browser.run(["fill", DEPLOY_TROOPS_INPUT, String(atMost)]);
   const deploy = await readUntil(() => browser.read(sheetButton("^Deploy$")), Boolean, SHEET_WAIT_MS);
   if (!deploy) return { sheet, deploy };
   browser.tap(deploy.offset);
@@ -1294,8 +1316,7 @@ const OATH_SLOTS_STEPS = [
     "research-oath-slot",
     "Research",
     async ({ browser }) => {
-      if (onADesktop()) browser.clickTab("Research");
-      else browser.click("Research");
+      await openPlace(browser, HUD_WORDS.research);
       await readUntil(() => browser.read(elementAt('[data-node="row-6"]')), Boolean, SHEET_WAIT_MS);
       browser.read(
         `(() => { document.querySelector('[data-node="row-6"]')?.scrollIntoView({ block: "nearest" }); return true; })()`,
@@ -1432,8 +1453,7 @@ const OATH_SLOTS_STEPS = [
 const WELL_LORE_NODE = '[data-node="well"]';
 
 async function researchWellLore({ browser }) {
-  if (onADesktop()) browser.clickTab("Research");
-  else browser.click("Research");
+  await openPlace(browser, HUD_WORDS.research);
   const node = await readUntil(() => browser.read(elementAt(WELL_LORE_NODE)), Boolean, SHEET_WAIT_MS);
   if (!node || node.state !== "ready") return { node };
   browser.tap(node.offset);
@@ -1795,11 +1815,12 @@ const buttonLabelled = (pattern) => `JSON.stringify((() => {
 
 /** A button in the sheet `selector` names, whose text matches `pattern`: its name and where it is. */
 const buttonIn = (selector, pattern) => `JSON.stringify((() => {
+  const nameOf = (candidate) => candidate.getAttribute("aria-label") || candidate.textContent.trim();
   const button = [...(document.querySelector(${JSON.stringify(selector)})?.querySelectorAll("button") ?? [])]
-    .find((candidate) => new RegExp(${JSON.stringify(pattern)}).test(candidate.textContent.trim()));
+    .find((candidate) => new RegExp(${JSON.stringify(pattern)}).test(nameOf(candidate)));
   if (!button) return null;
   const rect = button.getBoundingClientRect();
-  return { name: button.textContent.trim(), offset: [Math.round(rect.left + rect.width / 2 - innerWidth / 2), Math.round(rect.top + rect.height / 2 - innerHeight / 2)] };
+  return { name: nameOf(button), offset: [Math.round(rect.left + rect.width / 2 - innerWidth / 2), Math.round(rect.top + rect.height / 2 - innerHeight / 2)] };
 })())`;
 
 /** The army the lab's chain removed in the merge, leaving the map from its tile. */
@@ -1822,6 +1843,7 @@ const REALM_LEVELS = ["Settlement", "City", "Kingdom", "Empire"];
 const CASTLE_SHEET_TEXT = `document.querySelector('[data-kit-sheet][aria-label="Castle"]')?.textContent ?? ""`;
 const SHEET_NAME = `JSON.stringify(document.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null)`;
 const SHEET_WAIT_MS = 3_000;
+const SHEET_BUTTONS = `JSON.stringify([...document.querySelectorAll("[data-kit-sheet] button")].map((button) => button.textContent.trim()))`;
 
 /**
  * Taps the keep at the realm's centre for its Castle sheet, which names the level now and the next, then presses
@@ -1870,13 +1892,14 @@ async function buildOnAnOpenPlot({ browser }, building) {
     );
     tapped.push({ offset, sheet });
     if (sheet === "Build") {
+      const offers = browser.read(SHEET_BUTTONS);
       if (building) {
         const choice = browser.read(sheetButton(`^${building}`));
         if (!choice) throw new Error(`No ${building} in the Build sheet`);
         browser.tap(choice.offset);
       }
       browser.click("Build");
-      return { tapped, plot: offset, region: tileRegion(offset) };
+      return { tapped, offers, plot: offset, region: tileRegion(offset) };
     }
     if (sheet !== null) browser.press("Escape");
   }
@@ -2131,10 +2154,10 @@ function recordedStill(onMap) {
 async function readTheSeason(input) {
   if (!onADesktop()) return { desktop: false, ...(await readTheSeasonInTheMenu(input)) };
   const { browser } = input;
-  browser.clickTab(HUD_WORDS.season);
+  await openPlace(browser, HUD_WORDS.season);
   await sleep(2_000);
   const opened = browser.observe();
-  browser.clickTab(HUD_WORDS.season);
+  await openPlace(browser, HUD_WORDS.season);
   await sleep(1_000);
   return { desktop: true, opened, closed: browser.observe() };
 }
@@ -2160,7 +2183,7 @@ const hexesApart = (from, to) =>
 async function openAFeedEvent({ browser }) {
   const before = browser.observe();
   const from = browser.read(ROUTE_HEX_EXPRESSION);
-  const feed = onADesktop() ? undefined : await tapTheFeed(browser);
+  const feed = onADesktop() ? undefined : await openTheFeed(browser);
   if (feed === false) return { feed, row: null };
   // A row's button is named by its words, time and line run together; the browser presses the first one where it is.
   const row = browser.read(`JSON.stringify(document.querySelector(".ui-event__open")?.textContent.trim() ?? null)`);
@@ -2171,7 +2194,7 @@ async function openAFeedEvent({ browser }) {
   const feedLeftOpen = feed
     ? !(await waitFor(browser, (seen) => !seen.panels.includes(HUD_WORDS.feed), FEED_CLOSES_MS))
     : undefined;
-  if (feedLeftOpen) await tapTheFeed(browser);
+  if (feedLeftOpen) await openTheFeed(browser);
   return {
     feed,
     row,
@@ -2185,13 +2208,6 @@ async function openAFeedEvent({ browser }) {
 
 /** How long an army's card takes to stand in the Feed's place once its story is tapped. */
 const FEED_CLOSES_MS = 3_000;
-
-/** A phone's Feed slot tapped, as a player taps it; whether the Feed's panel is drawn after. */
-async function tapTheFeed(browser) {
-  browser.tapPlace(HUD_WORDS.feed);
-  await sleep(1_500);
-  return browser.observe().panels.includes(HUD_WORDS.feed);
-}
 
 /**
  * A story opens in the page, never by loading it again, on the map at the story's place, with what is there selected:
@@ -2263,12 +2279,7 @@ async function visitRow(browser, index) {
 
 /** The Season's board row at `index` opened and Visit pressed, as a player does; null when the board has no such row. */
 async function visitFromTheBoard(browser, index) {
-  if (onADesktop()) browser.clickTab(HUD_WORDS.season);
-  else {
-    browser.click(HUD_WORDS.menu);
-    await sleep(1_500);
-    browser.click(HUD_WORDS.season);
-  }
+  await openPlace(browser, HUD_WORDS.season);
   await sleep(2_000);
   const rows = `[...document.querySelectorAll('button[aria-label^="#"]')].map((row) => row.getAttribute("aria-label"))`;
   const row = browser.read(`JSON.stringify(${rows})`)[index] ?? null;
@@ -2411,11 +2422,12 @@ async function focusTheArmyFromItsDock(browser) {
  * screen (its token; the camera is left where it is: picking an army does not always centre it), and names the region
  * its result shows in: the explored tile, or the army's figure, which a move sets off.
  */
-async function orderBesideArmy({ browser, extraScreenshot }, verb) {
+async function orderBesideArmy({ browser, extraScreenshot }, verb, heldBack = null) {
   const armyName = await focusTheArmyFromItsDock(browser);
   if (!armyName) return { offered: [], army: armyName };
   const selection = browser.observe().selection;
   const armyId = selection?.army?.id ?? null;
+  if (heldBack !== null && armyId === heldBack) return { army: armyName, armyId, offered: [], heldBack: true };
   const armyAt = armyOnScreen(browser, armyId);
   if (!armyAt)
     return { army: armyName, armyId, offered: [], aimed: "the army is not within reach of the view's centre" };
@@ -4147,15 +4159,7 @@ function raceBoardSteps(result) {
     {
       name: "read-aspect-race",
       play: async ({ browser, extraScreenshot }) => {
-        if (result === null) {
-          if (onADesktop()) {
-            browser.clickTab(HUD_WORDS.season);
-          } else {
-            browser.click(HUD_WORDS.menu);
-            await sleep(500);
-            browser.click(HUD_WORDS.season);
-          }
-        }
+        if (result === null) await openPlace(browser, HUD_WORDS.season);
         const race = await readUntil(
           () => browser.read(RACE_BOARD_STATE),
           (state) => state.race.visible,
@@ -5060,8 +5064,7 @@ async function readTheFeedAfterTheClear({ browser }) {
 
 /** The Feed opened as a player opens it: a desktop's Feed place, a phone's place bar. */
 async function openTheFeed(browser) {
-  if (!onADesktop()) return tapTheFeed(browser);
-  browser.clickTab(HUD_WORDS.feed);
+  await openPlace(browser, HUD_WORDS.feed);
   await sleep(1_500);
   return browser.observe().panels.includes(HUD_WORDS.feed);
 }
@@ -5946,36 +5949,743 @@ function armyManagementSteps() {
   ];
 }
 
+const BARRACKS = "Barracks";
+const BUILD_BARRACKS_STEP = {
+  name: "build-barracks",
+  play: async ({ browser }) => {
+    const built = await buildOnAnOpenPlot({ browser }, BARRACKS);
+    if (!built.plot) return built;
+    await readUntil(() => browser.read(SHEET_NAME) !== "Build", Boolean, ORDER_OUTCOME_WAIT_MS);
+    browser.press("Escape");
+    browser.tap(built.plot);
+    const sheet = await readUntil(
+      () => browser.read(SHEET_NAME),
+      (name) => name === BARRACKS,
+      SHEET_WAIT_MS,
+    );
+    return { ...built, sheet };
+  },
+  settleMs: 3_000,
+  verify: ({ played }) =>
+    played.sheet === BARRACKS ? completed(played) : failed("Barracks did not appear on the chosen plot", played),
+};
+
+export const REHEARSAL_WORDS = {
+  startAdventure: "Start your adventure",
+  copyLink: "Copy link",
+  inviteTo: (aspect) => `Invite a friend to ${aspect}`,
+  join: (aspect) => `Join ${aspect}`,
+  invited: "Invited",
+  enter: "Enter",
+  move: "Move",
+  explore: "Explore",
+  attack: "Attack",
+  take: "Take",
+  beast: (name, troops) => `Today's beast: ${name}, ${troops} troops`,
+  open: "No guard: the next army takes it",
+  lasts: (ticks, time) => `${ticks} ticks left (${time})`,
+  share: (percent) => `${percent}% of each tick`,
+  glory: (amount) => `${amount} Glory`,
+  height: (amount) => `+${amount} height to your Aspect's hyperstructure`,
+  essence: (amount) => `${amount} Essence`,
+  labor: (amount) => `${amount} labor`,
+  bar: (perTick, charge, threshold) => `+${perTick} on the bane bar: ${charge} of ${threshold}`,
+  standingHeight: (height, finish) => `${height} of ${finish}`,
+  baneCharge: (charge, threshold) => `${charge} of ${threshold}`,
+  gloryChip: "Glory",
+};
+const INVITE_PREFIX = REHEARSAL_WORDS.inviteTo("");
+const JOIN_PREFIX = REHEARSAL_WORDS.join("");
+
+const escapeRegExp = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const wordPattern = (word, ...parts) => {
+  const marks = parts.map((_, index) => `§${index}§`);
+  return new RegExp(
+    parts.reduce(
+      (source, part, index) => source.replace(marks[index], part === "n" ? "([\\d,]+)" : "(?:.*?)"),
+      escapeRegExp(word(...marks)),
+    ),
+  );
+};
+const numberIn = (text, pattern) => {
+  const match = pattern.exec(text ?? "");
+  return match ? Number(match[1].replace(/,/g, "")) : null;
+};
+const PAY_PATTERNS = {
+  glory: wordPattern(REHEARSAL_WORDS.glory, "n"),
+  height: wordPattern(REHEARSAL_WORDS.height, "n"),
+  essence: wordPattern(REHEARSAL_WORDS.essence, "n"),
+  labor: wordPattern(REHEARSAL_WORDS.labor, "n"),
+  bar: wordPattern(REHEARSAL_WORDS.bar, "n", "any", "any"),
+};
+const SLOT_PATTERNS = {
+  ticks: wordPattern(REHEARSAL_WORDS.lasts, "n", "any"),
+  share: wordPattern(REHEARSAL_WORDS.share, "n"),
+  troops: /(?:^| · )([\d,]+)(?: · |$)/,
+};
+const TALLY_PATTERNS = {
+  height: new RegExp(`· ${wordPattern(REHEARSAL_WORDS.standingHeight, "n", "any").source}`),
+  glory: new RegExp(`^${REHEARSAL_WORDS.gloryChip} ([\\d,]+)$`),
+  bar: wordPattern(REHEARSAL_WORDS.baneCharge, "n", "any"),
+};
+
+export function readTickPay(chips) {
+  const pay = {};
+  for (const [part, pattern] of Object.entries(PAY_PATTERNS)) {
+    const chip = chips.find((text) => pattern.test(text));
+    if (chip) pay[part] = numberIn(chip, pattern);
+  }
+  return pay;
+}
+
+export function readHeldSlot(text) {
+  if (!text) return null;
+  return {
+    ticks: numberIn(text, SLOT_PATTERNS.ticks),
+    share: numberIn(text, SLOT_PATTERNS.share),
+    troops: numberIn(text, SLOT_PATTERNS.troops),
+  };
+}
+
+export function readAspectTally(read) {
+  return {
+    height: numberIn(read.height, TALLY_PATTERNS.height),
+    glory: numberIn(read.glory, TALLY_PATTERNS.glory),
+    bar: numberIn(read.bar, TALLY_PATTERNS.bar),
+  };
+}
+
+export function judgeTickPaid(before, after) {
+  const { pay, slot, tally } = before;
+  if (!(after.slot?.troops < slot.troops)) return { failed: "the guard lost no troops: no tick was settled" };
+  const ticks = [];
+  const gains = {};
+  for (const part of ["glory", "height", "bar"]) {
+    if (!pay[part]) continue;
+    if (tally[part] === null || after.tally[part] === null)
+      return { gains, failed: `the Season board shows no exact ${part}` };
+    const gained = after.tally[part] - tally[part];
+    gains[part] = gained;
+    if (!(gained > 0)) return { gains, failed: `the tick paid no ${part}` };
+    if (slot.share === 100) ticks.push(gained / pay[part]);
+  }
+  if (ticks.some((count) => !Number.isInteger(count) || count !== ticks[0]))
+    return { gains, ticks, failed: "the gains are not one whole number of ticks of the card's pay" };
+  return { gains, ticks: ticks[0] ?? null };
+}
+
+const DEEP_SITE_PLATES = `JSON.stringify(${JSON.stringify(DEEP_SITE_NAMES.map(({ icon }) => icon))}.flatMap((icon) =>
+  [...document.querySelectorAll('.mp-at:has([data-icon="' + icon + '"])')].flatMap((slot) => {
+    if (getComputedStyle(slot).display === "none" || !slot.firstElementChild) return [];
+    const box = slot.firstElementChild.getBoundingClientRect();
+    if (box.left < 0 || box.right > innerWidth || box.top < 0 || box.bottom > innerHeight) return [];
+    return [{ key: slot.getAttribute("data-key"),
+      token: [Math.round(box.left + box.width / 2 - innerWidth / 2), Math.round(box.bottom + ${SITE_MODEL_BELOW_PLATE} - innerHeight / 2)] }];
+  })))`;
+
+const DEEP_SITE_CARD = `JSON.stringify((() => {
+  const sheet = document.querySelector("[data-kit-sheet]");
+  return {
+    name: sheet?.getAttribute("aria-label") ?? null,
+    text: sheet?.textContent ?? "",
+    holder: sheet?.querySelector("[data-aspect-holder]")?.dataset.side ?? null,
+    pay: [...(sheet?.querySelectorAll("[data-deep-pay] .ui-chip") ?? [])].map((chip) => chip.textContent.trim()),
+    mine: sheet?.querySelector("[data-deep-slots] [data-deep-slot][data-mine]")?.getAttribute("aria-label") ?? null,
+    buttons: [...(sheet?.querySelectorAll("button:not([disabled])") ?? [])].map((button) => button.getAttribute("aria-label") || button.textContent.trim()),
+  };
+})())`;
+
+const ASPECT_TALLY = `JSON.stringify({
+  height: document.querySelector("[data-aspect-race] [data-own]")?.textContent ?? null,
+  glory: document.querySelector('[data-aspect-members] [aria-selected="true"] [aria-label^="${REHEARSAL_WORDS.gloryChip} "]')?.getAttribute("aria-label") ?? null,
+  bar: document.querySelector("[data-aspect-bane]")?.textContent ?? null,
+})`;
+
+const DEEP_SITE_KEYS = new Set(DEEP_SITE_NAMES.map(({ name }) => name));
+const DEEP_TICK_WAIT_MS = 300_000;
+const CATCH_UP_TICKS = 4;
+const IDLE_PLAYS = 3;
+const CATCH_UP_EVENTS_AT_MOST = 8;
+
+export const idlePlayOf = (plays) =>
+  plays
+    .slice(1)
+    .reduce((least, play) =>
+      play.events < least.events || (play.events === least.events && play.l2Gas < least.l2Gas) ? play : least,
+    );
+
+export function judgeCatchUp(t0, t1, ticks) {
+  const measured = {
+    ticks,
+    l2Gas: t1.l2Gas - t0.l2Gas,
+    events: t1.events - t0.events,
+    t1: { l2Gas: t1.l2Gas, events: t1.events },
+  };
+  if (measured.events <= 0)
+    return { ...measured, failed: "the catch-up play settled nothing: another command settled the ticks first" };
+  if (measured.events > CATCH_UP_EVENTS_AT_MOST)
+    return {
+      ...measured,
+      failed: `the catch-up play emitted ${measured.events} more events than the idle one: rows once per tick, not once each`,
+    };
+  return measured;
+}
+const TICK_SETTLED_WAIT_MS = 60_000;
+
+async function selectArmy(browser, army) {
+  for (const { label } of browser.armies()) {
+    await pickArmy(browser, label);
+    if (browser.observe().selection?.army?.id === army) return true;
+  }
+  return false;
+}
+
+function s1RehearsalSteps() {
+  const shared = {
+    game: null,
+    aspect: null,
+    link: null,
+    deepArmy: null,
+    allyDeepArmy: null,
+    held: null,
+    tick: null,
+    t0: null,
+    t1: null,
+  };
+  return [
+    rehearsalStep({ name: "found-the-host-realm", play: (context) => foundHostRealm(context, shared) }),
+    rehearsalStep({ name: "answer-a-standing-oath", play: answerAStandingOath, sends: 0 }),
+    { ...FRONTIER_MAP.opening[0], name: "host-on-map", play: goTo("Map", "map") },
+    rehearsalStep({ name: "copy-the-invite-link", play: (context) => copyInviteLink(context, shared), sends: 0 }),
+    rehearsalStep({
+      name: "ally-founds-from-the-invite",
+      as: "ally",
+      play: (context) => foundFromInvite(context, shared),
+    }),
+    rehearsalStep({
+      name: "ally-shares-the-aspect",
+      as: "ally",
+      play: (context) => readOwnAspect(context, shared),
+      sends: 0,
+    }),
+    rehearsalStep({
+      name: "ally-sends-an-army",
+      as: "ally",
+      play: (context) => sendOneOrder(context, REHEARSAL_WORDS.explore),
+      sends: 0,
+    }),
+    rehearsalStep({ name: "ally-fights-on-the-surface", as: "ally", play: fightOnTheSurface, sends: 0 }),
+    { name: "ally-opens-realm", as: "ally", play: goTo("Realm", "hex"), settleMs: 3_000, verify: inScene("hex") },
+    rehearsalStep({ name: "ally-builds-a-barracks", as: "ally", play: buildABarracksOnce }),
+    { ...FRONTIER_MAP.opening[0], name: "ally-back-on-map", as: "ally", play: goTo("Map", "map") },
+    { name: "open-realm", play: goTo("Realm", "hex"), settleMs: 3_000, verify: inScene("hex") },
+    rehearsalStep({ name: "build-barracks", play: buildABarracksOnce }),
+    { ...FRONTIER_MAP.opening[0], name: "back-on-map", play: goTo("Map", "map") },
+    rehearsalStep({
+      name: "send-an-army",
+      play: (context) => sendOneOrder(context, REHEARSAL_WORDS.explore),
+      sends: 0,
+    }),
+    rehearsalStep({ name: "fight-on-the-surface", play: fightOnTheSurface, sends: 0 }),
+    rehearsalStep({ name: "enter-the-deep", play: (context) => enterTheDeep(context, shared, "deepArmy") }),
+    rehearsalStep({
+      name: "fight-a-beast",
+      play: (context) => actAtADeepSite(context, shared, "deepArmy", BEAST_SITE),
+    }),
+    rehearsalStep({ name: "catch-up-t0", play: (context) => measureTheIdlePlay(context, shared), sends: 0 }),
+    rehearsalStep({ name: "read-the-tick-pay", play: (context) => readTheTickPay(context, shared), sends: 0 }),
+    rehearsalStep({ name: "catch-up-t1", play: (context) => measureTheCatchUpPlay(context, shared), sends: 0 }),
+    rehearsalStep({ name: "the-tick-paid", play: (context) => judgeTheTick(context, shared), sends: 0 }),
+    rehearsalStep({
+      name: "ally-enters-the-deep",
+      as: "ally",
+      play: (context) => enterTheDeep(context, shared, "allyDeepArmy"),
+    }),
+    rehearsalStep({
+      name: "ally-fights-a-guard",
+      as: "ally",
+      play: (context) => actAtADeepSite(context, shared, "allyDeepArmy", RIVAL_SITE),
+    }),
+    rehearsalStep({
+      name: "ally-takes-an-empty-site",
+      as: "ally",
+      play: (context) => actAtADeepSite(context, shared, "allyDeepArmy", EMPTY_SITE),
+    }),
+  ];
+}
+
+function rehearsalStep({ name, as, play, sends = 1 }) {
+  return {
+    name,
+    as,
+    settleMs: 0,
+    play: async (context) => {
+      const before = context.browser.read(SENT_ACTIONS);
+      const played = await play(context);
+      if (played.blocked || played.failed || played.already || sends === 0) return played;
+      const sent = await readUntil(
+        () => sentSince(before, context.browser.read(SENT_ACTIONS)),
+        (actions) => actions.length >= sends,
+        ORDER_OUTCOME_WAIT_MS,
+      );
+      const receipts = await receiptsOf(context.owner, gameShardOf(context.browser), sent);
+      return { ...played, receipts };
+    },
+    verify: ({ played }) => {
+      if (played.blocked) return blocked(played.blocked, played);
+      if (played.failed) return failed(played.failed, played);
+      if (sends === 0 || played.already) return completed(played);
+      if (played.receipts.length < sends)
+        return failed(`the page sent ${played.receipts.length} of the step's ${sends} actions`, played);
+      if (!allApplied(played.receipts)) return failed("the chain did not apply every action the step sent", played);
+      return completed(played);
+    },
+  };
+}
+
+async function foundHostRealm({ browser }, shared) {
+  const cards = await readUntil(
+    () => browser.read(ASPECT_CARDS),
+    (shown) => shown.length === 4 && shown.every(({ open }) => open),
+    PLAYABLE_WAIT_MS,
+  );
+  const orders = cards.length === 4 ? await chooseAspect(browser, cards[0].label) : null;
+  await waitFor(browser, (seen) => seen.playable, PLAYABLE_WAIT_MS);
+  shared.game = gameShardOf(browser);
+  if (!orders) return { already: "the host founded in this game earlier", game: shared.game };
+  shared.aspect = cards[0].label.slice(JOIN_PREFIX.length);
+  const armies = await startingArmies(browser);
+  if (armies.length === 0) return { orders, failed: FOUNDED_WITHOUT_ARMIES };
+  return { aspect: shared.aspect, orders, armies, game: shared.game };
+}
+
+const FOUNDED_WITHOUT_ARMIES = "the founded realm docks no starting army";
+const startingArmies = (browser) =>
+  readUntil(
+    () => browser.armies(),
+    (docked) => docked.length > 0,
+    PLAYABLE_WAIT_MS,
+  );
+
+async function chooseAspect(browser, label) {
+  browser.click(label);
+  return chooseFirstOrder(browser);
+}
+
+async function openTheSeason(browser) {
+  await openPlace(browser, HUD_WORDS.season);
+  return readUntil(
+    () => browser.read(RACE_BOARD_STATE),
+    (state) => state.race.visible,
+    PLAYABLE_WAIT_MS,
+  );
+}
+
+const INVITE_TITLE = `JSON.stringify((() => {
+  const panel = document.querySelector('[aria-label^=${JSON.stringify(INVITE_PREFIX)}]');
+  panel?.scrollIntoView({ block: "nearest" });
+  return panel?.getAttribute("aria-label") ?? null;
+})())`;
+
+async function copyInviteLink({ browser, extraScreenshot }, shared) {
+  await openTheSeason(browser);
+  const title = await readUntil(() => browser.read(INVITE_TITLE), Boolean, PLAYABLE_WAIT_MS);
+  if (!title) return { blocked: "the season board offers no invite" };
+  shared.aspect ??= title.slice(INVITE_PREFIX.length);
+  browser.read(`(() => {
+    const write = navigator.clipboard.writeText.bind(navigator.clipboard);
+    navigator.clipboard.writeText = (text) => { window.__copiedInvite = text; return write(text); };
+    return true;
+  })()`);
+  const copy = await readUntil(
+    () => browser.read(buttonIn(`[aria-label^="${INVITE_PREFIX}"]`, `^${REHEARSAL_WORDS.copyLink}$`)),
+    Boolean,
+    PLAYABLE_WAIT_MS,
+  );
+  if (!copy) return { title, failed: "the invite's link was never made" };
+  browser.tap(copy.offset);
+  shared.link = await readUntil(
+    () => browser.read("JSON.stringify(window.__copiedInvite ?? null)"),
+    Boolean,
+    SHEET_WAIT_MS,
+  );
+  extraScreenshot("invite-copied");
+  browser.press("Escape");
+  if (!shared.link || !/\/s\/[A-Za-z0-9]{8}\?via=system$/.test(shared.link))
+    return { title, link: shared.link, failed: "Copy link wrote no invite link" };
+  return { title, aspect: shared.aspect, link: shared.link };
+}
+
+const SHARED_LINK_TITLE = `JSON.stringify(document.querySelector("h1")?.textContent ?? null)`;
+const INVITED_LINE = `JSON.stringify(document.querySelector(".aspect-picker__invited")?.textContent ?? null)`;
+
+async function foundFromInvite({ browser, owner, extraScreenshot }, shared) {
+  if (!shared.link || !shared.game) return { blocked: "the host made no invite link" };
+  browser.run(["open", shared.link]);
+  const landing = await readUntil(() => browser.read(SHARED_LINK_TITLE), Boolean, PLAYABLE_WAIT_MS);
+  extraScreenshot("invite-landing");
+  await answerStandingPrompts(browser, owner);
+  browser.click(REHEARSAL_WORDS.startAdventure);
+  const game = { chainId: shared.game.chainId, gameId: shared.game.gameId };
+  await findHomeCardEntry(browser, owner, PLAYABLE_WAIT_MS, { card: FRONTIER.card, game });
+  browser.run(["click", ENTRY_BUTTON]);
+  const cards = await readUntil(
+    () => browser.read(ASPECT_CARDS),
+    (shown) => shown.length === 4 && shown.every(({ open }) => open),
+    PLAYABLE_WAIT_MS,
+  );
+  const invited = browser.read(INVITED_LINE);
+  extraScreenshot("invited-aspect-step");
+  if (cards.length !== 4) return { landing, already: "the friend founded in this game earlier" };
+  const hosts = cards.find(({ label }) => label === REHEARSAL_WORDS.join(shared.aspect));
+  if (!hosts) return { landing, cards, invited, failed: `the friend was not offered ${shared.aspect}` };
+  const tagged = cards[0] === hosts && hosts.invite === REHEARSAL_WORDS.invited;
+  const orders = await chooseAspect(browser, hosts.label);
+  await waitFor(browser, (seen) => seen.playable, PLAYABLE_WAIT_MS);
+  const armies = await startingArmies(browser);
+  if (armies.length === 0) return { landing, cards, invited, tagged, orders, failed: FOUNDED_WITHOUT_ARMIES };
+  return { landing, cards, invited, tagged, orders, armies };
+}
+
+async function readOwnAspect({ browser }, shared) {
+  await openTheSeason(browser);
+  const title = await readUntil(() => browser.read(INVITE_TITLE), Boolean, PLAYABLE_WAIT_MS);
+  browser.press("Escape");
+  return title === REHEARSAL_WORDS.inviteTo(shared.aspect)
+    ? { title }
+    : { title, failed: `the friend's home is not in ${shared.aspect}` };
+}
+
+const DEEP_LAYER = layerName(3);
+
+async function enterTheDeep({ browser, extraScreenshot }, shared, slot) {
+  await focusTheArmyFromItsDock(browser);
+  const panel = await readTheArmyPanel({ browser });
+  if (!panel.spireButton) return { blocked: "no army stands beside its realm's Spire", panel: panel.state };
+  const { state } = await pressSpire({ browser });
+  const deep = state.depths.find(({ depth }) => depth === DEEP_LAYER);
+  if (!deep)
+    return { blocked: `the Spire offers no ${DEEP_LAYER} row: its depth is not researched`, depths: state.depths };
+  if (!deep.enabled || deep.button !== REHEARSAL_WORDS.enter)
+    return {
+      blocked: `the Spire's ${DEEP_LAYER} row offers ${deep.button ?? "nothing"}: ${deep.line}`,
+      depths: state.depths,
+    };
+  shared[slot] = state.army?.id ?? null;
+  browser.click(`${REHEARSAL_WORDS.enter} ${DEEP_LAYER}`);
+  const arrived = await waitFor(browser, (seen) => isIn(seen, DEEP_LAYER, "map"), PLAYABLE_WAIT_MS);
+  extraScreenshot("arrived-at-the-gate");
+  if (!arrived) return { depths: state.depths, failed: `Enter did not bring the army's camera into the ${DEEP_LAYER}` };
+  return { depths: state.depths, army: state.army };
+}
+
+const BEAST_PREFIX = REHEARSAL_WORDS.beast("", "").split(":")[0];
+
+const BEAST_SITE = {
+  verb: REHEARSAL_WORDS.attack,
+  matches: (card) => card.text.includes(BEAST_PREFIX),
+  missing: `no ${DEEP_LAYER} site in view holds today's beast`,
+};
+const RIVAL_SITE = {
+  verb: REHEARSAL_WORDS.attack,
+  matches: (card) => card.holder === "rival",
+  missing: `no rival Aspect holds a ${DEEP_LAYER} site in view`,
+};
+const EMPTY_SITE = {
+  verb: REHEARSAL_WORDS.take,
+  matches: (card) => card.text.includes(REHEARSAL_WORDS.open),
+  missing: `no ${DEEP_LAYER} site in view stands empty: each holds today's beast or a guard`,
+};
+
+const SELECTED_HEX = `JSON.stringify(window.__eternumMapSelection?.hex ?? null)`;
+
+async function openDeepSite(browser, plate) {
+  const before = JSON.stringify(browser.read(SELECTED_HEX));
+  browser.tap(plate.token);
+  await readUntil(
+    () => JSON.stringify(browser.read(SELECTED_HEX)),
+    (hex) => hex !== before,
+    SHEET_WAIT_MS,
+  );
+  return readUntil(
+    () => browser.read(DEEP_SITE_CARD),
+    (card) => DEEP_SITE_KEYS.has(card.name),
+    SHEET_WAIT_MS,
+  );
+}
+
+async function openHeldSite(browser, held) {
+  const plate = browser.read(DEEP_SITE_PLATES).find(({ key }) => key === held.key);
+  if (!plate) return null;
+  const card = await openDeepSite(browser, plate);
+  return card.name === held.name ? card : null;
+}
+
+async function actAtADeepSite({ browser, extraScreenshot }, shared, slot, want) {
+  const army = shared[slot];
+  if (army === null) return { blocked: `no army entered the ${DEEP_LAYER}` };
+  if (!(await selectArmy(browser, army))) return { army, blocked: `the army that entered the ${DEEP_LAYER} is gone` };
+  const seen = [];
+  for (const plate of browser.read(DEEP_SITE_PLATES)) {
+    const card = await openDeepSite(browser, plate);
+    seen.push({ name: card.name, buttons: card.buttons });
+    if (want.matches(card)) return actOnTheSite({ browser, extraScreenshot }, shared, slot, plate, want);
+  }
+  return { army, seen, blocked: want.missing };
+}
+
+async function actOnTheSite({ browser, extraScreenshot }, shared, slot, plate, want) {
+  const sheetButton = (label) => browser.read(buttonIn("[data-kit-sheet]", `^${label}$`));
+  const move = sheetButton(REHEARSAL_WORDS.move);
+  if (move) browser.tap(move.offset);
+  const verb = await readUntil(() => sheetButton(want.verb), Boolean, ORDER_OUTCOME_WAIT_MS);
+  const card = browser.read(DEEP_SITE_CARD);
+  extraScreenshot(`${want.verb.toLowerCase()}-offered`);
+  if (!verb)
+    return { card, moved: Boolean(move), blocked: `the ${card.name} never offered ${want.verb}: ${card.text}` };
+  browser.tap(verb.offset);
+  const after = await readUntil(
+    () => browser.read(DEEP_SITE_CARD),
+    (now) => now.mine !== null,
+    ORDER_OUTCOME_WAIT_MS,
+  );
+  extraScreenshot(`after-${want.verb.toLowerCase()}`);
+  if (after.mine === null)
+    return { card, after, failed: `the army does not guard the ${card.name} after ${want.verb}` };
+  if (slot === "deepArmy") shared.held = { key: plate.key, name: card.name };
+  return { site: card.name, moved: Boolean(move), card, after };
+}
+
+const minutesOf = (time) => {
+  const [, days = 0, hours = 0, minutes = 0] = /^(?:(\d+)d)?\s*(?:(\d+)h)?\s*(?:(\d+)m)?$/.exec(time ?? "") ?? [];
+  return (Number(days) * 24 + Number(hours)) * 60 + Number(minutes);
+};
+const SLOT_TIME = new RegExp(
+  escapeRegExp(REHEARSAL_WORDS.lasts("§0§", "§1§")).replace("§0§", "[\\d,]+").replace("§1§", "([^)]*)"),
+);
+const slotMinutes = (card) => {
+  const match = SLOT_TIME.exec(card.mine ?? "");
+  return match ? minutesOf(match[1]) : null;
+};
+
+async function readTheTickPay({ browser, extraScreenshot }, shared) {
+  if (!shared.held) return { blocked: `the host's army guards no ${DEEP_LAYER} site` };
+  await openTheSeason(browser);
+  const tally = readAspectTally(browser.read(ASPECT_TALLY));
+  extraScreenshot("tally-before-the-tick");
+  browser.press("Escape");
+  const card = await openHeldSite(browser, shared.held);
+  if (!card) return { tally, failed: `the ${shared.held.name}'s card did not open` };
+  const pay = readTickPay(card.pay);
+  const slot = readHeldSlot(card.mine);
+  extraScreenshot("tick-pay");
+  let last = slotMinutes(card);
+  let crossed = 0;
+  await readUntil(
+    () => {
+      const now = slotMinutes(browser.read(DEEP_SITE_CARD));
+      if (now !== null && last !== null && now > last) crossed += 1;
+      last = now ?? last;
+      return crossed >= CATCH_UP_TICKS;
+    },
+    Boolean,
+    DEEP_TICK_WAIT_MS * CATCH_UP_TICKS,
+  );
+  if (crossed < CATCH_UP_TICKS)
+    return {
+      pay,
+      slot,
+      tally,
+      crossed,
+      blocked: `the guard's time left moved at ${crossed} ticks, not ${CATCH_UP_TICKS}`,
+    };
+  shared.tick = { pay, slot, tally };
+  return { pay, slot, tally, crossed };
+}
+
+async function receiptOfTheNextAction({ browser, owner }, before) {
+  const sent = await readUntil(
+    () => sentSince(before, browser.read(SENT_ACTIONS)),
+    (actions) => actions.length > 0,
+    ORDER_OUTCOME_WAIT_MS,
+  );
+  const [receipt] = await receiptsOf(owner, gameShardOf(browser), sent.slice(-1));
+  return receipt ?? null;
+}
+
+async function sendOneOrder(context, verb, heldBack = null) {
+  const deployed = await deployWhenTheDockIsEmpty(context);
+  if (deployed?.blocked || deployed?.failed) return deployed;
+  const before = context.browser.read(SENT_ACTIONS);
+  const order = await orderBesideArmy(context, verb, heldBack);
+  if (!order.army) return { deployed, order, blocked: "the dock holds no army to send" };
+  if (order.heldBack) return { deployed, order, blocked: "the readiest army is the Deep guard, not a surface army" };
+  if (!order.target) return { deployed, order, blocked: `nothing beside the readiest army offers ${verb}` };
+  const receipt = await receiptOfTheNextAction(context, before);
+  if (!receipt?.applied) return { deployed, order, receipt, failed: `the chain did not apply the ${verb}` };
+  return { deployed, army: order.armyId, receipt };
+}
+
+const REHEARSAL_ARMY_TROOPS = 500;
+
+async function deployWhenTheDockIsEmpty(context) {
+  const { browser, extraScreenshot } = context;
+  if (browser.armies().length > 0) return null;
+  const before = browser.read(SENT_ACTIONS);
+  const deploy = await deployFromTheDock(context, undefined, undefined, REHEARSAL_ARMY_TROOPS);
+  extraScreenshot("deploy");
+  if (!deploy.locate) return { deploy, blocked: "the dock offers no Deploy sheet with troops to send" };
+  const receipt = await receiptOfTheNextAction(context, before);
+  if (!receipt)
+    return { offers: browser.read(SHEET_BUTTONS), blocked: "the Deploy sheet sent nothing: no troops at home" };
+  if (!receipt.applied) return { receipt, failed: "the chain did not apply the Deploy" };
+  const docked = await readUntil(() => browser.armies().length, Boolean, ORDER_OUTCOME_WAIT_MS);
+  return docked ? { receipt } : { receipt, failed: "the deployed army did not reach the dock" };
+}
+
+const sendOneMove = (context, shared) => sendOneOrder(context, REHEARSAL_WORDS.move, shared.deepArmy);
+
+const SITE_SEARCH_REVEALS = 6;
+
+async function buildABarracksOnce(context) {
+  const built = await BUILD_BARRACKS_STEP.play(context);
+  const stands = !built.plot && built.tapped?.some(({ sheet }) => sheet === BARRACKS);
+  return stands ? { ...built, already: "the realm holds a Barracks built in this game earlier" } : built;
+}
+
+const OATH_PICK = "[data-oath-pick]";
+const OATH_CARD = "[data-oath-id]";
+
+async function chooseAnOfferedOath(context) {
+  const { browser, extraScreenshot } = context;
+  const pick = await readUntil(() => browser.read(elementAt(OATH_PICK)), Boolean, SHEET_WAIT_MS);
+  if (!pick) return null;
+  extraScreenshot("oath-pick");
+  const before = browser.read(SENT_ACTIONS);
+  browser.tap(browser.read(elementAt(OATH_CARD)).offset);
+  const receipt = await receiptOfTheNextAction(context, before);
+  const closed = await readUntil(() => browser.read(elementAt(OATH_PICK)) === null, Boolean, ORDER_OUTCOME_WAIT_MS);
+  return { receipt, closed };
+}
+
+const oathRefusal = (oath) => {
+  if (oath === null) return null;
+  if (!oath.receipt?.applied) return "the chain did not apply the Oath choice";
+  return oath.closed ? null : "the Oath pick stayed open after its choice";
+};
+
+async function answerAStandingOath(context) {
+  const oath = await chooseAnOfferedOath(context);
+  const refused = oathRefusal(oath);
+  if (refused) return { oath, failed: refused };
+  return oath ? { oath } : { none: "no Oath pick stands over the map" };
+}
+
+async function fightOnTheSurface(context) {
+  const reveals = [];
+  for (let reveal = 0; ; reveal += 1) {
+    const fight = await attackBesideAnArmy(context);
+    if (fight.failed) return { reveals, ...fight };
+    if (fight.receipt) {
+      const oath = await chooseAnOfferedOath(context);
+      const refused = oathRefusal(oath);
+      return refused ? { reveals, ...fight, oath, failed: refused } : { reveals, ...fight, oath };
+    }
+    if (reveal === SITE_SEARCH_REVEALS)
+      return { reveals, ...fight, blocked: `no army stands beside a site to attack after ${reveal} reveals` };
+    const revealed = await sendOneOrder(context, REHEARSAL_WORDS.explore);
+    if (!revealed.receipt?.applied) return { reveals, ...revealed };
+    reveals.push(revealed.receipt);
+  }
+}
+
+async function attackBesideAnArmy(context) {
+  const { browser, extraScreenshot } = context;
+  const offered = [];
+  for (const { label } of browser.armies()) {
+    await pickArmy(browser, label);
+    const army = browser.observe().selection?.army?.id ?? null;
+    const armyAt = armyOnScreen(browser, army);
+    if (!armyAt) continue;
+    const target = await findTheAttack(browser, armyAt);
+    offered.push({ army, offered: target.offered });
+    if (!target.offset) continue;
+    const before = browser.read(SENT_ACTIONS);
+    if (onADesktop()) browser.rightClick(target.offset);
+    else if (!target.opened) browser.tap(target.offset);
+    const attack = await readUntil(
+      () => browser.read(buttonIn("[data-kit-sheet]", `^${REHEARSAL_WORDS.attack}$`)),
+      Boolean,
+      SHEET_WAIT_MS,
+    );
+    extraScreenshot("attack-offered");
+    if (!attack) return { army, offered, failed: "the site beside the army opened no card offering Attack" };
+    browser.tap(attack.offset);
+    const receipt = await receiptOfTheNextAction(context, before);
+    extraScreenshot("after-attack");
+    if (!receipt?.applied) return { army, offered, receipt, failed: "the chain did not apply the attack" };
+    return { army, offered, receipt };
+  }
+  return { offered };
+}
+
+async function measureTheIdlePlay(context, shared) {
+  if (!shared.held) return { blocked: `the host's army guards no ${DEEP_LAYER} site` };
+  const plays = [];
+  for (let index = 0; index < IDLE_PLAYS; index += 1) {
+    const play = await sendOneMove(context, shared);
+    if (play.blocked || play.failed) return { plays, ...play };
+    plays.push(play.receipt);
+  }
+  shared.t0 = idlePlayOf(plays);
+  return { plays, t0: shared.t0 };
+}
+
+async function measureTheCatchUpPlay(context, shared) {
+  if (!shared.t0 || !shared.tick) return { blocked: "no idle play and no tick pay were read before the catch-up" };
+  const play = await sendOneMove(context, shared);
+  if (play.blocked || play.failed) return play;
+  shared.t1 = play.receipt;
+  return { t1: shared.t1 };
+}
+
+async function judgeTheTick({ browser, extraScreenshot }, shared) {
+  if (!shared.tick || !shared.t1) return { blocked: "no catch-up play was sent after the ticks" };
+  const card = await openHeldSite(browser, shared.held);
+  if (!card) return { failed: `the ${shared.held.name}'s card did not open` };
+  const slot = await readUntil(
+    () => readHeldSlot(browser.read(DEEP_SITE_CARD).mine),
+    (now) => now === null || now.troops < shared.tick.slot.troops,
+    TICK_SETTLED_WAIT_MS,
+  );
+  extraScreenshot("site-after-the-tick");
+  browser.press("Escape");
+  if (slot === null) return { blocked: "the guard died at the tick, so it earned nothing" };
+  await openTheSeason(browser);
+  const tally = readAspectTally(browser.read(ASPECT_TALLY));
+  extraScreenshot("tally-after-the-tick");
+  browser.press("Escape");
+  const after = { slot, tally };
+  const paid = judgeTickPaid(shared.tick, after);
+  const catchUp = judgeCatchUp(shared.t0, shared.t1, paid.ticks);
+  return { before: shared.tick, after, ...paid, catchUp, failed: paid.failed ?? catchUp.failed };
+}
+
 export const STEP_SETS = {
   "army-stock": {
     game: FRONTIER,
     steps: [
       ...FRONTIER_MAP.opening,
       { name: "open-realm", play: goTo("Realm", "hex"), settleMs: 3_000, verify: inScene("hex") },
-      {
-        name: "build-rehearsal-barracks",
-        play: async ({ browser }) => {
-          const built = await buildOnAnOpenPlot({ browser }, "Barracks");
-          if (!built.plot) return built;
-          await readUntil(() => browser.read(SHEET_NAME) !== "Build", Boolean, ORDER_OUTCOME_WAIT_MS);
-          browser.press("Escape");
-          browser.tap(built.plot);
-          const sheet = await readUntil(
-            () => browser.read(SHEET_NAME),
-            (name) => name === "Barracks",
-            SHEET_WAIT_MS,
-          );
-          return { ...built, sheet };
-        },
-        settleMs: 3_000,
-        verify: ({ played }) =>
-          played.sheet === "Barracks"
-            ? completed(played)
-            : failed("Barracks did not appear on the chosen plot", played),
-      },
+      BUILD_BARRACKS_STEP,
     ],
   },
   "army-management": { game: FRONTIER, steps: armyManagementSteps() },
+  "s1-rehearsal": {
+    game: { ...FRONTIER, entersFromHome: true },
+    answersStandingPrompts: true,
+    steps: s1RehearsalSteps(),
+  },
   spectator: { game: FRONTIER, steps: SPECTATOR_STEPS },
   "map-frames": { game: FRONTIER, steps: MAP_FRAME_STEPS },
   "unit-assets-spectator": {

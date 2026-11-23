@@ -7,13 +7,35 @@ import { ARMY_PLATE_HEIGHT } from "../../src/three/constants/army-constants";
 import { ARMY_LABEL_POINT } from "./plates.mjs";
 import { MAP_LEAST_SHARE } from "./hud-layout.mjs";
 import { HUD_MAP_LEAST_SHARE } from "../../src/tokens";
-import { CHAT, CLOSE, EVENTS_WORDS, MENU, SEASON } from "../../src/ui/design-system/kit/words";
+import {
+  ASPECT_PAGE_WORDS,
+  ASPECT_STEP_WORDS,
+  CHAT,
+  CLOSE,
+  DEEP_WORDS,
+  INVITE_WORDS,
+  EXPLORE,
+  MOVE,
+  EVENTS_WORDS,
+  MENU,
+  RESEARCH,
+  SEASON,
+  SHARED_LINK_WORDS,
+  SPIRE_WORDS,
+} from "../../src/ui/design-system/kit/words";
 import {
   CLOSEST_CAMERA_DISTANCE,
   FARTHEST_CAMERA_DISTANCE,
   HUD_WORDS,
   leftForHome,
   openedTheFarPlace,
+  idlePlayOf,
+  judgeCatchUp,
+  judgeTickPaid,
+  readAspectTally,
+  readHeldSlot,
+  readTickPay,
+  REHEARSAL_WORDS,
   SPECTATOR_STEPS,
   STEP_SETS,
 } from "./steps.mjs";
@@ -29,6 +51,7 @@ describe("the HUD's words the steps press and read", () => {
       menu: MENU,
       season: SEASON,
       feed: EVENTS_WORDS.feed,
+      research: RESEARCH,
       close: CLOSE,
       chat: CHAT,
     });
@@ -1173,4 +1196,157 @@ it("reports the failed Oath capacity assertion without trying to time a missing 
       },
     }),
   ).resolves.toMatchObject({ status: "failed", reason: "The new army did not inherit three Oath slots" });
+});
+
+describe("the Season 1 rehearsal", () => {
+  const steps = STEP_SETS["s1-rehearsal"].steps;
+  const step = (name) => steps.find((candidate) => candidate.name === name);
+
+  it("tells a step whose page sent nothing from one the chain refused", () => {
+    const refused = { hash: "0x1", confirmed: true, succeeded: false, rejection: "out of gas", applied: false };
+    expect(step("build-barracks").verify({ played: { receipts: [] } })).toMatchObject({
+      status: "failed",
+      reason: "the page sent 0 of the step's 1 actions",
+    });
+    expect(step("build-barracks").verify({ played: { receipts: [refused] } })).toMatchObject({
+      status: "failed",
+      reason: "the chain did not apply every action the step sent",
+    });
+  });
+
+  it("presses and reads the app's own words", () => {
+    expect(REHEARSAL_WORDS.startAdventure).toBe(SHARED_LINK_WORDS.play);
+    expect(REHEARSAL_WORDS.copyLink).toBe(INVITE_WORDS.copy);
+    expect(REHEARSAL_WORDS.inviteTo("Might")).toBe(INVITE_WORDS.title("Might"));
+    expect(REHEARSAL_WORDS.join("Guile")).toBe(ASPECT_STEP_WORDS.join("Guile"));
+    expect(REHEARSAL_WORDS.invited).toBe(ASPECT_STEP_WORDS.invited);
+    expect(REHEARSAL_WORDS.enter).toBe(SPIRE_WORDS.enter);
+    expect(REHEARSAL_WORDS.move).toBe(MOVE);
+    expect(REHEARSAL_WORDS.explore).toBe(EXPLORE);
+    expect(REHEARSAL_WORDS.attack).toBe(DEEP_WORDS.attack);
+    expect(REHEARSAL_WORDS.take).toBe(DEEP_WORDS.take);
+    expect(REHEARSAL_WORDS.beast("Balrog", 900)).toBe(DEEP_WORDS.beast("Balrog", 900));
+    expect(REHEARSAL_WORDS.open).toBe(DEEP_WORDS.open);
+    expect(REHEARSAL_WORDS.lasts(14, "28m")).toBe(DEEP_WORDS.lasts(14, "28m"));
+    expect(REHEARSAL_WORDS.share(40)).toBe(DEEP_WORDS.share(40));
+    expect(REHEARSAL_WORDS.glory(6)).toBe(DEEP_WORDS.glory(6));
+    expect(REHEARSAL_WORDS.height(6)).toBe(DEEP_WORDS.height(6));
+    expect(REHEARSAL_WORDS.essence(6)).toBe(DEEP_WORDS.essence(6));
+    expect(REHEARSAL_WORDS.labor(6)).toBe(DEEP_WORDS.labor(6));
+    expect(REHEARSAL_WORDS.bar(6, 30, 100)).toBe(DEEP_WORDS.bar(6, 30, 100));
+    expect(REHEARSAL_WORDS.standingHeight(120, 900)).toBe(ASPECT_PAGE_WORDS.height(120, 900));
+    expect(REHEARSAL_WORDS.baneCharge(30, 100)).toBe(ASPECT_PAGE_WORDS.baneCharge(30, 100));
+    expect(REHEARSAL_WORDS.gloryChip).toBe(ASPECT_PAGE_WORDS.glory);
+  });
+
+  it("plays the friend's founding and Deep turns in the second account's page and everything else in the host's", () => {
+    expect(steps.map(({ name, as }) => (as ? `${as}:${name}` : name))).toEqual([
+      "found-the-host-realm",
+      "answer-a-standing-oath",
+      "host-on-map",
+      "copy-the-invite-link",
+      "ally:ally-founds-from-the-invite",
+      "ally:ally-shares-the-aspect",
+      "ally:ally-sends-an-army",
+      "ally:ally-fights-on-the-surface",
+      "ally:ally-opens-realm",
+      "ally:ally-builds-a-barracks",
+      "ally:ally-back-on-map",
+      "open-realm",
+      "build-barracks",
+      "back-on-map",
+      "send-an-army",
+      "fight-on-the-surface",
+      "enter-the-deep",
+      "fight-a-beast",
+      "catch-up-t0",
+      "read-the-tick-pay",
+      "catch-up-t1",
+      "the-tick-paid",
+      "ally:ally-enters-the-deep",
+      "ally:ally-fights-a-guard",
+      "ally:ally-takes-an-empty-site",
+    ]);
+  });
+
+  it("completes an action only when every receipt it sent came back applied", () => {
+    const verify = step("build-barracks").verify;
+    const applied = { operation: "build", hash: "0x1", applied: true };
+    const refused = { operation: "build", hash: "0x2", applied: false, why: "refused: no labor" };
+    expect(verify({ played: { receipts: [applied] } }).status).toBe("completed");
+    expect(verify({ played: { receipts: [applied, refused] } }).status).toBe("failed");
+    expect(verify({ played: { receipts: [] } }).status).toBe("failed");
+  });
+
+  it("blocks what the game does not offer yet, and passes what an earlier run already did in this game", () => {
+    expect(
+      step("enter-the-deep").verify({
+        played: { blocked: "the Spire offers no Ethereal III row: its depth is not researched" },
+      }),
+    ).toMatchObject({ status: "blocked" });
+    expect(
+      step("found-the-host-realm").verify({ played: { already: "the host founded in this game earlier" } }).status,
+    ).toBe("completed");
+  });
+
+  it("reads a held site's pay, slot and the Season board in the app's own words", () => {
+    expect(
+      readTickPay([DEEP_WORDS.glory(6), DEEP_WORDS.height(3), DEEP_WORDS.essence(1500), DEEP_WORDS.bar(2, 1200, 5000)]),
+    ).toEqual({ glory: 6, height: 3, essence: 1500, bar: 2 });
+    expect(
+      readHeldSlot(
+        `Ashfall · ${DEEP_WORDS.facesNext} · 2,800 · ${DEEP_WORDS.drainTick(70)} · ${DEEP_WORDS.lasts(14, "28m")} · ${DEEP_WORDS.share(100)}`,
+      ),
+    ).toEqual({ ticks: 14, share: 100, troops: 2800 });
+    expect(
+      readAspectTally({
+        height: `1Might${ASPECT_PAGE_WORDS.stage(1, 5)} · ${ASPECT_PAGE_WORDS.height(1240, 9000)}`,
+        glory: `${ASPECT_PAGE_WORDS.glory} 42`,
+        bar: `${ASPECT_PAGE_WORDS.baneBar}: ${ASPECT_PAGE_WORDS.baneCharge(30, 100)}`,
+      }),
+    ).toEqual({ height: 1240, glory: 42, bar: 30 });
+  });
+
+  it("judges a tick paid only when the guard drained and each tally rose by whole ticks of the card's pay", () => {
+    const before = {
+      pay: { glory: 6, bar: 2 },
+      slot: { share: 100, troops: 2800 },
+      tally: { glory: 10, height: 0, bar: 30 },
+    };
+    const after = (glory, bar, troops = 2600) => ({ slot: { troops }, tally: { glory, height: 0, bar } });
+    expect(judgeTickPaid(before, after(16, 32))).toEqual({ gains: { glory: 6, bar: 2 }, ticks: 1 });
+    expect(judgeTickPaid(before, after(22, 34))).toEqual({ gains: { glory: 12, bar: 4 }, ticks: 2 });
+    expect(judgeTickPaid(before, after(16, 34)).failed).toBe(
+      "the gains are not one whole number of ticks of the card's pay",
+    );
+    expect(judgeTickPaid(before, after(10, 32)).failed).toBe("the tick paid no glory");
+    expect(judgeTickPaid(before, after(16, 32, 2800)).failed).toBe("the guard lost no troops: no tick was settled");
+    expect(judgeTickPaid(before, { slot: { troops: 2600 }, tally: { glory: null, height: 0, bar: 32 } }).failed).toBe(
+      "the Season board shows no exact glory",
+    );
+  });
+  it("measures the idle play as the cheaper of the plays sent after the first, which settled what was due", () => {
+    const plays = [
+      { hash: "0x1", events: 40, l2Gas: 90_000_000 },
+      { hash: "0x2", events: 34, l2Gas: 50_000_000 },
+      { hash: "0x3", events: 39, l2Gas: 80_000_000 },
+    ];
+    expect(idlePlayOf(plays).hash).toBe("0x2");
+  });
+
+  it("judges a catch-up play by its rows emitted once each, not once per tick, and by having settled something", () => {
+    const t0 = { events: 34, l2Gas: 50_000_000 };
+    expect(judgeCatchUp(t0, { events: 40, l2Gas: 102_000_000 }, 4)).toEqual({
+      ticks: 4,
+      l2Gas: 52_000_000,
+      events: 6,
+      t1: { l2Gas: 102_000_000, events: 40 },
+    });
+    expect(judgeCatchUp(t0, { events: 58, l2Gas: 102_000_000 }, 4).failed).toBe(
+      "the catch-up play emitted 24 more events than the idle one: rows once per tick, not once each",
+    );
+    expect(judgeCatchUp(t0, { events: 34, l2Gas: 50_000_000 }, 4).failed).toBe(
+      "the catch-up play settled nothing: another command settled the ticks first",
+    );
+  });
 });

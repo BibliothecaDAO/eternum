@@ -8,8 +8,8 @@ import { existsSync, readFileSync, rmSync } from "node:fs";
 
 const POLL_MS = 500;
 const PAGE_WAIT_MS = 30_000;
-// The day's summary shows as the game's HUD mounts, or not at all.
-const DAY_SUMMARY_WAIT_MS = 3_000;
+const DAY_SUMMARY = "[data-day-end]";
+export const ENTRY_DAY_SUMMARY_WAIT_MS = 3_000;
 // A sign-in code stops working ten minutes after it is sent.
 const SIGN_IN_CODE_WAIT_MS = 10 * 60_000;
 const EMAIL_FIELD = 'input[type="email"]';
@@ -112,6 +112,24 @@ export async function findHomeCardEntry(browser, owner, timeoutMs, { card, game 
   }
 }
 
+export const ALERTS_PROMPT = '[role="dialog"][aria-label="Know when to come back"]';
+
+export async function answerStandingPrompts(browser, owner) {
+  return {
+    wallet: await continueWithoutWallet(browser, owner),
+    alerts: await declineAlerts(browser, owner),
+    day: await continuePastTheDaySummary(browser, owner),
+  };
+}
+
+async function declineAlerts(browser, owner) {
+  const shown = () => browser.read(`Boolean(document.querySelector(${JSON.stringify(ALERTS_PROMPT)}))`);
+  if (!shown()) return false;
+  browser.press("Escape");
+  await waitUntil(owner, () => !shown(), "the alerts popup did not close on Escape");
+  return true;
+}
+
 /** Closes the optional wallet invitation through its visible close button before playing the map. */
 export async function continueWithoutWallet(browser, owner) {
   const prompt = '[role="dialog"][aria-label="Your wallet"]';
@@ -129,15 +147,19 @@ export async function continueWithoutWallet(browser, owner) {
  * A new day opens on the last one's summary card, over the map; a player reads it and continues. Returns whether it
  * was shown.
  */
-export async function continuePastTheDaySummary(browser, owner) {
-  const shown = () =>
-    browser.read(`[...document.querySelectorAll("button")].some((button) => button.textContent.trim() === "Continue")`);
+export async function continuePastTheDaySummary(browser, owner, waitMs = 0) {
+  const shown = () => browser.read(isShown(DAY_SUMMARY));
+  const offered = () =>
+    browser.read(
+      `[...document.querySelectorAll(${JSON.stringify(`${DAY_SUMMARY} button`)})].some((button) => button.textContent.trim() === "Continue")`,
+    );
   const startedAt = Date.now();
-  while (!shown()) {
-    if (Date.now() - startedAt > DAY_SUMMARY_WAIT_MS) return false;
+  while (!offered()) {
+    if (Date.now() - startedAt >= waitMs) return false;
     await owner.sleep(POLL_MS);
   }
   browser.click("Continue");
+  await waitUntil(owner, () => !shown(), "the day's summary did not lift after Continue");
   return true;
 }
 
