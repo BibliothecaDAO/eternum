@@ -92,26 +92,12 @@ function nextOpening(game: DayOpenGame, now: number): DayOpening | null {
 }
 
 /** Confirmed enrollment includes idle players, not merely actors in the recent story page. */
-export async function readGameFacts(
-  shardUrl: string,
-  gameId: number,
-  models: readonly ("PlayerEntry" | "SliceRules")[],
-): Promise<NativeFactStore> {
-  const snapshot = await fetchHeraldGameSnapshot({ url: shardUrl }, gameId, models);
-  if (BigInt(snapshot.game_id) !== BigInt(gameId)) throw new Error(`Game ${gameId} snapshot named another game`);
-  const store = new NativeFactStore();
-  for (const model of models) {
-    const read = snapshot.models.find((entry) => entry.model === model);
-    if (!read) throw new Error(`Game ${gameId} snapshot omitted ${model}`);
-    store.applyFacts(read.rows.map((row) => ({ model, key: row.key, value: row.value })));
-  }
-  return store;
-}
-
-export const enrolledAccounts = (store: NativeFactStore, gameId: number): string[] => [
-  ...new Set([...store.inGame("PlayerEntry", gameId)].map((entry) => `0x${entry.owner.toString(16)}`)),
-];
-
 export async function readEnrolledAccounts(shardUrl: string, gameId: number): Promise<string[]> {
-  return enrolledAccounts(await readGameFacts(shardUrl, gameId, ["PlayerEntry"]), gameId);
+  const snapshot = await fetchHeraldGameSnapshot({ url: shardUrl }, gameId, ["PlayerEntry"]);
+  if (BigInt(snapshot.game_id) !== BigInt(gameId)) throw new Error(`Game ${gameId} snapshot named another game`);
+  const enrollment = snapshot.models.find(({ model }) => model === "PlayerEntry");
+  if (!enrollment) throw new Error(`Game ${gameId} snapshot omitted PlayerEntry`);
+  const store = new NativeFactStore();
+  store.applyFacts(enrollment.rows.map((row) => ({ model: "PlayerEntry", key: row.key, value: row.value })));
+  return [...new Set([...store.inGame("PlayerEntry", gameId)].map((entry) => `0x${entry.owner.toString(16)}`))];
 }

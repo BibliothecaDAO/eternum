@@ -3,7 +3,8 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { realmsAccountAddress } from "@realms-world/identity/account";
 
 import { nativeCommandBits } from "../../../contracts/l3/world-native/schema/commands.gen";
-import { readEnrolledAccounts, readGameFacts } from "./day-open";
+import { readEnrolledAccounts } from "./day-open";
+import { readGameFacts, readReleaseCatalogue } from "./game-facts";
 import { ACCOUNT_CLASS_HASH, type IdentityEnv } from "./env";
 import { enteredGamesOf, namedGame, shopAccessOf } from "./shop-game";
 import { createTestD1 } from "./test-d1";
@@ -12,7 +13,11 @@ import { migrationStatements } from "./workerd-harness";
 vi.mock("./day-open", async (original) => ({
   ...(await original<typeof import("./day-open")>()),
   readEnrolledAccounts: vi.fn(),
+}));
+vi.mock("./game-facts", async (original) => ({
+  ...(await original<typeof import("./game-facts")>()),
   readGameFacts: vi.fn(),
+  readReleaseCatalogue: vi.fn(),
 }));
 
 /** The shop's rule, read from a shard's games directory and its confirmed enrollment. Times are seconds. */
@@ -58,6 +63,7 @@ const envOn = async (games: unknown[], enrolled: string[] | Error, commandMask =
     if (enrolled instanceof Error) throw enrolled;
     return enrolled;
   });
+  vi.mocked(readReleaseCatalogue).mockResolvedValue({} as never);
   vi.mocked(readGameFacts).mockImplementation(async () => {
     if (enrolled instanceof Error) throw enrolled;
     return {
@@ -98,7 +104,14 @@ it("lists a Frontier game the account entered before its first day, and none tha
 it("seats an enrolled player of a running Frontier game", async () => {
   const access = await shopOn([gameOf(1)], [accountOf("0xa1")]);
   expect(await access("0xa1", { chainId: CHAIN, gameId: 1 })).toBe(true);
-  expect(readGameFacts).toHaveBeenCalledWith("https://shard.test", 1, ["PlayerEntry", "SliceRules"]);
+  expect(readGameFacts).toHaveBeenCalledWith(
+    "https://shard.test",
+    1,
+    ["PlayerEntry", "SliceRules"],
+    NOW * 1000,
+    { actor: accountOf("0xa1") },
+    {},
+  );
 });
 
 it("opens no shop in a game whose rules take no Fragment spend, and opens it once one spend is on", async () => {
