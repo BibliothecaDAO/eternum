@@ -256,8 +256,7 @@ class BeastMotionEnvironment {
     configureWorldSunShadows(this.sun, true, 2048);
     scene.add(this.terrain.object3d, this.sun, this.sun.target, this.ambient, this.hemisphere);
     this.atmosphere = new WorldAtmosphereController(scene, this.sun, this.hemisphere, this.ambient, new Fog(0x819997));
-    this.terrain.setQualityTier("detail");
-    this.terrain.setGroundTextureDetailEnabled(true);
+    this.terrain.setQuality("high");
   }
 
   async init(): Promise<void> {
