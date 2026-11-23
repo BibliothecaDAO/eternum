@@ -27,7 +27,6 @@ export function createRendererEffectsRuntime(input: CreateRendererEffectsRuntime
       const requestedPixelRatio = Math.min(devicePixelRatio, features.pixelRatio);
       const pixelRatio = input.resolvePixelRatio?.(requestedPixelRatio) ?? requestedPixelRatio;
       input.backend.applyRenderVisuals({
-        finish: features.finish,
         height: window.innerHeight,
         pixelRatio,
         shadows: features.shadows,

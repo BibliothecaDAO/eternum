@@ -49,7 +49,6 @@ interface Dangers {
 }
 
 export const MAX_CREATURES = 48;
-export const PHONE_MAX_CREATURES = 16;
 const STANDING_SPOT_RADIUS = 0.28;
 const WARY_REACH = 1.7;
 const STATION_DISTANCE = 1.15;
@@ -87,35 +86,8 @@ export class BiomeCreaturePopulation {
     },
   };
   private herdsChanged = false;
-  private readonly reservedRegionBuffer = new Set<string>();
-  private readonly ownDangers = new Map<number, Danger>();
-  private readonly herdDangers = new Map<number, Danger>();
-  private readonly hunterBuffer: RoamingCreature[] = [];
-  private readonly dangers: Dangers = { own: this.ownDangers, herd: this.herdDangers };
 
-  constructor(
-    private readonly isPathClear: PathCheck = () => true,
-    private maxCreatures = MAX_CREATURES,
-  ) {}
-
-  get cap(): number {
-    return this.maxCreatures;
-  }
-
-  setCap(cap: number): void {
-    if (cap === this.maxCreatures) return;
-    const grew = cap > this.maxCreatures;
-    this.maxCreatures = cap;
-    if (this.creatures.size > cap) {
-      const ids = [...this.creatures.keys()];
-      for (let index = ids.length - 1; index >= 0 && this.creatures.size > cap; index--) {
-        this.creatures.delete(ids[index]!);
-      }
-      this.promoteOrphans();
-    } else if (grew && this.cells.size > 0) {
-      this.fillVacantRegions();
-    }
-  }
+  constructor(private readonly isPathClear: PathCheck = () => true) {}
 
   sync(cells: readonly TerrainCellInput[]): void {
     this.restrictTo(cells);
@@ -206,7 +178,7 @@ export class BiomeCreaturePopulation {
       .toSorted((a, b) => a.priority - b.priority || a.cell.row - b.cell.row || a.cell.col - b.cell.col)
       .map(({ cell }) => cell);
     for (const cell of candidates) {
-      if (this.creatures.size >= this.cap) break;
+      if (this.creatures.size >= MAX_CREATURES) break;
       const region = wildlifeRegion(cell);
       const species = creatureForBiome(cell.biome);
       if (!species || reserved.has(region) || !this.canVisit(cell, species)) continue;
@@ -225,7 +197,7 @@ export class BiomeCreaturePopulation {
     const [fewest, most] = traits.herd;
     const size = fewest + Math.floor(priority(leader.cell, 7) * (most - fewest + 1));
     const hasYoung = size > 1 && priority(leader.cell, 8) < (traits.young ?? 0);
-    for (let member = 1; member < size && this.creatures.size < this.cap; member++) {
+    for (let member = 1; member < size && this.creatures.size < MAX_CREATURES; member++) {
       const follower = createRoamingCreature(this.nextId, leader.species, leader.cell);
       follower.leader = leader.id;
       follower.young = hasYoung && member === size - 1;
@@ -255,33 +227,30 @@ export class BiomeCreaturePopulation {
   }
 
   private reservedRegions(): Set<string> {
-    this.reservedRegionBuffer.clear();
+    const reserved = new Set<string>();
     for (const creature of this.creatures.values()) {
       if (creature.leader !== null || creature.caughtBy !== null) continue;
-      if (creature.hunt) this.reservedRegionBuffer.add(wildlifeRegion(creature.hunt.den));
+      if (creature.hunt) reserved.add(wildlifeRegion(creature.hunt.den));
       else {
-        this.reservedRegionBuffer.add(wildlifeRegion(creature.cell));
-        if (creature.target) this.reservedRegionBuffer.add(wildlifeRegion(creature.target));
+        reserved.add(wildlifeRegion(creature.cell));
+        if (creature.target) reserved.add(wildlifeRegion(creature.target));
       }
     }
-    return this.reservedRegionBuffer;
+    return reserved;
   }
 
   private senseDangers(): Dangers {
-    this.ownDangers.clear();
-    this.herdDangers.clear();
-    this.hunterBuffer.length = 0;
-    for (const creature of this.creatures.values()) {
-      if (creatureTraits(creature.species).hunts) this.hunterBuffer.push(creature);
-    }
+    const own = new Map<number, Danger>();
+    const herd = new Map<number, Danger>();
+    const hunters = [...this.creatures.values()].filter((creature) => creatureTraits(creature.species).hunts);
     for (const creature of this.creatures.values()) {
       if (creature.caughtBy !== null) continue;
-      const danger = nearestDanger(creature, this.threats, this.hunterBuffer);
-      this.ownDangers.set(creature.id, danger);
-      const felt = this.herdDangers.get(herdOf(creature));
-      if (!felt || danger.distance < felt.distance) this.herdDangers.set(herdOf(creature), danger);
+      const danger = nearestDanger(creature, this.threats, hunters);
+      own.set(creature.id, danger);
+      const felt = herd.get(herdOf(creature));
+      if (!felt || danger.distance < felt.distance) herd.set(herdOf(creature), danger);
     }
-    return this.dangers;
+    return { own, herd };
   }
 
   private takeFright(creature: RoamingCreature, own: Danger, herd: Danger): void {

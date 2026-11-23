@@ -35,7 +35,6 @@ import type { TerrainFogMask } from "./terrain-fog-mask";
 import { TerrainBiomeMap } from "./terrain-biome-map";
 import { GroundLights } from "./ground-lights";
 import type { GraphicsPreferences } from "../graphics-preferences";
-import { renderProfile } from "../render-profile";
 import { createTerrainMaterials, TERRAIN_GRID_NO_FOCUS, type TerrainMaterials } from "./terrain-material";
 import { TerrainPageWorkerClient } from "./terrain-page-worker-client";
 import { isTerrainPropFootprintClear } from "./terrain-prop-footprint";
@@ -145,7 +144,7 @@ export class ProceduralTerrain {
   private readonly biomeMap = new TerrainBiomeMap();
   readonly groundLights = new GroundLights();
   private propLod: TerrainPropLod = "near";
-  private quality: TerrainQuality = renderProfile.visuals.quality;
+  private quality: TerrainQuality = "high";
   private propPools: TerrainPropPools | null = null;
   private propPoolsPromise: Promise<TerrainPropPools> | null = null;
   private propPoolFullRewrites = 0;

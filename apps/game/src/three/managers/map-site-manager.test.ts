@@ -85,7 +85,10 @@ vi.mock("@/three/managers/instanced-model", () => ({
   },
 }));
 
-import { ASPECT_HEX, SIDE_HEX } from "@/tokens";
+import { SEAT_COLOURS, SIDE_HEX } from "@/tokens";
+import { setActiveGame } from "@/runtime/world";
+import { setOpenGameSeats } from "@/utils/entity-ownership";
+import { overrideSpectateIntent } from "@/utils/spectator-session";
 import {
   aspects,
   DEEP_BEASTS,
@@ -464,8 +467,20 @@ describe("the Deep's sites on the map", () => {
     const manager = new MapSiteManager(scene, projection as never, store as never, plates as never, noGates() as never);
     await vi.waitFor(() => {
       expect(heldSpy).toHaveBeenCalledWith(0, SIDE_HEX.ally);
-      expect(heldSpy).toHaveBeenCalledWith(0, ASPECT_HEX[3]);
+      expect(heldSpy).toHaveBeenCalledWith(0, SIDE_HEX.enemy);
     });
+    heldSpy.mockClear();
+    const watchedGame = { chainId: "WATCH_TEST", gameId, name: "WATCH_TEST" };
+    setActiveGame(watchedGame);
+    overrideSpectateIntent(true);
+    setOpenGameSeats(watchedGame, [0x333n, 0x222n]);
+    try {
+      expect(heldSpy).toHaveBeenCalledWith(0, SEAT_COLOURS[0]);
+      expect(heldSpy).toHaveBeenCalledWith(0, SEAT_COLOURS[1]);
+    } finally {
+      setOpenGameSeats(watchedGame, []);
+      overrideSpectateIntent(false);
+    }
     const signum = scene.getObjectByName("Order stone signum")!;
     const emblem = signum.getObjectByName("Order signum emblem") as InstancedMesh;
     const cell = emblem.geometry.getAttribute("signumOrderCell");
@@ -509,7 +524,14 @@ describe("the Deep's sites on the map", () => {
       subscribe: () => () => {},
     };
     expect(
-      () => new MapSiteManager(new Scene(), projection as never, missingRulesStore as never, plates as never, noGates() as never),
+      () =>
+        new MapSiteManager(
+          new Scene(),
+          projection as never,
+          missingRulesStore as never,
+          plates as never,
+          noGates() as never,
+        ),
     ).toThrow("Deep sites are missing their preset rules");
 
     const missingCalendarStore = {
@@ -522,7 +544,13 @@ describe("the Deep's sites on the map", () => {
     };
     expect(
       () =>
-        new MapSiteManager(new Scene(), projection as never, missingCalendarStore as never, plates as never, noGates() as never),
+        new MapSiteManager(
+          new Scene(),
+          projection as never,
+          missingCalendarStore as never,
+          plates as never,
+          noGates() as never,
+        ),
     ).toThrow("Deep sites require expedition rules");
 
     const incompleteSyncStore = {

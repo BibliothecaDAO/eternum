@@ -1,12 +1,12 @@
 import { inlineTroops, resolveExplorerCombatTroops } from "../../managers/troop-stamina";
 import { armyOaths } from "../../utils/oaths";
 import { currentArmy } from "../../utils/deep";
-import { deepSites } from "@bibliothecadao/types";
+import { deepSites, layerName } from "@bibliothecadao/types";
 import { type NativeRows } from "../../../../../contracts/l3/world-native/schema/client.gen";
 import { nativeRuleConstants } from "../../../../../contracts/l3/world-native/schema/balance.gen";
 import type { NativeFactStore } from "../native-fact-store";
 import { configManager } from "../../managers/config-manager";
-import { dayOf, readExpeditionRules } from "../../utils/expeditions";
+import { DEEP_DEPTH, dayOf, readExpeditionRules } from "../../utils/expeditions";
 import { entityMapPosition } from "../../utils/tile";
 import { journeyDistance } from "../../utils/travel";
 
@@ -37,7 +37,7 @@ export function readDeepSites(
   if (!today) return [];
   const rows = [...store.inGame("DeepSite", gameId)];
   if (rows.length !== today.rules.rings.length * nativeRuleConstants.DEEP_RING_SITES) {
-    throw new IncompleteDeepSyncError("Incomplete Deep site facts");
+    throw new IncompleteDeepSyncError(`Incomplete ${layerName(DEEP_DEPTH)} site facts`);
   }
   return rows
     .sort((left, right) => left.ring - right.ring || Number(left.entity_id - right.entity_id))

@@ -12,7 +12,7 @@ export async function loadBiomeCreature(
   const { scene } = await gltfLoader.loadAsync(`/models/biome-creatures/${species}.glb`);
   try {
     createCreatureAnimator(scene).reset();
-    prepareCreatureMaterials(scene, reveal);
+    prepareCreatureMaterials(scene, creatureTraits(species).movement !== "water", reveal);
     fitCreatureToItsSize(scene, species);
     return scene;
   } catch (error) {
@@ -21,7 +21,11 @@ export async function loadBiomeCreature(
   }
 }
 
-function prepareCreatureMaterials(scene: Group, reveal: (material: MeshStandardNodeMaterial) => void): void {
+function prepareCreatureMaterials(
+  scene: Group,
+  castsShadow: boolean,
+  reveal: (material: MeshStandardNodeMaterial) => void,
+): void {
   const materials = new Map<MeshStandardMaterial, MeshStandardNodeMaterial>();
   scene.traverse((object) => {
     if (!(object instanceof Mesh)) return;
@@ -36,7 +40,7 @@ function prepareCreatureMaterials(scene: Group, reveal: (material: MeshStandardN
       return material;
     };
     object.material = Array.isArray(object.material) ? object.material.map(convert) : convert(object.material);
-    object.castShadow = false;
+    object.castShadow = castsShadow;
     object.receiveShadow = true;
     object.raycast = () => {};
   });

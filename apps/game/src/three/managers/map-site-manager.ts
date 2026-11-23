@@ -1,4 +1,4 @@
-import { ASPECT_HEX, SIDE_HEX } from "@/tokens";
+import { SIDE_HEX } from "@/tokens";
 import { DEEP_SITE_FACES } from "@/ui/features/frontier/deep/deep-site-faces";
 import { DEEP_WORDS } from "@/ui/design-system/kit/words";
 import type { IconMeaning } from "@/ui/design-system/icon";
@@ -13,7 +13,6 @@ import {
 import {
   IncompleteDeepSyncError,
   deepGateTiles,
-  homeAspect,
   isAspectAlly,
   nativeRuleConstants,
   readDeepBeastTroops,
@@ -25,13 +24,12 @@ import {
   type NativeFactStore,
 } from "@bibliothecadao/eternum/game-client";
 import { accountAddress } from "@/hooks/store/use-account-store";
-import { sideOf } from "@/utils/entity-ownership";
+import { onSidesChanged, sideOf, watchedSide } from "@/utils/entity-ownership";
 import {
   DEEP_BEASTS,
   aspectName,
   aspects,
   beastModel,
-  catalogAspectId,
   ordersOfAspect,
   type AspectId,
   deepSites,
@@ -87,6 +85,7 @@ export class MapSiteManager {
   private readonly unsubscribe: () => void;
   private readonly unsubscribeRewards: () => void;
   private readonly unsubscribeChainTime: () => void;
+  private readonly unsubscribeSides: () => void;
   private drawnDay: number | undefined;
   private drawnTick: number | undefined;
   private readonly guardingExplorers = new Set<bigint>();
@@ -166,6 +165,7 @@ export class MapSiteManager {
         this.refresh();
       }
     });
+    this.unsubscribeSides = onSidesChanged(() => this.refresh());
     this.refresh();
   }
 
@@ -208,6 +208,7 @@ export class MapSiteManager {
     this.unsubscribe();
     this.unsubscribeRewards();
     this.unsubscribeChainTime();
+    this.unsubscribeSides();
     this.plates.dispose();
     this.gates.dispose();
     this.models.forEach((model) => model.dispose());
@@ -461,14 +462,16 @@ export class MapSiteManager {
     if (!holder) return null;
     const home = this.store.get("Structure", { game_id: holder.game_id, entity_id: holder.owner });
     const owner = home?.owner ?? 0n;
+    const watched = watchedSide(owner);
+    if (watched) return watched.colour;
     const viewer = accountAddress() ?? null;
-    const side = sideOf({
-      isMine: isViewerOwner(owner, viewer),
-      isAlly: isAspectAlly(this.store, holder.game_id, viewer, holder.owner),
-      owner: { address: owner },
-    });
-    if (side === "own" || side === "ally") return SIDE_HEX[side];
-    return ASPECT_HEX[catalogAspectId(homeAspect(this.store, holder.game_id, holder.owner))];
+    return SIDE_HEX[
+      sideOf({
+        isMine: isViewerOwner(owner, viewer),
+        isAlly: isAspectAlly(this.store, holder.game_id, viewer, holder.owner),
+        owner: { address: owner },
+      })
+    ];
   }
 
   private refreshStandards(heldSites: readonly { hex: PlacedSite; site: DeepSiteView }[]): void {

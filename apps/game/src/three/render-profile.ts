@@ -1,12 +1,10 @@
-import { readGraphicsPreferences, type GraphicsPreferences, type GraphicsQuality } from "./graphics-preferences";
+import { readGraphicsPreferences, type GraphicsPreferences } from "./graphics-preferences";
 export type RenderMode = "uncapped" | "capped";
 
 export interface RenderVisualProfile {
   animationCullDistance: number;
   animationFps: number;
-  finish: boolean;
   pixelRatio: number;
-  quality: GraphicsQuality;
   shadowMapSize: number;
   shadows: boolean;
 }
@@ -30,9 +28,7 @@ const LEGACY_DEVICE_CHECK_STORAGE_KEY = "INITIAL_LAPTOP_CHECK";
 const QUALITY_VISUALS: RenderVisualProfile = {
   animationCullDistance: 120,
   animationFps: 24,
-  finish: true,
   pixelRatio: RENDERER_PIXEL_RATIO_CAP,
-  quality: "high",
   shadowMapSize: 1024,
   shadows: true,
 };
@@ -68,12 +64,7 @@ export function createRenderProfile(
   mode: RenderMode,
   preferences: GraphicsPreferences = { quality: "high", shadows: true },
 ): RenderProfile {
-  const visuals = {
-    ...QUALITY_VISUALS,
-    finish: preferences.quality === "high",
-    quality: preferences.quality,
-    shadows: preferences.shadows,
-  };
+  const visuals = { ...QUALITY_VISUALS, shadows: preferences.shadows };
   if (preferences.quality === "balanced") {
     visuals.pixelRatio = 1;
     visuals.shadowMapSize = 512;

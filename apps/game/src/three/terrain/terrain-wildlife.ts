@@ -1,14 +1,12 @@
 import { Group, Matrix4, Vector3 } from "three";
 import { clone as cloneWithSkeleton } from "three/addons/utils/SkeletonUtils.js";
 import type { MeshStandardNodeMaterial } from "three/webgpu";
-import { DESKTOP_MIN_PX } from "@/tokens";
 import { createCreatureAnimator } from "./creatures/biome-creature-animator";
 import { disposeBiomeCreature, loadBiomeCreature, releaseBiomeCreatureBones } from "./creatures/biome-creature-assets";
 import { creatureTraits, type CreatureSpecies } from "./creatures/biome-creature-catalog";
 import {
   BiomeCreaturePopulation,
   MAX_CREATURES,
-  PHONE_MAX_CREATURES,
   herdOf,
   homeTile,
   type RoamingCreature,
@@ -36,18 +34,9 @@ const FLIGHT_HEIGHT = 0.8;
 const SIZE_VARIATION = 0.16;
 const YOUNG_SIZE = 0.62;
 
-function resolveViewportCreatureCap(): number {
-  return typeof window !== "undefined" && window.innerWidth > 0 && window.innerWidth < DESKTOP_MIN_PX
-    ? PHONE_MAX_CREATURES
-    : MAX_CREATURES;
-}
-
 export class TerrainWildlife {
   readonly object3d = new Group();
-  private readonly population = new BiomeCreaturePopulation(
-    (from, to, species) => this.isPathClear(from, to, species),
-    resolveViewportCreatureCap(),
-  );
+  private readonly population = new BiomeCreaturePopulation((from, to, species) => this.isPathClear(from, to, species));
   private readonly templates = new Map<CreatureSpecies, Promise<Group | null>>();
   private readonly views = new Map<number, WildlifeView>();
   private readonly failures = new Set<string>();
@@ -63,16 +52,12 @@ export class TerrainWildlife {
   private pending = 0;
   private needsLoad = true;
   private needsPopulation = false;
-  private readonly handleResize = () => this.syncViewportCap();
 
   constructor(
     private readonly sampleSurface: (x: number, z: number) => TerrainSurfaceSample,
     private readonly reveal: (material: MeshStandardNodeMaterial) => void,
   ) {
     this.object3d.name = "terrain-wildlife";
-    if (typeof window !== "undefined" && typeof window.addEventListener === "function") {
-      window.addEventListener("resize", this.handleResize);
-    }
   }
 
   sync(cells: readonly TerrainCellInput[], props: readonly TerrainPropInstance[]): void {
@@ -104,7 +89,6 @@ export class TerrainWildlife {
 
   async load(): Promise<void> {
     if (this.disposed || !this.object3d.visible) return;
-    this.syncViewportCap();
     this.populatePresentedTerrain();
     this.needsLoad = false;
     await Promise.all(
@@ -117,7 +101,6 @@ export class TerrainWildlife {
 
   update(deltaSeconds: number): void {
     if (this.disposed || !this.object3d.visible) return;
-    this.syncViewportCap();
     const dt = Number.isFinite(deltaSeconds) ? Math.min(0.05, Math.max(0, deltaSeconds)) : 0;
     this.time += dt;
     this.population.update(dt);
@@ -133,7 +116,7 @@ export class TerrainWildlife {
   getStats() {
     return {
       count: this.population.creatures.size,
-      cap: this.population.cap,
+      cap: MAX_CREATURES,
       loaded: this.views.size,
       pending: this.pending,
       failed: [...this.failures],
@@ -155,9 +138,6 @@ export class TerrainWildlife {
 
   dispose(): void {
     this.disposed = true;
-    if (typeof window !== "undefined" && typeof window.removeEventListener === "function") {
-      window.removeEventListener("resize", this.handleResize);
-    }
     this.object3d.clear();
     this.views.forEach((view) => releaseBiomeCreatureBones(view.root));
     this.views.clear();
@@ -170,16 +150,6 @@ export class TerrainWildlife {
       });
     });
     this.templates.clear();
-  }
-
-  private syncViewportCap(): void {
-    if (this.disposed) return;
-    const nextCap = resolveViewportCreatureCap();
-    if (nextCap === this.population.cap) return;
-    const grew = nextCap > this.population.cap;
-    this.population.setCap(nextCap);
-    this.removeReleasedViews();
-    if (grew) this.needsLoad = true;
   }
 
   private populatePresentedTerrain(): void {

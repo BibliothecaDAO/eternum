@@ -57,13 +57,7 @@ export interface RendererDeviceLostEvent {
 export interface RendererBackend {
   readonly capabilities: RendererBackendCapabilities;
   readonly renderer?: RendererSurfaceLike;
-  applyRenderVisuals(input: {
-    finish: boolean;
-    pixelRatio: number;
-    shadows: boolean;
-    width: number;
-    height: number;
-  }): void;
+  applyRenderVisuals(input: { pixelRatio: number; shadows: boolean; width: number; height: number }): void;
   dispose(): void;
   initialize(): Promise<RendererInitDiagnostics>;
   renderFrame(pipeline: RendererFramePipeline): void;

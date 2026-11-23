@@ -330,7 +330,7 @@ async function waitForWebGpuBackendStartup(input: {
 
 function renderMainFrameWithRecovery(
   renderer: RendererSurfaceLike,
-  finish: SceneFinish | undefined,
+  finish: SceneFinish,
   pipeline: RendererFramePipeline,
 ): void {
   renderer.info.reset();
@@ -357,17 +357,13 @@ function renderMainFrameWithRecovery(
 
 function renderClearedMainScene(
   renderer: RendererSurfaceLike,
-  finish: SceneFinish | undefined,
+  finish: SceneFinish,
   pipeline: RendererFramePipeline,
 ): void {
   const previousAutoClear = renderer.autoClear;
   renderer.autoClear = true;
   try {
-    if (finish) {
-      finish.render(pipeline.mainScene, pipeline.mainCamera);
-    } else {
-      renderer.render(pipeline.mainScene, pipeline.mainCamera);
-    }
+    finish.render(pipeline.mainScene, pipeline.mainCamera);
   } finally {
     renderer.autoClear = previousAutoClear;
   }
@@ -388,7 +384,6 @@ export function createWebGPURendererBackend(
   } satisfies WebGPURendererBackendDependencies;
   let renderer: RendererSurfaceLike | undefined;
   let finish: SceneFinish | undefined;
-  let finishEnabled = false;
   let cleanupDeviceDiagnostics: (() => void) | undefined;
 
   const startRendererLane = async (forceWebGL: boolean): Promise<InitializedRendererLane> => {
@@ -490,11 +485,6 @@ export function createWebGPURendererBackend(
       return renderer;
     },
     applyRenderVisuals(input) {
-      finishEnabled = input.finish;
-      if (!finishEnabled) {
-        finish?.dispose();
-        finish = undefined;
-      }
       if (!renderer) {
         return;
       }
@@ -519,6 +509,7 @@ export function createWebGPURendererBackend(
         cleanupDeviceDiagnostics?.();
         cleanupDeviceDiagnostics = lane.releaseDeviceDiagnostics;
         renderer = lane.renderer;
+        finish = resolvedDependencies.createFinish(lane.renderer);
 
         return createRendererInitDiagnostics({
           activeMode: lane.activeMode,
@@ -534,11 +525,8 @@ export function createWebGPURendererBackend(
       }
     },
     renderFrame(pipeline: RendererFramePipeline) {
-      if (!renderer) return;
-      if (finishEnabled && !finish) {
-        finish = resolvedDependencies.createFinish(renderer);
-      }
-      renderMainFrameWithRecovery(renderer, finishEnabled ? finish : undefined, pipeline);
+      if (!renderer || !finish) return;
+      renderMainFrameWithRecovery(renderer, finish, pipeline);
       renderRendererOverlayPasses(renderer, pipeline);
     },
     resize(width: number, height: number) {

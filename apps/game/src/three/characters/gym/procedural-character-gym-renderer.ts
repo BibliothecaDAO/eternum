@@ -5,7 +5,6 @@ import {
   type ProceduralUnitRuntime,
 } from "@/three/characters";
 import { ArrowProjectileSystem } from "@/three/projectiles/arrow-projectile-system";
-import { renderProfile } from "@/three/render-profile";
 import type { RendererSurfaceLike } from "@/three/renderer-backend";
 import { getRendererDiagnosticActiveMode } from "@/three/renderer-diagnostics";
 import { TerrainMovementEffects, type TerrainMovementInteraction } from "@/three/terrain/terrain-movement-effects";
@@ -848,7 +847,6 @@ class ProceduralCharacterGymRuntime {
     const width = Math.max(1, Math.floor(rect.width));
     const height = Math.max(1, Math.floor(rect.height));
     this.backend.applyRenderVisuals({
-      finish: renderProfile.visuals.finish,
       height,
       pixelRatio: Math.min(window.devicePixelRatio || 1, 2),
       shadows: true,

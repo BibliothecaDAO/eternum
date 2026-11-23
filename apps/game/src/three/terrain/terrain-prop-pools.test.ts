@@ -1,13 +1,8 @@
 import { BufferAttribute, InstancedMesh, Matrix4, Mesh } from "three";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
-import {
-  LAYER_PROP_IDS,
-  SURFACE_PROP_IDS,
-  TERRAIN_PROP_ARCHETYPE_IDS,
-  TERRAIN_PROP_PAGE_SLOT_CAPACITY,
-  type TerrainPropArchetypeId,
-} from "./terrain-prop-catalog";
+import { TERRAIN_PROP_ARCHETYPE_IDS, type TerrainPropArchetypeId } from "./terrain-prop-catalog";
+import { TERRAIN_PROP_PAGE_SLOT_CAPACITY } from "./terrain-prop-catalog";
 import { loadTerrainPropCatalog } from "./terrain-prop-asset-cache";
 import { TERRAIN_PROP_POOL_PAGE_SLOTS, TerrainPropPools } from "./terrain-prop-pools";
 import type { TerrainPropInstance } from "./terrain-types";
@@ -36,7 +31,6 @@ describe("TerrainPropPools", () => {
   it("packs each plant's baked bend, its height, its foliage and its glow into one attribute of the pool", async () => {
     const { scene } = await loadTerrainPropCatalog();
     const source = (scene.getObjectByName("grass-tuft") as Mesh).geometry;
-    pools.writePage("packed-check", instances("grass-tuft", 1));
     const plant = poolMesh(pools, "grass-tuft").geometry.getAttribute("terrainPropPlant");
     for (let index = 0; index < plant.count; index++) {
       expect(plant.getX(index)).toBeCloseTo(source.getAttribute("_wind_bend").getX(index), 6);
@@ -46,16 +40,13 @@ describe("TerrainPropPools", () => {
     }
     expect(Math.min(...Array.from({ length: plant.count }, (_, index) => plant.getX(index)))).toBeCloseTo(0, 6);
     expect(Math.max(...Array.from({ length: plant.count }, (_, index) => plant.getX(index)))).toBeCloseTo(1, 6);
-    pools.releasePage("packed-check");
   });
 
   it("binds no more vertex buffers to any pool than WebGPU allows", () => {
     for (const archetype of TERRAIN_PROP_ARCHETYPE_IDS) {
-      pools.writePage("buffer-check", instances(archetype, 1));
       const mesh = poolMesh(pools, archetype);
       const instanceBuffers = [mesh.instanceMatrix, mesh.instanceColor].filter(Boolean).length;
       expect(Object.keys(mesh.geometry.attributes).length + instanceBuffers, archetype).toBeLessThanOrEqual(8);
-      pools.releasePage("buffer-check");
     }
   });
 
@@ -63,6 +54,10 @@ describe("TerrainPropPools", () => {
     const world = await TerrainPropPools.load();
     const local = await TerrainPropPools.load();
     try {
+      const worldTree = poolMesh(world, "broadleaf");
+      const localTree = poolMesh(local, "broadleaf");
+      expect(worldTree.geometry).not.toBe(localTree.geometry);
+      expect(ecologyAttribute(worldTree)).not.toBe(ecologyAttribute(localTree));
       world.writePage("forest", instances("broadleaf", 1));
       local.writePage("snow", [
         {
@@ -70,10 +65,6 @@ describe("TerrainPropPools", () => {
           appearance: { glow: [0, 0, 0], moss: 0, snow: 1, tint: [1, 1, 1], windAmplitude: 0 },
         },
       ]);
-      const worldTree = poolMesh(world, "broadleaf");
-      const localTree = poolMesh(local, "broadleaf");
-      expect(worldTree.geometry).not.toBe(localTree.geometry);
-      expect(ecologyAttribute(worldTree)).not.toBe(ecologyAttribute(localTree));
       expect(ecologyAttribute(worldTree).getZ(0)).toBe(0);
       expect(ecologyAttribute(localTree).getZ(0)).toBe(1);
       local.setLod("far");
@@ -90,40 +81,16 @@ describe("TerrainPropPools", () => {
     }
   });
 
-  it("allocates pools lazily for active families and disposes the inactive family when switching layers", async () => {
-    const fresh = await TerrainPropPools.load();
-    try {
-      expect(fresh.object3d.children).toHaveLength(0);
-
-      fresh.writePage(
-        "surface-page",
-        SURFACE_PROP_IDS.flatMap((archetype) => instances(archetype, 1)),
-      );
-      for (const archetype of SURFACE_PROP_IDS) {
-        const mesh = poolMesh(fresh, archetype);
-        expect(mesh.instanceMatrix.count).toBe(
-          TERRAIN_PROP_PAGE_SLOT_CAPACITY[archetype] * TERRAIN_PROP_POOL_PAGE_SLOTS,
-        );
-      }
-      for (const archetype of LAYER_PROP_IDS) {
-        expect(fresh.object3d.getObjectByName(`terrain-prop-pool:${archetype}`)).toBeUndefined();
-      }
-
-      fresh.releasePage("surface-page");
-      fresh.writePage("layer-page", instances("glowcap", 1));
-      expect(poolMesh(fresh, "glowcap").instanceMatrix.count).toBe(
-        TERRAIN_PROP_PAGE_SLOT_CAPACITY.glowcap * TERRAIN_PROP_POOL_PAGE_SLOTS,
-      );
-      for (const archetype of SURFACE_PROP_IDS) {
-        expect(fresh.object3d.getObjectByName(`terrain-prop-pool:${archetype}`)).toBeUndefined();
-      }
-    } finally {
-      fresh.dispose();
+  it("sizes every pool as one fixed slot per composed page and never grows it", () => {
+    for (const archetype of TERRAIN_PROP_ARCHETYPE_IDS) {
+      const mesh = poolMesh(pools, archetype);
+      expect(mesh.instanceMatrix.count).toBe(TERRAIN_PROP_PAGE_SLOT_CAPACITY[archetype] * TERRAIN_PROP_POOL_PAGE_SLOTS);
+      expect(mesh.count).toBe(0);
+      expect(mesh.visible).toBe(false);
     }
   });
 
   it("casts canopy shadows only at close zoom and leaves ground cover out of the shadow pass", () => {
-    pools.writePage("shadow-check", [...instances("broadleaf", 1), ...instances("grass-tuft", 1)]);
     pools.setLod("near");
     expect(poolMesh(pools, "broadleaf").castShadow).toBe(true);
     expect(poolMesh(pools, "grass-tuft").castShadow).toBe(false);
@@ -131,11 +98,9 @@ describe("TerrainPropPools", () => {
     expect(poolMesh(pools, "broadleaf").castShadow).toBe(false);
     pools.setLod("near");
     expect(poolMesh(pools, "broadleaf").castShadow).toBe(true);
-    pools.releasePage("shadow-check");
   });
 
   it("packs pages into the live prefix and uploads only changed instances", () => {
-    const writesBefore = pools.getMetrics().pageWrites;
     pools.writePage("east", instances("conifer", 3));
     pools.writePage("west", instances("conifer", 2));
     const mesh = poolMesh(pools, "conifer");
@@ -150,7 +115,7 @@ describe("TerrainPropPools", () => {
     expect(ecologyRanges(mesh)).toEqual([{ count: 5 * ecologyFloats, start: start * ecologyFloats }]);
     expect(mesh.count).toBe(8);
     expect(pools.getStats().instances).toBe(8);
-    expect(pools.getMetrics()).toMatchObject({ paddingInstances: 0, pageWrites: writesBefore + 3 });
+    expect(pools.getMetrics()).toMatchObject({ paddingInstances: 0, pageWrites: 3 });
     pools.releasePage("east");
     pools.releasePage("west");
   });
@@ -286,8 +251,7 @@ function ecologyRanges(mesh: InstancedMesh): Array<{ count: number; start: numbe
 /** What the renderer does after consuming the ranges on a draw. */
 function clearUploads(pools: TerrainPropPools): void {
   for (const archetype of TERRAIN_PROP_ARCHETYPE_IDS) {
-    const mesh = pools.object3d.getObjectByName(`terrain-prop-pool:${archetype}`);
-    if (!(mesh instanceof InstancedMesh)) continue;
+    const mesh = poolMesh(pools, archetype);
     mesh.instanceMatrix.clearUpdateRanges();
     mesh.instanceColor?.clearUpdateRanges();
     ecologyAttribute(mesh).clearUpdateRanges();

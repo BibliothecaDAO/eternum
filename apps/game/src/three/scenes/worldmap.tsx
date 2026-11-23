@@ -1256,7 +1256,6 @@ export default class WorldmapScene extends WarpTravel {
   private applyWorldmapVisualLimits(features: RenderVisualProfile): void {
     this.visibilityManager?.setAnimationMaxDistance(features.animationCullDistance);
     this.structureManager?.setAnimationCullDistance(features.animationCullDistance);
-    this.proceduralTerrain?.setQuality(features.quality);
   }
 
   private initializeWorldmapManagers(): void {
