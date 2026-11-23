@@ -7,24 +7,29 @@
 
 import { HEX_SIZE } from "@/three/constants";
 import {
-  createCasedHexagonBandGeometry,
+  createFilledHexagonOverlayGeometry,
   createHexagonShape,
   createRoundedHexagonShape,
 } from "@/three/geometry/hexagon-geometry";
-import { type BufferGeometry, ShapeGeometry } from "three";
+import { REALM_PLOT_PALETTE } from "@/three/managers/worldmap-interaction-palette";
+import { type BufferGeometry, Color, ShapeGeometry } from "three";
 import { registerDebugHook, type DebugHookInstallOptions } from "./debug-hooks";
 
 interface GeometryConfig {
   size: number;
   rounded: boolean;
   cornerRadius?: number;
-  /** A cased line instead of a fill: a light band out from this radius, with a dark casing this wide on both sides. */
-  band?: { innerRadius: number; casing: number };
+  overlay?: { innerRadius: number };
 }
 
-// The buildable-hex line's two tones: the terrain grid's grey lifted to read on dark ground, and a near-black casing
-// that carries it on snow and sand.
-const BAND_COLORS = { core: [0.93, 0.9, 0.84], casing: [0.07, 0.06, 0.05] } as const;
+const plotOverlayColors = () => {
+  const fill = new Color(REALM_PLOT_PALETTE.fill);
+  const rim = new Color(REALM_PLOT_PALETTE.rim);
+  return {
+    fill: [fill.r, fill.g, fill.b, REALM_PLOT_PALETTE.fillOpacity] as const,
+    rim: [rim.r, rim.g, rim.b, REALM_PLOT_PALETTE.rimOpacity] as const,
+  };
+};
 
 interface GeometryStats {
   totalGeometries: number;
@@ -53,11 +58,10 @@ export class HexGeometryPool {
       rounded: true,
       cornerRadius: HEX_SIZE * 0.975 * 0.15,
     },
-    // The buildable-hex outline in the local scene: a thin cased band just inside the cell.
     interactive: {
       size: HEX_SIZE * 0.965,
       rounded: false,
-      band: { innerRadius: HEX_SIZE * 0.935, casing: HEX_SIZE * 0.018 },
+      overlay: { innerRadius: HEX_SIZE * 0.905 },
     },
     border: {
       size: HEX_SIZE,
@@ -121,8 +125,8 @@ export class HexGeometryPool {
    * Create optimized geometry from config
    */
   private createGeometry(config: GeometryConfig): BufferGeometry {
-    const geometry = config.band
-      ? createCasedHexagonBandGeometry(config.size, config.band.innerRadius, config.band.casing, BAND_COLORS)
+    const geometry = config.overlay
+      ? createFilledHexagonOverlayGeometry(config.size, config.overlay.innerRadius, plotOverlayColors())
       : new ShapeGeometry(
           config.rounded
             ? createRoundedHexagonShape(config.size, config.cornerRadius)

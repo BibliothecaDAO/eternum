@@ -7,7 +7,7 @@ import * as THREE from "three";
 export const interactiveHexMaterial = new THREE.MeshBasicMaterial({
   vertexColors: true,
   transparent: true,
-  opacity: 0.8,
+  opacity: 1,
   depthWrite: false,
   toneMapped: false,
 });

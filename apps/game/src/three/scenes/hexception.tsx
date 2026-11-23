@@ -57,6 +57,7 @@ import {
   disposeClonedBuildingMaterials,
 } from "@/three/managers/building-preview";
 import { SMALL_DETAILS_NAME } from "@/three/managers/instanced-model";
+import { REALM_PLOT_HOVER_PALETTE } from "@/three/managers/worldmap-interaction-palette";
 import { SceneManager } from "@/three/scene-manager";
 import { HexagonScene } from "@/three/scenes/hexagon-scene";
 import { ProceduralTerrain } from "@/three/terrain/procedural-terrain";
@@ -338,6 +339,7 @@ export default class HexceptionScene extends HexagonScene {
     this.scene.add(this.proceduralTerrain.object3d);
     this.mode = getGameModeConfig();
     this.hoverLabelManager = new HexHoverLabel(this.scene);
+    this.interactiveHexManager.applyHoverPalette(REALM_PLOT_HOVER_PALETTE);
 
     this.ambienceSystem = new HexceptionAmbienceSystem(this.scene);
     this.applyAmbienceAppearance();

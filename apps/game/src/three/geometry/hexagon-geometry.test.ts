@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { createCasedHexagonBandGeometry } from "./hexagon-geometry";
+import { createCasedHexagonBandGeometry, createFilledHexagonOverlayGeometry } from "./hexagon-geometry";
 
 const CORE = [0.9, 0.9, 0.9] as const;
 const CASING = [0.1, 0.1, 0.1] as const;
@@ -26,6 +26,37 @@ describe("the cased hexagon band", () => {
 
   it("faces the same way as the flat hex shapes, so one rotation lays both on the ground", () => {
     // Counter-clockwise in XY: the first triangle's normal points to +Z.
+    const [a, b, c] = [0, 1, 2].map((index) => [positions.getX(index), positions.getY(index)] as const);
+    const cross = (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
+    expect(cross).toBeGreaterThan(0);
+  });
+});
+
+describe("the filled hexagon plot overlay", () => {
+  const fill = [0.02, 0.45, 0.09, 0.34] as const;
+  const rim = [0.01, 0.32, 0.07, 0.78] as const;
+  const geometry = createFilledHexagonOverlayGeometry(1, 0.9, { fill, rim });
+  const positions = geometry.getAttribute("position");
+  const colors = geometry.getAttribute("color");
+
+  it("fills the interior with translucent fill RGBA and frames it with rim RGBA, facing +Z", () => {
+    expect(colors.itemSize).toBe(4);
+    expect(positions.count).toBe(54);
+    const fillVertices = Array.from({ length: positions.count }, (_, index) => index).filter(
+      (index) => Math.abs(colors.getW(index) - fill[3]) < 1e-5,
+    );
+    const rimVertices = Array.from({ length: positions.count }, (_, index) => index).filter(
+      (index) => Math.abs(colors.getW(index) - rim[3]) < 1e-5,
+    );
+    expect(fillVertices).toHaveLength(18);
+    expect(rimVertices).toHaveLength(36);
+    expect(fillVertices.some((index) => Math.hypot(positions.getX(index), positions.getY(index)) < 1e-6)).toBe(true);
+    expect(
+      rimVertices.every((index) => {
+        const radius = Math.hypot(positions.getX(index), positions.getY(index));
+        return radius > 0.9 - 1e-6 && radius < 1 + 1e-6;
+      }),
+    ).toBe(true);
     const [a, b, c] = [0, 1, 2].map((index) => [positions.getX(index), positions.getY(index)] as const);
     const cross = (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
     expect(cross).toBeGreaterThan(0);
