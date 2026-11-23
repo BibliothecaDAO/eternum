@@ -109,6 +109,12 @@ describe("plain-words guard refuses banned words in player-facing text", () => {
     expect(await hits(SCREEN, `export const item = { label: "claim" };`)).toEqual([
       { ruleId: PLAIN_WORDS_RULE, message: expect.stringMatching(/^Plain words:/) },
     ]);
+    expect(
+      await hits(SCREEN, `export const item = (done: boolean) => ({ label: done ? "claimed" : "claim" });`),
+    ).toEqual([
+      { ruleId: PLAIN_WORDS_RULE, message: expect.stringMatching(/^Plain words:/) },
+      { ruleId: PLAIN_WORDS_RULE, message: expect.stringMatching(/^Plain words:/) },
+    ]);
     expect(await hits(SCREEN, `export const A = () => <span title="travel" />;`)).toEqual([
       { ruleId: PLAIN_WORDS_RULE, message: expect.stringMatching(/^Plain words:/) },
     ]);
@@ -117,7 +123,7 @@ describe("plain-words guard refuses banned words in player-facing text", () => {
     ]);
   });
 
-  it("agrees with scripts/words/check.mjs on diagnostics, logs, code attributes, and visible text", async () => {
+  it("agrees with scripts/words/check.mjs on diagnostics, logs, code attributes, bare words, and visible text", async () => {
     const context = {
       nouns: new Set(),
       voiceRules: [{ rule: "No pledge", forbidden: /\bpledg(?:e|ed|ing)\b/i }],
@@ -127,6 +133,9 @@ describe("plain-words guard refuses banned words in player-facing text", () => {
       [`export const f = () => console.warn("Pledge failed");`, false],
       [`export const A = () => <div className="pledge" data-testid="pledge" />;`, false],
       [`export const ok = (k: string) => k === "Pledge";`, false],
+      [`export const step = { kind: "pledge" };`, false],
+      [`export const item = (ok: boolean) => ({ label: ok ? "pledged" : "pledge" });`, true],
+      ["export const msg = (a: string) => `${a} pledged`;", true],
       [`export const A = () => <p>Pledge to Luminary</p>;`, true],
       [`export const A = () => <span title="Pledge to Luminary" />;`, true],
     ];

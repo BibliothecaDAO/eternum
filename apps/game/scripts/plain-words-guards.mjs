@@ -7,6 +7,7 @@ import {
   CODE_TOKEN,
   ERROR_CONSTRUCTOR,
   LOG_CALL,
+  TEXT_NAME,
   VISIBLE_ATTRIBUTES,
   VISIBLE_KEYS,
 } from "../../../scripts/words/player-text.mjs";
@@ -61,18 +62,52 @@ const calleeName = (node) => {
   return "";
 };
 
+const enclosingFunctionName = (node) => {
+  for (let up = node.parent; up && up.type !== "Program"; up = up.parent) {
+    if (up.type === "FunctionDeclaration") return up.id?.name ?? "";
+    if (up.type === "ArrowFunctionExpression" || up.type === "FunctionExpression") {
+      if (up.parent?.type === "VariableDeclarator" && up.parent.id?.type === "Identifier") return up.parent.id.name;
+      return "";
+    }
+  }
+  return "";
+};
+
 const isExplicitVisibleSlot = (node) => {
-  for (let up = node.parent; up; up = up.parent) {
+  for (let child = node, up = node.parent; up && up.type !== "Program"; child = up, up = up.parent) {
+    if (up.type === "JSXExpressionContainer") {
+      if (up.parent?.type === "JSXAttribute") {
+        const attrName = up.parent.name?.type === "JSXIdentifier" ? up.parent.name.name : "";
+        return VISIBLE_ATTRIBUTES.test(attrName);
+      }
+      return true;
+    }
     if (up.type === "JSXAttribute") {
       const attrName = up.name?.type === "JSXIdentifier" ? up.name.name : "";
       return VISIBLE_ATTRIBUTES.test(attrName);
     }
-    if (up.type === "Property" && !up.computed && up.value === node) {
+    if (up.type === "TemplateLiteral") return !isNonPlayerContext(up);
+    if (up.type === "Property" && !up.computed && up.value === child) {
       const keyName = up.key?.type === "Identifier" ? up.key.name : (stringLiteral(up.key) ?? "");
       return VISIBLE_KEYS.test(keyName);
     }
-    if (up.type === "JSXExpressionContainer") continue;
-    break;
+    if (up.type === "VariableDeclarator" && up.init === child && up.id?.type === "Identifier") {
+      return TEXT_NAME.test(up.id.name);
+    }
+    if (up.type === "ReturnStatement" || (up.type === "ArrowFunctionExpression" && up.body === child)) {
+      return TEXT_NAME.test(enclosingFunctionName(child));
+    }
+    if (up.type === "BinaryExpression" && up.operator === "+") continue;
+    if (up.type === "ConditionalExpression" && up.test !== child) continue;
+    if (up.type === "LogicalExpression" && (up.operator === "??" || up.operator === "||")) continue;
+    if (
+      up.type === "ParenthesizedExpression" ||
+      up.type === "TSAsExpression" ||
+      up.type === "TSSatisfiesExpression" ||
+      up.type === "TSNonNullExpression"
+    )
+      continue;
+    return false;
   }
   return false;
 };
@@ -116,13 +151,12 @@ const createPlainWordsRule = (rules, { checkCodeTokens = false } = {}) => ({
     },
   },
   create: (context) => {
-    const check = (node, text, { reportNode = node, allowCodeToken = false } = {}) => {
+    const check = (node, text, { reportNode = node, allowCodeToken = false, allowBareCodeWord = false } = {}) => {
       const trimmed = text.trim();
       if (!trimmed) return;
-      if (allowCodeToken && !checkCodeTokens) {
-        if (CODE_TOKEN.test(trimmed)) return;
-        if (BARE_CODE_WORD.test(trimmed) && !isExplicitVisibleSlot(reportNode)) return;
-      }
+      if (allowCodeToken && !checkCodeTokens && CODE_TOKEN.test(trimmed)) return;
+      if (allowBareCodeWord && !checkCodeTokens && BARE_CODE_WORD.test(trimmed) && !isExplicitVisibleSlot(reportNode))
+        return;
       for (const rule of rules) {
         if (rule.pattern.test(trimmed)) {
           context.report({ node: reportNode, messageId: "banned", data: { banned: rule.banned, use: rule.use } });
@@ -133,14 +167,18 @@ const createPlainWordsRule = (rules, { checkCodeTokens = false } = {}) => ({
     return {
       Literal(node) {
         if (typeof node.value !== "string" || isNonPlayerContext(node)) return;
-        check(node, node.value, { allowCodeToken: true });
+        check(node, node.value, { allowCodeToken: true, allowBareCodeWord: true });
       },
       JSXText(node) {
         check(node, node.value);
       },
       TemplateElement(node) {
         if (isNonPlayerContext(node.parent)) return;
-        check(node, node.value.cooked ?? "", { reportNode: node.parent, allowCodeToken: true });
+        check(node, node.value.cooked ?? "", {
+          reportNode: node.parent,
+          allowCodeToken: true,
+          allowBareCodeWord: node.parent.expressions.length === 0,
+        });
       },
     };
   },

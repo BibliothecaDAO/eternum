@@ -12,11 +12,13 @@ import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import ts from "typescript";
 import {
+  BARE_CODE_WORD,
   CODE_ATTRIBUTES,
   CODE_CALLS,
   CODE_TOKEN,
   ERROR_CONSTRUCTOR,
   LOG_CALL,
+  TEXT_NAME,
   VISIBLE_ATTRIBUTES,
   VISIBLE_KEYS,
 } from "./player-text.mjs";
@@ -644,7 +646,6 @@ const isCodeTemplate = (template) =>
  * object, or what a function named for text (…Label, …Name, …Text, …Title, …Line) returns. A value handed to a call, a
  * key or a comparison is code.
  */
-const TEXT_NAME = /(?:Label|Name|Text|Title|Line|Words?|Copy|Message)$/;
 const readsAsText = (node) => {
   for (let child = node, up = node.parent; up && !ts.isSourceFile(up); child = up, up = up.parent) {
     if (ts.isJsxExpression(up)) {
@@ -814,7 +815,8 @@ export function scanSource(source, fileName, { nouns, voiceRules }) {
     }
     if ((ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) && !isCodeString(node)) {
       if (nouns.has(node.text) && readsAsText(node)) hit("name.literal", node, node.text);
-      if (!inDiagnostic(node)) visible(node, node.text);
+      if (!inDiagnostic(node) && (!BARE_CODE_WORD.test(node.text.trim()) || readsAsText(node)))
+        visible(node, node.text);
     }
     if (ts.isTemplateExpression(node) && !isCodeString(node) && !inDiagnostic(node)) visible(node, templateText(node));
     // {n}% and {n} points/s in JSX: a number written, then its percent sign or its rate's unit as text.

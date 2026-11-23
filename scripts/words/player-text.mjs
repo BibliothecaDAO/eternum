@@ -4,6 +4,8 @@ export const VISIBLE_ATTRIBUTES =
 export const VISIBLE_KEYS =
   /^(label|title|text|description|message|tooltip|heading|subtitle|caption|hint|summary|detail|line|reason)$/;
 
+export const TEXT_NAME = /(?:Label|Name|Text|Title|Line|Words?|Copy|Message)$/;
+
 export const CODE_ATTRIBUTES =
   /^(className|class|style|key|id|type|href|src|to|role|name|data-(?!tip$)[\w-]+|htmlFor|target|rel)$/;
 
