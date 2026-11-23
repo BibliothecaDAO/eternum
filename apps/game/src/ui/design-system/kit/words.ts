@@ -453,6 +453,7 @@ export const PRESEASON_WORDS = {
   playAs: (order: string) => `Play as ${order}`,
   pledge: (aspect: string) => `Pledge to ${aspect}`,
   youreIn: (aspect: string) => `You're in ${aspect}`,
+  change: "Change side",
   waiting: (order: string, date: string) => `${order} · opens ${date}`,
 } as const;
 export const SEASON_INVITE_WORDS = {

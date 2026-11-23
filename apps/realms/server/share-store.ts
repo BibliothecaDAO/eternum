@@ -127,6 +127,12 @@ export function createShareStore(db: D1Database) {
     throw new Error("share_code_unavailable");
   };
 
+  const followAspect = (sharer: string, aspect: number) =>
+    db
+      .prepare(`UPDATE "share_links" SET "moment" = ? WHERE "sharer" = ? AND "kind" = ? AND "chain_id" IS NULL`)
+      .bind(aspect, sharer, INVITE)
+      .run();
+
   /** Marks the sharer's own link posted, once; false when the link is not theirs. */
   const markPosted = async (sharer: string, code: string, now: number): Promise<boolean> => {
     const owned = await db
@@ -372,6 +378,7 @@ export function createShareStore(db: D1Database) {
     sharedLink,
     joinedLink,
     openedInvite,
+    followAspect,
     recordVisit,
     settleJoins,
     pendingJoins,

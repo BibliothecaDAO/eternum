@@ -542,6 +542,31 @@ describe("the season's countdown, while its first day is ahead and Play has no g
     expect(page.text()).toContain("Link copied");
   });
 
+  it("lets a player change side before the season: Change side reopens the pick and the new choice is kept", async () => {
+    reads.directory = answered({ games: [] });
+    reads.calendar = answered(seasonOne(startsAt));
+    const titans = ordersOfAspect(1).at(-1)!;
+    const [perfection] = ordersOfAspect(2);
+    reads.intent = { order: titans.orderId, members: { [titans.orderId]: 1 } };
+    quietPlay();
+    const page = await mount();
+    await settle();
+    const step = () => page.container.querySelector("[data-preseason-step]")?.getAttribute("data-preseason-step");
+    expect(step()).toBe("waiting");
+    await press(page.container, "Change side");
+    expect(step()).toBe("pick");
+    await act(async () => page.container.querySelector<HTMLButtonElement>('[data-aspect="Luminary"]')!.click());
+    await press(page.container, "Pledge to Luminary");
+    await act(async () =>
+      document.body.querySelector<HTMLButtonElement>(`[data-order="${perfection!.fullOrderName}"]`)!.click(),
+    );
+    await press(document.body, `Play as ${perfection!.orderName}`);
+    await settle();
+    expect(reads.chosen.at(-1)).toBe(perfection!.orderId);
+    expect(step()).toBe("waiting");
+    expect(page.container.querySelector("h1")?.textContent).toBe("You're in Luminary");
+  });
+
   it("says a choice that was not kept did not go through, and keeps it on Try again", async () => {
     reads.directory = answered({ games: [] });
     reads.calendar = answered(seasonOne(startsAt));

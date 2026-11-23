@@ -52,6 +52,14 @@ const STALLED = Symbol("stalled");
 let launchDirectory: {
   chains: { chainId: string; games: { gameId: number; slotId: number | null }[] }[];
 } = { chains: [] };
+let seasonPhases: { phase: "frontier"; startsAt: string; endsAt: string }[] = [];
+const seasonFrom = (startsAt: number) => [
+  {
+    phase: "frontier" as const,
+    startsAt: new Date(startsAt).toISOString(),
+    endsAt: new Date(startsAt + 86_400_000).toISOString(),
+  },
+];
 const fetchShard = (async (input: RequestInfo | URL, init?: RequestInit) => {
   const body = heralds.get(new URL(input instanceof Request ? input.url : input).href);
   if (body === STALLED)
@@ -236,7 +244,13 @@ beforeAll(async () => {
     CHAT_INBOX: {} as IdentityEnv["CHAT_INBOX"],
     DB: database.db,
     GUARDIAN: createGuardian(GUARDIAN_KEY),
-    LAUNCH: { fetch: vi.fn(async () => Response.json({ chains: [] })) },
+    LAUNCH: {
+      fetch: vi.fn(async (input: RequestInfo | URL) =>
+        new URL(input instanceof Request ? input.url : input).pathname === "/api/factory/calendar"
+          ? Response.json({ phases: seasonPhases })
+          : Response.json({ chains: [] }),
+      ),
+    },
     VALUE_RELAY: { fetch: relay },
     DIRECTORY_RATE_LIMIT: { limit: async () => ({ success: true }) },
     PUBLIC_RATE_LIMIT: { limit: async () => ({ success: true }) },
@@ -1250,7 +1264,8 @@ describe("identity Worker", () => {
     expect((await createBrowser().request("/api/opening")).status).toBe(401);
   });
 
-  it("keeps each account's Order for the coming season, changed only to another Order of its Aspect, and counts every Order's members", async () => {
+  it("keeps each account's Order once the season has started, changed only to another Order of its Aspect, and counts every Order's members", async () => {
+    seasonPhases = seasonFrom(Date.now() - 1_000);
     const first = createBrowser();
     await signInWithCode(first, "order-one@realms.test");
     const second = createBrowser();
@@ -1268,6 +1283,21 @@ describe("identity Worker", () => {
     expect((await choose(first, { order: 0 })).status).toBe(400);
     expect((await choose(first, { order: "4" })).status).toBe(400);
     expect((await createBrowser().request("/api/order-intent")).status).toBe(401);
+    seasonPhases = [];
+  });
+
+  it("lets an account change its Order to any Aspect's until the season starts, and only within its Aspect from the start", async () => {
+    const player = createBrowser();
+    await signInWithCode(player, "order-change@realms.test");
+    const choose = (body: unknown) => player.request("/api/order-intent", { body });
+    seasonPhases = seasonFrom(Date.now() + 3_600_000);
+    expect(await (await choose({ order: 4 })).json()).toMatchObject({ order: 4 });
+    expect(await (await choose({ order: 16 })).json()).toMatchObject({ order: 16 });
+    seasonPhases = seasonFrom(Date.now() - 1_000);
+    const afterStart = await choose({ order: 4 });
+    expect([afterStart.status, await afterStart.json()]).toEqual([409, { error: "aspect_chosen" }]);
+    expect(await (await player.request("/api/order-intent")).json()).toMatchObject({ order: 16 });
+    seasonPhases = [];
   });
 
   it("holds one free Seal code on an account: case-blind, the same answer again, none from a taken, expired or unknown code, and no code spent on an account that has the Seal", async () => {
@@ -3251,6 +3281,29 @@ describe("shared links", () => {
       activated: 0,
       friendsPaid: 0,
       fragmentsEarned: 0,
+    });
+  });
+
+  it("lands a pre-season invite in the Aspect its sharer plays for now, after a change before the season", async () => {
+    const sharer = await player("season-switcher");
+    const titans = orders.find(({ fullOrderName }) => fullOrderName === "Order of Titans")!;
+    const elsewhere = orders.find(({ aspect }) => aspect !== null && aspect !== titans.aspect)!;
+    await sharer.browser.request("/api/order-intent", { body: { order: titans.orderId } });
+    const made = await sharer.browser.request("/api/shares", {
+      body: { kind: "aspect", chainId: null, gameId: null, moment: titans.aspect },
+    });
+    const code = ((await made.json()) as { code: string }).code;
+    expect((await visit(createBrowser(), code))[1]).toMatchObject({ moment: titans.aspect, order: titans.orderId });
+    await sharer.browser.request("/api/order-intent", { body: { order: elsewhere.orderId } });
+    const remade = await sharer.browser.request("/api/shares", {
+      body: { kind: "aspect", chainId: null, gameId: null, moment: elsewhere.aspect },
+    });
+    expect(((await remade.json()) as { code: string }).code).toBe(code);
+    const friendBrowser = createBrowser();
+    expect((await visit(friendBrowser, code))[1]).toMatchObject({ moment: elsewhere.aspect, order: elsewhere.orderId });
+    const friend = await player("season-switcher-friend", friendBrowser);
+    expect(await (await friend.browser.request("/api/shares/joined")).json()).toMatchObject({
+      moment: elsewhere.aspect,
     });
   });
 
