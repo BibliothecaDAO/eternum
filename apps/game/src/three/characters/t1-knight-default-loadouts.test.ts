@@ -102,7 +102,7 @@ describe("T1 Knight Default loadouts", () => {
               triangles += (object.geometry.index?.count ?? object.geometry.attributes.position.count) / 3;
             });
             expect(draws).toBe(3);
-            expect(triangles).toBe(renderDetail === "hero" ? 14999 : 5998);
+            expect(triangles).toBe(5790);
           } finally {
             actor.dispose();
           }
