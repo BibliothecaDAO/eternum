@@ -111,16 +111,16 @@ export const HUD_WORDS = {
   research: "Research",
   close: "Close",
   chat: "Chat",
+  settings: "Settings",
+  relics: "Relics",
 };
 
 const PHONE_PLACE_PRESSES = {
   [HUD_WORDS.research]: (browser) => browser.tapPlace(HUD_WORDS.research),
   [HUD_WORDS.feed]: (browser) => browser.tapPlace(HUD_WORDS.feed),
-  [HUD_WORDS.season]: async (browser) => {
-    browser.click(HUD_WORDS.menu);
-    await sleep(1_500);
-    browser.click(HUD_WORDS.season);
-  },
+  [HUD_WORDS.chat]: (browser) => browser.tapPlace(HUD_WORDS.chat),
+  [HUD_WORDS.relics]: (browser) => browser.tapPlace(HUD_WORDS.relics),
+  [HUD_WORDS.season]: (browser) => browser.tapPlace(HUD_WORDS.season),
 };
 
 async function openPlace(browser, word) {
@@ -1332,7 +1332,11 @@ const OATH_SLOTS_STEPS = [
       const node = browser.read(elementAt('[data-node="row-6"]'));
       if (!node || node.state !== "ready") return { node };
       browser.tap(node.offset);
-      const action = await readUntil(() => browser.read(buttonNamed("Research Oath slots")), Boolean, SHEET_WAIT_MS);
+      const action = await readUntil(
+        () => browser.read(buttonNamed("Upgrade Barracks Oath slots")),
+        Boolean,
+        SHEET_WAIT_MS,
+      );
       if (!action) return { action };
       watchFor(
         browser,
@@ -1396,7 +1400,7 @@ const OATH_SLOTS_STEPS = [
       played.footer &&
       played.prices.length === 2 &&
       played.actions.length === 1 &&
-      /^Level up the castle$/.test(played.actions[0]) &&
+      /^Upgrade the Castle$/.test(played.actions[0]) &&
       played.overlaps.length === 0 &&
       played.clipped.length === 0 &&
       played.outside.length === 0 &&
@@ -1465,7 +1469,7 @@ async function researchWellLore({ browser }) {
   const node = await readUntil(() => browser.read(elementAt(WELL_LORE_NODE)), Boolean, SHEET_WAIT_MS);
   if (!node || node.state !== "ready") return { node };
   browser.tap(node.offset);
-  const research = await readUntil(() => browser.read(buttonNamed("Research Well lore")), Boolean, SHEET_WAIT_MS);
+  const research = await readUntil(() => browser.read(buttonNamed("Upgrade Well lore")), Boolean, SHEET_WAIT_MS);
   if (!research) return { node, research };
   watchFor(browser, "researched", wellLoreResearched);
   browser.tap(research.offset);
@@ -1493,7 +1497,9 @@ const elementAt = (selector) => `JSON.stringify((() => {
 
 /** A button by its whole text, where it is from the screen's centre; null while none is drawn. */
 const buttonNamed = (name) => `JSON.stringify((() => {
-  const button = [...document.querySelectorAll("button")].find((candidate) => candidate.textContent.trim() === ${JSON.stringify(name)});
+  const button = [...document.querySelectorAll("button")].find(
+    (candidate) => candidate.textContent.trim() === ${JSON.stringify(name)} || candidate.getAttribute("aria-label")?.trim() === ${JSON.stringify(name)},
+  );
   if (!button) return null;
   const rect = button.getBoundingClientRect();
   return { offset: [Math.round(rect.left + rect.width / 2 - innerWidth / 2), Math.round(rect.top + rect.height / 2 - innerHeight / 2)] };
@@ -4044,6 +4050,8 @@ const RACE_BOARD_STATE = `JSON.stringify((() => {
   };
   return { race: read('[data-aspect-race]'), members: read('[data-aspect-members]'), triumphs: read('[data-aspect-triumphs]'),
     invite: read('[aria-label^="Invite a friend"]'), banner: read('[data-daily-quest]'),
+    stageReady: Boolean(document.querySelector('[data-race-stage][data-ready]')),
+    stageError: Boolean(document.querySelector('[data-race-stage][data-error]')),
     scopes: window.__labChain?.scopes ?? [], ended: Boolean(document.querySelector('[data-race-ended]')) };
 })())`;
 
@@ -4158,10 +4166,19 @@ function raceBoardSteps(result) {
     {
       name: "read-aspect-race",
       play: async ({ browser, extraScreenshot }) => {
-        if (result === null) await openPlace(browser, HUD_WORDS.season);
+        if (result === null) {
+          if (
+            browser.read(
+              `JSON.stringify(Boolean(document.querySelector('[data-daily-quest]') && document.querySelector('[data-daily-quest-chip]')))`,
+            )
+          ) {
+            browser.run(["click", "[data-daily-quest-chip]"]);
+          }
+          await openPlace(browser, HUD_WORDS.season);
+        }
         const race = await readUntil(
           () => browser.read(RACE_BOARD_STATE),
-          (state) => state.race.visible,
+          (state) => state.race.visible && state.stageReady,
           PLAYABLE_WAIT_MS,
         );
         extraScreenshot("aspect-standings");
@@ -4183,6 +4200,9 @@ function raceBoardSteps(result) {
           PLAYABLE_WAIT_MS,
         );
         extraScreenshot("aspect-invite");
+        browser.read(
+          `(() => { const scroller = document.querySelector('[data-aspect-race-page]'); if (scroller) scroller.scrollTop = 0; return true; })()`,
+        );
         return { race, members, invite };
       },
       verify: ({ played }) => {
@@ -4190,6 +4210,8 @@ function raceBoardSteps(result) {
         const members = played.members?.members;
         const scoped = played.race?.scopes?.at(-1)?.structures ?? [];
         return race?.visible &&
+          played.race?.stageReady &&
+          !played.race?.stageError &&
           members?.visible &&
           race.text.includes("Luminary") &&
           race.text.includes("Prowess") &&
@@ -4199,6 +4221,7 @@ function raceBoardSteps(result) {
           (result !== "expired" || race.text.includes("No Aspect finished its hyperstructure")) &&
           race.text.includes(result === "won" ? "200K" : "64K") &&
           played.invite?.invite.text.includes("Invite a friend to Prowess") &&
+          !played.invite?.invite.text.includes("could not be made") &&
           members.text.includes("1.3K") &&
           members.text.includes("3.8K") &&
           scoped.includes(7) &&
@@ -4230,9 +4253,9 @@ function raceBoardSteps(result) {
               return played.feed.visible &&
                 text.includes("Prowess beat Luminary") &&
                 text.includes("Luminary beat Prowess") &&
-                text.includes("Prowess and Luminary fought to a stand") &&
-                text.includes("Prowess and Luminary wiped each other out") &&
-                text.includes("Luminary wiped out") &&
+                text.includes("Prowess and Luminary tied") &&
+                text.includes("Prowess and Luminary destroyed each other") &&
+                text.includes("Luminary was defeated") &&
                 played.feed.rows.length === 4
                 ? completed(played)
                 : failed(
@@ -6987,6 +7010,125 @@ export const STEP_SETS = {
           (!onADesktop() || played.deployHud.inRealmSlot)
             ? completed(played)
             : failed("Deploy sheet must open at full stack with troop cards, Adjust size and enabled Deploy", played),
+      },
+    ],
+  },
+  "lab-panels": {
+    game: labSpireGame("panels"),
+    steps: [
+      {
+        name: "panel-research",
+        settleMs: 3_000,
+        play: async ({ browser, extraScreenshot }) => {
+          browser.read(SHOW_EVERYTHING);
+          browser.run(["reload"]);
+          await sleep(3_000);
+          await openPlace(browser, HUD_WORDS.research);
+          const ready = await readUntil(
+            () =>
+              browser.read(`JSON.stringify({
+                open: Boolean(document.querySelector('${onADesktop() ? "[data-realm-slot] " : ""}section[aria-label="${HUD_WORDS.research}"]')),
+                rows: document.querySelectorAll('section[aria-label="${HUD_WORDS.research}"] [data-node]').length,
+              })`),
+            (state) => state.open && state.rows > 0,
+            SHEET_WAIT_MS,
+          );
+          return { ...ready, shot: extraScreenshot("research") };
+        },
+        verify: ({ played }) =>
+          played.open && played.rows > 0
+            ? completed(played)
+            : failed("Research drawer must open with its rows visible", played),
+      },
+      {
+        name: "panel-feed",
+        settleMs: 0,
+        play: async ({ browser, extraScreenshot }) => {
+          await openPlace(browser, HUD_WORDS.feed);
+          const ready = await readUntil(
+            () =>
+              browser.read(`JSON.stringify({
+                open: Boolean(document.querySelector('${onADesktop() ? "[data-realm-slot] " : ""}section[aria-label="${HUD_WORDS.feed}"]')),
+                rows: document.querySelectorAll('section[aria-label="${HUD_WORDS.feed}"] [data-feed-line]').length,
+              })`),
+            (state) => state.open && state.rows > 0,
+            SHEET_WAIT_MS,
+          );
+          return { ...ready, shot: extraScreenshot("feed") };
+        },
+        verify: ({ played }) =>
+          played.open && played.rows > 0
+            ? completed(played)
+            : failed("Feed drawer must open with stories visible", played),
+      },
+      {
+        name: "panel-chat",
+        settleMs: 0,
+        play: async ({ browser, extraScreenshot }) => {
+          await openPlace(browser, HUD_WORDS.chat);
+          const ready = await readUntil(
+            () =>
+              browser.read(`JSON.stringify({
+                open: Boolean(document.querySelector('${onADesktop() ? "[data-realm-slot] " : ""}section[aria-label="${HUD_WORDS.chat}"]')),
+              })`),
+            (state) => state.open,
+            SHEET_WAIT_MS,
+          );
+          return { ...ready, shot: extraScreenshot("chat") };
+        },
+        verify: ({ played }) =>
+          played.open ? completed(played) : failed("Chat drawer must open from its place", played),
+      },
+      {
+        name: "panel-menu",
+        settleMs: 0,
+        play: async ({ browser, extraScreenshot }) => {
+          const target = onADesktop() ? HUD_WORDS.settings : HUD_WORDS.menu;
+          if (onADesktop()) browser.click(HUD_WORDS.settings);
+          else browser.tapPlace(HUD_WORDS.menu);
+          const ready = await readUntil(
+            () =>
+              browser.read(`JSON.stringify({
+                open: Boolean(document.querySelector('[aria-label="${target}"]:not(button)')),
+                tiles: [...document.querySelectorAll('.menu-place-tile')].map((button) => button.getAttribute('aria-label')),
+              })`),
+            (state) => state.open && (onADesktop() || state.tiles.length === 4),
+            SHEET_WAIT_MS,
+          );
+          return { ...ready, target, shot: extraScreenshot("menu") };
+        },
+        verify: ({ played }) =>
+          played.open &&
+          (onADesktop() ||
+            (played.tiles.includes(HUD_WORDS.research) &&
+              played.tiles.includes(HUD_WORDS.feed) &&
+              played.tiles.includes(HUD_WORDS.chat) &&
+              played.tiles.includes(HUD_WORDS.relics)))
+            ? completed(played)
+            : failed("Menu or Settings must open from its control", played),
+      },
+      {
+        name: "panel-relics",
+        settleMs: 0,
+        play: async ({ browser, extraScreenshot }) => {
+          if (onADesktop()) browser.clickTab(HUD_WORDS.relics);
+          else browser.click(HUD_WORDS.relics);
+          const ready = await readUntil(
+            () =>
+              browser.read(`JSON.stringify({
+                open: Boolean(document.querySelector('${onADesktop() ? "[data-realm-slot] " : ""}section[aria-label="${HUD_WORDS.relics}"]')),
+                ready: document.querySelectorAll('section[aria-label="${HUD_WORDS.relics}"] [data-army-relics] button[aria-label^="Switch on "]').length,
+                running: Boolean(document.querySelector('section[aria-label="${HUD_WORDS.relics}"] [data-relics-running]')),
+              })`),
+            (state) => state.open && state.ready === 3 && state.running,
+            SHEET_WAIT_MS,
+          );
+          return { ...ready, shot: extraScreenshot("relics") };
+        },
+        verify: ({ played }) =>
+          played.open && played.ready === 3 && played.running
+            ? completed(played)
+            : failed("Relics drawer must open showing the army's three carried relics and active effect", played),
       },
     ],
   },

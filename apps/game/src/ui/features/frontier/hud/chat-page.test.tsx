@@ -51,15 +51,16 @@ const page = (signedIn: boolean, onClose = vi.fn(), onSignIn = vi.fn()) => {
   return { frame, head: frame.querySelector<HTMLElement>(".ui-frame__head")! };
 };
 
-it("puts a signed-in player's rooms in the head row in the page's name's place, the players online beside its cross, over the history and field", () => {
+it("shows the Chat header with who is online and places the room tabs cleanly above the history and field", () => {
   const onClose = vi.fn();
   const { frame, head } = page(true, onClose);
-  // One row: the rooms, who is online and the way out; the frame still named Chat for assistive tech, no title drawn.
-  expect([...head.querySelectorAll('[role="tab"]')].map((tab) => tab.textContent)).toEqual(["Global", "Messages"]);
-  expect(head.querySelector(".ui-panel__title")!.textContent).toBe("GlobalMessages");
+  expect(head.querySelector(".ui-panel__title")!.textContent).toBe("Chat");
+  expect(head.querySelector(".ui-panel__icon")).not.toBeNull();
   expect(head.querySelector(".ui-panel__cue")!.textContent).toBe("2 online");
-  expect(head.querySelector(".ui-panel__icon")).toBeNull();
-  expect(frame.querySelector(".ui-frame__body [role='tablist']")).toBeNull();
+  expect([...frame.querySelectorAll('.ui-frame__body [role="tab"]')].map((tab) => tab.textContent)).toEqual([
+    "Global",
+    "Messages",
+  ]);
   expect(frame.querySelector(".ui-frame__body input[aria-label='Message Global']")).not.toBeNull();
   act(() => head.querySelector<HTMLButtonElement>('button[aria-label="Close"]')!.click());
   expect(onClose).toHaveBeenCalledOnce();

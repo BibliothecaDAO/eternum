@@ -18,8 +18,10 @@ import {
   MOVE,
   EVENTS_WORDS,
   MENU,
+  RELIC_WORDS,
   RESEARCH,
   SEASON,
+  SETTINGS,
   SHARED_LINK_WORDS,
   SPIRE_WORDS,
 } from "../../src/ui/design-system/kit/words";
@@ -54,6 +56,8 @@ describe("the HUD's words the steps press and read", () => {
       research: RESEARCH,
       close: CLOSE,
       chat: CHAT,
+      settings: SETTINGS,
+      relics: RELIC_WORDS.title,
     });
   });
 });

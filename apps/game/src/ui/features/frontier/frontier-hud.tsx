@@ -410,6 +410,10 @@ const FrontierHudBody = ({
         ) : undefined
       }
       page={page}
+      widePage={
+        surface === "season" &&
+        headerFacts.store.get("RaceRules", { game_id: configManager.getActiveGameId() }) !== undefined
+      }
       foot={
         <>
           {notices}
@@ -453,7 +457,7 @@ const FrontierHudBody = ({
   );
 };
 
-const REALM_HEADER_MODELS = ["HomeAspect", ...ARMY_RELIC_MODELS] as const;
+const REALM_HEADER_MODELS = ["HomeAspect", "RaceRules", ...ARMY_RELIC_MODELS] as const;
 
 /**
  * A phone's action row, the one row over the place bar that says what the pick lets the player do now (owner, 22 October

@@ -32,6 +32,21 @@ export type MapLayers = {
 
 const LAYER_MODELS = ["RealmKnowledge", "Structure", "DeepRules", "HomeAspect"] as const;
 
+export const realmLayers = (
+  store: Parameters<typeof reachableDepth>[0],
+  realm: NativeRows["Structure"],
+): MapLayer[] => {
+  const deepest = reachableDepth(store, realm.game_id, realm.entity_id) ?? 0;
+  const sharedDeep = hasSharedDeep(store, realm.game_id);
+  return [
+    0,
+    ...Array.from(
+      { length: deepest },
+      (_, index): MapLayer => (index === 2 && sharedDeep ? "deep" : ((index + 1) as EtherealLayer)),
+    ),
+  ];
+};
+
 export const useMapLayers = (
   rules: ExpeditionRules,
   realm: NativeRows["Structure"] | null,
@@ -40,19 +55,12 @@ export const useMapLayers = (
   const facts = useNativeFacts(LAYER_MODELS);
   const camera = useUIStore((state) => state.cameraTargetHex);
   const { isMapView } = useQuery();
-  const deepest = realm ? (reachableDepth(facts.store, realm.game_id, realm.entity_id) ?? 0) : 0;
   if (!realm || !isMapView) return null;
   const site = realmSite(facts.store, realm);
   const from = camera ?? site;
   const sharedDeep = hasSharedDeep(facts.store, realm.game_id);
   return {
-    layers: [
-      0,
-      ...Array.from(
-        { length: deepest },
-        (_, index): MapLayer => (index === 2 && sharedDeep ? "deep" : ((index + 1) as EtherealLayer)),
-      ),
-    ],
+    layers: realmLayers(facts.store, realm),
     shown: from
       ? sharedDeep && isDeepTile(rules.spacing, { ...from, alt: false })
         ? "deep"

@@ -24,6 +24,8 @@ export const LANDING_SCENARIOS = [
   "lab-battle-target",
   "lab-deep-battle-target",
   "lab-realm-world",
+  "lab-race",
+  "lab-panels",
 ];
 
 const VIEWPORTS = ["1920x1080", "390x844"];

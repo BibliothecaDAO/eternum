@@ -2,7 +2,16 @@ import { nativeResearchConstants as research } from "@bibliothecadao/eternum/gam
 import { describe, expect, it } from "vitest";
 
 import { EARLY_REALM, MID_REALM } from "./progression-fixture";
-import { canResearchNow, firstMissing, needLine, readResearchTree, type RealmResearchFacts } from "./research-tree";
+import {
+  canResearchNow,
+  firstMissing,
+  needLine,
+  readResearchTree,
+  researchActionName,
+  researchEffectLine,
+  researchVerb,
+  type RealmResearchFacts,
+} from "./research-tree";
 
 const node = (realm: RealmResearchFacts, key: string) => readResearchTree(realm).find((item) => item.key === key)!;
 const why = (realm: RealmResearchFacts, key: string) => {
@@ -24,11 +33,11 @@ describe("the castle's tree as the contract rules it", () => {
       ["spire", "locked"],
     ]);
     expect(why(EARLY_REALM, "row-0")).toBe("Needs 500 Essence");
-    expect(why(EARLY_REALM, "row-1")).toBe("Needs a Workshop standing");
+    expect(why(EARLY_REALM, "row-1")).toBe("Needs a Workshop");
     expect(why(EARLY_REALM, "row-2")).toBe("Needs the Realm at City");
     expect(why(EARLY_REALM, "row-4")).toBe("Needs the Realm at Kingdom");
     expect(why(EARLY_REALM, "row-5")).toBe("Needs the Realm at Kingdom");
-    expect(why({ ...EARLY_REALM, castleLevel: 2 }, "row-5")).toBe("Needs a Supply yard standing");
+    expect(why({ ...EARLY_REALM, castleLevel: 2 }, "row-5")).toBe("Needs a Supply yard");
     expect(why(EARLY_REALM, "well")).toBe("Needs 2,500 Essence");
     expect(why(EARLY_REALM, "shrine")).toBe("Needs Well lore first");
     expect(why(EARLY_REALM, "spire")).toBe("Needs Shrine lore first");
@@ -52,14 +61,16 @@ describe("the castle's tree as the contract rules it", () => {
 
   it("gives a Farm tier its output figure now and with the next tier", () => {
     const farm = node(MID_REALM, "row-0");
-    expect(farm.gives).toEqual({ line: "Farm wheat", now: "+20%", next: "+40%" });
-    expect(farm.figures).toEqual([{ icon: "fields", name: "Fields", line: "Farm wheat", now: "+20%", next: "+40%" }]);
+    expect(farm.gives).toEqual({ line: "Farm wheat", now: "120%", next: "140%" });
+    expect(farm.figures).toEqual([{ icon: "fields", name: "Fields", line: "Farm wheat", now: "120%", next: "140%" }]);
+    expect(researchEffectLine(farm)).toBe("120% → 140%");
   });
 
   it("says what a finished Farm gives, with nothing left to buy", () => {
     const farm = node({ ...MID_REALM, learned: { ...MID_REALM.learned, 0: { tier: 5 } } }, "row-0");
     expect([farm.state, farm.price, farm.nextTier]).toEqual(["done", undefined, undefined]);
-    expect(farm.gives).toEqual({ line: "Farm wheat", now: "+100%", next: undefined });
+    expect(farm.gives).toEqual({ line: "Farm wheat", now: "200%", next: undefined });
+    expect(researchEffectLine(farm)).toBe("200%");
   });
 });
 
@@ -104,9 +115,18 @@ it("offers independent Camp and Depot upgrades with their exact next output and 
     name: "Rations Depot",
     tier: 3,
     price: { essence: 25000, labor: 5000 },
-    gives: { now: "1.4 wheat a troop", next: "1.2 wheat a troop" },
-    figures: [{ name: "Wheat a troop", line: "On each deploy", now: "1.4", next: "1.2" }],
+    gives: { now: "1.4 wheat per troop", next: "1.2 wheat per troop", direction: "lower" },
+    figures: [{ name: "Wheat per troop", line: "On each deploy", now: "1.4", next: "1.2" }],
   });
+  expect(researchEffectLine(node(realm, `row-${research.ROW_CONSCRIPTION}`))).toBe(
+    "120 troops an hour → 140 troops an hour",
+  );
+  expect(researchEffectLine(node(realm, `row-${research.ROW_RATIONS}`))).toBe(
+    "1.4 wheat per troop → 1.2 wheat per troop (less)",
+  );
+  expect(researchEffectLine(node(EARLY_REALM, "well"))).toBe("None → 40% max stamina each");
+  expect(researchEffectLine(node({ ...EARLY_REALM, essence: 2_500 }, "well"))).toBe("None → 40% max stamina each");
+  expect(researchEffectLine(node(MID_REALM, "spire"))).toBe("Closed → Open");
 });
 
 it("shows only Knight slots at Settlement and each troop's three exact purchases at City", () => {
@@ -131,4 +151,11 @@ it("shows only Knight slots at Settlement and each troop's three exact purchases
       expect(result.state).toBe(tier === 3 ? "done" : "ready");
     }
   }
+});
+
+it("uses one Upgrade verb across building and oath rows while naming Oath slots explicitly", () => {
+  expect(researchVerb(research.ROW_FARM)).toBe("Upgrade");
+  expect(researchVerb(research.ROW_KNIGHT_OATHS)).toBe("Upgrade Oath slots");
+  expect(researchActionName({ row: research.ROW_FARM, name: "Farm" })).toBe("Upgrade Farm");
+  expect(researchActionName({ row: research.ROW_KNIGHT_OATHS, name: "Barracks" })).toBe("Upgrade Barracks Oath slots");
 });

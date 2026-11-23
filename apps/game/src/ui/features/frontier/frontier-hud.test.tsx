@@ -1,12 +1,14 @@
 // @vitest-environment jsdom
 import { SeasonOver } from "@/shell/season-tab/season-over";
+import { mapRouteHex } from "@/play/navigation/play-route";
+import { LAYER_VIEW_REQUEST_EVENT, type LayerViewRequest } from "@/three/scenes/worldmap-layer-request";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { MemoryRouter } from "react-router-dom";
 import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import { deepViewFor, type GameClientSetup, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { nativeReleaseConstants } from "../../../../../../contracts/l3/world-native/schema/client.gen";
 import type { HudSurface } from "./hud/frontier-nav";
 
@@ -46,11 +48,17 @@ vi.mock("@/ui/features/social", async () => ({
   GameChatMap: ({ children }: { children: ReactNode }) => children,
 }));
 
-const { getStructureName, readExpeditionRules } = await import("@bibliothecadao/eternum");
+const { configManager, getStructureName, Position, readExpeditionRules, setBlockTimestampSource } =
+  await import("@bibliothecadao/eternum");
+const { GameProvider } = await import("@/hooks/context/game-context");
+const { useAccountStore } = await import("@/hooks/store/use-account-store");
+const { wire: wireFact } = await import("@/lab/game/lab-chain");
+const { raceRules, raceScenario } = await import("@/lab/game/race-scenario");
 const { useRealtimeChatStore } = await import("@/ui/features/social/realtime-chat/model/store");
 const { LabGame } = await import("@/ui/features/debug/kit-lab/lab-game");
 const { useUIStore } = await import("@/hooks/store/use-ui-store");
 const { overrideSpectateIntent } = await import("@/utils/spectator-session");
+const { FrontierAspectPage } = await import("./aspect/aspect-page");
 const { FrontierHud } = await import("./frontier-hud");
 const { BuildingType, BUILDINGS_CENTER } = await import("@bibliothecadao/types");
 const { buildingName } = await import("./build/building-names");
@@ -196,30 +204,40 @@ it("treats the desktop's Feed as any other panel: closed at start, opened from i
   const route = window.location.pathname + window.location.search;
   const { selectedBuildingHex } = useUIStore.getState();
   await renderHud();
-  const panel = () => host.querySelector("[data-realm-slot]")!;
-  const open = (name: string) => panel().querySelector(`section[aria-label="${name}"]`) !== null;
+  const panel = () => host.querySelector("[data-realm-slot]");
+  const open = (name: string) => Boolean(panel()?.querySelector(`section[aria-label="${name}"]`));
   const place = (name: string) =>
     host.querySelector<HTMLButtonElement>(`nav[aria-label="Places"] button[aria-label="${name}"]`)!;
   const press = (name: string) => act(async () => place(name).click());
   try {
-    // Nothing stands in the rail until the player opens it.
-    expect(panel().childElementCount).toBe(0);
+    expect(panel()!.childElementCount).toBe(0);
     expect(place("Feed").getAttribute("aria-selected")).toBe("false");
     await press("Feed");
     expect([open("Feed"), place("Feed").getAttribute("aria-selected")]).toEqual([true, "true"]);
-    // The Season replaces it, and closing the Season leaves nothing: the Feed does not come back.
     await press("Season");
-    expect([open("Feed"), open("Season"), place("Feed").getAttribute("aria-selected")]).toEqual([false, true, "false"]);
+    expect([
+      open("Feed"),
+      open("Season"),
+      host.querySelector("[data-wide-page]") === null,
+      place("Feed").getAttribute("aria-selected"),
+    ]).toEqual([false, true, true, "false"]);
     await press("Season");
-    expect(panel().childElementCount).toBe(0);
-    // Its place closes it, as Research's and the Season's close theirs; so does its ×.
+    expect(panel()!.childElementCount).toBe(0);
+    await act(async () =>
+      shownStore.applyFacts([{ model: "RaceRules", key: "0xa500", value: wireFact(raceRules()) }] as never),
+    );
+    await press("Season");
+    expect(host.querySelector('[data-wide-page] section[aria-label="Aspect Race"]')).not.toBeNull();
+    expect(host.querySelector('[aria-label="Armies"]')).toBeNull();
+    await press("Season");
+    expect(panel()!.childElementCount).toBe(0);
+    expect(host.querySelector("[data-wide-page]")).toBeNull();
     await press("Feed");
     await press("Feed");
     expect(open("Feed")).toBe(false);
     await press("Feed");
-    await act(async () => panel().querySelector<HTMLButtonElement>('button[aria-label="Close"]')!.click());
-    expect(panel().childElementCount).toBe(0);
-    // A card the map opens replaces it: an open plot tapped on the realm's board, its Build sheet.
+    await act(async () => panel()!.querySelector<HTMLButtonElement>('button[aria-label="Close"]')!.click());
+    expect(panel()!.childElementCount).toBe(0);
     await press("Feed");
     window.history.replaceState(null, "", "/g/0x1ab9/1/hex?col=1&row=1");
     await act(async () =>
@@ -255,6 +273,11 @@ it("keeps a refused order in sight on a desktop, over the feed and over a panel 
     const season = host.querySelector<HTMLButtonElement>('nav[aria-label="Places"] button[aria-label="Season"]')!;
     await act(async () => season.click());
     expect(host.querySelector('[data-realm-slot] section[aria-label="Season"]')).not.toBeNull();
+    expect(rail().querySelector('[aria-label="Notices"]')?.textContent).toContain("Not enough stamina");
+    await act(async () =>
+      shownStore.applyFacts([{ model: "RaceRules", key: "0xa500", value: wireFact(raceRules()) }] as never),
+    );
+    expect(host.querySelector('[data-wide-page] section[aria-label="Aspect Race"]')).not.toBeNull();
     expect(rail().querySelector('[aria-label="Notices"]')?.textContent).toContain("Not enough stamina");
   } finally {
     useEventFeedStore.getState().dismiss();
@@ -930,6 +953,19 @@ it("keeps Chat reachable from the desktop top bar while visiting another realm",
   }
 });
 
+it("offers Relics for the player's own realm and hides it on a visit", async () => {
+  viewport.set(1440);
+  await renderHud();
+  expect(host.querySelector('nav[aria-label="Places"] button[aria-label="Relics"]')).not.toBeNull();
+  try {
+    await renderVisit();
+    expect(host.querySelector('button[aria-label="Relics"]')).toBeNull();
+    expect(document.querySelector('section[aria-label="Relics"]')).toBeNull();
+  } finally {
+    visiting.visit = null;
+  }
+});
+
 it("opens Shop from the desktop top bar Fragments control once Fragments are held", async () => {
   viewport.set(1440);
   const route = window.location.pathname + window.location.search;
@@ -952,5 +988,65 @@ it("opens Shop from the desktop top bar Fragments control once Fragments are hel
     expect(document.querySelector('[aria-label="Shop"]')).not.toBeNull();
   } finally {
     window.history.replaceState(null, "", route);
+  }
+});
+
+it("moves to the World map at the Deep hex when Go to Deep is pressed from the Realm view, dives on the map, and hides Go to Deep once the season ends", async () => {
+  const route = window.location.pathname + window.location.search;
+  const requested: LayerViewRequest[] = [];
+  const onRequest = (event: Event) => requested.push((event as CustomEvent<LayerViewRequest>).detail);
+  window.addEventListener(LAYER_VIEW_REQUEST_EVENT, onRequest);
+  const drawRace = async (finished: boolean, onClose: () => void) => {
+    const scenario = raceScenario(finished);
+    scenario.store.setSnapshot({ gameId: 1, actor: scenario.player, timestamp: scenario.startsAt, complete: true });
+    configManager.setActiveGame(1);
+    configManager.setStore(scenario.store);
+    setBlockTimestampSource(() => scenario.startsAt);
+    useAccountStore.setState({ account: { address: scenario.player } as never });
+    await act(async () =>
+      root.render(
+        <QueryClientProvider client={new QueryClient()}>
+          <GameProvider
+            value={{ store: scenario.store } as unknown as GameClientSetup}
+            account={{ address: scenario.player } as never}
+          >
+            <FrontierAspectPage onClose={onClose} />
+          </GameProvider>
+        </QueryClientProvider>,
+      ),
+    );
+    return scenario;
+  };
+  const goToDeep = () =>
+    [...host.querySelectorAll<HTMLButtonElement>('section[aria-label="Aspect Race"] button')].find((button) =>
+      button.textContent?.includes("Go to Deep"),
+    );
+  try {
+    window.history.replaceState(null, "", "/g/0x1ab9/1/hex?col=1&row=1");
+    window.dispatchEvent(new Event("urlChanged"));
+    const onClose = vi.fn();
+    const active = await drawRace(false, onClose);
+    const spacing = active.store.require("SettlementRules", { game_id: 1 }).spacing;
+    const deepTarget = deepViewFor(active.store, 1, 7n, spacing);
+    const expectedHex = mapRouteHex(Position.fromContract({ x: deepTarget.col, y: deepTarget.row }));
+
+    await act(async () => goToDeep()!.click());
+    expect(window.location.pathname).toBe("/g/0x1ab9/1/map");
+    expect(window.location.search).toBe(`?col=${expectedHex.col}&row=${expectedHex.row}`);
+    expect(requested).toEqual([]);
+    expect(onClose).toHaveBeenCalledTimes(1);
+
+    await act(async () => goToDeep()!.click());
+    expect(requested).toEqual([deepTarget]);
+    expect(onClose).toHaveBeenCalledTimes(2);
+
+    await drawRace(true, onClose);
+    expect(host.querySelector('section[aria-label="Aspect Race"]')).not.toBeNull();
+    expect(goToDeep()).toBeUndefined();
+  } finally {
+    setBlockTimestampSource(null);
+    window.removeEventListener(LAYER_VIEW_REQUEST_EVENT, onRequest);
+    window.history.replaceState(null, "", route);
+    window.dispatchEvent(new Event("urlChanged"));
   }
 });

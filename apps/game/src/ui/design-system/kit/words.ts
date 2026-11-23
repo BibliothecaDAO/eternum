@@ -948,13 +948,15 @@ export const OPENING_WORDS = {
 } as const;
 /** The Aspect page (docs/plans/frontier-season-1.md, Aspects and the hyperstructure): the race, and the player's Aspect. */
 export const ASPECT_PAGE_WORDS = {
-  title: "Aspects",
+  title: "Aspect Race",
   race: "The hyperstructures",
+  rateChip: (perHeight: number, bonus: string) => `${formatExact(perHeight)} / pt · +${bonus}`,
+  goToDeep: `Go to ${DEEP}`,
   height: (height: number, finish: number) => `${formatExact(height)} of ${formatExact(finish)}`,
   stage: (stage: number, stages: number) => `Stage ${stage} of ${stages}`,
   finished: "Finished",
-  won: (aspect: string) => `${aspect} finished first and won the age`,
-  noFinisher: "The age ended. No Aspect finished its hyperstructure.",
+  won: (aspect: string) => `${aspect} finished 1st and won the season`,
+  noFinisher: "The season ended. No Aspect finished its hyperstructure.",
   yours: (aspect: string) => `Your Aspect: ${aspect}`,
   triumphs: "Triumphs",
   triumph: { 1: "Clear Mist", 2: "Second Wind", 3: "Pale Moon", 4: "Spoils" },
@@ -974,12 +976,12 @@ export const ASPECT_PAGE_WORDS = {
   fight: (winner: string, loser: string) => `${winner} beat ${loser}`,
   fightLosses: (first: string, firstLost: number, second: string, secondLost: number) =>
     `${first} lost ${formatExact(firstLost)}, ${second} lost ${formatExact(secondLost)} troops`,
-  standoff: (first: string, second: string) => `${first} and ${second} fought to a stand`,
-  mutual: (first: string, second: string) => `${first} and ${second} wiped each other out`,
-  readingFights: `Reading the ${DEEP}'s fights…`,
-  fightsFailed: `The ${DEEP}'s fights could not be read.`,
-  wiped: (aspect: string) => `${aspect} wiped out`,
-  reading: "Reading the race…",
+  standoff: (first: string, second: string) => `${first} and ${second} tied`,
+  mutual: (first: string, second: string) => `${first} and ${second} destroyed each other`,
+  readingFights: `Loading ${DEEP} battles…`,
+  fightsFailed: `Could not load ${DEEP} battles.`,
+  wiped: (aspect: string) => `${aspect} was defeated`,
+  reading: "Loading scores…",
 } as const;
 export const RESEARCHING = "Researching…";
 export const BUILDING = "Building…";
@@ -2059,9 +2061,9 @@ function figureStep(from: RankedWords | string, to: RankedWords | string): Ranke
  */
 export const RESEARCH_TREE = {
   /** Said while the realm's knowledge, balances, prices or board rules have not all arrived. */
-  onItsWay: "The research tree is on its way",
+  onItsWay: "Loading research…",
   branches: { economy: "Economy", army: ARMY, castle: CASTLE },
-  states: { ready: "Can research", short: "Saving up", done: "Researched", locked: "Locked" },
+  states: { ready: "Can research", short: "Not enough", done: "Researched", locked: "Locked" },
   outputs: {
     fields: ["Fields", "Farm wheat"],
     tools: ["Tools", "Workshop labor"],
@@ -2072,10 +2074,10 @@ export const RESEARCH_TREE = {
   oathLocked: "Locked",
   oathResearch: "Research for new armies",
   conscriptionLine: "More troops from every troop building.",
-  rationsLine: "Armies leave for less wheat.",
+  rationsLine: "Armies cost less wheat to deploy.",
   troopsAnHour: "Troops an hour",
   atEach: (building: string) => `At each ${building}`,
-  wheatATroop: "Wheat a troop",
+  wheatATroop: "Wheat per troop",
   onEachDeploy: "On each deploy",
   newArmiesStart: (attribute: string) => `New armies start with ${attribute}`,
   /** A training building's figure, under the attribute's name on its card: what that level is given to. */
@@ -2084,7 +2086,7 @@ export const RESEARCH_TREE = {
   at: (tier: number, effect: string): RankedWords => [{ rank: tier }, ` · ${effect}`],
   effects: {
     logistics: (value: string) => `${value} max stamina`,
-    rations: (value: string) => `${value} wheat a troop`,
+    rations: (value: string) => `${value} wheat per troop`,
     troops: (value: string) => `${value} troops an hour`,
   },
   nouns: { essence: ESSENCE, labor: LABOR },
@@ -2093,17 +2095,20 @@ export const RESEARCH_TREE = {
   lore: loreOf,
   opensLayers: `Opens every layer under the ${layerName(0)}`,
   opens: "Open",
+  closed: "Closed",
+  none: "None",
   build: (building: string) => `Build a ${building}`,
-  stands: (building: string) => `${building} stands`,
-  needsBuilding: (building: string) => `Needs a ${building} standing`,
+  stands: (building: string) => `${building} built`,
+  needsBuilding: (building: string) => `Needs a ${building}`,
   needsLevel: (level: string) => `Needs the Realm at ${level}`,
   needsFirst: (what: string) => `Needs ${what} first`,
   needsResource: (amount: string, noun: string) => `Needs ${amount} ${noun}`,
   store: (limit: string, need: string, level: string) => `Labor storage ${limit} / ${need} · ${level}`,
   held: (noun: string, have: string, need: string) => `${noun} ${have} / ${need}`,
-  research: (what: RankedWords | string): RankedWords => ["Research ", ...asRanked(what)],
-  levelUpCastle: "Level up the castle",
+  upgrade: "Upgrade",
+  levelUpCastle: "Upgrade the Castle",
   complete: "Complete",
+  less: "(less)",
   step: figureStep,
   price: (essence: string) => `${essence} ${ESSENCE}`,
 } as const;

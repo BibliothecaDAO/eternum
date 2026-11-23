@@ -1,9 +1,11 @@
+import "./aspect-page-view.css";
+
 import { OpeningPartGate } from "../opening/opening-context";
 import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { Icon } from "@/ui/design-system/icon";
-import { HudChip, HudMeter, HudPage, HudRow } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudChip, HudMeter, HudPage, HudRow, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
 import { ASPECT_PAGE_WORDS as WORDS } from "@/ui/design-system/kit/words";
-import { aspectName, formatShort, type AspectId } from "@bibliothecadao/types";
+import { ASPECT_REWARD, aspectName, formatShort, type AspectId } from "@bibliothecadao/types";
 import type { ReactNode } from "react";
 import { AspectRaceCanvas } from "./aspect-race-canvas";
 import { AspectStandings } from "./aspect-standings";
@@ -48,35 +50,54 @@ export interface AspectPageProps {
   own: OwnAspect | null;
   fights?: ReactNode;
   invite?: ReactNode;
+  onGoToDeep?: () => void;
   onClose: () => void;
 }
 
-export const AspectPageView = ({ race, own, fights, invite, onClose }: AspectPageProps) => (
-  <HudPage label={WORDS.title} icon="hyperstructure" onClose={onClose} bodyClassName="gap-3">
-    {race === null ? (
-      <Muted>{WORDS.reading}</Muted>
-    ) : (
-      <div className="mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col gap-3 overflow-y-auto">
-        <Race race={race} />
-        {own ? <YourAspect own={own} /> : <Muted>{WORDS.noAspect}</Muted>}
-        {own && fights}
-        {own && invite}
-      </div>
-    )}
-  </HudPage>
-);
+export const AspectPageView = ({ race, own, fights, invite, onGoToDeep, onClose }: AspectPageProps) => {
+  const rewardChip = (
+    <HudChip icons={["lords"]}>
+      {WORDS.rateChip(ASPECT_REWARD.lordsPerHeight, formatShort(ASPECT_REWARD.finishBonus))}
+    </HudChip>
+  );
+  return (
+    <HudPage label={WORDS.title} icon="victory" cue={rewardChip} fills onClose={onClose} bodyClassName="gap-3">
+      {race === null ? (
+        <Muted>{WORDS.reading}</Muted>
+      ) : (
+        <div data-aspect-race-page className="aspect-race-page">
+          <Race race={race} />
+          <div className="aspect-race-page__board">
+            {own ? <YourAspect own={own} invite={invite} /> : <Muted>{WORDS.noAspect}</Muted>}
+            {own && fights && <div className="flex min-w-0 flex-col gap-2">{fights}</div>}
+          </div>
+          {onGoToDeep && race.result === null && own !== null && (
+            <HudWindowFoot>
+              <HudButton kind="primary" icon="spire" onClick={onGoToDeep}>
+                {WORDS.goToDeep}
+              </HudButton>
+            </HudWindowFoot>
+          )}
+        </div>
+      )}
+    </HudPage>
+  );
+};
 
 const Race = ({ race }: { race: NonNullable<AspectPageProps["race"]> }) => (
-  <section data-aspect-race className="flex flex-col gap-2">
-    <Heading>{WORDS.race}</Heading>
-    {race.result && <Muted>{race.result.winner === null ? WORDS.noFinisher : WORDS.won(race.result.winner)}</Muted>}
+  <section data-aspect-race className="aspect-race-page__hero">
+    {race.result && (
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <Muted>{race.result.winner === null ? WORDS.noFinisher : WORDS.won(race.result.winner)}</Muted>
+      </div>
+    )}
     <AspectRaceCanvas standings={race.standings} finishHeight={race.finishHeight} />
     <AspectStandings standings={race.standings} finishHeight={race.finishHeight} stages={race.stages} />
   </section>
 );
 
-const YourAspect = ({ own }: { own: OwnAspect }) => (
-  <section data-aspect-own className="flex flex-col gap-2">
+const YourAspect = ({ own, invite }: { own: OwnAspect; invite?: ReactNode }) => (
+  <section data-aspect-own className="flex min-w-0 flex-col gap-2">
     <Heading>
       <span className="inline-flex items-center gap-2">
         <AspectMark aspect={own.aspectId} size={24} decorative />
@@ -120,6 +141,7 @@ const YourAspect = ({ own }: { own: OwnAspect }) => (
         />
       ))}
     </div>
+    {invite}
   </section>
 );
 

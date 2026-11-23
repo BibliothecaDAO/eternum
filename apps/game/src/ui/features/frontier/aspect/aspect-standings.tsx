@@ -26,9 +26,7 @@ export const AspectStandings = ({
   finishHeight: number;
   stages?: number;
 }) => (
-  <div
-    className={stages !== undefined ? "grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4" : "flex flex-col gap-2"}
-  >
+  <div className={stages !== undefined ? "grid grid-cols-2 gap-2 sm:grid-cols-4 lg:gap-3" : "flex flex-col gap-2"}>
     {standings.map((standing) => (
       <AspectStandingRow key={standing.aspectId} standing={standing} finishHeight={finishHeight} stages={stages} />
     ))}
@@ -59,24 +57,32 @@ const AspectStandingRow = ({
       data-own={standing.own || undefined}
       className="race-row"
     >
-      <AspectMark aspect={standing.aspectId} size={24} decorative />
-      <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <div className="flex items-center justify-between gap-2">
-          <span className={standing.own ? "text-hud-strong text-hud-ink" : "text-hud-body text-hud-ink"}>{name}</span>
-          <div className="flex items-center gap-2">
-            <span className="text-hud-strong tabular-nums text-hud-ink">{formatExact(standing.height)}</span>
+      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+        <div className="flex min-w-0 items-center justify-between gap-2">
+          <span className="flex min-w-0 items-center gap-1.5">
+            <AspectMark aspect={standing.aspectId} size={22} decorative />
+            <span
+              className={standing.own ? "truncate text-hud-strong text-hud-ink" : "truncate text-hud-body text-hud-ink"}
+            >
+              {name}
+            </span>
+          </span>
+          <span className="shrink-0 text-hud-strong tabular-nums text-hud-ink">{formatExact(standing.height)}</span>
+        </div>
+        <HudMeter label={stageText ? heightText : name} share={raceProgress(standing.height, finishHeight)} />
+        {(stageText || standing.lords !== undefined) && (
+          <div className="flex flex-wrap items-center justify-between gap-1">
+            {stageText && (
+              <span className="min-w-0 text-hud-label text-hud-muted">
+                {stageText} · {heightText}
+              </span>
+            )}
             {standing.lords !== undefined && (
               <HudChip icons={["lords"]} label={WORDS.worth}>
                 {formatShort(standing.lords)}
               </HudChip>
             )}
           </div>
-        </div>
-        <HudMeter label={stageText ? heightText : name} share={raceProgress(standing.height, finishHeight)} />
-        {stageText && (
-          <span className="text-hud-label text-hud-muted">
-            {stageText} · {heightText}
-          </span>
         )}
       </div>
     </div>

@@ -11,10 +11,19 @@ import {
   HudTierStep,
 } from "@/ui/design-system/kit/hud-elements";
 import type { Fix } from "@/ui/design-system/kit/refusal";
-import { CLOSE, RESEARCH, RESEARCH_TREE, RESEARCHING, type Rank, type RankedWords } from "@/ui/design-system/kit/words";
+import { CLOSE, RESEARCH, RESEARCH_TREE, RESEARCHING, type Rank } from "@/ui/design-system/kit/words";
 import { formatAmount, formatExact, formatShort } from "@bibliothecadao/types";
-import { useState } from "react";
-import { type Branch, firstMissing, type Need, needLine, type NodeState, type TreeNode } from "./research-tree";
+import { useLayoutEffect, useRef, useState } from "react";
+import {
+  type Branch,
+  firstMissing,
+  type Need,
+  needLine,
+  type NodeState,
+  researchActionName,
+  researchEffectLine,
+  type TreeNode,
+} from "./research-tree";
 
 export const ResearchPanel = ({
   nodes,
@@ -41,6 +50,9 @@ export const ResearchPanel = ({
   const node = picked === null ? undefined : nodes.find(({ key }) => key === picked);
   const branches = Object.keys(RESEARCH_TREE.branches) as Branch[];
   const visibleBranches = filter === null ? branches : [filter];
+  const firstReadyKey = nodes.find(
+    (item) => item.state === "ready" && (filter === null || item.branch === filter),
+  )?.key;
   return (
     <HudPage label={RESEARCH} icon="research" onClose={onClose}>
       <HudTabs
@@ -62,7 +74,10 @@ export const ResearchPanel = ({
                     key={item.key}
                     node={item}
                     picked={item.key === node?.key}
+                    primaryAction={item.key === firstReadyKey}
+                    sending={sending.has(item.row)}
                     onPick={() => onPick(item.key)}
+                    onUpgrade={() => onResearch(item)}
                   />
                 ))}
               </div>
@@ -71,20 +86,31 @@ export const ResearchPanel = ({
         })}
       </div>
       {node && (
-        <NodeChoice
-          key={node.key}
-          node={node}
-          sending={sending.has(node.row)}
-          fix={(need) => fixFor(need, node)}
-          onResearch={() => onResearch(node)}
-          onClose={() => onPick(null)}
-        />
+        <NodeChoice key={node.key} node={node} fix={(need) => fixFor(need, node)} onClose={() => onPick(null)} />
       )}
     </HudPage>
   );
 };
 
-const ResearchRow = ({ node, picked, onPick }: { node: TreeNode; picked: boolean; onPick: () => void }) => {
+const ResearchRow = ({
+  node,
+  picked,
+  primaryAction,
+  sending,
+  onPick,
+  onUpgrade,
+}: {
+  node: TreeNode;
+  picked: boolean;
+  primaryAction: boolean;
+  sending: boolean;
+  onPick: () => void;
+  onUpgrade: () => void;
+}) => {
+  const rowRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    if (picked) rowRef.current?.scrollIntoView?.({ block: "nearest" });
+  }, [picked]);
   const look = STATE_LOOK[node.state];
   const missing = firstMissing(node);
   const price = node.needs.filter(isPrice);
@@ -101,9 +127,17 @@ const ResearchRow = ({ node, picked, onPick }: { node: TreeNode; picked: boolean
   ) : null;
   return (
     <div
+      ref={rowRef}
+      onClick={(event) => {
+        if (!(event.target as Element).closest("button")) onPick();
+      }}
       className={cn(
         "rounded-md border bg-hud-well",
-        node.state === "locked" && node.tier > 0 ? "border-hud-divider" : look.frame,
+        primaryAction
+          ? "border-hud-gold bg-hud-chosen"
+          : node.state === "locked" && node.tier > 0
+            ? "border-hud-divider"
+            : look.frame,
       )}
     >
       <HudRow
@@ -112,8 +146,8 @@ const ResearchRow = ({ node, picked, onPick }: { node: TreeNode; picked: boolean
         selected={picked}
         onClick={onPick}
         lead={
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-md border border-hud-divider bg-hud-surface">
-            <Icon name={node.icon} size={34} />
+          <span className="flex size-12 shrink-0 items-center justify-center rounded-md border border-hud-divider bg-hud-surface">
+            <Icon name={node.icon} size={48} />
           </span>
         }
         title={
@@ -125,6 +159,9 @@ const ResearchRow = ({ node, picked, onPick }: { node: TreeNode; picked: boolean
         detail={
           <span className="flex flex-col gap-0.5">
             <span className="block truncate">{node.gives.line}</span>
+            <span data-research-effect className="block truncate text-hud-label tabular-nums text-hud-good">
+              <HudRanked words={researchEffectLine(node)} />
+            </span>
             {(node.state === "locked" || node.state === "short") && missing && (
               <span data-lock-reason className="inline-flex items-center gap-1 text-hud-label text-hud-bad">
                 <Icon name={needIcon(missing)} size={13} />
@@ -134,29 +171,38 @@ const ResearchRow = ({ node, picked, onPick }: { node: TreeNode; picked: boolean
           </span>
         }
         trail={
-          node.state === "locked" || node.state === "short" ? undefined : (
-            <span className="flex flex-col items-end gap-0.5">
-              {node.state === "done" ? (
-                <span className="inline-flex items-center gap-1 text-hud-label text-hud-good">
-                  <Icon name="check" size={14} />
-                  {RESEARCH_TREE.states.done}
-                </span>
-              ) : (
-                price.map((need) => (
+          node.state === "done" ? (
+            <span className="inline-flex items-center gap-1 text-hud-label text-hud-good">
+              <Icon name="check" size={14} />
+              {RESEARCH_TREE.states.done}
+            </span>
+          ) : undefined
+        }
+        controls={
+          node.state === "ready" ? (
+            <div className="flex shrink-0 flex-col items-end gap-1">
+              <HudButton
+                kind={primaryAction ? "primary" : "secondary"}
+                size="sm"
+                busy={sending ? RESEARCHING : undefined}
+                aria-label={researchActionName(node)}
+                onClick={() => onUpgrade()}
+              >
+                {RESEARCH_TREE.upgrade}
+              </HudButton>
+              <span className="flex items-center gap-1.5">
+                {price.map((need) => (
                   <span
                     key={need.kind}
-                    className={cn(
-                      "inline-flex items-center gap-0.5 text-hud-label tabular-nums",
-                      need.met ? "text-hud-ink" : "text-hud-bad",
-                    )}
+                    className="inline-flex items-center gap-0.5 text-hud-label tabular-nums text-hud-muted"
                   >
                     <Icon name={need.kind} size={13} />
                     {formatShort(need.need)}
                   </span>
-                ))
-              )}
-            </span>
-          )
+                ))}
+              </span>
+            </div>
+          ) : undefined
         }
       />
     </div>
@@ -217,24 +263,15 @@ const tileTip = (node: TreeNode) =>
 
 const NodeChoice = ({
   node,
-  sending,
   fix,
-  onResearch,
   onClose,
 }: {
   node: TreeNode;
-  sending: boolean;
   fix: (need: Need) => Fix | undefined;
-  onResearch: () => unknown;
   onClose: () => void;
 }) => {
   const missing = firstMissing(node);
   const fixing = missing && fix(missing);
-  const verb: RankedWords | string = isOathResearch(node.row)
-    ? RESEARCH_TREE.oaths
-    : node.nextTier
-      ? [`${node.name} `, { rank: node.nextTier }]
-      : node.name;
   const price = node.needs.filter(isPrice);
   return (
     <div
@@ -255,7 +292,7 @@ const NodeChoice = ({
         {node.gives.line}
         {" · "}
         <span className="tabular-nums text-hud-good">
-          <HudRanked words={node.gives.next ? RESEARCH_TREE.step(node.gives.now, node.gives.next) : node.gives.now} />
+          <HudRanked words={researchEffectLine(node)} />
         </span>
       </span>
       {missing && (
@@ -264,7 +301,7 @@ const NodeChoice = ({
           {needLine(missing)}
         </span>
       )}
-      {node.state !== "done" && (
+      {node.state !== "done" && (price.length > 0 || fixing) && (
         <div data-research-footer className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5">
           <span className="flex shrink-0 gap-1">
             {price.map((need) => (
@@ -281,18 +318,9 @@ const NodeChoice = ({
               </span>
             ))}
           </span>
-          {fixing ? (
+          {fixing && (
             <HudButton kind="primary" icon={fixing.icon} onClick={fixing.onFix}>
               {fixing.word}
-            </HudButton>
-          ) : (
-            <HudButton
-              kind="primary"
-              disabled={node.state !== "ready"}
-              busy={sending ? RESEARCHING : undefined}
-              onClick={() => onResearch()}
-            >
-              <HudRanked words={RESEARCH_TREE.research(verb)} />
             </HudButton>
           )}
         </div>
