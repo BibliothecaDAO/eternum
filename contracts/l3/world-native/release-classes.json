@@ -1,13 +1,13 @@
 {
-  "release": 18,
+  "release": 19,
   "logic": {
     "season": "0x31e8c93493f0d0bba9799285ed0940d0860e51decdcb86f732cd5468b2ed360",
     "map": "0xe89dd54a2809d9536b7d162e910fdc4f8d7e8783ed28b212efd831254a7014",
     "placement": "0x6f2697ed245bc06f63c228a690eec6a6930ac668bb7ccff0caa54f038cd2867",
     "construction": "0x58d033c4f1c90be5c539cef566709b0375e2abb19272e390a4b9be480c95072",
     "production": "0x7bac46a7ed082df3365ad78697463686d677f2b996bbd5f1ed861ebf2b074bc",
-    "structures": "0x27938bee31fe93d0184fc0e7113310d03eb7ad785e2419628bd90e85ae0899f",
-    "troops": "0x5e093605d7b93c08f0a54059b83558ed7d69437fe08dc7bfa31ca52bd5d6218",
+    "structures": "0x731bf50a712be424bdc00d319dea76dc13c5cc9862f49f18eaaa4c671f8287a",
+    "troops": "0x10e64c06fff15e36142792b0980f63d8beb25f13f447c01a3ced1e76cec047a",
     "settlement": "0x88bcfb4fe7894c8a994be3f1ffa9f4d8350ca10d6c5bf3850c279ab84b1b6c",
     "resources": "0x3f4668027fd4ea66f0587baaac9090079b6d99fbfc71f93c68e0ecd592eecac",
     "economy": "0x3c7856605008dca3d645e3e630f38ebb3afb6d53ab5d63c99dab012c264183",
