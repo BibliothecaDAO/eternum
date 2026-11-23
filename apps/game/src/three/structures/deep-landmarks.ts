@@ -23,7 +23,10 @@ const DORMANT_GEM_HEX = "#121828";
 const ACTIVE_GEM_INTENSITY = 1.6;
 const DORMANT_TINT_FACTOR = 0.58;
 
-export async function loadDeepLandmark(key: DeepSiteKey, activation: number): Promise<{ scene: Group; animations: [] }> {
+export async function loadDeepLandmark(
+  key: DeepSiteKey,
+  activation: number,
+): Promise<{ scene: Group; animations: [] }> {
   const gltf = await gltfLoader.loadAsync(DEEP_SITE_MODELS[key]);
   const root = new Group();
   root.name = activation < 1 ? `deep-landmark-${key}-dormant` : `deep-landmark-${key}`;
