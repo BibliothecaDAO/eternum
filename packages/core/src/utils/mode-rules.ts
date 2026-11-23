@@ -12,7 +12,11 @@ export const isCommandEnabled = (
   command: keyof typeof nativeCommandBits,
 ): boolean => (BigInt(rules.command_mask) & BigInt(nativeCommandBits[command])) !== 0n;
 
-const FRAGMENT_SPENDS = ["BuySeal", "BuyStamina", "RerollOath"] as const satisfies readonly (keyof typeof nativeCommandBits)[];
+const FRAGMENT_SPENDS = [
+  "BuySeal",
+  "BuyStamina",
+  "RerollOath",
+] as const satisfies readonly (keyof typeof nativeCommandBits)[];
 
 export const spendsFragments = (rules: { readonly command_mask: bigint }): boolean =>
   FRAGMENT_SPENDS.some((command) => isCommandEnabled(rules, command));

@@ -1,6 +1,12 @@
 import type { IdentityAuth } from "./auth";
 import { spendsFragments } from "@bibliothecadao/eternum/game-client";
-import { enrolledAccounts, openFrontierGameIds, readEnrolledAccounts, readGameFacts, runningFrontierGameIds } from "./day-open";
+import {
+  enrolledAccounts,
+  openFrontierGameIds,
+  readEnrolledAccounts,
+  readGameFacts,
+  runningFrontierGameIds,
+} from "./day-open";
 import { directoryShard, directoryShardOf, fetchShardGames, gamesUrl } from "./directory";
 import type { IdentityEnv } from "./env";
 import { json } from "./http";
