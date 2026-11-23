@@ -1,0 +1,14 @@
+{
+  "name": "beast-warlock",
+  "kind": "beast",
+  "fit": "shipped",
+  "transform": {
+    "yaw_deg_about_y": 0,
+    "scale": 1,
+    "offset_xyz": [
+      0,
+      0,
+      0
+    ]
+  }
+}

@@ -980,9 +980,10 @@ are removed.
 
 `pnpm --dir apps/game prove:beasts <local-url> <fresh-evidence-directory>` drives the beast lab's visible controls and
 records its models, its HUD portraits, plates and panels. `verify:beasts` checks every delivery's budgets, footprint and
-provenance hashes through `ship-model.mjs`; `verify:fallen-realm` checks decoded triangles for zero masonry contacts at
-each production scale. Every species ships through `pnpm --dir apps/game ship:model --kind beast`, with one production
-path per species and no separate study GLB.
+exact `sourceSha256`/`fitSha256` hashes against its committed `asset-sources/tripo/` source GLB and `fit.json` through
+`ship-model.mjs`; `verify:fallen-realm` checks decoded triangles for zero masonry contacts at each production scale.
+Every species ships through `pnpm --dir apps/game ship:model --kind beast`, with one production path per species and no
+separate study GLB.
 
 Training buildings grant their first rank when built: 12,000 Essence + 3,000 Labor, with the lodge's kind chosen on the
 build sheet. Research and building gems run from Common I to Legendary V; the model shows the highest side level.

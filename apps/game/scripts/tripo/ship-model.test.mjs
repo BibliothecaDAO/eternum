@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -12,6 +12,7 @@ import sharp from "sharp";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { MODEL_TYPE_TO_FILE } from "../../src/three/constants/army-constants";
+import { FRONTIER_BEASTS } from "../../src/three/structures/frontier-beast";
 import {
   FRONTIER_PAINTED_BUILDINGS,
   frontierPaintedBuildingPath,
@@ -368,5 +369,46 @@ describe("ship-model pipeline", () => {
       const modelPath = fileURLToPath(new URL(`../../public${publicPath}`, import.meta.url));
       await assertDeliveredAsset(io, modelPath, kind, MODEL_BUDGETS[kind]);
     }
+  });
+
+  it("keeps one committed source.glb and fit.json pair under asset-sources/tripo for every shipped Tripo delivery", async () => {
+    const io = await createReader();
+    const paintedPaths = new Set(FRONTIER_PAINTED_BUILDINGS.map((entry) => entry.path));
+    const buildingPaths = [
+      ...new Set(
+        FRONTIER_BUILDING_TYPES.map((type) => frontierPaintedBuildingPath(type)).filter(
+          (path) => path && !paintedPaths.has(path),
+        ),
+      ),
+    ];
+    const troopPaths = [];
+    for (const file of new Set(Object.values(MODEL_TYPE_TO_FILE))) {
+      const modelPath = fileURLToPath(new URL(`../../public/models/${file}`, import.meta.url));
+      const doc = await io.read(modelPath);
+      const meshNode = doc
+        .getRoot()
+        .listNodes()
+        .find((node) => node.getMesh());
+      if (meshNode?.getExtras()?.assetKind === "troop") troopPaths.push(`/models/${file}`);
+    }
+    const expectedStems = [
+      ...buildingPaths,
+      ...troopPaths,
+      ...ASPECT_WONDER_PATHS,
+      ...Object.values(DEEP_SITE_MODELS),
+      ...Object.values(DEEP_GATE_MODELS),
+      ...Object.values(FRONTIER_BEASTS).map((entry) => entry.path),
+    ]
+      .map((publicPath) => publicPath.replace(/^\/models\//, "").replace(/\.glb$/, ""))
+      .sort();
+
+    const committed = readdirSync(new URL("../../asset-sources/tripo", import.meta.url), {
+      recursive: true,
+      encoding: "utf8",
+    })
+      .filter((file) => file.endsWith("/source.glb") || file.endsWith("/fit.json"))
+      .sort();
+
+    expect(committed).toEqual(expectedStems.flatMap((stem) => [`${stem}/fit.json`, `${stem}/source.glb`]).sort());
   });
 });

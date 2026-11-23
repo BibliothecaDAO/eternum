@@ -2,7 +2,7 @@ import { execFileSync, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { NodeIO } from "@gltf-transform/core";
@@ -15,6 +15,8 @@ import { BEAST_BUDGET } from "../frontier-beasts/beast-budget.mjs";
 import { resolveTripoPbr } from "../../src/three/materials/tripo-pbr-rules.mjs";
 
 const APP_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
+const PUBLIC_MODELS_ROOT = resolve(APP_ROOT, "public/models");
+const TRIPO_SOURCES_ROOT = resolve(APP_ROOT, "asset-sources/tripo");
 const GLTF_TRANSFORM = resolve(APP_ROOT, "node_modules/.bin/gltf-transform");
 const COMPRESS_MODELS = resolve(APP_ROOT, "scripts/compress-models.mjs");
 const MATERIAL_SPEC = JSON.parse(
@@ -604,6 +606,16 @@ function inspectGlbTextureProfile(glbPath) {
   };
 }
 
+function resolveTripoSourcePaths(deliveredPath) {
+  const rel = relative(PUBLIC_MODELS_ROOT, resolve(deliveredPath));
+  if (!rel || rel.startsWith("..") || !rel.endsWith(".glb")) return null;
+  const stem = rel.slice(0, -4);
+  return {
+    sourceGlb: resolve(TRIPO_SOURCES_ROOT, stem, "source.glb"),
+    fitJson: resolve(TRIPO_SOURCES_ROOT, stem, "fit.json"),
+  };
+}
+
 export async function assertDeliveredAsset(io, deliveredPath, kind, budget = MODEL_BUDGETS[kind]) {
   if (!budget) {
     throw new Error(`Unknown model kind "${kind}". Expected one of: ${Object.keys(MODEL_BUDGETS).join(", ")}`);
@@ -631,6 +643,25 @@ export async function assertDeliveredAsset(io, deliveredPath, kind, budget = MOD
   const meshNodes = root.listNodes().filter((node) => node.getMesh());
   if (meshNodes.length === 0 || !meshNodes.every((node) => node.getExtras()?.assetKind === kind)) {
     throw new Error(`Delivered ${kind} model is missing assetKind="${kind}" on its mesh node`);
+  }
+  const sourcePaths = resolveTripoSourcePaths(deliveredPath);
+  if (sourcePaths) {
+    if (!existsSync(sourcePaths.sourceGlb)) {
+      throw new Error(`Missing committed source GLB for ${deliveredPath}: ${sourcePaths.sourceGlb}`);
+    }
+    if (!existsSync(sourcePaths.fitJson)) {
+      throw new Error(`Missing committed fit.json for ${deliveredPath}: ${sourcePaths.fitJson}`);
+    }
+    const expectedSourceSha = sha256File(sourcePaths.sourceGlb);
+    const expectedFitSha = sha256File(sourcePaths.fitJson);
+    for (const node of meshNodes) {
+      if (node.getExtras()?.sourceSha256 !== expectedSourceSha) {
+        throw new Error(`Delivered ${kind} model sourceSha256 does not match ${sourcePaths.sourceGlb}`);
+      }
+      if (node.getExtras()?.fitSha256 !== expectedFitSha) {
+        throw new Error(`Delivered ${kind} model fitSha256 does not match ${sourcePaths.fitJson}`);
+      }
+    }
   }
   for (const material of root.listMaterials()) {
     if (!material.getDoubleSided()) {

@@ -1,24 +1,30 @@
 # Frontier beast models
 
 All nineteen production beasts (Surface five, Veil five, Hollow five, and Deep four) ship through the Tripo pipeline
-(`pnpm --dir apps/game ship:model --kind beast`). Each delivered GLB under `public/models/frontier/beast-*.glb` embeds
-its `assetKind: "beast"`, `sourceSha256`, and `fitSha256` extras. Retired legacy `.blend` sculpts and their Blender
-export scripts have been removed; concept paintings remain under `apps/game/asset-sources/frontier-beasts/refined/` as
-references.
+(`pnpm --dir apps/game ship:model --kind beast`) from committed editable sources under
+`apps/game/asset-sources/tripo/frontier/beast-<species>/{source.glb,fit.json}`. Each delivered GLB under
+`public/models/frontier/beast-*.glb` embeds `assetKind: "beast"`, `sourceSha256`, and `fitSha256` matching its committed
+`source.glb` and `fit.json`. Retired legacy `.blend` sculpts and their Blender export scripts have been removed; concept
+paintings remain under `apps/game/asset-sources/frontier-beasts/refined/` as references.
 
 ## Rebuild and validate
 
 From the repository root, with workspace dependencies and `ktx` installed:
 
 ```sh
-pnpm --dir apps/game ship:model --input <source.glb> --fit <fit.json> --kind beast --out apps/game/public/models/frontier/beast-<species>.glb
+pnpm --dir apps/game ship:model \
+  --input apps/game/asset-sources/tripo/frontier/beast-<species>/source.glb \
+  --fit apps/game/asset-sources/tripo/frontier/beast-<species>/fit.json \
+  --kind beast \
+  --out apps/game/public/models/frontier/beast-<species>.glb
 pnpm --dir apps/game verify:beasts
 ```
 
 `verify:beasts` runs `assertDeliveredAsset` from `apps/game/scripts/tripo/ship-model.mjs` against `BEAST_BUDGET`,
 checking budgets, grounded footprint at each species' maximum runtime scale, unit transforms, UVs, KTX2 encoding,
-`tripoMaterial` tags, and provenance hashes. The lab is `/lab/models?family=beasts`; its Set, View, Turn and Light
-controls expose the current species and site compositions.
+`tripoMaterial` tags, and exact `sourceSha256`/`fitSha256` equality against the committed files in
+`asset-sources/tripo/`. The lab is `/lab/models?family=beasts`; its Set, View, Turn and Light controls expose the
+current species and site compositions.
 
 ## Runtime identity and placement
 

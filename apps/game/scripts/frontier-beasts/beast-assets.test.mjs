@@ -67,8 +67,5 @@ for (const { species, directory, maxScale } of deliveries) {
       expect(minY).toBeLessThan(0.03);
     }
     expect(maxY).toBeGreaterThan(BEAST_BUDGET.minHeight);
-    const model = root.listNodes().find((node) => node.getMesh());
-    expect(model.getExtras().sourceSha256).toMatch(/^[0-9a-f]{64}$/);
-    expect(model.getExtras().fitSha256).toMatch(/^[0-9a-f]{64}$/);
   });
 }

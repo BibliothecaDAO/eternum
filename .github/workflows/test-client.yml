@@ -33,6 +33,7 @@ jobs:
             apps/game/asset-sources/realms/devcon
             apps/game/asset-sources/reward-chests/originals
             apps/game/asset-sources/rss-icons/selected
+            apps/game/asset-sources/tripo
             apps/game/asset-sources/workshops
             apps/game/public/icons/facets
             apps/game/public/images/aspects
