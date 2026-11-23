@@ -154,7 +154,7 @@ describe("a release's rule rows", () => {
       .gameRows("DepthRules", "1")
       .map(({ value }) => value.chest as Record<string, unknown>)
       .map((chest) => tiers.reduce((sum, tier) => sum + Number(chest[tier]), 0));
-    expect(odds).toEqual([10000, 10000, 10000]);
+    expect(odds).toEqual([10000, 10000, 10000, 10000]);
   });
 
   it("derives the complete launch config, preserving the chain's overrides", () => {
