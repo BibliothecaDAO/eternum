@@ -12,6 +12,7 @@ import { MeshoptDecoder } from "meshoptimizer";
 import { Matrix3, Matrix4, Vector3 } from "three";
 
 import { BEAST_BUDGET } from "../frontier-beasts/beast-budget.mjs";
+import { resolveTripoPbr } from "../../src/three/materials/tripo-pbr-rules.mjs";
 
 const APP_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const GLTF_TRANSFORM = resolve(APP_ROOT, "node_modules/.bin/gltf-transform");
@@ -444,34 +445,40 @@ function isInsideHex(x, z) {
 function normalizeTripoMaterials(document, kind) {
   for (const material of document.getRoot().listMaterials()) {
     const hasMrMap = Boolean(material.getMetallicRoughnessTexture());
-    const rawRoughness = material.getRoughnessFactor();
-    const roughness = !hasMrMap && rawRoughness > 0.85 ? MATERIAL_SPEC.roughness.default : rawRoughness;
-    material.setRoughnessFactor(clampRange(roughness, MATERIAL_SPEC.roughness.min, MATERIAL_SPEC.roughness.max));
-    const rawMetalness = material.getMetallicFactor();
-    const metalness = !hasMrMap && rawMetalness === 0 ? MATERIAL_SPEC.metalness.default : rawMetalness;
-    material.setMetallicFactor(clampRange(metalness, MATERIAL_SPEC.metalness.min, MATERIAL_SPEC.metalness.max));
-    if (material.getNormalTexture()) {
-      material.setNormalScale(clampRange(material.getNormalScale(), 0.1, MATERIAL_SPEC.normal.scale));
+    const emissive = material.getEmissiveFactor();
+    const resolved = resolveTripoPbr(
+      {
+        roughness: material.getRoughnessFactor(),
+        metalness: material.getMetallicFactor(),
+        hasRoughnessMap: hasMrMap,
+        hasMetalnessMap: hasMrMap,
+        hasNormalMap: Boolean(material.getNormalTexture()),
+        normalScaleX: material.getNormalScale(),
+        normalScaleY: material.getNormalScale(),
+        hasEmissiveMap: Boolean(material.getEmissiveTexture()),
+        emissivePeak: Math.max(emissive[0], emissive[1], emissive[2]),
+        emissiveIntensity: 1,
+      },
+      MATERIAL_SPEC,
+    );
+    material.setRoughnessFactor(resolved.roughness);
+    material.setMetallicFactor(resolved.metalness);
+    if (resolved.normalScaleX !== null) {
+      material.setNormalScale(resolved.normalScaleX);
     }
     if (material.getOcclusionTexture()) {
-      material.setOcclusionStrength(MATERIAL_SPEC.ambientOcclusion.mapIntensity);
+      material.setOcclusionStrength(resolved.aoMapIntensity);
     }
-    const emissive = material.getEmissiveFactor();
-    const peakEmissive = Math.max(emissive[0], emissive[1], emissive[2]);
-    if (!material.getEmissiveTexture() && peakEmissive < MATERIAL_SPEC.emissive.structuralEpsilon) {
+    if (!resolved.hasEmissiveAccent) {
       material.setEmissiveFactor([0, 0, 0]);
     }
-    material.setDoubleSided(true);
+    material.setDoubleSided(resolved.doubleSided);
     material.setExtras({
       ...material.getExtras(),
       tripoMaterial: true,
       ...(kind === "troop" ? { ownershipCloth: true } : {}),
     });
   }
-}
-
-function clampRange(value, low, high) {
-  return Math.min(high, Math.max(low, value));
 }
 
 function stripGeometryCompressionExtensions(document) {

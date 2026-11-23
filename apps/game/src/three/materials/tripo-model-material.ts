@@ -34,6 +34,7 @@ import {
 import { applyEndgameFrost } from "../effects/endgame/field";
 import { FrostedStandardNodeMaterial } from "../effects/game-map-material-library";
 import spec from "./tripo-model-material.json";
+import { resolveTripoPbr } from "./tripo-pbr-rules.mjs";
 
 const LUMA_WEIGHTS = vec3(0.2126, 0.7152, 0.0722);
 const RIM_COLOR = color(new Color(spec.rim.color));
@@ -106,7 +107,9 @@ function copySurfaceProperties(source: MeshStandardMaterial, target: FrostedStan
   target.fog = source.fog;
   target.envMap = source.envMap;
   target.envMapIntensity = Math.min(Math.max(source.envMapIntensity, 0.5), 1.0);
-  target.side = DoubleSide;
+  if (spec.doubleSided) {
+    target.side = DoubleSide;
+  }
 }
 
 function enforceTextureColorSpaces(material: FrostedStandardNodeMaterial): void {
@@ -125,31 +128,41 @@ function setColorSpace(map: Texture | null, space: typeof SRGBColorSpace | typeo
 }
 
 function applyPbrRanges(source: MeshStandardMaterial, target: FrostedStandardNodeMaterial): void {
-  const baseRoughness = !source.roughnessMap && source.roughness > 0.85 ? spec.roughness.default : source.roughness;
-  target.roughness = clampScalar(baseRoughness, spec.roughness.min, spec.roughness.max);
-  target.metalness = clampScalar(
-    !source.metalnessMap && source.metalness === 0 ? spec.metalness.default : source.metalness,
-    spec.metalness.min,
-    spec.metalness.max,
-  );
-  if (target.normalMap) {
-    target.normalScale.set(
-      clampScalar(Math.abs(source.normalScale.x), 0.1, spec.normal.scale),
-      clampScalar(Math.abs(source.normalScale.y), 0.1, spec.normal.scale),
-    );
+  const resolved = resolveSourcePbr(source);
+  target.roughness = resolved.roughness;
+  target.metalness = resolved.metalness;
+  if (resolved.normalScaleX !== null && resolved.normalScaleY !== null) {
+    target.normalScale.set(resolved.normalScaleX, resolved.normalScaleY);
   }
-  target.aoMapIntensity = spec.ambientOcclusion.mapIntensity;
+  target.aoMapIntensity = resolved.aoMapIntensity;
 }
 
 function applyBloomSafeEmissive(source: MeshStandardMaterial, target: FrostedStandardNodeMaterial): void {
-  const peak = Math.max(source.emissive.r, source.emissive.g, source.emissive.b) * source.emissiveIntensity;
-  const hasEmissiveAccent = Boolean(source.emissiveMap) || peak >= spec.emissive.structuralEpsilon;
-  if (!hasEmissiveAccent) {
+  const resolved = resolveSourcePbr(source);
+  if (!resolved.hasEmissiveAccent) {
     target.emissive.setHex(0x000000);
     target.emissiveIntensity = 0;
     return;
   }
-  target.emissiveIntensity = clampScalar(source.emissiveIntensity, 0, spec.emissive.maxIntensity);
+  target.emissiveIntensity = resolved.emissiveIntensity;
+}
+
+function resolveSourcePbr(source: MeshStandardMaterial) {
+  return resolveTripoPbr(
+    {
+      roughness: source.roughness,
+      metalness: source.metalness,
+      hasRoughnessMap: Boolean(source.roughnessMap),
+      hasMetalnessMap: Boolean(source.metalnessMap),
+      hasNormalMap: Boolean(source.normalMap),
+      normalScaleX: source.normalScale.x,
+      normalScaleY: source.normalScale.y,
+      hasEmissiveMap: Boolean(source.emissiveMap),
+      emissivePeak: Math.max(source.emissive.r, source.emissive.g, source.emissive.b) * source.emissiveIntensity,
+      emissiveIntensity: source.emissiveIntensity,
+    },
+    spec,
+  );
 }
 
 function attachShadingNodes(
@@ -275,8 +288,4 @@ function buildDerivedMetalnessNode(baseRgb: ReturnType<typeof sampleBaseRgb>) {
   const accent = float(spec.metalness.stoneAccent).mul(brightTrim);
   const combined = mix(accent, float(spec.metalness.gold), gold);
   return clamp(combined, float(spec.metalness.min), float(spec.metalness.max));
-}
-
-function clampScalar(value: number, low: number, high: number): number {
-  return Math.min(high, Math.max(low, value));
 }

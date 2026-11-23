@@ -26,6 +26,7 @@ import {
   isTripoTroopMaterial,
 } from "./tripo-model-material";
 import spec from "./tripo-model-material.json";
+import { resolveTripoPbr } from "./tripo-pbr-rules.mjs";
 
 vi.mock("../utils/contact-shadow", () => ({
   disposeContactShadowResources: vi.fn(),
@@ -69,6 +70,29 @@ describe("Tripo unified model material setup", () => {
     expect(structural.side).toBe(DoubleSide);
     expect(structural.roughness).toBe(spec.roughness.default);
     expect(structural.metalness).toBe(spec.metalness.default);
+    expect(
+      resolveTripoPbr(
+        {
+          roughness: 0.9,
+          metalness: 0,
+          hasRoughnessMap: false,
+          hasMetalnessMap: false,
+          hasNormalMap: false,
+          normalScaleX: 1,
+          normalScaleY: 1,
+          hasEmissiveMap: false,
+          emissivePeak: 0.01,
+          emissiveIntensity: 1,
+        },
+        spec,
+      ),
+    ).toMatchObject({
+      doubleSided: spec.doubleSided,
+      roughness: spec.roughness.default,
+      metalness: spec.metalness.default,
+      hasEmissiveAccent: false,
+      emissiveIntensity: 0,
+    });
     expect(structural.emissive.getHex()).toBe(0x000000);
     expect(structural.emissiveIntensity).toBe(0);
     expect(structural.colorNode).not.toBeNull();

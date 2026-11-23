@@ -1,8 +1,10 @@
 {
+  "doubleSided": true,
   "roughness": {
     "min": 0.45,
     "max": 0.92,
     "default": 0.76,
+    "fallbackThreshold": 0.85,
     "foliage": 0.9,
     "wood": 0.82,
     "stone": 0.72,
@@ -12,10 +14,12 @@
     "min": 0,
     "max": 0.35,
     "default": 0.04,
+    "fallbackThreshold": 0,
     "stoneAccent": 0.08,
     "gold": 0.3
   },
   "normal": {
+    "minScale": 0.1,
     "scale": 0.65,
     "bumpScale": 0.035
   },
