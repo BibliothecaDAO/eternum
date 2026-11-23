@@ -378,14 +378,19 @@ const AspectFilters = ({
   onChoose: (aspect: AspectId | null) => void;
 }) => (
   <div className="home-picker__filters" role="group" aria-label="Filter by Aspect">
-    <button type="button" className="home-picker__filter" aria-pressed={chosen === null} onClick={() => onChoose(null)}>
+    <button
+      type="button"
+      className="app-tabs__tab home-picker__filter"
+      aria-pressed={chosen === null}
+      onClick={() => onChoose(null)}
+    >
       {`All (${total})`}
     </button>
     {counts.map(({ id, name, count }) => (
       <button
         key={id}
         type="button"
-        className="home-picker__filter"
+        className="app-tabs__tab home-picker__filter"
         style={aspectVariables(id) as CSSProperties}
         aria-pressed={chosen === id}
         onClick={() => onChoose(chosen === id ? null : id)}
@@ -472,7 +477,7 @@ export function ChoiceButton({
   return (
     <button
       type="button"
-      className="home-picker__choice"
+      className="app-choice home-picker__choice"
       aria-pressed={picked}
       aria-label={choiceLabel(choice)}
       onClick={() => onPick(choice)}

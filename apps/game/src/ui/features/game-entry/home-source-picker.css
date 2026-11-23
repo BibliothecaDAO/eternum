@@ -260,14 +260,16 @@
   gap: 0.4rem;
 }
 
-.home-picker__filter {
+.app-tabs__tab.home-picker__filter {
   display: inline-flex;
+  height: auto;
   align-items: center;
   gap: 0.35rem;
   border: 1px solid var(--app-line);
   border-radius: var(--app-radius-round);
   background: var(--app-well);
   padding: 0.3rem 0.65rem;
+  font-family: var(--app-face-body);
   font-size: var(--app-text-label);
   font-weight: 600;
   color: var(--app-muted);
@@ -277,12 +279,12 @@
     color var(--app-fast) var(--app-ease);
 }
 
-.home-picker__filter:hover {
+.app-tabs__tab.home-picker__filter:hover {
   border-color: var(--app-line-strong);
   color: var(--app-ink);
 }
 
-.home-picker__filter[aria-pressed="true"] {
+.app-tabs__tab.home-picker__filter[aria-pressed="true"] {
   border-color: rgb(var(--hud-aspect, var(--hud-gold)));
   background: rgb(var(--hud-aspect, var(--hud-gold)) / 0.16);
   color: var(--app-ink);
@@ -294,12 +296,13 @@
   gap: 0.55rem;
 }
 
-.home-picker__choice,
+.app-choice.home-picker__choice,
 .home-picker__all {
   position: relative;
   display: flex;
   min-width: 0;
   flex-direction: column;
+  align-items: stretch;
   gap: 0.4rem;
   overflow: hidden;
   border: 1px solid var(--app-line);
@@ -313,24 +316,28 @@
     background-color var(--app-fast) var(--app-ease);
 }
 
-.home-picker__choice:not(:disabled):hover,
+.app-choice.home-picker__choice:not(:disabled):hover,
 .home-picker__all:not(:disabled):hover {
   border-color: var(--app-line-strong);
   background: var(--app-hover);
 }
 
-.home-picker__choice[aria-pressed="true"] {
+.app-choice.home-picker__choice[aria-pressed="true"] {
   border-color: rgb(var(--hud-gold));
   background: var(--app-chosen);
   box-shadow: inset 0 0 0 1px rgb(var(--hud-gold) / 0.35);
 }
 
-.home-picker__choice:disabled {
+.app-choice.home-picker__choice[aria-pressed="true"] .home-picker__choice-top {
+  padding-right: 1.65rem;
+}
+
+.app-choice.home-picker__choice:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-.home-picker__choice:focus-visible,
+.app-choice.home-picker__choice:focus-visible,
 .home-picker__all:focus-visible {
   outline: none;
   box-shadow: var(--app-focus);

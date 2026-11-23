@@ -10,9 +10,10 @@
   gap: 0.75rem;
 }
 
-.shop-pack {
+.app-choice.shop-pack {
   position: relative;
   display: flex;
+  flex-direction: row;
   align-items: center;
   gap: 1rem;
   border: 1.5px solid var(--app-line);
@@ -31,11 +32,11 @@
     transform var(--app-fast) var(--app-ease);
 }
 
-.shop-pack:hover {
+.app-choice.shop-pack:hover {
   border-color: var(--app-line-strong);
 }
 
-.shop-pack[aria-pressed="true"] {
+.app-choice.shop-pack[aria-pressed="true"] {
   border-color: rgb(var(--app-gold));
   background: linear-gradient(
     180deg,
@@ -47,7 +48,7 @@
     inset 0 1px 0 rgb(var(--app-gold) / 0.35);
 }
 
-.shop-pack:focus-visible {
+.app-choice.shop-pack:focus-visible {
   outline: none;
   box-shadow: var(--app-focus);
 }
@@ -123,7 +124,7 @@
     gap: 1.25rem;
   }
 
-  .shop-pack {
+  .app-choice.shop-pack {
     min-height: 23rem;
     flex-direction: column;
     justify-content: space-between;

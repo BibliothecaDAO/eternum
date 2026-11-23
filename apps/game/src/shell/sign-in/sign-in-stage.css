@@ -150,7 +150,7 @@
 
 .signin-providers__grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.5rem;
 }
 
@@ -190,14 +190,26 @@
 @media (max-width: 1023px) {
   .signin-stage {
     flex-direction: column;
-    justify-content: space-between;
+    justify-content: flex-start;
   }
 
   .signin-stage__art {
     position: absolute;
     inset: 0;
     justify-content: flex-start;
-    padding-top: max(2rem, env(safe-area-inset-top));
+    padding: max(0.875rem, env(safe-area-inset-top)) 1.25rem 0.75rem;
+  }
+
+  .signin-stage__brand {
+    gap: 0.4rem;
+  }
+
+  .signin-stage__lockup {
+    height: 5.5rem;
+  }
+
+  .signin-stage__lore {
+    font-size: 1.05rem;
   }
 
   .signin-stage__art .signin-stage__facets {
@@ -205,12 +217,14 @@
   }
 
   .signin-stage__panel {
-    margin-top: auto;
-    max-height: 76dvh;
+    margin-top: 10.25rem;
+    flex: 1;
+    min-height: 0;
     padding: 0 0.875rem max(1rem, env(safe-area-inset-bottom));
   }
 
   .signin-stage__card {
+    gap: 0.75rem;
     border: 1px solid var(--app-line-strong);
     border-radius: var(--app-radius-panel);
     background: linear-gradient(
@@ -218,7 +232,7 @@
       color-mix(in srgb, var(--app-surface-2) 94%, transparent),
       color-mix(in srgb, var(--app-surface) 97%, transparent)
     );
-    padding: 1.25rem 1rem 1rem;
+    padding: 1rem 1rem 0.875rem;
     box-shadow: 0 -10px 36px rgb(0 0 0 / 0.65);
     backdrop-filter: blur(12px);
   }

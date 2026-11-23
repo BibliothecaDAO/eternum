@@ -91,7 +91,7 @@ const Choose = ({ game, onPriced }: { game: ShopGame; onPriced: (paying: Paying)
             <button
               key={pack}
               type="button"
-              className="shop-pack"
+              className="app-choice shop-pack"
               aria-pressed={pack === fragments}
               onClick={() => setFragments(pack)}
             >
