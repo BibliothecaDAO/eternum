@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
@@ -21,15 +22,18 @@ const entry = (address: string, rank: number) => ({
   rewards: { lords: "0", essence: "0", labor: "0" },
   deepest_depth: 1,
 });
-vi.mock("../herald", () => ({
+const directory = vi.hoisted(() => ({ games: [] as unknown[] }));
+vi.mock("../herald", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../herald")>()),
   useLeaderboard: () => ({
     isError: false,
     isPending: false,
     data: { mode: "frontier", entries: [entry("0xa1", 1), entry("0xb7", 2)], prize: prize.current },
   }),
   useRealmsPlayer: () => ({ data: player.current }),
-  useDirectory: () => ({ data: { games: [] } }),
-  useRecentResults: () => ({ data: { games: [] } }),
+  useDirectory: () => ({ data: { games: directory.games }, isPending: false }),
+  useRecentResults: () => ({ data: { games: [] }, isPending: false }),
+  useSettledGames: () => ({ data: [], isPending: false }),
 }));
 // Signed out, without asking a session service: these tests read where Results leads.
 vi.mock("@/hooks/context/identity-session", async (importOriginal) => ({
@@ -55,6 +59,7 @@ afterEach(async () => {
   await unmount?.();
   player.current = "0xb7";
   prize.current = null;
+  directory.games = [];
 });
 
 const Where = () => {
@@ -71,13 +76,15 @@ const open = async (entry: string | typeof FROM_LIST = FROM_LIST) => {
   const root = createRoot(container);
   await act(async () =>
     root.render(
-      <MemoryRouter initialEntries={[entry]}>
-        <Routes>
-          <Route path="/results/:id" element={<ResultsPage />} />
-          <Route path="*" element={null} />
-        </Routes>
-        <Where />
-      </MemoryRouter>,
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <MemoryRouter initialEntries={[entry]}>
+          <Routes>
+            <Route path="/results/:id" element={<ResultsPage />} />
+            <Route path="*" element={null} />
+          </Routes>
+          <Where />
+        </MemoryRouter>
+      </QueryClientProvider>,
     ),
   );
   // Let identity's names land.
@@ -153,4 +160,45 @@ it("shows no podium for a season that ended with no prize pool, never one still 
     ["1", "0xa1", "39"],
     ["2", "0xb7", "38"],
   ]);
+});
+
+it("offers Withdraw on an ended Aspect season when the player holds a realm there, and omits it otherwise", async () => {
+  const aspectSeason = {
+    chainId: "0x52",
+    game_id: 3,
+    name: "frontier-1",
+    mode: "frontier",
+    status: "Ended",
+    clock_scale: 1,
+    season_number: 1,
+    clock: { start_settling_at: 0, start_main_at: 0, scheduled_end_at: 100, end_at: 100 },
+    player_count: 100,
+    aspect_members: { 1: 25, 2: 25, 3: 25, 4: 25 },
+    aspect_race: {
+      finish_height: 10_000,
+      season_days: 50,
+      heights: { 1: 10_000, 2: 5_000, 3: 2_000, 4: 1_000 },
+    },
+    player_state: {
+      registered: true,
+      settled: true,
+      held_realm_id: null,
+      has_home_source: false,
+      taken_realm_ids: [],
+      structures: [
+        { entity_id: 1, category: 1, level: 1, realm_id: 3098, coord_x: null, coord_y: null, resources_packed: "0" },
+      ],
+    },
+  };
+  directory.games = [aspectSeason];
+  const withRealm = await open();
+  await act(async () => withRealm.button("Withdraw")!.click());
+  expect(withRealm.container.querySelector("[data-where]")!.textContent).toBe(
+    entryHref({ chainId: "0x52", game_id: 3 }, "play"),
+  );
+  await unmount?.();
+
+  directory.games = [{ ...aspectSeason, player_state: null }];
+  const withoutRealm = await open();
+  expect(withoutRealm.button("Withdraw")).toBeUndefined();
 });

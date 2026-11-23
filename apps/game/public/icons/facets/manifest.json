@@ -1179,36 +1179,6 @@
       "label": "Troops",
       "family": "Minimap"
     },
-    "rating-storm-lord": {
-      "art": "rating-storm-lord",
-      "label": "Storm Lord",
-      "family": "Ratings"
-    },
-    "rating-warlord": {
-      "art": "rating-warlord",
-      "label": "Warlord",
-      "family": "Ratings"
-    },
-    "rating-conqueror": {
-      "art": "rating-conqueror",
-      "label": "Conqueror",
-      "family": "Ratings"
-    },
-    "rating-marauder": {
-      "art": "rating-marauder",
-      "label": "Marauder",
-      "family": "Ratings"
-    },
-    "rating-raider": {
-      "art": "rating-raider",
-      "label": "Raider",
-      "family": "Ratings"
-    },
-    "rating-scrapper": {
-      "art": "rating-scrapper",
-      "label": "Scrapper",
-      "family": "Ratings"
-    },
     "order-gods": {
       "art": "order-gods",
       "label": "Order of Gods",

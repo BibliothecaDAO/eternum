@@ -18,6 +18,7 @@ const season = {
   name: "Unavailable season",
   mode: "frontier",
   status: "Live",
+  clock_scale: 1,
   ready: true,
   error: "unavailable",
   expedition: null,
@@ -36,8 +37,6 @@ const season = {
 const lead = (verb: "play" | "resume") => (game: DirectoryGame) => {
   const item: PlayItem = {
     key: "0x1:1",
-    mode: "frontier",
-    when: "now",
     verb,
     mine: verb === "resume",
     game,
@@ -47,7 +46,7 @@ const lead = (verb: "play" | "resume") => (game: DirectoryGame) => {
 
 it.each([
   ["Play", lead("play")],
-  ["Resume", lead("resume")],
+  ["Enter Realm", lead("resume")],
 ] as const)("keeps an unreadable season's %s card, naming the failure in place of its verb", async (verb, card) => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const container = document.createElement("div");

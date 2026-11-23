@@ -238,11 +238,13 @@ export const AppTopBar = ({
   mark,
   places,
   player,
+  balance,
   notice,
 }: {
   mark: ReactNode;
   places: readonly AppBarPlace[];
   player: AppBarPlace | null;
+  balance?: ReactNode;
   notice?: ReactNode;
 }) => (
   <header data-band="bar" className="app-bar">
@@ -254,6 +256,7 @@ export const AppTopBar = ({
     </nav>
     <span className="app-bar__end">
       {notice ? <div data-band="notice">{notice}</div> : null}
+      {balance}
       {player && <AppBarLink place={player} />}
     </span>
   </header>
@@ -319,12 +322,14 @@ export const AppTabs = <K extends string | number>({
   value,
   onChange,
   label,
+  disabled = false,
   children,
 }: {
   tabs: readonly { key: K; label: string; dot?: boolean; lead?: ReactNode; aspectId?: AspectId }[];
   value: K | null;
   onChange?: (key: K) => void;
   label: string;
+  disabled?: boolean;
   /** The chosen view. */
   children?: ReactNode;
 }) => {
@@ -332,7 +337,7 @@ export const AppTabs = <K extends string | number>({
   const tabId = (key: K) => `${id}-tab-${key}`;
   const choose = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
     const move = TAB_KEYS[event.key];
-    if (!move || !onChange) return;
+    if (disabled || !move || !onChange) return;
     event.preventDefault();
     const next = move(index, tabs.length);
     onChange(tabs[next].key);
@@ -347,12 +352,13 @@ export const AppTabs = <K extends string | number>({
             id={tabId(tab.key)}
             type="button"
             role="tab"
+            disabled={disabled}
             data-aspect-id={tab.aspectId}
             aria-selected={tab.key === value}
             aria-controls={children === undefined ? undefined : `${id}-panel`}
             tabIndex={value === null ? (index === 0 ? 0 : -1) : tab.key === value ? 0 : -1}
             className="app-tabs__tab"
-            onClick={() => onChange?.(tab.key)}
+            onClick={() => !disabled && onChange?.(tab.key)}
             onKeyDown={(event) => choose(event, index)}
           >
             {tab.lead}
@@ -425,46 +431,6 @@ export const AppGameName = ({ age, name, when }: { age: Age; name: string; when?
   </span>
 );
 
-/**
- * An age as a tall column on its painting: its lockup over what it holds (Play's games of that age), in the age's
- * accent, the painting showing above. `idle`, an age with nothing to do now: dimmed, without its lift, its one line
- * (when it opens, or that none is scheduled) reading as it does.
- */
-export const AppAgeColumn = ({
-  age,
-  painting,
-  name,
-  idle = false,
-  children,
-}: {
-  age: Age;
-  painting: Painting;
-  name: string;
-  idle?: boolean;
-  children: ReactNode;
-}) => (
-  <section className="app-age-column" data-age={age} data-idle={idle || undefined} aria-label={name}>
-    <img
-      className="app-age-column__painting"
-      alt=""
-      {...paintingSources(painting)}
-      sizes="(min-width: 1024px) 25vw, 100vw"
-    />
-    <div className="app-age-column__body">
-      <h2 className="app-age-column__name">
-        <AppGameName age={age} name={name} />
-      </h2>
-      {children}
-    </div>
-  </section>
-);
-
-/**
- * A game, on its age's painting and in its age's accent: its title (an AppGameName, or a line where no game stands),
- * what stands (facts), and its one verb. `lead` is
- * Play's first card, the one gold verb of the page; `tile` sits among others. `idle`, as AppAgeColumn's: nothing to do
- * now, dimmed.
- */
 export const AppGameCard = ({
   age,
   painting,

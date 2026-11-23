@@ -34,8 +34,6 @@ const reads = vi.hoisted(() => ({
     refetch: () => {},
   } as Read<SeasonCalendar>,
   history: null as unknown as Read<{ games: DirectoryGame[]; next: null; failures: { url: string }[] }>,
-  // The signed-in account's build orders, as its identity service answers them: none saved unless a case says.
-  buildOrders: { orders: [], active: null } as unknown,
   intent: { order: null, members: {} } as { order: number | null; members: Record<number, number> },
   chosen: [] as number[],
   sealHeld: false,
@@ -47,7 +45,6 @@ const reads = vi.hoisted(() => ({
 vi.mock("@/hooks/context/identity-session", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/hooks/context/identity-session")>()),
   identityClient: {
-    getBuildOrders: async () => ({ owner: "0x7", revision: 1, book: reads.buildOrders }),
     getOrderIntent: async () => reads.intent,
     joinedShare: async () => reads.joined,
     chooseOrder: async (order: number) => {
@@ -90,8 +87,6 @@ import { identityClient } from "@/hooks/context/identity-session";
 
 import { PlayPage } from "./play-page";
 
-import { useBuildOrderStore } from "@/hooks/use-build-orders";
-
 import { useConnectStore } from "../sign-in/connect";
 
 const HOUR = 3_600;
@@ -105,6 +100,7 @@ const game = (over: Partial<DirectoryGame>): DirectoryGame =>
     name: "frontier-1",
     mode: "frontier",
     status: "Live",
+    clock_scale: 1,
     expedition: null,
     clock: {
       start_settling_at: 0,
@@ -140,14 +136,12 @@ afterEach(async () => {
   cleanup = null;
   reads.signedIn = true;
   reads.calendar = answered({ phases: [] });
-  reads.buildOrders = { orders: [], active: null };
   reads.intent = { order: null, members: {} };
   reads.chosen = [];
   reads.sealHeld = false;
   reads.redeemed = [];
   reads.shared = [];
   reads.joined = null;
-  useBuildOrderStore.setState({ owner: null, status: "signed-out", book: null, revision: 0, notice: null });
 });
 
 const mount = async () => {
@@ -164,7 +158,7 @@ const mount = async () => {
           <MemoryRouter initialEntries={["/"]}>
             <Routes>
               <Route path="/" element={<PlayPage />} />
-              <Route path="/blitz/build-orders" element={<p>build orders</p>} />
+              <Route path="/results/:id" element={<p data-opened-results>opened</p>} />
             </Routes>
           </MemoryRouter>
         </QueryClientProvider>,
@@ -189,12 +183,12 @@ it("keeps the games that answered usable while the player's results fail, in ful
   reads.directory = answered({ games: [ownSeason] });
   reads.history = failed();
   const page = await mount();
-  expect(page.text()).toContain("Resume");
+  expect(page.text()).toContain("Enter Realm");
   expect(page.text()).toContain("Results did not answer.");
 
   reads.history = answered({ games: [], next: null, failures: [{ url: "https://shard" }] });
   await page.render();
-  expect(page.text()).toContain("Resume");
+  expect(page.text()).toContain("Enter Realm");
   expect(page.text()).toContain("Results did not answer.");
 });
 
@@ -210,11 +204,25 @@ it.each([
   expect(page.text()).not.toMatch(/\b1 [Pp]layers\b/);
 });
 
-it("draws no race bars when aspect heights are unknown, and draws exact tower height bars against finish height", async () => {
+it("renders hex-tile stone foundation artwork at 0 height, stage progression as height rises, today's quest, and never shows Blitz", async () => {
   reads.directory = answered({ games: [ownSeason] });
   reads.history = answered({ games: [], next: null, failures: [] });
-  const unknown = await mount();
-  expect(unknown.container.querySelectorAll(".play-aspect__column")).toHaveLength(0);
+  const noRace = await mount();
+  expect(noRace.container.querySelectorAll(".hyper-art__svg")).toHaveLength(0);
+  expect(noRace.container.querySelector('section[aria-label="Blitz"]')).toBeNull();
+  expect(noRace.text()).not.toContain("No Blitz scheduled");
+  await cleanup?.();
+
+  reads.directory = answered({
+    games: [
+      game({
+        ...ownSeason,
+        aspect_race: { finish_height: 10_000, season_days: 50, heights: { 1: 0, 2: 0, 3: 0, 4: 0 } },
+      }),
+    ],
+  });
+  const zero = await mount();
+  expect(zero.container.querySelectorAll(".hyper-art__svg")).toHaveLength(4);
   await cleanup?.();
 
   reads.directory = answered({
@@ -223,7 +231,7 @@ it("draws no race bars when aspect heights are unknown, and draws exact tower he
         ...ownSeason,
         day_index: 11,
         day_ends_at: Math.floor(Date.now() / 1000) + 3_600,
-        aspect_race: { finish_height: 10_000, heights: { 1: 7_500, 2: 2_500, 3: 0, 4: 0 } },
+        aspect_race: { finish_height: 10_000, season_days: 50, heights: { 1: 7_500, 2: 2_500, 3: 0, 4: 0 } },
         player_state: {
           ...ownSeason.player_state!,
           today_quest: { quest_id: 2, progress: 0, target: 1, labor: 1_500 },
@@ -232,34 +240,89 @@ it("draws no race bars when aspect heights are unknown, and draws exact tower he
     ],
   });
   const known = await mount();
-  const heights = [...known.container.querySelectorAll("[data-aspect-id]")].map(
-    (node) => node.querySelector<HTMLElement>(".play-aspect__column")?.style.height ?? "none",
+  const stages = [...known.container.querySelectorAll("[data-aspect-id] .hyper-art")].map((node) =>
+    node.getAttribute("data-stage"),
   );
-  expect(heights).toEqual(["75%", "25%", "none", "none"]);
-  expect(known.container.querySelector('[data-aspect-id="1"] .play-aspect__count')?.textContent).toBe("7,500");
+  expect(stages).toEqual(["3", "1", "0", "0"]);
+  expect(known.container.querySelector('[data-aspect-id="1"] .hyper-tile__count')?.textContent).toBe("7,500");
   expect(known.container.querySelector("[data-play-today]")?.textContent).toContain(
     "Clear rifts · 0 of 1 · +1,500 Labor",
   );
+  expect(known.container.querySelector("[data-play-invite]")).not.toBeNull();
   expect(known.container.querySelectorAll('[role="timer"]')).toHaveLength(1);
+  expect(known.text()).not.toContain("Tomorrow lasts");
 });
 
-it("keeps Blitz on Play once an ended Blitz's results were seen, idle and saying none is scheduled (live-qa-night-1 P3-12)", async () => {
-  const ended = game({ game_id: 2, mode: "blitz", status: "Ended", name: "test-qa-fresh-1" } as Partial<DirectoryGame>);
-  reads.directory = answered({ games: [ownSeason] });
-  reads.history = answered({ games: [ended], next: null, failures: [] });
-  const page = await mount();
-  const blitz = () => page.container.querySelector('section[aria-label="Blitz"]')?.textContent ?? null;
-  const idle = () => page.container.querySelector('section[aria-label="Blitz"]')?.hasAttribute("data-idle") ?? null;
-  // Its results not yet opened: they stand in Blitz's column.
-  expect(blitz()).toContain("Results");
-  expect(blitz()).not.toContain("No Blitz scheduled");
+it("renders rehearsal games as compact secondary cards under InviteCard with speed badge and secondary Join/Resume actions", async () => {
+  const rehearsal = game({
+    game_id: 4,
+    name: "Season 1 Rehearsal",
+    clock_scale: 4,
+    day_index: 2,
+    day_ends_at: Math.floor(Date.now() / 1000) + 3_600,
+    player_count: 18,
+  });
+  reads.directory = answered({ games: [ownSeason, rehearsal] });
+  reads.history = answered({ games: [], next: null, failures: [] });
+  const joinable = await mount();
+  const sidePanels = [...joinable.container.querySelectorAll(".play-side > *")];
+  expect(sidePanels.at(-1)?.querySelector("[data-play-rehearsal]")).not.toBeNull();
+  const card = joinable.container.querySelector('[data-play-item="0xa:4"]')!.closest(".app-panel")!;
+  expect(card.textContent).toContain("Season 1 Rehearsal");
+  expect(card.textContent).toContain("4× Rehearsal");
+  expect(card.textContent).toContain("Day 3 · 18 players");
+  const joinBtn = card.querySelector<HTMLButtonElement>("button")!;
+  expect(joinBtn.textContent).toBe("Join rehearsal");
+  expect(joinBtn.dataset.kind).toBe("secondary");
+  expect(card.querySelector('button[data-kind="primary"]')).toBeNull();
+  await cleanup?.();
 
-  localStorage.setItem("realms.seen-results", JSON.stringify(["0xa:2"]));
-  await page.render();
-  // None left in the season: Blitz is idle, its line alone, with no build orders to prepare (owner, 29 October 2026).
-  expect(blitz()).toBe("No Blitz scheduled this season.");
-  expect(idle()).toBe(true);
-  expect(page.text()).toContain("Resume");
+  const mineRehearsal = game({
+    ...rehearsal,
+    player_state: ownSeason.player_state,
+  });
+  reads.directory = answered({ games: [ownSeason, mineRehearsal] });
+  const resumable = await mount();
+  const mineCard = resumable.container.querySelector('[data-play-item="0xa:4"]')!.closest(".app-panel")!;
+  expect(mineCard.textContent).toContain("Day 3 · 18 players");
+  const resumeBtn = mineCard.querySelector<HTMLButtonElement>("button")!;
+  expect(resumeBtn.textContent).toBe("Resume");
+  expect(resumeBtn.dataset.kind).toBe("secondary");
+  await cleanup?.();
+
+  reads.signedIn = false;
+  reads.directory = answered({ games: [ownSeason, rehearsal] });
+  const signedOut = await mount();
+  const signedOutBtn = signedOut.container
+    .querySelector('[data-play-item="0xa:4"]')!
+    .querySelector<HTMLButtonElement>("button")!;
+  expect(signedOutBtn.textContent).toBe("Join rehearsal");
+  await act(async () => signedOutBtn.click());
+  expect(useConnectStore.getState().request?.next).toBe("/g/0xa/4");
+});
+
+it("shows unseen ended Frontier season results beside a live Frontier lead", async () => {
+  const ended = game({
+    ...ownSeason,
+    game_id: 2,
+    season_number: 1,
+    status: "Ended",
+    clock: {
+      start_settling_at: 0,
+      start_main_at: 100,
+      scheduled_end_at: 1_700_000_000,
+      end_at: 1_700_000_000,
+    },
+  });
+  reads.directory = answered({ games: [ownSeason, ended] });
+  reads.history = answered({ games: [], next: null, failures: [] });
+  const page = await mount();
+  const resultRow = page.container.querySelector('[data-play-item="0xa:2"]');
+  expect(resultRow).not.toBeNull();
+  const button = resultRow?.querySelector<HTMLButtonElement>('button[data-play-verb="results"]');
+  expect(button?.textContent).toBe("Results");
+  await act(async () => button!.click());
+  expect(page.container.querySelector("[data-opened-results]")).not.toBeNull();
 });
 
 it.each(["Registration", "Live"] as const)("offers no entry for a retired Eternum game in %s", async (status) => {
@@ -274,21 +337,10 @@ it.each(["Registration", "Live"] as const)("offers no entry for a retired Eternu
   const page = await mount();
   expect(page.container.querySelector('[data-play-item="0xa:9"]')).toBeNull();
   expect(page.container.querySelector('section[aria-label="Eternum"]')).toBeNull();
-  expect(page.container.querySelector('[data-play-verb="resume"]')?.textContent).toBe("Resume");
+  expect(page.container.querySelector('[data-play-verb="resume"]')?.textContent).toBe("Enter Realm");
 });
 
-it("keeps the way to the build orders when the player's ended Blitz leads Play", async () => {
-  const ended = game({ game_id: 2, mode: "blitz", status: "Ended", name: "test-qa-fresh-1" } as Partial<DirectoryGame>);
-  reads.directory = answered({ games: [] });
-  reads.history = answered({ games: [ended], next: null, failures: [] });
-  const page = await mount();
-  const blitz = () => page.container.querySelector('section[aria-label="Blitz"]')?.textContent ?? null;
-  // Its results lead; Blitz's column under it holds only the way to the build orders.
-  expect(page.text()).toContain("Results");
-  expect(blitz()).toBe("Build ordersThe game's order");
-});
-
-it("names each game by its age's lockup", async () => {
+it("names Frontier by its lockup and omits Blitz", async () => {
   const lockups = (page: { container: HTMLElement }) =>
     [...page.container.querySelectorAll<HTMLImageElement>("[data-age] h2 img, [data-age] h3 img")].map(
       (img) => `${img.closest("[data-age]")!.getAttribute("data-age")} ${img.alt} ${img.getAttribute("src")}`,
@@ -296,10 +348,7 @@ it("names each game by its age's lockup", async () => {
   reads.directory = answered({ games: [ownSeason] });
   reads.history = answered({ games: [], next: null, failures: [] });
   const season = await mount();
-  expect(lockups(season)).toEqual([
-    "frontier Frontier /images/logos/frontier-lockup.webp",
-    "blitz Blitz /images/logos/blitz-lockup.webp",
-  ]);
+  expect(lockups(season)).toEqual(["frontier Frontier /images/logos/frontier-lockup.webp"]);
 });
 
 it("says the season calendar did not answer when it fails", async () => {
@@ -308,21 +357,6 @@ it("says the season calendar did not answer when it fails", async () => {
   reads.calendar = failed();
   const page = await mount();
   expect(page.text()).toContain("Season did not answer.");
-});
-
-it("ends Blitz's column on the way to the player's build orders, naming the order their games follow", async () => {
-  const ended = game({ game_id: 2, mode: "blitz", status: "Ended", name: "test-qa-fresh-1" } as Partial<DirectoryGame>);
-  reads.directory = answered({ games: [ownSeason] });
-  reads.history = answered({ games: [ended], next: null, failures: [] });
-  reads.buildOrders = {
-    orders: [{ id: "o1", order: { name: "Coal rush", steps: [{ rank: "Settlement", goal: "farm", count: 2 }] } }],
-    active: "o1",
-  };
-  const page = await mount();
-  const rows = [...page.container.querySelectorAll('section[aria-label="Blitz"] .app-row')];
-  expect(rows.at(-1)?.textContent).toBe("Build ordersCoal rush");
-  await act(async () => (rows.at(-1) as HTMLButtonElement).click());
-  expect(page.text()).toBe("build orders");
 });
 
 describe("the season's countdown, while its first day is ahead and Play has no game to lead with", () => {

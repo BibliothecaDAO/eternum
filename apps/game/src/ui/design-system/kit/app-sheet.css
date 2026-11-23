@@ -399,8 +399,12 @@
   font-weight: var(--app-weight-control);
   color: var(--app-muted);
 }
-.app-tabs__tab:is(:hover, [data-state="hover"]) {
+.app-tabs__tab:not(:disabled):is(:hover, [data-state="hover"]) {
   color: var(--app-ink);
+}
+.app-tabs__tab:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 .app-tabs__tab[aria-selected="true"] {
   background: var(--app-surface-2);
@@ -498,81 +502,12 @@
   flex-direction: column;
 }
 
-/* ── Holdings: what the player holds, counted at the foot of their own card; each count opens its sheet. ── */
-.app-holdings {
-  display: grid;
-  grid-auto-columns: minmax(0, 1fr);
-  grid-auto-flow: column;
-  margin-top: theme(spacing.4);
-  border-top: 1px solid var(--app-line);
-}
-.app-holdings__item {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  align-items: center;
-  gap: theme(spacing[0.5]);
-  padding: theme(spacing.3) theme(spacing.1) theme(spacing.1);
-  border-left: 1px solid var(--app-line);
-  text-align: center;
-}
-.app-holdings__item:first-child {
-  border-left: 0;
-}
-.app-holdings__item:hover {
-  background: color-mix(in srgb, rgb(var(--app-gold)) 8%, transparent);
-}
-.app-holdings__item:focus-visible {
-  outline: 2px solid rgb(var(--app-gold));
-  outline-offset: -2px;
-}
-
-/* ── Age column: an age, tall on its painting, its games in its well. ── */
-.app-age-column {
-  position: relative;
-  isolation: isolate;
-  display: flex;
-  min-height: 22rem;
-  min-width: 0;
-  flex-direction: column;
-  overflow: hidden;
-  border: 1px solid var(--app-line);
-  border-radius: var(--app-radius-panel);
-  box-shadow: var(--app-shadow-panel);
-}
-.app-age-column__painting {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-/* A mode's card with nothing to do now (an idle AppAgeColumn or AppGameCard): its painting and lockup in grey, dimmed,
-   its panel without its lift; its one line reads as it does. */
-:is(.app-age-column, .app-game-card)[data-idle] {
+.app-game-card[data-idle] {
   box-shadow: none;
 }
-:is(.app-age-column, .app-game-card)[data-idle]
-  :is(.app-age-column__painting, .app-game-card__painting, .app-game-name__lockup) {
+.app-game-card[data-idle] :is(.app-game-card__painting, .app-game-name__lockup) {
   filter: grayscale(1) brightness(0.6);
 }
-.app-age-column__body {
-  display: flex;
-  flex-direction: column;
-  gap: theme(spacing.3);
-  margin-top: auto;
-  background: linear-gradient(0deg, var(--app-age-to) 70%, transparent);
-  padding: theme(spacing.24) theme(spacing.5) theme(spacing.5);
-}
-/* A phone stacks the columns, each as tall as what it holds, over the same band of painting as a desktop's. It follows
-   the rule it narrows, so it wins at its specificity. */
-@media (max-width: 1023px) {
-  .app-age-column {
-    min-height: 0;
-  }
-}
-/* ── A game's name: its age's lockup, whole, then one game's start in the title face. ── */
 .app-game-name {
   display: flex;
   flex-direction: column;
@@ -594,17 +529,12 @@
 .app-game-card[data-size="lead"] .app-game-name__lockup {
   height: min(12rem, 40vw);
 }
-/* Eternum's lockup is inked for parchment (the kit's Play card): its column and card grade to parchment and read in
-   umber, the painting still above. */
-.app-age-column[data-age="eternum"],
 .app-game-card[data-age="eternum"] {
   --app-age-to: var(--app-parchment);
   --app-ink: var(--app-parchment-ink);
   --app-muted: var(--app-parchment-muted);
   --app-well: color-mix(in srgb, var(--app-parchment-ink) 8%, transparent);
 }
-/* Idle, its parchment greys and dims with its painting, as a dark ground does, its line still read in umber. */
-.app-age-column[data-age="eternum"][data-idle] .app-age-column__body,
 .app-game-card[data-age="eternum"][data-idle]::after,
 .app-game-card[data-age="eternum"][data-idle] .app-game-card__body {
   filter: grayscale(1) brightness(0.6);

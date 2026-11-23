@@ -267,11 +267,16 @@ it("stands the podium in its card, the player's own place theirs, with Exit befo
   expect(onExit.mock.calls.length).toBe(1);
 });
 
-it("shows a reader with no realm on the board the season and its podium card alone, with nothing to share", async () => {
+it("shows a reader with no realm on the board a full four-card season overview, with nothing to share", async () => {
   const host = await open({ viewer: null });
   expect(deck(host)).toBeNull();
-  expect([...host.querySelectorAll<HTMLElement>(".season-card")].map((each) => each.dataset.card)).toEqual(["podium"]);
-  // Outside the deck the card is named alone, with no number in it.
+  expect(host.querySelector("[data-recap-overview]")).not.toBeNull();
+  expect([...host.querySelectorAll<HTMLElement>(".season-card")].map((each) => each.dataset.card)).toEqual([
+    "podium",
+    "field",
+    "sites",
+    "haul",
+  ]);
   expect(host.querySelector(".season-card__step")?.textContent).toBe("The podium");
   expect(podium(host)).toHaveLength(3);
   expect(steps(host).map(([word]) => word)).toEqual(["Exit"]);

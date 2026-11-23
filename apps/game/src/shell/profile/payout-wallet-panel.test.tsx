@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, expect, it, vi } from "vitest";
@@ -39,7 +40,13 @@ const mount = async (wallet: Parameters<typeof PayoutWalletPanel>[0]["wallet"], 
   const container = document.createElement("div");
   document.body.append(container);
   const root = createRoot(container);
-  await act(async () => root.render(<PayoutWalletPanel wallet={wallet} email="you@mail.test" onChanged={onChanged} />));
+  await act(async () =>
+    root.render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <PayoutWalletPanel wallet={wallet} email="you@mail.test" onChanged={onChanged} />
+      </QueryClientProvider>,
+    ),
+  );
   mounted.push(async () => {
     await act(async () => root.unmount());
     container.remove();

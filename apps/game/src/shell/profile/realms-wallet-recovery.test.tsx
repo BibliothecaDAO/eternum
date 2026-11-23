@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, expect, it, vi } from "vitest";
@@ -68,7 +69,13 @@ const render = async (node: React.ReactNode) => {
   const container = document.createElement("div");
   document.body.append(container);
   const root = createRoot(container);
-  await act(async () => root.render(node));
+  await act(async () =>
+    root.render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        {node}
+      </QueryClientProvider>,
+    ),
+  );
   await act(async () => {});
   mounted.push(async () => {
     await act(async () => root.unmount());

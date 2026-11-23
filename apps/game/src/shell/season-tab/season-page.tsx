@@ -1,11 +1,23 @@
 import "./season-page.css";
 
-import { aspects, formatAmount, formatDate, orderAspect, type AspectId } from "@bibliothecadao/types";
-import { useState } from "react";
+import {
+  ASPECT_REWARD,
+  aspectName,
+  aspects,
+  formatAmount,
+  formatCount,
+  formatDate,
+  formatExact,
+  orderAspect,
+  type AspectId,
+} from "@bibliothecadao/types";
+import { useState, type CSSProperties } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { isGameOver } from "@/runtime/world/directory";
+import { aspectVariables } from "@/tokens";
 import { AspectMark } from "@/ui/design-system/aspect-mark";
+import { Icon } from "@/ui/design-system/icon";
 import {
   AppButton,
   AppChip,
@@ -17,17 +29,30 @@ import {
 } from "@/ui/design-system/kit/app-elements";
 import { HudPlaceMedal } from "@/ui/design-system/kit/hud-elements";
 import { RowThumb } from "@/ui/design-system/kit/list-row";
+import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
 import { PlayerName } from "@/ui/design-system/kit/player-name";
-import { DAY, PLAY_WORDS, PRIZE_UNHELD, SEASON_WORDS, WORDS } from "@/ui/design-system/kit/words";
+import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
+import {
+  ASPECT_PAGE_WORDS,
+  ASPECT_STEP_WORDS,
+  DAY,
+  PLAY_WORDS,
+  PRIZE_UNHELD,
+  SEASON_WORDS,
+  WORDS,
+} from "@/ui/design-system/kit/words";
 import { seasonWinner } from "@/ui/features/frontier/board/season-pool";
 import { findOwnEntry, wholeLords } from "@/ui/features/frontier/board/standings";
 
 import { useLayout } from "../frame/layout";
 import { openedFrom } from "../frame/opened-from";
 import { PageFrame } from "../frame/page-frame";
+import { entryHref } from "../game-links";
 import {
+  type AspectSeasonGame,
   type DirectoryGame,
   gameRefOf,
+  isAspectSeason,
   useDirectory,
   useLeaderboard,
   useRealmsPlayer,
@@ -35,8 +60,23 @@ import {
 } from "../herald";
 import { Loading } from "../loading";
 import { ageOf } from "../play/ages";
-import { chooseSeason, directoryDay, endedSeasons, seasonEnded, seasonTitle } from "../season";
-import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
+import { HyperstructureTile, RacePoolRuleStrip } from "../play/hyperstructure-stage";
+import { CopySeasonInvite, SeasonInviteAlerts, useSeasonInvite } from "../play/season-invite";
+import {
+  RACE_STAGE_COUNT,
+  RACE_TRIUMPHS,
+  type AspectRaceStanding,
+  aspectRaceStandings,
+  chooseSeason,
+  directoryDay,
+  endedSeasons,
+  seasonDayLabel,
+  seasonDaysOf,
+  seasonEnded,
+  seasonPlayerAspect,
+  seasonPlayerHome,
+  seasonTitle,
+} from "../season";
 import { useNowSeconds } from "../use-now";
 import { FrontierRows } from "./frontier-rows";
 import { resultsHref } from "./results-link";
@@ -46,20 +86,224 @@ const BOARD_ROWS = { phone: 12, desktop: 10 } as const;
 
 export const SeasonPage = () => {
   const phone = useLayout() === "phone";
+  const { season, past, failure } = useSeason();
   return (
     <PageFrame title={WORDS.season} painting="season-citadel">
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-6" data-season-page>
         {phone && <h1 className="text-app-title text-app-ink">{WORDS.season}</h1>}
-        <div className="season-grid">
-          <FrontierPanel rows={phone ? BOARD_ROWS.phone : BOARD_ROWS.desktop} />
-          <SeasonAside />
-        </div>
+        {failure ? (
+          <AppPanel>
+            <ServiceFailure service="season" error={failure.error} retry={() => void failure.refetch()} />
+          </AppPanel>
+        ) : !season ? (
+          <Loading />
+        ) : isAspectSeason(season) ? (
+          <AspectSeasonView season={season} past={past} />
+        ) : (
+          <div className="season-grid">
+            <FrontierPanel season={season} rows={phone ? BOARD_ROWS.phone : BOARD_ROWS.desktop} />
+            <SeasonAside season={season} past={past} />
+          </div>
+        )}
       </div>
     </PageFrame>
   );
 };
 
-/** Frontier's own season and its day by the hourglass, "Season 1 · Day 4", on the clock. */
+const AspectSeasonView = ({ season, past }: { season: AspectSeasonGame; past: readonly DirectoryGame[] }) => {
+  const [selectedAspect, setSelectedAspect] = useState<AspectId | 0>(0);
+  const now = useNowSeconds();
+  const day = directoryDay(season, now);
+  const { finishHeight, stageHeight, standings, byAspect } = aspectRaceStandings(
+    season.aspect_race,
+    season.aspect_members ?? null,
+  );
+  const dayText = seasonDayLabel(day.day, seasonDaysOf(season));
+  const ownAspect = seasonPlayerAspect(season);
+  const shownAspects = selectedAspect === 0 ? standings : standings.filter(({ id }) => id === selectedAspect);
+  return (
+    <div className="flex flex-col gap-6" data-season-race>
+      <AppPanel
+        title={ageOf("frontier").name}
+        icon="crown"
+        painting={ageOf("frontier").painting}
+        cue={
+          <span className="flex flex-wrap items-center gap-2">
+            {isGameOver(season) ? (
+              <SeasonEnded season={season} />
+            ) : (
+              <AppChip icon="hourglass" tone="gold">
+                {[seasonTitle(season), dayText].filter(Boolean).join(" · ")}
+              </AppChip>
+            )}
+            <AppChip icon="people">{formatCount(season.player_count, PLAY_WORDS.player)}</AppChip>
+          </span>
+        }
+      >
+        <div className="flex flex-col gap-4">
+          <div className="season-race__grid">
+            {aspects.map(({ id }) => {
+              const row = byAspect[id];
+              return (
+                <HyperstructureTile
+                  key={id}
+                  aspect={id}
+                  height={row.height}
+                  finishHeight={finishHeight}
+                  members={row.members}
+                  own={ownAspect === id}
+                  winner={row.finished}
+                  showWorth
+                />
+              );
+            })}
+          </div>
+          <RacePoolRuleStrip />
+        </div>
+      </AppPanel>
+      <div className="season-grid">
+        <AppPanel title={SEASON_WORDS.aspectBreakdown} icon="leaderboard">
+          <div className="flex flex-col gap-4">
+            <AppTabs
+              label={WORDS.season}
+              value={selectedAspect}
+              onChange={(value) => setSelectedAspect(value)}
+              tabs={[
+                { key: 0 as const, label: SEASON_WORDS.allAspects },
+                ...aspects.map(({ id, name }) => ({
+                  key: id,
+                  label: name,
+                  lead: <AspectMark aspect={id} size={18} decorative />,
+                  aspectId: id,
+                })),
+              ]}
+            />
+            <ul className="season-breakdown">
+              {shownAspects.map((row) => (
+                <li
+                  key={row.id}
+                  data-aspect-summary={row.id}
+                  data-own={ownAspect === row.id || undefined}
+                  style={aspectVariables(row.id) as CSSProperties}
+                  className="season-breakdown__row"
+                >
+                  <div className="season-breakdown__lead">
+                    <AspectMark aspect={row.id} size={34} decorative />
+                    <div className="flex min-w-0 flex-col">
+                      <span className="season-breakdown__name">{row.name}</span>
+                      <span className="text-app-label text-app-muted">
+                        {`${ASPECT_PAGE_WORDS.stage(row.stage, RACE_STAGE_COUNT)} · ${ASPECT_PAGE_WORDS.height(row.height, finishHeight)}`}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="season-breakdown__metrics">
+                    {row.members !== null && <AppChip icon="people">{ASPECT_STEP_WORDS.members(row.members)}</AppChip>}
+                    <AppChip icon="lords" tone="gold">
+                      {ASPECT_PAGE_WORDS.lords(row.lords)}
+                    </AppChip>
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <div className="season-triumphs">
+              <span className="text-app-label text-app-muted">{SEASON_WORDS.stageMilestones}</span>
+              <div className="season-triumphs__list">
+                {RACE_TRIUMPHS.map(({ stage, name }) => (
+                  <AppChip key={stage} icon="star">
+                    {`${name} · ${SEASON_WORDS.stageAtHeight(stage * stageHeight)}`}
+                  </AppChip>
+                ))}
+              </div>
+            </div>
+            <p className="text-app-label text-app-muted">{SEASON_WORDS.gloryNote(ASPECT_REWARD.gloryToShare)}</p>
+          </div>
+        </AppPanel>
+        <div className="flex min-w-0 flex-col gap-6">
+          <AspectPlayerStanding season={season} finishHeight={finishHeight} byAspect={byAspect} />
+          {past.length > 0 && <PastSeasons seasons={past} />}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const AspectPlayerStanding = ({
+  season,
+  finishHeight,
+  byAspect,
+}: {
+  season: AspectSeasonGame;
+  finishHeight: number;
+  byAspect: Record<AspectId, AspectRaceStanding>;
+}) => {
+  const { realm, order, aspect } = seasonPlayerHome(season);
+  if (!realm || aspect === null) {
+    return (
+      <AppPanel title={SEASON_WORDS.yourStanding} icon="realm">
+        <div className="flex flex-col gap-3">
+          <p className="text-app-body text-app-muted">{SEASON_WORDS.noRealmYet}</p>
+          <AppButton kind="primary" icon="play" to="/">
+            {WORDS.play}
+          </AppButton>
+        </div>
+      </AppPanel>
+    );
+  }
+  const ownStanding = byAspect[aspect];
+  return (
+    <AppPanel title={SEASON_WORDS.yourStanding} icon="realm">
+      <div className="flex flex-col gap-4" style={aspectVariables(aspect) as CSSProperties}>
+        <div className="flex items-center gap-3">
+          <AspectMark aspect={aspect} size={46} decorative />
+          <div className="flex min-w-0 flex-col">
+            <span className="text-app-heading text-app-ink">{realm.name}</span>
+            <span className="flex flex-wrap items-center gap-2 text-app-label text-app-muted">
+              <span className="season-standing__aspect">{aspectName(aspect)}</span>
+              {order && (
+                <span className="inline-flex items-center gap-1">
+                  <OrderEmblem order={order.orderId} size={16} />
+                  {order.orderName}
+                </span>
+              )}
+            </span>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="season-stat">
+            <span className="season-stat__value">{formatExact(ownStanding.height)}</span>
+            <span className="season-stat__label">{ASPECT_PAGE_WORDS.height(ownStanding.height, finishHeight)}</span>
+          </div>
+          <div className="season-stat">
+            <span className="season-stat__value text-app-gold">
+              <Icon name="lords" size={16} />
+              {formatAmount(ownStanding.lords)}
+            </span>
+            <span className="season-stat__label">{SEASON_WORDS.worthSoFar}</span>
+          </div>
+        </div>
+        <AspectStandingActions season={season} aspect={aspect} />
+      </div>
+    </AppPanel>
+  );
+};
+
+const AspectStandingActions = ({ season, aspect }: { season: AspectSeasonGame; aspect: AspectId }) => {
+  const invite = useSeasonInvite(aspect);
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-wrap gap-2">
+        {season.status === "Live" && (
+          <AppButton kind="primary" icon="play" to={entryHref(season, "play")} className="flex-1">
+            {WORDS.enterRealm}
+          </AppButton>
+        )}
+        <CopySeasonInvite invite={invite} size="md" className="flex-1" />
+      </div>
+      <SeasonInviteAlerts invite={invite} />
+    </div>
+  );
+};
+
 const FrontierDay = ({ season }: { season: DirectoryGame }) => {
   const now = useNowSeconds();
   return (
@@ -67,12 +311,6 @@ const FrontierDay = ({ season }: { season: DirectoryGame }) => {
   );
 };
 
-/**
- * The Frontier season Season shows: the live one, the player's own if they have a realm in one; with none live, the
- * last to end (an archived season at the least). The seasons that ended before it are past, the last to end first.
- * None is shown while a read it waits on is pending. `failure` is the read the shown season waits on that did not
- * answer: the directory, or the history while no season is live.
- */
 const useSeason = () => {
   const directory = useDirectory();
   const settled = useSettledGames();
@@ -88,10 +326,9 @@ const useSeason = () => {
   return { season, past: season ? ended.filter((game) => game !== season) : [], failure };
 };
 
-const Standing = () => {
-  const { season } = useSeason();
+const Standing = ({ season }: { season: DirectoryGame }) => {
   const { data: player } = useRealmsPlayer();
-  const board = useLeaderboard(season ? gameRefOf(season) : null);
+  const board = useLeaderboard(season);
   const entries = board.data?.entries ?? [];
   const own = findOwnEntry(entries, player);
   if (!own) return null;
@@ -115,18 +352,14 @@ const Standing = () => {
   );
 };
 
-const SeasonAside = () => {
-  const { past } = useSeason();
-  return (
-    <div className="flex min-w-0 flex-col gap-6">
-      <Standing />
-      {past.length > 0 && <PastSeasons seasons={past} />}
-    </div>
-  );
-};
+const SeasonAside = ({ season, past }: { season: DirectoryGame; past: readonly DirectoryGame[] }) => (
+  <div className="flex min-w-0 flex-col gap-6">
+    <Standing season={season} />
+    {past.length > 0 && <PastSeasons seasons={past} />}
+  </div>
+);
 
-const FrontierPanel = ({ rows }: { rows: number }) => {
-  const { season } = useSeason();
+const FrontierPanel = ({ season, rows }: { season: DirectoryGame; rows: number }) => {
   const frontier = ageOf("frontier");
   return (
     <div data-age="frontier" className="min-w-0">
@@ -134,26 +367,23 @@ const FrontierPanel = ({ rows }: { rows: number }) => {
         title={frontier.name}
         icon="leaderboard"
         painting={frontier.painting}
-        cue={season && (isGameOver(season) ? <SeasonEnded season={season} /> : <FrontierDay season={season} />)}
+        cue={isGameOver(season) ? <SeasonEnded season={season} /> : <FrontierDay season={season} />}
         flush
       >
-        <FrontierBoard rows={rows} />
+        <FrontierBoard season={season} rows={rows} />
       </AppPanel>
     </div>
   );
 };
 
-/** An ended season and the day it ended, "Playtest · Ended 31 Oct", on the calendar. */
 const SeasonEnded = ({ season }: { season: DirectoryGame }) => <AppChip icon="calendar">{seasonEnded(season)}</AppChip>;
 
-const FrontierBoard = ({ rows }: { rows: number }) => {
+const FrontierBoard = ({ season, rows }: { season: DirectoryGame; rows: number }) => {
   const [aspectFilter, setAspectFilter] = useState<AspectId | null>(null);
-  const { season, failure } = useSeason();
   const { data: player } = useRealmsPlayer();
-  const board = useLeaderboard(season ? gameRefOf(season) : null);
-  const failed = failure ?? (board.isError ? board : undefined);
-  if (failed) return <ServiceFailure service="season" error={failed.error} retry={() => void failed.refetch()} />;
-  if (!season || board.isPending) return <Loading />;
+  const board = useLeaderboard(season);
+  if (board.isError) return <ServiceFailure service="season" error={board.error} retry={() => void board.refetch()} />;
+  if (board.isPending) return <Loading />;
   const frontier = board.data;
   const entries = frontier?.entries ?? [];
   const own = findOwnEntry(entries, player);
@@ -191,7 +421,6 @@ const FrontierBoard = ({ rows }: { rows: number }) => {
   );
 };
 
-/** The seasons that ended before the one shown, the last to end first. */
 const PastSeasons = ({ seasons }: { seasons: readonly DirectoryGame[] }) => (
   <AppPanel title={SEASON_WORDS.pastSeasons} icon="calendar" flush>
     <ol>
@@ -204,12 +433,15 @@ const PastSeasons = ({ seasons }: { seasons: readonly DirectoryGame[] }) => (
   </AppPanel>
 );
 
-/** A past season: its number, the day it ended and its winner; the row opens its Results, whose Back leads here. */
 const PastSeason = ({ season }: { season: DirectoryGame }) => {
-  const board = useLeaderboard(gameRefOf(season));
+  const aspectSeason = isAspectSeason(season);
+  const board = useLeaderboard(season);
   const here = useLocation();
   const navigate = useNavigate();
   const winner = board.data && seasonWinner(board.data);
+  const aspectWinner = aspectSeason
+    ? aspectRaceStandings(season.aspect_race, season.aspect_members ?? null).winner
+    : null;
   return (
     <AppRow
       lead={<RowThumb painting={ageOf("frontier").painting} size={10} />}
@@ -217,7 +449,12 @@ const PastSeason = ({ season }: { season: DirectoryGame }) => {
       detail={`${PLAY_WORDS.ended} ${formatDate(season.clock.end_at)}`}
       onClick={() => navigate(resultsHref(gameRefOf(season)), { state: openedFrom(here) })}
       trail={
-        winner && (
+        aspectWinner ? (
+          <span className="inline-flex min-w-0 items-center gap-1.5">
+            <AspectMark aspect={aspectWinner.id} size={20} decorative />
+            <span className="text-app-ink">{aspectWinner.name}</span>
+          </span>
+        ) : winner ? (
           <span className="inline-flex min-w-0 items-center gap-2">
             <HudPlaceMedal place={1} size={20} below={null} />
             {typeof winner === "string" ? (
@@ -226,7 +463,7 @@ const PastSeason = ({ season }: { season: DirectoryGame }) => {
               <PlayerName account={winner.address} />
             )}
           </span>
-        )
+        ) : undefined
       }
     />
   );

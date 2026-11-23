@@ -1,3 +1,4 @@
+import { raceStage } from "@bibliothecadao/eternum/game-client";
 import { aspectLordsWorth, aspects, deepSites, type AspectId } from "@bibliothecadao/types";
 
 import type { AspectMember, AspectPageProps, AspectStanding, AspectTriumph, OwnAspect } from "./aspect-page-view";
@@ -20,7 +21,7 @@ const standings = (heights: Record<string, number>, own: string, winner?: string
       aspectId: aspectIdByName(aspect),
       rank: index + 1,
       height,
-      stage: Math.min(STAGES, Math.floor(height / STAGE) + 1),
+      stage: raceStage(height, STAGE),
       finished: height >= FINISH,
       own: aspect === own,
       lords: aspectLordsWorth(height, aspect === winner),

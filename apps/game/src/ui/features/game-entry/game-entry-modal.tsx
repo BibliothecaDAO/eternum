@@ -6,6 +6,7 @@ import { pageNavigation } from "@/utils/page-navigation";
 import { isRealmNumber, registerHomeSource } from "@/services/realm-entry";
 import { AppButton } from "@/ui/design-system/kit/app-elements";
 import { HudNotice } from "@/ui/design-system/kit/hud-elements";
+import { useHeldRealms } from "@/hooks/use-holdings";
 /**
  * The entry into a game, drawn as the doorway (design o5): the account, then the realm founded or prepared, then the
  * hand-off to the game's route, where the doorway carries on while the map boots.
@@ -16,11 +17,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { resolveEntryContextFromLandingSelection } from "@/game-entry/context";
-import { HomeSourcePicker, useNothingToChoose } from "./home-source-picker";
+import { EntryModeSwitch, HomeSourcePicker, useNothingToChoose } from "./home-source-picker";
 import { RealmNumberPicker } from "./realm-number-picker";
 import { createAutoSettleEntryKey, useAutoSettleStore } from "@/hooks/store/use-auto-settle-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import { identityUsername, useIdentitySession, useIdentitySessionStore } from "@/hooks/context/identity-session";
+import { useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { useRequestSignIn } from "@/shell/sign-in/connect";
 import { useJoinedShare } from "@/shell/share/own-shares";
 import { useOrderIntent } from "@/shell/play/order-intent";
@@ -33,7 +34,7 @@ import { fetchSettlementSnapshot, type SettlementSnapshot } from "@/runtime/worl
 import { isGameOver } from "@/runtime/world/directory";
 import { markGameEntryMilestone } from "@/ui/layouts/game-entry-timeline";
 import { resultsHref } from "@/shell/season-tab/results-link";
-import { seasonRealm } from "@/shell/season";
+import { questBonusPercentOf, seasonRealm } from "@/shell/season";
 import { ClockChip } from "@/ui/design-system/kit/clock-chip";
 import { doorwayRealmFromId, toPaddedFeltAddress } from "./doorway/doorway-realm";
 import { DoorwayScreen } from "./doorway/doorway-screen";
@@ -129,6 +130,8 @@ export const GameEntryModal = ({
 
   const joinedShare = useJoinedShare();
   const keptIntent = useOrderIntent();
+  const { held } = useHeldRealms();
+  const heldRealmsCount = held.data?.length ?? 0;
   // The game's directory row is the one source for entry: it is polled while the modal waits on readiness.
   const gameEntry = useGameEntry(game, {
     enabled: isOpen,
@@ -201,6 +204,7 @@ export const GameEntryModal = ({
     setDevSettlementTarget(null);
     setDevRealmNumber("1");
     setHeldRealmNumber("");
+    setSideAnswer(null);
     setRegisteredRealmId(null);
     setSettlementError(null);
   }, []);
@@ -644,11 +648,18 @@ export const GameEntryModal = ({
     registeredRealmId === null &&
     sideAnswer === null &&
     isRealmElsewhere(side, realmOrder);
-  const joinSideFree = (aspect: AspectId) => {
+  const joinSideFree = (chosenAspect: AspectId | null) => {
     setSideAnswer("free");
     setHeldRealmNumber("");
     setHomeSettled(true);
-    setAspect(aspect);
+    setAspect(chosenAspect);
+    setOrder(null);
+  };
+  const pickOwnedRealm = () => {
+    setSideAnswer("realm");
+    setAspect(null);
+    setOrder(null);
+    setHomeSettled(false);
   };
   const foundInOrder = (chosen: number) => {
     setOrder(chosen);
@@ -707,18 +718,32 @@ export const GameEntryModal = ({
         <RealmSideWarning
           side={side}
           realmId={homeRealm}
+          questBonusPercent={questBonusPercentOf(worldMeta)}
           onPlayRealm={() => setSideAnswer("realm")}
           onJoinFree={() => joinSideFree(sideAspect(side))}
         />
       )}
       {choosingHome && !warnsOfSide && (
         <>
+          {choosesAspect && !choosingSource && registeredRealmId === null && (
+            <EntryModeSwitch
+              heldCount={heldRealmsCount}
+              playingFree={sideAnswer === "free"}
+              questBonusPercent={questBonusPercentOf(worldMeta)}
+              disabled={isSettling}
+              onChange={(mode) => {
+                if (mode === "free") joinSideFree(null);
+                else pickOwnedRealm();
+              }}
+            />
+          )}
           {showsHomePicker && (
             <HomeSourcePicker
               title={choosingSource ? HOME_STEP_WORDS.attachTitle : undefined}
               takenRealmIds={takenRealmIds}
               requireSource={choosingSource}
               aspect={choosingSource ? homeAspect : null}
+              questBonusPercent={questBonusPercentOf(worldMeta)}
               onSourceAvailable={setSourceAvailable}
               registered={registeredRealmId}
               value={heldRealmNumber}
@@ -734,7 +759,7 @@ export const GameEntryModal = ({
           {choosesAspect && !choosingSource && keptIntent.intent.isError && (
             <HudNotice tone="warn" line={ASPECT_STEP_WORDS.keptUnread} retry={() => void keptIntent.intent.refetch()} />
           )}
-          {choosesAspect && !choosingSource && (
+          {tapsAspect && (
             <AspectPicker
               members={worldMeta?.aspect_members ?? null}
               realmOrder={realmOrder}
@@ -747,7 +772,7 @@ export const GameEntryModal = ({
               onFound={foundInOrder}
             />
           )}
-          {choosingSource ? <p>{HOME_STEP_WORDS.attachLine}</p> : isFrontierMode && <PlaysAs />}
+          {choosingSource && <p>{HOME_STEP_WORDS.attachLine}</p>}
           {settlementError && <HudNotice tone="bad" line={settlementError} />}
           {isEternumDevMode && (
             <RealmNumberPicker value={devRealmNumber} onChange={setDevRealmNumber} disabled={isSettling} />
@@ -777,19 +802,6 @@ export const GameEntryModal = ({
         </button>
       )}
     </DoorwayScreen>
-  );
-};
-
-/** The name the account plays under, chosen for it at sign-up and changed on You. */
-export const PlaysAs = () => {
-  const { session } = useIdentitySession();
-  const name = session ? identityUsername(session) : null;
-  if (!name) return null;
-  return (
-    <p className="flex w-full items-center gap-2 text-hud-body text-app-ink">
-      <span className="flex-1">{HOME_STEP_WORDS.playsAs(name)}</span>
-      <span className="opacity-70">{HOME_STEP_WORDS.changeOnYou}</span>
-    </p>
   );
 };
 

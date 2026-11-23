@@ -1,7 +1,7 @@
 import { SHARE_PATH } from "@realms-world/identity";
 import { lazy, Suspense, type ReactNode } from "react";
 import { useKeyboardInset } from "@/hooks/use-keyboard-inset";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
 
 import "./index.css";
@@ -16,9 +16,10 @@ import { WhatsNewPage } from "./shell/news/news";
 import { ChatPage } from "./shell/chat/chat-page";
 import { IS_DEV_ENVIRONMENT } from "./shell/frame/environment";
 import { NotFoundPage } from "./shell/not-found";
-import { BuildOrdersPage } from "./shell/build-orders/build-orders-page";
 import { PlayPage } from "./shell/play/play-page";
-import { PlayerPage, ProfilePage, SettingsPage } from "./shell/profile/profile-pages";
+import { PlayerPage, ProfilePage, SettingsRedirect } from "./shell/profile/profile-pages";
+import { PROFILE_PATH } from "./shell/profile/settings-route";
+import { FRAGMENTS_PATH } from "./shell/shop/fragments-route";
 import { ResultsPage } from "./shell/season-tab/results-page";
 import { SeasonPage } from "./shell/season-tab/season-page";
 import { SharedLinkPage } from "./shell/share/shared-link-page";
@@ -42,34 +43,36 @@ const GameClientApp = lazy(() => import("./game-client-app").then((module) => ({
 
 const AppFallback = FirstFrame;
 
-/**
- * Former pages: Play's, shared publicly before Play took them in, and the sign-in page Connect replaced (a link to it,
- * or a Discord return started before it went): each leads to Play. `public/_redirects` answers a full load with a
- * permanent redirect; these routes answer the app's own navigation and the dev server, which serve the shell for every
- * path.
- */
-export const RETIRED_PATHS = ["/blitz", "/frontier", "/eternum", "/dominion", "/sign-in"] as const;
+export const RETIRED_REDIRECTS = [
+  ["/blitz", "/"],
+  ["/blitz/build-orders", "/"],
+  ["/frontier", "/"],
+  ["/eternum", "/"],
+  ["/dominion", "/"],
+  ["/sign-in", "/"],
+  ["/shop/fragments", FRAGMENTS_PATH],
+] as const;
+
+export const RetiredRedirect = ({ to }: { to: string }) => {
+  const { search, hash } = useLocation();
+  return <Navigate to={{ pathname: to, search, hash }} replace />;
+};
 
 const LazyRoute = ({ children }: { children: ReactNode }) => <Suspense fallback={<AppFallback />}>{children}</Suspense>;
 
-/**
- * Every page the app serves. Cloudflare Pages rewrites to the app shell only the paths `public/_redirects` names, so
- * `app-hosting.test.ts` holds that file to exactly these routes.
- */
 export const appRoutes = (
   <>
     <Route element={<AppShell />}>
       <Route index element={<PlayPage />} />
-      {RETIRED_PATHS.map((path) => (
-        <Route key={path} path={path.slice(1)} element={<Navigate to="/" replace />} />
+      {RETIRED_REDIRECTS.map(([path, to]) => (
+        <Route key={path} path={path.slice(1)} element={<RetiredRedirect to={to} />} />
       ))}
-      <Route path="blitz/build-orders" element={<BuildOrdersPage />} />
       <Route path={`${SHARE_PATH.slice(1)}/:code`} element={<SharedLinkPage />} />
       <Route path="season" element={<SeasonPage />} />
       <Route path="results/:id" element={<ResultsPage />} />
-      <Route path="profile" element={<ProfilePage />} />
-      <Route path="profile/settings" element={<SettingsPage />} />
-      <Route path="shop/fragments" element={<FragmentsPage />} />
+      <Route path={PROFILE_PATH.slice(1)} element={<ProfilePage />} />
+      <Route path={`${PROFILE_PATH.slice(1)}/settings`} element={<SettingsRedirect />} />
+      <Route path={FRAGMENTS_PATH.slice(1)} element={<FragmentsPage />} />
       <Route path="p/:address" element={<PlayerPage />} />
       <Route path="scroll" element={<WhatsNewPage />} />
       <Route path="chat" element={<ChatPage />} />

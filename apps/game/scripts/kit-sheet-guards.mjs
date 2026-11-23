@@ -28,8 +28,6 @@ const PREEXISTING_UNOWNED = {
     "app-frame__painting",
     "app-frame__page",
     "app-mark",
-    "app-holdings",
-    "app-holdings__item",
     "app-well",
     "app-window",
     "app-window__head",

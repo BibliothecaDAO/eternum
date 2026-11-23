@@ -20,6 +20,9 @@ export const DAILY_QUEST_MODELS = [
   "SettledRealm",
 ] as const;
 
+export const questBonusPercent = (rules: Pick<NativeRows["QuestRules"], "bonus_percent">): number =>
+  Number(rules.bonus_percent) - 100;
+
 /** Unknown recorded rolls leave the quest itself unknown; no ordinary quest is invented while loading. */
 export function readDailyQuest(store: NativeFactStore, gameId: number, home: number, timestamp: number) {
   const at = questCalendar(store, gameId, home, timestamp);

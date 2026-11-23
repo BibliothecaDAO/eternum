@@ -48,6 +48,7 @@ export interface HeraldPlayerQuest {
 
 export interface HeraldAspectRace {
   finish_height: number;
+  season_days: number;
   heights: Record<AspectId, number>;
 }
 
@@ -81,6 +82,7 @@ export interface HeraldGameDirectoryEntry {
   /** Homes per Aspect; null without Aspects, absent on archived directory responses. */
   aspect_members?: Record<AspectId, number> | null;
   aspect_race?: HeraldAspectRace | null;
+  quest_bonus_percent?: number | null;
   player_state: HeraldPlayerGameState | null;
   registration: HeraldGameRegistration | null;
   settled_realms_count: number;
@@ -203,6 +205,7 @@ export class HeraldHttpError extends Error {
   constructor(
     message: string,
     readonly status: number,
+    readonly code?: string,
   ) {
     super(message);
     this.name = "HeraldHttpError";

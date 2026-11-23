@@ -54,23 +54,13 @@ export function readRaceBoard(
   if (!complete.known) return complete;
   const rules = store.get("RaceRules", { game_id: gameId });
   if (!rules) return { known: { race: null } };
-  const standings: RaceBoard["standings"] = [];
-  const finish = raceFinishHeight(rules.stage_height);
+  const rows: NativeRows["AspectHyperstructure"][] = [];
   for (const aspect of aspects) {
     const row = store.get("AspectHyperstructure", { game_id: gameId, aspect: aspect.id });
     if (!row) return { unknown: "MISSING_ASPECT_HYPERSTRUCTURE" };
-    if (row.height > finish) throw new Error("Race height exceeds its finish");
-    standings.push({
-      ...row,
-      rank: 0,
-      stage: Math.min(nativeRaceConstants.STAGE_COUNT, Math.floor(row.height / rules.stage_height) + 1),
-      finished: row.height === finish,
-    });
+    rows.push(row);
   }
-  standings.sort((a, b) => b.height - a.height || a.aspect - b.aspect);
-  standings.forEach((row, index) => {
-    row.rank = index + 1;
-  });
+  const standings = rankRaceStandings(rows, rules.stage_height);
   const own = readOwnAspect(store, gameId, home, timestamp);
   if (!own.known) return own;
   return {
@@ -124,4 +114,31 @@ function readOwnAspect(
   };
 }
 
+export const raceStage = (height: number, stageHeight: number): number =>
+  stageHeight <= 0 ? 1 : Math.min(nativeRaceConstants.STAGE_COUNT, Math.floor(Math.max(0, height) / stageHeight) + 1);
+
 export const raceFinishHeight = (stageHeight: number): number => stageHeight * nativeRaceConstants.STAGE_COUNT;
+
+export const raceStageHeight = (finishHeight: number): number =>
+  Math.round(finishHeight / nativeRaceConstants.STAGE_COUNT);
+
+export function rankRaceStandings<Row extends { aspect: number; height: number }>(
+  rows: readonly Row[],
+  stageHeight: number,
+): (Row & { rank: number; stage: number; finished: boolean })[] {
+  const finish = raceFinishHeight(stageHeight);
+  const ranked = rows.map((row) => {
+    if (row.height > finish) throw new Error("Race height exceeds its finish");
+    return {
+      ...row,
+      rank: 0,
+      stage: raceStage(row.height, stageHeight),
+      finished: finish > 0 && row.height === finish,
+    };
+  });
+  ranked.sort((a, b) => b.height - a.height || a.aspect - b.aspect);
+  ranked.forEach((row, index) => {
+    row.rank = index + 1;
+  });
+  return ranked;
+}

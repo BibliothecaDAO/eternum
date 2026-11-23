@@ -7,7 +7,7 @@ import type {
 } from "@bibliothecadao/eternum/game-sync";
 import { DAILY_QUEST_MODELS, nativeGameModeOfFamily, readDailyQuest } from "@bibliothecadao/eternum";
 import { dayOf, expeditionRealmSite, entityHomeNamespace, isRealmCategory } from "@bibliothecadao/eternum/expeditions";
-import { NativeFactStore, raceFinishHeight } from "@bibliothecadao/eternum/game-client";
+import { NativeFactStore, questBonusPercent, raceFinishHeight } from "@bibliothecadao/eternum/game-client";
 import { aspects, RESOURCE_PRECISION, type AspectId, StructureType } from "@bibliothecadao/types";
 import { isCheckGame, resolveDirectoryStatus, type DirectoryInput } from "../game-directory";
 import type { FoldRow } from "../types";
@@ -81,6 +81,7 @@ interface DirectoryRows {
   aspectRules: FoldRow[];
   aspectMembers: FoldRow[];
   raceRules: FoldRow[];
+  questRules: FoldRow[];
   aspectHyperstructures: FoldRow[];
 }
 
@@ -134,6 +135,7 @@ function directoryRows(input: DirectoryInput): DirectoryRows {
     aspectRules: rows("AspectRules"),
     aspectMembers: rows("AspectMembers"),
     raceRules: rows("RaceRules"),
+    questRules: rows("QuestRules"),
     aspectHyperstructures: rows("AspectHyperstructure"),
   };
 }
@@ -245,7 +247,9 @@ export function directoryFact(model: string, row: Row | undefined): unknown {
     case "AspectMembers":
       return [row.aspect, row.members];
     case "RaceRules":
-      return row.stage_height;
+      return [row.stage_height, row.season_days];
+    case "QuestRules":
+      return row.bonus_percent;
     case "AspectHyperstructure":
       return [row.aspect, row.height];
     case "Structure":
@@ -322,6 +326,7 @@ function directoryEntry(game: Row, facts: DirectoryRows, input: DirectoryInput):
     player_count: new Set(settlements.map((row) => address(row.owner))).size,
     aspect_members: aspectMembersOf(facts, game.game_id),
     aspect_race: aspectRaceOf(facts, game.game_id),
+    quest_bonus_percent: questBonusPercentOf(facts, game.game_id),
     player_state: directoryPlayerState(game, facts, input),
     registration: {
       count:
@@ -340,12 +345,18 @@ function directoryEntry(game: Row, facts: DirectoryRows, input: DirectoryInput):
   };
 }
 
+function questBonusPercentOf(facts: DirectoryRows, gameId: unknown): number | null {
+  const rules = gameRows(facts.questRules, gameId)[0];
+  return rules ? questBonusPercent({ bonus_percent: number(rules.bonus_percent) }) : null;
+}
+
 function aspectRaceOf(facts: DirectoryRows, gameId: unknown): HeraldAspectRace | null {
   const rules = gameRows(facts.raceRules, gameId)[0];
   if (!rules) return null;
   const rows = gameRows(facts.aspectHyperstructures, gameId);
   return {
     finish_height: raceFinishHeight(number(rules.stage_height)),
+    season_days: number(rules.season_days),
     heights: Object.fromEntries(
       aspects.map(({ id }) => [id, number(rows.find((row) => number(row.aspect) === id)?.height ?? 0)]),
     ) as Record<AspectId, number>,

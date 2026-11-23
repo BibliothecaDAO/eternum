@@ -6,7 +6,6 @@ import { memo, useRef } from "react";
 import { useGame } from "@/hooks/context/game-context";
 import { Position } from "@bibliothecadao/eternum";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { useBuildOrderFailure } from "@/hooks/use-build-orders";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { canIssueOrders } from "@/utils/can-issue-orders";
@@ -27,7 +26,6 @@ function AttentionCycle() {
   const goToStructure = useGoToStructure(setup);
   const structures = useFactView(playerStructuresView);
   const suggestions = useEmpireSuggestions();
-  const buildOrderFailure = useBuildOrderFailure();
   const previousKey = useRef<string | null>(null);
   const { targets } = useStructureAttention();
   const items = [
@@ -41,8 +39,6 @@ function AttentionCycle() {
       realmId: suggestion.realmId as number | null,
       suggestionId: suggestion.id,
     })),
-    // The account's orders failing to be read is said where the steps are, so it counts as one more to see.
-    ...(buildOrderFailure ? [{ key: "build-orders", realmId: null, suggestionId: "build-orders" }] : []),
   ];
   const openSuggestions = (selectedId: string) =>
     usePopoverStore.getState().openSurface({

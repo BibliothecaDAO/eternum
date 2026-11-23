@@ -209,25 +209,31 @@
 .home-picker__bonus {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
+  justify-content: center;
+  gap: 0.5rem;
   border: 1px solid var(--app-line);
   border-radius: var(--app-radius-control);
   background: var(--app-well);
-  padding: 0.625rem 0.875rem;
+  padding: 0.55rem 0.875rem;
   font-size: var(--app-text-label);
-}
-
-.home-picker__bonus-label {
-  color: var(--app-muted);
 }
 
 .home-picker__bonus-value {
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: center;
   gap: 0.35rem;
   font-weight: 700;
   color: var(--gold2);
+}
+
+.home-picker__free-note {
+  margin: 0;
+  max-width: 32rem;
+  font-size: var(--app-text-label);
+  line-height: var(--app-leading-label);
+  color: var(--app-muted);
 }
 
 .home-picker__sub {
@@ -537,21 +543,22 @@
 @media (min-width: 1024px) {
   .home-picker__shell[data-split] {
     display: grid;
-    min-height: calc(100dvh - var(--app-bar) - 9rem);
-    grid-template-columns: minmax(0, 1.55fr) minmax(24rem, 29rem);
+    min-height: min(38rem, calc(100dvh - var(--app-bar) - 9.5rem));
+    grid-template-columns: minmax(0, 1.5fr) minmax(22rem, 27rem);
     align-items: stretch;
-    gap: 1.5rem;
+    gap: clamp(1rem, 2vw, 1.5rem);
   }
 
   .home-picker__shell[data-split] .home-picker__vault {
     order: 1;
-    padding: 1.5rem;
-    gap: 1.15rem;
+    padding: clamp(0.75rem, 1.8dvh, 1.35rem);
+    gap: clamp(0.5rem, 1.2dvh, 1rem);
   }
 
   .home-picker__shell[data-split] .home-picker__featured {
     order: 2;
-    padding: 1.5rem;
+    padding: clamp(0.75rem, 1.8dvh, 1.35rem);
+    gap: clamp(0.45rem, 1.1dvh, 0.875rem);
     text-align: center;
   }
 
@@ -559,15 +566,15 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 1rem;
-    padding-top: 0.75rem;
+    gap: clamp(0.4rem, 1dvh, 0.875rem);
+    padding-top: 0.15rem;
   }
 
   .home-picker__shell[data-split] .home-picker__art-wrap {
-    width: 18.75rem;
-    height: 18.75rem;
+    width: clamp(6rem, 17dvh, 14rem);
+    height: clamp(6rem, 17dvh, 14rem);
     border-radius: var(--app-radius-panel);
-    padding: 0.75rem;
+    padding: clamp(0.35rem, 0.9dvh, 0.75rem);
   }
 
   .home-picker__shell[data-split] .home-picker__about {
@@ -582,10 +589,10 @@
 
   .home-picker__shell[data-split] .home-picker__strip {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.875rem;
+    gap: clamp(0.45rem, 1dvh, 0.875rem);
   }
 
   .home-picker__shell[data-split] .home-picker__choice-art {
-    height: 7.5rem;
+    height: clamp(2.75rem, 7dvh, 5.5rem);
   }
 }

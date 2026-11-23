@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { expiredRaceScenario, raceScenario } from "@/lab/game/race-scenario";
 import { rowsOf, wire } from "@/lab/game/lab-chain";
-import { NativeFactStore, readRaceBoard } from "@bibliothecadao/eternum/game-client";
+import { NativeFactStore, raceFinishHeight, readRaceBoard } from "@bibliothecadao/eternum/game-client";
 import { configManager, getStructureName } from "@bibliothecadao/eternum";
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
+import { raceStageOf } from "@/shell/season";
 import { aspectPage } from "./aspect-page";
 
 function fixture(finished = false) {
@@ -26,6 +27,10 @@ describe("the race board from native facts", () => {
       { aspect: 3, rank: 3, height: 2800, stage: 2 },
       { aspect: 4, rank: 4, height: 900, stage: 1 },
     ]);
+    const finishHeight = raceFinishHeight(board.rules.stage_height);
+    for (const row of board.standings) {
+      expect(raceStageOf(row.height, finishHeight)).toBe(row.stage);
+    }
     expect(
       board.own!.members.map(({ home, glory, contribution, mine, guards }) => ({
         home: home.entity_id,

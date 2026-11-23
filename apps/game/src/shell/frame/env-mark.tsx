@@ -11,8 +11,3 @@ export const EnvChip = () =>
       {WORDS.dev}
     </span>
   ) : null;
-
-export const EnvEdge = () =>
-  IS_DEV_ENVIRONMENT ? (
-    <div aria-hidden data-env-edge className="pointer-events-none fixed inset-x-0 top-0 z-50 h-1 bg-stripes" />
-  ) : null;

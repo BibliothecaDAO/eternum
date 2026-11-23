@@ -11,9 +11,12 @@
   gap: theme(spacing.4);
 }
 
-.play-side .app-age-column {
-  min-height: 11rem;
-  flex: 1;
+.play-result-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
 }
 
 .play-hero {
@@ -59,19 +62,34 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 1.5rem 1.25rem 0.5rem;
+  gap: 0.75rem;
+  padding: 1.25rem 1.25rem 0.5rem;
+}
+
+.play-hero__badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
 }
 
 .play-hero__title {
   margin: 0;
 }
 
+.play-hero__lockup-frame {
+  display: block;
+  width: min(17rem, 72vw);
+  aspect-ratio: 640 / 432;
+  overflow: hidden;
+  filter: drop-shadow(0 8px 24px rgb(0 0 0 / 0.7));
+}
+
 .play-hero__lockup {
   display: block;
-  width: auto;
-  height: 10.25rem;
-  object-fit: contain;
-  filter: drop-shadow(0 8px 24px rgb(0 0 0 / 0.7));
+  width: 100%;
+  height: auto;
 }
 
 .play-hero__plate {
@@ -148,70 +166,33 @@
   width: 100%;
 }
 
-.play-aspects {
+.play-aspects-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: theme(spacing.2);
-}
-
-.play-aspect {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.4rem;
-  border: 1px solid rgb(var(--app-aspect) / 0.4);
-  border-radius: var(--app-radius-control);
-  background: var(--app-well);
-  padding: 0.65rem 0.4rem;
-  text-align: center;
-}
-
-.play-aspect__tower {
-  display: flex;
-  height: 4.5rem;
-  width: 100%;
-  align-items: flex-end;
-  justify-content: center;
-  padding: 0 0.5rem;
-}
-
-.play-aspect__column {
-  width: 100%;
-  max-width: 2.5rem;
-  border-radius: 6px 6px 2px 2px;
-  background: linear-gradient(180deg, rgb(var(--app-aspect)), rgb(var(--app-aspect) / 0.28));
-  box-shadow: 0 0 14px rgb(var(--app-aspect) / 0.3);
-}
-
-.play-aspect__name {
-  font-family: var(--app-face-title);
-  font-size: 0.75rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: rgb(var(--app-aspect));
-}
-
-.play-aspect__height {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.1rem;
-  font-variant-numeric: tabular-nums;
-}
-
-.play-aspect__count {
-  font-size: var(--app-text-label);
-  font-weight: 700;
-  color: var(--app-ink);
-}
-
-.play-aspect__goal {
-  font-size: 0.6875rem;
-  color: var(--app-muted);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: theme(spacing.2.5);
 }
 
 .play-today {
-  display: none;
+  display: flex;
+}
+
+.play-invite {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.play-rehearsal {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.play-invite__text {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.25rem;
 }
 
 .play-today__quest {
@@ -648,20 +629,20 @@
 
   .play-side {
     height: 100%;
+    justify-content: flex-start;
+  }
+
+  .play-invite,
+  .play-rehearsal {
+    flex-direction: row;
+    align-items: center;
     justify-content: space-between;
   }
 
-  .play-today {
-    display: flex;
-  }
-
-  .play-aspect__tower {
-    height: 8.5rem;
-  }
-
   .play-hero {
-    min-height: 100%;
-    padding: 2.5rem 2.75rem;
+    min-height: min(36rem, calc(100dvh - var(--app-bar) - 3.5rem));
+    max-height: calc(100dvh - var(--app-bar) - 3.5rem);
+    padding: clamp(1.25rem, 2.5dvh, 2.25rem) clamp(1.5rem, 2.5vw, 2.5rem);
   }
 
   .play-hero__scrim {
@@ -681,8 +662,12 @@
     gap: 1rem;
   }
 
-  .play-hero__lockup {
-    height: 13.5rem;
+  .play-hero__badges {
+    justify-content: flex-start;
+  }
+
+  .play-hero__lockup-frame {
+    width: min(21rem, 28vw);
   }
 
   .play-hero__plate {
@@ -697,7 +682,7 @@
 
   .play-hero__verb .app-button {
     width: auto;
-    min-width: 16rem;
+    min-width: 12rem;
   }
 
   .preseason-pick {

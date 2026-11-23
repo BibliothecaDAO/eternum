@@ -1,0 +1,16 @@
+.app-bar__balance {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid rgb(var(--app-gold) / 0.45);
+  border-radius: var(--app-radius-round);
+  background: var(--app-well);
+  padding: 0.25rem 0.65rem;
+  font-family: var(--app-face-control);
+  font-size: var(--app-text-label);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--gold2);
+}

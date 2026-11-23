@@ -1,4 +1,5 @@
-import { fetchHeraldLeaderboard, type GameRef } from "@bibliothecadao/eternum/shard";
+import { fetchHeraldLeaderboard, HeraldHttpError, type GameRef } from "@bibliothecadao/eternum/shard";
+import type { HeraldAspectRace } from "@bibliothecadao/eternum/game-sync";
 import { realmsAccountAddress } from "@realms-world/identity/account";
 import { hashKey, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback } from "react";
@@ -16,6 +17,11 @@ import { archivedSeason } from "./season-tab/archive/archive";
 export interface DirectoryGame extends DirectoryEntry {
   chainId: string;
 }
+
+export type AspectSeasonGame = DirectoryGame & { aspect_race: HeraldAspectRace };
+
+export const isAspectSeason = (season: DirectoryGame | null | undefined): season is AspectSeasonGame =>
+  season?.aspect_race != null;
 
 /** A directory entry's game identity: its shard's chain id and its id there. */
 export const gameRefOf = (game: DirectoryGame): GameRef => ({ chainId: game.chainId, gameId: game.game_id });
@@ -140,10 +146,15 @@ export const useDirectory = () => {
  * The first few settled games, as a short list shows them (the latest result, a player's recent matches). `enabled`
  * holds the read until the player it is for is known, so a list of their own never shows everyone's.
  */
-export const useRecentResults = (limit: number, player: string | null = null, enabled = true) =>
+export const useRecentResults = (
+  limit: number,
+  player: string | null = null,
+  enabled = true,
+  mode: DirectoryGame["mode"] | null = null,
+) =>
   useQuery({
-    queryKey: ["shell", "history", "recent", limit, player],
-    queryFn: () => fetchDirectoryHistory({ limit, player }),
+    queryKey: ["shell", "history", "recent", limit, player, mode],
+    queryFn: () => fetchDirectoryHistory({ limit, player, mode }),
     enabled,
     staleTime: 30_000,
     retry: 1,
@@ -166,19 +177,29 @@ const readHistory = async () => {
   do {
     const page = await fetchDirectoryHistory({ limit: HISTORY_PAGE, cursor });
     games.push(...page.games);
-    cursor = page.next;
+    cursor = page.next ?? null;
   } while (cursor !== null);
   return games;
 };
 
-export const useLeaderboard = (game: GameRef | null) => {
-  const archived = game ? archivedSeason(game)?.board : undefined;
+const isAspectOnlyLeaderboard = (error: unknown): boolean =>
+  error instanceof HeraldHttpError && error.status === 404 && error.code === "season_one_ranks_aspects";
+
+export const useLeaderboard = (game: GameRef | DirectoryGame | null) => {
+  const ref = game === null ? null : "game_id" in game ? (isAspectSeason(game) ? null : gameRefOf(game)) : game;
+  const archived = ref ? archivedSeason(ref)?.board : undefined;
   return useQuery({
-    queryKey: ["shell", "leaderboard", game?.chainId, game?.gameId],
-    queryFn: async () =>
-      fetchHeraldLeaderboard(await requireOpenShard((game as GameRef).chainId), (game as GameRef).gameId),
+    queryKey: ["shell", "leaderboard", ref?.chainId, ref?.gameId],
+    queryFn: async () => {
+      try {
+        return await fetchHeraldLeaderboard(await requireOpenShard(ref!.chainId), ref!.gameId);
+      } catch (error) {
+        if (isAspectOnlyLeaderboard(error)) return null;
+        throw error;
+      }
+    },
     initialData: archived,
-    enabled: game !== null && archived === undefined,
+    enabled: ref !== null && archived === undefined,
     refetchInterval: 30_000,
     retry: 1,
   });

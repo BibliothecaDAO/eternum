@@ -1,14 +1,11 @@
-import { useState } from "react";
 import { canonicalRealm } from "@bibliothecadao/eternum";
 
 import { useHeldRealms } from "@/hooks/use-holdings";
 import { Icon } from "@/ui/design-system/icon";
-import type { IconMeaning } from "@/ui/design-system/icon-meaning";
 import { AppButton, AppEmpty } from "@/ui/design-system/kit/app-elements";
 import {
   HELD_REALMS_UNREADABLE,
   NO_HELD_REALMS,
-  PROFILE_WORDS,
   TRY_AGAIN,
   WORDS,
   YOUR_REALMS,
@@ -17,44 +14,6 @@ import {
 
 import { MARKET } from "../community";
 import { ShellWindow } from "../frame/shell-window";
-
-export const HoldingsStrip = () => {
-  const { wallet, held } = useHeldRealms();
-  const [open, setOpen] = useState(false);
-  if (wallet === null) return null;
-  return (
-    <>
-      <div className="app-holdings" role="group" aria-label={PROFILE_WORDS.holdings}>
-        <Holding
-          icon="realm"
-          count={held.isError ? PROFILE_WORDS.unknownCount : held.data?.length}
-          label={PROFILE_WORDS.realms}
-          onPress={() => setOpen(true)}
-        />
-      </div>
-      {open && <RealmsSheet held={held} onClose={() => setOpen(false)} />}
-    </>
-  );
-};
-
-/** One count: its painting, its number (blank while it is read), its name. */
-const Holding = ({
-  icon,
-  count,
-  label,
-  onPress,
-}: {
-  icon: IconMeaning;
-  count?: number | string;
-  label: string;
-  onPress: () => void;
-}) => (
-  <button type="button" className="app-holdings__item" onClick={onPress}>
-    <Icon name={icon} size={44} />
-    {count !== undefined && <b className="text-app-strong text-app-ink">{count}</b>}
-    <span className="text-app-label text-app-muted">{label}</span>
-  </button>
-);
 
 export const RealmsStatus = ({ held }: { held: ReturnType<typeof useHeldRealms>["held"] }) => {
   if (held.isError)
@@ -73,7 +32,6 @@ export const RealmsStatus = ({ held }: { held: ReturnType<typeof useHeldRealms>[
   return null;
 };
 
-/** The linked wallet's Realms, each by its number and name; the Market sells and buys them. */
 export const RealmsSheet = ({
   held,
   onClose,

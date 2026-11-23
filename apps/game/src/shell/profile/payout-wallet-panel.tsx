@@ -6,6 +6,7 @@ import {
   type NewPasskey,
   type SignInOptions,
 } from "@realms-world/identity";
+import { useQueryClient } from "@tanstack/react-query";
 import { PAYOUT_WALLET_CHANGE_SECONDS } from "@realms-world/value-ledger/payout-wallet";
 import { lazy, Suspense, useState } from "react";
 
@@ -23,6 +24,7 @@ import { l2Provider } from "@/runtime/l2-rpc";
 
 import { Loading } from "../loading";
 import { EmailCodeBoxes, useEmailCode } from "./email-code";
+import { invalidateLordsBalance } from "../value/use-lords-balance";
 import { WalletUnread } from "@/shell/value/wallet-unread";
 import { RealmsWalletFunds } from "./realms-wallet-funds";
 import { RealmsWalletRecovery, RecoverStart } from "./realms-wallet-recovery";
@@ -66,11 +68,13 @@ export const PayoutWalletPanel = ({
   email: string;
   onChanged: () => void;
 }) => {
+  const queryClient = useQueryClient();
   const [step, setStep] = useState<Step>(wallet === null ? { kind: "choose" } : { kind: "linked" });
   const { wallet: defaultWallet, failed: walletUnread, retry: readWalletAgain } = useDefaultWallet();
   const isDefault = wallet !== null && !!defaultWallet && isSameStarknetAddress(wallet, defaultWallet.address);
   const changed = () => {
     setStep({ kind: "linked" });
+    void invalidateLordsBalance(queryClient);
     onChanged();
   };
   const recover = () => setStep({ kind: "recover" });
@@ -100,7 +104,7 @@ export const PayoutWalletPanel = ({
     return <Linking step={step} email={email} onStep={setStep} onChanged={changed} />;
   };
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4" data-payout-wallet={wallet === null ? "none" : "linked"}>
       {step.kind === "code" && step.change.kind === "unlink" && (
         <p className="text-app-heading text-app-ink">{WALLET_WORDS.unlinkTitle}</p>
       )}

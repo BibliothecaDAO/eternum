@@ -31,6 +31,7 @@ describe("a detour's return path", () => {
   });
 
   it("checks the path it reads back", () => {
+    expect(nextOf("")).toBeNull();
     expect(nextOf(`?next=${encodeURIComponent("/results")}`)).toBe("/results");
     expect(nextOf("?next=https://evil.example")).toBe("/");
   });

@@ -411,13 +411,36 @@ describe("native directory", () => {
     const input = { chain: "madara", confirmedBlock: 11, timestamp: 30, fold };
     const race = (gameId: number) =>
       buildNativeDirectory(input).games.find(({ game_id }) => game_id === gameId)!.aspect_race;
-    expect(race(1)).toEqual({ finish_height: 10000, heights: { 1: 6400, 2: 7850, 3: 0, 4: 0 } });
+    expect(race(1)).toEqual({
+      finish_height: 10000,
+      season_days: 30,
+      heights: { 1: 6400, 2: 7850, 3: 0, 4: 0 },
+    });
     expect(race(2)).toBeNull();
 
     const revision = fold.directoryRevision();
     native.applyReceipt(fold, receipt([rowEvent("AspectHyperstructure", ["1", "3"], { height: 4100n })]), 12, 0);
     expect(fold.directoryRevision()).not.toBe(revision);
-    expect(race(1)).toEqual({ finish_height: 10000, heights: { 1: 6400, 2: 7850, 3: 4100, 4: 0 } });
+    expect(race(1)).toEqual({
+      finish_height: 10000,
+      season_days: 30,
+      heights: { 1: 6400, 2: 7850, 3: 4100, 4: 0 },
+    });
+
+    const raceRevision = fold.directoryRevision();
+    seedDerivedRows(fold, decoder, [
+      rowEvent("RaceRules", ["1"], {
+        season_days: 28n,
+        stage_height: 2000n,
+        clear_mist_percent: 120n,
+        second_wind_percent: 120n,
+        pale_moon_percent: 80n,
+        spoils_percent: 120n,
+      }),
+    ]);
+    expect(fold.directoryRevision()).not.toBe(raceRevision);
+    expect(race(1)?.season_days).toBe(28);
+    expect(buildNativeDirectory(input).games.find(({ game_id }) => game_id === 2)!.quest_bonus_percent).toBeNull();
   });
 
   it("publishes the player's current quest from core's readDailyQuest, including storage-clipped LaborGrant amounts", () => {
@@ -452,14 +475,16 @@ describe("native directory", () => {
       11,
       0,
     );
-    const readQuest = (confirmedBlock: number) =>
+    const readGame = (confirmedBlock: number) =>
       buildNativeDirectory({
         chain: "madara",
         confirmedBlock,
         timestamp: 30,
         fold,
         playerAddress: "0x111",
-      }).games.find(({ game_id }) => game_id === 1)!.player_state?.today_quest;
+      }).games.find(({ game_id }) => game_id === 1)!;
+    expect(readGame(11).quest_bonus_percent).toBe(50);
+    const readQuest = (confirmedBlock: number) => readGame(confirmedBlock).player_state?.today_quest;
     expect(readQuest(11)).toEqual({
       quest_id: expectedQuest,
       progress: 1,

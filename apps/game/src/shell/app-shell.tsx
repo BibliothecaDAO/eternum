@@ -1,6 +1,7 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { Outlet } from "react-router-dom";
 
+import { resetLoadingProgress } from "@/game-entry/loading-progress";
 import { useIdentitySession } from "@/hooks/context/identity-session";
 
 import { useBootDocumentState } from "@/ui/modules/boot-loader";
@@ -17,6 +18,9 @@ import { AppChatConnection } from "./chat/app-chat";
  */
 export const AppShell = () => {
   useBootDocumentState("app-ready");
+  useEffect(() => {
+    resetLoadingProgress();
+  }, []);
   // Back from a spectated game, the signed-in player is no spectator here.
   useOutsidePlaySession();
   const { session } = useIdentitySession();

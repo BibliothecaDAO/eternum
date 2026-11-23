@@ -4,7 +4,7 @@ import react from "@vitejs/plugin-react";
 import fs from "node:fs";
 import path, { resolve } from "path";
 import { visualizer } from "rollup-plugin-visualizer";
-import { ConfigEnv, defineConfig, loadEnv, Plugin, PluginOption, UserConfig } from "vite";
+import { ConfigEnv, defineConfig, loadEnv, PluginOption, UserConfig } from "vite";
 import mkcert from "vite-plugin-mkcert";
 import { VitePWA } from "vite-plugin-pwa";
 import wasm from "vite-plugin-wasm";
@@ -12,41 +12,14 @@ import { resolveRendererViteAliases } from "./src/three/renderer-vite-config";
 import { refuseRetiredVariables } from "./build/retired-env";
 import { PWA_PRECACHE_BUDGET_BYTES, PWA_PRECACHE_FILES } from "./build/pwa-assets.mjs";
 import { createPwaReleasePlugin } from "./build/pwa-release";
-import { APP_ADDRESS, STAGING_ORIGIN } from "./src/config/app-address";
-import { linkPreviewUrl } from "./src/brand/link-preview";
+import { appIdentity, appIdentityHtml } from "./build/app-identity-html";
+import { STAGING_ORIGIN } from "./src/config/app-address";
 import { hashedModels } from "./build/hashed-models";
 import { assetLinks } from "./build/asset-links";
 import { labArtwork } from "./build/lab-artwork";
 import { isDevEnvironment } from "./src/shell/frame/environment";
 import { SHELL_COLORS } from "./src/tokens";
 import llmTxtPlugin from "../game-docs/vite-plugin-llm-txt.mjs";
-
-/**
- * The dev environment's install name and icons (the hatched corner) and its page title, so an installed dev app never
- * passes for the real one. The page's own Dev mark is drawn by the shell (EnvMark).
- */
-const appIdentity = (devEnvironment: boolean) => {
-  const icons = devEnvironment ? "game-dev-" : "game-";
-  return {
-    name: devEnvironment ? "Realms dev" : "Realms",
-    icon: (file: string) => `/images/${icons}${file}`,
-    linkPreview: linkPreviewUrl(devEnvironment),
-  };
-};
-
-/**
- * The page as the environment serves it: its title and icons, and a share card that sends a reader to the live app,
- * unfurling with the environment's own copy of the link preview image.
- */
-const appIdentityHtml = (identity: ReturnType<typeof appIdentity>): Plugin => ({
-  name: "app-identity-html",
-  transformIndexHtml: (html) =>
-    html
-      .replace("<title>Realms</title>", `<title>${identity.name}</title>`)
-      .replaceAll("/images/game-", identity.icon(""))
-      .replaceAll("%LINK_PREVIEW%", identity.linkPreview)
-      .replaceAll("%APP_ADDRESS%", APP_ADDRESS),
-});
 
 // https://vitejs.dev/config/
 export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {

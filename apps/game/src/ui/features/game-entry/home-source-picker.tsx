@@ -10,17 +10,18 @@ import { useHeldRealms } from "@/hooks/use-holdings";
 import { useLayout } from "@/shell/frame/layout";
 import { linkWalletHref } from "@/shell/profile/settings-route";
 import { returnPathOf } from "@/shell/return-path";
+import { realmQuestBonus } from "@/shell/season";
 import { aspectVariables } from "@/tokens";
 import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { Icon } from "@/ui/design-system/icon";
 import { mintedResourceMeaning, orderMeaning } from "@/ui/design-system/icon-meaning";
+import { AppTabs } from "@/ui/design-system/kit/app-elements";
 import { HudLoading } from "@/ui/design-system/kit/hud-elements";
 import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
 import {
   ASPECT_STEP_WORDS,
   HELD_REALMS_UNREADABLE,
   HOME_STEP_WORDS,
-  REALM_SIDE_WORDS,
   TRY_AGAIN,
   numberedRealm,
 } from "@/ui/design-system/kit/words";
@@ -29,6 +30,39 @@ import { HomeArt } from "@/ui/shared/components/home-art";
 import { aspectOfOrder } from "./aspect-picker";
 
 const DESKTOP_VAULT_MAX = 9;
+
+export function EntryModeSwitch({
+  heldCount,
+  playingFree,
+  questBonusPercent = null,
+  disabled = false,
+  onChange,
+}: {
+  heldCount: number;
+  playingFree: boolean;
+  questBonusPercent?: number | null;
+  disabled?: boolean;
+  onChange: (mode: "realm" | "free") => void;
+}) {
+  if (heldCount <= 0) return null;
+  return (
+    <div className="flex flex-col items-center gap-2" data-entry-mode-switch>
+      <AppTabs
+        label={HOME_STEP_WORDS.title}
+        value={playingFree ? "free" : "realm"}
+        disabled={disabled}
+        onChange={onChange}
+        tabs={[
+          { key: "realm", label: HOME_STEP_WORDS.myRealmTab(heldCount) },
+          { key: "free", label: HOME_STEP_WORDS.playFreeTab },
+        ]}
+      />
+      {playingFree && questBonusPercent !== null && questBonusPercent > 0 && (
+        <p className="home-picker__free-note text-center">{HOME_STEP_WORDS.playFreeNote(questBonusPercent)}</p>
+      )}
+    </div>
+  );
+}
 
 export function HomeSourcePicker({
   registered,
@@ -41,11 +75,13 @@ export function HomeSourcePicker({
   onSourceAvailable,
   requireSource = false,
   aspect = null,
+  questBonusPercent = null,
   action,
 }: {
   title?: string;
   requireSource?: boolean;
   aspect?: AspectId | null;
+  questBonusPercent?: number | null;
   takenRealmIds?: readonly number[];
   onSourceAvailable?: (available: boolean) => void;
   registered: number | null;
@@ -95,7 +131,13 @@ export function HomeSourcePicker({
       )}
       <div className="home-picker__shell" data-split={splitDesktop || undefined}>
         {picked ? (
-          <Featured choice={picked} locked={registered !== null} split={splitDesktop} action={action} />
+          <Featured
+            choice={picked}
+            locked={registered !== null}
+            split={splitDesktop}
+            questBonusPercent={questBonusPercent}
+            action={action}
+          />
         ) : sources.ready ? (
           <FreeHome unlinked={sources.wallet === null} action={action} />
         ) : sources.realmsUnreadable ? (
@@ -175,11 +217,13 @@ function Featured({
   choice,
   locked,
   split,
+  questBonusPercent,
   action,
 }: {
   choice: Choice;
   locked: boolean;
   split: boolean;
+  questBonusPercent: number | null;
   action?: ReactNode;
 }) {
   const entry = catalogOrder(choice.order);
@@ -241,12 +285,15 @@ function Featured({
           {locked && <p className="home-picker__sub">{HOME_STEP_WORDS.registered}</p>}
         </div>
       </div>
-      <div className="home-picker__bonus">
-        <span className="home-picker__bonus-label">{REALM_SIDE_WORDS.bonus}</span>
-        <span className="home-picker__bonus-value">
-          <Icon name="labor" size={18} />
-        </span>
-      </div>
+      {questBonusPercent !== null && questBonusPercent > 0 && (
+        <div className="home-picker__bonus">
+          <span className="home-picker__bonus-value">
+            <Icon name="labor" size={18} />
+            {choice.wonder && <Icon name="fragment" size={18} />}
+            {realmQuestBonus(questBonusPercent, Boolean(choice.wonder))}
+          </span>
+        </div>
+      )}
       {action && <div className="home-picker__action">{action}</div>}
     </div>
   );

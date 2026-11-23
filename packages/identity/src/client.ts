@@ -134,9 +134,6 @@ const preparedWalletCallSchema = Schema.Struct({
   fee: Schema.NullOr(Schema.Struct({ estimated: Schema.String, max: Schema.String })),
 });
 export type PreparedWalletCall = typeof preparedWalletCallSchema.Type;
-/** An account's Blitz build orders as saved: their book is the game's to read, with its own build order reader. */
-const savedBuildOrdersSchema = Schema.Struct({ owner: Schema.String, revision: Schema.Number, book: Schema.Unknown });
-export type SavedBuildOrders = typeof savedBuildOrdersSchema.Type;
 /** The moments an account's interface has opened to and the lines it has been told, as sets of the game's own names. */
 const openingProgressSchema = Schema.Struct({
   reached: Schema.Array(Schema.String),
@@ -512,22 +509,6 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
     return readJson(response, parseNotificationPreferences);
   };
 
-  const getBuildOrders = async (): Promise<SavedBuildOrders> =>
-    readJson(await request("/build-orders", { method: "GET", cache: "no-store" }), decode(savedBuildOrdersSchema));
-  /** Saves over the revision it read; a refused order comes back with the game's reason, in the player's words. */
-  const saveBuildOrders = async (saved: SavedBuildOrders): Promise<SavedBuildOrders> => {
-    const response = await request("/build-orders", { method: "POST", body: JSON.stringify(saved) });
-    if (response.status === 409)
-      throw new IdentityRequestError(
-        409,
-        "build_order_conflict",
-        "Your build orders changed on another device. Reload them before saving again.",
-      );
-    if (response.status === 403 || response.status === 401)
-      throw new IdentityRequestError(response.status, "unauthorized", "Your account changed or signed out.");
-    return readJson(response, decode(savedBuildOrdersSchema));
-  };
-
   const getOpeningProgress = async (): Promise<OpeningProgress> =>
     readJson(await request("/opening", { method: "GET", cache: "no-store" }), decode(openingProgressSchema));
   /** Adds moments to the account's sets; adding one it holds changes nothing. */
@@ -658,8 +639,6 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
     updateUser,
     getNotificationPreferences,
     saveNotificationPreferences,
-    getBuildOrders,
-    saveBuildOrders,
     getOpeningProgress,
     addOpeningProgress,
     getOrderIntent,

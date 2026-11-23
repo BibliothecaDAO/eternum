@@ -3,12 +3,17 @@ import type { JoinedShare } from "@realms-world/identity";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { LAB_GUARDIAN, LAB_SESSION } from "@/shell/lab/app-lab-fixtures";
 import { answerLabChat } from "@/shell/lab/lab-chat";
-import { answerLabBuildOrders } from "@/shell/lab/lab-build-orders";
 import { gameChatZoneId } from "@/ui/features/world/containers/hud-chat-window";
 import { L2_LEDGER, l2Provider } from "@/runtime/l2-rpc";
 import { getShardRpcProvider } from "@/utils/shard-rpc-provider";
 import { dayOf, nativeGameModeOfFamily, readExpeditionRules } from "@bibliothecadao/eternum";
-import { NativeFactStore, ordinaryHash, raceFinishHeight, type PlayFrame } from "@bibliothecadao/eternum/game-client";
+import {
+  NativeFactStore,
+  ordinaryHash,
+  questBonusPercent,
+  raceFinishHeight,
+  type PlayFrame,
+} from "@bibliothecadao/eternum/game-client";
 import {
   deriveGameSyncScope,
   type HeraldFrontierLeaderboardEntry,
@@ -332,6 +337,7 @@ const answerDirectory = (
       if (!race) return null;
       return {
         finish_height: raceFinishHeight(race.stage_height),
+        season_days: Number(race.season_days),
         heights: Object.fromEntries(
           aspects.map(({ id }) => [
             id,
@@ -339,6 +345,10 @@ const answerDirectory = (
           ]),
         ),
       };
+    },
+    get quest_bonus_percent() {
+      const rules = chain.get("QuestRules", { game_id: LAB_GAME.gameId });
+      return rules ? questBonusPercent(rules) : null;
     },
     get player_state() {
       return playerStateNow();
@@ -381,7 +391,6 @@ const signInLabPlayer = (wallet: string | undefined, joined: JoinedShare) => {
   const session = wallet ? { ...LAB_SESSION, user: { ...LAB_SESSION.user, address: wallet } } : LAB_SESSION;
   identityClient.getSession = async () => session;
   identityClient.readDefaultWallet = async () => null;
-  answerLabBuildOrders();
   identityClient.joinedShare = async () => joined;
   identityClient.createShare = async ({ kind, gameId, moment }) => `lab-${kind}-${gameId}-${moment}`;
   identityClient.sharePosted = async () => undefined;

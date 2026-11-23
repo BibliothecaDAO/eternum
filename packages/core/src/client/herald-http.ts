@@ -18,10 +18,26 @@ const buildHeraldUrl = (shard: Pick<Shard, "url">, pathname: string): string => 
   return url.toString();
 };
 
+export { HeraldHttpError } from "../sync/herald-http-types";
+
+const readErrorCode = async (response: Response): Promise<string | undefined> => {
+  try {
+    const body = (await response.json()) as { error?: unknown };
+    return typeof body?.error === "string" ? body.error : undefined;
+  } catch {
+    return undefined;
+  }
+};
+
 const fetchHeraldJson = async <Payload>(url: string, description: string): Promise<Payload> => {
   const response = await fetch(url, { signal: AbortSignal.timeout(10_000) });
   if (!response.ok) {
-    throw new HeraldHttpError(`${description} failed: ${response.status} ${response.statusText}`, response.status);
+    const code = await readErrorCode(response);
+    throw new HeraldHttpError(
+      `${description} failed: ${response.status} ${response.statusText}`,
+      response.status,
+      code,
+    );
   }
   return (await response.json()) as Payload;
 };

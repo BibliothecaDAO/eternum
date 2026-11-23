@@ -55,13 +55,15 @@ export const handleDirectory = async (request: Request, dependencies: DirectoryD
 export const handleDirectoryHistory = async (request: Request, dependencies: DirectoryDependencies) => {
   const url = new URL(request.url);
   const player = playerOf(request);
+  const mode = url.searchParams.get("mode");
   const limit = Number(url.searchParams.get("limit") ?? HISTORY_PAGE);
   const cursor = url.searchParams.get("cursor");
   if (player === INVALID) return json({ error: "invalid_player" }, 400);
+  if (mode !== null && !HISTORY_MODES.has(mode)) return json({ error: "invalid_mode" }, 400);
   if (!Number.isInteger(limit) || limit < 1 || limit > HISTORY_PAGE_MAX) return json({ error: "invalid_limit" }, 400);
   if (cursor !== null && !HISTORY_CURSOR.test(cursor)) return json({ error: "invalid_cursor" }, 400);
   const { launchDirectory, listing } = await readListing(request, dependencies, player);
-  const settled = listing === null ? [] : settledGames(listing, launchDirectory, player);
+  const settled = listing === null ? [] : settledGames(listing, launchDirectory, player, mode);
   const after = cursor === null ? settled : settled.filter((game) => historyPosition(game) < positionOfCursor(cursor));
   const games = after.slice(0, limit);
   return json({
@@ -72,15 +74,28 @@ export const handleDirectoryHistory = async (request: Request, dependencies: Dir
   });
 };
 
-const settledGames = (listing: ShardListing, launchDirectory: LaunchDirectory | null, player: string | null) =>
+const settledGames = (
+  listing: ShardListing,
+  launchDirectory: LaunchDirectory | null,
+  player: string | null,
+  mode: string | null,
+) =>
   playerGames(listing, launchDirectory)
-    .filter((game) => isSettled(game) && (player === null || game.player_state?.registered === true))
+    .filter(
+      (game) =>
+        isSettled(game) &&
+        (player === null || game.player_state?.registered === true) &&
+        (mode === null || game.mode === mode),
+    )
     .map((game) => ({ ...game, chainId: listing.chainId, shardUrl: listing.url }))
     .sort((a, b) => historyPosition(b).localeCompare(historyPosition(a)));
 
 const HISTORY_PAGE = 20;
 const HISTORY_PAGE_MAX = 100;
 const HISTORY_CURSOR = /^\d+:0x[0-9a-f]+:\d+$/;
+const HISTORY_MODES = new Set<string>(
+  Object.keys({ blitz: true, eternum: true, frontier: true } satisfies Record<HeraldGameDirectoryEntry["mode"], true>),
+);
 const INVALID = Symbol("invalid player");
 
 const playerOf = (request: Request): string | null | typeof INVALID => {

@@ -9,13 +9,7 @@ import {
   type TroopType,
 } from "@bibliothecadao/types";
 
-import {
-  blitzBuildingResource,
-  type BuildOrder,
-  type BuildOrderStep,
-  buildOrderTarget,
-  DEFAULT_BUILD_ORDER,
-} from "./build-order";
+import { blitzBuildingResource, DEFAULT_BUILD_STEPS, type DefaultBuildStep } from "./build-order";
 
 export type EmpireSuggestionAction = "build" | "deploy-army" | "upgrade";
 
@@ -193,31 +187,14 @@ const createDeploySuggestion = (
   };
 };
 
-/**
- * A level up the order places: done once the realm is past its rank; at its rank, the level up when the realm can pay
- * for it, else the order waits for it.
- */
-const resolveLevelUpStep = (input: BlitzRealmSuggestionInput, step: BuildOrderStep): StepVerdict =>
-  step.rank < input.realmLevel ? "passes" : (resolveUpgradeSuggestion(input) ?? "holds");
-
-const resolveStep = (input: BlitzRealmSuggestionInput, step: BuildOrderStep): StepVerdict => {
-  const target = buildOrderTarget(step.goal);
-  if (target.kind === "building") return resolveBuildingStep(input, target.building, step.count);
-  if (target.kind === "barracks") return resolveBarracksStep(input, target.tier, step.count);
-  if (target.kind === "army") return resolveArmyStep(input, target.tier, step.count);
-  return resolveLevelUpStep(input, step);
+const resolveStep = (input: BlitzRealmSuggestionInput, step: DefaultBuildStep): StepVerdict => {
+  if (step.kind === "building") return resolveBuildingStep(input, step.building, step.count);
+  if (step.kind === "barracks") return resolveBarracksStep(input, step.tier, step.count);
+  return resolveArmyStep(input, step.tier, step.count);
 };
 
-/** Whether the order places the realm's level up at its rank itself, so it waits its turn instead of coming first. */
-const ordersLevelUp = (input: BlitzRealmSuggestionInput, order: BuildOrder): boolean =>
-  order.steps.some((step) => step.goal === "levelUp" && step.rank === input.realmLevel);
-
-/**
- * The order's next step for the realm: the first step of its rank or lower that does not pass, offered only once it
- * can be taken. An order is a sequence: a step waiting on resources holds the ones after it.
- */
-const resolveOrderSuggestion = (input: BlitzRealmSuggestionInput, order: BuildOrder): BlitzSuggestionDraft | null => {
-  for (const step of order.steps) {
+const resolveOrderSuggestion = (input: BlitzRealmSuggestionInput): BlitzSuggestionDraft | null => {
+  for (const step of DEFAULT_BUILD_STEPS) {
     if (step.rank > input.realmLevel) continue;
     const verdict = resolveStep(input, step);
     if (verdict === "holds") return null;
@@ -226,16 +203,8 @@ const resolveOrderSuggestion = (input: BlitzRealmSuggestionInput, order: BuildOr
   return null;
 };
 
-/**
- * A realm's one next step in a running Blitz: level up whenever it can (unless the order places that level up itself),
- * then the order's next step. The default order is the owner's.
- */
-export const buildBlitzRealmSuggestions = (
-  input: BlitzRealmSuggestionInput,
-  order: BuildOrder = DEFAULT_BUILD_ORDER,
-): BlitzSuggestionDraft[] => {
+export const buildBlitzRealmSuggestions = (input: BlitzRealmSuggestionInput): BlitzSuggestionDraft[] => {
   if (!input.isBlitzActive) return [];
-  const levelUpFirst = ordersLevelUp(input, order) ? null : resolveUpgradeSuggestion(input);
-  const suggestion = levelUpFirst ?? resolveOrderSuggestion(input, order);
+  const suggestion = resolveUpgradeSuggestion(input) ?? resolveOrderSuggestion(input);
   return suggestion ? [suggestion] : [];
 };

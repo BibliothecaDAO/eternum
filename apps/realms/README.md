@@ -1,8 +1,8 @@
 # Rating reads
 
-Ratings are keyed by the L2 wallet that played. `/api/ratings?players=<wallets>` accepts at most 100 wallets and an
-optional `block_hash`; `/api/ratings/top?player=<wallet>&limit=<count>` returns the ranking and that wallet's position.
-Changing a wallet link cannot retarget a historical game's rating. Account and Realms-id rating queries are refused.
+Ratings are keyed by the L2 wallet that played. `/api/ratings/top?player=<wallet>&limit=<count>` returns the ranking and
+that wallet's position. Changing a wallet link cannot retarget a historical game's rating. Account and Realms-id rating
+queries are refused.
 
 Every request reads token values at one verified L2 block. A named hash is read directly from the provider; latest reads
 resolve a confirmed header first. No rating values or rankings are stored in the Worker. Token calls are batched in
