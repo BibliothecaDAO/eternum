@@ -8,19 +8,15 @@ import {
   damageDealtEffect,
   damageTakenEffect,
   fromToEffect,
-  insteadOfEffect,
   percentFromTo,
   readPickEffectBase,
   staminaRecoveryEffect,
 } from "./pick-effect-text";
 
 describe("shared pick-effect text builder", () => {
-  it("formats contextual from-to, instead-of, and shared stat lines", () => {
+  it("formats contextual from-to and shared stat lines", () => {
     expect(fromToEffect("Deep troop loss", "200", "100 per tick", "less")).toBe(
       "Deep troop loss: 200 → 100 per tick (less)",
-    );
-    expect(insteadOfEffect("Guaranteed find after", "4 empty reveals", "7")).toBe(
-      "Guaranteed find after 4 empty reveals instead of 7",
     );
     expect(RESEARCH_TREE.less).toBe(`(${PICK_EFFECT_WORDS.less})`);
     expect(percentFromTo("Damage taken", 100, 85, "less")).toBe("Damage taken: 100% → 85% (less)");
@@ -39,7 +35,6 @@ describe("shared pick-effect text builder", () => {
       maxStamina: undefined,
       staminaPerSecond: undefined,
       deepLossPerTick: undefined,
-      emptyRevealLimit: undefined,
     });
     store.applyFacts([
       {
@@ -74,7 +69,6 @@ describe("shared pick-effect text builder", () => {
       maxStamina: 200,
       staminaPerSecond: 1 / 60,
       deepLossPerTick: 350,
-      emptyRevealLimit: release.definition.economy.discovery.Some.empty_reveal_limit,
     });
   });
 });
