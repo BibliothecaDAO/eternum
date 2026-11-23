@@ -37,7 +37,6 @@ const season = {
 const lead = (verb: "play" | "resume") => (game: DirectoryGame) => {
   const item: PlayItem = {
     key: "0x1:1",
-    mode: "frontier",
     verb,
     mine: verb === "resume",
     game,

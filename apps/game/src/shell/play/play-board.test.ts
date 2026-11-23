@@ -55,7 +55,7 @@ const finishedBlitz = game("blitz", { game_id: 9, status: "Settled" });
 
 const leadOf = (input: PlayBoardFacts) => {
   const { lead } = playBoard(input);
-  return lead ? `${lead.mode} ${lead.verb ?? "—"}` : "none";
+  return lead ? (lead.verb ?? "—") : "none";
 };
 
 describe("a rehearsal beside the season", () => {
@@ -92,20 +92,16 @@ describe("a rehearsal beside the season", () => {
 
 describe("the lead: the one gold verb, first match wins", () => {
   it.each<[string, PlayBoardFacts, string]>([
-    ["a Frontier day under way: Resume", facts({ games: [withRealm(frontier)] }), "frontier resume"],
-    ["a season over and unseen, with no season live: Results", facts({ games: [endedSeason] }), "frontier results"],
+    ["a Frontier day under way: Resume", facts({ games: [withRealm(frontier)] }), "resume"],
+    ["a season over and unseen, with no season live: Results", facts({ games: [endedSeason] }), "results"],
     ["a finished Blitz never leads Play", facts({ finished: [finishedBlitz] }), "none"],
     [
       "no realm in the live season, with a result unseen: Play the season first, as with no result",
       facts({ games: [frontier, endedSeason], finished: [finishedBlitz] }),
-      "frontier play",
+      "play",
     ],
-    ["signed in with no realm: Play", facts({ games: [frontier] }), "frontier play"],
-    [
-      "signed out: Play (free), never a result",
-      facts({ signedIn: false, games: [frontier, endedSeason] }),
-      "frontier play",
-    ],
+    ["signed in with no realm: Play", facts({ games: [frontier] }), "play"],
+    ["signed out: Play (free), never a result", facts({ signedIn: false, games: [frontier, endedSeason] }), "play"],
     ["a live Blitz in the directory offers nothing", facts({ games: [game("blitz", { game_id: 7 })] }), "none"],
     ["a retired mode never offers entry", facts({ games: [game("eternum", { status: "Registration" })] }), "none"],
     ["nothing live or scheduled: no lead", facts({}), "none"],
@@ -114,7 +110,7 @@ describe("the lead: the one gold verb, first match wins", () => {
   });
 
   it("does not resume a season that has not started its days", () => {
-    expect(leadOf(facts({ games: [withRealm({ ...frontier, status: "Registration" })] }))).toBe("frontier play");
+    expect(leadOf(facts({ games: [withRealm({ ...frontier, status: "Registration" })] }))).toBe("play");
   });
 });
 

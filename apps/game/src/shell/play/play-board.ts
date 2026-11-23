@@ -3,13 +3,10 @@ import { isGameOver } from "@/runtime/world/directory";
 import type { DirectoryGame } from "../herald";
 import { chooseSeason, isRehearsal, seasonRealm } from "../season";
 
-type PlayMode = "frontier";
-
 type PlayVerb = "resume" | "play" | "results";
 
 export type PlayItem = {
   key: string;
-  mode: PlayMode;
   verb: PlayVerb | null;
   mine: boolean;
   game: DirectoryGame;
@@ -34,7 +31,7 @@ export const gameKey = (game: Pick<DirectoryGame, "chainId" | "game_id">) => `${
 
 const LEAD_ORDER: readonly ((item: PlayItem) => boolean)[] = [
   (item) => item.verb === "resume",
-  (item) => item.mode === "frontier" && item.verb === "play",
+  (item) => item.verb === "play",
   (item) => item.verb === "results",
 ];
 
@@ -46,9 +43,8 @@ export const playBoard = (facts: PlayBoardFacts): PlayBoard => {
   return { lead, rehearsals, results };
 };
 
-const gameItem = (game: DirectoryGame, mode: PlayMode, verb: PlayVerb | null, mine: boolean): PlayItem => ({
+const gameItem = (game: DirectoryGame, verb: PlayVerb | null, mine: boolean): PlayItem => ({
   key: gameKey(game),
-  mode,
   verb,
   mine,
   game,
@@ -58,8 +54,8 @@ const frontierItems = ({ games, signedIn }: PlayBoardFacts): PlayItem[] => {
   const season = chooseSeason(games, signedIn);
   if (!season) return [];
   const live = season.status === "Live";
-  if (signedIn && live && seasonRealm(season)) return [gameItem(season, "frontier", "resume", true)];
-  return [gameItem(season, "frontier", "play", false)];
+  if (signedIn && live && seasonRealm(season)) return [gameItem(season, "resume", true)];
+  return [gameItem(season, "play", false)];
 };
 
 const rehearsalItems = ({ games, signedIn }: PlayBoardFacts): PlayItem[] =>
@@ -69,7 +65,7 @@ const rehearsalItems = ({ games, signedIn }: PlayBoardFacts): PlayItem[] =>
     .map((game) => {
       const live = game.status === "Live";
       const mine = signedIn && seasonRealm(game) !== undefined;
-      return gameItem(game, "frontier", live && mine ? "resume" : "play", mine);
+      return gameItem(game, live && mine ? "resume" : "play", mine);
     });
 
 const resultItems = ({ signedIn, games, finished, seenResults }: PlayBoardFacts): PlayItem[] => {
@@ -81,7 +77,7 @@ const resultItems = ({ signedIn, games, finished, seenResults }: PlayBoardFacts)
     (game) => game.mode === "frontier" && !isRehearsal(game) && !seenResults.has(gameKey(game)),
   );
   const newest = unseen[0];
-  return newest ? [gameItem(newest, "frontier", "results", true)] : [];
+  return newest ? [gameItem(newest, "results", true)] : [];
 };
 
 export const holdsNothing = (board: PlayBoard): boolean =>

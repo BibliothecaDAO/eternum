@@ -39,7 +39,7 @@ export const PlayPage = () => {
       <SeasonCountdown opening={facts.opening} now={facts.now} />
     );
   const firstVisit = !facts.signedIn && facts.board?.lead?.verb === "play";
-  const leadFrontier = facts.board?.lead?.mode === "frontier" ? facts.board.lead.game : null;
+  const leadFrontier = facts.board?.lead?.game ?? null;
   const leadRace = leadFrontier?.aspect_race ?? null;
   const hasActiveRealm = leadFrontier !== null && leadFrontier.status === "Live" && seasonRealm(leadFrontier) !== null;
   const playerAspect = facts.signedIn ? seasonPlayerAspect(leadFrontier) : null;

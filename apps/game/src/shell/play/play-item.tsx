@@ -115,19 +115,19 @@ const ItemVerbButton = ({
 type ItemProps = { item: PlayItem; now: number; signedIn: boolean };
 
 export const LeadCard = ({ item, now, signedIn, className }: ItemProps & { className?: string }) => {
-  const age = ageOf(item.mode);
-  if (item.mode === "frontier" && item.verb !== "results") {
+  const age = ageOf("frontier");
+  if (item.verb !== "results") {
     return <FrontierHeroCard item={item} now={now} signedIn={signedIn} className={className} />;
   }
   return (
     <div data-play-item={item.key} className={className}>
       <AppGameCard
-        age={item.mode}
+        age="frontier"
         painting={age.painting}
         size="lead"
         className="h-full"
-        title={<AppGameName age={item.mode} name={age.name} when={startOf(item)} />}
-        facts={<ItemFacts item={item} now={now} firstVisit={!signedIn && item.verb === "play"} />}
+        title={<AppGameName age="frontier" name={age.name} when={startOf(item)} />}
+        facts={<ItemFacts item={item} now={now} firstVisit={false} />}
         verb={<ItemVerbButton item={item} signedIn={signedIn} lead />}
         idle={idleCard([item])}
       />
