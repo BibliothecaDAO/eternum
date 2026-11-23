@@ -178,6 +178,7 @@ async function createRaceRuntime(input: MountAspectRaceRendererInput): Promise<R
     terrain = await createWorldTerrain();
     scene.add(terrain.object3d);
     atmosphere = createWorldLighting(scene, target);
+    renderer.setClearColor(scene.background as Color, 1);
     const compile = createPipelineCompiler({ getRenderer: () => renderer, getCamera: () => camera });
     hyperstructures = await createHyperstructures(scene, compile);
     applyTowers(hyperstructures, terrain, input.standings, input.finishHeight);
@@ -231,7 +232,7 @@ async function createRenderer(
 }
 
 async function createWorldTerrain(): Promise<ProceduralTerrain> {
-  const terrain = new ProceduralTerrain({ streaming: true, gameMode: "frontier" });
+  const terrain = new ProceduralTerrain({ streaming: false, gameMode: "frontier" });
   try {
     await terrain.loadProps();
     const request = createAspectRaceTerrainRequest();
@@ -252,14 +253,9 @@ function createWorldLighting(scene: Scene, target: Vector3): WorldAtmosphereCont
   const sun = new DirectionalLight();
   configureWorldSunShadows(sun, true, SHADOW_MAP_SIZE);
   scene.add(ambient, hemisphere, sun, sun.target);
-  const atmosphere = new WorldAtmosphereController(
-    scene,
-    sun,
-    hemisphere,
-    ambient,
-    new Fog(TERRAIN_DEEP_FOG_COLOR),
-    "frontier",
-  );
+  const fog = new Fog(TERRAIN_DEEP_FOG_COLOR, 18, 46);
+  scene.fog = fog;
+  const atmosphere = new WorldAtmosphereController(scene, sun, hemisphere, ambient, fog, "frontier");
   atmosphere.update(RACE_DAYLIGHT_PROGRESS, target, { snap: true, environment: "world" });
   return atmosphere;
 }

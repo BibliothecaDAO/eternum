@@ -15,6 +15,8 @@
 }
 
 .race-stage__canvas {
+  position: relative;
+  z-index: 1;
   display: block;
   width: 100%;
   height: 100%;
@@ -23,6 +25,7 @@
 .race-stage__plates {
   position: absolute;
   inset: 0;
+  z-index: 2;
   pointer-events: none;
 }
 
@@ -32,5 +35,9 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  filter: drop-shadow(0 2px 4px var(--hud-surface));
+  padding: theme(spacing.1);
+  border: 1px solid var(--hud-line);
+  border-radius: var(--hud-radius-round);
+  background: var(--hud-surface-to);
+  box-shadow: var(--hud-shadow-control);
 }

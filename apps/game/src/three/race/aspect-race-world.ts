@@ -39,8 +39,8 @@ export const RACE_DAYLIGHT_PROGRESS = 54;
 const COLUMNS = 23;
 const ROWS = 11;
 const CAMERA_FOV = 30;
-const TOWER_TARGET_Y = 1.45;
-const PLATE_Z_OFFSET = 0.85;
+const TOWER_TARGET_Y = 1.75;
+const PLATE_Z_OFFSET = 1.15;
 
 /** Builds an explored world-terrain patch using the game's real biomes around the four tower hexes. */
 export function createAspectRaceTerrainRequest(): TerrainPageRequest {
@@ -93,9 +93,9 @@ export function frameAspectRaceCamera(camera: PerspectiveCamera): Vector3 {
   const halfFovRad = (camera.fov * Math.PI) / 360;
   const aspect = Math.max(camera.aspect, 0.5);
   const idealHorizSpan = Math.abs(last.x - first.x) / 0.72;
-  const vertSpan = Math.max(4.6, idealHorizSpan / aspect);
+  const vertSpan = Math.max(5.4, idealHorizSpan / aspect);
   const distance = vertSpan / (2 * Math.tan(halfFovRad));
-  camera.position.set(center.x, center.y + distance * 0.36, center.z + distance * 0.93);
+  camera.position.set(center.x, center.y + distance * 0.26, center.z + distance * 0.96);
   camera.lookAt(center);
   camera.updateMatrixWorld();
   return center;
