@@ -544,7 +544,7 @@ describe("native directory", () => {
       quest_id: nativeQuestConstants.STAND,
       progress: 2,
       target: 3,
-      labor: 1500,
+      labor: 3000,
     });
     expect(directory.player_state?.today_quest).toEqual({
       quest_id: core.quest.id,
