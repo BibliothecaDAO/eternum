@@ -42,7 +42,7 @@ import { ageOf } from "../play/ages";
 import { useSeasonInvite } from "../play/season-invite";
 import { OwnRatingLine } from "../rating-line";
 import { returnPathOf } from "../return-path";
-import { chooseSeason } from "../season";
+import { chooseSeason, SEASON_SPENDS_FRAGMENTS } from "../season";
 import { HistoryRow } from "../season-tab/history-row";
 import { fragmentsHref } from "../shop/fragments-route";
 import { useNowSeconds } from "../use-now";
@@ -178,9 +178,11 @@ export const PlayerCard = ({ account, own }: { account: string; own: boolean }) 
           )}
           {own && (
             <div className="profile-actions">
-              <AppButton kind="primary" icon="fragment" to={topUpTo} className="w-full">
-                {FRAGMENTS_PAGE_WORDS.title}
-              </AppButton>
+              {SEASON_SPENDS_FRAGMENTS && (
+                <AppButton kind="primary" icon="fragment" to={topUpTo} className="w-full">
+                  {FRAGMENTS_PAGE_WORDS.title}
+                </AppButton>
+              )}
               {standingAspect !== null ? (
                 <InviteAction aspect={standingAspect} />
               ) : (

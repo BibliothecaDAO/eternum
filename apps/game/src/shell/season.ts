@@ -1,5 +1,5 @@
 import { aspectLordsWorth, formatDate } from "@bibliothecadao/types";
-import { raceFinishHeight } from "@bibliothecadao/eternum/game-client";
+import { raceFinishHeight, spendsFragments } from "@bibliothecadao/eternum/game-client";
 
 import { isGameOver } from "@/runtime/world/directory";
 import { PLAY_WORDS, SEASON } from "@/ui/design-system/kit/words";
@@ -81,6 +81,8 @@ export const seasonTitle = (season: Pick<DirectoryGame, "season_number" | "chain
 /** An ended season and the day it ended, "Playtest · Ended 31 Oct". */
 export const seasonEnded = (season: DirectoryGame): string =>
   `${seasonTitle(season)} · ${PLAY_WORDS.ended} ${formatDate(season.clock.end_at)}`;
+
+export const SEASON_SPENDS_FRAGMENTS = spendsFragments({ command_mask: BigInt(release.definition.rules.command_mask) });
 
 export type SeasonOpening = { startsAt: number; seasonDays: number | null; aspectLords: number | null };
 

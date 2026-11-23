@@ -543,28 +543,19 @@ fn a_new_army_holds_two_oaths_before_any_research_and_refuses_a_third_without_a_
 }
 
 #[test]
-fn a_reroll_costs_its_fragments_and_redraws_one_card_of_a_pick_once_from_the_oaths_neither_held_nor_shown() {
+fn a_reroll_costs_its_fragments_and_redraws_one_card_from_the_oaths_neither_held_nor_shown() {
     let (d, game_id, key) = super::registrar::setup_frontier_relics();
-    let offer: u16 = Into::<u8, u16>::into(crate::oaths::POWER - 1)
-        + Into::<u8, u16>::into(crate::oaths::FOX - 1) * 16
-        + Into::<u8, u16>::into(crate::oaths::SKILL - 1) * 256;
+    let offer = reroll_offer();
     let price: u128 = crate::fragments::OATH_REROLL_FRAGMENTS.into();
     open_pick(d, key, offer);
-    earn_fragments(d, game_id, price - 1);
-    assert!(!reroll_card(d, key, offer, 1, FIXTURE_START + 10));
-    assert_eq!(read_progress(d, key).oath_pick, offer);
-    earn_fragments(d, game_id, price + 1);
-    assert!(reroll_card(d, key, offer, 1, FIXTURE_START + 10));
+    earn_fragments(d, game_id, price * 2);
+    reroll_card(d, key, offer, 1, FIXTURE_START + 10);
     let rerolled = read_progress(d, key).oath_pick;
     let redrawn = card(rerolled, 1);
     assert_eq!(card(rerolled, 0), crate::oaths::POWER);
     assert_eq!(card(rerolled, 2), crate::oaths::SKILL);
     assert!(redrawn != crate::oaths::POWER && redrawn != crate::oaths::FOX && redrawn != crate::oaths::SKILL);
     assert_eq!(rerolled / crate::oaths::REROLLED, 1);
-    assert_eq!(fragments(d, game_id), price);
-    assert!(!reroll_card(d, key, rerolled, 1, FIXTURE_START + 11));
-    assert!(!reroll_card(d, key, rerolled, 0, FIXTURE_START + 11));
-    assert!(!reroll_card(d, key, offer, 0, FIXTURE_START + 11));
     assert_eq!(fragments(d, game_id), price);
     let take = ChooseOath { explorer_id: key.explorer_id, expected_pick: rerolled, oath: Some(redrawn), replace: None };
     assert!(
@@ -574,22 +565,77 @@ fn a_reroll_costs_its_fragments_and_redraws_one_card_of_a_pick_once_from_the_oat
     );
     assert_eq!(read_progress(d, key).oaths, crate::oaths::bit(redrawn));
     assert_eq!(read_progress(d, key).oath_pick, 0);
+}
+
+#[test]
+#[should_panic(expected: "not enough fragments")]
+fn a_reroll_needs_its_fragments() {
+    let (d, game_id, key) = super::registrar::setup_frontier_relics();
+    open_pick(d, key, reroll_offer());
+    earn_fragments(d, game_id, crate::fragments::OATH_REROLL_FRAGMENTS.into() - 1);
+    reroll_card(d, key, reroll_offer(), 1, FIXTURE_START + 10);
+}
+
+#[test]
+#[should_panic(expected: "oath pick already rerolled")]
+fn a_pick_is_rerolled_once() {
+    let (d, game_id, key) = super::registrar::setup_frontier_relics();
+    open_pick(d, key, reroll_offer());
+    earn_fragments(d, game_id, crate::fragments::OATH_REROLL_FRAGMENTS.into() * 2);
+    reroll_card(d, key, reroll_offer(), 1, FIXTURE_START + 10);
+    reroll_card(d, key, read_progress(d, key).oath_pick, 0, FIXTURE_START + 11);
+}
+
+#[test]
+#[should_panic(expected: "oath pick changed")]
+fn a_reroll_of_a_pick_already_redrawn_is_refused() {
+    let (d, game_id, key) = super::registrar::setup_frontier_relics();
+    open_pick(d, key, reroll_offer());
+    earn_fragments(d, game_id, crate::fragments::OATH_REROLL_FRAGMENTS.into() * 2);
+    reroll_card(d, key, reroll_offer(), 1, FIXTURE_START + 10);
+    reroll_card(d, key, reroll_offer(), 0, FIXTURE_START + 11);
+}
+
+#[test]
+#[should_panic(expected: "no oath left to reroll")]
+fn no_card_is_rerolled_when_every_other_oath_is_held() {
+    let (d, game_id, key) = super::registrar::setup_frontier_relics();
     let shown = crate::oaths::bit(crate::oaths::POWER)
         | crate::oaths::bit(crate::oaths::FOX)
         | crate::oaths::bit(crate::oaths::SKILL);
     hold_oaths(d, key, 65535 ^ shown);
-    open_pick(d, key, offer);
-    assert!(!reroll_card(d, key, offer, 2, FIXTURE_START + 13));
-    hold_oaths(d, key, 0);
-    super::progression::place_army_at_depth(d, key, 3);
-    assert!(!reroll_card(d, key, offer, 2, FIXTURE_START + 14));
-    assert_eq!(fragments(d, game_id), price);
-    assert_eq!(read_progress(d, key).oath_pick, offer);
+    open_pick(d, key, reroll_offer());
+    earn_fragments(d, game_id, crate::fragments::OATH_REROLL_FRAGMENTS.into());
+    reroll_card(d, key, reroll_offer(), 2, FIXTURE_START + 13);
 }
 
-fn reroll_card(d: super::Deployment, key: crate::troops::ExplorerKey, pick: u16, index: u8, timestamp: u64) -> bool {
+#[test]
+#[should_panic(expected: "no oath is rerolled in the Deep")]
+fn no_card_is_rerolled_in_the_deep() {
+    let (d, game_id, key) = super::registrar::setup_frontier_relics();
+    open_pick(d, key, reroll_offer());
+    earn_fragments(d, game_id, crate::fragments::OATH_REROLL_FRAGMENTS.into());
+    super::progression::place_army_at_depth(d, key, 3);
+    reroll_card(d, key, reroll_offer(), 2, FIXTURE_START + 14);
+}
+
+fn reroll_offer() -> u16 {
+    Into::<u8, u16>::into(crate::oaths::POWER - 1)
+        + Into::<u8, u16>::into(crate::oaths::FOX - 1) * 16
+        + Into::<u8, u16>::into(crate::oaths::SKILL - 1) * 256
+}
+
+fn reroll_card(d: super::Deployment, key: crate::troops::ExplorerKey, pick: u16, index: u8, timestamp: u64) {
     let reroll = RerollOath { explorer_id: key.explorer_id, expected_pick: pick, index };
-    super::resource_commands::execute_in_game(d, key.game_id, crate::commands::Command::RerollOath(reroll), timestamp)
+    snforge_std::interact_with_state(
+        d.games,
+        || crate::logic::oaths::reroll(
+            key.game_id,
+            d.actor,
+            reroll,
+            crate::commands::action_context(crate::commands::load_context(key.game_id, 987654321, timestamp)),
+        ),
+    );
 }
 
 fn earn_fragments(d: super::Deployment, game_id: u32, amount: u128) {

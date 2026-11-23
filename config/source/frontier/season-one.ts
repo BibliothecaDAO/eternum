@@ -139,5 +139,12 @@ export const frontierSeasonOnePreset = {
   },
   chests: null,
   commandMask:
-    frontierPreset.commandMask | BigInt(nativeCommandBits.ApplyRelic) | BigInt(nativeCommandBits.ClaimDailyQuest),
+    (frontierPreset.commandMask &
+      ~(
+        BigInt(nativeCommandBits.BuySeal) |
+        BigInt(nativeCommandBits.BuyStamina) |
+        BigInt(nativeCommandBits.RerollOath)
+      )) |
+    BigInt(nativeCommandBits.ApplyRelic) |
+    BigInt(nativeCommandBits.ClaimDailyQuest),
 } satisfies NativePreset;
