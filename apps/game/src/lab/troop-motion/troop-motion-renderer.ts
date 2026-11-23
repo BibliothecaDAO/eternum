@@ -551,8 +551,8 @@ export async function mountTroopMotionLab(input: MountTroopMotionInput): Promise
       camera.fov = compare ? 38 : 34;
       camera.position.set(
         0,
-        groundY + (compare ? (isScout ? 2.1 : 1.82) : 1.56),
-        compare ? (isScout ? 5.5 : 4.85) : 3.65,
+        groundY + (compare ? (isScout ? 3.1 : 2.75) : 1.56),
+        compare ? (isScout ? 9.4 : 8.4) : 3.65,
       );
       controls.target.set(0, targetY, 0);
     } else if (compare) {

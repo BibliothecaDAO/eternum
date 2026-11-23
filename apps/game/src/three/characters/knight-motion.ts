@@ -34,7 +34,7 @@ export function resolveKnightLiveCadence(
   elapsedSeconds: number,
   action: ProceduralMeleeUpperBodyPose,
 ): KnightLiveCadence | undefined {
-  if (elapsedSeconds <= 0 || config.animationMode === "mounted") return undefined;
+  if (elapsedSeconds <= 0 || config.animationMode === "mounted" || config.animationMode === "run") return undefined;
   const attackIntensity = Math.max(
     action.windupProgress,
     action.strikeProgress,
@@ -47,7 +47,7 @@ export function resolveKnightLiveCadence(
   if (config.animationMode === "idle") {
     return resolveKnightIdleCadence(elapsedSeconds, seedPhase, weight);
   }
-  return resolveKnightMarchCadence(gait.phaseRadians, config.animationMode === "run" ? 1.32 : 1, weight);
+  return resolveKnightMarchCadence(gait.phaseRadians, weight);
 }
 
 function resolveKnightIdleCadence(elapsedSeconds: number, seedPhase: number, weight: number): KnightLiveCadence {
@@ -55,30 +55,30 @@ function resolveKnightIdleCadence(elapsedSeconds: number, seedPhase: number, wei
   const sway = Math.sin(elapsedSeconds * 0.92 + seedPhase * 0.7);
   const scan = Math.sin(elapsedSeconds * 0.68 + seedPhase * 1.3);
   return {
-    chestLift: breath * 0.0045 * weight,
-    headPitchDegrees: breath * 1.8 * weight,
-    headYawDegrees: scan * 6.5 * weight,
-    leftElbowDelta: [0.003 * weight, 0.003 * breath * weight, 0.002 * sway * weight],
-    leftWristDelta: [0.004 * weight, 0.005 * breath * weight, 0.004 * sway * weight],
-    rightElbowDelta: [-0.003 * weight, 0.003 * breath * weight, -0.002 * sway * weight],
-    rightWristDelta: [-0.005 * weight, 0.006 * breath * weight, -0.004 * sway * weight],
-    spineTwistDegrees: sway * 2.4 * weight,
+    chestLift: breath * 0.0022 * weight,
+    headPitchDegrees: breath * 1.4 * weight,
+    headYawDegrees: scan * 4.8 * weight,
+    leftElbowDelta: [0.0012 * weight, 0.0018 * breath * weight, 0.0012 * sway * weight],
+    leftWristDelta: [0.0014 * weight, 0.0022 * breath * weight, 0.0014 * sway * weight],
+    rightElbowDelta: [-0.0012 * weight, 0.0018 * breath * weight, -0.0012 * sway * weight],
+    rightWristDelta: [-0.0016 * weight, 0.0024 * breath * weight, -0.0014 * sway * weight],
+    spineTwistDegrees: sway * 1.1 * weight,
   };
 }
 
-function resolveKnightMarchCadence(phaseRadians: number, boost: number, weight: number): KnightLiveCadence {
+function resolveKnightMarchCadence(phaseRadians: number, weight: number): KnightLiveCadence {
   const stride = Math.sin(phaseRadians);
   const doubleStride = Math.cos(phaseRadians * 2);
-  const scale = boost * weight;
+  const forwardSwing = Math.abs(stride);
   return {
-    chestLift: doubleStride * 0.005 * scale,
-    headPitchDegrees: doubleStride * 2.6 * scale,
-    headYawDegrees: -stride * 3.5 * scale,
-    leftElbowDelta: [0.006 * weight, 0.005 * doubleStride * scale, -0.009 * stride * scale],
-    leftWristDelta: [0.008 * weight, (0.006 + 0.008 * doubleStride) * scale, -0.014 * stride * scale],
-    rightElbowDelta: [-0.008 * weight, 0.006 * doubleStride * scale, 0.014 * stride * scale],
-    rightWristDelta: [-0.012 * weight, (0.005 + 0.011 * doubleStride) * scale, 0.022 * stride * scale],
-    spineTwistDegrees: -stride * 5.2 * scale,
+    chestLift: doubleStride * 0.003 * weight,
+    headPitchDegrees: doubleStride * 1.6 * weight,
+    headYawDegrees: -stride * 1.8 * weight,
+    leftElbowDelta: [0.008 * weight, -0.004 * weight, 0.004 * forwardSwing * weight],
+    leftWristDelta: [0.01 * weight, -0.005 * weight, 0.006 * forwardSwing * weight],
+    rightElbowDelta: [-0.006 * weight, 0.004 * doubleStride * weight, 0.012 * stride * weight],
+    rightWristDelta: [-0.01 * weight, 0.006 * doubleStride * weight, 0.018 * stride * weight],
+    spineTwistDegrees: -stride * 3.2 * weight,
   };
 }
 
