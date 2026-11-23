@@ -13,6 +13,7 @@ import {
 import {
   isDeepTile,
   nativeFragmentConstants,
+  nativeOathConstants,
   nativeResearchConstants as research,
   nativeRuleConstants,
   RACE_MODELS,
@@ -20,7 +21,7 @@ import {
   safeInteger,
   type NativeRows,
 } from "@bibliothecadao/eternum/game-client";
-import { RealmLevels } from "@bibliothecadao/types";
+import { RealmLevels, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { useEffect } from "react";
 
 import type { OpeningRules } from "@/ui/design-system/kit/words";
@@ -28,7 +29,6 @@ import { FIRST_BUILD } from "../build/first-build";
 import { useDockArmies } from "../hud/dock-armies";
 import { useRacesAspects } from "../aspect/races-aspects";
 import { useRealmStores } from "../realm-stores";
-import { useFragmentsHeld } from "../value/fragments";
 import { type Opened, type OpeningMoment } from "./opening";
 import {
   type OpeningHeld,
@@ -43,6 +43,7 @@ import { flush, loadOpening, reachMoments, seeLine, useOpeningStore } from "./op
 
 const KNOWLEDGE_MODELS = ["RealmKnowledge"] as const;
 const RELIC_MODELS = ["ArmyRelics"] as const;
+const PROGRESS_MODELS = ["ArmyProgress"] as const;
 
 /** How often a failed read or send is tried again while the HUD is up. */
 const RETRY_MS = 15_000;
@@ -110,11 +111,14 @@ function useOpeningRules(rules: ExpeditionRules, realm: NativeRows["Structure"] 
   if (!realm || troops === undefined) return null;
   const barracks = getBuildingQuantity(safeInteger(realm.entity_id), FIRST_BUILD, setup.store);
   const slice = setup.store.get("SliceRules", { game_id: realm.game_id });
-  if (!slice) return null;
+  const deep = setup.store.get("DeepRules", { game_id: realm.game_id });
+  if (!slice || !deep) return null;
   const tickSeconds = Number(slice.tick_config.armies_tick_in_seconds);
   return {
     knightsAnHour: troops / Math.max(1, barracks),
     deepTickSeconds: tickSeconds,
+    deepLossPerTick: Number(deep.loss_per_tick) / RESOURCE_PRECISION,
+    oathPassStamina: nativeOathConstants.PASS_STAMINA,
     staminaPerSecond: slice.troop_stamina_config.stamina_gain_per_tick / tickSeconds,
     staminaPerFragment: nativeFragmentConstants.STAMINA_PER_FRAGMENT,
     relicMinutesPerTier: slice.relic_seconds_per_rank / 60,
@@ -131,9 +135,9 @@ function useOpeningHeld(rules: ExpeditionRules, realm: NativeRows["Structure"] |
   useNativeRevision(RACE_MODELS);
   useNativeRevision(KNOWLEDGE_MODELS);
   useNativeRevision(RELIC_MODELS);
+  useNativeRevision(PROGRESS_MODELS);
   const armies = useDockArmies(realm);
   const essence = useRealmStores(realm, rules)?.essence.amount;
-  const fragments = useFragmentsHeld();
   if (!realm) return null;
   const home = safeInteger(realm.entity_id);
   const learned = setup.store.get("RealmKnowledge", { game_id: realm.game_id, structure_id: home })?.learned ?? 0n;
@@ -141,9 +145,14 @@ function useOpeningHeld(rules: ExpeditionRules, realm: NativeRows["Structure"] |
   const travelCost = setup.store.require("SliceRules", { game_id: realm.game_id }).troop_stamina_config
     .stamina_travel_stamina_cost;
   const outOfStamina = armies.some((army) => army.stamina !== undefined && army.stamina.current < travelCost);
+  const oath = armies.some((army) => {
+    const progress = setup.store.get("ArmyProgress", { game_id: realm.game_id, explorer_id: army.explorerId });
+    return progress !== undefined && (progress.oath_pick !== 0 || progress.oaths !== 0);
+  });
   const relic = armies.some((army) =>
     carriesRelic(setup.store.get("ArmyRelics", { game_id: realm.game_id, explorer_id: army.explorerId })),
   );
+  const spire = armies.some((army) => army.ethereal !== undefined);
   const deep = armies.some((army) => {
     const tile = setup.store.entityOccupancy(realm.game_id, army.explorerId);
     return tile !== undefined && isDeepTile(spacing, tile);
@@ -154,12 +163,14 @@ function useOpeningHeld(rules: ExpeditionRules, realm: NativeRows["Structure"] |
   const stageBuilt = (race?.standings.find((row) => row.aspect === race.own?.aspect)?.stage ?? 1) > 1;
   return {
     barracks: getBuildingQuantity(home, FIRST_BUILD, setup.store) > 0,
-    shop: fragments !== null && (outOfStamina || fragments > 0),
+    oath,
+    shop: outOfStamina,
     relic,
     city: realm.base.level >= RealmLevels.City,
     essence: (essence ?? 0) > 0,
     "well-lore": researchTier(learned, research.ROW_LORE) >= research.LORE_WELLS,
     "shrine-lore": researchTier(learned, research.ROW_LORE) >= research.LORE_SHRINES,
+    spire,
     deep,
     bane,
     aspects: deep || bane || stageBuilt,

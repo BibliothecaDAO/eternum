@@ -4,23 +4,27 @@ import { accountProgress, nextLine, siteAlertOfferDue, openedMoments, reachedOnS
 
 const NOTHING_HELD = {
   barracks: false,
+  oath: false,
   shop: false,
   relic: false,
   city: false,
   essence: false,
   "well-lore": false,
   "shrine-lore": false,
+  spire: false,
   deep: false,
   bane: false,
   aspects: false,
 };
 
-it("reaches the shop, a relic and City on their own state, in the design's order", () => {
-  expect(reachedOnState({ ...NOTHING_HELD, city: true, relic: true, shop: true })).toEqual([
+it("reaches the oath, shop, relic, City and spire on their own state, in the design's order", () => {
+  expect(reachedOnState({ ...NOTHING_HELD, spire: true, city: true, relic: true, shop: true, oath: true })).toEqual([
     "launch",
+    "oath",
     "shop",
     "relic",
     "city",
+    "spire",
   ]);
 });
 

@@ -4107,7 +4107,7 @@ function raceBoardSteps(result) {
             play: async (context) => {
               const { browser } = context;
               const told = [];
-              for (let attempt = 0; attempt < 12; attempt += 1) {
+              for (let attempt = 0; attempt < 16; attempt += 1) {
                 const state = browser.read(OPENING_STATE);
                 if (state.lines.length === 0) break;
                 told.push(state.lines[0].replace(/Got it$/, ""));

@@ -1013,12 +1013,12 @@ panel (its price fills the bar), the phone's picked army's stamina, or the order
 buys up to the account's Fragments. Kit lab: `army-refill`, `army-refill-ready`, `army-refill-short`, `move-refill`.
 
 **Shop**: the Fragments chip (the phone's Menu; the desktop top bar's stores) opens it once the "shop" moment is reached
-(an army out of stamina, or Fragments held). The Ancient Seal row: what it gives (the daily quest's bonus from
-`QuestRules`; an account whose Realm already pays it reads **Your Realm gives this bonus already**), **Get the Ancient
-Seal** for 1,000 Fragments, or while short how many more and their price in dollars, and the code field (the waiting
-screen's redeem, granted at once in a running game); once the account's Seal row exists it says the Ancient Seal is
-held. Then the Fragments row (a cent each) with **Get Fragments**, and the stamina refill rate. Kit lab: `shop`,
-`shop-ready`, `shop-held`.
+(an army runs out of stamina). The Ancient Seal row: what it gives (the daily quest's bonus from `QuestRules`; an
+account whose Realm already pays it reads **Your Realm gives this bonus already**), **Get the Ancient Seal** for 1,000
+Fragments, or while short how many more and their price in dollars, and the code field (the waiting screen's redeem,
+granted at once in a running game); once the account's Seal row exists it says the Ancient Seal is held. Then the
+Fragments row (a cent each) with **Get Fragments**, and the stamina refill rate. Kit lab: `shop`, `shop-ready`,
+`shop-held`.
 
 **Get Fragments** (`/shop/fragments?chain=<chain>&game=<game>&next=<game path>#shop`, from the shop's Fragments row):
 the store's packs (100, 500, 1,000 Fragments; the 1,000 pack is the Ancient Seal's) priced in dollars, the Seal's

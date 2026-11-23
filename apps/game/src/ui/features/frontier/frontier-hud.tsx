@@ -40,7 +40,7 @@ import { useChatKey } from "./hud/chat-key";
 import { DailyQuestChip } from "./hud/daily-quest-chip";
 import { FrontierDesktop, FrontierPlaces } from "./hud/frontier-desktop";
 import { FrontierFeed } from "./hud/frontier-feed";
-import { HeaderStores, pickStores, REALM_STORE_KINDS } from "./hud/header-stores";
+import { HeaderStores } from "./hud/header-stores";
 import { RealmHeaderChip } from "./hud/realm-header-chip";
 import { useResearchTree } from "./research/research-facts";
 import { canResearchNow } from "./research/research-tree";
@@ -612,7 +612,6 @@ const FrontierRealmPanel = ({
   const useSimpleCost = resolveUseSimpleCost(configManager.buildingCostMode, requestedSimpleCost);
   const name = useGameModeConfig().structure.getName(realm).name;
   const stores = useStoreReadings(realm, rules);
-  const panelStores = pickStores(stores, REALM_STORE_KINDS);
   const castleRate = facts.store.get("ResourceRule", { game_id: realm.game_id, resource_type: ResourcesIds.Labor })
     ? castleLabor(facts.store, realm)
     : undefined;
@@ -676,7 +675,7 @@ const FrontierRealmPanel = ({
       aspect={aspect}
       orderId={realm.metadata.order}
       armies={{ active: armies.length, limit: realm.base.troop_max_explorer_count }}
-      stores={panelStores}
+      stores={stores}
       buildings={buildings}
       onHome={isMapView ? () => goToPlace(false) : undefined}
       onClose={onClose}

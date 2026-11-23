@@ -338,6 +338,7 @@ import {
   formatDollars,
   formatExact,
   formatFigure,
+  formatGain,
   formatCount,
   formatOrdinal,
   FRIEND_FRAGMENTS,
@@ -890,6 +891,8 @@ export const DAY_BANNER_WORDS = {
 export interface OpeningRules {
   knightsAnHour: number;
   deepTickSeconds: number;
+  deepLossPerTick: number;
+  oathPassStamina: number;
   staminaPerSecond: number;
   staminaPerFragment: number;
   relicMinutesPerTier: number;
@@ -902,7 +905,9 @@ export const OPENING_WORDS = {
     launch: () => "This is your Realm. Build on the lit plot, then send an army into the mist.",
     barracks: (rules: OpeningRules) =>
       `A Barracks raises ${formatAmount(rules.knightsAnHour)} Knights an hour. Knights fill your armies.`,
-    guard: () => "Send 150% of the guard's troops to win.",
+    guard: () => "A blade or a bow shows its kind. Send 150% of the guard's troops to win.",
+    oath: (rules: OpeningRules) =>
+      `Take one and your army has it for today. A full army swaps one. You can also pass for ${formatGain(rules.oathPassStamina)} ${STAMINA}.`,
     shop: (rules: OpeningRules) =>
       `Stamina refills ${formatRate(rules.staminaPerSecond)}. A ${FRAGMENT} refills ${formatAmount(rules.staminaPerFragment)} points now.`,
     essence: () => "Essence buys research and lores.",
@@ -912,8 +917,9 @@ export const OPENING_WORDS = {
     "shrine-lore": () => "Your armies can now find shrines.",
     city: (rules: OpeningRules) =>
       `Scouts reveal for ${formatAmount(rules.scoutExploreStamina)} stamina, not ${formatAmount(rules.exploreStamina)}.`,
+    spire: () => "Guards are x2 on each layer down. A cleared camp refills your armies.",
     deep: (rules: OpeningRules) =>
-      `Every tick (${formatAmount(rules.deepTickSeconds)} seconds) drains troops. Your army panel shows its loss and time left. Hold a site to earn.`,
+      `Every tick (${formatAmount(rules.deepTickSeconds)} seconds) here, each army loses ${formatAmount(rules.deepLossPerTick)} troops. Hold a site to earn.`,
     bane: () => "A bane. Today's quest is the bane quest. Your Aspect ends the bane when enough members finish it.",
     aspects: () => "Your Aspect races to build its hyperstructure. Its page shows where every Aspect stands.",
   },

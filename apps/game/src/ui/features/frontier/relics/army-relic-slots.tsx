@@ -12,6 +12,7 @@ import { HudButton, HudChip, HudRow } from "@/ui/design-system/kit/hud-elements"
 import { RELIC_WORDS } from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
 
+import { usePartShown } from "../opening/opening-context";
 import { ARMY_RELIC_MODELS, readArmyRelics } from "./army-relics";
 import { relicEffect, relicIcon, relicId, relicName, type ArmyRelic } from "./relic-catalog";
 
@@ -24,11 +25,12 @@ export const ArmyRelicSlots = ({ explorerId }: { explorerId: number }) => {
   const { setup, account } = useGame();
   const now = useCurrentBlockTimestamp();
   useNativeRevision(ARMY_RELIC_MODELS);
+  const shown = usePartShown("relic-slots");
   const switching = useInFlight("army", explorerId) !== undefined;
   // The slot pressed last: the one that says it is switching on while the army's order is out; the others wait.
   const [pressed, setPressed] = useState<0 | 1 | 2 | null>(null);
   const relics = readArmyRelics(setup.store, configManager.getActiveGameId(), explorerId, now);
-  if (!relics || (relics.running.length === 0 && relics.slots.every((slot) => slot === null))) return null;
+  if (!shown || !relics || (relics.running.length === 0 && relics.slots.every((slot) => slot === null))) return null;
 
   const switchOn = (relic: ArmyRelic, slot: 0 | 1 | 2) => {
     setPressed(slot);

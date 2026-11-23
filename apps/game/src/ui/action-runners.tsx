@@ -275,9 +275,12 @@ const describeProvisionFailure = (
 };
 
 /** The background actors that submit transactions on their own; every other former store manager is the bridge. */
-export const ActionRunners = () => (
-  <>
-    <ResourceArrivalAutoClaim />
-    <AutoProvisionRealms />
-  </>
-);
+export const ActionRunners = () => {
+  const mode = useResolvedWorldGameMode();
+  return (
+    <>
+      {mode !== "frontier" && <ResourceArrivalAutoClaim />}
+      <AutoProvisionRealms />
+    </>
+  );
+};

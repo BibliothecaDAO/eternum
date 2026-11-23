@@ -7,6 +7,7 @@ import {
   formatClockTime,
   formatExact,
   formatGain,
+  FRONTIER_TROOP_NAMES,
   guardedSiteKind,
   GuardSlot,
   guardSlotName,
@@ -16,6 +17,7 @@ import {
   resourceName,
   scaledToUnits,
   troopPlural,
+  type TroopType,
   VERDICT_WORDS,
 } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
@@ -337,12 +339,14 @@ const formatters: Record<NativeStoryVariant | StoryEventModel | ArchivedStoryVar
     // A beast guarding an ownerless Frontier site fights as its species ("Troll"), never the troop row the chain keeps.
     const forces = (value: Record<string, unknown>, entityId: unknown) =>
       (frontier && toBigIntSafe(value.player) === 0n ? fightBeast(entityId, store)?.name : undefined) ??
-      formatTroopDescriptor(value.category, value.tier);
+      (frontier ? formatFrontierTroop(value.category) : formatTroopDescriptor(value.category, value.tier));
     const side = (label: string, value: Record<string, unknown>, entityId: unknown) => [
       `${label} forces: ${forces(value, entityId)} [ ${formatUnitAmount(value.before)} ]`,
       `${label} losses: ${formatResourceAmount(BigInt(String(value.before)) - BigInt(String(value.after)))}`,
       `${label} Troops Left: ${formatResourceAmount(value.after)}`,
-      Number(value.roll) > 0 ? `${label} d20: ${Number(value.roll)} (+${Number(value.roll)}% damage)` : undefined,
+      !frontier && Number(value.roll) > 0
+        ? `${label} d20: ${Number(value.roll)} (+${Number(value.roll)}% damage)`
+        : undefined,
     ];
     const sides = `${attackerName ?? "Attacker"} vs ${defenderName ?? "Defender"}`;
     // The viewer's own loss leads: who won is then plain, and the army it cost is what they need to read.
@@ -682,6 +686,12 @@ function normalizeResourceEntries(value: unknown): Array<{ id: number; amount: u
       return null;
     })
     .filter((value): value is { id: number; amount: unknown } => value !== null);
+}
+
+function formatFrontierTroop(type: unknown): string | undefined {
+  const typeLabel = formatEnum(type);
+  if (!typeLabel) return undefined;
+  return typeLabel in FRONTIER_TROOP_NAMES ? FRONTIER_TROOP_NAMES[typeLabel as TroopType] : typeLabel;
 }
 
 function formatTroopDescriptor(type: unknown, tier: unknown): string | undefined {
