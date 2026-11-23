@@ -186,7 +186,7 @@ function generatedSeasonOne(): Design {
       ),
       foxRevealDiscountPercent: oaths.FOX_REVEAL_DISCOUNT_PERCENT,
       reflectionWellPercent: oaths.REFLECTION_WELL_PERCENT,
-      detectionFindPercent: oaths.DETECTION_FIND_PERCENT,
+      detectionEmptyRevealLimit: oaths.DETECTION_EMPTY_REVEAL_LIMIT,
       brilliancePayPercent: oaths.BRILLIANCE_PAY_PERCENT,
       ragePayPercent: oaths.RAGE_PAY_PERCENT,
       perfectionPayPercent: oaths.PERFECTION_PAY_PERCENT,

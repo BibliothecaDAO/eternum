@@ -11,7 +11,9 @@ it("explains the implemented Deep loss on both Oath surfaces", () => {
     `Guarding a site, takes ${oaths.PROTECTION_REDUCTION_PERCENT}% less damage.`,
   );
   expect(oathEffectDescription(oaths.REFLECTION)).toBe("A well refills 80% of the stamina bar, not 40%.");
-  expect(oathEffectDescription(oaths.DETECTION)).toBe("Reveals find something 20% more often.");
+  expect(oathEffectDescription(oaths.DETECTION)).toBe(
+    "After 4 empty reveals in a row, the next reveal is sure to find something.",
+  );
   expect(oathEffectDescription(oaths.BRILLIANCE)).toBe("Reveals pay 25% more.");
   expect(oathEffectDescription(oaths.RAGE)).toBe("Beaten guards pay 25% more.");
   expect(oathEffectDescription(oaths.ANGER)).toBe("An attack costs 20 stamina.");

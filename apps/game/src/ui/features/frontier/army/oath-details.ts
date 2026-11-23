@@ -13,7 +13,8 @@ export function oathEffectDescription(id: number): string {
   if (id === oaths.PROTECTION) return `Guarding a site, takes ${oaths.PROTECTION_REDUCTION_PERCENT}% less damage.`;
   if (id === oaths.REFLECTION)
     return `A well refills ${oaths.REFLECTION_WELL_PERCENT}% of the stamina bar, not ${rules.WELL_REFILL_PERCENT}%.`;
-  if (id === oaths.DETECTION) return `Reveals find something ${oaths.DETECTION_FIND_PERCENT - 100}% more often.`;
+  if (id === oaths.DETECTION)
+    return `After ${oaths.DETECTION_EMPTY_REVEAL_LIMIT} empty reveals in a row, the next reveal is sure to find something.`;
   if (id === oaths.BRILLIANCE) return `Reveals pay ${oaths.BRILLIANCE_PAY_PERCENT - 100}% more.`;
   if (id === oaths.RAGE) return `Beaten guards pay ${oaths.RAGE_PAY_PERCENT - 100}% more.`;
   if (id === oaths.ANGER) return `An attack costs ${oaths.ANGER_ATTACK_STAMINA} stamina.`;

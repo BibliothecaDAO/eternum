@@ -88,7 +88,7 @@ export const seasonOneDesign = {
     enlightenmentStaminaPerHour: 40,
     foxRevealDiscountPercent: 20,
     reflectionWellPercent: 80,
-    detectionFindPercent: 120,
+    detectionEmptyRevealLimit: 4,
     brilliancePayPercent: 125,
     ragePayPercent: 125,
     perfectionPayPercent: 150,

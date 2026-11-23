@@ -485,10 +485,9 @@ function assertDiscoveryFits(rules: CairoRow, clearMistPercent: number): void {
   if (bps("beasts_bps") + bps("camp_bps") + bps("rift_bps") === 0)
     throw new Error("Season 1 discovery floor finds no guarded site");
   const widest = Math.max(bps("shrine_bps") + bps("well_bps"), bps("camp_bps"), bps("rift_bps"));
-  const detection = cairoConstant("src/oaths.cairo", "DETECTION_FIND_PERCENT");
   const finds = weights.reduce((sum, weight) => sum + weight, 0) + widest;
-  if (finds * clearMistPercent * detection > 100_000_000)
-    throw new Error("Season 1 discovery under Clear Mist and Detection exceeds one hundred percent");
+  if (finds * clearMistPercent > 1_000_000)
+    throw new Error("Season 1 discovery under Clear Mist exceeds one hundred percent");
 }
 
 function questsModule(quests: QuestRules): string {

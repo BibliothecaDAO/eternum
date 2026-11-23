@@ -92,7 +92,7 @@ export const nativeOathConstants = {
   "GIANTS_REDUCTION_PERCENT": 15,
   "PROTECTION_REDUCTION_PERCENT": 25,
   "REFLECTION_WELL_PERCENT": 80,
-  "DETECTION_FIND_PERCENT": 120,
+  "DETECTION_EMPTY_REVEAL_LIMIT": 4,
   "BRILLIANCE_PAY_PERCENT": 125,
   "RAGE_PAY_PERCENT": 125,
   "ANGER_ATTACK_STAMINA": 20,
@@ -160,4 +160,4 @@ export const nativeStructureConstants = {
     100000
   ]
 } as const;
-export const nativeBalanceIdentity = "8c6ff6dc73b116b66397779845aa2fbec29b66b56a453c66d34f51688b40b0ef";
+export const nativeBalanceIdentity = "099eeea91919a31beec1afecbe601587e7e28c5a587a1492a27a241c82759687";

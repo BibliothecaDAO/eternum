@@ -984,14 +984,14 @@ test("the race codec refuses missing Deep rules, malformed amounts and effects",
   }
 });
 
-test("the release's discovery must fit one draw under Clear Mist and Detection", () => {
+test("the release's discovery must fit one draw under Clear Mist", () => {
   const source = nativePresets[FRONTIER_S1_PRESET_ID]!;
   const previous = source.discovery;
   const modules = () => balanceModules(seasonOneReleaseDefinition());
   try {
     expect(modules).not.toThrow();
     source.discovery = { ...previous!, beastsBps: 4000 };
-    expect(modules).toThrow("Season 1 discovery under Clear Mist and Detection exceeds one hundred percent");
+    expect(modules).toThrow("Season 1 discovery under Clear Mist exceeds one hundred percent");
   } finally {
     source.discovery = previous;
   }

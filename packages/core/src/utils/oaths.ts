@@ -80,10 +80,6 @@ export function oathFuryRefund(oaths: number, cost: number): number {
   return holdsOath(oaths, oathRules.FURY) ? Math.floor((cost * oathRules.FURY_REFUND_PERCENT) / 100) : 0;
 }
 
-export function oathFindPercent(oaths: number, base: number): number {
-  return holdsOath(oaths, oathRules.DETECTION) ? Math.floor((base * oathRules.DETECTION_FIND_PERCENT) / 100) : base;
-}
-
 export function oathAttackStamina(oaths: number, base: number): number {
   return holdsOath(oaths, oathRules.ANGER) ? Math.min(base, oathRules.ANGER_ATTACK_STAMINA) : base;
 }

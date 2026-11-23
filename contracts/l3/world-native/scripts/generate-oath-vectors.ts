@@ -29,15 +29,16 @@ function oathPrizeVectors(): string[] {
   ];
   return sets.flatMap((held) => {
     const percent = (oath: number, value: number) => ((held & bit(oath)) !== 0 ? value : 100);
-    return [100, 150].flatMap((base) =>
-      [
-        held,
-        base,
-        Math.floor((base * percent(oaths.DETECTION, oaths.DETECTION_FIND_PERCENT)) / 100),
-        amount,
-        (amount * BigInt(percent(oaths.BRILLIANCE, oaths.BRILLIANCE_PAY_PERCENT))) / 100n,
-        (amount * BigInt(percent(oaths.RAGE, oaths.RAGE_PAY_PERCENT))) / 100n,
-      ].map(String),
+    return [frontierSeasonOnePreset.discovery.emptyRevealLimit, oaths.DETECTION_EMPTY_REVEAL_LIMIT - 1].flatMap(
+      (base) =>
+        [
+          held,
+          base,
+          (held & bit(oaths.DETECTION)) !== 0 ? Math.min(base, oaths.DETECTION_EMPTY_REVEAL_LIMIT) : base,
+          amount,
+          (amount * BigInt(percent(oaths.BRILLIANCE, oaths.BRILLIANCE_PAY_PERCENT))) / 100n,
+          (amount * BigInt(percent(oaths.RAGE, oaths.RAGE_PAY_PERCENT))) / 100n,
+        ].map(String),
     );
   });
 }
