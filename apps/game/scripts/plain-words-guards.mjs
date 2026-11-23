@@ -78,8 +78,7 @@ const isNonPlayerContext = (node) => {
     if (up.type === "ThrowStatement") return true;
     if (up.type === "NewExpression" && (ERROR_CONSTRUCTOR.test(calleeName(up)) || calleeName(up) === "RegExp"))
       return true;
-    if (up.type === "CallExpression" && (CODE_CALLS.test(calleeName(up)) || LOG_CALL.test(calleeName(up))))
-      return true;
+    if (up.type === "CallExpression" && (CODE_CALLS.test(calleeName(up)) || LOG_CALL.test(calleeName(up)))) return true;
     if (up.type === "JSXAttribute") {
       const attrName = up.name?.type === "JSXIdentifier" ? up.name.name : "";
       if (CODE_ATTRIBUTES.test(attrName)) return true;
@@ -98,10 +97,10 @@ const createPlainWordsRule = (rules, { checkCodeTokens = false } = {}) => ({
     },
   },
   create: (context) => {
-    const check = (node, text, reportNode = node) => {
+    const check = (node, text, { reportNode = node, allowCodeToken = false } = {}) => {
       const trimmed = text.trim();
       if (!trimmed) return;
-      if (!checkCodeTokens && CODE_TOKEN.test(trimmed)) return;
+      if (allowCodeToken && !checkCodeTokens && CODE_TOKEN.test(trimmed)) return;
       for (const rule of rules) {
         if (rule.pattern.test(trimmed)) {
           context.report({ node: reportNode, messageId: "banned", data: { banned: rule.banned, use: rule.use } });
@@ -112,14 +111,14 @@ const createPlainWordsRule = (rules, { checkCodeTokens = false } = {}) => ({
     return {
       Literal(node) {
         if (typeof node.value !== "string" || isNonPlayerContext(node)) return;
-        check(node, node.value);
+        check(node, node.value, { allowCodeToken: true });
       },
       JSXText(node) {
         check(node, node.value);
       },
       TemplateElement(node) {
         if (isNonPlayerContext(node.parent)) return;
-        check(node, node.value.cooked ?? "", node.parent);
+        check(node, node.value.cooked ?? "", { reportNode: node.parent, allowCodeToken: true });
       },
     };
   },

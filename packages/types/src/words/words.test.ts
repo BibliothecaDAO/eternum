@@ -342,10 +342,15 @@ describe("the voice rules", () => {
     for (const voiceRule of VOICE_RULES) {
       for (const banned of BANNED_WORDS) {
         if (voiceRule.forbidden) {
-          expect({ voice: voiceRule.rule, banned: banned.banned, overlap: voiceRule.forbidden.test(banned.bad) }).toEqual(
-            { voice: voiceRule.rule, banned: banned.banned, overlap: false },
-          );
+          expect({
+            voice: voiceRule.rule,
+            banned: banned.banned,
+            overlap: voiceRule.forbidden.test(banned.bad),
+          }).toEqual({ voice: voiceRule.rule, banned: banned.banned, overlap: false });
         }
+        expect({ voice: voiceRule.rule, banned: banned.banned, duplicate: banned.pattern.test(voiceRule.bad) }).toEqual(
+          { voice: voiceRule.rule, banned: banned.banned, duplicate: false },
+        );
         expect({ voice: voiceRule.rule, banned: banned.banned, conflict: banned.pattern.test(voiceRule.good) }).toEqual(
           { voice: voiceRule.rule, banned: banned.banned, conflict: false },
         );

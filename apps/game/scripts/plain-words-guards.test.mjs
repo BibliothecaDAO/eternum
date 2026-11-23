@@ -60,9 +60,17 @@ describe("plain-words guard refuses banned words in player-facing text", () => {
     ["Army disbanded in template", "export const msg = (a: string) => `${a} disbanded`;", PLAIN_WORDS_RULE],
     ["did not answer in string", `export const err = "Season did not answer.";`, PLAIN_WORDS_RULE],
     ["Travel blocked in string", `export const msg = "Travel blocked";`, PLAIN_WORDS_RULE],
+    ["Travel to the Deep tooltip", `export const A = () => <span title="Travel to the Deep" />;`, PLAIN_WORDS_RULE],
+    ["March button", `export const A = () => <button>March</button>;`, PLAIN_WORDS_RULE],
     ["Claim name in string", `export const cta = "Claim name";`, PLAIN_WORDS_RULE],
+    ["Claim rewards button", `export const A = () => <button>Claim rewards</button>;`, PLAIN_WORDS_RULE],
     ["Build order in string", `export const title = "Build order";`, PLAIN_WORDS_RULE],
+    ["Build-order hyphenated label", `export const title = "Build-order";`, PLAIN_WORDS_RULE],
+    ["Spoils with trailing colon in JSX", `export const A = () => <dt>Spoils:</dt>;`, PLAIN_WORDS_RULE],
+    ["Establish with trailing period", `export const msg = "Establish.";`, PLAIN_WORDS_RULE],
+    ["Re-establish hyphenated label", `export const msg = "Re-establish";`, PLAIN_WORDS_RULE],
     ["Guard dismissed in string", `export const msg = "Guard dismissed";`, PLAIN_WORDS_RULE],
+    ["Dismiss guard button", `export const A = () => <button>Dismiss guard</button>;`, PLAIN_WORDS_RULE],
     ["data-tip tooltip", `export const A = () => <span data-tip="Switch on" />;`, PLAIN_WORDS_RULE],
   ])("refuses %s", async (_, source, expectedRule) => {
     const found = await hits(SCREEN, source);
