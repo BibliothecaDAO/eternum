@@ -65,18 +65,25 @@
       }
       h1 {
         margin: 0;
-        font: 400 32px/1 serif;
+        color: var(--gold2);
+        font: 400 32px/1.1 serif;
+      }
+      p {
+        margin: 0;
+        text-align: center;
+        color: var(--muted);
+        font: 400 15px/1.45 system-ui, sans-serif;
       }
       button {
         align-self: stretch;
-        min-height: 48px;
+        min-height: 52px;
         padding: 0 1.5rem;
-        border: 2px solid var(--line2);
-        border-radius: 16px;
-        background: transparent;
-        color: var(--cream);
+        border: 1px solid var(--gold);
+        border-radius: 14px;
+        background: linear-gradient(180deg, var(--gold2), var(--gold));
+        color: var(--ink);
         font:
-          600 1rem system-ui,
+          700 1rem system-ui,
           sans-serif;
         cursor: pointer;
       }
@@ -90,6 +97,7 @@
     <main>
       <img src="/images/game-pwa-192x192.png" alt="Realms" />
       <h1>Offline</h1>
+      <p>Your connection dropped. Reconnect to continue your season.</p>
       <button type="button" onclick="location.reload()">Try again</button>
     </main>
   </body>
