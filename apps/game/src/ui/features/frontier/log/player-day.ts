@@ -12,10 +12,8 @@ type DayBounds = { start: number; end: number };
 const UNKNOWN: DayTotals = {
   reveals: undefined,
   cleared: undefined,
-  chests: undefined,
   essence: undefined,
   labor: undefined,
-  lords: undefined,
 };
 
 /**

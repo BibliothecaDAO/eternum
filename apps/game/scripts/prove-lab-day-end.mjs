@@ -41,7 +41,7 @@ const phaseIs = (...phases) =>
   `${JSON.stringify(phases)}.includes(document.querySelector('[data-day-end-lab]')?.dataset.phase)`;
 const waitFor = (browser, expression, timeout = 30000) =>
   browser.run(["wait", "--fn", expression, "--timeout", String(timeout)]);
-const SUMMARY_UP = "Boolean(document.querySelector('[data-day-end] section[aria-label=\"Day 1 done\"]'))";
+const SUMMARY_UP = "Boolean(document.querySelector('[data-day-end] section[aria-label=\"Day 1 complete\"]'))";
 const MAP_CLEAR =
   "(() => { const c = document.querySelector('canvas'); const r = c.getBoundingClientRect(); return document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2) === c; })()";
 
@@ -100,7 +100,7 @@ function play(browser, urlBase, { how, screen, skip = false }) {
   browser.run(["wait", "600"]);
   still("summary");
   check(browser.read(SUMMARY_UP), `${name}: the day's summary stands over the map`);
-  browser.click("Continue");
+  browser.run(["click", "[data-day-end] [data-day-continue]"]);
   browser.run(["wait", "300"]);
   still("continued");
   if (how === "late-block") proveLateBlock(browser, name, still);

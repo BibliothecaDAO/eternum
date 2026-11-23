@@ -267,15 +267,29 @@ const labDayEnd = (clock: DayClock): DayEnd => ({
 const UNKNOWN_TOTALS = {
   reveals: undefined,
   cleared: undefined,
-  chests: undefined,
   essence: undefined,
   labor: undefined,
-  lords: undefined,
 };
 const DAY_DONE = {
   endedDay: 12,
   clock: { ...NIGHT, secondsLeft: 7 * HOUR + 55 * 60 },
-  totals: { reveals: 31, cleared: 3, chests: 1, essence: 6_400, labor: 1_150, lords: 128 },
+  totals: { reveals: 31, cleared: 3, essence: 6_400, labor: 1_150 },
+  best: {
+    kind: "clear" as const,
+    site: "Ruin" as const,
+    guard: 3_400,
+    paid: { resource: "essence" as const, amount: 4_800 },
+  },
+  aspect: 2 as const,
+  race: {
+    finishHeight: 10_000,
+    standings: [
+      { aspectId: 2 as const, height: 9_600, own: true },
+      { aspectId: 1 as const, height: 6_200, own: false },
+      { aspectId: 3 as const, height: 4_100, own: false },
+      { aspectId: 4 as const, height: 2_900, own: false },
+    ],
+  },
   history: "whole" as const,
   onRetry: () => undefined,
   rank: { from: 14, to: 12 },
@@ -307,7 +321,7 @@ const THIN_DAY_SHARE: SharedDay = {
   player: WALLET_ADDRESS,
   game: { chainId: "0x1", gameId: 1 },
   day: 1,
-  totals: { reveals: 38, cleared: 1, chests: 0, essence: 5_700, labor: 1_400, lords: 0 },
+  totals: { reveals: 38, cleared: 1, essence: 5_700, labor: 1_400 },
   rank: null,
   trail: ["guard-holds", "Rift"],
   best: { kind: "clear", site: "Rift", guard: 666, paid: { resource: "essence", amount: 4_800 } },
@@ -1763,7 +1777,7 @@ const LabResults = ({
       lastDay={SEASON_LAST_DAY}
       today={results !== "today-earlier"}
       clock={clock}
-      totals={{ reveals: 19, cleared: 2, chests: 0, essence: 4_150, labor: 550, lords: 0 }}
+      totals={{ reveals: 19, cleared: 2, essence: 4_150, labor: 550 }}
       dayEnd={<DayEndBlock dayEnd={labDayEnd(clock)} />}
       lines={results === "today-sites" ? siteUseDayLog(NOW) : readTodayLog()}
       history={results === "today-failed" ? "failed" : "whole"}

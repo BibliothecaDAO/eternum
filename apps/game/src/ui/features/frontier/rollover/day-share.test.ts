@@ -19,7 +19,7 @@ const fight = (minute: number, after: { army: string; guard: string }) => ({
   },
   timestampMs: at(minute),
 });
-const TOTALS = { reveals: 31, cleared: 4, chests: 1, essence: 1200, labor: 340, lords: 0 };
+const TOTALS = { reveals: 31, cleared: 4, essence: 1200, labor: 340 };
 
 describe("a Frontier day's trail", () => {
   it("marks each clear by its site and each fight that cleared nothing, in the order they happened", () => {
@@ -56,19 +56,19 @@ describe("a Frontier day's post", () => {
         rank: { from: 9, to: 7 },
         trail: ["Ruin", "Rift", "Rift", "army-lost", "Beasts", "Camp"],
       }),
-    ).toBe("Frontier · Day 12 · #7 ▲2\n🧭 31 · 🚩 4 · 🎁 1\n🏛️🌀🌀💀🐺👹");
+    ).toBe("Frontier · Day 12 · #7 ▲2\n🧭 31 · 🚩 4\n🏛️🌀🌀💀🐺👹");
   });
 
   it("says no rank on the season's first day and no trail for a day of scouting", () => {
     expect(dayPostText({ game: "Frontier", day: 1, totals: TOTALS, rank: undefined, trail: [] })).toBe(
-      "Frontier · Day 1\n🧭 31 · 🚩 4 · 🎁 1",
+      "Frontier · Day 1\n🧭 31 · 🚩 4",
     );
   });
 
   it("counts the marks past its line", () => {
     const trail = Array.from({ length: TRAIL_LENGTH + 2 }, (): DayMark => "Camp");
     expect(dayPostText({ game: "Frontier", day: 3, totals: TOTALS, rank: { from: 4, to: 4 }, trail })).toBe(
-      `Frontier · Day 3 · #4\n🧭 31 · 🚩 4 · 🎁 1\n${"👹".repeat(TRAIL_LENGTH)} +2`,
+      `Frontier · Day 3 · #4\n🧭 31 · 🚩 4\n${"👹".repeat(TRAIL_LENGTH)} +2`,
     );
   });
 

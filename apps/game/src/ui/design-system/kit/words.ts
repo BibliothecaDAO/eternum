@@ -473,7 +473,12 @@ export const SEAL_CODE_WORDS = {
   } satisfies Record<SealCodeRefusal, string>,
 } as const;
 /** The day-done card: "Day 12 done · Realm kept · Day 13 is open", and its one verb. */
-export const DAY_DONE = "done";
+export const DAY_DONE = "complete";
+export const DAY_DONE_WORDS = {
+  bestMoment: (day: number) => `Best moment of ${DAY} ${formatExact(day)}`,
+  dawnOf: (day: number) => `Dawn of ${DAY} ${formatExact(day)}`,
+  beginDay: (day: number) => `Begin ${DAY} ${formatExact(day)}`,
+} as const;
 export const REALM_KEPT = "Realm kept";
 export const DAY_OPEN = "is open";
 export const CONTINUE = "Continue";

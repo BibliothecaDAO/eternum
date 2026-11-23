@@ -1,55 +1,46 @@
-import { LORDS, resourceName, ResourcesIds, formatShort } from "@bibliothecadao/types";
-import type { IconMeaning } from "@/ui/design-system/icon";
-import { HudChip, HudPanel } from "@/ui/design-system/kit/hud-elements";
+import { resourceName, ResourcesIds, formatShort } from "@bibliothecadao/types";
+import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 
-import { CHESTS, ESSENCE, REVEALS, SITES_CLEARED } from "@/ui/design-system/kit/words";
+import { ESSENCE, REVEALS, SITES_CLEARED } from "@/ui/design-system/kit/words";
 
-/** A day's totals as the log counts them; LORDS arrive with the contracts' ruin chests. Unknown shows as a dash. */
 export type DayTotals = {
   reveals: number | undefined;
   cleared: number | undefined;
-  chests: number | undefined;
   essence: number | undefined;
   labor: number | undefined;
-  lords: number | undefined;
 };
 
-/** A day's totals as every surface writes them: what was revealed, cleared and found, then what it paid. */
 export const dayTotalCells = (totals: DayTotals): TotalCell[] => [
   { total: "reveals", icon: "explore", name: REVEALS, value: formatShort(totals.reveals) },
   { total: "cleared", icon: "flag", name: SITES_CLEARED, value: formatShort(totals.cleared) },
-  { total: "chests", icon: "chest", name: CHESTS, value: formatShort(totals.chests) },
-  { total: "essence", icon: "essence", name: ESSENCE, value: gained(totals.essence) },
   { total: "labor", icon: "labor", name: resourceName(ResourcesIds.Labor), value: gained(totals.labor) },
-  { total: "lords", icon: "lords", name: LORDS, value: gained(totals.lords) },
+  { total: "essence", icon: "essence", name: ESSENCE, value: gained(totals.essence) },
 ];
 
-/** The day's totals in two rows: what was revealed, cleared and found, then what it paid. */
 export const DayTotalsGrid = ({ totals }: { totals: DayTotals }) => <TotalsGrid cells={dayTotalCells(totals)} />;
 
-/** One total: which it is, its icon, the name the icon stands for, and its figure. */
 type TotalCell = { total: keyof DayTotals; icon: IconMeaning; name: string; value: string };
 
-/**
- * A day's totals, three to a row. Each cell is its icon beside its figure, named in words under it
- * ("Reveals"), and one image named with its figure ("Reveals 31") for a screen reader.
- */
 const TotalsGrid = ({ cells }: { cells: readonly TotalCell[] }) => (
-  <HudPanel collapsible={false} bodyClassName="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+  <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
     {cells.map((cell) => (
       <span
         key={cell.icon}
         data-total={cell.icon}
-        className="flex flex-col items-center justify-center gap-1 rounded border border-hud-divider bg-hud-well p-2"
+        className="flex flex-col items-center justify-center gap-1.5 rounded-lg border border-hud-divider bg-hud-well px-3 py-4"
       >
-        <HudChip icons={[cell.icon]} label={cell.name}>
-          {cell.value}
-        </HudChip>
+        <span
+          role="img"
+          aria-label={`${cell.name} ${cell.value}`}
+          className="flex flex-col items-center gap-1.5 tabular-nums text-hud-ink"
+        >
+          <Icon name={cell.icon} size={28} />
+          <b className="text-hud-title leading-none">{cell.value}</b>
+        </span>
         <span className="text-hud-label text-hud-muted">{cell.name}</span>
       </span>
     ))}
-  </HudPanel>
+  </div>
 );
 
-/** A gain in a totals chip, short and signed. */
 const gained = (value: number | undefined) => formatShort(value, { signed: true });
