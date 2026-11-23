@@ -1,6 +1,6 @@
 import type { FrontierBeast } from "@/three/structures/frontier-beast";
 import { type FirstStrikeSide } from "@bibliothecadao/eternum";
-import { type Troops, formatCharge, formatShort } from "@bibliothecadao/types";
+import { type Troops, formatShort } from "@bibliothecadao/types";
 import { beastMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -32,7 +32,7 @@ import type { ReactNode } from "react";
 import { useEnterConfirms } from "../hud/enter-confirms";
 import type { Cost } from "../hud/army-order";
 import { GuardToken } from "../hud/army-token";
-import { FightArena } from "./fight-side";
+import { AttackStamina, FightArena } from "./fight-side";
 import { CombatMark } from "./combat-mark";
 import type { SiteFight } from "./site-card-plan";
 import { type AttackTargetKind, TARGET_MARKS, attackTargetName } from "./site-marks";
@@ -303,16 +303,9 @@ const Verb = ({
             busy={verb.kind === "attack" ? inFlightWord(verb.inFlight, "attack", ATTACKING) : undefined}
             disabled={verb.kind !== "attack"}
             onClick={verb.kind === "attack" ? verb.onAttack : undefined}
-            cost={
-              verb.kind === "attack" && (
-                <span className="contents" data-attack-stamina={verb.stamina}>
-                  · {formatCharge(verb.stamina)}
-                  <SemanticIcon name="stamina" size={14} />
-                </span>
-              )
-            }
           >
             {ATTACK}
+            {verb.kind === "attack" && <AttackStamina stamina={verb.stamina} />}
           </HudButton>
         )}
       </HudWindowFoot>

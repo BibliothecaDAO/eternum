@@ -310,6 +310,26 @@ describe("a row pressed to choose it", () => {
     act(() => sender.click());
     expect(pick.mock.calls).toEqual([["Hetokamohuti"]]);
   });
+
+  it("renders a display-only row without an interactive option role or row button", () => {
+    act(() =>
+      root.render(
+        <>
+          <HudRow title="Farm" detail="+6.3/min" />
+          <HudRow title="Workshop" detail="+0.83/min" controls={<button type="button">Upgrade</button>} />
+          <HudRow title="Brek" selected />
+        </>,
+      ),
+    );
+    const rows = [...host.querySelectorAll(".ui-row")];
+    expect(rows).toHaveLength(3);
+    for (const row of rows) {
+      expect(row.getAttribute("role")).toBeNull();
+      expect(row.getAttribute("aria-selected")).toBeNull();
+      expect(row.querySelector("button.ui-row__choose")).toBeNull();
+    }
+    expect(rows[2]!.hasAttribute("data-selected")).toBe(true);
+  });
 });
 
 describe("a slider", () => {

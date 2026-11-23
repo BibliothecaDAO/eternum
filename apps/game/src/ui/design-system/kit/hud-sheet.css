@@ -234,13 +234,6 @@ a.ui-button {
   cursor: progress;
   opacity: 1;
 }
-.ui-button__cost {
-  display: inline-flex;
-  align-items: center;
-  gap: theme(spacing[0.5]);
-  margin-left: theme(spacing.1);
-  font-variant-numeric: tabular-nums;
-}
 
 /* ── Field: what is typed (a name, a search, an amount), in a well. ── */
 .ui-field {
@@ -740,13 +733,13 @@ button.ui-ring:focus-visible .ui-ring__face {
   border-left: 2px solid transparent;
   border-radius: var(--hud-radius-chip);
   padding: theme(spacing.1) theme(spacing.2);
-  cursor: pointer;
   transition: background-color var(--hud-fast) var(--hud-ease);
 }
-.ui-row:is(:hover, [data-state="hover"]) {
+.ui-row[data-state="hover"],
+:is(button.ui-row, a.ui-row, .ui-row:has(> button.ui-row__choose)):hover {
   background: var(--hud-hover);
 }
-.ui-row:is([aria-selected="true"], [aria-pressed="true"]) {
+.ui-row:is([aria-selected="true"], [aria-pressed="true"], [data-selected]) {
   border-left-color: rgb(var(--hud-accent));
   background: var(--hud-chosen);
 }
@@ -760,11 +753,13 @@ button.ui-row {
   color: inherit;
   font: inherit;
   text-align: left;
+  cursor: pointer;
 }
 /* A row that opens an address (a guide) is a link with the row's look. */
 a.ui-row {
   color: inherit;
   text-decoration: none;
+  cursor: pointer;
 }
 .ui-row:is(:disabled, [aria-disabled="true"]) {
   cursor: not-allowed;

@@ -203,7 +203,7 @@ describe("the status strip", () => {
       "Labor 18,000 of 18,000",
       "Wheat 1,000 of 6,000",
       "Knights 420 of 1,500",
-      "Crossbows 600 of 1,500",
+      "Crossbowmen 600 of 1,500",
       "Scouts 0 of 1,500",
     ]);
   });

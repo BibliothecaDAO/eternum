@@ -23,13 +23,12 @@ import {
   type Troops,
   beastModel,
   deepSites,
-  formatCharge,
   formatExact,
 } from "@bibliothecadao/types";
 import { beastMeaning, troopMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { nativeRuleConstants } from "../../../../../../../contracts/l3/world-native/schema/balance.gen";
 
-import { FightArena } from "../sites/fight-side";
+import { AttackStamina, FightArena } from "../sites/fight-side";
 import { CombatMark } from "../sites/combat-mark";
 import type { DeepSiteFight } from "../sites/site-card-plan";
 
@@ -307,17 +306,9 @@ const OrderFoot = ({ order }: { order: DeepOrder | DeepBlock }) => {
           aria-label={order.busy ? undefined : DEEP_WORDS[order.verb]}
           busy={order.busy}
           onClick={order.onAct}
-          cost={
-            order.stamina !== undefined &&
-            order.stamina > 0 && (
-              <span className="contents" data-attack-stamina={order.stamina}>
-                · {formatCharge(order.stamina)}
-                <Icon name="stamina" size={14} />
-              </span>
-            )
-          }
         >
           {DEEP_WORDS[order.verb]}
+          {order.stamina !== undefined && order.stamina > 0 && <AttackStamina stamina={order.stamina} />}
         </HudButton>
       )}
       {order.kind === "short" && (

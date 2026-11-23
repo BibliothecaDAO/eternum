@@ -87,3 +87,10 @@
   justify-content: center;
   gap: theme(spacing.1);
 }
+.fight-attack-cost {
+  display: inline-flex;
+  align-items: center;
+  gap: theme(spacing[0.5]);
+  margin-left: theme(spacing.1);
+  font-variant-numeric: tabular-nums;
+}

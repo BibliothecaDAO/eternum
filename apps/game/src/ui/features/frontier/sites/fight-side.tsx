@@ -1,12 +1,20 @@
 import "./fight-side.css";
 
-import { formatExact, formatShort, type Troops } from "@bibliothecadao/types";
+import { formatCharge, formatExact, formatShort, type Troops } from "@bibliothecadao/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { HudPanel } from "@/ui/design-system/kit/hud-elements";
 import { FIGHT_WORDS, fightLost, NONE_LOST } from "@/ui/design-system/kit/words";
 import { CombatMark } from "./combat-mark";
 
 import type { ReactNode } from "react";
+
+export const AttackStamina = ({ stamina }: { stamina: number }) => (
+  <span className="fight-attack-cost" data-attack-stamina={stamina}>
+    · {formatCharge(stamina)}
+    <SemanticIcon name="stamina" size={14} />
+  </span>
+);
 
 export type Kept = number | undefined;
 
