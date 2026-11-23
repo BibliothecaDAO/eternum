@@ -11,6 +11,7 @@ import draco3d from "draco3dgltf";
 import sharp from "sharp";
 import { afterEach, describe, expect, it } from "vitest";
 
+import { MODEL_TYPE_TO_FILE } from "../../src/three/constants/army-constants";
 import {
   FRONTIER_PAINTED_BUILDINGS,
   frontierPaintedBuildingPath,
@@ -360,6 +361,79 @@ describe("ship-model pipeline", () => {
       }
       expect(minY, publicPath).toBeGreaterThanOrEqual(budget.minGroundY);
       expect(minY, publicPath).toBeLessThanOrEqual(budget.maxGroundY);
+    }
+  });
+
+  it("keeps every shipped Tripo troop model within troop budget, grounded, ownership-clothed and inside the unit hex", async () => {
+    const io = await createReader();
+    const budget = MODEL_BUDGETS.troop;
+    const apothem = Math.sqrt(3) / 2;
+    const candidateFiles = [...new Set(Object.values(MODEL_TYPE_TO_FILE))];
+    const shippedTroops = [];
+
+    for (const file of candidateFiles) {
+      const modelPath = fileURLToPath(new URL(`../../public/models/${file}`, import.meta.url));
+      const doc = await io.read(modelPath);
+      const meshNode = doc
+        .getRoot()
+        .listNodes()
+        .find((node) => node.getMesh());
+      if (meshNode?.getExtras()?.assetKind !== "troop") continue;
+      shippedTroops.push({ file, modelPath, doc });
+    }
+
+    expect(shippedTroops.length).toBeGreaterThanOrEqual(2);
+
+    for (const { file, modelPath, doc } of shippedTroops) {
+      const bytes = readFileSync(modelPath);
+      expect(bytes.length, file).toBeLessThanOrEqual(budget.maxBytes);
+
+      const root = doc.getRoot();
+      const extensions = root.listExtensionsUsed().map((extension) => extension.extensionName);
+      expect(extensions, file).toEqual(expect.arrayContaining(["KHR_draco_mesh_compression", "KHR_texture_basisu"]));
+
+      const primitives = root.listMeshes().flatMap((mesh) => mesh.listPrimitives());
+      expect(primitives.length, file).toBeGreaterThan(0);
+      expect(primitives.length, file).toBeLessThanOrEqual(budget.maxDraws);
+
+      const triangles = primitives.reduce((sum, primitive) => sum + primitive.getIndices().getCount() / 3, 0);
+      expect(triangles, file).toBeGreaterThan(0);
+      expect(triangles, file).toBeLessThanOrEqual(budget.maxTriangles);
+
+      for (const material of root.listMaterials()) {
+        expect(material.getDoubleSided(), file).toBe(true);
+        expect(material.getExtras().tripoMaterial, file).toBe(true);
+        expect(material.getExtras().ownershipCloth, file).toBe(true);
+      }
+
+      for (const texture of root.listTextures()) {
+        expect(texture.getMimeType(), file).toBe("image/ktx2");
+        const image = texture.getImage();
+        const view = new DataView(image.buffer, image.byteOffset, image.byteLength);
+        expect(view.getUint32(20, true), file).toBeLessThanOrEqual(budget.maxColorTexture);
+        expect(view.getUint32(24, true), file).toBeLessThanOrEqual(budget.maxColorTexture);
+      }
+
+      for (const node of root.listNodes()) {
+        expect(node.getTranslation(), file).toEqual([0, 0, 0]);
+        expect(node.getRotation(), file).toEqual([0, 0, 0, 1]);
+        expect(node.getScale(), file).toEqual([1, 1, 1]);
+      }
+
+      let minY = Infinity;
+      for (const primitive of primitives) {
+        const positions = primitive.getAttribute("POSITION");
+        for (let i = 0; i < positions.getCount(); i++) {
+          const [x, y, z] = positions.getElement(i, [0, 0, 0]);
+          minY = Math.min(minY, y);
+          for (let side = 0; side < 6; side++) {
+            const angle = (side * Math.PI) / 3;
+            expect(x * Math.cos(angle) + z * Math.sin(angle), file).toBeLessThanOrEqual(apothem + 0.001);
+          }
+        }
+      }
+      expect(minY, file).toBeGreaterThanOrEqual(budget.minGroundY);
+      expect(minY, file).toBeLessThanOrEqual(budget.maxGroundY);
     }
   });
 });
