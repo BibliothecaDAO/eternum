@@ -118,17 +118,13 @@ fn season_one_turns_off_army_battles_so_an_army_in_the_open_cannot_be_attacked()
     let (d, home, target, attacker, defender) = setup_with_counts((1000, 1000));
     into_deep(d, home, target, attacker, defender);
     let (before_attacker, before_defender) = (troop(d, attacker), troop(d, defender));
-    let mut events = snforge_std::spy_events();
-    assert!(
-        !execute(
-            d,
-            Command::Battle(
-                AttackExplorer { attacker_id: attacker, defender_id: defender, steal_resources: array![].span() },
-            ),
-            NOW,
+    assert_terminal_rejection(
+        d,
+        Command::Battle(
+            AttackExplorer { attacker_id: attacker, defender_id: defender, steal_resources: array![].span() },
         ),
+        NOW,
     );
-    assert_eq!(super::play_fixture::rejection(ref events, d.games).reason, "command disabled");
     assert_eq!(troop(d, attacker), before_attacker);
     assert_eq!(troop(d, defender), before_defender);
 }

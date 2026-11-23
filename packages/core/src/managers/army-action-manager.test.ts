@@ -392,7 +392,8 @@ describe("ArmyActionManager.findActionPaths origin precedence", () => {
         remainder: 0,
       } as any);
       const spacing = 200;
-      const rows = deep ? { DeepRules: {}, SettlementRules: { spacing } } : {};
+      const slice = { SliceRules: { day_unit_seconds: 0, command_mask: 0n } };
+    const rows = deep ? { ...slice, DeepRules: {}, SettlementRules: { spacing } } : slice;
       const { manager, components, structureHexes, armyHexes, exploredHexes } = createTestSetup({}, {}, rows);
       const start = deep ? deepCenter(spacing) : { col: TEST_FELT_CENTER, row: TEST_FELT_CENTER };
       components.Positions.set(TEST_ENTITY_ID.toString(), { alt: false, x: start.col, y: start.row });
