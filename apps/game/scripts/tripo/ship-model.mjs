@@ -43,6 +43,16 @@ export const MODEL_BUDGETS = Object.freeze({
     minGroundY: -0.05,
     maxGroundY: 0.2,
   },
+  wonder: {
+    maxTriangles: 24_000,
+    maxColorTexture: 1_024,
+    maxTechnicalTexture: 512,
+    maxBytes: 600_000,
+    maxDraws: 5,
+    maxBones: 0,
+    minGroundY: -0.05,
+    maxGroundY: 0.05,
+  },
 });
 
 export function readHexFit(fitPath) {

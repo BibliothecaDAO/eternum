@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { REALM_ASSETS, REALM_PATHS, realmModelIndex, isWonderModelPath } from "./realm-design";
 import { getStructureModelPaths, isRealmModelPath, isSettlementModelPath } from "../constants/scene-constants";
-import { StructureType } from "@bibliothecadao/types";
+import { aspects, StructureType } from "@bibliothecadao/types";
 
 describe("picked realm series", () => {
   it("keeps the chain's zero-based level mapping and gives every wonder its own realm body", () => {
@@ -32,5 +32,24 @@ describe("picked realm series", () => {
       expect(() => realmModelIndex(1, true, id)).toThrow();
     }
     for (const level of [-1, 4, 1.5, NaN]) expect(() => realmModelIndex(level, false, 1)).toThrow();
+  });
+
+  it("maps every catalog Aspect to its own Aspect Wonder model across all realm levels", () => {
+    const seenIds = new Set<string>();
+    for (const { id: aspect, name } of aspects) {
+      const index = realmModelIndex(0, true, 1003, aspect);
+      const asset = REALM_ASSETS[index];
+      expect(asset.wonder).toBe(true);
+      expect(asset.aspect).toBe(aspect);
+      expect(asset.id).toBe(`wonder-${name.toLowerCase()}`);
+      expect(asset.label).toBe(`Aspect Wonder · ${name}`);
+      expect(isWonderModelPath(asset.path)).toBe(true);
+      expect(isRealmModelPath(asset.path) && isSettlementModelPath(asset.path)).toBe(true);
+      for (const level of [1, 2, 3]) {
+        expect(realmModelIndex(level, true, 1003, aspect)).toBe(index);
+      }
+      seenIds.add(asset.id);
+    }
+    expect(seenIds.size).toBe(aspects.length);
   });
 });

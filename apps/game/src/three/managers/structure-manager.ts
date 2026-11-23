@@ -2,7 +2,7 @@ import { GUARD_MODELS } from "@bibliothecadao/eternum/game-client";
 import { FrontierModel, frontierModelKind, type BeastLayer } from "../structures/frontier-model";
 import { nextFrameOrTimeout } from "@/utils/frame-or-timeout";
 import { realmModelIndex, isWonderModelPath } from "../structures/realm-design";
-import { MineKinds, structureName, troopTierIndex } from "@bibliothecadao/types";
+import { MineKinds, orderAspect, structureName, troopTierIndex } from "@bibliothecadao/types";
 import {
   configManager,
   expeditionDepth,
@@ -1286,7 +1286,12 @@ export class StructureManager {
       return index;
     }
     return structure.structureType === StructureType.Realm
-      ? realmModelIndex(structure.level, structure.hasWonder, structure.entityId)
+      ? realmModelIndex(
+          structure.level,
+          structure.hasWonder,
+          structure.entityId,
+          structure.realmOrder ? orderAspect(structure.realmOrder) : null,
+        )
       : structure.stage;
   }
 
