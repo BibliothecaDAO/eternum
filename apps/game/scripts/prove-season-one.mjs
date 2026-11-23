@@ -71,15 +71,7 @@ const SIZES = [
   ["phone", "390", "844"],
 ];
 
-const captureScreenshot = (browser, path) => {
-  try {
-    browser.screenshot(path);
-  } catch (error) {
-    if (!String(error).includes("Page.captureScreenshot")) throw error;
-    browser.run(["wait", "250"]);
-    browser.screenshot(path);
-  }
-};
+const PAGES_PER_BROWSER = 20;
 
 const option = (key, fallback) => (process.argv.includes(key) ? process.argv[process.argv.indexOf(key) + 1] : fallback);
 const out = option("--out", join(homedir(), "projects/eternum-lanes/evidence/s1-client", String(Date.now())));
@@ -87,30 +79,33 @@ const port = option("--port", "4421");
 mkdirSync(out, { recursive: true });
 await withDevClient({ base: option("--base-url", null), port, out }, async (baseUrl) => {
   for (const [device, width, height] of SIZES) {
-    const profile = mkdtempSync(join(tmpdir(), "season-one-proof-"));
-    const browser = createBrowserSession(`season-one-${device}-${Date.now()}`, { profile, headed: false });
-    try {
-      browser.run(["set", "viewport", width, height]);
-      for (const { file, url, shown, press } of PAGES) {
-        browser.run(["open", `${baseUrl}${url}`]);
-        try {
-          if (press) {
-            browser.run(["wait", "--fn", `!!document.querySelector('${press.after}')`]);
-            browser.run(["find", "role", "button", "click", "--name", press.button]);
+    for (let start = 0; start < PAGES.length; start += PAGES_PER_BROWSER) {
+      const batch = PAGES.slice(start, start + PAGES_PER_BROWSER);
+      const profile = mkdtempSync(join(tmpdir(), "season-one-proof-"));
+      const browser = createBrowserSession(`season-one-${device}-${start}-${Date.now()}`, { profile, headed: false });
+      try {
+        browser.run(["set", "viewport", width, height]);
+        for (const { file, url, shown, press } of batch) {
+          browser.run(["open", `${baseUrl}${url}`]);
+          try {
+            if (press) {
+              browser.run(["wait", "--fn", `!!document.querySelector('${press.after}')`]);
+              browser.run(["find", "role", "button", "click", "--name", press.button]);
+            }
+            browser.run(["wait", "--fn", `!!document.querySelector('${shown}')`]);
+          } catch (error) {
+            writeFileSync(join(out, `${file}-${device}-errors.txt`), browser.run(["errors"]));
+            throw error;
+          } finally {
+            browser.screenshot(join(out, `${file}-${device}.png`));
           }
-          browser.run(["wait", "--fn", `!!document.querySelector('${shown}')`]);
-        } catch (error) {
-          writeFileSync(join(out, `${file}-${device}-errors.txt`), browser.run(["errors"]));
-          throw error;
-        } finally {
-          captureScreenshot(browser, join(out, `${file}-${device}.png`));
         }
+        const errors = browser.run(["errors"]);
+        if (errors.trim()) throw new Error(errors);
+      } finally {
+        browser.close();
+        rmSync(profile, { recursive: true, force: true });
       }
-      const errors = browser.run(["errors"]);
-      if (errors.trim()) throw new Error(errors);
-    } finally {
-      browser.close();
-      rmSync(profile, { recursive: true, force: true });
     }
   }
   writeFileSync(join(out, "proof.json"), JSON.stringify({ ok: true }) + "\n");
