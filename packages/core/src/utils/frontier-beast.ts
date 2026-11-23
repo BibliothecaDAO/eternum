@@ -11,7 +11,7 @@ import {
 import type { NativeFactStore } from "../client/native-fact-store";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { beastBand, type BeastBand } from "./frontier-beast-band";
-import { expeditionDepth, isGuardedSite, readExpeditionRules } from "./expeditions";
+import { expeditionDepth, hasSharedDeep, isGuardedSite, readExpeditionRules } from "./expeditions";
 
 export type FrontierSpecies = BeastModel;
 export interface FrontierBeast {
@@ -66,7 +66,7 @@ export function siteFrontierBeast(
   const rules = readExpeditionRules(store, gameId);
   if (!rules) throw new Error(`Frontier site ${entityId} stands without expedition rules`);
   const depth = expeditionDepth(rules, { y: site.row });
-  const gameHasDeep = store.get("DeepRules", { game_id: gameId }) !== undefined;
+  const gameHasDeep = hasSharedDeep(store, gameId);
   if (category !== StructureType.Beasts) return identityOf(siteBeastOf(siteFamily(category), depth, gameHasDeep));
   const bounds = store.get("DepthRules", { game_id: gameId, depth });
   if (!bounds) throw new Error(`Frontier beast ${entityId} stands without depth rules`);

@@ -209,11 +209,9 @@ export function groundSurface(input: GroundSurfaceInput) {
         albedo.assign(mix(albedo, vec3(0.4, 0.4, 0.41).mul(near.g.mul(0.15).add(0.92)), drift.mul(0.5)));
         albedo.mulAssign(rift.mul(0.6).oneMinus().mul(fine.mul(0.4).oneMinus()));
         slope.assign(middle.ba.sub(0.5).mul(0.2).add(bump.mul(0.25)));
-        If(close.greaterThan(0.001), () => {
-          const ember = strewn(at, 6, rim.oneMinus().mul(0.08), 0.12);
-          const flicker = time.mul(1.7).add(ember.y.mul(30)).sin().mul(0.4).add(0.6);
-          glow.assign(vec3(2.6, 0.7, 0.12).mul(ember.x).mul(flicker).mul(close));
-        });
+        const ember = strewn(at, 6, rim.oneMinus().mul(0.08), 0.12);
+        const flicker = time.mul(1.7).add(ember.y.mul(30)).sin().mul(0.4).add(0.6);
+        glow.assign(vec3(2.6, 0.7, 0.12).mul(ember.x).mul(flicker));
       })
       .ElseIf(biome.equal(B(BiomeType.Grassland)), () => {
         const tufts = near.g.mul(0.5).add(middle.g.mul(0.5));
