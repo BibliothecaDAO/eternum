@@ -1,4 +1,4 @@
-import { BoxGeometry, Group, Matrix4, Mesh, MeshStandardMaterial, Texture, Vector3 } from "three";
+import { BoxGeometry, Group, InstancedBufferAttribute, Matrix4, Mesh, MeshStandardMaterial, Texture, Vector3 } from "three";
 import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
 import { describe, expect, it } from "vitest";
 
@@ -143,7 +143,7 @@ describe("Pure-maths beast motion module", () => {
       };
       model.updateAnimations(0.05, allHiddenContext);
       const frozenNear = model.getMotionStateAt(0).clock;
-      const motionAttr = model.instancedMeshes[0].geometry.getAttribute("beastMotion");
+      const motionAttr = model.instancedMeshes[0].geometry.getAttribute("beastMotion") as InstancedBufferAttribute;
       const versionBefore = motionAttr.version;
       model.updateAnimations(0.1, allHiddenContext);
       expect(model.getMotionStateAt(0).clock).toBe(frozenNear);

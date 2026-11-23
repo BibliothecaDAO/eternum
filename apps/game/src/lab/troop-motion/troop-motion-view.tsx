@@ -7,9 +7,11 @@ import {
 } from "./troop-motion-renderer";
 import {
   TROOP_MOTION_ACTIONS,
+  TROOP_MOTION_KINDS,
   parseTroopMotionState,
   type TroopMotionAction,
   type TroopMotionCamera,
+  type TroopMotionKind,
   type TroopMotionLabel,
   type TroopMotionState,
 } from "./troop-motion-types";
@@ -97,6 +99,8 @@ export function TroopMotionView() {
     rendererRef.current?.updateState(state);
   }, [state]);
 
+  const setTroop = (troop: TroopMotionKind) =>
+    setState((prev) => ({ ...prev, troop, compareShipped: troop === "knight" ? Boolean(prev.shippedBaseUrl) : true }));
   const setAction = (action: TroopMotionAction) => setState((prev) => ({ ...prev, action }));
   const setCamera = (camera: TroopMotionCamera) => setState((prev) => ({ ...prev, camera }));
 
@@ -150,6 +154,24 @@ export function TroopMotionView() {
             maxWidth: "calc(100% - 24px)",
           }}
         >
+          {TROOP_MOTION_KINDS.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => setTroop(item.id)}
+              style={{
+                padding: "4px 9px",
+                borderRadius: 6,
+                border: "1px solid rgba(114, 198, 168, 0.45)",
+                background: state.troop === item.id ? "#66ddab" : "rgba(255,255,255,0.06)",
+                color: state.troop === item.id ? "#0e1d17" : "#f3ead6",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              {item.label}
+            </button>
+          ))}
           {TROOP_MOTION_ACTIONS.map((item) => (
             <button
               key={item.id}

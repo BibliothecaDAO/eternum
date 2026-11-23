@@ -1,4 +1,4 @@
-export type TroopMotionKind = "knight";
+export type TroopMotionKind = "knight" | "scout" | "crossbow";
 export type TroopMotionAction = "idle" | "march" | "attack" | "hit" | "death" | "reel";
 export type TroopMotionCamera = "desktop" | "phone";
 
@@ -17,6 +17,12 @@ export interface TroopMotionLabel {
   y: number;
   visible: boolean;
 }
+
+export const TROOP_MOTION_KINDS: ReadonlyArray<{ id: TroopMotionKind; label: string }> = [
+  { id: "knight", label: "Knight (Hybrid 31-bone)" },
+  { id: "scout", label: "Scout (Pure Maths)" },
+  { id: "crossbow", label: "Crossbow (Pure Maths)" },
+];
 
 export const TROOP_MOTION_ACTIONS: ReadonlyArray<{ id: TroopMotionAction; label: string }> = [
   { id: "idle", label: "Idle" },
@@ -41,6 +47,8 @@ export const REEL_SEQUENCE: ReadonlyArray<{
 
 export function parseTroopMotionState(search: string): TroopMotionState {
   const params = new URLSearchParams(search);
+  const rawTroop = params.get("troop");
+  const troop: TroopMotionKind = rawTroop === "scout" || rawTroop === "crossbow" ? rawTroop : "knight";
   const rawAction = params.get("action");
   const action: TroopMotionAction =
     rawAction === "idle" ||
@@ -53,9 +61,10 @@ export function parseTroopMotionState(search: string): TroopMotionState {
       : "march";
   const camera: TroopMotionCamera = params.get("camera") === "phone" ? "phone" : "desktop";
   const shippedBaseUrl = params.get("shippedUrl") || null;
-  const compareShipped = params.get("compare") === "1" && Boolean(shippedBaseUrl);
+  const compareParam = params.get("compare");
+  const compareShipped = troop === "knight" ? compareParam === "1" && Boolean(shippedBaseUrl) : compareParam !== "0";
   return {
-    troop: "knight",
+    troop,
     action,
     camera,
     compareShipped,

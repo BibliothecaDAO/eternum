@@ -1,5 +1,6 @@
 import { TroopTier, TroopType } from "@bibliothecadao/types";
 import type { SlotDirtyRange } from "../utils/instance-update-ranges";
+import type { TroopMotionController } from "../managers/troop-motion";
 import {
   Vector3,
   Euler,
@@ -109,4 +110,6 @@ export interface ModelData {
   lastAnimationUpdate: number;
   animationUpdateInterval: number;
   ownsGeometry: boolean;
+  troopMotion?: TroopMotionController;
+  troopMotionDriven?: { value: number };
 }

@@ -1,18 +1,22 @@
 import {
-  Box3,
+  BufferGeometry,
   Color,
   Group,
+  InstancedBufferAttribute,
+  InstancedMesh,
   Line,
   LineBasicMaterial,
+  Matrix4,
   Mesh,
+  MeshStandardMaterial,
   PCFShadowMap,
   PerspectiveCamera,
   Quaternion,
   Scene,
   Vector3,
-  BufferGeometry,
 } from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { float, positionLocal, uniform } from "three/tsl";
 import { env } from "../../../env";
 import { ProceduralCharacterAvatar } from "@/three/characters/procedural-character-avatar";
 import { resolveProceduralCharacterAppearance } from "@/three/characters/procedural-character-appearance";
@@ -38,9 +42,17 @@ import { applyProceduralMeleeHitReaction } from "@/three/characters/melee/proced
 import { T1_KNIGHT_DEFAULT_HUMANOID_RIG_ADAPTER } from "@/three/characters/t1-knight-default-humanoid-rig-adapter";
 import { applyProceduralUnitConfigPatch, createDefaultProceduralUnitConfig } from "@/three/characters/procedural-unit-config";
 import { ProceduralUnitRuntime, type ProceduralUnitActor } from "@/three/characters/procedural-unit-runtime";
-import { T1_KNIGHT_WORLD_SCALE } from "@/three/constants/army-constants";
+import { T1_KNIGHT_WORLD_SCALE, buildArmyModelAssetPath } from "@/three/constants/army-constants";
 import { ModelLabEnvironment } from "@/three/debug/model-lab/model-lab-environment";
 import { readModelLabSettings } from "@/three/debug/model-lab/model-lab-settings";
+import { mapAnimationTime } from "@/three/effects/endgame/state";
+import { createTripoModelMaterial } from "@/three/materials/tripo-model-material";
+import {
+  TroopMotionController,
+  createTroopMotionNode,
+  type AnimatedTroopKind,
+} from "@/three/managers/troop-motion";
+import { ModelType } from "@/three/types/army";
 import type { RendererSurfaceLike } from "@/three/renderer-backend";
 import { initializeRendererBackendRuntime } from "@/three/renderer-backend-runtime";
 import { configureRendererColorOutput } from "@/three/renderer-color-output";
@@ -51,12 +63,14 @@ import { isCoarsePointer } from "@/utils/pointer";
 import {
   REEL_SEQUENCE,
   type TroopMotionAction,
+  type TroopMotionKind,
   type TroopMotionLabel,
   type TroopMotionState,
 } from "./troop-motion-types";
 
 export interface TroopMotionStats {
   rendererMode: string;
+  troop: TroopMotionKind;
   activeAction: Exclude<TroopMotionAction, "reel">;
   actionLabel: string;
   drawCalls: number;
@@ -94,11 +108,23 @@ interface BaselineKnightHandle {
   dispose(): void;
 }
 
-const COMPARE_LEFT_X = -0.82;
-const COMPARE_RIGHT_X = 0.82;
+interface InstancedTroopPair {
+  kind: AnimatedTroopKind;
+  animatedRoot: Group;
+  staticRoot: Group;
+  controller: TroopMotionController;
+  driven: ReturnType<typeof uniform>;
+  dispose(): void;
+}
+
+const COMPARE_LEFT_X = -0.84;
+const COMPARE_RIGHT_X = 0.84;
 const FACING_YAW = 0.24;
 const MARCH_HALF_SPAN = 0.44;
 const MARCH_SPEED = 0.42;
+const SIDE_OWN_COLOR = new Color("#66ddab");
+const IDENTITY_MATRIX = new Matrix4();
+const INSTANCED_ACTIVE = [0] as const;
 
 function createHexOutline(centerX: number, centerZ: number, groundY: number): Line {
   const corners = terrainHexCorners(centerX, centerZ);
@@ -117,6 +143,79 @@ function setShadows(root: Group): void {
     object.castShadow = true;
     object.receiveShadow = true;
   });
+}
+
+async function createInstancedTroopPair(kind: AnimatedTroopKind): Promise<InstancedTroopPair> {
+  const modelType = kind === "scout" ? ModelType.Paladin1 : ModelType.Crossbowman1;
+  const gltf = await gltfLoader.loadAsync(buildArmyModelAssetPath(modelType));
+  const controller = new TroopMotionController(kind, 1);
+  controller.setPlacementAt(0, IDENTITY_MATRIX);
+  const driven = uniform(1);
+  const displacement = createTroopMotionNode(kind, float(mapAnimationTime), float(driven));
+
+  const animatedRoot = new Group();
+  const staticRoot = new Group();
+  const ownedGeometries: BufferGeometry[] = [];
+  const ownedMaterials: Array<{ dispose(): void }> = [];
+  const ownedMeshes: InstancedMesh[] = [];
+
+  gltf.scene.traverse((child) => {
+    if (!(child instanceof Mesh)) return;
+    const sourceMaterial = Array.isArray(child.material) ? child.material[0] : child.material;
+    if (!(sourceMaterial instanceof MeshStandardMaterial)) return;
+
+    const animGeo = child.geometry.clone();
+    animGeo.setAttribute("troopMotion", controller.attribute);
+    animGeo.computeBoundingBox();
+    animGeo.boundingBox?.expandByScalar(0.32);
+    animGeo.computeBoundingSphere();
+    if (animGeo.boundingSphere) animGeo.boundingSphere.radius += 0.32;
+    const animMat = createTripoModelMaterial(sourceMaterial);
+    animMat.positionNode = positionLocal.add(displacement);
+    const animMesh = new InstancedMesh(animGeo, animMat, 1);
+    animMesh.castShadow = true;
+    animMesh.receiveShadow = true;
+    animMesh.frustumCulled = false;
+    animMesh.instanceColor = new InstancedBufferAttribute(new Float32Array([SIDE_OWN_COLOR.r, SIDE_OWN_COLOR.g, SIDE_OWN_COLOR.b]), 3);
+    animMesh.setMatrixAt(0, IDENTITY_MATRIX);
+    animMesh.instanceMatrix.needsUpdate = true;
+    animMesh.count = 1;
+    animatedRoot.add(animMesh);
+
+    const staticGeo = child.geometry.clone();
+    const staticMat = createTripoModelMaterial(sourceMaterial);
+    const staticMesh = new InstancedMesh(staticGeo, staticMat, 1);
+    staticMesh.castShadow = true;
+    staticMesh.receiveShadow = true;
+    staticMesh.frustumCulled = false;
+    staticMesh.instanceColor = new InstancedBufferAttribute(new Float32Array([SIDE_OWN_COLOR.r, SIDE_OWN_COLOR.g, SIDE_OWN_COLOR.b]), 3);
+    staticMesh.setMatrixAt(0, IDENTITY_MATRIX);
+    staticMesh.instanceMatrix.needsUpdate = true;
+    staticMesh.count = 1;
+    staticRoot.add(staticMesh);
+
+    ownedGeometries.push(animGeo, staticGeo);
+    ownedMaterials.push(animMat, staticMat);
+    ownedMeshes.push(animMesh, staticMesh);
+  });
+
+  animatedRoot.rotation.y = FACING_YAW;
+  staticRoot.rotation.y = FACING_YAW;
+
+  return {
+    kind,
+    animatedRoot,
+    staticRoot,
+    controller,
+    driven,
+    dispose() {
+      ownedMeshes.forEach((m) => m.dispose());
+      ownedGeometries.forEach((g) => g.dispose());
+      ownedMaterials.forEach((m) => m.dispose());
+      animatedRoot.removeFromParent();
+      staticRoot.removeFromParent();
+    },
+  };
 }
 
 async function createBaselineShippedKnight(baseUrl: string): Promise<BaselineKnightHandle> {
@@ -183,9 +282,17 @@ async function createBaselineShippedKnight(baseUrl: string): Promise<BaselineKni
   const invRootQuat = new Quaternion();
   let gaitPhase = resolveInitialProceduralCharacterPhase(config.seed);
   let elapsed = 0;
-  let pose: ProceduralCharacterPose = resolveProceduralCharacterPose(rig, config, 0, undefined, gaitPhase, undefined, undefined, undefined, {
-    skipLiveCadence: true,
-  });
+  let pose: ProceduralCharacterPose = resolveProceduralCharacterPose(
+    rig,
+    config,
+    0,
+    undefined,
+    gaitPhase,
+    undefined,
+    undefined,
+    undefined,
+    { skipLiveCadence: true },
+  );
 
   const syncSockets = () => {
     avatar.group.updateMatrixWorld(true);
@@ -348,8 +455,14 @@ export async function mountTroopMotionLab(input: MountTroopMotionInput): Promise
   newKnight.object.rotation.y = FACING_YAW;
   scene.add(newKnightRoot);
 
+  const [scoutPair, crossbowPair] = await Promise.all([
+    createInstancedTroopPair("scout"),
+    createInstancedTroopPair("crossbow"),
+  ]);
+  scene.add(scoutPair.animatedRoot, scoutPair.staticRoot, crossbowPair.animatedRoot, crossbowPair.staticRoot);
+
   let shippedKnight: BaselineKnightHandle | null = null;
-  if (input.initialState.compareShipped && input.initialState.shippedBaseUrl) {
+  if (input.initialState.shippedBaseUrl) {
     shippedKnight = await createBaselineShippedKnight(input.initialState.shippedBaseUrl);
     shippedKnight.root.scale.setScalar(T1_KNIGHT_WORLD_SCALE);
     shippedKnight.root.rotation.y = FACING_YAW;
@@ -369,6 +482,12 @@ export async function mountTroopMotionLab(input: MountTroopMotionInput): Promise
   let deathTriggered = false;
   let disposed = false;
 
+  const isComparing = () =>
+    state.troop === "knight" ? Boolean(shippedKnight && state.compareShipped) : state.compareShipped;
+
+  const activeInstancedPair = (): InstancedTroopPair | null =>
+    state.troop === "scout" ? scoutPair : state.troop === "crossbow" ? crossbowPair : null;
+
   const rebuildStage = () => {
     while (hexOutlines.length > 0) {
       const line = hexOutlines.pop()!;
@@ -376,33 +495,46 @@ export async function mountTroopMotionLab(input: MountTroopMotionInput): Promise
       (line.material as LineBasicMaterial).dispose();
       stageGroup.remove(line);
     }
-    const compare = Boolean(shippedKnight && state.compareShipped);
-    if (shippedKnight) shippedKnight.root.visible = compare;
+    const compare = isComparing();
+    newKnightRoot.visible = state.troop === "knight";
+    if (shippedKnight) shippedKnight.root.visible = state.troop === "knight" && compare;
+    scoutPair.animatedRoot.visible = state.troop === "scout";
+    scoutPair.staticRoot.visible = state.troop === "scout" && compare;
+    crossbowPair.animatedRoot.visible = state.troop === "crossbow";
+    crossbowPair.staticRoot.visible = state.troop === "crossbow" && compare;
+
+    const rightX = compare ? COMPARE_RIGHT_X : 0;
+    newKnightRoot.position.set(rightX, groundY, 0);
+    if (shippedKnight) shippedKnight.root.position.set(COMPARE_LEFT_X, groundY, 0);
+    scoutPair.animatedRoot.position.set(rightX, groundY, 0);
+    scoutPair.staticRoot.position.set(COMPARE_LEFT_X, groundY, 0);
+    crossbowPair.animatedRoot.position.set(rightX, groundY, 0);
+    crossbowPair.staticRoot.position.set(COMPARE_LEFT_X, groundY, 0);
+
     if (compare) {
-      newKnightRoot.position.set(COMPARE_RIGHT_X, groundY, 0);
-      shippedKnight!.root.position.set(COMPARE_LEFT_X, groundY, 0);
       hexOutlines.push(createHexOutline(COMPARE_LEFT_X, 0, groundY), createHexOutline(COMPARE_RIGHT_X, 0, groundY));
     } else {
-      newKnightRoot.position.set(0, groundY, 0);
       hexOutlines.push(createHexOutline(0, 0, groundY));
     }
     hexOutlines.forEach((line) => stageGroup.add(line));
   };
 
   const applyCamera = () => {
-    const compare = Boolean(shippedKnight && state.compareShipped);
+    const compare = isComparing();
+    const isScout = state.troop === "scout";
+    const targetY = groundY + (isScout ? 0.64 : 0.54);
     if (state.camera === "phone") {
       camera.fov = compare ? 38 : 34;
-      camera.position.set(0, groundY + (compare ? 1.82 : 1.48), compare ? 4.85 : 3.45);
-      controls.target.set(0, groundY + 0.52, 0);
+      camera.position.set(0, groundY + (compare ? (isScout ? 2.1 : 1.82) : 1.56), compare ? (isScout ? 5.5 : 4.85) : 3.65);
+      controls.target.set(0, targetY, 0);
     } else if (compare) {
       camera.fov = 33;
-      camera.position.set(0, groundY + 1.46, 3.55);
-      controls.target.set(0, groundY + 0.54, 0);
+      camera.position.set(0, groundY + (isScout ? 1.65 : 1.46), isScout ? 4.1 : 3.55);
+      controls.target.set(0, targetY, 0);
     } else {
       camera.fov = 32;
-      camera.position.set(0.55, groundY + 1.24, 2.55);
-      controls.target.set(0, groundY + 0.54, 0);
+      camera.position.set(0.65, groundY + (isScout ? 1.45 : 1.24), isScout ? 3.05 : 2.55);
+      controls.target.set(0, targetY, 0);
     }
     camera.updateProjectionMatrix();
     controls.update();
@@ -426,9 +558,19 @@ export async function mountTroopMotionLab(input: MountTroopMotionInput): Promise
       }),
     );
     shippedKnight?.setMode(locomotion);
-    const compare = Boolean(shippedKnight && state.compareShipped);
-    newKnightRoot.position.set(compare ? COMPARE_RIGHT_X : 0, groundY, 0);
+
+    for (const pair of [scoutPair, crossbowPair]) {
+      pair.controller.playActionAt(0, nextAction === "march" ? "march" : "idle");
+    }
+
+    const compare = isComparing();
+    const rightX = compare ? COMPARE_RIGHT_X : 0;
+    newKnightRoot.position.set(rightX, groundY, 0);
     if (shippedKnight) shippedKnight.root.position.set(COMPARE_LEFT_X, groundY, 0);
+    scoutPair.animatedRoot.position.set(rightX, groundY, 0);
+    scoutPair.staticRoot.position.set(COMPARE_LEFT_X, groundY, 0);
+    crossbowPair.animatedRoot.position.set(rightX, groundY, 0);
+    crossbowPair.staticRoot.position.set(COMPARE_LEFT_X, groundY, 0);
   };
 
   const updateSize = () => {
@@ -451,34 +593,60 @@ export async function mountTroopMotionLab(input: MountTroopMotionInput): Promise
   const labelPos = new Vector3();
   const attackTargetNew = new Vector3();
   const attackTargetShipped = new Vector3();
-  const statsBox = new Box3();
 
   const projectLabels = () => {
     const width = input.container.clientWidth;
     const height = input.container.clientHeight;
     if (width <= 0 || height <= 0) return;
-    const compare = Boolean(shippedKnight && state.compareShipped);
-    const entries: Array<{ id: string; text: string; pos: Vector3 }> = compare
-      ? [
-          {
-            id: "shipped",
-            text: "Shipped Knight",
-            pos: new Vector3(shippedKnight!.root.position.x, groundY + 1.18, shippedKnight!.root.position.z),
-          },
-          {
-            id: "new",
-            text: "New Knight · Redone",
-            pos: new Vector3(newKnightRoot.position.x, groundY + 1.18, newKnightRoot.position.z),
-          },
-        ]
-      : [
-          {
-            id: "new",
-            text: `New Knight · ${actionLabel}`,
-            pos: new Vector3(newKnightRoot.position.x, groundY + 1.18, newKnightRoot.position.z),
-          },
-        ];
-    const pad = Math.min(84, width * 0.23);
+    const compare = isComparing();
+    const labelY = groundY + (state.troop === "scout" ? 1.44 : 1.18);
+    const pair = activeInstancedPair();
+    const entries: Array<{ id: string; text: string; pos: Vector3 }> =
+      state.troop === "knight"
+        ? compare
+          ? [
+              {
+                id: "shipped",
+                text: "Shipped Knight",
+                pos: new Vector3(shippedKnight!.root.position.x, labelY, shippedKnight!.root.position.z),
+              },
+              {
+                id: "new",
+                text: "New Knight · Redone",
+                pos: new Vector3(newKnightRoot.position.x, labelY, newKnightRoot.position.z),
+              },
+            ]
+          : [
+              {
+                id: "new",
+                text: `New Knight · ${actionLabel}`,
+                pos: new Vector3(newKnightRoot.position.x, labelY, newKnightRoot.position.z),
+              },
+            ]
+        : compare && pair
+          ? [
+              {
+                id: "static",
+                text: `Shipped ${state.troop === "scout" ? "Scout" : "Crossbow"} (Static)`,
+                pos: new Vector3(pair.staticRoot.position.x, labelY, pair.staticRoot.position.z),
+              },
+              {
+                id: "animated",
+                text: `Animated ${state.troop === "scout" ? "Scout" : "Crossbow"}`,
+                pos: new Vector3(pair.animatedRoot.position.x, labelY, pair.animatedRoot.position.z),
+              },
+            ]
+          : pair
+            ? [
+                {
+                  id: "animated",
+                  text: `${state.troop === "scout" ? "Scout" : "Crossbow"} · ${actionLabel}`,
+                  pos: new Vector3(pair.animatedRoot.position.x, labelY, pair.animatedRoot.position.z),
+                },
+              ]
+            : [];
+
+    const pad = Math.min(88, width * 0.24);
     const labels: TroopMotionLabel[] = entries.map((entry) => {
       labelPos.copy(entry.pos).project(camera);
       const visible = labelPos.z >= -1 && labelPos.z <= 1;
@@ -506,67 +674,87 @@ export async function mountTroopMotionLab(input: MountTroopMotionInput): Promise
       actionClock += deltaSeconds;
     }
 
+    const pair = activeInstancedPair();
+
     if (activeAction === "march") {
       const zTravel = ((actionClock * MARCH_SPEED) % (MARCH_HALF_SPAN * 2)) - MARCH_HALF_SPAN;
       newKnightRoot.position.z = zTravel;
       if (shippedKnight) shippedKnight.root.position.z = zTravel;
+      if (pair) {
+        pair.animatedRoot.position.z = zTravel;
+        pair.staticRoot.position.z = zTravel;
+      }
     } else if (activeAction === "attack") {
       const cycleIndex = Math.floor(actionClock / 1.55);
       if (cycleIndex !== lastTriggerIndex) {
         lastTriggerIndex = cycleIndex;
-        attackTargetNew.set(newKnightRoot.position.x + 0.35, groundY + 0.62, newKnightRoot.position.z + 1.45);
-        newKnight.attack(attackTargetNew);
-        if (shippedKnight) {
-          attackTargetShipped.set(
-            shippedKnight.root.position.x + 0.35,
-            groundY + 0.62,
-            shippedKnight.root.position.z + 1.45,
-          );
-          shippedKnight.attack(attackTargetShipped);
+        if (state.troop === "knight") {
+          attackTargetNew.set(newKnightRoot.position.x + 0.35, groundY + 0.62, newKnightRoot.position.z + 1.45);
+          newKnight.attack(attackTargetNew);
+          if (shippedKnight) {
+            attackTargetShipped.set(
+              shippedKnight.root.position.x + 0.35,
+              groundY + 0.62,
+              shippedKnight.root.position.z + 1.45,
+            );
+            shippedKnight.attack(attackTargetShipped);
+          }
+        } else if (pair) {
+          pair.controller.playActionAt(0, "attack");
         }
       }
     } else if (activeAction === "hit") {
       const cycleIndex = Math.floor(actionClock / 1.35);
       if (cycleIndex !== lastTriggerIndex) {
         lastTriggerIndex = cycleIndex;
-        newKnight.applyReaction({
-          directionX: 0.12,
-          directionY: 0,
-          directionZ: -1,
-          source: "melee",
-          strength: 1,
-        });
-        shippedKnight?.hit();
+        if (state.troop === "knight") {
+          newKnight.applyReaction({
+            directionX: 0.12,
+            directionY: 0,
+            directionZ: -1,
+            source: "melee",
+            strength: 1,
+          });
+          shippedKnight?.hit();
+        } else if (pair) {
+          pair.controller.playActionAt(0, "hit");
+        }
       }
     } else if (activeAction === "death") {
       if (!deathTriggered && actionClock >= 0.25) {
         deathTriggered = true;
-        newKnight.playDeath();
-        shippedKnight?.hit();
+        if (state.troop === "knight") {
+          newKnight.playDeath();
+          shippedKnight?.hit();
+        } else if (pair) {
+          pair.controller.playActionAt(0, "death");
+        }
       } else if (state.action !== "reel" && actionClock >= 2.55) {
         applyActionMode("death", true);
       }
     }
 
-    runtime.update(deltaSeconds);
-    shippedKnight?.update(deltaSeconds);
+    if (state.troop === "knight") {
+      runtime.update(deltaSeconds);
+      shippedKnight?.update(deltaSeconds);
+    } else if (pair) {
+      pair.controller.update(deltaSeconds, INSTANCED_ACTIVE);
+    }
     environment.frame(deltaSeconds, controls.target, "day");
   };
 
   let lastFrameMs = performance.now();
   let lastStatsPushMs = 0;
 
-  const getStats = (): TroopMotionStats => {
-    statsBox.setFromObject(newKnightRoot);
-    return {
-      rendererMode: getRendererDiagnosticActiveMode() ?? "webgpu",
-      activeAction,
-      actionLabel,
-      drawCalls: renderer.info.render.calls,
-      triangles: renderer.info.render.triangles,
-      seconds: elapsedSeconds,
-    };
-  };
+  const getStats = (): TroopMotionStats => ({
+    rendererMode: getRendererDiagnosticActiveMode() ?? "webgpu",
+    troop: state.troop,
+    activeAction,
+    actionLabel,
+    drawCalls: renderer.info.render.calls,
+    triangles: renderer.info.render.triangles,
+    seconds: elapsedSeconds,
+  });
 
   const renderFrame = () => {
     if (disposed) return;
@@ -587,10 +775,11 @@ export async function mountTroopMotionLab(input: MountTroopMotionInput): Promise
 
   return {
     updateState(next) {
-      const cameraChanged = next.camera !== state.camera || next.compareShipped !== state.compareShipped;
-      const actionChanged = next.action !== state.action;
+      const stageChanged =
+        next.troop !== state.troop || next.camera !== state.camera || next.compareShipped !== state.compareShipped;
+      const actionChanged = next.action !== state.action || next.troop !== state.troop;
       state = { ...next };
-      if (cameraChanged) {
+      if (stageChanged) {
         rebuildStage();
         applyCamera();
       }
@@ -623,6 +812,8 @@ export async function mountTroopMotionLab(input: MountTroopMotionInput): Promise
         line.geometry.dispose();
         (line.material as LineBasicMaterial).dispose();
       });
+      scoutPair.dispose();
+      crossbowPair.dispose();
       shippedKnight?.dispose();
       newKnight.dispose();
       runtime.dispose();

@@ -1,8 +1,8 @@
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
-import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { createBrowserSession } from "./client-playtest/browser-session.mjs";
 import { withDevClient } from "./lib/dev-client.mjs";
 
@@ -14,6 +14,7 @@ mkdirSync(out, { recursive: true });
 
 const ACTIONS = ["idle", "march", "attack", "hit", "death"];
 const KNIGHT_FILES = ["skin.glb", "sword.glb", "shield.glb"];
+const PUBLIC_TMP_DIR = fileURLToPath(new URL("../public/.tmp-shipped-knight", import.meta.url));
 
 function resolveShippedKnightRef() {
   for (const ref of ["feat/frontier-s1", "origin/feat/frontier-s1"]) {
@@ -25,34 +26,16 @@ function resolveShippedKnightRef() {
   return null;
 }
 
-async function startShippedKnightServer() {
+function stageShippedKnightFiles() {
   const ref = resolveShippedKnightRef();
-  if (!ref) return null;
-  const blobs = new Map();
+  if (!ref) return false;
+  mkdirSync(PUBLIC_TMP_DIR, { recursive: true });
   for (const file of KNIGHT_FILES) {
     const gitPath = `${ref}:apps/game/public/models/characters/t1-knight-default/near/${file}`;
     const content = execFileSync("git", ["show", gitPath], { maxBuffer: 16 * 1024 * 1024 });
-    blobs.set(`/${file}`, content);
+    writeFileSync(join(PUBLIC_TMP_DIR, file), content);
   }
-  const server = createServer((req, res) => {
-    const pathname = (req.url || "/").split("?")[0];
-    const body = blobs.get(pathname);
-    res.setHeader("Access-Control-Allow-Origin", "*");
-    if (!body) {
-      res.writeHead(404);
-      res.end("not found");
-      return;
-    }
-    res.writeHead(200, { "Content-Type": "model/gltf-binary", "Content-Length": String(body.length) });
-    res.end(body);
-  });
-  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
-  const address = server.address();
-  const url = `http://127.0.0.1:${address.port}`;
-  return {
-    url,
-    close: () => new Promise((resolve) => server.close(resolve)),
-  };
+  return true;
 }
 
 function transcodeClip(webmPath, mp4Path) {
@@ -97,15 +80,13 @@ function recordActionClip(browser, name, state, durationMs, fps = 24) {
 
 const profile = mkdtempSync(join(tmpdir(), "troop-motion-proof-"));
 const browser = createBrowserSession("troop-motion-" + Date.now(), { profile, headed: false });
-const shippedServer = await startShippedKnightServer();
+const hasShippedKnight = stageShippedKnightFiles();
 
 try {
   await withDevClient({ base: option("--base-url", null), port, out }, async (baseUrl) => {
     try {
       const clips = [];
-      const compareQuery = shippedServer
-        ? `&compare=1&shippedUrl=${encodeURIComponent(shippedServer.url)}`
-        : "&compare=0";
+      const compareQuery = hasShippedKnight ? "&compare=1&shippedUrl=/.tmp-shipped-knight" : "&compare=0";
 
       browser.run(["set", "viewport", "1280", "720"]);
       browser.run(["open", `${baseUrl}/lab/troop-motion?capture=1&troop=knight&action=idle&camera=desktop${compareQuery}`]);
@@ -115,48 +96,50 @@ try {
         "document.querySelector('[data-troop-motion-ready=\"true\"]') !== null && Boolean(window.__troopMotionLab?.ready)",
       ]);
 
-      for (const action of ACTIONS) {
-        const duration = action === "attack" ? 3100 : action === "death" ? 2600 : 2500;
+      for (const troop of ["knight", "scout", "crossbow"]) {
+        const compare = troop === "knight" ? hasShippedKnight : true;
+        for (const action of ACTIONS) {
+          const duration = action === "attack" ? 3000 : action === "death" ? 2500 : 2400;
+          clips.push(
+            recordActionClip(
+              browser,
+              `${troop}-desktop-${action}`,
+              { troop, action, camera: "desktop", compareShipped: compare },
+              duration,
+            ),
+          );
+        }
         clips.push(
           recordActionClip(
             browser,
-            `knight-desktop-${action}`,
-            { action, camera: "desktop", compareShipped: Boolean(shippedServer) },
-            duration,
+            `${troop}-reel-desktop`,
+            { troop, action: "reel", camera: "desktop", compareShipped: false },
+            11800,
           ),
         );
       }
 
-      clips.push(
-        recordActionClip(
-          browser,
-          "knight-new-reel-desktop",
-          { action: "reel", camera: "desktop", compareShipped: false },
-          11800,
-        ),
-      );
-
       browser.run(["set", "viewport", "390", "844"]);
-      for (const action of ACTIONS) {
-        const duration = action === "attack" ? 3100 : action === "death" ? 2600 : 2500;
-        clips.push(
-          recordActionClip(
-            browser,
-            `knight-phone-${action}`,
-            { action, camera: "phone", compareShipped: Boolean(shippedServer) },
-            duration,
-          ),
-        );
+      for (const troop of ["knight", "scout", "crossbow"]) {
+        const compare = troop === "knight" ? hasShippedKnight : true;
+        for (const action of ACTIONS) {
+          const duration = action === "attack" ? 3000 : action === "death" ? 2500 : 2400;
+          clips.push(
+            recordActionClip(
+              browser,
+              `${troop}-phone-${action}`,
+              { troop, action, camera: "phone", compareShipped: compare },
+              duration,
+            ),
+          );
+        }
       }
 
       const stats = JSON.parse(browser.run(["eval", "JSON.stringify(window.__troopMotionLab.getStats())"]));
-      const summary = {
-        capturedAt: new Date().toISOString(),
-        comparedWithShipped: Boolean(shippedServer),
-        clips,
-        stats,
-      };
-      writeFileSync(join(out, "summary.json"), JSON.stringify(summary, null, 2));
+      writeFileSync(
+        join(out, "summary.json"),
+        JSON.stringify({ capturedAt: new Date().toISOString(), comparedWithShipped: hasShippedKnight, clips, stats }, null, 2),
+      );
       console.log(`Troop motion proof complete: ${clips.length} clips in ${out}`);
     } finally {
       browser.close();
@@ -164,5 +147,5 @@ try {
     }
   });
 } finally {
-  if (shippedServer) await shippedServer.close();
+  rmSync(PUBLIC_TMP_DIR, { recursive: true, force: true });
 }
