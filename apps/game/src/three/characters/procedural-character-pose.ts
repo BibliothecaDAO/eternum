@@ -29,7 +29,6 @@ import { resolveKnightDeathPose, resolveKnightLiveCadence, type KnightLiveCadenc
 
 export interface ProceduralCharacterPoseOptions {
   deathProgress?: number;
-  skipLiveCadence?: boolean;
 }
 
 export type Vector3Tuple = readonly [number, number, number];
@@ -114,10 +113,7 @@ export function resolveProceduralCharacterPose(
 
   const gait = resolveProceduralCharacterGaitSignals(config, elapsedSeconds, phaseOverride);
   const declared = isDeclaredBodyAction(upperBodyAction) ? upperBodyAction : undefined;
-  const liveCadence =
-    declared && !options?.skipLiveCadence
-      ? resolveKnightLiveCadence(config, gait, elapsedSeconds, declared)
-      : undefined;
+  const liveCadence = declared ? resolveKnightLiveCadence(config, gait, elapsedSeconds, declared) : undefined;
   const trunkReaction = declared ? undefined : reaction;
   const basePelvis = resolveGroundedPelvis(rig, config, gait, elapsedSeconds);
   const basePelvisRotation = resolvePelvisRotation(config, gait);

@@ -1,5 +1,6 @@
 import { GUARD_MODELS } from "@bibliothecadao/eternum/game-client";
 import { FrontierModel, frontierModelKind, type BeastLayer } from "../structures/frontier-model";
+import type { BeastMotionAction } from "../structures/beast-motion";
 import { nextFrameOrTimeout } from "@/utils/frame-or-timeout";
 import { realmModelIndex, isWonderModelPath } from "../structures/realm-design";
 import { MineKinds, orderAspect, structureName, troopTierIndex } from "@bibliothecadao/types";
@@ -2012,6 +2013,19 @@ export class StructureManager {
 
     const structure = this.resolveStructureInfoByEntityId(normalizedEntityId);
     if (structure) this.refreshStructurePlate(structure);
+    if (degrees !== undefined) {
+      this.playBeastMotion(normalizedEntityId, role === "attacker" ? "attack" : "hit");
+    }
+  }
+
+  private playBeastMotion(entityId: ID, action: BeastMotionAction): void {
+    const bindings = this.structureInstanceBindings.get(entityId);
+    if (!bindings) return;
+    for (const binding of bindings) {
+      if (binding.model instanceof FrontierModel) {
+        binding.model.playMotionAt(binding.instanceIndex, action);
+      }
+    }
   }
 
   private playStructureGuardDifferenceFx(entityId: ID, previousGuards: GuardArmy[], currentGuards: GuardArmy[]) {
@@ -2027,6 +2041,9 @@ export class StructureManager {
       }
 
       const diff = newGuard.count - oldGuard.count;
+      if (diff < 0) {
+        this.playBeastMotion(entityId, newGuard.count <= 0 ? "death" : "hit");
+      }
 
       const worldPos = getWorldPositionForHex(structure.hexCoords);
       placePositionOnTerrain(worldPos, this.resolveTerrainSurface());

@@ -1,14 +1,12 @@
-import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createBrowserSession } from "./client-playtest/browser-session.mjs";
 import { withDevClient } from "./lib/dev-client.mjs";
+import { assertBrowserClean, parseOption, transcodeClip } from "./lib/motion-proof.mjs";
 
-const option = (key, fallback) => (process.argv.includes(key) ? process.argv[process.argv.indexOf(key) + 1] : fallback);
-
-const out = option("--out", join(tmpdir(), "beast-families-proof-" + Date.now()));
-const port = option("--port", "4429");
+const out = parseOption("--out", join(tmpdir(), "beast-families-proof-" + Date.now()));
+const port = parseOption("--port", "4429");
 mkdirSync(out, { recursive: true });
 
 const FAMILY_ACTION_DURATIONS_MS = {
@@ -17,31 +15,6 @@ const FAMILY_ACTION_DURATIONS_MS = {
   hit: 1800,
   death: 2200,
 };
-
-function transcodeClip(webmPath, mp4Path) {
-  execFileSync(
-    "ffmpeg",
-    [
-      "-y",
-      "-i",
-      webmPath,
-      "-c:v",
-      "libx264",
-      "-pix_fmt",
-      "yuv420p",
-      "-preset",
-      "veryfast",
-      "-crf",
-      "23",
-      "-movflags",
-      "+faststart",
-      "-an",
-      mp4Path,
-    ],
-    { stdio: "ignore" },
-  );
-  unlinkSync(webmPath);
-}
 
 function recordFamilyReel(browser, family, actions, camera, suffix, fps = 24) {
   const name = `family-${family.id}-${suffix}`;
@@ -77,7 +50,7 @@ function recordFamilyReel(browser, family, actions, camera, suffix, fps = 24) {
 const profile = mkdtempSync(join(tmpdir(), "beast-families-proof-"));
 const browser = createBrowserSession("beast-families-" + Date.now(), { profile, headed: false });
 
-await withDevClient({ base: option("--base-url", null), port, out }, async (baseUrl) => {
+await withDevClient({ base: parseOption("--base-url", null), port, out }, async (baseUrl) => {
   try {
     const clips = [];
     browser.run(["set", "viewport", "1280", "720"]);
@@ -101,7 +74,8 @@ await withDevClient({ base: option("--base-url", null), port, out }, async (base
       clips.push(recordFamilyReel(browser, family, familyActions, "phoneMap", "phone"));
     }
 
-    writeFileSync(join(out, "summary.json"), JSON.stringify({ capturedAt: new Date().toISOString(), clips }, null, 2));
+    const stats = assertBrowserClean(browser, "__beastMotionLab");
+    writeFileSync(join(out, "summary.json"), JSON.stringify({ capturedAt: new Date().toISOString(), clips, stats }, null, 2));
     console.log(`Beast family proof complete: ${clips.length} clips in ${out}`);
   } finally {
     browser.close();

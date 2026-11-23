@@ -1,58 +1,16 @@
-import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { loadavg, tmpdir } from "node:os";
 import { join } from "node:path";
 import { createBrowserSession } from "./client-playtest/browser-session.mjs";
 import { withDevClient } from "./lib/dev-client.mjs";
+import { assertBrowserClean, parseOption, recordClip, transcodeClip } from "./lib/motion-proof.mjs";
 
-const option = (key, fallback) => (process.argv.includes(key) ? process.argv[process.argv.indexOf(key) + 1] : fallback);
-
-const out = option("--out", join(tmpdir(), "beast-motion-proof-" + Date.now()));
-const port = option("--port", "4425");
-const runsPerCase = Number(option("--runs", "3"));
-const samplesPerRun = Number(option("--samples", "60"));
-const warmupFrames = Number(option("--warmup", "20"));
+const out = parseOption("--out", join(tmpdir(), "beast-motion-proof-" + Date.now()));
+const port = parseOption("--port", "4425");
+const runsPerCase = Number(parseOption("--runs", "3"));
+const samplesPerRun = Number(parseOption("--samples", "60"));
+const warmupFrames = Number(parseOption("--warmup", "20"));
 mkdirSync(out, { recursive: true });
-
-function transcodeClip(webmPath, mp4Path) {
-  execFileSync(
-    "ffmpeg",
-    [
-      "-y",
-      "-i",
-      webmPath,
-      "-c:v",
-      "libx264",
-      "-pix_fmt",
-      "yuv420p",
-      "-preset",
-      "veryfast",
-      "-crf",
-      "23",
-      "-movflags",
-      "+faststart",
-      "-an",
-      mp4Path,
-    ],
-    { stdio: "ignore" },
-  );
-  unlinkSync(webmPath);
-}
-
-function recordActionClip(browser, name, state, durationMs, fps = 24) {
-  const webmPath = join(out, `${name}.webm`);
-  const mp4Path = join(out, `${name}.mp4`);
-  browser.run(["eval", `window.__beastMotionLab.setState(${JSON.stringify({ ...state, paused: false })})`]);
-  browser.run(["wait", "200"]);
-  browser.run(["record", "start", webmPath, "--fps", String(fps)]);
-  try {
-    browser.run(["wait", String(durationMs)]);
-  } finally {
-    browser.run(["record", "stop"]);
-  }
-  transcodeClip(webmPath, mp4Path);
-  return `${name}.mp4`;
-}
 
 function recordSoloReel(browser, way, actions, fps = 24) {
   const name = `way-${way}-desktop`;
@@ -123,7 +81,7 @@ function summarizeRuns(runs) {
 const profile = mkdtempSync(join(tmpdir(), "beast-motion-proof-"));
 const browser = createBrowserSession("beast-motion-" + Date.now(), { profile, headed: false });
 
-await withDevClient({ base: option("--base-url", null), port, out }, async (baseUrl) => {
+await withDevClient({ base: parseOption("--base-url", null), port, out }, async (baseUrl) => {
   try {
     const clips = [];
     browser.run(["set", "viewport", "1280", "720"]);
@@ -141,10 +99,12 @@ await withDevClient({ base: option("--base-url", null), port, out }, async (base
 
     for (const action of actions) {
       clips.push(
-        recordActionClip(
+        recordClip(
           browser,
+          out,
           `compare-desktop-${action}`,
-          { mode: "compare", action, layer: 2, phoenix: true, camera: "threeQuarter" },
+          "__beastMotionLab",
+          { mode: "compare", action, layer: 2, phoenix: true, paused: false, camera: "threeQuarter" },
           2600,
         ),
       );
@@ -157,10 +117,12 @@ await withDevClient({ base: option("--base-url", null), port, out }, async (base
     browser.run(["set", "viewport", "390", "844"]);
     for (const action of actions) {
       clips.push(
-        recordActionClip(
+        recordClip(
           browser,
+          out,
           `compare-phone-${action}`,
-          { mode: "compare", action, layer: 2, phoenix: true, camera: "phoneMap" },
+          "__beastMotionLab",
+          { mode: "compare", action, layer: 2, phoenix: true, paused: false, camera: "phoneMap" },
           2600,
         ),
       );
@@ -186,10 +148,12 @@ await withDevClient({ base: option("--base-url", null), port, out }, async (base
         browser.run(["wait", "300"]);
         if (count === 20) {
           clips.push(
-            recordActionClip(
+            recordClip(
               browser,
+              out,
               `bench-phone-${way}-20`,
-              { mode: "bench", way, count: 20, action: "walk", layer: 2, phoenix: true, camera: "threeQuarter" },
+              "__beastMotionLab",
+              { mode: "bench", way, count: 20, action: "walk", layer: 2, phoenix: true, paused: false, camera: "threeQuarter" },
               2200,
             ),
           );
@@ -239,8 +203,7 @@ await withDevClient({ base: option("--base-url", null), port, out }, async (base
         webglGpuBenchmarks.push(browser.read("window.__bmMeasure"));
       }
     }
-    const errors = browser.run(["errors"]);
-    if (errors.trim()) throw new Error(errors);
+    assertBrowserClean(browser, "__beastMotionLab");
 
     writeFileSync(
       join(out, "measurements.json"),

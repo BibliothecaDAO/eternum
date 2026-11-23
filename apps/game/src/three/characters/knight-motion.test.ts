@@ -131,7 +131,7 @@ describe("Knight procedural hybrid motion", () => {
       try {
         actor.update(1 / 60);
         const standingPelvisY = actor.getPoseDiagnostics().humanoid!.joints.pelvis[1];
-        actor.playDeath();
+        actor.playDeath?.();
         const frames = Math.ceil(KNIGHT_DEATH_DURATION_SECONDS * 60) + 12;
         for (let frame = 0; frame < frames; frame++) {
           actor.update(1 / 60);

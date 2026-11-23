@@ -3042,6 +3042,12 @@ ${
     }
     // Under attack lifts the plate's priority.
     this.refreshArmyCompactLabel(army);
+    if (degrees !== undefined) {
+      const slot = this.visibleArmyIndices.get(entityId);
+      if (slot !== undefined) {
+        this.armyModel.playTroopAction(slot, role === "attacker" ? "attack" : "hit");
+      }
+    }
   }
 
   private applyExplorerTroopsPresentationUpdate(explorerTroops: ExplorerTroopsComponentValue): void {
@@ -3055,6 +3061,12 @@ ${
     const previousCount = army.troopCount;
     if (previousCount !== troopCount) {
       const diff = troopCount - previousCount;
+      if (diff < 0) {
+        const slot = this.visibleArmyIndices.get(entityId);
+        if (slot !== undefined) {
+          this.armyModel.playTroopAction(slot, troopCount <= 0 ? "death" : "hit");
+        }
+      }
 
       // Play floating damage/heal FX at the army's position
       const normalizedHex = army.hexCoords.getNormalized();

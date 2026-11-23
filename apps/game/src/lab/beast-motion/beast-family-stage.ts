@@ -7,23 +7,16 @@ import { gltfLoader } from "@/three/utils/gltf-loader";
 
 export type BeastFamilyShowcaseId = BeastFamily | "deep";
 
-export const BEAST_FAMILY_SHOWCASE_IDS: readonly BeastFamilyShowcaseId[] = [
-  "herd",
-  "band",
-  "camp",
-  "rift",
-  "ruin",
-  "deep",
-];
-
-export const BEAST_FAMILY_LABELS: Readonly<Record<BeastFamilyShowcaseId, string>> = {
+export const BEAST_FAMILY_LABELS = {
   herd: "Herd",
   band: "Band",
   camp: "Camp",
   rift: "Rift",
   ruin: "Ruin",
   deep: "Deep",
-};
+} as const satisfies Record<BeastFamilyShowcaseId, string>;
+
+export const BEAST_FAMILY_SHOWCASE_IDS = Object.keys(BEAST_FAMILY_LABELS) as BeastFamilyShowcaseId[];
 
 export const BEAST_FAMILY_SHOWCASE_LAYERS = {
   herd: 0,
@@ -147,10 +140,7 @@ export class BeastFamilyStage {
 
   public triggerAction(action: "idle" | "attack" | "hit" | "death"): void {
     for (const entry of this.mounted) {
-      if (action === "attack") entry.model.playAttackAt(0);
-      else if (action === "hit") entry.model.playHitAt(0);
-      else if (action === "death") entry.model.playDeathAt(0);
-      else entry.model.resetMotionAt(0);
+      entry.model.playMotionAt(0, action);
     }
   }
 

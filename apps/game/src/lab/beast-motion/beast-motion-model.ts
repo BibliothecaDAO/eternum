@@ -65,7 +65,7 @@ export const BEAST_MOTION_HEX_STRIDE = HEX_SIZE * 1.5;
 export const BEAST_MOTION_MODE_LABELS = {
   compare: "Side-by-side (a/b/c)",
   bench: "Benchmark (1/20/100)",
-  families: "Families (19 beasts)",
+  families: `Families (${Object.keys(FRONTIER_BEASTS).length} beasts)`,
 } satisfies Record<BeastMotionMode, string>;
 
 export const BEAST_MOTION_CAMERA_LABELS = {

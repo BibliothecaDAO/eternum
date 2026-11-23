@@ -116,7 +116,7 @@ export interface ProceduralUnitActor {
   fireRangedAttack(targetWorld: Readonly<Vector3>): boolean;
   onRangedRelease(listener: (event: ProceduralRangedReleaseEvent) => void): () => void;
   onMeleeContact(listener: (event: ProceduralMeleeContactEvent) => void): () => void;
-  playDeath(): void;
+  playDeath?(): void;
   reset(): void;
   startRagdoll(): Promise<void>;
   setRangedTarget(targetWorld?: Readonly<Vector3>): void;
@@ -792,10 +792,6 @@ class BoatUnitActor implements ProceduralUnitActor {
     return () => undefined;
   }
 
-  public playDeath(): void {
-    void this.boat.startSinking();
-  }
-
   public reset(): void {
     this.boat.reset();
   }
@@ -947,10 +943,6 @@ class DragonUnitActor implements ProceduralUnitActor {
     this.dragon.setTerrainSampler(sampleGround);
   }
 
-  public playDeath(): void {
-    void this.dragon.startRagdoll();
-  }
-
   public reset(): void {
     this.dragon.reset();
   }
@@ -1090,10 +1082,6 @@ class HorseUnitActor implements ProceduralUnitActor {
 
   public onMeleeContact(): () => void {
     return () => undefined;
-  }
-
-  public playDeath(): void {
-    void this.horse.startRagdoll();
   }
 
   public reset(): void {
@@ -1273,12 +1261,6 @@ class MountedUnitActor implements ProceduralUnitActor {
   public onMeleeContact(listener: (event: ProceduralMeleeContactEvent) => void): () => void {
     this.meleeContactListeners.add(listener);
     return () => this.meleeContactListeners.delete(listener);
-  }
-
-  public playDeath(): void {
-    this.melee.reset();
-    this.meleePose = undefined;
-    this.rider.playDeath();
   }
 
   public reset(): void {

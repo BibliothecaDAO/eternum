@@ -50,14 +50,16 @@ import { MaterialPool } from "../utils/material-pool";
 import { MemoryMonitor } from "../utils/memory-monitor";
 import { createPooledInstancedMaterial, releasePooledInstancedMaterial } from "./army-model-materials";
 import { ArmyContactShadows } from "./army-contact-shadow";
-import { float, positionLocal, uniform } from "three/tsl";
+import { float, positionLocal } from "three/tsl";
 import { FrostedStandardNodeMaterial } from "../effects/game-map-material-library";
 import { mapAnimationTime } from "../effects/endgame/state";
 import {
-  TroopMotionController,
+  createTroopMotionController,
   createTroopMotionNode,
   resolveAnimatedTroopKind,
   type AnimatedTroopKind,
+  type TroopMotionController,
+  type TroopShaderAction,
 } from "./troop-motion";
 import type { ResolvedCosmeticSkin } from "../cosmetics/types";
 import { resolvePrimarySkinGltf } from "../cosmetics/skin-asset-source";
@@ -83,9 +85,6 @@ import { resolveRenderableBaseModel } from "./army-model-render-policy";
 import type { PipelineCompiler } from "../pipeline-compiler";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
-
-const createTroopMotionDrivenUniform = () => uniform(0);
-type TroopMotionDrivenUniform = ReturnType<typeof createTroopMotionDrivenUniform>;
 
 const flushArmyModelSlotUploads = (modelData: ModelData): void => {
   flushSlotDirtyRange(modelData.dirtySlots, [
@@ -427,10 +426,9 @@ export class ArmyModel {
     const instancedMeshes: AnimatedInstancedMesh[] = [];
     const baseMeshes: Mesh[] = [];
     const troopKind = modelType ? resolveAnimatedTroopKind(modelType) : undefined;
-    const troopMotion = troopKind ? new TroopMotionController(troopKind, this.ARMY_INSTANCE_CAPACITY) : undefined;
-    const troopMotionDriven = troopKind ? createTroopMotionDrivenUniform() : undefined;
+    const troopMotion = troopKind ? createTroopMotionController(troopKind, this.ARMY_INSTANCE_CAPACITY) : undefined;
 
-    this.processGLTFScene(gltf, group, instancedMeshes, baseMeshes, troopKind, troopMotion, troopMotionDriven);
+    this.processGLTFScene(gltf, group, instancedMeshes, baseMeshes, troopKind, troopMotion);
 
     group.visible = this.modelsVisible;
 
@@ -454,7 +452,6 @@ export class ArmyModel {
       animationUpdateInterval: this.MODEL_ANIMATION_UPDATE_INTERVAL,
       ownsGeometry,
       ...(troopMotion && { troopMotion }),
-      ...(troopMotionDriven && { troopMotionDriven }),
     };
   }
 
@@ -465,20 +462,12 @@ export class ArmyModel {
     baseMeshes: Mesh[],
     troopKind?: AnimatedTroopKind,
     troopMotion?: TroopMotionController,
-    troopMotionDriven?: TroopMotionDrivenUniform,
   ): void {
     let meshIndex = 0;
 
     gltf.scene.traverse((child: Object3D) => {
       if (child instanceof Mesh) {
-        const instancedMesh = this.createInstancedMesh(
-          child,
-          gltf.animations,
-          meshIndex,
-          troopKind,
-          troopMotion,
-          troopMotionDriven,
-        );
+        const instancedMesh = this.createInstancedMesh(child, gltf.animations, meshIndex, troopKind, troopMotion);
         group.add(instancedMesh);
         instancedMeshes.push(instancedMesh);
         baseMeshes.push(child);
@@ -493,18 +482,17 @@ export class ArmyModel {
     meshIndex: number,
     troopKind?: AnimatedTroopKind,
     troopMotion?: TroopMotionController,
-    troopMotionDriven?: TroopMotionDrivenUniform,
   ): AnimatedInstancedMesh {
     const geometry = troopMotion ? mesh.geometry.clone() : mesh.geometry;
     const pooledMaterial = createPooledInstancedMaterial(mesh.material);
-    if (troopKind && troopMotion && troopMotionDriven) {
+    if (troopKind && troopMotion) {
       geometry.setAttribute("troopMotion", troopMotion.attribute);
       geometry.computeBoundingBox();
       geometry.boundingBox?.expandByScalar(0.28);
       geometry.computeBoundingSphere();
       if (geometry.boundingSphere) geometry.boundingSphere.radius += 0.28;
       const materials = Array.isArray(pooledMaterial.material) ? pooledMaterial.material : [pooledMaterial.material];
-      const displacement = createTroopMotionNode(troopKind, float(mapAnimationTime), float(troopMotionDriven));
+      const displacement = createTroopMotionNode(troopKind, float(mapAnimationTime));
       for (const material of materials) {
         if (material instanceof FrostedStandardNodeMaterial) {
           material.positionNode = positionLocal.add(displacement);
@@ -1169,9 +1157,8 @@ export class ArmyModel {
     const time = now * 0.001;
 
     this.models.forEach((modelData) => {
-      if (modelData.troopMotion && modelData.troopMotionDriven) {
-        modelData.troopMotionDriven.value = 1;
-        modelData.troopMotion.update(deltaTime, modelData.activeInstances, visibility);
+      if (modelData.troopMotion) {
+        modelData.troopMotion.update(mapAnimationTime.value, modelData.activeInstances, visibility);
       }
       if (!this.shouldAnimateModel(modelData, visibility)) {
         return;
@@ -2224,9 +2211,17 @@ export class ArmyModel {
     if (entityId !== undefined) {
       const modelType = this.activeBaseModelByEntity.get(entityId) ?? this.entityModelMap.get(entityId);
       if (modelType) {
-        this.models.get(modelType)?.troopMotion?.setLocomotionAt(index, isWalking);
+        this.models.get(modelType)?.troopMotion?.setLoopActionAt(index, isWalking ? "march" : "idle");
       }
     }
+  }
+
+  public playTroopAction(index: number, action: TroopShaderAction): void {
+    const entityId = this.matrixIndexOwners.get(index);
+    if (entityId === undefined) return;
+    const modelType = this.activeBaseModelByEntity.get(entityId) ?? this.entityModelMap.get(entityId);
+    if (!modelType) return;
+    this.models.get(modelType)?.troopMotion?.playActionAt(index, action, mapAnimationTime.value);
   }
 
   public requestBoundsUpdate(): void {

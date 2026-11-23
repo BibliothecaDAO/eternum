@@ -11,7 +11,7 @@ import {
   Matrix4,
   MeshStandardMaterial,
 } from "three";
-import type { BeastIdle } from "@bibliothecadao/types";
+import { beastOfModel, type BeastIdle } from "@bibliothecadao/types";
 import { MeshBasicNodeMaterial } from "three/webgpu";
 import {
   attribute,
@@ -28,7 +28,6 @@ import {
   select,
   smoothstep,
   texture,
-  uniform,
   uv,
   varying,
   vec3,
@@ -43,7 +42,14 @@ import { mapAnimationTime as time } from "../effects/endgame/state";
 import { DEEP_PALETTE } from "../terrain/deep-floor-material";
 import { createInstancedMeshWithSharedMatrices } from "../utils/create-instanced-mesh";
 import { MaterialPool } from "../utils/material-pool";
-import { BeastMotionController, createBeastMotionNode, type BeastMotionSlotState } from "./beast-motion";
+import {
+  createBeastMotionController,
+  createBeastMotionNode,
+  encodeBeastIdle,
+  type BeastMotionAction,
+  type BeastMotionController,
+  type BeastMotionSlotState,
+} from "./beast-motion";
 import { FALLEN_REALM_RUIN_PATH, FRONTIER_BEASTS, type FrontierSpecies } from "./frontier-beast";
 import { frontierPaintedPath } from "./frontier-painted-buildings";
 
@@ -81,7 +87,6 @@ export class FrontierModel extends InstancedModel {
   private readonly idle: InstancedBufferAttribute;
   private readonly layer: InstancedBufferAttribute;
   private readonly motionController?: BeastMotionController;
-  private readonly drivenByController = uniform(0);
   private disposed = false;
 
   constructor(gltf: GLTF, capacity: number, kind: "ruin" | FrontierSpecies) {
@@ -98,10 +103,14 @@ export class FrontierModel extends InstancedModel {
       this.mist.renderOrder = 11;
       this.group.add(this.mist);
     } else {
-      this.motionController = new BeastMotionController(kind, slots);
+      const [idleMotion, idleSpeed, idleHeight] = encodeBeastIdle(beastOfModel(kind).idle);
+      for (let i = 0; i < slots; i++) {
+        this.idle.setXYZ(i, idleMotion, idleSpeed, idleHeight);
+      }
+      this.motionController = createBeastMotionController(kind, slots);
       for (const mesh of this.instancedMeshes) {
         const previous = mesh.material as MeshStandardMaterial | FrostedStandardNodeMaterial;
-        const material = beastMaterial(previous, kind, float(this.drivenByController));
+        const material = beastMaterial(previous, kind);
         mesh.material = material;
         if (material !== previous) {
           MaterialPool.getInstance().releaseMaterial(previous);
@@ -137,8 +146,8 @@ export class FrontierModel extends InstancedModel {
   }
 
   setIdleAt(index: number, idle: BeastIdle): void {
-    if (idle.motion === "hover") this.idle.setXYZ(index, IDLE_MOTIONS.hover, 0, 0);
-    else this.idle.setXYZ(index, IDLE_MOTIONS[idle.motion], idle.speed, idle.height);
+    const [motion, speed, height] = encodeBeastIdle(idle);
+    this.idle.setXYZ(index, motion, speed, height);
     this.idle.needsUpdate = true;
   }
 
@@ -147,25 +156,13 @@ export class FrontierModel extends InstancedModel {
     this.layer.needsUpdate = true;
   }
 
-  playAttackAt(index: number): void {
-    this.motionController?.playActionAt(index, "attack");
+  playMotionAt(index: number, action: BeastMotionAction, nowSeconds = time.value): void {
+    this.motionController?.playActionAt(index, action, nowSeconds);
   }
 
-  playHitAt(index: number): void {
-    this.motionController?.playActionAt(index, "hit");
-  }
-
-  playDeathAt(index: number): void {
-    this.motionController?.playActionAt(index, "death");
-  }
-
-  resetMotionAt(index: number): void {
-    this.motionController?.resetAt(index);
-  }
-
-  getMotionStateAt(index: number): BeastMotionSlotState {
+  getMotionStateAt(index: number, nowSeconds = time.value): BeastMotionSlotState {
     return (
-      this.motionController?.getStateAt(index) ?? {
+      this.motionController?.getStateAt(index, nowSeconds) ?? {
         action: "idle",
         progress: 0,
         clock: 0,
@@ -176,8 +173,12 @@ export class FrontierModel extends InstancedModel {
 
   override updateAnimations(deltaTime: number, visibility?: AnimationVisibilityContext): void {
     if (this.motionController) {
-      this.drivenByController.value = 1;
-      this.motionController.update(deltaTime, this.instancedMeshes[0]?.count ?? 0, visibility);
+      const count = this.instancedMeshes[0]?.count ?? 0;
+      const slots: number[] = [];
+      if (visibility) {
+        for (let i = 0; i < count; i++) slots.push(i);
+      }
+      this.motionController.update(time.value, slots, visibility);
       return;
     }
     super.updateAnimations(deltaTime, visibility);
@@ -204,12 +205,8 @@ export class FrontierModel extends InstancedModel {
   }
 }
 
-function beastMaterial(
-  source: MeshStandardMaterial | FrostedStandardNodeMaterial,
-  species: FrontierSpecies,
-  drivenByController: Node<"float">,
-) {
-  const displacement = createBeastMotionNode(species, float(time), drivenByController);
+function beastMaterial(source: MeshStandardMaterial | FrostedStandardNodeMaterial, species: FrontierSpecies) {
+  const displacement = createBeastMotionNode(species, float(time));
   if (source instanceof FrostedStandardNodeMaterial && isTripoModelMaterial(source)) {
     source.positionNode = positionLocal.add(displacement);
     const authoredGlow = source.emissiveMap
@@ -231,8 +228,6 @@ function beastMaterial(
   material.emissiveNode = createBeastPhoenixGlow();
   return material;
 }
-
-const IDLE_MOTIONS = { breath: 0, lift: 1, hover: 2 } as const satisfies Record<BeastIdle["motion"], number>;
 
 const phase = float(instanceIndex).mul(2.399963);
 

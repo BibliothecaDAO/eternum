@@ -16,7 +16,7 @@ import {
   Vector3,
 } from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import { float, positionLocal, uniform } from "three/tsl";
+import { float, positionLocal } from "three/tsl";
 import { env } from "../../../env";
 import { ProceduralCharacterAvatar } from "@/three/characters/procedural-character-avatar";
 import { resolveProceduralCharacterAppearance } from "@/three/characters/procedural-character-appearance";
@@ -60,7 +60,12 @@ import { ModelLabEnvironment } from "@/three/debug/model-lab/model-lab-environme
 import { readModelLabSettings } from "@/three/debug/model-lab/model-lab-settings";
 import { mapAnimationTime } from "@/three/effects/endgame/state";
 import { createTripoModelMaterial } from "@/three/materials/tripo-model-material";
-import { TroopMotionController, createTroopMotionNode, type AnimatedTroopKind } from "@/three/managers/troop-motion";
+import {
+  createTroopMotionController,
+  createTroopMotionNode,
+  type AnimatedTroopKind,
+  type TroopMotionController,
+} from "@/three/managers/troop-motion";
 import { ModelType } from "@/three/types/army";
 import type { RendererSurfaceLike } from "@/three/renderer-backend";
 import { initializeRendererBackendRuntime } from "@/three/renderer-backend-runtime";
@@ -123,15 +128,11 @@ interface BaselineKnightHandle {
   dispose(): void;
 }
 
-const createTroopDrivenUniform = () => uniform(1);
-type TroopDrivenUniform = ReturnType<typeof createTroopDrivenUniform>;
-
 interface InstancedTroopPair {
   kind: AnimatedTroopKind;
   animatedRoot: Group;
   staticRoot: Group;
   controller: TroopMotionController;
-  driven: TroopDrivenUniform;
   dispose(): void;
 }
 
@@ -166,10 +167,9 @@ function setShadows(root: Group): void {
 async function createInstancedTroopPair(kind: AnimatedTroopKind): Promise<InstancedTroopPair> {
   const modelType = kind === "scout" ? ModelType.Paladin1 : ModelType.Crossbowman1;
   const gltf = await gltfLoader.loadAsync(buildArmyModelAssetPath(modelType));
-  const controller = new TroopMotionController(kind, 1);
+  const controller = createTroopMotionController(kind, 1);
   controller.setPlacementAt(0, IDENTITY_MATRIX);
-  const driven = createTroopDrivenUniform();
-  const displacement = createTroopMotionNode(kind, float(mapAnimationTime), float(driven));
+  const displacement = createTroopMotionNode(kind, float(mapAnimationTime));
 
   const animatedRoot = new Group();
   const staticRoot = new Group();
@@ -231,7 +231,6 @@ async function createInstancedTroopPair(kind: AnimatedTroopKind): Promise<Instan
     animatedRoot,
     staticRoot,
     controller,
-    driven,
     dispose() {
       ownedMeshes.forEach((m) => m.dispose());
       ownedGeometries.forEach((g) => g.dispose());
@@ -315,7 +314,6 @@ async function createBaselineShippedKnight(baseUrl: string): Promise<BaselineKni
     undefined,
     undefined,
     undefined,
-    { skipLiveCadence: true },
   );
 
   const syncSockets = () => {
@@ -358,7 +356,6 @@ async function createBaselineShippedKnight(baseUrl: string): Promise<BaselineKni
         action,
         reactionPose,
         pose.parts.chest.quaternion,
-        { skipLiveCadence: true },
       ),
       deltaSeconds,
       config.secondaryMotion,
@@ -588,7 +585,7 @@ export async function mountTroopMotionLab(input: MountTroopMotionInput): Promise
     shippedKnight?.setMode(locomotion);
 
     for (const pair of [scoutPair, crossbowPair]) {
-      pair.controller.playActionAt(0, nextAction === "march" ? "march" : "idle");
+      pair.controller.playActionAt(0, nextAction === "march" ? "march" : "idle", mapAnimationTime.value);
     }
 
     const compare = isComparing();
@@ -728,7 +725,7 @@ export async function mountTroopMotionLab(input: MountTroopMotionInput): Promise
             shippedKnight.attack(attackTargetShipped);
           }
         } else if (pair) {
-          pair.controller.playActionAt(0, "attack");
+          pair.controller.playActionAt(0, "attack", mapAnimationTime.value);
         }
       }
     } else if (activeAction === "hit") {
@@ -745,17 +742,17 @@ export async function mountTroopMotionLab(input: MountTroopMotionInput): Promise
           });
           shippedKnight?.hit();
         } else if (pair) {
-          pair.controller.playActionAt(0, "hit");
+          pair.controller.playActionAt(0, "hit", mapAnimationTime.value);
         }
       }
     } else if (activeAction === "death") {
       if (!deathTriggered && actionClock >= 0.25) {
         deathTriggered = true;
         if (state.troop === "knight") {
-          newKnight.playDeath();
+          newKnight.playDeath?.();
           shippedKnight?.hit();
         } else if (pair) {
-          pair.controller.playActionAt(0, "death");
+          pair.controller.playActionAt(0, "death", mapAnimationTime.value);
         }
       } else if (state.action !== "reel" && actionClock >= 2.55) {
         applyActionMode("death", true);
@@ -766,7 +763,7 @@ export async function mountTroopMotionLab(input: MountTroopMotionInput): Promise
       runtime.update(deltaSeconds);
       shippedKnight?.update(deltaSeconds);
     } else if (pair) {
-      pair.controller.update(deltaSeconds, INSTANCED_ACTIVE);
+      pair.controller.update(mapAnimationTime.value, INSTANCED_ACTIVE);
     }
     environment.frame(deltaSeconds, controls.target, "day");
   };

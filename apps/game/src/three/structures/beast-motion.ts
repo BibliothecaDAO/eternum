@@ -1,30 +1,21 @@
 import type Node from "three/src/nodes/core/Node.js";
-import { InstancedBufferAttribute, Matrix4, Vector3 } from "three";
+import { beastOfModel, type BeastIdle } from "@bibliothecadao/types";
+import { attribute, float, instanceIndex, positionGeometry, vec3 } from "three/tsl";
 import {
-  abs,
-  attribute,
-  cos,
-  float,
-  instanceIndex,
-  max,
-  mix,
-  positionGeometry,
-  select,
-  sin,
-  smoothstep,
-  vec3,
-} from "three/tsl";
-import type { AnimationVisibilityContext } from "../types/animation";
-import { isAnimationPositionVisible } from "../utils/animation-visibility";
+  CPU_MOTION_OPS,
+  INSTANCED_MOTION_GOLDEN_PHASE,
+  InstancedMotionController,
+  TSL_MOTION_OPS,
+  type InstancedMotionSlotState,
+  type MotionMathOps,
+} from "../utils/instanced-motion";
 import type { FrontierSpecies } from "./frontier-beast";
 
 export type BeastMotionAction = "idle" | "attack" | "hit" | "death";
 type BeastMotionArchetype = "winged" | "serpentine" | "floating" | "brute" | "tails";
 
-export interface BeastMotionProfile {
+interface BeastMotionProfile {
   readonly archetype: BeastMotionArchetype;
-  readonly breathSpeed: number;
-  readonly breathAmp: number;
   readonly swayAmp: number;
   readonly wingAmp: number;
   readonly tailAmp: number;
@@ -35,12 +26,8 @@ export interface BeastMotionProfile {
   readonly height: number;
 }
 
-export interface BeastMotionSlotState {
-  readonly action: BeastMotionAction;
-  readonly progress: number;
-  readonly clock: number;
-  readonly active: boolean;
-}
+export type BeastMotionSlotState = InstancedMotionSlotState<BeastMotionAction>;
+export type BeastMotionController = InstancedMotionController<BeastMotionAction>;
 
 const BEAST_ACTION_CODES = {
   idle: 0,
@@ -51,19 +38,20 @@ const BEAST_ACTION_CODES = {
 
 const CODE_TO_ACTION: readonly BeastMotionAction[] = ["idle", "attack", "hit", "death"];
 
-const ARCHETYPE_CODES = {
-  winged: 0,
-  serpentine: 1,
-  floating: 2,
-  brute: 3,
-  tails: 4,
-} as const satisfies Record<BeastMotionArchetype, number>;
+const BEAST_IDLE_MOTION_CODES = {
+  breath: 0,
+  lift: 1,
+  hover: 2,
+} as const satisfies Record<BeastIdle["motion"], number>;
+
+export function encodeBeastIdle(idle: BeastIdle): readonly [number, number, number] {
+  if (idle.motion === "hover") return [BEAST_IDLE_MOTION_CODES.hover, 1.85, 0];
+  return [BEAST_IDLE_MOTION_CODES[idle.motion], idle.speed, idle.height];
+}
 
 export const BEAST_MOTION_PROFILES = {
   cyclops: {
     archetype: "brute",
-    breathSpeed: 1.5,
-    breathAmp: 0.032,
     swayAmp: 0.028,
     wingAmp: 0,
     tailAmp: 0,
@@ -75,8 +63,6 @@ export const BEAST_MOTION_PROFILES = {
   },
   hydra: {
     archetype: "serpentine",
-    breathSpeed: 1.15,
-    breathAmp: 0.028,
     swayAmp: 0.042,
     wingAmp: 0,
     tailAmp: 0.055,
@@ -88,8 +74,6 @@ export const BEAST_MOTION_PROFILES = {
   },
   tarrasque: {
     archetype: "serpentine",
-    breathSpeed: 1.2,
-    breathAmp: 0.03,
     swayAmp: 0.03,
     wingAmp: 0,
     tailAmp: 0.068,
@@ -101,8 +85,6 @@ export const BEAST_MOTION_PROFILES = {
   },
   wraith: {
     archetype: "floating",
-    breathSpeed: 1.35,
-    breathAmp: 0.022,
     swayAmp: 0.036,
     wingAmp: 0,
     tailAmp: 0.042,
@@ -114,8 +96,6 @@ export const BEAST_MOTION_PROFILES = {
   },
   banshee: {
     archetype: "floating",
-    breathSpeed: 1.65,
-    breathAmp: 0.024,
     swayAmp: 0.044,
     wingAmp: 0,
     tailAmp: 0.048,
@@ -127,8 +107,6 @@ export const BEAST_MOTION_PROFILES = {
   },
   lich: {
     archetype: "floating",
-    breathSpeed: 1.0,
-    breathAmp: 0.02,
     swayAmp: 0.026,
     wingAmp: 0,
     tailAmp: 0.032,
@@ -140,8 +118,6 @@ export const BEAST_MOTION_PROFILES = {
   },
   troll: {
     archetype: "brute",
-    breathSpeed: 1.25,
-    breathAmp: 0.032,
     swayAmp: 0.034,
     wingAmp: 0,
     tailAmp: 0,
@@ -153,8 +129,6 @@ export const BEAST_MOTION_PROFILES = {
   },
   golem: {
     archetype: "brute",
-    breathSpeed: 0.85,
-    breathAmp: 0.024,
     swayAmp: 0.02,
     wingAmp: 0,
     tailAmp: 0,
@@ -166,8 +140,6 @@ export const BEAST_MOTION_PROFILES = {
   },
   ettin: {
     archetype: "brute",
-    breathSpeed: 1.4,
-    breathAmp: 0.034,
     swayAmp: 0.036,
     wingAmp: 0,
     tailAmp: 0,
@@ -179,8 +151,6 @@ export const BEAST_MOTION_PROFILES = {
   },
   "dark-fey": {
     archetype: "winged",
-    breathSpeed: 1.9,
-    breathAmp: 0.022,
     swayAmp: 0.024,
     wingAmp: 0.17,
     tailAmp: 0.02,
@@ -192,8 +162,6 @@ export const BEAST_MOTION_PROFILES = {
   },
   kappa: {
     archetype: "tails",
-    breathSpeed: 1.7,
-    breathAmp: 0.028,
     swayAmp: 0.034,
     wingAmp: 0,
     tailAmp: 0.045,
@@ -205,8 +173,6 @@ export const BEAST_MOTION_PROFILES = {
   },
   kitsune: {
     archetype: "tails",
-    breathSpeed: 1.45,
-    breathAmp: 0.026,
     swayAmp: 0.032,
     wingAmp: 0,
     tailAmp: 0.085,
@@ -218,8 +184,6 @@ export const BEAST_MOTION_PROFILES = {
   },
   wyvern: {
     archetype: "winged",
-    breathSpeed: 1.35,
-    breathAmp: 0.032,
     swayAmp: 0.03,
     wingAmp: 0.19,
     tailAmp: 0.056,
@@ -231,8 +195,6 @@ export const BEAST_MOTION_PROFILES = {
   },
   ammit: {
     archetype: "serpentine",
-    breathSpeed: 1.5,
-    breathAmp: 0.028,
     swayAmp: 0.034,
     wingAmp: 0,
     tailAmp: 0.058,
@@ -244,8 +206,6 @@ export const BEAST_MOTION_PROFILES = {
   },
   minotaur: {
     archetype: "brute",
-    breathSpeed: 1.25,
-    breathAmp: 0.034,
     swayAmp: 0.038,
     wingAmp: 0,
     tailAmp: 0,
@@ -257,8 +217,6 @@ export const BEAST_MOTION_PROFILES = {
   },
   colossus: {
     archetype: "brute",
-    breathSpeed: 0.85,
-    breathAmp: 0.03,
     swayAmp: 0.022,
     wingAmp: 0,
     tailAmp: 0,
@@ -270,8 +228,6 @@ export const BEAST_MOTION_PROFILES = {
   },
   warlock: {
     archetype: "floating",
-    breathSpeed: 1.4,
-    breathAmp: 0.024,
     swayAmp: 0.032,
     wingAmp: 0,
     tailAmp: 0.044,
@@ -283,8 +239,6 @@ export const BEAST_MOTION_PROFILES = {
   },
   balrog: {
     archetype: "winged",
-    breathSpeed: 1.2,
-    breathAmp: 0.036,
     swayAmp: 0.034,
     wingAmp: 0.16,
     tailAmp: 0.048,
@@ -296,8 +250,6 @@ export const BEAST_MOTION_PROFILES = {
   },
   basilisk: {
     archetype: "serpentine",
-    breathSpeed: 1.4,
-    breathAmp: 0.026,
     swayAmp: 0.046,
     wingAmp: 0,
     tailAmp: 0.078,
@@ -309,320 +261,209 @@ export const BEAST_MOTION_PROFILES = {
   },
 } as const satisfies Record<FrontierSpecies, BeastMotionProfile>;
 
-const GOLDEN_PHASE = 2.399963;
-const scratchPosition = new Vector3();
-
-export class BeastMotionController {
-  public readonly attribute: InstancedBufferAttribute;
-  private readonly profile: BeastMotionProfile;
-  private readonly positions: Float32Array;
-  private readonly seeded: Uint8Array;
-  private readonly capacity: number;
-  private lastVisibleCount = 0;
-
-  constructor(species: FrontierSpecies, capacity: number) {
-    this.profile = BEAST_MOTION_PROFILES[species];
-    this.capacity = capacity;
-    this.positions = new Float32Array(capacity * 3);
-    this.seeded = new Uint8Array(capacity);
-    this.attribute = new InstancedBufferAttribute(new Float32Array(capacity * 4), 4);
-    for (let i = 0; i < capacity; i++) {
-      this.attribute.setXYZW(i, BEAST_ACTION_CODES.idle, 0, i * GOLDEN_PHASE, 1);
-    }
-  }
-
-  public setPlacementAt(index: number, matrix: Matrix4): void {
-    if (index < 0 || index >= this.capacity) return;
-    const base = index * 3;
-    this.positions[base] = matrix.elements[12];
-    this.positions[base + 1] = matrix.elements[13];
-    this.positions[base + 2] = matrix.elements[14];
-    if (!this.seeded[index]) {
-      this.seeded[index] = 1;
-      this.attribute.setZ(index, index * GOLDEN_PHASE);
-      this.attribute.setW(index, 1);
-      this.attribute.needsUpdate = true;
-    }
-  }
-
-  public playActionAt(index: number, action: BeastMotionAction): void {
-    if (index < 0 || index >= this.capacity) return;
-    this.attribute.setX(index, BEAST_ACTION_CODES[action]);
-    this.attribute.setY(index, 0);
-    this.attribute.needsUpdate = true;
-  }
-
-  public resetAt(index: number): void {
-    this.playActionAt(index, "idle");
-  }
-
-  public getStateAt(index: number): BeastMotionSlotState {
-    if (index < 0 || index >= this.capacity) {
-      return { action: "idle", progress: 0, clock: 0, active: false };
-    }
-    const code = Math.round(this.attribute.getX(index));
-    return {
-      action: CODE_TO_ACTION[code] ?? "idle",
-      progress: this.attribute.getY(index),
-      clock: this.attribute.getZ(index),
-      active: this.attribute.getW(index) > 0.5,
-    };
-  }
-
-  public getVisibleSlotCount(): number {
-    return this.lastVisibleCount;
-  }
-
-  public update(deltaSeconds: number, count: number, visibility?: AnimationVisibilityContext): number {
-    const dt = Number.isFinite(deltaSeconds) ? Math.min(Math.max(0, deltaSeconds), 0.1) : 0;
-    const limit = Math.min(Math.max(0, count), this.capacity);
-    if (limit === 0) {
-      this.lastVisibleCount = 0;
-      return 0;
-    }
-    let visibleSlots = 0;
-    let dirty = false;
-    for (let i = 0; i < limit; i++) {
-      const base = i * 3;
-      scratchPosition.set(this.positions[base], this.positions[base + 1], this.positions[base + 2]);
-      const visible = isAnimationPositionVisible(scratchPosition, visibility);
-      const prevActive = this.attribute.getW(i) > 0.5;
-      if (visible !== prevActive) {
-        this.attribute.setW(i, visible ? 1 : 0);
-        dirty = true;
-      }
-      if (!visible) continue;
-      visibleSlots++;
-      if (dt <= 0) continue;
-      const code = Math.round(this.attribute.getX(i));
-      const clock = this.attribute.getZ(i) + dt;
-      this.attribute.setZ(i, clock);
-      dirty = true;
-      if (code === BEAST_ACTION_CODES.attack) {
-        const nextProgress = this.attribute.getY(i) + dt / this.profile.attackDuration;
-        if (nextProgress >= 1) {
-          this.attribute.setX(i, BEAST_ACTION_CODES.idle);
-          this.attribute.setY(i, 0);
-        } else {
-          this.attribute.setY(i, nextProgress);
-        }
-      } else if (code === BEAST_ACTION_CODES.hit) {
-        const nextProgress = this.attribute.getY(i) + dt / this.profile.hitDuration;
-        if (nextProgress >= 1) {
-          this.attribute.setX(i, BEAST_ACTION_CODES.idle);
-          this.attribute.setY(i, 0);
-        } else {
-          this.attribute.setY(i, nextProgress);
-        }
-      } else if (code === BEAST_ACTION_CODES.death) {
-        const nextProgress = Math.min(1, this.attribute.getY(i) + dt / this.profile.deathDuration);
-        this.attribute.setY(i, nextProgress);
-      }
-    }
-    this.lastVisibleCount = visibleSlots;
-    if (dirty) this.attribute.needsUpdate = true;
-    return visibleSlots;
-  }
+export function createBeastMotionController(species: FrontierSpecies, capacity: number): BeastMotionController {
+  const profile = BEAST_MOTION_PROFILES[species];
+  return new InstancedMotionController<BeastMotionAction>(
+    {
+      idleAction: "idle",
+      actionCodes: BEAST_ACTION_CODES,
+      codeToAction: CODE_TO_ACTION,
+      oneShotDurations: { attack: profile.attackDuration, hit: profile.hitDuration },
+      persistentDurations: { death: profile.deathDuration },
+    },
+    capacity,
+  );
 }
 
-function smoothstepCpu(edge0: number, edge1: number, x: number): number {
-  if (edge0 === edge1) return x < edge0 ? 0 : 1;
-  const t = Math.min(1, Math.max(0, (x - edge0) / (edge1 - edge0)));
-  return t * t * (3 - 2 * t);
+interface BeastDisplacementInputs<T> {
+  x: T;
+  y: T;
+  z: T;
+  actionCode: T;
+  progress: T;
+  t: T;
+  active: T;
+  idleMotion: T;
+  idleSpeed: T;
+  idleHeight: T;
+}
+
+function buildBeastDisplacement<T>(
+  op: MotionMathOps<T>,
+  p: BeastMotionProfile,
+  input: BeastDisplacementInputs<T>,
+): [T, T, T] {
+  const { x, y, z, actionCode, progress, t, active, idleMotion, idleSpeed, idleHeight } = input;
+  const zero = op.num(0);
+  const one = op.num(1);
+  const heightNorm = op.clamp(op.div(y, op.num(Math.max(0.4, p.height))), 0, 1);
+  const isHoverOrLift = op.selectGt(idleMotion, 0.5, one, zero);
+  const plantedMask = op.smoothstep(0.06, 0.32, heightNorm);
+  const grounded = op.selectGt(isHoverOrLift, 0.5, one, plantedMask);
+  const upper = op.smoothstep(0.28, 0.85, heightNorm);
+  const absX = op.abs(x);
+  const wingMask = op.mul(op.smoothstep(0.14, 0.36, absX), op.smoothstep(0.18, 0.5, heightNorm));
+  const tailMask = op.mul(op.smoothstep(-0.08, -0.34, z), op.smoothstep(0.05, 0.4, heightNorm));
+
+  const speed = op.selectGt(idleSpeed, 0.05, idleSpeed, op.num(1.2));
+  const breathWave = op.sin(op.mul(op.mul(t, speed), op.num(2.1)));
+  const swayWave = op.sin(op.mul(op.mul(t, speed), op.num(1.15)));
+  const hoverHeight = op.num(Math.max(p.hoverAmp, 0.024));
+  const idleAmp = op.selectGt(idleMotion, 1.5, hoverHeight, op.selectGt(idleHeight, 0.001, idleHeight, hoverHeight));
+
+  const baseDy = op.mul(op.mul(breathWave, idleAmp), grounded);
+  const baseDx = op.mul(op.mul(swayWave, op.num(p.swayAmp)), upper);
+
+  let archDx = zero;
+  let archDy = zero;
+  let archDz = zero;
+
+  if (p.archetype === "winged") {
+    const flapFreq = op.selectBetween(actionCode, 0.5, 1.5, op.num(10.5), op.num(4.2));
+    const flapBoost = op.selectBetween(actionCode, 0.5, 1.5, op.num(1.55), one);
+    const flap = op.mul(
+      op.mul(op.mul(op.sin(op.sub(op.mul(t, flapFreq), op.mul(absX, op.num(2.2)))), op.num(p.wingAmp)), flapBoost),
+      wingMask,
+    );
+    archDy = op.add(flap, op.mul(op.sin(op.mul(t, op.num(1.7))), op.num(p.hoverAmp)));
+    archDx = op.mul(op.mul(op.sin(op.sub(op.mul(t, op.num(2.4)), op.mul(z, op.num(4.5)))), op.num(p.tailAmp)), tailMask);
+  } else if (p.archetype === "serpentine") {
+    archDx = op.mul(
+      op.mul(op.sin(op.sub(op.mul(t, op.num(2.8)), op.mul(z, op.num(5.2)))), op.num(p.tailAmp)),
+      op.add(tailMask, op.mul(upper, op.num(0.45))),
+    );
+    archDz = op.mul(op.mul(op.cos(op.mul(t, op.num(2.1))), op.num(0.018)), upper);
+  } else if (p.archetype === "floating") {
+    archDx = op.mul(
+      op.mul(op.sin(op.add(op.mul(t, op.num(2.6)), op.mul(y, op.num(3.8)))), op.num(p.tailAmp)),
+      op.sub(one, op.mul(heightNorm, op.num(0.45))),
+    );
+    archDz = op.mul(op.cos(op.add(op.mul(t, op.num(1.45)), op.mul(y, op.num(2.4)))), op.num(p.swayAmp * 0.65));
+  } else if (p.archetype === "brute") {
+    const armMask = op.mul(op.smoothstep(0.16, 0.38, absX), op.smoothstep(0.32, 0.78, heightNorm));
+    const sideSign = op.selectGte(x, 0, one, op.num(-1));
+    archDz = op.mul(op.mul(op.mul(swayWave, sideSign), op.num(0.042)), armMask);
+    archDy = op.mul(op.mul(op.cos(op.mul(op.mul(t, speed), op.num(2.1))), op.num(0.018)), armMask);
+  } else {
+    archDx = op.mul(
+      op.mul(
+        op.sin(op.add(op.sub(op.mul(t, op.num(3.4)), op.mul(z, op.num(5.6))), op.mul(absX, op.num(2.5)))),
+        op.num(p.tailAmp),
+      ),
+      tailMask,
+    );
+    archDy = op.mul(
+      op.mul(op.cos(op.sub(op.mul(t, op.num(2.9)), op.mul(z, op.num(4.2)))), op.num(p.tailAmp * 0.45)),
+      tailMask,
+    );
+  }
+
+  const windup = op.mul(op.smoothstep(0, 0.3, progress), op.sub(one, op.smoothstep(0.3, 0.5, progress)));
+  const strike = op.mul(op.smoothstep(0.28, 0.52, progress), op.sub(one, op.smoothstep(0.58, 0.96, progress)));
+  const attackPitch = op.add(op.mul(windup, op.num(-0.24)), op.mul(strike, op.num(0.42)));
+  const pivotY = op.max(zero, op.sub(y, op.num(0.12)));
+  const attackDz = op.mul(
+    op.sub(op.add(op.mul(pivotY, op.sin(attackPitch)), op.mul(strike, op.num(0.24))), op.mul(windup, op.num(0.1))),
+    grounded,
+  );
+  const attackDy = op.mul(
+    op.sub(
+      op.add(op.mul(pivotY, op.sub(op.cos(attackPitch), one)), op.mul(windup, op.num(0.08))),
+      op.mul(strike, op.num(0.04)),
+    ),
+    grounded,
+  );
+  const attackDx = op.mul(op.mul(strike, op.num(0.045)), upper);
+
+  const flinch = op.mul(op.sin(op.mul(progress, op.num(Math.PI))), op.exp(op.mul(progress, op.num(-1.4))));
+  const hitDz = op.mul(op.mul(flinch, op.num(-0.18)), grounded);
+  const hitDy = op.mul(op.mul(flinch, op.num(-0.045)), upper);
+  const hitDx = op.mul(op.mul(op.mul(op.sin(op.mul(progress, op.num(Math.PI * 6))), flinch), op.num(0.032)), grounded);
+
+  const aliveDx = op.add(
+    op.add(baseDx, archDx),
+    op.add(
+      op.selectBetween(actionCode, 0.5, 1.5, attackDx, zero),
+      op.selectBetween(actionCode, 1.5, 2.5, hitDx, zero),
+    ),
+  );
+  const aliveDy = op.add(
+    op.add(baseDy, archDy),
+    op.add(
+      op.selectBetween(actionCode, 0.5, 1.5, attackDy, zero),
+      op.selectBetween(actionCode, 1.5, 2.5, hitDy, zero),
+    ),
+  );
+  const aliveDz = op.add(
+    archDz,
+    op.add(
+      op.selectBetween(actionCode, 0.5, 1.5, attackDz, zero),
+      op.selectBetween(actionCode, 1.5, 2.5, hitDz, zero),
+    ),
+  );
+
+  const fall = op.smoothstep(0, 0.78, progress);
+  const fallAngle = op.mul(fall, op.num(1.42));
+  const fallPivot = op.max(zero, op.sub(y, op.num(0.04)));
+  const rotY = op.sub(op.mul(fallPivot, op.cos(fallAngle)), op.mul(z, op.sin(fallAngle)));
+  const rotZ = op.add(op.mul(fallPivot, op.sin(fallAngle)), op.mul(z, op.cos(fallAngle)));
+  const settlePhase = op.clamp(op.div(op.sub(progress, op.num(0.78)), op.num(0.22)), 0, 1);
+  const settle = op.selectGt(progress, 0.78, op.mul(op.sin(op.mul(settlePhase, op.num(Math.PI))), op.num(0.015)), zero);
+  const deathDx = op.mul(op.mul(fall, op.num(0.05)), upper);
+  const deathDy = op.add(
+    op.sub(op.mul(op.sub(rotY, fallPivot), grounded), op.mul(op.mul(fall, op.num(0.06)), grounded)),
+    op.mul(settle, grounded),
+  );
+  const deathDz = op.sub(op.mul(op.sub(rotZ, z), grounded), op.mul(op.mul(fall, op.num(0.1)), grounded));
+
+  const dx = op.selectGt(actionCode, 2.5, deathDx, aliveDx);
+  const dy = op.selectGt(actionCode, 2.5, deathDy, aliveDy);
+  const dz = op.selectGt(actionCode, 2.5, deathDz, aliveDz);
+
+  return [
+    op.selectGt(active, 0.5, dx, zero),
+    op.selectGt(active, 0.5, dy, zero),
+    op.selectGt(active, 0.5, dz, zero),
+  ];
 }
 
 export function evaluateBeastMotionDisplacement(
   species: FrontierSpecies,
   localPos: readonly [number, number, number],
-  state: Pick<BeastMotionSlotState, "action" | "progress" | "clock">,
+  state: Pick<BeastMotionSlotState, "action" | "progress" | "clock" | "active">,
+  idleOverride?: BeastIdle,
 ): [number, number, number] {
-  const p = BEAST_MOTION_PROFILES[species];
-  const [x, y, z] = localPos;
-  const heightNorm = Math.min(1, Math.max(0, y / Math.max(0.4, p.height)));
-  const grounded = p.archetype === "floating" ? 1 : smoothstepCpu(0.06, 0.32, heightNorm);
-  const upper = smoothstepCpu(0.28, 0.85, heightNorm);
-  const absX = Math.abs(x);
-  const wingMask = smoothstepCpu(0.14, 0.36, absX) * smoothstepCpu(0.18, 0.5, heightNorm);
-  const tailMask = smoothstepCpu(-0.08, -0.34, z) * smoothstepCpu(0.05, 0.4, heightNorm);
-  const t = state.clock;
-
-  let dx = 0;
-  let dy = 0;
-  let dz = 0;
-
-  if (state.action === "death") {
-    const fall = smoothstepCpu(0, 0.78, state.progress);
-    const angle = fall * 1.42;
-    const pivotY = Math.max(0, y - 0.04);
-    const rotY = pivotY * Math.cos(angle) - z * Math.sin(angle);
-    const rotZ = pivotY * Math.sin(angle) + z * Math.cos(angle);
-    const settle = state.progress > 0.78 ? Math.sin(((state.progress - 0.78) / 0.22) * Math.PI) * 0.015 : 0;
-    dx = fall * 0.05 * upper;
-    dy = (rotY - pivotY) * grounded - fall * 0.06 * grounded + settle * grounded;
-    dz = (rotZ - z) * grounded - fall * 0.1 * grounded;
-    return [dx, dy, dz];
-  }
-
-  const breathWave = Math.sin(t * p.breathSpeed * 2.1);
-  const swayWave = Math.sin(t * p.breathSpeed * 1.15);
-  dy += breathWave * p.breathAmp * grounded;
-  dx += swayWave * p.swayAmp * upper;
-
-  if (p.archetype === "winged") {
-    const flapFreq = state.action === "attack" ? 10.5 : 4.2;
-    const flapBoost = state.action === "attack" ? 1.55 : 1.0;
-    const flap = Math.sin(t * flapFreq - absX * 2.2) * p.wingAmp * flapBoost * wingMask;
-    dy += flap + Math.sin(t * 1.7) * p.hoverAmp;
-    dx += Math.sin(t * 2.4 - z * 4.5) * p.tailAmp * tailMask;
-  } else if (p.archetype === "serpentine") {
-    dx += Math.sin(t * 2.8 - z * 5.2) * p.tailAmp * (tailMask + upper * 0.45);
-    dz += Math.cos(t * 2.1) * 0.018 * upper;
-  } else if (p.archetype === "floating") {
-    dy += Math.sin(t * 1.85) * p.hoverAmp;
-    dx += Math.sin(t * 2.6 + y * 3.8) * p.tailAmp * (1 - heightNorm * 0.45);
-    dz += Math.cos(t * 1.45 + y * 2.4) * p.swayAmp * 0.65;
-  } else if (p.archetype === "brute") {
-    const armMask = smoothstepCpu(0.16, 0.38, absX) * smoothstepCpu(0.32, 0.78, heightNorm);
-    dz += Math.sin(t * p.breathSpeed * 1.15) * (x >= 0 ? 1 : -1) * 0.042 * armMask;
-    dy += Math.cos(t * p.breathSpeed * 2.1) * 0.018 * armMask;
-  } else if (p.archetype === "tails") {
-    dx += Math.sin(t * 3.4 - z * 5.6 + absX * 2.5) * p.tailAmp * tailMask;
-    dy += Math.cos(t * 2.9 - z * 4.2) * p.tailAmp * 0.45 * tailMask;
-  }
-
-  if (state.action === "attack") {
-    const pr = Math.min(1, Math.max(0, state.progress));
-    const windup = smoothstepCpu(0, 0.3, pr) * (1 - smoothstepCpu(0.3, 0.5, pr));
-    const strike = smoothstepCpu(0.28, 0.52, pr) * (1 - smoothstepCpu(0.58, 0.96, pr));
-    const pitch = -windup * 0.24 + strike * 0.42;
-    const pivotY = Math.max(0, y - 0.12);
-    const lungedZ = pivotY * Math.sin(pitch) + strike * 0.24 - windup * 0.1;
-    const lungedY = pivotY * (Math.cos(pitch) - 1) + windup * 0.08 - strike * 0.04;
-    dz += lungedZ * grounded;
-    dy += lungedY * grounded;
-    dx += strike * 0.045 * upper;
-  } else if (state.action === "hit") {
-    const pr = Math.min(1, Math.max(0, state.progress));
-    const flinch = Math.sin(pr * Math.PI) * Math.exp(-pr * 1.4);
-    const shudder = Math.sin(pr * Math.PI * 6) * flinch * 0.032;
-    dz -= flinch * 0.18 * grounded;
-    dy -= flinch * 0.045 * upper;
-    dx += shudder * grounded;
-  }
-
-  return [dx, dy, dz];
+  const [idleMotion, idleSpeed, idleHeight] = encodeBeastIdle(idleOverride ?? beastOfModel(species).idle);
+  return buildBeastDisplacement(CPU_MOTION_OPS, BEAST_MOTION_PROFILES[species], {
+    x: localPos[0],
+    y: localPos[1],
+    z: localPos[2],
+    actionCode: BEAST_ACTION_CODES[state.action],
+    progress: state.progress,
+    t: state.clock,
+    active: state.active ? 1 : 0,
+    idleMotion,
+    idleSpeed,
+    idleHeight,
+  });
 }
 
-export function createBeastMotionNode(
-  species: FrontierSpecies,
-  clockNode: Node<"float">,
-  drivenByController: Node<"float">,
-) {
-  const p = BEAST_MOTION_PROFILES[species];
+export function createBeastMotionNode(species: FrontierSpecies, clockNode: Node<"float">) {
   const motion = attribute<"vec4">("beastMotion", "vec4");
   const idle = attribute<"vec3">("beastIdle", "vec3");
-  const fallbackPhase = float(instanceIndex).mul(GOLDEN_PHASE);
-
-  const actionCode = motion.x;
-  const progress = motion.y;
-  const t = mix(clockNode.add(fallbackPhase), motion.z, drivenByController);
-
-  const pos = positionGeometry;
-  const heightNorm = pos.y.div(Math.max(0.4, p.height)).clamp(0, 1);
-  const grounded = p.archetype === "floating" ? float(1) : smoothstep(0.06, 0.32, heightNorm);
-  const upper = smoothstep(0.28, 0.85, heightNorm);
-  const absX = abs(pos.x);
-  const wingMask = smoothstep(0.14, 0.36, absX).mul(smoothstep(0.18, 0.5, heightNorm));
-  const tailMask = smoothstep(-0.08, -0.34, pos.z).mul(smoothstep(0.05, 0.4, heightNorm));
-
-  const breathSpeed = select(idle.y.greaterThan(0.05), idle.y, float(p.breathSpeed));
-  const breathWave = sin(t.mul(breathSpeed).mul(2.1));
-  const swayWave = sin(t.mul(breathSpeed).mul(1.15));
-
-  const baseDy = breathWave.mul(p.breathAmp).mul(grounded);
-  const baseDx = swayWave.mul(p.swayAmp).mul(upper);
-
-  const isAttack = actionCode.greaterThan(0.5).and(actionCode.lessThan(1.5));
-  const isHit = actionCode.greaterThan(1.5).and(actionCode.lessThan(2.5));
-  const isDeath = actionCode.greaterThan(2.5);
-
-  const archCode = ARCHETYPE_CODES[p.archetype];
-  let archDx: Node<"float"> = float(0);
-  let archDy: Node<"float"> = float(0);
-  let archDz: Node<"float"> = float(0);
-
-  if (archCode === ARCHETYPE_CODES.winged) {
-    const flapFreq = select(isAttack, float(10.5), float(4.2));
-    const flapBoost = select(isAttack, float(1.55), float(1.0));
-    const flap = sin(t.mul(flapFreq).sub(absX.mul(2.2)))
-      .mul(p.wingAmp)
-      .mul(flapBoost)
-      .mul(wingMask);
-    archDy = flap.add(sin(t.mul(1.7)).mul(p.hoverAmp));
-    archDx = sin(t.mul(2.4).sub(pos.z.mul(4.5)))
-      .mul(p.tailAmp)
-      .mul(tailMask);
-  } else if (archCode === ARCHETYPE_CODES.serpentine) {
-    archDx = sin(t.mul(2.8).sub(pos.z.mul(5.2)))
-      .mul(p.tailAmp)
-      .mul(tailMask.add(upper.mul(0.45)));
-    archDz = cos(t.mul(2.1)).mul(0.018).mul(upper);
-  } else if (archCode === ARCHETYPE_CODES.floating) {
-    archDy = sin(t.mul(1.85)).mul(p.hoverAmp);
-    archDx = sin(t.mul(2.6).add(pos.y.mul(3.8)))
-      .mul(p.tailAmp)
-      .mul(float(1).sub(heightNorm.mul(0.45)));
-    archDz = cos(t.mul(1.45).add(pos.y.mul(2.4))).mul(p.swayAmp * 0.65);
-  } else if (archCode === ARCHETYPE_CODES.brute) {
-    const armMask = smoothstep(0.16, 0.38, absX).mul(smoothstep(0.32, 0.78, heightNorm));
-    const sideSign = select(pos.x.greaterThanEqual(0), float(1), float(-1));
-    archDz = sin(t.mul(breathSpeed).mul(1.15)).mul(sideSign).mul(0.042).mul(armMask);
-    archDy = cos(t.mul(breathSpeed).mul(2.1)).mul(0.018).mul(armMask);
-  } else {
-    archDx = sin(t.mul(3.4).sub(pos.z.mul(5.6)).add(absX.mul(2.5)))
-      .mul(p.tailAmp)
-      .mul(tailMask);
-    archDy = cos(t.mul(2.9).sub(pos.z.mul(4.2)))
-      .mul(p.tailAmp * 0.45)
-      .mul(tailMask);
-  }
-
-  const windup = smoothstep(0, 0.3, progress).mul(smoothstep(0.3, 0.5, progress).oneMinus());
-  const strike = smoothstep(0.28, 0.52, progress).mul(smoothstep(0.58, 0.96, progress).oneMinus());
-  const attackPitch = windup.mul(-0.24).add(strike.mul(0.42));
-  const pivotY = max(float(0), pos.y.sub(0.12));
-  const attackDz = pivotY.mul(sin(attackPitch)).add(strike.mul(0.24)).sub(windup.mul(0.1)).mul(grounded);
-  const attackDy = pivotY.mul(cos(attackPitch).sub(1)).add(windup.mul(0.08)).sub(strike.mul(0.04)).mul(grounded);
-  const attackDx = strike.mul(0.045).mul(upper);
-
-  const flinch = sin(progress.mul(Math.PI)).mul(progress.mul(-1.4).exp());
-  const hitDz = flinch.mul(-0.18).mul(grounded);
-  const hitDy = flinch.mul(-0.045).mul(upper);
-  const hitDx = sin(progress.mul(Math.PI * 6))
-    .mul(flinch)
-    .mul(0.032)
-    .mul(grounded);
-
-  const aliveDx = baseDx
-    .add(archDx)
-    .add(select(isAttack, attackDx, float(0)))
-    .add(select(isHit, hitDx, float(0)));
-  const aliveDy = baseDy
-    .add(archDy)
-    .add(select(isAttack, attackDy, float(0)))
-    .add(select(isHit, hitDy, float(0)));
-  const aliveDz = archDz.add(select(isAttack, attackDz, float(0))).add(select(isHit, hitDz, float(0)));
-
-  const fall = smoothstep(0, 0.78, progress);
-  const fallAngle = fall.mul(1.42);
-  const fallPivot = max(float(0), pos.y.sub(0.04));
-  const rotY = fallPivot.mul(cos(fallAngle)).sub(pos.z.mul(sin(fallAngle)));
-  const rotZ = fallPivot.mul(sin(fallAngle)).add(pos.z.mul(cos(fallAngle)));
-  const settlePhase = progress.sub(0.78).div(0.22).clamp(0, 1);
-  const settle = select(progress.greaterThan(0.78), sin(settlePhase.mul(Math.PI)).mul(0.015), float(0));
-  const deathDx = fall.mul(0.05).mul(upper);
-  const deathDy = rotY.sub(fallPivot).mul(grounded).sub(fall.mul(0.06).mul(grounded)).add(settle.mul(grounded));
-  const deathDz = rotZ.sub(pos.z).mul(grounded).sub(fall.mul(0.1).mul(grounded));
-
-  return vec3(select(isDeath, deathDx, aliveDx), select(isDeath, deathDy, aliveDy), select(isDeath, deathDz, aliveDz));
+  const phase = float(instanceIndex).mul(INSTANCED_MOTION_GOLDEN_PHASE);
+  const progress = clockNode.sub(motion.y).div(TSL_MOTION_OPS.max(motion.z, float(0.001))).clamp(0, 1);
+  const [dx, dy, dz] = buildBeastDisplacement(TSL_MOTION_OPS, BEAST_MOTION_PROFILES[species], {
+    x: positionGeometry.x,
+    y: positionGeometry.y,
+    z: positionGeometry.z,
+    actionCode: motion.x,
+    progress,
+    t: clockNode.add(phase),
+    active: motion.w,
+    idleMotion: idle.x,
+    idleSpeed: idle.y,
+    idleHeight: idle.z,
+  });
+  return vec3(dx, dy, dz);
 }

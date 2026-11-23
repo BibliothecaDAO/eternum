@@ -111,5 +111,4 @@ export interface ModelData {
   animationUpdateInterval: number;
   ownsGeometry: boolean;
   troopMotion?: TroopMotionController;
-  troopMotionDriven?: { value: number };
 }
