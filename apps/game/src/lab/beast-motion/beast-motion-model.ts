@@ -60,7 +60,7 @@ export const BEAST_MOTION_LAYERS: readonly BeastMotionLayer[] = [0, 1, 2, 3];
 export const BEAST_MOTION_SPECIES = "wyvern" as const;
 export const BEAST_MOTION_PATH = FRONTIER_BEASTS[BEAST_MOTION_SPECIES].path;
 export const BEAST_MOTION_CYCLE_SECONDS = 2.4;
-export const BEAST_MOTION_HEX_STRIDE = HEX_SIZE * 1.5;
+const BEAST_MOTION_HEX_STRIDE = HEX_SIZE * 1.5;
 
 export const BEAST_MOTION_MODE_LABELS = {
   compare: "Side-by-side (a/b/c)",
