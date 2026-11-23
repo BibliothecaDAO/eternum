@@ -274,7 +274,7 @@
   align-items: stretch;
   justify-content: space-evenly;
   gap: 10px;
-  padding: 58px 16px 18px;
+  padding: 54px 16px 14px;
   overflow: hidden;
   border: 1px solid var(--app-line-strong);
   border-radius: 18px;
@@ -491,9 +491,11 @@
 }
 .season-card__tile b {
   font-size: 24px;
+  line-height: 1.15;
 }
 .season-card__tile small {
   font-size: 19px;
+  line-height: 1.15;
   color: var(--app-muted);
 }
 .season-card__depth {
