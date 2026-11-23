@@ -8,7 +8,6 @@ import { existsSync, readFileSync, rmSync } from "node:fs";
 
 const POLL_MS = 500;
 const PAGE_WAIT_MS = 30_000;
-// The day's summary shows as the game's HUD mounts, or not at all.
 const DAY_SUMMARY = "[data-day-end]";
 // A sign-in code stops working ten minutes after it is sent.
 const SIGN_IN_CODE_WAIT_MS = 10 * 60_000;
@@ -148,17 +147,16 @@ export async function continueWithoutWallet(browser, owner) {
  * was shown.
  */
 export async function continuePastTheDaySummary(browser, owner) {
+  const shown = () => browser.read(isShown(DAY_SUMMARY));
   const offered = () =>
     browser.read(
       `[...document.querySelectorAll(${JSON.stringify(`${DAY_SUMMARY} button`)})].some((button) => button.textContent.trim() === "Continue")`,
     );
+  if (!shown()) return false;
+  await waitUntil(owner, () => offered() || !shown(), "the day's summary drew no Continue");
   if (!offered()) return false;
   browser.click("Continue");
-  await waitUntil(
-    owner,
-    () => !browser.read(`Boolean(document.querySelector(${JSON.stringify(DAY_SUMMARY)}))`),
-    "the day's summary did not lift after Continue",
-  );
+  await waitUntil(owner, () => !shown(), "the day's summary did not lift after Continue");
   return true;
 }
 

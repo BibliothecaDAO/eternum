@@ -5,6 +5,7 @@ import { ALERTS_POPUP } from "../../src/ui/design-system/kit/words";
 import {
   ALERTS_PROMPT,
   answerStandingPrompts,
+  continuePastTheDaySummary,
   continueWithoutWallet,
   findHomeCardEntry,
   CONNECT_PLACE,
@@ -150,6 +151,26 @@ describe("a turned day's summary over the map", () => {
       day: true,
     });
     expect(click).toHaveBeenCalledOnce();
+  });
+
+  it("is continued once its card is drawn, after the summary itself stands over the map", async () => {
+    const dom = page('<div data-day-end="summary"></div>');
+    const drawCard = vi.fn(() => {
+      dom.window.document.querySelector("[data-day-end]").innerHTML = "<button>Continue</button>";
+    });
+    const click = vi.fn(() => dom.window.document.querySelector("[data-day-end]").remove());
+    const browser = { read: (expression) => dom.window.eval(expression), run: vi.fn(), press: vi.fn(), click };
+    expect(await continuePastTheDaySummary(browser, { sleep: drawCard })).toBe(true);
+    expect(drawCard).toHaveBeenCalledOnce();
+    expect(click).toHaveBeenCalledWith("Continue");
+  });
+
+  it("passes a day's end that lifts without a summary to continue", async () => {
+    const dom = page('<div data-day-end="summary"></div>');
+    const lift = vi.fn(() => dom.window.document.querySelector("[data-day-end]").remove());
+    const browser = { read: (expression) => dom.window.eval(expression), run: vi.fn(), press: vi.fn(), click: vi.fn() };
+    expect(await continuePastTheDaySummary(browser, { sleep: lift })).toBe(false);
+    expect(browser.click).not.toHaveBeenCalled();
   });
 });
 
