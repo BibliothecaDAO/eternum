@@ -202,6 +202,9 @@
     },
     "apps/herald": {
       "paths": {
+        "@bibliothecadao/eternum/game-client": [
+          "../../packages/core/src/client/index.ts"
+        ],
         "@bibliothecadao/eternum/game-sync": [
           "../../packages/core/src/sync/index.ts"
         ],

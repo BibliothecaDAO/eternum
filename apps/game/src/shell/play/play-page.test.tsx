@@ -237,7 +237,9 @@ it("draws no race bars when aspect heights are unknown, and draws exact tower he
   );
   expect(heights).toEqual(["75%", "25%", "none", "none"]);
   expect(known.container.querySelector('[data-aspect-id="1"] .play-aspect__count')?.textContent).toBe("7,500");
-  expect(known.container.querySelector("[data-play-today]")?.textContent).toContain("Clear rifts · 0 of 1 · +1,500 Labor");
+  expect(known.container.querySelector("[data-play-today]")?.textContent).toContain(
+    "Clear rifts · 0 of 1 · +1,500 Labor",
+  );
 });
 
 it("keeps Blitz on Play once an ended Blitz's results were seen, idle and saying none is scheduled (live-qa-night-1 P3-12)", async () => {
