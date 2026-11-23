@@ -104,6 +104,7 @@ describe("Pure-maths Scout and Crossbow motion module", () => {
     internals.models.set(ModelType.Paladin1, {
       instancedMeshes: [],
       activeInstances: new Set(),
+      dirtySlots: { min: Infinity, max: -1 },
       troopMotion: scoutMotion,
     });
 

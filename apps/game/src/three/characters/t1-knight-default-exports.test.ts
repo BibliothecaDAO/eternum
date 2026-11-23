@@ -23,7 +23,7 @@ import { parseTextureFreeGlb } from "../../../test-support/parse-texture-free-gl
 const PREFIX = "/models/characters/t1-knight-default/";
 const EXPORT_HASHES = {
   "near/skin.glb": "8f56b2220c6712c3e103ce714c91399f2229b08e2d847031fba54943d5d5e0ab",
-  "mid/skin.glb": "0d5b1a900f98158481aefc567967b630f29d098d57118cabef76d0411df2b6ed",
+  "mid/skin.glb": "7653f537829c09156801a6ce064848f9bcc885a009f83790ff0b706cb2a88fbb",
   "near/sword.glb": "f13265680a50cc47a063a6c4b201a297677300b05feeef25d3234b4a7bd84c17",
   "near/shield.glb": "7d6372b22d86cc5d7b9da9fc4eaf4e7a413eafc97f62df7f119d46a8041319b7",
 } as const;

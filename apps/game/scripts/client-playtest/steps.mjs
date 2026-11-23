@@ -3054,7 +3054,7 @@ function knightPresented(onMap) {
       return failed("a visible Knight is still using the replaced model", played);
     if (stats.nearKnightCount + stats.midKnightCount !== stats.actorCount)
       return failed("Knight LOD count does not match actors", played);
-    const triangles = (stats.nearKnightCount + stats.midKnightCount) * 5790;
+    const triangles = stats.nearKnightCount * 5790 + stats.midKnightCount * 3333;
     return stats.meshDrawsPerPass === stats.actorCount * 3 && stats.trianglesPerPass === triangles
       ? completed(played)
       : failed("Knight render budget does not match the delivered meshes", played);

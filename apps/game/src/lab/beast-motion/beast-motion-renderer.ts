@@ -1,5 +1,5 @@
 import { NEUTRAL_BIOME_CLIMATE } from "@bibliothecadao/eternum";
-import { BiomeType } from "@bibliothecadao/types";
+import { BiomeType, beastOfModel } from "@bibliothecadao/types";
 import {
   AmbientLight,
   AnimationAction,
@@ -12,6 +12,7 @@ import {
   Fog,
   Group,
   HemisphereLight,
+  InstancedBufferAttribute,
   InstancedMesh,
   Line,
   LineBasicMaterial,
@@ -43,11 +44,14 @@ import { terrainHexCorners, terrainHexToWorld } from "@/three/terrain/terrain-co
 import type { TerrainCellInput, TerrainPageRequest } from "@/three/terrain/terrain-types";
 import { configureGltfTextureSupport, gltfLoader } from "@/three/utils/gltf-loader";
 import { isCoarsePointer } from "@/utils/pointer";
+import { createBeastMotionController, encodeBeastIdle } from "@/three/structures/beast-motion";
 import {
   BEAST_MOTION_ACTIONS,
   BEAST_MOTION_ACTION_INDEX,
   BEAST_MOTION_COUNTS,
+  BEAST_MOTION_CYCLE_SECONDS,
   BEAST_MOTION_PATH,
+  BEAST_MOTION_SPECIES,
   BEAST_MOTION_WAY_LABELS,
   BEAST_MOTION_WAYS,
   WYVERN_FULL_RIG_SPECS,
@@ -57,6 +61,7 @@ import {
   computeHexFormationOffsets,
   createWyvernSkeleton,
   poseHybridWyvernRig,
+  sampleBeastMotionCycle,
   type BeastMotionAction,
   type BeastMotionCount,
   type BeastMotionLayer,
@@ -343,6 +348,10 @@ class BeastMotionStage implements BeastMotionRendererHandle {
   private state: BeastMotionState;
   private stageSignature = "";
   private activeMathsMesh: InstancedMesh | null = null;
+  private readonly mathsMotionController = createBeastMotionController(BEAST_MOTION_SPECIES, 100);
+  private readonly mathsIdleAttribute = new InstancedBufferAttribute(new Float32Array(100 * 3), 3);
+  private mathsPlacements: Array<{ x: number; y: number; z: number }> = [];
+  private mathsActionCycle = -1;
   private rigActors: RigActor[] = [];
   private hybridActors: HybridActor[] = [];
   private activeAction: BeastMotionAction;
@@ -390,6 +399,12 @@ class BeastMotionStage implements BeastMotionRendererHandle {
     this.uniforms = createBeastShaderUniforms();
     this.baseGeometry = sourceMesh.geometry.clone();
     this.trianglesPerBeast = measureGeometryTriangles(this.baseGeometry);
+    const [idleMotion, idleSpeed, idleHeight] = encodeBeastIdle(beastOfModel(BEAST_MOTION_SPECIES).idle);
+    for (let i = 0; i < 100; i++) {
+      this.mathsIdleAttribute.setXYZ(i, idleMotion, idleSpeed, idleHeight);
+    }
+    this.baseGeometry.setAttribute("beastIdle", this.mathsIdleAttribute);
+    this.baseGeometry.setAttribute("beastMotion", this.mathsMotionController.attribute);
     this.baseGeometry.computeBoundingBox();
     this.baseGeometry.boundingBox?.expandByScalar(1.2);
     this.baseGeometry.computeBoundingSphere();
@@ -445,6 +460,10 @@ class BeastMotionStage implements BeastMotionRendererHandle {
       this.activeAction = next.action;
       this.seconds = 0;
       this.familyActionTimer = 0;
+      this.mathsActionCycle = -1;
+      for (let i = 0; i < this.mathsPlacements.length; i++) {
+        this.mathsMotionController.resetSlot(i);
+      }
       this.switchRigClips(next.action);
       if (this.state.mode === "families") {
         this.triggerFamilyAction(next.action);
@@ -645,10 +664,14 @@ class BeastMotionStage implements BeastMotionRendererHandle {
     mesh.frustumCulled = false;
     mesh.castShadow = true;
     mesh.receiveShadow = true;
+    this.mathsPlacements = placements.map((p) => ({ ...p }));
+    this.mathsActionCycle = -1;
     for (let i = 0; i < placements.length; i++) {
       const p = placements[i];
       MATRIX_TMP.makeTranslation(p.x, p.y, p.z);
       mesh.setMatrixAt(i, MATRIX_TMP);
+      this.mathsMotionController.resetSlot(i);
+      this.mathsMotionController.setPlacementAt(i, MATRIX_TMP);
     }
     mesh.instanceMatrix.needsUpdate = true;
     mesh.count = placements.length;
@@ -815,6 +838,28 @@ class BeastMotionStage implements BeastMotionRendererHandle {
         this.familyStage.update(delta);
       }
       return;
+    }
+    if (this.activeMathsMesh) {
+      const count = this.mathsPlacements.length;
+      if (this.state.action === "walk") {
+        const stagger = this.uniforms.phaseSpread.value > 0.5;
+        for (let i = 0; i < count; i++) {
+          const p = this.mathsPlacements[i];
+          const sample = sampleBeastMotionCycle("walk", this.seconds + (stagger ? i * 2.399963 : 0));
+          MATRIX_TMP.makeTranslation(p.x, p.y + sample.walkBob * 0.045, p.z + sample.walkOffsetZ);
+          this.activeMathsMesh.setMatrixAt(i, MATRIX_TMP);
+        }
+        this.activeMathsMesh.instanceMatrix.needsUpdate = true;
+      } else if (this.state.action === "attack" || this.state.action === "hit" || this.state.action === "death") {
+        const cycle = Math.floor(this.seconds / BEAST_MOTION_CYCLE_SECONDS);
+        if (cycle !== this.mathsActionCycle) {
+          this.mathsActionCycle = cycle;
+          for (let i = 0; i < count; i++) {
+            this.mathsMotionController.playActionAt(i, this.state.action, this.seconds);
+          }
+        }
+      }
+      this.mathsMotionController.update(this.seconds, []);
     }
     for (const actor of this.rigActors) {
       if (delta === 0) {
