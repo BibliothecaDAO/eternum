@@ -30,6 +30,7 @@ export { safeInteger } from "../utils/safe-integer";
 export { armyCombatRefusal, isAspectAlly, viewerAspects } from "../utils/army-opponents";
 export { armyDrain, deepArmyLife, type DeepArmyLife } from "../utils/deep-army-life";
 export {
+  IncompleteDeepSyncError,
   homeAspect,
   isBesideDeepSite,
   isDeepSiteRival,
@@ -38,7 +39,6 @@ export {
   readDeepRingOpening,
   readDeepSiteDefender,
   readDeepSites,
-  readDeepSitesIfReady,
   type DeepSiteView,
 } from "./views/deep-sites";
 export { raceFinishHeight, readRaceBoard, RACE_MODELS, type RaceBoard } from "./views/race";

@@ -293,10 +293,14 @@ describe("the Deep's sites on the map", () => {
     const store = {
       get: (model: string, key: { home?: bigint }) =>
         model === "DeepRules"
-          ? { gate_distance: 4 }
-          : model === "HomeAspect" && key.home === 9n
-            ? { aspect: 2 }
-            : undefined,
+          ? { gate_distance: 4, rings: [{ radius: 5, realms: 0 }] }
+          : model === "SliceRules"
+            ? { day_unit_seconds: clock.day }
+            : model === "GameRegistry"
+              ? { start_main_at: 10n, scheduled_end_at: BigInt(clock.day * 5), end_at: BigInt(clock.day * 5), seed: 1n }
+              : model === "HomeAspect" && key.home === 9n
+                ? { aspect: 2 }
+                : undefined,
       require: (model: string) => (model === "SettlementRules" ? { spacing: 1024 } : undefined),
       inGame: () => [],
       structuresOwnedBy: (_game: number, owner: bigint) => (owner === 0x111n ? [{ entity_id: 9n }] : []),
@@ -485,6 +489,70 @@ describe("the Deep's sites on the map", () => {
     expect(heldSpy.mock.calls.every(([, color]) => color === null)).toBe(true);
     expect(emblem.count).toBe(0);
 
+    manager.destroy();
+    clock.tick = 0;
+  });
+
+  it("throws loudly on missing Deep config and waits quietly while Deep sync is incomplete", () => {
+    mode.id = "frontier";
+    clock.tick = 100;
+    const gameId = configManager.getActiveGameId();
+    const projection = { getTiles: () => [], subscribeTiles: () => () => {} };
+    const plates = { setLabel: vi.fn(), retainOnly: vi.fn(), dispose: vi.fn(), setHover: vi.fn(), clearHover: vi.fn() };
+    const missingRulesStore = {
+      get: () => undefined,
+      require: () => {
+        throw new Error("unexpected");
+      },
+      inGame: (model: string) =>
+        model === "DeepSite" ? [{ game_id: gameId, entity_id: 10n, kind: 0, ring: 0, day: 0n }] : [],
+      subscribe: () => () => {},
+    };
+    expect(
+      () => new MapSiteManager(new Scene(), projection as never, missingRulesStore as never, plates as never, noGates() as never),
+    ).toThrow("Deep sites are missing their preset rules");
+
+    const missingCalendarStore = {
+      get: (model: string) =>
+        model === "DeepRules" ? { game_id: gameId, gate_distance: 4, rings: [{ radius: 5, realms: 0 }] } : undefined,
+      require: (model: string) => (model === "SettlementRules" ? { spacing: 1024 } : undefined),
+      inGame: () => [],
+      structuresOwnedBy: () => [],
+      subscribe: () => () => {},
+    };
+    expect(
+      () =>
+        new MapSiteManager(new Scene(), projection as never, missingCalendarStore as never, plates as never, noGates() as never),
+    ).toThrow("Deep sites require expedition rules");
+
+    const incompleteSyncStore = {
+      get: (model: string) =>
+        model === "DeepRules"
+          ? { game_id: gameId, gate_distance: 4, rings: [{ radius: 5, realms: 0 }] }
+          : model === "SliceRules"
+            ? { game_id: gameId, day_unit_seconds: clock.day }
+            : model === "GameRegistry"
+              ? {
+                  game_id: gameId,
+                  start_main_at: 0n,
+                  scheduled_end_at: BigInt(clock.day * 5),
+                  end_at: BigInt(clock.day * 5),
+                  seed: 1n,
+                }
+              : undefined,
+      require: (model: string) => (model === "SettlementRules" ? { spacing: 1024 } : undefined),
+      inGame: (model: string) =>
+        model === "DeepSite" ? [{ game_id: gameId, entity_id: 10n, kind: 0, ring: 0, day: 0n }] : [],
+      structuresOwnedBy: () => [],
+      subscribe: () => () => {},
+    };
+    const manager = new MapSiteManager(
+      new Scene(),
+      projection as never,
+      incompleteSyncStore as never,
+      plates as never,
+      noGates() as never,
+    );
     manager.destroy();
     clock.tick = 0;
   });

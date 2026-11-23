@@ -26,92 +26,19 @@ export interface DeepSiteView {
   guards: { slot: number; army: NativeRows["ExplorerTroops"] }[];
 }
 
-type DeepSitesAbsent =
-  | { status: "absent"; reason: "missing-rules" | "missing-calendar" | "incomplete-sites" }
-  | { status: "absent"; reason: "unknown-entries"; detail: string };
-
-type DeepSitesRead = { known: DeepSiteView[] } | { absent: string };
+export class IncompleteDeepSyncError extends Error {}
 
 export function readDeepSites(
   store: NativeFactStore,
   timestamp: number,
   gameId = configManager.getActiveGameId(),
 ): DeepSiteView[] {
-  const state = checkDeepSitesReady(store, timestamp, gameId);
-  if (state.status === "inactive") return [];
-  if (state.status === "absent") throw absentDeepSitesError(state);
-  return buildDeepSiteViews(store, state.today, state.rows, timestamp);
-}
-
-export function readDeepSitesIfReady(
-  store: NativeFactStore,
-  timestamp: number,
-  gameId = configManager.getActiveGameId(),
-): DeepSitesRead {
-  const state = checkDeepSitesReady(store, timestamp, gameId);
-  if (state.status === "inactive") return { known: [] };
-  if (state.status === "absent") return { absent: state.reason === "unknown-entries" ? state.detail : state.reason };
-  return { known: buildDeepSiteViews(store, state.today, state.rows, timestamp) };
-}
-
-type DeepSitesReady =
-  | { status: "ready"; today: DeepDay; rows: NativeRows["DeepSite"][] }
-  | { status: "inactive" }
-  | DeepSitesAbsent;
-
-type DeepDayState =
-  | { status: "ready"; today: DeepDay }
-  | { status: "inactive" }
-  | { status: "absent"; reason: "missing-rules" | "missing-calendar" };
-
-function absentDeepSitesError(state: DeepSitesAbsent): Error {
-  switch (state.reason) {
-    case "missing-rules":
-      return new Error("Deep sites are missing their preset rules");
-    case "missing-calendar":
-      return new Error("Deep sites require expedition rules");
-    case "incomplete-sites":
-      return new Error("Incomplete Deep site facts");
-    case "unknown-entries":
-      return new Error(`Realms entered today are unknown: ${state.detail}`);
-  }
-}
-
-function checkDeepDay(store: NativeFactStore, timestamp: number, gameId: number): DeepDayState {
-  const rules = store.get("DeepRules", { game_id: gameId });
-  if (!rules) {
-    if ([...store.inGame("DeepSite", gameId)].length) {
-      return { status: "absent", reason: "missing-rules" };
-    }
-    return { status: "inactive" };
-  }
-  const calendar = readExpeditionRules(store, gameId);
-  if (!calendar) return { status: "absent", reason: "missing-calendar" };
-  const day = dayOf(calendar, timestamp);
-  return day ? { status: "ready", today: { rules, index: day.index } } : { status: "inactive" };
-}
-
-function checkDeepSitesReady(store: NativeFactStore, timestamp: number, gameId: number): DeepSitesReady {
-  const dayState = checkDeepDay(store, timestamp, gameId);
-  if (dayState.status !== "ready") return dayState;
-  const { today } = dayState;
+  const today = readDeepDay(store, timestamp, gameId);
+  if (!today) return [];
   const rows = [...store.inGame("DeepSite", gameId)];
   if (rows.length !== today.rules.rings.length * nativeRuleConstants.DEEP_RING_SITES) {
-    return { status: "absent", reason: "incomplete-sites" };
+    throw new IncompleteDeepSyncError("Incomplete Deep site facts");
   }
-  const entered = realmsEntered(store, gameId, today);
-  if ("unknown" in entered) {
-    return { status: "absent", reason: "unknown-entries", detail: entered.unknown };
-  }
-  return { status: "ready", today, rows };
-}
-
-function buildDeepSiteViews(
-  store: NativeFactStore,
-  today: DeepDay,
-  rows: NativeRows["DeepSite"][],
-  timestamp: number,
-): DeepSiteView[] {
   return rows
     .sort((left, right) => left.ring - right.ring || Number(left.entity_id - right.entity_id))
     .map((site) => deepSiteView(store, today, site, timestamp));
@@ -157,9 +84,15 @@ interface DeepDay {
 }
 
 function readDeepDay(store: NativeFactStore, timestamp: number, gameId: number): DeepDay | undefined {
-  const state = checkDeepDay(store, timestamp, gameId);
-  if (state.status === "absent") throw absentDeepSitesError(state);
-  return state.status === "ready" ? state.today : undefined;
+  const rules = store.get("DeepRules", { game_id: gameId });
+  if (!rules) {
+    if ([...store.inGame("DeepSite", gameId)].length) throw new Error("Deep sites are missing their preset rules");
+    return undefined;
+  }
+  const calendar = readExpeditionRules(store, gameId);
+  if (!calendar) throw new Error("Deep sites require expedition rules");
+  const day = dayOf(calendar, timestamp);
+  return day ? { rules, index: day.index } : undefined;
 }
 
 function deepSiteView(
@@ -242,7 +175,7 @@ function realmsEntered(
 }
 
 function requireEntered(entered: { known: number } | { unknown: string }): number {
-  if ("unknown" in entered) throw new Error(`Realms entered today are unknown: ${entered.unknown}`);
+  if ("unknown" in entered) throw new IncompleteDeepSyncError(`Realms entered today are unknown: ${entered.unknown}`);
   return entered.known;
 }
 

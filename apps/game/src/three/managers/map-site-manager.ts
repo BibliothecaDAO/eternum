@@ -11,13 +11,14 @@ import {
   readExpeditionRules,
 } from "@bibliothecadao/eternum";
 import {
+  IncompleteDeepSyncError,
   deepGateTiles,
   homeAspect,
   isAspectAlly,
   nativeRuleConstants,
   readDeepBeastTroops,
   readDeepRingOpening,
-  readDeepSitesIfReady,
+  readDeepSites,
   safeInteger,
   viewerAspects,
   type DeepSiteView,
@@ -427,9 +428,13 @@ export class MapSiteManager {
   private readSitesById(): Map<number, DeepSiteView> {
     const now = readDefaultTick();
     if (now === undefined) return new Map();
-    const result = readDeepSitesIfReady(this.store, now, configManager.getActiveGameId());
-    if ("absent" in result) return new Map();
-    return new Map(result.known.map((site) => [safeInteger(site.id), site]));
+    try {
+      const sites = readDeepSites(this.store, now, configManager.getActiveGameId());
+      return new Map(sites.map((site) => [safeInteger(site.id), site]));
+    } catch (error) {
+      if (error instanceof IncompleteDeepSyncError) return new Map();
+      throw error;
+    }
   }
 
   private touchesGuardingArmy(change: { model: string; current?: unknown; previous?: unknown }): boolean {
