@@ -267,12 +267,12 @@ const describeProvisionFailure = (
 ): string => {
   const names = realms.map((realm) => realm.name).join(", ");
   const reason = error instanceof Error ? error.message : "transaction rejected";
-  if (error instanceof AutomationPending) return `Setting up ${names}: ${reason} · paused`;
+  if (error instanceof AutomationPending) return `Provisioning ${names}: ${reason} · automatic retries paused`;
   const next =
     retry.nextAttemptInHeads === null
       ? "giving up until reload"
       : `retry in ${formatCount(retry.nextAttemptInHeads, "block")}`;
-  return `Setting up ${names} failed (try ${retry.attempt}): ${reason} · ${next}`;
+  return `Provisioning ${names} failed (attempt ${retry.attempt}): ${reason} · ${next}`;
 };
 
 const ACTION_RUNNER_MODELS = ["SliceRules"] as const;
@@ -287,7 +287,7 @@ export const ActionRunners = () => {
   return (
     <>
       {hasRules && configManager.isCommandEnabled("OffloadArrival") && <ResourceArrivalAutoClaim />}
-      {hasRules && configManager.isCommandEnabled("ProvisionRealm") && <AutoProvisionRealms />}
+      <AutoProvisionRealms />
     </>
   );
 };

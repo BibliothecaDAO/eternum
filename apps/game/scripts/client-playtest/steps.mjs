@@ -5406,13 +5406,13 @@ const labDayTurnSteps = (expected) => [
 
 /** Prod's leading player's own day 2: 35 reveals and 5 sites cleared, paying 7,246 Essence and 524 Labor. */
 const RECORDED_DAY_2 = {
-  totals: ["35Reveals", "5Sites cleared", "0Chests", "+7.2KEssence", "+524Labor", "+0LORDS"],
+  totals: ["35Reveals", "5Sites cleared", "+524Labor", "+7.2KEssence"],
   notice: null,
 };
 /** Day 2 past the history read: each total a dash, and the card says why. */
 const DAY_2_OUT_OF_REACH = {
-  totals: ["—Reveals", "—Sites cleared", "—Chests", "—Essence", "—Labor", "—LORDS"],
-  notice: "Your history no longer reaches back to this day's start, so its totals are unknown.",
+  totals: ["—Reveals", "—Sites cleared", "—Labor", "—Essence"],
+  notice: "This day's totals are unknown",
 };
 /** Realm 7's site on day 3 of the lab's calendar: its region's column, four regions a day down (contract hexes). */
 const LAB_DAY_3_SITE = { col: 650, row: 850 };
@@ -5423,9 +5423,9 @@ const NEW_DAY_WAIT_MS = 20_000;
 const CAMERA_REPORT_MS = 1_000;
 const DAY_END_STATE = `JSON.stringify({
   phase: document.querySelector("[data-day-end]")?.dataset.dayEnd ?? "day",
-  card: document.querySelector("section[aria-label$=' done']")?.getAttribute("aria-label") ?? null,
-  totals: [...document.querySelectorAll("section[aria-label$=' done'] [data-total]")].map((cell) => cell.textContent),
-  notice: document.querySelector("section[aria-label$=' done'] .ui-notice")?.textContent ?? null,
+  card: document.querySelector("section[aria-label$=' complete']")?.getAttribute("aria-label") ?? null,
+  totals: [...document.querySelectorAll("section[aria-label$=' complete'] [data-total]")].map((cell) => cell.textContent),
+  notice: document.querySelector("section[aria-label$=' complete'] .ui-notice")?.textContent ?? null,
   camera: window.__eternumMapSelection?.camera ?? null,
 })`;
 
@@ -5440,7 +5440,7 @@ async function readTheDaySummary({ browser }) {
 
 function summaryShows(expected) {
   return ({ played }) => {
-    if (played.card !== "Day 2 done") return failed(`the summary shown is ${played.card ?? "none"}`, played);
+    if (played.card !== "Day 2 complete") return failed(`the summary shown is ${played.card ?? "none"}`, played);
     if (JSON.stringify(played.totals) !== JSON.stringify(expected.totals))
       return failed(`the summary counts ${played.totals.join(", ")}`, played);
     if (played.notice !== expected.notice)
