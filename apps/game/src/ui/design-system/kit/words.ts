@@ -2057,6 +2057,8 @@ function figureStep(from: RankedWords | string, to: RankedWords | string): Ranke
  * The castle's tree, read as a tree (the owner's pick, 20 October: "Branches"): its branches, how each node stands,
  * what each side and node gives, and each thing a node's next tier needs, in the order a player meets them.
  */
+const LESS_WORD = "less";
+
 export const RESEARCH_TREE = {
   /** Said while the realm's knowledge, balances, prices or board rules have not all arrived. */
   onItsWay: "The research tree is on its way",
@@ -2104,6 +2106,7 @@ export const RESEARCH_TREE = {
   research: (what: RankedWords | string): RankedWords => ["Research ", ...asRanked(what)],
   levelUpCastle: "Level up the castle",
   complete: "Complete",
+  less: `(${LESS_WORD})`,
   step: figureStep,
   price: (essence: string) => `${essence} ${ESSENCE}`,
 } as const;
@@ -2155,7 +2158,7 @@ export const RELIC_WORDS = {
 
 const STAMINA_TITLE = `${STAMINA[0]!.toUpperCase()}${STAMINA.slice(1)}`;
 export const PICK_EFFECT_WORDS = {
-  less: "less",
+  less: LESS_WORD,
   damageDealt: "Damage dealt",
   damageTaken: "Damage taken",
   damageTakenScope: (scope: string) => `Damage taken ${scope}`,
@@ -2166,8 +2169,8 @@ export const PICK_EFFECT_WORDS = {
   perTick: (amount: string) => `${amount} per tick`,
   guardingSite: "guarding a site",
   wellRefill: `Well ${STAMINA} refill`,
-  findEveryLead: "Find something every",
-  findEvery: (reveals: string) => `Find something every ${reveals}`,
+  findAfterLead: "Guaranteed find after",
+  findAfter: (emptyReveals: string) => `Guaranteed find after ${emptyReveals}`,
   exploreRewards: "Explore rewards",
   siteAndGuardRewards: "Site and guard rewards",
   attackCost: "Attack cost",

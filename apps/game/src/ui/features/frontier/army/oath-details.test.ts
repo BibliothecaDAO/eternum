@@ -24,7 +24,9 @@ it("contextualizes every Oath effect against the game's live rules", () => {
     "Damage taken guarding a site: 100% → 75% (less)",
   );
   expect(oathEffectDescription(oaths.REFLECTION, SEASON_ONE_BASE)).toBe("Well stamina refill: 40% → 80%");
-  expect(oathEffectDescription(oaths.DETECTION, SEASON_ONE_BASE)).toBe("Find something every 4 reveals instead of 7");
+  expect(oathEffectDescription(oaths.DETECTION, SEASON_ONE_BASE)).toBe(
+    "Guaranteed find after 4 empty reveals instead of 7",
+  );
   expect(oathEffectDescription(oaths.BRILLIANCE, SEASON_ONE_BASE)).toBe("Explore rewards: 100% → 125%");
   expect(oathEffectDescription(oaths.RAGE, SEASON_ONE_BASE)).toBe("Site and guard rewards: 100% → 125%");
   expect(oathEffectDescription(oaths.ANGER, SEASON_ONE_BASE)).toBe("Attack cost: 30 → 20 stamina (less)");
@@ -51,7 +53,7 @@ it("follows tuned game rules and avoids invented base figures when a rule row is
   expect(oathEffectDescription(oaths.ENLIGHTENMENT, customBase)).toBe("Stamina recovery: +3/min → +4/min");
   expect(oathEffectDescription(oaths.VITRIOL, {})).toBe("Deep troop loss: 100 per tick");
   expect(oathEffectDescription(oaths.ANGER, {})).toBe("Attack cost: 20 stamina");
-  expect(oathEffectDescription(oaths.DETECTION, {})).toBe("Find something every 4 reveals");
+  expect(oathEffectDescription(oaths.DETECTION, {})).toBe("Guaranteed find after 4 empty reveals");
 });
 
 it("describes every playable Oath uniquely with its own rule and rejects unknown ids", () => {
