@@ -29,6 +29,7 @@ import {
   resolveProceduralCharacterPose,
   type ProceduralCharacterPose,
 } from "./procedural-character-pose";
+import { KNIGHT_DEATH_DURATION_SECONDS } from "./knight-motion";
 import { ProceduralCharacterPoseFilter } from "./procedural-character-pose-filter";
 import {
   CHARACTER_PART_IDS,
@@ -69,6 +70,7 @@ export interface ProceduralCharacterActor extends ProceduralCharacterSocketReade
   getPoseDiagnostics(): ProceduralCharacterPoseDiagnostics;
   getStats(): ProceduralCharacterActorStats;
   hasFiniteState(): boolean;
+  playDeath(): void;
   reset(): void;
   setUpperBodyAction(action?: ProceduralCharacterUpperBodyAction): void;
   startRagdoll(): Promise<void>;
@@ -154,6 +156,7 @@ class RuntimeProceduralCharacterActor implements ProceduralCharacterActor {
   private readonly diagnosticJawAnchor = new Vector3();
   private readonly diagnosticSocketQuaternion = new Quaternion();
   private elapsedSeconds = 0;
+  private deathElapsedSeconds?: number;
   private upperBodyAction?: ProceduralCharacterUpperBodyAction;
   private reactionPose?: ProceduralContactReactionPose;
   private physicsSteps = 0;
@@ -327,9 +330,19 @@ class RuntimeProceduralCharacterActor implements ProceduralCharacterActor {
     this.reactionPose = this.reactionController.getPose();
   }
 
+  public playDeath(): void {
+    if (this.disposed || this.ragdoll) return;
+    this.deathElapsedSeconds = 0;
+    this.reactionController.reset();
+    this.reactionPose = undefined;
+    this.poseFilter.reset();
+    this.applyAnimatedPose(false, this.config.fixedStep);
+  }
+
   public reset(): void {
     if (this.disposed) return;
     this.resetRagdoll();
+    this.deathElapsedSeconds = undefined;
     this.plantController.reset();
     this.poseFilter.reset();
     this.gaitPhase = resolveInitialProceduralCharacterPhase(this.config.seed);
@@ -421,6 +434,11 @@ class RuntimeProceduralCharacterActor implements ProceduralCharacterActor {
   }
 
   private advanceAnimatedPose(deltaSeconds: number, phaseOverride?: number): void {
+    if (this.deathElapsedSeconds !== undefined) {
+      this.deathElapsedSeconds = Math.min(KNIGHT_DEATH_DURATION_SECONDS, this.deathElapsedSeconds + deltaSeconds);
+      this.applyAnimatedPose(false, deltaSeconds);
+      return;
+    }
     this.plantController.beginFrame(this.object, deltaSeconds);
     this.reactionPose = this.reactionController.update(deltaSeconds);
     this.gaitPhase = Number.isFinite(phaseOverride)
@@ -442,22 +460,27 @@ class RuntimeProceduralCharacterActor implements ProceduralCharacterActor {
 
   private applyAnimatedPose(beginPlantFrame = true, deltaSeconds = this.config.fixedStep): void {
     if (beginPlantFrame) this.plantController.beginFrame(this.object, deltaSeconds);
-    const action = applyDeclaredHitReaction(this.upperBodyAction, this.reactionPose);
+    const deathProgress =
+      this.deathElapsedSeconds !== undefined
+        ? Math.min(1, Math.max(0.001, this.deathElapsedSeconds / KNIGHT_DEATH_DURATION_SECONDS))
+        : undefined;
+    const action = deathProgress !== undefined ? undefined : applyDeclaredHitReaction(this.upperBodyAction, this.reactionPose);
     this.avatar.setUpperBodyAction(action);
-    this.pose = this.poseFilter.apply(
-      resolveProceduralCharacterPose(
-        this.rig,
-        this.config,
-        this.elapsedSeconds,
-        this.plantController.resolveTarget,
-        this.gaitPhase,
-        action,
-        this.reactionPose,
-        this.pose.parts.chest.quaternion,
-      ),
-      deltaSeconds,
-      this.config.secondaryMotion,
+    const nextPose = resolveProceduralCharacterPose(
+      this.rig,
+      this.config,
+      this.elapsedSeconds,
+      this.plantController.resolveTarget,
+      this.gaitPhase,
+      action,
+      this.reactionPose,
+      this.pose.parts.chest.quaternion,
+      deathProgress !== undefined ? { deathProgress } : undefined,
     );
+    this.pose =
+      deathProgress !== undefined
+        ? nextPose
+        : this.poseFilter.apply(nextPose, deltaSeconds, this.config.secondaryMotion);
     this.avatar.applyPose(this.pose);
   }
 

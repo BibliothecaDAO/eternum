@@ -25,6 +25,16 @@ import {
 } from "./procedural-motion-curves";
 import type { ProceduralPlantTargetResolver } from "./procedural-plant-controller";
 import { CHARACTER_PART_IDS, type CharacterPartId, type ResolvedCharacterRig } from "./procedural-character-rig";
+import {
+  resolveKnightDeathPose,
+  resolveKnightLiveCadence,
+  type KnightLiveCadence,
+} from "./knight-motion";
+
+export interface ProceduralCharacterPoseOptions {
+  deathProgress?: number;
+  skipLiveCadence?: boolean;
+}
 
 export type Vector3Tuple = readonly [number, number, number];
 export type QuaternionTuple = readonly [number, number, number, number];
@@ -98,13 +108,20 @@ export function resolveProceduralCharacterPose(
    * they keep their place against the chest the viewer sees rather than the controller's, which the filter trails.
    */
   visibleChestRotation?: QuaternionTuple,
+  options?: ProceduralCharacterPoseOptions,
 ): ProceduralCharacterPose {
+  if (options?.deathProgress !== undefined && options.deathProgress > 0) {
+    return resolveKnightDeathPose(rig, config, options.deathProgress);
+  }
   if (config.animationMode === "mounted")
     return resolveMountedCharacterPose(rig, config, elapsedSeconds, phaseOverride, upperBodyAction, reaction);
 
   const gait = resolveProceduralCharacterGaitSignals(config, elapsedSeconds, phaseOverride);
   const declared = isDeclaredBodyAction(upperBodyAction) ? upperBodyAction : undefined;
-  // A declared body takes its hit state instead (see applyProceduralMeleeHitReaction).
+  const liveCadence =
+    declared && !options?.skipLiveCadence
+      ? resolveKnightLiveCadence(config, gait, elapsedSeconds, declared)
+      : undefined;
   const trunkReaction = declared ? undefined : reaction;
   const basePelvis = resolveGroundedPelvis(rig, config, gait, elapsedSeconds);
   const basePelvisRotation = resolvePelvisRotation(config, gait);
@@ -112,7 +129,6 @@ export function resolveProceduralCharacterPose(
     ? resolveDeclaredPelvis(rig, config, basePelvis, basePelvisRotation, declared)
     : resolveActionPelvis(rig, basePelvis, basePelvisRotation, upperBodyAction);
   const { pelvis, pelvisRotation } = applyCharacterReactionPelvis(rig, actionPelvis, trunkReaction);
-  // Standing, a declared body places the feet; moving, the gait does.
   const stance = declared && config.animationMode === "idle" ? declared.body : undefined;
   const resolveLeg = (side: CharacterFootId) =>
     stance
@@ -121,7 +137,12 @@ export function resolveProceduralCharacterPose(
   const leftLeg = resolveLeg("left");
   const rightLeg = resolveLeg("right");
   const baseTorso = resolveGroundedTorso(rig, config, gait, pelvis, pelvisRotation, elapsedSeconds);
-  const torso = resolveActionTorso(rig, applyCharacterReactionTorso(rig, baseTorso, trunkReaction), upperBodyAction);
+  const torso = resolveActionTorso(
+    rig,
+    applyCharacterReactionTorso(rig, baseTorso, trunkReaction),
+    upperBodyAction,
+    liveCadence,
+  );
   const baseLeftArm = resolveGroundedArm(rig, config, gait, torso.leftShoulder, "left", elapsedSeconds);
   const baseRightArm = resolveGroundedArm(rig, config, gait, torso.rightShoulder, "right", elapsedSeconds);
   const { leftArm, rightArm } = resolveActionArms(
@@ -131,6 +152,7 @@ export function resolveProceduralCharacterPose(
     baseRightArm,
     upperBodyAction,
     visibleChestRotation,
+    liveCadence,
   );
 
   return assembleCharacterPose({
@@ -206,10 +228,11 @@ function resolveActionTorso(
   rig: ResolvedCharacterRig,
   torso: CharacterTorsoJoints,
   action?: ProceduralCharacterUpperBodyAction,
+  liveCadence?: KnightLiveCadence,
 ): CharacterTorsoJoints {
   if (action?.kind === "archer") return resolveArcherTorso(rig, torso, action);
   if (action?.kind === "crossbow") return resolveCrossbowTorso(rig, torso, action);
-  if (isDeclaredBodyAction(action)) return resolveDeclaredMeleeTorso(rig, torso, action);
+  if (isDeclaredBodyAction(action)) return resolveDeclaredMeleeTorso(rig, torso, action, liveCadence);
   if (action?.kind === "melee") return resolveMeleeTorso(rig, torso, action);
   return torso;
 }
@@ -225,11 +248,12 @@ function resolveActionArms(
   baseRightArm: CharacterArmJoints,
   action?: ProceduralCharacterUpperBodyAction,
   visibleChestRotation?: QuaternionTuple,
+  liveCadence?: KnightLiveCadence,
 ): { leftArm: CharacterArmJoints; rightArm: CharacterArmJoints } {
   if (action?.kind === "archer") return resolveArcherArms(rig, torso, baseLeftArm, baseRightArm, action);
   if (action?.kind === "crossbow") return resolveCrossbowArms(rig, torso, baseLeftArm, baseRightArm, action);
   if (action?.kind === "melee") {
-    return resolveMeleeArms(rig, torso, baseLeftArm, baseRightArm, action, visibleChestRotation);
+    return resolveMeleeArms(rig, torso, baseLeftArm, baseRightArm, action, visibleChestRotation, liveCadence);
   }
   return { leftArm: baseLeftArm, rightArm: baseRightArm };
 }
@@ -516,10 +540,12 @@ function resolveDeclaredMeleeTorso(
   rig: ResolvedCharacterRig,
   torso: CharacterTorsoJoints,
   action: DeclaredBodyAction,
+  liveCadence?: KnightLiveCadence,
 ): CharacterTorsoJoints {
   const { head, pelvis, spine } = action.body;
+  const cadenceTwist = liveCadence?.spineTwistDegrees ?? 0;
   const trunkTurn = resolveDeclaredTurn(pelvis.yaw, pelvis.pitch, pelvis.roll).multiply(
-    resolveDeclaredTurn(spine.twist, spine.flex, spine.side),
+    resolveDeclaredTurn(spine.twist + cadenceTwist, spine.flex, spine.side),
   );
   const declaredChest = torso.chestRotation.clone().multiply(trunkTurn);
   const chestAim = new Quaternion().setFromEuler(
@@ -531,12 +557,21 @@ function resolveDeclaredMeleeTorso(
   const declaredHead = torso.headRotation
     .clone()
     .multiply(trunkTurn)
-    .multiply(resolveDeclaredTurn(head.yaw, head.pitch, 0));
+    .multiply(
+      resolveDeclaredTurn(
+        head.yaw + (liveCadence?.headYawDegrees ?? 0),
+        head.pitch + (liveCadence?.headPitchDegrees ?? 0),
+        0,
+      ),
+    );
   const headAim = new Quaternion().setFromEuler(
     new Euler(action.aimPitchRadians * 0.46, action.aimYawRadians * 0.56, 0),
   );
   const headRotation = declaredHead.clone().slerp(declaredHead.clone().multiply(headAim), action.actionWeight);
-  return placeTorsoOnChest(rig, torso, torso.chest, chestRotation, headRotation);
+  const chestPosition = liveCadence
+    ? torso.chest.clone().add(new Vector3(0, liveCadence.chestLift, 0))
+    : torso.chest;
+  return placeTorsoOnChest(rig, torso, chestPosition, chestRotation, headRotation);
 }
 
 /** Neck, head and shoulders stand on the chest as it is turned. */
@@ -566,6 +601,7 @@ function resolveMeleeArms(
   baseRightArm: CharacterArmJoints,
   action: ProceduralMeleeUpperBodyPose,
   visibleChestRotation?: QuaternionTuple,
+  liveCadence?: KnightLiveCadence,
 ): { leftArm: CharacterArmJoints; rightArm: CharacterArmJoints } {
   const scale = rig.morphology.scale;
   const forward = new Vector3(
@@ -583,10 +619,24 @@ function resolveMeleeArms(
   );
   const halfShoulderWidth = rig.morphology.shoulderWidth / 2;
   const weapon = action.arms.right
-    ? placeDeclaredArm(action.arms.right, torso.rightShoulder, -halfShoulderWidth, chestFrame)
+    ? placeDeclaredArm(
+        action.arms.right,
+        torso.rightShoulder,
+        -halfShoulderWidth,
+        chestFrame,
+        liveCadence?.rightWristDelta,
+        liveCadence?.rightElbowDelta,
+      )
     : resolveMeleeWeaponArm(torso, baseRightArm, frame, scale, action);
   const offhand = action.arms.left
-    ? placeDeclaredArm(action.arms.left, torso.leftShoulder, halfShoulderWidth, chestFrame)
+    ? placeDeclaredArm(
+        action.arms.left,
+        torso.leftShoulder,
+        halfShoulderWidth,
+        chestFrame,
+        liveCadence?.leftWristDelta,
+        liveCadence?.leftElbowDelta,
+      )
     : resolveMeleeOffhandGuard(torso, baseLeftArm, frame, scale, action);
 
   return {
@@ -638,14 +688,19 @@ function placeDeclaredArm(
   shoulder: Vector3,
   shoulderLeft: number,
   frame: MeleeFrame,
+  wristDelta?: Vector3Tuple,
+  elbowDelta?: Vector3Tuple,
 ): MeleeArmGuide {
-  const place = ([left, up, forward]: readonly [number, number, number]) =>
+  const place = (
+    [left, up, forward]: readonly [number, number, number],
+    delta?: Vector3Tuple,
+  ) =>
     shoulder
       .clone()
-      .addScaledVector(frame.lateralLeft, left - shoulderLeft)
-      .addScaledVector(frame.up, up)
-      .addScaledVector(frame.forward, forward);
-  return { pole: place(pose.elbow), target: place(pose.wrist) };
+      .addScaledVector(frame.lateralLeft, left + (delta?.[0] ?? 0) - shoulderLeft)
+      .addScaledVector(frame.up, up + (delta?.[1] ?? 0))
+      .addScaledVector(frame.forward, forward + (delta?.[2] ?? 0));
+  return { pole: place(pose.elbow, elbowDelta), target: place(pose.wrist, wristDelta) };
 }
 
 /** The sword arm the controller places by its own targets, for a weapon it orients in actor space. */

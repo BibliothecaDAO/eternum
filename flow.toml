@@ -75,6 +75,10 @@ paths = "apps/game/scripts/prove-season-one.mjs"
 cmd = 'pnpm run build:packages && pnpm --dir apps/game exec node ./scripts/prove-beast-motion.mjs --out "$FLOW_TMP/proof"'
 paths = "apps/game/src/lab/beast-motion/ apps/game/scripts/prove-beast-motion.mjs"
 
+[kind.prove-troop-motion]
+cmd = 'pnpm run build:packages && pnpm --dir apps/game exec node ./scripts/prove-troop-motion.mjs --out "$FLOW_TMP/proof"'
+paths = "apps/game/src/lab/troop-motion/ apps/game/src/three/characters/ apps/game/scripts/prove-troop-motion.mjs"
+
 [gate]
 source = "contracts/l3/check-native-plan.sh"
 kinds = "gate-prelude gate-vrf gate-world gate-drift gate-events test-capture test-combat test-discovery test-economy test-lifecycle test-registration test-resources test-world test-blitz"
