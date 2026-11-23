@@ -1,9 +1,16 @@
 import { BiomeType } from "@bibliothecadao/types";
 import { type EventDispatcher, type Group, type Mesh, type Object3D, Vector3 } from "three";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createCreatureAnimator } from "./creatures/biome-creature-animator.js";
+import { DESKTOP_MIN_PX } from "@/tokens";
+import { createCreatureAnimator } from "./creatures/biome-creature-animator";
 import { creatureTraits } from "./creatures/biome-creature-catalog";
-import { BiomeCreaturePopulation, type RoamingCreature, wildlifeRegion } from "./creatures/biome-creature-population";
+import {
+  BiomeCreaturePopulation,
+  MAX_CREATURES,
+  PHONE_MAX_CREATURES,
+  type RoamingCreature,
+  wildlifeRegion,
+} from "./creatures/biome-creature-population";
 import {
   createZebraRigFixture,
   ZEBRA_RIG_FOOT_HEIGHT,
@@ -654,6 +661,48 @@ describe("terrain wildlife lifecycle", () => {
     expect(released).toHaveBeenCalledTimes(releasedMeshes.length);
     wildlife.dispose();
     expect(wildlife.object3d.children).toHaveLength(0);
+  });
+
+  it("caps wildlife at PHONE_MAX_CREATURES below DESKTOP_MIN_PX and tracks viewport resizes across the threshold", async () => {
+    const listeners = new Set<() => void>();
+    const viewport = {
+      innerWidth: DESKTOP_MIN_PX - 1,
+      addEventListener: (event: string, listener: () => void) => {
+        if (event === "resize") listeners.add(listener);
+      },
+      removeEventListener: (event: string, listener: () => void) => {
+        if (event === "resize") listeners.delete(listener);
+      },
+    };
+    vi.stubGlobal("window", viewport);
+    const wildlife = new TerrainWildlife(
+      () => ({ biome: BiomeType.Grassland, height: 0, normal: [0, 1, 0] }),
+      () => {},
+    );
+    try {
+      wildlife.sync(cells(64), []);
+      await wildlife.load();
+      expect(wildlife.getStats().cap).toBe(PHONE_MAX_CREATURES);
+      expect(wildlife.getStats().count).toBe(PHONE_MAX_CREATURES);
+      expect(wildlife.getStats().loaded).toBe(PHONE_MAX_CREATURES);
+
+      viewport.innerWidth = DESKTOP_MIN_PX;
+      listeners.forEach((listener) => listener());
+      await wildlife.load();
+      expect(wildlife.getStats().cap).toBe(MAX_CREATURES);
+      expect(wildlife.getStats().count).toBe(MAX_CREATURES);
+      expect(wildlife.getStats().loaded).toBe(MAX_CREATURES);
+
+      viewport.innerWidth = 900;
+      listeners.forEach((listener) => listener());
+      expect(wildlife.getStats().cap).toBe(PHONE_MAX_CREATURES);
+      expect(wildlife.getStats().count).toBe(PHONE_MAX_CREATURES);
+      expect(wildlife.getStats().loaded).toBe(PHONE_MAX_CREATURES);
+    } finally {
+      wildlife.dispose();
+      vi.unstubAllGlobals();
+    }
+    expect(listeners.size).toBe(0);
   });
 });
 

@@ -1,12 +1,30 @@
 import * as THREE from "three";
 
 const TAU = Math.PI * 2;
-const clamp = (x, lo, hi) => Math.min(hi, Math.max(lo, x));
-const fract = (x) => x - Math.floor(x);
-const mix = (a, b, t) => a + (b - a) * t;
-const smooth = (x) => x * x * (3 - 2 * x);
+const clamp = (x: number, lo: number, hi: number): number => Math.min(hi, Math.max(lo, x));
+const fract = (x: number): number => x - Math.floor(x);
+const mix = (a: number, b: number, t: number): number => a + (b - a) * t;
+const smooth = (x: number): number => x * x * (3 - 2 * x);
 
-const QUADRUPEDS = {
+interface QuadrupedProfile {
+  stride: number;
+  duty: number;
+  extension?: number;
+  nod: number;
+  forage: number;
+  lie?: number;
+  sit?: number;
+  tuck?: number;
+  hop?: number;
+  upright?: number;
+  runStride?: number;
+  undulation?: number;
+  gallops?: boolean;
+  gallop?: { stride: number; duty: number };
+  pounces?: boolean;
+}
+
+const QUADRUPEDS: Record<string, QuadrupedProfile> = {
   goat: { stride: 0.46, duty: 0.64, extension: 0.94, nod: 0.05, forage: 1.0, lie: 0.6, gallops: true },
   fox: {
     stride: 0.5,
@@ -28,23 +46,85 @@ const QUADRUPEDS = {
   salamander: { stride: 0.9, duty: 0.6, nod: 0, forage: 0, undulation: 0.16 },
 };
 const GALLOP = { stride: 0.55, duty: 0.3, crouch: 0.06, bound: 0.045 };
-const GALLOP_PHASES = { hindLeft: 0.5 * TAU, hindRight: 0.42 * TAU, foreLeft: 0.08 * TAU, foreRight: 0 };
+const GALLOP_PHASES: Record<string, number> = {
+  hindLeft: 0.5 * TAU,
+  hindRight: 0.42 * TAU,
+  foreLeft: 0.08 * TAU,
+  foreRight: 0,
+};
 const RUN_FROM = 1.25;
 const RUN_BY = 2.1;
 const PROWL_CROUCH = 0.14;
 const POUNCE = { every: 6, seconds: 1.5, crouch: 0.3, height: 1.15 };
 const GAZE_REACH = 1.3;
-const CYCLE_LENGTHS = { angler: 0.8, turtle: 2.2, crab: 0.5, beetle: 0.45, scorpion: 0.5, penguin: 0.36, toucan: 1 };
+const CYCLE_LENGTHS: Record<string, number> = {
+  angler: 0.8,
+  turtle: 2.2,
+  crab: 0.5,
+  beetle: 0.45,
+  scorpion: 0.5,
+  penguin: 0.36,
+  toucan: 1,
+};
 const SPLAY_REACH = 0.5;
 const SPLAY_DUTY = 0.5;
 const WINGBEATS = 3.2;
 export const PERCH_DROP = 0.44;
-const IDLE_ACTIONS = ["forage", "watch", "rest"];
+const IDLE_ACTIONS = ["forage", "watch", "rest"] as const;
 
-export function createCreatureAnimator(root, { seed = 0 } = {}) {
-  const joints = [],
-    hips = [];
-  let rig;
+export interface CreatureMotion {
+  distance?: number;
+  pace?: number;
+  turn?: number;
+  action?: string;
+  lift?: number;
+  gaze?: number | null;
+  stealth?: boolean;
+}
+
+export interface CreatureAnimator {
+  root: THREE.Object3D;
+  rig: THREE.Object3D;
+  profile: string;
+  joints: THREE.Object3D[];
+  update(time: number, motion?: CreatureMotion): THREE.Object3D;
+  reset(): void;
+}
+
+interface JointBind {
+  node: THREE.Object3D;
+  position: THREE.Vector3;
+  quaternion: THREE.Quaternion;
+  scale: THREE.Vector3;
+}
+
+interface LegRig {
+  hip: THREE.Object3D;
+  knee: THREE.Object3D;
+  front: boolean;
+  rest: THREE.Vector3;
+  upper: number;
+  lower: number;
+  bend: number;
+  footHeight: number;
+  phase: number;
+  toGallop: number;
+}
+
+interface StanceRig {
+  legLength: number;
+  hipHeight: number;
+  stride: number;
+  raise: number;
+  cycleLength: number;
+  frontZ: number;
+  rearZ: number;
+}
+
+export function createCreatureAnimator(root: THREE.Object3D, { seed = 0 }: { seed?: number } = {}): CreatureAnimator {
+  const joints: JointBind[] = [];
+  const hips: THREE.Object3D[] = [];
+  let rig: THREE.Object3D | undefined;
   root.traverse((o) => {
     if (o.userData.animation_schema === "biome-creature-v1") rig = o;
     if (o.userData.joint)
@@ -52,13 +132,13 @@ export function createCreatureAnimator(root, { seed = 0 } = {}) {
     if (o.userData.joint === "hip") hips.push(o);
   });
   if (!rig) throw new Error("This object does not contain a biome-creature-v1 hierarchy.");
-  const profile = rig.userData.profile;
+  const profile = String(rig.userData.profile);
   const body = joints.find((j) => j.node.userData.joint === "body")?.node;
   if (!body) throw new Error("Creature body joint is missing.");
   const quadruped = QUADRUPEDS[profile];
   const legs = quadruped ? createLegs(hips, profile) : [];
   for (const leg of legs) leg.toGallop = turnToGallop(leg);
-  const stance = legs.length > 0 ? createStance(legs, quadruped) : null;
+  const stance = legs.length > 0 && quadruped ? createStance(legs, quadruped) : null;
   const cycleLength = stance ? stance.cycleLength : CYCLE_LENGTHS[profile];
   if (!(cycleLength > 0)) throw new Error(`Creature profile has no gait: ${profile}`);
   const phaseOffset = seed * 2.399963229728653;
@@ -66,14 +146,15 @@ export function createCreatureAnimator(root, { seed = 0 } = {}) {
   const groundFeet = profile === "penguin" ? createFootGrounding(body, joints) : null;
   const axis = { x: new THREE.Vector3(1, 0, 0), y: new THREE.Vector3(0, 1, 0), z: new THREE.Vector3(0, 0, 1) };
   const delta = new THREE.Quaternion();
-  const turn = (node, key, angle) => node.quaternion.multiply(delta.setFromAxisAngle(axis[key], angle));
+  const turn = (node: THREE.Object3D, key: "x" | "y" | "z", angle: number) =>
+    node.quaternion.multiply(delta.setFromAxisAngle(axis[key], angle));
   const weights = { move: 0, run: 0, gazing: 0, prowl: 0, forage: 0, watch: 0, rest: 0 };
-  let lastTime;
+  let lastTime: number | undefined;
   let phase = phaseOffset;
   let lastDistance = 0;
   let look = 0;
 
-  function reset() {
+  function reset(): void {
     for (const j of joints) {
       j.node.position.copy(j.position);
       j.node.quaternion.copy(j.quaternion);
@@ -81,7 +162,7 @@ export function createCreatureAnimator(root, { seed = 0 } = {}) {
     }
   }
 
-  function easeWeights(time, pace, action, gaze, stealth) {
+  function easeWeights(time: number, pace: number, action: string, gaze: number | null, stealth: boolean): void {
     const dt = lastTime === undefined ? Infinity : clamp(time - lastTime, 0, 0.1);
     lastTime = time;
     weights.move += (clamp(pace * 2, 0, 1) - weights.move) * (1 - Math.exp(-8 * dt));
@@ -94,9 +175,17 @@ export function createCreatureAnimator(root, { seed = 0 } = {}) {
   }
 
   function update(
-    time,
-    { distance = 0, pace = 0, turn: turnRate = 0, action = "stand", lift = 0, gaze = null, stealth = false } = {},
-  ) {
+    time: number,
+    {
+      distance = 0,
+      pace = 0,
+      turn: turnRate = 0,
+      action = "stand",
+      lift = 0,
+      gaze = null,
+      stealth = false,
+    }: CreatureMotion = {},
+  ): THREE.Object3D {
     if (![time, distance, pace, turnRate, lift, gaze ?? 0].every(Number.isFinite))
       throw new Error("Animation inputs must be finite.");
     reset();
@@ -104,7 +193,7 @@ export function createCreatureAnimator(root, { seed = 0 } = {}) {
     const { move, run, gazing, prowl, forage, watch, rest } = weights;
     const galloping = quadruped && quadruped.gallops ? run : 0;
     const gallop = (quadruped && quadruped.gallop) || GALLOP;
-    const walkStride = stance ? stance.stride * (1 + ((quadruped.runStride || 1) - 1) * run) : 0;
+    const walkStride = stance && quadruped ? stance.stride * (1 + ((quadruped.runStride || 1) - 1) * run) : 0;
     const strideNow = stance ? mix(walkStride, gallop.stride * stance.legLength, galloping) : 0;
     const dutyNow = quadruped ? mix(quadruped.duty, gallop.duty, galloping) : 0;
     const pounce = quadruped && quadruped.pounces ? pounceAt(time + phaseOffset) * forage : 0;
@@ -125,7 +214,7 @@ export function createCreatureAnimator(root, { seed = 0 } = {}) {
     let roll = 0;
     let wag = 0;
     let pivotZ = 0;
-    if (stance) {
+    if (stance && quadruped) {
       const bound = quadruped.hop ? Math.max(0, Math.sin(phase + 0.5)) : 0;
       rise = stance.raise - 0.012 * stance.legLength * move * (1 - galloping) * Math.cos(phase * 2);
       rise += (quadruped.hop || 0) * stance.legLength * move * bound;
@@ -165,21 +254,22 @@ export function createCreatureAnimator(root, { seed = 0 } = {}) {
       pitch = profile === "crab" ? -0.1 * watch : 0;
     }
     const pivotY = stance ? stance.hipHeight : 0;
-    const cos = Math.cos(pitch),
-      sin = Math.sin(pitch);
+    const cos = Math.cos(pitch);
+    const sin = Math.sin(pitch);
     const offsetY = rise + pivotY - (pivotY * cos - pivotZ * sin);
     const offsetZ = pivotZ - (pivotY * sin + pivotZ * cos);
-    body.position.y = baseBody.y + offsetY;
-    body.position.z = baseBody.z + offsetZ;
-    turn(body, "x", pitch);
-    turn(body, "z", roll);
-    turn(body, "y", wag);
+    body!.position.y = baseBody.y + offsetY;
+    body!.position.z = baseBody.z + offsetZ;
+    turn(body!, "x", pitch);
+    turn(body!, "z", roll);
+    turn(body!, "y", wag);
 
     for (const leg of legs) {
       const length = leg.upper + leg.lower;
       const cycle = fract((phase + leg.phase + leg.toGallop * galloping) / TAU);
       const stride = strideNow;
-      let footZ, footLift;
+      let footZ: number;
+      let footLift: number;
       if (cycle < dutyNow) {
         footZ = stride * (0.5 - cycle / dutyNow);
         footLift = 0;
@@ -202,14 +292,14 @@ export function createCreatureAnimator(root, { seed = 0 } = {}) {
       const a = Math.acos(clamp((leg.upper ** 2 + d * d - leg.lower ** 2) / (2 * leg.upper * d), -1, 1));
       const b =
         Math.PI - Math.acos(clamp((leg.upper ** 2 + leg.lower ** 2 - d * d) / (2 * leg.upper * leg.lower), -1, 1));
-      const tucked = leg.front && quadruped.upright ? watch : 0;
+      const tucked = leg.front && quadruped?.upright ? watch : 0;
       leg.hip.quaternion.setFromAxisAngle(axis.x, mix(aim + leg.bend * a, -pitch - 0.5, tucked));
       leg.knee.quaternion.setFromAxisAngle(axis.x, mix(-leg.bend * b, 1.7, tucked));
     }
 
-    for (const { node: node } of joints) {
-      const u = node.userData,
-        side = u.side || 1;
+    for (const { node } of joints) {
+      const u = node.userData;
+      const side = (u.side as number | undefined) || 1;
       switch (u.joint) {
         case "neck": {
           const reach = quadruped ? quadruped.forage : profile === "penguin" ? 0.6 : profile === "toucan" ? 0.55 : 0;
@@ -223,7 +313,7 @@ export function createCreatureAnimator(root, { seed = 0 } = {}) {
           break;
         }
         case "tail": {
-          const segment = u.segment || 0;
+          const segment = (u.segment as number | undefined) || 0;
           if (swims || profile === "salamander") {
             const amp = swims ? 0.2 : 0.17;
             turn(node, "y", amp * Math.sin(stroke - 0.8 - segment * 0.75) * Math.max(effort, 0.2));
@@ -236,10 +326,11 @@ export function createCreatureAnimator(root, { seed = 0 } = {}) {
           break;
         }
         case "flipper": {
-          const power = (u.phase || 0) === 0 ? 1 : 0.4;
+          const jointPhase = (u.phase as number | undefined) || 0;
+          const power = jointPhase === 0 ? 1 : 0.4;
           const beat = profile === "turtle" ? 0.45 * power : 0.28;
-          turn(node, "z", side * beat * Math.sin(stroke + (u.phase || 0)) * Math.max(effort, 0.3));
-          turn(node, "x", 0.5 * beat * Math.cos(stroke + (u.phase || 0)) * Math.max(effort, 0.3));
+          turn(node, "z", side * beat * Math.sin(stroke + jointPhase) * Math.max(effort, 0.3));
+          turn(node, "x", 0.5 * beat * Math.cos(stroke + jointPhase) * Math.max(effort, 0.3));
           break;
         }
         case "lure":
@@ -248,7 +339,7 @@ export function createCreatureAnimator(root, { seed = 0 } = {}) {
           break;
         case "splay_leg":
         case "splay_knee": {
-          const cycle = fract((phase + u.phase) / TAU);
+          const cycle = fract((phase + (u.phase as number)) / TAU);
           const swing = (cycle - SPLAY_DUTY) / (1 - SPLAY_DUTY);
           const sweep = cycle < SPLAY_DUTY ? 0.5 - cycle / SPLAY_DUTY : smooth(swing) - 0.5;
           const footLift = cycle < SPLAY_DUTY ? 0 : Math.sin(swing * Math.PI) * move;
@@ -271,8 +362,8 @@ export function createCreatureAnimator(root, { seed = 0 } = {}) {
           turn(node, "y", side * (0.13 + 0.11 * Math.sin(time * 1.7 + side) + 0.2 * watch));
           break;
         case "stinger":
-          turn(node, "x", 0.05 * Math.sin(time * 1.4 - u.segment * 0.5) + 0.07 * watch);
-          turn(node, "y", 0.045 * Math.sin(time * 0.8 - u.segment * 0.5));
+          turn(node, "x", 0.05 * Math.sin(time * 1.4 - (u.segment as number) * 0.5) + 0.07 * watch);
+          turn(node, "y", 0.045 * Math.sin(time * 0.8 - (u.segment as number) * 0.5));
           break;
         case "wing":
           if (profile === "toucan") {
@@ -286,8 +377,8 @@ export function createCreatureAnimator(root, { seed = 0 } = {}) {
           break;
         case "bird_foot":
           if (profile === "penguin") {
-            turn(node, "x", 0.27 * move * Math.sin(phase + u.phase));
-            node.position.y += 0.07 * move * Math.max(0, Math.cos(phase + u.phase));
+            turn(node, "x", 0.27 * move * Math.sin(phase + (u.phase as number)));
+            node.position.y += 0.07 * move * Math.max(0, Math.cos(phase + (u.phase as number)));
           } else {
             turn(node, "x", 0.08 * Math.sin(time * 1.6 + side) * (1 - air) + 0.5 * air);
           }
@@ -304,7 +395,7 @@ export function createCreatureAnimator(root, { seed = 0 } = {}) {
   return { root, rig, profile, joints: joints.map((j) => j.node), update, reset };
 }
 
-function createLegs(hips, profile) {
+function createLegs(hips: THREE.Object3D[], profile: string): LegRig[] {
   return hips.flatMap((hip) => {
     const knee = hip.children.find((child) => child.userData.joint === "knee");
     if (!knee) return [];
@@ -314,17 +405,17 @@ function createLegs(hips, profile) {
       knee,
       front,
       rest: hip.position.clone(),
-      upper: hip.userData.upperLength,
-      lower: hip.userData.lowerLength,
-      bend: hip.userData.bend || 1,
-      footHeight: hip.userData.footHeight ?? 0.02,
-      phase: profile === "rabbit" ? (front ? Math.PI : 0) : hip.userData.phase,
+      upper: hip.userData.upperLength as number,
+      lower: hip.userData.lowerLength as number,
+      bend: (hip.userData.bend as number | undefined) || 1,
+      footHeight: (hip.userData.footHeight as number | undefined) ?? 0.02,
+      phase: profile === "rabbit" ? (front ? Math.PI : 0) : (hip.userData.phase as number),
       toGallop: 0,
     };
   });
 }
 
-function pounceAt(seconds) {
+function pounceAt(seconds: number): number {
   const into = (seconds % POUNCE.every) - (POUNCE.every - POUNCE.seconds);
   if (into < 0) return 0;
   const share = into / POUNCE.seconds;
@@ -333,20 +424,20 @@ function pounceAt(seconds) {
     : (share - POUNCE.crouch) / (1 - POUNCE.crouch);
 }
 
-function turnToGallop(leg) {
+function turnToGallop(leg: LegRig): number {
   const end = leg.front ? "fore" : "hind";
   const gallop = GALLOP_PHASES[`${end}${leg.rest.x < 0 ? "Left" : "Right"}`];
   return Math.atan2(Math.sin(gallop - leg.phase), Math.cos(gallop - leg.phase));
 }
 
-function createStance(legs, quadruped) {
+function createStance(legs: LegRig[], quadruped: QuadrupedProfile): StanceRig {
   const legLength = Math.min(...legs.map((leg) => leg.upper + leg.lower));
   const hipHeight = legs.reduce((sum, leg) => sum + leg.rest.y, 0) / legs.length;
   const stride = quadruped.stride * legLength;
   const raise = quadruped.extension
     ? Math.max(
         0,
-        Math.min(...legs.map((leg) => quadruped.extension * (leg.upper + leg.lower) - (leg.rest.y - leg.footHeight))),
+        Math.min(...legs.map((leg) => quadruped.extension! * (leg.upper + leg.lower) - (leg.rest.y - leg.footHeight))),
       )
     : 0;
   return {
@@ -360,17 +451,16 @@ function createStance(legs, quadruped) {
   };
 }
 
-/** Keep one sole planted as the body rocks and the other foot swings. */
-function createFootGrounding(body, joints) {
+function createFootGrounding(body: THREE.Object3D, joints: JointBind[]): () => void {
   const feet = joints.filter(({ node }) => node.userData.joint === "bird_foot").map(({ node }) => node);
   if (feet.length === 0) throw new Error("Walking bird has no feet.");
   const parentInverse = new THREE.Matrix4();
   const foot = new THREE.Vector3();
   const lowestFoot = () => {
-    parentInverse.copy(body.parent.matrixWorld).invert();
+    parentInverse.copy(body.parent!.matrixWorld).invert();
     return Math.min(...feet.map((node) => foot.setFromMatrixPosition(node.matrixWorld).applyMatrix4(parentInverse).y));
   };
-  body.parent.updateMatrixWorld(true);
+  body.parent!.updateMatrixWorld(true);
   const standing = lowestFoot();
   return () => {
     body.position.y -= lowestFoot() - standing;

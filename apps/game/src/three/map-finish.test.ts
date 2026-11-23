@@ -21,7 +21,7 @@ function watchReleases() {
 }
 
 describe("the map's finish", () => {
-  it("releases a scene's offscreen passes when its camera is replaced, and the rest when the map leaves", () => {
+  it("keeps one active finish and releases offscreen passes whenever scene or camera changes", () => {
     const releases = watchReleases();
     const finish = new MapFinish({} as WebGPURenderer);
     const scene = new Scene();
@@ -30,6 +30,8 @@ describe("the map's finish", () => {
     expect(releases()).toEqual([1, 1, 1]);
 
     finish.render(new Scene(), new PerspectiveCamera());
+    expect(releases()).toEqual([2, 2, 2]);
+
     finish.dispose();
     expect(releases()).toEqual([3, 3, 3]);
   });

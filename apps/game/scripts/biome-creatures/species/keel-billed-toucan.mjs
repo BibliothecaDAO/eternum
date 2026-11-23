@@ -1,4 +1,4 @@
-import { PERCH_DROP } from "../../../src/three/terrain/creatures/biome-creature-animator.js";
+import { PERCH_DROP } from "../../../src/three/terrain/creatures/biome-creature-animator.ts";
 import { sculptBird } from "../bird.mjs";
 import { colour, mixColour, smoothstep } from "../creature-coat.mjs";
 import { bothSides, mass, taperedLimb } from "../creature-volume.mjs";

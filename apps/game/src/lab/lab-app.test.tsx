@@ -24,7 +24,6 @@ vi.mock("../ui/features/debug/model-lab-view", () => ({ ModelLabView: () => <Too
 vi.mock("./beast-motion/beast-motion-view", () => ({ BeastMotionView: () => <Tool name="beast-motion" /> }));
 vi.mock("./troop-motion/troop-motion-view", () => ({ TroopMotionView: () => <Tool name="troop-motion" /> }));
 vi.mock("../ui/features/debug/map-life-lab-view", () => ({ MapLifeLabView: () => <Tool name="life" /> }));
-vi.mock("../ui/features/debug/wildlife-lab-view", () => ({ WildlifeLabView: () => <Tool name="wildlife" /> }));
 vi.mock("./endgame-mist/view", () => ({ EndgameMistLabView: () => <Tool name="endgame" /> }));
 vi.mock("./day-end/view", () => ({ DayEndLabView: () => <Tool name="day-end" /> }));
 vi.mock("../ui/features/debug/world-fx-gym-view", () => ({ WorldFxGymView: () => <Tool name="fx" /> }));
@@ -167,7 +166,7 @@ it.each([
   ["/lab/map-labels?zoom=close&hover=28", "map-labels", "Game", "Map labels & sites"],
   ["/lab/terrain?mode=frontier", "terrain", "Art", "Terrain"],
   ["/lab/life", "life", "Art", "Terrain"],
-  ["/lab/wildlife?species=moose&view=map", "wildlife", "Art", "Terrain"],
+  ["/lab/life?mode=paddock&species=moose&view=map", "life", "Art", "Terrain"],
   ["/lab/beast-motion?action=attack&layer=2", "beast-motion", "Art", "Beast motion"],
   ["/lab/troop-motion?action=march", "troop-motion", "Art", "Troop motion"],
   ["/lab/chunks", "chunks", "Art", "Bench"],

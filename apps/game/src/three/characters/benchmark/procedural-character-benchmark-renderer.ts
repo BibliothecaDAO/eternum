@@ -9,6 +9,7 @@ import {
   type ProceduralUnitRuntime,
 } from "@/three/characters";
 import { TroopTier } from "@bibliothecadao/types";
+import { renderProfile } from "@/three/render-profile";
 import type { RendererSurfaceLike } from "@/three/renderer-backend";
 import { getRendererDiagnosticActiveMode } from "@/three/renderer-diagnostics";
 import { ArrowProjectileSystem } from "@/three/projectiles/arrow-projectile-system";
@@ -922,6 +923,7 @@ class ProceduralCharacterBenchmarkRuntime {
 
   private applyRenderVisuals(width = this.viewportWidth, height = this.viewportHeight): void {
     this.backend.applyRenderVisuals({
+      finish: renderProfile.visuals.finish,
       height: Math.max(1, height),
       pixelRatio: Math.min(window.devicePixelRatio || 1, this.config.pixelRatio),
       shadows: this.config.shadows,

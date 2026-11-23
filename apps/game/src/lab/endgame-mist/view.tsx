@@ -40,10 +40,9 @@ export function EndgameMistLabView() {
         endgame: readEndgameSettings(search),
         gameMode: new URLSearchParams(search).get("mode") === "frontier" ? "frontier" : "blitz",
         forceWebGL: new URLSearchParams(search).get("rendererMode") === "webgpu-force-webgl",
-        qualityTier: "detail",
+        qualityTier: "high",
         revealProgress: 0,
         sceneId: "all-biomes",
-        texturedGround: true,
         onError: (reason) => {
           if (active) setError(String(reason));
         },

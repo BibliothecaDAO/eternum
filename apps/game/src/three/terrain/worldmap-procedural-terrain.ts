@@ -30,9 +30,9 @@ import type {
   TerrainSettlementAnchor,
   TerrainSurfaceSample,
 } from "./terrain-types";
+import type { GraphicsPreferences } from "../graphics-preferences";
 import type { TerrainPropLod } from "./terrain-prop-catalog";
 import { TERRAIN_PROP_POOL_PAGE_SLOTS } from "./terrain-prop-pools";
-import type { TerrainQualityTier } from "./terrain-quality";
 import type { TerrainFogFieldStats } from "./terrain-fog-field";
 import type { TerrainMovementInteraction } from "./terrain-movement-effects";
 
@@ -315,12 +315,8 @@ export class WorldmapProceduralTerrain {
     this.terrain.setPropLod(lod);
   }
 
-  setGroundTextureDetailEnabled(enabled: boolean): void {
-    this.terrain.setGroundTextureDetailEnabled(enabled);
-  }
-
-  setQualityTier(tier: TerrainQualityTier): void {
-    this.terrain.setQualityTier(tier);
+  setQuality(quality: GraphicsPreferences["quality"]): void {
+    this.terrain.setQuality(quality);
   }
 
   queueShroudReveal(col: number, row: number, source?: { col: number; row: number }): void {

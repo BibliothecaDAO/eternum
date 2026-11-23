@@ -1,9 +1,9 @@
 import { beastBand } from "./frontier-beast-band";
 import { currentArmy } from "./deep";
-import { deepViewFor } from "./deep-geometry";
+import { deepViewFor, deepZoneAt } from "./deep-geometry";
 import { entityHomeNamespace } from "./entity-home";
 import { reachableDepth } from "./realm-research";
-import { MAX_U32, ResourcesIds } from "@bibliothecadao/types";
+import { MAX_U32, ResourcesIds, type MapLayer } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import { readOptionalSeasonRow } from "../client/views/season-rows";
 import { readTriumphPeriod } from "../client/views/triumphs";
@@ -139,6 +139,23 @@ export const armyEtherealLayer = (
  */
 export const isEtherealTile = (rules: ExpeditionRules | null, hex: { row: number; alt: boolean }): boolean =>
   hex.alt || (rules !== null && expeditionDepth(rules, { y: hex.row }) > 0);
+
+export const hasSharedDeep = (store: Pick<NativeFactStore, "get"> | null, gameId: number): boolean =>
+  store?.get("DeepRules", { game_id: gameId }) !== undefined;
+
+export const cameraLayer = (
+  rules: ExpeditionRules | null,
+  store: Pick<NativeFactStore, "get"> | null,
+  gameId: number,
+  hex: { col: number; row: number; alt: boolean } | null,
+): MapLayer => {
+  if (!rules || !hex || hex.alt) return 0;
+  const deep = store?.get("DeepRules", { game_id: gameId });
+  if (deep && deepZoneAt(rules.spacing, deep, hex)) return 3;
+  const depth = expeditionDepth(rules, { y: hex.row });
+  if (depth === 3) return hasSharedDeep(store, gameId) ? 3 : 2;
+  return depth as MapLayer;
+};
 
 /**
  * Whether an army going from one tile to another passes through a spire instead of walking: onto the other map layer

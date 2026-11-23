@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { BiomeType, BiomeTypeToId, deepSites } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
+import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import {
   nativeTilePackingConstants,
   type NativeModelName,
@@ -14,6 +15,7 @@ import {
   readDeepRingOpening,
   readDeepSite,
   readDeepSites,
+  readDeepSitesIfReady,
 } from "../client/views/deep-sites";
 import { dayAtIndex } from "./days";
 
@@ -284,8 +286,38 @@ describe("the shared Deep", () => {
     expect(tomorrow.map((site) => [site.id, site.beastTroops, site.guards])).toEqual(
       kinds.map((_, place) => [BigInt(20 + place), 10n * precision, []]),
     );
+    expect(readDeepSitesIfReady(store, 420, 7)).toEqual({ known: today });
     rows.DeepSite.pop();
     expect(() => readDeepSites(store, 420, 7)).toThrow("Incomplete Deep site facts");
+    expect(readDeepSitesIfReady(store, 420, 7)).toEqual({ absent: "incomplete-sites" });
+  });
+
+  it("reports absent from readDeepSitesIfReady when day entries are unknown, and empty when outside the game window", () => {
+    const { rows, store } = fixture();
+    rows.DeepRules = [
+      {
+        game_id: 7,
+        loss_per_tick: precision,
+        rings: [{ radius: 5, realms: 0 }],
+        beasts: deepSites.map(() => ({ count: 10n * precision, bow: false })),
+        building_pay: { alone: 6, pair: 3, crowd: 2 },
+      },
+    ];
+    rows.DeepSite = Array.from({ length: nativeRuleConstants.DEEP_RING_SITES }, (_, place) => ({
+      game_id: 7,
+      entity_id: BigInt(20 + place),
+      kind: deepSites[place % deepSites.length]!.id,
+      ring: 0,
+      day: 0n,
+    }));
+    const unknownEntriesStore = {
+      ...store,
+      requireOrAbsent: () => ({ unknown: "INCOMPLETE_SNAPSHOT: DeepEntries" }),
+    } as unknown as NativeFactStore;
+    expect(readDeepSitesIfReady(unknownEntriesStore, 420, 7)).toEqual({
+      absent: "INCOMPLETE_SNAPSHOT: DeepEntries",
+    });
+    expect(readDeepSitesIfReady(store, 0, 7)).toEqual({ known: [] });
   });
 
   it("reads a site's beast from its guard and the day alone, before the day's entries are known", () => {

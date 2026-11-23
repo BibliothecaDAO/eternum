@@ -2,6 +2,7 @@ import { mapAnimationTime as time } from "../effects/endgame/state";
 import { FrostedStandardNodeMaterial } from "../effects/game-map-material-library";
 import { queueInstanceUpdate } from "../utils/instance-update-ranges";
 import { createInstancedMesh } from "../utils/create-instanced-mesh";
+import { hashCoordinates } from "../utils/utils";
 import {
   Box3,
   BufferGeometry,
@@ -33,8 +34,8 @@ import type UniformNode from "three/src/nodes/core/UniformNode.js";
 import { WORLD_CHUNK_CONFIG } from "../constants/world-chunk-config";
 import { loadTerrainPropCatalog } from "./terrain-prop-asset-cache";
 import {
-  TERRAIN_PROP_ARCHETYPE_IDS,
   getTerrainPropRole,
+  isLayerPropId,
   isTerrainGroundCover,
   isTerrainPropVisibleAtLod,
   TERRAIN_PROP_PAGE_SLOT_CAPACITY,
@@ -107,7 +108,6 @@ export class TerrainPropPools {
     this.object3d.name = "terrain-prop-pools";
     this.rigidMaterial.name = "terrain-props-rigid";
     this.windMaterial.name = "terrain-props-wind";
-    TERRAIN_PROP_ARCHETYPE_IDS.forEach((archetype) => this.createPool(archetype));
   }
 
   static async load(): Promise<TerrainPropPools> {
@@ -118,14 +118,20 @@ export class TerrainPropPools {
   /** Updates one page and shifts any following live ranges; unused capacity never enters a draw. */
   writePage(pageKey: string, instances: readonly TerrainPropInstance[]): void {
     const instancesByArchetype = groupByArchetype(instances);
-    for (const archetype of TERRAIN_PROP_ARCHETYPE_IDS) {
-      this.writePageSlot(archetype, pageKey, instancesByArchetype.get(archetype) ?? EMPTY_INSTANCES);
+    for (const [archetype, entries] of instancesByArchetype) {
+      this.writePageSlot(archetype, pageKey, entries);
     }
+    for (const archetype of this.pools.keys()) {
+      if (!instancesByArchetype.has(archetype)) {
+        this.writePageSlot(archetype, pageKey, EMPTY_INSTANCES);
+      }
+    }
+    this.disposeEmptyInactiveFamily();
     this.metrics.pageWrites += 1;
   }
 
   releasePage(pageKey: string): void {
-    for (const archetype of TERRAIN_PROP_ARCHETYPE_IDS) this.writePageSlot(archetype, pageKey, EMPTY_INSTANCES);
+    for (const archetype of this.pools.keys()) this.writePageSlot(archetype, pageKey, EMPTY_INSTANCES);
   }
 
   setLod(lod: TerrainPropLod): void {
@@ -176,7 +182,7 @@ export class TerrainPropPools {
     this.windMaterial.dispose();
   }
 
-  private createPool(archetype: TerrainPropArchetypeId): void {
+  private createPool(archetype: TerrainPropArchetypeId): PropPool {
     const slotCapacity = TERRAIN_PROP_PAGE_SLOT_CAPACITY[archetype];
     const capacity = slotCapacity * TERRAIN_PROP_POOL_PAGE_SLOTS;
     const ecology = new InstancedBufferAttribute(new Float32Array(capacity * ECOLOGY_FLOATS), ECOLOGY_FLOATS);
@@ -192,7 +198,7 @@ export class TerrainPropPools {
     mesh.castShadow = this.lod === "near" && getTerrainPropRole(archetype) === "canopy";
     mesh.receiveShadow = true;
     mesh.raycast = disablePropRaycast;
-    this.pools.set(archetype, {
+    const pool: PropPool = {
       catalogRadius: resolveCatalogMeshRadius(source),
       ecology,
       geometry,
@@ -200,8 +206,35 @@ export class TerrainPropPools {
       mesh,
       slotCapacity,
       slots: Array.from({ length: TERRAIN_PROP_POOL_PAGE_SLOTS }, createEmptySlot),
-    });
+    };
+    this.pools.set(archetype, pool);
     this.object3d.add(mesh);
+    return pool;
+  }
+
+  private disposePool(archetype: TerrainPropArchetypeId, pool: PropPool): void {
+    this.object3d.remove(pool.mesh);
+    pool.mesh.dispose();
+    pool.geometry.dispose();
+    this.pools.delete(archetype);
+  }
+
+  private disposeEmptyInactiveFamily(): void {
+    let surfaceLive = 0;
+    let layerLive = 0;
+    this.pools.forEach((pool, archetype) => {
+      if (isLayerPropId(archetype)) layerLive += pool.mesh.count;
+      else surfaceLive += pool.mesh.count;
+    });
+    if (surfaceLive > 0 && layerLive === 0) {
+      for (const [archetype, pool] of this.pools) {
+        if (isLayerPropId(archetype)) this.disposePool(archetype, pool);
+      }
+    } else if (layerLive > 0 && surfaceLive === 0) {
+      for (const [archetype, pool] of this.pools) {
+        if (!isLayerPropId(archetype)) this.disposePool(archetype, pool);
+      }
+    }
   }
 
   private writePageSlot(
@@ -209,7 +242,8 @@ export class TerrainPropPools {
     pageKey: string,
     instances: readonly TerrainPropInstance[],
   ): void {
-    const pool = this.requirePool(archetype);
+    const pool = instances.length > 0 ? this.getOrCreatePool(archetype) : this.pools.get(archetype);
+    if (!pool) return;
     const slotIndex = instances.length > 0 ? acquireSlot(pool, archetype, pageKey) : findSlot(pool, pageKey);
     if (slotIndex === -1) return;
     requireSlotCapacity(pool, archetype, pageKey, instances.length);
@@ -251,7 +285,7 @@ export class TerrainPropPools {
         instance.appearance.windAmplitude,
         instance.appearance.moss,
         instance.appearance.snow,
-        resolveWindPhase(instance.worldX, instance.worldZ),
+        hashCoordinates(instance.worldX, instance.worldZ),
       );
       pool.glow.setXYZ(index, ...instance.appearance.glow);
       slot.radius = Math.max(slot.radius, pool.catalogRadius * instance.scale);
@@ -284,10 +318,8 @@ export class TerrainPropPools {
     pool.mesh.boundingSphere.radius += radius;
   }
 
-  private requirePool(archetype: TerrainPropArchetypeId): PropPool {
-    const pool = this.pools.get(archetype);
-    if (!pool) throw new Error(`Terrain prop pool is unavailable: ${archetype}`);
-    return pool;
+  private getOrCreatePool(archetype: TerrainPropArchetypeId): PropPool {
+    return this.pools.get(archetype) ?? this.createPool(archetype);
   }
 
   private requireCatalogMesh(archetype: TerrainPropArchetypeId): Mesh {
@@ -388,11 +420,6 @@ function packBakedPlant(source: BufferGeometry, height: number): Float32BufferAt
     plant.set([bend.getX(index), height, foliage.getX(index), glow.getX(index)], index * 4);
   }
   return new Float32BufferAttribute(plant, 4);
-}
-
-function resolveWindPhase(worldX: number, worldZ: number): number {
-  const wave = Math.sin(worldX * 12.9898 + worldZ * 78.233) * 43758.5453;
-  return wave - Math.floor(wave);
 }
 
 function createTerrainPropMaterial(

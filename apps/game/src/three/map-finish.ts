@@ -26,23 +26,21 @@ const SATURATION = 1.1;
 const VIGNETTE = 0.18;
 
 export class MapFinish {
-  private readonly finishes = new Map<Object3D, { camera: Camera; finish: Finish }>();
+  private active: { scene: Object3D; camera: Camera; finish: Finish } | null = null;
 
   constructor(private readonly renderer: WebGPURenderer) {}
 
   render(scene: Object3D, camera: Camera): void {
-    let entry = this.finishes.get(scene);
-    if (!entry || entry.camera !== camera) {
-      entry?.finish.dispose();
-      entry = { camera, finish: createFinish(this.renderer, scene, camera) };
-      this.finishes.set(scene, entry);
+    if (!this.active || this.active.scene !== scene || this.active.camera !== camera) {
+      this.active?.finish.dispose();
+      this.active = { scene, camera, finish: createFinish(this.renderer, scene, camera) };
     }
-    entry.finish.render();
+    this.active.finish.render();
   }
 
   dispose(): void {
-    this.finishes.forEach(({ finish }) => finish.dispose());
-    this.finishes.clear();
+    this.active?.finish.dispose();
+    this.active = null;
   }
 }
 

@@ -2,7 +2,7 @@ import { Box3, Group, Mesh, MeshStandardMaterial, SkinnedMesh, Texture, Vector3 
 import { MeshStandardNodeMaterial } from "three/webgpu";
 import { gltfLoader } from "../../utils/gltf-loader";
 import { creatureTraits, type CreatureSpecies } from "./biome-creature-catalog";
-import { createCreatureAnimator } from "./biome-creature-animator.js";
+import { createCreatureAnimator } from "./biome-creature-animator";
 
 /** Owned by one terrain instance; clones share GPU resources but never joint transforms. */
 export async function loadBiomeCreature(
@@ -12,7 +12,7 @@ export async function loadBiomeCreature(
   const { scene } = await gltfLoader.loadAsync(`/models/biome-creatures/${species}.glb`);
   try {
     createCreatureAnimator(scene).reset();
-    prepareCreatureMaterials(scene, creatureTraits(species).movement !== "water", reveal);
+    prepareCreatureMaterials(scene, reveal);
     fitCreatureToItsSize(scene, species);
     return scene;
   } catch (error) {
@@ -21,11 +21,7 @@ export async function loadBiomeCreature(
   }
 }
 
-function prepareCreatureMaterials(
-  scene: Group,
-  castsShadow: boolean,
-  reveal: (material: MeshStandardNodeMaterial) => void,
-): void {
+function prepareCreatureMaterials(scene: Group, reveal: (material: MeshStandardNodeMaterial) => void): void {
   const materials = new Map<MeshStandardMaterial, MeshStandardNodeMaterial>();
   scene.traverse((object) => {
     if (!(object instanceof Mesh)) return;
@@ -40,7 +36,7 @@ function prepareCreatureMaterials(
       return material;
     };
     object.material = Array.isArray(object.material) ? object.material.map(convert) : convert(object.material);
-    object.castShadow = castsShadow;
+    object.castShadow = false;
     object.receiveShadow = true;
     object.raycast = () => {};
   });

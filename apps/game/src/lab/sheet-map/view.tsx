@@ -53,10 +53,9 @@ function WorldComparison() {
         mapSheet: { chapter, overlay: overlay.current! },
         gameMode: "blitz",
         forceWebGL,
-        qualityTier: "detail",
+        qualityTier: "high",
         revealProgress: 0,
         sceneId: "all-biomes",
-        texturedGround: true,
         onReady: () => {},
         onError: (reason) => {
           if (active) setError(reason instanceof Error ? (reason.stack ?? reason.message) : String(reason));

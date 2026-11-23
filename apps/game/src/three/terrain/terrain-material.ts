@@ -48,27 +48,25 @@ export const TERRAIN_GRID_NO_FOCUS = 1e6;
 
 export interface TerrainMaterials {
   grid: TerrainGrid;
-  flatLand: MeshStandardNodeMaterial;
   land: MeshStandardNodeMaterial;
   water: MeshStandardNodeMaterial;
   waterMotion: UniformNode<"float", number>;
   groundMotion: UniformNode<"float", number>;
 }
 
-export function createTerrainMaterials(): TerrainMaterials {
+export function createTerrainMaterials(biomeMap: Texture, groundLights: GroundLights): TerrainMaterials {
   const grid: TerrainGrid = {
     rest: uniform(MAP_MARKS.grid.deepAtRest, "float"),
     focus: uniform(new Vector4().setScalar(TERRAIN_GRID_NO_FOCUS), "vec4"),
   };
-  const flatLand = createVertexColorMaterial("terrain-land-flat", 0.95, grid);
   const waterMotion = uniform(1, "float");
+  const groundMotion = uniform(1, "float");
   return {
     grid,
-    flatLand,
-    land: flatLand,
+    land: createTerrainGroundMaterial(biomeMap, groundLights, groundMotion, grid),
     water: createTerrainWaterMaterial(waterMotion, grid),
     waterMotion,
-    groundMotion: uniform(1, "float"),
+    groundMotion,
   };
 }
 
@@ -209,7 +207,7 @@ function groundLightPool(albedo: Node<"vec3">, light: Node<"vec3">): Node<"vec3"
   return albedo.add(LIGHT_HUE_KEPT).mul(light);
 }
 
-export function createTerrainGroundMaterial(
+function createTerrainGroundMaterial(
   biomeMap: Texture,
   groundLights: GroundLights,
   groundMotion: UniformNode<"float", number>,
@@ -265,20 +263,6 @@ function drawHexGrid(surfaceColor: Node<"vec3">, grid: TerrainGrid): Node<"vec3"
     smoothstep(MAP_MARKS.grid.focusOuter, MAP_MARKS.grid.focusInner, positionWorld.xz.distance(point));
   const strength = mix(grid.rest, 1, max(near(grid.focus.xy), near(grid.focus.zw)));
   return applyEndgameFrost(mix(surfaceColor, borderColor, border.mul(strength).mul(normalLocal.y.abs())));
-}
-
-function createVertexColorMaterial(
-  name: string,
-  fallbackRoughness: number,
-  grid: TerrainGrid,
-): MeshStandardNodeMaterial {
-  const material = new MeshStandardNodeMaterial({ metalness: 0, roughness: fallbackRoughness });
-  material.name = name;
-  material.colorNode = withSpireStone(shadeTerrainSurface(attribute("terrainColor", "vec3"), grid), (stone) =>
-    applyEndgameFrost(stone.colour),
-  );
-  material.roughnessNode = attribute("terrainRoughness", "float");
-  return material;
 }
 
 function withSpireStone(

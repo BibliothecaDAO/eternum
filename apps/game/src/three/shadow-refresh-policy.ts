@@ -15,6 +15,7 @@ export class ShadowRefreshPolicy {
   private lightMoved = false;
   private elapsedSinceRefreshMs = Number.POSITIVE_INFINITY;
   private sunSignature: readonly number[] | null = null;
+  private frustumSignature: readonly number[] | null = null;
 
   markCameraCell(col: number, row: number): void {
     const nextKey = `${col},${row}`;
@@ -33,6 +34,15 @@ export class ShadowRefreshPolicy {
 
     this.sunSignature = [...signature];
     this.lightMoved = true;
+    this.dirty = true;
+  }
+
+  observeFrustum(signature: readonly number[]): void {
+    if (this.frustumSignature && signaturesMatch(this.frustumSignature, signature)) {
+      return;
+    }
+
+    this.frustumSignature = [...signature];
     this.dirty = true;
   }
 

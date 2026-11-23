@@ -3,8 +3,10 @@ import { ResourcesIds, StructureType } from "@bibliothecadao/types";
 import * as timestamp from "./timestamp";
 import {
   armyEtherealLayer,
+  cameraLayer,
   dayOf,
   entityHomeNamespace,
+  hasSharedDeep,
   seasonDay,
   expeditionDayEndsAt,
   expeditionRealmSite,
@@ -470,4 +472,21 @@ it("distinguishes a Band without resources from a Herd with wheat", () => {
     resourceType: ResourcesIds.Wheat,
     amount: 1400_000_000_000n,
   });
+});
+
+it("resolves the camera layer from expedition bands and shared Deep rules", () => {
+  const withoutDeep = storeWith(expeditionRules);
+  const deepRules = { game_id: 7, gate_distance: 4, rings: [{ radius: 5, realms: 0 }] };
+  const withDeep = storeWith({ ...expeditionRules, DeepRules: deepRules });
+  expect(hasSharedDeep(null, 7)).toBe(false);
+  expect(hasSharedDeep(withoutDeep, 7)).toBe(false);
+  expect(hasSharedDeep(withDeep, 7)).toBe(true);
+  expect(cameraLayer(null, null, 7, { col: 5, row: 15, alt: false })).toBe(0);
+  expect(cameraLayer(rules, null, 7, null)).toBe(0);
+  expect(cameraLayer(rules, withoutDeep, 7, { col: 5, row: 5, alt: false })).toBe(0);
+  expect(cameraLayer(rules, withoutDeep, 7, { col: 5, row: 15, alt: false })).toBe(1);
+  expect(cameraLayer(rules, withoutDeep, 7, { col: 5, row: 25, alt: false })).toBe(2);
+  expect(cameraLayer(rules, withoutDeep, 7, { col: 5, row: 35, alt: false })).toBe(2);
+  expect(cameraLayer(rules, withDeep, 7, { col: 5, row: 35, alt: false })).toBe(3);
+  expect(cameraLayer(rules, withDeep, 7, { col: 5, row: 15, alt: true })).toBe(0);
 });

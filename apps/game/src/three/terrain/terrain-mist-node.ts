@@ -6,6 +6,7 @@ import {
   cameraPosition,
   float,
   fwidth,
+  hash,
   mix,
   positionWorld,
   smoothstep,
@@ -133,7 +134,7 @@ function softMist(at: Node<"vec2">): Node<"float"> {
 function mistFlash(at: Node<"vec2">): Node<"float"> {
   const cycle = time.div(MIST_FLASH_SECONDS).floor();
   const phase = time.sub(cycle.mul(MIST_FLASH_SECONDS));
-  const lot = (salt: number) => cycle.add(salt).mul(12.9898).sin().mul(43758.5453).fract();
+  const lot = (salt: number) => hash(cycle.add(salt));
   const rise = smoothstep(0, 0.7, phase).mul(float(1).sub(smoothstep(0.7, 2.4, phase)));
   const centre = MIST_FOCUS.xz.add(vec2(lot(0).sub(0.5), lot(7.3).sub(0.5)).mul(24));
   return rise.mul(step(0.45, lot(3.1))).mul(smoothstep(14, 0, at.sub(centre).length()));

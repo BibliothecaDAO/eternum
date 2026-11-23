@@ -38,6 +38,7 @@ export {
   readDeepRingOpening,
   readDeepSiteDefender,
   readDeepSites,
+  readDeepSitesIfReady,
   type DeepSiteView,
 } from "./views/deep-sites";
 export { raceFinishHeight, readRaceBoard, RACE_MODELS, type RaceBoard } from "./views/race";

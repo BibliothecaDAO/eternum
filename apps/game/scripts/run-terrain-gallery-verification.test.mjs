@@ -8,22 +8,19 @@ import {
 describe("terrain gallery verification", () => {
   it("builds the auth-free fixed capture URL", () => {
     expect(buildTerrainGalleryUrl("https://localhost:4173/play/anything", "webgpu-force-webgl")).toBe(
-      "https://localhost:4173/lab/terrain?capture=1&rendererMode=webgpu-force-webgl&groundMode=textured&scene=all-biomes&quality=detail",
+      "https://localhost:4173/lab/terrain?capture=1&rendererMode=webgpu-force-webgl&scene=all-biomes&quality=high",
     );
   });
 
   it("builds a deterministic reveal-progress capture URL", () => {
-    expect(
-      buildTerrainGalleryUrl("https://localhost:4173", "webgpu-auto", "textured", "fog-reveal", "detail", 0.5),
-    ).toBe(
-      "https://localhost:4173/lab/terrain?capture=1&rendererMode=webgpu-auto&groundMode=textured&scene=fog-reveal&quality=detail&reveal=0.5",
+    expect(buildTerrainGalleryUrl("https://localhost:4173", "webgpu-auto", "fog-reveal", "high", 0.5)).toBe(
+      "https://localhost:4173/lab/terrain?capture=1&rendererMode=webgpu-auto&scene=fog-reveal&quality=high&reveal=0.5",
     );
   });
 
   it("passes matching healthy backend evidence", () => {
     const results = healthyResults();
     expect(evaluateTerrainGalleryResults(results)).toMatchObject({ ok: true, reasons: [] });
-    expect(evaluateTerrainGalleryResults(results).performanceDeltas).toHaveLength(2);
   });
 
   it("fails a WebGPU capture that three.js quietly drew on WebGL2", () => {
@@ -31,7 +28,7 @@ describe("terrain gallery verification", () => {
     results[0].snapshot.activeMode = "webgl2-fallback";
 
     expect(evaluateTerrainGalleryResults(results).reasons).toEqual([
-      "all-biomes/webgpu-auto/flat: rendered on webgl2-fallback, not webgpu",
+      "all-biomes/webgpu-auto: rendered on webgl2-fallback, not webgpu",
     ]);
   });
 
@@ -55,7 +52,7 @@ describe("terrain gallery verification", () => {
       { herd: 1, region: "0:0" },
     ]);
     expect(evaluateTerrainGalleryResults(results).reasons).toContain(
-      "all-biomes/webgpu-auto/flat: wildlife loading or 8x8 density contract failed",
+      "all-biomes/webgpu-auto: wildlife loading or 8x8 density contract failed",
     );
     results[0].snapshot.wildlife = {
       count: 1,
@@ -70,9 +67,7 @@ describe("terrain gallery verification", () => {
 
   it("reports backend parity, performance, and browser failures", () => {
     const results = healthyResults();
-    const fallback = results.find(
-      ({ rendererMode, groundMode }) => rendererMode === "webgpu-force-webgl" && groundMode === "textured",
-    );
+    const fallback = results.find(({ rendererMode }) => rendererMode === "webgpu-force-webgl");
     fallback.snapshot.fingerprint = "different";
     fallback.snapshot.commitMs = 9;
     fallback.errors = ["device lost"];
@@ -81,34 +76,32 @@ describe("terrain gallery verification", () => {
     expect(evaluateTerrainGalleryResults(results)).toMatchObject({
       ok: false,
       reasons: expect.arrayContaining([
-        "all-biomes/webgpu-force-webgl/textured: browser reported device lost",
-        "all-biomes/webgpu-force-webgl/textured: main-thread commit exceeded 8 ms",
-        "all-biomes/webgpu-force-webgl/textured: drawn terrain coverage was below 12%",
+        "all-biomes/webgpu-force-webgl: browser reported device lost",
+        "all-biomes/webgpu-force-webgl: main-thread commit exceeded 8 ms",
+        "all-biomes/webgpu-force-webgl: drawn terrain coverage was below 12%",
         "all-biomes: renderer backends produced different terrain fingerprints",
       ]),
     });
   });
 
-  it("accepts a focused scene/backend/material evaluation slice", () => {
-    const focused = [result("webgpu-force-webgl", "webgl2-fallback", "textured")];
+  it("accepts a focused scene/backend evaluation slice", () => {
+    const focused = [result("webgpu-force-webgl", "webgl2-fallback")];
 
     expect(
       evaluateTerrainGalleryResults(focused, {
-        groundModes: ["textured"],
         rendererModes: ["webgpu-force-webgl"],
         sceneIds: ["all-biomes"],
       }),
-    ).toMatchObject({ ok: true, performanceDeltas: [], reasons: [] });
+    ).toMatchObject({ ok: true, reasons: [] });
   });
 
   it("requires deterministic roads in the owned-road gallery scene", () => {
-    const roads = result("webgpu-auto", "webgpu", "textured");
+    const roads = result("webgpu-auto", "webgpu");
     roads.sceneId = "owned-roads";
     roads.snapshot.sceneId = "owned-roads";
     roads.snapshot.biomeCount = 3;
     roads.snapshot.roadSegments = 15;
     const options = {
-      groundModes: ["textured"],
       rendererModes: ["webgpu-auto"],
       sceneIds: ["owned-roads"],
     };
@@ -116,12 +109,12 @@ describe("terrain gallery verification", () => {
     expect(evaluateTerrainGalleryResults([roads], options)).toMatchObject({ ok: true, reasons: [] });
     roads.snapshot.roadSegments = 0;
     expect(evaluateTerrainGalleryResults([roads], options).reasons).toContain(
-      "owned-roads/webgpu-auto/textured: expected deterministic same-owner road segments",
+      "owned-roads/webgpu-auto: expected deterministic same-owner road segments",
     );
   });
 
   it("requires disturbance sites in the settlement-regrowth gallery scene", () => {
-    const settlement = result("webgpu-auto", "webgpu", "textured");
+    const settlement = result("webgpu-auto", "webgpu");
     settlement.sceneId = "settlement-regrowth";
     settlement.snapshot.sceneId = "settlement-regrowth";
     settlement.snapshot.biomeCount = 3;
@@ -139,7 +132,6 @@ describe("terrain gallery verification", () => {
     settlement.snapshot.settlementSites = 3;
     settlement.snapshot.settlementTierCount = 3;
     const options = {
-      groundModes: ["textured"],
       rendererModes: ["webgpu-auto"],
       sceneIds: ["settlement-regrowth"],
     };
@@ -147,22 +139,22 @@ describe("terrain gallery verification", () => {
     expect(evaluateTerrainGalleryResults([settlement], options)).toMatchObject({ ok: true, reasons: [] });
     settlement.snapshot.settlementSites = 0;
     expect(evaluateTerrainGalleryResults([settlement], options).reasons).toContain(
-      "settlement-regrowth/webgpu-auto/textured: expected three deterministic settlement disturbance sites",
+      "settlement-regrowth/webgpu-auto: expected three deterministic settlement disturbance sites",
     );
     settlement.snapshot.settlementSites = 3;
     settlement.snapshot.realmInstances = 0;
     expect(evaluateTerrainGalleryResults([settlement], options).reasons).toContain(
-      "settlement-regrowth/webgpu-auto/textured: expected three production Realm instances",
+      "settlement-regrowth/webgpu-auto: expected three production Realm instances",
     );
     settlement.snapshot.realmInstances = 3;
     settlement.snapshot.dustActiveParticles = 0;
     expect(evaluateTerrainGalleryResults([settlement], options).reasons).toContain(
-      "settlement-regrowth/webgpu-auto/textured: expected one deterministic dust puff per moving ground actor",
+      "settlement-regrowth/webgpu-auto: expected one deterministic dust puff per moving ground actor",
     );
   });
 
   it("requires a measurable wetland fringe in the tropical-coast scene", () => {
-    const coast = result("webgpu-auto", "webgpu", "textured");
+    const coast = result("webgpu-auto", "webgpu");
     coast.sceneId = "tropical-coast";
     coast.snapshot.sceneId = "tropical-coast";
     coast.snapshot.biomeCount = 4;
@@ -178,7 +170,6 @@ describe("terrain gallery verification", () => {
     coast.snapshot.waterVertices = 180;
     coast.snapshot.waterWakeInstances = 2;
     const options = {
-      groundModes: ["textured"],
       rendererModes: ["webgpu-auto"],
       sceneIds: ["tropical-coast"],
     };
@@ -186,17 +177,17 @@ describe("terrain gallery verification", () => {
     expect(evaluateTerrainGalleryResults([coast], options)).toMatchObject({ ok: true, reasons: [] });
     coast.snapshot.wetlandEdgeStrength = 0.2;
     expect(evaluateTerrainGalleryResults([coast], options).reasons).toContain(
-      "tropical-coast/webgpu-auto/textured: shoreline wetland response did not exceed inland response",
+      "tropical-coast/webgpu-auto: shoreline wetland response did not exceed inland response",
     );
     coast.snapshot.wetlandEdgeStrength = 1;
     coast.snapshot.waterInteractionInstances = 0;
     expect(evaluateTerrainGalleryResults([coast], options).reasons).toContain(
-      "tropical-coast/webgpu-auto/textured: expected 3 quality-gated naval water interactions",
+      "tropical-coast/webgpu-auto: expected 3 quality-gated naval water interactions",
     );
   });
 
   it("requires prepared fog cells to match the one-ring frontier", () => {
-    const fog = result("webgpu-auto", "webgpu", "textured");
+    const fog = result("webgpu-auto", "webgpu");
     fog.sceneId = "fog-frontier";
     fog.snapshot.sceneId = "fog-frontier";
     fog.snapshot.biomeCount = 10;
@@ -210,7 +201,6 @@ describe("terrain gallery verification", () => {
 
     expect(
       evaluateTerrainGalleryResults([fog], {
-        groundModes: ["textured"],
         rendererModes: ["webgpu-auto"],
         sceneIds: ["fog-frontier"],
       }),
@@ -221,7 +211,6 @@ describe("terrain gallery verification", () => {
     fog.snapshot.shroudActiveReveals = 1;
     expect(
       evaluateTerrainGalleryResults([fog], {
-        groundModes: ["textured"],
         rendererModes: ["webgpu-auto"],
         sceneIds: ["fog-frontier"],
       }),
@@ -230,13 +219,10 @@ describe("terrain gallery verification", () => {
     fog.snapshot.preparedFrontierCells = 5;
     expect(
       evaluateTerrainGalleryResults([fog], {
-        groundModes: ["textured"],
         rendererModes: ["webgpu-auto"],
         sceneIds: ["fog-frontier"],
       }).reasons,
-    ).toContain(
-      "fog-frontier/webgpu-auto/textured: prepared frontier cells did not match the committed one-ring fog frontier",
-    );
+    ).toContain("fog-frontier/webgpu-auto: prepared frontier cells did not match the committed one-ring fog frontier");
   });
 
   it("keeps structural gates while treating software-renderer timings as informational", () => {
@@ -254,26 +240,20 @@ describe("terrain gallery verification", () => {
     });
     results[0].imageCoverage = 0;
     expect(evaluateTerrainGalleryResults(results, { timingPolicy: "informational" }).reasons).toContain(
-      "all-biomes/webgpu-auto/flat: drawn terrain coverage was below 12%",
+      "all-biomes/webgpu-auto: drawn terrain coverage was below 12%",
     );
   });
 });
 
 function healthyResults() {
-  return [
-    result("webgpu-auto", "webgpu", "flat"),
-    result("webgpu-auto", "webgpu", "textured"),
-    result("webgpu-force-webgl", "webgl2-fallback", "flat"),
-    result("webgpu-force-webgl", "webgl2-fallback", "textured"),
-  ];
+  return [result("webgpu-auto", "webgpu"), result("webgpu-force-webgl", "webgl2-fallback")];
 }
 
-function result(rendererMode, activeMode, groundMode) {
+function result(rendererMode, activeMode) {
   return {
     errors: [],
-    groundMode,
     imageCoverage: 0.42,
-    qualityTier: "detail",
+    qualityTier: "high",
     revealProgress: 0,
     ready: true,
     rendererMode,
@@ -305,7 +285,7 @@ function result(rendererMode, activeMode, groundMode) {
       groundCoverInstances: 12,
       prepareMs: 20,
       propInstances: 39,
-      qualityTier: "detail",
+      qualityTier: "high",
       realmInstances: 0,
       revealProgress: 0,
       roadSegments: 0,
@@ -352,6 +332,6 @@ it.each(["blitz", "frontier"])("captures the requested production world mode %s"
   expect(evaluateTerrainGalleryResults(results, { gameMode }).ok).toBe(true);
   results[0].snapshot.gameMode = "wrong";
   expect(evaluateTerrainGalleryResults(results, { gameMode }).reasons).toContain(
-    "all-biomes/webgpu-auto/flat: world mode did not match request",
+    "all-biomes/webgpu-auto: world mode did not match request",
   );
 });

@@ -194,10 +194,7 @@ export class WorldAtmosphereController {
   }
 
   private layerLight(): TimeOfDayColors | null {
-    const environment = this.environment;
-    return environment === "veil" || environment === "hollow" || environment === "deep"
-      ? LAYER_LIGHTS[environment]
-      : null;
+    return this.environment in LAYER_LIGHTS ? LAYER_LIGHTS[this.environment as LayerPlace] : null;
   }
 
   get shownProgress(): number {

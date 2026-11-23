@@ -1,5 +1,5 @@
-import { Scene, Group, Mesh, BoxGeometry, MeshBasicMaterial } from "three";
-import { describe, expect, it, vi } from "vitest";
+import { Scene, Group, ImageLoader, InstancedMesh, Mesh, BoxGeometry, MeshBasicMaterial } from "three";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 const { load, models, mode, beasts, beastTroops, openings, clock, publish, viewer } = vi.hoisted(() => ({
   mode: { id: "frontier" },
@@ -85,14 +85,30 @@ vi.mock("@/three/managers/instanced-model", () => ({
   },
 }));
 
-import { aspects, DEEP_BEASTS, deepSites, ordersOfAspect, TileOccupier } from "@bibliothecadao/types";
-import { deepGateTiles } from "@bibliothecadao/eternum/game-client";
+import { ASPECT_HEX } from "@/tokens";
+import {
+  aspects,
+  DEEP_BEASTS,
+  deepSites,
+  ordersOfAspect,
+  RESOURCE_PRECISION,
+  TileOccupier,
+} from "@bibliothecadao/types";
+import { configManager } from "@bibliothecadao/eternum";
+import { deepGateTiles, nativeRuleConstants } from "@bibliothecadao/eternum/game-client";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
+import { DeepLandmarkModel } from "../structures/deep-landmarks";
+import { resolveOrderSignumCell } from "../structures/order-standard";
 import { FRONTIER_BEASTS } from "../structures/frontier-beast";
 import { DEEP_SITE_MODELS } from "../structures/deep-landmarks";
 import { DEEP_SITE_FACES } from "@/ui/features/frontier/deep/deep-site-faces";
 import { MapSiteManager } from "./map-site-manager";
 import { PLATE_CLEARANCE } from "./structure-visible-presentation";
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+});
 
 const noGates = () => ({
   setLabel: vi.fn(),
@@ -124,6 +140,7 @@ describe("the Deep's sites on the map", () => {
     const store = {
       get: (model: string, key: { entity_id: number }) => (model === "DeepSite" ? site(key) : undefined),
       require: (_model: string, key: { entity_id: number }) => site(key),
+      inGame: () => [],
       subscribe: () => () => {},
     };
     const manager = new MapSiteManager(
@@ -162,6 +179,7 @@ describe("the Deep's sites on the map", () => {
       get: (model: string, key: { entity_id: number }) =>
         model === "DeepSite" && site(key).kind !== undefined ? site(key) : undefined,
       require: (_model: string, key: { entity_id: number }) => site(key),
+      inGame: () => [],
       subscribe: (listener: (changes: unknown[]) => void) => {
         listeners.push(listener);
         return () => {};
@@ -218,6 +236,7 @@ describe("the Deep's sites on the map", () => {
     const store = {
       get: (model: string, key: { entity_id: number }) => (model === "DeepSite" ? site(key) : undefined),
       require: (_model: string, key: { entity_id: number }) => site(key),
+      inGame: () => [],
       subscribe: () => () => {},
     };
     const manager = new MapSiteManager(
@@ -279,6 +298,7 @@ describe("the Deep's sites on the map", () => {
             ? { aspect: 2 }
             : undefined,
       require: (model: string) => (model === "SettlementRules" ? { spacing: 1024 } : undefined),
+      inGame: () => [],
       structuresOwnedBy: (_game: number, owner: bigint) => (owner === 0x111n ? [{ entity_id: 9n }] : []),
       subscribe: () => () => {},
     };
@@ -306,6 +326,153 @@ describe("the Deep's sites on the map", () => {
     expect(gates.clearHover).toHaveBeenCalled();
     manager.destroy();
   });
+
+  it("reads Deep site holders and guard standards from readDeepSites and re-places as guards drain over time", async () => {
+    mode.id = "frontier";
+    models.length = 0;
+    load.mockReset();
+    load.mockImplementation(async (path: string) => ({
+      path,
+      scene: new Mesh(new BoxGeometry(1, 1.4, 1), new MeshBasicMaterial()),
+    }));
+    beastTroops.clear();
+    openings.clear();
+    clock.tick = 100;
+    const context = { fillRect: vi.fn(), drawImage: vi.fn(), fillStyle: "" };
+    vi.stubGlobal("document", { createElement: () => ({ width: 0, height: 0, getContext: () => context }) });
+    vi.spyOn(ImageLoader.prototype, "loadAsync").mockResolvedValue({ width: 256, height: 256 } as HTMLImageElement);
+    const heldSpy = vi.spyOn(DeepLandmarkModel.prototype, "setHolderColorAt");
+    const gameId = configManager.getActiveGameId();
+    const precision = BigInt(RESOURCE_PRECISION);
+    const [firstOrder, secondOrder] = ordersOfAspect(2);
+    const ringKinds = Array.from(
+      { length: nativeRuleConstants.DEEP_RING_SITES },
+      (_, index) => deepSites[index % deepSites.length]!,
+    );
+    const tiles = ringKinds.map((_, index) => tile(10 + index, TileOccupier.DeepSite));
+    const projection = { getTiles: () => tiles, subscribeTiles: () => () => {} };
+    const plates = { setLabel: vi.fn(), retainOnly: vi.fn(), dispose: vi.fn(), setHover: vi.fn(), clearHover: vi.fn() };
+    const rows: Record<string, Record<string, unknown>[]> = {
+      SliceRules: [
+        {
+          game_id: gameId,
+          day_unit_seconds: clock.day,
+          tick_config: { armies_tick_in_seconds: 60n },
+          capacity_config: { troop_capacity: 10 },
+        },
+      ],
+      SettlementRules: [{ game_id: gameId, spacing: 1024 }],
+      GameRegistry: [
+        {
+          game_id: gameId,
+          start_main_at: 0n,
+          scheduled_end_at: BigInt(clock.day * 5),
+          end_at: BigInt(clock.day * 5),
+          seed: 1n,
+        },
+      ],
+      DeepRules: [
+        {
+          game_id: gameId,
+          gate_distance: 4,
+          loss_per_tick: 500n * precision,
+          rings: [{ radius: 5, realms: 0 }],
+          beasts: deepSites.map((_, index) => ({ count: 5_000n * precision, bow: index % 2 === 1 })),
+          building_pay: { alone: 6, pair: 3, crowd: 2 },
+        },
+      ],
+      DeepEntries: [{ game_id: gameId, day: 0n, count: 10 }],
+      DeepSite: ringKinds.map((kind, index) => ({
+        game_id: gameId,
+        entity_id: BigInt(10 + index),
+        kind: kind.id,
+        ring: 0,
+        day: 0n,
+      })),
+      Guard: ringKinds.map((_, index) => ({
+        game_id: gameId,
+        structure_id: BigInt(10 + index),
+        slot: 0,
+        troops: { count: 0n },
+      })),
+      TileOccupancy: ringKinds.map((_, index) => ({
+        game_id: gameId,
+        entity_id: BigInt(10 + index),
+        col: 10 + index,
+        row: 0,
+        alt: false,
+      })),
+      DeepGuard: [
+        { game_id: gameId, site_id: 10n, slot: 0, explorer_id: 77n },
+        { game_id: gameId, site_id: 10n, slot: 1, explorer_id: 78n },
+      ],
+      DeepArmy: [
+        { game_id: gameId, explorer_id: 77n, last_tick: 1n },
+        { game_id: gameId, explorer_id: 78n, last_tick: 1n },
+      ],
+      ArmyDay: [
+        { game_id: gameId, explorer_id: 77n, day: 0n },
+        { game_id: gameId, explorer_id: 78n, day: 0n },
+      ],
+      ArmyProgress: [
+        { game_id: gameId, explorer_id: 77n, logistics: 0, oath_slots: 1, oaths: 0, oath_pick: 0 },
+        { game_id: gameId, explorer_id: 78n, logistics: 0, oath_slots: 1, oaths: 0, oath_pick: 0 },
+      ],
+      ExplorerTroops: [
+        { game_id: gameId, explorer_id: 77n, owner: 9n, troops: { count: 1_000n * precision } },
+        { game_id: gameId, explorer_id: 78n, owner: 19n, troops: { count: 500n * precision } },
+      ],
+      HomeAspect: [
+        { game_id: gameId, home: 9n, aspect: 2 },
+        { game_id: gameId, home: 19n, aspect: 2 },
+      ],
+      Structure: [
+        { game_id: gameId, entity_id: 9n, metadata: { order: firstOrder!.orderId } },
+        { game_id: gameId, entity_id: 19n, metadata: { order: secondOrder!.orderId } },
+      ],
+    };
+    const matchKey = (row: Record<string, unknown>, key: Record<string, unknown>) =>
+      Object.entries(key).every(([field, value]) => String(row[field]) === String(value));
+    const get = (model: string, key: Record<string, unknown>) => rows[model]?.find((row) => matchKey(row, key));
+    const store = {
+      get,
+      require: (model: string, key: Record<string, unknown>) => {
+        const row = get(model, key);
+        if (!row) throw new Error(`missing ${model}`);
+        return row;
+      },
+      requireOrAbsent: (model: string, key: Record<string, unknown>) => ({ known: get(model, key) ?? null }),
+      entityOccupancy: (game_id: number, entity_id: bigint) => get("TileOccupancy", { game_id, entity_id }),
+      inGame: (model: string) => rows[model] ?? [],
+      structuresOwnedBy: () => [],
+      subscribe: () => () => {},
+    };
+    const scene = new Scene();
+    const manager = new MapSiteManager(scene, projection as never, store as never, plates as never, noGates() as never);
+    await vi.waitFor(() => expect(heldSpy).toHaveBeenCalledWith(0, ASPECT_HEX[2]));
+    const signum = scene.getObjectByName("Order stone signum")!;
+    const emblem = signum.getObjectByName("Order signum emblem") as InstancedMesh;
+    const cell = emblem.geometry.getAttribute("signumOrderCell");
+    expect(emblem.count).toBe(2);
+    expect([cell.getX(0), cell.getX(1)]).toEqual([
+      resolveOrderSignumCell(secondOrder!.orderId),
+      resolveOrderSignumCell(firstOrder!.orderId),
+    ]);
+
+    heldSpy.mockClear();
+    headAt(120);
+    expect(heldSpy).toHaveBeenCalledWith(0, ASPECT_HEX[2]);
+    expect(emblem.count).toBe(1);
+    expect(cell.getX(0)).toBe(resolveOrderSignumCell(firstOrder!.orderId));
+
+    heldSpy.mockClear();
+    headAt(180);
+    expect(heldSpy).toHaveBeenCalledWith(0, null);
+    expect(emblem.count).toBe(0);
+
+    manager.destroy();
+    clock.tick = 0;
+  });
 });
 
 function guardedSites(tick: number | undefined, beaten: string[] = [], closed: string[] = []) {
@@ -331,6 +498,7 @@ function guardedSites(tick: number | undefined, beaten: string[] = [], closed: s
   const store = {
     get: (model: string, key: { entity_id: number }) => (model === "DeepSite" ? site(key) : undefined),
     require: (_model: string, key: { entity_id: number }) => site(key),
+    inGame: () => [],
     subscribe: () => () => {},
   };
   return {

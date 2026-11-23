@@ -17,7 +17,7 @@ const SCREEN_CORNERS = [
 ] as const;
 const CASTER_REACH = 2;
 const CASTER_HEIGHT = 6;
-const STEP = 0.25;
+const STEP = 1;
 const snapOut = (value: number, direction: 1 | -1) => (direction > 0 ? Math.ceil : Math.floor)(value / STEP) * STEP;
 
 const corner = new Vector3();

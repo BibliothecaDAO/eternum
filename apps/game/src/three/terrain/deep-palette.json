@@ -2,5 +2,11 @@
   "slate": "#4c6a96",
   "cobalt": "#2a4a8c",
   "gold": "#f2bc4e",
-  "ivory": "#efe6d0"
+  "ivory": "#efe6d0",
+  "base": "#2a3352",
+  "mineStone": "#4a3a8c",
+  "mineTrim": "#7b5ad6",
+  "altarStone": "#231a2c",
+  "altarTrim": "#3a2533",
+  "altarBase": "#160f1c"
 }

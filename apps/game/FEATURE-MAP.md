@@ -666,7 +666,9 @@ darker mist and Ember lighting; Blitz retains the shipped day/night lighting. Gr
 are unchanged. The realm scene retains its shipped lighting.
 
 For an auth-free comparison, open Art → Terrain (`/lab/terrain`) and switch **Game** to **Blitz** or **Frontier**, then
-select a scene and use Exploration or Time. The lab calls the production terrain and atmosphere constructors. See
+select a scene and use Exploration or Time. The lab calls the production terrain and atmosphere constructors. Open Art →
+Terrain → Life (`/lab/life`) to inspect every procedural flora kind and biome creature beside a knight, or switch Mode
+to **Wildlife paddocks** (`/lab/life?mode=paddock`) to observe live roaming herds and army avoidance. See
 `src/lab/README.md` for the gallery proof command; live game selection comes only from the game's synced mode.
 
 ## Facets icons

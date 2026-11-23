@@ -20,9 +20,6 @@ export interface RendererAdapterInfo {
 export interface RendererBackendCapabilities {
   supportsEnvironmentIbl: boolean;
   supportsToneMappingControl: boolean;
-  supportsColorGrade: boolean;
-  supportsBloom: boolean;
-  supportsVignette: boolean;
   supportsChromaticAberration: boolean;
   supportsWideLines: boolean;
 }
@@ -60,7 +57,13 @@ export interface RendererDeviceLostEvent {
 export interface RendererBackend {
   readonly capabilities: RendererBackendCapabilities;
   readonly renderer?: RendererSurfaceLike;
-  applyRenderVisuals(input: { pixelRatio: number; shadows: boolean; width: number; height: number }): void;
+  applyRenderVisuals(input: {
+    finish: boolean;
+    pixelRatio: number;
+    shadows: boolean;
+    width: number;
+    height: number;
+  }): void;
   dispose(): void;
   initialize(): Promise<RendererInitDiagnostics>;
   renderFrame(pipeline: RendererFramePipeline): void;
@@ -86,12 +89,9 @@ export function createRendererBackendCapabilities(
   input: Partial<RendererBackendCapabilities> = {},
 ): RendererBackendCapabilities {
   return {
-    supportsBloom: input.supportsBloom ?? false,
     supportsChromaticAberration: input.supportsChromaticAberration ?? false,
-    supportsColorGrade: input.supportsColorGrade ?? false,
     supportsEnvironmentIbl: input.supportsEnvironmentIbl ?? false,
     supportsToneMappingControl: input.supportsToneMappingControl ?? false,
-    supportsVignette: input.supportsVignette ?? false,
     supportsWideLines: input.supportsWideLines ?? false,
   };
 }

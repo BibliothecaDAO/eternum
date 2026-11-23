@@ -138,8 +138,8 @@ and quality controls still apply. This switch belongs to the dev lab; live games
 synced game mode.
 
 ```sh
-pnpm --dir apps/game verify:terrain:gallery --base-url 'https://127.0.0.1:4194/?mode=blitz' --scenes all-biomes,fog-reveal --ground-modes textured --timing-policy informational --artifact-dir <fresh-blitz-directory>
-pnpm --dir apps/game verify:terrain:gallery --base-url 'https://127.0.0.1:4194/?mode=frontier' --scenes all-biomes,fog-reveal --ground-modes textured --timing-policy informational --artifact-dir <fresh-frontier-directory>
+pnpm --dir apps/game verify:terrain:gallery --base-url 'https://127.0.0.1:4194/?mode=blitz' --scenes all-biomes,fog-reveal --timing-policy informational --artifact-dir <fresh-blitz-directory>
+pnpm --dir apps/game verify:terrain:gallery --base-url 'https://127.0.0.1:4194/?mode=frontier' --scenes all-biomes,fog-reveal --timing-policy informational --artifact-dir <fresh-frontier-directory>
 ```
 
 Both renderer backends are checked by default. Each capture records the requested world mode and the actual terrain

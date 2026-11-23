@@ -1024,12 +1024,13 @@ export abstract class HexagonScene {
     fitSunShadowToView(this.mainDirectionalLight, this.camera);
     const { position, target, shadow } = this.mainDirectionalLight;
     this.shadowRefreshPolicy.observeSun([
-      position.x,
-      position.y,
-      position.z,
-      target.position.x,
-      target.position.y,
-      target.position.z,
+      position.x - target.position.x,
+      position.y - target.position.y,
+      position.z - target.position.z,
+    ]);
+    this.shadowRefreshPolicy.observeFrustum([
+      Math.round(target.position.x),
+      Math.round(target.position.z),
       shadow.camera.left,
       shadow.camera.right,
       shadow.camera.top,

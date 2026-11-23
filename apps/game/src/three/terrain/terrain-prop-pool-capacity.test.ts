@@ -2,8 +2,11 @@ import { BiomeType } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
 
 import { TerrainField } from "./terrain-field";
-import { TERRAIN_PROP_ARCHETYPE_IDS, type TerrainPropArchetypeId } from "./terrain-prop-catalog";
-import { TERRAIN_PROP_PAGE_SLOT_CAPACITY } from "./terrain-prop-catalog";
+import {
+  TERRAIN_PROP_ARCHETYPE_IDS,
+  TERRAIN_PROP_PAGE_SLOT_CAPACITY,
+  type TerrainPropArchetypeId,
+} from "./terrain-prop-catalog";
 import { prepareTerrainPropInstances } from "./terrain-props";
 import type { TerrainPageRequest } from "./terrain-types";
 import { createTerrainBenchmarkFixture } from "./verification/terrain-benchmark-fixture";

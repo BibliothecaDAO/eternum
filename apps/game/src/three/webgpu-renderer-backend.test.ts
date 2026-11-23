@@ -88,12 +88,9 @@ describe("createWebGPURendererBackend", () => {
     );
 
     expect(backend.capabilities).toEqual({
-      supportsBloom: true,
       supportsChromaticAberration: false,
-      supportsColorGrade: true,
       supportsEnvironmentIbl: false,
       supportsToneMappingControl: true,
-      supportsVignette: true,
       supportsWideLines: false,
     });
   });
@@ -597,6 +594,7 @@ describe("createWebGPURendererBackend", () => {
     await backend.initialize();
 
     backend.applyRenderVisuals({
+      finish: true,
       pixelRatio: 1.5,
       shadows: true,
       width: 640,
@@ -701,4 +699,38 @@ describe("createWebGPURendererBackend", () => {
       expect(renderer.clear).not.toHaveBeenCalled();
     },
   );
+
+  it("runs MapFinish only when finish is enabled and disposes it when turned off", async () => {
+    const renderer = createRendererSurface();
+    const finishRender = vi.fn();
+    const finishDispose = vi.fn();
+    const createFinish = vi.fn(() => ({ render: finishRender, dispose: finishDispose }));
+    const backend = createWebGPURendererBackend(
+      { isMobileDevice: false, pixelRatio: 1, requestedMode: "webgpu-auto" },
+      {
+        createFinish,
+        createRenderer: vi.fn(async () => ({
+          renderer: Object.assign(renderer, { init: vi.fn(async () => {}) }),
+        })),
+        now: vi.fn(() => 0),
+      },
+    );
+    await backend.initialize();
+
+    const pipeline = { mainCamera: { id: "cam" } as never, mainScene: { id: "scene" } as never };
+    backend.renderFrame(pipeline);
+    expect(createFinish).not.toHaveBeenCalled();
+    expect(renderer.render).toHaveBeenCalledTimes(1);
+
+    backend.applyRenderVisuals({ finish: true, pixelRatio: 1, shadows: true, width: 640, height: 360 });
+    backend.renderFrame(pipeline);
+    expect(createFinish).toHaveBeenCalledTimes(1);
+    expect(finishRender).toHaveBeenCalledTimes(1);
+    expect(renderer.render).toHaveBeenCalledTimes(1);
+
+    backend.applyRenderVisuals({ finish: false, pixelRatio: 1, shadows: true, width: 640, height: 360 });
+    expect(finishDispose).toHaveBeenCalledTimes(1);
+    backend.renderFrame(pipeline);
+    expect(renderer.render).toHaveBeenCalledTimes(2);
+  });
 });

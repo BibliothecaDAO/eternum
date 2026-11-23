@@ -24,12 +24,9 @@ describe("renderer-diagnostics", () => {
       requestedMode: "webgpu-auto",
     });
     setRendererDiagnosticCapabilities({
-      supportsBloom: false,
       supportsChromaticAberration: false,
-      supportsColorGrade: false,
       supportsEnvironmentIbl: false,
       supportsToneMappingControl: true,
-      supportsVignette: false,
       supportsWideLines: false,
     });
     setRendererDiagnosticDegradations([
@@ -52,12 +49,9 @@ describe("renderer-diagnostics", () => {
       adapterInfo: null,
       buildMode: "webgpu-auto",
       capabilities: {
-        supportsBloom: false,
         supportsChromaticAberration: false,
-        supportsColorGrade: false,
         supportsEnvironmentIbl: false,
         supportsToneMappingControl: true,
-        supportsVignette: false,
         supportsWideLines: false,
       },
       degradations: [
@@ -102,12 +96,9 @@ describe("renderer-diagnostics", () => {
       requestedMode: "webgpu-force-webgl",
     });
     setRendererDiagnosticCapabilities({
-      supportsBloom: true,
       supportsChromaticAberration: true,
-      supportsColorGrade: true,
       supportsEnvironmentIbl: true,
       supportsToneMappingControl: true,
-      supportsVignette: true,
       supportsWideLines: false,
     });
 
@@ -116,12 +107,9 @@ describe("renderer-diagnostics", () => {
       adapterInfo: null,
       buildMode: "webgpu-force-webgl",
       capabilities: {
-        supportsBloom: true,
         supportsChromaticAberration: true,
-        supportsColorGrade: true,
         supportsEnvironmentIbl: true,
         supportsToneMappingControl: true,
-        supportsVignette: true,
         supportsWideLines: false,
       },
       degradations: [],
@@ -167,23 +155,17 @@ describe("renderer-diagnostics", () => {
   it("setRendererDiagnosticCapabilities produces a new state object reference", () => {
     const before = snapshotRendererDiagnostics();
     setRendererDiagnosticCapabilities({
-      supportsBloom: true,
       supportsChromaticAberration: false,
-      supportsColorGrade: false,
       supportsEnvironmentIbl: false,
-      supportsToneMappingControl: false,
-      supportsVignette: false,
+      supportsToneMappingControl: true,
       supportsWideLines: false,
     });
     const after = snapshotRendererDiagnostics();
     expect(after).not.toBe(before);
     expect(after.capabilities).toEqual({
-      supportsBloom: true,
       supportsChromaticAberration: false,
-      supportsColorGrade: false,
       supportsEnvironmentIbl: false,
-      supportsToneMappingControl: false,
-      supportsVignette: false,
+      supportsToneMappingControl: true,
       supportsWideLines: false,
     });
   });

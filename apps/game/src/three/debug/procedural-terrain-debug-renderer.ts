@@ -37,8 +37,8 @@ import type { RendererSurfaceLike } from "@/three/renderer-backend";
 import { getStructureModelPaths } from "@/three/constants/scene-constants";
 import InstancedModel from "@/three/managers/instanced-model";
 import { ProceduralTerrain } from "@/three/terrain/procedural-terrain";
+import type { GraphicsQuality } from "@/three/graphics-preferences";
 import { terrainHexToWorld } from "@/three/terrain/terrain-coordinates";
-import type { TerrainQualityTier } from "@/three/terrain/terrain-quality";
 import type { PreparedTerrainPage, TerrainPageRequest } from "@/three/terrain/terrain-types";
 import { TERRAIN_SHALLOW_WATER_DEPTH } from "@/three/terrain/terrain-water";
 import type { TerrainMovementInteraction } from "@/three/terrain/terrain-movement-effects";
@@ -96,7 +96,7 @@ export interface ProceduralTerrainDebugStats {
   groundCoverInstances: number;
   prepareMs: number;
   propInstances: number;
-  qualityTier: TerrainQualityTier;
+  qualityTier: GraphicsQuality;
   realmInstances: number;
   revealProgress: number;
   roadSegments: number;
@@ -113,7 +113,6 @@ export interface ProceduralTerrainDebugStats {
   shroudFrontierInstances: number;
   shroudInstances: number;
   shroudTriangles: number;
-  shadingMode: "flat" | "textured";
   triangles: number;
   textures: number;
   vertices: number;
@@ -192,10 +191,9 @@ interface MountProceduralTerrainDebugRendererInput {
   captureMode: boolean;
   localRadius?: number;
   forceWebGL: boolean;
-  qualityTier: TerrainQualityTier;
+  qualityTier: GraphicsQuality;
   revealProgress: number;
   sceneId: TerrainVerificationSceneId;
-  texturedGround: boolean;
   onError(error: unknown): void;
   onReady(stats: ProceduralTerrainDebugStats): void;
 }
@@ -310,9 +308,9 @@ async function mountOnCanvas(
     reportLostDevice(runtime.renderer, verification);
     const resizeObserver = observeCanvas(input.canvas, runtime);
     const stopAnimation = startAnimation(runtime, input);
-    const stats = readStats(runtime, input.forceWebGL, input.texturedGround);
+    const stats = readStats(runtime);
     Object.assign(verification, {
-      getSnapshot: () => readStats(runtime, input.forceWebGL, input.texturedGround),
+      getSnapshot: () => readStats(runtime),
       getInteraction: () => runtime.interaction?.getState(),
       captureFrame: () => captureDrawnFrame(runtime, input.canvas),
       status: "ready",
@@ -339,7 +337,7 @@ async function mountOnCanvas(
           delete debugWindow.__terrainVerification;
         }
       },
-      getStats: () => readStats(runtime, input.forceWebGL, input.texturedGround),
+      getStats: () => readStats(runtime),
       resetCamera: () => positionCamera(runtime.camera, runtime.controls, runtime.cameraFrame),
       previewExploration: async (entryEdge) => runtime.interaction?.previewExploration(entryEdge),
       placeBuilding: async (path, yaw, id, progress, dormant) =>
@@ -428,7 +426,7 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
 
   const terrain = new ProceduralTerrain({ streaming: true, gameMode: input.gameMode });
   await terrain.loadProps();
-  terrain.setQualityTier(input.qualityTier);
+  terrain.setQuality(input.qualityTier);
   let prepared = await terrain.preparePageAsync(request);
   let fogMask = await terrain.prepareFogMaskAsync([prepared]);
   let commitStartedAt = performance.now();
@@ -506,7 +504,6 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
     | "frameP95Ms"
     | "frameWorstMs"
     | "frameSampleCount"
-    | "shadingMode"
     | "textures"
   >;
   scene.add(terrain.object3d);
@@ -514,7 +511,6 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
   const { atmosphere, sun } = createGameLighting(scene, input.gameMode);
   const weather = new WeatherLabRuntime(scene, sun, controls, (x, z) => terrain.sampleSurface(x, z).height);
   atmosphere.update(50, controls.target, { snap: true });
-  terrain.setGroundTextureDetailEnabled(input.texturedGround);
   if (endgame || input.stage) {
     const compile = createPipelineCompiler({ getRenderer: () => renderer, getCamera: () => camera });
     try {
@@ -927,11 +923,7 @@ function drawnShare(pixels: Uint8ClampedArray): number {
   return drawn / (pixels.length / 4);
 }
 
-function readStats(
-  runtime: TerrainDebugRuntime,
-  forceWebGL: boolean,
-  texturedGround = runtime.terrain.isGroundTextureDetailEnabled(),
-): ProceduralTerrainDebugStats {
+function readStats(runtime: TerrainDebugRuntime): ProceduralTerrainDebugStats {
   const verification = runtime.terrain.object3d.userData.verification as Omit<
     ProceduralTerrainDebugStats,
     "activeMode" | "drawCalls"
@@ -967,7 +959,6 @@ function readStats(
     frameP95Ms: percentile(runtime.frameSamplesMs, 0.95),
     frameWorstMs: Math.max(0, ...runtime.frameSamplesMs),
     frameSampleCount: runtime.frameSamplesMs.length,
-    shadingMode: texturedGround ? "textured" : "flat",
     textures: runtime.renderer.info.memory.textures,
   };
 }

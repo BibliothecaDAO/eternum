@@ -140,12 +140,9 @@ let webGpuFrameRecoveryWarned = false;
 let webGpuRendererModulesPromise: Promise<WebGpuRendererModules> | null = null;
 
 const WEBGPU_RENDERER_BACKEND_CAPABILITIES = createRendererBackendCapabilities({
-  supportsBloom: true,
   supportsChromaticAberration: false,
-  supportsColorGrade: true,
   supportsEnvironmentIbl: false,
   supportsToneMappingControl: true,
-  supportsVignette: true,
   supportsWideLines: false,
 });
 
@@ -333,7 +330,7 @@ async function waitForWebGpuBackendStartup(input: {
 
 function renderMainFrameWithRecovery(
   renderer: RendererSurfaceLike,
-  finish: SceneFinish,
+  finish: SceneFinish | undefined,
   pipeline: RendererFramePipeline,
 ): void {
   renderer.info.reset();
@@ -360,13 +357,17 @@ function renderMainFrameWithRecovery(
 
 function renderClearedMainScene(
   renderer: RendererSurfaceLike,
-  finish: SceneFinish,
+  finish: SceneFinish | undefined,
   pipeline: RendererFramePipeline,
 ): void {
   const previousAutoClear = renderer.autoClear;
   renderer.autoClear = true;
   try {
-    finish.render(pipeline.mainScene, pipeline.mainCamera);
+    if (finish) {
+      finish.render(pipeline.mainScene, pipeline.mainCamera);
+    } else {
+      renderer.render(pipeline.mainScene, pipeline.mainCamera);
+    }
   } finally {
     renderer.autoClear = previousAutoClear;
   }
@@ -387,6 +388,7 @@ export function createWebGPURendererBackend(
   } satisfies WebGPURendererBackendDependencies;
   let renderer: RendererSurfaceLike | undefined;
   let finish: SceneFinish | undefined;
+  let finishEnabled = false;
   let cleanupDeviceDiagnostics: (() => void) | undefined;
 
   const startRendererLane = async (forceWebGL: boolean): Promise<InitializedRendererLane> => {
@@ -488,6 +490,11 @@ export function createWebGPURendererBackend(
       return renderer;
     },
     applyRenderVisuals(input) {
+      finishEnabled = input.finish;
+      if (!finishEnabled) {
+        finish?.dispose();
+        finish = undefined;
+      }
       if (!renderer) {
         return;
       }
@@ -512,7 +519,6 @@ export function createWebGPURendererBackend(
         cleanupDeviceDiagnostics?.();
         cleanupDeviceDiagnostics = lane.releaseDeviceDiagnostics;
         renderer = lane.renderer;
-        finish = resolvedDependencies.createFinish(lane.renderer);
 
         return createRendererInitDiagnostics({
           activeMode: lane.activeMode,
@@ -528,8 +534,11 @@ export function createWebGPURendererBackend(
       }
     },
     renderFrame(pipeline: RendererFramePipeline) {
-      if (!renderer || !finish) return;
-      renderMainFrameWithRecovery(renderer, finish, pipeline);
+      if (!renderer) return;
+      if (finishEnabled && !finish) {
+        finish = resolvedDependencies.createFinish(renderer);
+      }
+      renderMainFrameWithRecovery(renderer, finishEnabled ? finish : undefined, pipeline);
       renderRendererOverlayPasses(renderer, pipeline);
     },
     resize(width: number, height: number) {

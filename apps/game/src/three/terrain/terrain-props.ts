@@ -333,6 +333,15 @@ function prepareLayerFloraLayer(
   return candidates;
 }
 
+function saltedHash(
+  latticeX: number,
+  latticeZ: number,
+  context: Pick<LayerFloraContext, "elevationSeed" | "moistureSeed">,
+  prefix: string,
+): (salt: string) => number {
+  return (salt) => hashUnit(latticeX, latticeZ, context.elevationSeed, context.moistureSeed, `${prefix}-${salt}`);
+}
+
 function buildLayerFloraCandidate(
   latticeX: number,
   latticeZ: number,
@@ -340,8 +349,7 @@ function buildLayerFloraCandidate(
   spacing: number,
   context: LayerFloraContext,
 ): PreparedTerrainPropCandidate | null {
-  const hash = (salt: string) =>
-    hashUnit(latticeX, latticeZ, context.elevationSeed, context.moistureSeed, `layer-flora-${layer}-${salt}`);
+  const hash = saltedHash(latticeX, latticeZ, context, `layer-flora-${layer}`);
   const worldX = (latticeX + (hash("jitter-x") - 0.5) * 0.72) * spacing;
   const worldZ = (latticeZ + (hash("jitter-z") - 0.5) * 0.72) * spacing;
   const ownerCoordinate = findNearestTerrainHex(worldX, worldZ);
@@ -406,8 +414,7 @@ function buildLayerEdgeCandidate(
 ): PreparedTerrainPropCandidate | null {
   const latticeX = owner.col * 12 + slot;
   const latticeZ = owner.row;
-  const hash = (salt: string) =>
-    hashUnit(latticeX, latticeZ, context.elevationSeed, context.moistureSeed, `layer-edge-${salt}`);
+  const hash = saltedHash(latticeX, latticeZ, context, "layer-edge");
   const propProfile = LAYER_BIOME_PROP_PROFILES[owner.layerBiome];
   const onEdges = ({ archetype }: WeightedArchetype<LayerPropId>) => getLayerPropAnchor(archetype) === "edge";
   const weights = propProfile.weights.filter(onEdges);
@@ -472,8 +479,7 @@ function buildLayerCornerCandidate(
 ): PreparedTerrainPropCandidate | null {
   const latticeX = owner.col * 12 + corner;
   const latticeZ = owner.row;
-  const hash = (salt: string) =>
-    hashUnit(latticeX, latticeZ, context.elevationSeed, context.moistureSeed, `layer-corner-${salt}`);
+  const hash = saltedHash(latticeX, latticeZ, context, "layer-corner");
   const propProfile = LAYER_BIOME_PROP_PROFILES[owner.layerBiome];
   const atCorners = ({ archetype }: WeightedArchetype<LayerPropId>) => getLayerPropAnchor(archetype) === "corner";
   const weights = propProfile.weights.filter(atCorners);
