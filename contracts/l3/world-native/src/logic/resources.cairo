@@ -320,7 +320,12 @@ pub mod ResourceState {
                 limit: crate::logic::resources::store_limit(key, resource_type),
             };
             let previous = resource;
-            let since = resource.production.last_settled_at;
+            let mut since = resource.production.last_settled_at;
+            if crate::rules::PRODUCTION_FROM_MAIN {
+                let main: u32 = crate::logic::game::game(key.game_id).start_main_at.try_into().unwrap();
+                since = core::cmp::max(since, core::cmp::min(now, main));
+                resource.production.last_settled_at = since;
+            }
             if since != now && resource.production.building_count != 0 {
                 let effects = crate::logic::banes::effects(key, since.into(), now.into());
                 crate::resources::settle_windows(

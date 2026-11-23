@@ -3,8 +3,12 @@ use super::resource_commands::{grant, set_fixture};
 use super::state::{MapObservationTrait, StructureObservationTrait};
 
 pub fn blitz_game() -> (super::Deployment, u32) {
+    blitz_game_from(fixture_params('blitz'))
+}
+
+pub fn blitz_game_from(params: crate::registrar::CreateGameParams) -> (super::Deployment, u32) {
     let deployment = super::setup_family(false, "StructuresLogic", "TroopsLogic", "GamesTest", crate::game::BLITZ);
-    let params = crate::registrar::CreateGameParams { family: crate::game::BLITZ, ..fixture_params('blitz') };
+    let params = crate::registrar::CreateGameParams { family: crate::game::BLITZ, ..params };
     let game_id = create_game(deployment.games, params);
     caller(deployment.games, deployment.actor, FIXTURE_START);
     (deployment, game_id)

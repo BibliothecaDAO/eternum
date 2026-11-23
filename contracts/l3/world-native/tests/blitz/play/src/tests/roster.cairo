@@ -1,11 +1,13 @@
 use starknet::ContractAddress;
 pub use world_test_support::tests::troop_management::*;
 use crate::games::{IGamesSlotsDispatcher, IGamesSlotsDispatcherTrait};
-use super::fixture::blitz_game;
-use super::play_fixture::{FIXTURE_START, encode};
+use super::fixture::{blitz_game, blitz_game_from};
+use super::play_fixture::{FIXTURE_START, encode, fixture_params};
 use super::resource_commands::{assert_executes, execute_in_game};
+use super::unlimited_production::settle;
 
 const NOW: u64 = FIXTURE_START + 40;
+const MAIN: u64 = FIXTURE_START + 3600;
 
 fn record_roster(d: super::Deployment, game_id: u32, players: Span<ContractAddress>) {
     let mut calldata = array![];
@@ -80,4 +82,26 @@ fn a_game_records_its_roster_once() {
 fn a_roster_names_each_player_once() {
     let (d, game_id) = blitz_game();
     record_roster(d, game_id, array![d.actor, d.actor].span());
+}
+
+fn labor(d: super::Deployment, realm: ResourceKey) -> u128 {
+    IResourceOperationsDispatcher { contract_address: d.games }
+        .resource_balance(
+            ResourceSlot { game_id: realm.game_id, entity_id: realm.entity_id, resource_type: crate::resources::LABOR },
+        )
+}
+
+#[test]
+fn a_realm_seated_before_the_main_start_produces_from_the_main_start() {
+    let (d, game_id) = blitz_game_from(
+        crate::registrar::CreateGameParams { start_main_at: MAIN, ..fixture_params('blitz') },
+    );
+    record_roster(d, game_id, array![d.actor].span());
+    assert_executes(d, game_id, super::Command::SeatBlitzRoster(()), NOW);
+    let realm = ResourceKey { game_id, entity_id: 1 };
+    let seated = labor(d, realm);
+    settle(d, realm, crate::resources::LABOR, MAIN);
+    assert_eq!(labor(d, realm), seated);
+    let production = settle(d, realm, crate::resources::LABOR, MAIN + 600);
+    assert_eq!(labor(d, realm), seated + 600 * production.production_rate.into());
 }
