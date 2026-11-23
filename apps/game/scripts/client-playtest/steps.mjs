@@ -2455,11 +2455,12 @@ async function focusTheArmyFromItsDock(browser) {
  * screen (its token; the camera is left where it is: picking an army does not always centre it), and names the region
  * its result shows in: the explored tile, or the army's figure, which a move sets off.
  */
-async function orderBesideArmy({ browser, extraScreenshot }, verb) {
+async function orderBesideArmy({ browser, extraScreenshot }, verb, heldBack = null) {
   const armyName = await focusTheArmyFromItsDock(browser);
   if (!armyName) return { offered: [], army: armyName };
   const selection = browser.observe().selection;
   const armyId = selection?.army?.id ?? null;
+  if (heldBack !== null && armyId === heldBack) return { army: armyName, armyId, offered: [], heldBack: true };
   const armyAt = armyOnScreen(browser, armyId);
   if (!armyAt)
     return { army: armyName, armyId, offered: [], aimed: "the army is not within reach of the view's centre" };
@@ -6545,12 +6546,13 @@ async function receiptOfTheNextAction({ browser, owner }, before) {
   return receipt ?? null;
 }
 
-async function sendOneOrder(context, verb) {
+async function sendOneOrder(context, verb, heldBack = null) {
   const deployed = await deployWhenTheDockIsEmpty(context);
   if (deployed?.blocked || deployed?.failed) return deployed;
   const before = context.browser.read(SENT_ACTIONS);
-  const order = await orderBesideArmy(context, verb);
+  const order = await orderBesideArmy(context, verb, heldBack);
   if (!order.army) return { deployed, order, blocked: "the dock holds no army to send" };
+  if (order.heldBack) return { deployed, order, blocked: "the readiest army is the Deep guard, not a surface army" };
   if (!order.target) return { deployed, order, blocked: `nothing beside the readiest army offers ${verb}` };
   const receipt = await receiptOfTheNextAction(context, before);
   if (!receipt?.applied) return { deployed, order, receipt, failed: `the chain did not apply the ${verb}` };
@@ -6574,12 +6576,7 @@ async function deployWhenTheDockIsEmpty(context) {
   return docked ? { receipt } : { receipt, failed: "the deployed army did not reach the dock" };
 }
 
-async function sendOneMove(context, shared) {
-  const play = await sendOneOrder(context, REHEARSAL_WORDS.move);
-  if (play.army !== undefined && play.army === shared.deepArmy)
-    return { ...play, blocked: "the readiest army is the Deep guard, not a surface army" };
-  return play;
-}
+const sendOneMove = (context, shared) => sendOneOrder(context, REHEARSAL_WORDS.move, shared.deepArmy);
 
 const SITE_SEARCH_REVEALS = 6;
 
