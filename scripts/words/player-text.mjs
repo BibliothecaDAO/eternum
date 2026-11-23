@@ -6,6 +6,7 @@ export const CODE_CALLS =
 
 export const LOG_CALL = /^(console\.\w+|verboseLog|trace\w*|logger\.\w+)$/;
 
-export const CODE_TOKEN = /^(?:@\/|\.\.?\/|\/|[a-z0-9_$-]+(?:[_./:][a-z0-9_$-]+)+|[a-z0-9]+-[a-z0-9-]+)$/;
+export const CODE_TOKEN =
+  /^(?:(?:@\/|\.\.?\/|\/)[\w.$/:-]*|\.[a-z0-9]{1,6}|[a-z0-9_$-]+(?:[_./:][a-z0-9_$-]+)+|[a-z0-9]+-[a-z0-9-]+)$/;
 
 export const ERROR_CONSTRUCTOR = /Error$/;

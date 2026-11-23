@@ -92,6 +92,10 @@ describe("plain-words guard refuses banned words in player-facing text", () => {
     ["equality check against discriminator", `export const isProv = (k: string) => k === "provision";`],
     ["CSS className", `export const A = () => <div className="founding-step far-eye" />;`],
     ["import path", `import { x } from "@/ui/realm-provision-runner"; export const y = x;`],
+    ["asset path literal", `export const sound = { url: "/sound/units/march.mp3" };`],
+    ["relative path literal", `export const rel = "./claim/index.ts";`],
+    ["alias path literal", `export const mod = "@/ui/realm-provision-runner";`],
+    ["file extension piece", "export const img = (id: string) => `/images/${id}.png`;"],
   ])("allows %s", async (_, source) => {
     expect(await hits(SCREEN, source)).toEqual([]);
   });
