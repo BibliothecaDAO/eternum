@@ -78,4 +78,25 @@ describe("createPlayRouteEntryLoader", () => {
     rejectAccountRestoration(accountFailure);
     await expect(restoration).rejects.toBe(accountFailure);
   });
+
+  it("swallows a rejected renderer module preload without emitting an unhandled rejection", async () => {
+    const { createWebGpuRendererModulePrimer } = await import("./game-entry-preload");
+    const rejections: unknown[] = [];
+    const onRejection = (reason: unknown) => {
+      rejections.push(reason);
+    };
+    process.on("unhandledRejection", onRejection);
+    try {
+      const preload = vi.fn(async () => {
+        throw new Error("chunk fetch timed out");
+      });
+      const prime = createWebGpuRendererModulePrimer({ preloadWebGpuRendererModules: preload });
+      prime();
+      await new Promise((resolve) => setTimeout(resolve, 25));
+      expect(preload).toHaveBeenCalledTimes(1);
+      expect(rejections).toEqual([]);
+    } finally {
+      process.off("unhandledRejection", onRejection);
+    }
+  });
 });

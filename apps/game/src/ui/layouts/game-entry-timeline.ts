@@ -65,6 +65,9 @@ const getGameEntryWindow = (): GameEntryWindow | null => {
 
 const getMarkName = (name: GameEntryMilestone) => `${GAME_ENTRY_TIMELINE_PREFIX}:${name}`;
 
+export const GAME_ENTRY_PREFETCH_MILESTONE: GameEntryMilestone = "asset-prefetch-scheduled";
+export const GAME_ENTRY_PREFETCH_MARK = getMarkName(GAME_ENTRY_PREFETCH_MILESTONE);
+
 export const startGameEntryTimeline = (): void => {
   const gameEntryWindow = getGameEntryWindow();
   if (!gameEntryWindow) {

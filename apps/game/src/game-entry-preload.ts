@@ -1,4 +1,4 @@
-import { markGameEntryMilestone } from "@/ui/layouts/game-entry-timeline";
+import { GAME_ENTRY_PREFETCH_MILESTONE, markGameEntryMilestone } from "@/ui/layouts/game-entry-timeline";
 
 type GameRouteModule = typeof import("./game-route");
 
@@ -17,14 +17,16 @@ const schedule = (cb: () => void, delayMs: number = 0): void => {
   globalThis.setTimeout(cb, delayMs);
 };
 
-const createWebGpuRendererModulePrimer = ({
+export const createWebGpuRendererModulePrimer = ({
   preloadWebGpuRendererModules,
 }: {
   preloadWebGpuRendererModules: () => Promise<void> | void;
 }) => {
   return () => {
     schedule(() => {
-      void preloadWebGpuRendererModules();
+      void Promise.resolve()
+        .then(preloadWebGpuRendererModules)
+        .catch(() => undefined);
     });
   };
 };
@@ -78,7 +80,7 @@ const preloadGameRouteModule = (): Promise<GameRouteModule> => {
 
 /** The game's module graph and renderer load once a player heads into a game: a way in pressed, or the entry itself. */
 export const loadGameRouteForPlayEntry = createPlayRouteEntryLoader({
-  markPrefetchScheduled: () => markGameEntryMilestone("asset-prefetch-scheduled"),
+  markPrefetchScheduled: () => markGameEntryMilestone(GAME_ENTRY_PREFETCH_MILESTONE),
   preloadGameRouteModule,
   primeEntry: primeWebGpuRendererModules,
 });
