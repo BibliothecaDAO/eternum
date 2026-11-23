@@ -33,6 +33,7 @@ import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
 import brandPalette from "@/brand/palette.json";
 import InstancedModel from "../managers/instanced-model";
 import { FrostedStandardNodeMaterial } from "../effects/game-map-material-library";
+import { isTripoModelMaterial } from "../materials/tripo-model-material";
 import { mapAnimationTime as time } from "../effects/endgame/state";
 import { DEEP_PALETTE } from "../terrain/deep-floor-material";
 import { createInstancedMeshWithSharedMatrices } from "../utils/create-instanced-mesh";
@@ -90,10 +91,12 @@ export class FrontierModel extends InstancedModel {
       this.group.add(this.mist);
     } else {
       for (const mesh of this.instancedMeshes) {
-        const previous = mesh.material as MeshStandardMaterial;
+        const previous = mesh.material as MeshStandardMaterial | FrostedStandardNodeMaterial;
         const material = beastMaterial(previous);
         mesh.material = material;
-        MaterialPool.getInstance().releaseMaterial(previous);
+        if (material !== previous) {
+          MaterialPool.getInstance().releaseMaterial(previous);
+        }
         mesh.geometry = mesh.geometry.clone();
         mesh.geometry.setAttribute("beastIdle", this.idle);
         mesh.geometry.setAttribute("beastLayer", this.layer);
@@ -150,7 +153,12 @@ export class FrontierModel extends InstancedModel {
   }
 }
 
-function beastMaterial(source: MeshStandardMaterial) {
+function beastMaterial(source: MeshStandardMaterial | FrostedStandardNodeMaterial) {
+  if (source instanceof FrostedStandardNodeMaterial && isTripoModelMaterial(source)) {
+    source.positionNode = positionLocal.add(vec3(0, beastIdle(), 0));
+    source.emissiveNode = beastPhoenixGlow();
+    return source;
+  }
   const material = new FrostedStandardNodeMaterial();
   material.color.copy(source.color);
   material.map = source.map;

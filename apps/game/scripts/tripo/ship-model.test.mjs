@@ -75,7 +75,7 @@ async function writeSyntheticGlb(targetPath, options = {}) {
 
   const doc = new Document();
   const buffer = doc.createBuffer();
-  const material = doc.createMaterial("surface");
+  const material = doc.createMaterial("surface").setRoughnessFactor(0.9).setMetallicFactor(0);
 
   if (ktx2ColorBytes) {
     doc.createExtension(KHRTextureBasisu).setRequired(true);
@@ -276,6 +276,12 @@ describe("ship-model pipeline", () => {
     expect(meshNode.getExtras().assetKind).toBe("building");
     expect(meshNode.getExtras().sourceSha256).toBe(first.sourceSha256);
     expect(meshNode.getExtras().fitSha256).toBe(first.fitSha256);
+    const deliveredMaterial = root.listMaterials()[0];
+    expect(deliveredMaterial.getDoubleSided()).toBe(true);
+    expect(deliveredMaterial.getRoughnessFactor()).toBeCloseTo(0.76, 2);
+    expect(deliveredMaterial.getMetallicFactor()).toBeCloseTo(0.04, 2);
+    expect(deliveredMaterial.getEmissiveFactor()).toEqual([0, 0, 0]);
+    expect(deliveredMaterial.getExtras().tripoMaterial).toBe(true);
 
     const glbJsonLength = secondBytes.readUInt32LE(12);
     const glbJson = JSON.parse(secondBytes.toString("utf8", 20, 20 + glbJsonLength));
