@@ -95,118 +95,118 @@ const oathDamage = readFileSync(
   .split(/\s+/)
   .map(Number);
 
-it.each([4, 5, 6, 7, 8, 9])("reports the field or garrison survivors from Knight exchange %i", async (index) => {
-  const [, , attackerOaths, defenderOaths, attackerGuard, defenderGuard, attackers, defenders, afterA, afterB] =
-    oathDamage.slice(index * 10, (index + 1) * 10);
-  const game = createFakeGame();
-  const gameId = game.client.gameId;
-  const now = Math.floor(Date.now() / 1000);
-  setBlockTimestampSource(() => now);
-  seedGameRegistry(game.store, { status: "Active", startMainAt: now - 1, endAt: now + 86400 });
-  const rules = game.store.require("SliceRules", { game_id: gameId });
-  writeFact(game.store, "SliceRules", [gameId], {
-    ...rules,
-    day_unit_seconds: 100,
-    battle_config: { ...rules.battle_config, regular_immunity_ticks: 0 },
-    troop_damage_config: { ...rules.troop_damage_config, damage_biome_bonus_num: 0 },
-    troop_stamina_config: { ...rules.troop_stamina_config, stamina_attack_req: 10, stamina_defense_req: 0 },
-  });
-  const settlement = game.store.require("SettlementRules", { game_id: gameId });
-  writeFact(game.store, "SettlementRules", [gameId], { ...settlement, spacing: frontierSeasonOnePreset.spacing });
-  const deepCentre = deepCenter(frontierSeasonOnePreset.spacing);
-  const deep = frontierSeasonOnePreset.deep;
-  const scaled = (troops: number) => BigInt(troops) * BigInt(RESOURCE_PRECISION);
-  writeFact(game.store, "DeepRules", [gameId], {
-    game_id: gameId,
-    gate_distance: deep.gateDistance,
-    rings: deep.rings.slice(0, 1).map(({ radius, realms }) => ({ radius, realms })),
-    beasts: deepSites.map(({ key }) => ({ count: scaled(deep.beasts[key].count), bow: deep.beasts[key].bow })),
-    loss_per_tick: scaled(deep.lossPerTick),
-    core_per_tick: scaled(deep.corePerTick),
-    mine_per_tick: scaled(deep.minePerTick),
-    building_pay: deep.buildingPay,
-    altar_threshold: deep.altarThreshold,
-  });
-  seedStructure(game.store, { entityId: 12, owner: PLAYER, x: 90, y: 90 });
-  seedStructure(game.store, { entityId: 14, owner: ContractAddress(0x999n), x: 80, y: 80 });
-  writeFact(game.store, "HomeAspect", [gameId, 12], { game_id: gameId, home: 12, aspect: 1 });
-  writeFact(game.store, "HomeAspect", [gameId, 14], { game_id: gameId, home: 14, aspect: 2 });
-  function seedCombatant(id: number, count: number, oaths: number, owner: number) {
-    seedExplorer(game.store, {
-      explorerId: id,
-      owner,
-      x: deepCentre.col + id - 100,
-      y: deepCentre.row,
-      stamina: 100n,
-      count: BigInt(count) * BigInt(RESOURCE_PRECISION),
-      oaths,
+it.each([4, 5, 6, 7, 8, 9])(
+  "refuses a field fight in the open and reports a garrison's survivors from Knight exchange %i",
+  async (index) => {
+    const [, , attackerOaths, defenderOaths, attackerGuard, defenderGuard, attackers, defenders, afterA, afterB] =
+      oathDamage.slice(index * 10, (index + 1) * 10);
+    const game = createFakeGame();
+    const gameId = game.client.gameId;
+    const now = Math.floor(Date.now() / 1000);
+    setBlockTimestampSource(() => now);
+    seedGameRegistry(game.store, { status: "Active", startMainAt: now - 1, endAt: now + 86400 });
+    const rules = game.store.require("SliceRules", { game_id: gameId });
+    writeFact(game.store, "SliceRules", [gameId], {
+      ...rules,
+      day_unit_seconds: 100,
+      battle_config: { ...rules.battle_config, regular_immunity_ticks: 0 },
+      troop_damage_config: { ...rules.troop_damage_config, damage_biome_bonus_num: 0 },
+      troop_stamina_config: { ...rules.troop_stamina_config, stamina_attack_req: 10, stamina_defense_req: 0 },
     });
-    const tick = BigInt(now) / BigInt(rules.tick_config.armies_tick_in_seconds);
-    writeFact(game.store, "DeepArmy", [gameId, id], { game_id: gameId, explorer_id: id, last_tick: tick });
-  }
-  seedCombatant(101, attackers!, attackerOaths!, 12);
-  seedCombatant(102, defenders!, defenderOaths!, 14);
-  const simulate = (defenderId: number) =>
-    createSimulateTool(game).execute("combat", { kind: "combat", attackerId: 101, defenderId });
-  if (attackerGuard) {
-    writeFact(game.store, "DeepGuard", [gameId, 101], { game_id: gameId, explorer_id: 101, site_id: 1100, slot: 0 });
-    expect((await simulate(102)).content).toEqual([{ type: "text", text: "Attack refused: guarding-deep-site." }]);
-    return;
-  }
-  let defendingId = 102;
-  if (defenderGuard) {
-    const army = game.store.require("ExplorerTroops", { game_id: gameId, explorer_id: 102 });
-    for (const site of deepSites) {
-      const id = 1100 + site.id;
-      const tile = site.key === "mine" ? deepCentre : { col: deepCentre.col + 10 + site.id, row: deepCentre.row + 10 };
-      writeFact(game.store, "DeepSite", [gameId, id], {
-        game_id: gameId,
-        entity_id: id,
-        kind: site.id,
-        ring: 0,
-        day: 0,
-      });
-      writeFact(game.store, "TileOccupancy", [gameId, 0, tile.col, tile.row], {
-        game_id: gameId,
-        entity_id: id,
-        alt: false,
-        col: tile.col,
-        row: tile.row,
-        category: TileOccupier.DeepSite,
-        is_structure: false,
-      });
-      writeFact(game.store, "Guard", [gameId, id, 0], {
-        game_id: gameId,
-        structure_id: id,
-        slot: 0,
-        troops: { ...army.troops, count: 0n },
-        destroyed_tick: 0,
-      });
-      if (site.key === "mine") defendingId = id;
-    }
-    writeFact(game.store, "DeepGuard", [gameId, 102], {
+    const settlement = game.store.require("SettlementRules", { game_id: gameId });
+    writeFact(game.store, "SettlementRules", [gameId], { ...settlement, spacing: frontierSeasonOnePreset.spacing });
+    const deepCentre = deepCenter(frontierSeasonOnePreset.spacing);
+    const deep = frontierSeasonOnePreset.deep;
+    const scaled = (troops: number) => BigInt(troops) * BigInt(RESOURCE_PRECISION);
+    writeFact(game.store, "DeepRules", [gameId], {
       game_id: gameId,
-      explorer_id: 102,
-      site_id: defendingId,
-      slot: 0,
+      gate_distance: deep.gateDistance,
+      rings: deep.rings.slice(0, 1).map(({ radius, realms }) => ({ radius, realms })),
+      beasts: deepSites.map(({ key }) => ({ count: scaled(deep.beasts[key].count), bow: deep.beasts[key].bow })),
+      loss_per_tick: scaled(deep.lossPerTick),
+      core_per_tick: scaled(deep.corePerTick),
+      mine_per_tick: scaled(deep.minePerTick),
+      building_pay: deep.buildingPay,
+      altar_threshold: deep.altarThreshold,
     });
-  }
-  if (index === 4) {
-    const blade = { game_id: gameId, explorer_id: 101, kind: "Blade", rank: 1, expires_at: now + 60 };
-    writeFact(game.store, "ArmyRelicEffect", [gameId, 101, 0], blade);
-    expect((await simulate(defendingId)).content).toEqual([
-      { type: "text", text: expect.stringContaining(`Survivors: attacker ${afterA}, defender 423.`) },
+    seedStructure(game.store, { entityId: 12, owner: PLAYER, x: 90, y: 90 });
+    seedStructure(game.store, { entityId: 14, owner: ContractAddress(0x999n), x: 80, y: 80 });
+    writeFact(game.store, "HomeAspect", [gameId, 12], { game_id: gameId, home: 12, aspect: 1 });
+    writeFact(game.store, "HomeAspect", [gameId, 14], { game_id: gameId, home: 14, aspect: 2 });
+    function seedCombatant(id: number, count: number, oaths: number, owner: number) {
+      seedExplorer(game.store, {
+        explorerId: id,
+        owner,
+        x: deepCentre.col + id - 100,
+        y: deepCentre.row,
+        stamina: 100n,
+        count: BigInt(count) * BigInt(RESOURCE_PRECISION),
+        oaths,
+      });
+      const tick = BigInt(now) / BigInt(rules.tick_config.armies_tick_in_seconds);
+      writeFact(game.store, "DeepArmy", [gameId, id], { game_id: gameId, explorer_id: id, last_tick: tick });
+    }
+    seedCombatant(101, attackers!, attackerOaths!, 12);
+    seedCombatant(102, defenders!, defenderOaths!, 14);
+    const simulate = (defenderId: number) =>
+      createSimulateTool(game).execute("combat", { kind: "combat", attackerId: 101, defenderId });
+    if (attackerGuard) {
+      writeFact(game.store, "DeepGuard", [gameId, 101], { game_id: gameId, explorer_id: 101, site_id: 1100, slot: 0 });
+      expect((await simulate(102)).content).toEqual([{ type: "text", text: "Attack refused: guarding-deep-site." }]);
+      return;
+    }
+    let defendingId = 102;
+    if (defenderGuard) {
+      const army = game.store.require("ExplorerTroops", { game_id: gameId, explorer_id: 102 });
+      for (const site of deepSites) {
+        const id = 1100 + site.id;
+        const tile =
+          site.key === "mine" ? deepCentre : { col: deepCentre.col + 10 + site.id, row: deepCentre.row + 10 };
+        writeFact(game.store, "DeepSite", [gameId, id], {
+          game_id: gameId,
+          entity_id: id,
+          kind: site.id,
+          ring: 0,
+          day: 0,
+        });
+        writeFact(game.store, "TileOccupancy", [gameId, 0, tile.col, tile.row], {
+          game_id: gameId,
+          entity_id: id,
+          alt: false,
+          col: tile.col,
+          row: tile.row,
+          category: TileOccupier.DeepSite,
+          is_structure: false,
+        });
+        writeFact(game.store, "Guard", [gameId, id, 0], {
+          game_id: gameId,
+          structure_id: id,
+          slot: 0,
+          troops: { ...army.troops, count: 0n },
+          destroyed_tick: 0,
+        });
+        if (site.key === "mine") defendingId = id;
+      }
+      writeFact(game.store, "DeepGuard", [gameId, 102], {
+        game_id: gameId,
+        explorer_id: 102,
+        site_id: defendingId,
+        slot: 0,
+      });
+    }
+    if (!defenderGuard) {
+      expect((await simulate(defendingId)).content).toEqual([{ type: "text", text: "Attack refused: no-attack." }]);
+      return;
+    }
+    const result = await simulate(defendingId);
+    expect(result.content).toEqual([
+      { type: "text", text: expect.stringContaining(`Survivors: attacker ${afterA}, defender ${afterB}.`) },
     ]);
-    writeFact(game.store, "ArmyRelicEffect", [gameId, 101, 0], { ...blade, expires_at: now });
-  }
-  const result = await simulate(defendingId);
-  expect(result.content).toEqual([
-    { type: "text", text: expect.stringContaining(`Survivors: attacker ${afterA}, defender ${afterB}.`) },
-  ]);
-  if (defenderGuard) {
-    seedCombatant(102, 0, defenderOaths!, 14);
-    expect((await simulate(defendingId)).content).toEqual([
-      { type: "text", text: `${defendingId} has no guard to fight: the attack claims it.` },
-    ]);
-  }
-});
+    if (defenderGuard) {
+      seedCombatant(102, 0, defenderOaths!, 14);
+      expect((await simulate(defendingId)).content).toEqual([
+        { type: "text", text: `${defendingId} has no guard to fight: the attack claims it.` },
+      ]);
+    }
+  },
+);

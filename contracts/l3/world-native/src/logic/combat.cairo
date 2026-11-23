@@ -4,6 +4,10 @@ use crate::combat_actions::battle_side;
 use crate::commands::{Battle, ExecutionContext};
 use crate::game::assert_playing;
 use crate::geometry::{distance, spire_neighbor, tile_key};
+#[cfg(feature: "blitz")]
+use crate::logic::blitz::combat as family;
+#[cfg(not(feature: "blitz"))]
+use crate::logic::frontier_combat as family;
 use crate::map::{IMapLogicDispatcherTrait, IMapLogicLibraryDispatcher};
 use crate::resources::{IResourceOperationsDispatcherTrait, IResourceOperationsLibraryDispatcher, ResourceKey};
 use crate::rules::SliceRules;
@@ -41,7 +45,7 @@ pub fn battle_guard(game_id: u32, actor: ContractAddress, command: Battle, conte
     let target = guard_target(ResourceKey { game_id, entity_id: command.defender_id }, actor, attacker, context);
     assert!(attacker.troops.count != 0, "aggressor has no troops");
     assert_battle_immunity(game_id, attacker.owner, rules, context.timestamp, context);
-    assert_structure_range(attacker.coord, target.coord, attacker.troops.attack_range());
+    assert_structure_range(attacker.coord, target.coord);
     let mut defender = guard_defender(target, actor, attacker, context);
     let attacker_before = attacker.troops.count;
     let defender_before = defender.army.troops.count;
@@ -52,14 +56,22 @@ pub fn battle_guard(game_id: u32, actor: ContractAddress, command: Battle, conte
     if fought {
         fight_guard(key, ref attacker, ref defender, context);
     } else {
+        assert_claimable(target);
         attacker = combat_troops(game_id)
             .spend_claim(key, attacker, target.coord, crate::commands::action_context(context));
     }
-    let clean = fought && crate::oaths::clean_win(attacker_before, attacker.troops.count);
-    complete_guard_capture(key, actor, attacker, target, defender, command.relic_slot, clean, context);
+    let clean = crate::oaths::clean_win(attacker_before, attacker.troops.count);
+    complete_guard_capture(key, actor, attacker, target, defender, defender_before, command.relic_slot, clean, context);
     if fought {
         emit_guard_battle(key, actor, attacker, attacker_before, target, defender, defender_before, context);
     }
+}
+
+fn assert_claimable(target: GuardTarget) {
+    assert!(
+        crate::logic::expeditions::expedition_site(target.key).is_none(),
+        "a site goes to the army that beats its last guard",
+    );
 }
 
 fn guard_target(
@@ -69,12 +81,11 @@ fn guard_target(
     if crate::rules::DEEP_IN_PLAY {
         if let Some(site) = crate::logic::deep_sites::site(key) {
             let day = crate::days::day_of(
-                context.game.unbox(), crate::balance::rules::SWITCHES.day_unit_seconds, context.timestamp,
+                context.game.unbox(), crate::clock::day_unit_seconds(context.game.unbox()), context.timestamp,
             );
             assert!(site.day == day.index, "Deep is settling, try again");
             crate::logic::deep_sites::assert_open(key.game_id, site);
             let coord = crate::logic::map::entity_coord(key).expect('missing Deep site position');
-            assert!(crate::geometry::adjacent(attacker.coord, coord), "Deep site requires adjacency");
             return GuardTarget { key, coord, structure: None };
         }
     }
@@ -95,7 +106,7 @@ fn guard_defender(
     if target.structure.is_none() {
         if let Some(key) = crate::logic::deep_guards::next(target.key) {
             let army = combat_troops(game_id).command_explorer(key, None, crate::commands::action_context(context));
-            assert_army_opponents(game_id, attacker, army, context.rules.unbox());
+            assert_rival_guard(game_id, attacker, army);
             let owner = explorer_owner(key, army);
             assert!(owner != actor, "actor owns defender");
             assert_battle_immunity(game_id, army.owner, context.rules.unbox(), context.timestamp, context);
@@ -204,6 +215,7 @@ fn complete_guard_capture(
     attacker: ExplorerTroops,
     target: GuardTarget,
     defender: GuardDefender,
+    defender_before: u128,
     relic_slot: Option<u8>,
     clean: bool,
     context: ExecutionContext,
@@ -212,10 +224,23 @@ fn complete_guard_capture(
         try_capture(key, attacker, target.key, structure, relic_slot, clean, context);
         return;
     }
-    if attacker.troops.count == 0
-        || defender.army.troops.count != 0
-        || crate::logic::deep_guards::next(target.key).is_some() {
+    if attacker.troops.count == 0 || defender.army.troops.count != 0 {
         return;
+    }
+    let home = ResourceKey { game_id: key.game_id, entity_id: attacker.owner };
+    let beaten = match defender.source {
+        GuardSource::Army(_) => Some(defender_before),
+        GuardSource::Guard(_) => Some(crate::logic::deep_sites::beast_size(target.key)),
+        GuardSource::Empty => None,
+    };
+    if let Some(size) = beaten {
+        crate::logic::quest_progress::guard_beaten(home, size, context.timestamp);
+    }
+    if crate::logic::deep_guards::next(target.key).is_some() {
+        return;
+    }
+    if beaten.is_some() {
+        crate::logic::quest_progress::site_cleared(home, context.timestamp);
     }
     crate::deep::IDeepSitesDispatcherTrait::join_deep_site(
         crate::logic::deep_sites::dispatcher(key.game_id),
@@ -224,9 +249,6 @@ fn complete_guard_capture(
         crate::relics::InteractSite { explorer_id: key.explorer_id, coord: target.coord },
         crate::commands::action_context(context),
     );
-    if let GuardSource::Guard(_) = defender.source {
-        crate::logic::deep_sites::reward_beast_clear(key, attacker.owner, target.key, context.timestamp);
-    }
 }
 
 fn emit_guard_battle(
@@ -276,7 +298,6 @@ pub fn battle(
     let defender_key = ExplorerKey { game_id, explorer_id: command.defender_id };
     let mut attacker = authorized_explorer(attacker_key, actor, context);
     let mut defender = active_explorer(defender_key, context);
-    assert_army_opponents(game_id, attacker, defender, rules);
     let defender_owner = explorer_owner(defender_key, defender);
     assert!(defender_owner != actor, "actor owns defender");
     assert_battle_immunity(game_id, attacker.owner, rules, context.timestamp, context);
@@ -351,11 +372,10 @@ pub fn guard_attack(
     let defender_owner = explorer_owner(defender_key, defender);
     assert!(guard.troops.count != 0 && defender.troops.count != 0, "dead combatant");
     let coord = crate::structures::structure_coord(ResourceKey { game_id, entity_id: command.guard.structure_id });
-    assert_structure_range(coord, defender.coord, guard.troops.attack_range());
+    assert_structure_range(coord, defender.coord);
     assert_battle_immunity(game_id, command.guard.structure_id, rules, context.timestamp, context);
     assert_battle_immunity(game_id, defender.owner, rules, context.timestamp, context);
     let attacker = ExplorerTroops { owner: command.guard.structure_id, coord, troops: guard.troops };
-    assert_army_opponents(game_id, attacker, defender, rules);
     let combat = CombatContext {
         attacker_is_structure_guard: true,
         defender_oaths: crate::logic::progression::held_oaths(defender_key, context),
@@ -402,17 +422,10 @@ pub fn explorer_owner(key: ExplorerKey, explorer: ExplorerTroops) -> ContractAdd
     crate::logic::structures::owner(ResourceKey { game_id: key.game_id, entity_id: explorer.owner })
 }
 
-fn assert_army_opponents(game_id: u32, attacker: ExplorerTroops, defender: ExplorerTroops, rules: SliceRules) {
-    if crate::rules::DEEP_IN_PLAY {
-        let spacing = crate::logic::settlement::spacing();
-        assert!(
-            crate::deep::contains(attacker.coord, spacing) && crate::deep::contains(defender.coord, spacing),
-            "army combat requires Deep",
-        );
-        let attacker_aspect = crate::logic::aspects::home_aspect(ResourceKey { game_id, entity_id: attacker.owner });
-        let defender_aspect = crate::logic::aspects::home_aspect(ResourceKey { game_id, entity_id: defender.owner });
-        assert!(attacker_aspect != defender_aspect, "cannot attack an allied army");
-    }
+fn assert_rival_guard(game_id: u32, attacker: ExplorerTroops, guard: ExplorerTroops) {
+    let attacker_aspect = crate::logic::aspects::home_aspect(ResourceKey { game_id, entity_id: attacker.owner });
+    let guard_aspect = crate::logic::aspects::home_aspect(ResourceKey { game_id, entity_id: guard.owner });
+    assert!(attacker_aspect != guard_aspect, "cannot attack an allied army");
 }
 
 
@@ -425,8 +438,11 @@ pub fn try_capture(
     clean: bool,
     context: ExecutionContext,
 ) {
-    if explorer.troops.count == 0
-        || (crate::rules::ONLY_UNOWNED_TARGETS && target.owner != 0.try_into().unwrap())
+    if explorer.troops.count == 0 {
+        clear_site_left_unguarded(key, target);
+        return;
+    }
+    if (crate::rules::ONLY_UNOWNED_TARGETS && target.owner != 0.try_into().unwrap())
         || (crate::rules::NO_VILLAGE_CAPTURE && target.base.category == crate::taxonomy::VILLAGE_CATEGORY) {
         return;
     }
@@ -434,57 +450,27 @@ pub fn try_capture(
         || crate::logic::guards::GuardState::next(key, target.base.troop_max_guard_count).is_some() {
         return;
     }
-    capture(explorer_key, explorer, key, target, relic_slot, clean, context);
+    family::capture(explorer_key, explorer, key, target, relic_slot, clean, context);
 }
 
-#[cfg(feature: "blitz")]
-#[inline(always)]
-fn capture(
-    _explorer_key: ExplorerKey,
-    explorer: ExplorerTroops,
-    key: ResourceKey,
-    target: Structure,
-    _relic_slot: Option<u8>,
-    _clean: bool,
-    context: ExecutionContext,
-) {
-    crate::logic::blitz::capture::capture(key, explorer.owner, target, context.timestamp);
-}
-
-#[cfg(not(feature: "blitz"))]
-#[inline(always)]
-fn capture(
-    explorer_key: ExplorerKey,
-    _explorer: ExplorerTroops,
-    key: ResourceKey,
-    _target: Structure,
-    relic_slot: Option<u8>,
-    clean: bool,
-    context: ExecutionContext,
-) {
-    crate::relics::ICaptureRewardsDispatcherTrait::grant_capture_rewards(
-        crate::relics::ICaptureRewardsLibraryDispatcher {
-            class_hash: crate::logic::release::class_of(key.game_id, crate::slots::RELICS),
-        },
-        key,
-        explorer_key.explorer_id,
-        relic_slot,
-        clean,
-        crate::commands::action_context(context),
+fn clear_site_left_unguarded(key: ResourceKey, target: Structure) {
+    if crate::logic::expeditions::expedition_site(key).is_none()
+        || crate::logic::guards::GuardState::next(key, target.base.troop_max_guard_count).is_some() {
+        return;
+    }
+    crate::logic::expeditions::clear_site(
+        key, crate::expeditions::SiteClear { explorer_id: 0, home_id: 0, reward: None },
     );
 }
 
-pub fn assert_structure_range(attacker: Coord, defender: Coord, range: u32) {
+pub fn assert_structure_range(attacker: Coord, defender: Coord) {
     let stride: u128 = if attacker.alt {
         15
     } else {
         1
     };
     let separation = distance(attacker, defender);
-    assert!(
-        attacker.alt == defender.alt && separation > 0 && separation <= range.into() * stride,
-        "structure is out of range",
-    );
+    assert!(attacker.alt == defender.alt && separation > 0 && separation <= stride, "structure is out of range");
 }
 
 pub fn battle_winner(attacker: ExplorerTroops, defender: ExplorerTroops) -> u64 {
@@ -562,7 +548,7 @@ pub fn assert_battle_range(game_id: u32, mut attacker: ExplorerTroops, defender:
         } else {
             1
         };
-        separation > 0 && separation <= attacker.troops.attack_range().into() * stride
+        separation > 0 && separation <= stride
     };
     assert!(within, "explorers out of range");
 }
@@ -576,19 +562,7 @@ pub fn combat_context(
     let combat = CombatContext {
         timestamp: context.timestamp, attacker_biome: biome, defender_biome: biome, ..Default::default(),
     };
-    at_range(combat, attacker.coord, defender.coord)
-}
-
-#[cfg(feature: "blitz")]
-#[inline(always)]
-fn at_range(combat: CombatContext, attacker: Coord, defender: Coord) -> CombatContext {
-    CombatContext { attack_distance: distance(attacker, defender).try_into().unwrap(), ..combat }
-}
-
-#[cfg(not(feature: "blitz"))]
-#[inline(always)]
-fn at_range(combat: CombatContext, _attacker: Coord, _defender: Coord) -> CombatContext {
-    combat
+    family::at_range(combat, attacker.coord, defender.coord)
 }
 
 fn twin_damage(

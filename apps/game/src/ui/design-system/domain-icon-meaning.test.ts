@@ -53,6 +53,8 @@ describe("guard and site icon meanings", () => {
       beast_strong_upper: 550,
       site_guard_lower: 1000,
       site_guard_upper: 1600,
+      rift_guard_lower: 1000,
+      rift_guard_upper: 1600,
       reveal_site_neighbors: false,
       reveal_percent: 10,
       chest: { common: 5000, uncommon: 2700, rare: 1400, epic: 600, legendary: 300 },

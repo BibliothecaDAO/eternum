@@ -36,7 +36,7 @@ const GAME_OVERRIDES = new Set(["biome_climate_config", "map_center_offset"]);
 const SWITCHES = new Set(["command_mask", "mode_rules", "day_unit_seconds", "entry_rule"]);
 const LOGIC_MODE_RULES = ["HOME_REWARDS", "UNOWNED_TARGETS", "DEPTH_CONTENTS", "REVEAL_SUPPLIES"];
 const CHOOSE_OATH = wireIds.commands.find(({ name }) => name === "ChooseOath")!.id;
-const RULE_SCALARS: Record<string, string> = { spire_travel_essence_cost: "u128" };
+const RULE_SCALARS: Record<string, string> = { spire_travel_essence_cost: "u128", relic_seconds_per_rank: "u32" };
 
 export function balanceModules(definition: PresetDefinition): Record<string, string> {
   assertPayWithinStage(definition.economy);
@@ -362,7 +362,7 @@ function pascalCase(field: string): string {
 
 function expeditionsModule(definition: PresetDefinition): string {
   const depths: CairoRow[] = definition.settlement.depths.map((depth) => ({ ...depth, chest: { ...depth.chest } }));
-  if (depths.length !== 4) throw new Error(`Season 1 has four depths, found ${depths.length}`);
+  if (depths.length !== 3) throw new Error(`Season 1 has three layers to reveal, found ${depths.length}`);
   depths.forEach(assertDepthPlayable);
   const discovery = definition.economy.discovery.unwrap() as CairoRow | undefined;
   if (!discovery) throw new Error("Season 1 discovers sites: its discovery rules are required");
@@ -465,8 +465,10 @@ function assertDepthPlayable(depth: CairoRow, layer: number): void {
     refuse("a layer's ruins hold only its three relics");
   if (n("reveal_percent") === 0 || n("reveal_percent") > 100) refuse("invalid reveal percentage");
   if (n("site_guard_lower") === 0 || n("site_guard_lower") > n("site_guard_upper")) refuse("invalid site guards");
-  if (n("guard_step") === 0 || n("site_guard_lower") % n("guard_step") || n("site_guard_upper") % n("guard_step"))
-    refuse("site guard bounds off the guard grid");
+  if (n("rift_guard_lower") === 0 || n("rift_guard_lower") > n("rift_guard_upper")) refuse("invalid rift guards");
+  const guardBounds = ["site_guard_lower", "site_guard_upper", "rift_guard_lower", "rift_guard_upper"];
+  if (n("guard_step") === 0 || guardBounds.some((field) => n(field) % n("guard_step")))
+    refuse("guard bounds off the guard grid");
   if (n("beast_weak_lower") === 0 || n("beast_weak_lower") > n("beast_weak_upper")) refuse("invalid weak beasts");
   if (n("beast_strong_lower") > n("beast_strong_upper")) refuse("invalid strong beasts");
   if (n("beast_weak_upper") >= n("beast_strong_lower")) refuse("beast ranges overlap");
@@ -483,10 +485,9 @@ function assertDiscoveryFits(rules: CairoRow, clearMistPercent: number): void {
   if (bps("beasts_bps") + bps("camp_bps") + bps("rift_bps") === 0)
     throw new Error("Season 1 discovery floor finds no guarded site");
   const widest = Math.max(bps("shrine_bps") + bps("well_bps"), bps("camp_bps"), bps("rift_bps"));
-  const detection = cairoConstant("src/oaths.cairo", "DETECTION_FIND_PERCENT");
   const finds = weights.reduce((sum, weight) => sum + weight, 0) + widest;
-  if (finds * clearMistPercent * detection > 100_000_000)
-    throw new Error("Season 1 discovery under Clear Mist and Detection exceeds one hundred percent");
+  if (finds * clearMistPercent > 1_000_000)
+    throw new Error("Season 1 discovery under Clear Mist exceeds one hundred percent");
 }
 
 function questsModule(quests: QuestRules): string {

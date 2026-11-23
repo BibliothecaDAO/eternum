@@ -92,11 +92,7 @@ fn ruins_fill_replace_and_activate_an_armys_relics_through_commands() {
     assert_eq!(inventory.third, Some(ArmyRelic { kind: RelicKind::Ward, rank: 1 }));
     let essence = ResourceSlot { game_id, entity_id: home_id, resource_type: crate::resources::ESSENCE };
     let essence_before = resources.resource_balance(essence);
-    let activate = Command::ApplyRelic(
-        crate::relics::ApplyRelic {
-            entity_id: explorer_id, relic_id: 1, recipient: crate::relics::Recipient::ArmySlot(0),
-        },
-    );
+    let activate = Command::ApplyRelic(crate::relics::ApplyRelic { entity_id: explorer_id, relic_id: 1, slot: 0 });
     assert!(execute_in_game(d, game_id, activate, START + 400));
     assert!(!execute_in_game(d, game_id, activate, START + 400));
     assert_eq!(resources.resource_balance(essence), essence_before);
@@ -110,7 +106,7 @@ fn ruins_fill_replace_and_activate_an_armys_relics_through_commands() {
         ),
         Some(
             crate::army_relics::ArmyRelicEffect {
-                rank: 1, expires_at: START + 400 + crate::rules::RELIC_SECONDS_PER_RANK.into(),
+                rank: 1, expires_at: START + 400 + crate::balance::rules::RELIC_SECONDS_PER_RANK.into(),
             },
         ),
     );
@@ -137,6 +133,63 @@ fn a_ruin_cache_pays_its_fragments_to_the_army_owner_and_leaves_the_relics() {
     assert_eq!(read_ruin(d, site), None);
     assert_eq!(read_cache(d, site), 0);
     assert_eq!(snforge_std::interact_with_state(d.games, || crate::logic::fragments::balance(game_id, d.actor)), 10);
+}
+
+#[test]
+fn a_crossbow_two_tiles_from_a_ruin_cannot_attack_it() {
+    let (d, game_id, _, explorer_id, key, discovery, chest) = relic_game();
+    let reward = ArmyRelic { kind: RelicKind::Blade, rank: 1 };
+    let site = discover_relic(d, key, discovery, chest, reward, false, START + 280);
+    let mut army = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
+    let ruin = crate::geometry::neighbor(army.coord, 0);
+    army.troops.category = crate::troops::TroopType::Crossbowman;
+    army.coord = crate::geometry::neighbor(army.coord, 3);
+    super::resource_commands::set_explorer_fixture(d.games, key, army);
+    assert_eq!(crate::geometry::distance(army.coord, ruin), 2);
+    let before = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
+    let guard = IGuardsDispatcher { contract_address: d.games }
+        .guard(GuardKey { game_id, structure_id: site.entity_id, slot: 0 });
+    assert!(!execute_in_game(d, game_id, attack(explorer_id, site), START + 281));
+    assert_eq!(GameState { contract_address: d.games }.resolved_explorer(key).unwrap(), before);
+    assert_eq!(
+        IGuardsDispatcher { contract_address: d.games }
+            .guard(GuardKey { game_id, structure_id: site.entity_id, slot: 0 }),
+        guard,
+    );
+    assert_eq!(read_ruin(d, site), Some(reward));
+}
+
+#[test]
+fn the_army_that_lands_the_last_hit_takes_the_ruin_and_an_army_stepping_in_after_gets_nothing() {
+    let (d, game_id, home_id, explorer_id, key, discovery, chest) = relic_game();
+    let reward = ArmyRelic { kind: RelicKind::Blade, rank: 1 };
+    let site = discover_relic(d, key, discovery, chest, reward, false, START + 280);
+    let mut army = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
+    let ruin = crate::geometry::neighbor(army.coord, 0);
+    army.troops.category = crate::troops::TroopType::Crossbowman;
+    super::resource_commands::set_explorer_fixture(d.games, key, army);
+    let home = ResourceKey { game_id, entity_id: home_id };
+    let second = ExplorerKey {
+        game_id, explorer_id: *IStructureOperationsDispatcher { contract_address: d.games }.home_armies(home).at(1),
+    };
+    let follower = GameState { contract_address: d.games }.resolved_explorer(second).unwrap();
+    super::resource_commands::set_explorer_fixture(
+        d.games, second, crate::troops::ExplorerTroops { coord: crate::geometry::neighbor(ruin, 1), ..follower },
+    );
+    let loadout = read_loadout(d, second);
+    assert!(execute_in_game(d, game_id, attack(explorer_id, site), START + 281));
+    assert_eq!(read_loadout(d, key).first, Some(reward));
+    assert_eq!(read_ruin(d, site), None);
+    let before = GameState { contract_address: d.games }.resolved_explorer(second).unwrap();
+    assert!(!execute_in_game(d, game_id, attack(second.explorer_id, site), START + 282));
+    assert_eq!(read_loadout(d, second), loadout);
+    assert_eq!(GameState { contract_address: d.games }.resolved_explorer(second).unwrap(), before);
+}
+
+fn attack(explorer_id: u64, site: ResourceKey) -> Command {
+    Command::BattleGuard(
+        crate::commands::Battle { attacker_id: explorer_id, defender_id: site.entity_id, relic_slot: None },
+    )
 }
 
 fn discover_relic(
@@ -223,11 +276,7 @@ fn stamina_regen_army(oaths: u16) -> (super::Deployment, ExplorerKey) {
         },
     );
     let activate = Command::ApplyRelic(
-        crate::relics::ApplyRelic {
-            entity_id: explorer_id,
-            relic_id: crate::army_relics::encode(relic),
-            recipient: crate::relics::Recipient::ArmySlot(0),
-        },
+        crate::relics::ApplyRelic { entity_id: explorer_id, relic_id: crate::army_relics::encode(relic), slot: 0 },
     );
     assert!(execute_in_game(d, game_id, activate, regen_start()));
     snforge_std::interact_with_state(
@@ -262,7 +311,7 @@ fn level_three_regen_percent() -> u64 {
 #[test]
 fn a_level_three_stamina_relic_regenerates_its_step_times_three_faster_for_its_duration_then_normally() {
     let (d, key) = stamina_regen_army(0);
-    let duration: u64 = (crate::rules::RELIC_SECONDS_PER_RANK * 3).into();
+    let duration: u64 = (crate::balance::rules::RELIC_SECONDS_PER_RANK * 3).into();
     let ticks = duration / regen_tick();
     let during = stamina_at(d, key, regen_start() + duration);
     assert_eq!(during, ticks * level_three_regen_percent() / 100);
@@ -273,7 +322,7 @@ fn a_level_three_stamina_relic_regenerates_its_step_times_three_faster_for_its_d
 #[test]
 fn a_stamina_relic_multiplies_the_enlightened_regen_rate() {
     let (d, key) = stamina_regen_army(crate::oaths::bit(crate::oaths::ENLIGHTENMENT));
-    let duration: u64 = (crate::rules::RELIC_SECONDS_PER_RANK * 3).into();
+    let duration: u64 = (crate::balance::rules::RELIC_SECONDS_PER_RANK * 3).into();
     let enlightened: u64 = crate::oaths::ENLIGHTENMENT_REGEN_BPS.into();
     let during = stamina_at(d, key, regen_start() + duration);
     assert_eq!(during, duration * enlightened * level_three_regen_percent() / 100 / (regen_tick() * 10000));
@@ -290,7 +339,7 @@ fn a_switched_on_stamina_relic_leaves_its_effect_for_its_duration() {
             },
         ),
     );
-    let duration: u64 = (crate::rules::RELIC_SECONDS_PER_RANK * 3).into();
+    let duration: u64 = (crate::balance::rules::RELIC_SECONDS_PER_RANK * 3).into();
     assert_eq!(effect, Some(crate::army_relics::ArmyRelicEffect { rank: 3, expires_at: regen_start() + duration }));
     assert_eq!(read_loadout(d, key).first, None);
 }

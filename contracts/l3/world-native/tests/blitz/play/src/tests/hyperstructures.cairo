@@ -180,6 +180,25 @@ fn settling_the_game_pays_the_holder_up_to_the_end_and_settles_it() {
     assert!(game(d, game_id).settled, "a settled Blitz game is marked settled");
 }
 
+#[test]
+fn the_settled_holder_ranks_first_in_the_game_result() {
+    let (d, game_id, rival, key, coord) = unguarded_hyperstructure();
+    let mine = army_beside(d, game_id, d.actor, 100, west_of(coord, 2), EAST);
+    assert_executes(d, game_id, attack(mine, key), RESTED_AT);
+    super::results::settle(d, game_id);
+    let players = array![
+        crate::logic::blitz::results::RankedPlayer { wallet: d.actor, rank: 1 },
+        crate::logic::blitz::results::RankedPlayer { wallet: rival, rank: 2 },
+    ]
+        .span();
+    assert_eq!(
+        super::results::result(d, game_id),
+        crate::logic::blitz::results::BlitzResult {
+            players, complete: true, commitment: super::results::commitment(d, game_id, players),
+        },
+    );
+}
+
 fn game(d: super::Deployment, game_id: u32) -> crate::game::GameRegistry {
     snforge_std::interact_with_state(d.games, || crate::logic::game::game(game_id))
 }

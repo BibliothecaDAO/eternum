@@ -557,7 +557,7 @@
     {
       "id": 31,
       "name": "SkillPointSpent",
-      "retired": false
+      "retired": true
     },
     {
       "id": 32,

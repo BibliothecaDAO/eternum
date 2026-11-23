@@ -1,5 +1,5 @@
 use core::dict::Felt252Dict;
-use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess};
+use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
 use crate::commands::ExecutionContext;
 use crate::deep::{DeepShare, IDeepBanesDispatcherTrait};
 use crate::logic::race::DeepRaceTrait;
@@ -49,8 +49,8 @@ pub fn initialize(game_id: u32) {
     if state.deep.paid_tick.read(game_id).is_some() {
         return;
     }
-    let tick = state.games.games.entry(game_id).start_main_at.read()
-        / crate::balance::rules::TICK_CONFIG.armies_tick_in_seconds;
+    let game = crate::logic::game::game(game_id);
+    let tick = game.start_main_at / crate::clock::armies_tick_seconds(game);
     save_cursor(game_id, tick);
 }
 
@@ -137,7 +137,7 @@ fn walk(game_id: u32, cursor: u64, last: u64, context: ExecutionContext) -> u64 
 fn held(game_id: u32, context: ExecutionContext) -> Held {
     let state = crate::state::read();
     let rules = crate::logic::deep_sites::rules();
-    let unit = crate::balance::rules::SWITCHES.day_unit_seconds;
+    let unit = crate::clock::day_unit_seconds(context.game.unbox());
     let mut sites = array![];
     let mut guards = array![];
     let mut counts = array![];
@@ -383,8 +383,11 @@ fn grant_resources(game_id: u32, held: Held, boundary: u64, context: ExecutionCo
 
 fn settle_guards(payouts: @Payouts, held: Held, boundary: u64, context: ExecutionContext) {
     let context = ExecutionContext { timestamp: boundary, ..context };
-    for index in payouts.deaths.span() {
-        settle_guard(held, *index, context);
+    let deaths = payouts.deaths.span();
+    let mut remaining = deaths.len();
+    while remaining != 0 {
+        remaining -= 1;
+        settle_guard(held, *deaths.at(remaining), context);
     }
     for index in 0..held.guards.len() {
         if *held.counts.at(index) != 0 {

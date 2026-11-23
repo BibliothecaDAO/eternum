@@ -261,6 +261,13 @@ export function waitForWheatState(client: GameClient, realmId: number, timeoutMs
   );
 }
 
+const hasLivingGuard = (client: GameClient, siteId: bigint): boolean =>
+  [0, 1, 2, 3].some(
+    (slot) =>
+      (client.setup.store.get("Guard", { game_id: client.gameId, structure_id: siteId, slot })?.troops.count ?? 0n) >
+      0n,
+  );
+
 /** A completed fight can remove the last army and its deep region from the actor's view. Absence is not victory. */
 export async function resolveFrontierSiteCapture(
   client: GameClient,
@@ -917,7 +924,10 @@ function planExpedition(client: GameClient, game: HarnessGame, player: Player): 
       .map((spot) => getTileAt(client.setup.store, false, spot.col, spot.row, client.gameId)?.occupier_id)
       .filter((id): id is number => Boolean(id))
       .map((id) => client.setup.store.get("Structure", { game_id: client.gameId, entity_id: id }))
-      .find((site) => site && site.owner === 0n && GUARDED_SITES.has(site.base.category));
+      .find(
+        (site) =>
+          site && site.owner === 0n && GUARDED_SITES.has(site.base.category) && hasLivingGuard(client, site.entity_id),
+      );
     if (target) {
       if (holdsForSite(amount, stamina.stamina_attack_req)) continue;
       let campAttempt = day.campAttempts.find(

@@ -6,8 +6,9 @@ export const FRONTIER_ACCELERATED_PRESET_ID = 101;
 /** Historical Frontier preset. */
 export const FRONTIER_PRESET_ID = 5;
 /** Historical Devcon preset. */
-export const FRONTIER_DEVCON_PRESET_ID = 6;
+const FRONTIER_DEVCON_PRESET_ID = 6;
 export const FRONTIER_S1_PRESET_ID = 7;
+export const FRONTIER_REHEARSAL_PRESET_ID = 8;
 /** Immutable Frontier preset used by the committed contract fixtures. */
 export const FRONTIER_FIXTURE_PRESET_ID = 104;
 /**
@@ -25,6 +26,7 @@ const NATIVE_PRESET_MODES: Readonly<Record<number, GameType>> = {
   [FRONTIER_PRESET_ID]: "frontier",
   [FRONTIER_DEVCON_PRESET_ID]: "frontier",
   [FRONTIER_S1_PRESET_ID]: "frontier",
+  [FRONTIER_REHEARSAL_PRESET_ID]: "frontier",
   [FRONTIER_ACCELERATED_PRESET_ID]: "frontier",
   102: "frontier",
   [FRONTIER_FIXTURE_PRESET_ID]: "frontier",

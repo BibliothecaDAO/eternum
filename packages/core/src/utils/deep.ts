@@ -8,6 +8,15 @@ import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schem
 import { BiomeTypeToId, BiomeType } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 
+export function armiesBlockTile(
+  store: Pick<NativeFactStore, "get">,
+  game_id: number,
+  tile: { col: number; row: number; alt: boolean },
+): boolean {
+  const settlement = store.get("SettlementRules", { game_id });
+  return !(store.get("DeepRules", { game_id }) && settlement && isDeepTile(settlement.spacing, tile));
+}
+
 /** Fixed terrain is a view of the native Deep rules, without a reveal or a second tile store. */
 export function deepTerrain(
   store: Pick<NativeFactStore, "get">,

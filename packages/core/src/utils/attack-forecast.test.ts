@@ -222,6 +222,16 @@ function frontier() {
       row: tile.row,
       data: BigInt(BiomeTypeToId[BiomeType.Grassland]) * BigInt(nativeTilePackingConstants.BIOME_SCALE),
     });
+    write("ExpeditionSite", {
+      game_id: GAME_ID,
+      entity_id,
+      category: StructureType.Camp,
+      initial_guard_count: troops(guards.reduce((sum, [count]) => sum + count, 0)),
+      alt: false,
+      col: tile.col,
+      row: tile.row,
+      clear: null,
+    });
     for (let slot = 0; slot < 4; slot += 1) {
       const [count, category] = guards[slot] ?? [0, "Knight"];
       write("Guard", guardRow(entity_id, slot, count, category));
@@ -287,7 +297,7 @@ describe("one attack forecast for every combat surface", () => {
     game.home(1, PLAYER, 1);
     game.deepSite(50, DEEP, 300);
     game.army(10, 1, beside(DEEP, 2), { category: "Crossbowman" });
-    expect(refusalOf(game.forecast(10, 50))).toBe("deep-site-not-adjacent");
+    expect(refusalOf(game.forecast(10, 50))).toBe("out-of-range");
     game.army(10, 1, beside(DEEP), { category: "Crossbowman" });
     expect(refusalOf(game.forecast(10, 50))).toBe("fights");
   });
@@ -349,17 +359,17 @@ describe("one attack forecast for every combat surface", () => {
     expect(refusalOf(game.forecast(10, 50, tomorrow))).toBe("expired-army");
   });
 
-  it("refuses field armies fighting outside the Deep, and armies inside it fight (984d6e)", () => {
+  it("refuses an army in the open, on a personal map or in the Deep (984d6e)", () => {
     const game = frontier();
     game.home(1, PLAYER, 1);
     game.home(2, RIVAL, 2);
     const field = { col: 100, row: 100 };
     game.army(10, 1, field);
     game.army(20, 2, beside(field));
-    expect(refusalOf(game.forecast(10, 20))).toBe("outside-deep");
+    expect(refusalOf(game.forecast(10, 20))).toBe("no-attack");
     game.army(10, 1, beside(DEEP, 3));
     game.army(20, 2, beside(DEEP, 4));
-    expect(refusalOf(game.forecast(10, 20))).toBe("fights");
+    expect(refusalOf(game.forecast(10, 20))).toBe("no-attack");
   });
 
   it("judges the attacker's cooldown at the chain second it is given (addd1a)", () => {
@@ -371,15 +381,13 @@ describe("one attack forecast for every combat surface", () => {
     expect(refusalOf(game.forecast(10, 50, NOW + 30))).toBe("fights");
   });
 
-  it("claims an empty structure only from beside it", () => {
+  it("refuses a site with no guard left, which went to the army that beat its last guard", () => {
     const game = frontier();
     game.home(1, PLAYER, 1);
     const site = { col: 100, row: 100 };
     game.camp(60, site, []);
-    game.army(10, 1, beside(site, 2), { category: "Crossbowman" });
-    expect(refusalOf(game.forecast(10, 60))).toBe("claim-needs-adjacency");
     game.army(10, 1, beside(site), { category: "Crossbowman" });
-    expect(refusalOf(game.forecast(10, 60))).toBe("claims");
+    expect(refusalOf(game.forecast(10, 60))).toBe("unguarded-site");
   });
 
   it("refuses an attack past the troops' range and forecasts one from beside the target when asked", () => {
@@ -392,7 +400,7 @@ describe("one attack forecast for every combat surface", () => {
     expect(refusalOf(game.forecast(10, 60, NOW, { besideTarget: true }))).toBe("fights");
   });
 
-  it("attacks from a structure with its lowest guard in range, or the slot it is given (8f626c)", () => {
+  it("refuses a structure's guard attacking an army, which stands in the open, from any distance (8f626c)", () => {
     const game = frontier();
     game.home(2, RIVAL, 2);
     game.guardedPost(70, DEEP, PLAYER, 1, [
@@ -400,12 +408,9 @@ describe("one attack forecast for every combat surface", () => {
       [400, "Crossbowman"],
     ]);
     game.army(20, 2, beside(DEEP, 2));
-    const chosen = game.forecast(70, 20);
-    expect(chosen?.outcome).toBe("fights");
-    expect(chosen?.sides?.attacker.guardSlot).toBe(1);
-    const named = game.forecast(70, 20, NOW, { guardSlot: 0 });
-    expect(refusalOf(named)).toBe("out-of-range");
-    expect(named?.sides?.attacker.guardSlot).toBe(0);
+    expect(refusalOf(game.forecast(70, 20))).toBe("out-of-range");
+    game.army(20, 2, beside(DEEP));
+    expect(refusalOf(game.forecast(70, 20))).toBe("no-attack");
   });
 
   it("counts the attacking army's active Blade in its damage (44985b)", () => {

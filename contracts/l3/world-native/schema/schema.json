@@ -2251,65 +2251,6 @@
       "valueLength": 4
     },
     {
-      "name": "FrontierDiscoveryRules",
-      "identity": "0x46726f6e74696572446973636f7665727952756c6573",
-      "scope": "game",
-      "keys": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "beasts_bps",
-          "type": "core::integer::u16",
-          "id": "0x6265617374735f627073",
-          "feltLength": 1
-        },
-        {
-          "name": "camp_bps",
-          "type": "core::integer::u16",
-          "id": "0x63616d705f627073",
-          "feltLength": 1
-        },
-        {
-          "name": "rift_bps",
-          "type": "core::integer::u16",
-          "id": "0x726966745f627073",
-          "feltLength": 1
-        },
-        {
-          "name": "ruin_bps",
-          "type": "core::integer::u16",
-          "id": "0x7275696e5f627073",
-          "feltLength": 1
-        },
-        {
-          "name": "shrine_bps",
-          "type": "core::integer::u16",
-          "id": "0x736872696e655f627073",
-          "feltLength": 1
-        },
-        {
-          "name": "well_bps",
-          "type": "core::integer::u16",
-          "id": "0x77656c6c5f627073",
-          "feltLength": 1
-        },
-        {
-          "name": "empty_reveal_limit",
-          "type": "core::integer::u8",
-          "id": "0x656d7074795f72657665616c5f6c696d6974",
-          "feltLength": 1
-        }
-      ],
-      "keyLength": 1,
-      "valueLength": 7,
-      "derivedFrom": "preset"
-    },
-    {
       "name": "ExpeditionSpire",
       "identity": "0x45787065646974696f6e5370697265",
       "scope": "game",
@@ -5628,6 +5569,18 @@
           "feltLength": 1
         },
         {
+          "name": "rift_guard_lower",
+          "type": "core::integer::u16",
+          "id": "0x726966745f67756172645f6c6f776572",
+          "feltLength": 1
+        },
+        {
+          "name": "rift_guard_upper",
+          "type": "core::integer::u16",
+          "id": "0x726966745f67756172645f7570706572",
+          "feltLength": 1
+        },
+        {
           "name": "reveal_site_neighbors",
           "type": "core::bool",
           "id": "0x72657665616c5f736974655f6e65696768626f7273",
@@ -5671,13 +5624,15 @@
         }
       ],
       "keyLength": 2,
-      "valueLength": 14,
+      "valueLength": 16,
       "observation": {
         "domain": "expedition",
         "fields": {
           "revealPercent": "reveal_percent",
           "siteGuardLower": "site_guard_lower",
           "siteGuardUpper": "site_guard_upper",
+          "riftGuardLower": "rift_guard_lower",
+          "riftGuardUpper": "rift_guard_upper",
           "guardStep": "guard_step",
           "beastWeakLower": "beast_weak_lower",
           "beastWeakUpper": "beast_weak_upper",
@@ -5782,10 +5737,16 @@
           "type": "core::integer::u64",
           "id": "0x7363686564756c65645f656e645f6174",
           "feltLength": 1
+        },
+        {
+          "name": "clock_scale",
+          "type": "core::integer::u8",
+          "id": "0x636c6f636b5f7363616c65",
+          "feltLength": 1
         }
       ],
       "keyLength": 1,
-      "valueLength": 9
+      "valueLength": 10
     },
     {
       "name": "GameOverrides",
@@ -5940,10 +5901,16 @@
           "type": "world_native::rules::SpeedConfig",
           "id": "0x73706565645f636f6e666967",
           "feltLength": 2
+        },
+        {
+          "name": "relic_seconds_per_rank",
+          "type": "core::integer::u32",
+          "id": "0x72656c69635f7365636f6e64735f7065725f72616e6b",
+          "feltLength": 1
         }
       ],
       "keyLength": 1,
-      "valueLength": 87,
+      "valueLength": 88,
       "derivedFrom": "preset"
     }
   ],
@@ -7612,6 +7579,14 @@
           "type": "core::integer::u16"
         },
         {
+          "name": "rift_guard_lower",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "rift_guard_upper",
+          "type": "core::integer::u16"
+        },
+        {
           "name": "reveal_site_neighbors",
           "type": "core::bool"
         },
@@ -7703,40 +7678,6 @@
         }
       ]
     },
-    "world_native::expeditions::FrontierDiscoveryRules": {
-      "type": "struct",
-      "name": "world_native::expeditions::FrontierDiscoveryRules",
-      "members": [
-        {
-          "name": "beasts_bps",
-          "type": "core::integer::u16"
-        },
-        {
-          "name": "camp_bps",
-          "type": "core::integer::u16"
-        },
-        {
-          "name": "rift_bps",
-          "type": "core::integer::u16"
-        },
-        {
-          "name": "ruin_bps",
-          "type": "core::integer::u16"
-        },
-        {
-          "name": "shrine_bps",
-          "type": "core::integer::u16"
-        },
-        {
-          "name": "well_bps",
-          "type": "core::integer::u16"
-        },
-        {
-          "name": "empty_reveal_limit",
-          "type": "core::integer::u8"
-        }
-      ]
-    },
     "world_native::expeditions::SiteClear": {
       "type": "struct",
       "name": "world_native::expeditions::SiteClear",
@@ -7759,10 +7700,6 @@
       "type": "struct",
       "name": "world_native::expeditions::SitePayout",
       "members": [
-        {
-          "name": "xp",
-          "type": "core::integer::u32"
-        },
         {
           "name": "structure_id",
           "type": "core::integer::u64"
@@ -7904,6 +7841,10 @@
         {
           "name": "scheduled_end_at",
           "type": "core::integer::u64"
+        },
+        {
+          "name": "clock_scale",
+          "type": "core::integer::u8"
         }
       ]
     },
@@ -8512,11 +8453,6 @@
           "wireId": 30
         },
         {
-          "name": "SkillPointSpent",
-          "type": "world_native::progression::SkillPointSpent",
-          "wireId": 31
-        },
-        {
           "name": "SitePayout",
           "type": "world_native::expeditions::SitePayout",
           "wireId": 32
@@ -8652,80 +8588,6 @@
         {
           "name": "oath_pick",
           "type": "core::integer::u16"
-        }
-      ]
-    },
-    "world_native::progression::RecordedScoutingKind": {
-      "type": "enum",
-      "name": "world_native::progression::RecordedScoutingKind",
-      "variants": [
-        {
-          "name": "Camp",
-          "type": "()"
-        },
-        {
-          "name": "Rift",
-          "type": "()"
-        },
-        {
-          "name": "Beasts",
-          "type": "()"
-        },
-        {
-          "name": "Sanctuaries",
-          "type": "()"
-        }
-      ]
-    },
-    "world_native::progression::RecordedSkillPointUse": {
-      "type": "enum",
-      "name": "world_native::progression::RecordedSkillPointUse",
-      "variants": [
-        {
-          "name": "Battle",
-          "type": "()"
-        },
-        {
-          "name": "Logistics",
-          "type": "()"
-        },
-        {
-          "name": "Scouting",
-          "type": "world_native::progression::RecordedScoutingKind"
-        },
-        {
-          "name": "Homecoming",
-          "type": "()"
-        },
-        {
-          "name": "Stamina",
-          "type": "core::integer::u8"
-        }
-      ]
-    },
-    "world_native::progression::SkillPointSpent": {
-      "type": "struct",
-      "name": "world_native::progression::SkillPointSpent",
-      "members": [
-        {
-          "name": "explorer_id",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "choice",
-          "type": "world_native::progression::RecordedSkillPointUse"
-        },
-        {
-          "name": "point_rank",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "tier",
-          "type": "core::option::Option::<core::integer::u8>"
-        },
-        {
-          "name": "stamina",
-          "type": "core::integer::u64"
         }
       ]
     },
@@ -8972,6 +8834,10 @@
         {
           "name": "seed",
           "type": "core::felt252"
+        },
+        {
+          "name": "clock_scale",
+          "type": "core::integer::u8"
         }
       ]
     },
@@ -8988,8 +8854,8 @@
           "type": "core::integer::u8"
         },
         {
-          "name": "recipient",
-          "type": "world_native::relics::Recipient"
+          "name": "slot",
+          "type": "core::integer::u8"
         }
       ]
     },
@@ -9116,28 +8982,6 @@
         {
           "name": "prize_count",
           "type": "core::integer::u16"
-        }
-      ]
-    },
-    "world_native::relics::Recipient": {
-      "type": "enum",
-      "name": "world_native::relics::Recipient",
-      "variants": [
-        {
-          "name": "Explorer",
-          "type": "()"
-        },
-        {
-          "name": "StructureProduction",
-          "type": "()"
-        },
-        {
-          "name": "StructureGuard",
-          "type": "()"
-        },
-        {
-          "name": "ArmySlot",
-          "type": "core::integer::u8"
         }
       ]
     },
@@ -9552,6 +9396,10 @@
         {
           "name": "speed_config",
           "type": "world_native::rules::SpeedConfig"
+        },
+        {
+          "name": "relic_seconds_per_rank",
+          "type": "core::integer::u32"
         }
       ]
     },
@@ -10562,5 +10410,5 @@
       ]
     }
   },
-  "identity": "4f3b5d47640683c108bac0b8dcff30c1bf5ba4966e946a98c57957a788a85f78"
+  "identity": "64c67a91b300fa96401b463c69edaad9840273f73bb1217f1d9da43ebe9c828b"
 }

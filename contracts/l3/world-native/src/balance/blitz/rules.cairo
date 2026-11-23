@@ -99,6 +99,8 @@ pub const SPEED_CONFIG: crate::rules::SpeedConfig = crate::rules::SpeedConfig {
     donkey_sec_per_km: 9, donkey_sec_per_km_troops: 27,
 };
 
+pub const RELIC_SECONDS_PER_RANK: u32 = 1800;
+
 pub const SWITCHES: crate::rules::ReleaseSwitches = crate::rules::ReleaseSwitches {
     command_mask: 453386372688239981459535, mode_rules: 131395, day_unit_seconds: 0, entry_rule: 2,
 };

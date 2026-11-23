@@ -103,6 +103,7 @@ fn first_day_end(seed: felt252) -> u64 {
         end_at: end,
         seed,
         scheduled_end_at: end,
+        clock_scale: 1,
     };
     crate::days::day_at_index(game, crate::balance::rules::SWITCHES.day_unit_seconds, 0).end
 }

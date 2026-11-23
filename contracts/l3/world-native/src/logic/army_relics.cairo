@@ -91,7 +91,7 @@ pub fn store_cache(key: ResourceKey, relic: ArmyRelic, depth: u8) {
     emit_row('RuinCache', key, amount);
 }
 
-pub fn activate(key: ExplorerKey, index: u8, expected: u8, timestamp: u64) -> ArmyRelic {
+pub fn activate(key: ExplorerKey, index: u8, expected: u8, timestamp: u64, seconds_per_rank: u32) -> ArmyRelic {
     let mut loadout = read(key);
     let relic = crate::army_relics::slot(loadout, index).expect('empty relic slot');
     assert!(crate::army_relics::encode(relic) == expected, "relic slot changed");
@@ -99,8 +99,7 @@ pub fn activate(key: ExplorerKey, index: u8, expected: u8, timestamp: u64) -> Ar
     write(key, loadout);
     let effect_key = ArmyRelicEffectKey { game_id: key.game_id, explorer_id: key.explorer_id, kind: relic.kind };
     let value = ArmyRelicEffect {
-        rank: relic.rank,
-        expires_at: timestamp + Into::<u32, u64>::into(crate::rules::RELIC_SECONDS_PER_RANK) * relic.rank.into(),
+        rank: relic.rank, expires_at: timestamp + Into::<u32, u64>::into(seconds_per_rank) * relic.rank.into(),
     };
     crate::state::write()
         .relics

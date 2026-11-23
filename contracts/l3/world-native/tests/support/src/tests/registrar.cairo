@@ -467,7 +467,6 @@ pub fn assert_capture_at(
                     (crate::taxonomy::RIFT_CATEGORY, rift)
                 };
                 assert_eq!(payout.category, category);
-                assert_eq!(payout.xp, 0);
                 assert_eq!(
                     payout.reward,
                     if payout.site_id == camp_id {

@@ -53,8 +53,9 @@ check_world() {
   node "$world/scripts/check-wire-ids.mjs"
   node "$world/scripts/check-discovery-vectors.mjs"
   node "$world/scripts/check-blitz-marks.mjs"
+  node "$world/scripts/check-clock-reads.mjs"
   build_world
-  node --test "$world/scripts/check-class-sizes.test.mjs" "$world/scripts/check-fact-wire.test.mjs" "$world/scripts/event-layouts.test.mjs" "$world/scripts/taxonomy.test.mjs" "$world/scripts/rule-constants.test.mjs" "$world/scripts/wire-types.test.mjs" "$world/scripts/wire-ids.test.mjs" "$world/scripts/check-discovery-vectors.test.mjs" "$world/scripts/check-blitz-marks.test.mjs"
+  node --test "$world/scripts/check-class-sizes.test.mjs" "$world/scripts/check-fact-wire.test.mjs" "$world/scripts/event-layouts.test.mjs" "$world/scripts/taxonomy.test.mjs" "$world/scripts/rule-constants.test.mjs" "$world/scripts/wire-types.test.mjs" "$world/scripts/wire-ids.test.mjs" "$world/scripts/check-discovery-vectors.test.mjs" "$world/scripts/check-blitz-marks.test.mjs" "$world/scripts/check-clock-reads.test.mjs" "$world/scripts/ledger-result-vector.test.mjs"
   node "$world/scripts/check-class-sizes.mjs"
   bun "$world/scripts/pin-games-class.ts"
   bun test "$world/scripts/pin-release-classes.test.ts"

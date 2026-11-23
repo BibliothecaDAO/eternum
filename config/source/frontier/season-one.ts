@@ -78,16 +78,18 @@ export const frontierSeasonOnePreset = {
     },
   },
   orderAspects,
-  depths: frontierPreset.depths.map((depth, index) => ({
+  depths: frontierPreset.depths.slice(0, layerRuinOdds.length).map((depth, index) => ({
     ...depth,
     siteGuardLower: 1170 * 2 ** index,
     siteGuardUpper: 1430 * 2 ** index,
+    riftGuardLower: 1350 * 2 ** index,
+    riftGuardUpper: 1650 * 2 ** index,
     guardStep: 10,
     beastWeakLower: 315 * 2 ** index,
     beastWeakUpper: 385 * 2 ** index,
     beastStrongLower: 405 * 2 ** index,
     beastStrongUpper: 495 * 2 ** index,
-    chest: layerRuinOdds[index] ?? depth.chest,
+    chest: layerRuinOdds[index]!,
   })),
   board: {
     ...frontierPreset.board!,
@@ -137,8 +139,5 @@ export const frontierSeasonOnePreset = {
   },
   chests: null,
   commandMask:
-    frontierPreset.commandMask |
-    BigInt(nativeCommandBits.ApplyRelic) |
-    BigInt(nativeCommandBits.Battle) |
-    BigInt(nativeCommandBits.ClaimDailyQuest),
+    frontierPreset.commandMask | BigInt(nativeCommandBits.ApplyRelic) | BigInt(nativeCommandBits.ClaimDailyQuest),
 } satisfies NativePreset;

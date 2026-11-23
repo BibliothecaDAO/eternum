@@ -138,7 +138,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
     attackerIsArmy &&
     isStructureTarget &&
     clearsAllDefenders &&
-    (forecast?.outcome === "claims" || (fought?.distance === 1 && (attackerKept ?? 0) > 0));
+    (forecast?.outcome === "claims" || (attackerKept ?? 0) > 0);
 
   const garrisonGuardSlot = useMemo(() => {
     if (!willCaptureStructure || !targetData) return null;
@@ -164,7 +164,6 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   }, [canGarrison]);
 
   const attackDisabled = forecast === undefined || refusal !== undefined;
-  const claimNeedsAdjacency = refusal === "claim-needs-adjacency";
   const refusalLine = (() => {
     if (refusal === undefined) return null;
     if (refusal === "insufficient-stamina" && sides) {
@@ -311,12 +310,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
               {fightCost && <p className="text-hud-label text-hud-cue">{fightCost}</p>}
             </>
           ) : (
-            (forecast?.outcome === "claims" || claimNeedsAdjacency) && (
-              <HudNotice
-                tone="good"
-                line={claimNeedsAdjacency ? "No defenders: move adjacent to claim" : "No defenders: claim it"}
-              />
-            )
+            forecast?.outcome === "claims" && <HudNotice tone="good" line="No defenders: claim it" />
           )}
 
           {defenderSlots.length >= 1 && (
@@ -373,7 +367,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
           aria-busy={isSubmitting}
           onClick={handlePrimaryAction}
         >
-          {claimNeedsAdjacency ? ATTACK_REFUSAL_WORDS[refusal] : willCaptureStructure ? "Claim" : "Attack"}
+          {willCaptureStructure ? "Claim" : "Attack"}
         </HudButton>
       </HudActions>
     </div>

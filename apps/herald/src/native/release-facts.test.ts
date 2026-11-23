@@ -15,6 +15,7 @@ import {
 } from "@bibliothecadao/types";
 import { ClientConfigManager } from "../../../../packages/core/src/managers/config-manager";
 import { affordableAt, musterStamina, staminaAt } from "../../../../packages/core/src/managers/troop-stamina";
+import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 import { CairoOption, CairoOptionVariant } from "starknet";
 import type { buildNativePreset } from "../../../../config/deployer/clean/config/native-preset";
@@ -33,7 +34,7 @@ import { readReleaseDefinitions, releaseDefinitionText } from "./release-definit
 const registration = (presetId = 5, amend?: (definition: ReturnType<typeof buildNativePreset>) => void) =>
   presetRelease(presetId, 1, amend);
 
-function launch(preset: ReturnType<typeof registration>, gameId = 1, overrideMap = true): RpcEvent[] {
+function launch(preset: ReturnType<typeof registration>, gameId = 1, overrideMap = true, clockScale = 1): RpcEvent[] {
   const overrides = {
     registration_start: 1234,
     biome_climate: preset.definition.rules.biome_climate_config,
@@ -51,6 +52,7 @@ function launch(preset: ReturnType<typeof registration>, gameId = 1, overrideMap
       start_main_at: "1800",
       scheduled_end_at: "999999",
       end_at: "999999",
+      clock_scale: clockScale,
     }),
     rowEvent("GameOverrides", [String(gameId)], overrides),
     rowEvent("GameRelease", [String(gameId)], {
@@ -61,6 +63,27 @@ function launch(preset: ReturnType<typeof registration>, gameId = 1, overrideMap
 }
 
 describe("a release's rule rows", () => {
+  it("runs a rehearsal's rule rows by its clock scale exactly as the chain's clock does", () => {
+    const vectors = readFileSync(
+      new URL("../../../../contracts/l3/world-native/tests/fixtures/clock-scale.txt", import.meta.url),
+      "utf8",
+    );
+    const [scale, tick, day, relic, wheatRate] = vectors.trim().split("\n").map(BigInt);
+    const preset = registration(FRONTIER_S1_PRESET_ID);
+    const world = setup(preset.definitions);
+    world.native.applyReceipt(world.fold, receipt(launch(preset, 1, true, Number(scale))), 11, 0);
+    const store = new NativeFactStore();
+    for (const model of ["SliceRules", "ResourceRule"] as const)
+      store.applyFacts(world.fold.gameRows(model, "1").map(({ key, value }) => ({ model, key, value })));
+    const rules = store.require("SliceRules", { game_id: 1 });
+    expect(
+      [rules.tick_config.armies_tick_in_seconds, rules.day_unit_seconds, rules.relic_seconds_per_rank].map(BigInt),
+    ).toEqual([tick, day, relic]);
+    expect(BigInt(store.require("ResourceRule", { game_id: 1, resource_type: ResourcesIds.Wheat }).realm_rate)).toBe(
+      wheatRate,
+    );
+  });
+
   it("publishes the S1 Order mapping and leaves earlier presets without Aspect rules", () => {
     for (const presetId of [5, 7]) {
       const preset = registration(presetId);
@@ -76,17 +99,14 @@ describe("a release's rule rows", () => {
     }
   });
 
-  it("projects both beast strength ranges and renamed discovery odds into client facts", () => {
+  it("projects both beast strength ranges into client facts", () => {
     const preset = registration();
     const world = setup(preset.definitions);
     world.native.applyReceipt(world.fold, receipt(launch(preset)), 11, 0);
     const store = new NativeFactStore();
-    for (const model of ["DepthRules", "FrontierDiscoveryRules"] as const) {
-      store.applyFacts(world.fold.gameRows(model, "1").map(({ key, value }) => ({ model, key, value })));
-    }
-    const { game_id, ...discovery } = store.require("FrontierDiscoveryRules", { game_id: 1 });
-    expect(game_id).toBe(1);
-    expect(discovery).toEqual(preset.definition.economy.discovery.unwrap());
+    store.applyFacts(
+      world.fold.gameRows("DepthRules", "1").map(({ key, value }) => ({ model: "DepthRules", key, value })),
+    );
     for (const [depth, expected] of preset.definition.settlement.depths.entries()) {
       expect(store.require("DepthRules", { game_id: 1, depth })).toMatchObject({
         beast_weak_lower: expected.beast_weak_lower,
@@ -172,12 +192,6 @@ describe("a release's rule rows", () => {
     expect(depths.map((row) => Number(row.guard_step))).toEqual(expectedDepths.map((row) => row.guard_step));
     expect(depths.map((row) => Number(row.reveal_percent))).toEqual(expectedDepths.map((row) => row.reveal_percent));
     expect(depths.every((row) => !Object.hasOwn(row, "supply_multiplier"))).toBe(true);
-    const { game_id, ...discovery } = world.fold.gameRows("FrontierDiscoveryRules", "1")[0]!.value;
-    expect(Number(game_id)).toBe(1);
-    expect(Object.fromEntries(Object.entries(discovery).map(([key, value]) => [key, Number(value)]))).toEqual(
-      preset.definition.economy.discovery.unwrap(),
-    );
-
     expect(world.fold.gameRows("GameOverrides", "1")).toHaveLength(1);
     for (const scope of [undefined, {}, world.fold.subscriptionScope("1", "0x123", 1234)]) {
       const snapshot = world.fold.snapshot(1, 11, undefined, scope);

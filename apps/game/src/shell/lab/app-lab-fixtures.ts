@@ -56,6 +56,7 @@ const game = (over: Partial<DirectoryGame>): DirectoryGame => ({
   mode: "frontier",
   status: "Live",
   dev_mode_on: false,
+  clock_scale: 1,
   expedition: null,
   clock: {
     start_settling_at: NOW - DAY,

@@ -21,9 +21,10 @@ describe("the relic catalog", () => {
     );
   });
 
-  it("works 30 minutes a tier", () => {
-    expect(relicSeconds({ kind: "Ward", rank: 2 })).toBe(3_600);
-    expect(relicSeconds({ kind: "Blade", rank: 5 })).toBe(9_000);
+  it("works the game's relic seconds a tier: 30 minutes in Season 1, 7.5 at four times the speed", () => {
+    expect(relicSeconds({ kind: "Ward", rank: 2 }, { relic_seconds_per_rank: 1_800 })).toBe(3_600);
+    expect(relicSeconds({ kind: "Blade", rank: 5 }, { relic_seconds_per_rank: 1_800 })).toBe(9_000);
+    expect(relicSeconds({ kind: "Blade", rank: 5 }, { relic_seconds_per_rank: 450 })).toBe(2_250);
   });
 
   it("gives ApplyRelic the id the contract decodes: the kind's index × 5 + the tier", () => {

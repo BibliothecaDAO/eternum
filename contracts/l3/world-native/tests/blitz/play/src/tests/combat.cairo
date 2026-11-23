@@ -3,7 +3,7 @@ pub use world_test_support::tests::troop_management::*;
 use crate::biome::Biome;
 use crate::combat::CombatContext;
 use super::fixture::{RAISED_AT, REALM_COORD, RESTED_AT, blitz_realm, raise, rival_realm_at, step_east};
-use super::resource_commands::{assert_executes, grant};
+use super::resource_commands::{assert_executes, execute_in_game, grant};
 
 const WEST: u8 = 3;
 const UNITS: u128 = 100;
@@ -46,12 +46,11 @@ fn assert_ratio(scaled: u128, base: u128, numerator: u128, denominator: u128) {
 }
 
 #[test]
-fn a_crossbow_army_strikes_an_army_two_tiles_away_and_takes_no_damage_back() {
+fn a_crossbow_army_cannot_strike_an_army_two_tiles_away() {
     let (d, home, mine, theirs) = face_off(TroopType::Crossbowman, 4);
     assert_eq!(army(d, home.game_id, theirs).coord, step_east(REALM_COORD, 3));
-    assert_executes(d, home.game_id, battle(mine, theirs), RESTED_AT);
-    assert_eq!(army(d, home.game_id, mine).troops.count, UNITS * RESOURCE_PRECISION);
-    assert!(army(d, home.game_id, theirs).troops.count < UNITS * RESOURCE_PRECISION);
+    assert!(!execute_in_game(d, home.game_id, battle(mine, theirs), RESTED_AT));
+    assert_eq!(army(d, home.game_id, theirs).troops.count, UNITS * RESOURCE_PRECISION);
 }
 
 #[test]
@@ -64,7 +63,7 @@ fn armies_side_by_side_outside_any_deep_both_lose_troops() {
 }
 
 #[test]
-fn a_crossbow_guard_strikes_a_rival_army_two_tiles_from_its_realm() {
+fn a_crossbow_guard_cannot_strike_a_rival_army_two_tiles_from_its_realm() {
     let (d, home) = blitz_realm();
     let crossbows = crate::troops::troop_resource(TroopType::Crossbowman, 0);
     grant(d, home, crossbows, UNITS * RESOURCE_PRECISION);
@@ -76,11 +75,8 @@ fn a_crossbow_guard_strikes_a_rival_army_two_tiles_from_its_realm() {
     let (rival, realm) = rival_realm_at(d, home, step_east(REALM_COORD, 3));
     let theirs = raise(d, rival, realm, TroopType::Knight, 0, UNITS, WEST);
     let strike = Command::GuardAttack(crate::combat_actions::GuardAttack { guard, explorer_id: theirs });
-    assert_executes(d, home.game_id, strike, RESTED_AT);
-    let garrison = IGuardsDispatcher { contract_address: d.games }
-        .guard(GuardKey { game_id: home.game_id, structure_id: home.entity_id, slot: 0 });
-    assert_eq!(garrison.troops.count, UNITS * RESOURCE_PRECISION);
-    assert!(army(d, home.game_id, theirs).troops.count < UNITS * RESOURCE_PRECISION);
+    assert!(!execute_in_game(d, home.game_id, strike, RESTED_AT));
+    assert_eq!(army(d, home.game_id, theirs).troops.count, UNITS * RESOURCE_PRECISION);
 }
 
 #[test]

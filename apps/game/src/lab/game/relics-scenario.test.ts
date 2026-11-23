@@ -6,7 +6,7 @@ import { relicsScenario } from "./relics-scenario";
 const applyRelic = (relicId: number, slot: number): LabCommand => ({
   kind: "ApplyRelic",
   fields: {},
-  span: ["43", "201", String(relicId), "3", String(slot)],
+  span: ["43", "201", String(relicId), String(slot)],
 });
 
 it("answers ApplyRelic as army_relics.cairo applies it: the slot spent, its kind running 30 minutes a tier", () => {

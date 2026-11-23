@@ -1,49 +1,32 @@
 import type { NativeFactStore } from "../client/native-fact-store";
-import { isDeepTile } from "./deep-geometry";
-import { entityMapPosition } from "./tile";
+import type { nativeCommandBits } from "../../../../contracts/l3/world-native/schema/commands.gen";
+import { isCommandEnabled } from "./mode-rules";
 
 /** The same Frontier boundary for the map's order and the selected target's card. */
 export function armyCombatRefusal(
-  store: Pick<NativeFactStore, "get" | "require" | "entityOccupancy">,
+  store: Pick<NativeFactStore, "require">,
   attacker: { game_id: number; explorer_id: number | bigint },
   defender: { game_id: number; explorer_id: number | bigint },
-): "no-attack" | "outside-deep" | "allied" | undefined {
+): "no-attack" | undefined {
   if (attacker.game_id !== defender.game_id) return "no-attack";
-  if (!limitsArmyCombat(store, attacker.game_id)) return undefined;
-  const side = (army: typeof attacker) => {
-    const { x, y, alt } = entityMapPosition(store, army.game_id, army.explorer_id);
-    return { home: store.require("ExplorerTroops", army).owner, tile: { col: x, row: y, alt } };
-  };
-  return deepOpponentsRefusal(store, attacker.game_id, side(attacker), side(defender));
+  return commandRefusal(store, attacker.game_id, "Battle");
 }
 
-export function armyOpponentsRefusal(
+export const commandRefusal = (
   store: Pick<NativeFactStore, "require">,
   game_id: number,
-  attacker: ArmySide,
-  defender: ArmySide,
-): "outside-deep" | "allied" | undefined {
-  return limitsArmyCombat(store, game_id) ? deepOpponentsRefusal(store, game_id, attacker, defender) : undefined;
-}
+  command: keyof typeof nativeCommandBits,
+): "no-attack" | undefined =>
+  isCommandEnabled(store.require("SliceRules", { game_id }), command) ? undefined : "no-attack";
 
-const limitsArmyCombat = (store: Pick<NativeFactStore, "require">, game_id: number): boolean =>
-  store.require("SliceRules", { game_id }).day_unit_seconds !== 0;
-
-function deepOpponentsRefusal(
+export function rivalGuardRefusal(
   store: Pick<NativeFactStore, "require">,
   game_id: number,
-  attacker: ArmySide,
-  defender: ArmySide,
-): "outside-deep" | "allied" | undefined {
-  const { spacing } = store.require("SettlementRules", { game_id });
-  if (![attacker, defender].every((side) => isDeepTile(spacing, side.tile))) return "outside-deep";
-  const aspect = (side: ArmySide) => store.require("HomeAspect", { game_id, home: side.home }).aspect;
-  return aspect(attacker) === aspect(defender) ? "allied" : undefined;
-}
-
-interface ArmySide {
-  home: bigint;
-  tile: { col: number; row: number; alt: boolean };
+  attacker: { home: bigint },
+  guard: { home: bigint },
+): "allied" | undefined {
+  const aspect = (side: { home: bigint }) => store.require("HomeAspect", { game_id, home: side.home }).aspect;
+  return aspect(attacker) === aspect(guard) ? "allied" : undefined;
 }
 
 /** Whether a home stands in the Aspect of one of the viewer's own realms: an Aspect's armies are allies in the Deep. */

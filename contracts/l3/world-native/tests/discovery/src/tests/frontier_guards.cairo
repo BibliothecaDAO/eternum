@@ -4,14 +4,15 @@ pub use world_test_support::tests::frontier_guards::*;
 #[test]
 fn seeded_site_guards_keep_their_family_mark_on_the_inclusive_preset_grid() {
     let rules = release_rules();
-    let rifts = array![(1350_u32, 1640_u32), (2690, 3290), (5380, 6580), (10760, 13160)];
-    for depth_index in 0_u32..4 {
+    let camps = array![(1170_u32, 1430_u32), (2340, 2860), (4680, 5720)];
+    let rifts = array![(1350_u32, 1650_u32), (2700, 3300), (5400, 6600)];
+    for depth_index in 0_u32..3 {
         let depth = crate::logic::expeditions::depth_rules(depth_index.try_into().unwrap());
         for category in array![crate::taxonomy::CAMP_CATEGORY, RIFT_CATEGORY] {
             let (lower, upper) = if category == RIFT_CATEGORY {
                 *rifts.at(depth_index)
             } else {
-                (depth.site_guard_lower.into(), depth.site_guard_upper.into())
+                *camps.at(depth_index)
             };
             let mut saw_lower = false;
             let mut saw_upper = false;
@@ -40,12 +41,9 @@ fn seeded_site_guards_keep_their_family_mark_on_the_inclusive_preset_grid() {
 #[test]
 fn beasts_draw_two_depth_scaled_ranges_below_every_other_site_guard() {
     let rules = release_rules();
-    let expected = array![
-        (315_u128, 385_u128, 405_u128, 495_u128), (630, 770, 810, 990), (1260, 1540, 1620, 1980),
-        (2520, 3080, 3240, 3960),
-    ];
+    let expected = array![(315_u128, 385_u128, 405_u128, 495_u128), (630, 770, 810, 990), (1260, 1540, 1620, 1980)];
     let mut previous_stronger = 0;
-    for depth_index in 0_u32..4 {
+    for depth_index in 0_u32..3 {
         let depth = crate::logic::expeditions::depth_rules(depth_index.try_into().unwrap());
         let (weak_lower, weak_upper, strong_lower, strong_upper) = *expected.at(depth_index);
         assert!(weak_lower > previous_stronger && strong_lower > weak_upper);

@@ -34,7 +34,6 @@ pub trait IExpeditionSite<T> {
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct SitePayout {
-    pub xp: u32,
     pub structure_id: u64,
     pub explorer_id: u64,
     pub site_id: u64,
@@ -82,23 +81,22 @@ pub fn depth_reward(amount: u128, depth: u8) -> u128 {
     amount * (2 + depth.into()) / 2
 }
 
-pub fn validate_game(start: u64, duration: u64) {
-    let tick = crate::balance::rules::TICK_CONFIG.armies_tick_in_seconds;
-    assert!(start % tick == 0, "season does not start on a tick");
+pub fn validate_game(game: crate::game::GameRegistry) {
+    let tick = crate::clock::armies_tick_seconds(game);
+    let duration = game.end_at - game.start_main_at;
+    assert!(game.start_main_at % tick == 0, "season does not start on a tick");
     assert!(duration > 0 && duration % tick == 0, "season does not end on a tick");
-    assert_season_fits_map(duration);
+    assert_season_fits_map(game, duration);
 }
 
 #[cfg(feature: "blitz")]
-fn assert_season_fits_map(duration: u64) {}
+fn assert_season_fits_map(game: crate::game::GameRegistry, duration: u64) {}
 
 #[cfg(not(feature: "blitz"))]
-fn assert_season_fits_map(duration: u64) {
+fn assert_season_fits_map(game: crate::game::GameRegistry, duration: u64) {
     let spacing: u128 = crate::logic::settlement::spacing().into();
     // Before the seed is drawn, bound the map using the shortest possible day.
-    let season_days: u128 = (duration / (2 * Into::<u32, u64>::into(crate::balance::rules::SWITCHES.day_unit_seconds)))
-        .into()
-        + 3;
+    let season_days: u128 = (duration / (2 * Into::<u32, u64>::into(crate::clock::day_unit_seconds(game)))).into() + 3;
     assert!(season_days * 4 * spacing < 0x7fffffff, "expedition season exceeds map");
 }
 
@@ -173,6 +171,8 @@ pub struct DepthRules {
     pub reveal_percent: u16,
     pub site_guard_lower: u16,
     pub site_guard_upper: u16,
+    pub rift_guard_lower: u16,
+    pub rift_guard_upper: u16,
     pub reveal_site_neighbors: bool,
     // Each chest tier's odds, in basis points, for a ruin found at this depth.
     pub chest: crate::relics::ChestTiers,

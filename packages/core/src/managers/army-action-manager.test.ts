@@ -18,6 +18,7 @@ import { ArmyActionManager } from "./army-action-manager";
 import { configManager } from "./config-manager";
 import { StaminaManager } from "./stamina-manager";
 import { ActionPaths, ActionType } from "../utils/action-paths";
+import { deepCenter } from "../utils/deep-geometry";
 
 const TEST_ENTITY_ID = 1;
 const TEST_FELT_CENTER = 100;
@@ -59,7 +60,11 @@ function buildTileOptData(input: {
   };
 }
 
-function createTestSetup(systemCalls: Record<string, unknown> = {}, enabled: Partial<Record<string, boolean>> = {}) {
+function createTestSetup(
+  systemCalls: Record<string, unknown> = {},
+  enabled: Partial<Record<string, boolean>> = {},
+  rows: Record<string, unknown> = {},
+) {
   vi.spyOn(configManager, "getMapCenter").mockReturnValue(TEST_FELT_CENTER);
   vi.spyOn(configManager, "attacksOnlyUnownedStructures").mockReturnValue(false);
   vi.spyOn(configManager, "getActiveGameId").mockReturnValue(1);
@@ -92,6 +97,7 @@ function createTestSetup(systemCalls: Record<string, unknown> = {}, enabled: Par
   } as any;
 
   const read = (model: string, keys: { explorer_id?: number; alt?: boolean; col?: number; row?: number }) => {
+    if (model in rows) return rows[model];
     if (model === "SliceRules") return { day_unit_seconds: 0 };
     if (model === "ExplorerTroops") return components.ExplorerTroops.get(String(keys.explorer_id));
     const tile = components.TileOpt.get(toTileEntityKey(keys.alt!, keys.col!, keys.row!));
@@ -353,24 +359,11 @@ describe("ArmyActionManager.findActionPaths origin precedence", () => {
   });
 
   it("offers no attack on another player's army where the game leaves Battle out, and still one on a structure", () => {
-    const { manager, components, structureHexes, armyHexes, exploredHexes, oldFeltStart } = createTestSetup(
-      {},
-      { Battle: false },
-    );
+    const { manager, structureHexes, armyHexes, exploredHexes, oldFeltStart } = createTestSetup({}, { Battle: false });
     const [adjacentArmy, site] = getNeighborHexes(oldFeltStart.col, oldFeltStart.row);
-    const adjacentKeys = new Set(
-      getNeighborHexes(oldFeltStart.col, oldFeltStart.row).map((hex) => ActionPaths.posKey(hex)),
-    );
-    const rangedArmy = getHexesWithinRadius(oldFeltStart.col, oldFeltStart.row, 2).find(
-      (hex) =>
-        !adjacentKeys.has(ActionPaths.posKey(hex)) && ActionPaths.posKey(hex) !== ActionPaths.posKey(oldFeltStart),
-    )!;
-    components.ExplorerTroops.get(TEST_ENTITY_ID.toString())!.troops.category = TroopType.Crossbowman;
-    for (const hex of [adjacentArmy, rangedArmy]) {
-      setNestedMapValue(armyHexes, hex.col - TEST_FELT_CENTER, hex.row - TEST_FELT_CENTER, {
-        owner: 0x999n,
-      } as HexEntityInfo);
-    }
+    setNestedMapValue(armyHexes, adjacentArmy.col - TEST_FELT_CENTER, adjacentArmy.row - TEST_FELT_CENTER, {
+      owner: 0x999n,
+    } as HexEntityInfo);
     setNestedMapValue(structureHexes, site.col - TEST_FELT_CENTER, site.row - TEST_FELT_CENTER, {
       owner: 0n,
     } as HexEntityInfo);
@@ -382,14 +375,50 @@ describe("ArmyActionManager.findActionPaths origin precedence", () => {
 
     const actionPaths = manager.findActionPaths(structureHexes, armyHexes, exploredHexes, 0, 0x123n as any);
 
-    for (const hex of [adjacentArmy, rangedArmy]) {
-      expect(actionPaths.get(ActionPaths.posKey(hex))).toBeUndefined();
-      expect(actionPaths.getRefusals().get(ActionPaths.posKey(hex))).toEqual({ reason: "no-attack" });
-    }
+    expect(actionPaths.get(ActionPaths.posKey(adjacentArmy))).toBeUndefined();
+    expect(actionPaths.getRefusals().get(ActionPaths.posKey(adjacentArmy))).toEqual({ reason: "no-attack" });
     expect(ActionPaths.getActionType(actionPaths.get(ActionPaths.posKey(site))!)).toBe(ActionType.Attack);
   });
 
-  it("adds radius-two attack paths for crossbowman armies", () => {
+  it.each([
+    [true, 3],
+    [false, 4],
+  ])(
+    "in the Deep (%s) a route to the tile beyond an army takes %i hexes and never stops on the army",
+    (deep, hexes) => {
+      vi.spyOn(StaminaManager.prototype, "getStamina").mockReturnValue({
+        amount: 10n,
+        settled_at: 0,
+        remainder: 0,
+      } as any);
+      const spacing = 200;
+      const slice = { SliceRules: { day_unit_seconds: 0, command_mask: 0n } };
+      const rows = deep ? { ...slice, DeepRules: {}, SettlementRules: { spacing } } : slice;
+      const { manager, components, structureHexes, armyHexes, exploredHexes } = createTestSetup({}, {}, rows);
+      const start = deep ? deepCenter(spacing) : { col: TEST_FELT_CENTER, row: TEST_FELT_CENTER };
+      components.Positions.set(TEST_ENTITY_ID.toString(), { alt: false, x: start.col, y: start.row });
+      for (const hex of getHexesWithinRadius(start.col, start.row, 2))
+        setNestedMapValue(exploredHexes, hex.col - TEST_FELT_CENTER, hex.row - TEST_FELT_CENTER, 1 as BiomeType);
+      const army = getNeighborHexes(start.col, start.row)[0]!;
+      const direction = getDirectionBetweenAdjacentHexes(start, army)!;
+      const beyond = getNeighborHexes(army.col, army.row).find(
+        (hex) => getDirectionBetweenAdjacentHexes(army, hex) === direction,
+      )!;
+      setNestedMapValue(armyHexes, army.col - TEST_FELT_CENTER, army.row - TEST_FELT_CENTER, {
+        id: 55,
+        owner: 0x999n,
+      } as HexEntityInfo);
+
+      const paths = manager.findActionPaths(structureHexes, armyHexes, exploredHexes, 0, 0x123n as any);
+
+      const route = paths.get(ActionPaths.posKey(beyond))!.map(({ hex }) => ActionPaths.posKey(hex));
+      expect(route).toHaveLength(hexes);
+      expect(route.includes(ActionPaths.posKey(army))).toBe(deep);
+      expect(ActionPaths.getActionType(paths.get(ActionPaths.posKey(army)) ?? [])).not.toBe(ActionType.Move);
+    },
+  );
+
+  it("adds no attack path two tiles away, not even for a crossbowman army", () => {
     const { manager, components, structureHexes, armyHexes, exploredHexes, oldFeltStart } = createTestSetup();
     const adjacentKeys = new Set(
       getNeighborHexes(oldFeltStart.col, oldFeltStart.row).map((hex) => ActionPaths.posKey(hex)),
@@ -410,19 +439,12 @@ describe("ArmyActionManager.findActionPaths origin precedence", () => {
 
     const actionPaths = manager.findActionPaths(structureHexes, armyHexes, exploredHexes, 0, 0x123n as any);
 
-    expect(ActionPaths.getActionType(actionPaths.get(ActionPaths.posKey(targetHex)) ?? [])).toBe(ActionType.Attack);
+    expect(actionPaths.get(ActionPaths.posKey(targetHex))).toBeUndefined();
   });
 
-  it("says a structure off limits in a crossbowman's range is off limits, not out of reach", () => {
-    const { manager, components, structureHexes, armyHexes, exploredHexes, oldFeltStart } = createTestSetup();
-    const adjacentKeys = new Set(
-      getNeighborHexes(oldFeltStart.col, oldFeltStart.row).map((hex) => ActionPaths.posKey(hex)),
-    );
-    const targetHex = getHexesWithinRadius(oldFeltStart.col, oldFeltStart.row, 2).find(
-      (hex) =>
-        !adjacentKeys.has(ActionPaths.posKey(hex)) && ActionPaths.posKey(hex) !== ActionPaths.posKey(oldFeltStart),
-    )!;
-    components.ExplorerTroops.get(TEST_ENTITY_ID.toString())!.troops.category = TroopType.Crossbowman;
+  it("says a structure off limits beside the army is off limits, not out of reach", () => {
+    const { manager, structureHexes, armyHexes, exploredHexes, oldFeltStart } = createTestSetup();
+    const [targetHex] = getNeighborHexes(oldFeltStart.col, oldFeltStart.row);
     setNestedMapValue(structureHexes, targetHex.col - TEST_FELT_CENTER, targetHex.row - TEST_FELT_CENTER, {
       owner: 0x999n,
     } as HexEntityInfo);
@@ -464,29 +486,6 @@ describe("ArmyActionManager.findActionPaths origin precedence", () => {
       expect(refusals.get(ActionPaths.posKey(hex))).toEqual({ reason: "too-far" });
     }
     expect(refusals.has(ActionPaths.posKey(oldFeltStart))).toBe(false);
-  });
-
-  it("does not add radius-two attack paths for non-ranged armies", () => {
-    const { manager, structureHexes, armyHexes, exploredHexes, oldFeltStart } = createTestSetup();
-    const adjacentKeys = new Set(
-      getNeighborHexes(oldFeltStart.col, oldFeltStart.row).map((hex) => ActionPaths.posKey(hex)),
-    );
-    const targetHex = getHexesWithinRadius(oldFeltStart.col, oldFeltStart.row, 2).find(
-      (hex) => !adjacentKeys.has(ActionPaths.posKey(hex)),
-    )!;
-
-    setNestedMapValue(armyHexes, targetHex.col - TEST_FELT_CENTER, targetHex.row - TEST_FELT_CENTER, {
-      owner: 0x999n,
-    } as HexEntityInfo);
-    vi.mocked(StaminaManager.prototype.getStamina).mockReturnValue({
-      amount: 5n,
-      settled_at: 0,
-      remainder: 0,
-    } as any);
-
-    const actionPaths = manager.findActionPaths(structureHexes, armyHexes, exploredHexes, 0, 0x123n as any);
-
-    expect(actionPaths.get(ActionPaths.posKey(targetHex))).toBeUndefined();
   });
 });
 

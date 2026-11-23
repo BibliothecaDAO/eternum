@@ -40,13 +40,17 @@ pub fn oath_taken(home: ResourceKey, timestamp: u64) {
     record(home, crate::quests::VETERANS, 1, timestamp);
 }
 
-pub fn guarded_site_cleared(home: ResourceKey, guard_count: u128, timestamp: u64) {
+pub fn site_cleared(home: ResourceKey, timestamp: u64) {
     record(home, crate::quests::STAND, 1, timestamp);
+}
+
+pub fn guard_beaten(home: ResourceKey, guard_count: u128, timestamp: u64) {
     record(home, crate::quests::CULL, guard_count / crate::rules::RESOURCE_PRECISION, timestamp);
 }
 
 pub fn cleared(home: ResourceKey, category: u8, guard_count: u128, timestamp: u64) {
-    guarded_site_cleared(home, guard_count, timestamp);
+    site_cleared(home, timestamp);
+    guard_beaten(home, guard_count, timestamp);
     let quest = if category == crate::taxonomy::BEASTS_CATEGORY {
         Some(crate::quests::HUNT)
     } else if category == crate::taxonomy::CAMP_CATEGORY {

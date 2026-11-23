@@ -17,6 +17,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { campBeside, otherArmyAt, placeSite, SITE, SITE_TILE } from "@/ui/features/frontier/sites/site-fixture";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import { nativeTilePackingConstants } from "../../../../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeCommandBits } from "../../../../../../../contracts/l3/world-native/schema/commands.gen";
 import { ActorType, BiomeType, BiomeTypeToId } from "@bibliothecadao/types";
 import { QuickAttackPreview } from "./quick-attack-preview";
 
@@ -49,7 +50,13 @@ const preview = (armyStamina: bigint, aimAt: typeof target = target) => {
     {
       model: "SliceRules",
       key: "0x100",
-      value: { ...rules, day_unit_seconds: 0, battle_config: { ...rules.battle_config, regular_immunity_ticks: 0 } },
+      value: {
+        ...rules,
+        day_unit_seconds: 0,
+        mode_rules: 0,
+        command_mask: BigInt(rules.command_mask) | BigInt(nativeCommandBits.Battle),
+        battle_config: { ...rules.battle_config, regular_immunity_ticks: 0 },
+      },
     },
     { model: "ExpeditionSite", key: "0x72", value: null },
     {

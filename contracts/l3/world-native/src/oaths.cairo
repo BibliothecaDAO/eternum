@@ -23,7 +23,7 @@ pub const POWER_DAMAGE_PERCENT: u16 = 20;
 pub const GIANTS_REDUCTION_PERCENT: u16 = 15;
 pub const PROTECTION_REDUCTION_PERCENT: u16 = 25;
 pub const REFLECTION_WELL_PERCENT: u8 = 80;
-pub const DETECTION_FIND_PERCENT: u16 = 120;
+pub const DETECTION_EMPTY_REVEAL_LIMIT: u8 = 4;
 pub const BRILLIANCE_PAY_PERCENT: u16 = 125;
 pub const RAGE_PAY_PERCENT: u16 = 125;
 pub const ANGER_ATTACK_STAMINA: u16 = 20;
@@ -104,16 +104,12 @@ pub fn deep_loss_per_tick(oaths: u16, base: u128) -> u128 {
     }
 }
 
-pub fn find_percent(oaths: u16, base: u16) -> u16 {
+pub fn empty_reveal_limit(oaths: u16, base: u8) -> u8 {
     if held(oaths, DETECTION) {
-        detected_find_percent(base)
+        core::cmp::min(base, DETECTION_EMPTY_REVEAL_LIMIT)
     } else {
         base
     }
-}
-
-pub fn detected_find_percent(base: u16) -> u16 {
-    base * DETECTION_FIND_PERCENT / 100
 }
 
 pub fn reveal_pay(oaths: u16, amount: u128) -> u128 {

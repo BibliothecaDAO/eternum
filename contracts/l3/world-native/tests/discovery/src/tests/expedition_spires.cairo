@@ -4,13 +4,10 @@ use world_native::troops::Coord;
 const HERE: Coord = Coord { alt: false, x: 50, y: 50 };
 
 #[test]
-fn locked_lore_and_the_deep_do_not_advance_spire_odds() {
+fn locked_lore_does_not_advance_spire_odds() {
     let key = ExpeditionSpireKey { game_id: 1, structure_id: 17, epoch: 0, depth: 0 };
-    let learned = world_test_support::tests::registrar::lore(world_native::research::LORE_SPIRES);
-    for (candidate, knowledge) in array![(key, 0_u64), (ExpeditionSpireKey { depth: 3, ..key }, learned)] {
-        assert!(!world_native::logic::spires::discover_on_reveal(candidate, HERE, knowledge, 100, seed_for(0)));
-        assert!(world_native::logic::spires::read(candidate).is_none());
-    }
+    assert!(!world_native::logic::spires::discover_on_reveal(key, HERE, 0, seed_for(0)));
+    assert!(world_native::logic::spires::read(key).is_none());
 }
 #[test]
 fn each_reveal_adds_one_tenth_and_the_tenth_cannot_miss() {
@@ -19,7 +16,7 @@ fn each_reveal_adds_one_tenth_and_the_tenth_cannot_miss() {
         let seed = seed_for(draw);
         for previous_reveals in 0_u8..10 {
             let result = world_native::spires::discover(
-                ExpeditionSpire { reveals: previous_reveals, location: None }, HERE, 100, seed,
+                ExpeditionSpire { reveals: previous_reveals, location: None }, HERE, seed,
             );
             assert_eq!(result.reveals, previous_reveals + 1);
             assert_eq!(result.location, if draw < (previous_reveals + 1).into() {
@@ -34,7 +31,7 @@ fn each_reveal_adds_one_tenth_and_the_tenth_cannot_miss() {
 #[test]
 fn a_found_spire_is_not_rerolled_or_counted_again() {
     let found = ExpeditionSpire { reveals: 4, location: Some(HERE) };
-    assert_eq!(world_native::spires::discover(found, Coord { x: 51, ..HERE }, 100, 0), found);
+    assert_eq!(world_native::spires::discover(found, Coord { x: 51, ..HERE }, 0), found);
 }
 
 #[test]
@@ -42,17 +39,17 @@ fn reveals_share_one_spire_only_within_the_same_home_day_and_layer() {
     let key = ExpeditionSpireKey { game_id: 1, structure_id: 17, epoch: 2, depth: 0 };
     let seed = seed_for(9);
     for reveal in 1_u8..11 {
-        assert_eq!(world_native::logic::spires::discover(key, HERE, 100, seed), reveal == 10);
+        assert_eq!(world_native::logic::spires::discover(key, HERE, seed), reveal == 10);
         assert_eq!(world_native::logic::spires::read(key).unwrap().reveals, reveal);
     }
-    assert!(!world_native::logic::spires::discover(key, Coord { x: 51, ..HERE }, 100, 0));
+    assert!(!world_native::logic::spires::discover(key, Coord { x: 51, ..HERE }, 0));
     assert_eq!(world_native::logic::spires::read(key).unwrap().location, Some(HERE));
     for other in array![
         ExpeditionSpireKey { game_id: 2, ..key }, ExpeditionSpireKey { structure_id: 18, ..key },
         ExpeditionSpireKey { epoch: 3, ..key }, ExpeditionSpireKey { depth: 1, ..key },
     ] {
         assert!(world_native::logic::spires::read(other).is_none());
-        assert!(!world_native::logic::spires::discover(other, HERE, 100, seed));
+        assert!(!world_native::logic::spires::discover(other, HERE, seed));
         assert_eq!(world_native::logic::spires::read(other).unwrap(), ExpeditionSpire { reveals: 1, location: None });
     }
 }
@@ -77,7 +74,7 @@ fn a_spire_never_skips_a_layer() {
 #[should_panic(expected: "army must be at its realm's spire")]
 fn a_discovered_spire_cannot_be_used_from_far_away() {
     let key = ExpeditionSpireKey { game_id: 1, structure_id: 17, epoch: 0, depth: 0 };
-    assert!(world_native::logic::spires::discover(key, HERE, 100, seed_for(0)));
+    assert!(world_native::logic::spires::discover(key, HERE, seed_for(0)));
     world_native::logic::spires::descent_origin(key, Coord { x: 52, ..HERE }, 1);
 }
 
@@ -85,7 +82,7 @@ fn a_discovered_spire_cannot_be_used_from_far_away() {
 #[should_panic(expected: "spires require an upper layer")]
 fn the_deep_has_no_spire_roll() {
     world_native::logic::spires::discover(
-        ExpeditionSpireKey { game_id: 1, structure_id: 17, epoch: 0, depth: 3 }, HERE, 100, 0,
+        ExpeditionSpireKey { game_id: 1, structure_id: 17, epoch: 0, depth: 3 }, HERE, 0,
     );
 }
 
@@ -97,24 +94,4 @@ fn seed_for(draw: u128) -> u256 {
         }
     }
     panic!("missing spire draw bucket")
-}
-
-#[test]
-fn clear_mist_doubles_each_spire_draw_and_the_fifth_cannot_miss() {
-    for draw in 0_u128..10 {
-        for previous_reveals in 0_u8..10 {
-            let result = world_native::spires::discover(
-                ExpeditionSpire { reveals: previous_reveals, location: None }, HERE, 200, seed_for(draw),
-            );
-            assert_eq!(result.reveals, previous_reveals + 1);
-            assert_eq!(
-                result.location,
-                if draw < Into::<u8, u128>::into(previous_reveals + 1) * 2 {
-                    Some(HERE)
-                } else {
-                    None
-                },
-            );
-        }
-    }
 }

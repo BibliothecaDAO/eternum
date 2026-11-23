@@ -41,6 +41,8 @@ export const factWireTypes = [
       { name: "reveal_percent", type: "core::integer::u16" },
       { name: "site_guard_lower", type: "core::integer::u16" },
       { name: "site_guard_upper", type: "core::integer::u16" },
+      { name: "rift_guard_lower", type: "core::integer::u16" },
+      { name: "rift_guard_upper", type: "core::integer::u16" },
       { name: "reveal_site_neighbors", type: "core::bool" },
       { name: "chest", type: "world_native::relics::ChestTiers" },
       { name: "guard_step", type: "core::integer::u32" },
@@ -750,6 +752,10 @@ export const factWireTypes = [
         name: "scheduled_end_at",
         type: "core::integer::u64",
       },
+      {
+        name: "clock_scale",
+        type: "core::integer::u8",
+      },
     ],
   },
   {
@@ -1080,7 +1086,6 @@ const presetDerivedModels = new Set([
   "DepthRules",
   "ChestRules",
   "DeepRules",
-  "FrontierDiscoveryRules",
 ]);
 
 export function defineFactModels({ struct, model: declare }) {
@@ -1192,12 +1197,6 @@ export function defineFactModels({ struct, model: declare }) {
       "game",
       [{ name: "game_id", type: "core::integer::u32" }],
       struct("deposits::DepositSource"),
-    ),
-    model(
-      "FrontierDiscoveryRules",
-      "game",
-      [{ name: "game_id", type: "core::integer::u32" }],
-      struct("expeditions::FrontierDiscoveryRules"),
     ),
     model("ExpeditionSpire", "game", struct("spires::ExpeditionSpireKey"), struct("spires::ExpeditionSpire")),
     model(
@@ -1594,6 +1593,8 @@ const behaviouralFacts = {
       revealPercent: "reveal_percent",
       siteGuardLower: "site_guard_lower",
       siteGuardUpper: "site_guard_upper",
+      riftGuardLower: "rift_guard_lower",
+      riftGuardUpper: "rift_guard_upper",
       guardStep: "guard_step",
       beastWeakLower: "beast_weak_lower",
       beastWeakUpper: "beast_weak_upper",
@@ -1683,7 +1684,6 @@ export const syncScopes = {
       "DeepRules",
       "LordsBudget",
       "FrontierPrize",
-      "FrontierDiscoveryRules",
       "DepositSource",
       "MineKindConfig",
       "MinePool",

@@ -22,6 +22,7 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { acceptGameSyncStoryEvent, resetGameSyncStoryEvents } from "@/hooks/store/use-story-events-store";
 import { inFlight, sendOnce } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { ATTACK_REFUSAL_WORDS } from "@/ui/design-system/kit/words";
 import { ActionPaths, ActionType, setBlockTimestampSource, setEntityNameLocalStorage } from "@bibliothecadao/eternum";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import { nativeTilePackingConstants } from "../../../../../../../contracts/l3/world-native/schema/client.gen";
@@ -248,7 +249,7 @@ describe("the tile card", () => {
     unmount();
   });
 
-  it("is the same card for another player's army: its troops, the forecast, and Attack sent army against army", async () => {
+  it("is the same card for another player's army, whose Attack is refused since armies in the open cannot be attacked", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     const { store } = campBeside();
     store.applyFacts([
@@ -300,19 +301,12 @@ describe("the tile card", () => {
     );
     act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: null }));
     expect(host.querySelector('section[aria-label="Army"]')).not.toBeNull();
-    // The other army stands where a guard does: its 300 troops before this attack, on the guard's side.
-    const sides = fightSides(host);
-    expect(sides[1]).toMatch(/^Troops 300 →/);
-    const button = [...host.querySelectorAll("button")].find((candidate) => candidate.textContent?.includes("Attack"))!;
-    await act(async () => button.click());
-    expect(attack).toHaveBeenCalledWith(
-      expect.objectContaining({ aggressor_id: 201, defender_id: 301, steal_resources: [] }),
-    );
-    act(() => store.applyFacts([{ model: "HomeAspect", key: "0xa901", value: { game_id: 1, home: 9n, aspect: 1 } }]));
     expect(
-      [...host.querySelectorAll("button")].find((candidate) => candidate.textContent?.includes("Attack"))?.disabled,
+      [...host.querySelectorAll("button")].find((candidate) => candidate.textContent?.includes("Attack"))?.disabled ??
+        true,
     ).toBe(true);
-    expect(host.textContent).toContain("Allied armies cannot attack each other");
+    expect(host.textContent).toContain(ATTACK_REFUSAL_WORDS["no-attack"]);
+    expect(attack).not.toHaveBeenCalled();
     act(() => root.unmount());
     host.remove();
   });

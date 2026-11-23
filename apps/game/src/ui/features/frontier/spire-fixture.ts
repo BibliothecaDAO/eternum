@@ -19,6 +19,8 @@ const depthRules = (depth: number) => ({
     reveal_percent: 100,
     site_guard_lower: 1,
     site_guard_upper: 2,
+    rift_guard_lower: 1,
+    rift_guard_upper: 2,
     reveal_site_neighbors: false,
     chest: { common: 10000, uncommon: 0, rare: 0, epic: 0, legendary: 0 },
     guard_step: 1,

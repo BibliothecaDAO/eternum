@@ -100,7 +100,6 @@ pub mod ResourcesLogic {
                 actor,
                 crate::ownership::Story::SitePayout(
                     crate::expeditions::SitePayout {
-                        xp: 0,
                         structure_id: home_id,
                         explorer_id: explorer.explorer_id,
                         site_id: key.entity_id,

@@ -45,9 +45,8 @@ const stories: Record<string, { fields: number[]; expected: unknown }> = {
   },
   BlitzFinalized: { fields: [11], expected: 11n },
   SitePayout: {
-    fields: [85, 3, 7, 9, 7, 0, 23, 500],
+    fields: [3, 7, 9, 7, 0, 23, 500],
     expected: {
-      xp: 85n,
       structure_id: 3n,
       explorer_id: 7n,
       site_id: 9n,
@@ -58,10 +57,6 @@ const stories: Record<string, { fields: number[]; expected: unknown }> = {
   SiteUsed: {
     fields: [7, 1, 12, 34, 0, 200],
     expected: { explorer_id: 7n, coord, benefit: { Shrine: 200n } },
-  },
-  SkillPointSpent: {
-    fields: [7, 1, 3, 0, 3, 40],
-    expected: { explorer_id: 7n, choice: "Logistics", point_rank: 3n, tier: 3n, stamina: 40n },
   },
   LordsWithdrawn: {
     fields: [17, 200, 0, 0],
@@ -120,28 +115,6 @@ function assertDecoded(event: ReturnType<typeof raw>, key: unknown, value: Recor
 }
 
 describe("compiled native history coverage", () => {
-  it.each([
-    [2, "Beasts"],
-    [3, "Sanctuaries"],
-  ] as const)("keeps Scouting history code %i as %s", (kind, name) => {
-    const variant = Number(storyTag("SkillPointSpent"));
-    for (const layout of schema.games.events.filter(({ name }) => name === "StoryEvent")) {
-      assertDecoded(
-        raw({
-          from_address: manifest.world.address,
-          keys: [...layout.prefix, "2", "1", "0", "17", "0", "3", "0x55"],
-          data: [variant, 7, 2, kind, 3, 0, 3, 40, 140].map(String),
-        }),
-        { game_id: 1n, owner: 17n, entity_id: 3n, tx_hash: 85n },
-        {
-          story: {
-            SkillPointSpent: { explorer_id: 7n, choice: { Scouting: name }, point_rank: 3n, tier: 3n, stamina: 40n },
-          },
-          timestamp: 140n,
-        },
-      );
-    }
-  });
   for (const [name, { fields, expected }] of Object.entries(stories)) {
     it(`decodes ${name} from every Games event prefix`, () => {
       const variant = Number(storyTag(name));

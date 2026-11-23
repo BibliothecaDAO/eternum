@@ -9,7 +9,7 @@ import type { DeploymentEnvironmentId } from "../types";
 import { CairoOption, CairoOptionVariant } from "starknet";
 import type { Config } from "@bibliothecadao/types";
 import { buildCreateGameParams, type CreateGamePayloadInput } from "./preset";
-import { clockScaled } from "../../../source/common/season-clock";
+import { clockScaled, gameClockScale } from "../../../source/common/season-clock";
 
 /** Open-entry games only: a fixed roster is frozen and launched by the launch service when its slot closes. */
 export function buildNativeGameParams(config: Config, input: CreateGamePayloadInput) {
@@ -31,6 +31,7 @@ export function buildNativeGameParams(config: Config, input: CreateGamePayloadIn
     ),
     // Calendar and map layout metadata; gameplay draws use the stamped transaction root.
     seed: common.seed,
+    clock_scale: common.clock_scale,
   };
 }
 
@@ -41,7 +42,7 @@ export function buildNativeGameParams(config: Config, input: CreateGamePayloadIn
 function nativeSeasonStart(config: Config, input: Pick<CreateGamePayloadInput, "presetId" | "startMainAt">): number {
   const preset = nativePresetForId(input.presetId);
   if (preset.dayUnitSeconds === 0) return input.startMainAt;
-  const tick = clockScaled(config.tick.armiesTickIntervalInSeconds, preset.clockScale?.activity ?? 1, "armies tick");
+  const tick = clockScaled(config.tick.armiesTickIntervalInSeconds, gameClockScale(preset), "armies tick");
   return Math.ceil(input.startMainAt / tick) * tick;
 }
 
@@ -58,11 +59,6 @@ export function loadNativePresetConfiguration(environment: DeploymentEnvironment
   const loaded = configurationOf(structuredClone(stored), `config/generated/${preset.gameType}.madara.json`);
   const config = preset.balance ? mergeConfigPatches<Config>(loaded, preset.balance) : loaded;
   // A scaled preset's season lasts as many of its shorter bags as its mode's: the length scales with the day unit.
-  if (preset.clockScale !== undefined)
-    config.season.durationSeconds = clockScaled(
-      config.season.durationSeconds,
-      preset.clockScale.days,
-      "season duration",
-    );
+  config.season.durationSeconds = clockScaled(config.season.durationSeconds, gameClockScale(preset), "season duration");
   return config;
 }

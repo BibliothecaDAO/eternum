@@ -80,22 +80,9 @@ function deriveResources(emit: EmitRule, resources: PresetRecord) {
 
 function deriveStructures(emit: EmitRule, structures: PresetRecord) {
   for (const { category, rule } of records(structures.buildings)) emit("BuildingRule", record(rule), { category });
-  for (const entry of records(structures.research ?? [])) {
-    if ("row" in entry) {
-      const { row, tier, price } = entry;
-      emit("ResearchPrice", record(price), { row, tier });
-    } else {
-      // Archived registrations replay their node facts under the schema that recorded them.
-      const { node, rule } = entry;
-      emit("ResearchNode", record(rule), { node });
-    }
-  }
-  // Archived building tiers belong to their verified registration as well.
-  for (const { category, tier, rule } of records(structures.building_tiers ?? []))
-    emit("BuildingTierRule", record(rule), { category, tier });
+  for (const { row, tier, price } of records(structures.research)) emit("ResearchPrice", record(price), { row, tier });
   const board = some(structures.board);
   if (board) emit("BoardRules", board);
-  if ("faith" in structures) emit("FaithRules", record(structures.faith));
   emit("UpgradeLimits", record(structures.upgrade_limits));
   records(structures.upgrades).forEach((recipe, index) => emit("UpgradeRecipe", recipe, { level: index + 1 }));
 }
@@ -109,8 +96,6 @@ function deriveSettlement(emit: EmitRule, settlement: PresetRecord) {
 }
 
 function deriveEconomy(emit: EmitRule, economy: PresetRecord) {
-  if ("trade" in economy) emit("TradeRules", record(economy.trade));
-  if ("banks" in economy) emit("BankRules", record(economy.banks));
   if ("deep" in economy) {
     const deep = some(economy.deep);
     if (deep) emit("DeepRules", deep);
@@ -126,9 +111,5 @@ function deriveEconomy(emit: EmitRule, economy: PresetRecord) {
   if ("quests" in economy) {
     const quests = some(economy.quests);
     if (quests) emit("QuestRules", quests);
-  }
-  if ("discovery" in economy) {
-    const discovery = some(economy.discovery);
-    if (discovery) emit("FrontierDiscoveryRules", discovery);
   }
 }

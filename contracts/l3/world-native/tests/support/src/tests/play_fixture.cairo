@@ -39,6 +39,7 @@ pub fn fixture_params(name: felt252) -> crate::registrar::CreateGameParams {
         },
         map_override: None,
         seed: 1,
+        clock_scale: 1,
     }
 }
 pub fn create_game(games: ContractAddress, params: crate::registrar::CreateGameParams) -> u32 {

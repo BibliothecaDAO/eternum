@@ -76,10 +76,6 @@ pub impl StorySerde of Serde<Story> {
                 output.append(30);
                 Serde::serialize(value, ref output);
             },
-            Story::SkillPointSpent(value) => {
-                output.append(31);
-                Serde::serialize(value, ref output);
-            },
             Story::SitePayout(value) => {
                 output.append(32);
                 Serde::serialize(value, ref output);
@@ -129,7 +125,7 @@ pub impl StorySerde of Serde<Story> {
             28 => Some(Story::GuardDeleteStory(Serde::deserialize(ref serialized)?)),
             29 => Some(Story::TroopsTransferred(Serde::deserialize(ref serialized)?)),
             30 => Some(Story::LordsWithdrawn(Serde::deserialize(ref serialized)?)),
-            31 => Some(Story::SkillPointSpent(Serde::deserialize(ref serialized)?)),
+            31 => None,
             32 => Some(Story::SitePayout(Serde::deserialize(ref serialized)?)),
             33 => Some(Story::SpireDiscovered(Serde::deserialize(ref serialized)?)),
             34 => None,

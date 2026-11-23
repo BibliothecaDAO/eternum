@@ -3,15 +3,14 @@ import { resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const root = new URL("../", import.meta.url);
-const sources = ["expeditions", "taxonomy", "resources", "rules", "troops", "army_relics"];
+const sources = ["expeditions", "taxonomy", "resources", "rules", "army_relics"];
 
 /** Compile the pure site formulas. Unrecognized Cairo must fail, never leave a partial preview. */
 export function compileSitePreviews(source) {
   const rewards = resourceRewards(source);
   const premium = depthRewardRule(source.expeditions);
-  const rift = riftGuardRule(source.troops);
   const ruin = ruinStrengthRule(source.army_relics);
-  return `// From the site reward and rift guard formulas in Cairo. Run scripts/generate-site-previews.mjs.
+  return `// @generated from the site reward and ruin guard formulas in Cairo. Run scripts/generate-site-previews.mjs.
 export const RELICS_PER_LAYER = ${ruin.strengths.length};
 
 export function previewRuinGuardBounds(rank: number, depth: number): [number, number] {
@@ -21,10 +20,6 @@ export function previewRuinGuardBounds(rank: number, depth: number): [number, nu
   const strength = base * 2 ** depth;
   const spread = strength * ${ruin.spread} / 100;
   return [strength - spread, strength + spread];
-}
-
-export function previewRiftGuardBound(camp: number, step: number): number {
-  return Math.floor((camp * ${rift.percent} + step * ${rift.rounding}) / (step * ${rift.divisor})) * step;
 }
 
 export function previewSiteReward(category: number, initialGuardCount: bigint, depth: number, band: boolean): { resourceType: number; amount: bigint } | null {
@@ -99,15 +94,6 @@ function depthRewardRule(source) {
   const rule = body.match(/^amount\*\(([0-9_]+)\+depth.into\(\)\)\/([0-9_]+)$/);
   if (!rule) throw new Error("Unsupported depth_reward formula");
   return { base: positiveInteger(rule[1]), divisor: positiveInteger(rule[2]) };
-}
-
-function riftGuardRule(source) {
-  const body = functionBody(source, "rift_guard_bound", "camp:u16,step:u32", "u32");
-  const rule = body.match(
-    /^letscaled:u32=Into::<u16,u32>::into\(camp\)\*([A-Z_]+);\(scaled\+step\*([0-9_]+)\)\/\(step\*([0-9_]+)\)\*step$/,
-  );
-  if (!rule) throw new Error("Unsupported rift_guard_bound formula");
-  return { percent: constant(source, rule[1]), rounding: positiveInteger(rule[2]), divisor: positiveInteger(rule[3]) };
 }
 
 function functionBody(source, name, parameters, returns) {

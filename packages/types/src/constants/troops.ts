@@ -1,19 +1,3 @@
-import { troopTypeIndex, TroopType } from "../types/common";
-
-const DEFAULT_TROOP_ATTACK_RANGE = 1;
-const RANGED_TROOP_ATTACK_RANGE = 2;
-
-type TroopCategory = TroopType | number | string | null | undefined;
-
-export const getTroopAttackRange = (troopType: TroopCategory): number => {
-  const crossbowman = troopTypeIndex(TroopType.Crossbowman);
-  if (troopType === TroopType.Crossbowman || troopType === crossbowman || troopType === String(crossbowman)) {
-    return RANGED_TROOP_ATTACK_RANGE;
-  }
-
-  return DEFAULT_TROOP_ATTACK_RANGE;
-};
-
 // The name of the zero address, the owner of every structure and army no player holds (camps, rifts, hyperstructures,
 // sites): every surface that names an owner reads it through displayPlayerName.
 export const NEUTRAL_OWNER_NAME = "The Vanguard";

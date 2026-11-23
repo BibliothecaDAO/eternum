@@ -258,6 +258,7 @@ pub mod ResourceState {
             now: u32,
         ) {
             assert_production(resource_type);
+            let rate = crate::clock::per_second(key.game_id, rate);
             let (previous, mut resource) = self.load_settled(key, resource_type, unit_weight, now);
             resource.production.building_count += 1;
             resource.production.production_rate += rate;
@@ -277,6 +278,7 @@ pub mod ResourceState {
             now: u32,
         ) {
             assert_production(resource_type);
+            let rate = crate::clock::per_second(key.game_id, rate);
             let (previous, mut resource) = self.load_settled(key, resource_type, unit_weight, now);
             resource.production.building_count -= 1;
             resource.production.production_rate -= rate;

@@ -15,5 +15,6 @@ export const gameRegistryRow = (overrides: Partial<GameRegistryWire> = {}): Game
   end_at: "1000",
   seed: "1",
   scheduled_end_at: "1000",
+  clock_scale: 1,
   ...overrides,
 });

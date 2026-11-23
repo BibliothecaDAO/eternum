@@ -7,7 +7,7 @@ pub fn prepare(game_id: u32, context: crate::commands::ActionContext) {
     prepare_at(
         game_id,
         context.game.unbox(),
-        crate::balance::rules::SWITCHES.day_unit_seconds,
+        crate::clock::day_unit_seconds(context.game.unbox()),
         context.timestamp,
         context.raw_root,
     );
@@ -15,7 +15,7 @@ pub fn prepare(game_id: u32, context: crate::commands::ActionContext) {
 
 pub fn initialize(game_id: u32) {
     let game = crate::logic::game::game(game_id);
-    let unit = crate::balance::rules::SWITCHES.day_unit_seconds;
+    let unit = crate::clock::day_unit_seconds(game);
     prepare_at(game_id, game, unit, game.start_main_at, 0);
 }
 

@@ -140,6 +140,21 @@ const archivedFormatters = {
     const army = describeExplorer(payload.explorer_id, components, playerOf(event, components, resolvePlayerName));
     return rankedStory([`${attribute} `, tier], [`${army} · ${price} XP`], "scroll");
   },
+  SkillPointSpent: (event, payload, components, resolvePlayerName) => {
+    const choice = formatEnum(payload.choice);
+    const point = toNumber(payload.point_rank);
+    const stamina = toNumber(payload.stamina);
+    const tier = rankOf(toNumber(payload.tier));
+    const pointRank = rankOf(point);
+    if (!choice || !pointRank || stamina === null || (choice !== "Stamina" && !tier))
+      throw new Error("Incomplete skill point story");
+    const army = describeExplorer(payload.explorer_id, components, playerOf(event, components, resolvePlayerName));
+    return rankedStory(
+      choice === "Stamina" || !tier ? [`Stamina +${stamina}`] : [`${choice} `, tier],
+      [`${army} · `, pointRank, ` point · +${stamina} stamina`],
+      "scroll",
+    );
+  },
 } satisfies Record<string, StoryFormatter>;
 export type ArchivedStoryVariant = keyof typeof archivedFormatters;
 
@@ -227,21 +242,6 @@ const formatters: Record<NativeStoryVariant | StoryEventModel | ArchivedStoryVar
       description: describeExplorer(payload.explorer_id, components, playerOf(event, components, resolvePlayerName)),
       icon: "scroll",
     };
-  },
-  SkillPointSpent: (event, payload, components, resolvePlayerName) => {
-    const choice = formatEnum(payload.choice);
-    const point = toNumber(payload.point_rank);
-    const stamina = toNumber(payload.stamina);
-    const tier = rankOf(toNumber(payload.tier));
-    const pointRank = rankOf(point);
-    if (!choice || !pointRank || stamina === null || (choice !== "Stamina" && !tier))
-      throw new Error("Incomplete skill point story");
-    const army = describeExplorer(payload.explorer_id, components, playerOf(event, components, resolvePlayerName));
-    return rankedStory(
-      choice === "Stamina" || !tier ? [`Stamina +${stamina}`] : [`${choice} `, tier],
-      [`${army} · `, pointRank, ` point · +${stamina} stamina`],
-      "scroll",
-    );
   },
   LordsWithdrawn: (event, payload, components, resolvePlayerName) => {
     const amount = toNumber(payload.amount);

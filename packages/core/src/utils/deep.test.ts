@@ -9,6 +9,7 @@ import {
 import { nativeRowDefinitions } from "../client/native-row";
 import { currentArmy, currentResourceWeight, deepTerrain, deepTiles } from "./deep";
 import { armyCombatRefusal } from "./army-opponents";
+import { nativeCommandBits } from "../../../../contracts/l3/world-native/schema/commands.gen";
 import {
   IncompleteDeepSyncError,
   deepBuildingPay,
@@ -115,17 +116,14 @@ describe("the shared Deep", () => {
     expect(() => currentArmy(store, army, end)).toThrow("requires its rules and army facts");
   });
 
-  it("refuses allied targets and personal-map combat while retaining Blitz's opponent rules", () => {
+  it("refuses an army target where the game leaves the army battle out, while Blitz keeps army fights", () => {
     const { rows, store, army } = fixture();
     const enemy = { ...army, explorer_id: 12n, owner: 2n };
     rows.ExplorerTroops!.push(enemy);
     rows.TileOccupancy!.push({ game_id: 7, entity_id: 12n, col: 513, row: 3584, alt: false });
-    expect(armyCombatRefusal(store, army, enemy)).toBe("allied");
-    rows.HomeAspect![1]!.aspect = 2;
-    expect(armyCombatRefusal(store, army, enemy)).toBeUndefined();
-    rows.TileOccupancy![1]!.row = 512;
-    expect(armyCombatRefusal(store, army, enemy)).toBe("outside-deep");
-    rows.SliceRules![0]!.day_unit_seconds = 0;
+    rows.SliceRules![0]!.command_mask = 0n;
+    expect(armyCombatRefusal(store, army, enemy)).toBe("no-attack");
+    rows.SliceRules![0]!.command_mask = BigInt(nativeCommandBits.Battle);
     expect(armyCombatRefusal(store, army, enemy)).toBeUndefined();
   });
 

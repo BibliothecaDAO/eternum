@@ -10,6 +10,9 @@ import {
 } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import { RESOURCE_PRECISION, ResourcesIds } from "../../../../packages/types/src/constants";
 import { seasonOneDesign } from "../../../source/frontier/season-one-design";
+import { FRONTIER_S1_PRESET_ID } from "../../../source/common/native-preset-modes";
+import { gameClockScale } from "../../../source/common/season-clock";
+import { nativePresetForId } from "../../../source/native";
 
 type Amount = { resource_type: number; amount: string };
 type Design = typeof seasonOneDesign;
@@ -97,6 +100,7 @@ function generatedSeasonOne(): Design {
       dayUnitSeconds: definition.rules.day_unit_seconds,
       seasonDays: Number(seasonRace.season_days),
       baneChanceStepPercent: banes.chance_step,
+      speed: gameClockScale(nativePresetForId(FRONTIER_S1_PRESET_ID)),
     },
     realm: {
       upgradeLabor: definition.structures.upgrades.map(({ costs }) => amountOf(costs, ResourcesIds.Labor)),
@@ -186,7 +190,7 @@ function generatedSeasonOne(): Design {
       ),
       foxRevealDiscountPercent: oaths.FOX_REVEAL_DISCOUNT_PERCENT,
       reflectionWellPercent: oaths.REFLECTION_WELL_PERCENT,
-      detectionFindPercent: oaths.DETECTION_FIND_PERCENT,
+      detectionEmptyRevealLimit: oaths.DETECTION_EMPTY_REVEAL_LIMIT,
       brilliancePayPercent: oaths.BRILLIANCE_PAY_PERCENT,
       ragePayPercent: oaths.RAGE_PAY_PERCENT,
       perfectionPayPercent: oaths.PERFECTION_PAY_PERCENT,
@@ -197,7 +201,7 @@ function generatedSeasonOne(): Design {
       wardPercentPerTier: percent(rules.RELIC_WARD_BPS),
       plunderPercentPerTier: percent(rules.RELIC_PLUNDER_BPS),
       staminaRegenPercentPerTier: rules.STAMINA_REGEN_RELIC_STEP_PERCENT,
-      secondsPerTier: rules.RELIC_SECONDS_PER_RANK,
+      secondsPerTier: definition.rules.relic_seconds_per_rank,
       tiers: rules.ATTRIBUTE_CAP,
       oddsPercentByLayer: layers.map(({ chest }) =>
         [chest.common, chest.uncommon, chest.rare, chest.epic, chest.legendary].map(percent),
@@ -220,6 +224,7 @@ function generatedSeasonOne(): Design {
       herdByLayer: layers.map((layer) => centre(layer.beast_weak_lower, layer.beast_weak_upper)),
       bandByLayer: layers.map((layer) => centre(layer.beast_strong_lower, layer.beast_strong_upper)),
       campByLayer: layers.map((layer) => centre(layer.site_guard_lower, layer.site_guard_upper)),
+      riftByLayer: layers.map((layer) => centre(layer.rift_guard_lower, layer.rift_guard_upper)),
       spreadPercent: widestSpreadPercent(),
     },
     fragments: {
@@ -278,6 +283,7 @@ function widestSpreadPercent(): number {
       [layer.beast_weak_lower, layer.beast_weak_upper],
       [layer.beast_strong_lower, layer.beast_strong_upper],
       [layer.site_guard_lower, layer.site_guard_upper],
+      [layer.rift_guard_lower, layer.rift_guard_upper],
     ].map(([lower, upper]) => ((upper! - lower!) / 2 / centre(lower!, upper!)) * 100),
   );
   return hundredths(Math.max(...spreads));

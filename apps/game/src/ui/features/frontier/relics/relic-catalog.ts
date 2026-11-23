@@ -45,7 +45,10 @@ export const relicEffect = ({ kind, rank }: ArmyRelic): string => RELICS[kind].e
 
 export const relicIcon = (kind: RelicKind): IconMeaning => RELICS[kind].icon;
 
-export const relicSeconds = ({ rank }: ArmyRelic): number => rule.RELIC_SECONDS_PER_RANK * rank;
+export const relicSeconds = (
+  { rank }: ArmyRelic,
+  rules: Pick<NativeRows["SliceRules"], "relic_seconds_per_rank">,
+): number => rules.relic_seconds_per_rank * rank;
 
 /** The relic's id in ApplyRelic: its kind's index in the contract's order × 5 + its tier. */
 export const relicId = ({ kind, rank }: ArmyRelic): number => RELIC_KINDS.indexOf(kind) * 5 + rank;

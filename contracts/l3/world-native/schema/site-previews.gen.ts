@@ -1,4 +1,4 @@
-// From the site reward and rift guard formulas in Cairo. Run scripts/generate-site-previews.mjs.
+// @generated from the site reward and ruin guard formulas in Cairo. Run scripts/generate-site-previews.mjs.
 export const RELICS_PER_LAYER = 3;
 
 export function previewRuinGuardBounds(rank: number, depth: number): [number, number] {
@@ -8,10 +8,6 @@ export function previewRuinGuardBounds(rank: number, depth: number): [number, nu
   const strength = base * 2 ** depth;
   const spread = (strength * 10) / 100;
   return [strength - spread, strength + spread];
-}
-
-export function previewRiftGuardBound(camp: number, step: number): number {
-  return Math.floor((camp * 115 + step * 50) / (step * 100)) * step;
 }
 
 export function previewSiteReward(

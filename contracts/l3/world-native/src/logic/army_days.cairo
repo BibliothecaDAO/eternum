@@ -4,7 +4,7 @@ use crate::troops::ExplorerKey;
 #[inline(always)]
 pub fn today(game: crate::game::GameRegistry, timestamp: u64) -> u64 {
     if crate::rules::DAYS_IN_PLAY {
-        crate::days::day_of(game, crate::balance::rules::SWITCHES.day_unit_seconds, timestamp).index
+        crate::days::day_of(game, crate::clock::day_unit_seconds(game), timestamp).index
     } else {
         0
     }

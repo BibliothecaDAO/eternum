@@ -8,8 +8,7 @@ pub struct Period {
 }
 
 pub fn period(home: ResourceKey, stage: u8) -> Option<Period> {
-    let unit = crate::balance::rules::SWITCHES.day_unit_seconds;
-    if unit == 0 {
+    if !crate::rules::DAYS_IN_PLAY {
         return None;
     }
     let race = IRaceLibraryDispatcher {
@@ -19,7 +18,7 @@ pub fn period(home: ResourceKey, stage: u8) -> Option<Period> {
     let index = race.triumph_day(TriumphKey { game_id: home.game_id, aspect, stage })?;
     let game = crate::logic::game::game(home.game_id);
     let planned = crate::game::GameRegistry { end_at: game.scheduled_end_at, ..game };
-    let day = crate::days::day_at_index(planned, unit, index);
+    let day = crate::days::day_at_index(planned, crate::clock::day_unit_seconds(planned), index);
     let end = core::cmp::min(day.end, game.end_at);
     if day.start >= end {
         return None;

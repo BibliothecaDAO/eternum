@@ -5,7 +5,6 @@ use crate::commands::ExecutionContext;
 use crate::deep::{DeepBeast, DeepRing, DeepSettings, DeepSite};
 use crate::guards::{Guard, GuardKey};
 use crate::resources::ResourceKey;
-use crate::troops::ExplorerKey;
 
 #[cfg(feature: "blitz")]
 pub fn rules() -> DeepSettings {
@@ -80,7 +79,7 @@ pub fn assert_open(game_id: u32, site: DeepSite) {
 
 pub fn count_entry(game_id: u32, home: u64, context: ExecutionContext) {
     let day = crate::days::day_of(
-        context.game.unbox(), crate::balance::rules::SWITCHES.day_unit_seconds, context.timestamp,
+        context.game.unbox(), crate::clock::day_unit_seconds(context.game.unbox()), context.timestamp,
     )
         .index;
     let state = crate::state::write();
@@ -111,11 +110,8 @@ pub fn dispatcher(game_id: u32) -> crate::deep::IDeepSitesLibraryDispatcher {
     }
 }
 
-pub fn reward_beast_clear(key: ExplorerKey, home: u64, cleared: ResourceKey, timestamp: u64) {
-    let kind = site(cleared).expect('missing Deep site').kind;
-    crate::logic::quest_progress::guarded_site_cleared(
-        ResourceKey { game_id: key.game_id, entity_id: home }, beast(kind).count, timestamp,
-    );
+pub fn beast_size(key: ResourceKey) -> u128 {
+    beast(site(key).expect('missing Deep site').kind).count
 }
 
 #[cfg(feature: "blitz")]
@@ -157,7 +153,7 @@ pub fn rollover(game_id: u32, context: ExecutionContext) -> bool {
     if context.timestamp < game.start_main_at || (game.end_at != 0 && context.timestamp >= game.end_at) {
         return true;
     }
-    let day = crate::days::day_of(game, crate::balance::rules::SWITCHES.day_unit_seconds, context.timestamp);
+    let day = crate::days::day_of(game, crate::clock::day_unit_seconds(game), context.timestamp);
     let draw = day_draw(game_id, day.index, context.raw_root);
     let mut spent = 0;
     for band in 0..rules().ring_count {

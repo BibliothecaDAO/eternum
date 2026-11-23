@@ -18,7 +18,7 @@ import type { NativeFactStore } from "../client/native-fact-store";
 
 import { buildingCostModeOf, type BuildingCostMode } from "../utils/building-cost-mode";
 import { enabledHelpTransfers, type HelpBetween, type HelpTransfer } from "../utils/army-help";
-import { isModeRuleEnabled } from "../utils/mode-rules";
+import { isCommandEnabled, isModeRuleEnabled } from "../utils/mode-rules";
 import { tierStrength } from "../utils/tier-strength";
 import { hasEnabledProductionPath } from "../utils/production-path";
 import { disposeActiveGameSyncRuntime } from "../sync/game-sync-runtime";
@@ -431,7 +431,7 @@ export class ClientConfigManager {
     return this.game().family;
   }
   isCommandEnabled(command: keyof typeof nativeCommandBits): boolean {
-    return (this.rules().command_mask & BigInt(nativeCommandBits[command])) !== 0n;
+    return isCommandEnabled(this.rules(), command);
   }
   /** Whether a player can refill this resource's production in this game; see hasEnabledProductionPath. */
   canRefillProduction(resourceId: number): boolean {

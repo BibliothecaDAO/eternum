@@ -4,7 +4,7 @@ pub mod RelicState {
     use crate::commands::ExecutionContext;
     use crate::game::assert_playing;
     use crate::logic::release::ReleaseState;
-    use crate::relics::{ApplyRelic, Recipient};
+    use crate::relics::ApplyRelic;
     use crate::resources::ResourceKey;
     use crate::stamina::StaminaSourceTrait;
     use crate::troops::{ExplorerKey, ExplorerRecordTrait};
@@ -38,10 +38,7 @@ pub mod RelicState {
             let context = crate::commands::execution_context(game_id, context);
 
             self.assert_command(game_id, context.timestamp, context);
-            let Recipient::ArmySlot(index) = command.recipient else {
-                panic!("use an army relic slot")
-            };
-            self.activate_army_relic(game_id, actor, command, index, context);
+            self.activate_army_relic(game_id, actor, command, context);
         }
     }
     #[embeddable_as(ArmyProgressionImpl)]
@@ -180,12 +177,13 @@ pub mod RelicState {
             game_id: u32,
             actor: ContractAddress,
             command: ApplyRelic,
-            index: u8,
             context: ExecutionContext,
         ) {
             let key = ExplorerKey { game_id, explorer_id: command.entity_id };
             let explorer = crate::logic::troops::command_explorer(key, Some(actor), context.timestamp, context);
-            let relic = crate::logic::army_relics::activate(key, index, command.relic_id, context.timestamp);
+            let relic = crate::logic::army_relics::activate(
+                key, command.slot, command.relic_id, context.timestamp, context.rules.unbox().relic_seconds_per_rank,
+            );
             if relic.kind == crate::army_relics::RelicKind::StaminaRegen {
                 crate::logic::army_relics::start_stamina_regen(key, explorer);
             }

@@ -96,18 +96,13 @@ pub mod ConstructionLogic {
             if command.category == crate::research::WORKSHOP {
                 count -= 1;
             }
-            let costs = if command.use_simple {
-                rule.simple_cost
-            } else {
-                rule.complex_cost
-            };
             let labor_paid = crate::logic::buildings::pay_building_costs(
                 key,
                 actor,
                 coord,
                 command.category,
                 count,
-                costs,
+                rule.simple_cost,
                 context.rules.unbox().building_config.base_cost_percent_increase,
                 context.timestamp,
                 context,

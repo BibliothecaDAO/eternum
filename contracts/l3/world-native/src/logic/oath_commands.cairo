@@ -36,11 +36,7 @@ pub fn requires_answer(game_id: u32, command: Command) -> bool {
         Command::PauseBuildingProduction(_) => false,
         Command::ResumeBuildingProduction(_) => false,
         Command::BattleGuard(value) => waiting(game_id, value.attacker_id),
-        Command::ApplyRelic(value) => match value.recipient {
-            crate::relics::Recipient::Explorer |
-            crate::relics::Recipient::ArmySlot(_) => waiting(game_id, value.entity_id),
-            crate::relics::Recipient::StructureProduction | crate::relics::Recipient::StructureGuard => false,
-        },
+        Command::ApplyRelic(value) => waiting(game_id, value.entity_id),
         Command::CreateGuild(_) => false,
         Command::JoinGuild(_) => false,
         Command::LeaveGuild(_) => false,

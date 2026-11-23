@@ -12,6 +12,7 @@ pub struct CreateGameParams {
     pub biome_climate: crate::rules::BiomeClimateConfig,
     pub map_override: Option<crate::rules::MapConfig>,
     pub seed: felt252,
+    pub clock_scale: u8,
 }
 
 #[starknet::interface]
@@ -31,7 +32,8 @@ pub fn validate_params(params: CreateGameParams) {
     assert!(params.name != 0, "game name is empty");
     assert!(params.seed != 0, "game seed is zero");
     assert!(params.duration_seconds != 0, "game duration is zero");
-    crate::expeditions::validate_game(params.start_main_at, params.duration_seconds);
+    crate::clock::validate_scale(params.clock_scale, params.dev_mode_on);
+    crate::expeditions::validate_game(build_game(params));
     assert!(params.start_settling_at <= params.start_main_at, "invalid game schedule");
     assert!(
         Into::<u32, u64>::into(params.registration_start) < params.start_settling_at,
@@ -57,6 +59,7 @@ pub fn build_game(params: CreateGameParams) -> crate::game::GameRegistry {
         end_at: params.start_main_at + params.duration_seconds,
         scheduled_end_at: params.start_main_at + params.duration_seconds,
         seed: params.seed,
+        clock_scale: params.clock_scale,
     }
 }
 pub fn game_overrides(game_id: u32, params: CreateGameParams) -> crate::game::GameOverrides {

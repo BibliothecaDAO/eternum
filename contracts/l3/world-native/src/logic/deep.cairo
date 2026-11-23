@@ -54,6 +54,13 @@ pub fn arrival(game_id: u32, aspect: u8, context: ExecutionContext) -> Coord {
     panic!("Deep is full")
 }
 
+pub fn passable(game_id: u32, coord: Coord) -> bool {
+    contains(game_id, coord)
+        && crate::logic::map::occupancy(tile_key(game_id, coord))
+            .map(|occupied| crate::taxonomy::is_explorer(occupied.category))
+            .unwrap_or(false)
+}
+
 pub fn clear_expired_occupant(game_id: u32, coord: Coord, context: ExecutionContext) {
     if !contains(game_id, coord) {
         return;
@@ -66,7 +73,7 @@ pub fn clear_expired_occupant(game_id: u32, coord: Coord, context: ExecutionCont
         return;
     };
     let today = crate::days::day_of(
-        context.game.unbox(), crate::balance::rules::SWITCHES.day_unit_seconds, context.timestamp,
+        context.game.unbox(), crate::clock::day_unit_seconds(context.game.unbox()), context.timestamp,
     )
         .index;
     if crate::logic::army_days::require(key) != today {

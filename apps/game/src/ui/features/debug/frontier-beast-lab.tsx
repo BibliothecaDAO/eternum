@@ -28,10 +28,7 @@ import { SiteCardView } from "../frontier/sites/site-card-view";
 import { beastMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { Icon } from "@/ui/design-system/icon";
 import { frontierSeasonOnePreset } from "../../../../../../config/source/frontier/season-one";
-import {
-  previewRiftGuardBound,
-  previewRuinGuardBounds,
-} from "../../../../../../contracts/l3/world-native/schema/site-previews.gen";
+import { previewRuinGuardBounds } from "../../../../../../contracts/l3/world-native/schema/site-previews.gen";
 import "./workshop-model-lab.css";
 import "./frontier-beast-lab.css";
 import "@/three/map-plates/map-plates.css";
@@ -124,7 +121,7 @@ export function FrontierBeastLab() {
   const bounds = frontierSeasonOnePreset.depths[depth]!;
   const strength = [
     bounds.siteGuardLower,
-    previewRiftGuardBound(bounds.siteGuardLower, bounds.guardStep),
+    bounds.riftGuardLower,
     previewRuinGuardBounds(depth + 1, depth)[0],
     band === "lowly" ? bounds.beastWeakLower : bounds.beastStrongLower,
   ][site]!;

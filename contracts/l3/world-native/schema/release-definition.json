@@ -1,5 +1,5 @@
 {
-  "release": 19,
+  "release": 20,
   "definition": {
     "rules": {
       "battle_config": {
@@ -103,14 +103,15 @@
       },
       "map_center_offset": 2147483646,
       "spire_travel_essence_cost": "0",
-      "command_mask": "147242775896274732319823",
+      "command_mask": "147242775896274732319819",
       "day_unit_seconds": 14400,
       "mode_rules": 262305,
       "entry_rule": 1,
       "speed_config": {
         "donkey_sec_per_km": 9,
         "donkey_sec_per_km_troops": 27
-      }
+      },
+      "relic_seconds_per_rank": 1800
     },
     "resources": {
       "resources": [
@@ -1864,6 +1865,8 @@
           "reveal_percent": 10,
           "site_guard_lower": 1170,
           "site_guard_upper": 1430,
+          "rift_guard_lower": 1350,
+          "rift_guard_upper": 1650,
           "reveal_site_neighbors": false,
           "chest": {
             "common": 6000,
@@ -1882,6 +1885,8 @@
           "reveal_percent": 15,
           "site_guard_lower": 2340,
           "site_guard_upper": 2860,
+          "rift_guard_lower": 2700,
+          "rift_guard_upper": 3300,
           "reveal_site_neighbors": false,
           "chest": {
             "common": 0,
@@ -1900,6 +1905,8 @@
           "reveal_percent": 20,
           "site_guard_lower": 4680,
           "site_guard_upper": 5720,
+          "rift_guard_lower": 5400,
+          "rift_guard_upper": 6600,
           "reveal_site_neighbors": false,
           "chest": {
             "common": 0,
@@ -1913,24 +1920,6 @@
           "beast_weak_upper": 1540,
           "beast_strong_lower": 1620,
           "beast_strong_upper": 1980
-        },
-        {
-          "reveal_percent": 25,
-          "site_guard_lower": 9360,
-          "site_guard_upper": 11440,
-          "reveal_site_neighbors": false,
-          "chest": {
-            "common": 0,
-            "uncommon": 0,
-            "rare": 0,
-            "epic": 6400,
-            "legendary": 3600
-          },
-          "guard_step": 10,
-          "beast_weak_lower": 2520,
-          "beast_weak_upper": 3080,
-          "beast_strong_lower": 3240,
-          "beast_strong_upper": 3960
         }
       ],
       "realms": {

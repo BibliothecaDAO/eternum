@@ -64,6 +64,7 @@ export interface HeraldPlayerGameState {
 
 export interface HeraldGameDirectoryEntry {
   clock: HeraldGameClock;
+  clock_scale: number;
   dev_mode_on: boolean;
   /** A game with days: its day unit and the seed its bags of days are drawn from (decimal). */
   expedition: { day_unit_seconds: number; seed: string } | null;

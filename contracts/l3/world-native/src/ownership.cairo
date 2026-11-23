@@ -27,7 +27,6 @@ pub enum Story {
     GuardDeleteStory: crate::troop_management::GuardSlot,
     TroopsTransferred: crate::troop_management::TransferTroops,
     LordsWithdrawn: crate::relics::LordsWithdrawal,
-    SkillPointSpent: crate::progression::SkillPointSpent,
     SitePayout: crate::expeditions::SitePayout,
     SpireDiscovered: crate::exploration_rewards::ExtractedReward,
     SiteUsed: crate::relics::SiteUsed,

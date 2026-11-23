@@ -3,17 +3,10 @@ use crate::resources::ResourceKey;
 use crate::troops::Coord;
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
-pub enum Recipient {
-    Explorer,
-    StructureProduction,
-    StructureGuard,
-    ArmySlot: u8,
-}
-#[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct ApplyRelic {
     pub entity_id: u64,
     pub relic_id: u8,
-    pub recipient: Recipient,
+    pub slot: u8,
 }
 // Five chest tiers, common to legendary: a depth's odds in basis points, or the shares each tier pays.
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]

@@ -36,7 +36,7 @@ fn effects_expire_and_add_to_battle_without_stacking_the_same_kind() {
     let site = crate::resources::ResourceKey { game_id: 1, entity_id: 9 };
     crate::logic::army_relics::store_ruin(site, ArmyRelic { kind: RelicKind::Blade, rank: 3 });
     crate::logic::army_relics::award(key, site, None);
-    crate::logic::army_relics::activate(key, 0, 3, 100);
+    crate::logic::army_relics::activate(key, 0, 3, 100, crate::balance::rules::RELIC_SECONDS_PER_RANK);
     let mut boosts: crate::troops::TroopBoosts = Default::default();
     boosts.incr_damage_dealt_percent_num = 2000;
     crate::logic::army_relics::combat_boosts(key, ref boosts, 5499);
@@ -44,7 +44,7 @@ fn effects_expire_and_add_to_battle_without_stacking_the_same_kind() {
     assert_eq!(crate::logic::army_relics::bonus(key, RelicKind::Blade, 5500), 0);
     crate::logic::army_relics::store_ruin(site, decode(1));
     crate::logic::army_relics::award(key, site, None);
-    crate::logic::army_relics::activate(key, 0, 1, 101);
+    crate::logic::army_relics::activate(key, 0, 1, 101, crate::balance::rules::RELIC_SECONDS_PER_RANK);
     assert_eq!(crate::logic::army_relics::bonus(key, RelicKind::Blade, 102), 1000);
     crate::logic::army_relics::destroy(key);
     assert_eq!(crate::logic::army_relics::read(key), Default::default());
@@ -57,7 +57,7 @@ fn plunder_doubles_only_labor_and_essence_at_legendary() {
     let site = crate::resources::ResourceKey { game_id: 1, entity_id: 9 };
     crate::logic::army_relics::store_ruin(site, ArmyRelic { kind: RelicKind::Plunder, rank: 5 });
     crate::logic::army_relics::award(key, site, None);
-    crate::logic::army_relics::activate(key, 0, 15, 100);
+    crate::logic::army_relics::activate(key, 0, 15, 100, crate::balance::rules::RELIC_SECONDS_PER_RANK);
     for resource_type in array![crate::resources::LABOR, crate::resources::ESSENCE, crate::resources::WHEAT] {
         let reward = crate::resources::ResourceAmount { resource_type, amount: 500 };
         assert_eq!(

@@ -429,6 +429,7 @@ export const CLOCK_WORDS = {
   /** Before the time left to a beginning: "Starts 16:30 · in 2h 4m". */
   in: "in",
 } as const;
+export const gameSpeed = (clockScale: number): string | undefined => (clockScale > 1 ? `${clockScale}x` : undefined);
 export const COUNTDOWN_WORDS = {
   opens: (date: string) => `The season opens ${date}`,
   line: (aspectCount: number, days: number | null) =>
@@ -772,15 +773,14 @@ export const ATTACK_REFUSAL_WORDS = {
   "target-guards-deep-site": `Attack the ${DEEP} site it holds`,
   "expired-army": "An army from an earlier day",
   "deep-ring-closed": "This ring has not opened today",
-  "deep-site-not-adjacent": "Move beside the site to attack",
   "target-must-be-unowned": "Only unclaimed structures can be attacked",
   "own-target": "You hold it",
-  "outside-deep": `Armies fight only in the ${DEEP}`,
+  "no-attack": "This game allows no attack here",
   allied: "Allied armies cannot attack each other",
   "season-immunity": "Under season immunity",
   "village-immunity": "The village is under immunity",
   "out-of-range": "Out of range",
-  "claim-needs-adjacency": "Move adjacent to claim",
+  "unguarded-site": "No guard left: nothing to take",
   "no-troops": "No troops",
   cooldown: "On cooldown",
   "insufficient-stamina": "Not enough stamina",

@@ -133,5 +133,6 @@ function launchGameParams(request: CreateGameRequest, createdAt: number) {
       common.map_override,
     ),
     seed: common.seed,
+    clock_scale: common.clock_scale,
   };
 }

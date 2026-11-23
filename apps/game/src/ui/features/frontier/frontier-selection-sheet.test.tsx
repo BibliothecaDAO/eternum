@@ -174,10 +174,8 @@ describe("Frontier's selection sheet", () => {
             </GameProvider>,
           ),
         );
-        // Another player's army keeps its own card, titled as an army; the receipt in it names its site. Otherwise the
-        // receipt is the sheet, titled by the site. Either way the site's name shows exactly once.
         const sheet = host.querySelector("[data-kit-sheet]")!;
-        expect(sheet.getAttribute("aria-label")).toBe(foreign ? "Army" : `Supply post · ${expectedName}`);
+        expect(sheet.getAttribute("aria-label")).toBe(`Supply post · ${expectedName}`);
         expect(sheet.textContent!.split(expectedName).length - 1).toBe(1);
         expect(host.textContent).toContain("Cleared · Golem");
         expect(host.textContent).toContain("550 Labor");
@@ -187,7 +185,7 @@ describe("Frontier's selection sheet", () => {
         expect(host.querySelector("[data-kit-sheet]")).toBeNull();
         await act(async () => useUIStore.getState().selectOnMap({ kind: "hex", hex: SITE_TILE }));
         expect(host.querySelector("[data-kit-sheet]")?.getAttribute("aria-label")).toBe(
-          foreign ? "Army" : `Supply post · ${expectedName}`,
+          `Supply post · ${expectedName}`,
         );
         expect(host.querySelector("[data-kit-sheet]")!.textContent).toContain(expectedName);
         expect(host.querySelector("[data-site-rewards]")?.textContent).toBe("550 Labor");

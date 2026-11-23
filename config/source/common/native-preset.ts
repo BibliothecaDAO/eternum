@@ -18,7 +18,7 @@ export interface NativePreset {
   /**
    * Days and activity scale independently. Activity accelerates army ticks and per-second production.
    */
-  clockScale?: { days: number; activity: number };
+  clockScale?: number;
   /**
    * What a preset changes in its mode's balance (starting stock, prices); the rest of the balance is the mode's.
    * Applied wherever a preset's configuration is loaded.
@@ -109,6 +109,8 @@ export interface NativePreset {
     revealPercent: number;
     siteGuardLower: number;
     siteGuardUpper: number;
+    riftGuardLower: number;
+    riftGuardUpper: number;
     guardStep: number;
     beastWeakLower: number;
     beastWeakUpper: number;

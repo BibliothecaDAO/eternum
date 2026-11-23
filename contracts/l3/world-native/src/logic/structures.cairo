@@ -724,7 +724,7 @@ pub mod StructuresLogic {
                 return;
             }
             let today = crate::days::day_of(
-                context.game.unbox(), crate::balance::rules::SWITCHES.day_unit_seconds, context.timestamp,
+                context.game.unbox(), crate::clock::day_unit_seconds(context.game.unbox()), context.timestamp,
             )
                 .index;
             let origin = crate::expeditions::site(crate::logic::settlement::spacing(), realm_id, today, 0);

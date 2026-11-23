@@ -268,13 +268,13 @@ pub mod MapLogic {
         ) {
             let category = crate::logic::structures::record(key).base.category;
             let guards = if category == crate::taxonomy::HYPERSTRUCTURE_CATEGORY {
-                crate::troops::hyperstructure_guards(seed, rules, timestamp)
+                crate::logic::blitz::guards::hyperstructure_guards(seed, rules, timestamp)
             } else {
                 assert!(
                     category == crate::taxonomy::MINE_CATEGORY || category == crate::taxonomy::CAMP_CATEGORY,
                     "invalid guarded structure category",
                 );
-                array![crate::troops::light_guard(seed, rules, timestamp)].span()
+                array![crate::logic::blitz::guards::light_guard(seed, rules, timestamp)].span()
             };
             for slot in 0..guards.len() {
                 let guard_key = crate::guards::GuardKey {

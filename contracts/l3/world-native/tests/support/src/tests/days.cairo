@@ -14,6 +14,7 @@ pub fn season(seed: felt252) -> GameRegistry {
         end_at: START + 21 * 20 * UNIT.into(),
         scheduled_end_at: START + 21 * 20 * UNIT.into(),
         seed,
+        clock_scale: 1,
     }
 }
 pub fn unpack(mut lengths: u64) -> Span<u64> {

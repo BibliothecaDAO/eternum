@@ -1,4 +1,5 @@
 import { deriveReleaseFacts, type ReleaseRulesGame } from "./release-facts";
+import { scaleGameClocks } from "../../../../config/source/common/season-clock";
 import { RELEASE_DEFINITIONS, releaseDefinition, type ReleaseDefinitions } from "./release-definition";
 import { nativeRowKey } from "./row-key";
 import { gameplayRejection } from "@bibliothecadao/provider";
@@ -6,6 +7,7 @@ import { transactionScopes } from "./transactions";
 import type { MadaraRpc, ReadBlockOptions } from "../madara-rpc";
 import { normalizeFelt } from "../model-registry";
 import type {
+  DecodedRecord,
   DecodedWorldEvent,
   FoldChange,
   RpcBlockTransaction,
@@ -236,7 +238,12 @@ export class NativeIngestion {
     if (!overrides) return [];
     const release = fold.currentRow("GameRelease", key)?.value;
     if (!release) throw new Error("GameOverrides requires GameRelease");
-    const definition = releaseDefinition(this.definitions, Number(release.release_id));
+    const registry = fold.currentRow("GameRegistry", key)?.value;
+    if (!registry) throw new Error("GameOverrides requires GameRegistry");
+    const definition = scaleGameClocks(
+      releaseDefinition(this.definitions, Number(release.release_id)) as Parameters<typeof scaleGameClocks>[0],
+      Number(registry.clock_scale),
+    ) as DecodedRecord;
     const rows = deriveReleaseFacts(this.decoder, definition, overrides, game);
     return [...this.rowsLeftByEarlierRelease(fold, game, rows), ...rows];
   }

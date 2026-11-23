@@ -1,11 +1,4 @@
-import {
-  BiomeType,
-  ContractAddress,
-  getHexesWithinRadius,
-  getNeighborHexes,
-  HexEntityInfo,
-  type HexPosition,
-} from "@bibliothecadao/types";
+import { BiomeType, ContractAddress, getNeighborHexes, HexEntityInfo, type HexPosition } from "@bibliothecadao/types";
 import { FELT_CENTER } from "../utils/utils";
 import { ActionPath, ActionPaths, ActionType } from "../utils/action-paths";
 import { configManager } from "./config-manager";
@@ -33,14 +26,14 @@ export class StructureActionManager {
     playerAddress: ContractAddress,
     /** Whether anything occupies the tile (an army, a site, a chest): the contract raises no army onto it. */
     isOccupied: (hex: HexPosition) => boolean,
-    attackRange = 1,
+    guarded: boolean,
   ): ActionPaths {
     const actionPaths = new ActionPaths();
 
     const position = { col: contractPosition.col, row: contractPosition.row };
 
     this.addAdjacentSupportActionPaths(actionPaths, position, armyHexes, exploredHexes, playerAddress, isOccupied);
-    this.addAttackActionPaths(actionPaths, position, armyHexes, exploredHexes, playerAddress, attackRange);
+    if (guarded) this.addAttackActionPaths(actionPaths, position, armyHexes, exploredHexes, playerAddress);
 
     return actionPaths;
   }
@@ -102,9 +95,8 @@ export class StructureActionManager {
     armyHexes: Map<number, Map<number, HexEntityInfo>>,
     exploredHexes: Map<number, Map<number, BiomeType>>,
     playerAddress: ContractAddress,
-    attackRange: number,
   ) {
-    for (const { col, row } of getHexesWithinRadius(position.col, position.row, attackRange)) {
+    for (const { col, row } of getNeighborHexes(position.col, position.row)) {
       const exploredRow = exploredHexes.get(col - this.FELT_CENTER);
       if (!exploredRow?.has(row - this.FELT_CENTER)) continue;
 

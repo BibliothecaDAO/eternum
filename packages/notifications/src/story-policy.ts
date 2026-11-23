@@ -43,7 +43,6 @@ const STORY_RULES = {
 
   // The player's own taps: the Feed and the Log tell them, a push would only echo them.
   SitePayout: { excluded: OWN_ACTION },
-  SkillPointSpent: { excluded: OWN_ACTION },
   ExplorationReward: { excluded: OWN_ACTION },
   ProductionStory: { excluded: OWN_ACTION },
   BuildingPaymentStory: { excluded: OWN_ACTION },
