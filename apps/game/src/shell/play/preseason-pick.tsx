@@ -8,6 +8,7 @@ import {
   aspects,
   formatAmount,
   formatDate,
+  formatDuration,
   formatExact,
   formatShort,
   orders,
@@ -37,7 +38,6 @@ import { CopySeasonInvite, SeasonInviteCard, useSeasonInvite } from "./season-in
 import type { SeasonOpening } from "../season";
 import { ageOf } from "./ages";
 import { orderIntentKey, useOrderIntent } from "./order-intent";
-import { formatCountdownClock } from "./season-countdown";
 import { useJoinedShare } from "../share/own-shares";
 
 export const PreseasonPlay = ({ opening, now }: { opening: SeasonOpening; now: number }) => {
@@ -112,9 +112,7 @@ const OrderPick = ({
     <StageFrame
       wide
       notice={
-        choose.isError && chosen ? (
-          <ServiceFailure service="season" error={choose.error} retry={() => choose.mutate(chosen.orderId)} />
-        ) : retryInvite ? (
+        retryInvite ? (
           <AppNotice
             tone="warn"
             line={ASPECT_STEP_WORDS.inviteUnread}
@@ -164,7 +162,13 @@ const OrderPick = ({
         )}
       </div>
       {pickingOrder && (
-        <ShellWindow title={PRESEASON_WORDS.orderTitle} onClose={() => setPickingOrder(false)}>
+        <ShellWindow
+          title={PRESEASON_WORDS.orderTitle}
+          onClose={() => {
+            setPickingOrder(false);
+            choose.reset();
+          }}
+        >
           <div className="flex flex-col gap-4">
             <OrderRows aspect={aspect} chosen={order} members={members} onPick={setOrder} />
             {choose.isError && chosen && (
@@ -299,7 +303,7 @@ const SeasonWaiting = ({
           <div className="waiting-stage__brand">
             <img src={AGE_LOCKUP.frontier} alt={ageOf("frontier").name} className="countdown-stage__lockup" />
             <p className="countdown-stage__clock" aria-hidden="true">
-              {formatCountdownClock(opening.startsAt - now)}
+              {formatDuration(Math.max(0, opening.startsAt - now))}
             </p>
           </div>
           <div className="waiting-stage__badge">

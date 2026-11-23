@@ -1,12 +1,10 @@
-import { formatPercent, layerName } from "@bibliothecadao/types";
+import { formatPercent } from "@bibliothecadao/types";
 import { useEffect, useRef, useState } from "react";
 
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { DOORWAY_WORDS } from "@/ui/design-system/kit/words";
 
 import type { DoorwayView } from "./doorway-view";
-
-const deepTip = () => `Hold ${layerName(3)} sites before rollover to push your Aspect's tower higher.`;
 
 export const EntryProgress = ({ view, tip }: { view: DoorwayView; tip?: "first" | "deep" | null }) => {
   const running = view.steps.find(({ state }) => state !== "done") ?? view.steps[view.steps.length - 1];
@@ -15,7 +13,7 @@ export const EntryProgress = ({ view, tip }: { view: DoorwayView; tip?: "first" 
   return (
     <section aria-label={DOORWAY_WORDS.entering} className="doorway-progress">
       <div className="doorway-progress__header">
-        {tip === "deep" && <DoorwayTip icon="portal" title={deepTip()} />}
+        {tip === "deep" && <DoorwayTip icon="portal" title={DOORWAY_WORDS.deepTip} />}
         {tip === "first" && (
           <DoorwayTip icon="barracks" title={DOORWAY_WORDS.firstTitle} detail={DOORWAY_WORDS.firstDetail} />
         )}

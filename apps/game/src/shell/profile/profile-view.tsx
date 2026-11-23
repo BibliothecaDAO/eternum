@@ -36,7 +36,6 @@ import {
   numberedRealm,
 } from "@/ui/design-system/kit/words";
 import { findOwnEntry } from "@/ui/features/frontier/board/standings";
-import { realmTierIcon } from "@/ui/features/game-entry/home-source-picker";
 import { HomeArt } from "@/ui/shared/components/home-art";
 
 import { useLayout } from "../frame/layout";
@@ -283,10 +282,9 @@ export const RealmsShowcase = () => {
           {realms.slice(0, SHOWCASE_REALMS).map(({ realmId, map }) => {
             const info = canonicalRealm(realmId);
             const order = info && info.order !== 0 ? catalogOrder(info.order) : null;
-            const icon = info ? realmTierIcon(info) : "realm";
             return (
               <li key={realmId} className="profile-realm-tile">
-                <HomeArt map={map} icon={icon} size={64} />
+                <HomeArt map={map} icon="realm" size={64} />
                 <span className="profile-realm-tile__name">{numberedRealm(realmId, info?.name)}</span>
                 {order && (
                   <span className="profile-realm-tile__order">

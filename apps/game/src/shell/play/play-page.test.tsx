@@ -522,6 +522,9 @@ describe("the season's countdown, while its first day is ahead and Play has no g
       await press(document.body, `Play as ${giants!.orderName}`);
       await settle();
       expect(document.body.textContent).toContain("Season did not answer.");
+      expect(
+        [...document.body.querySelectorAll("button")].filter((each) => each.textContent === "Try again"),
+      ).toHaveLength(1);
       expect(page.container.querySelector("[data-preseason-step]")?.getAttribute("data-preseason-step")).toBe("pick");
 
       identityClient.chooseOrder = keep;

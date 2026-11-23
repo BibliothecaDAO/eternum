@@ -12,9 +12,8 @@ import { linkWalletHref } from "@/shell/profile/settings-route";
 import { returnPathOf } from "@/shell/return-path";
 import { aspectVariables } from "@/tokens";
 import { AspectMark } from "@/ui/design-system/aspect-mark";
-import { realmMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { Icon } from "@/ui/design-system/icon";
-import { mintedResourceMeaning, orderMeaning, type IconMeaning } from "@/ui/design-system/icon-meaning";
+import { mintedResourceMeaning, orderMeaning } from "@/ui/design-system/icon-meaning";
 import { HudLoading } from "@/ui/design-system/kit/hud-elements";
 import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
 import {
@@ -526,16 +525,8 @@ export function ChoiceButton({
   );
 }
 
-export const realmTierIcon = (choice: { resources: readonly string[]; wonder: string | null }): IconMeaning => {
-  if (choice.wonder !== null) return realmMeaning(3, true);
-  if (choice.resources.length >= 5) return realmMeaning(3, false);
-  if (choice.resources.length >= 4) return realmMeaning(2, false);
-  if (choice.resources.length >= 3) return realmMeaning(1, false);
-  return realmMeaning(0, false);
-};
-
 const ChoiceArt = ({ choice, size = 72, eager = false }: { choice: Choice; size?: number; eager?: boolean }) => (
-  <HomeArt map={choice.map} icon={realmTierIcon(choice)} size={size} eager={eager} />
+  <HomeArt map={choice.map} icon="realm" size={size} eager={eager} />
 );
 
 const Resources = ({ resources }: { resources: string[] }) => (

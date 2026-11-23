@@ -6,6 +6,8 @@ import { CairoCustomEnum, CairoOption, CairoOptionVariant } from "starknet";
 import { createHeraldRequestHandler } from "../http";
 import { WorldFold } from "../world-fold";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { questWeek } from "@bibliothecadao/eternum/game-client";
+import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { buildNativeDirectory, directoryFact } from "./read-models";
 import {
   structureValue,
@@ -417,8 +419,11 @@ describe("native directory", () => {
     expect(race(1)).toEqual({ finish_height: 10000, heights: { 1: 6400, 2: 7850, 3: 4100, 4: 0 } });
   });
 
-  it("publishes the player's current ordinary quest, progress, target, and Labor reward on a live Frontier day", () => {
+  it("publishes the player's current quest from core's readDailyQuest, including storage-clipped LaborGrant amounts", () => {
     const { fold, native, decoder } = world();
+    const baseCounts = [1, 1, 1, 1, 1, 2, 15];
+    const expectedQuest = questWeek(42n, 0).find(({ day }) => day === 0)!.quest;
+    const expectedTarget = baseCounts[expectedQuest]!;
     native.applyReceipt(
       fold,
       receipt(
@@ -426,7 +431,7 @@ describe("native directory", () => {
           gameEvent("1", "0", "0", "frontier", "Frontier"),
           rulesEvent("1", "3600"),
           rowEvent("QuestRules", ["1"], {
-            base_counts: [1, 1, 1, 1, 1, 2, 15],
+            base_counts: baseCounts,
             labor: 1000n,
             essence: 1500n,
             bonus_percent: 150,
@@ -446,18 +451,39 @@ describe("native directory", () => {
       11,
       0,
     );
-    const entry = buildNativeDirectory({
-      chain: "madara",
-      confirmedBlock: 11,
-      timestamp: 30,
-      fold,
-      playerAddress: "0x111",
-    }).games.find(({ game_id }) => game_id === 1)!;
-    expect(entry.player_state?.today_quest).toEqual({
-      quest_id: expect.any(Number),
+    const readQuest = (confirmedBlock: number) =>
+      buildNativeDirectory({
+        chain: "madara",
+        confirmedBlock,
+        timestamp: 30,
+        fold,
+        playerAddress: "0x111",
+      }).games.find(({ game_id }) => game_id === 1)!.player_state?.today_quest;
+    expect(readQuest(11)).toEqual({
+      quest_id: expectedQuest,
       progress: 1,
-      target: expect.any(Number),
+      target: expectedTarget,
       labor: 1500,
+    });
+
+    native.applyReceipt(
+      fold,
+      receipt([
+        rowEvent("QuestProgress", ["1", "7", "0"], { progress: BigInt(expectedTarget), completed_level: 1 }),
+        rowEvent("LaborGrant", ["1", "7", "0"], {
+          account: 0x111n,
+          amount: 900n * BigInt(RESOURCE_PRECISION),
+          essence: 1500n * BigInt(RESOURCE_PRECISION),
+        }),
+      ]),
+      12,
+      0,
+    );
+    expect(readQuest(12)).toEqual({
+      quest_id: expectedQuest,
+      progress: expectedTarget,
+      target: expectedTarget,
+      labor: 900,
     });
   });
 

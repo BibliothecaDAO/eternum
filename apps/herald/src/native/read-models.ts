@@ -5,15 +5,10 @@ import type {
   HeraldPlayerQuest,
   HeraldPlayerStructure,
 } from "@bibliothecadao/eternum/game-sync";
-import { nativeGameModeOfFamily } from "@bibliothecadao/eternum";
+import { DAILY_QUEST_MODELS, nativeGameModeOfFamily, readDailyQuest } from "@bibliothecadao/eternum";
 import { dayOf, expeditionRealmSite, entityHomeNamespace, isRealmCategory } from "@bibliothecadao/eternum/expeditions";
-import {
-  dailyQuest,
-  ordinaryQuestLabor,
-  ordinaryQuestTarget,
-  raceFinishHeight,
-} from "@bibliothecadao/eternum/game-client";
-import { aspects, type AspectId, StructureType } from "@bibliothecadao/types";
+import { NativeFactStore, raceFinishHeight } from "@bibliothecadao/eternum/game-client";
+import { aspects, RESOURCE_PRECISION, type AspectId, StructureType } from "@bibliothecadao/types";
 import { isCheckGame, resolveDirectoryStatus, type DirectoryInput } from "../game-directory";
 import type { FoldRow } from "../types";
 
@@ -42,6 +37,8 @@ export const FINALIZED_GAME_MODELS: ReadonlySet<string> = new Set([
 
 import { integer, number, address, record, gameRows, required, type Row } from "./values";
 
+const QUEST_STORE_MODELS = [...new Set(DAILY_QUEST_MODELS)];
+
 interface DirectoryRows {
   structures: FoldRow[];
   position: DirectoryInput["fold"]["structurePosition"];
@@ -54,13 +51,6 @@ interface DirectoryRows {
   aspectMembers: FoldRow[];
   raceRules: FoldRow[];
   aspectHyperstructures: FoldRow[];
-  questRules: FoldRow[];
-  questProgress: FoldRow[];
-  seals: FoldRow[];
-  settledRealms: FoldRow[];
-  worldBanes: FoldRow[];
-  teamBanes: FoldRow[];
-  homeAspects: FoldRow[];
 }
 
 export function buildNativeDirectory(input: DirectoryInput): HeraldGameDirectory {
@@ -93,14 +83,10 @@ export function directoryForPlayer(directory: HeraldGameDirectory, input: Direct
   );
   return {
     ...directory,
-    games: directory.games.map((entry) => {
-      const game = games.get(entry.game_id)!;
-      const day = gameDayOf(game, facts, input.timestamp)?.day ?? null;
-      return {
-        ...entry,
-        player_state: directoryPlayerState(game, facts, input, day),
-      };
-    }),
+    games: directory.games.map((entry) => ({
+      ...entry,
+      player_state: directoryPlayerState(games.get(entry.game_id)!, facts, input),
+    })),
   };
 }
 
@@ -118,13 +104,6 @@ function directoryRows(input: DirectoryInput): DirectoryRows {
     aspectMembers: rows("AspectMembers"),
     raceRules: rows("RaceRules"),
     aspectHyperstructures: rows("AspectHyperstructure"),
-    questRules: rows("QuestRules"),
-    questProgress: rows("QuestProgress"),
-    seals: rows("Seal"),
-    settledRealms: rows("SettledRealm"),
-    worldBanes: rows("WorldBane"),
-    teamBanes: rows("TeamBane"),
-    homeAspects: rows("HomeAspect"),
   };
 }
 
@@ -132,7 +111,6 @@ function directoryPlayerState(
   game: Row,
   facts: DirectoryRows,
   input: DirectoryInput,
-  day: { index: number } | null,
 ): HeraldGameDirectoryEntry["player_state"] {
   if (!input.playerAddress) return null;
   const player = address(input.playerAddress);
@@ -148,57 +126,37 @@ function directoryPlayerState(
     has_home_source: own !== undefined,
     taken_realm_ids: entitlements.filter((row) => number(row.pass_kind) === 2).map((row) => number(row.realm_id)),
     structures: structures.map((row) => playerStructure(row, game, settlement, facts, input.timestamp)),
-    today_quest: todayQuestOf(game, structures, facts, day, player, held !== null),
+    today_quest: todayQuestOf(number(game.game_id), structures, input, player),
   };
 }
 
 function todayQuestOf(
-  game: Row,
+  gameId: number,
   structures: readonly Row[],
-  facts: DirectoryRows,
-  day: { index: number } | null,
+  input: DirectoryInput,
   player: string,
-  hasHeldRealm: boolean,
 ): HeraldPlayerQuest | null {
-  if (!day) return null;
   const realm = structures.find((row) => isRealmCategory(number(record(row.base).category)));
   if (!realm) return null;
-  const rules = gameRows(facts.questRules, game.game_id)[0];
-  if (!rules) return null;
-  if (gameRows(facts.worldBanes, game.game_id).some((row) => number(row.day) === day.index)) return null;
-  const homeId = integer(realm.entity_id);
-  const homeAspect = gameRows(facts.homeAspects, game.game_id).find((row) => integer(row.home) === homeId);
-  if (
-    homeAspect &&
-    gameRows(facts.teamBanes, game.game_id).some(
-      (row) => number(row.day) === day.index && number(row.aspect) === number(homeAspect.aspect),
-    )
-  ) {
-    return null;
-  }
-  const questId = dailyQuest(integer(game.seed), day.index);
-  const progressRow = gameRows(facts.questProgress, game.game_id).find(
-    (row) => integer(row.home) === homeId && number(row.day) === day.index,
+  const targetGame = BigInt(gameId);
+  const hasRules = input.fold.modelRows("QuestRules").some(({ value }) => integer(value.game_id) === targetGame);
+  if (!hasRules) return null;
+  const store = new NativeFactStore();
+  const facts = QUEST_STORE_MODELS.flatMap((model) =>
+    input.fold
+      .modelRows(model)
+      .filter(({ value }) => integer(value.game_id) === targetGame)
+      .map(({ key, value }) => ({ model, key, value })),
   );
-  const completedLevel = progressRow ? number(progressRow.completed_level) : 0;
-  const level = completedLevel || number(record(realm.base).level) + 1;
-  const baseCounts = (rules.base_counts as readonly unknown[]).map((value) => number(value));
-  const target = ordinaryQuestTarget(baseCounts, questId, level);
-  const hasSeal = gameRows(facts.seals, game.game_id).some((row) => address(row.account) === player);
-  const hasSettledRealm =
-    hasHeldRealm && gameRows(facts.settledRealms, game.game_id).some((row) => integer(row.home) === homeId);
-  const labor = Number(
-    ordinaryQuestLabor(
-      { labor: integer(rules.labor), bonus_percent: number(rules.bonus_percent) },
-      level,
-      hasSeal || hasSettledRealm,
-    ),
-  );
+  store.applyFacts(facts);
+  store.setSnapshot({ gameId, complete: true, actor: BigInt(player), timestamp: input.timestamp });
+  const reading = readDailyQuest(store, gameId, number(realm.entity_id), input.timestamp)?.reading.known;
+  if (!reading) return null;
   return {
-    quest_id: questId,
-    progress: progressRow ? number(progressRow.progress) : 0,
-    target,
-    labor,
+    quest_id: reading.quest.id,
+    progress: Number(reading.progress),
+    target: Number(reading.target),
+    labor: Number(reading.reward.labor) / RESOURCE_PRECISION,
   };
 }
 
@@ -299,7 +257,7 @@ function directoryEntry(game: Row, facts: DirectoryRows, input: DirectoryInput):
     player_count: new Set(settlements.map((row) => address(row.owner))).size,
     aspect_members: aspectMembersOf(facts, game.game_id),
     aspect_race: aspectRaceOf(facts, game.game_id),
-    player_state: directoryPlayerState(game, facts, input, day),
+    player_state: directoryPlayerState(game, facts, input),
     registration: {
       count:
         mode === "frontier"

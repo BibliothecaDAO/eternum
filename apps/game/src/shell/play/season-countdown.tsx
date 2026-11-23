@@ -1,6 +1,6 @@
 import "./play-page.css";
 
-import { aspects, formatLongDate, ordersOfAspect } from "@bibliothecadao/types";
+import { aspects, formatDuration, formatLongDate, ordersOfAspect } from "@bibliothecadao/types";
 import type { CSSProperties } from "react";
 
 import { aspectVariables } from "@/tokens";
@@ -16,15 +16,6 @@ import type { SeasonOpening } from "../season";
 import { useRequestSignIn } from "../sign-in/connect";
 import { ageOf } from "./ages";
 
-export const formatCountdownClock = (seconds: number): string => {
-  const safe = Math.max(0, Math.floor(seconds));
-  const days = Math.floor(safe / 86_400);
-  const hours = Math.floor((safe % 86_400) / 3_600);
-  const minutes = Math.floor((safe % 3_600) / 60);
-  const pad = (value: number) => String(value).padStart(2, "0");
-  return `${pad(days)}D : ${pad(hours)}H : ${pad(minutes)}M`;
-};
-
 export const SeasonCountdown = ({ opening, now }: { opening: SeasonOpening; now: number }) => (
   <StageFrame wide verb={<CreateAccount />}>
     <div data-season-countdown className="countdown-stage">
@@ -32,7 +23,7 @@ export const SeasonCountdown = ({ opening, now }: { opening: SeasonOpening; now:
         <div className="countdown-stage__hero">
           <img src={AGE_LOCKUP.frontier} alt={ageOf("frontier").name} className="countdown-stage__lockup" />
           <p className="countdown-stage__clock" aria-hidden="true">
-            {formatCountdownClock(opening.startsAt - now)}
+            {formatDuration(Math.max(0, opening.startsAt - now))}
           </p>
         </div>
         <div className="countdown-stage__meta">

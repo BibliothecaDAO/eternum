@@ -1521,6 +1521,7 @@ export const DOORWAY_WORDS = {
   /** What the first minutes hold, said while a player's map loads. */
   firstTitle: "First: build a Barracks",
   firstDetail: "Then send your first army to explore",
+  deepTip: `Hold ${layerName(3)} sites before rollover to push your Aspect's tower higher.`,
   /** The bar, named for assistive technology. */
   entering: "Entering the game",
   enteringRealm: (name: string) => `Entering ${name}`,
