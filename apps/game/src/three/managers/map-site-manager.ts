@@ -166,7 +166,12 @@ export class MapSiteManager {
       }
     });
     this.unsubscribeSides = onSidesChanged(() => this.refresh());
-    this.refresh();
+    try {
+      this.refresh();
+    } catch (error) {
+      this.destroy();
+      throw error;
+    }
   }
 
   public hover(tile: SiteHex | null): void {

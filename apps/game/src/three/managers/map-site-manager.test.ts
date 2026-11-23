@@ -298,7 +298,7 @@ describe("the Deep's sites on the map", () => {
         model === "DeepRules"
           ? { gate_distance: 4, rings: [{ radius: 5, realms: 0 }] }
           : model === "SliceRules"
-            ? { day_unit_seconds: clock.day }
+            ? { day_unit_seconds: clock.day, tick_config: { armies_tick_in_seconds: 60n } }
             : model === "GameRegistry"
               ? { start_main_at: 10n, scheduled_end_at: BigInt(clock.day * 5), end_at: BigInt(clock.day * 5), seed: 1n }
               : model === "HomeAspect" && key.home === 9n
@@ -558,7 +558,7 @@ describe("the Deep's sites on the map", () => {
         model === "DeepRules"
           ? { game_id: gameId, gate_distance: 4, rings: [{ radius: 5, realms: 0 }] }
           : model === "SliceRules"
-            ? { game_id: gameId, day_unit_seconds: clock.day }
+            ? { game_id: gameId, day_unit_seconds: clock.day, tick_config: { armies_tick_in_seconds: 60n } }
             : model === "GameRegistry"
               ? {
                   game_id: gameId,
