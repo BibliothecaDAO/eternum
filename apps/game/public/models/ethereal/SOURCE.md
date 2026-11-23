@@ -48,8 +48,6 @@ triangles. These are asset counts, not frame draw costs.
 Runtime: `src/three/structures/spire-model.ts` evaluates the hierarchy with a stable phase per placement and shares
 instanced stone draws. `spire-portal.ts` composes rear light, translucent core and front light, splitting currents by a
 per-fragment ray/sphere test; separate portals sort on camera moves, including while animation is paused.
-`local-emissive-glow.ts` retains saturated upper-model vein cores and narrow additive shells on shared instance buffers,
-because the renderer runs without screen-space bloom.
 
 `apps/game/scripts/spires/build-spire.py` is the earlier procedural obelisk variant for a later cosmetic. It writes
 `spire-obelisk.glb`, which is not committed or loaded; wiring it needs its own model path because the runtime spire

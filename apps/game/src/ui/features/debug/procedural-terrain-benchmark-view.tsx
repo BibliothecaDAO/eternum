@@ -193,7 +193,6 @@ export const ProceduralTerrainBenchmarkView = () => {
             value={variant}
             onChange={(value) => setOption("variant", value)}
             options={[
-              ["geometry", "Flat geometry"],
               ["material", "Textured ground"],
               ["props", "Ground + props"],
               ["production", "Production + shadows"],

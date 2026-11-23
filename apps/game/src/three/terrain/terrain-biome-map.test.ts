@@ -1,19 +1,19 @@
-import { BiomeType } from "@bibliothecadao/types/terrain";
+import { BiomeType, BiomeTypeToId } from "@bibliothecadao/types/terrain";
 import { NEUTRAL_BIOME_CLIMATE } from "@bibliothecadao/eternum";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { setWorldOrigin } from "@/three/world-origin";
 
-import { BIOME_MAP_SIZE, biomeNumber, groundNumber, TerrainBiomeMap } from "./terrain-biome-map";
+import { BIOME_MAP_SIZE, BIOMES_BY_ID, LAYER_BIOME_OFFSET, groundNumber, TerrainBiomeMap } from "./terrain-biome-map";
 import { prepareTerrainPage } from "./terrain-page-builder";
 
 const ZERO = { col: 0, row: 0 };
-const CLIMATE = () => ({ elevation: 0.6, moisture: 0.2 });
+const FLAT_CLIMATE = () => ({ elevation: 0.4, moisture: 0.6 });
 
 afterEach(() => setWorldOrigin(ZERO));
 
 describe("the terrain's biome map", () => {
-  it("holds each cell's biome and ground at the hex it is drawn on, round the map's floating origin", () => {
+  it("holds each cell's biome, ground and climate round the map's floating origin", () => {
     const map = new TerrainBiomeMap();
     map.write(
       [
@@ -21,18 +21,18 @@ describe("the terrain's biome map", () => {
         { col: 127, row: 62, biome: BiomeType.Taiga },
       ],
       { col: 128, row: 64 },
-      (col) => ({ elevation: col === 131 ? 0.6 : 0.4, moisture: 0.2 }),
+      (col) => (col === 131 ? { elevation: 0.8, moisture: 0.2 } : { elevation: 0.3, moisture: 0.7 }),
     );
     expect(map.read(3, 1)).toEqual({
-      biome: biomeNumber(BiomeType.Scorched),
+      biome: BiomeTypeToId[BiomeType.Scorched],
       ground: groundNumber("ash"),
-      climate: [153 / 255, 51 / 255],
+      climate: [Math.round(0.8 * 255) / 255, Math.round(0.2 * 255) / 255],
       written: true,
     });
     expect(map.read(-1, -2)).toEqual({
-      biome: biomeNumber(BiomeType.Taiga),
+      biome: BiomeTypeToId[BiomeType.Taiga],
       ground: groundNumber("forest"),
-      climate: [102 / 255, 51 / 255],
+      climate: [Math.round(0.3 * 255) / 255, Math.round(0.7 * 255) / 255],
       written: true,
     });
     expect(map.read(0, 0).written).toBe(false);
@@ -40,20 +40,42 @@ describe("the terrain's biome map", () => {
 
   it("leaves a cell with no biome unwritten", () => {
     const map = new TerrainBiomeMap();
-    map.write([{ col: 2, row: 2, biome: null }], ZERO, CLIMATE);
+    map.write([{ col: 2, row: 2, biome: null }], ZERO, FLAT_CLIMATE);
     expect(map.read(2, 2).written).toBe(false);
   });
 
   it("reads a hex a whole map away at the same texel, so any window the map draws fits", () => {
     const map = new TerrainBiomeMap();
-    map.write([{ col: 5, row: 7, biome: BiomeType.Beach }], ZERO, CLIMATE);
-    expect(map.read(5 + BIOME_MAP_SIZE, 7 - BIOME_MAP_SIZE).biome).toBe(biomeNumber(BiomeType.Beach));
+    map.write([{ col: 5, row: 7, biome: BiomeType.Beach }], ZERO, FLAT_CLIMATE);
+    expect(map.read(5 + BIOME_MAP_SIZE, 7 - BIOME_MAP_SIZE).biome).toBe(BiomeTypeToId[BiomeType.Beach]);
   });
 
-  it("numbers every biome distinctly, and gives every biome a ground", () => {
-    const numbers = Object.values(BiomeType).map(biomeNumber);
-    expect(new Set(numbers).size).toBe(numbers.length);
-    expect(numbers.every((number) => number >= 0)).toBe(true);
+  it("indexes BIOMES_BY_ID directly by BiomeTypeToId for every BiomeType", () => {
+    for (const biome of Object.values(BiomeType)) {
+      const id = BiomeTypeToId[biome];
+      expect(id).toBeLessThan(LAYER_BIOME_OFFSET);
+      expect(BIOMES_BY_ID[id]).toBe(biome);
+    }
+  });
+
+  it("keeps layer biome codes above LAYER_BIOME_OFFSET and skips layer cells during surface writes", () => {
+    const map = new TerrainBiomeMap();
+    map.writeLayers([{ col: 3, row: 2, surfacePresentation: 1 }], ZERO, 0, NEUTRAL_BIOME_CLIMATE);
+    map.write(
+      [
+        { col: 3, row: 2, biome: BiomeType.Grassland, surfacePresentation: 1 },
+        { col: 2, row: 2, biome: BiomeType.Grassland },
+      ],
+      ZERO,
+      FLAT_CLIMATE,
+    );
+
+    const layerCell = map.read(3, 2);
+    expect(layerCell.biome).toBeGreaterThan(LAYER_BIOME_OFFSET);
+    expect(layerCell.ground).toBe(0);
+
+    const surfaceCell = map.read(2, 2);
+    expect(surfaceCell.biome).toBe(BiomeTypeToId[BiomeType.Grassland]);
   });
 });
 
@@ -74,9 +96,9 @@ describe("a page's biomes", () => {
     setWorldOrigin({ col: -1_236_511_808, row: -1_269_605_120 });
     const map = new TerrainBiomeMap();
 
-    map.write(page.request.cells, page.origin, CLIMATE);
+    map.write(page.request.cells, page.origin, FLAT_CLIMATE);
 
     expect(page.origin).toEqual(ZERO);
-    expect(map.read(3, 2)).toMatchObject({ biome: biomeNumber(BiomeType.TemperateDesert), written: true });
+    expect(map.read(3, 2)).toMatchObject({ biome: BiomeTypeToId[BiomeType.TemperateDesert], written: true });
   });
 });

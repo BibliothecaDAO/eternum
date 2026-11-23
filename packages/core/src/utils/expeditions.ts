@@ -1,9 +1,9 @@
 import { beastBand } from "./frontier-beast-band";
 import { currentArmy } from "./deep";
-import { deepViewFor } from "./deep-geometry";
+import { deepViewFor, deepZoneAt } from "./deep-geometry";
 import { entityHomeNamespace } from "./entity-home";
 import { reachableDepth } from "./realm-research";
-import { MAX_U32, ResourcesIds } from "@bibliothecadao/types";
+import { MAX_U32, ResourcesIds, type MapLayer } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import { readOptionalSeasonRow } from "../client/views/season-rows";
 import { readTriumphPeriod } from "../client/views/triumphs";
@@ -140,6 +140,26 @@ export const armyEtherealLayer = (
 export const isEtherealTile = (rules: ExpeditionRules | null, hex: { row: number; alt: boolean }): boolean =>
   hex.alt || (rules !== null && expeditionDepth(rules, { y: hex.row }) > 0);
 
+const sharedDeepRules = (store: Pick<NativeFactStore, "get"> | null, gameId: number) =>
+  store?.get("DeepRules", { game_id: gameId });
+
+export const hasSharedDeep = (store: Pick<NativeFactStore, "get"> | null, gameId: number): boolean =>
+  sharedDeepRules(store, gameId) !== undefined;
+
+export const cameraLayer = (
+  rules: ExpeditionRules | null,
+  store: Pick<NativeFactStore, "get"> | null,
+  gameId: number,
+  hex: { col: number; row: number; alt: boolean } | null,
+): MapLayer => {
+  if (!rules || !hex || hex.alt) return 0;
+  const deep = sharedDeepRules(store, gameId);
+  if (deep && deepZoneAt(rules.spacing, deep, hex)) return 3;
+  const depth = expeditionDepth(rules, { y: hex.row });
+  if (depth === 3) return deep ? 3 : 2;
+  return depth as MapLayer;
+};
+
 /**
  * Whether an army going from one tile to another passes through a spire instead of walking: onto the other map layer
  * (a spire's travel), or into another expedition region (a spire's portal to the Ethereal layer, which the contract
@@ -227,7 +247,7 @@ export const spireEtherealView = (
   const gameId = spire.realm.game_id;
   const rules = readExpeditionRules(store, gameId);
   if (!rules) throw new Error("A spire lights only in an expedition game");
-  if (spire.targetDepth === 3 && store.get("DeepRules", { game_id: gameId }))
+  if (spire.targetDepth === 3 && hasSharedDeep(store, gameId))
     return deepViewFor(store, gameId, spire.realm.entity_id, rules.spacing);
   const inEthereal = liveHomeArmies(store, Number(spire.realm.entity_id), gameId)
     .map((army) => entityMapPosition(store, gameId, army.explorer_id))

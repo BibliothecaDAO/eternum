@@ -21,6 +21,7 @@ import {
   expeditionDayEndsAt,
   expeditionSpires,
   type ExpeditionSpireView,
+  hasSharedDeep,
   isAtExpeditionSpire,
   isViewerOwner,
   readExpeditionRules,
@@ -137,7 +138,7 @@ const OwnSpire = ({ spire }: { spire: Spire }) => {
   const beside = position !== undefined && depthNow === sourceDepth && isAtExpeditionSpire(spire, position);
   const approach = useOrderAt(useApproachTile(spire, actor !== undefined && depthNow === sourceDepth && !beside));
 
-  const sharedDeep = store.get("DeepRules", { game_id: gameId }) !== undefined;
+  const sharedDeep = hasSharedDeep(store, gameId);
   const offered = spire.targetDepth === undefined ? ([1, 2, 3] as const) : [spire.targetDepth];
   const depths = offered.filter((depth) => depth <= spire.deepest);
   const choice = (depth: 1 | 2 | 3) => {

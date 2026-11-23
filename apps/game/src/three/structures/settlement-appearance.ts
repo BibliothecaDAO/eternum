@@ -266,7 +266,7 @@ export function createRealmBannerAtlas(): CanvasTexture {
   return atlas;
 }
 
-function loadOrderArtwork(): Promise<HTMLImageElement[]> {
+export function loadOrderArtwork(): Promise<HTMLImageElement[]> {
   return (orderArtwork ??= Promise.all(
     orders.map((order) => new ImageLoader().loadAsync(iconUrl(orderMeaning(order.orderId), 256))),
   ).catch((error) => {

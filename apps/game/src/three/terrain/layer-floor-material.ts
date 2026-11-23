@@ -1,20 +1,16 @@
+import { LAYER_PLACES } from "@bibliothecadao/types";
 import type Node from "three/src/nodes/core/Node.js";
 import { Color, type Texture } from "three";
-import { color, float, int, mix, normalWorld, positionWorld, smoothstep, uniformArray, vec2 } from "three/tsl";
+import { color, float, int, max, mix, normalWorld, positionWorld, smoothstep, uniformArray, vec2 } from "three/tsl";
 import { MeshStandardNodeMaterial } from "three/webgpu";
 import { applyEndgameFrost } from "../effects/endgame/field";
-import {
-  EVERY_LAYER_BIOME,
-  LAYER_BIOME_LOOKS,
-  LAYER_DEPTHS,
-  type LayerPlace,
-  type PersonalLayer,
-} from "./layer-biomes";
+import { EVERY_LAYER_BIOME, LAYER_BIOME_LOOKS, LAYER_DEPTHS, type PersonalLayer } from "./layer-biomes";
+import { cellHash } from "./terrain-cell-hash";
 import { layerFloorAir } from "./terrain-mist-node";
+import { LAYER_BIOME_OFFSET } from "./terrain-biome-map";
 import { biomeTexelAt, hexReach } from "./terrain-ground-node";
 import { nearestHexLocalPosition } from "./terrain-hex-node";
 
-const LAYER_PLACES = { 1: "veil", 2: "hollow" } as const satisfies Record<PersonalLayer, LayerPlace>;
 const LAYER_INKS = { 1: "#2c3340", 2: "#2b2033" } as const satisfies Record<PersonalLayer, string>;
 
 type Zone = { ground: Node<"vec3">; shade: Node<"vec3">; glow: Node<"vec3"> };
@@ -33,7 +29,7 @@ export function createLayerFloorMaterial(layer: PersonalLayer, layerBiomes: Text
   const at = positionWorld.xz;
   const zone = zoneAt(layerBiomes, at, LAYER_INKS[layer]);
   const ground = LAYER_PATTERNS[layer](at, zone);
-  const air = layerFloorAir(at, LAYER_DEPTHS[LAYER_PLACES[layer]]);
+  const air = layerFloorAir(at, LAYER_DEPTHS[LAYER_PLACES[layer]!]);
   const aired = mix(ground.colour, air.colour, air.sheets.add(air.haze.mul(0.85)).min(0.9)).add(air.flash);
   const lined = mix(aired, color(LAYER_INKS[layer]), gridLine(at).mul(0.42));
   const top = smoothstep(0.5, 0.9, normalWorld.y);
@@ -61,13 +57,12 @@ export function spireStone(
 }
 
 function zoneAt(layerBiomes: Texture, at: Node<"vec2">, ink: string): Zone {
-  const samples = [vec2(0, 0), vec2(0.9, 0.5), vec2(-0.6, -0.8)].map((offset) =>
-    int(
-      biomeTexelAt(layerBiomes, at.add(drift(at.add(offset.mul(3)))).add(offset.mul(0.35)))
-        .r.mul(255)
-        .round(),
-    ),
-  );
+  const samples = [vec2(0, 0), vec2(0.9, 0.5), vec2(-0.6, -0.8)].map((offset) => {
+    const raw = biomeTexelAt(layerBiomes, at.add(drift(at.add(offset.mul(3)))).add(offset.mul(0.35)))
+      .r.mul(255)
+      .round();
+    return int(max(raw.sub(LAYER_BIOME_OFFSET), float(0)));
+  });
   const blended = (part: keyof Zone) => {
     const looks = uniformArray(
       [new Color(ink), ...EVERY_LAYER_BIOME.map((biome) => new Color(LAYER_BIOME_LOOKS[biome][part]))],
@@ -130,7 +125,7 @@ function softNoise(at: Node<"vec2">): Node<"float"> {
 
 function motes(at: Node<"vec2">, fine: number, rarity: number): Node<"float"> {
   const cell = at.mul(fine).floor();
-  const lot = cell.x.mul(12.9898).add(cell.y.mul(78.233)).sin().mul(43758.5453).fract();
+  const lot = cellHash(cell, 5);
   const spot = at.mul(fine).fract().sub(0.5).length();
   return smoothstep(0.1, 0.03, spot).mul(smoothstep(rarity, rarity + 0.02, lot));
 }

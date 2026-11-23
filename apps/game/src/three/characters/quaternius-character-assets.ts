@@ -10,6 +10,7 @@ import type {
 } from "./procedural-character-assets";
 import { disposeSkinnedSceneTemplates } from "./skinned-asset-resources";
 import { gltfLoader } from "@/three/utils/gltf-loader";
+import { modelPath } from "@/three/utils/model-url";
 
 type QuaterniusCharacterAssetId = Extract<ProceduralCharacterAssetId, "base" | "peasant" | "ranger">;
 
@@ -18,19 +19,19 @@ const QUATERNIUS_CHARACTER_ASSETS: Readonly<Record<QuaterniusCharacterAssetId, P
     adapterId: "quaternius-universal",
     id: "base",
     label: "Universal base",
-    url: "/models/characters/quaternius/base-male.glb",
+    url: modelPath("characters/quaternius/base-male.glb"),
   },
   peasant: {
     adapterId: "quaternius-universal",
     id: "peasant",
     label: "Peasant outfit",
-    url: "/models/characters/quaternius/peasant-male.glb",
+    url: modelPath("characters/quaternius/peasant-male.glb"),
   },
   ranger: {
     adapterId: "quaternius-universal",
     id: "ranger",
     label: "Ranger outfit",
-    url: "/models/characters/quaternius/ranger-male.glb",
+    url: modelPath("characters/quaternius/ranger-male.glb"),
   },
 };
 

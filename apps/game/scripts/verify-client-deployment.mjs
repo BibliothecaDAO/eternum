@@ -21,14 +21,52 @@ export async function verifyClientDeployment(dist, origin) {
     ["/sw.js", /(?:javascript|ecmascript)/i],
     ["/manifest.webmanifest", /application\/(?:manifest\+json|json)/i],
     ["/offline.html", /text\/html/i],
+    ["/model-urls.json", /application\/json/i],
   ])
     checks.push(await checkMutableInstallAsset(dist, origin, path, type));
+  const modelUrls = JSON.parse(await readFile(join(dist, "model-urls.json"), "utf8"));
+  const modelChecks = await verifyPublishedModels(origin, modelUrls);
+  checks.push(...modelChecks);
   const entry = await readClientModuleEntries(dist);
   for (const route of await publishedRoutes(dist)) {
     checks.push(await checkPublishedRoute(origin, route, entry));
   }
   checks.push(await checkMissingAsset(origin));
-  return { origin, ok: checks.every((check) => check.ok), modules, checks };
+  return { origin, ok: checks.every((check) => check.ok), modules, models: modelChecks.length, checks };
+}
+
+async function verifyPublishedModels(origin, modelUrls) {
+  const entries = Object.entries(modelUrls);
+  if (!entries.length) throw new Error("Build has no published model URLs");
+  const checks = [];
+  let next = 0;
+  await Promise.all(
+    Array.from({ length: 12 }, async () => {
+      while (next < entries.length) {
+        const [logical, hashed] = entries[next++];
+        checks.push(await checkPublishedModel(origin, logical, hashed));
+      }
+    }),
+  );
+  return checks;
+}
+
+async function checkPublishedModel(origin, logical, path) {
+  try {
+    const response = await fetch(new URL(path, origin), { method: "HEAD", signal: AbortSignal.timeout(30_000) });
+    const type = response.headers.get("content-type") ?? "";
+    const cache = response.headers.get("cache-control") ?? "";
+    return {
+      logical,
+      path,
+      status: response.status,
+      type,
+      cache,
+      ok: response.status === 200 && !/text\/html/i.test(type) && cache.toLowerCase().includes("immutable"),
+    };
+  } catch (error) {
+    return { logical, path, ok: false, error: error.message };
+  }
 }
 
 async function checkPublishedAssets(dist, origin) {
@@ -148,6 +186,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
           origin,
           ok: result.ok,
           modules: result.modules,
+          models: result.models,
           failures: result.checks.filter((check) => !check.ok),
         },
         null,

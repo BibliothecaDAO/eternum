@@ -18,6 +18,7 @@ import { MeshStandardNodeMaterial } from "three/webgpu";
 import { applyEndgameFrost } from "../effects/endgame/field";
 import palette from "./deep-palette.json";
 import { LAYER_DEPTHS } from "./layer-biomes";
+import { cellHash } from "./terrain-cell-hash";
 import { layerFloorAir } from "./terrain-mist-node";
 
 const SQRT3 = Math.sqrt(3);
@@ -111,7 +112,7 @@ function dressedStone(hex: ArenaHex): Node<"vec3"> {
     min(seamTo(local, vec2(-SQRT3 / 2, -0.5)), seamTo(local, vec2(SQRT3 / 2, -0.5))),
   );
   const cut = smoothstep(0.012, 0.03, seam);
-  const tone = hash(hex.q.add(face.mul(17.3)), hex.r.add(face.mul(5.1)));
+  const tone = cellHash(vec2(hex.q.add(face.mul(17)), hex.r.add(face.mul(5))), 0x9e3779b9);
   const grain = hex.offset.x
     .mul(9.7)
     .add(hex.offset.y.mul(3.1).sin().mul(1.3))
@@ -159,8 +160,4 @@ function edgeFade(hex: ArenaHex): Node<"float"> {
     .min(hex.offset.y.sub(edges.z))
     .min(edges.w.sub(hex.offset.y));
   return smoothstep(DEEP_FLOOR.edgeFade.max(0.05), 0, inside);
-}
-
-function hash(a: Node<"float">, b: Node<"float">): Node<"float"> {
-  return a.mul(12.9898).add(b.mul(78.233)).sin().mul(43758.5453).fract();
 }

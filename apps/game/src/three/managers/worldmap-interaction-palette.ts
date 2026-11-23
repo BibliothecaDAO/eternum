@@ -25,6 +25,22 @@ const TAKE_BESIDE: HighlightLayerPalette = {
   endpointColor: 0xffe49a,
 };
 
+export const REALM_PLOT_PALETTE = {
+  fill: 0x29b355,
+  fillOpacity: 0.34,
+  rim: 0x24994a,
+  rimOpacity: 0.78,
+  selectionRoute: 0x2ecc58,
+  selectionEndpoint: 0x6ef292,
+} as const;
+
+export const REALM_PLOT_HOVER_PALETTE: HoverVisualPalette = {
+  baseColor: REALM_PLOT_PALETTE.selectionRoute,
+  rimColor: REALM_PLOT_PALETTE.selectionEndpoint,
+  intensity: 0.55,
+  visualMode: "fill",
+};
+
 const HIGHLIGHT_LAYER_PALETTES: Record<string, HighlightLayerPalette> = {
   move: {
     routeColor: 0x4fcf6b,
@@ -45,8 +61,8 @@ const HIGHLIGHT_LAYER_PALETTES: Record<string, HighlightLayerPalette> = {
     endpointColor: 0xf7bbff,
   },
   build: {
-    routeColor: 0xd3a746,
-    endpointColor: 0xf0d08a,
+    routeColor: REALM_PLOT_PALETTE.selectionRoute,
+    endpointColor: REALM_PLOT_PALETTE.selectionEndpoint,
   },
   use_site: TAKE_BESIDE,
   create_army: {

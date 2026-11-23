@@ -1,4 +1,5 @@
 import type { AspectId } from "@bibliothecadao/types";
+import { modelPath } from "../utils/model-url";
 import { resolveAgeWonderDesign } from "./wonder-design.mjs";
 import assets from "./realm-assets.json";
 
@@ -29,7 +30,7 @@ const ASPECT_WONDER_LIST: readonly RealmAssetEntry[] = (Object.entries(ASPECT_SL
       level: 3,
       wonder: true,
       aspect,
-      path: `/models/realms/wonder-${slug}.glb`,
+      path: modelPath(`realms/wonder-${slug}.glb`),
     };
   },
 );

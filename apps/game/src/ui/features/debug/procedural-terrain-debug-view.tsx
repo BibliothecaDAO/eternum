@@ -16,8 +16,8 @@ import {
   type ProceduralTerrainDebugRendererHandle,
   type ProceduralTerrainDebugStats,
 } from "@/three/debug/procedural-terrain-debug-renderer";
+import { GRAPHICS_QUALITIES, resolveGraphicsQuality, type GraphicsQuality } from "@/three/graphics-preferences";
 import { TERRAIN_BIOME_DESCRIPTORS, TERRAIN_BIOME_ORDER } from "@/three/terrain/terrain-palette";
-import { TERRAIN_QUALITY_TIERS, type TerrainQualityTier } from "@/three/terrain/terrain-quality";
 import {
   TERRAIN_VERIFICATION_SCENE_IDS,
   type TerrainVerificationSceneId,
@@ -59,7 +59,7 @@ const EMPTY_STATS: ProceduralTerrainDebugStats = {
   groundCoverInstances: 0,
   prepareMs: 0,
   propInstances: 0,
-  qualityTier: "detail",
+  qualityTier: "high",
   realmInstances: 0,
   revealProgress: 0,
   roadSegments: 0,
@@ -76,7 +76,6 @@ const EMPTY_STATS: ProceduralTerrainDebugStats = {
   shroudFrontierInstances: 0,
   shroudInstances: 0,
   shroudTriangles: 0,
-  shadingMode: "textured",
   triangles: 0,
   textures: 0,
   vertices: 0,
@@ -101,7 +100,6 @@ export const ProceduralTerrainDebugView = () => {
   const gameMode = searchParams.get("mode") === "frontier" ? "frontier" : "blitz";
   const capture = searchParams.get("capture") === "1";
   const forceWebGL = searchParams.get("rendererMode") === "webgpu-force-webgl";
-  const texturedGround = searchParams.get("groundMode") !== "flat";
   const sceneId = localMode ? "temperate-grove" : resolveSceneId(searchParams.get("scene"));
   const localRadius = localMode
     ? Math.max(1, Math.min(5, Math.floor(Number(searchParams.get("radius")) || 2)))
@@ -115,7 +113,7 @@ export const ProceduralTerrainDebugView = () => {
   const [entryEdge, setEntryEdge] = useState(0);
   const [preparingBuilding, setPreparingBuilding] = useState(false);
   const [preparingExploration, setPreparingExploration] = useState(false);
-  const qualityTier = resolveQualityTier(searchParams.get("quality"));
+  const qualityTier = resolveGraphicsQuality(searchParams.get("quality"));
   const revealProgress = resolveRevealProgress(searchParams.get("reveal"));
   const [preview, setPreview] = useState<TerrainLabPreview>(DEFAULT_TERRAIN_LAB_PREVIEW);
   const [buildingCount, setBuildingCount] = useState(0);
@@ -138,7 +136,6 @@ export const ProceduralTerrainDebugView = () => {
         qualityTier,
         revealProgress,
         sceneId,
-        texturedGround,
         onError: (reason) => {
           if (active) setError(String(reason));
         },
@@ -167,7 +164,7 @@ export const ProceduralTerrainDebugView = () => {
       rendererRef.current?.dispose();
       rendererRef.current = null;
     };
-  }, [capture, gameMode, forceWebGL, qualityTier, revealProgress, sceneId, texturedGround, localRadius]);
+  }, [capture, gameMode, forceWebGL, qualityTier, revealProgress, sceneId, localRadius]);
 
   useEffect(() => {
     if (!ready) return;
@@ -587,7 +584,7 @@ export const ProceduralTerrainDebugView = () => {
               onChange={(event) => changeSceneSetting("quality", event.target.value)}
               className="h-10 border border-white/15 bg-stone-950 px-3 text-sm font-medium text-white"
             >
-              {TERRAIN_QUALITY_TIERS.map((value) => (
+              {GRAPHICS_QUALITIES.map((value) => (
                 <option key={value} value={value}>
                   {formatSceneLabel(value)}
                 </option>
@@ -639,18 +636,6 @@ export const ProceduralTerrainDebugView = () => {
             >
               <option value="webgpu-auto">WebGPU auto</option>
               <option value="webgpu-force-webgl">WebGL2 fallback</option>
-            </select>
-          </label>
-
-          <label className="flex flex-col gap-2 text-sm font-semibold text-stone-300">
-            Ground shading
-            <select
-              value={texturedGround ? "textured" : "flat"}
-              onChange={(event) => changeSceneSetting("groundMode", event.target.value)}
-              className="h-10 border border-white/15 bg-stone-950 px-3 text-sm font-medium text-white"
-            >
-              <option value="textured">Textured PBR</option>
-              <option value="flat">Flat diagnostic</option>
             </select>
           </label>
 
@@ -797,16 +782,12 @@ function resolveSceneId(value: string | null): TerrainVerificationSceneId {
     : "all-biomes";
 }
 
-function resolveQualityTier(value: string | null): TerrainQualityTier {
-  return TERRAIN_QUALITY_TIERS.includes(value as TerrainQualityTier) ? (value as TerrainQualityTier) : "detail";
-}
-
 function resolveRevealProgress(value: string | null): number {
   const progress = value === null ? 0 : Number(value);
   return Number.isFinite(progress) ? Math.min(1, Math.max(0, progress)) : 0;
 }
 
-function formatSceneLabel(value: TerrainQualityTier | TerrainVerificationSceneId): string {
+function formatSceneLabel(value: GraphicsQuality | TerrainVerificationSceneId): string {
   return value
     .split("-")
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))

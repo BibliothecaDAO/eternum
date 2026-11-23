@@ -251,6 +251,9 @@ const CREATURE_TRAITS = {
 } as const satisfies Record<string, CreatureTraits>;
 
 export type CreatureSpecies = keyof typeof CREATURE_TRAITS;
+export const CREATURE_SPECIES: readonly CreatureSpecies[] = Object.freeze(
+  Object.keys(CREATURE_TRAITS) as CreatureSpecies[],
+);
 
 /** One native species per biome; terrestrial species can visit neighboring land biomes. */
 const CREATURES: Readonly<Record<BiomeType, CreatureSpecies | null>> = {

@@ -4,6 +4,7 @@ import { BiomeType, StructureType } from "@bibliothecadao/types";
 import { EventDispatcher, Group, InstancedMesh, Mesh, PerspectiveCamera, Scene } from "three";
 import { describe, expect, it, vi } from "vitest";
 
+import { DEEP_SURFACE_CODE } from "./ethereal-depths";
 import { terrainHexToWorld } from "./terrain-coordinates";
 import { TerrainField } from "./terrain-field";
 import { BASALT_SUPPORT_HEIGHT } from "./terrain-basalt";
@@ -22,12 +23,12 @@ describe("ProceduralTerrain", () => {
   it("renders mixed Frontier depths with distinct materials and retains Eternum basalt", () => {
     const terrain = new ProceduralTerrain();
     const source = request(BiomeType.Ocean, false);
-    const cells: TerrainCellInput[] = [1, 2, 3].map((depth, col) => ({
+    const cells: TerrainCellInput[] = ([1, 2, 3, "deep"] as const).map((surfacePresentation, col) => ({
       ...source.cells[0],
       col,
-      surfacePresentation: depth as 1 | 2 | 3,
+      surfacePresentation,
     }));
-    cells.push({ ...cells[0], col: 4, explored: false, biome: null });
+    cells.push({ ...cells[0], col: 5, explored: false, biome: null });
     const frontier = prepareTerrainPage({ ...source, cells });
     const eternum = prepareTerrainPage({ ...source, pageKey: "alt", surfacePresentation: "ethereal" });
     terrain.present([frontier, eternum]);
@@ -35,13 +36,18 @@ describe("ProceduralTerrain", () => {
     terrain.object3d.traverse((object) => {
       if (object instanceof InstancedMesh && object.userData.basaltInstances) meshes.push(object);
     });
-    expect(meshes.map((mesh) => mesh.userData.surfaceDepth).sort()).toEqual([0, 1, 2, 3]);
-    expect(meshes.map((mesh) => mesh.count)).toEqual([1, 1, 1, 1]);
-    expect(new Set(meshes.map((mesh) => mesh.material)).size).toBe(3);
+    expect(meshes.map((mesh) => mesh.userData.surfaceDepth).sort()).toEqual([0, 1, 2, 3, DEEP_SURFACE_CODE]);
+    expect(meshes.map((mesh) => mesh.count)).toEqual([1, 1, 1, 1, 1]);
+    expect(new Set(meshes.map((mesh) => mesh.material)).size).toBe(4);
     expect(new Set(meshes.map((mesh) => mesh.geometry)).size).toBe(1);
     expect(frontier.waterBuffers).toBeNull();
     expect(frontier.propInstances).toEqual([]);
-    const materials = { 1: "terrain-layer-floor-1", 2: "terrain-layer-floor-2", 3: "terrain-layer-floor-2" };
+    const materials = {
+      1: "terrain-layer-floor-1",
+      2: "terrain-layer-floor-2",
+      3: "terrain-layer-floor-2",
+      [DEEP_SURFACE_CODE]: "terrain-deep-floor",
+    };
     for (const [depth, name] of Object.entries(materials)) {
       const mesh = meshes.find((mesh) => mesh.userData.surfaceDepth === Number(depth))!;
       expect(Array.isArray(mesh.material)).toBe(false);
@@ -142,8 +148,8 @@ describe("ProceduralTerrain", () => {
     expect(prepared.propInstances).toHaveLength(0);
     const material = basalt.material;
     const dispose = vi.spyOn(Array.isArray(material) ? material[0] : material, "dispose");
-    terrain.setQualityTier("overview");
-    terrain.setQualityTier("detail");
+    terrain.setQuality("balanced");
+    terrain.setQuality("high");
     expect(basalt.material).toBe(material);
     const basaltGeometryDispose = vi.spyOn(basalt.geometry, "dispose");
     const borderGeometryDispose = vi.spyOn(borders.geometry, "dispose");
@@ -385,8 +391,8 @@ describe("ProceduralTerrain", () => {
     const setWind = vi.spyOn(TerrainPropPools.prototype, "setWindStrength");
     const fogBefore = terrain.getShroudStats();
     useWorldAppearanceStore.getState().setReducedMotion(true);
-    terrain.setQualityTier("overview");
-    terrain.setQualityTier("detail");
+    terrain.setQuality("balanced");
+    terrain.setQuality("high");
     expect(setWind).toHaveBeenLastCalledWith(0);
     useWorldAppearanceStore.getState().setFogStyle("mist");
     expect(terrain.getShroudStats()).toEqual(fogBefore);
@@ -398,15 +404,15 @@ describe("ProceduralTerrain", () => {
     setWind.mockRestore();
   });
 
-  it("hides wildlife for overview and reduced motion, then releases it with its terrain page", () => {
+  it("hides wildlife for balanced quality and reduced motion, then releases it with its terrain page", () => {
     const terrain = new ProceduralTerrain();
     terrain.present([prepareTerrainPage(forestRequest())]);
     const wildlife = terrain.object3d.getObjectByName("terrain-wildlife")!;
-    expect(terrain.getWildlifeStats().count).toBe(0); // Ambient spawning is deferred beyond the terrain commit.
+    expect(terrain.getWildlifeStats().count).toBe(0);
     expect(wildlife.visible).toBe(true);
-    terrain.setQualityTier("overview");
+    terrain.setQuality("balanced");
     expect(wildlife.visible).toBe(false);
-    terrain.setQualityTier("detail");
+    terrain.setQuality("high");
     expect(wildlife.visible).toBe(true);
     useWorldAppearanceStore.getState().setReducedMotion(true);
     expect(wildlife.visible).toBe(false);
@@ -416,7 +422,7 @@ describe("ProceduralTerrain", () => {
     useWorldAppearanceStore.getState().setReducedMotion(false);
   });
 
-  it("retains a requested quality tier while the catalog loads", async () => {
+  it("retains a requested quality preference while the catalog loads", async () => {
     const pools = {
       dispose: vi.fn(),
       getStats: vi.fn(() => ({ groundCoverInstances: 0, instances: 0, triangles: 0 })),
@@ -428,17 +434,17 @@ describe("ProceduralTerrain", () => {
     const load = vi.spyOn(TerrainPropPools, "load").mockResolvedValue(pools as unknown as TerrainPropPools);
     const terrain = new ProceduralTerrain();
 
-    terrain.setQualityTier("overview");
+    terrain.setQuality("balanced");
     await terrain.loadProps();
 
     expect(pools.setLod).toHaveBeenCalledWith("far");
-    expect(pools.setWindStrength).toHaveBeenCalledWith(0.12);
-    expect(terrain.getQualityTier()).toBe("overview");
+    expect(pools.setWindStrength).toHaveBeenCalledWith(0.35);
+    expect(terrain.getQuality()).toBe("balanced");
     terrain.dispose();
     load.mockRestore();
   });
 
-  it("presents bounded movement effects according to the terrain quality tier", () => {
+  it("presents bounded movement effects according to the quality preference", () => {
     const terrain = new ProceduralTerrain();
     terrain.present([prepareTerrainPage(request(BiomeType.Bare, false))]);
     terrain.setMovementInteractions([
@@ -454,13 +460,10 @@ describe("ProceduralTerrain", () => {
       triangles: 6,
       water: { instances: 2, triangles: 4, wakes: 1 },
     });
-    terrain.setQualityTier("overview");
-    expect(terrain.getMovementInteractionStats()).toMatchObject({
-      drawCalls: 0,
-      dust: { activeParticles: 0, emitters: 0 },
-      water: { instances: 0, triangles: 0, wakes: 0 },
-    });
-    terrain.setQualityTier("detail");
+    terrain.setQuality("balanced");
+    terrain.update(0);
+    expect(terrain.getMovementInteractionStats().drawCalls).toBe(2);
+    terrain.setQuality("high");
     terrain.update(0);
     expect(terrain.getMovementInteractionStats()).toMatchObject({
       drawCalls: 2,

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { BiomeType, BiomeTypeToId, deepSites } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
+import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import {
   nativeTilePackingConstants,
   type NativeModelName,
@@ -9,6 +10,7 @@ import { nativeRowDefinitions } from "../client/native-row";
 import { currentArmy, currentResourceWeight, deepTerrain, deepTiles } from "./deep";
 import { armyCombatRefusal } from "./army-opponents";
 import {
+  IncompleteDeepSyncError,
   deepBuildingPay,
   readDeepBeastTroops,
   readDeepRingOpening,
@@ -285,7 +287,45 @@ describe("the shared Deep", () => {
       kinds.map((_, place) => [BigInt(20 + place), 10n * precision, []]),
     );
     rows.DeepSite.pop();
+    expect(() => readDeepSites(store, 420, 7)).toThrow(IncompleteDeepSyncError);
     expect(() => readDeepSites(store, 420, 7)).toThrow("Incomplete Deep site facts");
+  });
+
+  it("throws IncompleteDeepSyncError when day entries are unknown, plain Error on missing rules, and empty outside the game window", () => {
+    const { rows, store } = fixture();
+    rows.DeepRules = [
+      {
+        game_id: 7,
+        loss_per_tick: precision,
+        rings: [{ radius: 5, realms: 0 }],
+        beasts: deepSites.map(() => ({ count: 10n * precision, bow: false })),
+        building_pay: { alone: 6, pair: 3, crowd: 2 },
+      },
+    ];
+    rows.DeepSite = Array.from({ length: nativeRuleConstants.DEEP_RING_SITES }, (_, place) => ({
+      game_id: 7,
+      entity_id: BigInt(20 + place),
+      kind: deepSites[place % deepSites.length]!.id,
+      ring: 0,
+      day: 0n,
+    }));
+    const unknownEntriesStore = {
+      ...store,
+      requireOrAbsent: () => ({ unknown: "INCOMPLETE_SNAPSHOT: DeepEntries" }),
+    } as unknown as NativeFactStore;
+    expect(() => readDeepSites(unknownEntriesStore, 420, 7)).toThrow(IncompleteDeepSyncError);
+    expect(() => readDeepSites(unknownEntriesStore, 420, 7)).toThrow("INCOMPLETE_SNAPSHOT: DeepEntries");
+    expect(readDeepSites(store, 0, 7)).toEqual([]);
+    rows.DeepRules = [];
+    let rulesError: unknown;
+    try {
+      readDeepSites(store, 420, 7);
+    } catch (error) {
+      rulesError = error;
+    }
+    expect(rulesError).toBeInstanceOf(Error);
+    expect(rulesError).not.toBeInstanceOf(IncompleteDeepSyncError);
+    expect((rulesError as Error).message).toContain("Deep sites are missing their preset rules");
   });
 
   it("reads a site's beast from its guard and the day alone, before the day's entries are known", () => {

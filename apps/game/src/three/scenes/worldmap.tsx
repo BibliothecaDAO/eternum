@@ -9,11 +9,10 @@ import { markShadowCastersChanged } from "../shadow-refresh-policy";
 import { forgetCameraView, publishCameraView } from "./worldmap-camera-view";
 import { followArmyCrossing } from "./worldmap-layer-follow";
 import { SelectedArmyOrders } from "./worldmap-selected-army-orders";
-import { TileOccupier } from "@bibliothecadao/types";
+import { LAYER_PLACES, TileOccupier, type MapLayer } from "@bibliothecadao/types";
 import { SpireManager } from "../managers/spire-manager";
 import { MapSiteManager } from "../managers/map-site-manager";
 import type { AtmosphereEnvironment } from "../effects/world-atmosphere-controller";
-import { layerOfSurface, type LayerPlace } from "../terrain/layer-biomes";
 import { MIST_FOCUS } from "../terrain/terrain-mist-node";
 import { DeepArenaManager } from "../managers/deep-arena-manager";
 import { activeMapLayer } from "@/three/map-layer";
@@ -86,6 +85,7 @@ import { LeftView } from "@/types";
 import {
   armyOaths,
   armyRealmSpire,
+  cameraLayer,
   configManager,
   dayOf,
   expeditionDepth,
@@ -4312,23 +4312,20 @@ export default class WorldmapScene extends WarpTravel {
     };
   }
 
+  private currentCameraLayer: MapLayer = 0;
+
   protected override atmosphereEnvironment(): AtmosphereEnvironment {
-    const place = this.cameraLayerPlace();
+    return LAYER_PLACES[this.currentCameraLayer] ?? "world";
+  }
+
+  private syncCameraLayerState(): void {
+    this.currentCameraLayer = cameraLayer(this.expeditionGrid(), this.game.store, configManager.getActiveGameId(), {
+      ...contractHexOf(this.getCameraTargetHex()),
+      alt: activeMapLayer(),
+    });
+    const place = LAYER_PLACES[this.currentCameraLayer];
     this.proceduralTerrain.setLayerMist(place);
     if (place) MIST_FOCUS.value.copy(this.controls.target);
-    return place ?? "world";
-  }
-
-  private cameraLayerPlace(): LayerPlace | null {
-    const hex = { ...contractHexOf(this.getCameraTargetHex()), alt: activeMapLayer() };
-    const surface = etherealSurfaceAt(this.expeditionGrid(), hex, false);
-    if (this.deepZoneOf(hex) || (surface === 3 && this.hasSharedDeep())) return "deep";
-    const layer = layerOfSurface(surface);
-    return layer === 1 ? "veil" : layer === 2 ? "hollow" : null;
-  }
-
-  private hasSharedDeep(): boolean {
-    return this.game.store.get("DeepRules", { game_id: configManager.getActiveGameId() }) !== undefined;
   }
 
   private deepZoneOf(hex: { col: number; row: number; alt: boolean }): DeepZone | undefined {
@@ -8016,6 +8013,7 @@ export default class WorldmapScene extends WarpTravel {
   update(deltaTime: number) {
     const animationContext = this.getAnimationVisibilityContext();
     this.syncWorldmapZoomSnapshot(deltaTime);
+    this.syncCameraLayerState();
     super.update(deltaTime);
     runWithFrameWorkOwner("armies:update", () =>
       this.armyManager.update(deltaTime, animationContext, this.animationsPaused),
@@ -8028,7 +8026,7 @@ export default class WorldmapScene extends WarpTravel {
     if (!this.animationsPaused) {
       this.syncTerrainMovementInteractions();
       this.proceduralTerrain.setGroundLightStrength(
-        this.cameraLayerPlace() === null ? hearthStrength(this.worldAtmosphereController.shownProgress) : 0,
+        this.currentCameraLayer === 0 ? hearthStrength(this.worldAtmosphereController.shownProgress) : 0,
       );
       this.proceduralTerrain.update(deltaTime);
       this.combatPresentation?.update(deltaTime);

@@ -7,6 +7,7 @@ import { Object3D, Vector3 } from "three";
 import { describe, expect, it } from "vitest";
 
 import { createCreatureAnimator } from "../../src/three/terrain/creatures/biome-creature-animator.js";
+import { CREATURE_SPECIES, homeBiome } from "../../src/three/terrain/creatures/biome-creature-catalog";
 import { countSurfacePieces } from "./creature-surface.mjs";
 
 const ASSET_DIRECTORY = new URL("../../public/models/biome-creatures/", import.meta.url);
@@ -63,6 +64,11 @@ function walkAndTakeOff(animator, seconds) {
 }
 
 describe("the map's animals as shipped", () => {
+  it("has a model for every creature species the catalog names", () => {
+    expect(manifest.creatures.map(({ id }) => id).toSorted()).toEqual([...CREATURE_SPECIES].toSorted());
+    for (const species of CREATURE_SPECIES) expect(homeBiome(species)).toBeTruthy();
+  });
+
   it.each(manifest.creatures)("ships $id as its manifest records it", async ({ file, bytes, sha256 }) => {
     const model = await readFile(new URL(file, ASSET_DIRECTORY));
     expect(model.byteLength).toBe(bytes);

@@ -1,8 +1,12 @@
 import floraManifest from "../../../public/models/terrain-flora/manifest.json";
+import { modelPath } from "../utils/model-url";
 
 export type TerrainPropLod = "near" | "far";
+export type TerrainPropRole = "canopy" | "groundcover" | "rigid" | "understory";
+export type TerrainPropPlacementLayer = "canopy" | "debris" | "groundcover" | "understory";
+type LayerPropAnchor = "scatter" | "edge" | "corner";
 
-export const TERRAIN_FLORA_MANIFEST_PATH = "/models/terrain-flora/manifest.json";
+export const TERRAIN_FLORA_MANIFEST_PATH = modelPath("terrain-flora/manifest.json");
 
 export const SURFACE_PROP_IDS = Object.freeze([
   "broadleaf",
@@ -38,47 +42,240 @@ export type SurfacePropId = (typeof SURFACE_PROP_IDS)[number];
 export type LayerPropId = (typeof LAYER_PROP_IDS)[number];
 export type TerrainPropArchetypeId = SurfacePropId | LayerPropId;
 
-export const TERRAIN_PROP_PAGE_SLOT_CAPACITY: Readonly<Record<TerrainPropArchetypeId, number>> = Object.freeze({
-  birch: 232,
-  boulder: 432,
-  broadleaf: 488,
-  cactus: 384,
-  conifer: 696,
-  "dead-tree": 96,
-  "fallen-log": 104,
-  fern: 992,
-  "grass-tuft": 568,
-  palm: 296,
-  cycad: 272,
-  shrub: 568,
-  mushroom: 64,
-  glowcap: 328,
-  "root-arch": 1952,
-  "bloom-coral": 192,
-  "hollow-fern": 432,
-  "standing-stone": 704,
-  "drift-banner": 160,
-  "frost-tuft": 888,
-  wildflower: 320,
-  "rainforest-canopy": 288,
-});
-export const TERRAIN_PROP_PALETTE_SHIFT: Readonly<Record<SurfacePropId, number>> = Object.freeze({
-  birch: 0.25,
-  boulder: 0.25,
-  broadleaf: 0.25,
-  cactus: 0.25,
-  conifer: 0.07,
-  cycad: 0.25,
-  "dead-tree": 0.25,
-  "fallen-log": 0.25,
-  fern: 0.25,
-  "grass-tuft": 0.25,
-  mushroom: 0.25,
-  palm: 0.25,
-  "rainforest-canopy": 0.25,
-  shrub: 0.25,
-  wildflower: 0.25,
-});
+interface SurfaceFloraKind {
+  family: "surface";
+  role: TerrainPropRole;
+  layer: TerrainPropPlacementLayer;
+  measuredDensestPage: number;
+  succession: number;
+  disturbance: number;
+  wetland: number;
+  paletteShift?: number;
+}
+
+interface LayerFloraKind {
+  family: "layer";
+  role: TerrainPropRole;
+  layer: TerrainPropPlacementLayer;
+  measuredDensestPage: number;
+  anchor: LayerPropAnchor;
+}
+
+type FloraKind = SurfaceFloraKind | LayerFloraKind;
+
+const DEFAULT_PALETTE_SHIFT = 0.25;
+const SLOT_HEADROOM_MULTIPLIER = 1.5;
+const SLOT_ALIGNMENT = 8;
+
+const FLORA_KINDS = Object.freeze({
+  broadleaf: {
+    family: "surface",
+    role: "canopy",
+    layer: "canopy",
+    measuredDensestPage: 325,
+    succession: 0.25,
+    disturbance: 0.1,
+    wetland: 0.45,
+  },
+  birch: {
+    family: "surface",
+    role: "canopy",
+    layer: "canopy",
+    measuredDensestPage: 154,
+    succession: 1,
+    disturbance: 1,
+    wetland: 0.35,
+  },
+  "rainforest-canopy": {
+    family: "surface",
+    role: "canopy",
+    layer: "canopy",
+    measuredDensestPage: 192,
+    succession: 0.35,
+    disturbance: 0.25,
+    wetland: 1,
+  },
+  conifer: {
+    family: "surface",
+    role: "canopy",
+    layer: "canopy",
+    measuredDensestPage: 464,
+    succession: 0.15,
+    disturbance: 0.2,
+    wetland: 0.2,
+    paletteShift: 0.07,
+  },
+  palm: {
+    family: "surface",
+    role: "canopy",
+    layer: "canopy",
+    measuredDensestPage: 197,
+    succession: 0.65,
+    disturbance: 0.2,
+    wetland: 0.55,
+  },
+  "dead-tree": {
+    family: "surface",
+    role: "rigid",
+    layer: "debris",
+    measuredDensestPage: 64,
+    succession: 0,
+    disturbance: 0.55,
+    wetland: 0.35,
+  },
+  shrub: {
+    family: "surface",
+    role: "understory",
+    layer: "understory",
+    measuredDensestPage: 378,
+    succession: 1,
+    disturbance: 1,
+    wetland: 0.7,
+  },
+  cactus: {
+    family: "surface",
+    role: "rigid",
+    layer: "understory",
+    measuredDensestPage: 256,
+    succession: 0.55,
+    disturbance: 0,
+    wetland: 0,
+  },
+  boulder: {
+    family: "surface",
+    role: "rigid",
+    layer: "debris",
+    measuredDensestPage: 288,
+    succession: 0,
+    disturbance: 0,
+    wetland: 0.2,
+  },
+  mushroom: {
+    family: "surface",
+    role: "rigid",
+    layer: "debris",
+    measuredDensestPage: 42,
+    succession: 0,
+    disturbance: 1,
+    wetland: 0.3,
+  },
+  "fallen-log": {
+    family: "surface",
+    role: "rigid",
+    layer: "debris",
+    measuredDensestPage: 69,
+    succession: 0,
+    disturbance: 0.85,
+    wetland: 0.65,
+  },
+  "grass-tuft": {
+    family: "surface",
+    role: "groundcover",
+    layer: "groundcover",
+    measuredDensestPage: 378,
+    succession: 0.85,
+    disturbance: 0.9,
+    wetland: 0.65,
+  },
+  fern: {
+    family: "surface",
+    role: "groundcover",
+    layer: "groundcover",
+    measuredDensestPage: 661,
+    succession: 0.9,
+    disturbance: 0.8,
+    wetland: 0.9,
+  },
+  cycad: {
+    family: "surface",
+    role: "groundcover",
+    layer: "groundcover",
+    measuredDensestPage: 181,
+    succession: 1,
+    disturbance: 0.7,
+    wetland: 1,
+  },
+  wildflower: {
+    family: "surface",
+    role: "groundcover",
+    layer: "groundcover",
+    measuredDensestPage: 213,
+    succession: 0.95,
+    disturbance: 1,
+    wetland: 0.5,
+  },
+  glowcap: {
+    family: "layer",
+    role: "rigid",
+    layer: "debris",
+    measuredDensestPage: 218,
+    anchor: "scatter",
+  },
+  "root-arch": {
+    family: "layer",
+    role: "rigid",
+    layer: "understory",
+    measuredDensestPage: 1301,
+    anchor: "edge",
+  },
+  "bloom-coral": {
+    family: "layer",
+    role: "rigid",
+    layer: "understory",
+    measuredDensestPage: 128,
+    anchor: "scatter",
+  },
+  "hollow-fern": {
+    family: "layer",
+    role: "groundcover",
+    layer: "groundcover",
+    measuredDensestPage: 288,
+    anchor: "scatter",
+  },
+  "standing-stone": {
+    family: "layer",
+    role: "rigid",
+    layer: "debris",
+    measuredDensestPage: 469,
+    anchor: "corner",
+  },
+  "drift-banner": {
+    family: "layer",
+    role: "understory",
+    layer: "understory",
+    measuredDensestPage: 106,
+    anchor: "scatter",
+  },
+  "frost-tuft": {
+    family: "layer",
+    role: "groundcover",
+    layer: "groundcover",
+    measuredDensestPage: 592,
+    anchor: "scatter",
+  },
+} as const satisfies Record<TerrainPropArchetypeId, FloraKind>);
+
+const alignSlotCapacity = (measuredDensestPage: number): number =>
+  Math.ceil((measuredDensestPage * SLOT_HEADROOM_MULTIPLIER) / SLOT_ALIGNMENT) * SLOT_ALIGNMENT;
+
+export const TERRAIN_PROP_PAGE_SLOT_CAPACITY: Readonly<Record<TerrainPropArchetypeId, number>> = Object.freeze(
+  Object.fromEntries(
+    TERRAIN_PROP_ARCHETYPE_IDS.map((archetype) => [
+      archetype,
+      alignSlotCapacity(FLORA_KINDS[archetype].measuredDensestPage),
+    ]),
+  ) as Record<TerrainPropArchetypeId, number>,
+);
+
+export const TERRAIN_PROP_PALETTE_SHIFT: Readonly<Record<SurfacePropId, number>> = Object.freeze(
+  Object.fromEntries(
+    SURFACE_PROP_IDS.map((archetype) => {
+      const kind = FLORA_KINDS[archetype];
+      return [archetype, "paletteShift" in kind ? kind.paletteShift : DEFAULT_PALETTE_SHIFT];
+    }),
+  ) as Record<SurfacePropId, number>,
+);
+
 const FLORA_FOOTPRINT_RADIUS = Object.fromEntries(
   TERRAIN_PROP_ARCHETYPE_IDS.map((archetype) => {
     const row = floraManifest.species.find(({ id }) => id === archetype);
@@ -94,114 +291,26 @@ const SPACING_SHARE: Readonly<Record<TerrainPropPlacementLayer, number>> = Objec
   understory: 0.8,
 });
 
-export type TerrainPropRole = "canopy" | "groundcover" | "rigid" | "understory";
-export type TerrainPropPlacementLayer = "canopy" | "debris" | "groundcover" | "understory";
+function requireFloraKind(archetype: TerrainPropArchetypeId): FloraKind {
+  const kind = FLORA_KINDS[archetype];
+  if (!kind) throw new Error(`Unknown terrain prop archetype: ${archetype}`);
+  return kind;
+}
 
-const CANOPY_ARCHETYPES = new Set<TerrainPropArchetypeId>([
-  "broadleaf",
-  "birch",
-  "rainforest-canopy",
-  "conifer",
-  "palm",
-  "standing-stone",
-]);
-const UNDERSTORY_ARCHETYPES = new Set<TerrainPropArchetypeId>(["shrub", "drift-banner"]);
-const GROUND_COVER_ARCHETYPES = new Set<TerrainPropArchetypeId>([
-  "fern",
-  "grass-tuft",
-  "cycad",
-  "wildflower",
-  "hollow-fern",
-  "frost-tuft",
-]);
-const DEBRIS_ARCHETYPES = new Set<TerrainPropArchetypeId>([
-  "boulder",
-  "dead-tree",
-  "fallen-log",
-  "mushroom",
-  "glowcap",
-]);
-const SUCCESSION_AFFINITY: Readonly<Record<SurfacePropId, number>> = Object.freeze({
-  birch: 1,
-  boulder: 0,
-  broadleaf: 0.25,
-  cactus: 0.55,
-  conifer: 0.15,
-  "dead-tree": 0,
-  "fallen-log": 0,
-  palm: 0.65,
-  shrub: 1,
-  mushroom: 0,
-  "rainforest-canopy": 0.35,
-  fern: 0.9,
-  "grass-tuft": 0.85,
-  cycad: 1,
-  wildflower: 0.95,
-});
-const DISTURBANCE_AFFINITY: Readonly<Record<SurfacePropId, number>> = Object.freeze({
-  birch: 1,
-  boulder: 0,
-  broadleaf: 0.1,
-  cactus: 0,
-  conifer: 0.2,
-  "dead-tree": 0.55,
-  "fallen-log": 0.85,
-  palm: 0.2,
-  shrub: 1,
-  mushroom: 1,
-  "rainforest-canopy": 0.25,
-  fern: 0.8,
-  "grass-tuft": 0.9,
-  cycad: 0.7,
-  wildflower: 1,
-});
-
-const WETLAND_AFFINITY: Readonly<Record<SurfacePropId, number>> = Object.freeze({
-  birch: 0.35,
-  boulder: 0.2,
-  broadleaf: 0.45,
-  cactus: 0,
-  conifer: 0.2,
-  "dead-tree": 0.35,
-  fern: 0.9,
-  "fallen-log": 0.65,
-  "grass-tuft": 0.65,
-  palm: 0.55,
-  cycad: 1,
-  shrub: 0.7,
-  mushroom: 0.3,
-  wildflower: 0.5,
-  "rainforest-canopy": 1,
-});
-
-type LayerPropAnchor = "scatter" | "edge" | "corner";
-
-const LAYER_PROP_ANCHOR: Readonly<Record<LayerPropId, LayerPropAnchor>> = Object.freeze({
-  glowcap: "scatter",
-  "root-arch": "edge",
-  "bloom-coral": "scatter",
-  "hollow-fern": "scatter",
-  "standing-stone": "corner",
-  "drift-banner": "scatter",
-  "frost-tuft": "scatter",
-});
+export function isLayerPropId(archetype: TerrainPropArchetypeId): archetype is LayerPropId {
+  return requireFloraKind(archetype).family === "layer";
+}
 
 export function getLayerPropAnchor(archetype: LayerPropId): LayerPropAnchor {
-  return LAYER_PROP_ANCHOR[archetype];
+  return FLORA_KINDS[archetype].anchor;
 }
 
 export function getTerrainPropRole(archetype: TerrainPropArchetypeId): TerrainPropRole {
-  if (CANOPY_ARCHETYPES.has(archetype)) return "canopy";
-  if (GROUND_COVER_ARCHETYPES.has(archetype)) return "groundcover";
-  if (UNDERSTORY_ARCHETYPES.has(archetype)) return "understory";
-  return "rigid";
+  return requireFloraKind(archetype).role;
 }
 
 export function getTerrainPropPlacementLayer(archetype: TerrainPropArchetypeId): TerrainPropPlacementLayer {
-  if (CANOPY_ARCHETYPES.has(archetype)) return "canopy";
-  if (DEBRIS_ARCHETYPES.has(archetype)) return "debris";
-  if (GROUND_COVER_ARCHETYPES.has(archetype)) return "groundcover";
-  return "understory";
+  return requireFloraKind(archetype).layer;
 }
 
 export function getTerrainPropFootprintRadius(archetype: TerrainPropArchetypeId): number {
@@ -213,19 +322,19 @@ export function getTerrainPropSpacingRadius(archetype: TerrainPropArchetypeId): 
 }
 
 export function getTerrainPropSuccessionAffinity(archetype: SurfacePropId): number {
-  return SUCCESSION_AFFINITY[archetype];
+  return FLORA_KINDS[archetype].succession;
 }
 
 export function getTerrainPropDisturbanceAffinity(archetype: SurfacePropId): number {
-  return DISTURBANCE_AFFINITY[archetype];
+  return FLORA_KINDS[archetype].disturbance;
 }
 
 export function getTerrainPropWetlandAffinity(archetype: SurfacePropId): number {
-  return WETLAND_AFFINITY[archetype];
+  return FLORA_KINDS[archetype].wetland;
 }
 
 export function isTerrainGroundCover(archetype: TerrainPropArchetypeId): boolean {
-  return GROUND_COVER_ARCHETYPES.has(archetype);
+  return getTerrainPropRole(archetype) === "groundcover";
 }
 
 export function isTerrainPropVisibleAtLod(archetype: TerrainPropArchetypeId, lod: TerrainPropLod): boolean {

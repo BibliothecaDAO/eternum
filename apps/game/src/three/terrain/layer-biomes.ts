@@ -1,15 +1,8 @@
-import type { BiomeClimateConfig, ExpeditionRules } from "@bibliothecadao/eternum";
-import { isDeepTile } from "@bibliothecadao/eternum/game-client";
-import { DEEP_PALETTE } from "./deep-floor-material";
-import { etherealSurfaceAt } from "./ethereal-depths";
-import type { HexPosition } from "@bibliothecadao/types";
-import { DataTexture, NearestFilter, RGBAFormat, UnsignedByteType } from "three";
-import { BIOME_MAP_SIZE, biomeMapTexel } from "./terrain-biome-map";
+import type { BiomeClimateConfig } from "@bibliothecadao/eternum";
+import type { LayerPlace } from "@bibliothecadao/types";
 import { TerrainNoise } from "./terrain-noise";
 
 export type PersonalLayer = 1 | 2;
-
-export type LayerPlace = "veil" | "hollow" | "deep";
 
 export const LAYER_DEPTHS = { veil: 0.5, hollow: 0.7, deep: 1 } as const satisfies Record<LayerPlace, number>;
 
@@ -41,7 +34,7 @@ export const LAYER_BIOME_LOOKS = {
 
 export const EVERY_LAYER_BIOME: readonly LayerBiome[] = [...LAYER_BIOMES[1], ...LAYER_BIOMES[2]];
 
-const layerBiomeNumber = (biome: LayerBiome): number => EVERY_LAYER_BIOME.indexOf(biome) + 1;
+export const layerBiomeNumber = (biome: LayerBiome): number => EVERY_LAYER_BIOME.indexOf(biome) + 1;
 
 const ZONE_HEXES = 5;
 const fields = new Map<string, TerrainNoise>();
@@ -56,50 +49,4 @@ export function layerBiomeAt(layer: PersonalLayer, col: number, row: number, cli
   const drift = field.sample(col / ZONE_HEXES, row / ZONE_HEXES, `layer-${layer}-drift`);
   const chill = field.sample(col / ZONE_HEXES, row / ZONE_HEXES, `layer-${layer}-chill`);
   return LAYER_BIOMES[layer][(drift > 0.5 ? 1 : 0) + (chill > 0.5 ? 2 : 0)];
-}
-
-export function layerGroundColour(
-  rules: ExpeditionRules | null,
-  sharedDeep: boolean,
-  hex: { col: number; row: number; alt: boolean },
-  climate: BiomeClimateConfig,
-): string | null {
-  if (rules && sharedDeep && isDeepTile(rules.spacing, hex)) return DEEP_PALETTE.slate;
-  const layer = layerOfSurface(etherealSurfaceAt(rules, hex, false));
-  return layer ? LAYER_BIOME_LOOKS[layerBiomeAt(layer, hex.col, hex.row, climate)].ground : null;
-}
-
-export class LayerBiomeMap {
-  readonly texture: DataTexture;
-  private readonly texels = new Uint8Array(BIOME_MAP_SIZE * BIOME_MAP_SIZE * 4);
-
-  constructor() {
-    this.texture = new DataTexture(this.texels, BIOME_MAP_SIZE, BIOME_MAP_SIZE, RGBAFormat, UnsignedByteType);
-    this.texture.name = "terrain-layer-biome-map";
-    this.texture.magFilter = NearestFilter;
-    this.texture.minFilter = NearestFilter;
-    this.texture.generateMipmaps = false;
-    this.texture.needsUpdate = true;
-  }
-
-  write(
-    cells: Iterable<{ col: number; row: number; surfacePresentation?: unknown }>,
-    origin: HexPosition,
-    mapCenter: number,
-    climate: BiomeClimateConfig,
-  ): void {
-    let wrote = false;
-    for (const { col, row, surfacePresentation } of cells) {
-      const layer = layerOfSurface(surfacePresentation);
-      if (!layer) continue;
-      const biome = layerBiomeAt(layer, col + mapCenter, row + mapCenter, climate);
-      this.texels[biomeMapTexel(col - origin.col, row - origin.row) * 4] = layerBiomeNumber(biome);
-      wrote = true;
-    }
-    if (wrote) this.texture.needsUpdate = true;
-  }
-
-  dispose(): void {
-    this.texture.dispose();
-  }
 }

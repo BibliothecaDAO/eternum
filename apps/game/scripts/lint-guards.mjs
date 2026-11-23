@@ -10,6 +10,7 @@ import reactHooks from "eslint-plugin-react-hooks";
 import tseslint from "typescript-eslint";
 import { CATALOG_RULE, catalogGuardConfigs, planCatalogBaseline } from "./catalog-guards.mjs";
 import { findUnownedKitSheetClasses } from "./kit-sheet-guards.mjs";
+import { modelUrlGuardConfigs } from "./model-url-guards.mjs";
 import { nameGuardConfigs } from "./name-guards.mjs";
 import { noBackGuardConfigs } from "./no-back-guards.mjs";
 import { threeDebugGuardConfigs } from "./three-debug-guards.mjs";
@@ -257,6 +258,7 @@ const eslint = new ESLint({
     // No Back link or row arrow on any screen (no-back-guards.mjs).
     ...noBackGuardConfigs,
     ...threeDebugGuardConfigs,
+    ...modelUrlGuardConfigs,
     ...catalogGuardConfigs,
   ],
 });

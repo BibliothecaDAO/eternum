@@ -1,13 +1,13 @@
-import * as THREE from "three";
+import { attribute, materialOpacity, varying } from "three/tsl";
+import { MeshBasicNodeMaterial } from "three/webgpu";
 
-/**
- * The buildable-hex band. Its geometry carries the two tones (a light core in a dark casing) that make it read on every
- * ground, so the material adds no colour of its own; it never writes depth.
- */
-export const interactiveHexMaterial = new THREE.MeshBasicMaterial({
-  vertexColors: true,
+const plotColor = varying(attribute("color", "vec4"), "vPlotColor");
+
+export const interactiveHexMaterial = new MeshBasicNodeMaterial({
   transparent: true,
-  opacity: 0.8,
+  opacity: 1,
   depthWrite: false,
   toneMapped: false,
 });
+interactiveHexMaterial.colorNode = plotColor.rgb;
+interactiveHexMaterial.opacityNode = plotColor.a.mul(materialOpacity);

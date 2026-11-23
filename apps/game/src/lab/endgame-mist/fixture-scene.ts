@@ -14,6 +14,7 @@ import { SettlementModel } from "@/three/structures/settlement-model";
 import { SpireManager } from "@/three/managers/spire-manager";
 import { terrainHexToWorld } from "@/three/terrain/terrain-coordinates";
 import type { ProceduralTerrain } from "@/three/terrain/procedural-terrain";
+import { modelPath } from "@/three/utils/model-url";
 import { gltfLoader } from "@/three/utils/utils";
 import { advanceGameEnd, resetGameEnd, skipGameEnd } from "@/three/effects/endgame/state";
 import { setEndgameView } from "@/three/effects/endgame/field";
@@ -93,7 +94,7 @@ export class EndgameFixtureScene {
   async prepare(scene: Scene, terrain: ProceduralTerrain, camera: Camera, compile: PipelineCompiler): Promise<void> {
     resetGameEnd();
     advanceGameEnd(1, false, 0);
-    const asset = await gltfLoader.loadAsync("/models/realms/settlement.glb");
+    const asset = await gltfLoader.loadAsync(modelPath("realms/settlement.glb"));
     this.realms = new SettlementModel(asset, this.fixture.realms.length, "realm");
     await this.realms.prepare();
     scene.add(this.realms.group);

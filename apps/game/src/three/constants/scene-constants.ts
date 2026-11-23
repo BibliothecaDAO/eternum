@@ -14,13 +14,14 @@ import { Color } from "three";
 import { HyperstructureTypesNames } from "../types";
 import { HYPERSTRUCTURE_MODEL_PATH } from "../structures/hyperstructure-design";
 import { FALLEN_REALM_MODEL_PATHS, FRONTIER_BEAST_PATHS, FRONTIER_BEASTS } from "../structures/frontier-beast";
+import { modelPath } from "../utils/model-url";
 
 export const HEX_SIZE = 1;
 
 export const PREVIEW_BUILD_COLOR_VALID = 0x00a300;
 export const PREVIEW_BUILD_COLOR_INVALID = 0xff0000;
 
-const BUILDINGS_MODELS_PATH = "/models/new-buildings-opt/";
+const BUILDINGS_MODELS_PATH = modelPath("new-buildings-opt/");
 
 const buildUniqueAssetPaths = (assetPaths: readonly string[]) => Object.freeze(Array.from(new Set(assetPaths)));
 
@@ -44,12 +45,12 @@ enum BuildingFilenames {
   Dragonhide = "dragonhide.glb",
 }
 
-export const RiftModelPath = "/models/reward-tiles/rift.glb";
-const RIFT_MODEL_PATH = "/models/reward-tiles/rift.glb";
+export const RiftModelPath = modelPath("reward-tiles/rift.glb");
+const RIFT_MODEL_PATH = RiftModelPath;
 
-export const VILLAGE_MODEL_PATH = "/models/outposts/village.glb";
-export const CLEARED_SITE_MODEL_PATH = "/models/outposts/cleared-standard.glb";
-export const CAMP_MODEL_PATH = "/models/outposts/camp.glb";
+export const VILLAGE_MODEL_PATH = modelPath("outposts/village.glb");
+export const CLEARED_SITE_MODEL_PATH = modelPath("outposts/cleared-standard.glb");
+export const CAMP_MODEL_PATH = modelPath("outposts/camp.glb");
 export const REALM_MODEL_PATHS = {
   [RealmLevelNames.Settlement]: REALM_PATHS[0],
   [RealmLevelNames.City]: REALM_PATHS[1],
@@ -269,4 +270,4 @@ export const MinesMaterialsParams: Record<number, { color: Color; emissive: Colo
   },
 };
 
-export const SPIRE_MODEL_PATH = "/models/ethereal/spire.glb";
+export const SPIRE_MODEL_PATH = modelPath("ethereal/spire.glb");

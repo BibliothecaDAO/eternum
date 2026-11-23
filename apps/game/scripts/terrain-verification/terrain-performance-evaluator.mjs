@@ -1,5 +1,5 @@
 export const TERRAIN_BENCHMARK_RENDERERS = Object.freeze(["webgpu-auto", "webgpu-force-webgl"]);
-export const TERRAIN_BENCHMARK_VARIANTS = Object.freeze(["geometry", "material", "props", "production"]);
+export const TERRAIN_BENCHMARK_VARIANTS = Object.freeze(["material", "props", "production"]);
 
 export function evaluateTerrainPerformanceResults(results, options = {}) {
   const requiredRenderers = options.renderers ?? TERRAIN_BENCHMARK_RENDERERS;

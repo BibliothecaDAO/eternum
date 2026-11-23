@@ -6,13 +6,29 @@ type ModelUrls = Readonly<Record<string, string>>;
 
 /** Where a build publishes its map (build/hashed-models.ts), so a tab opened before a deployment can read the new one. */
 const DEPLOYED_MODEL_URLS = "/model-urls.json";
+const MODEL_ROOT = "/models/";
 
 /** This tab's content-hashed model URLs: its build's, then the deployment's once a model fails; none in development. */
 let modelUrls: ModelUrls | null = typeof __MODEL_URLS__ === "undefined" ? null : __MODEL_URLS__;
 let reading: Promise<void> | null = null;
 
+export const modelPath = (file: string): string => {
+  if (file.startsWith(MODEL_ROOT)) return file;
+  const trimmed = file.replace(/^\/+/, "");
+  return `${MODEL_ROOT}${trimmed.startsWith("models/") ? trimmed.slice("models/".length) : trimmed}`;
+};
+
 /** The URL a model is served at: its content-hashed name in a build, the file's own in development. */
 export const modelUrl = (url: string): string => modelUrls?.[url] ?? url;
+
+export async function fetchModel(path: string, init?: RequestInit): Promise<Response> {
+  const asked = modelUrls;
+  const response = await fetch(modelUrl(path), init);
+  if (response.ok || !asked) return response;
+  await readDeployedModelUrls();
+  if (modelUrls === asked) return response;
+  return fetch(modelUrl(path), init);
+}
 
 /** The map this tab resolves model URLs with now; a new object once the deployment's differs. */
 export const currentModelUrls = (): ModelUrls | null => modelUrls;

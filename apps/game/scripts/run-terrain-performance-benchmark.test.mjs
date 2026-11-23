@@ -130,7 +130,6 @@ describe("terrain performance benchmark", () => {
 
 function passingResult(rendererMode, variant) {
   const props = variant === "props" || variant === "production";
-  const textured = variant !== "geometry";
   return {
     complete: true,
     errors: [],
@@ -192,7 +191,7 @@ function passingResult(rendererMode, variant) {
         pixelRatio: 1,
         propInstances: props ? 4_000 : 0,
         shroudInstances: 0,
-        textures: textured ? 7 : 5,
+        textures: 7,
         triangles: props ? 2_500_000 : 100_000,
       },
       runMode: "full",

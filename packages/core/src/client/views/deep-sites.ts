@@ -1,12 +1,12 @@
 import { inlineTroops, resolveExplorerCombatTroops } from "../../managers/troop-stamina";
 import { armyOaths } from "../../utils/oaths";
 import { currentArmy } from "../../utils/deep";
-import { deepSites } from "@bibliothecadao/types";
+import { deepSites, layerName } from "@bibliothecadao/types";
 import { type NativeRows } from "../../../../../contracts/l3/world-native/schema/client.gen";
 import { nativeRuleConstants } from "../../../../../contracts/l3/world-native/schema/balance.gen";
 import type { NativeFactStore } from "../native-fact-store";
 import { configManager } from "../../managers/config-manager";
-import { dayOf, readExpeditionRules } from "../../utils/expeditions";
+import { DEEP_DEPTH, dayOf, readExpeditionRules } from "../../utils/expeditions";
 import { entityMapPosition } from "../../utils/tile";
 import { journeyDistance } from "../../utils/travel";
 
@@ -26,6 +26,8 @@ export interface DeepSiteView {
   guards: { slot: number; army: NativeRows["ExplorerTroops"] }[];
 }
 
+export class IncompleteDeepSyncError extends Error {}
+
 export function readDeepSites(
   store: NativeFactStore,
   timestamp: number,
@@ -34,8 +36,9 @@ export function readDeepSites(
   const today = readDeepDay(store, timestamp, gameId);
   if (!today) return [];
   const rows = [...store.inGame("DeepSite", gameId)];
-  if (rows.length !== today.rules.rings.length * nativeRuleConstants.DEEP_RING_SITES)
-    throw new Error("Incomplete Deep site facts");
+  if (rows.length !== today.rules.rings.length * nativeRuleConstants.DEEP_RING_SITES) {
+    throw new IncompleteDeepSyncError(`Incomplete ${layerName(DEEP_DEPTH)} site facts`);
+  }
   return rows
     .sort((left, right) => left.ring - right.ring || Number(left.entity_id - right.entity_id))
     .map((site) => deepSiteView(store, today, site, timestamp));
@@ -101,8 +104,8 @@ function deepSiteView(
   const kind = deepSites.find((candidate) => candidate.id === site.kind);
   if (!kind) throw new Error(`Unknown site kind ${site.kind}`);
   const gameId = site.game_id;
-  const { current, guard, troops } = todaysBeast(store, today, site);
   const entered = requireEntered(realmsEntered(store, gameId, today));
+  const { current, guard, troops } = todaysBeast(store, today, site);
   const isOpen = (row: NativeRows["DeepSite"]) => ringOpens(entered, siteRing(today, row));
   const payingAt = Math.max(entered, siteRing(today, site).realms);
   const openOfKind = [...store.inGame("DeepSite", gameId)].filter(
@@ -172,7 +175,7 @@ function realmsEntered(
 }
 
 function requireEntered(entered: { known: number } | { unknown: string }): number {
-  if ("unknown" in entered) throw new Error(`Realms entered today are unknown: ${entered.unknown}`);
+  if ("unknown" in entered) throw new IncompleteDeepSyncError(`Realms entered today are unknown: ${entered.unknown}`);
   return entered.known;
 }
 

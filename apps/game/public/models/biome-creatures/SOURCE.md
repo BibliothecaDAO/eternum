@@ -29,4 +29,4 @@ hanging straight and a little longer than the hip is high: the animator bends th
 `src/three/terrain/creatures/biome-creature-animator.js` poses every animal, stepped by the ground it covers and posed
 for what it is doing; it reads the joints, leg lengths and gait phases the models carry. The game owns loading,
 navigation, terrain contact and disposal. Each species is drawn at the size the catalog gives it, not at the size it was
-authored. Judge a change to either on `/lab/wildlife`; `/lab/life` shows all sixteen beside a knight.
+authored. Judge a change to either on `/lab/life?mode=paddock`; `/lab/life` shows all sixteen beside a knight.

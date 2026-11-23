@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
-import { configManager, isEtherealTile, type ExpeditionRules } from "@bibliothecadao/eternum";
-import { TickIds, type HexPosition } from "@bibliothecadao/types";
+import { cameraLayer, configManager } from "@bibliothecadao/eternum";
+import { TickIds } from "@bibliothecadao/types";
 import { useUISound } from "@/audio";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import {
@@ -8,6 +8,7 @@ import {
   useCurrentArmiesTick,
   useCurrentBlockTimestamp,
 } from "@/hooks/helpers/use-block-timestamp";
+import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { dayLightProgress, resolveDayCycleProgress, SURFACE_MOOD_PROGRESS } from "@/utils/cycle-progress";
 import { useExpeditionRules } from "@/ui/features/frontier/frontier-home";
@@ -15,9 +16,7 @@ import { dayClock } from "@/ui/features/frontier/hud/day-clock";
 import { isWorldInteractive } from "@/game-entry/world-interactive";
 
 const DAY_LIGHT_STEP_SECONDS = 5;
-
-const isSurfaceInView = (rules: ExpeditionRules | null, camera: HexPosition | null, alt: boolean): boolean =>
-  camera === null ? !alt : !isEtherealTile(rules, { row: camera.row, alt });
+const DEEP_RULE_MODELS = ["DeepRules"] as const;
 
 export function GameCycleEffects() {
   const blockNow = useCurrentBlockTimestamp();
@@ -28,8 +27,13 @@ export function GameCycleEffects() {
   const previousTick = useRef(tick);
   const duration = configManager.getTick(TickIds.Armies);
   const rules = useExpeditionRules();
+  const deepFacts = useNativeFacts(DEEP_RULE_MODELS);
   const now = useCoarseNowSeconds(DAY_LIGHT_STEP_SECONDS, rules !== null);
-  const onSurface = useUIStore((state) => isSurfaceInView(rules, state.cameraTargetHex, state.mapLayer));
+  const onSurface = useUIStore((state) => {
+    if (state.mapLayer) return false;
+    const hex = state.cameraTargetHex ? { ...state.cameraTargetHex, alt: state.mapLayer } : null;
+    return cameraLayer(rules, deepFacts.store, configManager.getActiveGameId(), hex) === 0;
+  });
   const shareLeft = rules && onSurface ? dayClock(rules, now).shareLeft : undefined;
   useEffect(() => {
     if (rules) {

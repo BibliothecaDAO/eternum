@@ -11,7 +11,6 @@ const POLL_MS = 250;
 const RENDERER_MODES = ["webgpu-auto", "webgpu-force-webgl"];
 /** The backend each mode must render on: three.js quietly drops to WebGL2 when the browser offers no WebGPU adapter. */
 const ACTIVE_MODE_OF = { "webgpu-auto": "webgpu", "webgpu-force-webgl": "webgl2-fallback" };
-const GROUND_MODES = ["flat", "textured"];
 const SCENE_IDS = [
   "all-biomes",
   "temperate-grove",
@@ -26,7 +25,7 @@ const SCENE_IDS = [
   "fog-frontier",
   "fog-reveal",
 ];
-const QUALITY_TIERS = ["overview", "balanced", "detail"];
+const QUALITY_TIERS = ["balanced", "high"];
 
 const MAX_WILDLIFE = 48;
 
@@ -45,9 +44,8 @@ function isWildlifePopulationValid(wildlife) {
 export function buildTerrainGalleryUrl(
   baseUrl,
   rendererMode,
-  groundMode = "textured",
   sceneId = "all-biomes",
-  qualityTier = "detail",
+  qualityTier = "high",
   revealProgress = 0,
 ) {
   const url = new URL(baseUrl);
@@ -56,7 +54,6 @@ export function buildTerrainGalleryUrl(
   url.search = "";
   url.searchParams.set("capture", "1");
   url.searchParams.set("rendererMode", rendererMode);
-  url.searchParams.set("groundMode", groundMode);
   url.searchParams.set("scene", sceneId);
   url.searchParams.set("quality", qualityTier);
   if (revealProgress > 0) url.searchParams.set("reveal", String(revealProgress));
@@ -67,25 +64,17 @@ export function buildTerrainGalleryUrl(
 export function evaluateTerrainGalleryResults(results, options = {}) {
   const sceneIds = options.sceneIds ?? ["all-biomes"];
   const rendererModes = options.rendererModes ?? RENDERER_MODES;
-  const groundModes = options.groundModes ?? GROUND_MODES;
   const enforceTiming = options.timingPolicy !== "informational";
   const reasons = [];
   for (const sceneId of sceneIds) {
     for (const rendererMode of rendererModes) {
-      for (const groundMode of groundModes) {
-        if (
-          !results.some(
-            (result) =>
-              result.sceneId === sceneId && result.rendererMode === rendererMode && result.groundMode === groundMode,
-          )
-        ) {
-          reasons.push(`${sceneId}/${rendererMode}/${groundMode}: missing verification scenario`);
-        }
+      if (!results.some((result) => result.sceneId === sceneId && result.rendererMode === rendererMode)) {
+        reasons.push(`${sceneId}/${rendererMode}: missing verification scenario`);
       }
     }
   }
   for (const result of results) {
-    const label = `${result.sceneId}/${result.rendererMode}/${result.groundMode}`;
+    const label = `${result.sceneId}/${result.rendererMode}`;
     if (!result.routeMounted) reasons.push(`${label}: route did not mount`);
     if (!result.ready) reasons.push(`${label}: route did not become ready`);
     if (result.snapshot && result.snapshot.activeMode !== ACTIVE_MODE_OF[result.rendererMode]) {
@@ -118,11 +107,11 @@ export function evaluateTerrainGalleryResults(results, options = {}) {
         reasons.push(`${label}: first terrain render exceeded 500 ms`);
       }
     }
-    if (result.groundMode === "textured" && !(result.snapshot?.textures >= 2 && result.snapshot.textures <= 32)) {
+    if (!(result.snapshot?.textures >= 2 && result.snapshot.textures <= 32)) {
       reasons.push(`${label}: renderer texture count exceeded policy or was unavailable`);
     }
     if (!(result.snapshot?.propInstances > 0)) reasons.push(`${label}: expected deterministic prop instances`);
-    if (result.qualityTier === "detail" && !(result.snapshot?.groundCoverInstances > 0)) {
+    if (result.qualityTier === "high" && !(result.snapshot?.groundCoverInstances > 0)) {
       reasons.push(`${label}: expected deterministic near-view ground cover`);
     }
     if (result.sceneId === "owned-roads" && !(result.snapshot?.roadSegments > 0)) {
@@ -137,11 +126,10 @@ export function evaluateTerrainGalleryResults(results, options = {}) {
     if (result.sceneId === "settlement-regrowth" && result.snapshot?.settlementTierCount !== 3) {
       reasons.push(`${label}: expected three distinct structure-aware settlement tiers`);
     }
-    const expectedDustInteractions = result.qualityTier === "overview" ? 0 : 3;
-    if (result.sceneId === "settlement-regrowth" && result.snapshot?.dustEmitterCount !== expectedDustInteractions) {
-      reasons.push(`${label}: expected ${expectedDustInteractions} quality-gated ground movement emitters`);
+    if (result.sceneId === "settlement-regrowth" && result.snapshot?.dustEmitterCount !== 3) {
+      reasons.push(`${label}: expected 3 quality-gated ground movement emitters`);
     }
-    if (result.sceneId === "settlement-regrowth" && result.snapshot?.dustActiveParticles !== expectedDustInteractions) {
+    if (result.sceneId === "settlement-regrowth" && result.snapshot?.dustActiveParticles !== 3) {
       reasons.push(`${label}: expected one deterministic dust puff per moving ground actor`);
     }
     if (result.sceneId === "settlement-regrowth" && result.snapshot?.dustCapacity !== 128) {
@@ -192,16 +180,11 @@ export function evaluateTerrainGalleryResults(results, options = {}) {
     if (result.sceneId === "tropical-coast" && !(result.snapshot?.waterFoamVertices > 6)) {
       reasons.push(`${label}: expected shallow shoreline vertices eligible for animated foam`);
     }
-    const expectedWaterInteractions = result.qualityTier === "overview" ? 0 : 3;
-    const expectedWaterWakes = result.qualityTier === "overview" ? 0 : 2;
-    if (
-      result.sceneId === "tropical-coast" &&
-      result.snapshot?.waterInteractionInstances !== expectedWaterInteractions
-    ) {
-      reasons.push(`${label}: expected ${expectedWaterInteractions} quality-gated naval water interactions`);
+    if (result.sceneId === "tropical-coast" && result.snapshot?.waterInteractionInstances !== 3) {
+      reasons.push(`${label}: expected 3 quality-gated naval water interactions`);
     }
-    if (result.sceneId === "tropical-coast" && result.snapshot?.waterWakeInstances !== expectedWaterWakes) {
-      reasons.push(`${label}: expected ${expectedWaterWakes} quality-gated moving-boat wakes`);
+    if (result.sceneId === "tropical-coast" && result.snapshot?.waterWakeInstances !== 2) {
+      reasons.push(`${label}: expected 2 quality-gated moving-boat wakes`);
     }
     const expectsFog = result.sceneId.startsWith("fog-");
     if (expectsFog && !(result.snapshot?.shroudInstances > 0)) {
@@ -274,18 +257,6 @@ export function evaluateTerrainGalleryResults(results, options = {}) {
     }
   }
 
-  const performanceDeltas = createPerformanceDeltas(results, sceneIds, rendererModes, groundModes);
-  if (enforceTiming) {
-    for (const delta of performanceDeltas) {
-      const p95BudgetMs = delta.rendererMode === "webgpu-auto" ? 1.5 : 2.5;
-      if (delta.frameP95Ms > p95BudgetMs) {
-        reasons.push(
-          `${delta.sceneId}/${delta.rendererMode}: textured frame p95 added ${delta.frameP95Ms.toFixed(2)} ms`,
-        );
-      }
-    }
-  }
-
   for (const sceneId of sceneIds) {
     const sceneResults = results.filter((result) => result.sceneId === sceneId);
     const fingerprints = new Set(sceneResults.map((result) => result.snapshot?.fingerprint).filter(Boolean));
@@ -323,39 +294,12 @@ export function evaluateTerrainGalleryResults(results, options = {}) {
       }
     }
   }
-  return { ok: reasons.length === 0, performanceDeltas, reasons };
-}
-
-function createPerformanceDeltas(results, sceneIds, rendererModes, groundModes) {
-  if (!groundModes.includes("flat") || !groundModes.includes("textured")) return [];
-  return sceneIds.flatMap((sceneId) =>
-    rendererModes.flatMap((rendererMode) => {
-      const flat = results.find(
-        (result) => result.sceneId === sceneId && result.rendererMode === rendererMode && result.groundMode === "flat",
-      )?.snapshot;
-      const textured = results.find(
-        (result) =>
-          result.sceneId === sceneId && result.rendererMode === rendererMode && result.groundMode === "textured",
-      )?.snapshot;
-      if (!flat || !textured) return [];
-      return [
-        {
-          firstRenderMs: textured.firstRenderMs - flat.firstRenderMs,
-          frameP50Ms: textured.frameP50Ms - flat.frameP50Ms,
-          frameP95Ms: textured.frameP95Ms - flat.frameP95Ms,
-          frameWorstMs: textured.frameWorstMs - flat.frameWorstMs,
-          rendererMode,
-          sceneId,
-        },
-      ];
-    }),
-  );
+  return { ok: reasons.length === 0, reasons };
 }
 
 async function runGalleryScenario({
   artifactDirectory,
   baseUrl,
-  groundMode,
   headed,
   qualityTier,
   revealProgress,
@@ -363,10 +307,10 @@ async function runGalleryScenario({
   sceneId,
 }) {
   const rendererKey = rendererMode === "webgpu-auto" ? "wg" : "gl";
-  const browserName = `tg-${sceneId.slice(0, 8)}-${qualityTier[0]}-${rendererKey}-${groundMode[0]}-${Date.now().toString(36)}`;
+  const browserName = `tg-${sceneId.slice(0, 8)}-${qualityTier[0]}-${rendererKey}-${Date.now().toString(36)}`;
   const profile = mkdtempSync(join(tmpdir(), "terrain-gallery-"));
   const session = createBrowserSession(browserName, { headed, profile });
-  const url = buildTerrainGalleryUrl(baseUrl, rendererMode, groundMode, sceneId, qualityTier, revealProgress);
+  const url = buildTerrainGalleryUrl(baseUrl, rendererMode, sceneId, qualityTier, revealProgress);
   try {
     runAgentBrowser(session, ["set", "viewport", "1440", "900"], headed);
     runAgentBrowser(session, ["open", url], headed);
@@ -383,14 +327,13 @@ async function runGalleryScenario({
       ...(state.error ? [state.error] : []),
       ...parseErrorLines(runAgentBrowser(session, ["errors"], headed)),
     ];
-    const screenshotPath = join(artifactDirectory, `${sceneId}-${rendererMode}-${groundMode}.png`);
+    const screenshotPath = join(artifactDirectory, `${sceneId}-${rendererMode}.png`);
     const imageCoverage =
       state.status === "ready"
         ? captureDrawnFrame(session, screenshotPath, headed)
         : capturePageWithoutTerrain(session, screenshotPath, headed);
     return {
       errors,
-      groundMode,
       imageCoverage,
       qualityTier,
       revealProgress,
@@ -502,14 +445,12 @@ async function main(args) {
   const baseUrl = readOption(args, "--base-url", DEFAULT_BASE_URL);
   const artifactDirectory = resolve(readOption(args, "--artifact-dir", DEFAULT_ARTIFACT_DIRECTORY));
   const headed = args.includes("--headed");
-  const qualityTier = readOption(args, "--quality", "detail");
+  const qualityTier = readOption(args, "--quality", "high");
   const revealProgress = Number(readOption(args, "--reveal-progress", "0"));
   const timingPolicy = readOption(args, "--timing-policy", "enforced");
   const rendererModes = readListOption(args, "--renderers", RENDERER_MODES);
-  const groundModes = readListOption(args, "--ground-modes", GROUND_MODES);
   const sceneIds = readListOption(args, "--scenes", ["all-biomes"]);
   const unknownRenderers = rendererModes.filter((rendererMode) => !RENDERER_MODES.includes(rendererMode));
-  const unknownGroundModes = groundModes.filter((groundMode) => !GROUND_MODES.includes(groundMode));
   const unknownSceneIds = sceneIds.filter((sceneId) => !SCENE_IDS.includes(sceneId));
   if (!QUALITY_TIERS.includes(qualityTier)) throw new Error(`Unknown terrain gallery quality: ${qualityTier}`);
   if (!Number.isFinite(revealProgress) || revealProgress < 0 || revealProgress > 1) {
@@ -519,33 +460,26 @@ async function main(args) {
     throw new Error(`Unknown terrain gallery timing policy: ${timingPolicy}`);
   }
   if (unknownRenderers.length > 0) throw new Error(`Unknown terrain gallery renderers: ${unknownRenderers.join(", ")}`);
-  if (unknownGroundModes.length > 0) {
-    throw new Error(`Unknown terrain gallery ground modes: ${unknownGroundModes.join(", ")}`);
-  }
   if (unknownSceneIds.length > 0) throw new Error(`Unknown terrain gallery scenes: ${unknownSceneIds.join(", ")}`);
   mkdirSync(artifactDirectory, { recursive: true });
   const results = [];
   for (const sceneId of sceneIds) {
     for (const rendererMode of rendererModes) {
-      for (const groundMode of groundModes) {
-        results.push(
-          await runGalleryScenario({
-            artifactDirectory,
-            baseUrl,
-            groundMode,
-            headed,
-            qualityTier,
-            revealProgress,
-            rendererMode,
-            sceneId,
-          }),
-        );
-      }
+      results.push(
+        await runGalleryScenario({
+          artifactDirectory,
+          baseUrl,
+          headed,
+          qualityTier,
+          revealProgress,
+          rendererMode,
+          sceneId,
+        }),
+      );
     }
   }
   const gameMode = new URL(baseUrl).searchParams.get("mode") === "frontier" ? "frontier" : "blitz";
   const evaluation = evaluateTerrainGalleryResults(results, {
-    groundModes,
     rendererModes,
     sceneIds,
     timingPolicy,
@@ -553,7 +487,6 @@ async function main(args) {
   });
   const summary = {
     ...evaluation,
-    groundModes,
     qualityTier,
     rendererModes,
     results,

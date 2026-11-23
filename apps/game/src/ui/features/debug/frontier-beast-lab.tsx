@@ -20,7 +20,7 @@ import {
   FALLEN_REALM_RUIN_PATH,
   largestBeastScale,
 } from "@/three/structures/frontier-beast";
-import { CAMP_MODEL_PATH } from "@/three/constants/scene-constants";
+import { CAMP_MODEL_PATH, RiftModelPath } from "@/three/constants/scene-constants";
 import { Token } from "@/three/map-plates/map-plate-token";
 import { Plate } from "@/three/map-plates/map-plates";
 import { buildStructurePlate } from "@/three/map-plates/map-plate-model";
@@ -43,7 +43,7 @@ const MODELS: readonly LineupAsset[] = MODEL_BEASTS.map(({ beast }) => ({
 }));
 const SITES = [
   { kind: "Camp", category: StructureType.Camp, base: CAMP_MODEL_PATH },
-  { kind: "Rift", category: StructureType.Rift, base: "/models/reward-tiles/rift.glb" },
+  { kind: "Rift", category: StructureType.Rift, base: RiftModelPath },
   { kind: "Ruin", category: StructureType.Ruin, base: FALLEN_REALM_RUIN_PATH },
   { kind: "Beasts", category: StructureType.Beasts, base: "" },
 ] as const;

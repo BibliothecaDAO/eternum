@@ -8,6 +8,7 @@ import {
   type EtherealLayer,
   type ExpeditionRules,
   expeditionDepth,
+  hasSharedDeep,
   reachableDepth,
   structureMapPosition,
   viewInLayer,
@@ -43,7 +44,7 @@ export const useMapLayers = (
   if (!realm || !isMapView) return null;
   const site = realmSite(facts.store, realm);
   const from = camera ?? site;
-  const sharedDeep = facts.store.get("DeepRules", { game_id: realm.game_id }) !== undefined;
+  const sharedDeep = hasSharedDeep(facts.store, realm.game_id);
   return {
     layers: [
       0,

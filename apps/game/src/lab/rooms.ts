@@ -404,12 +404,6 @@ export const ROOMS: LabRoom[] = [
             "life",
             load(() => import("../ui/features/debug/map-life-lab-view"), "MapLifeLabView"),
           ),
-          view(
-            "Wildlife",
-            "/lab/wildlife",
-            "wildlife",
-            load(() => import("../ui/features/debug/wildlife-lab-view"), "WildlifeLabView"),
-          ),
         ],
       },
       {

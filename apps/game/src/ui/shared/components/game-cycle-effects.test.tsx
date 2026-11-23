@@ -28,10 +28,14 @@ vi.mock("@/ui/features/frontier/hud/day-clock", () => ({
     return { shareLeft: day.shareLeft };
   },
 }));
+vi.mock("@/hooks/helpers/use-native-facts", () => ({
+  useNativeFacts: () => ({ store: { get: () => undefined } }),
+}));
 vi.mock("@bibliothecadao/eternum", async (original) => ({
   ...(await original<object>()),
-  configManager: { getTick: () => day.tickDuration },
-  isEtherealTile: (_rules: unknown, hex: { row: number; alt: boolean }) => hex.alt || hex.row >= 100,
+  configManager: { getTick: () => day.tickDuration, getActiveGameId: () => 1 },
+  cameraLayer: (_rules: unknown, _store: unknown, _gameId: number, hex: { row: number; alt: boolean } | null) =>
+    hex && !hex.alt && hex.row >= 100 ? 1 : 0,
 }));
 
 import { useUIStore } from "@/hooks/store/use-ui-store";

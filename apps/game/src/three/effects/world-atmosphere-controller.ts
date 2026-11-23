@@ -1,6 +1,6 @@
 import type { GameModeId } from "@/config/game-modes";
 import { WORLD_ATMOSPHERE_PRESETS, type TimeOfDayColors } from "./world-atmosphere-presets";
-import type { LayerPlace } from "../terrain/layer-biomes";
+import type { LayerPlace } from "@bibliothecadao/types";
 import { DAY_PHASE_PROGRESS, resolveDayPhase } from "@/utils/cycle-progress";
 import { placeKeyLight } from "./key-light";
 import type GUI from "lil-gui";
@@ -194,10 +194,7 @@ export class WorldAtmosphereController {
   }
 
   private layerLight(): TimeOfDayColors | null {
-    const environment = this.environment;
-    return environment === "veil" || environment === "hollow" || environment === "deep"
-      ? LAYER_LIGHTS[environment]
-      : null;
+    return this.environment in LAYER_LIGHTS ? LAYER_LIGHTS[this.environment as LayerPlace] : null;
   }
 
   get shownProgress(): number {

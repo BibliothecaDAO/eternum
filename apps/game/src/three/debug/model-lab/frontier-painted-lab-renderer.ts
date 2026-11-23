@@ -4,7 +4,9 @@ import {
   BUILDINGS_GROUPS,
   CAMP_MODEL_PATH,
   REALM_MODEL_PATHS,
+  RiftModelPath,
 } from "../../constants/scene-constants";
+import { modelPath } from "../../utils/model-url";
 import { buildingTierModelPath } from "../../structures/building-tiers";
 import { FALLEN_REALM_RUIN_PATH } from "../../structures/frontier-beast";
 import {
@@ -39,9 +41,9 @@ const BOARD_TYPES: Partial<Record<string, BuildingType>> = {
 const SHIPPED_SITES: Partial<Record<string, string>> = {
   camp: CAMP_MODEL_PATH,
   "fallen-realm-ruin": FALLEN_REALM_RUIN_PATH,
-  shrine: "/models/outposts/shrine.glb",
-  well: "/models/outposts/well.glb",
-  "essence-rift": "/models/reward-tiles/rift.glb",
+  shrine: modelPath("outposts/shrine.glb"),
+  well: modelPath("outposts/well.glb"),
+  "essence-rift": RiftModelPath,
 };
 
 /** One painted set at game scale, optionally with the shipped models it would replace in a row behind it. */

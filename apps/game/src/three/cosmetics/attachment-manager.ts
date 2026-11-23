@@ -1,4 +1,5 @@
 import { Euler, Group, Mesh, Object3D, Scene, Vector3 } from "three";
+import { modelPath } from "../utils/model-url";
 import { CosmeticAssetHandle, ensureCosmeticAsset, loadCosmeticAsset } from "./asset-cache";
 import { getCosmeticRegistry } from "./registry";
 import { AttachmentTransform, CosmeticAttachmentTemplate, CosmeticRegistryEntry } from "./types";
@@ -27,9 +28,7 @@ const DEFAULT_SCALE = 1;
 const normalizeAssetPath = (path?: string): string | undefined => {
   if (!path) return undefined;
   if (path.startsWith("/")) return path;
-  // Absolute so deep routes resolve from the site root, not the current URL.
-  if (path.startsWith("models/")) return `/${path}`;
-  return `/models/${path}`;
+  return modelPath(path);
 };
 
 /**

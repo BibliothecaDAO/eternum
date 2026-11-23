@@ -5,11 +5,14 @@ import {
   CylinderGeometry,
   DirectionalLight,
   Group,
+  InstancedMesh,
+  Matrix4,
   Mesh,
   MeshStandardMaterial,
   Object3D,
   PerspectiveCamera,
   Scene,
+  Vector3,
 } from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { CSS2DObject, CSS2DRenderer } from "three/addons/renderers/CSS2DRenderer.js";
@@ -17,29 +20,43 @@ import { clone as cloneWithSkeleton } from "three/addons/utils/SkeletonUtils.js"
 import { WebGPURenderer } from "three/webgpu";
 
 import { T1_KNIGHT_WORLD_SCALE } from "@/three/constants/army-constants";
+import { fetchModel, modelPath } from "@/three/utils/model-url";
 import type { RendererSurfaceLike } from "@/three/renderer-backend";
 import { configureRendererColorOutput } from "@/three/renderer-color-output";
 import { loadBiomeCreature } from "@/three/terrain/creatures/biome-creature-assets";
-import { homeBiome, type CreatureSpecies } from "@/three/terrain/creatures/biome-creature-catalog";
-import { TERRAIN_BIOME_DESCRIPTORS } from "@/three/terrain/terrain-palette";
+import {
+  creatureForBiome,
+  creatureTraits,
+  homeBiome,
+  type CreatureSpecies,
+} from "@/three/terrain/creatures/biome-creature-catalog";
+import { findNearestTerrainHex, terrainCellKey, terrainHexToWorld } from "@/three/terrain/terrain-coordinates";
+import { TERRAIN_BIOME_DESCRIPTORS, TERRAIN_BIOME_ORDER } from "@/three/terrain/terrain-palette";
 import { LAYER_BIOME_LOOKS } from "@/three/terrain/layer-biomes";
 import {
-  LAYER_PROP_IDS,
   TERRAIN_FLORA_MANIFEST_PATH,
   TERRAIN_PROP_ARCHETYPE_IDS,
   getTerrainPropRole,
-  type LayerPropId,
+  isLayerPropId,
   type TerrainPropArchetypeId,
 } from "@/three/terrain/terrain-prop-catalog";
 import { TerrainPropPools } from "@/three/terrain/terrain-prop-pools";
 import { getLayerPropBiomes, getTerrainPropBiomes, resolveLayerFloraAppearance } from "@/three/terrain/terrain-props";
-import type { TerrainPropAppearance, TerrainPropInstance } from "@/three/terrain/terrain-types";
+import type {
+  TerrainCellInput,
+  TerrainPropAppearance,
+  TerrainPropInstance,
+  TerrainSurfaceSample,
+} from "@/three/terrain/terrain-types";
+import { isTerrainWaterBiome, TERRAIN_WATER_LEVEL } from "@/three/terrain/terrain-water";
+import { TerrainWildlife } from "@/three/terrain/terrain-wildlife";
 import { gltfLoader } from "@/three/utils/gltf-loader";
 import { configureGltfTextureSupport } from "@/three/utils/utils";
 import { resolveWebGpuRendererActiveMode } from "@/three/webgpu-renderer-backend";
 import type { BiomeType } from "@bibliothecadao/types/terrain";
 
 export type MapLifeGround = "neutral" | "biome";
+export type WildlifeLabCameraView = "flank" | "map";
 
 export interface MapLifeLabStats {
   activeMode: "webgl2-fallback" | "webgpu";
@@ -61,27 +78,63 @@ interface MountMapLifeLabInput {
   onReady(stats: MapLifeLabStats): void;
 }
 
-interface MapLifeRendererSurface extends RendererSurfaceLike {
+interface WildlifeLabStats {
+  activeMode: "webgl2-fallback" | "webgpu";
+  wildlife: ReturnType<TerrainWildlife["getStats"]>;
+}
+
+export interface WildlifeLabHandle {
+  dispose(): void;
+  getStats(): WildlifeLabStats;
+}
+
+interface MountWildlifeLabInput {
+  cameraDistance: number;
+  cameraView: WildlifeLabCameraView;
+  canvas: HTMLCanvasElement;
+  captureMode: boolean;
+  forceWebGL: boolean;
+  species: CreatureSpecies | null;
+  army: boolean;
+  onReady(stats: WildlifeLabStats): void;
+}
+
+interface LabRendererSurface extends RendererSurfaceLike {
   init(): Promise<void>;
   setAnimationLoop(callback: ((time: number) => void) | null): void;
   setClearColor(color: Color, alpha?: number): void;
   setSize(width: number, height: number, updateStyle?: boolean): void;
 }
 
-type MapLifeRendererConstructor = new (options: {
+type LabRendererConstructor = new (options: {
   antialias: boolean;
   canvas: HTMLCanvasElement;
   forceWebGL: boolean;
-}) => MapLifeRendererSurface;
+}) => LabRendererSurface;
 
-interface LabRuntime {
+interface GalleryRuntime {
   camera: PerspectiveCamera;
   controls: OrbitControls;
   labels: CSS2DRenderer;
-  renderer: MapLifeRendererSurface;
+  renderer: LabRendererSurface;
   pools: TerrainPropPools | null;
   scene: Scene;
   tiles: number;
+}
+
+interface PaddockRuntime {
+  army: LabArmy | null;
+  camera: PerspectiveCamera;
+  ground: Group;
+  renderer: LabRendererSurface;
+  scene: Scene;
+  wildlife: TerrainWildlife;
+}
+
+interface LabArmy {
+  marker: Group;
+  heading: number;
+  remaining: number;
 }
 
 interface FloraManifest {
@@ -92,14 +145,30 @@ interface CreatureManifest {
   creatures: { id: string; file: string; triangles: number; bytes: number }[];
 }
 
-const CREATURE_MANIFEST_PATH = "/models/biome-creatures/manifest.json";
-const KNIGHT_PATH = "/models/characters/t1-knight-default/near/skin.glb";
+type WildlifeLabWindow = Window & {
+  __wildlifeLab?: {
+    status: "booting" | "error" | "ready";
+    error?: string;
+    getSnapshot?: () => WildlifeLabStats;
+    step?: (seconds: number) => WildlifeLabStats;
+  };
+};
+
+const CREATURE_MANIFEST_PATH = modelPath("biome-creatures/manifest.json");
+const KNIGHT_PATH = modelPath("characters/t1-knight-default/near/skin.glb");
 const FLORA_SLOT = 3.4;
 const CREATURE_SLOT = 2.6;
 const CREATURE_ROW_Z = -4.5;
 const NEUTRAL_GROUND = "#8f8c84";
 const PROCEDURAL = "procedural (build-time)";
 const GALLERY_PAGE = "life-lab";
+const PADDOCK_CELLS = 8;
+const PADDOCK_COLUMNS = 4;
+const FRAME_SECONDS = 1 / 30;
+const WATER_BED_DEPTH = 0.3;
+const MAP_CAMERA_DIRECTION = new Vector3(0, 0.77, 0.64).normalize();
+const ARMY_PACE = 0.5;
+const ARMY_MARCH = 11;
 const SURFACE_GALLERY_LOOK: TerrainPropAppearance = {
   glow: [0, 0, 0],
   moss: 0,
@@ -108,19 +177,86 @@ const SURFACE_GALLERY_LOOK: TerrainPropAppearance = {
   windAmplitude: 0.3,
 };
 
+export const WILDLIFE_LAB_SPECIES = TERRAIN_BIOME_ORDER.map((biome) => creatureForBiome(biome)).filter(
+  (species) => species !== null,
+);
+
+async function createLabRenderer(
+  canvas: HTMLCanvasElement,
+  forceWebGL: boolean,
+  clearHex: string,
+  shadows: boolean,
+): Promise<LabRendererSurface> {
+  const Renderer = WebGPURenderer as unknown as LabRendererConstructor;
+  const renderer = new Renderer({ canvas, antialias: true, forceWebGL });
+  configureRendererColorOutput(renderer);
+  renderer.setPixelRatio(1);
+  renderer.setSize(...canvasSize(canvas), false);
+  renderer.setClearColor(new Color(clearHex), 1);
+  if (shadows) renderer.shadowMap.enabled = true;
+  await renderer.init();
+  configureGltfTextureSupport(renderer as Parameters<typeof configureGltfTextureSupport>[0]);
+  return renderer;
+}
+
+function createLabLights(shadows: boolean): Group {
+  const lights = new Group();
+  lights.add(new AmbientLight(0xdde7e9, shadows ? 1.4 : 1.5));
+  const sun = new DirectionalLight(0xfff2d0, shadows ? 3 : 3.2);
+  if (shadows) {
+    sun.position.set(-20, 30, 20);
+    sun.target.position.set(20, 0, -2);
+    sun.castShadow = true;
+    sun.shadow.mapSize.set(4096, 1024);
+    Object.assign(sun.shadow.camera, { left: -40, right: 40, top: 12, bottom: -12, near: 1, far: 120 });
+    lights.add(sun, sun.target);
+  } else {
+    sun.position.set(5, 8, 6);
+    lights.add(sun);
+  }
+  return lights;
+}
+
+function canvasSize(canvas: HTMLCanvasElement): [width: number, height: number] {
+  const bounds = canvas.getBoundingClientRect();
+  return [Math.max(1, Math.floor(bounds.width)), Math.max(1, Math.floor(bounds.height))];
+}
+
+function resizeSurface(
+  canvas: HTMLCanvasElement,
+  renderer: LabRendererSurface,
+  camera: PerspectiveCamera,
+  labels?: CSS2DRenderer,
+): void {
+  const [width, height] = canvasSize(canvas);
+  renderer.setSize(width, height, false);
+  labels?.setSize(width, height);
+  camera.aspect = width / height;
+  camera.updateProjectionMatrix();
+}
+
 export async function mountMapLifeLab(input: MountMapLifeLabInput): Promise<MapLifeLabHandle> {
-  const runtime = await createRuntime(input);
+  const renderer = await createLabRenderer(input.canvas, input.forceWebGL, "#20241f", true);
+  const labels = new CSS2DRenderer({ element: input.labels });
+  const camera = new PerspectiveCamera(36, 1, 0.05, 400);
+  const controls = new OrbitControls(camera, input.labels);
+  controls.enableDamping = false;
+  const scene = new Scene();
+  scene.add(createLabLights(true));
+  const runtime: GalleryRuntime = { camera, controls, labels, pools: null, renderer, scene, tiles: 0 };
+  frameGalleryCamera(runtime);
+
   const knight = await loadKnight();
   const floraTiles = await addFloraRow(runtime, input, knight);
   const creatureTiles = await addCreatureRow(runtime.scene, input, knight);
   runtime.tiles = floraTiles + creatureTiles;
-  const resize = () => resizeLab(input.canvas, runtime);
+  const resize = () => resizeSurface(input.canvas, runtime.renderer, runtime.camera, runtime.labels);
   const observer = new ResizeObserver(resize);
   observer.observe(input.canvas);
   resize();
-  runtime.renderer.setAnimationLoop(() => drawLab(runtime));
-  drawLab(runtime);
-  input.onReady(readStats(runtime));
+  runtime.renderer.setAnimationLoop(() => drawGallery(runtime));
+  drawGallery(runtime);
+  input.onReady(readGalleryStats(runtime));
   return {
     dispose: () => {
       runtime.renderer.setAnimationLoop(null);
@@ -131,31 +267,74 @@ export async function mountMapLifeLab(input: MountMapLifeLabInput): Promise<MapL
       runtime.scene.clear();
       runtime.renderer.dispose();
     },
-    resetCamera: () => frameCamera(runtime),
+    resetCamera: () => frameGalleryCamera(runtime),
   };
 }
 
-async function createRuntime(input: MountMapLifeLabInput): Promise<LabRuntime> {
-  const Renderer = WebGPURenderer as unknown as MapLifeRendererConstructor;
-  const renderer = new Renderer({ canvas: input.canvas, antialias: true, forceWebGL: input.forceWebGL });
-  configureRendererColorOutput(renderer);
-  renderer.setPixelRatio(1);
-  renderer.setClearColor(new Color("#20241f"), 1);
-  renderer.shadowMap.enabled = true;
-  await renderer.init();
-  configureGltfTextureSupport(renderer as Parameters<typeof configureGltfTextureSupport>[0]);
-  const labels = new CSS2DRenderer({ element: input.labels });
-  const camera = new PerspectiveCamera(36, 1, 0.05, 400);
-  const controls = new OrbitControls(camera, input.labels);
-  controls.enableDamping = false;
-  const scene = new Scene();
-  scene.add(createLights());
-  const runtime = { camera, controls, labels, pools: null, renderer, scene, tiles: 0 };
-  frameCamera(runtime);
-  return runtime;
+export async function mountWildlifeLab(input: MountWildlifeLabInput): Promise<WildlifeLabHandle> {
+  const labWindow = window as WildlifeLabWindow;
+  labWindow.__wildlifeLab = { status: "booting" };
+  try {
+    const renderer = await createLabRenderer(input.canvas, input.forceWebGL, "#1c1917", false);
+    const cells = createPaddockCells();
+    const biomes = new Map(cells.map((cell) => [terrainCellKey(cell.col, cell.row), cell.biome]));
+    const wildlife = new TerrainWildlife(
+      (x, z) => samplePaddockSurface(biomes, x, z),
+      () => {},
+    );
+    wildlife.sync(cells, []);
+    await wildlife.load();
+
+    const scene = new Scene();
+    const ground = createPaddockGround(cells);
+    scene.add(ground, wildlife.object3d, createLabLights(false));
+    const army = input.army && input.species ? createLabArmy() : null;
+    if (army) scene.add(army.marker);
+    const runtime: PaddockRuntime = {
+      army,
+      camera: new PerspectiveCamera(36, 1, 0.05, 300),
+      ground,
+      renderer,
+      scene,
+      wildlife,
+    };
+
+    const draw = () => drawPaddockFrame(runtime, input);
+    const resize = () => resizeSurface(input.canvas, runtime.renderer, runtime.camera);
+    const resizeObserver = new ResizeObserver(resize);
+    resizeObserver.observe(input.canvas);
+    resize();
+    const tick = (seconds: number) => advancePaddock(runtime, input, seconds);
+    const stopAnimation = startPaddockAnimation(runtime, draw, input.captureMode ? () => {} : tick);
+    labWindow.__wildlifeLab = {
+      status: "ready",
+      getSnapshot: () => readPaddockStats(runtime),
+      step: (seconds) => {
+        for (let remaining = seconds; remaining > 1e-6; remaining -= FRAME_SECONDS)
+          tick(Math.min(FRAME_SECONDS, remaining));
+        return readPaddockStats(runtime);
+      },
+    };
+    input.onReady(readPaddockStats(runtime));
+    return {
+      getStats: () => readPaddockStats(runtime),
+      dispose: () => {
+        stopAnimation();
+        resizeObserver.disconnect();
+        runtime.wildlife.dispose();
+        disposePaddockGround(runtime.ground);
+        if (runtime.army) disposeArmy(runtime.army);
+        runtime.renderer.dispose();
+        delete labWindow.__wildlifeLab;
+      },
+    };
+  } catch (error) {
+    labWindow.__wildlifeLab = { status: "error", error: error instanceof Error ? error.message : String(error) };
+    throw error;
+  }
 }
 
-async function addFloraRow(runtime: LabRuntime, input: MountMapLifeLabInput, knight: Object3D) {
+async function addFloraRow(runtime: GalleryRuntime, input: MountMapLifeLabInput, knight: Object3D) {
   const pools = await TerrainPropPools.load();
   runtime.pools = pools;
   runtime.scene.add(pools.object3d);
@@ -168,7 +347,7 @@ async function addFloraRow(runtime: LabRuntime, input: MountMapLifeLabInput, kni
     const x = index * FLORA_SLOT;
     const row = manifest.species.find(({ id }) => id === archetype)!;
     const draws = getTerrainPropRole(archetype) === "canopy" ? "1 draw per kind, +1 shadow" : "1 draw per kind";
-    runtime.scene.add(createGround(x, 0, FLORA_SLOT * 0.48, floraGroundColour(input.ground, archetype)));
+    runtime.scene.add(createGalleryGround(x, 0, FLORA_SLOT * 0.48, floraGroundColour(input.ground, archetype)));
     const anchor = new Object3D();
     anchor.position.set(x, 0, 0);
     runtime.scene.add(anchor);
@@ -179,9 +358,10 @@ async function addFloraRow(runtime: LabRuntime, input: MountMapLifeLabInput, kni
 }
 
 function galleryInstance(archetype: TerrainPropArchetypeId, x: number): TerrainPropInstance {
-  const layerProp = asLayerProp(archetype);
   return {
-    appearance: layerProp ? resolveLayerFloraAppearance(getLayerPropBiomes(layerProp)[0], 1) : SURFACE_GALLERY_LOOK,
+    appearance: isLayerPropId(archetype)
+      ? resolveLayerFloraAppearance(getLayerPropBiomes(archetype)[0], 1)
+      : SURFACE_GALLERY_LOOK,
     archetype,
     ownerCol: 0,
     ownerRow: 0,
@@ -195,13 +375,8 @@ function galleryInstance(archetype: TerrainPropArchetypeId, x: number): TerrainP
 }
 
 function floraGroundColour(ground: MapLifeGround, archetype: TerrainPropArchetypeId): string {
-  const layerProp = asLayerProp(archetype);
-  if (ground === "biome" && layerProp) return LAYER_BIOME_LOOKS[getLayerPropBiomes(layerProp)[0]].ground;
+  if (ground === "biome" && isLayerPropId(archetype)) return LAYER_BIOME_LOOKS[getLayerPropBiomes(archetype)[0]].ground;
   return groundColour(ground, getTerrainPropBiomes(archetype)[0]);
-}
-
-function asLayerProp(archetype: TerrainPropArchetypeId): LayerPropId | undefined {
-  return LAYER_PROP_IDS.find((id) => id === archetype);
 }
 
 async function addCreatureRow(scene: Scene, input: MountMapLifeLabInput, knight: Object3D) {
@@ -210,7 +385,7 @@ async function addCreatureRow(scene: Scene, input: MountMapLifeLabInput, knight:
     manifest.creatures.map(async (creature, index) => {
       const x = index * CREATURE_SLOT;
       scene.add(
-        createGround(
+        createGalleryGround(
           x,
           CREATURE_ROW_Z,
           CREATURE_SLOT * 0.46,
@@ -276,7 +451,7 @@ function objectTop(object: Object3D): number {
   return (bounds.max.y - object.position.y) / Math.max(object.scale.y, 1e-6);
 }
 
-function createGround(x: number, z: number, radius: number, colour: string): Mesh {
+function createGalleryGround(x: number, z: number, radius: number, colour: string): Mesh {
   const ground = new Mesh(
     new CylinderGeometry(radius, radius, 0.06, 6),
     new MeshStandardMaterial({ color: colour, roughness: 0.95 }),
@@ -291,41 +466,19 @@ function groundColour(ground: MapLifeGround, biome: BiomeType | undefined): stri
   return TERRAIN_BIOME_DESCRIPTORS[biome].primary;
 }
 
-function createLights(): Group {
-  const lights = new Group();
-  lights.add(new AmbientLight(0xdde7e9, 1.4));
-  const sun = new DirectionalLight(0xfff2d0, 3);
-  sun.position.set(-20, 30, 20);
-  sun.target.position.set(20, 0, -2);
-  sun.castShadow = true;
-  sun.shadow.mapSize.set(4096, 1024);
-  Object.assign(sun.shadow.camera, { left: -40, right: 40, top: 12, bottom: -12, near: 1, far: 120 });
-  lights.add(sun, sun.target);
-  return lights;
-}
-
-function frameCamera({ camera, controls }: Pick<LabRuntime, "camera" | "controls">) {
+function frameGalleryCamera({ camera, controls }: Pick<GalleryRuntime, "camera" | "controls">) {
   camera.position.set(2, 7, 9);
   controls.target.set(2, 0.4, -1.5);
   controls.update();
 }
 
-function resizeLab(canvas: HTMLCanvasElement, runtime: LabRuntime) {
-  const { width, height } = canvas.getBoundingClientRect();
-  const size = [Math.max(1, Math.floor(width)), Math.max(1, Math.floor(height))] as const;
-  runtime.renderer.setSize(size[0], size[1], false);
-  runtime.labels.setSize(size[0], size[1]);
-  runtime.camera.aspect = size[0] / size[1];
-  runtime.camera.updateProjectionMatrix();
-}
-
-function drawLab(runtime: LabRuntime) {
+function drawGallery(runtime: GalleryRuntime) {
   runtime.controls.update();
   runtime.renderer.render(runtime.scene, runtime.camera);
   runtime.labels.render(runtime.scene, runtime.camera);
 }
 
-function readStats(runtime: LabRuntime): MapLifeLabStats {
+function readGalleryStats(runtime: GalleryRuntime): MapLifeLabStats {
   const info = runtime.renderer.info.render;
   return {
     activeMode: resolveWebGpuRendererActiveMode(runtime.renderer),
@@ -352,7 +505,160 @@ function countMeshes(object: Object3D): number {
 }
 
 async function fetchJson(path: string): Promise<unknown> {
-  const response = await fetch(path);
+  const response = await fetchModel(path);
   if (!response.ok) throw new Error(`${path} answered ${response.status}`);
   return response.json();
+}
+
+function createPaddockCells(): TerrainCellInput[] {
+  return TERRAIN_BIOME_ORDER.flatMap((biome, paddock) => {
+    const firstCol = (paddock % PADDOCK_COLUMNS) * PADDOCK_CELLS;
+    const firstRow = Math.floor(paddock / PADDOCK_COLUMNS) * PADDOCK_CELLS;
+    return Array.from({ length: PADDOCK_CELLS * PADDOCK_CELLS }, (_, index) => ({
+      biome,
+      col: firstCol + (index % PADDOCK_CELLS),
+      row: firstRow + Math.floor(index / PADDOCK_CELLS),
+      explored: true,
+      occupied: false,
+      previewBiome: null,
+    }));
+  });
+}
+
+function samplePaddockSurface(
+  biomes: ReadonlyMap<string, TerrainCellInput["biome"]>,
+  x: number,
+  z: number,
+): TerrainSurfaceSample {
+  const hex = findNearestTerrainHex(x, z);
+  const biome = biomes.get(terrainCellKey(hex.col, hex.row)) ?? null;
+  return { biome, height: isTerrainWaterBiome(biome) ? TERRAIN_WATER_LEVEL - WATER_BED_DEPTH : 0, normal: [0, 1, 0] };
+}
+
+function createPaddockGround(cells: readonly TerrainCellInput[]): Group {
+  const ground = new Group();
+  ground.name = "wildlife-lab-ground";
+  const tile = new CylinderGeometry(0.97, 0.97, 0.04, 6);
+  const land = new InstancedMesh(tile, new MeshStandardMaterial({ roughness: 0.95 }), cells.length);
+  const waterCells = cells.filter((cell) => isTerrainWaterBiome(cell.biome));
+  const water = new InstancedMesh(
+    tile,
+    new MeshStandardMaterial({ color: "#4f9fb5", opacity: 0.55, roughness: 0.2, transparent: true }),
+    waterCells.length,
+  );
+  const matrix = new Matrix4();
+  const colour = new Color();
+  cells.forEach((cell, index) => {
+    const { x, z } = terrainHexToWorld(cell.col, cell.row);
+    const bed = isTerrainWaterBiome(cell.biome) ? TERRAIN_WATER_LEVEL - WATER_BED_DEPTH : 0;
+    land.setMatrixAt(index, matrix.makeTranslation(x, bed - 0.02, z));
+    land.setColorAt(index, colour.set(TERRAIN_BIOME_DESCRIPTORS[cell.biome!].primary));
+  });
+  waterCells.forEach((cell, index) => {
+    const { x, z } = terrainHexToWorld(cell.col, cell.row);
+    water.setMatrixAt(index, matrix.makeTranslation(x, TERRAIN_WATER_LEVEL - 0.02, z));
+  });
+  ground.add(land, water);
+  return ground;
+}
+
+function startPaddockAnimation(runtime: PaddockRuntime, draw: () => void, tick: (seconds: number) => void): () => void {
+  let last = performance.now();
+  runtime.renderer.setAnimationLoop((now) => {
+    tick((now - last) / 1000);
+    last = now;
+    draw();
+  });
+  return () => runtime.renderer.setAnimationLoop(null);
+}
+
+function advancePaddock(runtime: PaddockRuntime, input: MountWildlifeLabInput, seconds: number): void {
+  const followed = input.species ? findAnimal(runtime.wildlife, input.species) : undefined;
+  if (runtime.army && followed) {
+    marchPast(runtime.army, followed.position, seconds);
+    const { x, z } = runtime.army.marker.position;
+    runtime.wildlife.setArmies([{ worldX: x, worldZ: z, isMoving: true }]);
+  }
+  runtime.wildlife.update(seconds);
+}
+
+function createLabArmy(): LabArmy {
+  const marker = new Group();
+  marker.name = "wildlife-lab-army";
+  const post = new Mesh(new CylinderGeometry(0.04, 0.04, 0.9, 8), new MeshStandardMaterial({ color: "#3b2f2a" }));
+  post.position.y = 0.45;
+  const banner = new Mesh(new CylinderGeometry(0.2, 0.2, 0.3, 3), new MeshStandardMaterial({ color: "#b3261e" }));
+  banner.position.y = 0.8;
+  marker.add(post, banner);
+  return { marker, heading: 0.6, remaining: 0 };
+}
+
+function marchPast(army: LabArmy, animal: Vector3, seconds: number): void {
+  if (army.remaining <= 0) {
+    army.heading += 2.2;
+    army.remaining = ARMY_MARCH;
+    army.marker.position.set(
+      animal.x - Math.sin(army.heading) * ARMY_MARCH * 0.5,
+      0,
+      animal.z - Math.cos(army.heading) * ARMY_MARCH * 0.5,
+    );
+  }
+  const step = Math.min(ARMY_PACE * seconds, army.remaining);
+  army.marker.position.x += Math.sin(army.heading) * step;
+  army.marker.position.z += Math.cos(army.heading) * step;
+  army.remaining -= step;
+}
+
+function drawPaddockFrame(runtime: PaddockRuntime, input: MountWildlifeLabInput): void {
+  const followed = input.species ? findAnimal(runtime.wildlife, input.species) : undefined;
+  if (followed) followAnimal(runtime.camera, followed, input);
+  else frameEveryPaddock(runtime.camera);
+  runtime.renderer.render(runtime.scene, runtime.camera);
+}
+
+function findAnimal(wildlife: TerrainWildlife, species: CreatureSpecies) {
+  return wildlife.object3d.children.find((animal) => animal.name.startsWith(`biome-creature:${species}:`));
+}
+
+function followAnimal(
+  camera: PerspectiveCamera,
+  animal: Group["children"][number],
+  input: MountWildlifeLabInput,
+): void {
+  const size = creatureTraits(input.species!).size;
+  const target = animal.position.clone().setY(animal.position.y + size * 0.4);
+  if (input.cameraView === "map") {
+    camera.position.copy(target).addScaledVector(MAP_CAMERA_DIRECTION, input.cameraDistance);
+  } else {
+    const flank = new Vector3(1, 0, 0.25).applyQuaternion(animal.quaternion).setY(0.22).normalize();
+    camera.position.copy(target).addScaledVector(flank, input.cameraDistance * size);
+  }
+  camera.lookAt(target);
+}
+
+function frameEveryPaddock(camera: PerspectiveCamera): void {
+  const span = PADDOCK_COLUMNS * PADDOCK_CELLS;
+  const centre = terrainHexToWorld(span / 2, span / 2);
+  camera.position.set(centre.x, 62, centre.z + 44);
+  camera.lookAt(centre.x, 0, centre.z);
+}
+
+function readPaddockStats(runtime: PaddockRuntime): WildlifeLabStats {
+  return { activeMode: resolveWebGpuRendererActiveMode(runtime.renderer), wildlife: runtime.wildlife.getStats() };
+}
+
+function disposePaddockGround(ground: Group): void {
+  for (const tiles of ground.children as InstancedMesh[]) {
+    tiles.geometry.dispose();
+    (tiles.material as MeshStandardMaterial).dispose();
+    tiles.dispose();
+  }
+  ground.clear();
+}
+
+function disposeArmy(army: LabArmy): void {
+  for (const part of army.marker.children as Mesh[]) {
+    part.geometry.dispose();
+    (part.material as MeshStandardMaterial).dispose();
+  }
 }

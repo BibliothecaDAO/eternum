@@ -1,4 +1,5 @@
 import { BuildingType } from "@bibliothecadao/types";
+import { modelPath } from "../utils/model-url";
 
 const TIERED_MODELS: Partial<Record<BuildingType, string>> = {
   [BuildingType.ResourceWheat]: "farm",
@@ -13,5 +14,5 @@ const TIERED_MODELS: Partial<Record<BuildingType, string>> = {
  */
 export const buildingTierModelPath = (category: BuildingType, tier: number | undefined): string | undefined => {
   const name = TIERED_MODELS[category];
-  return name && tier !== undefined && tier > 1 ? `/models/frontier/buildings/${name}-${tier}.glb` : undefined;
+  return name && tier !== undefined && tier > 1 ? modelPath(`frontier/buildings/${name}-${tier}.glb`) : undefined;
 };

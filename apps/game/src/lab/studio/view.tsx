@@ -67,10 +67,9 @@ export function StudioLabView() {
       stage,
       gameMode,
       forceWebGL,
-      qualityTier: "detail",
+      qualityTier: "high",
       revealProgress: 0,
       sceneId: "all-biomes",
-      texturedGround: true,
       onError: (reason) => active && setError(String(reason)),
       onReady: () => {},
     })

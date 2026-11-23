@@ -1,15 +1,16 @@
 import { BuildingType } from "@bibliothecadao/types";
 import { buildingModelPaths, BUILDINGS_GROUPS } from "../../constants/scene-constants";
+import { modelPath } from "../../utils/model-url";
 import { mountStaticLineup, type LineupSettings } from "./static-model-lineup";
 
 export const WORKSHOP_LINEUP = [
-  { label: "Farm · shipped", path: "/models/new-buildings-opt/farm.glb", name: "Farm" },
+  { label: "Farm · shipped", path: modelPath("new-buildings-opt/farm.glb"), name: "Farm" },
   {
     label: "Workshop · Craft Yard",
     path: buildingModelPaths()[BUILDINGS_GROUPS.BUILDINGS][BuildingType.ResourceLabor],
     name: "Workshop",
   },
-  { label: "Workers Hut · shipped", path: "/models/new-buildings-opt/workers_hut.glb", name: "WorkersHut" },
+  { label: "Workers Hut · shipped", path: modelPath("new-buildings-opt/workers_hut.glb"), name: "WorkersHut" },
 ] as const;
 
 export interface WorkshopLabSettings {

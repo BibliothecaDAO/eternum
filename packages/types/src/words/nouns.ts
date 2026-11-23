@@ -152,7 +152,14 @@ export const buildingName = (category: BuildingType | number, frontier: boolean)
 export const guardSlotName = (slot: GuardSlot): string => GUARD_SLOT_NAMES[slot] ?? UNKNOWN;
 
 export const LAYER_NAMES = ["Surface", "Veil", "Hollow", "Deep"] as const;
-type LayerDepth = 0 | 1 | 2 | 3;
+export type MapLayer = 0 | 1 | 2 | 3;
+export type LayerPlace = "veil" | "hollow" | "deep";
+export const LAYER_PLACES: Readonly<Record<MapLayer, LayerPlace | null>> = Object.freeze({
+  0: null,
+  1: "veil",
+  2: "hollow",
+  3: "deep",
+});
 export const layerName = (depth: number): string => {
   const name = LAYER_NAMES[depth];
   if (name === undefined) throw new Error(`No layer at depth ${depth}`);
@@ -187,7 +194,7 @@ type BeastLook = { model: BeastModel };
 export type BeastRow = {
   name: string;
   family: BeastFamily;
-  layer: LayerDepth;
+  layer: MapLayer;
   scale: number;
   idle: BeastIdle;
 } & BeastLook;

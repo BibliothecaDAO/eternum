@@ -1,6 +1,7 @@
 import { Box3, Group, Mesh, MeshStandardMaterial, SkinnedMesh, Texture, Vector3 } from "three";
 import { MeshStandardNodeMaterial } from "three/webgpu";
 import { gltfLoader } from "../../utils/gltf-loader";
+import { modelPath } from "../../utils/model-url";
 import { creatureTraits, type CreatureSpecies } from "./biome-creature-catalog";
 import { createCreatureAnimator } from "./biome-creature-animator.js";
 
@@ -9,7 +10,7 @@ export async function loadBiomeCreature(
   species: CreatureSpecies,
   reveal: (material: MeshStandardNodeMaterial) => void,
 ): Promise<Group> {
-  const { scene } = await gltfLoader.loadAsync(`/models/biome-creatures/${species}.glb`);
+  const { scene } = await gltfLoader.loadAsync(modelPath(`biome-creatures/${species}.glb`));
   try {
     createCreatureAnimator(scene).reset();
     prepareCreatureMaterials(scene, creatureTraits(species).movement !== "water", reveal);

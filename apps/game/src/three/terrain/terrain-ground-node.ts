@@ -1,4 +1,4 @@
-import { BiomeType } from "@bibliothecadao/types/terrain";
+import { BiomeType, BiomeTypeToId } from "@bibliothecadao/types/terrain";
 import type { Texture } from "three";
 import type Node from "three/src/nodes/core/Node.js";
 import {
@@ -23,7 +23,8 @@ import {
   vec3,
 } from "three/tsl";
 
-import { BIOME_MAP_SIZE, biomeNumber, groundNumber } from "./terrain-biome-map";
+import { BIOMES_BY_ID, BIOME_MAP_SIZE, LAYER_BIOME_OFFSET, groundNumber } from "./terrain-biome-map";
+import { cellHash } from "./terrain-cell-hash";
 import { TERRAIN_WATER_LEVEL } from "./terrain-water";
 import { TERRAIN_HEX_HORIZONTAL_SPACING, TERRAIN_HEX_VERTICAL_SPACING } from "./terrain-coordinates";
 import { nearestHexLocalPosition } from "./terrain-hex-node";
@@ -51,19 +52,13 @@ const SNOW_SHADE = vec3(0.5, 0.66, 0.95);
 const LOWLAND = vec3(0.86, 0.8, 0.72);
 const HIGHLAND = vec3(1.08, 1.1, 1.14);
 const LUMA = vec3(0.2126, 0.7152, 0.0722);
-const B = (biome: BiomeType) => float(biomeNumber(biome));
+const B = (biome: BiomeType) => float(BiomeTypeToId[biome]);
 const G = (ground: TerrainGround) => float(groundNumber(ground));
 
 const PAINT = uniformArray(
-  Object.values(BiomeType).map((biome) => terrainBiomePaint(biome, "primary")),
+  BIOMES_BY_ID.map((biome) => terrainBiomePaint(biome, "primary")),
   "color",
 );
-
-const hash3 = (p: Node<"vec3">): Node<"float"> => {
-  const q = fract(p.mul(vec3(0.1031, 0.103, 0.0973))).toVar();
-  q.addAssign(dot(q, q.yxz.add(33.33)));
-  return fract(q.x.add(q.y).mul(q.z));
-};
 
 export const hexReach = (fromMiddle: Node<"vec2">): Node<"float"> => {
   const local = abs(fromMiddle);
@@ -72,13 +67,12 @@ export const hexReach = (fromMiddle: Node<"vec2">): Node<"float"> => {
 
 const strewn = (at: Node<"vec2">, fine: number, share: Node<"float"> | number, size: Node<"float"> | number) => {
   const cell = at.mul(fine).floor();
-  const lot = vec3(cell.x, 3.7, cell.y);
   const middle = cell
     .add(0.25)
-    .add(vec2(hash3(lot.mul(1.3)), hash3(lot.mul(2.9))).mul(0.5))
+    .add(vec2(cellHash(cell, 1), cellHash(cell, 2)).mul(0.5))
     .div(fine);
-  const inside = step(hexReach(at.sub(middle)).mul(fine), size).mul(step(hash3(lot.mul(5.1)), share));
-  return vec2(inside, hash3(lot.mul(7.7)).mul(inside));
+  const inside = step(hexReach(at.sub(middle)).mul(fine), size).mul(step(cellHash(cell, 3), share));
+  return vec2(inside, cellHash(cell, 4).mul(inside));
 };
 
 export const biomeTexelAt = (biomeMap: Texture, point: Node<"vec2">) => {
@@ -115,8 +109,12 @@ export function groundSurface(input: GroundSurfaceInput) {
     const close = smoothstep(18, 8, cameraPosition.distance(input.world));
     const painted = PAINT.element(int(biome)) as unknown as Node<"vec3">;
     const base = kind.equal(G("water")).select(input.meshColour, painted.mul(input.meshTint)).toVar();
-    const glint = strewn(at, 34, 0.1, 0.22);
-    const sparkle = glint.x.mul(close).mul(time.mul(2.6).add(glint.y.mul(40)).sin().mul(0.45).add(0.55));
+
+    const sparkle = float(0).toVar();
+    If(close.greaterThan(0.001), () => {
+      const glint = strewn(at, 34, 0.1, 0.22);
+      sparkle.assign(glint.x.mul(close).mul(time.mul(2.6).add(glint.y.mul(40)).sin().mul(0.45).add(0.55)));
+    });
 
     const albedo = base.mul(grain.mul(0.3).add(0.84)).mul(far.r.mul(0.16).add(0.9)).toVar();
     const slope = vec2(0).toVar();
@@ -154,8 +152,12 @@ export function groundSurface(input: GroundSurfaceInput) {
             .mul(near.g.mul(0.16).add(0.92)),
         );
         albedo.assign(mix(albedo, base.mul(vec3(0.66, 0.7, 0.52)), smoothstep(0.6, 0.78, far.g).mul(0.5)));
-        const gravel = strewn(at, 8, smoothstep(0.45, 0.7, other.g).mul(0.2), near.g.mul(0.16).add(0.12));
-        albedo.assign(mix(albedo, vec3(0.5, 0.45, 0.4).mul(gravel.y.mul(0.6).add(0.7)), gravel.x.mul(close).mul(0.8)));
+        If(close.greaterThan(0.001), () => {
+          const gravel = strewn(at, 8, smoothstep(0.45, 0.7, other.g).mul(0.2), near.g.mul(0.16).add(0.12));
+          albedo.assign(
+            mix(albedo, vec3(0.5, 0.45, 0.4).mul(gravel.y.mul(0.6).add(0.7)), gravel.x.mul(close).mul(0.8)),
+          );
+        });
         slope.assign(bump.mul(0.2));
       })
       .ElseIf(kind.equal(G("snow")).or(kind.equal(G("tundra"))), () => {
@@ -215,13 +217,15 @@ export function groundSurface(input: GroundSurfaceInput) {
         const tufts = near.g.mul(0.5).add(middle.g.mul(0.5));
         const gust = smoothstep(0.55, 1, dot(at, WIND).mul(0.85).sub(time.mul(1.3)).add(far.g.mul(7)).sin());
         albedo.assign(base.mul(tufts.mul(0.4).add(0.8)).mul(gust.mul(0.12).add(1)));
-        const bloom = strewn(at, 13, 0.22, 0.2);
-        const flower = mix(
-          mix(vec3(0.95, 0.92, 0.82), vec3(0.98, 0.78, 0.12), step(0.4, bloom.y)),
-          vec3(0.62, 0.36, 0.85),
-          step(0.75, bloom.y),
-        );
-        albedo.assign(mix(albedo, flower, bloom.x.mul(close).mul(smoothstep(0.42, 0.6, far.g))));
+        If(close.greaterThan(0.001), () => {
+          const bloom = strewn(at, 13, 0.22, 0.2);
+          const flower = mix(
+            mix(vec3(0.95, 0.92, 0.82), vec3(0.98, 0.78, 0.12), step(0.4, bloom.y)),
+            vec3(0.62, 0.36, 0.85),
+            step(0.75, bloom.y),
+          );
+          albedo.assign(mix(albedo, flower, bloom.x.mul(close).mul(smoothstep(0.42, 0.6, far.g))));
+        });
         slope.assign(bump.mul(0.1));
       })
       .ElseIf(biome.equal(B(BiomeType.Shrubland)), () => {
@@ -295,7 +299,9 @@ export function groundSurface(input: GroundSurfaceInput) {
         slope.assign(bump.mul(0.2));
       });
 
-    strewPebbles({ kind, at, close, albedo });
+    If(close.greaterThan(0.001), () => {
+      strewPebbles({ kind, at, close, albedo });
+    });
     const contest = (ground.get("contest") as Node<"float">).mul(0.5);
     albedo.assign(mix(albedo, (ground.get("other") as Node<"vec3">).mul(grain.mul(0.3).add(0.84)), contest));
     gloss.mulAssign(contest.oneMinus());
@@ -344,7 +350,8 @@ function chooseGround(input: {
     const fromMiddle = nearestHexLocalPosition(at);
     const middleAt = at.sub(fromMiddle);
     const own = biomeTexelAt(input.biomeMap, middleAt);
-    const ownBiome = own.r.mul(255).round();
+    const ownRaw = own.r.mul(255).round();
+    const ownBiome = ownRaw.mul(step(ownRaw, LAYER_BIOME_OFFSET - 1));
     const ownKind = own.g.mul(255).round();
     const ownWater = ownKind.equal(G("water"));
     const ownPaint = PAINT.element(int(ownBiome)) as unknown as Node<"vec3">;
@@ -359,9 +366,10 @@ function chooseGround(input: {
     for (let side = 0; side < 6; side += 1) {
       const toward = vec2(Math.cos((side * Math.PI) / 3), Math.sin((side * Math.PI) / 3));
       const beside = biomeTexelAt(input.biomeMap, middleAt.add(toward.mul(TERRAIN_HEX_HORIZONTAL_SPACING)));
-      const besideBiome = beside.r.mul(255).round();
+      const besideRaw = beside.r.mul(255).round();
+      const besideBiome = besideRaw.mul(step(besideRaw, LAYER_BIOME_OFFSET - 1));
       const besideKind = beside.g.mul(255).round();
-      const meets = beside.r
+      const meets = besideBiome
         .greaterThan(0)
         .and(besideKind.notEqual(G("water")))
         .and(besideBiome.notEqual(ownBiome));

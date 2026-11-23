@@ -4,7 +4,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { installLabChain, LAB_GAME } from "./lab-chain";
 import { LAB_SCENARIOS, startLabGame } from "./lab-games";
-import { applyLabDayLight, applyLabSurfaceMood } from "./lab-moods";
+import { applyLabDayLight } from "./lab-moods";
 
 /**
  * Dev only: the game itself on a fixture. /lab/game?scenario=spire installs the tab's chain for that scenario
@@ -21,7 +21,6 @@ export const GameLabView = () => {
   const [failed, setFailed] = useState<string | null>(null);
   useEffect(() => {
     if (!scenario) return;
-    applyLabSurfaceMood(params.get("mood"));
     applyLabDayLight(params.get("day"));
     installLabChain(scenario, startLabGame(name).startedAt).then(
       (game) => {

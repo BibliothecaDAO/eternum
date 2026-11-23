@@ -5,6 +5,7 @@ import { CAMP_MODEL_PATH, RiftModelPath } from "../constants/scene-constants";
 import { HYPERSTRUCTURE_HEIGHT } from "../structures/hyperstructure-design";
 import { HyperstructureModel } from "../structures/hyperstructure-model";
 import type { WorldmapProceduralTerrain } from "../terrain/worldmap-procedural-terrain";
+import { modelPath } from "../utils/model-url";
 import { gltfLoader } from "../utils/utils";
 
 /** What the map labels a thing as: its kind, and how the viewer stands to its owner. */
@@ -160,7 +161,7 @@ export async function createMapLabelFixture(
   const armies: MapLabelEntity[] = [];
   for (const [index, army] of [...ARMIES, ...(busy ? busyArmies() : [])].entries()) {
     const ground = beside(army.slot, -1);
-    const anchor = await place("/models/units/default_knight_lvl1.glb", ground, 0.6);
+    const anchor = await place(modelPath("units/default_knight_lvl1.glb"), ground, 0.6);
     armies.push({ ...armyEntity(anchor, homeOf(army.slot, army.relation) ?? realms[army.slot], army, index), ground });
   }
   return {

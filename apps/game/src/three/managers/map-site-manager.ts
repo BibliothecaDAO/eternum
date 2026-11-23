@@ -1,16 +1,30 @@
+import { SIDE_HEX } from "@/tokens";
 import { DEEP_SITE_FACES } from "@/ui/features/frontier/deep/deep-site-faces";
 import { DEEP_WORDS } from "@/ui/design-system/kit/words";
 import type { IconMeaning } from "@/ui/design-system/icon";
-import { DEEP_DEPTH, configManager, dayOf, readDefaultTick, readExpeditionRules } from "@bibliothecadao/eternum";
 import {
+  DEEP_DEPTH,
+  configManager,
+  dayOf,
+  isViewerOwner,
+  readDefaultTick,
+  readExpeditionRules,
+} from "@bibliothecadao/eternum";
+import {
+  IncompleteDeepSyncError,
   deepGateTiles,
+  isAspectAlly,
+  nativeRuleConstants,
   readDeepBeastTroops,
   readDeepRingOpening,
+  readDeepSites,
   safeInteger,
   viewerAspects,
+  type DeepSiteView,
   type NativeFactStore,
 } from "@bibliothecadao/eternum/game-client";
 import { accountAddress } from "@/hooks/store/use-account-store";
+import { onSidesChanged, sideOf, watchedSide } from "@/utils/entity-ownership";
 import {
   DEEP_BEASTS,
   aspectName,
@@ -29,7 +43,8 @@ import { PLATE_CLEARANCE } from "./structure-visible-presentation";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { presentResult } from "@/three/presented-results";
 import { activeMapLayer } from "@/three/map-layer";
-import { loadDeepLandmark } from "../structures/deep-landmarks";
+import { DeepLandmarkModel, loadDeepLandmark } from "../structures/deep-landmarks";
+import { OrderStandard } from "../structures/order-standard";
 import { DEEP_GATEWAY_HEIGHT } from "./deep-arena-manager";
 import { FRONTIER_BEASTS } from "../structures/frontier-beast";
 import { FrontierModel } from "../structures/frontier-model";
@@ -53,13 +68,10 @@ type DrawnSite = {
   stands: (tile: TileSpatialRenderable) => boolean;
   model: () => Promise<{ model: InstancedModel; height: number }>;
   scale: number;
-  front: number;
   idle?: BeastIdle;
 };
 type SiteHex = { col: number; row: number };
 
-const LANDMARK_UNDER_BEAST = false;
-const BEAST_FRONT = LANDMARK_UNDER_BEAST ? 0.55 : 0;
 type PlacedSite = SiteHex & { entityId: number };
 
 /**
@@ -73,7 +85,11 @@ export class MapSiteManager {
   private readonly unsubscribe: () => void;
   private readonly unsubscribeRewards: () => void;
   private readonly unsubscribeChainTime: () => void;
+  private readonly unsubscribeSides: () => void;
   private drawnDay: number | undefined;
+  private drawnTick: number | undefined;
+  private readonly guardingExplorers = new Set<bigint>();
+  private standards?: OrderStandard;
   private readonly heights = new Map<DrawnSite["key"], number>();
   private modelVisible = true;
   private destroyed = false;
@@ -84,10 +100,9 @@ export class MapSiteManager {
       stands: (tile: TileSpatialRenderable) =>
         this.isDeepSiteOf(tile, kind.id) &&
         this.closedRing(tile.occupierId) === undefined &&
-        (LANDMARK_UNDER_BEAST || !this.beastGuards(tile.occupierId)),
+        !this.beastGuards(tile.occupierId),
       model: () => landmarkModel(kind.key, kind.name, ACTIVE),
       scale: 1,
-      front: 0,
     })),
     ...deepSites.map((kind) => ({
       key: `deep-dormant:${kind.key}`,
@@ -96,7 +111,6 @@ export class MapSiteManager {
         this.isDeepSiteOf(tile, kind.id) && this.closedRing(tile.occupierId) !== undefined,
       model: () => landmarkModel(kind.key, kind.name, DORMANT),
       scale: 1,
-      front: 0,
     })),
     ...deepSites.map((kind) => {
       const beast = DEEP_BEASTS[kind.key];
@@ -106,7 +120,6 @@ export class MapSiteManager {
         stands: (tile: TileSpatialRenderable) => this.isDeepSiteOf(tile, kind.id) && this.beastStands(tile.occupierId),
         model: () => beastModelOf(beastModel(beast)),
         scale: beast.scale,
-        front: BEAST_FRONT,
         idle: beast.idle,
       };
     }),
@@ -137,17 +150,28 @@ export class MapSiteManager {
       const touched = changes.some(
         (change) =>
           change.model === "DeepSite" ||
+          change.model === "DeepGuard" ||
           change.model === "DeepEntries" ||
           change.model === "DeepRules" ||
           change.model === "HomeAspect" ||
-          (change.model === "Guard" && this.guardsDeepSite(change.current ?? change.previous)),
+          change.model === "SliceRules" ||
+          (change.model === "Guard" && this.guardsDeepSite(change.current ?? change.previous)) ||
+          this.touchesGuardingArmy(change),
       );
       if (touched) this.refresh();
     });
     this.unsubscribeChainTime = useChainTimeStore.subscribe(() => {
-      if (this.deepDay() !== this.drawnDay) this.refresh();
+      if (this.deepDay() !== this.drawnDay || (this.guardingExplorers.size > 0 && this.deepTick() !== this.drawnTick)) {
+        this.refresh();
+      }
     });
-    this.refresh();
+    this.unsubscribeSides = onSidesChanged(() => this.refresh());
+    try {
+      this.refresh();
+    } catch (error) {
+      this.destroy();
+      throw error;
+    }
   }
 
   public hover(tile: SiteHex | null): void {
@@ -171,6 +195,7 @@ export class MapSiteManager {
   public setModelVisible(visible: boolean): void {
     this.modelVisible = visible;
     this.models.forEach((model) => (model.group.visible = visible));
+    if (this.standards) this.standards.group.visible = visible;
     this.refreshPlates();
   }
 
@@ -188,18 +213,34 @@ export class MapSiteManager {
     this.unsubscribe();
     this.unsubscribeRewards();
     this.unsubscribeChainTime();
+    this.unsubscribeSides();
     this.plates.dispose();
     this.gates.dispose();
     this.models.forEach((model) => model.dispose());
     this.models.clear();
+    this.standards?.dispose();
+    this.standards = undefined;
   }
 
   private refresh(): void {
     if (this.destroyed) return;
     this.drawnDay = this.deepDay();
+    this.drawnTick = this.deepTick();
+    const sitesById = this.readSitesById();
+    this.guardingExplorers.clear();
+    for (const view of sitesById.values()) {
+      for (const guard of view.guards) this.guardingExplorers.add(guard.army.explorer_id);
+    }
     this.refreshPlates();
+    const heldSites: Array<{ hex: PlacedSite; site: DeepSiteView }> = [];
     for (const site of this.sites) {
       const hexes = this.siteHexes(site);
+      if (site.key.startsWith("deep:")) {
+        for (const hex of hexes) {
+          const view = sitesById.get(hex.entityId);
+          if (view && view.guards.length > 0) heldSites.push({ hex, site: view });
+        }
+      }
       const model = this.models.get(site.key);
       if (!model) {
         if (hexes.length > 0) this.load(site);
@@ -207,16 +248,20 @@ export class MapSiteManager {
       }
       const previous = model.getCount();
       hexes.forEach((hex, index) => {
-        model.setMatrixAt(index, this.placement(hex, site.scale, site.front));
+        model.setMatrixAt(index, this.placement(hex, site.scale));
         if (site.idle && model instanceof FrontierModel) {
           model.setIdleAt(index, site.idle);
           model.setLayerAt(index, DEEP_DEPTH);
+        }
+        if (model instanceof DeepLandmarkModel) {
+          model.setHolderColorAt(index, this.holderColor(sitesById.get(hex.entityId)));
         }
       });
       for (let index = hexes.length; index < previous; index += 1) model.removeInstance(index);
       model.setCount(hexes.length);
       model.needsUpdate();
     }
+    this.refreshStandards(heldSites);
     publishMapSelection({ drawnSites: this.drawnKinds(), siteHexes: this.kindHexes() });
   }
 
@@ -334,10 +379,8 @@ export class MapSiteManager {
   }
 
   private plateHeight(entityId: number, key: (typeof deepSites)[number]["key"]): number {
-    const landmark = this.heights.get(this.closedRing(entityId) ? `deep-dormant:${key}` : `deep:${key}`) ?? 0;
-    if (!this.beastStands(entityId)) return landmark;
-    const beast = this.heights.get(`deep-beast:${key}`) ?? 0;
-    return LANDMARK_UNDER_BEAST ? Math.max(landmark, beast) : beast;
+    if (this.beastStands(entityId)) return this.heights.get(`deep-beast:${key}`) ?? 0;
+    return this.heights.get(this.closedRing(entityId) ? `deep-dormant:${key}` : `deep:${key}`) ?? 0;
   }
 
   private isDeepSiteOf(tile: TileSpatialRenderable, kind: number): boolean {
@@ -380,14 +423,109 @@ export class MapSiteManager {
     return opening && "known" in opening && !opening.known.open ? opening.known : undefined;
   }
 
+  private deepTick(): number | undefined {
+    const now = readDefaultTick();
+    if (now === undefined) return undefined;
+    const rules = this.store.get("SliceRules", { game_id: configManager.getActiveGameId() });
+    const interval = rules ? Number(rules.tick_config.armies_tick_in_seconds) : 0;
+    return interval > 0 ? Math.floor(now / interval) : undefined;
+  }
+
+  private readSitesById(): Map<number, DeepSiteView> {
+    const now = readDefaultTick();
+    if (now === undefined) return new Map();
+    try {
+      const sites = readDeepSites(this.store, now, configManager.getActiveGameId());
+      return new Map(sites.map((site) => [safeInteger(site.id), site]));
+    } catch (error) {
+      if (error instanceof IncompleteDeepSyncError) return new Map();
+      throw error;
+    }
+  }
+
+  private touchesGuardingArmy(change: { model: string; current?: unknown; previous?: unknown }): boolean {
+    if (this.guardingExplorers.size === 0) return false;
+    if (change.model === "Structure") return true;
+    if (
+      change.model !== "ExplorerTroops" &&
+      change.model !== "DeepArmy" &&
+      change.model !== "ArmyDay" &&
+      change.model !== "ArmyProgress"
+    ) {
+      return false;
+    }
+    const row = (change.current ?? change.previous) as { explorer_id?: bigint } | undefined;
+    return row?.explorer_id !== undefined && this.guardingExplorers.has(row.explorer_id);
+  }
+
   private guardsDeepSite(guard: { structure_id: bigint } | undefined): boolean {
     return guard !== undefined && this.deepKindOf(safeInteger(guard.structure_id)) !== undefined;
   }
 
-  private placement(hex: SiteHex, scale: number, front: number) {
+  private holderColor(site: DeepSiteView | undefined): string | null {
+    const holder = site?.guards[0]?.army;
+    if (!holder) return null;
+    const home = this.store.get("Structure", { game_id: holder.game_id, entity_id: holder.owner });
+    const owner = home?.owner ?? 0n;
+    const watched = watchedSide(owner);
+    if (watched) return watched.colour;
+    const viewer = accountAddress() ?? null;
+    return SIDE_HEX[
+      sideOf({
+        isMine: isViewerOwner(owner, viewer),
+        isAlly: isAspectAlly(this.store, holder.game_id, viewer, holder.owner),
+        owner: { address: owner },
+      })
+    ];
+  }
+
+  private refreshStandards(heldSites: readonly { hex: PlacedSite; site: DeepSiteView }[]): void {
+    if (heldSites.length === 0) {
+      if (this.standards) {
+        this.standards.setCount(0);
+        this.standards.needsUpdate();
+      }
+      return;
+    }
+    if (!this.standards) {
+      this.standards = OrderStandard.standalone(SITE_CAPACITY * nativeRuleConstants.DEEP_GUARD_SLOTS);
+      this.standards.group.visible = this.modelVisible;
+      this.scene.add(this.standards.group);
+      void this.standards
+        .prepare()
+        .catch((error) => console.error("[MapSiteManager] Failed to load guard signum art", error));
+    }
+    let slot = 0;
+    const limit = SITE_CAPACITY * nativeRuleConstants.DEEP_GUARD_SLOTS;
+    for (const { hex, site } of heldSites) {
+      const count = site.guards.length;
+      for (let index = 0; index < count && slot < limit; index += 1) {
+        const guard = site.guards[index]!;
+        const home = this.store.get("Structure", { game_id: guard.army.game_id, entity_id: guard.army.owner });
+        const orderId = home?.metadata.order;
+        this.standards.setMatrixAt(slot, this.standardPlacement(hex, index, count));
+        this.standards.setOrderAt(slot, orderId);
+        slot += 1;
+      }
+    }
+    this.standards.setCount(slot);
+    this.standards.needsUpdate();
+  }
+
+  private standardPlacement(hex: SiteHex, index: number, total: number) {
+    const spread = total > 1 ? (index / (total - 1) - 0.5) * 1.15 : 0;
+    const position = getWorldPositionForHex({ col: hex.col - FELT_CENTER(), row: hex.row - FELT_CENTER() });
+    position.x += Math.sin(spread) * 0.78;
+    position.z += Math.cos(spread) * 0.78;
+    this.dummy.position.copy(placePositionOnTerrain(position, this.terrain));
+    this.dummy.scale.setScalar(0.9);
+    this.dummy.updateMatrix();
+    return this.dummy.matrix;
+  }
+
+  private placement(hex: SiteHex, scale: number) {
     const position = getWorldPositionForHex({ col: hex.col - FELT_CENTER(), row: hex.row - FELT_CENTER() });
     this.dummy.position.copy(placePositionOnTerrain(position, this.terrain));
-    this.dummy.position.z += front;
     this.dummy.scale.setScalar(scale);
     this.dummy.updateMatrix();
     return this.dummy.matrix;
@@ -402,10 +540,8 @@ const DORMANT = 0;
 
 const landmarkModel = async (key: (typeof deepSites)[number]["key"], name: string, activation: number) => {
   const landmark = await loadDeepLandmark(key, activation);
-  return {
-    model: new InstancedModel(landmark, SITE_CAPACITY, false, name),
-    height: new Box3().setFromObject(landmark.scene).max.y,
-  };
+  const model = new DeepLandmarkModel(landmark, SITE_CAPACITY, name, activation);
+  return { model, height: model.landmarkHeight };
 };
 
 const beastModelOf = async (species: BeastModel) => {
