@@ -5,7 +5,7 @@ import type {
   HeraldPlayerQuest,
   HeraldPlayerStructure,
 } from "@bibliothecadao/eternum/game-sync";
-import { DAILY_QUEST_MODELS, nativeGameModeOfFamily, readDailyQuest } from "@bibliothecadao/eternum";
+import { nativeGameModeOfFamily, readDailyQuest } from "@bibliothecadao/eternum";
 import { dayOf, expeditionRealmSite, entityHomeNamespace, isRealmCategory } from "@bibliothecadao/eternum/expeditions";
 import { NativeFactStore, raceFinishHeight } from "@bibliothecadao/eternum/game-client";
 import { aspects, RESOURCE_PRECISION, type AspectId, StructureType } from "@bibliothecadao/types";
@@ -36,8 +36,6 @@ export const FINALIZED_GAME_MODELS: ReadonlySet<string> = new Set([
 ]);
 
 import { integer, number, address, record, gameRows, required, type Row } from "./values";
-
-const QUEST_STORE_MODELS = [...new Set(DAILY_QUEST_MODELS)];
 
 interface DirectoryRows {
   structures: FoldRow[];
@@ -126,30 +124,85 @@ function directoryPlayerState(
     has_home_source: own !== undefined,
     taken_realm_ids: entitlements.filter((row) => number(row.pass_kind) === 2).map((row) => number(row.realm_id)),
     structures: structures.map((row) => playerStructure(row, game, settlement, facts, input.timestamp)),
-    today_quest: todayQuestOf(number(game.game_id), structures, input, player),
+    today_quest: todayQuestOf(number(game.game_id), structures, facts, input, player),
   };
 }
 
 function todayQuestOf(
   gameId: number,
   structures: readonly Row[],
+  directory: DirectoryRows,
   input: DirectoryInput,
   player: string,
 ): HeraldPlayerQuest | null {
   const realm = structures.find((row) => isRealmCategory(number(record(row.base).category)));
   if (!realm) return null;
   const targetGame = BigInt(gameId);
-  const hasRules = input.fold.modelRows("QuestRules").some(({ value }) => integer(value.game_id) === targetGame);
-  if (!hasRules) return null;
+  const homeId = integer(realm.entity_id);
+  const forGame = (rows: readonly FoldRow[]) => rows.filter(({ value }) => integer(value.game_id) === targetGame);
+  const rowsForGame = (model: string) => forGame(input.fold.modelRows(model));
+  const questRules = rowsForGame("QuestRules");
+  if (questRules.length === 0) return null;
+  const toFacts = (model: string, rows: readonly FoldRow[]) => rows.map(({ key, value }) => ({ model, key, value }));
+  const realmRow = forGame(directory.structures).find(({ value }) => integer(value.entity_id) === homeId);
+  if (!realmRow) return null;
+  const facts = [
+    ...toFacts("GameRegistry", rowsForGame("GameRegistry")),
+    ...toFacts("SliceRules", forGame(directory.rules)),
+    ...toFacts("SettlementRules", forGame(directory.settlementRules)),
+    ...toFacts("QuestRules", questRules),
+    ...toFacts("Structure", [realmRow]),
+    ...toFacts(
+      "QuestProgress",
+      rowsForGame("QuestProgress").filter(({ value }) => integer(value.home) === homeId),
+    ),
+    ...toFacts(
+      "LaborGrant",
+      rowsForGame("LaborGrant").filter(({ value }) => integer(value.home) === homeId),
+    ),
+    ...toFacts(
+      "BaneGrant",
+      rowsForGame("BaneGrant").filter(({ value }) => integer(value.home) === homeId),
+    ),
+    ...toFacts(
+      "Seal",
+      rowsForGame("Seal").filter(({ value }) => address(value.account) === player),
+    ),
+    ...toFacts(
+      "SettledRealm",
+      rowsForGame("SettledRealm").filter(({ value }) => integer(value.home) === homeId),
+    ),
+  ];
+  const baneRules = rowsForGame("BaneRules");
+  if (baneRules.length > 0) {
+    const homeAspect = rowsForGame("HomeAspect").filter(({ value }) => integer(value.home) === homeId);
+    const aspect = homeAspect[0] ? number(homeAspect[0].value.aspect) : null;
+    facts.push(
+      ...toFacts("BaneRules", baneRules),
+      ...toFacts("FirstTeamBane", rowsForGame("FirstTeamBane")),
+      ...toFacts("WorldBane", rowsForGame("WorldBane")),
+      ...toFacts("HomeAspect", homeAspect),
+      ...(aspect === null
+        ? []
+        : [
+            ...toFacts(
+              "TeamBane",
+              rowsForGame("TeamBane").filter(({ value }) => number(value.aspect) === aspect),
+            ),
+            ...toFacts(
+              "BaneProgress",
+              rowsForGame("BaneProgress").filter(({ value }) => number(value.aspect) === aspect),
+            ),
+            ...toFacts(
+              "AspectActivity",
+              rowsForGame("AspectActivity").filter(({ value }) => number(value.aspect) === aspect),
+            ),
+          ]),
+    );
+  }
   const store = new NativeFactStore();
-  const facts = QUEST_STORE_MODELS.flatMap((model) =>
-    input.fold
-      .modelRows(model)
-      .filter(({ value }) => integer(value.game_id) === targetGame)
-      .map(({ key, value }) => ({ model, key, value })),
-  );
   store.applyFacts(facts);
-  store.setSnapshot({ gameId, complete: true, actor: BigInt(player), timestamp: input.timestamp });
+  store.setSnapshot({ gameId, complete: true, actor: player, timestamp: input.timestamp });
   const reading = readDailyQuest(store, gameId, number(realm.entity_id), input.timestamp)?.reading.known;
   if (!reading) return null;
   return {
