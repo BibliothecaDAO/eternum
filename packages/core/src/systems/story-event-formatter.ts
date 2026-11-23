@@ -264,7 +264,7 @@ const formatters: Record<NativeStoryVariant | StoryEventModel | ArchivedStoryVar
     const realm = describeStructureName(event.entityId, components);
     return {
       // Another player's realm, which this client never synced, is told by its settler.
-      title: realm ? `${realm} founded` : `${ownerLabel ?? "Someone"} founded a realm`,
+      title: realm ? `${realm} created` : `${ownerLabel ?? "Someone"} created a Realm`,
       description: joinPieces([
         realm && ownerLabel ? `Settled by ${ownerLabel}` : undefined,
         coord ? `at ${coord}` : undefined,

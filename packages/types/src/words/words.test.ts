@@ -48,7 +48,7 @@ import {
   formatMoment,
   formatShortDuration,
 } from "./time";
-import { VOICE_RULES } from "./voice";
+import { BANNED_WORDS, PLAIN_WORDS, VOICE_RULES } from "./voice";
 
 describe("numbers", () => {
   it("writes an amount held but under a unit as <1, never as nothing", () => {
@@ -319,6 +319,63 @@ describe("the voice rules", () => {
       expect(refused(words)).toEqual({ words, refused: true });
     for (const words of ["+66/min", "points +120/min", "FP rate", "then per minute", "a second press", "3/4 · 13m"])
       expect(refused(words)).toEqual({ words, refused: false });
+  });
+
+  it("matches every banned word on its bad example and passes its good one", () => {
+    expect(BANNED_WORDS[0]?.banned).toBe("found (a Realm)");
+    expect(BANNED_WORDS[0]?.use).toBe("create");
+    expect(BANNED_WORDS[0]?.bad).toBe("Found your home");
+    expect(BANNED_WORDS[0]?.good).toBe("Create your Realm");
+    expect(BANNED_WORDS[0]?.zeroTolerance).toBe(true);
+    expect(BANNED_WORDS.find((entry) => entry.banned === "Far-Eye")?.zeroTolerance).toBe(true);
+    for (const { banned, bad, good, pattern } of BANNED_WORDS) {
+      expect({ banned, bad: pattern.test(bad) }).toEqual({ banned, bad: true });
+      expect({ banned, good: pattern.test(good) }).toEqual({ banned, good: false });
+    }
+    const foundRule = BANNED_WORDS[0]!;
+    for (const allowed of ["Not found", "Sites are found at 100%", "No Realm found", "Create your Realm"])
+      expect({ allowed, refused: foundRule.pattern.test(allowed) }).toEqual({ allowed, refused: false });
+    const plainTokens = new Set(
+      PLAIN_WORDS.flatMap(({ word }) => word.split(" / ").map((token) => token.trim().toLowerCase())),
+    );
+    for (const entry of PLAIN_WORDS) {
+      expect(entry.concept.length).toBeGreaterThan(0);
+      expect(entry.word.length).toBeGreaterThan(0);
+      for (const banned of BANNED_WORDS) {
+        expect({ word: entry.word, banned: banned.banned, matched: banned.pattern.test(entry.word) }).toEqual({
+          word: entry.word,
+          banned: banned.banned,
+          matched: false,
+        });
+      }
+    }
+    for (const banned of BANNED_WORDS) {
+      if (banned.use.startsWith("(")) continue;
+      for (const token of banned.use.split(" / ").map((part) => part.trim().toLowerCase())) {
+        expect({ banned: banned.banned, token, inPlainWords: plainTokens.has(token) }).toEqual({
+          banned: banned.banned,
+          token,
+          inPlainWords: true,
+        });
+      }
+    }
+    for (const voiceRule of VOICE_RULES) {
+      for (const banned of BANNED_WORDS) {
+        if (voiceRule.forbidden) {
+          expect({
+            voice: voiceRule.rule,
+            banned: banned.banned,
+            overlap: voiceRule.forbidden.test(banned.bad),
+          }).toEqual({ voice: voiceRule.rule, banned: banned.banned, overlap: false });
+        }
+        expect({ voice: voiceRule.rule, banned: banned.banned, duplicate: banned.pattern.test(voiceRule.bad) }).toEqual(
+          { voice: voiceRule.rule, banned: banned.banned, duplicate: false },
+        );
+        expect({ voice: voiceRule.rule, banned: banned.banned, conflict: banned.pattern.test(voiceRule.good) }).toEqual(
+          { voice: voiceRule.rule, banned: banned.banned, conflict: false },
+        );
+      }
+    }
   });
 });
 

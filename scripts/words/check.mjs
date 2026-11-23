@@ -11,6 +11,17 @@ import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import ts from "typescript";
+import {
+  calleeName,
+  inConsole,
+  inDiagnostic,
+  isCodeString,
+  isCodeTemplate,
+  playerTextOf,
+  templateText,
+  VISIBLE_ATTRIBUTES,
+  VISIBLE_KEYS,
+} from "./player-text.mjs";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const GAME = join(REPO, "apps/game");
@@ -94,24 +105,12 @@ const NAME_TABLES = new Set([
 ]);
 // Tables whose values are also keys (models, icons): a read counts only where a player reads it.
 const KEY_TABLES = new Set(["RealmLevelNames", "MineKinds"]);
-// Where a player reads a value: these attributes, and these fields of an object a screen draws.
-const VISIBLE_ATTRIBUTES =
-  /^(title|aria-label|aria-description|label|placeholder|alt|tooltip|tip|data-tip|description|heading|subtitle|caption|message|hint|detail)$/;
-const VISIBLE_KEYS =
-  /^(label|title|text|description|message|tooltip|heading|subtitle|caption|hint|summary|detail|line|reason)$/;
-// A string a player cannot read: an attribute or a call that takes code, not words.
-const CODE_ATTRIBUTES =
-  /^(className|class|style|key|id|type|href|src|to|role|name|data-(?!tip$)[\w-]+|htmlFor|target|rel)$/;
-const CODE_CALLS =
-  /^(cn|clsx|classNames|twMerge|cva|require|import|querySelector\w*|getElementById|addEventListener|console\.\w+)$/;
 const UNIT = /^(?:h|m|s|d|min|mins|sec|secs|hr|hrs)(?![A-Za-z])|^ (?:hours?|minutes?|seconds?|days?)\b/;
 const TIME_HINT =
   /Math\.(?:floor|ceil|round)|%|\/\s*60|3600|86_?400|\b(?:hours?|minutes?|mins?|seconds?|secs?|days?)\b/i;
 const SUFFIX = /^[KMB](?![A-Za-z])/;
 // A rate's unit after its number, with or without a noun between: "/h", " per hour", " points/s".
 const RATE_UNIT = /^(?: [A-Za-z]+)?\s?\/\s?(?:h|hr|min|m|s|sec)\b|^ (?:an|per|a) (?:hour|minute|second)\b/;
-// A token, a path or a key ("left-queue", "/images/x.png", "army_banner"): code, whatever it spells.
-const CODE_TOKEN = /^[\w.$-]*[-_./:][\w.$/:-]*$/;
 // An SVG path's commands between its numbers: "M ", " L ", " C ".
 const SVG_PATH = /^[\sMLCQSTAZHV,.\d-]*$/i;
 const AMOUNT_HINT = /\/\s*1_?000|1e[369]|toFixed|compact|thousand|million/i;
@@ -142,47 +141,6 @@ function* sourceFiles(dir) {
     } else if (/\.(ts|tsx)$/.test(entry.name)) yield path;
   }
 }
-
-const calleeName = (call) => {
-  const expression = call.expression;
-  if (ts.isIdentifier(expression)) return expression.text;
-  if (ts.isPropertyAccessExpression(expression)) {
-    const owner = ts.isIdentifier(expression.expression) ? `${expression.expression.text}.` : "";
-    return `${owner}${expression.name.text}`;
-  }
-  return "";
-};
-
-/** Whether a string literal is code (an import, a class name, a key) rather than words a player reads. */
-const isCodeString = (node) => {
-  const parent = node.parent;
-  if (!parent) return true;
-  if ((ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) && CODE_TOKEN.test(node.text)) return true;
-  if (ts.isImportDeclaration(parent) || ts.isExportDeclaration(parent) || ts.isExternalModuleReference(parent))
-    return true;
-  if (ts.isLiteralTypeNode(parent) || (ts.isPropertyAssignment(parent) && parent.name === node)) return true;
-  if (ts.isElementAccessExpression(parent) || ts.isCaseClause(parent)) return true;
-  if (ts.isBinaryExpression(parent) && /=== |!== |== |!= /.test(` ${parent.operatorToken.getText()} `)) return true;
-  if (ts.isJsxAttribute(parent) || (ts.isJsxExpression(parent) && ts.isJsxAttribute(parent.parent))) {
-    const attribute = ts.isJsxAttribute(parent) ? parent : parent.parent;
-    return CODE_ATTRIBUTES.test(attribute.name.getText());
-  }
-  for (let up = parent; up; up = up.parent) {
-    if (ts.isCallExpression(up) && CODE_CALLS.test(calleeName(up))) return true;
-    if (ts.isJsxAttribute(up)) return CODE_ATTRIBUTES.test(up.name.getText());
-    if (ts.isBlock(up) || ts.isSourceFile(up)) break;
-  }
-  return false;
-};
-
-// A log line: the console, the client's verbose log and its traces, which no player reads.
-const LOG_CALL = /^(console\.\w+|verboseLog|trace\w*|logger\.\w+)$/;
-const inConsole = (node) => {
-  for (let up = node.parent; up && !ts.isSourceFile(up); up = up.parent) {
-    if (ts.isCallExpression(up) && LOG_CALL.test(calleeName(up))) return true;
-  }
-  return false;
-};
 
 // Points are counted to the unit against the one above (formatPoints, formatExact); the compact amount rule ("12.4K")
 // is for amounts held.
@@ -550,15 +508,6 @@ const wordsOf = (node) => {
   return null;
 };
 
-// Text no player reads: a log line, or a thrown error's message.
-const inDiagnostic = (node) => {
-  if (inConsole(node)) return true;
-  for (let up = node.parent; up && !ts.isSourceFile(up); up = up.parent) {
-    if (ts.isThrowStatement(up)) return true;
-    if (ts.isNewExpression(up) && /Error$/.test(up.expression.getText())) return true;
-  }
-  return false;
-};
 /** A branch that writes its count before its noun ("1 exchange", `${count} exchanges`): words, never a route or a key. */
 const writesCount = (branch) =>
   (ts.isStringLiteralLike(branch) && /^\d/.test(branch.text)) ||
@@ -638,17 +587,6 @@ const roundsForArithmetic = (call) => {
   return ts.isCallExpression(parent) && /^(Number|parseFloat|Number\.parseFloat)$/.test(calleeName(parent));
 };
 
-/** Whether a template builds code (a key, a path, a class), not words: every piece of its text is a code token. */
-const isCodeTemplate = (template) =>
-  [template.head.text, ...template.templateSpans.map((span) => span.literal.text)].every(
-    (piece) => piece === "" || CODE_TOKEN.test(piece),
-  );
-
-/**
- * Whether a value ends where a player reads it: a JSX child, a visible attribute, a word template, a visible field of an
- * object, or what a function named for text (…Label, …Name, …Text, …Title, …Line) returns. A value handed to a call, a
- * key or a comparison is code.
- */
 const TEXT_NAME = /(?:Label|Name|Text|Title|Line|Words?|Copy|Message)$/;
 const readsAsText = (node) => {
   for (let child = node, up = node.parent; up && !ts.isSourceFile(up); child = up, up = up.parent) {
@@ -686,9 +624,6 @@ const enclosingFunctionName = (node) => {
   }
   return undefined;
 };
-
-/** A template's text as a player reads it, each substitution standing in as a number. */
-const templateText = (node) => node.head.text + node.templateSpans.map((span) => `7${span.literal.text}`).join("");
 
 // A realm's population reads one way, Blitz's and Frontier's alike: what its buildings take of all it can hold, "5/6",
 // written by the words module's formatPopulation (formatPopulationInWords in a line). A count of it set against another by hand ("1 / 6", "2 free of 6",
@@ -819,9 +754,12 @@ export function scanSource(source, fileName, { nouns, voiceRules }) {
     }
     if ((ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) && !isCodeString(node)) {
       if (nouns.has(node.text) && readsAsText(node)) hit("name.literal", node, node.text);
-      visible(node, node.text);
     }
-    if (ts.isTemplateExpression(node) && !isCodeString(node)) visible(node, templateText(node));
+    const text = playerTextOf(node);
+    if (text !== null) {
+      if (ts.isJsxText(node) && nouns.has(text)) hit("name.literal", node, text);
+      visible(node, text);
+    }
     // {n}% and {n} points/s in JSX: a number written, then its percent sign or its rate's unit as text.
     if (ts.isJsxText(node) && (/^\s*%/.test(node.text) || RATE_UNIT.test(node.text.replace(/^\s+/, " ")))) {
       const index = node.parent.children.indexOf(node);
@@ -830,11 +768,6 @@ export function scanSource(source, fileName, { nouns, voiceRules }) {
         hit(/^\s*%/.test(node.text) ? "number.percent" : "number.rate", before);
     }
     if (jsxFormula(node)) hit("number.formula", node.parent.children[node.parent.children.indexOf(node) - 1]);
-    if (ts.isJsxText(node) && node.text.trim()) {
-      const text = node.text.trim();
-      if (nouns.has(text)) hit("name.literal", node, text);
-      visible(node, text);
-    }
     if (isNamedFunction(node)) {
       let works = false;
       const inside = (child) => {

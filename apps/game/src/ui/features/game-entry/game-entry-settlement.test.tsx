@@ -125,7 +125,7 @@ it.each(["play", "settle"] as const)(
     state.settled = false;
     const { host, close } = await openEntry(entryIntent);
     try {
-      expect([...host.querySelectorAll("button")].some((button) => button.textContent === "Create your realm")).toBe(
+      expect([...host.querySelectorAll("button")].some((button) => button.textContent === "Create your Realm")).toBe(
         false,
       );
       expect(state.navigate).toHaveBeenCalledTimes(1);
@@ -177,7 +177,7 @@ it("asks a Season 1 free home for its Aspect, then its Order, and founds in the 
     expect(state.founded).toEqual([]);
     expect(state.navigate).not.toHaveBeenCalled();
     // No other verb stands beside the cards: the tap is the founding.
-    expect([...host.querySelectorAll("button")].some((button) => button.textContent === "Create your realm")).toBe(
+    expect([...host.querySelectorAll("button")].some((button) => button.textContent === "Create your Realm")).toBe(
       false,
     );
 

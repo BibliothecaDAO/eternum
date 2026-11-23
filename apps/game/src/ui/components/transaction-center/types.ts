@@ -46,7 +46,7 @@ const TX_MESSAGES: Record<TransactionType, string> = {
   [TransactionType.ACCEPT_ORDER]: "Trade accepted",
   [TransactionType.CANCEL_ORDER]: "Trade cancelled",
   [TransactionType.CREATE]: "Market order posted",
-  [TransactionType.CREATE_GUILD]: "Tribe founded",
+  [TransactionType.CREATE_GUILD]: "Tribe created",
   [TransactionType.JOIN_GUILD]: "Joined a tribe",
   [TransactionType.LEAVE_GUILD]: "Left the tribe",
   [TransactionType.UPDATE_WHITELIST]: "Tribe invitations updated",

@@ -93,7 +93,7 @@ describe("AspectPicker", () => {
     const { onChoose, onFound, cards, orders } = draw({ chosen: 2, joining: luminary.orderId });
     expect(cards[1]!.getAttribute("aria-label")).toBe("Joining Luminary…");
     expect(cards[1]!.getAttribute("aria-busy")).toBe("true");
-    expect(orders[0]!.getAttribute("aria-label")).toBe(`Founding as ${luminary.fullOrderName}…`);
+    expect(orders[0]!.getAttribute("aria-label")).toBe(`Creating Realm as ${luminary.fullOrderName}…`);
     expect([...cards, ...orders].every((button) => button.disabled)).toBe(true);
     act(() => cards[3]!.click());
     act(() => orders[1]!.click());

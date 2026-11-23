@@ -546,7 +546,7 @@ describe("a capture", () => {
       store,
       names,
     );
-    return { ...presentation, realm: realm.replace(/ founded$/, "") };
+    return { ...presentation, realm: realm.replace(/ created$/, "") };
   };
 
   const aftermath = "Its armies and deliveries went with it";
@@ -584,7 +584,7 @@ describe("a story's subject", () => {
     setHeldRealm(5, 1, 1);
     const title = (storyType: string, payload: Record<string, unknown>) =>
       buildStoryEventPresentation(story(storyType, payload, 5), store).title;
-    const name = title("RealmCreatedStory", { coord: { x: 1, y: 1 } }).replace(/ founded$/, "");
+    const name = title("RealmCreatedStory", { coord: { x: 1, y: 1 } }).replace(/ created$/, "");
     expect(name).not.toMatch(/^A realm$|\d{6,}/);
     expect(title("ResourceReceiveArrivalStory", { resources: [] })).toBe(`Resources arrived at ${name}`);
     expect(title("ResourceReceiveArrivalStory", { resources: [{ resource_type: 35, amount: "900000000000" }] })).toBe(
@@ -623,7 +623,7 @@ describe("a story's subject", () => {
     expect(title("ExplorerDeleteStory", { explorer_id: 7 })).toBe("djizus disbanded an army");
     expect(title("StructureLevelUpStory", { new_level: 1 })).toBe("djizus's realm became a City");
     expect(title("ResourceBurnStory", { resources: [] })).toBe("djizus spent resources");
-    expect(title("RealmCreatedStory", { coord: { x: 1, y: 1 } })).toBe("djizus founded a realm");
+    expect(title("RealmCreatedStory", { coord: { x: 1, y: 1 } })).toBe("djizus created a Realm");
     expect(title("ResourceReceiveArrivalStory", { resources: [] })).toBe("Resources arrived at djizus's realm");
     for (const line of [
       title("ProductionStory", { received_resource_type: 35, received_amount: "1", cost: [] }),
