@@ -71,14 +71,14 @@ function resolveKnightMarchCadence(phaseRadians: number, weight: number): Knight
   const doubleStride = Math.cos(phaseRadians * 2);
   const forwardSwing = Math.abs(stride);
   return {
-    chestLift: doubleStride * 0.003 * weight,
-    headPitchDegrees: doubleStride * 1.6 * weight,
-    headYawDegrees: -stride * 1.8 * weight,
-    leftElbowDelta: [0.008 * weight, -0.004 * weight, 0.004 * forwardSwing * weight],
-    leftWristDelta: [0.01 * weight, -0.005 * weight, 0.006 * forwardSwing * weight],
-    rightElbowDelta: [-0.006 * weight, 0.004 * doubleStride * weight, 0.012 * stride * weight],
-    rightWristDelta: [-0.01 * weight, 0.006 * doubleStride * weight, 0.018 * stride * weight],
-    spineTwistDegrees: -stride * 3.2 * weight,
+    chestLift: doubleStride * 0.002 * weight,
+    headPitchDegrees: doubleStride * 1.2 * weight,
+    headYawDegrees: -stride * 1.4 * weight,
+    leftElbowDelta: [0.0018 * weight, -0.001 * weight, 0.0012 * forwardSwing * weight],
+    leftWristDelta: [0.0022 * weight, -0.0012 * weight, 0.0018 * forwardSwing * weight],
+    rightElbowDelta: [-0.0016 * weight, 0.0012 * doubleStride * weight, 0.0032 * stride * weight],
+    rightWristDelta: [-0.0022 * weight, 0.0018 * doubleStride * weight, 0.0042 * stride * weight],
+    spineTwistDegrees: -stride * 1.4 * weight,
   };
 }
 
