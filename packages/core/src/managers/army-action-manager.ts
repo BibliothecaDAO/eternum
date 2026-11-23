@@ -1,6 +1,6 @@
 import { armyCombatRefusal } from "../utils/army-opponents";
 import { armyOaths, oathAttackStamina } from "../utils/oaths";
-import { currentArmy } from "../utils/deep";
+import { armiesBlockTile, currentArmy } from "../utils/deep";
 import { safeInteger } from "../utils/safe-integer";
 import { entityMapPosition } from "../utils/tile";
 import {
@@ -10,7 +10,6 @@ import {
   getLayerNeighborHexes,
   getLayeredAttackDistance,
   getNeighborHexes,
-  getTroopAttackRange,
   type HexEntityInfo,
   type HexPosition,
   type ID,
@@ -217,7 +216,6 @@ export class ArmyActionManager {
   private addAttackActionPaths(
     actionPaths: ActionPaths,
     startPos: HexPosition,
-    attackRange: number,
     armyStamina: number,
     armyHexes: Map<number, Map<number, HexEntityInfo>>,
     structureHexes: Map<number, Map<number, HexEntityInfo>>,
@@ -225,7 +223,7 @@ export class ArmyActionManager {
     playerAddress: ContractAddress,
   ) {
     const attackStaminaCost = this.getAttackStaminaRequirement();
-    const targetHexes = this.getAttackHexesInRange(startPos, attackRange, armyHexes, structureHexes);
+    const targetHexes = this.getAdjacentAttackHexes(startPos, armyHexes, structureHexes);
 
     for (const { col, row } of targetHexes.values()) {
       const army = armyHexes.get(col - this.FELT_CENTER)?.get(row - this.FELT_CENTER);
@@ -267,9 +265,8 @@ export class ArmyActionManager {
     }
   }
 
-  private getAttackHexesInRange(
+  private getAdjacentAttackHexes(
     startPos: HexPosition,
-    attackRange: number,
     ...indexes: Map<number, Map<number, HexEntityInfo>>[]
   ): Map<string, HexPosition> {
     const alt = this._getCurrentPosition().alt;
@@ -279,7 +276,7 @@ export class ArmyActionManager {
         for (const row of rows.keys()) {
           const hex = { col: col + this.FELT_CENTER, row: row + this.FELT_CENTER };
           const distance = getLayeredAttackDistance({ ...startPos, alt }, { ...hex, alt });
-          if (distance > 0 && distance <= attackRange) targets.set(ActionPaths.posKey(hex), hex);
+          if (distance === 1) targets.set(ActionPaths.posKey(hex), hex);
         }
       }
     }
@@ -315,11 +312,13 @@ export class ArmyActionManager {
     if (this.store.get("DeepGuard", { game_id: configManager.getActiveGameId(), explorer_id: this.entityId }))
       return actionPaths;
     const lowestStaminaUse = new Map<string, number>();
+    const armiesBlock = armiesBlockTile(this.store, configManager.getActiveGameId(), startPos);
     const priorityQueue: Array<{
       position: HexPosition;
       staminaUsed: number;
       distance: number;
       path: ActionPath[];
+      through?: boolean;
     }> = [];
 
     // Process initial neighbors instead of start position
@@ -344,6 +343,20 @@ export class ArmyActionManager {
       );
       const biome = exploredHexes.get(col - this.FELT_CENTER)?.get(row - this.FELT_CENTER);
       const key = ActionPaths.posKey({ col, row });
+      if (hasArmy && !armiesBlock && biome && maxHex > 0) {
+        const staminaCost = configManager.getTravelStaminaCost(biome, troopType);
+        if (staminaCost <= armyStamina)
+          priorityQueue.push({
+            position: { col, row },
+            staminaUsed: staminaCost,
+            distance: 1,
+            through: true,
+            path: [
+              { hex: { col: startPos.col, row: startPos.row }, actionType: ActionType.Move },
+              { hex: { col, row }, actionType: ActionType.Move, biomeType: biome, staminaCost },
+            ],
+          });
+      }
 
       // Each tile skipped here says why (ActionPaths.refuse), so the map can name the reason where no order leads.
       if (!isSpire && !isExplored && !canExplore) {
@@ -438,7 +451,7 @@ export class ArmyActionManager {
       const sortedQueue = priorityQueue.toSorted((a, b) => a.staminaUsed - b.staminaUsed);
       priorityQueue.length = 0;
       priorityQueue.push(...sortedQueue.slice(1));
-      const { position: current, staminaUsed, distance, path } = sortedQueue[0];
+      const { position: current, staminaUsed, distance, path, through } = sortedQueue[0];
       const currentKey = ActionPaths.posKey(current);
 
       if (!lowestStaminaUse.has(currentKey) || staminaUsed < lowestStaminaUse.get(currentKey)!) {
@@ -450,10 +463,10 @@ export class ArmyActionManager {
           structureHexes.get(current.col - this.FELT_CENTER)?.has(current.row - this.FELT_CENTER) || false;
         const hasSpire = this.isWorldSpireHex(current);
 
-        actionPaths.set(currentKey, path);
+        if (!through) actionPaths.set(currentKey, path);
 
         // cannot go through these hexes so need to stop here
-        if (!isExplored || hasArmy || hasStructure || hasSpire) continue;
+        if (!isExplored || (hasArmy && armiesBlock) || hasStructure || hasSpire) continue;
 
         const neighbors = getLayerNeighborHexes(current.col, current.row, startPos.alt);
         for (const { col, row } of neighbors) {
@@ -467,8 +480,9 @@ export class ArmyActionManager {
           const hasSpire = this.isWorldSpireHex({ col, row });
 
           // A target ends a route where it stands: the attack paths or the distance decide it below.
-          if (hasSpire || hasArmy || hasStructure) continue;
-          if (this.isOccupiedHex({ col, row })) {
+          if (hasSpire || (hasArmy && armiesBlock) || hasStructure) continue;
+          const passing = hasArmy;
+          if (!passing && this.isOccupiedHex({ col, row })) {
             actionPaths.refuse(neighborKey, { reason: "occupied" });
             continue;
           }
@@ -478,15 +492,16 @@ export class ArmyActionManager {
           const nextStaminaUsed = staminaUsed + staminaCost;
 
           if (nextDistance > maxHex) {
-            actionPaths.refuse(
-              neighborKey,
-              foodBoundsSteps ? { reason: "food" } : { reason: "stamina", need: nextStaminaUsed },
-            );
+            if (!passing)
+              actionPaths.refuse(
+                neighborKey,
+                foodBoundsSteps ? { reason: "food" } : { reason: "stamina", need: nextStaminaUsed },
+              );
             continue;
           }
 
           if (nextStaminaUsed > armyStamina) {
-            actionPaths.refuse(neighborKey, { reason: "stamina", need: nextStaminaUsed });
+            if (!passing) actionPaths.refuse(neighborKey, { reason: "stamina", need: nextStaminaUsed });
             continue;
           }
 
@@ -495,6 +510,7 @@ export class ArmyActionManager {
               position: { col, row },
               staminaUsed: nextStaminaUsed,
               distance: nextDistance,
+              through: passing,
               path: [
                 ...path,
                 {
@@ -513,7 +529,6 @@ export class ArmyActionManager {
     this.addAttackActionPaths(
       actionPaths,
       startPos,
-      getTroopAttackRange(troopType),
       armyStamina,
       armyHexes,
       structureHexes,

@@ -5,7 +5,6 @@ use crate::commands::ExecutionContext;
 use crate::deep::{DeepBeast, DeepRing, DeepSettings, DeepSite};
 use crate::guards::{Guard, GuardKey};
 use crate::resources::ResourceKey;
-use crate::troops::ExplorerKey;
 
 #[cfg(feature: "blitz")]
 pub fn rules() -> DeepSettings {
@@ -111,11 +110,8 @@ pub fn dispatcher(game_id: u32) -> crate::deep::IDeepSitesLibraryDispatcher {
     }
 }
 
-pub fn reward_beast_clear(key: ExplorerKey, home: u64, cleared: ResourceKey, timestamp: u64) {
-    let kind = site(cleared).expect('missing Deep site').kind;
-    crate::logic::quest_progress::guarded_site_cleared(
-        ResourceKey { game_id: key.game_id, entity_id: home }, beast(kind).count, timestamp,
-    );
+pub fn beast_size(key: ResourceKey) -> u128 {
+    beast(site(key).expect('missing Deep site').kind).count
 }
 
 #[cfg(feature: "blitz")]

@@ -109,6 +109,8 @@ export interface NativePreset {
     revealPercent: number;
     siteGuardLower: number;
     siteGuardUpper: number;
+    riftGuardLower: number;
+    riftGuardUpper: number;
     guardStep: number;
     beastWeakLower: number;
     beastWeakUpper: number;

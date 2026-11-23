@@ -2,11 +2,13 @@
 use crate::expeditions::{DepthRules, FrontierDiscoveryRules};
 use crate::relics::ChestTiers;
 
-pub const DEPTH_RULES: [DepthRules; 4] = [
+pub const DEPTH_RULES: [DepthRules; 3] = [
     DepthRules {
         reveal_percent: 10,
         site_guard_lower: 1170,
         site_guard_upper: 1430,
+        rift_guard_lower: 1350,
+        rift_guard_upper: 1650,
         reveal_site_neighbors: false,
         chest: ChestTiers { common: 6000, uncommon: 3000, rare: 1000, epic: 0, legendary: 0 },
         guard_step: 10,
@@ -19,6 +21,8 @@ pub const DEPTH_RULES: [DepthRules; 4] = [
         reveal_percent: 15,
         site_guard_lower: 2340,
         site_guard_upper: 2860,
+        rift_guard_lower: 2700,
+        rift_guard_upper: 3300,
         reveal_site_neighbors: false,
         chest: ChestTiers { common: 0, uncommon: 6000, rare: 3000, epic: 1000, legendary: 0 },
         guard_step: 10,
@@ -31,6 +35,8 @@ pub const DEPTH_RULES: [DepthRules; 4] = [
         reveal_percent: 20,
         site_guard_lower: 4680,
         site_guard_upper: 5720,
+        rift_guard_lower: 5400,
+        rift_guard_upper: 6600,
         reveal_site_neighbors: false,
         chest: ChestTiers { common: 0, uncommon: 0, rare: 6000, epic: 3000, legendary: 1000 },
         guard_step: 10,
@@ -38,18 +44,6 @@ pub const DEPTH_RULES: [DepthRules; 4] = [
         beast_weak_upper: 1540,
         beast_strong_lower: 1620,
         beast_strong_upper: 1980,
-    },
-    DepthRules {
-        reveal_percent: 25,
-        site_guard_lower: 9360,
-        site_guard_upper: 11440,
-        reveal_site_neighbors: false,
-        chest: ChestTiers { common: 0, uncommon: 0, rare: 0, epic: 6400, legendary: 3600 },
-        guard_step: 10,
-        beast_weak_lower: 2520,
-        beast_weak_upper: 3080,
-        beast_strong_lower: 3240,
-        beast_strong_upper: 3960,
     },
 ];
 

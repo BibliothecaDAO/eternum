@@ -43,8 +43,6 @@ export const dayLogLine = (story: LoggedStory, store: NativeFactStore, fight?: L
       return revealPayLine(payload) ?? story.presentation.title;
     case "SitePayout":
       return withFightCost(story.presentation.title, fight);
-    case "SkillPointSpent":
-      return titleOf(story);
     case "BuildingPaymentStory":
       return builtLineOf(payload) ?? story.presentation.title;
     case "ExplorerCreateStory":

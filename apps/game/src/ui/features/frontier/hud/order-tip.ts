@@ -120,9 +120,8 @@ const refusalLine = ({ refusal, staminaWait, staminaHeld, explored }: TileOrder)
 const orderRefusalWords: Record<Exclude<OrderRefusal["reason"], "stamina">, string> = {
   food: "Not enough food for the army",
   "off-limits": ATTACK_REFUSAL_WORDS["target-must-be-unowned"],
-  allied: ATTACK_REFUSAL_WORDS.allied,
   "no-attack": "This game allows no attack here",
-  "outside-deep": ATTACK_REFUSAL_WORDS["outside-deep"],
+  "in-the-open": ATTACK_REFUSAL_WORDS["in-the-open"],
   "no-transfer": "This game allows no transfer here",
   occupied: "No army can enter this tile",
   "too-far": "Too far: move closer",

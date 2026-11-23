@@ -222,6 +222,8 @@ pub mod MovementLogic {
             assert!(explorer.troops.count != 0, "explorer is dead");
             let oaths = crate::logic::progression::held_oaths(key, context);
             crate::logic::map::MapState::vacate(tile_key(game_id, explorer.coord), command.explorer_id);
+            let last = command.directions.len() - 1;
+            let mut step = 0;
             for direction in command.directions {
                 let destination = neighbor(explorer.coord, *direction);
                 crate::logic::deep::assert_step(game_id, explorer.coord, destination);
@@ -232,12 +234,17 @@ pub mod MovementLogic {
                     .reveal_destination_tile(tile, crate::commands::biome_context(context))
                     .expect('undiscovered movement tile')
                     .data;
-                assert!(crate::logic::map::occupancy(tile).is_none(), "movement tile occupied");
+                assert!(
+                    crate::logic::map::occupancy(tile).is_none()
+                        || (step != last && crate::logic::deep::passable(game_id, destination)),
+                    "movement tile occupied",
+                );
                 let stored_biome: u8 = (data / BIOME_SCALE % BYTE_RANGE).try_into().unwrap();
                 assert!(stored_biome != 0, "undiscovered movement tile");
                 let biome = stored_biome.into();
                 self.pay_movement(game_id, ref explorer, rules, biome, false, oaths, context.timestamp, context);
                 explorer.coord = destination;
+                step += 1;
             }
             crate::logic::map::MapState::occupy(
                 tile_key(game_id, explorer.coord),

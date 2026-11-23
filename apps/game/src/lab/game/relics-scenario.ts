@@ -46,9 +46,8 @@ const effect = (relic: ArmyRelic, expiresAt: number): LabFact => ({
   value: wire({ game_id: 1, explorer_id: ARMY, kind: relic.kind, rank: relic.rank, expires_at: expiresAt }),
 });
 
-/** ApplyRelic's span after the variant: the army, the relic's id (kind index × 5 + tier), then ArmySlot and its slot. */
 const switchOn = (command: LabCommand, chain: LabScenario["store"], now: number): LabFact[] => {
-  const [, , relicId, , slot] = command.span.map(Number);
+  const [, , relicId, slot] = command.span.map(Number);
   const carried = chain.require("ArmyRelics", { game_id: 1, explorer_id: ARMY });
   const slots = [carried.first, carried.second, carried.third].map(
     (held) => held && { kind: held.kind, rank: held.rank },

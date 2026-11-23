@@ -51,6 +51,7 @@ describe("StructureActionManager.findActionPaths", () => {
       exploredHexes,
       0x123n as never,
       isOccupied,
+      true,
     );
 
     expect(actionPaths.get(ActionPaths.posKey(site))).toBeUndefined();
@@ -77,14 +78,15 @@ describe("StructureActionManager.findActionPaths", () => {
       exploredHexes,
       0x123n as never,
       () => true,
+      true,
     );
 
     expect(ActionPaths.getActionType(actionPaths.get(ActionPaths.posKey(own))!)).toBe(ActionType.Help);
     expect(actionPaths.get(ActionPaths.posKey(foreign))).toBeUndefined();
   });
 
-  it("does not add ranged attacks for unexplored enemy armies", () => {
-    const targetHex = findRadiusTwoHex();
+  it("does not add attacks for unexplored enemy armies", () => {
+    const [targetHex] = getNeighborHexes(STRUCTURE_POSITION.col, STRUCTURE_POSITION.row);
     const armyHexes = new Map<number, Map<number, HexEntityInfo>>();
     const exploredHexes = new Map<number, Map<number, BiomeType>>();
     setNestedMapValue(armyHexes, targetHex.col - TEST_FELT_CENTER, targetHex.row - TEST_FELT_CENTER, {
@@ -97,14 +99,14 @@ describe("StructureActionManager.findActionPaths", () => {
       exploredHexes,
       0x123n as never,
       () => false,
-      2,
+      true,
     );
 
     expect(actionPaths.get(ActionPaths.posKey(targetHex))).toBeUndefined();
   });
 
-  it("adds ranged attacks for explored enemy armies", () => {
-    const targetHex = findRadiusTwoHex();
+  it("adds attacks for explored enemy armies beside it", () => {
+    const [targetHex] = getNeighborHexes(STRUCTURE_POSITION.col, STRUCTURE_POSITION.row);
     const armyHexes = new Map<number, Map<number, HexEntityInfo>>();
     const exploredHexes = new Map<number, Map<number, BiomeType>>();
     setNestedMapValue(armyHexes, targetHex.col - TEST_FELT_CENTER, targetHex.row - TEST_FELT_CENTER, {
@@ -123,14 +125,13 @@ describe("StructureActionManager.findActionPaths", () => {
       exploredHexes,
       0x123n as never,
       () => false,
-      2,
+      true,
     );
 
     expect(ActionPaths.getActionType(actionPaths.get(ActionPaths.posKey(targetHex)) ?? [])).toBe(ActionType.Attack);
   });
 
-  it("offers no guard attack where the game leaves GuardAttack out, and says so", () => {
-    vi.spyOn(configManager, "isCommandEnabled").mockImplementation((command) => command !== "GuardAttack");
+  it("offers no attack on an explored enemy army two tiles away", () => {
     const targetHex = findRadiusTwoHex();
     const armyHexes = new Map<number, Map<number, HexEntityInfo>>();
     const exploredHexes = new Map<number, Map<number, BiomeType>>();
@@ -150,7 +151,34 @@ describe("StructureActionManager.findActionPaths", () => {
       exploredHexes,
       0x123n as never,
       () => false,
-      2,
+      true,
+    );
+
+    expect(actionPaths.get(ActionPaths.posKey(targetHex))).toBeUndefined();
+  });
+
+  it("offers no guard attack where the game leaves GuardAttack out, and says so", () => {
+    vi.spyOn(configManager, "isCommandEnabled").mockImplementation((command) => command !== "GuardAttack");
+    const [targetHex] = getNeighborHexes(STRUCTURE_POSITION.col, STRUCTURE_POSITION.row);
+    const armyHexes = new Map<number, Map<number, HexEntityInfo>>();
+    const exploredHexes = new Map<number, Map<number, BiomeType>>();
+    setNestedMapValue(armyHexes, targetHex.col - TEST_FELT_CENTER, targetHex.row - TEST_FELT_CENTER, {
+      owner: 0x999n,
+    } as HexEntityInfo);
+    setNestedMapValue(
+      exploredHexes,
+      targetHex.col - TEST_FELT_CENTER,
+      targetHex.row - TEST_FELT_CENTER,
+      1 as BiomeType,
+    );
+
+    const actionPaths = new StructureActionManager().findActionPaths(
+      STRUCTURE_POSITION,
+      armyHexes,
+      exploredHexes,
+      0x123n as never,
+      () => false,
+      true,
     );
 
     expect(actionPaths.get(ActionPaths.posKey(targetHex))).toBeUndefined();

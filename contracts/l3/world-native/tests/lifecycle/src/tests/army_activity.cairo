@@ -1,4 +1,4 @@
-use snforge_std::{interact_with_state, spy_events};
+use snforge_std::interact_with_state;
 use starknet::storage::StorageMapReadAccess;
 use world_test_support::tests::play_fixture::{FIXTURE_START, create_game, fixture_params};
 use world_test_support::tests::registrar::CreateGameParams;
@@ -130,77 +130,6 @@ pub fn army(d: Deployment, key: ExplorerKey) -> ExplorerTroops {
     interact_with_state(d.games, || crate::logic::troops::explorer(key).unwrap())
 }
 
-fn attack(attacker: u64, defender: u64) -> Command {
-    Command::Battle(
-        crate::combat_actions::AttackExplorer {
-            attacker_id: attacker, defender_id: defender, steal_resources: array![].span(),
-        },
-    )
-}
-
-pub fn refused(d: Deployment, game_id: u32, command: Command, reason: ByteArray) {
-    let mut events = spy_events();
-    assert!(!execute_in_game(d, game_id, command, FIXTURE_START + 5));
-    assert_eq!(world_test_support::tests::play_fixture::rejection(ref events, d.games).reason, reason);
-}
-
-#[test]
-fn frontier_attacks_refuse_allies_and_personal_maps_but_allow_rivals_in_the_deep() {
-    let (d, game_id) = super::aspects::setup_aspects(74);
-    let ally = player(d, 7401);
-    let rival = player(d, 7402);
-    let home = found(d, game_id, 1);
-    let ally_home = found(ally, game_id, 1);
-    let rival_home = found(rival, game_id, 2);
-    let attacker = ExplorerKey {
-        game_id, explorer_id: slot_army(d, ArmySlotKey { game_id, structure_id: home, epoch: 0, slot: 0 }),
-    };
-    let friend = ExplorerKey {
-        game_id, explorer_id: slot_army(d, ArmySlotKey { game_id, structure_id: ally_home, epoch: 0, slot: 0 }),
-    };
-    let enemy = ExplorerKey {
-        game_id, explorer_id: slot_army(d, ArmySlotKey { game_id, structure_id: rival_home, epoch: 0, slot: 0 }),
-    };
-    let reserve = slot_army(d, ArmySlotKey { game_id, structure_id: rival_home, epoch: 0, slot: 1 });
-    assert!(
-        execute_in_game(
-            rival,
-            game_id,
-            Command::ManageTroops(
-                crate::troop_management::ManageTroops::Transfer(
-                    crate::troop_management::TransferTroops {
-                        source: crate::troop_management::Army::Explorer(enemy.explorer_id),
-                        target: crate::troop_management::Army::Explorer(reserve),
-                        amount: army(d, enemy).troops.count - crate::rules::RESOURCE_PRECISION,
-                    },
-                ),
-            ),
-            FIXTURE_START,
-        ),
-    );
-    refused(d, game_id, attack(attacker.explorer_id, enemy.explorer_id), "army combat requires Deep");
-    super::deep_sites::descend(d, attacker, FIXTURE_START);
-    super::deep_sites::descend(ally, friend, FIXTURE_START);
-    super::deep_sites::descend(rival, enemy, FIXTURE_START);
-    let center = crate::deep::center(crate::balance::settlement::SETTLEMENT_SPACING_STEPS);
-    set_explorer_fixture(d.games, attacker, ExplorerTroops { coord: center, ..army(d, attacker) });
-    set_explorer_fixture(
-        d.games, friend, ExplorerTroops { coord: crate::geometry::neighbor(center, 0), ..army(d, friend) },
-    );
-    set_explorer_fixture(
-        d.games, enemy, ExplorerTroops { coord: crate::geometry::neighbor(center, 1), ..army(d, enemy) },
-    );
-    let before_attacker = army(d, attacker);
-    let before_friend = army(d, friend);
-    refused(d, game_id, attack(attacker.explorer_id, friend.explorer_id), "cannot attack an allied army");
-    assert_eq!(army(d, attacker), before_attacker);
-    assert_eq!(army(d, friend), before_friend);
-    assert!(execute_in_game(d, game_id, attack(attacker.explorer_id, enemy.explorer_id), FIXTURE_START + 5));
-    assert!(army(d, attacker).troops.count > 0);
-    assert!(interact_with_state(d.games, || crate::logic::troops::explorer(enemy)).is_none());
-}
-
-
 fn combat_at(d: Deployment, key: ExplorerKey) -> crate::combat::ArmyCombat {
     interact_with_state(d.games, || crate::logic::army_combat::read(key).unwrap())
 }
@@ -210,60 +139,13 @@ fn combat_at(d: Deployment, key: ExplorerKey) -> crate::combat::ArmyCombat {
 fn successful_attacks_record_their_target_and_refusals_preserve_it() {
     let (d, game_id) = super::aspects::setup_aspects(82);
     let rival = player(d, 8201);
-    let home = crate::resources::ResourceKey { game_id, entity_id: found(d, game_id, 1) };
-    let rival_home = found(rival, game_id, 2);
-    super::deep_sites::applied(
-        d,
-        game_id,
-        world_test_support::tests::building_commands::create(home, crate::research::BARRACKS),
-        FIXTURE_START,
-    );
-    world_test_support::tests::resource_commands::grant(d, home, 26, 1000 * crate::rules::RESOURCE_PRECISION);
-    super::deep_sites::applied(d, game_id, muster(home.entity_id, 2, 5, 1000), FIXTURE_START);
-    let attacker = ExplorerKey {
-        game_id, explorer_id: slot_army(d, ArmySlotKey { game_id, structure_id: home.entity_id, epoch: 0, slot: 2 }),
-    };
-    let enemy = ExplorerKey {
-        game_id, explorer_id: slot_army(d, ArmySlotKey { game_id, structure_id: rival_home, epoch: 0, slot: 0 }),
-    };
-    let other = ExplorerKey {
-        game_id, explorer_id: slot_army(d, ArmySlotKey { game_id, structure_id: rival_home, epoch: 0, slot: 1 }),
-    };
-    super::deep_sites::descend(d, attacker, FIXTURE_START);
-    super::deep_sites::descend(rival, enemy, FIXTURE_START);
-    super::deep_sites::descend(rival, other, FIXTURE_START);
-    let center = crate::deep::center(crate::balance::settlement::SETTLEMENT_SPACING_STEPS);
-    let center = crate::troops::Coord { y: center.y - 2, ..center };
-    set_explorer_fixture(d.games, attacker, ExplorerTroops { coord: center, ..army(d, attacker) });
-    set_explorer_fixture(
-        d.games, enemy, ExplorerTroops { coord: crate::geometry::neighbor(center, 0), ..army(d, enemy) },
-    );
-    set_explorer_fixture(
-        d.games, other, ExplorerTroops { coord: crate::troops::Coord { x: center.x + 2, ..center }, ..army(d, other) },
-    );
-    super::deep_sites::applied(d, game_id, attack(attacker.explorer_id, enemy.explorer_id), FIXTURE_START + 5);
-    assert_eq!(combat_at(d, attacker), crate::combat::ArmyCombat { last_target: enemy.explorer_id });
-    assert_eq!(army(d, attacker).troops.count, 563 * crate::rules::RESOURCE_PRECISION);
-    assert_eq!(army(d, enemy).troops.count, 563 * crate::rules::RESOURCE_PRECISION);
-    let before = army(d, attacker);
-    assert!(!execute_in_game(d, game_id, attack(attacker.explorer_id, other.explorer_id), FIXTURE_START + 5));
-    assert_eq!(army(d, attacker), before);
-    assert_eq!(combat_at(d, attacker).last_target, enemy.explorer_id);
-    super::deep_sites::applied(d, game_id, attack(attacker.explorer_id, enemy.explorer_id), FIXTURE_START + 5);
-    assert_eq!(combat_at(d, attacker).last_target, enemy.explorer_id);
-    assert_eq!(army(d, attacker).troops.count, 287 * crate::rules::RESOURCE_PRECISION);
-    assert_eq!(army(d, enemy).troops.count, 287 * crate::rules::RESOURCE_PRECISION);
-    set_explorer_fixture(
-        d.games, other, ExplorerTroops { coord: crate::geometry::neighbor(center, 1), ..army(d, other) },
-    );
-    let rested = interact_with_state(
-        d.games,
-        || crate::logic::army_slot_storage::read(
-            ArmySlotKey { game_id, structure_id: home.entity_id, epoch: 0, slot: 2 },
-        )
-            .unwrap()
-            .stamina,
-    );
+    let attacker = super::deep_sites::deployed(d, game_id, 1, 1000);
+    let guard = super::deep_sites::deployed(rival, game_id, 2, 1000);
+    let target = super::deep_sites::site(d, game_id, crate::rules::DEEP_MINE);
+    super::deep_sites::seize(rival, guard, target, 0);
+    super::deep_sites::beside(d, attacker, target, 1);
+    super::deep_sites::applied(d, game_id, super::deep_sites::fight(attacker, target), FIXTURE_START);
+    assert_eq!(combat_at(d, attacker), crate::combat::ArmyCombat { last_target: guard.explorer_id });
     let before = army(d, attacker);
     set_explorer_fixture(
         d.games,
@@ -271,7 +153,7 @@ fn successful_attacks_record_their_target_and_refusals_preserve_it() {
         ExplorerTroops {
             troops: crate::troops::Troops {
                 stamina: crate::troops::Stamina {
-                    amount: 0, settled_at: (FIXTURE_START + 5).try_into().unwrap(), remainder: 0,
+                    amount: 0, settled_at: FIXTURE_START.try_into().unwrap(), remainder: 0,
                 }
                     .into(),
                 ..before.troops,
@@ -279,17 +161,10 @@ fn successful_attacks_record_their_target_and_refusals_preserve_it() {
             ..before,
         },
     );
-    assert!(!execute_in_game(d, game_id, attack(attacker.explorer_id, other.explorer_id), FIXTURE_START + 5));
-    assert_eq!(combat_at(d, attacker).last_target, enemy.explorer_id);
-    assert_eq!(army(d, attacker).troops.count, before.troops.count);
-    set_explorer_fixture(
-        d.games,
-        attacker,
-        ExplorerTroops { troops: crate::troops::Troops { stamina: rested.into(), ..before.troops }, ..before },
-    );
-    super::deep_sites::applied(d, game_id, attack(attacker.explorer_id, other.explorer_id), FIXTURE_START + 5);
-    assert!(interact_with_state(d.games, || crate::logic::army_combat::read(attacker)).is_none());
-    assert!(interact_with_state(d.games, || crate::logic::troops::explorer(attacker)).is_none());
+    let tired = army(d, attacker);
+    assert!(!execute_in_game(d, game_id, super::deep_sites::fight(attacker, target), FIXTURE_START));
+    assert_eq!(combat_at(d, attacker).last_target, guard.explorer_id);
+    assert_eq!(army(d, attacker), tired);
 }
 
 #[test]

@@ -49,7 +49,12 @@ const preview = (armyStamina: bigint, aimAt: typeof target = target) => {
     {
       model: "SliceRules",
       key: "0x100",
-      value: { ...rules, day_unit_seconds: 0, battle_config: { ...rules.battle_config, regular_immunity_ticks: 0 } },
+      value: {
+        ...rules,
+        day_unit_seconds: 0,
+        mode_rules: 0,
+        battle_config: { ...rules.battle_config, regular_immunity_ticks: 0 },
+      },
     },
     { model: "ExpeditionSite", key: "0x72", value: null },
     {

@@ -144,8 +144,6 @@ pub mod BuildingState {
     }
     #[generate_trait]
     pub impl InternalImpl<TContractState, +HasComponent<TContractState>> of InternalTrait<TContractState> {
-        // One standing building's output on a realm board. Tiers apply to every building of a type, so the output is
-        // the same on every plot: Fields, Tools and Drill each add a share of the type's base rate.
         fn board_output(
             self: @ComponentState<TContractState>,
             key: ResourceKey,

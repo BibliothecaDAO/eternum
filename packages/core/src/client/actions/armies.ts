@@ -1,5 +1,4 @@
 import {
-  getTroopAttackRange,
   TileOccupier,
   type BiomeType,
   type ContractAddress,
@@ -9,7 +8,6 @@ import {
   type TroopTier,
   type TroopType,
 } from "@bibliothecadao/types";
-import type { NativeRows } from "../../../../../contracts/l3/world-native/schema/client.gen";
 
 import { ArmyActionManager, type ArmyReach } from "../../managers/army-action-manager";
 import { ArmyManager } from "../../managers/army-manager";
@@ -106,30 +104,15 @@ export const findStructurePaths = (client: ActionClient, input: StructurePathsIn
     entity_id: input.structureId,
   });
   const home = structureMapPosition(store, structure);
-  const range = guardAttackRange(store, structure);
-  if (!home || range === undefined) return new ActionPaths();
+  const guards = getGuardsByStructure(structure, store);
+  if (!home || !guards) return new ActionPaths();
   return new StructureActionManager().findActionPaths(
     { col: home.x, row: home.y },
     input.armyHexes,
     input.exploredHexes,
     input.playerAddress,
     (hex) => (getTileAt(store, home.alt, hex.col, hex.row)?.occupier_type ?? TileOccupier.None) !== TileOccupier.None,
-    range,
-  );
-};
-
-/** The reach of the strongest-ranged guard with troops. */
-const guardAttackRange = (
-  store: ActionClient["setup"]["store"],
-  structure: NativeRows["Structure"],
-): number | undefined => {
-  const guards = getGuardsByStructure(structure, store);
-  if (!guards) return undefined;
-  return Math.max(
-    0,
-    ...guards
-      .filter((guard) => Number(guard.troops.count) > 0)
-      .map((guard) => getTroopAttackRange(guard.troops.category as TroopType)),
+    guards.some((guard) => Number(guard.troops.count) > 0),
   );
 };
 

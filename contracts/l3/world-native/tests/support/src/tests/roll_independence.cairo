@@ -92,11 +92,7 @@ pub fn typed_commands() -> Array<Command> {
             },
         ),
         Command::BattleGuard(crate::commands::Battle { attacker_id: 999999, defender_id: 999999, relic_slot: None }),
-        Command::ApplyRelic(
-            crate::relics::ApplyRelic {
-                entity_id: 999999, relic_id: 39, recipient: crate::relics::Recipient::Explorer,
-            },
-        ),
+        Command::ApplyRelic(crate::relics::ApplyRelic { entity_id: 999999, relic_id: 39, slot: 0 }),
         Command::CreateGuild(crate::guilds::CreateGuild { owned_structure_id: 999999, public: false, name: 'route' }),
         Command::JoinGuild(crate::guilds::JoinGuild { owned_structure_id: 999999, guild_id: 999.try_into().unwrap() }),
         Command::LeaveGuild,
@@ -171,7 +167,6 @@ pub fn draw_case(case: u8) -> (Deployment, TestAction, u64) {
     match case {
         0 => explorer_case(false),
         1 => explorer_case(true),
-        2 => battle_case(),
         3 => season_case(),
         _ => panic!("unknown draw case"),
     }
@@ -201,52 +196,8 @@ pub fn explorer_case(explore: bool) -> (Deployment, TestAction, u64) {
     };
     (d, TestAction { game_id: 3, actor: d.actor, command }, play_fixture::FIXTURE_START + 140)
 }
-pub fn battle_case() -> (Deployment, TestAction, u64) {
-    let (d, attacker, defender) = deep_armies();
-    let command = Command::Battle(
-        crate::combat_actions::AttackExplorer {
-            attacker_id: attacker, defender_id: defender, steal_resources: array![].span(),
-        },
-    );
-    (d, TestAction { game_id: 3, actor: d.actor, command }, play_fixture::FIXTURE_START)
-}
 pub fn season_case() -> (Deployment, TestAction, u64) {
     let d = super::registrar::setup();
     let game_id = play_fixture::create_game(d.games, play_fixture::fixture_params('season'));
     (d, play_fixture::settle_action(d, game_id, d.actor, 1), play_fixture::FIXTURE_START + 50)
-}
-pub fn deep_armies() -> (Deployment, u64, u64) {
-    let (d, home, target, attacker, defender) = super::combat_actions::setup_with_counts((1000, 1000));
-    super::combat_actions::into_deep(d, home, target, attacker, defender);
-    (d, attacker, defender)
-}
-pub fn live_loot_case(insufficient: bool, full: bool) -> (Deployment, TestAction) {
-    let (d, attacker, defender) = deep_armies();
-    super::resource_commands::grant(d, crate::resources::ResourceKey { game_id: 3, entity_id: defender }, 2, 90);
-    if full {
-        let key = crate::resources::ResourceKey { game_id: 3, entity_id: attacker };
-        let free = snforge_std::interact_with_state(
-            d.games,
-            || {
-                let weight = crate::state::read().resources.weights.read((3, attacker));
-                weight.capacity - weight.weight
-            },
-        );
-        // Fill the real army's carrying capacity; a zero capacity cannot survive casualty deductions.
-        super::resource_commands::grant(d, key, 1, free);
-    }
-    let loot = array![crate::resources::ResourceAmount { resource_type: 2, amount: if insufficient {
-        91
-    } else {
-        70
-    } }]
-        .span();
-    let command = {
-        Command::Battle(
-            crate::combat_actions::AttackExplorer {
-                attacker_id: attacker, defender_id: defender, steal_resources: loot,
-            },
-        )
-    };
-    (d, TestAction { game_id: 3, actor: d.actor, command })
 }

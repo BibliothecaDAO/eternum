@@ -203,7 +203,7 @@ describe("a realm's spire, from the player's path", () => {
     }
   });
 
-  it.each(["desktop", "phone"] as const)("updates Clear Mist odds from confirmed Triumph facts on a %s", (layout) => {
+  it.each(["desktop", "phone"] as const)("keeps the spire's fixed odds on a Clear Mist day on a %s", (layout) => {
     const { store } = discoveredSpireDay(0);
     setBlockTimestampSource(() => NOW);
     useBlockTimestampStore.setState({ currentBlockTimestamp: NOW, currentDefaultTick: NOW });
@@ -214,52 +214,25 @@ describe("a realm's spire, from the player's path", () => {
       { model: "ExpeditionSpire", key: wireKey, value: null },
       { model: "RaceRules", key: "0xc100", value: raceRules() },
       { model: "HomeAspect", key: "0xc101", value: { game_id: 1, home: 7, aspect: 1 } },
+      {
+        model: "TriumphDay",
+        key: "0xc102",
+        value: { game_id: 1, aspect: 1, stage: nativeRaceConstants.CLEAR_MIST_STAGE, day: 0 },
+      },
     ]);
     const hud = renderLayoutHud(store, layout);
     try {
       act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: ARMY, tile: "own" }));
       expect(hud.host.textContent).toContain("Spire · next reveal 10%");
-      act(() =>
-        store.applyFacts([
-          {
-            model: "TriumphDay",
-            key: "0xc102",
-            value: {
-              game_id: 1,
-              aspect: 1,
-              stage: nativeRaceConstants.CLEAR_MIST_STAGE,
-              day: 0,
-            },
-          },
-        ]),
-      );
-      expect(hud.host.textContent).toContain("Spire · next reveal 20%");
       for (const [reveals, chance] of [
-        [3, 80],
-        [4, 100],
+        [3, 40],
+        [9, 100],
       ]) {
         act(() =>
           store.applyFacts([{ model: "ExpeditionSpire", key: wireKey, value: { ...found, reveals, location: null } }]),
         );
         expect(hud.host.textContent).toContain(`Spire · next reveal ${chance}%`);
       }
-      act(() =>
-        store.applyFacts([
-          {
-            model: "TriumphDay",
-            key: "0xc102",
-            value: {
-              game_id: 1,
-              aspect: 1,
-              stage: nativeRaceConstants.CLEAR_MIST_STAGE,
-              day: 1,
-            },
-          },
-        ]),
-      );
-      expect(hud.host.textContent).toContain("Spire · next reveal 50%");
-      act(() => store.applyFacts([{ model: "HomeAspect", key: "0xc101", value: null }]));
-      expect(hud.host.querySelector("[data-spire-chance]")).toBeNull();
     } finally {
       hud.unmount();
     }
@@ -291,7 +264,7 @@ describe("a realm's spire, from the player's path", () => {
     expect(armySpireChance(store, 1, ARMY, NOW + 86400)).toBeNull();
   });
 
-  it("raises the next reveal's chance by Detection, as the contract's find percent does", () => {
+  it("leaves the next reveal's chance the same under Detection", () => {
     const { store } = discoveredSpireDay(1);
     const spire = { game_id: 1, structure_id: 7, epoch: 0, depth: 1 };
     store.applyFacts([{ model: "ExpeditionSpire", key: store.wireKeyOf("ExpeditionSpire", spire)!, value: null }]);
@@ -305,7 +278,7 @@ describe("a realm's spire, from the player's path", () => {
         value: { ...progress, oaths: 1 << (nativeOathConstants.DETECTION - 1) },
       },
     ]);
-    expect(armySpireChance(store, 1, ARMY, NOW)).toBe(12);
+    expect(armySpireChance(store, 1, ARMY, NOW)).toBe(10);
   });
 
   /** The camp the army cleared, on the tile it stands on: the site's row with its receipt, as clear_site leaves it. */

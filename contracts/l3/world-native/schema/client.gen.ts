@@ -4,7 +4,7 @@ export const NativeTroopType = {
   "Paladin": "Paladin",
   "Crossbowman": "Crossbowman"
 } as const;
-export const nativeFactSchemaIdentity = "4f3b5d47640683c108bac0b8dcff30c1bf5ba4966e946a98c57957a788a85f78";
+export const nativeFactSchemaIdentity = "2e7f6873808bb9e1078c2eaec39576755caee539426ffd0ce2aa68a20ae2fd06";
 export const nativeIdentifiers = {
   "rule": {
     "ENTRY_ENTITLEMENT": 0,
@@ -188,7 +188,6 @@ export const nativeStoryVariants = [
   "GuardDeleteStory",
   "TroopsTransferred",
   "LordsWithdrawn",
-  "SkillPointSpent",
   "SitePayout",
   "SpireDiscovered",
   "SiteUsed"
@@ -199,7 +198,6 @@ export interface NativeRows {
   GuildMember: { readonly game_id: number; readonly actor: bigint; readonly guild_id: bigint };
   GuildWhitelist: { readonly game_id: number; readonly guild_id: bigint; readonly player: bigint; readonly allowed: boolean };
   DepositSource: { readonly game_id: number; readonly chain: bigint; readonly ledger: bigint; readonly signer: bigint; readonly epoch: bigint };
-  FrontierDiscoveryRules: { readonly game_id: number; readonly beasts_bps: number; readonly camp_bps: number; readonly rift_bps: number; readonly ruin_bps: number; readonly shrine_bps: number; readonly well_bps: number; readonly empty_reveal_limit: number };
   ExpeditionSpire: { readonly game_id: number; readonly structure_id: bigint; readonly epoch: bigint; readonly depth: number; readonly reveals: number; readonly location: ({ readonly alt: boolean; readonly x: number; readonly y: number }) | null };
   ExpeditionDiscovery: { readonly game_id: number; readonly structure_id: bigint; readonly epoch: bigint; readonly empty_reveals: number; readonly ruin_cleared: boolean };
   FragmentCredit: { readonly game_id: number; readonly id: bigint; readonly account: bigint; readonly amount: bigint };
@@ -279,7 +277,7 @@ export interface NativeRows {
   ResourceRule: { readonly game_id: number; readonly resource_type: number; readonly unit_weight: bigint; readonly realm_rate: bigint; readonly village_rate: bigint };
   UpgradeLimits: { readonly game_id: number; readonly realm_max: number; readonly village_max: number };
   UpgradeRecipe: { readonly game_id: number; readonly level: number; readonly costs: readonly ({ readonly resource_type: number; readonly amount: bigint })[] };
-  DepthRules: { readonly game_id: number; readonly depth: number; readonly reveal_percent: number; readonly site_guard_lower: number; readonly site_guard_upper: number; readonly reveal_site_neighbors: boolean; readonly chest: { readonly common: number; readonly uncommon: number; readonly rare: number; readonly epic: number; readonly legendary: number }; readonly guard_step: number; readonly beast_weak_lower: number; readonly beast_weak_upper: number; readonly beast_strong_lower: number; readonly beast_strong_upper: number };
+  DepthRules: { readonly game_id: number; readonly depth: number; readonly reveal_percent: number; readonly site_guard_lower: number; readonly site_guard_upper: number; readonly rift_guard_lower: number; readonly rift_guard_upper: number; readonly reveal_site_neighbors: boolean; readonly chest: { readonly common: number; readonly uncommon: number; readonly rare: number; readonly epic: number; readonly legendary: number }; readonly guard_step: number; readonly beast_weak_lower: number; readonly beast_weak_upper: number; readonly beast_strong_lower: number; readonly beast_strong_upper: number };
   GameRelease: { readonly game_id: number; readonly release_id: number; readonly created_release_id: number };
   GameRegistry: { readonly game_id: number; readonly name: bigint; readonly family: number; readonly settled: boolean; readonly dev_mode_on: boolean; readonly start_settling_at: bigint; readonly start_main_at: bigint; readonly end_at: bigint; readonly seed: bigint; readonly scheduled_end_at: bigint };
   GameOverrides: { readonly game_id: number; readonly registration_start: number; readonly biome_climate: { readonly elevation_scale_bps: number; readonly moisture_scale_bps: number; readonly elevation_bias_bps: number; readonly moisture_bias_bps: number; readonly elevation_seed: number; readonly moisture_seed: number }; readonly map: ({ readonly shards_mines_win_probability: number; readonly shards_mines_fail_probability: number; readonly camp_win_probability: number; readonly camp_fail_probability: number; readonly hyps_win_prob: number; readonly hyps_fail_prob: number; readonly hyps_fail_prob_increase_p_hex: number; readonly hyps_fail_prob_increase_p_fnd: number; readonly relic_discovery_interval_sec: number; readonly relic_hex_dist_from_center: number }) | null; readonly map_center_offset: number };
@@ -290,7 +288,6 @@ export interface NativeKeys {
   GuildMember: { readonly game_id: number; readonly actor: bigint };
   GuildWhitelist: { readonly game_id: number; readonly guild_id: bigint; readonly player: bigint };
   DepositSource: { readonly game_id: number };
-  FrontierDiscoveryRules: { readonly game_id: number };
   ExpeditionSpire: { readonly game_id: number; readonly structure_id: bigint; readonly epoch: bigint; readonly depth: number };
   ExpeditionDiscovery: { readonly game_id: number; readonly structure_id: bigint; readonly epoch: bigint };
   FragmentCredit: { readonly game_id: number; readonly id: bigint };
@@ -428,22 +425,6 @@ export const nativeFactModels = {
       "ledger": "felt",
       "signer": "felt",
       "epoch": "u64"
-    }
-  },
-  "FrontierDiscoveryRules": {
-    "keys": [
-      "game_id"
-    ],
-    "scope": "game",
-    "fields": {
-      "game_id": "u32",
-      "beasts_bps": "u16",
-      "camp_bps": "u16",
-      "rift_bps": "u16",
-      "ruin_bps": "u16",
-      "shrine_bps": "u16",
-      "well_bps": "u16",
-      "empty_reveal_limit": "u8"
     }
   },
   "ExpeditionSpire": {
@@ -1959,6 +1940,8 @@ export const nativeFactModels = {
       "reveal_percent": "u16",
       "site_guard_lower": "u16",
       "site_guard_upper": "u16",
+      "rift_guard_lower": "u16",
+      "rift_guard_upper": "u16",
       "reveal_site_neighbors": "boolean",
       "chest": {
         "common": "u16",
@@ -2163,7 +2146,6 @@ export const nativeSyncScopes = {
   "DeepRules": "shared",
   "LordsBudget": "shared",
   "FrontierPrize": "shared",
-  "FrontierDiscoveryRules": "shared",
   "DepositSource": "shared",
   "MineKindConfig": "shared",
   "MinePool": "shared",

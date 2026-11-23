@@ -220,6 +220,7 @@ function generatedSeasonOne(): Design {
       herdByLayer: layers.map((layer) => centre(layer.beast_weak_lower, layer.beast_weak_upper)),
       bandByLayer: layers.map((layer) => centre(layer.beast_strong_lower, layer.beast_strong_upper)),
       campByLayer: layers.map((layer) => centre(layer.site_guard_lower, layer.site_guard_upper)),
+      riftByLayer: layers.map((layer) => centre(layer.rift_guard_lower, layer.rift_guard_upper)),
       spreadPercent: widestSpreadPercent(),
     },
     fragments: {
@@ -278,6 +279,7 @@ function widestSpreadPercent(): number {
       [layer.beast_weak_lower, layer.beast_weak_upper],
       [layer.beast_strong_lower, layer.beast_strong_upper],
       [layer.site_guard_lower, layer.site_guard_upper],
+      [layer.rift_guard_lower, layer.rift_guard_upper],
     ].map(([lower, upper]) => ((upper! - lower!) / 2 / centre(lower!, upper!)) * 100),
   );
   return hundredths(Math.max(...spreads));

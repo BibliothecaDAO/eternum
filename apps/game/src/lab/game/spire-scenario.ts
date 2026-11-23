@@ -1,4 +1,3 @@
-import { raceRules } from "./race-scenario";
 import { installLabGame } from "@/ui/features/debug/kit-lab/fixture-game";
 import { SPIRE_ARMY, SPIRE_DAY_NOW, applySpireDiscovery, spireDay } from "@/ui/features/frontier/spire-fixture";
 import { entityHomeNamespace, expeditionRealmSite, readExpeditionRules } from "@bibliothecadao/eternum";
@@ -10,12 +9,7 @@ import {
   type ResourcesIds,
 } from "@bibliothecadao/types";
 
-import {
-  nativeRaceConstants,
-  nativeResearchConstants,
-  type NativeFactStore,
-  type NativeRows,
-} from "@bibliothecadao/eternum/game-client";
+import { nativeResearchConstants, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
 
 import { nativeTilePackingConstants } from "../../../../../contracts/l3/world-native/schema/client.gen";
 import { frontierSeasonOnePreset as frontierPreset } from "../../../../../config/source/frontier/season-one";
@@ -221,27 +215,3 @@ export const discoveredSpireScenario = (): LabScenario => {
     },
   };
 };
-
-/** The recorded Clear Mist day, before this home has found its next-layer Spire. */
-export function clearMistScenario(): LabScenario {
-  const scenario = discoveredSpireScenario();
-  const store = scenario.store;
-  for (const [, row] of [...store.entries("ExpeditionSpire")]) {
-    const position = row.location;
-    if (position) {
-      const tile = { game_id: row.game_id, alt: position.alt, col: position.x, row: position.y };
-      store.applyFacts([{ model: "TileOccupancy", key: store.wireKeyOf("TileOccupancy", tile)!, value: null }]);
-    }
-    store.applyFacts([{ model: "ExpeditionSpire", key: store.wireKeyOf("ExpeditionSpire", row)!, value: null }]);
-  }
-  store.applyFacts([
-    { model: "RaceRules", key: "0xc100", value: wire(raceRules()) },
-    { model: "HomeAspect", key: "0xc101", value: { game_id: 1, home: "7", aspect: 1 } },
-    {
-      model: "TriumphDay",
-      key: "0xc102",
-      value: { game_id: 1, aspect: 1, stage: nativeRaceConstants.CLEAR_MIST_STAGE, day: 0 },
-    },
-  ] as never);
-  return scenario;
-}

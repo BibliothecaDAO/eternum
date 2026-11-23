@@ -12,7 +12,6 @@ import {
   pageLine,
 } from "./check-rendered-balance.mjs";
 import { LAYER_NAMES } from "@bibliothecadao/types";
-import { playableDepths } from "../docs/utils/playable-depths.mjs";
 
 const dist = fileURLToPath(new URL("../dist", import.meta.url));
 const scratch = mkdtempSync(join(tmpdir(), "rendered-balance-"));
@@ -21,10 +20,9 @@ const {
   frontierPreset: current,
   frontierConfig,
   historicalFrontierPreset: historical,
-  previewRiftGuardBound,
   nativeRules,
 } = await loadBalanceSources();
-const pages = frontierPhrases(frontierConfig, current, previewRiftGuardBound, nativeRules);
+const pages = frontierPhrases(frontierConfig, current, nativeRules);
 const n = (value) => value.toLocaleString("en-US");
 const range = (lower, upper) => `${n(lower)}–${n(upper)}`;
 
@@ -34,9 +32,8 @@ test("built current guides match the active preset, including its balance overri
 });
 
 test("the expedition guide gives reveal pay and guards for the personal depths only, never the shared Deep", () => {
-  const deepName = LAYER_NAMES[current.depths.length - 1];
+  const deepName = LAYER_NAMES.at(-1);
   assert.ok(current.deep, "the current preset has a shared Deep");
-  assert.deepEqual(playableDepths(current), current.depths.slice(0, -1));
   const page = pageLine(readFileSync(join(dist, "frontier/expedition", "index.html"), "utf8"));
   assert.ok(!new RegExp(`\\b${deepName} \\d+%`).test(page), "the Deep pays no reveal reward");
   assert.ok(!new RegExp(`\\b${deepName} (?:\\S+ )?[\\d,]+–`).test(page), "the Deep has no camp or rift guard row");
@@ -55,10 +52,10 @@ function rejectsStaleValue(page, currentText, historicalText) {
   assert.ok(missing[0].run[0].includes(currentText));
 }
 
-for (const [index, depth] of playableDepths(current).entries()) {
+for (const [index, depth] of current.depths.entries()) {
   for (const strength of ["Weak", "Strong"]) {
     test(`the rendered expedition check rejects historical ${strength.toLowerCase()} beasts at depth ${index}`, () => {
-      const row = frontierGuardPhrases(current, previewRiftGuardBound)[index + 1];
+      const row = frontierGuardPhrases(current)[index + 1];
       const oldDepth = historical.depths[index];
       const stale = row.replace(
         range(depth[`beast${strength}Lower`], depth[`beast${strength}Upper`]),

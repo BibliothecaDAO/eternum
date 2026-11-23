@@ -105,7 +105,6 @@ export const seasonOneDesign = {
       [60, 30, 10, 0, 0],
       [0, 60, 30, 10, 0],
       [0, 0, 60, 30, 10],
-      [0, 0, 0, 64, 36],
     ],
   },
   exploration: {
@@ -118,13 +117,14 @@ export const seasonOneDesign = {
     wellPercent: 3,
     emptyRevealsBeforeFind: 7,
     spireFoundByReveal: 10,
-    revealPayPercentByLayer: [10, 15, 20, 25],
+    revealPayPercentByLayer: [10, 15, 20],
     revealTroopsCounted: 10000,
   },
   beasts: {
-    herdByLayer: [350, 700, 1400, 2800],
-    bandByLayer: [450, 900, 1800, 3600],
-    campByLayer: [1300, 2600, 5200, 10400],
+    herdByLayer: [350, 700, 1400],
+    bandByLayer: [450, 900, 1800],
+    campByLayer: [1300, 2600, 5200],
+    riftByLayer: [1500, 3000, 6000],
     spreadPercent: 10,
   },
   fragments: {

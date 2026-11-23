@@ -29,6 +29,7 @@ const archivedStoryMeanings = {
   BankSwap: "swap",
   BankLiquidity: "bank",
   TierBought: "research",
+  SkillPointSpent: "research",
 } satisfies Record<ArchivedStoryVariant, IconMeaning>;
 
 /** Every story the game can emit (the schema's story variants, a fight and a raid), by the act it tells. */
@@ -56,7 +57,6 @@ const storyMeanings = {
   ExplorerDeleteStory: "military",
   TroopsTransferred: "military",
   LordsWithdrawn: "lords",
-  SkillPointSpent: "research",
   SiteUsed: "claim",
 } satisfies Record<NativeStoryVariant | "BattleEvent" | "RaidEvent" | keyof typeof archivedStoryMeanings, IconMeaning>;
 

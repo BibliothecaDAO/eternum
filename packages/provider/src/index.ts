@@ -1024,7 +1024,7 @@ export class EternumProvider extends EventEmitter {
         value: {
           entity_id: props.entity_id,
           relic_id: props.relic_resource_id,
-          recipient: { kind: "ArmySlot", value: props.relic_slot },
+          slot: props.relic_slot,
         },
       },
       TransactionType.APPLY_RELIC,

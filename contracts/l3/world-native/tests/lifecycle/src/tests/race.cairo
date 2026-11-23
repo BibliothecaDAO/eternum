@@ -326,7 +326,7 @@ fn recorded_clear_mist_changes_real_reveals_only_on_its_day() {
                         },
                     )
                         .unwrap();
-                    assert_eq!(counter.empty_reveals, if day == 1 {
+                    assert_eq!(counter.empty_reveals, if day == 1 && !spires {
                         0
                     } else {
                         1
@@ -345,12 +345,7 @@ fn recorded_clear_mist_changes_real_reveals_only_on_its_day() {
                             },
                         )
                             .unwrap();
-                        assert_eq!(spire.reveals, 1);
-                        assert_eq!(spire.location, if day == 1 {
-                            Some(destination)
-                        } else {
-                            None
-                        });
+                        assert_eq!(spire, crate::spires::ExpeditionSpire { reveals: 1, location: None });
                     } else if day == 1 {
                         let tile = crate::logic::map::occupancy(crate::geometry::tile_key(game_id, destination))
                             .unwrap();

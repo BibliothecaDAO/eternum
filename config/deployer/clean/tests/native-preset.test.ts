@@ -151,7 +151,6 @@ describe("native presets", () => {
         { common: 5000, uncommon: 2700, rare: 1400, epic: 600, legendary: 300 },
         { common: 0, uncommon: 5000, rare: 2833, epic: 1500, legendary: 667 },
         { common: 0, uncommon: 0, rare: 5500, epic: 3000, legendary: 1500 },
-        { common: 0, uncommon: 0, rare: 0, epic: 6400, legendary: 3600 },
       ]);
       for (const [depth, table] of tables.entries()) {
         const weights = [table.common, table.uncommon, table.rare, table.epic, table.legendary];
@@ -329,7 +328,6 @@ describe("native presets", () => {
       [1200, 1400, 100],
       [2400, 2800, 100],
       [4700, 5700, 100],
-      [9300, 11500, 100],
     ]);
     for (const depth of preset.settlement.depths) {
       expect(depth.site_guard_lower).toBeLessThanOrEqual(depth.site_guard_upper);
@@ -363,7 +361,6 @@ describe("native presets", () => {
       [380, 420, 430, 470],
       [760, 840, 860, 940],
       [1520, 1680, 1720, 1880],
-      [3040, 3360, 3440, 3760],
     ]);
     expect(preset.economy.discovery.unwrap()).toMatchObject({ beasts_bps: 600 });
   });
@@ -760,12 +757,12 @@ test("Frontier discoveries use the approved narrow guard ranges at every depth",
     [1200, 1400],
     [2400, 2800],
     [4700, 5700],
-    [9300, 11500],
   ]);
   for (const row of preset.settlement.depths) {
     expect(row).not.toHaveProperty("entry_stamina");
     for (const [lower, upper] of [
       [row.site_guard_lower, row.site_guard_upper],
+      [row.rift_guard_lower, row.rift_guard_upper],
       [row.beast_weak_lower, row.beast_weak_upper],
       [row.beast_strong_lower, row.beast_strong_upper],
     ]) {
@@ -1015,15 +1012,9 @@ test("preset 7 activates the complete Slice 1 rules while fixtures and historica
     expect(source.deep).toEqual(deepFixture());
     expect(source.race).toEqual(raceFixture());
     expect(built.economy.labor.isNone()).toBe(true);
-    for (const command of [
-      "ClaimDailyQuest",
-      "Battle",
-      "BattleGuard",
-      "ApplyRelic",
-      "InteractSite",
-      "MarkGameSettled",
-    ] as const)
+    for (const command of ["ClaimDailyQuest", "BattleGuard", "ApplyRelic", "InteractSite", "MarkGameSettled"] as const)
       expect(built.rules.command_mask & BigInt(nativeCommandBits[command])).not.toBe(0n);
+    expect(built.rules.command_mask & BigInt(nativeCommandBits.Battle)).toBe(0n);
     expect(built.rules.troop_stamina_config).toMatchObject({
       stamina_initial: 180,
       stamina_knight_max: 180,
@@ -1050,18 +1041,25 @@ test("preset 7 activates the complete Slice 1 rules while fixtures and historica
       [315, 385, 405, 495],
       [630, 770, 810, 990],
       [1260, 1540, 1620, 1980],
-      [2520, 3080, 3240, 3960],
     ]);
     expect(built.settlement.depths.map((row) => [row.site_guard_lower, row.site_guard_upper, row.guard_step])).toEqual([
       [1170, 1430, 10],
       [2340, 2860, 10],
       [4680, 5720, 10],
-      [9360, 11440, 10],
+    ]);
+    expect(built.settlement.depths.map((row) => [row.rift_guard_lower, row.rift_guard_upper])).toEqual([
+      [1350, 1650],
+      [2700, 3300],
+      [5400, 6600],
     ]);
     expect(
-      built.settlement.depths
-        .slice(0, 3)
-        .map(({ chest }) => [chest.common, chest.uncommon, chest.rare, chest.epic, chest.legendary]),
+      built.settlement.depths.map(({ chest }) => [
+        chest.common,
+        chest.uncommon,
+        chest.rare,
+        chest.epic,
+        chest.legendary,
+      ]),
     ).toEqual([
       [6000, 3000, 1000, 0, 0],
       [0, 6000, 3000, 1000, 0],

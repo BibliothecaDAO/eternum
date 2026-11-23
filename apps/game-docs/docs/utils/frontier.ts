@@ -3,7 +3,6 @@ import { nativePresetForId, nativePresetIdFor } from "../../../../config/source/
 import { seasonDayUnitSeconds } from "../../../../config/source/common/season-clock";
 import {
   RELICS_PER_LAYER,
-  previewRiftGuardBound,
   previewRuinGuardBounds,
 } from "../../../../contracts/l3/world-native/schema/site-previews.gen";
 import {
@@ -13,7 +12,6 @@ import {
 import { logisticsStamina } from "../../../../packages/core/src/utils/attribute-tiers";
 import { LAYER_NAMES, beastOf, buildingName, rankName, TIER_WORDS, resourceName } from "@bibliothecadao/types";
 import { ETERNUM_CONFIG } from "./config";
-import { playableDepths } from "./playable-depths.mjs";
 import { CONTRACT } from "./contract-constants";
 
 /**
@@ -110,14 +108,11 @@ export const FRONTIER = {
     well: pct(frontierPreset.discovery.wellBps),
     emptyRevealLimit: n(frontierPreset.discovery.emptyRevealLimit),
   },
-  depths: playableDepths(frontierPreset).map((depth, index) => ({
+  depths: frontierPreset.depths.map((depth, index) => ({
     name: LAYER_NAMES[index],
     revealPercent: `${depth.revealPercent}%`,
     campGuard: `${beastOf("camp", index).name} ${range(depth.siteGuardLower, depth.siteGuardUpper)}`,
-    riftGuard: `${beastOf("rift", index).name} ${range(
-      previewRiftGuardBound(depth.siteGuardLower, depth.guardStep),
-      previewRiftGuardBound(depth.siteGuardUpper, depth.guardStep),
-    )}`,
+    riftGuard: `${beastOf("rift", index).name} ${range(depth.riftGuardLower, depth.riftGuardUpper)}`,
     beastWeak: `${beastOf("herd", index).name} ${range(depth.beastWeakLower, depth.beastWeakUpper)}`,
     beastStrong: `${beastOf("band", index).name} ${range(depth.beastStrongLower, depth.beastStrongUpper)}`,
     ruinGuard: beastOf("ruin", index).name,

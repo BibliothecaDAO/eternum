@@ -34,7 +34,6 @@ pub trait IExpeditionSite<T> {
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct SitePayout {
-    pub xp: u32,
     pub structure_id: u64,
     pub explorer_id: u64,
     pub site_id: u64,
@@ -173,6 +172,8 @@ pub struct DepthRules {
     pub reveal_percent: u16,
     pub site_guard_lower: u16,
     pub site_guard_upper: u16,
+    pub rift_guard_lower: u16,
+    pub rift_guard_upper: u16,
     pub reveal_site_neighbors: bool,
     // Each chest tier's odds, in basis points, for a ruin found at this depth.
     pub chest: crate::relics::ChestTiers,

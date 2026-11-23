@@ -310,14 +310,7 @@ export const BattleLab = ({
             </div>
 
             {!state.hasDefender ? (
-              <HudNotice
-                tone="good"
-                line={
-                  refusal === "claim-needs-adjacency"
-                    ? "No defenders: move adjacent to claim"
-                    : "No defenders: claim it"
-                }
-              />
+              <HudNotice tone="good" line="No defenders: claim it" />
             ) : (
               prediction && <OutcomeBanner outcome={prediction.outcome} />
             )}

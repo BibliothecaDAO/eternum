@@ -116,7 +116,7 @@ it("puts every delivered story into its own words, in production as in developme
   }
 });
 
-it.each(["LordsWithdrawn", "BuildingPlacementStory", "ExplorationReward", "SkillPointSpent"])(
+it.each(["LordsWithdrawn", "BuildingPlacementStory", "ExplorationReward"])(
   "asks no words of %s, which no push tells",
   (story) => {
     expect(() => storyNotificationCopy(story, {})).toThrow(`Not a notified story: ${story}`);

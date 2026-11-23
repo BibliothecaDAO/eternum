@@ -54,6 +54,13 @@ pub fn arrival(game_id: u32, aspect: u8, context: ExecutionContext) -> Coord {
     panic!("Deep is full")
 }
 
+pub fn passable(game_id: u32, coord: Coord) -> bool {
+    contains(game_id, coord)
+        && crate::logic::map::occupancy(tile_key(game_id, coord))
+            .map(|occupied| crate::taxonomy::is_explorer(occupied.category))
+            .unwrap_or(false)
+}
+
 pub fn clear_expired_occupant(game_id: u32, coord: Coord, context: ExecutionContext) {
     if !contains(game_id, coord) {
         return;

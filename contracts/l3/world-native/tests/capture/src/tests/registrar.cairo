@@ -165,11 +165,6 @@ fn surface_sites_pay_initial_guards_once_without_rift_production() {
 }
 
 #[test]
-fn deep_sites_scale_immediate_rewards_and_never_accrue_after_capture() {
-    assert_expedition_capture(3);
-}
-
-#[test]
 fn frontier_reveal_pays_equal_strength_on_surface() {
     assert_capture_with_reveal(0, 1500 * RESOURCE_PRECISION, crate::troops::TroopTier::T1, 150 * RESOURCE_PRECISION);
     assert_capture_with_reveal(0, 500 * RESOURCE_PRECISION, crate::troops::TroopTier::T2, 150 * RESOURCE_PRECISION);
@@ -444,7 +439,7 @@ fn frontier_floor_counts_seven_player_reveals_across_armies_and_depths_then_rese
         };
         let mut army = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
         let centre = crate::expeditions::site(
-            SETTLEMENT_SPACING_STEPS, crate::entity_ids::namespace(home.entity_id), 0, index % 4,
+            SETTLEMENT_SPACING_STEPS, crate::entity_ids::namespace(home.entity_id), 0, index % 3,
         );
         army.coord = crate::troops::Coord { x: centre.x + 5 + Into::<u8, u32>::into(index) * 2, ..centre };
         while !is_open(d, game_id, army.coord) || !is_open(d, game_id, crate::geometry::neighbor(army.coord, 0)) {
@@ -529,7 +524,7 @@ fn frontier_sites_persist_the_seeded_guard_and_initial_count() {
     let (game_id, home, _) = expedition_home(d);
     let context = crate::commands::ExecutionContext { timestamp: NOW, ..crate::tests::context(d.games, game_id) };
     start_cheat_caller_address(d.games, d.games);
-    for depth_index in 0_u32..4 {
+    for depth_index in 0_u32..3 {
         let depth = crate::logic::expeditions::depth_rules(depth_index.try_into().unwrap());
         for (discovery, category, offset) in array![
             (crate::discovery::Discovery::Camp, crate::taxonomy::CAMP_CATEGORY, 0_u32),

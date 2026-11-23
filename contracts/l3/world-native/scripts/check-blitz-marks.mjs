@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-export const BLITZ_MARKS = 124;
+export const BLITZ_MARKS = 121;
 
 const source = "contracts/l3/world-native/src";
 

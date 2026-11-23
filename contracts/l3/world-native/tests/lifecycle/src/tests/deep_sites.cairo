@@ -94,7 +94,10 @@ pub fn descend(d: Deployment, key: ExplorerKey, now: u64) {
             );
         } else {
             let spire = crate::geometry::neighbor(army(d, key).coord, 0);
-            assert!(interact_with_state(d.games, || crate::logic::spires::discover(spire_key, spire, 1000, 0)));
+            let mut found = false;
+            while !found {
+                found = interact_with_state(d.games, || crate::logic::spires::discover(spire_key, spire, 0));
+            }
         }
         applied(
             d,
@@ -242,6 +245,23 @@ fn distinct_homes_enter_one_deep_and_move_on_its_fixed_terrain() {
 }
 
 #[test]
+fn an_army_walks_through_another_army_in_the_deep_but_cannot_stop_on_it() {
+    let (d, game_id) = setup(85);
+    let first = deployed(d, game_id, 1, 10);
+    let second = deployed(player(d, 8501), game_id, 1, 10);
+    let start = army(d, first).coord;
+    let blocker = army(d, second).coord;
+    let mut direction = 0_u8;
+    while crate::geometry::neighbor(start, direction) != blocker {
+        direction += 1;
+    }
+    refused(d, game_id, walk(first, array![direction].span()), FIXTURE_START, "movement tile occupied");
+    applied(d, game_id, walk(first, array![direction, direction].span()), FIXTURE_START);
+    assert_eq!(army(d, first).coord, crate::geometry::neighbor(blocker, direction));
+    assert_eq!(army(d, second).coord, blocker);
+}
+
+#[test]
 fn a_later_ring_refuses_moves_joins_and_attacks_until_enough_realms_entered_today() {
     let (d, game_id) = setup(880);
     let first = deployed(d, game_id, 1, 10);
@@ -320,6 +340,62 @@ fn four_allies_guard_one_site_and_a_rival_fights_exactly_one_slot_per_attack() {
     }
     assert_eq!(held(d, attacker), Some(crate::deep::DeepGuard { site_id: target.entity_id, slot: 0 }));
     assert!(army(d, attacker).troops.count > 0);
+}
+
+#[test]
+fn a_rival_fights_the_guard_that_came_in_last_even_after_a_lower_slot_emptied() {
+    let (d, game_id) = setup(86);
+    let target = site(d, game_id, crate::rules::DEEP_FOUNDATION);
+    wound_beast(d, target, 0);
+    let mut guards = array![];
+    for (salt, count) in array![(8600_felt252, 1000_u128), (8601, 10), (8602, 1000)] {
+        let member = player(d, salt);
+        let key = deployed(member, game_id, 1, count);
+        beside(d, key, target, guards.len().try_into().unwrap());
+        applied(member, game_id, join(d, key, target), FIXTURE_START);
+        guards.append(key);
+    }
+    let (first, short, third) = (*guards.at(0), *guards.at(1), *guards.at(2));
+    let interval = crate::tests::context(d.games, game_id).rules.unbox().tick_config.armies_tick_in_seconds;
+    let now = FIXTURE_START + interval;
+    let late = player(d, 8603);
+    let last = deployed(late, game_id, 1, 1000);
+    beside(d, last, target, 3);
+    applied(late, game_id, join(d, last, target), now);
+    assert!(held(d, short).is_none());
+    assert_eq!(held(d, first), Some(crate::deep::DeepGuard { site_id: target.entity_id, slot: 0 }));
+    assert_eq!(held(d, third), Some(crate::deep::DeepGuard { site_id: target.entity_id, slot: 1 }));
+    assert_eq!(held(d, last), Some(crate::deep::DeepGuard { site_id: target.entity_id, slot: 2 }));
+    let rival = player(d, 8604);
+    let attacker = deployed(rival, game_id, 2, 1500);
+    beside(d, attacker, target, 4);
+    let (first_before, third_before, last_before) = (army(d, first), army(d, third), army(d, last));
+    applied(rival, game_id, fight(attacker, target), now);
+    assert_eq!(army(d, first), first_before);
+    assert_eq!(army(d, third), third_before);
+    let hit = interact_with_state(d.games, || crate::logic::troops::explorer(last));
+    assert!(hit.is_none() || hit.unwrap().troops.count < last_before.troops.count);
+}
+
+#[test]
+fn beating_a_players_guard_counts_its_size_for_the_cull_and_the_cleared_site_for_the_stand() {
+    for (bane, expected) in array![(crate::banes::BLOOD_MOON, 1_u128), (crate::banes::ASH_FALL, 100)] {
+        let (d, game_id) = setup(870 + bane.into());
+        let target = site(d, game_id, crate::rules::DEEP_MINE);
+        let holder = player(d, 8701);
+        let guard = deployed(holder, game_id, 1, 100);
+        seize(holder, guard, target, 0);
+        let rival = player(d, 8702);
+        let attacker = deployed(rival, game_id, 2, 1500);
+        beside(d, attacker, target, 1);
+        let home = ResourceKey { game_id, entity_id: army(d, attacker).owner };
+        interact_with_state(d.games, || crate::state::write().banes.world_days.write((game_id, 0), Some(bane)));
+        assert_eq!(interact_with_state(d.games, || crate::logic::quests::read(home, 0).progress), 0);
+        applied(rival, game_id, fight(attacker, target), FIXTURE_START);
+        assert!(interact_with_state(d.games, || crate::logic::troops::explorer(guard)).is_none());
+        assert_eq!(held(d, attacker), Some(crate::deep::DeepGuard { site_id: target.entity_id, slot: 0 }));
+        assert_eq!(interact_with_state(d.games, || crate::logic::quests::read(home, 0).progress), expected);
+    }
 }
 
 #[test]
@@ -465,72 +541,6 @@ fn public_attacks_apply_held_oaths_to_the_army_and_the_rival_guard() {
             assert_eq!(held(d, attacker), None);
         }
     }
-}
-
-#[test]
-fn the_first_public_field_battle_applies_held_oaths_on_both_sides() {
-    public_field_battle(0);
-}
-
-#[test]
-fn the_second_public_field_battle_applies_held_oaths_on_both_sides() {
-    public_field_battle(1);
-}
-
-#[test]
-fn the_third_public_field_battle_applies_held_oaths_on_both_sides() {
-    public_field_battle(2);
-}
-
-#[test]
-fn the_fourth_public_field_battle_applies_held_oaths_on_both_sides() {
-    public_field_battle(3);
-}
-
-fn public_field_battle(nth: felt252) {
-    let values = snforge_std::fs::read_txt(@snforge_std::fs::FileTrait::new("../fixtures/oath-damage.txt"));
-    let mut fields = values.span();
-    let mut battles = 0;
-    while !fields.is_empty() {
-        let (a, b, ao, bo, ag, bg): (crate::troops::TroopType, crate::troops::TroopType, u16, u16, bool, bool) =
-            Serde::deserialize(
-            ref fields,
-        )
-            .unwrap();
-        let (before_a, before_b, after_a, after_b): (u128, u128, u128, u128) = Serde::deserialize(ref fields).unwrap();
-        let knights = a == crate::troops::TroopType::Knight && b == crate::troops::TroopType::Knight;
-        if ag || bg || !knights {
-            continue;
-        }
-        if battles != nth {
-            battles += 1;
-            continue;
-        }
-        let (d, game_id) = setup(872 + battles);
-        let defender = deployed(d, game_id, 1, 1000);
-        let rival = player(d, 8721);
-        let attacker = deployed(rival, game_id, 2, 1000);
-        let coord = crate::geometry::neighbor(army(d, defender).coord, 0);
-        set_explorer_fixture(d.games, attacker, ExplorerTroops { coord, ..army(d, attacker) });
-        prepare_oath_combatant(d, attacker, a, ao, before_a);
-        prepare_oath_combatant(d, defender, b, bo, before_b);
-        applied(
-            rival,
-            game_id,
-            Command::Battle(
-                crate::combat_actions::AttackExplorer {
-                    attacker_id: attacker.explorer_id,
-                    defender_id: defender.explorer_id,
-                    steal_resources: array![].span(),
-                },
-            ),
-            FIXTURE_START,
-        );
-        assert_eq!(army(d, attacker).troops.count, after_a * crate::rules::RESOURCE_PRECISION);
-        assert_eq!(army(d, defender).troops.count, after_b * crate::rules::RESOURCE_PRECISION);
-        return;
-    }
-    panic!("the oath vectors hold too few public field battles");
 }
 
 fn prepare_oath_combatant(

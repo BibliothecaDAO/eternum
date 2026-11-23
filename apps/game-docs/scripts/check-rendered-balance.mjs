@@ -14,7 +14,6 @@ import { readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { LAYER_NAMES, beastOf, resourceName, BuildingType } from "@bibliothecadao/types";
-import { playableDepths } from "../docs/utils/playable-depths.mjs";
 
 const here = fileURLToPath(new URL(".", import.meta.url));
 
@@ -34,20 +33,17 @@ const buildingPrice = (config, id) =>
  * guards, chests), as its four rules pages state them.
  */
 
-export const frontierGuardPhrases = (preset, riftGuardBound) => {
+export const frontierGuardPhrases = (preset) => {
   const range = (lower, upper) => `${n(lower)}–${n(upper)}`;
   return [
     "Ground Camps Rifts Weaker beasts Stronger beasts Ruins",
-    ...playableDepths(preset).map((depth, index) =>
+    ...preset.depths.map((depth, index) =>
       [
         LAYER_NAMES[index],
         beastOf("camp", index).name,
         range(depth.siteGuardLower, depth.siteGuardUpper),
         beastOf("rift", index).name,
-        range(
-          riftGuardBound(depth.siteGuardLower, depth.guardStep),
-          riftGuardBound(depth.siteGuardUpper, depth.guardStep),
-        ),
+        range(depth.riftGuardLower, depth.riftGuardUpper),
         beastOf("herd", index).name,
         range(depth.beastWeakLower, depth.beastWeakUpper),
         beastOf("band", index).name,
@@ -58,7 +54,7 @@ export const frontierGuardPhrases = (preset, riftGuardBound) => {
   ];
 };
 
-export const frontierPhrases = (config, preset, riftGuardBound, nativeRules) => {
+export const frontierPhrases = (config, preset, nativeRules) => {
   const stamina = config.troop.stamina;
   const tick = config.tick.armiesTickIntervalInSeconds;
   const start = (id) => n(config.startingResources.find((r) => r.resource === id).amount);
@@ -81,8 +77,8 @@ export const frontierPhrases = (config, preset, riftGuardBound, nativeRules) => 
     {
       page: "frontier/expedition",
       phrases: [
-        ...frontierGuardPhrases(preset, riftGuardBound),
-        ...playableDepths(preset).map((depth, index) => `${LAYER_NAMES[index]} ${depth.revealPercent}%`),
+        ...frontierGuardPhrases(preset),
+        ...preset.depths.map((depth, index) => `${LAYER_NAMES[index]} ${depth.revealPercent}%`),
       ],
     },
     {
@@ -123,8 +119,8 @@ export const payoutWalletPhrases = (changeHoldSeconds) => [
 ];
 
 /** The phrases every rules page that states a stamina, guard, chest or points number must show. */
-export const expectedPhrases = (frontier, frontierPreset, riftGuardBound, nativeRules) => [
-  ...frontierPhrases(frontier, frontierPreset, riftGuardBound, nativeRules),
+export const expectedPhrases = (frontier, frontierPreset, nativeRules) => [
+  ...frontierPhrases(frontier, frontierPreset, nativeRules),
 ];
 
 /**
@@ -149,9 +145,6 @@ export const loadBalanceSources = async () => {
     const { nativeRuleConstants: nativeRules } = await server.ssrLoadModule(
       join(here, "../../../contracts/l3/world-native/schema/balance.gen.ts"),
     );
-    const { previewRiftGuardBound } = await server.ssrLoadModule(
-      join(here, "../../../contracts/l3/world-native/schema/site-previews.gen.ts"),
-    );
     const { PAYOUT_WALLET_CHANGE_SECONDS } = await server.ssrLoadModule(
       join(here, "../../../packages/value-ledger/src/payout-wallet.ts"),
     );
@@ -159,7 +152,6 @@ export const loadBalanceSources = async () => {
       frontierPreset,
       frontierConfig,
       historicalFrontierPreset,
-      previewRiftGuardBound,
       nativeRules,
       payoutWalletChangeSeconds: PAYOUT_WALLET_CHANGE_SECONDS,
     };
@@ -283,17 +275,11 @@ export const tableSizeOverrides = (dist) =>
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const dist = resolve(process.argv[2] ?? join(here, "../dist"));
-  const {
-    frontierPreset,
-    frontierConfig,
-    historicalFrontierPreset,
-    previewRiftGuardBound,
-    nativeRules,
-    payoutWalletChangeSeconds,
-  } = await loadBalanceSources();
+  const { frontierPreset, frontierConfig, historicalFrontierPreset, nativeRules, payoutWalletChangeSeconds } =
+    await loadBalanceSources();
   const llm = readFileSync(join(dist, "llm.txt"), "utf8");
   const phrases = [
-    ...expectedPhrases(frontierConfig, frontierPreset, previewRiftGuardBound, nativeRules),
+    ...expectedPhrases(frontierConfig, frontierPreset, nativeRules),
     ...historicalChestPhrases(historicalFrontierPreset),
     ...payoutWalletPhrases(payoutWalletChangeSeconds),
   ];

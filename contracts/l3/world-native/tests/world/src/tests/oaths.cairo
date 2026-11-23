@@ -401,11 +401,7 @@ fn assert_army_commands_refused(d: super::Deployment, key: crate::troops::Explor
         Command::BattleGuard(Battle { attacker_id: key.explorer_id, defender_id: 1, relic_slot: None }),
         Command::EnterDepth(EnterDepth { explorer_id: key.explorer_id, depth: 1 }),
         Command::InteractSite(crate::relics::InteractSite { explorer_id: key.explorer_id, coord: before.coord }),
-        Command::ApplyRelic(
-            crate::relics::ApplyRelic {
-                entity_id: key.explorer_id, relic_id: 1, recipient: crate::relics::Recipient::ArmySlot(0),
-            },
-        ),
+        Command::ApplyRelic(crate::relics::ApplyRelic { entity_id: key.explorer_id, relic_id: 1, slot: 0 }),
         Command::ManageTroops(ManageTroops::RemoveExplorer(key.explorer_id)),
         Command::ManageTroops(
             ManageTroops::RecruitExplorer(
@@ -659,7 +655,7 @@ fn fight_rules_match_the_client_vectors_with_and_without_their_oaths() {
 }
 
 #[test]
-fn detection_finds_a_camp_brilliance_raises_its_reveal_pay_and_rage_and_perfection_its_clear_pay_but_not_a_claim() {
+fn detection_finds_a_camp_brilliance_raises_its_reveal_pay_and_rage_and_perfection_its_clear_pay() {
     let discovery = world_test_support::tests::frontier_discovery::rules();
     let detection = crate::oaths::bit(crate::oaths::DETECTION);
     let brilliance = crate::oaths::bit(crate::oaths::BRILLIANCE);
@@ -668,10 +664,9 @@ fn detection_finds_a_camp_brilliance_raises_its_reveal_pay_and_rage_and_perfecti
     let perfection = detection | crate::oaths::bit(crate::oaths::PERFECTION);
     let army_troops = 2000 * precision;
     let reveal_base = army_troops * crate::logic::expeditions::depth_rules(0).reveal_percent.into() / 100;
-    for (oaths, found, reveal_percent, clear_percent, emptied) in array![
-        (detection, true, 100_u128, 100_u128, false), (0, false, 100, 0, false),
-        (detection | brilliance | rage, true, 125, 125, false), (perfection, true, 100, 150, false),
-        (perfection, true, 100, 100, true),
+    for (oaths, found, reveal_percent, clear_percent) in array![
+        (detection, true, 100_u128, 100_u128), (0, false, 100, 0), (detection | brilliance | rage, true, 125, 125),
+        (perfection, true, 100, 150),
     ] {
         let (d, game_id, key) = super::registrar::setup_frontier_relics();
         let mut army = super::registrar::strong_frontier_army(d, game_id, key);
@@ -700,9 +695,6 @@ fn detection_finds_a_camp_brilliance_raises_its_reveal_pay_and_rage_and_perfecti
             d.games, || crate::logic::expeditions::expedition_site(site).unwrap().initial_guard_count,
         );
         super::registrar::strong_frontier_army(d, game_id, key);
-        if emptied {
-            snforge_std::interact_with_state(d.games, || crate::logic::guards::GuardState::reset(site));
-        }
         let command = crate::commands::Command::BattleGuard(
             crate::commands::Battle { attacker_id: key.explorer_id, defender_id: site.entity_id, relic_slot: None },
         );
@@ -719,6 +711,51 @@ fn detection_finds_a_camp_brilliance_raises_its_reveal_pay_and_rage_and_perfecti
             ),
         );
     }
+}
+
+#[test]
+fn detection_leaves_the_spire_chance_of_a_reveal_unchanged() {
+    for oaths in array![0_u16, crate::oaths::bit(crate::oaths::DETECTION)] {
+        let (d, game_id, key) = super::registrar::setup_frontier_relics();
+        let army = super::registrar::strong_frontier_army(d, game_id, key);
+        let home = snforge_std::interact_with_state(
+            d.games,
+            || {
+                let mut progress = crate::logic::progression::require(key);
+                progress.oaths = oaths;
+                crate::logic::progression::write(key, progress);
+                army_home(key)
+            },
+        );
+        world_test_support::tests::registrar::learn_spire_lore(d, home, FIXTURE_START);
+        let root = root_with_spire_draw_from(game_id, 10000 / crate::rules::SPIRE_REVEAL_LIMIT.into());
+        assert!(super::registrar::explore_with_root(d, game_id, key.explorer_id, root, FIXTURE_START + 10));
+        let spire = snforge_std::interact_with_state(
+            d.games,
+            || crate::logic::spires::read(
+                crate::spires::ExpeditionSpireKey {
+                    game_id,
+                    structure_id: home.entity_id,
+                    epoch: crate::expeditions::region_day(army.coord, crate::logic::settlement::spacing()),
+                    depth: crate::logic::expeditions::depth_at(game_id, army.coord),
+                },
+            ),
+        );
+        assert_eq!(spire, Some(crate::spires::ExpeditionSpire { reveals: 1, location: None }));
+    }
+}
+
+fn root_with_spire_draw_from(game_id: u32, lowest: u128) -> u256 {
+    for sample in 0_u64..10000 {
+        let raw_root: u256 = sample.into();
+        let mut root = raw_root;
+        let seed = crate::random::game_root(ref root, game_id);
+        let draw = crate::random::range(seed, 0x5350495245, 10000);
+        if draw >= lowest && draw < lowest * 12 / 10 {
+            return raw_root;
+        }
+    }
+    panic!("no root with that spire draw")
 }
 
 #[test]

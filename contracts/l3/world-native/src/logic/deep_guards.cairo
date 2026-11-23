@@ -94,11 +94,28 @@ pub fn remove(key: ExplorerKey) {
             crate::events::RowDeleted { version: 1, model: 'DeepGuard', keys: keys.span() },
         ),
     );
+    close_gap(key.game_id, site_id, slot);
+}
+
+fn close_gap(game_id: u32, site_id: u64, vacated: u8) {
+    let state = crate::state::write();
+    let mut free = vacated;
+    for slot in (vacated + 1)..crate::rules::DEEP_GUARD_SLOTS {
+        let explorer_id = state.deep.slots.read((game_id, site_id, slot));
+        if explorer_id == 0 {
+            continue;
+        }
+        state.deep.slots.write((game_id, site_id, slot), 0);
+        occupy_slot(ExplorerKey { game_id, explorer_id }, DeepGuard { site_id, slot: free });
+        free += 1;
+    }
 }
 
 pub fn expire(site: ResourceKey, context: crate::commands::ExecutionContext) {
     let state = crate::state::read();
-    for slot in 0..crate::rules::DEEP_GUARD_SLOTS {
+    let mut slot = crate::rules::DEEP_GUARD_SLOTS;
+    while slot != 0 {
+        slot -= 1;
         let explorer_id = state.deep.slots.read((site.game_id, site.entity_id, slot));
         if explorer_id == 0 {
             continue;

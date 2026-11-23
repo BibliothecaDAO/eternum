@@ -39,8 +39,7 @@ export type OrderRefusal =
   | { reason: "food" }
   | { reason: "off-limits" }
   | { reason: "no-attack" }
-  | { reason: "outside-deep" }
-  | { reason: "allied" }
+  | { reason: "in-the-open" }
   | { reason: "no-transfer" }
   | { reason: "occupied" }
   | { reason: "too-far" };

@@ -114,17 +114,17 @@ it("shows only the camp reward that fits in the home labor store", () => {
   expect(plan.payout).toEqual({ resourceId: ResourcesIds.Labor, amount: 825, fits: 10 });
 });
 
-it("refuses another player's army outside the Deep, near or far, as the contract does, and shows its troops", () => {
+it("refuses another player's army in the open, near or far, as the contract does, and shows its troops", () => {
   const { store, attack } = campBeside();
   const other = otherArmyAt(store, 42, 12);
   const plan = readArmyCard(store, other, attack({ col: 41, row: 12, alt: false }));
   expect(plan.kind).toBe("Army");
   expect(plan.guard).toEqual({ type: TroopType.Knight, tier: TroopTier.T1, count: 300 });
   expect(plan.payout).toBeNull();
-  expect(plan).toMatchObject({ fight: { refused: true }, blocked: "outside-deep", inReach: true });
+  expect(plan).toMatchObject({ fight: { refused: true }, blocked: "in-the-open", inReach: true });
   expect(readArmyCard(store, other, attack({ col: 44, row: 12, alt: false }))).toMatchObject({
     fight: { refused: true },
-    blocked: "outside-deep",
+    blocked: "in-the-open",
   });
 });
 

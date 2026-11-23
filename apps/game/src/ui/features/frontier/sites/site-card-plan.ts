@@ -207,12 +207,6 @@ const troopsOf = (troops: Pick<Troops, "category" | "tier" | "count">) => ({
   count: Number(troops.count / PRECISION),
 });
 
-const REACH_REFUSALS: ReadonlySet<AttackRefusal> = new Set([
-  "out-of-range",
-  "claim-needs-adjacency",
-  "deep-site-not-adjacent",
-]);
-
 const planAttack = (
   planned: ReturnType<typeof forecastFrom> | undefined,
 ): Pick<SiteCardPlan, "inReach" | "firstStrike" | "fight" | "blocked"> => {
@@ -232,7 +226,7 @@ const forecastFrom = (store: NativeFactStore, attack: SiteAttack, targetId: bigi
   const forecastAt = (besideTarget: boolean) =>
     forecastAttack(store, key(attack.army.explorer_id), key(targetId), attack.timestamp, { besideTarget });
   const now = forecastAt(false);
-  const inReach = !(now?.outcome === "refused" && REACH_REFUSALS.has(now.refusal));
+  const inReach = !(now?.outcome === "refused" && now.refusal === "out-of-range");
   return { inReach, forecast: inReach ? now : forecastAt(true) };
 };
 

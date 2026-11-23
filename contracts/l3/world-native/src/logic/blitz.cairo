@@ -1,6 +1,8 @@
 pub mod capture;
+pub mod combat;
 pub mod construction;
 pub mod discovery;
+pub mod guards;
 pub mod hyperstructures;
 pub mod points;
 pub mod roster;

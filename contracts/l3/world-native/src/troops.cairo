@@ -358,16 +358,11 @@ pub fn spend_stamina(
 pub fn frontier_guard(
     category: u8, depth: crate::expeditions::DepthRules, seed: u256, rules: crate::rules::SliceRules, timestamp: u64,
 ) -> Troops {
-    let (lower, upper) = if category == crate::taxonomy::RIFT_CATEGORY {
-        (
-            rift_guard_bound(depth.site_guard_lower, depth.guard_step),
-            rift_guard_bound(depth.site_guard_upper, depth.guard_step),
-        )
+    let (lower, upper): (u128, u128) = if category == crate::taxonomy::RIFT_CATEGORY {
+        (depth.rift_guard_lower.into(), depth.rift_guard_upper.into())
     } else {
         (depth.site_guard_lower.into(), depth.site_guard_upper.into())
     };
-    let lower: u128 = lower.into();
-    let upper: u128 = upper.into();
     let band = category == crate::taxonomy::BEASTS_CATEGORY && beast_draw_is_band(seed);
     let count = if category == crate::taxonomy::BEASTS_CATEGORY {
         let (lower, upper) = if !band {
@@ -404,43 +399,7 @@ pub fn ruin_guard(
     discovered_guard(TroopType::Knight, TroopTier::T1, count, rules, timestamp)
 }
 
-const RIFT_GUARD_PERCENT: u32 = 115;
-
-fn rift_guard_bound(camp: u16, step: u32) -> u32 {
-    // Round the stronger guard to the same inclusive preset grid.
-    let scaled: u32 = Into::<u16, u32>::into(camp) * RIFT_GUARD_PERCENT;
-    (scaled + step * 50) / (step * 100) * step
-}
-
-#[cfg(feature: "blitz")]
-pub fn light_guard(seed: u256, rules: crate::rules::SliceRules, timestamp: u64) -> Troops {
-    let limits = rules.troop_limit_config;
-    let lower: u128 = limits.light_guard_lower_bound.into();
-    let upper: u128 = limits.light_guard_upper_bound.into();
-    let category = match crate::random::range(seed, 2, 3) {
-        0 => TroopType::Knight,
-        1 => TroopType::Paladin,
-        _ => TroopType::Crossbowman,
-    };
-    discovered_guard(
-        category, TroopTier::T1, lower + crate::random::range(seed, 1, upper - lower + 1), rules, timestamp,
-    )
-}
-
-pub fn hyperstructure_guards(seed: u256, rules: crate::rules::SliceRules, timestamp: u64) -> Span<Troops> {
-    let limits = rules.troop_limit_config;
-    let lower: u128 = limits.heavy_guard_lower_bound.into();
-    let upper: u128 = limits.heavy_guard_upper_bound.into();
-    let categories = array![TroopType::Paladin, TroopType::Knight, TroopType::Crossbowman];
-    let mut guards = array![];
-    for slot in 0..categories.len() {
-        let count = lower + crate::random::range(seed + slot.into(), 1, upper - lower + 1);
-        guards.append(discovered_guard(*categories.at(slot), TroopTier::T2, count, rules, timestamp));
-    }
-    guards.span()
-}
-
-fn discovered_guard(
+pub(crate) fn discovered_guard(
     category: TroopType, tier: TroopTier, count: u128, rules: crate::rules::SliceRules, timestamp: u64,
 ) -> Troops {
     Troops {

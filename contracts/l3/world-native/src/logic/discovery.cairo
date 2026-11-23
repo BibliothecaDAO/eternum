@@ -80,14 +80,9 @@ fn roll(
         ),
     };
     let depth = crate::logic::expeditions::depth_at(key.game_id, Coord { alt: key.alt, x: key.col, y: key.row });
-    let triumph_find_percent = if depth < 3 {
-        crate::logic::triumphs::effects(home_key, context.timestamp).find_percent
-    } else {
-        100
-    };
     let find_percent = crate::oaths::find_percent(
         crate::logic::progression::require(crate::troops::ExplorerKey { game_id: key.game_id, explorer_id }).oaths,
-        triumph_find_percent,
+        crate::logic::triumphs::effects(home_key, context.timestamp).find_percent,
     );
     let day = crate::logic::expeditions::discovery(counter)
         .unwrap_or(crate::expeditions::ExpeditionDiscovery { empty_reveals: 0, ruin_cleared: false });
@@ -96,7 +91,6 @@ fn roll(
         crate::spires::ExpeditionSpireKey { game_id: key.game_id, structure_id: home, epoch: counter.epoch, depth },
         Coord { alt: key.alt, x: key.col, y: key.row },
         learned,
-        find_percent,
         seed,
     ) {
         crate::discovery::Discovery::Spire

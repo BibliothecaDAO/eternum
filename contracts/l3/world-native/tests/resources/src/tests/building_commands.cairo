@@ -19,17 +19,27 @@ fn record_spatial_replay_buildings() {
 fn failed_building_payment_rolls_back_placement_rate_and_resources() {
     let (deployment, home) = building_world();
     let structures = IStructureOperationsDispatcher { contract_address: deployment.games };
-    let before = resource_facts(deployment, home);
-    let counts = structures.structure_buildings(home);
-    assert_terminal_rejection(
-        deployment,
-        Command::CreateBuilding(
-            CreateBuilding {
-                structure_id: home.entity_id, directions: array![0_u8].span(), category: 37, use_simple: false,
+    let resources = IResourceOperationsDispatcher { contract_address: deployment.games };
+    let labor = ResourceSlot {
+        game_id: home.game_id, entity_id: home.entity_id, resource_type: crate::resources::LABOR,
+    };
+    start_cheat_caller_address(deployment.games, deployment.games);
+    crate::resources::IResourceOperationsDispatcherTrait::spend_resource(
+        resources,
+        home,
+        crate::resources::LABOR,
+        resources.resource_balance(labor),
+        FIXTURE_START + 40,
+        crate::commands::resource_context(
+            crate::commands::ExecutionContext {
+                timestamp: FIXTURE_START + 40, ..crate::tests::context(deployment.games, home.game_id),
             },
         ),
-        FIXTURE_START + 40,
     );
+    stop_cheat_caller_address(deployment.games);
+    let before = resource_facts(deployment, home);
+    let counts = structures.structure_buildings(home);
+    assert_terminal_rejection(deployment, create(home, crate::research::FARM), FIXTURE_START + 40);
     assert_eq!(resource_facts(deployment, home), before);
     assert_eq!(structures.structure_buildings(home), counts);
     assert!(structures.building(east(home)).is_none());

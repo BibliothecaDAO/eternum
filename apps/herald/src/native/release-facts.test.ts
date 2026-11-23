@@ -76,17 +76,14 @@ describe("a release's rule rows", () => {
     }
   });
 
-  it("projects both beast strength ranges and renamed discovery odds into client facts", () => {
+  it("projects both beast strength ranges into client facts", () => {
     const preset = registration();
     const world = setup(preset.definitions);
     world.native.applyReceipt(world.fold, receipt(launch(preset)), 11, 0);
     const store = new NativeFactStore();
-    for (const model of ["DepthRules", "FrontierDiscoveryRules"] as const) {
-      store.applyFacts(world.fold.gameRows(model, "1").map(({ key, value }) => ({ model, key, value })));
-    }
-    const { game_id, ...discovery } = store.require("FrontierDiscoveryRules", { game_id: 1 });
-    expect(game_id).toBe(1);
-    expect(discovery).toEqual(preset.definition.economy.discovery.unwrap());
+    store.applyFacts(
+      world.fold.gameRows("DepthRules", "1").map(({ key, value }) => ({ model: "DepthRules", key, value })),
+    );
     for (const [depth, expected] of preset.definition.settlement.depths.entries()) {
       expect(store.require("DepthRules", { game_id: 1, depth })).toMatchObject({
         beast_weak_lower: expected.beast_weak_lower,
@@ -157,7 +154,7 @@ describe("a release's rule rows", () => {
       .gameRows("DepthRules", "1")
       .map(({ value }) => value.chest as Record<string, unknown>)
       .map((chest) => tiers.reduce((sum, tier) => sum + Number(chest[tier]), 0));
-    expect(odds).toEqual([10000, 10000, 10000, 10000]);
+    expect(odds).toEqual([10000, 10000, 10000]);
   });
 
   it("derives the complete launch config, preserving the chain's overrides", () => {
@@ -172,12 +169,6 @@ describe("a release's rule rows", () => {
     expect(depths.map((row) => Number(row.guard_step))).toEqual(expectedDepths.map((row) => row.guard_step));
     expect(depths.map((row) => Number(row.reveal_percent))).toEqual(expectedDepths.map((row) => row.reveal_percent));
     expect(depths.every((row) => !Object.hasOwn(row, "supply_multiplier"))).toBe(true);
-    const { game_id, ...discovery } = world.fold.gameRows("FrontierDiscoveryRules", "1")[0]!.value;
-    expect(Number(game_id)).toBe(1);
-    expect(Object.fromEntries(Object.entries(discovery).map(([key, value]) => [key, Number(value)]))).toEqual(
-      preset.definition.economy.discovery.unwrap(),
-    );
-
     expect(world.fold.gameRows("GameOverrides", "1")).toHaveLength(1);
     for (const scope of [undefined, {}, world.fold.subscriptionScope("1", "0x123", 1234)]) {
       const snapshot = world.fold.snapshot(1, 11, undefined, scope);

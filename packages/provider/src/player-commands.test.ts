@@ -87,8 +87,7 @@ describe("player command callers", () => {
     const activation = decoded();
     expect(activation.entity_id).toBe(90n);
     expect(activation.relic_id).toBe(25n);
-    expect(activation.recipient.activeVariant()).toBe("ArmySlot");
-    expect(activation.recipient.unwrap()).toBe(2n);
+    expect(activation.slot).toBe(2n);
   });
   it("carries the chosen army slot through system calls and the provider into CreateExplorer", async () => {
     const { calls, signer, submit, decoded } = setup();

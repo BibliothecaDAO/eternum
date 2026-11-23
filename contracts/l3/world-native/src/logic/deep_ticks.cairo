@@ -383,8 +383,11 @@ fn grant_resources(game_id: u32, held: Held, boundary: u64, context: ExecutionCo
 
 fn settle_guards(payouts: @Payouts, held: Held, boundary: u64, context: ExecutionContext) {
     let context = ExecutionContext { timestamp: boundary, ..context };
-    for index in payouts.deaths.span() {
-        settle_guard(held, *index, context);
+    let deaths = payouts.deaths.span();
+    let mut remaining = deaths.len();
+    while remaining != 0 {
+        remaining -= 1;
+        settle_guard(held, *deaths.at(remaining), context);
     }
     for index in 0..held.guards.len() {
         if *held.counts.at(index) != 0 {

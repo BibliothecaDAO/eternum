@@ -23,7 +23,6 @@ it("covers every native story and tests every cumulative level", () => {
       "ExplorerDeleteStory",
       "GuardAddStory",
       "GuardDeleteStory",
-      "SkillPointSpent",
       "SitePayout",
       "ExplorationReward",
       "TroopsTransferred",
@@ -71,7 +70,7 @@ it("uses event-time recipients, normalizes duplicates, and excludes neutral addr
     }),
   ).toEqual([]);
   expect(storyRecipients("BlitzFinalized", "0x003", battle)).toEqual(["0x3"]);
-  expect(storyRecipients("SkillPointSpent", "0x003", { explorer_id: 7 })).toEqual([]);
+  expect(storyRecipients("SitePayout", "0x003", { explorer_id: 7 })).toEqual([]);
   expect(storyRecipients("BattleEvent", "0xff", { attacker: { player: "0x1" }, defender: { player: "0x01" } })).toEqual(
     ["0x1"],
   );

@@ -102,12 +102,7 @@ test("the expedition page gives camps and rifts their own correct guard column a
       fileURLToPath(new URL("../../../config/source/native.ts", import.meta.url)),
     );
     const frontierPreset = nativePresetForId(nativePresetIdFor("frontier"));
-    const { previewRiftGuardBound } = await server.ssrLoadModule(
-      fileURLToPath(new URL("../../../contracts/l3/world-native/schema/site-previews.gen.ts", import.meta.url)),
-    );
-    const pages = [
-      { page: "frontier/expedition", phrases: frontierGuardPhrases(frontierPreset, previewRiftGuardBound) },
-    ];
+    const pages = [{ page: "frontier/expedition", phrases: frontierGuardPhrases(frontierPreset) }];
     const docs = fileURLToPath(new URL("../docs", import.meta.url));
     const llm = await renderLlmTxt([join(docs, "pages/frontier/expedition.mdx")], docs);
     assert.deepEqual(exportProblems(llm, pages), []);

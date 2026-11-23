@@ -5,7 +5,6 @@ import { battleTargetScenario, deepBattleTargetScenario } from "./battle-target-
 import { townScenario } from "./town-scenario";
 import { scoutsScenario } from "./scouts-scenario";
 import { siteEffectsScenario } from "./site-effects-scenario";
-import { clearMistScenario } from "./spire-scenario";
 import { baneScenario } from "./bane-scenario";
 import { staminaScenario } from "./stamina-scenario";
 import { questScenario } from "./quest-scenario";
@@ -49,7 +48,6 @@ import { visitScenario } from "./visit-scenario";
 export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   spire: spireScenario,
   "discovered-spire": discoveredSpireScenario,
-  "clear-mist": clearMistScenario,
   "site-effects": siteEffectsScenario,
   deep: () => deepScenario(),
   "deep-closed": () => deepScenario(true),

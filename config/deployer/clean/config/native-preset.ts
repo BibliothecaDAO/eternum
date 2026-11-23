@@ -221,6 +221,8 @@ function buildSettlement(config: Config, preset: ReturnType<typeof nativePresetF
       reveal_percent: depth.revealPercent,
       site_guard_lower: depth.siteGuardLower,
       site_guard_upper: depth.siteGuardUpper,
+      rift_guard_lower: depth.riftGuardLower,
+      rift_guard_upper: depth.riftGuardUpper,
       reveal_site_neighbors: depth.revealSiteNeighbors,
       chest: depth.chest,
       guard_step: depth.guardStep,

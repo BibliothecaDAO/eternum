@@ -5,9 +5,7 @@ import { entityHomeNamespace } from "./entity-home";
 import { reachableDepth } from "./realm-research";
 import { MAX_U32, ResourcesIds, type MapLayer } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
-import { readOptionalSeasonRow } from "../client/views/season-rows";
-import { readTriumphPeriod } from "../client/views/triumphs";
-import { nativeRuleConstants, nativeRaceConstants } from "../../../../contracts/l3/world-native/schema/balance.gen";
+import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { getNeighborHexes, StructureType } from "@bibliothecadao/types";
 import { getBlockTimestamp } from "./timestamp";
@@ -15,7 +13,6 @@ import { dayOf } from "./days";
 import { previewSiteReward } from "../../../../contracts/l3/world-native/schema/site-previews.gen";
 
 import { entityMapPosition } from "./tile";
-import { armyOaths, oathFindPercent } from "./oaths";
 
 export * from "./days";
 export * from "./home-claim";
@@ -435,17 +432,7 @@ export const armySpireChance = (
     depth,
   });
   if (!progress.known || progress.known.location) return null;
-  const race = readOptionalSeasonRow(store, "RaceRules", { game_id: gameId });
-  if (!race.known) return null;
-  let percent = 100;
-  if (race.known.row) {
-    const mist = readTriumphPeriod(store, gameId, army.owner, nativeRaceConstants.CLEAR_MIST_STAGE, rules);
-    if (!mist.known) return null;
-    const period = mist.known.period;
-    if (period && nowSeconds >= period.start && nowSeconds < period.end) percent = race.known.row.clear_mist_percent;
-  }
-  const found = oathFindPercent(armyOaths(store, { game_id: gameId, explorer_id: explorerId }), percent);
-  return Math.min(100, ((progress.known.reveals + 1) * found) / nativeRuleConstants.SPIRE_REVEAL_LIMIT);
+  return ((progress.known.reveals + 1) * 100) / nativeRuleConstants.SPIRE_REVEAL_LIMIT;
 };
 
 /** The army's own spire while it stands on or beside it. */

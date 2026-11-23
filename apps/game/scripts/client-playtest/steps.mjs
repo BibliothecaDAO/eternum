@@ -1658,30 +1658,6 @@ const baneCollectionSteps = (expected) => [
   },
 ];
 
-const CLEAR_MIST_STEPS = [
-  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
-  {
-    name: "clear-mist-odds",
-    play: async ({ browser }) => {
-      const panel = await openTheArmyPanel(browser);
-      const odds = await browser.read(`(() => {
-        const line = [...document.querySelectorAll('[data-spire-chance]')].find((candidate) => {
-          const rect = candidate.getBoundingClientRect();
-          return rect.width && rect.height;
-        });
-        const rect = line?.getBoundingClientRect();
-        return { text: line?.textContent, visible: Boolean(rect && rect.width && rect.height && rect.top >= 0 && rect.bottom <= innerHeight) };
-      })()`);
-      return { panel, odds };
-    },
-    settleMs: 0,
-    verify: ({ played }) =>
-      played.odds.visible && played.odds.text.includes("next reveal 20%")
-        ? completed(played)
-        : failed("The army's next Spire reveal must show Clear Mist's doubled chance", played),
-  },
-];
-
 function staminaEffectSteps(wind) {
   return [
     { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
@@ -5864,8 +5840,6 @@ const DISMISSED_AT_EXPRESSION = `JSON.stringify(
  */
 export const UNMEASURED_COMMANDS = {
   InteractSite: "lab-deep-join checks joining on desktop and phone; click timing baselines are not recorded",
-  Battle:
-    "Deep army combat has native and client regressions, but desktop and phone click timing baselines are not recorded",
   ClaimDailyQuest: "lab-daily-quest checks collection on desktop and phone; click timing baselines are not recorded",
   ApplyRelic: "army relic activation has a control, but its desktop and phone timing baselines are not recorded",
   MarkGameSettled:
@@ -6754,7 +6728,6 @@ export const STEP_SETS = {
   },
   "lab-spire": { game: LAB_SPIRE, steps: LAB_SPIRE_STEPS },
   "lab-site-effects": { game: labSpireGame("site-effects"), steps: SITE_EFFECT_STEPS },
-  "lab-clear-mist": { game: labSpireGame("clear-mist"), steps: CLEAR_MIST_STEPS },
   "lab-stamina-mist": { game: { ...LAB_SPIRE, lab: "stamina-mist" }, steps: staminaEffectSteps(false) },
   "lab-stamina-wind": { game: { ...LAB_SPIRE, lab: "stamina-wind" }, steps: staminaEffectSteps(true) },
   "lab-layers": { game: LAB_SPIRE, steps: LAB_LAYERS_STEPS },

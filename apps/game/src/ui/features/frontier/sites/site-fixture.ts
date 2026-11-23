@@ -62,6 +62,8 @@ export const campBeside = (
       reveal_percent: 15,
       site_guard_lower: 3000,
       site_guard_upper: 5000,
+      rift_guard_lower: 3000,
+      rift_guard_upper: 5000,
       reveal_site_neighbors: false,
       chest: { common: 0, uncommon: 5000, rare: 2833, epic: 1500, legendary: 667 },
       guard_step: 100,
