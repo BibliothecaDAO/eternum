@@ -43,7 +43,7 @@
 .frontier-realm-chip__name {
   display: block;
   font-family: var(--hud-font-display);
-  font-size: var(--hud-text-title);
+  font-size: var(--hud-text-display);
   line-height: var(--hud-leading-title);
   color: rgb(var(--hud-ink));
   letter-spacing: 0.03em;
@@ -51,7 +51,7 @@
 }
 .frontier-realm-chip__sub {
   display: block;
-  font-size: var(--hud-text-label);
+  font-size: var(--hud-text-body);
   line-height: var(--hud-leading-label);
   color: var(--hud-muted);
   white-space: nowrap;
@@ -74,7 +74,7 @@
   padding: 0 theme(spacing.3);
   color: rgb(var(--hud-ink));
   font-family: var(--hud-font-display);
-  font-size: var(--hud-text-body);
+  font-size: var(--hud-text-title);
   line-height: var(--hud-leading-body);
   font-weight: var(--hud-weight-title);
   letter-spacing: 0.04em;
@@ -154,6 +154,11 @@
   width: theme(spacing.hud-frontier-page);
   max-width: calc(100vw - theme(spacing.8));
 }
+.frontier-quest-popover[data-align="left"] {
+  right: auto;
+  left: 0;
+  max-width: calc(100vw - theme(spacing.4));
+}
 
 .frontier-stores-wrap {
   position: relative;
@@ -171,6 +176,7 @@
   padding: 0 theme(spacing.3);
 }
 .frontier-store {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: theme(spacing.1);
@@ -206,20 +212,31 @@ button.frontier-store:hover {
 .frontier-army-card {
   position: relative;
   display: inline-flex;
-  min-width: theme(spacing.48);
+  min-width: 280px;
+  min-height: 76px;
   align-items: center;
   gap: theme(spacing.3);
   border: 1px solid var(--hud-line);
   border-radius: var(--hud-radius-panel);
   background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
   box-shadow: var(--hud-shadow-panel);
-  padding: theme(spacing[2.5]) theme(spacing.3);
+  padding: theme(spacing.3) theme(spacing[3.5]);
   color: rgb(var(--hud-ink));
   text-align: left;
   cursor: pointer;
   transition:
     border-color var(--hud-fast) var(--hud-ease),
     transform var(--hud-fast) var(--hud-ease);
+}
+.frontier-army-card__portrait {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  flex: none;
+}
+.frontier-army-card__portrait > .ui-portrait {
+  width: 48px;
+  height: 48px;
 }
 .frontier-army-card:hover {
   border-color: var(--hud-line-strong);
@@ -230,14 +247,15 @@ button.frontier-store:hover {
   flex: 1;
   flex-direction: column;
   gap: theme(spacing.1);
+  overflow: hidden;
 }
 .frontier-army-card__title {
   display: flex;
   align-items: center;
   gap: theme(spacing[1.5]);
   font-family: var(--hud-font-display);
-  font-size: var(--hud-text-strong);
-  line-height: var(--hud-leading-strong);
+  font-size: var(--hud-text-title);
+  line-height: var(--hud-leading-title);
   font-weight: var(--hud-weight-title);
   letter-spacing: 0.04em;
   white-space: nowrap;
@@ -246,29 +264,13 @@ button.frontier-store:hover {
   display: flex;
   flex-direction: column;
   gap: theme(spacing[0.5]);
-  font-size: var(--hud-text-label);
+  font-size: var(--hud-text-body);
   line-height: var(--hud-leading-label);
   color: var(--hud-muted);
   font-variant-numeric: tabular-nums;
 }
-.frontier-army-card__move {
-  display: inline-flex;
-  height: var(--hud-control);
-  align-items: center;
-  gap: theme(spacing[1.5]);
-  border-radius: var(--hud-radius-control);
-  background: rgb(var(--hud-gold));
-  padding: 0 theme(spacing.3);
-  color: rgb(var(--hud-dark));
-  font-family: var(--hud-font-display);
-  font-size: var(--hud-text-label);
-  line-height: var(--hud-leading-label);
-  font-weight: var(--hud-weight-strong);
-  letter-spacing: 0.04em;
-  white-space: nowrap;
-}
 .frontier-army-card[data-open-slot="true"] {
-  min-width: theme(spacing.40);
+  min-width: 210px;
   border-style: dashed;
 }
 
@@ -301,7 +303,7 @@ button.frontier-store:hover {
 .frontier-aspect-chip__head {
   display: block;
   font-family: var(--hud-font-display);
-  font-size: var(--hud-text-body);
+  font-size: var(--hud-text-title);
   line-height: var(--hud-leading-body);
   font-weight: var(--hud-weight-title);
   letter-spacing: 0.04em;
@@ -312,7 +314,7 @@ button.frontier-store:hover {
   display: inline-flex;
   align-items: center;
   gap: theme(spacing[1.5]);
-  font-size: var(--hud-text-label);
+  font-size: var(--hud-text-body);
   line-height: var(--hud-leading-label);
   color: var(--hud-muted);
   font-variant-numeric: tabular-nums;

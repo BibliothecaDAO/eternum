@@ -162,7 +162,7 @@ it("keeps the sheet on the keyboard when the visible part of the page only scrol
 /** The app's own rule for what steps aside while the keyboard is up, as index.css states it, applied to the page. */
 const KEYBOARD_RULE = /html\[data-keyboard\] \[data-keyboard-hides\][^}]*\}/.exec(appStyles)![0];
 
-it("steps the strip and the purse aside with the place bar while the keyboard is up, so a page typed in keeps the screen", async () => {
+it("steps the strip aside with the place bar while the keyboard is up, so a page typed in keeps the screen", async () => {
   const style = document.createElement("style");
   style.textContent = KEYBOARD_RULE;
   document.head.append(style);
@@ -171,7 +171,6 @@ it("steps the strip and the purse aside with the place bar while the keyboard is
     return (
       <HudBands
         strip={<div>Day</div>}
-        purse={<div>Purse</div>}
         nav={<nav aria-label="Places">Places</nav>}
         page={
           <HudPage label="Chat" icon="chat" fills onClose={() => {}}>
@@ -196,19 +195,19 @@ it("steps the strip and the purse aside with the place bar while the keyboard is
           if (getComputedStyle(part).display === "none") return false;
         return true;
       });
-  expect([shown("Day"), shown("Purse"), shown("Places")]).toEqual([true, true, true]);
+  expect([shown("Day"), shown("Places")]).toEqual([true, true]);
 
   await act(async () => host.querySelector<HTMLInputElement>('input[aria-label="Message"]')!.focus());
   await act(async () => {
     visual.height = 311;
     visual.dispatchEvent(new Event("resize"));
   });
-  expect([shown("Day"), shown("Purse"), shown("Places")]).toEqual([false, false, false]);
+  expect([shown("Day"), shown("Places")]).toEqual([false, false]);
 
   await act(async () => {
     visual.height = SCREEN;
     visual.dispatchEvent(new Event("resize"));
   });
-  expect([shown("Day"), shown("Purse"), shown("Places")]).toEqual([true, true, true]);
+  expect([shown("Day"), shown("Places")]).toEqual([true, true]);
   style.remove();
 });

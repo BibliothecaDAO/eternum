@@ -509,6 +509,8 @@ export const SHOW_MY_REALM = "Show my realm";
 export const RESEARCH = "Research";
 export const CHAT = "Chat";
 export const MENU = "Menu";
+export const unreadChatMessages = (count: number) => `Unread chat messages: ${count}`;
+export const unreadFeedEvents = (count: number) => `Unread feed events: ${count}`;
 
 /** The Menu's rows and its two buttons. */
 export const TODAY = "Today";

@@ -13,7 +13,7 @@ import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { homeIcon, HOME_KINDS, type HomeKind } from "@/ui/design-system/home-icons";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { orderMeaning } from "@/ui/design-system/icon-meaning";
-import { HudButton, HudIconButton, HudPanel, HudRow, HudTier } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudChip, HudIconButton, HudPanel, HudRow, HudTier } from "@/ui/design-system/kit/hud-elements";
 import {
   ARMIES,
   CLOSE,
@@ -35,7 +35,8 @@ export interface RealmBuildingItem {
   key: string;
   icon: IconMeaning;
   name: string;
-  tier: Rank;
+  tier?: Rank;
+  rankLabel?: string;
   rateIcon?: IconMeaning;
   rate?: string;
   onUpgrade?: () => void;
@@ -57,6 +58,7 @@ export const RealmPanel = ({
   onResearch,
   onDeploy,
   onClose,
+  sheetHandle = false,
   kind = "realm",
 }: {
   kind?: HomeKind;
@@ -80,6 +82,7 @@ export const RealmPanel = ({
   onResearch?: () => void;
   onDeploy?: () => void;
   onClose?: () => void;
+  sheetHandle?: boolean;
 }) => {
   const order = orderId && orderId > 0 ? catalogOrder(orderId) : undefined;
   const visibleStores = stores.filter(
@@ -94,10 +97,10 @@ export const RealmPanel = ({
     <HudPanel
       label={REALM}
       title={
-        <span className="inline-flex items-center gap-2.5">
+        <span className="inline-flex items-center gap-3">
           <SemanticIcon
             name={homeIcon(kind, level ?? 0)}
-            size={32}
+            size={40}
             alt={kind === "wonder" ? HOME_KINDS[kind].label : undefined}
             data-tip={kind === "wonder" ? HOME_KINDS[kind].label : undefined}
           />
@@ -129,9 +132,10 @@ export const RealmPanel = ({
       cue={onClose && <HudIconButton icon="close" label={CLOSE} kind="secondary" size="sm" onClick={onClose} />}
       onTitle={onHome && { label: SHOW_MY_REALM, run: onHome }}
       collapsible={false}
-      className="pointer-events-auto"
+      className={sheetHandle ? "pointer-events-auto relative realm-panel--sheet" : "pointer-events-auto"}
       bodyClassName="flex flex-col gap-3"
     >
+      {sheetHandle && <span className="frontier-phone-handle" aria-hidden="true" />}
       <ul aria-label="Stores" className="realm-tiles">
         {visibleStores.map((store) => (
           <li key={store.kind} data-store={store.kind} className="relative min-w-0">
@@ -176,28 +180,29 @@ export const RealmPanel = ({
       </ul>
       {storeCards?.open && storeCards.card}
       {buildings && buildings.length > 0 && (
-        <ul data-realm-buildings className="flex flex-col gap-1.5">
+        <ul data-realm-buildings className="flex flex-col gap-2">
           {buildings.map((building) => (
-            <li key={building.key} className="rounded-md border border-hud-divider bg-hud-well">
+            <li key={building.key} className="realm-building__row">
               <HudRow
-                lead={<SemanticIcon name={building.icon} size={32} />}
+                lead={<SemanticIcon name={building.icon} size={40} />}
                 title={
-                  <span className="flex items-center gap-1.5">
+                  <span className="flex items-center gap-2">
                     <span className="realm-building__name truncate">{building.name}</span>
-                    <HudTier tier={building.tier} />
+                    {building.tier !== undefined && <HudTier tier={building.tier} />}
+                    {building.rankLabel && <HudChip>{building.rankLabel}</HudChip>}
                   </span>
                 }
                 detail={
                   building.rate && (
-                    <span className="inline-flex items-center gap-1 tabular-nums">
-                      {building.rateIcon && <SemanticIcon name={building.rateIcon} size={13} />}
+                    <span className="inline-flex items-center gap-1 text-hud-body tabular-nums">
+                      {building.rateIcon && <SemanticIcon name={building.rateIcon} size={14} />}
                       {building.rate}
                     </span>
                   )
                 }
                 controls={
                   building.onUpgrade && (
-                    <HudButton kind="secondary" size="sm" onClick={building.onUpgrade}>
+                    <HudButton kind="secondary" onClick={building.onUpgrade}>
                       {UPGRADE}
                     </HudButton>
                   )
@@ -210,12 +215,12 @@ export const RealmPanel = ({
       {(onResearch || onDeploy) && (
         <div className="realm-foot">
           {onResearch && (
-            <HudButton kind="secondary" size="sm" icon="research" onClick={onResearch}>
+            <HudButton kind="secondary" icon="research" onClick={onResearch}>
               {RESEARCH}
             </HudButton>
           )}
           {onDeploy && (
-            <HudButton kind="primary" size="sm" icon="knight-t1" onClick={onDeploy}>
+            <HudButton kind="primary" icon="knight-t1" onClick={onDeploy}>
               {DEPLOY}
             </HudButton>
           )}

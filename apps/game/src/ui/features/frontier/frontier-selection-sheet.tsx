@@ -13,6 +13,21 @@ import { ReinforceSheet, useSelectedReinforcement } from "./army/reinforce";
 import { BuildingCard } from "./building/building-card";
 import { useTappedBuilding } from "./research/selected-building";
 
+type SelectionCardKind =
+  | "transfer"
+  | "reinforce"
+  | "plot"
+  | "deep-site"
+  | "target"
+  | "cleared"
+  | "realm-spire"
+  | "spire"
+  | "keep"
+  | "building";
+
+export const isRealmBoardCard = (kind: SelectionCardKind): boolean =>
+  kind === "plot" || kind === "keep" || kind === "building";
+
 export const useSelectionCard = ({
   realm,
   onResearch,
@@ -21,7 +36,7 @@ export const useSelectionCard = ({
   realm: NativeRows["Structure"] | null;
   /** Opens Research, on a node where the card names one, for a card whose next step is there. */
   onResearch: (node?: string) => void;
-}): { kind: string; key: string; sheet: ReactNode } | null => {
+}): { kind: SelectionCardKind; key: string; sheet: ReactNode } | null => {
   const selectedHex = useUIStore((state) => state.selectedHex);
   const selectedBuildingHex = useUIStore((state) => state.selectedBuildingHex);
   const openPlot = useOpenPlot(realm);
@@ -44,7 +59,7 @@ export const useSelectionCard = ({
     setSelectedBuildingHex(null);
   };
   const at = `${selectedHex?.col},${selectedHex?.row}:${selectedBuildingHex?.innerCol},${selectedBuildingHex?.innerRow}`;
-  const card = (kind: string, sheet: ReactNode) => ({ kind, key: `${kind}@${at}`, sheet });
+  const card = (kind: SelectionCardKind, sheet: ReactNode) => ({ kind, key: `${kind}@${at}`, sheet });
   if (realm && transfer) return card("transfer", <TransferTroopsSheet realm={realm} pair={transfer} onClose={close} />);
   if (realm && reinforcing)
     return card("reinforce", <ReinforceSheet realm={realm} army={reinforcing} onClose={close} />);

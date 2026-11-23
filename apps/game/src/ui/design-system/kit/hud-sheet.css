@@ -150,20 +150,24 @@ button.ui-panel__name[data-action]:hover {
   font-weight: var(--hud-weight-label);
 }
 .ui-button[data-kind="primary"] {
-  background: rgb(var(--hud-gold));
+  border-color: var(--primary-rim);
+  background: var(--primary-face);
   color: rgb(var(--hud-dark));
   box-shadow: var(--hud-shadow-control);
   font-family: var(--hud-font-display);
+  font-size: var(--hud-text-title);
+  line-height: var(--hud-leading-title);
   letter-spacing: 0.04em;
 }
 .ui-button[data-kind="primary"]:is(:hover, [data-state="hover"]) {
-  background: color-mix(in srgb, rgb(var(--hud-gold)) 88%, white);
+  filter: brightness(1.06);
 }
 .ui-button[data-kind="secondary"] {
   border-color: var(--hud-line-strong);
   background: transparent;
   color: rgb(var(--hud-accent));
   font-family: var(--hud-font-display);
+  font-size: var(--hud-text-title);
   letter-spacing: 0.04em;
 }
 .ui-button[data-kind="quiet"] {
@@ -218,7 +222,7 @@ a.ui-button {
   transform: translateY(1px);
 }
 .ui-button[data-kind="primary"]:is(:active, [data-state="pressed"]):not(:disabled) {
-  background: color-mix(in srgb, rgb(var(--hud-gold)) 82%, black);
+  filter: brightness(0.92);
 }
 .ui-button:is([data-kind="secondary"], [data-kind="quiet"]):is(:active, [data-state="pressed"]):not(:disabled),
 .ui-button[aria-pressed="true"] {
@@ -367,6 +371,7 @@ a.ui-button {
   padding: 0 theme(spacing.1);
 }
 .ui-tabs[data-size="sm"] {
+  flex-wrap: nowrap;
   border-bottom: 0;
   gap: theme(spacing[0.5]);
 }
@@ -376,9 +381,10 @@ a.ui-button {
   border-radius: var(--hud-radius-chip);
   padding: 0 theme(spacing.2);
   font-family: var(--hud-font-display);
-  font-size: var(--hud-text-body);
+  font-size: var(--hud-text-title);
   line-height: var(--hud-leading-body);
   letter-spacing: 0.04em;
+  white-space: nowrap;
 }
 .ui-tabs[data-size="sm"] .ui-tab[aria-selected="true"] {
   border-color: rgb(var(--hud-accent));
@@ -392,6 +398,11 @@ a.ui-button {
     padding: 0 theme(spacing.2);
     font-size: var(--hud-text-body);
     line-height: var(--hud-leading-body);
+  }
+  .ui-tabs[data-size="sm"] .ui-tab {
+    height: 30px;
+    padding: 0 theme(spacing[1.5]);
+    font-size: var(--hud-text-label);
   }
 }
 .ui-tab:is(:hover, [data-state="hover"]) {

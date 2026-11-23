@@ -78,14 +78,6 @@ const secondsUntilFull = (
 const storeTone = (fullIn: number | undefined): Tone =>
   fullIn === undefined ? "calm" : fullIn === 0 ? "ember" : fullIn <= AMBER_SECONDS ? "amber" : "calm";
 
-/** The Realm slot's dot: the worst tone among the stores the realm board spends (wheat, labor, troops). */
-export const realmDot = (stores: readonly Pick<RealmStore, "tone">[]): "amber" | "ember" | undefined =>
-  stores.some(({ tone }) => tone === "ember")
-    ? "ember"
-    : stores.some(({ tone }) => tone === "amber")
-      ? "amber"
-      : undefined;
-
 const STORE_MODELS = [
   "ResourceBalance",
   "ResourceProduction",

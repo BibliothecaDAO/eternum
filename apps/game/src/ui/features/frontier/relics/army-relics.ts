@@ -39,3 +39,21 @@ export const freeRelicSlot = (relics: ArmyRelics): 0 | 1 | 2 | null => {
   const free = relics.slots.findIndex((slot) => slot === null);
   return free === -1 ? null : (free as 0 | 1 | 2);
 };
+
+export const readRealmArmyRelics = <Army extends { explorerId: number }>(
+  store: Pick<NativeFactStore, "requireOrAbsent">,
+  gameId: number,
+  armies: readonly Army[],
+  now: number,
+): { army: Army; relics: ArmyRelics }[] =>
+  armies.flatMap((army) => {
+    const relics = readArmyRelics(store, gameId, army.explorerId, now);
+    if (!relics || (relics.running.length === 0 && !relics.slots.some((slot) => slot !== null))) return [];
+    return [{ army, relics }];
+  });
+
+export const countRealmRelics = (held: readonly { relics: ArmyRelics }[]): number =>
+  held.reduce(
+    (sum, { relics }) => sum + relics.running.length + relics.slots.filter((slot) => slot !== null).length,
+    0,
+  );

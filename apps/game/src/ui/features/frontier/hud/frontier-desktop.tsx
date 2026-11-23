@@ -4,7 +4,16 @@ import { usePartShown } from "../opening/opening-context";
 import { HUD_COLUMN_MARK } from "@/three/utils/labels/hud-clearance";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { SheetDock } from "@/ui/design-system/kit/hud-elements";
-import { CHAT, EVENTS_WORDS, REALM, RELIC_WORDS, RESEARCH, SEASON } from "@/ui/design-system/kit/words";
+import {
+  CHAT,
+  EVENTS_WORDS,
+  REALM,
+  RELIC_WORDS,
+  RESEARCH,
+  SEASON,
+  unreadChatMessages,
+  unreadFeedEvents,
+} from "@/ui/design-system/kit/words";
 import { FeedToasts, useUnreadImportantCount } from "@/ui/features/event-feed/quick-feed";
 import type { SeasonGoal } from "@/ui/features/world/containers/top-header/identity-chip";
 import { TopHeader } from "@/ui/features/world/containers/top-header/top-header";
@@ -61,7 +70,7 @@ export const FrontierDesktop = ({
       <aside
         {...HUD_COLUMN_MARK}
         aria-label={REALM}
-        className="pointer-events-none fixed bottom-hud-base left-4 top-hud-frontier-page-top z-hud-column flex w-hud-column flex-col gap-2"
+        className="pointer-events-none fixed bottom-hud-base left-4 top-hud-frontier-page-top z-hud-column flex w-hud-frontier-rail flex-col gap-2"
       >
         {!replaceRealmWithSheet && realm}
         <div ref={setLeftPanel} data-realm-slot className="flex min-h-0 flex-1 flex-col gap-2 empty:hidden" />
@@ -142,6 +151,7 @@ export const FrontierPlaces = ({
       icon: "chronicles",
       ariaLabel: EVENTS_WORDS.feed,
       count: unread > 0 ? unread : undefined,
+      countLabel: unread > 0 ? unreadFeedEvents(unread) : undefined,
     },
     {
       key: "chat",
@@ -149,7 +159,7 @@ export const FrontierPlaces = ({
       icon: "chat",
       ariaLabel: CHAT,
       count: surface !== "chat" && chatUnread > 0 ? chatUnread : undefined,
-      countLabel: chatUnread > 0 ? `Unread chat messages: ${chatUnread}` : undefined,
+      countLabel: chatUnread > 0 ? unreadChatMessages(chatUnread) : undefined,
     },
     ...(hasRealm
       ? [

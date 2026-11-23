@@ -1,16 +1,12 @@
-import { realmMeaning } from "@/ui/design-system/domain-icon-meaning";
-import { useQuery } from "@/hooks/helpers/use-query";
-import type { ExpeditionRules } from "@bibliothecadao/eternum";
-import type { NativeRows } from "@bibliothecadao/eternum/game-client";
+import "./phone-hud.css";
+
+import { AspectMark } from "@/ui/design-system/aspect-mark";
+import { Icon } from "@/ui/design-system/icon";
+import { MENU, SEASON, unreadChatMessages, unreadFeedEvents } from "@/ui/design-system/kit/words";
+import type { AspectId } from "@bibliothecadao/types";
 
 import { usePartShown } from "../opening/opening-context";
-import { useGoToFrontierPlace } from "../frontier-home";
-import { realmDot, useRealmStores } from "../realm-stores";
-import { useResearchTree } from "../research/research-facts";
-import { canResearchNow } from "../research/research-tree";
-import { type Place, PlaceNav } from "./place-nav";
 
-/** What the HUD has open over the map: a nav page, the Menu, or a way the Menu opens. */
 export type HudSurface =
   | "research"
   | "feed"
@@ -24,67 +20,58 @@ export type HudSurface =
   | "army-lost"
   | "shop";
 
-/**
- * The place bar over the game: the Realm / World switch takes the player to the realm's board from the map, and back to
- * the world from the board, putting any page away; each other slot opens its place over the map and a second tap
- * closes it. The Realm slot carries a dot
- * while a store the realm spends is full or fills within the hour. A spectator, with no realm of their own, opens the
- * realm they watch, and has no Research. Once the realm has an Ethereal layer, the switch on the map names the layer
- * shown and opens the list of views: Realm, the world and each Ethereal layer (owner, 4 November 2026: "yeah B is pretty
- * good on mobile").
- */
-export const FrontierNav = ({
-  rules,
-  realm,
-  board,
+export const PhoneWorldActions = ({
+  aspect,
   surface,
   onSurface,
   events,
   unread,
 }: {
-  rules: ExpeditionRules;
-  /** The player's own realm; none for a spectator. */
-  realm: NativeRows["Structure"] | null;
-  /** The realm the Realm slot goes to: the player's own, or the one a spectator watches. */
-  board: NativeRows["Structure"] | null;
+  aspect?: AspectId;
   surface: HudSurface | null;
   onSurface: (surface: HudSurface | null) => void;
-  /** Events arrived since the Feed was last read. */
   events: number;
   unread: number;
 }) => {
-  const { isMapView } = useQuery();
-  const place: Place | null =
-    surface === "research" || surface === "feed" || surface === "chat" || surface === "menu"
-      ? surface
-      : surface === "season"
-        ? "menu"
-        : null;
-  const goToPlace = useGoToFrontierPlace(board);
-  const researchDot = canResearchNow(useResearchTree(realm)?.nodes);
-  const researchOpen = usePartShown("research");
-  const stores = useRealmStores(realm, rules);
-  // A view choice shows its view, the Realm / World switch's and a layer's alike: the open page goes.
-  const putPageAway = () => onSurface(null);
-  const go = (to: Place) => {
-    if (to === "realm") {
-      putPageAway();
-      goToPlace(!isMapView);
-      return;
-    }
-    onSurface(surface === to ? null : to);
-  };
-  const realmIcon = board ? realmMeaning(board.base.level, board.metadata.has_wonder) : "realm";
+  const aspectsOpen = usePartShown("aspects");
+  const toggle = (target: "season" | "menu") => onSurface(surface === target ? null : target);
+  const badge = unread > 0 ? unread : events > 0 ? events : undefined;
+
   return (
-    <PlaceNav
-      realmIcon={realmIcon}
-      place={place}
-      onRealm={!isMapView}
-      onGo={go}
-      realmDot={stores ? realmDot([stores.wheat, stores.labor, stores.troops]) : undefined}
-      researchDot={realm && researchOpen ? researchDot : undefined}
-      events={events}
-      unread={unread}
-    />
+    <nav aria-label="Places" className="frontier-phone-actions pointer-events-auto">
+      {aspectsOpen && (
+        <button
+          type="button"
+          aria-label={SEASON}
+          aria-current={surface === "season" ? "page" : undefined}
+          className="frontier-phone-action"
+          onClick={() => toggle("season")}
+        >
+          <Icon name="victory" size={24} />
+          {aspect && (
+            <span className="frontier-phone-action__facet">
+              <AspectMark aspect={aspect} size={14} decorative />
+            </span>
+          )}
+        </button>
+      )}
+      <button
+        type="button"
+        aria-label={MENU}
+        aria-current={surface === "menu" ? "page" : undefined}
+        className="frontier-phone-action"
+        onClick={() => toggle("menu")}
+      >
+        <Icon name="menu" size={24} />
+        {badge !== undefined && (
+          <span
+            className="frontier-phone-action__badge"
+            aria-label={unread > 0 ? unreadChatMessages(unread) : unreadFeedEvents(events)}
+          >
+            {badge}
+          </span>
+        )}
+      </button>
+    </nav>
   );
 };

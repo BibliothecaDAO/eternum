@@ -427,6 +427,7 @@ export const SCREENS = {
  * named by its role. A HUD text takes a role (`text-hud-body`), never a size.
  */
 export const HUD_TYPE = {
+  hero: { size: "28px", line: "32px", weight: "700" },
   /** A window's title, a figure that is the point of its panel. */
   display: { size: "20px", line: "26px", weight: "700" },
   /** A panel's or a tab's title, a place's own name. */
@@ -585,6 +586,7 @@ export type HudMode = keyof typeof HUD_MODES;
 /** What a phone changes: touch targets, and the reading roles a step up; every element keeps its shape. */
 export const HUD_PHONE = {
   control: "44px",
+  "text-hero": "24px",
   "text-title": "17px",
   "text-body": "15px",
   "text-strong": "15px",

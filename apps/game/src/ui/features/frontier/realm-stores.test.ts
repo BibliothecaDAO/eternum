@@ -3,12 +3,12 @@ import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { frontierDay } from "./deploy/deploy-fixture";
-import { readRealmStore, realmDot } from "./realm-stores";
+import { readRealmStore } from "./realm-stores";
 
 afterEach(() => setBlockTimestampSource(null));
 
 describe("the realm's stores", () => {
-  it("reads troops against the store's limit, ember at the limit, and the Realm dot follows the worst store", () => {
+  it("reads troops against the store's limit, ember at the limit", () => {
     const { store, row } = frontierDay();
     const rules = readExpeditionRules(store, 1)!;
     const clock = { now: 350, tick: 3 };
@@ -34,8 +34,5 @@ describe("the realm's stores", () => {
     ] as never);
     const full = readRealmStore(store, row, rules, "troops", clock);
     expect(full).toMatchObject({ amount: limit, fullIn: 0, tone: "ember" });
-    expect(realmDot([{ tone: "calm" }, full])).toBe("ember");
-    expect(realmDot([{ tone: "calm" }, { tone: "amber" }])).toBe("amber");
-    expect(realmDot([{ tone: "calm" }])).toBeUndefined();
   });
 });

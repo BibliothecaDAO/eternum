@@ -124,8 +124,14 @@ export function createBrowserSession(session, { chromeArgs = [], executablePath,
     tap: (offset) => run(["batch", ...tapCommands(offset)]),
     tapPlace: (word) => {
       const at = read(placeSlotExpression(word));
-      if (!at) throw new Error(`The place bar shows no ${word}`);
-      run(["batch", `mouse move ${at.x} ${at.y}`, "mouse down", "mouse up"]);
+      if (at) {
+        run(["batch", `mouse move ${at.x} ${at.y}`, "mouse down", "mouse up"]);
+        return;
+      }
+      const menu = read(placeSlotExpression("Menu"));
+      if (!menu) throw new Error(`The place bar shows no ${word}`);
+      run(["batch", `mouse move ${menu.x} ${menu.y}`, "mouse down", "mouse up"]);
+      run(["find", "role", "button", "click", "--name", word, "--exact"]);
     },
     /** Opens the list of views (the map's layers) from the switch that names the one shown, with the mouse. */
     openViews: () => {
@@ -178,10 +184,11 @@ export const screenPoint = ([dx, dy]) => [Math.round(VIEWPORT.width / 2 + dx), M
  */
 const placeSlotExpression = (word) => `JSON.stringify((() => {
   const slot = [...document.querySelectorAll('nav[aria-label="Places"] button')].find(
-    (button) => button.lastElementChild?.textContent.trim() === ${JSON.stringify(word)},
+    (button) =>
+      button.getAttribute("aria-label") === ${JSON.stringify(word)} ||
+      button.lastElementChild?.textContent.trim() === ${JSON.stringify(word)},
   );
   const rect = slot?.getBoundingClientRect();
-  // agent-browser's mouse takes whole pixels.
   return rect ? { x: Math.round(rect.left + rect.width / 2), y: Math.round(rect.top + rect.height / 2) } : null;
 })())`;
 

@@ -31,11 +31,15 @@ export const FrontierDayClock = ({ rules, onOpenToday }: { rules: ExpeditionRule
  */
 export const DayPill = ({ clock }: { clock: DayClock }) => {
   const left = dayLeftCompact(clock.secondsLeft);
+  const tip =
+    clock.tomorrowSeconds === undefined
+      ? phraseText(dayEnds(clock.endsAt))
+      : `${phraseText(dayEnds(clock.endsAt))} · ${phraseText(tomorrowLasts(clock.tomorrowSeconds))}`;
   return (
     <HudPill
       label="Day clock"
       role="timer"
-      data-tip={`${phraseText(dayEnds(clock.endsAt))} · ${phraseText(tomorrowLasts(clock.tomorrowSeconds))}`}
+      data-tip={tip}
       className={cn("pointer-events-auto relative overflow-hidden tabular-nums", STORE_TONES[clock.tone].text)}
     >
       {[

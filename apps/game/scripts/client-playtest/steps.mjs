@@ -1056,9 +1056,15 @@ async function getThePass({ browser }) {
       SHEET_WAIT_MS,
     );
   }
-  const shop = await readUntil(() => browser.read(buttonLabelled("^Fragments [0-9,]+$")), Boolean, SHEET_WAIT_MS);
-  if (!shop) return { shop };
-  browser.tap(shop.offset);
+  let shop = null;
+  if (onADesktop()) {
+    shop = await readUntil(() => browser.read(buttonLabelled("^Fragments [0-9,]+$")), Boolean, SHEET_WAIT_MS);
+    if (!shop) return { shop };
+    browser.tap(shop.offset);
+  } else {
+    browser.tapPlace("Shop");
+    shop = { name: "Shop" };
+  }
   const pass = await readUntil(() => browser.read(sheetButton("Get the Ancient Seal$")), Boolean, SHEET_WAIT_MS);
   if (!pass) return { shop: shop.name, pass };
   watchFor(browser, "pass-held", passHeld);
@@ -1328,7 +1334,7 @@ const OATH_SLOTS_STEPS = [
     "Research",
     async ({ browser }) => {
       if (onADesktop()) browser.clickTab("Research");
-      else browser.click("Research");
+      else browser.tapPlace("Research");
       await readUntil(() => browser.read(elementAt('[data-node="row-6"]')), Boolean, SHEET_WAIT_MS);
       browser.read(
         `(() => { document.querySelector('[data-node="row-6"]')?.scrollIntoView({ block: "nearest" }); return true; })()`,
@@ -1466,7 +1472,7 @@ const WELL_LORE_NODE = '[data-node="well"]';
 
 async function researchWellLore({ browser }) {
   if (onADesktop()) browser.clickTab("Research");
-  else browser.click("Research");
+  else browser.tapPlace("Research");
   const node = await readUntil(() => browser.read(elementAt(WELL_LORE_NODE)), Boolean, SHEET_WAIT_MS);
   if (!node || node.state !== "ready") return { node };
   browser.tap(node.offset);
@@ -6123,7 +6129,7 @@ export const STEP_SETS = {
   "lab-relic-forecasts": { game: labSpireGame("relics"), steps: RELIC_FORECAST_STEPS },
   "lab-race": { game: labSpireGame("race"), steps: raceBoardSteps(null) },
   "lab-realm-world": {
-    game: labSpireGame("race"),
+    game: labSpireGame("realm-world"),
     steps: [
       {
         name: "world-screen",
@@ -6135,26 +6141,161 @@ export const STEP_SETS = {
           if (browser.read(`JSON.stringify(Boolean(document.querySelector('[aria-label="Close"]')))`))
             browser.click(HUD_WORDS.close);
           await sleep(1_500);
-          return { shot: extraScreenshot("world") };
+          const worldHud = browser.read(`(() => ({
+            places: [...document.querySelectorAll('nav[aria-label="Places"] button')].map((button) => button.getAttribute('aria-label') || button.textContent?.trim()),
+            questChip: Boolean(document.querySelector('[data-daily-quest-chip]')),
+            depthSwitch: Boolean(document.querySelector('[data-surface-deep-switch]')),
+            realmWorld: [...document.querySelectorAll('[aria-label="Map view"] [role="tab"]')].map((tab) => tab.textContent?.trim()),
+            armies: document.querySelectorAll('nav[aria-label="Armies"] button').length,
+            aspectChip: Boolean(document.querySelector('[data-aspect-standing-chip]')),
+            desktopStores: Boolean(document.querySelector('[aria-label="Stores"]')),
+            realmChip: Boolean(document.querySelector('.frontier-realm-chip')),
+            phonePill: Boolean(document.querySelector('.frontier-phone-pill')),
+          }))()`);
+          return { shot: extraScreenshot("world"), worldHud };
         },
-        verify: inScene("map", "Deep"),
+        verify: ({ seen, played }) => {
+          const base = inScene("map", "Deep")({ seen, played });
+          if (base.status !== "completed") return base;
+          const h = played.worldHud;
+          const ok = onADesktop()
+            ? h.realmChip &&
+              h.places.includes("Season") &&
+              h.places.includes("Research") &&
+              h.places.includes("Feed") &&
+              h.places.includes("Chat") &&
+              h.places.includes("Relics") &&
+              h.questChip &&
+              h.desktopStores &&
+              h.depthSwitch &&
+              h.realmWorld.includes("Realm") &&
+              h.realmWorld.includes("World") &&
+              h.armies > 0 &&
+              h.aspectChip
+            : h.phonePill &&
+              h.questChip &&
+              h.depthSwitch &&
+              h.realmWorld.includes("Realm") &&
+              h.realmWorld.includes("World") &&
+              h.armies > 0 &&
+              h.places.includes("Season") &&
+              h.places.includes("Menu") &&
+              h.places.length === 2;
+          return ok
+            ? completed(played)
+            : failed("World view must render the full approved HUD parts for this viewport", played);
+        },
+      },
+      {
+        name: "world-selected-army",
+        settleMs: 1_500,
+        play: async ({ browser, extraScreenshot }) => {
+          browser.click("Army 1");
+          const selected = await readUntil(
+            () =>
+              browser.read(
+                `Boolean(document.querySelector('nav[aria-label="Armies"] button[aria-label="Army 1"][aria-pressed="true"]'))`,
+              ),
+            Boolean,
+            SHEET_WAIT_MS,
+          );
+          const detailsShown = await readUntil(
+            () =>
+              browser.read(
+                onADesktop()
+                  ? `Boolean(document.querySelector('[data-kit-sheet][aria-label="Army 1"]'))`
+                  : `Boolean(document.querySelector('button[aria-label="Army 1: details"]'))`,
+              ),
+            Boolean,
+            SHEET_WAIT_MS,
+          );
+          await sleep(1_000);
+          return {
+            selected,
+            detailsShown,
+            shot: extraScreenshot("world-selected"),
+          };
+        },
+        verify: ({ played }) =>
+          played.selected && played.detailsShown
+            ? completed(played)
+            : failed("Selecting Army 1 on World must highlight it and show its army panel or picked row", played),
       },
       {
         name: "realm-screen",
         settleMs: 2_000,
         play: async ({ browser, extraScreenshot }) => {
-          if (onADesktop()) browser.clickTab("Realm");
-          else browser.click("Realm");
-          await sleep(2_500);
+          browser.clickTab("Realm");
+          const buildings = await readUntil(
+            () =>
+              browser.read(`document.querySelectorAll('section[aria-label="Realm"] [data-realm-buildings] li').length`),
+            (count) => count >= 4,
+            PLAYABLE_WAIT_MS,
+          );
+          await sleep(1_500);
+          const realmHud = browser.read(`(() => ({
+            tiles: document.querySelectorAll('section[aria-label="Realm"] .realm-tile').length,
+            hasDepthSwitch: Boolean(document.querySelector('[data-surface-deep-switch]')),
+            hasDeploy: Boolean(document.querySelector('section[aria-label="Realm"] .realm-foot button[data-kind="primary"]')),
+          }))()`);
           return {
-            shot: extraScreenshot("realm"),
+            buildings,
+            realmHud,
             hasRealmPanel: browser.read(`Boolean(document.querySelector('section[aria-label="Realm"]'))`),
+            shot: extraScreenshot("realm"),
           };
         },
         verify: ({ seen, played }) =>
-          seen.scene === "hex" && played.hasRealmPanel
+          seen.scene === "hex" &&
+          played.hasRealmPanel &&
+          played.buildings >= 4 &&
+          played.realmHud.tiles >= 3 &&
+          played.realmHud.hasDeploy &&
+          !played.realmHud.hasDepthSwitch
             ? completed(played)
-            : failed("Realm view must render with the Realm panel", { seen, played }),
+            : failed("Realm view must render with Castle, Workshop, Farm and Barracks standing and no depth switch", {
+                seen,
+                played,
+              }),
+      },
+      {
+        name: "realm-build-sheet",
+        settleMs: 1_500,
+        play: async ({ browser, extraScreenshot }) => {
+          let sheet = null;
+          for (const offset of [
+            [0, -110],
+            [-85, -55],
+            [85, -55],
+            [0, -70],
+            ...PLOT_CANDIDATES,
+            [85, 55],
+            [-85, 55],
+            [0, 110],
+          ]) {
+            browser.tap(offset);
+            sheet = await readUntil(
+              () => browser.read(SHEET_NAME),
+              (name) => name !== null,
+              SHEET_WAIT_MS,
+            );
+            if (sheet === "Build") break;
+            if (sheet !== null) browser.press("Escape");
+          }
+          await sleep(1_000);
+          return {
+            sheet,
+            inRealmSlot: onADesktop()
+              ? browser.read(`Boolean(document.querySelector('[data-realm-slot] [data-kit-sheet]'))`)
+              : true,
+            realmPanelShown: browser.read(`Boolean(document.querySelector('section[aria-label="Realm"]'))`),
+            shot: extraScreenshot("realm-build"),
+          };
+        },
+        verify: ({ played }) =>
+          played.sheet === "Build" && played.inRealmSlot && !played.realmPanelShown
+            ? completed(played)
+            : failed("Pressing an empty plot must replace the Realm panel with Build in place", played),
       },
     ],
   },
@@ -6573,13 +6714,8 @@ const placeSelected = (kind, selection) =>
 function openTheFarPlace(kind) {
   return async ({ browser }) => {
     if (!browser.read(farPlaceReading(kind)).chip) {
-      if (onADesktop()) {
-        const hasPlace = browser.read(
-          `Boolean(document.querySelector('nav[aria-label="Places"] button[aria-label="${HUD_WORDS.chat}"]'))`,
-        );
-        if (hasPlace) browser.clickTab(HUD_WORDS.chat);
-        else browser.click(`${HUD_WORDS.chat} strip`);
-      } else browser.tapPlace(HUD_WORDS.chat);
+      if (onADesktop()) browser.clickTab(HUD_WORDS.chat);
+      else browser.tapPlace(HUD_WORDS.chat);
       await sleep(1_500);
     }
     const before = browser.read(farPlaceReading(kind));

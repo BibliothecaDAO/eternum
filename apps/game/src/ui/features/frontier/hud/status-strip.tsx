@@ -1,18 +1,12 @@
-import { formatAmount, formatExact, formatDuration, formatRate, formatShort } from "@bibliothecadao/types";
-import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { HudDial, HudMeter, HudPanel } from "@/ui/design-system/kit/hud-elements";
+import { formatAmount, formatExact, formatDuration, formatRate } from "@bibliothecadao/types";
 import type { Tone } from "@/ui/design-system/kit/tone";
-import { DAY, FULL, FULL_IN, OF, TODAY, dayLeft, dayLeftCompact, phraseText } from "@/ui/design-system/kit/words";
-import { useLandedValue, useLandingDelta } from "@/ui/motion/landing-hold";
+import { FULL, FULL_IN, OF } from "@/ui/design-system/kit/words";
+import { useLandingDelta } from "@/ui/motion/landing-hold";
 import { EASE } from "@/ui/motion/motion-scale";
 import { useReducedMotion } from "@/ui/motion/motion-settings";
-import { TickNumber } from "@/ui/motion/tick-number";
 import { AnimatePresence, motion } from "framer-motion";
-import type { ReactNode } from "react";
 
 import { FRONTIER_STORES, type StoreKind } from "../stores";
-import type { DayClock } from "./day-clock";
 
 /**
  * One store on the strip: what it holds, its limit (Essence has none), its rate an hour and when it is full (0 once it
@@ -36,86 +30,6 @@ export const STORE_TONES: Record<Tone, { text: string; meter: "warn" | "bad" | u
 };
 
 /**
- * The strip across the top of every Frontier screen, one row: the day's dial, its ring the share of today still to run,
- * which opens Today (where the day's clock line is) where the host gives the way, then the four stores against their
- * limits (owner, 26 October 2026: the slim strip). A tap on a store with a card opens it, where the host gives the way.
- */
-export const StatusStrip = ({
-  clock,
-  stores,
-  onOpenDay,
-  storeCards,
-}: {
-  clock: DayClock;
-  stores: StoreReading[];
-  onOpenDay?: () => void;
-  /** The stores whose plate opens their card, and the way to it. */
-  storeCards?: { kinds: readonly StoreKind[]; onToggle: (kind: StoreKind) => void };
-}) => (
-  <HudPanel collapsible={false} bodyClassName="flex flex-col">
-    <div className="flex h-12 items-center gap-1.5">
-      <DayDialSlot onOpen={onOpenDay}>
-        <HudDial
-          value={clock.day ?? "—"}
-          share={clock.shareLeft ?? 0}
-          tone={STORE_TONES[clock.tone].meter}
-          label={dialLabel(clock)}
-        />
-        {clock.secondsLeft !== undefined && (
-          <span
-            aria-hidden
-            data-dial-left
-            className={cn("whitespace-nowrap text-hud-badge tabular-nums", STORE_TONES[clock.tone].text)}
-          >
-            {dayLeftCompact(clock.secondsLeft)}
-          </span>
-        )}
-      </DayDialSlot>
-      <Stores stores={stores} cards={storeCards} />
-    </div>
-  </HudPanel>
-);
-
-const DayDialSlot = ({ onOpen, children }: { onOpen?: () => void; children: ReactNode }) =>
-  onOpen ? (
-    <button type="button" aria-label={TODAY} onClick={onOpen} className="flex shrink-0 items-center gap-1">
-      {children}
-    </button>
-  ) : (
-    <span className="flex shrink-0 items-center gap-1">{children}</span>
-  );
-
-/** What the dial says it is: the day, and the time left of it ("Day 5 · 7h 14m left"); before the season, Day alone. */
-const dialLabel = (clock: DayClock): string =>
-  clock.day === undefined ? DAY : `${DAY} ${clock.day} · ${phraseText(dayLeft(clock.secondsLeft))}`;
-
-const Stores = ({
-  stores,
-  cards,
-}: {
-  stores: StoreReading[];
-  cards?: { kinds: readonly StoreKind[]; onToggle: (kind: StoreKind) => void };
-}) => (
-  <div className="flex h-full min-w-0 flex-1 items-stretch gap-1">
-    {stores.map((store) =>
-      cards?.kinds.includes(store.kind) ? (
-        <button
-          key={store.kind}
-          type="button"
-          data-store={store.kind}
-          onClick={() => cards.onToggle(store.kind)}
-          className="flex min-w-0 flex-auto"
-        >
-          <StorePlate store={store} />
-        </button>
-      ) : (
-        <StorePlate key={store.kind} store={store} />
-      ),
-    )}
-  </div>
-);
-
-/**
  * A store in one line, as its plate says it when asked: "Wheat 1,771 of 6,000 · +5/min · Full in 14h". Each part
  * is there only when the game's facts give it; a full store says Full in place of a rate it no longer earns.
  */
@@ -127,45 +41,6 @@ export const storeLine = ({ kind, amount, limit, perHour, fullIn }: StoreReading
   const rate = perHour !== undefined && perHour > 0 ? ` · ${formatRate(perHour / 3600)}` : "";
   return `${against}${rate}${fullIn === undefined ? "" : ` · ${FULL_IN} ${formatDuration(fullIn, { days: false })}`}`;
 };
-
-/**
- * A store's plate: its icon and amount, rolling as it changes, over the bar of its limit. Its line is its one name:
- * what a screen reader says and what the tooltip shows.
- */
-const StorePlate = ({ store }: { store: StoreReading }) => {
-  const { icon } = FRONTIER_STORES[store.kind];
-  const shown = useLandedValue(store.flyTarget, store.amount);
-  return (
-    <span className="relative flex min-w-0 flex-auto">
-      <LandingDelta target={store.flyTarget} />
-      <span role="img" aria-label={storeLine(store)} className="flex min-w-0 flex-1 flex-col justify-center gap-1">
-        <span className="flex items-center justify-center gap-0.5 whitespace-nowrap">
-          <span data-fly-target={store.flyTarget} className="inline-flex shrink-0">
-            <SemanticIcon name={icon} size={14} />
-          </span>
-          <span
-            className={cn("whitespace-nowrap text-hud-label leading-none tabular-nums", STORE_TONES[store.tone].text)}
-          >
-            {shown === undefined ? "—" : <TickNumber value={shown} format={formatShort} />}
-          </span>
-        </span>
-        <StoreMeter store={store} />
-      </span>
-    </span>
-  );
-};
-
-/** How full a store is against its limit; a store with no limit (Essence) keeps the bar's room so the plates align. */
-const StoreMeter = ({ store }: { store: StoreReading }) =>
-  store.limit === undefined ? (
-    <span aria-hidden className="block h-1 w-full" />
-  ) : (
-    <HudMeter
-      share={store.amount === undefined || store.limit <= 0 ? 0 : store.amount / store.limit}
-      tone={STORE_TONES[store.tone].meter}
-      label={FRONTIER_STORES[store.kind].word}
-    />
-  );
 
 /** A landing's "+N" shows this long, and never again when the counter remounts. */
 const DELTA_MS = 1_400;

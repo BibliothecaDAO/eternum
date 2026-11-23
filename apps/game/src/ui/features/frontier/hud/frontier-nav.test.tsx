@@ -4,13 +4,12 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 import { useUIStore } from "@/hooks/store/use-ui-store";
 
-import { FrontierNav, type HudSurface } from "./frontier-nav";
+import { PhoneWorldActions, type HudSurface } from "./frontier-nav";
 import { useOnePanel } from "./one-panel";
 import { SurfaceDeepSwitch } from "./surface-deep-switch";
 
 vi.mock("@/hooks/helpers/use-query", () => ({ useQuery: () => ({ isMapView: true }) }));
 vi.mock("../frontier-home", () => ({ useGoToFrontierPlace: () => vi.fn() }));
-vi.mock("../realm-stores", () => ({ useRealmStores: () => null, realmDot: () => undefined }));
 vi.mock("../research/research-facts", () => ({ useResearchTree: () => null }));
 vi.mock("../research/research-tree", () => ({ canResearchNow: () => false }));
 
@@ -40,15 +39,7 @@ function PhoneHud({ open }: { open: HudSurface }) {
     <>
       <output data-page>{surface ?? "map"}</output>
       <SurfaceDeepSwitch layers={{ layers: [0, 1, 2], shown: 2, go }} onSwitch={() => openSurface(null)} />
-      <FrontierNav
-        rules={{} as never}
-        realm={null}
-        board={null}
-        surface={surface}
-        onSurface={openSurface}
-        events={0}
-        unread={0}
-      />
+      <PhoneWorldActions surface={surface} onSurface={openSurface} events={0} unread={0} />
       <button onClick={() => openSurface(open)}>Open page</button>
     </>
   );

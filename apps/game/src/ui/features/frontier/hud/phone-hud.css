@@ -1,0 +1,168 @@
+.frontier-phone-top {
+  display: flex;
+  flex-direction: column;
+  gap: theme(spacing[1.5]);
+}
+.frontier-phone-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: theme(spacing[1.5]);
+}
+.frontier-phone-row .ui-pill {
+  height: 38px;
+  padding: 0 theme(spacing[1.5]);
+}
+.frontier-phone-pill {
+  display: inline-flex;
+  height: 38px;
+  min-width: 0;
+  align-items: center;
+  gap: theme(spacing.2);
+  border: 1px solid var(--hud-line-strong);
+  border-radius: var(--hud-radius-round);
+  background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
+  box-shadow: var(--hud-shadow-panel);
+  padding: 0 theme(spacing[2.5]);
+  color: rgb(var(--hud-ink));
+}
+.frontier-phone-realm {
+  display: inline-flex;
+  align-items: center;
+  gap: theme(spacing.1);
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: rgb(var(--hud-ink));
+  font-family: var(--hud-font-display);
+  font-size: var(--hud-text-label);
+  line-height: var(--hud-leading-label);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.frontier-phone-divider {
+  width: 1px;
+  height: theme(spacing.4);
+  background: var(--hud-divider);
+}
+.frontier-phone-foot {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: theme(spacing.2);
+}
+.frontier-phone-actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: theme(spacing[1.5]);
+}
+.frontier-phone-action {
+  position: relative;
+  display: inline-flex;
+  width: theme(spacing.12);
+  height: theme(spacing.12);
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--hud-line-strong);
+  border-radius: var(--hud-radius-panel);
+  background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
+  box-shadow: var(--hud-shadow-panel);
+  color: rgb(var(--hud-ink));
+  cursor: pointer;
+}
+.frontier-phone-action[aria-current="page"] {
+  border-color: rgb(var(--hud-gold));
+  background: var(--hud-chosen);
+}
+.frontier-phone-action__facet {
+  position: absolute;
+  top: calc(theme(spacing.1) * -1);
+  right: calc(theme(spacing.1) * -1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--hud-line-strong);
+  border-radius: var(--hud-radius-round);
+  background: var(--hud-surface-to);
+  padding: theme(spacing[0.5]);
+}
+.frontier-phone-action__badge {
+  position: absolute;
+  top: calc(theme(spacing.1) * -1);
+  right: calc(theme(spacing.1) * -1);
+  display: inline-flex;
+  min-width: theme(spacing.4);
+  height: theme(spacing.4);
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--hud-radius-round);
+  background: rgb(var(--hud-gold));
+  padding: 0 theme(spacing.1);
+  color: rgb(var(--hud-dark));
+  font-size: var(--hud-text-badge);
+  line-height: var(--hud-leading-badge);
+  font-weight: var(--hud-weight-badge);
+}
+.frontier-phone-handle {
+  position: absolute;
+  top: theme(spacing[1.5]);
+  left: 50%;
+  width: theme(spacing.10);
+  height: theme(spacing.1);
+  transform: translateX(-50%);
+  border-radius: var(--hud-radius-round);
+  background: var(--hud-line-strong);
+}
+.frontier-picked-army {
+  display: flex;
+  align-items: center;
+  gap: theme(spacing.3);
+}
+.frontier-picked-army__main {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: theme(spacing.3);
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: rgb(var(--hud-ink));
+  text-align: left;
+  cursor: pointer;
+}
+.frontier-picked-army__portrait {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  flex: none;
+}
+.frontier-picked-army__portrait > .ui-portrait {
+  width: 44px;
+  height: 44px;
+}
+.frontier-picked-army__body {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: theme(spacing.1);
+}
+.frontier-picked-army__title {
+  font-family: var(--hud-font-display);
+  font-size: var(--hud-text-title);
+  line-height: var(--hud-leading-title);
+  letter-spacing: 0.04em;
+  color: rgb(var(--hud-ink));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.frontier-picked-army__actions {
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: theme(spacing.1);
+}

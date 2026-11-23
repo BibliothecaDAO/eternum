@@ -19,7 +19,7 @@ export const AspectStandingChip = ({ orderId, onOpenSeason }: { orderId?: number
   const ownMember = board.own.members.find((member) => member.mine);
   const glory = ownMember ? Number(ownMember.glory) / RESOURCE_PRECISION : 0;
   const order = orderId && orderId > 0 ? catalogOrder(orderId) : undefined;
-  const head = `${aspectName(aspectId)} · Stage ${stage} of ${stages}`;
+  const head = `${aspectName(aspectId)} · ${ASPECT_PAGE_WORDS.stage(stage, stages)}`;
 
   return (
     <button

@@ -24,8 +24,6 @@ const { UnifiedHudLab } = await import("@/ui/features/debug/kit-lab/unified-hud-
 
 /** The lab realm's army out. */
 const ARMY = 90;
-/** Its token: its number (1) and its troops (5,000); its XP is a ring around the portrait, with no number. */
-const TOKEN = "15,000";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -146,8 +144,9 @@ describe("the army's panel on a phone (owner, 22 October 2026: mobile direction 
     await select(ARMY);
     expect(panel()).toBeNull();
     expect(details()).not.toBeNull();
-    // The picked army takes the dock's place.
-    expect(host.querySelector('nav[aria-label="Armies"]')).toBeNull();
+    expect(
+      host.querySelector('nav[aria-label="Armies"] button[aria-label="Army 1"]')?.getAttribute("aria-pressed"),
+    ).toBe("true");
 
     await act(async () => details()!.click());
     expect(panel()!.textContent).toContain("Full in");
@@ -160,9 +159,8 @@ describe("the army's panel on a phone (owner, 22 October 2026: mobile direction 
     await select(ARMY);
     expect(staminaMeter().getAttribute("aria-valuenow")).toBe("90");
     expect(staminaMeter().getAttribute("aria-valuemax")).toBe("150");
-    // One way to the card: the token, which wears the army's XP, number and troops.
     expect(host.querySelectorAll('button[aria-label="Army 1: details"]')).toHaveLength(1);
-    expect(details()!.textContent).toBe(TOKEN);
+    expect(details()!.textContent).toContain("5,000");
   });
 
   it("opens the army's card from its token", async () => {
@@ -191,13 +189,21 @@ describe("the army's panel on a phone (owner, 22 October 2026: mobile direction 
     expect(useUIStore.getState().entityActions.selectedEntityId).toBe(ARMY);
   });
 
-  /** A place on the phone's place bar, by its word (a count may stand before it). */
-  const place = (word: string) =>
-    act(async () =>
-      [...host.querySelectorAll<HTMLButtonElement>('nav[aria-label="Places"] button')]
-        .find((button) => button.textContent?.endsWith(word))!
-        .click(),
+  const place = async (word: string) => {
+    const direct = [...host.querySelectorAll<HTMLButtonElement>('nav[aria-label="Places"] button')].find(
+      (button) => button.getAttribute("aria-label") === word || button.textContent?.endsWith(word),
     );
+    if (direct) {
+      await act(async () => direct.click());
+      return;
+    }
+    await act(async () =>
+      host.querySelector<HTMLButtonElement>('nav[aria-label="Places"] button[aria-label="Menu"]')!.click(),
+    );
+    await act(async () =>
+      host.querySelector<HTMLButtonElement>(`section[aria-label="Menu"] button[aria-label="${word}"]`)!.click(),
+    );
+  };
   const openPage = () => host.querySelector("[data-page]");
   const openSheet = () => host.querySelector("[data-kit-sheet]");
 

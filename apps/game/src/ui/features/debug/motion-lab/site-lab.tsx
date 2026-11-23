@@ -1,4 +1,4 @@
-import { StatusStrip } from "@/ui/features/frontier/hud/status-strip";
+import { HeaderStores } from "@/ui/features/frontier/hud/header-stores";
 import { bankedCounterTarget } from "@/ui/motion/moments/banked-flight";
 import { playSiteClear } from "@/ui/features/frontier/sites/site-clear-moment";
 import type { SiteClear } from "@/ui/features/frontier/sites/site-outcome";
@@ -40,9 +40,9 @@ export const SiteLab = () => {
   return (
     <div className="flex w-full flex-col items-center gap-4">
       {counters && (
-        <div className="w-[390px]">
-          <StatusStrip
-            clock={NO_CLOCK}
+        <div className="flex justify-center">
+          <HeaderStores
+            showPopoverCard={false}
             stores={[
               labStore("essence", ResourcesIds.Essence, balances[ResourcesIds.Essence]),
               labStore("labor", ResourcesIds.Labor, balances[ResourcesIds.Labor]),
@@ -68,16 +68,6 @@ const LabButton = ({ onClick, children }: { onClick: () => void; children: React
     {children}
   </button>
 );
-
-/** The lab has no game clock: the strip's dial and clock line read as unknown. */
-const NO_CLOCK = {
-  day: undefined,
-  endsAt: undefined,
-  secondsLeft: undefined,
-  tomorrowSeconds: undefined,
-  shareLeft: undefined,
-  tone: "calm",
-} as const;
 
 const labStore = (kind: "essence" | "labor", resourceId: ResourcesIds, amount: number | undefined) => ({
   kind,

@@ -13,7 +13,15 @@ import { useEffect, useRef, useState } from "react";
 import { DailyQuest } from "../day/daily-quest";
 import { dayQuestFace } from "../day/day-quest-face";
 
-export const DailyQuestChip = ({ realm }: { realm: NativeRows["Structure"] }) => {
+export const DailyQuestChip = ({
+  realm,
+  showTitle = false,
+  align = "right",
+}: {
+  realm: NativeRows["Structure"];
+  showTitle?: boolean;
+  align?: "left" | "right";
+}) => {
   const { setup } = useGame();
   const now = useNowSeconds();
   useNativeRevision(DAILY_QUEST_MODELS);
@@ -46,7 +54,7 @@ export const DailyQuestChip = ({ realm }: { realm: NativeRows["Structure"] }) =>
   const count = reading ? `${formatShort(progress)}/${formatShort(target)}` : "—";
 
   return (
-    <div ref={wrapRef} className="frontier-quest-wrap">
+    <div ref={wrapRef} className="frontier-quest-wrap pointer-events-auto">
       <button
         type="button"
         data-daily-quest-chip=""
@@ -57,11 +65,11 @@ export const DailyQuestChip = ({ realm }: { realm: NativeRows["Structure"] }) =>
         onClick={() => setOpen((was) => !was)}
       >
         <Icon name={face?.icon ?? "explore"} size={18} />
-        <span>{count}</span>
+        <span>{showTitle && face ? `${face.name} ${count}` : count}</span>
       </button>
       {open && (
-        <div className="frontier-quest-popover">
-          <DailyQuest realm={realm} layout="desktop" />
+        <div className="frontier-quest-popover" data-align={align}>
+          <DailyQuest realm={realm} layout={align === "left" ? "phone" : "desktop"} />
         </div>
       )}
     </div>
