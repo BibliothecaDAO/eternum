@@ -155,6 +155,14 @@ const FRESH_WORLD_ROOTS: u64 = 2;
 #[test_case(name: "route_37_roots_08_15", 37, 8)]
 #[test_case(name: "route_37_roots_16_23", 37, 16)]
 #[test_case(name: "route_37_roots_24_31", 37, 24)]
+#[test_case(name: "route_38_roots_00_07", 38, 0)]
+#[test_case(name: "route_38_roots_08_15", 38, 8)]
+#[test_case(name: "route_38_roots_16_23", 38, 16)]
+#[test_case(name: "route_38_roots_24_31", 38, 24)]
+#[test_case(name: "route_39_roots_00_07", 39, 0)]
+#[test_case(name: "route_39_roots_08_15", 39, 8)]
+#[test_case(name: "route_39_roots_16_23", 39, 16)]
+#[test_case(name: "route_39_roots_24_31", 39, 24)]
 #[feature("safe_dispatcher")]
 fn all_typed_entry_refusals_are_root_independent(index: u32, start: u64) {
     let commands = typed_commands();
@@ -338,6 +346,14 @@ fn all_typed_entry_refusals_are_root_independent(index: u32, start: u64) {
 #[test_case(name: "route_37_roots_08_15", 37, 8)]
 #[test_case(name: "route_37_roots_16_23", 37, 16)]
 #[test_case(name: "route_37_roots_24_31", 37, 24)]
+#[test_case(name: "route_38_roots_00_07", 38, 0)]
+#[test_case(name: "route_38_roots_08_15", 38, 8)]
+#[test_case(name: "route_38_roots_16_23", 38, 16)]
+#[test_case(name: "route_38_roots_24_31", 38, 24)]
+#[test_case(name: "route_39_roots_00_07", 39, 0)]
+#[test_case(name: "route_39_roots_08_15", 39, 8)]
+#[test_case(name: "route_39_roots_16_23", 39, 16)]
+#[test_case(name: "route_39_roots_24_31", 39, 24)]
 fn all_real_domain_verdicts_are_root_independent(index: u32, start: u64) {
     let commands = typed_commands();
     assert_eq!(commands.len(), routes());
