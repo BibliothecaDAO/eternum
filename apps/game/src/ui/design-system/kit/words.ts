@@ -433,28 +433,75 @@ export const CLOCK_WORDS = {
   in: "in",
 } as const;
 export const gameSpeed = (clockScale: number): string | undefined => (clockScale > 1 ? `${clockScale}×` : undefined);
+export type CountdownParts = { days: string; hours: string; minutes: string; seconds: string };
+
+export const countdownParts = (remainingSeconds: number): CountdownParts => {
+  const total = Math.max(0, Math.floor(remainingSeconds));
+  const days = Math.floor(total / 86_400);
+  const hours = Math.floor((total % 86_400) / 3_600);
+  const minutes = Math.floor((total % 3_600) / 60);
+  const seconds = total % 60;
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return { days: pad(days), hours: pad(hours), minutes: pad(minutes), seconds: pad(seconds) };
+};
+
+const UTC_LONG_DAY_MONTH = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", timeZone: "UTC" });
+const UTC_LONG_DAY_MONTH_YEAR = new Intl.DateTimeFormat("en-GB", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+  timeZone: "UTC",
+});
+const UTC_CLOCK = new Intl.DateTimeFormat("en-GB", {
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+  timeZone: "UTC",
+});
+
+export const formatUtcOpening = (unixSeconds: number, nowSeconds: number): string => {
+  const date = new Date(unixSeconds * 1000);
+  const sameYear = date.getUTCFullYear() === new Date(nowSeconds * 1000).getUTCFullYear();
+  const day = (sameYear ? UTC_LONG_DAY_MONTH : UTC_LONG_DAY_MONTH_YEAR).format(date);
+  return `${day}, ${UTC_CLOCK.format(date)} UTC`;
+};
+
 export const COUNTDOWN_WORDS = {
-  opens: (date: string) => `The season opens ${date}`,
+  title: "Season 1",
+  opens: (date: string) => `Opens ${date}`,
   line: (aspectCount: number, days: number | null) =>
     days === null
-      ? `Pick your side before it starts. ${aspectCount} Aspects, one hyperstructure to build.`
-      : `Pick your side before it starts. ${aspectCount} Aspects, ${days} days, one hyperstructure to build.`,
-  create: "Create your account",
+      ? `${aspectCount} Aspects, one hyperstructure to build.`
+      : `${aspectCount} Aspects, ${days} days, one hyperstructure to build.`,
+  units: {
+    days: "DAYS",
+    hours: "HOURS",
+    minutes: "MIN",
+    seconds: "SEC",
+  },
+  rehearsalLive: (name: string) => `${name} live`,
+  rehearsalLine: (name: string) => `${name} is live. Learn the game before Season 1 opens and get a head start.`,
+  rehearsalOpeningLine: (name: string) =>
+    `${name} opens soon. Learn the game before Season 1 opens and get a head start.`,
+  playRehearsal: (name: string) => `Play ${name}`,
+  resumeRehearsal: (name: string) => `Resume ${name}`,
+  create: "Create your Realm",
   free: "Free to play",
 } as const;
 export const PRESEASON_WORDS = {
+  aspectTitle: "Season 1 Aspect",
+  optionalLine: "Optional — choose your Season 1 Aspect now or later. You can change it any time until Season 1 opens.",
+  joined: "Joined",
   pick: "Choose your side",
-  average: (lords: string) => `about ${lords} LORDS`,
-  ofTotal: (total: string) => `a player on average, of ${total}`,
+  prizesTitle: "Season 1 Rewards",
   shared: (total: string, finishBonus: string) =>
     `The Aspect's ${total} LORDS are shared by Glory: your share follows your Glory, not an equal split. The first to finish adds ${finishBonus} more.`,
   orderTitle: "Choose your Order",
   orderLine: (aspect: string) => `Inside ${aspect}. Your Order is your Realm's name and crest.`,
   playAs: (order: string) => `Play as ${order}`,
-  pledge: (aspect: string) => `Pledge to ${aspect}`,
-  youreIn: (aspect: string) => `You're in ${aspect}`,
-  change: "Change side",
-  waiting: (order: string, date: string) => `${order} · opens ${date}`,
+  invitePickPrompt:
+    "Pick an Aspect above to unlock your Season 1 invite link — friends start in your Aspect when Season 1 opens.",
+  inviteSignedOut: "Sign in to get your Season 1 invite link and earn Fragments when friends join.",
 } as const;
 export const SEASON_INVITE_WORDS = {
   title: "Bring friends",
@@ -463,6 +510,7 @@ export const SEASON_INVITE_WORDS = {
 } as const;
 export const SEAL_CODE_WORDS = {
   title: `Free ${ANCIENT_SEAL}?`,
+  haveCode: `Have an ${ANCIENT_SEAL} code?`,
   line: "Quest bonus and a Realm skin. One code, one account.",
   label: "Your code",
   placeholder: `${PRINTED_CODE_LENGTH} letters and digits`,
