@@ -9,6 +9,7 @@ import { existsSync, readFileSync, rmSync } from "node:fs";
 const POLL_MS = 500;
 const PAGE_WAIT_MS = 30_000;
 const DAY_SUMMARY = "[data-day-end]";
+export const ENTRY_DAY_SUMMARY_WAIT_MS = 3_000;
 // A sign-in code stops working ten minutes after it is sent.
 const SIGN_IN_CODE_WAIT_MS = 10 * 60_000;
 const EMAIL_FIELD = 'input[type="email"]';
@@ -146,15 +147,17 @@ export async function continueWithoutWallet(browser, owner) {
  * A new day opens on the last one's summary card, over the map; a player reads it and continues. Returns whether it
  * was shown.
  */
-export async function continuePastTheDaySummary(browser, owner) {
+export async function continuePastTheDaySummary(browser, owner, waitMs = 0) {
   const shown = () => browser.read(isShown(DAY_SUMMARY));
   const offered = () =>
     browser.read(
       `[...document.querySelectorAll(${JSON.stringify(`${DAY_SUMMARY} button`)})].some((button) => button.textContent.trim() === "Continue")`,
     );
-  if (!shown()) return false;
-  await waitUntil(owner, () => offered() || !shown(), "the day's summary drew no Continue");
-  if (!offered()) return false;
+  const startedAt = Date.now();
+  while (!offered()) {
+    if (Date.now() - startedAt >= waitMs) return false;
+    await owner.sleep(POLL_MS);
+  }
   browser.click("Continue");
   await waitUntil(owner, () => !shown(), "the day's summary did not lift after Continue");
   return true;

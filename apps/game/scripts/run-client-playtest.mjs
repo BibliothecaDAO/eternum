@@ -52,6 +52,7 @@ import {
 import {
   continuePastTheDaySummary,
   answerStandingPrompts,
+  ENTRY_DAY_SUMMARY_WAIT_MS,
   continueWithoutWallet,
   enterAsPlayer,
   signInIfSignedOut,
@@ -456,7 +457,7 @@ async function playRun(context) {
     browser.screenshot(join(runDir, `${label}-00-boot.png`));
     if (context.channel === "app-store") assertAppStorePage(browser);
     record.walletInvitation = await continueWithoutWallet(browser, owner);
-    if (player) record.daySummary = await continuePastTheDaySummary(browser, owner);
+    if (player) record.daySummary = await continuePastTheDaySummary(browser, owner, ENTRY_DAY_SUMMARY_WAIT_MS);
     // No order is sent before the run is proven to be in the game it was asked to play.
     record.game = assertInTargetGame(browser.observe().path, game);
 

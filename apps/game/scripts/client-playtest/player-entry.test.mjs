@@ -7,6 +7,7 @@ import {
   answerStandingPrompts,
   continuePastTheDaySummary,
   continueWithoutWallet,
+  ENTRY_DAY_SUMMARY_WAIT_MS,
   findHomeCardEntry,
   CONNECT_PLACE,
   markHomeCardEntryExpression,
@@ -153,23 +154,24 @@ describe("a turned day's summary over the map", () => {
     expect(click).toHaveBeenCalledOnce();
   });
 
-  it("is continued once its card is drawn, after the summary itself stands over the map", async () => {
-    const dom = page('<div data-day-end="summary"></div>');
-    const drawCard = vi.fn(() => {
-      dom.window.document.querySelector("[data-day-end]").innerHTML = "<button>Continue</button>";
+  it("is waited for at entry, where it rises once the player's history answers", async () => {
+    const dom = page("<main></main>");
+    const historyAnswers = vi.fn(() => {
+      dom.window.document.body.innerHTML = '<div data-day-end="summary"><button>Continue</button></div>';
     });
     const click = vi.fn(() => dom.window.document.querySelector("[data-day-end]").remove());
     const browser = { read: (expression) => dom.window.eval(expression), run: vi.fn(), press: vi.fn(), click };
-    expect(await continuePastTheDaySummary(browser, { sleep: drawCard })).toBe(true);
-    expect(drawCard).toHaveBeenCalledOnce();
+    expect(await continuePastTheDaySummary(browser, { sleep: historyAnswers }, ENTRY_DAY_SUMMARY_WAIT_MS)).toBe(true);
+    expect(historyAnswers).toHaveBeenCalledOnce();
     expect(click).toHaveBeenCalledWith("Continue");
   });
 
-  it("passes a day's end that lifts without a summary to continue", async () => {
-    const dom = page('<div data-day-end="summary"></div>');
-    const lift = vi.fn(() => dom.window.document.querySelector("[data-day-end]").remove());
+  it("is not waited for before a step, where the page shows none", async () => {
+    const dom = page("<main></main>");
+    const sleep = vi.fn();
     const browser = { read: (expression) => dom.window.eval(expression), run: vi.fn(), press: vi.fn(), click: vi.fn() };
-    expect(await continuePastTheDaySummary(browser, { sleep: lift })).toBe(false);
+    expect(await continuePastTheDaySummary(browser, { sleep })).toBe(false);
+    expect(sleep).not.toHaveBeenCalled();
     expect(browser.click).not.toHaveBeenCalled();
   });
 });
