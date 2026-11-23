@@ -104,8 +104,8 @@ function deepSiteView(
   const kind = deepSites.find((candidate) => candidate.id === site.kind);
   if (!kind) throw new Error(`Unknown site kind ${site.kind}`);
   const gameId = site.game_id;
-  const { current, guard, troops } = todaysBeast(store, today, site);
   const entered = requireEntered(realmsEntered(store, gameId, today));
+  const { current, guard, troops } = todaysBeast(store, today, site);
   const isOpen = (row: NativeRows["DeepSite"]) => ringOpens(entered, siteRing(today, row));
   const payingAt = Math.max(entered, siteRing(today, site).realms);
   const openOfKind = [...store.inGame("DeepSite", gameId)].filter(
