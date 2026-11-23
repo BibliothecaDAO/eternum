@@ -291,8 +291,7 @@ function applyTowers(
     const { x, z } = terrainHexToWorld(hex.col, hex.row);
     const y = terrain.sampleSurface(x, z).height;
     model.setMatrixAt(index, new Matrix4().makeRotationY(yaw).setPosition(x, y, z));
-    const progress =
-      finishHeight > 0 ? Math.max(0, Math.min(100, Math.round((entry.height / finishHeight) * 100))) : 0;
+    const progress = finishHeight > 0 ? Math.max(0, Math.min(100, Math.round((entry.height / finishHeight) * 100))) : 0;
     model.setConstructionAt(index, {
       entityId: ASPECT_HYPERSTRUCTURE_SEEDS[entry.aspectId],
       progress,
@@ -312,7 +311,8 @@ function setLoopActive(runtime: RaceRuntime, active: boolean, onError?: (error: 
       runtime.renderer.setAnimationLoop(null);
       return;
     }
-    const delta = previousTime === null ? 0 : Math.min(MAX_FRAME_DELTA_SECONDS, Math.max(0, (time - previousTime) / 1000));
+    const delta =
+      previousTime === null ? 0 : Math.min(MAX_FRAME_DELTA_SECONDS, Math.max(0, (time - previousTime) / 1000));
     previousTime = time;
     try {
       if (delta > 0) {

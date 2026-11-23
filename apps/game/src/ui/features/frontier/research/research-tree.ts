@@ -437,11 +437,7 @@ export const needLine = (need: Need): string => {
     case "essence":
     case "labor":
       return need.met
-        ? RESEARCH_TREE.held(
-            RESEARCH_TREE.nouns[need.kind],
-            formatExact(Math.floor(need.have)),
-            formatExact(need.need),
-          )
+        ? RESEARCH_TREE.held(RESEARCH_TREE.nouns[need.kind], formatExact(Math.floor(need.have)), formatExact(need.need))
         : RESEARCH_TREE.needsResource(formatExact(need.need), RESEARCH_TREE.nouns[need.kind]);
   }
 };

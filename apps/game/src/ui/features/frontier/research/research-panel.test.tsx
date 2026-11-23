@@ -158,8 +158,9 @@ it("states why each locked or short row is held back in plain words without repe
     ),
   );
   const standingReason = host.querySelector("[data-lab='node-choice'] [data-lock-reason]")!.textContent;
-  const buildButton = host.querySelector<HTMLButtonElement>("[data-lab='node-choice'] [data-research-footer] button")!
-    .textContent;
+  const buildButton = host.querySelector<HTMLButtonElement>(
+    "[data-lab='node-choice'] [data-research-footer] button",
+  )!.textContent;
   expect(standingReason).toBe("Needs a Conscription Camp standing");
   expect(buildButton).toBe("Build a Conscription Camp");
   expect(standingReason).not.toBe(buildButton);
