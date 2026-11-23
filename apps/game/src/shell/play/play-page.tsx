@@ -1,13 +1,15 @@
 import "./play-page.css";
 
-import { aspects } from "@bibliothecadao/types";
-import { ASPECT_PAGE_WORDS, BLITZ_WORDS, LORE_LINE, WORDS } from "@/ui/design-system/kit/words";
-import type { ReactNode } from "react";
+import { aspects, type AspectId } from "@bibliothecadao/types";
+import { ASPECT_PAGE_WORDS, BLITZ_WORDS, WORDS } from "@/ui/design-system/kit/words";
+import type { CSSProperties, ReactNode } from "react";
 
+import { aspectVariables } from "@/tokens";
 import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { AppAgeColumn, AppButton, AppGameCard, AppLink, AppPanel } from "@/ui/design-system/kit/app-elements";
 import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
 
+import { BuildOrdersRow } from "../build-orders/build-orders-row";
 import { PageFrame } from "../frame/page-frame";
 import { Loading } from "../loading";
 import { ageOf } from "./ages";
@@ -16,14 +18,7 @@ import { type PlayFacts, type SourceGap, usePlayFacts } from "./play-facts";
 import { ItemRows, LeadCard } from "./play-item";
 import { PreseasonPlay } from "./preseason-pick";
 import { SeasonCountdown } from "./season-countdown";
-import { BuildOrdersRow } from "../build-orders/build-orders-row";
 
-/**
- * Play (the owner's pick, B · Ages): the step the player most likely came for, widest, with the page's one gold verb;
- * beside it each age with games of its own, a tall column on its painting, its games under way first, then the next
- * and the finished. Every game appears once. A phone stacks them. A first visit stands on the plains under the lore
- * line.
- */
 export const PlayPage = () => {
   const facts = usePlayFacts();
   if (facts.opening && isPlayEmpty(facts))
@@ -34,23 +29,17 @@ export const PlayPage = () => {
     );
   const firstVisit = !facts.signedIn && facts.board?.lead?.verb === "play";
   const ages = facts.board ? agesShown(facts.board) : [];
+  const leadMembers = facts.board?.lead?.mode === "frontier" ? (facts.board.lead.game.aspect_members ?? null) : null;
   return (
     <PageFrame painting={firstVisit ? "dark-plains" : "brooding-plains"} stage={firstVisit} offersInstall>
-      {/* On a short phone (a browser's toolbars showing) the line draws at title size, so Play free stays on the first
-          screen. */}
-      {firstVisit && (
-        <h1 className="mb-6 max-w-[48rem] text-app-display text-app-ink [@media(max-height:720px)]:mb-3 [@media(max-height:720px)]:text-app-title">
-          {LORE_LINE}
-        </h1>
-      )}
-      <div className="play-grid">
+      <div data-play-page className="play-grid">
         <section className="flex min-w-0 flex-col gap-3">
           <LeadOrState facts={facts} />
           {facts.board && <SourceGaps gaps={facts.gaps} />}
         </section>
         {facts.board && (
           <div className="play-side">
-            {facts.board.lead?.mode === "frontier" && <AspectRacePreview />}
+            {facts.board.lead?.mode === "frontier" && <AspectRacePreview members={leadMembers} />}
             {ages.map((mode) => (
               <AgeColumn key={mode} mode={mode} facts={facts} items={(facts.board as PlayBoard).ages[mode]} />
             ))}
@@ -67,7 +56,6 @@ const isPlayEmpty = (facts: PlayFacts) =>
 const agesShown = (board: PlayBoard): PlayMode[] =>
   PLAY_MODES.filter((mode) => board.ages[mode].length > 0 || mode === "blitz");
 
-/** The lead; the directory's failure, the wait, or the quiet card in its place. */
 const LeadOrState = ({ facts }: { facts: PlayFacts }) => {
   if (facts.directory.isError)
     return (
@@ -87,13 +75,11 @@ const LeadOrState = ({ facts }: { facts: PlayFacts }) => {
         </AppButton>
       </QuietLead>
     );
-  // With no lead, the quiet card speaks only once every source answered: a read still out or failed is not "nothing".
   if (!facts.board.lead && facts.gaps.length > 0) return null;
   if (!facts.board.lead) return <QuietLead title={WORDS.noSeason} />;
   return <LeadCard item={facts.board.lead} now={facts.now} signedIn={facts.signedIn} className="h-full" />;
 };
 
-/** The lead's place while there is no lead: Frontier's painting, a line, and what stands in for the verb. */
 const QuietLead = ({ title, children }: { title: string; children?: ReactNode }) => (
   <AppGameCard age="frontier" painting="frontier-mist" size="lead" className="h-full" title={title} verb={children} />
 );
@@ -111,26 +97,37 @@ const SourceGaps = ({ gaps }: { gaps: readonly SourceGap[] }) =>
     </div>
   );
 
-const AspectRacePreview = () => (
-  <AppPanel
-    title={ASPECT_PAGE_WORDS.race}
-    icon="crown"
-    cue={
-      <AppLink to="/season" className="text-app-label text-app-gold">
-        {WORDS.season}
-      </AppLink>
-    }
-  >
-    <ul className="play-aspects">
-      {aspects.map(({ id, name }) => (
-        <li key={id} data-aspect-id={id} className="play-aspect">
-          <AspectMark aspect={id} size={44} decorative />
-          <span className="text-app-label text-app-ink">{name}</span>
-        </li>
-      ))}
-    </ul>
-  </AppPanel>
-);
+const AspectRacePreview = ({ members }: { members: Readonly<Record<AspectId, number>> | null }) => {
+  const maxMembers = members ? Math.max(1, ...aspects.map(({ id }) => members[id] ?? 0)) : 1;
+  return (
+    <AppPanel
+      title={ASPECT_PAGE_WORDS.race}
+      icon="crown"
+      cue={
+        <AppLink to="/season" className="text-app-label text-app-gold">
+          {WORDS.season}
+        </AppLink>
+      }
+    >
+      <ul className="play-aspects">
+        {aspects.map(({ id, name }) => {
+          const count = members?.[id] ?? null;
+          const share = count === null ? 65 : Math.max(18, Math.round((count / maxMembers) * 100));
+          return (
+            <li key={id} data-aspect-id={id} style={aspectVariables(id) as CSSProperties} className="play-aspect">
+              <AspectMark aspect={id} size={42} decorative />
+              <div className="play-aspect__bar" aria-hidden="true">
+                <div className="play-aspect__fill" style={{ width: `${share}%` }} />
+              </div>
+              <span className="play-aspect__name">{name}</span>
+              {count !== null && <span className="play-aspect__count">{count}</span>}
+            </li>
+          );
+        })}
+      </ul>
+    </AppPanel>
+  );
+};
 
 const AgeColumn = ({
   mode,

@@ -1,5 +1,7 @@
+import "./play-page.css";
+
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import {
   ASPECT_REWARD,
   aspectName,
@@ -13,6 +15,7 @@ import {
 import { IdentityRequestError, type OrderIntent } from "@realms-world/identity";
 
 import { identityClient } from "@/hooks/context/identity-session";
+import { aspectVariables } from "@/tokens";
 import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { Icon } from "@/ui/design-system/icon";
 import { AppButton, AppNotice } from "@/ui/design-system/kit/app-elements";
@@ -118,9 +121,11 @@ const OrderPick = ({
         </AppButton>
       }
     >
-      <div data-preseason-step="pick" className="flex w-full flex-col gap-2 lg:gap-3">
-        <h1 className="text-app-title text-app-ink">{ASPECT_STEP_WORDS.title}</h1>
-        <p className="text-app-body text-app-muted">{ASPECT_STEP_WORDS.line}</p>
+      <div data-preseason-step="pick" className="preseason-pick">
+        <header className="preseason-pick__head">
+          <h1 className="preseason-pick__title">{ASPECT_STEP_WORDS.title}</h1>
+          <p className="text-app-body text-app-muted">{ASPECT_STEP_WORDS.line}</p>
+        </header>
         <AspectCards
           chosen={aspect}
           members={members}
@@ -167,7 +172,7 @@ const AspectCards = ({
     {invitedFirst(offered).map(({ id, name }) => {
       const count = aspectMembers(members, id);
       return (
-        <li key={id}>
+        <li key={id} style={aspectVariables(id) as CSSProperties}>
           <AppAspectCard
             aspect={id}
             name={name}
@@ -204,7 +209,7 @@ const OrderRows = ({
   members: OrderIntent["members"];
   onPick: (order: number) => void;
 }) => (
-  <section className="flex flex-col gap-2" aria-label={PRESEASON_WORDS.orderTitle}>
+  <section className="preseason-pick__orders" aria-label={PRESEASON_WORDS.orderTitle}>
     <h2 className="text-app-heading text-app-ink">{PRESEASON_WORDS.orderTitle}</h2>
     <p className="text-app-label text-app-muted">{PRESEASON_WORDS.orderLine(aspectName(aspect))}</p>
     <ul className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">

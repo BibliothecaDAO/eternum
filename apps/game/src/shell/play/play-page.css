@@ -1,41 +1,289 @@
 .play-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: theme(spacing.5);
+  gap: theme(spacing.4);
 }
-@media (min-width: 1024px) {
-  .play-grid {
-    min-height: 38rem;
-    grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr);
-    gap: theme(spacing.6);
-  }
-}
+
 .play-side {
   display: flex;
   min-width: 0;
   flex-direction: column;
   gap: theme(spacing.4);
 }
+
 .play-side .app-age-column {
-  min-height: 13rem;
+  min-height: 11rem;
   flex: 1;
 }
+
+.play-hero {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  min-height: 29rem;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+  border: 1px solid var(--app-line-strong);
+  border-radius: var(--app-radius-panel);
+  background: var(--app-ground);
+  box-shadow: var(--app-shadow-panel);
+}
+
+.play-hero__painting {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 42%;
+}
+
+.play-hero__scrim {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% 18%, rgb(var(--app-aspect, var(--app-gold)) / 0.2) 0%, transparent 70%),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--app-ground) 38%, transparent) 0%,
+      color-mix(in srgb, var(--app-ground) 18%, transparent) 44%,
+      color-mix(in srgb, var(--app-ground) 88%, transparent) 84%,
+      var(--app-ground) 100%
+    );
+}
+
+.play-hero__top {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1.5rem 1.25rem 0.5rem;
+}
+
+.play-hero__title {
+  margin: 0;
+}
+
+.play-hero__lockup {
+  display: block;
+  width: auto;
+  height: 10.25rem;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 24px rgb(0 0 0 / 0.7));
+}
+
+.play-hero__plate {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 0.75rem;
+  border: 1px solid var(--app-line-strong);
+  border-radius: var(--app-radius-panel);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--app-surface-2) 92%, transparent),
+    color-mix(in srgb, var(--app-surface) 96%, transparent)
+  );
+  padding: 1rem;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 12px 28px rgb(0 0 0 / 0.5);
+}
+
+.play-hero__realm-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.625rem;
+}
+
+.play-hero__realm-id {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.play-hero__realm-name {
+  margin: 0;
+  font-family: var(--app-face-title);
+  font-size: clamp(1.35rem, 3vw, 2.25rem);
+  line-height: 1.12;
+  color: var(--app-ink);
+}
+
+.play-hero__aspect-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: var(--app-text-label);
+  font-weight: 600;
+  color: rgb(var(--app-aspect, var(--app-gold)));
+}
+
+.play-hero__order-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: var(--app-text-label);
+  color: var(--app-muted);
+}
+
+.play-hero__tiles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.play-hero__tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-radius-control);
+  background: var(--app-well);
+  padding: 0.5rem 0.4rem;
+  text-align: center;
+}
+
+.play-hero__tile-label {
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--app-muted);
+}
+
+.play-hero__tile-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: var(--app-text-label);
+  font-weight: 700;
+  color: var(--app-ink);
+}
+
+.play-hero__chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.play-hero__verb {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.play-hero__verb .app-button {
+  width: 100%;
+}
+
 .play-aspects {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: theme(spacing.2);
 }
+
 .play-aspect {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: theme(spacing.1);
-  border: 1px solid rgb(var(--app-aspect) / 0.45);
+  gap: 0.35rem;
+  border: 1px solid rgb(var(--app-aspect) / 0.4);
   border-radius: var(--app-radius-control);
   background: var(--app-well);
-  box-shadow: inset 0 2px 0 rgb(var(--app-aspect));
-  padding: theme(spacing.2);
+  padding: 0.65rem 0.4rem;
   text-align: center;
+}
+
+.play-aspect__bar {
+  height: 0.3rem;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--app-surface-2) 80%, transparent);
+}
+
+.play-aspect__fill {
+  height: 100%;
+  border-radius: 9999px;
+  background: rgb(var(--app-aspect));
+}
+
+.play-aspect__name {
+  font-family: var(--app-face-title);
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgb(var(--app-aspect));
+}
+
+.play-aspect__count {
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--app-ink);
+}
+
+.preseason-pick {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+
+.preseason-pick__head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  text-align: left;
+}
+
+.preseason-pick__title {
+  margin: 0;
+  font-family: var(--app-face-title);
+  font-size: clamp(1.65rem, 3.2vw, 2.35rem);
+  line-height: 1.12;
+  color: var(--gold2);
+}
+
+.preseason-pick .app-aspect-grid {
+  gap: 0.75rem;
+}
+
+.preseason-pick .app-aspect-card {
+  min-height: 16rem;
+  border: 1.5px solid var(--app-line);
+  border-radius: var(--app-radius-panel);
+  background: var(--app-ground);
+  box-shadow: 0 12px 28px rgb(0 0 0 / 0.5);
+}
+
+.preseason-pick .app-aspect-card[aria-pressed="true"] {
+  border-color: rgb(var(--app-gold));
+  box-shadow:
+    0 0 0 1px rgb(var(--app-gold) / 0.4),
+    0 16px 34px rgb(0 0 0 / 0.6);
+}
+
+.preseason-pick .app-aspect-card__name {
+  font-family: var(--app-face-title);
+  font-size: 1.25rem;
+  letter-spacing: 0.04em;
+  color: rgb(var(--app-aspect, var(--app-gold)));
+}
+
+.preseason-pick__orders {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-radius-panel);
+  background: color-mix(in srgb, var(--app-surface) 90%, transparent);
+  padding: 0.875rem;
 }
 
 .countdown-aspects {
@@ -44,12 +292,7 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: theme(spacing.3);
 }
-@media (min-width: 1024px) {
-  .countdown-aspects {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: theme(spacing.4);
-  }
-}
+
 .countdown-aspect {
   display: flex;
   flex-direction: column;
@@ -61,9 +304,76 @@
   box-shadow: inset 0 3px 0 rgb(var(--app-aspect));
   padding: theme(spacing.4) theme(spacing.3);
 }
+
 .countdown-aspect__name {
   font-family: var(--app-face-title);
   font-size: var(--app-text-heading);
   line-height: var(--app-leading-heading);
   color: var(--app-ink);
+}
+
+@media (min-width: 1024px) {
+  .play-grid {
+    min-height: 38rem;
+    grid-template-columns: minmax(0, 1.65fr) minmax(21rem, 1fr);
+    gap: theme(spacing.6);
+  }
+
+  .play-hero {
+    min-height: 38rem;
+    padding: 2.25rem 2.5rem;
+  }
+
+  .play-hero__scrim {
+    background:
+      linear-gradient(
+        90deg,
+        color-mix(in srgb, var(--app-ground) 72%, transparent) 0%,
+        color-mix(in srgb, var(--app-ground) 34%, transparent) 48%,
+        color-mix(in srgb, var(--app-ground) 18%, transparent) 100%
+      ),
+      linear-gradient(180deg, transparent 55%, color-mix(in srgb, var(--app-ground) 82%, transparent) 100%);
+  }
+
+  .play-hero__top {
+    align-items: flex-start;
+    padding: 0;
+    gap: 1rem;
+  }
+
+  .play-hero__lockup {
+    height: 12.5rem;
+  }
+
+  .play-hero__plate {
+    margin: 0;
+    border: 0;
+    background: transparent;
+    padding: 0;
+    box-shadow: none;
+    backdrop-filter: none;
+    gap: 1rem;
+  }
+
+  .play-hero__tiles {
+    display: none;
+  }
+
+  .play-hero__verb .app-button {
+    width: auto;
+    min-width: 15rem;
+  }
+
+  .preseason-pick .app-aspect-card {
+    min-height: 25rem;
+  }
+
+  .preseason-pick .app-aspect-card__name {
+    font-size: 1.55rem;
+  }
+
+  .countdown-aspects {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: theme(spacing.4);
+  }
 }

@@ -42,6 +42,7 @@ const PAGES = [
   { file: "doorway-loading", url: "/lab/app/home/doorway/map?capture=1", shown: "[data-doorway-loading]" },
   { file: "entry-founding", url: "/lab/app/realm-vault/doorway/home?capture=1", shown: "[data-home-picker]" },
   { file: "connect-start", url: "/lab/app/first-visit/connect/start?capture=1", shown: "[data-sign-in-stage]" },
+  { file: "play-active", url: "/lab/app/home?capture=1", shown: "[data-play-page]" },
   { file: "settings-no-wallet", url: "/lab/app/home/profile/settings?capture=1", shown: "[data-payout-wallet=none]" },
   { file: "hud-build", url: "/lab/kit/hud/build", shown: "[data-build-sheet]" },
   { file: "hud-research", url: "/lab/kit/hud/research", shown: 'section[aria-label="Research"]' },
