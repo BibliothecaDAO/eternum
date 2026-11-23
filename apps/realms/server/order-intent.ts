@@ -3,6 +3,7 @@ import { Data, Effect } from "effect";
 
 import type { IdentityAuth } from "./auth";
 import { json, readBody } from "./http";
+import { createShareStore } from "./share-store";
 
 const BODY_BYTES = 256;
 
@@ -49,7 +50,9 @@ function serveOrderIntent(
     });
     yield* chooseOrder(db, owner, order, start === null || Date.now() < start);
     const intent = yield* readIntent(db, owner);
-    return intent.order === order ? json(intent) : json({ error: "aspect_chosen" }, 409);
+    if (intent.order !== order) return json({ error: "aspect_chosen" }, 409);
+    yield* followAspect(db, owner, order);
+    return json(intent);
   });
 }
 
@@ -86,11 +89,19 @@ const chooseOrder = (db: D1Database, owner: string, order: number, beforeSeason:
 
 const anyOrder = () => orders.filter(({ aspect }) => aspect !== null).map(({ orderId }) => orderId);
 
-const sameAspectOrders = (order: number) => {
+const followAspect = (db: D1Database, owner: string, order: number) =>
+  Effect.tryPromise({
+    try: () => createShareStore(db).followAspect(owner, aspectOf(order)),
+    catch: () => new OrderIntentError({ code: "order_intent_unavailable", status: 503 }),
+  });
+
+const aspectOf = (order: number) => {
   const aspect = orders.find(({ orderId }) => orderId === order)?.aspect;
   if (!aspect) throw new Error(`Order ${order} plays for no Aspect`);
-  return ordersOfAspect(aspect).map(({ orderId }) => orderId);
+  return aspect;
 };
+
+const sameAspectOrders = (order: number) => ordersOfAspect(aspectOf(order)).map(({ orderId }) => orderId);
 
 const keptOrder = async (db: D1Database, owner: string): Promise<number | null> =>
   (await db.prepare('SELECT "order" FROM "order_intents" WHERE "owner" = ?').bind(owner).first<{ order: number }>())

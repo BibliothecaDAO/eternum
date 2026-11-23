@@ -1,4 +1,4 @@
-import { FRIEND_FRAGMENTS, FRIENDS_BONUS_FRAGMENTS, FRIENDS_LIMIT, orders } from "@bibliothecadao/types";
+import { FRIEND_FRAGMENTS, FRIENDS_BONUS_FRAGMENTS, FRIENDS_LIMIT } from "@bibliothecadao/types";
 import { profileOfIdentityUser } from "@realms-world/identity";
 import type { ShareKind, ShareChannel, ShareMoment, ShareTally } from "@realms-world/identity";
 
@@ -58,13 +58,8 @@ export interface SharerReport extends ShareFunnel {
 
 const INVITE: ShareKind = "aspect";
 
-const NAMED_LINK = `l."kind", l."chain_id" AS "chainId", l."game_id" AS "gameId", l."moment", o."order" AS "keptOrder", u."id", u."name", u."image"`;
-const SHARER_ORDER = `LEFT JOIN "order_intents" o ON o."owner" = l."sharer"`;
-type NamedLinkRow = ShareMoment & { keptOrder: number | null; id: string; name: string; image: string | null };
-
-const linkMoment = (row: { kind: ShareKind; chainId: string | null; moment: number; keptOrder: number | null }) =>
-  (row.kind === "aspect" && row.chainId === null && orders.find(({ orderId }) => orderId === row.keptOrder)?.aspect) ||
-  row.moment;
+const NAMED_LINK = `l."kind", l."chain_id" AS "chainId", l."game_id" AS "gameId", l."moment", u."id", u."name", u."image"`;
+type NamedLinkRow = ShareMoment & { id: string; name: string; image: string | null };
 
 const namedLink = (row: NamedLinkRow | null) =>
   row
@@ -72,7 +67,7 @@ const namedLink = (row: NamedLinkRow | null) =>
         kind: row.kind,
         chainId: row.chainId,
         gameId: row.gameId,
-        moment: linkMoment(row),
+        moment: row.moment,
         name: profileOfIdentityUser(row).name,
       }
     : null;
@@ -132,6 +127,12 @@ export function createShareStore(db: D1Database) {
     throw new Error("share_code_unavailable");
   };
 
+  const followAspect = (sharer: string, aspect: number) =>
+    db
+      .prepare(`UPDATE "share_links" SET "moment" = ? WHERE "sharer" = ? AND "kind" = ? AND "chain_id" IS NULL`)
+      .bind(aspect, sharer, INVITE)
+      .run();
+
   /** Marks the sharer's own link posted, once; false when the link is not theirs. */
   const markPosted = async (sharer: string, code: string, now: number): Promise<boolean> => {
     const owned = await db
@@ -150,8 +151,8 @@ export function createShareStore(db: D1Database) {
   const sharedLink = (code: string) =>
     db
       .prepare(
-        `SELECT l."sharer", l."kind", l."chain_id" AS "chainId", l."moment", o."order" AS "keptOrder", u."id", u."name", u."image"
-         FROM "share_links" l ${SHARER_ORDER} JOIN "user" u ON u."realmsId" = l."sharer" WHERE l."code" = ?`,
+        `SELECT l."sharer", l."kind", l."chain_id" AS "chainId", l."moment", u."id", u."name", u."image" FROM "share_links" l
+         JOIN "user" u ON u."realmsId" = l."sharer" WHERE l."code" = ?`,
       )
       .bind(code)
       .first<{
@@ -159,7 +160,6 @@ export function createShareStore(db: D1Database) {
         kind: ShareKind;
         chainId: string | null;
         moment: number;
-        keptOrder: number | null;
         id: string;
         name: string;
         image: string | null;
@@ -170,7 +170,7 @@ export function createShareStore(db: D1Database) {
               sharer: row.sharer,
               kind: row.kind,
               chainId: row.chainId,
-              moment: linkMoment(row),
+              moment: row.moment,
               name: profileOfIdentityUser(row).name,
             }
           : null,
@@ -180,7 +180,7 @@ export function createShareStore(db: D1Database) {
   const joinedLink = (friend: string) =>
     db
       .prepare(
-        `SELECT ${NAMED_LINK} FROM "share_joins" j JOIN "share_links" l ON l."code" = j."code" ${SHARER_ORDER}
+        `SELECT ${NAMED_LINK} FROM "share_joins" j JOIN "share_links" l ON l."code" = j."code"
          JOIN "user" u ON u."realmsId" = l."sharer" WHERE j."friend" = ?`,
       )
       .bind(friend)
@@ -190,7 +190,7 @@ export function createShareStore(db: D1Database) {
   const openedInvite = (account: string) =>
     db
       .prepare(
-        `SELECT ${NAMED_LINK} FROM "share_visits" v JOIN "share_links" l ON l."code" = v."code" ${SHARER_ORDER}
+        `SELECT ${NAMED_LINK} FROM "share_visits" v JOIN "share_links" l ON l."code" = v."code"
          JOIN "account_browsers" b ON b."browser" = v."browser"
          JOIN "user" u ON u."realmsId" = l."sharer"
          WHERE b."realmsId" = ?1 AND l."sharer" <> ?1 AND l."kind" = ?2
@@ -378,6 +378,7 @@ export function createShareStore(db: D1Database) {
     sharedLink,
     joinedLink,
     openedInvite,
+    followAspect,
     recordVisit,
     settleJoins,
     pendingJoins,

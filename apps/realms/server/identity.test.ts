@@ -3291,6 +3291,10 @@ describe("shared links", () => {
     const code = ((await made.json()) as { code: string }).code;
     expect((await visit(createBrowser(), code))[1]).toMatchObject({ moment: titans.aspect, order: titans.orderId });
     await sharer.browser.request("/api/order-intent", { body: { order: elsewhere.orderId } });
+    const remade = await sharer.browser.request("/api/shares", {
+      body: { kind: "aspect", chainId: null, gameId: null, moment: elsewhere.aspect },
+    });
+    expect(((await remade.json()) as { code: string }).code).toBe(code);
     const friendBrowser = createBrowser();
     expect((await visit(friendBrowser, code))[1]).toMatchObject({ moment: elsewhere.aspect, order: elsewhere.orderId });
     const friend = await player("season-switcher-friend", friendBrowser);

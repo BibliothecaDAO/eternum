@@ -43,6 +43,7 @@ import { useJoinedShare } from "../share/own-shares";
 export const PreseasonPlay = ({ opening, now }: { opening: SeasonOpening; now: number }) => {
   const { owner, intent } = useOrderIntent();
   const joined = useJoinedShare();
+  const [changing, setChanging] = useState(false);
   if (intent.isError)
     return (
       <StageFrame>
@@ -55,8 +56,16 @@ export const PreseasonPlay = ({ opening, now }: { opening: SeasonOpening; now: n
         <Loading />
       </StageFrame>
     );
-  if (intent.data.order !== null)
-    return <SeasonWaiting owner={owner} order={intent.data.order} opening={opening} now={now} />;
+  if (intent.data.order !== null && !changing)
+    return (
+      <SeasonWaiting
+        owner={owner}
+        order={intent.data.order}
+        opening={opening}
+        now={now}
+        onChange={() => setChanging(true)}
+      />
+    );
   return (
     <OrderPick
       owner={owner}
@@ -64,6 +73,7 @@ export const PreseasonPlay = ({ opening, now }: { opening: SeasonOpening; now: n
       aspectLords={opening.aspectLords}
       offered={joined.status === "ready" ? aspectOffer(joined.joined, null) : null}
       retryInvite={joined.status === "failed" ? joined.retry : null}
+      onChosen={() => setChanging(false)}
     />
   );
 };
@@ -74,12 +84,14 @@ const OrderPick = ({
   aspectLords,
   offered,
   retryInvite,
+  onChosen,
 }: {
   owner: string | null;
   members: OrderIntent["members"];
   aspectLords: number | null;
   offered: AspectOffer | null;
   retryInvite: (() => void) | null;
+  onChosen: () => void;
 }) => {
   const [aspect, setAspect] = useState<AspectId | null>(offered?.aspect ?? null);
   const [pickingOrder, setPickingOrder] = useState(false);
@@ -90,11 +102,13 @@ const OrderPick = ({
     onSuccess: (saved) => {
       setPickingOrder(false);
       client.setQueryData(orderIntentKey(owner), saved);
+      onChosen();
     },
     onError: (error) => {
       if (isAspectAlreadyChosen(error)) {
         setPickingOrder(false);
         void client.invalidateQueries({ queryKey: orderIntentKey(owner) });
+        onChosen();
       }
     },
   });
@@ -288,11 +302,13 @@ const SeasonWaiting = ({
   order,
   opening,
   now,
+  onChange,
 }: {
   owner: string | null;
   order: number;
   opening: SeasonOpening;
   now: number;
+  onChange: () => void;
 }) => {
   const chosen = aspectOrder(order);
   const invite = useSeasonInvite(chosen.aspect);
@@ -321,6 +337,9 @@ const SeasonWaiting = ({
               <p className="text-app-label text-app-muted">
                 {PRESEASON_WORDS.waiting(chosen.fullOrderName, formatDate(opening.startsAt, now))}
               </p>
+              <AppButton kind="secondary" data-preseason-change onClick={onChange}>
+                {PRESEASON_WORDS.change}
+              </AppButton>
             </div>
           </div>
         </div>
