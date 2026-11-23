@@ -627,7 +627,7 @@ and phone. Native command tests prove the old rate settles before a choice or re
 to later ticks; shared vectors check exact troop counts in the contract and client.
 
 The prize and stamina Oaths act where their card says, and the client reads each from the same generated rule: Detection
-finds more often and raises the Spire chance on the army's panel, Brilliance raises a reveal's pay, Rage a cleared
+makes the next reveal sure to find something after a shorter run of empty reveals, Brilliance raises a reveal's pay, Rage a cleared
 site's pay on its card, Anger lowers the attack's stamina on the site card and the quick preview, Titans adds to the bar
 at once and to its maximum, Enlightenment shortens the bar's Full in timer, and the Fox lowers a reveal's stamina on the
 dock. Native tests and the shared vectors `tests/fixtures/oath-prizes.txt` and `oath-stamina.txt` hold the contract and

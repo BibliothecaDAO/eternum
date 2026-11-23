@@ -13,7 +13,7 @@ vi.mock("@/sync/action-outcome", async (original) => ({
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { configManager } from "@bibliothecadao/eternum";
-import { nativeReleaseConstants } from "../../../../../../../contracts/l3/world-native/schema/client.gen";
+import { sellingFragments } from "../value/fragments-fixture";
 import { GameProvider } from "@/hooks/context/game-context";
 import { transferArmies } from "../army/transfer-fixture";
 import { ShopSheet, ShopView, type ShopViewProps } from "./shop-sheet";
@@ -129,18 +129,7 @@ describe("the shop", () => {
 
 const renderShop = (facts: object[]) => {
   const store = transferArmies();
-  store.applyFacts([
-    ...facts,
-    {
-      model: "GameRelease",
-      key: "0x1ab0",
-      value: {
-        game_id: 1,
-        release_id: nativeReleaseConstants.SEAL_RELEASE,
-        created_release_id: nativeReleaseConstants.SEAL_RELEASE,
-      },
-    },
-  ] as never);
+  store.applyFacts([...facts, ...sellingFragments(store)] as never);
   act(() =>
     root.render(
       <MemoryRouter initialEntries={["/g/0x1/1/map"]}>
