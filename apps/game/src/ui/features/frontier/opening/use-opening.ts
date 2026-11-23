@@ -22,13 +22,14 @@ import {
   safeInteger,
   type NativeRows,
 } from "@bibliothecadao/eternum/game-client";
-import { RealmLevels, RESOURCE_PRECISION } from "@bibliothecadao/types";
+import { RealmLevels } from "@bibliothecadao/types";
 import { useEffect } from "react";
 
 import type { OpeningRules } from "@/ui/design-system/kit/words";
 import { FIRST_BUILD } from "../build/first-build";
 import { useDockArmies } from "../hud/dock-armies";
 import { useRacesAspects } from "../aspect/races-aspects";
+import { readPickEffectBase } from "../pick-effect-text";
 import { useRealmStores } from "../realm-stores";
 import { type Opened, type OpeningMoment } from "./opening";
 import {
@@ -113,20 +114,20 @@ function useOpeningRules(rules: ExpeditionRules, realm: NativeRows["Structure"] 
   if (!realm || troops === undefined) return null;
   const barracks = getBuildingQuantity(safeInteger(realm.entity_id), FIRST_BUILD, setup.store);
   const slice = setup.store.get("SliceRules", { game_id: realm.game_id });
-  if (!slice) return null;
-  const deep = setup.store.get("DeepRules", { game_id: realm.game_id });
+  const pickBase = readPickEffectBase(setup.store, realm.game_id);
+  if (!slice || pickBase.staminaPerSecond === undefined || pickBase.revealStamina === undefined) return null;
   const tickSeconds = Number(slice.tick_config.armies_tick_in_seconds);
   return {
     knightsAnHour: troops / Math.max(1, barracks),
     deepTickSeconds: tickSeconds,
-    deepLossPerTick: deep ? Number(deep.loss_per_tick) / RESOURCE_PRECISION : undefined,
+    deepLossPerTick: pickBase.deepLossPerTick,
     oathPassStamina: nativeOathConstants.PASS_STAMINA,
     spireDepthFactor: previewRuinGuardBounds(2, 1)[0] / previewRuinGuardBounds(1, 0)[0],
-    staminaPerSecond: slice.troop_stamina_config.stamina_gain_per_tick / tickSeconds,
+    staminaPerSecond: pickBase.staminaPerSecond,
     staminaPerFragment: nativeFragmentConstants.STAMINA_PER_FRAGMENT,
     relicMinutesPerTier: slice.relic_seconds_per_rank / 60,
     scoutExploreStamina: nativeRuleConstants.SCOUT_EXPLORE_STAMINA,
-    exploreStamina: slice.troop_stamina_config.stamina_explore_stamina_cost,
+    exploreStamina: pickBase.revealStamina,
   };
 }
 

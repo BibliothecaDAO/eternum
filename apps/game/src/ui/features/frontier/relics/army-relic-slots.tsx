@@ -13,6 +13,7 @@ import { RELIC_WORDS } from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
 
 import { usePartShown } from "../opening/opening-context";
+import { usePickEffectBase } from "../pick-effect-text";
 import { ARMY_RELIC_MODELS, hasArmyRelics, readArmyRelics } from "./army-relics";
 import { relicEffect, relicIcon, relicId, relicName, type ArmyRelic } from "./relic-catalog";
 
@@ -26,6 +27,7 @@ export const ArmyRelicSlots = ({ explorerId }: { explorerId: number }) => {
   const now = useCurrentBlockTimestamp();
   useNativeRevision(ARMY_RELIC_MODELS);
   const shown = usePartShown("relic-slots");
+  const pickBase = usePickEffectBase();
   const switching = useInFlight("army", explorerId) !== undefined;
   // The slot pressed last: the one that says it is switching on while the army's order is out; the others wait.
   const [pressed, setPressed] = useState<0 | 1 | 2 | null>(null);
@@ -41,7 +43,7 @@ export const ArmyRelicSlots = ({ explorerId }: { explorerId: number }) => {
         relic_resource_id: relicId(relic),
         relic_slot: slot,
       }),
-    ).catch((error: unknown) => toast.failed(error, "The relic could not be switched on."));
+    ).catch((error: unknown) => toast.failed(error, "Could not use the relic."));
   };
 
   return (
@@ -64,7 +66,11 @@ export const ArmyRelicSlots = ({ explorerId }: { explorerId: number }) => {
             key={slot}
             lead={<Icon name={relicIcon(relic.kind)} size={22} />}
             title={relicName(relic)}
-            detail={replaces ? `${relicEffect(relic)} · ${RELIC_WORDS.replacesRunning}` : relicEffect(relic)}
+            detail={
+              replaces
+                ? `${relicEffect(relic, pickBase)} · ${RELIC_WORDS.replacesRunning}`
+                : relicEffect(relic, pickBase)
+            }
             controls={
               <HudButton
                 kind="secondary"

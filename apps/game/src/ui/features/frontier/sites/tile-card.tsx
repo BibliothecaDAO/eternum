@@ -33,6 +33,7 @@ import { fightIsSent, fightWasNotSent, useFightRefusal } from "./fight-refusal";
 import { useSelectedOwnArmy } from "./selected-army";
 import { readArmyCard, readSiteCard, type SiteAttack, type SiteCardPlan } from "./site-card-plan";
 import { SiteCardView, type SiteVerb } from "./site-card-view";
+import { readPickEffectBase } from "../pick-effect-text";
 import { useRuinRelicChoice } from "../relics/ruin-relic-choice";
 import { RelicReplacement } from "../relics/relic-replacement";
 
@@ -192,7 +193,12 @@ export const TileCard = ({
       cache={relics?.state.kind === "cache" ? relics.state.fragments : undefined}
       replacement={
         relics?.state.kind === "full" && (
-          <RelicReplacement carried={relics.state.carried} chosen={relics.state.chosen} onChoose={relics.replace} />
+          <RelicReplacement
+            carried={relics.state.carried}
+            chosen={relics.state.chosen}
+            pickBase={readPickEffectBase(setup.store, configManager.getActiveGameId())}
+            onChoose={relics.replace}
+          />
         )
       }
       verb={verb}

@@ -69,7 +69,7 @@ const ORDERS: Partial<Record<ActionType, string>> = {
   [ActionType.Move]: MOVE,
   [ActionType.Attack]: ATTACK,
   [ActionType.Help]: `${TRANSFER} troops`,
-  [ActionType.SpireTravel]: "Travel through the spire",
+  [ActionType.SpireTravel]: "Enter the Spire",
   [ActionType.EnterDepth]: SPIRE_WORDS.order,
 };
 

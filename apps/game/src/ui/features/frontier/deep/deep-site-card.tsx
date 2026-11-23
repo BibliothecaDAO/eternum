@@ -31,6 +31,7 @@ import { useApproachTile } from "../sites/approach";
 import { readDeepSiteFight } from "../sites/site-card-plan";
 import { STAMINA_MODELS } from "@bibliothecadao/eternum/troop-stamina";
 import { useSelectedOwnArmy } from "../sites/selected-army";
+import { readPickEffectBase } from "../pick-effect-text";
 import { DeepSiteView, type DeepBlock, type DeepGuard, type DeepOrder, type DeepTickPay } from "./deep-site-view";
 
 const MODELS = [...STAMINA_MODELS, ...GUARD_MODELS, "DeepSite", "DeepEntries", "ArmyRelicEffect", "AltarBar"] as const;
@@ -124,6 +125,7 @@ export function DeepSiteCard({ site, onClose }: { site: Site; onClose: () => voi
           : undefined
       }
       attackerName={userId !== null ? armyLabel(setup.store, userId) : undefined}
+      pickBase={readPickEffectBase(setup.store, game_id)}
       order={order}
       onClose={onClose}
     />

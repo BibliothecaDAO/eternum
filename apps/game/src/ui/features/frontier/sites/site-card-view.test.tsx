@@ -167,7 +167,7 @@ describe("a guarded site's card", () => {
       ),
     );
     const card = document.querySelector("section[aria-label='Blightglow Rift']")!;
-    expect(card.querySelector(".fight-vs")?.textContent).toContain("The guard holds");
+    expect(card.querySelector(".fight-vs")?.textContent).toContain("The guard survives");
     expect(card.querySelector(".fight-spoils .opacity-50")?.textContent).toBe("+4.2K+1 site");
     expect(card.textContent).toContain("794");
     expect(card.textContent).toContain("193");

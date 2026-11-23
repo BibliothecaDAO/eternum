@@ -95,7 +95,7 @@ describe("the day's banner", () => {
 
   it("says it is reading, and offers nothing, while the facts are not settled", () => {
     draw(DAY_BANNER_CASES["Facts not settled"]);
-    expect(text()).toContain("Reading today's quest…");
+    expect(text()).toContain("Loading today's quest…");
     expect(button("Collect")).toBeUndefined();
   });
 

@@ -3,6 +3,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Sheet } from "@/ui/design-system/kit/sheet";
 import { dayOf } from "@bibliothecadao/eternum";
@@ -25,7 +26,7 @@ import { DayPill } from "./day-pill";
 import { HeaderStores } from "./header-stores";
 import { PhoneWorldActions } from "./frontier-nav";
 import { HUD_PLACES, resolveMenuPlaces } from "./hud-places";
-import { OfflineBanner } from "./offline-notice";
+import { OfflineBanner, OfflineNotice } from "./offline-notice";
 import { type StoreReading, storeLine } from "./status-strip";
 
 const text = (markup: string) => new DOMParser().parseFromString(markup, "text/html").body.textContent ?? "";
@@ -685,6 +686,10 @@ it.each([81, 84, 85])("shows the last %ih day with its real countdown and no tom
 });
 
 describe("the offline banner", () => {
+  afterEach(() => {
+    useConnectionStore.getState().setGlobalStatus("connected");
+  });
+
   it("renders the reconnecting alert with its Retry action", () => {
     const onRetry = vi.fn();
     act(() => root.render(<OfflineBanner onRetry={onRetry} />));
@@ -695,5 +700,21 @@ describe("the offline banner", () => {
     expect(retry.textContent).toBe("Retry");
     act(() => retry.click());
     expect(onRetry).toHaveBeenCalledTimes(1);
+  });
+
+  it("matches the live stream state: hidden when connected, reconnecting on retry, and no reconnecting claim when failed", () => {
+    useConnectionStore.getState().setGlobalStatus("connected");
+    act(() => root.render(<OfflineNotice />));
+    expect(host.querySelector("[data-offline-banner]")).toBeNull();
+
+    useConnectionStore.getState().setGlobalStatus("reconnecting");
+    act(() => root.render(<OfflineNotice />));
+    expect(host.querySelector("[data-offline-banner]")?.textContent).toContain("Reconnecting…");
+
+    useConnectionStore.getState().setGlobalStatus("failed");
+    act(() => root.render(<OfflineNotice />));
+    const failedText = host.querySelector("[data-offline-banner]")?.textContent ?? "";
+    expect(failedText).toContain("Retry");
+    expect(failedText).not.toContain("Reconnecting…");
   });
 });

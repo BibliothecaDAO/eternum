@@ -241,7 +241,7 @@ describe("the tile card", () => {
     // Owner, 31 October 2026: "I should still have the projection even if I'm too far I think". The attack its army
     // would send from beside the site, and its headline; only Attack waits for the army to get there.
     expect(fightSides(host)).toEqual(FORECAST);
-    expect(host.querySelector(".fight-vs")?.textContent).toContain("The guard holds");
+    expect(host.querySelector(".fight-vs")?.textContent).toContain("The guard survives");
     expect(host.querySelector(".fight-spoils")?.textContent).toBe("+825+1 site");
     expect(button("Attack")?.disabled).toBe(true);
     expect(button("Move")).toBeUndefined();
@@ -383,9 +383,9 @@ describe("an attack in flight on the tile card", () => {
     act(
       () => void (moved = sendOnce("army", 201, { order: "move" }, () => Promise.resolve({ transaction_hash: "0x2" }))),
     );
-    expect(button("On its way…")?.disabled).toBe(true);
-    await act(async () => button("On its way…")!.click());
-    expect(button("On its way…")?.disabled).toBe(true);
+    expect(button("Sending…")?.disabled).toBe(true);
+    await act(async () => button("Sending…")!.click());
+    expect(button("Sending…")?.disabled).toBe(true);
     await settle(APPLIED);
     expect(await moved).toBe("0x2");
     expect(button("Attack")?.disabled).toBe(false);
@@ -588,7 +588,7 @@ describe("after the player's attack (owner, 30 October 2026: 'I'd like the army 
       vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
       try {
         const { host, unmount } = await attackThatLands(lands, { hud });
-        expect(lossSheet()?.textContent).toContain("Its troops fell in the fight. Deploy a new army from your realm.");
+        expect(lossSheet()?.textContent).toContain("Your troops died in battle. Deploy a new army from your Realm.");
         // In the kit's one frame, as every surface the HUD opens (frontier-hud.test).
         expect(lossSheet()?.hasAttribute("data-kit-frame")).toBe(true);
         expect(siteCard(host)).toBeNull();

@@ -492,7 +492,8 @@ export const OF = "of";
 
 export const OFFLINE = "Offline";
 export const OFFLINE_BANNER = {
-  connectionLost: "Connection lost · Reconnecting…",
+  connectionLostReconnecting: "Connection lost · Reconnecting…",
+  connectionLost: "Connection lost",
   reconnecting: "Reconnecting…",
   retry: "Retry",
 } as const;
@@ -716,7 +717,7 @@ const loreOf = (site: string) => `${site} lore`;
 export const ATTACK = "Attack";
 export const ATTACKING = "Attacking…";
 /** On an army's step while the order it was given before is still in flight. */
-export const ON_ITS_WAY = "On its way…";
+export const ON_ITS_WAY = "Sending…";
 /** The order bar while an army's order is in flight and a tile is tapped for it: that tile is its next order. */
 export const NEXT_ORDER = "Next order";
 export const AFTER_THIS_ONE = "After this one";
@@ -735,11 +736,11 @@ export const tooFarFrom = (site: string) => `Too far from the ${site}`;
 export const FIGHT_WORDS = {
   armyLost: "Your army is lost",
   /** Under the loss, in the panel's place, before it closes: what to do next. */
-  armyLostNext: "Its troops fell in the fight. Deploy a new army from your realm.",
+  armyLostNext: "Your troops died in battle. Deploy a new army from your Realm.",
   /** An attack that clears the site, over the reward it earns; a site that pays nothing is only cleared. */
   earns: "This attack earns",
   clears: "This attack clears it",
-  holds: "The guard holds",
+  holds: "The guard survives",
   hitsFirst: "Hits first",
 } as const;
 /**
@@ -771,21 +772,21 @@ export const SPIRE_WORDS = {
   pickArmy: "Select an army beside the spire",
   away: (army: string) => `${army} must be beside the spire`,
   inDepth: (army: string, depth: string) => `${army} is in ${depth} today`,
-  landingTaken: "Its landing is taken",
+  landingTaken: "Entry tile is blocked",
   commits: (army: string, left: string) => `${army} stays until the day ends (${left})`,
 } as const;
 
 const DEEP = layerName(3);
 export const ATTACK_REFUSAL_WORDS = {
-  "answer-oath-first": "Answer the Oath pick first",
+  "answer-oath-first": "Choose an Oath first",
   "game-not-started": "The season has not started",
   "game-ended": "The season has ended",
-  "guarding-deep-site": `This army holds a ${DEEP} site`,
-  "target-guards-deep-site": `Attack the ${DEEP} site it holds`,
+  "guarding-deep-site": `This army guards a ${DEEP} site`,
+  "target-guards-deep-site": `Attack the ${DEEP} site it guards`,
   "expired-army": "An army from an earlier day",
   "deep-ring-closed": "This ring has not opened today",
-  "target-must-be-unowned": "Only unclaimed structures can be attacked",
-  "own-target": "You hold it",
+  "target-must-be-unowned": "Only neutral structures can be attacked",
+  "own-target": "You already control this",
   "no-attack": "This game allows no attack here",
   allied: "Allied armies cannot attack each other",
   "season-immunity": "Under season immunity",
@@ -845,15 +846,15 @@ export const DEEP_WORDS = {
   otherDay: "Only today's armies can fight here",
   opensAt: (realms: number) => `Opens at ${formatExact(realms)} Realms today`,
   noTroops: "This army has no troops left",
-  readingStamina: "Reading the army's stamina…",
-  reading: "Reading the site…",
+  readingStamina: "Loading stamina…",
+  reading: "Loading site…",
   /** The map's order on a Deep site beside the army: its card then offers the site's own verb. */
   order: "Open the site",
 } as const;
 /** The day's banner: today's quest, its count and reward, the bane or Triumph heading it, the Aspect's members. */
 export const DAY_BANNER_WORDS = {
   today: "Today",
-  reading: "Reading today's quest…",
+  reading: "Loading today's quest…",
   collect: "Collect",
   collecting: "Collecting…",
   collected: "Collected",
@@ -1093,7 +1094,7 @@ export const STORE_MAKERS = {
 export const revealLine = (gain: string, resource: string) => `${gain} ${resource}`;
 export const builtLine = (building: string) => `${building} built`;
 export const deployedLine = (army: string) => `${army} deployed`;
-export const disbandedLine = (army: string) => `${army} disbanded`;
+export const disbandedLine = (army: string) => `${army} deleted`;
 /** A day's count of tiles explored, on its total. */
 export const REVEALS = "Reveals";
 /** How deep a realm went beyond the spire, I to III. */
@@ -2131,26 +2132,22 @@ export const RELIC_WORDS = {
   title: "Relics",
   cache: (fragments: number) => `Ancient cache: ${formatExact(fragments)} ${FRAGMENTS}`,
   kinds: { Blade: "Blade", Ward: "Ward", Plunder: "Plunder", StaminaRegen: "Stamina" },
-  blade: (amount: string) => `+${amount} damage dealt`,
-  ward: (amount: string) => `−${amount} damage taken`,
-  plunder: (amount: string) => `+${amount} labor and Essence from a cleared site`,
-  staminaRegen: (amount: string) => `+${amount} stamina regeneration`,
   empty: "Empty slot",
   switchOn: "Switch on",
   switching: "Switching on…",
   /** A running relic and its time left: "Rare Ward · 20m left". */
   runs: (relic: string, left: string) => `${relic} · ${left} left`,
   /** Switching on a relic whose kind already runs: the new one takes its place. */
-  replacesRunning: "Replaces the one running",
+  replacesRunning: "Replaces active relic",
   /** A ruin's relic, before the fight: the beast is as big as the relic is rare. */
-  guards: (relic: string) => `Pays a relic: ${relic}`,
+  guards: (relic: string) => `Reward: ${relic}`,
   /** Choosing which of three carried relics the ruin's relic replaces, before the attack. */
   full: `Your army carries ${ARMY_RELIC_SLOTS} relics. Choose the one this relic replaces.`,
   replace: (relic: string) => `Replace ${relic}`,
   /** The held attack's step while the army's relics are not known yet: whether it must choose cannot be told. */
-  reading: "Reading the army's relics…",
+  reading: "Loading relics…",
   /** The held attack's step while what the ruin pays is not known yet: whether a relic comes cannot be told. */
-  readingRuin: "Reading the ruin's relic…",
+  readingRuin: "Loading ruin reward…",
   /** The held attack's step while no relic is chosen: the choice itself is said just above it. */
   chooseFirst: "Choose the relic to replace first",
 } as const;
