@@ -36,7 +36,7 @@ import {
   nativeRuleConstants as rules,
 } from "../../../../contracts/l3/world-native/schema/balance.gen.ts";
 import { openOrderSendGate, touchAt, VIEWPORT } from "./browser-session.mjs";
-import { answerStandingPrompts, ENTRY_BUTTON, findHomeCardEntry } from "./player-entry.mjs";
+import { answerStandingPrompts, DAY_SUMMARY_GO_ON, ENTRY_BUTTON, findHomeCardEntry } from "./player-entry.mjs";
 import { allApplied, gameShardOf, receiptsOf, SENT_ACTIONS, sentSince } from "./chain-receipts.mjs";
 import { judgeClickToResult, measureClickToResult } from "./click-latency.mjs";
 import { proveResultOnScreen, startResultCapture } from "./result-capture.mjs";
@@ -114,7 +114,7 @@ export const HUD_WORDS = {
 };
 
 const PHONE_PLACE_PRESSES = {
-  [HUD_WORDS.research]: (browser) => browser.click(HUD_WORDS.research),
+  [HUD_WORDS.research]: (browser) => browser.tapPlace(HUD_WORDS.research),
   [HUD_WORDS.feed]: (browser) => browser.tapPlace(HUD_WORDS.feed),
   [HUD_WORDS.season]: async (browser) => {
     browser.click(HUD_WORDS.menu);
@@ -5477,7 +5477,7 @@ function summaryShows(expected) {
 /** Presses Continue, waits for the screen to come back up on the new day, and reads where the camera looks. */
 async function continueIntoTheNewDay({ browser }) {
   const before = browser.read(DAY_END_STATE);
-  browser.click("Continue");
+  browser.run(["click", DAY_SUMMARY_GO_ON]);
   await readUntil(
     () => browser.read(DAY_END_STATE),
     (shown) => shown.phase === "day",

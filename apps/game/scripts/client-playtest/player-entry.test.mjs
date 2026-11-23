@@ -140,30 +140,33 @@ describe("the optional wallet invitation", () => {
 
 describe("a turned day's summary over the map", () => {
   it("is continued and reported as shown", async () => {
-    const dom = page('<div data-day-end="summary"><button>Share your day</button><button>Continue</button></div>');
-    const click = vi.fn((name) => {
-      expect(name).toBe("Continue");
+    const dom = page(
+      '<div data-day-end="summary"><button data-kind="secondary">Share your day</button><button data-kind="primary">Go on</button></div>',
+    );
+    const run = vi.fn(([action, selector]) => {
+      expect([action, dom.window.document.querySelector(selector).textContent]).toEqual(["click", "Go on"]);
       dom.window.document.querySelector("[data-day-end]").remove();
     });
-    const browser = { read: (expression) => dom.window.eval(expression), run: vi.fn(), press: vi.fn(), click };
+    const browser = { read: (expression) => dom.window.eval(expression), run, press: vi.fn(), click: vi.fn() };
     expect(await answerStandingPrompts(browser, { sleep: vi.fn() })).toEqual({
       wallet: false,
       alerts: false,
       day: true,
     });
-    expect(click).toHaveBeenCalledOnce();
+    expect(run).toHaveBeenCalledOnce();
   });
 
   it("is waited for at entry, where it rises once the player's history answers", async () => {
     const dom = page("<main></main>");
     const historyAnswers = vi.fn(() => {
-      dom.window.document.body.innerHTML = '<div data-day-end="summary"><button>Continue</button></div>';
+      dom.window.document.body.innerHTML =
+        '<div data-day-end="summary"><button data-kind="primary">Go on</button></div>';
     });
-    const click = vi.fn(() => dom.window.document.querySelector("[data-day-end]").remove());
-    const browser = { read: (expression) => dom.window.eval(expression), run: vi.fn(), press: vi.fn(), click };
+    const run = vi.fn(() => dom.window.document.querySelector("[data-day-end]").remove());
+    const browser = { read: (expression) => dom.window.eval(expression), run, press: vi.fn(), click: vi.fn() };
     expect(await continuePastTheDaySummary(browser, { sleep: historyAnswers }, ENTRY_DAY_SUMMARY_WAIT_MS)).toBe(true);
     expect(historyAnswers).toHaveBeenCalledOnce();
-    expect(click).toHaveBeenCalledWith("Continue");
+    expect(run).toHaveBeenCalledWith(["click", '[data-day-end] button[data-kind="primary"]']);
   });
 
   it("is not waited for before a step, where the page shows none", async () => {
@@ -172,7 +175,7 @@ describe("a turned day's summary over the map", () => {
     const browser = { read: (expression) => dom.window.eval(expression), run: vi.fn(), press: vi.fn(), click: vi.fn() };
     expect(await continuePastTheDaySummary(browser, { sleep })).toBe(false);
     expect(sleep).not.toHaveBeenCalled();
-    expect(browser.click).not.toHaveBeenCalled();
+    expect(browser.run).not.toHaveBeenCalled();
   });
 });
 

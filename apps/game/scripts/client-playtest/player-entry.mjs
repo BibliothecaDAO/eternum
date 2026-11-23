@@ -9,6 +9,7 @@ import { existsSync, readFileSync, rmSync } from "node:fs";
 const POLL_MS = 500;
 const PAGE_WAIT_MS = 30_000;
 const DAY_SUMMARY = "[data-day-end]";
+export const DAY_SUMMARY_GO_ON = `${DAY_SUMMARY} button[data-kind="primary"]`;
 export const ENTRY_DAY_SUMMARY_WAIT_MS = 3_000;
 // A sign-in code stops working ten minutes after it is sent.
 const SIGN_IN_CODE_WAIT_MS = 10 * 60_000;
@@ -149,17 +150,14 @@ export async function continueWithoutWallet(browser, owner) {
  */
 export async function continuePastTheDaySummary(browser, owner, waitMs = 0) {
   const shown = () => browser.read(isShown(DAY_SUMMARY));
-  const offered = () =>
-    browser.read(
-      `[...document.querySelectorAll(${JSON.stringify(`${DAY_SUMMARY} button`)})].some((button) => button.textContent.trim() === "Continue")`,
-    );
+  const offered = () => browser.read(isShown(DAY_SUMMARY_GO_ON));
   const startedAt = Date.now();
   while (!offered()) {
     if (Date.now() - startedAt >= waitMs) return false;
     await owner.sleep(POLL_MS);
   }
-  browser.click("Continue");
-  await waitUntil(owner, () => !shown(), "the day's summary did not lift after Continue");
+  browser.run(["click", DAY_SUMMARY_GO_ON]);
+  await waitUntil(owner, () => !shown(), "the day's summary did not lift after its button");
   return true;
 }
 
