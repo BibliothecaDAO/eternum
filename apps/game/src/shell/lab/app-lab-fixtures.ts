@@ -211,6 +211,7 @@ export const LAB_SCREENS = {
   // Frontier's season before its prize pool is published.
   "season-unpublished": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
   "realm-held": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
+  "realm-vault": { signedIn: true, games: [frontier(false), liveBlitz(false), eternum] },
   // Your shared days on You (/profile): what a player's posted Frontier days brought.
   "shared-days": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
 } as const;
@@ -240,6 +241,7 @@ export const LAB_SHARE_TALLIES: Partial<Record<keyof typeof LAB_SCREENS, ShareTa
 /** The Realms the linked wallet holds on each screen that reads them (the relay's held-Realms answer). */
 export const LAB_HELD_REALMS: Partial<Record<keyof typeof LAB_SCREENS, { realmId: number; map: null }[]>> = {
   "realm-held": [{ realmId: 4786, map: null }],
+  "realm-vault": [418, 902, 1241, 2814, 3105, 4490, 5012].map((realmId) => ({ realmId, map: null })),
 };
 
 /** The player's name on each screen whose player is not Maelis. */
@@ -259,6 +261,7 @@ export const LAB_PAYOUT_WALLETS: Partial<Record<keyof typeof LAB_SCREENS, string
   "preseason-invited-pick": LAB_WALLET,
   "season-running": LAB_WALLET,
   "realm-held": LAB_WALLET,
+  "realm-vault": LAB_WALLET,
 };
 
 /** The lab's emailed code: this one is right, any other is refused as the identity service refuses it. */

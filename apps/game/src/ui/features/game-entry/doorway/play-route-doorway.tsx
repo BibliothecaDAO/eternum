@@ -93,13 +93,17 @@ const useRouteGame = (route: ReturnType<typeof parsePlayRoute>) => {
   );
 };
 
-const directoryRealmOf = (entry: DirectoryGame | null): DoorwayRealm | null => {
+const directoryRealmOf = (entry: Pick<DirectoryGame, "player_state"> | null): DoorwayRealm | null => {
   const structure = entry?.player_state?.structures.find((item) => item.category === StructureType.Realm);
   const realmId = structure?.realm_id ?? entry?.player_state?.held_realm_id ?? null;
   return realmId != null ? doorwayRealmFromId(realmId) : null;
 };
 
-const useOwnRealm = (setup: GameClientSetup | null, audience: DoorwayAudience, entry: DirectoryGame | null) => {
+const useOwnRealm = (
+  setup: GameClientSetup | null,
+  audience: DoorwayAudience,
+  entry: Pick<DirectoryGame, "player_state"> | null,
+) => {
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const isSpectating = useUIStore((state) => state.isSpectating);
   if (audience === "spectator" || isSpectating) return null;

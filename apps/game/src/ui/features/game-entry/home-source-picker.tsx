@@ -1,22 +1,33 @@
 import "./home-source-picker.css";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { canonicalRealm } from "@bibliothecadao/eternum";
-import { catalogOrder, type AspectId } from "@bibliothecadao/types";
+import { aspectName, aspects, catalogOrder, type AspectId } from "@bibliothecadao/types";
 import type { HeldRealm } from "@realms-world/identity";
 
 import { useHeldRealms } from "@/hooks/use-holdings";
 import { useLayout } from "@/shell/frame/layout";
 import { linkWalletHref } from "@/shell/profile/settings-route";
 import { returnPathOf } from "@/shell/return-path";
-import { HomeArt } from "@/ui/shared/components/home-art";
-import { aspectOfOrder } from "./aspect-picker";
+import { aspectVariables } from "@/tokens";
 import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { Icon } from "@/ui/design-system/icon";
 import { mintedResourceMeaning, orderMeaning } from "@/ui/design-system/icon-meaning";
 import { HudLoading } from "@/ui/design-system/kit/hud-elements";
-import { HELD_REALMS_UNREADABLE, HOME_STEP_WORDS, TRY_AGAIN, numberedRealm } from "@/ui/design-system/kit/words";
+import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
+import {
+  HELD_REALMS_UNREADABLE,
+  HOME_STEP_WORDS,
+  REALM_SIDE_WORDS,
+  TRY_AGAIN,
+  numberedRealm,
+} from "@/ui/design-system/kit/words";
+import { HomeArt } from "@/ui/shared/components/home-art";
+
+import { aspectOfOrder } from "./aspect-picker";
+
+const DESKTOP_VAULT_MAX = 9;
 
 export function HomeSourcePicker({
   registered,
@@ -24,15 +35,15 @@ export function HomeSourcePicker({
   onChange,
   onSettled,
   disabled,
-  title = HOME_STEP_WORDS.title,
+  title = "Found Your Home",
   takenRealmIds = [],
   onSourceAvailable,
   requireSource = false,
   aspect = null,
+  action,
 }: {
   title?: string;
   requireSource?: boolean;
-  /** The Aspect a founded home plays for, in a season with Aspects: only Realms of its Orders can attach to it. */
   aspect?: AspectId | null;
   takenRealmIds?: readonly number[];
   onSourceAvailable?: (available: boolean) => void;
@@ -41,7 +52,10 @@ export function HomeSourcePicker({
   onChange: (value: string) => void;
   onSettled: (settled: boolean) => void;
   disabled: boolean;
+  action?: ReactNode;
 }) {
+  const layout = useLayout();
+  const desktop = layout === "desktop";
   const sources = useHomeSources();
   const choices = choicesOf(sources)
     .filter((choice) => aspect === null || aspectOfOrder(choice.order) === aspect)
@@ -58,24 +72,56 @@ export function HomeSourcePicker({
     onSettled(settled);
   }, [settled, onSettled]);
   const picked = registered !== null ? realmChoice({ realmId: registered, map: null }) : pickedChoice(available, value);
+  const showChoices = registered === null && (choices.length > 1 || choices.some(isTaken));
+  const splitDesktop = desktop && showChoices && picked !== undefined;
   return (
-    <section className="home-picker" aria-label={title}>
-      <header className="home-picker__head">
-        <h2>{title}</h2>
-        {registered === null && choices.length > 0 && <span>{HOME_STEP_WORDS.count(choices.length)}</span>}
-      </header>
-      {picked ? (
-        <Featured choice={picked} locked={registered !== null} />
-      ) : sources.ready ? (
-        <FreeHome unlinked={sources.wallet === null} />
-      ) : sources.realmsUnreadable ? null : (
-        <div className="home-picker__waiting">
-          <HudLoading line={HOME_STEP_WORDS.loading} />
-        </div>
+    <section data-home-picker className="home-picker" aria-label={title}>
+      {!splitDesktop && (
+        <header className="home-picker__top">
+          <div className="home-picker__titles">
+            <h2>{title}</h2>
+            {registered === null && choices.length > 0 && (
+              <p className="home-picker__subtitle">
+                {`Pick one of your ${HOME_STEP_WORDS.count(choices.length)} for its quest bonus.`}
+              </p>
+            )}
+          </div>
+          {registered === null && choices.length > 0 && (
+            <span className="home-picker__owned">
+              <Icon name="realm" size={18} />
+              {HOME_STEP_WORDS.count(choices.length)}
+            </span>
+          )}
+        </header>
       )}
-      {registered === null && (choices.length > 1 || choices.some(isTaken)) && (
-        <Choices choices={choices} value={value} onChange={onChange} disabled={disabled} />
-      )}
+      <div className="home-picker__shell" data-split={splitDesktop || undefined}>
+        {picked ? (
+          <Featured choice={picked} locked={registered !== null} split={splitDesktop} action={action} />
+        ) : sources.ready ? (
+          <FreeHome unlinked={sources.wallet === null} action={action} />
+        ) : sources.realmsUnreadable ? (
+          action ? (
+            <div className="home-picker__action">{action}</div>
+          ) : null
+        ) : (
+          <>
+            <div className="home-picker__waiting">
+              <HudLoading line={HOME_STEP_WORDS.loading} />
+            </div>
+            {action && <div className="home-picker__action">{action}</div>}
+          </>
+        )}
+        {showChoices && (
+          <Choices
+            title={splitDesktop ? title : undefined}
+            choices={choices}
+            value={value}
+            onChange={onChange}
+            disabled={disabled}
+            desktop={desktop}
+          />
+        )}
+      </div>
       {registered === null && sources.ready && sources.wallet === null && choices.length > 0 && <LinkWallet />}
       {registered === null && sources.realmsUnreadable && (
         <Unreadable line={HELD_REALMS_UNREADABLE} retry={sources.realmsUnreadable} />
@@ -125,78 +171,231 @@ function usePickOffered(
   return offered;
 }
 
-function Featured({ choice, locked }: { choice: Choice; locked: boolean }) {
+function Featured({
+  choice,
+  locked,
+  split,
+  action,
+}: {
+  choice: Choice;
+  locked: boolean;
+  split: boolean;
+  action?: ReactNode;
+}) {
+  const entry = catalogOrder(choice.order);
+  const aspect = entry.aspect ?? null;
+  const aspectStyle = aspect !== null ? (aspectVariables(aspect) as CSSProperties) : undefined;
   return (
-    <div className="home-picker__featured" data-kind="realm">
-      <ChoiceArt choice={choice} eager />
-      <div className="home-picker__about">
-        <h3>{choice.name}</h3>
-        <p className="home-picker__sub">
-          {HOME_STEP_WORDS.realm(choice.realmId)} · <OrderName order={choice.order} />
-        </p>
-        <Resources resources={choice.resources} />
-        {choice.wonder && <Wonder wonder={choice.wonder} />}
-        {locked && <p className="home-picker__sub">{HOME_STEP_WORDS.registered}</p>}
+    <div className="home-picker__featured" data-kind="realm" style={aspectStyle}>
+      {split && (
+        <div className="home-picker__selected-head">
+          <span className="home-picker__eyebrow">Selected Realm</span>
+          <span className="home-picker__order-pill">
+            <OrderEmblem order={choice.order} size={18} />
+            {entry.orderName}
+          </span>
+        </div>
+      )}
+      <div className="home-picker__hero">
+        <div className="home-picker__art-wrap">
+          <ChoiceArt choice={choice} size={split ? 112 : 68} eager />
+          {split && aspect !== null && (
+            <span className="home-picker__facet-badge">
+              <AspectMark aspect={aspect} size={32} decorative />
+            </span>
+          )}
+        </div>
+        <div className="home-picker__about">
+          <div className="home-picker__name-row">
+            <h3>{choice.name}</h3>
+            {!split && <span className="home-picker__id">{`#${choice.realmId}`}</span>}
+          </div>
+          <div className="home-picker__meta">
+            {split ? (
+              <span>
+                {`${HOME_STEP_WORDS.realm(choice.realmId)}`}
+                {aspect !== null && (
+                  <>
+                    {" · "}
+                    <span className="home-picker__aspect-label">{`Aspect of ${aspectName(aspect)}`}</span>
+                  </>
+                )}
+              </span>
+            ) : (
+              <>
+                {aspect !== null && (
+                  <span className="home-picker__aspect-label">
+                    <AspectMark aspect={aspect} size={18} decorative />
+                    {aspectName(aspect)}
+                  </span>
+                )}
+                <span className="home-picker__order">
+                  <Icon name={orderMeaning(choice.order)} size={18} />
+                  {entry.orderName}
+                </span>
+              </>
+            )}
+          </div>
+          {choice.resources.length > 0 && <Resources resources={choice.resources} />}
+          {choice.wonder && <Wonder wonder={choice.wonder} />}
+          {locked && <p className="home-picker__sub">{HOME_STEP_WORDS.registered}</p>}
+        </div>
       </div>
+      <div className="home-picker__bonus">
+        <span className="home-picker__bonus-label">{REALM_SIDE_WORDS.bonus}</span>
+        <span className="home-picker__bonus-value">
+          <Icon name="labor" size={18} />
+        </span>
+      </div>
+      {action && <div className="home-picker__action">{action}</div>}
     </div>
   );
 }
 
 const choiceLabel = (choice: Choice) => numberedRealm(choice.realmId, choice.name);
 
-/**
- * The other choices: a strip of the first ones (three, two on a phone: what the doorway's width holds), then All,
- * which opens every choice in a grid with search. Each is a press; the chosen one is marked.
- */
 function Choices({
+  title,
   choices,
   value,
   onChange,
   disabled,
+  desktop,
 }: {
+  title?: string;
   choices: Choice[];
   value: string;
   onChange: (value: string) => void;
   disabled: boolean;
+  desktop: boolean;
 }) {
-  const strip = useLayout() === "phone" ? 2 : 3;
   const [all, setAll] = useState(false);
+  const [aspectFilter, setAspectFilter] = useState<AspectId | null>(null);
+  const [query, setQuery] = useState("");
+  const inlineVault = desktop && choices.length <= DESKTOP_VAULT_MAX;
+  const strip = desktop ? 3 : 2;
   const pick = (choice: Choice) => {
     onChange(valueOf(choice));
     setAll(false);
   };
-  const shown = choices.length > strip + 1 ? choices.slice(0, strip) : choices;
+  const visible = inlineVault
+    ? choices.filter((choice) => matchesFilter(choice, aspectFilter, query))
+    : choices;
+  const shown = inlineVault
+    ? visible
+    : choices.length > strip + 1
+      ? choices.slice(0, strip)
+      : choices;
+  const countsByAspect = aspects
+    .map((item) => ({
+      id: item.id,
+      name: item.name,
+      count: choices.filter((choice) => catalogOrder(choice.order).aspect === item.id).length,
+    }))
+    .filter((item) => item.count > 0);
   return (
-    <>
-      <div className="home-picker__strip" role="group" aria-label={HOME_STEP_WORDS.title}>
-        {shown.map((choice) => (
-          <ChoiceButton
-            key={valueOf(choice)}
-            choice={choice}
-            picked={valueOf(choice) === value}
-            onPick={pick}
-            disabled={disabled}
-          />
-        ))}
-        {shown.length < choices.length && (
-          <button
-            type="button"
-            className="home-picker__all"
-            aria-expanded={all}
-            onClick={() => setAll(!all)}
-            disabled={disabled}
-          >
-            <Icon name="search" size={32} />
-            {HOME_STEP_WORDS.all(choices.length)}
-          </button>
+    <div className="home-picker__vault">
+      <div className="home-picker__vault-head">
+        {title ? (
+          <div className="home-picker__titles">
+            <h2>{title}</h2>
+            <p className="home-picker__subtitle">
+              {`Your Order decides your Aspect · ${HOME_STEP_WORDS.count(choices.length)}`}
+            </p>
+          </div>
+        ) : (
+          <span className="home-picker__eyebrow">{`Your Realms (${choices.length})`}</span>
+        )}
+        {inlineVault && (
+          <label className="home-picker__search">
+            <Icon name="search" size={18} />
+            <input
+              type="search"
+              value={query}
+              placeholder={HOME_STEP_WORDS.search(choices.length)}
+              aria-label={HOME_STEP_WORDS.search(choices.length)}
+              onChange={(event) => setQuery(event.target.value)}
+            />
+          </label>
         )}
       </div>
+      {inlineVault && countsByAspect.length > 1 && (
+        <AspectFilters
+          total={choices.length}
+          counts={countsByAspect}
+          chosen={aspectFilter}
+          onChoose={setAspectFilter}
+        />
+      )}
+      {shown.length === 0 ? (
+        <p className="home-picker__sub">{HOME_STEP_WORDS.noMatch}</p>
+      ) : (
+        <div className="home-picker__strip" role="group" aria-label={HOME_STEP_WORDS.title}>
+          {shown.map((choice) => (
+            <ChoiceButton
+              key={valueOf(choice)}
+              choice={choice}
+              picked={valueOf(choice) === value}
+              onPick={pick}
+              disabled={disabled}
+              desktop={inlineVault}
+            />
+          ))}
+          {!inlineVault && shown.length < choices.length && (
+            <button
+              type="button"
+              className="home-picker__all"
+              aria-expanded={all}
+              onClick={() => setAll(!all)}
+              disabled={disabled}
+            >
+              <Icon name="search" size={24} />
+              {HOME_STEP_WORDS.all(choices.length)}
+            </button>
+          )}
+        </div>
+      )}
       {all && <AllChoices choices={choices} value={value} onPick={pick} disabled={disabled} />}
-    </>
+    </div>
   );
 }
 
-/** Every choice in a grid, searched by name or number; maps load as their cards scroll into view. */
+const AspectFilters = ({
+  total,
+  counts,
+  chosen,
+  onChoose,
+}: {
+  total: number;
+  counts: readonly { id: AspectId; name: string; count: number }[];
+  chosen: AspectId | null;
+  onChoose: (aspect: AspectId | null) => void;
+}) => (
+  <div className="home-picker__filters" role="group" aria-label="Filter by Aspect">
+    <button
+      type="button"
+      className="home-picker__filter"
+      aria-pressed={chosen === null}
+      onClick={() => onChoose(null)}
+    >
+      {`All (${total})`}
+    </button>
+    {counts.map(({ id, name, count }) => (
+      <button
+        key={id}
+        type="button"
+        className="home-picker__filter"
+        style={aspectVariables(id) as CSSProperties}
+        aria-pressed={chosen === id}
+        onClick={() => onChoose(chosen === id ? null : id)}
+      >
+        <AspectMark aspect={id} size={16} decorative />
+        {`${name} (${count})`}
+      </button>
+    ))}
+  </div>
+);
+
 function AllChoices({
   choices,
   value,
@@ -209,12 +408,20 @@ function AllChoices({
   disabled: boolean;
 }) {
   const [query, setQuery] = useState("");
+  const [aspectFilter, setAspectFilter] = useState<AspectId | null>(null);
   const realms = choices.length;
-  const found = choices.filter((choice) => matches(choice, query));
+  const countsByAspect = aspects
+    .map((item) => ({
+      id: item.id,
+      name: item.name,
+      count: choices.filter((choice) => catalogOrder(choice.order).aspect === item.id).length,
+    }))
+    .filter((item) => item.count > 0);
+  const found = choices.filter((choice) => matchesFilter(choice, aspectFilter, query));
   return (
     <div className="home-picker__allgrid">
       <label className="home-picker__search">
-        <Icon name="search" size={22} />
+        <Icon name="search" size={20} />
         <input
           type="search"
           value={query}
@@ -223,6 +430,9 @@ function AllChoices({
           onChange={(event) => setQuery(event.target.value)}
         />
       </label>
+      {countsByAspect.length > 1 && (
+        <AspectFilters total={realms} counts={countsByAspect} chosen={aspectFilter} onChoose={setAspectFilter} />
+      )}
       {found.length === 0 ? (
         <p className="home-picker__sub">{HOME_STEP_WORDS.noMatch}</p>
       ) : (
@@ -243,7 +453,8 @@ function AllChoices({
   );
 }
 
-const matches = (choice: Choice, query: string) => {
+const matchesFilter = (choice: Choice, aspectFilter: AspectId | null, query: string) => {
+  if (aspectFilter !== null && catalogOrder(choice.order).aspect !== aspectFilter) return false;
   const asked = query.trim().toLowerCase();
   if (asked === "") return true;
   return choice.name.toLowerCase().includes(asked) || String(choice.realmId).startsWith(asked);
@@ -255,31 +466,62 @@ export function ChoiceButton({
   onPick,
   disabled,
   traits = false,
+  desktop = false,
 }: {
   choice: Choice;
   picked: boolean;
   onPick: (choice: Choice) => void;
   disabled: boolean;
   traits?: boolean;
+  desktop?: boolean;
 }) {
+  const entry = catalogOrder(choice.order);
+  const aspect = entry.aspect ?? null;
   return (
     <button
       type="button"
-      className="ui-pick home-picker__choice"
+      className="home-picker__choice"
       aria-pressed={picked}
       aria-label={choiceLabel(choice)}
       onClick={() => onPick(choice)}
       disabled={disabled || isTaken(choice)}
     >
-      <ChoiceArt choice={choice} />
       {picked && (
         <span className="home-picker__check" aria-hidden="true">
-          <Icon name="check" size={14} />
+          <Icon name="check" size={12} />
         </span>
       )}
-      <span className="home-picker__caption">{choiceLabel(choice)}</span>
-      {isTaken(choice) && <span>{HOME_STEP_WORDS.taken}</span>}
-      {traits && (
+      {desktop || traits ? (
+        <div className="home-picker__choice-art">
+          <ChoiceArt choice={choice} size={64} />
+        </div>
+      ) : (
+        <div className="home-picker__choice-top">
+          <OrderEmblem order={choice.order} size={22} />
+          <span className="home-picker__id">{`#${choice.realmId}`}</span>
+        </div>
+      )}
+      <span className="home-picker__caption">{choice.name}</span>
+      <span className="home-picker__choice-foot">
+        <span className="home-picker__order">
+          {desktop || traits ? (
+            <>
+              <Icon name={orderMeaning(choice.order)} size={16} />
+              {entry.orderName}
+            </>
+          ) : (
+            aspect !== null && (
+              <>
+                <AspectMark aspect={aspect} size={16} decorative />
+                {aspectName(aspect)}
+              </>
+            )
+          )}
+        </span>
+        {(desktop || traits) && <span className="home-picker__id">{`#${choice.realmId}`}</span>}
+      </span>
+      {isTaken(choice) && <span className="home-picker__id">{HOME_STEP_WORDS.taken}</span>}
+      {traits && (choice.resources.length > 0 || choice.wonder) && (
         <span className="home-picker__traits">
           <Resources resources={choice.resources} />
           {choice.wonder && <Wonder wonder={choice.wonder} />}
@@ -289,50 +531,43 @@ export function ChoiceButton({
   );
 }
 
-const ChoiceArt = ({ choice, eager = false }: { choice: Choice; eager?: boolean }) => (
-  <HomeArt map={choice.map} icon="realm" size={72} eager={eager} />
+const ChoiceArt = ({ choice, size = 72, eager = false }: { choice: Choice; size?: number; eager?: boolean }) => (
+  <HomeArt map={choice.map} icon="realm" size={size} eager={eager} />
 );
-
-const OrderName = ({ order }: { order: number }) => {
-  const entry = catalogOrder(order);
-  return (
-    <span className="home-picker__order">
-      {entry.aspect && <AspectMark aspect={entry.aspect} size={20} decorative />}
-      <Icon name={orderMeaning(order)} size={20} />
-      {entry.fullOrderName}
-    </span>
-  );
-};
 
 const Resources = ({ resources }: { resources: string[] }) => (
   <span className="home-picker__resources">
     {resources.map((resource) => (
-      <Icon key={resource} name={mintedResourceMeaning(resource)} size={24} alt={resource} />
+      <Icon key={resource} name={mintedResourceMeaning(resource)} size={20} alt={resource} />
     ))}
   </span>
 );
 
 const Wonder = ({ wonder }: { wonder: string }) => (
   <span className="home-picker__wonder">
-    <Icon name="star" size={16} />
+    <Icon name="star" size={14} />
     {wonder}
   </span>
 );
 
-function FreeHome({ unlinked }: { unlinked: boolean }) {
+function FreeHome({ unlinked, action }: { unlinked: boolean; action?: ReactNode }) {
   return (
     <div className="home-picker__featured" data-kind="free">
-      <HomeArt icon="realm" size={96} />
-      <div className="home-picker__about">
-        <h3>{HOME_STEP_WORDS.freeHome}</h3>
-        <p className="home-picker__sub">{HOME_STEP_WORDS.freeHomeLine}</p>
-        {unlinked && <LinkWallet />}
+      <div className="home-picker__hero">
+        <div className="home-picker__art-wrap">
+          <HomeArt icon="realm" size={64} />
+        </div>
+        <div className="home-picker__about">
+          <h3>{HOME_STEP_WORDS.freeHome}</h3>
+          <p className="home-picker__sub">{HOME_STEP_WORDS.freeHomeLine}</p>
+          {unlinked && <LinkWallet />}
+        </div>
       </div>
+      {action && <div className="home-picker__action">{action}</div>}
     </div>
   );
 }
 
-/** To the payout wallet in Settings, and back here once one is linked: the wallet that may hold the player's Realms. */
 function LinkWallet() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -360,7 +595,6 @@ interface HomeSources {
   wallet: string | null;
   realms: HeldRealm[];
   ready: boolean;
-  /** Ask the Realms again: set while they could not be read. */
   realmsUnreadable: (() => void) | null;
 }
 

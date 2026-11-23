@@ -153,8 +153,8 @@ export const LabDoorway = () => {
         state === "aspect-kept" ||
         state === "realm-side"
       }
-      wide={state === "aspect" || state === "aspect-realm" || state === "aspect-kept"}
-      verb={state === "home" ? <FoundButton founding={false} ready onFound={noop} /> : undefined}
+      wide={state === "home" || state === "aspect" || state === "aspect-realm" || state === "aspect-kept"}
+      verb={undefined}
     >
       {/* The entry's own chips at the realm step, as game-entry-modal passes them. */}
       {state === "waiting" && <ClockChip prefix="starts" at={now + LAB_SEASON_WAIT} now={now} />}
@@ -202,7 +202,14 @@ const LabHomeStep = () => {
   const [value, setValue] = useState("");
   return (
     <>
-      <HomeSourcePicker registered={null} value={value} onChange={setValue} onSettled={noop} disabled={false} />
+      <HomeSourcePicker
+        registered={null}
+        value={value}
+        onChange={setValue}
+        onSettled={noop}
+        disabled={false}
+        action={<FoundButton founding={false} ready onFound={noop} />}
+      />
       <PlaysAs />
     </>
   );
