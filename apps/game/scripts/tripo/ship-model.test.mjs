@@ -4,12 +4,17 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { FRONTIER_BUILDING_TYPES } from "@bibliothecadao/types";
 import { Document, NodeIO } from "@gltf-transform/core";
 import { ALL_EXTENSIONS, KHRTextureBasisu } from "@gltf-transform/extensions";
 import draco3d from "draco3dgltf";
 import sharp from "sharp";
 import { afterEach, describe, expect, it } from "vitest";
 
+import {
+  FRONTIER_PAINTED_BUILDINGS,
+  frontierPaintedBuildingPath,
+} from "../../src/three/structures/frontier-painted-buildings";
 import { MODEL_BUDGETS, readHexFit, shipTripoModel } from "./ship-model.mjs";
 
 const CLI = fileURLToPath(new URL("./ship-model.mjs", import.meta.url));
@@ -193,21 +198,21 @@ describe("ship-model pipeline", () => {
     ).rejects.toThrow("triangle count");
 
     const tooBigColor = join(dir, "over-color.glb");
-    await writeSyntheticGlb(tooBigColor, { colorPngSize: MODEL_BUDGETS["deep-building"].maxColorTexture * 2 });
+    await writeSyntheticGlb(tooBigColor, { colorPngSize: MODEL_BUDGETS.building.maxColorTexture * 2 });
     await expect(
-      shipTripoModel({ input: tooBigColor, fit, kind: "deep-building", out: join(dir, "out2.glb") }),
-    ).rejects.toThrow("exceeding deep-building limit of 512px");
+      shipTripoModel({ input: tooBigColor, fit, kind: "building", out: join(dir, "out2.glb") }),
+    ).rejects.toThrow("exceeding building limit of 1024px");
 
     const tooBigNormal = join(dir, "over-normal.glb");
-    await writeSyntheticGlb(tooBigNormal, { normalPngSize: MODEL_BUDGETS.beast.maxTechnicalTexture * 2 });
+    await writeSyntheticGlb(tooBigNormal, { normalPngSize: MODEL_BUDGETS.building.maxTechnicalTexture * 2 });
     await expect(
-      shipTripoModel({ input: tooBigNormal, fit, kind: "beast", out: join(dir, "out3.glb") }),
-    ).rejects.toThrow("exceeding beast limit of 256px");
+      shipTripoModel({ input: tooBigNormal, fit, kind: "building", out: join(dir, "out3.glb") }),
+    ).rejects.toThrow("exceeding building limit of 512px");
 
     const tooManyDraws = join(dir, "over-draws.glb");
-    await writeSyntheticGlb(tooManyDraws, { drawCalls: MODEL_BUDGETS.beast.maxDraws + 1 });
+    await writeSyntheticGlb(tooManyDraws, { drawCalls: MODEL_BUDGETS.building.maxDraws + 1 });
     await expect(
-      shipTripoModel({ input: tooManyDraws, fit, kind: "beast", out: join(dir, "out4.glb") }),
+      shipTripoModel({ input: tooManyDraws, fit, kind: "building", out: join(dir, "out4.glb") }),
     ).rejects.toThrow("draw count");
 
     const outsideHexFit = join(dir, "wide-fit.json");
@@ -288,41 +293,57 @@ describe("ship-model pipeline", () => {
     expect(glbJson.images[0].extras?.eternumContentHash).toMatch(/^[0-9a-f]{64}$/);
   });
 
-  it("keeps shipped Frontier board building models within building budget, grounded and inside the unit hex", async () => {
+  it("keeps every standalone Frontier building model within building budget, grounded, normalized and inside the unit hex", async () => {
     const io = await createReader();
     const budget = MODEL_BUDGETS.building;
     const apothem = Math.sqrt(3) / 2;
+    const paintedPaths = new Set(FRONTIER_PAINTED_BUILDINGS.map((entry) => entry.path));
+    const shippedPaths = [
+      ...new Set(
+        FRONTIER_BUILDING_TYPES.map((type) => frontierPaintedBuildingPath(type)).filter(
+          (path) => path && !paintedPaths.has(path),
+        ),
+      ),
+    ];
+    expect(shippedPaths.length).toBeGreaterThanOrEqual(3);
 
-    for (const name of ["storeroom", "rations-depot", "crossbow-range"]) {
-      const modelPath = fileURLToPath(new URL(`../../public/models/frontier/buildings/${name}.glb`, import.meta.url));
+    for (const publicPath of shippedPaths) {
+      const modelPath = fileURLToPath(new URL(`../../public${publicPath}`, import.meta.url));
       const bytes = readFileSync(modelPath);
-      expect(bytes.length, name).toBeLessThanOrEqual(budget.maxBytes);
+      expect(bytes.length, publicPath).toBeLessThanOrEqual(budget.maxBytes);
 
       const doc = await io.read(modelPath);
       const root = doc.getRoot();
       const extensions = root.listExtensionsUsed().map((extension) => extension.extensionName);
-      expect(extensions, name).toEqual(expect.arrayContaining(["KHR_draco_mesh_compression", "KHR_texture_basisu"]));
+      expect(extensions, publicPath).toEqual(
+        expect.arrayContaining(["KHR_draco_mesh_compression", "KHR_texture_basisu"]),
+      );
 
       const primitives = root.listMeshes().flatMap((mesh) => mesh.listPrimitives());
-      expect(primitives.length, name).toBeGreaterThan(0);
-      expect(primitives.length, name).toBeLessThanOrEqual(budget.maxDraws);
+      expect(primitives.length, publicPath).toBeGreaterThan(0);
+      expect(primitives.length, publicPath).toBeLessThanOrEqual(budget.maxDraws);
 
       const triangles = primitives.reduce((sum, primitive) => sum + primitive.getIndices().getCount() / 3, 0);
-      expect(triangles, name).toBeGreaterThan(0);
-      expect(triangles, name).toBeLessThanOrEqual(budget.maxTriangles);
+      expect(triangles, publicPath).toBeGreaterThan(0);
+      expect(triangles, publicPath).toBeLessThanOrEqual(budget.maxTriangles);
+
+      for (const material of root.listMaterials()) {
+        expect(material.getDoubleSided(), publicPath).toBe(true);
+        expect(material.getExtras().tripoMaterial, publicPath).toBe(true);
+      }
 
       for (const texture of root.listTextures()) {
-        expect(texture.getMimeType(), name).toBe("image/ktx2");
+        expect(texture.getMimeType(), publicPath).toBe("image/ktx2");
         const image = texture.getImage();
         const view = new DataView(image.buffer, image.byteOffset, image.byteLength);
-        expect(view.getUint32(20, true), name).toBeLessThanOrEqual(budget.maxColorTexture);
-        expect(view.getUint32(24, true), name).toBeLessThanOrEqual(budget.maxColorTexture);
+        expect(view.getUint32(20, true), publicPath).toBeLessThanOrEqual(budget.maxColorTexture);
+        expect(view.getUint32(24, true), publicPath).toBeLessThanOrEqual(budget.maxColorTexture);
       }
 
       for (const node of root.listNodes()) {
-        expect(node.getTranslation(), name).toEqual([0, 0, 0]);
-        expect(node.getRotation(), name).toEqual([0, 0, 0, 1]);
-        expect(node.getScale(), name).toEqual([1, 1, 1]);
+        expect(node.getTranslation(), publicPath).toEqual([0, 0, 0]);
+        expect(node.getRotation(), publicPath).toEqual([0, 0, 0, 1]);
+        expect(node.getScale(), publicPath).toEqual([1, 1, 1]);
       }
 
       let minY = Infinity;
@@ -333,12 +354,12 @@ describe("ship-model pipeline", () => {
           minY = Math.min(minY, y);
           for (let side = 0; side < 6; side++) {
             const angle = (side * Math.PI) / 3;
-            expect(x * Math.cos(angle) + z * Math.sin(angle), name).toBeLessThanOrEqual(apothem + 0.001);
+            expect(x * Math.cos(angle) + z * Math.sin(angle), publicPath).toBeLessThanOrEqual(apothem + 0.001);
           }
         }
       }
-      expect(minY, name).toBeGreaterThanOrEqual(budget.minGroundY);
-      expect(minY, name).toBeLessThanOrEqual(budget.maxGroundY);
+      expect(minY, publicPath).toBeGreaterThanOrEqual(budget.minGroundY);
+      expect(minY, publicPath).toBeLessThanOrEqual(budget.maxGroundY);
     }
   });
 });

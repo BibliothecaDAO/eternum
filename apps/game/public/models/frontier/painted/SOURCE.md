@@ -1,9 +1,9 @@
 # Painted Frontier buildings
 
-Game-ready versions of the 33 approved painted Frontier building masters: the four realm castles, Farm, Workshop,
-Barracks and Workers' hut at tiers I–V, the four training buildings and five map sites. They are delivered for
-integration. The lab draws them through `InstancedModel` on game terrain (FEATURE-MAP.md, "Frontier buildings — painted
-set"), but the board and the world map still draw the shipped models.
+Game-ready versions of the 32 approved painted Frontier building masters: the four realm castles, Farm, Workshop,
+Barracks and Workers' hut at tiers I–V, the three remaining training buildings and five map sites. They are delivered
+for integration. The lab draws them through `InstancedModel` on game terrain (FEATURE-MAP.md, "Frontier buildings —
+painted set"), but the board and the world map still draw the shipped models.
 
 ## Sources and rebuild
 
@@ -91,7 +91,6 @@ one the game draws today where the painted building would stand.
 | workers-hut-3     |     8,988 |     3 | 1024² | 360,876 | 111 MB, 70,299, 14             | `frontier/buildings/workers-hut-3.glb`: 314,084, 6,246, 2 |
 | workers-hut-4     |     8,987 |     3 | 1024² | 364,076 | 112 MB, 71,449, 13             | none                                                      |
 | workers-hut-5     |     8,986 |     3 | 1024² | 367,196 | 84 MB, 71,777, 14              | none                                                      |
-| war-hall          |     8,720 |     2 | 1024² | 320,816 | 29 MB, 52,632, 2               | `new-buildings-opt/archerrange.glb`: 365,924, 8,114, 2    |
 | supply-yard       |     8,720 |     2 | 1024² | 338,796 | 30 MB, 46,651, 3               | `new-buildings-opt/market.glb`: 362,040, 7,404, 2         |
 | scouts-lodge      |     8,720 |     2 | 1024² | 344,964 | 29 MB, 59,502, 3               | `new-buildings-opt/stable.glb`: 564,940, 7,401, 4         |
 | hearth            |     8,720 |     2 | 1024² | 338,600 | 36 MB, 53,505, 4               | `new-buildings-opt/workers_hut.glb`: 310,936, 5,902, 2    |
