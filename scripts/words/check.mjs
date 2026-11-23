@@ -12,14 +12,13 @@ import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import ts from "typescript";
 import {
-  BARE_CODE_WORD,
-  CODE_ATTRIBUTES,
-  CODE_CALLS,
-  CODE_TOKEN,
-  ERROR_CONSTRUCTOR,
-  isCodeTemplatePieces,
-  LOG_CALL,
-  TEXT_NAME,
+  calleeName,
+  inConsole,
+  inDiagnostic,
+  isCodeString,
+  isCodeTemplate,
+  playerTextOf,
+  templateText,
   VISIBLE_ATTRIBUTES,
   VISIBLE_KEYS,
 } from "./player-text.mjs";
@@ -142,45 +141,6 @@ function* sourceFiles(dir) {
     } else if (/\.(ts|tsx)$/.test(entry.name)) yield path;
   }
 }
-
-const calleeName = (call) => {
-  const expression = call.expression;
-  if (ts.isIdentifier(expression)) return expression.text;
-  if (ts.isPropertyAccessExpression(expression)) {
-    const owner = ts.isIdentifier(expression.expression) ? `${expression.expression.text}.` : "";
-    return `${owner}${expression.name.text}`;
-  }
-  return "";
-};
-
-/** Whether a string literal is code (an import, a class name, a key) rather than words a player reads. */
-const isCodeString = (node) => {
-  const parent = node.parent;
-  if (!parent) return true;
-  if ((ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) && CODE_TOKEN.test(node.text)) return true;
-  if (ts.isImportDeclaration(parent) || ts.isExportDeclaration(parent) || ts.isExternalModuleReference(parent))
-    return true;
-  if (ts.isLiteralTypeNode(parent) || (ts.isPropertyAssignment(parent) && parent.name === node)) return true;
-  if (ts.isElementAccessExpression(parent) || ts.isCaseClause(parent)) return true;
-  if (ts.isBinaryExpression(parent) && /=== |!== |== |!= /.test(` ${parent.operatorToken.getText()} `)) return true;
-  if (ts.isJsxAttribute(parent) || (ts.isJsxExpression(parent) && ts.isJsxAttribute(parent.parent))) {
-    const attribute = ts.isJsxAttribute(parent) ? parent : parent.parent;
-    return CODE_ATTRIBUTES.test(attribute.name.getText());
-  }
-  for (let up = parent; up; up = up.parent) {
-    if (ts.isCallExpression(up) && CODE_CALLS.test(calleeName(up))) return true;
-    if (ts.isJsxAttribute(up)) return CODE_ATTRIBUTES.test(up.name.getText());
-    if (ts.isBlock(up) || ts.isSourceFile(up)) break;
-  }
-  return false;
-};
-
-const inConsole = (node) => {
-  for (let up = node.parent; up && !ts.isSourceFile(up); up = up.parent) {
-    if (ts.isCallExpression(up) && LOG_CALL.test(calleeName(up))) return true;
-  }
-  return false;
-};
 
 // Points are counted to the unit against the one above (formatPoints, formatExact); the compact amount rule ("12.4K")
 // is for amounts held.
@@ -548,15 +508,6 @@ const wordsOf = (node) => {
   return null;
 };
 
-// Text no player reads: a log line, or a thrown error's message.
-const inDiagnostic = (node) => {
-  if (inConsole(node)) return true;
-  for (let up = node.parent; up && !ts.isSourceFile(up); up = up.parent) {
-    if (ts.isThrowStatement(up)) return true;
-    if (ts.isNewExpression(up) && ERROR_CONSTRUCTOR.test(up.expression.getText())) return true;
-  }
-  return false;
-};
 /** A branch that writes its count before its noun ("1 exchange", `${count} exchanges`): words, never a route or a key. */
 const writesCount = (branch) =>
   (ts.isStringLiteralLike(branch) && /^\d/.test(branch.text)) ||
@@ -636,15 +587,7 @@ const roundsForArithmetic = (call) => {
   return ts.isCallExpression(parent) && /^(Number|parseFloat|Number\.parseFloat)$/.test(calleeName(parent));
 };
 
-/** Whether a template builds code (a key, a path, a class), not words: every piece of its text is a code token. */
-const isCodeTemplate = (template) =>
-  isCodeTemplatePieces([template.head.text, ...template.templateSpans.map((span) => span.literal.text)]);
-
-/**
- * Whether a value ends where a player reads it: a JSX child, a visible attribute, a word template, a visible field of an
- * object, or what a function named for text (…Label, …Name, …Text, …Title, …Line) returns. A value handed to a call, a
- * key or a comparison is code.
- */
+const TEXT_NAME = /(?:Label|Name|Text|Title|Line|Words?|Copy|Message)$/;
 const readsAsText = (node) => {
   for (let child = node, up = node.parent; up && !ts.isSourceFile(up); child = up, up = up.parent) {
     if (ts.isJsxExpression(up)) {
@@ -681,9 +624,6 @@ const enclosingFunctionName = (node) => {
   }
   return undefined;
 };
-
-/** A template's text as a player reads it, each substitution standing in as a number. */
-const templateText = (node) => node.head.text + node.templateSpans.map((span) => `7${span.literal.text}`).join("");
 
 // A realm's population reads one way, Blitz's and Frontier's alike: what its buildings take of all it can hold, "5/6",
 // written by the words module's formatPopulation (formatPopulationInWords in a line). A count of it set against another by hand ("1 / 6", "2 free of 6",
@@ -814,10 +754,12 @@ export function scanSource(source, fileName, { nouns, voiceRules }) {
     }
     if ((ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) && !isCodeString(node)) {
       if (nouns.has(node.text) && readsAsText(node)) hit("name.literal", node, node.text);
-      if (!inDiagnostic(node) && (!BARE_CODE_WORD.test(node.text.trim()) || readsAsText(node)))
-        visible(node, node.text);
     }
-    if (ts.isTemplateExpression(node) && !isCodeString(node) && !inDiagnostic(node)) visible(node, templateText(node));
+    const text = playerTextOf(node);
+    if (text !== null) {
+      if (ts.isJsxText(node) && nouns.has(text)) hit("name.literal", node, text);
+      visible(node, text);
+    }
     // {n}% and {n} points/s in JSX: a number written, then its percent sign or its rate's unit as text.
     if (ts.isJsxText(node) && (/^\s*%/.test(node.text) || RATE_UNIT.test(node.text.replace(/^\s+/, " ")))) {
       const index = node.parent.children.indexOf(node);
@@ -826,11 +768,6 @@ export function scanSource(source, fileName, { nouns, voiceRules }) {
         hit(/^\s*%/.test(node.text) ? "number.percent" : "number.rate", before);
     }
     if (jsxFormula(node)) hit("number.formula", node.parent.children[node.parent.children.indexOf(node) - 1]);
-    if (ts.isJsxText(node) && node.text.trim()) {
-      const text = node.text.trim();
-      if (nouns.has(text)) hit("name.literal", node, text);
-      visible(node, text);
-    }
     if (isNamedFunction(node)) {
       let works = false;
       const inside = (child) => {

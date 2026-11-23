@@ -1,21 +1,8 @@
 import { readFileSync } from "node:fs";
 import tseslint from "typescript-eslint";
-import {
-  BARE_CODE_WORD,
-  CODE_ATTRIBUTES,
-  CODE_CALLS,
-  CODE_TOKEN,
-  ERROR_CONSTRUCTOR,
-  isCodeTemplatePieces,
-  LOG_CALL,
-  TEXT_NAME,
-  VISIBLE_ATTRIBUTES,
-  VISIBLE_KEYS,
-} from "../../../scripts/words/player-text.mjs";
+import { scanPlayerText } from "../../../scripts/words/player-text.mjs";
 
 const VOICE_SOURCE = new URL("../../../packages/types/src/words/voice.ts", import.meta.url);
-
-const EQUALITY_OPERATORS = new Set(["===", "!==", "==", "!="]);
 
 const unwrap = (node) =>
   node?.type === "TSAsExpression" || node?.type === "TSSatisfiesExpression" ? unwrap(node.expression) : node;
@@ -52,99 +39,6 @@ export const readBannedWords = (source = readFileSync(VOICE_SOURCE, "utf8")) => 
   });
 };
 
-const calleeName = (node) => {
-  const callee = node.callee;
-  if (callee?.type === "Identifier") return callee.name;
-  if (callee?.type === "MemberExpression" && !callee.computed) {
-    const owner = callee.object.type === "Identifier" ? `${callee.object.name}.` : "";
-    const prop = callee.property.type === "Identifier" ? callee.property.name : "";
-    return `${owner}${prop}`;
-  }
-  return "";
-};
-
-const enclosingFunctionName = (node) => {
-  for (let up = node.parent; up && up.type !== "Program"; up = up.parent) {
-    if (up.type === "FunctionDeclaration") return up.id?.name ?? "";
-    if (up.type === "ArrowFunctionExpression" || up.type === "FunctionExpression") {
-      if (up.parent?.type === "VariableDeclarator" && up.parent.id?.type === "Identifier") return up.parent.id.name;
-      return "";
-    }
-  }
-  return "";
-};
-
-const isExplicitVisibleSlot = (node) => {
-  for (let child = node, up = node.parent; up && up.type !== "Program"; child = up, up = up.parent) {
-    if (up.type === "JSXExpressionContainer") {
-      if (up.parent?.type === "JSXAttribute") {
-        const attrName = up.parent.name?.type === "JSXIdentifier" ? up.parent.name.name : "";
-        return VISIBLE_ATTRIBUTES.test(attrName);
-      }
-      return true;
-    }
-    if (up.type === "JSXAttribute") {
-      const attrName = up.name?.type === "JSXIdentifier" ? up.name.name : "";
-      return VISIBLE_ATTRIBUTES.test(attrName);
-    }
-    if (up.type === "TemplateLiteral") {
-      return !isCodeTemplatePieces(up.quasis.map((quasi) => quasi.value.cooked ?? "")) && !isNonPlayerContext(up);
-    }
-    if (up.type === "Property" && !up.computed && up.value === child) {
-      const keyName = up.key?.type === "Identifier" ? up.key.name : (stringLiteral(up.key) ?? "");
-      return VISIBLE_KEYS.test(keyName);
-    }
-    if (up.type === "VariableDeclarator" && up.init === child && up.id?.type === "Identifier") {
-      return TEXT_NAME.test(up.id.name);
-    }
-    if (up.type === "ReturnStatement" || (up.type === "ArrowFunctionExpression" && up.body === child)) {
-      return TEXT_NAME.test(enclosingFunctionName(child));
-    }
-    if (up.type === "BinaryExpression" && up.operator === "+") continue;
-    if (up.type === "ConditionalExpression" && up.test !== child) continue;
-    if (up.type === "LogicalExpression" && (up.operator === "??" || up.operator === "||")) continue;
-    if (
-      up.type === "ParenthesizedExpression" ||
-      up.type === "TSAsExpression" ||
-      up.type === "TSSatisfiesExpression" ||
-      up.type === "TSNonNullExpression"
-    )
-      continue;
-    return false;
-  }
-  return false;
-};
-
-const isNonPlayerContext = (node) => {
-  const parent = node.parent;
-  if (!parent) return true;
-  if (
-    parent.type === "ImportDeclaration" ||
-    parent.type === "ExportNamedDeclaration" ||
-    parent.type === "ExportAllDeclaration" ||
-    parent.type === "ImportExpression"
-  )
-    return true;
-  if (parent.type === "Property" && parent.key === node && !parent.computed) return true;
-  if (parent.type === "MemberExpression" && parent.computed && parent.property === node) return true;
-  if (parent.type === "SwitchCase" && parent.test === node) return true;
-  if (parent.type === "BinaryExpression" && EQUALITY_OPERATORS.has(parent.operator)) return true;
-
-  for (let up = parent; up; up = up.parent) {
-    if (up.type.startsWith("TS") && up.type !== "TSAsExpression" && up.type !== "TSSatisfiesExpression") return true;
-    if (up.type === "ThrowStatement") return true;
-    if (up.type === "NewExpression" && (ERROR_CONSTRUCTOR.test(calleeName(up)) || calleeName(up) === "RegExp"))
-      return true;
-    if (up.type === "CallExpression" && (CODE_CALLS.test(calleeName(up)) || LOG_CALL.test(calleeName(up)))) return true;
-    if (up.type === "JSXAttribute") {
-      const attrName = up.name?.type === "JSXIdentifier" ? up.name.name : "";
-      if (CODE_ATTRIBUTES.test(attrName)) return true;
-    }
-    if (up.type === "BlockStatement" || up.type === "Program") break;
-  }
-  return false;
-};
-
 const createPlainWordsRule = (rules, { checkCodeTokens = false } = {}) => ({
   meta: {
     type: "problem",
@@ -153,38 +47,17 @@ const createPlainWordsRule = (rules, { checkCodeTokens = false } = {}) => ({
       banned: 'Plain words: avoid "{{banned}}" in player-facing text; use "{{use}}" instead.',
     },
   },
-  create: (context) => {
-    const check = (node, text, { reportNode = node, allowCodeToken = false, allowBareCodeWord = false } = {}) => {
-      const trimmed = text.trim();
-      if (!trimmed) return;
-      if (allowCodeToken && !checkCodeTokens && CODE_TOKEN.test(trimmed)) return;
-      if (allowBareCodeWord && !checkCodeTokens && BARE_CODE_WORD.test(trimmed) && !isExplicitVisibleSlot(reportNode))
-        return;
-      for (const rule of rules) {
-        if (rule.pattern.test(trimmed)) {
-          context.report({ node: reportNode, messageId: "banned", data: { banned: rule.banned, use: rule.use } });
-          return;
-        }
-      }
-    };
-    return {
-      Literal(node) {
-        if (typeof node.value !== "string" || isNonPlayerContext(node)) return;
-        check(node, node.value, { allowCodeToken: true, allowBareCodeWord: true });
-      },
-      JSXText(node) {
-        check(node, node.value);
-      },
-      TemplateElement(node) {
-        if (isNonPlayerContext(node.parent)) return;
-        check(node, node.value.cooked ?? "", {
-          reportNode: node.parent,
-          allowCodeToken: true,
-          allowBareCodeWord: node.parent.expressions.length === 0,
+  create: (context) => ({
+    Program() {
+      for (const match of scanPlayerText(context.sourceCode.text, context.filename, rules, { checkCodeTokens })) {
+        context.report({
+          loc: { line: match.line, column: match.column },
+          messageId: "banned",
+          data: { banned: match.rule.banned, use: match.rule.use },
         });
-      },
-    };
-  },
+      }
+    },
+  }),
 });
 
 const ALL_BANNED = readBannedWords();
@@ -193,6 +66,14 @@ const BASELINED_BANNED = ALL_BANNED.filter((rule) => !rule.zeroTolerance);
 
 export const PLAIN_WORDS_STRICT_RULE = "plain-words/no-zero-tolerance";
 export const PLAIN_WORDS_RULE = "plain-words/no-banned-words";
+
+const PLAYER_TEXT_SOURCES = [
+  "apps/game/src/**/*.{ts,tsx}",
+  "packages/core/src/**/*.{ts,tsx}",
+  "packages/notifications/src/**/*.{ts,tsx}",
+  "packages/identity/src/**/*.{ts,tsx}",
+  "packages/types/src/**/*.{ts,tsx}",
+];
 
 const IGNORED_FILES = [
   "packages/types/src/words/voice.ts",
@@ -209,7 +90,7 @@ const IGNORED_FILES = [
 
 export const plainWordsGuardConfigs = [
   {
-    files: ["apps/game/src/**/*.{ts,tsx}", "packages/*/src/**/*.{ts,tsx}"],
+    files: PLAYER_TEXT_SOURCES,
     ignores: IGNORED_FILES,
     plugins: {
       "plain-words": {

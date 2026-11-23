@@ -97,16 +97,24 @@ describe("plain-words guard refuses banned words in player-facing text", () => {
     ["relative path literal", `export const rel = "./claim/index.ts";`],
     ["alias path literal", `export const mod = "@/ui/realm-provision-runner";`],
     ["file extension piece", "export const img = (id: string) => `/images/${id}.png`;"],
-    ["lowercase discriminator property", `export const step = { kind: "travel" };`],
-    ["lowercase code array", `export const actions = ["idle", "march"];`],
-    ["lowercase payload call", `export const f = () => felt("claim");`],
-    ["lowercase fx registration", `export const reg = () => registerFX("travel", 1);`],
   ])("allows %s", async (_, source) => {
     expect(await hits(SCREEN, source)).toEqual([]);
   });
 
-  it("refuses lowercase banned words when placed in explicit visible attributes or keys", async () => {
-    expect(await hits(SCREEN, `export const item = { label: "claim" };`)).toEqual([
+  it("refuses status maps, typed label arrays, satisfies expressions, quoted keys, and visible attributes", async () => {
+    expect(await hits(SCREEN, `export const ORDER = { state: "pledge" };`)).toEqual([
+      { ruleId: PLAIN_WORDS_RULE, message: expect.stringMatching(/^Plain words:/) },
+    ]);
+    expect(await hits(SCREEN, `const PHASES: readonly Phase[] = ["pledge", "joined"]; export { PHASES };`)).toEqual([
+      { ruleId: PLAIN_WORDS_RULE, message: expect.stringMatching(/^Plain words:/) },
+    ]);
+    expect(await hits(SCREEN, `export const STATUS = { pending: "claimed", done: "collected" };`)).toEqual([
+      { ruleId: PLAIN_WORDS_RULE, message: expect.stringMatching(/^Plain words:/) },
+    ]);
+    expect(await hits(SCREEN, `export const actionLabel = "pledge" satisfies string;`)).toEqual([
+      { ruleId: PLAIN_WORDS_RULE, message: expect.stringMatching(/^Plain words:/) },
+    ]);
+    expect(await hits(SCREEN, `export const item = { "label": "pledge" };`)).toEqual([
       { ruleId: PLAIN_WORDS_RULE, message: expect.stringMatching(/^Plain words:/) },
     ]);
     expect(
@@ -123,7 +131,7 @@ describe("plain-words guard refuses banned words in player-facing text", () => {
     ]);
   });
 
-  it("agrees with scripts/words/check.mjs on diagnostics, logs, code attributes, bare words, and visible text", async () => {
+  it("uses the exact same player-text walker as scripts/words/check.mjs across every tricky form", async () => {
     const context = {
       nouns: new Set(),
       voiceRules: [{ rule: "No pledge", forbidden: /\bpledg(?:e|ed|ing)\b/i }],
@@ -133,9 +141,13 @@ describe("plain-words guard refuses banned words in player-facing text", () => {
       [`export const f = () => console.warn("Pledge failed");`, false],
       [`export const A = () => <div className="pledge" data-testid="pledge" />;`, false],
       [`export const ok = (k: string) => k === "Pledge";`, false],
-      [`export const step = { kind: "pledge" };`, false],
       ['export const src = (moving: boolean) => `/icons/${moving ? "pledge" : "idle"}.svg`;', false],
       ['export const line = (moving: boolean) => `Army ${moving ? "pledge" : "idle"}`;', true],
+      [`export const ORDER = { state: "pledge" };`, true],
+      [`const PHASES: readonly Phase[] = ["pledge", "joined"]; export { PHASES };`, true],
+      [`export const STATUS = { pending: "pledge", done: "joined" };`, true],
+      [`export const actionLabel = "pledge" satisfies string;`, true],
+      [`export const quoted = { "label": "pledge" };`, true],
       [`export const item = (ok: boolean) => ({ label: ok ? "pledged" : "pledge" });`, true],
       ["export const msg = (a: string) => `${a} pledged`;", true],
       [`export const A = () => <p>Pledge to Luminary</p>;`, true],
