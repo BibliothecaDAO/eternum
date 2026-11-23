@@ -104,18 +104,23 @@ describe("Frontier guard identity", () => {
     expect(deliveries).toEqual(species.map((beast) => basename(FRONTIER_BEASTS[beast].path)).sort());
   });
 
-  it("keeps one editable sculpt per shipped beast, without retired study sources", () => {
+  it("ships every beast through the Tripo pipeline with no retired .blend sculpts remaining", async () => {
+    const { createDecoderModule } = createRequire(import.meta.url)("draco3dgltf");
+    const io = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({
+      "draco3d.decoder": await createDecoderModule(),
+    });
+    for (const [species, entry] of Object.entries(FRONTIER_BEASTS)) {
+      const root = (
+        await io.readBinary(readFileSync(new URL(`../../../public${entry.path}`, import.meta.url)))
+      ).getRoot();
+      const meshNode = root.listNodes().find((node) => node.getMesh());
+      expect(meshNode?.getExtras()?.assetKind, `${species} missing assetKind="beast"`).toBe("beast");
+    }
     const sources = readdirSync(new URL("../../../asset-sources/frontier-beasts", import.meta.url), {
       recursive: true,
       encoding: "utf8",
-    })
-      .filter((file) => file.endsWith(".blend"))
-      .sort();
-    expect(sources).toEqual(
-      Object.keys(FRONTIER_BEASTS)
-        .map((species) => `refined/${species}.blend`)
-        .sort(),
-    );
+    }).filter((file) => file.endsWith(".blend"));
+    expect(sources).toEqual([]);
   });
 
   it("keeps one ruin beast a layer and refuses a layer the table has no beast for", () => {
@@ -146,7 +151,7 @@ describe("Frontier guard identity", () => {
     expect(readStandingFrontierBeast(fourth(StructureType.Ruin), 1, 9)).toEqual({
       beast: "hydra",
       name: "Hydra",
-      scale: 1.7,
+      scale: 1.2,
       idle: BEASTS.hydra.idle,
     });
     expect(readStandingFrontierBeast(fourth(StructureType.Beasts, 6_500), 1, 9)).toEqual({
@@ -185,7 +190,7 @@ describe("Frontier guard identity", () => {
       "Ammit breath",
       "Minotaur breath",
     ]);
-    expect([BEASTS.kappa, BEASTS.kitsune].map(beastModel)).toEqual(["dark-fey", "dark-fey"]);
+    expect([BEASTS.kappa, BEASTS.kitsune].map(beastModel)).toEqual(["kappa", "kitsune"]);
     for (const { idle } of rows) if (idle.motion !== "hover") expect(idle.height).toBeLessThanOrEqual(0.028);
   });
   it("names each family's beast by layer, a stronger Loot Survivor tier deeper", () => {
@@ -215,14 +220,14 @@ describe("Frontier guard identity", () => {
     [2, BEASTS.ettin, BEASTS.kitsune],
   ])("keeps camps beast-only and rifts fey-guarded at layer %s", (depth, camp, rift) => {
     expect(readStandingFrontierBeast(facts(StructureType.Camp, depth), 1, 9)).toEqual({
-      beast: "troll",
+      beast: beastModel(camp),
       name: camp.name,
       scale: 0.85,
       idle: camp.idle,
     });
     expect(frontierSiteComposition(StructureType.Camp).baseScale).toBe(0);
     expect(readStandingFrontierBeast(facts(StructureType.Rift, depth), 1, 9)).toEqual({
-      beast: "dark-fey",
+      beast: beastModel(rift),
       name: rift.name,
       scale: 0.75,
       idle: rift.idle,

@@ -133,6 +133,7 @@ import {
   StructureType,
   getHexDistance,
   getProducedResource,
+  orderAspect,
   resourceName,
 } from "@bibliothecadao/types";
 import gsap from "gsap";
@@ -1539,11 +1540,17 @@ export default class HexceptionScene extends HexagonScene {
     building: HexceptionBuilding,
     mainStructureType: StructureType | undefined,
   ): BuildingModelSelection {
+    const structure = this.game.store.get("Structure", {
+      game_id: configManager.getActiveGameId(),
+      entity_id: this.shownRealmId,
+    });
+    const orderId = structure?.metadata.order;
     return resolveBuildingModelSelection(building, {
       stage: this.structureStage,
       structureId: this.shownRealmId,
       mainStructureType,
       wonder: !!this.tileManager.getWonder(this.shownRealmId),
+      aspect: this.mode.id === "frontier" && orderId ? orderAspect(orderId) : null,
       frontier: this.mode.id === "frontier",
     });
   }

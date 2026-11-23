@@ -8,7 +8,6 @@
   "apps/game/src/three/scenes/worldmap-perf-simulation.ts": 1,
   "apps/game/src/three/sound/utils.ts": 1,
   "apps/game/src/three/structures/building-tiers.ts": 1,
-  "apps/game/src/three/structures/frontier-painted-buildings.ts": 2,
   "apps/game/src/three/terrain/creatures/biome-creature-catalog.ts": 1,
   "apps/game/src/three/terrain/terrain-biome-art-direction.ts": 1,
   "apps/game/src/three/terrain/terrain-ground-profile.ts": 1,

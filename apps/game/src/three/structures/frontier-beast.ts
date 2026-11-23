@@ -22,6 +22,17 @@ export const FRONTIER_BEASTS = {
   ammit: { path: "/models/frontier/beast-ammit.glb" },
   basilisk: { path: "/models/frontier/beast-basilisk.glb" },
   "dark-fey": { path: "/models/frontier/beast-dark-fey.glb" },
+  balrog: { path: "/models/frontier/beast-balrog.glb" },
+  colossus: { path: "/models/frontier/beast-colossus.glb" },
+  warlock: { path: "/models/frontier/beast-warlock.glb" },
+  banshee: { path: "/models/frontier/beast-banshee.glb" },
+  golem: { path: "/models/frontier/beast-golem.glb" },
+  kappa: { path: "/models/frontier/beast-kappa.glb" },
+  tarrasque: { path: "/models/frontier/beast-tarrasque.glb" },
+  lich: { path: "/models/frontier/beast-lich.glb" },
+  ettin: { path: "/models/frontier/beast-ettin.glb" },
+  kitsune: { path: "/models/frontier/beast-kitsune.glb" },
+  minotaur: { path: "/models/frontier/beast-minotaur.glb" },
 } as const satisfies Record<FrontierSpecies, { path: string }>;
 
 export const largestBeastScale = (species: BeastModel): number => {

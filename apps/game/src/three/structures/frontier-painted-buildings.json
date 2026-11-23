@@ -192,14 +192,6 @@
     "atlasSize": 1024
   },
   {
-    "id": "war-hall",
-    "label": "War hall",
-    "group": "training",
-    "path": "/models/frontier/painted/war-hall.glb",
-    "architectureTriangles": 8000,
-    "atlasSize": 1024
-  },
-  {
     "id": "supply-yard",
     "label": "Supply yard",
     "group": "training",

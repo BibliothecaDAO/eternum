@@ -1,4 +1,4 @@
-import { FRONTIER_PAINTED_REALMS } from "../structures/frontier-painted-buildings";
+import { FRONTIER_PAINTED_REALMS, frontierPaintedBuildingPath } from "../structures/frontier-painted-buildings";
 import { REALM_PATHS } from "../structures/realm-design";
 import { StructureProgress } from "@bibliothecadao/eternum";
 import {
@@ -138,8 +138,7 @@ export const buildingModelPaths = () => {
       [BuildingType.WorkersHut]: BUILDINGS_MODELS_PATH + BuildingFilenames.WorkersHut,
       [BuildingType.ResourceDragonhide]: BUILDINGS_MODELS_PATH + BuildingFilenames.Dragonhide,
       [BuildingType.ResourceResearch]: BUILDINGS_MODELS_PATH + BuildingFilenames.Castle,
-      // Frontier's training buildings stand in on existing models until the art pass draws them.
-      [BuildingType.RationsDepot]: BUILDINGS_MODELS_PATH + BuildingFilenames.Storehouse,
+      [BuildingType.RationsDepot]: frontierPaintedBuildingPath(BuildingType.RationsDepot)!,
       [BuildingType.SupplyYard]: BUILDINGS_MODELS_PATH + BuildingFilenames.Market,
       [BuildingType.ScoutsLodge]: BUILDINGS_MODELS_PATH + BuildingFilenames.Stable,
       [BuildingType.ConscriptionCamp]: BUILDINGS_MODELS_PATH + BuildingFilenames.Barracks,

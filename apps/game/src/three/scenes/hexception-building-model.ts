@@ -1,5 +1,6 @@
 import { ResourceIdToMiningType, StructureProgress } from "@bibliothecadao/eternum";
 import {
+  type AspectId,
   BUILDINGS_CENTER,
   BuildingType,
   buildingName,
@@ -93,6 +94,7 @@ export function resolveBuildingModelSelection(
     structureId: number;
     mainStructureType?: StructureType;
     wonder: boolean;
+    aspect?: AspectId | null;
     frontier?: boolean;
   },
 ): BuildingModelSelection {
@@ -126,7 +128,7 @@ export function resolveBuildingModelSelection(
 
   const tierPath =
     group === BUILDINGS_GROUPS.REALMS && wonder
-      ? REALM_PATHS[realmModelIndex(stage, true, structureId)]
+      ? REALM_PATHS[realmModelIndex(stage, true, structureId, context.frontier ? context.aspect : null)]
       : group === BUILDINGS_GROUPS.BUILDINGS
         ? context.frontier
           ? (building.tier ?? 1) > 1

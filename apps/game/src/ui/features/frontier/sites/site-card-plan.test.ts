@@ -34,7 +34,7 @@ describe("Frontier's tile card", () => {
     const { store, site, structure, attack } = campBeside();
     const plan = readSiteCard(store, site, structure, attack({ col: 41, row: 12, alt: false }));
     expect(plan.name).toBe("Golem");
-    expect(plan.beast?.beast).toBe("troll");
+    expect(plan.beast?.beast).toBe("golem");
     expect(plan.guard).toEqual({ type: TroopType.Knight, tier: TroopTier.T1, count: 1_100 });
     expect(plan.payout).toEqual({ resourceId: ResourcesIds.Labor, amount: 825, fits: 825 });
     expect(plan.attackStamina).toBe(release.definition.rules.troop_stamina_config.stamina_attack_req);

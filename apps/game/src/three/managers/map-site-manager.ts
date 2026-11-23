@@ -29,7 +29,7 @@ import { PLATE_CLEARANCE } from "./structure-visible-presentation";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { presentResult } from "@/three/presented-results";
 import { activeMapLayer } from "@/three/map-layer";
-import { deepLandmark } from "../structures/deep-landmarks";
+import { loadDeepLandmark } from "../structures/deep-landmarks";
 import { DEEP_GATEWAY_HEIGHT } from "./deep-arena-manager";
 import { FRONTIER_BEASTS } from "../structures/frontier-beast";
 import { FrontierModel } from "../structures/frontier-model";
@@ -85,7 +85,7 @@ export class MapSiteManager {
         this.isDeepSiteOf(tile, kind.id) &&
         this.closedRing(tile.occupierId) === undefined &&
         (LANDMARK_UNDER_BEAST || !this.beastGuards(tile.occupierId)),
-      model: () => Promise.resolve(landmarkModel(kind.key, kind.name, ACTIVE)),
+      model: () => landmarkModel(kind.key, kind.name, ACTIVE),
       scale: 1,
       front: 0,
     })),
@@ -94,7 +94,7 @@ export class MapSiteManager {
       name: kind.name,
       stands: (tile: TileSpatialRenderable) =>
         this.isDeepSiteOf(tile, kind.id) && this.closedRing(tile.occupierId) !== undefined,
-      model: () => Promise.resolve(landmarkModel(kind.key, kind.name, DORMANT)),
+      model: () => landmarkModel(kind.key, kind.name, DORMANT),
       scale: 1,
       front: 0,
     })),
@@ -400,8 +400,8 @@ const SITE_CAPACITY = 64;
 const ACTIVE = 1;
 const DORMANT = 0;
 
-const landmarkModel = (key: (typeof deepSites)[number]["key"], name: string, activation: number) => {
-  const landmark = deepLandmark(key, activation);
+const landmarkModel = async (key: (typeof deepSites)[number]["key"], name: string, activation: number) => {
+  const landmark = await loadDeepLandmark(key, activation);
   return {
     model: new InstancedModel(landmark, SITE_CAPACITY, false, name),
     height: new Box3().setFromObject(landmark.scene).max.y,

@@ -1,0 +1,59 @@
+{
+  "doubleSided": true,
+  "roughness": {
+    "min": 0.45,
+    "max": 0.92,
+    "default": 0.76,
+    "fallbackThreshold": 0.85,
+    "foliage": 0.9,
+    "wood": 0.82,
+    "stone": 0.72,
+    "gold": 0.48
+  },
+  "metalness": {
+    "min": 0,
+    "max": 0.35,
+    "default": 0.04,
+    "fallbackThreshold": 0,
+    "stoneAccent": 0.08,
+    "gold": 0.3
+  },
+  "normal": {
+    "minScale": 0.1,
+    "scale": 0.65,
+    "bumpScale": 0.035
+  },
+  "ambientOcclusion": {
+    "mapIntensity": 0.85,
+    "groundHeight": 0.22,
+    "groundMin": 0.86
+  },
+  "albedo": {
+    "shadowLift": 0.026,
+    "shadowRange": 0.2,
+    "pivot": 0.12,
+    "contrast": 1.06,
+    "vibrance": 0.18,
+    "warmStone": {
+      "red": 0.18,
+      "green": 0.05,
+      "blue": -0.18
+    }
+  },
+  "troop": {
+    "shadowLift": 0.042,
+    "shadowRange": 0.28,
+    "clothShadeScale": 3.8,
+    "clothShadeFloor": 0.34
+  },
+  "rim": {
+    "strength": 0.14,
+    "power": 2.8,
+    "color": "#c7d6eb"
+  },
+  "emissive": {
+    "bloomThreshold": 0.15,
+    "structuralEpsilon": 0.05,
+    "maxIntensity": 2.2
+  }
+}

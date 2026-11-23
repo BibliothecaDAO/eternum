@@ -1,5 +1,10 @@
 import { createOwnershipSailMaterial } from "../characters/ships/ship-sail-material";
 import { type Material, MeshBasicMaterial, MeshStandardMaterial } from "three";
+import {
+  createTripoModelMaterial,
+  isTripoModelMaterial,
+  isTripoTroopMaterial,
+} from "../materials/tripo-model-material";
 import { MaterialPool } from "../utils/material-pool";
 
 const materialPool = MaterialPool.getInstance();
@@ -10,6 +15,9 @@ function poolSingleMaterial(sourceMaterial: Material): Material {
     (sourceMaterial instanceof MeshStandardMaterial || sourceMaterial instanceof MeshBasicMaterial)
   ) {
     return createOwnershipSailMaterial(sourceMaterial);
+  }
+  if (isTripoModelMaterial(sourceMaterial) && sourceMaterial instanceof MeshStandardMaterial) {
+    return createTripoModelMaterial(sourceMaterial);
   }
   if (sourceMaterial instanceof MeshStandardMaterial) {
     const overrides = sourceMaterial.name?.includes("stand") ? { opacity: 0.9 } : {};
@@ -24,7 +32,9 @@ function poolSingleMaterial(sourceMaterial: Material): Material {
 }
 
 function usesOwnershipColor(material: Material): boolean {
-  return material.userData.ownershipColor === true || material.name?.includes("stand");
+  return (
+    material.userData.ownershipColor === true || isTripoTroopMaterial(material) || material.name?.includes("stand")
+  );
 }
 
 export function createPooledInstancedMaterial(sourceMaterial: Material | Material[]): {
@@ -44,7 +54,7 @@ export function createPooledInstancedMaterial(sourceMaterial: Material | Materia
 export function releasePooledInstancedMaterial(material: Material | Material[]): void {
   const materials = Array.isArray(material) ? material : [material];
   materials.forEach((entry) => {
-    if (entry.userData.ownershipColor === true) entry.dispose();
+    if (entry.userData.ownershipColor === true || isTripoModelMaterial(entry)) entry.dispose();
     else materialPool.releaseMaterial(entry);
   });
 }

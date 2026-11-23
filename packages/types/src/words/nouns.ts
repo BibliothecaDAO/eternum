@@ -162,10 +162,29 @@ export const layerName = (depth: number): string => {
 export const ETERNUM_MAP_NAMES = [LAYER_NAMES[0], "Ethereal Layer"] as const;
 export const eternumMapName = (alt: boolean): string => ETERNUM_MAP_NAMES[alt ? 1 : 0];
 
-export type BeastModel = "troll" | "wyvern" | "hydra" | "wraith" | "cyclops" | "ammit" | "basilisk" | "dark-fey";
+export type BeastModel =
+  | "troll"
+  | "wyvern"
+  | "hydra"
+  | "wraith"
+  | "cyclops"
+  | "ammit"
+  | "basilisk"
+  | "dark-fey"
+  | "balrog"
+  | "colossus"
+  | "warlock"
+  | "banshee"
+  | "golem"
+  | "kappa"
+  | "tarrasque"
+  | "lich"
+  | "ettin"
+  | "kitsune"
+  | "minotaur";
 export type BeastFamily = "herd" | "band" | "camp" | "rift" | "ruin";
 export type BeastIdle = { motion: "breath" | "lift"; speed: number; height: number } | { motion: "hover" };
-type BeastLook = { model: BeastModel; fallback?: never } | { model?: never; fallback: BeastModel };
+type BeastLook = { model: BeastModel };
 export type BeastRow = {
   name: string;
   family: BeastFamily;
@@ -182,25 +201,25 @@ const hover = { motion: "hover" } as const;
 export const BEASTS = {
   cyclops: { name: "Cyclops", family: "herd", layer: 0, scale: 1, model: "cyclops", idle: breath(1.5, 0.016) },
   hydra: { name: "Hydra", family: "herd", layer: 1, scale: 1.2, model: "hydra", idle: breath(0.9, 0.018) },
-  tarrasque: { name: "Tarrasque", family: "herd", layer: 2, scale: 1, fallback: "cyclops", idle: breath(1.2, 0.018) },
+  tarrasque: { name: "Tarrasque", family: "herd", layer: 2, scale: 1, model: "tarrasque", idle: breath(1.2, 0.018) },
   wraith: { name: "Wraith", family: "band", layer: 0, scale: 1, model: "wraith", idle: lift(1.2, 0.028) },
-  banshee: { name: "Banshee", family: "band", layer: 1, scale: 1, fallback: "wraith", idle: lift(1.5, 0.024) },
-  lich: { name: "Lich", family: "band", layer: 2, scale: 1, fallback: "wraith", idle: lift(0.9, 0.02) },
+  banshee: { name: "Banshee", family: "band", layer: 1, scale: 1, model: "banshee", idle: lift(1.5, 0.024) },
+  lich: { name: "Lich", family: "band", layer: 2, scale: 1, model: "lich", idle: lift(0.9, 0.02) },
   troll: { name: "Troll", family: "camp", layer: 0, scale: 0.85, model: "troll", idle: breath(1.1, 0.014) },
-  golem: { name: "Golem", family: "camp", layer: 1, scale: 0.85, fallback: "troll", idle: breath(0.7, 0.01) },
-  ettin: { name: "Ettin", family: "camp", layer: 2, scale: 0.85, fallback: "troll", idle: breath(1.3, 0.016) },
+  golem: { name: "Golem", family: "camp", layer: 1, scale: 0.85, model: "golem", idle: breath(0.7, 0.01) },
+  ettin: { name: "Ettin", family: "camp", layer: 2, scale: 0.85, model: "ettin", idle: breath(1.3, 0.016) },
   fairy: { name: "Fairy", family: "rift", layer: 0, scale: 0.75, model: "dark-fey", idle: hover },
-  kappa: { name: "Kappa", family: "rift", layer: 1, scale: 0.75, fallback: "dark-fey", idle: breath(1.6, 0.012) },
-  kitsune: { name: "Kitsune", family: "rift", layer: 2, scale: 0.75, fallback: "dark-fey", idle: breath(1.3, 0.012) },
+  kappa: { name: "Kappa", family: "rift", layer: 1, scale: 0.75, model: "kappa", idle: breath(1.6, 0.012) },
+  kitsune: { name: "Kitsune", family: "rift", layer: 2, scale: 0.75, model: "kitsune", idle: breath(1.3, 0.012) },
   wyvern: { name: "Wyvern", family: "ruin", layer: 0, scale: 1.35, model: "wyvern", idle: breath(1, 0.018) },
   ammit: { name: "Ammit", family: "ruin", layer: 1, scale: 1.2, model: "ammit", idle: breath(1.4, 0.01) },
-  minotaur: { name: "Minotaur", family: "ruin", layer: 2, scale: 1.2, fallback: "ammit", idle: breath(1.1, 0.012) },
+  minotaur: { name: "Minotaur", family: "ruin", layer: 2, scale: 1.2, model: "minotaur", idle: breath(1.1, 0.012) },
 } as const satisfies Record<string, BeastRow>;
 
 export const DEEP_BEASTS = {
-  foundation: { name: "Colossus", scale: 1.3, fallback: "troll", idle: breath(0.8, 0.012) },
-  core: { name: "Warlock", scale: 1.4, fallback: "dark-fey", idle: hover },
-  mine: { name: "Balrog", scale: 1.1, fallback: "troll", idle: breath(1, 0.016) },
+  foundation: { name: "Colossus", scale: 1.3, model: "colossus", idle: breath(0.8, 0.012) },
+  core: { name: "Warlock", scale: 1.4, model: "warlock", idle: hover },
+  mine: { name: "Balrog", scale: 1.1, model: "balrog", idle: breath(1, 0.016) },
   altar: { name: "Basilisk", scale: 1.2, model: "basilisk", idle: breath(1.3, 0.014) },
 } as const satisfies Record<(typeof deepSites)[number]["key"], DeepBeastRow>;
 
@@ -210,10 +229,10 @@ export const DEEPLESS_FOURTH_LAYER_BEASTS = {
   band: { ...BEASTS.wraith, layer: 3 },
   camp: { ...BEASTS.troll, layer: 3 },
   rift: { ...BEASTS.fairy, name: "Dark fey", layer: 3 },
-  ruin: { ...BEASTS.hydra, family: "ruin", layer: 3, scale: 1.7 },
+  ruin: { ...BEASTS.hydra, family: "ruin", layer: 3, scale: 1.2 },
 } as const satisfies Record<BeastFamily, BeastRow>;
 
-export const beastModel = (beast: BeastLook): BeastModel => beast.model ?? beast.fallback;
+export const beastModel = (beast: BeastLook): BeastModel => beast.model;
 
 export const beastOfModel = (model: BeastModel) =>
   [...Object.values<DeepBeastRow>(BEASTS), ...Object.values<DeepBeastRow>(DEEP_BEASTS)].find(

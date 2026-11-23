@@ -3419,6 +3419,116 @@
         "kind": "painted",
         "sha256": "33d8367bf9845a753009eb0920289184c33f64b51ed8a40d0ca1be2a29750732"
       }
+    },
+    {
+      "id": "beast-balrog",
+      "label": "Balrog",
+      "family": "Beasts",
+      "source": {
+        "kind": "model-render",
+        "model": "/models/frontier/beast-balrog.glb",
+        "sha256": "53d8ae3bcf499b81ceb4c913f15bae9a5c8616d6846947e218f8f48f1d31f1da"
+      }
+    },
+    {
+      "id": "beast-colossus",
+      "label": "Colossus",
+      "family": "Beasts",
+      "source": {
+        "kind": "model-render",
+        "model": "/models/frontier/beast-colossus.glb",
+        "sha256": "41ec4c9d0180c22158b4d2d1df9238fbc6d4a36590997c28a4e18e5d446f05c4"
+      }
+    },
+    {
+      "id": "beast-warlock",
+      "label": "Warlock",
+      "family": "Beasts",
+      "source": {
+        "kind": "model-render",
+        "model": "/models/frontier/beast-warlock.glb",
+        "sha256": "9b7bf0eb9c9555a2afb81864aea511be433fae706862589fcdec2e2998e5bdcc"
+      }
+    },
+    {
+      "id": "beast-banshee",
+      "label": "Banshee",
+      "family": "Beasts",
+      "source": {
+        "kind": "model-render",
+        "model": "/models/frontier/beast-banshee.glb",
+        "sha256": "56399edc8ea34968c11946cc81d2fd89b3017c404b1a0c1868dd5d50074857e6"
+      }
+    },
+    {
+      "id": "beast-golem",
+      "label": "Golem",
+      "family": "Beasts",
+      "source": {
+        "kind": "model-render",
+        "model": "/models/frontier/beast-golem.glb",
+        "sha256": "3ba3e823229b993435b708f4514feaf6d56666971f87086d9f872e5c7faeed69"
+      }
+    },
+    {
+      "id": "beast-kappa",
+      "label": "Kappa",
+      "family": "Beasts",
+      "source": {
+        "kind": "model-render",
+        "model": "/models/frontier/beast-kappa.glb",
+        "sha256": "0fd5740cd40b2ff7e8be82bb626f7012b084d81bffbc3bc7e44f5c0a3464f7e0"
+      }
+    },
+    {
+      "id": "beast-tarrasque",
+      "label": "Tarrasque",
+      "family": "Beasts",
+      "source": {
+        "kind": "model-render",
+        "model": "/models/frontier/beast-tarrasque.glb",
+        "sha256": "a6895c3c809409b932f6102874201b398576754edc26212c291093eb73bad679"
+      }
+    },
+    {
+      "id": "beast-lich",
+      "label": "Lich",
+      "family": "Beasts",
+      "source": {
+        "kind": "model-render",
+        "model": "/models/frontier/beast-lich.glb",
+        "sha256": "c64245913275ef2a4998dd6c8f856230f6a5c6ccfa3bf99228f10c52d58ed15e"
+      }
+    },
+    {
+      "id": "beast-ettin",
+      "label": "Ettin",
+      "family": "Beasts",
+      "source": {
+        "kind": "model-render",
+        "model": "/models/frontier/beast-ettin.glb",
+        "sha256": "436f5351705e6265130c52a3666b9a82a90ce1eac1b4eac1e2f77236f25ca23f"
+      }
+    },
+    {
+      "id": "beast-kitsune",
+      "label": "Kitsune",
+      "family": "Beasts",
+      "source": {
+        "kind": "model-render",
+        "model": "/models/frontier/beast-kitsune.glb",
+        "sha256": "e4bcaa6a26dc36d668e96ed21c378dc857c4f34ccabfeb09580be95703343dc0"
+      }
+    },
+    {
+      "id": "beast-minotaur",
+      "label": "Minotaur",
+      "family": "Beasts",
+      "source": {
+        "kind": "model-render",
+        "model": "/models/frontier/beast-minotaur.glb",
+        "sha256": "1c2d9582d8a50f2b4b813f6386931fd4374f89cfbf4cac7721eeb7ce23813f10"
+      }
     }
   ]
 }

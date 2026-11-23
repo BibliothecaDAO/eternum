@@ -89,6 +89,7 @@ import { aspects, DEEP_BEASTS, deepSites, ordersOfAspect, TileOccupier } from "@
 import { deepGateTiles } from "@bibliothecadao/eternum/game-client";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { FRONTIER_BEASTS } from "../structures/frontier-beast";
+import { DEEP_SITE_MODELS } from "../structures/deep-landmarks";
 import { DEEP_SITE_FACES } from "@/ui/features/frontier/deep/deep-site-faces";
 import { MapSiteManager } from "./map-site-manager";
 import { PLATE_CLEARANCE } from "./structure-visible-presentation";
@@ -108,10 +109,14 @@ const tile = (col: number, occupierType: number) => ({
 });
 
 describe("the Deep's sites on the map", () => {
-  it("draws each site kind as its own landmark, once per site, from no model file", async () => {
+  it("draws each site kind from its own landmark model, once per site", async () => {
     mode.id = "frontier";
     models.length = 0;
     load.mockReset();
+    load.mockImplementation(async (path: string) => ({
+      path,
+      scene: new Mesh(new BoxGeometry(1, 1.4, 1), new MeshBasicMaterial()),
+    }));
     const tiles = deepSites.map((_, index) => tile(10 + index, TileOccupier.DeepSite));
     const projection = { getTiles: () => tiles, subscribeTiles: () => () => {} };
     const plates = { setLabel: vi.fn(), retainOnly: vi.fn(), dispose: vi.fn(), setHover: vi.fn(), clearHover: vi.fn() };
@@ -130,7 +135,7 @@ describe("the Deep's sites on the map", () => {
     );
     await vi.waitFor(() => expect(models.map(({ name }) => name).toSorted()).toEqual(ALL_KIND_NAMES));
     expect(models.map(({ count }) => count)).toEqual([1, 1, 1, 1]);
-    expect(load).not.toHaveBeenCalled();
+    expect(load.mock.calls.map(([path]) => path).toSorted()).toEqual(Object.values(DEEP_SITE_MODELS).toSorted());
     manager.destroy();
   });
 
@@ -170,10 +175,10 @@ describe("the Deep's sites on the map", () => {
       noGates() as never,
     );
     await vi.waitFor(() =>
-      expect(beasts.map(({ species }) => species).toSorted()).toEqual(["basilisk", "troll", "troll"]),
+      expect(beasts.map(({ species }) => species).toSorted()).toEqual(["balrog", "basilisk", "colossus"]),
     );
     expect(load).toHaveBeenCalledWith(FRONTIER_BEASTS.basilisk.path);
-    expect(load).not.toHaveBeenCalledWith(FRONTIER_BEASTS["dark-fey"].path);
+    expect(load).not.toHaveBeenCalledWith(FRONTIER_BEASTS.warlock.path);
     const basilisk = beasts.find(({ species }) => species === "basilisk")!;
     expect(basilisk.count).toBe(1);
     expect(basilisk.scales[0]).toBeCloseTo(DEEP_BEASTS.altar.scale);
@@ -242,7 +247,7 @@ describe("the Deep's sites on the map", () => {
     expect(beasts).toEqual([]);
     expect(plates.setLabel.mock.calls.map(([plate]) => plate.plate.icon)).not.toContain("lock");
     headAt(100);
-    await vi.waitFor(() => expect(standingBeasts()).toEqual(["basilisk", "troll", "troll"]));
+    await vi.waitFor(() => expect(standingBeasts()).toEqual(["balrog", "basilisk", "colossus"]));
     await vi.waitFor(() => expect(drawnScenes()).toEqual(["deep-landmark-core-dormant"]));
     expect(plates.setLabel.mock.calls.findLast(([plate]) => plate.entityId === core)![0].plate.icon).toBe("lock");
     manager.destroy();
@@ -251,10 +256,10 @@ describe("the Deep's sites on the map", () => {
   it("stands a beast beaten yesterday back on its site when the day turns, with no site fact arriving", async () => {
     const altar = 10 + deepSites.findIndex(({ key }) => key === "altar");
     const { manager } = guardedSites(100, ["altar"]);
-    await vi.waitFor(() => expect(standingBeasts()).toEqual(["dark-fey", "troll", "troll"]));
+    await vi.waitFor(() => expect(standingBeasts()).toEqual(["balrog", "colossus", "warlock"]));
     beastTroops.set(altar, 5_000n);
     headAt(clock.day + 100);
-    await vi.waitFor(() => expect(standingBeasts()).toEqual(["basilisk", "dark-fey", "troll", "troll"]));
+    await vi.waitFor(() => expect(standingBeasts()).toEqual(["balrog", "basilisk", "colossus", "warlock"]));
     manager.destroy();
     clock.tick = 0;
   });

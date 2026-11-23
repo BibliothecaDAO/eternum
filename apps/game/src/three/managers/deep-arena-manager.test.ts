@@ -1,29 +1,32 @@
-import { Scene } from "three";
+import { BoxGeometry, Mesh, MeshBasicMaterial, Scene } from "three";
 import { describe, expect, it, vi } from "vitest";
 import { configManager } from "@bibliothecadao/eternum";
 import { deepZoneBounds } from "@bibliothecadao/eternum/game-client";
 import { frontierSeasonOnePreset } from "../../../../../config/source/frontier/season-one";
+import { DEEP_GATE_MODELS } from "../structures/deep-landmarks";
 import { DEEP_FLOOR } from "../terrain/deep-floor-material";
 import { FLAT_TERRAIN_SURFACE } from "../terrain/terrain-surface";
 import { DeepArenaManager } from "./deep-arena-manager";
 
-vi.mock("@/hooks/store/use-account-store", () => ({ accountAddress: () => null }));
+const { loadGate } = vi.hoisted(() => ({
+  loadGate: vi.fn(async (path: string) => ({
+    path,
+    scene: new Mesh(new BoxGeometry(1, 1.4, 1), new MeshBasicMaterial()),
+  })),
+}));
+
 vi.mock("@/ui/config", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/ui/config")>()),
   FELT_CENTER: () => 0,
 }));
-vi.mock("three", async (importOriginal) => {
-  const three = await importOriginal<typeof import("three")>();
-  return {
-    ...three,
-    TextureLoader: class {
-      load = () => new three.Texture();
-    },
-  };
-});
+vi.mock("../utils/utils", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../utils/utils")>()),
+  gltfLoader: { loadAsync: loadGate },
+}));
 
 describe("the Deep arena", () => {
   it("draws its floor's zones from the one bounds table the props and cards read", () => {
+    loadGate.mockClear();
     vi.spyOn(configManager, "getActiveGameId").mockReturnValue(1);
     const { gateDistance, rings } = frontierSeasonOnePreset.deep;
     const rules = { game_id: 1, gate_distance: gateDistance, rings };
@@ -43,6 +46,7 @@ describe("the Deep arena", () => {
       rimBeyond: DEEP_FLOOR.rimBeyond.value,
     }).toEqual(bounds);
     expect(bounds).toEqual({ plazaBelow: 5, ringRadii: [7, 11, 15, 19], rimBeyond: 20 });
+    expect(loadGate.mock.calls.map(([path]) => path).toSorted()).toEqual(Object.values(DEEP_GATE_MODELS).toSorted());
     manager.destroy();
   });
 

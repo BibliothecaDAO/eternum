@@ -1095,5 +1095,49 @@
   "faceted/aspect-insight": {
     "verdict": "beats shipped",
     "reason": "Approved Season 1 Aspect Facet emblem published through the facets 64/128/256 webp pipeline."
+  },
+  "faceted/beast-balrog": {
+    "verdict": "beats shipped",
+    "reason": "Studio portrait of shipped Deep guardian Balrog model, normalized to the Facets delivery contract."
+  },
+  "faceted/beast-colossus": {
+    "verdict": "beats shipped",
+    "reason": "Studio portrait of shipped Deep guardian Colossus model, normalized to the Facets delivery contract."
+  },
+  "faceted/beast-warlock": {
+    "verdict": "beats shipped",
+    "reason": "Studio portrait of shipped Deep guardian Warlock model, normalized to the Facets delivery contract."
+  },
+  "faceted/beast-banshee": {
+    "verdict": "beats shipped",
+    "reason": "Studio portrait of shipped Veil beast Banshee model, normalized to the Facets delivery contract."
+  },
+  "faceted/beast-golem": {
+    "verdict": "beats shipped",
+    "reason": "Studio portrait of shipped Veil beast Golem model, normalized to the Facets delivery contract."
+  },
+  "faceted/beast-kappa": {
+    "verdict": "beats shipped",
+    "reason": "Studio portrait of shipped Veil beast Kappa model, normalized to the Facets delivery contract."
+  },
+  "faceted/beast-tarrasque": {
+    "verdict": "beats shipped",
+    "reason": "Studio portrait of shipped Hollow beast Tarrasque model, normalized to the Facets delivery contract."
+  },
+  "faceted/beast-lich": {
+    "verdict": "beats shipped",
+    "reason": "Studio portrait of shipped Hollow beast Lich model, normalized to the Facets delivery contract."
+  },
+  "faceted/beast-ettin": {
+    "verdict": "beats shipped",
+    "reason": "Studio portrait of shipped Hollow beast Ettin model, normalized to the Facets delivery contract."
+  },
+  "faceted/beast-kitsune": {
+    "verdict": "beats shipped",
+    "reason": "Studio portrait of shipped Hollow beast Kitsune model, normalized to the Facets delivery contract."
+  },
+  "faceted/beast-minotaur": {
+    "verdict": "beats shipped",
+    "reason": "Studio portrait of shipped Hollow beast Minotaur model, normalized to the Facets delivery contract."
   }
 }

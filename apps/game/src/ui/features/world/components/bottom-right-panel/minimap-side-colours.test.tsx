@@ -41,7 +41,7 @@ describe("the minimap draws each thing in its map label's colour", () => {
 
 describe("enemies are red on the minimap", () => {
   it.each([
-    ["Frontier", GAME_FAMILIES.frontier, "beast-troll"],
+    ["Frontier", GAME_FAMILIES.frontier, "beast-golem"],
     ["Blitz", GAME_FAMILIES.blitz, "camp"],
   ] as const)(
     "in %s, another player's realm and army and a beast's camp are red; yours are green",

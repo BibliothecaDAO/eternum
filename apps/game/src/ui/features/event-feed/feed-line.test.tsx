@@ -301,11 +301,11 @@ it("keeps a site's guard once the player's map lets the site go, as when their a
     clear: null,
   });
   await draw(fightAt(CAMP));
-  expect(paintings()).toEqual(["attack", "beast-troll"]);
+  expect(paintings()).toEqual(["attack", "beast-golem"]);
   await act(async () => game.store.applyFacts([{ model: "ExpeditionSite", key: "0x1:0x2329", value: null }] as never));
   await act(async () => new Promise((settled) => setTimeout(settled, 0)));
   expect(game.store.get("ExpeditionSite", { game_id: 1, entity_id: CAMP })).toBeUndefined();
-  expect(paintings()).toEqual(["attack", "beast-troll"]);
+  expect(paintings()).toEqual(["attack", "beast-golem"]);
 });
 
 it("reads a clear's credited resources near or far without retired progression rewards", async () => {

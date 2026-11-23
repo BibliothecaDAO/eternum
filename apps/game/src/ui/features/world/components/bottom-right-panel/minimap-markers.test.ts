@@ -16,11 +16,11 @@ afterEach(() => {
 });
 
 describe("minimap icon meanings from game facts", () => {
-  it("uses the Troll in Frontier and the camp structure in Blitz", () => {
+  it("uses the Golem in Frontier and the camp structure in Blitz", () => {
     const { store } = campBeside();
     const game = store.require("GameRegistry", { game_id: 1 });
     for (const [family, expected] of [
-      [GAME_FAMILIES.frontier, "beast-troll"],
+      [GAME_FAMILIES.frontier, "beast-golem"],
       [GAME_FAMILIES.blitz, "camp"],
     ] as const) {
       store.applyFacts([{ model: "GameRegistry", key: "0x3", value: { ...game, family } }]);
@@ -44,7 +44,7 @@ describe("minimap icon meanings from game facts", () => {
     const { store } = campBeside();
     const markers = minimapMarkersView.read(store, ContractAddress("0x111"));
     expect(markers.get("7")).toEqual({ name: "map-realm-0", owner: "own", value: "0" });
-    expect(markers.get(String(SITE))).toEqual({ name: "beast-troll", owner: "neutral", value: undefined });
+    expect(markers.get(String(SITE))).toEqual({ name: "beast-golem", owner: "neutral", value: undefined });
     expect(markers.get("201")).toEqual({ name: "map-army", owner: "own", value: "••" });
     expect(minimapMarkersView.read(store, null).get("201")?.owner).toBe("enemy");
     expect(minimapMarkersView.read(store, ContractAddress("0x222")).get("201")?.owner).toBe("enemy");

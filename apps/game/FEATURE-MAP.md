@@ -979,11 +979,11 @@ plate has a species title and strength, with no combat-tier badge. Retired study
 are removed.
 
 `pnpm --dir apps/game prove:beasts <local-url> <fresh-evidence-directory>` drives the beast lab's visible controls and
-records its models, its HUD portraits, plates and panels. `verify:beasts` checks every delivery, budgets and
-editable-source hashes; `verify:fallen-realm` checks decoded triangles for zero masonry contacts at each production
-scale. All authoring sources and paint live in `asset-sources/frontier-beasts/refined/`;
-`scripts/frontier-beasts/rebuild.sh <fresh-absolute-directory>` exports those exact packed sources. There is one
-production path per species and no separate study GLB.
+records its models, its HUD portraits, plates and panels. `verify:beasts` checks every delivery's budgets, footprint and
+exact `sourceSha256`/`fitSha256` hashes against its committed `asset-sources/tripo/` source GLB and `fit.json` through
+`ship-model.mjs`; `verify:fallen-realm` checks decoded triangles for zero masonry contacts at each production scale.
+Every species ships through `pnpm --dir apps/game ship:model --kind beast`, with one production path per species and no
+separate study GLB.
 
 Training buildings grant their first rank when built: 12,000 Essence + 3,000 Labor, with the lodge's kind chosen on the
 build sheet. Research and building gems run from Common I to Legendary V; the model shows the highest side level.
