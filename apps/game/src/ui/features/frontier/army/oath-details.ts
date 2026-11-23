@@ -6,7 +6,6 @@ import {
   damageDealtEffect,
   damageTakenEffect,
   fromToEffect,
-  insteadOfEffect,
   percentFromTo,
   staminaRecoveryEffect,
   type PickEffectBase,
@@ -30,11 +29,8 @@ export function oathEffectDescription(id: number, base: PickEffectBase): string 
     return damageTakenEffect(oaths.PROTECTION_REDUCTION_PERCENT, PICK_EFFECT_WORDS.guardingSite);
   if (id === oaths.REFLECTION)
     return percentFromTo(PICK_EFFECT_WORDS.wellRefill, rules.WELL_REFILL_PERCENT, oaths.REFLECTION_WELL_PERCENT);
-  if (id === oaths.DETECTION) {
-    const next = formatCount(oaths.DETECTION_EMPTY_REVEAL_LIMIT, "empty reveal");
-    if (base.emptyRevealLimit === undefined) return PICK_EFFECT_WORDS.findAfter(next);
-    return insteadOfEffect(PICK_EFFECT_WORDS.findAfterLead, next, formatExact(base.emptyRevealLimit));
-  }
+  if (id === oaths.DETECTION)
+    return PICK_EFFECT_WORDS.findAfter(formatCount(oaths.DETECTION_EMPTY_REVEAL_LIMIT, "empty reveal"));
   if (id === oaths.BRILLIANCE)
     return percentFromTo(PICK_EFFECT_WORDS.exploreRewards, 100, oaths.BRILLIANCE_PAY_PERCENT);
   if (id === oaths.RAGE) return percentFromTo(PICK_EFFECT_WORDS.siteAndGuardRewards, 100, oaths.RAGE_PAY_PERCENT);

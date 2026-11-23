@@ -4,15 +4,12 @@ import { configManager } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { formatPercent, formatRate, RESOURCE_PRECISION } from "@bibliothecadao/types";
 
-import release from "../../../../../../contracts/l3/world-native/schema/release-definition.json";
-
 export interface PickEffectBase {
   attackStamina?: number;
   revealStamina?: number;
   maxStamina?: number;
   staminaPerSecond?: number;
   deepLossPerTick?: number;
-  emptyRevealLimit?: number;
 }
 
 const PICK_EFFECT_MODELS = ["SliceRules", "DeepRules"] as const;
@@ -30,7 +27,6 @@ export function readPickEffectBase(store: Pick<NativeFactStore, "get">, gameId: 
         ? slice.troop_stamina_config.stamina_gain_per_tick / Math.max(1, tickSeconds)
         : undefined,
     deepLossPerTick: deep ? Number(deep.loss_per_tick) / RESOURCE_PRECISION : undefined,
-    emptyRevealLimit: slice ? release.definition.economy.discovery.Some.empty_reveal_limit : undefined,
   };
 }
 
@@ -41,9 +37,6 @@ export function usePickEffectBase(): PickEffectBase {
 
 export const fromToEffect = (label: string, from: string, to: string, note?: string): string =>
   note ? `${label}: ${from} → ${to} (${note})` : `${label}: ${from} → ${to}`;
-
-export const insteadOfEffect = (lead: string, next: string, base: string): string =>
-  PICK_EFFECT_WORDS.insteadOf(lead, next, base);
 
 export const percentFromTo = (label: string, fromPercent: number, toPercent: number, note?: string): string =>
   fromToEffect(label, formatPercent(fromPercent / 100), formatPercent(toPercent / 100), note);
