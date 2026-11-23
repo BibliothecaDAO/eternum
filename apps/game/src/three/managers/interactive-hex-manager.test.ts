@@ -37,4 +37,24 @@ describe("a buildable hex's band", () => {
     manager.setSurfaceVisibility(false);
     expect(bandHeight(manager, scene)).toBeLessThan(0.4);
   });
+
+  it("renders buildable plots through a 4-channel RGBA vertex-colour overlay whose opacity clears when hidden", () => {
+    const scene = new THREE.Scene();
+    const manager = new InteractiveHexManager(scene, groundWithRisingEdge(0), AT_ORIGIN as never);
+    manager.addHex({ col: 0, row: 0 });
+    manager.renderAllHexes();
+    const mesh = scene.children.find((child): child is THREE.InstancedMesh => child instanceof THREE.InstancedMesh)!;
+    const material = mesh.material as THREE.Material & {
+      colorNode?: unknown;
+      opacityNode?: unknown;
+      opacity: number;
+    };
+    expect(mesh.geometry.getAttribute("color").itemSize).toBe(4);
+    expect(material.colorNode).toBeTruthy();
+    expect(material.opacityNode).toBeTruthy();
+    expect(material.opacity).toBe(1);
+    manager.setSurfaceVisibility(false);
+    expect(material.opacity).toBe(0);
+    manager.destroy();
+  });
 });
