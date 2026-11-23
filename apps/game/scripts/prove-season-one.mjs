@@ -71,6 +71,16 @@ const SIZES = [
   ["phone", "390", "844"],
 ];
 
+const captureScreenshot = (browser, path) => {
+  try {
+    browser.screenshot(path);
+  } catch (error) {
+    if (!String(error).includes("Page.captureScreenshot")) throw error;
+    browser.run(["wait", "250"]);
+    browser.screenshot(path);
+  }
+};
+
 const option = (key, fallback) => (process.argv.includes(key) ? process.argv[process.argv.indexOf(key) + 1] : fallback);
 const out = option("--out", join(homedir(), "projects/eternum-lanes/evidence/s1-client", String(Date.now())));
 const port = option("--port", "4421");
@@ -93,7 +103,7 @@ await withDevClient({ base: option("--base-url", null), port, out }, async (base
           writeFileSync(join(out, `${file}-${device}-errors.txt`), browser.run(["errors"]));
           throw error;
         } finally {
-          browser.screenshot(join(out, `${file}-${device}.png`));
+          captureScreenshot(browser, join(out, `${file}-${device}.png`));
         }
       }
       const errors = browser.run(["errors"]);
