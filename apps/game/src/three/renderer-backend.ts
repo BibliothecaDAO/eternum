@@ -20,6 +20,9 @@ export interface RendererAdapterInfo {
 export interface RendererBackendCapabilities {
   supportsEnvironmentIbl: boolean;
   supportsToneMappingControl: boolean;
+  supportsColorGrade: boolean;
+  supportsBloom: boolean;
+  supportsVignette: boolean;
   supportsChromaticAberration: boolean;
   supportsWideLines: boolean;
 }
@@ -83,9 +86,12 @@ export function createRendererBackendCapabilities(
   input: Partial<RendererBackendCapabilities> = {},
 ): RendererBackendCapabilities {
   return {
+    supportsBloom: input.supportsBloom ?? false,
     supportsChromaticAberration: input.supportsChromaticAberration ?? false,
+    supportsColorGrade: input.supportsColorGrade ?? false,
     supportsEnvironmentIbl: input.supportsEnvironmentIbl ?? false,
     supportsToneMappingControl: input.supportsToneMappingControl ?? false,
+    supportsVignette: input.supportsVignette ?? false,
     supportsWideLines: input.supportsWideLines ?? false,
   };
 }

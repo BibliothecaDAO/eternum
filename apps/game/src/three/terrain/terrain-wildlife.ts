@@ -1,7 +1,7 @@
 import { Group, Matrix4, Vector3 } from "three";
 import { clone as cloneWithSkeleton } from "three/addons/utils/SkeletonUtils.js";
 import type { MeshStandardNodeMaterial } from "three/webgpu";
-import { createCreatureAnimator } from "./creatures/biome-creature-animator";
+import { createCreatureAnimator } from "./creatures/biome-creature-animator.js";
 import { disposeBiomeCreature, loadBiomeCreature, releaseBiomeCreatureBones } from "./creatures/biome-creature-assets";
 import { creatureTraits, type CreatureSpecies } from "./creatures/biome-creature-catalog";
 import {

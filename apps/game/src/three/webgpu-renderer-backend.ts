@@ -140,9 +140,12 @@ let webGpuFrameRecoveryWarned = false;
 let webGpuRendererModulesPromise: Promise<WebGpuRendererModules> | null = null;
 
 const WEBGPU_RENDERER_BACKEND_CAPABILITIES = createRendererBackendCapabilities({
+  supportsBloom: true,
   supportsChromaticAberration: false,
+  supportsColorGrade: true,
   supportsEnvironmentIbl: false,
   supportsToneMappingControl: true,
+  supportsVignette: true,
   supportsWideLines: false,
 });
 

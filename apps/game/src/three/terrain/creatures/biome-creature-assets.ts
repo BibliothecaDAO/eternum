@@ -2,7 +2,7 @@ import { Box3, Group, Mesh, MeshStandardMaterial, SkinnedMesh, Texture, Vector3 
 import { MeshStandardNodeMaterial } from "three/webgpu";
 import { gltfLoader } from "../../utils/gltf-loader";
 import { creatureTraits, type CreatureSpecies } from "./biome-creature-catalog";
-import { createCreatureAnimator } from "./biome-creature-animator";
+import { createCreatureAnimator } from "./biome-creature-animator.js";
 
 /** Owned by one terrain instance; clones share GPU resources but never joint transforms. */
 export async function loadBiomeCreature(

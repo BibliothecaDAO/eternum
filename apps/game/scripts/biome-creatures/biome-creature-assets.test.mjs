@@ -6,7 +6,7 @@ import { KHRTextureBasisu } from "@gltf-transform/extensions";
 import { Object3D, Vector3 } from "three";
 import { describe, expect, it } from "vitest";
 
-import { createCreatureAnimator } from "../../src/three/terrain/creatures/biome-creature-animator";
+import { createCreatureAnimator } from "../../src/three/terrain/creatures/biome-creature-animator.js";
 import { CREATURE_SPECIES, homeBiome } from "../../src/three/terrain/creatures/biome-creature-catalog";
 import { countSurfacePieces } from "./creature-surface.mjs";
 

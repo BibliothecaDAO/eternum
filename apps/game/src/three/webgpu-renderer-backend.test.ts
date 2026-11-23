@@ -88,9 +88,12 @@ describe("createWebGPURendererBackend", () => {
     );
 
     expect(backend.capabilities).toEqual({
+      supportsBloom: true,
       supportsChromaticAberration: false,
+      supportsColorGrade: true,
       supportsEnvironmentIbl: false,
       supportsToneMappingControl: true,
+      supportsVignette: true,
       supportsWideLines: false,
     });
   });

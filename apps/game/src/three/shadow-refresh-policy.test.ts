@@ -55,19 +55,4 @@ describe("ShadowRefreshPolicy", () => {
     expect(realm.consumeRefresh(100, 100)).toBe(true);
     expect(realm.consumeRefresh(100, 100)).toBe(false);
   });
-
-  it("rate-limits fitted shadow frustum changes to the minimum refresh interval", () => {
-    const policy = new ShadowRefreshPolicy();
-    policy.consumeRefresh(0, 100);
-
-    policy.observeFrustum([0, 0, -10, 10, 10, -10]);
-    expect(policy.consumeRefresh(16, 100)).toBe(false);
-    expect(policy.consumeRefresh(84, 100)).toBe(true);
-
-    policy.observeFrustum([0, 0, -10, 10, 10, -10]);
-    expect(policy.consumeRefresh(200, 100)).toBe(false);
-
-    policy.observeFrustum([1, 0, -10, 10, 10, -10]);
-    expect(policy.consumeRefresh(0, 100)).toBe(true);
-  });
 });

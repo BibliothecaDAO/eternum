@@ -1,7 +1,7 @@
 import { BiomeType } from "@bibliothecadao/types";
 import { type EventDispatcher, type Group, type Mesh, type Object3D, Vector3 } from "three";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createCreatureAnimator } from "./creatures/biome-creature-animator";
+import { createCreatureAnimator } from "./creatures/biome-creature-animator.js";
 import { creatureTraits } from "./creatures/biome-creature-catalog";
 import { BiomeCreaturePopulation, type RoamingCreature, wildlifeRegion } from "./creatures/biome-creature-population";
 import {
