@@ -459,8 +459,7 @@ fn clear_site_left_unguarded(key: ResourceKey, target: Structure) {
         return;
     }
     crate::logic::expeditions::clear_site(
-        key,
-        crate::expeditions::SiteClear { explorer_id: 0, home_id: 0, reward: None },
+        key, crate::expeditions::SiteClear { explorer_id: 0, home_id: 0, reward: None },
     );
 }
 
