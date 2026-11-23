@@ -8,7 +8,7 @@ import type { IconMeaning } from "@/ui/design-system/icon";
  */
 export const OPENING = {
   launch: { icon: "realm", parts: [] },
-  barracks: { icon: "barracks", parts: ["troops-store", "building-list"] },
+  barracks: { icon: "barracks", parts: ["building-list"] },
   guard: { icon: "camp", parts: [] },
   oath: { icon: "shrine", parts: [] },
   essence: { icon: "essence", parts: ["essence-store", "research", "today"] },

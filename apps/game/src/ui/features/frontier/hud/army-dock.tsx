@@ -6,9 +6,9 @@ import { useLayout } from "@/shell/frame/layout";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { openArmyDeployment } from "@/ui/features/military/utils/open-army-deployment";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
-import { DEPLOY, DEPLOYING } from "@/ui/design-system/kit/words";
+import { DEPLOY, DEPLOYING, TROOPS } from "@/ui/design-system/kit/words";
 
-import { frontierTroopName, TroopTier } from "@bibliothecadao/types";
+import { formatAmount, frontierTroopName, TroopTier } from "@bibliothecadao/types";
 import type { Rank } from "@/ui/design-system/kit/words";
 
 import type { SlotStart } from "../deploy/deploy-plan";
@@ -37,7 +37,15 @@ export const ArmyDock = ({
   const actor = useAccountStore((state) => state.account?.address ?? null);
   // Only the actor's own armies are pan targets: a visited realm's army regions are not streamed.
   const own = actor !== null && BigInt(realm.owner) === BigInt(actor);
-  const openSlots = useDeployPlan(realm)?.open;
+  const plan = useDeployPlan(realm);
+  const openSlots = plan?.open;
+  const readyAtHome =
+    armies.length === 0 && plan?.troops && plan.troops.atHome > 0
+      ? {
+          count: formatAmount(plan.troops.atHome),
+          label: `${formatAmount(plan.troops.atHome)} ${frontierTroopName(plan.troops.type) ?? TROOPS}`,
+        }
+      : undefined;
   const openCount = ordersAllowed
     ? (openSlots?.length ?? Math.max(0, realm.base.troop_max_explorer_count - armies.length))
     : 0;
@@ -62,6 +70,7 @@ export const ArmyDock = ({
         realm={realm}
         slot={entry.slot}
         pulse={entry.slot === next && armies.length === 0}
+        stock={entry.slot === next ? readyAtHome : undefined}
         wide={desktop}
       />
     );
@@ -170,12 +179,14 @@ const DeploySlot = ({
   realm,
   slot,
   pulse,
+  stock,
   wide = false,
 }: {
   realm: NativeRows["Structure"];
   /** The slot and its start, as the deploy plan reads it; unknown while the plan is. */
   slot: SlotStart | undefined;
   pulse: boolean;
+  stock?: { count: string; label: string };
   wide?: boolean;
 }) => {
   const deploying = useInFlight("deploy", safeInteger(realm.entity_id));
@@ -187,6 +198,7 @@ const DeploySlot = ({
       filling={slot && deploying === slot.slot ? DEPLOYING : undefined}
       pulse={pulse}
       start={slot?.start && line ? { bar: slot.start, words: `${line}.` } : undefined}
+      stock={stock}
       onDeploy={() =>
         openArmyDeployment({ structureId: safeInteger(realm.entity_id), isExplorer: true, slot: slot?.slot })
       }

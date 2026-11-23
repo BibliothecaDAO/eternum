@@ -96,9 +96,10 @@ export function useOpening(
   const opened = openedMoments(progress.reached, onState);
   const moment = realm && progress.known ? nextLine(opened, progress.seen) : null;
   const lineRules = useOpeningRules(rules, realm);
+  const missingDeepRule = moment === "deep" && lineRules?.deepLossPerTick === undefined;
   return {
     opened: showEverything || !realm || races !== true || !progress.ownsParts ? "all" : opened,
-    line: showEverything || !moment || !lineRules ? null : { moment, rules: lineRules },
+    line: showEverything || !moment || !lineRules || missingDeepRule ? null : { moment, rules: lineRules },
     gotIt: () => moment && void seeLine(moment),
     offerDue:
       Boolean(realm) && races === true && siteAlertOfferDue(opened, progress.seen, progress.known, SITE_ALERT_OFFER),
@@ -112,13 +113,13 @@ function useOpeningRules(rules: ExpeditionRules, realm: NativeRows["Structure"] 
   if (!realm || troops === undefined) return null;
   const barracks = getBuildingQuantity(safeInteger(realm.entity_id), FIRST_BUILD, setup.store);
   const slice = setup.store.get("SliceRules", { game_id: realm.game_id });
+  if (!slice) return null;
   const deep = setup.store.get("DeepRules", { game_id: realm.game_id });
-  if (!slice || !deep) return null;
   const tickSeconds = Number(slice.tick_config.armies_tick_in_seconds);
   return {
     knightsAnHour: troops / Math.max(1, barracks),
     deepTickSeconds: tickSeconds,
-    deepLossPerTick: Number(deep.loss_per_tick) / RESOURCE_PRECISION,
+    deepLossPerTick: deep ? Number(deep.loss_per_tick) / RESOURCE_PRECISION : undefined,
     oathPassStamina: nativeOathConstants.PASS_STAMINA,
     spireDepthFactor: previewRuinGuardBounds(2, 1)[0] / previewRuinGuardBounds(1, 0)[0],
     staminaPerSecond: slice.troop_stamina_config.stamina_gain_per_tick / tickSeconds,

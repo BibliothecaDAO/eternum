@@ -229,7 +229,7 @@ const LAB_SHARED_DAY: SharedDay = {
   player: LAB_PLAYER,
   game: { chainId: LAB_CHAIN, gameId: 1 },
   day: 6,
-  totals: { reveals: 31, cleared: 6, chests: 0, essence: 420, labor: 1_200, lords: 0 },
+  totals: { reveals: 31, cleared: 6, essence: 420, labor: 1_200 },
   rank: { from: 5, to: 4 },
   trail: ["Ruin", "Rift", "Camp", "Beasts"],
   best: { kind: "clear", site: "Ruin", guard: 640, paid: { resource: "essence", amount: 420 } },

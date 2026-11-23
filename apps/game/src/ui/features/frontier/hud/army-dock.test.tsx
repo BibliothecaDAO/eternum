@@ -18,7 +18,15 @@ import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
 
 import { frontierDay } from "../deploy/deploy-fixture";
 import { ArmyDock } from "./army-dock";
-import { LAYER_NAMES } from "@bibliothecadao/types";
+import { frontierSeasonOnePreset } from "../../../../../../../config/source/frontier/season-one";
+import {
+  formatAmount,
+  FRONTIER_TROOP_NAMES,
+  LAYER_NAMES,
+  RESOURCE_PRECISION,
+  ResourcesIds,
+  TroopType,
+} from "@bibliothecadao/types";
 
 const BELOW_SURFACE = LAYER_NAMES.slice(1)
   .map((name) => `[aria-label="${name}"]`)
@@ -155,6 +163,83 @@ it.each(["phone", "desktop"] as const)(
         ],
       );
       expect(host.querySelector('nav[aria-label="Armies"] button[aria-label="Deploy"]')).not.toBeNull();
+    } finally {
+      act(() => root.unmount());
+      host.remove();
+    }
+  },
+);
+
+it.each(["phone", "desktop"] as const)(
+  "on a founded Realm with no army on %s, offers open Deploy slots and shows the preset Knights at home",
+  (size) => {
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    layout.current = size;
+    useAccountStore.setState({ account: { address: "0x111" } as never });
+    const { store, row } = frontierDay();
+    const startingKnights = frontierSeasonOnePreset.balance.startingResources.find(
+      (entry) => entry.resource === ResourcesIds.Knight,
+    )!.amount;
+    const startingWheat = frontierSeasonOnePreset.balance.startingResources.find(
+      (entry) => entry.resource === ResourcesIds.Wheat,
+    )!.amount;
+    store.applyFacts([
+      {
+        model: "ArmySlot",
+        key: "0x9",
+        value: {
+          game_id: 1,
+          structure_id: 7,
+          epoch: "0",
+          slot: 0,
+          explorer_id: 0,
+          stamina: { amount: "150", settled_at: "350", remainder: 0 },
+        },
+      },
+      {
+        model: "ResourceBalance",
+        key: "0x8",
+        value: {
+          game_id: 1,
+          entity_id: 7,
+          resource_type: ResourcesIds.Knight,
+          balance: String(BigInt(startingKnights) * BigInt(RESOURCE_PRECISION)),
+        },
+      },
+      {
+        model: "ResourceBalance",
+        key: "0xc",
+        value: {
+          game_id: 1,
+          entity_id: 7,
+          resource_type: ResourcesIds.Wheat,
+          balance: String(BigInt(startingWheat) * BigInt(RESOURCE_PRECISION)),
+        },
+      },
+    ] as never);
+    const host = document.createElement("div");
+    document.body.append(host);
+    const root = createRoot(host);
+    act(() =>
+      root.render(
+        <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: "0x111" } as never}>
+          <ArmyDock realm={row} armies={[]} />
+        </GameProvider>,
+      ),
+    );
+    try {
+      const slots = [...host.querySelectorAll<HTMLButtonElement>('button[aria-label="Deploy"]')];
+      expect(slots).toHaveLength(row.base.troop_max_explorer_count);
+      const expectedCount = formatAmount(startingKnights);
+      const expectedLabel = `${expectedCount} ${FRONTIER_TROOP_NAMES[TroopType.Knight]}`;
+      if (size === "desktop") {
+        expect(slots[0].textContent).toContain(expectedLabel);
+      } else {
+        expect(slots[0].textContent).toContain(expectedCount);
+        expect(slots[0].querySelector(`[aria-label="${expectedLabel}"]`)).not.toBeNull();
+      }
+      act(() => slots[0].click());
+      expect(useUIStore.getState().pendingMilitaryAction).toMatchObject({ structureId: 7, slot: 0 });
     } finally {
       act(() => root.unmount());
       host.remove();

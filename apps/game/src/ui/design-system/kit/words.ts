@@ -890,7 +890,7 @@ export const DAY_BANNER_WORDS = {
 export interface OpeningRules {
   knightsAnHour: number;
   deepTickSeconds: number;
-  deepLossPerTick: number;
+  deepLossPerTick?: number;
   oathPassStamina: number;
   spireDepthFactor: number;
   staminaPerSecond: number;
@@ -902,7 +902,7 @@ export interface OpeningRules {
 
 export const OPENING_WORDS = {
   lines: {
-    launch: () => "This is your Realm. Build on the lit plot, then send an army into the mist.",
+    launch: () => "This is your Realm. Build on the lit plot, then deploy an army into the mist.",
     barracks: (rules: OpeningRules) =>
       `A Barracks raises ${formatAmount(rules.knightsAnHour)} Knights an hour. Knights fill your armies.`,
     guard: () => "A blade or a bow shows its kind. Send 150% of the guard's troops to win.",
@@ -1528,7 +1528,7 @@ export const DOORWAY_WORDS = {
   secondsLeft: (seconds: number) => `About ${seconds} s left`,
   /** What the first minutes hold, said while a player's map loads. */
   firstTitle: "First: build a Barracks",
-  firstDetail: "Then send your first army to explore",
+  firstDetail: "Then deploy your first army to explore",
   /** The bar, named for assistive technology. */
   entering: "Entering the game",
   enteringRealm: (name: string) => `Entering ${name}`,

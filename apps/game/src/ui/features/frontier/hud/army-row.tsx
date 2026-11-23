@@ -65,6 +65,7 @@ export const OpenSlotCard = ({
   pulse,
   filling,
   start,
+  stock,
   selected,
   onDeploy,
 }: {
@@ -72,6 +73,7 @@ export const OpenSlotCard = ({
   pulse: boolean;
   filling?: string;
   start?: { bar: StaminaBar; words: string };
+  stock?: { count: string; label: string };
   selected?: boolean;
   onDeploy: () => void;
 }) => (
@@ -94,6 +96,7 @@ export const OpenSlotCard = ({
           <StaminaReading stamina={start.bar} />
         </span>
       )}
+      {stock && filling === undefined && <span className="frontier-army-card__hint">{stock.label}</span>}
     </span>
   </button>
 );

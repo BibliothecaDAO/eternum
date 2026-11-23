@@ -8,6 +8,7 @@ import {
 import { resolveResourceArrivalIndicators } from "@/ui/utils/resource-arrival-indicators";
 
 import { useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
+import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { useNowMs } from "@/hooks/helpers/use-block-timestamp";
@@ -274,13 +275,19 @@ const describeProvisionFailure = (
   return `Provisioning ${names} failed (attempt ${retry.attempt}): ${reason} · ${next}`;
 };
 
+const ACTION_RUNNER_MODELS = ["SliceRules"] as const;
+
 /** The background actors that submit transactions on their own; every other former store manager is the bridge. */
 export const ActionRunners = () => {
-  const mode = useResolvedWorldGameMode();
+  const {
+    setup: { store },
+  } = useGame();
+  useNativeRevision(ACTION_RUNNER_MODELS);
+  const hasRules = store.get("SliceRules", { game_id: configManager.getActiveGameId() }) !== undefined;
   return (
     <>
-      {mode !== "frontier" && <ResourceArrivalAutoClaim />}
-      <AutoProvisionRealms />
+      {hasRules && configManager.isCommandEnabled("OffloadArrival") && <ResourceArrivalAutoClaim />}
+      {hasRules && configManager.isCommandEnabled("ProvisionRealm") && <AutoProvisionRealms />}
     </>
   );
 };

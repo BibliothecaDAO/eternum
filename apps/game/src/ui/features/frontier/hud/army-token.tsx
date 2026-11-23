@@ -145,6 +145,7 @@ export const OpenSlot = ({
   pulse,
   filling,
   start,
+  stock,
   selected,
   onDeploy,
 }: {
@@ -156,6 +157,7 @@ export const OpenSlot = ({
   filling?: string;
   /** The bar the slot starts its army on, and that in words ("Army 2 starts on 7/150 stamina…"); none while unknown. */
   start?: { bar: StaminaBar; words: string };
+  stock?: { count: string; label: string };
   onDeploy: () => void;
 }) => (
   <button
@@ -171,6 +173,11 @@ export const OpenSlot = ({
     <SlotRing pulse={pulse} filling={filling} />
     {start && filling === undefined && <TokenStamina stamina={start.bar} />}
     <span className="text-hud-label leading-none text-hud-muted">{filling ?? label}</span>
+    {stock && filling === undefined && (
+      <span role="img" aria-label={stock.label} className="text-hud-body leading-none text-hud-ink tabular-nums">
+        {stock.count}
+      </span>
+    )}
   </button>
 );
 

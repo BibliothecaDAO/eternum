@@ -28,11 +28,10 @@ const line = (moment: OpeningMoment, onGotIt = () => {}) => {
 describe("the interface that opens as you play", () => {
   it("shows no waiting part at launch, and a part once its moment is reached", () => {
     const launch = new Set<OpeningMoment>(["launch"]);
-    expect(partShown(launch, "troops-store")).toBe(false);
+    expect(partShown(launch, "building-list")).toBe(false);
     expect(partShown(launch, "relic-slots")).toBe(false);
     expect(partShown(launch, "bane-row")).toBe(false);
     const barracks = new Set<OpeningMoment>(["launch", "barracks"]);
-    expect(partShown(barracks, "troops-store")).toBe(true);
     expect(partShown(barracks, "building-list")).toBe(true);
     expect(partShown(barracks, "essence-store")).toBe(false);
     expect(partShown(new Set<OpeningMoment>(["launch", "relic"]), "relic-slots")).toBe(true);
@@ -53,7 +52,7 @@ describe("the interface that opens as you play", () => {
   });
 
   it("says the design's line for each moment, naming the rules it reads", () => {
-    expect(line("launch")).toContain("This is your Realm. Build on the lit plot, then send an army into the mist.");
+    expect(line("launch")).toContain("This is your Realm. Build on the lit plot, then deploy an army into the mist.");
     expect(line("barracks")).toContain("A Barracks raises 100 Knights an hour. Knights fill your armies.");
     expect(line("guard")).toContain("A blade or a bow shows its kind. Send 150% of the guard's troops to win.");
     expect(line("oath")).toContain(
