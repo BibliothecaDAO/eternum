@@ -187,7 +187,7 @@ const OwnProfile = ({ account }: { account: string }) => {
   return (
     <div className="you-grid">
       <div className="flex min-w-0 flex-col gap-5">
-        <PlayerCard account={account} own showHoldings={false} />
+        <PlayerCard account={account} own />
       </div>
       <div className="flex min-w-0 flex-col gap-5">
         <RealmsShowcase />

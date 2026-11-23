@@ -69,6 +69,7 @@ export const ProfileView = ({ account, own }: { account: string; own: boolean })
   useLayout() === "phone" ? (
     <div data-you-profile className="flex flex-col gap-4">
       <PlayerCard account={account} own={own} />
+      {own && <HoldingsStrip />}
       {own && <WalletPanel />}
       <History account={account} own={own} />
     </div>
@@ -79,15 +80,7 @@ export const ProfileView = ({ account, own }: { account: string; own: boolean })
     </div>
   );
 
-export const PlayerCard = ({
-  account,
-  own,
-  showHoldings = true,
-}: {
-  account: string;
-  own: boolean;
-  showHoldings?: boolean;
-}) => {
+export const PlayerCard = ({ account, own }: { account: string; own: boolean }) => {
   const location = useLocation();
   const profile = useCardProfile(account, own);
   const { season, own: standing, field } = useSeasonStanding(account);
@@ -199,7 +192,6 @@ export const PlayerCard = ({
           )}
           {own && <OwnRatingLine />}
         </div>
-        {own && showHoldings && <HoldingsStrip />}
       </AppPanel>
     </div>
   );
