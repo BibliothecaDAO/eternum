@@ -17,6 +17,7 @@ import {
   CODE_CALLS,
   CODE_TOKEN,
   ERROR_CONSTRUCTOR,
+  isCodeTemplatePieces,
   LOG_CALL,
   TEXT_NAME,
   VISIBLE_ATTRIBUTES,
@@ -637,9 +638,7 @@ const roundsForArithmetic = (call) => {
 
 /** Whether a template builds code (a key, a path, a class), not words: every piece of its text is a code token. */
 const isCodeTemplate = (template) =>
-  [template.head.text, ...template.templateSpans.map((span) => span.literal.text)].every(
-    (piece) => piece === "" || CODE_TOKEN.test(piece),
-  );
+  isCodeTemplatePieces([template.head.text, ...template.templateSpans.map((span) => span.literal.text)]);
 
 /**
  * Whether a value ends where a player reads it: a JSX child, a visible attribute, a word template, a visible field of an

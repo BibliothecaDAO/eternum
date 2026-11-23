@@ -6,6 +6,7 @@ import {
   CODE_CALLS,
   CODE_TOKEN,
   ERROR_CONSTRUCTOR,
+  isCodeTemplatePieces,
   LOG_CALL,
   TEXT_NAME,
   VISIBLE_ATTRIBUTES,
@@ -86,7 +87,9 @@ const isExplicitVisibleSlot = (node) => {
       const attrName = up.name?.type === "JSXIdentifier" ? up.name.name : "";
       return VISIBLE_ATTRIBUTES.test(attrName);
     }
-    if (up.type === "TemplateLiteral") return !isNonPlayerContext(up);
+    if (up.type === "TemplateLiteral") {
+      return !isCodeTemplatePieces(up.quasis.map((quasi) => quasi.value.cooked ?? "")) && !isNonPlayerContext(up);
+    }
     if (up.type === "Property" && !up.computed && up.value === child) {
       const keyName = up.key?.type === "Identifier" ? up.key.name : (stringLiteral(up.key) ?? "");
       return VISIBLE_KEYS.test(keyName);

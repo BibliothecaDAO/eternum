@@ -134,6 +134,8 @@ describe("plain-words guard refuses banned words in player-facing text", () => {
       [`export const A = () => <div className="pledge" data-testid="pledge" />;`, false],
       [`export const ok = (k: string) => k === "Pledge";`, false],
       [`export const step = { kind: "pledge" };`, false],
+      ['export const src = (moving: boolean) => `/icons/${moving ? "pledge" : "idle"}.svg`;', false],
+      ['export const line = (moving: boolean) => `Army ${moving ? "pledge" : "idle"}`;', true],
       [`export const item = (ok: boolean) => ({ label: ok ? "pledged" : "pledge" });`, true],
       ["export const msg = (a: string) => `${a} pledged`;", true],
       [`export const A = () => <p>Pledge to Luminary</p>;`, true],

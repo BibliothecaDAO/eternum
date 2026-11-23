@@ -20,3 +20,5 @@ export const CODE_TOKEN =
 export const BARE_CODE_WORD = /^[a-z]+$/;
 
 export const ERROR_CONSTRUCTOR = /Error$/;
+
+export const isCodeTemplatePieces = (pieces) => pieces.every((piece) => piece === "" || CODE_TOKEN.test(piece));
