@@ -394,7 +394,7 @@ const FrontierHudBody = ({
       depthSwitch={isMapView ? depthSwitch : undefined}
       realm={realmOpen ? realmPanel : null}
       replaceRealmWithSheet={replaceRealmWithSheet}
-      armies={isMapView ? dock : null}
+      armies={isMapView && !deployOpen ? dock : null}
       aspectChip={
         isMapView && shown ? (
           <AspectStandingChip orderId={shown.metadata.order} onOpenSeason={() => setSurface("season")} />

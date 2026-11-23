@@ -115,3 +115,9 @@
   display: grid;
   flex: 1;
 }
+@media (max-width: 1023px) {
+  .deploy-troop-card {
+    min-height: 62px;
+    padding: theme(spacing.2) theme(spacing.3);
+  }
+}
