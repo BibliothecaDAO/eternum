@@ -72,11 +72,11 @@ const option = (key, fallback) => (process.argv.includes(key) ? process.argv[pro
 const out = option("--out", join(homedir(), "projects/eternum-lanes/evidence/s1-client", String(Date.now())));
 const port = option("--port", "4421");
 mkdirSync(out, { recursive: true });
-const profile = mkdtempSync(join(tmpdir(), "season-one-proof-"));
-const browser = createBrowserSession("season-one-" + Date.now(), { profile, headed: false });
 await withDevClient({ base: option("--base-url", null), port, out }, async (baseUrl) => {
-  try {
-    for (const [device, width, height] of SIZES) {
+  for (const [device, width, height] of SIZES) {
+    const profile = mkdtempSync(join(tmpdir(), "season-one-proof-"));
+    const browser = createBrowserSession(`season-one-${device}-${Date.now()}`, { profile, headed: false });
+    try {
       browser.run(["set", "viewport", width, height]);
       for (const { file, url, shown, press } of PAGES) {
         browser.run(["open", `${baseUrl}${url}`]);
@@ -93,13 +93,13 @@ await withDevClient({ base: option("--base-url", null), port, out }, async (base
           browser.screenshot(join(out, `${file}-${device}.png`));
         }
       }
+      const errors = browser.run(["errors"]);
+      if (errors.trim()) throw new Error(errors);
+    } finally {
+      browser.close();
+      rmSync(profile, { recursive: true, force: true });
     }
-    const errors = browser.run(["errors"]);
-    if (errors.trim()) throw new Error(errors);
-    writeFileSync(join(out, "proof.json"), JSON.stringify({ ok: true }) + "\n");
-  } finally {
-    browser.close();
-    rmSync(profile, { recursive: true, force: true });
   }
+  writeFileSync(join(out, "proof.json"), JSON.stringify({ ok: true }) + "\n");
 });
 console.log(`evidence: ${out}`);
