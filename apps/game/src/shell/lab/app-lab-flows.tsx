@@ -16,7 +16,7 @@ import { ClockChip } from "@/ui/design-system/kit/clock-chip";
 
 import { PlayPage } from "../play/play-page";
 import { PageAddress } from "../frame/page-address";
-import { ShellWindow } from "../frame/shell-window";
+import { SignInStage } from "../sign-in/sign-in-stage";
 import { HandoffStep } from "../sign-in/handoff-step";
 import { NotFoundPage } from "../not-found";
 import { CodeStep } from "../sign-in/code-step";
@@ -118,12 +118,18 @@ export const LabConnect = () => {
   const shown = labConnectStep(step);
   if (!shown) return <NotFoundPage />;
   // Play is at its own address under the window, so its place is lit as in the app.
+  const isStart = step === "start" || step === "start-refused" || step === "opening";
   return (
     <PageAddress.Provider value="/">
       <PlayPage />
-      <ShellWindow title={shown.title} onClose={noop}>
+      <SignInStage
+        title={shown.title}
+        heading={isStart ? "Enter the Frontier" : undefined}
+        subtitle={isStart ? "Free to play · No wallet required" : undefined}
+        onClose={noop}
+      >
         {shown.body}
-      </ShellWindow>
+      </SignInStage>
     </PageAddress.Provider>
   );
 };

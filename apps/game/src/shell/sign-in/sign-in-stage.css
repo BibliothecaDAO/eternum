@@ -1,0 +1,272 @@
+.signin-stage {
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--app-ground);
+  color: var(--app-ink);
+  font-family: var(--app-face-body);
+}
+
+.signin-stage__close {
+  position: absolute;
+  top: max(1rem, env(safe-area-inset-top));
+  right: 1rem;
+  z-index: 4;
+  display: grid;
+  width: 2.5rem;
+  height: 2.5rem;
+  place-items: center;
+  border: 1px solid var(--app-line-strong);
+  border-radius: var(--app-radius-control);
+  background: color-mix(in srgb, var(--app-ground) 78%, transparent);
+  color: var(--app-ink);
+  backdrop-filter: blur(8px);
+}
+
+.signin-stage__close:hover {
+  border-color: rgb(var(--app-gold));
+}
+
+.signin-stage__close:focus-visible {
+  outline: none;
+  box-shadow: var(--app-focus);
+}
+
+.signin-stage__art {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.25rem;
+  overflow: hidden;
+  padding: max(2rem, env(safe-area-inset-top)) 1.5rem 1.5rem;
+  text-align: center;
+}
+
+.signin-stage__painting {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 42%;
+}
+
+.signin-stage__scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 85% 55% at 50% 20%, rgb(var(--app-gold) / 0.16) 0%, transparent 70%),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--app-ground) 45%, transparent) 0%,
+      color-mix(in srgb, var(--app-ground) 28%, transparent) 42%,
+      color-mix(in srgb, var(--app-ground) 88%, transparent) 85%,
+      var(--app-ground) 100%
+    );
+}
+
+.signin-stage__brand {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  max-width: 28rem;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.875rem;
+}
+
+.signin-stage__lockup {
+  display: block;
+  width: auto;
+  height: clamp(8rem, 20vh, 11.5rem);
+  object-fit: contain;
+  filter: drop-shadow(0 8px 24px rgb(0 0 0 / 0.65));
+}
+
+.signin-stage__lore {
+  margin: 0;
+  font-family: var(--app-face-title);
+  font-size: clamp(1.25rem, 2.5vw, 1.85rem);
+  line-height: 1.22;
+  color: var(--app-ink);
+  text-shadow: 0 2px 14px rgb(0 0 0 / 0.78);
+}
+
+.signin-stage__facets {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.signin-stage__facet {
+  display: grid;
+  place-items: center;
+  border: 1px solid rgb(var(--app-line-strong, var(--app-gold)) / 0.35);
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--app-ground) 76%, transparent);
+  padding: 0.25rem;
+  box-shadow: 0 6px 18px rgb(0 0 0 / 0.5);
+}
+
+.signin-stage__panel {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.signin-stage__card {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.signin-stage__heading {
+  margin: 0;
+  font-family: var(--app-face-title);
+  font-size: clamp(1.65rem, 3.2vw, 2.25rem);
+  line-height: 1.15;
+  color: var(--gold2);
+}
+
+.signin-stage__sub {
+  margin: 0.25rem 0 0;
+  font-size: var(--app-text-label);
+  color: var(--app-muted);
+}
+
+.signin-providers {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.signin-providers__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.signin-providers__grid .app-button {
+  min-width: 0;
+  padding: 0 0.75rem;
+  font-size: var(--app-text-label);
+}
+
+.signin-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--app-muted);
+}
+
+.signin-divider::before,
+.signin-divider::after {
+  content: "";
+  height: 1px;
+  flex: 1;
+  background: var(--app-line);
+}
+
+.signin-foot-facets {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  border-top: 1px solid var(--app-line);
+  padding-top: 0.875rem;
+}
+
+@media (max-width: 1023px) {
+  .signin-stage {
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .signin-stage__art {
+    position: absolute;
+    inset: 0;
+    justify-content: flex-start;
+    padding-top: max(2rem, env(safe-area-inset-top));
+  }
+
+  .signin-stage__art .signin-stage__facets {
+    display: none;
+  }
+
+  .signin-stage__panel {
+    margin-top: auto;
+    max-height: 76dvh;
+    padding: 0 0.875rem max(1rem, env(safe-area-inset-bottom));
+  }
+
+  .signin-stage__card {
+    border: 1px solid var(--app-line-strong);
+    border-radius: var(--app-radius-panel);
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--app-surface-2) 94%, transparent),
+      color-mix(in srgb, var(--app-surface) 97%, transparent)
+    );
+    padding: 1.25rem 1rem 1rem;
+    box-shadow: 0 -10px 36px rgb(0 0 0 / 0.65);
+    backdrop-filter: blur(12px);
+  }
+
+  .signin-stage__head {
+    text-align: center;
+  }
+}
+
+@media (min-width: 1024px) {
+  .signin-stage {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 33rem;
+  }
+
+  .signin-stage__art {
+    align-items: flex-start;
+    justify-content: center;
+    padding: 3rem 4rem;
+    text-align: left;
+  }
+
+  .signin-stage__brand {
+    align-items: flex-start;
+  }
+
+  .signin-stage__panel {
+    justify-content: center;
+    border-left: 1px solid var(--app-line);
+    background: var(--app-ground);
+    padding: 2.5rem 3rem;
+  }
+
+  .signin-stage__card {
+    max-width: 24rem;
+    margin: 0 auto;
+  }
+
+  .signin-providers__grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.625rem;
+  }
+
+  .signin-providers__grid .app-button {
+    font-size: var(--app-text-control);
+  }
+
+  .signin-foot-facets {
+    display: none;
+  }
+}
