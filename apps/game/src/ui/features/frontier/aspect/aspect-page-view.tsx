@@ -5,6 +5,7 @@ import { HudChip, HudMeter, HudPage, HudRow } from "@/ui/design-system/kit/hud-e
 import { ASPECT_PAGE_WORDS as WORDS } from "@/ui/design-system/kit/words";
 import { aspectName, formatShort, type AspectId } from "@bibliothecadao/types";
 import type { ReactNode } from "react";
+import { AspectRaceCanvas } from "./aspect-race-canvas";
 import { AspectStandings } from "./aspect-standings";
 
 export interface AspectStanding {
@@ -69,6 +70,7 @@ const Race = ({ race }: { race: NonNullable<AspectPageProps["race"]> }) => (
   <section data-aspect-race className="flex flex-col gap-2">
     <Heading>{WORDS.race}</Heading>
     {race.result && <Muted>{race.result.winner === null ? WORDS.noFinisher : WORDS.won(race.result.winner)}</Muted>}
+    <AspectRaceCanvas standings={race.standings} finishHeight={race.finishHeight} />
     <AspectStandings standings={race.standings} finishHeight={race.finishHeight} stages={race.stages} />
   </section>
 );
