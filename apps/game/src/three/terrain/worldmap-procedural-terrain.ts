@@ -1,11 +1,10 @@
 import type { GroundLights } from "./ground-lights";
 import { MAP_MARKS } from "../map-marks";
 import type { EtherealSurface } from "./ethereal-depths";
-import type { LayerPlace } from "./layer-biomes";
 import type { DeepZone } from "@bibliothecadao/eternum/game-client";
 import type { GameModeId } from "@/config/game-modes";
 import { NEUTRAL_BIOME_CLIMATE, type BiomeClimateConfig } from "@bibliothecadao/eternum";
-import { BiomeType, getNeighborHexes } from "@bibliothecadao/types";
+import { BiomeType, getNeighborHexes, type LayerPlace } from "@bibliothecadao/types";
 import type { Group } from "three";
 
 import { scheduleFrameBudgetWork, type FrameBudgetWorkScheduler } from "../frame-budget-work-queue";

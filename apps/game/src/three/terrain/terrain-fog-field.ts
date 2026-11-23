@@ -31,8 +31,9 @@ import {
   vec3,
 } from "three/tsl";
 
+import type { LayerPlace } from "@bibliothecadao/types";
 import { terrainCellKey } from "./terrain-coordinates";
-import { LAYER_DEPTHS, type LayerPlace } from "./layer-biomes";
+import { LAYER_DEPTHS } from "./layer-biomes";
 import { mistAtDepth, mistColour } from "./terrain-mist-node";
 import { terrainHexEdgeDistance } from "./terrain-hex-node";
 import {

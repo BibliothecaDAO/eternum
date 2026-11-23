@@ -160,7 +160,6 @@ export const LAYER_PLACES: Readonly<Record<MapLayer, LayerPlace | null>> = Objec
   2: "hollow",
   3: "deep",
 });
-type LayerDepth = MapLayer;
 export const layerName = (depth: number): string => {
   const name = LAYER_NAMES[depth];
   if (name === undefined) throw new Error(`No layer at depth ${depth}`);
@@ -195,7 +194,7 @@ type BeastLook = { model: BeastModel };
 export type BeastRow = {
   name: string;
   family: BeastFamily;
-  layer: LayerDepth;
+  layer: MapLayer;
   scale: number;
   idle: BeastIdle;
 } & BeastLook;

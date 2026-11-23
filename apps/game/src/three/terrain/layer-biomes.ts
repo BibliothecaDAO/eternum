@@ -3,7 +3,6 @@ import type { LayerPlace } from "@bibliothecadao/types";
 import { TerrainNoise } from "./terrain-noise";
 
 export type PersonalLayer = 1 | 2;
-export type { LayerPlace };
 
 export const LAYER_DEPTHS = { veil: 0.5, hollow: 0.7, deep: 1 } as const satisfies Record<LayerPlace, number>;
 

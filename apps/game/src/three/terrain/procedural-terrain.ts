@@ -1,6 +1,7 @@
 import type { EtherealLayer } from "@bibliothecadao/eternum";
+import type { LayerPlace } from "@bibliothecadao/types";
 import { createDeepFloorMaterial } from "./deep-floor-material";
-import { layerOfSurface, type LayerPlace, type PersonalLayer } from "./layer-biomes";
+import { layerOfSurface, type PersonalLayer } from "./layer-biomes";
 import { createLayerFloorMaterial } from "./layer-floor-material";
 import { DEEP_SURFACE_CODE } from "./ethereal-depths";
 import type { GameModeId } from "@/config/game-modes";

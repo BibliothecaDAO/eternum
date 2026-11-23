@@ -85,7 +85,7 @@ vi.mock("@/three/managers/instanced-model", () => ({
   },
 }));
 
-import { ASPECT_HEX } from "@/tokens";
+import { ASPECT_HEX, SIDE_HEX } from "@/tokens";
 import {
   aspects,
   DEEP_BEASTS,
@@ -345,6 +345,7 @@ describe("the Deep's sites on the map", () => {
     const gameId = configManager.getActiveGameId();
     const precision = BigInt(RESOURCE_PRECISION);
     const [firstOrder, secondOrder] = ordersOfAspect(2);
+    const [rivalOrder] = ordersOfAspect(3);
     const ringKinds = Array.from(
       { length: nativeRuleConstants.DEEP_RING_SITES },
       (_, index) => deepSites[index % deepSites.length]!,
@@ -405,30 +406,37 @@ describe("the Deep's sites on the map", () => {
       DeepGuard: [
         { game_id: gameId, site_id: 10n, slot: 0, explorer_id: 77n },
         { game_id: gameId, site_id: 10n, slot: 1, explorer_id: 78n },
+        { game_id: gameId, site_id: 11n, slot: 0, explorer_id: 79n },
       ],
       DeepArmy: [
         { game_id: gameId, explorer_id: 77n, last_tick: 1n },
         { game_id: gameId, explorer_id: 78n, last_tick: 1n },
+        { game_id: gameId, explorer_id: 79n, last_tick: 1n },
       ],
       ArmyDay: [
         { game_id: gameId, explorer_id: 77n, day: 0n },
         { game_id: gameId, explorer_id: 78n, day: 0n },
+        { game_id: gameId, explorer_id: 79n, day: 0n },
       ],
       ArmyProgress: [
         { game_id: gameId, explorer_id: 77n, logistics: 0, oath_slots: 1, oaths: 0, oath_pick: 0 },
         { game_id: gameId, explorer_id: 78n, logistics: 0, oath_slots: 1, oaths: 0, oath_pick: 0 },
+        { game_id: gameId, explorer_id: 79n, logistics: 0, oath_slots: 1, oaths: 0, oath_pick: 0 },
       ],
       ExplorerTroops: [
         { game_id: gameId, explorer_id: 77n, owner: 9n, troops: { count: 1_000n * precision } },
         { game_id: gameId, explorer_id: 78n, owner: 19n, troops: { count: 500n * precision } },
+        { game_id: gameId, explorer_id: 79n, owner: 29n, troops: { count: 500n * precision } },
       ],
       HomeAspect: [
         { game_id: gameId, home: 9n, aspect: 2 },
         { game_id: gameId, home: 19n, aspect: 2 },
+        { game_id: gameId, home: 29n, aspect: 3 },
       ],
       Structure: [
-        { game_id: gameId, entity_id: 9n, metadata: { order: firstOrder!.orderId } },
-        { game_id: gameId, entity_id: 19n, metadata: { order: secondOrder!.orderId } },
+        { game_id: gameId, entity_id: 9n, owner: 0x111n, metadata: { order: firstOrder!.orderId } },
+        { game_id: gameId, entity_id: 19n, owner: 0x222n, metadata: { order: secondOrder!.orderId } },
+        { game_id: gameId, entity_id: 29n, owner: 0x333n, metadata: { order: rivalOrder!.orderId } },
       ],
     };
     const matchKey = (row: Record<string, unknown>, key: Record<string, unknown>) =>
@@ -444,30 +452,37 @@ describe("the Deep's sites on the map", () => {
       requireOrAbsent: (model: string, key: Record<string, unknown>) => ({ known: get(model, key) ?? null }),
       entityOccupancy: (game_id: number, entity_id: bigint) => get("TileOccupancy", { game_id, entity_id }),
       inGame: (model: string) => rows[model] ?? [],
-      structuresOwnedBy: () => [],
+      structuresOwnedBy: (_gameId: number, owner: bigint) =>
+        (rows.Structure ?? []).filter((row) => row.owner === owner),
       subscribe: () => () => {},
     };
     const scene = new Scene();
     const manager = new MapSiteManager(scene, projection as never, store as never, plates as never, noGates() as never);
-    await vi.waitFor(() => expect(heldSpy).toHaveBeenCalledWith(0, ASPECT_HEX[2]));
+    await vi.waitFor(() => {
+      expect(heldSpy).toHaveBeenCalledWith(0, SIDE_HEX.ally);
+      expect(heldSpy).toHaveBeenCalledWith(0, ASPECT_HEX[3]);
+    });
     const signum = scene.getObjectByName("Order stone signum")!;
     const emblem = signum.getObjectByName("Order signum emblem") as InstancedMesh;
     const cell = emblem.geometry.getAttribute("signumOrderCell");
-    expect(emblem.count).toBe(2);
-    expect([cell.getX(0), cell.getX(1)]).toEqual([
+    expect(emblem.count).toBe(3);
+    expect([cell.getX(0), cell.getX(1), cell.getX(2)]).toEqual([
       resolveOrderSignumCell(secondOrder!.orderId),
       resolveOrderSignumCell(firstOrder!.orderId),
+      resolveOrderSignumCell(rivalOrder!.orderId),
     ]);
 
     heldSpy.mockClear();
     headAt(120);
-    expect(heldSpy).toHaveBeenCalledWith(0, ASPECT_HEX[2]);
+    expect(heldSpy).toHaveBeenCalledWith(0, SIDE_HEX.own);
+    expect(heldSpy).toHaveBeenCalledWith(0, null);
     expect(emblem.count).toBe(1);
     expect(cell.getX(0)).toBe(resolveOrderSignumCell(firstOrder!.orderId));
 
     heldSpy.mockClear();
     headAt(180);
     expect(heldSpy).toHaveBeenCalledWith(0, null);
+    expect(heldSpy.mock.calls.every(([, color]) => color === null)).toBe(true);
     expect(emblem.count).toBe(0);
 
     manager.destroy();

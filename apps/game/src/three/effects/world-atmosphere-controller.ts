@@ -1,6 +1,6 @@
 import type { GameModeId } from "@/config/game-modes";
 import { WORLD_ATMOSPHERE_PRESETS, type TimeOfDayColors } from "./world-atmosphere-presets";
-import type { LayerPlace } from "../terrain/layer-biomes";
+import type { LayerPlace } from "@bibliothecadao/types";
 import { DAY_PHASE_PROGRESS, resolveDayPhase } from "@/utils/cycle-progress";
 import { placeKeyLight } from "./key-light";
 import type GUI from "lil-gui";

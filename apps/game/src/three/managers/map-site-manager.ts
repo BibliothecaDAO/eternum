@@ -1,11 +1,19 @@
-import { ASPECT_HEX } from "@/tokens";
+import { ASPECT_HEX, SIDE_HEX } from "@/tokens";
 import { DEEP_SITE_FACES } from "@/ui/features/frontier/deep/deep-site-faces";
 import { DEEP_WORDS } from "@/ui/design-system/kit/words";
 import type { IconMeaning } from "@/ui/design-system/icon";
-import { DEEP_DEPTH, configManager, dayOf, readDefaultTick, readExpeditionRules } from "@bibliothecadao/eternum";
+import {
+  DEEP_DEPTH,
+  configManager,
+  dayOf,
+  isViewerOwner,
+  readDefaultTick,
+  readExpeditionRules,
+} from "@bibliothecadao/eternum";
 import {
   deepGateTiles,
   homeAspect,
+  isAspectAlly,
   nativeRuleConstants,
   readDeepBeastTroops,
   readDeepRingOpening,
@@ -16,6 +24,7 @@ import {
   type NativeFactStore,
 } from "@bibliothecadao/eternum/game-client";
 import { accountAddress } from "@/hooks/store/use-account-store";
+import { sideOf } from "@/utils/entity-ownership";
 import {
   DEEP_BEASTS,
   aspectName,
@@ -445,6 +454,15 @@ export class MapSiteManager {
   private holderColor(site: DeepSiteView | undefined): string | null {
     const holder = site?.guards[0]?.army;
     if (!holder) return null;
+    const home = this.store.get("Structure", { game_id: holder.game_id, entity_id: holder.owner });
+    const owner = home?.owner ?? 0n;
+    const viewer = accountAddress() ?? null;
+    const side = sideOf({
+      isMine: isViewerOwner(owner, viewer),
+      isAlly: isAspectAlly(this.store, holder.game_id, viewer, holder.owner),
+      owner: { address: owner },
+    });
+    if (side === "own" || side === "ally") return SIDE_HEX[side];
     return ASPECT_HEX[catalogAspectId(homeAspect(this.store, holder.game_id, holder.owner))];
   }
 
