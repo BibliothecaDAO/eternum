@@ -8,15 +8,25 @@ const BODY_BYTES = 256;
 
 type OrderIntent = { order: number | null; members: Record<number, number> };
 
-export function handleOrderIntent(request: Request, auth: IdentityAuth, db: D1Database): Promise<Response> {
+export function handleOrderIntent(
+  request: Request,
+  auth: IdentityAuth,
+  db: D1Database,
+  seasonStart: () => Promise<number | null>,
+): Promise<Response> {
   return Effect.runPromise(
-    serveOrderIntent(request, auth, db).pipe(
+    serveOrderIntent(request, auth, db, seasonStart).pipe(
       Effect.catchTag("OrderIntentError", (error) => Effect.succeed(json({ error: error.code }, error.status))),
     ),
   );
 }
 
-function serveOrderIntent(request: Request, auth: IdentityAuth, db: D1Database) {
+function serveOrderIntent(
+  request: Request,
+  auth: IdentityAuth,
+  db: D1Database,
+  seasonStart: () => Promise<number | null>,
+) {
   return Effect.gen(function* () {
     const session = yield* Effect.tryPromise({
       try: () => auth.api.getSession({ headers: request.headers }),
@@ -33,7 +43,11 @@ function serveOrderIntent(request: Request, auth: IdentityAuth, db: D1Database) 
       catch: () => new OrderIntentError({ code: "invalid_order", status: 400 }),
     });
     if (order === null) return json({ error: "invalid_order" }, 400);
-    yield* chooseOrder(db, owner, order);
+    const start = yield* Effect.tryPromise({
+      try: seasonStart,
+      catch: () => new OrderIntentError({ code: "calendar_unavailable", status: 503 }),
+    });
+    yield* chooseOrder(db, owner, order, start === null || Date.now() < start);
     const intent = yield* readIntent(db, owner);
     return intent.order === order ? json(intent) : json({ error: "aspect_chosen" }, 409);
   });
@@ -58,17 +72,19 @@ const readIntent = (db: D1Database, owner: string) =>
     catch: () => new OrderIntentError({ code: "order_intent_unavailable", status: 503 }),
   });
 
-const chooseOrder = (db: D1Database, owner: string, order: number) =>
+const chooseOrder = (db: D1Database, owner: string, order: number, beforeSeason: boolean) =>
   Effect.tryPromise({
     try: () =>
       db
         .prepare(
           `INSERT INTO "order_intents" ("owner", "order", "chosen_at") VALUES (?, ?, ?) ON CONFLICT ("owner") DO UPDATE SET "order" = excluded."order", "chosen_at" = excluded."chosen_at" WHERE "order_intents"."order" IN (SELECT value FROM json_each(?))`,
         )
-        .bind(owner, order, Date.now(), JSON.stringify(sameAspectOrders(order)))
+        .bind(owner, order, Date.now(), JSON.stringify(beforeSeason ? anyOrder() : sameAspectOrders(order)))
         .run(),
     catch: () => new OrderIntentError({ code: "order_intent_unavailable", status: 503 }),
   });
+
+const anyOrder = () => orders.filter(({ aspect }) => aspect !== null).map(({ orderId }) => orderId);
 
 const sameAspectOrders = (order: number) => {
   const aspect = orders.find(({ orderId }) => orderId === order)?.aspect;
