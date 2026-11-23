@@ -139,6 +139,12 @@
   gap: 0.5rem;
 }
 
+.profile-actions .app-button {
+  min-width: 0;
+  padding: 0 0.625rem;
+  font-size: var(--app-text-label);
+}
+
 .profile-realms-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -200,6 +206,11 @@
   .profile-actions {
     grid-template-columns: minmax(0, 1fr);
     gap: 0.625rem;
+  }
+
+  .profile-actions .app-button {
+    padding: 0 1rem;
+    font-size: var(--app-text-control);
   }
 
   .profile-realms-grid {
