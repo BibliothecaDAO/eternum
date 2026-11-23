@@ -353,7 +353,7 @@ function chooseGround(input: {
     const middleAt = at.sub(fromMiddle);
     const own = biomeTexelAt(input.biomeMap, middleAt);
     const ownRaw = own.r.mul(255).round();
-    const ownBiome = ownRaw.lessThan(LAYER_BIOME_OFFSET).select(ownRaw, float(0));
+    const ownBiome = ownRaw.mul(step(ownRaw, LAYER_BIOME_OFFSET - 1));
     const ownKind = own.g.mul(255).round();
     const ownWater = ownKind.equal(G("water"));
     const ownPaint = PAINT.element(int(ownBiome)) as unknown as Node<"vec3">;
@@ -368,11 +368,11 @@ function chooseGround(input: {
     for (let side = 0; side < 6; side += 1) {
       const toward = vec2(Math.cos((side * Math.PI) / 3), Math.sin((side * Math.PI) / 3));
       const beside = biomeTexelAt(input.biomeMap, middleAt.add(toward.mul(TERRAIN_HEX_HORIZONTAL_SPACING)));
-      const besideBiome = beside.r.mul(255).round();
+      const besideRaw = beside.r.mul(255).round();
+      const besideBiome = besideRaw.mul(step(besideRaw, LAYER_BIOME_OFFSET - 1));
       const besideKind = beside.g.mul(255).round();
       const meets = besideBiome
         .greaterThan(0)
-        .and(besideBiome.lessThan(LAYER_BIOME_OFFSET))
         .and(besideKind.notEqual(G("water")))
         .and(besideBiome.notEqual(ownBiome));
       const span = beside.ba.sub(own.ba);

@@ -1,7 +1,7 @@
 import { LAYER_PLACES } from "@bibliothecadao/types";
 import type Node from "three/src/nodes/core/Node.js";
 import { Color, type Texture } from "three";
-import { color, float, int, mix, normalWorld, positionWorld, smoothstep, uniformArray, vec2 } from "three/tsl";
+import { color, float, int, max, mix, normalWorld, positionWorld, smoothstep, uniformArray, vec2 } from "three/tsl";
 import { MeshStandardNodeMaterial } from "three/webgpu";
 import { applyEndgameFrost } from "../effects/endgame/field";
 import { EVERY_LAYER_BIOME, LAYER_BIOME_LOOKS, LAYER_DEPTHS, type PersonalLayer } from "./layer-biomes";
@@ -61,7 +61,7 @@ function zoneAt(layerBiomes: Texture, at: Node<"vec2">, ink: string): Zone {
     const raw = biomeTexelAt(layerBiomes, at.add(drift(at.add(offset.mul(3)))).add(offset.mul(0.35)))
       .r.mul(255)
       .round();
-    return int(raw.greaterThan(LAYER_BIOME_OFFSET).select(raw.sub(LAYER_BIOME_OFFSET), 0));
+    return int(max(raw.sub(LAYER_BIOME_OFFSET), float(0)));
   });
   const blended = (part: keyof Zone) => {
     const looks = uniformArray(
