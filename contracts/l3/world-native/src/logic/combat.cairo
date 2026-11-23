@@ -293,7 +293,6 @@ pub fn battle(
     game_id: u32, actor: ContractAddress, command: crate::combat_actions::AttackExplorer, context: ExecutionContext,
 ) {
     let rules = authorize(game_id, context);
-    assert_open_field_fight();
     crate::resources::assert_unique_resources(command.steal_resources);
     let attacker_key = ExplorerKey { game_id, explorer_id: command.attacker_id };
     let defender_key = ExplorerKey { game_id, explorer_id: command.defender_id };
@@ -362,7 +361,6 @@ pub fn guard_attack(
     game_id: u32, actor: ContractAddress, command: crate::combat_actions::GuardAttack, context: ExecutionContext,
 ) {
     let rules = authorize(game_id, context);
-    assert_open_field_fight();
     let home = owned_structure(game_id, command.guard.structure_id, actor);
     assert!(command.guard.slot < home.base.troop_max_guard_count, "invalid guard slot");
     let guard_key = crate::guards::GuardKey {
@@ -424,10 +422,6 @@ pub fn explorer_owner(key: ExplorerKey, explorer: ExplorerTroops) -> ContractAdd
     crate::logic::structures::owner(ResourceKey { game_id: key.game_id, entity_id: explorer.owner })
 }
 
-fn assert_open_field_fight() {
-    assert!(!crate::rules::DEEP_IN_PLAY, "armies in the open cannot be attacked");
-}
-
 fn assert_rival_guard(game_id: u32, attacker: ExplorerTroops, guard: ExplorerTroops) {
     let attacker_aspect = crate::logic::aspects::home_aspect(ResourceKey { game_id, entity_id: attacker.owner });
     let guard_aspect = crate::logic::aspects::home_aspect(ResourceKey { game_id, entity_id: guard.owner });
@@ -444,8 +438,11 @@ pub fn try_capture(
     clean: bool,
     context: ExecutionContext,
 ) {
-    if explorer.troops.count == 0
-        || (crate::rules::ONLY_UNOWNED_TARGETS && target.owner != 0.try_into().unwrap())
+    if explorer.troops.count == 0 {
+        clear_site_left_unguarded(explorer_key, explorer, key, target);
+        return;
+    }
+    if (crate::rules::ONLY_UNOWNED_TARGETS && target.owner != 0.try_into().unwrap())
         || (crate::rules::NO_VILLAGE_CAPTURE && target.base.category == crate::taxonomy::VILLAGE_CATEGORY) {
         return;
     }
@@ -454,6 +451,17 @@ pub fn try_capture(
         return;
     }
     family::capture(explorer_key, explorer, key, target, relic_slot, clean, context);
+}
+
+fn clear_site_left_unguarded(explorer_key: ExplorerKey, explorer: ExplorerTroops, key: ResourceKey, target: Structure) {
+    if crate::logic::expeditions::expedition_site(key).is_none()
+        || crate::logic::guards::GuardState::next(key, target.base.troop_max_guard_count).is_some() {
+        return;
+    }
+    crate::logic::expeditions::clear_site(
+        key,
+        crate::expeditions::SiteClear { explorer_id: explorer_key.explorer_id, home_id: explorer.owner, reward: None },
+    );
 }
 
 pub fn assert_structure_range(attacker: Coord, defender: Coord) {
