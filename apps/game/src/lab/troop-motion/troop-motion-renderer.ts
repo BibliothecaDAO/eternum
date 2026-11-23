@@ -139,8 +139,7 @@ const SIDE_OWN_COLOR = new Color("#66ddab");
 const IDENTITY_MATRIX = new Matrix4();
 const TROOP_UNIT_SCALE = new Vector3(1, 1, 1);
 const TROOP_FACING_EULER = new Euler(0, FACING_YAW, 0);
-const SCOUT_ENTITY_ID = 101;
-const CROSSBOW_ENTITY_ID = 102;
+const TROOP_ENTITY_ID = 101;
 
 function createHexOutline(centerX: number, centerZ: number, groundY: number): Line {
   const corners = terrainHexCorners(centerX, centerZ);
@@ -447,10 +446,8 @@ export async function mountTroopMotionLab(input: MountTroopMotionInput): Promise
   const armyModel = new ArmyModel(scene, () => BiomeType.Grassland);
   armyModel.setShadowsEnabled(true);
   await armyModel.preloadModels(new Set([ModelType.Paladin1, ModelType.Crossbowman1]));
-  const scoutSlot = armyModel.allocateInstanceSlot(SCOUT_ENTITY_ID);
-  armyModel.assignModelToEntity(SCOUT_ENTITY_ID, ModelType.Paladin1);
-  const crossbowSlot = armyModel.allocateInstanceSlot(CROSSBOW_ENTITY_ID);
-  armyModel.assignModelToEntity(CROSSBOW_ENTITY_ID, ModelType.Crossbowman1);
+  const troopSlot = armyModel.allocateInstanceSlot(TROOP_ENTITY_ID);
+  armyModel.assignModelToEntity(TROOP_ENTITY_ID, ModelType.Paladin1);
 
   const [scoutRef, crossbowRef] = await Promise.all([
     createStaticTroopReference("scout"),
@@ -486,9 +483,9 @@ export async function mountTroopMotionLab(input: MountTroopMotionInput): Promise
 
   const activeTroopBinding = () =>
     state.troop === "scout"
-      ? { entityId: SCOUT_ENTITY_ID, slot: scoutSlot, ref: scoutRef }
+      ? { modelType: ModelType.Paladin1, slot: troopSlot, ref: scoutRef }
       : state.troop === "crossbow"
-        ? { entityId: CROSSBOW_ENTITY_ID, slot: crossbowSlot, ref: crossbowRef }
+        ? { modelType: ModelType.Crossbowman1, slot: troopSlot, ref: crossbowRef }
         : null;
 
   const syncAnimatedTroopPose = (x: number, z: number) => {
@@ -496,7 +493,7 @@ export async function mountTroopMotionLab(input: MountTroopMotionInput): Promise
     if (!binding) return;
     animatedTroopPos.set(x, groundY, z);
     armyModel.updateInstance(
-      binding.entityId,
+      TROOP_ENTITY_ID,
       binding.slot,
       animatedTroopPos,
       TROOP_UNIT_SCALE,
@@ -527,10 +524,12 @@ export async function mountTroopMotionLab(input: MountTroopMotionInput): Promise
     scoutRef.staticRoot.position.set(COMPARE_LEFT_X, groundY, 0);
     crossbowRef.staticRoot.position.set(COMPARE_LEFT_X, groundY, 0);
 
+    armyModel.resetInstanceCounts();
     const binding = activeTroopBinding();
     if (binding) {
-      armyModel.setVisibleSlots([binding.slot]);
+      armyModel.assignModelToEntity(TROOP_ENTITY_ID, binding.modelType);
       syncAnimatedTroopPose(rightX, 0);
+      armyModel.setVisibleSlots([binding.slot]);
     } else {
       armyModel.setVisibleSlots([]);
       armyModel.flushInstanceUploads();
@@ -588,8 +587,8 @@ export async function mountTroopMotionLab(input: MountTroopMotionInput): Promise
     );
     shippedKnight?.setMode(locomotion);
 
-    for (const slot of [scoutSlot, crossbowSlot]) {
-      armyModel.playTroopAction(slot, nextAction === "march" ? "march" : "idle");
+    if (activeTroopBinding()) {
+      armyModel.playTroopAction(troopSlot, nextAction === "march" ? "march" : "idle");
     }
 
     const compare = isComparing();
