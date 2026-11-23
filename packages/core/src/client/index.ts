@@ -51,7 +51,8 @@ export {
   isDeepTile,
   type DeepZone,
 } from "../utils/deep-geometry";
-export { questWeek } from "../utils/daily-quest";
+export { dailyQuest, questWeek } from "../utils/daily-quest";
+export { ordinaryQuestLabor, ordinaryQuestTarget } from "./views/quests";
 export { readActiveTriumph, TRIUMPH_MODELS } from "./views/triumphs";
 
 export { SITE_EFFECT_MODELS, readSiteEffects, readSiteReward } from "./views/site-effects";

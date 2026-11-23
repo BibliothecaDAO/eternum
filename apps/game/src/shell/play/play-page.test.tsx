@@ -210,7 +210,7 @@ it.each([
   expect(page.text()).not.toMatch(/\b1 [Pp]layers\b/);
 });
 
-it("draws no race bars when aspect counts are unknown, and draws no bar for an Aspect with zero members", async () => {
+it("draws no race bars when aspect heights are unknown, and draws exact tower height bars against finish height", async () => {
   reads.directory = answered({ games: [ownSeason] });
   reads.history = answered({ games: [], next: null, failures: [] });
   const unknown = await mount();
@@ -221,7 +221,13 @@ it("draws no race bars when aspect counts are unknown, and draws no bar for an A
     games: [
       game({
         ...ownSeason,
-        aspect_members: { 1: 100, 2: 50, 3: 0, 4: 0 },
+        day_index: 11,
+        day_ends_at: Math.floor(Date.now() / 1000) + 3_600,
+        aspect_race: { finish_height: 10_000, heights: { 1: 7_500, 2: 2_500, 3: 0, 4: 0 } },
+        player_state: {
+          ...ownSeason.player_state!,
+          today_quest: { quest_id: 2, progress: 0, target: 1, labor: 1_500 },
+        },
       }),
     ],
   });
@@ -229,7 +235,9 @@ it("draws no race bars when aspect counts are unknown, and draws no bar for an A
   const heights = [...known.container.querySelectorAll("[data-aspect-id]")].map(
     (node) => node.querySelector<HTMLElement>(".play-aspect__column")?.style.height ?? "none",
   );
-  expect(heights).toEqual(["100%", "50%", "none", "none"]);
+  expect(heights).toEqual(["75%", "25%", "none", "none"]);
+  expect(known.container.querySelector('[data-aspect-id="1"] .play-aspect__count')?.textContent).toBe("7,500");
+  expect(known.container.querySelector("[data-play-today]")?.textContent).toContain("Clear rifts · 0 of 1 · +1,500 Labor");
 });
 
 it("keeps Blitz on Play once an ended Blitz's results were seen, idle and saying none is scheduled (live-qa-night-1 P3-12)", async () => {

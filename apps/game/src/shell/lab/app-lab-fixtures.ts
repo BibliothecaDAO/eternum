@@ -86,6 +86,7 @@ const owned = {
   has_home_source: false,
   taken_realm_ids: [],
   structures: [REALM],
+  today_quest: { quest_id: 2, progress: 0, target: 1, labor: 1_500 },
 };
 
 /** Frontier's season on Day 12, the player's realm in it or not. */
@@ -107,6 +108,10 @@ const frontier = (withRealm: boolean) =>
     },
     player_count: 1240,
     aspect_members: { 1: 389, 2: 412, 3: 314, 4: 298 },
+    aspect_race: {
+      finish_height: 10_000,
+      heights: { 1: 6_400, 2: 7_850, 3: 4_100, 4: 2_900 },
+    },
     player_state: withRealm ? owned : null,
   });
 

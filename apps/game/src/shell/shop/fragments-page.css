@@ -128,29 +128,37 @@
 @media (min-width: 1024px) {
   .shop-stage {
     min-height: calc(100dvh - var(--app-bar) - 9rem);
-    justify-content: space-between;
+    justify-content: center;
+    gap: 2rem;
   }
 
   .shop-packs {
-    flex: 1;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 1.5rem;
   }
 
   .app-choice.shop-pack {
-    min-height: 29rem;
+    min-height: 31rem;
     flex-direction: column;
-    justify-content: space-between;
-    gap: 1.25rem;
-    padding: 2.5rem 1.75rem 2rem;
+    justify-content: center;
+    gap: 1.5rem;
+    padding: 2.75rem 2rem 2rem;
     text-align: center;
   }
 
   .shop-pack__art {
-    width: 10.5rem;
-    height: 10.5rem;
-    border-radius: var(--app-radius-panel);
-    padding: 0.75rem;
+    width: 10rem;
+    height: 10rem;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    padding: 0;
+    filter: drop-shadow(0 14px 28px rgb(0 0 0 / 0.55));
+  }
+
+  .shop-pack__art img {
+    width: 10rem;
+    height: 10rem;
   }
 
   .shop-pack__info {
@@ -163,6 +171,7 @@
   }
 
   .shop-pack__price {
+    margin-top: auto;
     width: 100%;
     border-top: 1px solid var(--app-line);
     padding-top: 1.25rem;

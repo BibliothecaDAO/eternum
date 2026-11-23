@@ -1,13 +1,13 @@
 import "./play-page.css";
 
-import { questWeek } from "@bibliothecadao/eternum/game-client";
-import { aspects, formatAmount, questCatalog, type AspectId, type QuestId } from "@bibliothecadao/types";
+import type { HeraldAspectRace } from "@bibliothecadao/eternum/game-sync";
+import { aspects, formatExact, questCatalog, type QuestId } from "@bibliothecadao/types";
 import {
   ASPECT_PAGE_WORDS,
   BLITZ_WORDS,
   DAY,
   DAY_BANNER_WORDS,
-  LABOR,
+  OF,
   WORDS,
   dayLeftCompact,
 } from "@/ui/design-system/kit/words";
@@ -43,7 +43,7 @@ export const PlayPage = () => {
   const firstVisit = !facts.signedIn && facts.board?.lead?.verb === "play";
   const ages = facts.board ? agesShown(facts.board) : [];
   const leadFrontier = facts.board?.lead?.mode === "frontier" ? facts.board.lead.game : null;
-  const leadMembers = leadFrontier?.aspect_members ?? null;
+  const leadRace = leadFrontier?.aspect_race ?? null;
   const hasActiveRealm = leadFrontier !== null && leadFrontier.status === "Live" && seasonRealm(leadFrontier) !== null;
   return (
     <PageFrame painting={firstVisit ? "dark-plains" : "brooding-plains"} stage={firstVisit} offersInstall>
@@ -54,7 +54,7 @@ export const PlayPage = () => {
         </section>
         {facts.board && (
           <div className="play-side">
-            {leadFrontier && <AspectRacePreview members={leadMembers} />}
+            {leadFrontier && <AspectRacePreview race={leadRace} />}
             {hasActiveRealm && <TodayQuestPanel game={leadFrontier} now={facts.now} />}
             {ages.map((mode) => (
               <AgeColumn key={mode} mode={mode} facts={facts} items={(facts.board as PlayBoard).ages[mode]} />
@@ -113,9 +113,9 @@ const SourceGaps = ({ gaps }: { gaps: readonly SourceGap[] }) =>
     </div>
   );
 
-const AspectRacePreview = ({ members }: { members: Readonly<Record<AspectId, number>> | null }) => {
-  const maxMembers = members ? Math.max(0, ...aspects.map(({ id }) => members[id] ?? 0)) : 0;
-  const showBars = members !== null && maxMembers > 0;
+const AspectRacePreview = ({ race }: { race: HeraldAspectRace | null }) => {
+  const finishHeight = race?.finish_height ?? 0;
+  const showBars = race !== null && finishHeight > 0;
   return (
     <AppPanel
       title={ASPECT_PAGE_WORDS.race}
@@ -128,10 +128,17 @@ const AspectRacePreview = ({ members }: { members: Readonly<Record<AspectId, num
     >
       <ul className="play-aspects">
         {aspects.map(({ id, name }) => {
-          const count = members?.[id] ?? null;
-          const share = count !== null && maxMembers > 0 ? Math.round((count / maxMembers) * 100) : 0;
+          const height = race?.heights[id] ?? null;
+          const share =
+            height !== null && finishHeight > 0 ? Math.min(100, Math.round((height / finishHeight) * 100)) : 0;
           return (
-            <li key={id} data-aspect-id={id} style={aspectVariables(id) as CSSProperties} className="play-aspect">
+            <li
+              key={id}
+              data-aspect-id={id}
+              aria-label={height !== null ? ASPECT_PAGE_WORDS.height(height, finishHeight) : name}
+              style={aspectVariables(id) as CSSProperties}
+              className="play-aspect"
+            >
               {showBars && (
                 <div className="play-aspect__tower" aria-hidden="true">
                   {share > 0 && <div className="play-aspect__column" style={{ height: `${share}%` }} />}
@@ -139,7 +146,12 @@ const AspectRacePreview = ({ members }: { members: Readonly<Record<AspectId, num
               )}
               <AspectMark aspect={id} size={38} decorative />
               <span className="play-aspect__name">{name}</span>
-              {count !== null && <span className="play-aspect__count">{formatAmount(count)}</span>}
+              {height !== null && (
+                <span className="play-aspect__height">
+                  <span className="play-aspect__count">{formatExact(height)}</span>
+                  <span className="play-aspect__goal">{`${OF} ${formatExact(finishHeight)}`}</span>
+                </span>
+              )}
             </li>
           );
         })}
@@ -148,18 +160,15 @@ const AspectRacePreview = ({ members }: { members: Readonly<Record<AspectId, num
   );
 };
 
-const todayQuestIdOf = (game: DirectoryGame): QuestId | null => {
-  if (!game.expedition || game.day_index == null || game.day_index < 0) return null;
-  const entry = questWeek(BigInt(game.expedition.seed), game.day_index).find(({ day }) => day === game.day_index);
-  return entry ? (questCatalog.find(({ id }) => id === entry.quest)?.id ?? null) : null;
-};
+const questIdOf = (id: number): QuestId | null => questCatalog.find((quest) => quest.id === id)?.id ?? null;
 
 const TodayQuestPanel = ({ game, now }: { game: DirectoryGame; now: number }) => {
   const day = directoryDay(game, now);
-  const questId = todayQuestIdOf(game);
-  if (day.day === undefined || questId === null) return null;
+  const quest = game.player_state?.today_quest ?? null;
+  const questId = quest !== null ? questIdOf(quest.quest_id) : null;
+  if (day.day === undefined || quest === null || questId === null) return null;
   const face = dayQuestFace(questId);
-  const hasRealm = seasonRealm(game) !== null;
+  const share = quest.target > 0 ? Math.min(100, Math.round((quest.progress / quest.target) * 100)) : 0;
   return (
     <AppPanel
       title={DAY_BANNER_WORDS.today}
@@ -173,15 +182,13 @@ const TodayQuestPanel = ({ game, now }: { game: DirectoryGame; now: number }) =>
         </span>
         <div className="play-today__body">
           <span className="play-today__name">{face.name}</span>
-          <span className="play-today__unit">{face.unit}</span>
+          <span className="play-today__summary">
+            {DAY_BANNER_WORDS.summary(face.objective, quest.progress, quest.target, quest.labor)}
+          </span>
+          <div className="play-today__track" aria-hidden="true">
+            <div className="play-today__fill" style={{ width: `${share}%` }} />
+          </div>
         </div>
-      </div>
-      <div className="play-today__foot">
-        <span className="play-today__reward">
-          <Icon name="labor" size={18} />
-          {LABOR}
-        </span>
-        {hasRealm && <span className="text-app-label text-app-muted">{WORDS.resume}</span>}
       </div>
     </AppPanel>
   );

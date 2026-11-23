@@ -384,6 +384,83 @@ describe("native directory", () => {
     expect(members(1)).toEqual({ 1: 3, 2: 1, 3: 1, 4: 0 });
   });
 
+  it("publishes each Aspect's hyperstructure height and finish height from RaceRules and AspectHyperstructure", () => {
+    const { fold, native, decoder } = world();
+    native.applyReceipt(
+      fold,
+      receipt(
+        seedDerivedRows(fold, decoder, [
+          rowEvent("RaceRules", ["1"], {
+            season_days: 30n,
+            stage_height: 2000n,
+            clear_mist_percent: 120n,
+            second_wind_percent: 120n,
+            pale_moon_percent: 80n,
+            spoils_percent: 120n,
+          }),
+          rowEvent("AspectHyperstructure", ["1", "1"], { height: 6400n }),
+          rowEvent("AspectHyperstructure", ["1", "2"], { height: 7850n }),
+        ]),
+      ),
+      11,
+      0,
+    );
+    const input = { chain: "madara", confirmedBlock: 11, timestamp: 30, fold };
+    const race = (gameId: number) =>
+      buildNativeDirectory(input).games.find(({ game_id }) => game_id === gameId)!.aspect_race;
+    expect(race(1)).toEqual({ finish_height: 10000, heights: { 1: 6400, 2: 7850, 3: 0, 4: 0 } });
+    expect(race(2)).toBeNull();
+
+    const revision = fold.directoryRevision();
+    native.applyReceipt(fold, receipt([rowEvent("AspectHyperstructure", ["1", "3"], { height: 4100n })]), 12, 0);
+    expect(fold.directoryRevision()).not.toBe(revision);
+    expect(race(1)).toEqual({ finish_height: 10000, heights: { 1: 6400, 2: 7850, 3: 4100, 4: 0 } });
+  });
+
+  it("publishes the player's current ordinary quest, progress, target, and Labor reward on a live Frontier day", () => {
+    const { fold, native, decoder } = world();
+    native.applyReceipt(
+      fold,
+      receipt(
+        seedDerivedRows(fold, decoder, [
+          gameEvent("1", "0", "0", "frontier", "Frontier"),
+          rulesEvent("1", "3600"),
+          rowEvent("QuestRules", ["1"], {
+            base_counts: [1, 1, 1, 1, 1, 2, 15],
+            labor: 1000n,
+            essence: 1500n,
+            bonus_percent: 150,
+          }),
+          structure("7", "1", "0x111", "0"),
+          rowEvent("EntryEntitlement", ["1", "0x111"], {
+            realm_id: 538n,
+            pass_kind: 2n,
+            metadata_1: 0n,
+            metadata_2: 0n,
+            metadata_3: 0n,
+          }),
+          rowEvent("SettledRealm", ["1", "538"], { home: 7n }),
+          rowEvent("QuestProgress", ["1", "7", "0"], { progress: 1n, completed_level: 0 }),
+        ]),
+      ),
+      11,
+      0,
+    );
+    const entry = buildNativeDirectory({
+      chain: "madara",
+      confirmedBlock: 11,
+      timestamp: 30,
+      fold,
+      playerAddress: "0x111",
+    }).games.find(({ game_id }) => game_id === 1)!;
+    expect(entry.player_state?.today_quest).toEqual({
+      quest_id: expect.any(Number),
+      progress: 1,
+      target: expect.any(Number),
+      labor: 1500,
+    });
+  });
+
   // The old-state dev incident: a clear deleted the site's TileOccupancy and the player took the site.
   // The player's directory still answers; the tile-less site is listed without a position and reported.
   it("answers a player who cleared a Frontier site, through the season's close", () => {

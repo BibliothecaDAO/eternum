@@ -90,11 +90,15 @@ function readQuestOnDay(store: NativeFactStore, at: QuestAt): NativeFactResult<Q
   };
 }
 
+export function ordinaryQuestTarget(baseCounts: readonly number[], kind: number, level: number): number {
+  const base = baseCounts[kind];
+  if (!base) throw new Error(`Missing ordinary quest target ${kind}`);
+  return base * level;
+}
+
 function questTarget(store: NativeFactStore, at: QuestAt, kind: number, level: number): bigint {
   if (kind < nativeQuestConstants.QUEST_COUNT) {
-    const base = at.rules.base_counts[kind];
-    if (!base) throw new Error(`Missing ordinary quest target ${kind}`);
-    return BigInt(base) * BigInt(level);
+    return BigInt(ordinaryQuestTarget(at.rules.base_counts, kind, level));
   }
   const rules = store.require("BaneRules", { game_id: at.game_id });
   const target = rules.quest_counts[(kind - nativeQuestConstants.STAND) * 4 + level - 1];
@@ -176,6 +180,16 @@ function presentOrKnownAbsent(
   return absence.known ? { known: { present: false } } : { unknown: absence.unknown };
 }
 
+export function ordinaryQuestLabor(
+  rules: { labor: bigint; bonus_percent: number },
+  level: number,
+  bonus: boolean,
+): bigint {
+  const multiplier = 1n << BigInt(level - 1);
+  const percent = BigInt(bonus ? rules.bonus_percent : 100);
+  return (rules.labor * multiplier * percent) / 100n;
+}
+
 function questReward(
   rules: { labor: bigint; essence: bigint; bonus_percent: number },
   level: number,
@@ -183,9 +197,8 @@ function questReward(
   grants: number,
 ): Reward {
   const multiplier = 1n << BigInt(level - 1);
-  const percent = BigInt(bonus ? rules.bonus_percent : 100);
   return {
-    labor: ((rules.labor * multiplier * percent) / 100n) * BigInt(grants) * BigInt(RESOURCE_PRECISION),
+    labor: ordinaryQuestLabor(rules, level, bonus) * BigInt(grants) * BigInt(RESOURCE_PRECISION),
     essence: rules.essence * multiplier * BigInt(grants) * BigInt(RESOURCE_PRECISION),
   };
 }

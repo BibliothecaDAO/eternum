@@ -869,6 +869,8 @@ export const DAY_BANNER_WORDS = {
   /** A quest's count in its own unit: "1 of 2 camps". */
   count: (progress: number, target: number, unit: string) =>
     `${formatExact(progress)} of ${formatExact(target)} ${unit}`,
+  summary: (objective: string, progress: number, target: number, labor: number) =>
+    `${objective} · ${formatExact(progress)} of ${formatExact(target)} · +${formatExact(labor)} ${LABOR}`,
   /** How many members of the Aspect finished the bane's quest: "4 of 6 members". */
   members: (completed: number, required: number) => `${formatExact(completed)} of ${formatExact(required)} members`,
   membersShort: (completed: number, required: number) => `${formatExact(completed)} of ${formatExact(required)}`,

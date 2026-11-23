@@ -39,6 +39,18 @@ export interface HeraldPlayerStructure {
   resources_packed: string;
 }
 
+export interface HeraldPlayerQuest {
+  quest_id: number;
+  progress: number;
+  target: number;
+  labor: number;
+}
+
+export interface HeraldAspectRace {
+  finish_height: number;
+  heights: Record<AspectId, number>;
+}
+
 /** The requesting player's standing in one game: everything the entry screens read before the player joins. */
 export interface HeraldPlayerGameState {
   registered: boolean;
@@ -47,6 +59,7 @@ export interface HeraldPlayerGameState {
   has_home_source: boolean;
   taken_realm_ids: number[];
   structures: HeraldPlayerStructure[];
+  today_quest?: HeraldPlayerQuest | null;
 }
 
 export interface HeraldGameDirectoryEntry {
@@ -66,6 +79,7 @@ export interface HeraldGameDirectoryEntry {
   player_count: number;
   /** Homes per Aspect; null without Aspects, absent on archived directory responses. */
   aspect_members?: Record<AspectId, number> | null;
+  aspect_race?: HeraldAspectRace | null;
   player_state: HeraldPlayerGameState | null;
   registration: HeraldGameRegistration | null;
   settled_realms_count: number;
