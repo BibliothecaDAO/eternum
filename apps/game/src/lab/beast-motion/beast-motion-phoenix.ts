@@ -1,5 +1,5 @@
 import type Node from "three/src/nodes/core/Node.js";
-import { Box3, InstancedMesh, MeshStandardMaterial, Vector3 } from "three";
+import { Box3, InstancedMesh, MeshStandardMaterial } from "three";
 import {
   abs,
   color,
@@ -24,7 +24,7 @@ import {
   createBeastEmberMaterial,
   createBeastPhoenixGlow,
 } from "@/three/structures/frontier-model";
-import { BEAST_MOTION_CYCLE_SECONDS } from "./beast-motion-model";
+import { BEAST_MOTION_CYCLE_SECONDS, readBoundsExtents } from "./beast-motion-model";
 
 const TAU = Math.PI * 2;
 
@@ -82,19 +82,15 @@ export function createHybridBeastMaterial(
 ): FrostedStandardNodeMaterial {
   const material = buildBaseBeastMaterial(source, uniforms, float(0));
   const profile = BEAST_MOTION_PROFILES[species];
-  const size = bounds.getSize(new Vector3());
-  const minY = bounds.min.y;
-  const invHeight = 1 / Math.max(size.y, 0.25);
-  const invHalfX = 2 / Math.max(size.x, 0.3);
-  const invHalfZ = 2 / Math.max(size.z, 0.3);
+  const ext = readBoundsExtents(bounds);
 
   const phase = float(uniforms.time).div(BEAST_MOTION_CYCLE_SECONDS).fract().mul(TAU);
   const gx = positionGeometry.x;
   const gy = positionGeometry.y;
   const gz = positionGeometry.z;
-  const nx = gx.mul(invHalfX);
-  const ny = gy.sub(minY).mul(invHeight);
-  const nz = gz.mul(invHalfZ);
+  const nx = gx.sub(ext.centerX).div(ext.halfX);
+  const ny = gy.sub(ext.minY).div(ext.height);
+  const nz = gz.sub(ext.centerZ).div(ext.halfZ);
   const absNx = abs(nx);
 
   const planted = smoothstep(0.08, 0.3, ny);

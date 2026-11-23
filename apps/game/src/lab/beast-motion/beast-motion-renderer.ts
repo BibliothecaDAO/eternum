@@ -700,22 +700,29 @@ class BeastMotionStage implements BeastMotionRendererHandle {
   }
 
   private ensureSpeciesLoaded(species: FrontierSpecies): void {
+    const token = ++this.speciesGeneration;
     const cached = this.assetCache.get(species);
     if (cached) {
       this.applyLoadedAsset(cached);
       return;
     }
-    const token = ++this.speciesGeneration;
     this.speciesLoaded = false;
-    void loadBeastAsset(species, this.uniforms).then((asset) => {
-      if (this.disposed) {
-        disposeBeastAsset(asset);
-        return;
-      }
-      this.assetCache.set(species, asset);
-      if (token !== this.speciesGeneration) return;
-      this.applyLoadedAsset(asset);
-    });
+    void loadBeastAsset(species, this.uniforms)
+      .then((asset) => {
+        if (this.disposed) {
+          disposeBeastAsset(asset);
+          return;
+        }
+        this.assetCache.set(species, asset);
+        if (token !== this.speciesGeneration) return;
+        this.applyLoadedAsset(asset);
+      })
+      .catch((error) => {
+        if (this.disposed || token !== this.speciesGeneration) return;
+        this.state = { ...this.state, species: this.activeAsset.species };
+        this.speciesLoaded = true;
+        console.error(`[BeastMotionStage] Failed to load beast species ${species}`, error);
+      });
   }
 
   private applyLoadedAsset(asset: LoadedBeastAsset): void {

@@ -56,7 +56,7 @@ export function resolveAnimatedTroopKind(modelType: ModelType): AnimatedTroopKin
 export function createTroopMotionController(
   kind: AnimatedTroopKind,
   capacity: number,
-  resolveLoopAction?: (index: number) => TroopShaderAction,
+  resolveLoopAction: (index: number) => TroopShaderAction,
 ): TroopMotionController {
   const profile = TROOP_MOTION_PROFILES[kind];
   return new InstancedMotionController<TroopShaderAction>(

@@ -199,7 +199,7 @@ interface BoundsExtents {
   centerZ: number;
 }
 
-function readBoundsExtents(bounds: Box3): BoundsExtents {
+export function readBoundsExtents(bounds: Box3): BoundsExtents {
   const size = bounds.getSize(new Vector3());
   const center = bounds.getCenter(new Vector3());
   return {

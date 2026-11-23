@@ -18,7 +18,7 @@ export const BEAST_FAMILY_LABELS = {
 
 export const BEAST_FAMILY_SHOWCASE_IDS = Object.keys(BEAST_FAMILY_LABELS) as BeastFamilyShowcaseId[];
 
-export interface FamilyMember {
+interface FamilyMember {
   readonly name: string;
   readonly species: FrontierSpecies;
   readonly layer: BeastLayer;
