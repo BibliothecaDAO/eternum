@@ -58,7 +58,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.875rem;
-  border: 1.5px solid rgb(var(--app-gold));
+  border: 1.5px solid rgb(var(--hud-gold));
   border-radius: var(--app-radius-panel);
   background: linear-gradient(
     180deg,
@@ -66,9 +66,7 @@
     color-mix(in srgb, var(--app-surface) 96%, transparent)
   );
   padding: 1rem;
-  box-shadow:
-    0 12px 28px rgb(0 0 0 / 0.45),
-    inset 0 1px 0 rgb(var(--app-gold) / 0.25);
+  box-shadow: var(--app-shadow-panel);
 }
 
 .home-picker__selected-head {
@@ -80,7 +78,7 @@
 
 .home-picker__eyebrow {
   font-family: var(--app-face-title);
-  font-size: 0.75rem;
+  font-size: var(--app-text-label);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--app-muted);
@@ -94,7 +92,7 @@
   border-radius: var(--app-radius-round);
   background: var(--app-well);
   padding: 0.2rem 0.6rem;
-  font-size: 0.75rem;
+  font-size: var(--app-text-label);
   color: var(--app-ink);
 }
 
@@ -128,11 +126,11 @@
   bottom: -0.35rem;
   display: grid;
   place-items: center;
-  border: 1px solid rgb(var(--app-aspect, var(--app-gold)) / 0.6);
+  border: 1px solid rgb(var(--hud-aspect, var(--hud-gold)) / 0.6);
   border-radius: var(--app-radius-round);
   background: var(--app-ground);
   padding: 0.15rem;
-  box-shadow: 0 4px 12px rgb(0 0 0 / 0.6);
+  box-shadow: var(--hud-shadow-control);
 }
 
 .home-picker__about {
@@ -177,7 +175,7 @@
   align-items: center;
   gap: 0.3rem;
   font-weight: 600;
-  color: rgb(var(--app-aspect, var(--app-gold)));
+  color: rgb(var(--hud-aspect, var(--hud-gold)));
 }
 
 .home-picker__order {
@@ -199,11 +197,11 @@
   width: fit-content;
   align-items: center;
   gap: 0.3rem;
-  border: 1px solid rgb(var(--app-gold) / 0.4);
+  border: 1px solid rgb(var(--hud-gold) / 0.4);
   border-radius: var(--app-radius-round);
   background: var(--app-chosen);
   padding: 0.15rem 0.6rem;
-  font-size: 0.75rem;
+  font-size: var(--app-text-label);
   font-weight: 600;
   color: var(--gold2);
 }
@@ -270,7 +268,7 @@
   border-radius: var(--app-radius-round);
   background: var(--app-well);
   padding: 0.3rem 0.65rem;
-  font-size: 0.75rem;
+  font-size: var(--app-text-label);
   font-weight: 600;
   color: var(--app-muted);
   transition:
@@ -285,8 +283,8 @@
 }
 
 .home-picker__filter[aria-pressed="true"] {
-  border-color: rgb(var(--app-aspect, var(--app-gold)));
-  background: rgb(var(--app-aspect, var(--app-gold)) / 0.16);
+  border-color: rgb(var(--hud-aspect, var(--hud-gold)));
+  background: rgb(var(--hud-aspect, var(--hud-gold)) / 0.16);
   color: var(--app-ink);
 }
 
@@ -322,9 +320,9 @@
 }
 
 .home-picker__choice[aria-pressed="true"] {
-  border-color: rgb(var(--app-gold));
+  border-color: rgb(var(--hud-gold));
   background: var(--app-chosen);
-  box-shadow: inset 0 0 0 1px rgb(var(--app-gold) / 0.35);
+  box-shadow: inset 0 0 0 1px rgb(var(--hud-gold) / 0.35);
 }
 
 .home-picker__choice:disabled {
@@ -359,7 +357,7 @@
 .home-picker__caption {
   overflow: hidden;
   font-family: var(--app-face-title);
-  font-size: 0.9375rem;
+  font-size: var(--app-text-body);
   line-height: 1.2;
   color: var(--app-ink);
   text-overflow: ellipsis;
@@ -371,7 +369,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.35rem;
-  font-size: 0.75rem;
+  font-size: var(--app-text-label);
   color: var(--app-muted);
 }
 
@@ -383,7 +381,7 @@
   width: 1.35rem;
   height: 1.35rem;
   place-items: center;
-  border: 1.5px solid rgb(var(--app-gold));
+  border: 1.5px solid rgb(var(--hud-gold));
   border-radius: var(--app-radius-round);
   background: var(--app-ground);
 }
@@ -393,7 +391,7 @@
   justify-content: center;
   gap: 0.3rem;
   border-style: dashed;
-  border-color: rgb(var(--app-gold) / 0.65);
+  border-color: rgb(var(--hud-gold) / 0.65);
   color: var(--gold2);
   font-weight: 600;
   text-align: center;
@@ -422,7 +420,7 @@
 }
 
 .home-picker__search:focus-within {
-  border-color: rgb(var(--app-gold));
+  border-color: rgb(var(--hud-gold));
 }
 
 .home-picker__search input {
@@ -518,7 +516,7 @@
 
 .realm-side__name {
   font-family: var(--app-face-title);
-  font-size: 1.25rem;
+  font-size: var(--app-text-heading);
   line-height: 1.2;
   color: var(--app-ink);
 }

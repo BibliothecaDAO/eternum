@@ -278,14 +278,8 @@ function Choices({
     onChange(valueOf(choice));
     setAll(false);
   };
-  const visible = inlineVault
-    ? choices.filter((choice) => matchesFilter(choice, aspectFilter, query))
-    : choices;
-  const shown = inlineVault
-    ? visible
-    : choices.length > strip + 1
-      ? choices.slice(0, strip)
-      : choices;
+  const visible = inlineVault ? choices.filter((choice) => matchesFilter(choice, aspectFilter, query)) : choices;
+  const shown = inlineVault ? visible : choices.length > strip + 1 ? choices.slice(0, strip) : choices;
   const countsByAspect = aspects
     .map((item) => ({
       id: item.id,
@@ -306,18 +300,7 @@ function Choices({
         ) : (
           <span className="home-picker__eyebrow">{`Your Realms (${choices.length})`}</span>
         )}
-        {inlineVault && (
-          <label className="home-picker__search">
-            <Icon name="search" size={18} />
-            <input
-              type="search"
-              value={query}
-              placeholder={HOME_STEP_WORDS.search(choices.length)}
-              aria-label={HOME_STEP_WORDS.search(choices.length)}
-              onChange={(event) => setQuery(event.target.value)}
-            />
-          </label>
-        )}
+        {inlineVault && <SearchBox count={choices.length} iconSize={18} value={query} onChange={setQuery} />}
       </div>
       {inlineVault && countsByAspect.length > 1 && (
         <AspectFilters
@@ -360,6 +343,29 @@ function Choices({
   );
 }
 
+const SearchBox = ({
+  count,
+  iconSize,
+  value,
+  onChange,
+}: {
+  count: number;
+  iconSize: number;
+  value: string;
+  onChange: (value: string) => void;
+}) => (
+  <label className="home-picker__search">
+    <Icon name="search" size={iconSize} />
+    <input
+      type="search"
+      value={value}
+      placeholder={HOME_STEP_WORDS.search(count)}
+      aria-label={HOME_STEP_WORDS.search(count)}
+      onChange={(event) => onChange(event.target.value)}
+    />
+  </label>
+);
+
 const AspectFilters = ({
   total,
   counts,
@@ -372,12 +378,7 @@ const AspectFilters = ({
   onChoose: (aspect: AspectId | null) => void;
 }) => (
   <div className="home-picker__filters" role="group" aria-label="Filter by Aspect">
-    <button
-      type="button"
-      className="home-picker__filter"
-      aria-pressed={chosen === null}
-      onClick={() => onChoose(null)}
-    >
+    <button type="button" className="home-picker__filter" aria-pressed={chosen === null} onClick={() => onChoose(null)}>
       {`All (${total})`}
     </button>
     {counts.map(({ id, name, count }) => (
@@ -420,16 +421,7 @@ function AllChoices({
   const found = choices.filter((choice) => matchesFilter(choice, aspectFilter, query));
   return (
     <div className="home-picker__allgrid">
-      <label className="home-picker__search">
-        <Icon name="search" size={20} />
-        <input
-          type="search"
-          value={query}
-          placeholder={HOME_STEP_WORDS.search(realms)}
-          aria-label={HOME_STEP_WORDS.search(realms)}
-          onChange={(event) => setQuery(event.target.value)}
-        />
-      </label>
+      <SearchBox count={realms} iconSize={20} value={query} onChange={setQuery} />
       {countsByAspect.length > 1 && (
         <AspectFilters total={realms} counts={countsByAspect} chosen={aspectFilter} onChoose={setAspectFilter} />
       )}

@@ -174,9 +174,7 @@ const FrontierHeroCard = ({ item, now, signedIn, className }: ItemProps & { clas
                 </div>
               </div>
               {item.game.status === "Live" && day.day !== undefined && (
-                <AppChip icon="hourglass">
-                  {`${DAY} ${day.day} · ${dayLeftCompact(day.secondsLeft)}`}
-                </AppChip>
+                <AppChip icon="hourglass">{`${DAY} ${day.day} · ${dayLeftCompact(day.secondsLeft)}`}</AppChip>
               )}
             </div>
           )}

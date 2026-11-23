@@ -16,7 +16,14 @@ import { AppPanel, AppPortrait } from "@/ui/design-system/kit/app-elements";
 import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
 import { PlayerName } from "@/ui/design-system/kit/player-name";
 import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
-import { LORDS_EARNED, PROFILE_WORDS, RANK, SEASON_WORDS, SITES_CLEARED, YOUR_REALMS } from "@/ui/design-system/kit/words";
+import {
+  LORDS_EARNED,
+  PROFILE_WORDS,
+  RANK,
+  SEASON_WORDS,
+  SITES_CLEARED,
+  YOUR_REALMS,
+} from "@/ui/design-system/kit/words";
 import { findOwnEntry } from "@/ui/features/frontier/board/standings";
 import { HomeArt } from "@/ui/shared/components/home-art";
 
