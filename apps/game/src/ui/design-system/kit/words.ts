@@ -1596,8 +1596,6 @@ export const PROFILE_WORDS = {
   signInMethods: "Sign-in",
   email: "email",
   noWallet: "No wallet set",
-  /** The You card's holding with no wallet linked: what a wallet holds and receives (owner, 31 October 2026). */
-  linkWalletHoldings: "Link a wallet for your Realms and LORDS",
   signOut: "Sign out",
   signOutAsk: "Sign out?",
   signOutCost: "This device forgets your account",

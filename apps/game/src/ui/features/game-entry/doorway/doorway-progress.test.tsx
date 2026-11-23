@@ -63,7 +63,28 @@ it("gives the bar's place to a step that asks the player to choose", () => {
   expect(page.querySelector('[role="progressbar"]')).toBeNull();
 });
 
-it("renders the Frontier lockup, Aspect Facet, Entering Realm heading, day subtitle and Deep tip when the realm is known", () => {
+it("keeps the first-minutes tip when entering a newly founded Realm even though the Realm is already known", () => {
+  const aspect = orderAspect(2)!;
+  const page = new DOMParser().parseFromString(
+    renderToStaticMarkup(
+      <MemoryRouter>
+        <DoorwayScreen
+          view={loadingMap()}
+          realm={{ name: "Temtinos", emblem: null, aspect }}
+          game={{ mode: "frontier", day_index: 0 }}
+          firstEntry
+          onRetry={() => {}}
+          onSignIn={() => {}}
+        />
+      </MemoryRouter>,
+    ),
+    "text/html",
+  ).body;
+  expect(page.textContent).toContain("Entering Temtinos");
+  expect(page.textContent).toContain("First: build a Barracks");
+});
+
+it("renders the Frontier lockup, Aspect Facet, Entering Realm heading, day subtitle and Deep tip for a returning Realm", () => {
   const aspect = orderAspect(2)!;
   const page = new DOMParser().parseFromString(
     renderToStaticMarkup(
@@ -72,6 +93,7 @@ it("renders the Frontier lockup, Aspect Facet, Entering Realm heading, day subti
           view={loadingMap()}
           realm={{ name: "Temtinos", emblem: null, aspect }}
           game={{ mode: "frontier", day_index: 5 }}
+          firstEntry={false}
           onRetry={() => {}}
           onSignIn={() => {}}
         />

@@ -152,6 +152,7 @@ export const LabDoorway = () => {
       view={doorway.view}
       realm={doorway.realm}
       game={LAB_FRONTIER}
+      firstEntry={false}
       onRetry={noop}
       onOpenRealm={noop}
       onSignIn={noop}

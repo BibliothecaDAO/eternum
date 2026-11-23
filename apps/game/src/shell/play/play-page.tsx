@@ -2,21 +2,13 @@ import "./play-page.css";
 
 import type { HeraldAspectRace } from "@bibliothecadao/eternum/game-sync";
 import { aspects, formatExact, questCatalog, type QuestId } from "@bibliothecadao/types";
-import {
-  ASPECT_PAGE_WORDS,
-  BLITZ_WORDS,
-  DAY,
-  DAY_BANNER_WORDS,
-  OF,
-  WORDS,
-  dayLeftCompact,
-} from "@/ui/design-system/kit/words";
+import { ASPECT_PAGE_WORDS, BLITZ_WORDS, DAY_BANNER_WORDS, OF, WORDS } from "@/ui/design-system/kit/words";
 import type { CSSProperties, ReactNode } from "react";
 
 import { aspectVariables } from "@/tokens";
 import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { Icon } from "@/ui/design-system/icon";
-import { AppAgeColumn, AppButton, AppChip, AppGameCard, AppLink, AppPanel } from "@/ui/design-system/kit/app-elements";
+import { AppAgeColumn, AppButton, AppGameCard, AppLink, AppPanel } from "@/ui/design-system/kit/app-elements";
 import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
 import { dayQuestFace } from "@/ui/features/frontier/day/day-quest-face";
 
@@ -170,12 +162,7 @@ const TodayQuestPanel = ({ game, now }: { game: DirectoryGame; now: number }) =>
   const face = dayQuestFace(questId);
   const share = quest.target > 0 ? Math.min(100, Math.round((quest.progress / quest.target) * 100)) : 0;
   return (
-    <AppPanel
-      title={DAY_BANNER_WORDS.today}
-      icon="hourglass"
-      cue={<AppChip icon="hourglass">{`${DAY} ${day.day} · ${dayLeftCompact(day.secondsLeft)}`}</AppChip>}
-      className="play-today"
-    >
+    <AppPanel title={DAY_BANNER_WORDS.today} icon="hourglass" className="play-today">
       <div className="play-today__quest" data-play-today>
         <span className="play-today__icon" aria-hidden="true">
           <Icon name={face.icon} size={34} />

@@ -1,4 +1,4 @@
-import { environmentL2, MAINNET_TOKENS, PUBLIC_L2_RPC_URL } from "@realms-world/chain";
+import { environmentL2, MAINNET_TOKENS, PUBLIC_L2_RPC_URL, valuePlaneAddress } from "@realms-world/chain";
 import { constants, RpcProvider } from "starknet";
 
 import { valueEnvironmentOf } from "@/shell/frame/environment";
@@ -16,8 +16,10 @@ const L2_CHAINS = {
   },
 } as const;
 
-/** The build's environment's L2 and ledger, from that environment's checked-in address book. */
-const ENVIRONMENT_L2 = environmentL2(valueEnvironmentOf(import.meta.env.VITE_PUBLIC_ENVIRONMENT));
+const VALUE_ENVIRONMENT = valueEnvironmentOf(import.meta.env.VITE_PUBLIC_ENVIRONMENT);
+const ENVIRONMENT_L2 = environmentL2(VALUE_ENVIRONMENT);
+
+export const L2_LORDS = valuePlaneAddress("lords", VALUE_ENVIRONMENT);
 
 /**
  * The environment's one L2, as its address book names it. The wallet connectors, the link proof, the ledger reads and

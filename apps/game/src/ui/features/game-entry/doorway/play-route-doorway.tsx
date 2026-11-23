@@ -11,7 +11,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useGameEntry } from "@/hooks/use-game-entry";
 import { parsePlayRoute } from "@/play/navigation/play-route";
 import type { DirectoryGame } from "@/shell/herald";
-import { seasonRealmId } from "@/shell/season";
+import { seasonRealm, seasonRealmId } from "@/shell/season";
 import { resultsHref } from "@/shell/season-tab/results-link";
 import { useRequestSignIn } from "@/shell/sign-in/connect";
 import { modelPreparationShare, subscribeModelPreparation } from "@/three/model-preparation";
@@ -58,11 +58,13 @@ export const PlayRouteDoorway = ({
     refused,
     modelShare,
   });
+  const firstEntry = route?.resumeScene === "hex" || (entry !== null && (seasonRealm(entry)?.level ?? 0) === 0);
   return (
     <DoorwayScreen
       view={view}
       realm={realm}
       game={entry ?? undefined}
+      firstEntry={firstEntry}
       onRetry={phase === "error" ? retry : () => pageNavigation.reload()}
       onOpenRealm={openRealmWithoutMap}
       onSignIn={() => requestSignIn()}

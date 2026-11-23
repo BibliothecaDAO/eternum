@@ -34,15 +34,15 @@ export interface TokenPayment {
   lordsBought: bigint;
 }
 
-export const MAINNET_PAY_TOKENS: readonly PayToken[] = (Object.keys(MAINNET_TOKENS) as MainnetToken[]).map((key) => ({
+const MAINNET_PAY_TOKENS: readonly PayToken[] = (Object.keys(MAINNET_TOKENS) as MainnetToken[]).map((key) => ({
   key,
   ...MAINNET_TOKENS[key],
 }));
 
-export const payTokensFor = (quote: Quote): PayToken[] =>
-  isMainnetLords(quote.token)
-    ? [...MAINNET_PAY_TOKENS]
-    : [{ key: "lords", ...MAINNET_TOKENS.lords, address: quote.token }];
+export const payTokensForToken = (token: string): PayToken[] =>
+  isMainnetLords(token) ? [...MAINNET_PAY_TOKENS] : [{ key: "lords", ...MAINNET_TOKENS.lords, address: token }];
+
+export const payTokensFor = (quote: Quote): PayToken[] => payTokensForToken(quote.token);
 
 export const paymentIn = async (
   token: PayToken,

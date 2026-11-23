@@ -10,6 +10,7 @@ import { nativeFragmentConstants } from "@bibliothecadao/eternum/game-client";
 import { identityClient, useIdentitySession } from "@/hooks/context/identity-session";
 import { useDefaultWallet } from "@/hooks/context/default-wallet";
 import { payoutAddressOf } from "@/hooks/context/payout-wallet";
+import { L2_LORDS } from "@/runtime/l2-rpc";
 import { Icon } from "@/ui/design-system/icon";
 import { AppButton, AppFigure, AppNotice, AppPanel } from "@/ui/design-system/kit/app-elements";
 import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
@@ -23,7 +24,7 @@ import { nextOf } from "../return-path";
 import { lordsOf } from "../value/ledger";
 import { WalletUnread } from "../value/wallet-unread";
 import { followPayment, forgetPayment, rememberPayment, sentPaymentOf, type SentPayment } from "./fragment-payment";
-import { MAINNET_PAY_TOKENS, PAY_TOKEN_ICONS } from "./pay-tokens";
+import { PAY_TOKEN_ICONS, payTokensForToken } from "./pay-tokens";
 import { PayWith } from "./pay-with";
 
 const PACKS = Object.values(STORE_PRODUCTS).map(({ fragments }) => fragments);
@@ -78,6 +79,7 @@ const Purchase = ({ account, game, next }: { account: string; game: ShopGame; ne
 
 const Choose = ({ game, onPriced }: { game: ShopGame; onPriced: (paying: Paying) => void }) => {
   const [fragments, setFragments] = useState<number>(SEAL);
+  const tokens = payTokensForToken(L2_LORDS);
   const price = useMutation({ mutationFn: (wanted: number) => identityClient.priceFragments(game, wanted) });
   const pay = () =>
     price.mutate(fragments, {
@@ -114,11 +116,11 @@ const Choose = ({ game, onPriced }: { game: ShopGame; onPriced: (paying: Paying)
       <div className="shop-foot">
         <div className="shop-methods">
           <span className="shop-methods__icons" aria-hidden="true">
-            {MAINNET_PAY_TOKENS.map(({ key }) => (
+            {tokens.map(({ key }) => (
               <Icon key={key} name={PAY_TOKEN_ICONS[key]} size={20} />
             ))}
           </span>
-          <span>{FRAGMENTS_PAGE_WORDS.payWithTokens(MAINNET_PAY_TOKENS.map(({ symbol }) => symbol))}</span>
+          <span>{FRAGMENTS_PAGE_WORDS.payWithTokens(tokens.map(({ symbol }) => symbol))}</span>
         </div>
         <AppButton
           kind="primary"

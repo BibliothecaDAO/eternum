@@ -24,7 +24,7 @@ import { Icon } from "@/ui/design-system/icon";
 import { AGE_LOCKUP } from "@/ui/design-system/icon-meaning";
 import { AppButton, AppNotice } from "@/ui/design-system/kit/app-elements";
 import { AppAspectCard, AppAspectGrid } from "@/ui/design-system/kit/aspect-card";
-import { AppCountdownChip } from "@/ui/design-system/kit/clock-chip";
+import { countdownLine } from "@/ui/design-system/kit/clock-chip";
 import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
 import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
 import { ASPECT_STEP_WORDS, PRESEASON_WORDS, TRY_AGAIN } from "@/ui/design-system/kit/words";
@@ -81,7 +81,7 @@ const OrderPick = ({
   offered: AspectOffer | null;
   retryInvite: (() => void) | null;
 }) => {
-  const [aspect, setAspect] = useState<AspectId>(offered?.aspect ?? aspects[0]!.id);
+  const [aspect, setAspect] = useState<AspectId | null>(offered?.aspect ?? null);
   const [pickingOrder, setPickingOrder] = useState(false);
   const [order, setOrder] = useState<number | null>(null);
   const client = useQueryClient();
@@ -98,16 +98,16 @@ const OrderPick = ({
       }
     },
   });
-  const chosen = orders.find((each) => each.orderId === order && each.aspect === aspect);
+  const chosen = aspect !== null ? orders.find((each) => each.orderId === order && each.aspect === aspect) : undefined;
   const pickAspect = (picked: AspectId) => {
     setAspect(picked);
     setOrder(null);
   };
   const openOrderStep = () => {
+    if (aspect === null) return;
     setOrder(null);
     setPickingOrder(true);
   };
-  const aspectLabel = aspectName(aspect);
   return (
     <StageFrame
       wide
@@ -130,13 +130,17 @@ const OrderPick = ({
           size="lg"
           step
           className="w-full lg:w-auto"
-          disabled={choose.isPending}
+          disabled={aspect === null || choose.isPending}
           onClick={openOrderStep}
         >
-          <span className="inline-flex items-center gap-2">
-            <AspectMark aspect={aspect} size={24} decorative />
-            {PRESEASON_WORDS.pledge(aspectLabel)}
-          </span>
+          {aspect !== null ? (
+            <span className="inline-flex items-center gap-2">
+              <AspectMark aspect={aspect} size={24} decorative />
+              {PRESEASON_WORDS.pledge(aspectName(aspect))}
+            </span>
+          ) : (
+            ASPECT_STEP_WORDS.choose
+          )}
         </AppButton>
       }
     >
@@ -161,7 +165,7 @@ const OrderPick = ({
           </p>
         )}
       </div>
-      {pickingOrder && (
+      {pickingOrder && aspect !== null && (
         <ShellWindow
           title={PRESEASON_WORDS.orderTitle}
           onClose={() => {
@@ -203,7 +207,7 @@ const AspectCards = ({
   offered,
   onPick,
 }: {
-  chosen: AspectId;
+  chosen: AspectId | null;
   members: OrderIntent["members"];
   aspectLords: number | null;
   offered: AspectOffer | null;
@@ -302,7 +306,11 @@ const SeasonWaiting = ({
         <div className="waiting-stage__top">
           <div className="waiting-stage__brand">
             <img src={AGE_LOCKUP.frontier} alt={ageOf("frontier").name} className="countdown-stage__lockup" />
-            <p className="countdown-stage__clock" aria-hidden="true">
+            <p
+              className="countdown-stage__clock"
+              role="timer"
+              aria-label={countdownLine("starts", opening.startsAt, now)}
+            >
               {formatDuration(Math.max(0, opening.startsAt - now))}
             </p>
           </div>
@@ -313,7 +321,6 @@ const SeasonWaiting = ({
               <p className="text-app-label text-app-muted">
                 {PRESEASON_WORDS.waiting(chosen.fullOrderName, formatDate(opening.startsAt, now))}
               </p>
-              <AppCountdownChip prefix="starts" at={opening.startsAt} now={now} />
             </div>
           </div>
         </div>

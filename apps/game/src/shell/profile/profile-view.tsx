@@ -15,31 +15,28 @@ import { aspectVariables } from "@/tokens";
 import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { Icon } from "@/ui/design-system/icon";
 import { shortAddress } from "@/ui/design-system/kit/address";
-import { AppButton, AppEmpty, AppPanel, AppPortrait, AppSetting } from "@/ui/design-system/kit/app-elements";
+import { AppButton, AppPanel, AppPortrait, AppSetting } from "@/ui/design-system/kit/app-elements";
 import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
 import { PlayerName } from "@/ui/design-system/kit/player-name";
 import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
 import {
   FRAGMENTS_PAGE_WORDS,
-  HELD_REALMS_UNREADABLE,
   HOME_STEP_WORDS,
   INVITE_WORDS,
   LORDS_EARNED,
-  NO_HELD_REALMS,
   PROFILE_WORDS,
   RANK,
   SEASON_WORDS,
   SITES_CLEARED,
-  TRY_AGAIN,
   WALLET_WORDS,
   YOUR_REALMS,
   numberedRealm,
 } from "@/ui/design-system/kit/words";
-import { findOwnEntry } from "@/ui/features/frontier/board/standings";
+import { findOwnEntry, wholeLords } from "@/ui/features/frontier/board/standings";
 import { HomeArt } from "@/ui/shared/components/home-art";
 
 import { useLayout } from "../frame/layout";
-import { useDirectory, useLeaderboard, useRecentResults } from "../herald";
+import { gameRefOf, useDirectory, useLeaderboard, useRecentResults } from "../herald";
 import { Loading } from "../loading";
 import { ageOf } from "../play/ages";
 import { useSeasonInvite } from "../play/season-invite";
@@ -49,7 +46,7 @@ import { chooseSeason } from "../season";
 import { HistoryRow } from "../season-tab/history-row";
 import { fragmentsHref } from "../shop/fragments-route";
 import { useNowSeconds } from "../use-now";
-import { HoldingsStrip, RealmsSheet } from "./holdings-strip";
+import { HoldingsStrip, RealmsSheet, RealmsStatus } from "./holdings-strip";
 import { linkWalletHref, SETTINGS_PATH } from "./settings-route";
 
 const useCardProfile = (account: string, own: boolean) => {
@@ -63,7 +60,7 @@ const HISTORY = 8;
 
 const useSeasonStanding = (account: string) => {
   const season = chooseSeason(useDirectory().data?.games ?? [], true);
-  const board = useLeaderboard(season ? { chainId: season.chainId, gameId: season.game_id } : null);
+  const board = useLeaderboard(season ? gameRefOf(season) : null);
   const entries = board.data?.entries;
   return { season, own: entries && findOwnEntry(entries, account), field: entries?.length };
 };
@@ -82,7 +79,15 @@ export const ProfileView = ({ account, own }: { account: string; own: boolean })
     </div>
   );
 
-export const PlayerCard = ({ account, own }: { account: string; own: boolean }) => {
+export const PlayerCard = ({
+  account,
+  own,
+  showHoldings = true,
+}: {
+  account: string;
+  own: boolean;
+  showHoldings?: boolean;
+}) => {
   const location = useLocation();
   const profile = useCardProfile(account, own);
   const { season, own: standing, field } = useSeasonStanding(account);
@@ -90,9 +95,7 @@ export const PlayerCard = ({ account, own }: { account: string; own: boolean }) 
   const standingOrder = standing ? catalogOrder(standing.order) : undefined;
   const standingAspect = standingOrder?.aspect ?? null;
   const cardStyle = standingAspect !== null ? (aspectVariables(standingAspect) as CSSProperties) : undefined;
-  const topUpTo = season
-    ? fragmentsHref({ chainId: season.chainId, gameId: season.game_id }, returnPathOf(location))
-    : SETTINGS_PATH;
+  const topUpTo = season ? fragmentsHref(gameRefOf(season), returnPathOf(location)) : SETTINGS_PATH;
   return (
     <div data-you-profile style={cardStyle} className="profile-card-wrap">
       <AppPanel
@@ -161,7 +164,7 @@ export const PlayerCard = ({ account, own }: { account: string; own: boolean }) 
                 <div className="profile-stat">
                   <span className="profile-stat__value">
                     <Icon name="lords" size={18} />
-                    {formatAmount(Number(standing.rewards.lords))}
+                    {formatAmount(wholeLords(standing.rewards.lords))}
                   </span>
                   <span className="profile-stat__label">{LORDS_EARNED}</span>
                 </div>
@@ -196,7 +199,7 @@ export const PlayerCard = ({ account, own }: { account: string; own: boolean }) 
           )}
           {own && <OwnRatingLine />}
         </div>
-        {own && <HoldingsStrip />}
+        {own && showHoldings && <HoldingsStrip />}
       </AppPanel>
     </div>
   );
@@ -243,28 +246,14 @@ export const RealmsShowcase = () => {
   const { wallet, held } = useHeldRealms();
   const [allOpen, setAllOpen] = useState(false);
   if (wallet === null) return null;
-  if (held.isError)
+  if (held.isError || held.data?.length === 0)
     return (
       <AppPanel title={YOUR_REALMS} icon="realm">
-        <AppEmpty
-          icon="realm"
-          line={HELD_REALMS_UNREADABLE}
-          action={
-            <AppButton kind="secondary" onClick={() => void held.refetch()}>
-              {TRY_AGAIN}
-            </AppButton>
-          }
-        />
+        <RealmsStatus held={held} />
       </AppPanel>
     );
   const realms = held.data;
   if (!realms) return null;
-  if (realms.length === 0)
-    return (
-      <AppPanel title={YOUR_REALMS} icon="realm">
-        <AppEmpty icon="realm" line={NO_HELD_REALMS} />
-      </AppPanel>
-    );
   return (
     <>
       <AppPanel

@@ -44,6 +44,7 @@ export const DoorwayScreen = ({
   onOpenRealm,
   onSignIn,
   results,
+  firstEntry = true,
   asking = false,
   wide = false,
   verb,
@@ -56,6 +57,7 @@ export const DoorwayScreen = ({
   onOpenRealm?: () => void;
   onSignIn: () => void;
   results?: string;
+  firstEntry?: boolean;
   asking?: boolean;
   wide?: boolean;
   verb?: ReactNode;
@@ -67,9 +69,9 @@ export const DoorwayScreen = ({
   const loadingMap = view.steps.some(({ step, state }) => (step === "map" || step === "play") && state === "running");
   const tip =
     game?.mode === "frontier" && player && loadingMap && view.blocker === null
-      ? realm !== null
-        ? "deep"
-        : "first"
+      ? firstEntry || realm === null
+        ? "first"
+        : "deep"
       : null;
 
   if (!asking && view.blocker === null && view.spectating === null) {

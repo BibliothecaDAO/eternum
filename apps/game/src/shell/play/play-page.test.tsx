@@ -240,6 +240,7 @@ it("draws no race bars when aspect heights are unknown, and draws exact tower he
   expect(known.container.querySelector("[data-play-today]")?.textContent).toContain(
     "Clear rifts · 0 of 1 · +1,500 Labor",
   );
+  expect(known.container.querySelectorAll('[role="timer"]')).toHaveLength(1);
 });
 
 it("keeps Blitz on Play once an ended Blitz's results were seen, idle and saying none is scheduled (live-qa-night-1 P3-12)", async () => {
@@ -348,7 +349,9 @@ describe("the season's countdown, while its first day is ahead and Play has no g
     const page = await mount();
     const countdown = page.container.querySelector("[data-season-countdown]")!;
     expect(countdown.querySelector("h1")?.textContent).toBe(`The season opens ${formatLongDate(startsAt, now)}`);
-    expect(countdown.querySelector(".app-chip")?.textContent).toBe("Starts in 14d 4h");
+    expect(countdown.querySelectorAll('[role="timer"]')).toHaveLength(1);
+    expect(countdown.querySelector('[role="timer"]')?.getAttribute("aria-label")).toBe("Starts in 14d 4h");
+    expect(countdown.querySelector('[role="timer"]')?.textContent).toBe("14d 4h");
     expect(countdown.textContent).toContain(
       `Pick your side before it starts. 4 Aspects, ${Number(release.definition.economy.race.Some.season_days)} days`,
     );
@@ -387,11 +390,13 @@ describe("the season's countdown, while its first day is ahead and Play has no g
     expect(
       page.container.querySelector("[data-aspect-shared]")?.closest("p")?.previousElementSibling?.matches("ul"),
     ).toBe(true);
-    expect(card("Prowess").getAttribute("aria-pressed")).toBe("true");
-    expect(button("Pledge to Prowess")?.disabled).toBe(false);
+    expect(
+      [...page.container.querySelectorAll("[data-aspect]")].map((each) => each.getAttribute("aria-pressed")),
+    ).toEqual(["false", "false", "false", "false"]);
+    expect(button("Choose your side")?.disabled).toBe(true);
 
     await act(async () => card("Luminary").click());
-    expect(button("Pledge to Luminary")).toBeDefined();
+    expect(button("Pledge to Luminary")?.disabled).toBe(false);
     await act(async () => card("Prowess").click());
     expect(card("Prowess").getAttribute("aria-pressed")).toBe("true");
     expect(card("Luminary").getAttribute("aria-pressed")).toBe("false");
@@ -409,7 +414,8 @@ describe("the season's countdown, while its first day is ahead and Play has no g
     expect(step()).toBe("waiting");
     expect(page.container.querySelector("h1")?.textContent).toBe("You're in Prowess");
     expect(page.text()).toContain(`${giants!.fullOrderName} · opens ${formatDate(startsAt, now)}`);
-    expect(page.container.querySelector(".app-chip")?.textContent).toBe("Starts in 14d 4h");
+    expect(page.container.querySelectorAll('[role="timer"]')).toHaveLength(1);
+    expect(page.container.querySelector('[role="timer"]')?.getAttribute("aria-label")).toBe("Starts in 14d 4h");
   });
 
   it("puts the Aspect a friend invited the account to first, chosen, with who invited it; an invite to a game is not offered", async () => {

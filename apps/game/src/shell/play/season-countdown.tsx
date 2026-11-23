@@ -8,7 +8,7 @@ import { aspectCardUrl } from "@/ui/design-system/domain-icon-meaning";
 import { Icon } from "@/ui/design-system/icon";
 import { AGE_LOCKUP, orderMeaning } from "@/ui/design-system/icon-meaning";
 import { AppButton } from "@/ui/design-system/kit/app-elements";
-import { AppCountdownChip } from "@/ui/design-system/kit/clock-chip";
+import { countdownLine } from "@/ui/design-system/kit/clock-chip";
 import { COUNTDOWN_WORDS } from "@/ui/design-system/kit/words";
 
 import { StageFrame } from "../frame/stage-frame";
@@ -22,13 +22,16 @@ export const SeasonCountdown = ({ opening, now }: { opening: SeasonOpening; now:
       <div className="countdown-stage__head">
         <div className="countdown-stage__hero">
           <img src={AGE_LOCKUP.frontier} alt={ageOf("frontier").name} className="countdown-stage__lockup" />
-          <p className="countdown-stage__clock" aria-hidden="true">
+          <p
+            className="countdown-stage__clock"
+            role="timer"
+            aria-label={countdownLine("starts", opening.startsAt, now)}
+          >
             {formatDuration(Math.max(0, opening.startsAt - now))}
           </p>
         </div>
         <div className="countdown-stage__meta">
           <h1 className="countdown-stage__title">{COUNTDOWN_WORDS.opens(formatLongDate(opening.startsAt, now))}</h1>
-          <AppCountdownChip prefix="starts" at={opening.startsAt} now={now} />
           <p className="text-app-body text-app-muted">{COUNTDOWN_WORDS.line(aspects.length, opening.seasonDays)}</p>
         </div>
       </div>
