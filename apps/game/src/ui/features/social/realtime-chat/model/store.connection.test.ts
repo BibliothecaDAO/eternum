@@ -6,6 +6,7 @@ const mock = vi.hoisted(() => ({
   close: vi.fn(),
   joinZone: vi.fn(),
   send: vi.fn(),
+  refreshRooms: vi.fn(),
 }));
 
 vi.mock("@bibliothecadao/types", async (importOriginal) => ({
@@ -17,6 +18,7 @@ vi.mock("@bibliothecadao/types", async (importOriginal) => ({
     close = mock.close;
     joinZone = mock.joinZone;
     send = mock.send;
+    refreshRooms = mock.refreshRooms;
   },
 }));
 
@@ -128,4 +130,19 @@ it("joins only the rooms the player has: a game the account may read but is not 
   );
   expect(useRealtimeChatStore.getState().unreadWorldTotal).toBe(0);
   expect(useRealtimeChatStore.getState().worldZones["game:7"]).toBeUndefined();
+});
+
+it("asks the server for the player's rooms again only when the player moves, never for a chat view opened in place", () => {
+  const actions = useRealtimeChatStore.getState().actions;
+  actions.initializeClient({ baseUrl: "https://chat.test", rooms: ["world:global"] });
+  actions.standAt("game:0x52:7");
+  actions.standAt("game:0x52:7");
+  expect(mock.refreshRooms).not.toHaveBeenCalled();
+  actions.standAt("game:0x52:8");
+  expect(mock.refreshRooms).toHaveBeenCalledOnce();
+  mock.options!.onMessage!(
+    { type: "connected", playerId: "0xa", channels: ["world:global", "aspect:0x52:8:2"] },
+    {} as MessageEvent,
+  );
+  expect(useRealtimeChatStore.getState().grantedRooms).toEqual(["world:global", "aspect:0x52:8:2"]);
 });

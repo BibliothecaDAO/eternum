@@ -240,6 +240,13 @@ export class RealtimeClient {
     sendWhenOpen(this.#inbox, message);
   }
 
+  refreshRooms() {
+    this.#forgetReopening(INBOX);
+    const stale = this.#inbox;
+    this.#inbox = this.#connectInbox();
+    closeQuietly(stale);
+  }
+
   close() {
     this.#closed = true;
     for (const zoneId of [...this.#reopening.keys()]) this.#forgetReopening(zoneId);

@@ -4,6 +4,19 @@ import { mapLocationSchema, messageContentSchema, metadataSchema, zoneIdSchema }
 
 export const GLOBAL_CHAT_CHANNEL_ID = "world:global";
 
+const ASPECT_CHAT_ROOM = /^aspect:(0x[0-9a-f]{1,64}):([1-9][0-9]{0,9}):([0-9]{1,3})$/;
+
+export const aspectChatRoom = (
+  chainId: string,
+  gameId: number,
+  aspect: number,
+): `aspect:${string}:${number}:${number}` => `aspect:0x${BigInt(chainId).toString(16)}:${gameId}:${aspect}`;
+
+export const parseAspectChatRoom = (zoneId: string): { chainId: string; gameId: number; aspect: number } | null => {
+  const match = ASPECT_CHAT_ROOM.exec(zoneId);
+  return match ? { chainId: match[1]!, gameId: Number(match[2]), aspect: Number(match[3]) } : null;
+};
+
 export const worldChatPublishSchema = Schema.Struct({
   zoneId: zoneIdSchema,
   content: messageContentSchema,
