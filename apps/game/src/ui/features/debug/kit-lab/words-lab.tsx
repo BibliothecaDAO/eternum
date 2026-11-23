@@ -129,7 +129,7 @@ const PlainWords = () => (
     <table className="border-collapse">
       <thead>
         <tr className="text-left text-[#b9ab8e]">
-          {["Action or thing", "Use", "Not"].map((cell) => (
+          {["Action or thing", "Use"].map((cell) => (
             <th key={cell} className="border-b border-white/15 px-3 py-1 font-normal">
               {cell}
             </th>
@@ -137,11 +137,10 @@ const PlainWords = () => (
         </tr>
       </thead>
       <tbody>
-        {PLAIN_WORDS.map(({ concept, word, not }) => (
+        {PLAIN_WORDS.map(({ concept, word }) => (
           <tr key={concept} className="border-b border-white/5 align-top">
             <td className="px-3 py-1 font-semibold">{concept}</td>
             <td className="px-3 py-1 text-emerald-300">{word}</td>
-            <td className="px-3 py-1 text-red-300 line-through">{not.join(", ")}</td>
           </tr>
         ))}
       </tbody>

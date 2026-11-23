@@ -54,10 +54,15 @@ describe("plain-words guard refuses banned words in player-facing text", () => {
     ["Tribe founded in JSX", `export const A = () => <p>Tribe founded</p>;`, PLAIN_WORDS_STRICT_RULE],
     ["Far-Eye in JSX", `export const A = () => <span>Far-Eye</span>;`, PLAIN_WORDS_STRICT_RULE],
     ["far-eye lowercase in string", `export const label = "Use far-eye relic";`, PLAIN_WORDS_STRICT_RULE],
+    ["far-eye standalone label", `export const item = { label: "far-eye" };`, PLAIN_WORDS_STRICT_RULE],
     ["Pledge in string", `export const cta = "Pledge to Luminary";`, PLAIN_WORDS_RULE],
     ["Redeem in JSX", `export const A = () => <button>Redeem</button>;`, PLAIN_WORDS_RULE],
     ["Army disbanded in template", "export const msg = (a: string) => `${a} disbanded`;", PLAIN_WORDS_RULE],
     ["did not answer in string", `export const err = "Season did not answer.";`, PLAIN_WORDS_RULE],
+    ["Travel blocked in string", `export const msg = "Travel blocked";`, PLAIN_WORDS_RULE],
+    ["Claim name in string", `export const cta = "Claim name";`, PLAIN_WORDS_RULE],
+    ["Build order in string", `export const title = "Build order";`, PLAIN_WORDS_RULE],
+    ["Guard dismissed in string", `export const msg = "Guard dismissed";`, PLAIN_WORDS_RULE],
     ["data-tip tooltip", `export const A = () => <span data-tip="Switch on" />;`, PLAIN_WORDS_RULE],
   ])("refuses %s", async (_, source, expectedRule) => {
     const found = await hits(SCREEN, source);

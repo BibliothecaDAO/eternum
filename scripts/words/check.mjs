@@ -11,6 +11,7 @@ import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import ts from "typescript";
+import { CODE_ATTRIBUTES, CODE_CALLS, CODE_TOKEN, ERROR_CONSTRUCTOR, LOG_CALL } from "./player-text.mjs";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const GAME = join(REPO, "apps/game");
@@ -99,19 +100,12 @@ const VISIBLE_ATTRIBUTES =
   /^(title|aria-label|aria-description|label|placeholder|alt|tooltip|tip|data-tip|description|heading|subtitle|caption|message|hint|detail)$/;
 const VISIBLE_KEYS =
   /^(label|title|text|description|message|tooltip|heading|subtitle|caption|hint|summary|detail|line|reason)$/;
-// A string a player cannot read: an attribute or a call that takes code, not words.
-const CODE_ATTRIBUTES =
-  /^(className|class|style|key|id|type|href|src|to|role|name|data-(?!tip$)[\w-]+|htmlFor|target|rel)$/;
-const CODE_CALLS =
-  /^(cn|clsx|classNames|twMerge|cva|require|import|querySelector\w*|getElementById|addEventListener|console\.\w+)$/;
 const UNIT = /^(?:h|m|s|d|min|mins|sec|secs|hr|hrs)(?![A-Za-z])|^ (?:hours?|minutes?|seconds?|days?)\b/;
 const TIME_HINT =
   /Math\.(?:floor|ceil|round)|%|\/\s*60|3600|86_?400|\b(?:hours?|minutes?|mins?|seconds?|secs?|days?)\b/i;
 const SUFFIX = /^[KMB](?![A-Za-z])/;
 // A rate's unit after its number, with or without a noun between: "/h", " per hour", " points/s".
 const RATE_UNIT = /^(?: [A-Za-z]+)?\s?\/\s?(?:h|hr|min|m|s|sec)\b|^ (?:an|per|a) (?:hour|minute|second)\b/;
-// A token, a path or a key ("left-queue", "/images/x.png", "army_banner"): code, whatever it spells.
-const CODE_TOKEN = /^[\w.$-]*[-_./:][\w.$/:-]*$/;
 // An SVG path's commands between its numbers: "M ", " L ", " C ".
 const SVG_PATH = /^[\sMLCQSTAZHV,.\d-]*$/i;
 const AMOUNT_HINT = /\/\s*1_?000|1e[369]|toFixed|compact|thousand|million/i;
@@ -175,8 +169,6 @@ const isCodeString = (node) => {
   return false;
 };
 
-// A log line: the console, the client's verbose log and its traces, which no player reads.
-const LOG_CALL = /^(console\.\w+|verboseLog|trace\w*|logger\.\w+)$/;
 const inConsole = (node) => {
   for (let up = node.parent; up && !ts.isSourceFile(up); up = up.parent) {
     if (ts.isCallExpression(up) && LOG_CALL.test(calleeName(up))) return true;
@@ -555,7 +547,7 @@ const inDiagnostic = (node) => {
   if (inConsole(node)) return true;
   for (let up = node.parent; up && !ts.isSourceFile(up); up = up.parent) {
     if (ts.isThrowStatement(up)) return true;
-    if (ts.isNewExpression(up) && /Error$/.test(up.expression.getText())) return true;
+    if (ts.isNewExpression(up) && ERROR_CONSTRUCTOR.test(up.expression.getText())) return true;
   }
   return false;
 };

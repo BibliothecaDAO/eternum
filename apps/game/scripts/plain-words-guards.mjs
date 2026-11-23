@@ -1,15 +1,14 @@
 import { readFileSync } from "node:fs";
 import tseslint from "typescript-eslint";
+import {
+  CODE_ATTRIBUTES,
+  CODE_CALLS,
+  CODE_TOKEN,
+  ERROR_CONSTRUCTOR,
+  LOG_CALL,
+} from "../../../scripts/words/player-text.mjs";
 
 const VOICE_SOURCE = new URL("../../../packages/types/src/words/voice.ts", import.meta.url);
-
-const CODE_JSX_ATTRIBUTES =
-  /^(className|class|style|key|id|type|href|src|to|role|name|htmlFor|target|rel|value|icon|variant|size|kind|state|mode|step|action|data-(?!tip$)[\w-]+)$/;
-
-const CODE_CALLS =
-  /^(cn|clsx|classNames|twMerge|cva|require|import|querySelector\w*|getElementById|addEventListener|console\.\w+|verboseLog|logger\.\w+|trace\w*|RegExp)$/;
-
-const CODE_TOKEN = /^(?:@\/|\.\.?\/|\/|[a-z0-9_.$-]*[_./:=][a-z0-9_.$/:=-]*)$/;
 
 const EQUALITY_OPERATORS = new Set(["===", "!==", "==", "!="]);
 
@@ -77,18 +76,20 @@ const isNonPlayerContext = (node) => {
   for (let up = parent; up; up = up.parent) {
     if (up.type.startsWith("TS") && up.type !== "TSAsExpression" && up.type !== "TSSatisfiesExpression") return true;
     if (up.type === "ThrowStatement") return true;
-    if (up.type === "NewExpression" && /Error$|^RegExp$/.test(calleeName(up))) return true;
-    if (up.type === "CallExpression" && CODE_CALLS.test(calleeName(up))) return true;
+    if (up.type === "NewExpression" && (ERROR_CONSTRUCTOR.test(calleeName(up)) || calleeName(up) === "RegExp"))
+      return true;
+    if (up.type === "CallExpression" && (CODE_CALLS.test(calleeName(up)) || LOG_CALL.test(calleeName(up))))
+      return true;
     if (up.type === "JSXAttribute") {
       const attrName = up.name?.type === "JSXIdentifier" ? up.name.name : "";
-      if (CODE_JSX_ATTRIBUTES.test(attrName)) return true;
+      if (CODE_ATTRIBUTES.test(attrName)) return true;
     }
     if (up.type === "BlockStatement" || up.type === "Program") break;
   }
   return false;
 };
 
-const createPlainWordsRule = (rules) => ({
+const createPlainWordsRule = (rules, { checkCodeTokens = false } = {}) => ({
   meta: {
     type: "problem",
     schema: [],
@@ -100,7 +101,7 @@ const createPlainWordsRule = (rules) => ({
     const check = (node, text, reportNode = node) => {
       const trimmed = text.trim();
       if (!trimmed) return;
-      if (CODE_TOKEN.test(trimmed)) return;
+      if (!checkCodeTokens && CODE_TOKEN.test(trimmed)) return;
       for (const rule of rules) {
         if (rule.pattern.test(trimmed)) {
           context.report({ node: reportNode, messageId: "banned", data: { banned: rule.banned, use: rule.use } });
@@ -151,7 +152,7 @@ export const plainWordsGuardConfigs = [
     plugins: {
       "plain-words": {
         rules: {
-          "no-zero-tolerance": createPlainWordsRule(STRICT_BANNED),
+          "no-zero-tolerance": createPlainWordsRule(STRICT_BANNED, { checkCodeTokens: true }),
           "no-banned-words": createPlainWordsRule(BASELINED_BANNED),
         },
       },
