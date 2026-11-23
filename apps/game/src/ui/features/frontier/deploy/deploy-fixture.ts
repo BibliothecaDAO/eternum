@@ -84,7 +84,6 @@ export const frontierDay = () => {
       workshop_rate: "0",
       output_step_bps: 2500,
       storage_step_bps: 5000,
-      population_step_bps: 2500,
       ration_step: "0",
       troop_store_deploys: 2,
       settlement_resource_cap: 6000,

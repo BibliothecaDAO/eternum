@@ -39,35 +39,8 @@ pub fn replay_buildings(record: bool) {
     }
     super::spatial_replay::compare("buildings", frames, record);
 }
-pub fn grant_population(deployment: super::Deployment, home: ResourceKey, extra: u32) {
-    let mut counts = IStructureOperationsDispatcher { contract_address: deployment.games }.structure_buildings(home);
-    counts.population.max += extra;
-    set_fixture(
-        deployment.games,
-        selector!("buildings"),
-        selector!("structure_buildings"),
-        array![home.game_id.into(), home.entity_id.into()].span(),
-        counts,
-    );
-}
-pub fn board_output(deployment: super::Deployment, home: ResourceKey, category: u8) -> u128 {
-    let resources = IResourceOperationsDispatcher { contract_address: deployment.games };
-    match category {
-        37 => resources
-            .resource_production(ResourceSlot { game_id: home.game_id, entity_id: home.entity_id, resource_type: 35 })
-            .production_rate
-            .into(),
-        1 => IStructureOperationsDispatcher { contract_address: deployment.games }
-            .structure_buildings(home)
-            .population
-            .max
-            .into(),
-        _ => panic!("unsupported board effect fixture"),
-    }
-}
 pub fn research_world() -> (super::Deployment, ResourceKey) {
     let (d, home) = building_world();
-    grant_population(d, home, 40);
     for _ in 0_u8..3 {
         level_up(d, home, super::play_fixture::FIXTURE_START);
     }

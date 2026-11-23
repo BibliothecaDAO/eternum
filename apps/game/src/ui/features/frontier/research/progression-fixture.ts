@@ -29,7 +29,6 @@ const realmOn = (
   price,
   board: {
     outputStepBps: preset.board.outputStepBps,
-    populationStepBps: preset.board.populationStepBps,
     rationStep: preset.board.rationStep,
     wheatPerTroop: Number(frontierBaseConfig.resources!.productionBySimpleRecipe![ResourcesIds.Knight]![0]!.amount),
     troopsPerHour: preset.balance.resources.productionByComplexRecipeOutputs[ResourcesIds.Knight] * 3600,
@@ -39,7 +38,7 @@ const realmOn = (
 });
 
 /** The owner's realm on 20 October: a Settlement, nothing researched, short of everything. */
-export const EARLY_REALM = realmOn(0, 300, 718, { [research.ROW_FARM]: 2, [research.ROW_HUT]: 1 }, {});
+export const EARLY_REALM = realmOn(0, 300, 718, { [research.ROW_FARM]: 2 }, {});
 
 export const MID_REALM = realmOn(
   1,
@@ -48,13 +47,11 @@ export const MID_REALM = realmOn(
   {
     [research.ROW_FARM]: 4,
     [research.ROW_WORKSHOP]: 2,
-    [research.ROW_HUT]: 3,
     [research.ROW_SUPPLY_YARD]: 1,
   },
   {
     [research.ROW_FARM]: { tier: 1 },
     [research.ROW_WORKSHOP]: { tier: 1 },
-    [research.ROW_HUT]: { tier: 1 },
     [research.ROW_SUPPLY_YARD]: { tier: 1 },
     [research.ROW_LORE]: { tier: research.LORE_SHRINES },
   },

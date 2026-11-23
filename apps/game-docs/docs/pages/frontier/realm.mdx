@@ -15,19 +15,18 @@ Your realm makes the troops, wheat and labor your armies need, and grows stronge
 
 Tap an open plot to build there. Each building's price, in labor, and Essence for the training buildings:
 
-| Building                     | Makes                         | Price                         | Population                         |
-| ---------------------------- | ----------------------------- | ----------------------------- | ---------------------------------- |
-| {FRONTIER.buildings[0].name} | {FRONTIER.buildings[0].makes} | {FRONTIER.buildings[0].price} | {FRONTIER.buildings[0].population} |
-| {FRONTIER.buildings[1].name} | {FRONTIER.buildings[1].makes} | {FRONTIER.buildings[1].price} | {FRONTIER.buildings[1].population} |
-| {FRONTIER.buildings[2].name} | {FRONTIER.buildings[2].makes} | {FRONTIER.buildings[2].price} | {FRONTIER.buildings[2].population} |
-| {FRONTIER.buildings[3].name} | {FRONTIER.buildings[3].makes} | {FRONTIER.buildings[3].price} | {FRONTIER.buildings[3].population} |
-| {FRONTIER.buildings[4].name} | {FRONTIER.buildings[4].makes} | {FRONTIER.buildings[4].price} | {FRONTIER.buildings[4].population} |
-| {FRONTIER.buildings[5].name} | {FRONTIER.buildings[5].makes} | {FRONTIER.buildings[5].price} | {FRONTIER.buildings[5].population} |
-| {FRONTIER.buildings[6].name} | {FRONTIER.buildings[6].makes} | {FRONTIER.buildings[6].price} | {FRONTIER.buildings[6].population} |
+| Building                     | Makes                         | Price                         |
+| ---------------------------- | ----------------------------- | ----------------------------- |
+| {FRONTIER.buildings[0].name} | {FRONTIER.buildings[0].makes} | {FRONTIER.buildings[0].price} |
+| {FRONTIER.buildings[1].name} | {FRONTIER.buildings[1].makes} | {FRONTIER.buildings[1].price} |
+| {FRONTIER.buildings[2].name} | {FRONTIER.buildings[2].makes} | {FRONTIER.buildings[2].price} |
+| {FRONTIER.buildings[3].name} | {FRONTIER.buildings[3].makes} | {FRONTIER.buildings[3].price} |
+| {FRONTIER.buildings[4].name} | {FRONTIER.buildings[4].makes} | {FRONTIER.buildings[4].price} |
+| {FRONTIER.buildings[5].name} | {FRONTIER.buildings[5].makes} | {FRONTIER.buildings[5].price} |
 
-Each workers' hut houses {FRONTIER.realm.hutHouses}, and every other building takes the population shown. Each further
-copy of a building costs more than the last, and pulling one down returns {FRONTIER.realm.demolitionRefund} of its
-price. Barracks and Scouts’ lodges train for free; deploying costs {FRONTIER.realm.deployWheat} wheat a troop.
+Each castle level opens another ring of plots, and each plot holds one building. Each further copy of a building costs
+more than the last, and pulling one down returns {FRONTIER.realm.demolitionRefund} of its price. Barracks and Scouts’
+lodges train for free; deploying costs {FRONTIER.realm.deployWheat} wheat a troop.
 
 <Shot
   frame="panel"
@@ -51,14 +50,12 @@ at once and stores more wheat and labor:
 ## Research
 
 At the castle, each research row climbs from 0 to Common I through Legendary V, paid in Essence and labor. A tier lifts
-every building of its type at once. Each Farm and Workshop tier adds {FRONTIER.research.outputStep} more output. Each
-Hut tier houses {FRONTIER.research.populationStep} more workers.
+every building of its type at once. Each Farm and Workshop tier adds {FRONTIER.research.outputStep} more output.
 
 | Type                        | Common I                                                                                     | Uncommon II                                                                                  | Rare III                                                                                     | Epic IV                                                                                      | Legendary V                                                                                  |
 | --------------------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
 | {FRONTIER.names.farm}       | {FRONTIER.research.farm[0].essence} Essence, {FRONTIER.research.farm[0].labor} labor         | {FRONTIER.research.farm[1].essence} Essence, {FRONTIER.research.farm[1].labor} labor         | {FRONTIER.research.farm[2].essence} Essence, {FRONTIER.research.farm[2].labor} labor         | {FRONTIER.research.farm[3].essence} Essence, {FRONTIER.research.farm[3].labor} labor         | {FRONTIER.research.farm[4].essence} Essence, {FRONTIER.research.farm[4].labor} labor         |
 | {FRONTIER.names.workshop}   | {FRONTIER.research.workshop[0].essence} Essence, {FRONTIER.research.workshop[0].labor} labor | {FRONTIER.research.workshop[1].essence} Essence, {FRONTIER.research.workshop[1].labor} labor | {FRONTIER.research.workshop[2].essence} Essence, {FRONTIER.research.workshop[2].labor} labor | {FRONTIER.research.workshop[3].essence} Essence, {FRONTIER.research.workshop[3].labor} labor | {FRONTIER.research.workshop[4].essence} Essence, {FRONTIER.research.workshop[4].labor} labor |
-| {FRONTIER.names.hut}        | {FRONTIER.research.hut[0].essence} Essence, {FRONTIER.research.hut[0].labor} labor           | {FRONTIER.research.hut[1].essence} Essence, {FRONTIER.research.hut[1].labor} labor           | {FRONTIER.research.hut[2].essence} Essence, {FRONTIER.research.hut[2].labor} labor           | {FRONTIER.research.hut[3].essence} Essence, {FRONTIER.research.hut[3].labor} labor           | {FRONTIER.research.hut[4].essence} Essence, {FRONTIER.research.hut[4].labor} labor           |
 | {FRONTIER.names.supplyYard} | {FRONTIER.research.training[0].essence} Essence, {FRONTIER.research.training[0].labor} labor | {FRONTIER.research.training[1].essence} Essence, {FRONTIER.research.training[1].labor} labor | {FRONTIER.research.training[2].essence} Essence, {FRONTIER.research.training[2].labor} labor | {FRONTIER.research.training[3].essence} Essence, {FRONTIER.research.training[3].labor} labor | {FRONTIER.research.training[4].essence} Essence, {FRONTIER.research.training[4].labor} labor |
 
 **{FRONTIER.names.storeroom}**: opens at {FRONTIER.storeroom.opens}, one per realm. It adds

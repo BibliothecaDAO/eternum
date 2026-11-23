@@ -141,7 +141,53 @@ pub fn settled_home(
         panic!("the home does not settle: {}", rejection(ref spy, d.games).reason);
     }
     let entry = crate::settlement::ISettlementEntryDispatcher { contract_address: d.games };
-    crate::resources::ResourceKey { game_id, entity_id: entry.settled_realm(game_id, realm_id) }
+    let home = crate::resources::ResourceKey { game_id, entity_id: entry.settled_realm(game_id, realm_id) };
+    deploy_starting_troops(d, actor, home, timestamp);
+    home
+}
+pub fn deploy_starting_troops(
+    d: super::Deployment, actor: ContractAddress, home: crate::resources::ResourceKey, timestamp: u64,
+) {
+    let mut held = None;
+    for category in array![
+        crate::troops::TroopType::Knight, crate::troops::TroopType::Paladin, crate::troops::TroopType::Crossbowman,
+    ] {
+        let troops = balance(d, home, crate::troops::troop_resource(category, 0));
+        if troops > 0 {
+            held = Some((category, troops));
+        }
+    }
+    let (category, troops) = held.expect('the home holds no troops');
+    for slot in 0_u8..2 {
+        let command = Command::CreateExplorer(
+            crate::commands::CreateExplorer {
+                slot,
+                structure_id: home.entity_id,
+                category: category.into(),
+                tier: 0,
+                amount: troops / 2,
+                direction: slot,
+            },
+        );
+        let mut spy = snforge_std::spy_events();
+        if !play(d.games, TestAction { game_id: home.game_id, actor, command }, 987654321, timestamp) {
+            panic!("the starting troops do not deploy: {}", rejection(ref spy, d.games).reason);
+        }
+    }
+}
+pub fn deploy_home_troops(d: super::Deployment, game_id: u32, timestamp: u64) -> crate::resources::ResourceKey {
+    let home = crate::resources::ResourceKey {
+        game_id,
+        entity_id: snforge_std::interact_with_state(d.games, || crate::entity_ids::home_for_actor(game_id, d.actor)),
+    };
+    deploy_starting_troops(d, d.actor, home, timestamp);
+    home
+}
+fn balance(d: super::Deployment, home: crate::resources::ResourceKey, resource_type: u8) -> u128 {
+    crate::tests::state::ResourceObservationTrait::resource_balance(
+        crate::resources::IResourceOperationsDispatcher { contract_address: d.games },
+        crate::resources::ResourceSlot { game_id: home.game_id, entity_id: home.entity_id, resource_type },
+    )
 }
 pub fn settle_action(d: super::Deployment, game_id: u32, actor: ContractAddress, realm_id: u32) -> TestAction {
     super::resource_commands::set_fixture(

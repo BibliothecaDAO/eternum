@@ -29,7 +29,7 @@ fn settle(d: Deployment, game_id: u32, held: bool, timestamp: u64) -> bool {
 
 #[test]
 #[feature("safe_dispatcher")]
-fn free_and_held_homes_start_with_two_full_armies_at_or_after_the_start() {
+fn free_and_held_homes_start_with_their_knights_at_home_and_no_army_then_deploy_them_by_the_normal_path() {
     let start = world_test_support::tests::play_fixture::FIXTURE_START;
     for timestamp in array![start, start + 86040] {
         for held in array![false, true] {
@@ -38,12 +38,15 @@ fn free_and_held_homes_start_with_two_full_armies_at_or_after_the_start() {
                 attach_realm(d, game_id);
             }
             assert!(settle(d, game_id, held, timestamp));
-            let armies = assert_start(d, game_id, timestamp);
+            assert_start(d, game_id);
             assert!(!settle(d, game_id, held, timestamp));
-            assert_eq!(assert_start(d, game_id, timestamp), armies);
+            assert_start(d, game_id);
             attach_realm(d, game_id);
             attach_realm(d, game_id);
-            assert_eq!(assert_start(d, game_id, timestamp), armies);
+            assert_start(d, game_id);
+            let home = interact_with_state(d.games, || crate::entity_ids::home_for_actor(game_id, d.actor));
+            assert!(execute_in_game(d, game_id, super::army_activity::muster(home, 0, 0, 2000), timestamp));
+            assert_deployed(d, game_id, timestamp);
         }
     }
 }
@@ -62,7 +65,27 @@ fn attach_realm(d: Deployment, game_id: u32) {
     stop_cheat_caller_address(d.games);
 }
 
-fn assert_start(d: Deployment, game_id: u32, timestamp: u64) -> Span<u64> {
+fn assert_start(d: Deployment, game_id: u32) {
+    interact_with_state(
+        d.games,
+        || {
+            let key = ResourceKey { game_id, entity_id: crate::entity_ids::home_for_actor(game_id, d.actor) };
+            assert_eq!(crate::logic::troops::home_armies(key).len(), 0);
+            let weight = crate::logic::resources::weight(key);
+            let capacity: u128 = core::num::traits::Bounded::MAX;
+            assert_eq!(weight.capacity, capacity);
+            assert_eq!(
+                crate::logic::resources::balance(key, crate::troops::troop_resource(TroopType::Knight, 0)),
+                2000 * RESOURCE_PRECISION,
+            );
+            assert_eq!(crate::logic::resources::balance(key, crate::resources::WHEAT), 6000 * RESOURCE_PRECISION);
+            assert_eq!(crate::logic::resources::balance(key, crate::resources::LABOR), 2000 * RESOURCE_PRECISION);
+            assert_eq!(crate::logic::resources::balance(key, crate::resources::ESSENCE), 0);
+        },
+    )
+}
+
+fn assert_deployed(d: Deployment, game_id: u32, timestamp: u64) {
     interact_with_state(
         d.games,
         || {
@@ -76,38 +99,28 @@ fn assert_start(d: Deployment, game_id: u32, timestamp: u64) -> Span<u64> {
                 crate::logic::settlement::rules(game_id).spacing, crate::entity_ids::namespace(home), day, 0,
             );
             let armies = crate::logic::troops::home_armies(key);
-            assert_eq!(armies.len(), 2);
-            let weight = crate::logic::resources::weight(key);
-            let capacity: u128 = core::num::traits::Bounded::MAX;
-            assert_eq!(weight.capacity, capacity);
-            assert_eq!(weight.weight, 0);
-            assert_eq!(crate::state::read().troops.aspect_activity.read((game_id, 1, day)), 1);
+            assert_eq!(armies.len(), 1);
             assert_eq!(crate::logic::resources::balance(key, crate::troops::troop_resource(TroopType::Knight, 0)), 0);
-            assert_eq!(crate::logic::resources::balance(key, crate::resources::WHEAT), 6000 * RESOURCE_PRECISION);
-            assert_eq!(crate::logic::resources::balance(key, crate::resources::LABOR), 2000 * RESOURCE_PRECISION);
-            assert_eq!(crate::logic::resources::balance(key, crate::resources::ESSENCE), 0);
-            for slot in 0_u8..2 {
-                let id = *armies.at(slot.into());
-                let explorer = ExplorerKey { game_id, explorer_id: id };
-                let army = crate::logic::troops::explorer(explorer).unwrap();
-                let bar = crate::logic::army_slot_storage::read(
-                    ArmySlotKey { game_id, structure_id: home, epoch: day, slot },
-                )
-                    .unwrap();
-                assert_eq!(army.owner, home);
-                assert_eq!(army.troops.category, TroopType::Knight);
-                assert_eq!(army.troops.tier, TroopTier::T1);
-                assert_eq!(army.troops.count, 1500 * RESOURCE_PRECISION);
-                assert_eq!(army.troops.stamina, StaminaSource::Slot(slot));
-                assert_eq!(crate::logic::army_days::require(explorer), day);
-                assert_eq!(army.coord, crate::geometry::neighbor(origin, slot));
-                assert_eq!(bar.explorer_id, id);
-                assert_eq!(
-                    bar.stamina.amount,
-                    crate::progression::stamina_max(Default::default(), TroopType::Knight, rules.troop_stamina_config),
-                );
-            }
-            armies
+            assert_eq!(crate::logic::resources::balance(key, crate::resources::WHEAT), 2000 * RESOURCE_PRECISION);
+            assert_eq!(crate::state::read().troops.aspect_activity.read((game_id, 1, day)), 1);
+            let explorer = ExplorerKey { game_id, explorer_id: *armies.at(0) };
+            let army = crate::logic::troops::explorer(explorer).unwrap();
+            let bar = crate::logic::army_slot_storage::read(
+                ArmySlotKey { game_id, structure_id: home, epoch: day, slot: 0 },
+            )
+                .unwrap();
+            assert_eq!(army.owner, home);
+            assert_eq!(army.troops.category, TroopType::Knight);
+            assert_eq!(army.troops.tier, TroopTier::T1);
+            assert_eq!(army.troops.count, 2000 * RESOURCE_PRECISION);
+            assert_eq!(army.troops.stamina, StaminaSource::Slot(0));
+            assert_eq!(crate::logic::army_days::require(explorer), day);
+            assert_eq!(army.coord, crate::geometry::neighbor(origin, 0));
+            assert_eq!(bar.explorer_id, *armies.at(0));
+            assert_eq!(
+                bar.stamina.amount,
+                crate::progression::stamina_max(Default::default(), TroopType::Knight, rules.troop_stamina_config),
+            );
         },
     )
 }

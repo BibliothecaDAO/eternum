@@ -15,7 +15,7 @@ it("opens a Kingdom with every town building, tier III production and guarded ma
   const buildings = [...store.rows("Building")];
   expect(buildings).toHaveLength(townCategories.length + 1);
   expect([...new Set(buildings.map((building) => building.category))].sort()).toEqual([...townCategories].sort());
-  for (const category of [BuildingType.ResourceWheat, BuildingType.ResourceLabor, BuildingType.WorkersHut]) {
+  for (const category of [BuildingType.ResourceWheat, BuildingType.ResourceLabor]) {
     expect(buildingTypeTier(store, 1, 7, category)).toBe(3);
   }
   // Frontier's sites as its contracts make them: nobody's, standing, guarded.

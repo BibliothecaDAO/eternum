@@ -78,7 +78,6 @@
       "ROW_FARM": 0,
       "ROW_WORKSHOP": 1,
       "ROW_CONSCRIPTION": 2,
-      "ROW_HUT": 3,
       "ROW_RATIONS": 4,
       "ROW_SUPPLY_YARD": 5,
       "ROW_KNIGHT_OATHS": 6,
@@ -88,7 +87,6 @@
       "LORE_WELLS": 1,
       "LORE_SHRINES": 2,
       "LORE_SPIRES": 3,
-      "HUT": 1,
       "STOREROOM": 2,
       "STOREROOM_LEVEL": 1,
       "WORKSHOP": 25,
@@ -5260,12 +5258,6 @@
           "feltLength": 1
         },
         {
-          "name": "population_step_bps",
-          "type": "core::integer::u16",
-          "id": "0x706f70756c6174696f6e5f737465705f627073",
-          "feltLength": 1
-        },
-        {
           "name": "ration_step",
           "type": "core::integer::u128",
           "id": "0x726174696f6e5f73746570",
@@ -5303,7 +5295,7 @@
         }
       ],
       "keyLength": 1,
-      "valueLength": 11,
+      "valueLength": 10,
       "derivedFrom": "preset"
     },
     {
@@ -6741,10 +6733,6 @@
         },
         {
           "name": "storage_step_bps",
-          "type": "core::integer::u16"
-        },
-        {
-          "name": "population_step_bps",
           "type": "core::integer::u16"
         },
         {
@@ -10574,5 +10562,5 @@
       ]
     }
   },
-  "identity": "f63924284e76feac5562a910df1c45d425c5ca5ce0f1d94e089dd0c822e0bd0e"
+  "identity": "4f3b5d47640683c108bac0b8dcff30c1bf5ba4966e946a98c57957a788a85f78"
 }

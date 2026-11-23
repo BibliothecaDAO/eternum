@@ -3,21 +3,19 @@ import { expect, it } from "vitest";
 
 import { disclosedBuildOptions, FIRST_BUILD } from "./first-build";
 
-const option = (category: BuildingType, standing: unknown = "open", populationCost = 5) => ({
-  category,
-  standing,
-  populationCost,
-});
+const option = (category: BuildingType, standing: unknown = "open") => ({ category, standing });
 const barracks = option(FIRST_BUILD);
-const hut = option(BuildingType.WorkersHut, "open", 0);
+const farm = option(BuildingType.ResourceWheat);
 
-it("offers the first Barracks alone while it can be raised, and every option once the list is open", () => {
-  expect(disclosedBuildOptions([hut, barracks], false, 12)).toEqual([barracks]);
-  expect(disclosedBuildOptions([hut, barracks], true, 12)).toEqual([hut, barracks]);
+it("offers the first Barracks alone while it is open, and every option once the list is open", () => {
+  expect(disclosedBuildOptions([farm, barracks], false)).toEqual([barracks]);
+  expect(disclosedBuildOptions([farm, barracks], true)).toEqual([farm, barracks]);
 });
 
-it("keeps the Hut reachable for a realm that has no room for the Barracks, with no Show everything", () => {
-  expect(disclosedBuildOptions([hut, barracks], false, 2)).toEqual([hut, barracks]);
-  expect(disclosedBuildOptions([hut, barracks], false, undefined)).toEqual([hut, barracks]);
-  expect(disclosedBuildOptions([hut, option(FIRST_BUILD, "built")], false, 12)).toHaveLength(2);
+it("keeps every option for a realm whose Barracks is not open, with no Show everything", () => {
+  expect(disclosedBuildOptions([farm, option(FIRST_BUILD, "built")], false)).toEqual([
+    farm,
+    option(FIRST_BUILD, "built"),
+  ]);
+  expect(disclosedBuildOptions([farm, option(FIRST_BUILD, { level: 1 })], false)).toHaveLength(2);
 });

@@ -173,34 +173,6 @@ pub mod BuildingState {
             let rate = base_rate * (10000 + makes * board.output_step_bps.into()) / 10000;
             (resource_type, rate.try_into().unwrap())
         }
-        // The population a realm's huts give beyond their base grant: each hut tier adds a share of every hut's.
-        fn hut_bonus(
-            self: @ComponentState<TContractState>,
-            game_id: u32,
-            huts: u8,
-            board: crate::buildings::BoardRules,
-            learned: u64,
-        ) -> u32 {
-            let grant: u32 = self
-                .rule(BuildingRuleKey { game_id, category: crate::research::HUT })
-                .capacity_grant
-                .into();
-            let tiers: u32 = crate::research::tier(learned, crate::research::ROW_HUT).into();
-            Into::<u8, u32>::into(huts) * grant * tiers * board.population_step_bps.into() / 10000
-        }
-        fn change_population_max(
-            ref self: ComponentState<TContractState>, key: ResourceKey, before: u32, after: u32, base_population: u32,
-        ) {
-            if before == after {
-                return;
-            }
-            let mut counts = self.data.buildings.structure_buildings.read((key.game_id, key.entity_id));
-            counts.population.max = counts.population.max + after - before;
-            assert!(
-                counts.population.current <= counts.population.max + base_population, "population exceeds capacity",
-            );
-            self.write_counts(key.game_id, key.entity_id, counts);
-        }
         fn rule(self: @ComponentState<TContractState>, key: BuildingRuleKey) -> BuildingRule {
             assert!(
                 key.category > 0 && key.category <= crate::buildings::BUILDING_CATEGORY_COUNT,
@@ -218,39 +190,16 @@ pub mod BuildingState {
         fn building(self: @ComponentState<TContractState>, key: BuildingKey) -> Option<Building> {
             super::building(key)
         }
-        fn create(
-            ref self: ComponentState<TContractState>,
-            key: BuildingKey,
-            building: Building,
-            population_cost: u8,
-            capacity_grant: u8,
-            base_population: u32,
-        ) {
+        fn create(ref self: ComponentState<TContractState>, key: BuildingKey, building: Building) {
             assert!(self.building(key).is_none(), "building location occupied");
             let mut counts = self.data.buildings.structure_buildings.read((key.game_id, key.structure_id));
             change_count(ref counts, building.category, true);
-            counts.population.current += population_cost.into();
-            counts.population.max += capacity_grant.into();
-            assert!(
-                counts.population.current <= counts.population.max + base_population, "population exceeds capacity",
-            );
             self.write_building(key, building);
             self.write_counts(key.game_id, key.structure_id, counts);
         }
-        fn remove(
-            ref self: ComponentState<TContractState>,
-            key: BuildingKey,
-            building: Building,
-            rule: BuildingRule,
-            base_population: u32,
-        ) {
+        fn remove(ref self: ComponentState<TContractState>, key: BuildingKey, building: Building) {
             let mut counts = self.data.buildings.structure_buildings.read((key.game_id, key.structure_id));
             change_count(ref counts, building.category, false);
-            counts.population.current -= rule.population_cost.into();
-            counts.population.max -= rule.capacity_grant.into();
-            assert!(
-                counts.population.current <= counts.population.max + base_population, "population exceeds capacity",
-            );
             self.write_counts(key.game_id, key.structure_id, counts);
             self
                 .data

@@ -67,7 +67,7 @@ export const frontierSeasonOnePreset = {
       },
     },
     startingResources: [
-      { resource: ResourcesIds.Knight, amount: 3000 },
+      { resource: ResourcesIds.Knight, amount: 2000 },
       { resource: ResourcesIds.Wheat, amount: 6000 },
       { resource: ResourcesIds.Labor, amount: 2000 },
     ],

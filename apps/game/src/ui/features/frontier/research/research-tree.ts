@@ -30,7 +30,6 @@ export interface RealmResearchFacts {
   price: (row: number, tier: number) => { essence: number; labor: number };
   board: {
     outputStepBps: number;
-    populationStepBps: number;
     rationStep: number;
     wheatPerTroop: number;
     troopsPerHour: number;
@@ -88,14 +87,12 @@ export interface TreeNode {
 const ROWS = {
   farm: research.ROW_FARM,
   workshop: research.ROW_WORKSHOP,
-  hut: research.ROW_HUT,
   lore: research.ROW_LORE,
 } as const;
 
 type ResearchRow = Extract<keyof typeof research, `ROW_${string}`>;
 
 const percent = (bps: number) => formatPercent(bps / 10_000, { signed: true });
-/** The realm's tree: Economy (Farm, Workshop, Hut), Army (Barracks, then the four training rows), Castle. */
 export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
   const learned = (row: number) => realm.learned[row] ?? { tier: 0 };
   const store = realm.laborStore(realm.castleLevel);
@@ -184,28 +181,9 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
       figures: (tier) => [{ icon, name, line, ...outputStep(tier) }],
     });
 
-  /** A Hut row's population share now and with its next tier. */
-  const hutPopulation = (tier: number) => ({
-    now: percent(tier * realm.board.populationStepBps),
-    next: tier < 5 ? percent((tier + 1) * realm.board.populationStepBps) : undefined,
-  });
-
   const rows = {
     ROW_FARM: [outputRow(ROWS.farm, BuildingType.ResourceWheat, "fields", RESEARCH_TREE.outputs.fields)],
     ROW_WORKSHOP: [outputRow(ROWS.workshop, BuildingType.ResourceLabor, "tools", RESEARCH_TREE.outputs.tools)],
-    ROW_HUT: [
-      buildingNode(
-        ROWS.hut,
-        BuildingType.WorkersHut,
-        "economy",
-        (tier) => ({ line: RESEARCH_TREE.hutLine, ...hutPopulation(tier) }),
-        {
-          figures: (tier) => [
-            { icon: "person", name: RESEARCH_TREE.population, line: RESEARCH_TREE.hutLine, ...hutPopulation(tier) },
-          ],
-        },
-      ),
-    ],
     ROW_CONSCRIPTION: [
       buildingNode(
         research.ROW_CONSCRIPTION,

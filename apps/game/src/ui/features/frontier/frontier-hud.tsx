@@ -16,7 +16,7 @@ import { useUnreadImportantCount } from "@/ui/features/event-feed/quick-feed";
 import { SettingsPanel } from "@/ui/modules/settings/settings";
 import { configManager, resolveUseSimpleCost } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
-import { BuildingType, catalogAspectId, formatRate, StructureType } from "@bibliothecadao/types";
+import { catalogAspectId, formatRate, StructureType } from "@bibliothecadao/types";
 import { useLayout } from "@/shell/frame/layout";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { type ComponentProps, type ComponentType, type ReactNode, useEffect, useState } from "react";
@@ -572,7 +572,7 @@ const FrontierRealmPanel = ({
     ? (readBuildOptions(facts.store, realm, useSimpleCost, tick) ?? [])
     : [];
   const isListed = (option: (typeof options)[number]) =>
-    option.category !== BuildingType.WorkersHut && typeof option.standing === "string" && option.rise.standing > 0;
+    typeof option.standing === "string" && option.rise.standing > 0;
   const buildings: RealmBuildingItem[] = options
     .filter(isListed)
     .slice(0, 4)

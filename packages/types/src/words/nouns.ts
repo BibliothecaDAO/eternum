@@ -125,7 +125,6 @@ export const structurePlural = (type: StructureType, mineKind?: number): string 
 const FRONTIER_BUILDINGS = new Map<BuildingType, string>([
   [BuildingType.ResourceWheat, "Farm"],
   [BuildingType.ResourceLabor, "Workshop"],
-  [BuildingType.WorkersHut, "Hut"],
   [BuildingType.ConscriptionCamp, BuildingTypeToString[BuildingType.ConscriptionCamp]],
   [BuildingType.RationsDepot, BuildingTypeToString[BuildingType.RationsDepot]],
   [BuildingType.SupplyYard, "Supply yard"],

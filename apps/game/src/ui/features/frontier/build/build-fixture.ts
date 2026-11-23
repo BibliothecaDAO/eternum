@@ -45,7 +45,6 @@ export const realmBoard = () => {
       workshop_rate: String((50n * PRECISION) / BigInt(HOUR)),
       output_step_bps: 2500,
       storage_step_bps: 5000,
-      population_step_bps: 2500,
       ration_step: String(PRECISION / 4n),
       troop_store_deploys: 2,
       settlement_resource_cap: 6000,

@@ -12,7 +12,7 @@ const SOURCES = new URL("../../asset-sources/frontier-painted/", import.meta.url
 const MAX_BYTES = 600_000;
 const MAX_DRAWS = 5;
 const APOTHEM = Math.sqrt(3) / 2;
-const TIERED_GROUPS = new Set(["farm", "workshop", "barracks", "workers-hut"]);
+const TIERED_GROUPS = new Set(["farm", "workshop", "barracks"]);
 
 it("keeps one delivery and one editable source per catalogued building", () => {
   const ids = catalogue.map((building) => `${building.id}.glb`).sort();

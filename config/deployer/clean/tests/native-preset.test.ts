@@ -49,12 +49,12 @@ describe("native presets", () => {
     expect(mask & BigInt(nativeCommandBits.ApplyRelic)).not.toBe(0n);
   });
 
-  test("Season 1 grants the two-army start while historical presets retain their stock", () => {
+  test("Season 1 grants 2,000 Knights at home while historical presets retain their stock", () => {
     for (const id of [FRONTIER_S1_PRESET_ID, FRONTIER_FIXTURE_PRESET_ID, FRONTIER_PRESET_ID]) {
       const preset = buildNativePreset(loadNativePresetConfiguration("madara.frontier", id), id);
       const seasonOne = id !== FRONTIER_PRESET_ID;
       expect(preset.settlement.realms.resources).toEqual([
-        { resource_type: ResourcesIds.Knight, amount: BigInt(seasonOne ? 3000 : 1500) * BigInt(RESOURCE_PRECISION) },
+        { resource_type: ResourcesIds.Knight, amount: BigInt(seasonOne ? 2000 : 1500) * BigInt(RESOURCE_PRECISION) },
         { resource_type: ResourcesIds.Wheat, amount: BigInt(seasonOne ? 6000 : 4500) * BigInt(RESOURCE_PRECISION) },
         { resource_type: ResourcesIds.Labor, amount: 2000n * BigInt(RESOURCE_PRECISION) },
       ]);
@@ -233,12 +233,11 @@ describe("native presets", () => {
         [BigInt(price.essence) / precision, BigInt(price.labor) / precision],
       ]),
     );
-    expect(preset.structures.research).toHaveLength(42);
+    expect(preset.structures.research).toHaveLength(37);
     expect(prices).toMatchObject({
       [`${research.ROW_FARM}:1`]: [500n, 500n],
       [`${research.ROW_FARM}:5`]: [30000n, 20000n],
       [`${research.ROW_WORKSHOP}:3`]: [8000n, 6000n],
-      [`${research.ROW_HUT}:5`]: [15000n, 10000n],
       [`${research.ROW_SUPPLY_YARD}:1`]: [6000n, 1500n],
       [`${research.ROW_SUPPLY_YARD}:2`]: [16000n, 3000n],
       [`${research.ROW_SUPPLY_YARD}:5`]: [360000n, 60000n],
@@ -275,7 +274,6 @@ describe("native presets", () => {
     expect(preset.structures.board.unwrap()).toMatchObject({
       output_step_bps: 2000,
       storage_step_bps: 4000,
-      population_step_bps: 2000,
       ration_step: precision / 5n,
       troop_store_deploys: 2,
       settlement_resource_cap: 6000,
@@ -286,12 +284,9 @@ describe("native presets", () => {
     expect(preset.structures.buildings).toHaveLength(buildingIds.length);
     for (const category of [research.SUPPLY_YARD]) {
       const rule = preset.structures.buildings.find((row) => row.category === category)!.rule;
-      expect([rule.population_cost, rule.simple_cost]).toEqual([
-        2,
-        [
-          { resource_type: 38, amount: 6000n * precision },
-          { resource_type: 23, amount: 1500n * precision },
-        ],
+      expect(rule.simple_cost).toEqual([
+        { resource_type: 38, amount: 6000n * precision },
+        { resource_type: 23, amount: 1500n * precision },
       ]);
     }
     for (const category of [34]) {
@@ -450,8 +445,6 @@ describe("native presets", () => {
       expect(production.recipe.simple_inputs).toEqual([]);
       expect(production.recipe.simple_output).toBe(0n);
     }
-    // A Labor building a player builds costs 2 population; the castle the world places at founding costs none.
-    expect(design.structures.buildings.find(({ category }) => category === 25)?.rule.population_cost).toBe(2);
   });
 
   test("Frontier castle upgrades and the workshop cost labor", () => {

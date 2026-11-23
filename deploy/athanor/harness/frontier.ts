@@ -749,7 +749,7 @@ function planBuilding(client: GameClient, player: Player): Action | undefined {
       (row.inner_col !== BUILDINGS_CENTER[0] || row.inner_row !== BUILDINGS_CENTER[1]),
   );
   const counts = (category: number) => buildings.filter((building) => building.category === category).length;
-  const desired = [37, 1, 28, 25, 2, 37, 28, 25, 37, 2];
+  const desired = [37, 28, 25, 2, 37, 28, 25, 37, 2];
   const training = known(
     new ResourceManager(client.setup.store, player.realmId, client.gameId).balanceWithProduction(
       getBlockTimestamp().currentDefaultTick,
@@ -758,25 +758,13 @@ function planBuilding(client: GameClient, player: Player): Action | undefined {
     player.realmId,
     "troop training balance",
   );
-  let category = training.hasReachedMaxCapacity
+  const category = training.hasReachedMaxCapacity
     ? 2
     : desired.find(
         (category, index) =>
           counts(category) < desired.slice(0, index + 1).filter((entry) => entry === category).length,
       );
   if (category === undefined) return;
-  const population = client.setup.store.require("StructureBuildings", {
-    game_id: client.gameId,
-    entity_id: player.realmId,
-  }).population;
-  const rule = client.setup.store.require("BuildingRule", { game_id: client.gameId, category });
-  if (
-    population.current + rule.population_cost >
-    population.max +
-      client.setup.store.require("SliceRules", { game_id: client.gameId }).building_config.base_population
-  ) {
-    category = 1;
-  }
   const costs = getBuildingCosts(player.realmId, client.setup.store, category, true);
   if (!costs) throw new Error(`Missing building costs for ${category}`);
   if (costs.some((cost) => Number(balance(client, player, cost.resource)) < cost.amount * RESOURCE_PRECISION)) return;

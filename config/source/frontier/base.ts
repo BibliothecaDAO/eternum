@@ -8,16 +8,10 @@ import { arenaBaseConfig } from "../common/arena/base";
 
 const resourceIds = Array.from({ length: 58 }, (_, index) => index + 1);
 const laborCosts: Record<number, number> = {
-  [research.HUT]: 300,
   [research.WORKSHOP]: 2000,
   [research.BARRACKS]: 400,
   [research.RANGE]: 500,
   [research.FARM]: 400,
-};
-const populationCosts: Record<number, number> = {
-  [research.HUT]: 0,
-  [research.BARRACKS]: 3,
-  [research.FARM]: 1,
 };
 const rates: Record<number, number> = {
   23: 0.028,
@@ -25,6 +19,7 @@ const rates: Record<number, number> = {
   29: 100 / 3600,
   35: 0.084,
 };
+const noPopulation = Object.fromEntries(buildingIds.map((id) => [id, 0]));
 const buildingCosts = Object.fromEntries(
   buildingIds.map((id) => {
     if (id === research.SUPPLY_YARD || id === research.CONSCRIPTION_CAMP || id === research.RATIONS_DEPOT) {
@@ -71,6 +66,7 @@ export const frontierBaseConfig: ConfigPatch = mergeConfigPatches(arenaBaseConfi
     { resource: 35, amount: 4500 },
     { resource: 23, amount: 2000 },
   ],
+  populationCapacity: { basePopulation: 0 },
   villageStartingResources: [],
   campStartingResources: [],
   resources: {
@@ -86,8 +82,8 @@ export const frontierBaseConfig: ConfigPatch = mergeConfigPatches(arenaBaseConfi
   buildings: {
     // A copy costs its base times 1 + (copies - 1)^2: a surcharge of 1.0, in basis points.
     buildingFixedCostScalePercent: 10000,
-    buildingPopulation: Object.fromEntries(buildingIds.map((id) => [id, populationCosts[id] ?? 2])),
-    buildingCapacity: Object.fromEntries(buildingIds.map((id) => [id, id === research.HUT ? 6 : 0])),
+    buildingPopulation: noPopulation,
+    buildingCapacity: noPopulation,
     simpleBuildingCost: buildingCosts,
     complexBuildingCosts: Object.fromEntries(buildingIds.map((id) => [id, []])),
   },

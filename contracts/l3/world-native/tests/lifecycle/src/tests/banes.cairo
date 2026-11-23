@@ -20,9 +20,7 @@ fn found(d: Deployment, game_id: u32, timestamp: u64) -> ResourceKey {
             timestamp,
         ),
     );
-    ResourceKey {
-        game_id, entity_id: interact_with_state(d.games, || crate::entity_ids::home_for_actor(game_id, d.actor)),
-    }
+    world_test_support::tests::play_fixture::deploy_home_troops(d, game_id, timestamp)
 }
 
 pub fn root_for(game_id: u32, day: u64, chance: u16, kind: u8) -> u256 {
@@ -431,13 +429,7 @@ fn altar_reserves_distinct_rivals_and_a_completed_team_quest_restores_height_wit
                 FIXTURE_START,
             ),
         );
-        homes
-            .append(
-                ResourceKey {
-                    game_id,
-                    entity_id: interact_with_state(d.games, || crate::entity_ids::home_for_actor(game_id, actor)),
-                },
-            );
+        homes.append(world_test_support::tests::play_fixture::deploy_home_troops(member, game_id, FIXTURE_START));
         train(member, *homes.at((aspect - 1).into()), FIXTURE_START);
         members.append(member);
     }

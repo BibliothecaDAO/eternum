@@ -20,7 +20,7 @@ pub fn found(d: Deployment, game_id: u32, aspect: u8) -> u64 {
             FIXTURE_START,
         ),
     );
-    interact_with_state(d.games, || crate::entity_ids::home_for_actor(game_id, d.actor))
+    world_test_support::tests::play_fixture::deploy_home_troops(d, game_id, FIXTURE_START).entity_id
 }
 
 pub fn player(d: Deployment, salt: felt252) -> Deployment {
@@ -171,7 +171,7 @@ fn frontier_attacks_refuse_allies_and_personal_maps_but_allow_rivals_in_the_deep
                     crate::troop_management::TransferTroops {
                         source: crate::troop_management::Army::Explorer(enemy.explorer_id),
                         target: crate::troop_management::Army::Explorer(reserve),
-                        amount: 1499 * crate::rules::RESOURCE_PRECISION,
+                        amount: army(d, enemy).troops.count - crate::rules::RESOURCE_PRECISION,
                     },
                 ),
             ),
@@ -229,20 +229,6 @@ fn successful_attacks_record_their_target_and_refusals_preserve_it() {
     let other = ExplorerKey {
         game_id, explorer_id: slot_army(d, ArmySlotKey { game_id, structure_id: rival_home, epoch: 0, slot: 1 }),
     };
-    super::deep_sites::applied(
-        rival,
-        game_id,
-        Command::ManageTroops(
-            crate::troop_management::ManageTroops::Transfer(
-                crate::troop_management::TransferTroops {
-                    source: crate::troop_management::Army::Explorer(enemy.explorer_id),
-                    target: crate::troop_management::Army::Explorer(other.explorer_id),
-                    amount: 500 * crate::rules::RESOURCE_PRECISION,
-                },
-            ),
-        ),
-        FIXTURE_START,
-    );
     super::deep_sites::descend(d, attacker, FIXTURE_START);
     super::deep_sites::descend(rival, enemy, FIXTURE_START);
     super::deep_sites::descend(rival, other, FIXTURE_START);

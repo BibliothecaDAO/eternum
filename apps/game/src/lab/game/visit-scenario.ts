@@ -22,7 +22,7 @@ const NEIGHBOUR_BUILDINGS = [
   BuildingType.ResourceWheat,
   BuildingType.ResourceLabor,
   BuildingType.ResourceKnightT1,
-  BuildingType.WorkersHut,
+  BuildingType.Storehouse,
   BuildingType.RationsDepot,
 ];
 

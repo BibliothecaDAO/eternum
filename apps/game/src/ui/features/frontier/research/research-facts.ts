@@ -91,7 +91,6 @@ const readResearchFacts = (
     },
     board: {
       outputStepBps: board.output_step_bps,
-      populationStepBps: board.population_step_bps,
       rationStep: Number(board.ration_step) / RESOURCE_PRECISION,
       wheatPerTroop: Number(wheat.amount) / Number(recipe.simple_output),
       troopsPerHour: buildingOutput(store, realm, BuildingType.ResourceKnightT1, 0).base * 3600,

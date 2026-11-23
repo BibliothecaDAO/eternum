@@ -44,7 +44,6 @@ const priceOf = (amounts: Amount[]) => ({
 const named = <Name extends string>(names: Record<Name, number>, id: number) =>
   (Object.keys(names) as Name[]).find((name) => names[name] === id) ?? `unnamed ${id}`;
 const buildingNames = {
-  hut: research.HUT,
   farm: research.FARM,
   workshop: research.WORKSHOP,
   storeroom: research.STOREROOM,
@@ -58,7 +57,6 @@ const buildingNames = {
 const researchNames = {
   fields: research.ROW_FARM,
   tools: research.ROW_WORKSHOP,
-  hut: research.ROW_HUT,
   conscription: research.ROW_CONSCRIPTION,
   rations: research.ROW_RATIONS,
   logistics: research.ROW_SUPPLY_YARD,
@@ -81,6 +79,9 @@ const researchPrices = () => {
   }
   return rows;
 };
+const hasPopulation = () =>
+  definition.rules.building_config.base_population > 0 ||
+  definition.structures.buildings.some(({ rule }) => rule.population_cost > 0 || rule.capacity_grant > 0);
 const realmRatePerHour = (resource: ResourcesIds) =>
   perHour(definition.resources.resources.find(({ resource_type }) => resource_type === resource)!.realm_rate);
 const centre = (lower: number, upper: number) => (lower + upper) / 2;
@@ -102,6 +103,7 @@ function generatedSeasonOne(): Design {
       laborStore: [...structures.LABOR_STORES],
       castleLaborPerHour: realmRatePerHour(ResourcesIds.Labor),
       storeroomStorePercent: percent(board.storage_step_bps),
+      population: hasPopulation(),
     },
     start: {
       knights: amountOf(definition.settlement.realms.resources, ResourcesIds.Knight),

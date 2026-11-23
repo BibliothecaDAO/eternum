@@ -8,7 +8,6 @@ pub struct RealmKnowledge {
 pub const ROW_FARM: u8 = 0;
 pub const ROW_WORKSHOP: u8 = 1;
 pub const ROW_CONSCRIPTION: u8 = 2;
-pub const ROW_HUT: u8 = 3;
 pub const ROW_RATIONS: u8 = 4;
 pub const ROW_SUPPLY_YARD: u8 = 5;
 pub const ROW_KNIGHT_OATHS: u8 = 6;
@@ -23,7 +22,6 @@ pub const LORE_SPIRES: u8 = 3;
 
 
 // Building categories used by construction and research.
-pub const HUT: u8 = 1;
 pub const STOREROOM: u8 = 2;
 pub const STOREROOM_LEVEL: u8 = 1;
 pub const WORKSHOP: u8 = 25;
@@ -62,8 +60,6 @@ pub fn row_category(row: u8) -> u8 {
         CONSCRIPTION_CAMP
     } else if row == ROW_RATIONS {
         RATIONS_DEPOT
-    } else if row == ROW_HUT {
-        HUT
     } else if row == ROW_SUPPLY_YARD {
         SUPPLY_YARD
     } else if row == ROW_KNIGHT_OATHS {
@@ -105,8 +101,8 @@ pub fn opens_at_level(category: u8) -> u8 {
     }
 }
 
-pub const ROWS: [u8; 10] = [
-    ROW_FARM, ROW_WORKSHOP, ROW_CONSCRIPTION, ROW_HUT, ROW_RATIONS, ROW_SUPPLY_YARD, ROW_KNIGHT_OATHS, ROW_SCOUT_OATHS,
+pub const ROWS: [u8; 9] = [
+    ROW_FARM, ROW_WORKSHOP, ROW_CONSCRIPTION, ROW_RATIONS, ROW_SUPPLY_YARD, ROW_KNIGHT_OATHS, ROW_SCOUT_OATHS,
     ROW_CROSSBOW_OATHS, ROW_LORE,
 ];
 
@@ -126,7 +122,6 @@ pub fn oath_slots(learned: u64, category: crate::troops::TroopType) -> u8 {
 pub fn max_tier(row: u8) -> u8 {
     if row == ROW_FARM
         || row == ROW_WORKSHOP
-        || row == ROW_HUT
         || row == ROW_SUPPLY_YARD
         || row == ROW_CONSCRIPTION
         || row == ROW_RATIONS {
@@ -146,7 +141,6 @@ fn tier_slot(row: u8) -> (u64, u64) {
         0 => (0x1, 8),
         1 => (0x80, 8),
         2 => (0x4000, 8),
-        3 => (0x200000, 8),
         4 => (0x1000000, 8),
         5 => (0x8000000, 8),
         6 => (0x40000000, 4),

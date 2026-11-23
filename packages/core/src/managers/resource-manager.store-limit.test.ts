@@ -56,7 +56,6 @@ const boardRealm = (wheat: bigint) => {
         kingdom_resource_cap: 40000,
         empire_resource_cap: 80000,
         storage_step_bps: 5000,
-        population_step_bps: 2500,
         ration_step: PRECISION / 4n,
       },
     }),

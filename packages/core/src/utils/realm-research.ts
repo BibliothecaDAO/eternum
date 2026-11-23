@@ -10,7 +10,6 @@ const tierFields: Record<number, readonly [offset: bigint, width: bigint]> = {
   [research.ROW_FARM]: [0n, 3n],
   [research.ROW_WORKSHOP]: [7n, 3n],
   [research.ROW_CONSCRIPTION]: [14n, 3n],
-  [research.ROW_HUT]: [21n, 3n],
   [research.ROW_RATIONS]: [24n, 3n],
   [research.ROW_SUPPLY_YARD]: [27n, 3n],
   [research.ROW_KNIGHT_OATHS]: [30n, 2n],
@@ -63,7 +62,6 @@ export function reachableDepth(
 export const researchRowCategory: Readonly<Partial<Record<number, number>>> = {
   [research.ROW_FARM]: research.FARM,
   [research.ROW_WORKSHOP]: research.WORKSHOP,
-  [research.ROW_HUT]: research.HUT,
   [research.ROW_CONSCRIPTION]: research.CONSCRIPTION_CAMP,
   [research.ROW_RATIONS]: research.RATIONS_DEPOT,
   [research.ROW_SUPPLY_YARD]: research.SUPPLY_YARD,

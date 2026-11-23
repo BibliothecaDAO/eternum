@@ -370,17 +370,9 @@ pub mod StructuresLogic {
                         .grant_non_troop_resources(
                             key, crate::logic::village::rules().resources, context.timestamp, context,
                         );
-                    let rules = context.rules.unbox();
                     self
                         .create_producer(
-                            key,
-                            0,
-                            crate::logic::resources::rule(23).village_rate,
-                            23,
-                            25,
-                            rules.building_config.base_population,
-                            context.timestamp,
-                            context,
+                            key, 0, crate::logic::resources::rule(23).village_rate, 23, 25, context.timestamp, context,
                         );
                 },
             }
@@ -527,13 +519,9 @@ pub mod StructuresLogic {
             rate: u64,
             resource_type: u8,
             building_category: u8,
-            base_population: u32,
             timestamp: u64,
             game_context: crate::commands::ExecutionContext,
         ) {
-            let building_rule = self
-                .buildings
-                .rule(crate::buildings::BuildingRuleKey { game_id: key.game_id, category: building_category });
             crate::logic::structure_actions::resources_dispatcher(key.game_id)
                 .start_production(
                     key, resource_type, rate, cap, timestamp, crate::commands::resource_context(game_context),
@@ -543,11 +531,6 @@ pub mod StructuresLogic {
                 .create(
                     BuildingKey { game_id: key.game_id, structure_id: key.entity_id, inner_col: 10, inner_row: 10 },
                     Building { category: building_category, paused: false, labor_paid: 0 },
-                    // A producer the world places at a structure's centre costs no population: only a player's
-                    // building does. The centre labor producer cannot be destroyed, so nothing refunds this.
-                    0,
-                    building_rule.capacity_grant,
-                    base_population,
                 );
         }
         #[cfg(feature: "blitz")]
@@ -618,7 +601,6 @@ pub mod StructuresLogic {
                     config.production_rate,
                     config.resource_type,
                     config.building_category,
-                    game_context.rules.unbox().building_config.base_population,
                     timestamp,
                     game_context,
                 );
@@ -645,7 +627,6 @@ pub mod StructuresLogic {
                     crate::balance::structures::CAMP_LABOR_RATE,
                     crate::resources::LABOR,
                     crate::research::WORKSHOP,
-                    game_context.rules.unbox().building_config.base_population,
                     timestamp,
                     game_context,
                 );
@@ -780,7 +761,6 @@ pub mod StructuresLogic {
             let grants = crate::logic::settlement::grants();
             self.grant_realm_troops(key, troops, grants.resources, timestamp, game_context);
             self.grant_non_troop_resources(key, grants.resources, timestamp, game_context);
-            let rules = game_context.rules.unbox();
             self
                 .create_producer(
                     key,
@@ -788,7 +768,6 @@ pub mod StructuresLogic {
                     crate::logic::resources::castle_labor_rate(crate::logic::structures::record(key).base.level),
                     crate::resources::LABOR,
                     crate::research::WORKSHOP,
-                    rules.building_config.base_population,
                     timestamp,
                     game_context,
                 );

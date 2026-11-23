@@ -183,18 +183,18 @@ it("states why each locked or short row is held back in plain words without repe
 describe("the picked building's choice, at the panel's foot (the owner's pick C)", () => {
   const choice = () => host.querySelector("[data-lab='node-choice']");
 
-  it("keeps what a finished node gives: the Shrine researched, a Hut at Legendary", () => {
+  it("keeps what a finished node gives: the Shrine researched, a Farm at Legendary", () => {
     draw("shrine");
     expect(choice()!.textContent).toContain("Armies find Shrines · Open");
-    const legendaryHut = readResearchTree({
+    const legendaryFarm = readResearchTree({
       ...MID_REALM,
-      learned: { ...MID_REALM.learned, 3: { tier: 5 } },
+      learned: { ...MID_REALM.learned, 0: { tier: 5 } },
     });
     act(() =>
       root.render(
         <ResearchPanel
-          nodes={legendaryHut}
-          picked="row-3"
+          nodes={legendaryFarm}
+          picked="row-0"
           onPick={vi.fn()}
           sending={new Set()}
           fixFor={() => undefined}
@@ -203,7 +203,7 @@ describe("the picked building's choice, at the panel's foot (the owner's pick C)
         />,
       ),
     );
-    expect(choice()!.textContent).toContain("Hut population · +100%");
+    expect(choice()!.textContent).toContain("Farm wheat · +100%");
   });
 
   it("stands after the whole tree, outside its scroll, with the price held against and Research", () => {
@@ -232,8 +232,8 @@ describe("the picked building's choice, at the panel's foot (the owner's pick C)
     draw(null, vi.fn(), onPick);
     expect(choice()).toBeNull();
     expect(host.querySelectorAll("[data-node]")).toHaveLength(nodes.length);
-    act(() => host.querySelector<HTMLButtonElement>("[data-node='row-3']")!.click());
-    expect(onPick).toHaveBeenLastCalledWith("row-3");
+    act(() => host.querySelector<HTMLButtonElement>("[data-node='row-1']")!.click());
+    expect(onPick).toHaveBeenLastCalledWith("row-1");
   });
 });
 

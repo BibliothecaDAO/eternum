@@ -30,17 +30,11 @@ export const useMarkFirstBuild = (building: BuildingType | null) => {
   }, [building, setFirstBuild]);
 };
 
-/**
- * The options a build sheet offers: all of them once the first Barracks has opened the list, and until then the Barracks
- * alone, but only while it can be raised now (open, with free population for it). A realm that cannot raise it keeps
- * every option, so the way out (a Hut for room) stays reachable whatever progress the account holds.
- */
-export function disclosedBuildOptions<
-  Option extends { category: BuildingType; standing: unknown; populationCost: number },
->(options: Option[] | undefined, listOpen: boolean, freePopulation: number | undefined): Option[] | undefined {
+export function disclosedBuildOptions<Option extends { category: BuildingType; standing: unknown }>(
+  options: Option[] | undefined,
+  listOpen: boolean,
+): Option[] | undefined {
   if (listOpen || !options) return options;
   const barracks = options.find(({ category }) => category === FIRST_BUILD);
-  const raisable =
-    barracks?.standing === "open" && freePopulation !== undefined && freePopulation >= barracks.populationCost;
-  return barracks && raisable ? [barracks] : options;
+  return barracks?.standing === "open" ? [barracks] : options;
 }

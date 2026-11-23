@@ -7,9 +7,9 @@ The source architecture, textures, transforms, skins and animation are retained.
 ## Sources and rebuild
 
 `apps/game/scripts/frontier/build-building-tiers.mjs` is the editable source. It reads the tracked GLBs under
-`apps/game/public/models/new-buildings-opt/`: `farm.glb`, `barracks.glb`, `storehouse.glb` and `workers_hut.glb`.
-Roof-fitting endpoints were measured on those meshes. Extensions, timber frames, roof banners, numerals and hex facings
-are generated in the source coordinate system. No hand-authored scene file is needed.
+`apps/game/public/models/new-buildings-opt/`: `farm.glb`, `barracks.glb` and `storehouse.glb`. Roof-fitting endpoints
+were measured on those meshes. Extensions, timber frames, roof banners, numerals and hex facings are generated in the
+source coordinate system. No hand-authored scene file is needed.
 
 From the repository root, with installed client dependencies and Khronos KTX-Software on PATH:
 
@@ -18,11 +18,11 @@ node apps/game/scripts/frontier/build-building-tiers.mjs
 node apps/game/scripts/frontier/verify-building-tiers.mjs
 ```
 
-Pass `farm`, `barracks`, `storehouse` or `workers-hut` as the optional build argument to regenerate one family. Every
-run reads the original GLB, never a previous tier export. Original KTX2 texture payloads remain byte-identical. New
-geometry samples the original stone, timber and roof atlas regions. Flat banner and trim colours use vertex colour. All
-additions merge into the building's existing opaque primitive, keeping the original material draw count. Geometry uses
-the project's Draco Edgebreaker codec.
+Pass `farm`, `barracks` or `storehouse` as the optional build argument to regenerate one family. Every run reads the
+original GLB, never a previous tier export. Original KTX2 texture payloads remain byte-identical. New geometry samples
+the original stone, timber and roof atlas regions. Flat banner and trim colours use vertex colour. All additions merge
+into the building's existing opaque primitive, keeping the original material draw count. Geometry uses the project's
+Draco Edgebreaker codec.
 
 Tier III adds one tiny procedural KTX2 emission mask. The builder writes its 16 by 4 RGBA pixels, encodes them with
 `ktx create --raw --width 16 --height 4 --format R8G8B8A8_SRGB --encode basis-lz`, and embeds the result with a content
@@ -36,20 +36,19 @@ III carry a roof-mounted banner in silver or gold with II or III on both sides. 
 cue. Tier II adds silver roof fittings and a structural addition; Tier III adds a further piece, broader gold fittings
 and soft emissive trim.
 
-| Building     | Tier II addition                         | Tier III addition           |
-| ------------ | ---------------------------------------- | --------------------------- |
-| Farm         | Stone and timber granary beside the mill | A raised granary loft       |
-| Barracks     | Crenellated watchtower                   | A second, taller watchtower |
-| Storehouse   | Stone and timber warehouse annex         | A roof loft                 |
-| Workers' hut | Covered timber porch                     | A tall capped chimney       |
+| Building   | Tier II addition                         | Tier III addition           |
+| ---------- | ---------------------------------------- | --------------------------- |
+| Farm       | Stone and timber granary beside the mill | A raised granary loft       |
+| Barracks   | Crenellated watchtower                   | A second, taller watchtower |
+| Storehouse | Stone and timber warehouse annex         | A roof loft                 |
 
 Gold is `#dfaa54`; ink is `#1b1207`. Silver is `#e3e9ef` and stone is `#837a68`, modulated by the existing atlas and
 scene lighting. Original roofs keep their terracotta colour.
 
 ## Runtime contract
 
-Files are `/models/frontier/buildings/{farm,barracks,storehouse,workers-hut}-{2,3}.glb`; tier I draws the original
-model. Use existing board placement scale, rotation and ground offset. The builder checks every added vertex against the
+Files are `/models/frontier/buildings/{farm,barracks,storehouse}-{2,3}.glb`; tier I draws the original model. Use
+existing board placement scale, rotation and ground offset. The builder checks every added vertex against the
 unit-radius pointy hex. Original meshes retain their source footprint. The Farm keeps its original scaled/skinned nodes,
 so these are board models rather than inputs for the separate structure-instancing path that skips scaled nodes.
 
@@ -67,17 +66,14 @@ Actual game-loader previews with game terrain and lighting show each family in I
 camera distances, plus Farm animation playback. Review captures remain outside the repository. These establish asset
 loading and appearance; frontend tier selection, live placement and model-swap effects are separate integration work.
 
-| Family      | Tier |   Bytes | Triangles | Increase over base | Draws |
-| ----------- | ---: | ------: | --------: | -----------------: | ----: |
-| barracks    |    1 | 353,288 |     9,419 |               1.3% |     2 |
-| barracks    |    2 | 354,492 |     9,611 |               3.4% |     2 |
-| barracks    |    3 | 356,704 |     9,731 |               4.6% |     2 |
-| farm        |    1 | 506,772 |     5,590 |               2.2% |     7 |
-| farm        |    2 | 508,612 |     5,826 |               6.5% |     7 |
-| farm        |    3 | 511,732 |     5,982 |               9.4% |     7 |
-| storehouse  |    1 | 257,888 |    18,168 |               0.7% |     2 |
-| storehouse  |    2 | 259,216 |    18,368 |               1.8% |     2 |
-| storehouse  |    3 | 261,608 |    18,532 |               2.7% |     2 |
-| workers-hut |    1 | 311,292 |     6,022 |               2.0% |     2 |
-| workers-hut |    2 | 312,384 |     6,186 |               4.8% |     2 |
-| workers-hut |    3 | 314,084 |     6,246 |               5.8% |     2 |
+| Family     | Tier |   Bytes | Triangles | Increase over base | Draws |
+| ---------- | ---: | ------: | --------: | -----------------: | ----: |
+| barracks   |    1 | 353,288 |     9,419 |               1.3% |     2 |
+| barracks   |    2 | 354,492 |     9,611 |               3.4% |     2 |
+| barracks   |    3 | 356,704 |     9,731 |               4.6% |     2 |
+| farm       |    1 | 506,772 |     5,590 |               2.2% |     7 |
+| farm       |    2 | 508,612 |     5,826 |               6.5% |     7 |
+| farm       |    3 | 511,732 |     5,982 |               9.4% |     7 |
+| storehouse |    1 | 257,888 |    18,168 |               0.7% |     2 |
+| storehouse |    2 | 259,216 |    18,368 |               1.8% |     2 |
+| storehouse |    3 | 261,608 |    18,532 |               2.7% |     2 |

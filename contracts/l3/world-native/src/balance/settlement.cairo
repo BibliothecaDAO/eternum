@@ -8,7 +8,7 @@ pub const SETTLEMENT_SPACING_STEPS: u32 = 100;
 pub const ORDER_ASPECTS: [u8; 16] = [1, 2, 3, 4, 4, 3, 4, 4, 1, 2, 2, 1, 1, 3, 3, 2];
 
 pub const REALM_GRANTS: [ResourceAmount; 3] = [
-    ResourceAmount { resource_type: 26, amount: 3000000000000 },
+    ResourceAmount { resource_type: 26, amount: 2000000000000 },
     ResourceAmount { resource_type: 35, amount: 6000000000000 },
     ResourceAmount { resource_type: 23, amount: 2000000000000 },
 ];

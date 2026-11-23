@@ -15,7 +15,6 @@ describe("the castle's tree as the contract rules it", () => {
     expect(readResearchTree(EARLY_REALM).map(({ key, state }) => [key, state])).toEqual([
       ["row-0", "short"],
       ["row-1", "locked"],
-      ["row-3", "ready"],
       ["row-2", "locked"],
       ["row-4", "locked"],
       ["row-6", "locked"],
@@ -33,7 +32,7 @@ describe("the castle's tree as the contract rules it", () => {
     expect(why(EARLY_REALM, "well")).toBe("Needs 2,500 Essence");
     expect(why(EARLY_REALM, "shrine")).toBe("Needs Well lore first");
     expect(why(EARLY_REALM, "spire")).toBe("Needs Shrine lore first");
-    expect(canResearchNow(readResearchTree(EARLY_REALM))).toBe(true);
+    expect(canResearchNow(readResearchTree(EARLY_REALM))).toBe(false);
   });
 
   it("prices Logistics from the active preset without a Barracks prerequisite", () => {
