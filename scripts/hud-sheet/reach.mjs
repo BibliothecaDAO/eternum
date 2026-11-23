@@ -151,7 +151,7 @@ const RETIRED = {
  * words, amounts) draw nothing.
  */
 const KIT = "ui/design-system/kit/";
-const KIT_FOR_HUD = new Set(["hud-elements.tsx", "sheet-closes.tsx", "named-tips.tsx"]);
+const KIT_FOR_HUD = new Set(["hud-elements.tsx", "sheet-closes.tsx", "named-tips.tsx", "order-emblem.tsx"]);
 
 /** Whether an app file is a retired control, a retired folder's (the old tabs), or a kit component, whatever it draws now. */
 export const isRetired = (path) => {

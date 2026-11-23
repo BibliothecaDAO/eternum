@@ -1108,31 +1108,11 @@ span.ui-row__choose {
   line-height: var(--hud-leading-display);
   font-weight: var(--hud-weight-display);
 }
-.ui-window__titles {
-  display: flex;
-  min-width: 0;
-  flex: 1 1 auto;
-  flex-direction: column;
-}
 .ui-window__title {
+  flex: 1 1 auto;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-.ui-window__sub {
-  font-family: var(--hud-font);
-  color: var(--hud-muted);
-  font-size: var(--hud-text-label);
-  line-height: var(--hud-leading-label);
-  font-weight: var(--hud-weight-label);
-}
-.ui-window__cue {
-  display: flex;
-  flex: none;
-  align-items: center;
-  gap: theme(spacing.2);
-  margin-left: auto;
-  font-family: var(--hud-font);
 }
 /* Dragging the bar moves a window that hangs from the screen (the popover's drag reads data-popover-drag-handle). */
 .ui-window__bar[data-popover-drag-handle] {
@@ -2434,42 +2414,6 @@ button.ui-card__choose:disabled {
   background: color-mix(in srgb, var(--oath-tone) 10%, var(--hud-well));
 }
 
-.ui-oath-pick {
-  width: min(100%, 24rem);
-  max-height: calc(100dvh - 2rem);
-}
-.ui-oath-pick .ui-window__bar {
-  padding: theme(spacing.3) theme(spacing.4);
-}
-.ui-oath-pick .ui-window__body {
-  display: flex;
-  flex-direction: column;
-  gap: theme(spacing.3);
-  padding: theme(spacing.3) theme(spacing.4);
-}
-.ui-oath-pick .ui-window__foot {
-  padding: theme(spacing.3) theme(spacing.4);
-}
-.ui-oath-pick .ui-window__foot > .ui-button {
-  flex: 1 1 auto;
-  width: 100%;
-  margin-left: 0;
-}
-.ui-oath-pick__portrait {
-  display: inline-flex;
-  flex: none;
-  border-radius: var(--hud-radius-control);
-  box-shadow: 0 0 0 1.5px var(--hud-own);
-}
-.ui-oath-pick__portrait .ui-portrait {
-  border-radius: var(--hud-radius-control);
-}
-.ui-oath-pick__meta {
-  display: flex;
-  flex: none;
-  align-items: center;
-  gap: theme(spacing.2);
-}
 .ui-oath-pips {
   display: flex;
   align-items: center;
@@ -2493,156 +2437,6 @@ button.ui-card__choose:disabled {
   border-style: solid;
   border-color: color-mix(in srgb, var(--oath-tone) 75%, transparent);
   background: color-mix(in srgb, var(--oath-tone) 18%, var(--hud-well));
-}
-.ui-oath-pick__cards {
-  display: flex;
-  flex-direction: column;
-  gap: theme(spacing[2.5]);
-}
-.ui-oath-pick__replace {
-  display: flex;
-  flex-direction: column;
-  gap: theme(spacing.2);
-}
-.ui-card[data-variant="oath"] {
-  position: relative;
-  display: flex;
-  height: auto;
-  min-width: 0;
-  align-items: center;
-  gap: theme(spacing.2);
-  overflow: visible;
-  border: 1px solid color-mix(in srgb, var(--oath-tone) 58%, transparent);
-  border-radius: var(--hud-radius-panel);
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--oath-tone) 18%, var(--hud-surface-from)),
-    color-mix(in srgb, var(--oath-tone) 6%, var(--hud-surface-to))
-  );
-  padding: theme(spacing[2.5]) theme(spacing.3);
-}
-.ui-card[data-variant="oath"] .ui-card__choose {
-  position: static;
-  display: flex;
-  min-width: 0;
-  flex: 1 1 auto;
-  flex-direction: row;
-  align-items: center;
-  gap: theme(spacing.3);
-  padding: 0;
-  text-align: left;
-}
-.ui-card[data-variant="oath"] .ui-card__picture {
-  position: static;
-  display: inline-flex;
-  width: 56px;
-  height: 56px;
-  flex: none;
-  align-items: center;
-  justify-content: center;
-}
-.ui-card[data-variant="oath"] .ui-card__foot {
-  position: static;
-  display: flex;
-  min-width: 0;
-  flex: 1 1 auto;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: theme(spacing[0.5]);
-  padding: 0;
-  background: none;
-}
-.ui-card[data-variant="oath"] .ui-card__title {
-  font-family: var(--hud-font-display);
-  font-size: var(--hud-text-title);
-  line-height: var(--hud-leading-title);
-  white-space: normal;
-}
-.ui-card[data-variant="oath"] .ui-card__detail {
-  color: var(--hud-muted);
-  font-size: var(--hud-text-label);
-  line-height: var(--hud-leading-label);
-}
-.ui-card[data-variant="oath"] .ui-card__below {
-  flex: none;
-}
-.ui-oath-card__redraw-label {
-  display: inline-flex;
-  align-items: center;
-  gap: theme(spacing.1);
-}
-.ui-oath-pick__pass-max {
-  display: none;
-}
-
-@media (min-width: 640px) {
-  .ui-oath-pick {
-    width: min(100%, 60rem);
-  }
-  .ui-oath-pick .ui-window__bar {
-    padding: theme(spacing.4) theme(spacing.5);
-  }
-  .ui-oath-pick .ui-window__body {
-    gap: theme(spacing.4);
-    padding: theme(spacing.4) theme(spacing.5);
-  }
-  .ui-oath-pick .ui-window__foot {
-    padding: theme(spacing.3) theme(spacing.5) theme(spacing.4);
-  }
-  .ui-oath-pick__pass-max {
-    display: inline;
-  }
-  .ui-oath-pick__cards {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: theme(spacing.4);
-    align-items: stretch;
-  }
-  .ui-oath-pick__cards > .ui-card[data-variant="oath"] {
-    flex-direction: column;
-    align-items: stretch;
-    gap: theme(spacing[2.5]);
-    border: 0;
-    background: none;
-    padding: 0;
-  }
-  .ui-oath-pick__cards > .ui-card[data-variant="oath"] .ui-card__choose {
-    flex-direction: column;
-    justify-content: center;
-    gap: theme(spacing.3);
-    min-height: 15.5rem;
-    border: 1px solid color-mix(in srgb, var(--oath-tone) 62%, transparent);
-    border-radius: var(--hud-radius-panel);
-    background: linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--oath-tone) 22%, var(--hud-surface-from)),
-      color-mix(in srgb, var(--oath-tone) 6%, var(--hud-surface-to))
-    );
-    padding: theme(spacing.5) theme(spacing.4);
-    text-align: center;
-    transition:
-      border-color var(--hud-fast) var(--hud-ease),
-      transform var(--hud-fast) var(--hud-ease);
-  }
-  .ui-oath-pick__cards > .ui-card[data-variant="oath"] .ui-card__choose:hover:not(:disabled) {
-    border-color: var(--oath-tone);
-    transform: translateY(-2px);
-  }
-  .ui-oath-pick__cards > .ui-card[data-variant="oath"] .ui-card__picture {
-    width: 105px;
-    height: 105px;
-  }
-  .ui-oath-pick__cards > .ui-card[data-variant="oath"] .ui-card__foot {
-    flex: 0 0 auto;
-    align-items: center;
-  }
-  .ui-oath-pick__cards > .ui-card[data-variant="oath"] .ui-card__title {
-    font-size: var(--hud-text-display);
-    line-height: var(--hud-leading-display);
-  }
-  .ui-oath-pick__cards > .ui-card[data-variant="oath"] .ui-card__below > .ui-button {
-    width: 100%;
-  }
 }
 
 .ui-button__cost {

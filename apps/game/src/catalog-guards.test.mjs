@@ -2,12 +2,17 @@
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { ETERNUM_MAP_NAMES, LAYER_NAMES } from "@bibliothecadao/types";
+import { aspects, ETERNUM_MAP_NAMES, LAYER_NAMES, orders } from "@bibliothecadao/types";
 import { ESLint } from "eslint";
 import tseslint from "typescript-eslint";
 import { describe, expect, it } from "vitest";
 
-import { catalogGuardConfigs, planCatalogBaseline, readLayerNames } from "../scripts/catalog-guards.mjs";
+import {
+  catalogGuardConfigs,
+  planCatalogBaseline,
+  readAspectAndOrderNames,
+  readLayerNames,
+} from "../scripts/catalog-guards.mjs";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 const BASE = {
@@ -55,6 +60,13 @@ describe("the layer names the guard refuses", () => {
       "No ETERNUM_MAP_NAMES tuple",
     );
   });
+
+  it("reads Aspect and Order names directly from orders.ts", () => {
+    expect(readAspectAndOrderNames()).toEqual({
+      aspectNames: aspects.map((aspect) => aspect.name),
+      orderNames: orders.map((order) => order.fullOrderName),
+    });
+  });
 });
 
 describe("one source per fact: no copy of a catalog outside its modules", () => {
@@ -90,6 +102,10 @@ describe("one source per fact: no copy of a catalog outside its modules", () => 
     ["Eternum's other map name", `export const word = ${JSON.stringify(`Enter the ${ETERNUM_MAP_NAMES[1]}`)};`],
     ["a layer's name in a template", `export const line = (n: string) => \`\${n} · ${LAYER_NAMES[2]}\`;`],
     ["an image path built in a template", "export const art = (name: string) => `/icons/facets/64/${name}.webp`;"],
+    ["a partial map of Aspects", "export const COLORS: Partial<Record<AspectId, string>> = { 1: 'red' };"],
+    ["a partial map of Oath jobs", "export const TONES: Partial<Record<OathJob, string>> = { fight: 'red' };"],
+    ["a spelled Aspect name", "export const word = 'Prowess';"],
+    ["a spelled Order name", "export const word = 'Order of Giants';"],
   ])("refuses %s", async (_, source) => {
     expect(await hits(SCREEN, source)).toEqual([expect.stringMatching(/^One source per fact/)]);
   });

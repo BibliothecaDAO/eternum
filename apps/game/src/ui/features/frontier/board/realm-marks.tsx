@@ -2,7 +2,6 @@ import { usePlayerName, usePlayerProfile } from "@/hooks/use-player-profile";
 import { playerPortraitUrl } from "@/services/identity/player-portrait";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon } from "@/ui/design-system/icon";
-import { iconDefinition, orderMeaning } from "@/ui/design-system/icon-meaning";
 import { HudPortrait } from "@/ui/design-system/kit/hud-elements";
 import { YOU } from "@/ui/design-system/kit/words";
 import { HOME_KINDS, homeKind } from "@/ui/design-system/home-icons";
@@ -44,11 +43,6 @@ export const RealmBadge = ({
     </span>
   );
 };
-
-/** A realm's Order, as its painting named for assistive technology. */
-export const OrderMark = ({ order, size = 24 }: { order: number; size?: number }) => (
-  <Icon name={orderMeaning(order)} size={size} alt={iconDefinition(orderMeaning(order)).label} />
-);
 
 /**
  * A lord by the one name rule: the claimed name; else "Lord" and the account's last four, muted; "You" on the

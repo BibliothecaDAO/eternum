@@ -1353,14 +1353,10 @@ export const HudCard = ({
   detail,
   corner,
   actions,
-  below,
   size = "md",
-  variant,
-  tone,
   selected = false,
   disabled = false,
   refusal,
-  chooseProps,
   onClick,
   ...rest
 }: {
@@ -1369,16 +1365,11 @@ export const HudCard = ({
   detail?: ReactNode;
   corner?: ReactNode;
   actions?: ReactNode;
-  below?: ReactNode;
   /** md in a window's grid; sm three to a sheet's row, its painting above its name. */
   size?: "md" | "sm";
-  variant?: "oath";
-  tone?: "fight" | "stamina" | "prize";
   selected?: boolean;
   disabled?: boolean;
   refusal?: string;
-  chooseProps?: Omit<ButtonHTMLAttributes<HTMLButtonElement>, "onClick" | "disabled" | "className" | "type"> &
-    Record<`data-${string}`, string | number | boolean | undefined>;
   onClick?: () => void;
 } & Omit<HTMLAttributes<HTMLDivElement>, "title" | "onClick">) => {
   const refusalId = useId();
@@ -1404,14 +1395,11 @@ export const HudCard = ({
       {...rest}
       className={cn("ui-card ui-pick", rest.className)}
       data-size={size}
-      data-variant={variant}
-      data-oath-job={tone}
       data-selected={selected || undefined}
       data-disabled={disabled || undefined}
     >
       {onClick ? (
         <button
-          {...chooseProps}
           type="button"
           className="ui-card__choose"
           aria-pressed={selected}
@@ -1428,7 +1416,6 @@ export const HudCard = ({
       )}
       {actions !== undefined && <div className="ui-card__actions">{actions}</div>}
       {corner !== undefined && <div className="ui-card__corner">{corner}</div>}
-      {below !== undefined && <div className="ui-card__below">{below}</div>}
     </div>
   );
 };
@@ -1566,10 +1553,7 @@ const WindowFootContext = createContext<HTMLElement | null>(null);
  */
 export const HudWindow = ({
   title,
-  subtitle,
   icon,
-  lead,
-  cue,
   size,
   className,
   onClose,
@@ -1577,10 +1561,7 @@ export const HudWindow = ({
   ...rest
 }: {
   title: string;
-  subtitle?: ReactNode;
   icon?: IconMeaning;
-  lead?: ReactNode;
-  cue?: ReactNode;
   size?: WindowSize;
   className?: string;
   onClose?: () => void;
@@ -1590,18 +1571,9 @@ export const HudWindow = ({
   return (
     <section {...rest} className={cn("ui ui-window", className)} role="dialog" aria-label={title} data-size={size}>
       <header className="ui-window__bar" data-popover-drag-handle={onClose ? "" : undefined}>
-        {lead}
         {icon && <Icon name={icon} size={22} />}
-        <span className="ui-window__titles">
-          <span className="ui-window__title">{title}</span>
-          {subtitle !== undefined && <span className="ui-window__sub">{subtitle}</span>}
-        </span>
-        {(cue !== undefined || onClose) && (
-          <span className="ui-window__cue">
-            {cue}
-            {onClose && <HudIconButton icon="close" label="Close" kind="quiet" onClick={onClose} />}
-          </span>
-        )}
+        <span className="ui-window__title">{title}</span>
+        {onClose && <HudIconButton icon="close" label="Close" kind="quiet" onClick={onClose} />}
       </header>
       <WindowFootContext.Provider value={foot}>
         <div className="ui-window__body">{children}</div>

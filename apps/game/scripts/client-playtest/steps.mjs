@@ -469,9 +469,9 @@ function battleTargetSteps(attack, place, withOaths = false) {
   ];
 }
 
-const ORDER_ART = Object.fromEntries(
-  Object.values(iconMeanings).flatMap((meaning) =>
-    meaning.orderId === undefined ? [] : [[meaning.orderId, [`/${meaning.art}.webp`]]],
+const ORDER_MEANING = Object.fromEntries(
+  Object.entries(iconMeanings).flatMap(([name, meaning]) =>
+    meaning.orderId === undefined ? [] : [[meaning.orderId, name]],
   ),
 );
 
@@ -4331,14 +4331,14 @@ async function attackFromTheDeepCard({ browser, extraScreenshot }) {
   );
   const guardOaths = browser.read(
     `Array.from(document.querySelectorAll("[data-guard-oaths]"), node => {
-      const art = ${JSON.stringify(ORDER_ART)};
+      const meanings = ${JSON.stringify(ORDER_MEANING)};
       const visible = Array.from(node.querySelectorAll("[data-oath] img")).filter(image => {
         const box = image.getBoundingClientRect();
         const shown = image.checkVisibility({ opacityProperty: true, visibilityProperty: true });
         return shown && box.width > 0 && box.height > 0;
       });
       const painted = visible.filter(image =>
-        art[image.closest("[data-oath]").dataset.oath].some(suffix => (image.currentSrc || image.src).endsWith(suffix)),
+        image.dataset.icon === meanings[image.closest("[data-oath]").dataset.oath],
       );
       const mask = Number(node.dataset.guardOaths);
       const shownMask = painted.reduce((bits, image) => bits | (1 << (Number(image.closest("[data-oath]").dataset.oath) - 1)), 0);

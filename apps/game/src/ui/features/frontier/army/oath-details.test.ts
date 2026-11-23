@@ -1,7 +1,7 @@
 import { expect, it } from "vitest";
 import { nativeOathConstants as oaths } from "@bibliothecadao/eternum/game-client";
-import { orders } from "@bibliothecadao/types";
-import { oathEffectDescription, oathJob } from "./oath-details";
+import { orderOathJob, orders, type OathJob } from "@bibliothecadao/types";
+import { oathEffectDescription, oathName } from "./oath-details";
 
 it("explains the implemented Deep loss on both Oath surfaces", () => {
   expect(oathEffectDescription(oaths.VITRIOL)).toBe(`Loses ${oaths.VITRIOL_LOSS_PER_TICK} troops a tick in the Deep.`);
@@ -28,37 +28,25 @@ it("explains the implemented Deep loss on both Oath surfaces", () => {
   );
 });
 
-it("words every Oath the draw can offer and ties every contract Oath constant to its catalog job", () => {
-  const expectedJobs: Record<number, "fight" | "stamina" | "prize"> = {
-    [oaths.POWER]: "fight",
-    [oaths.GIANTS]: "fight",
-    [oaths.PROTECTION]: "fight",
-    [oaths.SKILL]: "fight",
-    [oaths.TWINS]: "fight",
-    [oaths.VITRIOL]: "fight",
-    [oaths.TITANS]: "stamina",
-    [oaths.ANGER]: "stamina",
-    [oaths.ENLIGHTENMENT]: "stamina",
-    [oaths.FOX]: "stamina",
-    [oaths.FURY]: "stamina",
-    [oaths.DETECTION]: "prize",
-    [oaths.BRILLIANCE]: "prize",
-    [oaths.RAGE]: "prize",
-    [oaths.PERFECTION]: "prize",
-    [oaths.REFLECTION]: "prize",
-  };
-  const counts = { fight: 0, stamina: 0, prize: 0 };
+it("describes every playable Oath consistently with its catalog job and rejects unknown ids", () => {
+  const jobEffectPattern = {
+    fight: /\b(?:damage|troops|Deals)\b/,
+    stamina: /^(?!.*\b(?:Deals|refills)\b).*\bstamina\b/,
+    prize: /\b(?:find|pays?|refills)\b/,
+  } satisfies Record<OathJob, RegExp>;
   const playable = orders.filter((order) => order.orderId > 0);
   expect(playable).toHaveLength(16);
+  expect(oathName(oaths.VITRIOL)).toBe("Vitriol");
   for (const order of playable) {
-    expect(order.oathJob).toBe(expectedJobs[order.orderId]);
-    const job = oathJob(order.orderId);
-    expect(job).toBe(expectedJobs[order.orderId]);
-    expect(oathEffectDescription(order.orderId)).toMatch(/\S/);
-    counts[job] += 1;
+    const job = orderOathJob(order.orderId);
+    const description = oathEffectDescription(order.orderId);
+    expect(description).toMatch(jobEffectPattern[job]);
+    for (const [other, pattern] of Object.entries(jobEffectPattern)) {
+      if (other !== job) expect(description).not.toMatch(pattern);
+    }
   }
-  expect(counts).toEqual({ fight: 6, stamina: 5, prize: 5 });
+  expect(() => oathName(0)).toThrow();
   expect(() => oathEffectDescription(17)).toThrow();
-  expect(() => oathJob(0)).toThrow();
-  expect(() => oathJob(17)).toThrow();
+  expect(() => orderOathJob(0)).toThrow();
+  expect(() => orderOathJob(17)).toThrow();
 });

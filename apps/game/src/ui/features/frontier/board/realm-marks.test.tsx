@@ -17,7 +17,8 @@ vi.mock("@/hooks/use-player-profile", async () => {
   };
 });
 
-import { LordName, OrderMark, RealmBadge } from "./realm-marks";
+import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
+import { LordName, RealmBadge } from "./realm-marks";
 
 const render = (node: ReactNode) => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -55,8 +56,8 @@ describe("a lord and a realm's Order on the HUD", () => {
   });
 
   it("names the Order its painting shows", () => {
-    const host = render(<OrderMark order={1} />);
-    expect(host.querySelector("img")?.getAttribute("alt")).toBeTruthy();
+    const host = render(<OrderEmblem order={1} />);
+    expect(host.querySelector("img")?.getAttribute("alt")).toBe("Order of Giants");
   });
 });
 
