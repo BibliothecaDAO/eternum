@@ -142,7 +142,6 @@ it("states why each locked or short row is held back in plain words without repe
   expect(campButton).toBe("Level up the castle");
   expect(campReason).not.toBe(campButton);
 
-  // At City, Conscription Camp is open to build: the reason says it needs to stand, never repeating the Build button.
   const city = readResearchTree({ ...EARLY_REALM, castleLevel: 1 });
   act(() =>
     root.render(
@@ -165,7 +164,6 @@ it("states why each locked or short row is held back in plain words without repe
   expect(buildButton).toBe("Build a Conscription Camp");
   expect(standingReason).not.toBe(buildButton);
 
-  // Short of Essence: the detail states the exact Essence needed.
   act(() =>
     root.render(
       <ResearchPanel

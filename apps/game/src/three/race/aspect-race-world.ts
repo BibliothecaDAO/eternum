@@ -17,7 +17,6 @@ export interface TowerPlateAnchor {
   topPercent: number;
 }
 
-/** Distinct procedural seed per Aspect so each tower takes its own architectural family, crown and masonry tint. */
 export const ASPECT_HYPERSTRUCTURE_SEEDS = {
   1: 1,
   2: 2,
@@ -25,7 +24,6 @@ export const ASPECT_HYPERSTRUCTURE_SEEDS = {
   4: 23,
 } as const satisfies Record<AspectId, number>;
 
-/** Four hexes one apart across the stage so every Aspect's hyperstructure rises beside the others on one horizon. */
 export const RACE_TOWER_HEXES = [
   { col: 8, row: 5 },
   { col: 10, row: 5 },
@@ -33,7 +31,6 @@ export const RACE_TOWER_HEXES = [
   { col: 14, row: 5 },
 ] as const;
 
-/** Clear afternoon daylight on WorldAtmosphereController so biomes, sun shadows and sky read crisply. */
 export const RACE_DAYLIGHT_PROGRESS = 54;
 
 const COLUMNS = 23;
@@ -42,7 +39,6 @@ const CAMERA_FOV = 30;
 const TOWER_TARGET_Y = 1.75;
 const PLATE_Z_OFFSET = 1.15;
 
-/** Builds an explored world-terrain patch using the game's real biomes around the four tower hexes. */
 export function createAspectRaceTerrainRequest(): TerrainPageRequest {
   const occupied = new Set(RACE_TOWER_HEXES.map(({ col, row }) => `${col}:${row}`));
   const cells: TerrainCellInput[] = Array.from({ length: COLUMNS * ROWS }, (_, index) => {
@@ -78,7 +74,6 @@ function raceBiomeAt(col: number, row: number): BiomeType {
   return (col + row) % 3 === 0 ? BiomeType.Shrubland : BiomeType.Grassland;
 }
 
-/** Positions the camera to frame all four towers heroically across both desktop widescreen and phone viewports. */
 export function frameAspectRaceCamera(camera: PerspectiveCamera): Vector3 {
   const first = terrainHexToWorld(RACE_TOWER_HEXES[0].col, RACE_TOWER_HEXES[0].row);
   const last = terrainHexToWorld(
@@ -101,7 +96,6 @@ export function frameAspectRaceCamera(camera: PerspectiveCamera): Vector3 {
   return center;
 }
 
-/** Projects each tower's front plinth to viewport percentage coordinates so Aspect marks sit under each tower. */
 export function projectRacePlateAnchors(
   camera: PerspectiveCamera,
   entries: readonly RaceTowerEntry[],

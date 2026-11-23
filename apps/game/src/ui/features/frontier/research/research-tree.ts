@@ -104,7 +104,6 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
     return rankName(level ?? 3);
   };
 
-  /** What every tier of a building row needs: the castle level, the building, the labor store's room, the Essence and labor. */
   const buildingNeeds = (
     row: number,
     category: BuildingType,
@@ -423,7 +422,6 @@ const stateOf = (done: boolean, needs: Need[]): NodeState => {
 /** The first thing a node waits on: the one line a locked or short node shows, and the step its fix takes. */
 export const firstMissing = (node: TreeNode): Need | undefined => node.needs.find((need) => !need.met);
 
-/** A need in plain words: "Needs the Realm at City", "Needs a Workshop standing", "Needs 500 Essence". */
 export const needLine = (need: Need): string => {
   switch (need.kind) {
     case "level":

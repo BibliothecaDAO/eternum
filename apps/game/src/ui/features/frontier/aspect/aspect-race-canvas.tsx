@@ -140,7 +140,7 @@ export function AspectRaceCanvas({
             className="race-stage__plate"
             style={{ left: `${anchor.leftPercent}%`, top: `${anchor.topPercent}%` }}
           >
-            <AspectMark aspect={anchor.aspectId} size={28} decorative />
+            <AspectMark aspect={anchor.aspectId} size={22} decorative />
           </span>
         ))}
       </div>

@@ -82,13 +82,8 @@ interface RaceRuntime {
 const MAX_FRAME_DELTA_SECONDS = 0.05;
 const SHADOW_MAP_SIZE = 1024;
 
-/** Serializes GPU device ownership per canvas across React StrictMode mount/unmount cycles. */
 const canvasTurns = new WeakMap<HTMLCanvasElement, Promise<void>>();
 
-/**
- * Mounts a small standalone production 3D view of the four Aspect hyperstructures on the game's own world terrain,
- * biomes and sky. Touches no live-map state and stops its animation loop completely whenever paused/off-screen.
- */
 export async function mountAspectRaceRenderer(input: MountAspectRaceRendererInput): Promise<AspectRaceRendererHandle> {
   const previous = canvasTurns.get(input.canvas) ?? Promise.resolve();
   let release = () => {};
