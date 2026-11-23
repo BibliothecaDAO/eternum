@@ -29,7 +29,7 @@ describe("shared pick-effect text builder", () => {
     expect(staminaRecoveryEffect(undefined, 16_000)).toBe("Stamina recovery: 100% → 160%");
   });
 
-  it("reads live SliceRules, DeepRules, and FrontierDiscoveryRules without silent defaults when absent", () => {
+  it("reads live SliceRules and DeepRules without silent defaults when absent", () => {
     const store = new NativeFactStore();
     expect(readPickEffectBase(store, 1)).toEqual({
       attackStamina: undefined,
@@ -63,14 +63,6 @@ describe("shared pick-effect text builder", () => {
           ...release.definition.economy.deep.Some,
           game_id: 1,
           loss_per_tick: String(350n * BigInt(RESOURCE_PRECISION)),
-        },
-      },
-      {
-        model: "FrontierDiscoveryRules",
-        key: "0x3",
-        value: {
-          ...release.definition.economy.discovery.Some,
-          game_id: 1,
         },
       },
     ] as never);

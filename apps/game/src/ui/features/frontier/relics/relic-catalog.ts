@@ -2,7 +2,7 @@ import { nativeRuleConstants as rule, type NativeRows } from "@bibliothecadao/et
 import { TIER_WORDS } from "@bibliothecadao/types";
 
 import type { IconMeaning } from "@/ui/design-system/icon";
-import { RELIC_WORDS } from "@/ui/design-system/kit/words";
+import { PICK_EFFECT_WORDS, RELIC_WORDS } from "@/ui/design-system/kit/words";
 
 import { nativeFactModels } from "../../../../../../../contracts/l3/world-native/schema/client.gen";
 import {
@@ -40,7 +40,7 @@ const RELICS = {
   Plunder: {
     icon: "exploration-reward-relic-2",
     effect: (rank) =>
-      percentFromTo("Cleared site labor & Essence", 100, 100 + percentStep(rule.RELIC_PLUNDER_BPS, rank)),
+      percentFromTo(PICK_EFFECT_WORDS.clearedSiteRewards, 100, 100 + percentStep(rule.RELIC_PLUNDER_BPS, rank)),
   },
   StaminaRegen: {
     icon: "stamina-relic-2",

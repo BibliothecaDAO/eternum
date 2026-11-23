@@ -345,6 +345,7 @@ import {
   FRIEND_GLORY,
   FRIENDS_BONUS_FRAGMENTS,
   FRIENDS_LIMIT,
+  FRONTIER_TROOP_NAMES,
   formatClockTime,
   formatDuration,
   getRelicInfo,
@@ -2150,6 +2151,37 @@ export const RELIC_WORDS = {
   readingRuin: "Loading ruin reward…",
   /** The held attack's step while no relic is chosen: the choice itself is said just above it. */
   chooseFirst: "Choose the relic to replace first",
+} as const;
+
+const STAMINA_TITLE = `${STAMINA[0]!.toUpperCase()}${STAMINA.slice(1)}`;
+export const PICK_EFFECT_WORDS = {
+  less: "less",
+  damageDealt: "Damage dealt",
+  damageTaken: "Damage taken",
+  damageTakenScope: (scope: string) => `Damage taken ${scope}`,
+  staminaRecovery: `${STAMINA_TITLE} recovery`,
+  insteadOf: (lead: string, next: string, base: string) => `${lead} ${next} instead of ${base}`,
+  clearedSiteRewards: `Cleared site ${LABOR.toLowerCase()} & ${ESSENCE}`,
+  deepTroopLoss: `${DEEP} troop loss`,
+  perTick: (amount: string) => `${amount} per tick`,
+  guardingSite: "guarding a site",
+  wellRefill: `Well ${STAMINA} refill`,
+  findEveryLead: "Find something every",
+  findEvery: (reveals: string) => `Find something every ${reveals}`,
+  exploreRewards: "Explore rewards",
+  siteAndGuardRewards: "Site and guard rewards",
+  attackCost: "Attack cost",
+  staminaAmount: (amount: string) => `${amount} ${STAMINA}`,
+  staminaNow: (gain: string) => `${gain} ${STAMINA} now`,
+  maxStamina: `max ${STAMINA}`,
+  maxStaminaGain: (gain: string) => `${gain} max ${STAMINA}`,
+  revealCost: "Reveal cost",
+  scoutCostNote: (from: string, to: string) => `${FRONTIER_TROOP_NAMES[TroopType.Paladin]} ${from} → ${to}`,
+  lowStaminaAttackDamage: (threshold: string) => `Low-${STAMINA} (<${threshold}) attack damage`,
+  wonBattleRefund: `Won battle ${STAMINA} refund`,
+  shareOf: (percent: string, base: string) => `${percent} of ${base}`,
+  nearbyAllyDamage: "Nearby ally bonus damage",
+  cleanWinRewards: (lossLimit: string) => `Clean-win (<${lossLimit} lost) rewards`,
 } as const;
 
 export const REALM_SIDE_WORDS = {
