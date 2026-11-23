@@ -439,7 +439,7 @@ pub fn try_capture(
     context: ExecutionContext,
 ) {
     if explorer.troops.count == 0 {
-        clear_site_left_unguarded(explorer_key, explorer, key, target);
+        clear_site_left_unguarded(key, target);
         return;
     }
     if (crate::rules::ONLY_UNOWNED_TARGETS && target.owner != 0.try_into().unwrap())
@@ -453,14 +453,14 @@ pub fn try_capture(
     family::capture(explorer_key, explorer, key, target, relic_slot, clean, context);
 }
 
-fn clear_site_left_unguarded(explorer_key: ExplorerKey, explorer: ExplorerTroops, key: ResourceKey, target: Structure) {
+fn clear_site_left_unguarded(key: ResourceKey, target: Structure) {
     if crate::logic::expeditions::expedition_site(key).is_none()
         || crate::logic::guards::GuardState::next(key, target.base.troop_max_guard_count).is_some() {
         return;
     }
     crate::logic::expeditions::clear_site(
         key,
-        crate::expeditions::SiteClear { explorer_id: explorer_key.explorer_id, home_id: explorer.owner, reward: None },
+        crate::expeditions::SiteClear { explorer_id: 0, home_id: 0, reward: None },
     );
 }
 

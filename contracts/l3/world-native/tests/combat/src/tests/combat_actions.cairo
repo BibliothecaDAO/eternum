@@ -153,8 +153,7 @@ fn a_last_hit_that_kills_both_sides_clears_the_site_for_nobody() {
     let clear = snforge_std::interact_with_state(
         d.games, || crate::logic::expeditions::expedition_site(site).unwrap().clear.unwrap(),
     );
-    assert_eq!(clear.explorer_id, attacker);
-    assert_eq!(clear.reward, None);
+    assert_eq!(clear, crate::expeditions::SiteClear { explorer_id: 0, home_id: 0, reward: None });
 }
 
 #[test]
