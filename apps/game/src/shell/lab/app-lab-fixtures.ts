@@ -242,7 +242,7 @@ export const LAB_SHARE_TALLIES: Partial<Record<keyof typeof LAB_SCREENS, ShareTa
 /** The Realms the linked wallet holds on each screen that reads them (the relay's held-Realms answer). */
 export const LAB_HELD_REALMS: Partial<Record<keyof typeof LAB_SCREENS, { realmId: number; map: null }[]>> = {
   "realm-held": [{ realmId: 4786, map: null }],
-  "realm-vault": [538, 418, 902, 1241, 2814, 3105, 5012].map((realmId) => ({ realmId, map: null })),
+  "realm-vault": [538, 4490, 5012, 3, 8, 10, 1].map((realmId) => ({ realmId, map: null })),
 };
 
 /** The player's name on each screen whose player is not Maelis. */

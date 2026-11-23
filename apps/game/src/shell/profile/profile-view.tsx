@@ -224,10 +224,7 @@ export const WalletPanel = () => {
         icon="lock"
         name={payout ? shortAddress(payout) : PROFILE_WORDS.noWallet}
         control={
-          <AppButton
-            kind="secondary"
-            to={payout ? SETTINGS_PATH : linkWalletHref(returnPathOf(location))}
-          >
+          <AppButton kind="secondary" to={payout ? SETTINGS_PATH : linkWalletHref(returnPathOf(location))}>
             {payout ? PROFILE_WORDS.settings : FRAGMENTS_PAGE_WORDS.linkWallet}
           </AppButton>
         }

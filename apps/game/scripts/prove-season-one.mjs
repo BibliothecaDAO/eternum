@@ -45,7 +45,7 @@ const PAGES = [
   { file: "play-active", url: "/lab/app/home?capture=1", shown: "[data-play-page]" },
   { file: "you-profile", url: "/lab/app/realm-vault/profile?capture=1", shown: "[data-you-profile]" },
   { file: "state-not-found", url: "/lab/app/home/no-such-page?capture=1", shown: "[data-state-card]" },
-  { file: "state-offline", url: "/offline.html", shown: ".card" },
+  { file: "state-offline", url: "/offline.html", shown: "main" },
   { file: "state-locked", url: "/lab/app/home/doorway/devices?capture=1", shown: "[data-band=body]" },
   { file: "state-spectator", url: "/lab/app/home/doorway/spectator?capture=1", shown: "[data-doorway-loading]" },
   { file: "day-share", url: "/lab/app/home/share/day?capture=1", shown: ".day-card" },

@@ -20,9 +20,7 @@ export const StageFrame = ({
   return (
     <PageFrame painting="frontier-mist" stage notice={notice} foot={phone ? verb : undefined}>
       <div
-        className={
-          wide ? "stage-frame--wide" : "mx-auto flex max-w-tabs flex-col items-center gap-5 pt-4 text-center"
-        }
+        className={wide ? "stage-frame--wide" : "mx-auto flex max-w-tabs flex-col items-center gap-5 pt-4 text-center"}
       >
         {children}
         {!phone && verb && (wide ? <div className="stage-frame__verb">{verb}</div> : verb)}

@@ -370,9 +370,7 @@ describe("the season's countdown, while its first day is ahead and Play has no g
     await act(async () =>
       document.body.querySelector<HTMLButtonElement>(`[data-order="${giants!.fullOrderName}"]`)!.click(),
     );
-    expect(document.body.querySelector(`[data-order="${giants!.fullOrderName}"]`)?.textContent).toContain(
-      "30 members",
-    );
+    expect(document.body.querySelector(`[data-order="${giants!.fullOrderName}"]`)?.textContent).toContain("30 members");
     await press(document.body, `Play as ${giants!.orderName}`);
     await settle();
     expect(reads.chosen).toEqual([giants!.orderId]);
