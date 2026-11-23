@@ -12,8 +12,9 @@ import { linkWalletHref } from "@/shell/profile/settings-route";
 import { returnPathOf } from "@/shell/return-path";
 import { aspectVariables } from "@/tokens";
 import { AspectMark } from "@/ui/design-system/aspect-mark";
+import { realmMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { Icon } from "@/ui/design-system/icon";
-import { mintedResourceMeaning, orderMeaning } from "@/ui/design-system/icon-meaning";
+import { mintedResourceMeaning, orderMeaning, type IconMeaning } from "@/ui/design-system/icon-meaning";
 import { HudLoading } from "@/ui/design-system/kit/hud-elements";
 import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
 import {
@@ -198,10 +199,10 @@ function Featured({
       )}
       <div className="home-picker__hero">
         <div className="home-picker__art-wrap">
-          <ChoiceArt choice={choice} size={split ? 112 : 68} eager />
+          <ChoiceArt choice={choice} size={split ? 256 : 68} eager />
           {split && aspect !== null && (
             <span className="home-picker__facet-badge">
-              <AspectMark aspect={aspect} size={32} decorative />
+              <AspectMark aspect={aspect} size={40} decorative />
             </span>
           )}
         </div>
@@ -490,7 +491,7 @@ export function ChoiceButton({
       )}
       {desktop || traits ? (
         <div className="home-picker__choice-art">
-          <ChoiceArt choice={choice} size={64} />
+          <ChoiceArt choice={choice} size={96} />
         </div>
       ) : (
         <div className="home-picker__choice-top">
@@ -528,8 +529,16 @@ export function ChoiceButton({
   );
 }
 
+export const realmTierIcon = (choice: { resources: readonly string[]; wonder: string | null }): IconMeaning => {
+  if (choice.wonder !== null) return realmMeaning(3, true);
+  if (choice.resources.length >= 5) return realmMeaning(3, false);
+  if (choice.resources.length >= 4) return realmMeaning(2, false);
+  if (choice.resources.length >= 3) return realmMeaning(1, false);
+  return realmMeaning(0, false);
+};
+
 const ChoiceArt = ({ choice, size = 72, eager = false }: { choice: Choice; size?: number; eager?: boolean }) => (
-  <HomeArt map={choice.map} icon="realm" size={size} eager={eager} />
+  <HomeArt map={choice.map} icon={realmTierIcon(choice)} size={size} eager={eager} />
 );
 
 const Resources = ({ resources }: { resources: string[] }) => (

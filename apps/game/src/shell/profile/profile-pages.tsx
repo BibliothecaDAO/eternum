@@ -22,7 +22,7 @@ import { DeleteAccount } from "./account-deletion";
 import { DevicesCard } from "./devices-page";
 import { SharedDaysPanel } from "./shared-days-panel";
 import { NotificationsCard } from "./notifications";
-import { PlayerCard, ProfileView, RealmsShowcase, RecentGames } from "./profile-view";
+import { PlayerCard, ProfileView, RealmsShowcase, RecentGames, WalletPanel } from "./profile-view";
 import { SETTINGS_PATH } from "./settings-route";
 import { HOW_TO_PLAY, MARKET } from "../community";
 import { WHATS_NEW_PATH } from "../frame/tabs";
@@ -195,6 +195,7 @@ const OwnProfile = ({ account }: { account: string }) => {
         <Rows />
       </div>
       <div className="flex min-w-0 flex-col gap-5">
+        <WalletPanel />
         <RecentGames account={account} own />
       </div>
     </div>

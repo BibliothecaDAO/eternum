@@ -347,30 +347,33 @@ describe("the season's countdown, while its first day is ahead and Play has no g
     expect(step()).toBe("pick");
     expect(page.container.querySelector("[data-order]")).toBeNull();
     expect(page.text()).not.toContain("Create your account");
-    expect(card("Prowess").textContent).toBe("Prowess39 membersabout 2.5K LORDSa player on average, of 100K");
-    expect(card("Insight").textContent).toContain("0 membersabout 100K LORDS");
+    expect(card("Prowess").textContent).toBe("Prowess39about 2.5K LORDS");
+    expect(card("Insight").textContent).toBe("Insight0about 100K LORDS");
     expect(page.container.querySelector("[data-aspect-shared]")?.textContent).toBe(
       "The Aspect's 100,000 LORDS are shared by Glory: your share follows your Glory, not an equal split. The first to finish adds 100,000 more.",
     );
     expect(
       page.container.querySelector("[data-aspect-shared]")?.closest("p")?.previousElementSibling?.matches("ul"),
     ).toBe(true);
-    expect(button("Choose your side")?.disabled).toBe(true);
+    expect(card("Prowess").getAttribute("aria-pressed")).toBe("true");
+    expect(button("Pledge to Prowess")?.disabled).toBe(false);
 
     await act(async () => card("Luminary").click());
+    expect(button("Pledge to Luminary")).toBeDefined();
     await act(async () => card("Prowess").click());
     expect(card("Prowess").getAttribute("aria-pressed")).toBe("true");
     expect(card("Luminary").getAttribute("aria-pressed")).toBe("false");
-    expect([...page.container.querySelectorAll("[data-order]")].map((row) => row.getAttribute("data-order"))).toEqual(
+    await press(page.container, "Pledge to Prowess");
+    expect([...document.body.querySelectorAll("[data-order]")].map((row) => row.getAttribute("data-order"))).toEqual(
       ordersOfAspect(1).map(({ fullOrderName }) => fullOrderName),
     );
     await act(async () =>
-      page.container.querySelector<HTMLButtonElement>(`[data-order="${giants!.fullOrderName}"]`)!.click(),
+      document.body.querySelector<HTMLButtonElement>(`[data-order="${giants!.fullOrderName}"]`)!.click(),
     );
-    expect(page.container.querySelector(`[data-order="${giants!.fullOrderName}"]`)?.textContent).toContain(
+    expect(document.body.querySelector(`[data-order="${giants!.fullOrderName}"]`)?.textContent).toContain(
       "30 members",
     );
-    await press(page.container, `Play as ${giants!.orderName}`);
+    await press(document.body, `Play as ${giants!.orderName}`);
     await settle();
     expect(reads.chosen).toEqual([giants!.orderId]);
     expect(step()).toBe("waiting");
@@ -396,7 +399,8 @@ describe("the season's countdown, while its first day is ahead and Play has no g
     expect(cards()[0]!.getAttribute("aria-pressed")).toBe("true");
     expect(page.container.querySelectorAll("[data-aspect-invited]")).toHaveLength(1);
     expect(cards()[0]!.querySelector("[data-aspect-invited]")?.textContent).toBe("Dana invited you");
-    expect([...page.container.querySelectorAll("[data-order]")].map((row) => row.getAttribute("data-order"))).toEqual(
+    await press(page.container, "Pledge to Havoc");
+    expect([...document.body.querySelectorAll("[data-order]")].map((row) => row.getAttribute("data-order"))).toEqual(
       ordersOfAspect(3).map(({ fullOrderName }) => fullOrderName),
     );
 
@@ -408,7 +412,6 @@ describe("the season's countdown, while its first day is ahead and Play has no g
       [...again.container.querySelectorAll("[data-aspect]")].map((card) => card.getAttribute("data-aspect")),
     ).toEqual(aspects.map(({ name }) => name));
     expect(again.container.querySelector("[data-aspect-invited]")).toBeNull();
-    expect(again.container.querySelector('[aria-pressed="true"]')).toBeNull();
   });
 
   it("holds a free Ancient Seal code on the waiting screen: a refused code says so in its field, a good one is held", async () => {
@@ -482,16 +485,17 @@ describe("the season's countdown, while its first day is ahead and Play has no g
       await settle();
       const [giants] = ordersOfAspect(1);
       await act(async () => page.container.querySelector<HTMLButtonElement>('[data-aspect="Prowess"]')!.click());
+      await press(page.container, "Pledge to Prowess");
       await act(async () =>
-        page.container.querySelector<HTMLButtonElement>(`[data-order="${giants!.fullOrderName}"]`)!.click(),
+        document.body.querySelector<HTMLButtonElement>(`[data-order="${giants!.fullOrderName}"]`)!.click(),
       );
-      await press(page.container, `Play as ${giants!.orderName}`);
+      await press(document.body, `Play as ${giants!.orderName}`);
       await settle();
-      expect(page.text()).toContain("Season did not answer.");
+      expect(document.body.textContent).toContain("Season did not answer.");
       expect(page.container.querySelector("[data-preseason-step]")?.getAttribute("data-preseason-step")).toBe("pick");
 
       identityClient.chooseOrder = keep;
-      await press(page.container, "Try again");
+      await press(document.body, "Try again");
       await settle();
       expect(reads.chosen).toEqual([giants!.orderId]);
       expect(page.container.querySelector("[data-preseason-step]")?.getAttribute("data-preseason-step")).toBe(
@@ -518,10 +522,11 @@ describe("the season's countdown, while its first day is ahead and Play has no g
       await settle();
       const [perfection] = ordersOfAspect(2);
       await act(async () => page.container.querySelector<HTMLButtonElement>('[data-aspect="Luminary"]')!.click());
+      await press(page.container, "Pledge to Luminary");
       await act(async () =>
-        page.container.querySelector<HTMLButtonElement>(`[data-order="${perfection!.fullOrderName}"]`)!.click(),
+        document.body.querySelector<HTMLButtonElement>(`[data-order="${perfection!.fullOrderName}"]`)!.click(),
       );
-      await press(page.container, `Play as ${perfection!.orderName}`);
+      await press(document.body, `Play as ${perfection!.orderName}`);
       await settle();
       await settle();
       expect(page.container.querySelector("[data-preseason-step]")?.getAttribute("data-preseason-step")).toBe(

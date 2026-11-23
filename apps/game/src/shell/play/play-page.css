@@ -192,7 +192,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.4rem;
   border: 1px solid rgb(var(--app-aspect) / 0.4);
   border-radius: var(--app-radius-control);
   background: var(--app-well);
@@ -200,18 +200,21 @@
   text-align: center;
 }
 
-.play-aspect__bar {
-  height: 0.3rem;
+.play-aspect__tower {
+  display: flex;
+  height: 4.5rem;
   width: 100%;
-  overflow: hidden;
-  border-radius: 9999px;
-  background: color-mix(in srgb, var(--app-surface-2) 80%, transparent);
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0 0.5rem;
 }
 
-.play-aspect__fill {
-  height: 100%;
-  border-radius: 9999px;
-  background: rgb(var(--app-aspect));
+.play-aspect__column {
+  width: 100%;
+  max-width: 2.5rem;
+  border-radius: 6px 6px 2px 2px;
+  background: linear-gradient(180deg, rgb(var(--app-aspect)), rgb(var(--app-aspect) / 0.28));
+  box-shadow: 0 0 14px rgb(var(--app-aspect) / 0.3);
 }
 
 .play-aspect__name {
@@ -223,73 +226,245 @@
 }
 
 .play-aspect__count {
-  font-size: 0.75rem;
+  font-size: var(--app-text-label);
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: var(--app-ink);
+}
+
+.play-today {
+  display: none;
+}
+
+.play-today__quest {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-radius-control);
+  background: var(--app-well);
+  padding: 0.875rem 1rem;
+}
+
+.play-today__icon {
+  display: grid;
+  width: 3rem;
+  height: 3rem;
+  flex: none;
+  place-items: center;
+  border: 1px solid var(--app-line-strong);
+  border-radius: var(--app-radius-round);
+  background: var(--app-surface-2);
+}
+
+.play-today__body {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.play-today__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.play-today__name {
+  font-family: var(--app-face-title);
+  font-size: 1.15rem;
+  color: var(--app-ink);
+}
+
+.play-today__unit {
+  font-size: var(--app-text-label);
+  color: var(--app-muted);
+}
+
+.play-today__track {
+  height: 0.45rem;
+  width: 100%;
+  overflow: hidden;
+  border-radius: var(--app-radius-round);
+  background: color-mix(in srgb, var(--app-surface-2) 85%, transparent);
+}
+
+.play-today__fill {
+  height: 100%;
+  width: 58%;
+  border-radius: var(--app-radius-round);
+  background: linear-gradient(90deg, rgb(var(--app-gold)), var(--gold2));
+}
+
+.play-today__foot {
+  margin-top: 0.625rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.play-today__reward {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: var(--app-text-label);
+  font-weight: 700;
+  color: var(--gold2);
 }
 
 .preseason-pick {
   display: flex;
   width: 100%;
+  flex: 1;
+  min-height: calc(100dvh - 12.25rem);
   flex-direction: column;
-  gap: 0.875rem;
+  gap: 0.625rem;
 }
 
 .preseason-pick__head {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.15rem;
   text-align: left;
 }
 
 .preseason-pick__title {
   margin: 0;
   font-family: var(--app-face-title);
-  font-size: clamp(1.65rem, 3.2vw, 2.35rem);
-  line-height: 1.12;
+  font-size: clamp(1.5rem, 3vw, 2.35rem);
+  line-height: 1.1;
   color: var(--gold2);
 }
 
 .preseason-pick .app-aspect-grid {
-  gap: 0.75rem;
+  flex: 1;
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  gap: 0.625rem;
+  padding-top: 0;
+}
+
+.preseason-pick .app-aspect-grid > li {
+  display: flex;
+  min-height: 0;
 }
 
 .preseason-pick .app-aspect-card {
-  min-height: 16rem;
+  position: relative;
+  height: 100%;
+  min-height: 15.5rem;
+  justify-content: flex-end;
   border: 1.5px solid var(--app-line);
   border-radius: var(--app-radius-panel);
   background: var(--app-ground);
   box-shadow: 0 12px 28px rgb(0 0 0 / 0.5);
 }
 
+.preseason-pick .app-aspect-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    transparent 34%,
+    color-mix(in srgb, var(--app-ground) 72%, transparent) 66%,
+    color-mix(in srgb, var(--app-ground) 96%, transparent) 100%
+  );
+}
+
+.preseason-pick .app-aspect-card__art {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 22%;
+  mask-image: none;
+}
+
+.preseason-pick .app-aspect-card__body {
+  position: relative;
+  z-index: 2;
+  flex: 0 0 auto;
+  justify-content: flex-end;
+  gap: 0.4rem;
+  padding: 0.75rem 0.6rem 0.8rem;
+}
+
 .preseason-pick .app-aspect-card[aria-pressed="true"] {
-  border-color: rgb(var(--app-gold));
+  border: 2px solid rgb(var(--app-gold));
   box-shadow:
-    0 0 0 1px rgb(var(--app-gold) / 0.4),
-    0 16px 34px rgb(0 0 0 / 0.6);
+    0 0 0 1px rgb(var(--app-gold) / 0.55),
+    0 18px 40px rgb(0 0 0 / 0.65);
 }
 
 .preseason-pick .app-aspect-card__name {
   font-family: var(--app-face-title);
-  font-size: 1.25rem;
+  font-size: 1.35rem;
+  line-height: 1.1;
   letter-spacing: 0.04em;
   color: rgb(var(--app-aspect, var(--app-gold)));
+  text-shadow: 0 2px 12px rgb(0 0 0 / 0.85);
+}
+
+.preseason-pick .app-aspect-card__name > img {
+  display: none;
+}
+
+.preseason-card__meta {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding-top: 0.15rem;
+  font-size: var(--app-text-label);
+  color: var(--app-ink);
+}
+
+.preseason-card__members {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.preseason-card__lords {
+  display: none;
+  align-items: center;
+  gap: 0.3rem;
+  font-weight: 600;
+  color: var(--gold2);
+}
+
+.preseason-pick__pool {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  line-height: 1.3;
+  color: var(--app-muted);
 }
 
 .preseason-pick__orders {
   display: flex;
   flex-direction: column;
   gap: 0.625rem;
-  border: 1px solid var(--app-line);
-  border-radius: var(--app-radius-panel);
-  background: color-mix(in srgb, var(--app-surface) 90%, transparent);
-  padding: 0.875rem;
 }
 
 .countdown-stage {
   display: flex;
   width: 100%;
+  flex: 1;
   flex-direction: column;
+  justify-content: space-between;
   gap: 1.25rem;
 }
 
@@ -345,38 +520,72 @@
 .countdown-aspects {
   display: grid;
   width: 100%;
+  flex: 1;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: theme(spacing.3);
 }
 
 .countdown-aspect {
+  position: relative;
+  display: flex;
+  min-height: 13.5rem;
+  flex-direction: column;
+  justify-content: flex-end;
+  overflow: hidden;
+  border: 1.5px solid rgb(var(--app-aspect) / 0.55);
+  border-radius: var(--app-radius-panel);
+  background: var(--app-ground);
+  box-shadow: 0 12px 28px rgb(0 0 0 / 0.5);
+}
+
+.countdown-aspect::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    transparent 38%,
+    color-mix(in srgb, var(--app-ground) 72%, transparent) 72%,
+    color-mix(in srgb, var(--app-ground) 96%, transparent) 100%
+  );
+}
+
+.countdown-aspect__art {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 22%;
+}
+
+.countdown-aspect__foot {
+  position: relative;
+  z-index: 2;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  border: 1.5px solid rgb(var(--app-aspect) / 0.5);
-  border-radius: var(--app-radius-panel);
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, rgb(var(--app-aspect)) 12%, var(--app-surface-2)),
-    color-mix(in srgb, var(--app-surface) 95%, transparent)
-  );
-  padding: 1.25rem 0.75rem;
-  box-shadow: 0 12px 28px rgb(0 0 0 / 0.45);
+  gap: 0.4rem;
+  padding: 0.75rem 0.625rem 0.9rem;
 }
 
 .countdown-aspect__name {
   font-family: var(--app-face-title);
-  font-size: 1.25rem;
-  line-height: 1.2;
+  font-size: 1.35rem;
+  line-height: 1.15;
   color: rgb(var(--app-aspect));
+  text-shadow: 0 2px 12px rgb(0 0 0 / 0.85);
 }
 
 .waiting-stage {
   display: flex;
   width: 100%;
+  flex: 1;
   flex-direction: column;
+  justify-content: space-between;
   gap: 1.25rem;
 }
 
@@ -476,14 +685,28 @@
 
 @media (min-width: 1024px) {
   .play-grid {
-    min-height: 38rem;
-    grid-template-columns: minmax(0, 1.65fr) minmax(21rem, 1fr);
+    min-height: calc(100dvh - var(--app-bar) - 3.5rem);
+    grid-template-columns: minmax(0, 1.45fr) minmax(24rem, 1fr);
+    align-items: stretch;
     gap: theme(spacing.6);
   }
 
+  .play-side {
+    height: 100%;
+    justify-content: space-between;
+  }
+
+  .play-today {
+    display: flex;
+  }
+
+  .play-aspect__tower {
+    height: 8.5rem;
+  }
+
   .play-hero {
-    min-height: 38rem;
-    padding: 2.25rem 2.5rem;
+    min-height: 100%;
+    padding: 2.5rem 2.75rem;
   }
 
   .play-hero__scrim {
@@ -504,7 +727,7 @@
   }
 
   .play-hero__lockup {
-    height: 12.5rem;
+    height: 13.5rem;
   }
 
   .play-hero__plate {
@@ -523,15 +746,41 @@
 
   .play-hero__verb .app-button {
     width: auto;
-    min-width: 15rem;
+    min-width: 16rem;
+  }
+
+  .preseason-pick {
+    min-height: calc(100dvh - var(--app-bar) - 9rem);
+    gap: 1rem;
+  }
+
+  .preseason-pick .app-aspect-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-rows: minmax(0, 1fr);
+    gap: 1.25rem;
   }
 
   .preseason-pick .app-aspect-card {
-    min-height: 25rem;
+    min-height: 38rem;
+  }
+
+  .preseason-pick .app-aspect-card__body {
+    gap: 0.75rem;
+    padding: 1rem 1.25rem 1.35rem;
   }
 
   .preseason-pick .app-aspect-card__name {
-    font-size: 1.55rem;
+    font-size: 2.1rem;
+  }
+
+  .preseason-card__meta {
+    justify-content: space-between;
+    border-top: 1px solid color-mix(in srgb, var(--app-line) 70%, transparent);
+    padding-top: 0.65rem;
+  }
+
+  .preseason-card__lords {
+    display: inline-flex;
   }
 
   .countdown-stage__head,
@@ -550,7 +799,7 @@
 
   .waiting-stage__badge {
     width: auto;
-    min-width: 22rem;
+    min-width: 24rem;
   }
 
   .waiting-stage__cards {
@@ -559,11 +808,19 @@
 
   .countdown-aspects {
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: theme(spacing.4);
+    gap: theme(spacing.5);
   }
 
   .countdown-aspect {
-    min-height: 16rem;
-    padding: 1.75rem 1rem;
+    min-height: 29rem;
+  }
+
+  .countdown-aspect__foot {
+    padding: 1rem 1.25rem 1.35rem;
+    gap: 0.65rem;
+  }
+
+  .countdown-aspect__name {
+    font-size: 1.9rem;
   }
 }

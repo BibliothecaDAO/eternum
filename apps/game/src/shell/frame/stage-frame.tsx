@@ -1,3 +1,5 @@
+import "./stage-frame.css";
+
 import type { ReactNode } from "react";
 
 import { useLayout } from "./layout";
@@ -19,13 +21,11 @@ export const StageFrame = ({
     <PageFrame painting="frontier-mist" stage notice={notice} foot={phone ? verb : undefined}>
       <div
         className={
-          wide
-            ? "mx-auto flex w-full max-w-6xl flex-col gap-5 pt-2"
-            : "mx-auto flex max-w-[28rem] flex-col items-center gap-5 pt-4 text-center"
+          wide ? "stage-frame--wide" : "mx-auto flex max-w-tabs flex-col items-center gap-5 pt-4 text-center"
         }
       >
         {children}
-        {!phone && verb && (wide ? <div className="flex justify-end">{verb}</div> : verb)}
+        {!phone && verb && (wide ? <div className="stage-frame__verb">{verb}</div> : verb)}
       </div>
     </PageFrame>
   );

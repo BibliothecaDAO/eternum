@@ -1,3 +1,5 @@
+import "./not-found.css";
+
 import { APP_STATE_WORDS, WORDS } from "@/ui/design-system/kit/words";
 import { Icon } from "@/ui/design-system/icon";
 import { AppButton, AppPanel } from "@/ui/design-system/kit/app-elements";
@@ -5,7 +7,7 @@ import { AppButton, AppPanel } from "@/ui/design-system/kit/app-elements";
 import { PageFrame } from "./frame/page-frame";
 
 export const NothingHere = () => (
-  <div className="flex min-h-[55dvh] items-center justify-center" data-state-card="not-found">
+  <div className="state-card-stage" data-state-card="not-found">
     <AppPanel className="w-full max-w-dialog">
       <div className="flex flex-col items-center gap-4 text-center">
         <span className="grid size-16 place-items-center rounded-full border border-app-line-strong bg-app-well">

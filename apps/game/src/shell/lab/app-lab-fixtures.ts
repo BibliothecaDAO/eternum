@@ -105,6 +105,7 @@ const frontier = (withRealm: boolean) =>
       end_at: NOW + 20 * DAY,
     },
     player_count: 1240,
+    aspect_members: { 1: 389, 2: 412, 3: 314, 4: 298 },
     player_state: withRealm ? owned : null,
   });
 
@@ -241,7 +242,7 @@ export const LAB_SHARE_TALLIES: Partial<Record<keyof typeof LAB_SCREENS, ShareTa
 /** The Realms the linked wallet holds on each screen that reads them (the relay's held-Realms answer). */
 export const LAB_HELD_REALMS: Partial<Record<keyof typeof LAB_SCREENS, { realmId: number; map: null }[]>> = {
   "realm-held": [{ realmId: 4786, map: null }],
-  "realm-vault": [418, 902, 1241, 2814, 3105, 4490, 5012].map((realmId) => ({ realmId, map: null })),
+  "realm-vault": [538, 418, 902, 1241, 2814, 3105, 5012].map((realmId) => ({ realmId, map: null })),
 };
 
 /** The player's name on each screen whose player is not Maelis. */
@@ -586,6 +587,10 @@ export const LAB_SEASON_WAIT = 2 * 3600 + 4 * 60;
 export const LAB_DOORWAYS = {
   map: {
     view: doorwayView({ source: "boot", phase: "wait_worldmap_ready", audience: "player", modelShare: 0.57 }),
+    realm: { name: "Stolsli", emblem: orderEmblem(2), aspect: orderAspect(2) },
+  },
+  spectator: {
+    view: doorwayView({ source: "boot", phase: "wait_worldmap_ready", audience: "spectator", modelShare: 0.62 }),
     realm: { name: "Stolsli", emblem: orderEmblem(2), aspect: orderAspect(2) },
   },
   "sign-in": {

@@ -91,8 +91,8 @@ export const DoorwayScreen = ({
         foot={desktop ? undefined : verb}
       >
         {desktop ? (
-          <div className="flex min-h-[calc(100dvh-12rem)] items-center justify-center">
-            <AppPanel className={wide ? "w-full max-w-5xl" : "w-column"}>
+          <div className="flex min-h-[calc(100dvh-7.5rem)] items-center justify-center">
+            <AppPanel className={wide ? "w-full" : "w-column"}>
               <div className="flex flex-col items-stretch gap-5">
                 {realm && <RealmRising realm={realm} />}
                 {progress}

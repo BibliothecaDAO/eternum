@@ -4,7 +4,7 @@ import { aspects, formatLongDate, ordersOfAspect } from "@bibliothecadao/types";
 import type { CSSProperties } from "react";
 
 import { aspectVariables } from "@/tokens";
-import { AspectMark } from "@/ui/design-system/aspect-mark";
+import { aspectCardUrl } from "@/ui/design-system/domain-icon-meaning";
 import { Icon } from "@/ui/design-system/icon";
 import { AGE_LOCKUP, orderMeaning } from "@/ui/design-system/icon-meaning";
 import { AppButton } from "@/ui/design-system/kit/app-elements";
@@ -56,13 +56,15 @@ const AspectCrests = () => (
         style={aspectVariables(id) as CSSProperties}
         className="countdown-aspect"
       >
-        <AspectMark aspect={id} size={84} decorative />
-        <span className="countdown-aspect__name">{name}</span>
-        <span className="flex items-center justify-center gap-1.5">
-          {ordersOfAspect(id).map(({ orderId }) => (
-            <Icon key={orderId} name={orderMeaning(orderId)} size={22} />
-          ))}
-        </span>
+        <img src={aspectCardUrl(id)} alt="" aria-hidden className="countdown-aspect__art" />
+        <div className="countdown-aspect__foot">
+          <span className="countdown-aspect__name">{name}</span>
+          <span className="flex items-center justify-center gap-1.5">
+            {ordersOfAspect(id).map(({ orderId }) => (
+              <Icon key={orderId} name={orderMeaning(orderId)} size={22} />
+            ))}
+          </span>
+        </div>
       </li>
     ))}
   </ul>

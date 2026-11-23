@@ -1,41 +1,52 @@
 import "./profile-view.css";
 
 import { canonicalRealm } from "@bibliothecadao/eternum";
-import { aspectName, catalogOrder, formatAmount } from "@bibliothecadao/types";
+import { aspectName, catalogOrder, formatAmount, type AspectId } from "@bibliothecadao/types";
 import { profileOfIdentityUser } from "@realms-world/identity";
 import type { CSSProperties } from "react";
+import { useLocation } from "react-router-dom";
 
 import { useIdentitySession } from "@/hooks/context/identity-session";
+import { payoutAddressOf } from "@/hooks/context/payout-wallet";
 import { useHeldRealms } from "@/hooks/use-holdings";
 import { usePlayerProfile } from "@/hooks/use-player-profile";
 import { playerPortraitUrl } from "@/services/identity/player-portrait";
 import { aspectVariables } from "@/tokens";
 import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { Icon } from "@/ui/design-system/icon";
-import { AppPanel, AppPortrait } from "@/ui/design-system/kit/app-elements";
+import { shortAddress } from "@/ui/design-system/kit/address";
+import { AppButton, AppPanel, AppPortrait, AppSetting } from "@/ui/design-system/kit/app-elements";
 import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
 import { PlayerName } from "@/ui/design-system/kit/player-name";
 import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
 import {
+  FRAGMENTS_PAGE_WORDS,
+  INVITE_WORDS,
   LORDS_EARNED,
   PROFILE_WORDS,
   RANK,
   SEASON_WORDS,
   SITES_CLEARED,
+  WALLET_WORDS,
   YOUR_REALMS,
 } from "@/ui/design-system/kit/words";
 import { findOwnEntry } from "@/ui/features/frontier/board/standings";
+import { realmTierIcon } from "@/ui/features/game-entry/home-source-picker";
 import { HomeArt } from "@/ui/shared/components/home-art";
 
 import { useLayout } from "../frame/layout";
-import { gameRefOf, useDirectory, useLeaderboard, useRecentResults } from "../herald";
+import { useDirectory, useLeaderboard, useRecentResults } from "../herald";
 import { Loading } from "../loading";
 import { ageOf } from "../play/ages";
+import { useSeasonInvite } from "../play/season-invite";
 import { OwnRatingLine } from "../rating-line";
+import { returnPathOf } from "../return-path";
 import { chooseSeason } from "../season";
 import { HistoryRow } from "../season-tab/history-row";
+import { fragmentsHref } from "../shop/fragments-route";
 import { useNowSeconds } from "../use-now";
 import { HoldingsStrip } from "./holdings-strip";
+import { linkWalletHref, SETTINGS_PATH } from "./settings-route";
 
 const useCardProfile = (account: string, own: boolean) => {
   const { session } = useIdentitySession();
@@ -48,15 +59,16 @@ const HISTORY = 8;
 
 const useSeasonStanding = (account: string) => {
   const season = chooseSeason(useDirectory().data?.games ?? [], true);
-  const board = useLeaderboard(season ? gameRefOf(season) : null);
+  const board = useLeaderboard(season ? { chainId: season.chainId, gameId: season.game_id } : null);
   const entries = board.data?.entries;
-  return { own: entries && findOwnEntry(entries, account), field: entries?.length };
+  return { season, own: entries && findOwnEntry(entries, account), field: entries?.length };
 };
 
 export const ProfileView = ({ account, own }: { account: string; own: boolean }) =>
   useLayout() === "phone" ? (
     <div data-you-profile className="flex flex-col gap-4">
       <PlayerCard account={account} own={own} />
+      {own && <WalletPanel />}
       <History account={account} own={own} />
     </div>
   ) : (
@@ -67,14 +79,18 @@ export const ProfileView = ({ account, own }: { account: string; own: boolean })
   );
 
 export const PlayerCard = ({ account, own }: { account: string; own: boolean }) => {
+  const location = useLocation();
   const profile = useCardProfile(account, own);
-  const { own: standing, field } = useSeasonStanding(account);
+  const { season, own: standing, field } = useSeasonStanding(account);
   const frontier = ageOf("frontier");
   const standingOrder = standing ? catalogOrder(standing.order) : undefined;
   const standingAspect = standingOrder?.aspect ?? null;
   const cardStyle = standingAspect !== null ? (aspectVariables(standingAspect) as CSSProperties) : undefined;
+  const topUpTo = season
+    ? fragmentsHref({ chainId: season.chainId, gameId: season.game_id }, returnPathOf(location))
+    : SETTINGS_PATH;
   return (
-    <div data-you-profile style={cardStyle}>
+    <div data-you-profile style={cardStyle} className="profile-card-wrap">
       <AppPanel
         title={frontier.name}
         painting={frontier.painting}
@@ -160,11 +176,63 @@ export const PlayerCard = ({ account, own }: { account: string; own: boolean }) 
               </div>
             </>
           )}
+          {own && (
+            <div className="profile-actions">
+              <AppButton kind="primary" icon="fragment" to={topUpTo} className="w-full">
+                {FRAGMENTS_PAGE_WORDS.title}
+              </AppButton>
+              {standingAspect !== null ? (
+                <InviteAction aspect={standingAspect} />
+              ) : (
+                <AppButton kind="secondary" icon="share" to="/season" className="w-full">
+                  {INVITE_WORDS.copy}
+                </AppButton>
+              )}
+            </div>
+          )}
           {own && <OwnRatingLine />}
         </div>
         {own && <HoldingsStrip />}
       </AppPanel>
     </div>
+  );
+};
+
+const InviteAction = ({ aspect }: { aspect: AspectId }) => {
+  const invite = useSeasonInvite(aspect);
+  return (
+    <AppButton
+      kind="secondary"
+      icon="share"
+      className="w-full"
+      disabled={invite.link.code === undefined}
+      onClick={() => void invite.copy()}
+    >
+      {invite.copied === "copied" ? INVITE_WORDS.copied : INVITE_WORDS.copy}
+    </AppButton>
+  );
+};
+
+export const WalletPanel = () => {
+  const { session } = useIdentitySession();
+  const location = useLocation();
+  if (!session) return null;
+  const payout = payoutAddressOf(session.user);
+  return (
+    <AppPanel title={WALLET_WORDS.payoutWallet} icon="backpack" flush>
+      <AppSetting
+        icon="lock"
+        name={payout ? shortAddress(payout) : PROFILE_WORDS.noWallet}
+        control={
+          <AppButton
+            kind="secondary"
+            to={payout ? SETTINGS_PATH : linkWalletHref(returnPathOf(location))}
+          >
+            {payout ? PROFILE_WORDS.settings : FRAGMENTS_PAGE_WORDS.linkWallet}
+          </AppButton>
+        }
+      />
+    </AppPanel>
   );
 };
 
@@ -178,9 +246,10 @@ export const RealmsShowcase = () => {
         {realms.slice(0, 9).map(({ realmId, map }) => {
           const info = canonicalRealm(realmId);
           const order = info && info.order !== 0 ? catalogOrder(info.order) : null;
+          const icon = info ? realmTierIcon(info) : "realm";
           return (
             <li key={realmId} className="profile-realm-tile">
-              <HomeArt map={map} icon="realm" size={44} />
+              <HomeArt map={map} icon={icon} size={64} />
               <span className="profile-realm-tile__name">{info?.name ?? `#${realmId}`}</span>
               {order && (
                 <span className="profile-realm-tile__order">

@@ -1,0 +1,20 @@
+.stage-frame--wide {
+  margin: 0 auto;
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding-top: 0.25rem;
+}
+
+.stage-frame__verb {
+  display: flex;
+  justify-content: flex-end;
+}
+
+@media (min-width: 1024px) {
+  .stage-frame--wide {
+    min-height: calc(100dvh - var(--app-bar) - 3.5rem);
+    justify-content: space-between;
+  }
+}

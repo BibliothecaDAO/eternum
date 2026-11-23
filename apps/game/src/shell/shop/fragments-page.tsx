@@ -96,7 +96,7 @@ const Choose = ({ game, onPriced }: { game: ShopGame; onPriced: (paying: Paying)
               onClick={() => setFragments(pack)}
             >
               <span className="shop-pack__art" aria-hidden="true">
-                <Icon name={isSeal ? "final-seal" : "fragment"} size={isSeal ? 68 : 60} />
+                <Icon name={isSeal ? "final-seal" : "fragment"} size={148} />
               </span>
               <span className="shop-pack__info">
                 <span className="shop-pack__title">{FRAGMENTS_PAGE_WORDS.pack(pack)}</span>

@@ -5,6 +5,11 @@
   gap: theme(spacing.5);
 }
 
+.profile-card-wrap {
+  display: flex;
+  flex-direction: column;
+}
+
 .profile-identity {
   display: flex;
   flex-direction: column;
@@ -128,27 +133,33 @@
   color: var(--app-ink);
 }
 
+.profile-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
 .profile-realms-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.625rem;
+  gap: 0.75rem;
 }
 
 .profile-realm-tile {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.45rem;
   border: 1px solid var(--app-line);
   border-radius: var(--app-radius-control);
   background: var(--app-well);
-  padding: 0.65rem 0.5rem;
+  padding: 0.875rem 0.625rem;
   text-align: center;
 }
 
 .profile-realm-tile__name {
   font-family: var(--app-face-title);
-  font-size: 0.9375rem;
+  font-size: 1rem;
   color: var(--app-ink);
 }
 
@@ -162,8 +173,15 @@
 
 @media (min-width: 1024px) {
   .you-grid {
-    grid-template-columns: 20rem minmax(0, 1.35fr) minmax(0, 1fr);
+    min-height: calc(100dvh - var(--app-bar) - 8.5rem);
+    grid-template-columns: 22rem minmax(0, 1.4fr) minmax(0, 1fr);
+    align-items: stretch;
     gap: theme(spacing.6);
+  }
+
+  .profile-card-wrap,
+  .profile-card-wrap > .app-panel {
+    height: 100%;
   }
 
   .profile-hero {
@@ -177,6 +195,11 @@
 
   .profile-hero__sub {
     justify-content: center;
+  }
+
+  .profile-actions {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.625rem;
   }
 
   .profile-realms-grid {

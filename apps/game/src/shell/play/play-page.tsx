@@ -1,17 +1,29 @@
 import "./play-page.css";
 
-import { aspects, type AspectId } from "@bibliothecadao/types";
-import { ASPECT_PAGE_WORDS, BLITZ_WORDS, WORDS } from "@/ui/design-system/kit/words";
+import { aspects, formatAmount, questCatalog, type AspectId } from "@bibliothecadao/types";
+import {
+  ASPECT_PAGE_WORDS,
+  BLITZ_WORDS,
+  DAY,
+  DAY_BANNER_WORDS,
+  LABOR,
+  WORDS,
+  dayLeftCompact,
+} from "@/ui/design-system/kit/words";
 import type { CSSProperties, ReactNode } from "react";
 
 import { aspectVariables } from "@/tokens";
 import { AspectMark } from "@/ui/design-system/aspect-mark";
-import { AppAgeColumn, AppButton, AppGameCard, AppLink, AppPanel } from "@/ui/design-system/kit/app-elements";
+import { Icon } from "@/ui/design-system/icon";
+import { AppAgeColumn, AppButton, AppChip, AppGameCard, AppLink, AppPanel } from "@/ui/design-system/kit/app-elements";
 import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
+import { dayQuestFace } from "@/ui/features/frontier/day/day-quest-face";
 
 import { BuildOrdersRow } from "../build-orders/build-orders-row";
 import { PageFrame } from "../frame/page-frame";
+import type { DirectoryGame } from "../herald";
 import { Loading } from "../loading";
+import { directoryDay, seasonRealm } from "../season";
 import { ageOf } from "./ages";
 import { holdsNothing, idleCard, type PlayBoard, PLAY_MODES, type PlayMode } from "./play-board";
 import { type PlayFacts, type SourceGap, usePlayFacts } from "./play-facts";
@@ -29,7 +41,9 @@ export const PlayPage = () => {
     );
   const firstVisit = !facts.signedIn && facts.board?.lead?.verb === "play";
   const ages = facts.board ? agesShown(facts.board) : [];
-  const leadMembers = facts.board?.lead?.mode === "frontier" ? (facts.board.lead.game.aspect_members ?? null) : null;
+  const leadFrontier = facts.board?.lead?.mode === "frontier" ? facts.board.lead.game : null;
+  const leadMembers = leadFrontier?.aspect_members ?? null;
+  const hasActiveRealm = leadFrontier !== null && leadFrontier.status === "Live" && seasonRealm(leadFrontier) !== null;
   return (
     <PageFrame painting={firstVisit ? "dark-plains" : "brooding-plains"} stage={firstVisit} offersInstall>
       <div data-play-page className="play-grid">
@@ -39,7 +53,8 @@ export const PlayPage = () => {
         </section>
         {facts.board && (
           <div className="play-side">
-            {facts.board.lead?.mode === "frontier" && <AspectRacePreview members={leadMembers} />}
+            {leadFrontier && <AspectRacePreview members={leadMembers} />}
+            {hasActiveRealm && <TodayQuestPanel game={leadFrontier} now={facts.now} />}
             {ages.map((mode) => (
               <AgeColumn key={mode} mode={mode} facts={facts} items={(facts.board as PlayBoard).ages[mode]} />
             ))}
@@ -112,19 +127,61 @@ const AspectRacePreview = ({ members }: { members: Readonly<Record<AspectId, num
       <ul className="play-aspects">
         {aspects.map(({ id, name }) => {
           const count = members?.[id] ?? null;
-          const share = count === null ? 65 : Math.max(18, Math.round((count / maxMembers) * 100));
+          const share = count === null ? 65 : Math.max(20, Math.round((count / maxMembers) * 100));
           return (
             <li key={id} data-aspect-id={id} style={aspectVariables(id) as CSSProperties} className="play-aspect">
-              <AspectMark aspect={id} size={42} decorative />
-              <div className="play-aspect__bar" aria-hidden="true">
-                <div className="play-aspect__fill" style={{ width: `${share}%` }} />
+              <div className="play-aspect__tower" aria-hidden="true">
+                <div className="play-aspect__column" style={{ height: `${share}%` }} />
               </div>
+              <AspectMark aspect={id} size={38} decorative />
               <span className="play-aspect__name">{name}</span>
-              {count !== null && <span className="play-aspect__count">{count}</span>}
+              {count !== null && <span className="play-aspect__count">{formatAmount(count)}</span>}
             </li>
           );
         })}
       </ul>
+    </AppPanel>
+  );
+};
+
+const TodayQuestPanel = ({ game, now }: { game: DirectoryGame; now: number }) => {
+  const day = directoryDay(game, now);
+  const index = Math.max(0, (day.day ?? 1) - 1) % questCatalog.length;
+  const quest = questCatalog[index]!;
+  const face = dayQuestFace(quest.id);
+  const hasRealm = seasonRealm(game) !== null;
+  return (
+    <AppPanel
+      title={DAY_BANNER_WORDS.today}
+      icon="hourglass"
+      cue={
+        day.day !== undefined ? (
+          <AppChip icon="hourglass">{`${DAY} ${day.day} · ${dayLeftCompact(day.secondsLeft)}`}</AppChip>
+        ) : undefined
+      }
+      className="play-today"
+    >
+      <div className="play-today__quest" data-play-today>
+        <span className="play-today__icon" aria-hidden="true">
+          <Icon name={face.icon} size={34} />
+        </span>
+        <div className="play-today__body">
+          <div className="play-today__row">
+            <span className="play-today__name">{face.name}</span>
+            <span className="play-today__unit">{face.unit}</span>
+          </div>
+          <div className="play-today__track" aria-hidden="true">
+            <div className="play-today__fill" />
+          </div>
+        </div>
+      </div>
+      <div className="play-today__foot">
+        <span className="play-today__reward">
+          <Icon name="labor" size={18} />
+          {LABOR}
+        </span>
+        {hasRealm && <span className="text-app-label text-app-muted">{WORDS.resume}</span>}
+      </div>
     </AppPanel>
   );
 };
