@@ -167,6 +167,42 @@ it("formats native battle sides and positive Ethereal rolls without a legacy row
   expect(presentation.description).toContain("Defender d20: 1 (+1% damage)");
 });
 
+it("formats Frontier battle stories with Frontier troop names, no tier prefix and no d20 line", () => {
+  const frontierStore = {
+    get: (model: string) => {
+      if (model === "SliceRules") return { day_unit_seconds: 14_400 };
+      if (model === "GameRegistry")
+        return { start_main_at: 100, end_at: 1_000_000, scheduled_end_at: 1_000_000, seed: 1n };
+      if (model === "SettlementRules") return { spacing: 1024 };
+      return undefined;
+    },
+  } as unknown as Parameters<typeof buildStoryEventPresentation>[1];
+  const presentation = buildStoryEventPresentation(
+    story("BattleEvent", {
+      attacker_id: 20,
+      defender_id: 21,
+      attacker_owner: 10,
+      defender_owner: 11,
+      winner_id: 10,
+      attacker: {
+        player: "0x123",
+        category: "Paladin",
+        tier: "T1",
+        before: "10000000000",
+        after: "9000000000",
+        roll: 20,
+      },
+      defender: { player: "0x456", category: "Knight", tier: "T1", before: "10000000000", after: "0", roll: 1 },
+    }),
+    frontierStore,
+  );
+  expect(presentation.description).toContain("Attacker forces: Scouts [ 10 ]");
+  expect(presentation.description).toContain("Defender forces: Knights [ 10 ]");
+  expect(presentation.description).not.toContain("T1");
+  expect(presentation.description).not.toContain("Paladin");
+  expect(presentation.description).not.toContain("d20");
+});
+
 /**
  * Each BattleEvent shape combat.cairo emits, as its fields are recorded: army 20 from home 10 (player 0x123), army 22
  * from home 11 (player 0x456), structure 21 guarded by the Vanguard (player 0x0), structure 23 owned by player 0x123.

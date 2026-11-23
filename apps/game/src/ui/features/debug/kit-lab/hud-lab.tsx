@@ -4,7 +4,7 @@ import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
 import { Tooltip } from "@/ui/design-system/molecules/tooltip";
 import { FeedLine } from "@/ui/features/event-feed/feed-line";
 
-import { BuildingType, rankName } from "@bibliothecadao/types";
+import { BuildingType, FRONTIER_TROOP_NAMES, rankName, TroopType } from "@bibliothecadao/types";
 import type { AlertsPopupAsk } from "@/shell/profile/alerts-ask";
 import { GameProvider } from "@/hooks/context/game-context";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -13,13 +13,13 @@ import { TransferTroopsSheet, useSelectedTransfer } from "@/ui/features/frontier
 import { useGame } from "@/hooks/context/game-context";
 import { realmMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { homeIcon } from "@/ui/design-system/home-icons";
-import { HudIconButton, HudNotice, HudSheet } from "@/ui/design-system/kit/hud-elements";
+import { HudIconButton, HudSheet } from "@/ui/design-system/kit/hud-elements";
 import {
   ARMY,
   ARMY_MANAGEMENT,
+  DEPLOY_WORDS,
   EVENTS_WORDS,
   LINK_WALLET_FOR_LORDS,
-  OFFLINE,
   PAYOUTS_PAUSED,
   type Rank,
   WITHDRAWALS_CLOSED,
@@ -32,6 +32,7 @@ import { HeaderStores } from "@/ui/features/frontier/hud/header-stores";
 import { HudBands } from "@/ui/features/frontier/hud/hud-bands";
 import { FrontierDesktop, FrontierPlaces } from "@/ui/features/frontier/hud/frontier-desktop";
 import { PhoneWorldActions, type HudSurface } from "@/ui/features/frontier/hud/frontier-nav";
+import { OfflineBanner } from "@/ui/features/frontier/hud/offline-notice";
 import { PhoneTopBarView } from "@/ui/features/frontier/hud/phone-top-bar";
 import { RealmHeaderChip } from "@/ui/features/frontier/hud/realm-header-chip";
 import { LabGame, useLabPlayer } from "./lab-game";
@@ -266,15 +267,29 @@ const labDayEnd = (clock: DayClock): DayEnd => ({
 const UNKNOWN_TOTALS = {
   reveals: undefined,
   cleared: undefined,
-  chests: undefined,
   essence: undefined,
   labor: undefined,
-  lords: undefined,
 };
 const DAY_DONE = {
   endedDay: 12,
   clock: { ...NIGHT, secondsLeft: 7 * HOUR + 55 * 60 },
-  totals: { reveals: 31, cleared: 3, chests: 1, essence: 6_400, labor: 1_150, lords: 128 },
+  totals: { reveals: 31, cleared: 3, essence: 6_400, labor: 1_150 },
+  best: {
+    kind: "clear" as const,
+    site: "Ruin" as const,
+    guard: 3_400,
+    paid: { resource: "essence" as const, amount: 4_800 },
+  },
+  aspect: 2 as const,
+  race: {
+    finishHeight: 10_000,
+    standings: [
+      { aspectId: 2 as const, height: 9_600, own: true },
+      { aspectId: 1 as const, height: 6_200, own: false },
+      { aspectId: 3 as const, height: 4_100, own: false },
+      { aspectId: 4 as const, height: 2_900, own: false },
+    ],
+  },
   history: "whole" as const,
   onRetry: () => undefined,
   rank: { from: 14, to: 12 },
@@ -306,7 +321,7 @@ const THIN_DAY_SHARE: SharedDay = {
   player: WALLET_ADDRESS,
   game: { chainId: "0x1", gameId: 1 },
   day: 1,
-  totals: { reveals: 38, cleared: 1, chests: 0, essence: 5_700, labor: 1_400, lords: 0 },
+  totals: { reveals: 38, cleared: 1, essence: 5_700, labor: 1_400 },
   rank: null,
   trail: ["guard-holds", "Rift"],
   best: { kind: "clear", site: "Rift", guard: 666, paid: { resource: "essence", amount: 4_800 } },
@@ -1223,12 +1238,8 @@ export const HudLab = () => {
             )
           ) : undefined
         }
-        notices={
-          <>
-            {lab.offline && <HudNotice tone="bad" line={OFFLINE} retry={noop} />}
-            {!lab.visiting && <DayEndNotice dayEnd={labDayEnd(lab.clock)} onOpen={noop} />}
-          </>
-        }
+        banner={lab.offline ? <OfflineBanner onRetry={noop} /> : undefined}
+        notices={!lab.visiting ? <DayEndNotice dayEnd={labDayEnd(lab.clock)} onOpen={noop} /> : undefined}
         action={
           <>
             {lab.order && !desktop && (
@@ -1260,6 +1271,7 @@ export const HudLab = () => {
                         : null
               }
               onSurface={noop}
+              researchReady={!lab.offline}
               events={lab.offline ? 0 : 2}
               unread={lab.offline ? 0 : 3}
             />
@@ -1372,9 +1384,30 @@ const LabDeploySheet = ({
   const wheatStop = wheatStopsAt({ troopsMax: troopsAtHome, wheatMax, max: most }, count);
   return (
     <DeployView
+      troopSelection={{
+        choices:
+          troopsAtHome > 0
+            ? [
+                {
+                  category: TroopType.Knight,
+                  name: FRONTIER_TROOP_NAMES[TroopType.Knight],
+                  art: "knight-t1",
+                  role: DEPLOY_WORDS.troopRoles[TroopType.Knight](),
+                  atHome: troopsAtHome,
+                  displayCount: count,
+                  displayWheat: count * 2,
+                  isCustom: count !== most,
+                },
+              ]
+            : [],
+        selected: troopsAtHome > 0 ? TroopType.Knight : undefined,
+        onPick: noop,
+      }}
       art={troopsAtHome === 0 ? undefined : ("knight-t1" as const)}
       troopsAtHome={troopsAtHome}
       count={count}
+      isFullStack={count === most}
+      allowedSlots={3}
       amount={{ most, max: most, held: most < troopsAtHome ? most : troopsAtHome }}
       onCount={setCount}
       start={start}
@@ -1576,6 +1609,7 @@ const LabBands = ({ desktop, lab, ...slots }: ComponentProps<typeof HudBands> & 
           season={{ rank: "#12", onOpen: noop }}
           clock={<DayPill clock={lab.clock} />}
           stores={<HeaderStores stores={lab.stores} showPopoverCard={false} />}
+          banner={slots.banner}
           realm={
             <RealmPanel
               name={LAB_REALM_NAME}
@@ -1741,7 +1775,7 @@ const LabResults = ({
       lastDay={SEASON_LAST_DAY}
       today={results !== "today-earlier"}
       clock={clock}
-      totals={{ reveals: 19, cleared: 2, chests: 0, essence: 4_150, labor: 550, lords: 0 }}
+      totals={{ reveals: 19, cleared: 2, essence: 4_150, labor: 550 }}
       dayEnd={<DayEndBlock dayEnd={labDayEnd(clock)} />}
       lines={results === "today-sites" ? siteUseDayLog(NOW) : readTodayLog()}
       history={results === "today-failed" ? "failed" : "whole"}

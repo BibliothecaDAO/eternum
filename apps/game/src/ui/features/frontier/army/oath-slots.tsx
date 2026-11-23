@@ -3,6 +3,7 @@ import "./oath-slots.css";
 import { heldOaths } from "@bibliothecadao/eternum";
 import { Icon } from "@/ui/design-system/icon";
 import { orderMeaning } from "@/ui/design-system/icon-meaning";
+import { usePickEffectBase, type PickEffectBase } from "../pick-effect-text";
 import { oathEffectDescription, oathName } from "./oath-details";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { HudCost } from "@/ui/design-system/kit/hud-elements";
@@ -15,9 +16,17 @@ import {
   oathSlotResearchTier,
   troopOathSlots,
 } from "@bibliothecadao/eternum";
-import { orderOathJob, RESOURCE_PRECISION, type TroopType } from "@bibliothecadao/types";
+import { RESOURCE_PRECISION, type TroopType } from "@bibliothecadao/types";
 
-export function OathSlotPips({ held, slots }: { held: readonly number[]; slots: number }) {
+export function OathSlotPips({
+  held,
+  slots,
+  pickBase,
+}: {
+  held: readonly number[];
+  slots: number;
+  pickBase: PickEffectBase;
+}) {
   return (
     <div className="oath-pips" aria-label={`Slots ${held.length} of ${slots}`}>
       <div className="oath-pips__row">
@@ -28,8 +37,7 @@ export function OathSlotPips({ held, slots }: { held: readonly number[]; slots: 
               key={index}
               className="oath-pip"
               data-filled={oath ? "" : undefined}
-              data-oath-job={oath ? orderOathJob(oath) : undefined}
-              title={oath ? `${oathName(oath)} — ${oathEffectDescription(oath)}` : RESEARCH_TREE.oathOpen}
+              title={oath ? `${oathName(oath)} — ${oathEffectDescription(oath, pickBase)}` : RESEARCH_TREE.oathOpen}
             >
               {oath && <Icon name={orderMeaning(oath)} size={20} />}
             </span>
@@ -50,6 +58,7 @@ export function TroopOathSlots({
   explorerId?: number;
 }) {
   const { store } = useNativeFacts(["ArmyProgress", "RealmKnowledge", "ResearchPrice"]);
+  const pickBase = usePickEffectBase();
   const game_id = configManager.getActiveGameId();
   const learned = homeId === undefined ? undefined : store.get("RealmKnowledge", { game_id, structure_id: homeId });
   const count =
@@ -77,7 +86,7 @@ export function TroopOathSlots({
           return (
             <div
               key={index}
-              data-oath-job={oath ? orderOathJob(oath) : undefined}
+              data-filled={oath ? "" : undefined}
               aria-label={`${RESEARCH_TREE.oathSlots(index + 1)} · ${open ? RESEARCH_TREE.oathOpen : RESEARCH_TREE.oathLocked}`}
               className="oath-slot flex flex-col gap-1 rounded border border-hud-line p-1 text-hud-label text-hud-muted"
             >
@@ -85,7 +94,7 @@ export function TroopOathSlots({
                 <>
                   <Icon name={orderMeaning(oath)} />
                   <span>{oathName(oath)}</span>
-                  <span>{oathEffectDescription(oath)}</span>
+                  <span>{oathEffectDescription(oath, pickBase)}</span>
                 </>
               ) : open ? (
                 RESEARCH_TREE.oathOpen

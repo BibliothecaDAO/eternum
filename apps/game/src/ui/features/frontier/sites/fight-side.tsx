@@ -102,6 +102,7 @@ export const FightSide = ({
   return (
     <span
       role="img"
+      data-fight-side={side}
       aria-label={[`${label} ${formatExact(before)} → ${formatExact(kept)}`, figures.lost].filter(Boolean).join(", ")}
       className="flex min-w-0 flex-1 basis-0"
     >

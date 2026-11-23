@@ -13,6 +13,7 @@ import { endedHomeArmies } from "../frontier-home";
 import { dayClock, dayToRecap, endedDay, nextDayOf } from "../hud/day-clock";
 import { useOwnActs, usePlayerDay } from "../log/player-day";
 import { DayDoneCard, type DayDoneRace } from "./day-done-card";
+import { dayBest } from "./day-share";
 import { useDayShare } from "./day-share-sheet";
 import { DayEndScreen } from "./day-end-screen";
 import { useClosingRankChange } from "./day-ranks";
@@ -86,6 +87,10 @@ export const DayDone = ({
         }
       : undefined;
     const ownAspect = raceBoard?.own ? catalogAspectId(raceBoard.own.aspect) : undefined;
+    const best =
+      played.history === "whole" && played.stories.length > 0
+        ? dayBest(played.stories, played.totals.reveals ?? 0)
+        : undefined;
     return (
       <DayDoneCard
         endedDay={recap.day}
@@ -95,6 +100,7 @@ export const DayDone = ({
         onRetry={played.retry}
         rank={rank}
         aspect={ownAspect}
+        best={best}
         race={raceSummary}
         armies={gone.length}
         troopsLost={taken}

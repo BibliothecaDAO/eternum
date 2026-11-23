@@ -1,16 +1,6 @@
-[data-oath-job="fight"] {
-  --oath-tone: var(--hud-bad);
-}
-[data-oath-job="stamina"] {
-  --oath-tone: var(--hud-ally);
-}
-[data-oath-job="prize"] {
-  --oath-tone: rgb(var(--hud-gold));
-}
-
-.oath-slot[data-oath-job] {
-  border-color: color-mix(in srgb, var(--oath-tone) 55%, transparent);
-  background: color-mix(in srgb, var(--oath-tone) 10%, var(--hud-well));
+.oath-slot[data-filled] {
+  border-color: color-mix(in srgb, rgb(var(--hud-gold)) 55%, transparent);
+  background: color-mix(in srgb, rgb(var(--hud-gold)) 10%, var(--hud-well));
 }
 
 .oath-pips {
@@ -34,6 +24,6 @@
 }
 .oath-pip[data-filled] {
   border-style: solid;
-  border-color: color-mix(in srgb, var(--oath-tone) 75%, transparent);
-  background: color-mix(in srgb, var(--oath-tone) 18%, var(--hud-well));
+  border-color: color-mix(in srgb, rgb(var(--hud-gold)) 75%, transparent);
+  background: color-mix(in srgb, rgb(var(--hud-gold)) 18%, var(--hud-well));
 }

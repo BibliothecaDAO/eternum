@@ -4,6 +4,7 @@ import { heldOaths } from "@bibliothecadao/eternum";
 import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { orderMeaning } from "@/ui/design-system/icon-meaning";
 import { oathEffectDescription, oathName } from "../army/oath-details";
+import type { PickEffectBase } from "../pick-effect-text";
 import { Icon } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import {
@@ -81,6 +82,7 @@ export interface DeepSiteProps {
   guard: DeepGuard;
   fight?: DeepSiteFight;
   attackerName?: string;
+  pickBase: PickEffectBase;
   order: DeepOrder | DeepBlock;
   onClose: () => void;
 }
@@ -92,7 +94,7 @@ const FIGHT_ORDER = Array.from(
 
 const siteName = (key: DeepSiteProps["site"]) => deepSites.find((each) => each.key === key)!.name;
 
-export const DeepSiteView = ({ site, pay, guard, fight, attackerName, order, onClose }: DeepSiteProps) => {
+export const DeepSiteView = ({ site, pay, guard, fight, attackerName, pickBase, order, onClose }: DeepSiteProps) => {
   const face = DEEP_SITE_FACES[site];
   return (
     <HudSheet label={siteName(site)} onClose={onClose}>
@@ -124,7 +126,7 @@ export const DeepSiteView = ({ site, pay, guard, fight, attackerName, order, onC
         </div>
       </div>
       {fight && <FightPreview site={site} fight={fight} guard={guard} attackerName={attackerName} />}
-      <GuardStrip site={site} guard={guard} />
+      <GuardStrip site={site} guard={guard} pickBase={pickBase} />
       {pay && <TickPay pay={pay} />}
       <OrderFoot order={order} />
       {typeof order === "object" && order.kind === "short" && <HudNotice tone="warn" line={order.line} />}
@@ -189,8 +191,8 @@ const TickPay = ({ pay }: { pay: DeepTickPay }) => (
   </span>
 );
 
-const slotTip = (slot: DeepSlot, next: boolean): string => {
-  const oaths = heldOaths(slot.oaths).map((id) => `${oathName(id)} (${oathEffectDescription(id)})`);
+const slotTip = (slot: DeepSlot, next: boolean, pickBase: PickEffectBase): string => {
+  const oaths = heldOaths(slot.oaths).map((id) => `${oathName(id)} (${oathEffectDescription(id, pickBase)})`);
   return [
     next ? `${slot.realm} · ${DEEP_WORDS.facesNext}` : slot.realm,
     formatExact(slot.troops),
@@ -209,7 +211,15 @@ const guardDrainLabel = (slots: readonly DeepSlot[]): string | null => {
   return min === max ? DEEP_WORDS.drainTick(min) : DEEP_WORDS.drainRange(min, max);
 };
 
-const GuardStrip = ({ site, guard }: { site: DeepSiteProps["site"]; guard: DeepGuard }) => {
+const GuardStrip = ({
+  site,
+  guard,
+  pickBase,
+}: {
+  site: DeepSiteProps["site"];
+  guard: DeepGuard;
+  pickBase: PickEffectBase;
+}) => {
   if (guard.kind === "beast")
     return (
       <HudRow
@@ -232,7 +242,7 @@ const GuardStrip = ({ site, guard }: { site: DeepSiteProps["site"]; guard: DeepG
         <div className="deep-guards__row">
           {filled.map((held) => {
             const isNext = held.armyId === guard.next;
-            const tip = slotTip(held, isNext);
+            const tip = slotTip(held, isNext, pickBase);
             return (
               <span
                 key={held.slot}
@@ -280,7 +290,7 @@ const GuardStrip = ({ site, guard }: { site: DeepSiteProps["site"]; guard: DeepG
             <span
               key={id}
               data-oath={id}
-              title={oathEffectDescription(id)}
+              title={oathEffectDescription(id, pickBase)}
               className="inline-flex items-center gap-1 text-hud-label text-hud-muted"
             >
               <Icon name={orderMeaning(id)} size={16} />

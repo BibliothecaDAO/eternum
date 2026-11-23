@@ -46,7 +46,7 @@ export const DayPill = ({ clock }: { clock: DayClock }) => {
         <span key="day" className="flex items-center gap-1.5 whitespace-nowrap">
           <SemanticIcon name="hourglass" className="h-4 w-4 shrink-0" />
           {left ? `${DAY} ${clock.day ?? "—"} · ${left}` : `${DAY} ${clock.day ?? "—"}`}
-          {clock.shareLeft !== undefined && <ClockSpent label="Day spent" share={1 - clock.shareLeft} />}
+          {clock.shareLeft !== undefined && <ClockSpent label="Day progress" share={1 - clock.shareLeft} />}
         </span>,
       ]}
     </HudPill>

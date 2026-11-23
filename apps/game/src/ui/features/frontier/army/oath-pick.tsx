@@ -29,10 +29,10 @@ import {
   FRAGMENT,
   FRAGMENTS,
   FRONTIER_TROOP_NAMES,
-  orderOathJob,
   type TroopType,
 } from "@bibliothecadao/types";
 import { useFragmentsHeld } from "../value/fragments";
+import { usePickEffectBase, type PickEffectBase } from "../pick-effect-text";
 import { oathEffectDescription, oathName } from "./oath-details";
 import { OathSlotPips } from "./oath-slots";
 
@@ -73,12 +73,14 @@ export function FrontierOathPick({ realm }: { realm: NativeRows["Structure"] | n
 
 function OathChoiceCard({
   id,
+  pickBase,
   disabled,
   onSelect,
   replace,
   redraw,
 }: {
   id: number;
+  pickBase: PickEffectBase;
   disabled: boolean;
   onSelect: () => void;
   replace?: boolean;
@@ -86,7 +88,7 @@ function OathChoiceCard({
 }) {
   const name = oathName(id);
   return (
-    <div className="oath-card" data-oath-job={orderOathJob(id)} data-oath-id={replace ? undefined : id}>
+    <div className="oath-card" data-oath-id={replace ? undefined : id}>
       <button
         type="button"
         className="oath-card__choose"
@@ -100,7 +102,7 @@ function OathChoiceCard({
         </span>
         <span className="oath-card__foot">
           <span className="oath-card__title">{name}</span>
-          <span className="oath-card__detail">{oathEffectDescription(id)}</span>
+          <span className="oath-card__detail">{oathEffectDescription(id, pickBase)}</span>
         </span>
       </button>
       {redraw && (
@@ -135,6 +137,7 @@ function ArmyOathPick({
   fragments: number | null;
 }) {
   const { setup, account } = useGame();
+  const pickBase = usePickEffectBase();
   const allowed = useUIStore(canIssueOrders);
   const sending = useInFlight("army", army.explorerId) !== undefined;
   const [picked, setPicked] = useState<number | null>(null);
@@ -188,7 +191,7 @@ function ArmyOathPick({
                 {formatShort(fragments)}
               </HudChip>
             )}
-            <OathSlotPips held={held} slots={progress.oath_slots} />
+            <OathSlotPips held={held} slots={progress.oath_slots} pickBase={pickBase} />
           </div>
         </div>
         {picked === null ? (
@@ -199,6 +202,7 @@ function ArmyOathPick({
                 <OathChoiceCard
                   key={id}
                   id={id}
+                  pickBase={pickBase}
                   disabled={!allowed || sending}
                   onSelect={() => (full ? setPicked(id) : choose(id))}
                   redraw={
@@ -220,6 +224,7 @@ function ArmyOathPick({
               <OathChoiceCard
                 key={id}
                 id={id}
+                pickBase={pickBase}
                 replace
                 disabled={!allowed || sending}
                 onSelect={() => choose(picked, id)}

@@ -11,14 +11,22 @@ describe("the relic catalog", () => {
     expect(relicName({ kind: "Ward", rank: 5 })).toBe("Legendary Ward");
   });
 
-  it("says what each kind does at a tier, one step a tier, from the contract's own numbers", () => {
+  it("contextualizes each relic kind from the live game base rule to its boosted value", () => {
     expect(rule.RELIC_BLADE_BPS).toBe(1000);
-    expect(relicEffect({ kind: "Blade", rank: 3 })).toBe("+30% damage dealt");
-    expect(relicEffect({ kind: "Ward", rank: 5 })).toBe("−25% damage taken");
-    expect(relicEffect({ kind: "Plunder", rank: 2 })).toBe("+40% labor and Essence from a cleared site");
-    expect(relicEffect({ kind: "StaminaRegen", rank: 3 })).toBe(
-      `+${3 * rule.STAMINA_REGEN_RELIC_STEP_PERCENT}% stamina regeneration`,
+    expect(relicEffect({ kind: "Blade", rank: 3 }, { staminaPerSecond: 1 / 120 })).toBe("Damage dealt: 100% → 130%");
+    expect(relicEffect({ kind: "Ward", rank: 5 }, { staminaPerSecond: 1 / 120 })).toBe(
+      "Damage taken: 100% → 75% (less)",
     );
+    expect(relicEffect({ kind: "Plunder", rank: 2 }, { staminaPerSecond: 1 / 120 })).toBe(
+      "Cleared site labor & Essence: 100% → 140%",
+    );
+    expect(relicEffect({ kind: "StaminaRegen", rank: 3 }, { staminaPerSecond: 1 / 120 })).toBe(
+      "Stamina recovery: +0.5/min → +0.8/min",
+    );
+    expect(relicEffect({ kind: "StaminaRegen", rank: 3 }, { staminaPerSecond: 1 / 20 })).toBe(
+      "Stamina recovery: +3/min → +5/min",
+    );
+    expect(relicEffect({ kind: "StaminaRegen", rank: 3 }, {})).toBe("Stamina recovery: 100% → 160%");
   });
 
   it("works the game's relic seconds a tier: 30 minutes in Season 1, 7.5 at four times the speed", () => {
@@ -34,7 +42,8 @@ describe("the relic catalog", () => {
     expect(relicId({ kind: "StaminaRegen", rank: 5 })).toBe(20);
   });
 
-  it("names every kind the contract has and no other", () => {
+  it("names every kind the contract has and never names Far-Eye", () => {
     expect(Object.keys(RELIC_WORDS.kinds)).toEqual([...RELIC_KINDS]);
+    expect(Object.values(RELIC_WORDS.kinds).join(" ")).not.toMatch(/far.?eye/i);
   });
 });

@@ -88,7 +88,7 @@ describe("the day's end", () => {
           day={today ? 12 : 11}
           today={today}
           clock={clockAt(42 * 60)}
-          totals={{ reveals: 0, cleared: 0, chests: 0, essence: 0, labor: 0, lords: 0 }}
+          totals={{ reveals: 0, cleared: 0, essence: 0, labor: 0 }}
           dayEnd={<DayEndBlock dayEnd={{ clock: clockAt(42 * 60), items: EVERYTHING_LEFT, run: vi.fn() }} />}
           lines={[]}
           history="whole"

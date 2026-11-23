@@ -2,7 +2,7 @@ import type { MapSelectionIntent } from "@/hooks/store/map-selection";
 import { onOutcome, onSent, type OrderInFlight } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView } from "@/types";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { HudSurface } from "./frontier-nav";
 
@@ -57,14 +57,14 @@ export const useOnePanel = (
   });
   const [surfacePressed, setSurfacePressed] = useState(false);
 
-  const openSurface = (next: HudSurface | null) => {
+  const openSurface = useCallback((next: HudSurface | null) => {
     if (next) {
       letGoOfTheTile();
       closeDeployOrder();
       setSurfacePressed(true);
     }
     setSurface(next);
-  };
+  }, []);
 
   if (card !== seen.card || deploying !== seen.deploying || pick !== seen.pick || surfacePressed) {
     const cardOpened = card !== null && card !== seen.card;

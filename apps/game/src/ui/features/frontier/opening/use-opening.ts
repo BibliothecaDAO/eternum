@@ -6,6 +6,7 @@ import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-stor
 import {
   type ExpeditionRules,
   DAILY_QUEST_MODELS,
+  fragmentsSold,
   getBuildingQuantity,
   readDailyQuest,
   researchTier,
@@ -13,8 +14,10 @@ import {
 import {
   isDeepTile,
   nativeFragmentConstants,
+  nativeOathConstants,
   nativeResearchConstants as research,
   nativeRuleConstants,
+  previewRuinGuardBounds,
   RACE_MODELS,
   readRaceBoard,
   safeInteger,
@@ -27,8 +30,8 @@ import type { OpeningRules } from "@/ui/design-system/kit/words";
 import { FIRST_BUILD } from "../build/first-build";
 import { useDockArmies } from "../hud/dock-armies";
 import { useRacesAspects } from "../aspect/races-aspects";
+import { readPickEffectBase } from "../pick-effect-text";
 import { useRealmStores } from "../realm-stores";
-import { useFragmentsHeld } from "../value/fragments";
 import { type Opened, type OpeningMoment } from "./opening";
 import {
   type OpeningHeld,
@@ -43,6 +46,7 @@ import { flush, loadOpening, reachMoments, seeLine, useOpeningStore } from "./op
 
 const KNOWLEDGE_MODELS = ["RealmKnowledge"] as const;
 const RELIC_MODELS = ["ArmyRelics"] as const;
+const PROGRESS_MODELS = ["ArmyProgress"] as const;
 
 /** How often a failed read or send is tried again while the HUD is up. */
 const RETRY_MS = 15_000;
@@ -94,9 +98,10 @@ export function useOpening(
   const opened = openedMoments(progress.reached, onState);
   const moment = realm && progress.known ? nextLine(opened, progress.seen) : null;
   const lineRules = useOpeningRules(rules, realm);
+  const missingDeepRule = moment === "deep" && lineRules?.deepLossPerTick === undefined;
   return {
     opened: showEverything || !realm || races !== true || !progress.ownsParts ? "all" : opened,
-    line: showEverything || !moment || !lineRules ? null : { moment, rules: lineRules },
+    line: showEverything || !moment || !lineRules || missingDeepRule ? null : { moment, rules: lineRules },
     gotIt: () => moment && void seeLine(moment),
     offerDue:
       Boolean(realm) && races === true && siteAlertOfferDue(opened, progress.seen, progress.known, SITE_ALERT_OFFER),
@@ -110,16 +115,20 @@ function useOpeningRules(rules: ExpeditionRules, realm: NativeRows["Structure"] 
   if (!realm || troops === undefined) return null;
   const barracks = getBuildingQuantity(safeInteger(realm.entity_id), FIRST_BUILD, setup.store);
   const slice = setup.store.get("SliceRules", { game_id: realm.game_id });
-  if (!slice) return null;
+  const pickBase = readPickEffectBase(setup.store, realm.game_id);
+  if (!slice || pickBase.staminaPerSecond === undefined || pickBase.revealStamina === undefined) return null;
   const tickSeconds = Number(slice.tick_config.armies_tick_in_seconds);
   return {
     knightsAnHour: troops / Math.max(1, barracks),
     deepTickSeconds: tickSeconds,
-    staminaPerSecond: slice.troop_stamina_config.stamina_gain_per_tick / tickSeconds,
+    deepLossPerTick: pickBase.deepLossPerTick,
+    oathPassStamina: nativeOathConstants.PASS_STAMINA,
+    spireDepthFactor: previewRuinGuardBounds(2, 1)[0] / previewRuinGuardBounds(1, 0)[0],
+    staminaPerSecond: pickBase.staminaPerSecond,
     staminaPerFragment: nativeFragmentConstants.STAMINA_PER_FRAGMENT,
     relicMinutesPerTier: slice.relic_seconds_per_rank / 60,
     scoutExploreStamina: nativeRuleConstants.SCOUT_EXPLORE_STAMINA,
-    exploreStamina: slice.troop_stamina_config.stamina_explore_stamina_cost,
+    exploreStamina: pickBase.revealStamina,
   };
 }
 
@@ -131,9 +140,9 @@ function useOpeningHeld(rules: ExpeditionRules, realm: NativeRows["Structure"] |
   useNativeRevision(RACE_MODELS);
   useNativeRevision(KNOWLEDGE_MODELS);
   useNativeRevision(RELIC_MODELS);
+  useNativeRevision(PROGRESS_MODELS);
   const armies = useDockArmies(realm);
   const essence = useRealmStores(realm, rules)?.essence.amount;
-  const fragments = useFragmentsHeld();
   if (!realm) return null;
   const home = safeInteger(realm.entity_id);
   const learned = setup.store.get("RealmKnowledge", { game_id: realm.game_id, structure_id: home })?.learned ?? 0n;
@@ -141,9 +150,14 @@ function useOpeningHeld(rules: ExpeditionRules, realm: NativeRows["Structure"] |
   const travelCost = setup.store.require("SliceRules", { game_id: realm.game_id }).troop_stamina_config
     .stamina_travel_stamina_cost;
   const outOfStamina = armies.some((army) => army.stamina !== undefined && army.stamina.current < travelCost);
+  const oath = armies.some((army) => {
+    const progress = setup.store.get("ArmyProgress", { game_id: realm.game_id, explorer_id: army.explorerId });
+    return progress !== undefined && (progress.oath_pick !== 0 || progress.oaths !== 0);
+  });
   const relic = armies.some((army) =>
     carriesRelic(setup.store.get("ArmyRelics", { game_id: realm.game_id, explorer_id: army.explorerId })),
   );
+  const spire = armies.some((army) => army.ethereal !== undefined);
   const deep = armies.some((army) => {
     const tile = setup.store.entityOccupancy(realm.game_id, army.explorerId);
     return tile !== undefined && isDeepTile(spacing, tile);
@@ -154,12 +168,14 @@ function useOpeningHeld(rules: ExpeditionRules, realm: NativeRows["Structure"] |
   const stageBuilt = (race?.standings.find((row) => row.aspect === race.own?.aspect)?.stage ?? 1) > 1;
   return {
     barracks: getBuildingQuantity(home, FIRST_BUILD, setup.store) > 0,
-    shop: fragments !== null && (outOfStamina || fragments > 0),
+    oath,
+    shop: fragmentsSold(setup.store, realm.game_id) && outOfStamina,
     relic,
     city: realm.base.level >= RealmLevels.City,
     essence: (essence ?? 0) > 0,
     "well-lore": researchTier(learned, research.ROW_LORE) >= research.LORE_WELLS,
     "shrine-lore": researchTier(learned, research.ROW_LORE) >= research.LORE_SHRINES,
+    spire,
     deep,
     bane,
     aspects: deep || bane || stageBuilt,

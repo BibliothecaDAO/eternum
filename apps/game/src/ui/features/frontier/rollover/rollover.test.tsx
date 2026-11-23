@@ -46,7 +46,7 @@ describe("the day's end", () => {
             tomorrowSeconds: 20 * 3_600,
             tone: "calm",
           }}
-          totals={{ reveals: 31, cleared: 3, chests: 1, essence: 6_400, labor: 1_150, lords: undefined }}
+          totals={{ reveals: 31, cleared: 3, essence: 6_400, labor: undefined }}
           history="whole"
           onRetry={vi.fn()}
           armies={3}
@@ -55,7 +55,7 @@ describe("the day's end", () => {
         />,
       ),
     );
-    const card = host.querySelector("section[aria-label='Day 12 done']")!;
+    const card = host.querySelector("section[aria-label='Day 12 complete']")!;
     expect(card.textContent).toContain("Realm kept · Day 13 is open");
     expect(card.textContent).toContain("7h 55m");
     expect(card.textContent).toContain("Tomorrow lasts20h");
@@ -81,7 +81,7 @@ describe("the day's end", () => {
           <DayDoneCard
             endedDay={12}
             clock={{ day: 13, endsAt: undefined, secondsLeft: 3_600, tomorrowSeconds: 20 * 3_600, tone: "calm" }}
-            totals={{ reveals: 0, cleared: 0, chests: 0, essence: 0, labor: 0, lords: 0 }}
+            totals={{ reveals: 0, cleared: 0, essence: 0, labor: 0 }}
             history="whole"
             onRetry={vi.fn()}
             armies={armies}

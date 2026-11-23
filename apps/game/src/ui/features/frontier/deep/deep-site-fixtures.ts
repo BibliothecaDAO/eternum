@@ -31,7 +31,7 @@ const withShares = (slots: DeepSlot[]): DeepSlot[] => {
 };
 
 const noop = () => {};
-const base = { onClose: noop };
+const base = { onClose: noop, pickBase: { deepLossPerTick: LOSS_PER_TICK } };
 const pay = { glory: 6, height: 0, essence: 0, labor: 0, bar: null };
 
 /** The card's states on fixtures of its props: what the lab draws and the test asserts. */

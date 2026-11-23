@@ -8,14 +8,16 @@ import type { IconMeaning } from "@/ui/design-system/icon";
  */
 export const OPENING = {
   launch: { icon: "realm", parts: [] },
-  barracks: { icon: "barracks", parts: ["troops-store", "building-list"] },
+  barracks: { icon: "barracks", parts: ["building-list"] },
   guard: { icon: "camp", parts: [] },
+  oath: { icon: "shrine", parts: [] },
   essence: { icon: "essence", parts: ["essence-store", "research", "today"] },
   shop: { icon: "fragment", parts: ["fragments-chip"] },
-  relic: { icon: "relics", parts: [] },
+  relic: { icon: "relics", parts: ["relic-slots"] },
   "well-lore": { icon: "well", parts: [] },
   "shrine-lore": { icon: "shrine", parts: [] },
   city: { icon: "scout-lodge", parts: [] },
+  spire: { icon: "spire", parts: [] },
   deep: { icon: "depth-3", parts: ["glory"] },
   bane: { icon: "flame", parts: ["bane-row"] },
   // The Aspect's page opens with whichever comes first: the Deep, a bane on the Aspect or its first stage built.

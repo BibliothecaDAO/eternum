@@ -2,7 +2,7 @@ import "./phone-hud.css";
 
 import { HudPanel, HudPortrait } from "@/ui/design-system/kit/hud-elements";
 import { PICKED_ARMY, TROOPS } from "@/ui/design-system/kit/words";
-import { formatAmount, troopPlural } from "@bibliothecadao/types";
+import { formatAmount, frontierTroopName } from "@bibliothecadao/types";
 import type { ReactNode } from "react";
 
 import { DeepDrain, EtherealMark, StaminaReading } from "./army-token";
@@ -12,7 +12,7 @@ export type PickedArmyView = Pick<
   DockArmy,
   "explorerId" | "label" | "number" | "art" | "stamina" | "secondsToFull" | "troops" | "ethereal" | "drain"
 > & {
-  troopsFact?: DockArmy["troopsFact"];
+  troopsFact?: Pick<DockArmy["troopsFact"], "category">;
 };
 
 export const PickedArmy = ({
@@ -27,7 +27,7 @@ export const PickedArmy = ({
   onDetails: () => void;
 }) => {
   const category = army.troopsFact?.category;
-  const heading = (category && troopPlural(category)) ?? army.label;
+  const heading = (category && frontierTroopName(category)) ?? army.label;
   const title = army.troops === undefined ? heading : `${heading} · ${formatAmount(army.troops)}`;
   return (
     <HudPanel collapsible={false} className="pointer-events-auto" bodyClassName="frontier-picked-army pt-3">

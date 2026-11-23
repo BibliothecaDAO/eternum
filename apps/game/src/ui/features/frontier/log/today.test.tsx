@@ -20,7 +20,7 @@ const CLOCK = {
   shareLeft: 0.45,
   tone: "calm" as const,
 };
-const totals = { reveals: 19, cleared: 2, chests: 0, essence: 4_150, labor: 550, lords: undefined };
+const totals = { reveals: 19, cleared: 2, essence: 4_150, labor: undefined };
 
 const render = (props: Partial<Parameters<typeof TodaySheet>[0]>) => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -94,18 +94,14 @@ describe("Today", () => {
     const { host, unmount } = render({ onEarlier });
     expect(host.textContent).toContain("Day 12");
     expect(host.textContent).toContain("+4.2K");
-    // Each of the six figures is one image named with its figure: what a reader hears, and what the tooltip shows.
     expect(
       [...host.querySelectorAll('[role="img"][aria-label]')].map((cell) => cell.getAttribute("aria-label")),
-    ).toEqual(["Reveals 19", "Sites cleared 2", "Chests 0", "Essence +4.2K", "Labor +550", "LORDS —"]);
-    // Each tally is named in words under its figure, not by its icon alone.
+    ).toEqual(["Reveals 19", "Sites cleared 2", "Labor —", "Essence +4.2K"]);
     expect([...host.querySelectorAll("[data-total]")].map((cell) => cell.textContent)).toEqual([
       "19Reveals",
       "2Sites cleared",
-      "0Chests",
+      "—Labor",
       "+4.2KEssence",
-      "+550Labor",
-      "—LORDS",
     ]);
     expect(host.textContent).toContain("—");
     expect(host.textContent).toContain("Army 1 cleared a camp");

@@ -103,7 +103,6 @@ describe("one source per fact: no copy of a catalog outside its modules", () => 
     ["a layer's name in a template", `export const line = (n: string) => \`\${n} · ${LAYER_NAMES[2]}\`;`],
     ["an image path built in a template", "export const art = (name: string) => `/icons/facets/64/${name}.webp`;"],
     ["a partial map of Aspects", "export const COLORS: Partial<Record<AspectId, string>> = { 1: 'red' };"],
-    ["a partial map of Oath jobs", "export const TONES: Partial<Record<OathJob, string>> = { fight: 'red' };"],
     ["a spelled Aspect name", "export const word = 'Prowess';"],
     ["a spelled Order name", "export const word = 'Order of Giants';"],
   ])("refuses %s", async (_, source) => {

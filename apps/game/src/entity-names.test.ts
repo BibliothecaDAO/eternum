@@ -227,6 +227,6 @@ describe("one name for each thing, read by every list, picker, event and panel",
     );
     expect(fight.title.split(" vs ")[1].split(" · ")[0]).toBe(siteName(SITE));
     expect(fight.description).toContain("Defender forces: Golem [ 1,300 ]");
-    expect(fight.description).toContain("Attacker forces: T1 Knight [ 755 ]");
+    expect(fight.description).toContain("Attacker forces: Knights [ 755 ]");
   });
 });

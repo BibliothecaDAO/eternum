@@ -43,17 +43,27 @@ export interface SlotStart {
   start: StaminaBar | undefined;
 }
 
+interface DeployTroopChoice {
+  type: TroopType;
+  tier: TroopTier;
+  atHome: number;
+  cap: number;
+  exploreStamina: number;
+  raise: TroopRaise;
+}
+
 /**
  * What Deploy needs, read from facts with no UI of its own: the open slots and the bar each would start an army on,
  * the available troop stocks and what raising the selected kind costs.
  */
 interface DeployPlan {
-  choices: NonNullable<DeployPlan["troops"]>[];
+  allowedSlots: number;
+  choices: DeployTroopChoice[];
   /** Today's open slots, in slot order, for the player to choose from. */
   open: SlotStart[];
 
   /** The troops at home the next army draws from; null when the realm holds none. */
-  troops: { type: TroopType; tier: TroopTier; atHome: number; cap: number } | null;
+  troops: DeployTroopChoice | null;
   /** What raising the troops at home costs; null when the realm holds none. */
   raise: TroopRaise | null;
 }
@@ -97,16 +107,25 @@ export const readDeployPlan = (
   const open = openArmySlots(store, { game_id: realm.game_id, entity_id: realm.entity_id, allowedSlots: allowed });
   const learned = realmLearned(store, realm.game_id, realm.entity_id);
   if (!open || learned === undefined) return undefined;
-  const choices = readTroopsAtHome(store, realm, clock);
-  if (choices === undefined) return undefined;
+  const stocks = readTroopsAtHome(store, realm, clock);
+  if (stocks === undefined) return undefined;
+  const choices: DeployTroopChoice[] = [];
+  for (const stock of stocks) {
+    const raise = readTroopRaise(store, realm, stock, Math.min(stock.atHome, stock.cap), defaultTick);
+    if (raise === undefined) return undefined;
+    choices.push({
+      ...stock,
+      exploreStamina: exploreStaminaOf(store, realm.game_id, stock.type, 0),
+      raise,
+    });
+  }
   const troops = (selected ? choices.find(({ type }) => type === selected) : choices[0]) ?? null;
-  const raise = troops && readTroopRaise(store, realm, troops, Math.min(troops.atHome, troops.cap), defaultTick);
-  if (raise === undefined) return undefined;
+  const raise = troops?.raise ?? null;
   // A new army's Logistics starts at its realm's Supply yard tier, which raises the bar a fresh slot starts full at.
   const trained = researchTier(learned, research.ROW_SUPPLY_YARD);
-  const perExplore = troops ? exploreStaminaOf(store, realm.game_id, troops.type, 0) : 0;
+  const perExplore = troops?.exploreStamina ?? 0;
   const starts = open.map((slot) => slotStart(slot, troops, trained, clock.defaultTick, perExplore));
-  return { open: starts, troops, raise, choices };
+  return { allowedSlots: allowed, open: starts, troops, raise, choices };
 };
 
 /** One open slot's start, through the core's one rule for it (musterStamina), on the dock's clock. */
@@ -143,8 +162,8 @@ const readTroopsAtHome = (
   store: NativeFactStore,
   realm: NativeRows["Structure"],
   clock: { now: number; defaultTick: number },
-): DeployPlan["choices"] | undefined => {
-  const choices: DeployPlan["choices"] = [];
+): { type: TroopType; tier: TroopTier; atHome: number; cap: number }[] | undefined => {
+  const choices: { type: TroopType; tier: TroopTier; atHome: number; cap: number }[] = [];
   for (const tier of TROOP_TIERS)
     for (const type of TROOP_TYPES) {
       const stock = getBalance(

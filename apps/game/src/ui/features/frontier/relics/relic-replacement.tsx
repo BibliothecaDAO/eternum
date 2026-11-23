@@ -2,6 +2,7 @@ import { Icon } from "@/ui/design-system/icon";
 import { HudRarity, HudRow } from "@/ui/design-system/kit/hud-elements";
 import { RELIC_WORDS, type Tier } from "@/ui/design-system/kit/words";
 
+import { type PickEffectBase } from "../pick-effect-text";
 import { relicEffect, relicIcon, relicName, type ArmyRelic } from "./relic-catalog";
 
 /** A ruin's relic in what its clear pays: its painting, its tier's rarity and its name. */
@@ -20,10 +21,12 @@ export const RelicPay = ({ relic }: { relic: ArmyRelic }) => (
 export const RelicReplacement = ({
   carried,
   chosen,
+  pickBase,
   onChoose,
 }: {
   carried: readonly [ArmyRelic, ArmyRelic, ArmyRelic];
   chosen: 0 | 1 | 2 | null;
+  pickBase: PickEffectBase;
   onChoose: (slot: 0 | 1 | 2) => void;
 }) => (
   <section className="flex flex-col gap-1" aria-label={RELIC_WORDS.full} data-relic-replacement>
@@ -36,7 +39,7 @@ export const RelicReplacement = ({
           label={RELIC_WORDS.replace(relicName(relic))}
           lead={<Icon name={relicIcon(relic.kind)} size={22} />}
           title={relicName(relic)}
-          detail={relicEffect(relic)}
+          detail={relicEffect(relic, pickBase)}
           selected={chosen === slot}
           onClick={() => onChoose(slot)}
         />

@@ -117,10 +117,10 @@ const LEADERBOARD_DETAIL_FITS = `(() => {
 const ORDER_REFUSAL = [
   "Needs \\d+ stamina",
   "Not enough food for the army",
-  "Only unclaimed structures can be attacked",
+  "Only neutral structures can be attacked",
   "This game allows no transfer here",
   "No army can enter this tile",
-  "Too far: move next to it",
+  "Too far: move closer",
 ].join("|");
 
 const REFUSED_BEFORE_PLAY = {

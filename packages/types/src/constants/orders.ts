@@ -1,10 +1,9 @@
-import type { AspectId, IOrder, OathJob } from "../types";
+import type { AspectId, IOrder } from "../types";
 
 export const orders: IOrder[] = [
   {
     orderId: 0,
     aspect: null,
-    oathJob: null,
     orderName: "gods",
     fullOrderName: "Order of Gods",
     color: "#94a3b8",
@@ -12,7 +11,6 @@ export const orders: IOrder[] = [
   {
     orderId: 1,
     aspect: 1,
-    oathJob: "fight",
     orderName: "Giants",
     fullOrderName: "Order of Giants",
     color: "#EB544D",
@@ -20,7 +18,6 @@ export const orders: IOrder[] = [
   {
     orderId: 2,
     aspect: 2,
-    oathJob: "prize",
     orderName: "Perfection",
     fullOrderName: "Order of Perfection",
     color: "#8E35FF",
@@ -28,7 +25,6 @@ export const orders: IOrder[] = [
   {
     orderId: 3,
     aspect: 3,
-    oathJob: "prize",
     orderName: "Rage",
     fullOrderName: "Order of Rage",
     color: "#C74800",
@@ -36,7 +32,6 @@ export const orders: IOrder[] = [
   {
     orderId: 4,
     aspect: 4,
-    oathJob: "stamina",
     orderName: "Fox",
     fullOrderName: "Order of the Fox",
     color: "#D47230",
@@ -44,7 +39,6 @@ export const orders: IOrder[] = [
   {
     orderId: 5,
     aspect: 4,
-    oathJob: "fight",
     orderName: "Twins",
     fullOrderName: "Order of the Twins",
     color: "#0020C6",
@@ -52,7 +46,6 @@ export const orders: IOrder[] = [
   {
     orderId: 6,
     aspect: 3,
-    oathJob: "stamina",
     orderName: "Fury",
     fullOrderName: "Order of Fury",
     color: "#82005E",
@@ -60,7 +53,6 @@ export const orders: IOrder[] = [
   {
     orderId: 7,
     aspect: 4,
-    oathJob: "prize",
     orderName: "Reflection",
     fullOrderName: "Order of Reflection",
     color: "#00A2AA",
@@ -68,7 +60,6 @@ export const orders: IOrder[] = [
   {
     orderId: 8,
     aspect: 4,
-    oathJob: "prize",
     orderName: "Detection",
     fullOrderName: "Order of Detection",
     color: "#139757",
@@ -76,7 +67,6 @@ export const orders: IOrder[] = [
   {
     orderId: 9,
     aspect: 1,
-    oathJob: "fight",
     orderName: "Skill",
     fullOrderName: "Order of Skill",
     color: "#706DFF",
@@ -84,7 +74,6 @@ export const orders: IOrder[] = [
   {
     orderId: 10,
     aspect: 2,
-    oathJob: "prize",
     orderName: "Brilliance",
     fullOrderName: "Order of Brilliance",
     color: "#7DFFBA",
@@ -92,7 +81,6 @@ export const orders: IOrder[] = [
   {
     orderId: 11,
     aspect: 2,
-    oathJob: "fight",
     orderName: "Protection",
     fullOrderName: "Order of Protection",
     color: "#00C3A1",
@@ -100,7 +88,6 @@ export const orders: IOrder[] = [
   {
     orderId: 12,
     aspect: 1,
-    oathJob: "fight",
     orderName: "Power",
     fullOrderName: "Order of Power",
     color: "#F4B547",
@@ -108,7 +95,6 @@ export const orders: IOrder[] = [
   {
     orderId: 13,
     aspect: 1,
-    oathJob: "stamina",
     orderName: "Titans",
     fullOrderName: "Order of Titans",
     color: "#EC68A8",
@@ -116,7 +102,6 @@ export const orders: IOrder[] = [
   {
     orderId: 14,
     aspect: 3,
-    oathJob: "fight",
     orderName: "Vitriol",
     fullOrderName: "Order of Vitriol",
     color: "#59A509",
@@ -124,7 +109,6 @@ export const orders: IOrder[] = [
   {
     orderId: 15,
     aspect: 3,
-    oathJob: "stamina",
     orderName: "Anger",
     fullOrderName: "Order of Anger",
     color: "#89192D",
@@ -132,7 +116,6 @@ export const orders: IOrder[] = [
   {
     orderId: 16,
     aspect: 2,
-    oathJob: "stamina",
     orderName: "Enlightenment",
     fullOrderName: "Order of Enlightenment",
     color: "#1380FF",
@@ -143,12 +126,6 @@ export const catalogOrder = (orderId: number): IOrder => {
   const order = orders.find((candidate) => candidate.orderId === orderId);
   if (!order) throw new Error(`Unknown Order ${orderId}`);
   return order;
-};
-
-export const orderOathJob = (orderId: number): OathJob => {
-  const order = catalogOrder(orderId);
-  if (!order.oathJob) throw new Error(`Unknown Oath ${orderId}`);
-  return order.oathJob;
 };
 
 export const orderAspect = (orderId: number): AspectId | null => catalogOrder(orderId).aspect;

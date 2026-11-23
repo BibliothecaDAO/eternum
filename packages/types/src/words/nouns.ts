@@ -86,6 +86,9 @@ export const FRONTIER_TROOP_NAMES = {
   [TroopType.Crossbowman]: TROOP_WORDS[TroopType.Crossbowman].many,
 } satisfies Record<TroopType, string>;
 
+export const frontierTroopName = (troop: TroopType | string): string | undefined =>
+  (FRONTIER_TROOP_NAMES as Record<string, string>)[troop];
+
 /** Many of a troop type, by its type or its name in the game's tables: "Crossbowmen". Unknown is undefined. */
 export const troopPlural = (troop: TroopType | string): string | undefined =>
   (TROOP_WORDS as Record<string, { many: string }>)[troop]?.many;

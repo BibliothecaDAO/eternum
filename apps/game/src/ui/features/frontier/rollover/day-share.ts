@@ -1,11 +1,13 @@
 import { siteKindOf, type SiteKind } from "@bibliothecadao/eternum";
-import { fightVerdict, formatShort, scaledToUnits } from "@bibliothecadao/types";
+import { fightVerdict, formatAmount, formatShort, scaledToUnits } from "@bibliothecadao/types";
 
-import { DAY } from "@/ui/design-system/kit/words";
+import type { IconMeaning } from "@/ui/design-system/icon";
+import { DAY, DAY_SHARE_WORDS, ESSENCE, LABOR } from "@/ui/design-system/kit/words";
 
 import type { DayTotals } from "../log/day-totals";
 import { paidResource, someReward } from "../log/today-totals";
 import { battleRecordOf } from "../sites/fight-record";
+import { TARGET_MARKS } from "../sites/site-marks";
 
 export type DayMark = SiteKind | "army-lost" | "guard-holds";
 
@@ -26,7 +28,6 @@ export const DAY_MARKS = {
 const POST_TOTALS = [
   { total: "reveals", emoji: "🧭" },
   { total: "cleared", emoji: "🚩" },
-  { total: "chests", emoji: "🎁" },
 ] as const satisfies readonly { total: keyof DayTotals; emoji: string }[];
 
 /** How many marks a post's line shows before it counts the rest, so it stays one line. */
@@ -97,9 +98,32 @@ export type DayBest =
       kind: "clear";
       site: SiteKind;
       guard: number | undefined;
-      paid: { resource: "essence" | "labor" | "lords"; amount: number } | null;
+      paid: { resource: "essence" | "labor"; amount: number } | null;
     }
   | { kind: "reveals"; count: number };
+
+type DayBestMoment = {
+  icon: IconMeaning;
+  title: string;
+  detail: string | null;
+  paid: { icon: IconMeaning; value: string; name: string } | null;
+};
+
+const PAID_LABELS: Record<"essence" | "labor", { icon: IconMeaning; name: string }> = {
+  essence: { icon: "essence", name: ESSENCE },
+  labor: { icon: "labor", name: LABOR },
+};
+
+export const dayBestMoment = (best: DayBest): DayBestMoment => {
+  if (best.kind === "clear")
+    return {
+      icon: TARGET_MARKS[best.site].icon,
+      title: DAY_SHARE_WORDS.best.clear(TARGET_MARKS[best.site].word),
+      detail: best.guard ? DAY_SHARE_WORDS.guardBeaten(formatAmount(best.guard)) : null,
+      paid: best.paid && { ...PAID_LABELS[best.paid.resource], value: `+${formatShort(best.paid.amount)}` },
+    };
+  return { icon: "explore", title: DAY_SHARE_WORDS.best.reveals(formatAmount(best.count)), detail: null, paid: null };
+};
 
 /** Which clear leads when two beat the same guard: the rarer site. */
 const SITE_RANK: Record<SiteKind, number> = { Ruin: 3, Rift: 2, Camp: 1, Beasts: 0 };

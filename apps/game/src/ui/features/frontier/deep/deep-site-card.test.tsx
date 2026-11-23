@@ -284,7 +284,7 @@ it("prices Deep movement from the troops left at the requested second", () => {
 it("previews the Deep guard's opening and repeated exchange before sending each attack", async () => {
   const hud = draw(undefined, deepBattleTargetScenario());
   const labels = () =>
-    [...hud.host.querySelectorAll('[role="img"][aria-label*="→"]')].map((node) => node.getAttribute("aria-label"));
+    [...hud.host.querySelectorAll("[data-fight-side]")].map((node) => node.getAttribute("aria-label"));
   try {
     for (const [before, ownLeft, enemyLeft] of [
       [1000, 670, 754],

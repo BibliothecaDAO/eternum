@@ -18,6 +18,7 @@ const BAND_GAP = 6;
 /** Every slot of a phone's HUD, as Frontier fills them. */
 type Bands = {
   strip: ReactNode;
+  banner?: ReactNode;
   page?: ReactNode;
   notices?: ReactNode;
   action?: ReactNode;
@@ -28,7 +29,7 @@ type Bands = {
 
 export const HudBands = (bands: Bands) => (useSideways() ? <SidewaysBands {...bands} /> : <UprightBands {...bands} />);
 
-const UprightBands = ({ strip, page, notices, action, dock, nav, children }: Bands) => {
+const UprightBands = ({ strip, banner, page, notices, action, dock, nav, children }: Bands) => {
   const bar = useRef<HTMLDivElement>(null);
   const foot = useEdge(bar, (rect) => window.innerHeight - rect.top + BAND_GAP);
   const topBand = useRef<HTMLDivElement>(null);
@@ -41,6 +42,7 @@ const UprightBands = ({ strip, page, notices, action, dock, nav, children }: Ban
     >
       <div ref={topBand} {...HUD_TOP_MARK} data-keyboard-hides className="flex flex-col gap-1.5">
         <div className="relative">{strip}</div>
+        {banner}
       </div>
       <div data-map-band className="relative min-h-0 flex-1" />
       <div {...HUD_FOOT_MARK} className="flex min-h-0 flex-col gap-1.5 [&:has([data-page-fills])]:flex-1">
@@ -61,7 +63,7 @@ const UprightBands = ({ strip, page, notices, action, dock, nav, children }: Ban
   );
 };
 
-const SidewaysBands = ({ strip, page, notices, action, dock, nav, children }: Bands) => {
+const SidewaysBands = ({ strip, banner, page, notices, action, dock, nav, children }: Bands) => {
   const top = useRef<HTMLDivElement>(null);
   const sheetTop = useEdge(top, (rect) => rect.bottom + BAND_GAP);
   return (
@@ -77,6 +79,7 @@ const SidewaysBands = ({ strip, page, notices, action, dock, nav, children }: Ba
       <div {...HUD_COLUMN_MARK} className="flex min-h-0 w-hud-column flex-col gap-1.5">
         <div ref={top} data-keyboard-hides className="flex flex-col gap-1.5">
           <div className="relative">{strip}</div>
+          {banner}
         </div>
         <div className="flex flex-col gap-1.5">{notices}</div>
         {page ? <PageBand className="flex-1">{page}</PageBand> : <UnderSheet action={action} dock={dock} />}

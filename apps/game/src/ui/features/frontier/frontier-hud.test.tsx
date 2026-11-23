@@ -154,7 +154,8 @@ it("keeps one chat connection and its unread count from desktop to phone and bac
     expect(chatReading()).toEqual({ connected: true, unread: "3" });
 
     await act(async () => viewport.set(390));
-    expect(chatReading()).toEqual({ connected: true, unread: "3" });
+    expect(chatReading()).toEqual({ connected: true, unread: "" });
+    expect(host.querySelector('[aria-label="Unread chat messages: 3"][data-dot]')).not.toBeNull();
 
     await act(async () => viewport.set(1440));
     expect(chatReading()).toEqual({ connected: true, unread: "3" });
@@ -195,7 +196,7 @@ it("treats the desktop's Feed as any other panel: closed at start, opened from i
   const route = window.location.pathname + window.location.search;
   const { selectedBuildingHex } = useUIStore.getState();
   await renderHud();
-  const panel = () => host.querySelector("[data-frontier-rail] [data-rail-panel]")!;
+  const panel = () => host.querySelector("[data-realm-slot]")!;
   const open = (name: string) => panel().querySelector(`section[aria-label="${name}"]`) !== null;
   const place = (name: string) =>
     host.querySelector<HTMLButtonElement>(`nav[aria-label="Places"] button[aria-label="${name}"]`)!;
@@ -248,12 +249,12 @@ it("keeps a refused order in sight on a desktop, over the feed and over a panel 
     await act(async () => toast.error("Not enough stamina"));
     const feed = host.querySelector<HTMLButtonElement>('nav[aria-label="Places"] button[aria-label="Feed"]')!;
     await act(async () => feed.click());
-    expect(rail().querySelector('section[aria-label="Feed"]')).not.toBeNull();
+    expect(host.querySelector('[data-realm-slot] section[aria-label="Feed"]')).not.toBeNull();
     expect(rail().querySelector('[aria-label="Notices"]')?.textContent).toContain("Not enough stamina");
     // The Season stands in the rail's panel, the feed steps aside; the notice stays.
     const season = host.querySelector<HTMLButtonElement>('nav[aria-label="Places"] button[aria-label="Season"]')!;
     await act(async () => season.click());
-    expect(rail().querySelector('[data-rail-panel] section[aria-label="Season"]')).not.toBeNull();
+    expect(host.querySelector('[data-realm-slot] section[aria-label="Season"]')).not.toBeNull();
     expect(rail().querySelector('[aria-label="Notices"]')?.textContent).toContain("Not enough stamina");
   } finally {
     useEventFeedStore.getState().dismiss();
@@ -390,7 +391,7 @@ it.each([390, 1440])(
     const sheet = host.querySelector<HTMLElement>('section[aria-label="Today"]');
     expect(sheet).not.toBeNull();
     expect(sheet!.hasAttribute("data-docked")).toBe(width >= 1024);
-    expect(sheet!.closest("[data-rail-panel]") !== null).toBe(width >= 1024);
+    expect(sheet!.closest("[data-realm-slot]") !== null).toBe(width >= 1024);
     expect(host.querySelector(".ui-sheet__backdrop")).toBeNull();
     await act(async () => sheet!.querySelector<HTMLButtonElement>('button[aria-label="Close"]')!.click());
     expect(host.querySelector('section[aria-label="Today"]')).toBeNull();
@@ -444,7 +445,9 @@ const pressPlace = (word: string) =>
   );
 const surfaceNamed = (label: string) => document.querySelector<HTMLElement>(`section[aria-label="${label}"]`);
 const menuRow = (word: string) =>
-  [...surfaceNamed("Menu")!.querySelectorAll<HTMLElement>(".ui-row")].find((row) => row.textContent?.startsWith(word))!;
+  [...surfaceNamed("Menu")!.querySelectorAll<HTMLElement>(".menu-place-tile, .ui-row")].find(
+    (row) => row.getAttribute("aria-label") === word || row.textContent?.startsWith(word),
+  )!;
 
 it("opens a phone's Menu as a page in the one frame, which its ×, Escape and Menu close", async () => {
   viewport.set(390);

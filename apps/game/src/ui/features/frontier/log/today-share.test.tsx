@@ -147,7 +147,7 @@ it("shares a day the player played from Today's page of it, as the day-done card
   expect(buttons().some((button) => button.textContent === SHARE)).toBe(false);
 
   await stepBackTo(2);
-  expect(totalsShown()).toEqual(["35Reveals", "5Sites cleared", "0Chests", "+7.2KEssence", "+524Labor", "+0LORDS"]);
+  expect(totalsShown()).toEqual(["35Reveals", "5Sites cleared", "+524Labor", "+7.2KEssence"]);
   await act(async () =>
     buttons()
       .find((button) => button.textContent === SHARE)!
@@ -166,7 +166,7 @@ it("shares a day the player played from Today's page of it, as the day-done card
   );
   const intent = new URL(String(open.mock.calls[0]![0]));
   expect(intent.searchParams.get("url")).toBe(`${window.location.origin}/s/DAY2LINK?via=x`);
-  expect(intent.searchParams.get("text")).toBe("Frontier · Day 2 · #1\n🧭 35 · 🚩 5 · 🎁 0\n🐺🐺🛡️🌀🛡️🌀🐺");
+  expect(intent.searchParams.get("text")).toBe("Frontier · Day 2 · #1\n🧭 35 · 🚩 5\n🐺🐺🛡️🌀🛡️🌀🐺");
   open.mockRestore();
 
   // Closing the sheet leaves Today on day 2.
@@ -189,7 +189,7 @@ it("offers no Share on an earlier day the player did not play", async () => {
   await openToday();
   await stepBackTo(1);
   expect(host.textContent).toContain("Day 1 of");
-  expect(totalsShown()).toEqual(["0Reveals", "0Sites cleared", "0Chests", "+0Essence", "+0Labor", "+0LORDS"]);
+  expect(totalsShown()).toEqual(["0Reveals", "0Sites cleared", "+0Labor", "+0Essence"]);
   expect(buttons().some((button) => button.textContent === SHARE)).toBe(false);
 });
 

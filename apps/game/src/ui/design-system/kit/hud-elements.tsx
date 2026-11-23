@@ -1653,11 +1653,13 @@ SurfaceFrame.displayName = "SurfaceFrame";
  */
 export const HudSheet = ({
   label,
+  icon,
   beside,
   onClose,
   children,
 }: {
   label: string;
+  icon?: IconMeaning;
   /** A quiet control right after the sheet's name, out of the body's flow and away from the cross (an army's Delete). */
   beside?: ReactNode;
   onClose: () => void;
@@ -1668,6 +1670,7 @@ export const HudSheet = ({
     <SurfaceFrame
       role="dialog"
       label={label}
+      icon={icon}
       beside={beside}
       onClose={onClose}
       data-kit-sheet=""

@@ -133,87 +133,89 @@ export const RealmPanel = ({
       onTitle={onHome && { label: SHOW_MY_REALM, run: onHome }}
       collapsible={false}
       className={sheetHandle ? "pointer-events-auto relative realm-panel--sheet" : "pointer-events-auto"}
-      bodyClassName="flex flex-col gap-3"
+      bodyClassName="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden"
     >
       {sheetHandle && <span className="frontier-phone-handle" aria-hidden="true" />}
-      <ul aria-label="Stores" className="realm-tiles">
-        {visibleStores.map((store) => (
-          <li key={store.kind} data-store={store.kind} className="relative min-w-0">
-            <StoreTile
-              store={store}
-              onOpen={storeCards?.kinds.includes(store.kind) ? () => storeCards.onToggle(store.kind) : undefined}
-            />
-          </li>
-        ))}
-        {armies && (
-          <li className="min-w-0">
-            <span
-              className="realm-tile"
-              aria-label={`${ARMIES} ${formatExact(armies.active)} / ${formatExact(armies.limit)}`}
-            >
-              <span className="realm-tile__label">{ARMIES}</span>
-              <span className="realm-tile__value tabular-nums">
-                <SemanticIcon name="knight-t1" size={16} />
-                {`${formatExact(armies.active)} / ${formatExact(armies.limit)}`}
-              </span>
-            </span>
-          </li>
-        )}
-        {lords !== undefined && (
-          <li className="min-w-0">
-            <TileShell
-              label={[`${LORDS} ${formatExact(lords)}`, linkWalletLine].filter(Boolean).join(". ")}
-              tip={linkWalletLine ?? LORDS}
-              onClick={onWithdraw}
-            >
-              <span className="realm-tile__label">
-                {LORDS}
-                {linkWalletLine && <SemanticIcon name="warning" size={12} />}
-              </span>
-              <span className="realm-tile__value tabular-nums">
-                <SemanticIcon name="lords" size={16} />
-                {formatAmount(lords)}
-              </span>
-            </TileShell>
-          </li>
-        )}
-      </ul>
-      {storeCards?.open && storeCards.card}
-      {buildings && buildings.length > 0 && (
-        <ul data-realm-buildings className="flex flex-col gap-2">
-          {buildings.map((building) => (
-            <li key={building.key} className="realm-building__row">
-              <HudRow
-                lead={<SemanticIcon name={building.icon} size={40} />}
-                title={
-                  <span className="flex items-center gap-2">
-                    <span className="realm-building__name truncate">{building.name}</span>
-                    {building.tier !== undefined && <HudTier tier={building.tier} />}
-                    {building.rankLabel && <HudChip>{building.rankLabel}</HudChip>}
-                  </span>
-                }
-                detail={
-                  building.rate && (
-                    <span className="inline-flex items-center gap-1 text-hud-body tabular-nums">
-                      {building.rateIcon && <SemanticIcon name={building.rateIcon} size={14} />}
-                      {building.rate}
-                    </span>
-                  )
-                }
-                controls={
-                  building.onUpgrade && (
-                    <HudButton kind="secondary" onClick={building.onUpgrade}>
-                      {UPGRADE}
-                    </HudButton>
-                  )
-                }
+      <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto">
+        <ul aria-label="Stores" className="realm-tiles">
+          {visibleStores.map((store) => (
+            <li key={store.kind} data-store={store.kind} className="relative min-w-0">
+              <StoreTile
+                store={store}
+                onOpen={storeCards?.kinds.includes(store.kind) ? () => storeCards.onToggle(store.kind) : undefined}
               />
             </li>
           ))}
+          {armies && (
+            <li className="min-w-0">
+              <span
+                className="realm-tile"
+                aria-label={`${ARMIES} ${formatExact(armies.active)} / ${formatExact(armies.limit)}`}
+              >
+                <span className="realm-tile__label">{ARMIES}</span>
+                <span className="realm-tile__value tabular-nums">
+                  <SemanticIcon name="knight-t1" size={16} />
+                  {`${formatExact(armies.active)} / ${formatExact(armies.limit)}`}
+                </span>
+              </span>
+            </li>
+          )}
+          {lords !== undefined && (
+            <li className="min-w-0">
+              <TileShell
+                label={[`${LORDS} ${formatExact(lords)}`, linkWalletLine].filter(Boolean).join(". ")}
+                tip={linkWalletLine ?? LORDS}
+                onClick={onWithdraw}
+              >
+                <span className="realm-tile__label">
+                  {LORDS}
+                  {linkWalletLine && <SemanticIcon name="warning" size={12} />}
+                </span>
+                <span className="realm-tile__value tabular-nums">
+                  <SemanticIcon name="lords" size={16} />
+                  {formatAmount(lords)}
+                </span>
+              </TileShell>
+            </li>
+          )}
         </ul>
-      )}
+        {storeCards?.open && storeCards.card}
+        {buildings && buildings.length > 0 && (
+          <ul data-realm-buildings className="flex flex-col gap-2">
+            {buildings.map((building) => (
+              <li key={building.key} className="realm-building__row">
+                <HudRow
+                  lead={<SemanticIcon name={building.icon} size={40} />}
+                  title={
+                    <span className="flex items-center gap-2">
+                      <span className="realm-building__name truncate">{building.name}</span>
+                      {building.tier !== undefined && <HudTier tier={building.tier} />}
+                      {building.rankLabel && <HudChip>{building.rankLabel}</HudChip>}
+                    </span>
+                  }
+                  detail={
+                    building.rate && (
+                      <span className="inline-flex items-center gap-1 text-hud-body tabular-nums">
+                        {building.rateIcon && <SemanticIcon name={building.rateIcon} size={14} />}
+                        {building.rate}
+                      </span>
+                    )
+                  }
+                  controls={
+                    building.onUpgrade && (
+                      <HudButton kind="secondary" onClick={building.onUpgrade}>
+                        {UPGRADE}
+                      </HudButton>
+                    )
+                  }
+                />
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
       {(onResearch || onDeploy) && (
-        <div className="realm-foot">
+        <div className="realm-foot shrink-0">
           {onResearch && (
             <HudButton kind="secondary" icon="research" onClick={onResearch}>
               {RESEARCH}

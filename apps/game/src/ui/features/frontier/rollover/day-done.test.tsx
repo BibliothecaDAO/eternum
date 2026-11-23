@@ -171,7 +171,7 @@ const { setViewportWidth } = await import("@/shell/frame/test-viewport");
 const { watchDayTurn } = await import("@/ui/features/world/components/expeditions/expedition-rollover");
 
 const RULES = { ...RECORDED_DAY.calendar, scheduledEndAt: herald.scheduledEndAt, spacing: 100 };
-const SUMMARY = "section[aria-label='Day 2 done']";
+const SUMMARY = "section[aria-label='Day 2 complete']";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -208,11 +208,9 @@ afterEach(async () => {
   notifyManager.setNotifyFunction((notify) => notify());
 });
 
-const PROD_DAY_2 = ["35Reveals", "5Sites cleared", "0Chests", "+7.2KEssence", "+524Labor", "+0LORDS"];
-/** Prod's day 1 for the same player, as their own history holds it. */
-const PROD_DAY_1 = ["37Reveals", "6Sites cleared", "0Chests", "+6KEssence", "+2.7KLabor", "+0LORDS"];
-/** Any day's summary. */
-const SUMMARY_SHOWN = "section[aria-label$=' done']";
+const PROD_DAY_2 = ["35Reveals", "5Sites cleared", "+524Labor", "+7.2KEssence"];
+const PROD_DAY_1 = ["37Reveals", "6Sites cleared", "+2.7KLabor", "+6KEssence"];
+const SUMMARY_SHOWN = "section[aria-label$=' complete']";
 
 let client: QueryClient;
 /** Draws the HUD's day end at the clock as it stands. */
@@ -228,7 +226,7 @@ const phase = () => useDayEndStore.getState().phase;
 /** The summary's way into the new day, under Share your day. */
 const continueButton = () =>
   [...(host.querySelector(SUMMARY)?.querySelectorAll("button") ?? [])].find(
-    (button) => button.textContent === "Continue",
+    (button) => button.textContent === "Begin Day 3",
   )!;
 
 /** Opens the game with day 2 ended overnight, before the player played on, and reads the summary's totals. */
@@ -293,8 +291,8 @@ it("shares day 2 as its card and a post: its best moment, the numbers it moved, 
   expect([...shown.querySelectorAll(".day-card__haul small")].map((label) => label.textContent)).toEqual([
     "Reveals",
     "Sites cleared",
-    "Essence",
     "Labor",
+    "Essence",
   ]);
   expect(shares.createShare).toHaveBeenCalledWith({ kind: "frontier-day", chainId: "0x1", gameId: 1, moment: 2 });
 
@@ -312,7 +310,7 @@ it("shares day 2 as its card and a post: its best moment, the numbers it moved, 
   await act(async () => post!.click());
   const intent = new URL(String(open.mock.calls[0]![0]));
   expect(intent.searchParams.get("url")).toBe(`${window.location.origin}/s/DAY2LINK?via=x`);
-  expect(intent.searchParams.get("text")).toBe("Frontier · Day 2 · #1\n🧭 35 · 🚩 5 · 🎁 0\n🐺🐺🛡️🌀🛡️🌀🐺");
+  expect(intent.searchParams.get("text")).toBe("Frontier · Day 2 · #1\n🧭 35 · 🚩 5\n🐺🐺🛡️🌀🛡️🌀🐺");
   expect(shares.sharePosted).toHaveBeenCalledWith("DAY2LINK");
   // The press publishes the card the link unfurls as.
   await act(() => new Promise((resolve) => setTimeout(resolve, 0)));
@@ -348,7 +346,7 @@ it("shares a phone's day through its own share sheet: the card, the post's line 
     await act(async () => system.click());
     expect(share).toHaveBeenLastCalledWith({
       files: [CARD_FILE],
-      text: "Frontier · Day 2 · #1\n🧭 35 · 🚩 5 · 🎁 0\n🐺🐺🛡️🌀🛡️🌀🐺",
+      text: "Frontier · Day 2 · #1\n🧭 35 · 🚩 5\n🐺🐺🛡️🌀🛡️🌀🐺",
       url: `${window.location.origin}/s/DAY2LINK?via=system`,
     });
     expect(shares.sharePosted).toHaveBeenCalledWith("DAY2LINK");
@@ -393,14 +391,14 @@ it("shows a dash for each total, and says why, when the player's history no long
     },
   }));
   herald.history = [...later, ...BEFORE_PLAYING_ON.history];
-  expect(await openTheGame()).toEqual(["—Reveals", "—Sites cleared", "—Chests", "—Essence", "—Labor", "—LORDS"]);
+  expect(await openTheGame()).toEqual(["—Reveals", "—Sites cleared", "—Labor", "—Essence"]);
   expect(host.querySelector(`${SUMMARY} [role="status"]`)?.textContent).toBe("This day's totals are unknown");
 });
 
 it("shows a dash for each total, and says history did not answer, with Try again, when the read fails", async () => {
   herald.withheld = Promise.reject(new Error("Herald is down"));
   herald.withheld.catch(() => undefined);
-  expect(await openTheGame()).toEqual(["—Reveals", "—Sites cleared", "—Chests", "—Essence", "—Labor", "—LORDS"]);
+  expect(await openTheGame()).toEqual(["—Reveals", "—Sites cleared", "—Labor", "—Essence"]);
   expect(host.querySelector(`${SUMMARY} [role="alert"]`)?.textContent).toBe("This day's totals are unknownTry again");
 });
 
@@ -636,7 +634,7 @@ describe("a device arriving in a new day", () => {
   });
 
   describe('a player back after a day they skipped (owner, 10 Nov 2026: "I played day 1 but not day 2, its day 3 now")', () => {
-    const DAY_1 = "section[aria-label='Day 1 done']";
+    const DAY_1 = "section[aria-label='Day 1 complete']";
     /** The player's history without their own day-2 stories: they played day 1 and skipped day 2. */
     const skippingDay2 = (history: typeof herald.history) => {
       const day2 = endedDay(RULES, BEFORE_PLAYING_ON.now)!;
@@ -665,7 +663,7 @@ describe("a device arriving in a new day", () => {
 
       act(() =>
         [...card.querySelectorAll<HTMLButtonElement>("button")]
-          .find((button) => button.textContent === "Continue")!
+          .find((button) => button.textContent === "Begin Day 3")!
           .click(),
       );
       await throughTheBlack();

@@ -107,7 +107,7 @@ const sheetFitProblems = ({ sheet, scrolls, verb, height }) => {
 const FITS = { read: READ_SHEET_FIT, rule: sheetFitProblems };
 
 /** Each side of the fight on the open card: its box, and the widest any of its words, its mark or its bar reaches. */
-const READ_FIGHT_SIDES = `(() => [...document.querySelectorAll('[role="img"][aria-label*="→"]')].map((side) => {
+const READ_FIGHT_SIDES = `(() => [...document.querySelectorAll('[data-fight-side]')].map((side) => {
   const box = side.getBoundingClientRect();
   // The text itself, not its spans: a span held to its box lets wider words run past it unseen.
   const walker = document.createTreeWalker(side, NodeFilter.SHOW_TEXT);
@@ -277,14 +277,14 @@ export const SURFACES = [
     name: "blitz-attack-preview-short",
     path: "/lab/kit/unified/blitz-attack-short",
     mark: "unified",
-    waitFor: '[role="img"][aria-label*="→"]',
+    waitFor: "[data-fight-side]",
     ...FIGHT_FITS,
   },
   {
     name: "blitz-attack-preview",
     path: "/lab/kit/unified/blitz-attack",
     mark: "unified",
-    waitFor: '[role="img"][aria-label*="→"]',
+    waitFor: "[data-fight-side]",
     ...FIGHT_FITS,
   },
   // Twelve-digit sides whose short figures would read alike: exact, set smaller to fit, on the attack card.

@@ -18,6 +18,7 @@ export {
   nativeFragmentConstants,
   nativeStructureConstants,
 } from "../../../../contracts/l3/world-native/schema/balance.gen";
+export { previewRuinGuardBounds } from "../../../../contracts/l3/world-native/schema/site-previews.gen";
 
 export type { GameClientSetup } from "./game-client";
 export { assertReleaseReadable } from "./game-release";

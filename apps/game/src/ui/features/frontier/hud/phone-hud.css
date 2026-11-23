@@ -87,22 +87,15 @@
   background: var(--hud-surface-to);
   padding: theme(spacing[0.5]);
 }
-.frontier-phone-action__badge {
+.frontier-phone-action__dot {
   position: absolute;
-  top: calc(theme(spacing.1) * -1);
-  right: calc(theme(spacing.1) * -1);
-  display: inline-flex;
-  min-width: theme(spacing.4);
-  height: theme(spacing.4);
-  align-items: center;
-  justify-content: center;
+  top: theme(spacing.1);
+  right: theme(spacing.1);
+  width: 10px;
+  height: 10px;
+  border: 1.5px solid var(--hud-surface-to);
   border-radius: var(--hud-radius-round);
   background: rgb(var(--hud-gold));
-  padding: 0 theme(spacing.1);
-  color: rgb(var(--hud-dark));
-  font-size: var(--hud-text-badge);
-  line-height: var(--hud-leading-badge);
-  font-weight: var(--hud-weight-badge);
 }
 .frontier-phone-handle {
   position: absolute;
@@ -165,4 +158,59 @@
   flex-direction: column;
   align-items: flex-end;
   gap: theme(spacing.1);
+}
+.menu-place-tiles {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: theme(spacing.2);
+}
+.menu-place-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: theme(spacing[1.5]);
+  min-height: 76px;
+  border: 1px solid var(--hud-line);
+  border-radius: var(--hud-radius-panel);
+  background: var(--hud-well);
+  padding: theme(spacing[2.5]) theme(spacing.1);
+  color: rgb(var(--hud-ink));
+  cursor: pointer;
+}
+.menu-place-tile__label {
+  font-family: var(--hud-font-display);
+  font-size: var(--hud-text-label);
+  line-height: var(--hud-leading-label);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.menu-place-tile__dot {
+  position: absolute;
+  top: theme(spacing[1.5]);
+  right: theme(spacing[1.5]);
+  width: 8px;
+  height: 8px;
+  border-radius: var(--hud-radius-round);
+  background: rgb(var(--hud-gold));
+}
+.menu-place-tile__badge {
+  position: absolute;
+  top: theme(spacing.1);
+  right: theme(spacing.1);
+  display: inline-flex;
+  min-width: theme(spacing.4);
+  height: theme(spacing.4);
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--hud-radius-round);
+  background: rgb(var(--hud-gold));
+  padding: 0 theme(spacing.1);
+  color: rgb(var(--hud-dark));
+  font-size: var(--hud-text-badge);
+  line-height: var(--hud-leading-badge);
+  font-weight: var(--hud-weight-badge);
+  font-variant-numeric: tabular-nums;
 }

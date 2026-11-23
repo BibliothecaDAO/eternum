@@ -49,7 +49,7 @@ describe("the day log's line for a story", () => {
   it("names an army by its number, as its card does, and by Army alone once it has left the map", () => {
     const store = dayWithArmyTwo();
     expect(dayLogLine(story("ExplorerCreateStory", { explorer_id: 201 }), store)).toBe("Army 2 deployed");
-    expect(dayLogLine(story("ExplorerDeleteStory", { explorer_id: 201 }), store)).toBe("Army 2 disbanded");
+    expect(dayLogLine(story("ExplorerDeleteStory", { explorer_id: 201 }), store)).toBe("Army 2 deleted");
     expect(dayLogLine(story("ExplorerCreateStory", { explorer_id: 999 }), store)).toBe("Army deployed");
   });
 

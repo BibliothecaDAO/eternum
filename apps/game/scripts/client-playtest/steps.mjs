@@ -568,7 +568,7 @@ async function attackFromTheSiteCard({ browser }) {
   if (!sheet.buttons.includes("Attack")) return { army, offered: target.offered, target: target.offset, sheet };
   const token = browser.read(armyToken(army));
   const forecast = browser.read(
-    `Array.from(document.querySelectorAll('[data-kit-sheet] [role="img"][aria-label*="→"]'), node => node.getAttribute('aria-label'))`,
+    `Array.from(document.querySelectorAll('[data-kit-sheet] [data-fight-side]'), node => node.getAttribute('aria-label'))`,
   );
   watchFor(browser, "fought", tokensShowTheChainsCounts(browser, "BattleGuard"));
   browser.click("Attack");
@@ -758,10 +758,12 @@ async function deployFromTheDock({ browser }, amount, troopName, atMost = Infini
   );
   if (sheet !== "Deploy") return { sheet };
   if (troopName) browser.click(troopName);
-  if (amount === undefined) browser.click("Max");
-  else browser.run(["fill", DEPLOY_TROOPS_INPUT, String(amount)]);
-  if (Number(String(browser.read(DEPLOY_TROOPS)).replace(/,/g, "")) > atMost)
-    browser.run(["fill", DEPLOY_TROOPS_INPUT, String(atMost)]);
+  if (amount !== undefined || Number.isFinite(atMost)) {
+    browser.click("Adjust size");
+    if (amount !== undefined) browser.run(["fill", DEPLOY_TROOPS_INPUT, String(amount)]);
+    if (Number(String(browser.read(DEPLOY_TROOPS)).replace(/,/g, "")) > atMost)
+      browser.run(["fill", DEPLOY_TROOPS_INPUT, String(atMost)]);
+  }
   const deploy = await readUntil(() => browser.read(sheetButton("^Deploy$")), Boolean, SHEET_WAIT_MS);
   if (!deploy) return { sheet, deploy };
   browser.tap(deploy.offset);
@@ -4105,7 +4107,7 @@ function raceBoardSteps(result) {
             play: async (context) => {
               const { browser } = context;
               const told = [];
-              for (let attempt = 0; attempt < 12; attempt += 1) {
+              for (let attempt = 0; attempt < 16; attempt += 1) {
                 const state = browser.read(OPENING_STATE);
                 if (state.lines.length === 0) break;
                 told.push(state.lines[0].replace(/Got it$/, ""));
@@ -4295,7 +4297,7 @@ async function attackFromTheDeepCard({ browser, extraScreenshot }) {
   );
   if (!opened.buttons.includes("Attack")) return { before, opened };
   const forecast = browser.read(
-    `Array.from(document.querySelectorAll('[data-kit-sheet] [role="img"][aria-label*="→"]'), node => node.getAttribute('aria-label'))`,
+    `Array.from(document.querySelectorAll('[data-kit-sheet] [data-fight-side]'), node => node.getAttribute('aria-label'))`,
   );
   const guardOaths = browser.read(
     `Array.from(document.querySelectorAll("[data-guard-oaths]"), node => {
@@ -4873,7 +4875,7 @@ const FIGHT_STATE = `JSON.stringify({
   sheet: document.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null,
   buttons: [...(document.querySelector("[data-kit-sheet]")?.querySelectorAll("button") ?? [])].map((button) => button.getAttribute("aria-label") || button.textContent.trim()),
   attackHeld: [...(document.querySelector("[data-kit-sheet]")?.querySelectorAll("button") ?? [])].every((button) => !button.textContent.trim().startsWith("Attack") || button.disabled),
-  sides: [...(document.querySelector("[data-kit-sheet]")?.querySelectorAll('[role="img"][aria-label*="→"]') ?? [])].map((side) => side.getAttribute("aria-label")),
+  sides: [...(document.querySelector("[data-kit-sheet]")?.querySelectorAll("[data-fight-side]") ?? [])].map((side) => side.getAttribute("aria-label")),
   sent: (window.__labChain?.sent ?? []).map(({ command }) => command.kind),
   armyToken: document.querySelector('.mp-at[data-key="army:${PICKED_ARMY}"]')?.textContent ?? null,
   ruinToken: (() => {
@@ -5404,13 +5406,13 @@ const labDayTurnSteps = (expected) => [
 
 /** Prod's leading player's own day 2: 35 reveals and 5 sites cleared, paying 7,246 Essence and 524 Labor. */
 const RECORDED_DAY_2 = {
-  totals: ["35Reveals", "5Sites cleared", "0Chests", "+7.2KEssence", "+524Labor", "+0LORDS"],
+  totals: ["35Reveals", "5Sites cleared", "+524Labor", "+7.2KEssence"],
   notice: null,
 };
 /** Day 2 past the history read: each total a dash, and the card says why. */
 const DAY_2_OUT_OF_REACH = {
-  totals: ["—Reveals", "—Sites cleared", "—Chests", "—Essence", "—Labor", "—LORDS"],
-  notice: "Your history no longer reaches back to this day's start, so its totals are unknown.",
+  totals: ["—Reveals", "—Sites cleared", "—Labor", "—Essence"],
+  notice: "This day's totals are unknown",
 };
 /** Realm 7's site on day 3 of the lab's calendar: its region's column, four regions a day down (contract hexes). */
 const LAB_DAY_3_SITE = { col: 650, row: 850 };
@@ -5421,9 +5423,9 @@ const NEW_DAY_WAIT_MS = 20_000;
 const CAMERA_REPORT_MS = 1_000;
 const DAY_END_STATE = `JSON.stringify({
   phase: document.querySelector("[data-day-end]")?.dataset.dayEnd ?? "day",
-  card: document.querySelector("section[aria-label$=' done']")?.getAttribute("aria-label") ?? null,
-  totals: [...document.querySelectorAll("section[aria-label$=' done'] [data-total]")].map((cell) => cell.textContent),
-  notice: document.querySelector("section[aria-label$=' done'] .ui-notice")?.textContent ?? null,
+  card: document.querySelector("section[aria-label$=' complete']")?.getAttribute("aria-label") ?? null,
+  totals: [...document.querySelectorAll("section[aria-label$=' complete'] [data-total]")].map((cell) => cell.textContent),
+  notice: document.querySelector("section[aria-label$=' complete'] .ui-notice")?.textContent ?? null,
   camera: window.__eternumMapSelection?.camera ?? null,
 })`;
 
@@ -5438,7 +5440,7 @@ async function readTheDaySummary({ browser }) {
 
 function summaryShows(expected) {
   return ({ played }) => {
-    if (played.card !== "Day 2 done") return failed(`the summary shown is ${played.card ?? "none"}`, played);
+    if (played.card !== "Day 2 complete") return failed(`the summary shown is ${played.card ?? "none"}`, played);
     if (JSON.stringify(played.totals) !== JSON.stringify(expected.totals))
       return failed(`the summary counts ${played.totals.join(", ")}`, played);
     if (played.notice !== expected.notice)
@@ -6944,6 +6946,47 @@ export const STEP_SETS = {
           played.sheet === "Build" && played.inRealmSlot && !played.realmPanelShown
             ? completed(played)
             : failed("Pressing an empty plot must replace the Realm panel with Build in place", played),
+      },
+      {
+        name: "deploy-sheet",
+        settleMs: 1_500,
+        play: async ({ browser, extraScreenshot }) => {
+          browser.press("Escape");
+          const hasDeploy = await readUntil(
+            () =>
+              browser.read(
+                `Boolean(document.querySelector('section[aria-label="Realm"] .realm-foot button[data-kind="primary"]'))`,
+              ),
+            Boolean,
+            SHEET_WAIT_MS,
+          );
+          if (hasDeploy) browser.click("Deploy");
+          const sheet = await readUntil(
+            () => browser.read(SHEET_NAME),
+            (name) => name === "Deploy",
+            PLAYABLE_WAIT_MS,
+          );
+          await sleep(1_000);
+          const deployHud = browser.read(`(() => ({
+            troopCards: [...document.querySelectorAll('[data-kit-sheet] [aria-label="Troop type"] button')].map((b) => b.getAttribute("aria-label")),
+            hasAdjust: [...document.querySelectorAll('[data-kit-sheet] button')].some((b) => b.textContent?.trim() === "Adjust size"),
+            deployEnabled: Boolean(document.querySelector('[data-kit-sheet] .ui-window__foot button[data-kind="primary"]:not([disabled])')),
+            inRealmSlot: Boolean(document.querySelector('[data-realm-slot] [data-kit-sheet][aria-label="Deploy"]')),
+          }))()`);
+          return {
+            sheet,
+            deployHud,
+            shot: extraScreenshot("deploy"),
+          };
+        },
+        verify: ({ played }) =>
+          played.sheet === "Deploy" &&
+          played.deployHud.troopCards.length >= 3 &&
+          played.deployHud.hasAdjust &&
+          played.deployHud.deployEnabled &&
+          (!onADesktop() || played.deployHud.inRealmSlot)
+            ? completed(played)
+            : failed("Deploy sheet must open at full stack with troop cards, Adjust size and enabled Deploy", played),
       },
     ],
   },

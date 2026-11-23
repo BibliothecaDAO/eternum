@@ -3,7 +3,6 @@ import { createRoot } from "react-dom/client";
 import { afterEach, expect, it, vi } from "vitest";
 
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({ useCurrentBlockTimestamp: () => 1_000 }));
-vi.mock("@/hooks/helpers/use-native-facts", () => ({ useNativeRevision: () => 0 }));
 
 import { GameProvider } from "@/hooks/context/game-context";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
@@ -70,9 +69,9 @@ it("shows the relics running with their time left, then the three slots with wha
   expect(host.querySelector("[data-relics-running]")?.textContent).toBe("Rare Ward · 30m left");
   const rows = [...host.querySelectorAll("[data-army-relics] .ui-row")].map((row) => row.textContent);
   expect(rows).toEqual([
-    "Uncommon Blade+20% damage dealtSwitch on",
+    "Uncommon BladeDamage dealt: 100% → 120%Switch on",
     "Empty slot",
-    "Common Plunder+20% labor and Essence from a cleared siteSwitch on",
+    "Common PlunderCleared site labor & Essence: 100% → 120%Switch on",
   ]);
 });
 

@@ -165,7 +165,7 @@ it("leaves every total unknown when the history read fails, with Retry, never si
     expect(BigInt(asked.owners.at(-1)!)).toBe(OWNER);
     expect(
       [...host.querySelectorAll('[role="img"][aria-label]')].map((cell) => cell.getAttribute("aria-label")),
-    ).toEqual(["Reveals —", "Sites cleared —", "Chests —", "Essence —", "Labor —", "LORDS —"]);
+    ).toEqual(["Reveals —", "Sites cleared —", "Labor —", "Essence —"]);
     const retry = [...host.querySelectorAll("button")].find((button) => button.textContent === "Try again")!;
     act(() => retry.click());
     expect(asked.retried).toBe(1);

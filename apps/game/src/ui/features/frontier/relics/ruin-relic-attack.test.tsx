@@ -86,7 +86,7 @@ const FULL = [
 
 it("names the relic the ruin guards in what its clear pays", () => {
   const { host } = ruinCard([null, null, null]);
-  expect(host.querySelector("[data-ruin-relic]")?.getAttribute("aria-label")).toBe("Pays a relic: Epic Blade");
+  expect(host.querySelector("[data-ruin-relic]")?.getAttribute("aria-label")).toBe("Reward: Epic Blade");
 });
 
 it("names a ruin's Ancient cache in place of its relic, and sends a full army's attack without a replacement", async () => {
@@ -178,7 +178,7 @@ it("withholds the attack while the army's relics are not known, saying it reads 
   // A snapshot not yet complete: the effects the army has none of cannot be told apart from ones not yet delivered.
   act(() => store.setSnapshot({ gameId: 1, complete: false, actor: "0x111", timestamp: 350 }));
   expect(host.querySelector("[data-relic-replacement]")).toBeNull();
-  expect(host.textContent).toContain("Reading the army's relics…");
+  expect(host.textContent).toContain("Loading relics…");
   expect(button("Attack")?.disabled ?? true).toBe(true);
   await act(async () => button("Attack")?.click());
   expect(attack).not.toHaveBeenCalled();
@@ -218,14 +218,14 @@ it("withholds the attack while what the ruin pays is still arriving, then asks a
   act(() => store.setSnapshot({ gameId: 1, complete: false, actor: "0x111", timestamp: 350 }));
   expect(host.querySelector("[data-ruin-relic]")).toBeNull();
   expect(host.querySelector("[data-relic-replacement]")).toBeNull();
-  expect(host.textContent).toContain("Reading the ruin's relic…");
+  expect(host.textContent).toContain("Loading ruin reward…");
   expect(button("Attack")?.disabled ?? true).toBe(true);
   await act(async () => button("Attack")?.click());
   expect(attack).not.toHaveBeenCalled();
   // The reward arrives while the snapshot is still partial: the army's relics are what is left to read.
   act(() => store.applyFacts([EPIC_BLADE] as never));
-  expect(host.querySelector("[data-ruin-relic]")?.getAttribute("aria-label")).toBe("Pays a relic: Epic Blade");
-  expect(host.textContent).toContain("Reading the army's relics…");
+  expect(host.querySelector("[data-ruin-relic]")?.getAttribute("aria-label")).toBe("Reward: Epic Blade");
+  expect(host.textContent).toContain("Loading relics…");
   expect(button("Attack")?.disabled ?? true).toBe(true);
   // The snapshot completes: the army is full, so it must choose before anything leaves.
   act(() => store.setSnapshot({ gameId: 1, complete: true, actor: "0x111", timestamp: 350 }));

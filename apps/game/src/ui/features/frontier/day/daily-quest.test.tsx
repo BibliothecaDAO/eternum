@@ -85,7 +85,7 @@ describe.each(["desktop", "phone"] as const)("daily quest on %s", (layout) => {
     const game = fixture(layout);
     game.store.setSnapshot({ gameId: 1, actor: game.scenario.player, complete: false, timestamp: 350 });
     game.draw();
-    expect(host.textContent).toContain("Reading today's quest");
+    expect(host.textContent).toContain("Loading today's quest");
     expect(collect()).toBeUndefined();
     act(() => game.store.setSnapshot({ gameId: 1, actor: game.scenario.player, complete: true, timestamp: 350 }));
     expect(collect()?.disabled).toBe(false);
@@ -203,7 +203,7 @@ describe.each(["desktop", "phone"] as const)("bane collection on %s", (layout) =
     const game = worldDay(layout);
     game.store.applyFacts([{ model: "WorldBane", key: "0xd003", value: null }]);
     game.draw();
-    expect(host.textContent).toContain("Reading today's quest");
+    expect(host.textContent).toContain("Loading today's quest");
     expect(host.textContent).not.toContain("The Cull");
     expect(host.querySelector("[data-reward]")).toBeNull();
     expect(collect()).toBeUndefined();

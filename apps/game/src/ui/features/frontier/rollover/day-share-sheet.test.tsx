@@ -55,7 +55,7 @@ const { setViewportWidth } = await import("@/shell/frame/test-viewport");
 
 const DAY = {
   day: 2,
-  totals: { reveals: 35, cleared: 5, chests: 0, essence: 7_200, labor: 524, lords: 0 },
+  totals: { reveals: 35, cleared: 5, essence: 7_200, labor: 524 },
   rank: { from: 3, to: 1 },
   trail: ["Beasts", "Rift"] as const,
   best: { kind: "clear", site: "Beasts", guard: 483, paid: null } as const,

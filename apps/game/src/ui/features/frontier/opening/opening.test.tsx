@@ -28,12 +28,13 @@ const line = (moment: OpeningMoment, onGotIt = () => {}) => {
 describe("the interface that opens as you play", () => {
   it("shows no waiting part at launch, and a part once its moment is reached", () => {
     const launch = new Set<OpeningMoment>(["launch"]);
-    expect(partShown(launch, "troops-store")).toBe(false);
+    expect(partShown(launch, "building-list")).toBe(false);
+    expect(partShown(launch, "relic-slots")).toBe(false);
     expect(partShown(launch, "bane-row")).toBe(false);
     const barracks = new Set<OpeningMoment>(["launch", "barracks"]);
-    expect(partShown(barracks, "troops-store")).toBe(true);
     expect(partShown(barracks, "building-list")).toBe(true);
     expect(partShown(barracks, "essence-store")).toBe(false);
+    expect(partShown(new Set<OpeningMoment>(["launch", "relic"]), "relic-slots")).toBe(true);
   });
 
   it("keeps a part earned on an earlier day: only the moment counts, not what is held now", () => {
@@ -51,18 +52,20 @@ describe("the interface that opens as you play", () => {
   });
 
   it("says the design's line for each moment, naming the rules it reads", () => {
-    expect(line("launch")).toContain("This is your Realm. Build on the lit plot, then send an army into the mist.");
+    expect(line("launch")).toContain("This is your Realm. Build on the lit plot, then deploy an army into the mist.");
     expect(line("barracks")).toContain("A Barracks raises 100 Knights an hour. Knights fill your armies.");
-    expect(line("guard")).toContain("Send 150% of the guard's troops to win.");
+    expect(line("guard")).toContain("A blade or a bow shows its kind. Send 150% of the guard's troops to win.");
+    expect(line("oath")).toContain(
+      "Take one and your army has it for today. A full army swaps one. You can also pass for +20 stamina.",
+    );
     expect(line("shop")).toContain("Stamina refills +1/min. A Fragment refills 2 points now.");
     expect(line("relic")).toContain("A relic works for 30 minutes per tier. An army carries 3.");
     expect(line("city")).toContain("Scouts reveal for 10 stamina, not 20.");
+    expect(line("spire")).toContain("Guards are x2 on each layer down. A cleared camp refills your armies.");
     expect(line("essence")).toContain("Essence buys research and lores.");
     expect(line("well-lore")).toContain("Your armies can now find wells.");
     expect(line("shrine-lore")).toContain("Your armies can now find shrines.");
-    expect(line("deep")).toContain(
-      "Every tick (120 seconds) drains troops. Your army panel shows its loss and time left. Hold a site to earn.",
-    );
+    expect(line("deep")).toContain("Every tick (120 seconds) here, each army loses 200 troops. Hold a site to earn.");
     expect(line("bane")).toContain("A bane. Today's quest is the bane quest.");
     expect(line("aspects")).toContain("Your Aspect races to build its hyperstructure.");
   });

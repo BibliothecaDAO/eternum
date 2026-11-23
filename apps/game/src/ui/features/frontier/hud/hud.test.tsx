@@ -3,10 +3,13 @@ import { createRoot, type Root } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Sheet } from "@/ui/design-system/kit/sheet";
 import { dayOf } from "@bibliothecadao/eternum";
+import { TroopType } from "@bibliothecadao/types";
 
+import { OpeningProvider } from "../opening/opening-context";
 import { EARLY_REALM, MID_REALM } from "../research/progression-fixture";
 import { canResearchNow, readResearchTree } from "../research/research-tree";
 import { secondsUntilHeld } from "./army-order";
@@ -18,9 +21,12 @@ import { HudBands } from "./hud-bands";
 import { useOnePanel } from "./one-panel";
 import { MenuPage } from "./menu-page";
 import { OrderBar } from "./order-bar";
+import { PickedArmy } from "./picked-army";
 import { DayPill } from "./day-pill";
 import { HeaderStores } from "./header-stores";
 import { PhoneWorldActions } from "./frontier-nav";
+import { HUD_PLACES, resolveMenuPlaces } from "./hud-places";
+import { OfflineBanner, OfflineNotice } from "./offline-notice";
 import { type StoreReading, storeLine } from "./status-strip";
 
 const text = (markup: string) => new DOMParser().parseFromString(markup, "text/html").body.textContent ?? "";
@@ -270,19 +276,79 @@ describe("an open slot whose army is being deployed", () => {
 });
 
 describe("the phone world actions", () => {
-  it("shows Season and Menu buttons, counts unread news on Menu, and lights the open surface", () => {
+  it("shows Season and Menu buttons, dots Menu when something is new without numbers, and lights the open surface", () => {
     const onSurface = vi.fn();
     act(() => root.render(<PhoneWorldActions surface={null} onSurface={onSurface} events={2} unread={3} />));
     const buttons = [...host.querySelectorAll("button")];
     expect(buttons.map((button) => button.getAttribute("aria-label"))).toEqual(["Season", "Menu"]);
     expect(buttons.map((button) => button.getAttribute("aria-current"))).toEqual([null, null]);
-    expect(buttons[1].textContent).toBe("3");
+    expect(buttons[1].textContent).toBe("");
+    expect(buttons[1].querySelector("[data-dot]")).not.toBeNull();
     act(() => buttons[0].click());
     expect(onSurface).toHaveBeenCalledWith("season");
     act(() => buttons[1].click());
     expect(onSurface).toHaveBeenCalledWith("menu");
-    act(() => root.render(<PhoneWorldActions surface="menu" onSurface={onSurface} events={2} unread={3} />));
+    act(() => root.render(<PhoneWorldActions surface="menu" onSurface={onSurface} events={0} unread={0} />));
     expect(host.querySelectorAll("button")[1]!.getAttribute("aria-current")).toBe("page");
+    expect(host.querySelectorAll("button")[1]!.querySelector("[data-dot]")).toBeNull();
+    const seasonPlace = HUD_PLACES.find((place) => place.key === "season")!;
+    expect(host.querySelectorAll("button")[0]!.getAttribute("aria-label")).toBe(seasonPlace.label);
+    act(() =>
+      root.render(
+        <OpeningProvider opened={new Set(["launch"])}>
+          <PhoneWorldActions surface={null} onSurface={onSurface} events={0} unread={0} />
+        </OpeningProvider>,
+      ),
+    );
+    expect([...host.querySelectorAll("button")].map((button) => button.getAttribute("aria-label"))).toEqual(["Menu"]);
+  });
+
+  it("names a Paladin army Scouts on the picked-army row from Frontier's troop table", () => {
+    act(() =>
+      root.render(
+        <PickedArmy
+          army={{
+            explorerId: 7,
+            label: "Army 1",
+            number: 1,
+            art: "paladin-t1",
+            troops: 400,
+            troopsFact: { category: TroopType.Paladin },
+            stamina: { current: 100, max: 100, perExplore: 10 },
+            secondsToFull: 0,
+            ethereal: undefined,
+          }}
+          refill={null}
+          onDetails={() => undefined}
+        />,
+      ),
+    );
+    expect(host.textContent).toContain("Scouts · 400");
+    expect(host.textContent).not.toContain("Paladins");
+  });
+
+  it("reads the four non-Season Menu tiles from HUD_PLACES with Chat fourth and gates Relics on relic-slots", () => {
+    expect(HUD_PLACES.map((place) => place.key)).toEqual(["season", "research", "feed", "relics", "chat"]);
+    const allOpen = resolveMenuPlaces({
+      aspectsOpen: true,
+      researchOpen: true,
+      relicsOpen: true,
+      researchReady: true,
+      feedUnread: 2,
+      chatUnread: 1,
+      hasRealm: true,
+    });
+    expect(allOpen.map((place) => place.key)).toEqual(["research", "feed", "relics", "chat"]);
+    const noRelics = resolveMenuPlaces({
+      aspectsOpen: true,
+      researchOpen: true,
+      relicsOpen: false,
+      researchReady: false,
+      feedUnread: 0,
+      chatUnread: 0,
+      hasRealm: true,
+    });
+    expect(noRelics.map((place) => place.key)).toEqual(["research", "feed", "chat"]);
   });
 
   it("dots Research only while a node can be researched now", () => {
@@ -617,4 +683,38 @@ it.each([81, 84, 85])("shows the last %ih day with its real countdown and no tom
   expect(dayBounds(calendar, endAt + 1, day)).toEqual({ start, end: endAt });
   expect(endedDay(calendar, endAt)).toBeNull();
   expect(dayClock(calendar, endAt).day).toBeUndefined();
+});
+
+describe("the offline banner", () => {
+  afterEach(() => {
+    useConnectionStore.getState().setGlobalStatus("connected");
+  });
+
+  it("renders the reconnecting alert with its Retry action", () => {
+    const onRetry = vi.fn();
+    act(() => root.render(<OfflineBanner onRetry={onRetry} />));
+    const banner = host.querySelector<HTMLElement>('[data-offline-banner][role="alert"]')!;
+    expect(banner).not.toBeNull();
+    expect(banner.textContent).toContain("Reconnecting…");
+    const retry = banner.querySelector<HTMLButtonElement>("button")!;
+    expect(retry.textContent).toBe("Retry");
+    act(() => retry.click());
+    expect(onRetry).toHaveBeenCalledTimes(1);
+  });
+
+  it("matches the live stream state: hidden when connected, reconnecting on retry, and no reconnecting claim when failed", () => {
+    useConnectionStore.getState().setGlobalStatus("connected");
+    act(() => root.render(<OfflineNotice />));
+    expect(host.querySelector("[data-offline-banner]")).toBeNull();
+
+    useConnectionStore.getState().setGlobalStatus("reconnecting");
+    act(() => root.render(<OfflineNotice />));
+    expect(host.querySelector("[data-offline-banner]")?.textContent).toContain("Reconnecting…");
+
+    useConnectionStore.getState().setGlobalStatus("failed");
+    act(() => root.render(<OfflineNotice />));
+    const failedText = host.querySelector("[data-offline-banner]")?.textContent ?? "";
+    expect(failedText).toContain("Retry");
+    expect(failedText).not.toContain("Reconnecting…");
+  });
 });

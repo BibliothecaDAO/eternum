@@ -1,54 +1,67 @@
 import { expect, it } from "vitest";
 import { nativeOathConstants as oaths } from "@bibliothecadao/eternum/game-client";
-import { orderOathJob, orders, type OathJob } from "@bibliothecadao/types";
+import { orders, RESOURCE_PRECISION } from "@bibliothecadao/types";
+import release from "../../../../../../../contracts/l3/world-native/schema/release-definition.json";
+import type { PickEffectBase } from "../pick-effect-text";
 import { oathEffectDescription, oathName } from "./oath-details";
 
-it("explains the implemented Deep loss on both Oath surfaces", () => {
-  expect(oathEffectDescription(oaths.VITRIOL)).toBe(`Loses ${oaths.VITRIOL_LOSS_PER_TICK} troops a tick in the Deep.`);
-  expect(oathEffectDescription(oaths.POWER)).toBe(`Deals ${oaths.POWER_DAMAGE_PERCENT}% more damage.`);
-  expect(oathEffectDescription(oaths.GIANTS)).toBe(`Takes ${oaths.GIANTS_REDUCTION_PERCENT}% less damage.`);
-  expect(oathEffectDescription(oaths.PROTECTION)).toBe(
-    `Guarding a site, takes ${oaths.PROTECTION_REDUCTION_PERCENT}% less damage.`,
+const SEASON_ONE_BASE: PickEffectBase = {
+  attackStamina: release.definition.rules.troop_stamina_config.stamina_attack_req,
+  revealStamina: release.definition.rules.troop_stamina_config.stamina_explore_stamina_cost,
+  maxStamina: release.definition.rules.troop_stamina_config.stamina_knight_max,
+  staminaPerSecond:
+    release.definition.rules.troop_stamina_config.stamina_gain_per_tick /
+    release.definition.rules.tick_config.armies_tick_in_seconds,
+  deepLossPerTick: Number(release.definition.economy.deep.Some.loss_per_tick) / RESOURCE_PRECISION,
+  emptyRevealLimit: release.definition.economy.discovery.Some.empty_reveal_limit,
+};
+
+it("contextualizes every Oath effect against the game's live rules", () => {
+  expect(oathEffectDescription(oaths.VITRIOL, SEASON_ONE_BASE)).toBe("Deep troop loss: 200 → 100 per tick (less)");
+  expect(oathEffectDescription(oaths.POWER, SEASON_ONE_BASE)).toBe("Damage dealt: 100% → 120%");
+  expect(oathEffectDescription(oaths.GIANTS, SEASON_ONE_BASE)).toBe("Damage taken: 100% → 85% (less)");
+  expect(oathEffectDescription(oaths.PROTECTION, SEASON_ONE_BASE)).toBe(
+    "Damage taken guarding a site: 100% → 75% (less)",
   );
-  expect(oathEffectDescription(oaths.REFLECTION)).toBe("A well refills 80% of the stamina bar, not 40%.");
-  expect(oathEffectDescription(oaths.DETECTION)).toBe(
-    "After 4 empty reveals in a row, the next reveal is sure to find something.",
+  expect(oathEffectDescription(oaths.REFLECTION, SEASON_ONE_BASE)).toBe("Well stamina refill: 40% → 80%");
+  expect(oathEffectDescription(oaths.DETECTION, SEASON_ONE_BASE)).toBe("Find something every 4 reveals instead of 7");
+  expect(oathEffectDescription(oaths.BRILLIANCE, SEASON_ONE_BASE)).toBe("Explore rewards: 100% → 125%");
+  expect(oathEffectDescription(oaths.RAGE, SEASON_ONE_BASE)).toBe("Site and guard rewards: 100% → 125%");
+  expect(oathEffectDescription(oaths.ANGER, SEASON_ONE_BASE)).toBe("Attack cost: 30 → 20 stamina (less)");
+  expect(oathEffectDescription(oaths.TITANS, SEASON_ONE_BASE)).toBe("+60 stamina now; max stamina: 180 → 240");
+  expect(oathEffectDescription(oaths.ENLIGHTENMENT, SEASON_ONE_BASE)).toBe("Stamina recovery: +0.5/min → +0.67/min");
+  expect(oathEffectDescription(oaths.FOX, SEASON_ONE_BASE)).toBe("Reveal cost: 20 → 16 stamina (Scouts 10 → 8)");
+  expect(oathEffectDescription(oaths.SKILL, SEASON_ONE_BASE)).toBe("Low-stamina (<10) attack damage: 100% → 130%");
+  expect(oathEffectDescription(oaths.FURY, SEASON_ONE_BASE)).toBe(
+    "Won battle stamina refund: 0 → 15 stamina (50% of 30)",
   );
-  expect(oathEffectDescription(oaths.BRILLIANCE)).toBe("Reveals pay 25% more.");
-  expect(oathEffectDescription(oaths.RAGE)).toBe("Beaten guards pay 25% more.");
-  expect(oathEffectDescription(oaths.ANGER)).toBe("An attack costs 20 stamina.");
-  expect(oathEffectDescription(oaths.TITANS)).toBe("+60 stamina now, and the stamina bar holds 60 more.");
-  expect(oathEffectDescription(oaths.ENLIGHTENMENT)).toBe("Regains 33% more stamina each hour.");
-  expect(oathEffectDescription(oaths.FOX)).toBe("A reveal costs 20% less stamina.");
-  expect(oathEffectDescription(oaths.SKILL)).toBe("Deals 30% more on the attack that leaves its stamina under 10.");
-  expect(oathEffectDescription(oaths.FURY)).toBe(
-    "An attack that beats its target gives back 50% of the stamina it cost.",
-  );
-  expect(oathEffectDescription(oaths.PERFECTION)).toBe("A guard beaten with under 15% of the army lost pays 50% more.");
-  expect(oathEffectDescription(oaths.TWINS)).toBe(
-    "Your largest army beside it adds 30% of its own damage to each attack.",
-  );
+  expect(oathEffectDescription(oaths.PERFECTION, SEASON_ONE_BASE)).toBe("Clean-win (<15% lost) rewards: 100% → 150%");
+  expect(oathEffectDescription(oaths.TWINS, SEASON_ONE_BASE)).toBe("Nearby ally bonus damage: 0% → 30%");
 });
 
-it("describes every playable Oath consistently with its catalog job and rejects unknown ids", () => {
-  const jobEffectPattern = {
-    fight: /\b(?:damage|troops|Deals)\b/,
-    stamina: /^(?!.*\b(?:Deals|refills)\b).*\bstamina\b/,
-    prize: /\b(?:find|pays?|refills)\b/,
-  } satisfies Record<OathJob, RegExp>;
+it("follows tuned game rules and avoids invented base figures when a rule row is absent", () => {
+  const customBase: PickEffectBase = {
+    ...SEASON_ONE_BASE,
+    deepLossPerTick: 400,
+    attackStamina: 40,
+    staminaPerSecond: 1 / 20,
+  };
+  expect(oathEffectDescription(oaths.VITRIOL, customBase)).toBe("Deep troop loss: 400 → 100 per tick (less)");
+  expect(oathEffectDescription(oaths.ANGER, customBase)).toBe("Attack cost: 40 → 20 stamina (less)");
+  expect(oathEffectDescription(oaths.ENLIGHTENMENT, customBase)).toBe("Stamina recovery: +3/min → +4/min");
+  expect(oathEffectDescription(oaths.VITRIOL, {})).toBe("Deep troop loss: 100 per tick");
+  expect(oathEffectDescription(oaths.ANGER, {})).toBe("Attack cost: 20 stamina");
+  expect(oathEffectDescription(oaths.DETECTION, {})).toBe("Find something every 4 reveals");
+});
+
+it("describes every playable Oath uniquely with its own rule and rejects unknown ids", () => {
   const playable = orders.filter((order) => order.orderId > 0);
   expect(playable).toHaveLength(16);
-  expect(oathName(oaths.VITRIOL)).toBe("Vitriol");
-  for (const order of playable) {
-    const job = orderOathJob(order.orderId);
-    const description = oathEffectDescription(order.orderId);
-    expect(description).toMatch(jobEffectPattern[job]);
-    for (const [other, pattern] of Object.entries(jobEffectPattern)) {
-      if (other !== job) expect(description).not.toMatch(pattern);
-    }
-  }
+  const descriptions = playable.map((order) => {
+    expect(oathName(order.orderId)).toBe(order.orderName);
+    return oathEffectDescription(order.orderId, SEASON_ONE_BASE);
+  });
+  expect(new Set(descriptions).size).toBe(16);
   expect(() => oathName(0)).toThrow();
-  expect(() => oathEffectDescription(17)).toThrow();
-  expect(() => orderOathJob(0)).toThrow();
-  expect(() => orderOathJob(17)).toThrow();
+  expect(() => oathEffectDescription(17, SEASON_ONE_BASE)).toThrow();
 });
