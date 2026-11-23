@@ -19,6 +19,7 @@ import { assetLinks } from "./build/asset-links";
 import { labArtwork } from "./build/lab-artwork";
 import { isDevEnvironment } from "./src/shell/frame/environment";
 import { SHELL_COLORS } from "./src/tokens";
+import { paintingSources } from "./src/ui/design-system/kit/paintings";
 import llmTxtPlugin from "../game-docs/vite-plugin-llm-txt.mjs";
 
 /**
@@ -38,15 +39,20 @@ const appIdentity = (devEnvironment: boolean) => {
  * The page as the environment serves it: its title and icons, and a share card that sends a reader to the live app,
  * unfurling with the environment's own copy of the link preview image.
  */
-const appIdentityHtml = (identity: ReturnType<typeof appIdentity>): Plugin => ({
-  name: "app-identity-html",
-  transformIndexHtml: (html) =>
-    html
-      .replace("<title>Realms</title>", `<title>${identity.name}</title>`)
-      .replaceAll("/images/game-", identity.icon(""))
-      .replaceAll("%LINK_PREVIEW%", identity.linkPreview)
-      .replaceAll("%APP_ADDRESS%", APP_ADDRESS),
-});
+const appIdentityHtml = (identity: ReturnType<typeof appIdentity>): Plugin => {
+  const mist = paintingSources("frontier-mist");
+  return {
+    name: "app-identity-html",
+    transformIndexHtml: (html) =>
+      html
+        .replace("<title>Realms</title>", `<title>${identity.name}</title>`)
+        .replaceAll("/images/game-", identity.icon(""))
+        .replaceAll("%LINK_PREVIEW%", identity.linkPreview)
+        .replaceAll("%APP_ADDRESS%", APP_ADDRESS)
+        .replaceAll("%BOOT_MIST_SRC%", mist.src)
+        .replaceAll("%BOOT_MIST_SRCSET%", mist.srcSet),
+  };
+};
 
 // https://vitejs.dev/config/
 export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {

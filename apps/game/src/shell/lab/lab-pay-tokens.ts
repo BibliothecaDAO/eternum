@@ -1,5 +1,5 @@
 import { AVNU_ROUTER, LORDS_ADDRESS, MAINNET_TOKENS, type MainnetToken } from "@realms-world/chain";
-import { l2Provider } from "@/runtime/l2-rpc";
+import { L2_LORDS, l2Provider } from "@/runtime/l2-rpc";
 
 const MAINNET = "0x534e5f4d41494e";
 const hex = (value: bigint) => `0x${value.toString(16)}`;
@@ -10,9 +10,12 @@ const HELD_BY_TOKEN: Record<MainnetToken, bigint> = {
   strk: 0n,
   usdc: 25_000_000n,
 };
-const HELD = new Map(
-  Object.entries(HELD_BY_TOKEN).map(([key, held]) => [BigInt(MAINNET_TOKENS[key as MainnetToken].address), held]),
-);
+const HELD = new Map([
+  ...Object.entries(HELD_BY_TOKEN).map(
+    ([key, held]) => [BigInt(MAINNET_TOKENS[key as MainnetToken].address), held] as const,
+  ),
+  ...(L2_LORDS ? ([[BigInt(L2_LORDS), HELD_BY_TOKEN.lords]] as const) : []),
+]);
 
 const SOLD_FOR_THE_SEAL = new Map<bigint, bigint>([
   [BigInt(MAINNET_TOKENS.eth.address), 3_300_000_000_000_000n],

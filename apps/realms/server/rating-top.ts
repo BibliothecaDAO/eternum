@@ -1,10 +1,15 @@
 import { environmentL2 } from "@realms-world/chain";
+import { normalizeStarknetAddress as canonical } from "@realms-world/identity";
 import type { IdentityEnv } from "./env";
 import { json } from "./http";
 import { profilesOfRatingOwners } from "./profiles";
 import { ratingFailure } from "./rating-failure";
 import { ratingPoints } from "./rating-ledger";
-import { ratingIdentifier } from "./ratings";
+
+const ADDRESS_BOUND = (1n << 251n) - 256n;
+
+const ratingIdentifier = (value: string): string | null =>
+  /^0x[0-9a-fA-F]{1,64}$/.test(value) && BigInt(value) > 0n && BigInt(value) < ADDRESS_BOUND ? canonical(value) : null;
 
 /**
  * Every rated wallet in rating order and the reader's own position, one snapshot: the whole board, which the reader

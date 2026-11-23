@@ -432,7 +432,7 @@ export const CLOCK_WORDS = {
   /** Before the time left to a beginning: "Starts 16:30 · in 2h 4m". */
   in: "in",
 } as const;
-export const gameSpeed = (clockScale: number): string | undefined => (clockScale > 1 ? `${clockScale}x` : undefined);
+export const gameSpeed = (clockScale: number): string | undefined => (clockScale > 1 ? `${clockScale}×` : undefined);
 export const COUNTDOWN_WORDS = {
   opens: (date: string) => `The season opens ${date}`,
   line: (aspectCount: number, days: number | null) =>
@@ -572,49 +572,9 @@ export const SETTINGS = "Settings";
 export const BUILD_ORDER_WORDS = {
   levelUp: "Level up",
   title: "Build order",
-  /** A step's verb: the row's reason already names what it builds or deploys, or the level it reaches. */
   build: "Build",
   deploy: "Deploy",
   nothingNow: "Nothing to build now",
-  /** The maker: the player's orders, saved on their account, one of them followed. */
-  page: "Build orders",
-  yourOrders: "Your build orders",
-  /** The panel's choice of the order to follow, and its way to the page where orders are made. */
-  follow: "Order to follow",
-  makeOrders: "Make build orders",
-  theGamesOrder: "The game's order",
-  steps: (count: number) => (count === 1 ? "1 step" : `${count} steps`),
-  active: "Active",
-  use: "Use",
-  edit: "Edit",
-  copyToEdit: "Copy to edit",
-  remove: "Delete",
-  newOrder: "New order",
-  newOrderName: "My order",
-  pasteOrder: "Paste an order",
-  pasteHere: "Paste an order's JSON",
-  readIt: "Read it",
-  name: "Name",
-  addTo: (rank: string) => `Add to ${rank}`,
-  earlier: "Earlier",
-  later: "Later",
-  fewer: (goal: string) => `Fewer: ${goal}`,
-  more: (goal: string) => `More: ${goal}`,
-  removeStep: (goal: string) => `Delete: ${goal}`,
-  ranks: "Ranks",
-  gone: "This order was deleted.",
-  save: "Save",
-  copyJson: "Copy JSON",
-  askAi: "Get help from an AI",
-  copied: "JSON copied",
-  promptCopied: "Prompt copied",
-  noClipboard: "The clipboard is not available here.",
-  signInToSave: "Sign in to save your orders.",
-  unreachable: "Your build orders could not be reached.",
-  accountChanged: "Account changed. Reload your build orders.",
-  /** Another device saved first: the account's orders were read again, and this draft is kept. */
-  savedElsewhere: "Reloaded changed orders. Save this draft again.",
-  full: (limit: number) => `Limit: ${limit} orders. Delete one first.`,
 } as const;
 export const EVENTS_WORDS = {
   /** What Events and its Log say while the player's filter holds no story. */
@@ -1113,22 +1073,30 @@ export const RESULT_WORDS = {
   /** A finished game's map, opened as a spectator: how it ended, to scout. */
   endMap: "See the end map",
 } as const;
-/** A Frontier season's recap (in the game when it ends, and on its Results) and its share card. */
 export const RECAP_WORDS = {
-  /** After the place on the card: "#3 of 45 realms". */
   ofRealms: (field: string) => `of ${field} realms`,
-  /** The LORDS the player's podium place pays, on the card. */
   prize: "Prize",
   podium: "The podium",
-  /** The deck's four cards, each named at its top. */
   cardNames: { place: "Your place", podium: "The podium", sites: "Your sites", haul: "Your haul" },
-  /** The podium card's title, after the name of who took first place. */
+  overviewCardNames: {
+    podium: "The podium",
+    field: "The field",
+    sites: "Sites cleared",
+    haul: "Season haul",
+  },
+  raceCardNames: {
+    towers: "The hyperstructures",
+    pool: "LORDS pool",
+    standing: "Your Realm",
+    field: "The field",
+    season: "The season",
+  },
+  realmsCount: (count: number) => formatCount(count, "Realm"),
+  seasonDays: (days: number) => `${formatExact(days)} days`,
   tookTheSeason: "took the season",
-  /** A phone's story through the cards: its strip, and the halves that step it. */
   cards: "Your season's cards",
   next: "Next card",
   previous: "Previous card",
-  /** The deck's image, where it is saved rather than copied. */
   fileName: "my-season.png",
 } as const;
 
@@ -1239,6 +1207,19 @@ export const SHOP_WORDS = {
 
 export const FRAGMENTS_PAGE_WORDS = {
   title: `Get ${FRAGMENTS}`,
+  buyTab: `Buy ${FRAGMENTS}`,
+  spendTab: `Spend ${FRAGMENTS}`,
+  customLabel: "Custom amount",
+  customHint: (min: number) => `Minimum ${formatExact(min)} ${FRAGMENTS}`,
+  sealCardTitle: `The ${ANCIENT_SEAL}`,
+  sealCardDetail: (percent: number, seasonName?: string) =>
+    `+${formatExact(percent)}% daily quest labor · ${seasonName ? `${seasonName} ` : ""}Realm skin`,
+  sealInGameNote: `Activate your ${ANCIENT_SEAL} inside your Realm once you hold enough ${FRAGMENTS}.`,
+  inGameUsesTitle: `In-game ${FRAGMENTS} uses`,
+  inGameStamina: (points: number) =>
+    `Refill stamina above the ${DEEP} (+${formatExact(points)} stamina per ${FRAGMENT})`,
+  inGameOath: (cost: number) => `Reroll Oath choices (${formatExact(cost)} ${FRAGMENTS})`,
+  noLiveSeason: "No live Frontier season right now. Check back when the season opens.",
   pack: (fragments: number) => formatCount(fragments, FRAGMENT, FRAGMENTS),
   sealPack: `The ${ANCIENT_SEAL}`,
   price: (fragments: number) => formatDollars(fragments * FRAGMENT_CENTS),
@@ -1312,15 +1293,19 @@ export const INVALID_REALM_NUMBER = "Enter a Realm number from 1–8,000.";
 const CREATE_YOUR_REALM = "Create your Realm";
 export const HOME_STEP_WORDS = {
   title: CREATE_YOUR_REALM,
-  /** The step's one verb, and what it says while the home is founded. */
   found: CREATE_YOUR_REALM,
   founding: "Creating your Realm…",
-  /** The name a new account was given at sign-up, said where the player first chooses something of their own. */
-  playsAs: (name: string) => `You play as ${name}`,
-  changeOnYou: "Change it on You",
   loading: "Reading what you hold…",
   freeHome: "A free home",
   freeHomeLine: "Hold a Realm to add a daily claim.",
+  myRealmTab: (count: number) => `Use My Realm (${formatExact(count)})`,
+  playFreeTab: "Play Free (Pick Any Aspect)",
+  playFreeNote: (percent: number) =>
+    `Pick any Aspect & Order. No +${formatExact(percent)}% daily quest labor bonus unless you get an ${ANCIENT_SEAL}.`,
+  questBonus: (percent: number, wonderFragments = 0) =>
+    wonderFragments > 0
+      ? `+${formatExact(percent)}% daily quest labor · +${formatExact(wonderFragments)} ${FRAGMENTS} per quest`
+      : `+${formatExact(percent)}% daily quest labor`,
   taken: "Taken",
   keepFree: "Continue with my free home",
   attachTitle: "Choose a daily claim",
@@ -1358,6 +1343,7 @@ export const PRIZE_UNHELD = { open: "Open", awarding: "Pending" } as const;
 export const WORDS = {
   play: "Play",
   season: SEASON,
+  shop: "Shop",
   /** What changed in the game and the Scroll's posts: a place of its own. */
   whatsNew: "What's new",
   /** Realms' marketplace, a site of its own: the bar's one place outside the app. */
@@ -1370,7 +1356,8 @@ export const WORDS = {
   dev: "Dev",
   /** Start Frontier on a first visit; entry is free. */
   playFree: "Play free",
-  resume: "Resume",
+  enterRealm: "Enter Realm",
+  seasonRace: "Season Race",
   /** Go into a Blitz game the player is on. */
   enter: "Enter",
   /** Look at a Blitz game the player is not on. */
@@ -1400,6 +1387,10 @@ export const PLAY_WORDS = {
   ended: "Ended",
   /** A season's players, counted by the one plural rule (formatCount): "1 player", "14 players". */
   player: "player",
+  rehearsal: "Rehearsal",
+  rehearsalBadge: (speed: string) => `${speed} Rehearsal`,
+  joinRehearsal: "Join rehearsal",
+  resumeRehearsal: "Resume",
 } as const;
 
 /** The lore's line, on the first visit's painting and on sign-in (approved 25 September). */
@@ -1453,17 +1444,7 @@ export const SIGN_IN_WORDS = {
   continueInBrowser: "Continue in browser",
 } as const;
 
-/** Blitz's rows and lobby: the steps on Join, the seat's cost, and what stands where an action cannot. */
 export const BLITZ_WORDS = {
-  /**
-   * Blitz's column with no Blitz at all and none left in the season's Blitz calendar (live-qa-night-1 P3-12: it vanished
-   * once an ended one's results were seen).
-   */
-  noneScheduled: "No Blitz scheduled this season.",
-  /** Blitz's column before the calendar's next game opens for entry: "Starts 12:00 · Entry opens 10:25 · in 17m". */
-  nextRanked: "Next ranked Blitz",
-  /** The next game's entry, due to open at the schedule's next tick. */
-  entryOpening: "Entry opens in a moment",
   preparing: "Preparing…",
   lobby: "Lobby",
 } as const;
@@ -1550,43 +1531,44 @@ export const DOORWAY_WORDS = {
   openRealm: "Open realm",
 } as const;
 
-/** Season and a game's Results. */
 export const SEASON_WORDS = {
-  /** The view switch's name, for assistive technology. */
   views: "Season views",
-  /** What a board row's explore count is, read after it. */
   sitesCleared: "sites cleared",
   share: "Share",
-  /** Between a place and the field: "3rd of 24". */
   of: "of",
-  /** Blitz's own unit, one word wherever a player reads it. */
   vp: "points",
-  /** Under the LORDS the player's realm has earned this season. */
   lordsEarned: "LORDS earned",
-  /** Frontier's board before any realm is on it, and how to get on it. */
   boardEmpty: "No realm yet. Create one from Play.",
-  /** A player with no realm on Frontier's board this season. */
   notOnBoard: "Not on Frontier's board yet",
-  /** Frontier's seasons that have ended, under its board. */
   pastSeasons: "Past seasons",
-  /** Prod's October season, kept after its shard was torn down: its name, in place of a number. */
   playtest: "Playtest",
+  allAspects: "All Aspects",
+  aspectBreakdown: "Aspect standings",
+  yourStanding: "Your standing",
+  noRealmYet: "Create a Realm on Play to join an Aspect.",
+  poolRule: (perPoint: number, finishBonus: number) =>
+    `${formatExact(perPoint)} LORDS per height point · +${formatExact(finishBonus)} LORDS to first finisher`,
+  gloryNote: (minGlory: number) =>
+    `LORDS are shared by Glory at season end. Hold ${DEEP} sites to earn Glory (${formatExact(minGlory)}+ Glory to share).`,
+  stageMilestones: "Stage Triumphs",
+  stageAtHeight: (height: number) => `${formatExact(height)} height`,
+  worthSoFar: "Pool so far",
 } as const;
 
-/** The Blitz rating (MMR): its panel's words. The rating is automatic at settlement; nothing here asks for it. */
-export const RATING_WORDS = {
-  rating: "Rating",
-  blitzRating: "Blitz rating",
-  /** A Realms account with no linked wallet carries no rating (not 0, not 1000). */
-  unlinked: "Link a wallet to carry a rating",
-  /** Blitz's board before anyone has a rating. */
-  noneRated: "No ratings yet",
-} as const;
-
-/** You and Settings: their rows and groups, Settings' sheets and confirms. */
 export const PROFILE_WORDS = {
   settings: "Settings",
-  /** The docs site, opened in a new tab. */
+  overviewTab: "Overview & Realms",
+  overviewShort: "Realms",
+  referralsTab: "Referrals & Invite",
+  referralsShort: "Referrals",
+  walletTab: "Wallet & Devices",
+  walletShort: "Wallet",
+  settingsShort: "Settings",
+  tabsLabel: "Account sections",
+  noAspectInvite: "Join an Aspect on Play to get your personal invite link.",
+  friendsProgress: (paid: number, limit: number) => `${formatExact(paid)} of ${formatExact(limit)} friends`,
+  friendMilestone: (perFriend: number, bonus: number, limit: number) =>
+    `+${formatExact(perFriend)} ${FRAGMENTS} per friend · +${formatExact(bonus)} bonus at ${formatExact(limit)}`,
   howToPlay: "How to play",
   account: "Account",
   notifications: "Notifications",
@@ -1594,11 +1576,6 @@ export const PROFILE_WORDS = {
   /** Music outside a match, on this device. */
   music: "Music",
   recentGames: "Recent games",
-  /** The counts at the foot of the player's own card, each opening its sheet. */
-  holdings: "Holdings",
-  realms: "Realms",
-  /** Under a count the holdings could not read: it says why in its sheet. */
-  unknownCount: "—",
   /** Recent games with none finished yet: the player's own, and another player's. */
   noGamesOwn: "Your finished games will show here.",
   noGames: "No finished games yet.",
@@ -2193,7 +2170,6 @@ export const REALM_SIDE_WORDS = {
   invited: (sender: string | null, invited: string, realms: string) =>
     `${sharerName(sender)} plays ${invited}. Your Realm plays ${realms}.`,
   kept: (kept: string, realms: string) => `You chose ${kept} before the season. Your Realm plays ${realms}.`,
-  bonus: "Your Realm holds the quest bonus.",
   playRealm: "Play my Realm",
   keeps: "You keep the quest bonus.",
   apart: (sender: string | null) => `${sharerName(sender)} is in another Aspect.`,

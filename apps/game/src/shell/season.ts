@@ -1,8 +1,16 @@
-import { aspectLordsWorth, formatDate } from "@bibliothecadao/types";
-import { raceFinishHeight, spendsFragments } from "@bibliothecadao/eternum/game-client";
+import { aspectLordsWorth, aspects, catalogOrder, formatDate, type AspectId } from "@bibliothecadao/types";
+import { canonicalRealm } from "@bibliothecadao/eternum";
+import {
+  nativeFragmentConstants,
+  nativeRaceConstants,
+  raceFinishHeight,
+  raceStage,
+  spendsFragments,
+} from "@bibliothecadao/eternum/game-client";
+import type { HeraldAspectRace } from "@bibliothecadao/eternum/game-sync";
 
 import { isGameOver } from "@/runtime/world/directory";
-import { PLAY_WORDS, SEASON } from "@/ui/design-system/kit/words";
+import { ASPECT_PAGE_WORDS, DAY, HOME_STEP_WORDS, PLAY_WORDS, SEASON, dayOfSeason } from "@/ui/design-system/kit/words";
 import { type DayClock, dayTone } from "@/ui/features/frontier/hud/day-clock";
 import { isRealmCategory } from "@bibliothecadao/eternum/expeditions";
 
@@ -84,6 +92,105 @@ export const seasonEnded = (season: DirectoryGame): string =>
 
 export const SEASON_SPENDS_FRAGMENTS = spendsFragments({ command_mask: BigInt(release.definition.rules.command_mask) });
 
+const SEASON_DAYS = Number(release.definition.economy.race.Some.season_days);
+const RACE_STAGE_HEIGHT = Number(release.definition.economy.race.Some.stage_height);
+export const RACE_STAGE_COUNT = nativeRaceConstants.STAGE_COUNT;
+const RACE_FINISH_HEIGHT = raceFinishHeight(RACE_STAGE_HEIGHT);
+
+const raceStageHeightOf = (finishHeight: number): number => Math.round(finishHeight / RACE_STAGE_COUNT);
+
+export const questBonusPercentOf = (
+  game: Pick<DirectoryGame, "quest_bonus_percent"> | null | undefined,
+): number | null => game?.quest_bonus_percent ?? null;
+
+export const realmQuestBonus = (bonusPercent: number, wonder: boolean): string =>
+  HOME_STEP_WORDS.questBonus(bonusPercent, wonder ? nativeFragmentConstants.WONDER_QUEST_FRAGMENTS : 0);
+
+export const seasonDaysOf = (game: Pick<DirectoryGame, "aspect_race"> | null | undefined): number | null =>
+  game?.aspect_race?.season_days ?? null;
+
+export const seasonDayLabel = (day: number | undefined, seasonDays: number | null): string | null =>
+  day === undefined ? null : seasonDays !== null ? dayOfSeason(String(day), String(seasonDays)) : `${DAY} ${day}`;
+
+const TRIUMPH_ENTRIES = Object.entries(ASPECT_PAGE_WORDS.triumph).map(([stage, name]) => ({
+  stage: Number(stage),
+  name,
+}));
+
+export const RACE_TRIUMPHS: readonly { stage: number; name: string }[] = Array.from(
+  { length: RACE_STAGE_COUNT - 1 },
+  (_, index) => {
+    const stage = index + 1;
+    const entry = TRIUMPH_ENTRIES.find((item) => item.stage === stage);
+    if (!entry) throw new Error(`Missing Triumph name for stage ${stage}`);
+    return entry;
+  },
+);
+
+if (TRIUMPH_ENTRIES.length !== RACE_TRIUMPHS.length) {
+  throw new Error(`Expected ${RACE_TRIUMPHS.length} Triumph names, found ${TRIUMPH_ENTRIES.length}`);
+}
+
+export const raceStageOf = (height: number, finishHeight: number): number =>
+  raceStage(height, finishHeight / RACE_STAGE_COUNT);
+
+export type AspectRaceStanding = {
+  id: AspectId;
+  name: string;
+  rank: number;
+  height: number;
+  stage: number;
+  finished: boolean;
+  lords: number;
+  members: number | null;
+};
+
+export const aspectRaceStandings = (
+  race: HeraldAspectRace,
+  members: Readonly<Record<AspectId, number>> | null,
+): {
+  finishHeight: number;
+  stageHeight: number;
+  standings: AspectRaceStanding[];
+  byAspect: Record<AspectId, AspectRaceStanding>;
+  winner: AspectRaceStanding | null;
+} => {
+  const finishHeight = race.finish_height;
+  const stageHeight = raceStageHeightOf(finishHeight);
+  const rows: AspectRaceStanding[] = aspects.map((aspect) => {
+    const height = race.heights[aspect.id];
+    const finished = finishHeight > 0 && height >= finishHeight;
+    return {
+      id: aspect.id,
+      name: aspect.name,
+      rank: 0,
+      height,
+      stage: raceStageOf(height, finishHeight),
+      finished,
+      lords: aspectLordsWorth(height, finished),
+      members: members?.[aspect.id] ?? null,
+    };
+  });
+  const byAspect = Object.fromEntries(rows.map((row) => [row.id, row])) as Record<AspectId, AspectRaceStanding>;
+  const standings = [...rows].sort((a, b) => b.height - a.height || a.id - b.id);
+  standings.forEach((row, index) => {
+    row.rank = index + 1;
+  });
+  const winner = standings.find((row) => row.finished) ?? null;
+  return { finishHeight, stageHeight, standings, byAspect, winner };
+};
+
+export const seasonPlayerHome = (season: Pick<DirectoryGame, "player_state"> | null | undefined) => {
+  const realmId = seasonRealmId(season);
+  const realm = realmId !== null ? canonicalRealm(realmId) : null;
+  const order = realm && realm.order !== 0 ? catalogOrder(realm.order) : null;
+  const aspect: AspectId | null = order?.aspect ?? null;
+  return { realmId, realm, order, aspect };
+};
+
+export const seasonPlayerAspect = (season: Pick<DirectoryGame, "player_state"> | null | undefined): AspectId | null =>
+  seasonPlayerHome(season).aspect;
+
 export type SeasonOpening = { startsAt: number; seasonDays: number | null; aspectLords: number | null };
 
 export const seasonOpening = (phases: readonly SeasonPhase[], now: number): SeasonOpening | null => {
@@ -91,10 +198,9 @@ export const seasonOpening = (phases: readonly SeasonPhase[], now: number): Seas
   if (frontier?.phase !== "frontier") return null;
   const startsAt = Date.parse(frontier.startsAt) / 1000;
   if (!(startsAt > now)) return null;
-  const race = release.definition.economy.race.Some;
   return {
     startsAt,
-    seasonDays: Number(race.season_days),
-    aspectLords: aspectLordsWorth(raceFinishHeight(race.stage_height), false),
+    seasonDays: SEASON_DAYS,
+    aspectLords: aspectLordsWorth(RACE_FINISH_HEIGHT, false),
   };
 };

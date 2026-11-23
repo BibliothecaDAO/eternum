@@ -1,6 +1,7 @@
 import { formatPercent } from "@bibliothecadao/types";
 import { useEffect, useRef, useState } from "react";
 
+import { advanceLoadingProgress, useMonotonicLoadingProgress } from "@/game-entry/loading-progress";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { DOORWAY_WORDS } from "@/ui/design-system/kit/words";
 
@@ -8,7 +9,10 @@ import type { DoorwayView } from "./doorway-view";
 
 export const EntryProgress = ({ view, showTip = false }: { view: DoorwayView; showTip?: boolean }) => {
   const running = view.steps.find(({ state }) => state !== "done") ?? view.steps[view.steps.length - 1];
-  const percent = useNeverBack(view.percent);
+  const percent = useMonotonicLoadingProgress(view.percent);
+  useEffect(() => {
+    advanceLoadingProgress(view.percent);
+  }, [view.percent]);
   const left = useSecondsLeft(percent);
   return (
     <section aria-label={DOORWAY_WORDS.entering} className="doorway-progress">
@@ -46,14 +50,6 @@ const DoorwayTip = ({ icon, title, detail }: { icon: IconMeaning; title: string;
     </span>
   </div>
 );
-
-const useNeverBack = (percent: number): number => {
-  const [highest, setHighest] = useState(percent);
-  useEffect(() => {
-    setHighest((seen) => Math.max(seen, percent));
-  }, [percent]);
-  return Math.max(highest, percent);
-};
 
 const useSecondsLeft = (percent: number): number | null => {
   const start = useRef<{ at: number; percent: number } | null>(null);

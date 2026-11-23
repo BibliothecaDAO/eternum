@@ -93,7 +93,7 @@ it("counts the friends an Aspect link brought who were paid, the Fragments they 
   );
 });
 
-it("stands only once the player has posted a day or a friend joined, and says nothing when identity cannot tell", async () => {
+it("stays visible with 0 shares and a 10-slot progress track, and hides only when identity fails", async () => {
   service.shareTally.mockResolvedValue({
     links: 0,
     posted: 0,
@@ -104,19 +104,9 @@ it("stands only once the player has posted a day or a friend joined, and says no
     fragmentsEarned: 0,
   });
   await draw();
-  expect(host.textContent).toBe("");
-  // A sheet opened and closed without a post made a link, but shared no day.
-  service.shareTally.mockResolvedValue({
-    links: 1,
-    posted: 0,
-    visits: 0,
-    joined: 0,
-    activated: 0,
-    friendsPaid: 0,
-    fragmentsEarned: 0,
-  });
-  await draw();
-  expect(host.textContent).toBe("");
+  expect(host.querySelector("[data-referrals-panel]")).not.toBeNull();
+  expect(host.querySelectorAll(".referrals-slot")).toHaveLength(10);
+  expect(host.textContent).toContain("0 of 10 friends");
   service.shareTally.mockRejectedValue(new Error("identity unavailable"));
   await draw();
   expect(host.textContent).toBe("");

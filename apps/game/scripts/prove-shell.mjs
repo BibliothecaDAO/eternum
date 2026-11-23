@@ -165,7 +165,7 @@ export const labFlows = (labCode = labEmailCode(), wrongCode = labCode === "2222
     steps: [
       showing(
         press("Open Settings"),
-        `location.pathname === "/profile/settings" && location.hash === "#delete-account" && document.querySelector('[data-band="body"]') !== null`,
+        `location.pathname === "/profile" && location.hash === "#delete-account" && document.querySelector('[data-band="body"]') !== null`,
       ),
     ],
   },

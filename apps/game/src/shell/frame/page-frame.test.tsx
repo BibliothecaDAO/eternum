@@ -105,15 +105,14 @@ describe.each(SIZES)("every page at %i × %i keeps each control in its band", (w
       expect(bandOrder(container).filter((name) => name !== "body" && name !== "footer")).toEqual(
         ["top", "notice", "foot", "tabs"].filter((name) => band(container, name)),
       );
-      expect(controlsIn(band(container, "tabs")).filter((control) => control.dataset.role === "tab")).toHaveLength(4);
+      expect(controlsIn(band(container, "tabs")).filter((control) => control.dataset.role === "tab")).toHaveLength(5);
     } else {
-      // One bar across the top: the lockup as a mark, then the four places and nothing else, above every other band.
       expect(top).toBeNull();
       const bar = band(container, "bar");
       expect(bandOrder(container)[0]).toBe("bar");
       expect(bar!.querySelector('[data-role="lockup"]')!.matches(CONTROLS)).toBe(false);
       const controls = controlsIn(bar);
-      expect(controls.map((control) => control.dataset.role)).toEqual(["tab", "tab", "tab", "tab"]);
+      expect(controls.map((control) => control.dataset.role)).toEqual(["tab", "tab", "tab", "tab", "tab"]);
       expect(band(container, "tabs")).toBeNull();
     }
   });
@@ -122,7 +121,7 @@ describe.each(SIZES)("every page at %i × %i keeps each control in its band", (w
 describe("a phone's top row", () => {
   it.each([
     ["/season", null],
-    ["/profile/settings", "Settings"],
+    ["/profile/settings", null],
     ["/scroll", "What's new"],
   ])("on %s names the page by its title, a place by the lockup", async (path, title) => {
     setViewportWidth(390);
@@ -173,7 +172,7 @@ describe.each(SIZES)("the current place at %i × %i", (width) => {
       (tab) => tab.textContent,
     );
 
-  it.each(["/terms", "/privacy", "/credits"])(
+  it.each(["/terms", "/privacy", "/credits", "/scroll"])(
     "marks no place current on %s, read from the footer (qa-app-1 P3-3)",
     async (path) => {
       setViewportWidth(width);
@@ -181,10 +180,9 @@ describe.each(SIZES)("the current place at %i × %i", (width) => {
     },
   );
 
-  // What's new is read from You, so You is the place lit there.
-  it("marks You current on the patch notes", async () => {
+  it("marks Shop current on /shop", async () => {
     setViewportWidth(width);
-    expect(current(await renderPath("/scroll"))).toEqual(["You"]);
+    expect(current(await renderPath("/shop"))).toEqual(["Shop"]);
   });
 });
 

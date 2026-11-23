@@ -18,10 +18,18 @@ vi.mock("@/hooks/context/identity-session", async (importOriginal) => ({
   useIdentitySession: () => ({ status: identity.session ? "signed-in" : "signed-out", session: identity.session }),
 }));
 
+vi.mock("./herald", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./herald")>()),
+  useRealmsPlayer: () => ({ data: "0x7" }),
+  useDirectory: () => ({ data: { games: [] } }),
+  useLeaderboard: () => ({ data: undefined }),
+  useRecentResults: () => ({ isError: false, isPending: false, data: { games: [] } }),
+}));
+
 import { identityClient } from "@/hooks/context/identity-session";
 
-import { AccountCard } from "./profile/account-card";
-import { SettingsPage } from "./profile/profile-pages";
+import { ProfilePage, SettingsRedirect } from "./profile/profile-pages";
+import { linkWalletHref } from "./profile/settings-route";
 import { useConnectStore } from "./sign-in/connect";
 
 const FROM = "/season";
@@ -63,6 +71,7 @@ const mount = async (path: string, page: () => ReactNode) => {
           <QueryClientProvider client={client}>
             <Where />
             <Routes>
+              <Route path="/profile/settings" element={<SettingsRedirect />} />
               <Route path="*" element={page()} />
             </Routes>
           </QueryClientProvider>
@@ -80,29 +89,27 @@ const mount = async (path: string, page: () => ReactNode) => {
 const press = (word: string) =>
   act(async () => [...document.querySelectorAll("button")].find((button) => button.textContent === word)!.click());
 
-it("opens Settings on the payout wallet when sent to link one, and returns where it was sent from once it is linked", async () => {
+it("opens Wallet & Devices when sent to link a wallet, and returns where it was sent from once it is linked", async () => {
   identity.session = unlinked;
-  const render = await mount(`/profile/settings?next=${encodeURIComponent(FROM)}`, () => (
-    <AccountCard session={identity.session!} />
-  ));
+  const render = await mount(linkWalletHref(FROM), () => <ProfilePage />);
   expect(document.body.textContent).toContain("I have a wallet");
-  expect(where).toContain("/profile/settings");
+  expect(where).toContain("/profile");
 
   identity.session = linked;
   await render();
   expect(where).toBe(FROM);
 });
 
-it("keeps a player on Settings when their wallet was already linked as they arrived", async () => {
+it("keeps a player on Wallet & Devices when their wallet was already linked as they arrived", async () => {
   identity.session = linked;
-  await mount(`/profile/settings?next=${encodeURIComponent(FROM)}`, () => <AccountCard session={identity.session!} />);
-  expect(where).toBe(`/profile/settings?next=${encodeURIComponent(FROM)}`);
+  await mount(linkWalletHref(FROM), () => <ProfilePage />);
+  expect(where).toBe(`/profile?next=${encodeURIComponent(FROM)}`);
 });
 
 it("keeps a player who signs in from Settings on Settings, with where it was sending them", async () => {
   const settings = `/profile/settings?next=${encodeURIComponent(FROM)}`;
-  await mount(settings, () => <SettingsPage />);
+  await mount(settings, () => <ProfilePage />);
   await press("Sign in");
   expect(useConnectStore.getState().request).toEqual({ next: null });
-  expect(where).toBe(settings);
+  expect(where).toBe(`/profile?next=${encodeURIComponent(FROM)}`);
 });

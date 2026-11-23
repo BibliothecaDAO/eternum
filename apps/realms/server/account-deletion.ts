@@ -28,7 +28,6 @@ import { spendSignInCode } from "./wallet-changes";
  * | `notification_preferences`, `notification_push_subscriptions`      | deleted                                        |
  * | `realms_accounts`, `device_sessions`, `revoked_devices`,           | deleted: no device can be approved again       |
  * | `account_browsers`                                                 |                                                |
- * | `build_order_books`, `opening_progress`, `seal`, `news_email_sends` | deleted                                        |
  * | `fragment_credits`                                                 | deleted                                        |
  * | `store_receipts` (the payment ledger)                              | kept, its owner cleared: a receipt stays spent |
  * | `default_wallets`, `wallet_recoveries`, `sponsored_executions`     | deleted: the wallet stays on chain, owned by   |
@@ -114,7 +113,6 @@ const DELETED_BY_REALMS_ID = [
   ["device_sessions", "realmsId"],
   ["revoked_devices", "realmsId"],
   ["account_browsers", "realmsId"],
-  ["build_order_books", "owner"],
   ["opening_progress", "owner"],
   ["order_intents", "owner"],
   ["seal_grants", "owner"],

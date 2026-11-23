@@ -20,7 +20,10 @@ const identity = vi.hoisted(() => {
 });
 vi.mock("@/hooks/context/identity-session", () => ({
   identityClient: identity.client,
-  useIdentitySessionStore: { getState: () => identity.state },
+  useIdentitySessionStore: Object.assign(
+    <T,>(selector: (state: typeof identity.state) => T) => selector(identity.state),
+    { getState: () => identity.state },
+  ),
   useIdentitySession: () => ({ status: "signed-out", session: null }),
   notificationOwnerOf: () => null,
   // The account's chosen name, as the real reader gives it: none while the name is still the account's id.
@@ -32,7 +35,7 @@ vi.mock("../play/age-pages", () => ({ DominionPage: () => null, EternumPage: () 
 vi.mock("../profile/profile-pages", () => ({
   PlayerPage: () => null,
   ProfilePage: () => null,
-  SettingsPage: () => null,
+  SettingsRedirect: () => null,
 }));
 vi.mock("../season-tab/results-page", () => ({ ResultsPage: () => null }));
 vi.mock("../season-tab/season-page", () => ({ SeasonPage: () => null }));
@@ -146,7 +149,7 @@ it.each([
   );
   const lab = await renderLab(`/lab/app/first-visit/${page}`);
   const places = [...lab.querySelectorAll('[data-role="tab"]')];
-  expect(places).toHaveLength(4);
+  expect(places).toHaveLength(5);
   const current = places.filter((place) => place.getAttribute("aria-current") === "page");
   expect(current.map((place) => place.textContent)).toEqual(lit);
 });

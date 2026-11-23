@@ -33,6 +33,8 @@ export const CONNECT = "Connect window";
 const DESTINATIONS = {
   "Play free": () => CONNECT,
   Play: gamePath,
+  "Enter Realm": gamePath,
+  "Join rehearsal": gamePath,
   Resume: gamePath,
   Enter: gamePath,
   Watch: (item) => `${gamePath(item)}?spectate=true`,

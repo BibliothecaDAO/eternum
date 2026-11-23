@@ -35,6 +35,7 @@ vi.mock("@/hooks/use-game-entry", () => ({
       name: "frontier-staging",
       mode: "frontier",
       dev_mode_on: false,
+      quest_bonus_percent: 50,
       aspect_members: settlement.aspects ? { 1: 0, 2: 0, 3: 0, 4: 0 } : null,
       player_state: { structures: [{ entity_id: 7, category: 1, realm_id: 3098, level: 2 }] },
       clock: {
@@ -235,6 +236,7 @@ it("starts a holder on their first Realm, wonders first, and founds with it", as
     await vi.waitFor(() => expect(entry.featured()).toBe(name(538)));
     expect(entry.strip()).toEqual([`${realmChoice(538)} *`, realmChoice(3)]);
     expect(entry.host.textContent).toContain("The Glowing Geyser");
+    expect(entry.host.textContent).toContain("+50% daily quest labor · +10 Fragments per quest");
     expect(entry.host.querySelector('input[aria-label="Realm number"]')).toBeNull();
     await entry.press("Create your Realm");
     await vi.waitFor(() => expect(settlement.settled).toBe(true));
@@ -853,6 +855,66 @@ describe("a friend's Aspect invite at a Season 1 home's founding", () => {
       try {
         await vi.waitFor(() => expect(entry.featured()).toBe(name(538)));
         expect(warning(entry.host)).toBeNull();
+      } finally {
+        await entry.close();
+      }
+    });
+
+    it("explains the quest bonus, hides redundant Aspect cards and PlaysAs, and lets a holder play free without a Realm", async () => {
+      const registered = realmHolder(null);
+      const entry = await openEntry();
+      try {
+        await vi.waitFor(() => expect(entry.featured()).toBe(name(538)));
+        expect(entry.host.textContent).toContain("+50% daily quest labor");
+        expect(entry.host.textContent).not.toContain("Your Realm holds the quest bonus");
+        expect(entry.host.textContent).not.toContain("You play as");
+        expect(entry.host.querySelectorAll(".app-aspect-card")).toHaveLength(0);
+        expect(entry.host.textContent).not.toContain("Play free (without a Realm)");
+        expect(entry.host.querySelector('[data-entry-mode-switch] [role="tablist"]')?.textContent).toBe(
+          "Use My Realm (1)Play Free (Pick Any Aspect)",
+        );
+
+        await entry.press("Play Free (Pick Any Aspect)");
+        await vi.waitFor(() => expect(entry.host.querySelectorAll(".app-aspect-card")).toHaveLength(4));
+        expect(entry.host.querySelector(".home-picker__featured")).toBeNull();
+        expect(entry.host.textContent).toContain("No +50% daily quest labor bonus unless you get an Ancient Seal.");
+        expect(entry.host.textContent).not.toContain("Use one of my Realms instead");
+
+        await entry.press("Use My Realm (1)");
+        await vi.waitFor(() => expect(entry.featured()).toBe(name(538)));
+        expect(entry.host.querySelectorAll(".app-aspect-card")).toHaveLength(0);
+
+        await entry.press("Play Free (Pick Any Aspect)");
+        await join(entry.host, "Luminary");
+        await vi.waitFor(() => expect(settlement.calls).toEqual([firstOrderOf(2)]));
+        expect(registered).toEqual([{ gameId: 8 }]);
+      } finally {
+        await entry.close();
+      }
+    });
+
+    it("disables the Realm / Play Free switch while settlement is in progress", async () => {
+      (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+      settlement.aspects = true;
+      signIn("0x456");
+      vi.spyOn(identityClient, "joinedShare").mockResolvedValue(null);
+      let finishRegister: () => void = () => undefined;
+      vi.stubGlobal("fetch", async (url: string) => {
+        if (url === HELD_REALMS) return held(538);
+        settlement.hasSource = true;
+        await new Promise<void>((resolve) => (finishRegister = resolve));
+        return Response.json({});
+      });
+      const entry = await openEntry();
+      try {
+        await vi.waitFor(() => expect(entry.featured()).toBe(name(538)));
+        await entry.press("Create your Realm");
+        await vi.waitFor(() => {
+          const tabs = [...entry.host.querySelectorAll<HTMLButtonElement>('[data-entry-mode-switch] [role="tab"]')];
+          expect(tabs.map((tab) => tab.disabled)).toEqual([true, true]);
+        });
+        await act(async () => finishRegister());
+        await vi.waitFor(() => expect(settlement.settled).toBe(true));
       } finally {
         await entry.close();
       }

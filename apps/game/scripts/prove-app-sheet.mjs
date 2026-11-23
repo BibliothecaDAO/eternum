@@ -48,18 +48,11 @@ const SETTLE_MS = 2_000;
  * open.
  */
 const SHEET_PAGES = {
-  // Each mode's card, the lead and each age's column, live or idle (nothing to do now). The lab's Eternum opens in a
-  // week, so it is idle wherever it stands.
-  play: { path: "home", place: "Play", cards: { lead: "live", blitz: "live", eternum: "idle" } },
-  // Play with no Blitz left in the season: Blitz's column idle, no Build orders; and with the next one scheduled.
-  "play-no-blitz": { path: "no-blitz", place: "Play", cards: { lead: "live", blitz: "idle", eternum: "idle" } },
-  // Only Eternum: before it opens it leads idle, as its column would be; open, its lead offers Enter.
-  "play-eternum-lead": { path: "eternum-lead", place: "Play", cards: { lead: "idle", blitz: "idle" } },
-  "play-eternum-open": { path: "eternum-open", place: "Play", cards: { lead: "live", blitz: "idle" } },
+  play: { path: "home", place: "Play", cards: { lead: "live" } },
   season: { path: "season-running/season", place: "Season" },
+  shop: { path: "realm-vault/shop", place: "Shop" },
   results: { path: "season-over/results/0x5245414c4d53-3", place: "You" },
-  // What's new is read from You: You is lit there.
-  "whats-new": { path: "home/scroll", place: "You" },
+  "whats-new": { path: "home/scroll", place: null },
 };
 
 /** The socials realms.world links, in its order, each with its official mark (src/shell/community.ts). */
@@ -75,15 +68,7 @@ const SOCIALS = ["X", "Discord", "Telegram", "CoinGecko", "GitHub"].map(
 const BAR_CASES = [
   { name: "bar-long-name-1024", path: "long-name", viewport: ["1024", "768"], desktop: true, place: "Play" },
   { name: "bar-long-name-1440", path: "long-name", viewport: ["1440", "900"], desktop: true, place: "Play" },
-  // A page whose notice is words alone (a signed-out visitor's Build orders), at the desktop's narrowest width.
-  {
-    name: "bar-words-notice-1024",
-    path: "first-visit/blitz/build-orders",
-    viewport: ["1024", "768"],
-    desktop: true,
-    place: "Play",
-  },
-  { name: "tabs-phone-360", path: "home/scroll", viewport: ["360", "640"], desktop: false, place: "You" },
+  { name: "tabs-phone-360", path: "home/scroll", viewport: ["360", "640"], desktop: false, place: null },
   { name: "notice-phone-360", path: "home", viewport: ["360", "640"], desktop: false, place: "Play" },
 ];
 
@@ -100,8 +85,8 @@ const ACCOUNT_PAGES = {
   settings: { path: "home/profile/settings", place: "You" },
   "settings-name": { path: "home/profile/settings", place: "You", press: "Name" },
   "settings-portrait": { path: "home/profile/settings", place: "You", press: "Portrait" },
-  "settings-wallet-none": { path: "wallet-none/profile/settings", place: "You", press: "Payout wallet" },
-  "settings-wallet-linked": { path: "wallet-ready/profile/settings", place: "You", press: "Payout wallet" },
+  "settings-wallet-none": { path: "wallet-none/profile", hash: "#wallet", place: "You" },
+  "settings-wallet-linked": { path: "wallet-ready/profile", hash: "#wallet", place: "You" },
   "settings-sign-out": { path: "home/profile/settings", place: "You", press: "Sign out" },
   "connect-start": { path: "first-visit/connect/start", place: "Play" },
   "connect-code": { path: "first-visit/connect/code", place: "Play" },
@@ -157,25 +142,10 @@ const doorwayPages = (desktop) =>
  * the window must be gone.
  */
 const WINDOW_CLOSES = {
-  realms: { path: "realm-held/profile", holding: "Realms" },
   connect: { path: "first-visit/profile", words: "Connect" },
 };
 
-const markHolding = (label) => `(() => {
-  const holding = [...document.querySelectorAll(".app-holdings__item")].find((item) => item.querySelector(":scope > span:last-child")?.innerText.trim() === ${JSON.stringify(label)});
-  holding?.setAttribute("data-proof-press", "holding");
-  return holding !== undefined;
-})()`;
-
-/** Opens the window as a player does: its holding pressed, or the control with its words. */
-const openWindow = async (b, record, { holding, words }) => {
-  if (words !== undefined) return press(b, record, words);
-  const refused = b.evaluate(markHolding(holding))
-    ? clickAsPlayer(b, '[data-proof-press="holding"]')
-    : "not on the page";
-  record.presses.push({ press: holding, status: refused ?? "led" });
-  return refused === null;
-};
+const openWindow = async (b, record, { words }) => press(b, record, words);
 
 const openAndCloseWindow = (out, name, opener) => async (b, record) => {
   if (!(await openWindow(b, record, opener))) return;
@@ -200,9 +170,9 @@ const windowCloses = (out, desktop) =>
   });
 
 const accountPages = (desktop) =>
-  Object.entries(ACCOUNT_PAGES).map(([page, { path, place, press: words }]) => ({
+  Object.entries(ACCOUNT_PAGES).map(([page, { path, hash = "", place, press: words }]) => ({
     name: `${desktop ? "account" : "phone-account"}-${page}`,
-    path: `/lab/app/${path}?capture=1`,
+    path: `/lab/app/${path}?capture=1${hash}`,
     act: words === undefined ? undefined : (b, record) => press(b, record, words),
     more: sheetPageChecks({ desktop, place }),
   }));
@@ -241,13 +211,7 @@ const sheetPageChecks = (page) => (b) => {
       broken: [...document.querySelectorAll("img")]
         .filter((image) => !(image.complete && image.naturalWidth > 0))
         .map((image) => image.currentSrc || image.src),
-      // The gold verbs the player can press now: a layer over the page (a dialog, Connect) leaves the page under it inert.
       goldVerbs: [...document.querySelectorAll('.app-button[data-kind="primary"], .frontier-primary')].filter((verb) => !verb.closest("[inert]")).length,
-      // Each age column's band of painting above its games, as computed.
-      ageBands: [...document.querySelectorAll(".app-age-column__body")].map((body) => getComputedStyle(body).paddingTop),
-      // A phone's first screen loses what its notice or foot row covers: a verb straddling the top of either is half
-      // hidden by it (qa-fresh-2: Play's first Join under the install notice). A list row folding there is a list
-      // folding at a screen's edge, as one does at the tab bar, which ends every phone screen.
       cutAtEdge: (() => {
         const bands = ["notice", "foot"].map((name) => document.querySelector('[data-band="' + name + '"]')).filter(Boolean);
         if (!body || bands.length === 0) return [];
@@ -302,10 +266,6 @@ const sheetPageChecks = (page) => (b) => {
     {
       check: "its place is the one lit, or none on a page that belongs to no place (the doorway)",
       ok: JSON.stringify(measure.lit) === JSON.stringify(place === null ? [] : [place]),
-    },
-    {
-      check: "an age's band of painting is 96 px, on a desktop and a phone",
-      ok: measure.ageBands.every((band) => band === "96px"),
     },
     ...(desktop
       ? []
@@ -393,24 +353,16 @@ const sheetPages = (desktop) =>
     more: (b) => [...sheetPageChecks({ desktop, place })(b), ...modeCardChecks(b, cards)],
   }));
 
-/** A mode's card on Play: the lead's game card, or an age's column. */
-const cardSelector = (card) =>
-  card === "lead" ? '.app-game-card[data-size="lead"]' : `.app-age-column[data-age="${card}"]`;
+const cardSelector = () => '.play-hero, .app-game-card[data-size="lead"]';
 
-/**
- * Each mode's card on Play (the lead, an age's column), live or idle, by one rule. Live: something to do (a game's
- * verb; for Blitz's column, Build orders). Idle, nothing to do now: drawn dimmed, nothing on it to press, so no Build
- * orders.
- */
 const modeCardChecks = (b, cards) =>
   Object.entries(cards).map(([card, expected]) => {
     const found = b.evaluate(`(() => {
-      const card = document.querySelector(${JSON.stringify(cardSelector(card))});
+      const card = document.querySelector(${JSON.stringify(cardSelector())});
       if (!card) return null;
       return {
         idle: card.hasAttribute("data-idle"),
         pressable: card.querySelectorAll("a, button").length,
-        buildOrders: card.innerText.includes("Build orders"),
         dimmed: getComputedStyle(card.querySelector("img[class$='__painting']")).filter !== "none",
       };
     })()`);
@@ -419,10 +371,8 @@ const modeCardChecks = (b, cards) =>
     return {
       check: idle
         ? `${card} with nothing to do now reads idle: dimmed, nothing to press`
-        : `${card} with something to do reads live${card === "blitz" ? ", with Build orders" : ""}`,
-      ok: idle
-        ? found !== null && found.idle && found.dimmed && found.pressable === 0 && !found.buildOrders
-        : live && (card !== "blitz" || found.buildOrders),
+        : `${card} with something to do reads live`,
+      ok: idle ? found !== null && found.idle && found.dimmed && found.pressable === 0 : live,
       card: found,
     };
   });
@@ -742,10 +692,6 @@ const QA1_PHONE_CASES = [
     name: "phone-you",
     path: "home/profile",
     more: (b) => [
-      {
-        check: "the phone's own card says how a rating is carried (P3-10)",
-        ok: b.evaluate(`document.body.innerText.includes("Link a wallet in Settings to carry a rating.")`),
-      },
       {
         check: "the card opens on the player's name, never a stand-in (P3-4)",
         ok: b.evaluate(`!/\\bLord [0-9a-f]{4}\\b/.test(document.querySelector('[data-band="body"]').innerText)`),

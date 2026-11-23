@@ -4,9 +4,7 @@ import { Navigate, Route, Routes, useParams } from "react-router-dom";
 
 import { identityClient, useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { IdentityRequestError, SOCIAL_PROVIDERS, type SealCodeRefusal } from "@realms-world/identity";
-import { answerLabBuildOrders } from "./lab-build-orders";
 
-import { BuildOrdersPage } from "../build-orders/build-orders-page";
 import { PageAddress } from "../frame/page-address";
 import { CreditsPage, PrivacyPage, TermsPage } from "../legal";
 import { WhatsNewPage } from "../news/news";
@@ -16,7 +14,8 @@ import { PlayPage } from "../play/play-page";
 import { SharedLinkPage } from "../share/shared-link-page";
 import { FragmentsPage } from "../shop/fragments-page";
 import { answerAvnuRead, answerTokenBalances, isAvnuRead } from "./lab-pay-tokens";
-import { PlayerPage, ProfilePage, SettingsPage } from "../profile/profile-pages";
+import { PlayerPage, ProfilePage, SettingsRedirect } from "../profile/profile-pages";
+import { PROFILE_PATH } from "../profile/settings-route";
 import { ResultsPage } from "../season-tab/results-page";
 import { SeasonPage } from "../season-tab/season-page";
 import {
@@ -43,7 +42,6 @@ import {
   LAB_EMAIL_CODE,
   LAB_NAMES,
   LAB_PAYOUT_WALLETS,
-  labRatings,
   labCalendar,
   labOrderIntent,
   LAB_INVITE,
@@ -98,11 +96,10 @@ const LabPages = ({ screen }: { screen: LabScreen }) => {
     <PageAddress.Provider value={`/${page}`}>
       <Routes>
         <Route index element={<PlayPage />} />
-        <Route path="blitz/build-orders" element={<BuildOrdersPage />} />
         <Route path="season" element={<SeasonPage />} />
         <Route path="results/:id" element={<ResultsPage />} />
-        <Route path="profile" element={<ProfilePage />} />
-        <Route path="profile/settings" element={<SettingsPage />} />
+        <Route path={PROFILE_PATH.slice(1)} element={<ProfilePage />} />
+        <Route path={`${PROFILE_PATH.slice(1)}/settings`} element={<SettingsRedirect />} />
         <Route path="p/:address" element={<PlayerPage />} />
         <Route path="scroll" element={<WhatsNewPage />} />
         <Route path="chat" element={<ChatPage />} />
@@ -113,7 +110,7 @@ const LabPages = ({ screen }: { screen: LabScreen }) => {
         <Route path="doorway/:state" element={<LabDoorway />} />
         <Route path="s/:code" element={<SharedLinkPage />} />
         <Route path="share/day" element={<LabDayShare />} />
-        <Route path="shop/fragments" element={<FragmentsPage />} />
+        <Route path="shop" element={<FragmentsPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </PageAddress.Provider>
@@ -166,8 +163,6 @@ function installLabFixtures(screen: LabScreen, field: number | null): () => void
     "sendSignInCode",
     "unlinkWallet",
     "linkWallet",
-    "getBuildOrders",
-    "saveBuildOrders",
     "shareTally",
     "readDefaultWallet",
     "deleteAccount",
@@ -219,7 +214,6 @@ const answerAppReads = (screen: LabScreen, field: number | null) => {
     "/api/factory/calendar": () => json(labCalendar(screen)),
     "/api/profiles": (url) =>
       json({ profiles: profilesOf(screen, url.searchParams.get("accounts")?.split(",") ?? []) }),
-    "/api/ratings": (url) => json(labRatings(url.searchParams.get("players")?.split(",") ?? [])),
     "/api/value/held-realms": () => {
       const held = LAB_HELD_REALMS[screen] ?? [];
       return json({ realms: held.map(({ realmId }) => realmId), held });
@@ -272,10 +266,8 @@ const answerIdentity = (screen: LabScreen) => {
   });
   identityClient.payFragments = async () => ({ state: "delivering" });
   identityClient.fragmentPayment = async () => ({ state: "delivered", fragments: 1_000 });
-  // The lab's player has made no Realms wallet, so the payout window offers Create my wallet.
   identityClient.readDefaultWallet = async () => null;
   identityClient.addOpeningProgress = async () => ({ reached: [], seen: STANDING_PROMPTS });
-  answerLabBuildOrders();
   Object.assign(identityClient, {
     unlinkWallet: spend,
     linkWallet: async ({ code }: { code?: string }) => spend(code).then(() => LAB_PLAYER),

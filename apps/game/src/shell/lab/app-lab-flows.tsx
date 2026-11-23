@@ -6,10 +6,11 @@ import { IdentityRequestError, SOCIAL_PROVIDERS } from "@realms-world/identity";
 import { useState, type ReactNode } from "react";
 import { useParams } from "react-router-dom";
 
+import { useHeldRealms } from "@/hooks/use-holdings";
 import { Pill } from "@/ui/design-system/kit/pill";
 import { DoorwayScreen } from "@/ui/features/game-entry/doorway/doorway-screen";
-import { FoundButton, PlaysAs } from "@/ui/features/game-entry/game-entry-modal";
-import { HomeSourcePicker } from "@/ui/features/game-entry/home-source-picker";
+import { FoundButton } from "@/ui/features/game-entry/game-entry-modal";
+import { EntryModeSwitch, HomeSourcePicker } from "@/ui/features/game-entry/home-source-picker";
 import { RealmSideWarning } from "@/ui/features/game-entry/realm-side-warning";
 import { DayShareSheet } from "@/ui/features/frontier/rollover/day-share-sheet";
 
@@ -207,20 +208,30 @@ export const LabDoorway = () => {
   );
 };
 
-/** The Devcon game's Realm step over the screen's holdings, as game-entry-modal draws it: the pick, its verb pinned. */
 const LabHomeStep = () => {
   const [value, setValue] = useState("");
+  const [playingFree, setPlayingFree] = useState(false);
+  const { held } = useHeldRealms();
+  const heldCount = held.data?.length ?? 0;
   return (
     <>
-      <HomeSourcePicker
-        registered={null}
-        value={value}
-        onChange={setValue}
-        onSettled={noop}
-        disabled={false}
-        action={<FoundButton founding={false} ready onFound={noop} />}
+      <EntryModeSwitch
+        heldCount={heldCount}
+        playingFree={playingFree}
+        onChange={(mode) => setPlayingFree(mode === "free")}
       />
-      <PlaysAs />
+      {playingFree ? (
+        <LabAspectStep />
+      ) : (
+        <HomeSourcePicker
+          registered={null}
+          value={value}
+          onChange={setValue}
+          onSettled={noop}
+          disabled={false}
+          action={<FoundButton founding={false} ready onFound={noop} />}
+        />
+      )}
     </>
   );
 };

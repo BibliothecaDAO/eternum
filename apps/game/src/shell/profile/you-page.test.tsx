@@ -1,13 +1,13 @@
 import { existsSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, expect, it, vi } from "vitest";
 
 vi.hoisted(() => vi.stubGlobal("fetch", async () => new Response(null, { status: 401 })));
-// Signed out: what anyone can read does not wait on an account.
 vi.mock("@/hooks/context/identity-session", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/hooks/context/identity-session")>()),
   useIdentitySession: () => ({ status: "signed-out", session: null }),
@@ -34,13 +34,14 @@ const open = async (path: string, width: number) => {
   const root = createRoot(container);
   await act(async () =>
     root.render(
-      <MemoryRouter initialEntries={[path]}>
-        <Routes>
-          <Route path="/profile" element={<ProfilePage />} />
-          <Route path="/scroll" element={<p>patch notes</p>} />
-          <Route path="*" element={null} />
-        </Routes>
-      </MemoryRouter>,
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <MemoryRouter initialEntries={[path]}>
+          <Routes>
+            <Route path="/profile" element={<ProfilePage />} />
+            <Route path="*" element={null} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>,
     ),
   );
   unmount = () => act(async () => root.unmount());
@@ -49,34 +50,20 @@ const open = async (path: string, width: number) => {
 
 const body = (page: HTMLElement) => page.querySelector('[data-band="body"]')!;
 
-it("offers a signed-out reader Sign in, What's new, then How to play and Realms' marketplace in a new tab", async () => {
+it("offers a signed-out reader Sign in cleanly while What's new, How to play and Market live in the footer", async () => {
   const page = await open("/profile", 390);
   const controls = [...body(page).querySelectorAll("a, button")].map((control) => control.textContent);
-  expect(controls).toEqual(["Sign in", "What's new", "How to play", "Market"]);
-  const away = [...body(page).querySelectorAll<HTMLAnchorElement>("a")].map((link) => [
-    link.textContent,
-    link.href,
-    link.target,
-  ]);
-  expect(away).toEqual([
-    ["How to play", "https://docs.realms.party/frontier/", "_blank"],
-    ["Market", "https://realms.market/", "_blank"],
-  ]);
-  // What's new is read here, in the app: its row opens the patch notes.
-  await act(async () =>
-    [...body(page).querySelectorAll<HTMLButtonElement>("button")]
-      .find((button) => button.textContent === "What's new")!
-      .click(),
-  );
-  expect(page.textContent).toContain("patch notes");
+  expect(controls).toEqual(["Sign in"]);
+  const footer = page.querySelector('[data-band="footer"]')!;
+  const footerText = footer.textContent ?? "";
+  expect(footerText).toContain("What's new");
+  expect(footerText).toContain("How to play");
+  expect(footerText).toContain("Market");
 });
 
-// The docs site answers every address with its shell, so a page renamed there would open blank: the guide must be a
-// page the docs app (apps/game-docs) writes.
 it("opens How to play on a page the docs site has", () => {
   const { pathname } = new URL(HOW_TO_PLAY);
   const apps = join(dirname(fileURLToPath(import.meta.url)), "../../../..");
-  // A page is its path's own file, or the index of the folder the path names.
   const page = [`${pathname}.mdx`, `${pathname}/index.mdx`]
     .map((file) => join(apps, "game-docs/docs/pages", file))
     .find((file) => existsSync(file));

@@ -1,4 +1,5 @@
 import { IDENTITY_PORTRAITS, IdentityRequestError, type Session, type SocialProvider } from "@realms-world/identity";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import { Link, MemoryRouter, useLocation } from "react-router-dom";
@@ -26,8 +27,8 @@ import { pageNavigation } from "@/utils/page-navigation";
 import { setViewportWidth } from "../frame/test-viewport";
 import { useRequestSignIn, useConnectStore } from "./connect";
 import { TabBar } from "../frame/tabs";
-import { AccountCard } from "../profile/account-card";
-import { linkWalletHref, SETTINGS_PATH } from "../profile/settings-route";
+import { PayoutWalletPanel } from "../profile/payout-wallet-panel";
+import { linkWalletHref } from "../profile/settings-route";
 import { accountAnswers, deviceLastPlayedBeforeTheAnswer, leaveThePage } from "../standing-prompts-fixture";
 import { ConnectFlow } from "./connect-flow";
 import { APP_WAIT_MS, discordAndroidIntent, discordAppUrl } from "./discord-app";
@@ -66,9 +67,9 @@ const Page = ({ next }: { next?: string }) => {
 };
 
 const WalletAsk = ({ session }: { session: Session }) => {
-  const { pathname, search } = useLocation();
-  return pathname === SETTINGS_PATH ? (
-    <AccountCard session={session} />
+  const { pathname, search, hash } = useLocation();
+  return pathname === "/profile" && hash === "#wallet" ? (
+    <PayoutWalletPanel wallet={null} email={session.user.email} onChanged={() => undefined} />
   ) : (
     <Link data-testid="needs-wallet" to={linkWalletHref(`${pathname}${search}`)}>
       Link a wallet to pay
@@ -82,13 +83,16 @@ const mount = async (path: string, next?: string, bar = false, page?: ReactNode)
   const container = document.createElement("div");
   document.body.append(container);
   const root = createRoot(container);
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   await act(async () =>
     root.render(
-      <MemoryRouter initialEntries={[path]}>
-        {bar && <TabBar />}
-        <Page next={next} />
-        {page}
-      </MemoryRouter>,
+      <QueryClientProvider client={client}>
+        <MemoryRouter initialEntries={[path]}>
+          {bar && <TabBar />}
+          <Page next={next} />
+          {page}
+        </MemoryRouter>
+      </QueryClientProvider>,
     ),
   );
   // The page and Connect's window, which opens over it at the body's end.
@@ -470,12 +474,11 @@ describe("Your wallet", () => {
     await first.unmount();
     await leaveThePage();
     const session = useIdentitySessionStore.getState().session!;
-    const settings = await mount("/shop/fragments", undefined, false, <WalletAsk session={session} />);
+    const settings = await mount("/shop", undefined, false, <WalletAsk session={session} />);
     try {
       expect(settings.window()).toBeNull();
       await act(async () => settings.query<HTMLAnchorElement>('[data-testid="needs-wallet"]')!.click());
-      expect(settings.window()?.getAttribute("aria-label")).toBe("Payout wallet");
-      expect(settings.window()?.textContent).toContain("Create my wallet");
+      expect(settings.query('[data-payout-wallet="none"]')?.textContent).toContain("Create my wallet");
     } finally {
       await settings.unmount();
     }

@@ -1,7 +1,17 @@
 import "@/ui/design-system/kit/app-sheet.css";
 import "./season-recap.css";
 
-import { formatAmount, formatExact, formatShort, layerName, LORDS, orderAspect } from "@bibliothecadao/types";
+import {
+  ASPECT_REWARD,
+  aspectName,
+  aspects,
+  formatAmount,
+  formatExact,
+  formatShort,
+  layerName,
+  LORDS,
+  orderAspect,
+} from "@bibliothecadao/types";
 import type { HeraldFrontierLeaderboard, HeraldFrontierLeaderboardEntry } from "@bibliothecadao/eternum/game-sync";
 import type { GameRef } from "@bibliothecadao/eternum/shard";
 import { isSameStarknetAddress } from "@realms-world/identity";
@@ -19,6 +29,7 @@ import { createPortal } from "react-dom";
 import { usePlayerDisplayName, usePlayerNames, usePlayerProfile } from "@/hooks/use-player-profile";
 import { distributionChannel } from "@/runtime/distribution-channel";
 import { playerPortraitUrl } from "@/services/identity/player-portrait";
+import { aspectVariables } from "@/tokens";
 import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { Icon } from "@/ui/design-system/icon";
 import { AppButton, AppGameName, AppPortrait } from "@/ui/design-system/kit/app-elements";
@@ -26,12 +37,16 @@ import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
 import { paintingSources } from "@/ui/design-system/kit/paintings";
 import { PlayerName } from "@/ui/design-system/kit/player-name";
 import {
+  ASPECT_PAGE_WORDS,
+  ASPECT_STEP_WORDS,
+  AUTOMATIC_LORDS_PAYOUT,
   ESSENCE,
   LABOR,
   PRIZE_UNHELD,
   RECAP_WORDS,
   RESULT_WORDS,
   SEASON_ENDINGS,
+  SEASON_WORDS,
   SHARE_WORDS,
 } from "@/ui/design-system/kit/words";
 import { SITE_COUNTS, SITE_KINDS } from "@/ui/features/frontier/board/season-detail";
@@ -40,9 +55,16 @@ import { earnedResource, findOwnEntry, wholeLords } from "@/ui/features/frontier
 import { TARGET_MARKS } from "@/ui/features/frontier/sites/site-marks";
 
 import { useLayout } from "../frame/layout";
-import type { DirectoryGame } from "../herald";
+import type { AspectSeasonGame, DirectoryGame } from "../herald";
 import { ageOf } from "../play/ages";
-import { seasonEnded, seasonTitle } from "../season";
+import {
+  RACE_TRIUMPHS,
+  aspectRaceStandings,
+  seasonDaysOf,
+  seasonEnded,
+  seasonPlayerHome,
+  seasonTitle,
+} from "../season";
 import { resultsHref } from "./results-link";
 import { CARD_CUTS, canShareCardFile, type CardCut } from "@/utils/card-image";
 
@@ -133,9 +155,7 @@ export const SeasonRecap = ({
               </DeckFrame>
             </div>
           ) : (
-            <div className="season-recap__alone">
-              <PodiumCard board={board} viewer={viewer} alone />
-            </div>
+            <SpectatorBoardGrid board={board} viewer={viewer} />
           ))}
         <footer className="season-recap__foot">
           {cut === "tall" && withdraw}
@@ -588,4 +608,194 @@ const deckPlayers = (board: HeraldFrontierLeaderboard, own: Entry): string[] => 
 const useNamesOf = (players: string[]) => {
   const reader = usePlayerNames();
   return { reader, read: players.every((player) => reader.reading(player).state !== "waiting") };
+};
+
+const SpectatorBoardGrid = ({ board, viewer }: { board: HeraldFrontierLeaderboard; viewer: string | null }) => {
+  const totals = board.entries.reduce(
+    (sum, entry) => ({
+      sites: sum.sites + entry.sites_cleared.total,
+      camps: sum.camps + entry.sites_cleared.camps,
+      rifts: sum.rifts + entry.sites_cleared.rifts,
+      ruins: sum.ruins + entry.sites_cleared.ruins,
+      beasts: sum.beasts + entry.sites_cleared.beasts,
+      chests: sum.chests + entry.chests_earned,
+      lords: sum.lords + wholeLords(entry.rewards.lords),
+      essence: sum.essence + earnedResource(entry.rewards.essence),
+      labor: sum.labor + earnedResource(entry.rewards.labor),
+    }),
+    { sites: 0, camps: 0, rifts: 0, ruins: 0, beasts: 0, chests: 0, lords: 0, essence: 0, labor: 0 },
+  );
+  const byAspect = aspects.map((aspect) => ({
+    ...aspect,
+    count: board.entries.filter((entry) => orderAspect(entry.order) === aspect.id).length,
+  }));
+  return (
+    <div className="season-chronicle" data-recap-overview>
+      <PodiumCard board={board} viewer={viewer} alone />
+      <article className="season-card" data-card="field">
+        <span className="season-card__step">{RECAP_WORDS.overviewCardNames.field}</span>
+        <b className="season-card__big">{formatShort(board.entries.length)}</b>
+        <span className="season-card__title">{RECAP_WORDS.realmsCount(board.entries.length)}</span>
+        <ul className="season-chronicle__list">
+          {byAspect.map(({ id, name, count }) => (
+            <li key={id} style={aspectVariables(id) as CSSProperties} className="season-chronicle__row">
+              <span className="season-chronicle__lead">
+                <AspectMark aspect={id} size={22} decorative />
+                <span>{name}</span>
+              </span>
+              <b>{formatExact(count)}</b>
+            </li>
+          ))}
+        </ul>
+      </article>
+      <article className="season-card" data-card="sites">
+        <span className="season-card__step">{RECAP_WORDS.overviewCardNames.sites}</span>
+        <b className="season-card__big">{formatShort(totals.sites)}</b>
+        <span className="season-card__title">{RESULT_WORDS.sitesCleared}</span>
+        <div className="season-card__tiles">
+          {SITE_KINDS.map((kind) => (
+            <CardTile
+              key={kind}
+              icon={TARGET_MARKS[kind].icon}
+              value={formatShort(totals[SITE_COUNTS[kind]])}
+              label={TARGET_MARKS[kind].word}
+            />
+          ))}
+        </div>
+      </article>
+      <article className="season-card" data-card="haul">
+        <span className="season-card__step">{RECAP_WORDS.overviewCardNames.haul}</span>
+        <div className="season-card__tiles">
+          <CardTile icon="reward-chest" value={formatShort(totals.chests)} label={RESULT_WORDS.chests} />
+          <CardTile icon="lords" value={formatShort(totals.lords)} label={LORDS} />
+          <CardTile icon="essence" value={formatShort(totals.essence)} label={ESSENCE} />
+          <CardTile icon="labor" value={formatShort(totals.labor)} label={LABOR} />
+        </div>
+      </article>
+    </div>
+  );
+};
+
+export const SeasonRaceRecap = ({
+  game,
+  ending,
+  actions,
+}: {
+  game: AspectSeasonGame;
+  ending: keyof typeof SEASON_ENDINGS;
+  actions: ReactNode;
+}) => {
+  const cut: Cut = useLayout() === "phone" ? "tall" : "wide";
+  const {
+    finishHeight,
+    stageHeight,
+    standings: ranked,
+    winner,
+  } = aspectRaceStandings(game.aspect_race, game.aspect_members ?? null);
+  const seasonDays = seasonDaysOf(game);
+  const { realm, order, aspect: ownAspect } = seasonPlayerHome(game);
+  return (
+    <section
+      data-surface="shell"
+      data-race-recap
+      aria-label={SEASON_ENDINGS[ending]}
+      className="season-recap"
+      data-cut={cut}
+    >
+      <div className="season-recap__layout">
+        <header className="season-recap__head">
+          <p className="text-app-label text-app-gold">{seasonEnded(game)}</p>
+          <h1 className={cut === "tall" ? "text-app-title text-app-ink" : "text-app-display text-app-ink"}>
+            {winner ? ASPECT_PAGE_WORDS.won(winner.name) : SEASON_ENDINGS[ending]}
+          </h1>
+        </header>
+        <div className="season-chronicle">
+          <article className="season-card" data-card="place">
+            <span className="season-card__step">{RECAP_WORDS.raceCardNames.towers}</span>
+            <ul className="season-chronicle__list">
+              {ranked.map((row, index) => (
+                <li
+                  key={row.id}
+                  data-own={ownAspect === row.id || undefined}
+                  style={aspectVariables(row.id) as CSSProperties}
+                  className="season-chronicle__row"
+                >
+                  <span className="season-chronicle__lead">
+                    <b className="text-app-gold">{index + 1}</b>
+                    <AspectMark aspect={row.id} size={24} decorative />
+                    <span>{row.name}</span>
+                  </span>
+                  <span className="season-chronicle__val">{ASPECT_PAGE_WORDS.height(row.height, finishHeight)}</span>
+                </li>
+              ))}
+            </ul>
+          </article>
+          <article className="season-card" data-card="podium">
+            <span className="season-card__step">{RECAP_WORDS.raceCardNames.pool}</span>
+            <ul className="season-chronicle__list">
+              {ranked.map((row) => (
+                <li key={row.id} style={aspectVariables(row.id) as CSSProperties} className="season-chronicle__row">
+                  <span className="season-chronicle__lead">
+                    <AspectMark aspect={row.id} size={24} decorative />
+                    <span>{row.name}</span>
+                  </span>
+                  <span className="season-chronicle__val text-app-gold">
+                    <Icon name="lords" size={16} />
+                    {formatExact(row.lords)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <p className="text-app-label text-app-muted">{AUTOMATIC_LORDS_PAYOUT}</p>
+          </article>
+          <article className="season-card" data-card="sites">
+            <span className="season-card__step">
+              {realm ? RECAP_WORDS.raceCardNames.standing : RECAP_WORDS.raceCardNames.field}
+            </span>
+            {realm && ownAspect !== null ? (
+              <div className="flex flex-col items-center gap-3">
+                <AspectMark aspect={ownAspect} size={64} decorative />
+                <span className="season-card__title">{realm.name}</span>
+                <span className="text-app-label text-app-muted">
+                  {`${aspectName(ownAspect)}${order ? ` · ${order.orderName}` : ""}`}
+                </span>
+              </div>
+            ) : (
+              <>
+                <b className="season-card__big">{formatShort(game.player_count)}</b>
+                <span className="season-card__title">{RECAP_WORDS.realmsCount(game.player_count)}</span>
+                <ul className="season-chronicle__list">
+                  {ranked.map((row) => (
+                    <li key={row.id} style={aspectVariables(row.id) as CSSProperties} className="season-chronicle__row">
+                      <span className="season-chronicle__lead">
+                        <AspectMark aspect={row.id} size={20} decorative />
+                        <span>{row.name}</span>
+                      </span>
+                      <span>{ASPECT_STEP_WORDS.members(row.members ?? 0)}</span>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </article>
+          <article className="season-card" data-card="haul">
+            <span className="season-card__step">{RECAP_WORDS.raceCardNames.season}</span>
+            <span className="season-card__title">{seasonTitle(game)}</span>
+            {seasonDays !== null && (
+              <p className="text-app-label text-app-gold">{RECAP_WORDS.seasonDays(seasonDays)}</p>
+            )}
+            <p className="text-app-label text-app-muted">
+              {SEASON_WORDS.poolRule(ASPECT_REWARD.lordsPerHeight, ASPECT_REWARD.finishBonus)}
+            </p>
+            <p className="text-app-label text-app-muted">
+              {`${SEASON_WORDS.stageMilestones}: ${RACE_TRIUMPHS.map(({ name }) => name).join(" · ")} (${formatExact(stageHeight)}/stage)`}
+            </p>
+          </article>
+        </div>
+        <footer className="season-recap__foot">
+          <span className="season-recap__steps">{actions}</span>
+        </footer>
+      </div>
+    </section>
+  );
 };

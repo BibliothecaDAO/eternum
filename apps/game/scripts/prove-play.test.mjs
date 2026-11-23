@@ -9,7 +9,9 @@ describe("where a press must lead", () => {
   it("is the item's own game or results", () => {
     expect(destinationOf("Watch", { item: "game:0xa:3" })).toBe("/g/0xa/3?spectate=true");
     expect(destinationOf("Enter", { item: "game:0xa:3" })).toBe("/g/0xa/3");
-    expect(destinationOf("Resume", { item: "0xa:1" })).toBe("/g/0xa/1");
+    expect(destinationOf("Enter Realm", { item: "0xa:1" })).toBe("/g/0xa/1");
+    expect(destinationOf("Join rehearsal", { item: "0xa:4" })).toBe("/g/0xa/4");
+    expect(destinationOf("Resume", { item: "0xa:4" })).toBe("/g/0xa/4");
     expect(destinationOf("Play free", { item: "0xa:1" })).toBe(CONNECT);
     expect(destinationOf("Results", { item: "0xa:7" })).toBe("/results/0xa-7");
   });

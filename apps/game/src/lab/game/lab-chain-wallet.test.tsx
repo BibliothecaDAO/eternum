@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { MemoryRouter } from "react-router-dom";
@@ -31,12 +32,15 @@ it("keeps the playing ruin scenario clear of wallet onboarding and answers walle
     return <output>{state.failed ? "failed" : state.wallet === null ? "none" : "unknown"}</output>;
   };
   try {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     await act(async () =>
       root.render(
-        <MemoryRouter>
-          <Wallet />
-          <ConnectFlow />
-        </MemoryRouter>,
+        <QueryClientProvider client={client}>
+          <MemoryRouter>
+            <Wallet />
+            <ConnectFlow />
+          </MemoryRouter>
+        </QueryClientProvider>,
       ),
     );
     expect(host.textContent).toBe("none");

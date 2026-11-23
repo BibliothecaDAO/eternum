@@ -81,6 +81,7 @@ interface DirectoryRows {
   aspectRules: FoldRow[];
   aspectMembers: FoldRow[];
   raceRules: FoldRow[];
+  questRules: FoldRow[];
   aspectHyperstructures: FoldRow[];
 }
 
@@ -134,6 +135,7 @@ function directoryRows(input: DirectoryInput): DirectoryRows {
     aspectRules: rows("AspectRules"),
     aspectMembers: rows("AspectMembers"),
     raceRules: rows("RaceRules"),
+    questRules: rows("QuestRules"),
     aspectHyperstructures: rows("AspectHyperstructure"),
   };
 }
@@ -246,6 +248,8 @@ export function directoryFact(model: string, row: Row | undefined): unknown {
       return [row.aspect, row.members];
     case "RaceRules":
       return row.stage_height;
+    case "QuestRules":
+      return row.bonus_percent;
     case "AspectHyperstructure":
       return [row.aspect, row.height];
     case "Structure":
@@ -322,6 +326,7 @@ function directoryEntry(game: Row, facts: DirectoryRows, input: DirectoryInput):
     player_count: new Set(settlements.map((row) => address(row.owner))).size,
     aspect_members: aspectMembersOf(facts, game.game_id),
     aspect_race: aspectRaceOf(facts, game.game_id),
+    quest_bonus_percent: questBonusPercentOf(facts, game.game_id),
     player_state: directoryPlayerState(game, facts, input),
     registration: {
       count:
@@ -340,12 +345,18 @@ function directoryEntry(game: Row, facts: DirectoryRows, input: DirectoryInput):
   };
 }
 
+function questBonusPercentOf(facts: DirectoryRows, gameId: unknown): number | null {
+  const rules = gameRows(facts.questRules, gameId)[0];
+  return rules ? number(rules.bonus_percent) - 100 : null;
+}
+
 function aspectRaceOf(facts: DirectoryRows, gameId: unknown): HeraldAspectRace | null {
   const rules = gameRows(facts.raceRules, gameId)[0];
   if (!rules) return null;
   const rows = gameRows(facts.aspectHyperstructures, gameId);
   return {
     finish_height: raceFinishHeight(number(rules.stage_height)),
+    season_days: number(rules.season_days),
     heights: Object.fromEntries(
       aspects.map(({ id }) => [id, number(rows.find((row) => number(row.aspect) === id)?.height ?? 0)]),
     ) as Record<AspectId, number>,

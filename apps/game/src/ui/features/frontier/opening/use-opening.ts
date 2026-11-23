@@ -165,7 +165,7 @@ function useOpeningHeld(rules: ExpeditionRules, realm: NativeRows["Structure"] |
   const bane = readDailyQuest(setup.store, realm.game_id, home, now)?.reading.known?.bane !== undefined;
   // The Aspect's page opens with the first of the Deep, a bane on the Aspect and the first stage its hyperstructure builds.
   const race = readRaceBoard(setup.store, realm.game_id, BigInt(home), now).known?.race;
-  const stageBuilt = (race?.standings.find((row) => row.aspect === race.own?.aspect)?.stage ?? 1) > 1;
+  const stageBuilt = (race?.standings.find((row) => row.aspect === race.own?.aspect)?.stage ?? 0) >= 1;
   return {
     barracks: getBuildingQuantity(home, FIRST_BUILD, setup.store) > 0,
     oath,

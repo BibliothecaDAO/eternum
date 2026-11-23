@@ -52,7 +52,7 @@ it("explains account deletion in public, links to Settings' row, and says what s
     </MemoryRouter>,
   );
   const page = container.querySelector("article")!;
-  expect(page.querySelector('a[href="/profile/settings#delete-account"]')?.textContent).toBe("Open Settings");
+  expect(page.querySelector('a[href="/profile#delete-account"]')?.textContent).toBe("Open Settings");
   const text = page.textContent!.replace(/\s+/g, " ");
   expect(text).toContain("Enter the code we email you.");
   expect(text).toContain("Your notification settings and push alerts on every device");

@@ -63,7 +63,7 @@ export function readRaceBoard(
     standings.push({
       ...row,
       rank: 0,
-      stage: Math.min(nativeRaceConstants.STAGE_COUNT, Math.floor(row.height / rules.stage_height) + 1),
+      stage: raceStage(row.height, rules.stage_height),
       finished: row.height === finish,
     });
   }
@@ -123,5 +123,8 @@ function readOwnAspect(
     known: { own: { aspect, members, triumphs, bar: { charge: bar.known.charge, threshold: deep.altar_threshold } } },
   };
 }
+
+export const raceStage = (height: number, stageHeight: number): number =>
+  stageHeight <= 0 || height <= 0 ? 0 : Math.min(nativeRaceConstants.STAGE_COUNT, Math.floor(height / stageHeight));
 
 export const raceFinishHeight = (stageHeight: number): number => stageHeight * nativeRaceConstants.STAGE_COUNT;

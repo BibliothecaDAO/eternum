@@ -51,59 +51,6 @@ it("asks before signing out, with Keep as the safe choice", async () => {
   }
 });
 
-it("shows the linked payout wallet by its address, changed only with a code, and Link wallet to an account with none", async () => {
-  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-  vi.spyOn(identityClient, "listSignInProviders").mockResolvedValue([]);
-  const linked = { ...session, user: { ...session.user, address: "0x04a1d2c3e4f59f3c" } } as Session;
-  const mount = async (shown: Session) => {
-    const container = document.createElement("div");
-    document.body.append(container);
-    const root = createRoot(container);
-    await act(async () =>
-      root.render(
-        <MemoryRouter>
-          <AccountCard session={shown} />
-        </MemoryRouter>,
-      ),
-    );
-    return {
-      container,
-      unmount: async () => {
-        await act(async () => root.unmount());
-        container.remove();
-      },
-    };
-  };
-  const payoutRow = (container: HTMLElement) =>
-    [...container.querySelectorAll<HTMLElement>(".app-row")].find((row) =>
-      row.textContent?.startsWith("Payout wallet"),
-    )!;
-
-  const account = await mount(linked);
-  try {
-    // The wallet receives at once: its row is its address, never a time to wait for.
-    expect(payoutRow(account.container).textContent).toContain("0x04a1…9f3c");
-    await act(async () => payoutRow(account.container).click());
-    const words = [...document.querySelectorAll("button")].map((button) => button.textContent);
-    expect(words).toContain("Replace");
-    expect(words).toContain("Unlink");
-  } finally {
-    await account.unmount();
-  }
-
-  const unlinked = await mount(session);
-  try {
-    const noWallet = payoutRow(unlinked.container).querySelector<HTMLElement>(".app-setting__value")!;
-    expect(noWallet.textContent).toBe("No wallet set");
-    await act(async () => noWallet.click());
-    expect(document.querySelector('[role="dialog"][aria-label="Payout wallet"]')?.textContent).toContain(
-      "I have a wallet",
-    );
-  } finally {
-    await unlinked.unmount();
-  }
-});
-
 it("edits the name in its own row, offering Claim name only once it differs (qa-app-1 P3-6), Escape putting it back", async () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   vi.spyOn(identityClient, "listSignInProviders").mockResolvedValue([]);

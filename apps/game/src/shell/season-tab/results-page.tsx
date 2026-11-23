@@ -4,27 +4,25 @@ import { useLocation, useParams } from "react-router-dom";
 import type { GameRef } from "@bibliothecadao/eternum/shard";
 import type { HeraldFrontierLeaderboard } from "@bibliothecadao/eternum/game-sync";
 import { AppButton, AppPanel } from "@/ui/design-system/kit/app-elements";
+import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
 import { CONTINUE, RESULT_WORDS, WITHDRAW, WORDS } from "@/ui/design-system/kit/words";
 import { findOwnEntry } from "@/ui/features/frontier/board/standings";
 
-import { clockLine } from "@/ui/design-system/kit/clock-chip";
 import { entryHref } from "../game-links";
 import { useLayout } from "../frame/layout";
 import { isOpenedFrom } from "../frame/opened-from";
 import { PageFrame } from "../frame/page-frame";
-import { type DirectoryGame, useLeaderboard, useRealmsPlayer } from "../herald";
+import { type AspectSeasonGame, type DirectoryGame, isAspectSeason, useLeaderboard, useRealmsPlayer } from "../herald";
 import { Loading } from "../loading";
 import { NothingHere } from "../not-found";
 import type { Painting } from "@/ui/design-system/kit/paintings";
 import { gameKey } from "../play/play-board";
 import { markResultsSeen } from "../play/seen-results";
-import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
-import { useNowSeconds } from "../use-now";
-import { gameTitle } from "./history-row";
-import { gameOfResults } from "./results-link";
+import { seasonRealm } from "../season";
 import { archivedSeason } from "./archive/archive";
 import { useFinishedGame } from "./finished-game";
-import { SeasonRecap } from "./season-recap";
+import { gameOfResults } from "./results-link";
+import { SeasonRaceRecap, SeasonRecap } from "./season-recap";
 
 export const ResultsPage = () => {
   const { id } = useParams();
@@ -42,10 +40,6 @@ export const ResultsPage = () => {
   );
 };
 
-/**
- * The page's frame: no Back, the place it was opened from lit. The painting is the page's ground on desktop. The page's
- * buttons stand at the head's end on a desktop and in the foot on a phone.
- */
 const ResultsFrame = ({
   painting,
   buttons,
@@ -76,10 +70,44 @@ const Result = ({ gameRef, fromList }: { gameRef: GameRef; fromList: boolean }) 
         <Loading />
       </ResultsFrame>
     );
-  return game !== null && game.mode !== "frontier" ? (
-    <BlitzResult gameRef={gameRef} game={game} fromList={fromList} />
-  ) : (
-    <SeasonResult gameRef={gameRef} game={game} fromList={fromList} />
+  if (game !== null && game.mode !== "frontier") {
+    return (
+      <ResultsFrame>
+        <NothingHere />
+      </ResultsFrame>
+    );
+  }
+  if (game !== null && isAspectSeason(game)) {
+    return <AspectSeasonResult gameRef={gameRef} game={game} fromList={fromList} />;
+  }
+  return <SeasonResult gameRef={gameRef} game={game} fromList={fromList} />;
+};
+
+const AspectSeasonResult = ({
+  gameRef,
+  game,
+  fromList,
+}: {
+  gameRef: GameRef;
+  game: AspectSeasonGame;
+  fromList: boolean;
+}) => {
+  const onShard = archivedSeason(gameRef) === undefined;
+  const hasRealm = seasonRealm(game) !== undefined;
+  const actions = (
+    <>
+      <AppButton kind="secondary" icon="leaderboard" to="/season">
+        {WORDS.season}
+      </AppButton>
+      {onShard && <EndMapButton gameRef={gameRef} />}
+      {onShard && hasRealm && <WithdrawButton gameRef={gameRef} />}
+      <ContinueButton fromList={fromList} leads />
+    </>
+  );
+  return (
+    <ResultsFrame painting="season-citadel">
+      <SeasonRaceRecap game={game} ending="lifted" actions={actions} />
+    </ResultsFrame>
   );
 };
 
@@ -108,10 +136,15 @@ const SeasonResult = ({
         <Loading />
       </ResultsFrame>
     );
+  if (board.data === null)
+    return (
+      <ResultsFrame>
+        <NothingHere />
+      </ResultsFrame>
+    );
   return <FrontierResult gameRef={gameRef} game={game} board={board.data} player={player} fromList={fromList} />;
 };
 
-/** The game's map as it ended, opened as a spectator: anyone may scout how a finished game stood. */
 const EndMapButton = ({ gameRef }: { gameRef: GameRef }) => (
   <AppButton
     kind="secondary"
@@ -129,28 +162,16 @@ const ContinueButton = ({ fromList, leads = true }: { fromList: boolean; leads?:
     </AppButton>
   );
 
-const BlitzResult = ({ gameRef, game, fromList }: { gameRef: GameRef; game: DirectoryGame; fromList: boolean }) => {
-  const now = useNowSeconds();
-  const buttons = (
-    <span className="flex flex-wrap gap-2">
-      <EndMapButton gameRef={gameRef} />
-      <ContinueButton fromList={fromList} />
-    </span>
-  );
-  return (
-    <ResultsFrame painting="blitz-aftermath" buttons={buttons}>
-      <AppPanel>
-        <p className="text-app-label text-app-age">{`${gameTitle(game)} · ${clockLine(null, game.clock.end_at, now)}`}</p>
-      </AppPanel>
-    </ResultsFrame>
-  );
-};
+const WithdrawButton = ({ gameRef }: { gameRef: GameRef }) => (
+  <AppButton
+    kind="secondary"
+    icon="lords"
+    to={entryHref({ chainId: gameRef.chainId, game_id: gameRef.gameId }, "play")}
+  >
+    {WITHDRAW}
+  </AppButton>
+);
 
-/**
- * A season's Results: the season's recap (SeasonRecap), the one drawing of a season's end the game shows too, with
- * Season, the end map and Withdraw (the realm's LORDS still to take, from the season's last card) before its Share; an
- * archived season has no shard to open, so neither of the last two.
- */
 const FrontierResult = ({
   gameRef,
   game,
@@ -172,21 +193,11 @@ const FrontierResult = ({
         {WORDS.season}
       </AppButton>
       {onShard && <EndMapButton gameRef={gameRef} />}
-      {/* The player's own ended season stays in reach: its last card holds the realm's LORDS still to withdraw. */}
-      {onShard && own && (
-        <AppButton
-          kind="secondary"
-          icon="lords"
-          to={entryHref({ chainId: gameRef.chainId, game_id: gameRef.gameId }, "play")}
-        >
-          {WITHDRAW}
-        </AppButton>
-      )}
+      {onShard && own && <WithdrawButton gameRef={gameRef} />}
       <ContinueButton fromList={fromList} leads={own === undefined} />
     </>
   );
   return (
-    // The season's ending is not yet a recorded fact: the mist lifted stands until Herald names it.
     <ResultsFrame painting="season-citadel">
       <SeasonRecap gameRef={gameRef} game={game} board={board} viewer={player} ending="lifted" actions={actions} />
     </ResultsFrame>

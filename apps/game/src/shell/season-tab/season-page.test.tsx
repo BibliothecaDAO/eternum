@@ -4,16 +4,24 @@ import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { afterEach, expect, it, vi } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { GameRef } from "@bibliothecadao/eternum/shard";
+import type { DirectoryGame } from "../herald";
 
 const DIRECTORY_DOWN = { data: undefined, isError: true, isPending: false, error: new Error("502"), refetch: vi.fn() };
 const BOARD_WAITING = { data: undefined, isError: false, isPending: true };
 const NO_HISTORY = { data: [], isError: false, isPending: false };
+const shards = vi.hoisted(() => ({
+  open: vi.fn(async () => {
+    throw new Error("unexpected shard read");
+  }),
+}));
+vi.mock("@/runtime/world/shards", () => ({ requireOpenShard: shards.open }));
 const reads = vi.hoisted(() => ({
   directory: {} as unknown,
   board: {} as unknown,
   settled: {} as unknown,
   boards: {} as Record<number, unknown>,
   player: null as string | null,
+  useRealBoard: false,
 }));
 // Identity names the past seasons' players; any other ask stays unanswered, its name waiting.
 vi.hoisted(() =>
@@ -41,10 +49,13 @@ vi.mock("../herald", async (importOriginal) => {
   return {
     ...actual,
     useDirectory: () => reads.directory,
-    useLeaderboard: (game: GameRef | null) => {
-      const archived = game !== null && archivedSeason(game) !== undefined;
-      const read = actual.useLeaderboard(archived ? game : null);
-      return archived ? read : ((game && reads.boards[game.gameId]) ?? reads.board);
+    useLeaderboard: (game: GameRef | DirectoryGame | null) => {
+      const ref = game === null ? null : "game_id" in game ? actual.gameRefOf(game) : game;
+      const archived = ref !== null && archivedSeason(ref) !== undefined;
+      const real = actual.useLeaderboard(reads.useRealBoard || archived ? game : null);
+      if (reads.useRealBoard || archived) return real;
+      if (ref === null) return { data: undefined, isError: false, isPending: false };
+      return reads.boards[ref.gameId] ?? reads.board;
     },
     useSettledGames: () => reads.settled,
     useRealmsPlayer: () => ({ data: reads.player }),
@@ -56,6 +67,8 @@ afterEach(() => {
   reads.settled = NO_HISTORY;
   reads.boards = {};
   reads.player = null;
+  reads.useRealBoard = false;
+  shards.open.mockClear();
 });
 reads.directory = DIRECTORY_DOWN;
 reads.board = BOARD_WAITING;
@@ -106,6 +119,7 @@ const FRONTIER = {
   game_id: 1,
   mode: "frontier",
   status: "Live",
+  clock_scale: 1,
   season_number: 1,
   day_index: 3,
   day_ends_at: Math.floor(Date.now() / 1000) + 3600,
@@ -398,7 +412,40 @@ it.each([390, 1440])(
       "#1",
       "djizus",
     ]);
-    // The ledger fixed no winner: no one is named.
     expect(await pastRow(fixed(0, []))).toEqual(["Season 2", "Ended 20 Nov", undefined, undefined]);
   },
 );
+
+it("renders Season 1 Aspect race from directory without calling the Season 0 leaderboard", async () => {
+  reads.directory = {
+    data: {
+      games: [
+        {
+          ...FRONTIER,
+          player_count: 142,
+          aspect_members: { 1: 40, 2: 38, 3: 34, 4: 30 },
+          aspect_race: {
+            finish_height: 7_500,
+            season_days: 30,
+            heights: { 1: 6_400, 2: 4_100, 3: 0, 4: 0 },
+          },
+        },
+      ],
+    },
+    isError: false,
+    isPending: false,
+  };
+  reads.useRealBoard = true;
+  const { container, unmount } = await mount(1440);
+  try {
+    expect(shards.open).not.toHaveBeenCalled();
+    expect(container.querySelector("[data-season-race]")).not.toBeNull();
+    expect(container.textContent).not.toContain("Season did not answer.");
+    expect(container.querySelectorAll(".hyper-tile")).toHaveLength(4);
+    expect(container.querySelector('[data-aspect-id="1"] .hyper-tile__count')?.textContent).toBe("6,400");
+    expect(container.textContent).toContain("Day 4 of 30");
+    expect(container.textContent).toContain("Clear Mist · 1,500 height");
+  } finally {
+    await unmount();
+  }
+});

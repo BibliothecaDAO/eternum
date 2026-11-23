@@ -2,7 +2,8 @@ import { WALLET_WORDS, CANCEL } from "@/ui/design-system/kit/words";
 import { formatExact } from "@bibliothecadao/types";
 import { isSameStarknetAddress } from "@realms-world/identity";
 import { WALLET_GAS_TOKEN } from "@realms-world/identity/wallet";
-import { lazy, Suspense, useCallback, useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { lazy, Suspense, useEffect, useState } from "react";
 
 import { shortAddress } from "@/ui/design-system/kit/address";
 import { AppButton, AppField, AppNotice } from "@/ui/design-system/kit/app-elements";
@@ -13,14 +14,8 @@ import { l2Provider } from "@/runtime/l2-rpc";
 import type { WalletFee } from "@/ui/modules/identity/wallet-send";
 
 import { Loading } from "../loading";
-import {
-  environmentLedger,
-  lordsCentsTextOf,
-  lordsOf,
-  lordsTextOf,
-  lordsWeiOf,
-  transferLordsCall,
-} from "../value/ledger";
+import { lordsCentsTextOf, lordsOf, lordsTextOf, lordsWeiOf, transferLordsCall } from "../value/ledger";
+import { invalidateLordsBalance, useWalletFunds, type WalletFunds } from "../value/use-lords-balance";
 
 const WalletSign = lazy(() =>
   import("@/shell/value/wallet-actions").then((module) => ({ default: module.WalletSign })),
@@ -31,7 +26,7 @@ const FeeLine = lazy(() => import("@/shell/value/wallet-actions").then((module) 
  * The Realms wallet's LORDS as last read, with the ledger's token they are counted in, and the LORDS it pays network
  * fees with (WALLET_GAS_TOKEN): the same balance in production; on dev, whose ledger token is a test LORDS, real LORDS.
  */
-type Funds = { token: string; balance: bigint; feeBalance: bigint };
+type Funds = WalletFunds;
 
 type Stage = { kind: "view" } | { kind: "form" } | { kind: "confirm"; to: string; amount: bigint } | { kind: "sent" };
 
@@ -47,21 +42,22 @@ export const RealmsWalletFunds = ({
   /** A send is being written or confirmed: the panel around it steps aside until it ends. */
   onSending?: (sending: boolean) => void;
 }) => {
-  const funds = useFunds(address);
+  const queryClient = useQueryClient();
+  const funds = useWalletFunds(address);
   const [stage, setStage] = useState<Stage>({ kind: "view" });
   const sending = stage.kind === "form" || stage.kind === "confirm";
   useEffect(() => {
     onSending?.(sending);
   }, [onSending, sending]);
-  if (!funds.value) return null;
-  const { token, balance } = funds.value;
+  if (!funds.data) return null;
+  const { token, balance } = funds.data;
   const lords = formatExact(lordsOf(balance));
   switch (stage.kind) {
     case "form":
       return (
         <SendForm
           self={address}
-          funds={funds.value}
+          funds={funds.data}
           onReview={(to, amount) => setStage({ kind: "confirm", to, amount })}
           onCancel={() => setStage({ kind: "view" })}
         />
@@ -80,7 +76,7 @@ export const RealmsWalletFunds = ({
               calls={[transferLordsCall(token, stage.to, stage.amount)]}
               onLanded={() => {
                 setStage({ kind: "sent" });
-                funds.read();
+                void invalidateLordsBalance(queryClient);
               }}
               onFeeShort={(amount) => setStage({ ...stage, amount })}
             />
@@ -264,24 +260,4 @@ const QUOTE_RECIPIENT = "0x1";
 const isStarknetAddress = (text: string) => {
   const value = text.trim();
   return /^0x[0-9a-fA-F]{1,64}$/.test(value) && BigInt(value) > 0n && BigInt(value) < 2n ** 251n;
-};
-
-/** The wallet's LORDS on the environment's ledger token, read on open and again after a send lands. */
-const useFunds = (address: string) => {
-  const [value, setValue] = useState<Funds | null>(null);
-  const read = useCallback(() => {
-    const ledger = environmentLedger();
-    if (!ledger) return;
-    void (async () => {
-      const token = await ledger.lordsToken();
-      const balance = await ledger.balanceOf(token, address);
-      const paysFeeFromBalance = BigInt(token) === BigInt(WALLET_GAS_TOKEN);
-      const feeBalance = paysFeeFromBalance ? balance : await ledger.balanceOf(WALLET_GAS_TOKEN, address);
-      setValue({ token, balance, feeBalance });
-    })().catch((error) => console.error("realms_wallet_funds_failed", error));
-  }, [address]);
-  useEffect(() => {
-    read();
-  }, [read]);
-  return { value, read };
 };

@@ -15,35 +15,28 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { AppLink, AppTopBar } from "@/ui/design-system/kit/app-elements";
 import { Portrait } from "@/ui/design-system/kit/portrait";
 import { Lockup } from "./lockup";
+import { PROFILE_PATH } from "../profile/settings-route";
 import { useRequestSignIn } from "../sign-in/connect";
+import { LordsBalancePill } from "../value/lords-balance-pill";
 import { usePageAddress } from "./page-address";
 
 type Place = { to: string; word: string; icon: IconMeaning; matches: readonly string[] };
 
-/** What's new's address, which realms.world links. */
 export const WHATS_NEW_PATH = "/scroll";
 
-/** You: the player's place, at the end of both bars; What's new is read from it, so it is lit there too. */
 const YOU_TAB: Place = {
-  to: "/profile",
+  to: PROFILE_PATH,
   word: WORDS.you,
   icon: "person",
-  matches: ["/profile", "/results", WHATS_NEW_PATH],
+  matches: [PROFILE_PATH, "/results"],
 };
 
-/** Chat: a page of its own on a phone; over the page, as a pane, on a desktop (its bar's Chat opens it). */
 const CHAT_TAB: Place = { to: "/chat", word: CHAT_WORDS.chat, icon: "chat", matches: ["/chat"] };
 
-/**
- * The app's four places, one list for both layouts: the phone's tab bar and the desktop's top bar (owner, 29 October
- * 2026, of the four: "yeah B is great."). Play holds what to do now, Season where the player stands, Chat the one chat
- * (Global and Messages, as in a game, its unread counted on it), You the player, their finished games, everything about
- * the account, and what is read now and then: What's new and Realms' marketplace.
- * The legal pages, read from the footer, are none of these places: no tab is current there (qa-app-1 P3-3).
- */
 export const TABS: readonly Place[] = [
-  { to: "/", word: WORDS.play, icon: "play", matches: ["/", "/blitz"] },
+  { to: "/", word: WORDS.play, icon: "play", matches: ["/"] },
   { to: "/season", word: WORDS.season, icon: "leaderboard", matches: ["/season", "/p/"] },
+  { to: "/shop", word: WORDS.shop, icon: "fragment", matches: ["/shop"] },
   CHAT_TAB,
   YOU_TAB,
 ];
@@ -105,9 +98,8 @@ const TabIcon = ({ tab, current, size }: { tab: Place; current: boolean; size: n
 };
 
 const PHONE_TAB =
-  "flex min-h-12 flex-auto flex-col items-center justify-center gap-[3px] whitespace-nowrap font-ui text-sm font-semibold";
+  "flex min-h-12 min-w-0 flex-1 flex-col items-center justify-center gap-[2px] whitespace-nowrap font-ui text-xs font-semibold";
 
-/** The phone's foot: the places in thumb reach, each as wide as its word and the rest shared, so no word wraps. */
 export const TabBar = () => {
   const active = useActiveTab();
   const connect = useConnect();
@@ -116,7 +108,7 @@ export const TabBar = () => {
   return (
     <nav
       aria-label="Tabs"
-      className="flex h-[calc(64px+env(safe-area-inset-bottom))] border-t border-kit-line bg-kit-ground px-2.5 pb-[env(safe-area-inset-bottom)]"
+      className="flex h-[calc(64px+env(safe-area-inset-bottom))] border-t border-kit-line bg-kit-ground px-1 pb-[env(safe-area-inset-bottom)]"
     >
       {TABS.map((tab) => {
         const current = active === tab.to;
@@ -132,7 +124,7 @@ export const TabBar = () => {
               onClick={connect}
               className={look}
             >
-              <TabIcon tab={tab} current={current} size={32} />
+              <TabIcon tab={tab} current={current} size={26} />
               {WORDS.connect}
             </button>
           );
@@ -146,11 +138,11 @@ export const TabBar = () => {
             className={look}
           >
             <span className="relative">
-              <TabIcon tab={tab} current={current} size={32} />
+              <TabIcon tab={tab} current={current} size={26} />
               {tab === CHAT_TAB && unread > 0 && (
                 <span
                   data-count
-                  className="absolute -right-3 -top-1.5 min-w-5 rounded-full bg-kit-peach px-1 text-center text-sm leading-5 text-kit-ground"
+                  className="absolute -right-3 -top-1.5 min-w-5 rounded-full bg-kit-peach px-1 text-center text-xs leading-5 text-kit-ground"
                 >
                   {unread}
                 </span>
@@ -164,12 +156,6 @@ export const TabBar = () => {
   );
 };
 
-/**
- * The desktop's bar (the app sheet's AppTopBar): the lockup as the app's mark, then Play, Season and Chat with their
- * icons, the page's notice if it has one, and the player at the bar's far end (their name and portrait once
- * signed in, else Connect). It stays quiet (no gold fill) so the page's one gold step keeps the weight. Every page has
- * it: the places are the way out of any page (no page has Back).
- */
 export const DesktopBar = ({ notice }: { notice: ReactNode }) => {
   const active = useActiveTab();
   const player = useSignedInPlayer();
@@ -187,12 +173,11 @@ export const DesktopBar = ({ notice }: { notice: ReactNode }) => {
     <AppTopBar
       mark={<Lockup />}
       places={TABS.filter((tab) => tab !== YOU_TAB).map((tab) =>
-        // Chat opens over the page, as in a game; on a page that draws it itself, Chat is the place it is (lit on
-        // /chat), never a second chat over it.
         tab === CHAT_TAB && !chatOnPage
           ? { ...placeOf(tab), onSelect: pane.toggle, current: pane.open, count: unread }
           : placeOf(tab),
       )}
+      balance={<LordsBalancePill />}
       player={{
         ...placeOf(YOU_TAB),
         ...(connect && { label: WORDS.connect, onSelect: connect, action: "connect" as const }),

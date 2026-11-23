@@ -35,8 +35,9 @@ vi.hoisted(() =>
 vi.mock("../herald", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../herald")>()),
   useRealmsPlayer: () => ({ data: player.current }),
-  useDirectory: () => ({ data: { games: [] } }),
-  useRecentResults: () => ({ data: { games: [] } }),
+  useDirectory: () => ({ data: { games: [] }, isPending: false }),
+  useRecentResults: () => ({ data: { games: [] }, isPending: false }),
+  useSettledGames: () => ({ data: [], isPending: false }),
 }));
 vi.mock("@/hooks/context/identity-session", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/hooks/context/identity-session")>()),

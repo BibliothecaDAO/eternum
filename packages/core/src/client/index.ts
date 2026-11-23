@@ -43,7 +43,7 @@ export {
   readDeepSites,
   type DeepSiteView,
 } from "./views/deep-sites";
-export { raceFinishHeight, readRaceBoard, RACE_MODELS, type RaceBoard } from "./views/race";
+export { raceFinishHeight, raceStage, readRaceBoard, RACE_MODELS, type RaceBoard } from "./views/race";
 export { currentArmy, currentResourceWeight } from "../utils/deep";
 export {
   deepCenter,

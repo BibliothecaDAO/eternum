@@ -16,9 +16,9 @@ import { WhatsNewPage } from "./shell/news/news";
 import { ChatPage } from "./shell/chat/chat-page";
 import { IS_DEV_ENVIRONMENT } from "./shell/frame/environment";
 import { NotFoundPage } from "./shell/not-found";
-import { BuildOrdersPage } from "./shell/build-orders/build-orders-page";
 import { PlayPage } from "./shell/play/play-page";
-import { PlayerPage, ProfilePage, SettingsPage } from "./shell/profile/profile-pages";
+import { PlayerPage, ProfilePage, SettingsRedirect } from "./shell/profile/profile-pages";
+import { PROFILE_PATH } from "./shell/profile/settings-route";
 import { ResultsPage } from "./shell/season-tab/results-page";
 import { SeasonPage } from "./shell/season-tab/season-page";
 import { SharedLinkPage } from "./shell/share/shared-link-page";
@@ -48,14 +48,17 @@ const AppFallback = FirstFrame;
  * permanent redirect; these routes answer the app's own navigation and the dev server, which serve the shell for every
  * path.
  */
-export const RETIRED_PATHS = ["/blitz", "/frontier", "/eternum", "/dominion", "/sign-in"] as const;
+export const RETIRED_PATHS = [
+  "/blitz",
+  "/blitz/build-orders",
+  "/frontier",
+  "/eternum",
+  "/dominion",
+  "/sign-in",
+] as const;
 
 const LazyRoute = ({ children }: { children: ReactNode }) => <Suspense fallback={<AppFallback />}>{children}</Suspense>;
 
-/**
- * Every page the app serves. Cloudflare Pages rewrites to the app shell only the paths `public/_redirects` names, so
- * `app-hosting.test.ts` holds that file to exactly these routes.
- */
 export const appRoutes = (
   <>
     <Route element={<AppShell />}>
@@ -63,13 +66,12 @@ export const appRoutes = (
       {RETIRED_PATHS.map((path) => (
         <Route key={path} path={path.slice(1)} element={<Navigate to="/" replace />} />
       ))}
-      <Route path="blitz/build-orders" element={<BuildOrdersPage />} />
       <Route path={`${SHARE_PATH.slice(1)}/:code`} element={<SharedLinkPage />} />
       <Route path="season" element={<SeasonPage />} />
       <Route path="results/:id" element={<ResultsPage />} />
-      <Route path="profile" element={<ProfilePage />} />
-      <Route path="profile/settings" element={<SettingsPage />} />
-      <Route path="shop/fragments" element={<FragmentsPage />} />
+      <Route path={PROFILE_PATH.slice(1)} element={<ProfilePage />} />
+      <Route path={`${PROFILE_PATH.slice(1)}/settings`} element={<SettingsRedirect />} />
+      <Route path="shop" element={<FragmentsPage />} />
       <Route path="p/:address" element={<PlayerPage />} />
       <Route path="scroll" element={<WhatsNewPage />} />
       <Route path="chat" element={<ChatPage />} />
