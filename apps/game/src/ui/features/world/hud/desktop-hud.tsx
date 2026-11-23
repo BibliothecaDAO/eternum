@@ -53,7 +53,7 @@ export const OrdersFoot = () => (
  * The desktop HUD's left column, every mode's: from under the top bar down to the base band, its panels stacked, the
  * minimap pinned to its bottom-left corner. The map's labels keep clear of it.
  */
-export const HudColumn = ({ label, children }: { label: string; children: ReactNode }) => (
+const HudColumn = ({ label, children }: { label: string; children: ReactNode }) => (
   <aside
     {...HUD_COLUMN_MARK}
     aria-label={label}

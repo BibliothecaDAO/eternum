@@ -1,4 +1,4 @@
-import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
+import { useCurrentBlockTimestamp, useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { openArmyDeployment } from "@/ui/features/military/utils/open-army-deployment";
 import { StaminaReading } from "./hud/army-token";
@@ -8,15 +8,16 @@ import { canIssueOrders, isWatching } from "@/utils/can-issue-orders";
 import { useRealmVisit } from "@/sync/active-game-client";
 import { dropNextOrder } from "@/three/scenes/worldmap-next-order";
 import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
-import { SETTINGS } from "@/ui/design-system/kit/words";
+import { SETTINGS, type Rank } from "@/ui/design-system/kit/words";
 import { useGameChat } from "@/ui/features/world/containers/hud-chat-window";
+import { useChatRevealed } from "@/ui/features/social/realtime-chat/hooks/use-chat-revealed";
 import { IdentityChip } from "@/ui/features/world/containers/top-header/identity-chip";
 import { HudSheet } from "@/ui/design-system/kit/hud-elements";
 import { useUnreadImportantCount } from "@/ui/features/event-feed/quick-feed";
 import { SettingsPanel } from "@/ui/modules/settings/settings";
 import { configManager, resolveUseSimpleCost } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
-import { BuildingType, catalogAspectId, formatRate, StructureType } from "@bibliothecadao/types";
+import { BuildingType, BUILDINGS_CENTER, catalogAspectId, formatRate } from "@bibliothecadao/types";
 import { useLayout } from "@/shell/frame/layout";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { type ComponentProps, type ComponentType, type ReactNode, useEffect, useState } from "react";
@@ -35,9 +36,13 @@ import { FrontierSurfaces } from "./frontier-surfaces";
 import { useArmyRevealYield } from "./frontier-reveal-yield";
 import { type ArmyOrder, useArmyOrder } from "./hud/army-order";
 import { ArmyDock } from "./hud/army-dock";
+import { AspectStandingChip } from "./hud/aspect-standing-chip";
 import { useChatKey } from "./hud/chat-key";
+import { DailyQuestChip } from "./hud/daily-quest-chip";
 import { FrontierDesktop, FrontierPlaces } from "./hud/frontier-desktop";
 import { FrontierFeed } from "./hud/frontier-feed";
+import { HeaderStores } from "./hud/header-stores";
+import { RealmHeaderChip } from "./hud/realm-header-chip";
 import { useResearchTree } from "./research/research-facts";
 import { canResearchNow } from "./research/research-tree";
 import { ChatPage } from "./hud/chat-page";
@@ -57,7 +62,7 @@ import { useHowToPlay } from "@/ui/modules/how-to-play";
 import { FragmentsPurse, PurseRow } from "./value/lords-purse";
 import { useFragmentsHeld } from "./value/fragments";
 import { ShopSheet, useReturnToShop } from "./shop/shop-sheet";
-import { homeKind } from "@/ui/design-system/home-icons";
+import { homeIcon, homeKind } from "@/ui/design-system/home-icons";
 import { OfflineNotice } from "./hud/offline-notice";
 import { SceneFailureNotice } from "./hud/scene-failure-notice";
 import { NextOrderBar, OrderBar } from "./hud/order-bar";
@@ -73,6 +78,8 @@ import { useSiteAlertOffer } from "./opening/use-site-alert-offer";
 import { FrontierToday } from "./log/frontier-today";
 import { CARD_STORE_KINDS, type CardStore, FrontierStoreCard, isCardStore } from "./production/frontier-store-card";
 import { FrontierResearch } from "./research/frontier-research";
+import { ARMY_RELIC_MODELS, readArmyRelics } from "./relics/army-relics";
+import { FrontierRelics } from "./relics/frontier-relics";
 
 import { BuildingsInFlight } from "./build/build-sheet";
 import { readBuildOptions } from "./build/build-options";
@@ -177,8 +184,31 @@ const FrontierHudBody = ({
   const aspectsOpen = usePartShown("aspects");
   const fragments = useFragmentsChip();
   const layers = useMapLayers(rules, shown, visit ? null : realm);
-  // The store card a ring or a plate opened, under the realm card on a desktop and under the strip on a phone.
   const [openStore, setOpenStore] = useState<CardStore | null>(null);
+  const [realmOpen, setRealmOpen] = useState(() => !isMapView);
+  useEffect(() => {
+    setRealmOpen(!isMapView);
+  }, [isMapView]);
+  const chat = useGameChat(surface === "chat");
+  const chatPane = useChatKey(() => setSurface("chat"));
+  useChatRevealed(() => setSurface("chat"));
+  const headerStores = useStoreReadings(shown, rules);
+  const headerFacts = useNativeFacts(REALM_HEADER_MODELS);
+  const relicNow = useCurrentBlockTimestamp();
+  const shownArmies = useDockArmies(shown);
+  const relicCount = shown
+    ? shownArmies.reduce((sum, army) => {
+        const held = readArmyRelics(headerFacts.store, shown.game_id, army.explorerId, relicNow);
+        if (!held) return sum;
+        return sum + held.running.length + held.slots.filter((slot) => slot !== null).length;
+      }, 0)
+    : 0;
+  const modeConfig = useGameModeConfig();
+  const shownName = shown ? modeConfig.structure.getName(shown).name : null;
+  const shownAspectId = shown
+    ? headerFacts.store.get("HomeAspect", { game_id: shown.game_id, home: shown.entity_id })?.aspect
+    : undefined;
+  const shownAspect = shownAspectId !== undefined ? catalogAspectId(shownAspectId) : undefined;
   if (showBlankOverlay) return null;
   const close = () => setSurface(null);
   const own = realm && !visit ? realm : null;
@@ -218,13 +248,23 @@ const FrontierHudBody = ({
       <FrontierSeason rules={rules} onVisited={close} onClose={close} />
     ) : surface === "feed" ? (
       <FrontierFeed onClose={close} />
+    ) : surface === "chat" ? (
+      <ChatPage
+        rooms={chat.rooms}
+        signedIn={chat.initializer !== null}
+        onSignIn={chat.requestSignIn}
+        pane={chatPane}
+        onClose={close}
+      />
+    ) : surface === "relics" && shown ? (
+      <FrontierRelics realm={shown} onClose={close} />
     ) : surface === "menu" ? (
       <HudMenu onOpen={setSurface} onClose={close} />
     ) : undefined;
   const showOpening = !(desktop && (surface !== null || showsCard));
   const notices = (
     <>
-      {own && <DailyQuest realm={own} layout={desktop ? "desktop" : "phone"} />}
+      {!desktop && own && <DailyQuest realm={own} layout="phone" />}
       {showOpening && (opening.line || opening.offer) && (
         <div data-opening-notice className="flex flex-col gap-1.5 empty:hidden">
           {opening.line && (
@@ -246,17 +286,20 @@ const FrontierHudBody = ({
       <RealmVisitFoot home={realm} />
     </>
   );
+  const replaceRealmWithSheet =
+    desktop && !isMapView && showsCard && (card?.kind === "plot" || card?.kind === "keep" || card?.kind === "building");
+  const realmVisible = Boolean(shown) && realmOpen && !replaceRealmWithSheet;
   const realmPanel = shown && (
     <FrontierRealmPanel
       rules={rules}
       realm={shown}
       own={own}
       storeCards={storeCards}
-      onSurface={setSurface}
       onResearch={(node) => {
         setResearchPick(node);
         setSurface("research");
       }}
+      onClose={desktop ? () => setRealmOpen(false) : undefined}
     />
   );
   const dock = (() => {
@@ -296,11 +339,34 @@ const FrontierHudBody = ({
 
   return desktop ? (
     <FrontierDesktop
+      identity={
+        shown && shownName && !spectating ? (
+          <RealmHeaderChip
+            name={shownName}
+            level={shown.base.level}
+            aspect={shownAspect}
+            expanded={realmVisible}
+            onPress={() => setRealmOpen((open) => !open)}
+          />
+        ) : undefined
+      }
       season={aspectsOpen ? { rank: seasonRank, onOpen: () => setSurface("season") } : undefined}
       clock={<FrontierDayClock rules={rules} onOpenToday={() => setSurface("today")} />}
-      depthSwitch={depthSwitch}
-      realm={realmPanel}
-      armies={dock}
+      quest={own ? <DailyQuestChip realm={own} /> : undefined}
+      stores={
+        shown ? (
+          <HeaderStores stores={headerStores} storeCards={storeCards} showPopoverCard={!realmVisible} />
+        ) : undefined
+      }
+      depthSwitch={isMapView ? depthSwitch : undefined}
+      realm={realmOpen ? realmPanel : null}
+      replaceRealmWithSheet={replaceRealmWithSheet}
+      armies={isMapView ? dock : null}
+      aspectChip={
+        isMapView && shown ? (
+          <AspectStandingChip orderId={shown.metadata.order} onOpenSeason={() => setSurface("season")} />
+        ) : undefined
+      }
       page={page}
       foot={
         <>
@@ -314,6 +380,9 @@ const FrontierHudBody = ({
             surface={surface}
             onSurface={setSurface}
             research={realm ? canResearchNow(research?.nodes) : undefined}
+            chatUnread={chat.unread}
+            relics={relicCount}
+            hasRealm={Boolean(shown)}
           />
         )
       }
@@ -329,6 +398,7 @@ const FrontierHudBody = ({
       visiting={visit !== null}
       surface={surface}
       onSurface={setSurface}
+      chatUnread={chat.unread}
       strip={strip}
       purse={purse}
       page={page}
@@ -341,12 +411,8 @@ const FrontierHudBody = ({
   );
 };
 
-/**
- * Frontier's HUD on a phone, in its bands, and the one owner of its chat: the chat key and the place bar's Chat open
- * the chat page, and the place bar counts what is unread. A desktop's chat is the shared rail's own strip, so each
- * composition holds the chat's lifecycle once, and moving between them hands it over whole. The place bar's Log opens
- * the Events' history as a page, the same history the desktop's Events open in a window.
- */
+const REALM_HEADER_MODELS = ["HomeAspect", ...ARMY_RELIC_MODELS] as const;
+
 const FrontierPhoneHud = ({
   rules,
   realm,
@@ -355,6 +421,7 @@ const FrontierPhoneHud = ({
   visiting,
   surface,
   onSurface,
+  chatUnread,
   strip,
   purse,
   page,
@@ -363,12 +430,12 @@ const FrontierPhoneHud = ({
 }: {
   rules: ExpeditionRules;
   realm: NativeRows["Structure"] | null;
-  /** The realm the dock reads: the player's, or the one visited. */
   board: NativeRows["Structure"] | null;
   depthSwitch?: ReactNode;
   visiting: boolean;
   surface: HudSurface | null;
   onSurface: (surface: HudSurface | null) => void;
+  chatUnread: number;
   strip: ReactNode;
   purse: ReactNode;
   page: ReactNode;
@@ -377,8 +444,6 @@ const FrontierPhoneHud = ({
   dock: ReactNode;
   children: ReactNode;
 }) => {
-  const chat = useGameChat(surface === "chat");
-  const chatPane = useChatKey(() => onSurface("chat"));
   const events = useUnreadImportantCount(surface === "feed");
   return (
     <HudBands
@@ -386,21 +451,8 @@ const FrontierPhoneHud = ({
       strip={strip}
       depthSwitch={depthSwitch}
       purse={purse}
-      page={
-        surface === "chat" ? (
-          <ChatPage
-            rooms={chat.rooms}
-            signedIn={chat.initializer !== null}
-            onSignIn={chat.requestSignIn}
-            pane={chatPane}
-            onClose={() => onSurface(null)}
-          />
-        ) : (
-          page
-        )
-      }
+      page={page}
       nav={
-        // A player's visit trades the nav for its Leave; a spectator, with no realm to go back to, keeps it.
         !(visiting && realm) && (
           <FrontierNav
             rules={rules}
@@ -409,7 +461,7 @@ const FrontierPhoneHud = ({
             surface={surface}
             onSurface={onSurface}
             events={events}
-            unread={chat.unread}
+            unread={chatUnread}
           />
         )
       }
@@ -546,15 +598,15 @@ const FrontierRealmPanel = ({
   realm,
   own,
   storeCards,
-  onSurface,
   onResearch,
+  onClose,
 }: {
   rules: ExpeditionRules;
   realm: NativeRows["Structure"];
   own: NativeRows["Structure"] | null;
   storeCards: ComponentProps<typeof RealmPanel>["storeCards"];
-  onSurface: (surface: HudSurface) => void;
   onResearch: (node?: string) => void;
+  onClose?: () => void;
 }) => {
   const facts = useNativeFacts(REALM_PANEL_MODELS);
   const tick = useCurrentDefaultTick();
@@ -562,10 +614,11 @@ const FrontierRealmPanel = ({
   const useSimpleCost = resolveUseSimpleCost(configManager.buildingCostMode, requestedSimpleCost);
   const name = useGameModeConfig().structure.getName(realm).name;
   const stores = useStoreReadings(realm, rules);
+  const panelStores = stores.filter((store) => store.kind === "labor" || store.kind === "wheat");
+  const laborRate = stores.find((store) => store.kind === "labor")?.perHour;
   const armies = useDockArmies(realm);
   const research = useResearchTree(own);
   const goToPlace = useGoToFrontierPlace(realm);
-  const fragments = useFragmentsChip();
   const aspectId = facts.store.get("HomeAspect", { game_id: realm.game_id, home: realm.entity_id })?.aspect;
   const aspect = aspectId !== undefined ? catalogAspectId(aspectId) : undefined;
   const options = facts.store.get("BoardRules", { game_id: realm.game_id })
@@ -573,23 +626,45 @@ const FrontierRealmPanel = ({
     : [];
   const isListed = (option: (typeof options)[number]) =>
     option.category !== BuildingType.WorkersHut && typeof option.standing === "string" && option.rise.standing > 0;
-  const buildings: RealmBuildingItem[] = options
-    .filter(isListed)
-    .slice(0, 4)
-    .map((option) => {
-      const label = buildingName(option.category);
-      const node = research?.nodes.find((candidate) => candidate.name === label && candidate.state !== "done");
-      return {
-        key: String(option.category),
-        icon: buildingIcon(option.category),
-        name: label,
-        tier: option.tier,
-        rateIcon:
-          option.effect.kind === "produces" ? FRONTIER_STORES[madeStore(option.effect.resource)].icon : undefined,
-        rate: option.effect.kind === "produces" ? formatRate(option.effect.output.total) : undefined,
-        onUpgrade: own && node ? () => onResearch(node.key) : undefined,
-      };
+  const kind = homeKind(realm.metadata.has_wonder);
+  const citadelTier = Math.min(5, Math.max(1, realm.base.level + 1)) as Rank;
+  const openCastle = () => {
+    if (!own) return;
+    useUIStore.getState().setSelectedBuildingHex({
+      structureId: safeInteger(own.entity_id),
+      innerCol: BUILDINGS_CENTER[0],
+      innerRow: BUILDINGS_CENTER[1],
     });
+  };
+  const citadel: RealmBuildingItem = {
+    key: "citadel",
+    icon: homeIcon(kind, realm.base.level),
+    name: "Citadel",
+    tier: citadelTier,
+    rateIcon: laborRate ? FRONTIER_STORES.labor.icon : undefined,
+    rate: laborRate ? formatRate(laborRate) : undefined,
+    onUpgrade: own ? openCastle : undefined,
+  };
+  const buildings: RealmBuildingItem[] = [
+    citadel,
+    ...options
+      .filter(isListed)
+      .slice(0, 4)
+      .map((option) => {
+        const label = buildingName(option.category);
+        const node = research?.nodes.find((candidate) => candidate.name === label && candidate.state !== "done");
+        return {
+          key: String(option.category),
+          icon: buildingIcon(option.category),
+          name: label,
+          tier: option.tier,
+          rateIcon:
+            option.effect.kind === "produces" ? FRONTIER_STORES[madeStore(option.effect.resource)].icon : undefined,
+          rate: option.effect.kind === "produces" ? formatRate(option.effect.output.total) : undefined,
+          onUpgrade: own && node ? () => onResearch(node.key) : undefined,
+        };
+      }),
+  ];
   const openDeploy = () => {
     if (!own) return;
     openArmyDeployment({ structureId: safeInteger(own.entity_id), isExplorer: true });
@@ -597,20 +672,19 @@ const FrontierRealmPanel = ({
   return (
     <RealmPanel
       name={name}
-      kind={homeKind(realm.metadata.has_wonder)}
+      kind={kind}
       level={realm.base.level}
-      highest={configManager.getMaxLevel(StructureType.Realm)}
       aspect={aspect}
       orderId={realm.metadata.order}
       armies={{ active: armies.length, limit: realm.base.troop_max_explorer_count }}
-      stores={stores}
+      stores={panelStores}
       buildings={buildings}
       onHome={() => goToPlace(true)}
+      onClose={onClose}
       {...(own && {
         storeCards,
         onResearch: () => onResearch(),
         onDeploy: openDeploy,
-        ...(fragments !== null && { fragments, onShop: () => onSurface("shop") }),
       })}
     />
   );

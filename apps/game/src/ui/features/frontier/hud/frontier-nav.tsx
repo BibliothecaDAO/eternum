@@ -15,6 +15,7 @@ export type HudSurface =
   | "research"
   | "feed"
   | "chat"
+  | "relics"
   | "menu"
   | "today"
   | "settings"

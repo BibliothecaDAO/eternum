@@ -233,7 +233,12 @@ it("treats the desktop's Feed as any other panel: closed at start, opened from i
         selectedBuildingHex: { structureId: 7, innerCol: BUILDINGS_CENTER[0] + 1, innerRow: BUILDINGS_CENTER[1] },
       }),
     );
-    expect([open("Feed"), open("Build"), place("Feed").getAttribute("aria-selected")]).toEqual([false, true, "false"]);
+    expect([
+      open("Feed"),
+      host.querySelector('[data-realm-slot] section[aria-label="Build"]') !== null,
+      host.querySelector('section[aria-label="Realm"]') === null,
+      place("Feed").getAttribute("aria-selected"),
+    ]).toEqual([false, true, true, "false"]);
   } finally {
     window.history.replaceState(null, "", route);
     await act(async () => useUIStore.setState({ selectedBuildingHex }));
@@ -517,7 +522,7 @@ const PHONE_SURFACES = {
 } satisfies Record<
   // An army's sheet and a lost army's open from an army, which this lab game has none of: frontier-army.test and
   // tile-card.test stand those two in the frame.
-  Exclude<HudSurface, "army" | "army-lost">,
+  Exclude<HudSurface, "army" | "army-lost" | "relics">,
   { label: string; open: () => Promise<unknown> }
 >;
 
@@ -698,20 +703,21 @@ it("keeps the extended season live past its old end and reloads its final day fr
 
 it("tells a spectator on a phone that they are spectating, where a player's purse stands, as the desktop's top bar does", async () => {
   viewport.set(390);
+  const route = window.location.pathname + window.location.search;
   window.history.replaceState(null, "", "/g/0x1ab9/1/map?col=1&row=1");
-  await renderHud();
-  const spectatingChip = () =>
-    [...host.querySelectorAll("button")].find((button) => button.textContent === "Spectating") ?? null;
-  expect(spectatingChip()).toBeNull();
-
-  // The signed-in owner entered the game to spectate it (`?spectate=true`), as spectator-session latches it.
-  overrideSpectateIntent(true);
   try {
+    await renderHud();
+    const spectatingChip = () =>
+      [...host.querySelectorAll("button")].find((button) => button.textContent === "Spectating") ?? null;
+    expect(spectatingChip()).toBeNull();
+
+    overrideSpectateIntent(true);
     await act(async () => useUIStore.setState({ isSpectating: true }));
     expect(spectatingChip()).not.toBeNull();
   } finally {
     overrideSpectateIntent(false);
     await act(async () => useUIStore.setState({ isSpectating: false }));
+    window.history.replaceState(null, "", route);
   }
 });
 

@@ -11,8 +11,7 @@ import { dayOf } from "@bibliothecadao/eternum";
 import { EARLY_REALM, MID_REALM } from "../research/progression-fixture";
 import { canResearchNow, readResearchTree } from "../research/research-tree";
 import { secondsUntilHeld } from "./army-order";
-import { ArmyRow } from "./army-row";
-import { OpenSlotRow } from "./army-row";
+import { ArmyCard, OpenSlotRow } from "./army-row";
 import { ArmyToken, OpenSlot } from "./army-token";
 import { useChatKey } from "./chat-key";
 import { dayClock, dayBounds, endedDay, seasonDay } from "./day-clock";
@@ -259,30 +258,27 @@ describe("the army token", () => {
     ]);
   });
 
-  it("reads an army on a desktop's list: its troops, its stamina exact", () => {
+  it("reads an army on a desktop's card: its title and its stamina exact", () => {
     const onPick = vi.fn();
     act(() =>
       root.render(
-        <ArmyRow
+        <ArmyCard
           label="Army 2"
           number={2}
           art={undefined}
           stamina={{ current: 90, max: 150, perExplore: 20 }}
-          troops={1}
           selected
           onPick={onPick}
         />,
       ),
     );
-    // No XP number: the ring around the portrait says the way to the next point.
-    expect(host.textContent).toBe("22Army 21 troop90/150");
-    // The meter reads the stamina itself, as the phone's token does, never a rounded share of it.
+    expect(host.textContent).toContain("Army 2");
+    expect(host.textContent).toContain("90/150");
     const meter = host.querySelector('[role="meter"]')!;
     expect([meter.getAttribute("aria-valuenow"), meter.getAttribute("aria-valuemax")]).toEqual(["90", "150"]);
-    // The button is named for the army alone, as a phone's token is, so a click by name finds it.
-    const row = host.querySelector<HTMLButtonElement>('button[aria-label="Army 2"]')!;
-    expect(row.getAttribute("aria-pressed")).toBe("true");
-    act(() => row.click());
+    const card = host.querySelector<HTMLButtonElement>('button[aria-label="Army 2"]')!;
+    expect(card.getAttribute("aria-pressed")).toBe("true");
+    act(() => card.click());
     expect(onPick).toHaveBeenCalled();
   });
 

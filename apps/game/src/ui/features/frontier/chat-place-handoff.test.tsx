@@ -179,12 +179,13 @@ it("drops what Chat kept once the player picks again: a bare tile is nothing to 
   expect(share()?.disabled).toBe(true);
 });
 
-it("shares the realm a desktop player selected, chat opened from its strip beside the map", async () => {
+it("shares the realm a desktop player selected, chat opened from its place in the top bar", async () => {
   await renderHud(1440);
   await act(async () => useUIStore.getState().selectOnMap({ kind: "structure", entityId: REALM }));
-  await act(async () => host.querySelector<HTMLButtonElement>('[aria-label="Chat strip"]')!.click());
+  const chat = host.querySelector<HTMLButtonElement>('nav[aria-label="Places"] button[aria-label="Chat"]')!;
+  await act(async () => chat.click());
   await connect();
-  expect(useUIStore.getState().mapSelection).toEqual({ kind: "structure", entityId: REALM });
+  expect(useUIStore.getState().mapSelection).toBeNull();
   expect(share()?.disabled).toBe(false);
   await sendWithPlace("meet here");
 });

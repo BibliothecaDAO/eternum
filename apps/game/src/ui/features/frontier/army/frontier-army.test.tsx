@@ -115,7 +115,7 @@ it("opens the army's panel from its row on a desktop, through its existing selec
   const onOpenArmy = vi.fn();
   const realm = { owner: "0x111", base: { troop_max_explorer_count: 3 } };
   act(() => root.render(<ArmyDock realm={realm as never} armies={[army as never]} onOpenArmy={onOpenArmy} />));
-  act(() => button(/Army 1/)!.click());
+  act(() => host.querySelector<HTMLButtonElement>('button[aria-label="Army 1"]')!.click());
   // The HUD's pick selects and opens it (useArmyPanelOpens): the row takes that one way, no selection of its own.
   expect(onOpenArmy).toHaveBeenCalledOnce();
   expect(onOpenArmy).toHaveBeenCalledWith(12);

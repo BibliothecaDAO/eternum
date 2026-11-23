@@ -76,6 +76,9 @@ button.ui-panel__name[data-action]:hover {
 }
 .ui-panel__title {
   overflow: hidden;
+  color: rgb(var(--hud-ink));
+  font-family: var(--hud-font-display);
+  letter-spacing: 0.02em;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -150,6 +153,8 @@ button.ui-panel__name[data-action]:hover {
   background: rgb(var(--hud-gold));
   color: rgb(var(--hud-dark));
   box-shadow: var(--hud-shadow-control);
+  font-family: var(--hud-font-display);
+  letter-spacing: 0.04em;
 }
 .ui-button[data-kind="primary"]:is(:hover, [data-state="hover"]) {
   background: color-mix(in srgb, rgb(var(--hud-gold)) 88%, white);
@@ -158,6 +163,8 @@ button.ui-panel__name[data-action]:hover {
   border-color: var(--hud-line-strong);
   background: transparent;
   color: rgb(var(--hud-accent));
+  font-family: var(--hud-font-display);
+  letter-spacing: 0.04em;
 }
 .ui-button[data-kind="quiet"] {
   background: transparent;
@@ -359,11 +366,24 @@ a.ui-button {
   bottom: -6px;
   padding: 0 theme(spacing.1);
 }
+.ui-tabs[data-size="sm"] {
+  border-bottom: 0;
+  gap: theme(spacing[0.5]);
+}
 .ui-tabs[data-size="sm"] .ui-tab {
   height: calc(var(--hud-control) - 8px);
+  border: 1px solid transparent;
+  border-radius: var(--hud-radius-chip);
   padding: 0 theme(spacing.2);
+  font-family: var(--hud-font-display);
   font-size: var(--hud-text-body);
   line-height: var(--hud-leading-body);
+  letter-spacing: 0.04em;
+}
+.ui-tabs[data-size="sm"] .ui-tab[aria-selected="true"] {
+  border-color: rgb(var(--hud-accent));
+  background: var(--hud-chosen);
+  color: rgb(var(--hud-gold));
 }
 /* A phone's sheet is narrower than a full-size strip: each tab at the body's size, closer together. The phone layout's
  * width, not a container's: a strip that sizes to its tabs (the top bar's) cannot also be sized by them. */
@@ -2402,7 +2422,8 @@ button.ui-card__choose:disabled {
 [data-frontier-rail]:has([data-rail-panel] > *) [data-rail-home] {
   display: none;
 }
-[data-rail-panel] .ui-sheet {
+[data-rail-panel] .ui-sheet,
+[data-realm-slot] .ui-sheet {
   position: relative;
   inset: auto;
   z-index: auto;

@@ -572,9 +572,9 @@ export const HUD_MODES = {
   },
   /** Frontier: the title's violet on Frontier's ground. */
   frontier: {
-    accent: channels(GAME("frontier", "title")),
-    "surface-from": tint(GAME("frontier", "ground"), GAME("frontier", "title"), 0.06),
-    "surface-to": GAME("frontier", "ground"),
+    accent: channels(BRAND["action-gold"]),
+    "surface-from": BRAND.plate,
+    "surface-to": BRAND.hearth,
   },
   /** Eternum (`eternum-restoration`): the restored tower's gold over warm stone. */
   eternum: { accent: "230 194 122", "surface-from": "#27211a", "surface-to": "#16120d" },

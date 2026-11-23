@@ -7,7 +7,7 @@ import { afterEach, expect, it } from "vitest";
 // The playtest's own step and its own browser read of the armies, not a second reader.
 // The playtest's own step and its own browser read of the armies, not a second reader.
 import { STEP_SETS } from "../../../../../scripts/client-playtest/steps.mjs";
-import { ArmyRow } from "./army-row";
+import { ArmyCard } from "./army-row";
 import { ArmyToken } from "./army-token";
 
 const source = readFileSync("scripts/client-playtest/browser-session.mjs", "utf8");
@@ -25,7 +25,7 @@ const STAMINAS = [
 
 it.each([
   ["a phone's tokens", ArmyToken],
-  ["a desktop's rows", ArmyRow],
+  ["a desktop's cards", ArmyCard],
 ] as const)("reads each army's exact stamina from %s, and the player picks the army with the most", async (_, Army) => {
   document.body.innerHTML = renderToStaticMarkup(
     <nav aria-label="Armies">

@@ -1504,11 +1504,24 @@ const buttonNamed = (name) => `JSON.stringify((() => {
   return { offset: [Math.round(rect.left + rect.width / 2 - innerWidth / 2), Math.round(rect.top + rect.height / 2 - innerHeight / 2)] };
 })())`;
 
+async function openDailyQuestIfChip(browser) {
+  const ready = await readUntil(
+    () =>
+      browser.read(
+        `JSON.stringify({ panel: Boolean(document.querySelector('[data-daily-quest]')), chip: Boolean(document.querySelector('[data-daily-quest-chip]')) })`,
+      ),
+    (value) => value.panel || value.chip,
+    PLAYABLE_WAIT_MS,
+  );
+  if (ready && !ready.panel && ready.chip) browser.run(["click", "[data-daily-quest-chip]"]);
+}
+
 const DAILY_QUEST_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
   {
     name: "collect-daily-quest",
     play: async ({ browser, extraScreenshot }) => {
+      await openDailyQuestIfChip(browser);
       const ready = await readUntil(
         () =>
           browser.read(`JSON.stringify((() => {
@@ -1597,6 +1610,7 @@ const baneCollectionSteps = (expected) => [
   {
     name: "collect-bane-quest",
     play: async ({ browser, extraScreenshot }) => {
+      await openDailyQuestIfChip(browser);
       const ready = await readUntil(
         () =>
           browser.read(`JSON.stringify((() => {
@@ -4162,6 +4176,7 @@ function raceBoardSteps(result) {
               // The lab's reloaded page offers the wallet step first; a player puts it away to play on.
               if (context.browser.read(`JSON.stringify(Boolean(document.querySelector('[aria-label="Close"]')))`))
                 context.browser.click(HUD_WORDS.close);
+              await openDailyQuestIfChip(context.browser);
               const state = await readUntil(
                 () => context.browser.read(OPENING_STATE),
                 (read) => read.banner.length > 0,
@@ -6107,6 +6122,42 @@ export const STEP_SETS = {
   "lab-far-place": { game: labSpireGame("far-place"), steps: FAR_PLACE_STEPS, devOverlays: true },
   "lab-relic-forecasts": { game: labSpireGame("relics"), steps: RELIC_FORECAST_STEPS },
   "lab-race": { game: labSpireGame("race"), steps: raceBoardSteps(null) },
+  "lab-realm-world": {
+    game: labSpireGame("race"),
+    steps: [
+      {
+        name: "world-screen",
+        settleMs: 3_000,
+        play: async ({ browser, extraScreenshot }) => {
+          browser.read(SHOW_EVERYTHING);
+          browser.run(["reload"]);
+          await sleep(3_000);
+          if (browser.read(`JSON.stringify(Boolean(document.querySelector('[aria-label="Close"]')))`))
+            browser.click(HUD_WORDS.close);
+          await sleep(1_500);
+          return { shot: extraScreenshot("world") };
+        },
+        verify: inScene("map", "Deep"),
+      },
+      {
+        name: "realm-screen",
+        settleMs: 2_000,
+        play: async ({ browser, extraScreenshot }) => {
+          if (onADesktop()) browser.clickTab("Realm");
+          else browser.click("Realm");
+          await sleep(2_500);
+          return {
+            shot: extraScreenshot("realm"),
+            hasRealmPanel: browser.read(`Boolean(document.querySelector('section[aria-label="Realm"]'))`),
+          };
+        },
+        verify: ({ seen, played }) =>
+          seen.scene === "hex" && played.hasRealmPanel
+            ? completed(played)
+            : failed("Realm view must render with the Realm panel", { seen, played }),
+      },
+    ],
+  },
   "lab-race-expired": { game: labSpireGame("race-expired"), steps: raceBoardSteps("expired") },
   "lab-race-finished": { game: labSpireGame("race-finished"), steps: raceBoardSteps("won") },
 
@@ -6522,8 +6573,13 @@ const placeSelected = (kind, selection) =>
 function openTheFarPlace(kind) {
   return async ({ browser }) => {
     if (!browser.read(farPlaceReading(kind)).chip) {
-      if (onADesktop()) browser.click(`${HUD_WORDS.chat} strip`);
-      else browser.tapPlace(HUD_WORDS.chat);
+      if (onADesktop()) {
+        const hasPlace = browser.read(
+          `Boolean(document.querySelector('nav[aria-label="Places"] button[aria-label="${HUD_WORDS.chat}"]'))`,
+        );
+        if (hasPlace) browser.clickTab(HUD_WORDS.chat);
+        else browser.click(`${HUD_WORDS.chat} strip`);
+      } else browser.tapPlace(HUD_WORDS.chat);
       await sleep(1_500);
     }
     const before = browser.read(farPlaceReading(kind));

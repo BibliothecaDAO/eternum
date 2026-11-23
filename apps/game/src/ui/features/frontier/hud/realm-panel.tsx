@@ -13,13 +13,13 @@ import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { homeIcon, HOME_KINDS, type HomeKind } from "@/ui/design-system/home-icons";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { orderMeaning } from "@/ui/design-system/icon-meaning";
-import { HudButton, HudPanel, HudRow, HudTier } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudIconButton, HudPanel, HudRow, HudTier } from "@/ui/design-system/kit/hud-elements";
 import {
-  ARMY,
+  ARMIES,
+  CLOSE,
   DEPLOY,
   REALM,
   RESEARCH,
-  SHOP_WORDS,
   SHOW_MY_REALM,
   UPGRADE,
   type Rank,
@@ -28,7 +28,6 @@ import { useLandedValue } from "@/ui/motion/landing-hold";
 import { TickNumber } from "@/ui/motion/tick-number";
 import type { ReactNode } from "react";
 
-import { RankSteps } from "../realm/rank-steps";
 import { FRONTIER_STORES } from "../stores";
 import { LandingDelta, STORE_TONES, type StoreReading, storeLine } from "./status-strip";
 
@@ -45,7 +44,6 @@ export interface RealmBuildingItem {
 export const RealmPanel = ({
   name,
   level,
-  highest,
   aspect,
   orderId,
   armies,
@@ -56,16 +54,14 @@ export const RealmPanel = ({
   onHome,
   storeCards,
   onWithdraw,
-  fragments,
-  onShop,
   onResearch,
   onDeploy,
+  onClose,
   kind = "realm",
 }: {
   kind?: HomeKind;
   name: string;
   level: number | undefined;
-  highest?: number;
   aspect?: AspectId;
   orderId?: number;
   armies?: { active: number; limit: number };
@@ -81,10 +77,9 @@ export const RealmPanel = ({
     card: ReactNode;
   };
   onWithdraw?: () => void;
-  fragments?: number;
-  onShop?: () => void;
   onResearch?: () => void;
   onDeploy?: () => void;
+  onClose?: () => void;
 }) => {
   const order = orderId && orderId > 0 ? catalogOrder(orderId) : undefined;
   const visibleStores = stores.filter(
@@ -99,37 +94,44 @@ export const RealmPanel = ({
     <HudPanel
       label={REALM}
       title={
-        <span className="inline-flex items-center gap-2">
+        <span className="inline-flex items-center gap-2.5">
           <SemanticIcon
             name={homeIcon(kind, level ?? 0)}
-            size={24}
+            size={32}
             alt={kind === "wonder" ? HOME_KINDS[kind].label : undefined}
             data-tip={kind === "wonder" ? HOME_KINDS[kind].label : undefined}
           />
-          <span className="realm-panel__name">{name}</span>
-          {level !== undefined && highest !== undefined && <RankSteps level={level} highest={highest} kind={kind} />}
+          <span className="flex min-w-0 flex-col">
+            <span className="realm-panel__name">{name}</span>
+            {(aspect || order || (!aspect && level !== undefined)) && (
+              <span className="realm-panel__sub">
+                {!aspect && level !== undefined && (
+                  <span className="text-hud-label text-hud-muted">{rankName(level)}</span>
+                )}
+                {aspect && (
+                  <span className="inline-flex items-center gap-1 text-hud-label text-hud-ink">
+                    <AspectMark aspect={aspect} size={14} decorative />
+                    {aspectName(aspect)}
+                  </span>
+                )}
+                {aspect && order && <span className="text-hud-label text-hud-muted">·</span>}
+                {order && (
+                  <span className="inline-flex items-center gap-1 text-hud-label text-hud-muted">
+                    <SemanticIcon name={orderMeaning(order.orderId)} size={14} />
+                    {order.orderName}
+                  </span>
+                )}
+              </span>
+            )}
+          </span>
         </span>
       }
+      cue={onClose && <HudIconButton icon="close" label={CLOSE} kind="secondary" size="sm" onClick={onClose} />}
       onTitle={onHome && { label: SHOW_MY_REALM, run: onHome }}
       collapsible={false}
       className="pointer-events-auto"
-      bodyClassName="flex flex-col gap-2.5"
+      bodyClassName="flex flex-col gap-3"
     >
-      <div className="realm-panel__sub">
-        {level !== undefined && <span className="text-hud-label text-hud-muted">{rankName(level)}</span>}
-        {aspect && (
-          <span className="inline-flex items-center gap-1 text-hud-label text-hud-ink">
-            <AspectMark aspect={aspect} size={16} decorative />
-            {aspectName(aspect)}
-          </span>
-        )}
-        {order && (
-          <span className="inline-flex items-center gap-1 text-hud-label text-hud-muted">
-            <SemanticIcon name={orderMeaning(order.orderId)} size={16} />
-            {order.orderName}
-          </span>
-        )}
-      </div>
       <ul aria-label="Stores" className="realm-tiles">
         {visibleStores.map((store) => (
           <li key={store.kind} data-store={store.kind} className="relative min-w-0">
@@ -143,9 +145,9 @@ export const RealmPanel = ({
           <li className="min-w-0">
             <span
               className="realm-tile"
-              aria-label={`${ARMY} ${formatExact(armies.active)} / ${formatExact(armies.limit)}`}
+              aria-label={`${ARMIES} ${formatExact(armies.active)} / ${formatExact(armies.limit)}`}
             >
-              <span className="realm-tile__label">{ARMY}</span>
+              <span className="realm-tile__label">{ARMIES}</span>
               <span className="realm-tile__value tabular-nums">
                 <SemanticIcon name="knight-t1" size={16} />
                 {`${formatExact(armies.active)} / ${formatExact(armies.limit)}`}
@@ -171,17 +173,6 @@ export const RealmPanel = ({
             </TileShell>
           </li>
         )}
-        {fragments !== undefined && (
-          <li data-store="fragments" className="min-w-0">
-            <TileShell label={SHOP_WORDS.fragments(fragments)} tip={SHOP_WORDS.title} onClick={onShop}>
-              <span className="realm-tile__label">{SHOP_WORDS.title}</span>
-              <span className="realm-tile__value tabular-nums">
-                <SemanticIcon name="fragment" size={16} />
-                {formatAmount(fragments)}
-              </span>
-            </TileShell>
-          </li>
-        )}
       </ul>
       {storeCards?.open && storeCards.card}
       {buildings && buildings.length > 0 && (
@@ -192,7 +183,7 @@ export const RealmPanel = ({
                 lead={<SemanticIcon name={building.icon} size={32} />}
                 title={
                   <span className="flex items-center gap-1.5">
-                    <span className="truncate text-hud-strong text-hud-ink">{building.name}</span>
+                    <span className="realm-building__name truncate">{building.name}</span>
                     <HudTier tier={building.tier} />
                   </span>
                 }

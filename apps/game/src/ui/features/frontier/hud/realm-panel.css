@@ -1,14 +1,24 @@
 .realm-panel__name {
   font-family: var(--hud-font-display);
-  font-size: var(--hud-text-title);
-  line-height: var(--hud-leading-title);
+  font-size: var(--hud-text-display);
+  line-height: var(--hud-leading-display);
   color: rgb(var(--hud-ink));
+  letter-spacing: 0.03em;
 }
 .realm-panel__sub {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: theme(spacing.2);
+  gap: theme(spacing[1.5]);
+  font-family: var(--hud-font);
+}
+.realm-building__name {
+  font-family: var(--hud-font-display);
+  font-size: var(--hud-text-strong);
+  line-height: var(--hud-leading-strong);
+  font-weight: var(--hud-weight-title);
+  letter-spacing: 0.04em;
+  color: rgb(var(--hud-ink));
 }
 .realm-tiles {
   display: grid;

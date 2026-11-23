@@ -1,0 +1,5 @@
+.hud-topbar {
+  background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
+  border-bottom: 1px solid var(--hud-line-strong);
+  box-shadow: var(--hud-shadow-panel);
+}
