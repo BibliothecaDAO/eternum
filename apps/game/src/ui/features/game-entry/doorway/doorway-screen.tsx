@@ -1,4 +1,7 @@
-import type { ReactNode } from "react";
+import "./doorway-screen.css";
+
+import { aspectName, type AspectId } from "@bibliothecadao/types";
+import type { CSSProperties, ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { useLayout } from "@/shell/frame/layout";
@@ -6,25 +9,33 @@ import { PageFrame } from "@/shell/frame/page-frame";
 import { gamePainting, modeLabel } from "@/shell/game-links";
 import type { DirectoryGame } from "@/shell/herald";
 import { DEVICES_PATH } from "@/shell/profile/settings-route";
+import { aspectVariables } from "@/tokens";
+import { AspectMark } from "@/ui/design-system/aspect-mark";
+import { AGE_LOCKUP, REALMS_MARK } from "@/ui/design-system/icon-meaning";
 import { AppButton, AppNotice, AppPanel } from "@/ui/design-system/kit/app-elements";
-import { TRY_AGAIN, DOORWAY_WORDS, WORDS } from "@/ui/design-system/kit/words";
+import { paintingSources, type Painting } from "@/ui/design-system/kit/paintings";
+import { ASPECT_STEP_WORDS, DAY, DOORWAY_WORDS, TRY_AGAIN, WORDS } from "@/ui/design-system/kit/words";
 
 import type { DoorwayView } from "./doorway-view";
-import { ComingUp, EntryProgress } from "./entry-progress";
+import { EntryProgress } from "./entry-progress";
 
-/** The realm coming through the doorway, as much of it as is known yet. */
 export interface DoorwayRealm {
   name: string;
   emblem: { art: string; name: string } | null;
+  aspect?: AspectId | null;
 }
 
-/**
- * The doorway (spec 07): the realm rising under its Order's emblem, and one bar across the steps (account → realm →
- * map → play) continuing by themselves, with what a Frontier player's first minutes hold while their map loads, on the
- * app's frame over the mode's painting: on desktop one plate, on a phone the middle of the screen. It holds only for the one
- * thing the player must do, whose words come from their owners: sign in, try again, Devices, Watch or Results; a step
- * that asks the player to choose (the Realm step's homes) stands in the bar's place, its verb under the thumb on a phone.
- */
+type DoorwayGame = Pick<DirectoryGame, "mode"> & Partial<Pick<DirectoryGame, "day_index">>;
+
+const DEFAULT_PAINTING: Painting = "frontier-mist";
+
+const modeLockup = (mode: DoorwayGame["mode"] | undefined): { src: string; alt: string } => {
+  if (mode === "frontier" || mode === "blitz" || mode === "eternum") {
+    return { src: AGE_LOCKUP[mode], alt: modeLabel({ mode }) };
+  }
+  return { src: REALMS_MARK.lettered, alt: "Realms" };
+};
+
 export const DoorwayScreen = ({
   view,
   realm,
@@ -40,30 +51,33 @@ export const DoorwayScreen = ({
 }: {
   view: DoorwayView;
   realm: DoorwayRealm | null;
-  /** The game being entered, once the directory has it: its mode names the page, paints it and picks its advice. */
-  game?: Pick<DirectoryGame, "mode">;
+  game?: DoorwayGame;
   onRetry: () => void;
-  /** Opens the realm view without the map, when the map could not be drawn. */
   onOpenRealm?: () => void;
   onSignIn: () => void;
-  /** The finished game's Results page, where an ended game's doorway leads. */
   results?: string;
-  /** The step asks the player to choose (the Realm step's homes): what they choose from stands in the bar's place. */
   asking?: boolean;
   wide?: boolean;
-  /** The asking step's one verb: in the foot row on a phone, under what it acts on on a desktop. */
   verb?: ReactNode;
-  /** A mode's own control at the realm step, kept inside the doorway's frame. */
   children?: ReactNode;
 }) => {
-  const desktop = useLayout() === "desktop";
+  const layout = useLayout();
+  const desktop = layout === "desktop";
   const player = view.steps.some(({ step }) => step === "account");
   const loadingMap = view.steps.some(({ step, state }) => (step === "map" || step === "play") && state === "running");
-  const progress = !asking && <EntryProgress view={view} />;
-  const comingUp = game?.mode === "frontier" && player && loadingMap && view.blocker === null && <ComingUp />;
+  const showTip = game?.mode === "frontier" && player && loadingMap && view.blocker === null;
+
+  if (!asking && view.blocker === null && view.spectating === null) {
+    return (
+      <LoadingStage layout={layout} view={view} realm={realm} game={game} showTip={showTip}>
+        {children}
+      </LoadingStage>
+    );
+  }
+
+  const progress = !asking && <EntryProgress view={view} showTip={showTip} />;
   const hold = <Hold view={view} onRetry={onRetry} onOpenRealm={onOpenRealm} onSignIn={onSignIn} results={results} />;
   return (
-    // The shell's surface from the window's edge, so the ground behind the frame is the shell's too.
     <div data-surface="shell" className="fixed inset-0 z-50 overflow-y-auto bg-app-ground">
       <PageFrame
         title={game ? modeLabel(game) : undefined}
@@ -72,15 +86,14 @@ export const DoorwayScreen = ({
         foot={desktop ? undefined : verb}
       >
         {desktop ? (
-          <div className="flex min-h-[calc(100dvh-12rem)] items-center justify-center">
-            <AppPanel className={wide ? "w-full max-w-5xl" : "w-column"}>
+          <div className="flex min-h-[calc(100dvh-7.5rem)] items-center justify-center">
+            <AppPanel className={wide ? "w-full" : "w-column"}>
               <div className="flex flex-col items-stretch gap-5">
                 {realm && <RealmRising realm={realm} />}
                 {progress}
                 {hold}
                 {children}
                 {verb}
-                {comingUp}
               </div>
             </AppPanel>
           </div>
@@ -90,7 +103,6 @@ export const DoorwayScreen = ({
             {progress}
             {hold}
             {children}
-            {comingUp}
           </div>
         )}
       </PageFrame>
@@ -98,18 +110,80 @@ export const DoorwayScreen = ({
   );
 };
 
-/** The realm: its Order's emblem above its name. */
+const LoadingStage = ({
+  layout,
+  view,
+  realm,
+  game,
+  showTip,
+  children,
+}: {
+  layout: "phone" | "desktop";
+  view: DoorwayView;
+  realm: DoorwayRealm | null;
+  game?: DoorwayGame;
+  showTip: boolean;
+  children?: ReactNode;
+}) => {
+  const desktop = layout === "desktop";
+  const painting = game ? gamePainting(game) : DEFAULT_PAINTING;
+  const lockup = modeLockup(game?.mode);
+  const aspect = realm?.aspect ?? null;
+  const day = game?.day_index != null ? game.day_index + 1 : null;
+  const meta = buildStageMeta(aspect, day, desktop);
+  const stageStyle = aspect !== null ? (aspectVariables(aspect) as CSSProperties) : undefined;
+  return (
+    <div data-surface="shell" data-layout={layout} data-doorway-loading style={stageStyle} className="doorway-stage">
+      <img aria-hidden {...paintingSources(painting)} sizes="100vw" alt="" className="doorway-stage__painting" />
+      <div aria-hidden className="doorway-stage__scrim" />
+      <main data-band="body" className="doorway-stage__center">
+        <img src={lockup.src} alt={lockup.alt} className="doorway-stage__lockup" />
+        {(aspect !== null || realm?.emblem) && (
+          <div className="doorway-stage__facet">
+            {aspect !== null ? (
+              <AspectMark aspect={aspect} size={76} />
+            ) : (
+              realm?.emblem && <img src={realm.emblem.art} alt={realm.emblem.name} className="size-16 object-contain" />
+            )}
+          </div>
+        )}
+        {realm && (
+          <div className="doorway-stage__identity">
+            <h1 className="doorway-stage__heading">{DOORWAY_WORDS.enteringRealm(realm.name)}</h1>
+            {meta && <p className="doorway-stage__meta">{meta}</p>}
+          </div>
+        )}
+        {children}
+      </main>
+      <footer data-band="foot" className="doorway-stage__foot">
+        <EntryProgress view={view} showTip={showTip} />
+      </footer>
+    </div>
+  );
+};
+
+const buildStageMeta = (aspect: AspectId | null, day: number | null, desktop: boolean): string | null => {
+  const parts: string[] = [];
+  if (aspect !== null) {
+    parts.push(desktop ? ASPECT_STEP_WORDS.aspectOf(aspectName(aspect)) : aspectName(aspect));
+  }
+  if (day !== null) {
+    parts.push(`${DAY} ${day}`);
+  }
+  return parts.length > 0 ? parts.join(" · ") : null;
+};
+
 const RealmRising = ({ realm }: { realm: DoorwayRealm }) => (
   <div className="flex flex-col items-center gap-3">
-    {realm.emblem && <img src={realm.emblem.art} alt={realm.emblem.name} className="size-12 object-contain" />}
+    {realm.aspect != null ? (
+      <AspectMark aspect={realm.aspect} size={56} />
+    ) : (
+      realm.emblem && <img src={realm.emblem.art} alt={realm.emblem.name} className="size-12 object-contain" />
+    )}
     <h2 className="text-center text-app-heading text-app-ink">{realm.name}</h2>
   </div>
 );
 
-/**
- * What holds the doorway: its line as the app's notice, then the one step the player can take (on Enter on a desktop);
- * a second way on (Try again beside Open realm) stands over it.
- */
 const Hold = ({
   view,
   onRetry,

@@ -4,8 +4,12 @@ import { createRoot } from "react-dom/client";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { afterEach, expect, it, vi } from "vitest";
 
+const l2 = vi.hoisted(() => ({ lords: "0x10e5" }));
 vi.mock("@/runtime/l2-rpc", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/runtime/l2-rpc")>()),
+  get L2_LORDS() {
+    return l2.lords;
+  },
   l2Provider: () => ({ callContract: async () => [`0x${(10n ** 24n).toString(16)}`, "0x0"] }),
 }));
 vi.mock("@/hooks/context/starknet-provider", async () => ({
@@ -23,6 +27,7 @@ vi.mock("../profile/profile-pages", () => ({
   SignedInOnly: ({ children }: { children: (account: string) => ReactNode }) => children("realms-1"),
 }));
 
+import { MAINNET_TOKENS } from "@realms-world/chain";
 import { IdentityRequestError } from "@realms-world/identity";
 import { identityClient } from "@/hooks/context/identity-session";
 import { installWallet } from "@/ui/modules/identity/test-wallet";
@@ -90,6 +95,7 @@ const UNKNOWN = new IdentityRequestError(404, "unknown_payment");
 
 afterEach(async () => {
   for (const unmount of unmounts.splice(0)) await unmount();
+  l2.lords = QUOTE.token;
   defaultWallet.read = { wallet: null, failed: false, retry: () => {} };
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
@@ -111,6 +117,8 @@ it("offers the store's packs in dollars, the Ancient Seal's chosen, and pays its
     "1,000 FragmentsThe Ancient Seal$10.00",
   ]);
   expect(packs.map((pack) => pack.getAttribute("aria-pressed"))).toEqual(["false", "false", "true"]);
+  expect(page.textContent).toContain("Pay with LORDS");
+  expect(page.textContent).not.toContain("ETH");
   await press(page, "Pay $10.00");
   expect(price).toHaveBeenCalledWith(GAME, 1_000);
   expect(page.textContent).toContain("The treasury receives 2,750 LORDS");
@@ -184,6 +192,12 @@ it("puts a sent payment on its quote again after the answer was lost, and after 
     [QUOTE.id, "0xsent"],
   ]);
   expect(localStorage.getItem("realms.fragment-payment:realms-1")).toBeNull();
+});
+
+it("lists every mainnet payment token when the environment uses mainnet LORDS", async () => {
+  l2.lords = MAINNET_TOKENS.lords.address;
+  const page = await mount();
+  expect(page.textContent).toContain("Pay with LORDS · ETH · STRK · USDC");
 });
 
 it("offers to read the account's wallet again when its read failed, rather than waiting on it", async () => {

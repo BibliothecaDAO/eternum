@@ -27,6 +27,7 @@ export interface DayQuestFace {
   icon: IconMeaning;
   name: string;
   unit: string;
+  objective?: string;
 }
 
 /** How far the quest is, what it pays, and what the player can do about it. */

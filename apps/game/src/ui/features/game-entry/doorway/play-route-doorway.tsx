@@ -1,28 +1,26 @@
 import { pageNavigation } from "@/utils/page-navigation";
 import { configManager } from "@bibliothecadao/eternum";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
-import { useSyncExternalStore } from "react";
+import { useMemo, useSyncExternalStore } from "react";
 import { useLocation } from "react-router-dom";
 
 import type { PlayRouteBootPhase } from "@/game-entry/play-route-boot";
 import { getCurrentPlayRouteBootToken, usePlayRouteReadinessStore } from "@/game-entry/play-route-readiness-store";
+import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useGameEntry } from "@/hooks/use-game-entry";
 import { parsePlayRoute } from "@/play/navigation/play-route";
+import type { DirectoryGame } from "@/shell/herald";
+import { seasonRealmId } from "@/shell/season";
 import { resultsHref } from "@/shell/season-tab/results-link";
 import { useRequestSignIn } from "@/shell/sign-in/connect";
 import { modelPreparationShare, subscribeModelPreparation } from "@/three/model-preparation";
 import { BootDebugPanel } from "@/ui/debug/boot-debug-panel";
 
-import { doorwayRealmOf } from "./doorway-realm";
-import { DoorwayScreen } from "./doorway-screen";
+import { doorwayRealmFromId, doorwayRealmOf, toPaddedFeltAddress } from "./doorway-realm";
+import { DoorwayScreen, type DoorwayRealm } from "./doorway-screen";
 import { type DoorwayAudience, doorwayView, type GameRefusal } from "./doorway-view";
 
-/**
- * The doorway over the game's route while it boots (design o5): the map booting, then the hand-off to play, the
- * player's own realm shown once the game's store has it. The boot's debug panel (its milestones and the renderer
- * trial) stays for bug reports behind `?logs=1`.
- */
 export const PlayRouteDoorway = ({
   phase,
   audience,
@@ -37,9 +35,7 @@ export const PlayRouteDoorway = ({
   audience: DoorwayAudience;
   setup: GameClientSetup | null;
   accountError: string | null;
-  /** The game is finalized: the doorway leads to its results. */
   ended: boolean;
-  /** The game ran on a release this client cannot read: the doorway says so and offers no retry. */
   refused: GameRefusal | undefined;
   retry: () => void;
   currentTaskLabel: string;
@@ -48,7 +44,7 @@ export const PlayRouteDoorway = ({
   const route = parsePlayRoute(location);
   const requestSignIn = useRequestSignIn();
   const entry = useRouteGame(route);
-  const realm = useOwnRealm(setup, audience);
+  const realm = useOwnRealm(setup, audience, entry);
   const failedScene = usePlayRouteReadinessStore((state) => state.sceneFailure?.scene ?? null);
   const modelShare = useSyncExternalStore(subscribeModelPreparation, modelPreparationShare);
   const view = doorwayView({
@@ -67,7 +63,6 @@ export const PlayRouteDoorway = ({
       view={view}
       realm={realm}
       game={entry ?? undefined}
-      // The boot retries its own failures; an account that could not be set up retries the whole entry.
       onRetry={phase === "error" ? retry : () => pageNavigation.reload()}
       onOpenRealm={openRealmWithoutMap}
       onSignIn={() => requestSignIn()}
@@ -78,23 +73,37 @@ export const PlayRouteDoorway = ({
   );
 };
 
-/** The map could not be drawn: the boot goes on to the realm view alone, and the hand-off takes the player there. */
 const openRealmWithoutMap = () =>
   usePlayRouteReadinessStore.getState().openRealmWithoutMap(getCurrentPlayRouteBootToken());
 
-/** The route's game as the directory lists it (cached from the entry), for the doorway's title and painting. */
-const useRouteGame = (route: ReturnType<typeof parsePlayRoute>) =>
-  useGameEntry(route ?? { chainId: "", gameId: 0 }, { enabled: route !== null, player: null, refetchIntervalMs: 0 })
-    .data ?? null;
+const useRouteGame = (route: ReturnType<typeof parsePlayRoute>) => {
+  const address = useAccountStore((state) => state.account?.address ?? null);
+  const player = useMemo(() => toPaddedFeltAddress(address), [address]);
+  return (
+    useGameEntry(route ?? { chainId: "", gameId: 0 }, { enabled: route !== null, player, refetchIntervalMs: 0 }).data ??
+    null
+  );
+};
 
-/** The player's selected structure, once it is their own and the game's store holds it. */
-const useOwnRealm = (setup: GameClientSetup | null, audience: DoorwayAudience) => {
+const directoryRealmOf = (entry: Pick<DirectoryGame, "player_state"> | null): DoorwayRealm | null => {
+  const realmId = seasonRealmId(entry);
+  return realmId !== null ? doorwayRealmFromId(realmId) : null;
+};
+
+const useOwnRealm = (
+  setup: GameClientSetup | null,
+  audience: DoorwayAudience,
+  entry: Pick<DirectoryGame, "player_state"> | null,
+) => {
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const isSpectating = useUIStore((state) => state.isSpectating);
-  if (!setup || audience === "spectator" || isSpectating || !structureEntityId) return null;
-  const structure = setup.store.get("Structure", {
-    game_id: configManager.getActiveGameId(),
-    entity_id: structureEntityId,
-  });
-  return structure ? doorwayRealmOf(structure, setup.store) : null;
+  if (audience === "spectator" || isSpectating) return null;
+  if (setup && structureEntityId) {
+    const structure = setup.store.get("Structure", {
+      game_id: configManager.getActiveGameId(),
+      entity_id: structureEntityId,
+    });
+    if (structure) return doorwayRealmOf(structure, setup.store);
+  }
+  return directoryRealmOf(entry);
 };

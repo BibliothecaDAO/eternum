@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
 import { canonicalRealm } from "@bibliothecadao/eternum";
 
 import { useHeldRealms } from "@/hooks/use-holdings";
@@ -18,31 +17,20 @@ import {
 
 import { MARKET } from "../community";
 import { ShellWindow } from "../frame/shell-window";
-import { returnPathOf } from "../return-path";
-import { linkWalletHref } from "./settings-route";
 
 export const HoldingsStrip = () => {
   const { wallet, held } = useHeldRealms();
   const [open, setOpen] = useState(false);
-  const navigate = useNavigate();
-  const location = useLocation();
+  if (wallet === null) return null;
   return (
     <>
       <div className="app-holdings" role="group" aria-label={PROFILE_WORDS.holdings}>
-        {wallet === null ? (
-          <Holding
-            icon="backpack"
-            label={PROFILE_WORDS.linkWalletHoldings}
-            onPress={() => navigate(linkWalletHref(returnPathOf(location)))}
-          />
-        ) : (
-          <Holding
-            icon="realm"
-            count={held.isError ? PROFILE_WORDS.unknownCount : held.data?.length}
-            label={PROFILE_WORDS.realms}
-            onPress={() => setOpen(true)}
-          />
-        )}
+        <Holding
+          icon="realm"
+          count={held.isError ? PROFILE_WORDS.unknownCount : held.data?.length}
+          label={PROFILE_WORDS.realms}
+          onPress={() => setOpen(true)}
+        />
       </div>
       {open && <RealmsSheet held={held} onClose={() => setOpen(false)} />}
     </>
@@ -68,22 +56,35 @@ const Holding = ({
   </button>
 );
 
+export const RealmsStatus = ({ held }: { held: ReturnType<typeof useHeldRealms>["held"] }) => {
+  if (held.isError)
+    return (
+      <AppEmpty
+        icon="realm"
+        line={HELD_REALMS_UNREADABLE}
+        action={
+          <AppButton kind="secondary" onClick={() => void held.refetch()}>
+            {TRY_AGAIN}
+          </AppButton>
+        }
+      />
+    );
+  if (held.data?.length === 0) return <AppEmpty icon="realm" line={NO_HELD_REALMS} />;
+  return null;
+};
+
 /** The linked wallet's Realms, each by its number and name; the Market sells and buys them. */
-const RealmsSheet = ({ held, onClose }: { held: ReturnType<typeof useHeldRealms>["held"]; onClose: () => void }) => (
+export const RealmsSheet = ({
+  held,
+  onClose,
+}: {
+  held: ReturnType<typeof useHeldRealms>["held"];
+  onClose: () => void;
+}) => (
   <ShellWindow title={YOUR_REALMS} onClose={onClose}>
     <div className="flex flex-col gap-4">
-      {held.isError ? (
-        <AppEmpty
-          icon="realm"
-          line={HELD_REALMS_UNREADABLE}
-          action={
-            <AppButton kind="secondary" onClick={() => void held.refetch()}>
-              {TRY_AGAIN}
-            </AppButton>
-          }
-        />
-      ) : held.data?.length === 0 ? (
-        <AppEmpty icon="realm" line={NO_HELD_REALMS} />
+      {held.isError || held.data?.length === 0 ? (
+        <RealmsStatus held={held} />
       ) : (
         <ul className="flex flex-col gap-2" aria-label={YOUR_REALMS}>
           {held.data?.map(({ realmId }) => (

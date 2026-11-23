@@ -6,6 +6,9 @@ import { CairoCustomEnum, CairoOption, CairoOptionVariant } from "starknet";
 import { createHeraldRequestHandler } from "../http";
 import { WorldFold } from "../world-fold";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { DAILY_QUEST_MODELS, readDailyQuest } from "@bibliothecadao/eternum";
+import { NativeFactStore, questWeek } from "@bibliothecadao/eternum/game-client";
+import { RESOURCE_PRECISION, worldBanes } from "@bibliothecadao/types";
 import { buildNativeDirectory, directoryFact } from "./read-models";
 import {
   structureValue,
@@ -382,6 +385,169 @@ describe("native directory", () => {
     native.applyReceipt(fold, receipt([rowEvent("AspectMembers", ["1", "2"], { members: 1n })]), 12, 0);
     expect(fold.directoryRevision()).not.toBe(revision);
     expect(members(1)).toEqual({ 1: 3, 2: 1, 3: 1, 4: 0 });
+  });
+
+  it("publishes each Aspect's hyperstructure height and finish height from RaceRules and AspectHyperstructure", () => {
+    const { fold, native, decoder } = world();
+    native.applyReceipt(
+      fold,
+      receipt(
+        seedDerivedRows(fold, decoder, [
+          rowEvent("RaceRules", ["1"], {
+            season_days: 30n,
+            stage_height: 2000n,
+            clear_mist_percent: 120n,
+            second_wind_percent: 120n,
+            pale_moon_percent: 80n,
+            spoils_percent: 120n,
+          }),
+          rowEvent("AspectHyperstructure", ["1", "1"], { height: 6400n }),
+          rowEvent("AspectHyperstructure", ["1", "2"], { height: 7850n }),
+        ]),
+      ),
+      11,
+      0,
+    );
+    const input = { chain: "madara", confirmedBlock: 11, timestamp: 30, fold };
+    const race = (gameId: number) =>
+      buildNativeDirectory(input).games.find(({ game_id }) => game_id === gameId)!.aspect_race;
+    expect(race(1)).toEqual({ finish_height: 10000, heights: { 1: 6400, 2: 7850, 3: 0, 4: 0 } });
+    expect(race(2)).toBeNull();
+
+    const revision = fold.directoryRevision();
+    native.applyReceipt(fold, receipt([rowEvent("AspectHyperstructure", ["1", "3"], { height: 4100n })]), 12, 0);
+    expect(fold.directoryRevision()).not.toBe(revision);
+    expect(race(1)).toEqual({ finish_height: 10000, heights: { 1: 6400, 2: 7850, 3: 4100, 4: 0 } });
+  });
+
+  it("publishes the player's current quest from core's readDailyQuest, including storage-clipped LaborGrant amounts", () => {
+    const { fold, native, decoder } = world();
+    const baseCounts = [1, 1, 1, 1, 1, 2, 15];
+    const expectedQuest = questWeek(42n, 0).find(({ day }) => day === 0)!.quest;
+    const expectedTarget = baseCounts[expectedQuest]!;
+    native.applyReceipt(
+      fold,
+      receipt(
+        seedDerivedRows(fold, decoder, [
+          gameEvent("1", "0", "0", "frontier", "Frontier"),
+          rulesEvent("1", "3600"),
+          rowEvent("QuestRules", ["1"], {
+            base_counts: baseCounts,
+            labor: 1000n,
+            essence: 1500n,
+            bonus_percent: 150,
+          }),
+          structure("7", "1", "0x111", "0"),
+          rowEvent("EntryEntitlement", ["1", "0x111"], {
+            realm_id: 538n,
+            pass_kind: 2n,
+            metadata_1: 0n,
+            metadata_2: 0n,
+            metadata_3: 0n,
+          }),
+          rowEvent("SettledRealm", ["1", "538"], { home: 7n }),
+          rowEvent("QuestProgress", ["1", "7", "0"], { progress: 1n, completed_level: 0 }),
+        ]),
+      ),
+      11,
+      0,
+    );
+    const readQuest = (confirmedBlock: number) =>
+      buildNativeDirectory({
+        chain: "madara",
+        confirmedBlock,
+        timestamp: 30,
+        fold,
+        playerAddress: "0x111",
+      }).games.find(({ game_id }) => game_id === 1)!.player_state?.today_quest;
+    expect(readQuest(11)).toEqual({
+      quest_id: expectedQuest,
+      progress: 1,
+      target: expectedTarget,
+      labor: 1500,
+    });
+
+    native.applyReceipt(
+      fold,
+      receipt([
+        rowEvent("QuestProgress", ["1", "7", "0"], { progress: BigInt(expectedTarget), completed_level: 1 }),
+        rowEvent("LaborGrant", ["1", "7", "0"], {
+          account: 0x111n,
+          amount: 900n * BigInt(RESOURCE_PRECISION),
+          essence: 1500n * BigInt(RESOURCE_PRECISION),
+        }),
+      ]),
+      12,
+      0,
+    );
+    expect(readQuest(12)).toEqual({
+      quest_id: expectedQuest,
+      progress: expectedTarget,
+      target: expectedTarget,
+      labor: 900,
+    });
+  });
+
+  it("matches core readDailyQuest on Seal bonus and WorldBane override paths", () => {
+    const { fold, native, decoder } = world();
+    const bane = worldBanes[0];
+    native.applyReceipt(
+      fold,
+      receipt(
+        seedDerivedRows(fold, decoder, [
+          gameEvent("1", "0", "0", "frontier", "Frontier"),
+          rulesEvent("1", "3600"),
+          rowEvent("QuestRules", ["1"], {
+            base_counts: [1, 1, 1, 1, 1, 2, 15],
+            labor: 1000n,
+            essence: 1500n,
+            bonus_percent: 150,
+          }),
+          rowEvent("BaneRules", ["1"], {
+            chance_step: 20,
+            quorum_percent: 25,
+            beast_percent: 150,
+            stamina_percent: 50,
+            production_percent: 50,
+            quest_counts: [3n, 6n, 9n, 12n, 20n, 40n, 60n, 80n, 2500n, 6000n, 10000n, 15000n],
+          }),
+          structure("7", "1", "0x111", "0"),
+          rowEvent("HomeAspect", ["1", "7"], { aspect: 2 }),
+          rowEvent("Seal", ["1", "0x111"], { granted_at: 25n }),
+          rowEvent("WorldBane", ["1", "0"], { kind: bane.id }),
+          rowEvent("QuestProgress", ["1", "7", "0"], { progress: 2n, completed_level: 0 }),
+        ]),
+      ),
+      11,
+      0,
+    );
+    const fullStore = new NativeFactStore();
+    fullStore.applyFacts(
+      [...new Set(DAILY_QUEST_MODELS)].flatMap((model) =>
+        fold.gameRows(model, "1").map(({ key, value }) => ({ model, key, value })),
+      ),
+    );
+    fullStore.setSnapshot({ gameId: 1, complete: true, actor: "0x111", timestamp: 30 });
+    const core = readDailyQuest(fullStore, 1, 7, 30)!.reading.known!;
+    const directory = buildNativeDirectory({
+      chain: "madara",
+      confirmedBlock: 11,
+      timestamp: 30,
+      fold,
+      playerAddress: "0x111",
+    }).games.find(({ game_id }) => game_id === 1)!;
+    expect(directory.player_state?.today_quest).toEqual({
+      quest_id: bane.quest,
+      progress: 2,
+      target: 3,
+      labor: 3000,
+    });
+    expect(directory.player_state?.today_quest).toEqual({
+      quest_id: core.quest.id,
+      progress: Number(core.progress),
+      target: Number(core.target),
+      labor: Number(core.reward.labor) / RESOURCE_PRECISION,
+    });
   });
 
   // The old-state dev incident: a clear deleted the site's TileOccupancy and the player took the site.

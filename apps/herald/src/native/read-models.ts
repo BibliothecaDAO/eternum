@@ -1,11 +1,14 @@
 import type {
+  HeraldAspectRace,
   HeraldGameDirectory,
   HeraldGameDirectoryEntry,
+  HeraldPlayerQuest,
   HeraldPlayerStructure,
 } from "@bibliothecadao/eternum/game-sync";
-import { nativeGameModeOfFamily } from "@bibliothecadao/eternum";
+import { DAILY_QUEST_MODELS, nativeGameModeOfFamily, readDailyQuest } from "@bibliothecadao/eternum";
 import { dayOf, expeditionRealmSite, entityHomeNamespace, isRealmCategory } from "@bibliothecadao/eternum/expeditions";
-import { aspects, type AspectId, StructureType } from "@bibliothecadao/types";
+import { NativeFactStore, raceFinishHeight } from "@bibliothecadao/eternum/game-client";
+import { aspects, RESOURCE_PRECISION, type AspectId, StructureType } from "@bibliothecadao/types";
 import { isCheckGame, resolveDirectoryStatus, type DirectoryInput } from "../game-directory";
 import type { FoldRow } from "../types";
 
@@ -20,6 +23,8 @@ export const FINALIZED_GAME_MODELS: ReadonlySet<string> = new Set([
   "PlayerEntry",
   "AspectRules",
   "AspectMembers",
+  "RaceRules",
+  "AspectHyperstructure",
   "ChestRules",
   "LordsBudget",
   "FrontierPrize",
@@ -32,6 +37,39 @@ export const FINALIZED_GAME_MODELS: ReadonlySet<string> = new Set([
 
 import { integer, number, address, record, gameRows, required, type Row } from "./values";
 
+type DailyQuestModel = (typeof DAILY_QUEST_MODELS)[number];
+type QuestRowSelector = "game" | "home" | "entity" | "account" | "bane-game" | "bane-aspect" | "unused";
+
+const QUEST_MODEL_SELECTOR = {
+  GameRegistry: "game",
+  SliceRules: "game",
+  SettlementRules: "game",
+  QuestRules: "game",
+  Structure: "entity",
+  QuestProgress: "home",
+  LaborGrant: "home",
+  BaneGrant: "home",
+  Seal: "account",
+  SettledRealm: "home",
+  HomeAspect: "home",
+  BaneRules: "bane-game",
+  FirstTeamBane: "bane-game",
+  WorldBane: "bane-game",
+  TeamBane: "bane-aspect",
+  BaneProgress: "bane-aspect",
+  AspectActivity: "bane-aspect",
+  DeepSite: "unused",
+  AspectHyperstructure: "unused",
+  DeepGuard: "unused",
+  ArmyDay: "unused",
+  PlayerEntry: "unused",
+  ExplorerTroops: "unused",
+  TileOccupancy: "unused",
+  ExpeditionSite: "unused",
+} as const satisfies Record<DailyQuestModel, QuestRowSelector>;
+
+const DAILY_QUEST_MODEL_LIST: readonly DailyQuestModel[] = [...new Set(DAILY_QUEST_MODELS)];
+
 interface DirectoryRows {
   structures: FoldRow[];
   position: DirectoryInput["fold"]["structurePosition"];
@@ -42,6 +80,8 @@ interface DirectoryRows {
   entitlements: FoldRow[];
   aspectRules: FoldRow[];
   aspectMembers: FoldRow[];
+  raceRules: FoldRow[];
+  aspectHyperstructures: FoldRow[];
 }
 
 export function buildNativeDirectory(input: DirectoryInput): HeraldGameDirectory {
@@ -93,6 +133,8 @@ function directoryRows(input: DirectoryInput): DirectoryRows {
     entitlements: rows("EntryEntitlement"),
     aspectRules: rows("AspectRules"),
     aspectMembers: rows("AspectMembers"),
+    raceRules: rows("RaceRules"),
+    aspectHyperstructures: rows("AspectHyperstructure"),
   };
 }
 
@@ -115,6 +157,70 @@ function directoryPlayerState(
     has_home_source: own !== undefined,
     taken_realm_ids: entitlements.filter((row) => number(row.pass_kind) === 2).map((row) => number(row.realm_id)),
     structures: structures.map((row) => playerStructure(row, game, settlement, facts, input.timestamp)),
+    today_quest: todayQuestOf(number(game.game_id), structures, facts, input, player),
+  };
+}
+
+function todayQuestOf(
+  gameId: number,
+  structures: readonly Row[],
+  directory: DirectoryRows,
+  input: DirectoryInput,
+  player: string,
+): HeraldPlayerQuest | null {
+  const realm = structures.find((row) => isRealmCategory(number(record(row.base).category)));
+  if (!realm) return null;
+  const targetGame = BigInt(gameId);
+  const homeId = integer(realm.entity_id);
+  const rowsForGame = (model: DailyQuestModel): FoldRow[] => {
+    const source =
+      model === "Structure"
+        ? directory.structures
+        : model === "SliceRules"
+          ? directory.rules
+          : model === "SettlementRules"
+            ? directory.settlementRules
+            : input.fold.modelRows(model);
+    return source.filter(({ value }) => integer(value.game_id) === targetGame);
+  };
+  if (rowsForGame("QuestRules").length === 0) return null;
+  const hasBaneRules = rowsForGame("BaneRules").length > 0;
+  const homeAspectRow = hasBaneRules
+    ? rowsForGame("HomeAspect").find(({ value }) => integer(value.home) === homeId)
+    : undefined;
+  const aspect = homeAspectRow ? number(homeAspectRow.value.aspect) : null;
+  const facts = DAILY_QUEST_MODEL_LIST.flatMap((model) => {
+    const selector = QUEST_MODEL_SELECTOR[model];
+    if (selector === "unused") return [];
+    if ((selector === "bane-game" || selector === "bane-aspect") && !hasBaneRules) return [];
+    if (selector === "bane-aspect" && aspect === null) return [];
+    const rows = rowsForGame(model).filter(({ value }) => {
+      switch (selector) {
+        case "game":
+        case "bane-game":
+          return true;
+        case "entity":
+          return integer(value.entity_id) === homeId;
+        case "home":
+          return integer(value.home) === homeId;
+        case "account":
+          return address(value.account) === player;
+        case "bane-aspect":
+          return number(value.aspect) === aspect;
+      }
+    });
+    return rows.map(({ key, value }) => ({ model, key, value }));
+  });
+  const store = new NativeFactStore();
+  store.applyFacts(facts);
+  store.setSnapshot({ gameId, complete: true, actor: player, timestamp: input.timestamp });
+  const reading = readDailyQuest(store, gameId, number(realm.entity_id), input.timestamp)?.reading.known;
+  if (!reading) return null;
+  return {
+    quest_id: reading.quest.id,
+    progress: Number(reading.progress),
+    target: Number(reading.target),
+    labor: Number(reading.reward.labor) / RESOURCE_PRECISION,
   };
 }
 
@@ -138,6 +244,10 @@ export function directoryFact(model: string, row: Row | undefined): unknown {
       return row.orders;
     case "AspectMembers":
       return [row.aspect, row.members];
+    case "RaceRules":
+      return row.stage_height;
+    case "AspectHyperstructure":
+      return [row.aspect, row.height];
     case "Structure":
       return [
         row.owner,
@@ -162,6 +272,22 @@ export function directoryStatus(game: Row, timestamp: number) {
 
 const SETTLEMENT_CATEGORIES: readonly number[] = [StructureType.Realm, StructureType.Village];
 
+function gameDayOf(game: Row, facts: DirectoryRows, timestamp: number) {
+  const mode = nativeGameModeOfFamily(number(game.family));
+  const dayUnitSeconds = number(required(facts.rules, game.game_id, "SliceRules").day_unit_seconds);
+  if (mode !== "frontier" || dayUnitSeconds === 0) return null;
+  const calendar = {
+    seed: integer(game.seed),
+    scheduledEndAt: number(game.scheduled_end_at),
+    endAt: number(game.end_at),
+    startMainAt: number(game.start_main_at),
+    dayUnitSeconds,
+  };
+  const day = game.settled !== true ? dayOf(calendar, timestamp) : null;
+  const nextDay = day ? dayOf(calendar, day.end) : null;
+  return { day, nextDay };
+}
+
 function directoryEntry(game: Row, facts: DirectoryRows, input: DirectoryInput): HeraldGameDirectoryEntry {
   const { settlementRules, progress, structures } = facts;
   const mode = nativeGameModeOfFamily(number(game.family));
@@ -178,19 +304,9 @@ function directoryEntry(game: Row, facts: DirectoryRows, input: DirectoryInput):
     end_at: number(game.end_at),
     scheduled_end_at: number(game.scheduled_end_at),
   };
-  const calendar =
-    mode === "frontier" && dayUnitSeconds !== 0
-      ? {
-          seed: integer(game.seed),
-          scheduledEndAt: clock.scheduled_end_at,
-          endAt: clock.end_at,
-          startMainAt: clock.start_main_at,
-          dayUnitSeconds,
-        }
-      : null;
-  const day = calendar && game.settled !== true ? dayOf(calendar, input.timestamp) : null;
-
-  const nextDay = day ? dayOf(calendar!, day.end) : null;
+  const activeDay = gameDayOf(game, facts, input.timestamp);
+  const day = activeDay?.day ?? null;
+  const nextDay = activeDay?.nextDay ?? null;
   return {
     game_id: number(game.game_id),
     name: shortString(game.name),
@@ -204,6 +320,7 @@ function directoryEntry(game: Row, facts: DirectoryRows, input: DirectoryInput):
     clock,
     player_count: new Set(settlements.map((row) => address(row.owner))).size,
     aspect_members: aspectMembersOf(facts, game.game_id),
+    aspect_race: aspectRaceOf(facts, game.game_id),
     player_state: directoryPlayerState(game, facts, input),
     registration: {
       count:
@@ -219,6 +336,18 @@ function directoryEntry(game: Row, facts: DirectoryRows, input: DirectoryInput):
     settled_villages_count: settlements.length - realms.length,
     // Native placement is described by SettlementRules and SettlementPool in the snapshot.
     settlement: null,
+  };
+}
+
+function aspectRaceOf(facts: DirectoryRows, gameId: unknown): HeraldAspectRace | null {
+  const rules = gameRows(facts.raceRules, gameId)[0];
+  if (!rules) return null;
+  const rows = gameRows(facts.aspectHyperstructures, gameId);
+  return {
+    finish_height: raceFinishHeight(number(rules.stage_height)),
+    heights: Object.fromEntries(
+      aspects.map(({ id }) => [id, number(rows.find((row) => number(row.aspect) === id)?.height ?? 0)]),
+    ) as Record<AspectId, number>,
   };
 }
 

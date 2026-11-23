@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { canonicalRealm, getBlockTimestamp } from "@bibliothecadao/eternum";
 import { IdentityRequestError } from "@realms-world/identity";
-import { orders, ordersOfAspect, type AspectId } from "@bibliothecadao/types";
+import { aspectName, orders, ordersOfAspect, type AspectId } from "@bibliothecadao/types";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 
 const settlement = vi.hoisted(() => ({
@@ -943,4 +943,32 @@ describe("a friend's Aspect invite at a Season 1 home's founding", () => {
       await entry.close();
     }
   });
+});
+
+it("filters a multi-Realm vault by Aspect on desktop and founds with the chosen Realm", async () => {
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  setViewportWidth(1440);
+  signIn("0x456");
+  const vault = [418, 902, 1241, 2814, 3105, 4490, 5012];
+  const registered = relay(() => held(...vault));
+  const entry = await openEntry();
+  try {
+    await vi.waitFor(() => expect(entry.strip()).toHaveLength(vault.length));
+    const targetAspect = orders.find(({ orderId }) => orderId === canonicalRealm(902)!.order)!.aspect!;
+    const matching = vault.filter(
+      (id) => orders.find(({ orderId }) => orderId === canonicalRealm(id)!.order)!.aspect === targetAspect,
+    );
+    const filterButton = [...entry.host.querySelectorAll<HTMLButtonElement>(".home-picker__filter")].find((button) =>
+      button.textContent?.includes(aspectName(targetAspect)),
+    )!;
+    await act(async () => filterButton.click());
+    expect(entry.strip()).toHaveLength(matching.length);
+    await entry.pick(realmChoice(902));
+    expect(entry.featured()).toBe(name(902));
+    await entry.press("Create your realm");
+    await vi.waitFor(() => expect(settlement.settled).toBe(true));
+    expect(registered).toEqual([{ gameId: 8, realmId: 902 }]);
+  } finally {
+    await entry.close();
+  }
 });

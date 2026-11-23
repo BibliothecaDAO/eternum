@@ -1,5 +1,5 @@
 import type { HeraldFrontierLeaderboard } from "@bibliothecadao/eternum/game-sync";
-import { StructureType } from "@bibliothecadao/types";
+import { orderAspect, StructureType } from "@bibliothecadao/types";
 import { LORDS_ADDRESS } from "@realms-world/chain";
 import { realmsAccountAddress } from "@realms-world/identity/account";
 import type { Session, ShareTally } from "@realms-world/identity";
@@ -86,6 +86,7 @@ const owned = {
   has_home_source: false,
   taken_realm_ids: [],
   structures: [REALM],
+  today_quest: { quest_id: 2, progress: 0, target: 1, labor: 1_500 },
 };
 
 /** Frontier's season on Day 12, the player's realm in it or not. */
@@ -97,6 +98,7 @@ const frontier = (withRealm: boolean) =>
     day_index: 11,
     day_ends_at: NOW + LEFT_TODAY,
     next_day_length: DAY,
+    expedition: { day_unit_seconds: DAY, seed: "7" },
     season_number: 3,
     clock: {
       start_settling_at: NOW - 12 * DAY + LEFT_TODAY,
@@ -105,6 +107,11 @@ const frontier = (withRealm: boolean) =>
       end_at: NOW + 20 * DAY,
     },
     player_count: 1240,
+    aspect_members: { 1: 389, 2: 412, 3: 314, 4: 298 },
+    aspect_race: {
+      finish_height: 10_000,
+      heights: { 1: 6_400, 2: 7_850, 3: 4_100, 4: 2_900 },
+    },
     player_state: withRealm ? owned : null,
   });
 
@@ -211,6 +218,7 @@ export const LAB_SCREENS = {
   // Frontier's season before its prize pool is published.
   "season-unpublished": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
   "realm-held": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
+  "realm-vault": { signedIn: true, games: [frontier(false), liveBlitz(false), eternum] },
   // Your shared days on You (/profile): what a player's posted Frontier days brought.
   "shared-days": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
 } as const;
@@ -240,6 +248,7 @@ export const LAB_SHARE_TALLIES: Partial<Record<keyof typeof LAB_SCREENS, ShareTa
 /** The Realms the linked wallet holds on each screen that reads them (the relay's held-Realms answer). */
 export const LAB_HELD_REALMS: Partial<Record<keyof typeof LAB_SCREENS, { realmId: number; map: null }[]>> = {
   "realm-held": [{ realmId: 4786, map: null }],
+  "realm-vault": [538, 4490, 5012, 3, 8, 10, 1].map((realmId) => ({ realmId, map: null })),
 };
 
 /** The player's name on each screen whose player is not Maelis. */
@@ -259,6 +268,7 @@ export const LAB_PAYOUT_WALLETS: Partial<Record<keyof typeof LAB_SCREENS, string
   "preseason-invited-pick": LAB_WALLET,
   "season-running": LAB_WALLET,
   "realm-held": LAB_WALLET,
+  "realm-vault": LAB_WALLET,
 };
 
 /** The lab's emailed code: this one is right, any other is refused as the identity service refuses it. */
@@ -582,8 +592,12 @@ export const LAB_SEASON_WAIT = 2 * 3600 + 4 * 60;
  */
 export const LAB_DOORWAYS = {
   map: {
-    view: doorwayView({ source: "boot", phase: "initial_sync", audience: "player" }),
-    realm: { name: "Stolsli", emblem: orderEmblem(1) },
+    view: doorwayView({ source: "boot", phase: "wait_worldmap_ready", audience: "player", modelShare: 0.57 }),
+    realm: { name: "Stolsli", emblem: orderEmblem(2), aspect: orderAspect(2) },
+  },
+  spectator: {
+    view: doorwayView({ source: "boot", phase: "wait_worldmap_ready", audience: "spectator", modelShare: 0.62 }),
+    realm: { name: "Stolsli", emblem: orderEmblem(2), aspect: orderAspect(2) },
   },
   "sign-in": {
     view: doorwayView({ source: "entry", phase: "account", audience: "player", signedIn: false }),

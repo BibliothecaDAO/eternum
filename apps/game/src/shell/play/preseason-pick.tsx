@@ -1,9 +1,14 @@
+import "./play-page.css";
+
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import {
   ASPECT_REWARD,
   aspectName,
+  aspects,
+  formatAmount,
   formatDate,
+  formatDuration,
   formatExact,
   formatShort,
   orders,
@@ -13,21 +18,25 @@ import {
 import { IdentityRequestError, type OrderIntent } from "@realms-world/identity";
 
 import { identityClient } from "@/hooks/context/identity-session";
+import { aspectVariables } from "@/tokens";
 import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { Icon } from "@/ui/design-system/icon";
+import { AGE_LOCKUP } from "@/ui/design-system/icon-meaning";
 import { AppButton, AppNotice } from "@/ui/design-system/kit/app-elements";
 import { AppAspectCard, AppAspectGrid } from "@/ui/design-system/kit/aspect-card";
-import { AppCountdownChip } from "@/ui/design-system/kit/clock-chip";
+import { countdownLine } from "@/ui/design-system/kit/clock-chip";
 import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
 import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
 import { ASPECT_STEP_WORDS, PRESEASON_WORDS, TRY_AGAIN } from "@/ui/design-system/kit/words";
 import { aspectOffer, invitedFirst, type AspectOffer } from "@/ui/features/game-entry/aspect-picker";
 
+import { ShellWindow } from "../frame/shell-window";
 import { StageFrame } from "../frame/stage-frame";
 import { Loading } from "../loading";
 import { SealCodeCard } from "./seal-code-card";
 import { CopySeasonInvite, SeasonInviteCard, useSeasonInvite } from "./season-invite";
 import type { SeasonOpening } from "../season";
+import { ageOf } from "./ages";
 import { orderIntentKey, useOrderIntent } from "./order-intent";
 import { useJoinedShare } from "../share/own-shares";
 
@@ -73,27 +82,37 @@ const OrderPick = ({
   retryInvite: (() => void) | null;
 }) => {
   const [aspect, setAspect] = useState<AspectId | null>(offered?.aspect ?? null);
+  const [pickingOrder, setPickingOrder] = useState(false);
   const [order, setOrder] = useState<number | null>(null);
   const client = useQueryClient();
   const choose = useMutation({
     mutationFn: (chosen: number) => identityClient.chooseOrder(chosen),
-    onSuccess: (saved) => client.setQueryData(orderIntentKey(owner), saved),
+    onSuccess: (saved) => {
+      setPickingOrder(false);
+      client.setQueryData(orderIntentKey(owner), saved);
+    },
     onError: (error) => {
-      if (isAspectAlreadyChosen(error)) void client.invalidateQueries({ queryKey: orderIntentKey(owner) });
+      if (isAspectAlreadyChosen(error)) {
+        setPickingOrder(false);
+        void client.invalidateQueries({ queryKey: orderIntentKey(owner) });
+      }
     },
   });
-  const chosen = orders.find((each) => each.orderId === order && each.aspect === aspect);
+  const chosen = aspect !== null ? orders.find((each) => each.orderId === order && each.aspect === aspect) : undefined;
   const pickAspect = (picked: AspectId) => {
     setAspect(picked);
     setOrder(null);
+  };
+  const openOrderStep = () => {
+    if (aspect === null) return;
+    setOrder(null);
+    setPickingOrder(true);
   };
   return (
     <StageFrame
       wide
       notice={
-        choose.isError && chosen ? (
-          <ServiceFailure service="season" error={choose.error} retry={() => choose.mutate(chosen.orderId)} />
-        ) : retryInvite ? (
+        retryInvite ? (
           <AppNotice
             tone="warn"
             line={ASPECT_STEP_WORDS.inviteUnread}
@@ -111,16 +130,25 @@ const OrderPick = ({
           size="lg"
           step
           className="w-full lg:w-auto"
-          disabled={chosen === undefined || choose.isPending}
-          onClick={() => chosen && choose.mutate(chosen.orderId)}
+          disabled={aspect === null || choose.isPending}
+          onClick={openOrderStep}
         >
-          {chosen ? PRESEASON_WORDS.playAs(chosen.orderName) : PRESEASON_WORDS.pick}
+          {aspect !== null ? (
+            <span className="inline-flex items-center gap-2">
+              <AspectMark aspect={aspect} size={24} decorative />
+              {PRESEASON_WORDS.pledge(aspectName(aspect))}
+            </span>
+          ) : (
+            PRESEASON_WORDS.pick
+          )}
         </AppButton>
       }
     >
-      <div data-preseason-step="pick" className="flex w-full flex-col gap-2 lg:gap-3">
-        <h1 className="text-app-title text-app-ink">{ASPECT_STEP_WORDS.title}</h1>
-        <p className="text-app-body text-app-muted">{ASPECT_STEP_WORDS.line}</p>
+      <div data-preseason-step="pick" className="preseason-pick">
+        <header className="preseason-pick__head">
+          <h1 className="preseason-pick__title">{ASPECT_STEP_WORDS.title}</h1>
+          <p className="text-app-label text-app-muted">{ASPECT_STEP_WORDS.line}</p>
+        </header>
         <AspectCards
           chosen={aspect}
           members={members}
@@ -129,17 +157,39 @@ const OrderPick = ({
           onPick={pickAspect}
         />
         {aspectLords !== null && (
-          <p className="app-well p-2.5 text-left text-app-label text-app-muted lg:p-3">
-            <span className="flex items-start gap-2">
-              <Icon name="crown" size={24} />
-              <span data-aspect-shared>
-                {PRESEASON_WORDS.shared(formatExact(aspectLords), formatExact(ASPECT_REWARD.finishBonus))}
-              </span>
+          <p className="preseason-pick__pool">
+            <Icon name="crown" size={18} />
+            <span data-aspect-shared>
+              {PRESEASON_WORDS.shared(formatExact(aspectLords), formatExact(ASPECT_REWARD.finishBonus))}
             </span>
           </p>
         )}
-        {aspect !== null && <OrderRows aspect={aspect} chosen={order} members={members} onPick={setOrder} />}
       </div>
+      {pickingOrder && aspect !== null && (
+        <ShellWindow
+          title={PRESEASON_WORDS.orderTitle}
+          onClose={() => {
+            setPickingOrder(false);
+            choose.reset();
+          }}
+        >
+          <div className="flex flex-col gap-4">
+            <OrderRows aspect={aspect} chosen={order} members={members} onPick={setOrder} />
+            {choose.isError && chosen && (
+              <ServiceFailure service="season" error={choose.error} retry={() => choose.mutate(chosen.orderId)} />
+            )}
+            <AppButton
+              kind="primary"
+              size="lg"
+              className="w-full"
+              disabled={chosen === undefined || choose.isPending}
+              onClick={() => chosen && choose.mutate(chosen.orderId)}
+            >
+              {chosen ? PRESEASON_WORDS.playAs(chosen.orderName) : PRESEASON_WORDS.pick}
+            </AppButton>
+          </div>
+        </ShellWindow>
+      )}
     </StageFrame>
   );
 };
@@ -167,7 +217,7 @@ const AspectCards = ({
     {invitedFirst(offered).map(({ id, name }) => {
       const count = aspectMembers(members, id);
       return (
-        <li key={id}>
+        <li key={id} style={aspectVariables(id) as CSSProperties}>
           <AppAspectCard
             aspect={id}
             name={name}
@@ -175,17 +225,18 @@ const AspectCards = ({
             invited={offered?.aspect === id ? ASPECT_STEP_WORDS.invitedBy(offered.sender) : undefined}
             onClick={() => onPick(id)}
           >
-            <span className="text-app-label text-app-muted">{ASPECT_STEP_WORDS.members(count)}</span>
-            {aspectLords !== null && (
-              <span className="flex flex-col">
-                <span className="text-app-strong text-app-gold">
+            <span className="preseason-card__meta">
+              <span className="preseason-card__members">
+                <Icon name="person" size={16} />
+                {formatAmount(count)}
+              </span>
+              {aspectLords !== null && (
+                <span className="preseason-card__lords">
+                  <Icon name="lords" size={16} />
                   {PRESEASON_WORDS.average(formatShort(aspectLords / (count + 1)))}
                 </span>
-                <span className="text-app-label text-app-muted">
-                  {PRESEASON_WORDS.ofTotal(formatShort(aspectLords))}
-                </span>
-              </span>
-            )}
+              )}
+            </span>
           </AppAspectCard>
         </li>
       );
@@ -204,10 +255,9 @@ const OrderRows = ({
   members: OrderIntent["members"];
   onPick: (order: number) => void;
 }) => (
-  <section className="flex flex-col gap-2" aria-label={PRESEASON_WORDS.orderTitle}>
-    <h2 className="text-app-heading text-app-ink">{PRESEASON_WORDS.orderTitle}</h2>
+  <section className="preseason-pick__orders" aria-label={PRESEASON_WORDS.orderTitle}>
     <p className="text-app-label text-app-muted">{PRESEASON_WORDS.orderLine(aspectName(aspect))}</p>
-    <ul className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
+    <ul className="grid grid-cols-2 gap-2.5">
       {ordersOfAspect(aspect).map(({ orderId, fullOrderName }) => (
         <li key={orderId}>
           <button
@@ -247,16 +297,50 @@ const SeasonWaiting = ({
   const chosen = aspectOrder(order);
   const invite = useSeasonInvite(chosen.aspect);
   return (
-    <StageFrame verb={<CopySeasonInvite invite={invite} />}>
-      <div data-preseason-step="waiting" className="flex w-full flex-col items-center gap-4">
-        <AspectMark aspect={chosen.aspect} size={88} decorative />
-        <h1 className="text-app-title text-app-ink">{PRESEASON_WORDS.youreIn(aspectName(chosen.aspect))}</h1>
-        <p className="text-app-body text-app-muted">
-          {PRESEASON_WORDS.waiting(chosen.fullOrderName, formatDate(opening.startsAt, now))}
-        </p>
-        <AppCountdownChip prefix="starts" at={opening.startsAt} now={now} />
-        <SealCodeCard owner={owner} />
-        <SeasonInviteCard invite={invite} />
+    <StageFrame wide verb={<CopySeasonInvite invite={invite} />}>
+      <div
+        data-preseason-step="waiting"
+        style={aspectVariables(chosen.aspect) as CSSProperties}
+        className="waiting-stage"
+      >
+        <div className="waiting-stage__top">
+          <div className="waiting-stage__brand">
+            <img src={AGE_LOCKUP.frontier} alt={ageOf("frontier").name} className="countdown-stage__lockup" />
+            <p
+              className="countdown-stage__clock"
+              role="timer"
+              aria-label={countdownLine("starts", opening.startsAt, now)}
+            >
+              {formatDuration(Math.max(0, opening.startsAt - now))}
+            </p>
+          </div>
+          <div className="waiting-stage__badge">
+            <AspectMark aspect={chosen.aspect} size={64} decorative />
+            <div className="flex flex-col gap-1 text-left">
+              <h1 className="waiting-stage__title">{PRESEASON_WORDS.youreIn(aspectName(chosen.aspect))}</h1>
+              <p className="text-app-label text-app-muted">
+                {PRESEASON_WORDS.waiting(chosen.fullOrderName, formatDate(opening.startsAt, now))}
+              </p>
+            </div>
+          </div>
+        </div>
+        <ul className="waiting-stage__aspects" aria-hidden="true">
+          {aspects.map(({ id, name }) => (
+            <li
+              key={id}
+              data-chosen={id === chosen.aspect || undefined}
+              style={aspectVariables(id) as CSSProperties}
+              className="waiting-stage__aspect"
+            >
+              <AspectMark aspect={id} size={48} decorative />
+              <span className="waiting-stage__aspect-name">{name}</span>
+            </li>
+          ))}
+        </ul>
+        <div className="waiting-stage__cards">
+          <SealCodeCard owner={owner} />
+          <SeasonInviteCard invite={invite} />
+        </div>
       </div>
     </StageFrame>
   );

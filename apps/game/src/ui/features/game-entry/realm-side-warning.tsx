@@ -1,8 +1,11 @@
+import "./home-source-picker.css";
+
 import { canonicalRealm } from "@bibliothecadao/eternum";
 import { aspectName, type AspectId } from "@bibliothecadao/types";
 
+import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { Icon } from "@/ui/design-system/icon";
-import { HudButton } from "@/ui/design-system/kit/hud-elements";
+import { AppButton } from "@/ui/design-system/kit/app-elements";
 import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
 import { REALM_SIDE_WORDS } from "@/ui/design-system/kit/words";
 
@@ -33,35 +36,44 @@ export const RealmSideWarning = ({
   onJoinFree: () => void;
 }) => {
   const realm = canonicalRealm(realmId);
-  const aspect = aspectName(sideAspect(side));
-  const realms = aspectName(aspectOfOrder(realm.order));
+  const chosenAspect = sideAspect(side);
+  const realmAspect = aspectOfOrder(realm.order);
+  const aspect = aspectName(chosenAspect);
+  const realms = aspectName(realmAspect);
   return (
-    <section data-realm-side-warning className="flex w-full flex-col items-center gap-4 text-center">
-      <Icon name="warning" size={64} />
-      <h2 className="frontier-title">
+    <section data-realm-side-warning className="realm-side">
+      <div className="flex items-center gap-3">
+        <AspectMark aspect={chosenAspect} size={44} decorative />
+        <Icon name="warning" size={28} />
+        <AspectMark aspect={realmAspect} size={44} decorative />
+      </div>
+      <h2 className="realm-side__title">
         {side.kind === "kept"
           ? REALM_SIDE_WORDS.kept(aspect, realms)
           : REALM_SIDE_WORDS.invited(side.offer.sender, aspect, realms)}
       </h2>
-      <div className="frontier-card flex w-full items-center gap-3 p-3 text-left">
-        <OrderEmblem order={realm.order} size={48} />
-        <span className="flex flex-col">
-          <span className="frontier-title">{realm.name}</span>
-          <span>{REALM_SIDE_WORDS.bonus}</span>
+      <div className="realm-side__card">
+        <OrderEmblem order={realm.order} size={44} />
+        <span className="flex min-w-0 flex-1 flex-col">
+          <span className="realm-side__name">
+            {realm.name} <span className="home-picker__id">{`#${realmId}`}</span>
+          </span>
+          <span className="realm-side__note">{REALM_SIDE_WORDS.bonus}</span>
         </span>
+        <AspectMark aspect={realmAspect} size={32} decorative />
       </div>
-      <button type="button" className="frontier-primary w-full" onClick={onPlayRealm}>
+      <AppButton kind="primary" size="lg" icon="realm" step className="w-full" onClick={onPlayRealm}>
         {REALM_SIDE_WORDS.playRealm}
-      </button>
-      <p>
+      </AppButton>
+      <p className="realm-side__note">
         {side.kind === "kept"
           ? REALM_SIDE_WORDS.keeps
           : `${REALM_SIDE_WORDS.keeps} ${REALM_SIDE_WORDS.apart(side.offer.sender)}`}
       </p>
-      <HudButton kind="secondary" onClick={onJoinFree}>
+      <AppButton kind="secondary" size="lg" className="w-full" onClick={onJoinFree}>
         {REALM_SIDE_WORDS.joinFree(aspect)}
-      </HudButton>
-      <p>{REALM_SIDE_WORDS.loses}</p>
+      </AppButton>
+      <p className="realm-side__note">{REALM_SIDE_WORDS.loses}</p>
     </section>
   );
 };

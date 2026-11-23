@@ -69,25 +69,38 @@
       main {
         display: flex;
         flex-direction: column;
-        gap: 1.25rem;
+        align-items: center;
+        gap: 1rem;
         width: min(30rem, 100%);
-        padding: 1.5rem;
+        padding: 2rem 1.5rem 1.5rem;
         box-sizing: border-box;
         border: 1px solid var(--line2);
         border-radius: 16px;
-        background: var(--plate);
+        background: color-mix(in srgb, var(--plate) 94%, transparent);
         box-shadow: 0 22px 50px rgb(0 0 0 / 0.55);
+        text-align: center;
+      }
+      img {
+        height: 112px;
+        width: auto;
       }
       h1 {
         margin: 0;
-        text-align: center;
-        font: 400 34px/1 var(--face-display);
+        color: var(--gold2);
+        font: 400 34px/1.1 var(--face-display);
+      }
+      p {
+        margin: 0;
+        color: var(--muted);
+        font: 400 15px/1.45 var(--face-body);
       }
       a {
+        align-self: stretch;
         display: flex;
         align-items: center;
         justify-content: center;
         height: 56px;
+        margin-top: 0.5rem;
         border-radius: 16px;
         background: linear-gradient(180deg, var(--gold2), var(--gold));
         color: var(--ink);
@@ -102,7 +115,9 @@
   </head>
   <body>
     <main>
+      <img src="/images/logos/frontier-lockup.webp" alt="Frontier" />
       <h1>Nothing here</h1>
+      <p>This trail leads into the mist. Return to Play to continue.</p>
       <a href="/">Play</a>
     </main>
   </body>

@@ -1,8 +1,17 @@
-import { formatCount } from "@bibliothecadao/types";
-import { type IconMeaning } from "@/ui/design-system/icon";
+import { canonicalRealm } from "@bibliothecadao/eternum";
+import { aspectName, catalogOrder, formatCount, orderAspect } from "@bibliothecadao/types";
+import type { CSSProperties } from "react";
 
+import { primeGameEntry } from "@/game-entry-preload";
+import { aspectVariables } from "@/tokens";
+import { AspectMark } from "@/ui/design-system/aspect-mark";
+import type { IconMeaning } from "@/ui/design-system/icon";
+import { AGE_LOCKUP } from "@/ui/design-system/icon-meaning";
 import { AppButton, AppChip, AppGameCard, AppGameName, AppRow } from "@/ui/design-system/kit/app-elements";
 import { AppClockChip, clockLine } from "@/ui/design-system/kit/clock-chip";
+import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
+import { paintingSources } from "@/ui/design-system/kit/paintings";
+import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
 import {
   DAY,
   PITCH,
@@ -16,25 +25,15 @@ import {
 
 import { entryHref } from "../game-links";
 import { type DirectoryGame, gameRefOf } from "../herald";
+import { directoryDay, seasonRealmId } from "../season";
 import { gameStart, gameTitle } from "../season-tab/history-row";
 import { resultsHref } from "../season-tab/results-link";
-import { directoryDay } from "../season";
-import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
 import { useRequestSignIn } from "../sign-in/connect";
 import { ageOf } from "./ages";
 import { idleCard, type PlayItem } from "./play-board";
-import { primeGameEntry } from "@/game-entry-preload";
 
-/**
- * An item's verb: where it leads, or, for a signed-out player's Play free, Connect first and then there. A verb into a
- * game starts its files on the press.
- */
 type ItemVerb = { word: string; icon: IconMeaning; to: string; connectFirst?: true; entersGame?: true };
 
-/**
- * An item's verb as a route. Signed out, Play free opens Connect over Play, which then enters the season: the doorway
- * would only stop to ask for it.
- */
 const verbOf = (item: PlayItem, signedIn: boolean): ItemVerb | null => {
   const { game } = item;
   switch (item.verb) {
@@ -63,10 +62,9 @@ const ItemFacts = ({ item, now, firstVisit }: { item: PlayItem; now: number; fir
     return <AppChip icon="victory">{`${PLAY_WORDS.ended} ${clockLine(null, game.clock.end_at, now)}`}</AppChip>;
   if (firstVisit) return <p className="text-app-body text-app-ink">{PITCH}</p>;
   if (game.status !== "Live") return <AppClockChip prefix="starts" at={game.clock.start_main_at} now={now} />;
-  return <SeasonDay game={game} now={now} withPlayers={item.verb === "play"} />;
+  return <SeasonDay game={game} now={now} withPlayers={item.verb === "play" || item.mode === "frontier"} />;
 };
 
-/** A live season's day: when today ends and the time left, how long tomorrow lasts; its players where it is to join. */
 const SeasonDay = ({ game, now, withPlayers }: { game: DirectoryGame; now: number; withPlayers: boolean }) => {
   const day = directoryDay(game, now);
   const tone = day.tone === "ember" ? "bad" : day.tone === "amber" ? "warn" : undefined;
@@ -81,14 +79,11 @@ const SeasonDay = ({ game, now, withPlayers }: { game: DirectoryGame; now: numbe
   );
 };
 
-/** The verb, or where a shard could not be read, the failure in its place. */
 const ItemVerbButton = ({ item, signedIn, lead }: { item: PlayItem; signedIn: boolean; lead: boolean }) => {
   const requestSignIn = useRequestSignIn();
   if (item.game.error) return <ServiceFailure service="directory" error={item.game.error} />;
   const verb = verbOf(item, signedIn);
   if (!verb) return null;
-  // The verb by its name, whatever its word: what a script presses to take the game's step (the playtest runner).
-  // A way into a game starts the game's code and the map's ground on the press: sign-in's minute pays for them.
   const prime = verb.entersGame ? primeGameEntry : () => undefined;
   const press = {
     ...(verb.connectFirst
@@ -114,13 +109,11 @@ const ItemVerbButton = ({ item, signedIn, lead }: { item: PlayItem; signedIn: bo
 
 type ItemProps = { item: PlayItem; now: number; signedIn: boolean };
 
-/**
- * The lead: the step the player most likely came for, on its age's painting, its title, its facts and the page's one
- * gold verb (Enter presses it on a desktop). Every item carries its game's key (`data-play-item`), so a press can be
- * named by its game, not by its word. A signed-out player's season says what Frontier is instead of its clock.
- */
 export const LeadCard = ({ item, now, signedIn, className }: ItemProps & { className?: string }) => {
   const age = ageOf(item.mode);
+  if (item.mode === "frontier" && item.verb !== "results") {
+    return <FrontierHeroCard item={item} now={now} signedIn={signedIn} className={className} />;
+  }
   return (
     <div data-play-item={item.key} className={className}>
       <AppGameCard
@@ -137,7 +130,65 @@ export const LeadCard = ({ item, now, signedIn, className }: ItemProps & { class
   );
 };
 
-/** A row's facts as one line of text: what is so and when, then its count. */
+const FrontierHeroCard = ({ item, now, signedIn, className }: ItemProps & { className?: string }) => {
+  const age = ageOf("frontier");
+  const firstVisit = !signedIn && item.verb === "play";
+  const realmId = seasonRealmId(item.game);
+  const realm = realmId !== null ? canonicalRealm(realmId) : null;
+  const order = realm && realm.order !== 0 ? catalogOrder(realm.order) : null;
+  const aspect = order ? orderAspect(order.orderId) : null;
+  const day = directoryDay(item.game, now);
+  const heroStyle = aspect !== null ? (aspectVariables(aspect) as CSSProperties) : undefined;
+  return (
+    <div data-play-item={item.key} className={className}>
+      <section
+        data-age="frontier"
+        data-idle={idleCard([item]) || undefined}
+        style={heroStyle}
+        className="play-hero h-full"
+      >
+        <img aria-hidden {...paintingSources(age.painting)} sizes="100vw" alt="" className="play-hero__painting" />
+        <div aria-hidden className="play-hero__scrim" />
+        <div className="play-hero__top">
+          <h2 className="play-hero__title">
+            <img src={AGE_LOCKUP.frontier} alt={age.name} className="play-hero__lockup" />
+          </h2>
+        </div>
+        <div className="play-hero__plate">
+          {realm && (
+            <div className="play-hero__realm-row">
+              <div className="play-hero__realm-id">
+                {aspect !== null && <AspectMark aspect={aspect} size={42} decorative />}
+                <div className="flex min-w-0 flex-col">
+                  <h3 className="play-hero__realm-name">{realm.name}</h3>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {aspect !== null && <span className="play-hero__aspect-tag">{aspectName(aspect)}</span>}
+                    {order && (
+                      <span className="play-hero__order-tag">
+                        <OrderEmblem order={order.orderId} size={18} />
+                        {order.orderName}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              {item.game.status === "Live" && day.day !== undefined && (
+                <AppChip icon="sun">{`${DAY} ${day.day}`}</AppChip>
+              )}
+            </div>
+          )}
+          <div className="play-hero__chips">
+            <ItemFacts item={item} now={now} firstVisit={firstVisit} />
+          </div>
+          <div className="play-hero__verb">
+            <ItemVerbButton item={item} signedIn={signedIn} lead />
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+};
+
 const ItemLine = ({ item, now }: { item: PlayItem; now: number }) => lineParts(item, now).join(" · ");
 
 const lineParts = (item: PlayItem, now: number): string[] => {
@@ -167,7 +218,6 @@ const ItemRow = ({ item, now, signedIn }: ItemProps) => (
   </li>
 );
 
-/** An age's games as rows, in the age's well. */
 export const ItemRows = ({ items, now, signedIn }: { items: readonly PlayItem[]; now: number; signedIn: boolean }) => (
   <ul className="app-well">
     {items.map((item) => (

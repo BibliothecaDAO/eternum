@@ -23,7 +23,8 @@ vi.mock("@/hooks/context/identity-session", async (importOriginal) => {
   const identity = await importOriginal<typeof import("@/hooks/context/identity-session")>();
   return { ...identity, useIdentitySession: () => identity.useIdentitySessionStore() };
 });
-vi.mock("../herald", () => ({
+vi.mock("../herald", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../herald")>()),
   useRealmsPlayer: () => ({ data: "0x5eed0292" }),
   useRecentResults: () => ({ isError: false, isPending: false, data: { games: [] } }),
   useDirectory: () => ({ data: { games: [] } }),
@@ -94,48 +95,55 @@ const openYou = async (width: number) => {
       (cell) => cell.textContent,
     );
   const press = async (text: string) =>
-    act(async () => [...document.querySelectorAll("button")].find((button) => button.textContent === text)!.click());
+    act(async () =>
+      [...document.querySelectorAll<HTMLElement>("a, button")].find((node) => node.textContent === text)!.click(),
+    );
   return { container, strip, press, sheet: () => document.querySelector('[role="dialog"]') };
 };
 
-describe.each([1440, 390])("Holdings on the player's own card, at %i px", (width) => {
-  it("counts the linked wallet's Realms and lists them by number and name in their sheet", async () => {
-    signedIn.wallet = "0x269c";
-    relay(() => held(3, 4786));
-    const you = await openYou(width);
-    await vi.waitFor(() => expect(you.strip()).toEqual(["2Realms"]));
-    await you.press("2Realms");
-    const sheet = you.sheet()!;
-    expect(sheet.getAttribute("aria-label")).toBe("Your Realms");
-    expect([...sheet.querySelectorAll("li")].map((row) => row.textContent)).toEqual([named(3), named(4786)]);
-    expect([...sheet.querySelectorAll("button")].some((button) => button.textContent === "Market")).toBe(true);
-  });
+it("counts the linked wallet's Realms on phone and lists them by number and name in their sheet", async () => {
+  signedIn.wallet = "0x269c";
+  relay(() => held(3, 4786));
+  const you = await openYou(390);
+  await vi.waitFor(() => expect(you.strip()).toEqual(["2Realms"]));
+  await you.press("2Realms");
+  const sheet = you.sheet()!;
+  expect(sheet.getAttribute("aria-label")).toBe("Your Realms");
+  expect([...sheet.querySelectorAll("li")].map((row) => row.textContent)).toEqual([named(3), named(4786)]);
+  expect([...sheet.querySelectorAll("button")].some((button) => button.textContent === "Market")).toBe(true);
+});
 
-  it("offers the way to link a wallet when none is linked, and asks for no Realms", async () => {
+describe.each([1440, 390])("Unlinked wallet on You, at %i px", (width) => {
+  it("offers one way to link a wallet when none is linked, and asks for no Realms", async () => {
     const asked = relay(() => held());
     const you = await openYou(width);
-    await vi.waitFor(() => expect(you.strip()).toEqual(["Link a wallet for your Realms and LORDS"]));
+    expect(you.strip()).toEqual([]);
     expect(asked).not.toContain(HELD_REALMS);
-    await you.press("Link a wallet for your Realms and LORDS");
+    const links = [...you.container.querySelectorAll("a, button")].filter(
+      (node) => node.textContent === "Link a wallet to pay",
+    );
+    expect(links).toHaveLength(1);
+    await you.press("Link a wallet to pay");
     expect(you.container.textContent).toContain("Settings page");
   });
 });
 
-it("says the Realms could not be read, and reads them again on Try again", async () => {
+it("shows one Try again notice when Realms fail to load on desktop, and reloads into the showcase", async () => {
   signedIn.wallet = "0x269c";
   relay(
     () => Response.json({ error: "realm_holdings_unavailable" }, { status: 503 }),
     () => held(4786),
   );
   const you = await openYou(1440);
-  await vi.waitFor(() => expect(you.strip()).toEqual(["—Realms"]));
-  await you.press("—Realms");
-  expect(you.sheet()!.textContent).toContain("Your Realms cannot be read right now");
+  await vi.waitFor(() => expect(you.container.textContent).toContain("Your Realms cannot be read right now"));
+  expect(you.strip()).toEqual([]);
+  expect([...you.container.querySelectorAll("button")].filter((node) => node.textContent === "Try again")).toHaveLength(
+    1,
+  );
   await you.press("Try again");
   await vi.waitFor(() =>
-    expect([...you.sheet()!.querySelectorAll("li")].map((row) => row.textContent)).toEqual([named(4786)]),
+    expect(you.container.querySelector(".profile-realm-tile__name")?.textContent).toBe(named(4786)),
   );
-  expect(you.strip()).toEqual(["1Realms"]);
 });
 
 it("says a linked wallet holding no Realm holds none", async () => {
@@ -145,4 +153,16 @@ it("says a linked wallet holding no Realm holds none", async () => {
   await vi.waitFor(() => expect(you.strip()).toEqual(["0Realms"]));
   await you.press("0Realms");
   expect(you.sheet()!.textContent).toContain("Your linked wallet holds no Realm");
+});
+
+it("shows Realms once in the desktop showcase and opens the shared sheet for all Realms beyond nine", async () => {
+  signedIn.wallet = "0x269c";
+  const twelve = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+  relay(() => held(...twelve));
+  const you = await openYou(1440);
+  await vi.waitFor(() => expect(you.container.querySelectorAll(".profile-realm-tile")).toHaveLength(9));
+  expect(you.strip()).toEqual([]);
+  expect(you.container.querySelector(".profile-realm-tile__name")?.textContent).toBe(named(1));
+  await you.press("All 12");
+  expect(you.sheet()!.querySelectorAll("li")).toHaveLength(12);
 });

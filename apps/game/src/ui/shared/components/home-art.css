@@ -1,17 +1,18 @@
-/* A home's picture: a Realm's map in the parchment's tones. */
 .home-art {
   display: grid;
   overflow: hidden;
   place-items: center;
-  border-radius: calc(var(--hud-radius-panel) - 2px);
-  background: rgb(var(--hud-dark) / 0.6);
+  border-radius: var(--app-radius-control, calc(var(--hud-radius-panel) - 2px));
+  background: var(--app-well, rgb(var(--hud-dark) / 0.6));
 }
+
 .home-art__map {
   width: 100%;
   height: 100%;
   object-fit: cover;
   filter: sepia(0.75) contrast(1.05) brightness(0.92);
 }
+
 .home-art[data-map="drawn"] {
-  background: rgb(var(--hud-ink));
+  background: var(--app-ink, rgb(var(--hud-ink)));
 }

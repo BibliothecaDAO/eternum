@@ -447,6 +447,7 @@ export const PRESEASON_WORDS = {
   orderTitle: "Choose your Order",
   orderLine: (aspect: string) => `Inside ${aspect}. Your Order is your Realm's name and crest.`,
   playAs: (order: string) => `Play as ${order}`,
+  pledge: (aspect: string) => `Pledge to ${aspect}`,
   youreIn: (aspect: string) => `You're in ${aspect}`,
   waiting: (order: string, date: string) => `${order} · opens ${date}`,
 } as const;
@@ -858,6 +859,8 @@ export const DAY_BANNER_WORDS = {
   /** A quest's count in its own unit: "1 of 2 camps". */
   count: (progress: number, target: number, unit: string) =>
     `${formatExact(progress)} of ${formatExact(target)} ${unit}`,
+  summary: (objective: string, progress: number, target: number, labor: number) =>
+    `${objective} · ${formatExact(progress)} of ${formatExact(target)} · +${formatExact(labor)} ${LABOR}`,
   /** How many members of the Aspect finished the bane's quest: "4 of 6 members". */
   members: (completed: number, required: number) => `${formatExact(completed)} of ${formatExact(required)} members`,
   membersShort: (completed: number, required: number) => `${formatExact(completed)} of ${formatExact(required)}`,
@@ -1206,6 +1209,7 @@ export const FRAGMENTS_PAGE_WORDS = {
   sealPack: `The ${ANCIENT_SEAL}`,
   price: (fragments: number) => formatDollars(fragments * FRAGMENT_CENTS),
   pay: (fragments: number) => `Pay ${formatDollars(fragments * FRAGMENT_CENTS)}`,
+  payWithTokens: (symbols: readonly string[]) => `Pay with ${symbols.join(" · ")}`,
   pricing: "Getting your price…",
   treasuryReceives: (lords: number) => `The treasury receives ${formatExact(lords)} LORDS`,
   noPrice: "No price right now. Try again in a minute.",
@@ -1272,7 +1276,7 @@ export const HELD_REALMS_UNREADABLE = "Your Realms cannot be read right now";
 export const INVALID_REALM_NUMBER = "Enter a Realm number from 1–8,000.";
 /** The Realm step: its one job, the home the player founds, and what it offers to found it with. */
 export const HOME_STEP_WORDS = {
-  title: "Choose your home",
+  title: "Found your home",
   /** The step's one verb, and what it says while the home is founded. */
   found: "Create your realm",
   founding: "Creating your realm…",
@@ -1297,6 +1301,12 @@ export const HOME_STEP_WORDS = {
   all: (count: number) => `All ${count}`,
   search: (count: number) => `Search ${count} Realms`,
   count: (realms: number) => formatCount(realms, "Realm"),
+  selectedRealm: "Selected Realm",
+  pickForBonus: (realms: number) => `Pick one of your ${formatCount(realms, "Realm")} for its quest bonus.`,
+  orderDecidesAspect: (realms: number) => `Your Order decides your Aspect · ${formatCount(realms, "Realm")}`,
+  yourRealmsCount: (count: number) => `${YOUR_REALMS} (${formatExact(count)})`,
+  filterAll: (count: number) => `All (${formatExact(count)})`,
+  filterAspect: (name: string, count: number) => `${name} (${formatExact(count)})`,
 } as const;
 
 export const POOL_NOT_PUBLISHED = "Pool not published yet";
@@ -1372,6 +1382,8 @@ export const SIGN_IN_PROVIDER_NAMES = {
 
 /** The sign-in flow's words: its titles, its ways in and the steps on its buttons. */
 export const SIGN_IN_WORDS = {
+  enterHeading: "Enter the Frontier",
+  enterSubtitle: "Free to play · No wallet required",
   /** A provider's button, in the wording Google's and Apple's brand rules allow. */
   continueWith: (provider: SocialProvider) => `Continue with ${SIGN_IN_PROVIDER_NAMES[provider]}`,
   /** On a provider's button while its sign-in address is on its way (a phone's Discord app opens only from a tap that has it). */
@@ -1488,6 +1500,7 @@ export const DOORWAY_WORDS = {
   firstDetail: "Then send your first army to explore",
   /** The bar, named for assistive technology. */
   entering: "Entering the game",
+  enteringRealm: (name: string) => `Entering ${name}`,
   signInToPlay: "Sign in to play.",
   ended: "This game has ended.",
   gameRefused: "This game ran on a different version of the game and cannot be opened here.",
@@ -1559,8 +1572,6 @@ export const PROFILE_WORDS = {
   signInMethods: "Sign-in",
   email: "email",
   noWallet: "No wallet set",
-  /** The You card's holding with no wallet linked: what a wallet holds and receives (owner, 31 October 2026). */
-  linkWalletHoldings: "Link a wallet for your Realms and LORDS",
   signOut: "Sign out",
   signOutAsk: "Sign out?",
   signOutCost: "This device forgets your account",
@@ -1799,6 +1810,7 @@ export const APP_STATE_WORDS = {
   update: "Update",
   updating: "Updating…",
   nothingHere: "Nothing here",
+  nothingHereLine: "This trail leads into the mist. Return to Play to continue.",
   /** The browser's own words, quoted on the install steps. */
   share: "Share",
   addToHomeScreen: "Add to Home Screen",
@@ -2126,6 +2138,8 @@ export const REALM_SIDE_WORDS = {
 const INVITED = "Invited";
 export const ASPECT_STEP_WORDS = {
   title: "Choose your Aspect",
+  aspectOf: (aspect: string) => `Aspect of ${aspect}`,
+  filterByAspect: "Filter by Aspect",
   /** The title where nothing is chosen: a held Realm's home already plays for its Order's Aspect. */
   yours: "Your Aspect",
   line: "Your team for the season. Members of one Aspect never fight each other. You can't switch later.",

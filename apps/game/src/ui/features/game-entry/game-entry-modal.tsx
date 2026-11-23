@@ -1,9 +1,10 @@
 import { AspectPicker, aspectOfOrder, aspectOffer } from "./aspect-picker";
 import { isRealmElsewhere, RealmSideWarning, seasonSide, sideAspect } from "./realm-side-warning";
 import { canonicalRealm } from "@bibliothecadao/eternum";
-import { StructureType, type AspectId } from "@bibliothecadao/types";
+import type { AspectId } from "@bibliothecadao/types";
 import { pageNavigation } from "@/utils/page-navigation";
 import { isRealmNumber, registerHomeSource } from "@/services/realm-entry";
+import { AppButton } from "@/ui/design-system/kit/app-elements";
 import { HudNotice } from "@/ui/design-system/kit/hud-elements";
 /**
  * The entry into a game, drawn as the doorway (design o5): the account, then the realm founded or prepared, then the
@@ -32,7 +33,9 @@ import { fetchSettlementSnapshot, type SettlementSnapshot } from "@/runtime/worl
 import { isGameOver } from "@/runtime/world/directory";
 import { markGameEntryMilestone } from "@/ui/layouts/game-entry-timeline";
 import { resultsHref } from "@/shell/season-tab/results-link";
+import { seasonRealm } from "@/shell/season";
 import { ClockChip } from "@/ui/design-system/kit/clock-chip";
+import { doorwayRealmFromId, toPaddedFeltAddress } from "./doorway/doorway-realm";
 import { DoorwayScreen } from "./doorway/doorway-screen";
 import { doorwayView } from "./doorway/doorway-view";
 
@@ -80,8 +83,6 @@ const deriveSettlementStatus = ({
   };
 };
 
-const toPaddedFeltAddress = (address: string): string => `0x${BigInt(address).toString(16).padStart(64, "0")}`;
-
 interface GameEntryModalProps {
   isOpen: boolean;
   game: GameRef;
@@ -124,14 +125,7 @@ export const GameEntryModal = ({
     if (!account?.address) return null;
     return createAutoSettleEntryKey({ ...game, walletAddress: account.address });
   }, [account?.address, game]);
-  const playerFeltAddress = useMemo(() => {
-    if (!account?.address) return null;
-    try {
-      return toPaddedFeltAddress(account.address);
-    } catch {
-      return null;
-    }
-  }, [account?.address]);
+  const playerFeltAddress = useMemo(() => toPaddedFeltAddress(account?.address), [account?.address]);
 
   const joinedShare = useJoinedShare();
   const keptIntent = useOrderIntent();
@@ -632,9 +626,7 @@ export const GameEntryModal = ({
     phase === "settlement" &&
     isSeasonMode &&
     ((!foundsOnItsOwn && settleStage === "idle") || (isFrontierMode && settleStage === "error"));
-  const foundedRealm = worldMeta?.player_state?.structures.find(
-    (structure) => structure.category === StructureType.Realm,
-  )?.realm_id;
+  const foundedRealm = worldMeta ? seasonRealm(worldMeta)?.realm_id : undefined;
   const homeAspect =
     choosesAspect && foundedRealm !== undefined ? aspectOfOrder(canonicalRealm(foundedRealm).order) : null;
   const homeRealm = registeredRealmId ?? (heldRealmNumber !== "" && validHeldRealm ? Number(heldRealmNumber) : null);
@@ -671,10 +663,31 @@ export const GameEntryModal = ({
     foundingFailed: settleStage === "error" && !isFrontierMode,
   });
 
+  const doorwayRealm =
+    foundedRealm !== undefined
+      ? doorwayRealmFromId(foundedRealm)
+      : homeRealm !== null
+        ? doorwayRealmFromId(homeRealm)
+        : null;
+
+  const foundButton =
+    choosingHome && !tapsAspect && !warnsOfSide ? (
+      <FoundButton
+        upgrading={choosingSource}
+        founding={isSettling}
+        ready={
+          (!isEternumDevMode || validDevRealmNumber) &&
+          (!isFrontierMode || (validHeldRealm && homeSettled && keptKnown && inviteKnown))
+        }
+        onFound={() => void handleSettle()}
+      />
+    ) : undefined;
+  const showsHomePicker = choosingHome && !warnsOfSide && isFrontierMode && worldMeta !== null && sideAnswer !== "free";
+
   return (
     <DoorwayScreen
       view={view}
-      realm={null}
+      realm={doorwayRealm}
       game={worldMeta ?? undefined}
       onRetry={
         accountError
@@ -686,20 +699,8 @@ export const GameEntryModal = ({
       onSignIn={() => requestSignIn()}
       results={resultsHref(game)}
       asking={choosingHome}
-      wide={choosingHome && !warnsOfSide && choosesAspect && !choosingSource}
-      verb={
-        choosingHome && !tapsAspect && !warnsOfSide ? (
-          <FoundButton
-            upgrading={choosingSource}
-            founding={isSettling}
-            ready={
-              (!isEternumDevMode || validDevRealmNumber) &&
-              (!isFrontierMode || (validHeldRealm && homeSettled && keptKnown && inviteKnown))
-            }
-            onFound={() => void handleSettle()}
-          />
-        ) : undefined
-      }
+      wide={choosingHome && !warnsOfSide && (choosesAspect || isFrontierMode) && !choosingSource}
+      verb={showsHomePicker ? undefined : foundButton}
     >
       {phase === "settlement-waiting" && <ClockChip prefix="starts" at={seasonStartAt ?? undefined} now={nowSeconds} />}
       {choosingHome && warnsOfSide && side && homeRealm !== null && (
@@ -712,7 +713,7 @@ export const GameEntryModal = ({
       )}
       {choosingHome && !warnsOfSide && (
         <>
-          {isFrontierMode && worldMeta && sideAnswer !== "free" && (
+          {showsHomePicker && (
             <HomeSourcePicker
               title={choosingSource ? HOME_STEP_WORDS.attachTitle : undefined}
               takenRealmIds={takenRealmIds}
@@ -724,6 +725,7 @@ export const GameEntryModal = ({
               onChange={setHeldRealmNumber}
               onSettled={setHomeSettled}
               disabled={isSettling}
+              action={foundButton}
             />
           )}
           {choosesAspect && !choosingSource && joinedShare.status === "failed" && (
@@ -806,20 +808,16 @@ export const FoundButton = ({
   onFound: () => void;
   upgrading?: boolean;
 }) => (
-  <button
-    type="button"
-    disabled={founding || !ready}
-    aria-busy={founding || undefined}
+  <AppButton
+    kind="primary"
+    size="lg"
+    icon="realm"
+    step
+    className="w-full"
+    disabled={!ready}
+    busy={founding ? (upgrading ? HOME_STEP_WORDS.attaching : HOME_STEP_WORDS.founding) : undefined}
     onClick={onFound}
-    className="frontier-primary flex w-full items-center justify-center gap-3"
   >
-    {founding && <span className="ui-spinner" aria-hidden="true" />}
-    {upgrading
-      ? founding
-        ? HOME_STEP_WORDS.attaching
-        : HOME_STEP_WORDS.attach
-      : founding
-        ? HOME_STEP_WORDS.founding
-        : HOME_STEP_WORDS.found}
-  </button>
+    {upgrading ? HOME_STEP_WORDS.attach : HOME_STEP_WORDS.found}
+  </AppButton>
 );

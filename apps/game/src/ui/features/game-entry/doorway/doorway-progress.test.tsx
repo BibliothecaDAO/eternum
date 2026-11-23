@@ -1,3 +1,4 @@
+import { aspectName, orderAspect } from "@bibliothecadao/types";
 import { renderToStaticMarkup } from "react-dom/server";
 import { MemoryRouter } from "react-router-dom";
 import { expect, it, vi } from "vitest";
@@ -60,4 +61,28 @@ it("gives the bar's place to a step that asks the player to choose", () => {
     asking: true,
   });
   expect(page.querySelector('[role="progressbar"]')).toBeNull();
+});
+
+it("renders the Frontier lockup, Aspect Facet, Entering Realm heading, day subtitle and first-minutes tip when the realm is known", () => {
+  const aspect = orderAspect(2)!;
+  const page = new DOMParser().parseFromString(
+    renderToStaticMarkup(
+      <MemoryRouter>
+        <DoorwayScreen
+          view={loadingMap()}
+          realm={{ name: "Temtinos", emblem: null, aspect }}
+          game={{ mode: "frontier", day_index: 5 }}
+          onRetry={() => {}}
+          onSignIn={() => {}}
+        />
+      </MemoryRouter>,
+    ),
+    "text/html",
+  ).body;
+  expect(page.querySelector("[data-doorway-loading]")).not.toBeNull();
+  expect(page.querySelector(`[data-aspect-mark="${aspect}"]`)).not.toBeNull();
+  expect(page.textContent).toContain("Entering Temtinos");
+  expect(page.textContent).toContain(aspectName(aspect));
+  expect(page.textContent).toContain("Day 6");
+  expect(page.textContent).toContain("First: build a Barracks");
 });

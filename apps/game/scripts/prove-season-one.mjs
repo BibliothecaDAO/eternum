@@ -39,6 +39,16 @@ const PAGES = [
     url: `/lab/app/wallet-ready/doorway/${state}?capture=1`,
     shown,
   })),
+  { file: "doorway-loading", url: "/lab/app/home/doorway/map?capture=1", shown: "[data-doorway-loading]" },
+  { file: "entry-founding", url: "/lab/app/realm-vault/doorway/home?capture=1", shown: "[data-home-picker]" },
+  { file: "connect-start", url: "/lab/app/first-visit/connect/start?capture=1", shown: "[data-sign-in-stage]" },
+  { file: "play-active", url: "/lab/app/home?capture=1", shown: "[data-play-page]" },
+  { file: "you-profile", url: "/lab/app/realm-vault/profile?capture=1", shown: "[data-you-profile]" },
+  { file: "state-not-found", url: "/lab/app/home/no-such-page?capture=1", shown: "[data-state-card]" },
+  { file: "state-offline", url: "/offline.html", shown: "main" },
+  { file: "state-locked", url: "/lab/app/home/doorway/devices?capture=1", shown: "[data-band=body]" },
+  { file: "state-spectator", url: "/lab/app/home/doorway/spectator?capture=1", shown: "[data-doorway-loading]" },
+  { file: "day-share", url: "/lab/app/home/share/day?capture=1", shown: ".day-card" },
   { file: "settings-no-wallet", url: "/lab/app/home/profile/settings?capture=1", shown: "[data-payout-wallet=none]" },
   { file: "hud-build", url: "/lab/kit/hud/build", shown: "[data-build-sheet]" },
   { file: "hud-research", url: "/lab/kit/hud/research", shown: 'section[aria-label="Research"]' },
@@ -61,38 +71,43 @@ const SIZES = [
   ["phone", "390", "844"],
 ];
 
+const PAGES_PER_BROWSER = 20;
+
 const option = (key, fallback) => (process.argv.includes(key) ? process.argv[process.argv.indexOf(key) + 1] : fallback);
 const out = option("--out", join(homedir(), "projects/eternum-lanes/evidence/s1-client", String(Date.now())));
 const port = option("--port", "4421");
 mkdirSync(out, { recursive: true });
-const profile = mkdtempSync(join(tmpdir(), "season-one-proof-"));
-const browser = createBrowserSession("season-one-" + Date.now(), { profile, headed: false });
 await withDevClient({ base: option("--base-url", null), port, out }, async (baseUrl) => {
-  try {
-    for (const [device, width, height] of SIZES) {
-      browser.run(["set", "viewport", width, height]);
-      for (const { file, url, shown, press } of PAGES) {
-        browser.run(["open", `${baseUrl}${url}`]);
-        try {
-          if (press) {
-            browser.run(["wait", "--fn", `!!document.querySelector('${press.after}')`]);
-            browser.run(["find", "role", "button", "click", "--name", press.button]);
+  for (const [device, width, height] of SIZES) {
+    for (let start = 0; start < PAGES.length; start += PAGES_PER_BROWSER) {
+      const batch = PAGES.slice(start, start + PAGES_PER_BROWSER);
+      const profile = mkdtempSync(join(tmpdir(), "season-one-proof-"));
+      const browser = createBrowserSession(`season-one-${device}-${start}-${Date.now()}`, { profile, headed: false });
+      try {
+        browser.run(["set", "viewport", width, height]);
+        for (const { file, url, shown, press } of batch) {
+          browser.run(["open", `${baseUrl}${url}`]);
+          try {
+            if (press) {
+              browser.run(["wait", "--fn", `!!document.querySelector('${press.after}')`]);
+              browser.run(["find", "role", "button", "click", "--name", press.button]);
+            }
+            browser.run(["wait", "--fn", `!!document.querySelector('${shown}')`]);
+          } catch (error) {
+            writeFileSync(join(out, `${file}-${device}-errors.txt`), browser.run(["errors"]));
+            throw error;
+          } finally {
+            browser.screenshot(join(out, `${file}-${device}.png`));
           }
-          browser.run(["wait", "--fn", `!!document.querySelector('${shown}')`]);
-        } catch (error) {
-          writeFileSync(join(out, `${file}-${device}-errors.txt`), browser.run(["errors"]));
-          throw error;
-        } finally {
-          browser.screenshot(join(out, `${file}-${device}.png`));
         }
+        const errors = browser.run(["errors"]);
+        if (errors.trim()) throw new Error(errors);
+      } finally {
+        browser.close();
+        rmSync(profile, { recursive: true, force: true });
       }
     }
-    const errors = browser.run(["errors"]);
-    if (errors.trim()) throw new Error(errors);
-    writeFileSync(join(out, "proof.json"), JSON.stringify({ ok: true }) + "\n");
-  } finally {
-    browser.close();
-    rmSync(profile, { recursive: true, force: true });
   }
+  writeFileSync(join(out, "proof.json"), JSON.stringify({ ok: true }) + "\n");
 });
 console.log(`evidence: ${out}`);

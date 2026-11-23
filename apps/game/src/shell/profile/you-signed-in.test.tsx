@@ -19,7 +19,8 @@ vi.mock("@/hooks/context/identity-session", async (importOriginal) => ({
   useIdentitySession: () => ({ status: "signed-in", session: signedIn.session }),
 }));
 // A player with no finished game and no season to stand in.
-vi.mock("../herald", () => ({
+vi.mock("../herald", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../herald")>()),
   useRealmsPlayer: () => ({ data: "0x5eed0292" }),
   useRecentResults: () => ({ isError: false, isPending: false, data: { games: [] } }),
   useDirectory: () => ({ data: { games: [] } }),

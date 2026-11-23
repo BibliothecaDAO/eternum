@@ -8,7 +8,7 @@ import { gameChatZoneId } from "@/ui/features/world/containers/hud-chat-window";
 import { L2_LEDGER, l2Provider } from "@/runtime/l2-rpc";
 import { getShardRpcProvider } from "@/utils/shard-rpc-provider";
 import { dayOf, nativeGameModeOfFamily, readExpeditionRules } from "@bibliothecadao/eternum";
-import { NativeFactStore, ordinaryHash, type PlayFrame } from "@bibliothecadao/eternum/game-client";
+import { NativeFactStore, ordinaryHash, raceFinishHeight, type PlayFrame } from "@bibliothecadao/eternum/game-client";
 import {
   deriveGameSyncScope,
   type HeraldFrontierLeaderboardEntry,
@@ -325,6 +325,19 @@ const answerDirectory = (
           chain.get("AspectMembers", { game_id: LAB_GAME.gameId, aspect: id })?.members ?? 0,
         ]),
       );
+    },
+    get aspect_race() {
+      const race = chain.get("RaceRules", { game_id: LAB_GAME.gameId });
+      if (!race) return null;
+      return {
+        finish_height: raceFinishHeight(race.stage_height),
+        heights: Object.fromEntries(
+          aspects.map(({ id }) => [
+            id,
+            chain.get("AspectHyperstructure", { game_id: LAB_GAME.gameId, aspect: id })?.height ?? 0,
+          ]),
+        ),
+      };
     },
     get player_state() {
       return playerStateNow();

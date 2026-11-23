@@ -1,0 +1,8 @@
+.state-card-stage {
+  display: flex;
+  min-height: calc(100dvh - var(--app-bar) - 5.5rem);
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem 0;
+}
