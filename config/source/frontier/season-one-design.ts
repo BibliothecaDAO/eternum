@@ -18,7 +18,7 @@ export const seasonOneDesign = {
     castleLaborPerHour: 100,
     storeroomStorePercent: 100,
   },
-  start: { knights: 3000, wheat: 6000, labor: 2000 },
+  start: { knights: 2000, wheat: 6000, labor: 2000 },
   buildings: {
     hut: price(0, 300),
     farm: price(0, 500),

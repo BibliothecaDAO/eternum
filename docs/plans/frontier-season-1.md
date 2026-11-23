@@ -129,12 +129,12 @@ and the troop and wheat stores are today's. A level-up spends its whole price at
 (`src/logic/construction.cairo:241-297`), so each level's labor store holds the next level's price. **A City goes to the
 Deep**: with a mate's army it takes a site (see the Deep).
 
-| Item         | Season 1                                                                      | In code today                                                                                              |
-| ------------ | ----------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| Castle labor | 100 / 200 / 400 / 800 an hour by level                                        | 100.8 an hour · `frontier/base.ts:28-32`                                                                   |
-| Start        | **3,000 Knights in two armies of 1,500**, 6,000 wheat, 2,000 labor, 0 Essence | 1,500 Knights, 4,500 wheat · `frontier/base.ts:71-75`                                                      |
-| Daily reward | the daily quest, for every home                                               | one claim of 1,000 labor, none for a free home · `frontier/native.ts:124`, `src/logic/entry.cairo:172-231` |
-| Population   | none                                                                          | base 6, +6 a Hut                                                                                           |
+| Item         | Season 1                                                                                                                                    | In code today                                                                                              |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Castle labor | 100 / 200 / 400 / 800 an hour by level                                                                                                      | 100.8 an hour · `frontier/base.ts:28-32`                                                                   |
+| Start        | **2,000 Knights at home**, 6,000 wheat, 2,000 labor, 0 Essence; a Deploy costs 2 wheat a troop, so all 2,000 out take 4,000 and leave 2,000 | 1,500 Knights, 4,500 wheat · `frontier/base.ts:71-75`                                                      |
+| Daily reward | the daily quest, for every home                                                                                                             | one claim of 1,000 labor, none for a free home · `frontier/native.ts:124`, `src/logic/entry.cairo:172-231` |
+| Population   | none                                                                                                                                        | base 6, +6 a Hut                                                                                           |
 
 #### The daily quest (new)
 
@@ -169,15 +169,15 @@ Deep**: with a mate's army it takes a site (see the Deep).
 | Done: 1,000 labor and 1,500 Essence, ×2 at each Realm level     | 1,000 + 1,500 | 2,000 + 3,000 | 4,000 + 6,000 | 8,000 + 12,000 |
 | With the labor bonus (the pass, or a holder): 150% of the labor | 1,500         | 3,000         | 6,000         | 12,000         |
 
-| A new Settlement finishes, with the whole day's stamina (on two bars) | Round 42: 1,500 Knights, one army | **Now: 3,000 Knights in two armies** | … and camp and rift guards at 1,000 |
-| --------------------------------------------------------------------- | --------------------------------- | ------------------------------------ | ----------------------------------- |
-| The Hunt: 1 herd or band                                              | 92% (69%)                         | 100% (94%)                           | 100% (93%)                          |
-| Camp-breakers: 1 camp                                                 | 64% (19%)                         | 90% (43%)                            | 97% (83%)                           |
-| Rift-closers: 1 rift                                                  | 57% (0%)                          | 84% (10%)                            | 97% (83%)                           |
-| Relic-seekers: 1 ruin found (cleared)                                 | 73% (45% cleared)                 | 93% (71% cleared)                    | 93% (70%)                           |
-| Veterans: 1 skill point                                               | 100% (84%)                        | 100% (99%)                           | 100% (100%)                         |
-| Pathfinders: 2 finds                                                  | 100%                              | 100%                                 | 100%                                |
-| Cartographers: 15 tiles                                               | 100%                              | 100%                                 | 100%                                |
+| A new Settlement finishes, with the whole day's stamina (on two bars) | Round 42: 1,500 Knights, one army | **Measured: 3,000 Knights as two free armies** (the start is now 2,000 Knights at home, deployed at 2 wheat a troop) | … and camp and rift guards at 1,000 |
+| --------------------------------------------------------------------- | --------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
+| The Hunt: 1 herd or band                                              | 92% (69%)                         | 100% (94%)                                                                                                           | 100% (93%)                          |
+| Camp-breakers: 1 camp                                                 | 64% (19%)                         | 90% (43%)                                                                                                            | 97% (83%)                           |
+| Rift-closers: 1 rift                                                  | 57% (0%)                          | 84% (10%)                                                                                                            | 97% (83%)                           |
+| Relic-seekers: 1 ruin found (cleared)                                 | 73% (45% cleared)                 | 93% (71% cleared)                                                                                                    | 93% (70%)                           |
+| Veterans: 1 skill point                                               | 100% (84%)                        | 100% (99%)                                                                                                           | 100% (100%)                         |
+| Pathfinders: 2 finds                                                  | 100%                              | 100%                                                                                                                 | 100%                                |
+| Cartographers: 15 tiles                                               | 100%                              | 100%                                                                                                                 | 100%                                |
 
 | The count is found in a day                 | Reveals a day | Camp-breakers, Rift-closers | Relic-seekers | The Hunt |
 | ------------------------------------------- | ------------- | --------------------------- | ------------- | -------- |
@@ -186,11 +186,13 @@ Deep**: with a mate's army it takes a site (see the Deep).
 | Empire (× 4): 2 Knight armies, 3 of Scouts  | 182           | 94%                         | 80%           | 100%     |
 
 **What held a new Settlement back was finding, not fighting.** One Knight army makes about 25 reveals in a day: it finds
-a camp two days in three, whatever the camp's guard. So the lever is the starting troops: **3,000 Knights in two
-armies**, two bars, twice the reveals, and a second army to finish a guard the first one wore down. With it every kind
-passes 80% with today's guards. **Relic-seekers counts ruins found:** half the Surface's ruins are beyond a Settlement
-(an Uncommon beast is 2,500), and finding the ruin is the quest; clearing it pays the relic. Smaller camp and rift
-guards would lift the two-bar numbers too; they would also cut what a camp and a rift pay, so they stay as they are.
+a camp two days in three, whatever the camp's guard. So the lever is the starting troops: two armies give two bars,
+twice the reveals, and a second army to finish a guard the first one wore down. With 3,000 Knights as two free armies of
+1,500, every kind passed 80% with today's guards. The start is now **2,000 Knights at home**, deployed at 2 wheat a
+troop, and no run has measured the rates for it yet. **Relic-seekers counts ruins found:** half the Surface's ruins are
+beyond a Settlement (an Uncommon beast is 2,500), and finding the ruin is the quest; clearing it pays the relic. Smaller
+camp and rift guards would lift the two-bar numbers too; they would also cut what a camp and a rift pay, so they stay as
+they are.
 
 A Settlement finds a Troll camp on 86% of days and a City two on 91%. Each quest comes 7 times in a 50-day season; its
 count grows with the Realm, so the same quest asks more each time you level. **One quest for everyone, and a new
@@ -210,21 +212,21 @@ counts, so the lores help and are never needed. Once the quest is done, the day 
 - **Against today:** No tutorial exists in the game. It lights the first plot to build on, hides what a state doesn't
   have, and links to a guide on the docs site.
 
-| When you first…                         | This appears                                                                                                                                                                                   | The one line that explains it                                                                                      |
-| --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| launch the game                         | **7 things:** your Realm and its level · labor and wheat · a lit plot to build on · your 2 armies of Knights, each with its stamina · the map and its mist · the day's quest · the day's clock | "This is your Realm. Build on the lit plot, then send an army into the mist."                                      |
-| build a Barracks                        | troops at home; the list of buildings for your Realm level                                                                                                                                     | "A Barracks raises 100 Knights an hour. Knights fill your armies."                                                 |
-| find a guard                            | the guard's card and the fight preview                                                                                                                                                         | "Send 150% of the guard's troops to win."                                                                          |
-| win a fight                             | XP on the army's card                                                                                                                                                                          | "Armies earn XP by fighting. Enough XP gives a skill point."                                                       |
-| earn a skill point                      | the boon sheet: 3 boons, and rest                                                                                                                                                              | "Take 1 boon for today, or rest for stamina now."                                                                  |
-| collect a quest reward, or earn Essence | Essence; the Research page; the Today page with the week's quests                                                                                                                              | "Essence buys research and lores."                                                                                 |
-| run out of stamina                      | the shop: credits                                                                                                                                                                              | "Stamina refills 30 an hour. A credit refills 2 points now."                                                       |
-| find a relic                            | the army's 3 relic slots                                                                                                                                                                       | "A relic works for 30 minutes per tier. An army carries 3."                                                        |
-| buy Well, Shrine or Spire lore          | wells, shrines, or the spire's odds, on the map                                                                                                                                                | "Your armies can now find wells." · "… shrines." · "Each reveal adds 10% to the odds of the spire. It leads down." |
-| go down a spire                         | the layer switch; supply posts, at the first camp cleared below                                                                                                                                | "Guards are ×2 on each layer down. A cleared camp refills your armies."                                            |
-| reach City                              | Scouts; the Storeroom and the Conscription Hall in the building list                                                                                                                           | "Scouts reveal for 10 stamina, not 20."                                                                            |
-| enter the Deep                          | the 3 sites and their slots; each army's troops draining; your Glory; the Aspect page; the offer to turn the site alert on                                                                     | "Every tick (120 seconds) here, each army loses 200 troops. Hold a site to earn."                                  |
-| have a bane on your Aspect              | the bane's banner and its bane quest; the Aspect page, if not yet open                                                                                                                         | "A bane. Today's quest is the bane quest. Your Aspect ends the bane when enough members finish it."                |
+| When you first…                         | This appears                                                                                                                                                                              | The one line that explains it                                                                                      |
+| --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| launch the game                         | **7 things:** your Realm and its level · labor and wheat · a lit plot to build on · your 2,000 Knights at home, Deploy offered · the map and its mist · the day's quest · the day's clock | "This is your Realm. Build on the lit plot, then deploy an army into the mist."                                    |
+| build a Barracks                        | troops at home; the list of buildings for your Realm level                                                                                                                                | "A Barracks raises 100 Knights an hour. Knights fill your armies."                                                 |
+| find a guard                            | the guard's card and the fight preview                                                                                                                                                    | "Send 150% of the guard's troops to win."                                                                          |
+| win a fight                             | XP on the army's card                                                                                                                                                                     | "Armies earn XP by fighting. Enough XP gives a skill point."                                                       |
+| earn a skill point                      | the boon sheet: 3 boons, and rest                                                                                                                                                         | "Take 1 boon for today, or rest for stamina now."                                                                  |
+| collect a quest reward, or earn Essence | Essence; the Research page; the Today page with the week's quests                                                                                                                         | "Essence buys research and lores."                                                                                 |
+| run out of stamina                      | the shop: credits                                                                                                                                                                         | "Stamina refills 30 an hour. A credit refills 2 points now."                                                       |
+| find a relic                            | the army's 3 relic slots                                                                                                                                                                  | "A relic works for 30 minutes per tier. An army carries 3."                                                        |
+| buy Well, Shrine or Spire lore          | wells, shrines, or the spire's odds, on the map                                                                                                                                           | "Your armies can now find wells." · "… shrines." · "Each reveal adds 10% to the odds of the spire. It leads down." |
+| go down a spire                         | the layer switch; supply posts, at the first camp cleared below                                                                                                                           | "Guards are ×2 on each layer down. A cleared camp refills your armies."                                            |
+| reach City                              | Scouts; the Storeroom and the Conscription Hall in the building list                                                                                                                      | "Scouts reveal for 10 stamina, not 20."                                                                            |
+| enter the Deep                          | the 3 sites and their slots; each army's troops draining; your Glory; the Aspect page; the offer to turn the site alert on                                                                | "Every tick (120 seconds) here, each army loses 200 troops. Hold a site to earn."                                  |
+| have a bane on your Aspect              | the bane's banner and its bane quest; the Aspect page, if not yet open                                                                                                                    | "A bane. Today's quest is the bane quest. Your Aspect ends the bane when enough members finish it."                |
 
 | Things on screen                  | Minute 0 | Minute 5 | Day 3, a daily player | After the Deep and the first bane |
 | --------------------------------- | -------- | -------- | --------------------- | --------------------------------- |
@@ -245,11 +247,12 @@ the "+N XP" flourish (`attributes/progress-moment.ts:5-9`); the guide link in th
 setting. There is no onboarding, hint or tutorial code to replace.
 
 **Day 1 with it: a new Settlement, 9 minutes.** 0:00 seven things, one line: build on the lit plot. 0:30 Workshop,
-Barracks, Farm with the 2,000 labor; troops at home appear. 1:30 the quest: Veterans, 1 skill point; both armies go into
-the mist. 3:00 a Cyclops herd: the guard's card and the fight preview appear; won, 1,400 wheat. XP appears and passes
-60: the first skill point, and its 3 boons. The quest is done: its reward brings Essence and the Research page. **5:00:
-twelve things.** 6:00 a Common ruin (beast 1,000), the two armies one after the other: the first relic, and its 3 slots
-appear. 8:00 both armies are out of stamina: the shop appears. **9:00: fourteen things, each one met with its line.**
+Barracks, Farm with the 2,000 labor; troops at home appear. 1:30 the quest: Veterans, 1 skill point; the 2,000 Knights
+deploy as two armies of 1,000 into the mist. 3:00 a Cyclops herd: the guard's card and the fight preview appear; won,
+1,400 wheat. XP appears and passes 60: the first skill point, and its 3 boons. The quest is done: its reward brings
+Essence and the Research page. **5:00: twelve things.** 6:00 a Common ruin (beast 1,000), the two armies one after the
+other: the first relic, and its 3 slots appear. 8:00 both armies are out of stamina: the shop appears. **9:00: fourteen
+things, each one met with its line.**
 
 Watch in the playtest:
 
@@ -401,10 +404,10 @@ Sources: `frontier/native.ts:14-26,87-105`, `src/research.cairo:12-26,95-104`, `
 | Knight      | **Knights strike first.** | Barracks, from the start | 100 a Barracks | 2 wheat a troop | full   | 20 · 10 stamina     | Charge           |
 | Scout (new) | **Scouts find more.**     | Scouts' Lodge, from City | 100 a Lodge    | 2 wheat a troop | −25%   | **10** · 10 stamina | Scouting         |
 
-**You start with 3,000 Knights, in two armies of 1,500.** One of them wins the first fight in one hit (a Cyclops herd of
-300 to 400, 155 lost) and bring home 1,400 wheat. Scouts open at City, when there is a spire to look for. **In code:**
-`create_explorer` already accepts a Paladin army (`src/logic/troops.cairo:705-748`); the Lodge must produce it
-(`src/buildings.cairo:204-215`); the two Scout traits are new. One tier of troops, as today
+**You start with 2,000 Knights at home, deployed as one army or two.** An army of 1,500 won the first fight in one hit
+(a Cyclops herd of 300 to 400, 155 lost) and brought home 1,400 wheat. Scouts open at City, when there is a spire to
+look for. **In code:** `create_explorer` already accepts a Paladin army (`src/logic/troops.cairo:705-748`); the Lodge
+must produce it (`src/buildings.cairo:204-215`); the two Scout traits are new. One tier of troops, as today
 (`frontier/base.ts:139-142`).
 
 Watch in the playtest:
@@ -927,8 +930,8 @@ together.**
 
 **Progress counts on every layer, and every Realm can finish all 3 on the Surface.** The Cull is faster below the
 Surface, where guards are ×2 on each layer: fewer fights, bigger losses. The smallest quest is 20 actions, and an action
-is one reveal or one hit: 30 seconds. A new Settlement with its 2 armies of 1,500 Knights finishes the Stand and the
-Cull on 90% of days, and the Lights on 100%.
+is one reveal or one hit: 30 seconds. With the old start of 2 free armies of 1,500, a new Settlement finished the Stand
+and the Cull on 90% of days, and the Lights on 100%; no run has measured the start of 2,000 Knights at home yet.
 
 | Stage built | Triumph, the next day (new) | Plain rule                                | In the Deep                                          |
 | ----------- | --------------------------- | ----------------------------------------- | ---------------------------------------------------- |
@@ -1347,7 +1350,7 @@ Sources:
 - **Level prices** 2,500 / 15,000 / 50,000, and the labor stores that hold them.
 - **The research ladder** 5,000 / 10,000 / 25,000 / 50,000 / 100,000 Essence; the lore ladder: Well 2,500, Shrine 5,000,
   Spire 10,000. **Buildings:** Farm, Barracks and Lodge from 500; the Storeroom at 10,000 labor, from City. **The
-  start:** 3,000 Knights in two armies, 6,000 wheat.
+  start:** 2,000 Knights at home, 6,000 wheat.
 - **The quest:** its seven base counts and its reward (1,000 labor and 1,500 Essence, ×2 at each Realm level).
 - **The relics' steps** (Blade +10%, Ward −5%, Plunder +20%, Tome +40%, Stamina +20% regeneration a tier) and 30 minutes
   a tier; ruin beasts 1,000 to 25,000.
@@ -1415,7 +1418,7 @@ Slices: 1 the first playtest · 2 the town and the troops · 3 the shop and the 
 | P5  | **Quests.** The seven quests and their base counts, the reward; the three bane quests and their sizes; the roll's step; the four Triumphs' factors; 60 XP, 20 stamina per rank and the table of givers by Order (`config/source/frontier/native.ts:115-122`)                                                                                                                                | S    | the claim amounts (`frontier/native.ts:124`)                           | C8          | 1     |
 | P8  | **The Deep.** The three sites' tiles, the beast, the troops lost a tick, the three pays, the bane bar and the five stages of the build (`src/logic/preset_record.cairo:400-420`)                                                                                                                                                                                                            | S    | nothing                                                                | C4, C5, C17 | 1     |
 | P9  | **Aspects.** The table from Order to Aspect, 16 rows: the Order ids are not in the Loot suffix order (`packages/types/src/constants/orders.ts:3-106`)                                                                                                                                                                                                                                       | S    | nothing                                                                | C21         | 1     |
-| P6  | **Town prices.** Level prices and labor stores; castle labor by level; the Workshop at 1,000; Farm, Barracks and Lodge at 500; the Storeroom at 10,000 labor (free today, `frontier/base.ts:46`); the start at 3,000 Knights and 6,000 wheat (`frontier/base.ts:71-75`); unlock levels; the rows and the ladder of 5,000 to 100,000 (`frontier/base.ts:16-47`, `frontier/native.ts:87-105`) | S    | the Hut, Hearth and Depth rows                                         | C13         | 2     |
+| P6  | **Town prices.** Level prices and labor stores; castle labor by level; the Workshop at 1,000; Farm, Barracks and Lodge at 500; the Storeroom at 10,000 labor (free today, `frontier/base.ts:46`); the start at 2,000 Knights and 6,000 wheat (`frontier/base.ts:71-75`); unlock levels; the rows and the ladder of 5,000 to 100,000 (`frontier/base.ts:16-47`, `frontier/native.ts:87-105`) | S    | the Hut, Hearth and Depth rows                                         | C13         | 2     |
 | P7  | **Scouts.** Rate and wheat price (`frontier/base.ts:27-32,49-52`)                                                                                                                                                                                                                                                                                                                           | S    | nothing                                                                | C11         | 2     |
 
 ### Relay and indexer (7)

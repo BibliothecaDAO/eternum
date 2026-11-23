@@ -54,9 +54,6 @@ pub fn grant_starting_troops(
         if kind == resource_type {
             resources_dispatcher(key.game_id)
                 .grant_resource(key, kind, amount + guards, timestamp, crate::commands::resource_context(game_context));
-            if crate::rules::DAYS_IN_PLAY && record.base.category == crate::taxonomy::REALM_CATEGORY {
-                deploy_starting_armies(key, category, amount, timestamp, game_context);
-            }
             grant_starting_guard(key, category, guards, timestamp, game_context);
         }
     }
@@ -66,47 +63,6 @@ pub fn spend(
     key: ResourceKey, resource_type: u8, amount: u128, timestamp: u64, game_context: crate::commands::ResourceContext,
 ) {
     resources_dispatcher(key.game_id).spend_resource(key, resource_type, amount, timestamp, game_context);
-}
-
-fn deploy_starting_armies(
-    key: ResourceKey,
-    category: crate::troops::TroopType,
-    amount: u128,
-    timestamp: u64,
-    game_context: crate::commands::ExecutionContext,
-) {
-    assert!(amount > 0 && amount % (2 * crate::rules::RESOURCE_PRECISION) == 0, "unequal starting armies");
-    spend(
-        key,
-        crate::troops::troop_resource(category, 0),
-        amount,
-        timestamp,
-        crate::commands::resource_context(game_context),
-    );
-    let context = crate::commands::action_context(game_context);
-    let context = crate::commands::ActionContext {
-        timestamp: core::cmp::max(timestamp, context.game.start_main_at), ..context,
-    };
-    let allocator = crate::troops::IArmyAllocationLibraryDispatcher {
-        class_hash: crate::logic::release::class_of(key.game_id, crate::slots::TROOPS),
-    };
-    let actor = crate::logic::structures::record(key).owner;
-    for slot in 0_u8..2 {
-        crate::troops::IArmyAllocationDispatcherTrait::allocate_army(
-            allocator,
-            key.game_id,
-            actor,
-            crate::commands::CreateExplorer {
-                slot,
-                structure_id: key.entity_id,
-                category: category.into(),
-                tier: 0,
-                amount: amount / 2,
-                direction: slot,
-            },
-            context,
-        );
-    }
 }
 
 fn grant_starting_guard(
