@@ -24,36 +24,22 @@ export function HudHeaderLayout({
   settings,
 }: HudHeaderLayoutProps) {
   if (lane === null) {
-    if (places || depthSwitch) {
-      return (
-        <header
-          aria-label="Game controls"
-          className="pointer-events-none fixed inset-x-0 top-0 z-20 flex h-11 items-center justify-between gap-2 px-3"
-        >
-          <div className="flex min-w-0 items-center gap-2">
-            {identity}
-            {places}
-          </div>
-          <div className="flex min-w-0 items-center gap-2">
-            {viewControls}
-            {depthSwitch}
-            {clock}
-            {attention}
-            {settings}
-          </div>
-        </header>
-      );
-    }
     return (
       <header
         aria-label="Game controls"
-        className="pointer-events-none fixed inset-x-0 top-0 z-20 flex h-11 items-center justify-center gap-2 px-3"
+        className="pointer-events-none fixed inset-x-0 top-0 z-20 flex h-11 items-center justify-between gap-2 px-3"
       >
-        {identity}
-        {viewControls}
-        {clock}
-        {attention}
-        {settings}
+        <div className="flex min-w-0 items-center gap-2">
+          {identity}
+          {places}
+        </div>
+        <div className="flex min-w-0 items-center gap-2">
+          {viewControls}
+          {depthSwitch}
+          {clock}
+          {attention}
+          {settings}
+        </div>
       </header>
     );
   }
