@@ -5,8 +5,7 @@ import { join } from "node:path";
 import { createBrowserSession } from "./client-playtest/browser-session.mjs";
 import { withDevClient } from "./lib/dev-client.mjs";
 
-const option = (key, fallback) =>
-  process.argv.includes(key) ? process.argv[process.argv.indexOf(key) + 1] : fallback;
+const option = (key, fallback) => (process.argv.includes(key) ? process.argv[process.argv.indexOf(key) + 1] : fallback);
 
 const out = option("--out", join(tmpdir(), "beast-motion-proof-" + Date.now()));
 const port = option("--port", "4425");
@@ -91,7 +90,11 @@ function recordSoloReel(browser, way, fps = 24) {
 }
 
 function summarizeRuns(runs) {
-  const pick = (key) => runs.map((r) => r[key]).filter((v) => typeof v === "number").sort((a, b) => a - b);
+  const pick = (key) =>
+    runs
+      .map((r) => r[key])
+      .filter((v) => typeof v === "number")
+      .sort((a, b) => a - b);
   const stats = (values) => {
     if (values.length === 0) return null;
     const mid = values[Math.floor(values.length / 2)];
@@ -132,7 +135,7 @@ await withDevClient({ base: option("--base-url", null), port, out }, async (base
     browser.run([
       "wait",
       "--fn",
-      'document.querySelector(\'[data-beast-motion-ready="true"]\') !== null && Boolean(window.__beastMotionLab)',
+      "document.querySelector('[data-beast-motion-ready=\"true\"]') !== null && Boolean(window.__beastMotionLab)",
     ]);
 
     for (const action of ACTIONS) {
@@ -209,7 +212,7 @@ await withDevClient({ base: option("--base-url", null), port, out }, async (base
     browser.run([
       "wait",
       "--fn",
-      'document.querySelector(\'[data-beast-motion-ready="true"]\') !== null && Boolean(window.__beastMotionLab)',
+      "document.querySelector('[data-beast-motion-ready=\"true\"]') !== null && Boolean(window.__beastMotionLab)",
     ]);
     for (const way of BENCH_WAYS) {
       for (const count of BENCH_COUNTS) {
