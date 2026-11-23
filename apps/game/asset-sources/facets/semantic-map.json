@@ -1490,6 +1490,21 @@
     "label": "Dark fey",
     "family": "Beasts"
   },
+  "beast-balrog": {
+    "art": "beast-balrog",
+    "label": "Balrog",
+    "family": "Beasts"
+  },
+  "beast-colossus": {
+    "art": "beast-colossus",
+    "label": "Colossus",
+    "family": "Beasts"
+  },
+  "beast-warlock": {
+    "art": "beast-warlock",
+    "label": "Warlock",
+    "family": "Beasts"
+  },
   "wonder-realm-0": {
     "label": "Wonder · Settlement",
     "family": "Structures",

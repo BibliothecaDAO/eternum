@@ -156,7 +156,10 @@ export class FrontierModel extends InstancedModel {
 function beastMaterial(source: MeshStandardMaterial | FrostedStandardNodeMaterial) {
   if (source instanceof FrostedStandardNodeMaterial && isTripoModelMaterial(source)) {
     source.positionNode = positionLocal.add(vec3(0, beastIdle(), 0));
-    source.emissiveNode = beastPhoenixGlow();
+    source.emissiveNode =
+      source.emissiveIntensity > 0
+        ? beastPhoenixGlow().add(color(source.emissive).mul(source.emissiveIntensity))
+        : beastPhoenixGlow();
     return source;
   }
   const material = new FrostedStandardNodeMaterial();

@@ -162,7 +162,18 @@ export const layerName = (depth: number): string => {
 export const ETERNUM_MAP_NAMES = [LAYER_NAMES[0], "Ethereal Layer"] as const;
 export const eternumMapName = (alt: boolean): string => ETERNUM_MAP_NAMES[alt ? 1 : 0];
 
-export type BeastModel = "troll" | "wyvern" | "hydra" | "wraith" | "cyclops" | "ammit" | "basilisk" | "dark-fey";
+export type BeastModel =
+  | "troll"
+  | "wyvern"
+  | "hydra"
+  | "wraith"
+  | "cyclops"
+  | "ammit"
+  | "basilisk"
+  | "dark-fey"
+  | "balrog"
+  | "colossus"
+  | "warlock";
 export type BeastFamily = "herd" | "band" | "camp" | "rift" | "ruin";
 export type BeastIdle = { motion: "breath" | "lift"; speed: number; height: number } | { motion: "hover" };
 type BeastLook = { model: BeastModel; fallback?: never } | { model?: never; fallback: BeastModel };
@@ -198,9 +209,9 @@ export const BEASTS = {
 } as const satisfies Record<string, BeastRow>;
 
 export const DEEP_BEASTS = {
-  foundation: { name: "Colossus", scale: 1.3, fallback: "troll", idle: breath(0.8, 0.012) },
-  core: { name: "Warlock", scale: 1.4, fallback: "dark-fey", idle: hover },
-  mine: { name: "Balrog", scale: 1.1, fallback: "troll", idle: breath(1, 0.016) },
+  foundation: { name: "Colossus", scale: 1.3, model: "colossus", idle: breath(0.8, 0.012) },
+  core: { name: "Warlock", scale: 1.4, model: "warlock", idle: hover },
+  mine: { name: "Balrog", scale: 1.1, model: "balrog", idle: breath(1, 0.016) },
   altar: { name: "Basilisk", scale: 1.2, model: "basilisk", idle: breath(1.3, 0.014) },
 } as const satisfies Record<(typeof deepSites)[number]["key"], DeepBeastRow>;
 

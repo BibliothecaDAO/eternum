@@ -129,7 +129,7 @@
   },
   "faceted/map-village": {
     "verdict": "beats shipped",
-    "reason": "Paired red roofs distinguish village from the pale realm towers. The compact painted houses retain material at 32 px and roof colour at 12–16 px."
+    "reason": "Paired red roofs distinguish village from the pale realm towers. The compact painted houses retain material at 32 px and roof colour at 12\u201316 px."
   },
   "faceted/map-mine": {
     "verdict": "beats shipped",
@@ -1095,5 +1095,17 @@
   "faceted/aspect-insight": {
     "verdict": "beats shipped",
     "reason": "Approved Season 1 Aspect Facet emblem published through the facets 64/128/256 webp pipeline."
+  },
+  "faceted/beast-balrog": {
+    "verdict": "beats shipped",
+    "reason": "Studio portrait of shipped Deep guardian Balrog model, normalized to the Facets delivery contract."
+  },
+  "faceted/beast-colossus": {
+    "verdict": "beats shipped",
+    "reason": "Studio portrait of shipped Deep guardian Colossus model, normalized to the Facets delivery contract."
+  },
+  "faceted/beast-warlock": {
+    "verdict": "beats shipped",
+    "reason": "Studio portrait of shipped Deep guardian Warlock model, normalized to the Facets delivery contract."
   }
 }

@@ -170,10 +170,10 @@ describe("the Deep's sites on the map", () => {
       noGates() as never,
     );
     await vi.waitFor(() =>
-      expect(beasts.map(({ species }) => species).toSorted()).toEqual(["basilisk", "troll", "troll"]),
+      expect(beasts.map(({ species }) => species).toSorted()).toEqual(["balrog", "basilisk", "colossus"]),
     );
     expect(load).toHaveBeenCalledWith(FRONTIER_BEASTS.basilisk.path);
-    expect(load).not.toHaveBeenCalledWith(FRONTIER_BEASTS["dark-fey"].path);
+    expect(load).not.toHaveBeenCalledWith(FRONTIER_BEASTS.warlock.path);
     const basilisk = beasts.find(({ species }) => species === "basilisk")!;
     expect(basilisk.count).toBe(1);
     expect(basilisk.scales[0]).toBeCloseTo(DEEP_BEASTS.altar.scale);
@@ -242,7 +242,7 @@ describe("the Deep's sites on the map", () => {
     expect(beasts).toEqual([]);
     expect(plates.setLabel.mock.calls.map(([plate]) => plate.plate.icon)).not.toContain("lock");
     headAt(100);
-    await vi.waitFor(() => expect(standingBeasts()).toEqual(["basilisk", "troll", "troll"]));
+    await vi.waitFor(() => expect(standingBeasts()).toEqual(["balrog", "basilisk", "colossus"]));
     await vi.waitFor(() => expect(drawnScenes()).toEqual(["deep-landmark-core-dormant"]));
     expect(plates.setLabel.mock.calls.findLast(([plate]) => plate.entityId === core)![0].plate.icon).toBe("lock");
     manager.destroy();
@@ -251,10 +251,10 @@ describe("the Deep's sites on the map", () => {
   it("stands a beast beaten yesterday back on its site when the day turns, with no site fact arriving", async () => {
     const altar = 10 + deepSites.findIndex(({ key }) => key === "altar");
     const { manager } = guardedSites(100, ["altar"]);
-    await vi.waitFor(() => expect(standingBeasts()).toEqual(["dark-fey", "troll", "troll"]));
+    await vi.waitFor(() => expect(standingBeasts()).toEqual(["balrog", "colossus", "warlock"]));
     beastTroops.set(altar, 5_000n);
     headAt(clock.day + 100);
-    await vi.waitFor(() => expect(standingBeasts()).toEqual(["basilisk", "dark-fey", "troll", "troll"]));
+    await vi.waitFor(() => expect(standingBeasts()).toEqual(["balrog", "basilisk", "colossus", "warlock"]));
     manager.destroy();
     clock.tick = 0;
   });

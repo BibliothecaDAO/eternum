@@ -11,6 +11,8 @@ import draco3d from "draco3dgltf";
 import { MeshoptDecoder } from "meshoptimizer";
 import { Matrix3, Matrix4, Vector3 } from "three";
 
+import { BEAST_BUDGET } from "../frontier-beasts/beast-budget.mjs";
+
 const APP_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const GLTF_TRANSFORM = resolve(APP_ROOT, "node_modules/.bin/gltf-transform");
 const COMPRESS_MODELS = resolve(APP_ROOT, "scripts/compress-models.mjs");
@@ -53,6 +55,7 @@ export const MODEL_BUDGETS = Object.freeze({
     minGroundY: -0.05,
     maxGroundY: 0.05,
   },
+  beast: BEAST_BUDGET,
 });
 
 export function readHexFit(fitPath) {

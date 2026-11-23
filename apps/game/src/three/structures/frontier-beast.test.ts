@@ -104,18 +104,26 @@ describe("Frontier guard identity", () => {
     expect(deliveries).toEqual(species.map((beast) => basename(FRONTIER_BEASTS[beast].path)).sort());
   });
 
-  it("keeps one editable sculpt per shipped beast, without retired study sources", () => {
+  it("keeps one editable sculpt per legacy beast, without retired study sources", async () => {
+    const { createDecoderModule } = createRequire(import.meta.url)("draco3dgltf");
+    const io = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({
+      "draco3d.decoder": await createDecoderModule(),
+    });
+    const legacySpecies: string[] = [];
+    for (const [species, entry] of Object.entries(FRONTIER_BEASTS)) {
+      const root = (
+        await io.readBinary(readFileSync(new URL(`../../../public${entry.path}`, import.meta.url)))
+      ).getRoot();
+      const tripo = root.listNodes().some((node) => node.getMesh() && node.getExtras()?.assetKind === "beast");
+      if (!tripo) legacySpecies.push(species);
+    }
     const sources = readdirSync(new URL("../../../asset-sources/frontier-beasts", import.meta.url), {
       recursive: true,
       encoding: "utf8",
     })
       .filter((file) => file.endsWith(".blend"))
       .sort();
-    expect(sources).toEqual(
-      Object.keys(FRONTIER_BEASTS)
-        .map((species) => `refined/${species}.blend`)
-        .sort(),
-    );
+    expect(sources).toEqual(legacySpecies.map((species) => `refined/${species}.blend`).sort());
   });
 
   it("keeps one ruin beast a layer and refuses a layer the table has no beast for", () => {
