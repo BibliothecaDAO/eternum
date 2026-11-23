@@ -1,44 +1,18 @@
 import { type BattleEventSystemUpdate } from "@bibliothecadao/eternum";
+import { TroopTier, TroopType } from "@bibliothecadao/types";
 import { describe, expect, it, vi } from "vitest";
 
-import type { ProceduralMeleeContactEvent, ProceduralRangedReleaseEvent } from "@/three/characters";
 import type { CombatPresentationCoordinator } from "@/three/combat/combat-presentation-coordinator";
-import type { ArmyManager } from "@/three/managers/army-manager";
 
 import { WorldmapCombatPresentation, type WorldmapCombatPresentationDeps } from "./worldmap-combat-presentation";
 
-type RangedCb = (
-  entityId: number,
-  event: ProceduralRangedReleaseEvent,
-  targetEntityId?: number,
-  authority?: string,
-) => void;
-type MeleeCb = (entityId: number, event: ProceduralMeleeContactEvent, targetEntityId?: number) => void;
-
 function createHarness(over: Partial<WorldmapCombatPresentationDeps> = {}) {
-  const unsub = { ranged: vi.fn(), melee: vi.fn(), impact: vi.fn() };
-  const captured: { ranged?: RangedCb; melee?: MeleeCb } = {};
-
   const armyManager = {
-    onProceduralRangedRelease: vi.fn((cb: RangedCb) => {
-      captured.ranged = cb;
-      return unsub.ranged;
-    }),
-    onProceduralMeleeContact: vi.fn((cb: MeleeCb) => {
-      captured.melee = cb;
-      return unsub.melee;
-    }),
-    presentProceduralProjectileImpact: vi.fn(),
-    getArmy: vi.fn(() => ({ tier: 2, category: 0 })),
-    playProceduralAttack: vi.fn(() => true),
-  } as unknown as ArmyManager;
+    getArmy: vi.fn(() => ({ tier: TroopTier.T2, category: TroopType.Knight })),
+  } as unknown as WorldmapCombatPresentationDeps["armyManager"];
 
   const combatPresentation = {
-    onProjectileImpact: vi.fn(() => unsub.impact),
     replayIndexed: vi.fn(() => true),
-    presentImmediate: vi.fn(),
-    presentRangedRelease: vi.fn(),
-    presentMeleeContact: vi.fn(),
   } as unknown as CombatPresentationCoordinator;
 
   const deps: WorldmapCombatPresentationDeps = {
@@ -49,55 +23,22 @@ function createHarness(over: Partial<WorldmapCombatPresentationDeps> = {}) {
     ...over,
   };
 
-  return { runtime: new WorldmapCombatPresentation(deps), deps, armyManager, combatPresentation, unsub, captured };
+  return { runtime: new WorldmapCombatPresentation(deps), deps, armyManager, combatPresentation };
 }
 
 const battle = (attackerId: number, defenderId: number) =>
   ({ battleData: { attackerId, defenderId } }) as unknown as BattleEventSystemUpdate;
 
 describe("WorldmapCombatPresentation", () => {
-  it("tears down every subscription it opened on dispose", () => {
-    const h = createHarness();
-    h.runtime.bind();
-
-    expect(h.armyManager.onProceduralRangedRelease).toHaveBeenCalledTimes(1);
-    expect(h.armyManager.onProceduralMeleeContact).toHaveBeenCalledTimes(1);
-    expect(h.combatPresentation.onProjectileImpact).toHaveBeenCalledTimes(1);
-
-    h.runtime.dispose();
-
-    expect(h.unsub.ranged).toHaveBeenCalledTimes(1);
-    expect(h.unsub.melee).toHaveBeenCalledTimes(1);
-    expect(h.unsub.impact).toHaveBeenCalledTimes(1);
-  });
-
-  it("replays a confirmed battle and does not fall back when the animated attack starts", () => {
+  it("replays a confirmed battle in one coordinator call without animating actors", () => {
     const h = createHarness();
 
     h.runtime.replayIndexed(battle(1, 2));
 
     expect(h.combatPresentation.replayIndexed).toHaveBeenCalledTimes(1);
-    expect(h.armyManager.playProceduralAttack).toHaveBeenCalledTimes(1);
-    expect(h.combatPresentation.presentImmediate).not.toHaveBeenCalled();
-  });
-
-  it("falls back to an immediate present when the animated attack cannot start", () => {
-    const h = createHarness();
-    (h.armyManager.playProceduralAttack as ReturnType<typeof vi.fn>).mockReturnValue(false);
-
-    h.runtime.replayIndexed(battle(1, 2));
-
-    expect(h.combatPresentation.presentImmediate).toHaveBeenCalledTimes(1);
-  });
-
-  it("does nothing when the coordinator declines the replay", () => {
-    const h = createHarness();
-    (h.combatPresentation.replayIndexed as ReturnType<typeof vi.fn>).mockReturnValue(false);
-
-    h.runtime.replayIndexed(battle(1, 2));
-
-    expect(h.armyManager.playProceduralAttack).not.toHaveBeenCalled();
-    expect(h.combatPresentation.presentImmediate).not.toHaveBeenCalled();
+    expect(h.combatPresentation.replayIndexed).toHaveBeenCalledWith(
+      expect.objectContaining({ attackerId: 1, defenderId: 2, tier: TroopTier.T2, troopType: TroopType.Knight }),
+    );
   });
 
   it("skips replay when the attacker is unknown", () => {
@@ -120,30 +61,14 @@ describe("WorldmapCombatPresentation", () => {
     expect(h.combatPresentation.replayIndexed).not.toHaveBeenCalled();
   });
 
-  it("routes a procedural ranged release to the coordinator", () => {
-    const h = createHarness();
-    h.runtime.bind();
+  it("falls back to the defender structure hex when the defender is not an army", () => {
+    const h = createHarness({
+      getArmyDisplayPosition: vi.fn((id: number) => (id === 1 ? { col: 1, row: 1 } : undefined)),
+      getStructureHexPosition: vi.fn((id: number) => (id === 2 ? { col: 3, row: 4 } : undefined)),
+    });
 
-    const event = {
-      origin: { x: 0, y: 0, z: 0 },
-      origins: [],
-      shotGeneration: 3,
-      projectile: {},
-      seed: 7,
-      target: { x: 1, y: 0, z: 1 },
-    } as unknown as ProceduralRangedReleaseEvent;
-    h.captured.ranged?.(1, event, 2, "provisional");
+    h.runtime.replayIndexed(battle(1, 2));
 
-    expect(h.combatPresentation.presentRangedRelease).toHaveBeenCalledTimes(1);
-  });
-
-  it("routes a procedural melee contact to the coordinator", () => {
-    const h = createHarness();
-    h.runtime.bind();
-
-    const event = { direction: 1, target: { x: 1, y: 0, z: 1 } } as unknown as ProceduralMeleeContactEvent;
-    h.captured.melee?.(1, event, 2);
-
-    expect(h.combatPresentation.presentMeleeContact).toHaveBeenCalledTimes(1);
+    expect(h.combatPresentation.replayIndexed).toHaveBeenCalledTimes(1);
   });
 });

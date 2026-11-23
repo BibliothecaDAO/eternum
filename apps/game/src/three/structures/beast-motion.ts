@@ -26,7 +26,7 @@ interface BeastMotionProfile {
   readonly height: number;
 }
 
-export type BeastMotionSlotState = InstancedMotionSlotState<BeastMotionAction>;
+type BeastMotionSlotState = InstancedMotionSlotState<BeastMotionAction>;
 export type BeastMotionController = InstancedMotionController<BeastMotionAction>;
 
 const BEAST_ACTION_CODES = {

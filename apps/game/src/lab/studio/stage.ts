@@ -104,7 +104,6 @@ export class StudioStage implements LabStage {
       getArmyDisplayPosition: (entityId) => this.armyHex(entityId),
       getStructureHexPosition: () => undefined,
     });
-    this.combatBridge.bind();
     this.reset();
     await this.armies.whenReady();
   }
@@ -209,7 +208,6 @@ export class StudioStage implements LabStage {
   dispose(): void {
     this.disposed = true;
     this.stop();
-    this.combatBridge?.dispose();
     this.combat?.dispose();
     this.armies?.dispose();
     for (const model of [...this.realms, this.hyperstructure]) {

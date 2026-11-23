@@ -36,7 +36,7 @@ import "@/three/map-plates/map-plates.css";
 const MODEL_BEASTS = Object.keys(FRONTIER_BEASTS).map((beast) => ({ beast: beast as keyof typeof FRONTIER_BEASTS }));
 const MODELS: readonly LineupAsset[] = MODEL_BEASTS.map(({ beast }) => ({
   label: beastOfModel(beast).name,
-  parts: [{ path: FRONTIER_BEASTS[beast].path, scale: largestBeastScale(beast), idle: beastOfModel(beast).idle }],
+  parts: [{ path: FRONTIER_BEASTS[beast].path, scale: largestBeastScale(beast) }],
 }));
 const SITES = [
   { kind: "Camp", category: StructureType.Camp, base: CAMP_MODEL_PATH },
@@ -57,7 +57,6 @@ const siteModels = (layer: number): readonly LineupAsset[] =>
           scale: beast.scale,
           z: composition.beastZ,
           y: composition.beastY,
-          idle: beast.idle,
         },
       ],
     };
@@ -67,7 +66,7 @@ const roamingModels = (layer: number): readonly LineupAsset[] =>
     const beast = frontierBeast(layer, StructureType.Beasts, band);
     return {
       label: `${beast.name} · ${band}`,
-      parts: [{ path: FRONTIER_BEASTS[beast.beast].path, scale: beast.scale, idle: beast.idle }],
+      parts: [{ path: FRONTIER_BEASTS[beast.beast].path, scale: beast.scale }],
     };
   });
 
@@ -75,13 +74,13 @@ const FIXED_LINEUPS: Readonly<Record<string, readonly LineupAsset[]>> = {
   models: MODELS,
   families: Object.values<BeastRow>(BEASTS).map((beast) => ({
     label: `${beast.name} · ${LAYER_NAMES[beast.layer]} ${beast.family}`,
-    parts: [{ path: FRONTIER_BEASTS[beastModel(beast)].path, scale: beast.scale, idle: beast.idle }],
+    parts: [{ path: FRONTIER_BEASTS[beastModel(beast)].path, scale: beast.scale }],
   })),
   ruins: beastsOfFamily("ruin").map((beast) => ({
     label: `${beast.name} · ${LAYER_NAMES[beast.layer]}`,
     parts: [
       { path: FALLEN_REALM_RUIN_PATH, scale: 1 },
-      { path: FRONTIER_BEASTS[beastModel(beast)].path, scale: beast.scale, idle: beast.idle },
+      { path: FRONTIER_BEASTS[beastModel(beast)].path, scale: beast.scale },
     ],
   })),
 };

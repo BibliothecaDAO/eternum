@@ -1,8 +1,6 @@
-import { BiomeType } from "@bibliothecadao/types";
 import {
   BufferGeometry,
   Color,
-  Euler,
   Group,
   InstancedBufferAttribute,
   InstancedMesh,
@@ -17,6 +15,7 @@ import {
   Vector3,
 } from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { float, positionLocal } from "three/tsl";
 import { env } from "../../../env";
 import {
   applyProceduralUnitConfigPatch,
@@ -26,9 +25,16 @@ import { ProceduralUnitRuntime, type ProceduralUnitActor } from "@/three/charact
 import { T1_KNIGHT_WORLD_SCALE, buildArmyModelAssetPath } from "@/three/constants/army-constants";
 import { ModelLabEnvironment } from "@/three/debug/model-lab/model-lab-environment";
 import { readModelLabSettings } from "@/three/debug/model-lab/model-lab-settings";
+import { mapAnimationTime } from "@/three/effects/endgame/state";
 import { createTripoModelMaterial } from "@/three/materials/tripo-model-material";
-import { ArmyModel } from "@/three/managers/army-model";
-import type { AnimatedTroopKind } from "@/three/managers/troop-motion";
+import {
+  createTroopMotionController,
+  createTroopMotionNode,
+  resolveAnimatedTroopKind,
+  type AnimatedTroopKind,
+  type TroopMotionController,
+  type TroopShaderAction,
+} from "@/three/managers/troop-motion";
 import { ModelType } from "@/three/types/army";
 import type { RendererSurfaceLike } from "@/three/renderer-backend";
 import { initializeRendererBackendRuntime } from "@/three/renderer-backend-runtime";
@@ -81,9 +87,14 @@ interface LoopRenderer extends RendererSurfaceLike {
   setAnimationLoop(callback: (() => void) | null): void;
 }
 
-interface StaticTroopReference {
+interface TroopStagePair {
   kind: AnimatedTroopKind;
   staticRoot: Group;
+  animatedRoot: Group;
+  controller: TroopMotionController;
+  setLoopAction(action: "idle" | "march"): void;
+  playAction(action: TroopShaderAction): void;
+  update(): void;
   dispose(): void;
 }
 
@@ -94,9 +105,6 @@ const MARCH_HALF_SPAN = 0.44;
 const MARCH_SPEED = 0.42;
 const SIDE_OWN_COLOR = new Color("#66ddab");
 const IDENTITY_MATRIX = new Matrix4();
-const TROOP_UNIT_SCALE = new Vector3(1, 1, 1);
-const TROOP_FACING_EULER = new Euler(0, FACING_YAW, 0);
-const TROOP_ENTITY_ID = 101;
 
 function createHexOutline(centerX: number, centerZ: number, groundY: number): Line {
   const corners = terrainHexCorners(centerX, centerZ);
@@ -109,11 +117,18 @@ function createHexOutline(centerX: number, centerZ: number, groundY: number): Li
   return line;
 }
 
-async function createStaticTroopReference(kind: AnimatedTroopKind): Promise<StaticTroopReference> {
-  const modelType = kind === "scout" ? ModelType.Paladin1 : ModelType.Crossbowman1;
+async function createTroopStagePair(modelType: ModelType): Promise<TroopStagePair> {
+  const kind = resolveAnimatedTroopKind(modelType);
+  if (!kind) throw new Error(`Unsupported troop motion model type: ${modelType}`);
   const gltf = await gltfLoader.loadAsync(buildArmyModelAssetPath(modelType));
 
+  let loopAction: "idle" | "march" = "idle";
+  const controller = createTroopMotionController(kind, 1, () => loopAction);
+  controller.setPlacementAt(0, IDENTITY_MATRIX);
+  const displacement = createTroopMotionNode(kind, float(mapAnimationTime));
+
   const staticRoot = new Group();
+  const animatedRoot = new Group();
   const ownedGeometries: BufferGeometry[] = [];
   const ownedMaterials: Array<{ dispose(): void }> = [];
   const ownedMeshes: InstancedMesh[] = [];
@@ -123,36 +138,58 @@ async function createStaticTroopReference(kind: AnimatedTroopKind): Promise<Stat
     const sourceMaterial = Array.isArray(child.material) ? child.material[0] : child.material;
     if (!(sourceMaterial instanceof MeshStandardMaterial)) return;
 
-    const staticGeo = child.geometry.clone();
-    const staticMat = createTripoModelMaterial(sourceMaterial);
-    const staticMesh = new InstancedMesh(staticGeo, staticMat, 1);
-    staticMesh.castShadow = true;
-    staticMesh.receiveShadow = true;
-    staticMesh.frustumCulled = false;
-    staticMesh.instanceColor = new InstancedBufferAttribute(
-      new Float32Array([SIDE_OWN_COLOR.r, SIDE_OWN_COLOR.g, SIDE_OWN_COLOR.b]),
-      3,
-    );
-    staticMesh.setMatrixAt(0, IDENTITY_MATRIX);
-    staticMesh.instanceMatrix.needsUpdate = true;
-    staticMesh.count = 1;
-    staticRoot.add(staticMesh);
+    const buildMesh = (animated: boolean) => {
+      const geo = child.geometry.clone();
+      const mat = createTripoModelMaterial(sourceMaterial);
+      if (animated) {
+        geo.setAttribute("troopMotion", controller.attribute);
+        mat.positionNode = positionLocal.add(displacement);
+      }
+      const mesh = new InstancedMesh(geo, mat, 1);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      mesh.frustumCulled = false;
+      mesh.instanceColor = new InstancedBufferAttribute(
+        new Float32Array([SIDE_OWN_COLOR.r, SIDE_OWN_COLOR.g, SIDE_OWN_COLOR.b]),
+        3,
+      );
+      mesh.setMatrixAt(0, IDENTITY_MATRIX);
+      mesh.instanceMatrix.needsUpdate = true;
+      mesh.count = 1;
+      ownedGeometries.push(geo);
+      ownedMaterials.push(mat);
+      ownedMeshes.push(mesh);
+      return mesh;
+    };
 
-    ownedGeometries.push(staticGeo);
-    ownedMaterials.push(staticMat);
-    ownedMeshes.push(staticMesh);
+    staticRoot.add(buildMesh(false));
+    animatedRoot.add(buildMesh(true));
   });
 
   staticRoot.rotation.y = FACING_YAW;
+  animatedRoot.rotation.y = FACING_YAW;
 
   return {
     kind,
     staticRoot,
+    animatedRoot,
+    controller,
+    setLoopAction(next) {
+      loopAction = next;
+      controller.syncLoopActionAt(0);
+    },
+    playAction(action) {
+      controller.playActionAt(0, action, mapAnimationTime.value);
+    },
+    update() {
+      controller.update(mapAnimationTime.value, [0]);
+    },
     dispose() {
       ownedMeshes.forEach((m) => m.dispose());
       ownedGeometries.forEach((g) => g.dispose());
       ownedMaterials.forEach((m) => m.dispose());
       staticRoot.removeFromParent();
+      animatedRoot.removeFromParent();
     },
   };
 }
@@ -226,17 +263,11 @@ export async function mountTroopMotionLab(input: MountTroopMotionInput): Promise
   newKnight.object.rotation.y = FACING_YAW;
   scene.add(newKnightRoot);
 
-  const armyModel = new ArmyModel(scene, () => BiomeType.Grassland);
-  armyModel.setShadowsEnabled(true);
-  await armyModel.preloadModels(new Set([ModelType.Paladin1, ModelType.Crossbowman1]));
-  const troopSlot = armyModel.allocateInstanceSlot(TROOP_ENTITY_ID);
-  armyModel.assignModelToEntity(TROOP_ENTITY_ID, ModelType.Paladin1);
-
-  const [scoutRef, crossbowRef] = await Promise.all([
-    createStaticTroopReference("scout"),
-    createStaticTroopReference("crossbow"),
+  const [scoutPair, crossbowPair] = await Promise.all([
+    createTroopStagePair(ModelType.Paladin1),
+    createTroopStagePair(ModelType.Crossbowman1),
   ]);
-  scene.add(scoutRef.staticRoot, crossbowRef.staticRoot);
+  scene.add(scoutPair.staticRoot, scoutPair.animatedRoot, crossbowPair.staticRoot, crossbowPair.animatedRoot);
 
   const stageGroup = new Group();
   scene.add(stageGroup);
@@ -255,28 +286,14 @@ export async function mountTroopMotionLab(input: MountTroopMotionInput): Promise
 
   const isComparing = () => state.troop !== "knight" && state.compareShipped;
 
-  const activeTroopBinding = () =>
-    state.troop === "scout"
-      ? { modelType: ModelType.Paladin1, slot: troopSlot, ref: scoutRef }
-      : state.troop === "crossbow"
-        ? { modelType: ModelType.Crossbowman1, slot: troopSlot, ref: crossbowRef }
-        : null;
+  const activeTroopPair = () =>
+    state.troop === "scout" ? scoutPair : state.troop === "crossbow" ? crossbowPair : null;
 
   const syncAnimatedTroopPose = (x: number, z: number) => {
-    const binding = activeTroopBinding();
-    if (!binding) return;
+    const pair = activeTroopPair();
+    if (!pair) return;
     animatedTroopPos.set(x, groundY, z);
-    armyModel.updateInstance(
-      TROOP_ENTITY_ID,
-      binding.slot,
-      animatedTroopPos,
-      TROOP_UNIT_SCALE,
-      TROOP_FACING_EULER,
-      SIDE_OWN_COLOR,
-    );
-    armyModel.flushInstanceUploads();
-    armyModel.requestBoundsUpdate();
-    armyModel.applyPendingBounds();
+    pair.animatedRoot.position.copy(animatedTroopPos);
   };
 
   const rebuildStage = () => {
@@ -288,24 +305,16 @@ export async function mountTroopMotionLab(input: MountTroopMotionInput): Promise
     }
     const compare = isComparing();
     newKnightRoot.visible = state.troop === "knight";
-    scoutRef.staticRoot.visible = state.troop === "scout" && compare;
-    crossbowRef.staticRoot.visible = state.troop === "crossbow" && compare;
+    scoutPair.staticRoot.visible = state.troop === "scout" && compare;
+    scoutPair.animatedRoot.visible = state.troop === "scout";
+    crossbowPair.staticRoot.visible = state.troop === "crossbow" && compare;
+    crossbowPair.animatedRoot.visible = state.troop === "crossbow";
 
     const rightX = compare ? COMPARE_RIGHT_X : 0;
     newKnightRoot.position.set(rightX, groundY, 0);
-    scoutRef.staticRoot.position.set(COMPARE_LEFT_X, groundY, 0);
-    crossbowRef.staticRoot.position.set(COMPARE_LEFT_X, groundY, 0);
-
-    armyModel.resetInstanceCounts();
-    const binding = activeTroopBinding();
-    if (binding) {
-      armyModel.assignModelToEntity(TROOP_ENTITY_ID, binding.modelType);
-      syncAnimatedTroopPose(rightX, 0);
-      armyModel.setVisibleSlots([binding.slot]);
-    } else {
-      armyModel.setVisibleSlots([]);
-      armyModel.flushInstanceUploads();
-    }
+    scoutPair.staticRoot.position.set(COMPARE_LEFT_X, groundY, 0);
+    crossbowPair.staticRoot.position.set(COMPARE_LEFT_X, groundY, 0);
+    syncAnimatedTroopPose(rightX, 0);
 
     if (compare) {
       hexOutlines.push(createHexOutline(COMPARE_LEFT_X, 0, groundY), createHexOutline(COMPARE_RIGHT_X, 0, groundY));
@@ -357,16 +366,17 @@ export async function mountTroopMotionLab(input: MountTroopMotionInput): Promise
       }),
     );
 
-    if (activeTroopBinding()) {
-      armyModel.setAnimationState(troopSlot, nextAction === "march");
-      armyModel.playTroopAction(troopSlot, nextAction === "march" ? "march" : "idle");
+    const pair = activeTroopPair();
+    if (pair) {
+      pair.setLoopAction(nextAction === "march" ? "march" : "idle");
+      pair.playAction(nextAction === "march" ? "march" : "idle");
     }
 
     const compare = isComparing();
     const rightX = compare ? COMPARE_RIGHT_X : 0;
     newKnightRoot.position.set(rightX, groundY, 0);
-    scoutRef.staticRoot.position.set(COMPARE_LEFT_X, groundY, 0);
-    crossbowRef.staticRoot.position.set(COMPARE_LEFT_X, groundY, 0);
+    scoutPair.staticRoot.position.set(COMPARE_LEFT_X, groundY, 0);
+    crossbowPair.staticRoot.position.set(COMPARE_LEFT_X, groundY, 0);
     syncAnimatedTroopPose(rightX, 0);
   };
 
@@ -396,7 +406,7 @@ export async function mountTroopMotionLab(input: MountTroopMotionInput): Promise
     if (width <= 0 || height <= 0) return;
     const compare = isComparing();
     const labelY = groundY + (state.troop === "scout" ? 1.44 : 1.18);
-    const binding = activeTroopBinding();
+    const pair = activeTroopPair();
     const entries: Array<{ id: string; text: string; pos: Vector3 }> =
       state.troop === "knight"
         ? [
@@ -406,12 +416,12 @@ export async function mountTroopMotionLab(input: MountTroopMotionInput): Promise
               pos: new Vector3(newKnightRoot.position.x, labelY, newKnightRoot.position.z),
             },
           ]
-        : compare && binding
+        : compare && pair
           ? [
               {
                 id: "static",
                 text: `Static ${state.troop === "scout" ? "Scout" : "Crossbow"}`,
-                pos: new Vector3(binding.ref.staticRoot.position.x, labelY, binding.ref.staticRoot.position.z),
+                pos: new Vector3(pair.staticRoot.position.x, labelY, pair.staticRoot.position.z),
               },
               {
                 id: "animated",
@@ -419,7 +429,7 @@ export async function mountTroopMotionLab(input: MountTroopMotionInput): Promise
                 pos: new Vector3(animatedTroopPos.x, labelY, animatedTroopPos.z),
               },
             ]
-          : binding
+          : pair
             ? [
                 {
                   id: "animated",
@@ -457,13 +467,13 @@ export async function mountTroopMotionLab(input: MountTroopMotionInput): Promise
       actionClock += deltaSeconds;
     }
 
-    const binding = activeTroopBinding();
+    const pair = activeTroopPair();
 
     if (activeAction === "march") {
       const zTravel = ((actionClock * MARCH_SPEED) % (MARCH_HALF_SPAN * 2)) - MARCH_HALF_SPAN;
       newKnightRoot.position.z = zTravel;
-      if (binding) {
-        binding.ref.staticRoot.position.z = zTravel;
+      if (pair) {
+        pair.staticRoot.position.z = zTravel;
         syncAnimatedTroopPose(isComparing() ? COMPARE_RIGHT_X : 0, zTravel);
       }
     } else if (activeAction === "attack") {
@@ -473,8 +483,8 @@ export async function mountTroopMotionLab(input: MountTroopMotionInput): Promise
         if (state.troop === "knight") {
           attackTargetNew.set(newKnightRoot.position.x + 0.35, groundY + 0.62, newKnightRoot.position.z + 1.45);
           newKnight.attack(attackTargetNew);
-        } else if (binding) {
-          armyModel.playTroopAction(binding.slot, "attack");
+        } else if (pair) {
+          pair.playAction("attack");
         }
       }
     } else if (activeAction === "hit") {
@@ -489,8 +499,8 @@ export async function mountTroopMotionLab(input: MountTroopMotionInput): Promise
             source: "melee",
             strength: 1,
           });
-        } else if (binding) {
-          armyModel.playTroopAction(binding.slot, "hit");
+        } else if (pair) {
+          pair.playAction("hit");
         }
       }
     } else if (activeAction === "death") {
@@ -498,8 +508,8 @@ export async function mountTroopMotionLab(input: MountTroopMotionInput): Promise
         deathTriggered = true;
         if (state.troop === "knight") {
           newKnight.playDeath?.();
-        } else if (binding) {
-          armyModel.playTroopAction(binding.slot, "death");
+        } else if (pair) {
+          pair.playAction("death");
         }
       } else if (state.action !== "reel" && actionClock >= 2.55) {
         applyActionMode("death", true);
@@ -508,8 +518,8 @@ export async function mountTroopMotionLab(input: MountTroopMotionInput): Promise
 
     if (state.troop === "knight") {
       runtime.update(deltaSeconds);
-    } else if (binding) {
-      armyModel.updateAnimations(deltaSeconds);
+    } else if (pair) {
+      pair.update();
     }
     environment.frame(deltaSeconds, controls.target, "day");
   };
@@ -579,9 +589,8 @@ export async function mountTroopMotionLab(input: MountTroopMotionInput): Promise
         line.geometry.dispose();
         (line.material as LineBasicMaterial).dispose();
       });
-      scoutRef.dispose();
-      crossbowRef.dispose();
-      armyModel.dispose();
+      scoutPair.dispose();
+      crossbowPair.dispose();
       newKnight.dispose();
       runtime.dispose();
       environment.dispose();

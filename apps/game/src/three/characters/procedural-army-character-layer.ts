@@ -1,30 +1,9 @@
-import type {
-  ProceduralMeleeContactEvent,
-  ProceduralRangedReleaseEvent,
-  ProceduralUnitActor,
-  ProceduralUnitConfig,
-  ProceduralUnitRuntime,
-} from "@/three/characters";
+import type { ProceduralUnitActor, ProceduralUnitConfig, ProceduralUnitRuntime } from "@/three/characters";
 import { T1_KNIGHT_WORLD_SCALE } from "@/three/constants/army-constants";
-import type { ArmyPace } from "@/three/types/army";
 import { beginModelPreparation } from "@/three/model-preparation";
 import type { CosmeticAttachmentTemplate } from "@/three/cosmetics/types";
-import { CombatImpactRegistry } from "@/three/combat/combat-impact-registry";
 import { intersectSweptSphere } from "@/three/projectiles/arrow-ballistics";
-import type { ArrowImpactEvent } from "@/three/projectiles/arrow-projectile-system";
 import type { ProjectileSweepHit, ProjectileSweepRequest } from "@/three/projectiles/projectile-hit-query";
-import {
-  createProceduralCollisionBudget,
-  createProceduralCollisionProfile,
-  type ProceduralCollisionBudget,
-  type ProceduralCollisionProfile,
-} from "@/three/characters/collision/procedural-collision-profile";
-import type { ProceduralImpactAuthority, ProceduralUnitImpact } from "@/three/characters/collision/procedural-impact";
-import {
-  ProceduralSeparationSimulation,
-  type ProceduralSeparationBodySnapshot,
-  type ProceduralSeparationInput,
-} from "@/three/characters/collision/procedural-separation-simulation";
 import { TroopTier, TroopType } from "@bibliothecadao/types";
 import { BoxGeometry, Euler, Mesh, MeshBasicMaterial, type Scene, Vector3 } from "three";
 
@@ -34,10 +13,7 @@ export interface ProceduralArmyCharacterPresentation {
   category: TroopType;
   attachments?: readonly CosmeticAttachmentTemplate[];
   entityId: number;
-  distanceToCameraSquared?: number;
   isNaval: boolean;
-  pace?: ArmyPace;
-  isSelected?: boolean;
   position: Vector3;
   primaryColor: string;
   rotation?: Euler;
@@ -49,26 +25,10 @@ type ProceduralArmyActorFamily = "boat" | "foot" | "paladin-dragon" | "paladin-h
 interface ProceduralArmyActorRecord {
   actor: ProceduralUnitActor;
   actorFamily: ProceduralArmyActorFamily;
-  attackAuthority: ProceduralImpactAuthority;
-  attackTargetEntityId?: number;
-  collisionProfile: ProceduralCollisionProfile;
   configSignature: string;
   isT1Knight: boolean;
   hitTarget: Mesh;
-  lastReactionStrength: number;
-  unsubscribeActionEvents: () => void;
-  wasInContact: boolean;
-}
-
-interface DefeatedProceduralArmyActor {
-  actor: ProceduralUnitActor;
-  awaitingImpactSeconds: number;
-  entityId: number;
-  hitTarget: Mesh;
-  inheritedVelocityX: number;
-  inheritedVelocityZ: number;
-  ragdollStarted: boolean;
-  remainingSeconds: number;
+  posed: boolean;
 }
 
 export interface ProceduralArmyCharacterLayerStats {
@@ -76,22 +36,12 @@ export interface ProceduralArmyCharacterLayerStats {
   knightCount: number;
   meshDrawsPerPass: number;
   trianglesPerPass: number;
-  collisionBodyCount: number;
-  collisionMaximumOffset: number;
-  collisionPairCount: number;
-  defeatedActorCount: number;
   hitTargetCount: number;
   loadState: "failed" | "idle" | "loading" | "ready";
-  pendingImpactCount: number;
-  ragdollCount: number;
-  sinkingCount: number;
 }
 
 const WORLD_CHARACTER_SCALE = 0.72;
 const MAX_ACTOR_CREATIONS_PER_SYNC = 4;
-const DEFEAT_LIFETIME_SECONDS = 2.6;
-const NAVAL_DEFEAT_LIFETIME_SECONDS = 5.2;
-const PROJECTILE_IMPACT_WAIT_SECONDS = 2.4;
 
 /**
  * Production unit presentation for visible land and naval armies. ArmyModel keeps
@@ -100,38 +50,11 @@ const PROJECTILE_IMPACT_WAIT_SECONDS = 2.4;
  */
 export class ProceduralArmyCharacterLayer {
   private readonly actors = new Map<number, ProceduralArmyActorRecord>();
-  private readonly defeatedActors: DefeatedProceduralArmyActor[] = [];
-  private readonly meleeContactListeners = new Set<
-    (
-      entityId: number,
-      event: ProceduralMeleeContactEvent,
-      targetEntityId: number | undefined,
-      authority: ProceduralImpactAuthority,
-    ) => void
-  >();
-  private readonly rangedReleaseListeners = new Set<
-    (
-      entityId: number,
-      event: ProceduralRangedReleaseEvent,
-      targetEntityId: number | undefined,
-      authority: ProceduralImpactAuthority,
-    ) => void
-  >();
   private readonly desiredEntityIds = new Set<number>();
   private readonly hitTargetGeometry = new BoxGeometry(1, 1, 1);
   private readonly hitTargetMaterial = new MeshBasicMaterial({ colorWrite: false, depthWrite: false });
-  private readonly collisionBudget: ProceduralCollisionBudget = createProceduralCollisionBudget("quality");
-  private readonly separationSimulation = new ProceduralSeparationSimulation({
-    maxNeighborsPerBody: this.collisionBudget.maxNeighborsPerBody,
-    maxPairResolutions: this.collisionBudget.maxPairResolutions,
-  });
-  private readonly impactRegistry = new CombatImpactRegistry();
-  private readonly expectedProjectileImpacts = new Map<number, number>();
-  private readonly collisionCandidates: ProceduralArmyCharacterPresentation[] = [];
-  private readonly separationInputs: ProceduralSeparationInput[] = [];
   private readonly projectileTargetCenter = new Vector3();
   private readonly projectileHitPoint = new Vector3();
-  private readonly projectileImpactDirection = new Vector3();
   private characterModule?: CharacterModule;
   private runtime?: ProceduralUnitRuntime;
   private runtimePromise?: Promise<void>;
@@ -141,12 +64,11 @@ export class ProceduralArmyCharacterLayer {
   private readonly desiredAssetSignatures = new Set<string>();
   private generation = 0;
   private shadowsEnabled = false;
-  private elapsedSeconds = 0;
   private disposed = false;
 
   public constructor(private readonly scene: Scene) {}
 
-  public sync(presentations: readonly ProceduralArmyCharacterPresentation[], deltaSeconds: number): void {
+  public sync(presentations: readonly ProceduralArmyCharacterPresentation[]): void {
     if (this.disposed) return;
     this.syncAssetNeeds(presentations);
 
@@ -161,43 +83,15 @@ export class ProceduralArmyCharacterLayer {
     }
 
     this.latestPresentations = [];
-    this.syncReadyPresentations(presentations, deltaSeconds);
-  }
-
-  public async startRagdoll(entityId: number): Promise<void> {
-    const actor = await this.requireActor(entityId);
-    await actor?.startRagdoll();
-  }
-
-  public async applyImpulse(entityId: number): Promise<void> {
-    const actor = await this.requireActor(entityId);
-    await actor?.applyImpulse();
-  }
-
-  public playAttack(
-    entityId: number,
-    targetWorld: Readonly<Vector3>,
-    targetEntityId?: number,
-    authority: ProceduralImpactAuthority = "provisional",
-  ): boolean {
-    const record = this.actors.get(entityId);
-    if (!record) return false;
-    record.attackTargetEntityId = targetEntityId;
-    record.attackAuthority = authority;
-    const started = record.actor.attack(targetWorld);
-    if (started && targetEntityId !== undefined && isRangedKind(record.actor.kind)) {
-      this.expectedProjectileImpacts.set(targetEntityId, this.elapsedSeconds + PROJECTILE_IMPACT_WAIT_SECONDS);
-    }
-    return started;
+    this.syncReadyPresentations(presentations);
   }
 
   public sweepProjectile(request: ProjectileSweepRequest): ProjectileSweepHit | undefined {
     const targetEntityId = request.intendedTargetEntityId;
     if (targetEntityId === undefined || targetEntityId === request.ownerEntityId) return undefined;
     const record = this.actors.get(targetEntityId);
-    const defeated = this.findAwaitingDefeat(targetEntityId);
-    const actor = record?.actor ?? defeated?.actor;
-    const hitTarget = record?.hitTarget ?? defeated?.hitTarget;
+    const actor = record?.actor;
+    const hitTarget = record?.hitTarget;
     if (!actor || !hitTarget || actor.mode !== "animated") return undefined;
     hitTarget.updateWorldMatrix(true, false);
     hitTarget.getWorldPosition(this.projectileTargetCenter);
@@ -222,95 +116,12 @@ export class ProceduralArmyCharacterLayer {
     };
   }
 
-  public presentProjectileImpact(event: ArrowImpactEvent): boolean {
-    const targetEntityId = event.targetEntityId;
-    if (targetEntityId === undefined) return false;
-    const record = this.actors.get(targetEntityId);
-    const defeated = this.findAwaitingDefeat(targetEntityId);
-    const actor = record?.actor ?? defeated?.actor;
-    if (!actor || actor.mode !== "animated") return false;
-    const impact = this.createProjectileImpact(event, targetEntityId, actor, defeated);
-    actor.applyReaction(impact);
-    if (defeated) {
-      this.startDefeatedRagdoll(defeated, impact);
-      return true;
-    }
-    this.impactRegistry.record({
-      authority: event.authority,
-      impact,
-      nowSeconds: this.elapsedSeconds,
-      targetEntityId,
-    });
-    return true;
-  }
-
-  public onMeleeContact(
-    listener: (
-      entityId: number,
-      event: ProceduralMeleeContactEvent,
-      targetEntityId: number | undefined,
-      authority: ProceduralImpactAuthority,
-    ) => void,
-  ): () => void {
-    this.meleeContactListeners.add(listener);
-    return () => this.meleeContactListeners.delete(listener);
-  }
-
-  public onRangedRelease(
-    listener: (
-      entityId: number,
-      event: ProceduralRangedReleaseEvent,
-      targetEntityId: number | undefined,
-      authority: ProceduralImpactAuthority,
-    ) => void,
-  ): () => void {
-    this.rangedReleaseListeners.add(listener);
-    return () => this.rangedReleaseListeners.delete(listener);
-  }
-
-  /** Detach a defeated actor from live army state and let Jolt own its final pose briefly. */
-  public playDefeat(entityId: number): boolean {
-    const record = this.actors.get(entityId);
-    if (!record) return false;
-
-    this.actors.delete(entityId);
-    record.unsubscribeActionEvents();
-    this.makeRoomForDefeatedActor();
-    const presentationVelocity = this.separationSimulation.getBodySnapshot(entityId);
-    const defeated: DefeatedProceduralArmyActor = {
-      actor: record.actor,
-      awaitingImpactSeconds: 0,
-      entityId,
-      hitTarget: record.hitTarget,
-      inheritedVelocityX: presentationVelocity?.velocityX ?? 0,
-      inheritedVelocityZ: presentationVelocity?.velocityZ ?? 0,
-      ragdollStarted: false,
-      remainingSeconds: record.actor.kind === "boat" ? NAVAL_DEFEAT_LIFETIME_SECONDS : DEFEAT_LIFETIME_SECONDS,
-    };
-    this.defeatedActors.push(defeated);
-    const impact = this.impactRegistry.consume(entityId, this.elapsedSeconds);
-    const expectedImpactExpiresAt = this.expectedProjectileImpacts.get(entityId) ?? 0;
-    if (impact) this.startDefeatedRagdoll(defeated, impact);
-    else if (expectedImpactExpiresAt > this.elapsedSeconds) {
-      defeated.awaitingImpactSeconds = Math.min(
-        PROJECTILE_IMPACT_WAIT_SECONDS,
-        expectedImpactExpiresAt - this.elapsedSeconds,
-      );
-    } else this.startDefeatedRagdoll(defeated);
-    return true;
-  }
-
-  public reset(entityId: number): void {
-    this.impactRegistry.remove(entityId);
-    this.actors.get(entityId)?.actor.reset();
-  }
-
   public hasActor(entityId: number): boolean {
     return this.actors.has(entityId);
   }
 
   public hasProjectileTarget(entityId: number): boolean {
-    return this.actors.has(entityId) || this.findAwaitingDefeat(entityId) !== undefined;
+    return this.actors.has(entityId);
   }
 
   public getStats(): ProceduralArmyCharacterLayerStats {
@@ -325,16 +136,11 @@ export class ProceduralArmyCharacterLayer {
         trianglesPerPass += (object.geometry.index?.count ?? object.geometry.attributes.position.count) / 3;
       });
     });
-    const collision = this.separationSimulation.getStats();
     return {
       actorCount: this.actors.size,
       knightCount,
       meshDrawsPerPass,
       trianglesPerPass,
-      collisionBodyCount: collision.bodyCount,
-      collisionMaximumOffset: collision.maximumOffset,
-      collisionPairCount: collision.resolvedPairCount,
-      defeatedActorCount: this.defeatedActors.length,
       hitTargetCount: this.actors.size,
       loadState: [...this.assetNeeds.values()].some((need) => need.failed)
         ? "failed"
@@ -343,25 +149,13 @@ export class ProceduralArmyCharacterLayer {
           : this.runtimePromise
             ? "loading"
             : "idle",
-      pendingImpactCount: this.impactRegistry.getStats().activeCount,
-      ragdollCount:
-        [...this.actors.values()].filter(({ actor }) => actor.mode === "ragdoll").length +
-        this.defeatedActors.filter(({ actor }) => actor.mode === "ragdoll").length,
-      sinkingCount:
-        [...this.actors.values()].filter(({ actor }) => actor.mode === "sinking").length +
-        this.defeatedActors.filter(({ actor }) => actor.mode === "sinking").length,
     };
-  }
-
-  public getCollisionSnapshots(): ProceduralSeparationBodySnapshot[] {
-    return this.separationSimulation.getSnapshots();
   }
 
   public setShadowsEnabled(enabled: boolean): void {
     if (this.shadowsEnabled === enabled) return;
     this.shadowsEnabled = enabled;
     this.actors.forEach(({ actor }) => this.applyActorShadowState(actor));
-    this.defeatedActors.forEach(({ actor }) => this.applyActorShadowState(actor));
   }
 
   public dispose(): void {
@@ -371,13 +165,7 @@ export class ProceduralArmyCharacterLayer {
     this.assetNeeds.clear();
     this.desiredAssetSignatures.clear();
     this.latestPresentations = [];
-    this.separationSimulation.reset();
-    this.impactRegistry.reset();
-    this.expectedProjectileImpacts.clear();
     this.clearActors();
-    this.clearDefeatedActors();
-    this.meleeContactListeners.clear();
-    this.rangedReleaseListeners.clear();
     this.runtime?.dispose();
     this.runtime = undefined;
     this.characterModule = undefined;
@@ -429,7 +217,7 @@ export class ProceduralArmyCharacterLayer {
         runtime.updatePhysicsConfig(characterModule.createDefaultProceduralUnitConfig().humanoid);
         const pendingPresentations = this.latestPresentations;
         this.latestPresentations = [];
-        this.syncReadyPresentations(pendingPresentations, 0);
+        this.syncReadyPresentations(pendingPresentations);
       })
       .catch((error: unknown) => {
         if (this.disposed || generation !== this.generation) return;
@@ -470,106 +258,22 @@ export class ProceduralArmyCharacterLayer {
     });
   }
 
-  private syncReadyPresentations(
-    presentations: readonly ProceduralArmyCharacterPresentation[],
-    deltaSeconds: number,
-  ): void {
+  private syncReadyPresentations(presentations: readonly ProceduralArmyCharacterPresentation[]): void {
     this.reconcileActors(presentations);
-    this.updatePresentationSeparation(presentations, deltaSeconds);
     this.applyResolvedPresentationTransforms(presentations);
-    this.updateRuntime(deltaSeconds);
-  }
-
-  private updatePresentationSeparation(
-    presentations: readonly ProceduralArmyCharacterPresentation[],
-    deltaSeconds: number,
-  ): void {
-    this.collisionCandidates.length = 0;
-    presentations.forEach((presentation) => {
-      if (this.actors.get(presentation.entityId)?.actor.mode === "animated") {
-        this.collisionCandidates.push(presentation);
-      }
-    });
-    this.collisionCandidates.sort(compareCollisionPriority);
-    const count = Math.min(this.collisionBudget.maxActivePresentationBodies, this.collisionCandidates.length);
-    for (let index = 0; index < count; index += 1) {
-      const presentation = this.collisionCandidates[index];
-      const record = this.actors.get(presentation.entityId);
-      if (!record) continue;
-      const input = this.separationInputs[index] ?? {
-        anchorX: 0,
-        anchorZ: 0,
-        entityId: 0,
-        profile: record.collisionProfile,
-        yaw: 0,
-      };
-      input.anchorX = presentation.position.x;
-      input.anchorZ = presentation.position.z;
-      input.entityId = presentation.entityId;
-      input.profile = record.collisionProfile;
-      input.yaw = presentation.rotation?.y ?? 0;
-      this.separationInputs[index] = input;
-    }
-    this.separationInputs.length = count;
-    this.separationSimulation.update(this.separationInputs, deltaSeconds);
   }
 
   private applyResolvedPresentationTransforms(presentations: readonly ProceduralArmyCharacterPresentation[]): void {
     presentations.forEach((presentation) => {
       const record = this.actors.get(presentation.entityId);
       if (!record || record.actor.mode !== "animated") return;
-      const resolved = this.separationSimulation.getBodySnapshot(presentation.entityId);
-      record.actor.object.position.set(
-        resolved?.positionX ?? presentation.position.x,
-        presentation.position.y,
-        resolved?.positionZ ?? presentation.position.z,
-      );
+      record.actor.object.position.copy(presentation.position);
       record.actor.object.rotation.copy(presentation.rotation ?? ZERO_ROTATION);
-      this.applyContactReaction(record, resolved);
-    });
-  }
-
-  private applyContactReaction(
-    record: ProceduralArmyActorRecord,
-    resolved: ProceduralSeparationBodySnapshot | undefined,
-  ): void {
-    if (!resolved || resolved.contactCount === 0) {
-      record.wasInContact = false;
-      record.lastReactionStrength = 0;
-      return;
-    }
-    const shouldTrigger = !record.wasInContact || resolved.reactionStrength > record.lastReactionStrength * 1.25;
-    record.wasInContact = true;
-    record.lastReactionStrength = Math.max(record.lastReactionStrength, resolved.reactionStrength);
-    if (!shouldTrigger) return;
-    record.actor.applyReaction({
-      directionX: resolved.reactionX,
-      directionY: 0,
-      directionZ: resolved.reactionZ,
-      source: "body-contact",
-      strength: resolved.reactionStrength,
-    });
-  }
-
-  private updateRuntime(deltaSeconds: number): void {
-    if (deltaSeconds <= 0) return;
-    this.runtime?.update(deltaSeconds);
-    const elapsed = Number.isFinite(deltaSeconds) ? Math.min(Math.max(0, deltaSeconds), 1) : 0;
-    this.elapsedSeconds += elapsed;
-    this.impactRegistry.prune(this.elapsedSeconds);
-    this.pruneExpectedProjectileImpacts();
-    for (let index = this.defeatedActors.length - 1; index >= 0; index -= 1) {
-      const defeated = this.defeatedActors[index];
-      if (!defeated.ragdollStarted) {
-        defeated.awaitingImpactSeconds -= elapsed;
-        if (defeated.awaitingImpactSeconds <= 0) this.startDefeatedRagdoll(defeated);
-        continue;
+      if (!record.posed) {
+        record.posed = true;
+        record.actor.update?.(0);
       }
-      defeated.remainingSeconds -= elapsed;
-      if (defeated.remainingSeconds > 0) continue;
-      this.disposeDefeatedActor(defeated);
-      this.defeatedActors.splice(index, 1);
-    }
+    });
   }
 
   private syncActor(presentation: ProceduralArmyCharacterPresentation): void {
@@ -582,18 +286,14 @@ export class ProceduralArmyCharacterLayer {
     if (!record || record.configSignature !== configSignature) {
       const config = resolveUnitConfig(characterModule, presentation);
       if (!this.prepareActorAssets(runtime, config, resolveAssetSignature(presentation))) return;
-      const desiredKind = resolveUnitKind(presentation);
       if (!record) {
         record = this.createActorRecord(runtime, presentation, config, configSignature);
         this.actors.set(presentation.entityId, record);
       } else {
         runtime.updateActorConfig(record.actor, config);
-        record.collisionProfile = createProceduralCollisionProfile(
-          desiredKind,
-          resolveWorldCharacterScale(presentation.category, presentation.isNaval),
-        );
         record.configSignature = configSignature;
         record.isT1Knight = isT1FootKnight(presentation);
+        record.posed = false;
       }
     }
 
@@ -643,47 +343,16 @@ export class ProceduralArmyCharacterLayer {
     actor.object.name = `procedural-army-character:${presentation.entityId}`;
     const hitTarget = this.createHitTarget(presentation);
     actor.object.add(hitTarget);
-    const unsubscribeRanged = actor.onRangedRelease((event) => {
-      const attack = this.actors.get(presentation.entityId);
-      this.rangedReleaseListeners.forEach((listener) =>
-        listener(presentation.entityId, event, attack?.attackTargetEntityId, attack?.attackAuthority ?? "provisional"),
-      );
-    });
-    const unsubscribeMelee = actor.onMeleeContact((event) => {
-      const attack = this.actors.get(presentation.entityId);
-      this.meleeContactListeners.forEach((listener) =>
-        listener(presentation.entityId, event, attack?.attackTargetEntityId, attack?.attackAuthority ?? "provisional"),
-      );
-    });
     this.applyActorShadowState(actor);
     this.scene.add(actor.object);
     return {
       actor,
       actorFamily: resolveActorFamily(presentation),
-      attackAuthority: "provisional",
-      attackTargetEntityId: undefined,
-      collisionProfile: createProceduralCollisionProfile(
-        resolveUnitKind(presentation),
-        resolveWorldCharacterScale(presentation.category, presentation.isNaval),
-      ),
       configSignature,
       isT1Knight: isT1FootKnight(presentation),
       hitTarget,
-      lastReactionStrength: 0,
-      unsubscribeActionEvents: () => {
-        unsubscribeRanged();
-        unsubscribeMelee();
-      },
-      wasInContact: false,
+      posed: false,
     };
-  }
-
-  private async requireActor(entityId: number): Promise<ProceduralUnitActor | undefined> {
-    if (this.disposed) return undefined;
-    const actor = this.actors.get(entityId)?.actor;
-    if (actor) return actor;
-    await this.runtimePromise;
-    return this.disposed ? undefined : this.actors.get(entityId)?.actor;
   }
 
   private clearActors(): void {
@@ -692,83 +361,7 @@ export class ProceduralArmyCharacterLayer {
   }
 
   private disposeActorRecord(record: ProceduralArmyActorRecord): void {
-    record.unsubscribeActionEvents();
     record.actor.dispose();
-  }
-
-  private clearDefeatedActors(): void {
-    this.defeatedActors.forEach((defeated) => this.disposeDefeatedActor(defeated));
-    this.defeatedActors.length = 0;
-  }
-
-  private makeRoomForDefeatedActor(): void {
-    const maximum = Math.max(1, this.collisionBudget.maxActiveRagdolls);
-    while (this.defeatedActors.length >= maximum) {
-      const defeated = this.defeatedActors.shift();
-      if (defeated) this.disposeDefeatedActor(defeated);
-    }
-  }
-
-  private findAwaitingDefeat(entityId: number): DefeatedProceduralArmyActor | undefined {
-    return this.defeatedActors.find((defeated) => defeated.entityId === entityId && !defeated.ragdollStarted);
-  }
-
-  private startDefeatedRagdoll(
-    defeated: DefeatedProceduralArmyActor,
-    impact?: Parameters<ProceduralUnitActor["applyImpact"]>[0],
-  ): void {
-    if (defeated.ragdollStarted) return;
-    defeated.ragdollStarted = true;
-    defeated.awaitingImpactSeconds = 0;
-    defeated.hitTarget.removeFromParent();
-    this.expectedProjectileImpacts.delete(defeated.entityId);
-    const ragdoll = impact ? defeated.actor.applyImpact(impact) : defeated.actor.applyImpulse();
-    void ragdoll.catch((error: unknown) => {
-      console.warn(`[ProceduralArmyCharacterLayer] Failed to ragdoll defeated army ${defeated.entityId}`, error);
-    });
-  }
-
-  private createProjectileImpact(
-    event: ArrowImpactEvent,
-    targetEntityId: number,
-    actor: ProceduralUnitActor,
-    defeated: DefeatedProceduralArmyActor | undefined,
-  ): ProceduralUnitImpact {
-    this.projectileImpactDirection.copy(event.velocity);
-    const speed = this.projectileImpactDirection.length();
-    if (speed <= 1e-8) this.projectileImpactDirection.set(0, 0, 1);
-    else this.projectileImpactDirection.multiplyScalar(1 / speed);
-    const inheritedVelocity = this.separationSimulation.getBodySnapshot(targetEntityId);
-    return {
-      directionX: this.projectileImpactDirection.x,
-      directionY: this.projectileImpactDirection.y,
-      directionZ: this.projectileImpactDirection.z,
-      impactId: event.impactId,
-      inheritedVelocityX: defeated?.inheritedVelocityX ?? inheritedVelocity?.velocityX ?? 0,
-      inheritedVelocityY: 0,
-      inheritedVelocityZ: defeated?.inheritedVelocityZ ?? inheritedVelocity?.velocityZ ?? 0,
-      partId: event.partId,
-      pointX: event.position.x,
-      pointY: event.position.y,
-      pointZ: event.position.z,
-      source: event.kind,
-      strength:
-        event.kind === "cannonball" ? Math.min(28, Math.max(10, speed * 1.15)) : Math.min(18, Math.max(4, speed * 0.8)),
-      target: resolveImpactTarget(actor, event.position.y),
-    };
-  }
-
-  private disposeDefeatedActor(defeated: DefeatedProceduralArmyActor): void {
-    defeated.hitTarget.removeFromParent();
-    defeated.actor.dispose();
-    this.expectedProjectileImpacts.delete(defeated.entityId);
-  }
-
-  private pruneExpectedProjectileImpacts(): void {
-    this.expectedProjectileImpacts.forEach((expiresAt, entityId) => {
-      if (expiresAt >= this.elapsedSeconds) return;
-      this.expectedProjectileImpacts.delete(entityId);
-    });
   }
 
   private createHitTarget(presentation: ProceduralArmyCharacterPresentation): Mesh {
@@ -797,21 +390,6 @@ function clonePresentation(presentation: ProceduralArmyCharacterPresentation): P
   };
 }
 
-function compareCollisionPriority(
-  left: ProceduralArmyCharacterPresentation,
-  right: ProceduralArmyCharacterPresentation,
-): number {
-  const selectedDifference = Number(Boolean(right.isSelected)) - Number(Boolean(left.isSelected));
-  if (selectedDifference !== 0) return selectedDifference;
-  const movingDifference = Number(right.pace !== undefined) - Number(left.pace !== undefined);
-  if (movingDifference !== 0) return movingDifference;
-  const distanceDifference =
-    (left.distanceToCameraSquared ?? Number.POSITIVE_INFINITY) -
-    (right.distanceToCameraSquared ?? Number.POSITIVE_INFINITY);
-  if (distanceDifference !== 0) return distanceDifference;
-  return left.entityId - right.entityId;
-}
-
 function resolveProjectileTargetRadius(kind: ProceduralUnitActor["kind"]): number {
   if (kind === "boat") return 1.35;
   if (kind === "paladin") return 0.62;
@@ -821,15 +399,6 @@ function resolveProjectileTargetRadius(kind: ProceduralUnitActor["kind"]): numbe
 
 function isArmoredKind(kind: ProceduralUnitActor["kind"]): boolean {
   return kind === "crossbowman" || kind === "knight" || kind === "paladin";
-}
-
-function isRangedKind(kind: ProceduralUnitActor["kind"]): boolean {
-  return kind === "archer" || kind === "boat" || kind === "crossbowman";
-}
-
-function resolveImpactTarget(actor: ProceduralUnitActor, impactY: number): "mount" | "rider" | "unit" {
-  if (actor.kind !== "paladin") return actor.kind === "horse" ? "mount" : "unit";
-  return impactY - actor.object.position.y < 0.72 ? "mount" : "rider";
 }
 
 function configureHitTarget(target: Mesh, category: TroopType, isNaval: boolean): void {
@@ -853,40 +422,39 @@ function resolveUnitConfig(
 ): ProceduralUnitConfig {
   const tier = resolveCharacterTier(presentation.tier);
   const kind = resolveUnitKind(presentation);
-  const moving = presentation.pace !== undefined;
   return characterModule.applyProceduralUnitConfigPatch(characterModule.createDefaultProceduralUnitConfig(), {
     kind,
     boat: {
       broadsideCannons: tier + 2,
-      motionMode: moving ? "sail" : "idle",
+      motionMode: "idle",
       primaryColor: presentation.primaryColor,
       seed: resolveCharacterSeed(presentation.entityId),
       showSockets: false,
-      showWake: moving,
-      speed: moving ? 1.6 : 0,
+      showWake: false,
+      speed: 0,
       tier,
     },
     dragon: {
-      locomotionMode: moving ? "flight" : "idle",
+      locomotionMode: "idle",
       primaryColor: presentation.primaryColor,
       renderDetail: "crowd",
       seed: resolveCharacterSeed(presentation.entityId),
       showBones: false,
       showSockets: false,
-      speed: moving ? 3.2 : 0,
+      speed: 0,
       tier,
     },
     horse: {
-      gait: moving ? "walk" : "idle",
+      gait: "idle",
       primaryColor: presentation.primaryColor,
       showBones: false,
       showHoofTargets: false,
       showSockets: false,
-      speed: moving ? 1.4 : 0,
+      speed: 0,
       tier,
     },
     humanoid: {
-      animationMode: kind === "paladin" ? "mounted" : (presentation.pace ?? "idle"),
+      animationMode: kind === "paladin" ? "mounted" : "idle",
       autoRotate: false,
       primaryColor: presentation.primaryColor,
       renderDetail: ARMY_RENDER_DETAIL,
@@ -905,7 +473,7 @@ function resolveUnitConfig(
 const ARMY_RENDER_DETAIL = "crowd";
 
 function resolveConfigSignature(presentation: ProceduralArmyCharacterPresentation): string {
-  return [resolveAssetSignature(presentation), presentation.primaryColor, presentation.pace ?? "idle"].join(":");
+  return [resolveAssetSignature(presentation), presentation.primaryColor].join(":");
 }
 
 function resolveAssetSignature(presentation: ProceduralArmyCharacterPresentation): string {

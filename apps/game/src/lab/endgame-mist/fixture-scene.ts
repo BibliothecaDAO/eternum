@@ -119,7 +119,7 @@ export class EndgameFixtureScene {
     while (this.armies.getStats().actorCount !== this.actors.length) {
       if (this.armies.getStats().loadState === "failed" || performance.now() - start > 20000)
         throw new Error("Fixture armies did not load");
-      this.armies.sync(this.actors, 0);
+      this.armies.sync(this.actors);
       await new Promise((resolve) => setTimeout(resolve, 30));
     }
     this.spires = new SpireManager(scene, this.projection, new Group(), terrain, undefined, compile);
@@ -170,7 +170,7 @@ export class EndgameFixtureScene {
     this.spires?.update(this.frame.finished ? 0 : delta, camera);
     setEndgameView(true, this.settings.spared === "realm", this.frame.spread);
     if (!this.frame.finished) {
-      this.armies?.sync(this.ownRealmOnly ? [] : this.actors, delta);
+      this.armies?.sync(this.ownRealmOnly ? [] : this.actors);
       this.realms?.updateAnimations(delta);
     }
   }

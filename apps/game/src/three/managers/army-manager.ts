@@ -10,9 +10,6 @@ import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { watchPlayerNames } from "@/hooks/use-player-profile";
 import { getPlayerDisplayName } from "@/services/identity/player-profiles";
 import { gameWorkerManager } from "@/managers/game-worker-manager";
-import type { ProceduralMeleeContactEvent, ProceduralRangedReleaseEvent } from "@/three/characters";
-import type { ArrowImpactEvent } from "@/three/projectiles/arrow-projectile-system";
-import type { ProceduralImpactAuthority } from "@/three/characters/collision/procedural-impact";
 import type { ProjectileSweepHit, ProjectileSweepRequest } from "@/three/projectiles/projectile-hit-query";
 import {
   ProceduralArmyCharacterLayer,
@@ -245,7 +242,6 @@ export class ArmyManager {
   private readonly readyProceduralArmyEntityIds = new Set<number>();
   private readonly proceduralArmyPresentations = new Map<number, ProceduralArmyCharacterPresentation>();
   private readonly proceduralArmyPresentationBuffer: ProceduralArmyCharacterPresentation[] = [];
-  private proceduralCharacterPreviewEntityId: ID | null = null;
   private armyAttachmentSignatures: Map<number, string> = new Map();
   private activeArmyAttachmentEntities: Set<number> = new Set();
   private armyAttachmentTransformScratch = new Map<string, AttachmentTransform>();
@@ -577,23 +573,6 @@ export class ArmyManager {
     this.setupDebugArmyCreationControls();
     this.setupDebugArmyDeletionControls();
     this.setupDebugArmySpawner();
-    this.setupProceduralCharacterPreviewControls();
-  }
-
-  private setupProceduralCharacterPreviewControls(): void {
-    const folder = trackGuiFolder(this.guiFolders, createGuiFolder("Procedural Army Character"));
-    const state = { enabled: false, entityId: 0 };
-    const applyTarget = () => {
-      const requestedEntityId = state.entityId > 0 ? state.entityId : (this.visibleArmyOrder[0] ?? null);
-      this.setProceduralCharacterPreview(state.enabled ? requestedEntityId : null);
-    };
-
-    folder.add(state, "enabled").name("Enabled").onChange(applyTarget);
-    folder.add(state, "entityId", 0, Number.MAX_SAFE_INTEGER, 1).name("Army entity ID").onFinishChange(applyTarget);
-    folder.add({ ragdoll: () => void this.startProceduralCharacterRagdoll() }, "ragdoll").name("Start ragdoll");
-    folder.add({ impact: () => void this.applyProceduralCharacterImpulse() }, "impact").name("Apply impact");
-    folder.add({ reset: () => this.resetProceduralCharacter() }, "reset").name("Reset actor");
-    folder.close();
   }
 
   private setupDebugArmyCreationControls(): void {
@@ -1226,7 +1205,6 @@ export class ArmyManager {
     );
 
     this.armyPresentations.set(army.entityId, army);
-    this.armyModel.rebindMovementMatrixIndex(numericId, slot);
     this.syncArmyAuxiliaryPresentation(army, position);
   }
 
@@ -1999,15 +1977,8 @@ export class ArmyManager {
 
     if (!this.armyPresentations.has(entityId)) return;
 
-    if (this.proceduralCharacterPreviewEntityId === entityId) {
-      this.setProceduralCharacterPreview(null);
-    }
-
     const numericEntityId = this.toNumericId(entityId);
     if (this.armyPresentations.get(entityId)?.isMine) presentResult(`army-gone:${numericEntityId}`);
-    if (playDefeatFx && this.proceduralArmyCharacterLayer.playDefeat(numericEntityId)) {
-      this.activeProceduralArmyEntityIds.delete(numericEntityId);
-    }
     this.removeTrackedArmyAttachments(entityId);
 
     // Monitor memory usage before removing army
@@ -2162,11 +2133,6 @@ export class ArmyManager {
     this.pathRenderer.showPreview(worldRoute, this.pathColourOf(army));
   }
 
-  /** Select one production procedural actor for the graphics-dev ragdoll controls. */
-  public setProceduralCharacterPreview(entityId: ID | null): void {
-    this.proceduralCharacterPreviewEntityId = entityId;
-  }
-
   public getProceduralArmyProductionStats(): ProceduralArmyProductionStats {
     const layer = this.proceduralArmyCharacterLayer.getStats();
     const visibleArmyCount = this.proceduralArmyPresentationBuffer.length;
@@ -2178,70 +2144,12 @@ export class ArmyManager {
     };
   }
 
-  public async startProceduralCharacterRagdoll(): Promise<void> {
-    const entityId = this.proceduralCharacterPreviewEntityId;
-    if (entityId === null) return;
-    await this.proceduralArmyCharacterLayer.startRagdoll(this.toNumericId(entityId));
-  }
-
-  public async applyProceduralCharacterImpulse(): Promise<void> {
-    const entityId = this.proceduralCharacterPreviewEntityId;
-    if (entityId === null) return;
-    await this.proceduralArmyCharacterLayer.applyImpulse(this.toNumericId(entityId));
-  }
-
-  public resetProceduralCharacter(): void {
-    const entityId = this.proceduralCharacterPreviewEntityId;
-    if (entityId === null) return;
-    this.proceduralArmyCharacterLayer.reset(this.toNumericId(entityId));
-  }
-
-  public playProceduralAttack(
-    entityId: ID,
-    targetWorld: Readonly<Vector3>,
-    targetEntityId?: ID,
-    authority: ProceduralImpactAuthority = "provisional",
-  ): boolean {
-    return this.proceduralArmyCharacterLayer.playAttack(
-      this.toNumericId(entityId),
-      targetWorld,
-      targetEntityId === undefined ? undefined : this.toNumericId(targetEntityId),
-      authority,
-    );
-  }
-
   public sweepProceduralProjectile(request: ProjectileSweepRequest): ProjectileSweepHit | undefined {
     return this.proceduralArmyCharacterLayer.sweepProjectile(request);
   }
 
   public hasProceduralProjectileTarget(entityId: number): boolean {
     return this.proceduralArmyCharacterLayer.hasProjectileTarget(entityId);
-  }
-
-  public presentProceduralProjectileImpact(event: ArrowImpactEvent): boolean {
-    return this.proceduralArmyCharacterLayer.presentProjectileImpact(event);
-  }
-
-  public onProceduralMeleeContact(
-    listener: (
-      entityId: number,
-      event: ProceduralMeleeContactEvent,
-      targetEntityId: number | undefined,
-      authority: ProceduralImpactAuthority,
-    ) => void,
-  ): () => void {
-    return this.proceduralArmyCharacterLayer.onMeleeContact(listener);
-  }
-
-  public onProceduralRangedRelease(
-    listener: (
-      entityId: number,
-      event: ProceduralRangedReleaseEvent,
-      targetEntityId: number | undefined,
-      authority: ProceduralImpactAuthority,
-    ) => void,
-  ): () => void {
-    return this.proceduralArmyCharacterLayer.onRangedRelease(listener);
   }
 
   public onMovementStart(entityId: ID, callback: () => void): () => void {
@@ -2379,8 +2287,8 @@ export class ArmyManager {
   update(deltaTime: number, animationContext?: AnimationVisibilityContext, animationsPaused = false) {
     this.flushVisibleArmyPresentation();
 
-    if (!animationsPaused) this.updateAnimatedArmyPresentation(deltaTime, animationContext);
-    this.updateProceduralArmyCharacters(animationsPaused ? 0 : deltaTime, animationContext);
+    if (!animationsPaused) this.updateAnimatedArmyPresentation(deltaTime);
+    this.updateProceduralArmyCharacters(animationContext);
 
     // One pass owns moving labels and attachment transforms.
     this.updateVisibleArmyPresentation();
@@ -2401,11 +2309,10 @@ export class ArmyManager {
     }
   }
 
-  private updateAnimatedArmyPresentation(deltaTime: number, animationContext?: AnimationVisibilityContext): void {
+  private updateAnimatedArmyPresentation(deltaTime: number): void {
     // Update movements in ArmyModel
     this.armyModel.updateMovements(deltaTime);
     this.requestMovingArmyShadowRefresh();
-    this.armyModel.updateAnimations(deltaTime, animationContext);
 
     // Update FX
     this.fxManager.update(deltaTime);
@@ -2413,10 +2320,7 @@ export class ArmyManager {
     this.pathRenderer.update(deltaTime);
   }
 
-  private updateProceduralArmyCharacters(
-    deltaTime: number,
-    animationContext: AnimationVisibilityContext | undefined,
-  ): void {
+  private updateProceduralArmyCharacters(animationContext: AnimationVisibilityContext | undefined): void {
     this.proceduralArmyPresentationBuffer.length = 0;
     this.desiredProceduralArmyEntityIds.clear();
 
@@ -2424,7 +2328,7 @@ export class ArmyManager {
     if (this.contentLadder.armyModels && !useUIStore.getState().showBlankOverlay) {
       for (const army of this.visibleArmyRecords()) this.collectProceduralArmyPresentation(army, animationContext);
     }
-    this.proceduralArmyCharacterLayer.sync(this.proceduralArmyPresentationBuffer, deltaTime);
+    this.proceduralArmyCharacterLayer.sync(this.proceduralArmyPresentationBuffer);
     this.syncProceduralArmyRepresentationVisibility();
     this.pruneProceduralArmyPresentationCache();
   }
@@ -2448,10 +2352,8 @@ export class ArmyManager {
     if (!presentation) {
       presentation = {
         category: army.category,
-        distanceToCameraSquared: this.hexagonScene?.getCamera().position.distanceToSquared(instance.position),
         entityId,
         isNaval: isShipModel(modelType),
-        isSelected: this.selectedArmyId === army.entityId,
         position: instance.position,
         primaryColor: army.color,
         tier: army.tier,
@@ -2461,10 +2363,7 @@ export class ArmyManager {
 
     presentation.attachments = army.attachments;
     presentation.category = army.category;
-    presentation.distanceToCameraSquared = this.hexagonScene?.getCamera().position.distanceToSquared(instance.position);
     presentation.isNaval = isShipModel(modelType);
-    presentation.pace = this.armyModel.getEntityPace(entityId);
-    presentation.isSelected = this.selectedArmyId === army.entityId;
     presentation.position = instance.position;
     presentation.primaryColor = army.color;
     presentation.rotation = instance.rotation;
@@ -3042,12 +2941,6 @@ ${
     }
     // Under attack lifts the plate's priority.
     this.refreshArmyCompactLabel(army);
-    if (degrees !== undefined) {
-      const slot = this.visibleArmyIndices.get(entityId);
-      if (slot !== undefined) {
-        this.armyModel.playTroopAction(slot, role === "attacker" ? "attack" : "hit");
-      }
-    }
   }
 
   private applyExplorerTroopsPresentationUpdate(explorerTroops: ExplorerTroopsComponentValue): void {
@@ -3061,12 +2954,6 @@ ${
     const previousCount = army.troopCount;
     if (previousCount !== troopCount) {
       const diff = troopCount - previousCount;
-      if (diff < 0) {
-        const slot = this.visibleArmyIndices.get(entityId);
-        if (slot !== undefined) {
-          this.armyModel.playTroopAction(slot, troopCount <= 0 ? "death" : "hit");
-        }
-      }
 
       // Play floating damage/heal FX at the army's position
       const normalizedHex = army.hexCoords.getNormalized();

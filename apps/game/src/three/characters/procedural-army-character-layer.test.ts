@@ -41,24 +41,20 @@ describe("production Knight presentation", () => {
     );
     const layer = new ProceduralArmyCharacterLayer(new Scene());
     try {
-      layer.sync([], 0);
+      layer.sync([]);
       expect(createRuntime).not.toHaveBeenCalled();
-      layer.sync(
-        [
-          {
-            entityId: 42,
-            category: TroopType.Knight,
-            tier: TroopTier.T1,
-            isNaval: false,
-            primaryColor: "#ffffff",
-            position: new Vector3(),
-            distanceToCameraSquared: 400,
-          },
-        ],
-        0,
-      );
+      layer.sync([
+        {
+          entityId: 42,
+          category: TroopType.Knight,
+          tier: TroopTier.T1,
+          isNaval: false,
+          primaryColor: "#ffffff",
+          position: new Vector3(),
+        },
+      ]);
       await vi.waitFor(() => expect(createRuntime).toHaveBeenCalledOnce());
-      layer.sync([], 0);
+      layer.sync([]);
       finish();
       await vi.waitFor(() => expect(layer.getStats().loadState).toBe("ready"));
       expect(runtime.prepareAssets).not.toHaveBeenCalled();
@@ -84,10 +80,12 @@ describe("production Knight presentation", () => {
         }),
     );
     const object = new Group();
+    const update = vi.fn();
     const actor = {
       object,
       kind: "knight",
       mode: "animated",
+      update,
       onRangedRelease: () => () => {},
       onMeleeContact: () => () => {},
       dispose: () => object.removeFromParent(),
@@ -101,26 +99,28 @@ describe("production Knight presentation", () => {
       isNaval: false,
       primaryColor: "#ffffff",
       position: new Vector3(),
-      distanceToCameraSquared: 400,
     };
     try {
-      layer.sync([army], 0);
+      layer.sync([army]);
       await vi.waitFor(() => expect(runtime.prepareAssets).toHaveBeenCalledTimes(1));
       expect(runtime.prepareAssets.mock.calls[0][0]).toMatchObject({
         humanoid: { appearanceId: "t1-knight-default", renderDetail: "crowd" },
         melee: { detailedEquipment: true, weaponId: "t1-knight-default-sword", offhandId: "t1-knight-default-shield" },
       });
-      layer.sync([], 0);
+      layer.sync([]);
       finish();
       await new Promise((resolve) => setTimeout(resolve, 0));
       expect(layer.hasActor(42)).toBe(false);
-      layer.sync([army], 0);
+      layer.sync([army]);
       expect(layer.hasActor(42)).toBe(true);
       expect(object.scale.toArray()).toEqual([1.67, 1.67, 1.67]);
+      expect(update).toHaveBeenCalledTimes(1);
+      expect(update).toHaveBeenCalledWith(0);
       expect(runtime.createActor).toHaveBeenCalledWith(
         expect.objectContaining({ humanoid: expect.objectContaining({ renderDetail: "crowd" }) }),
       );
-      layer.sync([{ ...army, distanceToCameraSquared: 4 }], 0);
+      layer.sync([army]);
+      expect(update).toHaveBeenCalledTimes(1);
       expect(runtime.prepareAssets).toHaveBeenCalledTimes(1);
       expect(runtime.updateActorConfig).not.toHaveBeenCalled();
     } finally {
@@ -141,10 +141,10 @@ describe("the Knights' creation budget", () => {
       position: new Vector3(entityId * 3, 0, 0),
     }));
     try {
-      proof.layer.sync([...archers, proof.mid], 0);
+      proof.layer.sync([...archers, proof.mid]);
       await vi.waitFor(() => expect(runtime.prepareAssets).toHaveBeenCalled());
       await flushLoads();
-      proof.layer.sync([...archers, proof.mid], 0);
+      proof.layer.sync([...archers, proof.mid]);
       expect(proof.layer.hasActor(42)).toBe(true);
       expect(archers.some(({ entityId }) => proof.layer.hasActor(entityId))).toBe(false);
     } finally {
@@ -154,30 +154,27 @@ describe("the Knights' creation budget", () => {
 });
 
 describe("visible asset request recovery", () => {
-  it("retries a rejected skin on leave/return, not on frames, motion, colour or another unit sharing the need", async () => {
+  it("retries a rejected skin on leave/return, not on frames, colour or another unit sharing the need", async () => {
     const proof = recoveryFixture();
     try {
-      proof.layer.sync([proof.mid], 0);
+      proof.layer.sync([proof.mid]);
       await vi.waitFor(() => expect(proof.requests).toHaveLength(1));
       proof.requests[0].reject(new Error("temporary network failure"));
       await flushLoads();
       expect(proof.layer.getStats().loadState).toBe("failed");
       for (let frame = 0; frame < 30; frame++) {
-        proof.layer.sync(
-          [
-            { ...proof.mid, pace: frame % 2 === 0 ? "walk" : undefined, primaryColor: "#ff0000" },
-            { ...proof.mid, entityId: 43 },
-          ],
-          0,
-        );
+        proof.layer.sync([
+          { ...proof.mid, primaryColor: "#ff0000" },
+          { ...proof.mid, entityId: 43 },
+        ]);
       }
       expect(runtime.prepareAssets).toHaveBeenCalledTimes(1);
-      proof.layer.sync([], 0);
-      proof.layer.sync([proof.mid], 0);
+      proof.layer.sync([]);
+      proof.layer.sync([proof.mid]);
       expect(proof.requests).toHaveLength(2);
       proof.requests[1].resolve();
       await flushLoads();
-      proof.layer.sync([proof.mid], 0);
+      proof.layer.sync([proof.mid]);
       expect(proof.layer.hasActor(42)).toBe(true);
       expect(proof.scene.getObjectByName("procedural-army-character:42")).toBeDefined();
       expect(runtime.createActor).toHaveBeenCalledWith(
@@ -193,16 +190,16 @@ describe("visible asset request recovery", () => {
     const proof = recoveryFixture();
     const other = { ...proof.mid, entityId: 43, category: TroopType.Crossbowman, position: new Vector3(4, 0, 0) };
     try {
-      proof.layer.sync([proof.mid], 0);
+      proof.layer.sync([proof.mid]);
       await vi.waitFor(() => expect(proof.requests).toHaveLength(1));
       proof.requests[0].reject(new Error("mid unavailable"));
       await flushLoads();
-      proof.layer.sync([proof.mid, other], 0);
+      proof.layer.sync([proof.mid, other]);
       expect(proof.requests).toHaveLength(2);
       expect(runtime.prepareAssets.mock.calls[1][0].kind).toBe("archer");
       proof.requests[1].resolve();
       await flushLoads();
-      proof.layer.sync([proof.mid, other], 0);
+      proof.layer.sync([proof.mid, other]);
       expect(proof.layer.hasActor(42)).toBe(false);
       expect(proof.layer.hasActor(43)).toBe(true);
       expect(proof.requests).toHaveLength(2);
@@ -214,17 +211,17 @@ describe("visible asset request recovery", () => {
   it("does not let an old rejection poison a need that left and returned during its request", async () => {
     const proof = recoveryFixture();
     try {
-      proof.layer.sync([proof.mid], 0);
+      proof.layer.sync([proof.mid]);
       await vi.waitFor(() => expect(proof.requests).toHaveLength(1));
-      proof.layer.sync([], 0);
-      proof.layer.sync([proof.mid], 0);
+      proof.layer.sync([]);
+      proof.layer.sync([proof.mid]);
       proof.requests[0].reject(new Error("old request"));
       await flushLoads();
-      proof.layer.sync([proof.mid], 0);
+      proof.layer.sync([proof.mid]);
       expect(proof.requests).toHaveLength(2);
       proof.requests[1].resolve();
       await flushLoads();
-      proof.layer.sync([proof.mid], 0);
+      proof.layer.sync([proof.mid]);
       expect(proof.layer.hasActor(42)).toBe(true);
     } finally {
       proof.layer.dispose();
@@ -233,19 +230,18 @@ describe("visible asset request recovery", () => {
 
   it.each(["resolve", "reject"] as const)("ignores retry completion after disposal (%s)", async (completion) => {
     const proof = recoveryFixture();
-    proof.layer.sync([proof.mid], 0);
+    proof.layer.sync([proof.mid]);
     await vi.waitFor(() => expect(proof.requests).toHaveLength(1));
     proof.requests[0].reject(new Error("first request"));
     await flushLoads();
-    proof.layer.sync([], 0);
-    proof.layer.sync([proof.mid], 0);
+    proof.layer.sync([]);
+    proof.layer.sync([proof.mid]);
     expect(proof.requests).toHaveLength(2);
     proof.layer.dispose();
     if (completion === "resolve") proof.requests[1].resolve();
     else proof.requests[1].reject(new Error("retry request"));
     await flushLoads();
-    proof.layer.sync([proof.mid], 0);
-    await proof.layer.applyImpulse(42);
+    proof.layer.sync([proof.mid]);
     expect(proof.layer.hasActor(42)).toBe(false);
     expect(runtime.createActor).not.toHaveBeenCalled();
     expect(runtime.dispose).toHaveBeenCalledOnce();
@@ -259,12 +255,12 @@ describe("visible asset request recovery", () => {
     proof.loaded.add("knight");
     createRuntime.mockRejectedValueOnce(new Error("runtime chunk unavailable"));
     try {
-      proof.layer.sync([proof.mid], 0);
+      proof.layer.sync([proof.mid]);
       await vi.waitFor(() => expect(proof.layer.getStats().loadState).toBe("failed"));
-      for (let frame = 0; frame < 30; frame++) proof.layer.sync([proof.mid], 0);
+      for (let frame = 0; frame < 30; frame++) proof.layer.sync([proof.mid]);
       expect(createRuntime).toHaveBeenCalledOnce();
-      proof.layer.sync([], 0);
-      proof.layer.sync([proof.mid], 0);
+      proof.layer.sync([]);
+      proof.layer.sync([proof.mid]);
       await vi.waitFor(() => expect(proof.layer.hasActor(42)).toBe(true));
       expect(createRuntime).toHaveBeenCalledTimes(2);
       expect(proof.layer.getStats().loadState).toBe("ready");
@@ -313,7 +309,6 @@ function recoveryFixture() {
     isNaval: false,
     primaryColor: "#ffffff",
     position: new Vector3(),
-    distanceToCameraSquared: 400,
   };
   return {
     layer: new ProceduralArmyCharacterLayer(scene),
