@@ -250,7 +250,7 @@ export const BANNED_WORDS: readonly BannedWord[] = [
   {
     banned: "build order",
     use: "build plan",
-    pattern: /\bbuild orders?\b/i,
+    pattern: /\bbuild[- ]orders?\b/i,
     bad: "Build order",
     good: "Build plan",
   },
