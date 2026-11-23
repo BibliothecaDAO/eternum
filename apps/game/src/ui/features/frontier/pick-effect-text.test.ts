@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
+import { PICK_EFFECT_WORDS, RESEARCH_TREE } from "@/ui/design-system/kit/words";
 import release from "../../../../../../contracts/l3/world-native/schema/release-definition.json";
 
 import {
@@ -18,9 +19,10 @@ describe("shared pick-effect text builder", () => {
     expect(fromToEffect("Deep troop loss", "200", "100 per tick", "less")).toBe(
       "Deep troop loss: 200 → 100 per tick (less)",
     );
-    expect(insteadOfEffect("Find something every", "4 reveals", "7")).toBe(
-      "Find something every 4 reveals instead of 7",
+    expect(insteadOfEffect("Guaranteed find after", "4 empty reveals", "7")).toBe(
+      "Guaranteed find after 4 empty reveals instead of 7",
     );
+    expect(RESEARCH_TREE.less).toBe(`(${PICK_EFFECT_WORDS.less})`);
     expect(percentFromTo("Damage taken", 100, 85, "less")).toBe("Damage taken: 100% → 85% (less)");
     expect(damageDealtEffect(20)).toBe("Damage dealt: 100% → 120%");
     expect(damageTakenEffect(15)).toBe("Damage taken: 100% → 85% (less)");

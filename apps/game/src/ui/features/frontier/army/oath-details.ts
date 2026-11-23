@@ -31,9 +31,9 @@ export function oathEffectDescription(id: number, base: PickEffectBase): string 
   if (id === oaths.REFLECTION)
     return percentFromTo(PICK_EFFECT_WORDS.wellRefill, rules.WELL_REFILL_PERCENT, oaths.REFLECTION_WELL_PERCENT);
   if (id === oaths.DETECTION) {
-    const next = formatCount(oaths.DETECTION_EMPTY_REVEAL_LIMIT, "reveal");
-    if (base.emptyRevealLimit === undefined) return PICK_EFFECT_WORDS.findEvery(next);
-    return insteadOfEffect(PICK_EFFECT_WORDS.findEveryLead, next, formatExact(base.emptyRevealLimit));
+    const next = formatCount(oaths.DETECTION_EMPTY_REVEAL_LIMIT, "empty reveal");
+    if (base.emptyRevealLimit === undefined) return PICK_EFFECT_WORDS.findAfter(next);
+    return insteadOfEffect(PICK_EFFECT_WORDS.findAfterLead, next, formatExact(base.emptyRevealLimit));
   }
   if (id === oaths.BRILLIANCE)
     return percentFromTo(PICK_EFFECT_WORDS.exploreRewards, 100, oaths.BRILLIANCE_PAY_PERCENT);
