@@ -108,9 +108,25 @@ export const HUD_WORDS = {
   menu: "Menu",
   season: "Season",
   feed: "Feed",
+  research: "Research",
   close: "Close",
   chat: "Chat",
 };
+
+const PHONE_PLACE_PRESSES = {
+  [HUD_WORDS.research]: (browser) => browser.click(HUD_WORDS.research),
+  [HUD_WORDS.feed]: (browser) => browser.tapPlace(HUD_WORDS.feed),
+  [HUD_WORDS.season]: async (browser) => {
+    browser.click(HUD_WORDS.menu);
+    await sleep(1_500);
+    browser.click(HUD_WORDS.season);
+  },
+};
+
+async function openPlace(browser, word) {
+  if (onADesktop()) browser.clickTab(word);
+  else await PHONE_PLACE_PRESSES[word](browser);
+}
 
 // A game's card on Play takes its step by the verb's name (`data-play-verb`, src/shell/play/play-item.tsx).
 const FRONTIER = { mode: "frontier", card: { verbs: ["resume", "play"] } };
@@ -1333,8 +1349,7 @@ const OATH_SLOTS_STEPS = [
     "research-oath-slot",
     "Research",
     async ({ browser }) => {
-      if (onADesktop()) browser.clickTab("Research");
-      else browser.click("Research");
+      await openPlace(browser, HUD_WORDS.research);
       await readUntil(() => browser.read(elementAt('[data-node="row-6"]')), Boolean, SHEET_WAIT_MS);
       browser.read(
         `(() => { document.querySelector('[data-node="row-6"]')?.scrollIntoView({ block: "nearest" }); return true; })()`,
@@ -1471,8 +1486,7 @@ const OATH_SLOTS_STEPS = [
 const WELL_LORE_NODE = '[data-node="well"]';
 
 async function researchWellLore({ browser }) {
-  if (onADesktop()) browser.clickTab("Research");
-  else browser.click("Research");
+  await openPlace(browser, HUD_WORDS.research);
   const node = await readUntil(() => browser.read(elementAt(WELL_LORE_NODE)), Boolean, SHEET_WAIT_MS);
   if (!node || node.state !== "ready") return { node };
   browser.tap(node.offset);
@@ -2173,10 +2187,10 @@ function recordedStill(onMap) {
 async function readTheSeason(input) {
   if (!onADesktop()) return { desktop: false, ...(await readTheSeasonInTheMenu(input)) };
   const { browser } = input;
-  browser.clickTab(HUD_WORDS.season);
+  await openPlace(browser, HUD_WORDS.season);
   await sleep(2_000);
   const opened = browser.observe();
-  browser.clickTab(HUD_WORDS.season);
+  await openPlace(browser, HUD_WORDS.season);
   await sleep(1_000);
   return { desktop: true, opened, closed: browser.observe() };
 }
@@ -2202,7 +2216,7 @@ const hexesApart = (from, to) =>
 async function openAFeedEvent({ browser }) {
   const before = browser.observe();
   const from = browser.read(ROUTE_HEX_EXPRESSION);
-  const feed = onADesktop() ? undefined : await tapTheFeed(browser);
+  const feed = onADesktop() ? undefined : await openTheFeed(browser);
   if (feed === false) return { feed, row: null };
   // A row's button is named by its words, time and line run together; the browser presses the first one where it is.
   const row = browser.read(`JSON.stringify(document.querySelector(".ui-event__open")?.textContent.trim() ?? null)`);
@@ -2213,7 +2227,7 @@ async function openAFeedEvent({ browser }) {
   const feedLeftOpen = feed
     ? !(await waitFor(browser, (seen) => !seen.panels.includes(HUD_WORDS.feed), FEED_CLOSES_MS))
     : undefined;
-  if (feedLeftOpen) await tapTheFeed(browser);
+  if (feedLeftOpen) await openTheFeed(browser);
   return {
     feed,
     row,
@@ -2227,13 +2241,6 @@ async function openAFeedEvent({ browser }) {
 
 /** How long an army's card takes to stand in the Feed's place once its story is tapped. */
 const FEED_CLOSES_MS = 3_000;
-
-/** A phone's Feed slot tapped, as a player taps it; whether the Feed's panel is drawn after. */
-async function tapTheFeed(browser) {
-  browser.tapPlace(HUD_WORDS.feed);
-  await sleep(1_500);
-  return browser.observe().panels.includes(HUD_WORDS.feed);
-}
 
 /**
  * A story opens in the page, never by loading it again, on the map at the story's place, with what is there selected:
@@ -2305,12 +2312,7 @@ async function visitRow(browser, index) {
 
 /** The Season's board row at `index` opened and Visit pressed, as a player does; null when the board has no such row. */
 async function visitFromTheBoard(browser, index) {
-  if (onADesktop()) browser.clickTab(HUD_WORDS.season);
-  else {
-    browser.click(HUD_WORDS.menu);
-    await sleep(1_500);
-    browser.click(HUD_WORDS.season);
-  }
+  await openPlace(browser, HUD_WORDS.season);
   await sleep(2_000);
   const rows = `[...document.querySelectorAll('button[aria-label^="#"]')].map((row) => row.getAttribute("aria-label"))`;
   const row = browser.read(`JSON.stringify(${rows})`)[index] ?? null;
@@ -4189,15 +4191,7 @@ function raceBoardSteps(result) {
     {
       name: "read-aspect-race",
       play: async ({ browser, extraScreenshot }) => {
-        if (result === null) {
-          if (onADesktop()) {
-            browser.clickTab(HUD_WORDS.season);
-          } else {
-            browser.click(HUD_WORDS.menu);
-            await sleep(500);
-            browser.click(HUD_WORDS.season);
-          }
-        }
+        if (result === null) await openPlace(browser, HUD_WORDS.season);
         const race = await readUntil(
           () => browser.read(RACE_BOARD_STATE),
           (state) => state.race.visible,
@@ -5102,8 +5096,7 @@ async function readTheFeedAfterTheClear({ browser }) {
 
 /** The Feed opened as a player opens it: a desktop's Feed place, a phone's place bar. */
 async function openTheFeed(browser) {
-  if (!onADesktop()) return tapTheFeed(browser);
-  browser.clickTab(HUD_WORDS.feed);
+  await openPlace(browser, HUD_WORDS.feed);
   await sleep(1_500);
   return browser.observe().panels.includes(HUD_WORDS.feed);
 }
@@ -6312,11 +6305,7 @@ async function chooseAspect(browser, label) {
 }
 
 async function openTheSeason(browser) {
-  if (!onADesktop()) {
-    browser.click(HUD_WORDS.menu);
-    await sleep(500);
-  }
-  browser.click(HUD_WORDS.season);
+  await openPlace(browser, HUD_WORDS.season);
   return readUntil(
     () => browser.read(RACE_BOARD_STATE),
     (state) => state.race.visible,

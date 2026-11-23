@@ -18,6 +18,7 @@ import {
   MOVE,
   EVENTS_WORDS,
   MENU,
+  RESEARCH,
   SEASON,
   SHARED_LINK_WORDS,
   SPIRE_WORDS,
@@ -50,6 +51,7 @@ describe("the HUD's words the steps press and read", () => {
       menu: MENU,
       season: SEASON,
       feed: EVENTS_WORDS.feed,
+      research: RESEARCH,
       close: CLOSE,
       chat: CHAT,
     });
