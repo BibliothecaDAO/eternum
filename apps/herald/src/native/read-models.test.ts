@@ -6,7 +6,13 @@ import { CairoCustomEnum, CairoOption, CairoOptionVariant } from "starknet";
 import { createHeraldRequestHandler } from "../http";
 import { WorldFold } from "../world-fold";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { questWeek } from "@bibliothecadao/eternum/game-client";
+import { DAILY_QUEST_MODELS, readDailyQuest } from "@bibliothecadao/eternum";
+import {
+  NativeFactStore,
+  nativeBaneConstants,
+  nativeQuestConstants,
+  questWeek,
+} from "@bibliothecadao/eternum/game-client";
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { buildNativeDirectory, directoryFact } from "./read-models";
 import {
@@ -484,6 +490,67 @@ describe("native directory", () => {
       progress: expectedTarget,
       target: expectedTarget,
       labor: 900,
+    });
+  });
+
+  it("matches core readDailyQuest on Seal bonus and WorldBane override paths", () => {
+    const { fold, native, decoder } = world();
+    native.applyReceipt(
+      fold,
+      receipt(
+        seedDerivedRows(fold, decoder, [
+          gameEvent("1", "0", "0", "frontier", "Frontier"),
+          rulesEvent("1", "3600"),
+          rowEvent("QuestRules", ["1"], {
+            base_counts: [1, 1, 1, 1, 1, 2, 15],
+            labor: 1000n,
+            essence: 1500n,
+            bonus_percent: 150,
+          }),
+          rowEvent("BaneRules", ["1"], {
+            chance_step: 20,
+            quorum_percent: 25,
+            beast_percent: 150,
+            stamina_percent: 50,
+            production_percent: 50,
+            quest_counts: [3n, 6n, 9n, 12n, 20n, 40n, 60n, 80n, 2500n, 6000n, 10000n, 15000n],
+          }),
+          structure("7", "1", "0x111", "0"),
+          rowEvent("HomeAspect", ["1", "7"], { aspect: 2 }),
+          rowEvent("Seal", ["1", "0x111"], { granted_at: 25n }),
+          rowEvent("WorldBane", ["1", "0"], { kind: nativeBaneConstants.BLOOD_MOON }),
+          rowEvent("QuestProgress", ["1", "7", "0"], { progress: 2n, completed_level: 0 }),
+        ]),
+      ),
+      11,
+      0,
+    );
+    const fullStore = new NativeFactStore();
+    fullStore.applyFacts(
+      [...new Set(DAILY_QUEST_MODELS)].flatMap((model) =>
+        fold.gameRows(model, "1").map(({ key, value }) => ({ model, key, value })),
+      ),
+    );
+    fullStore.setSnapshot({ gameId: 1, complete: true, actor: "0x111", timestamp: 30 });
+    const core = readDailyQuest(fullStore, 1, 7, 30)!.reading.known!;
+    const directory = buildNativeDirectory({
+      chain: "madara",
+      confirmedBlock: 11,
+      timestamp: 30,
+      fold,
+      playerAddress: "0x111",
+    }).games.find(({ game_id }) => game_id === 1)!;
+    expect(directory.player_state?.today_quest).toEqual({
+      quest_id: nativeQuestConstants.STAND,
+      progress: 2,
+      target: 3,
+      labor: 1500,
+    });
+    expect(directory.player_state?.today_quest).toEqual({
+      quest_id: core.quest.id,
+      progress: Number(core.progress),
+      target: Number(core.target),
+      labor: Number(core.reward.labor) / RESOURCE_PRECISION,
     });
   });
 

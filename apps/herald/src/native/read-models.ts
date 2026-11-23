@@ -5,7 +5,7 @@ import type {
   HeraldPlayerQuest,
   HeraldPlayerStructure,
 } from "@bibliothecadao/eternum/game-sync";
-import { nativeGameModeOfFamily, readDailyQuest } from "@bibliothecadao/eternum";
+import { DAILY_QUEST_MODELS, nativeGameModeOfFamily, readDailyQuest } from "@bibliothecadao/eternum";
 import { dayOf, expeditionRealmSite, entityHomeNamespace, isRealmCategory } from "@bibliothecadao/eternum/expeditions";
 import { NativeFactStore, raceFinishHeight } from "@bibliothecadao/eternum/game-client";
 import { aspects, RESOURCE_PRECISION, type AspectId, StructureType } from "@bibliothecadao/types";
@@ -36,6 +36,39 @@ export const FINALIZED_GAME_MODELS: ReadonlySet<string> = new Set([
 ]);
 
 import { integer, number, address, record, gameRows, required, type Row } from "./values";
+
+type DailyQuestModel = (typeof DAILY_QUEST_MODELS)[number];
+type QuestRowSelector = "game" | "home" | "entity" | "account" | "bane-game" | "bane-aspect" | "unused";
+
+const QUEST_MODEL_SELECTOR = {
+  GameRegistry: "game",
+  SliceRules: "game",
+  SettlementRules: "game",
+  QuestRules: "game",
+  Structure: "entity",
+  QuestProgress: "home",
+  LaborGrant: "home",
+  BaneGrant: "home",
+  Seal: "account",
+  SettledRealm: "home",
+  HomeAspect: "home",
+  BaneRules: "bane-game",
+  FirstTeamBane: "bane-game",
+  WorldBane: "bane-game",
+  TeamBane: "bane-aspect",
+  BaneProgress: "bane-aspect",
+  AspectActivity: "bane-aspect",
+  DeepSite: "unused",
+  AspectHyperstructure: "unused",
+  DeepGuard: "unused",
+  ArmyDay: "unused",
+  PlayerEntry: "unused",
+  ExplorerTroops: "unused",
+  TileOccupancy: "unused",
+  ExpeditionSite: "unused",
+} as const satisfies Record<DailyQuestModel, QuestRowSelector>;
+
+const DAILY_QUEST_MODEL_LIST: readonly DailyQuestModel[] = [...new Set(DAILY_QUEST_MODELS)];
 
 interface DirectoryRows {
   structures: FoldRow[];
@@ -139,67 +172,45 @@ function todayQuestOf(
   if (!realm) return null;
   const targetGame = BigInt(gameId);
   const homeId = integer(realm.entity_id);
-  const forGame = (rows: readonly FoldRow[]) => rows.filter(({ value }) => integer(value.game_id) === targetGame);
-  const rowsForGame = (model: string) => forGame(input.fold.modelRows(model));
-  const questRules = rowsForGame("QuestRules");
-  if (questRules.length === 0) return null;
-  const toFacts = (model: string, rows: readonly FoldRow[]) => rows.map(({ key, value }) => ({ model, key, value }));
-  const realmRow = forGame(directory.structures).find(({ value }) => integer(value.entity_id) === homeId);
-  if (!realmRow) return null;
-  const facts = [
-    ...toFacts("GameRegistry", rowsForGame("GameRegistry")),
-    ...toFacts("SliceRules", forGame(directory.rules)),
-    ...toFacts("SettlementRules", forGame(directory.settlementRules)),
-    ...toFacts("QuestRules", questRules),
-    ...toFacts("Structure", [realmRow]),
-    ...toFacts(
-      "QuestProgress",
-      rowsForGame("QuestProgress").filter(({ value }) => integer(value.home) === homeId),
-    ),
-    ...toFacts(
-      "LaborGrant",
-      rowsForGame("LaborGrant").filter(({ value }) => integer(value.home) === homeId),
-    ),
-    ...toFacts(
-      "BaneGrant",
-      rowsForGame("BaneGrant").filter(({ value }) => integer(value.home) === homeId),
-    ),
-    ...toFacts(
-      "Seal",
-      rowsForGame("Seal").filter(({ value }) => address(value.account) === player),
-    ),
-    ...toFacts(
-      "SettledRealm",
-      rowsForGame("SettledRealm").filter(({ value }) => integer(value.home) === homeId),
-    ),
-  ];
-  const baneRules = rowsForGame("BaneRules");
-  if (baneRules.length > 0) {
-    const homeAspect = rowsForGame("HomeAspect").filter(({ value }) => integer(value.home) === homeId);
-    const aspect = homeAspect[0] ? number(homeAspect[0].value.aspect) : null;
-    facts.push(
-      ...toFacts("BaneRules", baneRules),
-      ...toFacts("FirstTeamBane", rowsForGame("FirstTeamBane")),
-      ...toFacts("WorldBane", rowsForGame("WorldBane")),
-      ...toFacts("HomeAspect", homeAspect),
-      ...(aspect === null
-        ? []
-        : [
-            ...toFacts(
-              "TeamBane",
-              rowsForGame("TeamBane").filter(({ value }) => number(value.aspect) === aspect),
-            ),
-            ...toFacts(
-              "BaneProgress",
-              rowsForGame("BaneProgress").filter(({ value }) => number(value.aspect) === aspect),
-            ),
-            ...toFacts(
-              "AspectActivity",
-              rowsForGame("AspectActivity").filter(({ value }) => number(value.aspect) === aspect),
-            ),
-          ]),
-    );
-  }
+  const rowsForGame = (model: DailyQuestModel): FoldRow[] => {
+    const source =
+      model === "Structure"
+        ? directory.structures
+        : model === "SliceRules"
+          ? directory.rules
+          : model === "SettlementRules"
+            ? directory.settlementRules
+            : input.fold.modelRows(model);
+    return source.filter(({ value }) => integer(value.game_id) === targetGame);
+  };
+  if (rowsForGame("QuestRules").length === 0) return null;
+  const hasBaneRules = rowsForGame("BaneRules").length > 0;
+  const homeAspectRow = hasBaneRules
+    ? rowsForGame("HomeAspect").find(({ value }) => integer(value.home) === homeId)
+    : undefined;
+  const aspect = homeAspectRow ? number(homeAspectRow.value.aspect) : null;
+  const facts = DAILY_QUEST_MODEL_LIST.flatMap((model) => {
+    const selector = QUEST_MODEL_SELECTOR[model];
+    if (selector === "unused") return [];
+    if ((selector === "bane-game" || selector === "bane-aspect") && !hasBaneRules) return [];
+    if (selector === "bane-aspect" && aspect === null) return [];
+    const rows = rowsForGame(model).filter(({ value }) => {
+      switch (selector) {
+        case "game":
+        case "bane-game":
+          return true;
+        case "entity":
+          return integer(value.entity_id) === homeId;
+        case "home":
+          return integer(value.home) === homeId;
+        case "account":
+          return address(value.account) === player;
+        case "bane-aspect":
+          return number(value.aspect) === aspect;
+      }
+    });
+    return rows.map(({ key, value }) => ({ model, key, value }));
+  });
   const store = new NativeFactStore();
   store.applyFacts(facts);
   store.setSnapshot({ gameId, complete: true, actor: player, timestamp: input.timestamp });
