@@ -14,7 +14,7 @@
   "apps/game/src/ui/components/transaction-center/types.ts": 10,
   "apps/game/src/ui/design-system/domain-icon-meaning.ts": 1,
   "apps/game/src/ui/design-system/kit/failure-lines.ts": 10,
-  "apps/game/src/ui/design-system/kit/words.ts": 37,
+  "apps/game/src/ui/design-system/kit/words.ts": 36,
   "apps/game/src/ui/design-system/molecules/popover.tsx": 1,
   "apps/game/src/ui/features/economy/resources/resource-arrival.tsx": 1,
   "apps/game/src/ui/features/event-feed/feed-reading.ts": 1,

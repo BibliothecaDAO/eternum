@@ -118,7 +118,7 @@ it("before the season, shows the time left and asks a signed-out friend to creat
   expect(host.textContent).toContain("Starts");
   expect(pageLine()).toBe("Members of one Aspect never fight each other. Dana plays Order of Titans.");
   const verbs = [...host.querySelectorAll("button, a")].map((each) => each.textContent);
-  expect(verbs).toContain("Create your account");
+  expect(verbs).toContain("Create your Realm");
   expect(verbs).not.toContain("Start your adventure");
 });
 

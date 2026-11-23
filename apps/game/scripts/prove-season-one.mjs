@@ -14,7 +14,7 @@ const VIEWS = [
 ];
 const PRESEASON_SCREENS = [
   ["preseason", "[data-season-countdown]"],
-  ["preseason-member", "[data-preseason-step=pick]"],
+  ["preseason-member", "[data-season-countdown]"],
   ["preseason-chosen", "[data-seal-code=open]"],
   ["preseason-sealed", "[data-seal-code=held]"],
   ["preseason-invited", "[data-shared-invite]", "/s/MRGHT234"],

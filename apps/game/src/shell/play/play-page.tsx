@@ -23,20 +23,22 @@ import { aspectRaceStandings, directoryDay, seasonEnded, seasonPlayerAspect, sea
 import { resultsHref } from "../season-tab/results-link";
 import { useShareTally } from "../share/own-shares";
 import { HyperstructureTile, RacePoolRuleStrip } from "./hyperstructure-stage";
-import { holdsNothing, type PlayItem } from "./play-board";
+import type { PlayItem } from "./play-board";
 import { type PlayFacts, type SourceGap, usePlayFacts } from "./play-facts";
 import { LeadCard, RehearsalCard } from "./play-item";
-import { PreseasonPlay } from "./preseason-pick";
 import { SeasonCountdown } from "./season-countdown";
 import { CopySeasonInvite, SeasonInviteAlerts, useSeasonInvite } from "./season-invite";
 
 export const PlayPage = () => {
   const facts = usePlayFacts();
-  if (facts.opening && isPlayEmpty(facts))
-    return facts.signedIn ? (
-      <PreseasonPlay opening={facts.opening} now={facts.now} />
-    ) : (
-      <SeasonCountdown opening={facts.opening} now={facts.now} />
+  if (isPreseason(facts))
+    return (
+      <SeasonCountdown
+        opening={facts.opening}
+        rehearsals={facts.board.rehearsals}
+        signedIn={facts.signedIn}
+        now={facts.now}
+      />
     );
   const firstVisit = !facts.signedIn && facts.board?.lead?.verb === "play";
   const leadFrontier = facts.board?.lead?.game ?? null;
@@ -77,8 +79,12 @@ export const PlayPage = () => {
   );
 };
 
-const isPlayEmpty = (facts: PlayFacts) =>
-  facts.board !== undefined && holdsNothing(facts.board) && facts.gaps.length === 0;
+const isPreseason = (
+  facts: PlayFacts,
+): facts is PlayFacts & {
+  opening: NonNullable<PlayFacts["opening"]>;
+  board: NonNullable<PlayFacts["board"]>;
+} => facts.opening !== null && facts.board !== undefined && facts.board.lead === null && facts.gaps.length === 0;
 
 const LeadOrState = ({ facts }: { facts: PlayFacts }) => {
   if (facts.directory.isError)

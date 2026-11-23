@@ -4,9 +4,10 @@ import { createRoot } from "react-dom/client";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { aspects, formatDate, formatLongDate, ordersOfAspect } from "@bibliothecadao/types";
+import { aspects, ordersOfAspect } from "@bibliothecadao/types";
 
 import release from "../../../../../contracts/l3/world-native/schema/release-definition.json";
+import { formatUtcOpening } from "@/ui/design-system/kit/words";
 
 import type { SeasonCalendar } from "../season-calendar";
 import type { DirectoryGame } from "../herald";
@@ -49,7 +50,14 @@ vi.mock("@/hooks/context/identity-session", async (importOriginal) => ({
     joinedShare: async () => reads.joined,
     chooseOrder: async (order: number) => {
       reads.chosen.push(order);
-      reads.intent = { order, members: { ...reads.intent.members, [order]: (reads.intent.members[order] ?? 0) + 1 } };
+      const nextMembers = { ...reads.intent.members };
+      if (reads.intent.order !== null) {
+        const previous = (nextMembers[reads.intent.order] ?? 1) - 1;
+        if (previous <= 0) delete nextMembers[reads.intent.order];
+        else nextMembers[reads.intent.order] = previous;
+      }
+      nextMembers[order] = (nextMembers[order] ?? 0) + 1;
+      reads.intent = { order, members: nextMembers };
       return reads.intent;
     },
     createShare: async (moment: unknown) => {
@@ -132,6 +140,7 @@ const ownSeason = game({
 
 let cleanup: (() => Promise<void>) | null = null;
 afterEach(async () => {
+  vi.useRealTimers();
   await cleanup?.();
   cleanup = null;
   reads.signedIn = true;
@@ -142,6 +151,7 @@ afterEach(async () => {
   reads.redeemed = [];
   reads.shared = [];
   reads.joined = null;
+  useConnectStore.setState({ request: null });
 });
 
 const mount = async () => {
@@ -159,6 +169,7 @@ const mount = async () => {
             <Routes>
               <Route path="/" element={<PlayPage />} />
               <Route path="/results/:id" element={<p data-opened-results>opened</p>} />
+              <Route path="/g/:chain/:id" element={<p data-entered-game>entered</p>} />
             </Routes>
           </MemoryRouter>
         </QueryClientProvider>,
@@ -361,7 +372,7 @@ it("says the season calendar did not answer when it fails", async () => {
 
 describe("the season's countdown, while its first day is ahead and Play has no game to lead with", () => {
   const now = Math.floor(Date.now() / 1000);
-  const startsAt = now + 14 * DAY + 3 * HOUR + 20 * 60;
+  const startsAt = now + 14 * DAY + 3 * HOUR + 20 * 60 + 9;
   const seasonOne = (from: number): SeasonCalendar => ({
     phases: [
       {
@@ -371,108 +382,229 @@ describe("the season's countdown, while its first day is ahead and Play has no g
       },
     ],
   });
+  const liveTestnet = (mine = false) =>
+    game({
+      game_id: 4,
+      name: "Final Testnet",
+      clock_scale: 4,
+      player_count: 18,
+      ...(mine ? { player_state: ownSeason.player_state } : {}),
+    });
   const quietPlay = () => {
     reads.history = answered({ games: [], next: null, failures: [] });
   };
+  const clockUnits = (container: HTMLElement) =>
+    ["days", "hours", "minutes", "seconds"].map(
+      (unit) => container.querySelector(`[data-countdown-unit="${unit}"] .countdown-clock__value`)?.textContent,
+    );
 
-  it("names the day it opens, the time left, every Aspect with its Orders, and one way in for a visitor", async () => {
+  it("ticks the live countdown every second with role=timer and aria-label", async () => {
+    vi.useFakeTimers();
+    const baseMs = Date.UTC(2026, 10, 23, 12, 0, 0);
+    vi.setSystemTime(baseMs);
+    const fixedNow = Math.floor(baseMs / 1000);
+    const fixedStartsAt = fixedNow + 8 * DAY + 14 * HOUR + 5 * 60 + 9;
+    reads.signedIn = false;
+    reads.directory = answered({ games: [] });
+    reads.calendar = answered(seasonOne(fixedStartsAt));
+    quietPlay();
+    const page = await mount();
+    const timer = page.container.querySelector('[role="timer"]')!;
+    expect(timer.getAttribute("aria-label")).toBe("Starts in 8d 15h");
+    expect(clockUnits(page.container)).toEqual(["08", "14", "05", "09"]);
+
+    await act(async () => {
+      vi.advanceTimersByTime(1000);
+    });
+    expect(clockUnits(page.container)).toEqual(["08", "14", "05", "08"]);
+
+    await act(async () => {
+      vi.advanceTimersByTime(9000);
+    });
+    expect(clockUnits(page.container)).toEqual(["08", "14", "04", "59"]);
+  });
+
+  it("shows a signed-out visitor the UTC date, live countdown, Create your Realm when no testnet is live, and optional 4 Aspects", async () => {
     reads.signedIn = false;
     reads.directory = answered({ games: [] });
     reads.calendar = answered(seasonOne(startsAt));
     quietPlay();
     const page = await mount();
     const countdown = page.container.querySelector("[data-season-countdown]")!;
-    expect(countdown.querySelector("h1")?.textContent).toBe(`The season opens ${formatLongDate(startsAt, now)}`);
+    expect(countdown.textContent).toContain(`Opens ${formatUtcOpening(startsAt, now)}`);
     expect(countdown.querySelectorAll('[role="timer"]')).toHaveLength(1);
-    expect(countdown.querySelector('[role="timer"]')?.getAttribute("aria-label")).toBe("Starts in 14d 4h");
-    expect(countdown.querySelector('[role="timer"]')?.textContent).toBe("14d 4h");
     expect(countdown.textContent).toContain(
-      `Pick your side before it starts. 4 Aspects, ${Number(release.definition.economy.race.Some.season_days)} days`,
+      `4 Aspects, ${Number(release.definition.economy.race.Some.season_days)} days, one hyperstructure to build.`,
     );
-    expect(
-      [...countdown.querySelectorAll("[data-aspect]")].map((aspect) => [
-        aspect.textContent,
-        aspect.querySelectorAll("img").length,
-      ]),
-    ).toEqual(aspects.map(({ name }) => [name, 5]));
-    expect(page.container.querySelector("[data-play-item]")).toBeNull();
-    expect(page.text()).toContain("Free to play");
-    await press(page.container, "Create your account");
+    expect([...countdown.querySelectorAll("[data-aspect]")].map((node) => node.getAttribute("data-aspect"))).toEqual(
+      aspects.map(({ name }) => name),
+    );
+    expect(countdown.querySelector("[data-preseason-testnet]")).toBeNull();
+    expect(countdown.textContent).toContain("Free to play");
+    expect(countdown.textContent).toContain("+100 Fragments per friend · +1,000 bonus at 10");
+    expect(countdown.querySelectorAll('button[data-kind="primary"]')).toHaveLength(1);
+
+    await act(async () => countdown.querySelector<HTMLButtonElement>('[data-aspect="Luminary"]')!.click());
+    expect(useConnectStore.getState().request).toEqual({ next: null });
+
+    useConnectStore.setState({ request: null });
+    await press(page.container, "Create your Realm");
     expect(useConnectStore.getState().request).toEqual({ next: null });
   });
 
-  it("asks a signed-in account its Aspect, then its Order inside it, on one screen, keeps the choice, and then counts down", async () => {
-    reads.directory = answered({ games: [] });
+  it("shows Final Testnet live as the single gold CTA for signed-out visitors when a rehearsal is live", async () => {
+    reads.signedIn = false;
+    reads.directory = answered({ games: [liveTestnet(false)] });
+    reads.calendar = answered(seasonOne(startsAt));
+    quietPlay();
+    const page = await mount();
+    const countdown = page.container.querySelector("[data-season-countdown]")!;
+    expect(countdown.textContent).toContain("Final Testnet live");
+    expect(countdown.textContent).toContain(
+      "Final Testnet is live. Learn the game before Season 1 opens and get a head start.",
+    );
+    expect(countdown.textContent).toContain("Free to play");
+    expect(countdown.textContent).not.toContain("Create your Realm");
+    const primaries = countdown.querySelectorAll('button[data-kind="primary"]');
+    expect(primaries).toHaveLength(1);
+    expect(primaries[0]?.textContent).toBe("Play Final Testnet");
+
+    await press(page.container, "Play Final Testnet");
+    expect(useConnectStore.getState().request).toEqual({ next: "/g/0xa/4" });
+  });
+
+  it("reads rehearsal name and non-live status from the game row and keeps additional rehearsals reachable", async () => {
+    const registrationRehearsal = game({
+      game_id: 5,
+      name: "Autumn Rehearsal",
+      status: "Registration",
+      clock_scale: 4,
+      clock: {
+        start_settling_at: 0,
+        start_main_at: now + 2 * HOUR,
+        scheduled_end_at: 4_000_000_000,
+        end_at: 4_000_000_000,
+      },
+    });
+    reads.signedIn = false;
+    reads.directory = answered({ games: [registrationRehearsal] });
+    reads.calendar = answered(seasonOne(startsAt));
+    quietPlay();
+    const pending = await mount();
+    expect(pending.text()).not.toContain("Final Testnet");
+    expect(pending.text()).not.toContain("live");
+    expect(pending.text()).toContain("Autumn Rehearsal opens soon.");
+    expect(pending.container.querySelector('button[data-kind="primary"]')?.textContent).toBe("Play Autumn Rehearsal");
+    await cleanup?.();
+
+    reads.directory = answered({ games: [liveTestnet(false), registrationRehearsal] });
+    const both = await mount();
+    expect(both.container.querySelector('button[data-kind="primary"]')?.textContent).toBe("Play Final Testnet");
+    expect(both.container.querySelector('[data-play-item="0xa:5"]')).not.toBeNull();
+    expect(both.container.querySelectorAll('button[data-kind="primary"]')).toHaveLength(1);
+  });
+
+  it("lands a signed-in player with no Aspect directly on the countdown with Play or Resume Final Testnet and optional Aspect selection", async () => {
+    reads.directory = answered({ games: [liveTestnet(false)] });
     reads.calendar = answered(seasonOne(startsAt));
     const [giants, skill] = ordersOfAspect(1);
     reads.intent = { order: null, members: { [giants!.orderId]: 30, [skill!.orderId]: 9 } };
     quietPlay();
     const page = await mount();
     await settle();
-    const step = () => page.container.querySelector("[data-preseason-step]")?.getAttribute("data-preseason-step");
-    const card = (name: string) => page.container.querySelector<HTMLButtonElement>(`[data-aspect="${name}"]`)!;
-    const button = (word: string) =>
-      [...page.container.querySelectorAll("button")].find((each) => each.textContent?.includes(word));
-    expect(step()).toBe("pick");
-    expect(page.container.querySelector("[data-order]")).toBeNull();
-    expect(page.text()).not.toContain("Create your account");
-    expect(card("Prowess").textContent).toBe("Prowess39about 2.5K LORDS");
-    expect(card("Insight").textContent).toBe("Insight0about 100K LORDS");
-    expect(page.container.querySelector("[data-aspect-shared]")?.textContent).toBe(
+
+    const countdown = page.container.querySelector("[data-season-countdown]")!;
+    expect(countdown.querySelectorAll('[role="timer"]')).toHaveLength(1);
+    expect(countdown.querySelector('button[data-kind="primary"]')?.textContent).toBe("Play Final Testnet");
+    expect(countdown.querySelectorAll('button[data-kind="primary"]')).toHaveLength(1);
+    expect(countdown.textContent).toContain(
+      "Optional — choose your Season 1 Aspect now or later. You can change it any time until Season 1 opens.",
+    );
+    expect(countdown.textContent).toContain(
+      "Pick an Aspect above to unlock your Season 1 invite link — friends start in your Aspect when Season 1 opens.",
+    );
+    expect(countdown.querySelector('[data-aspect="Prowess"]')?.textContent).toContain("39");
+    expect(countdown.querySelector("[data-aspect-shared]")?.textContent).toBe(
       "The Aspect's 100,000 LORDS are shared by Glory: your share follows your Glory, not an equal split. The first to finish adds 100,000 more.",
     );
-    expect(
-      page.container.querySelector("[data-aspect-shared]")?.closest("p")?.previousElementSibling?.matches("ul"),
-    ).toBe(true);
-    expect(
-      [...page.container.querySelectorAll("[data-aspect]")].map((each) => each.getAttribute("aria-pressed")),
-    ).toEqual(["false", "false", "false", "false"]);
-    expect(button("Choose your side")?.disabled).toBe(true);
 
-    await act(async () => card("Luminary").click());
-    expect(button("Pledge to Luminary")?.disabled).toBe(false);
-    await act(async () => card("Prowess").click());
-    expect(card("Prowess").getAttribute("aria-pressed")).toBe("true");
-    expect(card("Luminary").getAttribute("aria-pressed")).toBe("false");
-    await press(page.container, "Pledge to Prowess");
-    expect([...document.body.querySelectorAll("[data-order]")].map((row) => row.getAttribute("data-order"))).toEqual(
-      ordersOfAspect(1).map(({ fullOrderName }) => fullOrderName),
-    );
-    await act(async () =>
-      document.body.querySelector<HTMLButtonElement>(`[data-order="${giants!.fullOrderName}"]`)!.click(),
-    );
-    expect(document.body.querySelector(`[data-order="${giants!.fullOrderName}"]`)?.textContent).toContain("30 members");
-    await press(document.body, `Play as ${giants!.orderName}`);
+    await press(page.container, "Play Final Testnet");
+    expect(page.container.querySelector("[data-entered-game]")).not.toBeNull();
+    await cleanup?.();
+
+    reads.directory = answered({ games: [liveTestnet(true)] });
+    const resumable = await mount();
     await settle();
-    expect(reads.chosen).toEqual([giants!.orderId]);
-    expect(step()).toBe("waiting");
-    expect(page.container.querySelector("h1")?.textContent).toBe("You're in Prowess");
-    expect(page.text()).toContain(`${giants!.fullOrderName} · opens ${formatDate(startsAt, now)}`);
-    expect(page.container.querySelectorAll('[role="timer"]')).toHaveLength(1);
-    expect(page.container.querySelector('[role="timer"]')?.getAttribute("aria-label")).toBe("Starts in 14d 4h");
+    expect(resumable.container.querySelector('button[data-kind="primary"]')?.textContent).toBe("Resume Final Testnet");
   });
 
-  it("puts the Aspect a friend invited the account to first, chosen, with who invited it; an invite to a game is not offered", async () => {
+  it("lets a signed-in player pick an Aspect and Order, then switch to another Aspect and Order while updating the inline invite link", async () => {
+    reads.directory = answered({ games: [liveTestnet(false)] });
+    reads.calendar = answered(seasonOne(startsAt));
+    const [giants] = ordersOfAspect(1);
+    const [perfection] = ordersOfAspect(2);
+    reads.intent = { order: giants!.orderId, members: { [giants!.orderId]: 30 } };
+    quietPlay();
+    const written: string[] = [];
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText: async (text: string) => void written.push(text) },
+    });
+    const page = await mount();
+    await settle();
+    await settle();
+
+    const prowessCard = page.container.querySelector<HTMLButtonElement>('[data-aspect="Prowess"]')!;
+    expect(prowessCard.getAttribute("aria-pressed")).toBe("true");
+    expect(prowessCard.querySelector("[data-aspect-joined]")?.textContent).toBe("Joined");
+    expect(prowessCard.querySelector("[data-chosen-order]")?.textContent).toContain(giants!.fullOrderName);
+    expect(reads.shared).toEqual([{ kind: "aspect", chainId: null, gameId: null, moment: 1 }]);
+    expect(page.container.querySelector("[data-season-invite]")?.textContent).toContain(
+      "Copy your Prowess link. A friend who opens it starts in Prowess.",
+    );
+    await press(page.container, "Copy invite link");
+    await settle();
+    expect(written).toEqual([`${window.location.origin}/s/MRGHT234?via=system`]);
+    expect(page.text()).toContain("Link copied");
+
+    await act(async () => page.container.querySelector<HTMLButtonElement>('[data-aspect="Luminary"]')!.click());
+    expect([...document.body.querySelectorAll("[data-order]")].map((row) => row.getAttribute("data-order"))).toEqual(
+      ordersOfAspect(2).map(({ fullOrderName }) => fullOrderName),
+    );
+    await act(async () =>
+      document.body.querySelector<HTMLButtonElement>(`[data-order="${perfection!.fullOrderName}"]`)!.click(),
+    );
+    await press(document.body, `Play as ${perfection!.orderName}`);
+    await settle();
+    await settle();
+
+    expect(reads.chosen).toEqual([perfection!.orderId]);
+    expect(page.container.querySelector('[data-aspect="Prowess"]')?.getAttribute("aria-pressed")).toBe("false");
+    const luminaryCard = page.container.querySelector('[data-aspect="Luminary"]')!;
+    expect(luminaryCard.getAttribute("aria-pressed")).toBe("true");
+    expect(luminaryCard.querySelector("[data-aspect-joined]")?.textContent).toBe("Joined");
+    expect(luminaryCard.querySelector("[data-chosen-order]")?.textContent).toContain(perfection!.fullOrderName);
+    expect(reads.shared).toEqual([
+      { kind: "aspect", chainId: null, gameId: null, moment: 1 },
+      { kind: "aspect", chainId: null, gameId: null, moment: 2 },
+    ]);
+    expect(page.container.querySelector("[data-season-invite]")?.textContent).toContain(
+      "Copy your Luminary link. A friend who opens it starts in Luminary.",
+    );
+    expect(page.text()).not.toContain("Link copied");
+  });
+
+  it("puts the Aspect a friend invited the account to first with who invited it; a game invite is ignored", async () => {
     reads.directory = answered({ games: [] });
     reads.calendar = answered(seasonOne(startsAt));
     reads.joined = { kind: "aspect", chainId: null, gameId: null, moment: 3, name: "Dana" };
     quietPlay();
     const page = await mount();
     await settle();
-    const cards = () => [...page.container.querySelectorAll("[data-aspect]")];
-    expect(cards().map((card) => card.getAttribute("data-aspect"))).toEqual([
-      "Havoc",
-      "Prowess",
-      "Luminary",
-      "Insight",
-    ]);
-    expect(cards()[0]!.getAttribute("aria-pressed")).toBe("true");
+    const cards = [...page.container.querySelectorAll("[data-aspect]")];
+    expect(cards.map((card) => card.getAttribute("data-aspect"))).toEqual(["Havoc", "Prowess", "Luminary", "Insight"]);
     expect(page.container.querySelectorAll("[data-aspect-invited]")).toHaveLength(1);
-    expect(cards()[0]!.querySelector("[data-aspect-invited]")?.textContent).toBe("Dana invited you");
-    await press(page.container, "Pledge to Havoc");
-    expect([...document.body.querySelectorAll("[data-order]")].map((row) => row.getAttribute("data-order"))).toEqual(
-      ordersOfAspect(3).map(({ fullOrderName }) => fullOrderName),
-    );
+    expect(cards[0]!.querySelector("[data-aspect-invited]")?.textContent).toBe("Dana invited you");
 
     await cleanup?.();
     reads.joined = { kind: "aspect", chainId: "0xa", gameId: 1, moment: 3, name: "Dana" };
@@ -484,87 +616,46 @@ describe("the season's countdown, while its first day is ahead and Play has no g
     expect(again.container.querySelector("[data-aspect-invited]")).toBeNull();
   });
 
-  it("holds a free Ancient Seal code on the waiting screen: a refused code says so in its field, a good one is held", async () => {
-    reads.directory = answered({ games: [] });
+  it("renders SealCodeCard as a compact secondary disclosure with a secondary submit button and holds a valid code", async () => {
+    reads.directory = answered({ games: [liveTestnet(false)] });
     reads.calendar = answered(seasonOne(startsAt));
     reads.intent = { order: ordersOfAspect(1)[0]!.orderId, members: {} };
     quietPlay();
     const page = await mount();
     await settle();
     await settle();
-    const card = () => page.container.querySelector("[data-seal-code]");
+
+    const card = () => page.container.querySelector("[data-seal-code]")!;
+    expect(card().getAttribute("data-seal-code")).toBe("open");
+    expect(card().textContent).toContain("Have an Ancient Seal code?");
+    expect(card().querySelector("input")).toBeNull();
+
+    await act(async () => card().querySelector<HTMLButtonElement>(".seal-disclosure__toggle")!.click());
+    expect(card().querySelector("input")).not.toBeNull();
+    const submitBtn = card().querySelector<HTMLButtonElement>('button[type="submit"]')!;
+    expect(submitBtn.dataset.kind).toBe("secondary");
+    expect(page.container.querySelectorAll('button[data-kind="primary"]')).toHaveLength(1);
+
     const type = (text: string) =>
       act(() => {
-        const input = card()!.querySelector("input")!;
+        const input = card().querySelector("input")!;
         Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, text);
         input.dispatchEvent(new Event("input", { bubbles: true }));
       });
-    expect(card()?.getAttribute("data-seal-code")).toBe("open");
-    expect(card()?.textContent).toContain("Free Ancient Seal?");
-    expect(card()?.textContent).toContain("Quest bonus and a Realm skin. One code, one account.");
-
     await type("TAKEN234");
-    await press(page.container, "Redeem");
+    await act(async () => submitBtn.click());
     await settle();
-    expect(card()?.querySelector(".app-field__line")?.textContent).toBe(
+    expect(card().querySelector(".app-field__line")?.textContent).toBe(
       "That code is taken, expired or not one of ours.",
     );
     await type("seal2345");
-    expect(card()?.querySelector(".app-field__line")).toBeNull();
-    await press(page.container, "Redeem");
+    expect(card().querySelector(".app-field__line")).toBeNull();
+    await act(async () => submitBtn.click());
     await settle();
     expect(reads.redeemed).toEqual(["TAKEN234", "seal2345"]);
-    expect(card()?.getAttribute("data-seal-code")).toBe("held");
-    expect(card()?.textContent).toBe("Your Ancient Seal is heldIt is yours when the season opens.");
-    expect(card()?.querySelector("input")).toBeNull();
-  });
-
-  it("hands an account that kept its Order a link inviting friends to its Aspect for the coming season", async () => {
-    reads.directory = answered({ games: [] });
-    reads.calendar = answered(seasonOne(startsAt));
-    reads.intent = { order: ordersOfAspect(1)[0]!.orderId, members: {} };
-    quietPlay();
-    const written: string[] = [];
-    Object.defineProperty(navigator, "clipboard", {
-      configurable: true,
-      value: { writeText: async (text: string) => void written.push(text) },
-    });
-    const page = await mount();
-    await settle();
-    await settle();
-    expect(reads.shared).toEqual([{ kind: "aspect", chainId: null, gameId: null, moment: 1 }]);
-    expect(page.container.querySelector("[data-season-invite]")?.textContent).toBe(
-      "Bring friendsCopy your Prowess link. A friend who opens it starts in Prowess.",
-    );
-    await press(page.container, "Copy invite link");
-    await settle();
-    expect(written).toEqual([`${window.location.origin}/s/MRGHT234?via=system`]);
-    expect(page.text()).toContain("Link copied");
-  });
-
-  it("lets a player change side before the season: Change side reopens the pick and the new choice is kept", async () => {
-    reads.directory = answered({ games: [] });
-    reads.calendar = answered(seasonOne(startsAt));
-    const titans = ordersOfAspect(1).at(-1)!;
-    const [perfection] = ordersOfAspect(2);
-    reads.intent = { order: titans.orderId, members: { [titans.orderId]: 1 } };
-    quietPlay();
-    const page = await mount();
-    await settle();
-    const step = () => page.container.querySelector("[data-preseason-step]")?.getAttribute("data-preseason-step");
-    expect(step()).toBe("waiting");
-    await press(page.container, "Change side");
-    expect(step()).toBe("pick");
-    await act(async () => page.container.querySelector<HTMLButtonElement>('[data-aspect="Luminary"]')!.click());
-    await press(page.container, "Pledge to Luminary");
-    await act(async () =>
-      document.body.querySelector<HTMLButtonElement>(`[data-order="${perfection!.fullOrderName}"]`)!.click(),
-    );
-    await press(document.body, `Play as ${perfection!.orderName}`);
-    await settle();
-    expect(reads.chosen.at(-1)).toBe(perfection!.orderId);
-    expect(step()).toBe("waiting");
-    expect(page.container.querySelector("h1")?.textContent).toBe("You're in Luminary");
+    expect(card().getAttribute("data-seal-code")).toBe("held");
+    expect(card().textContent).toContain("Your Ancient Seal is held");
+    expect(card().querySelector("input")).toBeNull();
   });
 
   it("says a choice that was not kept did not go through, and keeps it on Try again", async () => {
@@ -580,7 +671,6 @@ describe("the season's countdown, while its first day is ahead and Play has no g
       await settle();
       const [giants] = ordersOfAspect(1);
       await act(async () => page.container.querySelector<HTMLButtonElement>('[data-aspect="Prowess"]')!.click());
-      await press(page.container, "Pledge to Prowess");
       await act(async () =>
         document.body.querySelector<HTMLButtonElement>(`[data-order="${giants!.fullOrderName}"]`)!.click(),
       );
@@ -590,21 +680,18 @@ describe("the season's countdown, while its first day is ahead and Play has no g
       expect(
         [...document.body.querySelectorAll("button")].filter((each) => each.textContent === "Try again"),
       ).toHaveLength(1);
-      expect(page.container.querySelector("[data-preseason-step]")?.getAttribute("data-preseason-step")).toBe("pick");
 
       identityClient.chooseOrder = keep;
       await press(document.body, "Try again");
       await settle();
       expect(reads.chosen).toEqual([giants!.orderId]);
-      expect(page.container.querySelector("[data-preseason-step]")?.getAttribute("data-preseason-step")).toBe(
-        "waiting",
-      );
+      expect(page.container.querySelector('[data-aspect="Prowess"]')?.getAttribute("aria-pressed")).toBe("true");
     } finally {
       identityClient.chooseOrder = keep;
     }
   });
 
-  it("shows the Order kept elsewhere when the account already chose another Aspect, instead of asking again", async () => {
+  it("refetches the kept Order when chooseOrder returns 409 aspect_chosen after Season 1 starts", async () => {
     reads.directory = answered({ games: [] });
     reads.calendar = answered(seasonOne(startsAt));
     quietPlay();
@@ -620,19 +707,39 @@ describe("the season's countdown, while its first day is ahead and Play has no g
       await settle();
       const [perfection] = ordersOfAspect(2);
       await act(async () => page.container.querySelector<HTMLButtonElement>('[data-aspect="Luminary"]')!.click());
-      await press(page.container, "Pledge to Luminary");
       await act(async () =>
         document.body.querySelector<HTMLButtonElement>(`[data-order="${perfection!.fullOrderName}"]`)!.click(),
       );
       await press(document.body, `Play as ${perfection!.orderName}`);
       await settle();
       await settle();
-      expect(page.container.querySelector("[data-preseason-step]")?.getAttribute("data-preseason-step")).toBe(
-        "waiting",
+      expect(page.container.querySelector('[data-aspect="Prowess"]')?.getAttribute("aria-pressed")).toBe("true");
+      expect(page.container.querySelector('[data-aspect="Prowess"] [data-chosen-order]')?.textContent).toContain(
+        titans.fullOrderName,
       );
-      expect(page.container.querySelector("h1")?.textContent).toBe("You're in Prowess");
     } finally {
       identityClient.chooseOrder = keep;
+    }
+  });
+
+  it("keeps the countdown and rehearsal CTA usable when orderIntent fails without showing fabricated member counts", async () => {
+    reads.directory = answered({ games: [liveTestnet(false)] });
+    reads.calendar = answered(seasonOne(startsAt));
+    quietPlay();
+    const keep = identityClient.getOrderIntent;
+    identityClient.getOrderIntent = vi.fn(async () => {
+      throw new Error("503");
+    });
+    try {
+      const page = await mount();
+      await settle();
+      await settle();
+      expect(page.container.querySelectorAll('[role="timer"]')).toHaveLength(1);
+      expect(page.container.querySelector('button[data-kind="primary"]')?.textContent).toBe("Play Final Testnet");
+      expect(page.container.querySelectorAll("[data-aspect]")).toHaveLength(0);
+      expect(page.text()).toContain("Season did not answer.");
+    } finally {
+      identityClient.getOrderIntent = keep;
     }
   });
 
