@@ -4,7 +4,7 @@ export const NativeTroopType = {
   "Paladin": "Paladin",
   "Crossbowman": "Crossbowman"
 } as const;
-export const nativeFactSchemaIdentity = "f63924284e76feac5562a910df1c45d425c5ca5ce0f1d94e089dd0c822e0bd0e";
+export const nativeFactSchemaIdentity = "4f3b5d47640683c108bac0b8dcff30c1bf5ba4966e946a98c57957a788a85f78";
 export const nativeIdentifiers = {
   "rule": {
     "ENTRY_ENTITLEMENT": 0,
@@ -84,7 +84,6 @@ export const nativeIdentifiers = {
     "ROW_FARM": 0,
     "ROW_WORKSHOP": 1,
     "ROW_CONSCRIPTION": 2,
-    "ROW_HUT": 3,
     "ROW_RATIONS": 4,
     "ROW_SUPPLY_YARD": 5,
     "ROW_KNIGHT_OATHS": 6,
@@ -94,7 +93,6 @@ export const nativeIdentifiers = {
     "LORE_WELLS": 1,
     "LORE_SHRINES": 2,
     "LORE_SPIRES": 3,
-    "HUT": 1,
     "STOREROOM": 2,
     "STOREROOM_LEVEL": 1,
     "WORKSHOP": 25,
@@ -273,7 +271,7 @@ export interface NativeRows {
   ResourceArrival: { readonly game_id: number; readonly entity_id: bigint; readonly day: bigint; readonly slot: number; readonly resources: readonly ({ readonly resource_type: number; readonly amount: bigint })[] };
   RealmKnowledge: { readonly game_id: number; readonly structure_id: bigint; readonly learned: bigint };
   ResearchPrice: { readonly game_id: number; readonly row: number; readonly tier: number; readonly essence: bigint; readonly labor: bigint };
-  BoardRules: { readonly game_id: number; readonly demolition_refund_bps: number; readonly workshop_rate: bigint; readonly output_step_bps: number; readonly storage_step_bps: number; readonly population_step_bps: number; readonly ration_step: bigint; readonly troop_store_deploys: number; readonly settlement_resource_cap: number; readonly city_resource_cap: number; readonly kingdom_resource_cap: number; readonly empire_resource_cap: number };
+  BoardRules: { readonly game_id: number; readonly demolition_refund_bps: number; readonly workshop_rate: bigint; readonly output_step_bps: number; readonly storage_step_bps: number; readonly ration_step: bigint; readonly troop_store_deploys: number; readonly settlement_resource_cap: number; readonly city_resource_cap: number; readonly kingdom_resource_cap: number; readonly empire_resource_cap: number };
   BuildingRule: { readonly game_id: number; readonly category: number; readonly population_cost: number; readonly capacity_grant: number; readonly simple_cost: readonly ({ readonly resource_type: number; readonly amount: bigint })[]; readonly complex_cost: readonly ({ readonly resource_type: number; readonly amount: bigint })[] };
   Building: { readonly game_id: number; readonly structure_id: bigint; readonly inner_col: number; readonly inner_row: number; readonly category: number; readonly paused: boolean; readonly labor_paid: bigint };
   StructureBuildings: { readonly game_id: number; readonly entity_id: bigint; readonly packed_counts_1: bigint; readonly packed_counts_2: bigint; readonly packed_counts_3: bigint; readonly population: { readonly current: number; readonly max: number } };
@@ -1826,7 +1824,6 @@ export const nativeFactModels = {
       "workshop_rate": "u64",
       "output_step_bps": "u16",
       "storage_step_bps": "u16",
-      "population_step_bps": "u16",
       "ration_step": "u128",
       "troop_store_deploys": "u8",
       "settlement_resource_cap": "u32",

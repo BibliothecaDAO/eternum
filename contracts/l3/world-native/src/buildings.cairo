@@ -118,23 +118,12 @@ pub struct BuildingRow {
     pub simple_count: u32,
     pub complex_count: u32,
 }
-#[derive(Copy, Drop, Default, starknet::Store)]
-pub struct BuildingTerms {
-    pub population_cost: u8,
-    pub capacity_grant: u8,
-    pub simple_count: u8,
-    pub complex_count: u8,
-}
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 pub struct BoardRules {
     pub demolition_refund_bps: u16,
     pub workshop_rate: u64,
-    // What one tier pick adds, for every building of its type: Fields, Tools and Drill a share of the base output,
-    // Granary and Storeroom a share of the castle's base limit, a hut tier a share of a hut's population, and
-    // Rations a cut in the wheat each deployed troop costs.
     pub output_step_bps: u16,
     pub storage_step_bps: u16,
-    pub population_step_bps: u16,
     pub ration_step: u128,
     // The number of Barracks purchases needed before building training.
     // Troop storage stays tied to deployment capacity; wheat and labor have their own per-level caps.

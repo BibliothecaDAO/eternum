@@ -123,7 +123,8 @@ pub mod ConstructionLogic {
                 self.change_building_production(key, building.category, base, false, context);
             }
             let rule = self.buildings.rule(crate::buildings::BuildingRuleKey { game_id, category: building.category });
-            self.buildings.remove(location, building, rule, context.rules.unbox().building_config.base_population);
+            self.buildings.remove(location, building);
+            self.buildings.house(location, rule, false, context.rules.unbox().building_config.base_population);
             emit_building_change(
                 key, actor, command.coord, building.category, BuildingChange::Destroyed, context.timestamp,
             );
@@ -183,15 +184,8 @@ pub mod ConstructionLogic {
             context: ExecutionContext,
         ) {
             let building = Building { category, paused: false, labor_paid: 0 };
-            self
-                .buildings
-                .create(
-                    location,
-                    building,
-                    rule.population_cost,
-                    rule.capacity_grant,
-                    context.rules.unbox().building_config.base_population,
-                );
+            self.buildings.create(location, building);
+            self.buildings.house(location, rule, true, context.rules.unbox().building_config.base_population);
             self.change_building_production(key, category, base, true, context);
             let resources = self.data.structures.structures.entry((key.game_id, key.entity_id)).resources_packed.read();
             assert!(crate::buildings::can_produce(category, resources), "structure cannot produce building resource");

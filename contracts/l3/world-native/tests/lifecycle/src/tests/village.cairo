@@ -1,16 +1,6 @@
 pub use world_test_support::tests::village::*;
 
 #[test]
-fn a_founded_realm_castle_uses_no_population_even_where_labor_buildings_cost_it() {
-    assert!(*crate::balance::structures::BUILDINGS.span().at(24).population_cost != 0);
-    let deployment = season_world();
-    let realm = ResourceKey { game_id: 3, entity_id: settle_season_realm(deployment) };
-    let structures = IStructureOperationsDispatcher { contract_address: deployment.games };
-    assert!(structures.structure_buildings(realm).packed_counts_2 > 0);
-    assert_eq!(structures.structure_buildings(realm).population.current, 0);
-}
-
-#[test]
 fn season_settlement_of_a_held_realm_takes_its_traits_and_provisions_its_economy() {
     let deployment = season_world();
     let id = settle_season_realm(deployment);

@@ -46,8 +46,6 @@ export interface NativePreset {
     outputStepBps: number;
     /** Granary and Storeroom, of the castle's base limit. */
     storageStepBps: number;
-    /** A hut tier, of a hut's population. */
-    populationStepBps: number;
     /** Wheat a Rations pick takes off each deployed troop. */
     rationStep: number;
     /** Total Barracks purchases needed to construct training. */

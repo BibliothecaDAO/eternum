@@ -87,7 +87,7 @@ pub mod ConstructionLogic {
             let board = crate::logic::buildings::board();
             self.assert_board_category(key, command.category, board);
             self.settle_stores_before_storeroom(key, command.category, context);
-            self.erect_building(key, actor, base, location, coord, command.category, rule, context.timestamp, context);
+            self.erect_building(key, actor, location, coord, command.category, context.timestamp);
             self.change_board_building(key, base, command.category, board, true, context);
             let mut count = crate::buildings::category_count(
                 self.buildings.data.buildings.structure_buildings.read((game_id, command.structure_id)),
@@ -134,9 +134,8 @@ pub mod ConstructionLogic {
                 building.category != 25 || command.coord.x != 10 || command.coord.y != 10,
                 "cannot destroy labor building",
             );
-            let rule = self.buildings.rule(crate::buildings::BuildingRuleKey { game_id, category: building.category });
             self.settle_stores_before_storeroom(key, building.category, context);
-            self.buildings.remove(location, building, rule, context.rules.unbox().building_config.base_population);
+            self.buildings.remove(location, building);
             let board = crate::logic::buildings::board();
             self.change_board_building(key, base, building.category, board, false, context);
             let refund = crate::math::PercentageImpl::get(building.labor_paid, board.demolition_refund_bps.into());
@@ -239,25 +238,13 @@ pub mod ConstructionLogic {
             ref self: ContractState,
             key: ResourceKey,
             actor: ContractAddress,
-            base: StructureBase,
             location: BuildingKey,
             coord: Coord,
             category: u8,
-            rule: crate::buildings::BuildingRule,
             timestamp: u64,
-            game_context: crate::commands::ExecutionContext,
         ) {
             let building = Building { category, paused: false, labor_paid: 0 };
-            let rules = game_context.rules.unbox();
-            self
-                .buildings
-                .create(
-                    location,
-                    building,
-                    rule.population_cost,
-                    rule.capacity_grant,
-                    rules.building_config.base_population,
-                );
+            self.buildings.create(location, building);
             self.assert_structure_produces(key, building.category);
             crate::logic::buildings::emit_building_change(
                 key, actor, coord, building.category, crate::ownership::BuildingChange::Created, timestamp,
@@ -345,8 +332,6 @@ pub mod ConstructionLogic {
                 self.spend(key, crate::resources::LABOR, price.labor, game_context.timestamp, context);
             }
         }
-        // A tier applies at once to every building of its type: Fields, Tools and Drill raise each one's output, and
-        // a hut tier raises each hut's population. Store, Rations and training picks are read where they apply.
         fn apply_research(
             ref self: ContractState,
             key: ResourceKey,
@@ -369,17 +354,7 @@ pub mod ConstructionLogic {
             if category == 0 {
                 return;
             }
-            let standing = self.standing(key, category);
             self.change_researched_output(key, base, category, board, before, after, game_context);
-            if category == crate::research::HUT {
-                let old_bonus = self.buildings.hut_bonus(key.game_id, standing, board, before);
-                let new_bonus = self.buildings.hut_bonus(key.game_id, standing, board, after);
-                self
-                    .buildings
-                    .change_population_max(
-                        key, old_bonus, new_bonus, game_context.rules.unbox().building_config.base_population,
-                    );
-            }
         }
         fn change_researched_output(
             ref self: ContractState,
@@ -414,21 +389,6 @@ pub mod ConstructionLogic {
             let learned = crate::logic::research::learned(key);
             let (resource_type, rate) = self.buildings.board_output(key, base, category, board, learned);
             self.change_board_output(key, resource_type, rate, adding, game_context);
-            if category == crate::research::HUT {
-                let huts = self.standing(key, category);
-                let previous = if adding {
-                    huts - 1
-                } else {
-                    huts + 1
-                };
-                let old_bonus = self.buildings.hut_bonus(key.game_id, previous, board, learned);
-                let new_bonus = self.buildings.hut_bonus(key.game_id, huts, board, learned);
-                self
-                    .buildings
-                    .change_population_max(
-                        key, old_bonus, new_bonus, game_context.rules.unbox().building_config.base_population,
-                    );
-            }
         }
         fn change_board_output(
             ref self: ContractState,

@@ -154,7 +154,6 @@ export const factWireTypes = [
       { name: "workshop_rate", type: "core::integer::u64" },
       { name: "output_step_bps", type: "core::integer::u16" },
       { name: "storage_step_bps", type: "core::integer::u16" },
-      { name: "population_step_bps", type: "core::integer::u16" },
       { name: "ration_step", type: "core::integer::u128" },
       { name: "troop_store_deploys", type: "core::integer::u8" },
       { name: "settlement_resource_cap", type: "core::integer::u32" },

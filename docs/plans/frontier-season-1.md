@@ -134,7 +134,7 @@ Deep**: with a mate's army it takes a site (see the Deep).
 | Castle labor | 100 / 200 / 400 / 800 an hour by level                                        | 100.8 an hour · `frontier/base.ts:28-32`                                                                   |
 | Start        | **3,000 Knights in two armies of 1,500**, 6,000 wheat, 2,000 labor, 0 Essence | 1,500 Knights, 4,500 wheat · `frontier/base.ts:71-75`                                                      |
 | Daily reward | the daily quest, for every home                                               | one claim of 1,000 labor, none for a free home · `frontier/native.ts:124`, `src/logic/entry.cairo:172-231` |
-| Population   | none                                                                          | base 6, +6 a Hut                                                                                           |
+| Population   | none                                                                          | none: the plots of the Realm's level are the limit · `src/logic/buildings.cairo:49-50`                     |
 
 #### The daily quest (new)
 

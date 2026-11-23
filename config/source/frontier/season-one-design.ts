@@ -17,10 +17,10 @@ export const seasonOneDesign = {
     laborStore: [5000, 15000, 50000, 100000],
     castleLaborPerHour: 100,
     storeroomStorePercent: 100,
+    population: false,
   },
   start: { knights: 3000, wheat: 6000, labor: 2000 },
   buildings: {
-    hut: price(0, 300),
     farm: price(0, 500),
     workshop: price(0, 1000),
     storeroom: price(0, 10000),
@@ -47,7 +47,6 @@ export const seasonOneDesign = {
   research: {
     fields: fieldsAndTools,
     tools: fieldsAndTools,
-    hut: [price(250, 250), price(500, 500), price(2000, 1500), price(6000, 4000), price(15000, 10000)],
     conscription: campAndDepot,
     rations: campAndDepot,
     logistics: [price(5000, 1000), price(10000, 2500), price(25000, 5000), price(50000, 10000), price(100000, 25000)],

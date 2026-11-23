@@ -166,7 +166,6 @@ function buildStructures(config: Config, preset: ReturnType<typeof nativePresetF
             workshop_rate: scaled(board.workshopRate, precision),
             output_step_bps: board.outputStepBps,
             storage_step_bps: board.storageStepBps,
-            population_step_bps: board.populationStepBps,
             ration_step: scaled(board.rationStep, precision),
             troop_store_deploys: board.troopStoreDeploys,
             settlement_resource_cap: board.resourceStoreCaps[0],

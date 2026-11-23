@@ -90,7 +90,7 @@ pub const STRUCTURE_CAPACITY_CONFIG: crate::rules::StructureCapacityConfig = cra
 };
 
 pub const BUILDING_CONFIG: crate::rules::BuildingConfig = crate::rules::BuildingConfig {
-    base_population: 6, base_cost_percent_increase: 10000,
+    base_population: 0, base_cost_percent_increase: 10000,
 };
 
 pub const SPIRE_TRAVEL_ESSENCE_COST: u128 = 0;

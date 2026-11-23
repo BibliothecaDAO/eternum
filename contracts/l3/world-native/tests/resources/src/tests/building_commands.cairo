@@ -16,7 +16,7 @@ fn record_spatial_replay_buildings() {
 }
 
 #[test]
-fn failed_building_payment_rolls_back_placement_population_rate_and_resources() {
+fn failed_building_payment_rolls_back_placement_rate_and_resources() {
     let (deployment, home) = building_world();
     let structures = IStructureOperationsDispatcher { contract_address: deployment.games };
     let before = resource_facts(deployment, home);
@@ -115,41 +115,40 @@ fn building_actions_require_ownership_and_the_game_window() {
 }
 
 #[test]
-fn the_castle_cannot_be_destroyed_and_population_blocks_overbuilding() {
+fn the_castle_cannot_be_destroyed() {
     let (deployment, home) = research_world();
     let structures = IStructureOperationsDispatcher { contract_address: deployment.games };
     let castle = ChangeBuilding { structure_id: home.entity_id, coord: Coord { alt: false, x: 10, y: 10 } };
     assert_terminal_rejection(deployment, Command::DestroyBuilding(castle), FIXTURE_START + 50);
     assert!(structures.building(BuildingKey { inner_col: 10, ..east(home) }).is_some());
-    let counts = structures.structure_buildings(home);
-    set_fixture(
-        deployment.games,
-        selector!("buildings"),
-        selector!("structure_buildings"),
-        array![3, home.entity_id.into()].span(),
-        crate::buildings::StructureBuildings {
-            population: crate::buildings::Population {
-                current: counts.population.max
-                    + IGameDispatcher { contract_address: deployment.games }.rules(3).building_config.base_population,
-                max: counts.population.max,
-            },
-            ..counts,
-        },
-    );
-    let before = resource_facts(deployment, home);
-    assert_terminal_rejection(deployment, create(home, crate::research::FARM), FIXTURE_START + 60);
-    assert_eq!(resource_facts(deployment, home), before);
 }
 
 #[test]
-fn a_workshop_a_player_builds_costs_its_rule_population() {
-    let (deployment, home) = research_world();
-    let structures = IStructureOperationsDispatcher { contract_address: deployment.games };
-    let workshop = *crate::balance::structures::BUILDINGS.span().at(crate::research::WORKSHOP.into() - 1);
-    assert!(workshop.population_cost != 0);
-    let before = structures.structure_buildings(home).population.current;
-    assert!(execute(deployment, create(home, crate::research::WORKSHOP), FIXTURE_START + 40));
-    assert_eq!(structures.structure_buildings(home).population.current, before + workshop.population_cost.into());
+fn a_settlement_fills_its_six_plots_and_no_seventh() {
+    let (d, home) = building_world();
+    super::unlimited_production::settle(d, home, crate::resources::LABOR, FIXTURE_START + 40);
+    for (direction, category) in array![
+        (0_u8, crate::research::FARM), (1, crate::research::FARM), (2, crate::research::BARRACKS),
+        (3, crate::research::BARRACKS), (4, crate::research::WORKSHOP), (5, crate::research::WORKSHOP),
+    ] {
+        super::resource_commands::grant(d, home, crate::resources::LABOR, 1000 * crate::rules::RESOURCE_PRECISION);
+        assert!(execute(d, build_toward(home, category, direction), FIXTURE_START + 40));
+    }
+    super::resource_commands::grant(d, home, crate::resources::LABOR, 1000 * crate::rules::RESOURCE_PRECISION);
+    let before = resource_facts(d, home);
+    assert_terminal_rejection(
+        d,
+        Command::CreateBuilding(
+            CreateBuilding {
+                structure_id: home.entity_id,
+                directions: array![0_u8, 0].span(),
+                category: crate::research::FARM,
+                use_simple: true,
+            },
+        ),
+        FIXTURE_START + 40,
+    );
+    assert_eq!(resource_facts(d, home), before);
 }
 
 #[test]
@@ -249,8 +248,6 @@ fn a_row_opens_with_its_first_building_and_sells_each_tier_once_in_order_at_its_
     }
     assert_eq!(resources.resource_balance(labor), before);
     assert_terminal_rejection(d, research(home, crate::research::ROW_LORE), FIXTURE_START + 40);
-    assert!(execute(d, build_toward(home, crate::research::HUT, 1), FIXTURE_START + 40));
-    assert!(execute(d, research(home, crate::research::ROW_HUT), FIXTURE_START + 40));
 }
 
 #[test]
@@ -275,25 +272,6 @@ fn a_make_pick_adds_a_fifth_of_the_base_to_every_building_of_the_type_standing_o
     assert_eq!(rate(d, home, labor), castle + workshop);
     assert!(execute(d, research(home, crate::research::ROW_WORKSHOP), FIXTURE_START + 40));
     assert_eq!(rate(d, home, labor), castle + stepped(workshop, 1));
-}
-
-#[test]
-fn each_hut_tier_adds_a_fifth_of_every_huts_population() {
-    let (d, home) = research_world();
-    let structures = IStructureOperationsDispatcher { contract_address: d.games };
-    let before = structures.structure_buildings(home).population.max;
-    assert!(execute(d, build_toward(home, crate::research::HUT, 0), FIXTURE_START + 40));
-    assert!(execute(d, build_toward(home, crate::research::HUT, 1), FIXTURE_START + 40));
-    assert_eq!(structures.structure_buildings(home).population.max, before + 12);
-    for _ in 0..3_u8 {
-        assert!(execute(d, research(home, crate::research::ROW_HUT), FIXTURE_START + 40));
-    }
-    // Two huts of 6 at Rare: 12 + 12 * 3 * 20%, rounded down once for the type.
-    assert_eq!(structures.structure_buildings(home).population.max, before + 12 + 7);
-    assert!(execute(d, build_toward(home, crate::research::HUT, 2), FIXTURE_START + 40));
-    assert_eq!(structures.structure_buildings(home).population.max, before + 18 + 10);
-    assert!(execute(d, Command::DestroyBuilding(change(home)), FIXTURE_START + 40));
-    assert_eq!(structures.structure_buildings(home).population.max, before + 12 + 7);
 }
 
 #[test]
@@ -351,7 +329,6 @@ fn a_tier_the_realm_cannot_pay_in_labor_is_refused_and_changes_nothing() {
 #[test]
 fn a_copy_costs_its_base_times_one_plus_the_square_of_the_copies_before_it() {
     let (d, home) = building_world();
-    grant_population(d, home, 40);
     let farm = *crate::balance::structures::BUILDINGS.span().at(crate::research::FARM.into() - 1);
     assert_eq!(farm.simple_count, 1);
     let cost = *crate::balance::structures::BUILDING_COSTS.span().at(farm.first_cost);
@@ -648,7 +625,6 @@ fn camp_and_depot_charge_their_own_exact_ladder_once_and_preserve_it_after_rebui
 #[test]
 fn range_camp_and_storeroom_open_at_city_and_depot_and_supply_yard_at_kingdom() {
     let (d, home) = building_world();
-    grant_population(d, home, 40);
     super::resource_commands::grant(d, home, crate::resources::ESSENCE, 100000 * crate::rules::RESOURCE_PRECISION);
     for category in array![
         crate::research::RANGE, crate::research::CONSCRIPTION_CAMP, crate::research::STOREROOM,

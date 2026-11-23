@@ -19,7 +19,6 @@ const laborLadder = [0.5, 1, 3, 8, 20];
 const buildingRows = [
   { row: research.ROW_FARM, essence: 1000, labor: 1000 },
   { row: research.ROW_WORKSHOP, essence: 2000, labor: 2000 },
-  { row: research.ROW_HUT, essence: 500, labor: 500 },
   ...[research.ROW_SUPPLY_YARD].map((row) => ({
     row,
     essence: 12000,
@@ -72,7 +71,6 @@ export const frontierPreset = {
     workshopRate: 0.056,
     outputStepBps: 2000,
     storageStepBps: 4000,
-    populationStepBps: 2000,
     rationStep: 0.2,
     troopStoreDeploys: 2,
     resourceStoreCaps: [6000, 18000, 40000, 80000],

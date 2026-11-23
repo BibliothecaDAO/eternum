@@ -1,5 +1,5 @@
 {
-  "release": 17,
+  "release": 18,
   "definition": {
     "rules": {
       "battle_config": {
@@ -98,7 +98,7 @@
         "camp_capacity": "18446744073709551615"
       },
       "building_config": {
-        "base_population": 6,
+        "base_population": 0,
         "base_cost_percent_increase": 10000
       },
       "map_center_offset": 2147483646,
@@ -1038,7 +1038,6 @@
           "workshop_rate": "55555556",
           "output_step_bps": 2000,
           "storage_step_bps": 10000,
-          "population_step_bps": 2000,
           "ration_step": "200000000",
           "troop_store_deploys": 2,
           "settlement_resource_cap": 6000,
@@ -1125,46 +1124,6 @@
           "tier": 5,
           "price": {
             "essence": "10000000000000",
-            "labor": "10000000000000"
-          }
-        },
-        {
-          "row": 3,
-          "tier": 1,
-          "price": {
-            "essence": "250000000000",
-            "labor": "250000000000"
-          }
-        },
-        {
-          "row": 3,
-          "tier": 2,
-          "price": {
-            "essence": "500000000000",
-            "labor": "500000000000"
-          }
-        },
-        {
-          "row": 3,
-          "tier": 3,
-          "price": {
-            "essence": "2000000000000",
-            "labor": "1500000000000"
-          }
-        },
-        {
-          "row": 3,
-          "tier": 4,
-          "price": {
-            "essence": "6000000000000",
-            "labor": "4000000000000"
-          }
-        },
-        {
-          "row": 3,
-          "tier": 5,
-          "price": {
-            "essence": "15000000000000",
             "labor": "10000000000000"
           }
         },
@@ -1390,20 +1349,15 @@
           "category": 1,
           "rule": {
             "population_cost": 0,
-            "capacity_grant": 6,
-            "simple_cost": [
-              {
-                "resource_type": 23,
-                "amount": "300000000000"
-              }
-            ],
+            "capacity_grant": 0,
+            "simple_cost": [],
             "complex_cost": []
           }
         },
         {
           "category": 2,
           "rule": {
-            "population_cost": 2,
+            "population_cost": 0,
             "capacity_grant": 0,
             "simple_cost": [
               {
@@ -1417,7 +1371,7 @@
         {
           "category": 3,
           "rule": {
-            "population_cost": 2,
+            "population_cost": 0,
             "capacity_grant": 0,
             "simple_cost": [],
             "complex_cost": []
@@ -1426,7 +1380,7 @@
         {
           "category": 4,
           "rule": {
-            "population_cost": 2,
+            "population_cost": 0,
             "capacity_grant": 0,
             "simple_cost": [],
             "complex_cost": []
@@ -1435,7 +1389,7 @@
         {
           "category": 5,
           "rule": {
-            "population_cost": 2,
+            "population_cost": 0,
             "capacity_grant": 0,
             "simple_cost": [],
             "complex_cost": []
@@ -1444,7 +1398,7 @@
         {
           "category": 6,
           "rule": {
-            "population_cost": 2,
+            "population_cost": 0,
             "capacity_grant": 0,
             "simple_cost": [],
             "complex_cost": []
@@ -1453,7 +1407,7 @@
         {
           "category": 7,
           "rule": {
-            "population_cost": 2,
+            "population_cost": 0,
             "capacity_grant": 0,
             "simple_cost": [],
             "complex_cost": []
@@ -1462,7 +1416,7 @@
         {
           "category": 8,
           "rule": {
-            "population_cost": 2,
+            "population_cost": 0,
             "capacity_grant": 0,
             "simple_cost": [],
             "complex_cost": []
@@ -1471,7 +1425,7 @@
         {
           "category": 9,
           "rule": {
-            "population_cost": 2,
+            "population_cost": 0,
             "capacity_grant": 0,
             "simple_cost": [],
             "complex_cost": []
@@ -1480,7 +1434,7 @@
         {
           "category": 10,
           "rule": {
-            "population_cost": 2,
+            "population_cost": 0,
             "capacity_grant": 0,
             "simple_cost": [],
             "complex_cost": []
@@ -1489,7 +1443,7 @@
         {
           "category": 11,
           "rule": {
-            "population_cost": 2,
+            "population_cost": 0,
             "capacity_grant": 0,
             "simple_cost": [],
             "complex_cost": []
@@ -1498,7 +1452,7 @@
         {
           "category": 12,
           "rule": {
-            "population_cost": 2,
+            "population_cost": 0,
             "capacity_grant": 0,
             "simple_cost": [],
             "complex_cost": []
@@ -1507,7 +1461,7 @@
         {
           "category": 13,
           "rule": {
-            "population_cost": 2,
+            "population_cost": 0,
             "capacity_grant": 0,
             "simple_cost": [],
             "complex_cost": []
@@ -1516,7 +1470,7 @@
         {
           "category": 14,
           "rule": {
-            "population_cost": 2,
+            "population_cost": 0,
             "capacity_grant": 0,
             "simple_cost": [],
             "complex_cost": []
@@ -1525,7 +1479,7 @@
         {
           "category": 15,
           "rule": {
-            "population_cost": 2,
+            "population_cost": 0,
             "capacity_grant": 0,
             "simple_cost": [],
             "complex_cost": []
@@ -1534,7 +1488,7 @@
         {
           "category": 16,
           "rule": {
-            "population_cost": 2,
+            "population_cost": 0,
             "capacity_grant": 0,
             "simple_cost": [],
             "complex_cost": []
@@ -1543,7 +1497,7 @@
         {
           "category": 17,
           "rule": {
-            "population_cost": 2,
+            "population_cost": 0,
             "capacity_grant": 0,
             "simple_cost": [],
             "complex_cost": []
@@ -1552,7 +1506,7 @@
         {
           "category": 18,
           "rule": {
-            "population_cost": 2,
+            "population_cost": 0,
             "capacity_grant": 0,
             "simple_cost": [],
             "complex_cost": []
@@ -1561,7 +1515,7 @@
         {
           "category": 19,
           "rule": {
-            "population_cost": 2,
+            "population_cost": 0,
             "capacity_grant": 0,
             "simple_cost": [],
             "complex_cost": []
@@ -1570,7 +1524,7 @@
         {
           "category": 20,
           "rule": {
-            "population_cost": 2,
+            "population_cost": 0,
             "capacity_grant": 0,
             "simple_cost": [],
             "complex_cost": []
@@ -1579,7 +1533,7 @@
         {
           "category": 21,
           "rule": {
-            "population_cost": 2,
+            "population_cost": 0,
             "capacity_grant": 0,
             "simple_cost": [],
             "complex_cost": []
@@ -1588,7 +1542,7 @@
         {
           "category": 22,
           "rule": {
-            "population_cost": 2,
+            "population_cost": 0,
             "capacity_grant": 0,
             "simple_cost": [],
             "complex_cost": []
@@ -1597,7 +1551,7 @@
         {
           "category": 23,
           "rule": {
-            "population_cost": 2,
+            "population_cost": 0,
             "capacity_grant": 0,
             "simple_cost": [],
             "complex_cost": []
@@ -1606,7 +1560,7 @@
         {
           "category": 24,
           "rule": {
-            "population_cost": 2,
+            "population_cost": 0,
             "capacity_grant": 0,
             "simple_cost": [],
             "complex_cost": []
@@ -1615,7 +1569,7 @@
         {
           "category": 25,
           "rule": {
-            "population_cost": 2,
+            "population_cost": 0,
             "capacity_grant": 0,
             "simple_cost": [
               {
@@ -1629,7 +1583,7 @@
         {
           "category": 26,
           "rule": {
-            "population_cost": 2,
+            "population_cost": 0,
             "capacity_grant": 0,
             "simple_cost": [],
             "complex_cost": []
@@ -1638,7 +1592,7 @@
         {
           "category": 27,
           "rule": {
-            "population_cost": 2,
+            "population_cost": 0,
             "capacity_grant": 0,
             "simple_cost": [],
             "complex_cost": []
@@ -1647,7 +1601,7 @@
         {
           "category": 28,
           "rule": {
-            "population_cost": 3,
+            "population_cost": 0,
             "capacity_grant": 0,
             "simple_cost": [
               {
@@ -1661,7 +1615,7 @@
         {
           "category": 29,
           "rule": {
-            "population_cost": 2,
+            "population_cost": 0,
             "capacity_grant": 0,
             "simple_cost": [],
             "complex_cost": []
@@ -1670,7 +1624,7 @@
         {
           "category": 30,
           "rule": {
-            "population_cost": 2,
+            "population_cost": 0,
             "capacity_grant": 0,
             "simple_cost": [],
             "complex_cost": []
@@ -1679,7 +1633,7 @@
         {
           "category": 31,
           "rule": {
-            "population_cost": 2,
+            "population_cost": 0,
             "capacity_grant": 0,
             "simple_cost": [
               {
@@ -1693,7 +1647,7 @@
         {
           "category": 32,
           "rule": {
-            "population_cost": 2,
+            "population_cost": 0,
             "capacity_grant": 0,
             "simple_cost": [],
             "complex_cost": []
@@ -1702,7 +1656,7 @@
         {
           "category": 33,
           "rule": {
-            "population_cost": 2,
+            "population_cost": 0,
             "capacity_grant": 0,
             "simple_cost": [],
             "complex_cost": []
@@ -1711,7 +1665,7 @@
         {
           "category": 34,
           "rule": {
-            "population_cost": 2,
+            "population_cost": 0,
             "capacity_grant": 0,
             "simple_cost": [],
             "complex_cost": []
@@ -1720,7 +1674,7 @@
         {
           "category": 35,
           "rule": {
-            "population_cost": 2,
+            "population_cost": 0,
             "capacity_grant": 0,
             "simple_cost": [],
             "complex_cost": []
@@ -1729,7 +1683,7 @@
         {
           "category": 36,
           "rule": {
-            "population_cost": 2,
+            "population_cost": 0,
             "capacity_grant": 0,
             "simple_cost": [],
             "complex_cost": []
@@ -1738,7 +1692,7 @@
         {
           "category": 37,
           "rule": {
-            "population_cost": 1,
+            "population_cost": 0,
             "capacity_grant": 0,
             "simple_cost": [
               {
@@ -1752,7 +1706,7 @@
         {
           "category": 38,
           "rule": {
-            "population_cost": 2,
+            "population_cost": 0,
             "capacity_grant": 0,
             "simple_cost": [],
             "complex_cost": []
@@ -1770,7 +1724,7 @@
         {
           "category": 40,
           "rule": {
-            "population_cost": 2,
+            "population_cost": 0,
             "capacity_grant": 0,
             "simple_cost": [],
             "complex_cost": []
@@ -1779,7 +1733,7 @@
         {
           "category": 41,
           "rule": {
-            "population_cost": 2,
+            "population_cost": 0,
             "capacity_grant": 0,
             "simple_cost": [
               {
@@ -1797,7 +1751,7 @@
         {
           "category": 42,
           "rule": {
-            "population_cost": 2,
+            "population_cost": 0,
             "capacity_grant": 0,
             "simple_cost": [
               {
@@ -1815,7 +1769,7 @@
         {
           "category": 43,
           "rule": {
-            "population_cost": 2,
+            "population_cost": 0,
             "capacity_grant": 0,
             "simple_cost": [
               {
@@ -1829,7 +1783,7 @@
         {
           "category": 44,
           "rule": {
-            "population_cost": 2,
+            "population_cost": 0,
             "capacity_grant": 0,
             "simple_cost": [
               {
