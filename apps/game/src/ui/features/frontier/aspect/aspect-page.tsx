@@ -13,7 +13,7 @@ import {
   nativeRaceConstants,
   type RaceBoard,
 } from "@bibliothecadao/eternum/game-client";
-import { aspectLordsWorth, aspects, catalogAspectId, RESOURCE_PRECISION } from "@bibliothecadao/types";
+import { aspects, catalogAspectId, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { useFrontierRealm } from "../frontier-home";
 import { realmLayers } from "../hud/map-layers";
 import { AspectInvite } from "../invite/aspect-invite";
@@ -76,7 +76,6 @@ export function aspectPage(
         stage: row.stage,
         finished: row.finished,
         own: row.aspect === board.own?.aspect,
-        lords: aspectLordsWorth(row.height, board.result?.winner === row.aspect),
       })),
       finishHeight: board.rules.stage_height * nativeRaceConstants.STAGE_COUNT,
       stages: nativeRaceConstants.STAGE_COUNT,

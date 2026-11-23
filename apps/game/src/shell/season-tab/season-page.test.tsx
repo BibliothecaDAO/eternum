@@ -447,6 +447,8 @@ it("renders Season 1 Aspect race from directory without calling the Season 0 lea
     expect(container.querySelector('[data-aspect-id="1"] .hyper-tile__count')?.textContent).toBe("6,400");
     expect(container.textContent).toContain("Day 4 of 30");
     expect(container.textContent).toContain("Clear Mist · 1,500 height");
+    expect(container.textContent).not.toContain("LORDS per height point");
+    expect(container.textContent).not.toContain("LORDS");
   } finally {
     await unmount();
   }

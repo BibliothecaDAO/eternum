@@ -1,4 +1,5 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
+import { fetchApi } from "@/runtime/app-api";
 import { createIdentityClient, profileOfIdentityUser, type Session } from "@realms-world/identity";
 import { useEffect } from "react";
 import { create } from "zustand";
@@ -9,7 +10,7 @@ import { create } from "zustand";
  * gameplay account is derived from the session by `GameplayAccountSync` and may lag it while it deploys.
  */
 /** The identity Worker answers under this app's own /api, so no request crosses origins. */
-export const identityClient = createIdentityClient({ apiUrl: "/api" });
+export const identityClient = createIdentityClient({ apiUrl: "/api", fetch: fetchApi });
 
 /** The identity chip's popover id: a signed-in player's account panel opens from it. */
 export const IDENTITY_POPOVER_ID = "identity";

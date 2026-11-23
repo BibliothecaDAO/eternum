@@ -96,6 +96,8 @@ const ASPECT_INVITE_UNREAD = "Your friend's invite could not be read. You can ch
 const keptOrder = { order: null as number | null };
 beforeEach(() => {
   vi.spyOn(identityClient, "getOrderIntent").mockImplementation(async () => ({ order: keptOrder.order, members: {} }));
+  vi.spyOn(identityClient, "joinedShare").mockResolvedValue(null);
+  vi.spyOn(identityClient, "readDefaultWallet").mockResolvedValue(null);
 });
 
 afterEach(() => {

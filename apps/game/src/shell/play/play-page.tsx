@@ -1,7 +1,16 @@
 import "./play-page.css";
 
 import type { HeraldAspectRace } from "@bibliothecadao/eternum/game-sync";
-import { aspectName, aspects, questCatalog, type AspectId, type QuestId } from "@bibliothecadao/types";
+import {
+  aspectName,
+  aspects,
+  FRIEND_FRAGMENTS,
+  FRIENDS_BONUS_FRAGMENTS,
+  FRIENDS_LIMIT,
+  questCatalog,
+  type AspectId,
+  type QuestId,
+} from "@bibliothecadao/types";
 import type { ReactNode } from "react";
 
 import { Icon } from "@/ui/design-system/icon";
@@ -10,6 +19,8 @@ import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
 import {
   ASPECT_PAGE_WORDS,
   DAY_BANNER_WORDS,
+  PRESEASON_WORDS,
+  PROFILE_WORDS,
   SEASON_INVITE_WORDS,
   SHARED_DAYS_WORDS,
   WORDS,
@@ -22,7 +33,8 @@ import { Loading } from "../loading";
 import { aspectRaceStandings, directoryDay, seasonEnded, seasonPlayerAspect, seasonRealm } from "../season";
 import { resultsHref } from "../season-tab/results-link";
 import { useShareTally } from "../share/own-shares";
-import { HyperstructureTile, RacePoolRuleStrip } from "./hyperstructure-stage";
+import { useRequestSignIn } from "../sign-in/connect";
+import { HyperstructureTile } from "./hyperstructure-stage";
 import type { PlayItem } from "./play-board";
 import { type PlayFacts, type SourceGap, usePlayFacts } from "./play-facts";
 import { LeadCard, RehearsalCard } from "./play-item";
@@ -56,6 +68,7 @@ export const PlayPage = () => {
           (leadRace !== null ||
             hasActiveRealm ||
             playerAspect !== null ||
+            (!facts.signedIn && leadFrontier !== null) ||
             facts.board.results.length > 0 ||
             facts.board.rehearsals.length > 0) && (
             <div className="play-side">
@@ -68,7 +81,11 @@ export const PlayPage = () => {
                 />
               )}
               {hasActiveRealm && leadFrontier && <TodayQuestPanel game={leadFrontier} now={facts.now} />}
-              {playerAspect !== null && <PlayInviteStrip aspect={playerAspect} />}
+              {playerAspect !== null ? (
+                <PlayInviteStrip aspect={playerAspect} />
+              ) : (
+                !facts.signedIn && leadFrontier !== null && <SignedOutInviteStrip />
+              )}
               {facts.board.rehearsals.map((item) => (
                 <RehearsalCard key={item.key} item={item} now={facts.now} signedIn={facts.signedIn} />
               ))}
@@ -159,13 +176,11 @@ const AspectRacePreview = ({
                 finishHeight={finishHeight}
                 members={row.members}
                 own={ownAspect === id}
-                winner={row.finished}
                 compact
               />
             );
           })}
         </div>
-        <RacePoolRuleStrip />
       </div>
     </AppPanel>
   );
@@ -238,6 +253,25 @@ const PlayInviteStrip = ({ aspect }: { aspect: AspectId }) => {
           <CopySeasonInvite invite={invite} size="md" />
         </div>
         <SeasonInviteAlerts invite={invite} />
+      </div>
+    </AppPanel>
+  );
+};
+
+const SignedOutInviteStrip = () => {
+  const requestSignIn = useRequestSignIn();
+  return (
+    <AppPanel title={SEASON_INVITE_WORDS.title} icon="people">
+      <div className="play-invite" data-play-invite>
+        <div className="play-invite__text">
+          <p className="text-app-label text-app-gold">
+            {PROFILE_WORDS.friendMilestone(FRIEND_FRAGMENTS, FRIENDS_BONUS_FRAGMENTS, FRIENDS_LIMIT)}
+          </p>
+          <p className="text-app-label text-app-muted">{PRESEASON_WORDS.inviteSignedOut}</p>
+        </div>
+        <AppButton kind="secondary" size="md" onClick={() => requestSignIn()}>
+          {WORDS.signIn}
+        </AppButton>
       </div>
     </AppPanel>
   );

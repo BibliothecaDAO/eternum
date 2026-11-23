@@ -1,14 +1,12 @@
 import "./play-page.css";
 
 import {
-  ASPECT_REWARD,
   FRIEND_FRAGMENTS,
   FRIENDS_BONUS_FRAGMENTS,
   FRIENDS_LIMIT,
   aspectName,
   aspects,
   formatAmount,
-  formatExact,
   orders,
   ordersOfAspect,
   type AspectId,
@@ -29,7 +27,6 @@ import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
 import {
   ASPECT_STEP_WORDS,
   COUNTDOWN_WORDS,
-  PLAY_WORDS,
   PRESEASON_WORDS,
   PROFILE_WORDS,
   SEASON_INVITE_WORDS,
@@ -44,7 +41,7 @@ import { aspectOffer, invitedFirst, type AspectOffer } from "@/ui/features/game-
 import { ShellWindow } from "../frame/shell-window";
 import { StageFrame } from "../frame/stage-frame";
 import { Loading } from "../loading";
-import type { SeasonOpening } from "../season";
+import { seasonTitle, type SeasonOpening } from "../season";
 import { useJoinedShare } from "../share/own-shares";
 import { useRequestSignIn } from "../sign-in/connect";
 import { ageOf } from "./ages";
@@ -111,7 +108,11 @@ export const SeasonCountdown = ({
             retryInvite={retryInvite}
             onPickAspect={handlePickAspect}
           />
-          <PrizeAndSealCard opening={opening} signedIn={signedIn} owner={owner} />
+          {signedIn && (
+            <AppPanel>
+              <SealCodeCard owner={owner} compact />
+            </AppPanel>
+          )}
           {otherRehearsals.map((item) => (
             <RehearsalCard key={item.key} item={item} now={now} signedIn={signedIn} />
           ))}
@@ -184,7 +185,7 @@ const CountdownClock = ({ startsAt, now }: { startsAt: number; now: number }) =>
 };
 
 const RehearsalCallout = ({ item, signedIn, now }: { item: PlayItem; signedIn: boolean; now: number }) => {
-  const name = item.game.name || PLAY_WORDS.rehearsal;
+  const name = seasonTitle(item.game);
   const isLive = item.game.status === "Live";
   return (
     <div data-preseason-testnet data-play-item={item.key} className="preseason-testnet">
@@ -351,33 +352,6 @@ const SignedInAspectInvite = ({ aspect, rewardLine }: { aspect: AspectId; reward
       </div>
       <SeasonInviteAlerts invite={invite} />
     </InviteStripFrame>
-  );
-};
-
-const PrizeAndSealCard = ({
-  opening,
-  signedIn,
-  owner,
-}: {
-  opening: SeasonOpening;
-  signedIn: boolean;
-  owner: string | null;
-}) => {
-  if (opening.aspectLords === null && !signedIn) return null;
-  return (
-    <AppPanel title={PRESEASON_WORDS.prizesTitle} icon="lords">
-      <div className="preseason-card-body">
-        {opening.aspectLords !== null && (
-          <p className="preseason-prize__line">
-            <Icon name="crown" size={18} />
-            <span data-aspect-shared>
-              {PRESEASON_WORDS.shared(formatExact(opening.aspectLords), formatExact(ASPECT_REWARD.finishBonus))}
-            </span>
-          </p>
-        )}
-        {signedIn && <SealCodeCard owner={owner} compact />}
-      </div>
-    </AppPanel>
   );
 };
 

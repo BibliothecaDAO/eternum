@@ -2,7 +2,6 @@ import "@/ui/design-system/kit/app-sheet.css";
 import "./season-recap.css";
 
 import {
-  ASPECT_REWARD,
   aspectName,
   aspects,
   formatAmount,
@@ -39,7 +38,6 @@ import { PlayerName } from "@/ui/design-system/kit/player-name";
 import {
   ASPECT_PAGE_WORDS,
   ASPECT_STEP_WORDS,
-  AUTOMATIC_LORDS_PAYOUT,
   ESSENCE,
   LABOR,
   PRIZE_UNHELD,
@@ -58,6 +56,7 @@ import { useLayout } from "../frame/layout";
 import type { AspectSeasonGame, DirectoryGame } from "../herald";
 import { ageOf } from "../play/ages";
 import {
+  RACE_STAGE_COUNT,
   RACE_TRIUMPHS,
   aspectRaceStandings,
   seasonDaysOf,
@@ -731,7 +730,7 @@ export const SeasonRaceRecap = ({
             </ul>
           </article>
           <article className="season-card" data-card="podium">
-            <span className="season-card__step">{RECAP_WORDS.raceCardNames.pool}</span>
+            <span className="season-card__step">{RECAP_WORDS.raceCardNames.stages}</span>
             <ul className="season-chronicle__list">
               {ranked.map((row) => (
                 <li key={row.id} style={aspectVariables(row.id) as CSSProperties} className="season-chronicle__row">
@@ -740,13 +739,11 @@ export const SeasonRaceRecap = ({
                     <span>{row.name}</span>
                   </span>
                   <span className="season-chronicle__val text-app-gold">
-                    <Icon name="lords" size={16} />
-                    {formatExact(row.lords)}
+                    {row.finished ? ASPECT_PAGE_WORDS.finished : ASPECT_PAGE_WORDS.stage(row.stage, RACE_STAGE_COUNT)}
                   </span>
                 </li>
               ))}
             </ul>
-            <p className="text-app-label text-app-muted">{AUTOMATIC_LORDS_PAYOUT}</p>
           </article>
           <article className="season-card" data-card="sites">
             <span className="season-card__step">
@@ -784,9 +781,6 @@ export const SeasonRaceRecap = ({
             {seasonDays !== null && (
               <p className="text-app-label text-app-gold">{RECAP_WORDS.seasonDays(seasonDays)}</p>
             )}
-            <p className="text-app-label text-app-muted">
-              {SEASON_WORDS.poolRule(ASPECT_REWARD.lordsPerHeight, ASPECT_REWARD.finishBonus)}
-            </p>
             <p className="text-app-label text-app-muted">
               {`${SEASON_WORDS.stageMilestones}: ${RACE_TRIUMPHS.map(({ name }) => name).join(" · ")} (${formatExact(stageHeight)}/stage)`}
             </p>

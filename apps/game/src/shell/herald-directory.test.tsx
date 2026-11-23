@@ -45,6 +45,7 @@ vi.stubGlobal("fetch", async (input: string) => {
 
 import type { GameRef } from "@bibliothecadao/eternum/shard";
 import { identityClient, useIdentitySessionStore } from "@/hooks/context/identity-session";
+import { retryTransientRead } from "@/runtime/app-api";
 import { type DirectoryGame, useDirectory, useLeaderboard, useRecentResults } from "./herald";
 
 // The app's first session load keeps whatever session a test set.
@@ -132,7 +133,7 @@ const mountLeaderboard = async (game: GameRef | DirectoryGame | null) => {
     return null;
   };
   const root = createRoot(document.createElement("div"));
-  const client = new QueryClient({ defaultOptions: { queries: { retryDelay: 0 } } });
+  const client = new QueryClient({ defaultOptions: { queries: { retry: retryTransientRead, retryDelay: 0 } } });
   await act(async () =>
     root.render(
       <QueryClientProvider client={client}>

@@ -2,7 +2,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { deepSites, formatShort } from "@bibliothecadao/types";
+import { deepSites } from "@bibliothecadao/types";
 import { ASPECT_PAGE_CASES } from "./aspect-page-fixtures";
 import { AspectPageView, type AspectPageProps } from "./aspect-page-view";
 
@@ -35,11 +35,10 @@ describe("the Aspect page", () => {
     expect(race).toContain("Stage 1 of 5 · 900 of 10,000");
   });
 
-  it("shows what each height is worth in LORDS, the finish bonus on the Aspect that won", () => {
+  it("shows no unfunded LORDS figures on the Aspect race standings", () => {
     draw(ASPECT_PAGE_CASES["Mid-season, the player's Aspect second"]);
-    expect(part("data-aspect-race")).toContain(formatShort(64_000));
-    draw(ASPECT_PAGE_CASES["Age won by another Aspect"]);
-    expect(part("data-aspect-race")).toContain(formatShort(200_000));
+    expect(part("data-aspect-race")).not.toContain("LORDS");
+    expect(document.body.textContent).not.toContain("10 / pt");
   });
 
   it("shows the Triumphs of built stages with the day after the build, and the rest with their stage", () => {
@@ -102,7 +101,7 @@ describe("the Aspect page", () => {
     expect(document.body.textContent).toContain("Loading scores…");
   });
 
-  it("shows the reward rate and Go to Deep in the footer when reachable", () => {
+  it("shows Go to Deep in the footer when reachable", () => {
     let deepClicked = 0;
     act(() =>
       root.render(
@@ -115,7 +114,6 @@ describe("the Aspect page", () => {
         />,
       ),
     );
-    expect(document.body.textContent).toContain("10 / pt · +100K");
     const buttons = [...document.body.querySelectorAll("button")];
     const goDeep = buttons.find((button) => button.textContent?.includes("Go to Deep"));
     expect(goDeep).toBeDefined();
