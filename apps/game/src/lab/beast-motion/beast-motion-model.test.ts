@@ -1,26 +1,32 @@
-import { BufferGeometry, Float32BufferAttribute } from "three";
+import { Box3, BufferGeometry, Float32BufferAttribute, Vector3 } from "three";
 import { describe, expect, it } from "vitest";
 import {
   BEAST_MOTION_ACTIONS,
   BEAST_MOTION_CYCLE_SECONDS,
+  BEAST_MOTION_HYBRID_BONE_COUNT,
+  BEAST_MOTION_SPECIES_LIST,
   WYVERN_FULL_RIG_SPECS,
-  WYVERN_HYBRID_RIG_SPECS,
-  applyWyvernSpatialSkinning,
-  buildWyvernRigClips,
+  applyBeastSpatialSkinning,
+  buildFullBeastRigClips,
   computeHexFormationOffsets,
-  createWyvernSkeleton,
-  poseHybridWyvernRig,
+  createBeastHybridSkeleton,
+  createFullBeastSkeleton,
+  poseBeastHybridRig,
   sampleBeastMotionCycle,
 } from "./beast-motion-model";
 
-function wyvernSampleGeometry(): BufferGeometry {
+function sampleBeastGeometry(): { geometry: BufferGeometry; bounds: Box3 } {
   const geometry = new BufferGeometry();
   const points = [
     0, 0.42, 0.05, 0, 0.98, 0.18, 0, 1.12, 0.14, -0.44, 0.72, -0.02, 0.44, 0.72, -0.02, 0.26, 0.14, -0.34, -0.2, 0.05,
     0.06, 0.2, 0.05, 0.06,
   ];
   geometry.setAttribute("position", new Float32BufferAttribute(points, 3));
-  return geometry;
+  geometry.computeBoundingBox();
+  return {
+    geometry,
+    bounds: geometry.boundingBox ?? new Box3(new Vector3(-0.44, 0, -0.34), new Vector3(0.44, 1.12, 0.18)),
+  };
 }
 
 describe("beast motion model", () => {
@@ -56,46 +62,46 @@ describe("beast motion model", () => {
     expect(deathDown.deathProgress).toBe(1);
   });
 
-  it("binds every wyvern region with normalized skin weights for full and hybrid rigs", () => {
-    const base = wyvernSampleGeometry();
-    for (const kind of ["full", "hybrid"] as const) {
-      const skinned = applyWyvernSpatialSkinning(base, kind);
+  it("binds normalized hybrid skin weights and poses all 19 beasts cleanly", () => {
+    const { geometry, bounds } = sampleBeastGeometry();
+    for (const species of BEAST_MOTION_SPECIES_LIST) {
+      const skinned = applyBeastSpatialSkinning(geometry, species, bounds, "hybrid");
       const weights = skinned.getAttribute("skinWeight");
       const indices = skinned.getAttribute("skinIndex");
-      const maxBone = (kind === "full" ? WYVERN_FULL_RIG_SPECS : WYVERN_HYBRID_RIG_SPECS).length - 1;
       for (let i = 0; i < weights.count; i++) {
         const sum = weights.getX(i) + weights.getY(i) + weights.getZ(i) + weights.getW(i);
         expect(sum).toBeCloseTo(1, 5);
-        expect(indices.getX(i)).toBeLessThanOrEqual(maxBone);
+        expect(indices.getX(i)).toBeLessThan(BEAST_MOTION_HYBRID_BONE_COUNT);
       }
-      const leftWingBone = (kind === "full" ? WYVERN_FULL_RIG_SPECS : WYVERN_HYBRID_RIG_SPECS).findIndex(
-        (spec) => spec.name === "wingL",
-      );
-      const rightWingBone = (kind === "full" ? WYVERN_FULL_RIG_SPECS : WYVERN_HYBRID_RIG_SPECS).findIndex(
-        (spec) => spec.name === "wingR",
-      );
-      expect(indices.getX(3)).toBe(leftWingBone);
-      expect(indices.getX(4)).toBe(rightWingBone);
       skinned.dispose();
+
+      const hybridRig = createBeastHybridSkeleton(species, bounds);
+      expect(hybridRig.bones).toHaveLength(BEAST_MOTION_HYBRID_BONE_COUNT);
+      poseBeastHybridRig(hybridRig, species, "attack", BEAST_MOTION_CYCLE_SECONDS * 0.45);
+      expect(hybridRig.boneMap.pelvis.position.z).toBeGreaterThan(hybridRig.restPositions.pelvis.z + 0.2);
+      poseBeastHybridRig(hybridRig, species, "death", BEAST_MOTION_CYCLE_SECONDS * 0.7);
+      expect(hybridRig.boneMap.pelvis.rotation.z).toBeGreaterThan(1.2);
+      hybridRig.skeleton.dispose();
     }
-    base.dispose();
+
+    const fullSkinned = applyBeastSpatialSkinning(geometry, "wyvern", bounds, "full");
+    const fullWeights = fullSkinned.getAttribute("skinWeight");
+    for (let i = 0; i < fullWeights.count; i++) {
+      const sum = fullWeights.getX(i) + fullWeights.getY(i) + fullWeights.getZ(i) + fullWeights.getW(i);
+      expect(sum).toBeCloseTo(1, 5);
+    }
+    fullSkinned.dispose();
+    geometry.dispose();
   });
 
-  it("builds clips for every action and poses the hybrid rig cleanly without a mixer", () => {
-    const fullRig = createWyvernSkeleton("full");
-    const clips = buildWyvernRigClips(fullRig.restPositions);
+  it("builds full rig clips for every action", () => {
+    const fullRig = createFullBeastSkeleton();
+    const clips = buildFullBeastRigClips(fullRig.restPositions);
     for (const action of BEAST_MOTION_ACTIONS) {
       expect(clips[action].tracks.length).toBeGreaterThanOrEqual(WYVERN_FULL_RIG_SPECS.length);
       expect(clips[action].duration).toBe(BEAST_MOTION_CYCLE_SECONDS);
     }
     fullRig.skeleton.dispose();
-
-    const hybridRig = createWyvernSkeleton("hybrid");
-    poseHybridWyvernRig(hybridRig, "attack", BEAST_MOTION_CYCLE_SECONDS * 0.45);
-    expect(hybridRig.boneMap.pelvis.position.z).toBeGreaterThan(hybridRig.restPositions.pelvis.z + 0.2);
-    poseHybridWyvernRig(hybridRig, "death", BEAST_MOTION_CYCLE_SECONDS * 0.7);
-    expect(hybridRig.boneMap.pelvis.rotation.z).toBeGreaterThan(1.2);
-    hybridRig.skeleton.dispose();
   });
 
   it("lays out distinct hex positions for 1, 20 and 100 beasts", () => {

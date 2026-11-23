@@ -83,6 +83,10 @@ paths = "apps/game/src/lab/troop-motion/ apps/game/src/three/characters/ apps/ga
 cmd = 'pnpm run build:packages && pnpm --dir apps/game exec node ./scripts/prove-beast-families.mjs --out "$FLOW_TMP/proof"'
 paths = "apps/game/src/three/structures/beast-motion.ts apps/game/src/three/structures/frontier-model.ts apps/game/src/lab/beast-motion/ apps/game/scripts/prove-beast-families.mjs"
 
+[kind.prove-beast-roster]
+cmd = 'pnpm run build:packages && pnpm --dir apps/game exec node ./scripts/prove-beast-roster.mjs --out "$FLOW_TMP/proof"'
+paths = "apps/game/src/three/structures/beast-motion.ts apps/game/src/three/structures/frontier-model.ts apps/game/src/lab/beast-motion/ apps/game/scripts/prove-beast-roster.mjs"
+
 [gate]
 source = "contracts/l3/check-native-plan.sh"
 kinds = "gate-prelude gate-vrf gate-world gate-drift gate-events test-capture test-combat test-discovery test-economy test-lifecycle test-registration test-resources test-world test-blitz"

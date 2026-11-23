@@ -44,30 +44,35 @@ import { terrainHexCorners, terrainHexToWorld } from "@/three/terrain/terrain-co
 import type { TerrainCellInput, TerrainPageRequest } from "@/three/terrain/terrain-types";
 import { configureGltfTextureSupport, gltfLoader } from "@/three/utils/gltf-loader";
 import { isCoarsePointer } from "@/utils/pointer";
-import { createBeastMotionController, encodeBeastIdle } from "@/three/structures/beast-motion";
+import {
+  createBeastMotionController,
+  encodeBeastIdle,
+  type BeastMotionController,
+} from "@/three/structures/beast-motion";
+import { FRONTIER_BEASTS, type FrontierSpecies } from "@/three/structures/frontier-beast";
+import { createBeastEmberGeometry } from "@/three/structures/frontier-model";
 import {
   BEAST_MOTION_ACTIONS,
   BEAST_MOTION_ACTION_INDEX,
   BEAST_MOTION_COUNTS,
   BEAST_MOTION_CYCLE_SECONDS,
-  BEAST_MOTION_PATH,
-  BEAST_MOTION_SPECIES,
+  BEAST_MOTION_HYBRID_BONE_COUNT,
   BEAST_MOTION_WAY_LABELS,
   BEAST_MOTION_WAYS,
   WYVERN_FULL_RIG_SPECS,
-  WYVERN_HYBRID_RIG_SPECS,
-  applyWyvernSpatialSkinning,
-  buildWyvernRigClips,
+  applyBeastSpatialSkinning,
+  buildFullBeastRigClips,
   computeHexFormationOffsets,
-  createWyvernSkeleton,
-  poseHybridWyvernRig,
+  createBeastHybridSkeleton,
+  createFullBeastSkeleton,
+  poseBeastHybridRig,
   sampleBeastMotionCycle,
   type BeastMotionAction,
   type BeastMotionCount,
   type BeastMotionLayer,
   type BeastMotionState,
   type BeastMotionWay,
-  type BuiltWyvernRig,
+  type BuiltBeastRig,
 } from "./beast-motion-model";
 import {
   createBeastShaderUniforms,
@@ -78,11 +83,27 @@ import {
   type BeastShaderUniforms,
 } from "./beast-motion-phoenix";
 import {
+  BEAST_FAMILY_LABELS,
   BEAST_FAMILY_SHOWCASE_IDS,
   BEAST_FAMILY_SHOWCASE_LAYERS,
   BeastFamilyStage,
+  resolveFamilyMembers,
   type BeastFamilyShowcaseId,
 } from "./beast-family-stage";
+
+export interface BeastRosterEntry {
+  readonly species: FrontierSpecies;
+  readonly name: string;
+  readonly layer: BeastMotionLayer;
+  readonly path: string;
+}
+
+export interface BeastRosterFamily {
+  readonly id: BeastFamilyShowcaseId;
+  readonly label: string;
+  readonly layer: BeastMotionLayer;
+  readonly members: readonly BeastRosterEntry[];
+}
 
 export interface BeastMotionMeta {
   modelPath: string;
@@ -91,11 +112,13 @@ export interface BeastMotionMeta {
   ways: readonly BeastMotionWay[];
   counts: readonly BeastMotionCount[];
   families: ReadonlyArray<{ id: BeastFamilyShowcaseId; layer: BeastMotionLayer }>;
+  roster: readonly BeastRosterFamily[];
 }
 
 const MAX_BEAST_MOTION_COUNT = Math.max(...BEAST_MOTION_COUNTS);
 
 export interface BeastMotionStats {
+  species: FrontierSpecies;
   modelPath: string;
   trianglesPerBeast: number;
   rendererMode: string;
@@ -116,6 +139,7 @@ export interface BeastMotionStats {
 }
 
 export interface BeastMotionMeasurement {
+  species: FrontierSpecies;
   way: BeastMotionWay | "compare" | "families";
   count: number;
   action: BeastMotionAction;
@@ -158,6 +182,7 @@ export interface BeastMotionRendererHandle {
   getStats(): BeastMotionStats;
   getMeta(): BeastMotionMeta;
   isFamilyReady(): boolean;
+  isSpeciesReady(): boolean;
   dispose(): void;
 }
 
@@ -174,17 +199,36 @@ interface LoopRenderer extends RendererSurfaceLike {
   setAnimationLoop(callback: (() => void) | null): void;
 }
 
+interface BeastMeshPart {
+  readonly baseGeometry: BufferGeometry;
+  readonly fullSkinnedGeometry: BufferGeometry;
+  readonly hybridSkinnedGeometry: BufferGeometry;
+  readonly mathsMaterial: ReturnType<typeof createPureMathsBeastMaterial>;
+  readonly rigMaterial: ReturnType<typeof createRigBeastMaterial>;
+  readonly hybridMaterial: ReturnType<typeof createHybridBeastMaterial>;
+}
+
+interface LoadedBeastAsset {
+  readonly species: FrontierSpecies;
+  readonly path: string;
+  readonly bounds: Box3;
+  readonly trianglesPerBeast: number;
+  readonly parts: readonly BeastMeshPart[];
+  readonly mathsMotionController: BeastMotionController;
+  readonly mathsIdleAttribute: InstancedBufferAttribute;
+}
+
 interface RigActor {
-  mesh: SkinnedMesh;
-  rig: BuiltWyvernRig;
+  meshes: SkinnedMesh[];
+  rig: BuiltBeastRig;
   mixer: AnimationMixer;
   actions: Record<BeastMotionAction, AnimationAction>;
   phaseOffset: number;
 }
 
 interface HybridActor {
-  mesh: SkinnedMesh;
-  rig: BuiltWyvernRig;
+  meshes: SkinnedMesh[];
+  rig: BuiltBeastRig;
   phaseOffset: number;
 }
 
@@ -201,50 +245,48 @@ const COMPARE_SLOTS: ReadonlyArray<{ way: BeastMotionWay; x: number; z: number }
 ];
 
 const LAYER_ENVIRONMENTS: Record<BeastMotionLayer, AtmosphereEnvironment> = {
-  0: "world",
+  0: "day",
   1: "veil",
   2: "hollow",
   3: "deep",
 };
 
+const LAYER_BG: Record<BeastMotionLayer, number> = {
+  0: 0x8da6a2,
+  1: 0x625a7c,
+  2: 0x3b3556,
+  3: 0x1e1930,
+};
+
 const COMPARE_ANCHOR_POS = new Vector3();
 const MATRIX_TMP = new Matrix4();
-const LAYER_BG: Record<BeastMotionLayer, number> = {
-  0: 0x819997,
-  1: 0x263140,
-  2: 0x1b1526,
-  3: 0x15223d,
-};
+const BOUNDS_SIZE_TMP = new Vector3();
 
 function createTerrainRequest(): TerrainPageRequest {
   const cells: TerrainCellInput[] = [];
-  const halo: TerrainCellInput[] = [];
-  for (let row = -14; row <= 14; row++) {
-    for (let col = -14; col <= 14; col++) {
-      const cell = {
+  for (let row = -18; row <= 18; row++) {
+    for (let col = -18; col <= 18; col++) {
+      cells.push({
         col,
         row,
         biome: BiomeType.Grassland,
-        previewBiome: BiomeType.Grassland,
         explored: true,
-        occupied: false,
-      };
-      (Math.abs(row) <= 12 && Math.abs(col) <= 12 ? cells : halo).push(cell);
+        climate: NEUTRAL_BIOME_CLIMATE,
+      });
     }
   }
   return {
+    id: "beast-motion-page",
+    colMin: -18,
+    colMax: 18,
+    rowMin: -18,
+    rowMax: 18,
     cells,
-    halo,
-    climate: { ...NEUTRAL_BIOME_CLIMATE, elevation_seed: 137, moisture_seed: 991 },
-    mapCenter: 0,
-    pageKey: "beast-motion-lab:grassland",
-    roadSegments: [],
-    settlementAnchors: [],
   };
 }
 
 class BeastMotionEnvironment {
-  readonly terrain = new ProceduralTerrain();
+  public readonly terrain = new ProceduralTerrain();
   private readonly atmosphere: WorldAtmosphereController;
   private readonly sun = new DirectionalLight();
   private readonly ambient = new AmbientLight();
@@ -286,6 +328,75 @@ class BeastMotionEnvironment {
   }
 }
 
+async function loadBeastAsset(species: FrontierSpecies, uniforms: BeastShaderUniforms): Promise<LoadedBeastAsset> {
+  const path = FRONTIER_BEASTS[species].path;
+  const gltf = await gltfLoader.loadAsync(path);
+  const bounds = new Box3().setFromObject(gltf.scene);
+  const sourceMeshes: Mesh[] = [];
+  gltf.scene.traverse((node) => {
+    if (node instanceof Mesh) sourceMeshes.push(node);
+  });
+  if (sourceMeshes.length === 0) {
+    throw new Error(`Beast mesh not found in ${path}`);
+  }
+
+  const mathsMotionController = createBeastMotionController(species, MAX_BEAST_MOTION_COUNT);
+  const mathsIdleAttribute = new InstancedBufferAttribute(new Float32Array(MAX_BEAST_MOTION_COUNT * 3), 3);
+  const [idleMotion, idleSpeed, idleHeight] = encodeBeastIdle(beastOfModel(species).idle);
+  for (let i = 0; i < MAX_BEAST_MOTION_COUNT; i++) {
+    mathsIdleAttribute.setXYZ(i, idleMotion, idleSpeed, idleHeight);
+  }
+
+  let trianglesPerBeast = 0;
+  const parts: BeastMeshPart[] = sourceMeshes.map((sourceMesh) => {
+    const baseGeometry = sourceMesh.geometry.clone();
+    trianglesPerBeast += measureGeometryTriangles(baseGeometry);
+    baseGeometry.setAttribute("beastIdle", mathsIdleAttribute);
+    baseGeometry.setAttribute("beastMotion", mathsMotionController.attribute);
+    baseGeometry.computeBoundingBox();
+    baseGeometry.boundingBox?.expandByScalar(1.2);
+    baseGeometry.computeBoundingSphere();
+    if (baseGeometry.boundingSphere) baseGeometry.boundingSphere.radius += 1.2;
+
+    const fullSkinnedGeometry = applyBeastSpatialSkinning(baseGeometry, species, bounds, "full");
+    const hybridSkinnedGeometry = applyBeastSpatialSkinning(baseGeometry, species, bounds, "hybrid");
+
+    const sourceMaterial = Array.isArray(sourceMesh.material)
+      ? (sourceMesh.material[0] as MeshStandardMaterial)
+      : (sourceMesh.material as MeshStandardMaterial);
+
+    return {
+      baseGeometry,
+      fullSkinnedGeometry,
+      hybridSkinnedGeometry,
+      mathsMaterial: createPureMathsBeastMaterial(sourceMaterial, uniforms, species),
+      rigMaterial: createRigBeastMaterial(sourceMaterial, uniforms),
+      hybridMaterial: createHybridBeastMaterial(sourceMaterial, uniforms, species, bounds),
+    };
+  });
+
+  return {
+    species,
+    path,
+    bounds,
+    trianglesPerBeast,
+    parts,
+    mathsMotionController,
+    mathsIdleAttribute,
+  };
+}
+
+function disposeBeastAsset(asset: LoadedBeastAsset): void {
+  for (const part of asset.parts) {
+    part.baseGeometry.dispose();
+    part.fullSkinnedGeometry.dispose();
+    part.hybridSkinnedGeometry.dispose();
+    part.mathsMaterial.dispose();
+    part.rigMaterial.dispose();
+    part.hybridMaterial.dispose();
+  }
+}
+
 export async function mountBeastMotionRenderer(input: MountBeastMotionInput): Promise<BeastMotionRendererHandle> {
   const rendererRuntime = await initializeRendererBackendRuntime({
     envBuildMode: env.VITE_PUBLIC_RENDERER_BUILD_MODE,
@@ -298,22 +409,15 @@ export async function mountBeastMotionRenderer(input: MountBeastMotionInput): Pr
     input.signal.throwIfAborted();
   }
   configureGltfTextureSupport(rendererRuntime.renderer as Parameters<typeof configureGltfTextureSupport>[0]);
-  const gltf = await gltfLoader.loadAsync(BEAST_MOTION_PATH);
+  const uniforms = createBeastShaderUniforms();
+  const initialAsset = await loadBeastAsset(input.initialState.species, uniforms);
   if (input.signal.aborted) {
+    disposeBeastAsset(initialAsset);
     rendererRuntime.backend.dispose();
     input.signal.throwIfAborted();
   }
 
-  let sourceMesh: Mesh | null = null;
-  gltf.scene.traverse((node) => {
-    if (!sourceMesh && node instanceof Mesh) sourceMesh = node;
-  });
-  if (!sourceMesh) {
-    rendererRuntime.backend.dispose();
-    throw new Error("Wyvern mesh not found in beast-wyvern.glb");
-  }
-
-  const stage = new BeastMotionStage(input, rendererRuntime, sourceMesh as Mesh, new Box3().setFromObject(gltf.scene));
+  const stage = new BeastMotionStage(input, rendererRuntime, uniforms, initialAsset);
   try {
     await stage.init();
     input.signal.throwIfAborted();
@@ -335,23 +439,17 @@ class BeastMotionStage implements BeastMotionRendererHandle {
   private readonly environment: BeastMotionEnvironment;
   private readonly gpuTimer: ProceduralCharacterGpuTimer;
   private readonly uniforms: BeastShaderUniforms;
-  private readonly baseGeometry: BufferGeometry;
-  private readonly trianglesPerBeast: number;
-  private readonly fullSkinnedGeometry: BufferGeometry;
-  private readonly hybridSkinnedGeometry: BufferGeometry;
-  private readonly mathsMaterial: ReturnType<typeof createPureMathsBeastMaterial>;
-  private readonly rigMaterial: ReturnType<typeof createRigBeastMaterial>;
-  private readonly hybridMaterial: ReturnType<typeof createHybridBeastMaterial>;
   private readonly rigClips: Record<BeastMotionAction, AnimationClip>;
   private readonly emberPool: InstancedMesh;
   private readonly familyStage = new BeastFamilyStage();
-  private readonly bounds: Box3;
+  private readonly assetCache = new Map<FrontierSpecies, LoadedBeastAsset>();
 
+  private activeAsset: LoadedBeastAsset;
+  private speciesGeneration = 0;
+  private speciesLoaded = true;
   private state: BeastMotionState;
   private stageSignature = "";
-  private activeMathsMesh: InstancedMesh | null = null;
-  private readonly mathsMotionController = createBeastMotionController(BEAST_MOTION_SPECIES, MAX_BEAST_MOTION_COUNT);
-  private readonly mathsIdleAttribute = new InstancedBufferAttribute(new Float32Array(MAX_BEAST_MOTION_COUNT * 3), 3);
+  private activeMathsMeshes: InstancedMesh[] = [];
   private mathsPlacements: Array<{ x: number; y: number; z: number }> = [];
   private mathsActionCycle = -1;
   private rigActors: RigActor[] = [];
@@ -373,12 +471,14 @@ class BeastMotionStage implements BeastMotionRendererHandle {
   constructor(
     private readonly input: MountBeastMotionInput,
     private readonly rendererRuntime: Awaited<ReturnType<typeof initializeRendererBackendRuntime>>,
-    sourceMesh: Mesh,
-    bounds: Box3,
+    uniforms: BeastShaderUniforms,
+    initialAsset: LoadedBeastAsset,
   ) {
     this.state = { ...input.initialState };
     this.activeAction = this.state.action;
-    this.bounds = bounds;
+    this.uniforms = uniforms;
+    this.activeAsset = initialAsset;
+    this.assetCache.set(initialAsset.species, initialAsset);
     this.renderer = rendererRuntime.renderer as LoopRenderer;
     configureRendererColorOutput(this.renderer);
     this.renderer.shadowMap.enabled = true;
@@ -398,35 +498,11 @@ class BeastMotionStage implements BeastMotionRendererHandle {
     this.renderer.domElement.setAttribute("aria-label", "Beast motion comparison stage");
     input.container.append(this.renderer.domElement);
 
-    this.uniforms = createBeastShaderUniforms();
-    this.baseGeometry = sourceMesh.geometry.clone();
-    this.trianglesPerBeast = measureGeometryTriangles(this.baseGeometry);
-    const [idleMotion, idleSpeed, idleHeight] = encodeBeastIdle(beastOfModel(BEAST_MOTION_SPECIES).idle);
-    for (let i = 0; i < MAX_BEAST_MOTION_COUNT; i++) {
-      this.mathsIdleAttribute.setXYZ(i, idleMotion, idleSpeed, idleHeight);
-    }
-    this.baseGeometry.setAttribute("beastIdle", this.mathsIdleAttribute);
-    this.baseGeometry.setAttribute("beastMotion", this.mathsMotionController.attribute);
-    this.baseGeometry.computeBoundingBox();
-    this.baseGeometry.boundingBox?.expandByScalar(1.2);
-    this.baseGeometry.computeBoundingSphere();
-    if (this.baseGeometry.boundingSphere) this.baseGeometry.boundingSphere.radius += 1.2;
-
-    this.fullSkinnedGeometry = applyWyvernSpatialSkinning(this.baseGeometry, "full");
-    this.hybridSkinnedGeometry = applyWyvernSpatialSkinning(this.baseGeometry, "hybrid");
-
-    const sourceMaterial = Array.isArray(sourceMesh.material)
-      ? (sourceMesh.material[0] as MeshStandardMaterial)
-      : (sourceMesh.material as MeshStandardMaterial);
-    this.mathsMaterial = createPureMathsBeastMaterial(sourceMaterial, this.uniforms);
-    this.rigMaterial = createRigBeastMaterial(sourceMaterial, this.uniforms);
-    this.hybridMaterial = createHybridBeastMaterial(sourceMaterial, this.uniforms);
-
-    const templateRig = createWyvernSkeleton("full");
-    this.rigClips = buildWyvernRigClips(templateRig.restPositions);
+    const templateRig = createFullBeastSkeleton();
+    this.rigClips = buildFullBeastRigClips(templateRig.restPositions);
     templateRig.skeleton.dispose();
 
-    this.emberPool = createSharedEmberPool(this.bounds, MAX_BEAST_MOTION_COUNT, this.uniforms);
+    this.emberPool = createSharedEmberPool(this.activeAsset.bounds, MAX_BEAST_MOTION_COUNT, this.uniforms);
     this.scene.add(this.emberPool);
 
     this.observer = new ResizeObserver(() => this.resize());
@@ -447,31 +523,34 @@ class BeastMotionStage implements BeastMotionRendererHandle {
   updateState(next: BeastMotionState): void {
     const previous = this.state;
     this.state = { ...next };
+    const speciesChanged = previous.species !== next.species;
     const topologyChanged =
+      speciesChanged ||
       previous.mode !== next.mode ||
       (next.mode === "bench" && (previous.way !== next.way || previous.count !== next.count)) ||
       (next.mode === "families" && previous.family !== next.family);
     const cameraChanged = topologyChanged || previous.camera !== next.camera;
     const actionChanged = previous.action !== next.action;
 
-    if (topologyChanged) {
+    if (speciesChanged && next.mode !== "families") {
+      this.ensureSpeciesLoaded(next.species);
+    } else if (topologyChanged) {
       this.rebuildStage();
       this.continuousEvaluator.reset();
     }
+
     if (actionChanged) {
       this.activeAction = next.action;
       this.seconds = 0;
       this.familyActionTimer = 0;
       this.mathsActionCycle = -1;
-      for (let i = 0; i < this.mathsPlacements.length; i++) {
-        this.mathsMotionController.resetSlot(i);
-      }
+      this.resetMathsTransformsAndSlots();
       this.switchRigClips(next.action);
       if (this.state.mode === "families") {
         this.triggerFamilyAction(next.action);
       }
     }
-    if (cameraChanged) {
+    if (cameraChanged && this.speciesLoaded) {
       this.resetCamera();
     }
     this.syncUniforms();
@@ -484,19 +563,36 @@ class BeastMotionStage implements BeastMotionRendererHandle {
     return this.state.mode !== "families" || this.familyLoaded;
   }
 
+  isSpeciesReady(): boolean {
+    return this.speciesLoaded && this.activeAsset.species === this.state.species;
+  }
+
   getMeta(): BeastMotionMeta {
     return {
-      modelPath: BEAST_MOTION_PATH,
-      trianglesPerBeast: this.trianglesPerBeast,
+      modelPath: this.activeAsset.path,
+      trianglesPerBeast: this.activeAsset.trianglesPerBeast,
       actions: BEAST_MOTION_ACTIONS,
       ways: BEAST_MOTION_WAYS,
       counts: BEAST_MOTION_COUNTS,
       families: BEAST_FAMILY_SHOWCASE_IDS.map((id) => ({ id, layer: BEAST_FAMILY_SHOWCASE_LAYERS[id] })),
+      roster: BEAST_FAMILY_SHOWCASE_IDS.map((id) => ({
+        id,
+        label: BEAST_FAMILY_LABELS[id],
+        layer: BEAST_FAMILY_SHOWCASE_LAYERS[id],
+        members: resolveFamilyMembers(id).map((member) => ({
+          species: member.species,
+          name: member.name,
+          layer: member.layer,
+          path: FRONTIER_BEASTS[member.species].path,
+        })),
+      })),
     };
   }
 
   resetCamera(): void {
     const groundY = this.environment.terrain.sampleSurface(0, 0).height;
+    const bounds = this.activeAsset.bounds;
+    const centerY = groundY + Math.max(0.46, (bounds.min.y + bounds.max.y) * 0.5);
     if (this.state.mode === "families") {
       const isDeep = this.state.family === "deep";
       if (this.state.camera === "phoneMap") {
@@ -511,8 +607,10 @@ class BeastMotionStage implements BeastMotionRendererHandle {
     }
     if (this.state.mode === "bench") {
       if (this.state.count === 1 && this.state.camera === "close") {
-        this.controls.target.set(0, groundY + 0.52, 0);
-        this.camera.position.set(0.35, groundY + 1.85, 3.2);
+        bounds.getSize(BOUNDS_SIZE_TMP);
+        const radius = Math.max(BOUNDS_SIZE_TMP.length() * 0.5, 0.58);
+        this.controls.target.set(0, centerY, 0);
+        this.camera.position.set(radius * 0.52, centerY + radius * 1.12, radius * 2.55);
       } else {
         const dist = this.state.count <= 1 ? 4.2 : 3.4 + Math.sqrt(this.state.count) * 2.16;
         this.controls.target.set(0, groundY + 0.55, 0);
@@ -522,11 +620,11 @@ class BeastMotionStage implements BeastMotionRendererHandle {
       this.controls.target.set(0, groundY + 0.55, 0);
       this.camera.position.set(0, groundY + 15.8, 13.6);
     } else if (this.state.camera === "close") {
-      this.controls.target.set(0, groundY + 0.58, 0);
-      this.camera.position.set(0, groundY + 2.3, 4.4);
+      this.controls.target.set(0, centerY, 0);
+      this.camera.position.set(0, centerY + 1.72, 4.4);
     } else {
-      this.controls.target.set(0, groundY + 0.55, 0);
-      this.camera.position.set(0.4, groundY + 3.2, 6.4);
+      this.controls.target.set(0, centerY, 0);
+      this.camera.position.set(0.4, centerY + 2.65, 6.4);
     }
     this.controls.update();
   }
@@ -546,8 +644,9 @@ class BeastMotionStage implements BeastMotionRendererHandle {
     const beastCount = this.state.mode === "compare" ? 3 : this.state.count;
     const activeBones = this.computeActiveBones();
     return {
-      modelPath: BEAST_MOTION_PATH,
-      trianglesPerBeast: this.trianglesPerBeast,
+      species: this.activeAsset.species,
+      modelPath: this.activeAsset.path,
+      trianglesPerBeast: this.activeAsset.trianglesPerBeast,
       rendererMode: getRendererDiagnosticActiveMode() ?? "unknown",
       drawCalls: this.lastDrawCalls,
       triangles: this.lastTriangles,
@@ -583,16 +682,64 @@ class BeastMotionStage implements BeastMotionRendererHandle {
     (this.emberPool.material as { dispose(): void }).dispose();
     this.emberPool.dispose();
     this.emberPool.removeFromParent();
-    this.baseGeometry.dispose();
-    this.fullSkinnedGeometry.dispose();
-    this.hybridSkinnedGeometry.dispose();
-    this.mathsMaterial.dispose();
-    this.rigMaterial.dispose();
-    this.hybridMaterial.dispose();
+    for (const asset of this.assetCache.values()) {
+      disposeBeastAsset(asset);
+    }
+    this.assetCache.clear();
     this.gpuTimer.dispose();
     this.environment.dispose();
     this.rendererRuntime.backend.dispose();
     this.renderer.domElement.remove();
+  }
+
+  private ensureSpeciesLoaded(species: FrontierSpecies): void {
+    const cached = this.assetCache.get(species);
+    if (cached) {
+      this.applyLoadedAsset(cached);
+      return;
+    }
+    const token = ++this.speciesGeneration;
+    this.speciesLoaded = false;
+    void loadBeastAsset(species, this.uniforms).then((asset) => {
+      if (this.disposed) {
+        disposeBeastAsset(asset);
+        return;
+      }
+      this.assetCache.set(species, asset);
+      if (token !== this.speciesGeneration) return;
+      this.applyLoadedAsset(asset);
+    });
+  }
+
+  private applyLoadedAsset(asset: LoadedBeastAsset): void {
+    this.activeAsset = asset;
+    this.speciesLoaded = true;
+    const prevEmberGeo = this.emberPool.geometry;
+    this.emberPool.geometry = createBeastEmberGeometry(asset.bounds);
+    prevEmberGeo.dispose();
+    this.seconds = 0;
+    this.mathsActionCycle = -1;
+    this.rebuildStage();
+    this.continuousEvaluator.reset();
+    this.resetCamera();
+    this.syncUniforms();
+    this.stepActors(0);
+  }
+
+  private resetMathsTransformsAndSlots(): void {
+    const count = this.mathsPlacements.length;
+    for (let i = 0; i < count; i++) {
+      const p = this.mathsPlacements[i];
+      MATRIX_TMP.makeTranslation(p.x, p.y, p.z);
+      for (const mesh of this.activeMathsMeshes) {
+        mesh.setMatrixAt(i, MATRIX_TMP);
+      }
+      this.activeAsset.mathsMotionController.resetSlot(i);
+      this.activeAsset.mathsMotionController.setPlacementAt(i, MATRIX_TMP);
+    }
+    for (const mesh of this.activeMathsMeshes) {
+      mesh.instanceMatrix.needsUpdate = true;
+    }
   }
 
   private rebuildStage(): void {
@@ -601,8 +748,8 @@ class BeastMotionStage implements BeastMotionRendererHandle {
       this.state.mode === "families"
         ? `families:${family}`
         : this.state.mode === "compare"
-          ? "compare"
-          : `bench:${this.state.way}:${this.state.count}`;
+          ? `compare:${this.activeAsset.species}`
+          : `bench:${this.activeAsset.species}:${this.state.way}:${this.state.count}`;
     if (signature === this.stageSignature) return;
     this.stageSignature = signature;
     this.clearStageActors();
@@ -633,12 +780,9 @@ class BeastMotionStage implements BeastMotionRendererHandle {
       }));
       this.addHexOutlines(placements);
 
-      const mathsSlot = placements[0];
-      this.spawnPureMaths([mathsSlot]);
-      const rigSlot = placements[1];
-      this.spawnRigActors([rigSlot], false);
-      const hybridSlot = placements[2];
-      this.spawnHybridActors([hybridSlot], false);
+      this.spawnPureMaths([placements[0]]);
+      this.spawnRigActors([placements[1]], false);
+      this.spawnHybridActors([placements[2]], false);
       this.placeEmbers(placements);
     } else {
       this.uniforms.phaseSpread.value = this.state.count > 1 ? 1 : 0;
@@ -648,6 +792,9 @@ class BeastMotionStage implements BeastMotionRendererHandle {
         z,
         y: this.environment.terrain.sampleSurface(x, z).height,
       }));
+      if (this.state.count === 1) {
+        this.addHexOutlines(placements);
+      }
       if (this.state.way === "maths") {
         this.spawnPureMaths(placements);
       } else if (this.state.way === "rig") {
@@ -661,38 +808,51 @@ class BeastMotionStage implements BeastMotionRendererHandle {
   }
 
   private spawnPureMaths(placements: ReadonlyArray<{ x: number; y: number; z: number }>): void {
-    const mesh = new InstancedMesh(this.baseGeometry, this.mathsMaterial, placements.length);
-    mesh.name = "Beast motion pure maths";
-    mesh.frustumCulled = false;
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
     this.mathsPlacements = placements.map((p) => ({ ...p }));
     this.mathsActionCycle = -1;
+    const meshes: InstancedMesh[] = [];
+    for (const part of this.activeAsset.parts) {
+      const mesh = new InstancedMesh(part.baseGeometry, part.mathsMaterial, placements.length);
+      mesh.name = `Beast motion pure maths (${this.activeAsset.species})`;
+      mesh.frustumCulled = false;
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      for (let i = 0; i < placements.length; i++) {
+        const p = placements[i];
+        MATRIX_TMP.makeTranslation(p.x, p.y, p.z);
+        mesh.setMatrixAt(i, MATRIX_TMP);
+      }
+      mesh.instanceMatrix.needsUpdate = true;
+      mesh.count = placements.length;
+      this.stageGroup.add(mesh);
+      meshes.push(mesh);
+    }
     for (let i = 0; i < placements.length; i++) {
       const p = placements[i];
       MATRIX_TMP.makeTranslation(p.x, p.y, p.z);
-      mesh.setMatrixAt(i, MATRIX_TMP);
-      this.mathsMotionController.resetSlot(i);
-      this.mathsMotionController.setPlacementAt(i, MATRIX_TMP);
+      this.activeAsset.mathsMotionController.resetSlot(i);
+      this.activeAsset.mathsMotionController.setPlacementAt(i, MATRIX_TMP);
     }
-    mesh.instanceMatrix.needsUpdate = true;
-    mesh.count = placements.length;
-    this.activeMathsMesh = mesh;
-    this.stageGroup.add(mesh);
+    this.activeMathsMeshes = meshes;
   }
 
   private spawnRigActors(placements: ReadonlyArray<{ x: number; y: number; z: number }>, stagger: boolean): void {
     for (let i = 0; i < placements.length; i++) {
       const p = placements[i];
-      const rig = createWyvernSkeleton("full");
-      const mesh = new SkinnedMesh(this.fullSkinnedGeometry, this.rigMaterial);
-      mesh.name = `Beast motion rig ${i}`;
-      mesh.frustumCulled = false;
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-      mesh.position.set(p.x, p.y, p.z);
-      mesh.add(rig.rootBone);
-      mesh.bind(rig.skeleton);
+      const rig = createFullBeastSkeleton();
+      const meshes: SkinnedMesh[] = [];
+      this.activeAsset.parts.forEach((part, partIndex) => {
+        const mesh = new SkinnedMesh(part.fullSkinnedGeometry, part.rigMaterial);
+        mesh.name = `Beast motion rig ${i}:${partIndex}`;
+        mesh.frustumCulled = false;
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        mesh.position.set(p.x, p.y, p.z);
+        if (partIndex === 0) mesh.add(rig.rootBone);
+        mesh.bind(rig.skeleton);
+        this.stageGroup.add(mesh);
+        meshes.push(mesh);
+      });
 
       const mixer = new AnimationMixer(rig.rootBone);
       const actions = {
@@ -702,9 +862,8 @@ class BeastMotionStage implements BeastMotionRendererHandle {
         hit: mixer.clipAction(this.rigClips.hit),
         death: mixer.clipAction(this.rigClips.death),
       };
-      this.stageGroup.add(mesh);
       this.rigActors.push({
-        mesh,
+        meshes,
         rig,
         mixer,
         actions,
@@ -716,18 +875,22 @@ class BeastMotionStage implements BeastMotionRendererHandle {
   private spawnHybridActors(placements: ReadonlyArray<{ x: number; y: number; z: number }>, stagger: boolean): void {
     for (let i = 0; i < placements.length; i++) {
       const p = placements[i];
-      const rig = createWyvernSkeleton("hybrid");
-      const mesh = new SkinnedMesh(this.hybridSkinnedGeometry, this.hybridMaterial);
-      mesh.name = `Beast motion hybrid ${i}`;
-      mesh.frustumCulled = false;
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-      mesh.position.set(p.x, p.y, p.z);
-      mesh.add(rig.rootBone);
-      mesh.bind(rig.skeleton);
-      this.stageGroup.add(mesh);
+      const rig = createBeastHybridSkeleton(this.activeAsset.species, this.activeAsset.bounds);
+      const meshes: SkinnedMesh[] = [];
+      this.activeAsset.parts.forEach((part, partIndex) => {
+        const mesh = new SkinnedMesh(part.hybridSkinnedGeometry, part.hybridMaterial);
+        mesh.name = `Beast motion hybrid ${i}:${partIndex}`;
+        mesh.frustumCulled = false;
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        mesh.position.set(p.x, p.y, p.z);
+        if (partIndex === 0) mesh.add(rig.rootBone);
+        mesh.bind(rig.skeleton);
+        this.stageGroup.add(mesh);
+        meshes.push(mesh);
+      });
       this.hybridActors.push({
-        mesh,
+        meshes,
         rig,
         phaseOffset: stagger ? i * 2.399963 : 0,
       });
@@ -777,21 +940,21 @@ class BeastMotionStage implements BeastMotionRendererHandle {
   }
 
   private clearStageActors(): void {
-    if (this.activeMathsMesh) {
-      this.activeMathsMesh.removeFromParent();
-      this.activeMathsMesh.dispose();
-      this.activeMathsMesh = null;
+    for (const mesh of this.activeMathsMeshes) {
+      mesh.removeFromParent();
+      mesh.dispose();
     }
+    this.activeMathsMeshes = [];
     for (const actor of this.rigActors) {
       actor.mixer.stopAllAction();
       actor.mixer.uncacheRoot(actor.rig.rootBone);
       actor.rig.skeleton.dispose();
-      actor.mesh.removeFromParent();
+      for (const mesh of actor.meshes) mesh.removeFromParent();
     }
     this.rigActors = [];
     for (const actor of this.hybridActors) {
       actor.rig.skeleton.dispose();
-      actor.mesh.removeFromParent();
+      for (const mesh of actor.meshes) mesh.removeFromParent();
     }
     this.hybridActors = [];
   }
@@ -841,7 +1004,7 @@ class BeastMotionStage implements BeastMotionRendererHandle {
       }
       return;
     }
-    if (this.activeMathsMesh) {
+    if (this.activeMathsMeshes.length > 0) {
       const count = this.mathsPlacements.length;
       if (this.state.action === "walk") {
         const stagger = this.uniforms.phaseSpread.value > 0.5;
@@ -849,19 +1012,23 @@ class BeastMotionStage implements BeastMotionRendererHandle {
           const p = this.mathsPlacements[i];
           const sample = sampleBeastMotionCycle("walk", this.seconds + (stagger ? i * 2.399963 : 0));
           MATRIX_TMP.makeTranslation(p.x, p.y + sample.walkBob * 0.045, p.z + sample.walkOffsetZ);
-          this.activeMathsMesh.setMatrixAt(i, MATRIX_TMP);
+          for (const mesh of this.activeMathsMeshes) {
+            mesh.setMatrixAt(i, MATRIX_TMP);
+          }
         }
-        this.activeMathsMesh.instanceMatrix.needsUpdate = true;
+        for (const mesh of this.activeMathsMeshes) {
+          mesh.instanceMatrix.needsUpdate = true;
+        }
       } else if (this.state.action === "attack" || this.state.action === "hit" || this.state.action === "death") {
         const cycle = Math.floor(this.seconds / BEAST_MOTION_CYCLE_SECONDS);
         if (cycle !== this.mathsActionCycle) {
           this.mathsActionCycle = cycle;
           for (let i = 0; i < count; i++) {
-            this.mathsMotionController.playActionAt(i, this.state.action, this.seconds);
+            this.activeAsset.mathsMotionController.playActionAt(i, this.state.action, this.seconds);
           }
         }
       }
-      this.mathsMotionController.update(this.seconds, []);
+      this.activeAsset.mathsMotionController.update(this.seconds, []);
     }
     for (const actor of this.rigActors) {
       if (delta === 0) {
@@ -871,7 +1038,7 @@ class BeastMotionStage implements BeastMotionRendererHandle {
       }
     }
     for (const actor of this.hybridActors) {
-      poseHybridWyvernRig(actor.rig, this.state.action, this.seconds, actor.phaseOffset);
+      poseBeastHybridRig(actor.rig, this.activeAsset.species, this.state.action, this.seconds, actor.phaseOffset);
     }
   }
 
@@ -947,6 +1114,7 @@ class BeastMotionStage implements BeastMotionRendererHandle {
     const way = this.state.mode === "bench" ? this.state.way : this.state.mode;
     const rect = this.input.container.getBoundingClientRect();
     return {
+      species: this.activeAsset.species,
       way,
       count: beastCount,
       action: this.state.action,
@@ -985,12 +1153,10 @@ class BeastMotionStage implements BeastMotionRendererHandle {
 
   private computeActiveBones(): number {
     if (this.state.mode === "compare") {
-      return WYVERN_FULL_RIG_SPECS.length + WYVERN_HYBRID_RIG_SPECS.length;
+      return WYVERN_FULL_RIG_SPECS.length + BEAST_MOTION_HYBRID_BONE_COUNT;
     }
     if (this.state.way === "maths") return 0;
-    return (
-      this.state.count * (this.state.way === "rig" ? WYVERN_FULL_RIG_SPECS.length : WYVERN_HYBRID_RIG_SPECS.length)
-    );
+    return this.state.count * (this.state.way === "rig" ? WYVERN_FULL_RIG_SPECS.length : BEAST_MOTION_HYBRID_BONE_COUNT);
   }
 
   private emitLabels(): void {
@@ -1010,6 +1176,20 @@ class BeastMotionStage implements BeastMotionRendererHandle {
         };
       });
       this.input.onLabels(projected);
+      return;
+    }
+    if (this.state.mode === "bench" && this.state.count === 1) {
+      const actionLabel = this.state.action.charAt(0).toUpperCase() + this.state.action.slice(1);
+      const beastName = beastOfModel(this.activeAsset.species).name;
+      this.input.onLabels([
+        {
+          key: "solo",
+          text: `${beastName} · ${BEAST_MOTION_WAY_LABELS[this.state.way]} · ${actionLabel}`,
+          x: width * 0.5,
+          y: 44,
+          visible: width > 0 && height > 0,
+        },
+      ]);
       return;
     }
     if (this.state.mode !== "compare") {

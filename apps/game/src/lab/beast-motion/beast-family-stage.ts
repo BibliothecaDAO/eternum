@@ -27,7 +27,7 @@ export const BEAST_FAMILY_SHOWCASE_LAYERS = {
   deep: 3,
 } satisfies Record<BeastFamilyShowcaseId, BeastLayer>;
 
-interface FamilyMember {
+export interface FamilyMember {
   readonly name: string;
   readonly species: FrontierSpecies;
   readonly layer: BeastLayer;
@@ -51,7 +51,7 @@ const QUAT_TMP = new Quaternion();
 const POS_TMP = new Vector3();
 const SCALE_TMP = new Vector3();
 
-function resolveFamilyMembers(family: BeastFamilyShowcaseId): FamilyMember[] {
+export function resolveFamilyMembers(family: BeastFamilyShowcaseId): FamilyMember[] {
   if (family === "deep") {
     return Object.values(DEEP_BEASTS).map((row) => ({
       name: row.name,
