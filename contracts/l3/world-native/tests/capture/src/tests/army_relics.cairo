@@ -14,8 +14,8 @@ fn relic_game() -> (
             START + 240,
         ),
     );
-    let home_id = snforge_std::interact_with_state(d.games, || crate::entity_ids::home_for_actor(game_id, d.actor));
-    let home = ResourceKey { game_id, entity_id: home_id };
+    let home = world_test_support::tests::play_fixture::deploy_home_troops(d, game_id, START + 240);
+    let home_id = home.entity_id;
     let explorer_id = *IStructureOperationsDispatcher { contract_address: d.games }.home_armies(home).at(0);
     let key = ExplorerKey { game_id, explorer_id };
     let mut army = strong_frontier_army(d, game_id, key);

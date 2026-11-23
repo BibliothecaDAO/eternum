@@ -784,22 +784,6 @@ function armyDeployed({ actionLatency }) {
   return army && { presented: `army-shown:${army}` };
 }
 
-/**
- * A season's entry (the lab's settle game, which opens on the home page): the Frontier card's Play, the doorway settling
- * the player's realm, then the game opening on it, on that realm. The wait covers the game's boot after the chain has
- * answered.
- */
-const STARTING_ARMY_BUTTONS = `JSON.stringify([...document.querySelectorAll('button[aria-label="Army 1"], button[aria-label="Army 2"]')].map(node => {
-  const box = node.getBoundingClientRect();
-  const visible = node.checkVisibility({ visibilityProperty: true, opacityProperty: true })
-    && box.width > 0 && box.height > 0 && box.top >= 0 && box.left >= 0
-    && box.bottom <= innerHeight && box.right <= innerWidth
-    && node.contains(document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2));
-  return { label: node.getAttribute("aria-label"), text: node.textContent, visible,
-    current: node.querySelector("[role=meter]")?.getAttribute("aria-valuenow"),
-    max: node.querySelector("[role=meter]")?.getAttribute("aria-valuemax") };
-}))`;
-
 /** The Aspect step's cards in the order drawn: each one's label, invite tag and whether it can be tapped. */
 const ASPECT_CARDS = `JSON.stringify([...document.querySelectorAll(".app-aspect-card")].map((card) => ({
   label: card.getAttribute("aria-label"),
@@ -896,18 +880,15 @@ const ASPECT_SETTLE_STEPS = [
       const founded = browser.read(`JSON.stringify(
         (window.__labChain?.sent ?? []).filter(({command}) => command.kind === "SettleSeason")
       )`);
-      await waitUntil(() => {
-        const buttons = browser.read(STARTING_ARMY_BUTTONS);
-        return buttons.length === 2 && buttons.every((button) => button.visible);
-      }, PLAYABLE_WAIT_MS);
       await devTools.send("Runtime.evaluate", {
         expression: "new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve(true))))",
         awaitPromise: true,
         returnByValue: true,
       });
-      const armyButtons = browser.read(STARTING_ARMY_BUTTONS);
-      extraScreenshot("starting-armies");
-      return { choice, choosing, orders, founded, armyButtons };
+      extraScreenshot("starting-home");
+      const deploy = await offeredDeploy(browser);
+      extraScreenshot("deploy-offered");
+      return { choice, choosing, orders, founded, deploy };
     },
     settleMs: 0,
     verify: ({ played, seen }) => {
@@ -923,7 +904,8 @@ const ASPECT_SETTLE_STEPS = [
         Number(home?.aspect) === 3 &&
         Number(members?.aspect) === 3 &&
         Number(members?.members) === 1 &&
-        hasStartingArmies(played) &&
+        holdsItsKnightsAtHome(played) &&
+        offersItsKnightsOut(played.deploy) &&
         seen.playable &&
         isIn(seen, "Realm", "hex")
         ? completed(played)
@@ -932,51 +914,36 @@ const ASPECT_SETTLE_STEPS = [
   },
 ];
 
-function hasStartingArmies(played) {
+async function offeredDeploy(browser) {
+  browser.click("Deploy");
+  const sheet = await readUntil(
+    () => browser.read(SHEET_NAME),
+    (name) => name === "Deploy",
+    SHEET_WAIT_MS,
+  );
+  const button =
+    sheet === "Deploy" && (await readUntil(() => browser.read(sheetButton("^Deploy$")), Boolean, SHEET_WAIT_MS));
+  const notice = browser.read(
+    `JSON.stringify(document.querySelector("[data-kit-sheet] .ui-notice")?.textContent ?? null)`,
+  );
+  return { sheet, offered: Boolean(button), notice };
+}
+
+function offersItsKnightsOut(deploy) {
+  return deploy?.sheet === "Deploy" && deploy.offered && !String(deploy.notice ?? "").startsWith("No troops at home");
+}
+
+function holdsItsKnightsAtHome(played) {
   const rows = played.founded?.[0]?.answered ?? [];
-  const armies = rows.filter(({ model }) => model === "ExplorerTroops").map(({ value }) => value);
-  const slots = rows.filter(({ model }) => model === "ArmySlot").map(({ value }) => value);
-  const days = rows.filter(({ model }) => model === "ArmyDay").map(({ value }) => value);
   const balance = (resource) =>
     rows.find(({ model, value }) => model === "ResourceBalance" && Number(value.resource_type) === resource)?.value
       .balance;
   return (
-    armies.length === 2 &&
-    slots.length === 2 &&
-    days.length === 2 &&
-    armies.every(
-      (army) =>
-        Number(army.owner) === 7 &&
-        army.troops.category === "Knight" &&
-        army.troops.tier === "T1" &&
-        BigInt(army.troops.count) === 1_500_000_000_000n,
+    !rows.some(({ model }) => ["ExplorerTroops", "ArmySlot", "ArmyDay"].includes(model)) &&
+    release.definition.settlement.realms.resources.every(
+      ({ resource_type, amount }) => BigInt(balance(resource_type) ?? -1) === BigInt(amount),
     ) &&
-    [0, 1].every((slot) => {
-      const army = armies.find(({ troops }) => troops.stamina.Slot === slot);
-      const bar = slots.find((value) => value.slot === slot);
-      return (
-        army &&
-        bar &&
-        String(bar.explorer_id) === String(army.explorer_id) &&
-        Number(bar.stamina.amount) === 120 &&
-        days.some((day) => String(day.explorer_id) === String(army.explorer_id) && Number(day.day) === 0)
-      );
-    }) &&
-    BigInt(balance(26) ?? -1) === 0n &&
-    BigInt(balance(35) ?? -1) === 6_000_000_000_000n &&
-    BigInt(balance(23) ?? -1) === 2_000_000_000_000n &&
-    BigInt(balance(38) ?? -1) === 0n &&
-    played.armyButtons?.length === 2 &&
-    ["Army 1", "Army 2"].every((label) =>
-      played.armyButtons.some(
-        (button) =>
-          button.label === label &&
-          button.visible === true &&
-          /1\.5k|1,500/.test(button.text) &&
-          Number(button.current) === 120 &&
-          Number(button.max) === 120,
-      ),
-    )
+    BigInt(balance(38) ?? -1) === 0n
   );
 }
 

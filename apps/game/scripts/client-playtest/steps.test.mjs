@@ -1027,33 +1027,12 @@ it("requires the selected Aspect in both the founding command and its membership
   const choice = { sent: 0, cards: ["Join Prowess", "Join Luminary", "Join Havoc", "Join Insight"] };
   const seen = { scene: "hex", rendered: "hex", place: "Realm", playable: true };
   const orders = [{ label: "Play as the Order shown first", order: "3" }];
-  const armyButtons = [1, 2].map((number) => ({
-    label: `Army ${number}`,
-    text: "1.5k",
-    current: "120",
-    max: "120",
-    visible: true,
-  }));
   const startRows = [
-    ...[0, 1].flatMap((slot) => [
-      {
-        model: "ExplorerTroops",
-        value: {
-          explorer_id: slot + 201,
-          owner: 7,
-          troops: { category: "Knight", tier: "T1", count: "1500000000000", stamina: { Slot: slot } },
-        },
-      },
-      { model: "ArmySlot", value: { slot, explorer_id: slot + 201, stamina: { amount: 120 } } },
-      { model: "ArmyDay", value: { explorer_id: slot + 201, day: 0 } },
-    ]),
-    ...[
-      [26, "0"],
-      [35, "6000000000000"],
-      [23, "2000000000000"],
-      [38, "0"],
-    ].map(([resource_type, balance]) => ({ model: "ResourceBalance", value: { resource_type, balance } })),
-  ];
+    [26, "2000000000000"],
+    [35, "6000000000000"],
+    [23, "2000000000000"],
+    [38, "0"],
+  ].map(([resource_type, balance]) => ({ model: "ResourceBalance", value: { resource_type, balance } }));
   const founded = {
     command: { span: ["10", "1", "0", "3"] },
     answered: [
@@ -1062,76 +1041,46 @@ it("requires the selected Aspect in both the founding command and its membership
       ...startRows,
     ],
   };
-  expect(verify({ seen, played: { armyButtons, orders, choice, founded: [founded] } }).status).toBe("completed");
-  expect(
-    verify({ seen, played: { armyButtons, orders, choice: { ...choice, sent: 1 }, founded: [founded] } }).status,
-  ).toBe("failed");
-  expect(verify({ seen, played: { armyButtons, orders, choice, founded: [] } }).status).toBe("failed");
-  expect(
-    verify({ seen, played: { armyButtons, orders, choice, founded: [{ ...founded, answered: [] }] } }).status,
-  ).toBe("failed");
-  expect(
-    verify({
-      seen,
-      played: {
-        armyButtons,
-        orders,
-        choice,
-        founded: [{ ...founded, command: { span: ["10", "1", "0", "2"] } }],
-      },
-    }).status,
-  ).toBe("failed");
+  const deploy = { sheet: "Deploy", offered: true, notice: null };
+  const answering = (answered) => ({ seen, played: { orders, choice, deploy, founded: [{ ...founded, answered }] } });
+  expect(verify({ seen, played: { orders, choice, deploy, founded: [founded] } }).status).toBe("completed");
+  expect(verify({ seen, played: { orders, choice: { ...choice, sent: 1 }, deploy, founded: [founded] } }).status).toBe(
+    "failed",
+  );
+  expect(verify({ seen, played: { orders, choice, deploy, founded: [] } }).status).toBe("failed");
+  for (const shown of [
+    undefined,
+    { sheet: null, offered: false, notice: null },
+    { sheet: "Deploy", offered: false, notice: "No troops at home" },
+    { sheet: "Deploy", offered: true, notice: "No troops at home · in 10s" },
+  ])
+    expect(verify({ seen, played: { orders, choice, deploy: shown, founded: [founded] } }).status).toBe("failed");
+  expect(verify(answering([])).status).toBe("failed");
   expect(
     verify({
       seen,
-      played: {
-        armyButtons,
-        orders,
-        choice,
-        founded: [
-          { ...founded, answered: [{ model: "HomeAspect", value: { home: 7, aspect: 2 } }, founded.answered[1]] },
-        ],
-      },
+      played: { orders, choice, deploy, founded: [{ ...founded, command: { span: ["10", "1", "0", "2"] } }] },
     }).status,
   ).toBe("failed");
+  expect(verify(answering([{ model: "HomeAspect", value: { home: 7, aspect: 2 } }, founded.answered[1]])).status).toBe(
+    "failed",
+  );
+  expect(verify(answering(founded.answered.filter(({ model }) => model !== "ResourceBalance"))).status).toBe("failed");
   expect(
-    verify({ seen, played: { orders, choice, founded: [founded], armyButtons: armyButtons.slice(0, 1) } }).status,
+    verify(
+      answering(
+        founded.answered.map((row) =>
+          row.model === "ResourceBalance" && row.value.resource_type === 26
+            ? { ...row, value: { ...row.value, balance: "0" } }
+            : row,
+        ),
+      ),
+    ).status,
   ).toBe("failed");
-  expect(
-    verify({
-      seen,
-      played: {
-        orders,
-        choice,
-        founded: [founded],
-        armyButtons: armyButtons.map((button) => ({ ...button, current: "100" })),
-      },
-    }).status,
-  ).toBe("failed");
-  expect(
-    verify({
-      seen,
-      played: {
-        orders,
-        choice,
-        founded: [founded],
-        armyButtons: armyButtons.map((button) => ({ ...button, visible: false })),
-      },
-    }).status,
-  ).toBe("failed");
-  for (const missing of ["ExplorerTroops", "ArmySlot", "ArmyDay", "ResourceBalance"]) {
-    expect(
-      verify({
-        seen,
-        played: {
-          orders,
-          choice,
-          armyButtons,
-          founded: [{ ...founded, answered: founded.answered.filter(({ model }) => model !== missing) }],
-        },
-      }).status,
-    ).toBe("failed");
-  }
+  for (const army of ["ExplorerTroops", "ArmySlot", "ArmyDay"])
+    expect(verify(answering([...founded.answered, { model: army, value: { explorer_id: 201 } }])).status).toBe(
+      "failed",
+    );
 });
 
 it("requires one quest command, its exact receipt, both credited balances and the collected UI", () => {

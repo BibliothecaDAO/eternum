@@ -97,6 +97,8 @@ fn a_real_clear_completes_the_daily_hunt_and_two_claims_pay_once() {
     let home = home(d, key);
     let claim = Command::ClaimDailyQuest(crate::quests::ClaimDailyQuest { home: home.entity_id, day: 0 });
     assert!(!execute_in_game(d, key.game_id, claim, FIXTURE_START));
+    let second = slot_army(d, ArmySlotKey { game_id: key.game_id, structure_id: home.entity_id, epoch: 0, slot: 1 });
+    super::deep_sites::transfer(d, key.game_id, second, key.explorer_id, 500);
     let site = discover(d, key, rules, Discovery::Beasts);
     apply(
         d,

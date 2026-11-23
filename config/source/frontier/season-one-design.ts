@@ -19,7 +19,7 @@ export const seasonOneDesign = {
     storeroomStorePercent: 100,
     population: false,
   },
-  start: { knights: 3000, wheat: 6000, labor: 2000 },
+  start: { knights: 2000, wheat: 6000, labor: 2000 },
   buildings: {
     farm: price(0, 500),
     workshop: price(0, 1000),

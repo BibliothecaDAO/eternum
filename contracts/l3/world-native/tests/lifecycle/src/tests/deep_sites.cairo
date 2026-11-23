@@ -48,30 +48,35 @@ pub fn seize(d: Deployment, key: ExplorerKey, target: ResourceKey, direction: u8
 
 pub fn deployed(d: Deployment, game_id: u32, aspect: u8, count: u128) -> ExplorerKey {
     let home = found(d, game_id, aspect);
-    assert!(count > 0 && count <= 1500, "invalid starting-army test count");
     let first = slot_army(d, ArmySlotKey { game_id, structure_id: home, epoch: 0, slot: 0 });
     let second = slot_army(d, ArmySlotKey { game_id, structure_id: home, epoch: 0, slot: 1 });
-    if count < 1500 {
-        applied(
-            d,
-            game_id,
-            Command::ManageTroops(
-                crate::troop_management::ManageTroops::Transfer(
-                    crate::troop_management::TransferTroops {
-                        source: crate::troop_management::Army::Explorer(first),
-                        target: crate::troop_management::Army::Explorer(second),
-                        amount: (1500 - count) * crate::rules::RESOURCE_PRECISION,
-                    },
-                ),
-            ),
-            FIXTURE_START,
-        );
+    let start = army(d, ExplorerKey { game_id, explorer_id: first }).troops.count / crate::rules::RESOURCE_PRECISION;
+    assert!(count > 0 && count < 2 * start, "invalid starting-army test count");
+    if count < start {
+        transfer(d, game_id, first, second, start - count);
+    } else if count > start {
+        transfer(d, game_id, second, first, count - start);
     }
-    let key = ExplorerKey {
-        game_id, explorer_id: slot_army(d, ArmySlotKey { game_id, structure_id: home, epoch: 0, slot: 0 }),
-    };
+    let key = ExplorerKey { game_id, explorer_id: first };
     descend(d, key, FIXTURE_START);
     key
+}
+
+pub fn transfer(d: Deployment, game_id: u32, source: u64, target: u64, count: u128) {
+    applied(
+        d,
+        game_id,
+        Command::ManageTroops(
+            crate::troop_management::ManageTroops::Transfer(
+                crate::troop_management::TransferTroops {
+                    source: crate::troop_management::Army::Explorer(source),
+                    target: crate::troop_management::Army::Explorer(target),
+                    amount: count * crate::rules::RESOURCE_PRECISION,
+                },
+            ),
+        ),
+        FIXTURE_START,
+    );
 }
 
 pub fn descend(d: Deployment, key: ExplorerKey, now: u64) {

@@ -643,7 +643,7 @@ pub mod TroopsLogic {
             let context = crate::commands::execution_context(game_id, context);
 
             self.authorize(game_id, context);
-            crate::logic::troops::owned_structure(game_id, command.structure_id, actor);
+            let home = crate::logic::troops::owned_structure(game_id, command.structure_id, actor);
             self
                 .expire_home_armies(
                     ResourceKey { game_id, entity_id: command.structure_id }, context.timestamp, context,
@@ -658,22 +658,7 @@ pub mod TroopsLogic {
                     context.timestamp,
                     context,
                 );
-            Allocation::allocate_army(ref self, game_id, actor, command, crate::commands::action_context(context));
-        }
-    }
-
-    #[abi(embed_v0)]
-    impl Allocation of crate::troops::IArmyAllocation<ContractState> {
-        fn allocate_army(
-            ref self: ContractState,
-            game_id: u32,
-            actor: ContractAddress,
-            command: CreateExplorer,
-            context: crate::commands::ActionContext,
-        ) -> u64 {
-            let context = crate::commands::execution_context(game_id, context);
             let rules = context.rules.unbox();
-            let home = crate::logic::troops::owned_structure(game_id, command.structure_id, actor);
             assert!(command.amount > 0, "empty army allocation");
             let category = troop_type(command.category);
             let tier = troop_tier(command.tier);
@@ -721,7 +706,6 @@ pub mod TroopsLogic {
                     ),
                     context.timestamp,
                 );
-            id
         }
     }
 
