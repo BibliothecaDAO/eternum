@@ -1,14 +1,14 @@
 import "./phone-hud.css";
 
-import { OpeningPartGate, usePartShown } from "../opening/opening-context";
+import { usePartShown } from "../opening/opening-context";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { HudButton, HudPage, HudRow } from "@/ui/design-system/kit/hud-elements";
-import { EXIT, MENU, SEASON, SETTINGS, SHOP_WORDS, TODAY } from "@/ui/design-system/kit/words";
+import { EXIT, MENU, SETTINGS, SHOP_WORDS, TODAY } from "@/ui/design-system/kit/words";
 import { HowToPlayRow } from "@/ui/modules/how-to-play";
 import { formatAmount } from "@bibliothecadao/types";
 import type { ReactNode } from "react";
 
-import { resolveMenuPlaces, type HudPlaceKey } from "./hud-places";
+import { resolveHudPlaces, resolveMenuPlaces, type HudPlaceKey } from "./hud-places";
 
 export const MenuPage = ({
   rank,
@@ -45,17 +45,20 @@ export const MenuPage = ({
   onExit: () => void;
   onClose: () => void;
 }) => {
+  const aspectsOpen = usePartShown("aspects");
   const researchOpen = usePartShown("research");
   const relicsOpen = usePartShown("relic-slots");
-  const places = resolveMenuPlaces({
-    aspectsOpen: false,
+  const placesState = {
+    aspectsOpen,
     researchOpen,
     relicsOpen,
     researchReady: onResearch ? Boolean(researchReady) : undefined,
     feedUnread: events,
     chatUnread,
     hasRealm: Boolean(onRelics),
-  });
+  };
+  const seasonPlace = resolveHudPlaces(placesState).find((place) => place.key === "season");
+  const places = resolveMenuPlaces(placesState);
   const handlers: Record<Exclude<HudPlaceKey, "season">, (() => void) | undefined> = {
     research: onResearch,
     feed: onFeed,
@@ -102,14 +105,14 @@ export const MenuPage = ({
           />
         )}
         <MenuRow icon="clock" label={TODAY} onClick={onToday} />
-        <OpeningPartGate part="aspects">
+        {seasonPlace && (
           <MenuRow
-            icon="victory"
-            label={SEASON}
+            icon={seasonPlace.icon}
+            label={seasonPlace.label}
             badge={<span className="text-hud-body tabular-nums">{rank ?? "—"}</span>}
             onClick={onSeason}
           />
-        </OpeningPartGate>
+        )}
         <MenuRow icon="settings" label={SETTINGS} onClick={onSettings} />
         <HowToPlayRow guide={guide} />
       </nav>

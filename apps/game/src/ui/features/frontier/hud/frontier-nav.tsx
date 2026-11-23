@@ -6,7 +6,7 @@ import { MENU } from "@/ui/design-system/kit/words";
 import type { AspectId } from "@bibliothecadao/types";
 
 import { usePartShown } from "../opening/opening-context";
-import { resolveHudPlaces } from "./hud-places";
+import { resolveHudPlaces, resolveMenuPlaces } from "./hud-places";
 
 export type HudSurface =
   | "research"
@@ -39,16 +39,16 @@ export const PhoneWorldActions = ({
   const aspectsOpen = usePartShown("aspects");
   const researchOpen = usePartShown("research");
   const relicsOpen = usePartShown("relic-slots");
-  const places = resolveHudPlaces({
+  const placesState = {
     aspectsOpen,
     researchOpen,
     relicsOpen,
     researchReady,
     feedUnread: events,
     chatUnread: unread,
-  });
-  const season = places.find((place) => place.key === "season");
-  const menuPlaces = places.filter((place) => place.key !== "season");
+  };
+  const season = resolveHudPlaces(placesState).find((place) => place.key === "season");
+  const menuPlaces = resolveMenuPlaces(placesState);
   const newPlace =
     menuPlaces.find((place) => place.key === "chat" && place.count && place.count > 0) ??
     menuPlaces.find((place) => place.key === "feed" && place.count && place.count > 0) ??

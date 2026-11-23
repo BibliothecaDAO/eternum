@@ -1081,7 +1081,7 @@ export const REINFORCE = {
 } as const;
 /** A realm's armies, as a list's name. */
 export const ARMIES = "Armies";
-export const ARMY_MOVE_HINT = "Press a hex to move";
+export const ARMY_MOVE_HINT = "Right-click a hex to move";
 /** The day-done card's count of the armies that ended with the day. */
 export const ARMIES_ENDED = "Armies ended with the day";
 /** The sources of a store's production, each with its combined rate. */
