@@ -19,6 +19,8 @@ import {
 import { waitForGameRegistryById } from "../registrar/game-registry";
 import { resolveAccountCredentials } from "../shared/credentials";
 import { requireRpcUrl } from "../shared/rpc";
+import { gameClockScale } from "../../../source/common/season-clock";
+import { nativePresetForId } from "../../../source/native";
 import type { DeploymentEnvironment, LaunchGameRequest, LaunchGameSummary } from "../types";
 import { createProgressReporter, formatDuration, type ProgressReporter } from "./progress";
 import { fileLaunchRunStore, type LaunchRunStore } from "./run-store";
@@ -50,6 +52,14 @@ function validateGameName(gameName: string): void {
   shortString.encodeShortString(gameName);
 }
 
+function refuseScaledPreset(presetId: number): number {
+  if (gameClockScale(nativePresetForId(presetId)) !== 1)
+    throw new Error(
+      `Preset ${presetId} runs a scaled clock: the launch Worker creates it on staging (POST /api/factory/testnet-games)`,
+    );
+  return presetId;
+}
+
 function resolvePresetId(version: string): number {
   const configuredPresetId = version;
   const presetId = Number(configuredPresetId);
@@ -67,7 +77,9 @@ function createRuntime(request: LaunchGameRequest): LaunchRuntime {
     provider: new RpcProvider({ nodeUrl: rpcUrl }),
     rpcUrl,
     startTime: parseStartTime(request.startTime),
-    presetId: resolvePresetId(request.version ?? String(presetIdForEnvironment(request.environmentId))),
+    presetId: refuseScaledPreset(
+      resolvePresetId(request.version ?? String(presetIdForEnvironment(request.environmentId))),
+    ),
     progress: createProgressReporter(),
   };
 }

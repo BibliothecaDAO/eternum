@@ -21,7 +21,7 @@ import {
   rowInGameSyncScope,
   scopeInputKeys,
 } from "@bibliothecadao/eternum/game-sync";
-import { aspects, type NativeWorldBindings, type WorldChatMessage } from "@bibliothecadao/types";
+import { aspects, seasonGameName, type NativeWorldBindings, type WorldChatMessage } from "@bibliothecadao/types";
 import type { AccountInterface, Call } from "starknet";
 
 import { LAB_CHAIN_ID } from "./lab-shard";
@@ -308,7 +308,7 @@ const answerDirectory = (
   const rules = chain.require("SliceRules", { game_id: LAB_GAME.gameId });
   const game = {
     game_id: LAB_GAME.gameId,
-    name: "lab",
+    name: seasonGameName(100 + clockOffset),
     mode: nativeGameModeOfFamily(registry.family),
     status: "Live",
     dev_mode_on: false,

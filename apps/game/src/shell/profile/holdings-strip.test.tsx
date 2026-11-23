@@ -33,6 +33,7 @@ vi.mock("../herald", async (importOriginal) => ({
         {
           chainId: "0x52",
           game_id: 1,
+          name: "frontier-100",
           mode: "frontier",
           status: "Live",
           clock_scale: 1,

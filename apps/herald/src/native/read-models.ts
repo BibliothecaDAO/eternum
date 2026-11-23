@@ -8,7 +8,7 @@ import type {
 import { DAILY_QUEST_MODELS, nativeGameModeOfFamily, readDailyQuest } from "@bibliothecadao/eternum";
 import { dayOf, expeditionRealmSite, entityHomeNamespace, isRealmCategory } from "@bibliothecadao/eternum/expeditions";
 import { NativeFactStore, questBonusPercent, raceFinishHeight } from "@bibliothecadao/eternum/game-client";
-import { aspects, RESOURCE_PRECISION, type AspectId, StructureType } from "@bibliothecadao/types";
+import { aspects, isSeasonGame, RESOURCE_PRECISION, type AspectId, StructureType } from "@bibliothecadao/types";
 import { isCheckGame, resolveDirectoryStatus, type DirectoryInput } from "../game-directory";
 import type { FoldRow } from "../types";
 
@@ -91,7 +91,10 @@ export function buildNativeDirectory(input: DirectoryInput): HeraldGameDirectory
   // Launcher-created check names are reserved for deployment; they never offer a player a joinable listing.
   const publicGames = rows("GameRegistry").filter(({ value }) => !isCheckGame(value));
   const seasons = publicGames
-    .filter(({ value }) => nativeGameModeOfFamily(number(value.family)) === "frontier")
+    .filter(
+      ({ value }) =>
+        nativeGameModeOfFamily(number(value.family)) === "frontier" && isSeasonGame(shortString(value.name)),
+    )
     .sort((a, b) => number(a.value.game_id) - number(b.value.game_id));
   // A chain's first Frontier season is Season 0 (Devcon's on the Nov 2 chain), the next Season 1 (owner, 2 November
   // 2026: "devcon season is s0").

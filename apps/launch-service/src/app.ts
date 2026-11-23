@@ -9,7 +9,7 @@ import type { CalendarStore } from "./calendar";
 import { createCalendarRoutes } from "./calendar-routes";
 import type { SlotStore } from "./slots";
 import { toFactoryRunRecord, type LaunchRun } from "./model";
-import type { CreateGameRequest } from "./schemas";
+import { testnetRequest, TestnetRefused, type CreateGameRequest, type TestnetInput } from "./schemas";
 import type { LaunchServiceStore } from "./store";
 import type { RegisteredShard } from "@realms-world/value-ledger";
 import { readThroughDependency } from "@realms-world/chain";
@@ -41,6 +41,29 @@ interface LaunchAppDependencies {
 const readEnvironment = (value: string | undefined): GameEnvironmentId => {
   if (!value || !isGameEnvironmentId(value)) throw new Error("Unsupported game environment");
   return value;
+};
+
+const readTestnetInput = (body: unknown): TestnetInput | null => {
+  const { startsAt, endsAt, speed = 1 } = (body ?? {}) as { startsAt?: unknown; endsAt?: unknown; speed?: unknown };
+  const start = typeof startsAt === "string" ? Date.parse(startsAt) : Number.NaN;
+  const end = typeof endsAt === "string" ? Date.parse(endsAt) : Number.NaN;
+  if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end) || !Number.isSafeInteger(speed)) return null;
+  return { startsAt: start, endsAt: end, speed: speed as number };
+};
+
+const respondWithTestnet = async (
+  context: Context,
+  dependencies: Pick<LaunchAppDependencies, "store" | "registrar" | "deployment">,
+) => {
+  const input = readTestnetInput(await context.req.json().catch(() => null));
+  if (!input) return context.json({ error: "invalid_testnet" }, 400);
+  try {
+    return await respondWithRun(context, dependencies, testnetRequest(input, dependencies.deployment.environment));
+  } catch (error) {
+    if (error instanceof TestnetRefused) return context.json({ error: error.message }, 403);
+    if (error instanceof CalendarConflict) return context.json({ error: error.message }, 409);
+    throw error;
+  }
 };
 
 const respondWithRun = async (
@@ -176,6 +199,7 @@ export const createLaunchApp = (dependencies: LaunchAppDependencies) => {
   app.post("/api/factory/runs/:environment/:name/actions/delete", (context) =>
     deleteRun(context, dependencies.store, context.req.param("name")),
   );
+  app.post("/api/factory/testnet-games", (context) => respondWithTestnet(context, dependencies));
 
   // The Cloudflare deploy's release step: the running Frontier games take the release its commit ships, as its box
   // build baked it, before its client goes live. A refusal names its reason; a rerun on games already there sends

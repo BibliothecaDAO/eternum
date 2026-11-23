@@ -19,7 +19,7 @@ afterEach(async () => {
   vi.restoreAllMocks();
   await database.close();
 });
-const fixture = (chain = TEST_CHAIN) => {
+const fixture = (chain = TEST_CHAIN, environment = "staging") => {
   const store = new D1LaunchStore(database.db, testChain(chain));
   const value = slotValueFixture();
   const slots = new D1SlotStore(database.db, store, value);
@@ -34,7 +34,7 @@ const fixture = (chain = TEST_CHAIN) => {
   );
   const app = createLaunchApp({
     config: { operatorToken: "operator-test-token" },
-    deployment: { environment: "staging", version: "test", revision: "abc1234" },
+    deployment: { environment, version: "test", revision: "abc1234" },
     store,
     slots,
     calendar,
@@ -76,6 +76,7 @@ test.each([
   ["POST", "/api/factory/runs/madara.frontier/frontier-7/actions/continue"],
   ["POST", "/api/factory/runs/madara.frontier/old/actions/delete"],
   ["POST", "/api/factory/release"],
+  ["POST", "/api/factory/testnet-games"],
 ])("requires an operator token for %s %s", async (method, url) => {
   const { app } = fixture();
   for (const headers of [session, {}, { authorization: "Bearer wrong" }] as Record<string, string>[])
@@ -287,4 +288,70 @@ test("an unexpected release failure is reported without its detail", async () =>
   const response = await applyRelease(app, { release: RELEASE, shard: SHARD });
   expect(response.status).toBe(503);
   expect(await response.json()).toEqual({ error: "release_apply_failed" });
+});
+
+const testnet = (body: object) => ({ method: "POST", headers: token, body: JSON.stringify(body) });
+const FINAL_TESTNET = { startsAt: "2026-11-24T12:00:00Z", endsAt: "2026-12-01T23:58:00Z" };
+
+test("production queues the final testnet: a real-speed Frontier game named testnet-<start>, which is not the season", async () => {
+  const { app, store, armFor } = fixture(TEST_CHAIN, "production");
+  const response = await app.request("/api/factory/testnet-games", testnet(FINAL_TESTNET));
+  expect(response.status).toBe(202);
+  const [run] = await store.list("madara.frontier");
+  expect(run!.request).toEqual({
+    environment: "madara.frontier",
+    gameName: "testnet-1795521600",
+    gameStartTime: "2026-11-24T12:00:00.000Z",
+    durationSeconds: 647_880,
+    devModeOn: false,
+  });
+  expect(armFor).toHaveBeenCalled();
+});
+
+test("a repeated testnet call lands on the same run, and another end for the same start is refused", async () => {
+  const { app, store } = fixture(TEST_CHAIN, "production");
+  expect((await app.request("/api/factory/testnet-games", testnet(FINAL_TESTNET))).status).toBe(202);
+  expect((await app.request("/api/factory/testnet-games", testnet(FINAL_TESTNET))).status).toBe(202);
+  const moved = await app.request(
+    "/api/factory/testnet-games",
+    testnet({ ...FINAL_TESTNET, endsAt: "2026-12-01T22:00:00Z" }),
+  );
+  expect(moved.status).toBe(409);
+  expect(await store.list("madara.frontier")).toHaveLength(1);
+});
+
+test("a testnet end off the 120 s tick is refused before anything is queued", async () => {
+  const { app, store } = fixture(TEST_CHAIN, "production");
+  const response = await app.request(
+    "/api/factory/testnet-games",
+    testnet({ ...FINAL_TESTNET, endsAt: "2026-12-01T23:59:00Z" }),
+  );
+  expect(response.status).toBe(409);
+  expect(await response.json()).toEqual({ error: "A Frontier season ends on a 120 s tick" });
+  expect(await store.list("madara.frontier")).toEqual([]);
+});
+
+test("staging queues a 4x rehearsal in dev mode on 30 s ticks; production refuses any speed but 1", async () => {
+  const staging = fixture();
+  const rehearsal = { startsAt: "2026-11-24T12:00:30Z", endsAt: "2026-11-25T12:00:30Z", speed: 4 };
+  expect((await staging.app.request("/api/factory/testnet-games", testnet(rehearsal))).status).toBe(202);
+  const [run] = await staging.store.list("madara.frontier");
+  expect(run!.request).toMatchObject({
+    gameName: "testnet-1795521630",
+    speed: 4,
+    devModeOn: true,
+    durationSeconds: 86_400,
+  });
+  const production = fixture(DEV_CHAIN, "production");
+  const refused = await production.app.request("/api/factory/testnet-games", testnet(rehearsal));
+  expect(refused.status).toBe(403);
+  expect(await refused.json()).toEqual({ error: "testnet_speed_staging_only" });
+  expect(await production.store.list("madara.frontier")).toEqual([]);
+});
+
+test("a testnet call without dates is refused", async () => {
+  const { app } = fixture();
+  const response = await app.request("/api/factory/testnet-games", testnet({ speed: 1 }));
+  expect(response.status).toBe(400);
+  expect(await response.json()).toEqual({ error: "invalid_testnet" });
 });

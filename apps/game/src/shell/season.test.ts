@@ -11,7 +11,7 @@ const season = (gameId: number, startMainAt: number, ownRealm: boolean): Directo
   dev_mode_on: false,
   clock_scale: 1,
   expedition: null,
-  name: "Season",
+  name: `frontier-${gameId}`,
   player_count: ownRealm ? 1 : 0,
   registration: null,
   settlement: null,
@@ -53,12 +53,13 @@ describe("the season a screen shows", () => {
   });
 });
 
-it("never picks a scaled rehearsal as the season, however late it started or whoever holds a realm in it", () => {
+it("never picks a testnet game as the season, however late it started, at whatever speed, or whoever holds a realm in it", () => {
   const playtest = season(1, 100, false);
-  const rehearsal = { ...season(2, 200, true), clock_scale: 4 };
-  for (const signedIn of [false, true]) expect(chooseSeason([rehearsal, playtest], signedIn)?.game_id).toBe(1);
-  expect(chooseSeason([rehearsal], true)).toBeUndefined();
-  const ended = { ...rehearsal, status: "Ended" } as DirectoryGame;
+  const testnet = { ...season(2, 200, true), name: "testnet-200" };
+  const rehearsal = { ...season(3, 300, true), name: "testnet-300", clock_scale: 4 };
+  for (const signedIn of [false, true]) expect(chooseSeason([rehearsal, testnet, playtest], signedIn)?.game_id).toBe(1);
+  expect(chooseSeason([testnet, rehearsal], true)).toBeUndefined();
+  const ended = { ...testnet, status: "Ended" } as DirectoryGame;
   expect(endedSeasons([ended], [ended]).map(({ game_id }) => game_id)).not.toContain(2);
 });
 

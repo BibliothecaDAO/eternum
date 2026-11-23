@@ -7,10 +7,10 @@ shards require a chain. No Worker shard URL or separate ledger URL/address is co
 
 Every Worker write requires the operator token. No route opens a paid Blitz slot. The schedule's
 `frontier-<start timestamp>` names are reserved. There is no general factory create-run route or wallet authority; the
-dev shard's test Blitz route is the one exception. The timetable exposes `slotId`; completed game directory rows carry
-that same field: null for every game outside a paid slot (Frontier, Eternum, and a dev shard's test Blitz). The
-environment address book supplies the ledger and L2 chain. No directory row carries economic addresses or a free/paid
-entry payload.
+dev shard's test Blitz route and the testnet-game route are the exceptions. The timetable exposes `slotId`; completed
+game directory rows carry that same field: null for every game outside a paid slot (Frontier, Eternum, and a dev shard's
+test Blitz). The environment address book supplies the ledger and L2 chain. No directory row carries economic addresses
+or a free/paid entry payload.
 
 A paid Blitz slot the ledger already holds never freezes or launches; its only way out is the refund. Before close the
 operator's refund cancels it, after its end it aborts it, and every registrant then reclaims the exact payment from the
@@ -27,6 +27,14 @@ role back on chain before activation. Pending shards stay invisible to players.
 Runtime settings include `BASE_URL`, `ENVIRONMENT`, and the `LAUNCH_DEPLOYER_PRIVATE_KEY` and `OPERATOR_TOKEN` secrets.
 `wrangler.jsonc` declares the identity, relay, D1 and registrar bindings. No hosting, secret provisioning or live
 deployment is performed by this change.
+
+POST `/api/factory/testnet-games` with the operator Bearer token and `{"startsAt", "endsAt", "speed"?}` queues a testnet
+game: a Frontier game named `testnet-<start timestamp>`, which is never the season (a Frontier game is the season only
+when the calendar named it `frontier-<start timestamp>`, `isSeasonGame` in packages/types). Production takes speed 1
+only; staging also takes 4, the rehearsal preset in dev mode. Start and end must fall on the game's army tick (120 s, or
+30 s at 4x); the end is the operator's end of the game. The Worker creates and records it like any launch, so Play lists
+it and every release advances it. The same start returns the same run; another end for that start answers 409. The
+deployer CLI refuses a scaled preset.
 
 To recover a named paid slot, POST `/api/slots/:name/refund?chainId=0x...` with the operator Bearer token. This enables
 ledger refunds by cancelling before close or aborting after end; players then claim their own refund. Between close and

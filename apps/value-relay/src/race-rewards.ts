@@ -1,3 +1,4 @@
+import { isSeasonGame } from "@bibliothecadao/types";
 import { Account, cairo, hash, type RpcProvider } from "starknet";
 import {
   RACE_CLAIM_WINDOW_SECONDS,
@@ -61,7 +62,8 @@ export async function settleFinishedRaces(
   settle: (settlement: RaceSettlement) => Promise<FinalEvidence | null>,
 ) {
   const { games } = await readFrontierGames(connection, heraldUrl);
-  return forEachGame(games, (game) => settleGameRace(connection, heraldUrl, finals, game.game_id, settle));
+  const seasons = games.filter((game) => isSeasonGame(game.name));
+  return forEachGame(seasons, (game) => settleGameRace(connection, heraldUrl, finals, game.game_id, settle));
 }
 
 async function settleGameRace(
