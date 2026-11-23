@@ -14,12 +14,13 @@ import {
 import { FRONTIER_BEASTS } from "@/three/structures/frontier-beast";
 import { type BeastLayer } from "@/three/structures/frontier-model";
 import { HEX_SIZE } from "@/three/constants/scene-constants";
+import type { BeastFamilyShowcaseId } from "./beast-family-stage";
 
 export type BeastMotionAction = "idle" | "walk" | "attack" | "hit" | "death";
 export type BeastMotionWay = "maths" | "rig" | "hybrid";
 export type BeastMotionCount = 1 | 20 | 100;
 export type BeastMotionLayer = BeastLayer;
-export type BeastMotionMode = "compare" | "bench";
+export type BeastMotionMode = "compare" | "bench" | "families";
 export type BeastMotionCamera = "threeQuarter" | "phoneMap" | "close";
 
 export interface BeastMotionState {
@@ -31,6 +32,7 @@ export interface BeastMotionState {
   phoenix: boolean;
   paused: boolean;
   camera: BeastMotionCamera;
+  family?: BeastFamilyShowcaseId;
 }
 
 interface BeastMotionSample {

@@ -67,6 +67,7 @@ import {
   createSharedEmberPool,
   type BeastShaderUniforms,
 } from "./beast-motion-phoenix";
+import { BeastFamilyStage, type BeastFamilyShowcaseId } from "./beast-family-stage";
 
 export interface BeastMotionStats {
   rendererMode: string;
@@ -114,12 +115,21 @@ export interface BeastMotionMeasurement {
   bottleneck: string;
 }
 
+export interface BeastMotionLabel {
+  key: string;
+  text: string;
+  x: number;
+  y: number;
+  visible: boolean;
+}
+
 export interface BeastMotionRendererHandle {
   updateState(next: BeastMotionState): void;
   seek(seconds: number): void;
   resetCamera(): void;
   measure(samples?: number, warmup?: number): Promise<BeastMotionMeasurement>;
   getStats(): BeastMotionStats;
+  isFamilyReady(): boolean;
   dispose(): void;
 }
 
@@ -128,7 +138,7 @@ interface MountBeastMotionInput {
   initialState: BeastMotionState;
   signal: AbortSignal;
   onStats(stats: BeastMotionStats): void;
-  onLabels(labels: Array<{ way: BeastMotionWay; x: number; y: number; visible: boolean }>): void;
+  onLabels(labels: BeastMotionLabel[]): void;
 }
 
 interface LoopRenderer extends RendererSurfaceLike {
@@ -305,6 +315,7 @@ class BeastMotionStage implements BeastMotionRendererHandle {
   private readonly hybridMaterial: ReturnType<typeof createHybridBeastMaterial>;
   private readonly rigClips: Record<BeastMotionAction, AnimationClip>;
   private readonly emberPool: InstancedMesh;
+  private readonly familyStage = new BeastFamilyStage();
   private readonly bounds: Box3;
 
   private state: BeastMotionState;
@@ -313,6 +324,8 @@ class BeastMotionStage implements BeastMotionRendererHandle {
   private rigActors: RigActor[] = [];
   private hybridActors: HybridActor[] = [];
   private activeAction: BeastMotionAction;
+  private familyLoaded = false;
+  private familyActionTimer = 0;
   private seconds = 0;
   private lastFrameMs = performance.now();
   private lastStatsMs = this.lastFrameMs;
@@ -341,7 +354,7 @@ class BeastMotionStage implements BeastMotionRendererHandle {
     this.continuousEvaluator.setGpuTimerSupported(this.gpuTimer.supported);
 
     this.scene.background = new Color(LAYER_BG[this.state.layer]);
-    this.scene.add(this.stageGroup, this.hexOutlineGroup);
+    this.scene.add(this.stageGroup, this.hexOutlineGroup, this.familyStage.group);
     this.environment = new BeastMotionEnvironment(this.scene);
 
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
@@ -396,7 +409,8 @@ class BeastMotionStage implements BeastMotionRendererHandle {
     this.state = { ...next };
     const topologyChanged =
       previous.mode !== next.mode ||
-      (next.mode === "bench" && (previous.way !== next.way || previous.count !== next.count));
+      (next.mode === "bench" && (previous.way !== next.way || previous.count !== next.count)) ||
+      (next.mode === "families" && previous.family !== next.family);
     const cameraChanged = topologyChanged || previous.camera !== next.camera;
     const actionChanged = previous.action !== next.action;
 
@@ -407,7 +421,11 @@ class BeastMotionStage implements BeastMotionRendererHandle {
     if (actionChanged) {
       this.activeAction = next.action;
       this.seconds = 0;
+      this.familyActionTimer = 0;
       this.switchRigClips(next.action);
+      if (this.state.mode === "families") {
+        this.triggerFamilyAction(next.action);
+      }
     }
     if (cameraChanged) {
       this.resetCamera();
@@ -416,6 +434,10 @@ class BeastMotionStage implements BeastMotionRendererHandle {
     if (this.state.paused) {
       this.stepActors(0);
     }
+  }
+
+  isFamilyReady(): boolean {
+    return this.state.mode !== "families" || this.familyLoaded;
   }
 
   seek(seconds: number): void {
@@ -428,6 +450,18 @@ class BeastMotionStage implements BeastMotionRendererHandle {
 
   resetCamera(): void {
     const groundY = this.environment.terrain.sampleSurface(0, 0).height;
+    if (this.state.mode === "families") {
+      const isDeep = (this.state.family ?? "ruin") === "deep";
+      if (this.state.camera === "phoneMap") {
+        this.controls.target.set(0, groundY + 0.55, 0);
+        this.camera.position.set(0, groundY + (isDeep ? 17.5 : 15.2), isDeep ? 15.4 : 13.4);
+      } else {
+        this.controls.target.set(0, groundY + 0.55, 0);
+        this.camera.position.set(0.35, groundY + (isDeep ? 3.8 : 3.2), isDeep ? 8.2 : 6.8);
+      }
+      this.controls.update();
+      return;
+    }
     if (this.state.mode === "bench") {
       if (this.state.count === 1 && this.state.camera === "close") {
         this.controls.target.set(0, groundY + 0.52, 0);
@@ -499,6 +533,7 @@ class BeastMotionStage implements BeastMotionRendererHandle {
     this.controls.dispose();
     this.clearStageActors();
     this.clearHexOutlines();
+    this.familyStage.dispose();
     this.emberPool.geometry.dispose();
     (this.emberPool.material as { dispose(): void }).dispose();
     this.emberPool.dispose();
@@ -516,11 +551,34 @@ class BeastMotionStage implements BeastMotionRendererHandle {
   }
 
   private rebuildStage(): void {
-    const signature = this.state.mode === "compare" ? "compare" : `bench:${this.state.way}:${this.state.count}`;
+    const family: BeastFamilyShowcaseId = this.state.family ?? "ruin";
+    const signature =
+      this.state.mode === "families"
+        ? `families:${family}`
+        : this.state.mode === "compare"
+          ? "compare"
+          : `bench:${this.state.way}:${this.state.count}`;
     if (signature === this.stageSignature) return;
     this.stageSignature = signature;
     this.clearStageActors();
     this.clearHexOutlines();
+    this.familyStage.clear();
+    this.familyLoaded = false;
+    this.familyActionTimer = 0;
+
+    if (this.state.mode === "families") {
+      this.emberPool.count = 0;
+      const expected = signature;
+      void this.familyStage
+        .loadFamily(family, (x, z) => this.environment.terrain.sampleSurface(x, z).height)
+        .then(() => {
+          if (this.disposed || this.stageSignature !== expected) return;
+          this.familyLoaded = true;
+          this.triggerFamilyAction(this.activeAction);
+          this.resetCamera();
+        });
+      return;
+    }
 
     if (this.state.mode === "compare") {
       this.uniforms.phaseSpread.value = 0;
@@ -706,7 +764,34 @@ class BeastMotionStage implements BeastMotionRendererHandle {
     this.uniforms.phoenixEnabled.value = this.state.phoenix ? 1 : 0;
   }
 
+  private triggerFamilyAction(action: BeastMotionAction): void {
+    if (action === "attack" || action === "hit" || action === "death") {
+      this.familyStage.triggerAction(action);
+    } else {
+      this.familyStage.triggerAction("idle");
+    }
+  }
+
   private stepActors(delta: number): void {
+    if (this.state.mode === "families") {
+      if (this.familyLoaded) {
+        if (delta > 0) {
+          this.familyActionTimer += delta;
+          if (this.activeAction === "attack" && this.familyActionTimer >= 1.35) {
+            this.familyActionTimer = 0;
+            this.familyStage.triggerAction("attack");
+          } else if (this.activeAction === "hit" && this.familyActionTimer >= 1.1) {
+            this.familyActionTimer = 0;
+            this.familyStage.triggerAction("hit");
+          } else if (this.activeAction === "death" && this.familyActionTimer >= 2.2) {
+            this.familyActionTimer = 0;
+            this.familyStage.triggerAction("death");
+          }
+        }
+        this.familyStage.update(delta);
+      }
+      return;
+    }
     for (const actor of this.rigActors) {
       if (delta === 0) {
         actor.mixer.setTime(this.seconds + actor.phaseOffset);
@@ -852,19 +937,36 @@ class BeastMotionStage implements BeastMotionRendererHandle {
   }
 
   private emitLabels(): void {
+    const width = this.input.container.clientWidth;
+    const height = this.input.container.clientHeight;
+    if (this.state.mode === "families") {
+      const pad = Math.min(54, width * 0.14);
+      const projected = this.familyStage.getLabelAnchors().map((anchor) => {
+        COMPARE_ANCHOR_POS.copy(anchor.position).project(this.camera);
+        const rawX = ((COMPARE_ANCHOR_POS.x + 1) / 2) * width;
+        return {
+          key: anchor.name,
+          text: anchor.name,
+          x: Math.max(pad, Math.min(width - pad, rawX)),
+          y: ((1 - COMPARE_ANCHOR_POS.y) / 2) * height,
+          visible: Math.abs(COMPARE_ANCHOR_POS.z) <= 1,
+        };
+      });
+      this.input.onLabels(projected);
+      return;
+    }
     if (this.state.mode !== "compare") {
       this.input.onLabels([]);
       return;
     }
-    const width = this.input.container.clientWidth;
-    const height = this.input.container.clientHeight;
     const pad = Math.min(62, width * 0.16);
     const projected = COMPARE_SLOTS.map((slot) => {
       const groundY = this.environment.terrain.sampleSurface(slot.x, slot.z).height;
       COMPARE_ANCHOR_POS.set(slot.x, groundY + 1.32, slot.z).project(this.camera);
       const rawX = ((COMPARE_ANCHOR_POS.x + 1) / 2) * width;
       return {
-        way: slot.way,
+        key: slot.way,
+        text: slot.way === "maths" ? "(a) Pure Maths" : slot.way === "rig" ? "(b) Rig + Clips" : "(c) Hybrid",
         x: Math.max(pad, Math.min(width - pad, rawX)),
         y: ((1 - COMPARE_ANCHOR_POS.y) / 2) * height,
         visible: Math.abs(COMPARE_ANCHOR_POS.z) <= 1,

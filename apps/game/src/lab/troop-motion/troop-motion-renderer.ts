@@ -39,9 +39,8 @@ import { T1_KNIGHT_DEFAULT_HUMANOID_RIG_ADAPTER } from "@/three/characters/t1-kn
 import { applyProceduralUnitConfigPatch, createDefaultProceduralUnitConfig } from "@/three/characters/procedural-unit-config";
 import { ProceduralUnitRuntime, type ProceduralUnitActor } from "@/three/characters/procedural-unit-runtime";
 import { T1_KNIGHT_WORLD_SCALE } from "@/three/constants/army-constants";
-import { HEX_SIZE } from "@/three/constants/scene-constants";
 import { ModelLabEnvironment } from "@/three/debug/model-lab/model-lab-environment";
-import { DEFAULT_MODEL_LAB_SETTINGS } from "@/three/debug/model-lab/model-lab-settings";
+import { readModelLabSettings } from "@/three/debug/model-lab/model-lab-settings";
 import type { RendererSurfaceLike } from "@/three/renderer-backend";
 import { initializeRendererBackendRuntime } from "@/three/renderer-backend-runtime";
 import { configureRendererColorOutput } from "@/three/renderer-color-output";
@@ -102,8 +101,8 @@ const MARCH_HALF_SPAN = 0.44;
 const MARCH_SPEED = 0.42;
 
 function createHexOutline(centerX: number, centerZ: number, groundY: number): Line {
-  const corners = terrainHexCorners(centerX, centerZ, HEX_SIZE);
-  const points = corners.map(([x, z]) => new Vector3(x, groundY + 0.014, z));
+  const corners = terrainHexCorners(centerX, centerZ);
+  const points = corners.map(({ x, z }) => new Vector3(x, groundY + 0.014, z));
   points.push(points[0].clone());
   const geometry = new BufferGeometry().setFromPoints(points);
   const material = new LineBasicMaterial({ color: 0xf4dca8, transparent: true, opacity: 0.52 });
@@ -298,25 +297,22 @@ function resolveReelSegment(seconds: number): {
 }
 
 export async function mountTroopMotionLab(input: MountTroopMotionInput): Promise<TroopMotionRendererHandle> {
-  const backend = await initializeRendererBackendRuntime({
-    antialias: true,
-    canvas: document.createElement("canvas"),
-    config: {
-      forceWebGL: env.VITE_PUBLIC_FORCE_WEBGL,
-      preferWebGPU: env.VITE_PUBLIC_ENABLE_WEBGPU,
-    },
-    powerPreference: "high-performance",
+  const rendererRuntime = await initializeRendererBackendRuntime({
+    envBuildMode: env.VITE_PUBLIC_RENDERER_BUILD_MODE,
+    isMobileDevice: isCoarsePointer(),
+    pixelRatio: Math.min(window.devicePixelRatio || 1, 1.5),
+    search: window.location.search,
   });
   if (input.signal.aborted) {
-    backend.renderer.dispose();
+    rendererRuntime.backend.dispose();
     throw new Error("Troop motion lab aborted during startup");
   }
 
-  const renderer = backend.renderer as LoopRenderer;
+  const renderer = rendererRuntime.renderer as LoopRenderer;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = PCFShadowMap;
   configureRendererColorOutput(renderer);
-  configureGltfTextureSupport(renderer);
+  configureGltfTextureSupport(rendererRuntime.renderer as Parameters<typeof configureGltfTextureSupport>[0]);
 
   const canvas = renderer.domElement;
   canvas.style.width = "100%";
@@ -327,8 +323,8 @@ export async function mountTroopMotionLab(input: MountTroopMotionInput): Promise
   const scene = new Scene();
   scene.background = new Color(0x819997);
   const environment = new ModelLabEnvironment(scene);
-  await environment.update({ ...DEFAULT_MODEL_LAB_SETTINGS, family: "units", biome: "grassland" });
-  const groundY = environment.terrain.sampleHeight(0, 0);
+  await environment.update(readModelLabSettings(new URLSearchParams("family=knight&biome=grassland")));
+  const groundY = environment.terrain.sampleSurface(0, 0).height;
 
   const camera = new PerspectiveCamera(34, 1, 0.1, 120);
   const controls = new OrbitControls(camera, canvas);
@@ -439,7 +435,7 @@ export async function mountTroopMotionLab(input: MountTroopMotionInput): Promise
     const width = Math.max(1, input.container.clientWidth);
     const height = Math.max(1, input.container.clientHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, isCoarsePointer() ? 1.5 : 2));
-    renderer.setSize(width, height, false);
+    renderer.setSize(width, height);
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
   };
@@ -631,7 +627,7 @@ export async function mountTroopMotionLab(input: MountTroopMotionInput): Promise
       newKnight.dispose();
       runtime.dispose();
       environment.dispose();
-      renderer.dispose();
+      rendererRuntime.backend.dispose();
     },
   };
 }

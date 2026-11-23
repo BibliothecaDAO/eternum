@@ -88,6 +88,7 @@
     "verify:painted-buildings": "vitest run --config vitest.assets.config.ts scripts/frontier-painted/painted-building-assets.test.mjs",
     "prove:beasts": "node scripts/frontier-beasts/prove.mjs",
     "prove:beast-motion": "node ./scripts/prove-beast-motion.mjs",
+    "prove:beast-families": "node ./scripts/prove-beast-families.mjs",
     "prove:troop-motion": "node ./scripts/prove-troop-motion.mjs"
   },
   "dependencies": {
