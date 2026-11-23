@@ -6717,7 +6717,11 @@ export const STEP_SETS = {
     ],
   },
   "army-management": { game: FRONTIER, steps: armyManagementSteps() },
-  "s1-rehearsal": { game: { ...FRONTIER, entersFromHome: true }, steps: s1RehearsalSteps() },
+  "s1-rehearsal": {
+    game: { ...FRONTIER, entersFromHome: true },
+    answersStandingPrompts: true,
+    steps: s1RehearsalSteps(),
+  },
   spectator: { game: FRONTIER, steps: SPECTATOR_STEPS },
   "map-frames": { game: FRONTIER, steps: MAP_FRAME_STEPS },
   "unit-assets-spectator": {

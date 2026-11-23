@@ -358,7 +358,7 @@ async function resolvePlaytestGame({ baseUrl, chainId, gameId, mode }) {
 async function playRun(context) {
   const { cpuThrottle, game, iteration, owner, player, rendererMode, runDir, timeoutMs } = context;
   const label = `${player ? "player" : "spectator"}-${rendererMode}-${iteration}`;
-  const { game: stepsGame, steps } = STEP_SETS[context.stepSet];
+  const { game: stepsGame, steps, answersStandingPrompts: answersPrompts = false } = STEP_SETS[context.stepSet];
   const record = {
     iteration,
     rendererMode,
@@ -394,8 +394,8 @@ async function playRun(context) {
         owner.throwIfCancelled();
         const base = join(runDir, `${label}-${String(first + index + 1).padStart(2, "0")}-${step.name}`);
         const stepPage = step.as === "ally" ? ally : page;
-        const answered = await answerStandingPrompts(stepPage.browser, owner);
-        if (answered.wallet || answered.alerts || answered.day)
+        const answered = answersPrompts && (await answerStandingPrompts(stepPage.browser, owner));
+        if (answered && (answered.wallet || answered.alerts || answered.day))
           record.answeredPrompts.push({ step: step.name, ...answered });
         const result = await playStep({
           ...stepPage,
