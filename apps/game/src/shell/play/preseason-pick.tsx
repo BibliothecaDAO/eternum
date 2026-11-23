@@ -110,6 +110,7 @@ const OrderPick = ({
           kind="primary"
           size="lg"
           step
+          className="w-full lg:w-auto"
           disabled={chosen === undefined || choose.isPending}
           onClick={() => chosen && choose.mutate(chosen.orderId)}
         >
@@ -117,7 +118,7 @@ const OrderPick = ({
         </AppButton>
       }
     >
-      <div data-preseason-step="pick" className="flex w-full flex-col gap-3">
+      <div data-preseason-step="pick" className="flex w-full flex-col gap-2 lg:gap-3">
         <h1 className="text-app-title text-app-ink">{ASPECT_STEP_WORDS.title}</h1>
         <p className="text-app-body text-app-muted">{ASPECT_STEP_WORDS.line}</p>
         <AspectCards
@@ -128,7 +129,7 @@ const OrderPick = ({
           onPick={pickAspect}
         />
         {aspectLords !== null && (
-          <p className="app-well p-3 text-left text-app-label text-app-muted">
+          <p className="app-well p-2.5 text-left text-app-label text-app-muted lg:p-3">
             <span className="flex items-start gap-2">
               <Icon name="crown" size={24} />
               <span data-aspect-shared>

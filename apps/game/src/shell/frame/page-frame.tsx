@@ -108,7 +108,7 @@ const PhoneFrame = ({ title, notice, foot, fill = false, painting, stage = false
         </div>
       ) : null}
       {foot ? (
-        <div data-band="foot" className="shrink-0 px-gutter pb-3">
+        <div data-band="foot" className="shrink-0 border-t border-kit-line bg-kit-ground px-gutter pb-3 pt-2.5">
           {foot}
         </div>
       ) : null}
