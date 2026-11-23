@@ -15,8 +15,8 @@ import { IdentityRequestError, type OrderIntent } from "@realms-world/identity";
 import { identityClient } from "@/hooks/context/identity-session";
 import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { Icon } from "@/ui/design-system/icon";
-import { aspectArtUrl } from "@/ui/design-system/icon-meaning";
 import { AppButton, AppNotice } from "@/ui/design-system/kit/app-elements";
+import { AppAspectCard } from "@/ui/design-system/kit/aspect-card";
 import { AppCountdownChip } from "@/ui/design-system/kit/clock-chip";
 import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
 import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
@@ -167,42 +167,25 @@ const AspectCards = ({
       const count = aspectMembers(members, id);
       return (
         <li key={id}>
-          <button
-            type="button"
-            data-aspect={name}
-            data-aspect-id={id}
-            aria-pressed={chosen === id}
+          <AppAspectCard
+            aspect={id}
+            name={name}
+            chosen={chosen === id}
+            invited={offered?.aspect === id ? ASPECT_STEP_WORDS.invitedBy(offered.sender) : undefined}
             onClick={() => onPick(id)}
-            className="app-aspect-card"
           >
-            <img src={aspectArtUrl(id, "card")} alt="" aria-hidden className="app-aspect-card__art" />
-            {offered?.aspect === id && (
-              <span data-aspect-invited className="app-choice__tag">
-                {ASPECT_STEP_WORDS.invitedBy(offered.sender)}
+            <span className="text-app-label text-app-muted">{ASPECT_STEP_WORDS.members(count)}</span>
+            {aspectLords !== null && (
+              <span className="flex flex-col">
+                <span className="text-app-strong text-app-gold">
+                  {PRESEASON_WORDS.average(formatShort(aspectLords / (count + 1)))}
+                </span>
+                <span className="text-app-label text-app-muted">
+                  {PRESEASON_WORDS.ofTotal(formatShort(aspectLords))}
+                </span>
               </span>
             )}
-            <span className="app-aspect-card__body">
-              <span className="app-aspect-card__name">{name}</span>
-              <span className="app-aspect-card__orders">
-                {ordersOfAspect(id).map(({ orderId }) => (
-                  <OrderEmblem key={orderId} order={orderId} size={28} />
-                ))}
-              </span>
-              <span className="app-aspect-card__meta">
-                <span className="text-app-label text-app-muted">{ASPECT_STEP_WORDS.members(count)}</span>
-                {aspectLords !== null && (
-                  <span className="flex flex-col">
-                    <span className="text-app-strong text-app-gold">
-                      {PRESEASON_WORDS.average(formatShort(aspectLords / (count + 1)))}
-                    </span>
-                    <span className="text-app-label text-app-muted">
-                      {PRESEASON_WORDS.ofTotal(formatShort(aspectLords))}
-                    </span>
-                  </span>
-                )}
-              </span>
-            </span>
-          </button>
+          </AppAspectCard>
         </li>
       );
     })}

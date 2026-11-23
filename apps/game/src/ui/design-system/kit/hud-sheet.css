@@ -3058,102 +3058,21 @@ button.ui-realm-tile:hover {
   background: var(--hud-well);
   padding: theme(spacing.3);
 }
-.ui-day-race__row {
+.ui-race-row {
   display: flex;
   align-items: center;
   gap: theme(spacing.2);
-}
-.ui-day-race__row .ui-meter > i {
-  background: rgb(var(--hud-aspect));
-}
-
-.ui-race-stage {
-  position: relative;
-  width: 100%;
-  height: 11.5rem;
-  overflow: hidden;
-  border: 1px solid var(--hud-line);
-  border-radius: var(--hud-radius-panel);
-  background: var(--hud-well);
-}
-@media (min-width: 1024px) {
-  .ui-race-stage {
-    height: 22rem;
-  }
-}
-.ui-race-stage__canvas {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-.ui-race-stage__plates {
-  position: absolute;
-  inset: auto 0 theme(spacing.2);
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  pointer-events: none;
-}
-.ui-race-stage__plate {
-  display: flex;
-  justify-content: center;
-}
-.ui-race-columns {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: theme(spacing[1.5]);
-}
-@media (min-width: 640px) {
-  .ui-race-columns {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: theme(spacing.2);
-  }
-}
-.ui-race-col {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  align-items: center;
-  gap: theme(spacing.1);
   border: 1px solid rgb(var(--hud-aspect) / 0.45);
+  border-left: 3px solid rgb(var(--hud-aspect));
   border-radius: var(--hud-radius-control);
   background: var(--hud-well);
-  box-shadow: inset 0 3px 0 rgb(var(--hud-aspect));
-  padding: theme(spacing.2);
-  text-align: center;
+  padding: theme(spacing.2) theme(spacing.3);
 }
-.ui-race-col[data-own] {
+.ui-race-row[data-own] {
   border-color: rgb(var(--hud-aspect));
   background: rgb(var(--hud-aspect) / 0.14);
 }
-.ui-race-col__head {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: theme(spacing.1);
-}
-.ui-race-col__name {
-  font-family: var(--hud-font-display);
-  font-size: var(--hud-text-strong);
-  line-height: var(--hud-leading-strong);
-  color: rgb(var(--hud-ink));
-}
-.ui-race-col__height {
-  font-size: var(--hud-text-title);
-  line-height: var(--hud-leading-title);
-  color: rgb(var(--hud-ink));
-}
-.ui-race-segments {
-  display: grid;
-  width: 100%;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 2px;
-}
-.ui-race-segment {
-  height: 4px;
-  border-radius: var(--hud-radius-round);
-  background: var(--hud-divider);
-}
-.ui-race-segment[data-active] {
+.ui-race-row .ui-meter > i {
   background: rgb(var(--hud-aspect));
 }
 
@@ -3175,113 +3094,6 @@ button.ui-realm-tile:hover {
   min-width: 0;
   align-items: center;
   gap: theme(spacing.2);
-}
-.ui-topbar-places {
-  padding: 2px;
-}
-.ui-topbar-places__nav {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-}
-.ui-topbar-place {
-  display: inline-flex;
-  height: 1.875rem;
-  align-items: center;
-  gap: theme(spacing[1.5]);
-  border-radius: var(--hud-radius-round);
-  padding: 0 theme(spacing[2.5]);
-  color: var(--hud-muted);
-  font-size: var(--hud-text-label);
-  line-height: var(--hud-leading-label);
-  font-weight: var(--hud-weight-strong);
-  white-space: nowrap;
-  transition:
-    background-color var(--hud-fast) var(--hud-ease),
-    color var(--hud-fast) var(--hud-ease);
-}
-.ui-topbar-place:hover {
-  background: var(--hud-hover);
-  color: rgb(var(--hud-ink));
-}
-.ui-topbar-place[aria-pressed="true"] {
-  background: var(--hud-chosen);
-  color: rgb(var(--hud-gold));
-}
-.ui-topbar-place__count {
-  min-width: 1.1rem;
-  border-radius: var(--hud-radius-round);
-  background: rgb(var(--hud-gold));
-  padding: 0 4px;
-  color: rgb(var(--hud-dark));
-  font-size: 10px;
-  line-height: 1.1rem;
-  text-align: center;
-  font-variant-numeric: tabular-nums;
-}
-.ui-depth-switch {
-  padding: 2px;
-}
-.ui-depth-switch__segments {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-}
-.ui-depth-switch__btn {
-  display: inline-flex;
-  height: 1.875rem;
-  align-items: center;
-  gap: theme(spacing.1);
-  border-radius: var(--hud-radius-round);
-  padding: 0 theme(spacing.2);
-  color: var(--hud-muted);
-  font-size: var(--hud-text-label);
-  line-height: var(--hud-leading-label);
-  font-weight: var(--hud-weight-strong);
-  white-space: nowrap;
-  transition:
-    background-color var(--hud-fast) var(--hud-ease),
-    color var(--hud-fast) var(--hud-ease);
-}
-.ui-depth-switch__btn:hover {
-  background: var(--hud-hover);
-  color: rgb(var(--hud-ink));
-}
-.ui-depth-switch__btn[aria-pressed="true"] {
-  background: var(--hud-chosen);
-  color: rgb(var(--hud-gold));
-}
-.ui-race-col__stage {
-  color: var(--hud-muted);
-  font-size: var(--hud-text-badge);
-  line-height: var(--hud-leading-badge);
-}
-
-.ui-research-tabs {
-  display: flex;
-  flex-shrink: 0;
-  gap: theme(spacing[1.5]);
-}
-.ui-research-tab {
-  display: inline-flex;
-  align-items: center;
-  gap: theme(spacing.1);
-  border: 1px solid var(--hud-line);
-  border-radius: var(--hud-radius-control);
-  background: var(--hud-well);
-  padding: theme(spacing.1) theme(spacing[2.5]);
-  color: var(--hud-muted);
-  font-size: var(--hud-text-label);
-  line-height: var(--hud-leading-label);
-}
-.ui-research-tab:hover {
-  border-color: var(--hud-line-strong);
-  color: rgb(var(--hud-ink));
-}
-.ui-research-tab[aria-pressed="true"] {
-  border-color: rgb(var(--hud-gold));
-  background: var(--hud-chosen);
-  color: rgb(var(--hud-ink));
 }
 .ui-research-row {
   display: flex;

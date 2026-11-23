@@ -1,6 +1,6 @@
 import meanings from "../../../asset-sources/facets/semantic-map.json";
 import resources from "../../../asset-sources/facets/resources.json";
-import type { AspectId, ResourcesIds } from "@bibliothecadao/types";
+import { aspectName, type AspectId, type ResourcesIds } from "@bibliothecadao/types";
 
 /**
  * The brand's marks the app draws, each the Realms Brand Kit v3 drawing for the size it is shown at (the kit's README:
@@ -34,11 +34,10 @@ export type IconMeaning = keyof typeof meanings;
 export type IconPixels = 64 | 128 | 256;
 export const iconMeanings = Object.keys(meanings) as IconMeaning[];
 
-type Meaning = { label: string; family: string; rotation?: number; orderId?: number } & (
-  | { art: string; token?: never; rewardChest?: never; oathBadge?: never }
-  | { token: string; art?: never; rewardChest?: never; oathBadge?: never }
-  | { rewardChest: string; art?: never; token?: never; oathBadge?: never }
-  | { oathBadge: string; art?: never; token?: never; rewardChest?: never }
+type Meaning = { label: string; family: string; rotation?: number; orderId?: number; aspectId?: number } & (
+  | { art: string; token?: never; rewardChest?: never }
+  | { token: string; art?: never; rewardChest?: never }
+  | { rewardChest: string; art?: never; token?: never }
 );
 export function iconDefinition(name: IconMeaning): Meaning {
   const definition: Meaning = meanings[name];
@@ -46,29 +45,25 @@ export function iconDefinition(name: IconMeaning): Meaning {
   return definition;
 }
 
-const ASPECT_SLUGS = {
-  1: "prowess",
-  2: "luminary",
-  3: "havoc",
-  4: "insight",
-} as const satisfies Record<AspectId, string>;
+const aspectMeanings = new Map(
+  iconMeanings.flatMap((name) => {
+    const entry = iconDefinition(name);
+    return entry.aspectId === undefined ? [] : [[entry.aspectId, name] as const];
+  }),
+);
 
-type AspectArtKind = "emblem" | "card";
+export function aspectMeaning(aspect: AspectId): IconMeaning {
+  const meaning = aspectMeanings.get(aspect);
+  if (!meaning) throw new Error(`Unknown Aspect icon: ${aspect}`);
+  return meaning;
+}
 
-export function aspectArtUrl(aspect: AspectId, kind: AspectArtKind = "emblem", size?: number): string {
-  const slug = ASPECT_SLUGS[aspect];
-  if (kind !== "emblem") return `/images/aspects/${slug}-${kind}.png`;
-  const suffix = size !== undefined && size <= 32 ? "-32" : size !== undefined && size <= 64 ? "-64" : "";
-  return `/images/aspects/${slug}-emblem${suffix}.png`;
+export function aspectCardUrl(aspect: AspectId): string {
+  return `/images/aspects/${aspectName(aspect).toLowerCase()}-card.webp`;
 }
 
 export function iconUrl(name: IconMeaning, pixels: IconPixels = 64): string {
   const definition = iconDefinition(name);
-  if (definition.oathBadge) {
-    return pixels === 64
-      ? `/images/oaths/${definition.oathBadge}-badge-64.png`
-      : `/images/oaths/${definition.oathBadge}-badge.png`;
-  }
   if (definition.rewardChest) return `/images/blitz-chests/${definition.rewardChest}.webp`;
   return definition.token ? `/tokens/${definition.token}.svg` : `/icons/facets/${pixels}/${definition.art}.webp`;
 }

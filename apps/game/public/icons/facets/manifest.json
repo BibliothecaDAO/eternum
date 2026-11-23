@@ -1219,97 +1219,97 @@
       "label": "Order of Giants",
       "family": "Orders",
       "orderId": 1,
-      "oathBadge": "giants"
+      "art": "order-giants"
     },
     "order-perfection": {
       "label": "Order of Perfection",
       "family": "Orders",
       "orderId": 2,
-      "oathBadge": "perfection"
+      "art": "order-perfection"
     },
     "order-rage": {
       "label": "Order of Rage",
       "family": "Orders",
       "orderId": 3,
-      "oathBadge": "rage"
+      "art": "order-rage"
     },
     "order-fox": {
       "label": "Order of the Fox",
       "family": "Orders",
       "orderId": 4,
-      "oathBadge": "fox"
+      "art": "order-fox"
     },
     "order-twins": {
       "label": "Order of the Twins",
       "family": "Orders",
       "orderId": 5,
-      "oathBadge": "twins"
+      "art": "order-twins"
     },
     "order-fury": {
       "label": "Order of Fury",
       "family": "Orders",
       "orderId": 6,
-      "oathBadge": "fury"
+      "art": "order-fury"
     },
     "order-reflection": {
       "label": "Order of Reflection",
       "family": "Orders",
       "orderId": 7,
-      "oathBadge": "reflection"
+      "art": "order-reflection"
     },
     "order-detection": {
       "label": "Order of Detection",
       "family": "Orders",
       "orderId": 8,
-      "oathBadge": "detection"
+      "art": "order-detection"
     },
     "order-skill": {
       "label": "Order of Skill",
       "family": "Orders",
       "orderId": 9,
-      "oathBadge": "skill"
+      "art": "order-skill"
     },
     "order-brilliance": {
       "label": "Order of Brilliance",
       "family": "Orders",
       "orderId": 10,
-      "oathBadge": "brilliance"
+      "art": "order-brilliance"
     },
     "order-protection": {
       "label": "Order of Protection",
       "family": "Orders",
       "orderId": 11,
-      "oathBadge": "protection"
+      "art": "order-protection"
     },
     "order-power": {
       "label": "Order of Power",
       "family": "Orders",
       "orderId": 12,
-      "oathBadge": "power"
+      "art": "order-power"
     },
     "order-titans": {
       "label": "Order of Titans",
       "family": "Orders",
       "orderId": 13,
-      "oathBadge": "titans"
+      "art": "order-titans"
     },
     "order-vitriol": {
       "label": "Order of Vitriol",
       "family": "Orders",
       "orderId": 14,
-      "oathBadge": "vitriol"
+      "art": "order-vitriol"
     },
     "order-anger": {
       "label": "Order of Anger",
       "family": "Orders",
       "orderId": 15,
-      "oathBadge": "anger"
+      "art": "order-anger"
     },
     "order-enlightenment": {
       "label": "Order of Enlightenment",
       "family": "Orders",
       "orderId": 16,
-      "oathBadge": "enlightenment"
+      "art": "order-enlightenment"
     },
     "discord": {
       "art": "discord",
@@ -1550,6 +1550,30 @@
       "label": "Golden Devcon · Empire",
       "family": "Structures",
       "art": "devcon-golden-realm-3"
+    },
+    "aspect-prowess": {
+      "art": "aspect-prowess",
+      "label": "Prowess",
+      "family": "Aspects",
+      "aspectId": 1
+    },
+    "aspect-luminary": {
+      "art": "aspect-luminary",
+      "label": "Luminary",
+      "family": "Aspects",
+      "aspectId": 2
+    },
+    "aspect-havoc": {
+      "art": "aspect-havoc",
+      "label": "Havoc",
+      "family": "Aspects",
+      "aspectId": 3
+    },
+    "aspect-insight": {
+      "art": "aspect-insight",
+      "label": "Insight",
+      "family": "Aspects",
+      "aspectId": 4
     }
   },
   "resources": {

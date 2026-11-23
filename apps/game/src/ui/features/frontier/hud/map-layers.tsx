@@ -87,9 +87,11 @@ export const selectLayer = ({ shown, go }: MapLayers, layer: MapLayer, chosen: (
 };
 
 export const layerChoices = (mapLayers: MapLayers, chosen: () => void = () => {}): MenuItem[] =>
-  mapLayers.layers.map((layer) => ({
-    label: layerWord(layer),
-    lead: <Icon name={layerMark(layer)} size={22} />,
-    checked: layer === mapLayers.shown,
-    onSelect: () => selectLayer(mapLayers, layer, chosen),
-  }));
+  mapLayers.layers
+    .filter((layer) => layer !== 0)
+    .map((layer) => ({
+      label: layerWord(layer),
+      lead: <Icon name={layerMark(layer)} size={22} />,
+      checked: layer === mapLayers.shown,
+      onSelect: () => selectLayer(mapLayers, layer, chosen),
+    }));

@@ -37,7 +37,7 @@ describe("SurfaceDeepSwitch", () => {
     act(() => root.render(<SurfaceDeepSwitch layers={layers} onSwitch={onSwitch} />));
 
     const buttons = [...host.querySelectorAll<HTMLButtonElement>("[data-surface-deep-switch] button")];
-    expect(buttons.map((button) => [button.textContent, button.getAttribute("aria-pressed")])).toEqual([
+    expect(buttons.map((button) => [button.textContent, button.getAttribute("aria-selected")])).toEqual([
       ["Surface", "true"],
       ["Deep", "false"],
     ]);
@@ -53,16 +53,16 @@ describe("SurfaceDeepSwitch", () => {
     act(() => root.render(<SurfaceDeepSwitch layers={layers} />));
 
     const buttons = [...host.querySelectorAll<HTMLButtonElement>("[data-surface-deep-switch] button")];
-    expect(buttons.map((button) => [button.textContent, button.getAttribute("aria-pressed")])).toEqual([
+    expect(buttons.map((button) => [button.textContent, button.getAttribute("aria-selected")])).toEqual([
       ["Surface", "false"],
       ["Veil", "true"],
     ]);
 
     act(() => buttons[1]!.click());
     const items = [...document.querySelectorAll<HTMLButtonElement>('[role="menu"] [role^="menuitem"]')];
-    expect(items.map((item) => item.textContent)).toEqual(["Surface", "Veil", "Hollow", "Deep"]);
+    expect(items.map((item) => item.textContent)).toEqual(["Veil", "Hollow", "Deep"]);
 
-    act(() => items[3]!.click());
+    act(() => items[2]!.click());
     expect(go).toHaveBeenCalledWith("deep");
   });
 });

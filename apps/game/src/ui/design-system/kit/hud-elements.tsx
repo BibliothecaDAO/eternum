@@ -3,6 +3,7 @@ import {
   formatTypedNumber,
   formatExact,
   formatPercent,
+  formatShort,
   formatShortDuration,
   readTypedNumber,
   typedNumberText,
@@ -756,7 +757,7 @@ export const HudTabs = <K extends string | number>({
    * wide for its place wraps; no tab ever leaves it.
    */
   tabs: readonly HudTab<K>[];
-  value: K;
+  value: K | null;
   onChange: (key: K) => void;
   /** A strip in a line of body text (the top bar's): its words at the body's size. */
   size?: "md" | "sm";
@@ -807,13 +808,13 @@ const TabFace = <K,>({ tab }: { tab: HudTab<K> }) =>
   tab.icon && !tab.label ? (
     <span className="ui-tab__mark">
       <Icon name={tab.icon} size={22} />
-      {tab.count !== undefined && <HudChip tone={tab.countTone}>{tab.count}</HudChip>}
+      {tab.count !== undefined && <HudChip tone={tab.countTone}>{formatShort(tab.count)}</HudChip>}
     </span>
   ) : (
     <>
       {tab.icon && <Icon name={tab.icon} size={22} />}
       {tab.label}
-      {tab.count !== undefined && <HudChip tone={tab.countTone}>{tab.count}</HudChip>}
+      {tab.count !== undefined && <HudChip tone={tab.countTone}>{formatShort(tab.count)}</HudChip>}
     </>
   );
 
@@ -1890,7 +1891,7 @@ const reachableItems = (menu: HTMLElement | null) =>
  * screen has no room below. Arrows move through it, Enter chooses, Escape, Tab and a press outside close it, and so does
  * a choice. A select's (HudSelect), a tab's that opens choices (HudTabs) and the phone's view slot's.
  */
-export const useHudList = (label: string) => {
+const useHudList = (label: string) => {
   const [open, setOpen] = useState(false);
   const [place, setPlace] = useState<ReturnType<typeof menuPlace> | null>(null);
   const trigger = useRef<HTMLButtonElement>(null);

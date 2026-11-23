@@ -1,7 +1,7 @@
 import { isOathResearch } from "@bibliothecadao/eternum";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
-import { HudButton, HudPage, HudRanked, HudTier, HudTierStep } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudPage, HudRanked, HudTabs, HudTier, HudTierStep } from "@/ui/design-system/kit/hud-elements";
 import type { Fix } from "@/ui/design-system/kit/refusal";
 import { CLOSE, RESEARCH, RESEARCH_TREE, RESEARCHING, type Rank, type RankedWords } from "@/ui/design-system/kit/words";
 import { formatAmount, formatExact, formatShort } from "@bibliothecadao/types";
@@ -35,23 +35,12 @@ export const ResearchPanel = ({
   const visibleBranches = filter === null ? branches : [filter];
   return (
     <HudPage label={RESEARCH} icon="research" onClose={onClose}>
-      <div className="ui-research-tabs" role="group" aria-label={RESEARCH}>
-        {branches.map((key) => {
-          const active = filter === key;
-          return (
-            <button
-              key={key}
-              type="button"
-              aria-pressed={active}
-              className="ui-research-tab"
-              onClick={() => setFilter(active ? null : key)}
-            >
-              <Icon name={BRANCH_ICONS[key]} size={15} />
-              <span>{RESEARCH_TREE.branches[key]}</span>
-            </button>
-          );
-        })}
-      </div>
+      <HudTabs
+        size="sm"
+        value={filter}
+        onChange={(key) => setFilter(filter === key ? null : key)}
+        tabs={branches.map((key) => ({ key, label: RESEARCH_TREE.branches[key], icon: BRANCH_ICONS[key] }))}
+      />
       <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pr-0.5">
         {visibleBranches.map((key) => {
           const items = nodes.filter((item) => item.branch === key);
