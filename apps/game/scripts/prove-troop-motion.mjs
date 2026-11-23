@@ -14,12 +14,14 @@ mkdirSync(out, { recursive: true });
 
 const KNIGHT_FILES = ["skin.glb", "sword.glb", "shield.glb"];
 const PUBLIC_TMP_DIR = fileURLToPath(new URL("../public/.tmp-shipped-knight", import.meta.url));
+const REPO_ROOT = fileURLToPath(new URL("../../..", import.meta.url));
 
 const SKIN_REPO_PATH = "apps/game/public/models/characters/t1-knight-default/near/skin.glb";
 
 function resolveShippedKnightRef() {
   try {
     const commits = execFileSync("git", ["log", "--format=%H", "-n", "12", "--", SKIN_REPO_PATH], {
+      cwd: REPO_ROOT,
       encoding: "utf8",
     })
       .trim()
@@ -27,14 +29,17 @@ function resolveShippedKnightRef() {
       .filter(Boolean);
     for (const hash of commits) {
       const size = Number(
-        execFileSync("git", ["cat-file", "-s", `${hash}:${SKIN_REPO_PATH}`], { encoding: "utf8" }).trim(),
+        execFileSync("git", ["cat-file", "-s", `${hash}:${SKIN_REPO_PATH}`], {
+          cwd: REPO_ROOT,
+          encoding: "utf8",
+        }).trim(),
       );
       if (size > 2_000_000) return hash;
     }
   } catch {}
   for (const ref of ["feat/frontier-s1", "origin/feat/frontier-s1"]) {
     try {
-      execFileSync("git", ["rev-parse", "--verify", ref], { stdio: "ignore" });
+      execFileSync("git", ["rev-parse", "--verify", ref], { cwd: REPO_ROOT, stdio: "ignore" });
       return ref;
     } catch {}
   }
@@ -47,7 +52,7 @@ function stageShippedKnightFiles() {
   mkdirSync(PUBLIC_TMP_DIR, { recursive: true });
   for (const file of KNIGHT_FILES) {
     const gitPath = `${ref}:apps/game/public/models/characters/t1-knight-default/near/${file}`;
-    const content = execFileSync("git", ["show", gitPath], { maxBuffer: 16 * 1024 * 1024 });
+    const content = execFileSync("git", ["show", gitPath], { cwd: REPO_ROOT, maxBuffer: 16 * 1024 * 1024 });
     writeFileSync(join(PUBLIC_TMP_DIR, file), content);
   }
   return true;
