@@ -75,7 +75,10 @@ await withDevClient({ base: parseOption("--base-url", null), port, out }, async 
     }
 
     const stats = assertBrowserClean(browser, "__beastMotionLab");
-    writeFileSync(join(out, "summary.json"), JSON.stringify({ capturedAt: new Date().toISOString(), clips, stats }, null, 2));
+    writeFileSync(
+      join(out, "summary.json"),
+      JSON.stringify({ capturedAt: new Date().toISOString(), clips, stats }, null, 2),
+    );
     console.log(`Beast family proof complete: ${clips.length} clips in ${out}`);
   } finally {
     browser.close();

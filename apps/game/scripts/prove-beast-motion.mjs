@@ -153,7 +153,16 @@ await withDevClient({ base: parseOption("--base-url", null), port, out }, async 
               out,
               `bench-phone-${way}-20`,
               "__beastMotionLab",
-              { mode: "bench", way, count: 20, action: "walk", layer: 2, phoenix: true, paused: false, camera: "threeQuarter" },
+              {
+                mode: "bench",
+                way,
+                count: 20,
+                action: "walk",
+                layer: 2,
+                phoenix: true,
+                paused: false,
+                camera: "threeQuarter",
+              },
               2200,
             ),
           );

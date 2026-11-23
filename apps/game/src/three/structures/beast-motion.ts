@@ -326,7 +326,10 @@ function buildBeastDisplacement<T>(
       wingMask,
     );
     archDy = op.add(flap, op.mul(op.sin(op.mul(t, op.num(1.7))), op.num(p.hoverAmp)));
-    archDx = op.mul(op.mul(op.sin(op.sub(op.mul(t, op.num(2.4)), op.mul(z, op.num(4.5)))), op.num(p.tailAmp)), tailMask);
+    archDx = op.mul(
+      op.mul(op.sin(op.sub(op.mul(t, op.num(2.4)), op.mul(z, op.num(4.5)))), op.num(p.tailAmp)),
+      tailMask,
+    );
   } else if (p.archetype === "serpentine") {
     archDx = op.mul(
       op.mul(op.sin(op.sub(op.mul(t, op.num(2.8)), op.mul(z, op.num(5.2)))), op.num(p.tailAmp)),
@@ -382,24 +385,15 @@ function buildBeastDisplacement<T>(
 
   const aliveDx = op.add(
     op.add(baseDx, archDx),
-    op.add(
-      op.selectBetween(actionCode, 0.5, 1.5, attackDx, zero),
-      op.selectBetween(actionCode, 1.5, 2.5, hitDx, zero),
-    ),
+    op.add(op.selectBetween(actionCode, 0.5, 1.5, attackDx, zero), op.selectBetween(actionCode, 1.5, 2.5, hitDx, zero)),
   );
   const aliveDy = op.add(
     op.add(baseDy, archDy),
-    op.add(
-      op.selectBetween(actionCode, 0.5, 1.5, attackDy, zero),
-      op.selectBetween(actionCode, 1.5, 2.5, hitDy, zero),
-    ),
+    op.add(op.selectBetween(actionCode, 0.5, 1.5, attackDy, zero), op.selectBetween(actionCode, 1.5, 2.5, hitDy, zero)),
   );
   const aliveDz = op.add(
     archDz,
-    op.add(
-      op.selectBetween(actionCode, 0.5, 1.5, attackDz, zero),
-      op.selectBetween(actionCode, 1.5, 2.5, hitDz, zero),
-    ),
+    op.add(op.selectBetween(actionCode, 0.5, 1.5, attackDz, zero), op.selectBetween(actionCode, 1.5, 2.5, hitDz, zero)),
   );
 
   const fall = op.smoothstep(0, 0.78, progress);
@@ -420,11 +414,7 @@ function buildBeastDisplacement<T>(
   const dy = op.selectGt(actionCode, 2.5, deathDy, aliveDy);
   const dz = op.selectGt(actionCode, 2.5, deathDz, aliveDz);
 
-  return [
-    op.selectGt(active, 0.5, dx, zero),
-    op.selectGt(active, 0.5, dy, zero),
-    op.selectGt(active, 0.5, dz, zero),
-  ];
+  return [op.selectGt(active, 0.5, dx, zero), op.selectGt(active, 0.5, dy, zero), op.selectGt(active, 0.5, dz, zero)];
 }
 
 export function evaluateBeastMotionDisplacement(
@@ -452,7 +442,10 @@ export function createBeastMotionNode(species: FrontierSpecies, clockNode: Node<
   const motion = attribute<"vec4">("beastMotion", "vec4");
   const idle = attribute<"vec3">("beastIdle", "vec3");
   const phase = float(instanceIndex).mul(INSTANCED_MOTION_GOLDEN_PHASE);
-  const progress = clockNode.sub(motion.y).div(TSL_MOTION_OPS.max(motion.z, float(0.001))).clamp(0, 1);
+  const progress = clockNode
+    .sub(motion.y)
+    .div(TSL_MOTION_OPS.max(motion.z, float(0.001)))
+    .clamp(0, 1);
   const [dx, dy, dz] = buildBeastDisplacement(TSL_MOTION_OPS, BEAST_MOTION_PROFILES[species], {
     x: positionGeometry.x,
     y: positionGeometry.y,

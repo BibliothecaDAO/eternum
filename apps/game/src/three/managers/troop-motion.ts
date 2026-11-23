@@ -107,10 +107,7 @@ function buildScoutDisplacement<T>(op: MotionMathOps<T>, input: TroopDisplacemen
   const frontSwing = op.sin(gallop);
   const hindSwing = op.sin(op.add(gallop, op.num(Math.PI * 0.85)));
   const marchDz = op.add(
-    op.add(
-      op.mul(op.mul(frontSwing, op.num(0.13)), frontLegs),
-      op.mul(op.mul(hindSwing, op.num(0.13)), hindLegs),
-    ),
+    op.add(op.mul(op.mul(frontSwing, op.num(0.13)), frontLegs), op.mul(op.mul(hindSwing, op.num(0.13)), hindLegs)),
     op.mul(op.mul(op.cos(gallop), op.num(0.045)), horseNeck),
   );
   const marchDy = op.add(
@@ -145,29 +142,23 @@ function buildScoutDisplacement<T>(op: MotionMathOps<T>, input: TroopDisplacemen
 
   const flinch = op.mul(op.sin(op.mul(progress, op.num(Math.PI))), op.exp(op.mul(progress, op.num(-1.4))));
   const hitDz = op.mul(op.mul(flinch, op.num(-0.16)), grounded);
-  const hitDy = op.sub(op.mul(op.mul(flinch, op.num(0.04)), horseNeck), op.mul(op.mul(flinch, op.num(0.03)), riderUpper));
+  const hitDy = op.sub(
+    op.mul(op.mul(flinch, op.num(0.04)), horseNeck),
+    op.mul(op.mul(flinch, op.num(0.03)), riderUpper),
+  );
   const hitDx = op.mul(op.mul(op.mul(op.sin(op.mul(progress, op.num(Math.PI * 6))), flinch), op.num(0.035)), grounded);
 
   const aliveDx = op.add(
     op.add(idleDx, op.selectBetween(actionCode, 0.5, 1.5, marchDx, zero)),
-    op.add(
-      op.selectBetween(actionCode, 1.5, 2.5, attackDx, zero),
-      op.selectBetween(actionCode, 2.5, 3.5, hitDx, zero),
-    ),
+    op.add(op.selectBetween(actionCode, 1.5, 2.5, attackDx, zero), op.selectBetween(actionCode, 2.5, 3.5, hitDx, zero)),
   );
   const aliveDy = op.add(
     op.add(idleDy, op.selectBetween(actionCode, 0.5, 1.5, marchDy, zero)),
-    op.add(
-      op.selectBetween(actionCode, 1.5, 2.5, attackDy, zero),
-      op.selectBetween(actionCode, 2.5, 3.5, hitDy, zero),
-    ),
+    op.add(op.selectBetween(actionCode, 1.5, 2.5, attackDy, zero), op.selectBetween(actionCode, 2.5, 3.5, hitDy, zero)),
   );
   const aliveDz = op.add(
     op.add(idleDz, op.selectBetween(actionCode, 0.5, 1.5, marchDz, zero)),
-    op.add(
-      op.selectBetween(actionCode, 1.5, 2.5, attackDz, zero),
-      op.selectBetween(actionCode, 2.5, 3.5, hitDz, zero),
-    ),
+    op.add(op.selectBetween(actionCode, 1.5, 2.5, attackDz, zero), op.selectBetween(actionCode, 2.5, 3.5, hitDz, zero)),
   );
 
   const fall = op.smoothstep(0, 0.78, progress);
@@ -188,11 +179,7 @@ function buildScoutDisplacement<T>(op: MotionMathOps<T>, input: TroopDisplacemen
   const dy = op.selectGt(actionCode, 3.5, deathDy, aliveDy);
   const dz = op.selectGt(actionCode, 3.5, deathDz, aliveDz);
 
-  return [
-    op.selectGt(active, 0.5, dx, zero),
-    op.selectGt(active, 0.5, dy, zero),
-    op.selectGt(active, 0.5, dz, zero),
-  ];
+  return [op.selectGt(active, 0.5, dx, zero), op.selectGt(active, 0.5, dy, zero), op.selectGt(active, 0.5, dz, zero)];
 }
 
 function buildCrossbowDisplacement<T>(op: MotionMathOps<T>, input: TroopDisplacementInputs<T>): [T, T, T] {
@@ -250,17 +237,11 @@ function buildCrossbowDisplacement<T>(op: MotionMathOps<T>, input: TroopDisplace
   );
   const aliveDy = op.add(
     op.add(idleDy, op.selectBetween(actionCode, 0.5, 1.5, marchDy, zero)),
-    op.add(
-      op.selectBetween(actionCode, 1.5, 2.5, attackDy, zero),
-      op.selectBetween(actionCode, 2.5, 3.5, hitDy, zero),
-    ),
+    op.add(op.selectBetween(actionCode, 1.5, 2.5, attackDy, zero), op.selectBetween(actionCode, 2.5, 3.5, hitDy, zero)),
   );
   const aliveDz = op.add(
     op.add(idleDz, op.selectBetween(actionCode, 0.5, 1.5, marchDz, zero)),
-    op.add(
-      op.selectBetween(actionCode, 1.5, 2.5, attackDz, zero),
-      op.selectBetween(actionCode, 2.5, 3.5, hitDz, zero),
-    ),
+    op.add(op.selectBetween(actionCode, 1.5, 2.5, attackDz, zero), op.selectBetween(actionCode, 2.5, 3.5, hitDz, zero)),
   );
 
   const fall = op.smoothstep(0, 0.78, progress);
@@ -281,11 +262,7 @@ function buildCrossbowDisplacement<T>(op: MotionMathOps<T>, input: TroopDisplace
   const dy = op.selectGt(actionCode, 3.5, deathDy, aliveDy);
   const dz = op.selectGt(actionCode, 3.5, deathDz, aliveDz);
 
-  return [
-    op.selectGt(active, 0.5, dx, zero),
-    op.selectGt(active, 0.5, dy, zero),
-    op.selectGt(active, 0.5, dz, zero),
-  ];
+  return [op.selectGt(active, 0.5, dx, zero), op.selectGt(active, 0.5, dy, zero), op.selectGt(active, 0.5, dz, zero)];
 }
 
 function buildTroopDisplacement<T>(
@@ -315,7 +292,10 @@ export function evaluateTroopMotionDisplacement(
 export function createTroopMotionNode(kind: AnimatedTroopKind, clockNode: Node<"float">) {
   const motion = attribute<"vec4">("troopMotion", "vec4");
   const phase = float(instanceIndex).mul(INSTANCED_MOTION_GOLDEN_PHASE);
-  const progress = clockNode.sub(motion.y).div(TSL_MOTION_OPS.max(motion.z, float(0.001))).clamp(0, 1);
+  const progress = clockNode
+    .sub(motion.y)
+    .div(TSL_MOTION_OPS.max(motion.z, float(0.001)))
+    .clamp(0, 1);
   const [dx, dy, dz] = buildTroopDisplacement(TSL_MOTION_OPS, kind, {
     x: positionGeometry.x,
     y: positionGeometry.y,
