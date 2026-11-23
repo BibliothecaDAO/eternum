@@ -44,8 +44,12 @@ import type { TerrainCellInput, TerrainPageRequest } from "@/three/terrain/terra
 import { configureGltfTextureSupport, gltfLoader } from "@/three/utils/gltf-loader";
 import { isCoarsePointer } from "@/utils/pointer";
 import {
+  BEAST_MOTION_ACTIONS,
   BEAST_MOTION_ACTION_INDEX,
+  BEAST_MOTION_COUNTS,
   BEAST_MOTION_PATH,
+  BEAST_MOTION_WAY_LABELS,
+  BEAST_MOTION_WAYS,
   WYVERN_FULL_RIG_SPECS,
   WYVERN_HYBRID_RIG_SPECS,
   applyWyvernSpatialSkinning,
@@ -54,6 +58,7 @@ import {
   createWyvernSkeleton,
   poseHybridWyvernRig,
   type BeastMotionAction,
+  type BeastMotionCount,
   type BeastMotionLayer,
   type BeastMotionState,
   type BeastMotionWay,
@@ -67,9 +72,25 @@ import {
   createSharedEmberPool,
   type BeastShaderUniforms,
 } from "./beast-motion-phoenix";
-import { BeastFamilyStage, type BeastFamilyShowcaseId } from "./beast-family-stage";
+import {
+  BEAST_FAMILY_SHOWCASE_IDS,
+  BEAST_FAMILY_SHOWCASE_LAYERS,
+  BeastFamilyStage,
+  type BeastFamilyShowcaseId,
+} from "./beast-family-stage";
+
+export interface BeastMotionMeta {
+  modelPath: string;
+  trianglesPerBeast: number;
+  actions: readonly BeastMotionAction[];
+  ways: readonly BeastMotionWay[];
+  counts: readonly BeastMotionCount[];
+  families: ReadonlyArray<{ id: BeastFamilyShowcaseId; layer: BeastMotionLayer }>;
+}
 
 export interface BeastMotionStats {
+  modelPath: string;
+  trianglesPerBeast: number;
   rendererMode: string;
   drawCalls: number;
   triangles: number;
@@ -88,7 +109,7 @@ export interface BeastMotionStats {
 }
 
 export interface BeastMotionMeasurement {
-  way: BeastMotionWay;
+  way: BeastMotionWay | "compare" | "families";
   count: number;
   action: BeastMotionAction;
   layer: BeastMotionLayer;
@@ -125,10 +146,10 @@ export interface BeastMotionLabel {
 
 export interface BeastMotionRendererHandle {
   updateState(next: BeastMotionState): void;
-  seek(seconds: number): void;
   resetCamera(): void;
   measure(samples?: number, warmup?: number): Promise<BeastMotionMeasurement>;
   getStats(): BeastMotionStats;
+  getMeta(): BeastMotionMeta;
   isFamilyReady(): boolean;
   dispose(): void;
 }
@@ -308,6 +329,7 @@ class BeastMotionStage implements BeastMotionRendererHandle {
   private readonly gpuTimer: ProceduralCharacterGpuTimer;
   private readonly uniforms: BeastShaderUniforms;
   private readonly baseGeometry: BufferGeometry;
+  private readonly trianglesPerBeast: number;
   private readonly fullSkinnedGeometry: BufferGeometry;
   private readonly hybridSkinnedGeometry: BufferGeometry;
   private readonly mathsMaterial: ReturnType<typeof createPureMathsBeastMaterial>;
@@ -367,6 +389,7 @@ class BeastMotionStage implements BeastMotionRendererHandle {
 
     this.uniforms = createBeastShaderUniforms();
     this.baseGeometry = sourceMesh.geometry.clone();
+    this.trianglesPerBeast = measureGeometryTriangles(this.baseGeometry);
     this.baseGeometry.computeBoundingBox();
     this.baseGeometry.boundingBox?.expandByScalar(1.2);
     this.baseGeometry.computeBoundingSphere();
@@ -440,18 +463,21 @@ class BeastMotionStage implements BeastMotionRendererHandle {
     return this.state.mode !== "families" || this.familyLoaded;
   }
 
-  seek(seconds: number): void {
-    this.seconds = Math.max(0, seconds);
-    this.state.paused = true;
-    this.syncUniforms();
-    this.stepActors(0);
-    this.renderSingleFrame();
+  getMeta(): BeastMotionMeta {
+    return {
+      modelPath: BEAST_MOTION_PATH,
+      trianglesPerBeast: this.trianglesPerBeast,
+      actions: BEAST_MOTION_ACTIONS,
+      ways: BEAST_MOTION_WAYS,
+      counts: BEAST_MOTION_COUNTS,
+      families: BEAST_FAMILY_SHOWCASE_IDS.map((id) => ({ id, layer: BEAST_FAMILY_SHOWCASE_LAYERS[id] })),
+    };
   }
 
   resetCamera(): void {
     const groundY = this.environment.terrain.sampleSurface(0, 0).height;
     if (this.state.mode === "families") {
-      const isDeep = (this.state.family ?? "ruin") === "deep";
+      const isDeep = this.state.family === "deep";
       if (this.state.camera === "phoneMap") {
         this.controls.target.set(0, groundY + 0.55, 0);
         this.camera.position.set(0, groundY + (isDeep ? 17.5 : 15.2), isDeep ? 15.4 : 13.4);
@@ -499,6 +525,8 @@ class BeastMotionStage implements BeastMotionRendererHandle {
     const beastCount = this.state.mode === "compare" ? 3 : this.state.count;
     const activeBones = this.computeActiveBones();
     return {
+      modelPath: BEAST_MOTION_PATH,
+      trianglesPerBeast: this.trianglesPerBeast,
       rendererMode: getRendererDiagnosticActiveMode() ?? "unknown",
       drawCalls: this.lastDrawCalls,
       triangles: this.lastTriangles,
@@ -511,14 +539,10 @@ class BeastMotionStage implements BeastMotionRendererHandle {
       renderCpuMs: perf.renderCpuMs.average,
       totalCpuMs: perf.totalCpuMs.average,
       gpuFrameMs: perf.gpuFrameMs?.average ?? null,
-      bottleneck: resolveBottleneck(
-        this.state.mode === "compare" ? "hybrid" : this.state.way,
-        beastCount,
+      bottleneck: classifyTimingBound(
         perf.animationCpuMs.average,
         perf.renderCpuMs.average,
         perf.gpuFrameMs?.average ?? null,
-        this.lastDrawCalls,
-        this.lastTriangles,
       ),
       performance: perf,
       seconds: this.seconds,
@@ -551,7 +575,7 @@ class BeastMotionStage implements BeastMotionRendererHandle {
   }
 
   private rebuildStage(): void {
-    const family: BeastFamilyShowcaseId = this.state.family ?? "ruin";
+    const family: BeastFamilyShowcaseId = this.state.family;
     const signature =
       this.state.mode === "families"
         ? `families:${family}`
@@ -804,16 +828,6 @@ class BeastMotionStage implements BeastMotionRendererHandle {
     }
   }
 
-  private renderSingleFrame(): void {
-    this.environment.frame(0, this.controls.target, this.state.layer);
-    this.controls.update();
-    this.renderer.info.reset();
-    this.renderer.render(this.scene, this.camera);
-    this.lastDrawCalls = this.renderer.info.render.drawCalls ?? this.renderer.info.render.calls;
-    this.lastTriangles = this.renderer.info.render.triangles;
-    this.emitLabels();
-  }
-
   private frame(): void {
     if (this.disposed) return;
     const frameStart = performance.now();
@@ -883,7 +897,7 @@ class BeastMotionStage implements BeastMotionRendererHandle {
     const max = sorted[sorted.length - 1] ?? 0;
     const median = sorted[Math.floor(sorted.length / 2)] ?? 0;
     const beastCount = this.state.mode === "compare" ? 3 : this.state.count;
-    const way = this.state.mode === "compare" ? "hybrid" : this.state.way;
+    const way = this.state.mode === "bench" ? this.state.way : this.state.mode;
     const rect = this.input.container.getBoundingClientRect();
     return {
       way,
@@ -914,14 +928,10 @@ class BeastMotionStage implements BeastMotionRendererHandle {
       drawCalls: this.lastDrawCalls,
       triangles: this.lastTriangles,
       activeBones: this.computeActiveBones(),
-      bottleneck: resolveBottleneck(
-        way,
-        beastCount,
+      bottleneck: classifyTimingBound(
         snap.animationCpuMs.average,
         snap.renderCpuMs.average,
         snap.gpuFrameMs?.average ?? null,
-        this.lastDrawCalls,
-        this.lastTriangles,
       ),
     };
   }
@@ -966,7 +976,7 @@ class BeastMotionStage implements BeastMotionRendererHandle {
       const rawX = ((COMPARE_ANCHOR_POS.x + 1) / 2) * width;
       return {
         key: slot.way,
-        text: slot.way === "maths" ? "(a) Pure Maths" : slot.way === "rig" ? "(b) Rig + Clips" : "(c) Hybrid",
+        text: BEAST_MOTION_WAY_LABELS[slot.way],
         x: Math.max(pad, Math.min(width - pad, rawX)),
         y: ((1 - COMPARE_ANCHOR_POS.y) / 2) * height,
         visible: Math.abs(COMPARE_ANCHOR_POS.z) <= 1,
@@ -988,31 +998,22 @@ function round2(value: number): number {
   return Math.round(value * 100) / 100;
 }
 
-function resolveBottleneck(
-  way: BeastMotionWay,
-  count: number,
-  animationCpuMs: number,
-  renderCpuMs: number,
-  gpuFrameMs: number | null,
-  drawCalls: number,
-  triangles: number,
-): string {
-  if (way === "maths") {
-    if (count >= 100 || triangles > 1_000_000) {
-      return "GPU vertex & shadow rasterization (1 instanced draw, 0 CPU anim)";
-    }
-    return "Display / scene baseline (1 instanced draw, ~0 ms CPU anim)";
+function measureGeometryTriangles(geometry: BufferGeometry): number {
+  if (geometry.index) return Math.round(geometry.index.count / 3);
+  const positions = geometry.getAttribute("position");
+  return positions ? Math.round(positions.count / 3) : 0;
+}
+
+function classifyTimingBound(animationCpuMs: number, renderCpuMs: number, gpuFrameMs: number | null): string {
+  const cpuTotalMs = animationCpuMs + renderCpuMs;
+  if (gpuFrameMs !== null && gpuFrameMs > cpuTotalMs && gpuFrameMs >= 2) {
+    return `GPU (${round2(gpuFrameMs)} ms vs ${round2(cpuTotalMs)} ms CPU)`;
   }
-  if (animationCpuMs > renderCpuMs && animationCpuMs > 1.5) {
-    return way === "rig"
-      ? `CPU AnimationMixer + ${count} skeletons (${drawCalls} draws)`
-      : `CPU bone posing + ${count} skeletons (${drawCalls} draws)`;
+  if (animationCpuMs > renderCpuMs && animationCpuMs >= 1) {
+    return `CPU animation (${round2(animationCpuMs)} ms anim vs ${round2(renderCpuMs)} ms render)`;
   }
-  if (gpuFrameMs !== null && gpuFrameMs > animationCpuMs + renderCpuMs && gpuFrameMs > 8) {
-    return `GPU vertex skinning + shadows (${triangles.toLocaleString()} tris, ${drawCalls} draws)`;
+  if (renderCpuMs >= 2) {
+    return `CPU render (${round2(renderCpuMs)} ms render vs ${round2(animationCpuMs)} ms anim)`;
   }
-  if (drawCalls > 40) {
-    return `CPU draw-call submission + bone matrix upload (${drawCalls} draws, ${count} SkinnedMeshes)`;
-  }
-  return `Display / scene baseline (${drawCalls} draws, ${count} SkinnedMesh)`;
+  return `Within budget (${round2(cpuTotalMs)} ms CPU${gpuFrameMs !== null ? `, ${round2(gpuFrameMs)} ms GPU` : ""})`;
 }

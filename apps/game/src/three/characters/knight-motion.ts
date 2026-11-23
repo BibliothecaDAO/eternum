@@ -103,15 +103,15 @@ export function resolveKnightDeathPose(
     lerp(restPelvisY, restPelvisY * 0.84, recoil) * (1 - collapse) +
     (groundPelvisY + Math.max(0, bounce) * 0.022) * collapse;
   const pelvis = new Vector3(
-    collapse * 0.03 * scale,
+    collapse * 0.05 * scale,
     pelvisY,
-    -0.055 * scale - recoil * 0.075 * scale - collapse * 0.24 * scale,
+    -0.055 * scale - recoil * 0.055 * scale + collapse * 0.16 * scale,
   );
   const pelvisRotation = new Quaternion().setFromEuler(
     new Euler(
-      -recoil * 0.24 - collapse * 1.24 + bounce * 0.08,
-      recoil * 0.15 + collapse * 0.2,
-      -collapse * 0.22 - bounce * 0.04,
+      -recoil * 0.2 + collapse * 1.26 - bounce * 0.08,
+      recoil * 0.14 - collapse * 0.24,
+      collapse * 0.34 + bounce * 0.05,
       "YXZ",
     ),
   );
@@ -120,7 +120,7 @@ export function resolveKnightDeathPose(
   const chestHalfHeight = rig.parts.chest.halfExtents?.[1] ?? morphology.torsoLength * 0.46;
   const spineAnchor = pelvis.clone().add(new Vector3(0, pelvisHalfHeight, 0).applyQuaternion(pelvisRotation));
   const chestDelta = new Quaternion().setFromEuler(
-    new Euler(-recoil * 0.18 - collapse * 0.14 + bounce * 0.06, collapse * 0.12, -collapse * 0.08, "YXZ"),
+    new Euler(-recoil * 0.16 + collapse * 0.14 - bounce * 0.05, -collapse * 0.1, collapse * 0.08, "YXZ"),
   );
   const chestRotation = pelvisRotation.clone().multiply(chestDelta).normalize();
   const chest = spineAnchor.clone().add(new Vector3(0, chestHalfHeight * 0.9, 0).applyQuaternion(pelvisRotation));
@@ -128,7 +128,7 @@ export function resolveKnightDeathPose(
 
   const neckAnchor = chest.clone().add(new Vector3(0, chestHalfHeight, 0).applyQuaternion(chestRotation));
   const headDelta = new Quaternion().setFromEuler(
-    new Euler(-recoil * 0.24 + collapse * 0.26 - bounce * 0.07, -collapse * 0.18, collapse * 0.14, "YXZ"),
+    new Euler(-recoil * 0.2 - collapse * 0.18 + bounce * 0.06, collapse * 0.22, -collapse * 0.12, "YXZ"),
   );
   const headRotation = chestRotation.clone().multiply(headDelta).normalize();
   const head = neckAnchor.clone().add(new Vector3(0, morphology.headRadius * 0.95, 0).applyQuaternion(chestRotation));
@@ -142,21 +142,21 @@ export function resolveKnightDeathPose(
     .add(new Vector3(-shoulderOffset, shoulderHeight, 0).applyQuaternion(chestRotation));
 
   const leftArmTarget = resolveDeathArmTarget(leftShoulder, chestRotation, scale, ankleHeight, [
-    0.14 + recoil * 0.06 + collapse * 0.12,
-    -0.18 + recoil * 0.08 - collapse * 0.05,
-    0.12 - collapse * 0.04,
+    0.16 + recoil * 0.05 + collapse * 0.16,
+    -0.14 + recoil * 0.06 + collapse * 0.1,
+    0.14 - collapse * 0.1,
   ]);
   const leftArmPole = leftShoulder
     .clone()
-    .add(new Vector3(0.24 * scale, 0.04 * scale, -0.06 * scale).applyQuaternion(chestRotation));
+    .add(new Vector3(0.28 * scale, 0.04 * scale, -0.1 * scale).applyQuaternion(chestRotation));
   const rightArmTarget = resolveDeathArmTarget(rightShoulder, chestRotation, scale, ankleHeight, [
-    -0.16 - recoil * 0.08 - collapse * 0.14,
-    -0.22 + recoil * 0.1 - collapse * 0.04,
-    0.08 - collapse * 0.06,
+    -0.18 - recoil * 0.06 - collapse * 0.18,
+    -0.16 + recoil * 0.08 + collapse * 0.14,
+    0.1 - collapse * 0.08,
   ]);
   const rightArmPole = rightShoulder
     .clone()
-    .add(new Vector3(-0.24 * scale, 0.04 * scale, -0.08 * scale).applyQuaternion(chestRotation));
+    .add(new Vector3(-0.28 * scale, 0.04 * scale, -0.1 * scale).applyQuaternion(chestRotation));
 
   const leftArm = solveTwoBoneLimb(
     leftShoulder,
@@ -180,23 +180,23 @@ export function resolveKnightDeathPose(
     .clone()
     .add(new Vector3(-morphology.hipWidth * 0.5, -0.08 * scale, 0).applyQuaternion(pelvisRotation));
   const leftAnkle = new Vector3(
-    0.055 * scale + collapse * 0.045 * scale,
+    0.06 * scale + collapse * 0.05 * scale,
     ankleHeight,
-    0.02 * scale + collapse * 0.12 * scale,
+    -0.02 * scale - collapse * 0.28 * scale,
   );
   const rightAnkle = new Vector3(
-    -0.06 * scale - collapse * 0.05 * scale,
+    -0.065 * scale - collapse * 0.05 * scale,
     ankleHeight,
-    -0.02 * scale + collapse * 0.16 * scale,
+    -0.04 * scale - collapse * 0.34 * scale,
   );
-  const kneeUp = new Vector3(0, 0.65, 0.76).normalize();
+  const kneeForward = new Vector3(0, -0.25, 0.96).normalize();
   const leftKneePole = leftHip
     .clone()
-    .addScaledVector(kneeUp, 0.4 * scale)
+    .addScaledVector(kneeForward, 0.4 * scale)
     .add(new Vector3(0.06 * scale, 0, 0));
   const rightKneePole = rightHip
     .clone()
-    .addScaledVector(kneeUp, 0.4 * scale)
+    .addScaledVector(kneeForward, 0.4 * scale)
     .add(new Vector3(-0.08 * scale, 0, 0));
   const leftLeg = solveTwoBoneLimb(leftHip, leftAnkle, leftKneePole, morphology.thighLength, morphology.shinLength);
   const rightLeg = solveTwoBoneLimb(rightHip, rightAnkle, rightKneePole, morphology.thighLength, morphology.shinLength);

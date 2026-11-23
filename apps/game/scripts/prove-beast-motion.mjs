@@ -14,10 +14,6 @@ const samplesPerRun = Number(option("--samples", "60"));
 const warmupFrames = Number(option("--warmup", "20"));
 mkdirSync(out, { recursive: true });
 
-const ACTIONS = ["idle", "walk", "attack", "hit", "death"];
-const BENCH_WAYS = ["maths", "rig", "hybrid"];
-const BENCH_COUNTS = [1, 20, 100];
-
 function transcodeClip(webmPath, mp4Path) {
   execFileSync(
     "ffmpeg",
@@ -58,7 +54,7 @@ function recordActionClip(browser, name, state, durationMs, fps = 24) {
   return `${name}.mp4`;
 }
 
-function recordSoloReel(browser, way, fps = 24) {
+function recordSoloReel(browser, way, actions, fps = 24) {
   const name = `way-${way}-desktop`;
   const webmPath = join(out, `${name}.webm`);
   const mp4Path = join(out, `${name}.mp4`);
@@ -68,7 +64,7 @@ function recordSoloReel(browser, way, fps = 24) {
       mode: "bench",
       way,
       count: 1,
-      action: "idle",
+      action: actions[0],
       layer: 2,
       phoenix: true,
       paused: false,
@@ -78,7 +74,7 @@ function recordSoloReel(browser, way, fps = 24) {
   browser.run(["wait", "220"]);
   browser.run(["record", "start", webmPath, "--fps", String(fps)]);
   try {
-    for (const action of ACTIONS) {
+    for (const action of actions) {
       browser.run(["eval", `window.__beastMotionLab.setState(${JSON.stringify({ action, paused: false })})`]);
       browser.run(["wait", "2400"]);
     }
@@ -138,7 +134,12 @@ await withDevClient({ base: option("--base-url", null), port, out }, async (base
       "document.querySelector('[data-beast-motion-ready=\"true\"]') !== null && Boolean(window.__beastMotionLab)",
     ]);
 
-    for (const action of ACTIONS) {
+    const meta = browser.read("window.__beastMotionLab.getMeta()");
+    const actions = meta.actions;
+    const benchWays = meta.ways;
+    const benchCounts = meta.counts;
+
+    for (const action of actions) {
       clips.push(
         recordActionClip(
           browser,
@@ -149,12 +150,12 @@ await withDevClient({ base: option("--base-url", null), port, out }, async (base
       );
     }
 
-    for (const way of BENCH_WAYS) {
-      clips.push(recordSoloReel(browser, way));
+    for (const way of benchWays) {
+      clips.push(recordSoloReel(browser, way, actions));
     }
 
     browser.run(["set", "viewport", "390", "844"]);
-    for (const action of ACTIONS) {
+    for (const action of actions) {
       clips.push(
         recordActionClip(
           browser,
@@ -167,8 +168,8 @@ await withDevClient({ base: option("--base-url", null), port, out }, async (base
 
     const loadBefore = loadavg();
     const benchmarks = [];
-    for (const way of BENCH_WAYS) {
-      for (const count of BENCH_COUNTS) {
+    for (const way of benchWays) {
+      for (const count of benchCounts) {
         browser.run([
           "eval",
           `window.__beastMotionLab.setState(${JSON.stringify({
@@ -214,8 +215,8 @@ await withDevClient({ base: option("--base-url", null), port, out }, async (base
       "--fn",
       "document.querySelector('[data-beast-motion-ready=\"true\"]') !== null && Boolean(window.__beastMotionLab)",
     ]);
-    for (const way of BENCH_WAYS) {
-      for (const count of BENCH_COUNTS) {
+    for (const way of benchWays) {
+      for (const count of benchCounts) {
         browser.run([
           "eval",
           `window.__beastMotionLab.setState(${JSON.stringify({
@@ -246,8 +247,8 @@ await withDevClient({ base: option("--base-url", null), port, out }, async (base
       JSON.stringify(
         {
           recordedAt: new Date().toISOString(),
-          model: "apps/game/public/models/frontier/beast-wyvern.glb",
-          trianglesPerBeast: 11414,
+          model: meta.modelPath,
+          trianglesPerBeast: meta.trianglesPerBeast,
           viewport: { width: 390, height: 844 },
           loadBefore,
           loadAfter,

@@ -32,7 +32,7 @@ export interface BeastMotionState {
   phoenix: boolean;
   paused: boolean;
   camera: BeastMotionCamera;
-  family?: BeastFamilyShowcaseId;
+  family: BeastFamilyShowcaseId;
 }
 
 interface BeastMotionSample {
@@ -51,6 +51,8 @@ interface BeastMotionSample {
   deathProgress: number;
 }
 
+export const BEAST_MOTION_MODES: readonly BeastMotionMode[] = ["compare", "bench", "families"];
+export const BEAST_MOTION_CAMERAS: readonly BeastMotionCamera[] = ["threeQuarter", "phoneMap", "close"];
 export const BEAST_MOTION_ACTIONS: readonly BeastMotionAction[] = ["idle", "walk", "attack", "hit", "death"];
 export const BEAST_MOTION_WAYS: readonly BeastMotionWay[] = ["maths", "rig", "hybrid"];
 export const BEAST_MOTION_COUNTS: readonly BeastMotionCount[] = [1, 20, 100];
@@ -59,6 +61,18 @@ const BEAST_MOTION_SPECIES = "wyvern" as const;
 export const BEAST_MOTION_PATH = FRONTIER_BEASTS[BEAST_MOTION_SPECIES].path;
 export const BEAST_MOTION_CYCLE_SECONDS = 2.4;
 export const BEAST_MOTION_HEX_STRIDE = HEX_SIZE * 1.5;
+
+export const BEAST_MOTION_MODE_LABELS = {
+  compare: "Side-by-side (a/b/c)",
+  bench: "Benchmark (1/20/100)",
+  families: "Families (19 beasts)",
+} satisfies Record<BeastMotionMode, string>;
+
+export const BEAST_MOTION_CAMERA_LABELS = {
+  threeQuarter: "3/4",
+  phoneMap: "Map",
+  close: "Close",
+} satisfies Record<BeastMotionCamera, string>;
 
 export const BEAST_MOTION_WAY_LABELS: Record<BeastMotionWay, string> = {
   maths: "(a) Pure Maths",
@@ -83,6 +97,7 @@ export const BEAST_MOTION_DEFAULTS: BeastMotionState = {
   phoenix: true,
   paused: false,
   camera: "threeQuarter",
+  family: "ruin",
 };
 
 interface BoneSpec {

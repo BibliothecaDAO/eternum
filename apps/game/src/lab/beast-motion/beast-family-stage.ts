@@ -25,6 +25,15 @@ export const BEAST_FAMILY_LABELS: Readonly<Record<BeastFamilyShowcaseId, string>
   deep: "Deep",
 };
 
+export const BEAST_FAMILY_SHOWCASE_LAYERS = {
+  herd: 0,
+  band: 1,
+  camp: 0,
+  rift: 1,
+  ruin: 2,
+  deep: 3,
+} satisfies Record<BeastFamilyShowcaseId, BeastLayer>;
+
 interface FamilyMember {
   readonly name: string;
   readonly species: FrontierSpecies;

@@ -45,22 +45,31 @@ export const REEL_SEQUENCE: ReadonlyArray<{
   { action: "death", label: "Death", durationSeconds: 2.4 },
 ];
 
+export const TROOP_MOTION_CAMERAS: readonly TroopMotionCamera[] = ["desktop", "phone"];
+
+const TROOP_MOTION_DEFAULTS: TroopMotionState = {
+  troop: "knight",
+  action: "march",
+  camera: "desktop",
+  compareShipped: false,
+  shippedBaseUrl: null,
+};
+
 export function parseTroopMotionState(search: string): TroopMotionState {
   const params = new URLSearchParams(search);
   const rawTroop = params.get("troop");
-  const troop: TroopMotionKind = rawTroop === "scout" || rawTroop === "crossbow" ? rawTroop : "knight";
+  const troop: TroopMotionKind = TROOP_MOTION_KINDS.some((item) => item.id === rawTroop)
+    ? (rawTroop as TroopMotionKind)
+    : TROOP_MOTION_DEFAULTS.troop;
   const rawAction = params.get("action");
-  const action: TroopMotionAction =
-    rawAction === "idle" ||
-    rawAction === "march" ||
-    rawAction === "attack" ||
-    rawAction === "hit" ||
-    rawAction === "death" ||
-    rawAction === "reel"
-      ? rawAction
-      : "march";
-  const camera: TroopMotionCamera = params.get("camera") === "phone" ? "phone" : "desktop";
-  const shippedBaseUrl = params.get("shippedUrl") || null;
+  const action: TroopMotionAction = TROOP_MOTION_ACTIONS.some((item) => item.id === rawAction)
+    ? (rawAction as TroopMotionAction)
+    : TROOP_MOTION_DEFAULTS.action;
+  const rawCamera = params.get("camera");
+  const camera: TroopMotionCamera = TROOP_MOTION_CAMERAS.includes(rawCamera as TroopMotionCamera)
+    ? (rawCamera as TroopMotionCamera)
+    : TROOP_MOTION_DEFAULTS.camera;
+  const shippedBaseUrl = params.get("shippedUrl") || TROOP_MOTION_DEFAULTS.shippedBaseUrl;
   const compareParam = params.get("compare");
   const compareShipped = troop === "knight" ? compareParam === "1" && Boolean(shippedBaseUrl) : compareParam !== "0";
   return {

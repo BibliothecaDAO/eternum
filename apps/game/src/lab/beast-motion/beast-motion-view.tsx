@@ -4,9 +4,13 @@ import { useSearchParams } from "react-router-dom";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import {
   BEAST_MOTION_ACTIONS,
+  BEAST_MOTION_CAMERAS,
+  BEAST_MOTION_CAMERA_LABELS,
   BEAST_MOTION_COUNTS,
   BEAST_MOTION_DEFAULTS,
   BEAST_MOTION_LAYERS,
+  BEAST_MOTION_MODES,
+  BEAST_MOTION_MODE_LABELS,
   BEAST_MOTION_WAY_LABELS,
   BEAST_MOTION_WAYS,
   type BeastMotionAction,
@@ -21,6 +25,7 @@ import {
   mountBeastMotionRenderer,
   type BeastMotionLabel,
   type BeastMotionMeasurement,
+  type BeastMotionMeta,
   type BeastMotionRendererHandle,
   type BeastMotionStats,
 } from "./beast-motion-renderer";
@@ -28,10 +33,10 @@ import { BEAST_FAMILY_LABELS, BEAST_FAMILY_SHOWCASE_IDS, type BeastFamilyShowcas
 
 interface BeastMotionDebugBridge {
   setState(patch: Partial<BeastMotionState>): void;
-  seek(seconds: number): void;
   resetCamera(): void;
   measure(samples?: number, warmup?: number): Promise<BeastMotionMeasurement>;
   getStats(): BeastMotionStats | null;
+  getMeta(): BeastMotionMeta;
   isFamilyReady(): boolean;
 }
 
@@ -43,11 +48,13 @@ declare global {
 
 function readInitialState(params: URLSearchParams): BeastMotionState {
   const rawMode = params.get("mode");
-  const mode: BeastMotionMode = rawMode === "bench" ? "bench" : rawMode === "families" ? "families" : "compare";
+  const mode = BEAST_MOTION_MODES.includes(rawMode as BeastMotionMode)
+    ? (rawMode as BeastMotionMode)
+    : BEAST_MOTION_DEFAULTS.mode;
   const rawFamily = params.get("family");
-  const family: BeastFamilyShowcaseId = BEAST_FAMILY_SHOWCASE_IDS.includes(rawFamily as BeastFamilyShowcaseId)
+  const family = BEAST_FAMILY_SHOWCASE_IDS.includes(rawFamily as BeastFamilyShowcaseId)
     ? (rawFamily as BeastFamilyShowcaseId)
-    : "ruin";
+    : BEAST_MOTION_DEFAULTS.family;
   const rawWay = params.get("way");
   const way = BEAST_MOTION_WAYS.includes(rawWay as BeastMotionWay)
     ? (rawWay as BeastMotionWay)
@@ -67,7 +74,9 @@ function readInitialState(params: URLSearchParams): BeastMotionState {
   const phoenix = params.get("phoenix") !== "0";
   const paused = params.get("paused") === "1";
   const rawCamera = params.get("camera");
-  const camera: BeastMotionCamera = rawCamera === "phoneMap" || rawCamera === "close" ? rawCamera : "threeQuarter";
+  const camera = BEAST_MOTION_CAMERAS.includes(rawCamera as BeastMotionCamera)
+    ? (rawCamera as BeastMotionCamera)
+    : BEAST_MOTION_DEFAULTS.camera;
   return { mode, way, count, action, layer, phoenix, paused, camera, family };
 }
 
@@ -119,10 +128,10 @@ export const BeastMotionView = () => {
               return next;
             });
           },
-          seek: (seconds) => handle.seek(seconds),
           resetCamera: () => handle.resetCamera(),
           measure: (samples, warmup) => handle.measure(samples, warmup),
           getStats: () => handle.getStats(),
+          getMeta: () => handle.getMeta(),
           isFamilyReady: () => handle.isFamilyReady(),
         };
         setStats(handle.getStats());
@@ -170,7 +179,7 @@ export const BeastMotionView = () => {
           <div className="flex flex-col gap-1">
             <span className="text-xs font-semibold uppercase tracking-wide text-stone-400">Stage</span>
             <div className="flex gap-1">
-              {(["compare", "bench", "families"] as const).map((mode) => (
+              {BEAST_MOTION_MODES.map((mode) => (
                 <button
                   key={mode}
                   type="button"
@@ -182,11 +191,7 @@ export const BeastMotionView = () => {
                       : "border-white/15 bg-stone-950 text-stone-300",
                   )}
                 >
-                  {mode === "compare"
-                    ? "Side-by-side (a/b/c)"
-                    : mode === "bench"
-                      ? "Benchmark (1/20/100)"
-                      : "Families (19 beasts)"}
+                  {BEAST_MOTION_MODE_LABELS[mode]}
                 </button>
               ))}
             </div>
@@ -203,7 +208,7 @@ export const BeastMotionView = () => {
                     onClick={() => patchState({ family })}
                     className={cn(
                       "border px-2.5 py-1.5 text-xs font-semibold",
-                      (state.family ?? "ruin") === family
+                      state.family === family
                         ? "border-amber-300 bg-amber-500/20 text-amber-100"
                         : "border-white/15 bg-stone-950 text-stone-300",
                     )}
@@ -317,7 +322,7 @@ export const BeastMotionView = () => {
           <div className="flex flex-col gap-1">
             <span className="text-xs font-semibold uppercase tracking-wide text-stone-400">Camera &amp; Run</span>
             <div className="flex gap-1">
-              {(["threeQuarter", "phoneMap", "close"] as const).map((camera) => (
+              {BEAST_MOTION_CAMERAS.map((camera) => (
                 <button
                   key={camera}
                   type="button"
@@ -329,7 +334,7 @@ export const BeastMotionView = () => {
                       : "border-white/15 bg-stone-950 text-stone-300",
                   )}
                 >
-                  {camera === "threeQuarter" ? "3/4" : camera === "phoneMap" ? "Map" : "Close"}
+                  {BEAST_MOTION_CAMERA_LABELS[camera]}
                 </button>
               ))}
               <button
@@ -354,7 +359,9 @@ export const BeastMotionView = () => {
 
       {!capture && stats && (
         <div className="flex flex-wrap items-center gap-4 border border-white/10 bg-stone-900/60 px-3 py-2 font-mono text-xs text-stone-200">
-          <span>Model: beast-wyvern.glb</span>
+          <span>
+            Model: {stats.modelPath.split("/").pop()} ({stats.trianglesPerBeast.toLocaleString()} tris)
+          </span>
           <span>Backend: {stats.rendererMode}</span>
           <span>Beasts: {stats.beastCount}</span>
           <span>Draws: {stats.drawCalls}</span>

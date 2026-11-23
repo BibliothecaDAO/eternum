@@ -1,8 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { mountTroopMotionLab, type TroopMotionRendererHandle, type TroopMotionStats } from "./troop-motion-renderer";
+import {
+  mountTroopMotionLab,
+  type TroopMotionMeta,
+  type TroopMotionRendererHandle,
+  type TroopMotionStats,
+} from "./troop-motion-renderer";
 import {
   TROOP_MOTION_ACTIONS,
+  TROOP_MOTION_CAMERAS,
   TROOP_MOTION_KINDS,
   parseTroopMotionState,
   type TroopMotionAction,
@@ -15,8 +21,8 @@ import {
 interface TroopMotionWindowHandle {
   ready: boolean;
   setState(patch: Partial<TroopMotionState>): void;
-  seek(seconds: number): void;
   getStats(): TroopMotionStats | null;
+  getMeta(): TroopMotionMeta | null;
 }
 
 declare global {
@@ -30,6 +36,7 @@ export function TroopMotionView() {
   const isCapture = new URLSearchParams(location.search).get("capture") === "1";
   const initialState = parseTroopMotionState(location.search);
   const [state, setState] = useState<TroopMotionState>(initialState);
+  const stateRef = useRef(state);
   const [stats, setStats] = useState<TroopMotionStats | null>(null);
   const [labels, setLabels] = useState<TroopMotionLabel[]>([]);
   const [ready, setReady] = useState(false);
@@ -48,17 +55,17 @@ export function TroopMotionView() {
       setState(patch) {
         setState((prev) => ({ ...prev, ...patch }));
       },
-      seek(seconds) {
-        rendererRef.current?.seek(seconds);
-      },
       getStats() {
         return rendererRef.current?.getStats() ?? null;
+      },
+      getMeta() {
+        return rendererRef.current?.getMeta() ?? null;
       },
     };
 
     void mountTroopMotionLab({
       container,
-      initialState: state,
+      initialState: stateRef.current,
       signal: controller.signal,
       onStats(next) {
         if (mounted) setStats(next);
@@ -92,6 +99,7 @@ export function TroopMotionView() {
   }, [initialState.shippedBaseUrl]);
 
   useEffect(() => {
+    stateRef.current = state;
     rendererRef.current?.updateState(state);
   }, [state]);
 
@@ -114,6 +122,7 @@ export function TroopMotionView() {
               key={label.id}
               style={{
                 position: "absolute",
+                zIndex: 10,
                 left: `${label.x}px`,
                 top: `${label.y}px`,
                 transform: "translate(-50%, -100%)",
@@ -136,6 +145,7 @@ export function TroopMotionView() {
         <div
           style={{
             position: "absolute",
+            zIndex: 20,
             top: 12,
             left: 12,
             display: "flex",
@@ -186,20 +196,24 @@ export function TroopMotionView() {
               {item.label}
             </button>
           ))}
-          <button
-            type="button"
-            onClick={() => setCamera(state.camera === "desktop" ? "phone" : "desktop")}
-            style={{
-              padding: "4px 9px",
-              borderRadius: 6,
-              border: "1px solid rgba(226, 198, 146, 0.35)",
-              background: "rgba(255,255,255,0.06)",
-              color: "#f3ead6",
-              cursor: "pointer",
-            }}
-          >
-            Cam: {state.camera}
-          </button>
+          {TROOP_MOTION_CAMERAS.map((cam) => (
+            <button
+              key={cam}
+              type="button"
+              onClick={() => setCamera(cam)}
+              style={{
+                padding: "4px 9px",
+                borderRadius: 6,
+                border: "1px solid rgba(226, 198, 146, 0.35)",
+                background: state.camera === cam ? "#98b8d6" : "rgba(255,255,255,0.06)",
+                color: state.camera === cam ? "#101820" : "#f3ead6",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              Cam: {cam}
+            </button>
+          ))}
           <button
             type="button"
             onClick={() => rendererRef.current?.resetCamera()}

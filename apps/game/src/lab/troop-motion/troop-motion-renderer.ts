@@ -71,11 +71,17 @@ import { configureGltfTextureSupport, gltfLoader } from "@/three/utils/gltf-load
 import { isCoarsePointer } from "@/utils/pointer";
 import {
   REEL_SEQUENCE,
+  TROOP_MOTION_KINDS,
   type TroopMotionAction,
   type TroopMotionKind,
   type TroopMotionLabel,
   type TroopMotionState,
 } from "./troop-motion-types";
+
+export interface TroopMotionMeta {
+  troops: readonly TroopMotionKind[];
+  actions: ReadonlyArray<Exclude<TroopMotionAction, "reel">>;
+}
 
 export interface TroopMotionStats {
   rendererMode: string;
@@ -89,9 +95,9 @@ export interface TroopMotionStats {
 
 export interface TroopMotionRendererHandle {
   updateState(next: TroopMotionState): void;
-  seek(seconds: number): void;
   resetCamera(): void;
   getStats(): TroopMotionStats;
+  getMeta(): TroopMotionMeta;
   dispose(): void;
 }
 
@@ -810,20 +816,16 @@ export async function mountTroopMotionLab(input: MountTroopMotionInput): Promise
         applyActionMode(next.action === "reel" ? "idle" : next.action, true);
       }
     },
-    seek(seconds) {
-      elapsedSeconds = 0;
-      applyActionMode(state.action === "reel" ? "idle" : state.action, true);
-      const step = 1 / 60;
-      const count = Math.max(1, Math.round(seconds / step));
-      for (let i = 0; i < count; i++) stepSimulation(step);
-      renderer.render(scene, camera);
-      projectLabels();
-      input.onStats(getStats());
-    },
     resetCamera() {
       applyCamera();
     },
     getStats,
+    getMeta() {
+      return {
+        troops: TROOP_MOTION_KINDS.map((item) => item.id),
+        actions: REEL_SEQUENCE.map((item) => item.action),
+      };
+    },
     dispose() {
       if (disposed) return;
       disposed = true;

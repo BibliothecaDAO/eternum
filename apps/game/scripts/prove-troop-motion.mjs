@@ -12,11 +12,26 @@ const out = option("--out", join(tmpdir(), "troop-motion-proof-" + Date.now()));
 const port = option("--port", "4427");
 mkdirSync(out, { recursive: true });
 
-const ACTIONS = ["idle", "march", "attack", "hit", "death"];
 const KNIGHT_FILES = ["skin.glb", "sword.glb", "shield.glb"];
 const PUBLIC_TMP_DIR = fileURLToPath(new URL("../public/.tmp-shipped-knight", import.meta.url));
 
+const SKIN_REPO_PATH = "apps/game/public/models/characters/t1-knight-default/near/skin.glb";
+
 function resolveShippedKnightRef() {
+  try {
+    const commits = execFileSync("git", ["log", "--format=%H", "-n", "12", "--", SKIN_REPO_PATH], {
+      encoding: "utf8",
+    })
+      .trim()
+      .split("\n")
+      .filter(Boolean);
+    for (const hash of commits) {
+      const size = Number(
+        execFileSync("git", ["cat-file", "-s", `${hash}:${SKIN_REPO_PATH}`], { encoding: "utf8" }).trim(),
+      );
+      if (size > 2_000_000) return hash;
+    }
+  } catch {}
   for (const ref of ["feat/frontier-s1", "origin/feat/frontier-s1"]) {
     try {
       execFileSync("git", ["rev-parse", "--verify", ref], { stdio: "ignore" });
@@ -99,9 +114,13 @@ try {
         "document.querySelector('[data-troop-motion-ready=\"true\"]') !== null && Boolean(window.__troopMotionLab?.ready)",
       ]);
 
-      for (const troop of ["knight", "scout", "crossbow"]) {
+      const meta = browser.read("window.__troopMotionLab.getMeta()");
+      const troops = meta.troops;
+      const actions = meta.actions;
+
+      for (const troop of troops) {
         const compare = troop === "knight" ? hasShippedKnight : true;
-        for (const action of ACTIONS) {
+        for (const action of actions) {
           const duration = action === "attack" ? 3000 : action === "death" ? 2500 : 2400;
           clips.push(
             recordActionClip(
@@ -123,9 +142,9 @@ try {
       }
 
       browser.run(["set", "viewport", "390", "844"]);
-      for (const troop of ["knight", "scout", "crossbow"]) {
+      for (const troop of troops) {
         const compare = troop === "knight" ? hasShippedKnight : true;
-        for (const action of ACTIONS) {
+        for (const action of actions) {
           const duration = action === "attack" ? 3000 : action === "death" ? 2500 : 2400;
           clips.push(
             recordActionClip(
