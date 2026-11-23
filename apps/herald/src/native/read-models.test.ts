@@ -426,6 +426,20 @@ describe("native directory", () => {
       season_days: 30,
       heights: { 1: 6400, 2: 7850, 3: 4100, 4: 0 },
     });
+
+    const raceRevision = fold.directoryRevision();
+    seedDerivedRows(fold, decoder, [
+      rowEvent("RaceRules", ["1"], {
+        season_days: 28n,
+        stage_height: 2000n,
+        clear_mist_percent: 120n,
+        second_wind_percent: 120n,
+        pale_moon_percent: 80n,
+        spoils_percent: 120n,
+      }),
+    ]);
+    expect(fold.directoryRevision()).not.toBe(raceRevision);
+    expect(race(1)?.season_days).toBe(28);
     expect(buildNativeDirectory(input).games.find(({ game_id }) => game_id === 2)!.quest_bonus_percent).toBeNull();
   });
 

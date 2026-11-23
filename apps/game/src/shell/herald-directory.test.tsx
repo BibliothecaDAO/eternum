@@ -27,26 +27,8 @@ vi.stubGlobal("fetch", async (input: string) => {
     return Response.json(GUARDIAN);
   }
   if (input.startsWith("/api/directory/history?")) {
-    const query = new URL(input, "https://app.test").searchParams;
-    if (query.get("cursor") === null) {
-      return Response.json({
-        games: Array.from({ length: 20 }, (_, index) => ({
-          game_id: 100 - index,
-          chainId: "0x1",
-          mode: "blitz",
-          status: "Settled",
-        })),
-        next: "50:0x1:81",
-        failures: [],
-      });
-    }
     return Response.json({
-      games: [
-        { game_id: 7, chainId: "0x1", mode: "frontier", status: "Settled" },
-        { game_id: 6, chainId: "0x1", mode: "blitz", status: "Settled" },
-        { game_id: 5, chainId: "0x1", mode: "frontier", status: "Settled" },
-        { game_id: 4, chainId: "0x1", mode: "frontier", status: "Settled" },
-      ],
+      games: [{ game_id: 7, chainId: "0x1", mode: "frontier", status: "Settled" }],
       next: null,
       failures: [],
     });
@@ -222,11 +204,11 @@ it("surfaces an error when a bare GameRef leaderboard fails with 503", async () 
   }
 });
 
-it("pages past Blitz games in history until the requested Frontier results are filled", async () => {
+it("requests Frontier history in a single query with mode=frontier", async () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   let latest: ReturnType<typeof useRecentResults> | undefined;
   const HistoryProbe = () => {
-    latest = useRecentResults(2, PLAYER, true, "frontier");
+    latest = useRecentResults(8, PLAYER, true, "frontier");
     return null;
   };
   const root = createRoot(document.createElement("div"));
@@ -242,8 +224,10 @@ it("pages past Blitz games in history until the requested Frontier results are f
     for (let waited = 0; waited < 5_000 && latest?.isPending; waited += 25) {
       await act(async () => new Promise((resolve) => setTimeout(resolve, 25)));
     }
-    expect(latest?.data?.games.map((game) => game.game_id)).toEqual([7, 5]);
-    expect(requests.filter((url) => url.startsWith("/api/directory/history?"))).toHaveLength(2);
+    expect(latest?.data?.games.map((game) => game.game_id)).toEqual([7]);
+    expect(requests.filter((url) => url.startsWith("/api/directory/history?"))).toEqual([
+      `/api/directory/history?limit=8&player=${PLAYER}&mode=frontier`,
+    ]);
   } finally {
     await act(async () => root.unmount());
   }

@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { readFileSync } from "node:fs";
 import { isValidElement } from "react";
-import { createRoutesFromChildren, matchRoutes, Navigate, type RouteObject } from "react-router-dom";
+import { createRoutesFromChildren, matchRoutes, type RouteObject } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -11,7 +11,7 @@ import {
   readAndroidAppManifest,
 } from "../build/asset-links";
 import { parseShellRoutes } from "../scripts/shell-routes.mjs";
-import { appRoutes, RETIRED_PATHS } from "./app";
+import { appRoutes, RETIRED_REDIRECTS, RetiredRedirect } from "./app";
 import iosApp from "../../ios/capacitor.config";
 
 /**
@@ -64,25 +64,23 @@ const routerPaths = (children: RouteObject[], parent = ""): string[] =>
     return [...own, ...routerPaths(route.children ?? [], path)];
   });
 
-const retired: readonly string[] = RETIRED_PATHS;
+const retired: readonly (readonly [string, string])[] = RETIRED_REDIRECTS;
+const retiredSources = retired.map(([path]) => path);
 
-/** The router's pages: not its not-found catch-all, and not Play's former pages, which only lead to Play. */
 const pagePaths = [...new Set(routerPaths(routes))].filter(
-  (path) => path !== NOT_FOUND_PATH && !retired.includes(path),
+  (path) => path !== NOT_FOUND_PATH && !retiredSources.includes(path),
 );
 
-/** Every path pattern `_redirects` rewrites or redirects. */
 const redirectSources = readHostingFile("_redirects")
   .split("\n")
   .map((line) => line.trim().split(/\s+/)[0])
   .filter((from) => from?.startsWith("/"));
 
-/** The paths `_redirects` sends permanently to Play. */
-const redirectsToPlay = readHostingFile("_redirects")
+const retiredRedirects = readHostingFile("_redirects")
   .split("\n")
   .map((line) => line.trim().split(/\s+/))
-  .filter(([from, to, status]) => from?.startsWith("/") && to === "/" && status === "301")
-  .map(([from]) => from);
+  .filter(([from, to, status]) => from?.startsWith("/") && to?.startsWith("/") && status === "301")
+  .map(([from, to]) => [from, to]);
 
 /** URLs a pattern matches. A router splat also matches nothing, which a Pages splat does not, so both are sampled. */
 const sampleUrls = (pattern: string) => {
@@ -105,14 +103,15 @@ describe("hosting files", () => {
     expect(urls.filter((url) => !noCachePaths.some((pattern) => matchesPagesPattern(pattern, url)))).toEqual([]);
   });
 
-  it("send Play's former pages, shared publicly, to Play: a permanent redirect on a full load, Play in the app", () => {
-    expect(redirectsToPlay).toEqual(retired);
-    for (const path of retired) {
+  it("send retired pages to their current homes: a permanent redirect on a full load, the matching redirect in the app", () => {
+    expect(retiredRedirects).toEqual(retired);
+    for (const [path, to] of retired) {
       expect(servesShell(path), path).toBe(false);
       const element = matchRoutes(routes, path)?.at(-1)?.route.element;
-      expect(isValidElement(element) && element.type === Navigate && (element.props as { to: string }).to, path).toBe(
-        "/",
-      );
+      expect(
+        isValidElement(element) && element.type === RetiredRedirect && (element.props as { to: string }).to,
+        path,
+      ).toBe(to);
     }
   });
 

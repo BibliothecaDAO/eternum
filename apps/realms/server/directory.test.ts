@@ -225,3 +225,27 @@ test("a shard whose manifest names another chain is listed as unavailable", asyn
     shard: { ...shard, manifest: null, games: null, error: "unavailable" },
   });
 });
+
+test("directory history filters by mode before applying limit and rejects unknown modes", async () => {
+  const mixed = [
+    { ...game(10, "Settled", 300), mode: "blitz" },
+    { ...game(11, "Settled", 200), mode: "blitz" },
+    { ...game(12, "Settled", 100), mode: "frontier" },
+  ] as HeraldGameDirectoryEntry[];
+  const deps = dependencies(async () => ({
+    chains: [{ chainId: "0x1", games: [10, 11, 12].map((gameId) => ({ gameId, slotId: null })) }],
+  }));
+  deps.fetchShard.mockImplementation(async (input) => herald("0x1", input, mixed));
+  const filtered = await handleDirectoryHistory(
+    new Request("https://app.test/api/directory/history?limit=1&mode=frontier"),
+    deps,
+  );
+  expect(filtered.status).toBe(200);
+  expect(await filtered.json()).toEqual({
+    games: [{ ...mixed[2], slotId: null, chainId: "0x1", shardUrl: "https://first.test" }],
+    next: null,
+    failures: [],
+  });
+  const invalid = await handleDirectoryHistory(new Request("https://app.test/api/directory/history?mode=bogus"), deps);
+  expect(invalid.status).toBe(400);
+});

@@ -247,7 +247,7 @@ export function directoryFact(model: string, row: Row | undefined): unknown {
     case "AspectMembers":
       return [row.aspect, row.members];
     case "RaceRules":
-      return row.stage_height;
+      return [row.stage_height, row.season_days];
     case "QuestRules":
       return row.bonus_percent;
     case "AspectHyperstructure":

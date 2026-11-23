@@ -146,28 +146,6 @@ export const useDirectory = () => {
  * The first few settled games, as a short list shows them (the latest result, a player's recent matches). `enabled`
  * holds the read until the player it is for is known, so a list of their own never shows everyone's.
  */
-const RECENT_PAGE_MIN = 20;
-
-const readRecentResults = async (limit: number, player: string | null, mode: DirectoryGame["mode"] | null) => {
-  if (mode === null) return fetchDirectoryHistory({ limit, player });
-  const pageSize = Math.max(limit, RECENT_PAGE_MIN);
-  const games: Awaited<ReturnType<typeof fetchDirectoryHistory>>["games"] = [];
-  const failures = new Map<string, { url: string; error: "unavailable" }>();
-  let cursor: string | null = null;
-  do {
-    const page = await fetchDirectoryHistory({ limit: pageSize, cursor, player });
-    for (const game of page.games) {
-      if (game.mode === mode) {
-        games.push(game);
-        if (games.length >= limit) break;
-      }
-    }
-    for (const failure of page.failures ?? []) failures.set(failure.url, failure);
-    cursor = page.next ?? null;
-  } while (games.length < limit && cursor !== null);
-  return { games, next: cursor, failures: [...failures.values()] };
-};
-
 export const useRecentResults = (
   limit: number,
   player: string | null = null,
@@ -176,7 +154,7 @@ export const useRecentResults = (
 ) =>
   useQuery({
     queryKey: ["shell", "history", "recent", limit, player, mode],
-    queryFn: () => readRecentResults(limit, player, mode),
+    queryFn: () => fetchDirectoryHistory({ limit, player, mode }),
     enabled,
     staleTime: 30_000,
     retry: 1,

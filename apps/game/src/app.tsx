@@ -1,7 +1,7 @@
 import { SHARE_PATH } from "@realms-world/identity";
 import { lazy, Suspense, type ReactNode } from "react";
 import { useKeyboardInset } from "@/hooks/use-keyboard-inset";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
 
 import "./index.css";
@@ -43,20 +43,20 @@ const GameClientApp = lazy(() => import("./game-client-app").then((module) => ({
 
 const AppFallback = FirstFrame;
 
-/**
- * Former pages: Play's, shared publicly before Play took them in, and the sign-in page Connect replaced (a link to it,
- * or a Discord return started before it went): each leads to Play. `public/_redirects` answers a full load with a
- * permanent redirect; these routes answer the app's own navigation and the dev server, which serve the shell for every
- * path.
- */
-export const RETIRED_PATHS = [
-  "/blitz",
-  "/blitz/build-orders",
-  "/frontier",
-  "/eternum",
-  "/dominion",
-  "/sign-in",
+export const RETIRED_REDIRECTS = [
+  ["/blitz", "/"],
+  ["/blitz/build-orders", "/"],
+  ["/frontier", "/"],
+  ["/eternum", "/"],
+  ["/dominion", "/"],
+  ["/sign-in", "/"],
+  ["/shop/fragments", FRAGMENTS_PATH],
 ] as const;
+
+export const RetiredRedirect = ({ to }: { to: string }) => {
+  const { search, hash } = useLocation();
+  return <Navigate to={{ pathname: to, search, hash }} replace />;
+};
 
 const LazyRoute = ({ children }: { children: ReactNode }) => <Suspense fallback={<AppFallback />}>{children}</Suspense>;
 
@@ -64,8 +64,8 @@ export const appRoutes = (
   <>
     <Route element={<AppShell />}>
       <Route index element={<PlayPage />} />
-      {RETIRED_PATHS.map((path) => (
-        <Route key={path} path={path.slice(1)} element={<Navigate to="/" replace />} />
+      {RETIRED_REDIRECTS.map(([path, to]) => (
+        <Route key={path} path={path.slice(1)} element={<RetiredRedirect to={to} />} />
       ))}
       <Route path={`${SHARE_PATH.slice(1)}/:code`} element={<SharedLinkPage />} />
       <Route path="season" element={<SeasonPage />} />

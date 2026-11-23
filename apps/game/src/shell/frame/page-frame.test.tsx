@@ -1,12 +1,13 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { createRoutesFromChildren, MemoryRouter, Routes, type RouteObject } from "react-router-dom";
+import { createRoutesFromChildren, MemoryRouter, Routes, useLocation, type RouteObject } from "react-router-dom";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { appRoutes, RETIRED_PATHS } from "@/app";
+import { appRoutes, RETIRED_REDIRECTS } from "@/app";
+import { FRAGMENTS_PATH } from "@/shell/shop/fragments-route";
 
 import { REALMS_MARK } from "@/ui/design-system/icon-meaning";
 
@@ -37,7 +38,7 @@ const CONTROLS = "a[href], button, input, select, textarea";
  */
 const shellPaths = (): string[] => {
   const shell = createRoutesFromChildren(appRoutes).find((route) => route.path === undefined) as RouteObject;
-  const retired: readonly string[] = RETIRED_PATHS;
+  const retired: readonly string[] = RETIRED_REDIRECTS.map(([path]) => path);
   return (shell.children ?? [])
     .map((route) => (route.index ? "/" : `/${route.path}`.replace("*", "nothing-here").replace(/:\w+/, "0x111")))
     .filter((path) => !retired.includes(path));
@@ -252,4 +253,28 @@ describe("the app's frame sizes itself to the visible screen", () => {
     const offenders = ROOTS.flatMap(sources).filter((path) => VIEWPORT_HEIGHT.test(readFileSync(path, "utf8")));
     expect(offenders).toEqual([]);
   });
+});
+
+it("redirects /shop/fragments to FRAGMENTS_PATH while preserving query parameters", async () => {
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  let seen = { pathname: "", search: "", hash: "" };
+  const Probe = () => {
+    const { pathname, search, hash } = useLocation();
+    seen = { pathname, search, hash };
+    return null;
+  };
+  const container = document.createElement("div");
+  document.body.replaceChildren(container);
+  root = createRoot(container);
+  await act(async () =>
+    root!.render(
+      <QueryClientProvider client={new QueryClient()}>
+        <MemoryRouter initialEntries={["/shop/fragments?chain=0x1&game=1&next=%2Fg%2F0x1%2F1"]}>
+          <Probe />
+          <Routes>{appRoutes}</Routes>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    ),
+  );
+  expect(seen).toEqual({ pathname: FRAGMENTS_PATH, search: "?chain=0x1&game=1&next=%2Fg%2F0x1%2F1", hash: "" });
 });
