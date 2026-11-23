@@ -19,7 +19,7 @@ import {
 } from "@/ui/features/social";
 import type { RealtimeConnectionStatus } from "@/ui/features/social/realtime-chat/model/types";
 import { chatRooms, gameAspectRooms } from "@/ui/features/social/realtime-chat/model/chat-rooms";
-import { useGrantedRooms, useStandAt } from "@/ui/features/social/realtime-chat/hooks/use-granted-rooms";
+import { useGrantedRooms } from "@/ui/features/social/realtime-chat/hooks/use-granted-rooms";
 import { chatUnread } from "@/ui/features/social/realtime-chat/model/direct-unread";
 import { messageWords, placeOf } from "@/ui/features/social/realtime-chat/model/place";
 import { usePlaceReader } from "@/ui/features/social/realtime-chat/ui/shared/use-chat-map";
@@ -61,7 +61,7 @@ const useGameChatRoom = () => {
     () => (signedIn ? { baseUrl: window.location.origin, rooms: rooms.map((room) => room.zoneId) } : null),
     [signedIn, rooms],
   );
-  return { status, rooms, zoneId, initializer, place: gameZoneId };
+  return { status, rooms, zoneId, initializer };
 };
 
 /**
@@ -71,9 +71,8 @@ const useGameChatRoom = () => {
  * the views, never the connection, so the room, its history and its unread count carry over.
  */
 export function GameChatConnection() {
-  const { initializer, zoneId, place } = useGameChatRoom();
+  const { initializer, zoneId } = useGameChatRoom();
   useRealtimeChatInitializer(initializer);
-  useStandAt(place);
   useSeenRoom(usePushDeviceId(notificationOwnerOf(useIdentitySession().session)));
   // A chat alert pressed brings this game forward: chat opens on what it is about, the game left as it is.
   const openAlert = useRealtimeChatSelector((state) => state.actions.openAlert);

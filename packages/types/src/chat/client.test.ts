@@ -185,25 +185,6 @@ describe("RealtimeClient", () => {
     expect(paths().filter((path) => path === "/api/chat/inbox")).toHaveLength(1);
   });
 
-  it("asks the server again for the rooms the player may join, and opens a room it now allows", () => {
-    const { client, sockets, paths } = connect(["world:global", "aspect:0x52:7:2"]);
-    sockets[0].open();
-    sockets[0].receive({ type: "connected", playerId: "p", channels: ["world:global"] });
-    expect(paths()).toEqual(["/api/chat/inbox", "/api/chat/rooms/world%3Aglobal"]);
-    client.refreshRooms();
-    expect(sockets[0].closedByClient).toBe(true);
-    const inbox = sockets.at(-1)!;
-    inbox.open();
-    inbox.receive({ type: "connected", playerId: "p", channels: ["world:global", "aspect:0x52:7:2"] });
-    expect(paths()).toEqual([
-      "/api/chat/inbox",
-      "/api/chat/rooms/world%3Aglobal",
-      "/api/chat/inbox",
-      "/api/chat/rooms/aspect%3A0x52%3A7%3A2",
-    ]);
-    vi.advanceTimersByTime(60_000);
-    expect(paths().filter((path) => path === "/api/chat/inbox")).toHaveLength(2);
-  });
 
   it("opens a room again on demand, so it answers anew who writes there", () => {
     const lobby = "slot:0x1:blitz-1630";

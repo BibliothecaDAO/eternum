@@ -12,8 +12,7 @@ import { AppButton, AppIconButton, AppPanel } from "@/ui/design-system/kit/app-e
 import { CHAT_WORDS, WORDS } from "@/ui/design-system/kit/words";
 import { RealtimeChatShell, useRealtimeChatInitializer, useRealtimeChatSelector } from "@/ui/features/social";
 import { useSeenRoom } from "@/ui/features/social/realtime-chat/hooks/use-seen-room";
-import { useStandAt } from "@/ui/features/social/realtime-chat/hooks/use-granted-rooms";
-import { GLOBAL_ROOM, lobbyRoom } from "@/ui/features/social/realtime-chat/model/chat-rooms";
+import { lobbyRoom } from "@/ui/features/social/realtime-chat/model/chat-rooms";
 
 import { useRequestSignIn } from "../sign-in/connect";
 import {
@@ -31,7 +30,6 @@ import {
  */
 export const AppChatConnection = () => {
   const rooms = useAppChatRooms();
-  useStandAt(useAppChatPlace((state) => state.lobby?.zoneId ?? GLOBAL_ROOM.zoneId));
   const config = useMemo(() => ({ baseUrl: window.location.origin, rooms: rooms.map((room) => room.zoneId) }), [rooms]);
   useRealtimeChatInitializer(config);
   useSeenRoom(usePushDeviceId(notificationOwnerOf(useIdentitySession().session)));

@@ -217,7 +217,6 @@ const initialState: Omit<RealtimeChatStore, "actions"> = {
   heldWorldMessages: [],
   rooms: [],
   grantedRooms: [],
-  standingAt: null,
   readOnlyZoneIds: [],
   roomRefusals: {},
 };
@@ -975,12 +974,6 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
           },
         },
       });
-    },
-    standAt: (place: string) => {
-      const { standingAt, client } = get();
-      if (standingAt === place) return;
-      set({ standingAt: place });
-      if (standingAt !== null) client?.refreshRooms();
     },
     loadWorldHistory: async ({ zoneId, cursor, limit, since, replaceExisting }: LoadWorldChatHistoryParams) => {
       const { baseUrl, joinedZoneIds } = get();
