@@ -22,10 +22,10 @@ describe("the race board from native facts", () => {
     const { read, store } = fixture();
     const board = read().known!.race!;
     expect(board.standings.map(({ aspect, rank, height, stage }) => ({ aspect, rank, height, stage }))).toEqual([
-      { aspect: 2, rank: 1, height: 6400, stage: 3 },
-      { aspect: 1, rank: 2, height: 5200, stage: 2 },
-      { aspect: 3, rank: 3, height: 2800, stage: 1 },
-      { aspect: 4, rank: 4, height: 900, stage: 0 },
+      { aspect: 2, rank: 1, height: 6400, stage: 4 },
+      { aspect: 1, rank: 2, height: 5200, stage: 3 },
+      { aspect: 3, rank: 3, height: 2800, stage: 2 },
+      { aspect: 4, rank: 4, height: 900, stage: 1 },
     ]);
     const finishHeight = raceFinishHeight(board.rules.stage_height);
     for (const row of board.standings) {

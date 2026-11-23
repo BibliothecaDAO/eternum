@@ -23,6 +23,9 @@ if (RACE_STAGE_COUNT !== DRAWN_TIERS) {
   throw new Error(`HyperstructureArt draws ${DRAWN_TIERS} tiers, expected ${RACE_STAGE_COUNT}`);
 }
 
+const completedTiersOf = (height: number, finishHeight: number): number =>
+  finishHeight > 0 && height >= finishHeight ? RACE_STAGE_COUNT : raceStageOf(height, finishHeight) - 1;
+
 const HyperstructureArt = ({
   aspect,
   height,
@@ -34,7 +37,7 @@ const HyperstructureArt = ({
   finishHeight: number;
   compact?: boolean;
 }) => {
-  const stage = raceStageOf(height, finishHeight);
+  const stage = completedTiersOf(height, finishHeight);
   const progress = finishHeight > 0 ? Math.max(0, Math.min(1, height / finishHeight)) : 0;
   return (
     <div
@@ -134,7 +137,7 @@ export const HyperstructureTile = ({
   compact?: boolean;
   showWorth?: boolean;
 }) => {
-  const stage = raceStageOf(height, finishHeight);
+  const stage = completedTiersOf(height, finishHeight);
   const name = aspectName(aspect);
   const worth = aspectLordsWorth(height, winner);
   return (

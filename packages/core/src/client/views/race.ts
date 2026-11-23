@@ -115,7 +115,7 @@ function readOwnAspect(
 }
 
 export const raceStage = (height: number, stageHeight: number): number =>
-  stageHeight <= 0 || height <= 0 ? 0 : Math.min(nativeRaceConstants.STAGE_COUNT, Math.floor(height / stageHeight));
+  stageHeight <= 0 ? 1 : Math.min(nativeRaceConstants.STAGE_COUNT, Math.floor(Math.max(0, height) / stageHeight) + 1);
 
 export const raceFinishHeight = (stageHeight: number): number => stageHeight * nativeRaceConstants.STAGE_COUNT;
 

@@ -30,9 +30,9 @@ describe("the Aspect page", () => {
     expect(race.indexOf("Prowess")).toBeLessThan(race.indexOf("Luminary"));
     expect(race.indexOf("Luminary")).toBeLessThan(race.indexOf("Havoc"));
     expect(race.indexOf("Havoc")).toBeLessThan(race.indexOf("Insight"));
-    expect(race).toContain("Stage 3 of 5 · 6,400 of 10,000");
-    expect(race).toContain("Stage 2 of 5 · 5,200 of 10,000");
-    expect(race).toContain("Stage 0 of 5 · 900 of 10,000");
+    expect(race).toContain("Stage 4 of 5 · 6,400 of 10,000");
+    expect(race).toContain("Stage 3 of 5 · 5,200 of 10,000");
+    expect(race).toContain("Stage 1 of 5 · 900 of 10,000");
   });
 
   it("shows what each height is worth in LORDS, the finish bonus on the Aspect that won", () => {
