@@ -43,14 +43,17 @@ const appIdentityHtml = (identity: ReturnType<typeof appIdentity>): Plugin => {
   const mist = paintingSources("frontier-mist");
   return {
     name: "app-identity-html",
-    transformIndexHtml: (html) =>
-      html
-        .replace("<title>Realms</title>", `<title>${identity.name}</title>`)
-        .replaceAll("/images/game-", identity.icon(""))
-        .replaceAll("%LINK_PREVIEW%", identity.linkPreview)
-        .replaceAll("%APP_ADDRESS%", APP_ADDRESS)
-        .replaceAll("%BOOT_MIST_SRC%", mist.src)
-        .replaceAll("%BOOT_MIST_SRCSET%", mist.srcSet),
+    transformIndexHtml: {
+      order: "pre",
+      handler: (html) =>
+        html
+          .replace("<title>Realms</title>", `<title>${identity.name}</title>`)
+          .replaceAll("/images/game-", identity.icon(""))
+          .replaceAll("%LINK_PREVIEW%", identity.linkPreview)
+          .replaceAll("%APP_ADDRESS%", APP_ADDRESS)
+          .replaceAll("%BOOT_MIST_SRC%", mist.src)
+          .replaceAll("%BOOT_MIST_SRCSET%", mist.srcSet),
+    },
   };
 };
 
