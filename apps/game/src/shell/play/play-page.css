@@ -298,7 +298,7 @@
 .preseason-pick .app-aspect-card {
   position: relative;
   height: 100%;
-  min-height: 14.25rem;
+  min-height: 13.25rem;
   justify-content: flex-end;
   border: 1.5px solid var(--app-line);
   border-radius: var(--app-radius-panel);
