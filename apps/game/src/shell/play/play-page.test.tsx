@@ -82,6 +82,8 @@ vi.mock("../season-calendar", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../season-calendar")>()),
   useSeasonCalendar: () => reads.calendar,
 }));
+const gameEntryPreload = vi.hoisted(() => ({ primeGameEntry: vi.fn() }));
+vi.mock("@/game-entry-preload", () => ({ primeGameEntry: gameEntryPreload.primeGameEntry }));
 
 import { identityClient } from "@/hooks/context/identity-session";
 
@@ -142,6 +144,7 @@ afterEach(async () => {
   reads.redeemed = [];
   reads.shared = [];
   reads.joined = null;
+  gameEntryPreload.primeGameEntry.mockClear();
 });
 
 const mount = async () => {
@@ -298,6 +301,7 @@ it("renders rehearsal games as compact secondary cards under InviteCard with spe
     .querySelector<HTMLButtonElement>("button")!;
   expect(signedOutBtn.textContent).toBe("Join rehearsal");
   await act(async () => signedOutBtn.click());
+  expect(gameEntryPreload.primeGameEntry).toHaveBeenCalledTimes(1);
   expect(useConnectStore.getState().request?.next).toBe("/g/0xa/4");
 });
 

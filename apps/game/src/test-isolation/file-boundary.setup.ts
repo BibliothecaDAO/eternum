@@ -1,4 +1,5 @@
 import { afterAll } from "vitest";
+import { GAME_ENTRY_PREFETCH_MARK } from "../ui/layouts/game-entry-timeline";
 
 // The vm pool runs each file in a fresh vm context, but on a worker that runs many files, and Node's performance
 // timeline and process belong to the worker. A file starts on an empty timeline, as a fresh page does, and must leave
@@ -14,6 +15,11 @@ afterAll(() => {
     throw new Error(
       `This file left the test worker's process changed, and the next file on the worker would inherit it: ` +
         `${left.join(", ")}. Restore it before the file ends (vi.unstubAllEnvs, process.off).`,
+    );
+  }
+  if (performance.getEntriesByName(GAME_ENTRY_PREFETCH_MARK).length > 0) {
+    throw new Error(
+      `This file triggered the real game-entry preload (${GAME_ENTRY_PREFETCH_MARK}), which schedules background dynamic imports past file teardown. Mock @/game-entry-preload in unit tests.`,
     );
   }
 });

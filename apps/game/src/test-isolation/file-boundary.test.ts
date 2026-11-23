@@ -39,12 +39,14 @@ it("gives each file on a reused worker an empty performance timeline, and fails 
   const files = runFixturesOnOneWorker().sort((a, b) => a.file.localeCompare(b.file));
 
   expect(files.map(({ file, status }) => [file, status])).toEqual([
+    ["leaks-game-preload.test.ts", "failed"],
     ["leaves-process-changed.test.ts", "failed"],
     ["timeline-dom-a.test.ts", "passed"],
     ["timeline-dom-b.test.ts", "passed"],
     ["timeline-node-a.test.ts", "passed"],
     ["timeline-node-b.test.ts", "passed"],
   ]);
-  expect(files[0].message).toContain("process.env.FILE_BOUNDARY_LEFT");
-  expect(files[0].message).toContain('a "file-boundary-left" listener on process');
+  expect(files[0].message).toContain("@/game-entry-preload");
+  expect(files[1].message).toContain("process.env.FILE_BOUNDARY_LEFT");
+  expect(files[1].message).toContain('a "file-boundary-left" listener on process');
 }, 60_000);
