@@ -1,6 +1,7 @@
-import { LAYER_NAMES } from "@bibliothecadao/types";
+import { LAYER_NAMES, beastOfModel } from "@bibliothecadao/types";
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import type { FrontierSpecies } from "@/three/structures/frontier-beast";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import {
   BEAST_MOTION_ACTIONS,
@@ -11,6 +12,7 @@ import {
   BEAST_MOTION_LAYERS,
   BEAST_MOTION_MODES,
   BEAST_MOTION_MODE_LABELS,
+  BEAST_MOTION_SPECIES_LIST,
   BEAST_MOTION_WAY_LABELS,
   BEAST_MOTION_WAYS,
   type BeastMotionAction,
@@ -38,6 +40,7 @@ interface BeastMotionDebugBridge {
   getStats(): BeastMotionStats | null;
   getMeta(): BeastMotionMeta;
   isFamilyReady(): boolean;
+  isSpeciesReady(): boolean;
 }
 
 declare global {
@@ -55,6 +58,10 @@ function readInitialState(params: URLSearchParams): BeastMotionState {
   const family = BEAST_FAMILY_SHOWCASE_IDS.includes(rawFamily as BeastFamilyShowcaseId)
     ? (rawFamily as BeastFamilyShowcaseId)
     : BEAST_MOTION_DEFAULTS.family;
+  const rawSpecies = params.get("species");
+  const species = BEAST_MOTION_SPECIES_LIST.includes(rawSpecies as FrontierSpecies)
+    ? (rawSpecies as FrontierSpecies)
+    : BEAST_MOTION_DEFAULTS.species;
   const rawWay = params.get("way");
   const way = BEAST_MOTION_WAYS.includes(rawWay as BeastMotionWay)
     ? (rawWay as BeastMotionWay)
@@ -77,7 +84,7 @@ function readInitialState(params: URLSearchParams): BeastMotionState {
   const camera = BEAST_MOTION_CAMERAS.includes(rawCamera as BeastMotionCamera)
     ? (rawCamera as BeastMotionCamera)
     : BEAST_MOTION_DEFAULTS.camera;
-  return { mode, way, count, action, layer, phoenix, paused, camera, family };
+  return { mode, way, count, action, layer, phoenix, paused, camera, family, species };
 }
 
 export const BeastMotionView = () => {
@@ -133,6 +140,7 @@ export const BeastMotionView = () => {
           getStats: () => handle.getStats(),
           getMeta: () => handle.getMeta(),
           isFamilyReady: () => handle.isFamilyReady(),
+          isSpeciesReady: () => handle.isSpeciesReady(),
         };
         setStats(handle.getStats());
         setReady(true);
@@ -197,7 +205,7 @@ export const BeastMotionView = () => {
             </div>
           </div>
 
-          {state.mode === "families" && (
+          {state.mode === "families" ? (
             <div className="flex flex-col gap-1">
               <span className="text-xs font-semibold uppercase tracking-wide text-stone-400">Family</span>
               <div className="flex gap-1">
@@ -217,6 +225,22 @@ export const BeastMotionView = () => {
                   </button>
                 ))}
               </div>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-1">
+              <span className="text-xs font-semibold uppercase tracking-wide text-stone-400">Beast</span>
+              <select
+                aria-label="Beast species"
+                value={state.species}
+                onChange={(event) => patchState({ species: event.target.value as FrontierSpecies })}
+                className="border border-white/15 bg-stone-950 px-2.5 py-1.5 text-xs font-semibold text-amber-100"
+              >
+                {BEAST_MOTION_SPECIES_LIST.map((species) => (
+                  <option key={species} value={species}>
+                    {beastOfModel(species).name}
+                  </option>
+                ))}
+              </select>
             </div>
           )}
 
@@ -394,7 +418,7 @@ export const BeastMotionView = () => {
         className={cn("relative overflow-hidden", capture ? "h-screen w-screen" : "min-h-[600px] flex-1")}
       >
         {showLabels &&
-          (state.mode === "compare" || state.mode === "families") &&
+          (state.mode === "compare" || state.mode === "families" || (state.mode === "bench" && state.count === 1)) &&
           labels.map(
             (label) =>
               label.visible && (

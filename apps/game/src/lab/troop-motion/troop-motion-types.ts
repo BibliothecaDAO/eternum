@@ -7,7 +7,6 @@ export interface TroopMotionState {
   action: TroopMotionAction;
   camera: TroopMotionCamera;
   compareShipped: boolean;
-  shippedBaseUrl: string | null;
 }
 
 export interface TroopMotionLabel {
@@ -52,7 +51,6 @@ const TROOP_MOTION_DEFAULTS: TroopMotionState = {
   action: "march",
   camera: "desktop",
   compareShipped: false,
-  shippedBaseUrl: null,
 };
 
 export function parseTroopMotionState(search: string): TroopMotionState {
@@ -69,14 +67,12 @@ export function parseTroopMotionState(search: string): TroopMotionState {
   const camera: TroopMotionCamera = TROOP_MOTION_CAMERAS.includes(rawCamera as TroopMotionCamera)
     ? (rawCamera as TroopMotionCamera)
     : TROOP_MOTION_DEFAULTS.camera;
-  const shippedBaseUrl = params.get("shippedUrl") || TROOP_MOTION_DEFAULTS.shippedBaseUrl;
   const compareParam = params.get("compare");
-  const compareShipped = troop === "knight" ? compareParam === "1" && Boolean(shippedBaseUrl) : compareParam !== "0";
+  const compareShipped = troop === "knight" ? false : compareParam !== "0";
   return {
     troop,
     action,
     camera,
     compareShipped,
-    shippedBaseUrl,
   };
 }

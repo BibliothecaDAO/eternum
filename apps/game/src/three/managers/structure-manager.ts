@@ -2029,10 +2029,20 @@ export class StructureManager {
   }
 
   private playStructureGuardDifferenceFx(entityId: ID, previousGuards: GuardArmy[], currentGuards: GuardArmy[]) {
-    if (previousGuards.length === 0 || currentGuards.length === 0) return;
+    if (previousGuards.length === 0) return;
 
     const structure = this.resolveStructureInfoByEntityId(entityId);
     if (!structure) return;
+
+    const previousTotal = previousGuards.reduce((sum, guard) => sum + Math.max(0, guard.count), 0);
+    const currentTotal = currentGuards.reduce((sum, guard) => sum + Math.max(0, guard.count), 0);
+    if (previousTotal > 0 && currentTotal <= 0) {
+      this.playBeastMotion(entityId, "death");
+    } else if (currentTotal < previousTotal) {
+      this.playBeastMotion(entityId, "hit");
+    }
+
+    if (currentGuards.length === 0) return;
 
     for (const newGuard of currentGuards) {
       const oldGuard = previousGuards.find((guard) => guard.slot === newGuard.slot);
@@ -2041,10 +2051,6 @@ export class StructureManager {
       }
 
       const diff = newGuard.count - oldGuard.count;
-      if (diff < 0) {
-        this.playBeastMotion(entityId, newGuard.count <= 0 ? "death" : "hit");
-      }
-
       const worldPos = getWorldPositionForHex(structure.hexCoords);
       placePositionOnTerrain(worldPos, this.resolveTerrainSurface());
       this.fxManager.playTroopDiffFx(diff, worldPos.x, worldPos.y + 3, worldPos.z);

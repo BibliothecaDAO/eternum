@@ -426,7 +426,11 @@ export class ArmyModel {
     const instancedMeshes: AnimatedInstancedMesh[] = [];
     const baseMeshes: Mesh[] = [];
     const troopKind = modelType ? resolveAnimatedTroopKind(modelType) : undefined;
-    const troopMotion = troopKind ? createTroopMotionController(troopKind, this.ARMY_INSTANCE_CAPACITY) : undefined;
+    const troopMotion = troopKind
+      ? createTroopMotionController(troopKind, this.ARMY_INSTANCE_CAPACITY, (slot) =>
+          this.animationStates[slot] === ANIMATION_STATE_MOVING ? "march" : "idle",
+        )
+      : undefined;
 
     this.processGLTFScene(gltf, group, instancedMeshes, baseMeshes, troopKind, troopMotion);
 
@@ -943,6 +947,7 @@ export class ArmyModel {
     modelData.activeInstances.add(index);
     this.updateInstanceTransform(state.position, visibleScale, state.rotation);
     this.updateInstanceMeshes(modelData, index, entityId, state.position, state.color);
+    modelData.troopMotion?.syncLoopActionAt(index);
     // Bump count so the just-added slot draws now, not only after the next
     // setVisibleSlots (see extendModelDrawCount).
     this.extendModelDrawCount(modelData, index);
@@ -2220,7 +2225,7 @@ export class ArmyModel {
     if (entityId !== undefined) {
       const modelType = this.activeBaseModelByEntity.get(entityId) ?? this.entityModelMap.get(entityId);
       if (modelType) {
-        this.models.get(modelType)?.troopMotion?.setLoopActionAt(index, isWalking ? "march" : "idle");
+        this.models.get(modelType)?.troopMotion?.syncLoopActionAt(index);
       }
     }
   }

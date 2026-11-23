@@ -96,7 +96,7 @@ export function TroopMotionView() {
       rendererRef.current = null;
       delete window.__troopMotionLab;
     };
-  }, [initialState.shippedBaseUrl]);
+  }, []);
 
   useEffect(() => {
     stateRef.current = state;
@@ -104,7 +104,7 @@ export function TroopMotionView() {
   }, [state]);
 
   const setTroop = (troop: TroopMotionKind) =>
-    setState((prev) => ({ ...prev, troop, compareShipped: troop === "knight" ? Boolean(prev.shippedBaseUrl) : true }));
+    setState((prev) => ({ ...prev, troop, compareShipped: troop !== "knight" }));
   const setAction = (action: TroopMotionAction) => setState((prev) => ({ ...prev, action }));
   const setCamera = (camera: TroopMotionCamera) => setState((prev) => ({ ...prev, camera }));
 

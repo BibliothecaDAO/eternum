@@ -53,7 +53,11 @@ export function resolveAnimatedTroopKind(modelType: ModelType): AnimatedTroopKin
   return undefined;
 }
 
-export function createTroopMotionController(kind: AnimatedTroopKind, capacity: number): TroopMotionController {
+export function createTroopMotionController(
+  kind: AnimatedTroopKind,
+  capacity: number,
+  resolveLoopAction: (index: number) => TroopShaderAction,
+): TroopMotionController {
   const profile = TROOP_MOTION_PROFILES[kind];
   return new InstancedMotionController<TroopShaderAction>(
     {
@@ -62,6 +66,7 @@ export function createTroopMotionController(kind: AnimatedTroopKind, capacity: n
       codeToAction: CODE_TO_ACTION,
       oneShotDurations: { attack: profile.attackDuration, hit: profile.hitDuration },
       persistentDurations: { death: profile.deathDuration },
+      resolveLoopAction,
     },
     capacity,
   );

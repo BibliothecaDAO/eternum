@@ -18,15 +18,6 @@ export const BEAST_FAMILY_LABELS = {
 
 export const BEAST_FAMILY_SHOWCASE_IDS = Object.keys(BEAST_FAMILY_LABELS) as BeastFamilyShowcaseId[];
 
-export const BEAST_FAMILY_SHOWCASE_LAYERS = {
-  herd: 0,
-  band: 1,
-  camp: 0,
-  rift: 1,
-  ruin: 2,
-  deep: 3,
-} satisfies Record<BeastFamilyShowcaseId, BeastLayer>;
-
 interface FamilyMember {
   readonly name: string;
   readonly species: FrontierSpecies;
@@ -51,7 +42,7 @@ const QUAT_TMP = new Quaternion();
 const POS_TMP = new Vector3();
 const SCALE_TMP = new Vector3();
 
-function resolveFamilyMembers(family: BeastFamilyShowcaseId): FamilyMember[] {
+export function resolveFamilyMembers(family: BeastFamilyShowcaseId): FamilyMember[] {
   if (family === "deep") {
     return Object.values(DEEP_BEASTS).map((row) => ({
       name: row.name,
@@ -91,7 +82,6 @@ export class BeastFamilyStage {
   public async loadFamily(
     family: BeastFamilyShowcaseId,
     sampleGroundY: (x: number, z: number) => number,
-    layerOverride?: BeastLayer,
   ): Promise<void> {
     const token = ++this.generation;
     const members = resolveFamilyMembers(family);
@@ -116,7 +106,7 @@ export class BeastFamilyStage {
       MATRIX_TMP.compose(POS_TMP, QUAT_TMP, SCALE_TMP);
       model.setMatrixAt(0, MATRIX_TMP);
       model.setIdleAt(0, member.idle);
-      model.setLayerAt(0, layerOverride ?? member.layer);
+      model.setLayerAt(0, member.layer);
       model.setCount(1);
       model.needsUpdate();
       this.group.add(model.group);
@@ -130,12 +120,6 @@ export class BeastFamilyStage {
 
   public getFamily(): BeastFamilyShowcaseId | null {
     return this.activeFamily;
-  }
-
-  public setLayer(layer: BeastLayer): void {
-    for (const entry of this.mounted) {
-      entry.model.setLayerAt(0, layer);
-    }
   }
 
   public triggerAction(action: "idle" | "attack" | "hit" | "death"): void {

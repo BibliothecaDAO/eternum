@@ -73,15 +73,19 @@ paths = "apps/game/scripts/prove-season-one.mjs"
 
 [kind.prove-beast-motion]
 cmd = 'pnpm run build:packages && pnpm --dir apps/game exec node ./scripts/prove-beast-motion.mjs --out "$FLOW_TMP/proof"'
-paths = "apps/game/src/lab/beast-motion/ apps/game/scripts/prove-beast-motion.mjs"
+paths = "apps/game/src/three/structures/beast-motion.ts apps/game/src/three/utils/instanced-motion.ts apps/game/src/lab/beast-motion/ apps/game/scripts/prove-beast-motion.mjs"
 
 [kind.prove-troop-motion]
 cmd = 'pnpm run build:packages && pnpm --dir apps/game exec node ./scripts/prove-troop-motion.mjs --out "$FLOW_TMP/proof"'
-paths = "apps/game/src/lab/troop-motion/ apps/game/src/three/characters/ apps/game/scripts/prove-troop-motion.mjs"
+paths = "apps/game/src/lab/troop-motion/ apps/game/src/three/characters/ apps/game/src/three/managers/troop-motion.ts apps/game/src/three/managers/army-model.ts apps/game/src/three/utils/instanced-motion.ts apps/game/scripts/prove-troop-motion.mjs"
 
 [kind.prove-beast-families]
 cmd = 'pnpm run build:packages && pnpm --dir apps/game exec node ./scripts/prove-beast-families.mjs --out "$FLOW_TMP/proof"'
-paths = "apps/game/src/three/structures/beast-motion.ts apps/game/src/three/structures/frontier-model.ts apps/game/src/lab/beast-motion/ apps/game/scripts/prove-beast-families.mjs"
+paths = "apps/game/src/three/structures/beast-motion.ts apps/game/src/three/structures/frontier-model.ts apps/game/src/three/utils/instanced-motion.ts apps/game/src/lab/beast-motion/ apps/game/scripts/prove-beast-families.mjs"
+
+[kind.prove-beast-roster]
+cmd = 'pnpm run build:packages && pnpm --dir apps/game exec node ./scripts/prove-beast-roster.mjs --out "$FLOW_TMP/proof"'
+paths = "apps/game/src/three/structures/beast-motion.ts apps/game/src/three/structures/frontier-model.ts apps/game/src/three/utils/instanced-motion.ts apps/game/src/lab/beast-motion/ apps/game/scripts/prove-beast-roster.mjs"
 
 [gate]
 source = "contracts/l3/check-native-plan.sh"
