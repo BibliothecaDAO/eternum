@@ -49,7 +49,7 @@ export const usePlayFacts = () => {
   const now = useNowSeconds();
   const player = useRealmsPlayer();
   const signedIn = status === "signed-in";
-  const history = useRecentResults(RECENT_FINISHED, player.data, signedIn && player.data !== null);
+  const history = useRecentResults(RECENT_FINISHED, player.data, signedIn && player.data !== null, "frontier");
   const games = directory.data?.games ?? [];
   const finished = signedIn ? (history.data?.games ?? []) : [];
   const known = directory.isSuccess && status !== "loading";

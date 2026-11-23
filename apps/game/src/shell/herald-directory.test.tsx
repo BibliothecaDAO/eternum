@@ -26,6 +26,31 @@ vi.stubGlobal("fetch", async (input: string) => {
     await new Promise<void>((resolve) => (guardianAnswer.release = resolve));
     return Response.json(GUARDIAN);
   }
+  if (input.startsWith("/api/directory/history?")) {
+    const query = new URL(input, "https://app.test").searchParams;
+    if (query.get("cursor") === null) {
+      return Response.json({
+        games: Array.from({ length: 20 }, (_, index) => ({
+          game_id: 100 - index,
+          chainId: "0x1",
+          mode: "blitz",
+          status: "Settled",
+        })),
+        next: "50:0x1:81",
+        failures: [],
+      });
+    }
+    return Response.json({
+      games: [
+        { game_id: 7, chainId: "0x1", mode: "frontier", status: "Settled" },
+        { game_id: 6, chainId: "0x1", mode: "blitz", status: "Settled" },
+        { game_id: 5, chainId: "0x1", mode: "frontier", status: "Settled" },
+        { game_id: 4, chainId: "0x1", mode: "frontier", status: "Settled" },
+      ],
+      next: null,
+      failures: [],
+    });
+  }
   if (input.startsWith("/api/directory")) return Response.json({ shard: null });
   if (input === "https://herald.test/games/4/leaderboard") {
     return Response.json({ error: "season_one_ranks_aspects" }, { status: 404 });
@@ -38,7 +63,7 @@ vi.stubGlobal("fetch", async (input: string) => {
 
 import type { GameRef } from "@bibliothecadao/eternum/shard";
 import { identityClient, useIdentitySessionStore } from "@/hooks/context/identity-session";
-import { type DirectoryGame, useDirectory, useLeaderboard } from "./herald";
+import { type DirectoryGame, useDirectory, useLeaderboard, useRecentResults } from "./herald";
 
 // The app's first session load keeps whatever session a test set.
 vi.spyOn(identityClient, "getSession").mockImplementation(async () => useIdentitySessionStore.getState().session);
@@ -194,5 +219,32 @@ it("surfaces an error when a bare GameRef leaderboard fails with 503", async () 
     expect(probe.read().isError).toBe(true);
   } finally {
     await probe.unmount();
+  }
+});
+
+it("pages past Blitz games in history until the requested Frontier results are filled", async () => {
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  let latest: ReturnType<typeof useRecentResults> | undefined;
+  const HistoryProbe = () => {
+    latest = useRecentResults(2, PLAYER, true, "frontier");
+    return null;
+  };
+  const root = createRoot(document.createElement("div"));
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  await act(async () =>
+    root.render(
+      <QueryClientProvider client={client}>
+        <HistoryProbe />
+      </QueryClientProvider>,
+    ),
+  );
+  try {
+    for (let waited = 0; waited < 5_000 && latest?.isPending; waited += 25) {
+      await act(async () => new Promise((resolve) => setTimeout(resolve, 25)));
+    }
+    expect(latest?.data?.games.map((game) => game.game_id)).toEqual([7, 5]);
+    expect(requests.filter((url) => url.startsWith("/api/directory/history?"))).toHaveLength(2);
+  } finally {
+    await act(async () => root.unmount());
   }
 });

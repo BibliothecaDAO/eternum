@@ -275,6 +275,7 @@ AREAS = {
         "apps/game/build/hashed-models.ts",
         "apps/game/build/asset-links.ts",
         "apps/game/build/lab-artwork.ts",
+        "apps/game/build/app-identity-html.ts",
         "apps/android/twa-manifest.json",
         "apps/game/src/three/renderer-vite-config.ts",
         "apps/game/src/tokens.ts",

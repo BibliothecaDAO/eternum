@@ -300,7 +300,7 @@ export const RecentGames = ({ account, own }: { account: string; own: boolean })
 );
 
 const History = ({ account, own, titled = false }: { account: string; own: boolean; titled?: boolean }) => {
-  const history = useRecentResults(HISTORY, account);
+  const history = useRecentResults(HISTORY, account, true, "frontier");
   const now = useNowSeconds();
   if (history.isError)
     return <ServiceFailure service="results" error={history.error} retry={() => void history.refetch()} />;
