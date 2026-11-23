@@ -1,6 +1,6 @@
 import meanings from "../../../asset-sources/facets/semantic-map.json";
 import resources from "../../../asset-sources/facets/resources.json";
-import { aspectName, type AspectId, type ResourcesIds } from "@bibliothecadao/types";
+import type { AspectId, ResourcesIds } from "@bibliothecadao/types";
 
 /**
  * The brand's marks the app draws, each the Realms Brand Kit v3 drawing for the size it is shown at (the kit's README:
@@ -56,10 +56,6 @@ export function aspectMeaning(aspect: AspectId): IconMeaning {
   const meaning = aspectMeanings.get(aspect);
   if (!meaning) throw new Error(`Unknown Aspect icon: ${aspect}`);
   return meaning;
-}
-
-export function aspectCardUrl(aspect: AspectId): string {
-  return `/images/aspects/${aspectName(aspect).toLowerCase()}-card.webp`;
 }
 
 export function iconUrl(name: IconMeaning, pixels: IconPixels = 64): string {

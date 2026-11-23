@@ -2,7 +2,7 @@ import { ordersOfAspect, type AspectId } from "@bibliothecadao/types";
 import type { ReactNode } from "react";
 
 import { AspectMark } from "@/ui/design-system/aspect-mark";
-import { aspectCardUrl } from "@/ui/design-system/icon-meaning";
+import { aspectCardUrl } from "@/ui/design-system/domain-icon-meaning";
 import { OrderEmblem } from "./order-emblem";
 
 export const AppAspectGrid = ({ children }: { children: ReactNode }) => <ul className="app-aspect-grid">{children}</ul>;

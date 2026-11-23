@@ -5,7 +5,6 @@ import { describe, expect, it } from "vitest";
 import { Icon, SvgIcon } from "./icon";
 import { AspectMark } from "./aspect-mark";
 import {
-  aspectCardUrl,
   aspectMeaning,
   iconDefinition,
   iconMeanings,
@@ -15,7 +14,7 @@ import {
   type IconMeaning,
 } from "./icon-meaning";
 import { HexMarker } from "./hex-marker";
-import { realmMeaning, realmMarkerMeaning, rewardChestMeaning } from "./domain-icon-meaning";
+import { aspectCardUrl, realmMeaning, realmMarkerMeaning, rewardChestMeaning } from "./domain-icon-meaning";
 import { aspects, orders, type ResourcesIds } from "@bibliothecadao/types";
 
 describe("semantic icons", () => {

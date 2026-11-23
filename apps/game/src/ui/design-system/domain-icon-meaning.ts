@@ -1,6 +1,13 @@
 import { homeIcon, homeKind } from "./home-icons";
 import type { FrontierSpecies } from "@/three/structures/frontier-beast";
-import { BuildingType, getProducedResource, StructureType, type StructureNamingMode } from "@bibliothecadao/types";
+import {
+  aspectName,
+  BuildingType,
+  getProducedResource,
+  StructureType,
+  type AspectId,
+  type StructureNamingMode,
+} from "@bibliothecadao/types";
 import {
   frontierBeast,
   isGuardedSite,
@@ -160,4 +167,8 @@ export function rewardChestMeaning(band?: number, opened = false): IconMeaning {
   if (band === undefined) return "reward-chest";
   if (!Number.isInteger(band) || band < 0 || band > 4) throw new Error(`Unknown reward chest band: ${band}`);
   return `reward-chest-${band}${opened ? "-opened" : ""}` as IconMeaning;
+}
+
+export function aspectCardUrl(aspect: AspectId): string {
+  return `/images/aspects/${aspectName(aspect).toLowerCase()}-card.webp`;
 }
