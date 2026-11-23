@@ -89,6 +89,7 @@ import { aspects, DEEP_BEASTS, deepSites, ordersOfAspect, TileOccupier } from "@
 import { deepGateTiles } from "@bibliothecadao/eternum/game-client";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { FRONTIER_BEASTS } from "../structures/frontier-beast";
+import { DEEP_SITE_MODELS } from "../structures/deep-landmarks";
 import { DEEP_SITE_FACES } from "@/ui/features/frontier/deep/deep-site-faces";
 import { MapSiteManager } from "./map-site-manager";
 import { PLATE_CLEARANCE } from "./structure-visible-presentation";
@@ -108,10 +109,14 @@ const tile = (col: number, occupierType: number) => ({
 });
 
 describe("the Deep's sites on the map", () => {
-  it("draws each site kind as its own landmark, once per site, from no model file", async () => {
+  it("draws each site kind from its own landmark model, once per site", async () => {
     mode.id = "frontier";
     models.length = 0;
     load.mockReset();
+    load.mockImplementation(async (path: string) => ({
+      path,
+      scene: new Mesh(new BoxGeometry(1, 1.4, 1), new MeshBasicMaterial()),
+    }));
     const tiles = deepSites.map((_, index) => tile(10 + index, TileOccupier.DeepSite));
     const projection = { getTiles: () => tiles, subscribeTiles: () => () => {} };
     const plates = { setLabel: vi.fn(), retainOnly: vi.fn(), dispose: vi.fn(), setHover: vi.fn(), clearHover: vi.fn() };
@@ -130,7 +135,7 @@ describe("the Deep's sites on the map", () => {
     );
     await vi.waitFor(() => expect(models.map(({ name }) => name).toSorted()).toEqual(ALL_KIND_NAMES));
     expect(models.map(({ count }) => count)).toEqual([1, 1, 1, 1]);
-    expect(load).not.toHaveBeenCalled();
+    expect(load.mock.calls.map(([path]) => path).toSorted()).toEqual(Object.values(DEEP_SITE_MODELS).toSorted());
     manager.destroy();
   });
 

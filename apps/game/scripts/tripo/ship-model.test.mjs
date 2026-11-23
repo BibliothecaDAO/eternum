@@ -16,6 +16,7 @@ import {
   FRONTIER_PAINTED_BUILDINGS,
   frontierPaintedBuildingPath,
 } from "../../src/three/structures/frontier-painted-buildings";
+import { DEEP_GATE_MODELS, DEEP_SITE_MODELS } from "../../src/three/structures/deep-landmarks";
 import { ASPECT_WONDER_PATHS } from "../../src/three/structures/realm-design";
 import { MODEL_BUDGETS, readHexFit, shipTripoModel } from "./ship-model.mjs";
 
@@ -500,6 +501,75 @@ describe("ship-model pipeline", () => {
       expect(minY, publicPath).toBeGreaterThanOrEqual(budget.minGroundY);
       expect(minY, publicPath).toBeLessThanOrEqual(budget.maxGroundY);
       expect(maxY, publicPath).toBeLessThanOrEqual(2.9);
+    }
+  });
+
+  it("keeps every Deep building and Deep gate within its budget, grounded, <= 1.4 tall and inside the unit hex", async () => {
+    const io = await createReader();
+    const apothem = Math.sqrt(3) / 2;
+    const entries = [
+      ...Object.values(DEEP_SITE_MODELS).map((publicPath) => ({ publicPath, budget: MODEL_BUDGETS.deepBuilding })),
+      ...Object.values(DEEP_GATE_MODELS).map((publicPath) => ({ publicPath, budget: MODEL_BUDGETS.deepGate })),
+    ];
+    expect(entries.length).toBe(8);
+
+    for (const { publicPath, budget } of entries) {
+      const modelPath = fileURLToPath(new URL(`../../public${publicPath}`, import.meta.url));
+      const bytes = readFileSync(modelPath);
+      expect(bytes.length, publicPath).toBeLessThanOrEqual(budget.maxBytes);
+
+      const doc = await io.read(modelPath);
+      const root = doc.getRoot();
+      const extensions = root.listExtensionsUsed().map((extension) => extension.extensionName);
+      expect(extensions, publicPath).toContain("KHR_draco_mesh_compression");
+      if (root.listTextures().length > 0) {
+        expect(extensions, publicPath).toContain("KHR_texture_basisu");
+      }
+
+      const primitives = root.listMeshes().flatMap((mesh) => mesh.listPrimitives());
+      expect(primitives.length, publicPath).toBeGreaterThan(0);
+      expect(primitives.length, publicPath).toBeLessThanOrEqual(budget.maxDraws);
+
+      const triangles = primitives.reduce((sum, primitive) => sum + primitive.getIndices().getCount() / 3, 0);
+      expect(triangles, publicPath).toBeGreaterThan(0);
+      expect(triangles, publicPath).toBeLessThanOrEqual(budget.maxTriangles);
+
+      for (const material of root.listMaterials()) {
+        expect(material.getDoubleSided(), publicPath).toBe(true);
+        expect(material.getExtras().tripoMaterial, publicPath).toBe(true);
+      }
+
+      for (const texture of root.listTextures()) {
+        expect(texture.getMimeType(), publicPath).toBe("image/ktx2");
+        const image = texture.getImage();
+        const view = new DataView(image.buffer, image.byteOffset, image.byteLength);
+        expect(view.getUint32(20, true), publicPath).toBeLessThanOrEqual(budget.maxColorTexture);
+        expect(view.getUint32(24, true), publicPath).toBeLessThanOrEqual(budget.maxColorTexture);
+      }
+
+      for (const node of root.listNodes()) {
+        expect(node.getTranslation(), publicPath).toEqual([0, 0, 0]);
+        expect(node.getRotation(), publicPath).toEqual([0, 0, 0, 1]);
+        expect(node.getScale(), publicPath).toEqual([1, 1, 1]);
+      }
+
+      let minY = Infinity;
+      let maxY = -Infinity;
+      for (const primitive of primitives) {
+        const positions = primitive.getAttribute("POSITION");
+        for (let i = 0; i < positions.getCount(); i++) {
+          const [x, y, z] = positions.getElement(i, [0, 0, 0]);
+          minY = Math.min(minY, y);
+          maxY = Math.max(maxY, y);
+          for (let side = 0; side < 6; side++) {
+            const angle = (side * Math.PI) / 3;
+            expect(x * Math.cos(angle) + z * Math.sin(angle), publicPath).toBeLessThanOrEqual(apothem + 0.001);
+          }
+        }
+      }
+      expect(minY, publicPath).toBeGreaterThanOrEqual(budget.minGroundY);
+      expect(minY, publicPath).toBeLessThanOrEqual(budget.maxGroundY);
+      expect(maxY, publicPath).toBeLessThanOrEqual(1.42);
     }
   });
 });

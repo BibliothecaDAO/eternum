@@ -56,6 +56,26 @@ export const MODEL_BUDGETS = Object.freeze({
     minGroundY: -0.05,
     maxGroundY: 0.05,
   },
+  deepBuilding: {
+    maxTriangles: 12_000,
+    maxColorTexture: 1_024,
+    maxTechnicalTexture: 512,
+    maxBytes: 450_000,
+    maxDraws: 5,
+    maxBones: 0,
+    minGroundY: -0.05,
+    maxGroundY: 0.05,
+  },
+  deepGate: {
+    maxTriangles: 6_000,
+    maxColorTexture: 1_024,
+    maxTechnicalTexture: 512,
+    maxBytes: 300_000,
+    maxDraws: 5,
+    maxBones: 0,
+    minGroundY: -0.05,
+    maxGroundY: 0.05,
+  },
   beast: BEAST_BUDGET,
 });
 

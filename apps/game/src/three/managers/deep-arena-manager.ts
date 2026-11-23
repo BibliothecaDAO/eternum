@@ -4,53 +4,50 @@ import {
   deepGateTiles,
   deepZoneBounds,
   nativeRuleConstants,
-  viewerAspects,
   type NativeFactStore,
 } from "@bibliothecadao/eternum/game-client";
-import { aspects, ordersOfAspect, type AspectId } from "@bibliothecadao/types";
-import { accountAddress } from "@/hooks/store/use-account-store";
-import { SIDE_HEX } from "@/tokens";
-import { orderEmblem } from "@/ui/design-system/kit/order-emblem";
+import { aspects, type AspectId } from "@bibliothecadao/types";
+import { ASPECT_HEX } from "@/tokens";
 import { FELT_CENTER } from "@/ui/config";
 import {
   AdditiveBlending,
-  BoxGeometry,
   BufferGeometry,
   Color,
-  CylinderGeometry,
   DoubleSide,
   Group,
   InstancedMesh,
+  type Material,
   Mesh,
+  MeshStandardMaterial,
   Object3D,
   PlaneGeometry,
   type Scene,
-  SRGBColorSpace,
-  TextureLoader,
 } from "three";
-import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { smoothstep, uv } from "three/tsl";
-import { MeshBasicNodeMaterial, MeshStandardNodeMaterial } from "three/webgpu";
-import { DEEP_FLOOR, DEEP_PALETTE } from "../terrain/deep-floor-material";
+import { MeshBasicNodeMaterial } from "three/webgpu";
+import { createTripoModelMaterial, isTripoModelMaterial } from "../materials/tripo-model-material";
+import { DEEP_GATE_MODELS } from "../structures/deep-landmarks";
+import { DEEP_FLOOR } from "../terrain/deep-floor-material";
 import { placePositionOnTerrain, type TerrainSurface } from "../terrain/terrain-surface";
 import { getWorldPositionForHex } from "../utils";
-import { subscribeWorldOrigin } from "../world-origin";
 import { HEX_HORIZONTAL_SPACING, HEX_VERTICAL_SPACING } from "../utils/hex-lattice";
+import { gltfLoader } from "../utils/utils";
+import { subscribeWorldOrigin } from "../world-origin";
 
-const GATE_HEIGHT = 3;
-const GATE_SPAN = 1.5;
-const LINTEL_FRONT = 0.31;
-const CREST_SIZE = 0.9;
-export const DEEP_GATEWAY_HEIGHT = GATE_HEIGHT + 1.18;
+const GATE_HEIGHT = 1.4;
+const VEIL_WIDTH = 0.54;
+const VEIL_HEIGHT = 0.88;
+const VEIL_CENTER_Y = 0.56;
+export const DEEP_GATEWAY_HEIGHT = GATE_HEIGHT + 0.25;
 
 export class DeepArenaManager {
   private readonly group = new Group();
-  private readonly stone: InstancedMesh;
+  private readonly gates: Record<AspectId, Group>;
   private readonly veil: InstancedMesh;
-  private readonly crests: Record<AspectId, Mesh>;
   private readonly dummy = new Object3D();
   private readonly unsubscribeStore: () => void;
   private readonly unsubscribeOrigin: () => void;
+  private destroyed = false;
 
   constructor(
     private readonly scene: Scene,
@@ -58,14 +55,14 @@ export class DeepArenaManager {
     private readonly terrain: TerrainSurface,
   ) {
     this.group.name = "deep-arena";
-    this.stone = new InstancedMesh(gatewayStone(), gatewayStoneMaterial(), aspects.length);
-    this.stone.castShadow = true;
-    this.stone.receiveShadow = true;
+    this.gates = Object.fromEntries(aspects.map(({ id }) => [id, gateSlot(id)])) as Record<AspectId, Group>;
     this.veil = new InstancedMesh(gatewayVeil(), gatewayVeilMaterial(), aspects.length);
     this.veil.renderOrder = 2;
-    this.crests = Object.fromEntries(aspects.map(({ id }) => [id, gatewayCrest(id)])) as Record<AspectId, Mesh>;
-    this.group.add(this.stone, this.veil, ...Object.values(this.crests));
+    this.group.add(this.veil, ...Object.values(this.gates));
     scene.add(this.group);
+    for (const { id } of aspects) {
+      this.loadGate(id);
+    }
     this.unsubscribeStore = store.subscribe((changes) => {
       if (changes.some(({ model }) => model === "DeepRules" || model === "SettlementRules" || model === "HomeAspect"))
         this.place();
@@ -79,16 +76,25 @@ export class DeepArenaManager {
   }
 
   public destroy(): void {
+    this.destroyed = true;
     this.unsubscribeStore();
     this.unsubscribeOrigin();
     this.scene.remove(this.group);
-    this.group.traverse((object) => {
-      if (!(object instanceof Mesh)) return;
-      object.geometry.dispose();
-      const material = object.material as MeshBasicNodeMaterial;
-      material.map?.dispose();
-      material.dispose();
-    });
+    disposeObjectTree(this.group);
+  }
+
+  private loadGate(aspect: AspectId): void {
+    void gltfLoader
+      .loadAsync(DEEP_GATE_MODELS[aspect])
+      .then((gltf) => {
+        if (this.destroyed) return;
+        const model = gltf.scene.clone(true);
+        applyTripoMaterials(model);
+        this.gates[aspect].add(model);
+      })
+      .catch((error) => {
+        if (!this.destroyed) console.error(`[DeepArenaManager] Failed to load gate ${aspect}`, error);
+      });
   }
 
   private place(): void {
@@ -102,20 +108,16 @@ export class DeepArenaManager {
     writeZoneBounds(deepZoneBounds(rules));
     const gates = deepGateTiles(rules.gate_distance, settlement.spacing);
     this.writeFloorEdges(deepCenter(settlement.spacing), center, gates);
-    const own = viewerAspects(this.store, gameId, accountAddress() ?? null);
     gates.forEach((gate, index) => {
       const at = this.worldAt(gate);
       this.dummy.position.copy(placePositionOnTerrain(at, this.terrain));
       this.dummy.updateMatrix();
-      this.stone.setMatrixAt(index, this.dummy.matrix);
+      this.gates[gate.aspect].position.copy(this.dummy.position);
       this.veil.setMatrixAt(index, this.dummy.matrix);
-      this.veil.setColorAt(index, new Color(own.has(gate.aspect) ? SIDE_HEX.own : DEEP_PALETTE.gold));
-      this.crests[gate.aspect].position.copy(this.dummy.position);
+      this.veil.setColorAt(index, new Color(ASPECT_HEX[gate.aspect]));
     });
-    this.stone.instanceMatrix.needsUpdate = true;
     this.veil.instanceMatrix.needsUpdate = true;
     if (this.veil.instanceColor) this.veil.instanceColor.needsUpdate = true;
-    this.stone.computeBoundingSphere();
     this.veil.computeBoundingSphere();
   }
 
@@ -155,6 +157,46 @@ const TILE_RADIUS = HEX_VERTICAL_SPACING / 1.5;
 const EDGE_FADE = 8;
 const TILE_INRADIUS = HEX_HORIZONTAL_SPACING / 2;
 
+function gateSlot(aspect: AspectId): Group {
+  const slot = new Group();
+  slot.name = `deep-gateway-${aspect}`;
+  return slot;
+}
+
+function applyTripoMaterials(root: Object3D): void {
+  root.traverse((object) => {
+    if (!(object instanceof Mesh)) return;
+    object.castShadow = true;
+    object.receiveShadow = true;
+    if (Array.isArray(object.material)) {
+      object.material = object.material.map(toTripoMaterial);
+    } else if (object.material) {
+      object.material = toTripoMaterial(object.material);
+    }
+  });
+}
+
+function toTripoMaterial(material: Material): Material {
+  return material instanceof MeshStandardMaterial && isTripoModelMaterial(material)
+    ? createTripoModelMaterial(material)
+    : material;
+}
+
+function disposeObjectTree(root: Object3D): void {
+  root.traverse((object) => {
+    if (!(object instanceof Mesh)) return;
+    object.geometry.dispose();
+    const materials = Array.isArray(object.material) ? object.material : [object.material];
+    for (const material of materials) {
+      if (!material) continue;
+      if ("map" in material && material.map && typeof material.map.dispose === "function") {
+        material.map.dispose();
+      }
+      material.dispose();
+    }
+  });
+}
+
 function squareBorder(middle: { col: number; row: number }, half: number): { col: number; row: number }[] {
   const span = Array.from({ length: half * 2 }, (_, step) => step - half);
   return span.flatMap((step) => [
@@ -173,66 +215,8 @@ function writeZoneBounds(bounds: ReturnType<typeof deepZoneBounds>): void {
   DEEP_FLOOR.rimBeyond.value = bounds.rimBeyond;
 }
 
-function gatewayStone(): BufferGeometry {
-  const pylon = (side: number) => {
-    const shaft = new CylinderGeometry(0.24, 0.34, GATE_HEIGHT, 4, 1).rotateY(Math.PI / 4);
-    return shaft.translate(side * (GATE_SPAN / 2), GATE_HEIGHT / 2, 0);
-  };
-  const plinth = (side: number) => new BoxGeometry(0.72, 0.3, 0.72).translate(side * (GATE_SPAN / 2), 0.15, 0);
-  const lintel = new BoxGeometry(GATE_SPAN + 0.95, 0.46, 0.6).translate(0, GATE_HEIGHT + 0.23, 0);
-  const cap = new BoxGeometry(GATE_SPAN + 0.4, 0.22, 0.44).translate(0, GATE_HEIGHT + 0.57, 0);
-  const crown = new CylinderGeometry(0, 0.3, 0.5, 4, 1).rotateY(Math.PI / 4).translate(0, GATE_HEIGHT + 0.93, 0);
-  const parts = [pylon(-1), pylon(1), plinth(-1), plinth(1), lintel, cap, crown].map((part) => part.toNonIndexed());
-  const merged = mergeGeometries(parts);
-  if (!merged) throw new Error("Deep gateway geometry did not merge");
-  return merged;
-}
-
 function gatewayVeil(): BufferGeometry {
-  return new PlaneGeometry(GATE_SPAN - 0.3, GATE_HEIGHT - 0.25).translate(0, (GATE_HEIGHT - 0.25) / 2 + 0.12, 0);
-}
-
-function gatewayCrest(aspect: AspectId): Mesh {
-  const texture = new TextureLoader().load(orderEmblem(ordersOfAspect(aspect)[0]!.orderId).art);
-  texture.colorSpace = SRGBColorSpace;
-  const material = new MeshBasicNodeMaterial({ map: texture, transparent: true, alphaTest: 0.1 });
-  material.name = "deep-gateway-crest";
-  const crest = new Mesh(
-    new PlaneGeometry(CREST_SIZE, CREST_SIZE).translate(0, GATE_HEIGHT + 0.3, LINTEL_FRONT + 0.06),
-    material,
-  );
-  crest.add(
-    new Mesh(
-      new CylinderGeometry(CREST_SIZE * 0.52, CREST_SIZE * 0.52, 0.06, 8)
-        .rotateX(Math.PI / 2)
-        .translate(0, GATE_HEIGHT + 0.3, LINTEL_FRONT + 0.02),
-      medallionMaterial(),
-    ),
-  );
-  crest.name = `deep-gateway-crest-${aspect}`;
-  return crest;
-}
-
-function medallionMaterial(): MeshStandardNodeMaterial {
-  const material = new MeshStandardNodeMaterial({
-    color: new Color(DEEP_PALETTE.cobalt),
-    roughness: 0.5,
-    metalness: 0,
-  });
-  material.name = "deep-gateway-medallion";
-  return material;
-}
-
-function gatewayStoneMaterial(): MeshStandardNodeMaterial {
-  const material = new MeshStandardNodeMaterial({
-    color: new Color(DEEP_PALETTE.ivory),
-    roughness: 0.62,
-    metalness: 0,
-  });
-  material.emissive = new Color(DEEP_PALETTE.gold);
-  material.emissiveIntensity = 0.12;
-  material.name = "deep-gateway-stone";
-  return material;
+  return new PlaneGeometry(VEIL_WIDTH, VEIL_HEIGHT).translate(0, VEIL_CENTER_Y, 0);
 }
 
 function gatewayVeilMaterial(): MeshBasicNodeMaterial {
