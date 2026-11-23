@@ -185,7 +185,6 @@ describe("RealtimeClient", () => {
     expect(paths().filter((path) => path === "/api/chat/inbox")).toHaveLength(1);
   });
 
-
   it("opens a room again on demand, so it answers anew who writes there", () => {
     const lobby = "slot:0x1:blitz-1630";
     const { client, sockets, paths } = connect([lobby, "world:global"]);
