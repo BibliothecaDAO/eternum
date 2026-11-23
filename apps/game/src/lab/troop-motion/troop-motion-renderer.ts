@@ -358,6 +358,7 @@ export async function mountTroopMotionLab(input: MountTroopMotionInput): Promise
     );
 
     if (activeTroopBinding()) {
+      armyModel.setAnimationState(troopSlot, nextAction === "march");
       armyModel.playTroopAction(troopSlot, nextAction === "march" ? "march" : "idle");
     }
 
