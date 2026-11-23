@@ -33,6 +33,7 @@ import { isGameOver } from "@/runtime/world/directory";
 import { markGameEntryMilestone } from "@/ui/layouts/game-entry-timeline";
 import { resultsHref } from "@/shell/season-tab/results-link";
 import { ClockChip } from "@/ui/design-system/kit/clock-chip";
+import { doorwayRealmFromId } from "./doorway/doorway-realm";
 import { DoorwayScreen } from "./doorway/doorway-screen";
 import { doorwayView } from "./doorway/doorway-view";
 
@@ -671,10 +672,17 @@ export const GameEntryModal = ({
     foundingFailed: settleStage === "error" && !isFrontierMode,
   });
 
+  const doorwayRealm =
+    foundedRealm !== undefined
+      ? doorwayRealmFromId(foundedRealm)
+      : homeRealm !== null
+        ? doorwayRealmFromId(homeRealm)
+        : null;
+
   return (
     <DoorwayScreen
       view={view}
-      realm={null}
+      realm={doorwayRealm}
       game={worldMeta ?? undefined}
       onRetry={
         accountError

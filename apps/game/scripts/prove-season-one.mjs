@@ -39,6 +39,7 @@ const PAGES = [
     url: `/lab/app/wallet-ready/doorway/${state}?capture=1`,
     shown,
   })),
+  { file: "doorway-loading", url: "/lab/app/home/doorway/map?capture=1", shown: "[data-doorway-loading]" },
   { file: "settings-no-wallet", url: "/lab/app/home/profile/settings?capture=1", shown: "[data-payout-wallet=none]" },
   { file: "hud-build", url: "/lab/kit/hud/build", shown: "[data-build-sheet]" },
   { file: "hud-research", url: "/lab/kit/hud/research", shown: 'section[aria-label="Research"]' },

@@ -129,7 +129,7 @@ export const LabConnect = () => {
 };
 
 /** The Frontier game the lab's doorway enters: the campaign's season, as the home step's picker reads it. */
-const LAB_FRONTIER = { mode: "frontier" } as const;
+const LAB_FRONTIER = { mode: "frontier", day_index: 5 } as const;
 
 /** The doorway into Frontier at one of its holds (/lab/app/<screen>/doorway/<state>), as entering a game draws it. */
 export const LabDoorway = () => {

@@ -1,5 +1,5 @@
 import type { HeraldFrontierLeaderboard } from "@bibliothecadao/eternum/game-sync";
-import { StructureType } from "@bibliothecadao/types";
+import { orderAspect, StructureType } from "@bibliothecadao/types";
 import { LORDS_ADDRESS } from "@realms-world/chain";
 import { realmsAccountAddress } from "@realms-world/identity/account";
 import type { Session, ShareTally } from "@realms-world/identity";
@@ -582,8 +582,8 @@ export const LAB_SEASON_WAIT = 2 * 3600 + 4 * 60;
  */
 export const LAB_DOORWAYS = {
   map: {
-    view: doorwayView({ source: "boot", phase: "initial_sync", audience: "player" }),
-    realm: { name: "Stolsli", emblem: orderEmblem(1) },
+    view: doorwayView({ source: "boot", phase: "wait_worldmap_ready", audience: "player", modelShare: 0.57 }),
+    realm: { name: "Stolsli", emblem: orderEmblem(2), aspect: orderAspect(2) },
   },
   "sign-in": {
     view: doorwayView({ source: "entry", phase: "account", audience: "player", signedIn: false }),

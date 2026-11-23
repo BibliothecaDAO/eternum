@@ -80,9 +80,15 @@
         position: fixed;
         inset: 0;
         z-index: 2147483647;
-        display: grid;
-        place-items: center;
-        background: var(--ground);
+        display: flex;
+        flex-direction: column;
+        background:
+          radial-gradient(
+            ellipse 92% 54% at 50% 18%,
+            color-mix(in srgb, var(--gold) 22%, transparent) 0%,
+            transparent 72%
+          ),
+          var(--ground);
         transition:
           opacity 360ms ease,
           visibility 360ms ease;
@@ -90,35 +96,41 @@
 
       #boot-shell > div {
         display: grid;
-        justify-items: center;
-        gap: 28px;
+        flex: 1;
+        place-items: center;
+        padding: 2rem 1.5rem 1rem;
       }
 
       #boot-shell img {
-        width: min(60vw, 240px);
-        height: auto;
+        width: auto;
+        height: clamp(8.5rem, 23vh, 11.75rem);
+        filter: drop-shadow(0 8px 24px rgb(0 0 0 / 0.65));
       }
 
-      /* The page's code still on its way (12 s on a slow link): a bar that moves under the mark, so the first screen never
-         reads as frozen; the doorway's own bar, with its share, follows it. */
+      #boot-shell footer {
+        width: 100%;
+        padding: 0 1.25rem max(1.5rem, env(safe-area-inset-bottom));
+      }
+
       #boot-shell i {
         position: relative;
         display: block;
-        width: min(48vw, 192px);
-        height: 4px;
+        width: 100%;
+        height: 8px;
         overflow: hidden;
-        border-radius: 2px;
-        background: var(--plate2);
+        border: 1px solid color-mix(in srgb, var(--line) 75%, transparent);
+        border-radius: 9999px;
+        background: color-mix(in srgb, var(--plate2) 82%, transparent);
       }
 
       #boot-shell i::after {
         content: "";
         position: absolute;
         inset: 0 auto 0 0;
-        width: 40%;
-        border-radius: 2px;
-        background: var(--gold);
-        animation: boot-shell-bar 1.4s ease-in-out infinite;
+        width: 38%;
+        border-radius: 9999px;
+        background: linear-gradient(90deg, var(--gold), var(--gold2));
+        animation: boot-shell-bar 1.5s ease-in-out infinite;
       }
 
       @keyframes boot-shell-bar {
@@ -126,7 +138,7 @@
           transform: translateX(-100%);
         }
         to {
-          transform: translateX(250%);
+          transform: translateX(270%);
         }
       }
 
@@ -157,9 +169,11 @@
     </script>
     <div id="boot-shell" aria-hidden="true">
       <div>
-        <img src="/images/logos/realms-lettered.webp" alt="" />
-        <i></i>
+        <img src="/images/logos/frontier-lockup.webp" alt="" />
       </div>
+      <footer>
+        <i></i>
+      </footer>
     </div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>

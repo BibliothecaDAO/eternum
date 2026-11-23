@@ -1,11 +1,19 @@
-import { REALMS_MARK } from "@/ui/design-system/icon-meaning";
+import "@/ui/features/game-entry/doorway/doorway-screen.css";
 
-/**
- * The app's first frame (spec 14): the lettered mark on the ground, as the page loads, while a lazy page arrives, and when the
- * app could not start; the install's splash matches it. Never a black page or an empty one.
- */
+import { AGE_LOCKUP } from "@/ui/design-system/icon-meaning";
+import { paintingSources } from "@/ui/design-system/kit/paintings";
+
 export const FirstFrame = () => (
-  <div className="fixed inset-0 grid place-items-center bg-kit-ground">
-    <img src={REALMS_MARK.lettered} alt="Realms" className="h-auto w-[min(60vw,240px)]" />
+  <div data-surface="shell" className="doorway-stage">
+    <img aria-hidden {...paintingSources("frontier-mist")} sizes="100vw" alt="" className="doorway-stage__painting" />
+    <div aria-hidden className="doorway-stage__scrim" />
+    <main className="doorway-stage__center">
+      <img src={AGE_LOCKUP.frontier} alt="Realms" className="doorway-stage__lockup" />
+    </main>
+    <footer className="doorway-stage__foot">
+      <div className="doorway-bar" aria-hidden="true">
+        <div className="doorway-bar__fill doorway-bar__fill--indeterminate" />
+      </div>
+    </footer>
   </div>
 );
