@@ -7,13 +7,8 @@ import { createHeraldRequestHandler } from "../http";
 import { WorldFold } from "../world-fold";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { DAILY_QUEST_MODELS, readDailyQuest } from "@bibliothecadao/eternum";
-import {
-  NativeFactStore,
-  nativeBaneConstants,
-  nativeQuestConstants,
-  questWeek,
-} from "@bibliothecadao/eternum/game-client";
-import { RESOURCE_PRECISION } from "@bibliothecadao/types";
+import { NativeFactStore, questWeek } from "@bibliothecadao/eternum/game-client";
+import { RESOURCE_PRECISION, worldBanes } from "@bibliothecadao/types";
 import { buildNativeDirectory, directoryFact } from "./read-models";
 import {
   structureValue,
@@ -495,6 +490,7 @@ describe("native directory", () => {
 
   it("matches core readDailyQuest on Seal bonus and WorldBane override paths", () => {
     const { fold, native, decoder } = world();
+    const bane = worldBanes[0];
     native.applyReceipt(
       fold,
       receipt(
@@ -518,7 +514,7 @@ describe("native directory", () => {
           structure("7", "1", "0x111", "0"),
           rowEvent("HomeAspect", ["1", "7"], { aspect: 2 }),
           rowEvent("Seal", ["1", "0x111"], { granted_at: 25n }),
-          rowEvent("WorldBane", ["1", "0"], { kind: nativeBaneConstants.BLOOD_MOON }),
+          rowEvent("WorldBane", ["1", "0"], { kind: bane.id }),
           rowEvent("QuestProgress", ["1", "7", "0"], { progress: 2n, completed_level: 0 }),
         ]),
       ),
@@ -541,7 +537,7 @@ describe("native directory", () => {
       playerAddress: "0x111",
     }).games.find(({ game_id }) => game_id === 1)!;
     expect(directory.player_state?.today_quest).toEqual({
-      quest_id: nativeQuestConstants.STAND,
+      quest_id: bane.quest,
       progress: 2,
       target: 3,
       labor: 3000,
