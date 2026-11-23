@@ -74,4 +74,13 @@ pub mod PrizesLogic {
             ()
         }
     }
+    #[abi(embed_v0)]
+    impl Results of crate::logic::release::ISlotViews<ContractState> {
+        fn slot_view(self: @ContractState, game_id: u32, calldata: Span<felt252>) -> Span<felt252> {
+            assert!(calldata.is_empty(), "results take no calldata");
+            let mut output = array![];
+            crate::logic::blitz::results::result(game_id).serialize(ref output);
+            output.span()
+        }
+    }
 }

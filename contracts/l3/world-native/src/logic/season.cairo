@@ -66,6 +66,7 @@ pub mod SeasonLogic {
             }
             game.settled = true;
             crate::logic::game::write_game(game_id, game);
+            crate::logic::blitz::results::announce(game_id, context.timestamp);
             (0)
         }
     }
