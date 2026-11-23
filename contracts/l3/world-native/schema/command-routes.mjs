@@ -188,3 +188,12 @@ export const commandRoutes = [
     entrypoint: "interact_site",
   },
 ];
+
+export const blitzCommandRoutes = [
+  {
+    name: "SeatBlitzRoster",
+    logic: "settlement",
+    entrypoint: "seat_blitz_roster",
+    batch: true,
+  },
+];

@@ -1,5 +1,5 @@
 import { nativeRuleConstants as rule } from "../../../contracts/l3/world-native/schema/balance.gen";
-import { nativeCommandBits } from "../../../contracts/l3/world-native/schema/commands.gen";
+import { nativeBlitzCommandBits, nativeCommandBits } from "../../../contracts/l3/world-native/schema/commands.gen";
 
 export const arenaModeRules =
   rule.HOME_REWARDS | rule.DISCOVER_CAMPS | rule.CAPTURE_VILLAGES | rule.SAME_OWNER_TRANSFER | rule.PRODUCTION_START;
@@ -53,10 +53,11 @@ const blitzReturnedCommands: NativeCommand[] = [
   "SettleVillage",
 ];
 
-export const arenaCommandMask = commandBits(allCommands) & ~commandBits(arenaClosedCommands);
+const blitzOnlyCommandMask = Object.values(nativeBlitzCommandBits).reduce((mask, bit) => mask | BigInt(bit), 0n);
+
+export const arenaCommandMask = (commandBits(allCommands) & ~commandBits(arenaClosedCommands)) | blitzOnlyCommandMask;
 
 const blitzCommandsWithoutRoute = [
-  "SettleBlitzRoster",
   "CreateReservedHyperstructure",
   "AllocateHyperstructureShares",
   "OpenRelicChest",

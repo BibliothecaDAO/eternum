@@ -86,7 +86,7 @@ forbid = "co-authored-by|claude|anthropic|codex|openai|generated with|session"
 cmd = "pnpm run build:packages && pnpm --dir packages/notifications test && pnpm --dir packages/provider test && pnpm --dir packages/core test && pnpm --dir apps/game test src/utils/automation-presets.test.ts src/utils/automation-signature.test.ts src/hooks/store/use-automation-store.test.ts src/ui/features/settlement/production/production-controls.test.tsx src/ui/features/economy/transfers/transfer-window.test.tsx src/ui/features/world/containers/left-facets/use-structure-actions.test.ts src/ui/lib/structure-capabilities.test.ts src/ui/features/military/battle/battle-lab/battle-share-names.test.tsx src/shell/play/play-board.test.ts src/shell/play/play-page.test.tsx src/utils/entity-ownership.test.ts src/ui/design-system/domain-icon-meaning.test.ts src/sync/chain-time-binding.test.ts src/three/effects/endgame/renderer.test.ts src/three/managers/structure-manager.guard-stamina.test.ts src/ui/features/frontier/build/build-options.test.ts src/ui/features/frontier/build/build-sheet.test.tsx src/ui/features/frontier/sites/site-card-plan.test.ts src/ui/features/social/components/player-id-hyperstructures.test.tsx && pnpm --dir apps/agent-runner test"
 
 [kind.schema-write]
-cmd = 'bash contracts/l3/check-native.sh build && pnpm run schema:native && pnpm run fixtures:native && bun contracts/l3/world-native/scripts/pin-release-classes.ts --write && git diff --binary > "$FLOW_TMP/schema.patch"'
+cmd = 'bash contracts/l3/check-native.sh build && bash contracts/l3/check-native.sh build-blitz && pnpm run schema:native && pnpm run fixtures:native && bun contracts/l3/world-native/scripts/pin-release-classes.ts --write && git diff --binary > "$FLOW_TMP/schema.patch"'
 
 [kind.balance-write]
 cmd = 'pnpm run build:packages && bun contracts/l3/world-native/scripts/balance-modules.ts && git add -N contracts/l3/world-native/src && git diff --binary > "$FLOW_TMP/balance.patch"'
@@ -108,7 +108,7 @@ cmd = "node --test contracts/l3/check-native-plan.test.mjs"
 paths = "flow.toml contracts/l3/"
 
 [kind.generate-native-retirement]
-cmd = '''trap 'git diff --binary > "$FLOW_TMP/generated.patch"' EXIT; node contracts/l3/world-native/scripts/generate-story-serde.mjs && bash contracts/l3/check-native.sh build && pnpm run schema:native && pnpm --dir config run config:generate && pnpm run fixtures:native && (cd contracts/l3/world-native && scarb fmt) && (cd contracts/l3/world-native/tests && scarb fmt) && pnpm run format && git diff --binary > "$FLOW_TMP/generated.patch"'''
+cmd = '''trap 'git diff --binary > "$FLOW_TMP/generated.patch"' EXIT; node contracts/l3/world-native/scripts/generate-story-serde.mjs && bash contracts/l3/check-native.sh build && bash contracts/l3/check-native.sh build-blitz && pnpm run schema:native && pnpm --dir config run config:generate && pnpm run fixtures:native && (cd contracts/l3/world-native && scarb fmt) && (cd contracts/l3/world-native/tests && scarb fmt) && pnpm run format && git diff --binary > "$FLOW_TMP/generated.patch"'''
 
 [kind.test-retirement-boundaries]
 cmd = "pnpm run build:packages && pnpm --dir packages/value-ledger test && pnpm --dir apps/value-relay typecheck && bun test config/deployer/clean/tests/native-preset.test.ts deploy/first/box-deploy.test.ts && pnpm --dir apps/game test src/lab/game src/ui/features/frontier src/shell/profile/notifications.test.tsx"

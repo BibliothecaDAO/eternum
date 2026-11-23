@@ -1,6 +1,8 @@
 import { tupleTypes } from "../../../../apps/herald/src/native/serde.ts";
 import { compileCommandRoutes } from "./command-routes.mjs";
-import { assignWireIds, renderWireSerde } from "./wire-ids.mjs";
+import { feltLengths, sumLengths } from "./felt-length.mjs";
+import { writeCairo } from "./write-cairo.mjs";
+import { assignWireIds, renderWireSerde, wireIds } from "./wire-ids.mjs";
 import {
   balanceIdentity,
   identifierConstants,
@@ -10,9 +12,6 @@ import {
 } from "./rule-constants.mjs";
 import { wireRoots, wireTypeNames } from "./wire-types.mjs";
 import { generateSitePreviews } from "./generate-site-previews.mjs";
-import { execFileSync } from "node:child_process";
-import { mkdtemp, rm } from "node:fs/promises";
-import { join } from "node:path";
 import { eventLayouts, uniqueEventLayouts } from "./event-layouts.mjs";
 import { readCheckedTaxonomy } from "./taxonomy.mjs";
 import { defineFactModels, factWireTypes, syncScopes } from "../schema/fact-models.mjs";
@@ -53,6 +52,7 @@ for (const abi of [...Object.values(artifacts), factWireTypes]) {
   }
 }
 
+const feltLength = feltLengths(types);
 const routes = compileCommandRoutes(artifacts, types, feltLength, logicClasses);
 types.set(routes.command.name, routes.command);
 await writeCairo("src/command_routes.cairo", routes.cairo);
@@ -101,31 +101,6 @@ function struct(name) {
   const item = types.get(`world_native::${name}`);
   if (item?.type !== "struct") throw new Error(`Missing ABI struct ${name}`);
   return item.members;
-}
-
-function feltLength(type) {
-  if (type === "()") return 0;
-  if (type.startsWith("(")) return sumLengths(tupleTypes(type).map(feltLength));
-  if (/^core::array::(Span|Array)::</.test(type)) return null;
-  const item = types.get(type);
-  if (item?.type === "struct") return sumLengths(item.members.map((member) => feltLength(member.type)));
-  if (item?.type === "enum") {
-    const lengths = item.variants.map((variant) => feltLength(variant.type));
-    if (lengths.includes(null) || new Set(lengths).size !== 1) return null;
-    return 1 + lengths[0];
-  }
-  if (
-    /^core::(felt252|integer::u(8|16|32|64|128)|starknet::(contract_address::ContractAddress|class_hash::ClassHash))$/.test(
-      type,
-    )
-  ) {
-    return 1;
-  }
-  throw new Error(`Unsupported row type ${type}`);
-}
-
-function sumLengths(lengths) {
-  return lengths.includes(null) ? null : lengths.reduce((sum, length) => sum + length, 0);
 }
 
 function model(name, scope, keys, members, emitterKey) {
@@ -238,24 +213,6 @@ schema.types = Object.fromEntries(
 schema.identity = schemaIdentity(schema);
 await writeJson("schema/schema.json", schema);
 await writeFixtures(schema);
-
-async function writeCairo(path, value) {
-  const temporary = await mkdtemp(fileURLToPath(new URL("src/.command-routes-", root)));
-  try {
-    const input = join(temporary, "routes.cairo");
-    await writeFile(input, value);
-    execFileSync("scarb", ["fmt", input], { cwd: fileURLToPath(root), encoding: "utf8" });
-    const formatted = await readFile(input, "utf8");
-    const target = new URL(path, root);
-    if (process.argv.includes("--check")) {
-      if ((await readFile(target, "utf8")) !== formatted) throw new Error(`Generated artifact differs: ${path}`);
-    } else {
-      await writeFile(target, formatted);
-    }
-  } finally {
-    await rm(temporary, { recursive: true });
-  }
-}
 
 async function writeJson(path, value) {
   const url = new URL(path, root);
@@ -504,6 +461,11 @@ const command = types.get("world_native::commands::Command");
 const commandBits = Object.fromEntries(
   command.variants.map(({ name, wireId }) => [name, (1n << BigInt(wireId)).toString()]),
 );
+const blitzCommandBits = Object.fromEntries(
+  wireIds.commands
+    .filter(({ retired, family }) => !retired && family === "blitz")
+    .map(({ name, id }) => [name, (1n << BigInt(id)).toString()]),
+);
 const gamesWrites = schema.games.entrypoints
   .filter((entry) => entry.state_mutability === "external")
   .map((entry) => entry.name);
@@ -513,6 +475,7 @@ await writeText(
     "// Generated from command routes and production payload ABIs. Run the native schema generator to update.",
     'import type { BigNumberish } from "starknet";',
     `export const nativeCommandBits = ${JSON.stringify(commandBits, null, 2)} as const;`,
+    `export const nativeBlitzCommandBits = ${JSON.stringify(blitzCommandBits, null, 2)} as const;`,
     `export const nativeGamesWrites = ${JSON.stringify(gamesWrites, null, 2)} as const;`,
     "export interface NativeCommandPayloads {",
     ...command.variants.map(({ name, type }) => `  ${name}: ${commandType(type)};`),

@@ -1,6 +1,12 @@
 use crate::commands::Command;
-use crate::troop_management::{Army, ManageTroops};
+use crate::troop_management::Army;
 
+#[cfg(feature: "blitz")]
+pub fn requires_answer(_game_id: u32, _command: Command) -> bool {
+    false
+}
+
+#[cfg(not(feature: "blitz"))]
 pub fn requires_answer(game_id: u32, command: Command) -> bool {
     match command {
         Command::BuySeal(_) => false,
@@ -42,11 +48,12 @@ pub fn requires_answer(game_id: u32, command: Command) -> bool {
         Command::RemoveGuildMember(_) => false,
         Command::MarkGameSettled(_) => false,
         Command::ManageTroops(value) => match value {
-            ManageTroops::RecruitExplorer(value) => waiting(game_id, value.explorer_id),
-            ManageTroops::RemoveExplorer(id) => waiting(game_id, id),
-            ManageTroops::Transfer(value) => managed_waiting(game_id, value.source)
+            crate::troop_management::ManageTroops::RecruitExplorer(value) => waiting(game_id, value.explorer_id),
+            crate::troop_management::ManageTroops::RemoveExplorer(id) => waiting(game_id, id),
+            crate::troop_management::ManageTroops::Transfer(value) => managed_waiting(game_id, value.source)
                 || managed_waiting(game_id, value.target),
-            ManageTroops::RecruitGuard(_) | ManageTroops::RemoveGuard(_) => false,
+            crate::troop_management::ManageTroops::RecruitGuard(_) |
+            crate::troop_management::ManageTroops::RemoveGuard(_) => false,
         },
         Command::GuardAttack(_) => false,
         Command::ProvisionAndUpgradeRealm(_) => false,

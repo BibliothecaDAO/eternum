@@ -169,6 +169,70 @@ pub mod SettlementLogic {
             self.settlements.data.settlements.entitlements.read((key.game_id, key.owner))
         }
     }
+    #[cfg(feature: "blitz")]
+    #[abi(embed_v0)]
+    impl RosterRecords of crate::logic::release::ISlotAuthority<ContractState> {
+        fn slot_authority(ref self: ContractState, family: u8, calldata: Span<felt252>) -> Span<felt252> {
+            let mut fields = calldata;
+            let (game_id, players): (u32, Span<ContractAddress>) = Serde::deserialize(ref fields)
+                .expect('INVALID_ROSTER');
+            assert!(fields.is_empty(), "invalid roster");
+            crate::logic::blitz::roster::record(game_id, players);
+            array![].span()
+        }
+    }
+    #[cfg(feature: "blitz")]
+    #[abi(embed_v0)]
+    impl RosterSeating of crate::settlement::IRosterSeating<ContractState> {
+        fn seat_blitz_roster(
+            ref self: ContractState, game_id: u32, actor: ContractAddress, context: crate::commands::ActionContext,
+        ) -> u64 {
+            let context = crate::commands::execution_context(game_id, context);
+            assert!(context.timestamp >= context.game.unbox().start_settling_at, "settling not started");
+            let size = crate::logic::blitz::roster::size(game_id);
+            assert!(size != 0, "game has no roster");
+            let mut progress = self.settlements.data.settlements.progress.read(game_id);
+            let seat: u32 = progress.registered.into();
+            assert!(seat < size, "roster already seated");
+            let mut root = context.raw_root;
+            let seed = crate::random::game_root(ref root, game_id);
+            let player = crate::logic::blitz::roster::draw_player(game_id, seat, seed);
+            self.settlements.record_entry(EntryKey { game_id, owner: player }, player);
+            let sites = crate::settlement_grid::triple_settlement_locations(
+                crate::settlement_grid::map_center(context.rules.unbox().map_center_offset),
+                crate::logic::settlement::spacing(),
+                seat,
+            );
+            let structures = ISettlementCreationLibraryDispatcher {
+                class_hash: crate::logic::release::class_of(game_id, crate::slots::STRUCTURES),
+            };
+            let resources = crate::logic::settlement::grants().realm_resources;
+            for (site, troop) in sites.into_iter().zip(crate::logic::blitz::roster::deal(seed)) {
+                progress.realm_count += 1;
+                crate::logic::blitz::roster::write_dealt(
+                    crate::resources::ResourceKey { game_id, entity_id: progress.realm_count.into() }, *troop,
+                );
+                structures
+                    .create_settlement(
+                        game_id,
+                        player,
+                        *site,
+                        SettlementCreation::Realm(
+                            RealmCreation {
+                                realm_id: progress.realm_count,
+                                traits: crate::realms::RealmTraits { wonder: 1, order: 0, resources },
+                                troops: crate::settlement::StartingTroops::Biome,
+                                activate_economy: true,
+                            },
+                        ),
+                        crate::commands::action_context(context),
+                    );
+            }
+            progress.registered += 1;
+            self.settlements.write_progress(game_id, progress);
+            (size - seat - 1).into()
+        }
+    }
     #[generate_trait]
     impl Internal of InternalTrait {
         // Frontier homes are private boards. Realm ids select immutable traits, rather than scarce catalogue seats.

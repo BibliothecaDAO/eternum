@@ -1,4 +1,4 @@
-// Generated from schema/command-routes.mjs and production logic ABIs.
+// @generated from schema/command-routes.mjs and the production logic ABIs. DO NOT EDIT.
 
 #[derive(Copy, Drop)]
 pub struct CommandRoute {
@@ -81,7 +81,6 @@ pub const COMMAND_ROUTES: [Option<CommandRoute>; 77] = [
     Some(CommandRoute { logic: 14, selector: selector!("reroll_oath"), items_offset: None, batch: false }),
 ];
 
-// Decode the complete command before reading a roll; routes retain the same wire discriminants.
 #[derive(Copy, Drop, Debug, PartialEq)]
 pub enum Command {
     BuySeal,

@@ -5,7 +5,7 @@ pub mod GamesTest {
     use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
     use crate::games::Authentication;
     use crate::games_entry::GamesEntry;
-    use crate::logic::release::ReleaseState;
+    use crate::logic::release::{ISlotAuthorityDispatcherTrait, ISlotViewsDispatcherTrait, ReleaseState};
     component!(path: GamesEntry, storage: entry, event: EntryEvent);
     component!(path: ReleaseState, storage: release, event: ReleaseEvent);
     impl EntryInternal = GamesEntry::InternalImpl<ContractState>;
@@ -52,6 +52,22 @@ pub mod GamesTest {
         self
             .entry
             .initializer(owner, launcher, authentication, release_id, release, classes, vrf_public_key, l2_gas_bound);
+    }
+    #[abi(embed_v0)]
+    impl Slots of crate::games::IGamesSlots<ContractState> {
+        fn view_call(self: @ContractState, game_id: u32, slot: u8, calldata: Span<felt252>) -> Span<felt252> {
+            crate::logic::release::ISlotViewsLibraryDispatcher {
+                class_hash: crate::logic::release::class_of(game_id, slot),
+            }
+                .slot_view(game_id, calldata)
+        }
+        fn authority_call(ref self: ContractState, family: u8, slot: u8, calldata: Span<felt252>) -> Span<felt252> {
+            crate::logic::release::assert_authority();
+            crate::logic::release::ISlotAuthorityLibraryDispatcher {
+                class_hash: crate::logic::release::family_class(family, slot),
+            }
+                .slot_authority(family, calldata)
+        }
     }
     #[abi(embed_v0)]
     impl RootFixture of crate::tests::play_fixture::IPlayFixture<ContractState> {

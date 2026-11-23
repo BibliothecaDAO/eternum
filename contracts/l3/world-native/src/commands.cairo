@@ -309,22 +309,26 @@ pub fn validated_command(
 }
 
 #[cfg(feature: "blitz")]
-fn assert_logic_returned(index: u32) {
+fn assert_family_admits(game_id: u32, index: u32, route: crate::command_routes::CommandRoute) {
     assert!(
         !crate::rules::command_enabled(crate::balance::rules::PENDING_COMMANDS, index.into()), "Blitz logic pending",
+    );
+    assert!(
+        route.selector == selector!("seat_blitz_roster") || !crate::logic::blitz::roster::seating(game_id),
+        "roster not seated",
     );
 }
 
 #[cfg(not(feature: "blitz"))]
-fn assert_logic_returned(index: u32) {}
+fn assert_family_admits(_game_id: u32, _index: u32, _route: crate::command_routes::CommandRoute) {}
 
 pub fn admit(game_id: u32, actor: ContractAddress, command: Span<felt252>) {
     let (index, route, _) = validated_command(command).expect('INVALID_COMMAND');
     assert!(
         crate::rules::command_enabled(crate::balance::rules::SWITCHES.command_mask, index.into()), "command disabled",
     );
-    assert_logic_returned(index);
     assert!(crate::logic::game::game_exists(game_id), "game does not exist");
+    assert_family_admits(game_id, index, route);
     if route.selector == selector!("settle_season") {
         crate::entity_ids::assign_open_home(game_id, actor);
     }

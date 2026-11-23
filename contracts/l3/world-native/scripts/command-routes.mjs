@@ -1,5 +1,5 @@
-import { commandRoutes } from "../schema/command-routes.mjs";
-import { assignWireIds, renderWireSerde, wireIds } from "./wire-ids.mjs";
+import { blitzCommandRoutes, commandRoutes } from "../schema/command-routes.mjs";
+import { assignWireIds, familyWireIds, renderWireSerde } from "./wire-ids.mjs";
 
 // Replaces separately maintained command payload types, discriminants and the dispatch match.
 export function compileCommandRoutes(artifacts, types, feltLength, logicClasses) {
@@ -12,7 +12,17 @@ export function compileCommandRoutes(artifacts, types, feltLength, logicClasses)
     name: "world_native::commands::Command",
     variants: routes.map(({ name, payload, wireId }) => ({ name, type: payload, wireId })),
   };
-  return { command, cairo: renderRoutes(routes) };
+  return { command, cairo: renderRoutes(routes, "frontier") };
+}
+
+export function compileBlitzCommandRoutes(frontier, blitz, logicClasses) {
+  const logic = logicClasses.map(({ name }) => name);
+  const blitzNames = new Set(blitzCommandRoutes.map(({ name }) => name));
+  const routes = assignWireIds("commands", [...commandRoutes, ...blitzCommandRoutes], "blitz").map((route) => {
+    const build = blitzNames.has(route.name) ? blitz : frontier;
+    return compileRoute(route, build.artifacts, build.types, logic, build.feltLength);
+  });
+  return renderRoutes(routes, "blitz");
 }
 
 function compileRoute(route, artifacts, types, logic, feltLength) {
@@ -59,8 +69,8 @@ function itemOffset(route, payload, types, feltLength) {
 
 const isSpan = (type) => /^core::array::(?:Span|Array)::</.test(type);
 
-function renderRoutes(routes) {
-  const definitions = wireIds.commands.map(({ id }) => {
+function renderRoutes(routes, family) {
+  const definitions = familyWireIds("commands", family).map(({ id }) => {
     const route = routes.find(({ wireId }) => wireId === id);
     if (!route) return "    None,";
     const { classIndex, entrypoint, itemsOffset, batch } = route;
@@ -71,7 +81,7 @@ function renderRoutes(routes) {
       ? `    ${name},`
       : `    ${name}: ${payload.replaceAll("world_native::", "crate::").replaceAll("core::starknet::", "starknet::")},`,
   );
-  return `// Generated from schema/command-routes.mjs and production logic ABIs.
+  return `// @generated from schema/command-routes.mjs and the production logic ABIs. DO NOT EDIT.
 
 #[derive(Copy, Drop)]
 pub struct CommandRoute {
@@ -86,7 +96,6 @@ pub const COMMAND_ROUTES: [Option<CommandRoute>; ${definitions.length}] = [
 ${definitions.join("\n")}
 ];
 
-// Decode the complete command before reading a roll; routes retain the same wire discriminants.
 #[derive(Copy, Drop, Debug, PartialEq)]
 pub enum Command {
 ${variants.join("\n")}

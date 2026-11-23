@@ -141,6 +141,13 @@ pub trait ISettlementCreation<T> {
     ) -> u64;
 }
 
+#[starknet::interface]
+pub trait IRosterSeating<T> {
+    fn seat_blitz_roster(
+        ref self: T, game_id: u32, actor: ContractAddress, context: crate::commands::ActionContext,
+    ) -> u64;
+}
+
 // Off-map realms retain their launch reference for the starting troop biome and immutable creation story.
 pub fn off_map_realm_reference(realm_id: u32) -> crate::troops::Coord {
     crate::troops::Coord { alt: false, x: 0xffffffff - realm_id, y: 0xffffffff }

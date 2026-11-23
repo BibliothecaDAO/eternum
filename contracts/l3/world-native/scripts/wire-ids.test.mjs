@@ -5,7 +5,7 @@ import { assignWireIds, validateWireIds, wireIds } from "./wire-ids.mjs";
 test("deletion leaves the original command and story IDs in place", () => {
   const commands = assignWireIds(
     "commands",
-    wireIds.commands.filter(({ retired }) => !retired),
+    wireIds.commands.filter(({ retired, family }) => !retired && family === undefined),
   );
   const stories = assignWireIds(
     "stories",
@@ -50,7 +50,18 @@ test("a new allocation appends after all live and retired IDs", () => {
 });
 
 test("a retired name cannot become a live route", () => {
-  const live = wireIds.commands.filter(({ retired }) => !retired);
+  const live = wireIds.commands.filter(({ retired, family }) => !retired && family === undefined);
   live[0] = wireIds.commands.find(({ retired }) => retired);
   assert.throws(() => assignWireIds("commands", live), /Allocate a permanent commands wire ID/);
+});
+
+test("a Blitz command keeps its family and stays out of the Frontier routes", () => {
+  const frontier = wireIds.commands.filter(({ retired, family }) => !retired && family === undefined);
+  const blitz = wireIds.commands.filter(({ retired }) => !retired);
+  assert.equal(assignWireIds("commands", blitz, "blitz").find(({ name }) => name === "SeatBlitzRoster").wireId, 77);
+  assert.throws(() => assignWireIds("commands", blitz), /must match the live wire registry/);
+  assert.doesNotThrow(() => assignWireIds("commands", frontier));
+  const moved = structuredClone(wireIds);
+  delete moved.commands.find(({ family }) => family === "blitz").family;
+  assert.throws(() => validateWireIds(moved, wireIds), /changed or reused/);
 });

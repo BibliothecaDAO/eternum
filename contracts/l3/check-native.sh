@@ -67,6 +67,7 @@ check_events() {
 
 check_drift() {
   build_world
+  build_blitz
   pnpm run schema:native
   pnpm run fixtures:native
   (cd "$world" && scarb fmt)

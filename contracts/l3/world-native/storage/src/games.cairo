@@ -51,6 +51,7 @@ pub struct GamesStorage<
     pub registrar: crate::registrar::RegistrarStateStorage,
     pub relics: crate::relics::RelicStateStorage<TLordsWithdrawal>,
     pub resources: crate::resources::ResourceStateStorage<TProduction, TWeight>,
+    pub roster: crate::settlement::RosterStorage,
     pub season: crate::season::SeasonPointsStorage,
     pub settlement_pool: crate::settlement::SettlementPoolStateStorage,
     pub settlements: crate::settlement::SettlementStateStorage<TSettlementProgress, TPlayerEntry, TEntryEntitlement>,

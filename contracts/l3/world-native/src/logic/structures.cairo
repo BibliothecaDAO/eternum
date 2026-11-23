@@ -328,7 +328,9 @@ pub mod StructuresLogic {
             match creation {
                 crate::settlement::SettlementCreation::Realm(realm) => {
                     crate::logic::research::write(key, crate::research::RealmKnowledge { learned: 0 });
-                    self.raise_realm_home(game_id, crate::entity_ids::namespace(key.entity_id), context);
+                    if crate::rules::DAYS_IN_PLAY {
+                        self.raise_realm_home(game_id, crate::entity_ids::namespace(key.entity_id), context);
+                    }
 
                     if realm.activate_economy {
                         self.provision_realm_economy(key, realm.troops, context.timestamp, context);
@@ -684,12 +686,14 @@ pub mod StructuresLogic {
             assert!(!coord.alt && record.owner != 0.try_into().unwrap(), "invalid realm owner or layer");
             let id = if record.base.category == crate::taxonomy::VILLAGE_CATEGORY {
                 crate::entity_ids::allocate_home(game_id, record.metadata.village_realm)
+            } else if crate::rules::ROSTER_ENTRY {
+                record.metadata.realm_id.into()
             } else {
                 crate::entity_ids::claim_home(game_id, record.owner)
             };
             let key = ResourceKey { game_id, entity_id: id };
             let village = record.base.category == crate::taxonomy::VILLAGE_CATEGORY;
-            let on_map = village;
+            let on_map = crate::rules::ROSTER_ENTRY || village;
             if on_map {
                 self.prepare_settlement_tile(game_id, coord, game_context);
             }

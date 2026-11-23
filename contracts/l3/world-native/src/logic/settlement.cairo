@@ -33,11 +33,6 @@ pub fn grants() -> RealmGrants {
     }
 }
 
-#[cfg(feature: "blitz")]
-pub fn biome_troop(biome: u8) -> crate::troops::TroopType {
-    panic!("a fixed roster deals its troop types")
-}
-
 #[cfg(not(feature: "blitz"))]
 pub fn biome_troop(biome: u8) -> crate::troops::TroopType {
     *crate::balance::settlement::STARTING_TROOPS.span().at(biome.into() - 1)

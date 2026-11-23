@@ -4,9 +4,14 @@ pub mod aspects;
 pub mod balance;
 pub mod banes;
 pub mod biome;
+#[cfg(feature: "blitz")]
+pub mod blitz_command_routes;
 pub mod buildings;
 pub mod combat;
 pub mod combat_actions;
+#[cfg(feature: "blitz")]
+pub use blitz_command_routes as command_routes;
+#[cfg(not(feature: "blitz"))]
 pub mod command_routes;
 pub mod commands;
 mod day_schedule;

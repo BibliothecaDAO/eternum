@@ -19,3 +19,10 @@ pub struct SettlementStateStorage<TSettlementProgress, TPlayerEntry, TEntryEntit
     pub held_realm_owners: Map<(u32, u32), ContractAddress>,
     pub held_realm_homes: Map<(u32, u32), u64>,
 }
+
+#[starknet::storage_node]
+pub struct RosterStorage {
+    pub sizes: Map<u32, u32>,
+    pub players: Map<(u32, u32), ContractAddress>,
+    pub dealt_troops: Map<(u32, u64), u8>,
+}

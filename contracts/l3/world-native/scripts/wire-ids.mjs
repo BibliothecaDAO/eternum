@@ -8,22 +8,36 @@ export function validateWireIds(registry, previous) {
     if (!Array.isArray(entries)) throw new Error(`Missing ${kind} wire IDs`);
     const names = new Set();
     for (const [id, entry] of entries.entries()) {
-      if (entry.id !== id || typeof entry.name !== "string" || typeof entry.retired !== "boolean")
+      if (
+        entry.id !== id ||
+        typeof entry.name !== "string" ||
+        typeof entry.retired !== "boolean" ||
+        ![undefined, "blitz"].includes(entry.family)
+      )
         throw new Error(`Invalid ${kind} wire allocation at ${id}`);
       if (names.has(entry.name)) throw new Error(`Reused ${kind} wire name ${entry.name}`);
       names.add(entry.name);
     }
     for (const entry of previous?.[kind] ?? []) {
       const current = entries[entry.id];
-      if (!current || current.name !== entry.name || (entry.retired && !current.retired))
+      if (
+        !current ||
+        current.name !== entry.name ||
+        current.family !== entry.family ||
+        (entry.retired && !current.retired)
+      )
         throw new Error(`Permanent ${kind} wire ID ${entry.id} (${entry.name}) changed or reused`);
     }
   }
 }
 
-export function assignWireIds(kind, variants) {
+export function familyWireIds(kind, family) {
+  return wireIds[kind].filter((entry) => family === "blitz" || entry.family === undefined);
+}
+
+export function assignWireIds(kind, variants, family = "frontier") {
   validateWireIds(wireIds);
-  const live = wireIds[kind].filter(({ retired }) => !retired);
+  const live = familyWireIds(kind, family).filter(({ retired }) => !retired);
   if (live.length !== variants.length || new Set(variants.map(({ name }) => name)).size !== variants.length)
     throw new Error(`${kind} variants must match the live wire registry`);
   return variants.map((variant) => {

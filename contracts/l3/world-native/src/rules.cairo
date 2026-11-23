@@ -193,6 +193,7 @@ pub const NO_VILLAGE_CAPTURE: bool = crate::balance::rules::SWITCHES.mode_rules 
 pub const DEEP_IN_PLAY: bool = crate::balance::rules::SWITCHES.mode_rules & DEPTH_CONTENTS != 0;
 pub const SAME_OWNER_TRANSFERS: bool = crate::balance::rules::SWITCHES.mode_rules & SAME_OWNER_TRANSFER != 0;
 pub const DAYS_IN_PLAY: bool = crate::balance::rules::SWITCHES.day_unit_seconds != 0;
+pub const ROSTER_ENTRY: bool = crate::balance::rules::SWITCHES.entry_rule == ENTRY_ROSTER;
 
 pub fn command_enabled(mask: u128, index: u128) -> bool {
     // Cairo lowers a dense integer match to a jump table.

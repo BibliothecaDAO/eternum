@@ -11,5 +11,6 @@ mod movement;
 mod names;
 mod pending;
 mod production;
+mod roster;
 mod settlement;
 mod transfers;

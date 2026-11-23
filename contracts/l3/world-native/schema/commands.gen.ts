@@ -42,6 +42,9 @@ export const nativeCommandBits = {
   "Research": "147573952589676412928",
   "InteractSite": "590295810358705651712"
 } as const;
+export const nativeBlitzCommandBits = {
+  "SeatBlitzRoster": "151115727451828646838272"
+} as const;
 export const nativeGamesWrites = [
   "authority_call",
   "deliver_deposit",

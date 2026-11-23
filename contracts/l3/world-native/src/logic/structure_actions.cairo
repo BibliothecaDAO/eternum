@@ -1,5 +1,4 @@
-use crate::geometry::tile_key;
-use crate::map::{IMapLogicDispatcherTrait, IMapLogicLibraryDispatcher};
+use crate::map::IMapLogicLibraryDispatcher;
 use crate::ownership::Story;
 use crate::resources::{IResourceOperationsDispatcherTrait, IResourceOperationsLibraryDispatcher, ResourceKey};
 
@@ -13,6 +12,12 @@ pub fn resources_dispatcher(game_id: u32) -> IResourceOperationsLibraryDispatche
     }
 }
 
+#[cfg(feature: "blitz")]
+pub fn biome_troop(key: ResourceKey, _game_context: crate::commands::ExecutionContext) -> crate::troops::TroopType {
+    crate::logic::blitz::roster::dealt(key)
+}
+
+#[cfg(not(feature: "blitz"))]
 pub fn biome_troop(key: ResourceKey, game_context: crate::commands::ExecutionContext) -> crate::troops::TroopType {
     let record = crate::logic::structures::record(key);
     let coord = if record.base.category == crate::taxonomy::REALM_CATEGORY {
@@ -20,8 +25,11 @@ pub fn biome_troop(key: ResourceKey, game_context: crate::commands::ExecutionCon
     } else {
         crate::structures::structure_coord(key)
     };
-    let biome = map_dispatcher(key.game_id)
-        .biome(tile_key(key.game_id, coord), crate::commands::biome_context(game_context));
+    let biome = crate::map::IMapLogicDispatcherTrait::biome(
+        map_dispatcher(key.game_id),
+        crate::geometry::tile_key(key.game_id, coord),
+        crate::commands::biome_context(game_context),
+    );
     assert!(biome > 0 && biome <= 17, "starting troops require a biome");
     crate::logic::settlement::biome_troop(biome)
 }
@@ -46,7 +54,7 @@ pub fn grant_starting_troops(
         if kind == resource_type {
             resources_dispatcher(key.game_id)
                 .grant_resource(key, kind, amount + guards, timestamp, crate::commands::resource_context(game_context));
-            if record.base.category == crate::taxonomy::REALM_CATEGORY {
+            if crate::rules::DAYS_IN_PLAY && record.base.category == crate::taxonomy::REALM_CATEGORY {
                 deploy_starting_armies(key, category, amount, timestamp, game_context);
             }
             grant_starting_guard(key, category, guards, timestamp, game_context);

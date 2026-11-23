@@ -384,6 +384,12 @@
       "id": 76,
       "name": "RerollOath",
       "retired": false
+    },
+    {
+      "id": 77,
+      "name": "SeatBlitzRoster",
+      "retired": false,
+      "family": "blitz"
     }
   ],
   "stories": [
