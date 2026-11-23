@@ -154,7 +154,7 @@ describe("Frontier guard identity", () => {
     expect(readStandingFrontierBeast(fourth(StructureType.Ruin), 1, 9)).toEqual({
       beast: "hydra",
       name: "Hydra",
-      scale: 1.7,
+      scale: 1.2,
       idle: BEASTS.hydra.idle,
     });
     expect(readStandingFrontierBeast(fourth(StructureType.Beasts, 6_500), 1, 9)).toEqual({
@@ -193,7 +193,7 @@ describe("Frontier guard identity", () => {
       "Ammit breath",
       "Minotaur breath",
     ]);
-    expect([BEASTS.kappa, BEASTS.kitsune].map(beastModel)).toEqual(["dark-fey", "dark-fey"]);
+    expect([BEASTS.kappa, BEASTS.kitsune].map(beastModel)).toEqual(["kappa", "kitsune"]);
     for (const { idle } of rows) if (idle.motion !== "hover") expect(idle.height).toBeLessThanOrEqual(0.028);
   });
   it("names each family's beast by layer, a stronger Loot Survivor tier deeper", () => {
@@ -223,14 +223,14 @@ describe("Frontier guard identity", () => {
     [2, BEASTS.ettin, BEASTS.kitsune],
   ])("keeps camps beast-only and rifts fey-guarded at layer %s", (depth, camp, rift) => {
     expect(readStandingFrontierBeast(facts(StructureType.Camp, depth), 1, 9)).toEqual({
-      beast: "troll",
+      beast: beastModel(camp),
       name: camp.name,
       scale: 0.85,
       idle: camp.idle,
     });
     expect(frontierSiteComposition(StructureType.Camp).baseScale).toBe(0);
     expect(readStandingFrontierBeast(facts(StructureType.Rift, depth), 1, 9)).toEqual({
-      beast: "dark-fey",
+      beast: beastModel(rift),
       name: rift.name,
       scale: 0.75,
       idle: rift.idle,

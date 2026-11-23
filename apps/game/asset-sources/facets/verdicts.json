@@ -129,7 +129,7 @@
   },
   "faceted/map-village": {
     "verdict": "beats shipped",
-    "reason": "Paired red roofs distinguish village from the pale realm towers. The compact painted houses retain material at 32 px and roof colour at 12\u201316 px."
+    "reason": "Paired red roofs distinguish village from the pale realm towers. The compact painted houses retain material at 32 px and roof colour at 12–16 px."
   },
   "faceted/map-mine": {
     "verdict": "beats shipped",
@@ -1107,5 +1107,37 @@
   "faceted/beast-warlock": {
     "verdict": "beats shipped",
     "reason": "Studio portrait of shipped Deep guardian Warlock model, normalized to the Facets delivery contract."
+  },
+  "faceted/beast-banshee": {
+    "verdict": "beats shipped",
+    "reason": "Studio portrait of shipped Veil beast Banshee model, normalized to the Facets delivery contract."
+  },
+  "faceted/beast-golem": {
+    "verdict": "beats shipped",
+    "reason": "Studio portrait of shipped Veil beast Golem model, normalized to the Facets delivery contract."
+  },
+  "faceted/beast-kappa": {
+    "verdict": "beats shipped",
+    "reason": "Studio portrait of shipped Veil beast Kappa model, normalized to the Facets delivery contract."
+  },
+  "faceted/beast-tarrasque": {
+    "verdict": "beats shipped",
+    "reason": "Studio portrait of shipped Hollow beast Tarrasque model, normalized to the Facets delivery contract."
+  },
+  "faceted/beast-lich": {
+    "verdict": "beats shipped",
+    "reason": "Studio portrait of shipped Hollow beast Lich model, normalized to the Facets delivery contract."
+  },
+  "faceted/beast-ettin": {
+    "verdict": "beats shipped",
+    "reason": "Studio portrait of shipped Hollow beast Ettin model, normalized to the Facets delivery contract."
+  },
+  "faceted/beast-kitsune": {
+    "verdict": "beats shipped",
+    "reason": "Studio portrait of shipped Hollow beast Kitsune model, normalized to the Facets delivery contract."
+  },
+  "faceted/beast-minotaur": {
+    "verdict": "beats shipped",
+    "reason": "Studio portrait of shipped Hollow beast Minotaur model, normalized to the Facets delivery contract."
   }
 }

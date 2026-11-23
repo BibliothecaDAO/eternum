@@ -1588,5 +1588,45 @@
     "label": "Insight",
     "family": "Aspects",
     "aspectId": 4
+  },
+  "beast-banshee": {
+    "art": "beast-banshee",
+    "label": "Banshee",
+    "family": "Beasts"
+  },
+  "beast-golem": {
+    "art": "beast-golem",
+    "label": "Golem",
+    "family": "Beasts"
+  },
+  "beast-kappa": {
+    "art": "beast-kappa",
+    "label": "Kappa",
+    "family": "Beasts"
+  },
+  "beast-tarrasque": {
+    "art": "beast-tarrasque",
+    "label": "Tarrasque",
+    "family": "Beasts"
+  },
+  "beast-lich": {
+    "art": "beast-lich",
+    "label": "Lich",
+    "family": "Beasts"
+  },
+  "beast-ettin": {
+    "art": "beast-ettin",
+    "label": "Ettin",
+    "family": "Beasts"
+  },
+  "beast-kitsune": {
+    "art": "beast-kitsune",
+    "label": "Kitsune",
+    "family": "Beasts"
+  },
+  "beast-minotaur": {
+    "art": "beast-minotaur",
+    "label": "Minotaur",
+    "family": "Beasts"
   }
 }

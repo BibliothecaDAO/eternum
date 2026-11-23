@@ -9,55 +9,55 @@
   "icons": [
     {
       "id": "knight-t1",
-      "label": "Knight \u00b7 T1",
+      "label": "Knight · T1",
       "family": "Troops",
       "prompt": "prompts/knight-t1.txt"
     },
     {
       "id": "knight-t2",
-      "label": "Knight \u00b7 T2",
+      "label": "Knight · T2",
       "family": "Troops",
       "prompt": "prompts/knight-t2.txt"
     },
     {
       "id": "knight-t3",
-      "label": "Knight \u00b7 T3",
+      "label": "Knight · T3",
       "family": "Troops",
       "prompt": "prompts/knight-t3.txt"
     },
     {
       "id": "crossbowman-t1",
-      "label": "Crossbowman \u00b7 T1",
+      "label": "Crossbowman · T1",
       "family": "Troops",
       "prompt": "prompts/crossbowman-t1.txt"
     },
     {
       "id": "crossbowman-t2",
-      "label": "Crossbowman \u00b7 T2",
+      "label": "Crossbowman · T2",
       "family": "Troops",
       "prompt": "prompts/crossbowman-t2.txt"
     },
     {
       "id": "crossbowman-t3",
-      "label": "Crossbowman \u00b7 T3",
+      "label": "Crossbowman · T3",
       "family": "Troops",
       "prompt": "prompts/crossbowman-t3.txt"
     },
     {
       "id": "paladin-t1",
-      "label": "Paladin \u00b7 T1",
+      "label": "Paladin · T1",
       "family": "Troops",
       "prompt": "prompts/paladin-t1.txt"
     },
     {
       "id": "paladin-t2",
-      "label": "Paladin \u00b7 T2",
+      "label": "Paladin · T2",
       "family": "Troops",
       "prompt": "prompts/paladin-t2.txt"
     },
     {
       "id": "paladin-t3",
-      "label": "Paladin \u00b7 T3",
+      "label": "Paladin · T3",
       "family": "Troops",
       "prompt": "prompts/paladin-t3.txt"
     },
@@ -135,7 +135,7 @@
     },
     {
       "id": "realm",
-      "label": "Realm \u00b7 level 2",
+      "label": "Realm · level 2",
       "family": "Structures",
       "prompt": "prompts/realm.txt"
     },
@@ -3122,7 +3122,7 @@
     },
     {
       "id": "devcon-realm-0",
-      "label": "Devcon \u00b7 Settlement",
+      "label": "Devcon · Settlement",
       "family": "Structures",
       "prompt": "prompts/devcon-realm-0.txt",
       "source": {
@@ -3132,7 +3132,7 @@
     },
     {
       "id": "devcon-realm-1",
-      "label": "Devcon \u00b7 City",
+      "label": "Devcon · City",
       "family": "Structures",
       "prompt": "prompts/devcon-realm-1.txt",
       "source": {
@@ -3142,7 +3142,7 @@
     },
     {
       "id": "devcon-realm-2",
-      "label": "Devcon \u00b7 Kingdom",
+      "label": "Devcon · Kingdom",
       "family": "Structures",
       "prompt": "prompts/devcon-realm-2.txt",
       "source": {
@@ -3152,7 +3152,7 @@
     },
     {
       "id": "devcon-realm-3",
-      "label": "Devcon \u00b7 Empire",
+      "label": "Devcon · Empire",
       "family": "Structures",
       "prompt": "prompts/devcon-realm-3.txt",
       "source": {
@@ -3162,7 +3162,7 @@
     },
     {
       "id": "wonder-realm-0",
-      "label": "Wonder \u00b7 Settlement",
+      "label": "Wonder · Settlement",
       "family": "Structures",
       "prompt": "prompts/wonder-realm-0.txt",
       "source": {
@@ -3172,7 +3172,7 @@
     },
     {
       "id": "wonder-realm-1",
-      "label": "Wonder \u00b7 City",
+      "label": "Wonder · City",
       "family": "Structures",
       "prompt": "prompts/wonder-realm-1.txt",
       "source": {
@@ -3182,7 +3182,7 @@
     },
     {
       "id": "wonder-realm-2",
-      "label": "Wonder \u00b7 Kingdom",
+      "label": "Wonder · Kingdom",
       "family": "Structures",
       "prompt": "prompts/wonder-realm-2.txt",
       "source": {
@@ -3192,7 +3192,7 @@
     },
     {
       "id": "devcon-golden-realm-0",
-      "label": "Golden Devcon \u00b7 Settlement",
+      "label": "Golden Devcon · Settlement",
       "family": "Structures",
       "prompt": "prompts/devcon-golden-realm-0.txt",
       "source": {
@@ -3202,7 +3202,7 @@
     },
     {
       "id": "devcon-golden-realm-1",
-      "label": "Golden Devcon \u00b7 City",
+      "label": "Golden Devcon · City",
       "family": "Structures",
       "prompt": "prompts/devcon-golden-realm-1.txt",
       "source": {
@@ -3212,7 +3212,7 @@
     },
     {
       "id": "devcon-golden-realm-2",
-      "label": "Golden Devcon \u00b7 Kingdom",
+      "label": "Golden Devcon · Kingdom",
       "family": "Structures",
       "prompt": "prompts/devcon-golden-realm-2.txt",
       "source": {
@@ -3222,7 +3222,7 @@
     },
     {
       "id": "devcon-golden-realm-3",
-      "label": "Golden Devcon \u00b7 Empire",
+      "label": "Golden Devcon · Empire",
       "family": "Structures",
       "prompt": "prompts/devcon-golden-realm-3.txt",
       "source": {
@@ -3232,7 +3232,7 @@
     },
     {
       "id": "wonder-realm-3",
-      "label": "Wonder \u00b7 Empire",
+      "label": "Wonder · Empire",
       "family": "Structures",
       "prompt": "prompts/wonder-realm-3.txt",
       "source": {
@@ -3448,6 +3448,86 @@
         "kind": "model-render",
         "model": "/models/frontier/beast-warlock.glb",
         "sha256": "9b7bf0eb9c9555a2afb81864aea511be433fae706862589fcdec2e2998e5bdcc"
+      }
+    },
+    {
+      "id": "beast-banshee",
+      "label": "Banshee",
+      "family": "Beasts",
+      "source": {
+        "kind": "model-render",
+        "model": "/models/frontier/beast-banshee.glb",
+        "sha256": "56399edc8ea34968c11946cc81d2fd89b3017c404b1a0c1868dd5d50074857e6"
+      }
+    },
+    {
+      "id": "beast-golem",
+      "label": "Golem",
+      "family": "Beasts",
+      "source": {
+        "kind": "model-render",
+        "model": "/models/frontier/beast-golem.glb",
+        "sha256": "3ba3e823229b993435b708f4514feaf6d56666971f87086d9f872e5c7faeed69"
+      }
+    },
+    {
+      "id": "beast-kappa",
+      "label": "Kappa",
+      "family": "Beasts",
+      "source": {
+        "kind": "model-render",
+        "model": "/models/frontier/beast-kappa.glb",
+        "sha256": "0fd5740cd40b2ff7e8be82bb626f7012b084d81bffbc3bc7e44f5c0a3464f7e0"
+      }
+    },
+    {
+      "id": "beast-tarrasque",
+      "label": "Tarrasque",
+      "family": "Beasts",
+      "source": {
+        "kind": "model-render",
+        "model": "/models/frontier/beast-tarrasque.glb",
+        "sha256": "a6895c3c809409b932f6102874201b398576754edc26212c291093eb73bad679"
+      }
+    },
+    {
+      "id": "beast-lich",
+      "label": "Lich",
+      "family": "Beasts",
+      "source": {
+        "kind": "model-render",
+        "model": "/models/frontier/beast-lich.glb",
+        "sha256": "c64245913275ef2a4998dd6c8f856230f6a5c6ccfa3bf99228f10c52d58ed15e"
+      }
+    },
+    {
+      "id": "beast-ettin",
+      "label": "Ettin",
+      "family": "Beasts",
+      "source": {
+        "kind": "model-render",
+        "model": "/models/frontier/beast-ettin.glb",
+        "sha256": "436f5351705e6265130c52a3666b9a82a90ce1eac1b4eac1e2f77236f25ca23f"
+      }
+    },
+    {
+      "id": "beast-kitsune",
+      "label": "Kitsune",
+      "family": "Beasts",
+      "source": {
+        "kind": "model-render",
+        "model": "/models/frontier/beast-kitsune.glb",
+        "sha256": "e4bcaa6a26dc36d668e96ed21c378dc857c4f34ccabfeb09580be95703343dc0"
+      }
+    },
+    {
+      "id": "beast-minotaur",
+      "label": "Minotaur",
+      "family": "Beasts",
+      "source": {
+        "kind": "model-render",
+        "model": "/models/frontier/beast-minotaur.glb",
+        "sha256": "1c2d9582d8a50f2b4b813f6386931fd4374f89cfbf4cac7721eeb7ce23813f10"
       }
     }
   ]

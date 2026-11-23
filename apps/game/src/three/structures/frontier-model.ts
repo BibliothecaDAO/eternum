@@ -25,6 +25,7 @@ import {
   positionWorld,
   select,
   smoothstep,
+  texture,
   uv,
   varying,
   vec3,
@@ -156,10 +157,10 @@ export class FrontierModel extends InstancedModel {
 function beastMaterial(source: MeshStandardMaterial | FrostedStandardNodeMaterial) {
   if (source instanceof FrostedStandardNodeMaterial && isTripoModelMaterial(source)) {
     source.positionNode = positionLocal.add(vec3(0, beastIdle(), 0));
-    source.emissiveNode =
-      source.emissiveIntensity > 0
-        ? beastPhoenixGlow().add(color(source.emissive).mul(source.emissiveIntensity))
-        : beastPhoenixGlow();
+    const authoredGlow = source.emissiveMap
+      ? texture(source.emissiveMap).rgb.mul(color(source.emissive)).mul(source.emissiveIntensity)
+      : color(source.emissive).mul(source.emissiveIntensity);
+    source.emissiveNode = source.emissiveIntensity > 0 ? beastPhoenixGlow().add(authoredGlow) : beastPhoenixGlow();
     return source;
   }
   const material = new FrostedStandardNodeMaterial();
