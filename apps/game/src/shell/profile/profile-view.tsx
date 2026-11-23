@@ -44,6 +44,7 @@ import {
   seasonPlayerHome,
 } from "../season";
 import { HistoryRow } from "../season-tab/history-row";
+import { FRAGMENTS_PATH } from "../shop/fragments-route";
 import { useNowSeconds } from "../use-now";
 import { RealmsSheet, RealmsStatus } from "./holdings-strip";
 
@@ -190,7 +191,7 @@ export const PlayerCard = ({
           {own && (
             <div className="profile-actions">
               {SEASON_SPENDS_FRAGMENTS && (
-                <AppButton kind="primary" icon="fragment" to="/shop" className="w-full">
+                <AppButton kind="primary" icon="fragment" to={FRAGMENTS_PATH} className="w-full">
                   {FRAGMENTS_PAGE_WORDS.title}
                 </AppButton>
               )}

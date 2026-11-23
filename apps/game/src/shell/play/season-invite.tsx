@@ -51,21 +51,19 @@ export const SeasonInviteCard = ({ invite }: { invite: SeasonInvite }) => (
 
 export const CopySeasonInvite = ({
   invite,
-  kind = "secondary",
   size = "lg",
   icon = "copy",
   label = SEASON_INVITE_WORDS.copy,
   className,
 }: {
   invite: SeasonInvite;
-  kind?: "primary" | "secondary";
   size?: "md" | "lg";
   icon?: IconMeaning;
   label?: string;
   className?: string;
 }) => (
   <AppButton
-    kind={kind}
+    kind="secondary"
     size={size}
     icon={icon}
     className={className}

@@ -16,6 +16,7 @@ import { FragmentsPage } from "../shop/fragments-page";
 import { answerAvnuRead, answerTokenBalances, isAvnuRead } from "./lab-pay-tokens";
 import { PlayerPage, ProfilePage, SettingsRedirect } from "../profile/profile-pages";
 import { PROFILE_PATH } from "../profile/settings-route";
+import { FRAGMENTS_PATH } from "../shop/fragments-route";
 import { ResultsPage } from "../season-tab/results-page";
 import { SeasonPage } from "../season-tab/season-page";
 import {
@@ -110,7 +111,7 @@ const LabPages = ({ screen }: { screen: LabScreen }) => {
         <Route path="doorway/:state" element={<LabDoorway />} />
         <Route path="s/:code" element={<SharedLinkPage />} />
         <Route path="share/day" element={<LabDayShare />} />
-        <Route path="shop" element={<FragmentsPage />} />
+        <Route path={FRAGMENTS_PATH.slice(1)} element={<FragmentsPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </PageAddress.Provider>

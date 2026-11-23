@@ -5,6 +5,8 @@ import {
   nativeRaceConstants,
   raceFinishHeight,
   raceStage,
+  raceStageHeight,
+  rankRaceStandings,
   spendsFragments,
 } from "@bibliothecadao/eternum/game-client";
 import type { HeraldAspectRace } from "@bibliothecadao/eternum/game-sync";
@@ -97,8 +99,6 @@ const RACE_STAGE_HEIGHT = Number(release.definition.economy.race.Some.stage_heig
 export const RACE_STAGE_COUNT = nativeRaceConstants.STAGE_COUNT;
 const RACE_FINISH_HEIGHT = raceFinishHeight(RACE_STAGE_HEIGHT);
 
-const raceStageHeightOf = (finishHeight: number): number => Math.round(finishHeight / RACE_STAGE_COUNT);
-
 export const questBonusPercentOf = (
   game: Pick<DirectoryGame, "quest_bonus_percent"> | null | undefined,
 ): number | null => game?.quest_bonus_percent ?? null;
@@ -132,7 +132,7 @@ if (TRIUMPH_ENTRIES.length !== RACE_TRIUMPHS.length) {
 }
 
 export const raceStageOf = (height: number, finishHeight: number): number =>
-  raceStage(height, finishHeight / RACE_STAGE_COUNT);
+  raceStage(height, raceStageHeight(finishHeight));
 
 export type AspectRaceStanding = {
   id: AspectId;
@@ -156,26 +156,25 @@ export const aspectRaceStandings = (
   winner: AspectRaceStanding | null;
 } => {
   const finishHeight = race.finish_height;
-  const stageHeight = raceStageHeightOf(finishHeight);
-  const rows: AspectRaceStanding[] = aspects.map((aspect) => {
-    const height = race.heights[aspect.id];
-    const finished = finishHeight > 0 && height >= finishHeight;
-    return {
-      id: aspect.id,
+  const stageHeight = raceStageHeight(finishHeight);
+  const standings: AspectRaceStanding[] = rankRaceStandings(
+    aspects.map((aspect) => ({
+      aspect: aspect.id,
       name: aspect.name,
-      rank: 0,
-      height,
-      stage: raceStageOf(height, finishHeight),
-      finished,
-      lords: aspectLordsWorth(height, finished),
-      members: members?.[aspect.id] ?? null,
-    };
-  });
-  const byAspect = Object.fromEntries(rows.map((row) => [row.id, row])) as Record<AspectId, AspectRaceStanding>;
-  const standings = [...rows].sort((a, b) => b.height - a.height || a.id - b.id);
-  standings.forEach((row, index) => {
-    row.rank = index + 1;
-  });
+      height: race.heights[aspect.id],
+    })),
+    stageHeight,
+  ).map((row) => ({
+    id: row.aspect,
+    name: row.name,
+    rank: row.rank,
+    height: row.height,
+    stage: row.stage,
+    finished: row.finished,
+    lords: aspectLordsWorth(row.height, row.finished),
+    members: members?.[row.aspect] ?? null,
+  }));
+  const byAspect = Object.fromEntries(standings.map((row) => [row.id, row])) as Record<AspectId, AspectRaceStanding>;
   const winner = standings.find((row) => row.finished) ?? null;
   return { finishHeight, stageHeight, standings, byAspect, winner };
 };

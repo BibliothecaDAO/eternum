@@ -91,7 +91,7 @@ const ShopWorkspace = ({
   seasonName?: string;
   questBonusPercent: number | null;
   directoryFailure: DirectoryFailure | null;
-  next: string;
+  next: string | null;
 }) => {
   const queryClient = useQueryClient();
   const { session } = useIdentitySession();
@@ -356,7 +356,7 @@ const Delivery = ({
   onAgain,
 }: {
   sent: SentPayment;
-  next: string;
+  next: string | null;
   onSettled: () => void;
   onAgain: () => void;
 }) => {
@@ -387,7 +387,7 @@ const Delivery = ({
   return (
     <div className="flex flex-col gap-3" data-fragments-delivered={sent.fragments}>
       <AppNotice tone="good" icon="fragment" line={FRAGMENTS_PAGE_WORDS.delivered(sent.fragments)} />
-      <AppButton kind="primary" size="lg" icon="fragment" onClick={() => navigate(next)}>
+      <AppButton kind="primary" size="lg" icon="fragment" onClick={() => (next ? navigate(next) : onAgain())}>
         {FRAGMENTS_PAGE_WORDS.backToShop}
       </AppButton>
     </div>

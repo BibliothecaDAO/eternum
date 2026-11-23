@@ -16,6 +16,7 @@ import { AppLink, AppTopBar } from "@/ui/design-system/kit/app-elements";
 import { Portrait } from "@/ui/design-system/kit/portrait";
 import { Lockup } from "./lockup";
 import { PROFILE_PATH } from "../profile/settings-route";
+import { FRAGMENTS_PATH } from "../shop/fragments-route";
 import { useRequestSignIn } from "../sign-in/connect";
 import { LordsBalancePill } from "../value/lords-balance-pill";
 import { usePageAddress } from "./page-address";
@@ -36,7 +37,7 @@ const CHAT_TAB: Place = { to: "/chat", word: CHAT_WORDS.chat, icon: "chat", matc
 export const TABS: readonly Place[] = [
   { to: "/", word: WORDS.play, icon: "play", matches: ["/"] },
   { to: "/season", word: WORDS.season, icon: "leaderboard", matches: ["/season", "/p/"] },
-  { to: "/shop", word: WORDS.shop, icon: "fragment", matches: ["/shop"] },
+  { to: FRAGMENTS_PATH, word: WORDS.shop, icon: "fragment", matches: [FRAGMENTS_PATH] },
   CHAT_TAB,
   YOU_TAB,
 ];

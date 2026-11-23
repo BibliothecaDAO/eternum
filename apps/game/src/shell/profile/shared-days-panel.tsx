@@ -79,7 +79,7 @@ const InviteStrip = ({ aspect }: { aspect: AspectId }) => {
           <span className="text-app-strong text-app-ink">{SEASON_INVITE_WORDS.title}</span>
           <span className="text-app-label text-app-muted">{SEASON_INVITE_WORDS.line(aspectName(aspect))}</span>
         </div>
-        <CopySeasonInvite invite={invite} kind="secondary" size="md" />
+        <CopySeasonInvite invite={invite} size="md" />
       </div>
       <SeasonInviteAlerts invite={invite} />
     </div>

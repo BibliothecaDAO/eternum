@@ -19,6 +19,7 @@ import { NotFoundPage } from "./shell/not-found";
 import { PlayPage } from "./shell/play/play-page";
 import { PlayerPage, ProfilePage, SettingsRedirect } from "./shell/profile/profile-pages";
 import { PROFILE_PATH } from "./shell/profile/settings-route";
+import { FRAGMENTS_PATH } from "./shell/shop/fragments-route";
 import { ResultsPage } from "./shell/season-tab/results-page";
 import { SeasonPage } from "./shell/season-tab/season-page";
 import { SharedLinkPage } from "./shell/share/shared-link-page";
@@ -71,7 +72,7 @@ export const appRoutes = (
       <Route path="results/:id" element={<ResultsPage />} />
       <Route path={PROFILE_PATH.slice(1)} element={<ProfilePage />} />
       <Route path={`${PROFILE_PATH.slice(1)}/settings`} element={<SettingsRedirect />} />
-      <Route path="shop" element={<FragmentsPage />} />
+      <Route path={FRAGMENTS_PATH.slice(1)} element={<FragmentsPage />} />
       <Route path="p/:address" element={<PlayerPage />} />
       <Route path="scroll" element={<WhatsNewPage />} />
       <Route path="chat" element={<ChatPage />} />

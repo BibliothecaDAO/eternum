@@ -7,7 +7,7 @@ import type {
 } from "@bibliothecadao/eternum/game-sync";
 import { DAILY_QUEST_MODELS, nativeGameModeOfFamily, readDailyQuest } from "@bibliothecadao/eternum";
 import { dayOf, expeditionRealmSite, entityHomeNamespace, isRealmCategory } from "@bibliothecadao/eternum/expeditions";
-import { NativeFactStore, raceFinishHeight } from "@bibliothecadao/eternum/game-client";
+import { NativeFactStore, questBonusPercent, raceFinishHeight } from "@bibliothecadao/eternum/game-client";
 import { aspects, RESOURCE_PRECISION, type AspectId, StructureType } from "@bibliothecadao/types";
 import { isCheckGame, resolveDirectoryStatus, type DirectoryInput } from "../game-directory";
 import type { FoldRow } from "../types";
@@ -347,7 +347,7 @@ function directoryEntry(game: Row, facts: DirectoryRows, input: DirectoryInput):
 
 function questBonusPercentOf(facts: DirectoryRows, gameId: unknown): number | null {
   const rules = gameRows(facts.questRules, gameId)[0];
-  return rules ? number(rules.bonus_percent) - 100 : null;
+  return rules ? questBonusPercent({ bonus_percent: number(rules.bonus_percent) }) : null;
 }
 
 function aspectRaceOf(facts: DirectoryRows, gameId: unknown): HeraldAspectRace | null {

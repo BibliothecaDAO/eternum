@@ -18,6 +18,11 @@ import { ASPECT_PAGE_WORDS, OF, SEASON_WORDS } from "@/ui/design-system/kit/word
 
 import { RACE_STAGE_COUNT, raceStageOf } from "../season";
 
+const DRAWN_TIERS = 5;
+if (RACE_STAGE_COUNT !== DRAWN_TIERS) {
+  throw new Error(`HyperstructureArt draws ${DRAWN_TIERS} tiers, expected ${RACE_STAGE_COUNT}`);
+}
+
 const HyperstructureArt = ({
   aspect,
   height,
@@ -96,7 +101,7 @@ const HyperstructureArt = ({
             <polygon points="86,20 94,20 95,33 85,33" className="hyper-svg__glow-4" />
           </g>
         )}
-        {stage >= 5 && (
+        {stage >= RACE_STAGE_COUNT && (
           <g>
             <polygon points="90,6 97,20 83,20" className="hyper-svg__spire" />
             <circle cx="90" cy="12" r="5" className="hyper-svg__spire-halo" />

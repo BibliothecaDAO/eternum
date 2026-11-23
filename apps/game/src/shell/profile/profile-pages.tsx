@@ -23,6 +23,7 @@ import { PageFrame } from "../frame/page-frame";
 import { useRealmsPlayer } from "../herald";
 import { Loading } from "../loading";
 import { NothingHere } from "../not-found";
+import { nextOf } from "../return-path";
 import { useRequestSignIn } from "../sign-in/connect";
 import { AccountCard, SignOut } from "./account-card";
 import { DeleteAccount } from "./account-deletion";
@@ -30,7 +31,7 @@ import { DevicesCard } from "./devices-page";
 import { NotificationsCard } from "./notifications";
 import { PayoutWalletPanel } from "./payout-wallet-panel";
 import { PlayerCard, ProfileView, RealmsShowcase, RecentGames, useSeasonStanding } from "./profile-view";
-import { DELETE_ACCOUNT_ID, walletReturnOf } from "./settings-route";
+import { DELETE_ACCOUNT_HASH, DEVICES_HASH } from "./settings-route";
 import { SharedDaysPanel } from "./shared-days-panel";
 
 type HubTab = "overview" | "referrals" | "wallet" | "settings";
@@ -49,14 +50,14 @@ const TAB_HASH: Record<HubTab, string> = {
   settings: "#settings",
 };
 
-const hubTabFromLocation = (hash: string, search: string): HubTab => {
-  if (hash === "#realms") return "overview";
-  if (hash === "#referrals") return "referrals";
-  if (hash === "#devices" || hash === "#wallet") return "wallet";
-  if (hash === "#settings" || hash.slice(1) === DELETE_ACCOUNT_ID) return "settings";
-  if (walletReturnOf(search) !== null) return "wallet";
-  return "overview";
-};
+const TAB_BY_HASH = new Map<string, HubTab>([
+  ...(Object.entries(TAB_HASH) as [HubTab, string][]).map(([tab, hash]) => [hash, tab] as const),
+  [DEVICES_HASH, "wallet"],
+  [DELETE_ACCOUNT_HASH, "settings"],
+]);
+
+const hubTabFromLocation = (hash: string, search: string): HubTab =>
+  TAB_BY_HASH.get(hash) ?? (nextOf(search) !== null ? "wallet" : "overview");
 
 export const ProfilePage = () => {
   const { hash, search } = useLocation();
@@ -73,9 +74,8 @@ export const ProfilePage = () => {
 
 export const SettingsRedirect = () => {
   const { pathname, search, hash } = useLocation();
-  return (
-    <Navigate to={{ pathname: pathname.replace(/\/settings\/?$/, ""), search, hash: hash || "#settings" }} replace />
-  );
+  const targetHash = hash || (nextOf(search) !== null ? TAB_HASH.wallet : TAB_HASH.settings);
+  return <Navigate to={{ pathname: pathname.replace(/\/settings\/?$/, ""), search, hash: targetHash }} replace />;
 };
 
 const SignedOut = ({ card }: { card: ReactNode }) => <div className="flex max-w-column flex-col gap-4">{card}</div>;
@@ -96,7 +96,7 @@ const AccountHub = ({ account, tab }: { account: string; tab: HubTab }) => {
   const navigate = useNavigate();
   const { aspect } = useSeasonStanding(account, true);
   const payout = session ? payoutAddressOf(session.user) : null;
-  useReturnOnceLinked(walletReturnOf(search), payout);
+  useReturnOnceLinked(nextOf(search), payout);
   useEffect(() => {
     if (hash) document.getElementById(hash.slice(1))?.scrollIntoView({ block: "start" });
   }, [hash, tab, desktop]);

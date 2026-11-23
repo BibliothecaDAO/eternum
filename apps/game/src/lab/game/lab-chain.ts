@@ -7,7 +7,13 @@ import { gameChatZoneId } from "@/ui/features/world/containers/hud-chat-window";
 import { L2_LEDGER, l2Provider } from "@/runtime/l2-rpc";
 import { getShardRpcProvider } from "@/utils/shard-rpc-provider";
 import { dayOf, nativeGameModeOfFamily, readExpeditionRules } from "@bibliothecadao/eternum";
-import { NativeFactStore, ordinaryHash, raceFinishHeight, type PlayFrame } from "@bibliothecadao/eternum/game-client";
+import {
+  NativeFactStore,
+  ordinaryHash,
+  questBonusPercent,
+  raceFinishHeight,
+  type PlayFrame,
+} from "@bibliothecadao/eternum/game-client";
 import {
   deriveGameSyncScope,
   type HeraldFrontierLeaderboardEntry,
@@ -342,7 +348,7 @@ const answerDirectory = (
     },
     get quest_bonus_percent() {
       const rules = chain.get("QuestRules", { game_id: LAB_GAME.gameId });
-      return rules ? rules.bonus_percent - 100 : null;
+      return rules ? questBonusPercent(rules) : null;
     },
     get player_state() {
       return playerStateNow();

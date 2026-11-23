@@ -121,6 +121,13 @@ it("redirects /profile/settings to /profile#settings and keeps the phone lockup 
   expect(document.querySelector('[data-band="top"] h1')).toBeNull();
 });
 
+it("redirects /profile/settings?next=%2F to Wallet & Devices instead of Settings", async () => {
+  const page = await open("/profile/settings?next=%2F", 1440);
+  expect(currentLocation).toEqual({ pathname: "/profile", search: "?next=%2F", hash: "#wallet" });
+  expect(page.querySelector("[data-you-tab]")?.getAttribute("data-you-tab")).toBe("wallet");
+  expect(page.querySelector('[data-payout-wallet="none"]')).not.toBeNull();
+});
+
 it("opens Wallet & Devices inline when sent to link a wallet and keeps the return query across tab switches", async () => {
   const page = await open("/profile?next=%2Fshop#wallet", 1440);
   expect(page.querySelector("[data-you-tab]")?.getAttribute("data-you-tab")).toBe("wallet");
