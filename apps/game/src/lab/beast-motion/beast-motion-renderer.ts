@@ -93,6 +93,8 @@ export interface BeastMotionMeta {
   families: ReadonlyArray<{ id: BeastFamilyShowcaseId; layer: BeastMotionLayer }>;
 }
 
+const MAX_BEAST_MOTION_COUNT = Math.max(...BEAST_MOTION_COUNTS);
+
 export interface BeastMotionStats {
   modelPath: string;
   trianglesPerBeast: number;
@@ -348,8 +350,8 @@ class BeastMotionStage implements BeastMotionRendererHandle {
   private state: BeastMotionState;
   private stageSignature = "";
   private activeMathsMesh: InstancedMesh | null = null;
-  private readonly mathsMotionController = createBeastMotionController(BEAST_MOTION_SPECIES, 100);
-  private readonly mathsIdleAttribute = new InstancedBufferAttribute(new Float32Array(100 * 3), 3);
+  private readonly mathsMotionController = createBeastMotionController(BEAST_MOTION_SPECIES, MAX_BEAST_MOTION_COUNT);
+  private readonly mathsIdleAttribute = new InstancedBufferAttribute(new Float32Array(MAX_BEAST_MOTION_COUNT * 3), 3);
   private mathsPlacements: Array<{ x: number; y: number; z: number }> = [];
   private mathsActionCycle = -1;
   private rigActors: RigActor[] = [];
@@ -400,7 +402,7 @@ class BeastMotionStage implements BeastMotionRendererHandle {
     this.baseGeometry = sourceMesh.geometry.clone();
     this.trianglesPerBeast = measureGeometryTriangles(this.baseGeometry);
     const [idleMotion, idleSpeed, idleHeight] = encodeBeastIdle(beastOfModel(BEAST_MOTION_SPECIES).idle);
-    for (let i = 0; i < 100; i++) {
+    for (let i = 0; i < MAX_BEAST_MOTION_COUNT; i++) {
       this.mathsIdleAttribute.setXYZ(i, idleMotion, idleSpeed, idleHeight);
     }
     this.baseGeometry.setAttribute("beastIdle", this.mathsIdleAttribute);
@@ -424,7 +426,7 @@ class BeastMotionStage implements BeastMotionRendererHandle {
     this.rigClips = buildWyvernRigClips(templateRig.restPositions);
     templateRig.skeleton.dispose();
 
-    this.emberPool = createSharedEmberPool(this.bounds, 100, this.uniforms);
+    this.emberPool = createSharedEmberPool(this.bounds, MAX_BEAST_MOTION_COUNT, this.uniforms);
     this.scene.add(this.emberPool);
 
     this.observer = new ResizeObserver(() => this.resize());
@@ -512,7 +514,7 @@ class BeastMotionStage implements BeastMotionRendererHandle {
         this.controls.target.set(0, groundY + 0.52, 0);
         this.camera.position.set(0.35, groundY + 1.85, 3.2);
       } else {
-        const dist = this.state.count === 100 ? 25 : this.state.count === 20 ? 12.5 : 4.2;
+        const dist = this.state.count <= 1 ? 4.2 : 3.4 + Math.sqrt(this.state.count) * 2.16;
         this.controls.target.set(0, groundY + 0.55, 0);
         this.camera.position.set(dist * 0.35, groundY + dist * 0.72, dist * 0.82);
       }
@@ -733,7 +735,7 @@ class BeastMotionStage implements BeastMotionRendererHandle {
   }
 
   private placeEmbers(placements: ReadonlyArray<{ x: number; y: number; z: number }>): void {
-    const count = Math.min(placements.length, 100);
+    const count = Math.min(placements.length, MAX_BEAST_MOTION_COUNT);
     for (let i = 0; i < count; i++) {
       const p = placements[i];
       MATRIX_TMP.makeTranslation(p.x, p.y, p.z);
