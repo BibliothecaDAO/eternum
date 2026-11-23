@@ -11,7 +11,15 @@ import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import ts from "typescript";
-import { CODE_ATTRIBUTES, CODE_CALLS, CODE_TOKEN, ERROR_CONSTRUCTOR, LOG_CALL } from "./player-text.mjs";
+import {
+  CODE_ATTRIBUTES,
+  CODE_CALLS,
+  CODE_TOKEN,
+  ERROR_CONSTRUCTOR,
+  LOG_CALL,
+  VISIBLE_ATTRIBUTES,
+  VISIBLE_KEYS,
+} from "./player-text.mjs";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const GAME = join(REPO, "apps/game");
@@ -95,11 +103,6 @@ const NAME_TABLES = new Set([
 ]);
 // Tables whose values are also keys (models, icons): a read counts only where a player reads it.
 const KEY_TABLES = new Set(["RealmLevelNames", "MineKinds"]);
-// Where a player reads a value: these attributes, and these fields of an object a screen draws.
-const VISIBLE_ATTRIBUTES =
-  /^(title|aria-label|aria-description|label|placeholder|alt|tooltip|tip|data-tip|description|heading|subtitle|caption|message|hint|detail)$/;
-const VISIBLE_KEYS =
-  /^(label|title|text|description|message|tooltip|heading|subtitle|caption|hint|summary|detail|line|reason)$/;
 const UNIT = /^(?:h|m|s|d|min|mins|sec|secs|hr|hrs)(?![A-Za-z])|^ (?:hours?|minutes?|seconds?|days?)\b/;
 const TIME_HINT =
   /Math\.(?:floor|ceil|round)|%|\/\s*60|3600|86_?400|\b(?:hours?|minutes?|mins?|seconds?|secs?|days?)\b/i;
@@ -811,9 +814,9 @@ export function scanSource(source, fileName, { nouns, voiceRules }) {
     }
     if ((ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) && !isCodeString(node)) {
       if (nouns.has(node.text) && readsAsText(node)) hit("name.literal", node, node.text);
-      visible(node, node.text);
+      if (!inDiagnostic(node)) visible(node, node.text);
     }
-    if (ts.isTemplateExpression(node) && !isCodeString(node)) visible(node, templateText(node));
+    if (ts.isTemplateExpression(node) && !isCodeString(node) && !inDiagnostic(node)) visible(node, templateText(node));
     // {n}% and {n} points/s in JSX: a number written, then its percent sign or its rate's unit as text.
     if (ts.isJsxText(node) && (/^\s*%/.test(node.text) || RATE_UNIT.test(node.text.replace(/^\s+/, " ")))) {
       const index = node.parent.children.indexOf(node);

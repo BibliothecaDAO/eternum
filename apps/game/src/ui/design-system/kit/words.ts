@@ -1273,11 +1273,12 @@ export const NO_HELD_REALMS = "Your linked wallet holds no Realm";
 export const HELD_REALMS_UNREADABLE = "Your Realms cannot be read right now";
 export const INVALID_REALM_NUMBER = "Enter a Realm number from 1–8,000.";
 /** The Realm step: its one job, the home the player founds, and what it offers to found it with. */
+const CREATE_YOUR_REALM = "Create your Realm";
 export const HOME_STEP_WORDS = {
-  title: "Create your Realm",
+  title: CREATE_YOUR_REALM,
   /** The step's one verb, and what it says while the home is founded. */
-  found: "Create your realm",
-  founding: "Creating your realm…",
+  found: CREATE_YOUR_REALM,
+  founding: "Creating your Realm…",
   /** The name a new account was given at sign-up, said where the player first chooses something of their own. */
   playsAs: (name: string) => `You play as ${name}`,
   changeOnYou: "Change it on You",

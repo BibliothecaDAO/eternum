@@ -335,9 +335,29 @@ describe("the voice rules", () => {
     const foundRule = BANNED_WORDS[0]!;
     for (const allowed of ["Not found", "Sites are found at 100%", "No Realm found", "Create your Realm"])
       expect({ allowed, refused: foundRule.pattern.test(allowed) }).toEqual({ allowed, refused: false });
+    const plainTokens = new Set(
+      PLAIN_WORDS.flatMap(({ word }) => word.split(" / ").map((token) => token.trim().toLowerCase())),
+    );
     for (const entry of PLAIN_WORDS) {
       expect(entry.concept.length).toBeGreaterThan(0);
       expect(entry.word.length).toBeGreaterThan(0);
+      for (const banned of BANNED_WORDS) {
+        expect({ word: entry.word, banned: banned.banned, matched: banned.pattern.test(entry.word) }).toEqual({
+          word: entry.word,
+          banned: banned.banned,
+          matched: false,
+        });
+      }
+    }
+    for (const banned of BANNED_WORDS) {
+      if (banned.use.startsWith("(")) continue;
+      for (const token of banned.use.split(" / ").map((part) => part.trim().toLowerCase())) {
+        expect({ banned: banned.banned, token, inPlainWords: plainTokens.has(token) }).toEqual({
+          banned: banned.banned,
+          token,
+          inPlainWords: true,
+        });
+      }
     }
     for (const voiceRule of VOICE_RULES) {
       for (const banned of BANNED_WORDS) {

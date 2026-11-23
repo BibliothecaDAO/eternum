@@ -106,13 +106,6 @@ export const VOICE_RULES: readonly VoiceRule[] = [
     bad: "Steps out on the bright tile. Tap another lit tile beside the realm to move it there.",
     good: "Deploy",
   },
-  {
-    rule: "Contextualized picks (from X to Y)",
-    instead:
-      "every Oath, relic and research pick shows its effect against the player's current value ('from X to Y' or 'Y instead of X'), read from the game's rule rows, never a bare number",
-    bad: "Loses 100 troops a tick in the Deep.",
-    good: "Deep troop loss: 200 → 100 per tick (less)",
-  },
 ];
 
 interface PlainWord {
@@ -129,26 +122,30 @@ export const PLAIN_WORDS: readonly PlainWord[] = [
   { concept: "Send an army onto the map", word: "Deploy" },
   { concept: "Move an army", word: "Move" },
   { concept: "Delete an army, building, or tribe", word: "Delete" },
-  { concept: "Remove a guard", word: "Remove" },
+  { concept: "Remove a guard or close a notice", word: "Remove / Close" },
   { concept: "Upgrade Castle or Realm", word: "Upgrade" },
   { concept: "Use a relic", word: "Use" },
   { concept: "Reroll an Oath card", word: "Reroll" },
   { concept: "Skip an Oath pick", word: "Skip" },
   { concept: "Collect rewards or arrivals", word: "Collect" },
   { concept: "Take a site or structure", word: "Take" },
+  { concept: "Save a player name", word: "Save" },
   { concept: "Resource storage", word: "Storage / Resources" },
   { concept: "Site or castle defenders", word: "Guard" },
   { concept: "Players in your Aspect", word: "Teammates" },
   { concept: "Battle or quest payouts", word: "Gives / Earns" },
   { concept: "Battle and site rewards", word: "Rewards" },
+  { concept: "Battle outcome", word: "Defeated / Died in battle / Tied" },
+  { concept: "First place in a season", word: "Won the season" },
   { concept: "Scouting details", word: "Info" },
   { concept: "Saved build plan", word: "Build plan" },
   { concept: "Shareable build plan text", word: "Code" },
   { concept: "Wallet destination", word: "Wallet" },
-  { concept: "Numbers and multipliers", word: "Digits and % (150%, 4)" },
+  { concept: "Multipliers", word: "150% / 200%" },
+  { concept: "Short of resources", word: "Not enough" },
+  { concept: "Troops ready to deploy", word: "Available" },
   { concept: "Loading or network failure", word: "Could not load / Failed" },
   { concept: "In-progress state", word: "Loading / Sending / In progress" },
-  { concept: "Oath, relic, or research pick effect", word: "From X to Y / Y instead of X" },
 ];
 
 interface BannedWord {
@@ -193,7 +190,7 @@ export const BANNED_WORDS: readonly BannedWord[] = [
   },
   {
     banned: "provision",
-    use: "create / set up",
+    use: "create",
     pattern: /\b(?:Provision|provision(?:ed|ing))\b|\bto provision\b/,
     bad: "Realm provisioned",
     good: "Realm created",

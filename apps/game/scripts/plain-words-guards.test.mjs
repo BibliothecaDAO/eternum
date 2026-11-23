@@ -12,6 +12,7 @@ import {
   plainWordsGuardConfigs,
   readBannedWords,
 } from "./plain-words-guards.mjs";
+import { scanSource } from "../../../scripts/words/check.mjs";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 const BASE = {
@@ -96,8 +97,45 @@ describe("plain-words guard refuses banned words in player-facing text", () => {
     ["relative path literal", `export const rel = "./claim/index.ts";`],
     ["alias path literal", `export const mod = "@/ui/realm-provision-runner";`],
     ["file extension piece", "export const img = (id: string) => `/images/${id}.png`;"],
+    ["lowercase discriminator property", `export const step = { kind: "travel" };`],
+    ["lowercase code array", `export const actions = ["idle", "march"];`],
+    ["lowercase payload call", `export const f = () => felt("claim");`],
+    ["lowercase fx registration", `export const reg = () => registerFX("travel", 1);`],
   ])("allows %s", async (_, source) => {
     expect(await hits(SCREEN, source)).toEqual([]);
+  });
+
+  it("refuses lowercase banned words when placed in explicit visible attributes or keys", async () => {
+    expect(await hits(SCREEN, `export const item = { label: "claim" };`)).toEqual([
+      { ruleId: PLAIN_WORDS_RULE, message: expect.stringMatching(/^Plain words:/) },
+    ]);
+    expect(await hits(SCREEN, `export const A = () => <span title="travel" />;`)).toEqual([
+      { ruleId: PLAIN_WORDS_RULE, message: expect.stringMatching(/^Plain words:/) },
+    ]);
+    expect(await hits(SCREEN, `export const A = () => <button>march</button>;`)).toEqual([
+      { ruleId: PLAIN_WORDS_RULE, message: expect.stringMatching(/^Plain words:/) },
+    ]);
+  });
+
+  it("agrees with scripts/words/check.mjs on diagnostics, logs, code attributes, and visible text", async () => {
+    const context = {
+      nouns: new Set(),
+      voiceRules: [{ rule: "No pledge", forbidden: /\bpledg(?:e|ed|ing)\b/i }],
+    };
+    const cases = [
+      [`export const f = () => { throw new Error("Pledge failed"); };`, false],
+      [`export const f = () => console.warn("Pledge failed");`, false],
+      [`export const A = () => <div className="pledge" data-testid="pledge" />;`, false],
+      [`export const ok = (k: string) => k === "Pledge";`, false],
+      [`export const A = () => <p>Pledge to Luminary</p>;`, true],
+      [`export const A = () => <span title="Pledge to Luminary" />;`, true],
+    ];
+    for (const [source, expected] of cases) {
+      const wordsHits = scanSource(source, resolve(REPO, SCREEN), context);
+      const guardHits = await hits(SCREEN, source);
+      expect(wordsHits.length > 0).toBe(expected);
+      expect(guardHits.length > 0).toBe(expected);
+    }
   });
 
   it.each([

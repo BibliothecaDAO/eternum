@@ -1,11 +1,14 @@
 import { readFileSync } from "node:fs";
 import tseslint from "typescript-eslint";
 import {
+  BARE_CODE_WORD,
   CODE_ATTRIBUTES,
   CODE_CALLS,
   CODE_TOKEN,
   ERROR_CONSTRUCTOR,
   LOG_CALL,
+  VISIBLE_ATTRIBUTES,
+  VISIBLE_KEYS,
 } from "../../../scripts/words/player-text.mjs";
 
 const VOICE_SOURCE = new URL("../../../packages/types/src/words/voice.ts", import.meta.url);
@@ -58,6 +61,22 @@ const calleeName = (node) => {
   return "";
 };
 
+const isExplicitVisibleSlot = (node) => {
+  for (let up = node.parent; up; up = up.parent) {
+    if (up.type === "JSXAttribute") {
+      const attrName = up.name?.type === "JSXIdentifier" ? up.name.name : "";
+      return VISIBLE_ATTRIBUTES.test(attrName);
+    }
+    if (up.type === "Property" && !up.computed && up.value === node) {
+      const keyName = up.key?.type === "Identifier" ? up.key.name : (stringLiteral(up.key) ?? "");
+      return VISIBLE_KEYS.test(keyName);
+    }
+    if (up.type === "JSXExpressionContainer") continue;
+    break;
+  }
+  return false;
+};
+
 const isNonPlayerContext = (node) => {
   const parent = node.parent;
   if (!parent) return true;
@@ -100,7 +119,10 @@ const createPlainWordsRule = (rules, { checkCodeTokens = false } = {}) => ({
     const check = (node, text, { reportNode = node, allowCodeToken = false } = {}) => {
       const trimmed = text.trim();
       if (!trimmed) return;
-      if (allowCodeToken && !checkCodeTokens && CODE_TOKEN.test(trimmed)) return;
+      if (allowCodeToken && !checkCodeTokens) {
+        if (CODE_TOKEN.test(trimmed)) return;
+        if (BARE_CODE_WORD.test(trimmed) && !isExplicitVisibleSlot(reportNode)) return;
+      }
       for (const rule of rules) {
         if (rule.pattern.test(trimmed)) {
           context.report({ node: reportNode, messageId: "banned", data: { banned: rule.banned, use: rule.use } });

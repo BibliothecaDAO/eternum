@@ -157,7 +157,7 @@ const openEntry = async () => {
     query.clear();
   };
   const found = () =>
-    [...host.querySelectorAll("button")].find((button) => button.textContent === "Create your realm")!;
+    [...host.querySelectorAll("button")].find((button) => button.textContent === "Create your Realm")!;
   /** The tiles wearing the chosen mark (its check), by name. */
   const checked = () =>
     [...host.querySelectorAll(".home-picker__choice")]
@@ -236,7 +236,7 @@ it("starts a holder on their first Realm, wonders first, and founds with it", as
     expect(entry.strip()).toEqual([`${realmChoice(538)} *`, realmChoice(3)]);
     expect(entry.host.textContent).toContain("The Glowing Geyser");
     expect(entry.host.querySelector('input[aria-label="Realm number"]')).toBeNull();
-    await entry.press("Create your realm");
+    await entry.press("Create your Realm");
     await vi.waitFor(() => expect(settlement.settled).toBe(true));
     expect(registered).toEqual([{ gameId: 8, realmId: 538 }]);
   } finally {
@@ -261,11 +261,11 @@ it("lets a refused Realm claimant found with another Realm", async () => {
   try {
     await vi.waitFor(() => expect(entry.strip()).toHaveLength(2));
     await entry.pick(realmChoice(711));
-    await entry.press("Create your realm");
+    await entry.press("Create your Realm");
     await vi.waitFor(() => expect(entry.host.textContent).toContain("This source cannot be attached to your home."));
     expect(settlement.calls).toEqual([]);
     await entry.pick(realmChoice(712));
-    await entry.press("Create your realm");
+    await entry.press("Create your Realm");
     await vi.waitFor(() => expect(settlement.settled).toBe(true));
     expect(sent).toEqual([711, 712]);
   } finally {
@@ -295,7 +295,7 @@ it("shows each account its own Realms in the same tab, and lets a pick of anothe
     await act(async () => useIdentitySessionStore.setState({ session: signedIn("0x3", "0xabc") }));
     await vi.waitFor(() => expect(entry.featured()).toBe(name(12)));
     expect(asked).toEqual(["0x456", "0x789", "0xabc"]);
-    await entry.press("Create your realm");
+    await entry.press("Create your Realm");
     await vi.waitFor(() => expect(settlement.settled).toBe(true));
     expect(registered).toEqual([{ gameId: 8, realmId: 12 }]);
   } finally {
@@ -326,7 +326,7 @@ it.each([
     expect(asked.includes(HELD_REALMS)).toBe(wallet !== null);
     // No picker and no press: the step never asked.
     expect(entry.featured()).toBeNull();
-    expect(entry.host.textContent).not.toContain("Create your realm");
+    expect(entry.host.textContent).not.toContain("Create your Realm");
   } finally {
     await entry.close();
   }
@@ -376,7 +376,7 @@ it.each([{ width: 1440 }, { width: 390 }])(
       await entry.press("Try again");
       await vi.waitFor(() => expect(entry.featured()).toBe(name(711)));
       expect(entry.host.textContent).not.toContain(notice);
-      await entry.press("Create your realm");
+      await entry.press("Create your Realm");
       await vi.waitFor(() => expect(settlement.settled).toBe(true));
       expect(registered).toEqual([{ gameId: 8, realmId: 711 }]);
     } finally {
@@ -402,7 +402,7 @@ it("waits to found until it knows what the account holds, so a holder never foun
     await act(async () => answer(held(711)));
     await vi.waitFor(() => expect(entry.featured()).toBe(name(711)));
     expect(entry.found().disabled).toBe(false);
-    await entry.press("Create your realm");
+    await entry.press("Create your Realm");
     await vi.waitFor(() => expect(settlement.settled).toBe(true));
     expect(registered).toEqual([{ gameId: 8, realmId: 711 }]);
   } finally {
@@ -426,10 +426,10 @@ it("spins while the realm is founded and says so, at full strength, until the fo
   const entry = await openEntry();
   try {
     await vi.waitFor(() => expect(entry.featured()).toBe(name(711)));
-    await entry.press("Create your realm");
+    await entry.press("Create your Realm");
     const founding = await vi.waitFor(() => {
       const button = [...entry.host.querySelectorAll("button")].find(
-        (candidate) => candidate.textContent === "Creating your realm…",
+        (candidate) => candidate.textContent === "Creating your Realm…",
       );
       expect(button?.getAttribute("aria-busy")).toBe("true");
       return button!;
@@ -486,7 +486,7 @@ it.each([
       await entry.pick(realmChoice(17));
       expect(entry.featured()).toBe(name(17));
       expect(grid()).toHaveLength(0);
-      await entry.press("Create your realm");
+      await entry.press("Create your Realm");
       await vi.waitFor(() => expect(settlement.settled).toBe(true));
       expect(registered).toEqual([{ gameId: 8, realmId: 17 }]);
     } finally {
@@ -508,7 +508,7 @@ it("keeps the Realm already registered for this game, shown alone and locked, wh
     await act(async () => useIdentitySessionStore.setState({ session: signedIn("0x2", null) }));
     await entry.askHoldingsAgain();
     expect(entry.featured()).toBe(name(711));
-    await entry.press("Create your realm");
+    await entry.press("Create your Realm");
     await vi.waitFor(() => expect(settlement.settled).toBe(true));
     expect(registered).toEqual([]);
     expect(settlement.order).toEqual(["settle"]);
@@ -772,7 +772,7 @@ describe("a friend's Aspect invite at a Season 1 home's founding", () => {
         expect(warning(entry.host)?.textContent).toContain("You lose the quest bonus.");
         await entry.press("Play my Realm");
         expect(warning(entry.host)).toBeNull();
-        await entry.press("Create your realm");
+        await entry.press("Create your Realm");
         await vi.waitFor(() => expect(settlement.settled).toBe(true));
         expect(registered).toEqual([{ gameId: 8, realmId: 538 }]);
         expect(settlement.calls).toEqual([expect.objectContaining({ order: undefined })]);
@@ -965,7 +965,7 @@ it("filters a multi-Realm vault by Aspect on desktop and founds with the chosen 
     expect(entry.strip()).toHaveLength(matching.length);
     await entry.pick(realmChoice(902));
     expect(entry.featured()).toBe(name(902));
-    await entry.press("Create your realm");
+    await entry.press("Create your Realm");
     await vi.waitFor(() => expect(settlement.settled).toBe(true));
     expect(registered).toEqual([{ gameId: 8, realmId: 902 }]);
   } finally {
