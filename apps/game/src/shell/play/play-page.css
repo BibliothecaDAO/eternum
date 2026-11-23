@@ -311,7 +311,7 @@
 .countdown-stage__lockup {
   display: block;
   width: auto;
-  height: clamp(7rem, 18vh, 10rem);
+  height: clamp(7rem, 18dvh, 10rem);
   object-fit: contain;
   filter: drop-shadow(0 8px 24px rgb(0 0 0 / 0.65));
 }
