@@ -35,6 +35,16 @@ describe("model URLs come from model-url.ts and never bypass fetchModel", () => 
       `export const fetchJson = (path: string) => fetch(path);`,
       "three/debug/zz-guard.ts",
     ],
+    [
+      "bare fetch of a local variable bound to modelPath outside src/three",
+      `const url = modelPath("characters/quaternius/base-male.glb"); export const load = () => fetch(url);`,
+      "ui/features/debug/knight-animation-review-panel.tsx",
+    ],
+    [
+      "bare fetch of a transitive binding from a MANIFEST_PATH constant outside src/three",
+      `const a = TERRAIN_FLORA_MANIFEST_PATH; const b = a; export const load = () => fetch(b);`,
+      "ui/features/debug/zz-guard.tsx",
+    ],
   ])("refuses %s", async (_, source, path) => {
     const found = await hits(source, path);
     expect(found.length).toBeGreaterThan(0);

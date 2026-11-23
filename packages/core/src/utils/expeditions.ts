@@ -140,8 +140,11 @@ export const armyEtherealLayer = (
 export const isEtherealTile = (rules: ExpeditionRules | null, hex: { row: number; alt: boolean }): boolean =>
   hex.alt || (rules !== null && expeditionDepth(rules, { y: hex.row }) > 0);
 
+const sharedDeepRules = (store: Pick<NativeFactStore, "get"> | null, gameId: number) =>
+  store?.get("DeepRules", { game_id: gameId });
+
 export const hasSharedDeep = (store: Pick<NativeFactStore, "get"> | null, gameId: number): boolean =>
-  store?.get("DeepRules", { game_id: gameId }) !== undefined;
+  sharedDeepRules(store, gameId) !== undefined;
 
 export const cameraLayer = (
   rules: ExpeditionRules | null,
@@ -150,10 +153,10 @@ export const cameraLayer = (
   hex: { col: number; row: number; alt: boolean } | null,
 ): MapLayer => {
   if (!rules || !hex || hex.alt) return 0;
-  const deep = store?.get("DeepRules", { game_id: gameId });
+  const deep = sharedDeepRules(store, gameId);
   if (deep && deepZoneAt(rules.spacing, deep, hex)) return 3;
   const depth = expeditionDepth(rules, { y: hex.row });
-  if (depth === 3) return hasSharedDeep(store, gameId) ? 3 : 2;
+  if (depth === 3) return deep ? 3 : 2;
   return depth as MapLayer;
 };
 
@@ -244,7 +247,7 @@ export const spireEtherealView = (
   const gameId = spire.realm.game_id;
   const rules = readExpeditionRules(store, gameId);
   if (!rules) throw new Error("A spire lights only in an expedition game");
-  if (spire.targetDepth === 3 && store.get("DeepRules", { game_id: gameId }))
+  if (spire.targetDepth === 3 && hasSharedDeep(store, gameId))
     return deepViewFor(store, gameId, spire.realm.entity_id, rules.spacing);
   const inEthereal = liveHomeArmies(store, Number(spire.realm.entity_id), gameId)
     .map((army) => entityMapPosition(store, gameId, army.explorer_id))

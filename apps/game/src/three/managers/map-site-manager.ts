@@ -502,7 +502,7 @@ export class MapSiteManager {
       for (let index = 0; index < count && slot < limit; index += 1) {
         const guard = site.guards[index]!;
         const home = this.store.get("Structure", { game_id: guard.army.game_id, entity_id: guard.army.owner });
-        const orderId = home && home.metadata.order > 0 ? home.metadata.order : undefined;
+        const orderId = home?.metadata.order;
         this.standards.setMatrixAt(slot, this.standardPlacement(hex, index, count));
         this.standards.setOrderAt(slot, orderId);
         slot += 1;
