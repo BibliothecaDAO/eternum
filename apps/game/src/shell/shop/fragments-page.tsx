@@ -10,7 +10,8 @@ import { nativeFragmentConstants } from "@bibliothecadao/eternum/game-client";
 import { identityClient, useIdentitySession } from "@/hooks/context/identity-session";
 import { useDefaultWallet } from "@/hooks/context/default-wallet";
 import { payoutAddressOf } from "@/hooks/context/payout-wallet";
-import { AppButton, AppChoice, AppFigure, AppNotice, AppPanel } from "@/ui/design-system/kit/app-elements";
+import { Icon } from "@/ui/design-system/icon";
+import { AppButton, AppFigure, AppNotice, AppPanel } from "@/ui/design-system/kit/app-elements";
 import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
 import { FRAGMENTS_PAGE_WORDS } from "@/ui/design-system/kit/words";
 
@@ -82,28 +83,45 @@ const Choose = ({ game, onPriced }: { game: ShopGame; onPriced: (paying: Paying)
       onSuccess: ({ fragments: priced, cents, quote }) => quote && onPriced({ fragments: priced, cents, quote }),
     });
   return (
-    <div className="flex flex-col gap-5">
+    <div className="shop-stage">
       <div className="shop-packs" data-fragment-packs>
-        {PACKS.map((pack) => (
-          <AppChoice
-            key={pack}
-            icon={pack === SEAL ? "final-seal" : "fragment"}
-            title={FRAGMENTS_PAGE_WORDS.pack(pack)}
-            detail={pack === SEAL ? FRAGMENTS_PAGE_WORDS.sealPack : undefined}
-            price={FRAGMENTS_PAGE_WORDS.price(pack)}
-            selected={pack === fragments}
-            onClick={() => setFragments(pack)}
-          />
-        ))}
+        {PACKS.map((pack) => {
+          const isSeal = pack === SEAL;
+          return (
+            <button
+              key={pack}
+              type="button"
+              className="shop-pack"
+              aria-pressed={pack === fragments}
+              onClick={() => setFragments(pack)}
+            >
+              <span className="shop-pack__art" aria-hidden="true">
+                <Icon name={isSeal ? "final-seal" : "fragment"} size={isSeal ? 68 : 60} />
+              </span>
+              <span className="shop-pack__info">
+                <span className="shop-pack__title">{FRAGMENTS_PAGE_WORDS.pack(pack)}</span>
+                {isSeal && <span className="shop-pack__detail">{FRAGMENTS_PAGE_WORDS.sealPack}</span>}
+              </span>
+              <span className="shop-pack__price">{FRAGMENTS_PAGE_WORDS.price(pack)}</span>
+            </button>
+          );
+        })}
       </div>
       {price.data && !price.data.quote && <AppNotice tone="warn" line={FRAGMENTS_PAGE_WORDS.noPrice} />}
       {isDailyCap(price.error) && <AppNotice tone="warn" line={FRAGMENTS_PAGE_WORDS.dailyCap} />}
       {price.isError && !isDailyCap(price.error) && <ServiceFailure service="season" error={price.error} retry={pay} />}
-      <div className="flex justify-end">
+      <div className="shop-foot">
+        <div className="shop-methods">
+          <span className="shop-methods__icons" aria-hidden="true">
+            <Icon name="lords" size={20} />
+            <Icon name="trade" size={18} />
+          </span>
+          <span>LORDS · USDC · ETH · Gas sponsored</span>
+        </div>
         <AppButton
           kind="primary"
           size="lg"
-          icon="fragment"
+          icon={fragments === SEAL ? "final-seal" : "fragment"}
           className="w-full lg:w-auto"
           busy={price.isPending ? FRAGMENTS_PAGE_WORDS.pricing : undefined}
           onClick={pay}

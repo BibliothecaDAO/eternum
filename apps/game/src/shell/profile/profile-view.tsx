@@ -1,34 +1,35 @@
 import "./profile-view.css";
 
-import { PROFILE_WORDS, SEASON_WORDS } from "@/ui/design-system/kit/words";
+import { canonicalRealm } from "@bibliothecadao/eternum";
 import { aspectName, catalogOrder, formatAmount } from "@bibliothecadao/types";
-import { useIdentitySession } from "@/hooks/context/identity-session";
-import { usePlayerProfile } from "@/hooks/use-player-profile";
 import { profileOfIdentityUser } from "@realms-world/identity";
+import type { CSSProperties } from "react";
 
+import { useIdentitySession } from "@/hooks/context/identity-session";
+import { useHeldRealms } from "@/hooks/use-holdings";
+import { usePlayerProfile } from "@/hooks/use-player-profile";
+import { playerPortraitUrl } from "@/services/identity/player-portrait";
+import { aspectVariables } from "@/tokens";
 import { AspectMark } from "@/ui/design-system/aspect-mark";
+import { Icon } from "@/ui/design-system/icon";
+import { AppPanel, AppPortrait } from "@/ui/design-system/kit/app-elements";
 import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
 import { PlayerName } from "@/ui/design-system/kit/player-name";
-import { findOwnEntry } from "@/ui/features/frontier/board/standings";
-
-import { playerPortraitUrl } from "@/services/identity/player-portrait";
-import { AppPanel, AppPortrait } from "@/ui/design-system/kit/app-elements";
 import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
+import { LORDS_EARNED, PROFILE_WORDS, RANK, SEASON_WORDS, SITES_CLEARED, YOUR_REALMS } from "@/ui/design-system/kit/words";
+import { findOwnEntry } from "@/ui/features/frontier/board/standings";
+import { HomeArt } from "@/ui/shared/components/home-art";
 
 import { useLayout } from "../frame/layout";
 import { gameRefOf, useDirectory, useLeaderboard, useRecentResults } from "../herald";
 import { Loading } from "../loading";
-import { OwnRatingLine } from "../rating-line";
 import { ageOf } from "../play/ages";
+import { OwnRatingLine } from "../rating-line";
 import { chooseSeason } from "../season";
 import { HistoryRow } from "../season-tab/history-row";
-import { HoldingsStrip } from "./holdings-strip";
 import { useNowSeconds } from "../use-now";
+import { HoldingsStrip } from "./holdings-strip";
 
-/**
- * The profile a player's card shows: the player's own from the signed-in session, known at once, so the card never
- * opens on a stand-in name and face (qa-app-1 P3-4); another player's as identity answers it.
- */
 const useCardProfile = (account: string, own: boolean) => {
   const { session } = useIdentitySession();
   const fromSession = own && session !== null;
@@ -36,10 +37,8 @@ const useCardProfile = (account: string, own: boolean) => {
   return fromSession ? { ...profileOfIdentityUser(session.user), known: true } : looked;
 };
 
-/** How many finished games a player's page lists. */
 const HISTORY = 8;
 
-/** The live Frontier season's board row for a player: their Order and their rank, the page's one figure. */
 const useSeasonStanding = (account: string) => {
   const season = chooseSeason(useDirectory().data?.games ?? [], true);
   const board = useLeaderboard(season ? gameRefOf(season) : null);
@@ -47,91 +46,153 @@ const useSeasonStanding = (account: string) => {
   return { own: entries && findOwnEntry(entries, account), field: entries?.length };
 };
 
-/**
- * Who a player is (spec 10): their card (their season's painting with their place on its board, the portrait and the
- * name, the player's own rating) and their finished games. The player's own card wears the accent ring. On the desktop
- * the games stand at the card's right.
- */
 export const ProfileView = ({ account, own }: { account: string; own: boolean }) =>
   useLayout() === "phone" ? (
-    <div className="flex flex-col gap-4">
+    <div data-you-profile className="flex flex-col gap-4">
       <PlayerCard account={account} own={own} />
       <History account={account} own={own} />
     </div>
   ) : (
-    <div className="grid grid-cols-[theme(width.rail)_minmax(0,1fr)] items-start gap-6">
+    <div data-you-profile className="grid grid-cols-[theme(width.rail)_minmax(0,1fr)] items-start gap-6">
       <PlayerCard account={account} own={own} />
       <RecentGames account={account} own={own} />
     </div>
   );
 
-/**
- * A player's card: Frontier's painting in its head with the player's place on the season's board, then the portrait,
- * the name and, on the player's own card, their Blitz rating and at its foot what they hold (another player's wallet is
- * not known here).
- */
 export const PlayerCard = ({ account, own }: { account: string; own: boolean }) => {
   const profile = useCardProfile(account, own);
   const { own: standing, field } = useSeasonStanding(account);
   const frontier = ageOf("frontier");
   const standingOrder = standing ? catalogOrder(standing.order) : undefined;
   const standingAspect = standingOrder?.aspect ?? null;
+  const cardStyle = standingAspect !== null ? (aspectVariables(standingAspect) as CSSProperties) : undefined;
   return (
-    <AppPanel
-      title={frontier.name}
-      painting={frontier.painting}
-      cue={
-        standing ? (
-          <span className="flex items-center gap-1.5">
-            {standingAspect && <AspectMark aspect={standingAspect} size={20} decorative />}
-            <OrderEmblem order={standing.order} size={20} />
-            <b className="text-app-gold">{`#${standing.rank}`}</b>
-            {SEASON_WORDS.of} {formatAmount(field)}
-          </span>
-        ) : undefined
-      }
-    >
-      <div className="flex flex-col items-center gap-2 text-center">
-        <AppPortrait
-          src={profile.known ? playerPortraitUrl(account, profile.portrait) : undefined}
-          name={profile.known ? (profile.name ?? "") : ""}
-          size="lg"
-          own={own}
-        />
-        <h2 className="max-w-full text-app-title text-app-ink">
-          <PlayerName account={account} profile={profile.known ? profile : undefined} />
-        </h2>
-        {standing && standingOrder && (
-          <div className="profile-crests">
-            {standingAspect && (
-              <span className="profile-crest">
-                <AspectMark aspect={standingAspect} size={32} decorative />
-                <span className="text-app-label text-app-ink">{aspectName(standingAspect)}</span>
-              </span>
-            )}
-            <span className="profile-crest">
-              <OrderEmblem order={standingOrder.orderId} size={32} />
-              <span className="text-app-label text-app-ink">{standingOrder.orderName}</span>
+    <div data-you-profile style={cardStyle}>
+      <AppPanel
+        title={frontier.name}
+        painting={frontier.painting}
+        cue={
+          standing ? (
+            <span className="flex items-center gap-1.5">
+              {standingAspect && <AspectMark aspect={standingAspect} size={20} decorative />}
+              <OrderEmblem order={standing.order} size={20} />
+              <b className="text-app-gold">{`#${standing.rank}`}</b>
+              {SEASON_WORDS.of} {formatAmount(field)}
             </span>
+          ) : undefined
+        }
+      >
+        <div className="profile-identity">
+          <div className="profile-hero">
+            <div className="profile-avatar">
+              <AppPortrait
+                src={profile.known ? playerPortraitUrl(account, profile.portrait) : undefined}
+                name={profile.known ? (profile.name ?? "") : ""}
+                size="lg"
+                own={own}
+              />
+              {standingAspect !== null && (
+                <span className="profile-avatar__facet">
+                  <AspectMark aspect={standingAspect} size={28} decorative />
+                </span>
+              )}
+            </div>
+            <div className="profile-hero__info">
+              <h2 className="profile-hero__name max-w-full">
+                <PlayerName account={account} profile={profile.known ? profile : undefined} />
+              </h2>
+              {standing && standingOrder ? (
+                <div className="profile-hero__sub">
+                  {standingAspect && <span className="profile-hero__aspect">{aspectName(standingAspect)}</span>}
+                  <span className="inline-flex items-center gap-1">
+                    <OrderEmblem order={standingOrder.orderId} size={18} />
+                    {standingOrder.orderName}
+                  </span>
+                </div>
+              ) : (
+                <p className="text-app-label text-app-muted">{SEASON_WORDS.notOnBoard}</p>
+              )}
+            </div>
           </div>
-        )}
-        {!standing && <p className="text-app-label text-app-muted">{SEASON_WORDS.notOnBoard}</p>}
-        {own && <OwnRatingLine />}
-      </div>
-      {own && <HoldingsStrip />}
+          {standing && standingOrder && (
+            <>
+              <div className="profile-stats">
+                <div className="profile-stat">
+                  <span className="profile-stat__value">
+                    <Icon name="crown" size={18} />
+                    {`#${standing.rank}`}
+                  </span>
+                  <span className="profile-stat__label">{RANK}</span>
+                </div>
+                <div className="profile-stat">
+                  <span className="profile-stat__value">
+                    <Icon name="attack" size={18} />
+                    {formatAmount(standing.sites_cleared.total)}
+                  </span>
+                  <span className="profile-stat__label">{SITES_CLEARED}</span>
+                </div>
+                <div className="profile-stat">
+                  <span className="profile-stat__value">
+                    <Icon name="lords" size={18} />
+                    {formatAmount(Number(standing.rewards.lords))}
+                  </span>
+                  <span className="profile-stat__label">{LORDS_EARNED}</span>
+                </div>
+              </div>
+              <div className="profile-crests">
+                {standingAspect && (
+                  <span className="profile-crest">
+                    <AspectMark aspect={standingAspect} size={32} decorative />
+                    <span className="profile-crest__name">{aspectName(standingAspect)}</span>
+                  </span>
+                )}
+                <span className="profile-crest">
+                  <OrderEmblem order={standingOrder.orderId} size={32} />
+                  <span className="profile-crest__name">{standingOrder.orderName}</span>
+                </span>
+              </div>
+            </>
+          )}
+          {own && <OwnRatingLine />}
+        </div>
+        {own && <HoldingsStrip />}
+      </AppPanel>
+    </div>
+  );
+};
+
+export const RealmsShowcase = () => {
+  const { held } = useHeldRealms();
+  const realms = held.data ?? [];
+  if (realms.length === 0) return null;
+  return (
+    <AppPanel title={`${YOUR_REALMS} (${realms.length})`} icon="realm">
+      <ul className="profile-realms-grid">
+        {realms.slice(0, 9).map(({ realmId, map }) => {
+          const info = canonicalRealm(realmId);
+          const order = info && info.order !== 0 ? catalogOrder(info.order) : null;
+          return (
+            <li key={realmId} className="profile-realm-tile">
+              <HomeArt map={map} icon="realm" size={44} />
+              <span className="profile-realm-tile__name">{info?.name ?? `#${realmId}`}</span>
+              {order && (
+                <span className="profile-realm-tile__order">
+                  <OrderEmblem order={order.orderId} size={16} />
+                  {order.orderName}
+                </span>
+              )}
+            </li>
+          );
+        })}
+      </ul>
     </AppPanel>
   );
 };
 
-/**
- * The desktop's finished games, in their panel; none yet, the panel says where they will show, so the page's right half
- * is never empty (qa-app-1 P3-9).
- */
 export const RecentGames = ({ account, own }: { account: string; own: boolean }) => (
   <History account={account} own={own} titled />
 );
 
-/** Their finished games, newest first, in their panel. None yet: the desktop's panel says so, and the phone shows nothing. */
 const History = ({ account, own, titled = false }: { account: string; own: boolean; titled?: boolean }) => {
   const history = useRecentResults(HISTORY, account);
   const now = useNowSeconds();

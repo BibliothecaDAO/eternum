@@ -5,6 +5,7 @@ import { useState, type CSSProperties } from "react";
 import {
   ASPECT_REWARD,
   aspectName,
+  aspects,
   formatDate,
   formatExact,
   formatShort,
@@ -18,6 +19,7 @@ import { identityClient } from "@/hooks/context/identity-session";
 import { aspectVariables } from "@/tokens";
 import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { Icon } from "@/ui/design-system/icon";
+import { AGE_LOCKUP } from "@/ui/design-system/icon-meaning";
 import { AppButton, AppNotice } from "@/ui/design-system/kit/app-elements";
 import { AppAspectCard, AppAspectGrid } from "@/ui/design-system/kit/aspect-card";
 import { AppCountdownChip } from "@/ui/design-system/kit/clock-chip";
@@ -31,7 +33,9 @@ import { Loading } from "../loading";
 import { SealCodeCard } from "./seal-code-card";
 import { CopySeasonInvite, SeasonInviteCard, useSeasonInvite } from "./season-invite";
 import type { SeasonOpening } from "../season";
+import { ageOf } from "./ages";
 import { orderIntentKey, useOrderIntent } from "./order-intent";
+import { formatCountdownClock } from "./season-countdown";
 import { useJoinedShare } from "../share/own-shares";
 
 export const PreseasonPlay = ({ opening, now }: { opening: SeasonOpening; now: number }) => {
@@ -252,16 +256,47 @@ const SeasonWaiting = ({
   const chosen = aspectOrder(order);
   const invite = useSeasonInvite(chosen.aspect);
   return (
-    <StageFrame verb={<CopySeasonInvite invite={invite} />}>
-      <div data-preseason-step="waiting" className="flex w-full flex-col items-center gap-4">
-        <AspectMark aspect={chosen.aspect} size={88} decorative />
-        <h1 className="text-app-title text-app-ink">{PRESEASON_WORDS.youreIn(aspectName(chosen.aspect))}</h1>
-        <p className="text-app-body text-app-muted">
-          {PRESEASON_WORDS.waiting(chosen.fullOrderName, formatDate(opening.startsAt, now))}
-        </p>
-        <AppCountdownChip prefix="starts" at={opening.startsAt} now={now} />
-        <SealCodeCard owner={owner} />
-        <SeasonInviteCard invite={invite} />
+    <StageFrame wide verb={<CopySeasonInvite invite={invite} />}>
+      <div
+        data-preseason-step="waiting"
+        style={aspectVariables(chosen.aspect) as CSSProperties}
+        className="waiting-stage"
+      >
+        <div className="waiting-stage__top">
+          <div className="waiting-stage__brand">
+            <img src={AGE_LOCKUP.frontier} alt={ageOf("frontier").name} className="countdown-stage__lockup" />
+            <p className="countdown-stage__clock" aria-hidden="true">
+              {formatCountdownClock(opening.startsAt - now)}
+            </p>
+          </div>
+          <div className="waiting-stage__badge">
+            <AspectMark aspect={chosen.aspect} size={64} decorative />
+            <div className="flex flex-col gap-1 text-left">
+              <h1 className="waiting-stage__title">{PRESEASON_WORDS.youreIn(aspectName(chosen.aspect))}</h1>
+              <p className="text-app-label text-app-muted">
+                {PRESEASON_WORDS.waiting(chosen.fullOrderName, formatDate(opening.startsAt, now))}
+              </p>
+              <AppCountdownChip prefix="starts" at={opening.startsAt} now={now} />
+            </div>
+          </div>
+        </div>
+        <ul className="waiting-stage__aspects" aria-hidden="true">
+          {aspects.map(({ id, name }) => (
+            <li
+              key={id}
+              data-chosen={id === chosen.aspect || undefined}
+              style={aspectVariables(id) as CSSProperties}
+              className="waiting-stage__aspect"
+            >
+              <AspectMark aspect={id} size={48} decorative />
+              <span className="waiting-stage__aspect-name">{name}</span>
+            </li>
+          ))}
+        </ul>
+        <div className="waiting-stage__cards">
+          <SealCodeCard owner={owner} />
+          <SeasonInviteCard invite={invite} />
+        </div>
       </div>
     </StageFrame>
   );
