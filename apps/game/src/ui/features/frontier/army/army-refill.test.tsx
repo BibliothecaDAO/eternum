@@ -58,7 +58,7 @@ const render = (
       key: "0x1ab0",
       value: { game_id: 1, release_id: release, created_release_id: release },
     },
-  ]);
+  ] as never);
   const buy = vi.fn().mockResolvedValue({ transaction_hash: "0x2" });
   act(() =>
     root.render(
