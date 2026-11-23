@@ -382,22 +382,27 @@ each closed by its cross, a tap outside, a swipe down or `Escape`. A right-click
   mode holding something of yours. Blitz: **Results**. Eternum: when it opens.
 - A read that fails (the season's calendar, your results) says so with **Try again**; the games that answered stay
   usable.
-- Before the season: while the season calendar's Frontier phase has not started and Play holds nothing else (no game,
-  every read answered), Play is the season's countdown on Frontier's painting: the day it opens, **Starts in …**, the
-  four Aspects with their Orders' crests, and signed out one verb **Create your account** (opens sign-in). Signed in,
-  Play asks the account's side for the season instead, on one screen: **Choose your Aspect** (each card its members and
-  about how many LORDS a player gets on average of the Aspect's total), then that Aspect's Orders below it, and **Play
-  as <Order's name>**; kept on the account (`/api/order-intent`); a save that fails says so with **Try again**, and an
-  Order already kept in another Aspect (on another device) shows that one. An account a friend's pre-season invite
-  brought sees the invited Aspect first, chosen, tagged **<name> invited you**. With an Order kept, **You're in
-  <Aspect>**, the Order, the day it opens and **Starts in …**, then **Free Ancient Seal?**: a code field and **Redeem**
-  (`/api/seal-code`) hold one operator's code on the account (a taken, expired or unknown code is refused in the field);
-  once held, **Your Ancient Seal is held**. Under it **Bring friends** and, in the foot, **Copy invite link**: the
-  account's link to its Aspect for the coming season (`/api/shares` with no game), which a friend's first visit ties to
-  the account they make. Operator codes: `apps/realms` README, Free Ancient Seal codes. Lab: `/lab/app/preseason`
-  (signed out), `/lab/app/preseason-member` (the pick), `/lab/app/preseason-chosen` (kept; code SEAL2345 redeems),
-  `/lab/app/preseason-sealed` (code held) and `/lab/app/preseason-invited-pick` (invited to Prowess); proof:
-  `build.sh prove-season-one` (each, desktop and phone).
+- Before the season: while the season calendar's Frontier phase has not started, no non-rehearsal Frontier season or
+  unseen result leads Play (`lead === null`), and every read answered, Play renders one unified pre-season screen on
+  Frontier's painting for both signed-out and signed-in players. Its hero shows Frontier's lockup, the UTC opening date
+  pill, a live ticking 4-box countdown (`DAYS : HOURS : MIN : SEC`, `role="timer"` with **Starts in …**), and when a
+  rehearsal is listed in the directory, a callout showing that rehearsal's live status or start clock, its name, and one
+  gold CTA **Play <rehearsal>** / **Resume <rehearsal>** (signed out opens sign-in into that game with **Free to play**;
+  any additional rehearsals appear as secondary cards beside it). Without a rehearsal, signed-out visitors get one gold
+  verb **Create your Realm** with **Free to play**. Beside the hero (below on phone), **Season 1 Aspect** lets players
+  optionally pick or change their Season 1 Aspect and Order any time before Season 1 opens (`/api/order-intent`) from a
+  2x2 grid showing member counts (when signed in), **Joined** plus the chosen Order on the active tile, and an invited
+  Aspect first tagged **<name> invited you**; clicking an Aspect opens sign-in when signed out or the Order picker
+  window (**Choose your Order**, **Play as <Order's name>**, with **Try again** on failure and graceful refresh if the
+  server locks the Aspect with `409 aspect_chosen` once the season starts) when signed in. An inline **Bring friends**
+  strip inside that card shows the friend Fragment reward rule and, once an Aspect is picked, **Copy invite link**
+  (`/api/shares` with no game) updating when the Aspect changes. **Season 1 Rewards** shows the Aspect LORDS pool rule
+  and, for signed-in players, a compact collapsible **Have an Ancient Seal code? Redeem** disclosure (`/api/seal-code`
+  with a secondary submit button; once held, a quiet **Your Ancient Seal is held** pill). Operator codes: `apps/realms`
+  README, Free Ancient Seal codes. Lab: `/lab/app/preseason` (signed out), `/lab/app/preseason-member` (signed in, no
+  Aspect yet), `/lab/app/preseason-chosen` (Aspect kept; code SEAL2345 redeems), `/lab/app/preseason-sealed` (code held)
+  and `/lab/app/preseason-invited-pick` (invited to Prowess); proof: `build.sh prove-season-one` (each, desktop and
+  phone).
 - Creating a Frontier home (the game's entry): with nothing to choose (no Realm held, so a free home) the realm is
   created without a press, the doorway's bar saying **Preparing your realm**; a failure asks with the picker below. A
   Realm holder gets **Choose your home**, **You play as <name>** (changed on You), then **Create your realm**, pinned in
@@ -1134,7 +1139,7 @@ finisher. Canonical proof: `playtest --steps lab-race-expired`.
   Aspect first when founding.
 - An invite's landing (`/s/<code>`): **<name> invites you**, **Join <Aspect>** with its four Orders' crests and members,
   "Members of one Aspect never fight each other." and the Order the sharer kept; before the season **Starts in …** and,
-  signed out, **Create your account**. Lab: `/lab/app/preseason-invited/s/MRGHT234`; proof: `build.sh prove-season-one`.
+  signed out, **Create your Realm**. Lab: `/lab/app/preseason-invited/s/MRGHT234`; proof: `build.sh prove-season-one`.
 - A Deep guard shows its troop loss each tick and the ticks left on its army row, token and panel; an army of the
   player's Aspect is drawn as an ally on the map.
 - **Today** shows the week's seven quests with today marked.

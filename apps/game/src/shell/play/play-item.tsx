@@ -11,7 +11,16 @@ import { AppClockChip, clockLine } from "@/ui/design-system/kit/clock-chip";
 import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
 import { paintingSources } from "@/ui/design-system/kit/paintings";
 import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
-import { PITCH, PLAY_WORDS, WORDS, dayEnds, dayLeft, gameSpeed, phraseText } from "@/ui/design-system/kit/words";
+import {
+  COUNTDOWN_WORDS,
+  PITCH,
+  PLAY_WORDS,
+  WORDS,
+  dayEnds,
+  dayLeft,
+  gameSpeed,
+  phraseText,
+} from "@/ui/design-system/kit/words";
 
 import { entryHref } from "../game-links";
 import { type DirectoryGame, gameRefOf } from "../herald";
@@ -24,12 +33,20 @@ import { idleCard, type PlayItem } from "./play-board";
 
 type ItemVerb = { word: string; icon: IconMeaning; to: string; connectFirst?: true; entersGame?: true };
 
-const verbOf = (item: PlayItem, signedIn: boolean, rehearsal = false): ItemVerb | null => {
+const rehearsalVerbWord = (verb: "play" | "resume", game: DirectoryGame, lead: boolean): string => {
+  if (lead) {
+    const name = game.name || PLAY_WORDS.rehearsal;
+    return verb === "resume" ? COUNTDOWN_WORDS.resumeRehearsal(name) : COUNTDOWN_WORDS.playRehearsal(name);
+  }
+  return verb === "resume" ? PLAY_WORDS.resumeRehearsal : PLAY_WORDS.joinRehearsal;
+};
+
+const verbOf = (item: PlayItem, signedIn: boolean, rehearsal = false, lead = false): ItemVerb | null => {
   const { game } = item;
   switch (item.verb) {
     case "resume":
       return {
-        word: rehearsal ? PLAY_WORDS.resumeRehearsal : WORDS.enterRealm,
+        word: rehearsal ? rehearsalVerbWord("resume", game, lead) : WORDS.enterRealm,
         icon: "play",
         to: entryHref(game, "play"),
         entersGame: true,
@@ -37,9 +54,14 @@ const verbOf = (item: PlayItem, signedIn: boolean, rehearsal = false): ItemVerb 
     case "play": {
       const entry = entryHref(game, "play");
       return signedIn
-        ? { word: rehearsal ? PLAY_WORDS.joinRehearsal : WORDS.play, icon: "play", to: entry, entersGame: true }
+        ? {
+            word: rehearsal ? rehearsalVerbWord("play", game, lead) : WORDS.play,
+            icon: "play",
+            to: entry,
+            entersGame: true,
+          }
         : {
-            word: rehearsal ? PLAY_WORDS.joinRehearsal : WORDS.playFree,
+            word: rehearsal ? rehearsalVerbWord("play", game, lead) : WORDS.playFree,
             icon: "play",
             to: entry,
             connectFirst: true,
@@ -74,7 +96,7 @@ const SeasonDay = ({ game, now }: { game: DirectoryGame; now: number }) => {
   );
 };
 
-const ItemVerbButton = ({
+export const ItemVerbButton = ({
   item,
   signedIn,
   lead,
@@ -87,7 +109,7 @@ const ItemVerbButton = ({
 }) => {
   const requestSignIn = useRequestSignIn();
   if (item.game.error) return <ServiceFailure service="directory" error={item.game.error} />;
-  const verb = verbOf(item, signedIn, rehearsal);
+  const verb = verbOf(item, signedIn, rehearsal, lead);
   if (!verb) return null;
   const prime = verb.entersGame ? primeGameEntry : () => undefined;
   const press = {

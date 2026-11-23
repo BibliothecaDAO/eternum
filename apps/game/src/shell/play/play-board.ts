@@ -79,6 +79,3 @@ const resultItems = ({ signedIn, games, finished, seenResults }: PlayBoardFacts)
   const newest = unseen[0];
   return newest ? [gameItem(newest, "results", true)] : [];
 };
-
-export const holdsNothing = (board: PlayBoard): boolean =>
-  board.lead === null && board.rehearsals.length === 0 && board.results.length === 0;

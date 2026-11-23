@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { DirectoryGame } from "../herald";
-import { gameKey, holdsNothing, playBoard, type PlayBoardFacts } from "./play-board";
+import { gameKey, playBoard, type PlayBoardFacts } from "./play-board";
 
 const REALM = { category: 1, realm_id: 3098, level: 1 } as NonNullable<
   DirectoryGame["player_state"]
@@ -89,7 +89,6 @@ describe("a rehearsal beside the season", () => {
     const board = playBoard(facts({ games: [withRealm(rehearsal)] }));
     expect(board.lead).toBeNull();
     expect(board.rehearsals.map((item) => [item.game.game_id, item.verb])).toEqual([[4, "resume"]]);
-    expect(holdsNothing(board)).toBe(false);
   });
 
   it("never counts an ended rehearsal as a season result or active rehearsal", () => {
@@ -98,7 +97,6 @@ describe("a rehearsal beside the season", () => {
     expect(board.lead).toBeNull();
     expect(board.rehearsals).toEqual([]);
     expect(board.results).toEqual([]);
-    expect(holdsNothing(board)).toBe(true);
   });
 });
 
