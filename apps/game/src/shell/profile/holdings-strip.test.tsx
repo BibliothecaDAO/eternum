@@ -120,10 +120,10 @@ describe.each([1440, 390])("Unlinked wallet on You, at %i px", (width) => {
     expect(you.strip()).toEqual([]);
     expect(asked).not.toContain(HELD_REALMS);
     const links = [...you.container.querySelectorAll("a, button")].filter(
-      (node) => node.textContent === "Link a wallet",
+      (node) => node.textContent === "Link a wallet to pay",
     );
     expect(links).toHaveLength(1);
-    await you.press("Link a wallet");
+    await you.press("Link a wallet to pay");
     expect(you.container.textContent).toContain("Settings page");
   });
 });
