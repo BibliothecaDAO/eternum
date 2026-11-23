@@ -13,9 +13,7 @@ export const EntryProgress = ({ view, showTip = false }: { view: DoorwayView; sh
   return (
     <section aria-label={DOORWAY_WORDS.entering} className="doorway-progress">
       <div className="doorway-progress__header">
-        {showTip && (
-          <DoorwayTip icon="barracks" title={DOORWAY_WORDS.firstTitle} detail={DOORWAY_WORDS.firstDetail} />
-        )}
+        {showTip && <DoorwayTip icon="barracks" title={DOORWAY_WORDS.firstTitle} detail={DOORWAY_WORDS.firstDetail} />}
         <div className="doorway-progress__status">
           <span className="doorway-progress__step">
             <span>{DOORWAY_WORDS[running.step]}</span>

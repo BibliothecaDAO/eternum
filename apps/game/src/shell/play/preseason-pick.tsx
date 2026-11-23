@@ -139,7 +139,7 @@ const OrderPick = ({
               {PRESEASON_WORDS.pledge(aspectName(aspect))}
             </span>
           ) : (
-            ASPECT_STEP_WORDS.choose
+            PRESEASON_WORDS.pick
           )}
         </AppButton>
       }
