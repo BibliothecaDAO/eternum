@@ -1,10 +1,12 @@
-import { Matrix4, Vector3 } from "three";
+import { BiomeType } from "@bibliothecadao/types";
+import { Matrix4, Scene, Vector3 } from "three";
 import { float } from "three/tsl";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { mapAnimationTime } from "../effects/endgame/state";
-import { ModelType } from "../types/army";
+import { ModelType, type ModelData } from "../types/army";
 import type { AnimationVisibilityContext } from "../types/animation";
+import { ArmyModel } from "./army-model";
 import {
   createTroopMotionController,
   createTroopMotionNode,
@@ -12,6 +14,8 @@ import {
   resolveAnimatedTroopKind,
   type AnimatedTroopKind,
 } from "./troop-motion";
+
+vi.mock("@/ui/config", async (importOriginal) => ({ ...(await importOriginal<object>()), FELT_CENTER: () => 0 }));
 
 describe("Pure-maths Scout and Crossbow motion module", () => {
   it("maps Paladin1 to scout and Crossbowman1 to crossbow", () => {
@@ -89,4 +93,43 @@ describe("Pure-maths Scout and Crossbow motion module", () => {
       expect(controller.getStateAt(1, 5.2).action).toBe("idle");
     },
   );
+
+  it("resets persistent death motion through ArmyModel across purgeDrawnSlot, freeInstanceSlot and allocateInstanceSlot", () => {
+    const model = new ArmyModel(new Scene(), () => BiomeType.Grassland);
+    const scoutMotion = createTroopMotionController("scout", 8);
+    const internals = model as unknown as {
+      models: Map<ModelType, Partial<ModelData>>;
+      activeBaseModelByEntity: Map<number, ModelType>;
+    };
+    internals.models.set(ModelType.Paladin1, {
+      instancedMeshes: [],
+      activeInstances: new Set(),
+      troopMotion: scoutMotion,
+    });
+
+    const firstSlot = model.allocateInstanceSlot(11);
+    internals.activeBaseModelByEntity.set(11, ModelType.Paladin1);
+    model.playTroopAction(firstSlot, "death");
+    expect(scoutMotion.getStateAt(firstSlot, mapAnimationTime.value).action).toBe("death");
+
+    model.purgeDrawnSlot(firstSlot);
+    expect(scoutMotion.getStateAt(firstSlot, mapAnimationTime.value).action).toBe("idle");
+
+    const reusedAfterPurge = model.allocateInstanceSlot(22);
+    expect(reusedAfterPurge).toBe(firstSlot);
+    internals.activeBaseModelByEntity.set(22, ModelType.Paladin1);
+    model.setAnimationState(reusedAfterPurge, true);
+    expect(scoutMotion.getStateAt(reusedAfterPurge, mapAnimationTime.value).action).toBe("march");
+
+    model.playTroopAction(reusedAfterPurge, "death");
+    expect(scoutMotion.getStateAt(reusedAfterPurge, mapAnimationTime.value).action).toBe("death");
+    model.freeInstanceSlot(22, reusedAfterPurge);
+
+    const reusedAfterFree = model.allocateInstanceSlot(33);
+    expect(reusedAfterFree).toBe(firstSlot);
+    internals.activeBaseModelByEntity.set(33, ModelType.Paladin1);
+    expect(scoutMotion.getStateAt(reusedAfterFree, mapAnimationTime.value).action).toBe("idle");
+    model.setAnimationState(reusedAfterFree, true);
+    expect(scoutMotion.getStateAt(reusedAfterFree, mapAnimationTime.value).action).toBe("march");
+  });
 });

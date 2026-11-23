@@ -553,6 +553,12 @@ export class ArmyModel {
     }
   }
 
+  private resetTroopMotionSlot(slot: number): void {
+    this.models.forEach((modelData) => {
+      modelData.troopMotion?.resetSlot(slot);
+    });
+  }
+
   private clearInstanceSlot(matrixIndex: number): void {
     const entityId = this.matrixIndexOwners.get(matrixIndex);
 
@@ -562,9 +568,7 @@ export class ArmyModel {
       this.clearSlotFromEveryRenderable(matrixIndex);
     }
 
-    this.models.forEach((modelData) => {
-      modelData.troopMotion?.resetSlot(matrixIndex);
-    });
+    this.resetTroopMotionSlot(matrixIndex);
     this.shadows.clear(matrixIndex);
     this.setAnimationState(matrixIndex, false);
   }
@@ -758,6 +762,7 @@ export class ArmyModel {
     if (reusedSlot !== undefined) {
       this.freeSlotSet.delete(reusedSlot);
     }
+    this.resetTroopMotionSlot(slot);
     this.matrixIndexOwners.set(slot, entityId);
     return slot;
   }
@@ -982,6 +987,7 @@ export class ArmyModel {
   public purgeDrawnSlot(slot: number): void {
     this.clearMovementStateForSlot(slot);
     this.clearSlotFromEveryRenderable(slot);
+    this.resetTroopMotionSlot(slot);
     this.shadows.clear(slot);
     this.matrixIndexOwners.delete(slot);
     this.setAnimationState(slot, false);
