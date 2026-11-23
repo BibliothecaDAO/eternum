@@ -169,6 +169,44 @@ describe("the status strip", () => {
     expect(markup).toContain('role="img" aria-label="Wheat — of 18,000"');
     expect(text(markup)).toContain("—");
   });
+
+  it("formats strip figures compactly across six stores while keeping exact labels", () => {
+    const clock = dayClock(
+      {
+        dayUnitSeconds: 4 * 3_600,
+        seed: 1n,
+        startMainAt: 0,
+        scheduledEndAt: 21 * 20 * 14_400,
+        endAt: 21 * 20 * 14_400,
+      },
+      3_600,
+    );
+    act(() =>
+      root.render(
+        <StatusStrip
+          clock={clock}
+          stores={[
+            store("essence", 125_000),
+            store("labor", 18_000, 18_000),
+            store("wheat", 1_000, 6_000),
+            store("troops", 420, 1_500),
+            store("crossbows", 600, 1_500),
+            store("scouts", 0, 1_500),
+          ]}
+        />,
+      ),
+    );
+    const plates = [...host.querySelectorAll('[role="img"]')].filter((node) => !node.classList.contains("ui-dial"));
+    expect(plates.map((plate) => plate.textContent)).toEqual(["125K", "18K", "1K", "420", "600", "0"]);
+    expect(plates.map((plate) => plate.getAttribute("aria-label"))).toEqual([
+      "Essence 125,000",
+      "Labor 18,000 of 18,000",
+      "Wheat 1,000 of 6,000",
+      "Knights 420 of 1,500",
+      "Crossbows 600 of 1,500",
+      "Scouts 0 of 1,500",
+    ]);
+  });
 });
 
 describe("the army token", () => {

@@ -1,4 +1,4 @@
-import { formatAmount, formatExact, formatDuration, formatRate } from "@bibliothecadao/types";
+import { formatAmount, formatExact, formatDuration, formatRate, formatShort } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HudDial, HudMeter, HudPanel } from "@/ui/design-system/kit/hud-elements";
@@ -104,7 +104,7 @@ const Stores = ({
           type="button"
           data-store={store.kind}
           onClick={() => cards.onToggle(store.kind)}
-          className="flex min-w-0 flex-1"
+          className="flex min-w-0 flex-auto"
         >
           <StorePlate store={store} />
         </button>
@@ -136,19 +136,17 @@ const StorePlate = ({ store }: { store: StoreReading }) => {
   const { icon } = FRONTIER_STORES[store.kind];
   const shown = useLandedValue(store.flyTarget, store.amount);
   return (
-    <span className="relative flex min-w-0 flex-1">
+    <span className="relative flex min-w-0 flex-auto">
       <LandingDelta target={store.flyTarget} />
-      <span
-        role="img"
-        aria-label={storeLine(store)}
-        className="flex min-w-0 flex-1 flex-col justify-center gap-1 px-0.5"
-      >
-        <span className="flex items-center justify-center gap-0.5">
-          <span data-fly-target={store.flyTarget} className="inline-flex">
-            <SemanticIcon name={icon} size={18} />
+      <span role="img" aria-label={storeLine(store)} className="flex min-w-0 flex-1 flex-col justify-center gap-1">
+        <span className="flex items-center justify-center gap-0.5 whitespace-nowrap">
+          <span data-fly-target={store.flyTarget} className="inline-flex shrink-0">
+            <SemanticIcon name={icon} size={14} />
           </span>
-          <span className={cn("text-hud-body leading-none tabular-nums", STORE_TONES[store.tone].text)}>
-            {shown === undefined ? "—" : <TickNumber value={shown} format={formatAmount} />}
+          <span
+            className={cn("whitespace-nowrap text-hud-label leading-none tabular-nums", STORE_TONES[store.tone].text)}
+          >
+            {shown === undefined ? "—" : <TickNumber value={shown} format={formatShort} />}
           </span>
         </span>
         <StoreMeter store={store} />

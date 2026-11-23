@@ -1838,6 +1838,18 @@ button.ui-relic:focus-visible {
 .ui-notice[data-tone="warn"] {
   border-left-color: var(--hud-warn);
 }
+@media (max-width: 1023px) {
+  .ui-notice {
+    gap: theme(spacing[1.5]);
+    padding: theme(spacing.1) theme(spacing.2);
+    font-size: var(--hud-text-label);
+    line-height: var(--hud-leading-label);
+  }
+  .ui-notice > img {
+    width: 16px;
+    height: 16px;
+  }
+}
 .ui-notice__fix {
   margin-left: auto;
   align-self: center;
