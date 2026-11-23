@@ -43,8 +43,9 @@ verifiable gate).
    game adds does not compile until it has its row, and give a surface built from a catalog a test that fails when it
    misses a member. The guard is `apps/game/scripts/catalog-guards.mjs`, run in CI by `lint:guards`: outside the catalog
    modules it refuses a list or a partial map of a catalog's members and an image path. `catalog-copies-baseline.json`
-   counts the copies that stood when it came; a file may not hold more, and `--write-catalog-baseline` only lowers a
-   count, writing nothing while any file gains a copy.
+   counts the copies that stood when it came; a file may not hold more (a lower count passes plain `lint:guards` so
+   merges are not blocked when copies are removed), and `--write-catalog-baseline` only lowers a count, writing nothing
+   while any file gains a copy.
 4. **Success of systemic work is deletion.** When a layer becomes trustworthy, the bespoke fallbacks, holds, TTLs, and
    timers stacked above it should disappear. A systemic "fix" that only adds code is suspect.
 5. **Evidence before optimization.** Instrument, convict, then fix what the data names. Performance and bug-fix changes

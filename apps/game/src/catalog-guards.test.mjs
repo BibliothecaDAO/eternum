@@ -152,37 +152,37 @@ describe("one source per fact: no copy of a catalog outside its modules", () => 
 
 describe("the baseline only falls (review 1: lowering it must never carry a copy in)", () => {
   const BASELINE = { "a.ts": 2, "b.ts": 1 };
-  const lower = (counts) => planCatalogBaseline(counts, BASELINE, { lowering: true });
+  const plan = (counts, lowering = false) => planCatalogBaseline(counts, BASELINE, { lowering });
 
-  it("lowers a file's count when a copy is removed, and drops a file left with none", () => {
-    expect(lower({ "a.ts": 1 })).toEqual({ additions: [], unlowered: [], write: { "a.ts": 1 } });
+  it("passes without writing when counts drop or reach zero in a plain check", () => {
+    expect(plan({ "a.ts": 1 })).toEqual({ additions: [], write: undefined });
+    expect(plan({ "a.ts": 1, "b.ts": 1 })).toEqual({ additions: [], write: undefined });
   });
 
-  it("asks for the lowering when a copy is removed and the run does not lower", () => {
-    expect(planCatalogBaseline({ "a.ts": 1, "b.ts": 1 }, BASELINE)).toEqual({
-      additions: [],
-      unlowered: ["a.ts"],
-      write: undefined,
-    });
+  it("lowers a file's count when asked to write, dropping a file left with none", () => {
+    expect(plan({ "a.ts": 1 }, true)).toEqual({ additions: [], write: { "a.ts": 1 } });
+    expect(plan({ "a.ts": 1, "b.ts": 1 }, true)).toEqual({ additions: [], write: { "a.ts": 1, "b.ts": 1 } });
   });
 
   it("refuses a file over its count, and writes nothing", () => {
-    expect(lower({ "a.ts": 3, "b.ts": 1 })).toEqual({ additions: ["a.ts"], unlowered: [], write: undefined });
+    expect(plan({ "a.ts": 3, "b.ts": 1 })).toEqual({ additions: ["a.ts"], write: undefined });
+    expect(plan({ "a.ts": 3, "b.ts": 1 }, true)).toEqual({ additions: ["a.ts"], write: undefined });
   });
 
   it("refuses a file the baseline does not name, and writes nothing", () => {
-    expect(lower({ ...BASELINE, "new.ts": 1 })).toEqual({ additions: ["new.ts"], unlowered: [], write: undefined });
+    expect(plan({ ...BASELINE, "new.ts": 1 })).toEqual({ additions: ["new.ts"], write: undefined });
+    expect(plan({ ...BASELINE, "new.ts": 1 }, true)).toEqual({ additions: ["new.ts"], write: undefined });
   });
 
-  it("refuses a cleanup that brings a copy in elsewhere, writing nothing and still asking for the cleanup's lowering", () => {
-    expect(lower({ "a.ts": 1, "b.ts": 1, "new.ts": 1 })).toEqual({
+  it("refuses a cleanup that brings a copy in elsewhere, and writes nothing even when asked to lower", () => {
+    expect(plan({ "a.ts": 1, "b.ts": 1, "new.ts": 1 }, true)).toEqual({
       additions: ["new.ts"],
-      unlowered: ["a.ts"],
       write: undefined,
     });
   });
 
   it("passes a tree that matches its baseline, writing nothing", () => {
-    expect(lower(BASELINE)).toEqual({ additions: [], unlowered: [], write: undefined });
+    expect(plan(BASELINE)).toEqual({ additions: [], write: undefined });
+    expect(plan(BASELINE, true)).toEqual({ additions: [], write: undefined });
   });
 });

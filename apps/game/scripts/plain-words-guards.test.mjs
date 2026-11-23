@@ -6,6 +6,7 @@ import { ESLint } from "eslint";
 import tseslint from "typescript-eslint";
 import { describe, expect, it } from "vitest";
 
+import { planCatalogBaseline } from "./catalog-guards.mjs";
 import {
   PLAIN_WORDS_RULE,
   PLAIN_WORDS_STRICT_RULE,
@@ -176,5 +177,25 @@ describe("plain-words guard refuses banned words in player-facing text", () => {
       expect(() => readFileSync(resolve(REPO, file)), file).not.toThrow();
       expect(count, file).toBeGreaterThan(0);
     }
+  });
+
+  it("passes without writing when a count drops, lowers only when asked, and still fails on additions", () => {
+    const baseline = { "a.ts": 3, "b.ts": 1 };
+    expect(planCatalogBaseline({ "a.ts": 1 }, baseline)).toEqual({
+      additions: [],
+      write: undefined,
+    });
+    expect(planCatalogBaseline({ "a.ts": 1 }, baseline, { lowering: true })).toEqual({
+      additions: [],
+      write: { "a.ts": 1 },
+    });
+    expect(planCatalogBaseline({ "a.ts": 1 }, { "a.ts": 1 }, { lowering: true })).toEqual({
+      additions: [],
+      write: undefined,
+    });
+    expect(planCatalogBaseline({ "a.ts": 4, "b.ts": 1 }, baseline, { lowering: true })).toEqual({
+      additions: ["a.ts"],
+      write: undefined,
+    });
   });
 });

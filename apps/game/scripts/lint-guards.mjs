@@ -275,35 +275,28 @@ const line = ({ file, message }) => `${file}:${message.line}:${message.column} $
 const isCatalogCopy = ({ message }) => message.ruleId === CATALOG_RULE;
 const isPlainWords = ({ message }) => message.ruleId === PLAIN_WORDS_RULE;
 
-const checkBaseline = (matched, baselineName, flag, noun) => {
+const checkBaseline = (matched, baselineName, flag) => {
   const baselinePath = resolve(dirname(fileURLToPath(import.meta.url)), baselineName);
   const byFile = new Map();
   for (const hit of matched) byFile.set(hit.file, [...(byFile.get(hit.file) ?? []), hit]);
   const counts = Object.fromEntries([...byFile].map(([file, items]) => [file, items.length]));
   const baseline = JSON.parse(readFileSync(baselinePath, "utf8"));
-  const { additions, unlowered, write } = planCatalogBaseline(counts, baseline, {
+  const { additions, write } = planCatalogBaseline(counts, baseline, {
     lowering: process.argv.includes(flag),
   });
   if (write) writeFileSync(baselinePath, `${JSON.stringify(write, null, 2)}\n`);
-  return [
-    ...additions.flatMap((file) => byFile.get(file).map(line)),
-    ...unlowered.map(
-      (file) => `${file} holds ${counts[file] ?? 0} ${noun}, under its baseline of ${baseline[file]}: run ${flag}`,
-    ),
-  ];
+  return additions.flatMap((file) => byFile.get(file).map(line));
 };
 
 const catalogHits = checkBaseline(
   errors.filter(isCatalogCopy),
   "catalog-copies-baseline.json",
   "--write-catalog-baseline",
-  "catalog copies",
 );
 const plainWordsHits = checkBaseline(
   errors.filter(isPlainWords),
   "plain-words-baseline.json",
   "--write-plain-words-baseline",
-  "banned words",
 );
 
 const hits = [
