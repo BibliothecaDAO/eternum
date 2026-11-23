@@ -1,9 +1,21 @@
 import { useState } from "react";
-import { formatExact, formatHeldAgainst, formatShortChange, LORDS } from "@bibliothecadao/types";
+import { nativeFragmentConstants } from "@bibliothecadao/eternum/game-client";
+import {
+  formatCount,
+  formatExact,
+  formatHeldAgainst,
+  formatShortChange,
+  FRAGMENT,
+  FRAGMENTS,
+} from "@bibliothecadao/types";
 import { HudButton, HudChip, HudSheet, HudSlider } from "@/ui/design-system/kit/hud-elements";
 import { CANCEL, needsHave, REFILL, REFILLING, STAMINA } from "@/ui/design-system/kit/words";
 
-/** Every refill control requires enough LORDS to buy at least one whole stamina point. */
+const POINTS = nativeFragmentConstants.STAMINA_PER_FRAGMENT;
+
+export const fragmentsToFill = (stamina: { current: number; max: number }): number =>
+  Math.max(0, Math.ceil((stamina.max - stamina.current) / POINTS));
+
 const refillOutOfReach = (held: number | undefined): boolean => held === undefined || held < 1;
 
 export const RefillButton = ({
@@ -26,12 +38,6 @@ export const RefillButton = ({
   </HudButton>
 );
 
-/**
- * The army panel's refill, over "Full in": the other way to a full bar, said in full on two lines, "Refill" over
- * "123 LORDS", with the LORDS mark (the owner, 4 November: "its either full or pay"). Its price fills the whole bar; the
- * confirm it opens buys part of it. Short of one LORDS it is red and takes no press, its hover saying what it needs
- * and what the realm holds.
- */
 export const RefillPrice = ({
   price,
   held,
@@ -45,33 +51,26 @@ export const RefillPrice = ({
 }) => {
   const short = refillOutOfReach(held);
   const pair = formatHeldAgainst(held, price);
-  const holds = needsHave(pair.need, LORDS, pair.held);
+  const holds = needsHave(pair.need, FRAGMENTS, pair.held);
   return (
     <HudButton
       kind="secondary"
-      icon="lords"
+      icon="fragment"
       tone={short ? "bad" : undefined}
       disabled={short}
       busy={refilling ? REFILLING : undefined}
       title={short ? holds : undefined}
-      aria-label={`${REFILL} ${STAMINA} · ${pair.need} ${LORDS}${short ? ` · ${holds}` : ""}`}
+      aria-label={`${REFILL} ${STAMINA} · ${formatCount(price, FRAGMENT, FRAGMENTS)}${short ? ` · ${holds}` : ""}`}
       onClick={onRefill}
     >
       <span className="flex flex-col items-start text-hud-label leading-tight">
         <span>{REFILL}</span>
-        <span className="tabular-nums">
-          {pair.need} {LORDS}
-        </span>
+        <span className="tabular-nums">{formatCount(price, FRAGMENT, FRAGMENTS)}</span>
       </span>
     </HudButton>
   );
 };
 
-/**
- * A phone's picked army's stamina as its refill, one button over Level up (the owner, 27 October): "14/140", a press
- * opening the refill's confirm. A whole LORDS buys a partial refill;
- * with no affordable point, or with a full bar, it takes no press.
- */
 export const StaminaRefill = ({
   stamina,
   held,
@@ -80,11 +79,9 @@ export const StaminaRefill = ({
 }: {
   stamina: { current: number; max: number };
   held: number | undefined;
-  /** A refill of this army is in flight: sent, its outcome not known yet. */
   refilling?: boolean;
   onRefill: () => void;
 }) => {
-  const price = Math.ceil(stamina.max - stamina.current);
   const short = refillOutOfReach(held);
   const reading = `${formatExact(stamina.current)}/${formatExact(stamina.max)}`;
   return (
@@ -94,7 +91,7 @@ export const StaminaRefill = ({
       icon="stamina"
       tone={short ? "bad" : undefined}
       aria-label={`${REFILL} ${reading}`}
-      disabled={price <= 0 || short}
+      disabled={fragmentsToFill(stamina) <= 0 || short}
       busy={refilling ? REFILLING : undefined}
       onClick={onRefill}
     >
@@ -103,44 +100,39 @@ export const StaminaRefill = ({
   );
 };
 
-/** Purchase whole stamina points, up to the missing bar or the realm's available LORDS. */
 export const RefillConfirm = ({
   stamina,
   held,
-  spendOnly = 0,
   sending,
   onRefill,
   onCancel,
 }: {
   stamina: { current: number; max: number };
   held: number | undefined;
-  spendOnly?: number;
   sending: boolean;
-  onRefill: (amount: number) => void;
+  onRefill: (fragments: number) => void;
   onCancel: () => void;
 }) => {
-  const missing = Math.max(0, Math.floor(stamina.max - stamina.current));
-  const affordable = Math.min(missing, Math.max(0, Math.floor(held ?? 0)));
+  const needed = fragmentsToFill(stamina);
+  const affordable = Math.min(needed, Math.max(0, Math.floor(held ?? 0)));
   const [selected, setSelected] = useState(affordable);
-  const amount = Math.min(selected, affordable);
+  const fragments = Math.min(selected, affordable);
+  const after = Math.min(stamina.max, stamina.current + fragments * POINTS);
   return (
     <HudSheet label={REFILL} onClose={onCancel}>
       <div className="flex items-center justify-center gap-2">
         <HudChip icons={["stamina"]} label={STAMINA}>
-          {formatShortChange(stamina.current, stamina.current + amount)}
+          {formatShortChange(stamina.current, after)}
         </HudChip>
-        <HudChip icons={["lords"]} label={LORDS}>
-          {formatShortChange(held, held === undefined ? undefined : held - amount)}
+        <HudChip icons={["fragment"]} label={FRAGMENTS}>
+          {formatShortChange(held, held === undefined ? undefined : held - fragments)}
         </HudChip>
       </div>
-      <p>
-        {Math.min(amount, spendOnly)} spend-only LORDS + {Math.max(0, amount - spendOnly)} winnings.
-      </p>
       <HudSlider
-        label="Stamina to refill"
-        value={amount}
+        label={FRAGMENTS}
+        value={fragments}
         min={0}
-        max={missing}
+        max={needed}
         stop={affordable}
         disabled={sending || affordable === 0}
         onChange={setSelected}
@@ -152,11 +144,11 @@ export const RefillConfirm = ({
         <span className="col-span-2 grid">
           <HudButton
             kind="primary"
-            disabled={amount <= 0 || held === undefined}
+            disabled={fragments <= 0 || held === undefined}
             busy={sending ? REFILLING : undefined}
-            onClick={() => onRefill(amount)}
+            onClick={() => onRefill(fragments)}
           >
-            {REFILL} · {formatExact(amount)} {LORDS}
+            {REFILL} · {formatCount(fragments, FRAGMENT, FRAGMENTS)}
           </HudButton>
         </span>
       </div>

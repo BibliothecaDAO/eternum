@@ -45,18 +45,6 @@ def configuration():
     return config
 
 
-def requested_presets(environ, facts):
-    """The presets this shard registers, from PRESETS, with the commitment the release gives each; an id outside the
-    release's catalogue is refused before anything deploys."""
-    ids = [int(value) for value in environ.get("PRESETS", "").split(",") if value.strip()]
-    if not ids:
-        raise ValueError("PRESETS must name the preset ids this shard registers, e.g. PRESETS=2,5")
-    unknown = [preset for preset in ids if str(preset) not in facts["presets"]]
-    if unknown:
-        raise ValueError(f"Presets {unknown} are not in this release's catalogue {sorted(facts['presets'], key=int)}")
-    return {preset: facts["presets"][str(preset)] for preset in ids}
-
-
 def default_gateway(route_table):
     """The IPv4 default route's gateway in /proc/net/route text: on the shard's Compose network, the host side
     that every connection to a published port arrives from."""
@@ -149,7 +137,7 @@ def publish(name, destination):
     os.replace(temporary, target)
 
 
-def deploy(config, presets):
+def deploy(config):
     env = environment(config)
     shard.wait_for_endpoint(env["RPC_URL"], rpc=True)
     complete = DATA / "initialized.json"
@@ -160,7 +148,6 @@ def deploy(config, presets):
     else:
         record = deploy_world_once(config, env)
     publish_deployed_config(config)
-    record["presets"] = register_presets(env, presets)
     shard.write_json(complete, record)
     warm_native_classes(env)
     print(complete.read_text())
@@ -190,30 +177,9 @@ def register_next_release(config, env):
         shard.register_world_release(config, DATA, env, logs=f"release-{shard_release + 1}")
 
 
-# Registration is idempotent, so every start registers the listed presets: one added later registers without
-# touching the shard's identity. The record holds the commitment each preset has on chain, which must be the release's.
-def register_presets(env, presets):
-    operator = json.loads((DATA / "gameplay-contracts.json").read_text())["operatorAccountAddress"]
-    env = {**env, "DEPLOYER_ACCOUNT_ADDRESS": operator}
-    commitments = {}
-    for preset, released in presets.items():
-        record = DATA / f"preset-{preset}.json"
-        shard.run(["bun", "config/deployer/clean/registrar/register-preset.ts", "--preset-id", str(preset),
-                   "--record", str(record)], DATA, f"preset-{preset}", env)
-        commitments[str(preset)] = chain_commitment(preset, json.loads(record.read_text())["commitment"], released)
-    return commitments
-
-
-def chain_commitment(preset, on_chain, released):
-    if int(on_chain, 16) != int(released, 16):
-        raise ValueError(f"Preset {preset} commits to {on_chain} on chain; this release's facts say {released}")
-    return on_chain
-
-
-def harness_invocation(args, environ, data=DATA, started=None, script="run.ts"):
-    """The harness command against this shard (run.ts, burst.ts for the 2,000-player wave, blitz-split.ts for a Blitz
-    roster split): its private settings from harness.env, its reports under data/harness/<start time> unless the caller
-    names a directory."""
+def harness_invocation(args, environ, data=DATA, started=None):
+    """The harness command against this shard: its private settings from harness.env, its reports under
+    data/harness/<start time> unless the caller names a directory."""
     environment = {**environ, **operator_environment(),
                    **shard.read_private_environment(data / "harness.env"), **shard.host_credentials(data)}
     operator = json.loads((data / "gameplay-contracts.json").read_text())["operatorAccountAddress"]
@@ -228,20 +194,7 @@ def harness_invocation(args, environ, data=DATA, started=None, script="run.ts"):
         environment[field] = str(data / filename)
     stamp = time.strftime("%Y%m%dT%H%M%SZ", started or time.gmtime())
     environment.setdefault("HARNESS_OUTPUT_DIRECTORY", str(data / "harness" / stamp))
-    return ["bun", f"deploy/athanor/harness/{script}", *args], environment
-
-
-def probe():
-    """Readiness and account probes use only the shard's private Compose network."""
-    rpc = shard.PRIVATE_NODE_RPC_URL
-    public = "http://rpc:8080/rpc/v0_10_2"
-    rpc_rtt = shard.wait_for_endpoint(rpc, rpc=True)
-    herald_rtt = shard.wait_for_endpoint("http://herald:3003/health")
-    shard.wait_for_endpoint(public, rpc=True)
-    for args, name in [([str(DATA), rpc], "roles"), (["--public-rpc", public], "public-rpc")]:
-        shard.run(["bun", "deploy/athanor/scripts/inspect-shard-roles.ts", *args], DATA, name)
-    shard.run(["bun", "deploy/athanor/scripts/account-rpc-smoke.ts", str(DATA), public], DATA, "account-rpc-smoke")
-    shard.write_json(DATA / "network-probes.json", {"rpcRttMs": rpc_rtt, "heraldRttMs": herald_rtt})
+    return ["bun", "deploy/athanor/harness/run.ts", *args], environment
 
 
 def run_as_host_user():
@@ -263,24 +216,14 @@ if __name__ == "__main__":
     os.umask(0o077)
     run_as_host_user()
     action = sys.argv[1]
-    if action == "probe":
-        os.environ.update(operator_environment())
-        probe()
-        raise SystemExit(0)
-    if action in ("harness", "wave", "split"):
+    if action == "harness":
         # The harness runs as the host user, so what it writes is already the user's: it execs before any chown.
-        script = {"wave": "burst.ts", "split": "blitz-split.ts"}.get(action, "run.ts")
-        argv, environment = harness_invocation(sys.argv[2:], os.environ, script=script)
+        argv, environment = harness_invocation(sys.argv[2:], os.environ)
         os.execvpe(argv[0], argv, environment)
     config = configuration()
-    presets = requested_presets(os.environ, json.loads(RELEASE_FACTS.read_text()))
     if action == "prepare":
         prepare(config)
     elif action == "deploy":
-        deploy(config, presets)
-    elif action == "measurement-roles":
-        # The runner's call only; the script refuses a chain named after a deployment environment.
-        shard.run(["bun", "deploy/athanor/scripts/measurement-roles.ts", str(DATA)], DATA, "measurement-roles",
-                  environment(config))
+        deploy(config)
     else:
-        raise ValueError("Expected prepare, deploy or measurement-roles")
+        raise ValueError("Expected prepare or deploy")

@@ -1,7 +1,13 @@
-"""pull_events keeps the Games contract's events whole across runs stopped at any point, and reads each block once.
+"""Offline analysis of current facts, and event pulls that survive interruption without rereading blocks.
 
 Run: python3 -m unittest discover -s apps/game/scripts/live-data -p "test_*.py"
 """
+import contextlib
+import io
+import runpy
+import sys
+from pathlib import Path
+from unittest.mock import patch
 import gzip
 import importlib.util
 import json
@@ -37,7 +43,7 @@ class Chain:
 
     def get(self, url):
         if url.endswith("/manifest"):
-            return {"contracts": {"games": GAMES}, "releaseSchemas": {"1": "abc"}, "rpcUrl": "rpc"}
+            return {"contracts": {"games": GAMES}, "releases": {"1": {"schema": "abc", "family": 1, "previous": 0}}, "rpcUrl": "rpc"}
         return {"identity": "abc"}
 
     def rpc_batch(self, _url, calls):
@@ -102,6 +108,67 @@ class PullEvents(unittest.TestCase):
             self.assertEqual(json.load(f)["contracts"]["games"], GAMES)
         with open(os.path.join(self.pull, "schema.json")) as f:
             self.assertEqual(json.load(f)["identity"], "abc")
+
+
+class CurrentSnapshot(unittest.TestCase):
+    def test_analyse_reads_current_facts_without_network_or_muster_history(self):
+        folder = Path(HERE) / "fixtures" / "current-pull"
+        output = io.StringIO()
+        argv = [str(Path(HERE) / "live-data.py"), "analyse", str(folder)]
+        with patch.object(sys, "argv", argv), contextlib.redirect_stdout(output), \
+                patch("socket.socket", side_effect=AssertionError("analysis must stay offline")):
+            runpy.run_path(argv[0], run_name="__main__")
+        report = output.getvalue()
+        print(report)
+        for line in (
+            "| Ada | 17 | 7 | Knight | T1 | 420 | 2 | 33 | 0 |",
+            "| Ada | 7 | 0 | 0 | 17 | 90 | 360 |",
+            "| Ada | 7 | 0 | 2 | False |",
+            "| Ada | camp | False | 1 |",
+            "| Ada | 7 | Labor | 1500.0 |",
+            "Battles: 1 — guard holds 1.",
+            "| 0 | ExplorationReward | Labor | 50.0 |",
+            "| Ada | 7 | Knight | 1 | 3600.0 | 360 |",
+        ):
+            self.assertIn(line, report)
+        army_table = report.split("## Armies (snapshot)")[1].split("## Standings")[0]
+        self.assertNotIn("| Ada | 19 |", army_table, "history cannot keep a removed army alive")
+        self.assertNotIn("XP", report)
+        self.assertNotIn("Shrine", report)
+
+    def test_saved_state_rows_match_the_current_schema(self):
+        schema_path = Path(HERE).parents[3] / "contracts/l3/world-native/schema/schema.json"
+        schema = json.loads(schema_path.read_text())
+        models = {model["name"]: model for model in schema["models"]}
+        players = json.loads((Path(HERE) / "fixtures/current-pull/players.json").read_text())
+        for snapshot in players.values():
+            for name, rows in snapshot["models"].items():
+                fields = models[name]["keys"] + models[name]["members"]
+                for row in rows:
+                    self.assertEqual(set(row["value"]), {field["name"] for field in fields}, name)
+                    for field in fields:
+                        self.check_value(schema, field["type"], row["value"][field["name"]])
+
+    def check_value(self, schema, typename, value):
+        if typename == "core::bool":
+            self.assertIsInstance(value, bool)
+            return
+        if typename.startswith("core::option::Option"):
+            if value is not None:
+                self.check_value(schema, typename[len("core::option::Option::<"):-1], value)
+            return
+        shape = schema["types"].get(typename)
+        if shape is None:
+            return
+        if shape["type"] == "struct":
+            self.assertEqual(set(value), {member["name"] for member in shape["members"]}, typename)
+            for member in shape["members"]:
+                self.check_value(schema, member["type"], value[member["name"]])
+        elif shape["type"] == "enum":
+            variant = value if isinstance(value, str) else next(iter(value))
+            member = next(member for member in shape["variants"] if member["name"] == variant)
+            if member["type"] != "()":
+                self.check_value(schema, member["type"], value[variant])
 
 
 if __name__ == "__main__":

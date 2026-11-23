@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { resolveGameRouteView } from "./game-route.utils";
+import { GameOnOlderNumbersError, ShardReleaseMismatchError } from "@bibliothecadao/eternum/game-client";
+import { refusalOf, resolveGameRouteView } from "./game-route.utils";
 
 describe("resolveGameRouteView", () => {
   it("returns ready when setup and account are available", () => {
@@ -45,5 +46,13 @@ describe("resolveGameRouteView", () => {
     expect(resolveGameRouteView({ phase: "wait_worldmap_ready", hasSetupResult: false, hasAccount: true })).toBe(
       "loading",
     );
+  });
+});
+
+describe("refusalOf", () => {
+  it("names a game on older balance numbers apart from a release the client cannot read", () => {
+    expect(refusalOf(new GameOnOlderNumbersError("http://shard.test", "9"))).toBe("older-numbers");
+    expect(refusalOf(new ShardReleaseMismatchError("http://shard.test", "11"))).toBe("release");
+    expect(refusalOf(new Error("The world did not answer"))).toBeUndefined();
   });
 });

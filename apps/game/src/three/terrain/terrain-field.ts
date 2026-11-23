@@ -1,5 +1,5 @@
-import { Biome } from "@bibliothecadao/eternum/biome";
-import { BiomeType, BiomeTypeToId } from "@bibliothecadao/types/terrain";
+import { Biome, BIOME_ELEVATION_LEVELS } from "@bibliothecadao/eternum/biome";
+import { BiomeType } from "@bibliothecadao/types/terrain";
 import { Color } from "three/src/math/Color.js";
 
 import { TERRAIN_FOG_GROUND_HEIGHT } from "./terrain-fog-style";
@@ -17,10 +17,12 @@ import {
   resolveTerrainGroundRecipe,
   type TerrainGroundWeights,
 } from "./terrain-ground-profile";
-import { TERRAIN_BIOME_DESCRIPTORS, type TerrainBiomeDescriptor } from "./terrain-palette";
+import { TERRAIN_BIOME_DESCRIPTORS, terrainBiomePaint, type TerrainBiomeDescriptor } from "./terrain-palette";
 import { resolvePlaceableTerrainSettlementInfluence } from "./terrain-settlements";
 import {
   findNearestTerrainHex,
+  TERRAIN_HEX_HORIZONTAL_SPACING,
+  TERRAIN_HEX_VERTICAL_SPACING,
   terrainCellKey,
   terrainHexToWorld,
   terrainNeighborCoordinates,
@@ -31,8 +33,8 @@ import { isTerrainWaterBiome, isTerrainWaterCovered, TERRAIN_WATER_LEVEL } from 
 interface CellFieldSample {
   baseHeight: number;
   biome: BiomeType;
-  biomeId: number;
   centerX: number;
+  shoreBias: number;
   centerZ: number;
   col: number;
   descriptor: TerrainBiomeDescriptor;
@@ -75,9 +77,9 @@ export interface TerrainPropDensityContext extends TerrainVegetationField {
 }
 
 export interface TerrainVisualSample extends TerrainSurfaceSample {
-  biomeId: number;
+  climate: readonly [number, number, number];
   color: readonly [number, number, number];
-  explored: number;
+  tint: readonly [number, number, number];
   groundWeights: TerrainGroundWeights;
   roughness: number;
   shore: number;
@@ -159,12 +161,13 @@ export class TerrainField {
   sampleVisual(worldX: number, worldZ: number, owner?: Pick<TerrainCellInput, "col" | "row">): TerrainVisualSample {
     const ownerCoordinate = owner ?? findNearestTerrainHex(worldX, worldZ);
     const candidates = this.resolveExploredCandidates(ownerCoordinate.col, ownerCoordinate.row);
-    return this.sampleVisualFromCandidates(worldX, worldZ, candidates);
+    return this.sampleVisualFromCandidates(worldX, worldZ, ownerCoordinate, candidates);
   }
 
   private sampleVisualFromCandidates(
     worldX: number,
     worldZ: number,
+    owner: Pick<TerrainCellInput, "col" | "row">,
     candidates: readonly CellFieldSample[],
   ): TerrainVisualSample {
     const dominant = findDominantTerrainCandidate(worldX, worldZ, candidates);
@@ -173,7 +176,6 @@ export class TerrainField {
     let totalWeight = 0;
     let visualWeightSum = 0;
     const nearestDistanceSquared = (dominant.centerX - worldX) ** 2 + (dominant.centerZ - worldZ) ** 2;
-    let height = 0;
     let roughness = 0;
     let red = 0;
     let green = 0;
@@ -194,7 +196,6 @@ export class TerrainField {
       // Equal distance is the actual hex boundary. Restrict material blending to its narrow verge.
       const visualWeight = Math.exp(-(distanceSquared - nearestDistanceSquared) / 0.24);
       visualWeightSum += visualWeight;
-      height += candidate.baseHeight * weight;
       roughness += candidate.descriptor.roughness * weight;
       relief += candidate.descriptor.relief * weight;
       macroTintStrength += candidate.direction.material.macroTintStrength * weight;
@@ -212,7 +213,7 @@ export class TerrainField {
     const paddedHeight = this.resolveSurfaceHeight(
       worldX,
       worldZ,
-      height * inverseWeight,
+      this.sampleFieldHeight(worldX, worldZ, owner, candidates),
       relief * inverseWeight,
       candidates,
     );
@@ -240,21 +241,21 @@ export class TerrainField {
     const disturbedColorBlend = Math.max(road * 0.72, vegetation.disturbanceStrength * 0.5);
     const baseColor = [red * inverseVisualWeight, green * inverseVisualWeight, blue * inverseVisualWeight] as const;
 
+    const climate = this.sampleClimate(worldX, worldZ, owner);
+    const disturbed = [
+      TERRAIN_DISTURBED_GROUND_COLOR.r,
+      TERRAIN_DISTURBED_GROUND_COLOR.g,
+      TERRAIN_DISTURBED_GROUND_COLOR.b,
+    ];
+    const color = baseColor.map(
+      (channel, index) =>
+        (channel + (disturbed[index] - channel) * disturbedColorBlend) * albedoFactor * groundEcology.tint[index],
+    ) as [number, number, number];
     return {
       biome: strongestBiome,
-      biomeId: dominant.biomeId,
-      color: [
-        (baseColor[0] + (TERRAIN_DISTURBED_GROUND_COLOR.r - baseColor[0]) * disturbedColorBlend) *
-          albedoFactor *
-          groundEcology.tint[0],
-        (baseColor[1] + (TERRAIN_DISTURBED_GROUND_COLOR.g - baseColor[1]) * disturbedColorBlend) *
-          albedoFactor *
-          groundEcology.tint[1],
-        (baseColor[2] + (TERRAIN_DISTURBED_GROUND_COLOR.b - baseColor[2]) * disturbedColorBlend) *
-          albedoFactor *
-          groundEcology.tint[2],
-      ],
-      explored: 1,
+      climate: [climate.elevation, climate.moisture, climate.landform],
+      color,
+      tint: color.map((value, index) => value / Math.max(baseColor[index], 0.02)) as [number, number, number],
       groundWeights: roadGroundWeights,
       height: paddedHeight,
       normal: [0, 1, 0],
@@ -348,6 +349,7 @@ export class TerrainField {
     return this.sampleVertexFromCandidates(
       worldX,
       worldZ,
+      ownerCoordinate,
       this.resolveExploredCandidates(ownerCoordinate.col, ownerCoordinate.row),
     );
   }
@@ -355,9 +357,10 @@ export class TerrainField {
   private sampleVertexFromCandidates(
     worldX: number,
     worldZ: number,
+    owner: Pick<TerrainCellInput, "col" | "row">,
     candidates: readonly CellFieldSample[],
   ): TerrainVisualSample {
-    const center = this.sampleVisualFromCandidates(worldX, worldZ, candidates);
+    const center = this.sampleVisualFromCandidates(worldX, worldZ, owner, candidates);
     if (center.biome === null) return center;
     const normal = this.sampleNormalFromCandidates(worldX, worldZ, candidates);
     return { ...center, groundWeights: applyTerrainGroundSlope(center.groundWeights, normal[1]), normal };
@@ -381,19 +384,72 @@ export class TerrainField {
 
   private sampleHeightFromCandidates(worldX: number, worldZ: number, candidates: readonly CellFieldSample[]): number {
     let totalWeight = 0;
-    let height = 0;
     let relief = 0;
     for (const candidate of candidates) {
       const distanceSquared = (candidate.centerX - worldX) ** 2 + (candidate.centerZ - worldZ) ** 2;
       const weight = terrainBlendWeight(distanceSquared);
       if (weight === 0) continue;
       totalWeight += weight;
-      height += candidate.baseHeight * weight;
       relief += candidate.descriptor.relief * weight;
     }
     if (totalWeight === 0) return TERRAIN_BIOME_DESCRIPTORS[BiomeType.None].baseHeight;
-    const inverseWeight = 1 / totalWeight;
-    return this.resolveSurfaceHeight(worldX, worldZ, height * inverseWeight, relief * inverseWeight, candidates);
+    const owner = findNearestTerrainHex(worldX, worldZ);
+    const height = this.sampleFieldHeight(worldX, worldZ, owner, candidates);
+    return this.resolveSurfaceHeight(worldX, worldZ, height, relief * (1 / totalWeight), candidates);
+  }
+
+  private sampleFieldHeight(
+    worldX: number,
+    worldZ: number,
+    owner: Pick<TerrainCellInput, "col" | "row">,
+    candidates: readonly CellFieldSample[],
+  ): number {
+    let weight = 0;
+    let bias = 0;
+    let land = 0;
+    let reach = 0;
+    for (const candidate of candidates) {
+      const distance = (candidate.centerX - worldX) ** 2 + (candidate.centerZ - worldZ) ** 2;
+      const share = Math.exp(-distance / SHORE_BIAS_SPREAD);
+      weight += share;
+      bias += candidate.shoreBias * share;
+      const wide = Math.exp(-distance / SHORE_SIDE_SPREAD);
+      reach += wide;
+      if (!isTerrainWaterBiome(candidate.biome)) land += wide;
+    }
+    if (weight === 0) return heightAtElevation(this.sampleClimate(worldX, worldZ, owner).elevation);
+    const landShare = land / reach;
+    const shoreness = 1 - Math.abs(landShare * 2 - 1);
+    const wobble = (this.noise.sample(worldX * 1.6, worldZ * 1.6, "terrain-shore-v1") - 0.5) * SHORE_WOBBLE * shoreness;
+    const free = heightAtElevation(this.sampleClimate(worldX, worldZ, owner).elevation) + bias / weight + wobble;
+    const held = holdToWaterSide(free, landShare < 0.5);
+    const height = free + (held - free) * smoothstep(0.72, 0.97, Math.max(landShare, 1 - landShare));
+    const ownerBiome = this.getCell(owner.col, owner.row)?.biome;
+    return ownerBiome ? this.holdBesideFog(worldX, worldZ, owner, ownerBiome, height) : height;
+  }
+
+  private holdBesideFog(
+    worldX: number,
+    worldZ: number,
+    owner: Pick<TerrainCellInput, "col" | "row">,
+    biome: BiomeType,
+    height: number,
+  ): number {
+    const center = terrainHexToWorld(owner.col, owner.row);
+    const across = terrainNeighborCoordinates(owner.col, owner.row)
+      .map((hex) => ({ hex, at: terrainHexToWorld(hex.col, hex.row) }))
+      .reduce((best, next) =>
+        (next.at.x - worldX) ** 2 + (next.at.z - worldZ) ** 2 < (best.at.x - worldX) ** 2 + (best.at.z - worldZ) ** 2
+          ? next
+          : best,
+      );
+    if (this.getCell(across.hex.col, across.hex.row)?.explored) return height;
+    const reach = Math.sqrt(
+      ((center.x - worldX) ** 2 + (center.z - worldZ) ** 2) /
+        Math.max((across.at.x - worldX) ** 2 + (across.at.z - worldZ) ** 2, 1e-6),
+    );
+    const held = holdToWaterSide(height, isTerrainWaterBiome(biome));
+    return held + (height - held) * (1 - smoothstep(0.4, 0.9, reach));
   }
 
   private sampleWeightedEnvironment(
@@ -597,15 +653,13 @@ export class TerrainField {
     const descriptor = TERRAIN_BIOME_DESCRIPTORS[biome];
     const direction = TERRAIN_BIOME_ART_DIRECTIONS[biome];
     const center = terrainHexToWorld(col, row);
-    const primary = new Color(descriptor.primary);
-    const secondary = new Color(descriptor.secondary);
+    const middleHeight = heightAtElevation(this.sampleClimate(center.x, center.z, { col, row }).elevation);
+    const primary = terrainBiomePaint(biome, "primary");
+    const secondary = terrainBiomePaint(biome, "secondary");
     const sample = {
-      baseHeight:
-        descriptor.baseHeight +
-        (environment.elevation - 0.5) * descriptor.elevationScale +
-        this.resolveMacroLandformOffset(center.x, center.z, direction),
+      baseHeight: holdToWaterSide(middleHeight, isTerrainWaterBiome(biome)),
+      shoreBias: holdToWaterSide(middleHeight, isTerrainWaterBiome(biome)) - middleHeight,
       biome,
-      biomeId: BiomeTypeToId[biome],
       centerX: center.x,
       centerZ: center.z,
       col,
@@ -622,6 +676,18 @@ export class TerrainField {
     };
     this.sampleByKey.set(terrainCellKey(col, row), sample);
     return sample;
+  }
+
+  private sampleClimate(worldX: number, worldZ: number, owner: Pick<TerrainCellInput, "col" | "row">) {
+    const center = terrainHexToWorld(owner.col, owner.row);
+    const rowOffset = (worldZ - center.z) / TERRAIN_HEX_VERTICAL_SPACING;
+    const colOffset = (worldX - center.x) / TERRAIN_HEX_HORIZONTAL_SPACING + oddRowShiftFrom(owner.row, rowOffset);
+    const mapCenter = this.request.mapCenter;
+    return Biome.sampleField(
+      owner.col + mapCenter + colOffset,
+      owner.row + mapCenter + rowOffset,
+      this.request.climate,
+    );
   }
 
   private applyStructurePad(
@@ -650,16 +716,6 @@ export class TerrainField {
     const detail = (this.noise.sample(worldX * 0.7, worldZ * 0.7, "terrain-relief-v1") - 0.5) * 2 * relief;
     const height = this.applyStructurePad(worldX, worldZ, baseHeight + detail, candidates);
     return this.basaltTransition.blendHeight(worldX, worldZ, height);
-  }
-
-  private resolveMacroLandformOffset(worldX: number, worldZ: number, direction: TerrainBiomeArtDirection): number {
-    const { basinStrength, macroAmplitude, macroFrequency, ridgeStrength } = direction.landform;
-    const macroNoise = this.noise.sample(worldX * macroFrequency, worldZ * macroFrequency, "terrain-landform-v1");
-    const signedMacro = macroNoise * 2 - 1;
-    const ridge = 1 - Math.abs(signedMacro);
-    const basin = 1 - smoothstep(0.18, 0.72, macroNoise);
-    const macroShape = signedMacro * 0.58 + (ridge - 0.5) * ridgeStrength * 0.72 - basin * basinStrength * 0.28;
-    return macroShape * macroAmplitude;
   }
 
   private sampleShoreProximity(worldX: number, worldZ: number, candidates: readonly CellFieldSample[]): number {
@@ -763,6 +819,41 @@ function resolveTerrainCandidateCoordinates(col: number, row: number): Array<{ c
   });
 }
 
+const ELEVATION_HEIGHTS: ReadonlyArray<readonly [number, number]> = [
+  [0, -0.42],
+  [BIOME_ELEVATION_LEVELS.deepOcean, -0.28],
+  [BIOME_ELEVATION_LEVELS.ocean, TERRAIN_WATER_LEVEL],
+  [BIOME_ELEVATION_LEVELS.sand, 0],
+  [BIOME_ELEVATION_LEVELS.forest, 0.05],
+  [BIOME_ELEVATION_LEVELS.desert, 0.1],
+  [BIOME_ELEVATION_LEVELS.mountain, 0.17],
+  [1, 0.9],
+];
+const WATERLINE_MARGIN = 0.02;
+const WATER_DEPTH_AT_MIDDLE = 0.06;
+const SHORE_BIAS_SPREAD = 0.6;
+const SHORE_WOBBLE = 0.07;
+const SHORE_SIDE_SPREAD = 2.5;
+
+function heightAtElevation(elevation: number): number {
+  const upper = ELEVATION_HEIGHTS.findIndex(([level]) => level >= elevation);
+  if (upper <= 0) return ELEVATION_HEIGHTS[Math.max(upper, 0)][1];
+  const [lowLevel, lowHeight] = ELEVATION_HEIGHTS[upper - 1];
+  const [highLevel, highHeight] = ELEVATION_HEIGHTS[upper];
+  return lowHeight + ((elevation - lowLevel) / (highLevel - lowLevel)) * (highHeight - lowHeight);
+}
+
+function holdToWaterSide(height: number, water: boolean): number {
+  return water
+    ? Math.min(height, TERRAIN_WATER_LEVEL - WATER_DEPTH_AT_MIDDLE)
+    : Math.max(height, TERRAIN_WATER_LEVEL + WATERLINE_MARGIN);
+}
+
+function oddRowShiftFrom(row: number, rowOffset: number): number {
+  const parity = Math.abs(row % 2) === 1 ? -1 : 1;
+  return (parity * (1 - Math.cos(Math.PI * rowOffset))) / 4;
+}
+
 function resolveSeed(value: number | undefined): number {
   return Number.isFinite(value) && value! > 0 ? Math.trunc(value!) : 0;
 }
@@ -825,9 +916,9 @@ function createUnknownSample(): TerrainVisualSample {
   const color = new Color(descriptor.primary);
   return {
     biome: null,
-    biomeId: 0,
+    climate: [0, 0, 0],
     color: [color.r, color.g, color.b],
-    explored: 0,
+    tint: [1, 1, 1],
     groundWeights: [0, 0, 1, 0, 0, 0, 0, 0],
     height: descriptor.baseHeight,
     normal: [0, 1, 0],

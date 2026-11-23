@@ -1,5 +1,5 @@
 export const TERRAIN_BENCHMARK_RENDERERS = Object.freeze(["webgpu-auto", "webgpu-force-webgl"]);
-export const TERRAIN_BENCHMARK_VARIANTS = Object.freeze(["geometry", "material", "props", "production"]);
+export const TERRAIN_BENCHMARK_VARIANTS = Object.freeze(["material", "props", "production"]);
 
 export function evaluateTerrainPerformanceResults(results, options = {}) {
   const requiredRenderers = options.renderers ?? TERRAIN_BENCHMARK_RENDERERS;
@@ -140,11 +140,7 @@ function evaluateFrameStats(label, phase, stats, p95BudgetMs, reasons) {
 }
 
 function evaluateAssetRequests(label, variant, assets, reasons) {
-  const expectsGround = variant !== "geometry";
   const expectsProps = variant === "props" || variant === "production";
-  if (assets?.groundArrayRequests !== (expectsGround ? 2 : 0)) {
-    reasons.push(`${label}: ground arrays did not load exactly ${expectsGround ? "once each" : "zero times"}`);
-  }
   if (assets?.propCatalogRequests !== (expectsProps ? 1 : 0)) {
     reasons.push(`${label}: prop catalog request count did not match the variant`);
   }

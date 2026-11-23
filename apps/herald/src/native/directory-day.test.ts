@@ -3,29 +3,39 @@ import { dayOf } from "../../../../packages/core/src/utils/days";
 import { buildNativeDirectory } from "./read-models";
 import type { DirectoryInput } from "../game-directory";
 import type { FoldRow } from "../types";
+import { gameRegistryRow } from "../../../../packages/core/src/test-support/game-registry";
+import { GAME_FAMILIES } from "../../../../config/source/common/native-preset-modes";
 
 const start = 1_800_000_000;
-const calendar = { seed: 42n, startMainAt: start, endAt: start + 21 * 20 * 14_400, dayUnitSeconds: 14_400 };
+const calendar = {
+  seed: 42n,
+  startMainAt: start,
+  scheduledEndAt: start + 21 * 20 * 14_400,
+  endAt: start + 21 * 20 * 14_400,
+  dayUnitSeconds: 14_400,
+};
 const input = (timestamp: number): DirectoryInput => {
-  const games = [
-    { game_id: 1, preset_id: 5, settled: true },
-    { game_id: 2, preset_id: 2, settled: false },
-    { game_id: 3, preset_id: 5, settled: false },
-  ].map((game) => ({
-    ...game,
-    name: "0x536561736f6e",
-    creator: "0x1",
-    ready: true,
-    dev_mode_on: false,
-    start_settling_at: start - 100,
-    start_main_at: start,
-    end_at: start + 21 * 20 * 14_400,
-    end_grace_seconds: 0,
-    seed: 42n,
-  }));
+  const dayUnits = [
+    { game_id: 1, settled: true, family: GAME_FAMILIES.frontier, day_unit_seconds: 14_400 },
+    { game_id: 2, settled: false, family: GAME_FAMILIES.blitz, day_unit_seconds: 0 },
+    { game_id: 3, settled: false, family: GAME_FAMILIES.frontier, day_unit_seconds: 14_400 },
+  ];
+  const games = dayUnits.map(({ game_id, settled, family }) =>
+    gameRegistryRow({
+      game_id,
+      settled,
+      family,
+      name: "0x536561736f6e",
+      start_settling_at: String(start - 100),
+      start_main_at: String(start),
+      scheduled_end_at: String(start + 21 * 20 * 14_400),
+      end_at: String(start + 21 * 20 * 14_400),
+      seed: "42",
+    }),
+  );
   const rows: Record<string, Record<string, unknown>[]> = {
     GameRegistry: games,
-    SliceRules: games.map((game) => ({ game_id: game.game_id, day_unit_seconds: game.preset_id === 5 ? 14_400 : 0 })),
+    SliceRules: dayUnits.map(({ game_id, day_unit_seconds }) => ({ game_id, day_unit_seconds })),
     SettlementRules: games.map((game) => ({
       game_id: game.game_id,
       registration_limit: 0,
@@ -96,26 +106,28 @@ it("does not require a season seed for a game without a day schedule", () => {
 });
 
 it("folds the extension row and preserves the added days through a checkpoint reload", async () => {
-  const { default: approved } = await import("../../../../config/source/frontier/extension.json");
-  const { setup, rowEvent, receipt, seedDerivedRows, rulesEvent } = await import("./fixtures");
+  const approved = {
+    chainId: "0x50524f44554354494f4e5f31386530376435323330633539393933",
+    name: "frontier-1792575960",
+    start: 1792575960,
+    oldEnd: 1793151960,
+    end: 1793439960,
+    seed: "0x5b0a63f717733291c17fc3ecf7ead6e4bd6ae7157150430908152aad0d4ef09",
+    dayUnit: 14400,
+  };
+  const { setup, gameRegistryEvent, rowEvent, receipt, seedDerivedRows, rulesEvent } = await import("./fixtures");
   const { WorldFold } = await import("../world-fold");
   const { shortString, CairoCustomEnum } = await import("starknet");
   const { fold, native, decoder } = setup();
   const game = {
-    game_id: 1,
     name: shortString.encodeShortString(approved.name),
-    preset_id: approved.presetId,
-    creator: 1,
-    ready: true,
-    settled: false,
-    dev_mode_on: false,
-    start_main_at: approved.start,
-    start_settling_at: approved.start,
-    end_at: approved.oldEnd,
-    end_grace_seconds: 0,
-    seed: BigInt(approved.seed),
+    start_main_at: String(approved.start),
+    start_settling_at: String(approved.start),
+    scheduled_end_at: String(approved.oldEnd),
+    end_at: String(approved.oldEnd),
+    seed: String(BigInt(approved.seed)),
   };
-  native.applyReceipt(fold, receipt([rowEvent("GameRegistry", ["1"], game)]), 10, 0);
+  native.applyReceipt(fold, receipt([gameRegistryEvent(game)]), 10, 0);
   seedDerivedRows(fold, decoder, [
     rulesEvent("1", String(approved.dayUnit)),
     rowEvent("SettlementRules", ["1"], {
@@ -134,7 +146,12 @@ it("folds the extension row and preserves the added days through a checkpoint re
       fold: state,
     }).games[0]!;
   expect(directory(fold, approved.oldEnd).day_index).toBeNull();
-  native.applyReceipt(fold, receipt([rowEvent("GameRegistry", ["1"], { ...game, end_at: approved.end })]), 11, 0);
+  native.applyReceipt(
+    fold,
+    receipt([gameRegistryEvent({ ...game, end_at: String(approved.end), scheduled_end_at: String(approved.end) })]),
+    11,
+    0,
+  );
   expect(directory(fold, approved.oldEnd)).toMatchObject({ day_index: 10, clock: { end_at: approved.end } });
   const cold = WorldFold.restore(decoder.registry, JSON.parse(JSON.stringify(fold.checkpoint())));
   expect(directory(cold, approved.oldEnd)).toEqual(directory(fold, approved.oldEnd));
@@ -151,7 +168,7 @@ it.each([81, 84, 85])("publishes the final %ih day without a tomorrow", (hours) 
       ...row,
       value: {
         ...row.value,
-        ...(model === "GameRegistry" ? { seed: 0x5eedn, end_at: end } : {}),
+        ...(model === "GameRegistry" ? { seed: 0x5eedn, end_at: end, scheduled_end_at: end } : {}),
         ...(model === "SliceRules" && row.value.game_id === 3 ? { day_unit_seconds: 7200 } : {}),
       },
     }));

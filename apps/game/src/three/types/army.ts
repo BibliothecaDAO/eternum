@@ -1,5 +1,6 @@
 import { TroopTier, TroopType } from "@bibliothecadao/types";
 import type { SlotDirtyRange } from "../utils/instance-update-ranges";
+import type { TroopMotionController } from "../managers/troop-motion";
 import {
   Vector3,
   Euler,
@@ -23,6 +24,8 @@ export interface MovementData {
   targetRotation: number;
 }
 
+export type ArmyPace = "walk" | "run";
+
 export interface SplineMovementData {
   spline: CatmullRomCurve3;
   totalLength: number;
@@ -38,6 +41,7 @@ export interface SplineMovementData {
   endpointCache: Vector3;
   // Terrain speed
   currentSpeedMultiplier: number;
+  pace: ArmyPace;
   // Rhythmic bob + arrival slam
   elapsedTime: number;
   arrivalSlamTimer: number;
@@ -85,8 +89,6 @@ export interface AnimatedInstancedMesh extends InstancedMesh {
 export interface ModelData {
   group: Group;
   instancedMeshes: AnimatedInstancedMesh[];
-  contactShadowMesh?: InstancedMesh;
-  contactShadowScale?: number;
   baseMeshes: Mesh[];
   mixer: AnimationMixer;
   animations: {
@@ -108,4 +110,5 @@ export interface ModelData {
   lastAnimationUpdate: number;
   animationUpdateInterval: number;
   ownsGeometry: boolean;
+  troopMotion?: TroopMotionController;
 }

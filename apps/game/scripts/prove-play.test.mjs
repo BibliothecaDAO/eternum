@@ -6,18 +6,16 @@ import { problemsOf } from "./prove-run.mjs";
 const BASE = "https://127.0.0.1:4176";
 
 describe("where a press must lead", () => {
-  it("is the item's own game, lobby or results", () => {
+  it("is the item's own game or results", () => {
     expect(destinationOf("Watch", { item: "game:0xa:3" })).toBe("/g/0xa/3?spectate=true");
     expect(destinationOf("Enter", { item: "game:0xa:3" })).toBe("/g/0xa/3");
     expect(destinationOf("Resume", { item: "0xa:1" })).toBe("/g/0xa/1");
     expect(destinationOf("Play free", { item: "0xa:1" })).toBe(CONNECT);
-    expect(destinationOf("Lobby", { item: "game:0xa:8" })).toBe("/blitz/game-0xa-8");
-    expect(destinationOf("Join", { item: "slot:blitz-1630" })).toBe("/blitz/slot-blitz-1630");
     expect(destinationOf("Results", { item: "0xa:7" })).toBe("/results/0xa-7");
   });
 
-  it("is Connect over the lobby a lobby's Sign in was pressed from", () => {
-    expect(destinationOf("Sign in", { from: "/blitz/slot-blitz-1630" })).toBe(CONNECT);
+  it("is Connect over the page a Sign in was pressed from", () => {
+    expect(destinationOf("Sign in", { from: "/season" })).toBe(CONNECT);
   });
 
   it("is unknown for a word the proof does not know", () => {
@@ -49,21 +47,21 @@ describe("a press's verdict", () => {
     });
   });
 
-  it("fails a Sign in that leaves its lobby, or opens no Connect window", () => {
-    const expected = destinationOf("Sign in", { from: "/blitz/slot-blitz-1630" });
-    const lobby = `${BASE}/blitz/slot-blitz-1630`;
-    expect(judge("Sign in", expected, lobby, `${BASE}/`, true)).toMatchObject({
+  it("fails a Sign in that leaves its page, or opens no Connect window", () => {
+    const expected = destinationOf("Sign in", { from: "/season" });
+    const page = `${BASE}/season`;
+    expect(judge("Sign in", expected, page, `${BASE}/`, true)).toMatchObject({
       status: "failed",
       reason: "left the page instead of opening Connect",
     });
-    expect(judge("Sign in", expected, lobby, lobby, false)).toMatchObject({
+    expect(judge("Sign in", expected, page, page, false)).toMatchObject({
       status: "failed",
       reason: "Connect did not open",
     });
   });
 
   it("fails a press that goes nowhere, or whose word has no known address", () => {
-    expect(judge("Join", "/blitz/slot-blitz-1630", `${BASE}/`, `${BASE}/`)).toMatchObject({
+    expect(judge("Enter", "/g/0xa/1", `${BASE}/`, `${BASE}/`)).toMatchObject({
       status: "failed",
       reason: "no navigation",
     });
@@ -75,7 +73,7 @@ describe("a press's verdict", () => {
 });
 
 describe("the run's completeness", () => {
-  const led = { word: "Join", status: "led", led: "/blitz/slot-1" };
+  const led = { word: "Enter", status: "led", led: "/g/0xa/1" };
   const record = (over) => ({ state: "live", layout: "phone", ready: true, presses: [[led]], ...over });
 
   it("is complete only when every page was ready and every press led", () => {

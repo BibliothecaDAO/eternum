@@ -214,6 +214,7 @@ const StateHeads = () => (
 const TODAY_SIZES = [8, 9, 10, 11, 12, 13, 13.2, 14, 15, 15.6, 16, 17, 18, 20, 22, 24, 34] as const;
 /** Each role's class, written out so Tailwind generates it. */
 const ROLE_CLASS: Record<keyof typeof HUD_TYPE, string> = {
+  hero: "text-hud-hero",
   display: "text-hud-display",
   title: "text-hud-title",
   body: "text-hud-body",
@@ -222,6 +223,7 @@ const ROLE_CLASS: Record<keyof typeof HUD_TYPE, string> = {
   badge: "text-hud-badge",
 };
 const ROLE_SAMPLES: Record<keyof typeof HUD_TYPE, string> = {
+  hero: "Temtinos",
   display: "Military",
   title: "Structure Tile · Guards",
   body: "Sacred Hyperstructure of Destiny, held by The Vanguard",
@@ -726,7 +728,7 @@ const LoadingSection = () => (
 );
 
 /** The game's player chip as it draws today: name, rank, points and the game's goal. */
-const LabPlayerPill = () => <HudPill>{playerReadings("clientlane", { rank: 1, points: 310 })}</HudPill>;
+const LabPlayerPill = () => <HudPill>{playerReadings("clientlane")}</HudPill>;
 
 const TopBarSection = () => (
   <Element
@@ -820,15 +822,6 @@ const orderStep = (actionType: ActionType, staminaCost?: number) => ({
 const ORDER_LINES = [
   { path: [orderStep(ActionType.Move), orderStep(ActionType.Explore)], food: { wheat: 100, fish: 0 } },
   { path: [orderStep(ActionType.Move), orderStep(ActionType.Move, 10), orderStep(ActionType.Move, 10)] },
-  { path: [orderStep(ActionType.Move), orderStep(ActionType.Chest)] },
-  {
-    path: [orderStep(ActionType.Move), orderStep(ActionType.UseSite)],
-    site: { kind: "Shrine", gain: 3, stamina: undefined } as const,
-  },
-  {
-    path: [orderStep(ActionType.Move), orderStep(ActionType.UseSite)],
-    site: { kind: "Well", gain: 60, stamina: { current: 120, max: 120, perExplore: 20 } } as const,
-  },
   { path: undefined, refusal: { reason: "stamina", need: 30 } as const, staminaWait: 24, staminaHeld: 12 },
 ].flatMap((order) => {
   const tip = orderTip({
@@ -838,7 +831,6 @@ const ORDER_LINES = [
     refusal: undefined,
     staminaWait: undefined,
     staminaHeld: undefined,
-    site: undefined,
     byRealm: false,
     ...order,
   });
@@ -848,7 +840,7 @@ const ORDER_LINES = [
 const TooltipSection = () => (
   <Element
     name="Tooltip and the map's order line"
-    rule="One tooltip; its words are its own. A line, what it costs on one compact line under it, why not (and when, to the second), and how, as a cue. The order lines are the game's own (orderTip): the action, then its exact cost; a crate is its action alone."
+    rule="One tooltip; its words are its own. A line, what it costs on one compact line under it, why not (and when, to the second), and how, as a cue. The order lines are the game's own (orderTip): the action, then its exact cost."
     sheet={
       <div className="flex flex-wrap items-start gap-4">
         <LabTip line="Wheat, 1,200 held" />
@@ -890,7 +882,7 @@ const PanelSection = () => (
     sheet={
       <div className="grid grid-cols-2 gap-4">
         <HudPanel title="Next up" icon="hourglass" cue="1 of 4">
-          <HudRow title="Your army can explore" detail="+10 points a tile" />
+          <HudRow title="Your army can explore" detail="Right-click a tile beside your army" />
         </HudPanel>
         <HudPanel title="Next up" icon="hourglass" cue="1 of 4" defaultCollapsed>
           <HudRow title="Folded: the cue stays" />
@@ -1046,11 +1038,7 @@ const RelicSection = () => (
         </span>
       </div>
     }
-    today={
-      <span className="ui-row__detail">
-        The game draws its own relic chips (active-relic-effects, compact inventory).
-      </span>
-    }
+    today={<span className="ui-row__detail">The game draws no relic chips.</span>}
   />
 );
 

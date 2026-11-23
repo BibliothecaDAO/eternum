@@ -32,18 +32,10 @@ Cloudflare account. See
 [the co-signer deployment procedure](../../../deploy/athanor/README.md#independent-payout-co-signer). Only the cold
 admin can unpause.
 
-## Frontier settlement and treasury returns
+## Frontier closure
 
-Players can withdraw LORDS manually during the season. The immutable `claim_window_seconds` preset defaults to seven
-days; the shard's manual withdrawal cutoff remains one hour before `season.end + claim_window_seconds`. That window does
-not limit automatic sweeps or ledger reporting while open. Its deadline bounds how long unpaid claims can hold
-settlement.
-
-After the game ends, the relay sweeps each realm's remaining LORDS to its owner through `sweep_lords`, producing the
-same withdrawal receipt as a manual withdrawal. An empty realm is a no-op. The relay reports and pays these receipts
-alongside the season prizes through the existing ledger path. Chest reports remain accepted while the season is open,
-including after the manual claim window. Reports move no money; an unpaid-report counter prevents early closure while
-any recorded claim remains unpaid; payment remains bounded by the pool's unlocked amount.
+Nothing off chain closes a Frontier season: the relay runs no sweep and sends no `settle_frontier`, and the co-signer
+signs no settlement. Season 1 funds no Frontier pool; its LORDS leave through [`RaceRewards`](#race-rewards).
 
 For a monitor-proven forgery, the cold admin can call `void_report(shard, claim_id)` only while paused. It clears an
 unpaid report and pending count, and frees its prize rank. The fixed prize count resets only when no reported ranks
@@ -53,41 +45,12 @@ relay rereads held conflicting receipts and reports them again once their ledger
 
 The relay records its signed recipient decision through identity before broadcast for the monitor's payment audit. The
 co-signer independently reads the receipt account's current linked wallet from identity; it accepts no recipient
-assertion from the relay. Missing-wallet claims remain deferred until the player links a wallet or deadline closure
-returns their funds to the treasury.
-
-The relay checks a confirmed post-end snapshot with no remaining realm LORDS and chest receipts equal to the consumed
-world budget. Before the claim deadline, it settles only when the prize pool is fully issued and all chest and prize
-receipts match confirmed L2 paid totals. A missing wallet or unknown account stays deferred and retries. If no prize
-winners qualify, the unallocated prize reserve waits for the deadline too.
-
-`settle_frontier(shard, season_id, chest_withdrawn, prize_withdrawn, signature_r, signature_s)` is the only closure
-entrypoint. It requires an unpaused ledger, the operator role, the season's end, supplied totals equal to `paid` and
-`prize_paid`, and an independent co-signature over the exact paid totals, treasury remainder and domain. Before the
-deadline it also requires no unpaid reports and the entire prize pool paid. The co-signer checks confirmed post-end
-state and funding. Before the deadline it also checks fully swept realm balances and exact receipt totals; after it, the
-signature binds the L2 paid totals and permits unpaid funds to return to treasury. Closure needs no proposal or waiting
-period. A closed-season retry returns without a second transfer or event.
+assertion from the relay. Missing-wallet claims remain deferred until the player links a wallet.
 
 The independent monitor still checks raw reports, payments, results and conservation. Proven mismatches pause at once;
 unavailable report evidence retries and makes health unhealthy immediately, pausing after ten continuous minutes with a
 known report waiting. Its confirmed STRK balance appears in health, with a warning below 0.1 STRK. The co-signer needs
 no STRK because it signs messages rather than submitting transactions.
-
-Once the claim deadline passes on the confirmed L2 head, the relay settles with the L2 paid totals even if claims remain
-unpaid. Closure voids those claims, including missing-wallet claims, for both chests and prizes. New chest or prize
-reports and unpaid payments then refuse; already paid retries remain harmless. A pause blocks settlement at either time.
-
-Settlement transfers `pool - paid` plus `prize_pool - prize_paid` to the ledger's fixed treasury address in the same
-transaction, including voided no-wallet claims and unclaimed prize shares. The ledger computes that exact amount from
-custody and includes it in the `ETERNUM_SETTLE_V2` co-signing message. The co-signer independently verifies it from
-confirmed funding. `FrontierClosed` records the treasury address and separate chest/prize amounts. Closure is written
-before the token transfer, and a failed transfer reverts the whole call. Repeating settlement transfers nothing and
-emits nothing. Each new season is funded solely by its new deposit; there is no carry balance or top-up command.
-
-This lifecycle requires the matching Games root, libraries/release, fresh ledger, relay and co-signer together. Rehearse
-sweep, payment, deadline settlement, treasury receipt and retries against these contracts before enabling production
-value. Old settlement signatures do not authorize the new treasury-return message.
 
 ## Blitz custody and rewards
 
@@ -176,6 +139,40 @@ at that position and pays its geometric preset share once. Pause blocks withdraw
 settlement, registrations, refunds, result settlement, chest finishes and season claims. Frontier funding, chest
 requests and challenges remain available. Settlement's input treasury transfer continues to its fixed address.
 
+## Race rewards
+
+`RaceRewards` (`src/race.cairo`) is a separate class that holds one race's LORDS apart from deposit custody. It
+configures nothing of its own: the operator role, the co-signer key and epoch, and the pause are read from the ledger,
+and its treasury is fixed at construction to the ledger's. The holder of the ledger's `DEFAULT_ADMIN_ROLE` funds it and
+may upgrade it in place, so a fix never moves a funded pool.
+
+The owner runs three steps from `contracts/l2/ledger/scripts`, each with `--addresses dev` or `--addresses production`.
+Without `--execute` a step reads the chain and prints the transaction it would send; with it, it sends that one
+transaction. A step already applied prints so and sends nothing.
+
+```sh
+pnpm race declare --addresses dev
+pnpm race deploy --addresses dev
+pnpm race fund --addresses dev --shard 0x… --game 7 --amount 500000
+pnpm race status --addresses dev --shard 0x… --game 7
+```
+
+- `declare` builds the class and declares it.
+- `deploy` refuses a ledger whose stored treasury differs from the address book's, deploys the class bound to that
+  ledger and treasury, and writes `raceRewards` into `contracts/common/addresses/<book>.json`. Commit that file and
+  redeploy the relay and the co-signer box from it: until then the relay skips races and the co-signer refuses race
+  signatures. If the step stops after its deployment printed the address, write that address into the book by hand
+  rather than deploying a second class.
+- `fund` approves and funds one race in a single transaction, once, in whole LORDS, from the ledger admin account.
+- `status` prints the race as the class answers it and, with `VALUE_RELAY_URL` set to the game's origin, the relay's
+  receipt of the rewards that were still unpaid when it closed (home, amount, reason).
+
+The relay sends everything after funding. Once Herald confirms a race's result it posts the total, pays each home's
+linked wallet, at most 20 homes a pass, and closes when every reward is paid. A home with no payout wallet is tried
+again every pass for seven days after the post; then the relay keeps the receipt and closes, and what is left goes to
+the treasury. An unfunded race is skipped on staging and reported as a fault on production. No script posts, pays or
+closes: the relay is the only sender, under the co-signer's recomputation.
+
 ## Package checks
 
 Run only these package checks for this ledger work; do not run the world suite:
@@ -195,49 +192,11 @@ is not a rehearsal dependency.
 
 Use the single [first deployment command](../../../deploy/first/README.md) for dev or production. It defaults to a
 read-only dry run, creates the owner's three accounts, resumes fixed-address deployments and setup, and continues
-through the shard, Workers, client and funded season. Its README is the deployment procedure. Dev uses test tokens on
+through the shard, Workers, client and season calendar. Its README is the deployment procedure. Dev uses test tokens on
 Starknet mainnet; only public addresses enter `contracts/common/addresses/dev.json`.
 
 All three value-plane packages use the root Scarb 2.13.1 and Starknet Foundry 0.51.2 pins. The command builds them on
 the box under its shared lock. The ledger tests declare the production collectible implementation.
-
-### Fund a Frontier season
-
-Set the Frontier calendar first. When the shard confirms creation, take the actual game ID from the launch result or
-Herald directory and fund it at once. The deployment check may have consumed earlier IDs. The funding command takes
-`dev` or `production`, never a network name. Both run on `SN_MAIN`; `dev` selects `dev.json` through the shared staging
-reader and `production` selects `production.json`. It reads the ledger and token from that environment's book, then
-verifies `ledger.lords()` matches the token before approving anything. An undeployed address fails; it never falls back
-to the other environment.
-
-Supply the ledger admin's `STARKNET_ACCOUNT_ADDRESS` and `STARKNET_ACCOUNT_PRIVATE_KEY` as secrets, `STARKNET_RPC` for
-Starknet mainnet, `NATIVE_WORLD_MANIFEST` for the shard, `RPC_URL` for that shard's public RPC, and `HERALD_URL` for its
-HTTPS Herald. Give the command the amount to deposit as a positive whole number of LORDS (devLords for dev). The admin
-must hold that amount in the selected environment's token and enough real mainnet STRK for fees. For dev, call
-devLords's public `mint(recipient, amount)` to mint test tokens to the admin before funding; production uses real LORDS.
-The command converts whole tokens to wei and refuses a deposit that does not fit u128 wei. For example, the argument
-1000000 deposits exactly 1000000000000000000000000 wei.
-
-```sh
-# Replace 42 with the confirmed Frontier game ID; production selects the production book.
-pnpm --dir contracts/l2/ledger/scripts fund:frontier dev 42 1000000
-```
-
-The command checks the shard chain ID, reads Herald's confirmed GameRegistry, ChestRules and SliceRules, and checks the
-game against the shard RPC at that same block. It compares the day length and claim window with ledger preset (2 for
-dev; the native preset ID for production), and submits approval plus the requested deposit with the game's start and end
-in one transaction. The preset carries no pool. It waits for confirmation, rereads `get_frontier` and its preset, and
-refuses a different start, seed, end, pool or day rule. Its public result includes the transaction hash and verified
-funding. A season already running may be funded; a season at or past its end cannot. No caller-entered seed, start or
-end can override the confirmed game.
-
-The relay reads the confirmed ledger deposit and publishes its pool to the shard once, after checking the game start,
-end and seed. Before publication the pool is zero and no ruin chest exists. Confirm a positive `LordsBudget.pool` in
-Herald before expecting chest payouts. The release uses that deposited pool and the existing day schedule; publication
-after the start releases elapsed days immediately, and unused daily tokens roll over.
-
-`pnpm --dir contracts/l2/ledger/scripts test` checks deployment publication, setup separation, compiled funding
-calldata, confirmed reads, mismatches and readback without a signer or live deployment.
 
 Use the resulting public manifest to verify the deployment and the checked-in address book to configure service and
 client builds. Match the shard's Frontier season window and published pool to the deployed ledger. Mint devLords to dev

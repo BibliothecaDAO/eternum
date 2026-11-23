@@ -1,5 +1,4 @@
 use crate::geometry::checked_neighbor_at_distance;
-use crate::settlement::SettlementMode;
 use crate::troops::Coord;
 
 /// The tile settlement, reservation and discovery layouts are measured from.
@@ -25,28 +24,8 @@ fn distances(spacing: u32) -> Distances {
     Distances { base: spacing, step: spacing * 3 / 2 + 3, mirror_first: spacing + 3, mirror_second: spacing / 2 }
 }
 
-pub fn target_pool_size(registered: u16, limit: u16, mode: SettlementMode) -> u16 {
-    if registered >= limit {
-        return 0;
-    }
-    let remaining = limit - registered;
-    let window = if mode == SettlementMode::Duel {
-        remaining
-    } else if registered < 3 {
-        6
-    } else if registered < 15 {
-        9
-    } else {
-        12
-    };
-    core::cmp::min(window, remaining)
-}
-
 // A candidate's ordinal replaces the mutable side/ring/point cursor and stored coordinates.
-pub fn settlement_location(center: Coord, mode: SettlementMode, spacing: u32, candidate: u32) -> Span<Coord> {
-    if mode == SettlementMode::Duel {
-        return duel_location(center, candidate);
-    }
+pub fn settlement_location(center: Coord, spacing: u32, candidate: u32) -> Coord {
     let distances = distances(spacing);
     let side = candidate % 6;
     let mut point = candidate / 6;
@@ -61,68 +40,66 @@ pub fn settlement_location(center: Coord, mode: SettlementMode, spacing: u32, ca
     let first = neighbor_at_distance(first, start, distances.step * (ring - 1));
     if point <= ring {
         let a = neighbor_at_distance(first, triangle, distances.step * (point - 1));
-        let b = neighbor_at_distance(a, start, 3);
-        let c = neighbor_at_distance(b, triangle, 3);
-        let middle = neighbor_at_distance(neighbor_at_distance(a, start, 2), triangle, 1);
-        select_location(mode, a, b, c, middle)
+        neighbor_at_distance(neighbor_at_distance(a, start, 2), triangle, 1)
     } else {
         let anchor = neighbor_at_distance(first, triangle, distances.step * (2 * ring - point));
         let a = neighbor_at_distance(
             neighbor_at_distance(anchor, start, distances.mirror_first), triangle, distances.mirror_second,
         );
-        let b = neighbor_at_distance(a, triangle, 3);
-        let c = neighbor_at_distance(b, start, 3);
-        let middle = neighbor_at_distance(neighbor_at_distance(a, triangle, 2), start, 1);
-        select_location(mode, a, b, c, middle)
+        neighbor_at_distance(neighbor_at_distance(a, triangle, 2), start, 1)
     }
 }
 
-fn select_location(mode: SettlementMode, a: Coord, b: Coord, c: Coord, middle: Coord) -> Span<Coord> {
-    if mode == SettlementMode::Single {
-        array![middle].span()
+#[derive(Copy, Drop)]
+struct Corner {
+    coord: Coord,
+    first: u8,
+    second: u8,
+}
+
+fn corner(center: Coord, spacing: u32, candidate: u32) -> Corner {
+    let distances = distances(spacing);
+    let side = candidate % 6;
+    let mut point = candidate / 6;
+    let mut ring = 1;
+    while point >= 2 * ring {
+        point -= 2 * ring;
+        ring += 1;
+    }
+    point += 1;
+    let (start, triangle) = *array![(1_u8, 3_u8), (3, 5), (5, 1), (2, 4), (4, 0), (0, 2)].at(side);
+    let first = neighbor_at_distance(neighbor_at_distance(center, start, distances.base), triangle, distances.base / 2);
+    let first = neighbor_at_distance(first, start, distances.step * (ring - 1));
+    if point <= ring {
+        Corner {
+            coord: neighbor_at_distance(first, triangle, distances.step * (point - 1)), first: start, second: triangle,
+        }
     } else {
-        array![a, b, c].span()
+        let anchor = neighbor_at_distance(first, triangle, distances.step * (2 * ring - point));
+        let coord = neighbor_at_distance(
+            neighbor_at_distance(anchor, start, distances.mirror_first), triangle, distances.mirror_second,
+        );
+        Corner { coord, first: triangle, second: start }
     }
 }
 
-fn duel_location(center: Coord, candidate: u32) -> Span<Coord> {
-    assert!(candidate < 2, "two players already settled");
-    let (outward, lower, upper) = if candidate == 0 {
-        (3, 4, 2)
-    } else {
-        (0, 5, 1)
-    };
-    let anchor = neighbor_at_distance(center, outward, 4);
-    array![
-        neighbor_at_distance(center, outward, 8), neighbor_at_distance(anchor, lower, 2),
-        neighbor_at_distance(anchor, upper, 2),
-    ]
-        .span()
+pub fn triple_settlement_locations(center: Coord, spacing: u32, candidate: u32) -> Span<Coord> {
+    let corner = corner(center, spacing, candidate);
+    let second = neighbor_at_distance(corner.coord, corner.first, 3);
+    array![corner.coord, second, neighbor_at_distance(second, corner.second, 3)].span()
 }
 
-pub fn reservation_count(limit: u16, mode: SettlementMode) -> u32 {
-    if mode == SettlementMode::Duel {
-        return 3;
-    }
+pub fn reservation_count(players: u32) -> u32 {
     let mut ring = 0_u32;
-    while limit.into() >= 6 * ring * ring + 1 {
+    while players >= 6 * ring * ring + 1 {
         ring += 1;
     }
     1 + 3 * ring * (ring + 1)
 }
 
-pub fn reservation_location(center: Coord, mode: SettlementMode, spacing: u32, candidate: u32) -> Coord {
+pub fn reservation_location(center: Coord, spacing: u32, candidate: u32) -> Coord {
     if candidate == 0 {
         return center;
-    }
-    if mode == SettlementMode::Duel {
-        assert!(candidate < 3, "all duel reservations placed");
-        let direction = if candidate == 1 {
-            1
-        } else {
-            5
-        };
-        return neighbor_at_distance(neighbor_at_distance(center, direction, 6), 3, 3);
     }
     let step = distances(spacing).step;
     let mut point = candidate - 1;
@@ -137,12 +114,4 @@ pub fn reservation_location(center: Coord, mode: SettlementMode, spacing: u32, c
 
 fn neighbor_at_distance(coord: Coord, direction: u8, distance: u32) -> Coord {
     checked_neighbor_at_distance(coord, direction, distance).expect('settlement geometry exhausted')
-}
-
-pub fn hyperstructure_scan_distance(spacing: u32, mode: SettlementMode) -> u32 {
-    distances(spacing).base + if mode == SettlementMode::Single {
-        2
-    } else {
-        0
-    }
 }

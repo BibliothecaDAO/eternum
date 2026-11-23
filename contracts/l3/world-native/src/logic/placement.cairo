@@ -1,11 +1,8 @@
 #[starknet::contract]
 pub mod PlacementLogic {
-    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
-    use crate::geometry::{spire_neighbor, tile_key};
     use crate::logic::map::MapState;
     use crate::logic::release::ReleaseState;
     use crate::logic::settlement::SettlementPoolState;
-    use crate::map::{BIOME_SCALE, BYTE_RANGE};
     #[cfg(feature: "test_support")]
     use crate::settlement::SettlementPool;
     use crate::troops::Coord;
@@ -16,27 +13,13 @@ pub mod PlacementLogic {
 
     #[abi(embed_v0)]
     impl CommandIngress of crate::commands::ICommandIngress<ContractState> {
-        fn validate_command(self: @ContractState, command: Span<felt252>) -> u32 {
-            let (index, _, _) = crate::commands::validated_command(command).expect('INVALID_COMMAND');
-            index
+        fn admit(ref self: ContractState, game_id: u32, actor: starknet::ContractAddress, command: Span<felt252>) {
+            crate::commands::admit(game_id, actor, command);
         }
-        fn assign_open_home(ref self: ContractState, game_id: u32, actor: starknet::ContractAddress) {
-            crate::entity_ids::assign_open_home(game_id, actor);
-        }
-    }
-    #[abi(embed_v0)]
-    impl PresetSettlement of crate::presets::IPresetSettlement<ContractState> {
-        fn store_settlement_preset(
-            ref self: ContractState,
-            commitment: felt252,
-            settlement: crate::presets::SettlementPreset,
-            entry_rule: u8,
-            mode_rules: u32,
-            day_unit_seconds: u32,
-        ) {
-            crate::logic::preset_record::store_settlement(
-                commitment, settlement, entry_rule, mode_rules, day_unit_seconds,
-            );
+        fn requires_oath_answer(self: @ContractState, game_id: u32, command: Span<felt252>) -> bool {
+            let mut fields = command;
+            let command = Serde::deserialize(ref fields).expect('INVALID_COMMAND');
+            crate::logic::oath_commands::requires_answer(game_id, command)
         }
     }
     #[storage]
@@ -58,48 +41,7 @@ pub mod PlacementLogic {
         RowSet: crate::events::RowSet,
     }
     #[abi(embed_v0)]
-    impl Spires of crate::spires::ISpires<ContractState> {
-        fn initialize_spires(ref self: ContractState, game_id: u32) {
-            let game_context = crate::commands::load_context(game_id, 0, starknet::get_block_timestamp());
-            assert!(
-                crate::rules::rule_enabled(game_context.rules.unbox(), crate::rules::SPIRES), "spires are disabled",
-            );
-            let layout = crate::logic::preset_record::for_game(game_id).spires.read().expect('missing season spires');
-            let center = self.map_center(game_id, game_context);
-            for ordinal in 0_u32..layout.count.into() {
-                self.create_spire(game_id, crate::spires::location(center, layout, ordinal), game_context);
-            }
-        }
-        #[cfg(feature: "test_support")]
-        fn spire_layout(self: @ContractState, game_id: u32) -> Option<crate::spires::SpireLayout> {
-            crate::logic::preset_record::for_game(game_id).spires.read()
-        }
-    }
-    #[abi(embed_v0)]
-    impl SeasonPlacement of crate::realms::ISeasonPlacement<ContractState> {
-        fn claim_season_settlement(
-            ref self: ContractState, game_id: u32, settled_count: u16, seed: u256, center: Coord,
-        ) -> Coord {
-            let mut rules = crate::logic::settlement::rules(game_id);
-            assert!(rules.mode == crate::settlement::SettlementMode::Single, "season settlement requires one realm");
-            rules.registration_limit = 0xffff;
-            for _ in 0..64_u32 {
-                let coords = self.settlements.claim(game_id, center, rules, settled_count, seed);
-                let coord = *coords.at(0);
-                let occupied = crate::logic::map::occupancy(tile_key(game_id, coord)).is_some();
-                if !occupied {
-                    return coord;
-                }
-            }
-            panic!("no vacant settlement in search limit")
-        }
-    }
-    #[abi(embed_v0)]
     impl Settlements of crate::settlement::ISettlementPool<ContractState> {
-        #[cfg(feature: "test_support")]
-        fn reserved_hyperstructures(self: @ContractState, game_id: u32) -> u32 {
-            self.settlements.data.settlement_pool.reserved_hyperstructures.read(game_id)
-        }
         #[cfg(feature: "test_support")]
         fn settlement_pool(self: @ContractState, game_id: u32, center: Coord) -> SettlementPool {
             self.settlements.pool(game_id, center, crate::logic::settlement::rules(game_id))
@@ -108,109 +50,8 @@ pub mod PlacementLogic {
         fn village_pool(self: @ContractState, game_id: u32, center: Coord) -> SettlementPool {
             self.settlements.village_pool(game_id, center, crate::logic::settlement::rules(game_id))
         }
-        fn claim_village(ref self: ContractState, game_id: u32, registered: u16, seed: u256, center: Coord) -> Coord {
-            self.settlements.claim_village(game_id, center, crate::logic::settlement::rules(game_id), registered, seed)
-        }
-    }
-    #[abi(embed_v0)]
-    impl Reservations of crate::settlement::IBlitzReservations<ContractState> {
-        fn initialize_reservations(ref self: ContractState, game_id: u32) {
-            let game_context = crate::commands::load_context(game_id, 0, starknet::get_block_timestamp());
-
-            if self.settlements.data.settlement_pool.reserved_hyperstructures.read(game_id) != 0 {
-                return;
-            }
-            let rules = crate::logic::settlement::rules(game_id);
-            self.settlements.reserve_blitz_locations(game_id, self.map_center(game_id, game_context), rules);
-            self.reserve_sites(game_id, 255, starknet::get_block_timestamp(), game_context);
-        }
-
-        fn release_hyperstructure(ref self: ContractState, game_id: u32, coord: Coord) {
-            crate::logic::map::MapState::release_hyperstructure(tile_key(game_id, coord));
-        }
-    }
-
-    #[generate_trait]
-    impl Internal of InternalTrait {
-        fn reserve_sites(
-            ref self: ContractState,
-            game_id: u32,
-            count: u8,
-            timestamp: u64,
-            game_context: crate::commands::ExecutionContext,
-        ) {
-            let game = game_context.game.unbox();
-            let game_rules = game_context.rules.unbox();
-            assert!(
-                crate::rules::rule_enabled(game_rules, crate::rules::RESERVED_HYPERSTRUCTURES),
-                "reserved hyperstructures disabled",
-            );
-            assert!(game.end_at == 0 || timestamp < game.end_at, "game ended");
-            let rules = crate::logic::settlement::rules(game_id);
-            let required = crate::settlement_grid::reservation_count(rules.registration_limit, rules.mode);
-            let center = self.map_center(game_id, game_context);
-            let mut placed = self.settlements.data.settlement_pool.reserved_hyperstructures.read(game_id);
-            let last = core::cmp::min(required, placed + count.into());
-            while placed < last {
-                let coord = crate::settlement_grid::reservation_location(center, rules.mode, rules.spacing, placed);
-                let key = tile_key(game_id, coord);
-                let previous = crate::logic::map::tile(key).map(|tile| tile.data).unwrap_or(0);
-                if previous / BIOME_SCALE % BYTE_RANGE == 0 {
-                    crate::logic::map::MapState::reveal(
-                        key, crate::logic::map::biome(key, crate::commands::biome_context(game_context)),
-                    );
-                }
-                crate::logic::map::MapState::reserve_hyperstructure(key);
-                placed += 1;
-            }
-            if placed != self.settlements.data.settlement_pool.reserved_hyperstructures.read(game_id) {
-                self.settlements.data.settlement_pool.reserved_hyperstructures.write(game_id, placed);
-                self
-                    .emit(
-                        crate::events::RowSet {
-                            version: 1,
-                            model: 'HyperstructureReservations',
-                            keys: array![game_id.into()].span(),
-                            values: array![placed.into()].span(),
-                        },
-                    );
-            }
-        }
-
-        fn create_spire(
-            ref self: ContractState, game_id: u32, coord: Coord, game_context: crate::commands::ExecutionContext,
-        ) -> u64 {
-            for alt in array![false, true] {
-                let occupied = crate::logic::map::occupancy(tile_key(game_id, Coord { alt, ..coord }));
-                assert!(occupied.is_none(), "spire tile occupied");
-            }
-            let id: u64 = crate::logic::game::allocate_setup_entity(game_id).into();
-            for alt in array![false, true] {
-                let center = Coord { alt, ..coord };
-                self.reveal_spire_access(game_id, center, game_context);
-                crate::logic::map::MapState::occupy(
-                    tile_key(game_id, center), id, crate::taxonomy::SPIRE_OCCUPIER, true,
-                );
-                for direction in 0_u8..6 {
-                    self.reveal_spire_access(game_id, spire_neighbor(center, direction), game_context);
-                }
-            }
-            id
-        }
-        fn reveal_spire_access(
-            ref self: ContractState, game_id: u32, coord: Coord, game_context: crate::commands::ExecutionContext,
-        ) {
-            let key = tile_key(game_id, coord);
-            let data = crate::logic::map::tile(key).map(|tile| tile.data).unwrap_or(0);
-            if data / BIOME_SCALE % BYTE_RANGE == 0 {
-                crate::logic::map::MapState::reveal(
-                    key, crate::logic::map::biome(key, crate::commands::biome_context(game_context)),
-                );
-            }
-        }
-
-        fn map_center(self: @ContractState, game_id: u32, game_context: crate::commands::ExecutionContext) -> Coord {
-            crate::settlement_grid::map_center(game_context.rules.unbox().map_center_offset)
+        fn claim_village(ref self: ContractState, game_id: u32, seed: u256, center: Coord) -> Coord {
+            self.settlements.claim_village(game_id, center, crate::logic::settlement::rules(game_id), seed)
         }
     }
 }

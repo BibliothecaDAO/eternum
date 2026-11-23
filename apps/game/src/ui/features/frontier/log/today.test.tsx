@@ -20,7 +20,7 @@ const CLOCK = {
   shareLeft: 0.45,
   tone: "calm" as const,
 };
-const totals = { reveals: 19, cleared: 2, chests: 0, essence: 4_150, labor: 550, lords: undefined };
+const totals = { reveals: 19, cleared: 2, essence: 4_150, labor: undefined };
 
 const render = (props: Partial<Parameters<typeof TodaySheet>[0]>) => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -50,7 +50,13 @@ const render = (props: Partial<Parameters<typeof TodaySheet>[0]>) => {
 
 describe("Today", () => {
   it("bounds any day of the season back from today, and none before the first or after today", () => {
-    const calendar = { dayUnitSeconds: DAY / 4, seed: 1n, startMainAt: 0, endAt: 21 * 20 * 14_400 };
+    const calendar = {
+      dayUnitSeconds: DAY / 4,
+      seed: 1n,
+      startMainAt: 0,
+      scheduledEndAt: 21 * 20 * 14_400,
+      endAt: 21 * 20 * 14_400,
+    };
     const days = [dayOf(calendar, 0)!];
     while (days.length < 12) days.push(dayOf(calendar, days.at(-1)!.end)!);
     const now = days[11].start + 60;
@@ -61,7 +67,13 @@ describe("Today", () => {
   });
 
   it("counts today against the season's last day, and none outside the season (audit 10-27)", () => {
-    const calendar = { dayUnitSeconds: DAY / 4, seed: 1n, startMainAt: 0, endAt: 21 * 20 * 14_400 };
+    const calendar = {
+      dayUnitSeconds: DAY / 4,
+      seed: 1n,
+      startMainAt: 0,
+      scheduledEndAt: 21 * 20 * 14_400,
+      endAt: 21 * 20 * 14_400,
+    };
     const days = [dayOf(calendar, 0)!];
     while (days.length < 14) days.push(dayOf(calendar, days.at(-1)!.end)!);
     const endsAt = days[13].end;
@@ -82,18 +94,14 @@ describe("Today", () => {
     const { host, unmount } = render({ onEarlier });
     expect(host.textContent).toContain("Day 12");
     expect(host.textContent).toContain("+4.2K");
-    // Each of the six figures is one image named with its figure: what a reader hears, and what the tooltip shows.
     expect(
       [...host.querySelectorAll('[role="img"][aria-label]')].map((cell) => cell.getAttribute("aria-label")),
-    ).toEqual(["Reveals 19", "Sites cleared 2", "Chests 0", "Essence +4.2K", "Labor +550", "LORDS —"]);
-    // Each tally is named in words under its figure, not by its icon alone.
+    ).toEqual(["Reveals 19", "Sites cleared 2", "Labor —", "Essence +4.2K"]);
     expect([...host.querySelectorAll("[data-total]")].map((cell) => cell.textContent)).toEqual([
       "19Reveals",
       "2Sites cleared",
-      "0Chests",
+      "—Labor",
       "+4.2KEssence",
-      "+550Labor",
-      "—LORDS",
     ]);
     expect(host.textContent).toContain("—");
     expect(host.textContent).toContain("Army 1 cleared a camp");

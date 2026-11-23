@@ -1,3 +1,4 @@
+import { setBuildingCount } from "@bibliothecadao/eternum";
 import {
   BUILDINGS_CENTER,
   BuildingType,
@@ -7,6 +8,9 @@ import {
 } from "@bibliothecadao/types";
 
 import type { LabFact, LabScenario } from "./lab-chain";
+import { wire } from "./lab-chain";
+import { raceScenario } from "./race-scenario";
+import { seasonOneResearchPrices } from "./season-one-research";
 import { balancesPaid, spireScenario } from "./spire-scenario";
 
 /**
@@ -14,11 +18,11 @@ import { balancesPaid, spireScenario } from "./spire-scenario";
  * fills them before it is raised.
  */
 const FIRST_RING = [
-  BuildingType.WorkersHut,
+  BuildingType.ResourceKnightT1,
   BuildingType.ResourceWheat,
   BuildingType.ResourceLabor,
   BuildingType.ResourceKnightT1,
-  BuildingType.WarHall,
+  BuildingType.ResourceWheat,
   BuildingType.SupplyYard,
 ];
 
@@ -34,7 +38,25 @@ const LABOR_HELD = 18_000n * BigInt(RESOURCE_PRECISION);
  */
 export const realmScenario = (): LabScenario => {
   const spire = spireScenario();
-  spire.store.applyFacts([...firstRingBuilt(), ...castlePriced()] as never);
+  const buildings = spire.store.require("StructureBuildings", { game_id: 1, entity_id: 7 });
+  const counts = FIRST_RING.reduce<bigint[]>(
+    (packed, category) => setBuildingCount(category, packed, FIRST_RING.filter((item) => item === category).length),
+    [0n, 0n, 0n],
+  );
+  spire.store.applyFacts([
+    ...firstRingBuilt(),
+    ...castlePriced(),
+    {
+      model: "StructureBuildings",
+      key: spire.store.wireKeyOf("StructureBuildings", { game_id: 1, entity_id: 7 })!,
+      value: {
+        ...buildings,
+        packed_counts_1: counts[0],
+        packed_counts_2: counts[1],
+        packed_counts_3: counts[2],
+      },
+    },
+  ] as never);
   return {
     ...spire,
     answer: (command, chain, now) =>
@@ -44,17 +66,20 @@ export const realmScenario = (): LabScenario => {
 
 /** The castle's levels priced in labor alone, as the castle card reads them, and labor for realm 7 up to an Empire. */
 export const castlePriced = (): LabFact[] => [
-  ...[1, 2, 3].map((level) => ({
-    model: "UpgradeRecipe",
-    key: `0xc${level}`,
-    value: { game_id: 1, level, costs: [{ resource_type: ResourcesIds.Labor, amount: String(levelPrice(level)) }] },
-  })),
+  ...castleRecipes(),
   {
     model: "ResourceBalance",
     key: "0x1ab90",
     value: { game_id: 1, entity_id: 7, resource_type: ResourcesIds.Labor, balance: String(LABOR_HELD) },
   },
 ];
+
+const castleRecipes = (): LabFact[] =>
+  [1, 2, 3].map((level) => ({
+    model: "UpgradeRecipe",
+    key: `0xc${level}`,
+    value: { game_id: 1, level, costs: [{ resource_type: ResourcesIds.Labor, amount: String(levelPrice(level)) }] },
+  }));
 
 const firstRingBuilt = (): LabFact[] =>
   getNeighborHexes(BUILDINGS_CENTER[0], BUILDINGS_CENTER[1]).map(({ col, row }, index) => ({
@@ -79,4 +104,76 @@ const raiseRealm = (chain: LabScenario["store"]): LabFact[] => {
     { model: "Structure", key: realmKey, value: { ...wire, base: { ...wire.base, level: realm.base.level + 1 } } },
     ...balancesPaid(chain, 7n, [{ resource: ResourcesIds.Labor, amount: levelPrice(realm.base.level + 1) }]),
   ];
+};
+
+const REALM_WORLD_STANDING = [BuildingType.ResourceLabor, BuildingType.ResourceWheat, BuildingType.ResourceKnightT1];
+
+export const realmWorldScenario = (): LabScenario => {
+  const race = raceScenario();
+  const buildings = race.store.require("StructureBuildings", { game_id: 1, entity_id: 7 });
+  const standingWithCastle = [BuildingType.ResourceLabor, ...REALM_WORLD_STANDING];
+  const counts = standingWithCastle.reduce<bigint[]>(
+    (packed, category) =>
+      setBuildingCount(category, packed, standingWithCastle.filter((item) => item === category).length),
+    [0n, 0n, 0n],
+  );
+  const plots = getNeighborHexes(BUILDINGS_CENTER[0], BUILDINGS_CENTER[1]).slice(0, REALM_WORLD_STANDING.length);
+  const balanceFact = (resourceType: ResourcesIds, amount: bigint, fallbackKey: string): LabFact => ({
+    model: "ResourceBalance",
+    key:
+      race.store.wireKeyOf("ResourceBalance", { game_id: 1, entity_id: 7, resource_type: resourceType }) ?? fallbackKey,
+    value: {
+      game_id: 1,
+      entity_id: 7,
+      resource_type: resourceType,
+      balance: String(amount * BigInt(RESOURCE_PRECISION)),
+    },
+  });
+  const knightRecipe = race.store.require("ProductionRecipe", { game_id: 1, resource_type: ResourcesIds.Knight });
+  const troopRecipeFact = (resourceType: ResourcesIds, fallbackKey: string): LabFact => ({
+    model: "ProductionRecipe",
+    key: race.store.wireKeyOf("ProductionRecipe", { game_id: 1, resource_type: resourceType }) ?? fallbackKey,
+    value: wire({ ...knightRecipe, resource_type: resourceType }),
+  });
+  race.store.applyFacts([
+    ...plots.map(({ col, row }, index) => ({
+      model: "Building",
+      key: `0x1ac8${index}`,
+      value: {
+        game_id: 1,
+        structure_id: "7",
+        inner_col: col,
+        inner_row: row,
+        category: REALM_WORLD_STANDING[index],
+        paused: false,
+        labor_paid: "0",
+      },
+    })),
+    ...castleRecipes(),
+    ...seasonOneResearchPrices(race.store),
+    troopRecipeFact(ResourcesIds.Crossbowman, "0x1ac95"),
+    troopRecipeFact(ResourcesIds.Paladin, "0x1ac96"),
+    balanceFact(ResourcesIds.Labor, 3_400n, "0x1ac90"),
+    balanceFact(ResourcesIds.Wheat, 1_900n, "0x1ac91"),
+    balanceFact(ResourcesIds.Essence, 420n, "0x1ac92"),
+    balanceFact(ResourcesIds.Knight, 1_200n, "0x1ac97"),
+    balanceFact(ResourcesIds.Crossbowman, 900n, "0x1ac98"),
+    balanceFact(ResourcesIds.Paladin, 400n, "0x1ac99"),
+    {
+      model: "StructureBuildings",
+      key: race.store.wireKeyOf("StructureBuildings", { game_id: 1, entity_id: 7 })!,
+      value: {
+        ...buildings,
+        packed_counts_1: counts[0],
+        packed_counts_2: counts[1],
+        packed_counts_3: counts[2],
+        population: { ...buildings.population, current: REALM_WORLD_STANDING.length },
+      },
+    },
+  ] as never);
+  return {
+    ...race,
+    answer: (command, chain, now) =>
+      command.kind === "LevelUp" ? raiseRealm(chain) : race.answer(command, chain, now),
+  };
 };

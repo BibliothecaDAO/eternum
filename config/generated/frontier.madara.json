@@ -3,11 +3,6 @@
       "message": "This file was generated from the composed config source and should not be edited manually",
       "configuration": {
   "spireTravelEssenceCost": 0,
-  "bitcoin": {
-    "prizePerPhase": 1,
-    "minimumLabor": 100,
-    "ownerCutBps": 2000
-  },
   "mines": {
     "kinds": {
       "1": {
@@ -37,13 +32,12 @@
     "village_pass_nft_address": "0x0"
   },
   "populationCapacity": {
-    "basePopulation": 6
+    "basePopulation": 0
   },
   "tick": {
     "defaultTickIntervalInSeconds": 1,
     "armiesTickIntervalInSeconds": 120,
-    "deliveryTickIntervalInSeconds": 180,
-    "bitcoinPhaseInSeconds": 600
+    "deliveryTickIntervalInSeconds": 180
   },
   "carryCapacityGram": {
     "0": 0,
@@ -55,8 +49,7 @@
     "6": "18446744073709551615",
     "7": "18446744073709551615",
     "8": "18446744073709551615",
-    "10": "18446744073709551615",
-    "11": "18446744073709551615"
+    "10": "18446744073709551615"
   },
   "speed": {
     "donkey_for_resources": 9,
@@ -77,7 +70,6 @@
     "layer_capacity_increment": 6,
     "layer_capacity_bps": 8000,
     "single_realm_mode": false,
-    "two_player_mode": false,
     "spires_layer_distance": 0,
     "spires_max_count": 0,
     "spires_settled_count": 0
@@ -94,8 +86,6 @@
     "startSettlingAfterSeconds": 0,
     "startMainAfterSeconds": 0,
     "durationSeconds": 0,
-    "endGraceSeconds": 0,
-    "bridgeCloseAfterEndSeconds": 604800,
     "startSettlingAt": 0,
     "startMainAt": 0
   },
@@ -128,8 +118,6 @@
     "shardsMinesWinProbability": 0,
     "campFindProbability": 0,
     "campFindFailProbability": 1,
-    "bitcoinMineWinProbability": 0,
-    "bitcoinMineFailProbability": 1,
     "hyperstructureWinProbAtCenter": 0,
     "hyperstructureFailProbAtCenter": 1,
     "hyperstructureFailProbIncreasePerHexDistance": 9820,
@@ -230,7 +218,7 @@
       "26": 0.028,
       "27": 0,
       "28": 0,
-      "29": 0,
+      "29": 0.027777777777777776,
       "30": 0,
       "31": 0,
       "32": 0,
@@ -295,7 +283,12 @@
       ],
       "27": [],
       "28": [],
-      "29": [],
+      "29": [
+        {
+          "resource": 35,
+          "amount": 2
+        }
+      ],
       "30": [],
       "31": [],
       "32": [],
@@ -355,7 +348,7 @@
       "26": 1,
       "27": 0,
       "28": 0,
-      "29": 0,
+      "29": 1,
       "30": 0,
       "31": 0,
       "32": 0,
@@ -555,7 +548,7 @@
   "buildings": {
     "buildingCapacity": {
       "0": 0,
-      "1": 6,
+      "1": 0,
       "2": 0,
       "3": 0,
       "4": 0,
@@ -603,49 +596,49 @@
     "buildingPopulation": {
       "0": 0,
       "1": 0,
-      "2": 2,
-      "3": 2,
-      "4": 2,
-      "5": 2,
-      "6": 2,
-      "7": 2,
-      "8": 2,
-      "9": 2,
-      "10": 2,
-      "11": 2,
-      "12": 2,
-      "13": 2,
-      "14": 2,
-      "15": 2,
-      "16": 2,
-      "17": 2,
-      "18": 2,
-      "19": 2,
-      "20": 2,
-      "21": 2,
-      "22": 2,
-      "23": 2,
-      "24": 2,
-      "25": 2,
-      "26": 2,
-      "27": 2,
-      "28": 3,
-      "29": 2,
-      "30": 2,
-      "31": 2,
-      "32": 2,
-      "33": 2,
-      "34": 2,
-      "35": 2,
-      "36": 2,
-      "37": 1,
-      "38": 2,
-      "39": 2,
-      "40": 2,
-      "41": 2,
-      "42": 2,
-      "43": 2,
-      "44": 2
+      "2": 0,
+      "3": 0,
+      "4": 0,
+      "5": 0,
+      "6": 0,
+      "7": 0,
+      "8": 0,
+      "9": 0,
+      "10": 0,
+      "11": 0,
+      "12": 0,
+      "13": 0,
+      "14": 0,
+      "15": 0,
+      "16": 0,
+      "17": 0,
+      "18": 0,
+      "19": 0,
+      "20": 0,
+      "21": 0,
+      "22": 0,
+      "23": 0,
+      "24": 0,
+      "25": 0,
+      "26": 0,
+      "27": 0,
+      "28": 0,
+      "29": 0,
+      "30": 0,
+      "31": 0,
+      "32": 0,
+      "33": 0,
+      "34": 0,
+      "35": 0,
+      "36": 0,
+      "37": 0,
+      "38": 0,
+      "39": 0,
+      "40": 0,
+      "41": 0,
+      "42": 0,
+      "43": 0,
+      "44": 0
     },
     "buildingResourceProduced": {
       "0": 0,
@@ -738,12 +731,7 @@
     },
     "simpleBuildingCost": {
       "0": [],
-      "1": [
-        {
-          "resource": 23,
-          "amount": 300
-        }
-      ],
+      "1": [],
       "2": [],
       "3": [],
       "4": [],
@@ -783,7 +771,12 @@
       ],
       "29": [],
       "30": [],
-      "31": [],
+      "31": [
+        {
+          "resource": 23,
+          "amount": 500
+        }
+      ],
       "32": [],
       "33": [],
       "34": [],
@@ -801,11 +794,11 @@
       "41": [
         {
           "resource": 38,
-          "amount": 6000
+          "amount": 2500
         },
         {
           "resource": 23,
-          "amount": 1500
+          "amount": 500
         }
       ],
       "42": [
@@ -818,35 +811,19 @@
           "amount": 1500
         }
       ],
-      "43": [
-        {
-          "resource": 38,
-          "amount": 6000
-        },
-        {
-          "resource": 23,
-          "amount": 1500
-        }
-      ],
+      "43": [],
       "44": [
         {
           "resource": 38,
-          "amount": 6000
+          "amount": 2500
         },
         {
           "resource": 23,
-          "amount": 1500
+          "amount": 500
         }
       ]
     },
     "buildingFixedCostScalePercent": 10000
-  },
-  "hyperstructures": {
-    "hyperstructureInitializationShardsCost": {
-      "resource": 24,
-      "amount": 0
-    },
-    "hyperstructureConstructionCost": []
   },
   "realmUpgradeCosts": {
     "0": [],
@@ -872,7 +849,6 @@
   "realmMaxLevel": 4,
   "villageMaxLevel": 1,
   "victoryPoints": {
-    "pointsForWin": "0",
     "hyperstructurePointsPerCycle": "0",
     "pointsForHyperstructureClaimAgainstBandits": "0",
     "pointsForNonHyperstructureClaimAgainstBandits": "0",
@@ -886,9 +862,6 @@
       "collectible_timelock_address": "0x0",
       "collectibles_lootchest_address": "0x0",
       "collectibles_elitenft_address": "0x0"
-    },
-    "exploration": {
-      "rewards": []
     }
   },
   "faith": {
@@ -897,9 +870,6 @@
     "realm_fp_per_sec": 0,
     "village_fp_per_sec": 0,
     "owner_share_percent": 0
-  },
-  "artificer": {
-    "research_cost_for_relic": 0
   },
   "trade": {
     "maxCount": 0

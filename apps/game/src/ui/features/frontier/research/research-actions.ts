@@ -9,11 +9,6 @@ import { useGoToFrontierPlace } from "../frontier-home";
 import type { Need, TreeNode } from "./research-tree";
 import { researchKey, sendResearch } from "./send-research";
 
-/**
- * What a research choice does, wherever it stands (the Research page, a building's card): send the node's next tier with
- * a side, say whether a row's research is under way, and the step that clears a need. A need on another node (the
- * Barracks' gate) opens that node through `openNode`.
- */
 export const useResearchActions = (realm: NativeRows["Structure"], openNode: (key: string) => void) => {
   const { setup, account } = useGame();
   const goToPlace = useGoToFrontierPlace(realm);
@@ -21,9 +16,9 @@ export const useResearchActions = (realm: NativeRows["Structure"], openNode: (ke
 
   const sending = (node: TreeNode) => researching.has(researchKey(realm, node.row));
 
-  const research = async (node: TreeNode, side: number) => {
+  const research = async (node: TreeNode) => {
     try {
-      await sendResearch(setup.systemCalls, account.account, realm, { row: node.row, choice: side }, () => undefined);
+      await sendResearch(setup.systemCalls, account.account, realm, node.row, () => undefined);
     } catch (error) {
       toast.failed(error, "The research could not be sent.");
     }
@@ -38,6 +33,8 @@ export const useResearchActions = (realm: NativeRows["Structure"], openNode: (ke
       case "essence":
       case "labor":
         return undefined;
+      case "level":
+        return { icon: "realm", word: RESEARCH_TREE.levelUpCastle, onFix: () => goToPlace(false) };
       case "stands":
         return { icon: need.icon, word: RESEARCH_TREE.build(need.building), onFix: () => goToPlace(false) };
       case "store":

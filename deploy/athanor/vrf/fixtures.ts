@@ -17,7 +17,7 @@ export function invoke(): PlayInvoke {
     nonce: "0x0",
     tip: "0x0",
     signature: ["0x1", "0x2", "0x3"],
-    calldata: ["0x1", identity.games, hash.getSelectorFromName("play"), "0x5", "0x1", "0x1", "0x123", "0x1", "0x0"],
+    calldata: ["0x1", identity.games, hash.getSelectorFromName("play"), "0x4", "0x1", "0x1", "0x1", "0x0"],
     resource_bounds: {
       l1_gas: { max_amount: "0x0", max_price_per_unit: "0x0" },
       l2_gas: { max_amount: identity.l2GasBound, max_price_per_unit: "0x0" },

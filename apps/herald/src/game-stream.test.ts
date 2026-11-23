@@ -26,9 +26,9 @@ const recordingSocket = (): StreamSocket & { messages: Array<Record<string, unkn
 };
 
 describe("GameStreamHub", () => {
-  it.each([false, true])("streams peer chest earnings only within their game (preconfirmed=%s)", (preconfirmed) => {
+  it.each([false, true])("streams peer ruin payouts only within their game (preconfirmed=%s)", (preconfirmed) => {
     const { decoder, native, fold } = setup();
-    const hub = new GameStreamHub("chest-stories", { info: vi.fn() });
+    const hub = new GameStreamHub("payout-stories", { info: vi.fn() });
     const attach = (actor?: string, gameId = "7") => {
       const scopedFold = {
         subscriptionScope: () => ({
@@ -76,11 +76,9 @@ describe("GameStreamHub", () => {
     const spectator = attach();
     const otherGame = attach("0xb", "8");
     const layout = schema.games.events.find((event) => event.name === "StoryEvent")!;
-    const chest = (amount: number) => ({
-      RewardChestOpened: { explorer_id: 70, structure_id: 7, coord: { alt: false, x: 40, y: 12 }, amount },
-    });
     const payout = (category: number, amount: number) => ({
       SitePayout: {
+        xp: 85,
         structure_id: 7,
         explorer_id: 70,
         site_id: 99,
@@ -91,14 +89,12 @@ describe("GameStreamHub", () => {
       },
     });
     const variants = [
-      chest(50),
-      chest(0),
       payout(10, 50_000_000_000),
       payout(10, 0),
       payout(7, 10),
       payout(9, 10),
       payout(11, 10),
-      { FaithPointsClaimedStory: { wonder_id: 7, new_points: 3, total_points: 4 } },
+      { StructureLevelUpStory: { new_level: 2 } },
     ];
     const events = variants.map((story) => {
       const values = {
@@ -129,17 +125,17 @@ describe("GameStreamHub", () => {
     });
     const { changes } = native.applyReceipt(fold, receipt(events), preconfirmed ? null : 13, 0);
     const rows = changes.flatMap(({ change }) => (change?.set ? [change.set] : []));
-    expect(rows).toHaveLength(8);
+    expect(rows).toHaveLength(6);
     const publish = (set: typeof rows) =>
       hub.publishDiff("7", { block: 13, preconfirmed, set, del: [] }, (row) => rowStreamKeys(row.model, row.value, 21));
     // A private-only diff must not wake a peer, and sharing a mixed diff must not leak its private rows.
-    publish(rows.slice(4));
-    expect(owner.rows()).toEqual(rows.slice(4));
+    publish(rows.slice(2));
+    expect(owner.rows()).toEqual(rows.slice(2));
     expect(peer.rows()).toEqual([]);
     publish(rows);
-    expect(owner.rows()).toEqual([...rows.slice(4), ...rows]);
-    expect(peer.rows()).toEqual(rows.slice(0, 4));
-    expect(spectator.rows()).toEqual(rows.slice(0, 4));
+    expect(owner.rows()).toEqual([...rows.slice(2), ...rows]);
+    expect(peer.rows()).toEqual(rows.slice(0, 2));
+    expect(spectator.rows()).toEqual(rows.slice(0, 2));
     expect(otherGame.rows()).toEqual([]);
   });
 

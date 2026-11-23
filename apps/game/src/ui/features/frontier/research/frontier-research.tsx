@@ -7,12 +7,6 @@ import { useResearchActions } from "./research-actions";
 import { useResearchTree } from "./research-facts";
 import { ResearchPanel } from "./research-panel";
 
-/**
- * The castle's tree over the game's facts, Frontier's Research page: the tree, the picked node's choice at its foot, and
- * Research with the side picked. `pick` opens on a node (a card's way to its research); otherwise the page opens on the
- * tree alone, to browse (owner, 27 October: "it shouldnt open up the one I can research I just wanna browse").
- * Until every fact the tree reads has arrived, the page says so, in its frame.
- */
 export const FrontierResearch = ({
   realm,
   pick,

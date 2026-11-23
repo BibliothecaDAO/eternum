@@ -130,7 +130,6 @@ describe("terrain performance benchmark", () => {
 
 function passingResult(rendererMode, variant) {
   const props = variant === "props" || variant === "production";
-  const textured = variant !== "geometry";
   return {
     complete: true,
     errors: [],
@@ -140,7 +139,7 @@ function passingResult(rendererMode, variant) {
     variant,
     snapshot: {
       activeMode: rendererMode === "webgpu-auto" ? "webgpu" : "webgl2-fallback",
-      assets: { groundArrayRequests: textured ? 2 : 0, propCatalogRequests: props ? 1 : 0 },
+      assets: { propCatalogRequests: props ? 1 : 0 },
       chunks: {
         builtPages: 30,
         cachePages: 100,
@@ -192,7 +191,7 @@ function passingResult(rendererMode, variant) {
         pixelRatio: 1,
         propInstances: props ? 4_000 : 0,
         shroudInstances: 0,
-        textures: textured ? 7 : 5,
+        textures: 7,
         triangles: props ? 2_500_000 : 100_000,
       },
       runMode: "full",

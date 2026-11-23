@@ -1,7 +1,6 @@
-import { rpcAt, readFrontierFunding } from "@realms-world/value-ledger";
+import { ledgerInteger, rpcAt, readFrontierFunding, type FrontierFundingTerms } from "@realms-world/value-ledger";
 import { ShardReader } from "./shard-rpc";
-import { readConfirmedSnapshot, optionalRow } from "./shard-snapshot";
-import { frontierTerms } from "./frontier-games";
+import { readConfirmedSnapshot, optionalRow, singleRow, type ConfirmedSnapshot } from "./shard-snapshot";
 import { uint } from "./shard-rpc";
 import { relayOperation } from "./ports";
 
@@ -39,3 +38,18 @@ export const frontierReceiptBindings = (
       return gameId;
     }),
 });
+
+function frontierTerms(snapshot: ConfirmedSnapshot): FrontierFundingTerms {
+  const game = singleRow(snapshot, "GameRegistry");
+  const chests = singleRow(snapshot, "ChestRules");
+  const rules = singleRow(snapshot, "SliceRules");
+  return {
+    start: ledgerInteger(String(game.start_main_at)),
+    end: ledgerInteger(String(game.end_at)),
+    seed: String(game.seed),
+    dayUnit: ledgerInteger(String(rules.day_unit_seconds)),
+    claimWindow: ledgerInteger(String(chests.claim_window_seconds)),
+    chestPoolBps: ledgerInteger(String(chests.pool_bps)),
+    topN: ledgerInteger(String(chests.top_n)),
+  };
+}

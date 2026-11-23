@@ -21,7 +21,7 @@ const DAY = 86_400;
 
 const disposers: Array<() => void> = [];
 beforeEach(() => {
-  configManager.setActiveGame(GAME, 1);
+  configManager.setActiveGame(GAME);
   // A map centred on 0: a contract hex and its scene hex are the same numbers.
   vi.spyOn(configManager, "getMapCenter").mockReturnValue(0);
   useUIStore.setState({ mapLayer: false });
@@ -276,6 +276,7 @@ function createWorld(options: { expedition?: { dayUnitSeconds: number; spacing: 
     rules.set("GameRegistry", {
       game_id: GAME,
       start_main_at: BigInt(options.expedition.startMainAt),
+      scheduled_end_at: BigInt(options.expedition.startMainAt + 21 * 20 * options.expedition.dayUnitSeconds),
       end_at: BigInt(options.expedition.startMainAt + 21 * 20 * options.expedition.dayUnitSeconds),
       seed: 1n,
     });
@@ -287,12 +288,21 @@ function createWorld(options: { expedition?: { dayUnitSeconds: number; spacing: 
     structuresOwnedBy: facts.structuresOwnedBy.bind(facts),
     armiesAtHome: facts.armiesAtHome.bind(facts),
     subscribe: facts.subscribe.bind(facts),
+    subscriptionScope: facts.subscriptionScope.bind(facts),
     get: ((model: string, keys: object) => rules.get(model) ?? facts.get(model as "TileOpt", keys as never)) as never,
     require: ((model: string, keys: object) =>
       rules.get(model) ?? facts.require(model as "TileOpt", keys as never)) as never,
   } as Pick<
     NativeFactStore,
-    "entries" | "inGame" | "entityOccupancy" | "structuresOwnedBy" | "armiesAtHome" | "subscribe" | "get" | "require"
+    | "entries"
+    | "inGame"
+    | "entityOccupancy"
+    | "structuresOwnedBy"
+    | "armiesAtHome"
+    | "subscribe"
+    | "get"
+    | "require"
+    | "subscriptionScope"
   >;
   const projection = new WorldSpatialProjection({ store });
   projection.start();

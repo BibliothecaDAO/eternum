@@ -1,46 +1,36 @@
 import "./home-source-picker.css";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { canonicalRealm, homeSourceClaim, type HomeClaimSource, type LaborRuleAmounts } from "@bibliothecadao/eternum";
-import { orders } from "@bibliothecadao/types";
-import type { CampaignKey, HeldRealm } from "@realms-world/identity";
+import { canonicalRealm } from "@bibliothecadao/eternum";
+import { aspectName, aspects, catalogOrder, type AspectId } from "@bibliothecadao/types";
+import type { HeldRealm } from "@realms-world/identity";
 
-import { useHeldRealms, useHeldTicket } from "@/hooks/use-holdings";
-import { campaignOfPreset, presetLaborRules } from "@/services/home-claim-rules";
+import { useHeldRealms } from "@/hooks/use-holdings";
 import { useLayout } from "@/shell/frame/layout";
 import { linkWalletHref } from "@/shell/profile/settings-route";
 import { returnPathOf } from "@/shell/return-path";
-import { homeIcon } from "@/ui/design-system/home-icons";
-import { HomeArt } from "@/ui/shared/components/home-art";
+import { aspectVariables } from "@/tokens";
+import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { Icon } from "@/ui/design-system/icon";
 import { mintedResourceMeaning, orderMeaning } from "@/ui/design-system/icon-meaning";
 import { HudLoading } from "@/ui/design-system/kit/hud-elements";
+import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
 import {
+  ASPECT_STEP_WORDS,
   HELD_REALMS_UNREADABLE,
   HOME_STEP_WORDS,
-  JOIN_WORDS,
-  TICKET_UNREADABLE,
+  REALM_SIDE_WORDS,
   TRY_AGAIN,
-  campaignTicketName,
   numberedRealm,
 } from "@/ui/design-system/kit/words";
+import { HomeArt } from "@/ui/shared/components/home-art";
 
-/**
- * A Frontier game's Realm step (owner's pick, option B of reports/entry-realm-picker-5.md): one job, choose your home.
- * It offers only what the player can found with: the campaign ticket the account holds for this game's preset, the
- * Realms its linked wallet holds, or, with neither, a free home. The chosen one stands large with what it claims each
- * day (homeSourceClaim on the game's preset rules); the others sit in a strip under it, and past the strip, All opens
- * every choice with search. A ticket and a Realm never combine: the relay registers one source per home
- * (apps/value-relay/src/realm-entry.ts).
- *
- * `value` is the pick: a Realm's number, or "" for the ticket (or, holding none, the free home). It starts on the ticket,
- * else on the first Realm in the step's order, and it never outlives the choice that offered it. `registered` is the
- * Realm the relay already holds for this game: the home's source for good, shown alone and locked. `onSettled` says
- * whether the pick stands on what the account holds, so founding waits for the reads rather than founding a free home.
- */
+import { aspectOfOrder } from "./aspect-picker";
+
+const DESKTOP_VAULT_MAX = 9;
+
 export function HomeSourcePicker({
-  presetId,
   registered,
   value,
   onChange,
@@ -50,10 +40,12 @@ export function HomeSourcePicker({
   takenRealmIds = [],
   onSourceAvailable,
   requireSource = false,
+  aspect = null,
+  action,
 }: {
-  presetId: number;
   title?: string;
   requireSource?: boolean;
+  aspect?: AspectId | null;
   takenRealmIds?: readonly number[];
   onSourceAvailable?: (available: boolean) => void;
   registered: number | null;
@@ -61,11 +53,14 @@ export function HomeSourcePicker({
   onChange: (value: string) => void;
   onSettled: (settled: boolean) => void;
   disabled: boolean;
+  action?: ReactNode;
 }) {
-  const sources = useHomeSources(presetId);
-  const choices = choicesOf(sources).map((choice) =>
-    choice.kind === "realm" ? { ...choice, taken: takenRealmIds.includes(choice.realmId) } : choice,
-  );
+  const layout = useLayout();
+  const desktop = layout === "desktop";
+  const sources = useHomeSources();
+  const choices = choicesOf(sources)
+    .filter((choice) => aspect === null || aspectOfOrder(choice.order) === aspect)
+    .map((choice) => ({ ...choice, taken: takenRealmIds.includes(choice.realmId) }));
   const available = choices.filter((choice) => !isTaken(choice));
   const hasSource = available.length > 0;
   const hasChoices = choices.length > 0;
@@ -78,28 +73,56 @@ export function HomeSourcePicker({
     onSettled(settled);
   }, [settled, onSettled]);
   const picked = registered !== null ? realmChoice({ realmId: registered, map: null }) : pickedChoice(available, value);
+  const showChoices = registered === null && (choices.length > 1 || choices.some(isTaken));
+  const splitDesktop = desktop && showChoices && picked !== undefined;
   return (
-    <section className="home-picker" aria-label={title}>
-      <header className="home-picker__head">
-        <h2>{title}</h2>
-        {registered === null && choices.length > 0 && <span>{choiceCount(choices)}</span>}
-      </header>
-      {picked ? (
-        <Featured choice={picked} rules={sources.rules} locked={registered !== null} />
-      ) : sources.ready ? (
-        <FreeHome unlinked={sources.wallet === null} />
-      ) : sources.ticketUnreadable || sources.realmsUnreadable ? null : (
-        <div className="home-picker__waiting">
-          <HudLoading line={HOME_STEP_WORDS.loading} />
-        </div>
+    <section data-home-picker className="home-picker" aria-label={title}>
+      {!splitDesktop && (
+        <header className="home-picker__top">
+          <div className="home-picker__titles">
+            <h2>{title}</h2>
+            {registered === null && choices.length > 0 && (
+              <p className="home-picker__subtitle">{HOME_STEP_WORDS.pickForBonus(choices.length)}</p>
+            )}
+          </div>
+          {registered === null && choices.length > 0 && (
+            <span className="home-picker__owned">
+              <Icon name="realm" size={18} />
+              {HOME_STEP_WORDS.count(choices.length)}
+            </span>
+          )}
+        </header>
       )}
-      {registered === null && (choices.length > 1 || choices.some(isTaken)) && (
-        <Choices choices={choices} value={value} onChange={onChange} disabled={disabled} />
-      )}
+      <div className="home-picker__shell" data-split={splitDesktop || undefined}>
+        {picked ? (
+          <Featured choice={picked} locked={registered !== null} split={splitDesktop} action={action} />
+        ) : sources.ready ? (
+          <FreeHome unlinked={sources.wallet === null} action={action} />
+        ) : sources.realmsUnreadable ? (
+          action ? (
+            <div className="home-picker__action">{action}</div>
+          ) : null
+        ) : (
+          <>
+            <div className="home-picker__waiting">
+              <HudLoading line={HOME_STEP_WORDS.loading} />
+            </div>
+            {action && <div className="home-picker__action">{action}</div>}
+          </>
+        )}
+        {showChoices && (
+          <Choices
+            title={splitDesktop ? title : undefined}
+            stripLabel={title}
+            choices={choices}
+            value={value}
+            onChange={onChange}
+            disabled={disabled}
+            desktop={desktop}
+          />
+        )}
+      </div>
       {registered === null && sources.ready && sources.wallet === null && choices.length > 0 && <LinkWallet />}
-      {registered === null && sources.ticketUnreadable && (
-        <Unreadable line={TICKET_UNREADABLE} retry={sources.ticketUnreadable} />
-      )}
       {registered === null && sources.realmsUnreadable && (
         <Unreadable line={HELD_REALMS_UNREADABLE} retry={sources.realmsUnreadable} />
       )}
@@ -107,44 +130,30 @@ export function HomeSourcePicker({
   );
 }
 
-/** One thing the player can found with: the account's campaign ticket, or one of its wallet's Realms. */
-export type Choice =
-  | { kind: "ticket"; campaign: CampaignKey; golden: boolean }
-  | {
-      kind: "realm";
-      realmId: number;
-      taken?: boolean;
-      map: string | null;
-      name: string;
-      order: number;
-      resources: string[];
-      wonder: string | null;
-    };
+export type Choice = {
+  kind: "realm";
+  realmId: number;
+  taken?: boolean;
+  map: string | null;
+  name: string;
+  order: number;
+  resources: string[];
+  wonder: string | null;
+};
 
 export const realmChoice = (held: HeldRealm): Choice => ({ kind: "realm", ...held, ...canonicalRealm(held.realmId) });
-const isTaken = (choice: Choice) => choice.kind === "realm" && choice.taken === true;
-const valueOf = (choice: Choice) => (choice.kind === "ticket" ? "" : String(choice.realmId));
+const isTaken = (choice: Choice) => choice.taken === true;
+const valueOf = (choice: Choice) => String(choice.realmId);
 
-/** The ticket first (its home claims Essence on top of Labor), then the Realms: wonders first, the richest, by number. */
-const choicesOf = (sources: HomeSources): Choice[] => [
-  ...(sources.ticket ? [sources.ticket] : []),
-  ...sources.realms.map(realmChoice).toSorted(byRealmOrder),
-];
+const choicesOf = (sources: HomeSources): Choice[] => sources.realms.map(realmChoice).toSorted(byRealmOrder);
 
 const byRealmOrder = (a: Choice, b: Choice) =>
-  a.kind === "realm" && b.kind === "realm"
-    ? Number(b.wonder !== null) - Number(a.wonder !== null) ||
-      b.resources.length - a.resources.length ||
-      a.realmId - b.realmId
-    : 0;
+  Number(b.wonder !== null) - Number(a.wonder !== null) ||
+  b.resources.length - a.resources.length ||
+  a.realmId - b.realmId;
 
 const pickedChoice = (choices: Choice[], value: string) => choices.find((choice) => valueOf(choice) === value);
 
-/**
- * Keeps the pick on a choice the step offers, and says whether it does. Once both reads are known, a pick none offers
- * (an empty one while Realms but no ticket are held, a Realm of another wallet) moves to the first choice: the ticket,
- * or else the first Realm. Nothing moves while settling or once a Realm is registered.
- */
 function usePickOffered(
   choices: Choice[],
   ready: boolean,
@@ -162,113 +171,240 @@ function usePickOffered(
   return offered;
 }
 
-const choiceCount = (choices: Choice[]) =>
-  HOME_STEP_WORDS.count(
-    choices.filter((choice) => choice.kind === "ticket").length,
-    choices.filter((choice) => choice.kind === "realm").length,
-  );
-
-/** The chosen home, large: its picture, its name, its traits and what it claims each day. */
-function Featured({ choice, rules, locked }: { choice: Choice; rules: LaborRuleAmounts | null; locked: boolean }) {
-  const claim = rules && homeSourceClaim(rules, sourceOf(choice));
+function Featured({
+  choice,
+  locked,
+  split,
+  action,
+}: {
+  choice: Choice;
+  locked: boolean;
+  split: boolean;
+  action?: ReactNode;
+}) {
+  const entry = catalogOrder(choice.order);
+  const aspect = entry.aspect ?? null;
+  const aspectStyle = aspect !== null ? (aspectVariables(aspect) as CSSProperties) : undefined;
   return (
-    <div className="home-picker__featured" data-kind={choice.kind}>
-      <ChoiceArt choice={choice} eager />
-      <div className="home-picker__about">
-        <h3>{choiceName(choice)}</h3>
-        {choice.kind === "realm" ? (
-          <>
-            <p className="home-picker__sub">
-              {HOME_STEP_WORDS.realm(choice.realmId)} · <OrderName order={choice.order} />
-            </p>
-            <Resources resources={choice.resources} />
-            {choice.wonder && <Wonder wonder={choice.wonder} />}
-          </>
-        ) : (
-          <p className="home-picker__sub">{choice.golden ? JOIN_WORDS.goldenLine : JOIN_WORDS.realm}</p>
-        )}
-        {claim && (
-          <ul className="home-picker__claim">
-            <li>
-              <Icon name="labor" size={28} />
-              {JOIN_WORDS.laborEachDay(claim.labor)}
-            </li>
-            {claim.essence > 0 && (
-              <li>
-                <Icon name="essence" size={28} />
-                {JOIN_WORDS.essenceEachDay(claim.essence)}
-              </li>
+    <div className="home-picker__featured" data-kind="realm" style={aspectStyle}>
+      {split && (
+        <div className="home-picker__selected-head">
+          <span className="home-picker__eyebrow">{HOME_STEP_WORDS.selectedRealm}</span>
+          <span className="home-picker__order-pill">
+            <OrderEmblem order={choice.order} size={18} />
+            {entry.orderName}
+          </span>
+        </div>
+      )}
+      <div className="home-picker__hero">
+        <div className="home-picker__art-wrap">
+          <ChoiceArt choice={choice} size={split ? 256 : 68} eager />
+          {split && aspect !== null && (
+            <span className="home-picker__facet-badge">
+              <AspectMark aspect={aspect} size={40} decorative />
+            </span>
+          )}
+        </div>
+        <div className="home-picker__about">
+          <div className="home-picker__name-row">
+            <h3>{choice.name}</h3>
+            {!split && <span className="home-picker__id">{`#${choice.realmId}`}</span>}
+          </div>
+          <div className="home-picker__meta">
+            {split ? (
+              <span>
+                {`${HOME_STEP_WORDS.realm(choice.realmId)}`}
+                {aspect !== null && (
+                  <>
+                    {" · "}
+                    <span className="home-picker__aspect-label">{ASPECT_STEP_WORDS.aspectOf(aspectName(aspect))}</span>
+                  </>
+                )}
+              </span>
+            ) : (
+              <>
+                {aspect !== null && (
+                  <span className="home-picker__aspect-label">
+                    <AspectMark aspect={aspect} size={18} decorative />
+                    {aspectName(aspect)}
+                  </span>
+                )}
+                <span className="home-picker__order">
+                  <Icon name={orderMeaning(choice.order)} size={18} />
+                  {entry.orderName}
+                </span>
+              </>
             )}
-          </ul>
-        )}
-        {locked && <p className="home-picker__sub">{HOME_STEP_WORDS.registered}</p>}
+          </div>
+          {choice.resources.length > 0 && <Resources resources={choice.resources} />}
+          {choice.wonder && <Wonder wonder={choice.wonder} />}
+          {locked && <p className="home-picker__sub">{HOME_STEP_WORDS.registered}</p>}
+        </div>
       </div>
+      <div className="home-picker__bonus">
+        <span className="home-picker__bonus-label">{REALM_SIDE_WORDS.bonus}</span>
+        <span className="home-picker__bonus-value">
+          <Icon name="labor" size={18} />
+        </span>
+      </div>
+      {action && <div className="home-picker__action">{action}</div>}
     </div>
   );
 }
 
-const sourceOf = (choice: Choice): HomeClaimSource =>
-  choice.kind === "ticket" ? { kind: "campaign", golden: choice.golden } : { kind: "realm" };
+const choiceLabel = (choice: Choice) => numberedRealm(choice.realmId, choice.name);
 
-const choiceName = (choice: Choice) =>
-  choice.kind === "ticket" ? campaignTicketName(choice.campaign, choice.golden) : choice.name;
+const aspectCountsOf = (choices: readonly Choice[]) =>
+  aspects
+    .map((item) => ({
+      id: item.id,
+      name: item.name,
+      count: choices.filter((choice) => catalogOrder(choice.order).aspect === item.id).length,
+    }))
+    .filter((item) => item.count > 0);
 
-const choiceLabel = (choice: Choice) =>
-  choice.kind === "ticket" ? choiceName(choice) : numberedRealm(choice.realmId, choice.name);
-
-/**
- * The other choices: a strip of the first ones (three, two on a phone: what the doorway's width holds), then All,
- * which opens every choice in a grid with search. Each is a press; the chosen one is marked.
- */
 function Choices({
+  title,
+  stripLabel,
   choices,
   value,
   onChange,
   disabled,
+  desktop,
 }: {
+  title?: string;
+  stripLabel: string;
   choices: Choice[];
   value: string;
   onChange: (value: string) => void;
   disabled: boolean;
+  desktop: boolean;
 }) {
-  const strip = useLayout() === "phone" ? 2 : 3;
   const [all, setAll] = useState(false);
+  const [aspectFilter, setAspectFilter] = useState<AspectId | null>(null);
+  const [query, setQuery] = useState("");
+  const inlineVault = desktop && choices.length <= DESKTOP_VAULT_MAX;
+  const strip = desktop ? 3 : 2;
   const pick = (choice: Choice) => {
     onChange(valueOf(choice));
     setAll(false);
   };
-  const shown = choices.length > strip + 1 ? choices.slice(0, strip) : choices;
+  const visible = inlineVault ? choices.filter((choice) => matchesFilter(choice, aspectFilter, query)) : choices;
+  const shown = inlineVault ? visible : choices.length > strip + 1 ? choices.slice(0, strip) : choices;
+  const countsByAspect = aspectCountsOf(choices);
   return (
-    <>
-      <div className="home-picker__strip" role="group" aria-label={HOME_STEP_WORDS.title}>
-        {shown.map((choice) => (
-          <ChoiceButton
-            key={valueOf(choice)}
-            choice={choice}
-            picked={valueOf(choice) === value}
-            onPick={pick}
-            disabled={disabled}
-          />
-        ))}
-        {shown.length < choices.length && (
-          <button
-            type="button"
-            className="home-picker__all"
-            aria-expanded={all}
-            onClick={() => setAll(!all)}
-            disabled={disabled}
-          >
-            <Icon name="search" size={32} />
-            {HOME_STEP_WORDS.all(choices.length)}
-          </button>
+    <div className="home-picker__vault">
+      <div className="home-picker__vault-head">
+        {title ? (
+          <div className="home-picker__titles">
+            <h2>{title}</h2>
+            <p className="home-picker__subtitle">{HOME_STEP_WORDS.orderDecidesAspect(choices.length)}</p>
+          </div>
+        ) : (
+          <span className="home-picker__eyebrow">{HOME_STEP_WORDS.yourRealmsCount(choices.length)}</span>
         )}
+        {inlineVault && <SearchBox count={choices.length} iconSize={18} value={query} onChange={setQuery} />}
       </div>
+      {inlineVault && countsByAspect.length > 1 && (
+        <AspectFilters
+          total={choices.length}
+          counts={countsByAspect}
+          chosen={aspectFilter}
+          onChoose={setAspectFilter}
+        />
+      )}
+      {shown.length === 0 ? (
+        <p className="home-picker__sub">{HOME_STEP_WORDS.noMatch}</p>
+      ) : (
+        <div className="home-picker__strip" role="group" aria-label={stripLabel}>
+          {shown.map((choice) => (
+            <ChoiceButton
+              key={valueOf(choice)}
+              choice={choice}
+              picked={valueOf(choice) === value}
+              onPick={pick}
+              disabled={disabled}
+              desktop={inlineVault}
+            />
+          ))}
+          {!inlineVault && shown.length < choices.length && (
+            <button
+              type="button"
+              className="home-picker__all"
+              aria-expanded={all}
+              onClick={() => setAll(!all)}
+              disabled={disabled}
+            >
+              <Icon name="search" size={24} />
+              {HOME_STEP_WORDS.all(choices.length)}
+            </button>
+          )}
+        </div>
+      )}
       {all && <AllChoices choices={choices} value={value} onPick={pick} disabled={disabled} />}
-    </>
+    </div>
   );
 }
 
-/** Every choice in a grid, searched by name or number; maps load as their cards scroll into view. */
+const SearchBox = ({
+  count,
+  iconSize,
+  value,
+  onChange,
+}: {
+  count: number;
+  iconSize: number;
+  value: string;
+  onChange: (value: string) => void;
+}) => (
+  <label className="home-picker__search">
+    <Icon name="search" size={iconSize} />
+    <input
+      type="search"
+      value={value}
+      placeholder={HOME_STEP_WORDS.search(count)}
+      aria-label={HOME_STEP_WORDS.search(count)}
+      onChange={(event) => onChange(event.target.value)}
+    />
+  </label>
+);
+
+const AspectFilters = ({
+  total,
+  counts,
+  chosen,
+  onChoose,
+}: {
+  total: number;
+  counts: readonly { id: AspectId; name: string; count: number }[];
+  chosen: AspectId | null;
+  onChoose: (aspect: AspectId | null) => void;
+}) => (
+  <div className="home-picker__filters" role="group" aria-label={ASPECT_STEP_WORDS.filterByAspect}>
+    <button
+      type="button"
+      className="app-tabs__tab home-picker__filter"
+      aria-pressed={chosen === null}
+      onClick={() => onChoose(null)}
+    >
+      {HOME_STEP_WORDS.filterAll(total)}
+    </button>
+    {counts.map(({ id, name, count }) => (
+      <button
+        key={id}
+        type="button"
+        className="app-tabs__tab home-picker__filter"
+        style={aspectVariables(id) as CSSProperties}
+        aria-pressed={chosen === id}
+        onClick={() => onChoose(chosen === id ? null : id)}
+      >
+        <AspectMark aspect={id} size={16} decorative />
+        {HOME_STEP_WORDS.filterAspect(name, count)}
+      </button>
+    ))}
+  </div>
+);
+
 function AllChoices({
   choices,
   value,
@@ -281,20 +417,16 @@ function AllChoices({
   disabled: boolean;
 }) {
   const [query, setQuery] = useState("");
-  const realms = choices.filter((choice) => choice.kind === "realm").length;
-  const found = choices.filter((choice) => matches(choice, query));
+  const [aspectFilter, setAspectFilter] = useState<AspectId | null>(null);
+  const realms = choices.length;
+  const countsByAspect = aspectCountsOf(choices);
+  const found = choices.filter((choice) => matchesFilter(choice, aspectFilter, query));
   return (
     <div className="home-picker__allgrid">
-      <label className="home-picker__search">
-        <Icon name="search" size={22} />
-        <input
-          type="search"
-          value={query}
-          placeholder={HOME_STEP_WORDS.search(realms)}
-          aria-label={HOME_STEP_WORDS.search(realms)}
-          onChange={(event) => setQuery(event.target.value)}
-        />
-      </label>
+      <SearchBox count={realms} iconSize={20} value={query} onChange={setQuery} />
+      {countsByAspect.length > 1 && (
+        <AspectFilters total={realms} counts={countsByAspect} chosen={aspectFilter} onChoose={setAspectFilter} />
+      )}
       {found.length === 0 ? (
         <p className="home-picker__sub">{HOME_STEP_WORDS.noMatch}</p>
       ) : (
@@ -315,10 +447,10 @@ function AllChoices({
   );
 }
 
-/** A search matches a Realm's name, or the start of its number; the ticket always shows. */
-const matches = (choice: Choice, query: string) => {
+const matchesFilter = (choice: Choice, aspectFilter: AspectId | null, query: string) => {
+  if (aspectFilter !== null && catalogOrder(choice.order).aspect !== aspectFilter) return false;
   const asked = query.trim().toLowerCase();
-  if (asked === "" || choice.kind === "ticket") return true;
+  if (asked === "") return true;
   return choice.name.toLowerCase().includes(asked) || String(choice.realmId).startsWith(asked);
 };
 
@@ -328,31 +460,62 @@ export function ChoiceButton({
   onPick,
   disabled,
   traits = false,
+  desktop = false,
 }: {
   choice: Choice;
   picked: boolean;
   onPick: (choice: Choice) => void;
   disabled: boolean;
   traits?: boolean;
+  desktop?: boolean;
 }) {
+  const entry = catalogOrder(choice.order);
+  const aspect = entry.aspect ?? null;
   return (
     <button
       type="button"
-      className="ui-pick home-picker__choice"
+      className="app-choice home-picker__choice"
       aria-pressed={picked}
       aria-label={choiceLabel(choice)}
       onClick={() => onPick(choice)}
       disabled={disabled || isTaken(choice)}
     >
-      <ChoiceArt choice={choice} />
       {picked && (
         <span className="home-picker__check" aria-hidden="true">
-          <Icon name="check" size={14} />
+          <Icon name="check" size={12} />
         </span>
       )}
-      <span className="home-picker__caption">{choiceLabel(choice)}</span>
-      {isTaken(choice) && <span>{HOME_STEP_WORDS.taken}</span>}
-      {traits && choice.kind === "realm" && (
+      {desktop || traits ? (
+        <div className="home-picker__choice-art">
+          <ChoiceArt choice={choice} size={96} />
+        </div>
+      ) : (
+        <div className="home-picker__choice-top">
+          <OrderEmblem order={choice.order} size={22} />
+          <span className="home-picker__id">{`#${choice.realmId}`}</span>
+        </div>
+      )}
+      <span className="home-picker__caption">{choice.name}</span>
+      <span className="home-picker__choice-foot">
+        <span className="home-picker__order">
+          {desktop || traits ? (
+            <>
+              <Icon name={orderMeaning(choice.order)} size={16} />
+              {entry.orderName}
+            </>
+          ) : (
+            aspect !== null && (
+              <>
+                <AspectMark aspect={aspect} size={16} decorative />
+                {aspectName(aspect)}
+              </>
+            )
+          )}
+        </span>
+        {(desktop || traits) && <span className="home-picker__id">{`#${choice.realmId}`}</span>}
+      </span>
+      {isTaken(choice) && <span className="home-picker__id">{HOME_STEP_WORDS.taken}</span>}
+      {traits && (choice.resources.length > 0 || choice.wonder) && (
         <span className="home-picker__traits">
           <Resources resources={choice.resources} />
           {choice.wonder && <Wonder wonder={choice.wonder} />}
@@ -362,55 +525,43 @@ export function ChoiceButton({
   );
 }
 
-/** A Realm's map from the Realm index (fetched once it nears the screen), or a ticket's realm painting on its colour. */
-const ChoiceArt = ({ choice, eager = false }: { choice: Choice; eager?: boolean }) =>
-  choice.kind === "ticket" ? (
-    <HomeArt
-      icon={homeIcon(choice.golden ? "devcon-golden" : "devcon", 0)}
-      size={112}
-      tier={choice.golden ? "golden" : "regular"}
-    />
-  ) : (
-    <HomeArt map={choice.map} icon="realm" size={72} eager={eager} />
-  );
-
-const OrderName = ({ order }: { order: number }) => (
-  <span className="home-picker__order">
-    <Icon name={orderMeaning(order)} size={20} />
-    {orders.find((entry) => entry.orderId === order)?.fullOrderName}
-  </span>
+const ChoiceArt = ({ choice, size = 72, eager = false }: { choice: Choice; size?: number; eager?: boolean }) => (
+  <HomeArt map={choice.map} icon="realm" size={size} eager={eager} />
 );
 
 const Resources = ({ resources }: { resources: string[] }) => (
   <span className="home-picker__resources">
     {resources.map((resource) => (
-      <Icon key={resource} name={mintedResourceMeaning(resource)} size={24} alt={resource} />
+      <Icon key={resource} name={mintedResourceMeaning(resource)} size={20} alt={resource} />
     ))}
   </span>
 );
 
 const Wonder = ({ wonder }: { wonder: string }) => (
   <span className="home-picker__wonder">
-    <Icon name="star" size={16} />
+    <Icon name="star" size={14} />
     {wonder}
   </span>
 );
 
-/** Holding neither a ticket nor a Realm: the free home, and the way to the wallet that may hold some. */
-function FreeHome({ unlinked }: { unlinked: boolean }) {
+function FreeHome({ unlinked, action }: { unlinked: boolean; action?: ReactNode }) {
   return (
     <div className="home-picker__featured" data-kind="free">
-      <HomeArt icon="realm" size={96} tier="free" />
-      <div className="home-picker__about">
-        <h3>{HOME_STEP_WORDS.freeHome}</h3>
-        <p className="home-picker__sub">{HOME_STEP_WORDS.freeHomeLine}</p>
-        {unlinked && <LinkWallet />}
+      <div className="home-picker__hero">
+        <div className="home-picker__art-wrap">
+          <HomeArt icon="realm" size={64} />
+        </div>
+        <div className="home-picker__about">
+          <h3>{HOME_STEP_WORDS.freeHome}</h3>
+          <p className="home-picker__sub">{HOME_STEP_WORDS.freeHomeLine}</p>
+          {unlinked && <LinkWallet />}
+        </div>
       </div>
+      {action && <div className="home-picker__action">{action}</div>}
     </div>
   );
 }
 
-/** To the payout wallet in Settings, and back here once one is linked: the wallet that may hold the player's Realms. */
 function LinkWallet() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -425,10 +576,6 @@ function LinkWallet() {
   );
 }
 
-/**
- * The ticket or the Realms could not be read: say so, and read them again on demand. Nothing is offered or founded
- * around a failed read, and never a number to type instead.
- */
 const Unreadable = ({ line, retry }: { line: string; retry: () => void }) => (
   <p className="home-picker__notice" role="status">
     {line}
@@ -438,53 +585,24 @@ const Unreadable = ({ line, retry }: { line: string; retry: () => void }) => (
   </p>
 );
 
-/** What the step needs before it offers anything: the account's ticket, its wallet's Realms and the preset's rules. */
 interface HomeSources {
   wallet: string | null;
-  ticket: Choice | null;
   realms: HeldRealm[];
-  /**
-   * Both reads answered: the step can offer its choices and settle the pick. A failed read is not an answer: a holder's
-   * Realms or ticket that could not be read must not become a free home or a lesser default.
-   */
   ready: boolean;
-  /** Ask the Realms again: set while they could not be read. */
   realmsUnreadable: (() => void) | null;
-  /** Ask the ticket again: set while it could not be read; until it is known, nothing is offered or founded. */
-  ticketUnreadable: (() => void) | null;
-  rules: LaborRuleAmounts | null;
 }
 
-/**
- * Whether the account has nothing to choose at the Realm step: every read answered and no Realm held, so its home is
- * its ticket or a free one. Entry then creates the realm without asking (the owner's flow F3, 4 November 2026).
- */
-export function useNothingToChoose(presetId: number): boolean {
-  const sources = useHomeSources(presetId);
-  return sources.ready && sources.realms.length === 0 && !sources.realmsUnreadable && !sources.ticketUnreadable;
+export function useNothingToChoose(): boolean {
+  const sources = useHomeSources();
+  return sources.ready && sources.realms.length === 0 && !sources.realmsUnreadable;
 }
 
-/**
- * The account's sources from the holdings reads every screen shares (useHeldRealms, useHeldTicket). The step is ready
- * once both have answered: a failed read (Realms or ticket) is not an answer, so the step waits on its Try again rather
- * than offering a free home or a lesser default without it.
- */
-function useHomeSources(presetId: number): HomeSources {
+function useHomeSources(): HomeSources {
   const { session, wallet, held } = useHeldRealms();
-  const campaign = campaignOfPreset(presetId);
-  const ticket = useHeldTicket(campaign);
-  const rules = useMemo(() => presetLaborRules(presetId), [presetId]);
-  const heldKnown = wallet === null || held.data !== undefined;
   return {
     wallet,
-    ticket: ticketChoice(campaign, ticket),
     realms: held.data ?? [],
-    ready: session !== null && heldKnown && (ticket.state === "none" || ticket.state === "held"),
+    ready: session !== null && (wallet === null || held.data !== undefined),
     realmsUnreadable: held.isError ? () => void held.refetch() : null,
-    ticketUnreadable: ticket.state === "unreadable" ? ticket.retry : null,
-    rules,
   };
 }
-
-const ticketChoice = (campaign: CampaignKey | null, ticket: ReturnType<typeof useHeldTicket>): Choice | null =>
-  campaign && ticket.state === "held" ? { kind: "ticket", campaign, golden: ticket.ticket.tier === "golden" } : null;

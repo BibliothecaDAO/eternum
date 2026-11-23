@@ -1,10 +1,10 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { nextFrameOrTimeout } from "@/utils/frame-or-timeout";
-import { armyNumber, resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
+import { armyNumber, resolveExplorerTroops, STAMINA_MODELS } from "@bibliothecadao/eternum/troop-stamina";
 import { projectionChangesForLayer } from "@bibliothecadao/eternum/game-sync";
 import { markShadowCastersChanged } from "@/three/shadow-refresh-policy";
 import { activeMapLayer } from "@/three/map-layer";
-import { arePlayersAllied, onSidesChanged, watchedSide } from "@/utils/entity-ownership";
+import { onSidesChanged, watchedSide } from "@/utils/entity-ownership";
 import { accountAddress, useAccountStore } from "@/hooks/store/use-account-store";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { watchPlayerNames } from "@/hooks/use-player-profile";
@@ -44,22 +44,28 @@ import {
   isShipModel,
   TROOP_TO_SHIP_MODEL,
 } from "@/three/constants/army-constants";
-import { ModelType } from "@/three/types/army";
+import { type ArmyPace, ModelType } from "@/three/types/army";
 import { GRAPHICS_DEV_GUI_ENABLED, createGuiFolder } from "@/three/utils/gui-manager";
 import { isAddressEqualToAccount } from "@/three/utils/utils";
 import { getExplorerStaminaSnapshot } from "@/utils/explorer-stamina";
 import { readArmyMovementReadiness } from "@/ui/features/world/components/armies/army-movement-readiness";
-import { safeInteger, type GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
 import {
-  FELT_CENTER,
-  Position,
-  StaminaManager,
+  currentArmy,
+  isAspectAlly,
+  safeInteger,
+  type GameClientSetup as SetupResult,
+} from "@bibliothecadao/eternum/game-client";
+import {
+  armyOaths,
   configManager,
   divideByPrecision,
+  FELT_CENTER,
   getBlockTimestamp,
   getExplorerOwner,
   isArmyCrossing,
+  Position,
   ResourceManager,
+  StaminaManager,
   storedBiomeAt,
 } from "@bibliothecadao/eternum";
 import type {
@@ -148,6 +154,12 @@ export interface ArmyMovementPlan {
   worldPath: Vector3[];
   armyCategory: TroopType;
   armyTier: TroopTier;
+  pace: ArmyPace;
+}
+
+interface OrderedRoute {
+  hexes: Position[];
+  pace: ArmyPace;
 }
 
 export interface ProceduralArmyProductionStats extends ProceduralArmyCharacterLayerStats {
@@ -224,7 +236,6 @@ export class ArmyManager {
   private readonly unsubscribeArmyProjection: () => void;
   private unsubscribeExplorerTroopsPresentation?: () => void;
   private unsubscribeStructureOwnership?: () => void;
-  private unsubscribeGuildMembership?: () => void;
   private unsubscribeSides?: () => void;
   private readonly armyProjectionSyncs = new Map<ID, Promise<void>>();
   private attachmentManager: CosmeticAttachmentManager;
@@ -239,7 +250,7 @@ export class ArmyManager {
   private activeArmyAttachmentEntities: Set<number> = new Set();
   private armyAttachmentTransformScratch = new Map<string, AttachmentTransform>();
   /** The route each of the player's armies was last ordered along, held until its facts move it (expectOrderedRoute). */
-  private orderedRoutes = new Map<ID, Position[]>();
+  private orderedRoutes = new Map<ID, OrderedRoute>();
   private chunkStride: number;
   private isDestroyed = false;
   private layerRevision = 0;
@@ -282,17 +293,9 @@ export class ArmyManager {
     this.worldSpatialProjection = worldSpatialProjection;
     this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
     this.contentLadder = resolveWorldmapContentLadder(this.currentCameraView);
-    this.armyModel = new ArmyModel(
-      scene,
-      (col, row) => this.groundBiomeOrLand(col, row),
-      this.currentCameraView,
-      compilePipelines,
-    );
+    this.armyModel = new ArmyModel(scene, (col, row) => this.groundBiomeOrLand(col, row), compilePipelines);
     this.armyModel.setModelsVisible(this.contentLadder.armyModels);
     this.proceduralArmyCharacterLayer = new ProceduralArmyCharacterLayer(scene);
-    this.proceduralArmyCharacterLayer.setShadowsEnabled(
-      this.currentCameraView === CameraView.Close && (hexagonScene?.getShadowsEnabled() ?? true),
-    );
     this.scale = new Vector3().setScalar(ARMY_MODEL_SCALE);
     this.renderChunkSize = renderChunkSize;
     // Keep chunk stride aligned with world chunk size so visibility/fetch math matches.
@@ -307,7 +310,6 @@ export class ArmyManager {
     });
     this.subscribeToExplorerTroopsPresentation();
     this.subscribeToStructureOwnership();
-    this.subscribeToGuildMembership();
     // Whose an army is may read otherwise (the seats arrive, the viewer starts watching): every plate says it again.
     this.unsubscribeSides = onSidesChanged(() =>
       this.armyPresentations.forEach((army) => this.refreshArmyCompactLabel(army)),
@@ -347,6 +349,19 @@ export class ArmyManager {
 
   private subscribeToExplorerTroopsPresentation(): void {
     this.unsubscribeExplorerTroopsPresentation = this.store?.subscribe((changes) => {
+      const effectsChanged = changes.some(
+        (change) =>
+          change.model !== "ExplorerTroops" &&
+          change.model !== "ArmySlot" &&
+          change.model !== "TileOccupancy" &&
+          STAMINA_MODELS.some((model) => model === change.model),
+      );
+      if (effectsChanged) {
+        for (const explorer of this.store!.inGame("ExplorerTroops", configManager.getActiveGameId())) {
+          if (explorer.troops.count > 0n) this.applyExplorerTroopsPresentationUpdate(explorer);
+        }
+        return;
+      }
       for (const change of changes) {
         const explorer =
           change.model === "ExplorerTroops"
@@ -360,19 +375,6 @@ export class ArmyManager {
         if (!explorer || explorer.game_id !== configManager.getActiveGameId() || explorer.troops.count <= 0n) continue;
         this.applyExplorerTroopsPresentationUpdate(explorer);
       }
-    });
-  }
-
-  private subscribeToGuildMembership(): void {
-    this.unsubscribeGuildMembership = this.store?.subscribe((changes) => {
-      if (
-        changes.some(
-          (change) =>
-            change.model === "GuildMember" &&
-            (change.current ?? change.previous)?.game_id === configManager.getActiveGameId(),
-        )
-      )
-        this.recheckOwnership();
     });
   }
 
@@ -522,9 +524,16 @@ export class ArmyManager {
     }
   }
 
-  private resolveLiveExplorerTroopsComponent(entityId: ID): ExplorerTroopsComponentValue | undefined {
+  private resolveLiveExplorerTroopsComponent(
+    entityId: ID,
+    timestamp?: number,
+  ): ExplorerTroopsComponentValue | undefined {
     if (!this.store) return undefined;
-    return this.store.get("ExplorerTroops", { game_id: configManager.getActiveGameId(), explorer_id: entityId });
+    const explorer = this.store.get("ExplorerTroops", {
+      game_id: configManager.getActiveGameId(),
+      explorer_id: entityId,
+    });
+    return explorer && currentArmy(this.store, explorer, timestamp);
   }
 
   private isProjectedArmyInCurrentChunk(renderable: ArmySpatialRenderable): boolean {
@@ -845,17 +854,17 @@ export class ArmyManager {
 
     const nextOwningStructureId =
       params.ownerStructureId !== undefined ? params.ownerStructureId : army.owningStructureId;
-    const nextIsMine = isAddressEqualToAccount(mergedOwner.address);
-    const nextColor = this.getArmyColor({
+    const {
       isMine: nextIsMine,
-      owner: { address: mergedOwner.address },
-    });
+      isAlly: nextIsAlly,
+      color: nextColor,
+    } = this.relationOf(mergedOwner.address, nextOwningStructureId);
 
     const ownerChanged =
       army.owner.address !== mergedOwner.address ||
       army.owner.ownerName !== mergedOwner.ownerName ||
       army.owner.guildName !== mergedOwner.guildName;
-    const ownershipVisualChanged = army.isMine !== nextIsMine || army.color !== nextColor;
+    const ownershipVisualChanged = army.isMine !== nextIsMine || army.isAlly !== nextIsAlly || army.color !== nextColor;
     const structureChanged = army.owningStructureId !== nextOwningStructureId;
 
     if (!ownerChanged && !ownershipVisualChanged && !structureChanged) {
@@ -867,6 +876,7 @@ export class ArmyManager {
     army.owner.guildName = mergedOwner.guildName;
     army.owningStructureId = nextOwningStructureId;
     army.isMine = nextIsMine;
+    army.isAlly = nextIsAlly;
     army.color = nextColor;
     this.armyPresentations.set(params.entityId, army);
     this.refreshArmyCompactLabel(army);
@@ -1293,11 +1303,13 @@ export class ArmyManager {
       plate: buildArmyPlate(
         {
           ...army,
-          isAlly: arePlayersAllied(this.store, accountAddress(), army.owner.address),
-          watched: watchedSide(this.store, army.owner.address),
+          watched: watchedSide(army.owner.address),
         },
         this.resolveHomeRealmName(army),
-        configManager.getExploreStaminaCost(),
+        configManager.getExploreStaminaCost(
+          army.category,
+          armyOaths(this.store!, { game_id: configManager.getActiveGameId(), explorer_id: army.entityId }),
+        ),
       ),
     });
   }
@@ -1762,14 +1774,9 @@ export class ArmyManager {
       this.armyModel.assignCosmeticToEntity(numericEntityId, cosmetic.skin);
     }
 
-    const isMine = finalOwnerAddress ? isAddressEqualToAccount(finalOwnerAddress) : false;
-
     // Determine the color based on ownership using the centralized player color system
     // Relation colours are shared with sails, structures and labels.
-    const color = this.getArmyColor({
-      isMine,
-      owner: { address: finalOwnerAddress || 0n },
-    });
+    const { isMine, isAlly, color } = this.relationOf(finalOwnerAddress || 0n, finalOwningStructureId);
 
     const initialStaminaPresentation = this.resolveArmyStaminaSnapshot(params.entityId);
     finalCurrentStamina = initialStaminaPresentation?.current ?? finalCurrentStamina;
@@ -1783,6 +1790,7 @@ export class ArmyManager {
         entityId: params.entityId,
         hexCoords: params.hexCoords,
         isMine,
+        isAlly,
         owningStructureId: finalOwningStructureId,
         owner: {
           address: finalOwnerAddress || 0n,
@@ -1835,15 +1843,15 @@ export class ArmyManager {
    * walks this route at once instead of asking the path worker for it again, a round trip behind the tile updates the
    * same facts queued there.
    */
-  public expectOrderedRoute(entityId: ID, route: Position[]): void {
+  public expectOrderedRoute(entityId: ID, route: OrderedRoute): void {
     this.orderedRoutes.set(entityId, route);
   }
 
-  /** The ordered route, once, if it runs from where the army stands to where its facts now put it. */
-  private takeOrderedRoute(entityId: ID, from: Position, to: Position): Position[] | null {
-    const route = this.orderedRoutes.get(entityId);
+  private takeOrderedRoute(entityId: ID, from: Position, to: Position): OrderedRoute | null {
+    const ordered = this.orderedRoutes.get(entityId);
     this.orderedRoutes.delete(entityId);
-    return orderedRouteFor(route, from, to);
+    const hexes = orderedRouteFor(ordered?.hexes, from, to);
+    return ordered && hexes ? { hexes, pace: ordered.pace } : null;
   }
 
   public async computeMovementPlan(entityId: ID, hexCoords: Position): Promise<ArmyMovementPlan | null> {
@@ -1880,7 +1888,7 @@ export class ArmyManager {
     }
 
     const route =
-      orderedRoute ??
+      orderedRoute?.hexes ??
       (shouldUseWorkerPath && maxHex !== undefined
         ? await gameWorkerManager.findPath(armyData.hexCoords, hexCoords, maxHex)
         : null);
@@ -1896,6 +1904,7 @@ export class ArmyManager {
       worldPath,
       armyCategory: armyData.category,
       armyTier: armyData.tier,
+      pace: orderedRoute?.pace ?? "walk",
     };
   }
 
@@ -1939,7 +1948,7 @@ export class ArmyManager {
       : undefined;
     if (walkingFrom) worldPath[0] = walkingFrom;
     this.armyModel.setMovementCompleteCallback(numericEntityId, undefined);
-    this.armyModel.startMovement(numericEntityId, worldPath, matrixIndex, plan.armyCategory, plan.armyTier);
+    this.armyModel.startMovement(numericEntityId, worldPath, matrixIndex, plan.armyCategory, plan.armyTier, plan.pace);
     if (armyData.isMine) presentResult(`walk:${numericEntityId}`);
     this.armyModel.setMovementCompleteCallback(numericEntityId, () => {
       if (!this.armyPresentations.has(entityId)) return;
@@ -2442,7 +2451,6 @@ export class ArmyManager {
         distanceToCameraSquared: this.hexagonScene?.getCamera().position.distanceToSquared(instance.position),
         entityId,
         isNaval: isShipModel(modelType),
-        isMoving: false,
         isSelected: this.selectedArmyId === army.entityId,
         position: instance.position,
         primaryColor: army.color,
@@ -2455,7 +2463,7 @@ export class ArmyManager {
     presentation.category = army.category;
     presentation.distanceToCameraSquared = this.hexagonScene?.getCamera().position.distanceToSquared(instance.position);
     presentation.isNaval = isShipModel(modelType);
-    presentation.isMoving = this.armyModel.isEntityMoving(entityId);
+    presentation.pace = this.armyModel.getEntityPace(entityId);
     presentation.isSelected = this.selectedArmyId === army.entityId;
     presentation.position = instance.position;
     presentation.primaryColor = army.color;
@@ -2619,7 +2627,7 @@ export class ArmyManager {
   }
 
   private requestMovingArmyShadowRefresh(): void {
-    if (this.currentCameraView !== CameraView.Close || !this.hasMovingArmies()) {
+    if (!this.hasMovingArmies()) {
       return;
     }
 
@@ -2752,10 +2760,20 @@ export class ArmyManager {
   /** The army's path colour, as its plate tells its side: its side's, or its owner's seat colour to a watcher. */
   private pathColourOf(army: ArmyData): Color {
     const owner = army.owner.address;
-    return armyPathColour(
-      { isMine: army.isMine, isAlly: arePlayersAllied(this.store, accountAddress(), owner), owner: army.owner },
-      watchedSide(this.store, owner),
-    );
+    return armyPathColour({ isMine: army.isMine, isAlly: army.isAlly, owner: army.owner }, watchedSide(owner));
+  }
+
+  /** How the viewer stands to an army, the one reading every visual of it takes: its side flags and its model's colour. */
+  private relationOf(owner: bigint, home: ID | null | undefined) {
+    const isMine = owner !== 0n && isAddressEqualToAccount(owner);
+    const isAlly = this.isAllyArmy(home, isMine);
+    return { isMine, isAlly, color: this.getArmyColor({ isMine, isAlly, owner: { address: owner } }) };
+  }
+
+  /** An army of the viewer's Aspect: marked as an ally on the map, as it is in the Deep's orders. */
+  private isAllyArmy(home: ID | null | undefined, isMine: boolean): boolean {
+    if (isMine || !this.store || home === null || home === undefined) return false;
+    return isAspectAlly(this.store, configManager.getActiveGameId(), accountAddress() ?? null, home);
   }
 
   private getArmyColorProfile(army: {
@@ -2763,11 +2781,7 @@ export class ArmyManager {
     isAlly?: boolean;
     owner?: { address: bigint };
   }): PlayerColorProfile {
-    return playerColorManager.getProfileForUnit(
-      army.isMine,
-      army.isAlly ?? arePlayersAllied(this.store, accountAddress(), army.owner?.address),
-      army.owner?.address,
-    );
+    return playerColorManager.getProfileForUnit(army.isMine, army.isAlly ?? false, army.owner?.address);
   }
 
   /**
@@ -2782,18 +2796,14 @@ export class ArmyManager {
     const updatedVisible: ArmyData[] = [];
 
     this.armyPresentations.forEach((army, entityId) => {
-      const nextIsMine = isAddressEqualToAccount(army.owner.address);
-      const nextColor = this.getArmyColor({
-        isMine: nextIsMine,
-        owner: army.owner,
-      });
-
-      if (army.isMine === nextIsMine && army.color === nextColor) {
+      const next = this.relationOf(army.owner.address, army.owningStructureId);
+      if (army.isMine === next.isMine && army.isAlly === next.isAlly && army.color === next.color) {
         return;
       }
 
-      army.isMine = nextIsMine;
-      army.color = nextColor;
+      army.isMine = next.isMine;
+      army.isAlly = next.isAlly;
+      army.color = next.color;
       this.armyPresentations.set(entityId, army);
       this.refreshArmyCompactLabel(army);
 
@@ -2844,21 +2854,13 @@ export class ArmyManager {
 
   private handleCameraViewChange = (view: CameraView) => {
     const shadowsEnabled = this.hexagonScene?.getShadowsEnabled() ?? true;
-    const enableRealShadows = view === CameraView.Close && shadowsEnabled;
-    const enableContactShadows = !enableRealShadows;
-
-    // Keep shadow flags in sync when the scene reapplies its visual profile.
-    this.armyModel.setShadowsEnabled(enableRealShadows);
-    this.armyModel.setContactShadowsEnabled(enableContactShadows);
-    this.proceduralArmyCharacterLayer.setShadowsEnabled(enableRealShadows);
+    this.armyModel.setShadowsEnabled(shadowsEnabled);
+    this.proceduralArmyCharacterLayer.setShadowsEnabled(shadowsEnabled);
 
     if (this.currentCameraView === view) {
       return;
     }
     this.currentCameraView = view;
-
-    // Update the ArmyModel's camera view
-    this.armyModel.setCurrentCameraView(view);
     this.applyContentLadder(resolveWorldmapContentLadder(view));
   };
 
@@ -2996,6 +2998,8 @@ ${
       this.staminaUnresolved.delete(entityId);
       army.currentStamina = staminaSnapshot.current;
       army.maxStamina = staminaSnapshot.max;
+      const explorer = this.resolveLiveExplorerTroopsComponent(entityId, timestamp);
+      if (explorer) army.troopCount = divideByPrecision(Number(explorer.troops.count));
       army.foodBlocked = this.resolveFoodBlocked(entityId, army.isMine);
       this.refreshArmyCompactLabel(army);
     } catch {
@@ -3038,9 +3042,16 @@ ${
     }
     // Under attack lifts the plate's priority.
     this.refreshArmyCompactLabel(army);
+    if (degrees !== undefined) {
+      const slot = this.visibleArmyIndices.get(entityId);
+      if (slot !== undefined) {
+        this.armyModel.playTroopAction(slot, role === "attacker" ? "attack" : "hit");
+      }
+    }
   }
 
   private applyExplorerTroopsPresentationUpdate(explorerTroops: ExplorerTroopsComponentValue): void {
+    explorerTroops = currentArmy(this.store!, explorerTroops);
     const entityId = safeInteger(explorerTroops.explorer_id);
     const army = this.armyPresentations.get(entityId);
     if (!army) return;
@@ -3050,6 +3061,12 @@ ${
     const previousCount = army.troopCount;
     if (previousCount !== troopCount) {
       const diff = troopCount - previousCount;
+      if (diff < 0) {
+        const slot = this.visibleArmyIndices.get(entityId);
+        if (slot !== undefined) {
+          this.armyModel.playTroopAction(slot, troopCount <= 0 ? "death" : "hit");
+        }
+      }
 
       // Play floating damage/heal FX at the army's position
       const normalizedHex = army.hexCoords.getNormalized();
@@ -3131,8 +3148,6 @@ ${
     this.unsubscribeArmyProjection();
     this.unsubscribeExplorerTroopsPresentation?.();
     this.unsubscribeExplorerTroopsPresentation = undefined;
-    this.unsubscribeGuildMembership?.();
-    this.unsubscribeGuildMembership = undefined;
     this.unsubscribeSides?.();
     this.unsubscribeSides = undefined;
     this.unsubscribeStructureOwnership?.();

@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { configManager } from "@bibliothecadao/eternum";
 import { Vector3 } from "three";
+import { deepScenario } from "@/lab/game/deep-scenario";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ArmyPlate } from "../map-plates/map-plate-model";
 import { ArmyManager } from "./army-manager";
@@ -27,7 +28,10 @@ const managerWithVisibleArmy = (stamina: number) => {
   const drawn: ArmyPlate[] = [];
   const manager = Object.assign(Object.create(ArmyManager.prototype), {
     isDestroyed: false,
-    store: null,
+    store: {
+      get: () => undefined,
+      require: (model: string) => (model === "SliceRules" ? { day_unit_seconds: 60 } : { oaths: 0 }),
+    },
     armyPresentations: new Map([[ARMY, armyRecord(stamina)]]),
     visibleArmyOrder: [ARMY],
     visibleArmyIndices: new Map([[ARMY, 0]]),
@@ -99,4 +103,24 @@ describe("a walking army's plate", () => {
     expect(drawn).toEqual([]);
     expect(manager.plates.setPosition).toHaveBeenCalledWith(ARMY, expect.any(Vector3));
   });
+});
+
+it("draws the Deep count at each chain tick without changing or charging the stored army twice", () => {
+  vi.spyOn(configManager, "getActiveGameId").mockReturnValue(1);
+  vi.spyOn(configManager, "getExploreStaminaCost").mockReturnValue(20);
+  const scenario = deepScenario();
+  const { manager, drawn } = managerWithVisibleArmy(120);
+  manager.store = scenario.store;
+  const entityId = 201;
+  manager.armyPresentations = new Map([[entityId, { ...armyRecord(120), entityId }]]);
+  manager.resolveArmyStaminaSnapshot = () => ({ current: 120, max: 150 });
+  const source = scenario.store.require("ExplorerTroops", { game_id: 1, explorer_id: entityId });
+  const rule = scenario.store.require("DeepRules", { game_id: 1 });
+  const interval = Number(scenario.store.require("SliceRules", { game_id: 1 }).tick_config.armies_tick_in_seconds);
+  const next = (Math.floor(scenario.startsAt / interval) + 1) * interval;
+  manager.refreshArmyStamina(entityId, next);
+  expect(drawn.at(-1)?.troops.count).toBe(Number(source.troops.count - rule.loss_per_tick) / 1e9);
+  manager.refreshArmyStamina(entityId, next + interval);
+  expect(drawn.at(-1)?.troops.count).toBe(Number(source.troops.count - 2n * rule.loss_per_tick) / 1e9);
+  expect(scenario.store.require("ExplorerTroops", { game_id: 1, explorer_id: entityId })).toBe(source);
 });

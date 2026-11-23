@@ -2,8 +2,11 @@ import { BiomeType } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
 
 import { TerrainField } from "./terrain-field";
-import { TERRAIN_PROP_ARCHETYPE_IDS, type TerrainPropArchetypeId } from "./terrain-prop-catalog";
-import { TERRAIN_PROP_PAGE_SLOT_CAPACITY } from "./terrain-prop-catalog";
+import {
+  TERRAIN_PROP_ARCHETYPE_IDS,
+  TERRAIN_PROP_PAGE_SLOT_CAPACITY,
+  type TerrainPropArchetypeId,
+} from "./terrain-prop-catalog";
 import { prepareTerrainPropInstances } from "./terrain-props";
 import type { TerrainPageRequest } from "./terrain-types";
 import { createTerrainBenchmarkFixture } from "./verification/terrain-benchmark-fixture";
@@ -12,6 +15,7 @@ import { buildWorldmapTerrainPageRequests } from "./worldmap-procedural-terrain"
 const PAGE_SIZE = 24;
 const PAGE_ORIGIN = { col: -12, row: -12 };
 const HOMOGENEOUS_CENTER_PAGE_KEY = `${PAGE_ORIGIN.row},${PAGE_ORIGIN.col}`;
+const PERSONAL_LAYERS = [1, 2] as const;
 const CAPACITY_CLIMATE_SEEDS = [
   [137, 991],
   [1, 1],
@@ -49,6 +53,10 @@ describe("terrain prop page slot capacity", () => {
         const block = pageRequests(homogeneousBlockCells(biome), climate);
         measure(block.filter((request) => request.pageKey === HOMOGENEOUS_CENTER_PAGE_KEY));
       }
+      for (const layer of PERSONAL_LAYERS) {
+        const block = pageRequests(homogeneousBlockCells(BiomeType.Grassland, layer), climate);
+        measure(block.filter((request) => request.pageKey === HOMOGENEOUS_CENTER_PAGE_KEY));
+      }
     }
 
     for (const archetype of TERRAIN_PROP_ARCHETYPE_IDS) {
@@ -62,7 +70,7 @@ describe("terrain prop page slot capacity", () => {
     }
   }, 60_000);
 
-  it("keeps every prop kind within its slot on a page denser than any measured, for every biome", () => {
+  it("keeps every prop kind within its slot on a page denser than any measured, for every biome and layer", () => {
     // The realm view draws its whole board as one page, larger than a world page: nine pages of one biome in one.
     const [elevationSeed, moistureSeed] = CAPACITY_CLIMATE_SEEDS[0];
     const climate = {
@@ -71,15 +79,23 @@ describe("terrain prop page slot capacity", () => {
       moisture_seed: moistureSeed,
     };
     const capped = new Set<TerrainPropArchetypeId>();
-    for (const biome of Object.values(BiomeType)) {
-      if (biome === BiomeType.None) continue;
-      for (const request of pageRequests(homogeneousBlockCells(biome), climate, PAGE_SIZE * 3)) {
+    const blocks = [
+      ...Object.values(BiomeType)
+        .filter((biome) => biome !== BiomeType.None)
+        .map((biome) => ({ name: biome, cells: homogeneousBlockCells(biome) })),
+      ...PERSONAL_LAYERS.map((layer) => ({
+        name: `layer ${layer}`,
+        cells: homogeneousBlockCells(BiomeType.Grassland, layer),
+      })),
+    ];
+    for (const { name, cells } of blocks) {
+      for (const request of pageRequests(cells, climate, PAGE_SIZE * 3)) {
         const placed = new Map<TerrainPropArchetypeId, number>();
         for (const { archetype } of prepareTerrainPropInstances(request, new TerrainField(request))) {
           placed.set(archetype, (placed.get(archetype) ?? 0) + 1);
         }
         placed.forEach((count, archetype) => {
-          expect(count, `${biome} ${archetype}`).toBeLessThanOrEqual(TERRAIN_PROP_PAGE_SLOT_CAPACITY[archetype]);
+          expect(count, `${name} ${archetype}`).toBeLessThanOrEqual(TERRAIN_PROP_PAGE_SLOT_CAPACITY[archetype]);
           if (count === TERRAIN_PROP_PAGE_SLOT_CAPACITY[archetype]) capped.add(archetype);
         });
       }
@@ -90,7 +106,7 @@ describe("terrain prop page slot capacity", () => {
 });
 
 function pageRequests(
-  cells: ReadonlyArray<{ biomeKey: string; col: number; occupied: boolean; row: number }>,
+  cells: ReadonlyArray<{ biomeKey: string; col: number; occupied: boolean; row: number; surfacePresentation?: 1 | 2 }>,
   climate: ReturnType<typeof createTerrainBenchmarkFixture>["climate"],
   pageSize = PAGE_SIZE,
 ): TerrainPageRequest[] {
@@ -107,9 +123,10 @@ function pageRequests(
 }
 
 /** A 3×3-page block of one biome so the centre page sees the densest possible neighbourhood on every side. */
-function homogeneousBlockCells(biome: BiomeType) {
+function homogeneousBlockCells(biome: BiomeType, surfacePresentation?: 1 | 2) {
   const span = PAGE_SIZE * 3;
   return Array.from({ length: span * span }, (_, index) => ({
+    ...(surfacePresentation ? { surfacePresentation } : {}),
     biomeKey: biome,
     col: PAGE_ORIGIN.col - PAGE_SIZE + (index % span),
     occupied: false,

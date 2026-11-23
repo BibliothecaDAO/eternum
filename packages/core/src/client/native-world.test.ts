@@ -18,7 +18,7 @@ const storeWithRelease = (releaseId: number) => {
       {
         model: "GameRelease",
         key: hash.computePoseidonHashOnElements([1n]),
-        value: { game_id: 1, release_id: id, created_release_id: releaseId, preset_commitment: "0x789" },
+        value: { game_id: 1, release_id: id, created_release_id: releaseId },
       },
     ]);
   writeRelease(releaseId);
@@ -40,6 +40,28 @@ const accountSending = (transactionHash: string) =>
   }) as unknown as AccountInterface & { execute: ReturnType<typeof vi.fn> };
 
 describe("a game command as the player's own invoke", () => {
+  it("sends a surviving command at its original ID and refuses the retired preceding ID", async () => {
+    const { store } = storeWithRelease(1);
+    const account = accountSending("0x98");
+    const send = nativePlay(
+      { bindings, release: { ready: async () => {} }, shard: SHARD, stopped: running, runtime },
+      store,
+      1,
+      GAMES,
+    );
+    await expect(
+      send(account, { contractAddress: GAMES, entrypoint: "LevelUp", calldata: ["1", "5", "7"] }),
+    ).rejects.toThrow("discriminant mismatch");
+    expect(account.execute).not.toHaveBeenCalled();
+    await send(account, { contractAddress: GAMES, entrypoint: "LevelUp", calldata: ["1", "6", "7"] });
+    expect(account.execute).toHaveBeenCalledOnce();
+    expect(account.execute.mock.calls[0]![0]).toEqual({
+      contractAddress: GAMES,
+      entrypoint: "play",
+      calldata: ["1", "1", "2", "6", "7"],
+    });
+  });
+
   it("sends one Games.play call with the game, its current release pins and the command as a span", async () => {
     const { store, writeRelease } = storeWithRelease(1);
     let openGate!: () => void;
@@ -60,7 +82,7 @@ describe("a game command as the player's own invoke", () => {
     expect(account.execute.mock.calls[0]![0]).toEqual({
       contractAddress: GAMES,
       entrypoint: "play",
-      calldata: ["1", "2", String(0x789n), String(EXPLORE.length), ...EXPLORE],
+      calldata: ["1", "2", String(EXPLORE.length), ...EXPLORE],
     });
   });
 

@@ -1,5 +1,4 @@
 import { Effect, Result } from "effect";
-import { decodeBlitzResult } from "./shard-results";
 import { ShardReader, felt, sameFelt, uint, type ValueRow } from "./shard-rpc";
 import {
   RelayFailure,
@@ -30,7 +29,6 @@ export const shardWithdrawalPorts = (
       const { block, first, anchors, rows, next } = yield* relayOperation("read confirmed shard receipts", () =>
         reader.page(from, to, cursor),
       );
-      const results: import("./ports").BlitzResult[] = [];
       const withdrawals: Withdrawal[] = [];
       const held: HeldObligation[] = rows
         .filter((row) => row.model === "MalformedValueEvent")
@@ -39,18 +37,6 @@ export const shardWithdrawalPorts = (
           reason: "decode confirmed value event",
           row: { ...row, chainId: reader.connection.chainId, blockNumber: row.blockNumber ?? block.block_number },
         }));
-      for (const row of rows.filter((row) => row.model === "BlitzResult")) {
-        try {
-          const result = decodeBlitzResult(reader.connection.chainId, row);
-          if (result) results.push({ ...result, blockNumber: row.blockNumber ?? block.block_number });
-        } catch {
-          held.push({
-            kind: "row",
-            reason: "decode confirmed Blitz result",
-            row: { ...row, chainId: reader.connection.chainId, blockNumber: row.blockNumber ?? block.block_number },
-          });
-        }
-      }
       for (const row of rows.filter((row) => row.model === "LordsWithdrawal")) {
         const resolved = yield* Effect.result(resolveWithdrawal(reader, bindings, row, row.confirmedAt));
         if (Result.isSuccess(resolved)) withdrawals.push(resolved.success);
@@ -78,7 +64,6 @@ export const shardWithdrawalPorts = (
         next,
         status: block.status,
         withdrawals,
-        results,
         held,
       };
     }),

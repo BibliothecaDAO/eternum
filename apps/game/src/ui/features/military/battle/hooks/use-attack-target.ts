@@ -1,19 +1,18 @@
-import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
+import { GUARD_MODELS } from "@bibliothecadao/eternum/game-client";
+import { resolveExplorerCombatTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { useTileAt } from "@/hooks/helpers/use-tile-at";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import {
   DEFAULT_COORD_ALT,
   configManager,
   getExplorerOwner,
-  getArmyRelicEffects,
+  getDefendingGuards,
   getGuardsByStructure,
-  getStructureArmyRelicEffects,
-  getStructureRelicEffects,
 } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
-import { useNativeRowOrAbsent, useNativeRow, useNativeFacts } from "@/hooks/helpers/use-native-facts";
+import { useNativeRow, useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
-import { STEALABLE_RESOURCES, type ID, type RelicEffect } from "@bibliothecadao/types";
+import { STEALABLE_RESOURCES, type ID } from "@bibliothecadao/types";
 import { useMemo } from "react";
 
 import { structureGuardSlots } from "../../utils/defense-slot-utils";
@@ -28,8 +27,6 @@ const orderResourcesByPriority = (resourceBalances: Array<{ resourceId: number; 
 };
 
 interface UseAttackTargetResult {
-  attackerRelicEffects: RelicEffect[];
-  targetRelicEffects: RelicEffect[];
   target: AttackTarget | null;
   targetResources: Array<{ resourceId: number; amount: number }>;
   isLoading: boolean;
@@ -45,24 +42,12 @@ export const useAttackTargetData = (
   } = useGame();
 
   const targetTile = useTileAt(targetHex.x, targetHex.y, targetAlt);
-  const guardsFacts = useNativeFacts(["ArmySlot", "Guard", "Structure"]);
+  const guardsFacts = useNativeFacts(["ArmySlot", "ArmyRelicEffect", "ArmyProgress", ...GUARD_MODELS, "Structure"]);
 
   const currentDefaultTick = useCurrentDefaultTick();
   const attackerStructure = useNativeRow(
     "Structure",
     attackerEntityId !== undefined
-      ? { game_id: configManager.getActiveGameId(), entity_id: attackerEntityId }
-      : undefined,
-  );
-  const attackerExplorer = useNativeRow(
-    "ExplorerTroops",
-    attackerEntityId !== undefined
-      ? { game_id: configManager.getActiveGameId(), explorer_id: attackerEntityId }
-      : undefined,
-  );
-  const attackerProductionBoost = useNativeRowOrAbsent(
-    "ProductionBonus",
-    attackerStructure !== undefined
       ? { game_id: configManager.getActiveGameId(), entity_id: attackerEntityId }
       : undefined,
   );
@@ -78,41 +63,14 @@ export const useAttackTargetData = (
       : undefined,
   );
   const targetResource = useResourceManager(targetEntityId);
-  const targetProductionBoost = useNativeRowOrAbsent(
-    "ProductionBonus",
-    targetStructure !== undefined
-      ? { game_id: configManager.getActiveGameId(), entity_id: targetStructure.entity_id }
-      : undefined,
-  );
-
-  const attackerRelicEffects = useMemo(() => {
-    if (attackerStructure) {
-      const structureRelicEffects = attackerProductionBoost
-        ? getStructureRelicEffects(attackerProductionBoost, currentDefaultTick)
-        : [];
-      const structureArmyRelicEffects = (getGuardsByStructure(attackerStructure, guardsFacts.store) ?? []).flatMap(
-        (guard) => getStructureArmyRelicEffects(guard, currentDefaultTick),
-      );
-
-      return [...structureRelicEffects, ...structureArmyRelicEffects];
-    }
-
-    if (attackerExplorer) {
-      const troops = resolveExplorerTroops(guardsFacts.store, attackerExplorer);
-      return troops ? getArmyRelicEffects(troops, currentDefaultTick) : [];
-    }
-
-    return [];
-  }, [guardsFacts, attackerExplorer, attackerProductionBoost, attackerStructure, currentDefaultTick]);
 
   const target = useMemo<AttackTarget | null>(() => {
     if (!targetTile || !targetEntityId) return null;
 
     if (targetTile.occupier_is_structure) {
       if (!targetStructure) return null;
-      const knownGuards = getGuardsByStructure(targetStructure, guardsFacts.store);
-      if (!knownGuards) return null;
-      const guards = knownGuards.filter((guard) => guard.troops.count > 0n).toSorted((a, b) => a.slot - b.slot);
+      const guards = getDefendingGuards(targetStructure, guardsFacts.store);
+      if (!guards) return null;
 
       return {
         info: guards.map((guard) => guard.troops),
@@ -127,7 +85,7 @@ export const useAttackTargetData = (
     }
 
     if (!targetExplorer) return null;
-    const troops = resolveExplorerTroops(guardsFacts.store, targetExplorer);
+    const troops = resolveExplorerCombatTroops(guardsFacts.store, targetExplorer, currentDefaultTick);
     if (!troops) return null;
     return {
       info: [troops],
@@ -137,31 +95,7 @@ export const useAttackTargetData = (
       hex: { x: targetTile.col, y: targetTile.row },
       addressOwner: getExplorerOwner(guardsFacts.store, targetExplorer),
     };
-  }, [guardsFacts, targetEntityId, targetExplorer, targetStructure, targetTile]);
-
-  const targetRelicEffects = useMemo<RelicEffect[]>(() => {
-    if (targetTile?.occupier_is_structure) {
-      if (!targetStructure) return [];
-      const structureRelicEffects = (getGuardsByStructure(targetStructure, guardsFacts.store) ?? []).flatMap((guard) =>
-        getStructureArmyRelicEffects(guard, currentDefaultTick),
-      );
-      if (!targetProductionBoost) {
-        return structureRelicEffects;
-      }
-
-      return [...structureRelicEffects, ...getStructureRelicEffects(targetProductionBoost, currentDefaultTick)];
-    }
-
-    const troops = targetExplorer ? resolveExplorerTroops(guardsFacts.store, targetExplorer) : undefined;
-    return troops ? getArmyRelicEffects(troops, currentDefaultTick) : [];
-  }, [
-    guardsFacts,
-    currentDefaultTick,
-    targetExplorer,
-    targetProductionBoost,
-    targetStructure,
-    targetTile?.occupier_is_structure,
-  ]);
+  }, [guardsFacts, targetEntityId, targetExplorer, targetStructure, targetTile, currentDefaultTick]);
 
   const targetResources = useMemo<Array<{ resourceId: number; amount: number }>>(() => {
     if (!targetResource?.hasResources()) return [];
@@ -174,8 +108,8 @@ export const useAttackTargetData = (
   }, [currentDefaultTick, targetResource, targetTile?.occupier_is_structure]);
 
   const guardsUnknown = Boolean(
-    (attackerStructure && (!getGuardsByStructure(attackerStructure, store) || !attackerProductionBoost)) ||
-    (targetStructure && (!getGuardsByStructure(targetStructure, store) || !targetProductionBoost)),
+    (attackerStructure && !getGuardsByStructure(attackerStructure, store)) ||
+    (targetStructure && !getGuardsByStructure(targetStructure, store)),
   );
   const isLoading =
     guardsUnknown ||
@@ -183,8 +117,6 @@ export const useAttackTargetData = (
     Boolean(targetEntityId && (targetTile?.occupier_is_structure ? !targetStructure : !targetExplorer));
 
   return {
-    attackerRelicEffects,
-    targetRelicEffects,
     target: guardsUnknown ? null : target,
     targetResources,
     isLoading,

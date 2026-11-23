@@ -969,11 +969,6 @@
       "label": "Spire",
       "family": "Structures"
     },
-    "bitcoin-mine": {
-      "art": "bitcoin-mine",
-      "label": "Bitcoin Mine",
-      "family": "Structures"
-    },
     "realm-0": {
       "art": "realm-0",
       "label": "Settlement",
@@ -1174,11 +1169,6 @@
       "label": "Timer",
       "family": "Statuses"
     },
-    "bitcoinMine": {
-      "art": "bitcoin-mine",
-      "label": "Bitcoinmine",
-      "family": "Structures"
-    },
     "storage": {
       "art": "resources",
       "label": "Storage",
@@ -1226,100 +1216,100 @@
       "orderId": 0
     },
     "order-giants": {
-      "art": "order-giants",
       "label": "Order of Giants",
       "family": "Orders",
-      "orderId": 1
+      "orderId": 1,
+      "art": "order-giants"
     },
     "order-perfection": {
-      "art": "order-perfection",
       "label": "Order of Perfection",
       "family": "Orders",
-      "orderId": 2
+      "orderId": 2,
+      "art": "order-perfection"
     },
     "order-rage": {
-      "art": "order-rage",
       "label": "Order of Rage",
       "family": "Orders",
-      "orderId": 3
+      "orderId": 3,
+      "art": "order-rage"
     },
     "order-fox": {
-      "art": "order-fox",
       "label": "Order of the Fox",
       "family": "Orders",
-      "orderId": 4
+      "orderId": 4,
+      "art": "order-fox"
     },
     "order-twins": {
-      "art": "order-twins",
       "label": "Order of the Twins",
       "family": "Orders",
-      "orderId": 5
+      "orderId": 5,
+      "art": "order-twins"
     },
     "order-fury": {
-      "art": "order-fury",
       "label": "Order of Fury",
       "family": "Orders",
-      "orderId": 6
+      "orderId": 6,
+      "art": "order-fury"
     },
     "order-reflection": {
-      "art": "order-reflection",
       "label": "Order of Reflection",
       "family": "Orders",
-      "orderId": 7
+      "orderId": 7,
+      "art": "order-reflection"
     },
     "order-detection": {
-      "art": "order-detection",
       "label": "Order of Detection",
       "family": "Orders",
-      "orderId": 8
+      "orderId": 8,
+      "art": "order-detection"
     },
     "order-skill": {
-      "art": "order-skill",
       "label": "Order of Skill",
       "family": "Orders",
-      "orderId": 9
+      "orderId": 9,
+      "art": "order-skill"
     },
     "order-brilliance": {
-      "art": "order-brilliance",
       "label": "Order of Brilliance",
       "family": "Orders",
-      "orderId": 10
+      "orderId": 10,
+      "art": "order-brilliance"
     },
     "order-protection": {
-      "art": "order-protection",
       "label": "Order of Protection",
       "family": "Orders",
-      "orderId": 11
+      "orderId": 11,
+      "art": "order-protection"
     },
     "order-power": {
-      "art": "order-power",
       "label": "Order of Power",
       "family": "Orders",
-      "orderId": 12
+      "orderId": 12,
+      "art": "order-power"
     },
     "order-titans": {
-      "art": "order-titans",
       "label": "Order of Titans",
       "family": "Orders",
-      "orderId": 13
+      "orderId": 13,
+      "art": "order-titans"
     },
     "order-vitriol": {
-      "art": "order-vitriol",
       "label": "Order of Vitriol",
       "family": "Orders",
-      "orderId": 14
+      "orderId": 14,
+      "art": "order-vitriol"
     },
     "order-anger": {
-      "art": "order-anger",
       "label": "Order of Anger",
       "family": "Orders",
-      "orderId": 15
+      "orderId": 15,
+      "art": "order-anger"
     },
     "order-enlightenment": {
-      "art": "order-enlightenment",
       "label": "Order of Enlightenment",
       "family": "Orders",
-      "orderId": 16
+      "orderId": 16,
+      "art": "order-enlightenment"
     },
     "discord": {
       "art": "discord",
@@ -1466,6 +1456,16 @@
       "label": "CoinGecko",
       "family": "Brands"
     },
+    "brand-eth": {
+      "token": "brand-eth",
+      "label": "ETH",
+      "family": "Brands"
+    },
+    "brand-usdc": {
+      "token": "brand-usdc",
+      "label": "USDC",
+      "family": "Brands"
+    },
     "brand-google": {
       "token": "brand-google",
       "label": "Google",
@@ -1550,6 +1550,30 @@
       "label": "Golden Devcon · Empire",
       "family": "Structures",
       "art": "devcon-golden-realm-3"
+    },
+    "aspect-prowess": {
+      "art": "aspect-prowess",
+      "label": "Prowess",
+      "family": "Aspects",
+      "aspectId": 1
+    },
+    "aspect-luminary": {
+      "art": "aspect-luminary",
+      "label": "Luminary",
+      "family": "Aspects",
+      "aspectId": 2
+    },
+    "aspect-havoc": {
+      "art": "aspect-havoc",
+      "label": "Havoc",
+      "family": "Aspects",
+      "aspectId": 3
+    },
+    "aspect-insight": {
+      "art": "aspect-insight",
+      "label": "Insight",
+      "family": "Aspects",
+      "aspectId": 4
     }
   },
   "resources": {

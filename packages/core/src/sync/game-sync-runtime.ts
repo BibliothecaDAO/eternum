@@ -15,7 +15,7 @@ import { createMicrotaskGameSyncScheduler } from "./scheduler";
 import type { WorldSpatialProjection } from "./world-spatial-projection";
 import { eventConfirmationRank } from "./event-confirmation";
 
-export type GameSyncRuntimeStatus = "idle" | "subscribing" | "snapshotting" | "replaying" | "running" | "stopped";
+type GameSyncRuntimeStatus = "idle" | "subscribing" | "snapshotting" | "replaying" | "running" | "stopped";
 
 export class SupersededGameSyncStartError extends Error {
   constructor() {
@@ -370,7 +370,10 @@ export class GameSyncRuntime {
       onHead: (head) => {
         if (!current()) return;
         session.onHead?.(head);
-        if (!head.preconfirmed) this.confirmedHead.resolve();
+        if (!head.preconfirmed) {
+          this.confirmedHead.resolve();
+          this.worldSpatialProjection?.refreshTime();
+        }
       },
       onTransaction: (transaction) => {
         if (!current()) return;

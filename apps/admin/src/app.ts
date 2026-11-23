@@ -28,7 +28,6 @@ interface Action {
   method: "POST" | "PUT";
   /** The page's path for it, under ACTIONS; the catch-all run action is listed last so it matches last. */
   pattern: string;
-  devOnly?: boolean;
   carriesBody: boolean;
   route: (params: Record<string, string>) => { path: string; action: string } | null;
 }
@@ -45,19 +44,6 @@ const named = (value: string | undefined): value is string => value !== undefine
 const WRITES: Action[] = [
   {
     method: "POST",
-    pattern: "test-blitz",
-    devOnly: true,
-    carriesBody: true,
-    route: () => ({ path: "/api/factory/test-blitz", action: "Free test Blitz" }),
-  },
-  {
-    method: "POST",
-    pattern: "slots",
-    carriesBody: true,
-    route: () => ({ path: "/api/slots", action: "Open Blitz slot" }),
-  },
-  {
-    method: "POST",
     pattern: "slots/:name/refund",
     carriesBody: false,
     route: ({ name }) => (named(name) ? { path: `/api/slots/${name}/refund`, action: `Refund slot ${name}` } : null),
@@ -67,18 +53,14 @@ const WRITES: Action[] = [
     pattern: "calendar/:phase",
     carriesBody: true,
     route: ({ phase }) =>
-      phase === "frontier" || phase === "blitz"
-        ? { path: `/api/factory/calendar/${phase}`, action: `Set ${phase} phase` }
-        : null,
+      phase === "frontier" ? { path: `/api/factory/calendar/${phase}`, action: `Set ${phase} phase` } : null,
   },
   {
     method: "POST",
     pattern: ":kind/:game/:name/:verb",
     carriesBody: false,
     route: ({ kind, game, name, verb }) =>
-      isGameEnvironment(game) &&
-      named(name) &&
-      ((kind === "runs" && (verb === "continue" || verb === "delete")) || (kind === "results" && verb === "continue"))
+      isGameEnvironment(game) && named(name) && kind === "runs" && (verb === "continue" || verb === "delete")
         ? { path: `/api/factory/${kind}/${game}/${name}/actions/${verb}`, action: `${verb} ${kind} ${name}` }
         : null,
   },
@@ -135,7 +117,7 @@ export const adminApp = (dependencies: AdminDependencies) => {
 
   const write = (action: Action) => async (context: AdminContext) => {
     const route = action.route(context.req.param());
-    if (!route || (action.devOnly && config.environment !== "dev")) return context.notFound();
+    if (!route) return context.notFound();
     let body: string | null;
     try {
       body = await readBody(context, action.carriesBody);

@@ -123,7 +123,10 @@ export function MessageComposer({
 
   // The field stands at its frame's foot, kept off it as every frame keeps its last row (HudPage, HudSheet).
   return (
-    <form onSubmit={handleSubmit} className="flex flex-shrink-0 flex-col gap-1 px-1.5 pb-3 pt-1.5">
+    <form
+      onSubmit={handleSubmit}
+      className="flex flex-shrink-0 flex-col gap-1 border-t border-hud-divider px-3 pb-3 pt-2.5"
+    >
       {replying && (
         <div className="flex min-w-0 items-center gap-1.5 px-1 text-hud-label text-hud-muted">
           <span className="shrink-0 text-hud-accent">{replying.name}</span>
@@ -185,7 +188,7 @@ export function MessageComposer({
           aria-controls={choices.length > 0 ? listId : undefined}
           aria-activedescendant={choices.length > 0 ? menuOptionId(listId, chosen) : undefined}
         />
-        <HudButton kind="secondary" type="submit" disabled={disabled} busy={isSending ? "Sending…" : undefined}>
+        <HudButton kind="primary" type="submit" disabled={disabled} busy={isSending ? "Sending…" : undefined}>
           Send
         </HudButton>
         {choices.length > 0 && (

@@ -1,35 +1,5 @@
-import {
-  type ID,
-  RealmLevels,
-  StructureType,
-  TileOccupier,
-  type TroopTier,
-  type TroopType,
-} from "@bibliothecadao/types";
-import type { NativeFactStore } from "../client/native-fact-store";
-import { getHyperstructureProgress } from "../utils";
-import { PROGRESS_FINAL_THRESHOLD, PROGRESS_HALF_THRESHOLD } from "../utils/constants";
+import { RealmLevels, StructureType, TileOccupier, type TroopTier, type TroopType } from "@bibliothecadao/types";
 import { StructureProgress } from "./types";
-
-export const getStructureStage = (structureType: StructureType, entityId: ID, store: NativeFactStore): number => {
-  if (structureType === StructureType.Hyperstructure) {
-    const { initialized, percentage } = getHyperstructureProgress(entityId, store);
-
-    if (!initialized) {
-      return StructureProgress.STAGE_1;
-    }
-
-    if (percentage < PROGRESS_HALF_THRESHOLD) {
-      return StructureProgress.STAGE_1;
-    }
-    if (percentage < PROGRESS_FINAL_THRESHOLD && percentage >= PROGRESS_HALF_THRESHOLD) {
-      return StructureProgress.STAGE_2;
-    }
-    return StructureProgress.STAGE_3;
-  }
-
-  return StructureProgress.STAGE_1;
-};
 
 export const getExplorerInfoFromTileOccupier = (
   occupierType: number,
@@ -145,8 +115,6 @@ export const getStructureInfoFromTileOccupier = (
       return { type: StructureType.Bank, stage: StructureProgress.STAGE_1, level: 1, hasWonder: false };
     case TileOccupier.Camp:
       return { type: StructureType.Camp, stage: StructureProgress.STAGE_1, level: 1, hasWonder: false };
-    case TileOccupier.BitcoinMine:
-      return { type: StructureType.BitcoinMine, stage: StructureProgress.STAGE_1, level: 1, hasWonder: false };
     case TileOccupier.Rift:
       return { type: StructureType.Rift, stage: StructureProgress.STAGE_1, level: 1, hasWonder: false };
     case TileOccupier.Ruin:

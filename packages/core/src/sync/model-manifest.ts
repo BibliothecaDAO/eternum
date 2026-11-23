@@ -78,7 +78,6 @@ const SYNC_SETS = ["owners", "entities", "realms", "realmTraits"] as const;
 export function isSharedChestStory(row: Record<string, unknown>): boolean {
   const story = row.story;
   if (typeof story !== "object" || story === null) return false;
-  if (Object.hasOwn(story, "RewardChestOpened")) return true;
   const payout = (story as Record<string, unknown>).SitePayout;
   return (
     typeof payout === "object" &&
@@ -152,22 +151,17 @@ export const SCOPE_RULE_MODELS = ["SliceRules", "GameRegistry", "SettlementRules
 /** Every model an expedition scope is derived from: a change to any other model never moves a scope. */
 export const SCOPE_INPUT_MODELS = [
   ...SCOPE_RULE_MODELS,
+  "DeepSite",
+  "AspectHyperstructure",
+  "HomeAspect",
+  "DeepGuard",
+  "ArmyDay",
   "PlayerEntry",
   "Structure",
   "ExplorerTroops",
+  "ArmyDay",
   "TileOccupancy",
   "ExpeditionSite",
 ] as const;
-
-/**
- * Whether a scope holds every region-scoped row of the map region at `coord` (its sites, tiles and occupants): one of
- * the expedition's regions, or any region of a scope that holds every row. Outside it, a missing row says nothing.
- */
-export function regionInGameSyncScope(scope: GameSyncScope, coord: { x: number; y: number }): boolean {
-  if (holdsEveryScopedRow(scope)) return true;
-  const spacing = scope.expedition?.spacing;
-  const region = spacing === undefined ? undefined : gameSyncRegion({ ...coord, alt: false }, spacing);
-  return region !== undefined && scope.expedition?.regions.has(region) === true;
-}
 
 export { deriveGameSyncScope, scopeInputKeys, scopeLookup } from "./subscription-scope";

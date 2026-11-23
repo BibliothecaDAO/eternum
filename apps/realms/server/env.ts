@@ -22,7 +22,6 @@ const IdentityVars = Schema.Struct({
   L2_RPC_URL: Schema.NonEmptyString,
   /** The marketplace API (its base, before `/v1`): the Realm holdings index, and at `/rpc` the relay for point reads. */
   MARKETPLACE_API_URL: Schema.String.pipe(Schema.check(Schema.isPattern(/^https:\/\/[^/]+/))),
-  /** The environment's one operator token for all automation: listing shards and changing their status here. */
   OPERATOR_TOKEN: Schema.NonEmptyString,
   /**
    * The OAuth clients players sign in with, each optional and offered only as a pair; each one's redirect is
@@ -58,7 +57,6 @@ export interface IdentityEnv extends Schema.Schema.Type<typeof IdentityVars> {
   GUARDIAN: Guardian;
   /** The launch Worker, reached by service binding only. */
   LAUNCH: { fetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> };
-  /** The value relay, reached by service binding only: it turns a founded Devcon home golden for its inviter's friends. */
   VALUE_RELAY: { fetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> };
   RATING_READER: DurableObjectNamespace<import("./rating-reader").RatingReader>;
   PUBLIC_RATE_LIMIT: RateLimit;

@@ -1,3 +1,4 @@
+import { aspectName, orderAspect } from "@bibliothecadao/types";
 import { renderToStaticMarkup } from "react-dom/server";
 import { MemoryRouter } from "react-router-dom";
 import { expect, it, vi } from "vitest";
@@ -18,7 +19,7 @@ const draw = (view: ReturnType<typeof doorwayView>, { asking = false, mode = "fr
         <DoorwayScreen
           view={view}
           realm={null}
-          game={{ mode, preset_id: 1 }}
+          game={{ mode }}
           onRetry={() => {}}
           onSignIn={() => {}}
           asking={asking}
@@ -39,7 +40,6 @@ it("shows a Frontier player's map loading as one bar with its share and step, an
   expect(page.textContent).toContain("71%");
   expect(page.textContent).toContain("Step 3 of 4");
   expect(page.textContent).toContain("First: build a Barracks");
-  expect(page.textContent).toContain("Claim Labor every day");
   // A meter, not a control: nothing on the page but the places can be pressed while it loads.
   expect([...page.querySelectorAll("button")].filter((button) => !button.closest('[data-band="tabs"]'))).toEqual([]);
 });
@@ -47,7 +47,6 @@ it("shows a Frontier player's map loading as one bar with its share and step, an
 it.each(["blitz", "eternum"] as const)("keeps Frontier's first minutes out of a %s entry: the bar alone", (mode) => {
   const page = draw(loadingMap(), { mode });
   expect(page.textContent).toContain("Loading the map");
-  expect(page.textContent).not.toContain("Claim Labor every day");
   expect(page.textContent).not.toContain("First: build a Barracks");
 });
 
@@ -62,4 +61,28 @@ it("gives the bar's place to a step that asks the player to choose", () => {
     asking: true,
   });
   expect(page.querySelector('[role="progressbar"]')).toBeNull();
+});
+
+it("renders the Frontier lockup, Aspect Facet, Entering Realm heading, day subtitle and first-minutes tip when the realm is known", () => {
+  const aspect = orderAspect(2)!;
+  const page = new DOMParser().parseFromString(
+    renderToStaticMarkup(
+      <MemoryRouter>
+        <DoorwayScreen
+          view={loadingMap()}
+          realm={{ name: "Temtinos", emblem: null, aspect }}
+          game={{ mode: "frontier", day_index: 5 }}
+          onRetry={() => {}}
+          onSignIn={() => {}}
+        />
+      </MemoryRouter>,
+    ),
+    "text/html",
+  ).body;
+  expect(page.querySelector("[data-doorway-loading]")).not.toBeNull();
+  expect(page.querySelector(`[data-aspect-mark="${aspect}"]`)).not.toBeNull();
+  expect(page.textContent).toContain("Entering Temtinos");
+  expect(page.textContent).toContain(aspectName(aspect));
+  expect(page.textContent).toContain("Day 6");
+  expect(page.textContent).toContain("First: build a Barracks");
 });

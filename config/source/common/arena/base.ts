@@ -3,7 +3,6 @@ import { buildCommonBaseConfig } from "../base-config";
 import { mergeConfigPatches } from "../merge-config";
 import { arenaBuildingConfig } from "./building";
 import { arenaExplorationConfig } from "./exploration";
-import { arenaHyperstructureConfig } from "./hyperstructures";
 import { arenaRealmLevelConfig } from "./levels";
 import { arenaVictoryPointConfig } from "./points";
 import { arenaResourceConfig } from "./resources";
@@ -25,12 +24,6 @@ const blitzModeConfig: ConfigPatch = {
   },
 };
 
-const blitzSeasonConfig: ConfigPatch = {
-  season: {
-    endGraceSeconds: 0,
-  },
-};
-
 const blitzVillageConfig: ConfigPatch = {
   village: {
     village_pass_nft_address: "0x0",
@@ -45,7 +38,6 @@ const blitzTradeConfig: ConfigPatch = {
     village_fp_per_sec: 0,
     owner_share_percent: 0,
   },
-  artificer: { research_cost_for_relic: 0 },
   trade: {
     maxCount: 0,
   },
@@ -81,11 +73,9 @@ export const arenaBaseConfig: ConfigPatch = mergeConfigPatches(
   arenaResourceConfig,
   arenaTroopConfig,
   arenaBuildingConfig,
-  arenaHyperstructureConfig,
   arenaRealmLevelConfig,
   arenaVictoryPointConfig,
   blitzModeConfig,
-  blitzSeasonConfig,
   blitzVillageConfig,
   blitzTradeConfig,
   blitzSettlementConfig,

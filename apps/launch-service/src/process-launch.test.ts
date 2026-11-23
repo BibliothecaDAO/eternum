@@ -1,11 +1,9 @@
-import { RegistrationOpen } from "./blitz-roster";
 import { Effect, Layer } from "effect";
 import { RpcError } from "starknet";
-import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import { LaunchExecutionFailure } from "./errors";
 import { LaunchExecutor } from "./executor";
 import { processNextLaunch } from "./process-launch";
-import { GameNotEnded } from "./results";
 import { D1LaunchStore, databaseLayer } from "./store";
 import { createLaunchTestDatabase, testChain } from "./test-database";
 
@@ -26,7 +24,7 @@ const request = {
 
 describe("the registrar's launch step", () => {
   test("persists the default start time once so retries cannot move it", async () => {
-    const queued = await store.enqueue("game", request);
+    const queued = await store.enqueue(request);
     const persistedStart = "gameStartTime" in queued.request ? queued.request.gameStartTime : undefined;
     const failing = Layer.mergeAll(
       databaseLayer(store),
@@ -54,7 +52,7 @@ describe("the registrar's launch step", () => {
       ["bltz-socket", socketClosed],
       ["bltz-rpc", notPublic],
     ] as const) {
-      const queued = await store.enqueue("game", { ...request, gameName });
+      const queued = await store.enqueue({ ...request, gameName });
       const failing = Layer.mergeAll(
         databaseLayer(store),
         Layer.succeed(LaunchExecutor, {
@@ -62,47 +60,14 @@ describe("the registrar's launch step", () => {
         }),
       );
       await Effect.runPromise(processNextLaunch(Date.now()).pipe(Effect.provide(failing)));
-      expect((await store.find("game", "madara.blitz", queued.name))?.errorMessage).toContain(
+      expect((await store.find("madara.blitz", queued.name))?.errorMessage).toContain(
         cause === notPublic ? "-32601: RPC method is not public" : "WebSocket connection closed",
       );
     }
   });
 
-  test("defers a result job to the chain's end time without spending an attempt", async () => {
-    await store.enqueue("result", { environment: "madara.blitz", gameName: "bltz-early", gameId: 4 });
-    const services = Layer.mergeAll(
-      databaseLayer(store),
-      Layer.succeed(LaunchExecutor, {
-        execute: (run) => Effect.fail(new LaunchExecutionFailure({ runId: run.id, cause: new GameNotEnded(90) })),
-      }),
-    );
-
-    await Effect.runPromise(processNextLaunch(Date.now()).pipe(Effect.provide(services)));
-
-    expect(await store.find("result", "madara.blitz", "bltz-early")).toMatchObject({ status: "queued", attempts: 0 });
-    expect(await store.startNext(Date.now())).toBeNull();
-    expect(await store.nextDue()).toBeGreaterThanOrEqual(Date.now() + 80_000);
-  });
-
-  test("defers a Blitz launch while ledger registration is open without spending an attempt", async () => {
-    await store.enqueue("game", request);
-    const services = Layer.mergeAll(
-      databaseLayer(store),
-      Layer.succeed(LaunchExecutor, {
-        execute: (run) =>
-          Effect.fail(
-            new LaunchExecutionFailure({ runId: run.id, cause: new RegistrationOpen({ secondsUntilClose: 90 }) }),
-          ),
-      }),
-    );
-    await Effect.runPromise(processNextLaunch(Date.now()).pipe(Effect.provide(services)));
-    expect(await store.find("game", "madara.blitz", request.gameName)).toMatchObject({ status: "queued", attempts: 0 });
-    expect(await store.startNext(Date.now())).toBeNull();
-    expect(await store.nextDue()).toBeGreaterThanOrEqual(Date.now() + 80_000);
-  });
-
   test("completes a started launch through the injected executor and store", async () => {
-    await store.enqueue("game", request);
+    await store.enqueue(request);
     const executor = {
       execute: () =>
         Effect.succeed({
@@ -117,14 +82,13 @@ describe("the registrar's launch step", () => {
           configSteps: [],
           dryRun: false,
           gameId: 62,
-          finalizeAt: 3_000_000_000,
         }),
     };
     const services = Layer.mergeAll(databaseLayer(store), Layer.succeed(LaunchExecutor, executor));
 
     await Effect.runPromise(processNextLaunch(Date.now()).pipe(Effect.provide(services)));
 
-    expect(await store.find("game", "madara.blitz", request.gameName)).toMatchObject({
+    expect(await store.find("madara.blitz", request.gameName)).toMatchObject({
       status: "complete",
       attempts: 1,
       summary: { gameId: 62 },
@@ -133,11 +97,11 @@ describe("the registrar's launch step", () => {
 });
 
 test("three interrupted attempts fail before execution and release the queue", async () => {
-  const stuck = await store.enqueue("game", request);
+  const stuck = await store.enqueue(request);
   for (let attempt = 1; attempt <= 3; attempt++) {
     expect(await store.startNext(Date.now())).toMatchObject({ id: stuck.id, attempts: attempt });
   }
-  const next = await store.enqueue("game", { ...request, gameName: "bltz-next" });
+  const next = await store.enqueue({ ...request, gameName: "bltz-next" });
   let executions = 0;
   const services = Layer.mergeAll(
     databaseLayer(store),
@@ -152,44 +116,4 @@ test("three interrupted attempts fail before execution and release the queue", a
   expect(executions).toBe(0);
   expect(await store.failed()).toMatchObject([{ id: stuck.id, errorMessage: "Launch interrupted after 3 attempts" }]);
   expect(await store.startNext(Date.now())).toMatchObject({ id: next.id, attempts: 1 });
-});
-
-test("a played game's result retries past three failures without cancelling the slot", async () => {
-  await store.enqueue("result", { environment: "madara.blitz", gameName: "played-result-recovery", gameId: 4 });
-  const execute = vi.fn(() =>
-    Effect.fail(new LaunchExecutionFailure({ runId: "played", cause: new Error("result RPC unavailable") })),
-  );
-  const services = Layer.mergeAll(databaseLayer(store), Layer.succeed(LaunchExecutor, { execute }));
-  for (let attempt = 0; attempt < 4; attempt++)
-    await Effect.runPromise(processNextLaunch(Date.now() + 1000000).pipe(Effect.provide(services)));
-  expect(execute).toHaveBeenCalledTimes(4);
-  expect((await store.find("result", "madara.blitz", "played-result-recovery"))?.status).toBe("queued");
-});
-
-test("paid runs keep retrying transient failures beyond the ordinary attempt limit", async () => {
-  await store.enqueue("game", { ...request, gameName: "paid-transient", slotId: 7, groupIndex: 0 });
-  await store.saveGame({
-    environment: "madara.blitz",
-    chain: "madara",
-    gameType: "blitz",
-    gameName: "paid-transient",
-    gameId: 7,
-    startTime: 1,
-    startTimeIso: "1970-01-01T00:00:01.000Z",
-    rpcUrl: "https://shard.test",
-    configMode: "batched",
-    configSteps: [],
-    dryRun: false,
-  });
-  const execute = vi.fn(() =>
-    Effect.fail(new LaunchExecutionFailure({ runId: "paid", cause: new Error("Herald temporarily down") })),
-  );
-  const services = Layer.mergeAll(databaseLayer(store), Layer.succeed(LaunchExecutor, { execute }));
-  for (let index = 0; index < 4; index++)
-    await Effect.runPromise(processNextLaunch(Date.now() + 1000000).pipe(Effect.provide(services)));
-  expect(execute).toHaveBeenCalledTimes(4);
-  for (let index = 0; index < 6; index++)
-    await Effect.runPromise(processNextLaunch(Date.now() + 1000000).pipe(Effect.provide(services)));
-  expect(execute).toHaveBeenCalledTimes(10);
-  expect((await store.find("game", "madara.blitz", "paid-transient"))?.status).toBe("queued");
 });

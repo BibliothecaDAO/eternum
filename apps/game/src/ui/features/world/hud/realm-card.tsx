@@ -4,8 +4,6 @@ import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useAutomationStore } from "@/hooks/store/use-automation-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { isVillageLikeStructureCategory } from "@/lib/structure-type-utils";
-import { ActiveRelicEffects } from "@/ui/features/world/components/entities/active-relic-effects";
-import { CompactEntityInventory } from "@/ui/features/world/components/entities/compact-entity-inventory";
 import { useStructureEntityDetail } from "@/ui/features/world/components/entities/hooks/use-structure-entity-detail";
 import {
   type StructureProductionSummary,
@@ -21,10 +19,7 @@ import { divideByPrecision, type ResourceManager } from "@bibliothecadao/eternum
 import { inferRealmPreset, REALM_PRESETS, type RealmPresetId } from "@bibliothecadao/eternum/automation";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 import {
-  EntityType,
   type ID,
-  isRelic,
-  RelicRecipientType,
   ResourcesIds,
   StructureType,
   formatCount,
@@ -38,12 +33,6 @@ import { useMemo } from "react";
 import { ProductionStatusBadge } from "@/ui/shared";
 import { resourcesInTierOrder } from "@/ui/shared/resource-tier-order";
 
-/**
- * The selected holding of the player's, in a HUD panel named for it with rename beside the name: its population,
- * building tiles and automation, then a medallion per resource it makes or holds (five to a row), then its relics: those
- * it holds, then those working on it with their time left (an activated relic leaves the held row for that one).
- * Nothing for a holding not theirs.
- */
 export const RealmCard = ({ holding }: { holding: StructureWithMetadata | null }) => {
   const entityId = useUIStore((state) => state.structureEntityId);
   const detail = useStructureEntityDetail({ structureEntityId: entityId });
@@ -65,8 +54,6 @@ export const RealmCard = ({ holding }: { holding: StructureWithMetadata | null }
           automation={isVillage ? "village" : detail.structure.base.category === StructureType.Realm ? "realm" : null}
         />
         <ResourceRings resources={detail.resources} summary={summary} />
-        <HeldRelics entityId={entityId} resources={detail.resources} activeRelicIds={detail.relicEffects} />
-        <ActiveRelicEffects entityId={entityId} relicEffects={detail.relicEffects} />
       </div>
     </HudPanel>
   );
@@ -225,34 +212,4 @@ const describeResource = ({ resourceId, held, buildings }: ResourceReading): str
   const parts = [`${resourceName(resourceId)} · ${formatExact(Math.floor(held))} held`];
   if (buildings > 0) parts.push(formatCount(buildings, "building"));
   return parts.join(" · ");
-};
-
-/** The holding's relics, on their own row, activated from there as on the classic panel. */
-const HeldRelics = ({
-  entityId,
-  resources,
-  activeRelicIds,
-}: {
-  entityId: ID;
-  resources: ResourceManager | null | undefined;
-  activeRelicIds: Array<{ id: number | string }>;
-}) => {
-  const now = useCurrentDefaultTick();
-  const hasRelics = (resources?.balances(now) ?? []).some(
-    (balance) => isRelic(Number(balance.resourceId)) && Number(balance.amount) > 0,
-  );
-  if (!hasRelics) return null;
-  return (
-    <CompactEntityInventory
-      resources={resources}
-      activeRelicIds={activeRelicIds.map((effect) => Number(effect.id))}
-      recipientType={RelicRecipientType.Structure}
-      entityId={safeInteger(entityId)}
-      entityType={EntityType.STRUCTURE}
-      allowRelicActivation
-      filter="relics"
-      emptyMessage=""
-      showHiddenCount={false}
-    />
-  );
 };

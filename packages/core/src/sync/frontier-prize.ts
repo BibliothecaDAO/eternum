@@ -12,7 +12,7 @@ export const frontierPrizeHolders = <Entry extends Pick<HeraldFrontierLeaderboar
 
 /**
  * What each prize place takes of the season's prize pool, first to last, as the ledger pays it
- * (frontier_prizes.cairo, prize_amount): rank r of `count` takes `count + 1 - r` shares of `count (count + 1) / 2`,
+ * (the ledger’s frontier_prizes.cairo, prize_amount): rank r of `count` takes `count + 1 - r` shares of `count (count + 1) / 2`,
  * each place below the first rounded down, and the first takes what the others leave, so the rounding stays with it.
  */
 export const prizeShares = (pool: bigint, count: number): bigint[] => {

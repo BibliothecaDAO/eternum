@@ -4,7 +4,7 @@ import { WorldFold } from "../world-fold";
 import { LiveWorld } from "../live-world";
 import type { MadaraRpc } from "../madara-rpc";
 import type { RpcBlockWithReceipts } from "../types";
-import { presetLaunch, presetRegistration } from "./preset-fixtures";
+import { presetLaunch, presetRelease } from "./preset-fixtures";
 import { manifest, receipt, rowEvent, schema, setup, shardManifest } from "./fixtures";
 
 it("indexes only structure positions across moves, replacement, overlays and checkpoint restore", () => {
@@ -57,9 +57,8 @@ it("indexes only structure positions across moves, replacement, overlays and che
 });
 
 it("an army move does not notify directory clients; structure moves and empty-block clock transitions do", async () => {
-  const { native, fold, decoder } = setup();
-  const preset = presetRegistration(2);
-  native.applyReceipt(fold, receipt([preset.event]), 10, 0, preset.calldata);
+  const preset = presetRelease(2);
+  const { native, fold, decoder } = setup(preset.definitions);
   native.applyReceipt(fold, receipt(presetLaunch(preset, 1, 100)), 10, 0);
   const structure = rowEvent("TileOccupancy", ["1", "0", "1", "1"], {
     entity_id: 7n,

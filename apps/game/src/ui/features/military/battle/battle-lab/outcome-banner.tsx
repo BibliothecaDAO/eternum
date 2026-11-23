@@ -8,14 +8,7 @@ const COPY: Record<BattleOutcome, { label: string; tone: "good" | "bad" | "warn"
   Draw: { label: "Both armies survive — no decisive result", tone: "warn" },
 };
 
-/** The battle's result, or both ends of it where the attacker's worst and best rolls land differently. */
-export const OutcomeBanner = ({ outcomes }: { outcomes: { worst: BattleOutcome; best: BattleOutcome } }) => {
-  const { label, tone } =
-    outcomes.worst === outcomes.best
-      ? COPY[outcomes.worst]
-      : {
-          label: `Worst roll ${outcomes.worst} · best ${outcomes.best}`,
-          tone: COPY.Draw.tone,
-        };
+export const OutcomeBanner = ({ outcome }: { outcome: BattleOutcome }) => {
+  const { label, tone } = COPY[outcome];
   return <HudNotice tone={tone} line={label} />;
 };

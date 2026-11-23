@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { frontierDay } from "@/ui/features/frontier/deploy/deploy-fixture";
 import { setBlockTimestampSource } from "@bibliothecadao/eternum";
-import { getRelicInfo, RELICS, TroopTier, TroopType } from "@bibliothecadao/types";
+import { TroopTier, TroopType } from "@bibliothecadao/types";
 import type { WorkingArmy } from "./battle-lab.types";
 import { ArmyColumn } from "./army-column";
 
@@ -26,7 +26,7 @@ const mount = () => {
       troopCount: 100,
       stamina: 50,
       battle_cooldown_end: 0,
-      relics: [],
+      oaths: 0,
     });
     shown = army;
     return (
@@ -53,22 +53,7 @@ const mount = () => {
   };
 };
 
-/** The fight relics the column offers, as the picker it replaced listed them. */
-const FIGHT_RELICS = RELICS.filter((relic) => ["Damage", "Damage Reduction", "Stamina"].includes(relic.type));
-
 describe("Combat's army column", () => {
-  it("offers every relic that changes a fight, and keeps several on at once", () => {
-    const column = mount();
-    const [first, second] = FIGHT_RELICS;
-    for (const relic of FIGHT_RELICS) expect(column.button(`Add ${relic.name}`), relic.name).not.toBeNull();
-    column.press(`Add ${first.name}`);
-    column.press(`Add ${second.name}`);
-    expect(column.army().relics).toEqual([first.id, second.id]);
-    column.press(`Remove ${getRelicInfo(first.id)!.name}`);
-    expect(column.army().relics).toEqual([second.id]);
-    column.unmount();
-  });
-
   it("sets troops in steps of 100 and never below one, and stamina within its maximum", () => {
     const column = mount();
     column.press("More: Troops");

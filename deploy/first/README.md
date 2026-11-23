@@ -14,13 +14,12 @@ than guessing their values. A fresh dry run cannot inspect Alchemy or Cloudflare
 entered; it reports those steps as unavailable. Later dry runs use the saved credentials and inspect remote results.
 
 The first apply asks for the Cloudflare token, one Alchemy mainnet URL, the Resend key, the Discord application's client
-ID and secret (every environment offers Discord sign-in), the whole-token Frontier deposit, and four UTC dates: Frontier
-start/end and Blitz start/end. Dates use `YYYY-MM-DDTHH:MM:SSZ`; none has a default. The Frontier start must be on its
-army tick, with a positive duration. Invalid dates are rejected without changing it. All four dates and the deposit are
-shown before transactions. Production additionally asks for its **public** treasury address, never its key: the treasury
-is fixed in the ledger's constructor. The deployer is the ledger's admin and funding payer on dev and production; an
-environment marked `coldAdmin` in `environments.json` instead asks for its public cold-admin address, and setup refuses
-a saved `admin` anywhere else.
+ID and secret (every environment offers Discord sign-in), and two UTC dates: Frontier start and end. Dates use
+`YYYY-MM-DDTHH:MM:SSZ`; none has a default. The Frontier start must be on its army tick, with a positive duration.
+Invalid dates are rejected without changing it. Both dates are shown before transactions. Production additionally asks
+for its **public** treasury address, never its key: the treasury is fixed in the ledger's constructor. The deployer is
+the ledger's admin on dev and production; an environment marked `coldAdmin` in `environments.json` instead asks for its
+public cold-admin address, and setup refuses a saved `admin` anywhere else.
 
 Setup does not ask for AVNU's paymaster key. To let the identity Worker sponsor default wallets' recovery steps, add it
 to the environment's `inputs.json` as `avnuPaymasterApiKey`, then run setup's apply
@@ -108,10 +107,9 @@ lockfiles and compiler versions key Docker's Cairo layers; changes to Herald or 
    production pays LORDS only (`contracts/l2/ledger/scripts/chest-preset.js`), so its cosmetics collection exists for
    the ledger's constructor but gets no metadata and mints nothing. Publish only public contract addresses to the
    environment book, retaining the Realms collection and unrelated fields.
-6. Read roles, metadata events, presets and season state, and prepare only missing setup calls. Metadata scans begin at
-   each collection’s deployment block, found from historical class reads once per collection per run. Presence reads run
-   in parallel during both inspection and apply. Opening a new Blitz ledger season requires its start to be in the
-   future; an existing matching season is preserved after its start. An environment with a cold admin writes public
+6. Read roles and metadata events, and prepare only missing setup calls; setup registers no ledger preset. Metadata
+   scans begin at each collection’s deployment block, found from historical class reads once per collection per run.
+   Presence reads run in parallel during both inspection and apply. An environment with a cold admin writes public
    unsigned calls to `cold-setup.json` and waits for the cold wallet to execute them; its cold key never enters the
    command.
 7. Reuse the saved service credentials, or generate them once for a new environment. An existing box token requires the
@@ -148,8 +146,9 @@ lockfiles and compiler versions key Docker's Cairo layers; changes to Herald or 
 ## Deploy
 
 After setup, the box and Cloudflare halves run from the same pushed commit, independently except for a new world release
-(`deploy/release/native-release.ts`): then the box half goes first, and the Cloudflare half refuses until the shard has
-the release.
+(`deploy/release/native-release.ts`) or a new shard: then the box half goes first, and the Cloudflare half refuses until
+the box's Herald serves its chain and release. The box half never touches the shard directory; the Cloudflare half alone
+lists the shard there.
 
 ```sh
 pnpm run deploy dev
@@ -157,33 +156,78 @@ pnpm run deploy:cloudflare dev "$HOME/.realms-dev"
 ```
 
 The box command needs Bun and SSH, with no dependency install or package build. A Git archive carries its source commit
-in `deploy/first/commit.txt`. The box command builds images on the target box, initializes the shard and registers it.
-Full output, including builds and failures, stays in a mode-0600 `deploy-*.log` in the run directory; the command prints
-its path, failing stage, HTTP status and fixed service error. Deployment holds the box's stack lock. The world names the
-launcher and relay accounts at creation; each Worker joins using its own device from its alarm or cron. Deployment does
-not enrol those devices or transfer their roles. Dev uses `realms-dev` in `/opt/athanor/runs/dev`. On a running shard, a
-commit whose release follows the shard's, with the same schema and Games class, continues it: init registers the
-release, and Herald restarts from the published manifest until its `/manifest` maps every release. Any other release
-change is refused, and a rerun registers nothing.
+in `deploy/first/commit.txt`. The box command builds images on the target box and initializes the shard. Full output,
+including builds and failures, stays in a mode-0600 `deploy-*.log` in the run directory; the command prints its path,
+failing stage, HTTP status and fixed service error. Deployment holds the box's stack lock. The world names the launcher
+and relay accounts at creation; each Worker joins using its own device from its alarm or cron. Deployment does not enrol
+those devices or transfer their roles. Dev uses `realms-dev` in `/opt/athanor/runs/dev`. On a running shard, a commit
+whose release follows the shard's, with the same schema and Games class, continues it: init registers the release, and
+Herald restarts from the published manifest until its `/manifest` maps every release. Any other release change is
+refused, and a rerun registers nothing.
 
 The Cloudflare command belongs to the credential holder. It first reads, over the box's SSH alias, the box's record of
 its last build (`release.json` in the run directory): the release facts the init image baked. It takes them as this
 commit's release only when the record is the same release and `git diff` finds no change between the two commits in
 `RELEASE_SOURCES` (`deploy/first/release-identity.ts`: the world's contracts and Scarb path dependencies, the release
-id, and the image that compiles them); otherwise it asks for the box half at this commit first. It then exports HEAD to
-a temporary directory, installs locked dependencies, builds workspace packages, migrates D1 and publishes Workers. It
-names every chat room and inbox the identity Worker holds to that Worker, which has each delete its messages past thirty
-days and set its alarm for the rest, so chat stored before that rule existed keeps the same thirty days. It hands that
-release to the launch Worker, which advances the running Frontier games to it, signed by the launcher. The Worker
-resolves each Frontier launch's game by its name on the chain, whatever the launch's state, so a launch interrupted
-after creating its game is included. It refuses, by name and before sending anything, until the shard's registered
-release has those contents and Herald maps every release a game moves through to that schema, and it sends nothing for
-games already there. Only then does it build and publish the client, then builds the docs (`pnpm run build:docs`, the
-build validation runs) and publishes them to `docs.realms.party` (dev: `docs.dev-realms.party`). Each run uploads both
-sites' builds and checks each at its own address, byte for byte, before the command ends, so a rerun at the same commit
-proves what it published. It refuses to start until setup has created every resource, so a site new to the deployment
-reaches an existing environment through `setup --apply`. Neither deploy command has a dry run or performs funding or
-calendar operations. Production, when commissioned, builds its images on its own box from the same source commit.
+id, and the image that compiles them); otherwise it asks for the box half at this commit first. It also reads the chain
+the box prepared (`data/native-world.json`). It then exports HEAD to a temporary directory, installs locked dependencies
+and builds workspace packages. It then makes sure the directory lists the box's shard: it reads the box's public Herald
+`/manifest` (`public_herald_url` in `deploy/release/ENVIRONMENT.json`) and refuses before sending anything unless it
+serves the box's chain and maps this release to its schema, so a half-deployed box is never listed. It then asks the
+identity Worker, as the operator, which shard the directory lists (`GET /api/directory/shard`). When that is the box's
+chain at that Herald, nothing changes: a tune or a redeploy of the listed chain publishes identity with the other
+Workers, after the release step. Otherwise (a fresh chain, or an identity Worker from before the one-row directory,
+which answers 404) it migrates the identity D1, publishes the identity Worker and sends `PUT /api/directory/shard` with
+that URL, so the launcher's account can join on a listed chain. The identity Worker checks the manifest and account
+identity again and replaces the row; a rerun finds the row listed and sends nothing, and a run stopped earlier leaves
+the previous row. A box that has never built lists nothing. It then migrates D1 for and publishes the launch Worker,
+then builds the client. It hands that release and the box's shard to the launch Worker, which reads the shard's manifest
+from its Herald itself, refuses a shard whose Herald serves another chain, and advances the running Frontier games to
+it, signed by the launcher; this step asks the identity Worker for nothing. On the first deploy of the one-row
+directory, the previous launch Worker's cron, between the identity Worker's publish and its own, asks for the directory
+in the form that Worker no longer serves and fails: one tick, on a chain that has no game yet. The Worker resolves each
+Frontier launch's game by its name on the chain, whatever the launch's state, so a launch interrupted after creating its
+game is included. It refuses, by name and before sending anything, until the shard's registered release has those
+contents and Herald maps every release a game moves through to that schema, and it sends nothing for games already
+there. Registering a release in the box half does not change the release new games start on: this step then opens it,
+and every release staged before it, for new games (the launcher's `open_release`), so new games start on it in the same
+deploy that publishes the client reading its numbers. Only then does it publish the other Workers and the client: each
+reads only games that run the balance numbers it carries, so a refused release stops the deploy before any of them
+changes, and open clients built for the previous numbers stop and reload onto the new one. A game left on older numbers
+(a settled Frontier game, any Blitz game) is not readable by them after a tune. Each build reads games from the family
+line's `since` in `NATIVE_RELEASES` (`deploy/release/native-release.ts`) to its own release; a commit that changes a
+balance number sets it to that commit's release. The box half records each release's balance identity when it registers
+it, and refuses a release whose earlier releases from that one on ran other numbers. Between the Workers and the client
+it names every chat room and inbox the identity Worker holds to that Worker, which has each delete its messages past
+thirty days and set its alarm for the rest, so chat stored before that rule existed keeps the same thirty days. It then
+builds the docs (`pnpm run build:docs`, the build validation runs) and publishes them to `docs.realms.party` (dev:
+`docs.dev-realms.party`). Each run uploads both sites' builds and checks each at its own address, byte for byte, before
+the command ends, so a rerun at the same commit proves what it published. It refuses to start until setup has created
+every resource, so a site new to the deployment reaches an existing environment through `setup --apply`. Neither deploy
+command has a dry run or performs funding or calendar operations. Production, when commissioned, builds its images on
+its own box from the same source commit.
+
+## Tune rehearsal
+
+```sh
+pnpm run rehearse:tune <game_id> "$HOME/.realms-dev" [--expect Model,Model.member,...]
+```
+
+A balance tune is a plain release: a commit that changes only tunable Cairo numbers and bumps its family's `release` in
+`NATIVE_RELEASES`. A number is tunable when its name ends in a unit (`_BPS`, `_PERCENT`, `_STAMINA`, `_PER_TICK`,
+`_PER_RANK`, `_LIMIT`, `_CAP`, `_SHARE`, `_BASE`, `_STEPS`; `contracts/l3/world-native/scripts/rule-constants.mjs`).
+Tunable numbers ship in `contracts/l3/world-native/schema/balance.gen.ts`, outside the schema identity, so the tune
+keeps the schema and the box half registers it on the running chain. Every other constant is an identifier that stored
+facts are read with (mode flags, entry rules, kinds, ids); the identity covers it, so changing one is a schema change
+the box refuses on a running chain. A tune sets the family line's `since` in `NATIVE_RELEASES` to its release, so the
+new client reads only games on its numbers; players' clients reload on their own, since a client refuses a game pinned
+past the release it was built for. This command rehearses one on the dev chain with the deploy's own steps: it runs the
+box half (`pnpm run deploy dev`), waits for the game's next day start, snapshots the game's facts from Herald's
+checkpoint (`deploy/release/game-facts.ts`), runs the Cloudflare half, which advances the running game and opens the
+release for new games, then snapshots again once the checkpoint pins the game to the new release. It prints every fact
+that changed and exits 1 when a change is outside `GameRelease.release_id` and the `--expect` list; players' own moves
+between the two snapshots show up there too. It refuses (exit 2) a game already on the commit's release. A rollback is
+the same command on a commit that restores the previous numbers under the next release id.
 
 ## Season
 
@@ -192,12 +236,8 @@ pnpm run season dev "$HOME/.realms-dev"
 ```
 
 This reads the existing private directory without migration: `inputs.json`, `keys.json` and `secrets.json`. It sets the
-missing calendar phases from the saved dates, preserves and displays existing published phases, waits for the launch
-cron's Frontier game, deposits the saved whole-LORDS amount, then watches pool publication and the automatic Blitz slot.
-Dev mints missing test LORDS. Production refuses a missing or noncanonical LORDS address; its payer must hold real LORDS
-before funding. Clear the retired production ledger address and deployment block before fresh setup, and fund only a new
-shard/game identity never funded on the retired ledger. It uses the public address book written by setup. An existing
-deposit is verified rather than repeated. Mainnet funding remains an owner operation, including dev funding.
+missing calendar phases from the saved dates and preserves and displays existing published phases. It makes no ledger
+deposit. Clear the retired production ledger address and deployment block before fresh setup.
 
 The dev box can open the free Frontier phase at the current armies tick, for one complete bag of days:
 
@@ -206,15 +246,7 @@ python3 deploy/athanor/scripts/operator-command.py season dev
 ```
 
 This uses the deployed preset and the protected operator credential. It preserves an already running phase and makes no
-mainnet transaction. Run the existing harness after deployment and report its result separately from deployment:
-
-```sh
-python3 deploy/athanor/scripts/operator-command.py measure /opt/athanor/runs/dev check -- \
-  --game-type frontier --bots 2 --minutes 2 --setup-concurrency 2
-```
-
-When the launch Worker has created the game, add its `--game-id` to play that game. Funding, paid Blitz registration and
-payouts require the owner. The gameplay report never controls shard admission.
+mainnet transaction. Funding, paid Blitz registration and payouts require the owner.
 
 ## Alerts
 
@@ -236,11 +268,13 @@ pnpm run teardown dev
 pnpm run teardown production /opt/athanor/backups/NAME
 ```
 
-Production always names the backup the box verifies first; dev may name one to rehearse that path. The box retires its
-directory row, stops its Compose project, removes its volumes and run directory, and preserves deployment logs in
-`/opt/athanor/logs`. It leaves Cloudflare and the mainnet ledger alone. Teardown output has its own mode-0600 log there.
-The next deployment creates a fresh shard with a new chain identity so service cursors cannot follow the former chain. A
-restart reads the existing chain identity from the run directory.
+Production always names the backup the box verifies first; dev may name one to rehearse that path. The box stops its
+Compose project, removes its volumes and run directory, and preserves deployment logs in `/opt/athanor/logs`. It leaves
+Cloudflare, the directory row and the mainnet ledger alone: the next `deploy:cloudflare` replaces the row, and a shard
+decommissioned without a redeploy is unlisted with `DELETE /api/directory/shard` as the operator, which a rerun repeats
+harmlessly. Teardown output has its own mode-0600 log there. The next deployment creates a fresh shard with a new chain
+identity so service cursors cannot follow the former chain. A restart reads the existing chain identity from the run
+directory.
 
 ## Private state and recovery
 
@@ -263,19 +297,15 @@ nonce. A changed artifact or constructor is refused after an address has been pi
 retry: that would generate different accounts. Restore its backup. The process lock prevents two simultaneous runs from
 sharing an account nonce.
 
-If a calendar phase's start has passed but its end is still in the future, rerun with the same dates. An already-open
-Blitz ledger season keeps its dates; only a new ledger season requires a future start. For future seasons, edit the four
-dates and the Frontier deposit in `inputs.json`, run setup to open the next ledger season, then run season. After the
-previous seasons end, the ledger opens the next Blitz season number and the calendar replaces its ended phases. Running
-or future seasons are never replaced. Existing deposits are never changed. If a production collection or rating token
-needs an upgrade, its cold owner must complete the reviewed upgrade first; this command grants no new upgrade power and
-never obtains the upgrade key.
+If a calendar phase's start has passed but its end is still in the future, rerun with the same dates. For future
+seasons, edit the two dates in `inputs.json`, then run season; the calendar replaces its ended phases. Running or future
+seasons are never replaced. If a production collection or rating token needs an upgrade, its cold owner must complete
+the reviewed upgrade first; this command grants no new upgrade power and never obtains the upgrade key.
 
-Declarations, contract deployments, transfers, successful setup and funding cannot be undone. Check the public book,
-roles and four displayed dates before applying. A wrong published contract or immutable preset causes a refusal;
-changing private state does not repair it. If the funding game, token, start, end or pool differs, the command refuses
-rather than sending another deposit. A proven pool mismatch remains an error. D1 migrations and DNS also affect running
-services: keep the former active shard’s retained data for recovery.
+Declarations, contract deployments, transfers and successful setup cannot be undone. Check the public book, roles and
+two displayed dates before applying. A wrong published contract or immutable preset causes a refusal; changing private
+state does not repair it. D1 migrations and DNS also affect running services: keep the former active shard’s retained
+data for recovery.
 
 Dev chest metadata uses the public test CID already committed in
 `contracts/l2/collectibles/ext/scripts/deployment/data/example.json`. All five chest bands and the test cosmetics use

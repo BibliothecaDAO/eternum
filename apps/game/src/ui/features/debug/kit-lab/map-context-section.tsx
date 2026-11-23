@@ -64,7 +64,6 @@ const line = (order: Partial<Parameters<typeof orderTip>[0]>) => {
     refusal: undefined,
     staminaWait: undefined,
     staminaHeld: undefined,
-    site: undefined,
     byRealm: false,
     ...order,
   });
@@ -280,8 +279,7 @@ export const MapContextSection = ({ world }: { world?: ReactNode }) => (
             {line({ refusal: { reason: "too-far" } })}
             {line({ explored: false })}
           </OnMap>
-          <OnMap name="Crate and spire" when="Beside a relic crate or a spire: the right-click opens or travels.">
-            {line({ path: [step(ActionType.Move), step(ActionType.Chest)] })}
+          <OnMap name="Spire" when="Beside a spire: the right-click travels.">
             {line({ path: [step(ActionType.Move), step(ActionType.SpireTravel)] })}
           </OnMap>
           <OnMap name="Structure menu" when="A right-click on your own realm: what it can raise, one click each.">

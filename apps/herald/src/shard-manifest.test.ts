@@ -2,6 +2,7 @@ import { expect, it } from "vitest";
 
 import { manifest } from "./native/fixtures";
 import { assertShardChain, buildShardManifest, readShardDocument } from "./shard-manifest";
+import { releaseLine } from "../../../packages/core/src/test-support/releases";
 
 const document = {
   ...manifest,
@@ -19,7 +20,7 @@ it("serves the shard's chain, release, endpoint, play gas bound and every contra
   const served = buildShardManifest(document, { rpcUrl: "https://rpc.test" });
   expect(served).toMatchObject({
     chainId: "0x4c4142",
-    releaseSchemas: { [manifest.native.releaseId]: manifest.native.activeSchema },
+    releases: releaseLine(manifest.native.activeSchema, [manifest.native.releaseId]),
     rpcUrl: "https://rpc.test",
     accountClassHash: "0x456",
     guardianPublicKey: "0xabc",
@@ -39,17 +40,26 @@ it("reads a deployment document only with a shard record that has a guardian pub
   expect(() => readShardDocument(JSON.stringify(unsharded))).toThrow("no shard record");
 });
 
+it("refuses a deployment document that lists release schemas without their families", () => {
+  const { releases, ...native } = document.native;
+  const old = { ...document, native: { ...native, releaseSchemas: { "1": releases["1"]!.schema } } };
+  expect(() => readShardDocument(JSON.stringify(old))).toThrow("lists no releases with their families");
+});
+
 it("refuses a node whose chain differs from the shard it serves", () => {
   expect(() => assertShardChain(document, "0x4c4142")).not.toThrow();
   expect(() => assertShardChain(document, "0x999")).toThrow("declares 0x4c4142");
 });
 
-it("serves every published release schema, including games pinned behind the current release", () => {
-  const releases = { "1": manifest.native.activeSchema, "2": "new-decoder" };
+it("serves every published release with its family and previous, including games pinned behind the current release", () => {
+  const releases = {
+    "1": { schema: manifest.native.activeSchema, family: 1, previous: 0 },
+    "2": { schema: "new-decoder", family: 1, previous: 1 },
+  };
   const served = buildShardManifest(
-    { ...document, native: { ...document.native, releaseId: 2, releaseSchemas: releases } },
+    { ...document, native: { ...document.native, releaseId: 2, releases } },
     { rpcUrl: "https://rpc.test" },
   );
-  expect(served.releaseSchemas).toEqual(releases);
+  expect(served.releases).toEqual(releases);
   expect(served).not.toHaveProperty("schemaHash");
 });

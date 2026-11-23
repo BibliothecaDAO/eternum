@@ -60,7 +60,6 @@ describe("buildConfig", () => {
     expect(sixtyMinuteConfig.victoryPoints.pointsForHyperstructureClaimAgainstBandits).toBe(1_000_000_000n);
     expect(sixtyMinuteConfig.victoryPoints.hyperstructurePointsPerCycle).toBe(1_000_000n);
     expect(sixtyMinuteConfig.buildings.simpleBuildingCost[BuildingType.ResourceCopper]?.[0]?.amount).toBe(540);
-    expect(sixtyMinuteConfig.blitz.exploration.rewards).toHaveLength(6);
 
     expect(customDurationConfig.season.durationSeconds).toBe(2700);
     expect(customDurationConfig.resources.productionByComplexRecipeOutputs[ResourcesIds.Wood]).toBe(

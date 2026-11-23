@@ -16,13 +16,11 @@
       "origin": "https://docs.dev-realms.party"
     },
     "box": "realms-dev",
-    "blitzPreset": 1,
     "chests": "mystery",
     "chestName": "devChest",
     "cosmeticsName": "devCosmetics",
     "collectionDescription": "Dev test collection (no value)",
     "picture": "Qmb7Zr5bJaSzrARdXVYzc5PMp3bbnydJu4reKBXGF8Aiz4",
-    "blitzPrice": 100,
     "runDirectory": "/opt/athanor/runs/dev",
     "environment": "dev"
   },
@@ -48,7 +46,6 @@
     "cosmeticsName": "Realms Cosmetic Items",
     "collectionDescription": "Won in Realms games",
     "picture": "Qmb7Zr5bJaSzrARdXVYzc5PMp3bbnydJu4reKBXGF8Aiz4",
-    "blitzPrice": 100,
     "runDirectory": "/opt/athanor/runs/production",
     "environment": "production"
   }

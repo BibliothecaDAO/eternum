@@ -1,12 +1,16 @@
+import { beastBand } from "./frontier-beast-band";
+import { currentArmy } from "./deep";
+import { deepViewFor, deepZoneAt } from "./deep-geometry";
 import { entityHomeNamespace } from "./entity-home";
-import { researchedDepth } from "./realm-research";
-import { MAX_U32, ResourcesIds } from "@bibliothecadao/types";
+import { reachableDepth } from "./realm-research";
+import { MAX_U32, ResourcesIds, type MapLayer } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
+import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { getNeighborHexes, StructureType } from "@bibliothecadao/types";
 import { getBlockTimestamp } from "./timestamp";
 import { dayOf } from "./days";
-import { previewSiteClearXp, previewSiteReward } from "../../../../contracts/l3/world-native/schema/site-previews.gen";
+import { previewSiteReward } from "../../../../contracts/l3/world-native/schema/site-previews.gen";
 
 import { entityMapPosition } from "./tile";
 
@@ -22,7 +26,14 @@ type ExpeditionRuleReader = (model: ExpeditionRuleModel) => Record<string, unkno
 export const readExpeditionRules = (
   source: Pick<NativeFactStore, "get"> | ExpeditionRuleReader,
   gameId: number,
-): { dayUnitSeconds: number; spacing: number; startMainAt: number; endAt: number; seed: bigint } | null => {
+): {
+  dayUnitSeconds: number;
+  spacing: number;
+  startMainAt: number;
+  endAt: number;
+  scheduledEndAt: number;
+  seed: bigint;
+} | null => {
   const read: ExpeditionRuleReader =
     typeof source === "function" ? source : (model) => source.get(model, { game_id: gameId });
   const rules = read("SliceRules");
@@ -37,6 +48,7 @@ export const readExpeditionRules = (
     spacing: Number(settlement.spacing),
     startMainAt: Number(game.start_main_at),
     endAt: Number(game.end_at),
+    scheduledEndAt: Number(game.scheduled_end_at),
     seed: BigInt(game.seed as bigint | string),
   };
 };
@@ -66,13 +78,23 @@ export const siteReward = (
   store: Pick<NativeFactStore, "require">,
   site: Pick<NativeRows["ExpeditionSite"], "category" | "initial_guard_count" | "clear" | "game_id" | "row">,
 ): { resourceType: ResourcesIds; amount: bigint } | null =>
-  site.clear ? null : previewSiteReward(site.category, site.initial_guard_count, siteDepth(store, site));
+  site.clear
+    ? null
+    : previewSiteReward(site.category, site.initial_guard_count, siteDepth(store, site), siteIsWraith(store, site));
 
-/** The contract's integer XP formula, shared by the preview, receipt and local replay. */
-export const siteClearXp = (
+const siteIsWraith = (
   store: Pick<NativeFactStore, "require">,
-  site: Pick<NativeRows["ExpeditionSite"], "initial_guard_count" | "game_id" | "row">,
-): number => previewSiteClearXp(site.initial_guard_count, siteDepth(store, site));
+  site: Pick<NativeRows["ExpeditionSite"], "category" | "initial_guard_count" | "game_id" | "row">,
+): boolean => {
+  if (site.category !== StructureType.Beasts) return false;
+  const bounds = store.require("DepthRules", { game_id: site.game_id, depth: siteDepth(store, site) });
+  return beastBand(site.initial_guard_count, bounds) === "stronger";
+};
+
+export const siteHoldsOath = (
+  store: Pick<NativeFactStore, "require">,
+  site: Pick<NativeRows["ExpeditionSite"], "category" | "initial_guard_count" | "clear" | "game_id" | "row">,
+): boolean => site.clear === null && siteIsWraith(store, site) && siteDepth(store, site) < 3;
 
 const siteDepth = (
   store: Pick<NativeFactStore, "require">,
@@ -92,6 +114,7 @@ export const expeditionDepth = (rules: ExpeditionRules, coord: { y: number }): n
 
 /** An Ethereal layer, I to III: a Frontier depth below the day's surface. */
 export type EtherealLayer = 1 | 2 | 3;
+export const DEEP_DEPTH = 3 satisfies EtherealLayer;
 
 /**
  * The Ethereal layer an army stands in, by the same depth the terrain and the spire read; none on the day's surface or
@@ -113,6 +136,26 @@ export const armyEtherealLayer = (
  */
 export const isEtherealTile = (rules: ExpeditionRules | null, hex: { row: number; alt: boolean }): boolean =>
   hex.alt || (rules !== null && expeditionDepth(rules, { y: hex.row }) > 0);
+
+const sharedDeepRules = (store: Pick<NativeFactStore, "get"> | null, gameId: number) =>
+  store?.get("DeepRules", { game_id: gameId });
+
+export const hasSharedDeep = (store: Pick<NativeFactStore, "get"> | null, gameId: number): boolean =>
+  sharedDeepRules(store, gameId) !== undefined;
+
+export const cameraLayer = (
+  rules: ExpeditionRules | null,
+  store: Pick<NativeFactStore, "get"> | null,
+  gameId: number,
+  hex: { col: number; row: number; alt: boolean } | null,
+): MapLayer => {
+  if (!rules || !hex || hex.alt) return 0;
+  const deep = sharedDeepRules(store, gameId);
+  if (deep && deepZoneAt(rules.spacing, deep, hex)) return 3;
+  const depth = expeditionDepth(rules, { y: hex.row });
+  if (depth === 3) return deep ? 3 : 2;
+  return depth as MapLayer;
+};
 
 /**
  * Whether an army going from one tile to another passes through a spire instead of walking: onto the other map layer
@@ -139,21 +182,37 @@ export const isArmyCrossing = (
 export const expeditionDayEndsAt = (rules: ExpeditionRules, nowSeconds: number): number =>
   dayOf(rules, nowSeconds)?.end ?? (nowSeconds < rules.startMainAt ? rules.startMainAt : Infinity);
 
-/**
- * An army belongs to today's expedition only while it stands in today's region, as the contract's `is_current` decides;
- * an army from an earlier day may remain a fact, but every command refuses it.
- */
+/** Army lifetime follows its allocation day, independent of its position. */
 export const isCurrentExpeditionArmy = (
   rules: ExpeditionRules,
-  coord: { x: number; y: number; alt: boolean },
+  day: bigint | number | string,
   nowSeconds: number,
-): boolean =>
-  !coord.alt &&
-  nowSeconds >= rules.startMainAt &&
-  Math.floor(expeditionBand(rules, coord) / 4) === seasonDay(rules, nowSeconds);
+): boolean => {
+  const today = seasonDay(rules, nowSeconds);
+  return today !== null && BigInt(day) === BigInt(today);
+};
+
+export const isArmyCurrent = (
+  store: Pick<NativeFactStore, "get" | "require">,
+  gameId: number,
+  explorerId: bigint,
+  nowSeconds: number,
+): boolean => {
+  const rules = readExpeditionRules(store, gameId);
+  if (!rules) return true;
+  const army = store.require("ArmyDay", { game_id: gameId, explorer_id: explorerId });
+  return isCurrentExpeditionArmy(rules, army.day, nowSeconds);
+};
+
+/** Personal sites remain in the map region belonging to their discovery day. */
+export const isCurrentExpeditionRegion = (
+  rules: ExpeditionRules,
+  coord: { y: number; alt: boolean },
+  nowSeconds: number,
+): boolean => !coord.alt && isCurrentExpeditionArmy(rules, Math.floor(expeditionBand(rules, coord) / 4), nowSeconds);
 
 /**
- * A structure's living field armies: troops left and, in a game with expeditions, standing in today's region. An army
+ * A structure's living field armies: troops left and, in a game with expeditions, allocated today. An army
  * from an earlier day is dead by rule: every command refuses it, and the contract destroys it before checking the army
  * cap when the realm next musters. So it never counts toward that cap or shows as the realm's army, even while its row
  * is still a fact. Today is judged at the execution floor, the time the next command will run at, unless a caller that
@@ -165,13 +224,13 @@ export const liveHomeArmies = (
   gameId: number,
   floorSeconds?: number,
 ): NativeRows["ExplorerTroops"][] => {
-  const armies = [...store.armiesAtHome(gameId, structureId)].filter((army) => army.troops.count > 0n);
+  const armies = [...store.armiesAtHome(gameId, structureId)]
+    .map((army) => currentArmy(store, army, floorSeconds))
+    .filter((army) => army.troops.count > 0n);
   const rules = readExpeditionRules(store, gameId);
   if (!rules) return armies;
   const floor = floorSeconds ?? getBlockTimestamp().currentDefaultTick;
-  return armies.filter((army) =>
-    isCurrentExpeditionArmy(rules, entityMapPosition(store, gameId, army.explorer_id), floor),
-  );
+  return armies.filter((army) => isArmyCurrent(store, gameId, army.explorer_id, floor));
 };
 
 /**
@@ -180,15 +239,19 @@ export const liveHomeArmies = (
  */
 export const spireEtherealView = (
   store: Pick<NativeFactStore, "get" | "require" | "armiesAtHome" | "entityOccupancy">,
-  spire: { col: number; row: number; realm: NativeRows["Structure"] },
+  spire: { col: number; row: number; realm: NativeRows["Structure"]; targetDepth?: EtherealLayer },
 ): { col: number; row: number } => {
   const gameId = spire.realm.game_id;
   const rules = readExpeditionRules(store, gameId);
   if (!rules) throw new Error("A spire lights only in an expedition game");
+  if (spire.targetDepth === 3 && hasSharedDeep(store, gameId))
+    return deepViewFor(store, gameId, spire.realm.entity_id, rules.spacing);
   const inEthereal = liveHomeArmies(store, Number(spire.realm.entity_id), gameId)
     .map((army) => entityMapPosition(store, gameId, army.explorer_id))
-    .find((at) => expeditionDepth(rules, at) > 0);
-  return inEthereal ? { col: inEthereal.x, row: inEthereal.y } : viewInLayer(rules, spire, 1);
+    .find((at) =>
+      spire.targetDepth ? expeditionDepth(rules, at) === spire.targetDepth : expeditionDepth(rules, at) > 0,
+    );
+  return inEthereal ? { col: inEthereal.x, row: inEthereal.y } : viewInLayer(rules, spire, spire.targetDepth ?? 1);
 };
 
 /**
@@ -220,10 +283,9 @@ export const structureMapPosition = (
   store: Pick<NativeFactStore, "get" | "require" | "entityOccupancy">,
   structure: NativeRows["Structure"],
 ): { x: number; y: number; alt: boolean } | null => {
-  const rules = readExpeditionRules(store, structure.game_id);
-  if (rules && isRealmCategory(structure.base.category)) {
+  if (isExpeditionRealm(store, structure)) {
     const site = expeditionRealmSite(
-      rules,
+      readExpeditionRules(store, structure.game_id)!,
       entityHomeNamespace(structure.entity_id),
       getBlockTimestamp().currentBlockTimestamp,
     );
@@ -300,58 +362,110 @@ export const isAtExpeditionSpire = (spire: { col: number; row: number }, coord: 
   (spire.col === coord.x && spire.row === coord.y) ||
   getNeighborHexes(spire.col, spire.row).some((hex) => hex.col === coord.x && hex.row === coord.y);
 
-/**
- * A realm's spire today, once its research lights it: where it stands and the deepest depth it opens. Null outside an
- * expedition game, before the season, or before Ethereal I.
- */
-const realmSpire = (
+export type ExpeditionSpireView = {
+  col: number;
+  row: number;
+  deepest: number;
+  targetDepth?: EtherealLayer;
+  realm: NativeRows["Structure"];
+};
+
+function realmSpires(
   store: Pick<NativeFactStore, "get" | "require">,
   realm: NativeRows["Structure"],
   nowSeconds: number,
-): { col: number; row: number; deepest: number } | null => {
+): ExpeditionSpireView[] {
   const rules = isRealmCategory(realm.base.category) ? readExpeditionRules(store, realm.game_id) : null;
-  if (!rules) return null;
-  const deepest = researchedDepth(store, realm.game_id, realm.entity_id) ?? 0;
-  const spire = deepest > 0 ? expeditionSpireTile(rules, realm, nowSeconds) : null;
-  return spire && { ...spire, deepest };
-};
+  if (!rules) return [];
+  const deepest = reachableDepth(store, realm.game_id, realm.entity_id) ?? 0;
+  const epoch = seasonDay(rules, nowSeconds);
+  if (epoch === null) return [];
+  return ([1, 2, 3] as const).flatMap((targetDepth) => {
+    const spire = store.get("ExpeditionSpire", {
+      game_id: realm.game_id,
+      structure_id: realm.entity_id,
+      epoch,
+      depth: targetDepth - 1,
+    });
+    return spire?.location ? [{ col: spire.location.x, row: spire.location.y, deepest, targetDepth, realm }] : [];
+  });
+}
 
-/** A living army's realm and that realm's lit spire today; null where realmSpire is, or for a fallen army. */
 export const armyRealmSpire = (
-  store: Pick<NativeFactStore, "get" | "require">,
+  store: Pick<NativeFactStore, "get" | "require" | "entityOccupancy">,
   gameId: number,
   explorerId: number | bigint,
   nowSeconds: number,
-): { col: number; row: number; deepest: number; realm: NativeRows["Structure"] } | null => {
+): ExpeditionSpireView | null => {
   const army = store.get("ExplorerTroops", { game_id: gameId, explorer_id: explorerId });
   const realm =
     army && army.troops.count > 0n ? store.get("Structure", { game_id: gameId, entity_id: army.owner }) : null;
-  const spire = realm ? realmSpire(store, realm, nowSeconds) : null;
-  return spire && realm ? { ...spire, realm } : null;
+  if (!realm) return null;
+  const spires = realmSpires(store, realm, nowSeconds);
+  const rules = readExpeditionRules(store, gameId);
+  if (!rules) return null;
+  const depth = expeditionDepth(rules, entityMapPosition(store, gameId, explorerId));
+  return spires.find((spire) => spire.targetDepth === depth + 1) ?? null;
 };
 
-/**
- * The lit spire of a living army's realm while the army stands where enter_depth takes it (on the spire or beside it);
- * null anywhere else.
- */
+/** The next eligible reveal's chance, from the same home/day/layer counter that discovers its Spire. */
+export const armySpireChance = (
+  store: NativeFactStore,
+  gameId: number,
+  explorerId: number | bigint,
+  nowSeconds: number,
+): number | null => {
+  const rules = readExpeditionRules(store, gameId);
+  const army = store.get("ExplorerTroops", { game_id: gameId, explorer_id: explorerId });
+  const position = store.entityOccupancy(gameId, explorerId);
+  if (!rules || !army || army.troops.count === 0n || !position) return null;
+  const epoch = seasonDay(rules, nowSeconds);
+  const allocation = store.get("ArmyDay", { game_id: gameId, explorer_id: explorerId });
+  if (epoch === null || !allocation || !isCurrentExpeditionArmy(rules, allocation.day, nowSeconds)) return null;
+  const depth = expeditionDepth(rules, { y: position.row });
+  const researched = reachableDepth(store, gameId, army.owner);
+  if (position.alt || depth >= DEEP_DEPTH || researched === undefined || researched === 0) return null;
+  const progress = store.requireOrAbsent("ExpeditionSpire", {
+    game_id: gameId,
+    structure_id: army.owner,
+    epoch,
+    depth,
+  });
+  if (!progress.known || progress.known.location) return null;
+  return ((progress.known.reveals + 1) * 100) / nativeRuleConstants.SPIRE_REVEAL_LIMIT;
+};
+
+/** The army's own spire while it stands on or beside it. */
 export const armyAtItsSpire = (
   store: Pick<NativeFactStore, "get" | "require" | "entityOccupancy">,
   gameId: number,
   explorerId: number | bigint,
   nowSeconds: number,
-): { col: number; row: number; deepest: number; realm: NativeRows["Structure"] } | null => {
+): ExpeditionSpireView | null => {
   const spire = armyRealmSpire(store, gameId, explorerId, nowSeconds);
   const tile = spire && store.entityOccupancy(gameId, explorerId);
   return spire && tile && isAtExpeditionSpire(spire, { x: tile.col, y: tile.row }) ? spire : null;
 };
 
-/** Every spire lit today that the store knows of, with its realm: one per expedition realm with depth research. */
+/** Every current-day spire in the subscribed realms, from their canonical facts. */
 export const expeditionSpires = (
   store: Pick<NativeFactStore, "get" | "require" | "inGame">,
   gameId: number,
   nowSeconds: number,
-): Array<{ col: number; row: number; deepest: number; realm: NativeRows["Structure"] }> =>
-  [...store.inGame("Structure", gameId)].flatMap((realm) => {
-    const spire = realmSpire(store, realm, nowSeconds);
-    return spire ? [{ ...spire, realm }] : [];
-  });
+): ExpeditionSpireView[] =>
+  [...store.inGame("Structure", gameId)].flatMap((realm) => realmSpires(store, realm, nowSeconds));
+
+/** A retained camp receipt is the supply post for its clearing home until that map's day ends. */
+export function isSupplyPost(
+  store: Pick<NativeFactStore, "get">,
+  site: NativeRows["ExpeditionSite"],
+  home: bigint,
+  timestamp: number,
+): boolean {
+  const rules = readExpeditionRules(store, site.game_id);
+  if (!rules || site.alt || site.category !== StructureType.Camp || site.clear?.home_id !== home) return false;
+  return (
+    expeditionDepth(rules, { y: site.row }) < 3 &&
+    Math.floor(site.row / rules.spacing / 4) === dayOf(rules, timestamp)?.index
+  );
+}

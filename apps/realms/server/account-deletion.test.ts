@@ -18,8 +18,6 @@ import {
 
 /**
  * Deleting an account as Cloudflare runs it: the Worker, its D1 and the chat inboxes in workerd. The emailed code is
- * the account's confirmation; once it is spent, the old session opens nothing and the account's rows are gone, except
- * the ledger's and the campaign's, which stay keyed to an anonymous tombstone.
  */
 let bundle: string;
 beforeAll(() => {
@@ -68,13 +66,26 @@ const seedAccount = (worker: Worker, realmsId: string) =>
       )
       .bind(realmsId, "ab".repeat(32), Date.now()),
     worker.db.prepare(`INSERT INTO "build_order_books" ("owner", "book") VALUES (?, '{}')`).bind(realmsId),
-    worker.db.prepare(
-      `INSERT INTO "campaign_codes" ("campaign", "code_hash", "tier") VALUES ('devcon-2026', 'golden-hash', 'golden')`,
-    ),
+    worker.db
+      .prepare(`INSERT INTO "opening_progress" ("owner", "moment", "kind") VALUES (?, 'barracks', 'reached')`)
+      .bind(realmsId),
+    worker.db.prepare(`INSERT INTO "order_intents" ("owner", "order", "chosen_at") VALUES (?, 4, 1)`).bind(realmsId),
+    worker.db
+      .prepare(`INSERT INTO "seal_codes" ("code_hash", "label", "owner", "redeemed_at") VALUES (?, 'playtest', ?, 1)`)
+      .bind(`held-by-${realmsId}`, realmsId),
     worker.db
       .prepare(
-        `INSERT INTO "campaign_tickets" ("campaign", "owner", "code_hash", "tier", "redeemed_at")
-         VALUES ('devcon-2026', ?, 'golden-hash', 'golden', 1)`,
+        `INSERT INTO "store_receipts" ("receipt", "product", "received_at", "owner", "outcome") VALUES ('apple:tx-leaving', 'seal', 1, ?, 'seal')`,
+      )
+      .bind(realmsId),
+    worker.db
+      .prepare(
+        `INSERT INTO "store_receipts" ("receipt", "product", "received_at", "owner", "outcome") VALUES ('apple:tx-bundle', 'fragments-500', 1, ?, 'fragments')`,
+      )
+      .bind(realmsId),
+    worker.db
+      .prepare(
+        `INSERT INTO "fragment_credits" ("receipt", "owner", "fragments", "created_at") VALUES ('apple:tx-bundle', ?, 500, 1)`,
       )
       .bind(realmsId),
     worker.db
@@ -125,6 +136,16 @@ it("deletes an account only with its emailed code: its old session opens nothing
   expect(await countOf(worker, "notification_push_subscriptions", "owner", leaving.realmsId)).toBe(0);
   expect(await countOf(worker, "notification_preferences", "owner", leaving.realmsId)).toBe(0);
   expect(await countOf(worker, "build_order_books", "owner", leaving.realmsId)).toBe(0);
+  expect(await countOf(worker, "opening_progress", "owner", leaving.realmsId)).toBe(0);
+  expect(await countOf(worker, "order_intents", "owner", leaving.realmsId)).toBe(0);
+  expect(await countOf(worker, "fragment_credits", "owner", leaving.realmsId)).toBe(0);
+  // The payments stay in the ledger, owned by no one, so neither receipt can be used again.
+  expect(
+    (await worker.db.prepare(`SELECT "receipt", "owner" FROM "store_receipts" ORDER BY "receipt"`).all()).results,
+  ).toEqual([
+    { receipt: "apple:tx-bundle", owner: null },
+    { receipt: "apple:tx-leaving", owner: null },
+  ]);
   expect(await countOf(worker, "user", "email", LEAVING)).toBe(0);
   expect(await inbox.threadMessages(threadId, undefined, 10)).toBeNull();
   expect(
@@ -134,8 +155,7 @@ it("deletes an account only with its emailed code: its old session opens nothing
       .first(),
   ).toEqual({ closed: 1 });
 
-  // The ledger's and the campaign's rows stay, with an anonymous tombstone their Realms id still names.
-  expect(await countOf(worker, "campaign_tickets", "owner", leaving.realmsId)).toBe(1);
+  expect(await countOf(worker, "seal_codes", "owner", leaving.realmsId)).toBe(1);
   expect(
     await worker.db
       .prepare(`SELECT "replaced_at" IS NOT NULL AS closed FROM "wallet_link_history" WHERE "account" = ?`)
@@ -264,7 +284,7 @@ const publish = (socket: { send(data: string): void }, room: string, content: st
 
 /** Waits a while for frames of a type that should not come. */
 const noneArrive = async (frames: Frame[], type: string) => {
-  await waitUntil(() => ofType(frames, type).length > 0, 2_000);
+  await pause(2_000);
   expect(ofType(frames, type)).toEqual([]);
 };
 
@@ -296,7 +316,7 @@ it("review: a deleted account cannot publish through an already-open room socket
         payload: { zoneId: GLOBAL, content: "published after account deletion" },
       }),
     );
-    await waitUntil(() => room.frames.some((frame) => frame.type === "world:message"), 2000);
+    await pause(2_000);
     expect(room.frames.filter((frame) => frame.type === "world:message")).toEqual([]);
   } finally {
     socket?.close();
@@ -444,8 +464,8 @@ it("closes a deleted account's open sockets in Global, its game's room and a lob
   try {
     await worker.db.batch(migrationStatements().map((statement) => worker.db.prepare(statement)));
     await worker.db
-      .prepare(`INSERT INTO "shards" ("url", "chainId", "status", "addedAt") VALUES (?, ?, 'active', ?)`)
-      .bind(SHARD, CHAIN_ID, Date.now())
+      .prepare(`INSERT INTO "shards" ("slot", "url", "chainId") VALUES (1, ?, ?)`)
+      .bind(SHARD, CHAIN_ID)
       .run();
     const leaving = await worker.signInWithEmailCode(LEAVING);
     const watcher = await worker.signInWithEmailCode("watcher@realms.test");

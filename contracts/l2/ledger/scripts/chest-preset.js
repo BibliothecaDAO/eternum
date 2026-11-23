@@ -11,8 +11,6 @@ export function buildMysteryChestPreset() {
   const tokenOdds = [500, 1000, 1000, 0, 0];
   const names = ["common", "uncommon", "rare", "epic", "legendary", "lords", "sword", "shield"];
   return {
-    // Each paid game puts this share of its pool in the season's chest reserve; the odds above spend about all of it.
-    chestLordsBps: 1000,
     bands: weights.map((row, band) => {
       const nonToken = row.map((weight, index) => (index === 5 ? 0 : weight));
       const total = nonToken.reduce((sum, weight) => sum + weight, 0);
@@ -44,7 +42,6 @@ export function buildLordsChestPreset() {
   const mystery = buildMysteryChestPreset();
   const odds = { common: 0, uncommon: 0, rare: 0, epic: 0, legendary: 0, lords: 9998, sword: 1, shield: 1 };
   return {
-    chestLordsBps: 9000,
     bands: mystery.bands.map((band) => ({ metadata: band.metadata, odds, lords_shares: 1 })),
     items: mystery.items,
   };

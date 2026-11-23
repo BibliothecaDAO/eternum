@@ -1,35 +1,26 @@
 import type { NativePreset } from "../common/native-preset";
-import { nativeRuleConstants as rule } from "../../../contracts/l3/world-native/schema/client.gen";
-import { realmResourcePool, relicRules } from "../common/native-data";
+import { nativeRuleConstants as rule } from "../../../contracts/l3/world-native/schema/balance.gen";
+import { realmResourcePool } from "../common/native-data";
 import { arenaModeRules, arenaCommandMask } from "../common/native-commands";
-import { blitzBalance } from "./balance";
 
 export const blitzPreset: NativePreset = {
-  ledger: {
-    protocolCutBps: 1000,
-    mmrEnabled: true,
-  },
-  bitcoinEnabled: false,
+  orderAspects: [],
+  deep: null,
+  race: null,
+  dailyQuest: null,
+  banes: null,
   startingTroops: [],
   realmResources: realmResourcePool,
-  relics: relicRules,
-  supplies: blitzBalance.blitz!.exploration!.rewards!.map(({ rewardId, percent, probabilityBps }) => ({
-    resource_type: rewardId!,
-    percent: percent!,
-    percent_max: percent!,
-    weight: probabilityBps!,
-  })),
   bridgeResources: [],
   id: 2,
   gameType: "blitz",
   environmentGameType: "blitz",
   settlementMode: "Triple",
-  modeRules: arenaModeRules | rule.DISCOVER_SPIRES,
+  modeRules: arenaModeRules,
   entryRule: rule.ENTRY_ROSTER,
   commandMask: arenaCommandMask,
   spacing: 6,
   dayUnitSeconds: 0,
-  progression: null,
   discovery: null,
   labor: null,
   chests: null,

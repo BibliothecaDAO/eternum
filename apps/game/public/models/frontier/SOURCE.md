@@ -1,62 +1,45 @@
 # Frontier beast models
 
-The eight production beasts come from the packed Blender sources in `apps/game/asset-sources/frontier-beasts/refined/`.
-Each source retains its sculpt and painted textures. The matching `*-paint.png` files and prompts live beside the
-sources. `apps/game/scripts/frontier-beasts/sculpt-beasts.py` authors these production sculpts, dispatching the approved
-Troll, Cyclops, Wyvern and Hydra to `sculpt-creatures.py`, Wraith to `sculpt-weak-beasts.py`, and Ammit, Basilisk and
-Dark fey to `sculpt-site-beasts.py`; the packed `.blend` files are the inputs to delivery rebuilds.
-
-| Species  | Editable source under `refined/` | Production delivery under `public/models/frontier/` |
-| -------- | -------------------------------- | --------------------------------------------------- |
-| Troll    | `troll.blend`                    | `beast-troll.glb`                                   |
-| Wyvern   | `wyvern.blend`                   | `beast-wyvern.glb`                                  |
-| Hydra    | `hydra.blend`                    | `beast-hydra.glb`                                   |
-| Wraith   | `wraith.blend`                   | `beast-wraith.glb`                                  |
-| Cyclops  | `cyclops.blend`                  | `beast-cyclops.glb`                                 |
-| Ammit    | `ammit.blend`                    | `beast-ammit.glb`                                   |
-| Basilisk | `basilisk.blend`                 | `beast-basilisk.glb`                                |
-| Dark fey | `dark-fey.blend`                 | `beast-dark-fey.glb`                                |
+All nineteen production beasts (Surface five, Veil five, Hollow five, and Deep four) ship through the Tripo pipeline
+(`pnpm --dir apps/game ship:model --kind beast`) from committed editable sources under
+`apps/game/asset-sources/tripo/frontier/beast-<species>/{source.glb,fit.json}`. Each delivered GLB under
+`public/models/frontier/beast-*.glb` embeds `assetKind: "beast"`, `sourceSha256`, and `fitSha256` matching its committed
+`source.glb` and `fit.json`. Retired legacy `.blend` sculpts and their Blender export scripts have been removed; concept
+paintings remain under `apps/game/asset-sources/frontier-beasts/refined/` as references.
 
 ## Rebuild and validate
 
-From the repository root, with workspace dependencies, Blender and the texture encoder installed:
+From the repository root, with workspace dependencies and `ktx` installed:
 
 ```sh
-bash apps/game/scripts/frontier-beasts/rebuild.sh /absolute/path/to/a-new-beast-build
+pnpm --dir apps/game ship:model \
+  --input apps/game/asset-sources/tripo/frontier/beast-<species>/source.glb \
+  --fit apps/game/asset-sources/tripo/frontier/beast-<species>/fit.json \
+  --kind beast \
+  --out apps/game/public/models/frontier/beast-<species>.glb
 pnpm --dir apps/game verify:beasts
 ```
 
-The output directory must be absolute and must not already exist. The rebuild exports all eight packed sources through
-`export-beast.py`, then compresses the fresh exports through `scripts/outposts/optimize-outpost.mjs`. It writes
-`beast-{troll,wyvern,hydra,wraith,cyclops,ammit,basilisk,dark-fey}.glb` and per-model logs into that external directory.
-It does not overwrite production deliveries. Review the rebuilt files in the game's lab before copying an approved set
-to the production paths, then run `verify:beasts` again against those delivered bytes. Never recompress an already
-compressed delivery.
-
-`verify:beasts` checks the committed GLBs' source hashes, grounded footprint at each species' maximum runtime scale,
-triangle and byte budgets, one primitive, unit transforms, UVs, color and normal textures, and KTX2 encoding. The lab is
-`/lab/models?family=beasts`; its Set, View, Turn and Light controls expose the current species and site compositions.
+`verify:beasts` runs `assertDeliveredAsset` from `apps/game/scripts/tripo/ship-model.mjs` against `BEAST_BUDGET`,
+checking budgets, grounded footprint at each species' maximum runtime scale, unit transforms, UVs, KTX2 encoding,
+`tripoMaterial` tags, and exact `sourceSha256`/`fitSha256` equality against the committed files in
+`asset-sources/tripo/`. The lab is `/lab/models?family=beasts`; its Set, View, Turn and Light controls expose the
+current species and site compositions.
 
 ## Runtime identity and placement
 
-Models are static, authored Z-up facing -Y and delivered Y-up facing +Z with baked transforms. Each origin is the tile's
-ground center. Deliveries use Draco geometry, ETC1S color and UASTC normal textures. Terrain belongs to the scene.
+Models are static, delivered Y-up facing +Z with baked transforms. Each origin is the tile's ground center. Deliveries
+use Draco geometry, ETC1S color/emissive and UASTC technical textures. Terrain belongs to the scene.
 
-`packages/core/src/utils/frontier-beast.ts` owns encounter identity and scale. Cyclops is lowly, Wraith stronger; Troll
-replaces the camp category on the client at every depth; Dark fey hovers above every rift. Ruins use Ammit / Basilisk /
-Wyvern / Hydra from surface through III. No combat tier or count rule is derived from this art. The client beast catalog
-owns delivery paths and site offsets.
-
-All eight use the selected sculpts. Wraith, Ammit and Basilisk have the latest paint/sculpt polish; Wyvern and Hydra are
-the approved polished versions. Minotaur and the unselected Ghoul/Kappa/Golem outputs are retired. Selected concept
-paintings remain in the lab archive and appear beside the live final-map page. Its predecessor comparison is an actual
-renderer screenshot, `production-before.png`, captured at `3d4f8c734334bb7e952c9440a5716e09909799ad` before promotion.
+`packages/core/src/utils/frontier-beast.ts` resolves each site's beast and scale from the one table by family and layer
+(`BEASTS`, `packages/types/src/words/nouns.ts`), and each Deep site's beast by its kind (`DEEP_BEASTS`, read by the
+map's Deep sites). Every species ships its own model with no fallback stand-ins. No combat tier or count rule is derived
+from this art. The client beast catalog owns delivery paths and site offsets.
 
 All beast deliveries remain static primitives. `FrontierModel` adds small vertex-shader idle displacements using the
 shared animation clock and different phases per instance. Grounded beasts breathe above planted feet, the Wraith lifts
 through its shroud, and the fey retains hover and wing motion. No bones, animation textures, extra draws or per-frame
-instance-matrix uploads are added. The lab's Beast idle checkbox removes the displacement shader for comparison;
-`population=128` measures sixteen of every species with ruin mist on in both conditions.
+instance-matrix uploads are added.
 
 The fey delivery remains one static primitive; `FrontierModel` animates hover and wing membrane displacement on the GPU,
 using the game's shared animation clock. It retains the painted color and normal maps. The rift and fey share a tile

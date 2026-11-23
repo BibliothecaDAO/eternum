@@ -3,7 +3,7 @@ import { buildStoryEventPresentation } from "@bibliothecadao/eternum";
 import { describe, expect, it } from "vitest";
 
 import { campBeside, SITE } from "../sites/site-fixture";
-import { frontierArmyRules } from "../army/progression-rules-fixture";
+
 import { dayLogLine } from "./day-line";
 
 const story = (name: string, storyPayload: Record<string, unknown>, title = "The story's own title") => ({
@@ -38,8 +38,8 @@ describe("the day log's line for a story", () => {
     const { store } = campBeside();
     const farm = { category: BuildingType.ResourceWheat };
     expect(dayLogLine(story("BuildingPaymentStory", { ...farm, cost: [] }), store)).toBe("Farm built");
-    expect(dayLogLine(story("BuildingPaymentStory", { category: BuildingType.WorkersHut, cost: [] }), store)).toBe(
-      "Hut built",
+    expect(dayLogLine(story("BuildingPaymentStory", { category: BuildingType.Storehouse, cost: [] }), store)).toBe(
+      "Storeroom built",
     );
     expect(
       dayLogLine(story("BuildingPlacementStory", { ...farm, change: "Destroyed" }, "Demolished: Farm"), store),
@@ -49,34 +49,19 @@ describe("the day log's line for a story", () => {
   it("names an army by its number, as its card does, and by Army alone once it has left the map", () => {
     const store = dayWithArmyTwo();
     expect(dayLogLine(story("ExplorerCreateStory", { explorer_id: 201 }), store)).toBe("Army 2 deployed");
-    expect(dayLogLine(story("ExplorerDeleteStory", { explorer_id: 201 }), store)).toBe("Army 2 disbanded");
+    expect(dayLogLine(story("ExplorerDeleteStory", { explorer_id: 201 }), store)).toBe("Army 2 deleted");
     expect(dayLogLine(story("ExplorerCreateStory", { explorer_id: 999 }), store)).toBe("Army deployed");
   });
 
-  it("writes the XP each story moved: a reveal's, a clear's by the guard the site started with, a level-up's price", () => {
+  it("writes reveal and clear resource rewards and retains historical purchases", () => {
     const { store } = campBeside();
     // Prod's rules: 2 XP a reveal. The fixture's site started with 1,100 guards, at depth I pays 123 XP whatever
     // the last attack killed (√(25 × 1,100) = 165, halved then multiplied by 1.5).
-    store.applyFacts([
-      {
-        model: "ArmyProgressionRules",
-        key: "0x101",
-        value: {
-          common_xp: 100,
-          game_id: 1,
-          reveal_xp: 2,
-          reveal_xp_per_depth: 1,
-          uncommon_xp: 250,
-          rare_xp: 500,
-          epic_xp: 1000,
-          legendary_xp: 2000,
-        },
-      },
-    ] as never);
+    store.applyFacts([] as never);
     const reveal = { resource_type: ResourcesIds.Labor, amount: "98400000000", coord: { x: 1, y: 1 } };
-    expect(dayLogLine(story("ExplorationReward", reveal), store)).toBe("+98 Labor, +2 XP");
-    expect(dayLogLine(story("SitePayout", { site_id: SITE, reward: null }, "Troll cleared"), store)).toBe(
-      "Troll cleared, +123 XP",
+    expect(dayLogLine(story("ExplorationReward", reveal), store)).toBe("+98 Labor");
+    expect(dayLogLine(story("SitePayout", { site_id: SITE, reward: null, xp: 123 }, "Troll cleared"), store)).toBe(
+      "Troll cleared",
     );
     expect(dayLogLine(story("SkillPointSpent", { price: "0x64" }, "Battle II"), store)).toBe("Battle II");
     expect(dayLogLine(story("SkillPointSpent", { price: "12500" }, "Battle V"), store)).toBe("Battle V");
@@ -86,8 +71,8 @@ describe("the day log's line for a story", () => {
       attacker: { before: "500000000000", after: "432000000000" },
       defender: { before: "150000000000", after: "0" },
     });
-    expect(dayLogLine(story("SitePayout", { site_id: SITE, reward: null }, "Troll cleared"), store, won)).toBe(
-      "Troll cleared, lost 68, +123 XP",
+    expect(dayLogLine(story("SitePayout", { site_id: SITE, reward: null, xp: 123 }, "Troll cleared"), store, won)).toBe(
+      "Troll cleared, lost 68",
     );
     // A clear of a site this client no longer holds keeps its title: no figure is guessed.
     expect(dayLogLine(story("SitePayout", { site_id: 999, reward: null }, "Troll cleared"), store)).toBe(
@@ -156,9 +141,9 @@ it.each([
   [1, 3],
   [2, 4],
   [3, 5],
-])("keeps historical reveal XP at depth %s without a living army", (depth, xp) => {
+])("reads a historical reveal reward at depth %s without a living army", (depth) => {
   const { store } = campBeside();
-  store.applyFacts([{ model: "ArmyProgressionRules", key: "0x101", value: frontierArmyRules() }] as never);
+  store.applyFacts([] as never);
   const spacing = store.require("SettlementRules", { game_id: 1 }).spacing;
   const payload = {
     explorer_id: 999,
@@ -166,5 +151,5 @@ it.each([
     resource_type: ResourcesIds.Labor,
     amount: "1000000000",
   };
-  expect(dayLogLine(story("ExplorationReward", payload), store)).toBe(`+1 Labor, +${xp} XP`);
+  expect(dayLogLine(story("ExplorationReward", payload), store)).toBe("+1 Labor");
 });

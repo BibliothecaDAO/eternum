@@ -5,17 +5,23 @@ import type { Account } from "starknet";
 import { createHarnessGame } from "./harness-game";
 import type { HarnessGameClient } from "./game-client";
 import { setBlockTimestampSource } from "@bibliothecadao/eternum";
+import { aspects, ordersOfAspect } from "@bibliothecadao/types";
 
-test("setup waits for the confirmed start and roster readiness in every game mode", async () => {
+test("setup waits for the confirmed start in every game mode", async () => {
   let timestamp = 82;
   let start = 100n;
-  let ready = false;
   setBlockTimestampSource(() => timestamp);
   const game = createHarnessGame({
     gameId: 4,
     setup: {
       store: {
-        require: () => ({ start_main_at: start, start_settling_at: 40n, end_at: 200n, ready, dev_mode_on: false }),
+        require: () => ({
+          start_main_at: start,
+          start_settling_at: 40n,
+          scheduled_end_at: 200n,
+          end_at: 200n,
+          dev_mode_on: false,
+        }),
       },
       systemCalls: {},
     },
@@ -27,11 +33,8 @@ test("setup waits for the confirmed start and roster readiness in every game mod
   try {
     await Bun.sleep(10);
     expect(started).toBe(false);
-    timestamp = 100;
-    await Bun.sleep(1_050);
-    expect(started).toBe(false);
-    ready = true;
     start = 110n;
+    timestamp = 100;
     await Bun.sleep(1_050);
     expect(started).toBe(false);
     timestamp = 110;
@@ -81,7 +84,7 @@ test("a prepared Frontier player reaches confirmed play with no owner credential
     gameId: 7,
     waitForAction: async () => ({ status: "SUCCEEDED" }),
     setup: {
-      store: {},
+      store: { get: () => undefined },
       network: { provider },
       systemCalls: {
         settle_season: async (call: unknown) => {
@@ -95,7 +98,7 @@ test("a prepared Frontier player reaches confirmed play with no owner credential
     const game = createHarnessGame(client);
     const sent = await game.submit(signer, () => game.settle(signer));
     await sent.confirmed;
-    expect(calls).toEqual([{ signer }]);
+    expect(calls).toEqual([{ signer, order: undefined }]);
     expect(sent.transactionHash).toBe("0x123");
   } finally {
     if (saved.address === undefined) delete process.env.DEPLOYER_ACCOUNT_ADDRESS;
@@ -120,4 +123,22 @@ test("keeps listening for provider timing after the separate confirmation resolv
   provider.emit("transactionComplete", { details: { transaction_hash: "0x123" }, admissionToVisibleMs: 480 });
   expect(await submission.admissionToVisibleMs).toBe(480);
   expect(provider.listenerCount("transactionComplete")).toBe(0);
+});
+
+test("a free home in an Aspect game founds in the first Aspect's first Order", async () => {
+  const signer = { address: "0x42" } as Account;
+  const calls: unknown[] = [];
+  const game = createHarnessGame({
+    gameId: 7,
+    setup: {
+      store: { get: (model: string) => (model === "AspectRules" ? { orders: [1, 2, 3, 4] } : undefined) },
+      systemCalls: {
+        settle_season: async (props: unknown) => {
+          calls.push(props);
+        },
+      },
+    },
+  } as unknown as GameClient);
+  await game.settle(signer);
+  expect(calls).toEqual([{ signer, order: ordersOfAspect(aspects[0].id)[0]!.orderId }]);
 });

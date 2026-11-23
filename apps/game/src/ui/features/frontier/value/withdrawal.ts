@@ -32,13 +32,13 @@ export const withdrawalRefusal = ({
 };
 
 /** A withdrawal the shard applied: its whole LORDS, and the transaction there that is its claim on the ledger. */
-export type SentWithdrawal = { amount: number; claimId: string; fromBlock: number };
+type SentWithdrawal = { amount: number; claimId: string; fromBlock: number };
 
 /**
  * What the game made of a withdrawal: applied (the LORDS left the realm, and the ledger now pays its claim), not
  * applied with the reason (refused by the game, or never sent), or unknown: no answer, so it may still apply.
  */
-export type WithdrawalOutcome =
+type WithdrawalOutcome =
   | ({ kind: "applied" } & SentWithdrawal)
   | { kind: "not-applied"; reason: string }
   | { kind: "unknown"; amount: number };

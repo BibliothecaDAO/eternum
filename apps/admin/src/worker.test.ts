@@ -1,3 +1,4 @@
+import { GAME_ENVIRONMENTS } from "@bibliothecadao/launch-service/operator-api";
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -72,7 +73,7 @@ const launchAnswer = (request: Request, body: string): Response => {
   if (request.method !== "GET") return Response.json({ status: "queued" }, { status: 202 });
   if (url.pathname === "/api/factory/calendar")
     return Response.json({
-      phases: [{ phase: "frontier", presetId: 5, startsAt: "2026-10-15T20:00:00Z", endsAt: "2026-10-22T20:00:00Z" }],
+      phases: [{ phase: "frontier", startsAt: "2026-10-15T20:00:00Z", endsAt: "2026-10-22T20:00:00Z" }],
     });
   if (url.pathname === "/api/slots") return Response.json({ slots: [] });
   if (url.pathname === "/api/factory/runs") {
@@ -119,7 +120,7 @@ const statusState = (chainId: string) =>
       ],
       incidents: [],
     },
-    targets: [{ url: "https://herald.test", chainId, status: "active" }],
+    targets: [{ url: "https://herald.test", chainId }],
     counters: {},
   });
 
@@ -242,26 +243,32 @@ describe("who may call", () => {
 
   it("lets production's operators read, and only its writers act", async () => {
     expect((await call(production, "/api/games", await operator())).status).toBe(200);
-    const slot = {
-      method: "POST",
-      body: JSON.stringify({ name: "blitz-20261017-1200", closesAt: "2026-10-17T11:55:00Z" }),
+    const phase = {
+      method: "PUT",
+      body: JSON.stringify({ startsAt: "2026-11-03T06:30:00Z", endsAt: "2026-11-06T14:30:00Z" }),
     };
-    expect(await call(production, "/api/actions/slots", await operator(), slot)).toEqual({
+    expect(await call(production, "/api/actions/calendar/frontier", await operator(), phase)).toEqual({
       status: 403,
       body: { error: "Production actions are open to the owner's list only" },
     });
     expect(launchCalls).toEqual([]);
     expect((await call(production, "/api/audit", await owner())).body.actions).toEqual([]);
-    expect((await call(production, "/api/actions/slots", await owner(), slot)).status).toBe(202);
+    expect((await call(production, "/api/actions/calendar/frontier", await owner(), phase)).status).toBe(202);
     expect(launchCalls.map((sent) => [sent.url, sent.authorization])).toEqual([
-      [`${PRODUCTION}/api/slots`, "Bearer production-operator-token"],
+      [`${PRODUCTION}/api/factory/calendar/frontier`, "Bearer production-operator-token"],
     ]);
   });
 
   it("refuses a write another site sends with the operator's cookie, sending and logging nothing", async () => {
-    const slot = { method: "POST", body: JSON.stringify({ name: "blitz-20261017-1200" }) };
+    const phase = {
+      method: "PUT",
+      body: JSON.stringify({ startsAt: "2026-11-03T06:30:00Z", endsAt: "2026-11-06T14:30:00Z" }),
+    };
     for (const origin of ["https://attacker.test", "null", ""])
-      expect(await call(production, "/api/actions/slots", await owner(), { ...slot, origin }), origin).toEqual({
+      expect(
+        await call(production, "/api/actions/calendar/frontier", await owner(), { ...phase, origin }),
+        origin,
+      ).toEqual({
         status: 403,
         body: { error: "Actions are sent from the admin page only" },
       });
@@ -308,13 +315,11 @@ describe("screens", () => {
       },
     });
     expect(body.calendar.value).toEqual([
-      { phase: "frontier", presetId: 5, startsAt: "2026-10-15T20:00:00Z", endsAt: "2026-10-22T20:00:00Z" },
+      { phase: "frontier", startsAt: "2026-10-15T20:00:00Z", endsAt: "2026-10-22T20:00:00Z" },
     ]);
-    expect(body.runs.value.map((run: { gameName: string }) => run.gameName)).toEqual([
-      "madara.blitz-run",
-      "madara.frontier-run",
-      "madara.eternum-run",
-    ]);
+    expect(body.runs.value.map((run: { gameName: string }) => run.gameName)).toEqual(
+      GAME_ENVIRONMENTS.map((environment) => `${environment}-run`),
+    );
   });
 
   it("shows what runs where and the commands that deploy it, sending nothing", async () => {
@@ -322,7 +327,7 @@ describe("screens", () => {
       environment: "production",
       workers: { ok: true, value: { version: "v-id", revision: "7ba76ed03a0" } },
       client: { ok: true, value: "7ba76ed03a0" },
-      shards: { ok: true, value: [{ url: "https://herald.test", chainId: "0xmainnet", status: "active" }] },
+      shards: { ok: true, value: [{ url: "https://herald.test", chainId: "0xmainnet" }] },
       commands: {
         box: "pnpm run deploy production",
         cloudflare: 'pnpm run deploy:cloudflare production "$HOME/.realms-production"',
@@ -333,34 +338,25 @@ describe("screens", () => {
 });
 
 describe("actions", () => {
-  it("sends a free test Blitz to dev's launch service with dev's token and logs who sent it", async () => {
-    const body = JSON.stringify({ name: "test-owner", players: ["0x1"] });
-    expect(await call(dev, "/api/actions/test-blitz", await owner(), { method: "POST", body })).toEqual({
+  it("sends a phase to dev's launch service with dev's token and logs who sent it", async () => {
+    const body = JSON.stringify({ startsAt: "2026-11-03T06:30:00Z", endsAt: "2026-11-06T14:30:00Z" });
+    expect(await call(dev, "/api/actions/calendar/frontier", await owner(), { method: "PUT", body })).toEqual({
       status: 202,
       body: { status: "queued" },
     });
     expect(launchCalls).toEqual([
-      { url: `${DEV}/api/factory/test-blitz`, method: "POST", authorization: "Bearer dev-operator-token", body },
+      { url: `${DEV}/api/factory/calendar/frontier`, method: "PUT", authorization: "Bearer dev-operator-token", body },
     ]);
     expect((await call(dev, "/api/audit", await owner())).body.actions).toMatchObject([
       {
         email: "owner@realms.world",
         environment: "dev",
-        action: "Free test Blitz",
-        request: JSON.stringify({ method: "POST", path: "/api/factory/test-blitz", body: JSON.parse(body) }),
+        action: "Set frontier phase",
+        request: JSON.stringify({ method: "PUT", path: "/api/factory/calendar/frontier", body: JSON.parse(body) }),
         state: "done",
         status: 202,
       },
     ]);
-  });
-
-  it("refuses a test Blitz on production, sending and logging nothing", async () => {
-    const body = JSON.stringify({ name: "test-owner", players: ["0x1"] });
-    expect((await call(production, "/api/actions/test-blitz", await owner(), { method: "POST", body })).status).toBe(
-      404,
-    );
-    expect(launchCalls).toEqual([]);
-    expect((await call(production, "/api/audit", await owner())).body.actions).toEqual([]);
   });
 
   it("deletes a production run with production's token, on the launch route it names", async () => {
@@ -384,12 +380,14 @@ describe("actions", () => {
       "/api/actions/runs/other.env/name/delete",
       "/api/actions/results/madara.blitz/name/delete",
       "/api/actions/calendar/eternum",
+      "/api/actions/calendar/blitz",
       "/api/actions/slots/Upper/refund",
+      "/api/actions/slots",
     ]) {
       const method = path.includes("calendar") ? "PUT" : "POST";
       expect((await call(dev, path, token, { method, body: "{}" })).status, path).toBe(404);
     }
-    expect((await call(dev, "/api/actions/slots", token, { method: "POST", body: "[1]" })).status).toBe(400);
+    expect((await call(dev, "/api/actions/calendar/frontier", token, { method: "PUT", body: "[1]" })).status).toBe(400);
     expect(launchCalls).toEqual([]);
   });
 
@@ -402,8 +400,8 @@ describe("actions", () => {
       )
       .run();
     try {
-      const body = JSON.stringify({ name: "test-owner", players: ["0x1"] });
-      expect(await call(dev, "/api/actions/test-blitz", await owner(), { method: "POST", body })).toEqual({
+      const body = JSON.stringify({ startsAt: "2026-11-03T06:30:00Z", endsAt: "2026-11-06T14:30:00Z" });
+      expect(await call(dev, "/api/actions/calendar/frontier", await owner(), { method: "PUT", body })).toEqual({
         status: 202,
         body: { status: "queued" },
       });
@@ -412,12 +410,12 @@ describe("actions", () => {
       await db.prepare("DROP TRIGGER refuse_done").run();
     }
     expect((await call(dev, "/api/audit", await owner())).body.actions).toMatchObject([
-      { action: "Free test Blitz", state: "sent", status: null, response: null },
+      { action: "Set frontier phase", state: "sent", status: null, response: null },
     ]);
   });
 
-  it("forwards the selected calendar preset and dates unchanged and records the request", async () => {
-    const body = JSON.stringify({ presetId: 6, startsAt: "2026-11-03T06:30:00Z", endsAt: "2026-11-06T14:30:00Z" });
+  it("forwards the calendar dates unchanged and records the request", async () => {
+    const body = JSON.stringify({ startsAt: "2026-11-03T06:30:00Z", endsAt: "2026-11-06T14:30:00Z" });
     const response = await call(dev, "/api/actions/calendar/frontier", await owner(), { method: "PUT", body });
     expect(response.status).toBe(202);
     expect(launchCalls).toMatchObject([{ method: "PUT", body }]);
@@ -432,7 +430,7 @@ describe("actions", () => {
 
   it("keeps a sent action in the log as failed when the launch service answers with a redirect it refuses", async () => {
     launchRedirects = true;
-    const body = JSON.stringify({ presetId: 5, startsAt: "2026-10-22T20:00:00Z", endsAt: "2026-10-29T20:00:00Z" });
+    const body = JSON.stringify({ startsAt: "2026-10-22T20:00:00Z", endsAt: "2026-10-29T20:00:00Z" });
     expect((await call(dev, "/api/actions/calendar/frontier", await owner(), { method: "PUT", body })).status).toBe(
       502,
     );

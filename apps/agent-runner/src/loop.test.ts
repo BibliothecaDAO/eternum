@@ -12,7 +12,14 @@ import { createScriptedDirectionSource } from "./directions";
 import { runAgentLoop } from "./loop";
 import { createRunManifest } from "./manifest";
 import { GAME_ENDED_PREFIX, OWNER_DIRECTION_PREFIX, WORLD_STATE_UPDATE_PREFIX } from "./prompt";
-import { createFakeGame, PLAYER, seedExplorer, seedGameRegistry, seedStructure } from "./test-support/fake-game";
+import {
+  createFakeGame,
+  liveWindow,
+  PLAYER,
+  seedExplorer,
+  seedGameRegistry,
+  seedStructure,
+} from "./test-support/fake-game";
 import { createScriptedStream, deferred, type ScriptedReply } from "./test-support/scripted-stream";
 import { createTestClock } from "./test-support/test-clock";
 import { createRunnerTools } from "./tools";
@@ -31,7 +38,7 @@ afterEach(async () => {
     await loop.done.catch(() => undefined);
   }
   vi.restoreAllMocks();
-  ClientConfigManager.instance().setActiveGame(28, 0);
+  ClientConfigManager.instance().setActiveGame(28);
   await Promise.all(dataDirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })));
 });
 
@@ -62,7 +69,7 @@ const startLoop = async (input: {
   maxTicks?: number;
 }): Promise<LoopHarness> => {
   const game = createFakeGame();
-  seedGameRegistry(game.store, { status: "Live", startMainAt: 0, endAt: 0 });
+  seedGameRegistry(game.store, { status: "Live", ...liveWindow() });
   seedStructure(game.store, { entityId: 12, owner: PLAYER, x: HOME.x, y: HOME.y });
   const spawn = getNeighborHexes(HOME.x, HOME.y)[0]!;
   seedExplorer(game.store, { explorerId: 101, owner: 12, x: spawn.col, y: spawn.row });
@@ -233,7 +240,7 @@ describe("runAgentLoop", () => {
     const loop = await startLoop({});
     await loop.agent.waitForIdle();
 
-    seedGameRegistry(loop.game.store, { status: "Ended", startMainAt: 0, endAt: 0 });
+    seedGameRegistry(loop.game.store, { status: "Ended", ...liveWindow() });
     loop.game.advanceSnapshot();
     await loop.clock.advance(QUIET_WINDOW_MS);
 

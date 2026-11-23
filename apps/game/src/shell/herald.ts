@@ -6,13 +6,7 @@ import { useCallback } from "react";
 import { useIdentitySession, useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { appQueryClient } from "@/runtime/query-client";
 
-import {
-  canEnterGame,
-  fetchDirectory,
-  fetchDirectoryHistory,
-  listedShards,
-  type DirectoryEntry,
-} from "@/runtime/world/directory";
+import { canEnterGame, fetchDirectory, fetchDirectoryHistory, type DirectoryEntry } from "@/runtime/world/directory";
 import { requireOpenShard } from "@/runtime/world/shards";
 import { fetchApi } from "@/runtime/app-api";
 
@@ -37,11 +31,12 @@ const DIRECTORY_QUERY_KEY = ["shell", "directory"] as const;
  * Our directory from the Worker, the one list of shards and their games. No shard's Herald is contacted here: a game's
  * shard opens only when the game is entered.
  */
-export const fetchDirectories = async (player: string | null): Promise<ShardDirectory> => ({
-  games: listedShards(await fetchDirectory(player)).flatMap((shard) =>
-    (shard.games ?? []).map((game) => ({ ...game, chainId: shard.chainId })),
-  ),
-});
+export const fetchDirectories = async (player: string | null): Promise<ShardDirectory> => {
+  const shard = await fetchDirectory(player);
+  if (!shard?.games) return { games: [] };
+  const { chainId } = shard;
+  return { games: shard.games.map((game) => ({ ...game, chainId })) };
+};
 
 interface GuardianIdentity {
   publicKey: string;
@@ -154,45 +149,28 @@ export const useRecentResults = (limit: number, player: string | null = null, en
     retry: 1,
   });
 
-/**
- * Every settled game a player took part in, newest first: their own history followed to its last page, so nothing of
- * theirs falls off the end of a recent page. Asked only for a player (without one it would be every game ever).
- */
-export const usePlayerHistory = (player: string | null) =>
-  useQuery({
-    queryKey: ["shell", "history", "player", player],
-    queryFn: () => readHistory(player as string),
-    enabled: player !== null,
-    staleTime: 30_000,
-    retry: 1,
-  });
-
 /** Every settled game on the shards we list, newest first, followed to its last page: where a season that ended lives. */
 export const useSettledGames = () =>
   useQuery({
     queryKey: ["shell", "history", "all"],
-    queryFn: () => readHistory(null),
+    queryFn: readHistory,
     staleTime: 60_000,
     retry: 1,
   });
 
 const HISTORY_PAGE = 100;
 
-const readHistory = async (player: string | null) => {
+const readHistory = async () => {
   const games: Awaited<ReturnType<typeof fetchDirectoryHistory>>["games"] = [];
   let cursor: string | null = null;
   do {
-    const page = await fetchDirectoryHistory({ limit: HISTORY_PAGE, cursor, player });
+    const page = await fetchDirectoryHistory({ limit: HISTORY_PAGE, cursor });
     games.push(...page.games);
     cursor = page.next;
   } while (cursor !== null);
   return games;
 };
 
-/**
- * A game's standings in its mode's shape: Frontier's season board, or live points while a game runs and the recorded
- * final standings once its result is complete. An archived season's board is its archive's, with no shard to ask.
- */
 export const useLeaderboard = (game: GameRef | null) => {
   const archived = game ? archivedSeason(game)?.board : undefined;
   return useQuery({

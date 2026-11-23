@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { OccupiedSpaceError, TileManager } from "../index";
 import type { NativeFactStore } from "../client/native-fact-store";
+import { nativeResearchConstants as research } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import { BUILDINGS_CENTER, BuildingType, type GameplayAccount, type SystemCalls } from "@bibliothecadao/types";
 
 const setup = (occupied = false) => {
@@ -44,49 +45,42 @@ describe("building occupancy errors", () => {
   });
 });
 
-it("supplies the realm model with the highest side tier, from Common through Legendary", () => {
+it("draws Farms, Workshops and Supply yards at their row's tier", () => {
   for (const [category, offset] of [
-    [37, 0n],
-    [25, 7n],
-    [28, 14n],
+    [research.FARM, 0n],
+    [research.WORKSHOP, 7n],
+    [research.SUPPLY_YARD, 27n],
   ] as const) {
-    for (let a = 0; a <= 5; a++)
-      for (let b = 0; b <= 5; b++) {
-        const store = {
-          require: () => ({ entity_id: 1 }),
-          get: (model: string, key: { inner_col?: number; inner_row?: number }) =>
-            model === "RealmKnowledge"
-              ? { learned: (BigInt(a) << offset) | (BigInt(b) << (offset + 3n)) }
-              : model === "Building" && key.inner_col === BUILDINGS_CENTER[0] && key.inner_row === BUILDINGS_CENTER[1]
-                ? { inner_col: key.inner_col, inner_row: key.inner_row, category, paused: false }
-                : undefined,
-        } as unknown as NativeFactStore;
-        const manager = TileManager.forStructure(store, {} as SystemCalls, 1);
-        expect(manager.existingBuildings()).toEqual([expect.objectContaining({ category, tier: Math.max(1, a, b) })]);
-      }
+    for (let tier = 0; tier <= 5; tier++) {
+      const store = {
+        require: () => ({ entity_id: 1 }),
+        get: (model: string, key: { inner_col?: number; inner_row?: number }) =>
+          model === "RealmKnowledge"
+            ? { learned: BigInt(tier) << offset }
+            : model === "Building" && key.inner_col === BUILDINGS_CENTER[0] && key.inner_row === BUILDINGS_CENTER[1]
+              ? { inner_col: key.inner_col, inner_row: key.inner_row, category, paused: false }
+              : undefined,
+      } as unknown as NativeFactStore;
+      const manager = TileManager.forStructure(store, {} as SystemCalls, 1);
+      expect(manager.existingBuildings()).toEqual([expect.objectContaining({ category, tier: Math.max(1, tier) })]);
+    }
   }
 });
 
-it("requires the Scouts first kind and sends each choice with construction", async () => {
+it("builds a Scout producer without buying Scouting research", async () => {
   const { manager, create_building } = setup();
-  const build = (kind?: 0 | 1 | 2) =>
-    manager.placeBuilding(
-      { address: "0xabc" } as GameplayAccount,
-      1,
-      BuildingType.ScoutsLodge,
-      { col: 11, row: 10 },
-      true,
-      kind,
-    );
-  await expect(build()).rejects.toThrow("Choose the Scouts");
-  expect(create_building).not.toHaveBeenCalled();
-  for (const kind of [0, 1, 2] as const) {
-    await build(kind);
-    expect(create_building).toHaveBeenLastCalledWith(
-      expect.objectContaining({
-        building_category: BuildingType.ScoutsLodge,
-        scouting_kind: kind,
-      }),
-    );
-  }
+  await manager.placeBuilding(
+    { address: "0xabc" } as GameplayAccount,
+    1,
+    BuildingType.ScoutsLodge,
+    { col: 11, row: 10 },
+    true,
+  );
+  expect(create_building).toHaveBeenCalledWith({
+    signer: { address: "0xabc" },
+    entity_id: 1,
+    directions: expect.any(Array),
+    building_category: BuildingType.ScoutsLodge,
+    use_simple: true,
+  });
 });

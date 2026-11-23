@@ -1,3 +1,4 @@
+import { exploreStaminaCost } from "../utils/explore-stamina";
 import { nativeCommandBits } from "../../../../contracts/l3/world-native/schema/commands.gen";
 import {
   BiomeType,
@@ -6,7 +7,6 @@ import {
   EntityType,
   getProducedResource,
   RESOURCE_PRECISION,
-  wholePoints,
   ResourcesIds,
   StructureType,
   TickIds,
@@ -16,21 +16,17 @@ import {
 } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 
-/** The first relic's resource id: the game's relic rules are listed from it (relics.cairo FIRST_RELIC). */
-const FIRST_RELIC_ID = ResourcesIds.StaminaRelic1;
-/** The stamina relics, which last their uses rather than their duration. */
-const STAMINA_RELIC_IDS = new Set<number>([ResourcesIds.StaminaRelic1, ResourcesIds.StaminaRelic2]);
 import { buildingCostModeOf, type BuildingCostMode } from "../utils/building-cost-mode";
 import { enabledHelpTransfers, type HelpBetween, type HelpTransfer } from "../utils/army-help";
-import { isModeRuleEnabled } from "../utils/mode-rules";
+import { isCommandEnabled, isModeRuleEnabled } from "../utils/mode-rules";
 import { tierStrength } from "../utils/tier-strength";
 import { hasEnabledProductionPath } from "../utils/production-path";
 import { disposeActiveGameSyncRuntime } from "../sync/game-sync-runtime";
 import { getBlockTimestamp } from "../utils/timestamp";
 import type { BiomeClimateConfig } from "../utils/biome";
-import type { CombatRules } from "../utils/combat-exchange";
+import { readCombatRules, type CombatRules } from "../utils/combat-exchange";
 
-const MAP_CENTER = 2147483646;
+import { mapCenter } from "../utils/map-center";
 type ResourceAmount = { readonly resource_type: number; readonly amount: bigint };
 const displayAmounts = (rows: readonly ResourceAmount[]) =>
   rows.map(({ resource_type, amount }) => ({
@@ -59,7 +55,7 @@ export class ClientConfigManager {
     return (ClientConfigManager._instance ??= new ClientConfigManager());
   }
 
-  public setActiveGame(gameId: number, _presetId: number) {
+  public setActiveGame(gameId: number) {
     if (!Number.isSafeInteger(gameId) || gameId <= 0) throw new Error("A positive game id is required");
     disposeActiveGameSyncRuntime();
     this.store = undefined;
@@ -162,12 +158,6 @@ export class ClientConfigManager {
   get buildingCostMode(): BuildingCostMode {
     return buildingCostModeOf(this.facts().inGame("BuildingRule", this.gameId));
   }
-  get structureCosts() {
-    return { [StructureType.Hyperstructure]: [this.getHyperstructureConstructionCosts()] };
-  }
-  get hyperstructureTotalCosts() {
-    return this.getHyperstructureTotalCosts();
-  }
   get mapCenter() {
     return this.getMapCenter();
   }
@@ -183,23 +173,6 @@ export class ClientConfigManager {
     if (category === StructureType.Realm) return limits.realm_max;
     if (category === StructureType.Village) return limits.village_max;
     return 0;
-  }
-  getHyperstructureTotalCosts() {
-    return this.facts()
-      .require("HyperstructureRules", { game_id: this.gameId })
-      .resources.map((row) => ({
-        resource: row.resource_type as ResourcesIds,
-        min_amount: row.minimum,
-        max_amount: row.maximum,
-      }));
-  }
-  getHyperstructureConstructionCosts() {
-    return {
-      resource: ResourcesIds.AncientFragment,
-      amount: this.divideByPrecision(
-        Number(this.facts().require("HyperstructureRules", { game_id: this.gameId }).initialize_shards),
-      ),
-    };
   }
   getResourceWeightKg(resourceId: number) {
     const rule = this.facts().get("ResourceRule", { game_id: this.gameId, resource_type: resourceId });
@@ -254,12 +227,6 @@ export class ClientConfigManager {
    *  an owner, so no surface offers it. */
   attacksOnlyUnownedStructures(): boolean {
     return isModeRuleEnabled(this.rules(), "UNOWNED_TARGETS");
-  }
-  /** Whether a battle rolls a d20 per side: everywhere in a game with combat dice, on the ethereal layer in one with
-   *  ethereal dice, and never otherwise. */
-  rollsCombatDice(defenderAlt: boolean): boolean {
-    const rules = this.rules();
-    return (defenderAlt && isModeRuleEnabled(rules, "COMBAT_DICE_ETHEREAL")) || isModeRuleEnabled(rules, "COMBAT_DICE");
   }
   /** Whether a new reveal pays from the army's strength and depth (Frontier's reveal supplies) rather than the drawn
    *  exploration reward. */
@@ -365,8 +332,8 @@ export class ClientConfigManager {
     return 1 + modifier;
   }
 
-  getExploreStaminaCost() {
-    return this.rules().troop_stamina_config.stamina_explore_stamina_cost;
+  getExploreStaminaCost(category: TroopType, oaths: number) {
+    return exploreStaminaCost(this.rules(), category, oaths);
   }
   getSeasonMainGameStartAt() {
     return Number(this.game().start_main_at);
@@ -382,13 +349,7 @@ export class ClientConfigManager {
   }
   /** The active game's combat rules, as its SliceRules carries them. */
   getCombatRules(): CombatRules {
-    const rules = this.rules();
-    return {
-      cooldownSeconds: rules.battle_config.cooldown_seconds,
-      tickSeconds: this.getTick(TickIds.Armies),
-      damage: rules.troop_damage_config,
-      stamina: rules.troop_stamina_config,
-    };
+    return readCombatRules(this.facts(), this.gameId);
   }
   /** Army strength a structure of this level may deploy. */
   getDeploymentCap(level: number): number {
@@ -429,34 +390,9 @@ export class ClientConfigManager {
       tick_interval_seconds: this.getTick(TickIds.Armies),
     };
   }
-  getBattleGraceTickCount() {
-    return this.rules().battle_config.regular_immunity_ticks;
-  }
-  getVillageSettlementImmunityTickCount() {
-    return this.rules().battle_config.village_immunity_ticks;
-  }
-  getVillagePostRaidImmunityTickCount() {
-    return this.rules().battle_config.village_raid_immunity_ticks;
-  }
   getMinTravelStaminaCost() {
     const config = this.rules().troop_stamina_config;
     return Math.max(config.stamina_travel_stamina_cost - config.stamina_bonus_value, 10);
-  }
-  getResourceBridgeFeeSplitConfig() {
-    const deposit = this.facts().require("DepositRules", { game_id: this.gameId });
-    const withdrawal = this.facts().require("WithdrawalRules", { game_id: this.gameId });
-    return {
-      velords_fee_on_dpt_percent: deposit.velords_fee_bps,
-      velords_fee_on_wtdr_percent: withdrawal.velords_fee_bps,
-      season_pool_fee_on_dpt_percent: deposit.season_fee_bps,
-      season_pool_fee_on_wtdr_percent: withdrawal.season_fee_bps,
-      client_fee_on_dpt_percent: deposit.client_fee_bps,
-      client_fee_on_wtdr_percent: withdrawal.client_fee_bps,
-      velords_fee_recipient: withdrawal.velords_recipient,
-      season_pool_fee_recipient: withdrawal.season_recipient,
-      realm_fee_dpt_percent: deposit.realm_fee_bps,
-      realm_fee_wtdr_percent: withdrawal.bank_fee_bps,
-    };
   }
   getTick(tickId: TickIds): number {
     if (tickId === TickIds.Default) return 1;
@@ -464,18 +400,6 @@ export class ClientConfigManager {
     if (tickId === TickIds.Armies) return Number(config.armies_tick_in_seconds);
     if (tickId === TickIds.Delivery) return Number(config.delivery_tick_in_seconds);
     throw new Error("Unknown tick id");
-  }
-  getBankConfig() {
-    const rule = this.facts().require("BankRules", { game_id: this.gameId });
-    return { lpFeesNumerator: rule.lp_fee_num, lpFeesDenominator: rule.lp_fee_denom };
-  }
-  getAdminBankOwnerFee() {
-    const rule = this.facts().require("BankRules", { game_id: this.gameId });
-    return rule.owner_fee_num / rule.owner_fee_denom;
-  }
-  getAdminBankLpFee() {
-    const rule = this.getBankConfig();
-    return rule.lpFeesNumerator / rule.lpFeesDenominator;
   }
   getCapacityConfigKg(category: CapacityConfig) {
     if (category === CapacityConfig.None) return 0;
@@ -487,7 +411,6 @@ export class ClientConfigManager {
       [CapacityConfig.FragmentMineStructure]: structures.fragment_mine_capacity,
       [CapacityConfig.BankStructure]: structures.bank_structure_capacity,
       [CapacityConfig.CampStructure]: structures.camp_capacity,
-      [CapacityConfig.BitcoinMineStructure]: structures.bitcoin_mine_capacity,
       [CapacityConfig.Donkey]: general.donkey_capacity,
       [CapacityConfig.Army]: general.troop_capacity,
       [CapacityConfig.Storehouse]: general.storehouse_boost_capacity,
@@ -504,20 +427,17 @@ export class ClientConfigManager {
   getBuildingConfig() {
     return this.rules().building_config;
   }
-  getPresetId(): number {
-    return this.game().preset_id;
+  getFamily(): number {
+    return this.game().family;
   }
   isCommandEnabled(command: keyof typeof nativeCommandBits): boolean {
-    return (this.rules().command_mask & BigInt(nativeCommandBits[command])) !== 0n;
+    return isCommandEnabled(this.rules(), command);
   }
   /** Whether a player can refill this resource's production in this game; see hasEnabledProductionPath. */
   canRefillProduction(resourceId: number): boolean {
     return hasEnabledProductionPath(
       this.facts().get("ProductionRecipe", { game_id: this.gameId, resource_type: resourceId }),
-      {
-        labor: this.isCommandEnabled("BurnLaborForResourceProduction"),
-        resource: this.isCommandEnabled("BurnResourceForResourceProduction"),
-      },
+      this.isCommandEnabled("BurnResourceForResourceProduction"),
     );
   }
   getSettlementConfig() {
@@ -525,35 +445,6 @@ export class ClientConfigManager {
   }
   getDevModeConfig() {
     return { dev_mode_on: this.game().dev_mode_on };
-  }
-  getHyperstructureConfig() {
-    return {
-      timeBetweenSharesChange: 0,
-      pointsPerCycle: wholePoints(this.rules().victory_points_grant_config.hyp_points_per_second),
-      pointsForWin: wholePoints(this.facts().require("SeasonWinThreshold", { game_id: this.gameId }).points),
-    };
-  }
-  /**
-   * What each scoring action grants in this game, in whole victory points. A held hyperstructure earns its rate every
-   * second, times what the contract's multiplier counts (hyperstructures.cairo): 1 without the multiplier rule, 2 in a
-   * Duel, else each realm settled on the six sites around it.
-   */
-  getVictoryPointGrants() {
-    const rules = this.rules();
-    const grants = rules.victory_points_grant_config;
-    const hyperstructureScale: "flat" | "double" | "per-realm" = !isModeRuleEnabled(rules, "HYPERSTRUCTURE_MULTIPLIERS")
-      ? "flat"
-      : this.getSettlementConfig().mode === "Duel"
-        ? "double"
-        : "per-realm";
-    return {
-      exploreTile: wholePoints(grants.explore_tiles_points),
-      claimCampFromBandits: wholePoints(grants.claim_otherstructure_points),
-      claimHyperstructureFromBandits: wholePoints(grants.claim_hyperstructure_points),
-      openRelicCrate: wholePoints(grants.relic_open_points),
-      hyperstructurePerSecond: wholePoints(grants.hyp_points_per_second),
-      hyperstructureScale,
-    };
   }
   getBasePopulationCapacity() {
     return this.rules().building_config.base_population;
@@ -592,32 +483,10 @@ export class ClientConfigManager {
       startSettlingAt: Number(game.start_settling_at),
       startMainAt: Number(game.start_main_at),
       endAt: Number(game.end_at),
-      bridgeCloseAfterEndSeconds: game.end_grace_seconds,
     };
   }
   getSpireTravelEssenceCost() {
     return this.divideByPrecision(Number(this.rules().spire_travel_essence_cost));
-  }
-  /**
-   * How long a relic's effect lasts, in seconds (0 for one that acts at once), and the Essence it costs to activate,
-   * as the game's relic rules set them: rules are listed from the first relic id, and the stamina relics last their
-   * uses, the others their duration, each in army ticks (relics.cairo, boost_explorer and boost_production). The rule
-   * holds the cost in whole Essence, which the chain scales to resource precision when it spends it.
-   */
-  getRelicActivation(relicId: number): { durationSeconds: number; essenceCost: number } {
-    const rules = this.facts().require("RelicRules", { game_id: this.gameId }).rules;
-    const rule = rules[relicId - FIRST_RELIC_ID];
-    if (!rule) throw new Error(`No relic rule for relic ${relicId}`);
-    const ticks = STAMINA_RELIC_IDS.has(relicId) ? rule.uses : rule.duration;
-    return {
-      durationSeconds: ticks * this.getTick(TickIds.Armies),
-      essenceCost: Number(rule.essence_cost),
-    };
-  }
-  getArtificerConfig() {
-    return {
-      research_cost_for_relic: Number(this.facts().require("ArtificerCost", { game_id: this.gameId }).research),
-    };
   }
   getLaborConfig(resourceId: number) {
     const recipe = this.facts().require("ProductionRecipe", { game_id: this.gameId, resource_type: resourceId });
@@ -632,7 +501,7 @@ export class ClientConfigManager {
     };
   }
   getMapCenter() {
-    return MAP_CENTER - this.rules().map_center_offset;
+    return mapCenter(this.rules().map_center_offset);
   }
   getBiomeClimateConfig(): BiomeClimateConfig {
     return this.rules().biome_climate_config;

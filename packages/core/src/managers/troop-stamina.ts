@@ -1,13 +1,15 @@
-import { troopTierIndex, TroopTier, TroopType, type Troops } from "@bibliothecadao/types";
+export { exploreStaminaCost } from "../utils/explore-stamina";
+import { readStaminaEffects } from "../client/views/stamina";
+import { expeditionDepth, readExpeditionRules } from "../utils/expeditions";
+export { STAMINA_MODELS } from "../client/views/stamina";
+import { currentArmy } from "../utils/deep";
+import { entityMapOccupancy } from "../utils/tile";
+import { troopTierIndex, TroopTier, TroopType, type Troops, type StaminaEffects } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
-import { battleBonusBps, logisticsStamina } from "../utils/attribute-tiers";
-import { nativeRuleConstants, type NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
-
-export const WELL_REFILL_PERCENT = 100 / nativeRuleConstants.WELL_STAMINA_DIVISOR;
-
-/** The contract rounds down half of this army's own maximum, including Logistics. */
-export const wellRefillStamina = (maximum: number): number =>
-  Math.floor(maximum / nativeRuleConstants.WELL_STAMINA_DIVISOR);
+import { armyRelicBonus, staminaRegenBoost } from "../utils/army-relics";
+import { logisticsStamina } from "../utils/attribute-tiers";
+import { oathStaminaBonus } from "../utils/oaths";
+import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 
 /** One game's stamina rules, exactly as its SliceRules carries them. */
 export type TroopStaminaRules = NativeRows["SliceRules"]["troop_stamina_config"];
@@ -25,26 +27,63 @@ export const troopStaminaLimits = (rules: TroopStaminaRules, troopType: TroopTyp
   return { staminaInitial: Number(rules.stamina_initial), staminaMax: Number(maximum) + tier * 20 };
 };
 
-/** Below the cap, any partition of the same seconds yields the same gain and remainder, including boost expiry. */
+/** Historical effect windows and boost expiry share one fractional stamina scale. */
 export function staminaAt(troops: Troops, timestamp: number, rules: TroopStaminaRules, tickSeconds: number) {
-  const bar = troops.stamina;
   const { staminaInitial, staminaMax } = troopStaminaLimits(rules, troops.category, troops.tier);
   const maximum = BigInt(troops.staminaMax ?? staminaMax);
-  const secondsLeft = troops.boosts.incr_stamina_regen_seconds_left;
-  const now = Math.max(bar.settled_at, Math.floor(timestamp));
+  const until = Math.max(
+    troops.stamina.settled_at,
+    Math.min(Math.floor(timestamp), troops.staminaEffects?.until ?? Infinity),
+  );
+  let bar = { ...troops.stamina, boostSecondsLeft: troops.boosts.incr_stamina_regen_seconds_left };
+  const settle = (end: number, rateBps: number) => {
+    bar = refillStamina(
+      bar,
+      troops.boosts.incr_stamina_regen_percent_num,
+      Math.max(bar.settled_at, end),
+      maximum,
+      staminaInitial,
+      rules.stamina_gain_per_tick,
+      tickSeconds,
+      rateBps,
+    );
+  };
+  if (bar.settled_at !== 0) {
+    for (const window of troops.staminaEffects?.windows ?? []) {
+      const start = Math.max(bar.settled_at, window.start);
+      const end = Math.min(until, window.end);
+      if (start >= end) continue;
+      settle(start, 10_000);
+      settle(end, window.rateBps);
+    }
+  }
+  settle(until, 10_000);
+  return bar;
+}
+
+function refillStamina(
+  bar: Troops["stamina"] & { boostSecondsLeft: number },
+  boostBps: number,
+  now: number,
+  maximum: bigint,
+  initial: number,
+  gain: number,
+  tickSeconds: number,
+  rateBps: number,
+) {
   const elapsed = bar.settled_at === 0 ? 0 : now - bar.settled_at;
-  const boosted = Math.min(elapsed, secondsLeft);
+  const boosted = Math.min(elapsed, bar.boostSecondsLeft);
   const denominator = BigInt(tickSeconds) * 10_000n;
+  const rate = BigInt(rateBps);
+  const boostedRate = (rate * BigInt(10_000 + boostBps)) / 10_000n;
   const numerator =
-    BigInt(bar.remainder) +
-    BigInt(rules.stamina_gain_per_tick) *
-      (BigInt(elapsed) * 10_000n + BigInt(boosted) * BigInt(troops.boosts.incr_stamina_regen_percent_num));
-  const total = bar.settled_at === 0 ? BigInt(staminaInitial) : bar.amount + numerator / denominator;
+    BigInt(bar.remainder) + BigInt(gain) * (BigInt(elapsed - boosted) * rate + BigInt(boosted) * boostedRate);
+  const total = bar.settled_at === 0 ? BigInt(initial) : bar.amount + numerator / denominator;
   return {
     amount: total >= maximum ? maximum : total,
     settled_at: now,
     remainder: total >= maximum || bar.settled_at === 0 ? 0 : Number(numerator % denominator),
-    boostSecondsLeft: secondsLeft - boosted,
+    boostSecondsLeft: bar.boostSecondsLeft - boosted,
   };
 }
 
@@ -58,12 +97,17 @@ export function affordableAt(
 ): number | null {
   const maximum = troops.staminaMax ?? troopStaminaLimits(rules, troops.category, troops.tier).staminaMax;
   const now = Math.floor(timestamp);
+  if (troops.staminaEffects && now >= troops.staminaEffects.until) return null;
   const canAfford = (second: number) => staminaAt(troops, second, rules, tickSeconds).amount >= BigInt(cost);
   if (canAfford(now)) return now;
   const gain = Number(rules.stamina_gain_per_tick);
   if (cost > maximum || gain <= 0) return null;
   let low = now;
-  let high = Math.max(now, troops.stamina.settled_at) + Math.ceil((cost * tickSeconds) / gain) + 1;
+  let high =
+    troops.staminaEffects && Number.isFinite(troops.staminaEffects.until)
+      ? troops.staminaEffects.until - 1
+      : Math.max(now, troops.stamina.settled_at) + Math.ceil((cost * tickSeconds) / gain) + 1;
+  if (!canAfford(high)) return null;
   while (high - low > 1) {
     const middle = Math.floor((low + high) / 2);
     if (canAfford(middle)) high = middle;
@@ -86,15 +130,39 @@ export function inlineTroops(troops: NativeRows["ExplorerTroops"]["troops"], rul
   };
 }
 
+/** Combat reads the same slot and skill state, plus active effects at the execution second. */
+export function resolveExplorerCombatTroops(
+  store: NativeFactStore,
+  explorer: NativeRows["ExplorerTroops"],
+  timestamp: number,
+): Troops | undefined {
+  const troops = resolveExplorerTroops(store, explorer, timestamp);
+  if (!troops) return undefined;
+  const blade = armyRelicBonus(store, explorer, "Blade", timestamp);
+  const ward = armyRelicBonus(store, explorer, "Ward", timestamp);
+  if (blade === undefined || ward === undefined) return undefined;
+  return {
+    ...troops,
+    boosts: {
+      ...troops.boosts,
+      incr_damage_dealt_percent_num: troops.boosts.incr_damage_dealt_percent_num + blade,
+      decr_damage_gotten_percent_num: troops.boosts.decr_damage_gotten_percent_num + ward,
+    },
+  };
+}
+
 /** The sole explorer bar resolver; an occupied slot must be present and name this explorer. */
 export function resolveExplorerTroops(
   store: NativeFactStore,
   explorer: NativeRows["ExplorerTroops"],
+  timestamp?: number,
 ): Troops | undefined {
+  explorer = currentArmy(store, explorer, timestamp);
   const source = explorer.troops.stamina;
   if ("Inline" in source) return inlineTroops(explorer.troops);
-  const epoch = slotEpoch(store);
-  if (epoch === undefined) return undefined;
+  const day = store.get("ArmyDay", { game_id: explorer.game_id, explorer_id: explorer.explorer_id });
+  if (!day) return undefined;
+  const epoch = day.day;
   const result = store.requireOrAbsent("ArmySlot", {
     game_id: explorer.game_id,
     structure_id: explorer.owner,
@@ -107,16 +175,29 @@ export function resolveExplorerTroops(
   const progress = store.get("ArmyProgress", { game_id: explorer.game_id, explorer_id: explorer.explorer_id });
   const rules = store.get("SliceRules", { game_id: explorer.game_id });
   if (!progress || !rules) return undefined;
+  const calendar = readExpeditionRules(store, explorer.game_id);
+  const position = entityMapOccupancy(store, explorer.game_id, explorer.explorer_id);
+  if (calendar && !position) return undefined;
+  const effects = readStaminaEffects(
+    store,
+    explorer.game_id,
+    explorer.owner,
+    epoch,
+    result.known.stamina.settled_at,
+    calendar && position ? expeditionDepth(calendar, { y: position.row }) : 0,
+    progress.oaths,
+  );
+  if (!effects.known) return undefined;
+  const regen = staminaRegenBoost(store, explorer, result.known.stamina.settled_at);
+  if (!regen) return undefined;
   const base = troopStaminaLimits(rules.troop_stamina_config, explorer.troops.category, TroopTier.T1).staminaMax;
   return {
     ...explorer.troops,
+    boosts:
+      regen.incr_stamina_regen_seconds_left > 0 ? { ...explorer.troops.boosts, ...regen } : explorer.troops.boosts,
     stamina: result.known.stamina,
-    staminaMax: base + logisticsStamina(progress.logistics),
-    boosts: {
-      ...explorer.troops.boosts,
-      incr_damage_dealt_percent_num: battleBonusBps(progress.battle),
-      incr_damage_dealt_end_at: 0,
-    },
+    staminaMax: base + logisticsStamina(base, progress.logistics) + oathStaminaBonus(progress.oaths),
+    staminaEffects: effects.known,
   };
 }
 
@@ -131,6 +212,7 @@ export const armyNumber = (explorer: NativeRows["ExplorerTroops"]): number | und
 export interface OpenArmySlot {
   slot: number;
   inherited: Troops["stamina"] | null;
+  effects?: StaminaEffects;
 }
 
 /**
@@ -156,7 +238,19 @@ export function openArmySlots(
     });
     if (result.unknown) return undefined;
     if (!result.known) open.push({ slot, inherited: null });
-    else if (result.known.explorer_id === 0n) open.push({ slot, inherited: result.known.stamina });
+    else if (result.known.explorer_id === 0n) {
+      const effects = readStaminaEffects(
+        store,
+        home.game_id,
+        home.entity_id,
+        epoch,
+        result.known.stamina.settled_at,
+        0,
+        0,
+      );
+      if (!effects.known) return undefined;
+      open.push({ slot, inherited: result.known.stamina, effects: effects.known });
+    }
   }
   return open;
 }
@@ -181,8 +275,8 @@ export function musterStamina(
     return { amount: Math.min(staminaInitial, staminaMax), max: staminaMax };
   }
   // A new slot occupant starts at its realm's trained Logistics, regardless of its troop tier.
-  const staminaMax =
-    troopStaminaLimits(rules, troop.category, TroopTier.T1).staminaMax + logisticsStamina(trainedLogistics);
+  const base = troopStaminaLimits(rules, troop.category, TroopTier.T1).staminaMax;
+  const staminaMax = base + logisticsStamina(base, trainedLogistics);
   // A slot's first army of the day starts full at its own maximum.
   if (!slot.inherited) return { amount: staminaMax, max: staminaMax };
   const newArmy: Troops = {
@@ -190,6 +284,7 @@ export function musterStamina(
     count: 0n,
     stamina: { ...slot.inherited, amount: BigInt(Math.min(Number(slot.inherited.amount), staminaMax)) },
     staminaMax,
+    ...(slot.effects ? { staminaEffects: slot.effects } : {}),
     boosts: NO_BOOSTS,
     battle_cooldown_end: 0,
   };

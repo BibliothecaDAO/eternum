@@ -1,13 +1,11 @@
 // @vitest-environment jsdom
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { configManager } from "@bibliothecadao/eternum";
-import { shortString } from "starknet";
-import { DEVCON } from "@/shell/join/devcon";
 import { BUILDINGS_CENTER, BuildingType, StructureType } from "@bibliothecadao/types";
 import { Box3, Group, Mesh, MeshStandardMaterial, BoxGeometry } from "three";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
-import { FRONTIER_PRESET_ID } from "../../../../../config/source/common/native-preset-modes";
+import { GAME_FAMILIES } from "../../../../../config/source/common/native-preset-modes";
 
 // A model as the loader hands it over: one mesh, standing for a building's file.
 const loaded = vi.hoisted(() => ({ scene: null as unknown }));
@@ -32,7 +30,7 @@ const realmBoard = (buildings: Array<{ col: number; row: number; category: Build
   const store = new NativeFactStore();
   const scene = Object.assign(Object.create(HexceptionScene.prototype), {
     game: { store },
-    mode: getGameModeConfig(FRONTIER_PRESET_ID),
+    mode: getGameModeConfig(GAME_FAMILIES.frontier),
     state: { structureEntityId: 7 },
     structureStage: 0,
     tileManager: { getWonder: () => undefined },
@@ -53,42 +51,17 @@ it("loads the models a realm's keep and buildings draw, each once and at its tie
     { col: BUILDINGS_CENTER[0] + 1, row: BUILDINGS_CENTER[1], category: BuildingType.ResourceWheat },
     { col: BUILDINGS_CENTER[0] - 1, row: BUILDINGS_CENTER[1], category: BuildingType.ResourceWheat },
     { col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1] + 1, category: BuildingType.ResourceWheat, tier: 3 },
-    { col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1] - 1, category: BuildingType.WorkersHut },
+    { col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1] - 1, category: BuildingType.ResourceKnightT1 },
   ]);
 
   await board.scene.loadLaidOutModels(StructureType.Realm);
 
   expect(board.requested.toSorted()).toEqual([
+    "/models/frontier/painted/barracks-1.glb",
     "/models/frontier/painted/farm-1.glb",
     "/models/frontier/painted/farm-3.glb",
-    "/models/frontier/painted/workers-hut-1.glb",
     "/models/realms/settlement.glb",
   ]);
-});
-
-it.each([
-  { tier: 1, directory: "regular" },
-  { tier: 2, directory: "gold" },
-])("loads the $directory Devcon keep from the home's confirmed campaign identity", async ({ tier, directory }) => {
-  const board = realmBoard([
-    { col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1], category: BuildingType.ResourceLabor },
-  ]);
-  board.store.applyFacts([
-    {
-      model: "CampaignHome",
-      key: "0x7",
-      value: {
-        game_id: configManager.getActiveGameId(),
-        home: "7",
-        campaign_id: shortString.encodeShortString(DEVCON.campaign),
-        tier,
-      },
-    },
-  ]);
-
-  await board.scene.loadLaidOutModels(StructureType.Realm);
-
-  expect(board.requested).toEqual([`/models/realms/devcon/${directory}/settlement.glb`]);
 });
 
 it("compiles a loaded model's pipelines against the realm scene before it hands the model to the board", async () => {

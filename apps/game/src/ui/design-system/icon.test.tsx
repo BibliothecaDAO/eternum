@@ -3,10 +3,19 @@ import { resolve } from "node:path";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { Icon, SvgIcon } from "./icon";
-import { iconDefinition, iconMeanings, iconUrl, orderMeaning, resourceMeaning, type IconMeaning } from "./icon-meaning";
+import { AspectMark } from "./aspect-mark";
+import {
+  aspectMeaning,
+  iconDefinition,
+  iconMeanings,
+  iconUrl,
+  orderMeaning,
+  resourceMeaning,
+  type IconMeaning,
+} from "./icon-meaning";
 import { HexMarker } from "./hex-marker";
-import { realmMeaning, realmMarkerMeaning, rewardChestMeaning } from "./domain-icon-meaning";
-import type { ResourcesIds } from "@bibliothecadao/types";
+import { aspectCardUrl, realmMeaning, realmMarkerMeaning, rewardChestMeaning } from "./domain-icon-meaning";
+import { aspects, orders, type ResourcesIds } from "@bibliothecadao/types";
 
 describe("semantic icons", () => {
   it("gives every realm level its own portrait and hex emblem", () => {
@@ -115,4 +124,29 @@ it("keeps reward rank artwork separate from map crates at every display size", (
   expect(rewardChestMeaning()).toBe("reward-chest");
   for (const invalid of [-1, 5, 1.5, NaN])
     expect(() => rewardChestMeaning(invalid)).toThrow("Unknown reward chest band");
+});
+
+it("serves the 16 approved Order Facets and 4 Aspect Facets through the facets webp pipeline", () => {
+  for (const { orderId, orderName } of orders.filter((order) => order.orderId > 0)) {
+    const slug = orderName.toLowerCase();
+    const meaning = orderMeaning(orderId);
+    for (const pixels of [64, 128, 256] as const) {
+      expect(iconUrl(meaning, pixels)).toBe(`/icons/facets/${pixels}/order-${slug}.webp`);
+      expect(existsSync(resolve("public", iconUrl(meaning, pixels).slice(1)))).toBe(true);
+    }
+  }
+  for (const { id, name } of aspects) {
+    const slug = name.toLowerCase();
+    const meaning = aspectMeaning(id);
+    for (const pixels of [64, 128, 256] as const) {
+      expect(iconUrl(meaning, pixels)).toBe(`/icons/facets/${pixels}/aspect-${slug}.webp`);
+      expect(existsSync(resolve("public", iconUrl(meaning, pixels).slice(1)))).toBe(true);
+    }
+    expect(aspectCardUrl(id)).toBe(`/images/aspects/${slug}-card.webp`);
+    expect(existsSync(resolve("public", aspectCardUrl(id).slice(1)))).toBe(true);
+    const html = renderToStaticMarkup(<AspectMark aspect={id} size={48} />);
+    expect(html).toContain(`data-aspect-mark="${id}"`);
+    expect(html).toContain(`alt="${name}"`);
+    expect(html).toContain(iconUrl(meaning, 128));
+  }
 });

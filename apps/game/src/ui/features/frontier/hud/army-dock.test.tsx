@@ -18,6 +18,19 @@ import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
 
 import { frontierDay } from "../deploy/deploy-fixture";
 import { ArmyDock } from "./army-dock";
+import { frontierSeasonOnePreset } from "../../../../../../../config/source/frontier/season-one";
+import {
+  formatAmount,
+  FRONTIER_TROOP_NAMES,
+  LAYER_NAMES,
+  RESOURCE_PRECISION,
+  ResourcesIds,
+  TroopType,
+} from "@bibliothecadao/types";
+
+const BELOW_SURFACE = LAYER_NAMES.slice(1)
+  .map((name) => `[aria-label="${name}"]`)
+  .join(",");
 
 afterEach(() => {
   setBlockTimestampSource(null);
@@ -89,62 +102,9 @@ const ARMIES_OUT = [
   troopsFact: {} as never,
   label: `Army ${army.number}`,
   art: "knight-t1" as const,
-  xp: 40,
-  xpGoal: undefined,
-  tiers: undefined,
   stamina: { current: 60, max: 120, perExplore: 20 },
   secondsToFull: undefined,
-  canSpendSkillPoint: false,
 }));
-
-it.each(["phone", "desktop"] as const)(
-  "shows by each army on a %s what its Homecoming sends home, in the day's last hour only",
-  (size) => {
-    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-    layout.current = size;
-    // The realm's player, whose armies are buttons on their dock.
-    useAccountStore.setState({ account: { address: "0x111" } as never });
-    const { store, row } = frontierDay();
-    const host = document.createElement("div");
-    document.body.append(host);
-    const root = createRoot(host);
-    const draw = (lastHour: boolean) =>
-      act(() =>
-        root.render(
-          <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: "0x111" } as never}>
-            <ArmyDock realm={row} armies={ARMIES_OUT} lastHour={lastHour} />
-          </GameProvider>,
-        ),
-      );
-    /** What each army's own button says comes home, beside its troops. */
-    const returns = () =>
-      ARMIES_OUT.map(({ label }) =>
-        host
-          .querySelector(`button[aria-label="${label}"]`)!
-          .querySelector('[aria-label$="come home at day end"]')
-          ?.getAttribute("aria-label"),
-      );
-    /** What each army's chip reads in sight: words on a desktop's row, the figure on a phone's token. */
-    const shown = () =>
-      ARMIES_OUT.map(
-        ({ label }) =>
-          host.querySelector(`button[aria-label="${label}"]`)!.querySelector('[aria-label$="come home at day end"]')
-            ?.textContent,
-      );
-    try {
-      draw(false);
-      expect(returns()).toEqual([undefined, undefined]);
-      draw(true);
-      expect(returns()).toEqual(["134 come home at day end", "0 come home at day end"]);
-      expect(shown()).toEqual(
-        size === "desktop" ? ["134 come home at day end", "0 come home at day end"] : ["+134", "+0"],
-      );
-    } finally {
-      act(() => root.unmount());
-      host.remove();
-    }
-  },
-);
 
 it.each(["phone", "desktop"] as const)(
   "marks on a %s each army in an Ethereal layer with that layer, and an army on the surface with nothing",
@@ -166,10 +126,10 @@ it.each(["phone", "desktop"] as const)(
     try {
       // Each army's own button: the layer's name, and the numeral it shows beside the layer's painting.
       const marks = ARMIES_OUT.map(({ label }) => {
-        const mark = host.querySelector(`button[aria-label="${label}"]`)!.querySelector('[aria-label^="Ethereal"]');
+        const mark = host.querySelector(`button[aria-label="${label}"]`)!.querySelector(BELOW_SURFACE);
         return mark && [mark.getAttribute("aria-label"), mark.textContent, mark.querySelector("img")?.dataset.icon];
       });
-      expect(marks).toEqual([["Ethereal II", "II", "depth-2"], null]);
+      expect(marks).toEqual([["Hollow", "Hollow", "depth-2"], null]);
     } finally {
       act(() => root.unmount());
       host.remove();
@@ -203,6 +163,83 @@ it.each(["phone", "desktop"] as const)(
         ],
       );
       expect(host.querySelector('nav[aria-label="Armies"] button[aria-label="Deploy"]')).not.toBeNull();
+    } finally {
+      act(() => root.unmount());
+      host.remove();
+    }
+  },
+);
+
+it.each(["phone", "desktop"] as const)(
+  "on a founded Realm with no army on %s, offers open Deploy slots and shows the preset Knights at home",
+  (size) => {
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    layout.current = size;
+    useAccountStore.setState({ account: { address: "0x111" } as never });
+    const { store, row } = frontierDay();
+    const startingKnights = frontierSeasonOnePreset.balance.startingResources.find(
+      (entry) => entry.resource === ResourcesIds.Knight,
+    )!.amount;
+    const startingWheat = frontierSeasonOnePreset.balance.startingResources.find(
+      (entry) => entry.resource === ResourcesIds.Wheat,
+    )!.amount;
+    store.applyFacts([
+      {
+        model: "ArmySlot",
+        key: "0x9",
+        value: {
+          game_id: 1,
+          structure_id: 7,
+          epoch: "0",
+          slot: 0,
+          explorer_id: 0,
+          stamina: { amount: "150", settled_at: "350", remainder: 0 },
+        },
+      },
+      {
+        model: "ResourceBalance",
+        key: "0x8",
+        value: {
+          game_id: 1,
+          entity_id: 7,
+          resource_type: ResourcesIds.Knight,
+          balance: String(BigInt(startingKnights) * BigInt(RESOURCE_PRECISION)),
+        },
+      },
+      {
+        model: "ResourceBalance",
+        key: "0xc",
+        value: {
+          game_id: 1,
+          entity_id: 7,
+          resource_type: ResourcesIds.Wheat,
+          balance: String(BigInt(startingWheat) * BigInt(RESOURCE_PRECISION)),
+        },
+      },
+    ] as never);
+    const host = document.createElement("div");
+    document.body.append(host);
+    const root = createRoot(host);
+    act(() =>
+      root.render(
+        <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: "0x111" } as never}>
+          <ArmyDock realm={row} armies={[]} />
+        </GameProvider>,
+      ),
+    );
+    try {
+      const slots = [...host.querySelectorAll<HTMLButtonElement>('button[aria-label="Deploy"]')];
+      expect(slots).toHaveLength(row.base.troop_max_explorer_count);
+      const expectedCount = formatAmount(startingKnights);
+      const expectedLabel = `${expectedCount} ${FRONTIER_TROOP_NAMES[TroopType.Knight]}`;
+      if (size === "desktop") {
+        expect(slots[0].textContent).toContain(expectedLabel);
+      } else {
+        expect(slots[0].textContent).toContain(expectedCount);
+        expect(slots[0].querySelector(`[aria-label="${expectedLabel}"]`)).not.toBeNull();
+      }
+      act(() => slots[0].click());
+      expect(useUIStore.getState().pendingMilitaryAction).toMatchObject({ structureId: 7, slot: 0 });
     } finally {
       act(() => root.unmount());
       host.remove();

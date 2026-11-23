@@ -5,7 +5,7 @@ import type { PlayScene } from "@/play/navigation/play-route";
 import { DEVICE_LIMIT_REACHED } from "@/hooks/context/gameplay-account-sync";
 import { failureLine } from "@/ui/design-system/kit/failure-lines";
 
-import type { BlitzEntry, GameEntryModalPhase } from "../game-entry-phase";
+import type { GameEntryModalPhase } from "../game-entry-phase";
 
 /** The doorway's track (design o5): the player's account, their realm, the world map, then play. */
 export type DoorwayStep = "account" | "realm" | "map" | "play";
@@ -19,15 +19,24 @@ export type DoorwayAudience = "player" | "spectator";
  * limit with Devices as its step. A map that could not be drawn offers the realm beside the retry, since the realm
  * view opens without it.
  */
-type DoorwayBlocker = { kind: "sign-in" } | { kind: "retry"; line: string; openRealm?: true } | { kind: "devices" };
+type DoorwayBlocker =
+  | { kind: "sign-in" }
+  | { kind: "retry"; line: string; openRealm?: true }
+  | { kind: "refused"; line: string }
+  | { kind: "devices" };
+
+export type GameRefusal = "release" | "older-numbers";
+const REFUSAL_LINES: Record<GameRefusal, string> = {
+  release: DOORWAY_WORDS.gameRefused,
+  "older-numbers": DOORWAY_WORDS.gameOnOlderNumbers,
+};
 
 export interface DoorwayView {
   steps: { step: DoorwayStep; state: StepState }[];
   /** How far through the track the entry is, 0 to 100, for the doorway's one bar. */
   percent: number;
   blocker: DoorwayBlocker | null;
-  /** A Blitz the player is not on offers Watch; one that has ended offers its results. */
-  spectating: "watch" | "results" | null;
+  spectating: "results" | null;
 }
 
 /** The entry's side of the doorway: before the game's route, while the account and the realm come to be. */
@@ -39,7 +48,6 @@ interface EntrySide {
   accountError?: string | null;
   /** Founding the realm failed; its detail is in the console. */
   foundingFailed?: boolean;
-  blitzEntry?: BlitzEntry | null;
 }
 
 /** The play route's side: the world map booting, then the hand-off to play. */
@@ -55,6 +63,8 @@ interface BootSide {
   realmCanOpen?: boolean;
   /** The game is over and finalized, so it leads to its results instead of booting. */
   ended?: boolean;
+  /** The game ran on a release this client cannot read, which no retry changes. */
+  refused?: GameRefusal;
   /** The share of the opening view's model loads and compiles done (model-preparation), while the map waits on them. */
   modelShare?: number;
 }
@@ -126,7 +136,7 @@ const place = (step: DoorwayStep, overrides: Partial<Place> = {}): Place => ({
   ...overrides,
 });
 
-const entryPlace = ({ phase, signedIn, accountError, foundingFailed = false, blitzEntry }: EntrySide): Place => {
+const entryPlace = ({ phase, signedIn, accountError, foundingFailed = false }: EntrySide): Place => {
   switch (phase) {
     case "loading":
       return place("account");
@@ -136,11 +146,6 @@ const entryPlace = ({ phase, signedIn, accountError, foundingFailed = false, bli
       return place("realm");
     case "settlement":
       return place("realm", { blocker: foundingFailed ? WORLD_DID_NOT_ANSWER : null });
-    case "spectate":
-      return place("account", {
-        done: true,
-        spectating: blitzEntry === "review" ? "results" : "watch",
-      });
     case "ready":
       // The realm stands; the entry now hands over to the game's route, where the map boots.
       return place("map");
@@ -149,8 +154,16 @@ const entryPlace = ({ phase, signedIn, accountError, foundingFailed = false, bli
   }
 };
 
-const bootPlace = ({ phase, accountError, failedScene, realmCanOpen = false, ended = false }: BootSide): Place => {
+const bootPlace = ({
+  phase,
+  accountError,
+  failedScene,
+  realmCanOpen = false,
+  ended = false,
+  refused,
+}: BootSide): Place => {
   if (ended) return place("account", { done: true, spectating: "results" });
+  if (refused) return place("map", { blocker: { kind: "refused", line: REFUSAL_LINES[refused] } });
   switch (phase) {
     case "normalize_route":
     case "await_account":

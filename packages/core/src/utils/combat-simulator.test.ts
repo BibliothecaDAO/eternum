@@ -1,185 +1,86 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { BiomeType, TroopTier, TroopType } from "@bibliothecadao/types";
+import release from "../../../../contracts/l3/world-native/schema/release-definition.json";
+import { type CombatRules } from "./combat-exchange";
+import { type Army, CombatSimulator, type CombatParameters } from "./combat-simulator";
 
-import { configManager } from "../managers";
-import { type Army, CombatSimulator } from "./combat-simulator";
-
-vi.mock("../managers", () => ({
-  configManager: {
-    getBiomeCombatBonus: vi.fn(() => 1),
+const damage = release.definition.rules.troop_damage_config;
+const rules: CombatRules = {
+  cooldownSeconds: 0,
+  tickSeconds: release.definition.rules.tick_config.armies_tick_in_seconds,
+  damage: {
+    ...damage,
+    damage_biome_bonus_num: 0,
+    damage_scaling_factor: 36893488147419103232n,
+    t1_damage_value: BigInt(damage.t1_damage_value),
+    t2_damage_multiplier: BigInt(damage.t2_damage_multiplier),
+    t3_damage_multiplier: BigInt(damage.t3_damage_multiplier),
   },
-}));
-
-const baseArmy = (troopType: TroopType): Army => ({
+  stamina: {
+    ...release.definition.rules.troop_stamina_config,
+    stamina_attack_req: 10,
+    stamina_defense_req: 0,
+    damage_stamina_refund: false,
+  },
+};
+const parameters: CombatParameters = {
+  ...rules.damage,
+  stamina_attack_req: rules.stamina.stamina_attack_req,
+  stamina_defense_req: rules.stamina.stamina_defense_req,
+  tick_interval_seconds: rules.tickSeconds,
+};
+const army: Army = {
   stamina: 100,
-  troopCount: 1_000,
-  troopType,
-  tier: TroopTier.T2,
+  troopCount: 1000,
+  troopType: TroopType.Knight,
+  tier: TroopTier.T1,
   battle_cooldown_end: 0,
-});
+  oaths: 0,
+};
+const simulator = new CombatSimulator(parameters, rules);
+const simulate = (attacker: Army, defender: Army) =>
+  simulator.simulateBattle(100, attacker, defender, BiomeType.None, {});
 
-describe("CombatSimulator Combat v3 context", () => {
-  it("applies exact Crossbowman ranged field damage and removes counter-damage", () => {
-    const simulator = new CombatSimulator(CombatSimulator.getDefaultParameters());
-
-    const adjacent = simulator.simulateBattle(
-      0,
-      baseArmy(TroopType.Crossbowman),
-      baseArmy(TroopType.Knight),
-      BiomeType.Taiga,
-    );
-    const ranged = simulator.simulateBattle(
-      0,
-      baseArmy(TroopType.Crossbowman),
-      baseArmy(TroopType.Knight),
-      BiomeType.Taiga,
-      [],
-      [],
-      { attackDistance: 2 },
-    );
-
-    expect(ranged.attackerDamage).toBeCloseTo(adjacent.attackerDamage * 0.7);
-    expect(ranged.defenderDamage).toBe(0);
-    expect(ranged.attackerRefundMultiplier).toBe(0);
-    expect(ranged.defenderRefundMultiplier).toBe(0);
-  });
-
-  it("heavily reduces Crossbowman ranged damage against structure guards", () => {
-    const simulator = new CombatSimulator(CombatSimulator.getDefaultParameters());
-
-    const adjacent = simulator.simulateBattle(
-      0,
-      baseArmy(TroopType.Crossbowman),
-      baseArmy(TroopType.Paladin),
-      BiomeType.Taiga,
-    );
-    const guard = simulator.simulateBattle(
-      0,
-      baseArmy(TroopType.Crossbowman),
-      baseArmy(TroopType.Paladin),
-      BiomeType.Taiga,
-      [],
-      [],
-      { attackDistance: 2, defenderIsStructureGuard: true },
-    );
-
-    expect(guard.attackerDamage).toBeCloseTo(adjacent.attackerDamage * 0.3);
-    expect(guard.defenderDamage).toBe(0);
-  });
-
-  it("applies exact adjacent Knight damage against structure guards", () => {
-    const simulator = new CombatSimulator(CombatSimulator.getDefaultParameters());
-
-    const field = simulator.simulateBattle(
-      0,
-      baseArmy(TroopType.Knight),
-      baseArmy(TroopType.Crossbowman),
-      BiomeType.Taiga,
-    );
-    const guard = simulator.simulateBattle(
-      0,
-      baseArmy(TroopType.Knight),
-      baseArmy(TroopType.Crossbowman),
-      BiomeType.Taiga,
-      [],
-      [],
-      { defenderIsStructureGuard: true },
-    );
-
-    expect(guard.attackerDamage).toBeCloseTo(field.attackerDamage * 1.15);
-  });
-
-  it("applies exact incoming damage reduction for Knight structure guards", () => {
-    const simulator = new CombatSimulator(CombatSimulator.getDefaultParameters());
-
-    const field = simulator.simulateBattle(0, baseArmy(TroopType.Paladin), baseArmy(TroopType.Knight), BiomeType.Taiga);
-    const guard = simulator.simulateBattle(
-      0,
-      baseArmy(TroopType.Paladin),
-      baseArmy(TroopType.Knight),
-      BiomeType.Taiga,
-      [],
-      [],
-      { defenderIsStructureGuard: true },
-    );
-
-    expect(guard.attackerDamage).toBeCloseTo(field.attackerDamage * 0.85);
-  });
-
-  it("uses reduced defender stamina and halves both battle timers for ranged attacks", () => {
-    const simulator = new CombatSimulator(CombatSimulator.getDefaultParameters());
-    const context = { attackDistance: 2 };
-
-    expect(simulator.calculateNewStaminaAttacker(100, 1, context)).toBe(50);
-    expect(simulator.calculateNewStaminaDefender(100, 1, context)).toBe(80);
-    expect(simulator.calculateNewCooldownEndAttacker(0, 1_000, 1, context)).toBe(1_030);
-    expect(simulator.calculateNewCooldownEndDefender(0, 1_000, 1, context)).toBe(1_030);
-  });
-
-  it("uses the official 60-minute Blitz tier and combat stamina defaults", () => {
-    const params = CombatSimulator.getDefaultParameters();
-
-    expect(Number(params.t2_damage_multiplier) / Number(CombatSimulator.MAX_U64)).toBe(3);
-    expect(Number(params.t3_damage_multiplier) / Number(CombatSimulator.MAX_U64)).toBe(9);
-    expect(params.stamina_attack_req).toBe(50);
-    expect(params.stamina_defense_req).toBe(40);
-  });
-});
-
-describe("combat dice", () => {
-  it("adds each side's d20 roll as a percentage of its damage", () => {
-    const simulator = new CombatSimulator(CombatSimulator.getDefaultParameters());
-    const attacker = baseArmy(TroopType.Knight);
-    const defender = baseArmy(TroopType.Paladin);
-    const unrolled = simulator.simulateBattle(0, attacker, defender, BiomeType.Taiga);
-    const rolled = simulator.simulateBattle(0, attacker, defender, BiomeType.Taiga, [], [], {
-      attackerRoll: 20,
-      defenderRoll: 5,
+describe("battle lab exchange", () => {
+  it("shows exact losses and stamina across two attacks", () => {
+    expect(simulate(army, army)).toEqual({
+      ok: true,
+      attackerDamage: 437,
+      defenderDamage: 437,
+      attackerStamina: 90,
+      defenderStamina: 100,
+      attackerCooldownEnd: 100,
+      defenderCooldownEnd: 100,
     });
-    expect(rolled.attackerDamage).toBeCloseTo(unrolled.attackerDamage * 1.2);
-    expect(rolled.defenderDamage).toBeCloseTo(unrolled.defenderDamage * 1.05);
+    expect(simulate({ ...army, troopCount: 563, stamina: 90 }, { ...army, troopCount: 563 })).toMatchObject({
+      ok: true,
+      attackerDamage: 276,
+      defenderDamage: 276,
+      attackerStamina: 80,
+    });
   });
 
-  it("runs a dice battle from the attacker's worst roll to its best, and collapses to one outcome without dice", () => {
-    const simulator = new CombatSimulator(CombatSimulator.getDefaultParameters());
-    const attacker = baseArmy(TroopType.Knight);
-    const defender = baseArmy(TroopType.Paladin);
-    const unrolled = simulator.simulateBattle(0, attacker, defender, BiomeType.Taiga);
-    const range = simulator.simulateBattleRange(0, attacker, defender, BiomeType.Taiga, [], [], {}, true);
-    expect(range.worst.attackerDamage).toBeCloseTo(unrolled.attackerDamage * 1.01);
-    expect(range.worst.defenderDamage).toBeCloseTo(unrolled.defenderDamage * 1.2);
-    expect(range.best.attackerDamage).toBeCloseTo(unrolled.attackerDamage * 1.2);
-    expect(range.best.defenderDamage).toBeCloseTo(unrolled.defenderDamage * 1.01);
-
-    const plain = simulator.simulateBattleRange(0, attacker, defender, BiomeType.Taiga, [], [], {}, false);
-    expect(plain.worst).toEqual(unrolled);
-    expect(plain.best).toEqual(unrolled);
+  it("spends from the army's own stamina maximum, above its troop's base bar (4587f1)", () => {
+    expect(simulate({ ...army, stamina: 200, maxStamina: 200 }, army)).toMatchObject({
+      ok: true,
+      attackerStamina: 190,
+    });
+    expect(simulate({ ...army, stamina: 200 }, army)).toMatchObject({
+      ok: true,
+      attackerStamina: rules.stamina.stamina_knight_max - rules.stamina.stamina_attack_req,
+    });
+    expect(rules.stamina.stamina_knight_max).toBe(180);
   });
-});
 
-it("keeps ethereal terrain neutral even when the caller supplies a surface biome", () => {
-  const simulator = new CombatSimulator(CombatSimulator.getDefaultParameters());
-  const bonus = vi.mocked(configManager.getBiomeCombatBonus);
-  bonus.mockReturnValue(1.5);
-  try {
-    const surface = simulator.simulateBattle(
-      0,
-      baseArmy(TroopType.Knight),
-      baseArmy(TroopType.Paladin),
-      BiomeType.Grassland,
-    );
-    const ethereal = simulator.simulateBattle(
-      0,
-      baseArmy(TroopType.Knight),
-      baseArmy(TroopType.Paladin),
-      BiomeType.Grassland,
-      [],
-      [],
-      { defenderAlt: true },
-    );
-    expect(ethereal.attackerDamage).toBeCloseTo(surface.attackerDamage / 1.5);
-    expect(ethereal.defenderDamage).toBeCloseTo(surface.defenderDamage / 1.5);
-  } finally {
-    bonus.mockReturnValue(1);
-  }
+  it("keeps Scouts at three quarters damage", () => {
+    const scout = { ...army, troopType: TroopType.Paladin };
+    expect(simulate(scout, army)).toMatchObject({ ok: true, attackerDamage: 328, defenderDamage: 437 });
+    expect(simulate(army, scout)).toMatchObject({ ok: true, attackerDamage: 437, defenderDamage: 328 });
+  });
+
+  it("returns a refusal instead of a battle prediction when the attack cannot execute", () => {
+    expect(simulate({ ...army, stamina: 0 }, army)).toEqual({ ok: false, refusal: "insufficient-stamina" });
+    expect(simulate({ ...army, battle_cooldown_end: 101 }, army)).toEqual({ ok: false, refusal: "cooldown" });
+    expect(simulate(army, { ...army, troopCount: 0 })).toEqual({ ok: false, refusal: "no-troops" });
+  });
 });

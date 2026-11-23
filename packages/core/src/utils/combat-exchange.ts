@@ -1,6 +1,8 @@
-import { bonusActive } from "./relic";
+import { oathAttackStamina, oathDamageMultiplier, oathFuryRefund, oathSkillMultiplier, oathTwinDamage } from "./oaths";
 import { BiomeType, RESOURCE_PRECISION, type Troops } from "@bibliothecadao/types";
-import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { type NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/balance.gen";
+import type { NativeFactStore } from "../client/native-fact-store";
 import { staminaAt } from "../managers/troop-stamina";
 import {
   add,
@@ -36,27 +38,52 @@ export interface CombatRules {
   stamina: TroopStaminaConfig;
 }
 
+export const readCombatRules = (store: Pick<NativeFactStore, "require">, gameId: number): CombatRules => {
+  const rules = store.require("SliceRules", { game_id: gameId });
+  return {
+    cooldownSeconds: rules.battle_config.cooldown_seconds,
+    tickSeconds: Number(rules.tick_config.armies_tick_in_seconds),
+    damage: rules.troop_damage_config,
+    stamina: rules.troop_stamina_config,
+  };
+};
+
+export const isCombatGuard = (owner: bigint | null): boolean => {
+  if (owner === null) throw new Error("Combat guard owner is missing");
+  return owner !== 0n;
+};
+
 interface ExchangeContext {
   timestamp: number;
-  attackDistance: number;
   attackerBiome: BiomeType;
   defenderBiome: BiomeType;
   attackerIsStructureGuard: boolean;
   defenderIsStructureGuard: boolean;
-  /** Each side's d20 where the game rolls dice, adding that many percent to its damage; 0 without dice. */
-  attackerRoll: number;
-  defenderRoll: number;
+  attackerOaths: number;
+  defenderOaths: number;
+  attackerTwin: ExchangeTroops | null;
 }
 
-/** The faces of the die each side rolls where a game has combat dice. */
-export const COMBAT_DIE_FACES = 20;
-
 export type ExchangeRefusal = "no-troops" | "cooldown" | "insufficient-stamina";
+
+export type FirstStrikeSide = "attacker" | "defender" | null;
+
+export const resolveFirstStrike = (
+  attacker: ExchangeTroops["category"],
+  defender: ExchangeTroops["category"],
+): FirstStrikeSide => {
+  const attackerBow = attacker === "Crossbowman";
+  const defenderBow = defender === "Crossbowman";
+  if (attackerBow && !defenderBow) return "attacker";
+  if (defenderBow && !attackerBow) return "defender";
+  return null;
+};
 
 type ExchangeResult =
   | { ok: false; refusal: ExchangeRefusal }
   | {
       ok: true;
+      firstStrike: FirstStrikeSide;
       attackerLoss: bigint;
       defenderLoss: bigint;
       attacker: ExchangeTroops;
@@ -71,7 +98,6 @@ const REFUND_CEILING = fixed(184467440737095516160n);
 
 const percent = (numerator: number): Fixed => div(fixed(BigInt(numerator)), fixed(100n));
 
-/** One attack by `attacker` on `defender`; the defender answers in the same exchange unless the attack is ranged. */
 export const resolveExchange = (
   attacker: ExchangeTroops,
   defender: ExchangeTroops,
@@ -88,37 +114,43 @@ export const resolveExchange = (
   const attackerStamina = attackerBar.amount;
   const defenderBar = staminaAt(defender, now, rules.stamina, rules.tickSeconds);
   const defenderStamina = defenderBar.amount;
-  if (attackerStamina < BigInt(rules.stamina.stamina_attack_req)) return { ok: false, refusal: "insufficient-stamina" };
+  const attackStamina = BigInt(oathAttackStamina(context.attackerOaths, rules.stamina.stamina_attack_req));
+  if (attackerStamina < attackStamina) return { ok: false, refusal: "insufficient-stamina" };
 
-  const ranged = context.attackDistance > 1;
-  const defenderStaminaRequired = ranged
-    ? Math.floor(rules.stamina.stamina_defense_req / 2)
-    : rules.stamina.stamina_defense_req;
-  let defenderStaminaLoss =
-    defenderStamina < BigInt(defenderStaminaRequired) ? defenderStamina : BigInt(defenderStaminaRequired);
-  let attackerStaminaLoss = BigInt(rules.stamina.stamina_attack_req);
-  const tired = !ranged && defenderStaminaLoss < BigInt(defenderStaminaRequired);
+  const defenderStaminaRequired = BigInt(rules.stamina.stamina_defense_req);
+  let defenderStaminaLoss = defenderStamina < defenderStaminaRequired ? defenderStamina : defenderStaminaRequired;
+  let attackerStaminaLoss = attackStamina;
 
+  const defenderCooldownMultiplier = defenderCooldownEnd > now ? percent(85) : ONE;
   const damage = exchangeDamage(attacker, defender, context, rules, {
-    defenderStaminaMultiplier: tired ? div(fixed(7n), fixed(10n)) : ONE,
-    defenderCooldownMultiplier: defenderCooldownEnd > now ? percent(85) : ONE,
+    defenderCooldownMultiplier,
+    attackerSkillMultiplier: oathSkillMultiplier(context.attackerOaths, attackerStamina - attackStamina),
   });
+  const twin = context.attackerTwin
+    ? exchangeDamage(context.attackerTwin, defender, { ...context, attackerOaths: 0 }, rules, {
+        defenderCooldownMultiplier,
+        attackerSkillMultiplier: ONE,
+      }).attacker
+    : ZERO;
 
-  if (!ranged) {
-    const attackerRefund = ceil(mul(unscaled(attackerStaminaLoss), refundMultiplier(damage.attacker, damage.defender)));
-    const defenderRefund = ceil(mul(unscaled(defenderStaminaLoss), refundMultiplier(damage.defender, damage.attacker)));
-    if (rules.stamina.damage_stamina_refund) {
-      attackerStaminaLoss -= toWhole(attackerRefund);
-      defenderStaminaLoss -= toWhole(defenderRefund);
-    }
+  if (rules.stamina.damage_stamina_refund) {
+    attackerStaminaLoss -= staminaRefund(attackerStaminaLoss, damage.attacker, damage.defender);
+    defenderStaminaLoss -= staminaRefund(defenderStaminaLoss, damage.defender, damage.attacker);
   }
 
-  const attackerDamage = toWhole(round(damage.attacker)) * PRECISION;
-  const defenderDamage = ranged ? 0n : toWhole(round(damage.defender)) * PRECISION;
+  const attackerDamage =
+    toWhole(round(damage.attacker)) * PRECISION +
+    oathTwinDamage(context.attackerOaths, toWhole(round(twin)) * PRECISION);
+  const defenderDamage = toWhole(round(damage.defender)) * PRECISION;
   const attackerLoss = defenderDamage < attacker.count ? defenderDamage : attacker.count;
   const defenderLoss = attackerDamage < defender.count ? attackerDamage : defender.count;
+  if (defenderLoss === defender.count && attackerLoss < attacker.count) {
+    const refund = BigInt(oathFuryRefund(context.attackerOaths, Number(attackStamina)));
+    attackerStaminaLoss -= refund < attackerStaminaLoss ? refund : attackerStaminaLoss;
+  }
   return {
     ok: true,
+    firstStrike: damage.firstStrike,
     attackerLoss,
     defenderLoss,
     attacker: afterExchange(
@@ -126,14 +158,14 @@ export const resolveExchange = (
       attackerLoss,
       attackerStamina - attackerStaminaLoss,
       attackerBar,
-      attackerCooldownEnd + exchangeCooldown(rules.cooldownSeconds, ranged, damage.attacker, damage.defender),
+      attackerCooldownEnd + exchangeCooldown(rules.cooldownSeconds, damage.attacker, damage.defender),
     ),
     defender: afterExchange(
       defender,
       defenderLoss,
       defenderStamina - defenderStaminaLoss,
       defenderBar,
-      defenderCooldownEnd + exchangeCooldown(rules.cooldownSeconds, ranged, damage.defender, damage.attacker),
+      defenderCooldownEnd + exchangeCooldown(rules.cooldownSeconds, damage.defender, damage.attacker),
     ),
   };
 };
@@ -152,9 +184,11 @@ const afterExchange = (
   boosts: { ...troops.boosts, incr_stamina_regen_seconds_left: bar.boostSecondsLeft },
 });
 
-/** Ranged attacks add half the timer; melee refunds the timer by the same damage ratio as the contract. */
-const exchangeCooldown = (seconds: number, ranged: boolean, dealt: Fixed, taken: Fixed): number =>
-  ranged ? Math.floor(seconds / 2) : Number(toWhole(mul(unscaled(seconds), sub(ONE, refundMultiplier(dealt, taken)))));
+const staminaRefund = (loss: bigint, dealt: Fixed, taken: Fixed): bigint =>
+  toWhole(ceil(mul(unscaled(loss), refundMultiplier(dealt, taken))));
+
+const exchangeCooldown = (seconds: number, dealt: Fixed, taken: Fixed): number =>
+  Number(toWhole(mul(unscaled(seconds), sub(ONE, refundMultiplier(dealt, taken)))));
 
 /** Both sides' damage in fixed point, before rounding, in the contract's order of operations. */
 const exchangeDamage = (
@@ -162,37 +196,31 @@ const exchangeDamage = (
   defender: ExchangeTroops,
   context: ExchangeContext,
   rules: CombatRules,
-  penalties: { defenderStaminaMultiplier: Fixed; defenderCooldownMultiplier: Fixed },
+  multipliers: { defenderCooldownMultiplier: Fixed; attackerSkillMultiplier: Fixed },
 ) => {
   const base = fixed(rules.damage.damage_scaling_factor);
   const attackerTroops = unscaled(attacker.count / PRECISION);
   const defenderTroops = unscaled(defender.count / PRECISION);
   const attackerTier = tierBonus(attacker.tier, rules.damage);
   const defenderTier = tierBonus(defender.tier, rules.damage);
-  const attackerBiome =
-    context.attackDistance > 1 ? ONE : biomeBonus(attacker.category, context.attackerBiome, rules.damage);
+  const attackerBiome = biomeBonus(attacker.category, context.attackerBiome, rules.damage);
   const defenderBiome = biomeBonus(defender.category, context.defenderBiome, rules.damage);
   const scale = pow(add(attackerTroops, defenderTroops), EFFECTIVE_BETA);
 
-  let defenderDamage = [
-    defenderTroops,
-    defenderTier,
-    defenderBiome,
-    penalties.defenderStaminaMultiplier,
-    penalties.defenderCooldownMultiplier,
-  ].reduce(mul, base);
+  let defenderDamage = [defenderTroops, defenderTier, defenderBiome, multipliers.defenderCooldownMultiplier].reduce(
+    mul,
+    base,
+  );
   defenderDamage = div(div(defenderDamage, attackerTier), scale);
-  let attackerDamage = [attackerTroops, attackerTier, ONE, attackerBiome, ONE].reduce(mul, base);
+  let attackerDamage = [attackerTroops, attackerTier, attackerBiome].reduce(mul, base);
   attackerDamage = div(div(attackerDamage, defenderTier), scale);
 
-  if (context.attackerRoll > COMBAT_DIE_FACES || context.defenderRoll > COMBAT_DIE_FACES)
-    throw new Error("A combat die has twenty faces");
-  attackerDamage = mul(attackerDamage, percent(100 + context.attackerRoll));
-  defenderDamage = mul(defenderDamage, percent(100 + context.defenderRoll));
-  attackerDamage = mul(attackerDamage, outgoingMultiplier(attacker, context));
   attackerDamage = mul(attackerDamage, incomingMultiplier(defender, context.defenderIsStructureGuard));
   defenderDamage = mul(defenderDamage, incomingMultiplier(attacker, context.attackerIsStructureGuard));
-  if (context.attackDistance > 1) defenderDamage = ZERO;
+  if (attacker.category !== "Knight")
+    attackerDamage = mul(attackerDamage, percent(nativeRuleConstants.FRONTIER_LIGHT_DAMAGE_PERCENT));
+  if (defender.category !== "Knight")
+    defenderDamage = mul(defenderDamage, percent(nativeRuleConstants.FRONTIER_LIGHT_DAMAGE_PERCENT));
 
   const attackerBoosts = activeBoosts(attacker, context.timestamp);
   const defenderBoosts = activeBoosts(defender, context.timestamp);
@@ -200,8 +228,27 @@ const exchangeDamage = (
   defenderDamage = add(defenderDamage, div(mul(defenderDamage, unscaled(defenderBoosts.dealt)), BPS_100));
   defenderDamage = sub(defenderDamage, div(mul(defenderDamage, unscaled(attackerBoosts.gotten)), BPS_100));
   attackerDamage = sub(attackerDamage, div(mul(attackerDamage, unscaled(defenderBoosts.gotten)), BPS_100));
-  return { attacker: attackerDamage, defender: defenderDamage };
+
+  attackerDamage = mul(
+    attackerDamage,
+    oathDamageMultiplier(context.attackerOaths, context.defenderOaths, context.defenderIsStructureGuard),
+  );
+  attackerDamage = mul(attackerDamage, multipliers.attackerSkillMultiplier);
+  defenderDamage = mul(
+    defenderDamage,
+    oathDamageMultiplier(context.defenderOaths, context.attackerOaths, context.attackerIsStructureGuard),
+  );
+  const firstStrike = resolveFirstStrike(attacker.category, defender.category);
+  if (firstStrike === "attacker") {
+    defenderDamage = mul(defenderDamage, survivingFraction(defenderTroops, attackerDamage));
+  } else if (firstStrike === "defender") {
+    attackerDamage = mul(attackerDamage, survivingFraction(attackerTroops, defenderDamage));
+  }
+  return { attacker: attackerDamage, defender: defenderDamage, firstStrike };
 };
+
+const survivingFraction = (troops: Fixed, damage: Fixed): Fixed =>
+  gte(damage, troops) ? ZERO : div(sub(troops, damage), troops);
 
 const tierBonus = (tier: ExchangeTroops["tier"], damage: TroopDamageConfig): Fixed => {
   const t1 = fixed(damage.t1_damage_value);
@@ -255,36 +302,25 @@ const biomeBonus = (category: ExchangeTroops["category"], biome: BiomeType, dama
   return div(bonus ? add(BPS_100, edge) : sub(BPS_100, edge), BPS_100);
 };
 
-const outgoingMultiplier = (attacker: ExchangeTroops, context: ExchangeContext): Fixed => {
-  const rangedCrossbow =
-    attacker.category === "Crossbowman" && context.attackDistance > 1
-      ? percent(context.defenderIsStructureGuard ? 30 : 70)
-      : unscaled(1);
-  const knightAssault =
-    attacker.category === "Knight" &&
-    !context.attackerIsStructureGuard &&
-    context.defenderIsStructureGuard &&
-    context.attackDistance === 1
-      ? percent(115)
-      : unscaled(1);
-  return mul(rangedCrossbow, knightAssault);
-};
-
 const incomingMultiplier = (troops: ExchangeTroops, isStructureGuard: boolean): Fixed =>
-  isStructureGuard && troops.category === "Knight" ? percent(85) : unscaled(1);
+  isStructureGuard && troops.category === "Knight"
+    ? percent(nativeRuleConstants.FRONTIER_KNIGHT_GUARD_DAMAGE_PERCENT)
+    : unscaled(1);
+
+const boostEnded = (endAt: number, timestamp: number): boolean => endAt !== 0 && timestamp >= endAt;
 
 const activeBoosts = (troops: ExchangeTroops, timestamp: number) => ({
-  dealt:
-    troops.boosts.incr_damage_dealt_end_at !== 0 && !bonusActive(troops.boosts.incr_damage_dealt_end_at, timestamp)
-      ? 0
-      : troops.boosts.incr_damage_dealt_percent_num,
-  gotten:
-    troops.boosts.decr_damage_gotten_end_at !== 0 && !bonusActive(troops.boosts.decr_damage_gotten_end_at, timestamp)
-      ? 0
-      : troops.boosts.decr_damage_gotten_percent_num,
+  dealt: boostEnded(troops.boosts.incr_damage_dealt_end_at, timestamp)
+    ? 0
+    : troops.boosts.incr_damage_dealt_percent_num,
+  gotten: boostEnded(troops.boosts.decr_damage_gotten_end_at, timestamp)
+    ? 0
+    : troops.boosts.decr_damage_gotten_percent_num,
 });
 
 const refundMultiplier = (dealt: Fixed, taken: Fixed): Fixed => {
+  if (dealt.mag === 0n) return ZERO;
+  if (taken.mag === 0n) return ONE;
   const ratio = div(dealt, taken);
   if (gte(ratio, REFUND_CEILING)) return ONE;
   if (lte(ratio, REFUND_FLOOR)) return ZERO;
@@ -309,8 +345,7 @@ export type FightForecast =
 
 /**
  * Attack after attack at the same moment until one side has no troops or the attacker lacks the stamina for another
- * exchange: how many exchanges a fight takes and what it costs, as the contract would resolve each one. Where the game
- * rolls dice every exchange takes the context's rolls, so a range is the forecast at the worst and best rolls.
+ * exchange: how many exchanges a fight takes and what it costs, as the contract would resolve each one.
  */
 export const forecastFight = (
   attacker: ExchangeTroops,
@@ -337,7 +372,7 @@ export const forecastFight = (
     attackerLoss += next.attackerLoss;
     defenderLoss += next.defenderLoss;
   }
-  const outcome = state.defender.count === 0n ? "wins" : state.attacker.count === 0n ? "loses" : "stalls";
+  const outcome = state.attacker.count === 0n ? "loses" : state.defender.count === 0n ? "wins" : "stalls";
   return {
     outcome,
     exchanges,

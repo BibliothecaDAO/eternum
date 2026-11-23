@@ -12,7 +12,7 @@ import { StructureType, structurePlural, type StructureNamingMode } from "@bibli
  */
 type ListedHolding = Pick<
   StructureWithMetadata,
-  "category" | "displayName" | "isFavorite" | "realmLevel" | "realmSkin" | "structure"
+  "category" | "displayName" | "isFavorite" | "realmLevel" | "structure"
 >;
 
 /** Every kind a player can hold, in the order the tabs show them. */
@@ -22,7 +22,6 @@ const KINDS = [
   StructureType.Camp,
   StructureType.Mine,
   StructureType.Rift,
-  StructureType.BitcoinMine,
   StructureType.Hyperstructure,
   StructureType.Bank,
   StructureType.Ruin,
@@ -59,7 +58,7 @@ export const kindsHeld = (
     const presentsOneMineKind = kind === StructureType.Mine && onlyMineKind !== undefined;
     return {
       kind,
-      plural: structurePlural(kind, presentsOneMineKind ? onlyMineKind : undefined, mode),
+      plural: structurePlural(kind, presentsOneMineKind ? onlyMineKind : undefined),
       icon: presentsOneMineKind ? mineMeaning(onlyMineKind) : structureMeaning(kind, mode),
       count: counts.get(kind)!,
     };
@@ -94,11 +93,11 @@ export const listHoldings = <T extends ListedHolding>(holdings: T[], kind: LeftL
 
 /** A realm shows its age's painting, a mine its kind's (a rift's rift), every other holding its category's. */
 export const holdingIcon = (
-  holding: Pick<ListedHolding, "category" | "realmLevel" | "realmSkin" | "structure">,
+  holding: Pick<ListedHolding, "category" | "realmLevel" | "structure">,
   mode?: StructureNamingMode,
 ): IconMeaning => {
   if (holding.category === StructureType.Realm)
-    return realmMeaning(holding.realmLevel, holding.realmSkin, holding.structure.metadata.has_wonder);
+    return realmMeaning(holding.realmLevel, holding.structure.metadata.has_wonder);
   const mineKind = mineKindOf(holding);
   return mineKind !== undefined ? mineMeaning(mineKind) : structureMeaning(holding.category as StructureType, mode);
 };

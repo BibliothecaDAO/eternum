@@ -1,4 +1,5 @@
 import { TransactionType } from "@bibliothecadao/provider";
+import { ANCIENT_SEAL } from "@bibliothecadao/types";
 
 /**
  * What each command reads as in the feed and its notices, in the player's words. Every command has its line: a new one
@@ -6,18 +7,13 @@ import { TransactionType } from "@bibliothecadao/provider";
  */
 const TX_MESSAGES: Record<TransactionType, string> = {
   [TransactionType.PROVISION_REALM]: "Realm provisioned",
-  [TransactionType.BITCOIN_MINE_CONTRIBUTE_LABOR]: "Labor sent to the mine",
-  [TransactionType.BITCOIN_MINE_CLAIM_PHASE_REWARD]: "Mine reward claimed",
-  [TransactionType.BITCOIN_MINE_CLOSE_PHASE]: "Mining phase closed",
-  [TransactionType.BITCOIN_MINE_BIND_PHASE]: "Mine joined the mining phase",
   [TransactionType.EXPLORE]: "Scouts sent to explore new lands",
   [TransactionType.TRAVEL_HEX]: "Army on the move",
   [TransactionType.TOGGLE_ALTERNATE]: "Army passed through a spire",
   [TransactionType.ENTER_DEPTH]: "Army went deeper",
   [TransactionType.RESEARCH]: "Research started",
-  [TransactionType.SPEND_SKILL_POINT]: "Upgrade bought",
-  [TransactionType.REFILL_STAMINA]: "Stamina refilled",
-  [TransactionType.WITHDRAW_LORDS]: "LORDS withdrawn",
+  [TransactionType.CHOOSE_OATH]: "Oath choice recorded",
+  [TransactionType.REROLL_OATH]: "Oath card redrawn",
   [TransactionType.EXPLORER_CREATE]: "Army raised",
   [TransactionType.EXPLORER_ADD]: "Army reinforced",
   [TransactionType.EXPLORER_DELETE]: "Army disbanded",
@@ -46,22 +42,17 @@ const TX_MESSAGES: Record<TransactionType, string> = {
   [TransactionType.SELL]: "Sold at the market",
   [TransactionType.REMOVE]: "Liquidity withdrawn",
   [TransactionType.ADD_LIQUIDITY]: "Liquidity added",
-  [TransactionType.BRIDGE_DEPOSIT]: "Resources bridged in",
-  [TransactionType.BRIDGE_WITHDRAW]: "Resources bridged out",
   [TransactionType.CREATE_ORDER]: "Trade posted",
   [TransactionType.ACCEPT_ORDER]: "Trade accepted",
   [TransactionType.CANCEL_ORDER]: "Trade cancelled",
   [TransactionType.CREATE]: "Market order posted",
-  [TransactionType.CREATE_GUILD]: "Tribe founded",
+  [TransactionType.CREATE_GUILD]: "Tribe created",
   [TransactionType.JOIN_GUILD]: "Joined a tribe",
   [TransactionType.LEAVE_GUILD]: "Left the tribe",
   [TransactionType.UPDATE_WHITELIST]: "Tribe invitations updated",
   [TransactionType.REMOVE_GUILD_MEMBER]: "Member removed from the tribe",
   [TransactionType.SET_ENTITY_NAME]: "Renamed",
   [TransactionType.TRANSFER_STRUCTURE_OWNERSHIP]: "Structure ownership transferred",
-  [TransactionType.CREATE_HYPERSTRUCTURE]: "Hyperstructure founded",
-  [TransactionType.INITIALIZE_HYPERSTRUCTURE]: "Hyperstructure construction started",
-  [TransactionType.CONTRIBUTE]: "Resources given to the hyperstructure",
   [TransactionType.CLAIM_WONDER_POINTS]: "Wonder points claimed",
   [TransactionType.CLAIM_PLAYER_FAITH_POINTS]: "Faith points claimed",
   [TransactionType.PLEDGE_FAITH]: "Faith pledged",
@@ -69,12 +60,11 @@ const TX_MESSAGES: Record<TransactionType, string> = {
   [TransactionType.UPDATE_WONDER_OWNERSHIP]: "Wonder shares updated",
   [TransactionType.UPDATE_STRUCTURE_OWNERSHIP]: "Structure shares updated",
   [TransactionType.SETTLE]: "Realm settled",
-  [TransactionType.SET_ACCESS]: "Access updated",
-  [TransactionType.END_GAME]: "Game ended",
-  [TransactionType.OPEN_CHEST]: "Crate opened",
   [TransactionType.INTERACT_SITE]: "Site visited",
-  [TransactionType.BURN_RESEARCH_FOR_RELIC]: "Relic crafted",
+  [TransactionType.CLAIM_DAILY_QUEST]: "Quest reward collected",
   [TransactionType.APPLY_RELIC]: "Relic activated",
+  [TransactionType.BUY_STAMINA]: "Stamina refilled",
+  [TransactionType.BUY_SEAL]: `${ANCIENT_SEAL} bought`,
 };
 
 export const getTxMessage = (type: TransactionType): string => TX_MESSAGES[type];

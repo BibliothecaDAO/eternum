@@ -1,3 +1,4 @@
+import { storyTag } from "./fixtures";
 import { describe, expect, it } from "vitest";
 import { toJsonValue } from "../model-registry";
 import { manifest, raw, receipt, schema, setup, rowEvent, seedDerivedRows } from "./fixtures";
@@ -45,7 +46,7 @@ describe("native structure upgrades", () => {
       raw({
         from_address: manifest.world.address,
         keys: [...event.prefix, "2", "1", "0", "0x111", "0", "3", "0x55"],
-        data: ["1", "2", "1860"],
+        data: [storyTag("StructureLevelUpStory"), "2", "1860"],
       }),
     );
     expect(decoded.kind).toBe("event");

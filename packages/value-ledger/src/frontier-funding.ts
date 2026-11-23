@@ -4,7 +4,6 @@ import { decodeFrontierSeason, decodeLedgerPreset, readConfirmedLedgerHead } fro
 
 /** Immutable confirmed GameRegistry, ChestRules and SliceRules facts. */
 export interface FrontierFundingTerms {
-  presetId: number;
   start: number;
   end: number;
   seed: string;
@@ -34,18 +33,13 @@ export async function readFrontierFunding(
   );
   const preset = decodeLedgerPreset(await read("get_preset", [String(season.presetId)]));
   assertFrontierPreset(preset, native);
-  if (
-    season.presetId !== native.presetId ||
-    season.start !== native.start ||
-    season.end !== native.end ||
-    BigInt(season.seed) !== BigInt(native.seed)
-  )
+  if (season.start !== native.start || season.end !== native.end || BigInt(season.seed) !== BigInt(native.seed))
     throw new Error("frontier_funding_differs_from_game");
   return { ...season, claimDeadline: season.end + preset.claimWindow, confirmedBlock: head };
 }
 
 /** Compare the immutable day rules before funding and when checking an existing pool. */
-export function assertFrontierPreset(preset: ReturnType<typeof decodeLedgerPreset>, native: FrontierFundingTerms) {
+function assertFrontierPreset(preset: ReturnType<typeof decodeLedgerPreset>, native: FrontierFundingTerms) {
   if (
     ![native.start, native.end, native.dayUnit, native.claimWindow, native.topN, native.chestPoolBps].every(
       Number.isSafeInteger,
@@ -65,11 +59,4 @@ export function assertFrontierPreset(preset: ReturnType<typeof decodeLedgerPrese
     preset.frontierTopN !== native.topN
   )
     throw new Error("frontier_funding_differs_from_game");
-}
-
-/** Unpaid chest custody and prize reserves leave the season together at settlement. */
-export function frontierTreasuryAmount(
-  season: Pick<ReturnType<typeof decodeFrontierSeason>, "pool" | "paid" | "prizePool" | "prizePaid">,
-): string {
-  return String(BigInt(season.pool) - BigInt(season.paid) + BigInt(season.prizePool) - BigInt(season.prizePaid));
 }

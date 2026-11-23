@@ -671,66 +671,6 @@
     "verdict": "equal",
     "reason": "Well: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
   },
-  "faceted/order-giants": {
-    "verdict": "equal",
-    "reason": "Order of Giants: original emblem silhouette and identifying colour remain readable at 24 and 32 px, with painted depth and no gilded frame."
-  },
-  "faceted/order-perfection": {
-    "verdict": "equal",
-    "reason": "Order of Perfection: original emblem silhouette and identifying colour remain readable at 24 and 32 px, with painted depth and no gilded frame."
-  },
-  "faceted/order-rage": {
-    "verdict": "equal",
-    "reason": "Order of Rage: original emblem silhouette and identifying colour remain readable at 24 and 32 px, with painted depth and no gilded frame."
-  },
-  "faceted/order-fox": {
-    "verdict": "equal",
-    "reason": "Order of the Fox: original emblem silhouette and identifying colour remain readable at 24 and 32 px, with painted depth and no gilded frame."
-  },
-  "faceted/order-twins": {
-    "verdict": "equal",
-    "reason": "Order of the Twins: original emblem silhouette and identifying colour remain readable at 24 and 32 px, with painted depth and no gilded frame."
-  },
-  "faceted/order-fury": {
-    "verdict": "equal",
-    "reason": "Order of Fury: original emblem silhouette and identifying colour remain readable at 24 and 32 px, with painted depth and no gilded frame."
-  },
-  "faceted/order-reflection": {
-    "verdict": "equal",
-    "reason": "Order of Reflection: original emblem silhouette and identifying colour remain readable at 24 and 32 px, with painted depth and no gilded frame."
-  },
-  "faceted/order-detection": {
-    "verdict": "equal",
-    "reason": "Order of Detection: original emblem silhouette and identifying colour remain readable at 24 and 32 px, with painted depth and no gilded frame."
-  },
-  "faceted/order-brilliance": {
-    "verdict": "equal",
-    "reason": "Order of Brilliance: original emblem silhouette and identifying colour remain readable at 24 and 32 px, with painted depth and no gilded frame."
-  },
-  "faceted/order-protection": {
-    "verdict": "equal",
-    "reason": "Order of Protection: original emblem silhouette and identifying colour remain readable at 24 and 32 px, with painted depth and no gilded frame."
-  },
-  "faceted/order-power": {
-    "verdict": "equal",
-    "reason": "Order of Power: original emblem silhouette and identifying colour remain readable at 24 and 32 px, with painted depth and no gilded frame."
-  },
-  "faceted/order-titans": {
-    "verdict": "equal",
-    "reason": "Order of Titans: original emblem silhouette and identifying colour remain readable at 24 and 32 px, with painted depth and no gilded frame."
-  },
-  "faceted/order-vitriol": {
-    "verdict": "equal",
-    "reason": "Order of Vitriol: original emblem silhouette and identifying colour remain readable at 24 and 32 px, with painted depth and no gilded frame."
-  },
-  "faceted/order-anger": {
-    "verdict": "equal",
-    "reason": "Order of Anger: original emblem silhouette and identifying colour remain readable at 24 and 32 px, with painted depth and no gilded frame."
-  },
-  "faceted/order-enlightenment": {
-    "verdict": "equal",
-    "reason": "Order of Enlightenment: original emblem silhouette and identifying colour remain readable at 24 and 32 px, with painted depth and no gilded frame."
-  },
   "faceted/beasts": {
     "verdict": "equal",
     "reason": "Beasts: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
@@ -746,10 +686,6 @@
   "faceted/spire": {
     "verdict": "beats shipped",
     "reason": "Dark suspended spire and portal orb from the shipped spire model."
-  },
-  "faceted/bitcoin-mine": {
-    "verdict": "equal",
-    "reason": "Bitcoin Mine: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
   },
   "faceted/realm-0": {
     "verdict": "beats shipped",
@@ -907,10 +843,6 @@
     "verdict": "equal",
     "reason": "Order of Gods: repaint preserves the original emblem silhouette and colour at 24 and 32 px. The rejected wheat motif is removed."
   },
-  "faceted/order-skill": {
-    "verdict": "equal",
-    "reason": "Order of Skill: repaint preserves the original emblem silhouette and colour at 24 and 32 px. The rejected wheat motif is removed."
-  },
   "faceted/strk": {
     "verdict": "equal",
     "reason": "Retained the token brand mark without a decorative frame; unchanged identity at 24 and 32 px."
@@ -983,6 +915,16 @@
     "verdict": "beats shipped",
     "reason": "Nothing shipped for CoinGecko in the footer before. The official mark as realms.world shows it, geometry unchanged from its source (apps/web/src/site/data/socials.ts); white currentColor, as LORDS.",
     "officialSource": "apps/web/src/site/data/socials.ts"
+  },
+  "official/brand-eth": {
+    "verdict": "beats shipped",
+    "reason": "Nothing shipped for ETH before; the Fragments page's Pay with needs it. Ethereum's coin mark as realms.world ships it, geometry and colours unchanged (the lead's ruling of 2026-11-20: each token's official mark, as-is).",
+    "officialSource": "apps/web/src/components/icons/ethereum.svg"
+  },
+  "official/brand-usdc": {
+    "verdict": "beats shipped",
+    "reason": "Nothing shipped for USDC before; the Fragments page's Pay with needs it. Circle's USDC coin as the repo ships it (apps/game/public/tokens/usdc.png), unchanged but for its size, set in an SVG frame (the lead's ruling of 2026-11-20: each token's official mark, as-is).",
+    "officialSource": "apps/game/public/tokens/usdc.png"
   },
   "official/brand-google": {
     "verdict": "beats shipped",
@@ -1073,5 +1015,129 @@
   "faceted/wonder-realm-3": {
     "verdict": "equal",
     "reason": "Representative Wonder level painted from the shipped sanctum-star model; silhouette and materials compared side by side, including at board size."
+  },
+  "faceted/order-giants": {
+    "verdict": "beats shipped",
+    "reason": "Approved Season 1 Order Facet badge published through the facets 64/128/256 webp pipeline."
+  },
+  "faceted/order-perfection": {
+    "verdict": "beats shipped",
+    "reason": "Approved Season 1 Order Facet badge published through the facets 64/128/256 webp pipeline."
+  },
+  "faceted/order-rage": {
+    "verdict": "beats shipped",
+    "reason": "Approved Season 1 Order Facet badge published through the facets 64/128/256 webp pipeline."
+  },
+  "faceted/order-fox": {
+    "verdict": "beats shipped",
+    "reason": "Approved Season 1 Order Facet badge published through the facets 64/128/256 webp pipeline."
+  },
+  "faceted/order-twins": {
+    "verdict": "beats shipped",
+    "reason": "Approved Season 1 Order Facet badge published through the facets 64/128/256 webp pipeline."
+  },
+  "faceted/order-fury": {
+    "verdict": "beats shipped",
+    "reason": "Approved Season 1 Order Facet badge published through the facets 64/128/256 webp pipeline."
+  },
+  "faceted/order-reflection": {
+    "verdict": "beats shipped",
+    "reason": "Approved Season 1 Order Facet badge published through the facets 64/128/256 webp pipeline."
+  },
+  "faceted/order-detection": {
+    "verdict": "beats shipped",
+    "reason": "Approved Season 1 Order Facet badge published through the facets 64/128/256 webp pipeline."
+  },
+  "faceted/order-skill": {
+    "verdict": "beats shipped",
+    "reason": "Approved Season 1 Order Facet badge published through the facets 64/128/256 webp pipeline."
+  },
+  "faceted/order-brilliance": {
+    "verdict": "beats shipped",
+    "reason": "Approved Season 1 Order Facet badge published through the facets 64/128/256 webp pipeline."
+  },
+  "faceted/order-protection": {
+    "verdict": "beats shipped",
+    "reason": "Approved Season 1 Order Facet badge published through the facets 64/128/256 webp pipeline."
+  },
+  "faceted/order-power": {
+    "verdict": "beats shipped",
+    "reason": "Approved Season 1 Order Facet badge published through the facets 64/128/256 webp pipeline."
+  },
+  "faceted/order-titans": {
+    "verdict": "beats shipped",
+    "reason": "Approved Season 1 Order Facet badge published through the facets 64/128/256 webp pipeline."
+  },
+  "faceted/order-vitriol": {
+    "verdict": "beats shipped",
+    "reason": "Approved Season 1 Order Facet badge published through the facets 64/128/256 webp pipeline."
+  },
+  "faceted/order-anger": {
+    "verdict": "beats shipped",
+    "reason": "Approved Season 1 Order Facet badge published through the facets 64/128/256 webp pipeline."
+  },
+  "faceted/order-enlightenment": {
+    "verdict": "beats shipped",
+    "reason": "Approved Season 1 Order Facet badge published through the facets 64/128/256 webp pipeline."
+  },
+  "faceted/aspect-prowess": {
+    "verdict": "beats shipped",
+    "reason": "Approved Season 1 Aspect Facet emblem published through the facets 64/128/256 webp pipeline."
+  },
+  "faceted/aspect-luminary": {
+    "verdict": "beats shipped",
+    "reason": "Approved Season 1 Aspect Facet emblem published through the facets 64/128/256 webp pipeline."
+  },
+  "faceted/aspect-havoc": {
+    "verdict": "beats shipped",
+    "reason": "Approved Season 1 Aspect Facet emblem published through the facets 64/128/256 webp pipeline."
+  },
+  "faceted/aspect-insight": {
+    "verdict": "beats shipped",
+    "reason": "Approved Season 1 Aspect Facet emblem published through the facets 64/128/256 webp pipeline."
+  },
+  "faceted/beast-balrog": {
+    "verdict": "beats shipped",
+    "reason": "Studio portrait of shipped Deep guardian Balrog model, normalized to the Facets delivery contract."
+  },
+  "faceted/beast-colossus": {
+    "verdict": "beats shipped",
+    "reason": "Studio portrait of shipped Deep guardian Colossus model, normalized to the Facets delivery contract."
+  },
+  "faceted/beast-warlock": {
+    "verdict": "beats shipped",
+    "reason": "Studio portrait of shipped Deep guardian Warlock model, normalized to the Facets delivery contract."
+  },
+  "faceted/beast-banshee": {
+    "verdict": "beats shipped",
+    "reason": "Studio portrait of shipped Veil beast Banshee model, normalized to the Facets delivery contract."
+  },
+  "faceted/beast-golem": {
+    "verdict": "beats shipped",
+    "reason": "Studio portrait of shipped Veil beast Golem model, normalized to the Facets delivery contract."
+  },
+  "faceted/beast-kappa": {
+    "verdict": "beats shipped",
+    "reason": "Studio portrait of shipped Veil beast Kappa model, normalized to the Facets delivery contract."
+  },
+  "faceted/beast-tarrasque": {
+    "verdict": "beats shipped",
+    "reason": "Studio portrait of shipped Hollow beast Tarrasque model, normalized to the Facets delivery contract."
+  },
+  "faceted/beast-lich": {
+    "verdict": "beats shipped",
+    "reason": "Studio portrait of shipped Hollow beast Lich model, normalized to the Facets delivery contract."
+  },
+  "faceted/beast-ettin": {
+    "verdict": "beats shipped",
+    "reason": "Studio portrait of shipped Hollow beast Ettin model, normalized to the Facets delivery contract."
+  },
+  "faceted/beast-kitsune": {
+    "verdict": "beats shipped",
+    "reason": "Studio portrait of shipped Hollow beast Kitsune model, normalized to the Facets delivery contract."
+  },
+  "faceted/beast-minotaur": {
+    "verdict": "beats shipped",
+    "reason": "Studio portrait of shipped Hollow beast Minotaur model, normalized to the Facets delivery contract."
   }
 }

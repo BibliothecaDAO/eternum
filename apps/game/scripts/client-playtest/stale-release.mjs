@@ -1,3 +1,5 @@
+import { nodeRpc } from "./node-rpc.mjs";
+
 /** Records actual move submissions and their receipts without retaining signatures or account addresses. */
 export function watchReleaseMove(devTools) {
   const sends = new Map();
@@ -77,15 +79,7 @@ async function describeAttempt(send) {
 }
 
 async function rpc(url, method, params) {
-  const response = await fetch(url, {
-    method: "POST",
-    redirect: "manual",
-    signal: AbortSignal.timeout(15_000),
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
-  });
-  if (!response.ok) throw new Error(`Release measurement RPC HTTP ${response.status}`);
-  const answer = await response.json();
+  const answer = await nodeRpc(url, method, params);
   if (answer.error) throw new Error(`Release measurement RPC error ${answer.error.code}`);
   return answer.result;
 }

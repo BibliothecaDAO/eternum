@@ -1,14 +1,19 @@
 use starknet::storage::Map;
 
 #[starknet::storage_node]
-pub struct StructureStateStorage<TStructureRecord, TExpeditionSite, TSiteChest> {
+pub struct StructureStateStorage<TStructureRecord, TExpeditionSite> {
     pub structures: Map<(u32, u64), TStructureRecord>,
     pub expedition_sites: Map<(u32, u64), Option<TExpeditionSite>>,
-    pub site_chests: Map<(u32, u64), Option<TSiteChest>>,
-    pub shrine_rewards: Map<(u32, u64), Option<u8>>,
 }
 
 #[starknet::storage_node]
 pub struct StructuresDomainStorage {
     pub entity_names: Map<(u32, u64), felt252>,
+}
+
+#[starknet::storage_node]
+pub struct HyperstructureStorage {
+    pub counts: Map<u32, u32>,
+    pub held_since: Map<(u32, u64), u64>,
+    pub paid_at_end: Map<u32, u32>,
 }

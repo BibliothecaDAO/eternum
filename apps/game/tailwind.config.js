@@ -7,8 +7,10 @@ import {
   HUD_COLOR_CLASSES,
   APP_COLOR_CLASSES,
   APP_TYPE,
+  ASPECT_HEX,
   appAgeVariables,
   appVariables,
+  aspectVariables,
   HUD_COLORS,
   HUD_FINISH,
   HUD_LAYERS,
@@ -210,8 +212,6 @@ export default {
         "float-up": "floatUp 2s ease-out forwards",
         "rank-up": "rankUp 3s ease-out forwards",
         "rank-down": "rankDown 3s ease-out forwards",
-        "row-glow-up": "rowGlowUp 2s ease-out forwards",
-        "row-glow-down": "rowGlowDown 1.5s ease-out forwards",
         "burst-ring": "burstRing 0.6s ease-out forwards",
         shimmer: "shimmer 3s ease-in-out infinite",
       },
@@ -238,16 +238,6 @@ export default {
           "0%": { opacity: "1", transform: "scale(1)" },
           "50%": { opacity: "0.9", transform: "scale(1.15)" },
           "100%": { opacity: "0", transform: "scale(1)" },
-        },
-        rowGlowUp: {
-          "0%": { boxShadow: "0 0 0 0 rgba(74, 222, 128, 0)" },
-          "15%": { boxShadow: "0 0 20px 2px rgba(74, 222, 128, 0.5)" },
-          "100%": { boxShadow: "0 0 0 0 rgba(74, 222, 128, 0)" },
-        },
-        rowGlowDown: {
-          "0%": { boxShadow: "0 0 0 0 rgba(248, 113, 113, 0)" },
-          "15%": { boxShadow: "0 0 12px 1px rgba(248, 113, 113, 0.4)" },
-          "100%": { boxShadow: "0 0 0 0 rgba(248, 113, 113, 0)" },
         },
         burstRing: {
           "0%": { boxShadow: "0 0 0 0 currentColor", opacity: "0.6" },
@@ -393,6 +383,9 @@ export default {
         '[data-hud-device="phone"]': phone,
         // The age a game shows in the app, on its card or page.
         ...Object.fromEntries(Object.keys(HUD_MODES).map((age) => [`[data-age="${age}"]`, appAgeVariables(age)])),
+        ...Object.fromEntries(
+          Object.keys(ASPECT_HEX).map((id) => [`[data-aspect-id="${id}"]`, aspectVariables(Number(id))]),
+        ),
         "@media (pointer: coarse)": { ":root": phone },
       });
     }),

@@ -1,5 +1,3 @@
-import { readRealmSkin, type RealmSkin } from "@/three/structures/realm-skins";
-import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { realmMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -46,15 +44,13 @@ export const CastleUpgrade = ({
 }) => {
   const { setup } = useGame();
   const tick = useCurrentDefaultTick();
-  useNativeRevision(["CampaignHome"]);
-  const skin = readRealmSkin(setup.store, realm);
   const ordersAllowed = useUIStore(canIssueOrders);
   const levelUp = useRealmLevelUp(safeInteger(realm.entity_id));
   const tree = useResearchTree(realm);
   if (!levelUp) return null;
   return (
     <CastleView
-      now={castleSide(setup.store, realm.game_id, levelUp.currentLevel, skin, realm.metadata.has_wonder)}
+      now={castleSide(setup.store, realm.game_id, levelUp.currentLevel, realm.metadata.has_wonder)}
       laborRate={castleLaborRate(setup.store, realm)}
       research={
         ordersAllowed &&
@@ -79,7 +75,7 @@ const upgradeOrder = (
   const held = (resource: number) => knownAmount(getBalance(realmId, resource, tick, store).balance);
   const short = levelUp.requirements.find(({ resource, amount }) => (held(resource) ?? 0) < amount);
   return {
-    next: castleSide(store, realm.game_id, levelUp.nextLevel, readRealmSkin(store, realm), realm.metadata.has_wonder),
+    next: castleSide(store, realm.game_id, levelUp.nextLevel, realm.metadata.has_wonder),
     prices: levelUp.requirements.map(({ resource, amount }) => ({ of: castlePriceKind(resource), amount })),
     refusal:
       (short && {
@@ -101,25 +97,16 @@ const upgradeOrder = (
   };
 };
 
-/**
- * The castle at a level: the plots its ring opens, its army slots, what it stores of each store (before the Granary and
- * Storeroom) and its deploy cap, from the preset.
- */
-const castleSide = (
-  store: NativeFactStore,
-  gameId: number,
-  level: number,
-  skin?: RealmSkin,
-  hasWonder = false,
-): CastleSide => {
-  const art = realmMeaning(level, skin, hasWonder);
+const castleSide = (store: NativeFactStore, gameId: number, level: number, hasWonder = false): CastleSide => {
+  const art = realmMeaning(level, hasWonder);
   if (!art) throw new Error(`No castle art for level ${level}`);
   return {
     level,
     art,
     plots: buildablePlotCount(level),
     slots: configManager.getArmySlots(level),
-    limit: wholeOrUnknown(ResourceManager.castleStoreLimit(store, gameId, level)),
+    wheatStore: wholeOrUnknown(ResourceManager.castleStoreLimit(store, gameId, level, ResourcesIds.Wheat)),
+    laborStore: wholeOrUnknown(ResourceManager.castleStoreLimit(store, gameId, level, ResourcesIds.Labor)),
     maxArmySize: configManager.getMaxArmySize(level, TroopTier.T1),
   };
 };

@@ -1,6 +1,5 @@
 import { type ContractAddress, type Player, type PlayerInfo } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
-import { LeaderboardManager } from "../managers/leaderboard-manager";
 import { configManager } from "../managers/config-manager";
 import { displayPlayerName, type PlayerNameResolver } from "./entities";
 import { getGuild } from "./guild";
@@ -9,7 +8,6 @@ import { isViewerOwner } from "./viewer";
 export const getPlayerInfo = (
   players: Player[],
   playerAddress: ContractAddress,
-  playersByRank: [bigint, number][],
   playerStructureCounts: Map<
     ContractAddress,
     {
@@ -25,42 +23,22 @@ export const getPlayerInfo = (
 ): PlayerInfo[] => {
   const game_id = configManager.getActiveGameId();
 
-  const playerInfo = players
-    .map((player) => {
-      const isAlive = !store.structuresOwnedBy(game_id, player.address).next().done;
-
-      const guildMember = store.get("GuildMember", { game_id, actor: player.address });
-      const guild = getGuild(guildMember?.guild_id ?? 0n, player.address, store);
-
-      return {
-        entity: player.entity,
-        address: player.address,
-        name: displayPlayerName(player.address, playerName(player.address)),
-        isAlive,
-        guildName: guild?.name,
-      };
-    })
-    .filter((player) => player !== undefined);
-
-  const leaderboard = LeaderboardManager.instance(store);
-  const scoresKnown = playerInfo.every((player) => leaderboard.getPlayerRegisteredPoints(player.address) !== null);
-  return playerInfo.map((player) => {
-    const rankIndex = playersByRank.findIndex(([address]) => address === player.address);
-    const points = rankIndex === -1 ? leaderboard.getPlayerPoints(player.address) : playersByRank[rankIndex][1];
+  return players.map((player) => {
+    const guildMember = store.get("GuildMember", { game_id, actor: player.address });
+    const guild = getGuild(guildMember?.guild_id ?? 0n, player.address, store);
+    const counts = playerStructureCounts.get(player.address);
 
     return {
       entity: player.entity,
-      name: player.name,
+      name: displayPlayerName(player.address, playerName(player.address)),
       address: player.address,
-      points,
-      rank: !scoresKnown || rankIndex === -1 ? Number.MAX_SAFE_INTEGER : rankIndex + 1,
-      realms: playerStructureCounts.get(player.address)?.realms ?? 0,
-      mines: playerStructureCounts.get(player.address)?.mines ?? 0,
-      hyperstructures: playerStructureCounts.get(player.address)?.hyperstructures ?? 0,
-      villages: playerStructureCounts.get(player.address)?.villages ?? 0,
-      banks: playerStructureCounts.get(player.address)?.banks ?? 0,
-      isAlive: player.isAlive,
-      guildName: player.guildName || "",
+      realms: counts?.realms ?? 0,
+      mines: counts?.mines ?? 0,
+      hyperstructures: counts?.hyperstructures ?? 0,
+      villages: counts?.villages ?? 0,
+      banks: counts?.banks ?? 0,
+      isAlive: !store.structuresOwnedBy(game_id, player.address).next().done,
+      guildName: guild?.name || "",
       isUser: isViewerOwner(player.address, playerAddress),
     };
   });

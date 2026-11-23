@@ -52,15 +52,14 @@ export class ModelLabEnvironment {
     configureWorldSunShadows(this.sun, true, 2048);
     scene.add(this.terrain.object3d, this.sun, this.sun.target, this.ambient, this.hemisphere);
     this.atmosphere = new WorldAtmosphereController(scene, this.sun, this.hemisphere, this.ambient, new Fog(0x819997));
-    this.terrain.setQualityTier("detail");
-    this.terrain.setGroundTextureDetailEnabled(true);
+    this.terrain.setQuality("high");
   }
 
   async update(settings: ModelLabSettings): Promise<void> {
     const signature = `${settings.family === "ships"}:${settings.biome}`;
     const generation = ++this.generation;
     if (signature === this.signature) return;
-    this.assets ??= Promise.all([this.terrain.loadProps(), this.terrain.loadGroundTextures()]).then(() => undefined);
+    this.assets ??= this.terrain.loadProps();
     await this.assets;
     if (this.disposed || generation !== this.generation) return;
     const page = await this.terrain.preparePageAsync(createModelLabTerrainRequest(settings));

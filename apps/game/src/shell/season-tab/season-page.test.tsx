@@ -34,8 +34,6 @@ vi.hoisted(() =>
   }),
 );
 
-// Blitz's board has its own test; this page test reads Frontier's board and the switch.
-vi.mock("./blitz-board", () => ({ BlitzBoard: () => <p>Blitz board</p> }));
 // Each shard game's board is the test's; an archived season's is the real read, from its file and never a shard.
 vi.mock("../herald", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../herald")>();
@@ -90,23 +88,19 @@ const mount = async (width: number) => {
   return { container, unmount: () => act(async () => root.unmount()) };
 };
 
-it("says Season did not answer in the glossary's words, with Try again, and the switch still works", async () => {
+it("says Season did not answer in the glossary's words, with Try again", async () => {
   const { container, unmount } = await mount(390);
   try {
     const body = container.querySelector('[data-band="body"]')!;
     expect(body.textContent).toContain("Season did not answer.");
     expect(body.textContent).not.toContain("502");
-    const blitz = [...body.querySelectorAll('[role="tab"]')].find((tab) => tab.textContent === "Blitz")!;
-    await act(async () => (blitz as HTMLButtonElement).click());
-    expect(blitz.getAttribute("aria-selected")).toBe("true");
-    expect(body.textContent).toContain("Blitz board");
-    expect(body.textContent).not.toContain("Season did not answer.");
   } finally {
     await unmount();
   }
 });
 
 /** Frontier's live season 1, on its 4th day, with no realm on its board. */
+const FRONTIER_END = Math.floor(Date.now() / 1000) + 30 * 86_400;
 const FRONTIER = {
   chainId: "0x52",
   game_id: 1,
@@ -115,7 +109,7 @@ const FRONTIER = {
   season_number: 1,
   day_index: 3,
   day_ends_at: Math.floor(Date.now() / 1000) + 3600,
-  clock: { start_settling_at: 0, start_main_at: 1, end_at: Math.floor(Date.now() / 1000) + 30 * 86_400 },
+  clock: { start_settling_at: 0, start_main_at: 1, scheduled_end_at: FRONTIER_END, end_at: FRONTIER_END },
 };
 
 it("titles the page Season and names Frontier's own season on its board; an empty board says how to get on it", async () => {
@@ -140,7 +134,6 @@ const entry = (address: string, rank: number, sites: number) => ({
   rank,
   order: 1,
   structure_id: String(rank),
-  campaign: null,
   sites_cleared: { total: sites, camps: sites, rifts: 0, ruins: 0, beasts: 0 },
   chests_earned: 0,
   rewards: { lords: "0", essence: "0", labor: "0" },
@@ -243,7 +236,7 @@ const ended = (game_id: number, season_number: number, end_at: number, status = 
   status,
   day_index: null,
   day_ends_at: null,
-  clock: { start_settling_at: 0, start_main_at: end_at - 10 * 86_400, end_at },
+  clock: { start_settling_at: 0, start_main_at: end_at - 10 * 86_400, scheduled_end_at: end_at, end_at },
 });
 /** Season 2, ended on 20 November; its board ranks Volcanic, djizus and Canzi, with no prize pool. */
 const seasonTwo = (status = "Settled") => ended(2, 2, ENDED_AT + 20 * 86_400, status);
@@ -358,6 +351,7 @@ it.each([390, 1440])("keeps the last season's final board while the next is only
     clock: {
       start_settling_at: ENDED_AT + 7 * 86_400,
       start_main_at: ENDED_AT + 7 * 86_400,
+      scheduled_end_at: ENDED_AT + 37 * 86_400,
       end_at: ENDED_AT + 37 * 86_400,
     },
   };
@@ -391,10 +385,6 @@ it.each([390, 1440])(
     const pastRow = async (board: unknown) => {
       reads.boards = { 2: board };
       const { container, unmount } = await mount(width);
-      if (width === 390) {
-        const tab = [...container.querySelectorAll('[role="tab"]')].find((each) => each.textContent === "Frontier");
-        expect(tab?.getAttribute("aria-selected")).toBe("true");
-      }
       const row = pastRows(container)[0];
       await unmount();
       return row;

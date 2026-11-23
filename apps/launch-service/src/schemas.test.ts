@@ -9,29 +9,21 @@ const gameRequest = (devModeOn?: boolean): CreateGameRequest => ({
 
 describe("applyDurableLaunchDefaults", () => {
   it("keeps a real game's devModeOn:false instead of forcing dev mode on", () => {
-    expect(applyDurableLaunchDefaults("game", gameRequest(false)).devModeOn).toBe(false);
+    expect(applyDurableLaunchDefaults(gameRequest(false)).devModeOn).toBe(false);
   });
 
   it("keeps a Sandbox game's devModeOn:true", () => {
-    expect(applyDurableLaunchDefaults("game", gameRequest(true)).devModeOn).toBe(true);
+    expect(applyDurableLaunchDefaults(gameRequest(true)).devModeOn).toBe(true);
   });
 
-  it("defaults an absent version to 2 and stamps a default game start time", () => {
-    const result = applyDurableLaunchDefaults("game", gameRequest(false), 0);
-    expect(result.version).toBe("2");
-    expect("gameStartTime" in result && result.gameStartTime).toBeTruthy();
+  it("stamps a default game start time", () => {
+    const result = applyDurableLaunchDefaults(gameRequest(false), 0);
+    expect(result.gameStartTime).toBe(new Date(15 * 60_000).toISOString());
   });
-});
-
-it("selects the Eternum preset and rejects cross-mode presets", () => {
-  const request: CreateGameRequest = { environment: "madara.eternum", gameName: "eternum-test", devModeOn: false };
-  expect(applyDurableLaunchDefaults("game", request).version).toBe("3");
-  expect(() => applyDurableLaunchDefaults("game", { ...request, version: "2" })).toThrow();
-  expect(() => applyDurableLaunchDefaults("game", { ...gameRequest(), version: "5" })).toThrow();
 });
 
 it("rejects reserved names at the durable queue boundary, including slot-derived games", () => {
-  expect(() => applyDurableLaunchDefaults("game", { environment: "madara.blitz", gameName: "check-hidden-1" })).toThrow(
+  expect(() => applyDurableLaunchDefaults({ environment: "madara.blitz", gameName: "check-hidden-1" })).toThrow(
     "reserved",
   );
 });

@@ -93,7 +93,7 @@ export const TransferSlotSelection = ({
         </div>
         <div className="text-hud-label uppercase tracking-wide text-hud-muted">{String(troop.category)}</div>
         <span className="mt-1 block">
-          <GuardStaminaBar current={troop.staminaCurrent} max={troop.staminaMax} />
+          <GuardStaminaBar category={troop.category} current={troop.staminaCurrent} max={troop.staminaMax} />
         </span>
       </div>
     );

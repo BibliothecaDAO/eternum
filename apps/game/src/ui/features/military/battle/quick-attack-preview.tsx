@@ -1,39 +1,39 @@
-import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
-import { useStoredBiome } from "@/hooks/helpers/use-tile-at";
 import { type MouseEvent, useEffect, useMemo, useState } from "react";
 
 import { playUnitCommandSound } from "@/audio/unit-command-audio";
-import { useNowSeconds, useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
+import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { HudActions, HudButton, HudCheck, HudIconButton, HudNotice } from "@/ui/design-system/kit/hud-elements";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { usePlayerDisplayName } from "@/hooks/use-player-profile";
 import { surfaceAnchorFrom } from "@/ui/design-system/molecules/popover";
-import { configManager, getGuardsByStructure, getTroopResourceId, StaminaManager } from "@bibliothecadao/eternum";
+import {
+  ATTACK_FORECAST_MODELS,
+  configManager,
+  forecastAttack,
+  getTroopResourceId,
+  oathAttackStamina,
+  StaminaManager,
+} from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 
 import { staminaShortfall } from "@/ui/design-system/kit/reasons";
-import { resolveAttackStaminaState } from "./attack-stamina-state";
-import { keptAcross } from "./battle-range";
+import { ATTACK_REFUSAL_WORDS } from "@/ui/design-system/kit/words";
 import { CombatModal } from "./combat-modal";
 import { troopMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { Icon } from "@/ui/design-system/icon";
 import { FightSide } from "@/ui/features/frontier/sites/fight-side";
-import { combatTitle, describeFightCost, forecastAttack } from "./fight-forecast";
+import { combatTitle, describeFightCost, wholeTroops } from "./fight-forecast";
 import { useAttackTargetData } from "./hooks/use-attack-target";
 import { AttackTarget, TargetType } from "./types";
 
 import {
-  BiomeType,
   getDirectionBetweenAdjacentHexes,
-  getLayeredAttackDistance,
-  getTroopAttackRange,
   RESOURCE_PRECISION,
   type ActorType,
   type ID,
-  type Troops,
   formatWait,
   formatExact,
 } from "@bibliothecadao/types";
@@ -70,16 +70,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
       },
     },
   } = useGame();
-  const facts = useNativeFacts([
-    "ArmySlot",
-    "Structure",
-    "Guard",
-    "ExplorerTroops",
-    "TileOccupancy",
-    "ResourceBalance",
-    "ResourceProduction",
-    "ResourceWeight",
-  ]);
+  const facts = useNativeFacts([...ATTACK_FORECAST_MODELS, "ResourceBalance", "ResourceProduction", "ResourceWeight"]);
 
   const accountName = usePlayerDisplayName(account?.address);
   // The attacker's own tile, never the map's selected one: a selected army can show another tile's card.
@@ -91,17 +82,12 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   // Opt-in toggle: when on, the Claim action also garrisons the surviving troops. Off by default.
   const [garrisonEnabled, setGarrisonEnabled] = useState(false);
 
-  const currentTime = useNowSeconds();
   const executionSecond = useCurrentDefaultTick();
 
   const { target: targetData, targetResources, isLoading } = useAttackTargetData(attacker.id, target.hex, target.alt);
   const targetOwnerName = usePlayerDisplayName(targetData ? (targetData.addressOwner ?? 0n) : null);
 
-  const combatConfig = useMemo(() => configManager.getCombatConfig(), []);
   const ethereal = target.alt;
-  const surfaceBiome = useStoredBiome(target.hex.x, target.hex.y) ?? BiomeType.None;
-  const biome = ethereal ? BiomeType.Underground : surfaceBiome;
-  const rollsDice = useMemo(() => configManager.rollsCombatDice(ethereal), [ethereal]);
 
   const attackerType = useMemo(() => {
     const structure = facts.store.get("Structure", {
@@ -111,213 +97,89 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
     return structure ? AttackerType.Structure : AttackerType.Army;
   }, [attacker.id, facts]);
 
-  const structureGuards = useMemo(() => {
-    if (attackerType !== AttackerType.Structure) return [];
-    const structure = facts.store.get("Structure", {
-      game_id: configManager.getActiveGameId(),
-      entity_id: attacker.id,
-    });
-    return structure
-      ? getGuardsByStructure(structure, facts.store)
-          ?.filter((guard) => guard.troops.count > 0n)
-          .toSorted((a, b) => a.slot - b.slot)
-      : [];
-  }, [attackerType, attacker.id, facts]);
-
-  // Hex distance from the attacker to the target. Crossbowmen can poke at range 2; everything else
-  // is adjacency-only, so this drives which guards may fire and whether a structure can be claimed.
-  const targetDistance = useMemo(() => {
-    return getLayeredAttackDistance(
-      { ...attackerHex, alt: attacker.alt },
-      { col: target.hex.x, row: target.hex.y, alt: target.alt },
-    );
-  }, [attackerHex, attacker.alt, target.alt, target.hex.x, target.hex.y]);
-
-  // When a structure is the aggressor, only guards whose attack range reaches the target can fire.
-  const eligibleStructureGuards = useMemo(
-    () => structureGuards?.filter((guard) => getTroopAttackRange(guard.troops.category) >= targetDistance) ?? [],
-    [structureGuards, targetDistance],
-  );
-
-  const activeGuard = attackerType === AttackerType.Structure ? eligibleStructureGuards[0] : undefined;
-
-  const attackerArmyData: { troops: Troops } | null = useMemo(() => {
-    if (attackerType === AttackerType.Structure) return activeGuard ? { troops: activeGuard.troops } : null;
-    const army = facts.store.get("ExplorerTroops", {
-      game_id: configManager.getActiveGameId(),
-      explorer_id: attacker.id,
-    });
-    const troops = army ? resolveExplorerTroops(facts.store, army) : undefined;
-    return troops ? { troops } : null;
-  }, [facts, attacker.id, attackerType, activeGuard]);
-  const attackerStamina = attackerArmyData
-    ? StaminaManager.getStamina(attackerArmyData.troops, executionSecond).amount
-    : undefined;
-  const requiredAttackStamina = Number(combatConfig.stamina_attack_req);
-  const readyAt = attackerArmyData
-    ? StaminaManager.getAffordableAt(attackerArmyData.troops, requiredAttackStamina, executionSecond)
-    : null;
-  const staminaWaitSeconds = readyAt === null ? null : Math.max(0, readyAt - executionSecond);
-
-  const targetTroopSnapshots = useMemo(() => targetData?.info ?? [], [targetData]);
-
-  const isStructureTarget = targetData?.targetType === TargetType.Structure;
-
-  const targetArmyData: { troops: Troops } | null = useMemo(() => {
-    if (!targetTroopSnapshots[0]) return null;
-    return { troops: targetTroopSnapshots[0] };
-  }, [targetTroopSnapshots]);
-
-  const queuedTargetGuards = useMemo(
-    () => (isStructureTarget ? targetTroopSnapshots.slice(1) : []),
-    [isStructureTarget, targetTroopSnapshots],
-  );
-
-  const totalGuardCount = isStructureTarget ? targetTroopSnapshots.length : 0;
-
-  // Every exchange is the contract's own arithmetic on both sides' troops, stamina and boosts at chain time: this
-  // attack and the whole fight as successive attacks now, at both ends of the dice.
-  const fight = useMemo(() => {
-    if (!attackerArmyData || !targetArmyData) return null;
+  const forecast = useMemo(() => {
+    if (!targetData) return undefined;
+    const game_id = configManager.getActiveGameId();
     return forecastAttack(
-      attackerArmyData.troops,
-      targetArmyData.troops,
-      {
-        timestamp: executionSecond,
-        attackDistance: targetDistance,
-        attackerBiome: biome,
-        defenderBiome: biome,
-        attackerIsStructureGuard: attackerType === AttackerType.Structure,
-        defenderIsStructureGuard: isStructureTarget,
-      },
-      { rules: configManager.getCombatRules(), rollsDice },
+      facts.store,
+      { game_id, entity_id: attacker.id },
+      { game_id, entity_id: targetData.id },
+      executionSecond,
     );
-  }, [
-    attackerArmyData,
-    targetArmyData,
-    executionSecond,
-    targetDistance,
-    biome,
-    attackerType,
-    isStructureTarget,
-    rollsDice,
-  ]);
+  }, [facts, attacker.id, targetData, executionSecond]);
 
-  const attackerTroopsTotal = useMemo(() => {
-    if (!attackerArmyData) return 0;
-    return Number(attackerArmyData.troops.count) / RESOURCE_PRECISION;
-  }, [attackerArmyData]);
+  const sides = forecast?.sides;
+  const fought = forecast?.outcome === "fights" ? forecast : undefined;
+  const refusal = forecast?.outcome === "refused" ? forecast.refusal : undefined;
+  const attackerTroops = sides?.attacker.troops;
+  const defenderTroops = sides?.defender?.troops;
+  const queuedTargetGuards = useMemo(() => sides?.queued ?? [], [sides]);
+  const isStructureTarget = targetData?.targetType === TargetType.Structure;
+  const attackerIsArmy = attackerType === AttackerType.Army;
+  const certainLoss = fought?.certainLoss ?? false;
 
-  const defenderTroopsTotal = useMemo(() => {
-    if (!targetArmyData) return 0;
-    return Number(targetArmyData.troops.count) / RESOURCE_PRECISION;
-  }, [targetArmyData]);
+  const attackerTroopsTotal = attackerTroops ? wholeTroops(attackerTroops.count) : 0;
+  const defenderTroopsTotal = defenderTroops ? wholeTroops(defenderTroops.count) : 0;
+  const attackerKept = fought ? wholeTroops(fought.exchange.attacker.count) : undefined;
+  const defenderKept = fought ? wholeTroops(fought.exchange.defender.count) : undefined;
 
-  const attackerSide = fight?.sides?.attacker ?? null;
-  const defenderSide = fight?.sides?.defender ?? null;
-  // The army falls at every roll: Attack steps back.
-  const certainLoss = fight?.certainLoss ?? false;
-
-  // Capture and garrison are judged on the attacker's worst roll, so the atomic claim never counts on luck.
-  const attackerRemaining = attackerSide ? attackerSide.worst.remaining : attackerTroopsTotal;
-  const defenderRemaining = defenderSide ? defenderSide.worst.remaining : defenderTroopsTotal;
-
-  // Per-slot defender view: the active guard (slot 0) shows its projected
-  // post-fight remainder, queued guards show their untouched troop counts.
   const defenderSlots = useMemo(() => {
-    if (!isStructureTarget) return [];
-    return targetTroopSnapshots.map((snapshot, index) => {
+    if (!isStructureTarget || !defenderTroops) return [];
+    return [defenderTroops, ...queuedTargetGuards.map((guard) => guard.troops)].map((snapshot, index) => {
       const isActive = index === 0;
-      const remaining = isActive ? defenderRemaining : Number(snapshot.count) / RESOURCE_PRECISION;
+      const remaining = isActive && defenderKept !== undefined ? defenderKept : wholeTroops(snapshot.count);
       const resourceId = getTroopResourceId(snapshot.category, snapshot.tier);
       return { tier: snapshot.tier, resourceId, remaining, isActive, eliminated: remaining <= 0 };
     });
-  }, [isStructureTarget, targetTroopSnapshots, defenderRemaining]);
+  }, [isStructureTarget, defenderTroops, queuedTargetGuards, defenderKept]);
 
-  const attackerIsArmy = attackerType === AttackerType.Army;
+  const clearsAllDefenders = forecast?.outcome === "claims" || (defenderKept === 0 && queuedTargetGuards.length === 0);
+  const willCaptureStructure =
+    attackerIsArmy &&
+    isStructureTarget &&
+    clearsAllDefenders &&
+    (forecast?.outcome === "claims" || (attackerKept ?? 0) > 0);
 
-  // The attack captures the structure when it clears every remaining defender and the attacker
-  // survives — and only from an adjacent hex, since ranged pokes cannot claim.
-  const clearsAllDefenders =
-    isStructureTarget && (!targetArmyData || (defenderRemaining <= 0 && queuedTargetGuards.length === 0));
-  const attackerSurvivesCapture = !targetArmyData || attackerRemaining > 0;
-  const willCaptureStructure = attackerIsArmy && clearsAllDefenders && attackerSurvivesCapture && targetDistance <= 1;
-
-  // First open guard slot the captured structure exposes (defeated guards leave their slot empty,
-  // so a swap into it inherits the explorer's category/tier).
   const garrisonGuardSlot = useMemo(() => {
     if (!willCaptureStructure || !targetData) return null;
     const [firstSlot] = targetData.guardSlots ?? [];
     return firstSlot ?? null;
   }, [willCaptureStructure, targetData]);
 
-  // Troops to garrison: a 1% buffer below the simulated survivor count so a tick-boundary divergence
-  // between this preview and the on-chain combat result can't revert the atomic attack+swap multicall
-  // (the guard swap asserts count <= live troops; the buffer also leaves >=1 troop on the explorer),
-  // then capped to the structure's max guard army size so the swap never overfills the slot.
   const garrisonTroopCount = useMemo(() => {
-    // A structure whose level this client does not know takes no garrison: its cap is unknown.
     const structureLevel = targetData?.structureLevel;
-    if (!willCaptureStructure || !attackerArmyData || structureLevel == null) return 0;
-    const survivors = targetArmyData ? attackerRemaining : attackerTroopsTotal;
+    if (!willCaptureStructure || !attackerTroops || structureLevel == null) return 0;
+    const survivors = attackerKept ?? attackerTroopsTotal;
     const buffered = Math.floor(survivors * 0.99);
-    const maxArmySize = configManager.getMaxArmySize(structureLevel, attackerArmyData.troops.tier);
+    const maxArmySize = configManager.getMaxArmySize(structureLevel, attackerTroops.tier);
     return Math.max(0, Math.min(buffered, maxArmySize));
-  }, [willCaptureStructure, attackerArmyData, targetArmyData, attackerRemaining, attackerTroopsTotal, targetData]);
+  }, [willCaptureStructure, attackerTroops, attackerKept, attackerTroopsTotal, targetData]);
 
   const canGarrison = !ethereal && willCaptureStructure && garrisonGuardSlot !== null && garrisonTroopCount >= 1;
 
-  // Reset the opt-in toggle when the target stops being garrison-able so a stale "on" state can't
-  // carry over to a different target.
   useEffect(() => {
     if (!canGarrison) {
       setGarrisonEnabled(false);
     }
   }, [canGarrison]);
 
-  const attackerCooldownEnd = Number(attackerArmyData?.troops.battle_cooldown_end ?? 0);
-  const attackerCooldownRemaining = Math.max(0, attackerCooldownEnd - currentTime);
-  const attackerOnCooldown = attackerCooldownRemaining > 0;
-
-  const hasDefenders = !!targetArmyData;
-  const attackStaminaState = useMemo(
-    () =>
-      resolveAttackStaminaState({
-        attackerStamina,
-        hasAttackerTroops: Boolean(attackerArmyData),
-        hasDefenders,
-        requiredStamina: requiredAttackStamina,
-      }),
-    [attackerArmyData, attackerStamina, hasDefenders, requiredAttackStamina],
-  );
-  const cooldownBlocksAttack = hasDefenders && attackerOnCooldown;
-  // A ranged poke can clear guards but never claims — the structure must be taken from an adjacent hex.
-  const rangedClaimBlocked = !hasDefenders && isStructureTarget && targetDistance > 1;
-  const attackDisabled =
-    rangedClaimBlocked || cooldownBlocksAttack || attackStaminaState.isBlocked || !attackerArmyData;
-
-  const attackButtonLabel = (() => {
-    if (rangedClaimBlocked) return "Move adjacent to claim";
-    if (attackerType === AttackerType.Structure && !activeGuard) return "No guard in range";
-    if (!attackerArmyData) return "No troops selected";
-    if (cooldownBlocksAttack) return "On cooldown";
-    if (attackStaminaState.isBlocked)
-      return staminaShortfall(
-        attackStaminaState.currentStamina,
-        attackStaminaState.requiredStamina,
-        staminaWaitSeconds ?? undefined,
-      );
-    if (!hasDefenders) return "Claim";
-    return attackStaminaState.actionLabel;
+  const attackDisabled = forecast === undefined || refusal !== undefined;
+  const refusalLine = (() => {
+    if (refusal === undefined) return null;
+    if (refusal === "insufficient-stamina" && sides) {
+      const need = oathAttackStamina(sides.attacker.oaths, configManager.getCombatRules().stamina.stamina_attack_req);
+      const held = Number(StaminaManager.getStamina(sides.attacker.troops, executionSecond).amount);
+      const readyAt = StaminaManager.getAffordableAt(sides.attacker.troops, need, executionSecond);
+      return staminaShortfall(held, need, readyAt == null ? undefined : Math.max(0, readyAt - executionSecond));
+    }
+    if (refusal === "cooldown" && attackerTroops)
+      return `${ATTACK_REFUSAL_WORDS.cooldown} · ${formatWait(Math.max(0, attackerTroops.battle_cooldown_end - executionSecond))}`;
+    return ATTACK_REFUSAL_WORDS[refusal];
   })();
 
   // Who survives and what each side loses are the casualty lines below; the title only names the sides.
   const title = combatTitle(accountName, targetOwnerName);
-  const fightCost = (() => {
-    if (!fight) return null;
-    const [worst, best] = [describeFightCost(fight.worst.forecast), describeFightCost(fight.best.forecast)];
-    return worst === best ? worst : `Worst roll: ${worst ?? "—"} · best: ${best ?? "—"}`;
-  })();
+  const fightCost = fought ? describeFightCost(fought.fight) : null;
 
   // Shared submit pipeline: guards, pending worldmap FX, sound, and teardown are identical across
   // every attack variant — only the system call differs, so callers just provide that call.
@@ -348,7 +210,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
     runWorldmapAttack(async ({ resolvedTarget }) => {
       // Combat v3 derives battle range from coordinates onchain, so no direction is passed.
       if (attackerType === AttackerType.Structure) {
-        const guardSlot = activeGuard?.slot;
+        const guardSlot = sides?.attacker.guardSlot;
         if (guardSlot === undefined) throw new Error("No structure guard is selected");
 
         return attack_guard_vs_explorer({
@@ -412,8 +274,6 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
     return formatExact(Math.round(value));
   };
 
-  if (structureGuards === undefined) return <div>Loading guards…</div>;
-
   return (
     <div className="w-72 max-w-full px-3 py-2.5">
       <div className="mb-1.5 flex items-start justify-between gap-2">
@@ -427,36 +287,33 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
         <div className="py-6 text-center text-hud-body text-hud-muted">No target detected.</div>
       ) : (
         <div className="space-y-1.5">
-          {targetArmyData ? (
+          {defenderTroops ? (
             <>
               {/* Both sides in every state: without a forecast (short of stamina, on cooldown, out of range) each keeps
                   a dash, and the state is the line under them with Attack held. */}
               <div className="flex gap-2">
                 <FightSide
                   label="Your forces"
-                  mark={attackerArmyData && <Icon name={troopMeaning(attackerArmyData.troops)} size={24} />}
-                  before={attackerArmyData ? Math.round(attackerTroopsTotal) : undefined}
-                  kept={attackerSide ? keptAcross(attackerSide) : undefined}
+                  mark={attackerTroops && <Icon name={troopMeaning(attackerTroops)} size={64} className="size-full" />}
+                  before={attackerTroops ? attackerTroopsTotal : undefined}
+                  kept={attackerKept}
                   side="ours"
                 />
                 <FightSide
                   label={isStructureTarget ? "Active guard" : "Enemy army"}
-                  mark={<Icon name={troopMeaning(targetArmyData.troops)} size={24} />}
-                  before={Math.round(defenderTroopsTotal)}
-                  kept={defenderSide ? keptAcross(defenderSide) : undefined}
+                  mark={<Icon name={troopMeaning(defenderTroops)} size={64} className="size-full" />}
+                  before={defenderTroopsTotal}
+                  kept={defenderKept}
                   side="theirs"
                 />
               </div>
               {fightCost && <p className="text-hud-label text-hud-cue">{fightCost}</p>}
             </>
           ) : (
-            <HudNotice
-              tone="good"
-              line={rangedClaimBlocked ? "No defenders: move adjacent to claim" : "No defenders: claim it"}
-            />
+            forecast?.outcome === "claims" && <HudNotice tone="good" line="No defenders: claim it" />
           )}
 
-          {isStructureTarget && totalGuardCount >= 1 && (
+          {defenderSlots.length >= 1 && (
             <div className="rounded-md border border-hud-line bg-hud-well px-3 py-2">
               <div className="flex items-center justify-between">
                 <span className="text-hud-label text-hud-muted">Defenders</span>
@@ -479,17 +336,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
             </div>
           )}
 
-          {attackDisabled && (
-            <HudNotice
-              tone="bad"
-              line={[
-                attackButtonLabel,
-                cooldownBlocksAttack && attackerCooldownRemaining > 0 ? formatWait(attackerCooldownRemaining) : null,
-              ]
-                .filter(Boolean)
-                .join(" · ")}
-            />
-          )}
+          {refusalLine && <HudNotice tone="bad" line={refusalLine} />}
         </div>
       )}
 
@@ -520,7 +367,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
           aria-busy={isSubmitting}
           onClick={handlePrimaryAction}
         >
-          {rangedClaimBlocked ? "Move adjacent to claim" : willCaptureStructure ? "Claim" : "Attack"}
+          {willCaptureStructure ? "Claim" : "Attack"}
         </HudButton>
       </HudActions>
     </div>

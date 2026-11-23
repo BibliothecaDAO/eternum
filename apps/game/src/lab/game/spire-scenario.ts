@@ -1,6 +1,5 @@
-import { frontierArmyRules } from "../../ui/features/frontier/army/progression-rules-fixture";
 import { installLabGame } from "@/ui/features/debug/kit-lab/fixture-game";
-import { SPIRE_ARMY, SPIRE_DAY_NOW, spireDay } from "@/ui/features/frontier/spire-fixture";
+import { SPIRE_ARMY, SPIRE_DAY_NOW, applySpireDiscovery, spireDay } from "@/ui/features/frontier/spire-fixture";
 import { entityHomeNamespace, expeditionRealmSite, readExpeditionRules } from "@bibliothecadao/eternum";
 import {
   BiomeType,
@@ -10,11 +9,11 @@ import {
   type ResourcesIds,
 } from "@bibliothecadao/types";
 
-import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
+import { nativeResearchConstants, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
 
 import { nativeTilePackingConstants } from "../../../../../contracts/l3/world-native/schema/client.gen";
-import { frontierPreset } from "../../../../../config/source/frontier/native";
-import { LAB_GAME, LAB_GAME_ENDS_AT, type LabFact, type LabScenario, wire } from "./lab-chain";
+import { frontierSeasonOnePreset as frontierPreset } from "../../../../../config/source/frontier/season-one";
+import { LAB_GAME_ENDS_AT, type LabFact, type LabScenario, wire } from "./lab-chain";
 
 /** A revealed tile's packed data: its biome alone. */
 const tileData = (biome: BiomeType) => BigInt(BiomeTypeToId[biome]) * BigInt(nativeTilePackingConstants.BIOME_SCALE);
@@ -54,7 +53,7 @@ const frontierRules = (rules: NativeRows["SliceRules"]) => {
 export const spireScenario = (ground: LabGround = GRASSLAND): LabScenario => {
   // The HUD's whole game (its buildings, rules and recipes) on the spire's day.
   // Frontier's own regions, a hundred tiles wide (config/source/frontier/native.ts).
-  const store = installLabGame(LAB_GAME.presetId, false, () => spireDay({ spacing: 100 }));
+  const store = installLabGame("frontier", false, () => spireDay({ spacing: 100 }));
   const rules = readExpeditionRules(store, 1)!;
   const realm = store.require("Structure", { game_id: 1, entity_id: 7 });
   const site = expeditionRealmSite(rules, entityHomeNamespace(realm.entity_id), SPIRE_DAY_NOW)!;
@@ -68,14 +67,14 @@ export const spireScenario = (ground: LabGround = GRASSLAND): LabScenario => {
       value: {
         ...(wire(store.require("GameRegistry", { game_id: 1 })) as object),
         end_at: String(LAB_GAME_ENDS_AT),
+        scheduled_end_at: String(LAB_GAME_ENDS_AT),
       },
     },
     // The camp the card fixture keeps on another region is no part of this game.
     { model: "Structure", key: "0x71", value: null },
     { model: "ExpeditionSite", key: "0x72", value: null },
     { model: "Guard", key: "0x73", value: null },
-    progressionRules(),
-    armyProgress(PROGRESS_KEYS.spireArmy, SPIRE_ARMY, 0),
+    armyProgress(store, SPIRE_ARMY),
     ...[site, ...getHexesWithinRadius(site.col, site.row, 4)]
       .filter((hex) => !store.get("TileOpt", { game_id: 1, alt: false, col: hex.col, row: hex.row }))
       .map((hex, index) => tile(`0x1ab7${index.toString(16)}`, hex.col, hex.row)),
@@ -107,7 +106,7 @@ export const spireScenario = (ground: LabGround = GRASSLAND): LabScenario => {
 };
 
 /** A tile revealed in `biome`, as the chain holds it. */
-export const revealedTile = (key: string, hex: { col: number; row: number }, biome: BiomeType): LabFact => ({
+export const revealedTile = (key: string, hex: { col: number; row: number }, biome: BiomeType) => ({
   model: "TileOpt",
   key,
   value: { game_id: 1, alt: false, col: hex.col, row: hex.row, data: tileData(biome).toString() },
@@ -116,7 +115,20 @@ export const revealedTile = (key: string, hex: { col: number; row: number }, bio
 /** An army's troops row once it has paid `cost` stamina at `now`, as the chain writes it. */
 export const armySpent = (chain: NativeFactStore, explorerId: bigint, cost: number | bigint, now: number): LabFact => {
   const [key, army] = [...chain.entries("ExplorerTroops")].find(([, row]) => row.explorer_id === explorerId)!;
-  const stamina = army.troops.stamina as { Inline: { amount: bigint } };
+  if ("Slot" in army.troops.stamina) {
+    const { day } = chain.require("ArmyDay", { game_id: 1, explorer_id: explorerId });
+    const slotKey = { game_id: 1, structure_id: army.owner, epoch: day, slot: army.troops.stamina.Slot };
+    const slot = chain.require("ArmySlot", slotKey);
+    return {
+      model: "ArmySlot",
+      key: chain.wireKeyOf("ArmySlot", slotKey)!,
+      value: wire({
+        ...slot,
+        stamina: { amount: slot.stamina.amount - BigInt(cost), settled_at: now, remainder: 0 },
+      }),
+    };
+  }
+  const stamina = army.troops.stamina;
   return {
     model: "ExplorerTroops",
     key,
@@ -163,33 +175,43 @@ export const besideOnOpenLand = (store: NativeFactStore, beside: { col: number; 
   return { col: open.col, row: open.row };
 };
 
-/** Where the spire's game keeps its progression rows: a lab game that writes its own replaces them in place. */
-export const PROGRESS_KEYS = { rules: "0x1ab94", spireArmy: "0x1ab92" } as const;
-
-/** The game's progression rules, from the Frontier preset. */
-export const progressionRules = (): LabFact => ({
-  model: "ArmyProgressionRules",
-  key: PROGRESS_KEYS.rules,
-  value: frontierArmyRules(),
-});
-
-/** The lab army's XP and trained sides, with no unspent skill points. */
-export const armyProgress = (key: string, explorerId: number, xp: number): LabFact => ({
+export const armyProgress = (store: NativeFactStore, explorerId: number, logistics = 1): LabFact => ({
   model: "ArmyProgress",
-  key,
+  key: store.wireKeyOf("ArmyProgress", { game_id: 1, explorer_id: explorerId }) ?? `0xaf${explorerId}`,
   value: {
     game_id: 1,
     explorer_id: String(explorerId),
-    xp,
-    common_points: 0,
-    uncommon_points: 0,
-    rare_points: 0,
-    epic_points: 0,
-    legendary_points: 0,
-    battle: 1,
-    logistics: 1,
-    scouting: 0,
-    scouting_kinds: 0,
-    homecoming: 1,
+    logistics,
+    oath_slots: nativeResearchConstants.OATH_SLOTS_BASE,
+    oaths: 0,
+    oath_pick: 0,
   },
 });
+
+/** A discovered Ethereal I portal opens only Ethereal II, using the same card and movement answer. */
+export const discoveredSpireScenario = (): LabScenario => {
+  const scenario = spireScenario();
+  const { spire, rules } = applySpireDiscovery(scenario.store, 1);
+  scenario.store.applyFacts(
+    [spire, ...getHexesWithinRadius(spire.col, spire.row, 4)].map((hex, index) =>
+      revealedTile(`0x5ff${index.toString(16)}`, hex, BiomeType.Underground),
+    ) as never,
+  );
+  return {
+    ...scenario,
+    opensOn: spire,
+    answer: (command, chain) => {
+      if (command.kind !== "EnterDepth") return [];
+      const explorerId = BigInt(command.fields.explorer_id);
+      if (Number(command.fields.depth) !== 2 || explorerId !== BigInt(SPIRE_ARMY))
+        throw new Error("Discovered Spire only opens the next layer");
+      const [key, army] = [...chain.entries("TileOccupancy")].find(([, row]) => row.entity_id === explorerId)!;
+      const landing = { col: spire.col, row: spire.row + rules.spacing };
+      return [
+        { model: "TileOccupancy", key, value: null },
+        { model: "TileOccupancy", key: "0x5fe1", value: wire({ ...army, ...landing }) },
+        revealedTile("0x5fe2", landing, BiomeType.Underground),
+      ];
+    },
+  };
+};

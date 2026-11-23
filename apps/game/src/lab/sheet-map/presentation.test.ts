@@ -57,7 +57,7 @@ describe("map sheet comparison", () => {
     expect(strip(0).some(({ explored }) => explored)).toBe(true);
     expect([mapAgeAccent("blitz"), mapAgeAccent("frontier"), mapAgeAccent("eternum")]).toEqual([
       "#ffe45e",
-      "#be96fb",
+      "#dfaa54",
       "#e6c27a",
     ]);
   });

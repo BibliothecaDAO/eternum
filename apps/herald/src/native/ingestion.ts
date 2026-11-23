@@ -1,16 +1,13 @@
-import {
-  NativePresetRegistrationInvalid,
-  decodePresetPreimage,
-  verifyPresetRegistrations,
-  type VerifiedPreset,
-} from "./preset-preimages";
-import { derivePresetFacts } from "./preset-facts";
+import { deriveReleaseFacts, type ReleaseRulesGame } from "./release-facts";
+import { scaleGameClocks } from "../../../../config/source/common/season-clock";
+import { RELEASE_DEFINITIONS, releaseDefinition, type ReleaseDefinitions } from "./release-definition";
 import { nativeRowKey } from "./row-key";
 import { gameplayRejection } from "@bibliothecadao/provider";
 import { transactionScopes } from "./transactions";
 import type { MadaraRpc, ReadBlockOptions } from "../madara-rpc";
 import { normalizeFelt } from "../model-registry";
 import type {
+  DecodedRecord,
   DecodedWorldEvent,
   FoldChange,
   RpcBlockTransaction,
@@ -53,11 +50,26 @@ const sameEvents = (left: readonly RpcEvent[], right: readonly RpcEvent[]) =>
 
 const REPLAY_EVENT_BUDGET = 16_384;
 
+function releaseRuleChanges(decoded: DecodedWorldEvent[]): ReleaseRulesGame[] {
+  const games = new Map<string, ReleaseRulesGame>();
+  for (const event of decoded) {
+    if (event.model.name === "GameOverrides" && event.kind !== "set")
+      throw new Error("GameOverrides must be an immutable launch fact");
+    const changesRules =
+      event.kind === "set" && (event.model.name === "GameOverrides" || event.model.name === "GameRelease");
+    if (changesRules) games.set(String(event.key.game_id), { gameId: event.key.game_id, position: event.position });
+  }
+  return [...games.values()];
+}
+
 export class NativeIngestion {
   receiptFailures = 0;
   routingFailures = 0;
   halted?: NativeReceiptRejected;
-  constructor(readonly decoder: NativeDecoder) {}
+  constructor(
+    readonly decoder: NativeDecoder,
+    private readonly definitions: ReleaseDefinitions = RELEASE_DEFINITIONS,
+  ) {}
 
   rejectReceipt(receipt: RpcReceipt, block: number | null, cause: unknown, confirmed: boolean) {
     const rejection = new NativeReceiptRejected(block, normalizeFelt(receipt.transaction_hash), cause);
@@ -96,19 +108,10 @@ export class NativeIngestion {
     receipt: RpcReceipt,
     blockNumber: number | null,
     transactionIndex: number,
-    calldata?: string[],
     earlier?: PreconfirmedDecode,
   ) {
     const preview = fold.overlay();
-    const { events, decoded, presets } = this.validateReceipt(
-      preview,
-      receipt,
-      blockNumber,
-      transactionIndex,
-      calldata,
-      earlier,
-    );
-    presets.forEach((preset) => fold.rememberPreset(preset));
+    const { events, decoded } = this.validateReceipt(preview, receipt, blockNumber, transactionIndex, earlier);
     return { events, decoded, changes: this.commit(fold, events) };
   }
 
@@ -142,7 +145,6 @@ export class NativeIngestion {
     if (this.halted) throw this.halted;
     const preview = input.fold.overlay();
     const events: DecodedWorldEvent[] = [];
-    const presets: VerifiedPreset[] = [];
     const transactions: RpcBlockTransaction[] = [];
     let pages = 0;
     let throughBlock = input.toBlock;
@@ -155,23 +157,14 @@ export class NativeIngestion {
       const block = await input.rpc.readBlock(number, this.decoder.manifest.world.address, {
         ...input.readOptions,
         retainTransactions: input.retainTransactions,
-        needsCalldata: (events) => this.decoder.needsPresetCalldata(events),
       });
       if (block.block_number !== number) throw new Error("Native replay block number mismatch");
       pages++;
       await input.beforeBlock?.(preview, block, events);
       block.transactions.forEach(({ receipt, transaction }, index) => {
         try {
-          const validated = this.validateReceipt(
-            preview,
-            receipt,
-            number,
-            index,
-            transaction.calldata,
-            input.preconfirmed?.(receipt),
-          );
+          const validated = this.validateReceipt(preview, receipt, number, index, input.preconfirmed?.(receipt));
           events.push(...validated.events);
-          presets.push(...validated.presets);
           if (input.retainTransactions !== false)
             transactions.push({
               transaction,
@@ -186,7 +179,6 @@ export class NativeIngestion {
       if (events.length >= REPLAY_EVENT_BUDGET) break;
     }
     await input.beforeCommit?.(events, throughBlock);
-    presets.forEach((preset) => input.fold.rememberPreset(preset));
     const changes = this.commit(input.fold, events);
     const byBlock = new Map<number, FoldChange[]>();
     changes.forEach(({ event, change }) => {
@@ -222,40 +214,52 @@ export class NativeIngestion {
     receipt: RpcReceipt,
     blockNumber: number | null,
     transactionIndex: number,
-    calldata?: string[],
     earlier?: PreconfirmedDecode,
-  ): { events: DecodedWorldEvent[]; decoded: DecodedWorldEvent[]; presets: VerifiedPreset[] } {
-    if (receipt.execution_status === "REVERTED") return { events: [], decoded: [], presets: [] };
+  ): { events: DecodedWorldEvent[]; decoded: DecodedWorldEvent[] } {
+    if (receipt.execution_status === "REVERTED") return { events: [], decoded: [] };
     const decoded = this.decodeReceipt(receipt, blockNumber, transactionIndex, earlier);
-    if (receipt.execution_status !== "SUCCEEDED" && decoded.some((event) => event.model.name === "Preset"))
-      throw new NativePresetRegistrationInvalid("Preset preimages require a successful execution");
-    const presets = verifyPresetRegistrations(this.decoder.manifest, decoded, calldata);
-    presets.forEach((preset) => fold.rememberPreset(preset));
     decoded.forEach((event) => fold.apply(event));
-    const derived = decoded.flatMap((event) =>
-      event.model.name === "GameOverrides" ? this.gameConfiguration(fold, event) : [],
-    );
+    const derived = releaseRuleChanges(decoded).flatMap((game) => this.releaseRules(fold, game));
     derived.forEach((event) => fold.apply(event));
-    return { events: [...decoded, ...derived], decoded, presets };
+    return { events: [...decoded, ...derived], decoded };
   }
 
-  private gameConfiguration(fold: WorldFold, launch: DecodedWorldEvent): DecodedWorldEvent[] {
-    if (launch.kind !== "set") throw new Error("GameOverrides must be an immutable launch fact");
-    const gameId = String(launch.key.game_id);
-    const key = nativeRowKey([gameId]);
-    const game = fold.currentRow("GameRegistry", key)?.value;
+  restoreReleaseRules(fold: WorldFold, confirmedBlock: number): void {
+    const position = { blockNumber: confirmedBlock, transactionHash: "0x0", transactionIndex: 0, eventIndex: 0 };
+    for (const { value } of fold.modelRows("GameRelease")) {
+      if (!this.definitions.has(Number(value.release_id))) continue;
+      this.releaseRules(fold, { gameId: value.game_id, position }).forEach((event) => fold.apply(event));
+    }
+  }
+
+  private releaseRules(fold: WorldFold, game: ReleaseRulesGame): DecodedWorldEvent[] {
+    const key = nativeRowKey([String(game.gameId)]);
+    const overrides = fold.currentRow("GameOverrides", key)?.value;
+    if (!overrides) return [];
     const release = fold.currentRow("GameRelease", key)?.value;
-    if (!game || !release) throw new Error("GameOverrides requires GameRegistry and GameRelease");
-    const preset = fold.currentRow("Preset", nativeRowKey([String(game.preset_id)]))?.value;
-    if (!preset || BigInt(preset.commitment as string) !== BigInt(release.preset_commitment as string))
-      throw new Error("GameRelease preset commitment differs from registered preset");
-    const schema = this.decoder.manifest.native.schemas[this.decoder.manifest.native.activeSchema]!;
-    const definition = decodePresetPreimage(schema, fold.presetPreimage(String(preset.commitment)));
-    const roster = fold.currentRow("BlitzRoster", key)?.value.players as unknown[] | undefined;
-    // A5 settlement::rules reads registrar.roster_sizes; a launch without a roster leaves it zero.
-    const registrationLimit = roster?.length ?? 0;
-    const overrides = fold.currentRow("GameOverrides", key)!.value;
-    return derivePresetFacts(this.decoder, definition, overrides, registrationLimit, launch);
+    if (!release) throw new Error("GameOverrides requires GameRelease");
+    const registry = fold.currentRow("GameRegistry", key)?.value;
+    if (!registry) throw new Error("GameOverrides requires GameRegistry");
+    const definition = scaleGameClocks(
+      releaseDefinition(this.definitions, Number(release.release_id)) as Parameters<typeof scaleGameClocks>[0],
+      Number(registry.clock_scale),
+    ) as DecodedRecord;
+    const rows = deriveReleaseFacts(this.decoder, definition, overrides, game);
+    return [...this.rowsLeftByEarlierRelease(fold, game, rows), ...rows];
+  }
+
+  private rowsLeftByEarlierRelease(
+    fold: WorldFold,
+    game: ReleaseRulesGame,
+    rows: DecodedWorldEvent[],
+  ): DecodedWorldEvent[] {
+    const derived = new Set(rows.map((row) => `${row.model.name}:${row.entityId}`));
+    return this.decoder.derivedRuleModels().flatMap((model) =>
+      fold
+        .gameRows(model, String(game.gameId))
+        .filter(({ key }) => !derived.has(`${model}:${key}`))
+        .map(({ key, value }) => this.decoder.deleteDerivedRow(model, key, value, game.position)),
+    );
   }
 
   /**
@@ -289,10 +293,6 @@ export class NativeIngestion {
     );
   }
   private commit(fold: WorldFold, events: DecodedWorldEvent[]) {
-    return events.flatMap((event) => {
-      const derived: FoldChange[] = [];
-      const change = fold.apply(event, (row) => derived.push(row));
-      return [{ event, change }, ...derived.map((change) => ({ event, change }))];
-    });
+    return events.map((event) => ({ event, change: fold.apply(event) }));
   }
 }

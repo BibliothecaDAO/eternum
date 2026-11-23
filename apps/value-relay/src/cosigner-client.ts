@@ -1,19 +1,20 @@
-import type { DepositSigningRequest } from "@realms-world/value-ledger/deposits";
-import type { CosignRequest, Cosignature } from "@realms-world/value-ledger";
+import type { CosignRequest, Cosignature, RacePayTerms, RacePostTerms } from "@realms-world/value-ledger";
 import type { Withdrawal } from "./ports";
-import type { FrontierSettlement } from "./frontier-sweep";
 
 export interface PayoutCosigner {
   pay(withdrawal: Withdrawal, wallet: string): Promise<Cosignature>;
-  settle(settlement: FrontierSettlement & { treasuryAmount: string }): Promise<Cosignature>;
+}
+export interface RaceCosigner {
+  postRace(terms: Omit<RacePostTerms, "kind">): Promise<Cosignature>;
+  payRace(terms: Omit<RacePayTerms, "kind">): Promise<Cosignature>;
 }
 export function cosignerClient(
   url: string,
   token: string,
   network: typeof fetch = fetch,
-): PayoutCosigner & { deposit(request: DepositSigningRequest): Promise<Cosignature> } {
+): PayoutCosigner & RaceCosigner {
   if (new URL(url).protocol !== "https:" || !token) throw new Error("cosigner_configuration_invalid");
-  const sign = async (terms: CosignRequest | DepositSigningRequest): Promise<Cosignature> => {
+  const sign = async (terms: CosignRequest): Promise<Cosignature> => {
     const response = await network(new URL("/sign", url), {
       method: "POST",
       redirect: "manual",
@@ -34,7 +35,6 @@ export function cosignerClient(
     return { r: result.r, s: result.s };
   };
   return {
-    deposit: sign,
     pay: (withdrawal, wallet) =>
       sign({
         kind: "pay",
@@ -46,14 +46,7 @@ export function cosignerClient(
         rank: withdrawal.prizeRank,
         count: withdrawal.prizeCount,
       }),
-    settle: (settlement) =>
-      sign({
-        kind: "settle",
-        shard: settlement.chainId,
-        season: settlement.gameId,
-        chest: settlement.chestWithdrawn,
-        prize: settlement.prizeWithdrawn,
-        treasuryAmount: settlement.treasuryAmount,
-      }),
+    postRace: (terms) => sign({ kind: "race-post", ...terms }),
+    payRace: (terms) => sign({ kind: "race-pay", ...terms }),
   };
 }

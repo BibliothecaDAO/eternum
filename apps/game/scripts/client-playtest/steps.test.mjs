@@ -1,8 +1,5 @@
 import { JSDOM } from "jsdom";
 import { runInNewContext } from "node:vm";
-import homeIcons from "../../src/ui/design-system/home-icons.json" with { type: "json" };
-import realmAssets from "../../src/three/structures/realm-assets.json" with { type: "json" };
-import realmSkins from "../../src/three/structures/realm-skins.json" with { type: "json" };
 import { describe, expect, it, vi } from "vitest";
 
 import { WORLDMAP_CAMERA_ZOOM } from "../../src/three/scenes/worldmap-camera-view-profile";
@@ -10,13 +7,37 @@ import { ARMY_PLATE_HEIGHT } from "../../src/three/constants/army-constants";
 import { ARMY_LABEL_POINT } from "./plates.mjs";
 import { MAP_LEAST_SHARE } from "./hud-layout.mjs";
 import { HUD_MAP_LEAST_SHARE } from "../../src/tokens";
-import { CHAT, CLOSE, ruinRule, EVENTS_WORDS, MENU, REALM_LABOR, SEASON } from "../../src/ui/design-system/kit/words";
+import {
+  ASPECT_PAGE_WORDS,
+  ASPECT_STEP_WORDS,
+  CHAT,
+  CLOSE,
+  DEEP_WORDS,
+  INVITE_WORDS,
+  EXPLORE,
+  MOVE,
+  EVENTS_WORDS,
+  MENU,
+  RELIC_WORDS,
+  RESEARCH,
+  SEASON,
+  SETTINGS,
+  SHARED_LINK_WORDS,
+  SPIRE_WORDS,
+} from "../../src/ui/design-system/kit/words";
 import {
   CLOSEST_CAMERA_DISTANCE,
   FARTHEST_CAMERA_DISTANCE,
   HUD_WORDS,
   leftForHome,
   openedTheFarPlace,
+  idlePlayOf,
+  judgeCatchUp,
+  judgeTickPaid,
+  readAspectTally,
+  readHeldSlot,
+  readTickPay,
+  REHEARSAL_WORDS,
   SPECTATOR_STEPS,
   STEP_SETS,
 } from "./steps.mjs";
@@ -32,10 +53,11 @@ describe("the HUD's words the steps press and read", () => {
       menu: MENU,
       season: SEASON,
       feed: EVENTS_WORDS.feed,
+      research: RESEARCH,
       close: CLOSE,
       chat: CHAT,
-      realmLabor: REALM_LABOR,
-      ruinRule: ruinRule(true),
+      settings: SETTINGS,
+      relics: RELIC_WORDS.title,
     });
   });
 });
@@ -405,7 +427,7 @@ describe("a neighbour's realm visited, left, and visited and left again (lab-vis
   const card = (title, controls = ["Close"]) => ({ title, controls });
   const building = (hover, opened) => ({ offset: [0, 0], hover, card: opened });
   const plot = (opened) => ({ offset: [0, 0], hover: null, card: opened });
-  const found = ["Barracks", "Farm", "Hut", "Castle"];
+  const found = ["Barracks", "Farm", "Storeroom", "Castle"];
   const visitTaps = [...found.map((name) => building(name, card(name))), plot(null)];
 
   it("runs the visit and Leave twice, each board swept", () => {
@@ -445,9 +467,9 @@ describe("a neighbour's realm visited, left, and visited and left again (lab-vis
   });
 
   it("fails a sweep that found too few buildings to judge", () => {
-    expect(verify("visit-plots")({ played: { taps: [building("Hut", card("Hut"))], signed: 0 } }).status).toBe(
-      "failed",
-    );
+    expect(
+      verify("visit-plots")({ played: { taps: [building("Storeroom", card("Storeroom"))], signed: 0 } }).status,
+    ).toBe("failed");
   });
 
   it("passes home when each building's card is its hover's and an open plot opens Build", () => {
@@ -757,8 +779,9 @@ describe("the HUD's layout on the map", () => {
     expect(judged({ parts }).status).toBe("completed");
   });
 
-  it("fails a desktop with no minimap", () => {
+  it("fails a desktop with no minimap, except on Frontier where no minimap is drawn", () => {
     expect(judged({ parts, minimap: null }).reason).toBe("not drawn: the minimap");
+    expect(judged({ parts, frontier: true, minimap: null }).status).toBe("completed");
   });
 
   it("fails a part pushed off the page, two parts over each other, or a control drawn over", () => {
@@ -978,51 +1001,6 @@ describe("the player's Wheat store card", () => {
   });
 });
 
-describe("Devcon delivery through the game", () => {
-  it("requires the Season to show both campaign paintings, the ordinary control, and the Wonder", () => {
-    const verify = STEP_SETS["lab-devcon-season"].steps[0].verify;
-    const seen = { panels: ["Season"] };
-    const played = [
-      ...Object.keys(realmSkins).flatMap((skin) => Object.values(homeIcons[skin]).map((icon) => `${icon}.webp`)),
-      "realm-3.webp",
-      `${homeIcons.wonder[0]}.webp`,
-    ];
-    expect(verify({ seen, played }).status).toBe("completed");
-    expect(verify({ seen, played: played.filter((icon) => !icon.startsWith("wonder-")) }).status).toBe("failed");
-    expect(verify({ seen, played: ["realm-3.webp"] }).status).toBe("failed");
-    expect(verify({ seen, played: played.slice(0, 2) }).status).toBe("failed");
-    expect(verify({ seen: { panels: [] }, played }).status).toBe("failed");
-  });
-
-  const steps = STEP_SETS["lab-devcon-art"].steps;
-  it("visits every registered tier of both families on the map and in the realm", () => {
-    expect(steps.map((step) => step.name)).toEqual(
-      Object.keys(realmSkins).flatMap((skin) =>
-        realmAssets.filter((asset) => !asset.wonder).flatMap(({ id }) => [`${skin}-${id}-map`, `${skin}-${id}-realm`]),
-      ),
-    );
-  });
-  it("rejects a playable screen with the wrong family or an absent HUD icon", () => {
-    const verify = steps[0].verify;
-    const expected = {
-      path: "/models/realms/devcon/regular/settlement.glb",
-      icon: homeIcons.devcon[0],
-      label: "Devcon",
-    };
-    const played = {
-      expected,
-      assets: [expected.path],
-      icons: [`/icons/facets/64/${homeIcons.devcon[0]}.webp`],
-      text: "Devcon",
-    };
-    expect(verify({ seen: onTheMap, played }).status).toBe("completed");
-    expect(verify({ seen: onTheMap, played: { ...played, assets: [] } }).status).toBe("failed");
-    expect(verify({ seen: onTheMap, played: { ...played, icons: ["/icons/facets/64/realm.webp"] } }).status).toBe(
-      "failed",
-    );
-  });
-});
-
 // A failed preparation must never delete some other army left selected on the map.
 it("delete-rehearsal-army refuses to act before the rehearsal army is identified", async () => {
   const step = STEP_SETS["army-management"].steps.find((step) => step.name === "delete-rehearsal-army");
@@ -1037,195 +1015,6 @@ it("has no Reinforce in the army-management rehearsal: deploy, then delete", () 
     "deploy-rehearsal-army",
     "delete-rehearsal-army",
   ]);
-});
-
-it("requires a real regular-to-golden transition and confirmed claim in the upgrade rehearsal", () => {
-  const verify = STEP_SETS["home-upgrade"].steps.find((step) => step.name === "upgrade-campaign-home").verify;
-  const played = { before: { tier: "regular" }, upgraded: { tier: "golden" }, claimed: true, after: { claimed: true } };
-  expect(verify({ played })).toEqual(expect.objectContaining({ status: "completed" }));
-  for (const bad of [
-    { ...played, claimed: false },
-    { ...played, upgraded: { tier: "regular" } },
-    { ...played, after: { claimed: false } },
-  ]) {
-    expect(verify({ played: bad })).toEqual(expect.objectContaining({ status: "failed" }));
-  }
-});
-
-describe("live deposit prerequisites", () => {
-  it("reads the real route and raw decimal purse, then reports the missing linked wallet", async () => {
-    const chain = `0x${Buffer.from("S1_DEPOSIT_PROOF").toString("hex")}`;
-    const dom = new JSDOM('<button aria-label="LORDS 30">30</button>', {
-      url: `https://play.test/g/${chain}/7/map`,
-    });
-    const { document, location } = dom.window;
-    dom.window.HTMLElement.prototype.scrollIntoView = () => {};
-    const browser = {
-      read: (expression) =>
-        JSON.parse(
-          runInNewContext(expression, {
-            document,
-            location,
-            innerWidth: 1920,
-            innerHeight: 1080,
-          }),
-        ),
-      tap: vi.fn(() => {
-        document.body.insertAdjacentHTML(
-          "beforeend",
-          `<section data-kit-sheet aria-label="LORDS">
-          <p data-earned-lords="30">Winnings: 30 LORDS</p>
-          <p data-spend-lords="9007199254740993">Spend-only: 9007199254740993 LORDS</p>
-          <button>Link a wallet to deposit</button>
-        </section>`,
-        );
-      }),
-    };
-    const steps = STEP_SETS["s1-deposits"].steps;
-    const step = steps.find(({ name }) => name === "wallet-deposit");
-    const finalDeposit = steps.at(-1);
-    const stop = vi.fn();
-    try {
-      const played = await step.play({ browser, owner: {}, devTools: { onEvent: () => stop } });
-      expect(played.before).toMatchObject({ spend: "9007199254740993", earned: "30" });
-      expect(step.verify({ played })).toMatchObject({
-        status: "blocked",
-        reason: expect.stringContaining("no linked wallet"),
-      });
-      expect(steps.slice(-2).map(({ name }) => name)).toEqual(["live-mixed-refill", "wallet-deposit-for-sweep"]);
-      expect(finalDeposit.play).toBe(step.play);
-      const repeated = await finalDeposit.play({ browser, owner: {}, devTools: { onEvent: () => stop } });
-      expect(repeated.before).toEqual(played.before);
-      expect(finalDeposit.verify({ played: repeated })).toEqual(step.verify({ played }));
-      expect(browser.tap).toHaveBeenCalledOnce();
-      expect(stop).toHaveBeenCalledTimes(2);
-    } finally {
-      dom.window.close();
-    }
-  });
-});
-
-describe("purchased refill proof", () => {
-  const steps = STEP_SETS["lab-spend-lords"].steps;
-  const proof = steps.find(({ name }) => name === "purchased-refill-isolation");
-  async function play(after, amount) {
-    const dom = new JSDOM('<button aria-label="LORDS 500">500</button>');
-    const { document } = dom.window;
-    const window = {
-      __labChain: { sent: [{ command: { kind: "RefillStamina", fields: { amount } }, answered: [{}] }] },
-    };
-    let balances = "LORDS 500. 50 spend-only LORDS";
-    const browser = {
-      read: (expression) =>
-        JSON.parse(runInNewContext(expression, { document, window, innerWidth: 1920, innerHeight: 1080 })),
-      tap: vi.fn(() => {
-        const pair = /^LORDS (\d+)\. (\d+) spend-only LORDS$/.exec(balances);
-        document.body.insertAdjacentHTML(
-          "beforeend",
-          `<section data-kit-sheet aria-label="LORDS">
-          <p data-earned-lords>Winnings: ${pair?.[1] ?? "—"} LORDS</p>
-          <p data-spend-lords>Spend-only: ${pair?.[2] ?? "—"} LORDS</p></section>`,
-        );
-      }),
-      press: vi.fn(() => document.querySelector("[data-kit-sheet]")?.remove()),
-    };
-    try {
-      await steps[0].play({ browser });
-      expect(document.querySelector("[data-kit-sheet]")).toBeNull();
-      balances = after;
-      const played = await proof.play({ browser });
-      expect(browser.tap).toHaveBeenCalledTimes(2);
-      expect(browser.press).toHaveBeenCalledWith("Escape");
-      expect(document.querySelector('[aria-label="LORDS"]')).not.toBeNull();
-      return played;
-    } finally {
-      dom.window.close();
-    }
-  }
-
-  it("gathers browser evidence in play and judges only that evidence using the submitted amount", async () => {
-    const played = await play("LORDS 454. 0 spend-only LORDS", "96");
-    expect(proof.verify({ played, seen: onTheMap }).status).toBe("completed");
-    expect(played).toMatchObject({
-      before: { earned: 500, purchased: 50 },
-      after: { earned: 454, purchased: 0 },
-      amounts: ["96"],
-    });
-  });
-
-  it("requires purchased LORDS first and exactly the earned remainder", async () => {
-    for (const after of ["LORDS 404. 50 spend-only LORDS", "LORDS 450. 0 spend-only LORDS"]) {
-      expect(proof.verify({ played: await play(after, "96"), seen: onTheMap }).status).toBe("failed");
-    }
-    expect(proof.verify({ played: await play("LORDS 500. 20 spend-only LORDS", "30"), seen: onTheMap }).status).toBe(
-      "completed",
-    );
-  });
-
-  it("uses the visible slider for a partial refill and watches actual current/max stamina", async () => {
-    const dom = new JSDOM(
-      '<section data-kit-sheet aria-label="Army 1"><span data-stamina-line>44/140</span><button>Refill</button></section>',
-    );
-    const { document } = dom.window;
-    dom.window.HTMLElement.prototype.scrollIntoView = () => {};
-    let watched;
-    const window = {
-      __labChain: { sent: [] },
-      __playtest: {
-        watch: (_name, expression) => {
-          watched = expression;
-        },
-      },
-    };
-    const context = { document, window, innerWidth: 1920, innerHeight: 1080 };
-    let taps = 0;
-    const browser = {
-      read: (expression) => JSON.parse(runInNewContext(expression, context)),
-      run: ([verb, expression]) => {
-        expect(verb).toBe("eval");
-        runInNewContext(expression, context);
-      },
-      tap: () => {
-        taps += 1;
-        if (taps === 1) {
-          document.body.innerHTML =
-            '<section data-kit-sheet aria-label="Refill"><input type="range" aria-label="Stamina to refill" max="96" value="96"><button>Refill · 96 LORDS</button></section>';
-        } else if (taps === 2) {
-          document.querySelector("input").value = "72";
-          document.querySelector("button").textContent = "Refill · 72 LORDS";
-        } else {
-          const amount = document.querySelector("input").value;
-          window.__labChain.sent.push({
-            command: { kind: "RefillStamina", fields: { amount } },
-            answered: [{ model: "ArmySlot", value: { stamina: { amount: "116" } } }],
-          });
-          document.body.innerHTML = '<section data-kit-sheet aria-label="Army 1"></section>';
-          document.querySelector("section").innerText = "116/140";
-        }
-      },
-    };
-    try {
-      const played = await steps
-        .find(({ name }) => name === "refill")
-        .play({ browser, owner: { sleep: async () => {} } });
-      expect(played.watching).toBe(true);
-      expect(taps).toBe(3);
-      expect(window.__labChain.sent[0].command.fields.amount).toBe("72");
-      expect(runInNewContext(watched, context)).toBe(true);
-      document.querySelector("section").innerText = "116/116";
-      expect(runInNewContext(watched, context)).toBe(false);
-    } finally {
-      dom.window.close();
-    }
-  });
-
-  it("refuses missing purse or submitted refill evidence", async () => {
-    expect(proof.verify({ played: await play("LORDS —", "96"), seen: onTheMap }).status).toBe("failed");
-    const played = await play("LORDS 454. 0 spend-only LORDS", "96");
-    for (const amounts of [[], ["96", "96"], ["0"]]) {
-      expect(proof.verify({ played: { ...played, amounts }, seen: onTheMap }).status).toBe("failed");
-    }
-  });
 });
 
 describe("lab-hud-devices", () => {
@@ -1245,13 +1034,324 @@ describe("lab-hud-devices", () => {
   });
 });
 
-it("the ruin fight proof refuses a legacy or missing daily rule", () => {
+it("the ruin fight proof completes once the card opens with its Attack, the camera still", () => {
   const verify = STEP_SETS["lab-ruin-fight"].steps.find((step) => step.name === "open-the-fight").verify;
   const camera = { col: 1, row: 2 };
   const before = { ruinToken: [0, 180], camera };
-  const after = { camera, buttons: ["Attack"], ruinRule: ruinRule(true), sheet: "Ruin" };
+  const after = { camera, buttons: ["Attack"], sheet: "Ruin" };
   expect(verify({ played: { before, after } }).status).toBe("completed");
-  for (const rule of [ruinRule(false), null]) {
-    expect(verify({ played: { before, after: { ...after, ruinRule: rule } } }).status).toBe("failed");
-  }
+});
+
+it("requires an opened army panel and no retired LORDS controls", () => {
+  const verify = STEP_SETS["lab-no-lords"].steps[1].verify;
+  const panel = { army: "Army 1", sheet: "Army 1" };
+  expect(verify({ played: { panel, controls: [] } }).status).toBe("completed");
+  expect(verify({ played: { panel, controls: ["Refill"] } }).status).toBe("failed");
+  expect(verify({ played: { panel: { army: "Army 1" }, controls: [] } }).status).toBe("failed");
+});
+
+it("requires the selected Aspect in both the founding command and its membership result", () => {
+  const verify = STEP_SETS["lab-aspect-settle"].steps[0].verify;
+  const choice = { sent: 0, cards: ["Join Prowess", "Join Luminary", "Join Havoc", "Join Insight"] };
+  const seen = { scene: "hex", rendered: "hex", place: "Realm", playable: true };
+  const orders = [{ label: "Play as the Order shown first", order: "3" }];
+  const startRows = [
+    [26, "2000000000000"],
+    [35, "6000000000000"],
+    [23, "2000000000000"],
+    [38, "0"],
+  ].map(([resource_type, balance]) => ({ model: "ResourceBalance", value: { resource_type, balance } }));
+  const founded = {
+    command: { span: ["10", "1", "0", "3"] },
+    answered: [
+      { model: "HomeAspect", value: { home: 7, aspect: 3 } },
+      { model: "AspectMembers", value: { aspect: 3, members: 1 } },
+      ...startRows,
+    ],
+  };
+  const deploy = { sheet: "Deploy", offered: true, notice: null };
+  const answering = (answered) => ({ seen, played: { orders, choice, deploy, founded: [{ ...founded, answered }] } });
+  expect(verify({ seen, played: { orders, choice, deploy, founded: [founded] } }).status).toBe("completed");
+  expect(verify({ seen, played: { orders, choice: { ...choice, sent: 1 }, deploy, founded: [founded] } }).status).toBe(
+    "failed",
+  );
+  expect(verify({ seen, played: { orders, choice, deploy, founded: [] } }).status).toBe("failed");
+  for (const shown of [
+    undefined,
+    { sheet: null, offered: false, notice: null },
+    { sheet: "Deploy", offered: false, notice: "No troops at home" },
+    { sheet: "Deploy", offered: true, notice: "No troops at home · in 10s" },
+  ])
+    expect(verify({ seen, played: { orders, choice, deploy: shown, founded: [founded] } }).status).toBe("failed");
+  expect(verify(answering([])).status).toBe("failed");
+  expect(
+    verify({
+      seen,
+      played: { orders, choice, deploy, founded: [{ ...founded, command: { span: ["10", "1", "0", "2"] } }] },
+    }).status,
+  ).toBe("failed");
+  expect(verify(answering([{ model: "HomeAspect", value: { home: 7, aspect: 2 } }, founded.answered[1]])).status).toBe(
+    "failed",
+  );
+  expect(verify(answering(founded.answered.filter(({ model }) => model !== "ResourceBalance"))).status).toBe("failed");
+  expect(
+    verify(
+      answering(
+        founded.answered.map((row) =>
+          row.model === "ResourceBalance" && row.value.resource_type === 26
+            ? { ...row, value: { ...row.value, balance: "0" } }
+            : row,
+        ),
+      ),
+    ).status,
+  ).toBe("failed");
+  for (const army of ["ExplorerTroops", "ArmySlot", "ArmyDay"])
+    expect(verify(answering([...founded.answered, { model: army, value: { explorer_id: 201 } }])).status).toBe(
+      "failed",
+    );
+});
+
+it("requires one quest command, its exact receipt, both credited balances and the collected UI", () => {
+  const verify = STEP_SETS["lab-daily-quest"].steps[1].verify;
+  const sent = {
+    command: { fields: { home: "7", day: "0" } },
+    answered: [
+      { model: "LaborGrant", value: { home: "7", day: "0", amount: "1000000000000", essence: "1500000000000" } },
+      { model: "ResourceBalance", value: { balance: "1500000000000" } },
+      { model: "ResourceBalance", value: { balance: "1500000000000" } },
+    ],
+  };
+  const played = { ready: { collect: true }, collected: true, grants: [sent] };
+  expect(verify({ played }).status).toBe("completed");
+  for (const failed of [
+    { ...played, collected: false },
+    { ...played, grants: [] },
+    { ...played, grants: [sent, sent] },
+    { ...played, grants: [{ ...sent, command: { fields: { home: "8", day: "0" } } }] },
+    { ...played, grants: [{ ...sent, command: { fields: { home: "7", day: "1" } } }] },
+    { ...played, grants: [{ ...sent, answered: sent.answered.slice(0, 1) }] },
+    {
+      ...played,
+      grants: [
+        {
+          ...sent,
+          answered: [
+            { ...sent.answered[0], value: { ...sent.answered[0].value, essence: "0" } },
+            ...sent.answered.slice(1),
+          ],
+        },
+      ],
+    },
+  ])
+    expect(verify({ played: failed }).status).toBe("failed");
+});
+
+it.each([
+  ["world", ["LaborGrant"], "1500000000000", "1500000000000", "The Cull: 2,500 of 2,500 troops. Ash Fall"],
+  ["again", ["BaneGrant"], "2500000000000", "3000000000000", "The Cull: 2,500 of 2,500 troops. Ash Fall"],
+  ["late", ["LaborGrant", "BaneGrant"], "2500000000000", "3000000000000", "The Cull: 2,500 of 2,500 troops. Ash Fall"],
+  ["team", ["LaborGrant"], "1500000000000", "1500000000000", "The Stand: 3 of 3 sites. Prowess's bane"],
+])("requires exact %s bane receipts, balances, identity and collected UI", (stage, models, labor, essence, text) => {
+  const verify = STEP_SETS[`lab-bane-${stage}`].steps[1].verify;
+  const sent = {
+    command: { fields: { home: "7", day: "1" } },
+    answered: [
+      ...models.map((model) => ({
+        model,
+        value: { home: "7", day: "1", amount: "1000000000000", essence: "1500000000000" },
+      })),
+      { model: "ResourceBalance", value: { resource_type: 23, balance: labor } },
+      { model: "ResourceBalance", value: { resource_type: 38, balance: essence } },
+    ],
+  };
+  const played = { ready: { collect: true, text }, collected: true, grants: [sent] };
+  expect(verify({ played }).status).toBe("completed");
+  const withAnswers = (answered) => ({ ...played, grants: [{ ...sent, answered }] });
+  for (const bad of [
+    { ...played, collected: false },
+    { ...played, ready: { collect: true, text: "A different quest" } },
+    { ...played, grants: [sent, sent] },
+    { ...played, grants: [{ ...sent, command: { fields: { home: "7", day: "0" } } }] },
+    withAnswers(sent.answered.slice(1)),
+    withAnswers([...sent.answered, sent.answered[0]]),
+    withAnswers(
+      sent.answered.map((fact) =>
+        fact.model === models[0] ? { ...fact, value: { ...fact.value, amount: "0" } } : fact,
+      ),
+    ),
+    withAnswers(
+      sent.answered.map((fact) =>
+        fact.model === "ResourceBalance" ? { ...fact, value: { ...fact.value, balance: "0" } } : fact,
+      ),
+    ),
+    withAnswers(sent.answered.filter((fact) => fact.model !== "ResourceBalance")),
+  ])
+    expect(verify({ played: bad }).status).toBe("failed");
+});
+
+it("reports the failed Oath capacity assertion without trying to time a missing result", async () => {
+  const step = STEP_SETS["lab-oath-slots"].steps.find(({ name }) => name === "deploy-with-oath-slots");
+  await expect(
+    step.verify({
+      played: {},
+      probe: {},
+      window: { from: 0 },
+      actionLatency: {
+        chainAnswers: [{ kind: "CreateExplorer", answered: [{ model: "ArmyProgress", value: { oath_slots: 1 } }] }],
+      },
+    }),
+  ).resolves.toMatchObject({ status: "failed", reason: "The new army did not inherit three Oath slots" });
+});
+
+describe("the Season 1 rehearsal", () => {
+  const steps = STEP_SETS["s1-rehearsal"].steps;
+  const step = (name) => steps.find((candidate) => candidate.name === name);
+
+  it("tells a step whose page sent nothing from one the chain refused", () => {
+    const refused = { hash: "0x1", confirmed: true, succeeded: false, rejection: "out of gas", applied: false };
+    expect(step("build-barracks").verify({ played: { receipts: [] } })).toMatchObject({
+      status: "failed",
+      reason: "the page sent 0 of the step's 1 actions",
+    });
+    expect(step("build-barracks").verify({ played: { receipts: [refused] } })).toMatchObject({
+      status: "failed",
+      reason: "the chain did not apply every action the step sent",
+    });
+  });
+
+  it("presses and reads the app's own words", () => {
+    expect(REHEARSAL_WORDS.startAdventure).toBe(SHARED_LINK_WORDS.play);
+    expect(REHEARSAL_WORDS.copyLink).toBe(INVITE_WORDS.copy);
+    expect(REHEARSAL_WORDS.inviteTo("Might")).toBe(INVITE_WORDS.title("Might"));
+    expect(REHEARSAL_WORDS.join("Guile")).toBe(ASPECT_STEP_WORDS.join("Guile"));
+    expect(REHEARSAL_WORDS.invited).toBe(ASPECT_STEP_WORDS.invited);
+    expect(REHEARSAL_WORDS.enter).toBe(SPIRE_WORDS.enter);
+    expect(REHEARSAL_WORDS.move).toBe(MOVE);
+    expect(REHEARSAL_WORDS.explore).toBe(EXPLORE);
+    expect(REHEARSAL_WORDS.attack).toBe(DEEP_WORDS.attack);
+    expect(REHEARSAL_WORDS.take).toBe(DEEP_WORDS.take);
+    expect(REHEARSAL_WORDS.beast("Balrog", 900)).toBe(DEEP_WORDS.beast("Balrog", 900));
+    expect(REHEARSAL_WORDS.open).toBe(DEEP_WORDS.open);
+    expect(REHEARSAL_WORDS.lasts(14, "28m")).toBe(DEEP_WORDS.lasts(14, "28m"));
+    expect(REHEARSAL_WORDS.share(40)).toBe(DEEP_WORDS.share(40));
+    expect(REHEARSAL_WORDS.glory(6)).toBe(DEEP_WORDS.glory(6));
+    expect(REHEARSAL_WORDS.height(6)).toBe(DEEP_WORDS.height(6));
+    expect(REHEARSAL_WORDS.essence(6)).toBe(DEEP_WORDS.essence(6));
+    expect(REHEARSAL_WORDS.labor(6)).toBe(DEEP_WORDS.labor(6));
+    expect(REHEARSAL_WORDS.bar(6, 30, 100)).toBe(DEEP_WORDS.bar(6, 30, 100));
+    expect(REHEARSAL_WORDS.standingHeight(120, 900)).toBe(ASPECT_PAGE_WORDS.height(120, 900));
+    expect(REHEARSAL_WORDS.baneCharge(30, 100)).toBe(ASPECT_PAGE_WORDS.baneCharge(30, 100));
+    expect(REHEARSAL_WORDS.gloryChip).toBe(ASPECT_PAGE_WORDS.glory);
+  });
+
+  it("plays the friend's founding and Deep turns in the second account's page and everything else in the host's", () => {
+    expect(steps.map(({ name, as }) => (as ? `${as}:${name}` : name))).toEqual([
+      "found-the-host-realm",
+      "answer-a-standing-oath",
+      "host-on-map",
+      "copy-the-invite-link",
+      "ally:ally-founds-from-the-invite",
+      "ally:ally-shares-the-aspect",
+      "ally:ally-sends-an-army",
+      "ally:ally-fights-on-the-surface",
+      "ally:ally-opens-realm",
+      "ally:ally-builds-a-barracks",
+      "ally:ally-back-on-map",
+      "open-realm",
+      "build-barracks",
+      "back-on-map",
+      "send-an-army",
+      "fight-on-the-surface",
+      "enter-the-deep",
+      "fight-a-beast",
+      "catch-up-t0",
+      "read-the-tick-pay",
+      "catch-up-t1",
+      "the-tick-paid",
+      "ally:ally-enters-the-deep",
+      "ally:ally-fights-a-guard",
+      "ally:ally-takes-an-empty-site",
+    ]);
+  });
+
+  it("completes an action only when every receipt it sent came back applied", () => {
+    const verify = step("build-barracks").verify;
+    const applied = { operation: "build", hash: "0x1", applied: true };
+    const refused = { operation: "build", hash: "0x2", applied: false, why: "refused: no labor" };
+    expect(verify({ played: { receipts: [applied] } }).status).toBe("completed");
+    expect(verify({ played: { receipts: [applied, refused] } }).status).toBe("failed");
+    expect(verify({ played: { receipts: [] } }).status).toBe("failed");
+  });
+
+  it("blocks what the game does not offer yet, and passes what an earlier run already did in this game", () => {
+    expect(
+      step("enter-the-deep").verify({
+        played: { blocked: "the Spire offers no Ethereal III row: its depth is not researched" },
+      }),
+    ).toMatchObject({ status: "blocked" });
+    expect(
+      step("found-the-host-realm").verify({ played: { already: "the host founded in this game earlier" } }).status,
+    ).toBe("completed");
+  });
+
+  it("reads a held site's pay, slot and the Season board in the app's own words", () => {
+    expect(
+      readTickPay([DEEP_WORDS.glory(6), DEEP_WORDS.height(3), DEEP_WORDS.essence(1500), DEEP_WORDS.bar(2, 1200, 5000)]),
+    ).toEqual({ glory: 6, height: 3, essence: 1500, bar: 2 });
+    expect(
+      readHeldSlot(
+        `Ashfall · ${DEEP_WORDS.facesNext} · 2,800 · ${DEEP_WORDS.drainTick(70)} · ${DEEP_WORDS.lasts(14, "28m")} · ${DEEP_WORDS.share(100)}`,
+      ),
+    ).toEqual({ ticks: 14, share: 100, troops: 2800 });
+    expect(
+      readAspectTally({
+        height: `1Might${ASPECT_PAGE_WORDS.stage(1, 5)} · ${ASPECT_PAGE_WORDS.height(1240, 9000)}`,
+        glory: `${ASPECT_PAGE_WORDS.glory} 42`,
+        bar: `${ASPECT_PAGE_WORDS.baneBar}: ${ASPECT_PAGE_WORDS.baneCharge(30, 100)}`,
+      }),
+    ).toEqual({ height: 1240, glory: 42, bar: 30 });
+  });
+
+  it("judges a tick paid only when the guard drained and each tally rose by whole ticks of the card's pay", () => {
+    const before = {
+      pay: { glory: 6, bar: 2 },
+      slot: { share: 100, troops: 2800 },
+      tally: { glory: 10, height: 0, bar: 30 },
+    };
+    const after = (glory, bar, troops = 2600) => ({ slot: { troops }, tally: { glory, height: 0, bar } });
+    expect(judgeTickPaid(before, after(16, 32))).toEqual({ gains: { glory: 6, bar: 2 }, ticks: 1 });
+    expect(judgeTickPaid(before, after(22, 34))).toEqual({ gains: { glory: 12, bar: 4 }, ticks: 2 });
+    expect(judgeTickPaid(before, after(16, 34)).failed).toBe(
+      "the gains are not one whole number of ticks of the card's pay",
+    );
+    expect(judgeTickPaid(before, after(10, 32)).failed).toBe("the tick paid no glory");
+    expect(judgeTickPaid(before, after(16, 32, 2800)).failed).toBe("the guard lost no troops: no tick was settled");
+    expect(judgeTickPaid(before, { slot: { troops: 2600 }, tally: { glory: null, height: 0, bar: 32 } }).failed).toBe(
+      "the Season board shows no exact glory",
+    );
+  });
+  it("measures the idle play as the cheaper of the plays sent after the first, which settled what was due", () => {
+    const plays = [
+      { hash: "0x1", events: 40, l2Gas: 90_000_000 },
+      { hash: "0x2", events: 34, l2Gas: 50_000_000 },
+      { hash: "0x3", events: 39, l2Gas: 80_000_000 },
+    ];
+    expect(idlePlayOf(plays).hash).toBe("0x2");
+  });
+
+  it("judges a catch-up play by its rows emitted once each, not once per tick, and by having settled something", () => {
+    const t0 = { events: 34, l2Gas: 50_000_000 };
+    expect(judgeCatchUp(t0, { events: 40, l2Gas: 102_000_000 }, 4)).toEqual({
+      ticks: 4,
+      l2Gas: 52_000_000,
+      events: 6,
+      t1: { l2Gas: 102_000_000, events: 40 },
+    });
+    expect(judgeCatchUp(t0, { events: 58, l2Gas: 102_000_000 }, 4).failed).toBe(
+      "the catch-up play emitted 24 more events than the idle one: rows once per tick, not once each",
+    );
+    expect(judgeCatchUp(t0, { events: 34, l2Gas: 50_000_000 }, 4).failed).toBe(
+      "the catch-up play settled nothing: another command settled the ticks first",
+    );
+  });
 });

@@ -77,72 +77,6 @@ describe("Frontier season standings", () => {
     expect(buildFrontierLeaderboard(read, "1", []).prize).toBeNull();
   });
 
-  it("includes each home's campaign identity from the complete game, including ordinary homes", () => {
-    const { read, rows } = facts([0, 0, 0]);
-    rows.CampaignHome = [
-      { key: "regular", value: { game_id: "1", home: "0x1", campaign_id: "0x123", tier: 1 } },
-      { key: "golden", value: { game_id: "1", home: "2", campaign_id: "0x123", tier: 2 } },
-      { key: "other-game", value: { game_id: "2", home: "3", campaign_id: "0x456", tier: 2 } },
-    ];
-    expect(
-      buildFrontierLeaderboard(read, "1", []).entries.map(({ structure_id, campaign }) => ({ structure_id, campaign })),
-    ).toEqual([
-      { structure_id: "1", campaign: { campaign_id: "291", tier: 1 } },
-      { structure_id: "2", campaign: { campaign_id: "291", tier: 2 } },
-      { structure_id: "3", campaign: null },
-    ]);
-  });
-
-  it.each([50, 0])("counts a %s LORDS exploration chest once without a site clear", (amount) => {
-    const { read } = facts();
-    const opening = story(
-      "RewardChestOpened",
-      {
-        explorer_id: 7,
-        structure_id: 1,
-        coord: { alt: false, x: 40, y: 12 },
-        amount,
-      },
-      0,
-    );
-    const board = buildFrontierLeaderboard(read, "1", [opening, opening]);
-    expect(board.entries[0]).toMatchObject({
-      chests_earned: 1,
-      rewards: { lords: String(amount), labor: "0", essence: "0" },
-      sites_cleared: { total: 0, camps: 0, rifts: 0, ruins: 0, beasts: 0 },
-    });
-    expect(buildFrontierLeaderboard(read, "1", [opening])).toEqual(board);
-  });
-
-  it("adds whole chest LORDS to precision-scaled ruin payouts without changing any clear ranking", () => {
-    const { read } = facts([1, 2, 2, 0, 0]);
-    const clears = [clear("Ruin", 1, 10), clear("Camp", 2, 10), clear("Camp", 0, 12), clear("Camp", 3, 11)];
-    const before = buildFrontierLeaderboard(read, "1", clears);
-    const receipts = [
-      ...clears,
-      story("RewardChestOpened", { amount: "50" }, 4, 10),
-      story("RewardChestOpened", { amount: "99999999999999999999" }, 5, 14),
-      story("RewardChestOpened", { amount: 0 }, 6, 11),
-      story("RewardChestOpened", { amount: 25 }, 7, 12),
-    ];
-    const after = buildFrontierLeaderboard(read, "1", [...receipts, ...receipts].reverse());
-    expect(after.entries.map(({ address, rank, sites_cleared }) => ({ address, rank, sites_cleared }))).toEqual(
-      before.entries.map(({ address, rank, sites_cleared }) => ({ address, rank, sites_cleared })),
-    );
-    expect(after.entries.find((entry) => entry.address === "0xa")).toMatchObject({
-      chests_earned: 2,
-      rewards: { lords: "250" },
-    });
-    expect(after.entries.find((entry) => entry.address === "0xe")).toMatchObject({
-      chests_earned: 1,
-      rewards: { lords: "99999999999999999999" },
-    });
-    expect(after.entries.find((entry) => entry.address === "0xc")).toMatchObject({
-      chests_earned: 1,
-      rewards: { lords: "25" },
-    });
-  });
-
   it("counts a ruin's clear as its chest and its stored LORDS in whole units", () => {
     const { read } = facts();
     const [entry] = buildFrontierLeaderboard(read, "1", [clear("Ruin", 0), clear("Ruin", 1)]).entries;
@@ -230,4 +164,13 @@ it("keeps Wonder identity for every settled home in the complete board, without 
   ]);
   delete (rows.Structure![1]!.value.metadata as Record<string, unknown>).has_wonder;
   expect(() => buildFrontierLeaderboard(read, "1", [])).toThrow("missing its Wonder identity");
+});
+
+describe("a Season 1 game", () => {
+  it("ranks no player by the sites it cleared, though a legacy game does", () => {
+    const { rows, read } = facts([1, 2]);
+    expect(buildFrontierLeaderboard(read, "1", []).entries).toHaveLength(2);
+    rows.RaceRules = [{ key: "0", value: { game_id: "1", stage_height: 2000 } }];
+    expect(() => buildFrontierLeaderboard(read, "1", [])).toThrow("Season 1 ranks Aspects by height");
+  });
 });

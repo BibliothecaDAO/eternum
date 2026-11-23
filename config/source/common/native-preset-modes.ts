@@ -1,11 +1,14 @@
 import type { GameType } from "./types";
+import { nativeIdentifiers } from "../../../contracts/l3/world-native/schema/client.gen";
 
-/** The fixture preset for accelerated Frontier: fixtures and harness design runs create from it, the launcher never does. */
+/** Historical accelerated Frontier preset. */
 export const FRONTIER_ACCELERATED_PRESET_ID = 101;
-/** Frontier's own preset: the design the launcher's seasons create from. */
+/** Historical Frontier preset. */
 export const FRONTIER_PRESET_ID = 5;
-/** Frontier's three-times-speed Devcon season; registered separately from normal-speed seasons. */
-export const FRONTIER_DEVCON_PRESET_ID = 6;
+/** Historical Devcon preset. */
+const FRONTIER_DEVCON_PRESET_ID = 6;
+export const FRONTIER_S1_PRESET_ID = 7;
+export const FRONTIER_REHEARSAL_PRESET_ID = 8;
 /** Immutable Frontier preset used by the committed contract fixtures. */
 export const FRONTIER_FIXTURE_PRESET_ID = 104;
 /**
@@ -20,14 +23,12 @@ const NATIVE_PRESET_MODES: Readonly<Record<number, GameType>> = {
   // Frontier's first design; registered on the shards and still played by the games created from it.
   1: "frontier",
   2: "blitz",
-  3: "eternum",
-  4: "duel",
   [FRONTIER_PRESET_ID]: "frontier",
   [FRONTIER_DEVCON_PRESET_ID]: "frontier",
+  [FRONTIER_S1_PRESET_ID]: "frontier",
+  [FRONTIER_REHEARSAL_PRESET_ID]: "frontier",
   [FRONTIER_ACCELERATED_PRESET_ID]: "frontier",
-  // The first playtest's preset; registered on shard A and still played by the game created from it.
   102: "frontier",
-  103: "eternum",
   [FRONTIER_FIXTURE_PRESET_ID]: "frontier",
   [FRONTIER_PLAYGROUND_PRESET_ID]: "frontier",
 };
@@ -37,3 +38,19 @@ export function nativeGameModeOf(presetId: number): GameType {
   if (!mode) throw new Error(`Unknown native preset ${presetId}`);
   return mode;
 }
+
+export const GAME_FAMILIES = {
+  frontier: nativeIdentifiers.family.FRONTIER,
+  blitz: nativeIdentifiers.family.BLITZ,
+} satisfies Record<GameType, number>;
+
+export const isGameType = (mode: unknown): mode is GameType =>
+  typeof mode === "string" && Object.hasOwn(GAME_FAMILIES, mode);
+
+export const nativeFamilyOf = (presetId: number): number => GAME_FAMILIES[nativeGameModeOf(presetId)];
+
+export const nativeGameModeOfFamily = (family: number): GameType => {
+  const mode = (Object.keys(GAME_FAMILIES) as GameType[]).find((type) => GAME_FAMILIES[type] === family);
+  if (!mode) throw new Error(`Unknown game family ${family}`);
+  return mode;
+};

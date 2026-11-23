@@ -1,20 +1,10 @@
-import {
-  BiomeType,
-  CROSSBOWMAN_RANGED_FIELD_DAMAGE_MULTIPLIER,
-  CROSSBOWMAN_RANGED_STRUCTURE_DAMAGE_MULTIPLIER,
-  KNIGHT_STRUCTURE_ASSAULT_DAMAGE_MULTIPLIER,
-  KNIGHT_STRUCTURE_GUARD_INCOMING_DAMAGE_MULTIPLIER,
-  RELICS,
-  ResourcesIds,
-  TroopTier,
-  TroopType,
-} from "@bibliothecadao/types";
-import { configManager } from "../managers";
-import { COMBAT_DIE_FACES } from "./combat-exchange";
-import { divideWithPrecision } from "./utils";
+import { BiomeType, RESOURCE_PRECISION, TroopTier, TroopType } from "@bibliothecadao/types";
+import { resolveExchange, type CombatRules, type ExchangeRefusal, type ExchangeTroops } from "./combat-exchange";
 
 export interface Army {
+  oaths: number;
   stamina: number;
+  maxStamina?: number;
   troopCount: number;
   troopType: TroopType;
   tier: TroopTier;
@@ -22,27 +12,14 @@ export interface Army {
 }
 
 export interface CombatSimulationContext {
-  attackDistance?: number;
   attackerBiome?: BiomeType;
   defenderBiome?: BiomeType;
   defenderAlt?: boolean;
   attackerIsStructureGuard?: boolean;
   defenderIsStructureGuard?: boolean;
-  /** Each side's d20 where the battle rolls dice: it adds that many percent to the side's damage; 0 without dice. */
-  attackerRoll?: number;
-  defenderRoll?: number;
-}
-
-type BattleSimulation = ReturnType<CombatSimulator["simulateBattle"]>;
-
-/** A battle at both ends of the dice: the attacker's worst roll against the defender's best, and the reverse. */
-export interface BattleRange {
-  worst: BattleSimulation;
-  best: BattleSimulation;
 }
 
 export interface CombatParameters {
-  damage_raid_percent_num: number;
   damage_biome_bonus_num: number;
   damage_scaling_factor: bigint;
   t1_damage_value: bigint;
@@ -53,386 +30,91 @@ export interface CombatParameters {
   tick_interval_seconds: number;
 }
 
+export interface BattleOutcome {
+  attackerDamage: number;
+  defenderDamage: number;
+  attackerStamina: number;
+  defenderStamina: number;
+  attackerCooldownEnd: number;
+  defenderCooldownEnd: number;
+}
+
+type RefusedBattle = { ok: false; refusal: ExchangeRefusal };
+type BattleSimulation = ({ ok: true } & BattleOutcome) | RefusedBattle;
+
+/** Editable battle inputs resolve through the same fixed-point exchange as live forecasts. */
 export class CombatSimulator {
-  private readonly t1DamageValue: number;
-  private readonly t2DamageMultiplier: number;
-  private readonly t3DamageMultiplier: number;
-  private readonly staminaAttackThreshold: number;
-  private readonly staminaDefenseThreshold: number;
-  private readonly baseDamageFactor: number;
-  private readonly tickIntervalSeconds: number;
+  private readonly rules: CombatRules;
 
-  static MAX_U64: bigint = BigInt(2) ** BigInt(64);
-
-  constructor(params: CombatParameters) {
-    this.t1DamageValue = divideWithPrecision(params.t1_damage_value, CombatSimulator.MAX_U64);
-    this.t2DamageMultiplier = divideWithPrecision(params.t2_damage_multiplier, CombatSimulator.MAX_U64);
-    this.t3DamageMultiplier = divideWithPrecision(params.t3_damage_multiplier, CombatSimulator.MAX_U64);
-    this.staminaAttackThreshold = params.stamina_attack_req;
-    this.staminaDefenseThreshold = params.stamina_defense_req;
-
-    this.baseDamageFactor = divideWithPrecision(params.damage_scaling_factor, CombatSimulator.MAX_U64);
-    this.tickIntervalSeconds = params.tick_interval_seconds;
+  constructor(params: CombatParameters, rules: CombatRules) {
+    this.rules = {
+      ...rules,
+      tickSeconds: params.tick_interval_seconds,
+      damage: {
+        damage_biome_bonus_num: params.damage_biome_bonus_num,
+        damage_scaling_factor: params.damage_scaling_factor,
+        t1_damage_value: params.t1_damage_value,
+        t2_damage_multiplier: params.t2_damage_multiplier,
+        t3_damage_multiplier: params.t3_damage_multiplier,
+      },
+      stamina: {
+        ...rules.stamina,
+        stamina_attack_req: params.stamina_attack_req,
+        stamina_defense_req: params.stamina_defense_req,
+      },
+    };
   }
 
-  private getTierValue(tier: TroopTier): number {
-    switch (tier) {
-      case TroopTier.T1:
-        return this.t1DamageValue;
-      case TroopTier.T2:
-        return this.t1DamageValue * this.t2DamageMultiplier;
-      case TroopTier.T3:
-        return this.t1DamageValue * this.t3DamageMultiplier;
-    }
-  }
-
-  public calculateStaminaModifier(stamina: number, isAttacker: boolean): number {
-    if (isAttacker) {
-      if (stamina < this.staminaAttackThreshold) return 0;
-      return 1;
-    } else {
-      if (stamina < this.staminaDefenseThreshold) return 0.7;
-      return 1;
-    }
-  }
-
-  /**
-   * Calculates damage modifier based on current cooldown status.
-   *
-   * @param battle_cooldown_end - The CURRENT cooldown end time from the troops model
-   * @param time - The current timestamp
-   * @param isAttacker - Whether this is for the attacking army
-   * @returns Damage modifier (0-1)
-   */
-  public calculateBattleTimerDamageModifier(battle_cooldown_end: number, time: number, isAttacker: boolean): number {
-    const isOnCooldown = battle_cooldown_end > time;
-
-    if (isAttacker) {
-      // Attackers must not be on cooldown to initiate attacks
-      // If they are on cooldown, they cannot attack (damage modifier = 0)
-      return isOnCooldown ? 0 : 1;
-    } else {
-      // Defenders on cooldown deal 15% less damage when attacked (they fight less effectively)
-      return isOnCooldown ? 0.85 : 1;
-    }
-  }
-
-  public calculateRefundMultiplier(aDamage: number, bDamage: number): number {
-    let ratio = aDamage / bDamage;
-    if (ratio >= 10) {
-      return 1;
-    }
-    if (ratio <= 2.5) {
-      return 0;
-    }
-
-    return (ratio - 2.5) / (10 - 2.5);
-  }
-
-  private calculateEffectiveBeta(): number {
-    return 0.2;
-  }
-
-  private isRangedCrossbowAttack(attacker: Army, context: CombatSimulationContext): boolean {
-    return attacker.troopType === TroopType.Crossbowman && (context.attackDistance ?? 1) > 1;
-  }
-
-  private isRangedAttack(context: CombatSimulationContext): boolean {
-    return (context.attackDistance ?? 1) > 1;
-  }
-
-  private calculateAttackerBiomeModifier(
-    attacker: Army,
-    battleBiome: BiomeType,
-    context: CombatSimulationContext,
-  ): number {
-    // Range-2 attacks ignore biome damage modifiers; mirrors the contract's _attacker_biome_damage_bonus.
-    if (context.defenderAlt || this.isRangedAttack(context)) {
-      return 1;
-    }
-
-    return configManager.getBiomeCombatBonus(attacker.troopType, context.attackerBiome ?? battleBiome);
-  }
-
-  private calculateDefenderBiomeModifier(
-    defender: Army,
-    battleBiome: BiomeType,
-    context: CombatSimulationContext,
-  ): number {
-    if (context.defenderAlt) return 1;
-    return configManager.getBiomeCombatBonus(defender.troopType, context.defenderBiome ?? battleBiome);
-  }
-
-  private calculateAttackerRoleDamageMultiplier(attacker: Army, context: CombatSimulationContext): number {
-    return (
-      this.calculateRangedCrossbowDamageMultiplier(attacker, context) *
-      this.calculateKnightStructureAssaultMultiplier(attacker, context)
-    );
-  }
-
-  private calculateRangedCrossbowDamageMultiplier(attacker: Army, context: CombatSimulationContext): number {
-    if (!this.isRangedCrossbowAttack(attacker, context)) {
-      return 1;
-    }
-
-    return context.defenderIsStructureGuard
-      ? CROSSBOWMAN_RANGED_STRUCTURE_DAMAGE_MULTIPLIER
-      : CROSSBOWMAN_RANGED_FIELD_DAMAGE_MULTIPLIER;
-  }
-
-  private calculateKnightStructureAssaultMultiplier(attacker: Army, context: CombatSimulationContext): number {
-    const isAdjacentStructureGuardAssault =
-      !context.attackerIsStructureGuard && context.defenderIsStructureGuard && (context.attackDistance ?? 1) === 1;
-
-    return attacker.troopType === TroopType.Knight && isAdjacentStructureGuardAssault
-      ? KNIGHT_STRUCTURE_ASSAULT_DAMAGE_MULTIPLIER
-      : 1;
-  }
-
-  private calculateIncomingDamageMultiplier(defender: Army, isStructureGuard: boolean | undefined): number {
-    return isStructureGuard && defender.troopType === TroopType.Knight
-      ? KNIGHT_STRUCTURE_GUARD_INCOMING_DAMAGE_MULTIPLIER
-      : 1;
-  }
-
-  public calculateStaminaCost(baseStaminaCost: number, refundMultiplier: number): number {
-    return baseStaminaCost - Math.ceil(baseStaminaCost * refundMultiplier);
-  }
-
-  public calculateNewStaminaAttacker(
-    currentStamina: number,
-    refundMultiplier: number,
-    context: CombatSimulationContext = {},
-  ): number {
-    const staminaCost = this.calculateStaminaCost(
-      this.staminaAttackThreshold,
-      this.isRangedAttack(context) ? 0 : refundMultiplier,
-    );
-    return currentStamina - staminaCost;
-  }
-
-  private getRangedDefenseStaminaCost(): number {
-    return Math.ceil(this.staminaDefenseThreshold / 2);
-  }
-
-  public calculateNewStaminaDefender(
-    currentStamina: number,
-    refundMultiplier: number,
-    context: CombatSimulationContext = {},
-  ): number {
-    if (this.isRangedAttack(context)) {
-      return currentStamina - Math.min(currentStamina, this.getRangedDefenseStaminaCost());
-    }
-
-    const staminaCost = this.calculateStaminaCost(this.staminaDefenseThreshold, refundMultiplier);
-    return currentStamina - staminaCost;
-  }
-
-  public calculateNewCooldownEndAttacker(
-    currentCooldownEnd: number,
-    now: number,
-    refundMultiplier: number,
-    context: CombatSimulationContext = {},
-  ): number {
-    return this.calculateNextBattleCooldownEnd(
-      currentCooldownEnd,
-      now,
-      this.isRangedAttack(context) ? 0.5 : refundMultiplier,
-    );
-  }
-
-  public calculateNewCooldownEndDefender(
-    currentCooldownEnd: number,
-    now: number,
-    refundMultiplier: number,
-    context: CombatSimulationContext = {},
-  ): number {
-    return this.calculateNextBattleCooldownEnd(
-      currentCooldownEnd,
-      now,
-      this.isRangedAttack(context) ? 0.5 : refundMultiplier,
-    );
-  }
-
-  /**
-   * Calculates the next battle cooldown end time after a combat.
-   * This represents what the cooldown will be AFTER the battle, not the current cooldown.
-   *
-   * @param currentCooldownEnd - The current cooldown end time from the troops model
-   * @param now - The current timestamp
-   * @param refundMultiplier - The refund multiplier based on battle outcome (0-1)
-   * @returns The new cooldown end time that will be set after the battle
-   */
-  public calculateNextBattleCooldownEnd(currentCooldownEnd: number, now: number, refundMultiplier: number): number {
-    // If the army is currently on cooldown, add to the existing cooldown
-    // Otherwise, start a new cooldown from now
-    const effectiveCooldownStart = Math.max(currentCooldownEnd, now);
-    const additionalCooldown = Math.floor(this.tickIntervalSeconds * (1 - refundMultiplier));
-    return effectiveCooldownStart + additionalCooldown;
-  }
-
-  /**
-   * Simulates a battle between two armies in a specific biome, with support for relic effects.
-   *
-   * @param attacker - The attacking army with troopCount, tier, troopType, and stamina
-   * @param defender - The defending army with troopCount, tier, troopType, and stamina
-   * @param biome - The biome type where the battle takes place, affecting troop bonuses
-   * @param attackerRelics - Array of resource IDs representing attacker's active relic effects
-   * @param defenderRelics - Array of resource IDs representing defender's active relic effects
-   * @returns An object containing the damage dealt by each side:
-   *          - attackerDamage: Amount of damage dealt by the attacker
-   *          - defenderDamage: Amount of damage dealt by the defender
-   */
   public simulateBattle(
     now: number,
     attacker: Army,
     defender: Army,
     biome: BiomeType,
-    attackerRelics: ResourcesIds[] = [],
-    defenderRelics: ResourcesIds[] = [],
-    context: CombatSimulationContext = {},
-  ): {
-    attackerDamage: number;
-    defenderDamage: number;
-    attackerRefundMultiplier: number;
-    defenderRefundMultiplier: number;
-  } {
-    const totalTroops = attacker.troopCount + defender.troopCount;
-    const betaEff = this.calculateEffectiveBeta();
-
-    if (totalTroops === 0) {
-      return { attackerDamage: 0, defenderDamage: 0, attackerRefundMultiplier: 0, defenderRefundMultiplier: 0 };
-    }
-
-    // Calculate relic effects
-    // Attacker damage relics increase damage output
-    const attackerDamageRelics = RELICS.filter((r) => attackerRelics.includes(r.id) && r.type === "Damage");
-    const attackerDamageMultiplierRelics =
-      attackerDamageRelics.length > 0 ? Math.max(...attackerDamageRelics.map((r) => r.bonus)) : 1;
-
-    // Defender damage reduction relics reduce incoming damage
-    const defenderReductionRelics = RELICS.filter(
-      (r) => defenderRelics.includes(r.id) && r.type === "Damage Reduction",
-    );
-    const defenderReductionMultiplierRelics =
-      defenderReductionRelics.length > 0 ? Math.min(...defenderReductionRelics.map((r) => r.bonus)) : 1;
-
-    // Defender damage relics increase damage output
-    const defenderDamageRelics = RELICS.filter((r) => defenderRelics.includes(r.id) && r.type === "Damage");
-    const defenderDamageMultiplierRelics =
-      defenderDamageRelics.length > 0 ? Math.max(...defenderDamageRelics.map((r) => r.bonus)) : 1;
-
-    // Attacker damage reduction relics reduce incoming damage
-    const attackerReductionRelics = RELICS.filter(
-      (r) => attackerRelics.includes(r.id) && r.type === "Damage Reduction",
-    );
-    const attackerReductionMultiplierRelics =
-      attackerReductionRelics.length > 0 ? Math.min(...attackerReductionRelics.map((r) => r.bonus)) : 1;
-
-    // Calculate base damage for attacker
-    const baseAttackerDamage =
-      (this.baseDamageFactor *
-        attacker.troopCount *
-        (this.getTierValue(attacker.tier) / this.getTierValue(defender.tier)) *
-        this.calculateStaminaModifier(attacker.stamina, true) *
-        this.calculateBattleTimerDamageModifier(attacker.battle_cooldown_end, now, true) *
-        this.calculateAttackerBiomeModifier(attacker, biome, context) *
-        this.calculateAttackerRoleDamageMultiplier(attacker, context) *
-        this.calculateIncomingDamageMultiplier(defender, context.defenderIsStructureGuard)) /
-      Math.pow(totalTroops, betaEff);
-
-    // Calculate base damage for defender
-    const baseDefenderDamage = this.isRangedAttack(context)
-      ? 0
-      : (this.baseDamageFactor *
-          defender.troopCount *
-          (this.getTierValue(defender.tier) / this.getTierValue(attacker.tier)) *
-          this.calculateStaminaModifier(defender.stamina, false) *
-          this.calculateBattleTimerDamageModifier(defender.battle_cooldown_end, now, false) *
-          this.calculateDefenderBiomeModifier(defender, biome, context) *
-          this.calculateIncomingDamageMultiplier(attacker, context.attackerIsStructureGuard)) /
-        Math.pow(totalTroops, betaEff);
-
-    // Apply the dice and relic modifiers
-    const attackerDamage =
-      (1 + (context.attackerRoll ?? 0) / 100) *
-      baseAttackerDamage *
-      attackerDamageMultiplierRelics *
-      defenderReductionMultiplierRelics;
-    const defenderDamage =
-      (1 + (context.defenderRoll ?? 0) / 100) *
-      baseDefenderDamage *
-      defenderDamageMultiplierRelics *
-      attackerReductionMultiplierRelics;
-
-    const attackerRefundMultiplier = this.isRangedAttack(context)
-      ? 0
-      : this.calculateRefundMultiplier(attackerDamage, defenderDamage);
-    const defenderRefundMultiplier = this.isRangedAttack(context)
-      ? 0
-      : this.calculateRefundMultiplier(defenderDamage, attackerDamage);
-
-    return {
-      attackerDamage,
-      defenderDamage,
-      attackerRefundMultiplier,
-      defenderRefundMultiplier,
-    };
-  }
-
-  public static getDefaultParameters(): CombatParameters {
-    return {
-      damage_raid_percent_num: 1000, //10%
-      damage_biome_bonus_num: 3000,
-      damage_scaling_factor: 36893488147419103232n, // 2
-      t1_damage_value: 1844674407370955161600n, // 100
-      t2_damage_multiplier: 55340232221128654848n, // 3
-      t3_damage_multiplier: 166020696663385964544n, // 9
-      stamina_attack_req: 50,
-      stamina_defense_req: 40,
-      tick_interval_seconds: 60,
-    };
-  }
-
-  // Static method to simulate with default parameters
-  public simulateBattleWithParams(
-    now: number,
-    attacker: Army,
-    defender: Army,
-    biome: BiomeType,
-    attackerRelics: ResourcesIds[] = [],
-    defenderRelics: ResourcesIds[] = [],
-    context: CombatSimulationContext = {},
-  ): {
-    attackerDamage: number;
-    defenderDamage: number;
-    attackerRefundMultiplier: number;
-    defenderRefundMultiplier: number;
-  } {
-    return this.simulateBattle(now, attacker, defender, biome, attackerRelics, defenderRelics, context);
-  }
-
-  /** A battle's outcome at both ends of the dice; without dice both ends are its one outcome. */
-  public simulateBattleRange(
-    now: number,
-    attacker: Army,
-    defender: Army,
-    biome: BiomeType,
-    attackerRelics: ResourcesIds[],
-    defenderRelics: ResourcesIds[],
     context: CombatSimulationContext,
-    dice: boolean,
-  ): BattleRange {
-    const at = (attackerRoll: number, defenderRoll: number) =>
-      this.simulateBattle(now, attacker, defender, biome, attackerRelics, defenderRelics, {
-        ...context,
-        attackerRoll,
-        defenderRoll,
-      });
-    if (!dice) {
-      const outcome = at(0, 0);
-      return { worst: outcome, best: outcome };
-    }
-    return { worst: at(1, COMBAT_DIE_FACES), best: at(COMBAT_DIE_FACES, 1) };
+  ): BattleSimulation {
+    const result = resolveExchange(
+      combatTroops(attacker, now),
+      combatTroops(defender, now),
+      {
+        timestamp: now,
+        attackerOaths: attacker.oaths,
+        defenderOaths: defender.oaths,
+        attackerTwin: null,
+        attackerBiome: context.defenderAlt ? BiomeType.Underground : (context.attackerBiome ?? biome),
+        defenderBiome: context.defenderAlt ? BiomeType.Underground : (context.defenderBiome ?? biome),
+        attackerIsStructureGuard: context.attackerIsStructureGuard ?? false,
+        defenderIsStructureGuard: context.defenderIsStructureGuard ?? false,
+      },
+      this.rules,
+    );
+    if (!result.ok) return result;
+    return {
+      ok: true,
+      attackerDamage: Number(result.defenderLoss) / RESOURCE_PRECISION,
+      defenderDamage: Number(result.attackerLoss) / RESOURCE_PRECISION,
+      attackerStamina: Number(result.attacker.stamina.amount),
+      defenderStamina: Number(result.defender.stamina.amount),
+      attackerCooldownEnd: result.attacker.battle_cooldown_end,
+      defenderCooldownEnd: result.defender.battle_cooldown_end,
+    };
   }
 }
+
+const combatTroops = (army: Army, now: number): ExchangeTroops => ({
+  category: army.troopType,
+  tier: army.tier,
+  count: BigInt(Math.round(army.troopCount * RESOURCE_PRECISION)),
+  battle_cooldown_end: army.battle_cooldown_end,
+  stamina: { amount: BigInt(Math.floor(army.stamina)), settled_at: now, remainder: 0 },
+  ...(army.maxStamina === undefined ? {} : { staminaMax: army.maxStamina }),
+  boosts: {
+    incr_damage_dealt_percent_num: 0,
+    incr_damage_dealt_end_at: 0,
+    decr_damage_gotten_percent_num: 0,
+    decr_damage_gotten_end_at: 0,
+    incr_stamina_regen_percent_num: 0,
+    incr_stamina_regen_seconds_left: 0,
+    incr_explore_reward_percent_num: 0,
+    incr_explore_reward_end_at: 0,
+  },
+});

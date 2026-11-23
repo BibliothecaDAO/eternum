@@ -4,6 +4,9 @@ export {
   ledgerBool,
   ledgerU256,
   decodeFrontierSeason,
+  decodeRaceSeason,
+  decodeRaceReward,
+  RACE_CLAIM_WINDOW_SECONDS,
   decodeWithdrawalPayment,
   decodeChest,
   chestDrawBlocksLeft,
@@ -13,33 +16,30 @@ export {
   readConfirmedLedgerHead,
   readFinalLedgerHead,
 } from "./codecs";
+export { raceCalldata } from "./race-rewards-abi";
 export { rpcAt, isDeploymentBlock, isContractRevert } from "./rpc";
-export { BLITZ_SLOT_INTERVAL_SECONDS, BLITZ_SLOT_PREPARATION_SECONDS } from "./blitz-timetable";
-export { blitzSlotFitsSeason, readLedgerSlot, readLedgerRegistration, readRegistrationPage } from "./blitz-slots";
-export type { LedgerSlotKey, SlotRegistration, RegistrationPage, RegistrationQuery } from "./blitz-slots";
+export { BLITZ_SLOT_PREPARATION_SECONDS } from "./blitz-timetable";
+export { readLedgerSlot, readLedgerRegistration } from "./blitz-slots";
+export type { LedgerSlotKey } from "./blitz-slots";
 export type { LedgerSlot } from "./codecs";
-export { resolveBlitzRoster, splitPlaytestRoster } from "./blitz-roster";
-export type { RegistrationIdentity, SlotCohort, LaunchCohorts } from "./blitz-roster";
 
-export { activeShards, requireActiveChain, readRegisteredShard } from "./official-shards";
+export { officialChain, requireActiveChain, readRegisteredShard } from "./official-shards";
 export { isDevShardChain } from "./dev-shard";
 export type { ShardDirectory, RegisteredShard } from "./official-shards";
 
 export { computeSeasonTop } from "./season-top";
 
-export { readBlitzRoster } from "./shard-roster";
-
-export { readFrontierFunding, frontierTreasuryAmount, type FrontierFundingTerms } from "./frontier-funding";
+export { readFrontierFunding, type FrontierFundingTerms } from "./frontier-funding";
 
 export { ServiceResponseFailure, serviceError, serviceFailure, serviceResponseFailure } from "./service-error";
-export {
-  LAUNCHER_LABEL,
-  RELAY_LABEL,
-  launcherAccountAddress,
-  relayAccountAddress,
-  seaterLabels,
-  seaterAccountAddresses,
-} from "./shard-accounts";
+export { LAUNCHER_LABEL, RELAY_LABEL, launcherAccountAddress, relayAccountAddress } from "./shard-accounts";
 
-export { cosigningHash, decodeCosignRequest, decodeCosigner } from "./cosigning";
-export type { CosigningDomain, PayoutTerms, SettlementTerms, CosignRequest, Cosignature } from "./cosigning";
+export { cosigningHash, raceCosigningHash, decodeCosignRequest, decodeCosigner } from "./cosigning";
+export type {
+  CosigningDomain,
+  PayoutTerms,
+  RacePostTerms,
+  RacePayTerms,
+  CosignRequest,
+  Cosignature,
+} from "./cosigning";

@@ -12,13 +12,17 @@ Usage (run from the folder that keeps the pulls; they land in its raw/, never in
 The usage step decodes the Games contract's events with Herald's decoder (usage.ts, through bun), so it needs the
 repository's dependencies installed.
 
+Offline proof from the repository root:
+  python3 -I apps/game/scripts/live-data/live-data.py analyse apps/game/scripts/live-data/fixtures/current-pull
+The fixture covers a current army without muster history and an old muster absent from the snapshot.
+The accompanying unittest checks the report and current schema with sockets disabled.
+
 Defaults: https://herald.realms.party, game 1. Only public data is stored: the Herald's history, the per-player
 snapshots its own client reads, the leaderboard, closed days' ranks and the players' public names.
 """
 import collections
 import gzip
 import json
-import math
 import os
 import re
 import subprocess
@@ -101,7 +105,7 @@ def pull(base="https://herald.realms.party", game=1):
     pull_ledger(folder)
     named = set(players)
     for g in load(folder, "blitz.json").values():
-        named |= {r["account"] for r in g["entry"]["roster"]} | {e["address"] for e in g["leaderboard"]["entries"]}
+        named |= {r["account"] for r in g["entry"]["roster"]}
     named = sorted(named)
     names = {}
     for start in range(0, len(named), 20):
@@ -118,8 +122,8 @@ def pull(base="https://herald.realms.party", game=1):
 
 
 BLITZ_MODELS = (
-    "BlitzResult", "BlitzRoster", "SettlementProgress", "Hyperstructure", "HyperstructureShares", "PlayerPoints",
-    "RelicChest", "GameRegistry", "PlayerEntry",
+    "BlitzRoster", "SettlementProgress", "Hyperstructure", "HyperstructureShares", "RelicChest", "GameRegistry",
+    "PlayerEntry",
 )
 
 
@@ -134,7 +138,7 @@ def history_of(base, game):
 
 
 def pull_blitz(folder, base):
-    """Every Blitz game the Herald lists: its directory entry, history, leaderboard and frozen review rows."""
+    """Every Blitz game the Herald lists: its directory entry, history and frozen review rows."""
     games = {}
     for entry in get(f"{base}/games")["games"]:
         if entry["mode"] != "blitz":
@@ -146,7 +150,7 @@ def pull_blitz(folder, base):
             rows = {m["model"]: m["rows"] for m in review["models"] if m["model"] in BLITZ_MODELS and m["rows"]}
         except urllib.error.HTTPError as error:
             rows = {"error": error.code}
-        games[game] = {"entry": entry, "history": items, "leaderboard": get(f"{base}/games/{game}/leaderboard"), "review": rows}
+        games[game] = {"entry": entry, "history": items, "review": rows}
     save(folder, "blitz.json", games)
 
 
@@ -317,9 +321,9 @@ def pull_events(folder, base, last_block):
     every published segment whole and the next run starts after the last one."""
     manifest = get(f"{base}/manifest")
     games_contract = manifest["contracts"]["games"]
-    newest_release = max(manifest["releaseSchemas"], key=int)
+    newest_release = max(manifest["releases"], key=int)
     save(folder, "manifest.json", manifest)
-    save(folder, "schema.json", get(f"{base}/schemas/{manifest['releaseSchemas'][newest_release]}"))
+    save(folder, "schema.json", get(f"{base}/schemas/{manifest['releases'][newest_release]['schema']}"))
     segments = events_folder(games_contract)
     os.makedirs(segments, exist_ok=True)
     first = events_scanned_through(segments) + 1
@@ -367,32 +371,8 @@ def newest_pull():
 
 P = 10**9
 SESSION_GAP = 30 * 60
-# Release 2 (#5087 at da9e10a130d: a whole merge keeps the army with more XP plus level prices) reached game 1 in this
-# transaction on 10-23 (evidence/infra/prod-rollout-1/98-release-advance-production.json).
-RELEASE_2_TX = 0x4E661E33D9C99C2C28665A1497DD96F84D721C07415D9270058788A50F1D73A
-# Codes and rules as release 1 (963db0884de) has them: contracts/l3/world-native/src taxonomy.cairo, resources.cairo,
-# buildings.cairo, research.cairo, troops.cairo; config/source/frontier/base.ts and native.ts.
 SITE = {0x7: "camp", 0x9: "rift", 0xA: "ruin", 0xB: "beasts"}
 RESOURCE = {23: "Labor", 26: "Knight", 35: "Wheat", 37: "LORDS", 38: "Essence"}
-BUILDING = {1: "Hut", 25: "Workshop", 28: "Barracks", 37: "Farm", 41: "War hall", 42: "Supply yard", 43: "Scouts' lodge", 44: "Hearth"}
-OCCUPIER = {34: "chest", 40: "shrine", 41: "well"}
-# research.cairo:110-193: (row, name, tier bit, tier width, choice bit, choice width, sides)
-RESEARCH = [
-    (0, "Farm", 0, 3, 3, 1, ("Fields", "Granary")),
-    (1, "Workshop", 7, 3, 10, 1, ("Tools", "Storeroom")),
-    (2, "Barracks", 14, 3, 17, 1, ("Drill", "Rations")),
-    (3, "Hut", 21, 3, None, 0, ()),
-    (4, "War hall", 24, 3, None, 0, ()),
-    (5, "Supply yard", 27, 3, None, 0, ()),
-    (6, "Scouts' lodge", 30, 3, 36, 2, ("camp", "rift", "beasts")),
-    (7, "Hearth", 33, 3, None, 0, ()),
-    (8, "Shrine", 44, 1, None, 0, ()),
-    (9, "Well", 45, 1, None, 0, ()),
-    (10, "Depth", 46, 2, None, 0, ()),
-]
-DEPLOY_CAP = [3000, 9000, 25000, 60000]  # by realm level; a store holds 2 deploys, +50% per store pick
-REVEAL_STAMINA, ATTACK_STAMINA, STAMINA_MAX, STAMINA_PER_HOUR = 20, 30, 120, 30
-LOGISTICS_BONUS = {1: 0, 2: 20, 3: 50, 4: 90, 5: 150}
 
 
 def num(value):
@@ -432,7 +412,6 @@ class World:
         self.players = load(folder, "players.json")
         self.names = load(folder, "names.json")
         self.board = load(folder, "leaderboard.json")
-        self.rules = {m["model"]: m["rows"] for m in load(folder, "rules.json")["models"] if m["rows"]}
         ranks = load(folder, "day-ranks.json")
         start = self.game["clock"]["start_main_at"]
         ends = [r["ends_at"] for _, r in sorted(ranks.items(), key=lambda kv: int(kv[0])) if "ends_at" in r]
@@ -450,18 +429,6 @@ class World:
                 self.stories.append(
                     {"kind": "Battle", "body": value, "owner": value["attacker"]["player"], "at": when, "item": item}
                 )
-        self.realm_of = {s["owner"]: num(s["item"]["value"]["entity_id"]) for s in self.of("RealmCreatedStory")}
-        # The block that moved the game to release 2 (stronger-army merge), when the chain scan holds it.
-        self.release_2 = None
-        if os.path.exists(os.path.join(folder, "chain.json")):
-            self.release_2 = next(
-                ((t["block"], t["at"]) for t in load(folder, "chain.json")["transactions"] if int(t["hash"], 16) == RELEASE_2_TX),
-                None,
-            )
-
-    def release(self, story):
-        return 2 if self.release_2 and story["item"]["block_number"] > self.release_2[0] else 1
-
     def of(self, *kinds):
         return [s for s in self.stories if s["kind"] in kinds]
 
@@ -549,198 +516,49 @@ def section_players(w):
     table(["player", "actions", "sessions", "sessions per day", "last action (UTC)", "hours idle"], rows)
 
 
-def armies(w):
-    """Every army from its muster: owner, day, troops through battles and transfers, XP by source, how it ended."""
-    xp_rules = w.rules["ArmyProgressionRules"][0]["value"]
-    reveal_xp, shrine_xp = num(xp_rules["reveal_xp"]), num(xp_rules["fixed_xp"])
-    first_guard, out = {}, {}
-    for s in w.of("Battle"):
-        first_guard.setdefault(num(s["body"]["defender_id"]), num(s["body"]["defender"]["before"]) // P)
-    live = {}
-    for p in w.players:
-        for row in w.rows(p, "ArmyProgress"):
-            live[num(row["explorer_id"])] = {"xp": num(row["xp"])}
-        for row in w.rows(p, "ExplorerTroops"):
-            live.setdefault(num(row["explorer_id"]), {})["troops"] = num(row["troops"]["count"]) // P
-    # The stories that name each army, to tell after a whole merge which of the two went on.
-    named = collections.defaultdict(list)
-    for n, s in enumerate(w.stories):
-        b = s["body"]
-        for key in ("explorer_id", "attacker_id"):
-            if key in b:
-                named[num(b[key])].append(n)
-        for key in ("source", "target"):
-            if isinstance(b.get(key), dict) and "Explorer" in b[key]:
-                named[num(b[key]["Explorer"])].append(n)
-    merges = []
-    for n, s in enumerate(w.stories):
-        b = s["body"]
-        if s["kind"] == "ExplorerCreateStory":
-            out[num(b["explorer_id"])] = {
-                "id": num(b["explorer_id"]),
-                "owner": s["owner"],
-                "born": s["at"],
-                "day": w.day(s["at"]),
-                "troops": num(b["amount"]) // P,
-                "mustered": num(b["amount"]) // P,
-                "xp": 0,
-                "reveals": 0,
-                "reveal_days": collections.Counter(),
-                "clears": [],
-                "clear_xp": 0,
-                "shrines": 0,
-                "spent": 0,
-                "tiers": [],
-                "fights": 0,
-                "end": None,
-            }
+def army_activity(w):
+    """Recorded activity per army, including armies whose muster predates the retained history."""
+    out = {}
+    for story in w.stories:
+        body = story["body"]
+        explorer = body.get("explorer_id") or body.get("attacker_id")
+        if explorer is None:
             continue
-        if s["kind"] == "Battle":
-            a = out.get(num(b["attacker_id"]))
-            if a:
-                a["fights"] += 1
-                a["troops"] = num(b["attacker"]["after"]) // P
-                if a["troops"] == 0:
-                    a["end"] = ("lost in battle", s["at"])
-            continue
-        if s["kind"] == "ExplorationReward":
-            a = out[num(b["explorer_id"])]
-            a["reveals"] += 1
-            a["reveal_days"][w.day(s["at"])] += 1
-            a["xp"] += reveal_xp
-        elif s["kind"] == "SitePayout":
-            a = out[num(b["explorer_id"])]
-            gained = math.isqrt(first_guard.get(num(b["site_id"]), 0) * 25) // 2
-            a["clears"].append((SITE.get(num(b["category"]), b["category"]), s["at"]))
-            a["clear_xp"] += gained
-            a["xp"] += gained
-        elif s["kind"] == "SkillPointSpent":
-            a = out[num(b["explorer_id"])]
-            price = num(b["price"])
-            if a["xp"] < price:  # a Shrine leaves no story: the fewest that pay for this level-up
-                count = -(-(price - a["xp"]) // shrine_xp)
-                a["shrines"] += count
-                a["xp"] += count * shrine_xp
-            a["xp"] -= price
-            a["spent"] += price
-            a["tiers"].append((b["attribute"], num(b["tier"]), price, s["at"]))
-        elif s["kind"] == "TroopsTransferred" and "Explorer" in b["source"] and "Explorer" in b["target"]:
-            source, target = out.get(num(b["source"]["Explorer"])), out.get(num(b["target"]["Explorer"]))
-            amount = num(b["amount"]) // P
-            if source and target and amount >= source["troops"]:
-                # A whole merge. The story keeps the clicked direction; from release 2 the contract keeps the army with
-                # more unspent XP plus level prices (troops.cairo source_wins_merge). The survivor is the one named
-                # again later or alive now; the rule decides only when neither or both are.
-                value = lambda a: a["xp"] + a["spent"]  # noqa: E731
-                release = w.release(s)
-                by_rule = release == 2 and value(source) > value(target)
-                later = {a["id"]: any(m > n for m in named[a["id"]]) or a["id"] in live for a in (source, target)}
-                seen = later[source["id"]] if later[source["id"]] != later[target["id"]] else None
-                source_won = by_rule if seen is None else seen
-                winner, loser = (source, target) if source_won else (target, source)
-                merges.append({
-                    "release": release, "at": s["at"], "owner": s["owner"], "source_won": source_won,
-                    "seen": seen, "by_rule": by_rule, "lost_xp": loser["xp"], "lost_value": value(loser),
-                    "kept_value": value(winner), "clicked_value": value(source),
-                })
-                winner["troops"] += loser["troops"]
-                loser["troops"] = 0
-                loser["end"] = ("merged whole", s["at"])
-                loser["merged_xp_lost"] = loser["xp"]
-                continue
-            if source:
-                source["troops"] -= amount
-            if target:
-                target["troops"] += amount
-    for a in out.values():
-        now = live.get(a["id"])
-        if now and "xp" in now:
-            # The stored XP settles the Shrines the stories cannot show.
-            extra = now["xp"] - a["xp"]
-            if extra > 0 and extra % shrine_xp == 0:
-                a["shrines"] += extra // shrine_xp
-                a["xp"] += extra
-            a["xp_check"] = now["xp"] - a["xp"]
-            a["end"] = a["end"] or ("live", None)
-        elif not a["end"]:
-            a["end"] = ("gone at day end", None) if a["day"] < len(w.days) - 1 else ("gone", None)
-    return out, merges
+        army = out.setdefault(num(explorer), {
+            "owner": story["owner"], "reveals": 0, "reveal_days": collections.Counter(),
+            "fights": 0,
+        })
+        if story["kind"] == "ExplorationReward":
+            army["reveals"] += 1
+            army["reveal_days"][w.day(story["at"])] += 1
+        elif story["kind"] == "Battle":
+            army["fights"] += 1
+    return out
 
 
-def section_progression(w):
-    print("## Progression\n")
-    A, merges = armies(w)
-    xp_rules = w.rules["ArmyProgressionRules"][0]["value"]
-    reveal_xp, shrine_xp = num(xp_rules["reveal_xp"]), num(xp_rules["fixed_xp"])
+def section_armies(w):
+    print("## Armies (snapshot)\n")
     rows = []
-    for d in range(len(w.days)):
-        day = [a for a in A.values() if a["day"] == d]
-        rows.append(
-            [
-                d,
-                len(day),
-                len({a["owner"] for a in day}),
-                sum(a["reveals"] for a in day) * reveal_xp,
-                sum(a["clear_xp"] for a in day),
-                sum(a["shrines"] for a in day) * shrine_xp,
-                sum(a["spent"] for a in day),
-                spread([a["reveals"] * reveal_xp + a["clear_xp"] + a["shrines"] * shrine_xp for a in day]),
-            ]
-        )
-    table(["day", "armies mustered", "players", "XP reveals", "XP clears", "XP shrines", "XP spent", "XP earned per army"], rows)
-    mismatched = [a for a in A.values() if a.get("xp_check")]
-    print(
-        f"Live armies checked against their stored XP: {sum(1 for a in A.values() if 'xp_check' in a)},"
-        f" off: {len(mismatched)} {[(a['id'], a['xp_check']) for a in mismatched]}.\n"
-    )
-    ends = collections.Counter(a["end"][0] for a in A.values())
-    print("How armies ended: " + ", ".join(f"{k} {v}" for k, v in ends.most_common()) + ".")
-    lost_xp = [a.get("merged_xp_lost", 0) for a in A.values() if a["end"][0] == "merged whole"]
-    print(f"XP destroyed by whole merges: {sum(lost_xp)} ({spread(lost_xp)}).\n")
-    print("Whole merges by release (value = unspent XP + the prices of levels bought; release 2 keeps the higher):\n")
-    rows = []
-    for release in (1, 2):
-        ms = [m for m in merges if m["release"] == release]
-        if not ms:
-            continue
-        rows.append([
-            release, len(ms), len({m["owner"] for m in ms}),
-            f"{datetime.fromtimestamp(ms[0]['at'], UTC):%m-%d %H:%M} – {datetime.fromtimestamp(ms[-1]['at'], UTC):%m-%d %H:%M}",
-            sum(m["lost_xp"] for m in ms), spread([m["lost_xp"] for m in ms]), sum(m["lost_value"] for m in ms),
-            sum(1 for m in ms if m["lost_value"] > m["kept_value"]),
-            sum(1 for m in ms if m["source_won"]),
-            sum(m["clicked_value"] for m in ms),
-            f"{sum(1 for m in ms if m['seen'] is not None)}; rule agrees {sum(1 for m in ms if m['seen'] is not None and m['seen'] == m['by_rule'])}",
-        ])
-    table(["release", "whole merges", "players", "first – last (UTC)", "unspent XP lost", "per merge", "value lost",
-           "merges that lost the stronger army", "clicked army kept (direction reversed)",
-           "value of the clicked army (what release 1 destroys)", "survivor seen in later stories; rule agrees"], rows)
-    tiers = [(a, t) for a in A.values() for t in a["tiers"]]
-    print(f"Level-ups bought: {len(tiers)} by {len({a['owner'] for a, _ in tiers})} players on {len({a['id'] for a, _ in tiers})} armies.\n")
-    by = collections.Counter((t[0], t[1], t[2]) for _, t in tiers)
-    table(["attribute", "tier", "price", "bought"], [[k[0], k[1], k[2], v] for k, v in sorted(by.items())])
-    rows = []
-    for a in sorted({id(a): a for a, _ in tiers}.values(), key=lambda a: a["born"]):
-        rows.append(
-            [
-                w.who(a["owner"]),
-                a["id"] & 0xFFFF,
-                a["day"],
-                " → ".join(f"{t[0]} {t[1]} (+{(t[3] - a['born']) / 3600:.1f}h)" for t in a["tiers"]),
-                a["reveals"],
-                len(a["clears"]),
-                a["shrines"],
-            ]
-        )
-    table(["player", "army", "day", "level-ups in order (hours after muster)", "reveals", "clears", "shrines"], rows)
-    return A
+    for player in w.players:
+        progress = {num(r["explorer_id"]): r for r in w.rows(player, "ArmyProgress")}
+        combat = {num(r["explorer_id"]): r for r in w.rows(player, "ArmyCombat")}
+        days = {num(r["explorer_id"]): r for r in w.rows(player, "ArmyDay")}
+        for row in w.rows(player, "ExplorerTroops"):
+            explorer = num(row["explorer_id"])
+            troops = row["troops"]
+            rows.append([
+                w.who(player), explorer, num(row["owner"]), troops["category"], troops["tier"],
+                num(troops["count"]) // P,
+                num(progress[explorer]["logistics"]) if explorer in progress else "absent",
+                num(combat[explorer]["last_target"]) if explorer in combat else "absent",
+                num(days[explorer]["day"]) if explorer in days else "absent",
+            ])
+    table(["player", "army", "home", "category", "tier", "troops", "Logistics", "last target", "day"], rows)
 
 
-def section_standings(w, A):
+def section_standings(w, activity):
     """Every realm on the leaderboard beside what its owner did, to show who is far ahead and how."""
     print("## Standings\n")
-    xp_rules = w.rules["ArmyProgressionRules"][0]["value"]
-    reveal_xp, shrine_xp = num(xp_rules["reveal_xp"]), num(xp_rules["fixed_xp"])
     acts, days = collections.Counter(), collections.defaultdict(set)
     for s in w.stories:
         if s["kind"] != "RealmCreatedStory":
@@ -748,18 +566,17 @@ def section_standings(w, A):
             days[s["owner"]].add(w.day(s["at"]))
     rows = []
     for e in sorted(w.board["entries"], key=lambda e: e["rank"]):
-        p, mine = e["address"], [a for a in A.values() if a["owner"] == e["address"]]
+        p, mine = e["address"], [a for a in activity.values() if a["owner"] == e["address"]]
         sites = e["sites_cleared"]
         rows.append([
             e["rank"], w.who(p), e["level"], sites["total"],
             f"{sites['camps']}/{sites['rifts']}/{sites['ruins']}/{sites['beasts']}", e["chests_earned"],
             int(e["rewards"]["lords"]), int(e["rewards"]["essence"]) // P, int(e["rewards"]["labor"]) // P,
             e["deepest_depth"], acts[p], len(days[p]), len(mine),
-            sum(a["reveals"] * reveal_xp + a["clear_xp"] + a["shrines"] * shrine_xp for a in mine),
-            sum(len(a["tiers"]) for a in mine),
+            sum(a["reveals"] for a in mine), sum(a["fights"] for a in mine),
         ])
     table(["rank", "player", "realm level", "sites cleared", "camp/rift/ruin/beasts", "chests", "LORDS", "Essence", "Labor",
-           "deepest depth", "actions", "days active", "armies", "XP earned", "level-ups"], rows)
+           "deepest depth", "actions", "days active", "armies in history", "reveals", "battles"], rows)
 
 
 def section_fights(w):
@@ -795,13 +612,13 @@ def section_fights(w):
     print("Deepest depth per realm (leaderboard): " + ", ".join(f"depth {k}: {v}" for k, v in sorted(depth.items())) + ".\n")
 
 
-def section_exploration(w, A):
+def section_exploration(w, activity):
     print("## Exploration\n")
     rows = []
     for d in range(len(w.days)):
-        per_army = [a["reveal_days"][d] for a in A.values() if a["reveal_days"][d]]
+        per_army = [a["reveal_days"][d] for a in activity.values() if a["reveal_days"][d]]
         per_player = collections.Counter()
-        for a in A.values():
+        for a in activity.values():
             per_player[a["owner"]] += a["reveal_days"][d]
         rewards = collections.Counter(
             RESOURCE.get(num(s["body"]["resource_type"]), s["body"]["resource_type"])
@@ -826,199 +643,42 @@ def section_exploration(w, A):
     print()
 
 
-def research_of(learned):
-    """Learned tiers by row, each with the side picked at every tier."""
-    out = {}
-    for row, name, bit, width, choice, cwidth, sides in RESEARCH:
-        tier = (learned >> bit) % (1 << width)
-        if not tier:
-            continue
-        picks = [sides[(learned >> (choice + cwidth * k)) % (1 << cwidth)] for k in range(tier)] if sides else []
-        out[name] = (tier, picks)
-    return out
+def section_stamina(w):
+    print("## Stamina (last settled snapshot values)\n")
+    rows = []
+    for player in w.players:
+        for row in w.rows(player, "ArmySlot"):
+            rows.append([
+                w.who(player), num(row["structure_id"]), num(row["epoch"]), num(row["slot"]),
+                num(row["explorer_id"]), num(row["stamina"]["amount"]), num(row["stamina"]["settled_at"]),
+            ])
+    table(["player", "home", "day", "slot", "army", "stamina", "settled at"], rows)
 
 
-def realm_row(w, player):
-    return next(s for s in w.rows(player, "Structure") if s["owner"] == player and num(s["base"]["category"]) == 1)
+def section_discovery(w):
+    print("## Discovery (snapshot)\n")
+    rows = []
+    for player in w.players:
+        for row in w.rows(player, "ExpeditionDiscovery"):
+            rows.append([w.who(player), num(row["structure_id"]), num(row["epoch"]),
+                         num(row["empty_reveals"]), row["ruin_cleared"]])
+    table(["player", "home", "day", "empty streak", "ruin cleared"], rows)
+    sites = collections.Counter()
+    for player in w.players:
+        for row in w.rows(player, "ExpeditionSite"):
+            sites[(w.who(player), SITE.get(num(row["category"]), row["category"]), row["clear"] is not None)] += 1
+    table(["player", "site", "cleared", "snapshot sites"], [list(key) + [count] for key, count in sorted(sites.items())])
+    print("Snapshot sites describe retained state; discovery frequencies require recorded reveal outcomes.\n")
 
 
-def store_limit(level, store_picks):
-    return DEPLOY_CAP[level] * 2 * (10000 + store_picks * 5000) // 10000
-
-
-def section_stamina(w, A):
-    """Stamina an army is known to have spent (20 a reveal, 30 an attack; moves leave no story, so this is a floor) against
-    the most it could have had without paying: a full bar of 120 at muster, 30 an hour after, 30 per level-up. More than
-    that needs a LORDS refill or a Well, neither of which leaves a story."""
-    print("## Stamina\n")
-    last = collections.defaultdict(int)
-    for s in w.stories:
-        b = s["body"]
-        army = b.get("explorer_id") or b.get("attacker_id")
-        if army:
-            last[num(army)] = max(last[num(army)], s["at"])
-    rows, over = [], []
-    for d in range(len(w.days)):
-        spent, ratio = [], []
-        for a in A.values():
-            if a["day"] != d or not (a["reveals"] or a["fights"]):
-                continue
-            used = a["reveals"] * REVEAL_STAMINA + a["fights"] * ATTACK_STAMINA
-            hours = max(0, last[a["id"]] - a["born"]) / 3600
-            bound = STAMINA_MAX + STAMINA_PER_HOUR * hours + 30 * len(a["tiers"])
-            spent.append(used)
-            ratio.append(round(used / bound, 2))
-            if used > bound:
-                over.append((w.who(a["owner"]), a["id"] & 0xFFFF, d, used, round(bound)))
-        rows.append([d, spread(spent), spread(ratio)])
-    table(["day", "stamina spent per army (reveals + attacks)", "spent / most it could have had unpaid"], rows)
-    print(f"Armies that spent more than a free bar allows (so refilled or used a Well): {len(over)}")
-    for who, army, d, used, bound in over:
-        print(f"- {who} army {army} day {d}: spent at least {used}, free bound {bound}")
-    print()
-    bars = [num(r["stamina"]["amount"]) for p in w.players for r in w.rows(p, "ArmySlot") if num(r["explorer_id"])]
-    print(f"Live armies' stamina bar now (as last settled): {spread(bars)}.\n")
-
-
-def section_discovery(w, A):
-    """The current day's finds, per realm: its reveals in chain order, each marked by what its tile holds now.
-
-    A reveal makes one ExplorationReward, empty or not (map.cairo:440-498). A camp, rift, ruin or beasts find leaves an
-    ExpeditionSite at the reward's coord; an unused shrine, well or chest leaves its tile occupant. A used shrine or well
-    vacates its tile and leaves no trace but the Shrine XP, so those finds have no place in the sequence. The rebuilt
-    final streak is checked against the realm's own ExpeditionDiscovery.empty_reveals."""
-    print("## Discovery (current day, rebuilt per realm)\n")
-    rules = {k: num(v) for k, v in w.rules["FrontierDiscoveryRules"][0]["value"].items() if k != "game_id"}
-    totals, rows, floor_hits, streak_checks = collections.Counter(), [], 0, []
-    clean = collections.Counter()
-    for p in w.players:
-        realm = realm_row(w, p)
-        ns = num(realm["entity_id"]) >> 32
-        for disc in w.rows(p, "ExpeditionDiscovery"):
-            epoch = num(disc["epoch"])
-            found = {}
-            for site in w.rows(p, "ExpeditionSite"):
-                found[(num(site["col"]), num(site["row"]))] = SITE.get(num(site["category"]), "?")
-            for tile in w.rows(p, "TileOccupancy"):
-                kind = OCCUPIER.get(num(tile["category"]))
-                if kind:
-                    found[(num(tile["col"]), num(tile["row"]))] = kind
-            reveals = [
-                s for s in w.of("ExplorationReward")
-                if num(s["body"]["explorer_id"]) >> 32 == ns and num(s["body"]["coord"]["y"]) // 100 == 4 * epoch
-            ]
-            if not reveals:
-                continue
-            tree = research_of(next((num(r["learned"]) for r in w.rows(p, "RealmKnowledge")), 0))
-            complete = "Shrine" not in tree and "Well" not in tree  # no find here can vanish from the map
-            streak, kinds = 0, collections.Counter()
-            for s in reveals:
-                kind = found.get((num(s["body"]["coord"]["x"]), num(s["body"]["coord"]["y"])))
-                if kind:
-                    hit = streak >= rules["empty_reveal_limit"]
-                    floor_hits += hit
-                    if complete:
-                        clean["finds"] += 1
-                        clean["floor"] += hit
-                    streak = 0
-                    kinds[kind] += 1
-                else:
-                    streak += 1
-                    kinds["empty"] += 1
-            shrines = sum(a["shrines"] for a in A.values() if a["owner"] == p and a["day"] == epoch)
-            kinds["shrine (used)"] += shrines
-            kinds["empty"] -= shrines
-            totals.update(kinds)
-            if complete:
-                clean["realms"] += 1
-                clean["reveals"] += len(reveals)
-            streak_checks.append((w.who(p), streak, num(disc["empty_reveals"])))
-            rows.append([w.who(p), len(reveals)] + [kinds[k] for k in DISCOVERY_KINDS] + [f"{streak}/{num(disc['empty_reveals'])}"])
-    table(["player", "reveals"] + list(DISCOVERY_KINDS) + ["final empty streak rebuilt/stored"], rows)
-    n = sum(totals.values())
-    weights = {"beasts": rules["beasts_bps"], "camp": rules["camp_bps"], "rift": rules["rift_bps"], "ruin": rules["ruin_bps"]}
-    print(
-        f"All {n} reveals: "
-        + ", ".join(f"{k} {totals[k]} ({100 * totals[k] / max(1, n):.1f}%, rule {weights[k] / 100:.0f}%)" if k in weights else f"{k} {totals[k]} ({100 * totals[k] / max(1, n):.1f}%)" for k in DISCOVERY_KINDS)
-        + "."
-    )
-    print(f"Finds that came right after {rules['empty_reveal_limit']} or more empties (the floor): {floor_hits}.")
-    print(
-        f"In the {clean['realms']} realms without the Shrine or Well node (every find stays on the map, so the sequence is"
-        f" complete): {clean['reveals']} reveals, {clean['finds']} finds ({100 * clean['finds'] / max(1, clean['reveals']):.1f}%),"
-        f" {clean['floor']} of them forced by the floor ({100 * clean['floor'] / max(1, clean['finds']):.0f}% of finds)."
-    )
-    matched = sum(1 for _, a, b in streak_checks if a == b)
-    print(f"Rebuilt final streak equals the stored one in {matched} of {len(streak_checks)} realms.\n")
-
-
-DISCOVERY_KINDS = ("beasts", "camp", "rift", "ruin", "shrine", "shrine (used)", "well", "chest", "empty")
-
-
-def section_research(w):
-    print("## Research and storage\n")
-    rows, uptake = [], collections.Counter()
-    picks = collections.Counter()
-    for p in w.players:
-        realm = realm_row(w, p)
-        level = num(realm["base"]["level"])
-        learned = next((num(r["learned"]) for r in w.rows(p, "RealmKnowledge")), 0)
-        tree = research_of(learned)
-        uptake[(level, bool(tree))] += 1
-        for name, (tier, sides) in tree.items():
-            picks[name] += 1
-            for side in sides:
-                picks[f"{name}: {side}"] += 1
-        if tree:
-            rows.append(
-                [w.who(p), level, "; ".join(f"{n} {t}" + (f" ({', '.join(sd)})" if sd else "") for n, (t, sd) in tree.items())]
-            )
-    print(
-        "Realms with any research: "
-        + ", ".join(f"level {lv} {'with' if has else 'without'}: {n}" for (lv, has), n in sorted(uptake.items()))
-        + ".\n"
-    )
-    table(["player", "realm level", "research learned (side per tier)"], rows)
-    print("Picks by node: " + ", ".join(f"{k} {v}" for k, v in sorted(picks.items())) + ".")
-    never = [name for _, name, *_ in RESEARCH if name not in picks]
-    never += [f"{name}: {side}" for _, name, _, _, _, _, sides in RESEARCH for side in sides if f"{name}: {side}" not in picks]
-    print("Never picked by anyone: " + ", ".join(never) + ".\n")
-    # Storage: wheat and labor settle up to 2 deploys of the level's cap, +50% per Granary/Storeroom pick.
-    rows, at_cap = [], collections.Counter()
-    for p in w.players:
-        realm = realm_row(w, p)
-        level = num(realm["base"]["level"])
-        tree = research_of(next((num(r["learned"]) for r in w.rows(p, "RealmKnowledge")), 0))
-        cells = [w.who(p), level]
-        for resource, row, store in ((35, "Farm", "Granary"), (23, "Workshop", "Storeroom")):
-            limit = store_limit(level, tree.get(row, (0, []))[1].count(store))
-            balance = next(
-                (num(r["balance"]) for r in w.rows(p, "ResourceBalance")
-                 if num(r["entity_id"]) == num(realm["entity_id"]) and num(r["resource_type"]) == resource), 0)
-            production = next(
-                (r for r in w.rows(p, "ResourceProduction")
-                 if num(r["entity_id"]) == num(realm["entity_id"]) and num(r["resource_type"]) == resource), None)
-            if production and num(production["building_count"]):
-                balance += num(production["production_rate"]) * max(0, w.now - num(production["last_settled_at"]))
-            settled = min(limit * P, balance) // P
-            hours = ""
-            if production and num(production["production_rate"]) and settled < limit:
-                hours = f", full in {(limit * P - balance) / num(production['production_rate']) / 3600:.1f}h"
-            if settled >= limit:
-                at_cap[RESOURCE[resource]] += 1
-            cells.append(f"{settled}/{limit}{hours}")
-        rows.append(cells)
-    print(
-        f"Stores at their limit now: "
-        + (", ".join(f"{k} {v}" for k, v in at_cap.items()) or "none")
-        + f" of {len(w.players)} realms.\n"
-    )
-    table(["player", "level", "Wheat now/limit", "Labor now/limit"], rows)
-    clipped = [
-        (w.who(p), round(num(g["amount"]) / P))
-        for p in w.players for g in w.rows(p, "LaborGrant") if num(g["amount"]) < 1000 * P
-    ]
-    print(f"Labor grants clipped by the store limit (stored < 1000): {clipped or 'none'}.\n")
+def section_stocks(w):
+    print("## Stored resources (snapshot, before future production settlement)\n")
+    rows = []
+    for player in w.players:
+        for row in w.rows(player, "ResourceBalance"):
+            rows.append([w.who(player), num(row["entity_id"]),
+                         RESOURCE.get(num(row["resource_type"]), row["resource_type"]), num(row["balance"]) / P])
+    table(["player", "entity", "resource", "stored amount"], rows)
 
 
 def section_realm(w):
@@ -1035,7 +695,7 @@ def section_realm(w):
     built = collections.defaultdict(collections.Counter)
     labor = collections.Counter()
     for s in w.of("BuildingPaymentStory"):
-        built[s["owner"]][BUILDING.get(num(s["body"]["category"]), s["body"]["category"])] += 1
+        built[s["owner"]][num(s["body"]["category"])] += 1
         for cost in s["body"]["cost"]:
             labor[RESOURCE.get(num(cost["resource_type"]), cost["resource_type"])] += num(cost["amount"]) // P
     kinds = sorted({k for c in built.values() for k in c})
@@ -1049,109 +709,34 @@ def section_realm(w):
     )
     per_player = [sum(c.values()) for c in built.values()]
     print(f"- buildings per building player: {spread(per_player)}\n")
-    # Flows the stories show. Labor in: reveals paid in labor (as computed; a full store clips them) and camp payouts
-    # (as stored). Labor out: buildings and realm level-ups (4000 to level 1, 15000 to 2, 40000 to 3; base.ts:80-86).
-    # Wheat out: 2 a troop mustered, 0.02 a troop per reveal (troops.cairo:306-338). Research spends are not stories.
-    level_cost = {1: 4000, 2: 15000, 3: 40000}
-    troops_at = {}
-    rows = []
-    for d in range(len(w.days)):
-        flow = collections.Counter()
-        for st in w.stories:
-            if w.day(st["at"]) != d:
-                continue
-            b = st["body"]
-            if st["kind"] == "ExplorerCreateStory":
-                troops_at[num(b["explorer_id"])] = num(b["amount"]) // P
-                flow["troops mustered"] += num(b["amount"]) // P
-                flow["wheat: musters"] += 2 * num(b["amount"]) // P
-            elif st["kind"] == "ExplorationReward":
-                if num(b["resource_type"]) == 23:
-                    flow["labor: reveals"] += num(b["amount"]) // P
-                else:
-                    flow["essence: reveals"] += num(b["amount"]) // P
-                flow["wheat: reveals"] += troops_at.get(num(b["explorer_id"]), 0) * 2 // 100
-            elif st["kind"] == "SitePayout" and b["reward"]:
-                kind = {23: "labor: camps", 38: "essence: rifts", 37: "lords: ruins"}[num(b["reward"]["resource_type"])]
-                flow[kind] += num(b["reward"]["amount"]) // P
-            elif st["kind"] == "BuildingPaymentStory":
-                flow["labor: buildings"] += sum(num(c["amount"]) // P for c in b["cost"] if num(c["resource_type"]) == 23)
-            elif st["kind"] == "StructureLevelUpStory":
-                flow["labor: level-ups"] += level_cost[num(b["new_level"])]
-            elif st["kind"] == "Battle" and num(b["attacker_id"]) in troops_at:
-                troops_at[num(b["attacker_id"])] = num(b["attacker"]["after"]) // P
-        rows.append(
-            [d, flow["labor: reveals"], flow["labor: camps"], flow["labor: buildings"], flow["labor: level-ups"],
-             flow["essence: reveals"], flow["essence: rifts"], flow["troops mustered"], flow["wheat: musters"], flow["wheat: reveals"]]
-        )
-    table(
-        ["day", "labor in: reveals", "labor in: camps", "labor out: buildings", "labor out: level-ups",
-         "Essence in: reveals", "Essence in: rifts", "troops mustered", "wheat out: musters", "wheat out: reveals"],
-        rows,
-    )
-    rates = collections.defaultdict(list)
-    for p in w.players:
-        realm = num(realm_row(w, p)["entity_id"])
-        for r in w.rows(p, "ResourceProduction"):
-            if num(r["entity_id"]) == realm and num(r["building_count"]):
-                rates[RESOURCE.get(num(r["resource_type"]), r["resource_type"])].append(round(num(r["production_rate"]) * 3600 / P))
-    for kind, values in sorted(rates.items()):
-        print(f"- {kind} produced an hour per realm now: {spread(values)}")
-    print()
+    print("Building categories above use their recorded native IDs.\n")
+    rates = []
+    for player in w.players:
+        for row in w.rows(player, "ResourceProduction"):
+            rates.append([w.who(player), num(row["entity_id"]),
+                          RESOURCE.get(num(row["resource_type"]), row["resource_type"]),
+                          num(row["building_count"]), num(row["production_rate"]) * 3600 / P,
+                          num(row["last_settled_at"])])
+    table(["player", "entity", "resource", "buildings", "rate per hour", "last settled at"], rates)
 
 
 def section_economy(w):
-    """LORDS out (ruin payouts, opened chests, withdrawals) against the pool's linear unlock (lords_budget.cairo)."""
-    print("## Economy (LORDS)\n")
-    budget = {k: num(v) for k, v in w.rules["LordsBudget"][0]["value"].items() if k != "game_id"}
-    clock = w.game["clock"]
-    span = clock["end_at"] - clock["start_main_at"]
-    rows, paid_total = [], 0
-    for d, (start, end) in enumerate(w.days):
-        ruins = [s for s in w.of("SitePayout") if num(s["body"]["category"]) == 0xA and w.day(s["at"]) == d]
-        ruin_lords = sum(num(s["body"]["reward"]["amount"]) // P for s in ruins if s["body"]["reward"])
-        chests = [s for s in w.of("RewardChestOpened") if w.day(s["at"]) == d]
-        chest_lords = sum(num(s["body"]["amount"]) for s in chests)
-        withdrawn = sum(num(s["body"].get("amount", 0)) for s in w.of("LordsWithdrawn") if w.day(s["at"]) == d)
-        unlocked_today = budget["pool"] * (min(end, clock["end_at"]) - start) // span
-        paid_total += ruin_lords + chest_lords
-        rows.append([d, len(ruins), ruin_lords, len(chests), chest_lords, withdrawn, unlocked_today])
-    table(["day", "ruins cleared", "LORDS from ruins", "chests opened", "LORDS from chests", "LORDS withdrawn", "pool unlocked that day"], rows)
-    print(
-        f"Pool {budget['pool']} for the season ({span / 3600:.0f} h), unlocked linearly: {budget['pool'] * 3600 // span} an hour."
-        f" Left {budget['pool_left']}; paid out per the stories {paid_total}; so refills paid back"
-        f" {budget['pool_left'] - (budget['pool'] - paid_total)} (pool_left = pool − paid + refills)."
-    )
-    print(
-        f"Today: price {budget['price']} LORDS a share (ceiling {num(w.rules['ChestRules'][0]['value']['price_ceiling'])}),"
-        f" {budget['rolled_shares']} shares rolled, {budget['open']} LORDS reserved by found ruins and chests."
-        f" Yesterday: {budget['yesterday_shares']} shares over {budget['yesterday_ticks']} ticks."
-    )
-    reserved = collections.Counter()
-    shares = {k: num(v) for k, v in w.rules["ChestRules"][0]["value"]["shares"].items()}
-    tiers = ["common", "uncommon", "rare", "epic", "legendary"]
-    for p in w.players:
-        for c in w.rows(p, "SiteChest"):
-            if num(c["reservation_day"]) == budget["day"]:
-                reserved[w.who(p)] += shares[tiers[num(c["tier"])]]
-                print(f"- chest held by {w.who(p)}: {tiers[num(c['tier'])]}, {num(c['amount'])} LORDS")
-    print(
-        f"Shares held by today's chests: {sum(reserved.values())} of {budget['rolled_shares']} rolled"
-        f" (a ruin the budget cannot cover is refused and turns empty, but its shares still count as rolled).\n"
-    )
-    lords = [(w.who(e["address"]), int(e["rewards"]["lords"])) for e in w.board["entries"] if int(e["rewards"]["lords"])]
-    print(f"Leaderboard LORDS earned: {lords}.")
-    held = [(w.who(p), num(r["balance"]) // P) for p in w.players for r in w.rows(p, "ResourceBalance") if num(r["resource_type"]) == 37]
-    print(f"LORDS held in realms now: {held}.\n")
-    grants = collections.defaultdict(list)
-    for p in w.players:
-        for g in w.rows(p, "LaborGrant"):
-            grants[(p, num(g["day"]))].append(num(g["amount"]) / P)
-    print("## Labor grants (one row per Realm NFT an account holds and UTC day it claimed)\n")
-    for (p, day), amounts in sorted(grants.items(), key=lambda kv: -len(kv[1])):
-        when = datetime.fromtimestamp(day * 86400, UTC).strftime("%m-%d")
-        print(f"- {w.who(p)} on {when}: {len(amounts)} grants, {round(sum(amounts))} Labor stored")
-    print()
+    print("## Recorded payouts\n")
+    paid = collections.Counter()
+    for story in w.of("ExplorationReward", "SitePayout"):
+        reward = story["body"] if story["kind"] == "ExplorationReward" else story["body"]["reward"]
+        if reward:
+            resource = num(reward["resource_type"])
+            paid[(w.day(story["at"]), story["kind"], resource)] += num(reward["amount"])
+    table(["day", "source", "resource", "recorded amount"],
+          [[day, kind, RESOURCE.get(resource, resource), amount / P]
+           for (day, kind, resource), amount in sorted(paid.items())])
+    rows = []
+    for day in range(len(w.days)):
+        chests = [s for s in w.of("RewardChestOpened") if w.day(s["at"]) == day]
+        withdrawn = sum(num(s["body"]["amount"]) for s in w.of("LordsWithdrawn") if w.day(s["at"]) == day)
+        rows.append([day, len(chests), sum(num(s["body"]["amount"]) for s in chests), withdrawn])
+    table(["day", "chests opened", "LORDS from chests", "LORDS withdrawn"], rows)
 
 
 def section_health(w):
@@ -1191,14 +776,14 @@ DROPOUT_MINUTES = 15
 
 
 def section_blitz(folder, who):
-    """Blitz on the same shard: every listed game, from the directory, its history, leaderboard and review rows."""
+    """Blitz on the same shard: every listed game, from the directory, its history and review rows."""
     games = load(folder, "blitz.json")
     print("# Blitz\n")
     fmt = lambda t: datetime.fromtimestamp(t, UTC).strftime("%m-%d %H:%M")  # noqa: E731
-    rows, sources, winners, dropouts, accounts = [], collections.Counter(), [], [], collections.Counter()
+    rows, dropouts, accounts = [], [], collections.Counter()
     for gid in sorted(games, key=int):
         g = games[gid]
-        entry, items, board, review = g["entry"], g["history"], g["leaderboard"], g["review"]
+        entry, items, review = g["entry"], g["history"], g["review"]
         clock = entry["clock"]
         roster = [r["account"] for r in entry["roster"]]
         for a in roster:
@@ -1213,11 +798,6 @@ def section_blitz(folder, who):
             owner = v.get("owner") or (v.get("attacker") or {}).get("player")
             if owner and kind not in ("RealmCreatedStory", "GuardAddStory", "BlitzFinalized"):
                 last[owner] = max(last.get(owner, 0), num(v.get("timestamp", "0x0")))
-        entries = sorted(board["entries"], key=lambda e: e["rank"])
-        scored = [e for e in entries if e["totalPoints"]]
-        for e in entries:
-            for source, b in e["activityBreakdown"].items():
-                sources[source] += b["points"]
         for a in roster:
             if a not in last:
                 dropouts.append((gid, who(a), "never acted"))
@@ -1225,9 +805,6 @@ def section_blitz(folder, who):
                 dropouts.append((gid, who(a), f"last action {(clock['end_at'] - last[a]) / 60:.0f} min before the end"))
         hypers = review.get("Hyperstructure", []) if isinstance(review, dict) else []
         complete = sum(1 for h in hypers if h["value"]["stage"] == "Complete")
-        top = entries[0] if entries else None
-        if top:
-            winners.append((gid, who(top["address"]), top["totalPoints"], top["activityBreakdown"]))
         rows.append(
             [
                 gid,
@@ -1235,9 +812,6 @@ def section_blitz(folder, who):
                 f"{(clock['end_at'] - clock['start_main_at']) / 3600:.1f}",
                 f"{entry['registration']['count']}/{entry['registration']['max']}",
                 len([a for a in roster if a in last]),
-                len(scored),
-                f"{who(top['address'])} {top['totalPoints']}" if top else "",
-                entries[1]["totalPoints"] if len(entries) > 1 else "",
                 f"{complete}/{len(hypers)}",
                 kinds["RelicChestOpened"],
                 kinds["StructureCapturedStory"],
@@ -1250,15 +824,9 @@ def section_blitz(folder, who):
     print(f"Players per game: {spread(sizes)}; " + ", ".join(f"{k} players: {v} games" for k, v in sorted(collections.Counter(sizes).items()))
           + f". Solo games: {sizes.count(1)} of {len(sizes)}.\n")
     table(
-        ["game", "main starts (UTC)", "hours", "registered/max", "acted", "scored", "winner, points", "2nd points",
-         "hyperstructures complete/on map", "relic crates opened", "captures", "battles", "reveals"],
+        ["game", "main starts (UTC)", "hours", "registered/max", "acted", "hyperstructures complete/on map",
+         "relic crates opened", "captures", "battles", "reveals"],
         rows,
-    )
-    total = sum(sources.values())
-    print("Points by source, all games: " + ", ".join(f"{k} {v} ({100 * v / max(1, total):.0f}%)" for k, v in sources.most_common()) + ".\n")
-    table(
-        ["game", "winner", "points", "by source"],
-        [[g, w, p, ", ".join(f"{k} {b['points']}" for k, b in br.items() if b["points"])] for g, w, p, br in winners],
     )
     print(f"Registered players who never acted or stopped more than {DROPOUT_MINUTES} min before the end: {len(dropouts)}")
     for gid, name, why in dropouts:
@@ -1376,13 +944,14 @@ def analyse(folder):
     w = World(folder)
     print(f"# Frontier live data, game {w.game['game_id']}, pulled {w.pulled['at']}\n")
     section_players(w)
-    A = section_progression(w)
-    section_standings(w, A)
+    activity = army_activity(w)
+    section_armies(w)
+    section_standings(w, activity)
     section_fights(w)
-    section_exploration(w, A)
-    section_discovery(w, A)
-    section_stamina(w, A)
-    section_research(w)
+    section_exploration(w, activity)
+    section_discovery(w)
+    section_stamina(w)
+    section_stocks(w)
     section_realm(w)
     section_economy(w)
     if os.path.exists(os.path.join(folder, "chain.json")):

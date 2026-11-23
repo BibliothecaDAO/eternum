@@ -1,4 +1,3 @@
-import { readRealmSkin, isRealmSkinPath, DEVCON_BANNER_ART } from "../structures/realm-skins";
 import {
   getBuildingDisplayName,
   resolveBuildingModelSelection,
@@ -14,7 +13,6 @@ import { RealmLivingAura } from "../structures/realm-living-aura";
 import { HexceptionModels, disposeBuildingModel, prepareBuildingModel } from "./hexception-models";
 import { SettlementAnimation } from "../structures/settlement-animation";
 import { HyperstructureModel } from "../structures/hyperstructure-model";
-import { readHyperstructureConstruction } from "../structures/hyperstructure-state";
 import {
   SettlementAppearance,
   resolveSettlementRelationship,
@@ -43,7 +41,6 @@ import { resolveStructureRotationY } from "@/three/structures/structure-orientat
 import { resolvePlayRouteTarget } from "@/play/navigation/play-route-target";
 import { RealmGridBuilds } from "./hexception-grid-builds";
 import type { PipelineCompiler } from "@/three/pipeline-compiler";
-import { awaitLocalScenePresentable } from "./local-scene-presentation";
 import { getGameModeConfig } from "@/config/game-modes";
 import type { GameModeConfig } from "@/config/game-modes";
 import {
@@ -60,6 +57,7 @@ import {
   disposeClonedBuildingMaterials,
 } from "@/three/managers/building-preview";
 import { SMALL_DETAILS_NAME } from "@/three/managers/instanced-model";
+import { REALM_PLOT_HOVER_PALETTE } from "@/three/managers/worldmap-interaction-palette";
 import { SceneManager } from "@/three/scene-manager";
 import { HexagonScene } from "@/three/scenes/hexagon-scene";
 import { ProceduralTerrain } from "@/three/terrain/procedural-terrain";
@@ -119,7 +117,6 @@ import {
   ResourceManager,
   configManager,
   getRealmInfo,
-  getStructureStage,
   DEFAULT_COORD_ALT,
   storedBiomeAt,
 } from "@bibliothecadao/eternum";
@@ -137,6 +134,7 @@ import {
   StructureType,
   getHexDistance,
   getProducedResource,
+  orderAspect,
   resourceName,
 } from "@bibliothecadao/types";
 import gsap from "gsap";
@@ -306,7 +304,6 @@ export default class HexceptionScene extends HexagonScene {
   // Presentable once the realm's first frame has been drawn behind the held map frame (see whenPresentable).
   private presentation: Promise<void> = Promise.resolve();
   private resolveFirstFrame: (() => void) | undefined;
-  private groundTexturesReady: Promise<void> = Promise.resolve();
   // Store Zustand unsubscribe functions to clean up on destroy
   private storeUnsubscribes: (() => void)[] = [];
   // True from setup until switch-off. Store subscriptions fire in every scene, so a grid rebuild (and the
@@ -342,6 +339,7 @@ export default class HexceptionScene extends HexagonScene {
     this.scene.add(this.proceduralTerrain.object3d);
     this.mode = getGameModeConfig();
     this.hoverLabelManager = new HexHoverLabel(this.scene);
+    this.interactiveHexManager.applyHoverPalette(REALM_PLOT_HOVER_PALETTE);
 
     this.ambienceSystem = new HexceptionAmbienceSystem(this.scene);
     this.applyAmbienceAppearance();
@@ -617,9 +615,8 @@ export default class HexceptionScene extends HexagonScene {
       }
     });
     if (isSettlementModelPath(path)) {
-      const appearance = new SettlementAppearance(model, meshes, isRealmSkinPath(path) ? DEVCON_BANNER_ART : undefined);
+      const appearance = new SettlementAppearance(model, meshes);
       appearance.setRelationship("enemy");
-      if (isRealmSkinPath(path)) await appearance.setOrder(undefined);
       this.settlementPresentations.set(path, { appearance, animation: new SettlementAnimation(model, meshes) });
       model.userData.settlementModelPath = path;
     }
@@ -670,9 +667,6 @@ export default class HexceptionScene extends HexagonScene {
     this.localAssetsStarted = true;
     void this.proceduralTerrain.loadProps().catch((error) => {
       console.warn("[Hexception] Optional procedural terrain props failed to load", error);
-    });
-    this.groundTexturesReady = this.proceduralTerrain.loadGroundTextures().catch((error) => {
-      console.warn("[Hexception] Procedural ground textures failed; retaining flat terrain", error);
     });
   }
 
@@ -1047,20 +1041,20 @@ export default class HexceptionScene extends HexagonScene {
     );
     const producedResource = getProducedResource(building.category as BuildingType);
 
-    if (producedResource) {
-      const productionManager = new ResourceManager(this.game.store, this.shownRealmId);
-      const productionEndsAt = productionManager.getProductionEndsAt(producedResource as ResourcesIds);
-      const currentTick = getBlockTimestamp().currentDefaultTick;
-      const isActive =
-        (productionEndsAt ?? 0) > currentTick || productionManager.isFood(producedResource as ResourcesIds);
-      const producedName = resourceName(producedResource as ResourcesIds);
+    const production =
+      producedResource &&
+      new ResourceManager(this.game.store, this.shownRealmId).productionData(
+        producedResource as ResourcesIds,
+        getBlockTimestamp().currentDefaultTick,
+      );
 
+    if (production) {
       this.hoverLabelManager.update(position, {
         kind: "resource",
         buildingName,
         resourceId: producedResource as ResourcesIds,
-        resourceName: producedName,
-        isActive: !!isActive,
+        resourceName: resourceName(producedResource as ResourcesIds),
+        isActive: production.isProducing,
       });
       return;
     }
@@ -1157,7 +1151,7 @@ export default class HexceptionScene extends HexagonScene {
     const structureType = this.tileManager.structureType();
     this.structureStage =
       structureType === StructureType.Hyperstructure
-        ? getStructureStage(structureType, this.shownRealmId, this.game.store)
+        ? StructureProgress.STAGE_3
         : this.tileManager.getRealmLevel(this.shownRealmId);
     this.fitCameraReach();
   }
@@ -1257,10 +1251,7 @@ export default class HexceptionScene extends HexagonScene {
     // A realm superseded before its first frame releases whoever waited on it.
     this.resolveFirstFrame?.();
     const firstFrame = new Promise<void>((resolve) => (this.resolveFirstFrame = resolve));
-    this.localPresentation = awaitLocalScenePresentable({
-      gridBuilt: this.gridBuilds.whenBuilt(),
-      groundTextures: this.groundTexturesReady,
-    }).finally(() => {
+    this.localPresentation = this.gridBuilds.whenBuilt().finally(() => {
       if (this.ownsRealmGeneration(generation)) this.localPresentationReady = true;
     });
     this.presentation = this.localPresentation.then(() => firstFrame);
@@ -1506,7 +1497,7 @@ export default class HexceptionScene extends HexagonScene {
       const model = (this.hyperstructureModel ??= new HyperstructureModel(1));
       model.setMatrixAt(0, building.matrix);
       model.setCount(1);
-      this.syncHyperstructureConstruction();
+      model.setConstructionAt(0, { entityId: this.shownRealmId, progress: 100, completed: true });
       model.group.userData[BUILDING_RENDER_SIGNATURE] = signature;
       this.scene.add(model.group);
       this.buildingInstances.set(key, model.group);
@@ -1551,19 +1542,18 @@ export default class HexceptionScene extends HexagonScene {
     building: HexceptionBuilding,
     mainStructureType: StructureType | undefined,
   ): BuildingModelSelection {
+    const structure = this.game.store.get("Structure", {
+      game_id: configManager.getActiveGameId(),
+      entity_id: this.shownRealmId,
+    });
+    const orderId = structure?.metadata.order;
     return resolveBuildingModelSelection(building, {
       stage: this.structureStage,
       structureId: this.shownRealmId,
       mainStructureType,
       wonder: !!this.tileManager.getWonder(this.shownRealmId),
+      aspect: this.mode.id === "frontier" && orderId ? orderAspect(orderId) : null,
       frontier: this.mode.id === "frontier",
-      realmSkin:
-        mainStructureType === StructureType.Realm
-          ? readRealmSkin(this.game.store, {
-              game_id: configManager.getActiveGameId(),
-              entity_id: BigInt(this.state.structureEntityId),
-            })
-          : undefined,
     });
   }
 
@@ -1628,14 +1618,6 @@ export default class HexceptionScene extends HexagonScene {
       return;
     }
     gsap.to(instance.scale, { x: 1, y: 1, z: 1, duration: 0.5, ease: "power2.out", onComplete: standing });
-  }
-
-  private syncHyperstructureConstruction(): void {
-    if (!this.hyperstructureModel || this.tileManager.structureType() !== StructureType.Hyperstructure) return;
-    this.hyperstructureModel.setConstructionAt(
-      0,
-      readHyperstructureConstruction(this.game.store, safeInteger(this.shownRealmId)),
-    );
   }
 
   private applyMiningBuildingMaterial(
@@ -1842,26 +1824,12 @@ export default class HexceptionScene extends HexagonScene {
    * redraws now while the view is open, and on the next entry otherwise.
    */
   private answerFactChanges(changes: readonly NativeFactChange[]): void {
-    if (changes.some((change) => this.changesShownHyperstructure(change))) this.syncHyperstructureConstruction();
     const level = changes.map((change) => this.changedCastleLevel(change)).find((value) => value !== undefined);
-    const skinChanged = changes.some(
-      (change) =>
-        change.model === "CampaignHome" &&
-        (change.current ?? change.previous)?.home === BigInt(this.state.structureEntityId) &&
-        (change.current ?? change.previous)?.game_id === configManager.getActiveGameId(),
-    );
-    if (level !== undefined || skinChanged) {
-      if (level !== undefined && level > this.structureStage) this.newRingRadius = buildableRadius(level);
+    if (level !== undefined) {
+      if (level > this.structureStage) this.newRingRadius = buildableRadius(level);
       this.removeCastleFromScene();
     }
-    if (level !== undefined || skinChanged || changes.some((change) => this.changesShownGround(change)))
-      this.redrawStaleGrid();
-  }
-
-  private changesShownHyperstructure(change: NativeFactChange): boolean {
-    if (change.model !== "Hyperstructure" && change.model !== "HyperstructureProgress") return false;
-    const row = change.current ?? change.previous;
-    return row?.entity_id === BigInt(this.shownRealmId) && row?.game_id === configManager.getActiveGameId();
+    if (level !== undefined || changes.some((change) => this.changesShownGround(change))) this.redrawStaleGrid();
   }
 
   /** The shown structure's new level, when the change is one to its level. */

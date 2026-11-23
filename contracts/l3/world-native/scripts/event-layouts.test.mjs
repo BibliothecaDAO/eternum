@@ -3,7 +3,7 @@ import test from "node:test";
 import { readFile } from "node:fs/promises";
 import { eventLayouts, uniqueEventLayouts } from "./event-layouts.mjs";
 
-test("Games exposes the published player frame, roles and frozen roster ABI", async () => {
+test("Games exposes the published player frame and roles", async () => {
   const { abi } = JSON.parse(
     await readFile(new URL("../target/dev/world_native_Games.contract_class.json", import.meta.url), "utf8"),
   );
@@ -16,13 +16,12 @@ test("Games exposes the published player frame, roles and frozen roster ABI", as
   assert.deepEqual(method("play").inputs, [
     { name: "game_id", type: "core::integer::u32" },
     { name: "release_id", type: "core::integer::u32" },
-    { name: "preset_commitment", type: "core::felt252" },
     { name: "command", type: "core::array::Span::<core::felt252>" },
   ]);
   assert.deepEqual(method("play").outputs, []);
   assert.deepEqual(
     method("constructor").inputs.map(({ name }) => name),
-    ["owner", "launcher", "authentication", "release_id", "release", "vrf_public_key", "l2_gas_bound"],
+    ["owner", "launcher", "authentication", "release_id", "release", "classes", "vrf_public_key", "l2_gas_bound"],
   );
   for (const name of [
     "owner",
@@ -31,56 +30,41 @@ test("Games exposes the published player frame, roles and frozen roster ABI", as
     "set_launcher",
     "set_ledger_operator",
     "create_game",
-    "register_preset",
+    "release_classes",
+    "view_call",
+    "authority_call",
   ])
     method(name);
   assert.deepEqual(method("create_game").inputs, [
     { name: "params", type: "world_native::registrar::CreateGameParams" },
   ]);
-  assert.deepEqual(abi.find(({ name }) => name === "world_native::registrar::RosterPlayer").members, [
-    { name: "account", type: "core::starknet::contract_address::ContractAddress" },
-    { name: "wallet", type: "core::starknet::contract_address::ContractAddress" },
-  ]);
   assert.equal(
-    abi.find(({ name }) => name === "world_native::entry::LaborHome").members.find(({ name }) => name === "home").type,
-    "core::integer::u64",
+    abi.some(({ name }) => name === "world_native::registrar::RosterPlayer"),
+    false,
   );
-  assert.deepEqual(method("publish_frontier_pool").inputs, [
+  for (const retired of [
+    "register_preset",
+    "publish_frontier_pool",
+    "post_frontier_top",
+    "award_frontier_prize",
+    "grant_labor",
+    "labor_grant",
+    "player_points",
+    "game_result",
+  ])
+    assert.equal(
+      methods.some(({ name }) => name === retired),
+      false,
+      `${retired} is retired`,
+    );
+  assert.deepEqual(method("sweep_lords").inputs, [
     { name: "game_id", type: "core::integer::u32" },
-    { name: "amount", type: "core::integer::u128" },
-    { name: "prize_pool", type: "core::integer::u128" },
-  ]);
-  assert.deepEqual(method("publish_frontier_pool").outputs, []);
-  assert.deepEqual(abi.find(({ name }) => name === "world_native::relics::ChestRules").members, [
-    { name: "price_ceiling", type: "core::integer::u128" },
-    { name: "shares", type: "world_native::relics::ChestTiers" },
-    { name: "claim_window_seconds", type: "core::integer::u32" },
-    { name: "pool_bps", type: "core::integer::u16" },
-    { name: "top_n", type: "core::integer::u16" },
-  ]);
-  const relics = JSON.parse(
-    await readFile(new URL("../target/dev/world_native_RelicsLogic.contract_class.json", import.meta.url), "utf8"),
-  ).abi;
-  assert.deepEqual(relics.find(({ name }) => name === "world_native::relics::LordsBudget").members, [
-    { name: "pool", type: "core::integer::u128" },
-    { name: "pool_left", type: "core::integer::u128" },
-    { name: "open", type: "core::integer::u128" },
-    { name: "day", type: "core::integer::u64" },
-    { name: "price", type: "core::integer::u128" },
-    { name: "rolled_shares", type: "core::integer::u128" },
-    { name: "yesterday_shares", type: "core::integer::u128" },
-    { name: "yesterday_ticks", type: "core::integer::u64" },
+    { name: "structure_id", type: "core::integer::u64" },
   ]);
   assert.equal(
     methods.some(({ name }) => name === "lords_budget"),
     false,
   );
-  assert.deepEqual(method("grant_labor").inputs, [
-    { name: "home", type: "world_native::entry::LaborHome" },
-    { name: "day", type: "core::integer::u64" },
-    { name: "account", type: "core::starknet::contract_address::ContractAddress" },
-  ]);
-  assert.deepEqual(method("grant_labor").outputs, [{ type: "world_native::entry::LaborGrant" }]);
   assert.equal(
     methods.some(({ name }) =>
       /recorded_execution|execution_head|actor_nonce|open_epoch|reveal_epoch/.test(name ?? ""),

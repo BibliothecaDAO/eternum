@@ -1,3 +1,6 @@
+import { gameRegistryRow } from "../../../../../../../packages/core/src/test-support/game-registry";
+import { GAME_FAMILIES } from "../../../../../../../config/source/common/native-preset-modes";
+import { NATIVE_RELEASES } from "../../../../../../../deploy/release/native-release";
 import { configManager, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import {
@@ -7,7 +10,7 @@ import {
   StructureType,
   TileOccupier,
 } from "@bibliothecadao/types";
-import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
+import release from "../../../../../../../contracts/l3/world-native/schema/release-definition.json";
 
 const set = (key: string, model: string, value: Record<string, unknown>) => ({ model, key, value });
 export const HOUR = 3600;
@@ -19,25 +22,21 @@ const PRECISION = BigInt(RESOURCE_PRECISION);
  */
 export const realmBoard = () => {
   const store = new NativeFactStore();
-  store.applyFacts([set("0x100", "SliceRules", { ...preset.rules, game_id: 1 })] as never);
+  store.applyFacts([
+    set("0x100", "SliceRules", { ...release.definition.rules, game_id: 1, day_unit_seconds: 0 }),
+  ] as never);
   store.setSnapshot({ gameId: 1, complete: true, actor: "0x111", timestamp: 350 });
   store.applyFacts([
-    set("0x3", "GameRegistry", {
+    set("0x3", "GameRegistry", gameRegistryRow({ family: GAME_FAMILIES.blitz })),
+    set("0x1ab0", "GameRelease", {
       game_id: 1,
-      preset_id: 3,
-      name: "1",
-      start_settling_at: "1",
-      start_main_at: "100",
-      end_at: "1000",
-      settled: false,
-      ready: true,
-      dev_mode_on: false,
-      end_grace_seconds: 0,
-      seed: "1",
+      release_id: NATIVE_RELEASES.frontier.release,
+      created_release_id: NATIVE_RELEASES.frontier.release,
     }),
-    set("0x1ab0", "GameRelease", { game_id: 1, release_id: 3, created_release_id: 3, preset_commitment: "0x1ab" }),
-    ...preset.resources.map((rule) => set(`0x5${rule.resource_type}`, "ResourceRule", { ...rule, game_id: 1 })),
-    ...preset.buildings.map(({ category, rule }) =>
+    ...release.definition.resources.resources.map((rule) =>
+      set(`0x5${rule.resource_type}`, "ResourceRule", { ...rule, game_id: 1 }),
+    ),
+    ...release.definition.structures.buildings.map(({ category, rule }) =>
       set(`0x6${category}`, "BuildingRule", { ...rule, category, game_id: 1 }),
     ),
     set("0x70", "BoardRules", {
@@ -46,9 +45,7 @@ export const realmBoard = () => {
       workshop_rate: String((50n * PRECISION) / BigInt(HOUR)),
       output_step_bps: 2500,
       storage_step_bps: 5000,
-      population_step_bps: 2500,
       ration_step: String(PRECISION / 4n),
-      training_gate_tier: 2,
       troop_store_deploys: 2,
       settlement_resource_cap: 6000,
       city_resource_cap: 18000,
@@ -95,6 +92,8 @@ export const realmBoard = () => {
     }),
     set("0x73", "ResourceWeight", { game_id: 1, entity_id: 7, capacity: "100000000000000", weight: "0" }),
     set("0x74", "ResourceProduction", {
+      remainder: 0,
+
       game_id: 1,
       entity_id: 7,
       resource_type: ResourcesIds.Wheat,
@@ -122,7 +121,7 @@ export const realmBoard = () => {
     }),
   ] as never);
   setBlockTimestampSource(() => 350);
-  configManager.setActiveGame(1, 3);
+  configManager.setActiveGame(1);
   configManager.setStore(store);
   return { store, realm: store.require("Structure", { game_id: 1, entity_id: 7 }) };
 };

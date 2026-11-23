@@ -1,18 +1,12 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HudButton, HudNumberField, HudPanel, HudSelect } from "@/ui/design-system/kit/hud-elements";
 import { StaminaManager } from "@bibliothecadao/eternum";
-import { RELICS, TROOP_TIERS, TROOP_TYPES, formatExact } from "@bibliothecadao/types";
+import { TROOP_TIERS, TROOP_TYPES, formatExact } from "@bibliothecadao/types";
 
 import type { GuardOption, WorkingArmy } from "./battle-lab.types";
-import { RelicChip } from "../../utils/relic-chip";
 import { TierChip } from "../../utils/tier-chip";
 
 const MAX_TROOPS_PER_ARMY = 500_000;
-
-/** The relics that change a fight (damage, damage taken, stamina), by type then level, as the relic picker listed them. */
-const COMBAT_RELICS = RELICS.filter((relic) => ["Damage", "Damage Reduction", "Stamina"].includes(relic.type))
-  .toSorted((a, b) => (a.type === b.type ? a.level - b.level : a.type.localeCompare(b.type)))
-  .map((relic) => relic.id);
 
 const TYPES = TROOP_TYPES.map((type) => ({ value: type, label: type }));
 
@@ -120,26 +114,6 @@ export const ArmyColumn = ({
             <HudSelect label="Tier" value={army.tier} options={TIERS} onChange={(tier) => onChange({ tier })} />
           </Field>
         </div>
-
-        <Field label="Active Relics" hint={army.relics.length > 0 ? `${army.relics.length} on` : undefined}>
-          <div role="group" aria-label="Active Relics" className="flex flex-wrap gap-1.5">
-            {COMBAT_RELICS.map((relic) => {
-              const chosen = army.relics.includes(relic);
-              return (
-                <RelicChip
-                  key={relic}
-                  relic={relic}
-                  chosen={chosen}
-                  onPress={() =>
-                    onChange({
-                      relics: chosen ? army.relics.filter((each) => each !== relic) : [...army.relics, relic],
-                    })
-                  }
-                />
-              );
-            })}
-          </div>
-        </Field>
 
         {footer}
       </div>

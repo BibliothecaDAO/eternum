@@ -1,47 +1,32 @@
+use crate::rules::SPIRE_REVEAL_LIMIT;
 use crate::troops::Coord;
 
-#[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
-pub struct SpireLayout {
-    pub count: u16,
-    pub base_distance: u8,
-    pub layer_distance: u8,
-    pub max_layer: u8,
-}
-#[starknet::interface]
-pub trait ISpires<T> {
-    fn initialize_spires(ref self: T, game_id: u32);
-    #[cfg(feature: "test_support")]
-    fn spire_layout(self: @T, game_id: u32) -> Option<SpireLayout>;
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct ExpeditionSpireKey {
+    pub game_id: u32,
+    pub structure_id: u64,
+    pub epoch: u64,
+    pub depth: u8,
 }
 
-pub fn validate(layout: SpireLayout) {
-    assert!(layout.count > 0, "season preset requires a spire");
-    if layout.count == 1 {
-        return;
-    }
-    assert!(layout.base_distance > 0 && layout.layer_distance > 0, "invalid spire spacing");
-    let spacing: u32 = Into::<u8, u32>::into(layout.base_distance) * layout.layer_distance.into();
-    assert!(spacing % 15 == 0, "spire spacing must align with ethereal steps");
-    let layers: u32 = (layout.max_layer / layout.layer_distance).into();
-    let capacity = 1 + 3 * layers * (layers + 1);
-    assert!(layout.count.into() <= capacity, "spire count exceeds lattice");
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct ExpeditionSpire {
+    pub reveals: u8,
+    pub location: Option<Coord>,
 }
 
-pub fn location(center: Coord, layout: SpireLayout, ordinal: u32) -> Coord {
-    assert!(ordinal < layout.count.into(), "spire index outside layout");
-    if ordinal == 0 {
-        return center;
+pub fn discover(previous: ExpeditionSpire, coord: Coord, seed: u256) -> ExpeditionSpire {
+    if previous.location.is_some() {
+        return previous;
     }
-    let mut remaining = ordinal - 1;
-    let mut layer = 1;
-    while remaining >= 6 * layer {
-        remaining -= 6 * layer;
-        layer += 1;
-    }
-    // The pinned planner orders sides E, SE, SW, W, NW, NE.
-    let direction: u8 = ((6 - remaining % 6) % 6).try_into().unwrap();
-    let point = remaining / 6;
-    let spacing: u32 = Into::<u8, u32>::into(layout.base_distance) * layout.layer_distance.into();
-    let start = crate::geometry::neighbor_at_distance(center, direction, spacing * layer);
-    crate::geometry::neighbor_at_distance(start, (direction + 4) % 6, spacing * point)
+    let reveals = previous.reveals + 1;
+    assert!(reveals <= SPIRE_REVEAL_LIMIT, "spire discovery exhausted");
+    let chance: u128 = Into::<u8, u128>::into(reveals) * 10000 / SPIRE_REVEAL_LIMIT.into();
+    let found = crate::random::range(seed, 0x5350495245, 10000) < chance;
+    ExpeditionSpire { reveals, location: if found {
+        Some(coord)
+    } else {
+        None
+    } }
 }
+

@@ -3,6 +3,7 @@ import type { NativeWorld, NativeWorldManifest, RegistrarWorld } from "./types";
 import type { NativePlan } from "./types";
 import type { ShardRecord } from "../../../../../apps/herald/src/shard-manifest";
 import type { NativeSchema } from "../../../../../apps/herald/src/native/schema";
+import { nativeBalanceIdentity } from "../../../../../contracts/l3/world-native/schema/balance.gen";
 
 /** The shard's active schema: what its deployed Games contract exposes and how its rows are encoded. */
 export function nativeWorldSchema(manifest: RegistrarWorld): NativeSchema {
@@ -18,19 +19,11 @@ export function nativeGamesAbi(manifest: RegistrarWorld): Abi {
   return [...Object.values(schema.types), ...games.entrypoints] as Abi;
 }
 
-/** Resolve the Games surface from the shard's verified schema and address. */
-export function registrarWorldOf(
-  shard: { chainId: string; worldAddress: string; l2GasBound: bigint },
-  schema: NativeSchema,
-): RegistrarWorld {
-  return {
-    native: { activeSchema: schema.identity, schemas: { [schema.identity]: schema } },
-    world: { address: shard.worldAddress },
-    shard: { chainId: shard.chainId, l2GasBound: `0x${shard.l2GasBound.toString(16)}` },
-  };
-}
-
-export function buildNativeManifest(local: NativeWorld, before: NativePlan, shard: ShardRecord): NativeWorldManifest {
+export function buildNativeManifest(
+  local: NativeWorld,
+  report: { before: NativePlan; after: NativePlan },
+  shard: ShardRecord,
+): NativeWorldManifest {
   const games = local.games;
   const abis = new Map(
     [games, ...local.logic]
@@ -61,14 +54,15 @@ export function buildNativeManifest(local: NativeWorld, before: NativePlan, shar
     shard,
     native: {
       version: 2,
-      deploymentBlock: local.previous?.native.deploymentBlock ?? before.blockNumber,
+      deploymentBlock: local.previous?.native.deploymentBlock ?? report.before.blockNumber,
       activeSchema: local.schema.identity,
       schemas: { ...local.previous?.native.schemas, [local.schema.identity]: local.schema },
       gamesClassHash: games.classHash,
       verifierClassHash: local.verifier.classHash,
       migrationClassHash: local.release.migrationClassHash,
       releaseId: local.release.releaseId,
-      releaseSchemas: { ...local.previous?.native.releaseSchemas, [local.release.releaseId]: local.release.schema },
+      releases: { ...local.previous?.native.releases, ...report.after.releases },
+      releaseBalances: { ...local.previous?.native.releaseBalances, [local.release.releaseId]: nativeBalanceIdentity },
       logic: Object.fromEntries(local.logic.map(({ name, classHash }) => [name, classHash])),
     },
   };

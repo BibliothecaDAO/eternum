@@ -5,16 +5,16 @@ pub const UNIT: u32 = 14400;
 pub const START: u64 = 1_800_000_000;
 pub fn season(seed: felt252) -> GameRegistry {
     GameRegistry {
+        family: crate::game::FRONTIER,
         name: 'frontier',
-        preset_id: 5,
         settled: false,
-        ready: true,
         dev_mode_on: false,
         start_settling_at: START,
         start_main_at: START,
         end_at: START + 21 * 20 * UNIT.into(),
-        end_grace_seconds: 0,
+        scheduled_end_at: START + 21 * 20 * UNIT.into(),
         seed,
+        clock_scale: 1,
     }
 }
 pub fn unpack(mut lengths: u64) -> Span<u64> {

@@ -1,11 +1,10 @@
 import { STORE_MAKERS } from "@/ui/design-system/kit/words";
 import { buildingOutput } from "@/ui/shared/lib/building-output";
-import { getBuildingQuantity, realmLearned } from "@bibliothecadao/eternum";
+import { buildingMakePicks, getBuildingQuantity, realmLearned } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { BuildingType, formatCount, formatRate, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 
 import { buildingName } from "../build/building-names";
-import { makePicks } from "../research/sides-taken";
 import { FRONTIER_STORES, madeStore, type MadeResource, storeBuilding, storeMadeBy } from "../stores";
 
 /**
@@ -17,9 +16,9 @@ export const standingBuildings = (store: NativeFactStore, realmId: number, categ
   return category === BuildingType.ResourceLabor ? Math.max(0, count - 1) : count;
 };
 
-/** The picks on the make side (Fields, Tools, Drill) that raise a product's building. */
+/** Output research on the building that makes this resource. */
 export const madePicks = (resource: MadeResource, learned: bigint): number =>
-  makePicks(learned, FRONTIER_STORES[madeStore(resource)].made.row);
+  buildingMakePicks(learned, storeBuilding(madeStore(resource)));
 
 /** What all of a type's standing buildings make: their product and its rate a second. */
 type BuildingsMake = { resource: MadeResource; perSecond: number };
@@ -77,6 +76,6 @@ const makersLine = (
 };
 
 /** The castle's own labor a second: Labor's realm rate, which research never raises. */
-const castleLabor = (store: NativeFactStore, realm: NativeRows["Structure"]): number =>
+export const castleLabor = (store: NativeFactStore, realm: NativeRows["Structure"]): number =>
   Number(store.require("ResourceRule", { game_id: realm.game_id, resource_type: ResourcesIds.Labor }).realm_rate) /
   RESOURCE_PRECISION;

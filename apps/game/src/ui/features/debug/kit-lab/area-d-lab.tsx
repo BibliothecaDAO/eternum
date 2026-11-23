@@ -7,51 +7,27 @@ import { ArmyDeploymentPicker } from "@/ui/features/military/components/army-dep
 import { UnifiedArmyCreationBody } from "@/ui/features/military/components/unified-army-creation-modal/unified-army-creation-modal";
 import { GuildListHeader, GuildRow } from "@/ui/features/social/guilds/guild-list";
 import { PlayerList, type PlayerCustom } from "@/ui/features/social/player/player-list";
-import { CRATE_NEEDS_AN_ARMY } from "@/ui/design-system/kit/words";
-import { ChestTileDetails } from "@/ui/features/world/components/actions/chest-tile-details";
 import { ProductionStatusBadge } from "@/ui/shared";
-import type { VictoryPointGrants } from "@/ui/shared/lib/victory-point-grants";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import { ResourcesIds } from "@bibliothecadao/types";
 import { type ReactNode, useMemo } from "react";
 
-const GRANTS: VictoryPointGrants = {
-  exploreTile: 5,
-  openRelicCrate: 250,
-  claimCampFromBandits: 250,
-  claimHyperstructureFromBandits: 1_000,
-  hyperstructurePerSecond: 1,
-  hyperstructureScale: "per-realm",
-};
-
-const player = (address: bigint, name: string, rank: number, points: number, isUser = false): PlayerCustom => ({
+const player = (address: bigint, name: string, hyperstructures: number, isUser = false): PlayerCustom => ({
   entity: `0x${address.toString(16)}`,
   address,
   name,
-  points,
-  rank,
   realms: 2,
   mines: 0,
-  hyperstructures: rank === 1 ? 2 : 0,
+  hyperstructures,
   villages: 0,
   banks: 0,
   isAlive: true,
   guildName: "",
   isUser,
-  isInvited: false,
   guild: undefined,
-  activityBreakdown: {
-    exploration: { count: 40 - rank * 8, points: (40 - rank * 8) * 5 },
-    openRelicChest: { count: rank === 1 ? 1 : 0, points: rank === 1 ? 250 : 0 },
-    otherStructureBanditsDefeat: { count: 0, points: 0 },
-    hyperStructureBanditsDefeat: { count: rank === 1 ? 2 : 0, points: rank === 1 ? 2_000 : 0 },
-    hyperstructureShare: { count: 0, points: rank === 1 ? 420 : 0 },
-  } as PlayerCustom["activityBreakdown"],
-  accruingHoldPoints: 0,
-  mmrDelta: null,
 });
 
-const PLAYERS = [player(1n, "djizus", 1, 2_870), player(2n, "clientlane", 2, 120, true), player(3n, "uxplay", 3, 80)];
+const PLAYERS = [player(1n, "djizus", 2), player(2n, "clientlane", 0, true), player(3n, "uxplay", 0)];
 
 const GUILD = {
   entityId: 1n,
@@ -59,9 +35,6 @@ const GUILD = {
   isOwner: false,
   isMember: true,
   memberCount: 4,
-  points: 3_070,
-  rank: 1,
-  prize: { lords: 1_200, strk: 40 },
   realms: 6,
   mines: 0,
   hyperstructures: 2,
@@ -79,11 +52,6 @@ const Surface = ({ name, children }: { name: string; children: ReactNode }) => (
   </section>
 );
 
-/**
- * Dev only, at /lab/kit/area-d: area D's surfaces (rings, leaderboard, tribes, the Military picker and window body,
- * Combat, the crate panel) as the game renders them, on the deploy fixture's realm, for before and after captures of
- * the HUD sheet migration without a live game.
- */
 export const AreaDLab = () => {
   useDocumentClass("classic-hud");
   const { store } = useMemo(() => frontierDay(), []);
@@ -153,8 +121,6 @@ export const AreaDLab = () => {
           <div className="w-fit">
             <PlayerList
               players={PLAYERS}
-              grants={GRANTS}
-              mmr="off"
               viewPlayerInfo={() => undefined}
               whitelistPlayer={() => undefined}
               isLoading={false}
@@ -163,7 +129,7 @@ export const AreaDLab = () => {
         </Surface>
         <Surface name="tribes">
           <div className="w-[56rem]">
-            <GuildListHeader activeSort={{ sortKey: "rank", sort: "asc" }} setActiveSort={() => undefined} />
+            <GuildListHeader activeSort={{ sortKey: "name", sort: "asc" }} setActiveSort={() => undefined} />
             <GuildRow guild={GUILD} onClick={() => undefined} />
           </div>
         </Surface>
@@ -180,16 +146,6 @@ export const AreaDLab = () => {
         <Surface name="combat">
           <div className="w-[74rem]">
             <BattleLab mode="sim" />
-          </div>
-        </Surface>
-        <Surface name="crate">
-          <div className="w-80">
-            <ChestTileDetails opening={null} open={{ onOpen: () => undefined }} />
-          </div>
-        </Surface>
-        <Surface name="crate-far">
-          <div className="w-80">
-            <ChestTileDetails opening={null} open={{ blocked: CRATE_NEEDS_AN_ARMY }} />
           </div>
         </Surface>
       </div>

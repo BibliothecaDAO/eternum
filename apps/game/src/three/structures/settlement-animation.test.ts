@@ -2,7 +2,7 @@ import { BufferAttribute, BufferGeometry, Group, Mesh, MeshStandardMaterial, Vec
 import { describe, expect, it, vi } from "vitest";
 import { SettlementAnimation } from "./settlement-animation";
 
-function harness(motion: "banner" | "flame" | "spin" | "foliage") {
+function harness(motion: "banner" | "flame" | "spin") {
   const geometry = new BufferGeometry();
   geometry.setAttribute("position", new BufferAttribute(new Float32Array([0, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0]), 3));
   geometry.setIndex([0, 2, 1, 1, 2, 3]);
@@ -77,25 +77,6 @@ describe("settlement animation", () => {
     expect(Array.from(model.geometry.getAttribute("position").array)).toEqual(rest);
     model.animation.update(9, { windX: -1, windZ: -1 });
     model.positions().forEach((value, index) => expect(value).toBeCloseTo(rest[index]));
-    model.dispose();
-  });
-
-  it("sways foliage above fixed stems without changing leaf height or escaping its bounds", () => {
-    const model = harness("foliage");
-    const rest = model.positions();
-    for (let frame = 0; frame < 120; frame++) {
-      model.animation.update(0.05, { windX: 1, windZ: -1 });
-      const positions = model.positions();
-      expect(positions.slice(6)).toEqual(rest.slice(6));
-      for (let i = 0; i < positions.length; i += 3) {
-        expect(positions[i + 1]).toEqual(rest[i + 1]);
-        expect(model.instance.geometry.boundingBox!.containsPoint(new Vector3(...positions.slice(i, i + 3)))).toBe(
-          true,
-        );
-      }
-    }
-    expect(model.positions().slice(0, 6)).not.toEqual(rest.slice(0, 6));
-    expect(Array.from(model.geometry.getAttribute("position").array)).toEqual(rest);
     model.dispose();
   });
 

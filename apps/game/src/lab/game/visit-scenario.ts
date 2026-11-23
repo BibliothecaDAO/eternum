@@ -18,12 +18,12 @@ export const NEIGHBOUR_REALM = 8;
 const NEIGHBOUR_BUILDINGS = [
   BuildingType.SupplyYard,
   BuildingType.ScoutsLodge,
-  BuildingType.Hearth,
+  BuildingType.ConscriptionCamp,
   BuildingType.ResourceWheat,
   BuildingType.ResourceLabor,
   BuildingType.ResourceKnightT1,
-  BuildingType.WorkersHut,
-  BuildingType.WarHall,
+  BuildingType.Storehouse,
+  BuildingType.RationsDepot,
 ];
 
 /**
@@ -139,7 +139,6 @@ const ownRealmRows = (store: LabScenario["store"], model: (typeof RESOURCE_MODEL
 const boardEntry = (address: string, structureId: number, rank: number): HeraldFrontierLeaderboardEntry => ({
   address,
   structure_id: String(structureId),
-  campaign: null,
   rank,
   sites_cleared: { total: 0, camps: 0, rifts: 0, ruins: 0, beasts: 0 },
   chests_earned: 0,

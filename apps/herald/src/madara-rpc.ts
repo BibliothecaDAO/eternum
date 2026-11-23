@@ -23,7 +23,6 @@ class BlockConsistencyFailure extends RpcReadFailure {}
 export interface ReadBlockOptions {
   retainTransactions?: boolean;
   knownTransaction?: (hash: string) => RpcTransaction | undefined;
-  needsCalldata?: (events: readonly RpcEvent[]) => boolean;
 }
 interface BlockHeader extends RpcHead {
   block_hash?: string;
@@ -268,8 +267,7 @@ export class MadaraRpc {
     options: ReadBlockOptions,
   ) {
     let transaction = options.knownTransaction?.(normalizeFelt(hash));
-    const needsCalldata = options.needsCalldata?.(events) === true;
-    if ((!transaction && options.retainTransactions !== false) || (needsCalldata && !transaction?.calldata)) {
+    if (!transaction && options.retainTransactions !== false) {
       const value = await this.request<RpcTransaction>("starknet_getTransactionByHash", [hash]);
       if (!value.transaction_hash || normalizeFelt(value.transaction_hash) !== normalizeFelt(hash))
         throw new BlockConsistencyFailure("starknet_getTransactionByHash", "hash_mismatch");

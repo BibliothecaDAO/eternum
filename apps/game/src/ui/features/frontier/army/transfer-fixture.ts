@@ -1,19 +1,15 @@
-import { frontierArmyRules } from "./progression-rules-fixture";
+import { nativeResearchConstants } from "@bibliothecadao/eternum/game-client";
 import { getNeighborHexes } from "@bibliothecadao/types";
 import { campBeside } from "../sites/site-fixture";
 
 const TRANSFER_PICKED = { col: 41, row: 12 };
 export const TRANSFER_TAPPED = getNeighborHexes(41, 12)[0]!;
-export const transferArmies = (pickedXp = 0, tappedXp = 99) => {
+export const transferArmies = (pickedLogistics = 1, tappedLogistics = 0) => {
   const { store } = campBeside();
   const first = store.require("ExplorerTroops", { game_id: 1, explorer_id: 201 });
   const facts = [
-    {
-      model: "ArmyProgressionRules",
-      key: "0xf1",
-      value: frontierArmyRules(),
-    },
     ...[201, 202].flatMap((id, slot) => [
+      { model: "ArmyDay", key: `0xad${id}`, value: { game_id: 1, explorer_id: id, day: 0 } },
       {
         model: "ExplorerTroops",
         key: slot === 0 ? "0x74" : "0x92",
@@ -27,19 +23,12 @@ export const transferArmies = (pickedXp = 0, tappedXp = 99) => {
         model: "ArmyProgress",
         key: `0xf${id}2`,
         value: {
-          common_points: 0,
-          uncommon_points: 0,
-          rare_points: 0,
-          epic_points: 0,
-          legendary_points: 0,
           game_id: 1,
           explorer_id: id,
-          xp: slot === 0 ? pickedXp : tappedXp,
-          battle: 1,
-          logistics: slot === 0 ? 1 : 0,
-          scouting: 0,
-          homecoming: 1,
-          scouting_kinds: 0,
+          logistics: slot === 0 ? pickedLogistics : tappedLogistics,
+          oath_slots: nativeResearchConstants.OATH_SLOTS_BASE,
+          oaths: 0,
+          oath_pick: 0,
         },
       },
       {
@@ -75,9 +64,9 @@ export const transferArmies = (pickedXp = 0, tappedXp = 99) => {
   return store;
 };
 
-/** The reported 500 into 1,500 transfer: 222 total XP against 20 unspent XP, with logistics on both armies. */
-export const transferXpArmies = () => {
-  const store = transferArmies(222, 120);
+/** The reported 500 into 1,500 transfer: stronger Logistics on the source army. */
+export const transferTrainedArmies = () => {
+  const store = transferArmies(2, 1);
   store.applyFacts([{ model: "ArmySlot", key: "0xf2023", value: null }]);
   const realm = store.require("Structure", { game_id: 1, entity_id: 7 });
   const facts = [
@@ -102,7 +91,7 @@ export const transferXpArmies = () => {
         {
           model: "ArmyProgress",
           key: `0xf${id}2`,
-          value: { ...progress, logistics: 1, homecoming: index === 0 ? 1 : 0 },
+          value: { ...progress, logistics: index === 0 ? 2 : 1 },
         },
         {
           model: "ArmySlot",

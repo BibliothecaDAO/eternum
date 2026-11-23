@@ -25,6 +25,7 @@ import { openArmyDeployment } from "@/ui/features/military/utils/open-army-deplo
 import type { TroopStack } from "@/ui/features/military/components/unified-army-creation-modal/types";
 import { ResourcesIds, TroopTier, TroopType } from "@bibliothecadao/types";
 import { MilitaryModal } from "./military-modal";
+import { GAME_FAMILIES } from "../../../../../../../config/source/common/native-preset-modes";
 
 /** The viewport's width class as the HUD reads it: compact (a phone) or the desktop, and a way to cross `lg`. */
 const viewport = (compact: boolean) => {
@@ -122,7 +123,7 @@ const raiseOrder =
   (troops: TroopStack, crossbows = 0) =>
   (store: NativeFactStore) => {
     const game = store.require("GameRegistry", { game_id: 1 });
-    store.applyFacts([{ model: "GameRegistry", key: "0x3", value: { ...game, preset_id: 2 } }] as never);
+    store.applyFacts([{ model: "GameRegistry", key: "0x3", value: { ...game, family: GAME_FAMILIES.blitz } }] as never);
     if (crossbows > 0) {
       const recipe = store.require("ProductionRecipe", { game_id: 1, resource_type: ResourcesIds.Knight });
       store.applyFacts([

@@ -14,8 +14,6 @@ import { SceneName } from "./types";
 interface RendererFrameSceneController {
   getCurrentCameraView(): CameraView | undefined;
   getInteractionOverlayScene(): Scene;
-  /** A reward staged over everything (the world map's chest), drawn last; none while nothing is staged. */
-  getRewardStagePasses(): RendererOverlayPass[];
   getScene(): Scene;
   hasActiveLabelAnimations(): boolean;
   onFrameRendered?(atMs: number): void;
@@ -221,7 +219,6 @@ function resolveRendererFrameOverlayPasses(input: {
       name: "hud",
       scene: input.hudScene.getScene(),
     },
-    ...input.sceneController.getRewardStagePasses(),
   ];
 }
 

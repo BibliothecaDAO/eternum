@@ -54,7 +54,17 @@ const createHarness = () => {
     }
   };
   const write = (
-    model: "TileOpt" | "TileOccupancy" | "ExplorerTroops" | "Structure" | "ExpeditionSite",
+    model:
+      | "TileOpt"
+      | "TileOccupancy"
+      | "ExplorerTroops"
+      | "Structure"
+      | "ExpeditionSite"
+      | "DeepRules"
+      | "DeepArmy"
+      | "ArmyDay"
+      | "ArmyProgress"
+      | "DeepGuard",
     alias: string,
     keys: (number | boolean)[],
     row: object,
@@ -100,7 +110,7 @@ const createHarness = () => {
         { ...key, data: (BigInt(input.biome ?? 4) << 41n) | (BigInt(input.rewardExtracted ? 1 : 0) << 113n) },
         false,
       );
-      const category = input.occupierType ?? TileOccupier.Chest;
+      const category = input.occupierType ?? TileOccupier.Spire;
       if (category !== 0)
         write(
           "TileOccupancy",
@@ -165,6 +175,7 @@ const createHarness = () => {
     rules.set("GameRegistry", {
       game_id: 13,
       start_main_at: BigInt(startMainAt),
+      scheduled_end_at: BigInt(startMainAt + 21 * 20 * dayUnitSeconds),
       end_at: BigInt(startMainAt + 21 * 20 * dayUnitSeconds),
       seed: 1n,
     });
@@ -220,6 +231,62 @@ const createHarness = () => {
     source,
     projection: new WorldSpatialProjection({ store: source, bucketSize: 4 }),
     writeClearedSite,
+    atomic,
+    writeDeep: () => {
+      writeExpeditionRules(14400, 1024, 360);
+      rules.set("SliceRules", { game_id: 13, day_unit_seconds: 14400, tick_config: { armies_tick_in_seconds: 60n } });
+      write(
+        "DeepRules",
+        "deep",
+        [13],
+        {
+          game_id: 13,
+          gate_distance: 4,
+          rings: [{ radius: 5, realms: 0 }],
+          beasts: [
+            { count: 100n, bow: false },
+            { count: 100n, bow: true },
+            { count: 100n, bow: false },
+            { count: 100n, bow: true },
+          ],
+          loss_per_tick: 1n,
+          core_per_tick: 100n,
+          mine_per_tick: 100n,
+          building_pay: { alone: 1, pair: 1, crowd: 1 },
+          altar_threshold: 10,
+        },
+        false,
+      );
+    },
+    writeDeepArmy: (explorer: number) =>
+      atomic(() => {
+        write(
+          "ArmyProgress",
+          `progress-${explorer}`,
+          [13, explorer],
+          { game_id: 13, explorer_id: explorer, logistics: 0, oath_slots: 1, oaths: 0, oath_pick: 0 },
+          false,
+        );
+        write("ArmyDay", `day-${explorer}`, [13, explorer], { game_id: 13, explorer_id: explorer, day: 0n }, false);
+        write(
+          "DeepArmy",
+          `deep-${explorer}`,
+          [13, explorer],
+          { game_id: 13, explorer_id: explorer, last_tick: 6n },
+          false,
+        );
+      }),
+    joinDeep: (alias: string, explorer: number, site: number) =>
+      atomic(() => {
+        remove("TileOccupancy", `army-${alias}`);
+        write(
+          "DeepGuard",
+          `guard-${explorer}`,
+          [13, explorer],
+          { game_id: 13, explorer_id: explorer, site_id: site, slot: 0 },
+          false,
+        );
+      }),
     writeTile,
     writeArmy,
     writeExpeditionRules,
@@ -319,25 +386,6 @@ describe("WorldSpatialProjection", () => {
     expect(projection.getTilesInBounds({ alt: false, minCol: 96, maxCol: 104, minRow: 196, maxRow: 204 })).toHaveLength(
       1,
     );
-  });
-
-  it("rebuilds a surface-chest index from native facts and excludes non-renderable tiles", () => {
-    const { projection, writeTile } = createHarness();
-    writeTile("chest", { col: 100, row: 200, occupierId: 7 });
-    writeTile("ethereal-chest", { alt: true, col: 100, row: 200, occupierId: 8 });
-    writeTile("plain-tile", { col: 101, row: 200, occupierId: 0, occupierType: TileOccupier.None });
-
-    projection.start();
-
-    expect(projection.getChests(false)).toEqual([
-      { kind: "chest", entityId: 7, hexCoords: { alt: false, col: 100, row: 200 } },
-    ]);
-    expect(projection.getChestsAtHex({ alt: false, col: 100, row: 200 }).map(({ entityId }) => entityId)).toEqual([7]);
-    expect(
-      projection
-        .getChestsInBounds({ alt: false, minCol: 96, maxCol: 100, minRow: 196, maxRow: 204 })
-        .map(({ entityId }) => entityId),
-    ).toEqual([7]);
   });
 
   it("indexes real structures by entity and reserved hyperstructures by coordinate", () => {
@@ -465,9 +513,8 @@ describe("WorldSpatialProjection", () => {
         writeTile("destination", { col: 20, row: 21, occupierId: 7 });
       }
 
-      expect(projection.getChest(7)?.hexCoords).toEqual({ alt: false, col: 20, row: 21 });
-      expect(projection.getChestsAtHex({ alt: false, col: 10, row: 11 })).toEqual([]);
-      expect(projection.getChestsAtHex({ alt: false, col: 20, row: 21 }).map(({ entityId }) => entityId)).toEqual([7]);
+      expect(projection.getTileAtHex({ alt: false, col: 10, row: 11 })).toBeUndefined();
+      expect(projection.getTileAtHex({ alt: false, col: 20, row: 21 })?.occupierId).toBe(7);
     },
   );
 
@@ -514,27 +561,25 @@ describe("WorldSpatialProjection", () => {
 
   it("restores missed updates and deletions from a full rebuild", () => {
     const { projection, removeTile, writeTile } = createHarness();
-    writeTile("chest", { col: 10, row: 11, occupierId: 7 });
+    writeTile("spire", { col: 10, row: 11, occupierId: 7 });
     projection.start();
 
-    removeTile("chest", { skipUpdateStream: true });
-    expect(projection.getChest(7)).toBeDefined();
+    removeTile("spire", { skipUpdateStream: true });
+    expect(projection.getTileAtHex({ alt: false, col: 10, row: 11 })).toBeDefined();
 
     projection.rebuild();
 
-    expect(projection.getChest(7)).toBeUndefined();
+    expect(projection.getTileAtHex({ alt: false, col: 10, row: 11 })).toBeUndefined();
   });
 
   it("does not return an offscreen deletion when its bounds are queried later", () => {
     const { projection, removeTile, writeTile } = createHarness();
-    writeTile("offscreen-chest", { col: 200, row: 201, occupierId: 7 });
+    writeTile("offscreen-spire", { col: 200, row: 201, occupierId: 7 });
     projection.start();
 
-    removeTile("offscreen-chest");
+    removeTile("offscreen-spire");
 
-    expect(projection.getChestsInBounds({ alt: false, minCol: 196, maxCol: 204, minRow: 196, maxRow: 204 })).toEqual(
-      [],
-    );
+    expect(projection.getTilesInBounds({ alt: false, minCol: 196, maxCol: 204, minRow: 196, maxRow: 204 })).toEqual([]);
   });
 
   it("publishes one complete change and detaches cleanly", () => {
@@ -543,7 +588,7 @@ describe("WorldSpatialProjection", () => {
     projection.start();
     const unsubscribe = projection.subscribe(listener);
 
-    writeTile("chest", { col: 10, row: 11, occupierId: 7 });
+    writeTile("spire", { col: 10, row: 11, occupierId: 7 });
     projection.flush();
 
     expect(listener).toHaveBeenCalledWith([
@@ -556,11 +601,6 @@ describe("WorldSpatialProjection", () => {
           hexCoords: { alt: false, col: 10, row: 11 },
         }),
       }),
-      expect.objectContaining({
-        kind: "chest",
-        entityId: 7,
-        current: { kind: "chest", entityId: 7, hexCoords: { alt: false, col: 10, row: 11 } },
-      }),
     ]);
 
     unsubscribe();
@@ -570,7 +610,7 @@ describe("WorldSpatialProjection", () => {
 
     projection.dispose();
     writeTile("third", { col: 14, row: 15, occupierId: 9 });
-    expect(projection.getChests(false)).toEqual([]);
+    expect(projection.getTiles(false)).toEqual([]);
   });
 
   it("publishes structure variant, move, and reserved-site removal changes", () => {
@@ -782,12 +822,10 @@ describe("WorldSpatialProjection", () => {
     const { projection, writeArmy, writeTile } = createHarness();
     projection.start();
     const tileListener = vi.fn();
-    const chestListener = vi.fn();
     const structureListener = vi.fn();
     const armyListener = vi.fn();
     const listener = vi.fn();
     projection.subscribeTiles(tileListener);
-    projection.subscribeChests(chestListener);
     projection.subscribeStructures(structureListener);
     projection.subscribeArmies(armyListener);
     projection.subscribe(listener);
@@ -812,7 +850,6 @@ describe("WorldSpatialProjection", () => {
       expect.objectContaining({ entityId: 7 }),
       expect.objectContaining({ entityId: 8 }),
     ]);
-    expect(chestListener).not.toHaveBeenCalled();
     expect(structureListener).not.toHaveBeenCalled();
     expect(listener).toHaveBeenCalledOnce();
     expect(listener).toHaveBeenCalledWith([
@@ -887,8 +924,8 @@ describe("WorldSpatialProjection", () => {
     const listener = vi.fn();
     projection.subscribe(listener);
 
-    writeTile("chest", { col: 10, row: 11, occupierId: 7 });
-    removeTile("chest");
+    writeTile("spire", { col: 10, row: 11, occupierId: 7 });
+    removeTile("spire");
     writeArmy("army", { explorerId: 8, col: 20, row: 21 });
     removeArmy("army");
     writeArmy("returning-army", { explorerId: 9, col: 40, row: 41 });
@@ -896,7 +933,7 @@ describe("WorldSpatialProjection", () => {
     projection.flush();
 
     expect(listener).not.toHaveBeenCalled();
-    expect(projection.getChests(false)).toEqual([]);
+    expect(projection.getTileAtHex({ alt: false, col: 10, row: 11 })).toBeUndefined();
     expect(projection.getArmies(false).map(({ entityId }) => entityId)).toEqual([9]);
   });
 
@@ -949,21 +986,21 @@ describe("WorldSpatialProjection", () => {
     const { projection, writeTile } = createHarness();
     projection.start();
     const listener = vi.fn();
-    projection.subscribeChests(listener);
+    projection.subscribeTiles(listener);
 
-    writeTile("live-chest", { col: 10, row: 11, occupierId: 7 });
-    writeTile("missed-chest", { col: 12, row: 13, occupierId: 8 }, true);
+    writeTile("live-spire", { col: 10, row: 11, occupierId: 7 });
+    writeTile("missed-spire", { col: 12, row: 13, occupierId: 8 }, true);
     projection.rebuild();
 
     expect(listener).toHaveBeenCalledOnce();
     expect(listener).toHaveBeenCalledWith([
       expect.objectContaining({
-        entityId: 7,
-        current: expect.objectContaining({ hexCoords: { alt: false, col: 10, row: 11 } }),
+        spatialId: "tile:0:10:11",
+        current: expect.objectContaining({ occupierId: 7 }),
       }),
       expect.objectContaining({
-        entityId: 8,
-        current: expect.objectContaining({ hexCoords: { alt: false, col: 12, row: 13 } }),
+        spatialId: "tile:0:12:13",
+        current: expect.objectContaining({ occupierId: 8 }),
       }),
     ]);
   });
@@ -971,7 +1008,7 @@ describe("WorldSpatialProjection", () => {
   it("drops pending changes on dispose", () => {
     const { projection, writeTile } = createHarness();
     projection.start();
-    writeTile("chest", { col: 10, row: 11, occupierId: 7 });
+    writeTile("spire", { col: 10, row: 11, occupierId: 7 });
 
     projection.dispose();
     const listener = vi.fn();
@@ -979,5 +1016,68 @@ describe("WorldSpatialProjection", () => {
     projection.flush();
 
     expect(listener).not.toHaveBeenCalled();
+  });
+});
+
+describe("shared Deep spatial projection", () => {
+  it("removes an exhausted army and stale occupancy on a clock-only head, retaining fixed terrain", () => {
+    let now = 360;
+    setBlockTimestampSource(() => now);
+    const harness = createHarness();
+    try {
+      harness.writeDeep();
+      harness.writeArmy("field", { explorerId: 11, col: 512, row: 3584, count: 2n });
+      harness.writeDeepArmy(11);
+      harness.projection.start();
+      expect(harness.projection.getTiles(false)).toHaveLength(2500);
+      expect(harness.projection.getArmies(false).map((army) => army.entityId)).toEqual([11]);
+      now = 420;
+      harness.projection.refreshTime();
+      expect(harness.projection.getArmy(11)).toBeDefined();
+      now = 480;
+      harness.projection.refreshTime();
+      expect(harness.projection.getArmy(11)).toBeUndefined();
+      expect(harness.projection.getTiles(false)).toHaveLength(2500);
+      const tile = harness.projection
+        .getTiles(false)
+        .find((tile) => tile.hexCoords.col === 512 && tile.hexCoords.row === 3584)!;
+      expect(tile.occupierId).toBe(0);
+      expect(harness.source.require("ExplorerTroops", { game_id: 13, explorer_id: 11 }).troops.count).toBe(2n);
+    } finally {
+      harness.projection.dispose();
+      setBlockTimestampSource(null);
+    }
+  });
+
+  it("folds guard membership and field departure atomically, including after rebuild", () => {
+    setBlockTimestampSource(() => 360);
+    const harness = createHarness();
+    try {
+      harness.writeDeep();
+      harness.writeArmy("field", { explorerId: 11, col: 512, row: 3584, count: 10n });
+      harness.writeDeepArmy(11);
+      harness.writeTile("site", { col: 513, row: 3584, occupierId: 20, occupierType: TileOccupier.DeepSite });
+      harness.projection.start();
+      const changes: ArmySpatialProjectionChange[][] = [];
+      harness.projection.subscribeArmies((batch) => changes.push([...batch]));
+      harness.joinDeep("field", 11, 20);
+      harness.projection.flush();
+      expect(harness.projection.getArmy(11)).toBeUndefined();
+      expect(changes).toHaveLength(1);
+      expect(changes[0]).toHaveLength(1);
+      expect(changes[0]![0]!.previous?.entityId).toBe(11);
+      expect(changes[0]![0]!.current).toBeUndefined();
+      harness.projection.rebuild();
+      expect(harness.projection.getArmies(false)).toEqual([]);
+      expect(harness.projection.getTiles(false)).toHaveLength(2500);
+      expect(harness.projection.getTiles(false).find((tile) => tile.occupierId === 20)?.hexCoords).toEqual({
+        col: 513,
+        row: 3584,
+        alt: false,
+      });
+    } finally {
+      harness.projection.dispose();
+      setBlockTimestampSource(null);
+    }
   });
 });

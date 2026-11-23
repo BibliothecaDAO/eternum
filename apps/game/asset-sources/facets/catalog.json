@@ -167,7 +167,7 @@
           "apps/game/src/three/structures/hyperstructure-model.ts": "1ec99bfd8918f1a4bd247fe334f5f2902cbdcc30c3a3c55c4c97c6abc840e5ad",
           "apps/game/src/three/structures/hyperstructure-power.ts": "676b2984ac5ab209f6d483181ff2294f1d8f951d9be916c23ddc2a9409cb8057"
         },
-        "sha256": "5a821ec79eeb77d98b9f5bd9248a2ff5acfcd29caaccd9ffcadfa5642c370a2c"
+        "sha256": "55a54c24ca98ef285482532e61546259790166ef1f9f0c5d6076fb5f1313408a"
       }
     },
     {
@@ -2592,12 +2592,6 @@
       }
     },
     {
-      "id": "bitcoin-mine",
-      "label": "Bitcoin Mine",
-      "family": "Structures",
-      "prompt": "prompts/bitcoin-mine.txt"
-    },
-    {
       "id": "realm-0",
       "label": "Settlement",
       "family": "Structures",
@@ -2960,118 +2954,6 @@
       "identityReference": "images/orders/gods.png"
     },
     {
-      "id": "order-giants",
-      "label": "Order of Giants",
-      "family": "Orders",
-      "prompt": "prompts/order-giants.txt",
-      "identityReference": "images/orders/giants.png"
-    },
-    {
-      "id": "order-perfection",
-      "label": "Order of Perfection",
-      "family": "Orders",
-      "prompt": "prompts/order-perfection.txt",
-      "identityReference": "images/orders/perfection.png"
-    },
-    {
-      "id": "order-rage",
-      "label": "Order of Rage",
-      "family": "Orders",
-      "prompt": "prompts/order-rage.txt",
-      "identityReference": "images/orders/rage.png"
-    },
-    {
-      "id": "order-fox",
-      "label": "Order of the Fox",
-      "family": "Orders",
-      "prompt": "prompts/order-fox.txt",
-      "identityReference": "images/orders/fox.png"
-    },
-    {
-      "id": "order-twins",
-      "label": "Order of the Twins",
-      "family": "Orders",
-      "prompt": "prompts/order-twins.txt",
-      "identityReference": "images/orders/twins.png"
-    },
-    {
-      "id": "order-fury",
-      "label": "Order of Fury",
-      "family": "Orders",
-      "prompt": "prompts/order-fury.txt",
-      "identityReference": "images/orders/fury.png"
-    },
-    {
-      "id": "order-reflection",
-      "label": "Order of Reflection",
-      "family": "Orders",
-      "prompt": "prompts/order-reflection.txt",
-      "identityReference": "images/orders/reflection.png"
-    },
-    {
-      "id": "order-detection",
-      "label": "Order of Detection",
-      "family": "Orders",
-      "prompt": "prompts/order-detection.txt",
-      "identityReference": "images/orders/detection.png"
-    },
-    {
-      "id": "order-skill",
-      "label": "Order of Skill",
-      "family": "Orders",
-      "prompt": "prompts/order-skill.txt",
-      "identityReference": "images/orders/skill.png"
-    },
-    {
-      "id": "order-brilliance",
-      "label": "Order of Brilliance",
-      "family": "Orders",
-      "prompt": "prompts/order-brilliance.txt",
-      "identityReference": "images/orders/brilliance.png"
-    },
-    {
-      "id": "order-protection",
-      "label": "Order of Protection",
-      "family": "Orders",
-      "prompt": "prompts/order-protection.txt",
-      "identityReference": "images/orders/protection.png"
-    },
-    {
-      "id": "order-power",
-      "label": "Order of Power",
-      "family": "Orders",
-      "prompt": "prompts/order-power.txt",
-      "identityReference": "images/orders/power.png"
-    },
-    {
-      "id": "order-titans",
-      "label": "Order of Titans",
-      "family": "Orders",
-      "prompt": "prompts/order-titans.txt",
-      "identityReference": "images/orders/titans.png"
-    },
-    {
-      "id": "order-vitriol",
-      "label": "Order of Vitriol",
-      "family": "Orders",
-      "prompt": "prompts/order-vitriol.txt",
-      "identityReference": "images/orders/vitriol.png"
-    },
-    {
-      "id": "order-anger",
-      "label": "Order of Anger",
-      "family": "Orders",
-      "prompt": "prompts/order-anger.txt",
-      "identityReference": "images/orders/anger.png"
-    },
-    {
-      "id": "order-enlightenment",
-      "label": "Order of Enlightenment",
-      "family": "Orders",
-      "prompt": "prompts/order-enlightenment.txt",
-      "identityReference": "images/orders/enlightenment.png"
-    },
-    {
       "id": "discord",
       "label": "Discord",
       "family": "Brands",
@@ -3356,6 +3238,296 @@
       "source": {
         "kind": "painted",
         "sha256": "4ddd4478896d4031eb6effe870face5bba7c8c3cd881d0a20a48e34fb2ad21f8"
+      }
+    },
+    {
+      "id": "order-giants",
+      "label": "Order of Giants",
+      "family": "Orders",
+      "source": {
+        "kind": "painted",
+        "sha256": "0fe45c68772f66d3216fb066d489b26d7d4d658a830077ba72620921b7d0a115"
+      }
+    },
+    {
+      "id": "order-perfection",
+      "label": "Order of Perfection",
+      "family": "Orders",
+      "source": {
+        "kind": "painted",
+        "sha256": "7cac7cf852ca34c745ac8c10bc4b8079a61036a483fc1f0990f3a647a2c629ce"
+      }
+    },
+    {
+      "id": "order-rage",
+      "label": "Order of Rage",
+      "family": "Orders",
+      "source": {
+        "kind": "painted",
+        "sha256": "1444fdf68252f23bf1978c092fdf151fbf6c78dc77732ecb9d5e5a3d72a64dad"
+      }
+    },
+    {
+      "id": "order-fox",
+      "label": "Order of the Fox",
+      "family": "Orders",
+      "source": {
+        "kind": "painted",
+        "sha256": "4018d2bda690045efea01607b00954d82239ff35226cdff36a53ea05dab37c2e"
+      }
+    },
+    {
+      "id": "order-twins",
+      "label": "Order of the Twins",
+      "family": "Orders",
+      "source": {
+        "kind": "painted",
+        "sha256": "0a90ccae08a14da9f7dc66bbf8b784f80a893b4d26c448c6f1cdef21dcab3453"
+      }
+    },
+    {
+      "id": "order-fury",
+      "label": "Order of Fury",
+      "family": "Orders",
+      "source": {
+        "kind": "painted",
+        "sha256": "39f2f89e61adf95f84bc71fe68d26392021a4dfc41ba44cbaa4bac50b3bafcd5"
+      }
+    },
+    {
+      "id": "order-reflection",
+      "label": "Order of Reflection",
+      "family": "Orders",
+      "source": {
+        "kind": "painted",
+        "sha256": "57a9570c2db589de259830b62d04c4253630d9e0ed9777b22103410af5bd345c"
+      }
+    },
+    {
+      "id": "order-detection",
+      "label": "Order of Detection",
+      "family": "Orders",
+      "source": {
+        "kind": "painted",
+        "sha256": "a078e8654efc916cdff0b77da3a5a3d930857998f6fecd7c1a9a86d89d0289e5"
+      }
+    },
+    {
+      "id": "order-skill",
+      "label": "Order of Skill",
+      "family": "Orders",
+      "source": {
+        "kind": "painted",
+        "sha256": "c8dc3ff54a8b9819171252e6fc7fd25b0444a75aa84d1ba46a952a26c3b00c7b"
+      }
+    },
+    {
+      "id": "order-brilliance",
+      "label": "Order of Brilliance",
+      "family": "Orders",
+      "source": {
+        "kind": "painted",
+        "sha256": "0bbc727d8d9133b5f3173dd9c4efea7cfbe60a32d819aefc82447d7a572ef7f3"
+      }
+    },
+    {
+      "id": "order-protection",
+      "label": "Order of Protection",
+      "family": "Orders",
+      "source": {
+        "kind": "painted",
+        "sha256": "b00d17e5bb94d2fbb7aa30eb0f3993d6978a4a9c350c5b2b5e421f63ee6dafc8"
+      }
+    },
+    {
+      "id": "order-power",
+      "label": "Order of Power",
+      "family": "Orders",
+      "source": {
+        "kind": "painted",
+        "sha256": "b5402cf148155cb0a856823606602655204a8eb2fafc134be2855a36115ef3dd"
+      }
+    },
+    {
+      "id": "order-titans",
+      "label": "Order of Titans",
+      "family": "Orders",
+      "source": {
+        "kind": "painted",
+        "sha256": "c8ac90f116b1bdcd658b324890f328fc9cd364aeb55c95b50f86a991f72fc5e7"
+      }
+    },
+    {
+      "id": "order-vitriol",
+      "label": "Order of Vitriol",
+      "family": "Orders",
+      "source": {
+        "kind": "painted",
+        "sha256": "cfb0a9046b10a41500781d05a80bff1b65dff9fb67d83b1ece6d3a51d82414fd"
+      }
+    },
+    {
+      "id": "order-anger",
+      "label": "Order of Anger",
+      "family": "Orders",
+      "source": {
+        "kind": "painted",
+        "sha256": "7632f9a98da3a941890da409a4e21f120491e90d3233c72fc3e939408dd2974c"
+      }
+    },
+    {
+      "id": "order-enlightenment",
+      "label": "Order of Enlightenment",
+      "family": "Orders",
+      "source": {
+        "kind": "painted",
+        "sha256": "5653e071214a8fc36611a2b2fcc97f5c5fdd8620b756dce1e4830b52a071e801"
+      }
+    },
+    {
+      "id": "aspect-prowess",
+      "label": "Prowess",
+      "family": "Aspects",
+      "source": {
+        "kind": "painted",
+        "sha256": "eaf7bed1092db14b34aab1d1b6e01d6c35061223372727fc5bce449825520114"
+      }
+    },
+    {
+      "id": "aspect-luminary",
+      "label": "Luminary",
+      "family": "Aspects",
+      "source": {
+        "kind": "painted",
+        "sha256": "3c123018f3416edc10f99832a2a9c2c9a3e5be5dd5bf6cb1ee61d1ff2fd5c404"
+      }
+    },
+    {
+      "id": "aspect-havoc",
+      "label": "Havoc",
+      "family": "Aspects",
+      "source": {
+        "kind": "painted",
+        "sha256": "65c92ddb8f6607b6e8a4c1e80a96135a47be0a35d5e1d77351f701f1baa5b367"
+      }
+    },
+    {
+      "id": "aspect-insight",
+      "label": "Insight",
+      "family": "Aspects",
+      "source": {
+        "kind": "painted",
+        "sha256": "33d8367bf9845a753009eb0920289184c33f64b51ed8a40d0ca1be2a29750732"
+      }
+    },
+    {
+      "id": "beast-balrog",
+      "label": "Balrog",
+      "family": "Beasts",
+      "source": {
+        "kind": "model-render",
+        "model": "/models/frontier/beast-balrog.glb",
+        "sha256": "53d8ae3bcf499b81ceb4c913f15bae9a5c8616d6846947e218f8f48f1d31f1da"
+      }
+    },
+    {
+      "id": "beast-colossus",
+      "label": "Colossus",
+      "family": "Beasts",
+      "source": {
+        "kind": "model-render",
+        "model": "/models/frontier/beast-colossus.glb",
+        "sha256": "41ec4c9d0180c22158b4d2d1df9238fbc6d4a36590997c28a4e18e5d446f05c4"
+      }
+    },
+    {
+      "id": "beast-warlock",
+      "label": "Warlock",
+      "family": "Beasts",
+      "source": {
+        "kind": "model-render",
+        "model": "/models/frontier/beast-warlock.glb",
+        "sha256": "9b7bf0eb9c9555a2afb81864aea511be433fae706862589fcdec2e2998e5bdcc"
+      }
+    },
+    {
+      "id": "beast-banshee",
+      "label": "Banshee",
+      "family": "Beasts",
+      "source": {
+        "kind": "model-render",
+        "model": "/models/frontier/beast-banshee.glb",
+        "sha256": "56399edc8ea34968c11946cc81d2fd89b3017c404b1a0c1868dd5d50074857e6"
+      }
+    },
+    {
+      "id": "beast-golem",
+      "label": "Golem",
+      "family": "Beasts",
+      "source": {
+        "kind": "model-render",
+        "model": "/models/frontier/beast-golem.glb",
+        "sha256": "3ba3e823229b993435b708f4514feaf6d56666971f87086d9f872e5c7faeed69"
+      }
+    },
+    {
+      "id": "beast-kappa",
+      "label": "Kappa",
+      "family": "Beasts",
+      "source": {
+        "kind": "model-render",
+        "model": "/models/frontier/beast-kappa.glb",
+        "sha256": "0fd5740cd40b2ff7e8be82bb626f7012b084d81bffbc3bc7e44f5c0a3464f7e0"
+      }
+    },
+    {
+      "id": "beast-tarrasque",
+      "label": "Tarrasque",
+      "family": "Beasts",
+      "source": {
+        "kind": "model-render",
+        "model": "/models/frontier/beast-tarrasque.glb",
+        "sha256": "a6895c3c809409b932f6102874201b398576754edc26212c291093eb73bad679"
+      }
+    },
+    {
+      "id": "beast-lich",
+      "label": "Lich",
+      "family": "Beasts",
+      "source": {
+        "kind": "model-render",
+        "model": "/models/frontier/beast-lich.glb",
+        "sha256": "c64245913275ef2a4998dd6c8f856230f6a5c6ccfa3bf99228f10c52d58ed15e"
+      }
+    },
+    {
+      "id": "beast-ettin",
+      "label": "Ettin",
+      "family": "Beasts",
+      "source": {
+        "kind": "model-render",
+        "model": "/models/frontier/beast-ettin.glb",
+        "sha256": "436f5351705e6265130c52a3666b9a82a90ce1eac1b4eac1e2f77236f25ca23f"
+      }
+    },
+    {
+      "id": "beast-kitsune",
+      "label": "Kitsune",
+      "family": "Beasts",
+      "source": {
+        "kind": "model-render",
+        "model": "/models/frontier/beast-kitsune.glb",
+        "sha256": "e4bcaa6a26dc36d668e96ed21c378dc857c4f34ccabfeb09580be95703343dc0"
+      }
+    },
+    {
+      "id": "beast-minotaur",
+      "label": "Minotaur",
+      "family": "Beasts",
+      "source": {
+        "kind": "model-render",
+        "model": "/models/frontier/beast-minotaur.glb",
+        "sha256": "1c2d9582d8a50f2b4b813f6386931fd4374f89cfbf4cac7721eeb7ce23813f10"
       }
     }
   ]

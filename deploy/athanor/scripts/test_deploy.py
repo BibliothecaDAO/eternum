@@ -11,15 +11,14 @@ import deploy
 
 def release():
     return {"commit": "abc", "releaseId": 1, "schema": "0xs", "migrationClassHash": "0x0",
-            "classes": {"games": "0x1", "logic": {"Season": "0x2", "Map": "0x3"}, "account": "0x4", "verifier": "0x5"},
-            "presets": {"2": "0x20", "5": "0x50", "101": "0x65"}}
+            "classes": {"games": "0x1", "logic": {"Season": "0x2", "Map": "0x3"}, "account": "0x4", "verifier": "0x5"}}
 
 
 def deployed():
     manifest = {"native": {"releaseId": 1, "activeSchema": "0xs", "gamesClassHash": "0x01", "verifierClassHash": "0x5", "migrationClassHash": "0x0",
                            "logic": {"Season": "0x2", "Map": "0x3"}},
                 "shard": {"accountClassHash": "0x4"}}
-    return manifest, {"presets": {"2": "0x20", "5": "0x050"}}
+    return manifest
 
 
 class DeployTest(unittest.TestCase):
@@ -28,7 +27,6 @@ class DeployTest(unittest.TestCase):
             patch.object(deploy.subprocess, "run") as run,
             patch.object(deploy.subprocess, "check_output", return_value="0"),
             patch.object(deploy, "wait_for_identity"),
-            patch.object(deploy, "directory_status", return_value={"status": "pending"}),
         ):
             deploy.start(Path("/unused"), {"public_herald_url": "https://herald.test"})
         commands = [call.args[0] for call in run.call_args_list]
@@ -36,28 +34,25 @@ class DeployTest(unittest.TestCase):
         self.assertEqual(commands[1][-4:], ["up", "-d", "herald", "metrics"])
 
     def test_a_shard_running_its_release_has_no_differences(self):
-        manifest, initialized = deployed()
-        self.assertEqual(deploy.release_differences(release(), manifest, initialized, [2, 5]), [])
+        self.assertEqual(deploy.release_differences(release(), deployed()), [])
 
     def test_every_difference_from_the_release_is_named(self):
-        manifest, initialized = deployed()
+        manifest = deployed()
         manifest["native"]["logic"]["Map"] = "0x9"
         manifest["native"]["logic"]["Troops"] = "0x7"
         manifest["native"]["migrationClassHash"] = "0x6"
         manifest["shard"]["accountClassHash"] = "0x8"
-        initialized["presets"].pop("5")
-        differences = deploy.release_differences(release(), manifest, initialized, [2, 5])
+        differences = deploy.release_differences(release(), manifest)
         self.assertEqual(differences, [
             "Map class 0x9, release has 0x3",
             "Troops class 0x7, release has None",
             "migration class 0x6, release has 0x0",
             "account class 0x8, release has 0x4",
-            "preset 5 commitment None, release has 0x50",
         ])
 
     def test_the_package_environment_carries_the_deployment_inputs(self):
         inputs = {"shard_name": "realms-staging-d", "chain_id": "REALMS_STAGING_D", "player_capacity": 96,
-                  "guardian_url": "https://staging.test/api/guardian", "presets": [2, 5],
+                  "guardian_url": "https://staging.test/api/guardian",
                   "public_rpc_url": "https://rpc.staging.test/rpc/v0_10_2",
                   "public_herald_url": "https://herald.staging.test", "l2_gas_bound": "0x47868c00"}
         rendered = deploy.render_environment(inputs, "SHARD_INIT_IMAGE=ghcr.io/x@sha256:1\n")
@@ -65,7 +60,6 @@ class DeployTest(unittest.TestCase):
         self.assertIn("BLOCK_TIME=2s\n", rendered)
         dev = deploy.render_environment({**inputs, "block_time": "1s"}, "")
         self.assertIn("BLOCK_TIME=1s\n", dev)
-        self.assertIn("PRESETS=2,5\n", rendered)
         self.assertIn("CHAIN_ID=REALMS_STAGING_D\n", rendered)
         self.assertNotIn("NODE_MEMORY", rendered)
         self.assertNotIn("HERALD_MEMORY", rendered)
@@ -97,7 +91,7 @@ class InputsTest(unittest.TestCase):
                 git("add", "deploy/release/dev.json")
                 git("-c", "user.name=ci", "-c", "user.email=ci@example.test", "commit", "-q", "-m", "staging inputs")
                 self.assertEqual(deploy.load_inputs("dev"), self.INPUTS)
-                inputs.write_text(json.dumps({**self.INPUTS, "presets": [9]}))
+                inputs.write_text(json.dumps({**self.INPUTS, "player_capacity": 9}))
                 with self.assertRaisesRegex(ValueError, "is not committed"):
                     deploy.load_inputs("dev")
 
@@ -117,66 +111,38 @@ class EnrolmentTest(unittest.TestCase):
 
 
 class ActivationTest(unittest.TestCase):
-    def test_matching_facts_activate_with_extra_historical_presets_and_files(self):
+    def test_matching_facts_pass_with_extra_files(self):
         for mismatch in (False, True):
             with self.subTest(mismatch=mismatch), tempfile.TemporaryDirectory() as temporary:
                 root = Path(temporary)
                 data = root / "data"
                 data.mkdir()
-                manifest, initialized = deployed()
-                initialized["presets"].update({"103": "0x67", "104": "0x68"})
+                manifest = deployed()
                 if mismatch:
                     manifest["native"]["gamesClassHash"] = "0x99"
                 (data / "native-world.json").write_text(json.dumps(manifest))
-                (data / "initialized.json").write_text(json.dumps(initialized))
+                (data / "initialized.json").write_text("{}")
                 (data / "obsolete-result.json").write_text('{"passed":false}')
                 with (
                     patch.object(deploy, "deployment_target", return_value={"environment": "dev"}),
-                    patch.object(deploy, "load_inputs", return_value={"presets": [2, 5]}),
+                    patch.object(deploy, "load_inputs", return_value={}),
                     patch.object(deploy, "deployment_revision"),
                     patch.object(deploy.shard, "isolated_stack_lock", return_value=nullcontext()),
                     patch.object(deploy.shard, "build_images", return_value={**release(), "images": {"init": "sha256:1"}}),
                     patch.object(deploy, "restart_unfinished"),
                     patch.object(deploy, "render_environment", return_value=""),
                     patch.object(deploy, "check_operator_approval"),
-                    patch.object(deploy, "start", return_value={"status": "pending"}),
+                    patch.object(deploy, "start"),
                     patch.object(deploy, "publish_releases"),
-                    patch.object(deploy, "activate") as activate,
                 ):
                     self.assertEqual(deploy.main("test", root), int(mismatch))
-                if mismatch:
-                    activate.assert_not_called()
-                else:
-                    activate.assert_called_once()
                 self.assertEqual((data / "obsolete-result.json").read_text(), '{"passed":false}')
-
-
-    def test_official_deployment_registers_pending_after_identity_before_initialization(self):
-        events = []
-        with (
-            patch.object(deploy.subprocess, "run", side_effect=lambda args, **_: events.append(args[-1])),
-            patch.object(deploy.subprocess, "check_output", return_value="0"),
-            patch.object(deploy, "wait_for_identity", side_effect=lambda *_: events.append("identity")),
-            patch.object(deploy, "directory_status", side_effect=lambda *_: (events.append("pending") or {"status": "pending"})),
-        ):
-            deploy.start(Path("/unused"), {})
-        self.assertEqual(events[:5], ["prepare", "metrics", "identity", "pending", "-d"])
-
-
-    def test_missing_pending_route_names_the_required_service_order(self):
-        from urllib.error import HTTPError
-        with (
-            patch.dict(deploy.os.environ, {"OPERATOR_TOKEN": "test-token"}),
-            patch("directory.service_json", side_effect=HTTPError("https://identity.test", 404, "Not found", {}, None)),
-        ):
-            with self.assertRaisesRegex(RuntimeError, "identity service must carry the pending route before a shard from this code starts"):
-                deploy.directory_status({"guardian_url": "https://identity.test/api/guardian", "public_herald_url": "https://herald.test"}, "pending")
 
 
 
 class RestartUnfinishedTest(unittest.TestCase):
-    def probe(self, rows, *, recorded="0x54455354", differences=("initialization is incomplete",),
-              proof=False, empty=False, manifest="valid", error=None, refused=None):
+    def probe(self, *, recorded="0x54455354", differences=("initialization is incomplete",),
+              proof=False, empty=False, manifest="valid", refused=None):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             if not empty:
@@ -188,11 +154,9 @@ class RestartUnfinishedTest(unittest.TestCase):
                     (data / "native-world.json").write_text(content)
                 if proof:
                     (data / "obsolete-result.json").write_text('{"passed":true}')
-            inputs = {"chain_id": "TEST", "guardian_url": "https://id.test/api/guardian",
-                      "public_herald_url": "https://herald.test"}
+            inputs = {"chain_id": "TEST", "guardian_url": "https://id.test/api/guardian"}
             stages = []
             with (
-                patch.object(deploy, "service_json", return_value=rows, side_effect=error) as request,
                 patch.object(deploy, "unfinished_differences", return_value=list(differences)),
                 patch.object(deploy.subprocess, "run") as run,
             ):
@@ -201,7 +165,7 @@ class RestartUnfinishedTest(unittest.TestCase):
                         deploy.restart_unfinished(root, inputs, release(), stages.append)
                 else:
                     deploy.restart_unfinished(root, inputs, release(), stages.append)
-                deleted = stages == ["restart pending shard"]
+                deleted = stages == ["restart unfinished shard"]
                 if deleted:
                     self.assertEqual(run.call_args.args[0][-2:], ["down", "--volumes"])
                     self.assertFalse((root / "data").exists())
@@ -209,67 +173,37 @@ class RestartUnfinishedTest(unittest.TestCase):
                     run.assert_not_called()
                     if not empty:
                         self.assertEqual((root / "data/marker").read_text(), "keep")
-                if request.called:
-                    request.assert_called_once_with("https://id.test/api/directory/shards", authenticated=True)
                 return deleted
 
-    def test_twelve_deletion_probes(self):
-        own = {"chainId": "0x54455354", "url": "https://herald.test", "status": "pending"}
+    def test_deletion_probes(self):
         cases = [
-            (1, [own], {}, True),
-            (2, [{**own, "status": "active"}], {"refused": "cannot be reinitialized"}, False),
-            (3, [{**own, "status": "retired"}], {"refused": "remove the run directory yourself"}, False),
-            (4, [{**own, "status": "draining"}], {"refused": "cannot be reinitialized"}, False),
-            (5, [], {"refused": "remove the run directory yourself"}, False),
-            (6, [], {"proof": True, "refused": "remove the run directory yourself"}, False),
-            (7, [own], {"recorded": "0x999", "proof": True, "refused": "chain 0x999, configured chain is 0x54455354"}, False),
-            (8, [own, {**own, "chainId": "0x999", "status": "retired"}],
-             {"recorded": "0x999", "proof": True, "refused": "chain 0x999"}, False),
-            (9, [], {"recorded": "0x999", "refused": "chain 0x999"}, False),
-            (10, [{**own, "url": "https://other.test"}], {"refused": "another Herald URL"}, False),
-            (11, [own], {"proof": True, "differences": ["Games class differs"]}, True),
-            (12, [{**own, "chainId": "0x999"}], {"refused": "another chain"}, False),
+            (1, {}, True),
+            (2, {"proof": True, "differences": ["Games class differs"], "refused": "cannot be reinitialized"}, False),
+            (3, {"recorded": "0x999", "proof": True, "refused": "chain 0x999, configured chain is 0x54455354"}, False),
+            (4, {"recorded": "0x999", "refused": "chain 0x999"}, False),
         ]
-        for case, rows, options, deleted in cases:
+        for case, options, deleted in cases:
             with self.subTest(case=case):
-                self.assertEqual(self.probe({"shards": rows}, **options), deleted)
+                self.assertEqual(self.probe(**options), deleted)
 
-    def test_duplicate_and_malformed_rows_never_delete(self):
-        own = {"chainId": "0x54455354", "url": "https://herald.test", "status": "pending"}
-        for answer, reason in (
-            ({"shards": [own, own]}, "Several directory rows"),
-            ({}, "malformed"), (None, "malformed"), ({"shards": None}, "malformed"),
-            ({"shards": [{}]}, "malformed"), ({"shards": [{**own, "status": "unknown"}]}, "malformed"),
-            ({"shards": [{**own, "chainId": "not-a-chain"}]}, "malformed"),
-            ({"shards": [own, {**own, "url": "", "chainId": "0x999"}]}, "malformed"),
-            ({"shards": [{**own, "url": "https://user:password@herald.test"}]}, "malformed"),
-        ):
-            with self.subTest(answer=answer):
-                self.assertFalse(self.probe(answer, refused=reason))
-
-    def test_missing_unreadable_identity_and_status_failure_never_delete(self):
+    def test_missing_or_unreadable_identity_never_deletes(self):
         for manifest in ("missing", "invalid"):
             with self.subTest(manifest=manifest):
-                self.assertFalse(self.probe({"shards": []}, manifest=manifest, refused="no readable chain"))
-        self.assertFalse(self.probe(None, error=OSError("unreachable"), refused="unreachable"))
+                self.assertFalse(self.probe(manifest=manifest, refused="no readable chain"))
 
-    def test_compatible_unlisted_or_listed_shard_continues_in_place(self):
-        for status in (None, "pending", "active", "draining", "retired"):
-            rows = [] if status is None else [{"chainId": "0x54455354", "url": "https://herald.test", "status": status}]
-            with self.subTest(status=status):
-                self.assertFalse(self.probe({"shards": rows}, differences=[]))
+    def test_a_compatible_shard_continues_in_place(self):
+        self.assertFalse(self.probe(differences=[]))
 
     def test_fresh_directory_has_nothing_to_delete(self):
-        self.assertFalse(self.probe({"shards": []}, empty=True))
+        self.assertFalse(self.probe(empty=True))
 
-    def test_unreadable_native_manifest_never_reads_status_or_deletes(self):
+    def test_unreadable_native_manifest_never_deletes(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             (root / "marker").touch()
-            with patch.object(Path, "read_text", side_effect=PermissionError()), patch.object(deploy, "service_json") as request:
+            with patch.object(Path, "read_text", side_effect=PermissionError()):
                 with self.assertRaisesRegex(deploy.DeploymentRefused, "no readable chain"):
-                    deploy.restart_unfinished(root, {"chain_id": "TEST", "public_herald_url": "https://herald.test"}, {}, lambda _: None)
-            request.assert_not_called()
+                    deploy.restart_unfinished(root, {"chain_id": "TEST"}, {}, lambda _: None)
             self.assertTrue((root / "marker").exists())
 
     def test_wrong_directory_refuses_before_inputs_build_or_status_reads(self):
@@ -283,13 +217,13 @@ class RestartUnfinishedTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             data = Path(temporary)
             inputs = {'chain_id': 'TEST', 'guardian_url': 'https://identity.test/api/guardian',
-                      'l2_gas_bound': '0x10', 'presets': [2, 5, 101]}
-            manifest, initialized = deployed()
+                      'l2_gas_bound': '0x10'}
+            manifest = deployed()
             manifest['shard'].update(chainId='0x54455354', guardianPublicKey='0x7')
             for name in ('host-keys.json', 'host-accounts.json', 'vrf-key.json', 'gameplay-contracts.json', 'chain-config.yaml', 'harness.env'):
                 (data / name).write_text('{}')
             (data / 'native-world.json').write_text(json.dumps(manifest))
-            (data / 'initialized.json').write_text(json.dumps(initialized))
+            (data / 'initialized.json').write_text('{}')
             (data / 'init-configuration.json').write_text(json.dumps({
                 'shard': 'test', 'chain_id': 'TEST', 'guardian_url': inputs['guardian_url'], 'l2_gas_bound': '0x10'}))
             with patch.object(deploy.shard, 'read_guardian_identity', return_value={'guardianPublicKey': '0x7'}):
@@ -307,13 +241,13 @@ class RestartUnfinishedTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             data = Path(temporary)
             inputs = {'chain_id': 'TEST', 'guardian_url': 'https://identity.test/api/guardian',
-                      'l2_gas_bound': '0x10', 'presets': [2, 5]}
-            manifest, initialized = deployed()
+                      'l2_gas_bound': '0x10'}
+            manifest = deployed()
             manifest['shard'].update(chainId='0x54455354', guardianPublicKey='0x7')
             for name in ('host-keys.json', 'host-accounts.json', 'vrf-key.json', 'gameplay-contracts.json', 'chain-config.yaml', 'harness.env'):
                 (data / name).write_text('{}')
             (data / 'native-world.json').write_text(json.dumps(manifest))
-            (data / 'initialized.json').write_text(json.dumps(initialized))
+            (data / 'initialized.json').write_text('{}')
             (data / 'init-configuration.json').write_text(json.dumps({
                 'shard': 'test', 'chain_id': 'TEST', 'guardian_url': inputs['guardian_url'], 'l2_gas_bound': '0x10'}))
 
@@ -337,12 +271,14 @@ class RestartUnfinishedTest(unittest.TestCase):
                     'migration class 0x0, release has 0x23'])
                 self.assertEqual(differences(candidate(2, games='0x99')), ['Games class 0x01, release has 0x99'])
                 self.assertEqual(differences(candidate(2, schema='0xother')), ['schema 0xs, release has 0xother'])
-                self.assertEqual(differences(candidate(2, presets={'2': '0x20', '5': '0x51'})),
-                                 ['preset 5 commitment 0x050, release has 0x51'])
             # After the run the shard must run this release exactly: verification never accepts the previous one.
-            self.assertEqual(deploy.release_differences(candidate(2), manifest, initialized, [2, 5]), [
+            self.assertEqual(deploy.release_differences(candidate(2), manifest), [
                 'release id 1, release has 2', 'Season class 0x2, release has 0x22',
                 'migration class 0x0, release has 0x23'])
+
+
+def frontier_line(schemas):
+    return {release: {"schema": schema, "family": 1, "previous": int(release) - 1} for release, schema in schemas.items()}
 
 
 class PublishReleasesTest(unittest.TestCase):
@@ -354,10 +290,10 @@ class PublishReleasesTest(unittest.TestCase):
             (directory / "data").mkdir()
             (directory / "data/native-world.json").write_text(json.dumps({"native": {
                 "releaseId": release_id, "activeSchema": "0xs",
-                "releaseSchemas": release_schemas or {"1": "0xs", "2": "0xs"}}}))
+                "releases": frontier_line(release_schemas or {"1": "0xs", "2": "0xs"})}}))
             stages = []
             with (
-                patch.object(deploy, "service_json", side_effect=[{"releaseSchemas": value} for value in served]) as read,
+                patch.object(deploy, "service_json", side_effect=[{"releases": frontier_line(value)} for value in served]) as read,
                 patch.object(deploy, "wait_for_identity"),
                 patch.object(deploy.subprocess, "run") as run,
             ):
@@ -398,5 +334,5 @@ class ChainIdentityTest(unittest.TestCase):
             second = deploy.chain_identity(root, "dev")
             self.assertNotEqual(first, second)
             self.assertLessEqual(len(first.encode("ascii")), 31)
-            (root / ".env").write_text(f"CHAIN_ID={first}\n")
+            (root / ".env").write_text(f"SHARD_NAME=realms-dev\nCHAIN_ID={first}\n")
             self.assertEqual(deploy.chain_identity(root, "dev"), first)

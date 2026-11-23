@@ -8,9 +8,7 @@ pub mod GamesEntry {
     use starknet::{ContractAddress, get_caller_address, get_tx_info};
     use crate::games::Authentication;
     use crate::logic::release::ReleaseState;
-    use crate::logic::release::ReleaseState::InternalTrait as ReleaseInternal;
-    use crate::presets::PresetDefinition;
-    use crate::registrar::{CreateGameParams, IRegistrarDispatcherTrait, IRegistrarLibraryDispatcher, RosterPlayer};
+    use crate::registrar::{CreateGameParams, IRegistrarDispatcherTrait, IRegistrarLibraryDispatcher};
 
     #[storage]
     #[allow(starknet::colliding_storage_paths)]
@@ -29,7 +27,6 @@ pub mod GamesEntry {
         GameplayRejected: crate::commands::GameplayRejected,
         BatchProgress: crate::commands::BatchProgress,
         StoryEvent: crate::ownership::StoryEvent,
-        PointsAwarded: crate::game::PointsAwarded,
         RowSet: crate::events::RowSet,
     }
 
@@ -78,16 +75,10 @@ pub mod GamesEntry {
         impl Release: ReleaseState::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of crate::games::IGamesPlay<ComponentState<TContractState>> {
-        fn play(
-            ref self: ComponentState<TContractState>,
-            game_id: u32,
-            release_id: u32,
-            preset_commitment: felt252,
-            command: Span<felt252>,
-        ) {
-            let actor = self.validate_play(game_id, release_id, preset_commitment, command);
+        fn play(ref self: ComponentState<TContractState>, game_id: u32, release_id: u32, command: Span<felt252>) {
+            let actor = self.validate_play(game_id, release_id);
             let timestamp = starknet::get_block_timestamp();
-            self.assign_settlement_home_before_roll(game_id, actor, command);
+            self.admit(game_id, actor, command);
             let raw_root = self.verify_stamp_before_roll();
             self.apply_gameplay(game_id, actor, command, raw_root, timestamp);
         }
@@ -107,6 +98,7 @@ pub mod GamesEntry {
             authentication: Authentication,
             release_id: u32,
             release: crate::logic::release::Release,
+            classes: Span<starknet::ClassHash>,
             vrf_public_key: Point,
             l2_gas_bound: u64,
         ) {
@@ -114,8 +106,8 @@ pub mod GamesEntry {
             assert!(launcher.is_non_zero(), "zero launcher");
             assert!(authentication.account_class.is_non_zero(), "zero account class");
             assert!(authentication.guardian_public_key.is_non_zero(), "zero guardian");
-            games_storage::release::validate(release.classes);
             assert!(release_id != 0, "zero release id");
+            assert!(release.family != 0 && release.previous == 0, "first release of a family");
             assert!(core::ec::EcPointImpl::new(vrf_public_key.x, vrf_public_key.y).is_some(), "invalid VRF key");
             assert!(l2_gas_bound != 0, "zero L2 gas bound");
             self.vrf_key_x.write(vrf_public_key.x);
@@ -123,19 +115,13 @@ pub mod GamesEntry {
             self.vrf_gas_bound.write(l2_gas_bound);
             self.data.authority.write(owner);
             self.data.launcher.write(launcher);
-            self.data.current_release.write(release_id);
-            self.data.releases.write(release_id, release);
+            crate::logic::release::write_release(release_id, release, classes);
+            self.data.open_releases.write(release.family, release_id);
             self.data.registrar.next_game.write(1);
             self.authentication_state.authentication.write(authentication);
         }
 
-        fn validate_play(
-            self: @ComponentState<TContractState>,
-            game_id: u32,
-            release_id: u32,
-            preset_commitment: felt252,
-            command: Span<felt252>,
-        ) -> ContractAddress {
+        fn validate_play(self: @ComponentState<TContractState>, game_id: u32, release_id: u32) -> ContractAddress {
             let actor = get_caller_address();
             assert!(
                 actor.is_non_zero() && actor == get_tx_info().unbox().account_contract_address,
@@ -143,52 +129,19 @@ pub mod GamesEntry {
             );
             self.assert_approved_account(actor);
             assert!(game_id != 0 && crate::logic::game::game_exists(game_id), "invalid game");
-            let game = crate::logic::game::game(game_id);
             assert!(release_id == self.data.game_releases.read(game_id), "stale release");
-            assert!(preset_commitment == crate::logic::game::preset_commitment(game), "invalid preset");
-            crate::commands::ICommandIngressDispatcherTrait::validate_command(
-                crate::commands::ICommandIngressLibraryDispatcher {
-                    class_hash: get_dep_component!(self, Release).classes(game_id).placement.read(),
-                },
-                command,
-            );
-            let (index, route, _payload) = crate::commands::route_command(command).expect('INVALID_COMMAND');
-            // The season class reads the game's rules once for the whole play; the ingress reads only its gate.
-            let command_mask = crate::logic::preset_record::for_game(game_id).rules.command_mask.read();
-            assert!(crate::rules::command_enabled(command_mask, index.into()), "command disabled");
-            assert!(game.ready || index == crate::command_routes::SETTLE_BLITZ_ROSTER, "roster not ready");
-            if index == crate::command_routes::SETTLE_BLITZ_ROSTER {
-                assert!(self.data.registrar.roster_sizes.read(game_id) != 0, "roster not frozen");
-                assert!(actor == self.data.registrar.seaters.read(game_id), "only the game's seater");
-            }
-            if route.selector == selector!("withdraw_lords") {
-                crate::relics::assert_claim_window(
-                    game, crate::logic::lords_budget::chest_rules(game_id), starknet::get_block_timestamp(),
-                );
-            }
-            if route.selector == selector!("create_banks") {
-                crate::logic::release::assert_launcher();
-            }
             actor
         }
 
-        fn assign_settlement_home_before_roll(
-            self: @ComponentState<TContractState>, game_id: u32, actor: ContractAddress, command: Span<felt252>,
-        ) {
-            let (_, route, _) = crate::commands::route_command(command).expect('INVALID_COMMAND');
-            if route.selector != selector!("settle_season") {
-                return;
-            }
-            let rules = crate::logic::preset_record::for_game(game_id).rules;
-            if rules.entry_rule.read() == crate::rules::ENTRY_OPEN && rules.day_unit_seconds.read() != 0 {
-                crate::commands::ICommandIngressDispatcherTrait::assign_open_home(
-                    crate::commands::ICommandIngressLibraryDispatcher {
-                        class_hash: get_dep_component!(self, Release).classes(game_id).placement.read(),
-                    },
-                    game_id,
-                    actor,
-                );
-            }
+        fn admit(self: @ComponentState<TContractState>, game_id: u32, actor: ContractAddress, command: Span<felt252>) {
+            crate::commands::ICommandIngressDispatcherTrait::admit(
+                crate::commands::ICommandIngressLibraryDispatcher {
+                    class_hash: crate::logic::release::class_of(game_id, crate::slots::INGRESS),
+                },
+                game_id,
+                actor,
+                command,
+            );
         }
 
         fn assert_approved_account(self: @ComponentState<TContractState>, actor: ContractAddress) {
@@ -225,7 +178,7 @@ pub mod GamesEntry {
             timestamp.serialize(ref calldata);
             let outcome =
                 match starknet::syscalls::library_call_syscall(
-                    get_dep_component!(@self, Release).classes(game_id).season.read(),
+                    crate::logic::release::class_of(game_id, crate::slots::GAMEPLAY),
                     selector!("execute_gameplay"),
                     calldata.span(),
                 ) {
@@ -259,9 +212,10 @@ pub mod GamesEntry {
             }
         }
 
-        fn registrar(self: @ComponentState<TContractState>) -> IRegistrarLibraryDispatcher {
-            let classes = self.data.releases.read(self.data.current_release.read()).classes;
-            IRegistrarLibraryDispatcher { class_hash: classes.registry }
+        fn registrar(self: @ComponentState<TContractState>, family: u8) -> IRegistrarLibraryDispatcher {
+            IRegistrarLibraryDispatcher {
+                class_hash: crate::logic::release::family_class(family, crate::slots::REGISTRY),
+            }
         }
     }
 
@@ -272,29 +226,16 @@ pub mod GamesEntry {
         impl Release: ReleaseState::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of crate::registrar::IRegistrar<ComponentState<TContractState>> {
-        fn register_preset(ref self: ComponentState<TContractState>, preset_id: u32, definition: PresetDefinition) {
-            crate::logic::release::assert_authority();
-            self.registrar().register_preset(preset_id, definition);
-        }
         fn create_game(ref self: ComponentState<TContractState>, params: CreateGameParams) -> u32 {
             crate::logic::release::assert_launcher();
-            self.registrar().create_game(params)
+            self.registrar(params.family).create_game(params)
         }
 
-        fn preset_commitment(self: @ComponentState<TContractState>, preset_id: u32) -> felt252 {
-            self.data.registrar.presets.read(preset_id)
-        }
         fn next_game_id(self: @ComponentState<TContractState>) -> u32 {
             self.data.registrar.next_game.read()
         }
         fn game_id_by_name(self: @ComponentState<TContractState>, name: felt252) -> u32 {
             self.data.registrar.launch_ids.read(name)
-        }
-        fn blitz_roster(self: @ComponentState<TContractState>, game_id: u32) -> Span<RosterPlayer> {
-            crate::logic::registrar::blitz_roster(game_id)
-        }
-        fn game_seater(self: @ComponentState<TContractState>, game_id: u32) -> ContractAddress {
-            self.data.registrar.seaters.read(game_id)
         }
     }
 }

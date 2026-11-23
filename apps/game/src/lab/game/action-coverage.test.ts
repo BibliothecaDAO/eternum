@@ -3,7 +3,7 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { frontierPreset } from "../../../../../config/source/frontier/native";
+import { frontierSeasonOnePreset } from "../../../../../config/source/frontier/season-one";
 import { commandRoutes } from "../../../../../contracts/l3/world-native/schema/command-routes.mjs";
 import { nativeCommandBits } from "../../../../../contracts/l3/world-native/schema/commands.gen";
 import { STEP_SETS, UNMEASURED_COMMANDS } from "../../../scripts/client-playtest/steps.mjs";
@@ -18,7 +18,7 @@ const BASELINES = join(__dirname, "../../../scripts/client-playtest/baselines");
 
 const frontierCommands = (commandRoutes as { name: keyof typeof nativeCommandBits }[])
   .map(({ name }) => name)
-  .filter((name) => (frontierPreset.commandMask & BigInt(nativeCommandBits[name])) !== 0n);
+  .filter((name) => (frontierSeasonOnePreset.commandMask & BigInt(nativeCommandBits[name])) !== 0n);
 
 type ActionStep = { name: string; sends?: string };
 const labActionLists = Object.entries(STEP_SETS as Record<string, { steps: ActionStep[] }>).filter(([list]) =>

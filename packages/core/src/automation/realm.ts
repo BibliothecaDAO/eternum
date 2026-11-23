@@ -1,14 +1,12 @@
 import { buildableRadius } from "../utils/castle-reach";
-import {
-  configManager,
-  divideByPrecision,
-  getBalance,
-  getRealmInfo,
-  getBuildingCount,
-  liveHomeArmies,
-  storedBiomeAt,
-  type TileManager,
-} from "../index";
+import { configManager } from "../managers/config-manager";
+import { divideByPrecision } from "../utils/utils";
+import { getBalance } from "../utils/resources";
+import { getRealmInfo } from "../utils/realm";
+import { getBuildingCount } from "../utils/packed-data";
+import { liveHomeArmies } from "../utils/expeditions";
+import { storedBiomeAt } from "../utils/tile";
+import { type TileManager } from "../managers/tile-manager";
 import type { NativeFactStore, NativeRows } from "../client/index";
 import {
   type BuildingType,

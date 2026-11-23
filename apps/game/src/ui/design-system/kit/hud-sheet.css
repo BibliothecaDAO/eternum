@@ -76,6 +76,9 @@ button.ui-panel__name[data-action]:hover {
 }
 .ui-panel__title {
   overflow: hidden;
+  color: rgb(var(--hud-ink));
+  font-family: var(--hud-font-display);
+  letter-spacing: 0.02em;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -147,17 +150,25 @@ button.ui-panel__name[data-action]:hover {
   font-weight: var(--hud-weight-label);
 }
 .ui-button[data-kind="primary"] {
-  background: rgb(var(--hud-gold));
+  border-color: var(--primary-rim);
+  background: var(--primary-face);
   color: rgb(var(--hud-dark));
   box-shadow: var(--hud-shadow-control);
+  font-family: var(--hud-font-display);
+  font-size: var(--hud-text-title);
+  line-height: var(--hud-leading-title);
+  letter-spacing: 0.04em;
 }
 .ui-button[data-kind="primary"]:is(:hover, [data-state="hover"]) {
-  background: color-mix(in srgb, rgb(var(--hud-gold)) 88%, white);
+  filter: brightness(1.06);
 }
 .ui-button[data-kind="secondary"] {
   border-color: var(--hud-line-strong);
   background: transparent;
   color: rgb(var(--hud-accent));
+  font-family: var(--hud-font-display);
+  font-size: var(--hud-text-title);
+  letter-spacing: 0.04em;
 }
 .ui-button[data-kind="quiet"] {
   background: transparent;
@@ -211,7 +222,7 @@ a.ui-button {
   transform: translateY(1px);
 }
 .ui-button[data-kind="primary"]:is(:active, [data-state="pressed"]):not(:disabled) {
-  background: color-mix(in srgb, rgb(var(--hud-gold)) 82%, black);
+  filter: brightness(0.92);
 }
 .ui-button:is([data-kind="secondary"], [data-kind="quiet"]):is(:active, [data-state="pressed"]):not(:disabled),
 .ui-button[aria-pressed="true"] {
@@ -359,11 +370,26 @@ a.ui-button {
   bottom: -6px;
   padding: 0 theme(spacing.1);
 }
+.ui-tabs[data-size="sm"] {
+  flex-wrap: nowrap;
+  border-bottom: 0;
+  gap: theme(spacing[0.5]);
+}
 .ui-tabs[data-size="sm"] .ui-tab {
   height: calc(var(--hud-control) - 8px);
+  border: 1px solid transparent;
+  border-radius: var(--hud-radius-chip);
   padding: 0 theme(spacing.2);
-  font-size: var(--hud-text-body);
+  font-family: var(--hud-font-display);
+  font-size: var(--hud-text-title);
   line-height: var(--hud-leading-body);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.ui-tabs[data-size="sm"] .ui-tab[aria-selected="true"] {
+  border-color: rgb(var(--hud-accent));
+  background: var(--hud-chosen);
+  color: rgb(var(--hud-gold));
 }
 /* A phone's sheet is narrower than a full-size strip: each tab at the body's size, closer together. The phone layout's
  * width, not a container's: a strip that sizes to its tabs (the top bar's) cannot also be sized by them. */
@@ -372,6 +398,11 @@ a.ui-button {
     padding: 0 theme(spacing.2);
     font-size: var(--hud-text-body);
     line-height: var(--hud-leading-body);
+  }
+  .ui-tabs[data-size="sm"] .ui-tab {
+    height: 30px;
+    padding: 0 theme(spacing[1.5]);
+    font-size: var(--hud-text-label);
   }
 }
 .ui-tab:is(:hover, [data-state="hover"]) {
@@ -572,36 +603,6 @@ button.ui-chip:disabled {
   box-shadow: 0 0 10px var(--hud-rarity-5);
 }
 
-/* ── Layer chests: a layer's ruin chest today on the layer switch. In the list, the chest, check or lock ends the row;
-   on the switch, each layer's mark with that state on its corner, the mark faded once its chest is taken or while the
-   layer is locked. ── */
-.ui-chest {
-  display: inline-flex;
-  margin-left: auto;
-}
-.ui-chest:not([data-chest="open"]) {
-  opacity: 0.75;
-}
-.ui-layer-chests {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-}
-.ui-layer-chests__layer {
-  position: relative;
-  display: inline-flex;
-  padding: 0 3px 3px 0;
-}
-.ui-layer-chests__layer > :last-child {
-  position: absolute;
-  right: -2px;
-  bottom: -1px;
-}
-.ui-layer-chests__layer:not([data-chest="open"]) > :first-child {
-  opacity: 0.45;
-  filter: grayscale(1);
-}
-
 /* ── Tier: a gem in its rarity colour with the tier's numeral, Common I to Legendary V. ── */
 .ui-tier {
   --rarity: var(--hud-rarity-1);
@@ -763,13 +764,13 @@ button.ui-ring:focus-visible .ui-ring__face {
   border-left: 2px solid transparent;
   border-radius: var(--hud-radius-chip);
   padding: theme(spacing.1) theme(spacing.2);
-  cursor: pointer;
   transition: background-color var(--hud-fast) var(--hud-ease);
 }
-.ui-row:is(:hover, [data-state="hover"]) {
+.ui-row[data-state="hover"],
+:is(button.ui-row, a.ui-row, .ui-row:has(> button.ui-row__choose)):hover {
   background: var(--hud-hover);
 }
-.ui-row:is([aria-selected="true"], [aria-pressed="true"]) {
+.ui-row:is([aria-selected="true"], [aria-pressed="true"], [data-selected]) {
   border-left-color: rgb(var(--hud-accent));
   background: var(--hud-chosen);
 }
@@ -783,11 +784,13 @@ button.ui-row {
   color: inherit;
   font: inherit;
   text-align: left;
+  cursor: pointer;
 }
 /* A row that opens an address (a guide) is a link with the row's look. */
 a.ui-row {
   color: inherit;
   text-decoration: none;
+  cursor: pointer;
 }
 .ui-row:is(:disabled, [aria-disabled="true"]) {
   cursor: not-allowed;
@@ -1123,6 +1126,9 @@ span.ui-row__choose {
   background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
   box-shadow: var(--hud-shadow-panel);
 }
+.ui-frame__head .ui-panel__title {
+  font-family: var(--hud-font-display);
+}
 .ui-window__bar {
   display: flex;
   align-items: center;
@@ -1130,12 +1136,16 @@ span.ui-row__choose {
   border-bottom: 1px solid var(--hud-divider);
   padding: theme(spacing.2) theme(spacing.2) theme(spacing.2) theme(spacing.4);
   color: rgb(var(--hud-accent));
+  font-family: var(--hud-font-display);
   font-size: var(--hud-text-display);
   line-height: var(--hud-leading-display);
   font-weight: var(--hud-weight-display);
 }
-.ui-window__bar > :last-child {
-  margin-left: auto;
+.ui-window__title {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 /* Dragging the bar moves a window that hangs from the screen (the popover's drag reads data-popover-drag-handle). */
 .ui-window__bar[data-popover-drag-handle] {
@@ -1854,6 +1864,18 @@ button.ui-relic:focus-visible {
 .ui-notice[data-tone="warn"] {
   border-left-color: var(--hud-warn);
 }
+@media (max-width: 1023px) {
+  .ui-notice {
+    gap: theme(spacing[1.5]);
+    padding: theme(spacing.1) theme(spacing.2);
+    font-size: var(--hud-text-label);
+    line-height: var(--hud-leading-label);
+  }
+  .ui-notice > img {
+    width: 16px;
+    height: 16px;
+  }
+}
 .ui-notice__fix {
   margin-left: auto;
   align-self: center;
@@ -2216,19 +2238,37 @@ button.ui-card__choose:disabled {
 /* A small card, three to a sheet's row (a Frontier building): its painting above its name, what it gives and its band
    centred under it. */
 .ui-card[data-size="sm"] {
-  height: theme(spacing.hud-frontier-build-card);
+  display: flex;
+  flex-direction: column;
+  height: auto;
+  min-height: theme(spacing.hud-frontier-build-card);
   container-type: inline-size;
 }
+.ui-card[data-size="sm"] .ui-card__choose {
+  position: static;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: theme(spacing.1);
+  padding: theme(spacing.2) theme(spacing[1.5]) theme(spacing[1.5]);
+}
 .ui-card[data-size="sm"] .ui-card__picture {
-  inset: theme(spacing.2) 0 auto;
+  position: static;
+  flex: none;
   height: theme(spacing.7);
 }
 .ui-card[data-size="sm"] .ui-card__picture > * {
   width: auto;
 }
 .ui-card[data-size="sm"] .ui-card__foot {
+  position: static;
+  width: 100%;
+  flex: 1;
   align-items: center;
-  padding: 0 theme(spacing[1.5]) theme(spacing[1.5]);
+  justify-content: flex-start;
+  padding: 0;
   background: none;
 }
 /* The name keeps its size until the card is too narrow for "Scouts' lodge" (a 360-wide phone), then shrinks with it. */
@@ -2385,134 +2425,22 @@ button.ui-card__choose:disabled {
 [data-frontier-rail] {
   width: theme(spacing.hud-frontier-rail);
 }
+@media (min-width: 1024px) {
+  [data-frontier-rail] {
+    width: 26.25rem;
+  }
+}
 [data-frontier-rail]:has([data-rail-panel] > *) [data-rail-home] {
   display: none;
 }
-[data-rail-panel] .ui-sheet {
+[data-rail-panel] .ui-sheet,
+[data-realm-slot] .ui-sheet {
   position: relative;
   inset: auto;
   z-index: auto;
   width: 100%;
   max-height: 100%;
+  flex: 0 1 auto;
+  height: auto;
   border-radius: var(--hud-radius-panel);
-}
-
-/* ── A chest's moment (owner, 28 October 2026: "darken the rest of the screen so the focus is on it", "the lords
-   winnings ... the fucking biggest moment of the game"): over the whole screen, map and HUD alike, a dark veil with a
-   soft spotlight where the chest stands at the centre, and its LORDS counted up large under it in front of light rays
-   in the chest's rarity. It takes no pointer: the map stays in play under it. ── */
-.ui-chest-moment {
-  position: fixed;
-  inset: 0;
-  z-index: theme(zIndex.hud-motion);
-  pointer-events: none;
-}
-/* The chest is drawn by the map's canvas, over the board; every page layer pinned to the map's tiles would draw over it:
-   the labels and plates (army plates, site tokens, all in the label layer) and the tiles' rises and flights (the motion
-   layer's "+136 XP", "-4"). While the moment plays they step aside. */
-.chest-moment #labelrenderer,
-.chest-moment [data-motion-layer] {
-  visibility: hidden;
-}
-.ui-chest-moment__veil {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(
-    ellipse 34vmin 30vmin at 50% 46%,
-    rgb(0 0 0 / 0) 0%,
-    rgb(var(--hud-dark) / 0.45) 50%,
-    rgb(var(--hud-dark) / 0.9) 100%
-  );
-}
-.ui-chest-moment__hero {
-  --rarity: var(--hud-rarity-1);
-  position: absolute;
-  left: 50%;
-  top: 70%;
-  transform: translate(-50%, -50%);
-}
-/* The figure's own box, which pops in: the hero above stays where it is placed. */
-.ui-chest-moment__pop {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-.ui-chest-moment__hero[data-tier="2"] {
-  --rarity: var(--hud-rarity-2);
-}
-.ui-chest-moment__hero[data-tier="3"] {
-  --rarity: var(--hud-rarity-3);
-}
-.ui-chest-moment__hero[data-tier="4"] {
-  --rarity: var(--hud-rarity-4);
-}
-.ui-chest-moment__hero[data-tier="5"] {
-  --rarity: var(--hud-rarity-5);
-}
-/* Light rays behind the figure, in the chest's rarity, turning slowly. */
-.ui-chest-moment__rays {
-  position: absolute;
-  inset: 50% auto auto 50%;
-  width: 34rem;
-  height: 34rem;
-  margin: -17rem 0 0 -17rem;
-  border-radius: 50%;
-  background: repeating-conic-gradient(from 0deg, var(--rarity) 0deg 7deg, transparent 7deg 24deg);
-  mask-image: radial-gradient(circle, black 0%, transparent 68%);
-  opacity: 0.55;
-  filter: blur(2px);
-  animation: ui-chest-rays 9s linear infinite;
-}
-@keyframes ui-chest-rays {
-  to {
-    transform: rotate(1turn);
-  }
-}
-.ui-chest-moment__figure {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: theme(spacing.3);
-  color: rgb(var(--hud-gold));
-  font-family: theme(fontFamily.display);
-  font-size: clamp(3.5rem, 12vmin, 9rem);
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
-  text-shadow:
-    0 0 18px rgb(var(--hud-gold) / 0.65),
-    0 3px 0 rgb(var(--hud-dark)),
-    0 6px 18px rgb(var(--hud-dark) / 0.9);
-}
-.ui-chest-moment__word {
-  position: relative;
-  margin-top: theme(spacing.1);
-  color: rgb(var(--hud-gold));
-  font-size: var(--hud-text-title);
-  line-height: var(--hud-leading-title);
-  font-weight: var(--hud-weight-title);
-  letter-spacing: 0.3em;
-  text-shadow: 0 2px 8px rgb(var(--hud-dark));
-}
-/* What else the chest gives, small under its LORDS. */
-.ui-chest-moment__prizes {
-  position: relative;
-  display: flex;
-  gap: theme(spacing.2);
-  margin-top: theme(spacing.3);
-}
-/* An account with no linked wallet, told under its LORDS how to receive them. */
-.ui-chest-moment__wallet {
-  position: relative;
-  margin-top: theme(spacing.3);
-  max-width: 22rem;
-  color: rgb(var(--hud-warn));
-  font-size: var(--hud-text-body);
-  font-weight: var(--hud-weight-strong);
-  text-align: center;
-  text-shadow: 0 2px 8px rgb(var(--hud-dark));
-}
-@media (prefers-reduced-motion: reduce) {
-  .ui-chest-moment__rays {
-    animation: none;
-  }
 }

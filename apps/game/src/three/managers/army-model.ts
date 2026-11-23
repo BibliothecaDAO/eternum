@@ -1,5 +1,4 @@
 import { createInstancedMesh } from "../utils/create-instanced-mesh";
-import { CameraView } from "@/three/scenes/hexagon-scene";
 import { gltfLoader } from "@/three/utils/utils";
 import { FELT_CENTER } from "@/ui/config";
 import { SHIP_WORLD_SCALE } from "@/three/characters/ships/ship-design";
@@ -7,7 +6,6 @@ import { BiomeType, TroopTier, TroopType } from "@bibliothecadao/types";
 import {
   AnimationAction,
   AnimationMixer,
-  Box3,
   BufferGeometry,
   Color,
   Euler,
@@ -27,6 +25,7 @@ import { VERBOSE_LOGS_ENABLED } from "@/utils/dev-mode";
 import {
   ANIMATION_STATE_IDLE,
   ANIMATION_STATE_MOVING,
+  ARMY_PACE_SPEED,
   buildArmyModelAssetPath,
   MAX_INSTANCES,
   TROOP_TO_MODEL,
@@ -36,6 +35,7 @@ import {
 import {
   AnimatedInstancedMesh,
   ArmyInstanceData,
+  type ArmyPace,
   ModelData,
   ModelType,
   MovementData,
@@ -45,11 +45,22 @@ import type { AnimationVisibilityContext } from "../types/animation";
 import { isAnimationPositionVisible } from "../utils/animation-visibility";
 import { getHexForWorldPosition } from "../utils";
 import { applyEasing, EasingType } from "../utils/easing";
-import { getContactShadowResources } from "../utils/contact-shadow";
 import { getArmyGroundOffset, groundModelMatrix } from "../utils/model-grounding";
 import { MaterialPool } from "../utils/material-pool";
 import { MemoryMonitor } from "../utils/memory-monitor";
 import { createPooledInstancedMaterial, releasePooledInstancedMaterial } from "./army-model-materials";
+import { ArmyContactShadows } from "./army-contact-shadow";
+import { float, positionLocal } from "three/tsl";
+import { FrostedStandardNodeMaterial } from "../effects/game-map-material-library";
+import { mapAnimationTime } from "../effects/endgame/state";
+import {
+  createTroopMotionController,
+  createTroopMotionNode,
+  resolveAnimatedTroopKind,
+  type AnimatedTroopKind,
+  type TroopMotionController,
+  type TroopShaderAction,
+} from "./troop-motion";
 import type { ResolvedCosmeticSkin } from "../cosmetics/types";
 import { resolvePrimarySkinGltf } from "../cosmetics/skin-asset-source";
 import {
@@ -74,13 +85,10 @@ import { resolveRenderableBaseModel } from "./army-model-render-policy";
 import type { PipelineCompiler } from "../pipeline-compiler";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
-const CONTACT_SHADOW_Y_OFFSET = 0.02;
 
-// One upload range over the touched slot span, so a one-army write never re-uploads every buffer.
 const flushArmyModelSlotUploads = (modelData: ModelData): void => {
   flushSlotDirtyRange(modelData.dirtySlots, [
     ...modelData.instancedMeshes.flatMap((mesh) => [mesh.instanceMatrix, mesh.instanceColor]),
-    modelData.contactShadowMesh?.instanceMatrix,
   ]);
 };
 
@@ -141,7 +149,6 @@ export class ArmyModel {
   private readonly movingInstances: Map<number, MovementData> = new Map();
   private readonly instanceData: Map<number, ArmyInstanceData> = new Map();
   private readonly matrixIndexOwners: Map<number, number> = new Map();
-  private currentCameraView: CameraView = CameraView.Medium;
   private movementCompleteCallbacks: Map<number, () => void> = new Map();
 
   // Cosmetic model management
@@ -155,7 +162,6 @@ export class ArmyModel {
 
   // Reusable objects for matrix operations and memory optimization
   private readonly dummyMatrix: Matrix4 = new Matrix4();
-  private readonly contactShadowMatrix: Matrix4 = new Matrix4();
   private readonly dummyEuler: Euler = new Euler();
   private readonly tempVector1: Vector3 = new Vector3();
   private readonly tempVector3: Vector3 = new Vector3();
@@ -203,7 +209,7 @@ export class ArmyModel {
   }
 
   private hasWarnedInstanceCapacityOverflow = false;
-  private contactShadowsEnabled = true;
+  private readonly shadows: ArmyContactShadows;
 
   // Memory monitoring
   private memoryMonitor?: MemoryMonitor;
@@ -223,14 +229,13 @@ export class ArmyModel {
     scene: Scene,
     /** The biome an army stands on at contract coordinates: its tile's stored biome (see ArmyManager). */
     private readonly groundBiomeAt: (col: number, row: number) => BiomeType,
-    cameraView?: CameraView,
     private readonly compilePipelines?: PipelineCompiler,
   ) {
     this.scene = scene;
+    this.shadows = new ArmyContactShadows(this.ARMY_INSTANCE_CAPACITY);
+    scene.add(this.shadows.mesh);
     this.dummyObject = new Object3D();
     this.loadPromise = Promise.resolve();
-    this.currentCameraView = cameraView || CameraView.Medium;
-    this.contactShadowsEnabled = this.currentCameraView !== CameraView.Close;
 
     // Initialize memory monitor for army model operations
     if (MEMORY_MONITORING_ENABLED) {
@@ -277,7 +282,7 @@ export class ArmyModel {
         async (gltf) => {
           try {
             if (isShipModel(modelType)) bakeShipWorldScale(gltf.scene);
-            const modelData = this.createModelData(gltf);
+            const modelData = this.createModelData(gltf, true, modelType);
             await this.compilePipelines?.(modelData.group, this.scene);
             this.scene.add(modelData.group);
             this.models.set(modelType, modelData);
@@ -393,9 +398,6 @@ export class ArmyModel {
     modelData.instancedMeshes.forEach((mesh) => {
       mesh.count = drawCount;
     });
-    if (modelData.contactShadowMesh) {
-      modelData.contactShadowMesh.count = drawCount;
-    }
   }
 
   /**
@@ -417,30 +419,21 @@ export class ArmyModel {
         mesh.count = minCount;
       }
     });
-    if (modelData.contactShadowMesh && modelData.contactShadowMesh.count < minCount) {
-      modelData.contactShadowMesh.count = minCount;
-    }
   }
 
-  private createModelData(gltf: any, ownsGeometry: boolean = true): ModelData {
+  private createModelData(gltf: any, ownsGeometry: boolean = true, modelType?: ModelType): ModelData {
     const group = new Group();
     const instancedMeshes: AnimatedInstancedMesh[] = [];
     const baseMeshes: Mesh[] = [];
+    const troopKind = modelType ? resolveAnimatedTroopKind(modelType) : undefined;
+    const troopMotion = troopKind
+      ? createTroopMotionController(troopKind, this.ARMY_INSTANCE_CAPACITY, (slot) =>
+          this.animationStates[slot] === ANIMATION_STATE_MOVING ? "march" : "idle",
+        )
+      : undefined;
 
-    this.processGLTFScene(gltf, group, instancedMeshes, baseMeshes);
+    this.processGLTFScene(gltf, group, instancedMeshes, baseMeshes, troopKind, troopMotion);
 
-    const contactShadowScale = this.computeContactShadowScale(gltf);
-    const { geometry, material } = getContactShadowResources();
-    const contactShadowMesh = createInstancedMesh(geometry, material, this.ARMY_INSTANCE_CAPACITY);
-    contactShadowMesh.frustumCulled = true;
-    contactShadowMesh.castShadow = false;
-    contactShadowMesh.receiveShadow = false;
-    contactShadowMesh.renderOrder = 9;
-    contactShadowMesh.count = 0;
-    contactShadowMesh.raycast = () => {};
-    contactShadowMesh.visible = this.contactShadowsEnabled;
-    contactShadowMesh.instanceMatrix.needsUpdate = true;
-    group.add(contactShadowMesh);
     group.visible = this.modelsVisible;
 
     const mixer = new AnimationMixer(gltf.scene);
@@ -448,8 +441,6 @@ export class ArmyModel {
     return {
       group,
       instancedMeshes,
-      contactShadowMesh,
-      contactShadowScale,
       baseMeshes,
       mixer,
       animations: {
@@ -464,20 +455,8 @@ export class ArmyModel {
       lastAnimationUpdate: 0,
       animationUpdateInterval: this.MODEL_ANIMATION_UPDATE_INTERVAL,
       ownsGeometry,
+      ...(troopMotion && { troopMotion }),
     };
-  }
-
-  private computeContactShadowScale(gltf: any): number {
-    try {
-      gltf.scene.updateMatrixWorld(true);
-      const bounds = new Box3().setFromObject(gltf.scene);
-      bounds.getSize(this.tempVector1);
-      const footprint = Math.max(this.tempVector1.x, this.tempVector1.z);
-      return Math.max(0.6, footprint * 1.1);
-    } catch (error) {
-      console.warn("[ArmyModel] Failed to compute contact shadow bounds", error);
-      return 1;
-    }
   }
 
   private processGLTFScene(
@@ -485,12 +464,14 @@ export class ArmyModel {
     group: Group,
     instancedMeshes: AnimatedInstancedMesh[],
     baseMeshes: Mesh[],
+    troopKind?: AnimatedTroopKind,
+    troopMotion?: TroopMotionController,
   ): void {
     let meshIndex = 0;
 
     gltf.scene.traverse((child: Object3D) => {
       if (child instanceof Mesh) {
-        const instancedMesh = this.createInstancedMesh(child, gltf.animations, meshIndex);
+        const instancedMesh = this.createInstancedMesh(child, gltf.animations, meshIndex, troopKind, troopMotion);
         group.add(instancedMesh);
         instancedMeshes.push(instancedMesh);
         baseMeshes.push(child);
@@ -499,9 +480,29 @@ export class ArmyModel {
     });
   }
 
-  private createInstancedMesh(mesh: Mesh, animations: any[], meshIndex: number): AnimatedInstancedMesh {
-    const geometry = mesh.geometry;
+  private createInstancedMesh(
+    mesh: Mesh,
+    animations: any[],
+    meshIndex: number,
+    troopKind?: AnimatedTroopKind,
+    troopMotion?: TroopMotionController,
+  ): AnimatedInstancedMesh {
+    const geometry = troopMotion ? mesh.geometry.clone() : mesh.geometry;
     const pooledMaterial = createPooledInstancedMaterial(mesh.material);
+    if (troopKind && troopMotion) {
+      geometry.setAttribute("troopMotion", troopMotion.attribute);
+      geometry.computeBoundingBox();
+      geometry.boundingBox?.expandByScalar(0.28);
+      geometry.computeBoundingSphere();
+      if (geometry.boundingSphere) geometry.boundingSphere.radius += 0.28;
+      const materials = Array.isArray(pooledMaterial.material) ? pooledMaterial.material : [pooledMaterial.material];
+      const displacement = createTroopMotionNode(troopKind, float(mapAnimationTime));
+      for (const material of materials) {
+        if (material instanceof FrostedStandardNodeMaterial) {
+          material.positionNode = positionLocal.add(displacement);
+        }
+      }
+    }
     const instancedMesh = createInstancedMesh(
       geometry,
       pooledMaterial.material,
@@ -556,6 +557,12 @@ export class ArmyModel {
     }
   }
 
+  private resetTroopMotionSlot(slot: number): void {
+    this.models.forEach((modelData) => {
+      modelData.troopMotion?.resetSlot(slot);
+    });
+  }
+
   private clearInstanceSlot(matrixIndex: number): void {
     const entityId = this.matrixIndexOwners.get(matrixIndex);
 
@@ -565,6 +572,8 @@ export class ArmyModel {
       this.clearSlotFromEveryRenderable(matrixIndex);
     }
 
+    this.resetTroopMotionSlot(matrixIndex);
+    this.shadows.clear(matrixIndex);
     this.setAnimationState(matrixIndex, false);
   }
 
@@ -641,7 +650,6 @@ export class ArmyModel {
       mesh.setMatrixAt(matrixIndex, this.zeroInstanceMatrix);
       mesh.userData.entityIdMap?.delete(matrixIndex);
     });
-    modelData.contactShadowMesh?.setMatrixAt(matrixIndex, this.zeroInstanceMatrix);
     markSlotDirty(modelData.dirtySlots, matrixIndex);
   }
 
@@ -758,6 +766,7 @@ export class ArmyModel {
     if (reusedSlot !== undefined) {
       this.freeSlotSet.delete(reusedSlot);
     }
+    this.resetTroopMotionSlot(slot);
     this.matrixIndexOwners.set(slot, entityId);
     return slot;
   }
@@ -850,6 +859,7 @@ export class ArmyModel {
     this.matrixIndexOwners.set(index, entityId);
 
     const state = this.storeInstanceState(entityId, index, position, scale, rotation, color);
+    this.placeShadow(index, state);
 
     const desiredModelType = this.entityModelMap.get(entityId) ?? null;
     const desiredCosmeticId = this.entityCosmeticMap.get(entityId);
@@ -911,6 +921,14 @@ export class ArmyModel {
     }
   }
 
+  private placeShadow(slot: number, state: ArmyInstanceData): void {
+    if (state.scale.x === 0 && state.scale.z === 0) {
+      this.shadows.clear(slot);
+      return;
+    }
+    this.shadows.place(slot, state.position);
+  }
+
   private syncRenderableInstance(
     modelData: ModelData,
     state: ArmyInstanceData,
@@ -929,6 +947,7 @@ export class ArmyModel {
     modelData.activeInstances.add(index);
     this.updateInstanceTransform(state.position, visibleScale, state.rotation);
     this.updateInstanceMeshes(modelData, index, entityId, state.position, state.color);
+    modelData.troopMotion?.syncLoopActionAt(index);
     // Bump count so the just-added slot draws now, not only after the next
     // setVisibleSlots (see extendModelDrawCount).
     this.extendModelDrawCount(modelData, index);
@@ -973,6 +992,8 @@ export class ArmyModel {
   public purgeDrawnSlot(slot: number): void {
     this.clearMovementStateForSlot(slot);
     this.clearSlotFromEveryRenderable(slot);
+    this.resetTroopMotionSlot(slot);
+    this.shadows.clear(slot);
     this.matrixIndexOwners.delete(slot);
     this.setAnimationState(slot, false);
     if (!this.freeSlotSet.has(slot)) {
@@ -1140,31 +1161,19 @@ export class ArmyModel {
       mesh.userData.entityIdMap.set(index, entityId);
     });
 
-    if (modelData.contactShadowMesh) {
-      const isHidden =
-        this.dummyObject.scale.x === 0 && this.dummyObject.scale.y === 0 && this.dummyObject.scale.z === 0;
-      if (isHidden) {
-        modelData.contactShadowMesh.setMatrixAt(index, this.zeroInstanceMatrix);
-      } else {
-        const baseScale = modelData.contactShadowScale ?? 1;
-        const instanceScale = Math.max(this.dummyObject.scale.x, this.dummyObject.scale.z);
-        const finalScale = baseScale * instanceScale;
-
-        this.contactShadowMatrix.makeScale(finalScale, finalScale, finalScale);
-        this.contactShadowMatrix.setPosition(position.x, position.y + CONTACT_SHADOW_Y_OFFSET, position.z);
-        modelData.contactShadowMesh.setMatrixAt(index, this.contactShadowMatrix);
-      }
-    }
+    modelData.troopMotion?.setPlacementAt(index, this.dummyObject.matrix);
     markSlotDirty(modelData.dirtySlots, index);
   }
 
-  // Animation Methods
-  public updateAnimations(_deltaTime: number, visibility?: AnimationVisibilityContext): void {
+  public updateAnimations(deltaTime: number, visibility?: AnimationVisibilityContext): void {
     if (!this.modelsVisible) return;
     const now = performance.now();
     const time = now * 0.001;
 
     this.models.forEach((modelData) => {
+      if (modelData.troopMotion) {
+        modelData.troopMotion.update(mapAnimationTime.value, modelData.activeInstances, visibility);
+      }
       if (!this.shouldAnimateModel(modelData, visibility)) {
         return;
       }
@@ -1232,8 +1241,7 @@ export class ArmyModel {
       return;
     }
 
-    const updateInterval = this.getAnimationUpdateIntervalMs(modelData.animationUpdateInterval);
-    if (now - modelData.lastAnimationUpdate < updateInterval) {
+    if (now - modelData.lastAnimationUpdate < modelData.animationUpdateInterval) {
       return;
     }
 
@@ -1262,7 +1270,6 @@ export class ArmyModel {
       let needsMovingWeights = false;
       for (let i = 0; i < instanceCount; i++) {
         const state = this.animationStates[i];
-        if (this.shouldSkipAnimation(state)) continue;
         if (state === ANIMATION_STATE_IDLE) needsIdleWeights = true;
         else if (state === ANIMATION_STATE_MOVING) needsMovingWeights = true;
         if (needsIdleWeights && needsMovingWeights) break;
@@ -1331,7 +1338,6 @@ export class ArmyModel {
             const i = indices[idx];
             if (i >= instanceCount) continue;
             const state = this.animationStates[i];
-            if (this.shouldSkipAnimation(state)) continue;
 
             let sourceWeights: Float32Array | null = null;
             let sourceOffset = 0;
@@ -1364,10 +1370,6 @@ export class ArmyModel {
     }
   }
 
-  private shouldSkipAnimation(animationState: number): boolean {
-    return this.currentCameraView === CameraView.Far && animationState === ANIMATION_STATE_IDLE;
-  }
-
   private getAnimationUpdateFrequency(instanceCount: number): number {
     let updateFrequency = 1;
 
@@ -1376,34 +1378,13 @@ export class ArmyModel {
     if (instanceCount > 80) updateFrequency = 4;
     if (instanceCount > 150) updateFrequency = 5;
 
-    if (this.currentCameraView === CameraView.Medium) {
-      updateFrequency = Math.min(updateFrequency + 1, 10);
-    } else if (this.currentCameraView === CameraView.Far) {
-      updateFrequency = Math.min(updateFrequency + 2, 10);
-    }
-
     return updateFrequency;
-  }
-
-  private getAnimationUpdateIntervalMs(baseInterval: number): number {
-    if (this.currentCameraView === CameraView.Medium) {
-      return baseInterval * 1.25;
-    }
-    if (this.currentCameraView === CameraView.Far) {
-      return baseInterval * 1.6;
-    }
-    return baseInterval;
   }
 
   private getAnimationBucketStride(instanceCount: number): number {
     let stride = 1;
     if (instanceCount > 150) stride = 2;
     if (instanceCount > 300) stride = 4;
-
-    if (this.currentCameraView === CameraView.Far) {
-      stride = Math.min(stride * 2, this.ANIMATION_BUCKETS);
-    }
-
     return stride;
   }
 
@@ -1466,6 +1447,7 @@ export class ArmyModel {
     matrixIndex: number,
     category: TroopType,
     tier: TroopTier,
+    pace: ArmyPace,
   ): void {
     if (path.length < 2) return;
 
@@ -1513,6 +1495,7 @@ export class ArmyModel {
         isSettling: false,
         finalTangent: null,
         currentSpeedMultiplier: 1.0,
+        pace,
         elapsedTime: 0,
         arrivalSlamTimer: 0,
         isArrivalSlamming: false,
@@ -1692,7 +1675,7 @@ export class ArmyModel {
       (targetMultiplier - splineData.currentSpeedMultiplier) *
       Math.min(1, ArmyModel.SPEED_MULTIPLIER_LERP_RATE * deltaTime);
 
-    const currentSpeed = this.MOVEMENT_SPEED * splineData.currentSpeedMultiplier;
+    const currentSpeed = this.MOVEMENT_SPEED * splineData.currentSpeedMultiplier * ARMY_PACE_SPEED[splineData.pace];
 
     // Advance journey progress with terrain-adjusted speed
     const progressResult = resolveJourneyProgressUpdate({
@@ -1993,10 +1976,7 @@ export class ArmyModel {
     this.modelsVisible = visible;
     this.models.forEach((modelData) => (modelData.group.visible = visible));
     this.cosmeticModels.forEach((modelData) => (modelData.group.visible = visible));
-  }
-
-  public setCurrentCameraView(view: CameraView): void {
-    this.currentCameraView = view;
+    this.shadows.mesh.visible = visible;
   }
 
   public hasMovingInstances(): boolean {
@@ -2016,20 +1996,6 @@ export class ArmyModel {
     });
   }
 
-  public setContactShadowsEnabled(enabled: boolean): void {
-    this.contactShadowsEnabled = enabled;
-    this.models.forEach((model) => {
-      if (model.contactShadowMesh) {
-        model.contactShadowMesh.visible = enabled;
-      }
-    });
-    this.cosmeticModels.forEach((model) => {
-      if (model.contactShadowMesh) {
-        model.contactShadowMesh.visible = enabled;
-      }
-    });
-  }
-
   public setMovementCompleteCallback(entityId: number, callback?: () => void): void {
     if (!callback) {
       this.movementCompleteCallbacks.delete(entityId);
@@ -2046,6 +2012,10 @@ export class ArmyModel {
   public rebindMovementMatrixIndex(entityId: number, newMatrixIndex: number): void {
     if (!this.movingInstances.has(entityId)) return;
     this.setAnimationState(newMatrixIndex, true);
+  }
+
+  public getEntityPace(entityId: number): ArmyPace | undefined {
+    return this.splineMovingInstances.get(entityId)?.pace;
   }
 
   public isEntityMoving(entityId: number): boolean {
@@ -2167,9 +2137,6 @@ export class ArmyModel {
       modelData.instancedMeshes.forEach((mesh) => {
         mesh.count = 0;
       });
-      if (modelData.contactShadowMesh) {
-        modelData.contactShadowMesh.count = 0;
-      }
       modelData.activeInstances.clear();
     });
 
@@ -2177,9 +2144,6 @@ export class ArmyModel {
       modelData.instancedMeshes.forEach((mesh) => {
         mesh.count = 0;
       });
-      if (modelData.contactShadowMesh) {
-        modelData.contactShadowMesh.count = 0;
-      }
       modelData.activeInstances.clear();
     });
   }
@@ -2188,6 +2152,7 @@ export class ArmyModel {
   public flushInstanceUploads(): void {
     this.models.forEach(flushArmyModelSlotUploads);
     this.cosmeticModels.forEach(flushArmyModelSlotUploads);
+    this.shadows.flush();
   }
 
   public setVisibleSlots(slots: Iterable<number>): void {
@@ -2204,6 +2169,7 @@ export class ArmyModel {
 
     this.currentVisibleCount = activeCount;
     this.guardInstanceCapacity(maxIndex >= 0 ? maxIndex + 1 : 0);
+    this.shadows.setDrawCount(maxIndex + 1);
 
     // Set per-model draw counts based on their active instances
     // Models with no active instances get mesh.count = 0 (skip rendering/raycasting/animation)
@@ -2212,9 +2178,6 @@ export class ArmyModel {
       modelData.instancedMeshes.forEach((mesh) => {
         mesh.count = modelDrawCount;
       });
-      if (modelData.contactShadowMesh) {
-        modelData.contactShadowMesh.count = modelDrawCount;
-      }
     });
 
     // Also update cosmetic models with per-model counts
@@ -2223,9 +2186,6 @@ export class ArmyModel {
       modelData.instancedMeshes.forEach((mesh) => {
         mesh.count = modelDrawCount;
       });
-      if (modelData.contactShadowMesh) {
-        modelData.contactShadowMesh.count = modelDrawCount;
-      }
     });
   }
 
@@ -2261,6 +2221,21 @@ export class ArmyModel {
 
   public setAnimationState(index: number, isWalking: boolean): void {
     this.animationStates[index] = isWalking ? ANIMATION_STATE_MOVING : ANIMATION_STATE_IDLE;
+    const entityId = this.matrixIndexOwners.get(index);
+    if (entityId !== undefined) {
+      const modelType = this.activeBaseModelByEntity.get(entityId) ?? this.entityModelMap.get(entityId);
+      if (modelType) {
+        this.models.get(modelType)?.troopMotion?.syncLoopActionAt(index);
+      }
+    }
+  }
+
+  public playTroopAction(index: number, action: TroopShaderAction): void {
+    const entityId = this.matrixIndexOwners.get(index);
+    if (entityId === undefined) return;
+    const modelType = this.activeBaseModelByEntity.get(entityId) ?? this.entityModelMap.get(entityId);
+    if (!modelType) return;
+    this.models.get(modelType)?.troopMotion?.playActionAt(index, action, mapAnimationTime.value);
   }
 
   public requestBoundsUpdate(): void {
@@ -2278,7 +2253,6 @@ export class ArmyModel {
       modelData.instancedMeshes.forEach((mesh) => {
         mesh.computeBoundingSphere();
       });
-      modelData.contactShadowMesh?.computeBoundingSphere();
     });
 
     // Also compute for cosmetic models
@@ -2286,7 +2260,6 @@ export class ArmyModel {
       modelData.instancedMeshes.forEach((mesh) => {
         mesh.computeBoundingSphere();
       });
-      modelData.contactShadowMesh?.computeBoundingSphere();
     });
   }
 
@@ -2313,13 +2286,6 @@ export class ArmyModel {
         this.scene.remove(mesh);
       });
 
-      // Phase 2.5: free the contact-shadow instance buffers. Its geometry/material
-      // are shared via getContactShadowResources, so dispose only the mesh.
-      if (modelData.contactShadowMesh) {
-        modelData.contactShadowMesh.dispose();
-        this.scene.remove(modelData.contactShadowMesh);
-      }
-
       // Dispose animations
       modelData.mixer.stopAllAction();
 
@@ -2334,13 +2300,11 @@ export class ArmyModel {
         mesh.dispose();
         this.scene.remove(mesh);
       });
-      if (modelData.contactShadowMesh) {
-        modelData.contactShadowMesh.dispose();
-        this.scene.remove(modelData.contactShadowMesh);
-      }
       modelData.mixer.stopAllAction();
       this.scene.remove(modelData.group);
     });
+
+    this.shadows.dispose();
 
     // Clear all data structures
     this.models.clear();

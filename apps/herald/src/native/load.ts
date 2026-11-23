@@ -24,6 +24,7 @@ export async function loadNativeWorld(input: {
   let confirmedBlock = checkpoint?.confirmedBlock ?? 0;
   if (checkpoint && checkpoint.confirmedBlock > targetBlock) throw new Error("Native checkpoint is ahead of chain");
   const fold = checkpoint?.fold ?? new WorldFold(registry);
+  if (checkpoint) input.native.restoreReleaseRules(fold, checkpoint.confirmedBlock);
   const metrics = { decoded_events: 0, event_messages: 0, store_events: 0, pages: 0 };
   let checkpointBlock = checkpoint?.confirmedBlock;
   try {

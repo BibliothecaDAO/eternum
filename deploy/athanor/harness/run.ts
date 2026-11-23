@@ -2,11 +2,7 @@
 import { listedFrontierGame } from "./directory-game";
 import { observeHarnessWorker, sendPreparedReport, superviseHarnessProcess } from "./terminal-report";
 import { runFrontierWorkload, type FrontierBurst } from "./frontier";
-import { FRONTIER_ACCELERATED_PRESET_ID } from "../../../config/source/common/native-preset-modes";
 import { catchUncaughtFailures, recordWorkerFailure } from "./worker-boundary";
-import { runLayerRoundTrip } from "./layer-round-trip";
-import { closeHarnessSeason } from "./season-lifecycle";
-import { nativePresetForId, nativePresetIdFor } from "../../../config/source/native";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { Worker, isMainThread, parentPort, workerData } from "node:worker_threads";
 import path from "node:path";
@@ -15,7 +11,7 @@ import { configureGameplayAccountSubmits, openShard, type Shard } from "@bibliot
 import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
 import { Account, logger } from "starknet";
 import { assertChainId } from "../../../packages/chain/chain-guard.js";
-import { createHarnessAdminProvider, launchHarnessGame } from "./game-setup";
+import { createHarnessAdminProvider } from "./game-setup";
 import { createHarnessAccounts, type HarnessAccount } from "./account-factory";
 import { connectActorClients, connectHarnessGameClient } from "./game-client";
 import { createHarnessGame } from "./harness-game";
@@ -35,10 +31,6 @@ interface HarnessCliOptions {
   workload: "burst" | "cadence" | "frontier";
   functional: boolean;
   gameType: HarnessGameType;
-  /** The preset to play; a Frontier game is the directory's unless the harness creates it. */
-  presetId: number;
-  /** Create the game as this shard's launcher instead of playing the directory's: measurement shards only. */
-  createGame: boolean;
   /** A campaign burst on the Frontier shape instead of its day-long play. */
   frontierBurst?: FrontierBurst;
   /** Worker threads that share one Frontier season, each playing its own slice of the accounts. */
@@ -46,7 +38,6 @@ interface HarnessCliOptions {
   bots: number;
   gameId?: number;
   preparedGamePath?: string;
-  gameName?: string;
   intervalSeconds: number;
   minutes: number;
   rpcUrl: string;
@@ -73,7 +64,7 @@ export function parseHarnessArgs(args: string[]): HarnessCliOptions {
   const setupConcurrency = positiveInteger(values["setup-concurrency"] ?? "6", "setup-concurrency");
   const gameId = values["game-id"] === undefined ? undefined : positiveInteger(values["game-id"], "game-id");
   const gameType = values["game-type"] ?? "frontier";
-  if (gameType !== "eternum" && gameType !== "frontier") throw new Error("--game-type must be eternum or frontier");
+  if (gameType !== "frontier") throw new Error("--game-type must be frontier");
   const workload = values.workload ?? (gameType === "frontier" ? "frontier" : "cadence");
   if (workload !== "burst" && workload !== "cadence" && workload !== "frontier")
     throw new Error("--workload must be burst, cadence or frontier");
@@ -83,15 +74,8 @@ export function parseHarnessArgs(args: string[]): HarnessCliOptions {
   if (workload === "frontier" && values["interval-seconds"] !== undefined)
     throw new Error("--interval-seconds paces a cadence; Frontier paces with --frontier-burst and its window");
   const functional = values.functional === "true";
-  const createGame = values["create-game"] === "true";
-  const presetId =
-    values.preset === undefined ? defaultPresetFor(gameType, functional) : positiveInteger(values.preset, "preset");
-  nativePresetForId(presetId);
   if (gameType === "frontier" && functional && bots < 2)
     throw new Error("Frontier design run requires both player profiles");
-  if (gameId !== undefined && !values["game-name"]) {
-    values["game-name"] = `game-${gameId}`;
-  }
   const frontierBurst = resolveFrontierBurst(values, gameType);
   const workers = positiveInteger(values.workers ?? "1", "workers");
   if (workers > 1 && gameType !== "frontier")
@@ -103,14 +87,11 @@ export function parseHarnessArgs(args: string[]): HarnessCliOptions {
     gameType,
     workload,
     functional,
-    presetId,
-    createGame,
     frontierBurst,
     workers,
     bots,
     gameId,
     preparedGamePath: values["prepared-game"],
-    gameName: values["game-name"],
     intervalSeconds,
     minutes,
     rpcUrl: requiredEndpoint(values["rpc-url"], "rpc-url", "RPC_URL"),
@@ -216,30 +197,6 @@ async function main(run: AbortSignal): Promise<void> {
           });
 
     const transportRequests = requests?.finish();
-    const layerRoundTrips =
-      options.gameType === "eternum"
-        ? [
-            await runLayerRoundTrip({
-              bots,
-              gameId: game.gameId,
-              provider,
-              client,
-              game: harnessGame,
-            }),
-          ]
-        : [];
-
-    const seasonFinalizations =
-      options.gameType === "eternum"
-        ? [
-            await closeHarnessSeason({
-              accounts,
-              client,
-              game: harnessGame,
-              provider,
-            }),
-          ]
-        : [];
 
     const gates = revision
       ? {
@@ -262,8 +219,6 @@ async function main(run: AbortSignal): Promise<void> {
       setupTransactions,
       heraldUrl: options.heraldUrl,
       workload,
-      seasonFinalizations,
-      layerRoundTrips,
       transportRequests,
     };
   } finally {
@@ -317,22 +272,19 @@ function parseFlags(args: string[]): Record<string, string> {
         "interval-seconds",
         "setup-concurrency",
         "game-id",
-        "game-name",
         "prepared-game",
         "workload",
         "game-type",
         "rpc-url",
         "herald-url",
-        "preset",
         "frontier-burst",
         "burst-window-seconds",
         "workers",
-        "create-game",
       ].includes(name)
     ) {
       throw new Error(`Unsupported harness option --${name}`);
     }
-    if (name === "help" || name === "functional" || name === "create-game") {
+    if (name === "help" || name === "functional") {
       values[name] = "true";
       continue;
     }
@@ -373,16 +325,12 @@ async function prepareGames(
   provider: HarnessProvider,
   run: AbortSignal,
 ): Promise<PreparedGame | PreparedGame[]> {
-  const listed =
-    options.gameType === "frontier" && !options.createGame
-      ? await listedFrontierGame(
-          requiredEnvironmentValue("IDENTITY_URL", "game discovery"),
-          shard,
-          options.heraldUrl,
-          options.presetId,
-          options.gameId,
-        )
-      : undefined;
+  const game = await listedFrontierGame(
+    requiredEnvironmentValue("IDENTITY_URL", "game discovery"),
+    shard,
+    options.heraldUrl,
+    options.gameId,
+  );
   const setupProvider = createHarnessAdminProvider();
   const accounts = await createHarnessAccounts({
     concurrency: options.setupConcurrency,
@@ -397,16 +345,6 @@ async function prepareGames(
     shard,
     stopped: run,
   }).finally(() => setupProvider.dispose());
-  const game =
-    listed ??
-    (await launchHarnessGame({
-      gameId: options.gameId,
-      gameName: options.gameName ?? `lab-${Date.now().toString(36)}`,
-      minutes: options.minutes,
-      presetId: options.presetId,
-      // Only Eternum homes are entitlements; a Frontier season is open entry.
-      owners: options.gameType === "eternum" ? accounts.map(({ address }) => address) : [],
-    }));
   return { game, accounts: accounts.map(({ account: _account, ...entry }) => ({ ...entry, gameId: game.gameId })) };
 }
 
@@ -548,8 +486,6 @@ export function workerArguments(options: HarnessCliOptions, bots: number, file: 
           String(options.frontierBurst.windowSeconds),
         ]
       : []),
-    "--preset",
-    String(options.presetId),
     "--rpc-url",
     options.rpcUrl,
     "--herald-url",
@@ -662,11 +598,6 @@ async function waitForWorkloadStart(): Promise<void> {
   });
 }
 
-/** A Frontier design run plays the accelerated fixture preset; every other run plays its mode's own. */
-function defaultPresetFor(gameType: HarnessGameType, functional: boolean): number {
-  return gameType === "frontier" && functional ? FRONTIER_ACCELERATED_PRESET_ID : nativePresetIdFor(gameType);
-}
-
 /** A shard endpoint has no default: a lab port that answers for the wrong shard is worse than a loud stop. */
 function requiredEndpoint(flagValue: string | undefined, flag: string, environmentName: string): string {
   const value = flagValue ?? process.env[environmentName]?.trim();
@@ -701,24 +632,20 @@ function printUsage(): void {
 Usage: bun deploy/athanor/harness/run.ts [options]
 
   --bots <count>                 default: 96
-  --game-type <eternum|frontier>   default: frontier
+  --game-type <frontier>   default: frontier
   --minutes <minutes>            default: 10
   --interval-seconds <seconds>   default: 15
   --setup-concurrency <count>    default: 6
   --workload <burst|cadence|frontier> default: the game type’s workload; burst submits every plan at once
-  --preset <id>                  preset to play; default: the game type’s preset
   --frontier-burst <booth|rollover>  Frontier campaign burst, measured as the workload: booth founds every bot's
                                  realm inside the window; rollover waits for the next day and has every bot muster
-                                 and move inside the window (use the 720 s day of --preset 101 on perf shards)
+                                 and move inside the window
   --burst-window-seconds <s>     with --frontier-burst; default: 600 for booth, 120 for rollover
   --workers <count>              Frontier: split the season's bots across this many worker threads; default: 1
   --functional                  omit request counts and the latency gates; for Frontier, the accelerated design run,
-                                 or with --preset 5 the real-speed pass on the preset's own rates and charges
+                                 or on production-length days the real-speed pass on the season's rates and charges
   --prepared-game <path>         resume a prepared roster using its private account file
-  --game-id <id>                 select a listed Frontier game or existing Eternum game
-  --create-game                  create the Frontier game as the shard's launcher instead of playing the directory's;
-                                 only a measurement shard, whose runner makes the harness its launcher, accepts it
-  --game-name <name>             name for a new game or report label for --game-id
+  --game-id <id>                 select a listed Frontier game
   --rpc-url <url>                required, or RPC_URL; the published RPC named by the Herald manifest
   --herald-url <url>             required, or HERALD_URL
 

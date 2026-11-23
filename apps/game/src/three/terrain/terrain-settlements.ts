@@ -30,7 +30,6 @@ const STRUCTURE_INFLUENCE: Record<StructureType, StructureInfluence> = {
   [StructureType.Hyperstructure]: { disturbanceStrength: 1, levelDisturbance: 0, levelRadius: 0.08, radiusScale: 1.4 },
   [StructureType.Bank]: { disturbanceStrength: 0.72, levelDisturbance: 0.08, levelRadius: 0.08, radiusScale: 0.86 },
   [StructureType.Mine]: MINE_INFLUENCE,
-  [StructureType.BitcoinMine]: MINE_INFLUENCE,
   [StructureType.Village]: { disturbanceStrength: 0.62, levelDisturbance: 0.12, levelRadius: 0.12, radiusScale: 0.78 },
   [StructureType.Camp]: CAMP_INFLUENCE,
   // Frontier's sites: a rift tears the ground as a mine does, a ruin keeps a fallen realm's footprint without growing

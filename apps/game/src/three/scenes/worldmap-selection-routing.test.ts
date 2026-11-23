@@ -40,21 +40,7 @@ describe("resolveWorldmapHexClickPlan", () => {
     });
   });
 
-  it("clears entity selection for chests and empty tiles", () => {
-    expect(
-      resolveWorldmapHexClickPlan({
-        hexCoords: { col: 1, row: 1 },
-        accountAddress: 7n,
-        chest: { id: 303 },
-      }),
-    ).toEqual({
-      kind: "select",
-      isMine: false,
-      selection: {
-        type: "clear",
-      },
-    });
-
+  it("clears entity selection for empty tiles", () => {
     expect(
       resolveWorldmapHexClickPlan({
         hexCoords: { col: 1, row: 1 },

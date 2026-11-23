@@ -1,3 +1,5 @@
+import { gameRegistryRow } from "../../../../../packages/core/src/test-support/game-registry";
+import { GAME_FAMILIES } from "../../../../../config/source/common/native-preset-modes";
 import { Euler, Group, Matrix4, Vector3, type Camera, type Scene } from "three";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
@@ -12,6 +14,7 @@ import { SettlementModel } from "@/three/structures/settlement-model";
 import { SpireManager } from "@/three/managers/spire-manager";
 import { terrainHexToWorld } from "@/three/terrain/terrain-coordinates";
 import type { ProceduralTerrain } from "@/three/terrain/procedural-terrain";
+import { modelPath } from "@/three/utils/model-url";
 import { gltfLoader } from "@/three/utils/utils";
 import { advanceGameEnd, resetGameEnd, skipGameEnd } from "@/three/effects/endgame/state";
 import { setEndgameView } from "@/three/effects/endgame/field";
@@ -78,26 +81,20 @@ export class EndgameFixtureScene {
       {
         model: "GameRegistry",
         key: "1",
-        value: {
-          game_id: 1,
-          preset_id: 3,
-          name: "1",
-          start_settling_at: "1",
+        value: gameRegistryRow({
+          family: GAME_FAMILIES.blitz,
           start_main_at: "1",
+          scheduled_end_at: "0",
           end_at: "0",
           settled: ended,
-          ready: true,
-          dev_mode_on: false,
-          end_grace_seconds: 0,
-          seed: "1",
-        },
+        }),
       },
     ]);
   }
   async prepare(scene: Scene, terrain: ProceduralTerrain, camera: Camera, compile: PipelineCompiler): Promise<void> {
     resetGameEnd();
     advanceGameEnd(1, false, 0);
-    const asset = await gltfLoader.loadAsync("/models/realms/settlement.glb");
+    const asset = await gltfLoader.loadAsync(modelPath("realms/settlement.glb"));
     this.realms = new SettlementModel(asset, this.fixture.realms.length, "realm");
     await this.realms.prepare();
     scene.add(this.realms.group);
@@ -112,7 +109,6 @@ export class EndgameFixtureScene {
           tier: TroopTier.T1,
           entityId: i * 2 + j + 1,
           isNaval: false,
-          isMoving: false,
           position: new Vector3(w.x, terrain.sampleSurface(w.x, w.z).height, w.z),
           rotation: new Euler(0, i, 0),
           primaryColor: i % 2 ? "#a33b39" : "#e1b955",
@@ -126,7 +122,7 @@ export class EndgameFixtureScene {
       this.armies.sync(this.actors, 0);
       await new Promise((resolve) => setTimeout(resolve, 30));
     }
-    this.spires = new SpireManager(scene, this.projection, new Group(), terrain, undefined, undefined, compile);
+    this.spires = new SpireManager(scene, this.projection, new Group(), terrain, undefined, compile);
     // The lab plays the end on demand, as a game in its last minutes: the veil is ready before it is asked for.
     this.spires.prepareGameEnd();
     await this.spires.prepare();

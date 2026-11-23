@@ -8,8 +8,7 @@ import {
   type PushRegistration,
 } from "@bibliothecadao/notifications";
 import { SOCIAL_PROVIDERS, type SocialProvider } from "./account-rules";
-import { TICKET_TIERS } from "./campaigns";
-import { SHARE_CARD, SHARE_KINDS, type ShareChannel, type ShareKind } from "./shares";
+import { DAY_SHARE_KINDS, SHARE_CARD, SHARE_KINDS, type ShareChannel, type ShareKind } from "./shares";
 import type { SiwsTypedData } from "./siws";
 import { buildSiwsMessage, payoutWalletStatement } from "./siws";
 import type { IdentityChainId, Session } from "./types";
@@ -138,67 +137,92 @@ export type PreparedWalletCall = typeof preparedWalletCallSchema.Type;
 /** An account's Blitz build orders as saved: their book is the game's to read, with its own build order reader. */
 const savedBuildOrdersSchema = Schema.Struct({ owner: Schema.String, revision: Schema.Number, book: Schema.Unknown });
 export type SavedBuildOrders = typeof savedBuildOrdersSchema.Type;
-/** An account's ticket to a campaign, told to that account only. */
-const campaignTicketSchema = Schema.Struct({
-  campaign: Schema.String,
-  tier: Schema.Literals(TICKET_TIERS),
+/** The moments an account's interface has opened to and the lines it has been told, as sets of the game's own names. */
+const openingProgressSchema = Schema.Struct({
+  reached: Schema.Array(Schema.String),
+  seen: Schema.Array(Schema.String),
 });
-export type CampaignTicket = typeof campaignTicketSchema.Type;
-/** What opens a new ticket: the code a flyer carried, or a friend's referral link. */
-export type CampaignOpening = { code: string } | { referral: string };
-/**
- * The account's referral link to a campaign, told to that account only: its code, what its friends can still earn it
- * (a ticket for a free home, golden for a Devcon one, nothing more), each friend's public name and progress, and what
- * they earned it so far.
- */
-/**
- * The inviter's referral link as identity settles it. `home`: no ticket (free), a ticket not on a home yet (ticket), a
- * founded Devcon home the confirmed board shows regular (devcon) or golden (golden), or a claim from elsewhere (held).
- * `goldenPending`: golden earned on a Devcon home the board does not show golden yet.
- */
-const campaignReferralSchema = Schema.Struct({
-  code: Schema.String,
-  home: Schema.Literals(["free", "ticket", "devcon", "golden", "held"]),
-  tier: Schema.NullOr(Schema.Literals(TICKET_TIERS)),
-  goldenPending: Schema.Boolean,
-  link: Schema.Struct({ counted: Schema.Number, golden: Schema.Boolean }),
-  friends: Schema.Array(
-    Schema.Struct({
-      name: Schema.NullOr(Schema.String),
-      state: Schema.Literals(["signed", "founded", "counted", "excluded"]),
-      golden: Schema.Boolean,
-    }),
-  ),
-  earned: Schema.Struct({ ticket: Schema.Boolean, golden: Schema.Boolean }),
+export type OpeningProgress = typeof openingProgressSchema.Type;
+const orderIntentSchema = Schema.Struct({
+  order: Schema.NullOr(Schema.Number),
+  members: Schema.Record(Schema.String, Schema.Number),
 });
-export type CampaignReferral = typeof campaignReferralSchema.Type;
+export type OrderIntent = typeof orderIntentSchema.Type;
+const sealCodeSchema = Schema.Struct({ held: Schema.Boolean });
+export const SEAL_CODE_REFUSALS = ["invalid_code", "code_unavailable"] as const;
+export type SealCodeRefusal = (typeof SEAL_CODE_REFUSALS)[number];
+export const isSealCodeRefusal = (code: string | undefined): code is SealCodeRefusal =>
+  (SEAL_CODE_REFUSALS as readonly (string | undefined)[]).includes(code);
+type SealCode = typeof sealCodeSchema.Type;
 
-/** A moment a player shares, as its link records it: its kind, the game it was played in, and which one (a day). */
-export interface ShareMoment {
-  kind: ShareKind;
-  chainId: string;
-  gameId: number;
-  moment: number;
-}
-/** A shared link as a friend who opened it sees it: what it shares and who shared it (null: no public name). */
-const openedShareSchema = Schema.Struct({
-  kind: Schema.Literals(SHARE_KINDS),
-  moment: Schema.Number,
-  name: Schema.NullOr(Schema.String),
-});
-export type OpenedShare = typeof openedShareSchema.Type;
 /**
- * What the account's shared links brought, told to that account only: links made, posted, opened by other browsers,
- * the new accounts they brought and how many of those founded a realm and cleared a site.
+ * A moment a player shares, as its link records it: its kind, the game it was played in, and which one (the day, or
+ * the Aspect an invite names).
  */
+export type ShareMoment =
+  | { kind: ShareKind; chainId: string; gameId: number; moment: number }
+  | { kind: "aspect"; chainId: null; gameId: null; moment: number };
+/** A shared link as a friend who opened it sees it: what it shares and who shared it (null: no public name). */
+const sharedLinkFields = { moment: Schema.Number, name: Schema.NullOr(Schema.String) };
+const openedShareSchema = Schema.Union([
+  Schema.Struct({ kind: Schema.Literals(DAY_SHARE_KINDS), ...sharedLinkFields }),
+  Schema.Struct({
+    kind: Schema.Literal("aspect"),
+    ...sharedLinkFields,
+    order: Schema.NullOr(Schema.Number),
+    members: Schema.NullOr(Schema.Number),
+  }),
+]);
+export type OpenedShare = typeof openedShareSchema.Type;
+/** The link a new account came by, as that account reads it: its kind, its game and its moment; null for none. */
+const joinedShareSchema = Schema.NullOr(
+  Schema.Union([
+    Schema.Struct({
+      kind: Schema.Literals(SHARE_KINDS),
+      chainId: Schema.String,
+      gameId: Schema.Number,
+      moment: Schema.Number,
+      name: Schema.NullOr(Schema.String),
+    }),
+    Schema.Struct({
+      kind: Schema.Literal("aspect"),
+      chainId: Schema.Null,
+      gameId: Schema.Null,
+      moment: Schema.Number,
+      name: Schema.NullOr(Schema.String),
+    }),
+  ]),
+);
+export type JoinedShare = typeof joinedShareSchema.Type;
 const shareTallySchema = Schema.Struct({
   links: Schema.Number,
   posted: Schema.Number,
   visits: Schema.Number,
   joined: Schema.Number,
   activated: Schema.Number,
+  friendsPaid: Schema.Number,
+  fragmentsEarned: Schema.Number,
 });
 export type ShareTally = typeof shareTallySchema.Type;
+const fragmentPriceSchema = Schema.Struct({
+  fragments: Schema.Number,
+  cents: Schema.Number,
+  quote: Schema.NullOr(
+    Schema.Struct({
+      id: Schema.String,
+      lordsWei: Schema.String,
+      token: Schema.String,
+      treasury: Schema.String,
+      expiresAt: Schema.Number,
+    }),
+  ),
+});
+export type FragmentPrice = typeof fragmentPriceSchema.Type;
+const fragmentPaymentSchema = Schema.Struct({
+  state: Schema.Literals(["delivering", "delivered"]),
+  fragments: Schema.optional(Schema.Number),
+});
+export type FragmentPayment = typeof fragmentPaymentSchema.Type;
 
 const readJson = async <T>(response: Response, decode: (value: unknown) => T): Promise<T> => {
   if (!response.ok) throw await requestFailure(response);
@@ -504,36 +528,26 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
     return readJson(response, decode(savedBuildOrdersSchema));
   };
 
-  /**
-   * Takes the account's one ticket to a campaign, from its flyer's code or a friend's referral link; without either, the
-   * ticket it holds. Again, the same ticket.
-   */
-  const redeemCampaignTicket = async (campaign: string, opening: CampaignOpening | null): Promise<CampaignTicket> =>
+  const getOpeningProgress = async (): Promise<OpeningProgress> =>
+    readJson(await request("/opening", { method: "GET", cache: "no-store" }), decode(openingProgressSchema));
+  /** Adds moments to the account's sets; adding one it holds changes nothing. */
+  const addOpeningProgress = async (additions: Partial<OpeningProgress>): Promise<OpeningProgress> =>
     readJson(
-      await request("/campaigns/redeem", { method: "POST", body: JSON.stringify({ campaign, ...opening }) }),
-      decode(campaignTicketSchema),
+      await request("/opening", { method: "POST", body: JSON.stringify(additions) }),
+      decode(openingProgressSchema),
     );
 
-  /** The account's referral link to a campaign and what its friends earned it, settled as it is read. */
-  const campaignReferral = async (campaign: string): Promise<CampaignReferral> =>
+  const getOrderIntent = async (): Promise<OrderIntent> =>
+    readJson(await request("/order-intent", { method: "GET", cache: "no-store" }), decode(orderIntentSchema));
+  const chooseOrder = async (order: number): Promise<OrderIntent> =>
     readJson(
-      await request(`/campaigns/referral?campaign=${encodeURIComponent(campaign)}`, {
-        method: "GET",
-        cache: "no-store",
-      }),
-      decode(campaignReferralSchema),
+      await request("/order-intent", { method: "POST", body: JSON.stringify({ order }) }),
+      decode(orderIntentSchema),
     );
-
-  /** The public name of the inviter behind a referral link; null when they chose none. */
-  const campaignReferrer = async (campaign: string, code: string): Promise<string | null> =>
-    (
-      await readJson(
-        await request(`/campaigns/referral/${encodeURIComponent(code)}?campaign=${encodeURIComponent(campaign)}`, {
-          method: "GET",
-        }),
-        decode(Schema.Struct({ name: Schema.NullOr(Schema.String) })),
-      )
-    ).name;
+  const getSealCode = async (): Promise<SealCode> =>
+    readJson(await request("/seal-code", { method: "GET", cache: "no-store" }), decode(sealCodeSchema));
+  const redeemSealCode = async (code: string): Promise<SealCode> =>
+    readJson(await request("/seal-code", { method: "POST", body: JSON.stringify({ code }) }), decode(sealCodeSchema));
 
   /** The account's link for one moment, made on first ask and the same ever after. */
   const createShare = async (moment: ShareMoment): Promise<string> =>
@@ -568,6 +582,31 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
     readJson(
       await request(`/shares/${encodeURIComponent(code)}/visit`, { method: "POST", body: JSON.stringify({ via }) }),
       decode(openedShareSchema),
+    );
+
+  /** The link this account came by (the first another player's that its browser opened before it was made); null for none. */
+  const joinedShare = async (): Promise<JoinedShare> =>
+    readJson(await request("/shares/joined", { method: "GET", cache: "no-store" }), decode(joinedShareSchema));
+
+  const priceFragments = async (game: { chainId: string; gameId: number }, fragments: number): Promise<FragmentPrice> =>
+    readJson(
+      await request(
+        `/shop/fragments?${new URLSearchParams({ chain: game.chainId, game: String(game.gameId), fragments: String(fragments) })}`,
+        { method: "GET", cache: "no-store" },
+      ),
+      decode(fragmentPriceSchema),
+    );
+
+  const payFragments = async (quoteId: string, transactionHash: string): Promise<FragmentPayment> =>
+    readJson(
+      await request("/shop/fragments/pay", { method: "POST", body: JSON.stringify({ quoteId, transactionHash }) }),
+      decode(fragmentPaymentSchema),
+    );
+
+  const fragmentPayment = async (transactionHash: string): Promise<FragmentPayment> =>
+    readJson(
+      await request(`/shop/fragments/pay/${encodeURIComponent(transactionHash)}`, { method: "GET", cache: "no-store" }),
+      decode(fragmentPaymentSchema),
     );
 
   /** What the account's shared links brought, settled as it is read. */
@@ -621,14 +660,21 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
     saveNotificationPreferences,
     getBuildOrders,
     saveBuildOrders,
-    redeemCampaignTicket,
-    campaignReferral,
-    campaignReferrer,
+    getOpeningProgress,
+    addOpeningProgress,
+    getOrderIntent,
+    chooseOrder,
+    getSealCode,
+    redeemSealCode,
     createShare,
     sharePosted,
     uploadShareCard,
     openShare,
+    joinedShare,
     shareTally,
+    priceFragments,
+    payFragments,
+    fragmentPayment,
     getPushConfiguration: () => pushRequest("config", decode(pushConfigurationSchema)),
     registerPushSubscription: (input: PushRegistration) =>
       pushRequest("subscribe", decode(Schema.Struct({ id: Schema.String })), input),

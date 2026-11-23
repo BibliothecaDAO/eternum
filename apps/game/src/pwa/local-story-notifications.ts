@@ -1,10 +1,10 @@
 import { notificationOwnerOf, useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useNotificationPreferenceStore } from "@/hooks/use-notification-preferences";
+import { getGameModeId } from "@/config/game-modes";
 import { getActiveGame } from "@/runtime/world";
 import { buildEntryHref, parsePlayRoute } from "@/play/navigation/play-route";
 import { isExplicitSpectateSession } from "@/utils/spectator-session";
-import { nativeGameModeOf } from "@bibliothecadao/eternum";
 import {
   eventConfirmationRank,
   storyEventIdentity,
@@ -96,7 +96,7 @@ function isCurrentDeliveryContext(scope: StoryEventScope, expected: DeliveryCont
 function buildEligibleNotification(value: Record<string, unknown>, scope: StoryEventScope, context: DeliveryContext) {
   const { story, payload } = readNotificationStory(value);
   if (
-    !includesStoryNotification(context.preference.level, story, nativeGameModeOf(context.world.presetId)) ||
+    !includesStoryNotification(context.preference.level, story, getGameModeId()) ||
     !storyRecipients(story, value.owner, payload).includes(`0x${BigInt(context.account).toString(16)}`)
   )
     return null;
@@ -104,7 +104,7 @@ function buildEligibleNotification(value: Record<string, unknown>, scope: StoryE
     sourceId: storyEventIdentity(scope, value),
     value,
     owner: context.identity,
-    game: { mode: nativeGameModeOf(context.world.presetId) },
+    game: { mode: getGameModeId() },
     target: buildEntryHref({
       chainId: context.world.chainId,
       gameId: context.world.gameId,

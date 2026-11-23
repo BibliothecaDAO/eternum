@@ -1,4 +1,3 @@
-import type { RealmSkin } from "../structures/realm-skins";
 import { Position } from "@bibliothecadao/eternum";
 import type { IncomingTroopArrival, SiteKind } from "@bibliothecadao/eternum";
 
@@ -23,7 +22,6 @@ export interface StructureInfo {
   entityId: ID;
   hexCoords: { col: number; row: number };
   stage: number;
-  initialized: boolean;
   level: number;
   isMine: boolean;
   isAlly: boolean;
@@ -37,7 +35,6 @@ export interface StructureInfo {
   /** The standing site's beast identity shared by its model and plate. */
   frontierBeast?: FrontierBeast;
   realmOrder?: number;
-  realmSkin?: RealmSkin;
   cosmeticId?: string;
   cosmeticAssetPaths?: string[];
   usesFallbackCosmeticSkin?: boolean;
@@ -63,6 +60,8 @@ export interface ArmyData {
   entityId: ID;
   hexCoords: Position;
   isMine: boolean;
+  /** Not the viewer's, but of the Aspect of one of the viewer's realms. */
+  isAlly: boolean;
   owningStructureId: ID | null;
   owner: { address: bigint; ownerName: string; guildName: string };
   color: string;

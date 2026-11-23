@@ -1,20 +1,13 @@
-import { WorkerEntrypoint } from "cloudflare:workers";
-import { activeShards } from "@realms-world/value-ledger";
+import { officialChain } from "@realms-world/value-ledger";
 import { Effect } from "effect";
 import { createLaunchApp } from "./app";
 import { D1CalendarStore } from "./calendar-store";
 import { decodeLaunchEnv, type LaunchEnv } from "./env";
 import { shardChainOf } from "./executor";
 import { runLaunchSchedule } from "./schedule";
-import { slotResolver } from "./paid-blitz";
 import { D1SlotStore } from "./slot-store";
 import { D1LaunchStore } from "./store";
 
-/**
- * The launch Worker, served under the app's /api beside identity: /api/factory/* for operators and /api/slots/* for
- * players. Its cron tick follows the season calendar: it creates the Frontier season game at its start and the next
- * Blitz slot inside the Blitz window, and wakes the registrar, which freezes closed slots and executes launches.
- */
 export default {
   fetch(request: Request, rawEnv: Record<string, unknown>): Response | Promise<Response> {
     return launchAppOf(decodeLaunchEnv(rawEnv), new URL(request.url).searchParams.get("chainId")).fetch(request);
@@ -22,9 +15,10 @@ export default {
   async scheduled(_controller: ScheduledController, rawEnv: Record<string, unknown>): Promise<void> {
     const env = decodeLaunchEnv(rawEnv);
     try {
-      for (const shard of await activeShards(env.IDENTITY)) {
-        const { launches, slots, calendar } = launchStoresOf(env, shard.chainId);
-        await Effect.runPromise(runLaunchSchedule(launches, slots, calendar));
+      const chain = await officialChain(env.IDENTITY);
+      if (chain) {
+        const { launches, calendar } = launchStoresOf(env, chain.chainId);
+        await Effect.runPromise(runLaunchSchedule(launches, calendar));
       }
     } finally {
       await registrarOf(env).armFor(Date.now());
@@ -34,13 +28,11 @@ export default {
 
 /** The launch service's stores on one D1, keyed to the chain the shard's /manifest names. */
 const launchStoresOf = (env: LaunchEnv, chainId?: string | null) => {
-  const launches = new D1LaunchStore(env.DB, shardChainOf(env, chainId), () =>
-    activeShards(env.IDENTITY).then((rows) => rows.map((row) => row.chainId)),
-  );
+  const launches = new D1LaunchStore(env.DB, shardChainOf(env, chainId));
   return {
     launches,
-    slots: new D1SlotStore(env.DB, launches, env.VALUE_RELAY, slotResolver(env.VALUE_RELAY, env.IDENTITY)),
-    calendar: new D1CalendarStore(env.DB, () => env.VALUE_RELAY.verifyFrontierExtension()),
+    slots: new D1SlotStore(env.DB, launches, env.VALUE_RELAY),
+    calendar: new D1CalendarStore(env.DB),
   };
 };
 
@@ -60,22 +52,9 @@ const launchAppOf = (env: LaunchEnv, chainId?: string | null) => {
     calendar,
     registrar: {
       armFor: (dueAt) => registrarOf(env).armFor(dueAt),
-      joinFailures: () => registrarOf(env).joinFailures(),
+      joinFailure: () => registrarOf(env).joinFailure(),
       wakeAt: () => registrarOf(env).wakeAt(),
-      applyRelease: (release) => registrarOf(env).applyRelease(release),
+      applyRelease: (release, shard) => registrarOf(env).applyRelease(release, shard),
     },
   });
 };
-
-/** Private immutable game-to-slot metadata; player ownership is read from the ledger and shard. */
-export class ValueLaunchDirectory extends WorkerEntrypoint<Record<string, unknown>> {
-  override fetch() {
-    return new Response(null, { status: 404 });
-  }
-  rosterCohorts() {
-    return launchStoresOf(decodeLaunchEnv(this.env)).launches.rosterCohorts();
-  }
-  directoryGames() {
-    return launchStoresOf(decodeLaunchEnv(this.env)).launches.playerDirectoryGames();
-  }
-}

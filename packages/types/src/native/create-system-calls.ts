@@ -1,4 +1,3 @@
-import type { NativeCommandPayloads } from "../../../../contracts/l3/world-native/schema/commands.gen";
 import { GetTransactionReceiptResponse } from "starknet";
 import * as SystemProps from "../types";
 
@@ -26,8 +25,6 @@ const reportedFailures = new WeakSet<object>();
 /** Whether a system call already reported this failure to its error handler (the one that logs it). */
 export const wasReported = (error: unknown): boolean =>
   typeof error === "object" && error !== null && reportedFailures.has(error);
-
-export type BatchTransactionReceipt = GetTransactionReceiptResponse & { remaining: bigint };
 
 export type SystemCalls = ReturnType<typeof createSystemCalls>;
 
@@ -57,54 +54,15 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     }) as T;
   };
 
+  const claim_daily_quest = (props: Parameters<typeof provider.claim_daily_quest>[0]) =>
+    provider.claim_daily_quest(props);
   const settle_season = (props: Parameters<typeof provider.settle_season>[0]) => provider.settle_season(props);
   const enter_depth = (props: Parameters<typeof provider.enter_depth>[0]) => provider.enter_depth(props);
+  const choose_oath = (props: Parameters<typeof provider.choose_oath>[0]) => provider.choose_oath(props);
+  const buy_stamina = (props: Parameters<typeof provider.buy_stamina>[0]) => provider.buy_stamina(props);
+  const buy_seal = (props: Parameters<typeof provider.buy_seal>[0]) => provider.buy_seal(props);
+  const reroll_oath = (props: Parameters<typeof provider.reroll_oath>[0]) => provider.reroll_oath(props);
   const research = (props: Parameters<typeof provider.research>[0]) => provider.research(props);
-  const spend_skill_point = (props: Parameters<typeof provider.spend_skill_point>[0]) =>
-    provider.spend_skill_point(props);
-  const refill_stamina = (props: Parameters<typeof provider.refill_stamina>[0]) => provider.refill_stamina(props);
-  const withdraw_lords = (props: Parameters<typeof provider.withdraw_lords>[0]) => provider.withdraw_lords(props);
-
-  const bitcoin_mine_contribute_labor = async (
-    props: SystemProps.BitcoinMineContributeLaborProps,
-  ): Promise<GetTransactionReceiptResponse> => provider.bitcoin_mine_contribute_labor(props);
-
-  const bitcoin_mine_close_phase = (props: SystemProps.BitcoinMinePhaseProps): Promise<GetTransactionReceiptResponse> =>
-    provider.bitcoin_mine_close_phase(props);
-  const bitcoin_mine_bind_phase = (props: SystemProps.BitcoinMinePhaseProps): Promise<GetTransactionReceiptResponse> =>
-    provider.bitcoin_mine_bind_phase(props);
-
-  const bitcoin_mine_claim_phase_reward = async (
-    props: SystemProps.BitcoinMineClaimPhaseRewardProps,
-  ): Promise<BatchTransactionReceipt> => provider.bitcoin_mine_claim_phase_reward(props);
-
-  const create_order = async (props: SystemProps.CreateOrderProps): Promise<GetTransactionReceiptResponse> => {
-    return await provider.create_order(props);
-  };
-
-  const accept_order = async (props: SystemProps.AcceptOrderProps): Promise<GetTransactionReceiptResponse> => {
-    return await provider.accept_order(props);
-  };
-
-  const cancel_order = async (props: SystemProps.CancelOrderProps): Promise<GetTransactionReceiptResponse> => {
-    return await provider.cancel_order(props);
-  };
-
-  const bridge_deposit_into_realm = async (
-    props: SystemProps.BridgeDepositIntoRealmProps,
-  ): Promise<GetTransactionReceiptResponse> => {
-    return await provider.bridge_deposit_into_realm(props);
-  };
-
-  const bridge_withdraw_from_realm = async (
-    props: SystemProps.BridgeWithdrawFromRealmProps,
-  ): Promise<GetTransactionReceiptResponse> => {
-    return await provider.bridge_withdraw_from_realm(props);
-  };
-
-  const create_hyperstructure = async (
-    props: SystemProps.SystemSigner & { x: number; y: number; alt: boolean },
-  ): Promise<GetTransactionReceiptResponse> => provider.create_hyperstructure(props);
 
   const provision_realm = async (
     props: SystemProps.UpgradeRealmProps & { upgrade?: boolean },
@@ -152,42 +110,6 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.execute_realm_production_plan(props);
   };
 
-  const buy_resources = async (props: SystemProps.BuyResourcesProps): Promise<GetTransactionReceiptResponse> => {
-    return await provider.buy_resources(props);
-  };
-
-  const sell_resources = async (props: SystemProps.SellResourcesProps): Promise<GetTransactionReceiptResponse> => {
-    return await provider.sell_resources(props);
-  };
-
-  const add_liquidity = async (props: SystemProps.AddLiquidityProps): Promise<GetTransactionReceiptResponse> => {
-    return await provider.add_liquidity(props);
-  };
-
-  const remove_liquidity = async (props: SystemProps.RemoveLiquidityProps): Promise<GetTransactionReceiptResponse> => {
-    return await provider.remove_liquidity(props);
-  };
-
-  const initialize_hyperstructure = async (
-    props: SystemProps.InitializeHyperstructureProps,
-  ): Promise<GetTransactionReceiptResponse> => {
-    return await provider.initialize(props);
-  };
-
-  const contribute_to_construction = async (
-    props: SystemProps.ContributeToConstructionProps,
-  ): Promise<GetTransactionReceiptResponse> => {
-    return await provider.contribute_to_construction(props);
-  };
-
-  const set_access = async (props: SystemProps.SetAccessProps): Promise<GetTransactionReceiptResponse> => {
-    return await provider.set_access(props);
-  };
-
-  const end_game = async (props: SystemProps.EndGameProps): Promise<BatchTransactionReceipt> => {
-    return await provider.end_game(props);
-  };
-
   const create_guild = async (props: SystemProps.CreateGuildProps): Promise<GetTransactionReceiptResponse> => {
     return await provider.create_guild(props);
   };
@@ -206,12 +128,6 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
 
   const disband_guild = async (props: SystemProps.DisbandGuild): Promise<GetTransactionReceiptResponse> => {
     return await provider.disband_guild(props);
-  };
-
-  const burn_labor_for_resource_production = async (
-    props: SystemProps.BurnLaborResourcesForOtherProductionProps,
-  ): Promise<GetTransactionReceiptResponse> => {
-    return await provider.burn_labor_for_resource_production(props);
   };
 
   const burn_resource_for_resource_production = async (
@@ -294,12 +210,6 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.attack_guard_vs_explorer(props);
   };
 
-  const raid_explorer_vs_guard = async (
-    props: SystemProps.RaidExplorerVsGuardProps,
-  ): Promise<GetTransactionReceiptResponse> => {
-    return await provider.raid_explorer_vs_guard(props);
-  };
-
   const troop_troop_adjacent_transfer = async (
     props: SystemProps.TroopTroopAdjacentTransferProps,
   ): Promise<GetTransactionReceiptResponse> => {
@@ -312,12 +222,6 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.troop_structure_adjacent_transfer(props);
   };
 
-  const structure_troop_adjacent_transfer = async (
-    props: SystemProps.StructureTroopAdjacentTransferProps,
-  ): Promise<GetTransactionReceiptResponse> => {
-    return await provider.structure_troop_adjacent_transfer(props);
-  };
-
   const receive_army_grant = async (
     props: SystemProps.ReceiveArmyGrantProps,
   ): Promise<GetTransactionReceiptResponse> => {
@@ -328,89 +232,24 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.leave_guild(props);
   };
 
-  const pledge_faith = async (props: SystemProps.PledgeFaithProps): Promise<GetTransactionReceiptResponse> => {
-    return await provider.pledge_faith(props);
-  };
-
-  const remove_faith = async (props: SystemProps.RemoveFaithProps): Promise<GetTransactionReceiptResponse> => {
-    return await provider.remove_faith(props);
-  };
-
-  const update_wonder_ownership = async (
-    props: SystemProps.UpdateWonderOwnershipProps,
-  ): Promise<GetTransactionReceiptResponse> => {
-    return await provider.update_wonder_ownership(props);
-  };
-
-  const update_structure_ownership = async (
-    props: SystemProps.UpdateStructureOwnershipProps,
-  ): Promise<GetTransactionReceiptResponse> => {
-    return await provider.update_structure_ownership(props);
-  };
-
-  const transfer_structure_ownership = async (
-    props: SystemProps.TransferStructureOwnershipProps,
-  ): Promise<GetTransactionReceiptResponse> => {
-    return await provider.transfer_structure_ownership(props);
-  };
-
   const interact_site = (props: SystemProps.InteractSiteProps) => provider.interact_site(props);
-
-  const open_chest = async (props: SystemProps.OpenChestProps): Promise<GetTransactionReceiptResponse> => {
-    return await provider.open_chest(props);
-  };
-
-  const burn_research_for_relic = async (
-    props: SystemProps.BurnResearchForRelicProps,
-  ): Promise<GetTransactionReceiptResponse> => {
-    return await provider.burn_research_for_relic(props);
-  };
 
   const apply_relic = async (props: SystemProps.ApplyRelicProps): Promise<GetTransactionReceiptResponse> => {
     return await provider.apply_relic(props);
   };
 
   const systemCalls = {
-    claim_wonder_points: withAuth(
-      (props: SystemProps.SystemSigner & { value: NativeCommandPayloads["ClaimWonderPoints"] }) =>
-        provider.claim_wonder_points(props),
-    ),
-    claim_player_faith_points: withAuth(
-      (props: SystemProps.SystemSigner & { value: NativeCommandPayloads["ClaimPlayerFaithPoints"] }) =>
-        provider.claim_player_faith_points(props),
-    ),
     send_resources_multiple: withAuth(send_resources_multiple),
     arrivals_offload: withAuth(arrivals_offload),
-    remove_liquidity: withAuth(remove_liquidity),
-    add_liquidity: withAuth(add_liquidity),
-    sell_resources: withAuth(sell_resources),
-    buy_resources: withAuth(buy_resources),
     set_entity_name: withAuth(set_entity_name),
-    bitcoin_mine_contribute_labor: withAuth(bitcoin_mine_contribute_labor),
-    bitcoin_mine_claim_phase_reward: withAuth(bitcoin_mine_claim_phase_reward),
-    bitcoin_mine_close_phase: withAuth(bitcoin_mine_close_phase),
-    bitcoin_mine_bind_phase: withAuth(bitcoin_mine_bind_phase),
-    create_order: withAuth(create_order),
-    accept_order: withAuth(accept_order),
-    cancel_order: withAuth(cancel_order),
     upgrade_realm: withAuth(upgrade_realm),
     provision_realm: withAuth(provision_realm),
-    create_hyperstructure: withAuth(create_hyperstructure),
     receive_army_grant: withAuth(receive_army_grant),
     destroy_building: withAuth(destroy_building),
     pause_production: withAuth(pause_production),
     resume_production: withAuth(resume_production),
     execute_realm_production_plan: withAuth(execute_realm_production_plan),
     create_building: withAuth(create_building),
-    pledge_faith: withAuth(pledge_faith),
-    remove_faith: withAuth(remove_faith),
-    update_wonder_ownership: withAuth(update_wonder_ownership),
-    update_structure_ownership: withAuth(update_structure_ownership),
-
-    initialize_hyperstructure: withAuth(initialize_hyperstructure),
-    contribute_to_construction: withAuth(contribute_to_construction),
-    set_access: withAuth(set_access),
-    end_game: withAuth(end_game),
 
     create_guild: withAuth(create_guild),
     join_guild: withAuth(join_guild),
@@ -418,15 +257,14 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     remove_guild_member: withAuth(remove_guild_member),
     disband_guild: withAuth(disband_guild),
     settle_season: withAuth(settle_season),
+    claim_daily_quest: withAuth(claim_daily_quest),
     enter_depth: withAuth(enter_depth),
     research: withAuth(research),
-    spend_skill_point: withAuth(spend_skill_point),
-    refill_stamina: withAuth(refill_stamina),
-    withdraw_lords: withAuth(withdraw_lords),
-    bridge_deposit_into_realm: withAuth(bridge_deposit_into_realm),
-    bridge_withdraw_from_realm: withAuth(bridge_withdraw_from_realm),
+    choose_oath: withAuth(choose_oath),
+    buy_stamina: withAuth(buy_stamina),
+    buy_seal: withAuth(buy_seal),
+    reroll_oath: withAuth(reroll_oath),
 
-    burn_labor_for_resource_production: withAuth(burn_labor_for_resource_production),
     burn_resource_for_resource_production: withAuth(burn_resource_for_resource_production),
 
     guard_add: withAuth(guard_add),
@@ -444,18 +282,13 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     attack_explorer_vs_guard: withAuth(attack_explorer_vs_guard),
     attack_explorer_vs_guard_and_garrison: withAuth(attack_explorer_vs_guard_and_garrison),
     attack_guard_vs_explorer: withAuth(attack_guard_vs_explorer),
-    raid_explorer_vs_guard: withAuth(raid_explorer_vs_guard),
 
     troop_troop_adjacent_transfer: withAuth(troop_troop_adjacent_transfer),
     troop_structure_adjacent_transfer: withAuth(troop_structure_adjacent_transfer),
-    structure_troop_adjacent_transfer: withAuth(structure_troop_adjacent_transfer),
 
     leave_guild: withAuth(leave_guild),
 
-    transfer_structure_ownership: withAuth(transfer_structure_ownership),
-    open_chest: withAuth(open_chest),
     interact_site: withAuth(interact_site),
-    burn_research_for_relic: withAuth(burn_research_for_relic),
     apply_relic: withAuth(apply_relic),
   };
 

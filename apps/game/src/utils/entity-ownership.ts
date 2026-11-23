@@ -1,5 +1,5 @@
 import { ContractAddress } from "@bibliothecadao/types";
-import { configManager, isViewerOwner, nativeGameModeOf } from "@bibliothecadao/eternum";
+import { configManager, isViewerOwner } from "@bibliothecadao/eternum";
 import type { GameRef, NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { gameKey, getActiveGame } from "@/runtime/world/store";
 import { seatSide, type SeatSide, type Side } from "@/tokens";
@@ -32,27 +32,8 @@ export const isEntityOwnedByAccount = (
 };
 
 /**
- * Whether two players are allies: tribe members, in Eternum only (owner, 2026-10-21: "no allies in frontier/blitz but in
- * eternum yes, tribe members"). The chain lets a tribe form in any mode (guilds.cairo checks no mode), so the mode is read
- * here, in the one rule every map label, token and minimap mark takes its side from; elsewhere a tribe makes no ally.
- */
-export function arePlayersAllied(
-  store: NativeFactStore | null | undefined,
-  playerAddress: bigint | string | null | undefined,
-  ownerAddress: bigint | string | undefined,
-): boolean {
-  const player = toAddress(playerAddress);
-  const owner = toAddress(ownerAddress);
-  if (!store || !player || !owner || player === owner) return false;
-  if (nativeGameModeOf(configManager.getPresetId()) !== "eternum") return false;
-  const playerGuild = store.get("GuildMember", { game_id: configManager.getActiveGameId(), actor: player })?.guild_id;
-  if (!playerGuild) return false;
-  return store.get("GuildMember", { game_id: configManager.getActiveGameId(), actor: owner })?.guild_id === playerGuild;
-}
-
-/**
  * How a playing viewer stands to a thing, the one rule the map's labels and the minimap take its side from: theirs, a
- * tribe member's (`arePlayersAllied`), nobody's (owner zero) or another player's.
+ * nobody's (owner zero) or another player's.
  */
 export const sideOf = (thing: { isMine: boolean; isAlly?: boolean; owner: { address: bigint } }): Side =>
   thing.isMine ? "own" : thing.isAlly ? "ally" : thing.owner.address === 0n ? "neutral" : "enemy";
@@ -72,10 +53,6 @@ export const subscribeSeats = (listener: () => void): (() => void) => {
   return () => seatListeners.delete(listener);
 };
 
-/**
- * Sets an open game's seat order (a Frontier or Eternum game has no roster on the chain), as `useOpenGameSeats` read it
- * for that game. Labels and marks drawn by seat are told again.
- */
 export const setOpenGameSeats = (game: GameRef, order: bigint[]): void => {
   const key = gameKey(game);
   const same =
@@ -100,14 +77,7 @@ export const onSidesChanged = (listener: () => void): (() => void) => {
   };
 };
 
-/**
- * The game's players in seat order, the same on every client and through the game: a Blitz or Duel game's roster, fixed
- * before play; else an open game's players in the order they joined it (`useOpenGameSeats`). Empty until this game's
- * own order is known: another game's, on this shard or another, never stands in while its read is on its way or failed.
- */
-export const seatOrder = (store: NativeFactStore): bigint[] => {
-  const roster = store.get("BlitzRoster", { game_id: configManager.getActiveGameId() });
-  if (roster) return roster.players.map((player) => ContractAddress(player.account));
+export const seatOrder = (): bigint[] => {
   const game = getActiveGame();
   return game && openGameSeats?.game === gameKey(game) ? openGameSeats.order : [];
 };
@@ -116,13 +86,10 @@ export const seatOrder = (store: NativeFactStore): bigint[] => {
  * Whose a thing is to a watching viewer (owner, 2026-10-21: "when you're spectating maybe a diff color for every
  * player"): there is no "yours", so each player is told by their seat's colour, the same on the map's labels, the
  * minimap and the standings; nobody's things are grey. Null while the viewer plays: the three sides tell it
- * (`arePlayersAllied`, map-plates.css).
+ * (map-plates.css).
  */
-export const watchedSide = (
-  store: NativeFactStore | null | undefined,
-  owner: bigint | string | null | undefined,
-): SeatSide | null => {
+export const watchedSide = (owner: bigint | string | null | undefined): SeatSide | null => {
   if (!isWatching()) return null;
   const address = toAddress(owner);
-  return seatSide(store && address ? seatOrder(store).indexOf(address) : null);
+  return seatSide(address ? seatOrder().indexOf(address) : null);
 };

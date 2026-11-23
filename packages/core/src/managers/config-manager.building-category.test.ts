@@ -1,19 +1,18 @@
 import { describe, expect, it, vi } from "vitest";
-import { BiomeType, BuildingType, CapacityConfig, ResourcesIds, TickIds, TroopType } from "@bibliothecadao/types";
+import { BiomeType, BuildingType, CapacityConfig, TickIds, TroopType } from "@bibliothecadao/types";
 import { hash } from "starknet";
 import { NativeFactStore } from "../client/native-fact-store";
-import { nativePresetForId, nativePresetIdFor } from "../../../../config/source/native";
 import { ClientConfigManager } from "./config-manager";
-import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
-import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
+import release from "../../../../contracts/l3/world-native/schema/release-definition.json";
+import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/balance.gen";
 
 function fixture(gameId = 54) {
   const store = new NativeFactStore();
   const manager = new ClientConfigManager();
-  manager.setActiveGame(gameId, 2);
+  manager.setActiveGame(gameId);
   const write = (model: string, keys: number[], value: Record<string, unknown>) =>
     store.applyFacts([{ model, key: hash.computePoseidonHashOnElements(keys), value }]);
-  write("SliceRules", [gameId], { ...preset.rules, game_id: gameId });
+  write("SliceRules", [gameId], { ...release.definition.rules, game_id: gameId });
   manager.setStore(store);
   return { manager, store, write };
 }
@@ -36,58 +35,6 @@ describe("native immutable configuration", () => {
     });
   });
 
-  it("reads a relic's duration and whole-Essence cost from the Blitz preset's relic rules, in army ticks", () => {
-    const { manager, write } = fixture();
-    const armyTick = Number(preset.rules.tick_config.armies_tick_in_seconds);
-    // The rules the factory writes for a Blitz game, listed from the first relic (Stamina I, 39): the stamina relics
-    // last their uses, the others their duration.
-    write("RelicRules", [54], { game_id: 54, rules: nativePresetForId(nativePresetIdFor("blitz")).relics });
-    expect(manager.getRelicActivation(ResourcesIds.StaminaRelic1)).toEqual({
-      durationSeconds: 3 * armyTick,
-      essenceCost: 250,
-    });
-    expect(manager.getRelicActivation(ResourcesIds.DamageRelic2)).toEqual({
-      durationSeconds: 3 * armyTick,
-      essenceCost: 500,
-    });
-    expect(() => manager.getRelicActivation(39 + 18)).toThrow("No relic rule for relic 57");
-  });
-
-  it("reads victory points in the units the game awards them", () => {
-    const { manager, write } = fixture();
-    write("SeasonWinThreshold", [54], { game_id: 54, points: 10_000_000_000n });
-    // The preset grants 1,000 points per crate and 1 point per hyperstructure second, at six decimals on chain.
-    expect(manager.getVictoryPointGrants()).toEqual({
-      exploreTile: 10,
-      claimCampFromBandits: 500,
-      claimHyperstructureFromBandits: 3_000,
-      openRelicCrate: 1_000,
-      hyperstructurePerSecond: 1,
-      // This preset runs without the hyperstructure multiplier: a held one earns its rate alone.
-      hyperstructureScale: "flat",
-    });
-    expect(manager.getHyperstructureConfig()).toEqual({
-      timeBetweenSharesChange: 0,
-      pointsPerCycle: 1,
-      pointsForWin: 10_000,
-    });
-  });
-
-  it("says a held hyperstructure's rate counts each realm around it where the multiplier rule is on, and doubles in a Duel", () => {
-    const scale = (mode: "Single" | "Duel") => {
-      const { manager, write } = fixture();
-      write("SliceRules", [54], {
-        ...preset.rules,
-        game_id: 54,
-        mode_rules: preset.rules.mode_rules | nativeRuleConstants.HYPERSTRUCTURE_MULTIPLIERS,
-      });
-      write("SettlementRules", [54], { game_id: 54, registration_start: 1, registration_limit: 2, spacing: 6, mode });
-      return manager.getVictoryPointGrants().hyperstructureScale;
-    };
-    expect(scale("Single")).toBe("per-realm");
-    expect(scale("Duel")).toBe("double");
-  });
-
   it("throws for absent building rules instead of granting zero-cost population", () => {
     const { manager } = fixture();
     expect(() => manager.getBuildingCategoryConfig(BuildingType.WorkersHut)).toThrow("not synchronized");
@@ -97,7 +44,8 @@ describe("native immutable configuration", () => {
     const { manager, write } = fixture();
     // The chain configures exactly 58 resource rules and recipes and 40 building rules; relics carry zero rows.
     const isRelic = (resource: number) => (resource >= 39 && resource <= 56) || resource === 58;
-    for (const rule of preset.resources) write("ResourceRule", [54, rule.resource_type], { ...rule, game_id: 54 });
+    for (const rule of release.definition.resources.resources)
+      write("ResourceRule", [54, rule.resource_type], { ...rule, game_id: 54 });
     for (let resource = 1; resource <= 58; resource++)
       write("ProductionRecipe", [54, resource], {
         game_id: 54,
@@ -156,17 +104,19 @@ describe("native immutable configuration", () => {
 
   it("reads tick and capacity values directly from the native rules", () => {
     const { manager } = fixture();
-    expect(manager.getTick(TickIds.Armies)).toBe(Number(preset.rules.tick_config.armies_tick_in_seconds));
-    expect(manager.getTick(TickIds.Delivery)).toBe(Number(preset.rules.tick_config.delivery_tick_in_seconds));
+    expect(manager.getTick(TickIds.Armies)).toBe(Number(release.definition.rules.tick_config.armies_tick_in_seconds));
+    expect(manager.getTick(TickIds.Delivery)).toBe(
+      Number(release.definition.rules.tick_config.delivery_tick_in_seconds),
+    );
     expect(manager.getCapacityConfigKg(CapacityConfig.Donkey)).toBe(
-      Number(preset.rules.capacity_config.donkey_capacity) / 1000,
+      Number(release.definition.rules.capacity_config.donkey_capacity) / 1000,
     );
     expect(manager.getCapacityConfigKg(CapacityConfig.None)).toBe(0);
   });
 
   it("reads each castle level's army slots from the troop limits and refuses a level the game has none for", () => {
     const { manager } = fixture();
-    const limits = preset.rules.troop_limit_config;
+    const limits = release.definition.rules.troop_limit_config;
     expect([0, 1, 2, 3].map((level) => manager.getArmySlots(level))).toEqual([
       limits.settlement_armies,
       limits.city_armies,
@@ -178,7 +128,7 @@ describe("native immutable configuration", () => {
 
   it("clears the previous game's rules before another game's snapshot", () => {
     const { manager, store } = fixture();
-    manager.setActiveGame(55, 2);
+    manager.setActiveGame(55);
     expect(() => manager.getTick(TickIds.Armies)).toThrow("not synchronized");
     expect(() => manager.setStore(store)).toThrow("not synchronized");
   });
@@ -187,40 +137,32 @@ describe("native immutable configuration", () => {
     const { manager, store, write } = fixture();
     store.applyFacts([{ model: "SliceRules", key: hash.computePoseidonHashOnElements([54]), value: null }]);
     expect(() => manager.getTick(TickIds.Armies)).toThrow("not synchronized");
-    write("SliceRules", [54], { ...preset.rules, game_id: 54 });
-    expect(manager.getTick(TickIds.Armies)).toBe(Number(preset.rules.tick_config.armies_tick_in_seconds));
-  });
-
-  it("rolls combat dice everywhere in a dice game, on the ethereal layer in an ethereal-dice game, else never", () => {
-    const { manager, write } = fixture();
-    const withRules = (mode_rules: number) => {
-      write("SliceRules", [54], { ...preset.rules, game_id: 54, mode_rules });
-      return [manager.rollsCombatDice(true), manager.rollsCombatDice(false)];
-    };
-    const base =
-      preset.rules.mode_rules & ~(nativeRuleConstants.COMBAT_DICE | nativeRuleConstants.COMBAT_DICE_ETHEREAL);
-    expect(withRules(base)).toEqual([false, false]);
-    expect(withRules(base | nativeRuleConstants.COMBAT_DICE_ETHEREAL)).toEqual([true, false]);
-    expect(withRules(base | nativeRuleConstants.COMBAT_DICE)).toEqual([true, true]);
+    write("SliceRules", [54], { ...release.definition.rules, game_id: 54 });
+    expect(manager.getTick(TickIds.Armies)).toBe(Number(release.definition.rules.tick_config.armies_tick_in_seconds));
   });
 
   it("pays reveals from strength and depth only in a game with reveal supplies", () => {
     const { manager, write } = fixture();
-    const base = preset.rules.mode_rules & ~nativeRuleConstants.REVEAL_SUPPLIES;
-    write("SliceRules", [54], { ...preset.rules, game_id: 54, mode_rules: base });
+    const base = release.definition.rules.mode_rules & ~nativeRuleConstants.REVEAL_SUPPLIES;
+    write("SliceRules", [54], { ...release.definition.rules, game_id: 54, mode_rules: base });
     expect(manager.paysRevealSupplies()).toBe(false);
-    write("SliceRules", [54], { ...preset.rules, game_id: 54, mode_rules: base | nativeRuleConstants.REVEAL_SUPPLIES });
+    write("SliceRules", [54], {
+      ...release.definition.rules,
+      game_id: 54,
+      mode_rules: base | nativeRuleConstants.REVEAL_SUPPLIES,
+    });
     expect(manager.paysRevealSupplies()).toBe(true);
   });
 
   it("reads whether terrain changes combat from the game's damage rule", () => {
     const { manager, write } = fixture();
-    expect(manager.hasBiomeCombatEffects()).toBe(true);
-    expect(manager.getBiomeCombatBonus(TroopType.Knight, BiomeType.Beach)).toBe(0.7);
-
-    const neutral = { ...preset.rules.troop_damage_config, damage_biome_bonus_num: 0 };
-    write("SliceRules", [54], { ...preset.rules, game_id: 54, troop_damage_config: neutral });
+    expect(release.definition.rules.troop_damage_config.damage_biome_bonus_num).toBe(0);
     expect(manager.hasBiomeCombatEffects()).toBe(false);
     expect(manager.getBiomeCombatBonus(TroopType.Knight, BiomeType.Beach)).toBe(1);
+
+    const terrain = { ...release.definition.rules.troop_damage_config, damage_biome_bonus_num: 3000 };
+    write("SliceRules", [54], { ...release.definition.rules, game_id: 54, troop_damage_config: terrain });
+    expect(manager.hasBiomeCombatEffects()).toBe(true);
+    expect(manager.getBiomeCombatBonus(TroopType.Knight, BiomeType.Beach)).toBe(0.7);
   });
 });

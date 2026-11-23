@@ -1,29 +1,30 @@
 // @vitest-environment jsdom
+// @vitest-environment jsdom
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
+import { formatCount, FRAGMENT, FRAGMENTS } from "@bibliothecadao/types";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import type { DockArmy } from "../hud/dock-armies";
 
 const game = vi.hoisted(() => ({
   spendPoint: vi.fn(() => Promise.resolve({ transaction_hash: "0x7" })),
+  chooseOath: vi.fn(() => Promise.resolve({ transaction_hash: "0x8" })),
+  rerollOath: vi.fn(() => Promise.resolve({ transaction_hash: "0x9" })),
+  fragments: null as number | null,
+  ethereal: undefined as number | undefined,
+  staminaKnown: true,
   select: vi.fn(),
   learned: 0n,
   signer: { address: "0x111" },
   progress: {
-    common_points: 0,
-    uncommon_points: 0,
-    rare_points: 0,
-    epic_points: 0,
-    legendary_points: 0,
     game_id: 1,
     explorer_id: 12n,
-    xp: 12,
-    battle: 0,
     logistics: 0,
-    scouting: 0,
-    scouting_kinds: 0,
-    homecoming: 0,
+    oath_slots: 1,
+    oaths: 0,
+    oath_pick: 0,
   },
   rules: {
     common_xp: 75,
@@ -36,16 +37,16 @@ const game = vi.hoisted(() => ({
     legendary_xp: 1500,
   },
 }));
+const troopsFact: Pick<DockArmy["troopsFact"], "category"> = { category: "Knight" };
 const army = {
   explorerId: 12,
   number: 1,
   label: "Army 1",
   art: "knight-t1",
-  xp: 12,
   troops: 1_500,
+  troopsFact,
   stamina: { current: 4, max: 120 },
   secondsToFull: 232,
-  canSpendSkillPoint: false,
 };
 
 vi.mock("@/hooks/context/game-context", () => ({
@@ -59,13 +60,16 @@ vi.mock("@/hooks/context/game-context", () => ({
               ? { learned: game.learned }
               : game.rules,
       },
-      systemCalls: { spend_skill_point: game.spendPoint },
+      systemCalls: { spend_skill_point: game.spendPoint, choose_oath: game.chooseOath, reroll_oath: game.rerollOath },
     },
     account: { account: game.signer },
   }),
 }));
 vi.mock("@/sync/action-outcome", () => ({ untilApplied: async (sent: Promise<unknown>) => (await sent, "0x7") }));
-vi.mock("@/hooks/helpers/use-native-facts", () => ({ useNativeRevision: () => 0 }));
+vi.mock("@/hooks/helpers/use-native-facts", () => ({
+  useNativeRevision: () => 0,
+  useNativeFacts: () => ({ store: { get: (model: string) => (model === "ArmyProgress" ? game.progress : undefined) } }),
+}));
 vi.mock("@/hooks/helpers/use-navigate", () => ({ useSelectArmyOnMap: () => game.select }));
 vi.mock("@/hooks/store/use-account-store", () => ({
   useAccountStore: (pick: (state: unknown) => unknown) => pick({ account: { address: "0x111" } }),
@@ -74,11 +78,13 @@ vi.mock("@/shell/frame/layout", () => ({ useLayout: () => "desktop" }));
 vi.mock("@/utils/can-issue-orders", () => ({ canIssueOrders: () => true }));
 vi.mock("../deploy/use-deploy-plan", () => ({ useDeployPlan: () => ({ open: [] }) }));
 vi.mock("../sites/well-refill", () => ({ useWellRefill: (_id: number, ratio: number) => ({ shown: ratio }) }));
-vi.mock("../hud/dock-armies", () => ({ useDockArmies: () => [army] }));
-vi.mock("./army-refill", () => ({ ArmyRefill: () => null }));
+vi.mock("../hud/dock-armies", () => ({
+  useDockArmies: () => [{ ...army, ethereal: game.ethereal, ...(game.staminaKnown ? {} : { stamina: undefined }) }],
+}));
 vi.mock("../frontier-reveal-yield", () => ({ useArmyRevealYield: () => 75 }));
+vi.mock("../value/fragments", () => ({ useFragmentsHeld: () => game.fragments }));
 // The army stands away from its spire: its panel has no Spire (spire-card.test.tsx plays the spire).
-vi.mock("../spire-card", () => ({ useArmyAtItsSpire: () => null, SpireButton: () => null }));
+vi.mock("../spire-card", () => ({ useArmySpireStatus: () => null }));
 
 const { FrontierArmy } = await import("./frontier-army");
 const { ArmyDock } = await import("../hud/army-dock");
@@ -93,8 +99,9 @@ beforeEach(() => {
   root = createRoot(host);
   vi.clearAllMocks();
   game.learned = 0n;
-  game.progress.xp = 12;
-  game.progress.common_points = 0;
+  game.staminaKnown = true;
+  game.progress.oath_slots = 1;
+  army.troopsFact = { category: "Knight" };
 });
 
 afterEach(() => {
@@ -104,49 +111,20 @@ afterEach(() => {
 
 const button = (text: RegExp) => [...host.querySelectorAll("button")].find((each) => text.test(each.textContent ?? ""));
 
-it("opens the army's panel from its row on a desktop, whether it holds a point", () => {
+it("opens the army's panel from its row on a desktop, through its existing selection callback", () => {
   const onOpenArmy = vi.fn();
   const realm = { owner: "0x111", base: { troop_max_explorer_count: 3 } };
   act(() => root.render(<ArmyDock realm={realm as never} armies={[army as never]} onOpenArmy={onOpenArmy} />));
-  act(() => button(/Army 1/)!.click());
+  act(() => host.querySelector<HTMLButtonElement>('button[aria-label="Army 1"]')!.click());
   // The HUD's pick selects and opens it (useArmyPanelOpens): the row takes that one way, no selection of its own.
   expect(onOpenArmy).toHaveBeenCalledOnce();
   expect(onOpenArmy).toHaveBeenCalledWith(12);
   expect(game.select).not.toHaveBeenCalled();
 });
 
-it("shows the army's figures, then its level-ups one step on, and buys the chosen level with spend_skill_point", async () => {
-  game.progress.xp = 260;
-  game.progress.common_points = 1;
-  useUIStore.setState((state) => ({ entityActions: { ...state.entityActions, selectedEntityId: 12 } }));
-  act(() => root.render(<FrontierArmy realm={{ game_id: 1 } as never} choosing={false} onClose={vi.fn()} />));
-  // The army's sheet stands in the kit's one frame, as every surface the HUD opens does (frontier-hud.test).
-  expect(host.querySelector("section[data-kit-sheet]")?.hasAttribute("data-kit-frame")).toBe(true);
-  // Each attribute is a row named by its attribute, with what it gives as its effect (the owner's pick, 22 October).
-  expect(host.querySelector('button[aria-label="Battle 0% damage"]')).not.toBeNull();
-  expect(host.textContent).toMatch(/\d+ max stamina/);
-  expect(host.textContent).toMatch(/% come home/);
-  // Scouting uses the same Troll name as the map.
-  expect(host.textContent).not.toMatch(/Camp/);
-  // Level up counts nothing: a point buys one level-up, whichever the choices take.
-  expect(button(/Level up/)!.textContent).toBe("Level up");
-  // A tile opens its own level-up.
-  act(() => host.querySelector<HTMLButtonElement>('button[aria-label^="Scouting"]')!.click());
-  expect(host.querySelector("[data-attribute='scouting']")!.getAttribute("aria-pressed")).toBe("true");
-  expect(button(/^Trolls$/)).toBeDefined();
-  expect(host.textContent).not.toMatch(/Camp/);
-  act(() => button(/^Rifts$/)!.click());
-  await act(async () => button(/^Level up$/)!.click());
-  expect(game.spendPoint).toHaveBeenCalledWith({
-    signer: game.signer,
-    explorerId: 12,
-    choice: { kind: "Scouting", value: { kind: "Rift", value: undefined } },
-  });
-});
-
 it("keeps Delete as a trash right after the army's name, asking before it deletes, and offers no Reinforce", () => {
   useUIStore.setState((state) => ({ entityActions: { ...state.entityActions, selectedEntityId: 12 } }));
-  act(() => root.render(<FrontierArmy realm={{ game_id: 1 } as never} choosing={false} onClose={vi.fn()} />));
+  act(() => root.render(<FrontierArmy realm={{ game_id: 1 } as never} onClose={vi.fn()} />));
   const trash = host.querySelector<HTMLButtonElement>('.ui-frame__head button[aria-label="Delete"]');
   // At the head's left, the name's next neighbour, not beside the cross (the owner, 4 November).
   expect(trash?.previousElementSibling?.textContent).toBe("Army 1");
@@ -157,116 +135,134 @@ it("keeps Delete as a trash right after the army's name, asking before it delete
   expect(host.querySelector('[role="alertdialog"]')).toBeNull();
   act(() => trash!.click());
   expect(host.querySelector('.ui-frame__body [role="alertdialog"]')?.textContent).toContain(
-    "troops, skills, XP and carried resources are lost",
+    "troops, carried resources and held Oaths are lost",
   );
 });
 
-it("draws no trash while the panel stands on the level-up choices", () => {
+vi.mock("../relics/army-relic-slots", () => ({ ArmyRelicSlots: () => null }));
+
+it("shows the army's captured Oath capacity rather than later home research", () => {
   useUIStore.setState((state) => ({ entityActions: { ...state.entityActions, selectedEntityId: 12 } }));
-  act(() => root.render(<FrontierArmy realm={{ game_id: 1 } as never} choosing onClose={vi.fn()} />));
-  expect(host.querySelector('[aria-label="Delete"]')).toBeNull();
+  game.learned = 3n << 30n;
+  game.progress.oath_slots = 2;
+  act(() => root.render(<FrontierArmy realm={{ game_id: 1 } as never} onClose={vi.fn()} />));
+  expect(host.querySelector("[data-oath-slots]")?.getAttribute("data-oath-slots")).toBe("2");
+  expect(host.querySelector("[data-oath-slots]")?.textContent).toContain("2 Oath slots");
+  game.progress.oath_slots = 5;
+  act(() => root.render(<FrontierArmy realm={{ game_id: 1 } as never} onClose={vi.fn()} />));
+  expect(host.querySelector("[data-oath-slots]")?.getAttribute("data-oath-slots")).toBe("5");
+  expect(host.querySelector("[data-oath-slots]")?.textContent).not.toContain("Locked");
 });
 
-it.each([
-  ["Level-ups", () => button(/^Level-ups$/)!],
-  ["an attribute", () => host.querySelector<HTMLButtonElement>('button[aria-label^="Battle "]')!],
-])(
-  "hides the trash on the choices reached from the status by %s, and shows it again back on the status",
-  (_, entry) => {
-    useUIStore.setState((state) => ({ entityActions: { ...state.entityActions, selectedEntityId: 12 } }));
-    act(() => root.render(<FrontierArmy realm={{ game_id: 1 } as never} choosing={false} onClose={vi.fn()} />));
-    const trash = () => host.querySelector('.ui-frame__head [aria-label="Delete"]');
-    expect(trash()).not.toBeNull();
-    act(() => entry().click());
-    expect(host.querySelector("[data-army-step]")!.getAttribute("data-army-step")).toBe("choose");
-    expect(trash()).toBeNull();
-  },
-);
-
-it("brings the trash back with the status once the army's last point is spent", async () => {
-  game.progress.xp = 260;
-  game.progress.common_points = 1;
-  useUIStore.setState((state) => ({ entityActions: { ...state.entityActions, selectedEntityId: 12 } }));
-  const draw = () =>
-    act(() => root.render(<FrontierArmy realm={{ game_id: 1 } as never} choosing={false} onClose={vi.fn()} />));
-  draw();
-  act(() => button(/^Level up$/)!.click());
-  expect(host.querySelector('[aria-label="Delete"]')).toBeNull();
-  act(() => host.querySelector<HTMLButtonElement>('[data-attribute="stamina"]')!.click());
-  await act(async () => button(/^Refill$/)!.click());
-  game.progress.common_points = 0;
-  draw();
-  expect(host.querySelector("[data-army-step]")!.getAttribute("data-army-step")).toBe("stats");
-  expect(host.querySelector('.ui-frame__head [aria-label="Delete"]')).not.toBeNull();
+it("draws each offered Oath with its Order crest, effect line, army header and held slot pips without job colours", async () => {
+  const { FrontierOathPick } = await import("./oath-pick");
+  const { nativeOathConstants: oaths } = await import("@bibliothecadao/eternum/game-client");
+  game.progress.oath_slots = 2;
+  game.progress.oaths = 1 << (oaths.GIANTS - 1);
+  game.progress.oath_pick = oaths.POWER - 1 + ((oaths.FOX - 1) << 4) + ((oaths.RAGE - 1) << 8);
+  act(() => root.render(<FrontierOathPick realm={{ game_id: 1 } as never} />));
+  const cards = [...host.querySelectorAll<HTMLElement>("[data-oath-id]")];
+  expect(cards).toHaveLength(3);
+  expect(cards.map((card) => Number(card.dataset.oathId))).toEqual([oaths.POWER, oaths.FOX, oaths.RAGE]);
+  expect(cards.every((card) => !("oathJob" in card.dataset))).toBe(true);
+  expect(cards.every((card) => card.querySelector("img, svg") !== null)).toBe(true);
+  expect(host.textContent).toContain("Army 1 · 1,500 Knights");
+  expect(host.querySelector('[aria-label="Slots 1 of 2"]')).not.toBeNull();
 });
 
-it("lets an army without points see its level-ups, and holds the verb with what is missing", () => {
-  useUIStore.setState((state) => ({ entityActions: { ...state.entityActions, selectedEntityId: 12 } }));
-  act(() => root.render(<FrontierArmy realm={{ game_id: 1 } as never} choosing={false} onClose={vi.fn()} />));
-  act(() => button(/^Level-ups$/)!.click());
-  expect(host.textContent).toContain("No fitting point");
-  expect(button(/^Level up$/)!.disabled).toBe(true);
-});
-
-it("sends the chosen point rank for Stamina without changing lifetime XP", async () => {
-  game.progress.xp = 260;
-  game.progress.common_points = 1;
-  useUIStore.setState((state) => ({ entityActions: { ...state.entityActions, selectedEntityId: 12 } }));
-  act(() => root.render(<FrontierArmy realm={{ game_id: 1 } as never} choosing={false} onClose={vi.fn()} />));
-  act(() => button(/^Level up$/)!.click());
-  act(() => host.querySelector<HTMLButtonElement>('[data-attribute="stamina"]')!.click());
-  await act(async () => button(/^Refill$/)!.click());
-  expect(game.spendPoint).toHaveBeenCalledWith({
-    signer: game.signer,
-    explorerId: 12,
-    choice: { kind: "Stamina", value: 1 },
+it("opens the earned pick without a selection and keeps it through Escape and outside presses", async () => {
+  const { FrontierOathPick } = await import("./oath-pick");
+  const { nativeOathConstants: oaths } = await import("@bibliothecadao/eternum/game-client");
+  game.progress.oath_slots = 1;
+  game.progress.oaths = 0;
+  game.progress.oath_pick = oaths.POWER - 1 + ((oaths.FOX - 1) << 4) + ((oaths.RAGE - 1) << 8);
+  act(() => root.render(<FrontierOathPick realm={{ game_id: 1 } as never} />));
+  expect(host.querySelectorAll("[data-oath-id]")).toHaveLength(3);
+  expect(host.querySelector('button[aria-label="Close"]')).toBeNull();
+  act(() => {
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
+    host.querySelector<HTMLElement>(".ui-modal")!.click();
   });
-  expect(game.progress.xp).toBe(260);
+  expect(host.querySelector("[data-oath-pick]")).not.toBeNull();
+  expect(host.querySelector<HTMLElement>("[data-oath-pass-result]")!.dataset.oathPassResult).toBe(
+    String(army.stamina.current + oaths.PASS_STAMINA),
+  );
+  act(() => {
+    game.progress.oath_pick = 0;
+    root.render(<FrontierOathPick realm={{ game_id: 1 } as never} />);
+  });
+  expect(host.querySelector("[data-oath-pick]")).toBeNull();
 });
 
-it("returns to the army's status once its last point is spent, and stays on the choices while one is left", async () => {
-  game.progress.xp = 260;
-  game.progress.common_points = 2;
-  useUIStore.setState((state) => ({ entityActions: { ...state.entityActions, selectedEntityId: 12 } }));
-  const draw = () =>
-    act(() => root.render(<FrontierArmy realm={{ game_id: 1 } as never} choosing={false} onClose={vi.fn()} />));
-  draw();
-  act(() => button(/^Level up$/)!.click());
-  act(() => host.querySelector<HTMLButtonElement>('[data-attribute="stamina"]')!.click());
-  // The first point lands: one is left, so the choices stay.
-  await act(async () => button(/^Refill$/)!.click());
-  game.progress.common_points = 1;
-  draw();
-  expect(host.querySelector("[data-army-step]")!.getAttribute("data-army-step")).toBe("choose");
-  // The last lands: nothing is left to buy, and the army's status is back, never "No fitting point".
-  await act(async () => button(/^Refill$/)!.click());
-  expect(game.spendPoint).toHaveBeenCalledTimes(2);
-  game.progress.common_points = 0;
-  draw();
-  expect(host.querySelector("[data-army-step]")!.getAttribute("data-army-step")).toBe("stats");
-  expect(host.textContent).not.toContain("No fitting point");
+it("opens an earned pick before the army's stamina is known, its cards answerable and Pass held until its result is", async () => {
+  const { FrontierOathPick } = await import("./oath-pick");
+  const { nativeOathConstants: oaths } = await import("@bibliothecadao/eternum/game-client");
+  game.staminaKnown = false;
+  game.progress.oath_slots = 1;
+  game.progress.oaths = 0;
+  game.progress.oath_pick = oaths.POWER - 1 + ((oaths.FOX - 1) << 4) + ((oaths.RAGE - 1) << 8);
+  act(() => root.render(<FrontierOathPick realm={{ game_id: 1 } as never} />));
+  expect(host.querySelectorAll("[data-oath-id]")).toHaveLength(3);
+  const pass = button(/^Pass:/)!;
+  expect(pass.textContent).toBe(`Pass: +${oaths.PASS_STAMINA} stamina`);
+  expect(pass.disabled).toBe(true);
+  expect(host.querySelector("[data-oath-pass-result]")).toBeNull();
+  game.staminaKnown = true;
+  act(() => root.render(<FrontierOathPick realm={{ game_id: 1 } as never} />));
+  expect(button(/^Pass:/)!.disabled).toBe(false);
+  expect(button(/^Pass:/)!.textContent).toBe(
+    `Pass: +${oaths.PASS_STAMINA} stamina${army.stamina.current} → ${army.stamina.current + oaths.PASS_STAMINA} / ${army.stamina.max}`,
+  );
+  game.staminaKnown = false;
+  act(() => root.render(<FrontierOathPick realm={{ game_id: 1 } as never} />));
+  await act(async () => host.querySelector<HTMLButtonElement>(`[data-oath-id="${oaths.FOX}"] button`)!.click());
+  expect(game.chooseOath).toHaveBeenCalledWith({
+    signer: game.signer,
+    explorerId: army.explorerId,
+    expectedPick: game.progress.oath_pick,
+    oath: oaths.FOX,
+    replace: null,
+  });
 });
 
-it.each([
-  [74, "75"],
-  [75, "200"],
-  [199, "200"],
-  [200, "400"],
-  [399, "400"],
-  [400, "800"],
-  [799, "800"],
-  [800, "1,500"],
-  [1499, "1,500"],
-  [1500, "1,575"],
-  [1575, "1,700"],
-  [3000, "3,075"],
-])("shows the real next-point readout at %s XP, including in Level up", (xp, next) => {
-  game.progress.xp = xp;
-  game.progress.common_points = Number(xp >= game.rules.common_xp);
-  useUIStore.setState((state) => ({ entityActions: { ...state.entityActions, selectedEntityId: 12 } }));
-  act(() => root.render(<FrontierArmy realm={{ game_id: 1 } as never} choosing={false} onClose={vi.fn()} />));
-  const readout = `${xp.toLocaleString("en-US")} / ${next} XP`;
-  expect(host.textContent).toContain(readout);
-  act(() => button(/Level[ -]up/)!.click());
-  expect(host.textContent).toContain(readout);
+it("redraws the card at its place for its Fragments, once a pick, never short of Fragments or in the Deep", async () => {
+  const { FrontierOathPick } = await import("./oath-pick");
+  const { nativeFragmentConstants, nativeOathConstants: oaths } = await import("@bibliothecadao/eternum/game-client");
+  const price = nativeFragmentConstants.OATH_REROLL_FRAGMENTS;
+  const offer = oaths.POWER - 1 + ((oaths.FOX - 1) << 4) + ((oaths.RAGE - 1) << 8);
+  const redraws = () => [...host.querySelectorAll<HTMLButtonElement>("[data-reroll-oath]")];
+  const show = (pick: number, fragments: number | null, ethereal: number | undefined) => {
+    game.progress.oath_pick = pick;
+    game.fragments = fragments;
+    game.ethereal = ethereal;
+    act(() => root.render(<FrontierOathPick realm={{ game_id: 1 } as never} />));
+  };
+  game.staminaKnown = true;
+  game.progress.oath_slots = 1;
+  game.progress.oaths = 0;
+  show(offer, price, undefined);
+  expect(redraws().map((redraw) => [redraw.dataset.rerollOath, redraw.disabled])).toEqual([
+    ["0", false],
+    ["1", false],
+    ["2", false],
+  ]);
+  const rageRedraw = host.querySelector(`[data-oath-id="${oaths.RAGE}"] [data-reroll-oath]`)!;
+  expect(rageRedraw.getAttribute("aria-label")).toBe(`Redraw Rage for ${formatCount(price, FRAGMENT, FRAGMENTS)}`);
+  expect(rageRedraw.textContent).toBe(`Redraw · ${price}`);
+  await act(async () => redraws()[2]!.click());
+  expect(game.rerollOath).toHaveBeenCalledWith({
+    signer: game.signer,
+    explorerId: army.explorerId,
+    expectedPick: offer,
+    index: 2,
+  });
+  show(offer + oaths.REROLLED, price, undefined);
+  expect(redraws()).toHaveLength(0);
+  show(offer, price - 1, undefined);
+  expect(redraws().map((redraw) => redraw.disabled)).toEqual([true, true, true]);
+  show(offer, null, undefined);
+  expect(redraws()).toHaveLength(0);
+  const { DEEP_DEPTH } = await import("@bibliothecadao/eternum");
+  show(offer, price, DEEP_DEPTH);
+  expect(redraws()).toHaveLength(0);
 });

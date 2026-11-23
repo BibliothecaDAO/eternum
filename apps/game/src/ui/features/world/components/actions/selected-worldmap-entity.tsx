@@ -1,9 +1,6 @@
-import { ChestTilePanel } from "@/ui/features/military/chest/chest-tile-panel";
 import { useTileAt } from "@/hooks/helpers/use-tile-at";
-import { useChestOpening } from "@/hooks/store/use-chest-opening-store";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { useBlitzHyperstructureCreation } from "@/hooks/use-blitz-hyperstructure-creation";
 import { HudButton, HudPanel } from "@/ui/design-system/kit/hud-elements";
 import {
   BiomeSummaryCard,
@@ -14,19 +11,10 @@ import { StructureBannerEntityDetail } from "@/ui/features/world/components/enti
 import { useArmyEntityDetail } from "@/ui/features/world/components/entities/hooks/use-army-entity-detail";
 import { useStructureEntityDetail } from "@/ui/features/world/components/entities/hooks/use-structure-entity-detail";
 import { BattleLab } from "@/ui/features/military/battle/battle-lab";
-import { BiomeType, HexPosition, ID, TileOccupier, TroopType } from "@bibliothecadao/types";
-import {
-  biomeTypeOf,
-  hasTileOccupier,
-  isTileOccupierArmy,
-  isTileOccupierChest,
-  isTileOccupierReservedHyperstructure,
-  isTileOccupierStructure,
-} from "@bibliothecadao/eternum";
+import { BiomeType, HexPosition, ID, TileOccupier, TroopType, eternumMapName } from "@bibliothecadao/types";
+import { biomeTypeOf, hasTileOccupier, isTileOccupierArmy, isTileOccupierStructure } from "@bibliothecadao/eternum";
 import { type ReactNode, useCallback } from "react";
 import { formatTilePanelTitle } from "@/ui/features/world/components/bottom-right-panel/tile-panel-title";
-import { toast } from "@/ui/features/event-feed/notify";
-import { getGameModeConfig } from "@/config/game-modes";
 
 // Layout: vertical column of bubbles. The outer parent (TileDetails atom in
 // bottom-right-panel) already provides positioning + scroll, so this layout
@@ -64,7 +52,6 @@ const SelectedWorldmapEntityContent = ({
   const openSurface = usePopoverStore((state) => state.openSurface);
 
   const tile = useTileAt(selectedHex.col, selectedHex.row);
-  const crateOpening = useChestOpening(selectedHex);
 
   const biome = tile && tile.biome !== 0 ? biomeTypeOf(tile.biome) : BiomeType.None;
   const handleSimulateBattle = useCallback(() => {
@@ -74,9 +61,7 @@ const SelectedWorldmapEntityContent = ({
   const hasOccupier = !!tile && hasTileOccupier(tile.occupier_type);
   const occupierType = tile?.occupier_type ?? 0;
   const isSpire = occupierType === TileOccupier.Spire;
-  const isReservedHyperstructure = isTileOccupierReservedHyperstructure(occupierType);
   const isStructure = isTileOccupierStructure(occupierType);
-  const isChest = isTileOccupierChest(occupierType);
   const isArmy = isTileOccupierArmy(occupierType);
   const isExplored = !!tile && Number(tile.biome) !== 0;
   const mapLayer = useUIStore((state) => state.mapLayer);
@@ -90,22 +75,9 @@ const SelectedWorldmapEntityContent = ({
   const title = (label: string) => formatTilePanelTitle(label, selectedHex);
   const biomeCard = <BiomeSummaryCard biome={biome} showSimulateAction onSimulateBattle={handleSimulateBattle} />;
 
-  // A crate opened this session keeps its panel after the tile empties, now listing what it yielded. An army standing
-  // on the tile comes first, the crate under it: the unit the player can order beats the tile's memory.
-  const cratePanel = (isChest || crateOpening) && (
-    <ChestTilePanel
-      rewardChestId={isChest && getGameModeConfig().id === "frontier" ? tile.occupier_id : undefined}
-      opening={crateOpening}
-      selectedHex={selectedHex}
-      coordsLabel={title(getGameModeConfig().id === "frontier" ? "Chest Tile" : "Relic Tile")}
-      headerAction={isArmy ? undefined : headerAction}
-    />
-  );
-  if (cratePanel && !isArmy) return stackParts({ occupant: cratePanel, biome: biomeCard });
-
   // A shrine or well is used from Frontier's own card and a dormant spire offers nothing; here its tile reads like any
   // other.
-  if (!hasOccupier || !(isSpire || isReservedHyperstructure || isStructure || isArmy)) {
+  if (!hasOccupier || !(isSpire || isStructure || isArmy)) {
     return stackParts({
       occupant: null,
       biome: (
@@ -130,16 +102,6 @@ const SelectedWorldmapEntityContent = ({
       biome: biomeCard,
     });
 
-  if (isReservedHyperstructure)
-    return stackParts({
-      occupant: (
-        <TileChrome title={title("Unconstructed Hyperstructure")} headerAction={headerAction}>
-          <ReservedHyperstructurePanel selectedHex={selectedHex} />
-        </TileChrome>
-      ),
-      biome: biomeCard,
-    });
-
   if (isStructure)
     return stackParts({
       occupant: (
@@ -155,18 +117,15 @@ const SelectedWorldmapEntityContent = ({
 
   return stackParts({
     occupant: (
-      <>
-        <ArmyBannerEntityDetail
-          armyEntityId={occupierEntityId}
-          showButtons={false}
-          className={scrollableEntityDetailClass}
-          coordsLabel={title("Army Tile")}
-          headerAction={headerAction}
-          compact
-          layoutVariant="banner"
-        />
-        {cratePanel}
-      </>
+      <ArmyBannerEntityDetail
+        armyEntityId={occupierEntityId}
+        showButtons={false}
+        className={scrollableEntityDetailClass}
+        coordsLabel={title("Army Tile")}
+        headerAction={headerAction}
+        compact
+        layoutVariant="banner"
+      />
     ),
     biome: <ArmyBiomeCard armyEntityId={occupierEntityId} biome={biome} onSimulateBattle={handleSimulateBattle} />,
   });
@@ -221,46 +180,12 @@ const TileChrome = ({
   </HudPanel>
 );
 
-const ReservedHyperstructurePanel = ({ selectedHex }: { selectedHex: HexPosition }) => {
-  const { canCreate, refusal, createHyperstructure, isCreating } = useBlitzHyperstructureCreation({
-    contractHex: selectedHex,
-  });
-
-  const handleCreateHyperstructure = useCallback(async () => {
-    try {
-      await createHyperstructure();
-    } catch (error) {
-      toast.failed(error, "Failed to create the hyperstructure.", {
-        location: { x: selectedHex.col, y: selectedHex.row },
-      });
-    }
-  }, [createHyperstructure, selectedHex.col, selectedHex.row]);
-
-  return (
-    <div className="flex flex-col gap-2">
-      <p className="text-hud-title text-hud-ink">Reserved Hyperstructure</p>
-      <div>
-        <HudButton
-          kind="secondary"
-          size="sm"
-          disabled={!canCreate}
-          busy={isCreating ? "Creating…" : undefined}
-          onClick={handleCreateHyperstructure}
-        >
-          Create here
-        </HudButton>
-      </div>
-      {refusal !== null && <p className="text-hud-label text-hud-muted">{refusal}</p>}
-    </div>
-  );
-};
-
 const SpireTravelPanel = ({ mapLayer, onLookAtOtherLayer }: { mapLayer: boolean; onLookAtOtherLayer: () => void }) => (
   <div className="flex flex-col gap-2">
     <p className="text-hud-title text-hud-ink">Spire</p>
     <div>
       <HudButton kind="secondary" size="sm" onClick={onLookAtOtherLayer}>
-        {mapLayer ? "Look at the surface" : "Look at the ethereal layer"}
+        Look at the {eternumMapName(!mapLayer)}
       </HudButton>
     </div>
   </div>

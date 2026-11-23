@@ -1,14 +1,11 @@
 #[starknet::contract]
 pub mod ResourcesLogic {
-    use starknet::ContractAddress;
-    use starknet::storage::StoragePointerReadAccess;
-    use crate::arrivals::{ArrivalKey, OffloadArrival, has_arrived};
     use crate::events::RowSet;
     use crate::logic::arrivals::ArrivalState;
     use crate::logic::production::ProductionState;
     use crate::logic::release::ReleaseState;
     use crate::logic::resources::ResourceState;
-    use crate::ownership::{Story, StoryEvent};
+    use crate::ownership::StoryEvent;
     use crate::resources::ResourceKey;
     use crate::troops::ExplorerKey;
 
@@ -55,6 +52,7 @@ pub mod ResourcesLogic {
             key: ResourceKey,
             explorer: ExplorerKey,
             home_id: u64,
+            clean: bool,
             context: crate::commands::ActionContext,
         ) -> () {
             let context = crate::commands::execution_context(key.game_id, context);
@@ -64,13 +62,21 @@ pub mod ResourcesLogic {
             let depth = crate::logic::expeditions::depth_at(
                 key.game_id, crate::troops::Coord { alt: site.alt, x: site.col, y: site.row },
             );
-            let reward = if category == crate::taxonomy::RUIN_CATEGORY {
-                Some(crate::logic::lords_budget::pay_ruin(key, home_id, context))
-            } else {
-                crate::expeditions::site_reward(category, site, depth)
-            };
+            let band = category == crate::taxonomy::BEASTS_CATEGORY
+                && crate::expeditions::is_band(site, crate::logic::expeditions::depth_rules(depth));
+            let reward = crate::expeditions::site_reward(category, site, depth, band);
             let home = ResourceKey { game_id: key.game_id, entity_id: home_id };
+            let spoils: u128 = if depth < 3 {
+                crate::logic::triumphs::effects(home, context.timestamp).spoils_percent.into()
+            } else {
+                100
+            };
             let reward = if let Some(reward) = reward {
+                let amount = crate::oaths::site_pay(
+                    crate::logic::progression::held_oaths(explorer, context), reward.amount * spoils / 100, clean,
+                );
+                let reward = crate::resources::ResourceAmount { amount, ..reward };
+                let reward = crate::logic::army_relics::site_reward(explorer, reward, context.timestamp);
                 let amount = self
                     .grant_resource(
                         home,
@@ -84,16 +90,10 @@ pub mod ResourcesLogic {
                 None
             };
             self.resources.destroy(key);
-            crate::logic::expeditions::clear_rewarded_site(
-                key, site, crate::expeditions::SiteClear { explorer_id: explorer.explorer_id, home_id, reward }, depth,
+            crate::logic::expeditions::clear_site(
+                key, crate::expeditions::SiteClear { explorer_id: explorer.explorer_id, home_id, reward },
             );
-            crate::progression::IArmyProgressionDispatcherTrait::grant_army_xp(
-                crate::progression::IArmyProgressionLibraryDispatcher {
-                    class_hash: self.release.classes(key.game_id).relics.read(),
-                },
-                explorer,
-                crate::progression::XpAward::Clear(crate::progression::clear_xp(site.initial_guard_count, depth)),
-            );
+            crate::logic::quest_progress::cleared(home, category, site.initial_guard_count, context.timestamp);
             let actor = crate::logic::structures::structure(home).expect('missing home structure').owner;
             crate::logic::stories::emit_entity_story(
                 key,
@@ -147,28 +147,8 @@ pub mod ResourcesLogic {
             }
         }
 
-        fn initialize_resources(
-            ref self: ContractState,
-            key: ResourceKey,
-            capacity: u128,
-            category: u8,
-            timestamp: u64,
-            game_context: crate::commands::ActionContext,
-        ) {
-            let game_context = crate::commands::execution_context(key.game_id, game_context);
-
+        fn initialize_resources(ref self: ContractState, key: ResourceKey, capacity: u128) {
             self.resources.initialize(key, capacity);
-            if category == crate::taxonomy::BITCOIN_MINE_CATEGORY {
-                crate::bitcoin::IBitcoinFundingDispatcherTrait::register_bitcoin_structure(
-                    crate::bitcoin::IBitcoinFundingLibraryDispatcher {
-                        class_hash: self.release.classes(key.game_id).prizes.read(),
-                    },
-                    key,
-                    category,
-                    timestamp,
-                    crate::commands::action_context(game_context),
-                );
-            }
         }
         fn destroy_resources(ref self: ContractState, key: ResourceKey) {
             self.resources.destroy(key);
@@ -181,17 +161,8 @@ pub mod ResourcesLogic {
             timestamp: u64,
             game_context: crate::commands::ResourceContext,
         ) -> u128 {
-            let rule = crate::logic::resources::rule(key.game_id, resource_type);
-            self
-                .resources
-                .grant_resource(
-                    key,
-                    resource_type,
-                    amount,
-                    rule.unit_weight,
-                    timestamp.try_into().unwrap(),
-                    game_context.production_start,
-                )
+            let rule = crate::logic::resources::rule(resource_type);
+            self.resources.grant_resource(key, resource_type, amount, rule.unit_weight, timestamp.try_into().unwrap())
         }
         fn spend_resource(
             ref self: ContractState,
@@ -212,9 +183,7 @@ pub mod ResourcesLogic {
             game_context: crate::commands::ResourceContext,
         ) {
             self.resources.spend(key, resource_type, amount, timestamp, game_context);
-            if produces_without_inputs(key.game_id) {
-                self.pay_troop_recipe(key, resource_type, amount, timestamp, game_context);
-            }
+            self.pay_troop_recipe(key, resource_type, amount, timestamp, game_context);
         }
         fn stop_production(
             ref self: ContractState,
@@ -230,15 +199,53 @@ pub mod ResourcesLogic {
                     key,
                     resource_type,
                     rate,
-                    crate::logic::resources::rule(key.game_id, resource_type).unit_weight,
+                    crate::logic::resources::rule(resource_type).unit_weight,
                     timestamp.try_into().unwrap(),
-                    game_context.production_start,
                 );
         }
         fn settle_production(
             ref self: ContractState, key: ResourceKey, timestamp: u64, game_context: crate::commands::ResourceContext,
         ) {
-            self.resources.settle_production(key, timestamp.try_into().unwrap(), game_context.production_start);
+            self.resources.settle_production(key, timestamp.try_into().unwrap());
+        }
+        fn assert_loot_available(
+            ref self: ContractState,
+            from: ResourceKey,
+            resources: Span<crate::resources::ResourceAmount>,
+            timestamp: u64,
+            game_context: crate::commands::ResourceContext,
+        ) {
+            if resources.is_empty() {
+                return;
+            }
+            self.resources.settle_production(from, timestamp.try_into().unwrap());
+            for resource in resources {
+                assert!(
+                    crate::logic::resources::balance(from, *resource.resource_type) >= *resource.amount,
+                    "insufficient requested loot",
+                );
+            }
+        }
+        fn take_loot(
+            ref self: ContractState,
+            from: ResourceKey,
+            to: ResourceKey,
+            resources: Span<crate::resources::ResourceAmount>,
+            timestamp: u64,
+            game_context: crate::commands::ResourceContext,
+        ) {
+            for resource in resources {
+                let amount = *resource.amount;
+                if amount != 0 {
+                    let rule = crate::logic::resources::rule(*resource.resource_type);
+                    self.resources.spend(from, *resource.resource_type, amount, timestamp, game_context);
+                    self
+                        .resources
+                        .grant_resource(
+                            to, *resource.resource_type, amount, rule.unit_weight, timestamp.try_into().unwrap(),
+                        );
+                }
+            }
         }
         fn change_structure_capacity(
             ref self: ContractState,
@@ -248,11 +255,7 @@ pub mod ResourcesLogic {
             timestamp: u64,
             game_context: crate::commands::ResourceContext,
         ) {
-            self
-                .resources
-                .change_structure_capacity(
-                    key, amount, adding, timestamp.try_into().unwrap(), game_context.production_start,
-                );
+            self.resources.change_structure_capacity(key, amount, adding, timestamp.try_into().unwrap());
         }
         fn start_production(
             ref self: ContractState,
@@ -263,23 +266,15 @@ pub mod ResourcesLogic {
             timestamp: u64,
             game_context: crate::commands::ResourceContext,
         ) {
-            let rule = crate::logic::resources::rule(key.game_id, resource_type);
+            let rule = crate::logic::resources::rule(resource_type);
             self
                 .resources
-                .start_production(
-                    key,
-                    resource_type,
-                    rate,
-                    output,
-                    rule.unit_weight,
-                    timestamp.try_into().unwrap(),
-                    game_context.production_start,
-                );
+                .start_production(key, resource_type, rate, output, rule.unit_weight, timestamp.try_into().unwrap());
         }
     }
     #[abi(embed_v0)]
-    impl EconomyDelivery of crate::trade::IEconomyDelivery<ContractState> {
-        fn queue_economy_delivery(
+    impl EconomyDelivery of crate::resources::IResourceDelivery<ContractState> {
+        fn queue_resource_delivery(
             ref self: ContractState,
             key: ResourceKey,
             resource: crate::resources::ResourceAmount,
@@ -287,7 +282,7 @@ pub mod ResourcesLogic {
             timestamp: u64,
             game_context: crate::commands::ResourceContext,
         ) {
-            let _ = crate::logic::resources::rule(key.game_id, resource.resource_type);
+            let _ = crate::logic::resources::rule(resource.resource_type);
 
             let arrival = crate::arrivals::arrival_key(
                 key.game_id, key.entity_id, game_context.delivery_tick, timestamp, travel_time,
@@ -306,210 +301,9 @@ pub mod ResourcesLogic {
             timestamp: u64,
             game_context: crate::commands::ResourceContext,
         ) {
-            let rule = crate::logic::resources::rule(key.game_id, resource_type);
-            self
-                .resources
-                .grant_resource(
-                    key,
-                    resource_type,
-                    amount,
-                    rule.unit_weight,
-                    timestamp.try_into().unwrap(),
-                    game_context.production_start,
-                );
+            let rule = crate::logic::resources::rule(resource_type);
+            self.resources.grant_resource(key, resource_type, amount, rule.unit_weight, timestamp.try_into().unwrap());
         }
-    }
-
-    #[abi(embed_v0)]
-    impl ResourceCommands of crate::commands::IResourceCommands<ContractState> {
-        fn send_resources(
-            ref self: ContractState,
-            game_id: u32,
-            actor: ContractAddress,
-            command: crate::resources::ResourceTransfer,
-            context: crate::commands::ActionContext,
-        ) -> () {
-            let context = crate::commands::execution_context(game_id, context);
-
-            self.assert_resource_command(game_id, context.timestamp, context);
-            crate::resources::assert_unique_resources(command.resources);
-            let from = ResourceKey { game_id, entity_id: command.from_entity_id };
-            assert!(crate::logic::structures::owner(from) == actor, "actor does not own sender");
-            self.transfer_delayed(game_id, command, context.timestamp, context);
-            ()
-        }
-        fn transfer_explorer_resources_to_structure(
-            ref self: ContractState,
-            game_id: u32,
-            actor: ContractAddress,
-            command: crate::resources::ResourceTransfer,
-            context: crate::commands::ActionContext,
-        ) -> () {
-            let context = crate::commands::execution_context(game_id, context);
-
-            self.assert_resource_command(game_id, context.timestamp, context);
-            let explorer = crate::logic::troops::command_explorer(
-                ExplorerKey { game_id, explorer_id: command.from_entity_id }, Some(actor), context.timestamp, context,
-            );
-            let structure = crate::logic::structures::structure(
-                ResourceKey { game_id, entity_id: command.to_entity_id },
-            )
-                .expect('missing recipient structure');
-            assert!(
-                crate::geometry::adjacent(
-                    explorer.coord,
-                    crate::structures::structure_coord(ResourceKey { game_id, entity_id: command.to_entity_id }),
-                ),
-                "explorer and structure are not adjacent",
-            );
-            for resource in command.resources {
-                if crate::resources::is_troop_resource(*resource.resource_type) {
-                    let owner = crate::logic::structures::owner(ResourceKey { game_id, entity_id: explorer.owner });
-                    assert!(
-                        owner != 0.try_into().unwrap() && owner == structure.owner,
-                        "reinforcement requires target ownership",
-                    );
-                    break;
-                }
-            }
-            self.transfer_instant(game_id, command, context.timestamp, context);
-            ()
-        }
-        fn offload_arrival(
-            ref self: ContractState,
-            game_id: u32,
-            actor: ContractAddress,
-            command: OffloadArrival,
-            context: crate::commands::ActionContext,
-        ) -> () {
-            let context = crate::commands::execution_context(game_id, context);
-
-            self.assert_resource_command(game_id, context.timestamp, context);
-            let entity = ResourceKey { game_id, entity_id: command.entity_id };
-            assert!(command.entity_id != 0, "missing destination structure");
-            assert!(crate::logic::structures::owner(entity) == actor, "actor does not own structure");
-            self.assert_deposits_unlocked(entity, context.timestamp, context);
-            assert!(command.resource_count != 0, "resource count is zero");
-            let key = ArrivalKey { game_id, entity_id: command.entity_id, day: command.day, slot: command.slot };
-            let rules = context.rules.unbox();
-            assert!(
-                has_arrived(key, rules.tick_config.delivery_tick_in_seconds, context.timestamp),
-                "resources have not arrived",
-            );
-            let arrival = self.arrivals.read(key);
-            let count = core::cmp::min(command.resource_count.into(), arrival.resources.len());
-            let delivered = arrival.resources.slice(0, count);
-            let start_at = crate::logic::resources::production_start(game_id, context);
-            for resource in delivered {
-                let rule = crate::logic::resources::rule(game_id, *resource.resource_type);
-                self
-                    .resources
-                    .grant_resource(
-                        entity,
-                        *resource.resource_type,
-                        *resource.amount,
-                        rule.unit_weight,
-                        context.timestamp.try_into().unwrap(),
-                        start_at,
-                    );
-            }
-            self.arrivals.remove_prefix(key, count);
-            if count != 0 {
-                crate::logic::stories::emit_entity_story(
-                    entity,
-                    actor,
-                    Story::ResourceReceiveArrivalStory(crate::ownership::ResourceAmountsStory { resources: delivered }),
-                    context.timestamp,
-                );
-            }
-            ()
-        }
-        fn burn_structure_resources(
-            ref self: ContractState,
-            game_id: u32,
-            actor: ContractAddress,
-            command: crate::resources::ResourceBurn,
-            context: crate::commands::ActionContext,
-        ) -> () {
-            let context = crate::commands::execution_context(game_id, context);
-
-            self.assert_resource_command(game_id, context.timestamp, context);
-            let key = ResourceKey { game_id, entity_id: command.entity_id };
-            assert!(crate::logic::structures::owner(key) == actor, "actor does not own structure");
-            crate::resources::assert_unique_resources(command.resources);
-            self.burn(key, command.resources);
-            crate::logic::stories::emit_entity_story(
-                key,
-                actor,
-                Story::ResourceBurnStory(crate::ownership::ResourceAmountsStory { resources: command.resources }),
-                context.timestamp,
-            );
-            ()
-        }
-        fn transfer_explorer_resources(
-            ref self: ContractState,
-            game_id: u32,
-            actor: ContractAddress,
-            command: crate::resources::ResourceTransfer,
-            context: crate::commands::ActionContext,
-        ) -> () {
-            let context = crate::commands::execution_context(game_id, context);
-
-            self.assert_resource_command(game_id, context.timestamp, context);
-            assert!(command.from_entity_id != 0 && command.to_entity_id != 0, "missing explorer id");
-            let from = crate::logic::troops::command_explorer(
-                ExplorerKey { game_id, explorer_id: command.from_entity_id }, Some(actor), context.timestamp, context,
-            );
-            let to = crate::logic::troops::command_explorer(
-                ExplorerKey { game_id, explorer_id: command.to_entity_id }, None, context.timestamp, context,
-            );
-            assert!(to.owner != 0, "recipient explorer has no owner");
-            assert!(crate::geometry::adjacent(from.coord, to.coord), "explorers are not adjacent");
-            self.transfer_instant(game_id, command, context.timestamp, context);
-            ()
-        }
-        fn transfer_structure_resources_to_explorer(
-            ref self: ContractState,
-            game_id: u32,
-            actor: ContractAddress,
-            command: crate::resources::ResourceTransfer,
-            context: crate::commands::ActionContext,
-        ) -> () {
-            let context = crate::commands::execution_context(game_id, context);
-
-            self.assert_resource_command(game_id, context.timestamp, context);
-            assert!(command.from_entity_id != 0 && command.to_entity_id != 0, "missing transfer entity");
-            let from_key = ResourceKey { game_id, entity_id: command.from_entity_id };
-            assert!(crate::logic::structures::owner(from_key) == actor, "actor does not own structure");
-            let to = crate::logic::troops::command_explorer(
-                ExplorerKey { game_id, explorer_id: command.to_entity_id }, None, context.timestamp, context,
-            );
-            assert!(
-                crate::geometry::adjacent(crate::structures::structure_coord(from_key), to.coord),
-                "structure and explorer are not adjacent",
-            );
-            for resource in command.resources {
-                assert!(
-                    !crate::resources::is_troop_resource(*resource.resource_type), "cannot transfer troop resource",
-                );
-            }
-            self.transfer_instant(game_id, command, context.timestamp, context);
-            ()
-        }
-    }
-    // A board's buildings produce for ever from nothing, so its troops are paid for when they are raised.
-    // Each Rations pick cuts the wheat a deployed troop costs; the cut is per troop, the recipe per `per_troops`.
-    fn ration_cut(key: ResourceKey, per_troops: u128) -> u128 {
-        let board = crate::logic::preset_record::for_game(key.game_id).board_terms.read().unwrap();
-        let rations: u128 = crate::research::picks(
-            crate::logic::research::learned(key), crate::research::ROW_BARRACKS, crate::research::CHOICE_RATIONS,
-        )
-            .into();
-        rations * board.ration_step * per_troops / crate::rules::RESOURCE_PRECISION
-    }
-
-    fn produces_without_inputs(game_id: u32) -> bool {
-        crate::logic::preset_record::for_game(game_id).board_terms.read().is_some()
     }
 
     #[generate_trait]
@@ -524,185 +318,25 @@ pub mod ResourcesLogic {
         ) {
             let recipe = self.production.recipe(crate::production::RecipeKey { game_id: key.game_id, resource_type });
             let per_troops: u128 = recipe.simple_output.into();
-            let ration_cut = ration_cut(key, per_troops);
+            let denominator = per_troops * crate::rules::RESOURCE_PRECISION;
             let now: u32 = timestamp.try_into().unwrap();
+            let rations = crate::logic::research::ration_discount(key, per_troops);
             for input in recipe.simple_inputs {
-                let unit_weight = crate::logic::resources::rule(key.game_id, *input.resource_type).unit_weight;
-                let amount = if *input.resource_type == crate::resources::WHEAT {
-                    *input.amount - core::cmp::min(*input.amount, ration_cut)
+                let unit_weight = crate::logic::resources::rule(*input.resource_type).unit_weight;
+                let discount = if *input.resource_type == crate::resources::WHEAT {
+                    rations
                 } else {
-                    *input.amount
+                    0
                 };
+                let amount = *input.amount * crate::rules::RESOURCE_PRECISION;
+                let amount = amount - core::cmp::min(amount, discount);
                 // A realm never underpays a fraction of a recipe.
-                let cost = (amount * troops + per_troops - 1) / per_troops;
-                let (previous, mut stock) = self
-                    .resources
-                    .load_settled(key, *input.resource_type, unit_weight, now, game_context.production_start);
+                let cost = (amount * troops + denominator - 1) / denominator;
+                let (previous, mut stock) = self.resources.load_settled(key, *input.resource_type, unit_weight, now);
                 assert!(stock.balance >= cost, "realm cannot pay to raise troops");
                 crate::resources::spend(*input.resource_type, ref stock.balance, ref stock.weight, cost, unit_weight);
                 self.resources.commit_resource(key, *input.resource_type, previous, stock);
             }
-        }
-
-        fn assert_resource_command(
-            self: @ContractState, game_id: u32, timestamp: u64, game_context: crate::commands::ExecutionContext,
-        ) {
-            crate::game::assert_main_with_grace(game_context.game.unbox(), timestamp);
-        }
-
-        fn assert_deposits_unlocked(
-            self: @ContractState, key: ResourceKey, timestamp: u64, game_context: crate::commands::ExecutionContext,
-        ) {
-            let structure = crate::logic::structures::structure(key).expect('missing destination structure');
-            if structure.base.category != crate::taxonomy::VILLAGE_CATEGORY {
-                return;
-            }
-            let rules = game_context.rules.unbox();
-            let game = game_context.game.unbox();
-            let interval = rules.tick_config.armies_tick_in_seconds;
-            let now = timestamp / interval;
-            let season_end = game.start_main_at / interval + rules.battle_config.regular_immunity_ticks.into();
-            let village_end = structure.base.created_at.into() / interval
-                + rules.battle_config.village_immunity_ticks.into();
-            assert!(now >= season_end && now >= village_end, "village cannot claim deposits during spawn immunity");
-        }
-
-        fn burn(ref self: ContractState, key: ResourceKey, resources: Span<crate::resources::ResourceAmount>) {
-            for resource in resources {
-                let rule = crate::logic::resources::rule(key.game_id, *resource.resource_type);
-                self.resources.burn_resource(key, *resource.resource_type, *resource.amount, rule.unit_weight);
-            }
-        }
-        fn transfer_delayed(
-            ref self: ContractState,
-            game_id: u32,
-            command: crate::resources::ResourceTransfer,
-            timestamp: u64,
-            game_context: crate::commands::ExecutionContext,
-        ) {
-            assert!(command.from_entity_id != 0 && command.to_entity_id != 0, "missing transfer structure");
-            assert!(command.from_entity_id != command.to_entity_id, "self transfer");
-            assert!(!command.resources.is_empty(), "no resource to transfer");
-            let from = ResourceKey { game_id, entity_id: command.from_entity_id };
-            let to = ResourceKey { game_id, entity_id: command.to_entity_id };
-            let source = crate::logic::structures::structure(from).expect('missing sending structure');
-            let destination = crate::logic::structures::structure(to).expect('missing recipient structure');
-            let rules = game_context.rules.unbox();
-            assert!(
-                !crate::rules::rule_enabled(rules, crate::rules::SAME_OWNER_TRANSFER)
-                    || source.owner == destination.owner,
-                "transfers require the same owner",
-            );
-            let travel_time = crate::transport::travel_time(
-                crate::structures::structure_coord(from),
-                crate::structures::structure_coord(to),
-                command.resources,
-                rules.speed_config,
-                false,
-            );
-            let weight = self.spend_shipment(from, command.resources, timestamp, game_context);
-            let donkeys = crate::transport::donkeys_needed(weight, rules.capacity_config.donkey_capacity.into());
-            self
-                .resources
-                .spend(
-                    from, crate::transport::DONKEY, donkeys, timestamp, crate::commands::resource_context(game_context),
-                );
-            let arrival = crate::arrivals::arrival_key(
-                game_id, to.entity_id, rules.tick_config.delivery_tick_in_seconds, timestamp, travel_time,
-            );
-            self.arrivals.enqueue(arrival, command.resources);
-            let story = Story::ResourceTransferStory(
-                crate::ownership::ResourceTransferStory {
-                    transfer_type: crate::ownership::TransferType::Delayed,
-                    from_entity_id: from.entity_id,
-                    from_entity_owner_address: source.owner,
-                    to_entity_id: to.entity_id,
-                    to_entity_owner_address: destination.owner,
-                    resources: command.resources,
-                    is_mint: false,
-                    travel_time,
-                },
-            );
-            crate::logic::stories::emit_entity_story(from, source.owner, story, timestamp);
-            crate::logic::stories::emit_entity_story(to, destination.owner, story, timestamp);
-        }
-        fn spend_shipment(
-            ref self: ContractState,
-            from: ResourceKey,
-            resources: Span<crate::resources::ResourceAmount>,
-            timestamp: u64,
-            game_context: crate::commands::ExecutionContext,
-        ) -> u128 {
-            let mut weight = 0;
-            let start_at = crate::logic::resources::production_start(from.game_id, game_context);
-            for resource in resources {
-                let rule = crate::logic::resources::rule(from.game_id, *resource.resource_type);
-                weight += *resource.amount * rule.unit_weight;
-                self
-                    .resources
-                    .spend_resource(
-                        from,
-                        *resource.resource_type,
-                        *resource.amount,
-                        rule.unit_weight,
-                        timestamp.try_into().unwrap(),
-                        start_at,
-                    );
-            }
-            weight
-        }
-        fn transfer_instant(
-            ref self: ContractState,
-            game_id: u32,
-            command: crate::resources::ResourceTransfer,
-            timestamp: u64,
-            game_context: crate::commands::ExecutionContext,
-        ) {
-            crate::resources::assert_unique_resources(command.resources);
-            let from = ResourceKey { game_id, entity_id: command.from_entity_id };
-            let to = ResourceKey { game_id, entity_id: command.to_entity_id };
-            let start_at = crate::logic::resources::production_start(game_id, game_context);
-            for resource in command.resources {
-                let rule = crate::logic::resources::rule(game_id, *resource.resource_type);
-                self
-                    .resources
-                    .spend_resource(
-                        from,
-                        *resource.resource_type,
-                        *resource.amount,
-                        rule.unit_weight,
-                        timestamp.try_into().unwrap(),
-                        start_at,
-                    );
-                self
-                    .resources
-                    .grant_resource(
-                        to,
-                        *resource.resource_type,
-                        *resource.amount,
-                        rule.unit_weight,
-                        timestamp.try_into().unwrap(),
-                        start_at,
-                    );
-            }
-            let recipient = crate::logic::structures::owner(to);
-            crate::logic::stories::emit_entity_story(
-                to,
-                recipient,
-                Story::ResourceTransferStory(
-                    crate::ownership::ResourceTransferStory {
-                        transfer_type: crate::ownership::TransferType::Instant,
-                        from_entity_id: from.entity_id,
-                        from_entity_owner_address: crate::logic::structures::owner(from),
-                        to_entity_id: to.entity_id,
-                        to_entity_owner_address: recipient,
-                        resources: command.resources,
-                        is_mint: false,
-                        travel_time: 0,
-                    },
-                ),
-                timestamp,
-            );
         }
     }
 }

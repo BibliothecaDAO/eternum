@@ -2,16 +2,12 @@ use starknet::ContractAddress;
 use crate::troops::{Coord, TroopType};
 
 pub const HELD_REALM_KIND: u8 = 2;
-pub const CAMPAIGN_KIND: u8 = 3;
-pub const CAMPAIGN_NORMAL: u8 = 1;
-pub const CAMPAIGN_GOLDEN: u8 = 2;
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 #[allow(starknet::store_no_default_variant)]
 pub enum SettlementMode {
     Single,
     Triple,
-    Duel,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
@@ -60,13 +56,6 @@ pub struct EntryEntitlement {
 }
 
 #[starknet::interface]
-pub trait ISettlementCommands<T> {
-    fn settle_blitz_roster(
-        ref self: T, game_id: u32, actor: ContractAddress, context: crate::commands::ActionContext,
-    ) -> u64;
-}
-
-#[starknet::interface]
 pub trait ISettlementEntry<T> {
     fn register_entitlement(ref self: T, key: EntryKey, entitlement: EntryEntitlement);
     fn entry_entitlement(self: @T, key: EntryKey) -> Option<EntryEntitlement>;
@@ -75,8 +64,6 @@ pub trait ISettlementEntry<T> {
 
 #[starknet::interface]
 pub trait ISettlementViews<T> {
-    #[cfg(feature: "test_support")]
-    fn blitz_settlement_order(self: @T, game_id: u32) -> Span<u8>;
     #[cfg(feature: "test_support")]
     fn settlement_rules(self: @T, game_id: u32) -> SettlementRules;
     #[cfg(feature: "test_support")]
@@ -93,15 +80,7 @@ pub trait ISettlementPool<T> {
     fn settlement_pool(self: @T, game_id: u32, center: Coord) -> SettlementPool;
     #[cfg(feature: "test_support")]
     fn village_pool(self: @T, game_id: u32, center: Coord) -> SettlementPool;
-    fn claim_village(ref self: T, game_id: u32, registered: u16, seed: u256, center: Coord) -> Coord;
-    #[cfg(feature: "test_support")]
-    fn reserved_hyperstructures(self: @T, game_id: u32) -> u32;
-}
-
-#[starknet::interface]
-pub trait IBlitzReservations<T> {
-    fn initialize_reservations(ref self: T, game_id: u32);
-    fn release_hyperstructure(ref self: T, game_id: u32, coord: Coord);
+    fn claim_village(ref self: T, game_id: u32, seed: u256, center: Coord) -> Coord;
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
@@ -127,13 +106,6 @@ pub trait ISettlementDisplacement<T> {
     fn displace_explorer(ref self: T, game_id: u32, explorer_id: u64, game_context: crate::commands::ActionContext);
 }
 
-#[starknet::interface]
-pub trait IBlitzHyperstructures<T> {
-    fn create_reserved_hyperstructure(
-        ref self: T, game_id: u32, actor: ContractAddress, coord: Coord, context: crate::commands::ActionContext,
-    );
-}
-
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct RealmCreation {
     pub realm_id: u16,
@@ -146,7 +118,6 @@ pub struct RealmCreation {
 pub enum StartingTroops {
     None,
     Biome,
-    Dealt: TroopType,
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct VillageCreation {
@@ -170,42 +141,11 @@ pub trait ISettlementCreation<T> {
     ) -> u64;
 }
 
-// Fisher-Yates selection fixes each roster position once from the first recorded batch root.
-pub fn shuffle_roster(count: u32, root: u256) -> Span<u8> {
-    assert!(count > 0 && count <= 24, "invalid Blitz roster size");
-    let mut remaining: core::dict::Felt252Dict<u32> = Default::default();
-    for index in 0..count {
-        remaining.insert(index.into(), index);
-    }
-    let mut players = array![];
-    for index in 0..count {
-        let size = count - index;
-        let choice: u32 = crate::random::range(root, 98139 + index.into(), size.into()).try_into().unwrap();
-        players.append(remaining.get(choice.into()).try_into().unwrap());
-        let last = remaining.get((size - 1).into());
-        remaining.insert(choice.into(), last);
-    }
-    players.span()
-}
-
-// A fixed-roster player is dealt the three troop types in a shuffled order, one per realm; a fourth realm starts the
-// order again, so no type leads another by more than one.
-pub fn deal_troop_types(root: u256, realms: u32) -> Span<TroopType> {
-    let (first, second, third) = *array![
-        (TroopType::Knight, TroopType::Crossbowman, TroopType::Paladin),
-        (TroopType::Knight, TroopType::Paladin, TroopType::Crossbowman),
-        (TroopType::Crossbowman, TroopType::Knight, TroopType::Paladin),
-        (TroopType::Crossbowman, TroopType::Paladin, TroopType::Knight),
-        (TroopType::Paladin, TroopType::Knight, TroopType::Crossbowman),
-        (TroopType::Paladin, TroopType::Crossbowman, TroopType::Knight),
-    ]
-        .at(crate::random::range(root, 51071, 6).try_into().unwrap());
-    let order = array![first, second, third];
-    let mut dealt = array![];
-    for index in 0..realms {
-        dealt.append(*order.at(index % 3));
-    }
-    dealt.span()
+#[starknet::interface]
+pub trait IRosterSeating<T> {
+    fn seat_blitz_roster(
+        ref self: T, game_id: u32, actor: ContractAddress, context: crate::commands::ActionContext,
+    ) -> u64;
 }
 
 // Off-map realms retain their launch reference for the starting troop biome and immutable creation story.

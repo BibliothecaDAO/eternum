@@ -5,10 +5,9 @@ vi.mock("@/hooks/context/game-context", () => ({
   useGame: () => ({
     setup: {
       store: {
-        get: (model: "ExplorerTroops" | "ArmyProgressionRules" | "SliceRules" | "GameRegistry" | "SettlementRules") =>
+        get: (model: "ExplorerTroops" | "SliceRules" | "GameRegistry" | "SettlementRules") =>
           ({
             ExplorerTroops: { owner: 1n, troops: {} },
-            ArmyProgressionRules: { reveal_xp: 2, reveal_xp_per_depth: 1 },
             SliceRules: { day_unit_seconds: 7200 },
             SettlementRules: { spacing: 100 },
             GameRegistry: { start_main_at: 0, seed: 1n },
@@ -27,7 +26,10 @@ vi.mock("@/three/scenes/worldmap-order-request", () => ({ pinsOrder: () => true 
 vi.mock("@/lib/army-stamina/path-cost", () => ({ computeEffectiveStaminaCost: () => 21 }));
 // QA's charge: 563 troops at 0.05 wheat a step.
 vi.mock("./order-tip", () => ({ orderFood: () => ({ wheat: 28.15, fish: 0 }) }));
-vi.mock("@bibliothecadao/eternum/troop-stamina", () => ({ resolveExplorerTroops: () => ({}) }));
+vi.mock("@bibliothecadao/eternum/troop-stamina", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@bibliothecadao/eternum/troop-stamina")>()),
+  resolveExplorerTroops: () => ({}),
+}));
 const realm = vi.hoisted(() => ({ wheat: 0 }));
 vi.mock("@bibliothecadao/eternum", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@bibliothecadao/eternum")>();
@@ -36,6 +38,7 @@ vi.mock("@bibliothecadao/eternum", async (importOriginal) => {
     FELT_CENTER: () => 0,
     ActionPaths: { posKey: () => "tile", getActionType: () => actual.ActionType.Explore },
     configManager: { getActiveGameId: () => 1, getExploreStaminaCost: () => 21 },
+    armyOaths: () => 0,
     // The balance as the chain stores it, at the resource's precision.
     getBalance: () => ({ balance: Math.round(realm.wheat * 1_000_000_000) }),
     ResourceManager: class {
@@ -68,10 +71,3 @@ describe("an order's wheat, held exactly against its charge", () => {
     expect(wheat.wait).toBeCloseTo(3, 6);
   });
 });
-
-it.each([
-  [2, 2],
-  [102, 3],
-  [202, 4],
-  [302, 5],
-])("previews the revealed tile's XP at row %s", (row, xp) => expect(useOrderAt({ col: 1, row })!.xp).toBe(xp));

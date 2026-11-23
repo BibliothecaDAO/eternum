@@ -1,6 +1,3 @@
-// The lab's stand-in for the admin Worker: the page's own files, answered from fixtures in its API's shapes, so the
-// owner reviews the real page without a deploy, Access or a token. Every value below is invented, except the Devcon
-// season's dates: DEVCON_SEASON is written above this file by scripts/lab.mjs from the Devcon campaign.
 const now = Date.parse("2026-10-16T14:30:00Z");
 const probe = (id, name, status, latency_ms) => ({ id, name, status, latency_ms });
 const run = (gameName, environment, status, gameId, kind = "game") => ({
@@ -26,14 +23,13 @@ const ENVIRONMENTS = {
       probe("launch", "Launch service", "up", 120),
       probe("value", "Value relay", "degraded", 1420),
     ],
-    phases: [{ phase: "frontier", presetId: 5, startsAt: "2026-10-15T20:00:00Z", endsAt: "2026-10-22T20:00:00Z" }],
+    phases: [{ phase: "frontier", startsAt: "2026-10-15T20:00:00Z", endsAt: "2026-10-22T20:00:00Z" }],
     slots: [
       {
         chainId: "0x6230",
         slotId: 4,
         name: "blitz-20261016-1600",
         closesAt: "2026-10-16T15:55:00Z",
-        frozenAt: null,
         closed: false,
       },
       {
@@ -41,7 +37,6 @@ const ENVIRONMENTS = {
         slotId: 3,
         name: "blitz-20261016-1400",
         closesAt: "2026-10-16T13:55:00Z",
-        frozenAt: "2026-10-16T13:55:00Z",
         closed: true,
       },
     ],
@@ -52,7 +47,7 @@ const ENVIRONMENTS = {
     ],
     workers: { version: "5c1d…", revision: "7ba76ed03a0" },
     client: "7ba76ed03a0",
-    shards: [{ url: "https://herald.dev-realms.party", chainId: "0x4445565f…6230", status: "active" }],
+    shards: [{ url: "https://herald.dev-realms.party", chainId: "0x4445565f…6230" }],
   },
   production: {
     origin: "https://play.realms.party",
@@ -62,27 +57,16 @@ const ENVIRONMENTS = {
       probe("launch", "Launch service", "up", 91),
       probe("value", "Value relay", "up", 230),
     ],
-    phases: [{ phase: "frontier", presetId: 6, ...DEVCON_SEASON }],
+    phases: [{ phase: "frontier", startsAt: "2026-12-01T12:00:00.000Z", endsAt: "2027-01-20T12:00:00.000Z" }],
     slots: [],
     runs: [run("frontier-1761933600", "madara.frontier", "queued", undefined)],
     workers: { version: "a90e…", revision: "b015a52b6c9" },
     client: "b015a52b6c9",
-    shards: [{ url: "https://herald.realms.party", chainId: "0x…mainnet", status: "active" }],
+    shards: [{ url: "https://herald.realms.party", chainId: "0x…mainnet" }],
   },
 };
 
 const audit = [
-  {
-    id: 2,
-    at: now - 40 * 60_000,
-    email: "owner@realms.world",
-    environment: "dev",
-    action: "Free test Blitz",
-    request: "{}",
-    state: "done",
-    status: 202,
-    response: "{}",
-  },
   {
     id: 1,
     at: now - 90 * 60_000,
@@ -131,19 +115,12 @@ const write = (environment, route, body) => {
   const env = ENVIRONMENTS[environment];
   const [first, ...rest] = route;
   let action = route.join(" ");
-  if (first === "test-blitz") {
-    if (environment !== "dev") return json({ error: "Not Found" }, 404);
-    if (!/^test-[a-z0-9-]{1,26}$/.test(body.name ?? "")) return json({ error: "Invalid test Blitz" }, 400);
-    env.runs.unshift(run(body.name, "madara.blitz", "queued", undefined));
-    action = "Free test Blitz";
-  }
   if (first === "slots" && rest.length === 0) {
     env.slots.unshift({
       chainId: "",
       slotId: env.slots.length + 1,
       name: body.name,
       closesAt: body.closesAt,
-      frozenAt: null,
       closed: false,
     });
     action = "Open Blitz slot";

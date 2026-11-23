@@ -1,5 +1,6 @@
 import { formatExact, formatPercent } from "@bibliothecadao/types";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
+import { orderMeaning } from "@/ui/design-system/icon-meaning";
 import { HudStamina, HudTierChip, type StaminaBar } from "@/ui/design-system/kit/hud-elements";
 import { UNDEFENDED } from "@/ui/design-system/kit/words";
 
@@ -25,6 +26,7 @@ interface TokenReading {
   stamina: StaminaBar | null;
   /** To a watching viewer, its player's initial on the disk, in their seat's colour. */
   mark: PlateWatched["mark"];
+  crest: number | null;
 }
 
 export const tokenReading = (plate: MapPlate): TokenReading => {
@@ -36,6 +38,7 @@ export const tokenReading = (plate: MapPlate): TokenReading => {
       undefended: false,
       stamina: plate.stamina ?? null,
       mark: plate.watched?.mark ?? null,
+      crest: null,
     };
   const guards = plate.guards ?? [];
   return {
@@ -53,12 +56,14 @@ export const tokenReading = (plate: MapPlate): TokenReading => {
     undefended: plate.guards !== null && guards.length === 0,
     stamina: null,
     mark: plate.watched?.mark ?? null,
+    crest: plate.crest ?? null,
   };
 };
 
 /** The token's sizes (map-plates.css .mp-token__*): its disk, the strip's row and its overlap of the disk, the
  * stamina bar, the gap between readings, the strip's padding and frame. */
 const TOKEN = { disk: 30, row: 18, overlap: 2, stamina: 4, gap: 3, frame: 2 * 4 + 2 };
+const CREST_SIZE = 18;
 
 /** A token's box, as map-plates.css draws it. */
 export const tokenSize = (plate: MapPlate): { width: number; height: number } => {
@@ -89,6 +94,11 @@ const TokenView = ({ reading }: { reading: TokenReading }) => (
       {reading.mark && (
         <span className="ui-seat mp-token__seat" data-ink={reading.mark.ink} aria-hidden>
           {reading.mark.letter}
+        </span>
+      )}
+      {reading.crest !== null && (
+        <span className="mp-token__crest" aria-hidden>
+          <Icon name={orderMeaning(reading.crest)} size={CREST_SIZE} />
         </span>
       )}
     </span>

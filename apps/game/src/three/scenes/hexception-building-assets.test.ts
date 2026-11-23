@@ -7,29 +7,30 @@ import { MeshoptDecoder } from "three/addons/libs/meshopt_decoder.module.js";
 import { expect, it } from "vitest";
 import { BUILDINGS_CENTER, BuildingType, getProducedResource } from "@bibliothecadao/types";
 import { getGameModeConfig } from "@/config/game-modes";
+import { GAME_FAMILIES } from "../../../../../config/source/common/native-preset-modes";
 import { BUILDINGS_GROUPS } from "../constants/scene-constants";
-import { REALM_SKIN_MODELS } from "../structures/realm-skins";
 import { FRONTIER_PAINTED_BUILDINGS } from "../structures/frontier-painted-buildings";
 import { prepareBuildingModel } from "./hexception-models";
 import { resolveBuildingModelSelection } from "./hexception-building-model";
 
-it("grounds every building kind and tier in each mode, including keeps and cosmetic skins", async () => {
+it("grounds every buildable kind and tier in each mode, including keeps", async () => {
   const { createDecoderModule } = createRequire(import.meta.url)("draco3dgltf");
   const io = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({
     "draco3d.decoder": await createDecoderModule(),
     "meshopt.decoder": MeshoptDecoder,
   });
-  const paths = new Set([...REALM_SKIN_MODELS, ...FRONTIER_PAINTED_BUILDINGS].map(({ path }) => path));
-  const covered = new Set<BuildingType>();
+  const paths = new Set(FRONTIER_PAINTED_BUILDINGS.map(({ path }) => path));
   const kinds = Object.values(BuildingType).filter(
     (kind): kind is BuildingType => typeof kind === "number" && kind !== BuildingType.None,
   );
-  for (const preset of [2, 3, 5]) {
-    const mode = getGameModeConfig(preset);
+  for (const family of [GAME_FAMILIES.blitz, GAME_FAMILIES.frontier]) {
+    const mode = getGameModeConfig(family);
     for (const [group, models] of Object.entries(mode.assets.buildingModelPaths)) {
       if (group !== BUILDINGS_GROUPS.HYPERSTRUCTURE) Object.values(models).forEach((path) => paths.add(path));
     }
-    for (const category of kinds) {
+    const buildable = kinds.filter((kind) => mode.rules.isBuildingTypeAllowed(BuildingType[kind]));
+    expect(buildable.length).toBeGreaterThan(0);
+    for (const category of buildable) {
       for (let tier = 1; tier <= 3; tier++) {
         const selected = resolveBuildingModelSelection(
           {
@@ -43,14 +44,11 @@ it("grounds every building kind and tier in each mode, including keeps and cosme
         );
         const models: Readonly<Record<string, string>> = mode.assets.buildingModelPaths[selected.group];
         const path = selected.tierPath ?? models[selected.type];
-        if (path) {
-          paths.add(path);
-          covered.add(category);
-        }
+        expect(path, `${mode.id}: ${BuildingType[category]} tier ${tier}`).toBeTruthy();
+        paths.add(path!);
       }
     }
   }
-  expect(covered).toEqual(new Set(kinds));
   for (const path of paths) {
     const document = await io.read(new URL(`../../../public${path}`, import.meta.url).pathname);
     const source = new Group();

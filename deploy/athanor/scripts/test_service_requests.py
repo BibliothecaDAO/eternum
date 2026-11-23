@@ -9,7 +9,6 @@ from urllib.response import addinfourl
 from unittest.mock import patch
 
 import deploy
-import directory
 import shard
 import service_requests
 from service_requests import service_json
@@ -34,10 +33,10 @@ class ServiceTransportTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "HTTPS"):
             shard.validate_shard_identity(config)
 
-    def test_directory_never_follows_even_same_origin_redirects(self):
-        config = {"guardian_url": "https://identity.test/api/guardian", "public_herald_url": "https://herald.test"}
+    def test_authenticated_requests_never_follow_even_same_origin_redirects(self):
+        route = "https://identity.test/api/value/operator/reset"
         for target in ("https://identity.test/elsewhere", "https://other.test/steal", "http://other.test/steal"):
-            for operation in (lambda: directory.directory_status(config, "pending"),):
+            for operation in (lambda: service_json(route, {"chainId": "0x1"}), lambda: service_json(route, authenticated=True)):
                 with self.subTest(target=target):
                     requests = []
 
@@ -49,7 +48,7 @@ class ServiceTransportTest(unittest.TestCase):
                             status = 302
                         else:
                             status = 200
-                        response = addinfourl(io.BytesIO(json.dumps({"status": "pending"}).encode()), headers, request.full_url, status)
+                        response = addinfourl(io.BytesIO(json.dumps({"shard": None}).encode()), headers, request.full_url, status)
                         response.msg = "Fixture response"
                         return response
 
@@ -64,8 +63,8 @@ class AuthenticatedReadTest(unittest.TestCase):
     def test_operator_read_has_a_token_without_turning_into_a_post(self):
         with patch.dict(os.environ, {'OPERATOR_TOKEN': 'throwaway'}), \
                 patch.object(service_requests, 'build_opener') as transport:
-            transport.return_value.open.return_value.__enter__.return_value = io.BytesIO(b'{"shards":[]}')
-            self.assertEqual(service_requests.service_json('https://identity.test/api/directory/shards', authenticated=True), {'shards': []})
+            transport.return_value.open.return_value.__enter__.return_value = io.BytesIO(b'{"shard":null}')
+            self.assertEqual(service_requests.service_json('https://identity.test/api/directory/shard', authenticated=True), {'shard': None})
             request = transport.return_value.open.call_args.args[0]
             self.assertEqual(request.get_method(), 'GET')
             self.assertEqual(request.get_header('Authorization'), 'Bearer throwaway')

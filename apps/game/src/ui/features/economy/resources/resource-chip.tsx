@@ -1,36 +1,14 @@
-import { categoryCan } from "@/ui/lib/structure-capabilities";
-import { relicLine } from "@/ui/design-system/kit/words";
-import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
-import { surfaceAnchorFrom } from "@/ui/design-system/molecules/popover";
-import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { openTransfer } from "@/ui/features/economy/transfers/transfer-window";
 import { openProduction } from "@/ui/features/settlement/production/open-production";
 import { CountUpNumber } from "@/ui/shared";
 import { HudIconButton, HudRow } from "@/ui/design-system/kit/hud-elements";
-import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { knownAmount } from "@/ui/utils/utils";
-import {
-  bonusActive,
-  configManager,
-  divideByPrecision,
-  isRelic as isResourceRelic,
-  ResourceManager,
-} from "@bibliothecadao/eternum";
-import { useNativeRow } from "@/hooks/helpers/use-native-facts";
-import {
-  ID,
-  RelicEffect,
-  RelicRecipientType,
-  ResourcesIds,
-  formatWait,
-  formatAmount,
-  formatRate,
-  resourceName,
-} from "@bibliothecadao/types";
+import { configManager, ResourceManager } from "@bibliothecadao/eternum";
+import { ID, ResourcesIds, formatWait, formatAmount, formatRate, resourceName } from "@bibliothecadao/types";
 import { useCallback, useMemo } from "react";
 
 export const ResourceChip = ({
@@ -38,7 +16,6 @@ export const ResourceChip = ({
   resourceManager,
   hideZeroBalance = false,
   showTransfer = true,
-  activeRelicEffects,
   canOpenProduction = false,
   disableButtons = false,
   onManageProduction,
@@ -48,18 +25,11 @@ export const ResourceChip = ({
   resourceManager: ResourceManager;
   hideZeroBalance?: boolean;
   showTransfer?: boolean;
-  activeRelicEffects: RelicEffect[];
   canOpenProduction?: boolean;
   disableButtons?: boolean;
   onManageProduction?: (resourceId: ResourcesIds) => void;
 }) => {
   const setTooltip = useTooltipStore((state) => state.setTooltip);
-  const openSurface = usePopoverStore((state) => state.openSurface);
-  const closeSurface = usePopoverStore((state) => state.closeSurface);
-  const structure = useNativeRow("Structure", {
-    game_id: configManager.getActiveGameId(),
-    entity_id: resourceManager.entityId,
-  });
 
   const now = useCurrentDefaultTick();
   const resourceEnumId = resourceId as ResourcesIds;
@@ -71,20 +41,15 @@ export const ResourceChip = ({
     [resourceManager, now, resourceEnumId],
   );
   const balance = production?.balance;
-  const productionInfo = useMemo(() => resourceManager.current(resourceEnumId), [resourceManager, resourceEnumId]);
-
-  const productionData = useMemo(() => {
-    if (!productionInfo) return null;
-
-    return ResourceManager.calculateResourceProductionData(resourceEnumId, productionInfo, now);
-  }, [productionInfo, resourceEnumId, now]);
+  const productionData = useMemo(
+    () => resourceManager.productionData(resourceEnumId, now),
+    [resourceManager, resourceEnumId, now],
+  );
 
   const productionRate = productionData?.productionPerSecond ?? 0;
   const isProducing = productionData?.isProducing ?? false;
 
-  const timeUntilValueReached = useMemo(() => {
-    return resourceManager.timeUntilValueReached(now, resourceId);
-  }, [resourceManager, now, resourceId]);
+  const timeUntilValueReached = productionData?.timeRemainingSeconds;
 
   const icon = useMemo(() => {
     return <ResourceIcon withTooltip={false} resource={resourceId} size="sm" className="self-center" />;
@@ -98,14 +63,6 @@ export const ResourceChip = ({
     return configManager.canRefillProduction(resourceId);
   }, [canOpenProduction, resourceId]);
 
-  const canOpenCraftRelic = useMemo(() => {
-    if (resourceEnumId !== ResourcesIds.Research || !balance || balance <= 0) {
-      return false;
-    }
-
-    return categoryCan(structure?.base.category, "craftsRelics");
-  }, [balance, structure, resourceEnumId]);
-
   const handleOpenProduction = useCallback(() => {
     if (!canShowProductionShortcut) return;
 
@@ -118,31 +75,16 @@ export const ResourceChip = ({
     openProduction({ realmId: resourceManager.entityId, resource: resourceId as ResourcesIds });
   }, [canShowProductionShortcut, onManageProduction, resourceManager, resourceId]);
 
-  const isRelic = isResourceRelic(resourceId);
-
-  // todo: check relic effect active
-  const relicEffectActivated = useMemo(() => {
-    return activeRelicEffects.some((effect) => effect.id === resourceId && bonusActive(effect.endAt, now));
-  }, [activeRelicEffects, resourceId, now]);
-
-  // Calculate time remaining for active relic with real-time countdown
-  const relicTimeRemaining = useMemo(() => {
-    if (!isRelic || !relicEffectActivated) return 0;
-
-    const relicEffect = activeRelicEffects.find((effect) => effect.id === resourceId);
-    return relicEffect ? Math.max(0, relicEffect.endAt - now) : 0;
-  }, [isRelic, relicEffectActivated, activeRelicEffects, resourceId, now]);
-
-  // Check if we should hide this resource based on the balance and hideZeroBalance prop
-  // Show relics with active effects even if balance is 0
   if (!production || balance === undefined) return null;
   const { hasReachedMaxCapacity: hasReachedMaxCap, amountProduced } = production;
-  if (hideZeroBalance && balance <= 0 && !(isRelic && relicEffectActivated)) {
+  if (hideZeroBalance && balance <= 0) {
     return null;
   }
   const ratePerHour = isProducing && !hasReachedMaxCap ? formatRate(productionRate) : null;
   const timeLeft =
-    timeUntilValueReached > 0 && timeUntilValueReached <= 1_000_000_000 ? formatWait(timeUntilValueReached) : null;
+    timeUntilValueReached !== undefined && timeUntilValueReached > 0 && Number.isFinite(timeUntilValueReached)
+      ? formatWait(timeUntilValueReached)
+      : null;
   // Each action keeps the app's named tip on hover, as before; the chip is the anchor it hangs from.
   const tipOn = (content: string) => (event: React.MouseEvent<HTMLElement>) =>
     setTooltip({ anchorElement: event.currentTarget, content, position: "bottom" });
@@ -156,33 +98,13 @@ export const ResourceChip = ({
           <CountUpNumber
             value={balance}
             format={(v) => formatAmount(knownAmount(v))}
-            className={cn("tabular-nums text-hud-strong", relicEffectActivated && "text-hud-accent")}
+            className="tabular-nums text-hud-strong"
             highlightClassName="text-hud-good scale-105"
           />
         }
         detail={
-          (relicEffectActivated || ratePerHour || (hasReachedMaxCap && amountProduced > 0n) || timeLeft) && (
+          (ratePerHour || (hasReachedMaxCap && amountProduced > 0n) || timeLeft) && (
             <span className="flex flex-wrap items-center gap-2">
-              {relicEffectActivated && (
-                <span
-                  className="inline-flex items-center gap-1 text-hud-accent"
-                  onMouseEnter={(e) => {
-                    e.stopPropagation();
-                    setTooltip({
-                      anchorElement: e.currentTarget,
-                      position: "top",
-                      content: `Relic effect expires in ${formatWait(relicTimeRemaining)}`,
-                    });
-                  }}
-                  onMouseLeave={(e) => {
-                    e.stopPropagation();
-                    setTooltip(null);
-                  }}
-                >
-                  <SemanticIcon name="relics" className="h-3 w-3" />
-                  {formatWait(relicTimeRemaining)}
-                </span>
-              )}
               {ratePerHour && <span className="tabular-nums text-hud-good">{ratePerHour}</span>}
               {hasReachedMaxCap && amountProduced > 0n && <span className="text-hud-warn">Max</span>}
               {timeLeft && <span className="text-hud-cue">{timeLeft}</span>}
@@ -206,28 +128,6 @@ export const ResourceChip = ({
                 }}
               />
             )}
-            {canOpenCraftRelic && (
-              <HudIconButton
-                icon="research"
-                label="Craft relic from research"
-                kind="quiet"
-                size="sm"
-                disabled={disableButtons}
-                onMouseEnter={tipOn("Craft Relic from Research")}
-                onMouseLeave={tipOff}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  const anchor = surfaceAnchorFrom(event.currentTarget);
-                  import("./craft-relic-popup").then(({ CraftRelicPopup }) => {
-                    openSurface({
-                      id: "craft-relic",
-                      content: <CraftRelicPopup structureId={resourceManager.entityId} onClose={closeSurface} />,
-                      anchor,
-                    });
-                  });
-                }}
-              />
-            )}
             {showTransfer && (
               <HudIconButton
                 icon="swap"
@@ -239,37 +139,6 @@ export const ResourceChip = ({
                 onClick={(event) => {
                   event.stopPropagation();
                   openTransfer({ sourceId: resourceManager.entityId, destinationIds: [], resource: resourceId });
-                }}
-              />
-            )}
-            {isRelic && balance > 0 && (
-              <HudIconButton
-                icon="relics"
-                label={`Activate ${name}`}
-                kind="quiet"
-                size="sm"
-                disabled={disableButtons || relicTimeRemaining > 0}
-                onMouseEnter={tipOn(
-                  `Activate · ${relicLine(resourceId, configManager.getRelicActivation(resourceId), knownAmount(resourceManager.balance(ResourcesIds.Essence)))}`,
-                )}
-                onMouseLeave={tipOff}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  import("./relic-activation-popup").then(({ RelicActivationPopup }) => {
-                    openSurface({
-                      id: "relic-activation",
-                      content: (
-                        <RelicActivationPopup
-                          entityId={resourceManager.entityId}
-                          entityOwnerId={resourceManager.entityId}
-                          recipientType={RelicRecipientType.Structure}
-                          relicId={resourceId}
-                          relicBalance={divideByPrecision(balance)}
-                          onClose={closeSurface}
-                        />
-                      ),
-                    });
-                  });
                 }}
               />
             )}

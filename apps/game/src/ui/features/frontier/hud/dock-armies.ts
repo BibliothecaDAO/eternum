@@ -1,4 +1,3 @@
-import { nextSkillPoint, heldSkillPoints } from "@bibliothecadao/eternum";
 import type { IconMeaning } from "@/ui/design-system/icon";
 import { troopMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { useGame } from "@/hooks/context/game-context";
@@ -10,23 +9,36 @@ import type { StaminaBar } from "@/ui/design-system/kit/hud-elements";
 import { getExplorerStaminaSnapshot } from "@/utils/explorer-stamina";
 import {
   armyEtherealLayer,
+  armyOaths,
   configManager,
   type EtherealLayer,
   getArmyName,
-  homecomingReturn,
   liveHomeArmies,
 } from "@bibliothecadao/eternum";
-import { safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
-import { armyNumber, resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
+import {
+  armyDrain,
+  safeInteger,
+  type DeepArmyLife,
+  type NativeFactStore,
+  type NativeRows,
+} from "@bibliothecadao/eternum/game-client";
+import { armyNumber, resolveExplorerTroops, STAMINA_MODELS } from "@bibliothecadao/eternum/troop-stamina";
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { useMemo } from "react";
 
 import { ARMY } from "@/ui/design-system/kit/words";
 
-import { availableRankUps, attributeTiers } from "../attributes/attributes";
-import type { AttributeKey } from "../army/army-detail";
-
-const ARMY_MODELS = ["ArmySlot", "ArmyProgress", "ExplorerTroops", "TileOccupancy", "EntityName"] as const;
+const ARMY_MODELS = [
+  ...STAMINA_MODELS,
+  "EntityName",
+  "DeepGuard",
+  "DeepArmy",
+  "ArmyDay",
+  "DeepRules",
+  "SliceRules",
+  "SettlementRules",
+  "GameRegistry",
+] as const;
 
 /** One army as the dock and the action bar read it. Unknown is undefined, never zero. */
 export type DockArmy = {
@@ -36,20 +48,16 @@ export type DockArmy = {
   troopsFact: NativeRows["ExplorerTroops"]["troops"];
   label: string;
   art: IconMeaning;
-  xp: number | undefined;
-  /** The attribute tier its XP buys next: its XP price and the tier it reaches; none at legendary or while unknown. */
-  xpGoal: ReturnType<typeof nextSkillPoint> | undefined;
+
   /** Its tier in each attribute, 0 to 5, by its field on the progress; unknown while its progress is. */
-  tiers: Record<AttributeKey, number> | undefined;
   stamina: StaminaBar | undefined;
   secondsToFull: number | undefined;
   troops: number;
-  /** Its XP buys a tier of an attribute now: the card fan on its token. */
-  canSpendSkillPoint: boolean;
-  /** The whole troops its Homecoming returns when its day ends; unknown while its progress is. */
-  returnsHome: number | undefined;
+
   /** The Ethereal layer it stands in (armyEtherealLayer); none on the surface. */
   ethereal: EtherealLayer | undefined;
+  /** What holding a Deep site costs it: its troops fall each tick. None while it holds no site. */
+  drain?: DeepArmyLife;
 };
 
 /** The realm's armies out today, in the order the castle granted their slots; none without a realm. */
@@ -64,20 +72,7 @@ export const useDockArmies = (realm: NativeRows["Structure"] | null): DockArmy[]
   );
   return armies.map((army, index) => {
     const explorerId = safeInteger(army.explorer_id);
-    const snapshot = getExplorerStaminaSnapshot({
-      timestamp,
-      liveTroops: resolveExplorerTroops(setup.store, army),
-    });
-    const stamina = snapshot
-      ? buildStaminaDisplayModel({
-          committedCurrent: snapshot.current,
-          committedMax: snapshot.max,
-          timestamp,
-          troops: snapshot.troops,
-        })
-      : null;
-    const progress = setup.store.get("ArmyProgress", { game_id: army.game_id, explorer_id: army.explorer_id });
-    const xpRules = setup.store.get("ArmyProgressionRules", { game_id: army.game_id });
+    const { stamina, secondsToFull } = armyBar(setup.store, army, timestamp);
     const number = armyNumber(army) ?? index + 1;
     return {
       explorerId,
@@ -85,29 +80,39 @@ export const useDockArmies = (realm: NativeRows["Structure"] | null): DockArmy[]
       troopsFact: army.troops,
       label: armyName(setup.store, explorerId, number),
       art: armyArt(army.troops),
-      xp: progress?.xp,
-      xpGoal: progress && xpRules && nextSkillPoint(progress.xp, xpRules),
-      tiers: progress && attributeTiers(progress),
-      stamina: stamina
-        ? {
-            current: stamina.committedCurrent,
-            max: stamina.committedMax,
-            perExplore: exploreStaminaOf(setup.store, army.game_id),
-          }
-        : undefined,
-      secondsToFull: stamina?.secondsUntilFull,
+      stamina,
+      secondsToFull,
       troops: Number(army.troops.count / BigInt(RESOURCE_PRECISION)),
-      canSpendSkillPoint:
-        progress !== undefined &&
-        (availableRankUps(progress).length > 0 ||
-          (heldSkillPoints(progress).some((count) => count > 0) &&
-            stamina !== null &&
-            stamina.committedCurrent < stamina.committedMax)),
-      returnsHome:
-        progress && homecomingReturn(Number(army.troops.count / BigInt(RESOURCE_PRECISION)), progress.homecoming),
       ethereal: armyEtherealLayer(setup.store, army.game_id, explorerId),
+      drain: armyDrain(setup.store, army, timestamp),
     };
   });
+};
+
+export const armyBar = (
+  store: NativeFactStore,
+  army: NativeRows["ExplorerTroops"],
+  timestamp: number,
+): Pick<DockArmy, "stamina" | "secondsToFull"> => {
+  const snapshot = getExplorerStaminaSnapshot({ timestamp, liveTroops: resolveExplorerTroops(store, army, timestamp) });
+  const stamina = snapshot
+    ? buildStaminaDisplayModel({
+        committedCurrent: snapshot.current,
+        committedMax: snapshot.max,
+        timestamp,
+        troops: snapshot.troops,
+      })
+    : null;
+  return {
+    stamina: stamina
+      ? {
+          current: stamina.committedCurrent,
+          max: stamina.committedMax,
+          perExplore: exploreStaminaOf(store, army.game_id, army.troops.category, armyOaths(store, army)),
+        }
+      : undefined,
+    secondsToFull: stamina?.secondsUntilFull,
+  };
 };
 
 export const armyArt = troopMeaning;

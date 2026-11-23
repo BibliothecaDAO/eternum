@@ -1,11 +1,9 @@
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { configManager, getStructureRelicEffects, ResourceManager } from "@bibliothecadao/eternum";
 import { useBuildings } from "@/hooks/helpers/use-buildings";
-import { useNativeRowOrAbsent } from "@/hooks/helpers/use-native-facts";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
 import { getProducedResource, ID, RealmInfo, ResourcesIds, formatCount } from "@bibliothecadao/types";
-import { HudButton, HudChip, HudRow, HudTabs } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudRow, HudTabs } from "@/ui/design-system/kit/hud-elements";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { isVillageLikeStructureCategory } from "@/ui/lib/structure-capabilities";
 import { REALM_PRESETS, RealmPresetId } from "@bibliothecadao/eternum/automation";
@@ -75,8 +73,8 @@ const SidebarRealm = ({
       let activeBuildings = 0;
 
       const productionInfo = resourceData.current(resourceId);
-      if (productionInfo) {
-        const productionData = ResourceManager.calculateResourceProductionData(resourceId, productionInfo, now);
+      const productionData = resourceData.productionData(resourceId, now);
+      if (productionInfo && productionData) {
         isProducing = productionData.isProducing;
         if (isProducing) {
           const buildingCount = productionInfo.production.building_count;
@@ -112,18 +110,6 @@ const SidebarRealm = ({
   );
   const hasProduction = resourceProductionSummary.length > 0;
 
-  const productionBoostBonus = useNativeRowOrAbsent("ProductionBonus", {
-    game_id: configManager.getActiveGameId(),
-    entity_id: realm.entityId,
-  });
-
-  const activeRelics = useMemo(() => {
-    if (!productionBoostBonus) return [];
-    return getStructureRelicEffects(productionBoostBonus, now);
-  }, [productionBoostBonus, now]);
-
-  if (!productionBoostBonus) return <p>Loading production…</p>;
-
   return (
     <div className="flex flex-col gap-1">
       <HudRow
@@ -132,13 +118,6 @@ const SidebarRealm = ({
           hasProduction
             ? `${formatCount(buildingsData.length, "building")} · ${activeProductionBuildings}/${totalProductionBuildings} producing`
             : `${formatCount(buildingsData.length, "building")} · no production`
-        }
-        trail={
-          activeRelics.length > 0 ? (
-            <span title={`${activeRelics.length} Active Relics`}>
-              <HudChip>{activeRelics.length}</HudChip>
-            </span>
-          ) : undefined
         }
         selected={isSelected}
         onClick={onSelect}

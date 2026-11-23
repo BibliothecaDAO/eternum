@@ -4,13 +4,13 @@ import { createWorldFxRuntime, type WorldFxRuntime } from "@/three/fx/world-fx-r
 import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
 import { burstParticles, momentSpeed, type Intensity } from "@/ui/motion/motion-scale";
 import { placeKeyLight } from "@/three/effects/key-light";
-import { configureWorldSunShadows } from "@/three/effects/world-sun-shadows";
+import { configureWorldSunShadows, fitSunShadowToView } from "@/three/effects/world-sun-shadows";
+import type { GroundLights } from "@/three/terrain/ground-lights";
 import { useUIStore, type AppStore } from "@/hooks/store/use-ui-store";
 import { TERRAIN_DEEP_FOG_COLOR } from "@/three/terrain/terrain-fog-style";
 import { CAMERA_CONFIG, FOG_CONFIG } from "@/three/constants";
 import { runWithFrameWorkOwner } from "@/three/frame-work-owner";
-import type { RendererOverlayPass } from "@/three/renderer-backend";
-import { WorldAtmosphereController } from "@/three/effects/world-atmosphere-controller";
+import { type AtmosphereEnvironment, WorldAtmosphereController } from "@/three/effects/world-atmosphere-controller";
 import { type WeatherState } from "@/three/managers/weather-manager";
 import { HighlightHexManager } from "@/three/managers/highlight-hex-manager";
 import { InputManager } from "@/three/managers/input-manager";
@@ -104,6 +104,7 @@ export abstract class HexagonScene {
   protected visibilityManager!: CentralizedVisibilityManager;
   protected thunderBoltManager!: ThunderBoltManager;
   protected worldAtmosphereController!: WorldAtmosphereController;
+  private lastCycleOverride: number | null = null;
   protected GUIFolder!: any;
   protected state!: AppStore;
   protected fog!: Fog;
@@ -752,17 +753,16 @@ export abstract class HexagonScene {
     return this.interactionOverlayScene;
   }
 
-  /** A reward staged over everything this scene draws; a scene that stages none has none. */
-  public getRewardStagePasses(): RendererOverlayPass[] {
-    return [];
-  }
-
   public getCamera() {
     return this.camera;
   }
 
   public getTerrainSurface(): TerrainSurface {
     return FLAT_TERRAIN_SURFACE;
+  }
+
+  public getGroundLights(): GroundLights | null {
+    return null;
   }
 
   public getThunderBoltManager(): ThunderBoltManager {
@@ -1021,7 +1021,8 @@ export abstract class HexagonScene {
       return;
     }
 
-    const { position, target } = this.mainDirectionalLight;
+    fitSunShadowToView(this.mainDirectionalLight, this.camera);
+    const { position, target, shadow } = this.mainDirectionalLight;
     this.shadowRefreshPolicy.observeSun([
       position.x,
       position.y,
@@ -1029,6 +1030,10 @@ export abstract class HexagonScene {
       target.position.x,
       target.position.y,
       target.position.z,
+      shadow.camera.left,
+      shadow.camera.right,
+      shadow.camera.top,
+      shadow.camera.bottom,
     ]);
     if (this.shadowRefreshPolicy.consumeRefresh(deltaTime * 1000)) {
       this.mainDirectionalLight.shadow.needsUpdate = true;
@@ -1045,13 +1050,20 @@ export abstract class HexagonScene {
     this.worldFx.emit({ kind: "burst", count, position, seed: Date.now() >>> 0 });
   }
 
+  protected atmosphereEnvironment(): AtmosphereEnvironment {
+    return "world";
+  }
+
   update(deltaTime: number): void {
     PerformanceMonitor.recordFrame();
     PerformanceMonitor.begin("scene.update");
     this.visibilityManager?.beginFrame();
 
     if (this.animationsPaused) {
-      this.worldAtmosphereController.update(this.frozenCycleProgress, this.controls.target, { snap: true });
+      this.worldAtmosphereController.update(this.frozenCycleProgress, this.controls.target, {
+        snap: true,
+        environment: this.atmosphereEnvironment(),
+      });
       this.updateLights();
       this.updateShadowRefresh(deltaTime);
       PerformanceMonitor.end("scene.update");
@@ -1073,6 +1085,7 @@ export abstract class HexagonScene {
     }
 
     this.updateShadowRefresh(deltaTime);
+    this.getGroundLights()?.follow(this.controls.target.x, this.controls.target.z);
 
     PerformanceMonitor.end("scene.update");
   }
@@ -1142,9 +1155,12 @@ export abstract class HexagonScene {
 
     // Update world atmosphere with camera target for proper light positioning
     const cameraTarget = this.controls.target;
+    const override = this.state.debugCycleProgressOverride;
     this.worldAtmosphereController.update(cycleProgress, cameraTarget, {
-      snap: this.state.debugCycleProgressOverride !== null,
+      snap: override !== null || override !== this.lastCycleOverride,
+      environment: this.atmosphereEnvironment(),
     });
+    this.lastCycleOverride = override;
 
     const weatherState = this.weatherAtmosphereState;
     const stormDepth = weatherState ? Math.max(weatherState.intensity, weatherState.stormIntensity) : 0;

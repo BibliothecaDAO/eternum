@@ -42,7 +42,7 @@ const BuildingTypeSchema = Type.Enum(BuildingType, {
 export const ACTION_CATALOG: Record<ActionName, ActionCatalogEntry> = {
   armyPaths: {
     description:
-      "Plan from an explorer's current hex: every move, explore, attack, help, chest, and spire option it can reach now, with stamina costs.",
+      "Plan from an explorer's current hex: every move, explore, attack, help, and spire option it can reach now, with stamina costs.",
     params: Type.Object({ explorerId: EntityId("The explorer army to plan for.") }),
     preconditions: "The explorer exists and has enough stamina at the confirmed block time.",
     submits: false,
@@ -86,10 +86,10 @@ export const ACTION_CATALOG: Record<ActionName, ActionCatalogEntry> = {
       structureId: EntityId("The explorer's home structure."),
       explorerId: EntityId("The explorer to reinforce."),
       troopCount: TroopCount,
-      homeDirection: HexDirection,
+      supplyPost: Type.Optional(EntityId("Cleared camp used for reinforcement instead of the home tile.")),
     }),
     preconditions:
-      "The explorer is adjacent to the structure in homeDirection; the structure holds enough troops of the explorer's type and tier.",
+      "The explorer is adjacent to its home or supplyPost, a camp its home cleared today above the Deep; the home holds enough troops of the explorer's type and tier.",
     submits: true,
   },
   addTroopsToGuard: {

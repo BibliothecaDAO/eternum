@@ -1,6 +1,3 @@
-import { checkDepositRetirement } from "./deposit-retirement";
-import { relayDeposits, depositHistory, clearDepositFault, depositsSettled, type DepositMutation } from "./deposits";
-import { mutateDeposit } from "./deposit-ledger";
 import { cosignerClient } from "./cosigner-client";
 import type { HeldRealm } from "@realms-world/identity";
 import {
@@ -9,69 +6,55 @@ import {
   registerHomeSource,
   type RealmEntryClaim,
 } from "./realm-entry";
+import { creditFriendFragments, FriendCredit } from "./fragment-credit";
 import { PlayerRequestError } from "./player-request";
 import { joinShardOperator } from "./shard-account";
 import { decodeRelaySettings, ledgerAddress, ledgerContractOf, type RelaySettings } from "./environment";
 import { bindLedgerState, ledgerOrNull, ledgerStateName } from "./ledger-state";
 import {
   relayAccountAddress,
-  activeShards,
+  officialChain,
   requireActiveChain,
   readRegisteredShard,
   type ShardDirectory,
-  rpcAt,
-  readRegistrationPage,
-  readLedgerSlot,
   type LedgerSlotKey,
-  type RegistrationQuery,
 } from "@realms-world/value-ledger";
 import { processSeasonTops } from "./season-tops";
 import { seasonLedgerReads, postSeasonTop } from "./season-ledger";
 import { ledgerBatches } from "./ledger-batches";
-import { isLedgerReadTick } from "@realms-world/chain";
+import { isLedgerReadTick, valuePlaneAddress } from "@realms-world/chain";
 import { beginCause, causeDue, completeCause, raiseCause, retryCause } from "./ledger-cause";
 import { onIdentityChain } from "./ledger-chain";
-import { openSlotOnLedger, refundSlotOnLedger, markSlotRefundable } from "./blitz-launch";
-import { currentLaborDay, writeLaborGrant } from "./shard-labor";
-import { handleLaborRequest } from "./labor-route";
+import { refundSlotOnLedger } from "./blitz-launch";
 import { ShardReader, shardConnection } from "./shard-rpc";
-import { publishFrontierPools } from "./frontier-pools";
-import { awardFrontierPrizes } from "./frontier-prizes";
-import { sweepFrontierLords, type FrontierSettlement, type PrincipalSweep } from "./frontier-sweep";
-import { settleFrontier } from "./frontier-settlement";
+import { settleEndedFrontierGames } from "./frontier-end";
+import { runShardJobs, type JobFailure } from "./shard-jobs";
+import { raceReceiptKey, settleFinishedRaces, settleRace, type RaceReceipt, type RaceSettlement } from "./race-rewards";
 import { frontierReceiptBindings } from "./frontier-binding";
-import approvedExtension from "../../../config/source/frontier/extension.json";
-import { readFrontierExtension, requireExtendedFrontier } from "./frontier-extension";
 import { durableFinalFacts } from "./final-facts";
 import { shardWithdrawalPorts } from "./shard-withdrawals";
 import { chestLedgerReads, finishChestOnLedger } from "./chest-ledger";
 import { DurableChestStore, finishChestNow, finishRequestedChests } from "./chests";
 import { DurableObject, WorkerEntrypoint } from "cloudflare:workers";
-import { Effect, Result, Semaphore } from "effect";
-import { ledgerResultAdapter, postVerifiedResult } from "./ledger";
+import { Effect, Option, Result, Schema, Semaphore } from "effect";
 import { ledgerPaymentRead, ledgerPaymentProof, ledgerWithdrawalVoided, ledgerResetPayments } from "./chain";
 import { presentsOperatorToken } from "@realms-world/identity";
 import { identityAdapter } from "./adapters";
-import { runRelay, grantDailyLabor } from "./relay";
+import { runRelay } from "./relay";
 import { DurableRelayStore } from "./state";
-import { RelayFailure, relayOperation, type RelayPorts, type LaborClaim } from "./ports";
+import { RelayFailure, relayOperation, type RelayPorts } from "./ports";
 
 interface RelayEnv extends RelaySettings {
   IDENTITY_HTTP: Fetcher;
   ROSTER_MONITOR: {
-    verifyRoster(chainId: string, gameId: number): Promise<number | null>;
     ledgerWritten(): Promise<void>;
   };
   IDENTITY: ShardDirectory & {
     l2ChainId(): Promise<string>;
     holdsRealm(wallet: string, realmId: number): Promise<boolean>;
     heldRealmsWithMaps(wallet: string): Promise<HeldRealm[]>;
-    campaignTicket(
-      realmsId: string,
-      presetId: number,
-    ): Promise<{ campaign: string; tier: "regular" | "golden" } | null>;
+    holdsSeal(realmsId: string): Promise<boolean>;
     recordPayDecisions(decisions: import("@realms-world/identity").LedgerPayDecision[]): Promise<void>;
-    ratingsChanged(): Promise<void>;
     linkedWallet(id: string): Promise<string | null>;
     authenticate(cookie: string): Promise<{ realmsId: string } | null>;
     accountForRealmsId(id: string): Promise<string | null>;
@@ -95,18 +78,6 @@ const ledgerTickFinished = (observation: {
   !observation.chest_error &&
   observation.chests.failed === 0 &&
   observation.chests.pending === 0;
-const DELIVERY_DUE = "deposits:due";
-const DELIVERY_RETRY_SECONDS = 60;
-
-interface ShardObservation {
-  deposits?: {
-    error?: unknown;
-    pending?: number | undefined;
-    more?: boolean | undefined;
-    faults?: readonly string[] | undefined;
-  };
-  [field: string]: unknown;
-}
 
 /** A single transaction stream per official chain, isolated from the shard host. */
 export class ValueRelay extends DurableObject<RelayEnv> {
@@ -258,45 +229,21 @@ export class ValueRelay extends DurableObject<RelayEnv> {
                 ),
               ),
             );
-            const funding = await Effect.runPromise(
-              Effect.result(
-                onIdentityChain(
-                  relay.env.L2_RPC_URL,
-                  relay.env.IDENTITY,
-                  relay.shardSigning.withPermit(
-                    relayOperation("publish Frontier pools", () => relay.publishPools(chain, reconcile)),
-                  ),
-                ),
-              ),
-            );
-            const lastTick = await relay.ctx.storage.get<ShardObservation>("shardTick");
-            const reported = await beginCause(relay.ctx.storage, DELIVERY_DUE, false);
-            const deposits =
-              lastTick?.deposits && !reconcile && !reported && depositsSettled(lastTick.deposits)
-                ? Result.succeed(lastTick.deposits)
-                : await Effect.runPromise(Effect.result(relay.relayDepositsNow(chain, reconcile)));
+            const failures = await relay.runShardJobs(chain);
             const observation = {
               checked_at: Math.floor(Date.now() / 1000),
-              deposits: Result.isSuccess(deposits) ? deposits.success : { error: deposits.failure.operation },
-              funding_error: Result.isFailure(funding) ? funding.failure.operation : null,
+              job_failures: failures,
               value: Result.isSuccess(value)
                 ? value.success
                 : { status: "unavailable", reason: value.failure.operation },
             };
             await relay.ctx.storage.put("shardTick", observation);
-            const depositsDone = Result.isSuccess(deposits) && !deposits.success.error;
-            if (reported) {
-              if (depositsDone) await completeCause(relay.ctx.storage, reported);
-              else await retryCause(relay.ctx.storage, reported, DELIVERY_RETRY_SECONDS);
-            }
             if (reconciling) {
-              // The request covers every kind of work a proof pass does: a failure in any of them keeps the cause.
               const done =
                 Result.isSuccess(value) &&
                 value.success.status === "ready" &&
                 value.success.reconciled &&
-                Result.isSuccess(funding) &&
-                depositsDone;
+                failures.length === 0;
               if (done) await completeCause(relay.ctx.storage, reconciling);
               else await retryCause(relay.ctx.storage, reconciling, RECONCILE_RETRY_SECONDS);
             }
@@ -316,178 +263,51 @@ export class ValueRelay extends DurableObject<RelayEnv> {
     if (reconciling) await retryCause(this.ctx.storage, reconciling, RECONCILE_RETRY_SECONDS);
     return observation;
   }
-  /** One pass over the deposits: the work is durable in the obligations, so a pass that ends or dies loses nothing. */
-  private relayDepositsNow(chainId: string, proofs: boolean) {
-    return this.shardSigning.withPermit(
-      relayOperation("relay LORDS deposits", async () => relayDeposits(await this.depositPorts(chainId, proofs))),
-    );
-  }
-  /**
-   * A player's deposit, delivered now: the page asks once its payment landed, so a deposit is not found by reading the
-   * ledger's count every minute. The report is stored before anything is attempted and stays until the pass and its
-   * published observation are done: a worker killed anywhere in between leaves it for the next tick. Reports made before
-   * a pass share it; one that arrives during it is kept for the next.
-   */
-  async deliverDeposits(chainId: string) {
-    await requireActiveChain(this.env.IDENTITY, chainId);
-    await raiseCause(this.ctx.storage, DELIVERY_DUE);
-    return Effect.runPromise(
-      this.shardSigning.withPermit(
-        relayOperation("relay LORDS deposits", async () => {
-          const previous = await this.ctx.storage.get<ShardObservation>("shardTick");
-          const began = await beginCause(this.ctx.storage, DELIVERY_DUE, false);
-          if (!began) return previous?.deposits ?? null;
-          try {
-            const result = await relayDeposits(await this.depositPorts(chainId, false));
-            await this.ctx.storage.put("shardTick", { ...previous, deposits: result });
-            await completeCause(this.ctx.storage, began);
-            return result;
-          } catch (error) {
-            await retryCause(this.ctx.storage, began, DELIVERY_RETRY_SECONDS);
-            throw error;
-          }
-        }),
-      ),
-    );
-  }
-  private async depositPorts(chainId: string, proofs: boolean) {
-    const shard = await readRegisteredShard(this.env.IDENTITY, chainId);
-    return {
-      target: {
-        ...shardConnection(shard),
-        accountAddress: relayAccountAddress(shard),
-        privateKey: this.env.SHARD_LEDGER_OPERATOR_PRIVATE_KEY,
-      },
-      heraldUrl: shard.url,
-      ledger: {
-        rpcUrl: this.env.L2_RPC_URL,
-        address: ledgerAddress(this.env.ENVIRONMENT),
-        chainId: await this.env.IDENTITY.l2ChainId(),
-      },
-      storage: this.ctx.storage,
-      finals: durableFinalFacts(this.ctx.storage),
-      obligations: this.ctx.storage,
-      proofs,
-      sign: cosignerClient(this.env.COSIGNER_URL, this.env.COSIGNER_TOKEN).deposit,
-      mutate: (request: DepositMutation) => ledgerOf(this.env).depositMutation(request),
-    };
-  }
-  /** The operator dealt with a deposit the shard credited and the ledger lost: its fault goes, no other work is touched. */
-  async clearDepositFault(chainId: string, commitment: string, reason: string) {
-    const fault = await clearDepositFault(this.ctx.storage, chainId, commitment, reason);
-    return { id: fault.id, commitment: fault.commitment, row: fault.row };
-  }
-  async deposits(chainId: string, realmsId: string, before?: string) {
-    return depositHistory(await this.depositPorts(chainId, false), realmsId, before);
-  }
-  async depositRetirement(chainId: string) {
-    const shard = await readRegisteredShard(this.env.IDENTITY, chainId);
-    return checkDepositRetirement({
-      shard: { ...shardConnection(shard), heraldUrl: shard.url },
-      ledger: {
-        rpcUrl: this.env.L2_RPC_URL,
-        address: ledgerAddress(this.env.ENVIRONMENT),
-        chainId: await this.env.IDENTITY.l2ChainId(),
-      },
-    });
-  }
-  async depositMutation(request: DepositMutation) {
-    const outcome = await Effect.runPromise(
-      this.ledgerPermit(
-        relayOperation("resolve deposit custody", async () =>
-          mutateDeposit(
-            ledgerCredentialsOf(this.env),
-            await this.env.IDENTITY.l2ChainId(),
-            request,
-            cosignerClient(this.env.COSIGNER_URL, this.env.COSIGNER_TOKEN).deposit,
-            {
-              getAnchor: (key) => this.ctx.storage.get(key),
-              putAnchor: (key, value) => this.ctx.storage.put(key, value),
-            },
-            (account) => this.principalWallet(account),
-          ),
-        ),
-        [request.shard],
-      ),
-    );
-    if (outcome.wrote) await this.ledgerWritten();
-    return outcome.final;
-  }
-  private async publishPools(chainId: string, proofs: boolean) {
+  private async runShardJobs(chainId: string) {
     const shard = await readRegisteredShard(this.env.IDENTITY, chainId);
     const target = {
       ...shardConnection(shard),
       accountAddress: relayAccountAddress(shard),
       privateKey: this.env.SHARD_LEDGER_OPERATOR_PRIVATE_KEY,
     };
-    const ledger = {
-      rpcUrl: this.env.L2_RPC_URL,
-      address: ledgerAddress(this.env.ENVIRONMENT),
-      finals: durableFinalFacts(this.ctx.storage),
-      obligations: this.ctx.storage,
-      proofs,
-    };
-    let unavailable: unknown;
-    for (const publish of [publishFrontierPools, awardFrontierPrizes]) {
-      try {
-        await publish(target, shard.url, ledger);
-      } catch (error) {
-        unavailable ??= error;
-      }
-    }
-    try {
-      await sweepFrontierLords(
-        target,
-        shard.url,
-        ledger,
-        (settlement) => ledgerOf(this.env).settleFrontier(settlement),
-        (claim) => this.payPrincipal(claim),
-      );
-    } catch (error) {
-      unavailable ??= error;
-    }
-    if (unavailable) throw unavailable;
-  }
-  /** Identity answers for free: a principal whose player has no wallet is not read on the ledger. */
-  private async principalWallet(account: string) {
-    const realmsId = await this.env.IDENTITY.realmsIdForAccount(account);
-    const wallet = realmsId ? await this.env.IDENTITY.linkedWallet(realmsId) : null;
-    if (!wallet) throw new Error("principal_wallet_unavailable");
-    return wallet;
-  }
-  /**
-   * Identity answers for free, so a principal never tried and with no linked wallet costs the ledger nothing. Once a
-   * payment was tried, the ledger decides: a reply that was lost recognizes the payment even after the wallet unlinks.
-   */
-  private async payPrincipal(claim: PrincipalSweep) {
-    const tried = `principal-tried:${BigInt(claim.chainId)}:${claim.gameId}:${BigInt(claim.account)}`;
-    if ((await this.ctx.storage.get(tried)) === undefined) {
-      await this.principalWallet(claim.account);
-      await this.ctx.storage.put(tried, true);
-    }
-    return ledgerOf(this.env).depositMutation({
-      kind: "principal",
-      shard: claim.chainId,
-      season: claim.gameId,
-      account: claim.account,
-      amount: claim.amount,
-    });
-  }
-
-  async settleFrontier(settlement: FrontierSettlement) {
-    await Effect.runPromise(
-      this.ledgerPermit(
-        relayOperation("settle Frontier season", () =>
-          settleFrontier(
-            ledgerCredentialsOf(this.env),
-            settlement,
-            cosignerClient(this.env.COSIGNER_URL, this.env.COSIGNER_TOKEN),
+    const finals = durableFinalFacts(this.ctx.storage);
+    return Effect.runPromise(
+      this.shardSigning.withPermit(
+        Effect.promise(() =>
+          runShardJobs(
+            {
+              "settle ended games": () => settleEndedFrontierGames(target, shard.url),
+              "pay race rewards": () =>
+                settleFinishedRaces(target, shard.url, finals, (settlement) =>
+                  ledgerOf(this.env).settleRace(settlement),
+                ),
+            },
+            secretsOf(this.env),
           ),
+        ),
+      ),
+    );
+  }
+  private async linkedWalletOf(account: string) {
+    const realmsId = await this.env.IDENTITY.realmsIdForAccount(account);
+    return realmsId ? this.env.IDENTITY.linkedWallet(realmsId) : null;
+  }
+  async settleRace(settlement: RaceSettlement) {
+    return Effect.runPromise(
+      this.ledgerPermit(
+        relayOperation("settle race rewards", () =>
+          settleRace(raceLedgerOf(this.env), settlement, {
+            cosigner: cosignerClient(this.env.COSIGNER_URL, this.env.COSIGNER_TOKEN),
+            payoutWallet: (owner) => this.linkedWalletOf(owner),
+            keepReceipt: (receipt) => this.ctx.storage.put(raceReceiptKey(receipt.chainId, receipt.gameId), receipt),
+          }),
         ),
         [settlement.chainId],
       ),
     );
-    await this.ledgerWritten();
+  }
+  async raceReceipt(chainId: string, gameId: number) {
+    return (await this.ctx.storage.get<RaceReceipt>(raceReceiptKey(chainId, gameId))) ?? null;
   }
   async alarm() {
     await this.tick();
@@ -536,43 +356,19 @@ export class ValueRelay extends DurableObject<RelayEnv> {
     if (outcomes.some((outcome) => outcome.error === null)) await this.ledgerWritten();
     return outcomes;
   }
-  async postResult(result: import("./ports").BlitzResult) {
-    await Effect.runPromise(
-      this.ledgerPermit(
-        relayOperation("verify and post paid game results", () =>
-          postVerifiedResult(
-            result,
-            (chainId, gameId) => this.env.ROSTER_MONITOR.verifyRoster(chainId, gameId),
-            (slotId) => ledgerResultAdapter(ledgerCredentialsOf(this.env), slotId),
-          ),
-        ),
-        [result.chainId],
-      ),
-    );
-    await this.ledgerWritten();
-    try {
-      await this.env.IDENTITY.ratingsChanged();
-    } catch {
-      /* The identity service's own hour still refreshes the ratings if this notice is lost. */
-    }
-  }
   async shardHealth() {
     const progress = await this.store.progress();
     const observation = await this.ctx.storage.get<{
       checked_at: number;
       value: { status: string };
-      funding_error: string | null;
-      deposits?: { error?: string | { obligation: string; error: string }[] | null; faults?: readonly string[] };
+      job_failures?: readonly JobFailure[];
     }>("shardTick");
     return {
       ...progress,
       ...observation,
       success:
         observation?.value.status === "ready" &&
-        observation.funding_error === null &&
-        !!observation.deposits &&
-        !observation.deposits.error &&
-        !observation.deposits.faults?.length &&
+        observation.job_failures?.length === 0 &&
         !progress.halted &&
         Date.now() / 1000 - (observation?.checked_at ?? 0) <= 300,
     };
@@ -614,26 +410,46 @@ export class ValueRelay extends DurableObject<RelayEnv> {
       jobs: observation ?? null,
     };
   }
-  async realmEntry(claim: RealmEntryClaim) {
+  realmEntry(claim: RealmEntryClaim) {
+    return this.operateShard(claim.chainId, (shard) =>
+      registerHomeSource(
+        {
+          connection: shardConnection(shard),
+          heraldUrl: shard.url,
+          operatorAddress: relayAccountAddress(shard),
+          privateKey: this.env.SHARD_LEDGER_OPERATOR_PRIVATE_KEY,
+          identity: this.env.IDENTITY,
+        },
+        claim,
+      ),
+    );
+  }
+  creditFragments(credit: FriendCredit) {
+    return this.operateShard(credit.chainId, (shard) =>
+      creditFriendFragments(
+        {
+          connection: shardConnection(shard),
+          operatorAddress: relayAccountAddress(shard),
+          privateKey: this.env.SHARD_LEDGER_OPERATOR_PRIVATE_KEY,
+          identity: this.env.IDENTITY,
+        },
+        credit,
+      ),
+    );
+  }
+  private async operateShard<T>(
+    chainId: string,
+    operate: (shard: Awaited<ReturnType<typeof readRegisteredShard>>) => Promise<T>,
+  ) {
     const result = await Effect.runPromise(
       this.shardSigning.withPermit(
         Effect.result(
           Effect.tryPromise({
             try: async () => {
-              await this.portsFor(claim.chainId);
+              await this.portsFor(chainId);
               const progress = await this.store.progress();
               if (progress.halted) throw new Error("relay_halted_or_wrong_chain");
-              const shard = await readRegisteredShard(this.env.IDENTITY, claim.chainId);
-              return registerHomeSource(
-                {
-                  connection: shardConnection(shard),
-                  heraldUrl: shard.url,
-                  operatorAddress: relayAccountAddress(shard),
-                  privateKey: this.env.SHARD_LEDGER_OPERATOR_PRIVATE_KEY,
-                  identity: this.env.IDENTITY,
-                },
-                claim,
-              );
+              return operate(await readRegisteredShard(this.env.IDENTITY, chainId));
             },
             catch: (error) => error,
           }),
@@ -650,68 +466,6 @@ export class ValueRelay extends DurableObject<RelayEnv> {
       };
     }
     return { entry: result.success };
-  }
-  async labor(claim: LaborClaim) {
-    const relay = this;
-    return Effect.runPromise(
-      this.shardSigning.withPermit(
-        Effect.gen(function* () {
-          const progress = yield* relayOperation("read relay progress", () => relay.store.progress());
-          const ports = yield* relayOperation("read official labor shard", () => relay.portsFor(claim.chainId));
-          const shard = yield* relayOperation("read official labor manifest", () =>
-            readRegisteredShard(relay.env.IDENTITY, claim.chainId),
-          );
-          if (progress.halted) return yield* Effect.fail(new Error("relay_halted_or_wrong_chain"));
-          const day = yield* currentLaborDay(shardConnection(shard), shard.url, claim.gameId);
-          if (claim.day !== day) return yield* Effect.fail(new RelayFailure({ operation: "labor_day_differs" }));
-          return yield* grantDailyLabor(ports, claim);
-        }),
-      ),
-    );
-  }
-  async openSlot(key: LedgerSlotKey, window: { start: number; end: number }) {
-    await this.requireLaunchSlot(key);
-    const shard = (await this.env.IDENTITY.shards()).find((row) => BigInt(row.chainId) === BigInt(key.chainId));
-    if (shard?.status !== "active") throw new Error("new_slot_requires_active_shard");
-    return Effect.runPromise(
-      this.ledgerPermit(
-        relayEffect("write ledger slot", () => openSlotOnLedger(ledgerCredentialsOf(this.env), key, window)),
-        [key.chainId],
-      ),
-    );
-  }
-  async slot(key: LedgerSlotKey) {
-    await this.requireLaunchSlot(key);
-    return Effect.runPromise(
-      onIdentityChain(
-        this.env.L2_RPC_URL,
-        this.env.IDENTITY,
-        relayOperation("read ledger slot", () =>
-          readLedgerSlot(rpcAt(this.env.L2_RPC_URL), ledgerAddress(this.env.ENVIRONMENT), key, "latest"),
-        ),
-      ),
-    );
-  }
-  async registrations(query: RegistrationQuery) {
-    await this.requireLaunchSlot(query);
-    return Effect.runPromise(
-      onIdentityChain(
-        this.env.L2_RPC_URL,
-        this.env.IDENTITY,
-        relayOperation("read closed slot registrations", () =>
-          readRegistrationPage(rpcAt(this.env.L2_RPC_URL), ledgerAddress(this.env.ENVIRONMENT), query),
-        ),
-      ),
-    );
-  }
-  async markRefundable(key: LedgerSlotKey, wallets: readonly string[]) {
-    await this.requireLaunchSlot(key);
-    return Effect.runPromise(
-      this.ledgerPermit(
-        relayEffect("write ledger slot", () => markSlotRefundable(ledgerCredentialsOf(this.env), key, wallets)),
-        [key.chainId],
-      ),
-    );
   }
   async refundSlot(key: LedgerSlotKey) {
     await this.requireLaunchSlot(key);
@@ -739,7 +493,6 @@ export class ValueRelay extends DurableObject<RelayEnv> {
             : row.kind === "row"
               ? row.row.transactionHash
               : null,
-      ...(row.kind === "result" ? { gameId: row.result.gameId } : {}),
     }));
   }
   async status() {
@@ -767,7 +520,6 @@ const relayPortsOf = (env: RelayEnv, shard: Awaited<ReturnType<typeof readRegist
         ),
       reportMany: (rows) => relayOperation("report withdrawal page", () => ledgerOf(env).reportMany(rows)),
       payMany: (rows) => relayOperation("pay withdrawal page", () => ledgerOf(env).payMany(rows)),
-      postResult: (row) => relayOperation("post shard result", () => ledgerOf(env).postResult(row)),
     },
     shard: {
       ...shardWithdrawalPorts(
@@ -779,20 +531,6 @@ const relayPortsOf = (env: RelayEnv, shard: Awaited<ReturnType<typeof readRegist
           shard.url,
         ),
       ),
-      grantLabor: (claim) =>
-        relayOperation("grant on official shard", async () => {
-          await requireActiveChain(env.IDENTITY, claim.chainId);
-          return Effect.runPromise(
-            writeLaborGrant(
-              {
-                connection: shardConnection(shard),
-                operatorAddress: relayAccountAddress(shard),
-                privateKey: env.SHARD_LEDGER_OPERATOR_PRIVATE_KEY,
-              },
-              claim,
-            ),
-          );
-        }),
     },
   };
 };
@@ -801,6 +539,21 @@ const ledgerCredentialsOf = (env: RelayEnv) => ({
   ...ledgerContractOf(env.ENVIRONMENT),
   accountAddress: env.LEDGER_OPERATOR_ADDRESS,
   privateKey: env.LEDGER_OPERATOR_PRIVATE_KEY,
+});
+
+const secretsOf = (env: RelayEnv) => [
+  env.SHARD_LEDGER_OPERATOR_PRIVATE_KEY,
+  env.LEDGER_OPERATOR_PRIVATE_KEY,
+  env.COSIGNER_TOKEN,
+  env.OPERATOR_TOKEN,
+];
+
+const raceLedgerOf = (env: RelayEnv) => ({
+  rpcUrl: env.L2_RPC_URL,
+  rewardsAddress: ledgerOrNull(() => valuePlaneAddress("raceRewards", env.ENVIRONMENT)),
+  accountAddress: env.LEDGER_OPERATOR_ADDRESS,
+  privateKey: env.LEDGER_OPERATOR_PRIVATE_KEY,
+  unfundedIsFault: env.ENVIRONMENT === "production",
 });
 
 const chestPortsOf = (env: RelayEnv, permit: LedgerPermit) => ({
@@ -819,17 +572,17 @@ const ledgerOf = (env: RelayEnv) =>
       ),
     ),
   );
-const heldOf = async (env: RelayEnv) =>
-  (await Promise.all((await env.IDENTITY.shards()).map((shard) => relayOf(env, shard.chainId).shardHeld()))).flat();
+const heldOf = async (env: RelayEnv) => {
+  const official = await officialChain(env.IDENTITY);
+  return official ? relayOf(env, official.chainId).shardHeld() : [];
+};
 const healthOf = async (env: RelayEnv) => {
   const ledger = await ledgerOf(env).ledgerHealth();
-  const shards = await Promise.all(
-    (await activeShards(env.IDENTITY)).map(async (shard) => ({
-      chainId: shard.chainId,
-      ...(await relayOf(env, shard.chainId).shardHealth()),
-    })),
-  );
-  return { ...ledger, success: ledger.success && shards.every((row) => row.success), shards, held: await heldOf(env) };
+  const official = await officialChain(env.IDENTITY);
+  const shard = official
+    ? { chainId: official.chainId, ...(await relayOf(env, official.chainId).shardHealth()) }
+    : null;
+  return { ...ledger, success: ledger.success && (shard?.success ?? true), shard, held: await heldOf(env) };
 };
 /** Diagnostics expose reasons only; the monitor independently verifies contract evidence. */
 export class RelayDiagnostics extends WorkerEntrypoint<RelayEnv> {
@@ -841,89 +594,25 @@ export class RelayDiagnostics extends WorkerEntrypoint<RelayEnv> {
   }
   /** The monitor's operator reset follows an admin's void of a report: the held honest claims are asked about now. */
   async recoverHeld() {
-    for (const shard of await activeShards(this.env.IDENTITY))
-      await relayOf(this.env, shard.chainId).requestReconcile();
+    const official = await officialChain(this.env.IDENTITY);
+    if (official) await relayOf(this.env, official.chainId).requestReconcile();
   }
 }
 export class ValueLaunch extends WorkerEntrypoint<RelayEnv> {
   override fetch() {
     return new Response(null, { status: 404 });
   }
-  slot(key: LedgerSlotKey) {
-    return ledgerOf(this.env).slot(key);
-  }
-  registrations(query: RegistrationQuery) {
-    return ledgerOf(this.env).registrations(query);
-  }
-  openSlot(key: LedgerSlotKey, window: { start: number; end: number }) {
-    return ledgerOf(this.env).openSlot(key, window);
-  }
-  markRefundable(key: LedgerSlotKey, wallets: readonly string[]) {
-    return ledgerOf(this.env).markRefundable(key, wallets);
-  }
   refundSlot(key: LedgerSlotKey) {
     return ledgerOf(this.env).refundSlot(key);
-  }
-  async verifyFrontierExtension() {
-    await requireActiveChain(this.env.IDENTITY, approvedExtension.chainId);
-    const shard = await readRegisteredShard(this.env.IDENTITY, approvedExtension.chainId);
-    return requireExtendedFrontier(await readFrontierExtension(shardConnection(shard), shard.url, this.env.L2_RPC_URL));
   }
 }
 export default {
   async fetch(request: Request, raw: RelayEnv): Promise<Response> {
     const env = { ...raw, ...decodeRelaySettings(raw) };
-    if (new URL(request.url).pathname === "/api/value/operator/campaign-entry" && request.method === "POST")
-      return operatorCampaignEntry(request, env, "recover");
-    if (new URL(request.url).pathname === "/api/value/operator/campaign-upgrade" && request.method === "POST")
-      return operatorCampaignEntry(request, env, "upgrade");
-    if (new URL(request.url).pathname === "/api/value/operator/deposit-retirement" && request.method === "POST") {
-      if (!(await presentsOperatorToken(request, env.OPERATOR_TOKEN))) return new Response(null, { status: 401 });
-      const body = (await request.json().catch(() => null)) as { chainId?: unknown } | null;
-      if (
-        !body ||
-        typeof body !== "object" ||
-        Object.keys(body).join() !== "chainId" ||
-        typeof body.chainId !== "string" ||
-        !/^0x[0-9a-f]+$/i.test(body.chainId)
-      )
-        return Response.json({ error: "invalid_chain" }, { status: 400 });
-      try {
-        return Response.json(await relayOf(env, body.chainId).depositRetirement(body.chainId), {
-          headers: { "cache-control": "no-store" },
-        });
-      } catch {
-        return Response.json({ error: "deposit_retirement_not_ready" }, { status: 409 });
-      }
-    }
-    if (new URL(request.url).pathname === "/api/value/operator/deposit-fault" && request.method === "POST") {
-      if (!(await presentsOperatorToken(request, env.OPERATOR_TOKEN)))
-        return Response.json({ error: "unauthorized" }, { status: 401 });
-      const body = (await request.json().catch(() => null)) as {
-        chainId?: unknown;
-        commitment?: unknown;
-        reason?: unknown;
-      } | null;
-      if (
-        !body ||
-        typeof body.chainId !== "string" ||
-        !/^0x[0-9a-f]+$/i.test(body.chainId) ||
-        typeof body.commitment !== "string" ||
-        !/^0x[0-9a-f]+$/i.test(body.commitment) ||
-        typeof body.reason !== "string" ||
-        !body.reason.trim() ||
-        body.reason.length > 500 ||
-        Object.keys(body).sort().join() !== "chainId,commitment,reason"
-      )
-        return Response.json({ error: "deposit_fault_commitment_and_reason_required" }, { status: 400 });
-      try {
-        return Response.json(
-          await relayOf(env, body.chainId).clearDepositFault(body.chainId, body.commitment, body.reason),
-        );
-      } catch {
-        return Response.json({ error: "deposit_fault_unknown" }, { status: 409 });
-      }
-    }
+    if (new URL(request.url).pathname === "/api/value/operator/seal" && request.method === "POST")
+      return operatorSealGrant(request, env);
+    if (new URL(request.url).pathname === "/api/value/operator/fragments" && request.method === "POST")
+      return operatorFragmentCredit(request, env);
     if (new URL(request.url).pathname === "/api/value/operator/reset" && request.method === "POST") {
       if (!(await presentsOperatorToken(request, env.OPERATOR_TOKEN)))
         return Response.json({ error: "unauthorized" }, { status: 401 });
@@ -953,6 +642,8 @@ export default {
       }
     }
 
+    if (new URL(request.url).pathname === "/api/value/race-receipt" && request.method === "GET")
+      return raceReceiptResponse(new URL(request.url).searchParams, env);
     if (new URL(request.url).pathname === "/api/value/chests/finish" && request.method === "POST")
       return finishChestResponse(request, env);
 
@@ -979,38 +670,6 @@ export default {
         accountForRealmsId: (id) => env.IDENTITY.accountForRealmsId(id),
         identity: env.IDENTITY,
       });
-    if (new URL(request.url).pathname === "/api/value/labor" && request.method === "POST") {
-      const chainId = new URL(request.url).searchParams.get("chainId");
-      if (!chainId || !/^0x[0-9a-f]+$/i.test(chainId))
-        return Response.json({ error: "shard_chain_required" }, { status: 400 });
-      await requireActiveChain(env.IDENTITY, chainId);
-      const shard = await readRegisteredShard(env.IDENTITY, chainId);
-      return handleLaborRequest(request, {
-        origin: env.BASE_URL,
-        chainId,
-        accountForRealmsId: (id) => env.IDENTITY.accountForRealmsId(id),
-        authenticate: (cookie) => env.IDENTITY.authenticate(cookie),
-        currentDay: (gameId) => currentLaborDay(shardConnection(shard), shard.url, gameId),
-        grant: (claim) => relayOf(env, claim.chainId).labor(claim),
-      });
-    }
-    if (new URL(request.url).pathname === "/api/value/deposits" && request.method === "GET") {
-      const url = new URL(request.url);
-      const chain = url.searchParams.get("chainId");
-      if (!chain || !/^0x[0-9a-f]+$/i.test(chain)) return Response.json({ error: "invalid_chain" }, { status: 400 });
-      const identity = await env.IDENTITY.authenticate(request.headers.get("cookie") ?? "");
-      if (!identity) return Response.json({ error: "unauthorized" }, { status: 401 });
-      try {
-        return Response.json(
-          await relayOf(env, chain).deposits(chain, identity.realmsId, url.searchParams.get("before") ?? undefined),
-          { headers: { "cache-control": "no-store" } },
-        );
-      } catch {
-        return Response.json({ error: "deposit_status_unavailable" }, { status: 503 });
-      }
-    }
-    if (new URL(request.url).pathname === "/api/value/deposits/deliver" && request.method === "POST")
-      return deliverDepositsResponse(request, env);
     if (new URL(request.url).pathname !== "/api/value/health" || request.method !== "GET")
       return new Response(null, { status: 404 });
     const health = await healthOf(env);
@@ -1024,13 +683,8 @@ export default {
     } catch {
       console.error("ledger_tick_unavailable");
     }
-    for (const shard of await activeShards(env.IDENTITY)) {
-      try {
-        await relayOf(env, shard.chainId).tick(shard.chainId, hourly);
-      } catch {
-        /* One unavailable shard must not suppress another shard. */
-      }
-    }
+    const official = await officialChain(env.IDENTITY);
+    if (official) await relayOf(env, official.chainId).tick(official.chainId, hourly);
   },
 };
 
@@ -1055,33 +709,37 @@ const finishChestResponse = async (request: Request, env: RelayEnv) => {
   }
 };
 
-/** POST /api/value/deposits/deliver?chainId=0x…, from a signed-in player's page on our origin once its deposit landed. */
-const deliverDepositsResponse = async (request: Request, env: RelayEnv) => {
-  if (request.headers.get("origin") !== new URL(env.BASE_URL).origin)
-    return Response.json({ error: "invalid_origin" }, { status: 403 });
-  if (!(await env.IDENTITY.authenticate(request.headers.get("cookie") ?? "")))
-    return Response.json({ error: "unauthenticated" }, { status: 401 });
-  const chain = new URL(request.url).searchParams.get("chainId");
-  if (!chain || !/^0x[0-9a-f]+$/i.test(chain)) return Response.json({ error: "invalid_chain" }, { status: 400 });
-  try {
-    return Response.json(await relayOf(env, chain).deliverDeposits(chain), {
-      headers: { "cache-control": "no-store" },
-    });
-  } catch {
-    console.error("deposit_delivery_unavailable");
-    return Response.json({ error: "deposit_delivery_unavailable" }, { status: 503 });
-  }
+const raceReceiptResponse = async (query: URLSearchParams, env: RelayEnv) => {
+  const chain = query.get("chainId");
+  const game = Number(query.get("gameId"));
+  if (!chain || !/^0x[0-9a-f]+$/i.test(chain) || !Number.isSafeInteger(game) || game <= 0)
+    return Response.json({ error: "invalid_race" }, { status: 400 });
+  const receipt = await ledgerOf(env).raceReceipt(chain, game);
+  if (!receipt) return Response.json({ error: "race_not_closed" }, { status: 404 });
+  return Response.json(receipt, { headers: { "cache-control": "no-store" } });
 };
 
 const relayEffect = <A, E>(operation: string, make: () => Effect.Effect<A, E>) =>
   relayOperation(operation, () => Effect.runPromise(make()));
 
 /** Identity supplies the awarded ticket; operator requests cannot choose a tier, account or held Realm. */
-async function operatorCampaignEntry(
-  request: Request,
-  env: RelayEnv,
-  action: "recover" | "upgrade",
-): Promise<Response> {
+async function operatorFragmentCredit(request: Request, env: RelayEnv): Promise<Response> {
+  if (!(await presentsOperatorToken(request, env.OPERATOR_TOKEN)))
+    return Response.json({ error: "unauthorized" }, { status: 401 });
+  const credit = Schema.decodeUnknownOption(FriendCredit, { onExcessProperty: "error" })(
+    await request.json().catch(() => null),
+  );
+  if (Option.isNone(credit)) return Response.json({ error: "invalid_fragment_credit" }, { status: 400 });
+  try {
+    const result = await relayOf(env, credit.value.chainId).creditFragments(credit.value);
+    if (result.error) return Response.json({ error: result.error.code }, { status: result.error.status });
+    return Response.json(result.entry);
+  } catch {
+    return Response.json({ error: "value_service_unavailable" }, { status: 503 });
+  }
+}
+
+async function operatorSealGrant(request: Request, env: RelayEnv): Promise<Response> {
   if (!(await presentsOperatorToken(request, env.OPERATOR_TOKEN)))
     return Response.json({ error: "unauthorized" }, { status: 401 });
   const body = (await request.json().catch(() => null)) as {
@@ -1111,7 +769,7 @@ async function operatorCampaignEntry(
       realmsId: body.realmsId,
       account,
       realmId: null,
-      ...(action === "recover" ? { recoverFlyer: true as const } : { upgradeCampaign: true as const }),
+      sealOnly: true,
     });
     if (result.error) return Response.json({ error: result.error.code }, { status: result.error.status });
     return Response.json(result.entry);

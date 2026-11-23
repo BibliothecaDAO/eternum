@@ -1,8 +1,11 @@
-import { formatAmount, formatDate } from "@bibliothecadao/types";
+import "./season-page.css";
+
+import { aspects, formatAmount, formatDate, orderAspect, type AspectId } from "@bibliothecadao/types";
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { isGameOver } from "@/runtime/world/directory";
+import { AspectMark } from "@/ui/design-system/aspect-mark";
 import {
   AppButton,
   AppChip,
@@ -35,62 +38,24 @@ import { ageOf } from "../play/ages";
 import { chooseSeason, directoryDay, endedSeasons, seasonEnded, seasonTitle } from "../season";
 import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
 import { useNowSeconds } from "../use-now";
-import { BlitzBoard } from "./blitz-board";
 import { FrontierRows } from "./frontier-rows";
 import { resultsHref } from "./results-link";
 import { SeasonPodium } from "./season-podium";
 
-type SeasonView = "frontier" | "blitz";
-
-/** How many rows tall each board's scroll area stands, by layout: every place is on it, the rest a scroll away. */
 const BOARD_ROWS = { phone: 12, desktop: 10 } as const;
 
-/**
- * Season (the owner's pick, A · Launcher): where the player stands this season, in figures at the top (their place on
- * Frontier's board, the LORDS their realm earned), then one board per mode under its mode's painting: Frontier's
- * season board, and Blitz's rating with the season prize each place would take. With no Frontier season running, its
- * board is the last one's as it ended, an archived one at the least; the seasons before it are under Past seasons, each
- * opening its Results. The desktop shows both side by side; a phone switches between them. The player's own finished
- * games are on You.
- */
 export const SeasonPage = () => {
   const phone = useLayout() === "phone";
-  // Frontier and Blitz each run their own season: the page is Season, and each board names its own.
   return (
     <PageFrame title={WORDS.season} painting="season-citadel">
       <div className="flex flex-col gap-6">
         {phone && <h1 className="text-app-title text-app-ink">{WORDS.season}</h1>}
-        <Standing />
-        {phone ? <PhoneBoards /> : <DesktopBoards />}
+        <div className="season-grid">
+          <FrontierPanel rows={phone ? BOARD_ROWS.phone : BOARD_ROWS.desktop} />
+          <SeasonAside />
+        </div>
       </div>
     </PageFrame>
-  );
-};
-
-const DesktopBoards = () => (
-  <div className="grid grid-cols-2 items-start gap-6">
-    <FrontierPanel rows={BOARD_ROWS.desktop} />
-    <BlitzBoard rows={BOARD_ROWS.desktop} />
-  </div>
-);
-
-/** A phone: the sheet's tabs above the one board. */
-const PhoneBoards = () => {
-  const [view, setView] = useState<SeasonView>("frontier");
-  return (
-    <>
-      <AppTabs
-        label={SEASON_WORDS.views}
-        value={view}
-        onChange={setView}
-        tabs={[
-          { key: "frontier", label: ageOf("frontier").name },
-          { key: "blitz", label: ageOf("blitz").name },
-        ]}
-      >
-        {view === "frontier" ? <FrontierPanel rows={BOARD_ROWS.phone} /> : <BlitzBoard rows={BOARD_ROWS.phone} />}
-      </AppTabs>
-    </>
   );
 };
 
@@ -123,15 +88,11 @@ const useSeason = () => {
   return { season, past: season ? ended.filter((game) => game !== season) : [], failure };
 };
 
-/**
- * Where the player stands on Frontier this season, in figures with their pictures: their place on the board, and the
- * LORDS their realm has earned. Their Blitz rating stands on Blitz's board. With no realm in the season, nothing.
- */
 const Standing = () => {
   const { season } = useSeason();
   const { data: player } = useRealmsPlayer();
   const board = useLeaderboard(season ? gameRefOf(season) : null);
-  const entries = board.data?.mode === "frontier" ? board.data.entries : [];
+  const entries = board.data?.entries ?? [];
   const own = findOwnEntry(entries, player);
   if (!own) return null;
   return (
@@ -154,24 +115,30 @@ const Standing = () => {
   );
 };
 
-/** Frontier's board under Frontier's painting, with its season and day, or the day it ended; the seasons past under it. */
+const SeasonAside = () => {
+  const { past } = useSeason();
+  return (
+    <div className="flex min-w-0 flex-col gap-6">
+      <Standing />
+      {past.length > 0 && <PastSeasons seasons={past} />}
+    </div>
+  );
+};
+
 const FrontierPanel = ({ rows }: { rows: number }) => {
-  const { season, past } = useSeason();
+  const { season } = useSeason();
   const frontier = ageOf("frontier");
   return (
-    <div className="flex flex-col gap-6">
-      <div data-age="frontier">
-        <AppPanel
-          title={frontier.name}
-          icon="leaderboard"
-          painting={frontier.painting}
-          cue={season && (isGameOver(season) ? <SeasonEnded season={season} /> : <FrontierDay season={season} />)}
-          flush
-        >
-          <FrontierBoard rows={rows} />
-        </AppPanel>
-      </div>
-      {past.length > 0 && <PastSeasons seasons={past} />}
+    <div data-age="frontier" className="min-w-0">
+      <AppPanel
+        title={frontier.name}
+        icon="leaderboard"
+        painting={frontier.painting}
+        cue={season && (isGameOver(season) ? <SeasonEnded season={season} /> : <FrontierDay season={season} />)}
+        flush
+      >
+        <FrontierBoard rows={rows} />
+      </AppPanel>
     </div>
   );
 };
@@ -179,15 +146,15 @@ const FrontierPanel = ({ rows }: { rows: number }) => {
 /** An ended season and the day it ended, "Playtest · Ended 31 Oct", on the calendar. */
 const SeasonEnded = ({ season }: { season: DirectoryGame }) => <AppChip icon="calendar">{seasonEnded(season)}</AppChip>;
 
-/** Frontier's board: its podium, then every realm's row, the player's own lit (AppBoard's one rule). */
 const FrontierBoard = ({ rows }: { rows: number }) => {
+  const [aspectFilter, setAspectFilter] = useState<AspectId | null>(null);
   const { season, failure } = useSeason();
   const { data: player } = useRealmsPlayer();
   const board = useLeaderboard(season ? gameRefOf(season) : null);
   const failed = failure ?? (board.isError ? board : undefined);
   if (failed) return <ServiceFailure service="season" error={failed.error} retry={() => void failed.refetch()} />;
   if (!season || board.isPending) return <Loading />;
-  const frontier = board.data?.mode === "frontier" ? board.data : undefined;
+  const frontier = board.data;
   const entries = frontier?.entries ?? [];
   const own = findOwnEntry(entries, player);
   if (entries.length === 0)
@@ -202,10 +169,24 @@ const FrontierBoard = ({ rows }: { rows: number }) => {
         }
       />
     );
+  const shown = aspectFilter === null ? entries : entries.filter((entry) => orderAspect(entry.order) === aspectFilter);
   return (
     <div>
       {frontier && <SeasonPodium board={frontier} own={own?.address} over={isGameOver(season)} />}
-      <FrontierRows entries={entries} own={own} rows={rows} />
+      <div className="border-b border-app-line px-4 py-3">
+        <AppTabs
+          label={WORDS.season}
+          value={aspectFilter}
+          onChange={(id) => setAspectFilter(aspectFilter === id ? null : id)}
+          tabs={aspects.map(({ id, name }) => ({
+            key: id,
+            label: name,
+            lead: <AspectMark aspect={id} size={18} decorative />,
+            aspectId: id,
+          }))}
+        />
+      </div>
+      <FrontierRows entries={shown} own={own} rows={rows} />
     </div>
   );
 };
@@ -228,7 +209,7 @@ const PastSeason = ({ season }: { season: DirectoryGame }) => {
   const board = useLeaderboard(gameRefOf(season));
   const here = useLocation();
   const navigate = useNavigate();
-  const winner = board.data?.mode === "frontier" ? seasonWinner(board.data) : undefined;
+  const winner = board.data && seasonWinner(board.data);
   return (
     <AppRow
       lead={<RowThumb painting={ageOf("frontier").painting} size={10} />}

@@ -1,12 +1,20 @@
 import { dayOf } from "../utils/days";
-import { TileOccupier } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
 import { rowInGameSyncScope } from "./model-manifest";
 import { deriveGameSyncScope, scopeInputKeys, type ScopeRowReader } from "./subscription-scope";
 
 // Day 0 runs from 300 for at least three 60 s units, so t=350 is on it.
-const expedition = { dayUnitSeconds: 60, spacing: 1024, startMainAt: 300, endAt: 300 + 21 * 20 * 60, seed: 1n };
+const expedition = {
+  dayUnitSeconds: 60,
+  spacing: 1024,
+  startMainAt: 300,
+  scheduledEndAt: 300 + 21 * 20 * 60,
+  endAt: 300 + 21 * 20 * 60,
+  seed: 1n,
+};
 const rows = [
+  { model: "ArmyDay", value: { explorer_id: "101", day: "0" } },
+  { model: "ArmyDay", value: { explorer_id: "102", day: "0" } },
   { model: "PlayerEntry", value: { owner: "11", player: "3003" } },
   { model: "Structure", value: { entity_id: "1", owner: "10", base: { category: 1 }, metadata: { realm_id: 1 } } },
   { model: "Structure", value: { entity_id: "2", owner: "11", base: { category: 1 }, metadata: { realm_id: 2 } } },
@@ -32,7 +40,8 @@ describe("visited realm scope", () => {
     for (const model of ["Building", "RealmKnowledge", "ArmySlot"])
       expect(rowInGameSyncScope(model, { structure_id: "2", epoch: 0 }, scope)).toBe(true);
     expect(rowInGameSyncScope("TileOpt", { alt: false, col: 1600, row: 2700 }, scope)).toBe(false);
-    expect(rowInGameSyncScope("TileOccupancy", rows[6].value, scope)).toBe(true);
+    const visitedArmyTile = rows.find((row) => row.model === "TileOccupancy" && row.value.entity_id === "102")!;
+    expect(rowInGameSyncScope("TileOccupancy", visitedArmyTile.value, scope)).toBe(true);
     expect(rowInGameSyncScope("GameplayRejected", { actor: "11" }, scope)).toBe(false);
   });
 
@@ -99,49 +108,80 @@ it("retains the cleared site's facts by its own coordinate, then drops yesterday
     );
   const today = deriveGameSyncScope("0xa", 350, expedition, withSite);
   expect(today.expedition?.entities.has("999")).toBe(true);
-  for (const model of ["Structure", "SiteChest", "ExpeditionSite"])
-    expect(rowInGameSyncScope(model, site.value, today)).toBe(true);
+  for (const model of ["Structure", "ExpeditionSite"]) expect(rowInGameSyncScope(model, site.value, today)).toBe(true);
   const tomorrow = deriveGameSyncScope("0xa", dayOf(expedition, 350)!.end, expedition, withSite);
   expect(tomorrow.expedition?.entities.has("999")).toBe(false);
   expect(rowInGameSyncScope("ExpeditionSite", site.value, tomorrow)).toBe(false);
 });
 
-it.each([
-  [TileOccupier.Chest, "SiteChest"],
-  [TileOccupier.Shrine, "ShrineReward"],
-] as const)("includes visible site %s and its %s reward through the tile occupancy", (category, rewardModel) => {
-  const chest = {
-    model: "TileOccupancy",
-    value: {
-      entity_id: "900",
-      category: String(category),
-      is_structure: false,
-      alt: false,
-      col: 513,
-      row: 1600,
-    },
-  };
-  const withChest: ScopeRowReader = (model, spacing, keys) => [
-    ...read(model, spacing, keys),
-    ...[chest].filter(
-      (row) => row.model === model && scopeInputKeys(model, row.value, spacing).some((key) => keys.includes(key)),
-    ),
+it("drops expired armies before reading positions on the shared map", () => {
+  const nextDay = dayOf(expedition, 350)!.end;
+  const nextRows = [
+    ...rows.filter((row) => row.model !== "TileOccupancy"),
+    { model: "ExplorerTroops", value: { explorer_id: "103", owner: "1", troops: { count: "1000000000" } } },
+    { model: "ArmyDay", value: { explorer_id: "103", day: "1" } },
+    { model: "TileOccupancy", value: { entity_id: "103", category: "26", alt: false, col: 512, row: 1600 } },
   ];
-  const visible = deriveGameSyncScope("0xa", 350, expedition, withChest);
-  expect(visible.expedition?.entities.has("900")).toBe(true);
-  expect(rowInGameSyncScope(rewardModel, { entity_id: "900" }, visible)).toBe(true);
-  expect(scopeInputKeys("TileOccupancy", chest.value, 1024)).toEqual(
-    category === TileOccupier.Chest
-      ? ["TileOccupancy.region:0:1"]
-      : ["TileOccupancy.entity:900", "TileOccupancy.region:0:1"],
-  );
-  const gone = deriveGameSyncScope("0xa", 350, expedition, read);
-  expect(rowInGameSyncScope(rewardModel, { entity_id: "900" }, gone)).toBe(false);
-  expect(
-    rowInGameSyncScope(
-      rewardModel,
-      { entity_id: "900" },
-      deriveGameSyncScope(undefined, 350, expedition, withChest, "0xbbb"),
-    ),
-  ).toBe(false);
+  const readNext: ScopeRowReader = (model, spacing, keys) =>
+    nextRows.filter(
+      (row) => row.model === model && scopeInputKeys(model, row.value, spacing).some((key) => keys.includes(key)),
+    );
+  const scope = deriveGameSyncScope("0xa", nextDay, expedition, readNext);
+  expect(scope.expedition!.entities.has("103")).toBe(true);
+  expect(scope.expedition!.entities.has("101")).toBe(false);
+  expect(scope.expedition!.day).toBe(1);
+});
+
+it("includes shared Deep field armies and all held guards with their home facts", () => {
+  const extra: typeof rows = [
+    { model: "DeepSite", value: { entity_id: "200", kind: 0, day: "0" } },
+    { model: "TileOccupancy", value: { entity_id: "200", category: "46", alt: false, col: 512, row: 3584 } },
+    { model: "TileOccupancy", value: { entity_id: "301", category: "26", alt: false, col: 511, row: 3584 } },
+    { model: "DeepGuard", value: { explorer_id: "302", site_id: "200", slot: 3 } },
+    { model: "ExplorerTroops", value: { explorer_id: "301", owner: "8", troops: { count: "1000000000" } } },
+    { model: "ExplorerTroops", value: { explorer_id: "302", owner: "9", troops: { count: "1000000000" } } },
+  ];
+  const shared: ScopeRowReader = (model, spacing, keys) =>
+    [...rows, ...extra].filter(
+      (row) => row.model === model && scopeInputKeys(model, row.value, spacing).some((key) => keys.includes(key)),
+    );
+  const scope = deriveGameSyncScope("0xa", 350, expedition, shared);
+  expect(scope.expedition?.regions).toContain("0:3");
+  for (const id of ["200", "301", "302", "8", "9"]) expect(scope.expedition?.entities).toContain(id);
+  expect(rowInGameSyncScope("ExplorerTroops", { explorer_id: "302", owner: "9" }, scope)).toBe(true);
+  expect(rowInGameSyncScope("DeepArmy", { explorer_id: "302" }, scope)).toBe(true);
+  expect(rowInGameSyncScope("Structure", { entity_id: "9" }, scope)).toBe(true);
+  expect(rowInGameSyncScope("ArmySlot", { structure_id: "9", epoch: 0 }, scope)).toBe(true);
+  expect(rowInGameSyncScope("ArmySlot", { structure_id: "9", epoch: 1 }, scope)).toBe(false);
+  expect(rowInGameSyncScope("ArmySlot", { structure_id: "10", epoch: 0 }, scope)).toBe(false);
+  expect(rowInGameSyncScope("RealmKnowledge", { structure_id: "9" }, scope)).toBe(false);
+});
+
+it("includes the own Aspect's member identities and shared race heights without adding their private map regions", () => {
+  const teamRows = [
+    ...rows,
+    { model: "HomeAspect", value: { home: "1", aspect: 1 } },
+    { model: "HomeAspect", value: { home: "3", aspect: 1 } },
+    { model: "HomeAspect", value: { home: "2", aspect: 2 } },
+    { model: "HomeAspect", value: { home: "4", aspect: 2 } },
+    { model: "AspectHyperstructure", value: { aspect: 1, height: 2000 } },
+  ];
+  const teamRead: ScopeRowReader = (model, spacing, keys) =>
+    teamRows.filter(
+      (row) => row.model === model && scopeInputKeys(model, row.value, spacing).some((key) => keys.includes(key)),
+    );
+  const own = deriveGameSyncScope("0xa", 350, expedition, teamRead);
+  expect(own.expedition?.entities).toEqual(new Set(["1", "101", "3"]));
+  expect(own.expedition?.regions).toEqual(new Set(["0:0", "0:1"]));
+  expect(rowInGameSyncScope("Structure", { entity_id: "3" }, own)).toBe(true);
+  expect(rowInGameSyncScope("EntityName", { entity_id: "3" }, own)).toBe(true);
+  expect(rowInGameSyncScope("Building", { structure_id: "3" }, own)).toBe(false);
+  expect(rowInGameSyncScope("Structure", { entity_id: "4" }, own)).toBe(false);
+  const visiting = deriveGameSyncScope("0xa", 350, expedition, teamRead, "0xbbb");
+  expect(rowInGameSyncScope("Structure", { entity_id: "4" }, visiting)).toBe(true);
+  expect(visiting.expedition?.regions).toEqual(own.expedition?.regions);
+  const watching = deriveGameSyncScope(undefined, 350, expedition, teamRead, "0xbbb");
+  expect(rowInGameSyncScope("Structure", { entity_id: "4" }, watching)).toBe(true);
+  expect(rowInGameSyncScope("Structure", { entity_id: "3" }, watching)).toBe(false);
+  expect(rowInGameSyncScope("AspectHyperstructure", { aspect: 1, height: 2000 }, watching)).toBe(true);
 });

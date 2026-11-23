@@ -1,36 +1,76 @@
+import { FRIEND_FRAGMENTS, FRIENDS_BONUS_FRAGMENTS, FRIENDS_LIMIT } from "@bibliothecadao/types";
 import { profileOfIdentityUser } from "@realms-world/identity";
 import type { ShareKind, ShareChannel, ShareMoment, ShareTally } from "@realms-world/identity";
 
-import { newPublicCode } from "./campaigns";
+import { newPublicCode } from "./public-codes";
 
 /** A shared link as a friend's landing reads it. */
 export interface SharedLink {
   sharer: string;
   kind: ShareKind;
+  chainId: string | null;
   moment: number;
   name: string | null;
 }
 
-/** A join not yet activated, with the season board that decides it. */
 export interface PendingJoin {
   friend: string;
+  sharer: string;
+  kind: ShareKind;
+  chainId: string | null;
+  gameId: number | null;
+}
+
+export interface ShareGame {
   chainId: string;
   gameId: number;
 }
 
+export interface SharePayout extends ShareGame {
+  id: string;
+  realmsId: string;
+  amount: number;
+}
+
+type ShareFunnel = Omit<ShareTally, "friendsPaid" | "fragmentsEarned">;
+
+const GMAIL = new Set(["gmail.com", "googlemail.com"]);
+
+const mailboxOf = (email: string): string => {
+  const [local = "", domain = ""] = email.trim().toLowerCase().split("@");
+  const base = local.split("+")[0]!;
+  return GMAIL.has(domain) ? `${base.replaceAll(".", "")}@gmail.com` : `${base}@${domain}`;
+};
+
 /** One moment's row of the operator's report: what its links did, from made to activated. */
-export interface MomentReport extends ShareTally {
+export interface MomentReport extends ShareFunnel {
   kind: ShareKind;
-  chainId: string;
-  gameId: number;
+  chainId: string | null;
+  gameId: number | null;
   moment: number;
 }
 
 /** One sharer's row of the operator's report. */
-export interface SharerReport extends ShareTally {
+export interface SharerReport extends ShareFunnel {
   realmsId: string;
   name: string | null;
 }
+
+const INVITE: ShareKind = "aspect";
+
+const NAMED_LINK = `l."kind", l."chain_id" AS "chainId", l."game_id" AS "gameId", l."moment", u."id", u."name", u."image"`;
+type NamedLinkRow = ShareMoment & { id: string; name: string; image: string | null };
+
+const namedLink = (row: NamedLinkRow | null) =>
+  row
+    ? {
+        kind: row.kind,
+        chainId: row.chainId,
+        gameId: row.gameId,
+        moment: row.moment,
+        name: profileOfIdentityUser(row).name,
+      }
+    : null;
 
 /** A new code takes another try only when it collides with another link's; eight letters make that rare. */
 const CODE_ATTEMPTS = 4;
@@ -66,7 +106,7 @@ export function createShareStore(db: D1Database) {
     db
       .prepare(
         `SELECT "code" FROM "share_links"
-         WHERE "sharer" = ? AND "kind" = ? AND "chain_id" = ? AND "game_id" = ? AND "moment" = ?`,
+         WHERE "sharer" = ? AND "kind" = ? AND "chain_id" IS ? AND "game_id" IS ? AND "moment" = ?`,
       )
       .bind(sharer, kind, chainId, gameId, moment)
       .first<{ code: string }>();
@@ -105,14 +145,54 @@ export function createShareStore(db: D1Database) {
   const sharedLink = (code: string) =>
     db
       .prepare(
-        `SELECT l."sharer", l."kind", l."moment", u."id", u."name", u."image" FROM "share_links" l
+        `SELECT l."sharer", l."kind", l."chain_id" AS "chainId", l."moment", u."id", u."name", u."image" FROM "share_links" l
          JOIN "user" u ON u."realmsId" = l."sharer" WHERE l."code" = ?`,
       )
       .bind(code)
-      .first<{ sharer: string; kind: ShareKind; moment: number; id: string; name: string; image: string | null }>()
+      .first<{
+        sharer: string;
+        kind: ShareKind;
+        chainId: string | null;
+        moment: number;
+        id: string;
+        name: string;
+        image: string | null;
+      }>()
       .then((row): SharedLink | null =>
-        row ? { sharer: row.sharer, kind: row.kind, moment: row.moment, name: profileOfIdentityUser(row).name } : null,
+        row
+          ? {
+              sharer: row.sharer,
+              kind: row.kind,
+              chainId: row.chainId,
+              moment: row.moment,
+              name: profileOfIdentityUser(row).name,
+            }
+          : null,
       );
+
+  /** The link an account came by, with its sharer's public name; null for an account no link brought. */
+  const joinedLink = (friend: string) =>
+    db
+      .prepare(
+        `SELECT ${NAMED_LINK} FROM "share_joins" j JOIN "share_links" l ON l."code" = j."code"
+         JOIN "user" u ON u."realmsId" = l."sharer" WHERE j."friend" = ?`,
+      )
+      .bind(friend)
+      .first<NamedLinkRow>()
+      .then(namedLink);
+
+  const openedInvite = (account: string) =>
+    db
+      .prepare(
+        `SELECT ${NAMED_LINK} FROM "share_visits" v JOIN "share_links" l ON l."code" = v."code"
+         JOIN "account_browsers" b ON b."browser" = v."browser"
+         JOIN "user" u ON u."realmsId" = l."sharer"
+         WHERE b."realmsId" = ?1 AND l."sharer" <> ?1 AND l."kind" = ?2
+         ORDER BY julianday(v."at") DESC LIMIT 1`,
+      )
+      .bind(account, INVITE)
+      .first<NamedLinkRow>()
+      .then(namedLink);
 
   /** The browser's first visit to the link, with the channel it came through; a later one keeps the first. */
   const recordVisit = (code: string, browser: string, via: ShareChannel | null) =>
@@ -144,18 +224,70 @@ export function createShareStore(db: D1Database) {
       )
       .run();
 
-  /** Joins not yet activated, every sharer's or one sharer's, with the season board of the link that brought each. */
   const pendingJoins = async (sharer?: string): Promise<PendingJoin[]> =>
     (
       await db
         .prepare(
-          `SELECT j."friend", l."chain_id" AS "chainId", l."game_id" AS "gameId"
+          `SELECT j."friend", l."sharer", l."kind", l."chain_id" AS "chainId", l."game_id" AS "gameId"
            FROM "share_joins" j JOIN "share_links" l ON l."code" = j."code"
-           WHERE j."activated_at" IS NULL AND (?1 IS NULL OR l."sharer" = ?1)`,
+           WHERE j."activated_at" IS NULL AND (?1 IS NULL OR l."sharer" = ?1)
+             AND NOT EXISTS (SELECT 1 FROM "account_deletions" d WHERE d."realms_id" = l."sharer")`,
         )
         .bind(sharer ?? null)
         .all<PendingJoin>()
     ).results;
+
+  const recordFriendPayout = async ({ friend, sharer }: PendingJoin, game: ShareGame, now: number) => {
+    if (!(await isOwnMailbox(sharer, friend, game))) return;
+    const friendRow = `friend:${game.chainId}:${game.gameId}:${friend}`;
+    const bonusRow = `friends:${game.chainId}:${game.gameId}:${sharer}`;
+    const friendsPaid = `(SELECT COUNT(*) FROM "share_payouts"
+      WHERE "sharer" = ?2 AND "chain_id" = ?3 AND "game_id" = ?4 AND "friend" IS NOT NULL)`;
+    await db.batch([
+      db
+        .prepare(
+          `INSERT OR IGNORE INTO "share_payouts" ("id", "sharer", "friend", "chain_id", "game_id", "amount", "created_at")
+           SELECT ?1, ?2, ?5, ?3, ?4, ?6, ?7 WHERE ${friendsPaid} < ?8`,
+        )
+        .bind(friendRow, sharer, game.chainId, game.gameId, friend, FRIEND_FRAGMENTS, now, FRIENDS_LIMIT),
+      db
+        .prepare(
+          `INSERT OR IGNORE INTO "share_payouts" ("id", "sharer", "friend", "chain_id", "game_id", "amount", "created_at")
+           SELECT ?1, ?2, NULL, ?3, ?4, ?5, ?6 WHERE ${friendsPaid} >= ?7`,
+        )
+        .bind(bonusRow, sharer, game.chainId, game.gameId, FRIENDS_BONUS_FRAGMENTS, now, FRIENDS_LIMIT),
+    ]);
+  };
+
+  const isOwnMailbox = async (sharer: string, friend: string, game: ShareGame) => {
+    const others = await db
+      .prepare(
+        `SELECT u."email" FROM "user" u WHERE u."realmsId" = ?1
+         UNION ALL SELECT u."email" FROM "share_payouts" p JOIN "user" u ON u."realmsId" = p."friend"
+         WHERE p."sharer" = ?1 AND p."chain_id" = ?2 AND p."game_id" = ?3 AND p."friend" <> ?4`,
+      )
+      .bind(sharer, game.chainId, game.gameId, friend)
+      .all<{ email: string }>();
+    const own = await db
+      .prepare('SELECT "email" FROM "user" WHERE "realmsId" = ?')
+      .bind(friend)
+      .first<{ email: string }>();
+    return own !== null && !others.results.some(({ email }) => mailboxOf(email) === mailboxOf(own.email));
+  };
+
+  const unpaidPayouts = async (games: readonly ShareGame[]): Promise<SharePayout[]> => {
+    const open = new Set(games.map((game) => `${game.chainId}:${game.gameId}`));
+    const unpaid = await db
+      .prepare(
+        `SELECT "id", "sharer" AS "realmsId", "chain_id" AS "chainId", "game_id" AS "gameId", "amount"
+         FROM "share_payouts" WHERE "paid_at" IS NULL ORDER BY "created_at", "id"`,
+      )
+      .all<SharePayout>();
+    return unpaid.results.filter((payout) => open.has(`${payout.chainId}:${payout.gameId}`));
+  };
+
+  const markPaid = (id: string, now: number) =>
+    db.prepare('UPDATE "share_payouts" SET "paid_at" = ? WHERE "id" = ? AND "paid_at" IS NULL').bind(now, id).run();
 
   const markActivated = (friends: readonly string[], now: number) =>
     friends.length === 0
@@ -170,10 +302,24 @@ export function createShareStore(db: D1Database) {
 
   /** What one account's links brought, every kind and moment together: one row, all zeros before its first link. */
   const tallyOf = async (sharer: string): Promise<ShareTally> => {
-    const tally = await db.prepare(tallySelect("", `WHERE l."sharer" = ?`)).bind(sharer).first<ShareTally>();
+    const tally = await db.prepare(tallySelect("", `WHERE l."sharer" = ?`)).bind(sharer).first<ShareFunnel>();
     // An aggregate without GROUP BY always answers one row.
     if (!tally) throw new Error("share_tally_unanswered");
-    return tally;
+    return { ...tally, ...(await paidTo(sharer)) };
+  };
+
+  const paidTo = async (sharer: string) => {
+    const paid = await db
+      .prepare(
+        `SELECT COUNT("friend") AS "friendsPaid", COALESCE(SUM("amount"), 0) AS "fragmentsEarned"
+         FROM "share_payouts" WHERE "sharer" = ?1 AND "paid_at" IS NOT NULL
+           AND ("chain_id", "game_id") = (SELECT "chain_id", "game_id" FROM "share_payouts"
+                                          WHERE "sharer" = ?1 AND "paid_at" IS NOT NULL
+                                          ORDER BY "paid_at" DESC, "game_id" DESC LIMIT 1)`,
+      )
+      .bind(sharer)
+      .first<{ friendsPaid: number; fragmentsEarned: number }>();
+    return paid ?? { friendsPaid: 0, fragmentsEarned: 0 };
   };
 
   /** Every moment's funnel, newest moment first. */
@@ -224,9 +370,14 @@ export function createShareStore(db: D1Database) {
     linkFor,
     markPosted,
     sharedLink,
+    joinedLink,
+    openedInvite,
     recordVisit,
     settleJoins,
     pendingJoins,
+    recordFriendPayout,
+    unpaidPayouts,
+    markPaid,
     markActivated,
     tallyOf,
     momentReport,

@@ -1,4 +1,4 @@
-import { AGE_LOCKUP, REALMS_MARK } from "@/ui/design-system/icon-meaning";
+import { REALMS_MARK } from "@/ui/design-system/icon-meaning";
 import "@/ui/design-system/kit/app-sheet.css";
 
 import {
@@ -7,7 +7,6 @@ import {
   AppButton,
   AppChip,
   AppChoice,
-  AppTicket,
   AppCode,
   AppDialog,
   AppEmpty,
@@ -32,7 +31,7 @@ import { APP_SHEET, APP_TYPE, HUD_MODES, TYPE } from "@/tokens";
 import { type ReactNode, useState } from "react";
 import { Link } from "react-router-dom";
 
-import { JOIN_WORDS, REWARD_WORDS } from "@/ui/design-system/kit/words";
+import { REWARD_WORDS } from "@/ui/design-system/kit/words";
 
 import { Element } from "../sheet-element";
 import { Icon } from "@/ui/design-system/icon";
@@ -79,7 +78,6 @@ export const AppSheetLab = () => (
       <NoticeSection />
       <SettingSection />
       <ChoiceSection />
-      <TicketSection />
       <PortraitSection />
       <PageHeadSection />
       <EmptySection />
@@ -647,28 +645,11 @@ const ChoiceSection = () => (
     }
     today={
       <p className="text-sm text-white/70">
-        The lobby's Tile: rounded-well border-2, gold when on, a check badge, drawn in entry-panel.tsx alone.
+        The Tile: rounded-well border-2, gold when on, a check badge, drawn in payout-wallet-panel.tsx.
       </p>
     }
   />
 );
-
-const TicketSection = () => {
-  const art = <img src={AGE_LOCKUP.frontier} alt="Frontier" className="h-24 w-auto" />;
-  return (
-    <Element
-      name="Ticket"
-      rule="A campaign's flyer in small: its art, its line, its stub. Sealed, then turned over once; gold under rays."
-      sheet={
-        <div className="flex flex-wrap items-start gap-6 p-6">
-          <AppTicket art={art} line={JOIN_WORDS.sealed} stub={JOIN_WORDS.stub} />
-          <AppTicket art={art} face="opened" line={JOIN_WORDS.realm} stub={JOIN_WORDS.stub} />
-          <AppTicket art={art} face="golden" line={JOIN_WORDS.goldenLine} stub={JOIN_WORDS.goldenStub} />
-        </div>
-      }
-    />
-  );
-};
 
 const PortraitSection = () => (
   <Element
@@ -783,18 +764,8 @@ const ChestSection = () => (
  */
 const APP_PAGES = [
   { name: "Play", direction: "B · Ages", path: "/lab/app/home" },
-  { name: "Blitz lobby", direction: "C · Ledger", path: "/lab/app/entry-choose/blitz/slot-blitz-1630" },
   { name: "Season", direction: "A · Launcher", path: "/lab/app/season-running/season" },
-  {
-    name: "Results, the chest sealed",
-    direction: "C · Ledger",
-    path: "/lab/app/reward-sealed/results/0x5245414c4d53-7",
-  },
-  {
-    name: "Results, the chest opened",
-    direction: "C · Ledger",
-    path: "/lab/app/reward-lords/results/0x5245414c4d53-7",
-  },
+  { name: "Results", direction: "C · Ledger", path: "/lab/app/season-over/results/0x5245414c4d53-3" },
 ] as const;
 
 const PagesSection = () => (

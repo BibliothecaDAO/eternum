@@ -29,6 +29,7 @@ vi.mock("@/hooks/helpers/use-block-timestamp", () => ({
   useNowSeconds: () => 350,
 }));
 
+import { wire } from "@/lab/game/lab-chain";
 import { GameProvider } from "@/hooks/context/game-context";
 import { inFlight } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -36,9 +37,15 @@ import { toast } from "@/ui/features/event-feed/notify";
 import { openArmyDeployment } from "@/ui/features/military/utils/open-army-deployment";
 import { disposeGameSyncSession, installActiveGameClient } from "@/sync/active-game-client";
 import { DEPLOY_ON_MAP_EVENT, type DeployOnMap, readDeployOnMap } from "@/three/scenes/worldmap-deploy-request";
-import { type GameClient, readExpeditionRules, setBlockTimestampSource, spawnRing } from "@bibliothecadao/eternum";
+import {
+  type GameClient,
+  getTroopResourceId,
+  readExpeditionRules,
+  setBlockTimestampSource,
+  spawnRing,
+} from "@bibliothecadao/eternum";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
-import { Direction, RESOURCE_PRECISION, TroopTier, TroopType } from "@bibliothecadao/types";
+import { Direction, RESOURCE_PRECISION, TROOP_TYPES, TroopTier, TroopType } from "@bibliothecadao/types";
 import { frontierDay } from "./deploy-fixture";
 import { DeploySheet } from "./deploy-sheet";
 
@@ -96,8 +103,9 @@ const slotButton = (host: HTMLElement, name: string) =>
 const startReading = (host: HTMLElement) => {
   const chosen = host.querySelector('[aria-label="Army slots"] [aria-pressed="true"]');
   const meter = chosen?.querySelector<HTMLElement>('[role="meter"][aria-label="stamina"]');
+  const sub = host.querySelector(".deploy-sheet__stamina")?.textContent ?? null;
   return {
-    number: meter?.parentElement?.parentElement?.lastElementChild?.textContent ?? null,
+    number: sub,
     meter: meter ? [Number(meter.getAttribute("aria-valuenow")), Number(meter.getAttribute("aria-valuemax"))] : null,
   };
 };
@@ -163,23 +171,21 @@ describe("the Deploy sheet", () => {
     } as unknown as GameClient);
     const { host, root } = render(store, row);
     try {
-      // Army 1 is out, so its slot is not offered; Deploy opened from the map named no slot, so the first open one is
-      // chosen and Deploy stands (owner's pick A, 30 October; before, nothing was chosen and Deploy never showed).
       expect(slotsOffered(host)).toEqual([
         ["Army 2", "true"],
         ["Army 3", "false"],
       ]);
-      expect(slotButton(host, "Army 2").textContent).toContain("7/150");
-      expect(slotButton(host, "Army 3").textContent).toContain("150/150");
+      expect(host.querySelector(".deploy-sheet__sub")?.textContent).toContain("Slot 2 of 3");
+      expect(host.querySelector(".deploy-sheet__sub")?.textContent).toContain("7/150");
       expect(deployButton(host)).toBeDefined();
-      // One stamina bar a slot: no second bar for the start apart from the slots.
       expect(host.querySelectorAll('[role="meter"][aria-label="stamina"]')).toHaveLength(2);
       act(() => slotButton(host, "Army 3").click());
       expect(slotsOffered(host)).toEqual([
         ["Army 2", "false"],
         ["Army 3", "true"],
       ]);
-      press(host, "Max");
+      expect(host.querySelector(".deploy-sheet__sub")?.textContent).toContain("Slot 3 of 3");
+      expect(host.querySelector(".deploy-sheet__sub")?.textContent).toContain("150/150");
       await act(async () => deployButton(host)!.click());
       expect(createExplorerArmy).toHaveBeenCalledWith(expect.objectContaining({ slot: 2 }));
     } finally {
@@ -246,9 +252,8 @@ describe("the Deploy sheet", () => {
       openArmyDeployment({ structureId: 7, isExplorer: true, direction: Direction.WEST });
       const { host, root } = render(store, row);
       try {
-        expect(slotsOffered(host)).toEqual([["Army 3", "true"]]);
+        expect(host.querySelector(".deploy-sheet__sub")?.textContent).toContain("Slot 3 of 3");
         expect(deployButton(host)).toBeDefined();
-        press(host, "Max");
         await act(async () => deployButton(host)!.click());
         expect(createExplorerArmy).toHaveBeenCalledWith(
           expect.objectContaining({ slot: 2, spawnDirection: Direction.WEST }),
@@ -309,7 +314,7 @@ describe("the Deploy sheet", () => {
     }
   });
 
-  it("opens at no troops, with Max and a slider for the count, and deploys the count typed", async () => {
+  it("opens at full stack, expands Adjust size for custom counts, and deploys the count typed", async () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     const { store, row } = frontierDay();
     const createExplorerArmy = vi.fn(() => Promise.resolve({ transaction_hash: "0x1" }));
@@ -323,30 +328,22 @@ describe("the Deploy sheet", () => {
     const onClose = vi.fn();
     const { host, root } = render(store, row, onClose);
     click(host.querySelector('button[aria-label="Army 2"]')!);
-    // 420 knights at home and 1,000 wheat at 2 a troop: all 420 can go, and nothing but the price names the wheat.
-    expect(outOf(host)).toBe("of 420");
     expect(host.querySelector(".ui-notice")).toBeNull();
-    // No troops yet, so nothing to deploy; with 420 at most, +500 would only be Max.
-    expect(countField(host).value).toBe("0");
-    expect(deployButton(host)?.disabled).toBe(true);
-    press(host, "Max");
-    // At the most the troops at home stop it, not the wheat: still no line.
+    expect(deployButton(host)?.disabled).toBe(false);
+    expect(host.querySelector(".deploy-troop-card")?.textContent).toContain("420");
+    press(host, "Adjust size");
+    expect(outOf(host)).toBe("of 420");
     expect([countField(host).value, host.querySelector(".ui-notice")]).toEqual(["420", null]);
     typeCount(host, 120);
-    // Deploy in the foot beside its price, and nothing else.
     expect(deployButton(host)?.textContent).toBe("Deploy");
     expect(foot(host)).toBe("240 WheatDeploy");
     expect(host.textContent!.replace(foot(host), "")).not.toMatch(/wheat/i);
-    // The window shows the decision only: the count's slider over the same range, no stamina, attribute marks or day
-    // clock.
     const slider = host.querySelector<HTMLInputElement>("input[type=range]");
     expect([slider?.getAttribute("aria-label"), slider?.max, slider?.value]).toEqual([
       "Troops: how many go",
       "420",
       "120",
     ]);
-    // The day's clock is the top bar's; the stamina the army starts on is the sheet's bar and its number, with no line
-    // explaining either (the owner: "good UI/UX doesnt need subtext").
     expect(host.textContent).not.toMatch(/Day ends/i);
     expect(startReading(host)).toEqual({ number: "150/150", meter: [150, 150] });
     expect(host.textContent).not.toMatch(/starts|its slot|Leaves|Steps out/);
@@ -380,17 +377,14 @@ describe("the Deploy sheet", () => {
     const refused = vi.spyOn(toast, "error").mockImplementation(() => "");
     const onClose = vi.fn();
     const { host, root } = render(store, row, onClose);
-    press(host, "Max");
     click(host.querySelector('button[aria-label="Army 2"]')!);
     await act(async () => {
       deployButton(host)!.click();
       deployButton(host)!.click();
     });
     expect(createExplorerArmy).toHaveBeenCalledTimes(1);
-    // The sheet closed as the command left; the wait is the dock slot's from here.
     expect(onClose).toHaveBeenCalledOnce();
     expect(inFlight("deploy", 7)).toBe(1);
-    // Opened again before the outcome, it cannot send a second army.
     expect([...host.querySelectorAll("button")].find((button) => button.textContent === "Deploying…")?.disabled).toBe(
       true,
     );
@@ -402,31 +396,28 @@ describe("the Deploy sheet", () => {
     host.remove();
   });
 
-  it("caps the count where the wheat runs out and names the wheat only at that cap, never at 0 or below it", () => {
+  it("caps the count where the wheat runs out and names the wheat only at that cap, never below it", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     const { store, row } = frontierDay();
     store.applyFacts([
       {
         model: "ResourceBalance",
         key: "0xc",
-        value: { game_id: 1, entity_id: 7, resource_type: 35, balance: String(100n * 1_000_000_000n) },
+        value: { game_id: 1, entity_id: 7, resource_type: 35, balance: String(108n * 1_000_000_000n) },
       },
     ] as never);
     const { host, root } = render(store, row);
     click(host.querySelector('button[aria-label="Army 2"]')!);
-    // 100 wheat deploys 50 of the 420 troops: the count reads out of 50, not "that fit", since the castle has room.
-    // At no troops nothing names the wheat (owner, 1 November: "not at 0 its confusing").
-    expect([outOf(host), countField(host).value, wheatLine(host)]).toEqual(["of 50", "0", null]);
-    // Below the cap the price is all: 30 troops for 60 wheat.
+    expect(wheatLine(host)).toEqual({ line: "Wheat for only 50 of 420 troops", press: "Get Wheat" });
+    press(host, "Adjust size");
+    expect([outOf(host), countField(host).value]).toEqual(["of 54", "50"]);
     typeCount(host, 30);
     expect([wheatLine(host), foot(host)]).toEqual([null, "60 WheatDeploy"]);
-    // Past it, the count stops at 50 and one red line says the wheat is why.
     typeCount(host, 300);
-    expect(countField(host).value).toBe("50");
-    expect(wheatLine(host)).toEqual({ line: "Wheat for only 50 of 420 troops", press: "Get Wheat" });
-    expect(foot(host)).toBe("100 WheatDeploy");
+    expect(countField(host).value).toBe("54");
+    expect(wheatLine(host)).toEqual({ line: "Wheat for only 54 of 420 troops", press: "Get Wheat" });
+    expect(foot(host)).toBe("108 WheatDeploy");
     expect(deployButton(host)?.disabled).toBe(false);
-    // One under the cap, the line goes; Max brings it back.
     typeCount(host, 49);
     expect(wheatLine(host)).toBeNull();
     press(host, "Max");
@@ -436,18 +427,16 @@ describe("the Deploy sheet", () => {
   });
 
   it.each([
-    ["seven Wheat deploys four troops at 1.75 each", 7, "of 4", "7 WheatDeploy"],
-    ["three and a half Wheat deploys two", 3.5, "of 2", null],
-  ])("prices Max on the whole batch with Rations: %s", (_case, wheat, most, price) => {
+    ["nine Wheat deploys four troops", 9, "of 4", "8 WheatDeploy"],
+    ["four and a half Wheat deploys two", 4.5, "of 2", null],
+  ])("prices Max on the whole batch at the recipe cost: %s", (_case, wheat, most, price) => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     const { store, row } = frontierDay();
-    const board = store.require("BoardRules", { game_id: 1 });
     store.applyFacts([
-      { model: "BoardRules", key: "0xa", value: { ...board, ration_step: "250000000" } },
       {
         model: "RealmKnowledge",
         key: "0xd",
-        value: { game_id: 1, structure_id: 7, learned: String((1n << 14n) | (1n << 17n)) },
+        value: { game_id: 1, structure_id: 7, learned: String(2n << 14n) },
       },
       {
         model: "ResourceBalance",
@@ -457,7 +446,7 @@ describe("the Deploy sheet", () => {
     ] as never);
     const { host, root } = render(store, row);
     click(host.querySelector('button[aria-label="Army 2"]')!);
-    press(host, "Max");
+    press(host, "Adjust size");
     expect(outOf(host)).toBe(most);
     if (price) expect(foot(host)).toBe(price);
     act(() => root.unmount());
@@ -467,17 +456,18 @@ describe("the Deploy sheet", () => {
   it("says at Max that the wheat caps the count, offers Get Wheat on the line, and keeps Max at the most as the farms fill", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     const { store, row } = frontierDay();
-    // dev-playtest-2 (10-31): 16 wheat at 2 a troop holds 420 knights at home to 8; farms make 720 wheat an hour.
     store.applyFacts([
       {
         model: "ResourceBalance",
         key: "0xc",
-        value: { game_id: 1, entity_id: 7, resource_type: 35, balance: String(16n * BigInt(RESOURCE_PRECISION)) },
+        value: { game_id: 1, entity_id: 7, resource_type: 35, balance: String(18n * BigInt(RESOURCE_PRECISION)) },
       },
       {
         model: "ResourceProduction",
         key: "0x835",
         value: {
+          remainder: 0,
+
           game_id: 1,
           entity_id: 7,
           resource_type: 35,
@@ -491,24 +481,20 @@ describe("the Deploy sheet", () => {
     const onClose = vi.fn();
     const { host, root, draw } = render(store, row, onClose);
     click(host.querySelector('button[aria-label="Army 2"]')!);
-    expect([outOf(host), wheatLine(host)]).toEqual(["of 8", null]);
-    press(host, "Max");
-    expect([countField(host).value, outOf(host), foot(host)]).toEqual(["8", "of 8", "16 WheatDeploy"]);
+    press(host, "Adjust size");
+    expect([countField(host).value, outOf(host), foot(host)]).toEqual(["8", "of 9", "16 WheatDeploy"]);
     expect(wheatLine(host)).toEqual({ line: "Wheat for only 8 of 420 troops", press: "Get Wheat" });
 
-    // Ten seconds of farming: 2 more wheat, one more troop. Max meant the most, so the count moves with the label.
     clock.tick = 13;
     draw();
-    expect([countField(host).value, outOf(host), foot(host)]).toEqual(["9", "of 9", "18 WheatDeploy"]);
+    expect([countField(host).value, outOf(host), foot(host)]).toEqual(["9", "of 10", "18 WheatDeploy"]);
     expect(wheatLine(host)?.line).toBe("Wheat for only 9 of 420 troops");
 
-    // A count set below the most stays where it was set, and names no wheat.
     typeCount(host, 5);
     clock.tick = 23;
     draw();
-    expect([countField(host).value, outOf(host), wheatLine(host)]).toEqual(["5", "of 10", null]);
+    expect([countField(host).value, outOf(host), wheatLine(host)]).toEqual(["5", "of 11", null]);
 
-    // No Build anywhere: Get Wheat on the line, back at Max, takes the player to the realm, where farms are built.
     expect([...host.querySelectorAll("button")].some((button) => button.textContent === "Build")).toBe(false);
     press(host, "Max");
     act(() => host.querySelector<HTMLButtonElement>(".ui-notice__fix button")!.click());
@@ -529,8 +515,6 @@ describe("the Deploy sheet", () => {
     ] as never);
     const { host, root } = render(store, row);
     click(host.querySelector('button[aria-label="Army 2"]')!);
-    // The most is 0 and the wheat is why: this 0 is the cap, so the line says so (owner, 1 November).
-    expect(outOf(host)).toBe("of 0");
     expect(wheatLine(host)).toEqual({ line: "Needs 2 Wheat, have 1", press: "Get Wheat" });
     expect(deployButton(host)?.disabled).toBe(true);
     act(() => root.unmount());
@@ -573,8 +557,8 @@ describe("the Deploy sheet", () => {
           value: { game_id: 1, structure_id: 7, learned: String(1n << 27n) },
         },
       ],
-      number: "170/170",
-      meter: [170, 170],
+      number: "180/180",
+      meter: [180, 180],
     },
   ])("shows the stamina bar the new army starts on, its slot's: $case", ({ facts, number, meter }) => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -620,19 +604,27 @@ describe("the Deploy sheet", () => {
     host.remove();
   });
 
-  it("with no troops at home while the Barracks make them, counts down to the next and offers Deploy once it is in", () => {
+  it.each(TROOP_TYPES)("counts down to the next trained troop and offers Deploy when it arrives (%s)", (type) => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     const { store, row } = frontierDay();
-    // Barracks training 360 knights an hour without end (the unlimited-output sentinel), from none at tick 3.
+    const resource = getTroopResourceId(type, TroopTier.T1);
+    const recipe = store.require("ProductionRecipe", { game_id: 1, resource_type: 26 });
     store.applyFacts([
       noTroops,
+      {
+        model: "ProductionRecipe",
+        key: store.wireKeyOf("ProductionRecipe", { game_id: 1, resource_type: resource }) ?? "0xb29",
+        value: wire({ ...recipe, resource_type: resource }),
+      },
       {
         model: "ResourceProduction",
         key: "0x826",
         value: {
+          remainder: 0,
+
           game_id: 1,
           entity_id: 7,
-          resource_type: 26,
+          resource_type: resource,
           building_count: 1,
           production_rate: String((360n * BigInt(RESOURCE_PRECISION)) / 3_600n),
           output_amount_left: String((1n << 128n) - 1n),
@@ -646,12 +638,10 @@ describe("the Deploy sheet", () => {
     const build = () => [...host.querySelectorAll("button")].some((button) => button.textContent === "Build");
     expect([notice(), build(), deployButton(host)]).toEqual(["No troops at home · in 10s", false, undefined]);
 
-    // Half a knight made: the wait is what is left of it.
     clock.tick = 8;
     draw();
     expect([notice(), build(), deployButton(host)]).toEqual(["No troops at home · in 5s", false, undefined]);
 
-    // The knight is in, as promised: the notice goes and Deploy is offered.
     clock.tick = 13;
     draw();
     expect(notice()).toBeNull();
@@ -680,10 +670,8 @@ describe("the Deploy sheet", () => {
     expect(host.textContent).not.toMatch(/tile/i);
     // The taken tile is passed over: the map marks the first open one.
     expect(map.asked.at(-1)).toEqual({ structureId: 7, direction: ringDirection(store, row, 1) });
-    // A tap on another lit tile orders again (openArmyDeployment), and the map marks that one.
     act(() => openArmyDeployment({ structureId: 7, isExplorer: true, direction: Direction.WEST }));
     expect(map.asked.at(-1)).toEqual({ structureId: 7, direction: Direction.WEST });
-    press(host, "Max");
     await act(async () => deployButton(host)!.click());
     expect(createExplorerArmy).toHaveBeenCalledWith(expect.objectContaining({ spawnDirection: Direction.WEST }));
 

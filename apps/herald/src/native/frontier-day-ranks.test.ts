@@ -2,13 +2,14 @@ import { expect, it, vi } from "vitest";
 import { dayOf } from "../../../../packages/core/src/utils/days";
 import { closingFrontierDays, replayWithFrontierDays } from "./frontier-day-ranks";
 import type { FoldRow, RpcBlockWithReceipts } from "../types";
-import { receipt, rowEvent, rulesEvent, seedDerivedRows, setup, structureValue } from "./fixtures";
+import { gameRegistryEvent, receipt, rowEvent, rulesEvent, seedDerivedRows, setup, structureValue } from "./fixtures";
+import { gameRegistryRow } from "../../../../packages/core/src/test-support/game-registry";
 import { WorldFold } from "../world-fold";
 import { CairoCustomEnum, CairoOption, CairoOptionVariant } from "starknet";
 import { encodeMembers } from "./serde";
 import { manifest, schema } from "./fixtures";
 
-function openedChest(owner: number, amount: number) {
+function ruinPayout(owner: number, siteId: number) {
   const layout = schema.games.events.find((event) => event.name === "StoryEvent")!;
   const values = {
     version: 2,
@@ -18,7 +19,14 @@ function openedChest(owner: number, amount: number) {
     tx_hash: 85,
     timestamp: start,
     story: new CairoCustomEnum({
-      RewardChestOpened: { explorer_id: 7, structure_id: 1, coord: { alt: false, x: 40, y: 12 }, amount },
+      SitePayout: {
+        xp: 85,
+        structure_id: 1,
+        explorer_id: 7,
+        site_id: siteId,
+        category: 10,
+        reward: new CairoOption(CairoOptionVariant.None),
+      },
     }),
   };
   return {
@@ -40,16 +48,20 @@ function openedChest(owner: number, amount: number) {
 }
 
 const start = 1800000000;
-const calendar = { seed: 42n, startMainAt: start, endAt: start + 21 * 20 * 3600, dayUnitSeconds: 3600 };
-const game = {
-  name: "0x46526f6e74696572",
-  game_id: 1,
-  preset_id: 5,
+const calendar = {
   seed: 42n,
-  start_main_at: start,
-  end_at: start + 1000000,
-  settled: false,
+  startMainAt: start,
+  scheduledEndAt: start + 21 * 20 * 3600,
+  endAt: start + 21 * 20 * 3600,
+  dayUnitSeconds: 3600,
 };
+const game = gameRegistryRow({
+  name: "0x46526f6e74696572",
+  seed: "42",
+  start_main_at: String(start),
+  scheduled_end_at: String(start + 1000000),
+  end_at: String(start + 1000000),
+});
 const rows = {
   GameRegistry: [{ key: "1", value: game }],
   SliceRules: [{ key: "1", value: { game_id: 1, day_unit_seconds: 3600 } }],
@@ -94,23 +106,22 @@ it("closes every elapsed day across empty blocks, without inventing days past th
   const second = dayOf(calendar, first.end)!;
   const third = dayOf(calendar, second.end)!;
   expect(closingFrontierDays(read, start - 1, third.end, 20, []).map((day) => day.day_index)).toEqual([0, 1, 2]);
-  const end = game.end_at;
-  game.end_at = second.end;
+  rows.GameRegistry = [{ key: "1", value: { ...game, end_at: String(second.end) } }];
   expect(closingFrontierDays(read, start - 1, third.end, 20, []).map((day) => day.day_index)).toEqual([0, 1]);
-  game.end_at = end;
+  rows.GameRegistry = [{ key: "1", value: game }];
+});
+
+it("closes no ranked day for a Season 1 game, which races Aspects by height", () => {
+  const day = dayOf(calendar, start)!;
+  const withRace = (model: string) =>
+    model === "RaceRules" ? [{ key: "1", value: { game_id: 1, stage_height: 100 } }] : read(model);
+  expect(closingFrontierDays(withRace, day.end - 1, day.end, 20, [])).toEqual([]);
+  expect(closingFrontierDays(read, day.end - 1, day.end, 20, [])).toHaveLength(1);
 });
 
 it("replays a checkpoint before closure, excluding changes at the boundary and rejecting partial replay", async () => {
   const { fold, native, decoder } = setup();
-  const gameEvent = rowEvent("GameRegistry", ["1"], {
-    ...game,
-    name: 1,
-    creator: 1,
-    ready: true,
-    dev_mode_on: false,
-    start_settling_at: start,
-    end_grace_seconds: 0,
-  });
+  const gameEvent = gameRegistryEvent({ ...game, name: "1", start_settling_at: String(start) });
   native.applyReceipt(fold, receipt([gameEvent]), 10, 0);
   seedDerivedRows(fold, decoder, [rulesEvent("1", "3600")]);
   native.applyReceipt(
@@ -134,7 +145,7 @@ it("replays a checkpoint before closure, excluding changes at the boundary and r
       {
         block_number: 11,
         timestamp: end - 1,
-        transactions: [{ transaction: { type: "INVOKE" }, receipt: receipt([openedChest(1, 50), openedChest(1, 0)]) }],
+        transactions: [{ transaction: { type: "INVOKE" }, receipt: receipt([ruinPayout(1, 20), ruinPayout(1, 21)]) }],
       },
     ],
     [
@@ -200,7 +211,7 @@ it("replays a checkpoint before closure, excluding changes at the boundary and r
     "disconnected",
   );
   expect(fold.checkpoint()).toEqual(before);
-  blocks.get(11)!.transactions[0]!.receipt = receipt([openedChest(999, 50)]);
+  blocks.get(11)!.transactions[0]!.receipt = receipt([ruinPayout(999, 20)]);
   await expect(replayWithFrontierDays(native, history, { ...input, fold })).rejects.toThrow("settled realm");
   expect(fold.checkpoint()).toEqual(before);
 });
@@ -234,7 +245,8 @@ it("never records closing ranks for a hidden check game, even without its rules"
 it.each([81, 84, 85])("records an %ih season's final ranks once, with no snapshot for an absorbed stub", (hours) => {
   const end = start + hours * 3600;
   const readPartial = (model: string): FoldRow[] => {
-    if (model === "GameRegistry") return [{ key: "1", value: { ...game, seed: 0x5eedn, end_at: end } }];
+    if (model === "GameRegistry")
+      return [{ key: "1", value: { ...game, seed: 0x5eedn, end_at: end, scheduled_end_at: end } }];
     if (model === "SliceRules") return [{ key: "1", value: { game_id: 1, day_unit_seconds: 7200 } }];
     return read(model);
   };

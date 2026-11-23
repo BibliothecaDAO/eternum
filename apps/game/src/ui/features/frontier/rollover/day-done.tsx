@@ -1,25 +1,26 @@
 import { useGame } from "@/hooks/context/game-context";
-import { useCurrentDefaultTick, useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
+import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { type DaySummary, useDayEndStore } from "@/hooks/store/use-day-end-store";
 import { configManager, type readExpeditionRules } from "@bibliothecadao/eternum";
-import type { NativeRows } from "@bibliothecadao/eternum/game-client";
-import { RESOURCE_PRECISION } from "@bibliothecadao/types";
+import { nativeRaceConstants, readRaceBoard, type NativeRows } from "@bibliothecadao/eternum/game-client";
+import { catalogAspectId, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { AlertsPopup } from "../alerts-popup";
-import { endedHomeArmies, homecomingAtNextDeploy } from "../frontier-home";
+import { endedHomeArmies } from "../frontier-home";
 import { dayClock, dayToRecap, endedDay, nextDayOf } from "../hud/day-clock";
 import { useOwnActs, usePlayerDay } from "../log/player-day";
-import { DayDoneCard } from "./day-done-card";
+import { DayDoneCard, type DayDoneRace } from "./day-done-card";
+import { dayBest } from "./day-share";
 import { useDayShare } from "./day-share-sheet";
 import { DayEndScreen } from "./day-end-screen";
 import { useClosingRankChange } from "./day-ranks";
 
 type ExpeditionRules = NonNullable<ReturnType<typeof readExpeditionRules>>;
 
-const ARMY_MODELS = ["ExplorerTroops", "TileOccupancy", "ArmyProgress", "ResourceBalance"] as const;
+const ARMY_MODELS = ["ExplorerTroops", "TileOccupancy"] as const;
 
 /**
  * A Frontier day's end in the HUD (use-day-end-store): the summary over the map, the black and the way past them
@@ -27,8 +28,7 @@ const ARMY_MODELS = ["ExplorerTroops", "TileOccupancy", "ArmyProgress", "Resourc
  * realm's new site, and the summary before it when there is one. The summary is the day-done card for the last day the
  * player played (dayToRecap), when this device has gone through no day's end since it: a player back after a day they
  * skipped is offered the day before it. It gives that day's totals (the player's day as Today reads it, usePlayerDay),
- * the rank it closed at against the day before and, when it is the day that just ended, the troops its armies took and
- * what Homecoming returns at the next deploy. It waits for the player's history to answer (the moment's summary phase
+ * the rank it closed at against the day before and, when it is the day that just ended, the troops its armies took. It waits for the player's history to answer (the moment's summary phase
  * waits with it, for a while), and says when that history cannot give the day. With no day played since the last end
  * gone through (none of their own stories, no army ended with the day), and on a visit to another realm, there is none;
  * the moment then passes without it. Nor does a device show it once the player has played on since its day, on this
@@ -49,7 +49,6 @@ export const DayDone = ({
 }) => {
   const { setup } = useGame();
   const now = useNowSeconds();
-  const tick = useCurrentDefaultTick();
   const player = useAccountStore((state) => state.account?.address ?? null);
   useNativeRevision(ARMY_MODELS);
   const gameId = configManager.getActiveGameId();
@@ -70,13 +69,28 @@ export const DayDone = ({
   const summary = (() => {
     if (!recapOwed || !ended || played.history === "waiting" || played.playedOn) return null;
     const { totals } = played;
-    // The realm's armies and Homecoming are read as they stand, so they tell only the day that just ended.
+    // The realm's armies are read as they stand, so they tell only the day that just ended.
     const justEnded = recap.day === ended.day;
-    const gone = justEnded ? endedHomeArmies(setup.store, realm, rules, now) : [];
+    const gone = justEnded ? endedHomeArmies(setup.store, realm, now) : [];
     // Only a whole history says the day was not played; one that failed or stops short shows the card with dashes.
     if (played.history === "whole" && gone.length === 0 && played.stories.length === 0) return null;
-    const returned = justEnded ? homecomingAtNextDeploy(setup.store, realm, rules, now, tick) : null;
     const taken = gone.reduce((sum, army) => sum + Number(army.troops.count / BigInt(RESOURCE_PRECISION)), 0);
+    const raceBoard = readRaceBoard(setup.store, gameId, realm.entity_id, now).known?.race;
+    const raceSummary: DayDoneRace | undefined = raceBoard
+      ? {
+          finishHeight: raceBoard.rules.stage_height * nativeRaceConstants.STAGE_COUNT,
+          standings: raceBoard.standings.map((row) => ({
+            aspectId: catalogAspectId(row.aspect),
+            height: row.height,
+            own: row.aspect === raceBoard.own?.aspect,
+          })),
+        }
+      : undefined;
+    const ownAspect = raceBoard?.own ? catalogAspectId(raceBoard.own.aspect) : undefined;
+    const best =
+      played.history === "whole" && played.stories.length > 0
+        ? dayBest(played.stories, played.totals.reveals ?? 0)
+        : undefined;
     return (
       <DayDoneCard
         endedDay={recap.day}
@@ -85,9 +99,11 @@ export const DayDone = ({
         history={played.history}
         onRetry={played.retry}
         rank={rank}
+        aspect={ownAspect}
+        best={best}
+        race={raceSummary}
         armies={gone.length}
-        troopsLost={taken - (returned?.sent ?? 0)}
-        returned={returned && returned.sent > 0 ? returned : undefined}
+        troopsLost={taken}
         onShare={onShare}
         onContinue={continueDay}
       />

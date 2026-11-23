@@ -1,4 +1,10 @@
-import { sharePathVia, type ShareChannel, type ShareMoment, type ShareTally } from "@realms-world/identity";
+import {
+  sharePathVia,
+  type JoinedShare,
+  type ShareChannel,
+  type ShareMoment,
+  type ShareTally,
+} from "@realms-world/identity";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 
@@ -22,7 +28,8 @@ const useShareOwner = (): string | null => {
 
 /**
  * The account's link for one moment, as each channel posts it: made once per moment by identity, so the sheet opened
- * again gets the same one. `posted` records the post; `publish` hands identity the card the link then unfurls as.
+ * again gets the same one. `posted` records the post; `publish` hands identity the card the link then unfurls as;
+ * `failed` says identity refused or could not make it, and `retry` asks again.
  */
 export const useShareLink = (moment: ShareMoment) => {
   const owner = useShareOwner();
@@ -40,6 +47,8 @@ export const useShareLink = (moment: ShareMoment) => {
     // A post that cannot be recorded is still posted; the tally misses it, the player does not.
     posted: () => void (code && identityClient.sharePosted(code).catch(() => undefined)),
     publish: (card: Blob) => (code ? identityClient.uploadShareCard(code, card) : Promise.resolve()),
+    failed: owner !== null && made.isError,
+    retry: () => void made.refetch(),
   };
 };
 
@@ -53,4 +62,30 @@ export const useShareTally = (): ShareTally | null => {
     retry: false,
   });
   return owner !== null && tally.status === "success" ? tally.data : null;
+};
+
+/** What is known of the link the account came by: being read, unreadable (with a way to ask again), or read. */
+type JoinedShareReading =
+  | { status: "loading" }
+  | { status: "failed"; retry: () => void }
+  | { status: "ready"; joined: JoinedShare };
+
+/**
+ * The link the signed-in account came by, read once per account: loading until identity answers, failed when it cannot
+ * say, ready with the link (null when none brought the account). Without an account there is nothing to read. Another
+ * account's answer is never reused.
+ */
+export const useJoinedShare = (): JoinedShareReading => {
+  const owner = useShareOwner();
+  const joined = useQuery({
+    queryKey: [OWN_SHARES, owner, "joined"],
+    queryFn: () => identityClient.joinedShare(),
+    enabled: owner !== null,
+    staleTime: Number.POSITIVE_INFINITY,
+    retry: 1,
+  });
+  if (owner === null) return { status: "ready", joined: null };
+  if (joined.status === "success") return { status: "ready", joined: joined.data };
+  if (joined.status === "error") return { status: "failed", retry: () => void joined.refetch() };
+  return { status: "loading" };
 };

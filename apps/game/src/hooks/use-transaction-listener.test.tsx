@@ -52,21 +52,23 @@ const fail = (payload: Record<string, unknown>) =>
     provider.emitter!.emit("transactionFailed", { type: TransactionType.TRAVEL_HEX, ...payload });
   });
 
-it.each(["movement tile occupied", "stale release"])(
-  "shows the refusal %s on screen, whichever handler sent it",
-  async (reason) => {
-    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
-    await fail({
-      transactionHash: "0x476f",
-      stage: "revert",
-      message: reason,
-      error: new Error(reason),
-    });
-    expect(shownNotices()).toEqual([reason]);
-    expect(logged).not.toHaveBeenCalled();
-    logged.mockRestore();
-  },
-);
+it.each([
+  "movement tile occupied",
+  "stale release",
+  "Deep is settling, try again",
+  "The Deep is catching up, try again in a moment",
+])("shows the refusal %s on screen, whichever handler sent it", async (reason) => {
+  const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+  await fail({
+    transactionHash: "0x476f",
+    stage: "revert",
+    message: reason,
+    error: new Error(reason),
+  });
+  expect(shownNotices()).toEqual([reason]);
+  expect(logged).not.toHaveBeenCalled();
+  logged.mockRestore();
+});
 
 it("says on screen an action the shard refused before sending it, in the refusal's words", async () => {
   const refusal = new Error("Another action from this account was sent first, perhaps from another tab. Try again.");

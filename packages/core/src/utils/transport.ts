@@ -1,4 +1,4 @@
-import { configManager } from "..";
+import { configManager } from "../managers/config-manager";
 import { CapacityConfig, Resource } from "@bibliothecadao/types";
 
 export const calculateDonkeysNeeded = (orderWeightKg: number): number => {

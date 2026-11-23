@@ -2,6 +2,8 @@ import { BLITZ_SLOT_NAME_PATTERN, normalizeStarknetAddress } from "@realms-world
 import { fetchHeraldGameDirectory } from "@bibliothecadao/eternum/game-client";
 import { GLOBAL_CHAT_CHANNEL_ID } from "@bibliothecadao/types";
 
+import { directoryShard } from "../directory";
+
 /** Global chat, a shard's Blitz game, or the lobby of an environment's launch slot. */
 export type ChatRoomId = typeof GLOBAL_CHAT_CHANNEL_ID | `game:${string}:${number}` | `slot:${string}`;
 
@@ -35,28 +37,22 @@ export const gameRoomsOf = async (db: D1Database, realmsId: string): Promise<Cha
     .bind(realmsId)
     .first<{ address: string }>();
   if (!account) return [];
-  const { results: shards } = await db
-    .prepare(`SELECT "url", "chainId" FROM "shards" WHERE "status" != 'retired'`)
-    .all<{ url: string; chainId: string }>();
-  const rooms = await Promise.all(
-    shards.map(async (shard) => {
-      try {
-        const directory = await fetchHeraldGameDirectory({ url: shard.url }, account.address);
-        return directory.games
-          .filter(
-            (game) =>
-              game.mode === "blitz" &&
-              (game.status === "Registration" || game.status === "Live") &&
-              Boolean(game.player_state?.registered || game.player_state?.settled),
-          )
-          .map((game) => gameRoomOf(shard.chainId, game.game_id));
-      } catch (error) {
-        console.error("chat_membership_unavailable", shard.url, error);
-        return [];
-      }
-    }),
-  );
-  return rooms.flat();
+  const shard = await directoryShard(db);
+  if (!shard) return [];
+  try {
+    const directory = await fetchHeraldGameDirectory({ url: shard.url }, account.address);
+    return directory.games
+      .filter(
+        (game) =>
+          game.mode === "blitz" &&
+          (game.status === "Registration" || game.status === "Live") &&
+          Boolean(game.player_state?.registered || game.player_state?.settled),
+      )
+      .map((game) => gameRoomOf(shard.chainId, game.game_id));
+  } catch (error) {
+    console.error("chat_membership_unavailable", shard.url, error);
+    return [];
+  }
 };
 
 export const isRoomMember = async (db: D1Database, realmsId: string, room: ChatRoomId): Promise<boolean> =>

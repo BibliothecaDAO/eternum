@@ -1,7 +1,9 @@
 import { beforeEach, expect, it, vi } from "vitest";
 import { Effect } from "effect";
 import { ec } from "starknet";
-import { cosigningHash, type PayoutTerms } from "@realms-world/value-ledger";
+import { cosigningHash, raceCosigningHash, type PayoutTerms } from "@realms-world/value-ledger";
+import { response } from "../../../packages/value-ledger/test-support/abi";
+import { raceRewardsAbi } from "../../../packages/value-ledger/src/race-rewards-abi";
 import { createCosigner, handleCosignRequest, type CosignerConfig } from "./cosigner";
 import { RelayFailure } from "./ports";
 
@@ -11,7 +13,8 @@ const calls = vi.hoisted(() => ({
   read: vi.fn(),
   receipt: vi.fn(),
   funding: vi.fn(),
-  settlement: vi.fn(),
+  race: vi.fn(),
+  rewards: vi.fn(),
 }));
 vi.mock("@realms-world/value-ledger", async (original) => ({
   ...(await original<typeof import("@realms-world/value-ledger")>()),
@@ -24,7 +27,11 @@ vi.mock("./shard-rpc", () => ({
 }));
 vi.mock("./frontier-binding", () => ({ frontierReceiptBindings: calls.funding }));
 vi.mock("./shard-withdrawals", () => ({ shardWithdrawalPorts: () => ({ withdrawalReceipt: calls.receipt }) }));
-vi.mock("./frontier-sweep", () => ({ frontierSettlementEvidence: calls.settlement }));
+vi.mock("./race-facts", () => ({ readFinishedRace: calls.race }));
+vi.mock("@realms-world/chain", async (original) => ({
+  ...(await original<typeof import("@realms-world/chain")>()),
+  raceRewardsBeside: calls.rewards,
+}));
 const key = "0x12345";
 const config: CosignerConfig = {
   l2RpcUrl: "https://l2.test",
@@ -55,11 +62,28 @@ const payment: PayoutTerms = {
 };
 const identity = vi.fn<typeof fetch>();
 const wallets = {
-  getAnchor: async () => undefined,
-  putAnchor: async () => {},
   assertWallet: vi.fn(),
   pendingChanges: () => ({ count: 0, oldestSince: null }),
 };
+const raceSeason = (state: { posted?: boolean; total?: number; closed?: boolean } = {}) =>
+  response(raceRewardsAbi, "get_race", {
+    funded: true,
+    pool: { low: 500, high: 0 },
+    posted: state.posted ?? true,
+    posted_at: state.posted === false ? 0 : 1000,
+    total: { low: state.total ?? 30, high: 0 },
+    paid: { low: 0, high: 0 },
+    closed: state.closed ?? false,
+  });
+const racePost = { kind: "race-post" as const, shard: "0x2", season: 7, total: "30" };
+const racePay = { kind: "race-pay" as const, shard: "0x2", season: 7, home: "5", wallet: "0x123", amount: "10" };
+const signedBy = (signature: { r: string; s: string }, digest: string) =>
+  ec.starkCurve.verify(
+    new ec.starkCurve.Signature(BigInt(signature.r), BigInt(signature.s)),
+    digest,
+    ec.starkCurve.getPublicKey(key),
+  );
+const raceDomain = { chainId: "0x1", rewards: "0x30", epoch: 2 };
 const run = (input: unknown = payment) => createCosigner(config, key, wallets, identity).sign(input);
 beforeEach(() => {
   vi.resetAllMocks();
@@ -69,6 +93,7 @@ beforeEach(() => {
     if (entrypoint === "cosigner") return [ec.starkCurve.getStarkKey(key), "2"];
     if (entrypoint === "is_paused") return ["0"];
     if (entrypoint === "get_payment") return ["0", "7", "0", "17", "0", "0", "0", "1000"];
+    if (entrypoint === "get_race") return raceSeason();
     throw new Error("unexpected read");
   });
   calls.receipt.mockReturnValue(
@@ -83,7 +108,14 @@ beforeEach(() => {
       confirmedAt: 1000,
     }),
   );
-  calls.settlement.mockResolvedValue(null);
+  calls.rewards.mockReturnValue("0x30");
+  calls.race.mockResolvedValue({
+    total: 30n,
+    rewards: [
+      { home: 5n, aspect: 1, amount: 10n, owner: "0x456" },
+      { home: 9n, aspect: 2, amount: 20n, owner: "0x789" },
+    ],
+  });
   identity.mockImplementation(async () => Response.json({ identity: { realmsId: "0x1", wallet: "0x123" } }));
 });
 it("serves an exact signature from independent sources in the request, without a clock delay", async () => {
@@ -160,26 +192,6 @@ it("refuses paid or conflicting ledger reports", async () => {
     await expect(run()).rejects.toThrow("cosigner_report_differs");
   }
 });
-it("independently verifies settlement and signs only its exact totals", async () => {
-  const terms = { kind: "settle" as const, shard: "0x2", season: 7, chest: "17", prize: "3", treasuryAmount: "980" };
-  const signature = await run(terms);
-  expect(calls.settlement).toHaveBeenCalledExactlyOnceWith(
-    config.shards[0],
-    "http://127.0.0.1:8081",
-    { chainId: "0x2", gameId: 7, chestWithdrawn: "17", prizeWithdrawn: "3" },
-    { rpcUrl: config.l2RpcUrl, address: config.ledgerAddress },
-    "980",
-  );
-  expect(
-    ec.starkCurve.verify(
-      new ec.starkCurve.Signature(BigInt(signature.r), BigInt(signature.s)),
-      cosigningHash({ chainId: "0x1", ledger: "0x10", epoch: 2 }, terms),
-      ec.starkCurve.getPublicKey(key),
-    ),
-  ).toBe(true);
-  calls.settlement.mockResolvedValue("unpaid_receipts");
-  await expect(run(terms)).rejects.toThrow("cosigner_settlement_differs");
-});
 it("rejects unauthenticated HTTP requests before reading game state", async () => {
   const response = await handleCosignRequest(
     new Request("https://cosigner.test/sign", { method: "POST", body: JSON.stringify(payment) }),
@@ -221,4 +233,61 @@ it("withholds the HTTP signature when the independent wallet record refuses a ch
   expect(response.status).toBe(503);
   expect(await response.json()).toEqual({ error: "cosigning_refused" });
   expect(wallets.assertWallet).toHaveBeenCalledExactlyOnceWith("0x456", "0x1", "0x123");
+});
+
+it("signs a race total and a home's reward only as it recomputes them from its own shard", async () => {
+  expect(signedBy(await run(racePost), raceCosigningHash(raceDomain, racePost))).toBe(true);
+  expect(signedBy(await run(racePay), raceCosigningHash(raceDomain, racePay))).toBe(true);
+  expect(calls.race).toHaveBeenCalledWith(config.shards[0], "http://127.0.0.1:8081", 7);
+  expect(calls.rewards).toHaveBeenCalledWith(config.ledgerAddress);
+  expect(calls.read).toHaveBeenCalledWith(
+    { contractAddress: "0x30", entrypoint: "get_race", calldata: ["2", "7"] },
+    10,
+  );
+  expect(wallets.assertWallet).toHaveBeenCalledExactlyOnceWith("0x456", "0x1", "0x123");
+  expect(identity.mock.calls[0]![0].toString()).toBe(
+    "https://identity.test/api/operator/payout-identity?account=0x456",
+  );
+});
+it.each([
+  [racePost, { total: "31" }],
+  [racePost, { total: "0" }],
+  [racePay, { amount: "11" }],
+  [racePay, { amount: "20" }],
+  [racePay, { home: "6" }],
+  [racePay, { wallet: "0x999" }],
+  [racePay, { shard: "0x999" }],
+])("refuses race terms the relay chose %j %j", async (terms, change) => {
+  await expect(run({ ...terms, ...change })).rejects.toThrow();
+});
+it("signs nothing for a race with no confirmed result or no rewards address", async () => {
+  calls.race.mockResolvedValue(null);
+  await expect(run(racePost)).rejects.toThrow("cosigner_race_unfinished");
+  await expect(run(racePay)).rejects.toThrow("cosigner_race_unfinished");
+  calls.race.mockRejectedValue(new Error("confirmed_herald_read_unavailable"));
+  await expect(run(racePost)).rejects.toThrow("confirmed_herald_read_unavailable");
+  calls.rewards.mockImplementation(() => {
+    throw new Error("no race rewards address");
+  });
+  await expect(run(racePost)).rejects.toThrow("no race rewards address");
+});
+it.each([
+  ["unposted", raceSeason({ posted: false, total: 0 })],
+  ["closed", raceSeason({ closed: true })],
+  ["posted with another total", raceSeason({ total: 29 })],
+])("refuses a race payment while the race is %s", async (_, season) => {
+  const read = calls.read.getMockImplementation()!;
+  calls.read.mockImplementation((query) => (query.entrypoint === "get_race" ? season : read(query)));
+  await expect(run(racePay)).rejects.toThrow("cosigner_race_differs");
+});
+it("refuses a race payment to a wallet the home's owner did not link", async () => {
+  identity.mockImplementation(async () => Response.json({ identity: null }));
+  await expect(run(racePay)).rejects.toThrow("cosigner_wallet_differs");
+});
+it("signs no race terms while the ledger is paused or its key rotated", async () => {
+  const read = calls.read.getMockImplementation()!;
+  calls.read.mockImplementation((query) => (query.entrypoint === "is_paused" ? ["1"] : read(query)));
+  await expect(run(racePost)).rejects.toThrow("cosigner_ledger_paused");
+  calls.read.mockImplementation((query) => (query.entrypoint === "cosigner" ? ["0x999", "3"] : read(query)));
+  await expect(run(racePay)).rejects.toThrow("cosigner_key_differs");
 });

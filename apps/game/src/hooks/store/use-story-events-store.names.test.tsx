@@ -19,7 +19,6 @@ vi.mock("@realms-world/identity", async (original) => ({
     }),
 }));
 vi.mock("@/hooks/context/game-context", () => ({ useGame: () => ({ setup: { store: {} } }) }));
-vi.mock("@/runtime/world", () => ({ getActiveGame: () => ({ chainId: "0x1" }) }));
 vi.mock("@bibliothecadao/eternum/game-client", async (original) => ({
   ...(await original<typeof import("@bibliothecadao/eternum/game-client")>()),
   requireShard: () => ({ url: "http://herald.test", chainId: "0x1", worldAddress: "0xabc" }),
@@ -47,7 +46,7 @@ it.each([
     const host = document.createElement("div");
     const root = createRoot(host);
     const client = new QueryClient();
-    const Log = () => <p>{useStoryEvents(10).data[0]?.presentation.description ?? "no story"}</p>;
+    const Log = () => <p>{useStoryEvents(10).data[0]?.presentation.title ?? "no story"}</p>;
     const render = () =>
       act(async () =>
         root.render(
@@ -68,7 +67,7 @@ it.each([
             owner: account,
             entity_id: "0x0",
             tx_hash: "0xbeef",
-            story: { SeasonEnded: account },
+            story: { LordsWithdrawn: { account, amount: "0x32" } },
             timestamp: "0x64",
             event_position: { block_number: 35, transaction_hash: "0xbeef", transaction_index: 0, event_index: 0 },
           },
@@ -77,7 +76,7 @@ it.each([
         { block: 35, preconfirmed: false },
       );
       await render();
-      await vi.waitFor(() => expect(host.textContent).toBe("…"));
+      await vi.waitFor(() => expect(host.textContent).toBe("… withdrew LORDS"));
       await vi.waitFor(() => expect(pending.answer).toBeDefined());
       // The history read settles first: nothing about the game changes after identity answers.
       await act(async () => {
@@ -88,7 +87,7 @@ it.each([
         await new Promise((resolve) => setTimeout(resolve, 10));
       });
       expect(getPlayerDisplayName(account)).toBe(expected);
-      expect(host.textContent).toBe(expected);
+      expect(host.textContent).toBe(`${expected} withdrew LORDS`);
     } finally {
       await act(async () => root.unmount());
       client.clear();

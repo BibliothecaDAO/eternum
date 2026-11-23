@@ -30,18 +30,6 @@ export const AppSurfacesSection = () => {
               }}
             />
           </figure>
-          <figure className="relative h-96 overflow-hidden rounded-lg [transform:translateZ(0)]" data-game-end-banner>
-            <NewsHeadlineBanner
-              headline={{
-                id: "lab-end",
-                type: "game-end",
-                icon: "game-end",
-                title: "The game has ended",
-                description: ["Moonhand wins!"],
-                timestamp: 0,
-              }}
-            />
-          </figure>
           <figure className="h-80">
             <SurfaceFrame
               title="Transfer"

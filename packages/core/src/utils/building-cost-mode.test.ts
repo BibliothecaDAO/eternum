@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 
 import blitz from "../../../../config/generated/blitz.madara.json";
-import eternum from "../../../../config/generated/eternum.madara.json";
 import frontier from "../../../../config/generated/frontier.madara.json";
 import { buildingCostModeOf, resolveUseSimpleCost } from "./building-cost-mode";
 
@@ -17,7 +16,6 @@ const rulesOf = (preset: { configuration: { buildings: Record<string, Record<str
 describe("building cost mode", () => {
   it("reads the mode from each preset's own cost tables", () => {
     expect(buildingCostModeOf(rulesOf(frontier as never))).toBe("simple");
-    expect(buildingCostModeOf(rulesOf(eternum as never))).toBe("choice");
     expect(buildingCostModeOf(rulesOf(blitz as never))).toBe("choice");
   });
 

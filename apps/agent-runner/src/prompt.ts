@@ -20,7 +20,7 @@ export interface ToolGuideEntry {
 interface GameSummaryInput {
   gameId: number;
   gameName: string;
-  mode: "blitz" | "eternum" | "frontier" | "duel" | null;
+  mode: "blitz" | "eternum" | "frontier" | null;
   chain: string;
   /** The signer's address, or null while spectating. */
   viewer: string | null;
@@ -37,8 +37,8 @@ export const renderGameSection = (gameSummary: string): string => `# The game\n\
 export const renderGameSummary = (input: GameSummaryInput): string =>
   [
     `Game ${input.gameId} "${input.gameName}" (${input.mode ?? "unknown mode"}) on the ${input.chain} chain.`,
-    input.mode === "blitz" || input.mode === "duel"
-      ? "Blitz is a short timed match: a fixed number of hours, a small map, and victory points from exploration, fights, chests, and hyperstructures. Every tick counts."
+    input.mode === "blitz"
+      ? "Blitz is a short timed match: a fixed number of hours, a small map, and victory points from exploration and fights. Every tick counts."
       : input.mode === "frontier"
         ? "Frontier keeps a season-long realm and rolls the expedition map and field armies over daily."
         : "Eternum is the long format: days of play, a large map, and an economy that rewards patient building and trade.",
@@ -70,7 +70,7 @@ export const renderToolGuideSection = (tools: ToolGuideEntry[]): string =>
     "# Tools",
     "",
     "The loop is observe_game → list_actions → act:",
-    "1. observe_game(focus) is the only source of truth about the board. empire for my structures, armies for my explorers, nearby for what stands within three hexes of them, market, leaderboard, events.",
+    "1. observe_game(focus) is the only source of truth about the board. empire for my structures, armies for my explorers, nearby for what stands within three hexes of them, market, events.",
     "2. list_actions(keyword) documents each action's parameters and preconditions. Look an action up before the first time I use it.",
     "3. act(action, params) runs one action. Planners (armyPaths, structurePaths) are read-only and return reachable hexes; a moveArmy target must be one of them. Submitting actions sign, wait for confirmation, and return the confirmation or a classified failure.",
     "simulate prices a fight, a raid, or a building before I commit. remember and recall keep notes across wakes. report_to_owner is for my owner, not for thinking aloud.",
@@ -115,7 +115,7 @@ export const renderWorldStateUpdate = (delta: WorldDelta): string =>
   [WORLD_STATE_UPDATE_PREFIX, renderDelta(delta), "Re-observe what changed before continuing."].join("\n");
 
 export const renderGameEndedMessage = (): string =>
-  `${GAME_ENDED_PREFIX} The game is over. Send my owner one final report with report_to_owner: my final standing if the leaderboard shows it, what worked, and what to change next game. Then stop.`;
+  `${GAME_ENDED_PREFIX} The game is over. Send my owner one final report with report_to_owner: what worked, and what to change next game. Then stop.`;
 
 export const renderCompactionNotice = (dropped: number): string =>
   `[Context compacted: ${dropped} older messages dropped. Re-observe before relying on anything I no longer see.]`;
@@ -129,7 +129,6 @@ const renderDelta = (delta: WorldDelta): string =>
     delta.hostilesAppeared.length > 0 && `Hostile armies now within reach: ${renderIds(delta.hostilesAppeared)}.`,
     delta.hostilesMoved.length > 0 && `Hostile armies moved: ${renderIds(delta.hostilesMoved)}.`,
     delta.hostilesLeft.length > 0 && `Hostile armies left reach: ${renderIds(delta.hostilesLeft)}.`,
-    delta.chestsAppeared.length > 0 && `Chests within reach: ${renderIds(delta.chestsAppeared)}.`,
     delta.ticksAdvanced > 0 && `${delta.ticksAdvanced} tick(s) passed.`,
   ]
     .filter((line): line is string => typeof line === "string")

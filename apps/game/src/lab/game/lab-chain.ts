@@ -1,12 +1,14 @@
 import { identityClient, useIdentitySessionStore } from "@/hooks/context/identity-session";
+import type { JoinedShare } from "@realms-world/identity";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { LAB_GUARDIAN, LAB_SESSION } from "@/shell/lab/app-lab-fixtures";
 import { answerLabChat } from "@/shell/lab/lab-chat";
+import { answerLabBuildOrders } from "@/shell/lab/lab-build-orders";
 import { gameChatZoneId } from "@/ui/features/world/containers/hud-chat-window";
 import { L2_LEDGER, l2Provider } from "@/runtime/l2-rpc";
 import { getShardRpcProvider } from "@/utils/shard-rpc-provider";
-import { homeDailyClaim, dayOf, readExpeditionRules, ResourceManager } from "@bibliothecadao/eternum";
-import { NativeFactStore, ordinaryHash, type PlayFrame } from "@bibliothecadao/eternum/game-client";
+import { dayOf, nativeGameModeOfFamily, readExpeditionRules } from "@bibliothecadao/eternum";
+import { NativeFactStore, ordinaryHash, raceFinishHeight, type PlayFrame } from "@bibliothecadao/eternum/game-client";
 import {
   deriveGameSyncScope,
   type HeraldFrontierLeaderboardEntry,
@@ -14,20 +16,16 @@ import {
   rowInGameSyncScope,
   scopeInputKeys,
 } from "@bibliothecadao/eternum/game-sync";
-import {
-  RESOURCE_PRECISION,
-  ResourcesIds,
-  type NativeWorldBindings,
-  type WorldChatMessage,
-} from "@bibliothecadao/types";
+import { aspects, type NativeWorldBindings, type WorldChatMessage } from "@bibliothecadao/types";
 import type { AccountInterface, Call } from "starknet";
 
 import { LAB_CHAIN_ID } from "./lab-shard";
 
-import { FRONTIER_PRESET_ID } from "../../../../../config/source/common/native-preset-modes";
+import { releaseLine } from "../../../../../packages/core/src/test-support/releases";
 import {
   nativeFactModels,
   nativeFactSchemaIdentity,
+  nativeIdentifiers,
   type NativeModelName,
 } from "../../../../../contracts/l3/world-native/schema/client.gen";
 
@@ -35,11 +33,12 @@ import {
 export const LAB_GAME = {
   chainId: LAB_CHAIN_ID,
   gameId: 1,
-  presetId: FRONTIER_PRESET_ID,
+  family: nativeIdentifiers.family.FRONTIER,
   url: "https://herald.lab.invalid",
 } as const;
 /** The lab game's end: a month of chain seconds, so a session never sees it close. */
 export const LAB_GAME_ENDS_AT = 30 * 86_400;
+export const LAB_LINKED_WALLET = "0x456";
 /** The lab shard's node and its account class, as its manifest names them. */
 const LAB_SHARD_RPC = "https://rpc.lab.invalid";
 const LAB_ACCOUNT_CLASS = "0x2";
@@ -50,7 +49,7 @@ const LAB_L2_GAS_BOUND = "0x47868c00";
 export type LabFact = { model: string; key: string; value: unknown };
 
 /** A command the game signed, as the lab read it off the play call: its variant and its fields, in ABI order. */
-export type LabCommand = { kind: string; fields: Record<string, string>; calldata: string[] };
+export type LabCommand = { kind: string; fields: Record<string, string>; span: string[] };
 
 export interface LabScenario {
   /** The game the route opens on: every fact Herald's snapshot carries. */
@@ -77,6 +76,8 @@ export interface LabScenario {
   wallet?: string;
   /** The player enters from the home page's game card, as one not yet settled does; otherwise on the map. */
   entersFromHome?: boolean;
+  /** The link the player's account came by, as identity answers it; none: no link brought the account. */
+  joined?: JoinedShare;
   /**
    * Herald serves each selection its scope alone, as a live shard does: the player's own expedition, and another
    * player's realm and armies only on a visit. None: the lab's game is all the player's to see.
@@ -99,6 +100,8 @@ interface LabChainRecord {
   streams: number;
   /** The stream goes silent, as a slept phone's does: its socket stays open and nothing more comes on it. */
   silence: () => void;
+  /** The chain writes these rows in its next block, as its own tick would (the lab's stand-in for time passing in the game). */
+  writeBlock: (facts: LabFact[]) => void;
   /** Each scope the lab's Herald served, in order: its selection and the structures and armies it carried. */
   scopes: { actor: string | null; visit: string | null; structures: number[]; armies: number[] }[];
 }
@@ -113,10 +116,31 @@ declare global {
 export const wire = (value: unknown): Record<string, unknown> =>
   JSON.parse(JSON.stringify(value, (_, field) => (typeof field === "bigint" ? field.toString() : field)));
 
+/**
+ * A row's key as Herald carries it: its key fields' felts joined by ":". The store names a row by its decoded key, where
+ * an enum key field (an army's running relic is keyed by its kind) is its variant's name; on the wire it is the
+ * variant's index.
+ */
+const wireKey = (model: NativeModelName, key: string): string => {
+  const fields = nativeFactModels[model].keys.map(
+    (field) => nativeFactModels[model].fields[field as never],
+  ) as unknown[];
+  return key
+    .split(":")
+    .map((part, index) => {
+      const type = fields[index];
+      if (typeof type !== "object" || type === null || !("enum" in type)) return part;
+      const variant = (type.enum as readonly string[]).indexOf(part);
+      if (variant === -1) throw new Error(`${model} has no ${part} in its key`);
+      return String(variant);
+    })
+    .join(":");
+};
+
 /** Every row of a store as Herald carries it. */
 export const rowsOf = (store: NativeFactStore): LabFact[] =>
   (Object.keys(nativeFactModels) as NativeModelName[]).flatMap((model) =>
-    [...store.entries(model)].map(([key, value]) => ({ model, key, value: wire(value) })),
+    [...store.entries(model)].map(([key, value]) => ({ model, key: wireKey(model, key), value: wire(value) })),
   );
 
 /**
@@ -142,7 +166,7 @@ const scopedRowsOf = (store: NativeFactStore, actor: string | undefined, visit: 
   return (Object.keys(nativeFactModels) as NativeModelName[]).flatMap((model) =>
     [...store.entries(model)]
       .filter(([, value]) => rowInGameSyncScope(model, value as Record<string, unknown>, scope))
-      .map(([key, value]) => ({ model, key, value: wire(value) })),
+      .map(([key, value]) => ({ model, key: wireKey(model, key), value: wire(value) })),
   );
 };
 
@@ -158,13 +182,23 @@ export const installLabChain = (makeScenario: () => LabScenario, startedAt: numb
   // after /lab/game, or a route's effect run twice) must not open the game before the tab answers its directory.
   (installing ??= installOnce(makeScenario, startedAt));
 
+/** The blocks the lab has written on its own, for their transaction hashes. */
+let blocksWritten = 0;
+
 /** This page's install of the chain, begun or done. */
 let installing: Promise<LabScenario> | undefined;
 
 const installOnce = async (makeScenario: () => LabScenario, startedAt: number): Promise<LabScenario> => {
   // Building a scenario seats its fixture's player, so it is built only here, once, never over the lab's signing account.
   const scenario = makeScenario();
-  const record: LabChainRecord = { sent: [], rejected: [], streams: 0, silence: () => herald.silence(), scopes: [] };
+  const record: LabChainRecord = {
+    sent: [],
+    rejected: [],
+    streams: 0,
+    silence: () => herald.silence(),
+    writeBlock: (facts) => herald.apply(`0xlab${(blocksWritten += 1)}`, facts.map(keyedAsHeldOnChain)),
+    scopes: [],
+  };
   window.__labChain = record;
   const { nativeBindings } = await import("@/runtime/world/native-bindings");
   const chain = chainOf(scenario);
@@ -189,10 +223,10 @@ const installOnce = async (makeScenario: () => LabScenario, startedAt: number): 
   );
   answerAccountJoin(LAB_SHARD_RPC, LAB_ACCOUNT_CLASS);
   answerHeraldSocket(herald);
-  answerLaborClaims(scenario, chain, record, herald, now);
+  if (scenario.entersFromHome) answerHomeEntry(scenario);
   answerLedgerReads(now);
   answerLabChat({ gameRooms: [gameChatZoneId(LAB_GAME.chainId, LAB_GAME.gameId)], history: scenario.chat });
-  signInLabPlayer(scenario.wallet);
+  signInLabPlayer(scenario.wallet, scenario.joined ?? null);
   seatPlayer(labAccount(scenario, chain, nativeBindings, record, herald, now, events));
   return scenario;
 };
@@ -235,7 +269,6 @@ const playerState = (chain: NativeFactStore, player: string) => {
   return {
     registered: true,
     settled: structures.length > 0,
-    roster_wallet: null,
     held_realm_id: own?.pass_kind === 2 ? own.realm_id : null,
     has_home_source: own !== undefined,
     taken_realm_ids: entitlements.filter((row) => row.pass_kind === 2).map((row) => row.realm_id),
@@ -254,9 +287,10 @@ const answerDirectory = (
   const manifest = {
     version: 1,
     chainId: LAB_GAME.chainId,
-    releaseSchemas: Object.fromEntries(
-      [...chain.rows("GameRelease")].flatMap((row) =>
-        [row.created_release_id, row.release_id].map((release) => [String(release), nativeFactSchemaIdentity]),
+    releases: releaseLine(
+      nativeFactSchemaIdentity,
+      [...new Set([...chain.rows("GameRelease")].flatMap((row) => [row.created_release_id, row.release_id]))].sort(
+        (left, right) => left - right,
       ),
     ),
     rpcUrl: LAB_SHARD_RPC,
@@ -265,26 +299,50 @@ const answerDirectory = (
     guardianPublicKey: "0x3",
     l2GasBound: LAB_L2_GAS_BOUND,
   };
+  const registry = chain.require("GameRegistry", { game_id: LAB_GAME.gameId });
+  const rules = chain.require("SliceRules", { game_id: LAB_GAME.gameId });
   const game = {
     game_id: LAB_GAME.gameId,
     name: "lab",
-    mode: "frontier",
+    mode: nativeGameModeOfFamily(registry.family),
     status: "Live",
-    ready: true,
     dev_mode_on: false,
-    expedition: { day_unit_seconds: 3600, seed: "1" },
+    clock_scale: registry.clock_scale,
+    expedition: rules.day_unit_seconds
+      ? { day_unit_seconds: rules.day_unit_seconds, seed: String(registry.seed) }
+      : null,
     clock: {
       start_settling_at: 1 + clockOffset,
       start_main_at: 100 + clockOffset,
+      scheduled_end_at: LAB_GAME_ENDS_AT + clockOffset,
       end_at: LAB_GAME_ENDS_AT + clockOffset,
-      end_grace_seconds: 0,
     },
     player_count: 1,
+    get aspect_members() {
+      if (!chain.get("AspectRules", { game_id: LAB_GAME.gameId })) return null;
+      return Object.fromEntries(
+        aspects.map(({ id }) => [
+          id,
+          chain.get("AspectMembers", { game_id: LAB_GAME.gameId, aspect: id })?.members ?? 0,
+        ]),
+      );
+    },
+    get aspect_race() {
+      const race = chain.get("RaceRules", { game_id: LAB_GAME.gameId });
+      if (!race) return null;
+      return {
+        finish_height: raceFinishHeight(race.stage_height),
+        heights: Object.fromEntries(
+          aspects.map(({ id }) => [
+            id,
+            chain.get("AspectHyperstructure", { game_id: LAB_GAME.gameId, aspect: id })?.height ?? 0,
+          ]),
+        ),
+      };
+    },
     get player_state() {
       return playerStateNow();
     },
-    roster_count: 0,
-    preset_id: LAB_GAME.presetId,
     registration: null,
     settled_realms_count: 1,
     settled_villages_count: 0,
@@ -298,13 +356,9 @@ const answerDirectory = (
   window.fetch = (input, init) => {
     const url = new URL(input instanceof Request ? input.url : String(input), window.location.origin);
     if (url.pathname === "/api/guardian") return json(LAB_GUARDIAN);
-    // The lab's season has no Blitz: no slot open, none scheduled.
-    if (url.pathname === "/api/slots") return json({ slots: [] });
-    if (url.pathname === "/api/factory/calendar") return json({ nextBlitz: null });
+    if (url.pathname === "/api/factory/calendar") return json({ phases: [] });
     if (url.pathname === "/api/directory")
-      return json({
-        shards: [{ url: LAB_GAME.url, chainId: LAB_GAME.chainId, status: "active", games: [game], manifest }],
-      });
+      return json({ shard: { url: LAB_GAME.url, chainId: LAB_GAME.chainId, games: [game], manifest } });
     if (url.host !== shard.host) return network(input, init);
     if (url.pathname === "/manifest") return json(manifest);
     if (url.pathname === "/games")
@@ -319,87 +373,56 @@ const answerDirectory = (
 
 /**
  * The lab's player is signed in as the app lab's (its session and guardian), so the game's HUD reads as a signed-in
- * player's. The identity client holds its own fetch, so its session read is answered on the client itself, and so is
- * its default wallet's: the lab's player has none (a payout wallet it links is another wallet).
+ * player's. The identity client holds its own fetch, so its session read is answered on the client itself, and so are
+ * its default wallet's (the lab's player has none; a payout wallet it links is another wallet) and the link the account
+ * came by.
  */
-const signInLabPlayer = (wallet: string | undefined) => {
+const signInLabPlayer = (wallet: string | undefined, joined: JoinedShare) => {
   const session = wallet ? { ...LAB_SESSION, user: { ...LAB_SESSION.user, address: wallet } } : LAB_SESSION;
   identityClient.getSession = async () => session;
   identityClient.readDefaultWallet = async () => null;
+  answerLabBuildOrders();
+  identityClient.joinedShare = async () => joined;
+  identityClient.createShare = async ({ kind, gameId, moment }) => `lab-${kind}-${gameId}-${moment}`;
+  identityClient.sharePosted = async () => undefined;
+  identityClient.getOrderIntent = async () => ({ order: null, members: {} });
+  answerLabOpening();
   useIdentitySessionStore.getState().applySession(session);
 };
 
-/** The lab's home claim follows the current relay: game day, grant facts, then the receipt's transaction. */
-const answerLaborClaims = (
-  scenario: LabScenario,
-  chain: NativeFactStore,
-  record: LabChainRecord,
-  herald: LabHerald,
-  now: () => number,
-) => {
-  const network = window.fetch.bind(window);
-  window.fetch = async (input, init) => {
-    const url = new URL(input instanceof Request ? input.url : String(input), window.location.origin);
-    if (url.pathname !== "/api/value/labor" || init?.method !== "POST") return network(input, init);
-    const { gameId, home } = JSON.parse(String(init.body)) as { gameId: number; home: string };
-    const rules = readExpeditionRules(chain, gameId);
-    if (!rules) throw new Error("The lab claim has no season rules");
-    const day = dayOf(rules, now())!.index;
-    const hash = `0x1ab${(record.sent.length + 1).toString(16).padStart(4, "0")}de1a`;
-    const command: LabCommand = { kind: "GrantLabor", fields: { day: String(day) }, calldata: [] };
-    const answered = grantLabor(chain, scenario.player, gameId, BigInt(home), day).map(keyedAsHeldOnChain);
-    record.sent.push({ hash, command, answered });
-    await new Promise((applied) => setTimeout(applied, LAB_BLOCK_MS));
-    herald.apply(hash, answered);
-    await new Promise((closed) => setTimeout(closed, LAB_BLOCK_MS));
-    const grant = answered.find(({ model }) => model === "LaborGrant")!.value as { amount: string; essence: string };
-    return Response.json({
-      day,
-      grant: {
-        gameId,
-        home,
-        account: scenario.player,
-        amount: grant.amount,
-        essence: grant.essence,
-        transactionHash: hash,
-      },
-    });
+/**
+ * The lab account's opening progress as its identity service keeps it: sets that only grow, kept for the tab (it outlives
+ * a reload, as the account's service outlives a page).
+ */
+const answerLabOpening = () => {
+  const key = "lab:opening";
+  identityClient.addOpeningProgress = async (additions) => {
+    const held = JSON.parse(sessionStorage.getItem(key) ?? '{"reached":[],"seen":[]}') as {
+      reached: string[];
+      seen: string[];
+    };
+    const next = {
+      reached: [...new Set([...held.reached, ...(additions.reached ?? [])])],
+      seen: [...new Set([...held.seen, ...(additions.seen ?? [])])],
+    };
+    sessionStorage.setItem(key, JSON.stringify(next));
+    return next;
   };
 };
 
-/** The home's daily receipt and balances, derived from the same eligibility rules the claim button reads. */
-const grantLabor = (chain: NativeFactStore, account: string, gameId: number, home: bigint, day: number): LabFact[] => {
-  const daily = homeDailyClaim(chain, { gameId, entityId: home });
-  if (!daily) throw new Error("The lab's home has no daily claim");
-  const amount = BigInt(daily.labor) * BigInt(RESOURCE_PRECISION);
-  const essence = BigInt(daily.essence) * BigInt(RESOURCE_PRECISION);
-  const grant: LabFact = {
-    model: "LaborGrant",
-    key: `0x1ab6${day.toString(16)}`,
-    value: wire({ game_id: gameId, home, day, account, amount, essence }),
+/** A free lab home has no source to register, matching the relay's empty answer for an account with no holdings. */
+const answerHomeEntry = (scenario: LabScenario) => {
+  const network = window.fetch.bind(window);
+  window.fetch = async (input, init) => {
+    const url = new URL(input instanceof Request ? input.url : String(input), window.location.origin);
+    if (url.pathname !== "/api/value/realm-entry" || init?.method !== "POST") return network(input, init);
+    const { gameId, realmId } = JSON.parse(String(init.body)) as { gameId: number; realmId?: number };
+    if (realmId !== undefined || scenario.wallet)
+      return Response.json({ error: "realm_wallet_missing" }, { status: 409 });
+    if (gameId !== LAB_GAME.gameId || url.searchParams.get("chainId") !== LAB_GAME.chainId)
+      return Response.json({ error: "realm_registration_refused" }, { status: 409 });
+    return Response.json({});
   };
-  const balances = [
-    [ResourcesIds.Labor, amount],
-    [ResourcesIds.Essence, essence],
-  ] as const;
-  return [
-    grant,
-    ...balances
-      .filter(([, added]) => added > 0n)
-      .map(([resource, added]): LabFact => {
-        const held = [...chain.entries("ResourceBalance")].find(
-          ([, row]) => row.entity_id === home && row.resource_type === resource,
-        );
-        const balance = (held?.[1].balance ?? 0n) + added;
-        const limit = new ResourceManager(chain, Number(home), gameId).storeLimit(resource);
-        if (limit !== undefined && balance > limit) throw new Error(`The lab's home ${home} has no room for the claim`);
-        return {
-          model: "ResourceBalance",
-          key: held?.[0] ?? `0x1b${resource.toString(16)}`,
-          value: wire({ game_id: gameId, entity_id: home, resource_type: resource, balance }),
-        };
-      }),
-  ];
 };
 
 /**
@@ -459,18 +482,24 @@ const answerHeraldRead = (
         setTimeout(() => answered(answerHeraldRead(url, scenario, chain, now, confirmedBlock)), heldFor * 1_000),
       );
     const query = url.searchParams;
-    const owner = query.get("owner");
-    const named = owner && `"0x${BigInt(owner).toString(16)}"`;
+    // Herald takes one owner or several: an event names any of them.
+    const named = query.getAll("owner").map((owner) => `"0x${BigInt(owner).toString(16)}"`);
     const limit = Math.min(Number(query.get("limit") ?? 100), HISTORY_PAGE);
     const offset = Number(query.get("offset") ?? 0);
     const items = (scenario.history ?? []).filter(
       (event) =>
         hasHappened(event, now()) &&
-        (!named || JSON.stringify(event.value).includes(named)) &&
+        (named.length === 0 || named.some((owner) => JSON.stringify(event.value).includes(owner))) &&
         (!query.get("model") || event.model === query.get("model")) &&
         (!query.get("story") || storyOf(event) === query.get("story")),
     );
-    return { complete_through_block: confirmedBlock, items: items.slice(offset, offset + limit), limit, offset };
+    return {
+      complete_through_block: confirmedBlock,
+      items: items.slice(offset, offset + limit),
+      limit,
+      offset,
+      total: items.length,
+    };
   }
   const site = url.pathname.match(new RegExp(`^${game}/sites/(\\d+)$`));
   if (site) {
@@ -582,27 +611,26 @@ const labAccount = (
  * A fact under the key its row is held by on the chain, as Herald names every row by one key: a later answer that
  * finds the row in the chain's store (its entries) and changes or removes it then names the row the game holds.
  */
-const keyedAsHeldOnChain = (fact: LabFact): LabFact => {
+export const keyedAsHeldOnChain = (fact: LabFact): LabFact => {
   if (fact.value === null) return fact;
   const held = new NativeFactStore();
   held.applyFacts([fact] as never);
   const [[key]] = [...held.entries(fact.model as NativeModelName)];
-  return { ...fact, key };
+  return { ...fact, key: wireKey(fact.model as NativeModelName, key) };
 };
 
 type AbiItem = {
   type: string;
   name: string;
   members?: { name: string; type: string }[];
-  variants?: { name: string; type: string }[];
+  variants?: { name: string; type: string; wireId?: number }[];
 };
 
-/** A play call's command, as native-submission builds it: game, release, commitment, the span's length, the span. */
 const readCommand = (bindings: NativeWorldBindings, calldata: string[]): LabCommand => {
-  const span = calldata.slice(4);
+  const span = calldata.slice(3);
   const abi = bindings.commandAbi as unknown as AbiItem[];
   const commands = abi.find((item) => item.type === "enum" && item.name === "world_native::commands::Command");
-  const variant = commands?.variants?.[Number(span[0])];
+  const variant = commands?.variants?.find(({ wireId }) => wireId === Number(span[0]));
   if (!variant) throw new Error(`The lab cannot read command ${span[0]}`);
   // Flat commands (each field one felt) read field by field; anything else keeps its raw span.
   const members = abi.find((item) => item.name === variant.type)?.members ?? [];
@@ -610,7 +638,7 @@ const readCommand = (bindings: NativeWorldBindings, calldata: string[]): LabComm
     members.length === span.length - 1
       ? Object.fromEntries(members.map((member, index) => [member.name, BigInt(span[index + 1]).toString()]))
       : {};
-  return { kind: variant.name, fields, calldata };
+  return { kind: variant.name, fields, span };
 };
 
 /** The lab shard's Herald, answering the game's one stream socket with Herald's own messages. */

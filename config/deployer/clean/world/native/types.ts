@@ -2,6 +2,7 @@ import type { NativeRelease, NativeSchema } from "../../../../../apps/herald/src
 import type { ShardRecord } from "../../../../../apps/herald/src/shard-manifest";
 import type { ClassArtifact } from "../../shared/declare";
 import type { Abi } from "starknet";
+import type { NativeReleases } from "@bibliothecadao/eternum/game-sync";
 
 export interface NativeWorldManifest {
   native: NativeRelease;
@@ -67,6 +68,7 @@ export interface NativePlan {
   deployedClassHash: string | null;
   realmCatalogue?: { initialized: number; digest: string };
   releaseRegistered: boolean;
+  releases: NativeReleases;
   roleChanges?: Array<{ entrypoint: "set_launcher" | "set_ledger_operator"; address: string }>;
   blockers: string[];
   synced: boolean;

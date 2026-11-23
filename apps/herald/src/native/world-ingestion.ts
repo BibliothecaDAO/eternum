@@ -1,5 +1,5 @@
 import { createNativeHistoryCodec } from "./history";
-import { buildNativeDirectory, buildNativeLeaderboard } from "./read-models";
+import { buildNativeDirectory } from "./read-models";
 import type { NativeIngestion } from "./ingestion";
 import { LiveWorld, type LiveWorldInput } from "../live-world";
 import { loadNativeWorld } from "./load";
@@ -10,7 +10,7 @@ export function createNativeWorldIngestion(native: NativeIngestion) {
     historyCodec: createNativeHistoryCodec(
       native.decoder.manifest.native.schemas[native.decoder.manifest.native.activeSchema],
     ),
-    readModels: { directory: buildNativeDirectory, leaderboard: buildNativeLeaderboard },
+    readModels: { directory: buildNativeDirectory },
     load: (input: Omit<Parameters<typeof loadNativeWorld>[0], "native">) => loadNativeWorld({ ...input, native }),
     createLive: (input: LiveWorldInput) => new LiveWorld({ ...input, native }),
   };

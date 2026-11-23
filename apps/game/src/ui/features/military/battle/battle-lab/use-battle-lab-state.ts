@@ -1,13 +1,10 @@
-import { BiomeType, ResourcesIds, TroopTier, TroopType } from "@bibliothecadao/types";
+import { BiomeType, TroopTier, TroopType } from "@bibliothecadao/types";
 import { useReducer } from "react";
 
 import type { BattleLabMode, LiveSnapshot, WorkingArmy } from "./battle-lab.types";
 
-export type AttackMode = "attack" | "raid";
-
 interface BattleLabState {
   mode: BattleLabMode;
-  attackType: AttackMode;
   biome: BiomeType;
   defenderAlt: boolean;
   attacker: WorkingArmy;
@@ -33,7 +30,6 @@ type BattleLabAction =
   | { type: "SET_DEFENDER_LAYER"; alt: boolean }
   | { type: "PATCH_ATTACKER"; patch: Partial<WorkingArmy> }
   | { type: "PATCH_DEFENDER"; patch: Partial<WorkingArmy> }
-  | { type: "SET_ATTACK_TYPE"; attackType: AttackMode }
   | { type: "SELECT_GUARD_SLOT"; slot: number; army: WorkingArmy }
   | { type: "RESET_TO_LIVE" };
 
@@ -43,7 +39,7 @@ const DEFAULT_ATTACKER: WorkingArmy = {
   troopType: TroopType.Knight,
   tier: TroopTier.T1,
   battle_cooldown_end: 0,
-  relics: [],
+  oaths: 0,
 };
 
 const DEFAULT_DEFENDER: WorkingArmy = {
@@ -52,22 +48,11 @@ const DEFAULT_DEFENDER: WorkingArmy = {
   troopType: TroopType.Crossbowman,
   tier: TroopTier.T1,
   battle_cooldown_end: 0,
-  relics: [],
-};
-
-const sameRelics = (a: ResourcesIds[], b: ResourcesIds[]) => {
-  if (a.length !== b.length) return false;
-  const sa = [...a].sort();
-  const sb = [...b].sort();
-  return sa.every((id, i) => id === sb[i]);
+  oaths: 0,
 };
 
 const sameEditable = (a: WorkingArmy, b: WorkingArmy) =>
-  a.stamina === b.stamina &&
-  a.troopCount === b.troopCount &&
-  a.troopType === b.troopType &&
-  a.tier === b.tier &&
-  sameRelics(a.relics, b.relics);
+  a.stamina === b.stamina && a.troopCount === b.troopCount && a.troopType === b.troopType && a.tier === b.tier;
 
 /** Derived: has the user edited any working value away from the live baseline? */
 const selectIsEdited = (state: BattleLabState): boolean => {
@@ -97,7 +82,6 @@ const reducer = (state: BattleLabState, action: BattleLabAction): BattleLabState
     case "INIT_SIM":
       return {
         mode: "sim",
-        attackType: "attack",
         biome: action.biome,
         defenderAlt: false,
         attacker: DEFAULT_ATTACKER,
@@ -109,7 +93,7 @@ const reducer = (state: BattleLabState, action: BattleLabAction): BattleLabState
 
     case "INIT_LIVE": {
       const { snapshot } = action;
-      const { army: attacker, slot } = resolveLiveAttacker(snapshot, state.selectedGuardSlot);
+      const { army: attacker, slot } = resolveLiveAttacker(snapshot, snapshot.guardSlot);
       const defender = snapshot.defender ?? DEFAULT_DEFENDER;
       const hasDefender = snapshot.defender !== null;
       return {
@@ -137,9 +121,6 @@ const reducer = (state: BattleLabState, action: BattleLabAction): BattleLabState
     case "PATCH_DEFENDER":
       return { ...state, defender: { ...state.defender, ...action.patch } };
 
-    case "SET_ATTACK_TYPE":
-      return { ...state, attackType: action.attackType };
-
     case "SELECT_GUARD_SLOT": {
       // Selecting a guard re-baselines the attacker, so it never reads as an edit.
       const live = state.live ? { ...state.live, attacker: action.army } : null;
@@ -165,7 +146,6 @@ const reducer = (state: BattleLabState, action: BattleLabAction): BattleLabState
 
 const initialState = (mode: BattleLabMode, biome: BiomeType): BattleLabState => ({
   mode,
-  attackType: "attack",
   defenderAlt: false,
   biome,
   attacker: DEFAULT_ATTACKER,

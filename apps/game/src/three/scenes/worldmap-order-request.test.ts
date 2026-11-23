@@ -27,7 +27,6 @@ describe("a tap on a tile with an army selected", () => {
 
   it("opens a standing site out of reach for the army, so its card can say what the army lacks", () => {
     expect(tap(undefined, true)).toBe("site-card");
-    expect(tap([step(ActionType.Move), step(ActionType.UseSite)], true)).toBe("site-card");
     expect(
       orderOnTap({ path: undefined, armySelected: false, site: true, ownSpire: false, onPhone: false }),
     ).toBeNull();
@@ -130,21 +129,18 @@ describe("a tap on a phone, where the HUD carries the verb (owner, 22 October 20
     expect(onPhone(undefined)).toBeNull();
   });
 
-  it.each([ActionType.UseSite, ActionType.EnterDepth])(
-    "keeps %s on its card even when the phone target is pinned",
-    (actionType) => {
-      expect(
-        orderOnTap({
-          path: [step(ActionType.Move), step(actionType)],
-          armySelected: true,
-          site: actionType === ActionType.UseSite,
-          ownSpire: actionType === ActionType.EnterDepth,
-          onPhone: true,
-          hud: { pinned: true, refused: false },
-        }),
-      ).toBe("site-card");
-    },
-  );
+  it.each([ActionType.EnterDepth])("keeps %s on its card even when the phone target is pinned", (actionType) => {
+    expect(
+      orderOnTap({
+        path: [step(ActionType.Move), step(actionType)],
+        armySelected: true,
+        site: false,
+        ownSpire: actionType === ActionType.EnterDepth,
+        onPhone: true,
+        hud: { pinned: true, refused: false },
+      }),
+    ).toBe("site-card");
+  });
 
   it("still opens the attack's preview on a target, which has its own confirm", () => {
     expect(onPhone([step(ActionType.Move), step(ActionType.Attack)], { pinned: true })).toBe("attack");

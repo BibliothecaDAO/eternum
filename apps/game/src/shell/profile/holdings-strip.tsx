@@ -1,19 +1,14 @@
 import { useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
 import { canonicalRealm } from "@bibliothecadao/eternum";
 
-import { useHeldRealms, useHeldTicket, type HeldTicket } from "@/hooks/use-holdings";
-import { homeIcon } from "@/ui/design-system/home-icons";
+import { useHeldRealms } from "@/hooks/use-holdings";
 import { Icon } from "@/ui/design-system/icon";
 import type { IconMeaning } from "@/ui/design-system/icon-meaning";
 import { AppButton, AppEmpty } from "@/ui/design-system/kit/app-elements";
 import {
-  DEVCON as DEVCON_NAME,
   HELD_REALMS_UNREADABLE,
-  JOIN_WORDS,
   NO_HELD_REALMS,
   PROFILE_WORDS,
-  TICKET_UNREADABLE,
   TRY_AGAIN,
   WORDS,
   YOUR_REALMS,
@@ -22,56 +17,22 @@ import {
 
 import { MARKET } from "../community";
 import { ShellWindow } from "../frame/shell-window";
-import { DEVCON } from "../join/devcon";
-import { DevconTicket } from "../join/devcon-ticket";
-import { returnPathOf } from "../return-path";
-import { linkWalletHref } from "./settings-route";
 
-type Sheet = "realms" | "ticket";
-
-/**
- * What the player holds, counted at the foot of their own card, each count opening its sheet (owner's pick, holdings
- * layout C). The account's Realms (its linked wallet's, as a game's Realm step reads them) and its Devcon ticket; with no
- * linked wallet, the way to link one, for the Realms it holds and the LORDS a season pays to it. LORDS counted, chests
- * and cosmetics join later.
- */
 export const HoldingsStrip = () => {
   const { wallet, held } = useHeldRealms();
-  const ticket = useHeldTicket(DEVCON.campaign);
-  const [sheet, setSheet] = useState<Sheet | null>(null);
-  const navigate = useNavigate();
-  const location = useLocation();
-  const golden = ticket.state === "held" && ticket.ticket.tier === "golden";
+  const [open, setOpen] = useState(false);
+  if (wallet === null) return null;
   return (
     <>
       <div className="app-holdings" role="group" aria-label={PROFILE_WORDS.holdings}>
-        {wallet === null ? (
-          <Holding
-            icon="backpack"
-            label={PROFILE_WORDS.linkWalletHoldings}
-            onPress={() => navigate(linkWalletHref(returnPathOf(location)))}
-          />
-        ) : (
-          <Holding
-            icon="realm"
-            count={held.isError ? PROFILE_WORDS.unknownCount : held.data?.length}
-            label={PROFILE_WORDS.realms}
-            onPress={() => setSheet("realms")}
-          />
-        )}
-        {(ticket.state === "held" || ticket.state === "unreadable") && (
-          <Holding
-            icon={homeIcon(golden ? "devcon-golden" : "devcon", 0)}
-            count={ticket.state === "held" ? DEVCON_NAME : PROFILE_WORDS.unknownCount}
-            label={golden ? JOIN_WORDS.golden : PROFILE_WORDS.ticket}
-            onPress={() => setSheet("ticket")}
-          />
-        )}
+        <Holding
+          icon="realm"
+          count={held.isError ? PROFILE_WORDS.unknownCount : held.data?.length}
+          label={PROFILE_WORDS.realms}
+          onPress={() => setOpen(true)}
+        />
       </div>
-      {sheet === "realms" && <RealmsSheet held={held} onClose={() => setSheet(null)} />}
-      {sheet === "ticket" && (ticket.state === "held" || ticket.state === "unreadable") && (
-        <TicketSheet ticket={ticket} onClose={() => setSheet(null)} />
-      )}
+      {open && <RealmsSheet held={held} onClose={() => setOpen(false)} />}
     </>
   );
 };
@@ -95,55 +56,35 @@ const Holding = ({
   </button>
 );
 
-/** The account's Devcon ticket, as the landing shows it opened; or, while it cannot be read, why, and Try again. */
-const TicketSheet = ({
-  ticket,
-  onClose,
-}: {
-  ticket: Extract<HeldTicket, { state: "held" | "unreadable" }>;
-  onClose: () => void;
-}) => {
-  const golden = ticket.state === "held" && ticket.ticket.tier === "golden";
-  return (
-    <ShellWindow title={golden ? JOIN_WORDS.golden : JOIN_WORDS.yourTicket} onClose={onClose}>
-      {ticket.state === "held" ? (
-        <div className="flex flex-col items-center gap-4 text-center">
-          <DevconTicket tier={ticket.ticket.tier} />
-          <AppButton kind="primary" icon="play" to="/">
-            {WORDS.play}
+export const RealmsStatus = ({ held }: { held: ReturnType<typeof useHeldRealms>["held"] }) => {
+  if (held.isError)
+    return (
+      <AppEmpty
+        icon="realm"
+        line={HELD_REALMS_UNREADABLE}
+        action={
+          <AppButton kind="secondary" onClick={() => void held.refetch()}>
+            {TRY_AGAIN}
           </AppButton>
-        </div>
-      ) : (
-        <AppEmpty
-          icon={homeIcon("devcon", 0)}
-          line={TICKET_UNREADABLE}
-          action={
-            <AppButton kind="secondary" onClick={ticket.retry}>
-              {TRY_AGAIN}
-            </AppButton>
-          }
-        />
-      )}
-    </ShellWindow>
-  );
+        }
+      />
+    );
+  if (held.data?.length === 0) return <AppEmpty icon="realm" line={NO_HELD_REALMS} />;
+  return null;
 };
 
 /** The linked wallet's Realms, each by its number and name; the Market sells and buys them. */
-const RealmsSheet = ({ held, onClose }: { held: ReturnType<typeof useHeldRealms>["held"]; onClose: () => void }) => (
+export const RealmsSheet = ({
+  held,
+  onClose,
+}: {
+  held: ReturnType<typeof useHeldRealms>["held"];
+  onClose: () => void;
+}) => (
   <ShellWindow title={YOUR_REALMS} onClose={onClose}>
     <div className="flex flex-col gap-4">
-      {held.isError ? (
-        <AppEmpty
-          icon="realm"
-          line={HELD_REALMS_UNREADABLE}
-          action={
-            <AppButton kind="secondary" onClick={() => void held.refetch()}>
-              {TRY_AGAIN}
-            </AppButton>
-          }
-        />
-      ) : held.data?.length === 0 ? (
-        <AppEmpty icon="realm" line={NO_HELD_REALMS} />
+      {held.isError || held.data?.length === 0 ? (
+        <RealmsStatus held={held} />
       ) : (
         <ul className="flex flex-col gap-2" aria-label={YOUR_REALMS}>
           {held.data?.map(({ realmId }) => (

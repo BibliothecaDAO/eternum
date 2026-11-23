@@ -1,15 +1,11 @@
 import type { NodeHealth } from "./node-health";
 import { buildFrontierLeaderboard } from "./native/frontier-leaderboard";
-import type { HeraldGameLeaderboard } from "@bibliothecadao/eternum/game-sync";
+import type { HeraldFrontierLeaderboard } from "@bibliothecadao/eternum/game-sync";
 import { required, number } from "./native/values";
+import { isSeasonOneGame } from "./native/season-one";
 import { parseStoryHistoryCursor } from "@bibliothecadao/eternum/game-sync";
 import { GameFinalizedError } from "./world-fold";
-import {
-  buildNativeDirectory,
-  buildNativeLeaderboard,
-  directoryForPlayer,
-  directoryStatus,
-} from "./native/read-models";
+import { buildNativeDirectory, directoryForPlayer, directoryStatus } from "./native/read-models";
 import { isCheckGame, type DirectoryInput, type GameDirectorySource } from "./game-directory";
 import { dayOf } from "@bibliothecadao/eternum/expeditions";
 import type { GameSnapshot } from "./types";
@@ -31,7 +27,6 @@ interface SnapshotSource extends GameDirectorySource {
 
 interface WorldReadModels {
   directory: (input: DirectoryInput) => ReturnType<typeof buildNativeDirectory>;
-  leaderboard: typeof buildNativeLeaderboard;
 }
 
 interface HeraldHttpState {
@@ -48,7 +43,7 @@ interface HeraldHttpState {
   fold: SnapshotSource;
   history?: Pick<
     HistoryStore,
-    "queryStoryCursor" | "queryEvents" | "reviewSnapshot" | "activity" | "frontierHistory" | "frontierDayRanks"
+    "queryStoryCursor" | "queryEvents" | "reviewSnapshot" | "frontierHistory" | "frontierDayRanks"
   >;
   undecodableEventCount: () => number;
   /** The node's last memory sample (node-health.ts); null while none can be read. */
@@ -111,13 +106,13 @@ const historyQuery = (url: URL, gameId: string): HistoryQuery => ({
   model: url.searchParams.get("model") ?? undefined,
   story: url.searchParams.get("story") ?? undefined,
   offset: paginationValue(url, "offset", 0),
-  owner: url.searchParams.get("owner") ?? undefined,
+  owner: url.searchParams.has("owner") ? url.searchParams.getAll("owner") : undefined,
 });
 
 export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: Request) => Promise<Response>) => {
-  const readModels = state.readModels ?? { directory: buildNativeDirectory, leaderboard: buildNativeLeaderboard };
+  const readModels = state.readModels ?? { directory: buildNativeDirectory };
   const directory = cachedDirectory(state, readModels.directory);
-  const leaderboard = cachedLeaderboard(state, readModels.leaderboard);
+  const leaderboard = cachedLeaderboard(state);
   const directoryPath = "/games";
   const snapshotPath = /^\/games\/([0-9]+)\/snapshot$/;
   const historyPath = /^\/games\/([0-9]+)\/history$/;
@@ -200,12 +195,12 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
 
     const leaderboardMatch = request.method === "GET" ? leaderboardPath.exec(url.pathname) : null;
     if (leaderboardMatch) {
+      if (isSeasonOneGame(state.fold.modelRows, leaderboardMatch[1]))
+        return jsonResponse({ error: "season_one_ranks_aspects" }, 404);
       try {
         const gameId = leaderboardMatch[1];
-        const timestamp = state.chainTimestamp();
-        if (timestamp <= 0) return jsonResponse({ error: "chain_clock_unavailable" }, 503);
         const head = state.confirmedBlock();
-        const board = await leaderboard(gameId, timestamp);
+        const board = await leaderboard(gameId);
         const response = jsonResponse(board);
         response.headers.set("X-Confirmed-Block", String(head));
         return response;
@@ -278,10 +273,10 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
 };
 
 /** Only successful known-game results enter the cache; the next head replaces the entire generation. */
-function cachedLeaderboard(state: HeraldHttpState, build: WorldReadModels["leaderboard"]) {
+function cachedLeaderboard(state: HeraldHttpState) {
   let block = -1;
-  const responses = new Map<string, HeraldGameLeaderboard>();
-  return async (requestedGame: string, timestamp: number): Promise<HeraldGameLeaderboard> => {
+  const responses = new Map<string, HeraldFrontierLeaderboard>();
+  return async (requestedGame: string): Promise<HeraldFrontierLeaderboard> => {
     const head = state.confirmedBlock();
     if (block !== head) {
       responses.clear();
@@ -291,12 +286,12 @@ function cachedLeaderboard(state: HeraldHttpState, build: WorldReadModels["leade
     const cached = responses.get(gameId);
     if (cached) return cached;
     const rules = required(state.fold.modelRows("SliceRules"), gameId, "SliceRules");
-    let response: HeraldGameLeaderboard;
+    let response: HeraldFrontierLeaderboard;
     if (number(rules.day_unit_seconds) > 0) {
       if (!state.history || state.undecodableEventCount() > 0) throw new Error("Frontier history unavailable");
       // Capture current facts before awaiting SQL, so a newer head cannot mix into this board.
       const facts = new Map(
-        ["GameRegistry", "Structure", "CampaignHome", "FrontierPrize", "ChestRules", "LordsWithdrawal"].map((model) => [
+        ["GameRegistry", "Structure", "FrontierPrize", "ChestRules", "LordsWithdrawal"].map((model) => [
           model,
           state.fold.modelRows(model),
         ]),
@@ -304,7 +299,7 @@ function cachedLeaderboard(state: HeraldHttpState, build: WorldReadModels["leade
       const history = await state.history.frontierHistory(gameId, head);
       response = buildFrontierLeaderboard((model) => facts.get(model) ?? [], gameId, history);
     } else {
-      response = build(state.fold.modelRows, gameId, timestamp, state.history?.activity(gameId) ?? null);
+      throw new Error(`Game ${gameId} has no Frontier leaderboard`);
     }
     if (state.confirmedBlock() === head) responses.set(gameId, response);
     return response;
@@ -393,6 +388,7 @@ function seasonDayOf(game: Record<string, unknown>, dayUnitSeconds: number, now:
   const calendar = {
     dayUnitSeconds,
     seed: BigInt(game.seed as string),
+    scheduledEndAt: Number(game.scheduled_end_at),
     endAt: Number(game.end_at),
     startMainAt: Number(game.start_main_at),
   };

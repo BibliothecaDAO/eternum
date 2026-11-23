@@ -124,8 +124,14 @@ export function createBrowserSession(session, { chromeArgs = [], executablePath,
     tap: (offset) => run(["batch", ...tapCommands(offset)]),
     tapPlace: (word) => {
       const at = read(placeSlotExpression(word));
-      if (!at) throw new Error(`The place bar shows no ${word}`);
-      run(["batch", `mouse move ${at.x} ${at.y}`, "mouse down", "mouse up"]);
+      if (at) {
+        run(["batch", `mouse move ${at.x} ${at.y}`, "mouse down", "mouse up"]);
+        return;
+      }
+      const menu = read(placeSlotExpression("Menu"));
+      if (!menu) throw new Error(`The place bar shows no ${word}`);
+      run(["batch", `mouse move ${menu.x} ${menu.y}`, "mouse down", "mouse up"]);
+      run(["find", "role", "button", "click", "--name", word, "--exact"]);
     },
     /** Opens the list of views (the map's layers) from the switch that names the one shown, with the mouse. */
     openViews: () => {
@@ -178,10 +184,11 @@ export const screenPoint = ([dx, dy]) => [Math.round(VIEWPORT.width / 2 + dx), M
  */
 const placeSlotExpression = (word) => `JSON.stringify((() => {
   const slot = [...document.querySelectorAll('nav[aria-label="Places"] button')].find(
-    (button) => button.lastElementChild?.textContent.trim() === ${JSON.stringify(word)},
+    (button) =>
+      button.getAttribute("aria-label") === ${JSON.stringify(word)} ||
+      button.lastElementChild?.textContent.trim() === ${JSON.stringify(word)},
   );
   const rect = slot?.getBoundingClientRect();
-  // agent-browser's mouse takes whole pixels.
   return rect ? { x: Math.round(rect.left + rect.width / 2), y: Math.round(rect.top + rect.height / 2) } : null;
 })())`;
 
@@ -191,7 +198,7 @@ const placeSlotExpression = (word) => `JSON.stringify((() => {
  */
 const VIEW_SWITCH_EXPRESSION = `JSON.stringify((() => {
   const rect = document
-    .querySelector('nav[aria-label="Places"] [data-switch][aria-haspopup], [aria-label="Map view"] [role="tab"][aria-haspopup]')
+    .querySelector('[data-surface-deep-switch] [aria-haspopup]')
     ?.getBoundingClientRect();
   return rect ? { x: Math.round(rect.left + rect.width / 2), y: Math.round(rect.top + rect.height / 2) } : null;
 })())`;
@@ -225,6 +232,7 @@ const OBSERVE_EXPRESSION = `JSON.stringify({
   selection: window.__eternumMapSelection ?? null,
   place:
     document.querySelector('nav[aria-label="Places"] [aria-current="page"]')?.textContent.trim() ??
+    document.querySelector('[data-surface-deep-switch] [role="tab"][aria-selected="true"]')?.textContent.trim() ??
     document.querySelector('[aria-label="Map view"] [role="tab"][aria-selected="true"]')?.textContent.trim() ??
     ({ world: "Realm", realm: "Map" })[document.querySelector('nav[aria-label="Places"] [data-switch]')?.dataset.switch] ??
     null,
@@ -232,7 +240,7 @@ const OBSERVE_EXPRESSION = `JSON.stringify({
   panels: [...document.querySelectorAll("section.ui-panel[aria-label]")]
     .filter((panel) => panel.checkVisibility({ visibilityProperty: true }))
     .map((panel) => panel.getAttribute("aria-label")),
-  pressed: [...document.querySelectorAll('button[aria-pressed="true"]')].map((button) => button.getAttribute("aria-label")),
+  pressed: [...document.querySelectorAll('button[aria-pressed="true"], nav[aria-label="Places"] [role="tab"][aria-selected="true"]')].map((button) => button.getAttribute("aria-label")),
   worldmapDistance: JSON.parse(localStorage.getItem("eternum-camera-zoom") ?? "null")?.state?.worldmapDistance ?? null,
   playable: (window.__eternumGameEntryTimeline ?? []).some((milestone) => milestone.name === "world-interactive"),
   timeOrigin: performance.timeOrigin,

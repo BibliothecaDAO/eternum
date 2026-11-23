@@ -37,9 +37,6 @@ const AREAS = {
     "ui/features/military",
     "ui/features/social",
     "ui/features/frontier/board",
-    "ui/features/frontier/chest",
-    "ui/features/world/containers/spectator-standings.tsx",
-    "ui/features/world/components/actions/chest-tile-details.tsx",
     "ui/features/world/hud/action-bubbles.tsx",
     "ui/shared/components/production-status-badge.tsx",
   ],
@@ -60,13 +57,8 @@ const AREAS = {
     "ui/features/world/components/bottom-right-panel",
     "ui/features/world/components/entities",
     "ui/features/world/components/structure-status-row",
-    "ui/features/world/components/biome-info-panel.tsx",
     "ui/features/world/components/armies",
-    "ui/features/world/components/hyperstructures",
     "ui/features/world/components/actions/selected-worldmap-entity.tsx",
-    "ui/features/world/components/actions/chest-tile-details.tsx",
-    "ui/features/world/components/actions/bitcoin-mining-action-panel.tsx",
-    "ui/features/world/components/actions/faith-devotion-action-panel.tsx",
     "ui/features/world/components/actions/unoccupied-tile-quadrants.tsx",
     "ui/features/frontier/frontier-hud.tsx",
     "ui/features/frontier/frontier-selection-sheet.tsx",
@@ -105,9 +97,6 @@ const AREAS = {
   ],
   "B. Windows and modals": [
     "ui/features/settlement",
-    "ui/features/relics",
-    "ui/features/economy/trading",
-    "ui/features/economy/banking",
     "ui/features/event-feed",
     "ui/features/frontier/upgrade",
     "ui/features/world/components/structure-edit-popup.tsx",
@@ -162,7 +151,7 @@ const RETIRED = {
  * words, amounts) draw nothing.
  */
 const KIT = "ui/design-system/kit/";
-const KIT_FOR_HUD = new Set(["hud-elements.tsx", "sheet-closes.tsx", "named-tips.tsx"]);
+const KIT_FOR_HUD = new Set(["hud-elements.tsx", "sheet-closes.tsx", "named-tips.tsx", "order-emblem.tsx"]);
 
 /** Whether an app file is a retired control, a retired folder's (the old tabs), or a kit component, whatever it draws now. */
 export const isRetired = (path) => {

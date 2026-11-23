@@ -1,11 +1,9 @@
 import { RESOURCE_TIER_NAMES } from "@bibliothecadao/types";
-import { categoryCan } from "@/ui/lib/structure-capabilities";
 import { knownAmount } from "@/ui/utils/utils";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { realmLevelNumber } from "@/ui/lib/realm-level";
 import { structureMapPosition } from "@bibliothecadao/eternum";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
-import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { openTransfer } from "@/ui/features/economy/transfers/transfer-window";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { useFactView } from "@/hooks/use-fact-view";
@@ -25,7 +23,7 @@ import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { getBuildingFromResource, ID, ResourcesIds, formatAmount, formatRate } from "@bibliothecadao/types";
 import clsx from "clsx";
-import { HudChip, HudIconButton, HudSwitch } from "@/ui/design-system/kit/hud-elements";
+import { HudIconButton, HudSwitch } from "@/ui/design-system/kit/hud-elements";
 
 import React, { useCallback, useMemo, useState } from "react";
 import { ALWAYS_SHOW_RESOURCES, productionTimeLeft, HIDE_TIME_REMAINING_FOR } from "./utils";
@@ -90,8 +88,6 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
   );
 
   const playerStructures = useFactView(playerStructuresView);
-  const openSurface = usePopoverStore((state) => state.openSurface);
-  const closeSurface = usePopoverStore((state) => state.closeSurface);
   const { isMapView } = useQuery();
   const {
     setup,
@@ -133,22 +129,6 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
 
   const structureIdSet = useMemo(() => new Set(structureColumns.map((column) => column.entityId)), [structureColumns]);
 
-  const relicCraftableStructureIds = useMemo(() => {
-    const craftableStructureIds = new Set<number>();
-
-    structureColumns.forEach((structureColumn) => {
-      const structure = store.get("Structure", {
-        game_id: configManager.getActiveGameId(),
-        entity_id: structureColumn.entityId,
-      });
-      if (categoryCan(structure?.base.category, "craftsRelics")) {
-        craftableStructureIds.add(structureColumn.entityId);
-      }
-    });
-
-    return craftableStructureIds;
-  }, [store, structureColumns]);
-
   // Only the columns' own rows are read, never every Resource row.
   const resourceFacts = useNativeFacts(RESOURCE_FACTS);
 
@@ -171,13 +151,12 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
       if (!balances) return;
 
       balances.forEach(({ resourceId, amount }) => {
-        const productionInfo = resourceValue.current(resourceId);
+        const production = resourceValue.productionData(resourceId, currentDefaultTick);
         const withProduction = resourceValue.balanceWithProduction(currentDefaultTick, resourceId);
-        if (!productionInfo || !withProduction) return;
+        if (!production || !withProduction) return;
         const { hasReachedMaxCapacity, balance } = withProduction;
 
-        const { productionPerSecond, isProducing, outputRemaining, timeRemainingSeconds } =
-          ResourceManager.calculateResourceProductionData(resourceId, productionInfo, currentDefaultTick);
+        const { productionPerSecond, isProducing, outputRemaining, timeRemainingSeconds } = production;
 
         // Only count production rate if actually producing
         const activeProductionRate = isProducing ? productionPerSecond : 0;
@@ -248,18 +227,6 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
   const handleManageProduction = useCallback(
     (structureId: number, resourceId: ResourcesIds) => openProduction({ realmId: structureId, resource: resourceId }),
     [],
-  );
-
-  const handleOpenCraftRelic = useCallback(
-    (structureId: number) => {
-      import("../craft-relic-popup").then(({ CraftRelicPopup }) => {
-        openSurface({
-          id: "craft-relic",
-          content: <CraftRelicPopup structureId={structureId} onClose={closeSurface} />,
-        });
-      });
-    },
-    [closeSurface, openSurface],
   );
 
   // Every hook stands above this: a player whose last holding goes (or whose first arrives) keeps the same hooks.
@@ -463,10 +430,6 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
                               const hasProductionBuilding = Boolean(
                                 actualBuildingCount > 0 && configManager.canRefillProduction(resourceId),
                               );
-                              const canCraftRelic =
-                                resourceId === ResourcesIds.Research &&
-                                Number(cell?.amount ?? 0) > 0 &&
-                                relicCraftableStructureIds.has(structure.entityId);
 
                               return (
                                 <td
@@ -494,8 +457,6 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
                                       isSelectedStructure={isSelectedStructure}
                                       hasProductionBuilding={hasProductionBuilding}
                                       onManageProduction={() => handleManageProduction(structure.entityId, resourceId)}
-                                      canCraftRelic={canCraftRelic}
-                                      onCraftRelic={() => handleOpenCraftRelic(structure.entityId)}
                                       onDragStart={handleDragStart}
                                       onDragEnd={handleDragEnd}
                                       onDoubleClick={handleDoubleClick}
@@ -545,8 +506,6 @@ interface TransferCellProps {
   isSelectedStructure: boolean;
   hasProductionBuilding: boolean;
   onManageProduction: () => void;
-  canCraftRelic: boolean;
-  onCraftRelic: () => void;
   onDragStart: (structureId: number, resourceId: ResourcesIds, amount: number) => void;
   onDragEnd: () => void;
   onDoubleClick: (structureId: number, resourceId: ResourcesIds) => void;
@@ -563,8 +522,6 @@ const TransferCell = React.memo((props: TransferCellProps) => {
     isSelectedStructure,
     hasProductionBuilding,
     onManageProduction,
-    canCraftRelic,
-    onCraftRelic,
     onDragStart,
     onDragEnd,
     onDoubleClick,
@@ -607,10 +564,7 @@ const TransferCell = React.memo((props: TransferCellProps) => {
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <div className="flex flex-wrap items-center gap-1">
-            <span className="text-hud-ink">{formatAmount(knownAmount(cell.amount))}</span>
-            {canCraftRelic && <HudChip>Forge</HudChip>}
-          </div>
+          <span className="text-hud-ink">{formatAmount(knownAmount(cell.amount))}</span>
           {cell.isProducing && (
             <div className="flex items-center gap-1.5 text-hud-cue">
               <span>{formatRate(cell.productionPerSecond)}</span>
@@ -630,15 +584,6 @@ const TransferCell = React.memo((props: TransferCellProps) => {
               kind="quiet"
               size="sm"
               onClick={onManageProduction}
-            />
-          )}
-          {canCraftRelic && (
-            <HudIconButton
-              icon="research"
-              label="Craft relic from research"
-              kind="quiet"
-              size="sm"
-              onClick={onCraftRelic}
             />
           )}
           {isSelectedStructure && (

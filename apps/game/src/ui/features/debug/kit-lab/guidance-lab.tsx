@@ -14,8 +14,8 @@ import { playerReadings } from "@/ui/features/world/containers/top-header/identi
 import { NextUpView } from "@/ui/features/world/hud/next-up";
 import type { NextStep } from "@/ui/features/world/hud/next-step";
 import { type CoachArmy, type CoachStep, type CoachTarget, coachSteps } from "@/ui/features/world/hud/coach";
-import { buildStoryEventPresentation, configManager } from "@bibliothecadao/eternum";
-import { relicChestRelics, ResourcesIds, TroopTier, TroopType } from "@bibliothecadao/types";
+import { buildStoryEventPresentation } from "@bibliothecadao/eternum";
+import { ResourcesIds, TroopTier, TroopType } from "@bibliothecadao/types";
 import type { GameClientSetup, NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { useState } from "react";
 
@@ -67,13 +67,7 @@ const story = (
     ),
   }) as unknown as ProcessedStoryEvent;
 
-/**
- * What a newcomer's first minutes write to the game's history, oldest first: an explore's find, a level-up, a crate, a
- * fight lost, another player's fight.
- */
 const labStories = (store: NativeFactStore): ProcessedStoryEvent[] => {
-  const chest = { pack: "War", lucky: false } as const;
-  const scaledPoints = (points: number) => BigInt(points) * 1_000_000n;
   const side = (player: string, category: string, before: string, after: string) => ({
     player,
     category,
@@ -97,19 +91,6 @@ const labStories = (store: NativeFactStore): ProcessedStoryEvent[] => {
       341_000,
     ),
     story(store, "up", "StructureLevelUpStory", { new_level: 1 }, 345_000),
-    story(
-      store,
-      "crate",
-      "RelicChestOpened",
-      {
-        explorer_id: 70,
-        coord: { x: 2147483651, y: 2147483652 },
-        chest,
-        relics: relicChestRelics(chest),
-        points: scaledPoints(configManager.getVictoryPointGrants().openRelicCrate),
-      },
-      346_000,
-    ),
     story(
       store,
       "fight",
@@ -141,7 +122,7 @@ const labStories = (store: NativeFactStore): ProcessedStoryEvent[] => {
 /** Events as the rail draws it, on the lab's stories: the player's filter (its switch works here) and the newest three. */
 const LabEvents = ({ store }: { store: NativeFactStore }) => {
   const [filter] = useEventsFilter();
-  const told = selectEventStories(labStories(store), filter, PLAYER, () => false).slice(0, 3);
+  const told = selectEventStories(labStories(store), filter, PLAYER).slice(0, 3);
   return (
     <HudPanel label="Events" title="Events" cue={<EventsFilterSwitch />} bodyClassName="flex flex-col gap-1">
       {told.map((event) => (
@@ -159,13 +140,7 @@ const ARMY: CoachArmy = {
   canExplore: true,
   selected: false,
 };
-const CRATE: CoachTarget = { kind: "crate", name: "the relic crate", hex: { col: 12, row: 10 } };
 const CAMP: CoachTarget = { kind: "site", name: "Camp", hex: { col: 14, row: 10 } };
-const HYPERSTRUCTURE: CoachTarget = {
-  kind: "hyperstructure",
-  name: "Obsidian Hyperstructure",
-  hex: { col: 18, row: 10 },
-};
 const TROOPS = {
   realmId: 7,
   realmName: "'oak Leukue",
@@ -180,7 +155,6 @@ const coached = (state: Partial<Parameters<typeof coachSteps>[0]>): NextStep[] =
     targets: [],
     troopsOnHand: TROOPS,
     certainLoss: () => false,
-    grants: configManager.getVictoryPointGrants(),
     ...state,
   }).map(labStep);
 
@@ -206,24 +180,20 @@ const nextUpStates = (): { label: string; steps: NextStep[]; refusal?: string }[
     ],
   },
   { label: "No troops anywhere", steps: coached({ troopsOnHand: null }) },
-  {
-    label: "Army beside a crate",
-    steps: coached({ armies: [ARMY], targets: [{ ...CRATE, hex: { col: 11, row: 10 } }, CAMP, HYPERSTRUCTURE] }),
-  },
-  { label: "Army idle, can explore", steps: coached({ armies: [ARMY], targets: [CRATE, CAMP, HYPERSTRUCTURE] }) },
+  { label: "Army idle, can explore", steps: coached({ armies: [ARMY], targets: [CAMP] }) },
   { label: "Army selected", steps: coached({ armies: [{ ...ARMY, selected: true }] }) },
   {
     label: "Fight unwinnable",
     steps: coached({
       armies: [{ ...ARMY, canExplore: false }],
-      targets: [HYPERSTRUCTURE],
+      targets: [CAMP],
       certainLoss: () => true,
     }),
   },
 ];
 
 /** The top bar's player chip as a player reads it: name, rank, points and the game's goal. */
-const LabPlayerPill = () => <HudPill>{playerReadings("clientlane", { rank: 1, points: 310 })}</HudPill>;
+const LabPlayerPill = () => <HudPill>{playerReadings("clientlane")}</HudPill>;
 
 /**
  * Dev only: the points-first guidance a newcomer sees, the real components on the deploy fixture in the War room skin,

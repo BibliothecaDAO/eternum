@@ -17,6 +17,7 @@ import {
 import * as WebGPUTextureUtils from "three/addons/utils/WebGPUTextureUtils.js";
 import { GLTFExporter } from "three/addons/exporters/GLTFExporter.js";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { modelPath } from "../../utils/model-url";
 import { initializeProceduralCharacterRendererRuntime } from "../../characters/procedural-character-renderer-runtime";
 import {
   applyProceduralUnitConfigPatch,
@@ -559,7 +560,7 @@ class ModelReviewScene implements ModelLabRenderer {
   }
 
   private loadShipAssets(army: ModelLabSettings["army"], tier: ShipTier): Promise<Group> {
-    const path = `/models/ships/${army}-t${tier}.glb`;
+    const path = modelPath(`ships/${army}-t${tier}.glb`);
     let pending = this.shipAssets.get(path);
     if (!pending) {
       pending = gltfLoader.loadAsync(path).then((asset) => asset.scene);
@@ -608,8 +609,8 @@ function resolveFootAnimationMode(action: ModelLabSettings["action"]): "idle" | 
 }
 
 function assetPath(settings: ModelLabSettings, tier: ShipTier): string {
-  if (settings.family === "ships") return "/models/units/ship.glb";
-  return `/models/units/default_${settings.family}_lvl${tier}.glb`;
+  if (settings.family === "ships") return modelPath("units/ship.glb");
+  return modelPath(`units/default_${settings.family}_lvl${tier}.glb`);
 }
 
 function countTriangles(group: Group): number {

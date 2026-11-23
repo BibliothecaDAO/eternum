@@ -2,7 +2,7 @@ import {
   HeraldHttpError,
   type HeraldGameDirectory,
   type HeraldFrontierDayRanks,
-  type HeraldGameLeaderboard,
+  type HeraldFrontierLeaderboard,
   type HeraldGameSnapshot,
   type HeraldHistoryPage,
 } from "../sync/herald-http-types";
@@ -80,7 +80,7 @@ export const fetchHeraldGameHistory = async (
     model?: string;
     story?: string;
     offset?: number;
-    owner?: string;
+    owner?: string | readonly string[];
   } = {},
 ): Promise<HeraldHistoryPage> => {
   if (!Number.isSafeInteger(gameId) || gameId <= 0) {
@@ -92,7 +92,7 @@ export const fetchHeraldGameHistory = async (
   if (input.model) url.searchParams.set("model", input.model);
   if (input.story) url.searchParams.set("story", input.story);
   if (input.offset !== undefined) url.searchParams.set("offset", String(input.offset));
-  if (input.owner) url.searchParams.set("owner", input.owner);
+  for (const owner of [input.owner ?? []].flat()) url.searchParams.append("owner", owner);
   return fetchHeraldJson(url.toString(), `Herald history for ${shard.url} game ${gameId}`);
 };
 
@@ -130,16 +130,13 @@ export const feltEquals = (left: unknown, right: unknown): boolean => {
   }
 };
 
-/** A game's leaderboard in its mode's shape: Frontier's season board, or the points board of every other mode. */
-export const fetchHeraldLeaderboard = async (shard: Shard, gameId: number): Promise<HeraldGameLeaderboard> => {
+export const fetchHeraldLeaderboard = async (shard: Shard, gameId: number): Promise<HeraldFrontierLeaderboard> => {
   if (!Number.isSafeInteger(gameId) || gameId <= 0)
     throw new Error(`Herald leaderboard requires a positive game id; received ${gameId}`);
-  const board = await fetchHeraldJson<HeraldGameLeaderboard>(
+  const board = await fetchHeraldJson<HeraldFrontierLeaderboard>(
     buildHeraldUrl(shard, `/games/${gameId}/leaderboard`),
     `Herald leaderboard for ${shard.url} game ${gameId}`,
   );
-  if (board.mode === "frontier" && board.entries.some((entry) => entry.campaign === undefined))
-    throw new Error("Herald Frontier leaderboard is missing campaign identity");
   return board;
 };
 

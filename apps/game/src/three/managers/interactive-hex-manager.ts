@@ -7,6 +7,7 @@ import { hexGeometryDebugger } from "@/three/utils/hex-geometry-debug";
 import { HexGeometryPool } from "@/three/utils/hex-geometry-pool";
 import { PerformanceMonitor } from "@/three/utils/performance-monitor";
 import * as THREE from "three";
+import type { MeshBasicNodeMaterial } from "three/webgpu";
 import { WORLD_HEX_SPACE, type HexSpace } from "../utils/utils";
 import { type HoverVisualPalette } from "./worldmap-interaction-palette";
 
@@ -36,7 +37,7 @@ export class InteractiveHexManager {
   private instanceMesh: THREE.InstancedMesh | null = null;
   private hoverAura: Aura;
   private hoverHexManager: HoverHexManager;
-  private readonly instanceMaterial: THREE.MeshBasicMaterial;
+  private readonly instanceMaterial: MeshBasicNodeMaterial;
   private position = new THREE.Vector3();
   private pickIntersection = new THREE.Vector3();
   private dummy = new THREE.Object3D();

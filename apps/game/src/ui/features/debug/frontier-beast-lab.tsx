@@ -1,77 +1,110 @@
 import { siteDisplayName, type BeastBand } from "@bibliothecadao/eternum";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { StructureType, frontierSiteName } from "@bibliothecadao/types";
+import {
+  BEASTS,
+  LAYER_NAMES,
+  StructureType,
+  beastModel,
+  beastOfModel,
+  beastsOfFamily,
+  frontierSiteName,
+  guardedSiteKind,
+  type BeastRow,
+} from "@bibliothecadao/types";
 import { mountStaticLineup, type LineupAsset, type LineupSettings } from "@/three/debug/model-lab/static-model-lineup";
 import {
   FRONTIER_BEASTS,
   frontierBeast,
   frontierSiteComposition,
   FALLEN_REALM_RUIN_PATH,
-  FALLEN_REALM_DEPTHS,
+  largestBeastScale,
 } from "@/three/structures/frontier-beast";
-import { CAMP_MODEL_PATH } from "@/three/constants/scene-constants";
+import { CAMP_MODEL_PATH, RiftModelPath } from "@/three/constants/scene-constants";
 import { Token } from "@/three/map-plates/map-plate-token";
 import { Plate } from "@/three/map-plates/map-plates";
 import { buildStructurePlate } from "@/three/map-plates/map-plate-model";
 import { SiteCardView } from "../frontier/sites/site-card-view";
-import { BEAST_NAMES } from "@/ui/design-system/kit/words";
 import { beastMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { Icon } from "@/ui/design-system/icon";
+import { frontierSeasonOnePreset } from "../../../../../../config/source/frontier/season-one";
+import { previewRuinGuardBounds } from "../../../../../../contracts/l3/world-native/schema/site-previews.gen";
 import "./workshop-model-lab.css";
 import "./frontier-beast-lab.css";
 import "@/three/map-plates/map-plates.css";
 
 const MODEL_BEASTS = Object.keys(FRONTIER_BEASTS).map((beast) => ({ beast: beast as keyof typeof FRONTIER_BEASTS }));
 const MODELS: readonly LineupAsset[] = MODEL_BEASTS.map(({ beast }) => ({
-  label: BEAST_NAMES[beast],
-  parts: [{ path: FRONTIER_BEASTS[beast].path, scale: FRONTIER_BEASTS[beast].maxScale }],
+  label: beastOfModel(beast).name,
+  parts: [{ path: FRONTIER_BEASTS[beast].path, scale: largestBeastScale(beast), idle: beastOfModel(beast).idle }],
 }));
 const SITES = [
   { kind: "Camp", category: StructureType.Camp, base: CAMP_MODEL_PATH },
-  { kind: "Rift", category: StructureType.Rift, base: "/models/reward-tiles/rift.glb" },
+  { kind: "Rift", category: StructureType.Rift, base: RiftModelPath },
   { kind: "Ruin", category: StructureType.Ruin, base: FALLEN_REALM_RUIN_PATH },
   { kind: "Beasts", category: StructureType.Beasts, base: "" },
 ] as const;
-const SITE_MODELS: readonly LineupAsset[] = SITES.map(({ category, base }) => {
-  const beast = frontierBeast(0, category, "lowly");
-  const composition = frontierSiteComposition(category);
-  return {
-    label: frontierSiteName(category, beast),
-    parts: [
-      ...(composition.baseScale ? [{ path: base, scale: composition.baseScale, z: composition.baseZ }] : []),
-      { path: FRONTIER_BEASTS[beast.beast].path, scale: beast.scale, z: composition.beastZ, y: composition.beastY },
-    ],
-  };
-});
-const BEAST_MODELS = (["lowly", "stronger"] as const).map((band) => {
-  const beast = frontierBeast(0, StructureType.Beasts, band);
-  return { label: `${beast.name} · ${band}`, parts: [{ path: FRONTIER_BEASTS[beast.beast].path, scale: beast.scale }] };
-});
+const siteModels = (layer: number): readonly LineupAsset[] =>
+  SITES.map(({ category, base }) => {
+    const beast = frontierBeast(layer, category, "lowly");
+    const composition = frontierSiteComposition(category);
+    return {
+      label: guardedSiteKind(category, beast),
+      parts: [
+        ...(composition.baseScale ? [{ path: base, scale: composition.baseScale, z: composition.baseZ }] : []),
+        {
+          path: FRONTIER_BEASTS[beast.beast].path,
+          scale: beast.scale,
+          z: composition.beastZ,
+          y: composition.beastY,
+          idle: beast.idle,
+        },
+      ],
+    };
+  });
+const roamingModels = (layer: number): readonly LineupAsset[] =>
+  (["lowly", "stronger"] as const).map((band) => {
+    const beast = frontierBeast(layer, StructureType.Beasts, band);
+    return {
+      label: `${beast.name} · ${band}`,
+      parts: [{ path: FRONTIER_BEASTS[beast.beast].path, scale: beast.scale, idle: beast.idle }],
+    };
+  });
 
-const LINEUPS: Readonly<Record<string, readonly LineupAsset[]>> = {
+const FIXED_LINEUPS: Readonly<Record<string, readonly LineupAsset[]>> = {
   models: MODELS,
-  sites: SITE_MODELS,
-  beasts: BEAST_MODELS,
-  ruins: FALLEN_REALM_DEPTHS.map(({ beast, scale }, depth) => ({
-    label: `${BEAST_NAMES[beast]} · depth ${depth}`,
+  families: Object.values<BeastRow>(BEASTS).map((beast) => ({
+    label: `${beast.name} · ${LAYER_NAMES[beast.layer]} ${beast.family}`,
+    parts: [{ path: FRONTIER_BEASTS[beastModel(beast)].path, scale: beast.scale, idle: beast.idle }],
+  })),
+  ruins: beastsOfFamily("ruin").map((beast) => ({
+    label: `${beast.name} · ${LAYER_NAMES[beast.layer]}`,
     parts: [
       { path: FALLEN_REALM_RUIN_PATH, scale: 1 },
-      { path: FRONTIER_BEASTS[beast].path, scale },
+      { path: FRONTIER_BEASTS[beastModel(beast)].path, scale: beast.scale, idle: beast.idle },
     ],
   })),
+};
+const LAYERED_LINEUPS: Readonly<Record<string, (layer: number) => readonly LineupAsset[]>> = {
+  sites: siteModels,
+  beasts: roamingModels,
 };
 
 export function FrontierBeastLab() {
   const [params, setParams] = useSearchParams();
   const group = params.get("group") ?? "models";
-  const lineup = LINEUPS[group] ?? MODELS;
+  const [depth, setDepth] = useState(0);
+  const lineupLayer = LAYERED_LINEUPS[group] ? depth : 0;
+  const lineup = useMemo(
+    () => LAYERED_LINEUPS[group]?.(lineupLayer) ?? FIXED_LINEUPS[group] ?? MODELS,
+    [group, lineupLayer],
+  );
   const index = Number(params.get("focus"));
   const focus =
     params.has("focus") && Number.isInteger(index) && index >= 0 && index < lineup.length ? index : "lineup";
   const settings: LineupSettings = {
     focus,
-    distance: focus === "lineup" ? 20 : 3.5,
+    distance: focus === "lineup" ? Math.max(20, lineup.length * 2.5) : 3.5,
     yaw: Number(params.get("yaw") ?? 30),
     lighting: params.get("lighting") === "sunset" ? "sunset" : "day",
   };
@@ -84,9 +117,14 @@ export function FrontierBeastLab() {
   const [panel, setPanel] = useState(false);
   const [site, setSite] = useState(2);
   const [band, setBand] = useState<BeastBand>("lowly");
-  const [depth, setDepth] = useState(0);
   const beast = frontierBeast(depth, SITES[site].category, band);
-  const strength = site === 3 ? (band === "lowly" ? 325 : 500) : 2800;
+  const bounds = frontierSeasonOnePreset.depths[depth]!;
+  const strength = [
+    bounds.siteGuardLower,
+    bounds.riftGuardLower,
+    previewRuinGuardBounds(depth + 1, depth)[0],
+    band === "lowly" ? bounds.beastWeakLower : bounds.beastStrongLower,
+  ][site]!;
   const plate = buildStructurePlate({
     entityId: 29,
     level: 0,
@@ -137,12 +175,12 @@ export function FrontierBeastLab() {
       <header>
         <Link to="/lab/models">Models</Link>
         <h1>Frontier beasts</h1>
-        <Link to="?family=beasts&group=site-map">Final site map</Link>
         <label>
           Set{" "}
           <select aria-label="Set" value={group} onChange={(e) => change("group", e.target.value)}>
-            <option value="models">Eight production species</option>
-            <option value="ruins">Ruin depths</option>
+            <option value="models">Production species</option>
+            <option value="families">Every beast by family and layer</option>
+            <option value="ruins">Ruin layers</option>
             <option value="sites">Standing sites</option>
             <option value="beasts">Roaming beasts</option>
           </select>
@@ -193,16 +231,19 @@ export function FrontierBeastLab() {
                 ))}
               </select>
             </label>
-            {site === 3 ? (
+            <select aria-label="Layer" value={depth} onChange={(e) => setDepth(Number(e.target.value))}>
+              {LAYER_NAMES.slice(0, 3).map((label, index) => (
+                <option key={label} value={index}>
+                  {label}
+                </option>
+              ))}
+            </select>
+            {site === 3 && (
               <select aria-label="Beast strength" value={band} onChange={(e) => setBand(e.target.value as BeastBand)}>
-                <option value="lowly">Lowly · {BEAST_NAMES.cyclops}</option>
-                <option value="stronger">Stronger · {BEAST_NAMES.wraith}</option>
-              </select>
-            ) : (
-              <select aria-label="Depth" value={depth} onChange={(e) => setDepth(Number(e.target.value))}>
-                {["Surface", "I", "II", "III"].map((label, index) => (
-                  <option key={label} value={index}>
-                    {label}
+                {(["lowly", "stronger"] as const).map((strengthBand) => (
+                  <option key={strengthBand} value={strengthBand}>
+                    {strengthBand === "lowly" ? "Lowly" : "Stronger"} ·{" "}
+                    {frontierBeast(depth, StructureType.Beasts, strengthBand).name}
                   </option>
                 ))}
               </select>
@@ -217,7 +258,7 @@ export function FrontierBeastLab() {
           <div className="beast-icon-studies">
             <small>Species portraits · 20 px</small>
             {MODEL_BEASTS.map(({ beast: species }) => (
-              <span key={species} title={BEAST_NAMES[species]}>
+              <span key={species} title={beastOfModel(species).name}>
                 <Icon name={beastMeaning(species)} size={20} />
               </span>
             ))}
@@ -234,7 +275,6 @@ export function FrontierBeastLab() {
               guardLeft: Math.floor(strength / 3),
             }}
             pay={site === 0 ? { icon: "labor", amount: 1400 } : site === 1 ? { icon: "essence", amount: 8400 } : null}
-            xp={132}
             verb={null}
             onClose={() => setPanel(false)}
           />

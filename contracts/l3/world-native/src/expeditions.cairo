@@ -41,13 +41,18 @@ pub struct SitePayout {
     pub reward: Option<crate::resources::ResourceAmount>,
 }
 
-// Camps and beasts pay labor on clear; a ruin pays the chest stored with it (crate::relics::SiteChest).
-pub fn site_reward(category: u8, site: ExpeditionSite, depth: u8) -> Option<crate::resources::ResourceAmount> {
-    use crate::resources::{ESSENCE, LABOR, ResourceAmount};
+// Camps pay labor, herds wheat, and rifts Essence.
+pub fn site_reward(
+    category: u8, site: ExpeditionSite, depth: u8, band: bool,
+) -> Option<crate::resources::ResourceAmount> {
+    if band {
+        return None;
+    }
+    use crate::resources::{ESSENCE, LABOR, ResourceAmount, WHEAT};
     let reward = if category == crate::taxonomy::CAMP_CATEGORY {
         Some(ResourceAmount { resource_type: LABOR, amount: site.initial_guard_count / 2 })
     } else if category == crate::taxonomy::BEASTS_CATEGORY {
-        Some(ResourceAmount { resource_type: LABOR, amount: site.initial_guard_count / 4 })
+        Some(ResourceAmount { resource_type: WHEAT, amount: site.initial_guard_count * 4 })
     } else if category == crate::taxonomy::RIFT_CATEGORY {
         Some(ResourceAmount { resource_type: ESSENCE, amount: site.initial_guard_count * 3 })
     } else {
@@ -56,21 +61,42 @@ pub fn site_reward(category: u8, site: ExpeditionSite, depth: u8) -> Option<crat
     reward.map(|reward| ResourceAmount { amount: depth_reward(reward.amount, depth), ..reward })
 }
 
+
+pub fn is_band(site: ExpeditionSite, rules: DepthRules) -> bool {
+    site.category == crate::taxonomy::BEASTS_CATEGORY
+        && site.initial_guard_count > Into::<u16, u128>::into(rules.beast_weak_upper)
+        * crate::rules::RESOURCE_PRECISION
+}
+
+
+pub fn is_supply_post(site: ExpeditionSite, home: u64, today: u64, spacing: u32) -> bool {
+    !site.alt
+        && site.category == crate::taxonomy::CAMP_CATEGORY
+        && (site.row / spacing) % 4 < 3
+        && Into::<u32, u64>::into(site.row / spacing / 4) == today
+        && site.clear.map(|receipt| receipt.home_id == home).unwrap_or(false)
+}
+
 pub fn depth_reward(amount: u128, depth: u8) -> u128 {
     amount * (2 + depth.into()) / 2
 }
 
-pub fn validate_game(rules: crate::registrar::LaunchRules, start: u64, duration: u64) {
-    if rules.day_unit_seconds == 0 {
-        return;
-    }
-    assert!(rules.spacing >= 16, "expedition regions are too small");
-    assert!(start % rules.armies_tick_seconds == 0, "season does not start on a tick");
-    assert!(duration > 0 && duration % rules.armies_tick_seconds == 0, "season does not end on a tick");
-    let spacing: u128 = rules.spacing.into();
+pub fn validate_game(game: crate::game::GameRegistry) {
+    let tick = crate::clock::armies_tick_seconds(game);
+    let duration = game.end_at - game.start_main_at;
+    assert!(game.start_main_at % tick == 0, "season does not start on a tick");
+    assert!(duration > 0 && duration % tick == 0, "season does not end on a tick");
+    assert_season_fits_map(game, duration);
+}
+
+#[cfg(feature: "blitz")]
+fn assert_season_fits_map(game: crate::game::GameRegistry, duration: u64) {}
+
+#[cfg(not(feature: "blitz"))]
+fn assert_season_fits_map(game: crate::game::GameRegistry, duration: u64) {
+    let spacing: u128 = crate::logic::settlement::spacing().into();
     // Before the seed is drawn, bound the map using the shortest possible day.
-    let season_days: u128 = (duration / (2 * Into::<u32, u64>::into(rules.day_unit_seconds))).into() + 3;
-    assert!(spacing * crate::realms::CANONICAL_REALM_COUNT.into() < 0x7fffffff, "expedition map exhausted");
+    let season_days: u128 = (duration / (2 * Into::<u32, u64>::into(crate::clock::day_unit_seconds(game)))).into() + 3;
     assert!(season_days * 4 * spacing < 0x7fffffff, "expedition season exceeds map");
 }
 
@@ -111,18 +137,12 @@ pub fn home_ring_center(coord: Coord, spacing: u32) -> Coord {
     Coord { alt: false, x: coord.x / spacing * spacing + spacing / 2, y: coord.y / spacing * spacing + spacing / 2 }
 }
 
-// The day's spire, which depth research lights: one of the home ring's six tiles, turning one step each day so the
-// first march from home differs daily. It is a rule, not a stored structure.
-pub fn spire(spacing: u32, region_id: u32, day: u64) -> Coord {
-    crate::geometry::neighbor(site(spacing, region_id, day, 0), (day % 6).try_into().unwrap())
-}
-
-/// An army lives only on its own day's map: on any later day it is gone.
-pub fn is_current(coord: Coord, spacing: u32, day: u64) -> bool {
-    !coord.alt && region_day(coord, spacing) == day
-}
 
 pub fn assert_same_region(origin: Coord, destination: Coord, spacing: u32) {
+    assert!(inside_region(origin, destination, spacing), "outside expedition region");
+}
+
+pub fn inside_region(origin: Coord, destination: Coord, spacing: u32) -> bool {
     let same_region = origin.x / spacing == destination.x / spacing && origin.y / spacing == destination.y / spacing;
     let local_x = destination.x % spacing;
     let local_y = destination.y % spacing;
@@ -130,7 +150,7 @@ pub fn assert_same_region(origin: Coord, destination: Coord, spacing: u32) {
     let inside_region = local_x >= margin && local_x < spacing
         - margin && local_y >= margin && local_y < spacing
         - margin;
-    assert!(!destination.alt && same_region && inside_region, "outside expedition region");
+    !destination.alt && same_region && inside_region
 }
 
 // Each day's map draws its own terrain: the climate seeds move by the day, counted in units from absolute time so
@@ -151,11 +171,11 @@ pub struct DepthRules {
     pub reveal_percent: u16,
     pub site_guard_lower: u16,
     pub site_guard_upper: u16,
+    pub rift_guard_lower: u16,
+    pub rift_guard_upper: u16,
     pub reveal_site_neighbors: bool,
     // Each chest tier's odds, in basis points, for a ruin found at this depth.
     pub chest: crate::relics::ChestTiers,
-    pub ruin_guard_lower: u32,
-    pub ruin_guard_upper: u32,
     pub guard_step: u32,
     pub beast_weak_lower: u16,
     pub beast_weak_upper: u16,
@@ -194,13 +214,7 @@ pub struct ExpeditionDiscovery {
 }
 #[starknet::interface]
 pub trait IFrontierDiscovery<T> {
-    fn consume_frontier_site(ref self: T, key: crate::map::TileKey, explorer_id: u64) -> Option<u8>;
-    fn shrine_reward(self: @T, key: crate::resources::ResourceKey) -> Option<crate::relics::ShrineReward>;
-    fn frontier_discovery_rules(self: @T, game_id: u32) -> Option<FrontierDiscoveryRules>;
     fn expedition_discovery(self: @T, key: ExpeditionDiscoveryKey) -> Option<ExpeditionDiscovery>;
-    fn discover_frontier_tile(
-        ref self: T, key: crate::map::TileKey, explorer_id: u64, seed: u256, context: crate::commands::ActionContext,
-    ) -> crate::discovery::Discovery;
 }
 
 #[starknet::interface]
@@ -210,6 +224,7 @@ pub trait ISiteRewards<T> {
         key: crate::resources::ResourceKey,
         explorer: crate::troops::ExplorerKey,
         home_id: u64,
+        clean: bool,
         context: crate::commands::ActionContext,
     );
 }

@@ -15,89 +15,20 @@ pub struct ProductionRecipe {
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
-pub struct RecipeConfig {
-    pub resource_type: u8,
-    pub recipe: ProductionRecipe,
-}
-
-#[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct RefillProduction {
     pub structure_id: u64,
     pub resource_types: Span<u8>,
     pub amounts: Span<u128>,
 }
 
-#[derive(Copy, Drop, Serde, Default, Debug, PartialEq)]
-pub struct ProductionBonus {
-    pub incr_resource_rate_percent_num: u16,
-    pub incr_labor_rate_percent_num: u16,
-    pub incr_troop_rate_percent_num: u16,
-    pub incr_resource_rate_end_at: u32,
-    pub incr_labor_rate_end_at: u32,
-    pub incr_troop_rate_end_at: u32,
-}
-
-const U16_SCALE: u128 = 0x10000;
-const U32_SCALE: u128 = 0x100000000;
-const U48_SCALE: u128 = 0x1000000000000;
-
-pub impl BonusPacking of starknet::storage_access::StorePacking<ProductionBonus, felt252> {
-    fn pack(value: ProductionBonus) -> felt252 {
-        let percentages: u128 = value.incr_resource_rate_percent_num.into()
-            + value.incr_labor_rate_percent_num.into() * U16_SCALE
-            + value.incr_troop_rate_percent_num.into() * U32_SCALE;
-        let ends: u128 = value.incr_resource_rate_end_at.into()
-            + value.incr_labor_rate_end_at.into() * U32_SCALE
-            + value.incr_troop_rate_end_at.into() * U32_SCALE * U32_SCALE;
-        percentages.into() + ends.into() * U48_SCALE.into()
-    }
-    fn unpack(value: felt252) -> ProductionBonus {
-        let value: u256 = value.into();
-        let percentages = value.low % U48_SCALE;
-        let ends = value.low / U48_SCALE + value.high * 0x100000000000000000000;
-        ProductionBonus {
-            incr_resource_rate_percent_num: (percentages % U16_SCALE).try_into().unwrap(),
-            incr_labor_rate_percent_num: (percentages / U16_SCALE % U16_SCALE).try_into().unwrap(),
-            incr_troop_rate_percent_num: (percentages / U32_SCALE).try_into().unwrap(),
-            incr_resource_rate_end_at: (ends % U32_SCALE).try_into().unwrap(),
-            incr_labor_rate_end_at: (ends / U32_SCALE % U32_SCALE).try_into().unwrap(),
-            incr_troop_rate_end_at: (ends / U32_SCALE / U32_SCALE).try_into().unwrap(),
-        }
-    }
-}
-
-pub fn bonus_output(bonus: ProductionBonus, resource_type: u8, amount: u128, timestamp: u64) -> u128 {
-    let (percent, end) = if resource_type == 23 {
-        (bonus.incr_labor_rate_percent_num, bonus.incr_labor_rate_end_at)
-    } else if crate::resources::is_troop_resource(resource_type) {
-        (bonus.incr_troop_rate_percent_num, bonus.incr_troop_rate_end_at)
-    } else {
-        (bonus.incr_resource_rate_percent_num, bonus.incr_resource_rate_end_at)
-    };
-    if !crate::relics::bonus_active(end, timestamp) {
-        amount
-    } else {
-        amount + crate::math::PercentageImpl::get(amount, percent.into())
-    }
-}
-
 #[starknet::interface]
 pub trait IProductionRules<T> {
     #[cfg(feature: "test_support")]
     fn production_recipe(self: @T, key: RecipeKey) -> ProductionRecipe;
-    #[cfg(feature: "test_support")]
-    fn production_bonus(self: @T, key: crate::resources::ResourceKey) -> ProductionBonus;
 }
 
 #[starknet::interface]
 pub trait IProductionCommands<T> {
-    fn burn_labor_for_resource_production(
-        ref self: T,
-        game_id: u32,
-        actor: starknet::ContractAddress,
-        command: RefillProduction,
-        context: crate::commands::ActionContext,
-    );
     fn burn_resource_for_resource_production(
         ref self: T,
         game_id: u32,
@@ -105,6 +36,15 @@ pub trait IProductionCommands<T> {
         command: RefillProduction,
         context: crate::commands::ActionContext,
     );
+}
+
+#[derive(Copy, Drop)]
+pub struct RecipeRow {
+    pub simple_output: u64,
+    pub complex_output: u64,
+    pub first_input: u32,
+    pub simple_count: u32,
+    pub complex_count: u32,
 }
 
 #[derive(Copy, Drop, Default, starknet::Store)]

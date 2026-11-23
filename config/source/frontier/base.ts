@@ -1,39 +1,34 @@
 import { FRONTIER_ARMIES_TICK_SECONDS } from "./clock";
 import { buildingIds, frontierPreset } from "./native";
-import { nativeResearchConstants as research } from "../../../contracts/l3/world-native/schema/client.gen";
+import { nativeResearchConstants as research } from "../../../contracts/l3/world-native/schema/balance.gen";
 import { RESOURCE_PRECISION } from "../../../packages/types/src/constants";
 import type { ConfigPatch } from "../common/merge-config";
 import { mergeConfigPatches } from "../common/merge-config";
 import { arenaBaseConfig } from "../common/arena/base";
 
 const resourceIds = Array.from({ length: 58 }, (_, index) => index + 1);
-const trainingBuildings: readonly number[] = [
-  research.WAR_HALL,
-  research.SUPPLY_YARD,
-  research.SCOUTS_LODGE,
-  research.HEARTH,
-];
 const laborCosts: Record<number, number> = {
-  [research.HUT]: 300,
   [research.WORKSHOP]: 2000,
   [research.BARRACKS]: 400,
+  [research.RANGE]: 500,
   [research.FARM]: 400,
 };
-const populationCosts: Record<number, number> = {
-  [research.HUT]: 0,
-  [research.BARRACKS]: 3,
-  [research.FARM]: 1,
-};
-// One troop type: Barracks make Knight T1 (resource 26) and nothing else.
 const rates: Record<number, number> = {
   23: 0.028,
   26: 0.028,
+  29: 100 / 3600,
   35: 0.084,
 };
+const noPopulation = Object.fromEntries(buildingIds.map((id) => [id, 0]));
 const buildingCosts = Object.fromEntries(
   buildingIds.map((id) => {
-    if (trainingBuildings.includes(id)) {
-      const row = research.ROW_WAR_HALL + id - research.WAR_HALL;
+    if (id === research.SUPPLY_YARD || id === research.CONSCRIPTION_CAMP || id === research.RATIONS_DEPOT) {
+      const row =
+        id === research.CONSCRIPTION_CAMP
+          ? research.ROW_CONSCRIPTION
+          : id === research.RATIONS_DEPOT
+            ? research.ROW_RATIONS
+            : research.ROW_SUPPLY_YARD;
       const rank = frontierPreset.research!.find((price) => price.row === row && price.tier === 1)!;
       return [
         id,
@@ -48,7 +43,7 @@ const buildingCosts = Object.fromEntries(
 );
 // Barracks train from nothing. A troop's recipe is what its realm pays, per troop, to raise it into an army.
 const troopRaiseCosts = Object.fromEntries(
-  resourceIds.map((id) => [id, id === 26 ? [{ resource: 35, amount: 2 }] : []]),
+  resourceIds.map((id) => [id, id === 26 || id === 29 ? [{ resource: 35, amount: 2 }] : []]),
 );
 
 // Combat keeps the existing troop formula; the board and economy use Frontier's sheet.
@@ -56,13 +51,11 @@ export const frontierBaseConfig: ConfigPatch = mergeConfigPatches(arenaBaseConfi
   presetId: frontierPreset.id,
   blitz: {
     registration: { registration_count_max: 0 },
-    exploration: { rewards: [] },
   },
   dev: { mode: { on: false } },
   season: {
     // Unset until the operator supplies the calendar; the launch boundary refuses zero.
     durationSeconds: 0,
-    endGraceSeconds: 0,
     startSettlingAfterSeconds: 0,
     startMainAfterSeconds: 0,
   },
@@ -73,12 +66,13 @@ export const frontierBaseConfig: ConfigPatch = mergeConfigPatches(arenaBaseConfi
     { resource: 35, amount: 4500 },
     { resource: 23, amount: 2000 },
   ],
+  populationCapacity: { basePopulation: 0 },
   villageStartingResources: [],
   campStartingResources: [],
   resources: {
     resourcePrecision: RESOURCE_PRECISION,
     productionBySimpleRecipe: troopRaiseCosts,
-    productionBySimpleRecipeOutputs: Object.fromEntries(resourceIds.map((id) => [id, id === 26 ? 1 : 0])),
+    productionBySimpleRecipeOutputs: Object.fromEntries(resourceIds.map((id) => [id, id === 26 || id === 29 ? 1 : 0])),
     productionByComplexRecipe: Object.fromEntries(resourceIds.map((id) => [id, []])),
     productionByComplexRecipeOutputs: Object.fromEntries(resourceIds.map((id) => [id, rates[id] ?? 0])),
     resourceWeightsGrams: Object.fromEntries(
@@ -88,8 +82,8 @@ export const frontierBaseConfig: ConfigPatch = mergeConfigPatches(arenaBaseConfi
   buildings: {
     // A copy costs its base times 1 + (copies - 1)^2: a surcharge of 1.0, in basis points.
     buildingFixedCostScalePercent: 10000,
-    buildingPopulation: Object.fromEntries(buildingIds.map((id) => [id, populationCosts[id] ?? 2])),
-    buildingCapacity: Object.fromEntries(buildingIds.map((id) => [id, id === research.HUT ? 6 : 0])),
+    buildingPopulation: noPopulation,
+    buildingCapacity: noPopulation,
     simpleBuildingCost: buildingCosts,
     complexBuildingCosts: Object.fromEntries(buildingIds.map((id) => [id, []])),
   },
@@ -147,8 +141,6 @@ export const frontierBaseConfig: ConfigPatch = mergeConfigPatches(arenaBaseConfi
     shardsMinesFailProbability: 1,
     campFindProbability: 0,
     campFindFailProbability: 1,
-    bitcoinMineWinProbability: 0,
-    bitcoinMineFailProbability: 1,
     hyperstructureWinProbAtCenter: 0,
     hyperstructureFailProbAtCenter: 1,
     relicDiscoveryIntervalSeconds: 0,
@@ -165,6 +157,5 @@ export const frontierBaseConfig: ConfigPatch = mergeConfigPatches(arenaBaseConfi
     pointsForNonHyperstructureClaimAgainstBandits: 0n,
     pointsForTileExploration: 0n,
     pointsForRelicDiscovery: 0n,
-    pointsForWin: 0n,
   },
 });

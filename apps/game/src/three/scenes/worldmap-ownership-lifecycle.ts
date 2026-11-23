@@ -5,10 +5,9 @@ interface Destroyable {
 interface WorldmapOwnedManagers {
   armyManager?: Destroyable | null;
   structureManager?: Destroyable | null;
-  reservedHyperstructureManager?: Destroyable | null;
   spireManager?: Destroyable | null;
   mapSiteManager?: Destroyable | null;
-  chestManager?: Destroyable | null;
+  deepArenaManager?: Destroyable | null;
   fxManager?: Destroyable | null;
   resourceFXManager?: Destroyable | null;
 }
@@ -16,10 +15,9 @@ interface WorldmapOwnedManagers {
 export function destroyWorldmapOwnedManagers(managers: WorldmapOwnedManagers): void {
   managers.armyManager?.destroy();
   managers.structureManager?.destroy();
-  managers.reservedHyperstructureManager?.destroy();
   managers.spireManager?.destroy();
   managers.mapSiteManager?.destroy();
-  managers.chestManager?.destroy();
+  managers.deepArenaManager?.destroy();
   managers.fxManager?.destroy();
   managers.resourceFXManager?.destroy();
 }

@@ -1,5 +1,9 @@
 import { buildableRadius } from "../utils/castle-reach";
-import { configManager, divideByPrecision, getBalance, getBlockTimestamp, getBuildingCosts } from "../index";
+import { configManager } from "../managers/config-manager";
+import { divideByPrecision } from "../utils/utils";
+import { getBalance } from "../utils/resources";
+import { getBlockTimestamp } from "../utils/timestamp";
+import { getBuildingCosts } from "../utils/buildings";
 import {
   BUILDINGS_CENTER,
   BuildingType,

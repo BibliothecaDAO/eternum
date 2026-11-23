@@ -12,6 +12,12 @@ vi.mock("@/hooks/context/identity-session", async (original) => ({
   useIdentitySession: () => ({ status: "signed-out", session: null }),
 }));
 
+const season = vi.hoisted(() => ({ calendar: { data: undefined as unknown } }));
+vi.mock("../season-calendar", async (original) => ({
+  ...(await original<typeof import("../season-calendar")>()),
+  useSeasonCalendar: () => season.calendar,
+}));
+
 import { IdentityRequestError } from "@realms-world/identity";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 
@@ -24,6 +30,7 @@ beforeEach(() => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   setViewportWidth(390);
   service.openShare.mockReset();
+  season.calendar = { data: undefined };
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
@@ -65,6 +72,54 @@ it("records the visit and says who shared which day, with the way into Frontier"
   expect(host.textContent).toContain("Ashwalker shared Day 12 of Frontier");
   await act(async () => (play() as HTMLElement).click());
   expect(host.textContent).toBe("Play page");
+});
+
+const invite = () => host.querySelector("[data-shared-invite]")?.textContent;
+const pageLine = () => host.querySelector("p")?.textContent;
+
+it("names who invites the friend to which Aspect, its members and its four Orders, by the catalog's names", async () => {
+  service.openShare.mockResolvedValue({ kind: "aspect", moment: 2, name: "Linden", order: null, members: 31 });
+  await open("/s/ABCD2347");
+  expect(frontierNames()).toEqual(["Join Luminary", "Frontier"]);
+  expect(invite()).toBe(
+    "Linden invites youJoin Luminary31 members · Order of Perfection, Brilliance, Protection, Enlightenment",
+  );
+  expect(pageLine()).toBe("Members of one Aspect never fight each other.");
+});
+
+it("names no members for an invite into a running game, whose members the game counts", async () => {
+  service.openShare.mockResolvedValue({ kind: "aspect", moment: 4, name: "Orrin", order: null, members: null });
+  await open("/s/ABCD2350");
+  expect(invite()).toBe("Orrin invites youJoin InsightOrder of Fox, Twins, Reflection, Detection");
+});
+
+it("says which Order the sharer kept, and names a sharer with no public name as a player", async () => {
+  service.openShare.mockResolvedValue({ kind: "aspect", moment: 1, name: null, order: 13, members: 1 });
+  await open("/s/ABCD2348");
+  expect(invite()).toContain("A player invites youJoin Prowess1 member · ");
+  expect(pageLine()).toBe("Members of one Aspect never fight each other. A player plays Order of Titans.");
+});
+
+it("before the season, shows the time left and asks a signed-out friend to create an account", async () => {
+  const now = Math.floor(Date.now() / 1000);
+  season.calendar = {
+    data: {
+      phases: [
+        {
+          phase: "frontier",
+          startsAt: new Date((now + 14 * 86_400) * 1000).toISOString(),
+          endsAt: new Date((now + 64 * 86_400) * 1000).toISOString(),
+        },
+      ],
+    },
+  };
+  service.openShare.mockResolvedValue({ kind: "aspect", moment: 1, name: "Dana", order: 13, members: 39 });
+  await open("/s/ABCD2349");
+  expect(host.textContent).toContain("Starts");
+  expect(pageLine()).toBe("Members of one Aspect never fight each other. Dana plays Order of Titans.");
+  const verbs = [...host.querySelectorAll("button, a")].map((each) => each.textContent);
+  expect(verbs).toContain("Create your account");
+  expect(verbs).not.toContain("Start your adventure");
 });
 
 it("tells identity the channel the link was posted from, and nothing for one no player's link carries", async () => {

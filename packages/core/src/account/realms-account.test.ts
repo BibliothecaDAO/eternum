@@ -9,7 +9,7 @@ import {
   joinBotAccount,
   joinRealmsAccount,
   readAccountDevices,
-  revokeDeviceEverywhere,
+  revokeAccountDevice,
 } from "./realms-account";
 
 const shard = { chainId: "0x1", accountClassHash: "0x2", guardianPublicKey: "0x3", l2GasBound: "0x47868c00" };
@@ -159,46 +159,31 @@ const deadShard = (url: string) => ({
   } as unknown as ProviderInterface,
 });
 
-describe("the account's devices across shards", () => {
-  it("lists what the readable shards hold and names each shard it could not read", async () => {
-    const a = accountShard("https://a.test", { devices: ["0xa1", "0xb2"] });
-    const b = accountShard("https://b.test", { devices: ["0xb2"] });
-
-    const { devices, failures } = await readAccountDevices("0x9", [a, deadShard("https://dead.test"), b]);
-
-    expect([...devices].map(([key, on]) => [key, on.map(({ url }) => url)])).toEqual([
-      ["0xa1", ["https://a.test"]],
-      ["0xb2", ["https://a.test", "https://b.test"]],
+describe("the account's devices on the official chain", () => {
+  it("lists the devices the chain holds and names its failure when it cannot be read", async () => {
+    expect(await readAccountDevices("0x9", accountShard("https://a.test", { devices: ["0xa1", "0xb2"] }))).toEqual([
+      "0xa1",
+      "0xb2",
     ]);
-    expect(failures).toEqual([{ shard: "https://dead.test", error: new Error("node unreachable") }]);
+    await expect(readAccountDevices("0x9", deadShard("https://dead.test"))).rejects.toThrow("node unreachable");
   });
 
-  it("revokes on every shard, joining first where this device never signed, and names the shards that failed", async () => {
+  it("revokes a device, joining first when this device never signed on the chain", async () => {
     const execute = vi.spyOn(Account.prototype, "execute").mockResolvedValue({ transaction_hash: "0x8" });
     vi.spyOn(Account.prototype, "waitForTransaction").mockResolvedValue({} as never);
     const guardian = vi.fn(async () => ["0x5", "0x6"]);
-    const joined = accountShard("https://joined.test", { signs: true });
-    const neverJoined = accountShard("https://never-joined.test", { signs: false });
-
-    const failures = await revokeDeviceEverywhere({
-      shards: [joined, deadShard("https://dead.test"), neverJoined],
+    await revokeAccountDevice({
+      shard: accountShard("https://never-joined.test", { signs: false }),
       realmsId: "0x9",
       device,
       deviceKey: "0xa1",
       approve: guardian,
     });
-
-    expect(failures).toMatchObject([
-      {
-        shard: "https://dead.test",
-        error: { message: "account_join_read_failed", cause: new Error("node unreachable") },
-      },
-    ]);
     const revocations = execute.mock.calls.filter(
       ([call]) => (call as { entrypoint: string }).entrypoint === "revoke_device",
     );
-    expect(revocations).toHaveLength(2);
-    expect(guardian.mock.calls.map(([change]) => change.action).sort()).toEqual(["ADD", "REVOKE", "REVOKE"]);
+    expect(revocations).toHaveLength(1);
+    expect(guardian.mock.calls.map(([change]) => change.action).sort()).toEqual(["ADD", "REVOKE"]);
   });
 });
 
@@ -372,15 +357,15 @@ describe("a device change while a play of this browser is held", () => {
     const node = heldNode(realmsAccountAddress(realmsId, shard.accountClassHash, shard.guardianPublicKey), 4);
     const play = node.play();
     await vi.advanceTimersByTimeAsync(10);
-    const revoked = revokeDeviceEverywhere({
-      shards: [{ ...shard, url: "https://dev.test", provider: node.provider(true) }],
+    const revoked = revokeAccountDevice({
+      shard: { ...shard, url: "https://dev.test", provider: node.provider(true) },
       realmsId,
       device,
       deviceKey: "0xa1",
       approve,
     });
     await vi.advanceTimersByTimeAsync(5_000);
-    await expect(revoked).resolves.toEqual([]);
+    await expect(revoked).resolves.toBeUndefined();
     await expect((await play).inBlock).resolves.toBeUndefined();
     expect(node.sent()).toEqual([
       [7n, "play"],

@@ -1,0 +1,29 @@
+.oath-slot[data-filled] {
+  border-color: color-mix(in srgb, rgb(var(--hud-gold)) 55%, transparent);
+  background: color-mix(in srgb, rgb(var(--hud-gold)) 10%, var(--hud-well));
+}
+
+.oath-pips {
+  display: flex;
+  align-items: center;
+}
+.oath-pips__row {
+  display: flex;
+  align-items: center;
+  gap: theme(spacing.1);
+}
+.oath-pip {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed var(--hud-line-strong);
+  border-radius: var(--hud-radius-round);
+  background: var(--hud-well);
+}
+.oath-pip[data-filled] {
+  border-style: solid;
+  border-color: color-mix(in srgb, rgb(var(--hud-gold)) 75%, transparent);
+  background: color-mix(in srgb, rgb(var(--hud-gold)) 18%, var(--hud-well));
+}

@@ -2,6 +2,8 @@ use starknet::storage::Map;
 
 #[starknet::storage_node]
 pub struct RealmStateStorage {
+    pub order_count: Map<u8, u16>,
+    pub order_realms: Map<(u8, u16), u32>,
     pub catalogue_count: u32,
     pub traits: Map<u32, u32>,
     pub slots: Map<(u32, u32), u32>,

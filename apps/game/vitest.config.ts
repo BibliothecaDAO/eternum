@@ -45,6 +45,7 @@ export default defineConfig({
     },
     environment: "jsdom",
     environmentMatchGlobs: [
+      ["src/three/map-finish.test.ts", "jsdom"],
       ["src/three/**/*.test.ts", "node"],
       ["src/three/**/__tests__/*.test.ts", "node"],
       ["scripts/**/*.test.mjs", "node"],

@@ -14,9 +14,11 @@ vi.mock("@/hooks/helpers/use-block-timestamp", () => ({
 import { GameProvider } from "@/hooks/context/game-context";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { campBeside, otherArmyAt, SITE, SITE_TILE } from "@/ui/features/frontier/sites/site-fixture";
+import { campBeside, otherArmyAt, placeSite, SITE, SITE_TILE } from "@/ui/features/frontier/sites/site-fixture";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
-import { ActorType } from "@bibliothecadao/types";
+import { nativeTilePackingConstants } from "../../../../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeCommandBits } from "../../../../../../../contracts/l3/world-native/schema/commands.gen";
+import { ActorType, BiomeType, BiomeTypeToId } from "@bibliothecadao/types";
 import { QuickAttackPreview } from "./quick-attack-preview";
 
 const ARMY = 201;
@@ -40,26 +42,27 @@ afterEach(() => {
 const preview = (armyStamina: bigint, aimAt: typeof target = target) => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const { store } = campBeside("Camp", true, armyStamina);
+  placeSite(store);
   otherArmyAt(store, target.hex.x, target.hex.y);
-  // The camp's tile names it, as a Blitz structure's tile does.
+  const rules = store.require("SliceRules", { game_id: 1 });
+  const grassland = BigInt(BiomeTypeToId[BiomeType.Grassland]) * BigInt(nativeTilePackingConstants.BIOME_SCALE);
   store.applyFacts([
     {
-      model: "TileOccupancy",
-      key: "0x7101",
-      value: { game_id: 1, ...SITE_TILE, entity_id: SITE, category: 0, is_structure: true },
+      model: "SliceRules",
+      key: "0x100",
+      value: {
+        ...rules,
+        day_unit_seconds: 0,
+        mode_rules: 0,
+        command_mask: BigInt(rules.command_mask) | BigInt(nativeCommandBits.Battle),
+        battle_config: { ...rules.battle_config, regular_immunity_ticks: 0 },
+      },
     },
-  ] as never);
-  // The other army's realm, another player's.
-  const realm = store.require("Structure", { game_id: 1, entity_id: 7 });
-  store.applyFacts([
+    { model: "ExpeditionSite", key: "0x72", value: null },
     {
-      model: "Structure",
-      key: "0x92",
-      value: JSON.parse(
-        JSON.stringify({ ...realm, entity_id: 9, owner: "0x999" }, (_, v) =>
-          typeof v === "bigint" ? v.toString() : v,
-        ),
-      ),
+      model: "TileOpt",
+      key: "0x72011",
+      value: { game_id: 1, col: target.hex.x, row: target.hex.y, alt: false, data: grassland },
     },
   ] as never);
   const attack = vi.fn(() => Promise.resolve({ transaction_hash: "0x1" }));

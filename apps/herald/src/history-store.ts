@@ -4,8 +4,6 @@ import {
   type StoryHistoryCursor,
   type HeraldStoryHistoryPage,
 } from "@bibliothecadao/eternum/game-sync";
-import { PointsLeaderboard } from "./points-leaderboard";
-import type { PlayerActivityBreakdown, PointsRegistration } from "@bibliothecadao/eternum/game-sync";
 import { Pool, type PoolClient } from "pg";
 
 import type {
@@ -21,8 +19,6 @@ import { FRONTIER_REWARD_STORIES } from "./native/frontier-rewards";
 
 export interface HistoryCodec {
   storyModels: readonly string[];
-  pointsModel: string;
-  readPoints: (value: Record<string, unknown>) => PointsRegistration | null;
   participants?: (value: Record<string, unknown>) => { owners: string[]; entities: string[] };
 }
 
@@ -47,7 +43,8 @@ export interface HistoryQuery {
   model?: string;
   story?: string;
   offset: number;
-  owner?: string;
+  /** One player, or several: a story matches when any of them took part. */
+  owner?: string | readonly string[];
 }
 
 const scalarString = (value: unknown): string | null => {
@@ -103,7 +100,6 @@ const storedHistoryEvent = (event: DecodedWorldEvent, codec: HistoryCodec): Stor
 
 export class HistoryStore {
   private readonly pool: Pool;
-  private readonly points = new PointsLeaderboard();
   private readonly frozenReviews = new Set<string>();
 
   constructor(
@@ -186,7 +182,6 @@ export class HistoryStore {
       [this.chain, this.worldAddress],
     );
     for (const { game_id } of frozen.rows) this.frozenReviews.add(game_id);
-    await this.restorePointsLeaderboard();
   }
 
   public async appendEvents(
@@ -201,17 +196,15 @@ export class HistoryStore {
     if (rows.length === 0 && completeThroughBlock === undefined && !frontierDays?.length) return;
 
     const client = await this.pool.connect();
-    let registrations: Array<{ gameId: string; points: PointsRegistration }> = [];
     try {
       await client.query("BEGIN");
-      registrations = await this.insertNewHistory(client, rows);
+      await this.insertNewHistory(client, rows);
       await this.insertFrontierDays(client, frontierDays ?? []);
       if (completeThroughBlock !== undefined) {
         await this.advanceHistoryProgress(client, completeThroughBlock);
         if (frontierDays !== undefined) await this.advanceFrontierRanksProgress(client, completeThroughBlock);
       }
       await client.query("COMMIT");
-      for (const registration of registrations) this.points.accept(registration.gameId, registration.points);
     } catch (error) {
       await client.query("ROLLBACK");
       throw error;
@@ -239,8 +232,8 @@ export class HistoryStore {
   }
 
   private async insertNewHistory(client: PoolClient, rows: StoredHistoryEvent[]) {
-    if (rows.length === 0) return [];
-    const inserted = await client.query<Pick<StoredHistoryEvent, "game_id" | "value">>(
+    if (rows.length === 0) return;
+    await client.query(
       `INSERT INTO herald_history_events (
              chain, world_address, model, game_id, block_number, transaction_hash,
              transaction_index, event_index, owner, entity_id, participants, entities, value
@@ -251,14 +244,9 @@ export class HistoryStore {
              model text, game_id text, block_number bigint, transaction_hash text,
              transaction_index integer, event_index integer, owner text, entity_id text, participants text[], entities text[], value jsonb
            )
-           ON CONFLICT DO NOTHING
-           RETURNING game_id::text, value`,
+           ON CONFLICT DO NOTHING`,
       [this.chain, this.worldAddress, JSON.stringify(rows)],
     );
-    return inserted.rows.flatMap((row) => {
-      const points = this.codec.readPoints(row.value);
-      return points ? [{ gameId: row.game_id, points }] : [];
-    });
   }
 
   private async advanceHistoryProgress(client: PoolClient, completeThroughBlock: number): Promise<void> {
@@ -273,23 +261,6 @@ export class HistoryStore {
                updated_at = now()`,
       [this.chain, this.worldAddress, completeThroughBlock],
     );
-  }
-
-  /** Each player's points by activity. */
-  public activity(gameId: string): ReadonlyMap<string, PlayerActivityBreakdown> {
-    return this.points.activity(gameId);
-  }
-
-  private async restorePointsLeaderboard(): Promise<void> {
-    const result = await this.pool.query<{ game_id: string; value: Record<string, unknown> }>(
-      `SELECT game_id::text, value FROM herald_history_events
-       WHERE chain = $1 AND world_address = $2 AND model = $3`,
-      [this.chain, this.worldAddress, this.codec.pointsModel],
-    );
-    for (const row of result.rows) {
-      const registration = this.codec.readPoints(row.value);
-      if (registration) this.points.accept(row.game_id, registration);
-    }
   }
 
   public async freezeReviewSnapshot(gameId: string, createSnapshot: () => HeraldGameSnapshot): Promise<void> {
@@ -409,7 +380,10 @@ export class HistoryStore {
     };
     if (query.model) addFilter("model = $value", query.model);
     if (query.story) addFilter("value->'story' ? $value", query.story);
-    if (query.owner) addFilter("(owner = $value OR participants @> ARRAY[$value]::text[])", normalizeFelt(query.owner));
+    if (query.owner?.length) {
+      const owners = [query.owner].flat().map(normalizeFelt);
+      addFilter("(owner = ANY($value::text[]) OR participants && $value::text[])", owners);
+    }
     if (query.entityId)
       addFilter(
         "(entity_id = $value::numeric OR entities @> ARRAY[$value]::text[])",

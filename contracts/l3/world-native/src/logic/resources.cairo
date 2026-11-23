@@ -1,5 +1,9 @@
-use starknet::storage::{StorageMapReadAccess, StoragePathEntry, StoragePointerReadAccess};
-use crate::resources::{Production, ResourceKey, Weight, assert_resource, has_castle_limit, has_production};
+use starknet::storage::StorageMapReadAccess;
+#[cfg(not(feature: "blitz"))]
+use starknet::storage::{StoragePathEntry, StoragePointerReadAccess};
+#[cfg(not(feature: "blitz"))]
+use crate::resources::has_castle_limit;
+use crate::resources::{Production, ResourceKey, Weight, assert_resource, has_production};
 
 #[inline(never)]
 pub fn assert_exists(key: ResourceKey) {
@@ -35,17 +39,25 @@ pub fn weight(key: ResourceKey) -> Weight {
 /// Board realms have separate wheat/labor and troop bases. Every other store, and every store off a board, has no
 /// limit.
 #[inline(never)]
+#[cfg(feature: "blitz")]
+pub fn store_limit(key: ResourceKey, resource_type: u8) -> Option<u128> {
+    None
+}
+
+#[inline(never)]
+#[cfg(not(feature: "blitz"))]
 pub fn store_limit(key: ResourceKey, resource_type: u8) -> Option<u128> {
     if !has_castle_limit(resource_type) {
         return None;
     }
-    let preset = crate::logic::preset_record::for_game(key.game_id);
-    let board = preset.board_terms.read()?;
+    let board = crate::balance::structures::BOARD;
     let base = crate::state::read().structures.structures.entry((key.game_id, key.entity_id)).base.read();
     if base.category != crate::taxonomy::REALM_CATEGORY {
         return None;
     }
-    let cap: u128 = if resource_type == crate::resources::WHEAT || resource_type == crate::resources::LABOR {
+    let cap: u128 = if resource_type == crate::resources::LABOR {
+        (*crate::balance::structures::LABOR_STORES.span().at(base.level.into())).into()
+    } else if resource_type == crate::resources::WHEAT {
         let cap = match base.level {
             0 => board.settlement_resource_cap,
             1 => board.city_resource_cap,
@@ -55,17 +67,14 @@ pub fn store_limit(key: ResourceKey, resource_type: u8) -> Option<u128> {
         };
         cap.into()
     } else {
-        Into::<u32, u128>::into(crate::troops::deployment_cap(preset.rules.troop_limit_config.read(), base.level))
+        Into::<u32, u128>::into(crate::troops::deployment_cap(crate::balance::rules::TROOP_LIMIT_CONFIG, base.level))
             * Into::<u8, u128>::into(board.troop_store_deploys)
     };
     let castle_base = cap * crate::rules::RESOURCE_PRECISION;
-    let stores = if resource_type == crate::resources::WHEAT {
-        crate::research::picks(
-            crate::logic::research::learned(key), crate::research::ROW_FARM, crate::research::CHOICE_STORE,
-        )
-    } else if resource_type == crate::resources::LABOR {
-        crate::research::picks(
-            crate::logic::research::learned(key), crate::research::ROW_WORKSHOP, crate::research::CHOICE_STORE,
+    let stores = if resource_type == crate::resources::WHEAT || resource_type == crate::resources::LABOR {
+        crate::buildings::category_count(
+            crate::state::read().buildings.structure_buildings.read((key.game_id, key.entity_id)),
+            crate::research::STOREROOM,
         )
     } else {
         0
@@ -74,24 +83,17 @@ pub fn store_limit(key: ResourceKey, resource_type: u8) -> Option<u128> {
     Some(castle_base * (10000 + stores * board.storage_step_bps.into()) / 10000)
 }
 
-pub fn rule(game_id: u32, resource_type: u8) -> crate::resources::ResourceRule {
-    let preset = crate::logic::preset_record::for_game(game_id);
-    assert_resource(resource_type);
-    let (unit_weight, rates) = preset.resource_rules.read(resource_type);
-    crate::resources::ResourceRule {
-        resource_type,
-        unit_weight,
-        realm_rate: (rates % crate::resources::RESOURCE_RATE_SCALE).try_into().unwrap(),
-        village_rate: (rates / crate::resources::RESOURCE_RATE_SCALE).try_into().unwrap(),
+pub fn castle_labor_rate(level: u8) -> u64 {
+    let mut rate = rule(crate::resources::LABOR).realm_rate;
+    for _ in 0..level {
+        rate *= 2;
     }
+    rate
 }
 
-pub fn production_start(game_id: u32, game_context: crate::commands::ExecutionContext) -> u32 {
-    if crate::rules::rule_enabled(game_context.rules.unbox(), crate::rules::PRODUCTION_START) {
-        game_context.game.unbox().start_main_at.try_into().unwrap()
-    } else {
-        0
-    }
+pub fn rule(resource_type: u8) -> crate::resources::ResourceRule {
+    assert_resource(resource_type);
+    *crate::balance::resources::RESOURCE_RULES.span().at(resource_type.into() - 1)
 }
 
 #[starknet::component]
@@ -99,7 +101,7 @@ pub mod ResourceState {
     use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerWriteAccess};
     use crate::events::{RowDeleted, RowSet};
     use crate::resources::{
-        Production, ResourceKey, SettledResource, Weight, add, assert_production, has_production, settle, spend,
+        Production, ResourceKey, SettledResource, Weight, add, assert_production, has_production, spend,
     };
 
     #[storage]
@@ -137,12 +139,6 @@ pub mod ResourceState {
             for resource_type in 1_u8..59 {
                 let storage_key = (key.game_id, key.entity_id, resource_type);
                 self.write_balance(key, resource_type, self.data.resources.balances.read(storage_key), 0);
-                if has_production(resource_type) {
-                    self
-                        .write_production(
-                            key, resource_type, self.data.resources.productions.read(storage_key), Default::default(),
-                        );
-                }
             }
             self.data.resources.weights.write((key.game_id, key.entity_id), Default::default());
             self.data.resources.resource_exists.write((key.game_id, key.entity_id), false);
@@ -181,29 +177,20 @@ pub mod ResourceState {
         }
 
         fn settle_resource(
-            ref self: ComponentState<TContractState>,
-            key: ResourceKey,
-            resource_type: u8,
-            unit_weight: u128,
-            now: u32,
-            start_at: u32,
+            ref self: ComponentState<TContractState>, key: ResourceKey, resource_type: u8, unit_weight: u128, now: u32,
         ) -> u128 {
-            let (previous, resource) = self.load_settled(key, resource_type, unit_weight, now, start_at);
+            let (previous, resource) = self.load_settled(key, resource_type, unit_weight, now);
             self.commit_resource(key, resource_type, previous, resource);
             resource.balance
         }
         // A rate or a storage limit applies from the moment it changes: what accrued before settles under the old one.
-        fn settle_production(ref self: ComponentState<TContractState>, key: ResourceKey, now: u32, start_at: u32) {
+        fn settle_production(ref self: ComponentState<TContractState>, key: ResourceKey, now: u32) {
             for resource_type in 1_u8..59 {
                 if has_production(resource_type)
                     && crate::logic::resources::production(key, resource_type).building_count != 0 {
                     self
                         .settle_resource(
-                            key,
-                            resource_type,
-                            crate::logic::resources::rule(key.game_id, resource_type).unit_weight,
-                            now,
-                            start_at,
+                            key, resource_type, crate::logic::resources::rule(resource_type).unit_weight, now,
                         );
                 }
             }
@@ -216,16 +203,8 @@ pub mod ResourceState {
             timestamp: u64,
             game_context: crate::commands::ResourceContext,
         ) {
-            let rule = super::rule(key.game_id, resource_type);
-            self
-                .spend_resource(
-                    key,
-                    resource_type,
-                    amount,
-                    rule.unit_weight,
-                    timestamp.try_into().unwrap(),
-                    game_context.production_start,
-                );
+            let rule = super::rule(resource_type);
+            self.spend_resource(key, resource_type, amount, rule.unit_weight, timestamp.try_into().unwrap());
         }
         fn spend_resource(
             ref self: ComponentState<TContractState>,
@@ -234,9 +213,8 @@ pub mod ResourceState {
             amount: u128,
             unit_weight: u128,
             now: u32,
-            start_at: u32,
         ) {
-            let (previous, mut resource) = self.load_settled(key, resource_type, unit_weight, now, start_at);
+            let (previous, mut resource) = self.load_settled(key, resource_type, unit_weight, now);
             spend(resource_type, ref resource.balance, ref resource.weight, amount, unit_weight);
             self.commit_resource(key, resource_type, previous, resource);
         }
@@ -247,9 +225,8 @@ pub mod ResourceState {
             amount: u128,
             unit_weight: u128,
             now: u32,
-            start_at: u32,
         ) -> u128 {
-            let (previous, mut resource) = self.load_settled(key, resource_type, unit_weight, now, start_at);
+            let (previous, mut resource) = self.load_settled(key, resource_type, unit_weight, now);
             let granted = add(
                 resource_type, ref resource.balance, ref resource.weight, amount, unit_weight, resource.limit,
             );
@@ -263,10 +240,9 @@ pub mod ResourceState {
             output: u128,
             unit_weight: u128,
             now: u32,
-            start_at: u32,
         ) {
             assert_production(resource_type);
-            let (previous, mut resource) = self.load_settled(key, resource_type, unit_weight, now, start_at);
+            let (previous, mut resource) = self.load_settled(key, resource_type, unit_weight, now);
             if !crate::resources::is_unlimited(resource.production.output_amount_left) {
                 resource.production.output_amount_left += output;
             }
@@ -280,10 +256,10 @@ pub mod ResourceState {
             output: u128,
             unit_weight: u128,
             now: u32,
-            start_at: u32,
         ) {
             assert_production(resource_type);
-            let (previous, mut resource) = self.load_settled(key, resource_type, unit_weight, now, start_at);
+            let rate = crate::clock::per_second(key.game_id, rate);
+            let (previous, mut resource) = self.load_settled(key, resource_type, unit_weight, now);
             resource.production.building_count += 1;
             resource.production.production_rate += rate;
             if crate::resources::is_unlimited(output) {
@@ -300,28 +276,23 @@ pub mod ResourceState {
             rate: u64,
             unit_weight: u128,
             now: u32,
-            start_at: u32,
         ) {
             assert_production(resource_type);
-            let (previous, mut resource) = self.load_settled(key, resource_type, unit_weight, now, start_at);
+            let rate = crate::clock::per_second(key.game_id, rate);
+            let (previous, mut resource) = self.load_settled(key, resource_type, unit_weight, now);
             resource.production.building_count -= 1;
             resource.production.production_rate -= rate;
             self.commit_resource(key, resource_type, previous, resource);
         }
         fn change_structure_capacity(
-            ref self: ComponentState<TContractState>,
-            key: ResourceKey,
-            amount: u128,
-            adding: bool,
-            now: u32,
-            start_at: u32,
+            ref self: ComponentState<TContractState>, key: ResourceKey, amount: u128, adding: bool, now: u32,
         ) {
             crate::logic::resources::assert_exists(key);
             if crate::logic::resources::weight(key).capacity == 0xffffffffffffffffffffffffffffffff {
                 return;
             }
             // Storage only caps what settles, so the old limit must cap what accrued under it.
-            self.settle_production(key, now, start_at);
+            self.settle_production(key, now);
             let previous = self.data.resources.weights.read((key.game_id, key.entity_id));
             let mut weight = previous;
             weight.capacity = if adding {
@@ -335,12 +306,7 @@ pub mod ResourceState {
             self.write_weight(key, previous, weight);
         }
         fn load_settled(
-            ref self: ComponentState<TContractState>,
-            key: ResourceKey,
-            resource_type: u8,
-            unit_weight: u128,
-            now: u32,
-            start_at: u32,
+            ref self: ComponentState<TContractState>, key: ResourceKey, resource_type: u8, unit_weight: u128, now: u32,
         ) -> (SettledResource, SettledResource) {
             super::assert_exists(key);
             crate::resources::assert_resource(resource_type);
@@ -356,18 +322,19 @@ pub mod ResourceState {
                 limit: crate::logic::resources::store_limit(key, resource_type),
             };
             let previous = resource;
-            let since = core::cmp::max(resource.production.last_settled_at, core::cmp::min(now, start_at));
-            resource.production.last_settled_at = since;
-            if since != now {
-                settle(
-                    resource_type,
-                    ref resource.balance,
-                    ref resource.production,
-                    ref resource.weight,
-                    unit_weight,
-                    resource.limit,
-                    now,
+            let mut since = resource.production.last_settled_at;
+            if crate::rules::PRODUCTION_FROM_MAIN {
+                let main: u32 = crate::logic::game::game(key.game_id).start_main_at.try_into().unwrap();
+                since = core::cmp::max(since, core::cmp::min(now, main));
+                resource.production.last_settled_at = since;
+            }
+            if since != now && resource.production.building_count != 0 {
+                let effects = crate::logic::banes::effects(key, since.into(), now.into());
+                crate::resources::settle_windows(
+                    resource_type, ref resource, unit_weight, now, effects.windows, effects.production_percent,
                 );
+            } else {
+                resource.production.last_settled_at = now;
             }
             (previous, resource)
         }

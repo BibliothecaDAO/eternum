@@ -15,8 +15,6 @@ import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
 interface ConnectHarnessGameClientOptions {
   actor: string;
   gameId: number;
-  /** A private deployment fixture knows its immutable preset from the confirmed creation receipt. */
-  presetId?: number;
   shard: Shard;
 }
 
@@ -41,13 +39,12 @@ export interface HarnessGameClient {
 
 /** Each player reads and acts through its own Herald subscription and native store. */
 export async function connectHarnessGameClient(options: ConnectHarnessGameClientOptions): Promise<HarnessGameClient> {
-  const presetId = options.presetId ?? (await waitForHeraldToListGame(options.shard, options.gameId));
+  await waitForHeraldToListGame(options.shard, options.gameId);
   const heraldConfirmations = createHeraldConfirmations();
   const client = await createGameClient({
     actor: options.actor,
     shard: options.shard,
     gameId: options.gameId,
-    presetId,
     // Harness bots read no Realms profiles, so they name no player.
     playerNames: () => null,
     bindings: bindings as unknown as NativeWorldBindings,
@@ -127,13 +124,11 @@ function createHeraldConfirmations() {
   };
 }
 
-/** A game launched moments ago reaches Herald's directory once its registry row is folded; its row carries the preset. */
-async function waitForHeraldToListGame(world: Shard, gameId: number): Promise<number> {
+async function waitForHeraldToListGame(world: Shard, gameId: number): Promise<void> {
   const deadline = Date.now() + GAME_LISTING_TIMEOUT_MS;
   while (Date.now() <= deadline) {
     const directory = await fetchHeraldGameDirectory(world);
-    const game = directory.games.find((candidate) => candidate.game_id === gameId);
-    if (game) return game.preset_id;
+    if (directory.games.some((candidate) => candidate.game_id === gameId)) return;
     await sleep(GAME_LISTING_POLL_MS);
   }
   throw new Error(`Herald did not list game ${gameId} within ${GAME_LISTING_TIMEOUT_MS / 1_000} seconds`);

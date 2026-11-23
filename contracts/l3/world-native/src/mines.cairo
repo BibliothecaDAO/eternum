@@ -18,12 +18,6 @@ pub struct MineKindConfig {
     pub cap_steps: u32,
 }
 
-#[derive(Copy, Drop, Serde, Debug, PartialEq)]
-pub struct MineKindEntry {
-    pub kind: u8,
-    pub config: MineKindConfig,
-}
-
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 pub struct MineWeight {
     pub kind: u8,
@@ -34,8 +28,6 @@ pub struct MineWeight {
 pub trait IMineRules<T> {
     #[cfg(feature: "test_support")]
     fn mine_kind(self: @T, key: MineKindKey) -> MineKindConfig;
-    #[cfg(feature: "test_support")]
-    fn mine_pool(self: @T, key: MinePoolKey) -> Span<MineWeight>;
     fn mine_draw(self: @T, key: MinePoolKey, seed: u256) -> (u8, MineKindConfig, u128);
 }
 

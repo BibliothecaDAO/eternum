@@ -6,7 +6,8 @@ import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-clien
 import { BuildingType } from "@bibliothecadao/types";
 import { useEffect } from "react";
 
-const BARRACKS = BuildingType.ResourceKnightT1;
+/** The building a realm raises first: the Barracks. */
+export const FIRST_BUILD = BuildingType.ResourceKnightT1;
 const BUILDING_MODELS = ["StructureBuildings"] as const;
 
 /**
@@ -17,7 +18,7 @@ export const useFirstBuild = (realm: NativeRows["Structure"] | null): BuildingTy
   const { setup } = useGame();
   useNativeRevision(BUILDING_MODELS);
   if (!realm) return null;
-  return getBuildingQuantity(safeInteger(realm.entity_id), BARRACKS, setup.store) > 0 ? null : BARRACKS;
+  return getBuildingQuantity(safeInteger(realm.entity_id), FIRST_BUILD, setup.store) > 0 ? null : FIRST_BUILD;
 };
 
 /** Names the first build to the realm's board and the build sheet; none once the HUD leaves. */
@@ -28,3 +29,12 @@ export const useMarkFirstBuild = (building: BuildingType | null) => {
     return () => setFirstBuild(null);
   }, [building, setFirstBuild]);
 };
+
+export function disclosedBuildOptions<Option extends { category: BuildingType; standing: unknown }>(
+  options: Option[] | undefined,
+  listOpen: boolean,
+): Option[] | undefined {
+  if (listOpen || !options) return options;
+  const barracks = options.find(({ category }) => category === FIRST_BUILD);
+  return barracks?.standing === "open" ? [barracks] : options;
+}

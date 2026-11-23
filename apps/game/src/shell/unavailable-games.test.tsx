@@ -21,12 +21,11 @@ const season = {
   ready: true,
   error: "unavailable",
   expedition: null,
-  clock: { start_main_at: 0, end_at: 100 },
+  clock: { start_main_at: 0, scheduled_end_at: 100, end_at: 100 },
   player_count: 1,
   roster_count: 0,
   player_state: {
     registered: true,
-    roster_wallet: null,
     held_realm_id: null,
     has_home_source: false,
     taken_realm_ids: [],
@@ -41,7 +40,6 @@ const lead = (verb: "play" | "resume") => (game: DirectoryGame) => {
     when: "now",
     verb,
     mine: verb === "resume",
-    source: "game",
     game,
   };
   return <LeadCard item={item} now={1} signedIn />;

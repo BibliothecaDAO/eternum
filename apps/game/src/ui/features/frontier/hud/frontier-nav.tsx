@@ -1,95 +1,94 @@
-import { useHomeKind } from "@/hooks/helpers/use-home-kind";
-import { homeIcon } from "@/ui/design-system/home-icons";
-import { useQuery } from "@/hooks/helpers/use-query";
-import type { ExpeditionRules } from "@bibliothecadao/eternum";
-import type { NativeRows } from "@bibliothecadao/eternum/game-client";
+import "./phone-hud.css";
 
-import { useGoToFrontierPlace } from "../frontier-home";
-import { realmDot, useRealmStores } from "../realm-stores";
-import { useResearchTree } from "../research/research-facts";
-import { canResearchNow } from "../research/research-tree";
-import { layerViews, type MapLayers } from "./map-layers";
-import { type Place, PlaceNav } from "./place-nav";
+import { AspectMark } from "@/ui/design-system/aspect-mark";
+import { Icon } from "@/ui/design-system/icon";
+import { MENU } from "@/ui/design-system/kit/words";
+import type { AspectId } from "@bibliothecadao/types";
 
-/** What the HUD has open over the map: a nav page, the Menu, or a way the Menu opens. */
+import { usePartShown } from "../opening/opening-context";
+import { resolveHudPlaces, resolveMenuPlaces } from "./hud-places";
+
 export type HudSurface =
   | "research"
   | "feed"
   | "chat"
+  | "relics"
   | "menu"
   | "today"
   | "settings"
   | "season"
   | "army"
   | "army-lost"
-  | "withdraw"
-  | "realms";
+  | "shop";
 
-/**
- * The place bar over the game: the Realm / World switch takes the player to the realm's board from the map, and back to
- * the world from the board, putting any page away; each other slot opens its place over the map and a second tap
- * closes it. The Realm slot carries a dot
- * while a store the realm spends is full or fills within the hour. A spectator, with no realm of their own, opens the
- * realm they watch, and has no Research. Once the realm has an Ethereal layer, the switch on the map names the layer
- * shown and opens the list of views: Realm, the world and each Ethereal layer (owner, 4 November 2026: "yeah B is pretty
- * good on mobile").
- */
-export const FrontierNav = ({
-  rules,
-  realm,
-  board,
-  layers,
+export const PhoneWorldActions = ({
+  aspect,
   surface,
   onSurface,
+  researchReady = false,
   events,
   unread,
 }: {
-  rules: ExpeditionRules;
-  /** The player's own realm; none for a spectator. */
-  realm: NativeRows["Structure"] | null;
-  /** The realm the Realm slot goes to: the player's own, or the one a spectator watches. */
-  board: NativeRows["Structure"] | null;
-  /** The map's layers (useMapLayers); none on the board or before Ethereal I. */
-  layers: MapLayers | null;
+  aspect?: AspectId;
   surface: HudSurface | null;
   onSurface: (surface: HudSurface | null) => void;
-  /** Events arrived since the Feed was last read. */
+  researchReady?: boolean;
   events: number;
   unread: number;
 }) => {
-  const { isMapView } = useQuery();
-  const kind = useHomeKind(board);
-  const place: Place | null =
-    surface === "research" || surface === "feed" || surface === "chat" || surface === "menu"
-      ? surface
-      : surface === "season"
-        ? "menu"
-        : null;
-  const goToPlace = useGoToFrontierPlace(board);
-  const researchDot = canResearchNow(useResearchTree(realm)?.nodes);
-  const stores = useRealmStores(realm, rules);
-  // A view choice shows its view, the Realm / World switch's and a layer's alike: the open page goes.
-  const putPageAway = () => onSurface(null);
-  const go = (to: Place) => {
-    if (to === "realm") {
-      putPageAway();
-      goToPlace(!isMapView);
-      return;
-    }
-    onSurface(surface === to ? null : to);
+  const aspectsOpen = usePartShown("aspects");
+  const researchOpen = usePartShown("research");
+  const relicsOpen = usePartShown("relic-slots");
+  const placesState = {
+    aspectsOpen,
+    researchOpen,
+    relicsOpen,
+    researchReady,
+    feedUnread: events,
+    chatUnread: unread,
   };
-  const realmIcon = board ? homeIcon(kind, board.base.level) : "realm";
+  const season = resolveHudPlaces(placesState).find((place) => place.key === "season");
+  const menuPlaces = resolveMenuPlaces(placesState);
+  const newPlace =
+    menuPlaces.find((place) => place.key === "chat" && place.count && place.count > 0) ??
+    menuPlaces.find((place) => place.key === "feed" && place.count && place.count > 0) ??
+    menuPlaces.find((place) => place.count && place.count > 0);
+  const toggle = (target: "season" | "menu") => onSurface(surface === target ? null : target);
+
   return (
-    <PlaceNav
-      realmIcon={realmIcon}
-      views={layers && layerViews(layers, { icon: realmIcon, go: () => go("realm") }, putPageAway)}
-      place={place}
-      onRealm={!isMapView}
-      onGo={go}
-      realmDot={stores ? realmDot([stores.wheat, stores.labor, stores.troops]) : undefined}
-      researchDot={realm ? researchDot : undefined}
-      events={events}
-      unread={unread}
-    />
+    <nav aria-label="Places" className="frontier-phone-actions pointer-events-auto">
+      {season && (
+        <button
+          type="button"
+          aria-label={season.ariaLabel}
+          aria-current={surface === "season" ? "page" : undefined}
+          className="frontier-phone-action"
+          onClick={() => toggle("season")}
+        >
+          <Icon name={season.icon} size={24} />
+          {aspect && (
+            <span className="frontier-phone-action__facet">
+              <AspectMark aspect={aspect} size={14} decorative />
+            </span>
+          )}
+        </button>
+      )}
+      <button
+        type="button"
+        aria-label={MENU}
+        aria-current={surface === "menu" ? "page" : undefined}
+        className="frontier-phone-action"
+        onClick={() => toggle("menu")}
+      >
+        <Icon name="menu" size={24} />
+        {newPlace && (
+          <span
+            className="frontier-phone-action__dot"
+            data-dot=""
+            aria-label={newPlace.countLabel ?? newPlace.ariaLabel}
+          />
+        )}
+      </button>
+    </nav>
   );
 };

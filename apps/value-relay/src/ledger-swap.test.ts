@@ -105,7 +105,7 @@ const storageOf = (name: string) => {
 let instances = new Map<string, ValueMonitor>();
 const env = {
   ...settings,
-  IDENTITY: { l2ChainId: async () => "0x1", shards: async () => [] },
+  IDENTITY: { l2ChainId: async () => "0x1", shard: async () => null },
   RELAY_REPORT: { held: async () => [] },
   MONITOR: {
     idFromName: (name: string) => name,
@@ -130,7 +130,7 @@ const health = async () =>
   };
 /** Where each audited stream started reading on the last tick, and on which ledger. */
 const auditReads = () =>
-  ["WithdrawalPaid", "ResultsApplied"].map((name) => {
+  ["WithdrawalPaid", "WithdrawalReported"].map((name) => {
     const read = chain.reads.find((row) => row.keys.includes(hash.getSelectorFromName(name)));
     return read && { address: read.address, from: read.from, returned: read.returned };
   });
@@ -184,7 +184,7 @@ it("does not continue an old ledger's in-flight page for a new ledger", async ()
   // A's first pass is in flight, holding a continuation token, when the ledger changes: prod's state at today's swap.
   chain.paging.add("0xa1");
   await tick();
-  expect((await health()).cursors?.postedResults).toMatchObject({ fromBlock: 10, page: expect.any(String) });
+  expect((await health()).cursors?.paidClaims).toMatchObject({ fromBlock: 10, page: expect.any(String) });
   useLedger("0xb2");
   restart();
   await tick();
@@ -193,7 +193,7 @@ it("does not continue an old ledger's in-flight page for a new ledger", async ()
     { address: "0xb2", from: 40, returned: 0 },
   ]);
   expect(storages.get("monitor:0xa1")!.get("progress")).toMatchObject({
-    cursors: { postedResults: { fromBlock: 10, page: expect.any(String) } },
+    cursors: { paidClaims: { fromBlock: 10, page: expect.any(String) } },
   });
 });
 

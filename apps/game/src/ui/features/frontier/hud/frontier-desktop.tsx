@@ -1,146 +1,177 @@
+import "./frontier-bar.css";
+
+import { usePartShown } from "../opening/opening-context";
 import { HUD_COLUMN_MARK } from "@/three/utils/labels/hud-clearance";
-import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { HudBubble, SheetDock } from "@/ui/design-system/kit/hud-elements";
-import { EVENTS_WORDS, REALM, RESEARCH, SEASON } from "@/ui/design-system/kit/words";
+import { Icon } from "@/ui/design-system/icon";
+import { SheetDock } from "@/ui/design-system/kit/hud-elements";
+import { REALM } from "@/ui/design-system/kit/words";
 import { FeedToasts, useUnreadImportantCount } from "@/ui/features/event-feed/quick-feed";
-import { HudChatWindow } from "@/ui/features/world/containers/hud-chat-window";
 import type { SeasonGoal } from "@/ui/features/world/containers/top-header/identity-chip";
-import type { WorldTab } from "@/ui/features/world/containers/top-header/map-view-controls";
 import { TopHeader } from "@/ui/features/world/containers/top-header/top-header";
-import { HudColumn, HudFoot } from "@/ui/features/world/hud/desktop-hud";
-import { HudMinimap } from "@/ui/features/world/hud/minimap";
+import { HudFoot } from "@/ui/features/world/hud/desktop-hud";
 import { type ReactNode, useState } from "react";
 
 import type { HudSurface } from "./frontier-nav";
+import { resolveHudPlaces } from "./hud-places";
 import { useHudScale } from "./hud-scale";
 
-/**
- * Frontier on the one desktop HUD every mode shares (the owner, 19 October 2026: "A unified hud, with elements that can
- * differ a bit"; issue 5067): the shared top bar, the left column, the rail and the foot, with Frontier's own panels in
- * them. The top bar's clock is the day's, Frontier's one day timer. The left column holds one panel for the realm (its
- * stores and LORDS as rings, as Blitz's realm card reads a holding), one for its armies, and the minimap; the rail is the
- * one home for everything (FrontierRail); the foot the selected army's state over the round places. An order goes from
- * the map itself, as in Blitz. The whole HUD draws bigger on a bigger screen (useHudScale).
- */
 export const FrontierDesktop = ({
+  identity,
   season,
   clock,
-  worldTab,
+  quest,
+  stores,
+  depthSwitch,
+  banner,
   realm,
+  replaceRealmWithSheet = false,
   armies,
+  aspectChip,
   page,
+  widePage = false,
   foot,
   places,
   children,
 }: {
-  /** The player's place on the season's board, in the top bar's chip, which opens it. */
+  identity?: ReactNode;
   season?: SeasonGoal;
-  /** The day, in the top bar's clock place. */
   clock: ReactNode;
-  /** The top bar's World tab on the map once the realm has an Ethereal layer: the layer shown, opening every layer. */
-  worldTab?: WorldTab;
+  quest?: ReactNode;
+  stores?: ReactNode;
+  depthSwitch?: ReactNode;
+  banner?: ReactNode;
   realm?: ReactNode;
+  replaceRealmWithSheet?: boolean;
   armies?: ReactNode;
-  /** A nav page (the Feed, Research, the Season's board): it stands in the rail's panel. */
+  aspectChip?: ReactNode;
   page?: ReactNode;
-  /** Over the places: notices, the selected army's state, a visit's Leave. */
+  widePage?: boolean;
   foot?: ReactNode;
   places: ReactNode;
-  /** The HUD's sheets: each stands in the rail's panel. */
   children?: ReactNode;
 }) => {
-  const [panel, setPanel] = useState<HTMLElement | null>(null);
+  const [railPanel, setRailPanel] = useState<HTMLElement | null>(null);
+  const [leftPanel, setLeftPanel] = useState<HTMLElement | null>(null);
+  const showWide = Boolean(widePage && page);
   return (
     <div style={{ zoom: useHudScale() }}>
-      <TopHeader season={season} clock={clock} worldTab={worldTab} />
-      <HudColumn label={REALM}>
-        {realm}
-        <div className="flex shrink-0 flex-col">{armies}</div>
-        <HudMinimap className="mt-auto min-h-hud-minimap w-full shrink" />
-      </HudColumn>
-      <FrontierRail page={page} onPanel={setPanel} />
+      <TopHeader
+        identity={identity}
+        season={season}
+        places={places}
+        quest={quest}
+        stores={stores}
+        depthSwitch={depthSwitch}
+        clock={clock}
+      />
+      <div className="pointer-events-none fixed inset-x-4 bottom-hud-base top-hud-frontier-page-top z-hud-rail flex flex-col gap-2">
+        {banner && <div className="pointer-events-none flex shrink-0 justify-center empty:hidden">{banner}</div>}
+        {showWide ? (
+          <div className="pointer-events-none flex min-h-0 flex-1 flex-col gap-2">
+            <div className="pointer-events-none flex shrink-0 justify-end empty:hidden">
+              <FrontierRail onPanel={setRailPanel} />
+            </div>
+            <div
+              data-wide-page
+              className="pointer-events-none flex min-h-0 flex-1 flex-col [&>[data-kit-frame]]:pointer-events-auto [&>[data-kit-frame]]:max-h-full [&>[data-kit-frame]]:w-full [&>[data-kit-frame]]:flex-1"
+            >
+              {page}
+            </div>
+          </div>
+        ) : (
+          <div className="pointer-events-none flex min-h-0 flex-1 items-stretch justify-between gap-4">
+            <aside
+              {...HUD_COLUMN_MARK}
+              aria-label={REALM}
+              className="pointer-events-none flex min-h-0 w-hud-frontier-rail flex-col gap-2"
+            >
+              {!replaceRealmWithSheet && !page && realm}
+              <div ref={setLeftPanel} data-realm-slot className="flex min-h-0 flex-1 flex-col gap-2 empty:hidden">
+                {page}
+              </div>
+            </aside>
+            <FrontierRail onPanel={setRailPanel} />
+          </div>
+        )}
+      </div>
+      {!showWide && armies && <div className="pointer-events-none fixed bottom-4 left-4 z-hud-column">{armies}</div>}
+      {!showWide && aspectChip && (
+        <div className="pointer-events-none fixed bottom-4 right-4 z-hud-column">{aspectChip}</div>
+      )}
       <HudFoot>
-        <div className="pointer-events-none flex flex-col items-center gap-2">
-          {foot}
-          {places}
-        </div>
+        <div className="pointer-events-none flex flex-col items-center gap-3">{foot}</div>
       </HudFoot>
-      <SheetDock.Provider value={panel}>{children}</SheetDock.Provider>
+      <SheetDock.Provider value={replaceRealmWithSheet ? leftPanel : railPanel}>{children}</SheetDock.Provider>
     </div>
   );
 };
 
-/**
- * Frontier's right rail on a desktop, the one home for everything (the owner, 22 October: "The right rail being home
- * for everything is perfect"): the client's own notices (a refused order, a warning, the game clock's milestones) on top
- * whatever is open, as they stood atop Events, then the open panel (a nav page such as the Feed, or any sheet the HUD
- * opens: Build, an army, a site, Today), which stands in the rail; with none open, nothing. Chat stands at its foot.
- */
-const FrontierRail = ({
-  page,
-  onPanel,
-}: {
-  page?: ReactNode;
-  /** The panel's place, where the HUD's sheets stand. */
-  onPanel: (panel: HTMLElement | null) => void;
-}) => {
-  const [chatOpen, setChatOpen] = useState(false);
-  return (
-    <aside
-      {...HUD_COLUMN_MARK}
-      aria-label="Guided rail"
-      data-hud-rail
-      data-frontier-rail
-      className="pointer-events-none fixed bottom-hud-base right-3 top-hud-header z-hud-rail flex flex-col gap-2"
-    >
-      <div aria-label="Notices" className="ui ui-panel pointer-events-auto shrink-0 px-3 py-2 empty:hidden">
-        <FeedToasts />
-      </div>
-      <div ref={onPanel} data-rail-panel className="flex min-h-0 flex-1 flex-col gap-2 empty:hidden">
-        {page}
-      </div>
-      <div className={cn("mt-auto flex shrink-0 flex-col justify-end", chatOpen && "min-h-hud-chat-least")}>
-        <HudChatWindow open={chatOpen} onOpenChange={setChatOpen} />
-      </div>
-    </aside>
-  );
-};
+const FrontierRail = ({ onPanel }: { onPanel: (panel: HTMLElement | null) => void }) => (
+  <aside
+    {...HUD_COLUMN_MARK}
+    aria-label="Guided rail"
+    data-hud-rail
+    data-frontier-rail
+    className="pointer-events-none flex min-h-0 flex-col gap-2"
+  >
+    <div aria-label="Notices" className="ui ui-panel pointer-events-auto shrink-0 px-3 py-2 empty:hidden">
+      <FeedToasts />
+    </div>
+    <div ref={onPanel} data-rail-panel className="flex min-h-0 flex-1 flex-col gap-2 empty:hidden" />
+  </aside>
+);
 
-/**
- * Frontier's places as the shared HUD's round bubbles, each a surface pressed while it stands and closed by a second
- * press: Research (lit while a node can be bought), the Feed (counting what is unread and important, as a phone's place
- * bar does), and the Season. Today opens from the top bar's day. A desktop has no Menu: Map and Realm are the top bar's
- * Realm / World, chat the rail's strip, the Realms' labor the realm panel's chip, and leaving the game Settings' Leave
- * game.
- */
 export const FrontierPlaces = ({
   surface,
   onSurface,
   research,
+  chatUnread = 0,
+  relics = 0,
+  hasRealm = true,
 }: {
   surface: HudSurface | null;
   onSurface: (surface: HudSurface | null) => void;
-  /** Whether a research node can be bought now; absent for a spectator, who has no Research. */
   research?: boolean;
+  chatUnread?: number;
+  relics?: number;
+  hasRealm?: boolean;
 }) => {
   const unread = useUnreadImportantCount(surface === "feed");
-  const bubble = (to: HudSurface, icon: Parameters<typeof HudBubble>[0]["icon"], word: string, count?: number) => (
-    <HudBubble
-      key={to}
-      icon={icon}
-      word={word}
-      count={count}
-      countTone="good"
-      pressed={surface === to}
-      aria-label={word}
-      onClick={() => onSurface(surface === to ? null : to)}
-    />
-  );
+  const researchOpen = usePartShown("research");
+  const aspectsOpen = usePartShown("aspects");
+  const relicsOpen = usePartShown("relic-slots");
+  const tabs = resolveHudPlaces({
+    aspectsOpen,
+    researchOpen,
+    relicsOpen,
+    researchReady: research,
+    feedUnread: unread,
+    chatUnread,
+    chatOpen: surface === "chat",
+    relics,
+    hasRealm,
+  });
   return (
-    <nav aria-label="Places" className="pointer-events-auto flex items-start gap-3">
-      {research !== undefined && bubble("research", "research", RESEARCH, research ? 1 : undefined)}
-      {bubble("feed", "chronicles", EVENTS_WORDS.feed, unread > 0 ? unread : undefined)}
-      {bubble("season", "victory", SEASON)}
+    <nav aria-label="Places" role="tablist" className="frontier-places pointer-events-auto">
+      {tabs.map((tab) => (
+        <button
+          key={tab.key}
+          type="button"
+          role="tab"
+          aria-selected={surface === tab.key}
+          aria-label={tab.ariaLabel}
+          className="ui-pick frontier-place"
+          onClick={() => onSurface(surface === tab.key ? null : tab.key)}
+        >
+          <Icon name={tab.icon} size={18} />
+          <span>{tab.label}</span>
+          {tab.count !== undefined && (
+            <span className="frontier-place__badge" data-tone={tab.countTone} aria-label={tab.countLabel}>
+              {tab.count}
+            </span>
+          )}
+        </button>
+      ))}
     </nav>
   );
 };

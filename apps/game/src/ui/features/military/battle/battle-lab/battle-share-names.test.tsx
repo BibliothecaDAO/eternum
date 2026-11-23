@@ -27,33 +27,27 @@ vi.mock("@realms-world/identity", async (original) => ({
 vi.mock("@/hooks/context/game-context", () => ({
   useGame: () => ({ setup: { store: held.store, systemCalls: {} }, account: { account: held.account } }),
 }));
-vi.mock("@/config/game-modes/use-game-mode-config", () => ({
-  useGameModeConfig: () => ({ ui: { showAttackTypeSelector: false } }),
-}));
 vi.mock("@bibliothecadao/eternum", async (original) => ({
   ...(await original<typeof import("@bibliothecadao/eternum")>()),
   getGuildFromPlayerAddress: () => null,
-  configManager: { getCombatConfig: () => ({ stamina_attack_req: 1 }), rollsCombatDice: () => false },
+  configManager: {
+    getCombatRules: () => ({}),
+    getCombatConfig: () => ({ stamina_attack_req: 1 }),
+  },
   CombatSimulator: class {
-    simulateBattleRange() {
-      const roll = { attackerDamage: 1, defenderDamage: 1, attackerRefundMultiplier: 1, defenderRefundMultiplier: 1 };
-      return { worst: roll, best: roll };
-    }
-    calculateNewStaminaAttacker() {
-      return 90;
-    }
-    calculateNewStaminaDefender() {
-      return 90;
+    simulateBattle() {
+      const outcome = { attackerDamage: 1, defenderDamage: 1, attackerStamina: 90, defenderStamina: 90 };
+      return { ok: true, ...outcome };
     }
   },
 }));
 vi.mock("./use-battle-lab-live-data", () => ({ useBattleLabLiveData: () => held.live }));
+vi.mock("@/hooks/helpers/use-block-timestamp", () => ({ useCurrentDefaultTick: () => 360 }));
 vi.mock("./army-column", () => ({ ArmyColumn: () => null }));
 vi.mock("./biome-environment-bar", () => ({ BiomeEnvironmentBar: () => null }));
 vi.mock("./combat-parameters-panel", () => ({ CombatParametersPanel: () => null }));
 vi.mock("./outcome-banner", () => ({ OutcomeBanner: () => null }));
 vi.mock("./outcome-strip", () => ({ OutcomeStrip: () => null }));
-vi.mock("../raid-container", () => ({ RaidContainer: () => null }));
 vi.mock("@/ui/design-system/kit/hud-elements", () => ({
   HudWindow: ({ children }: any) => <section>{children}</section>,
   HudCheck: () => null,
@@ -77,23 +71,29 @@ it.each([
     (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
     getPlayerDisplayName(held.account.address);
     await vi.waitFor(() => expect(getPlayerDisplayName(held.account.address)).toBe("Attacker"));
-    const army = { stamina: 100, troopCount: 100, troopType: 1, tier: 1, battle_cooldown_end: 0, relics: [] };
+    const army = { stamina: 100, troopCount: 100, troopType: 1, tier: 1, battle_cooldown_end: 0, oaths: 0 };
     held.live = {
       snapshot: {
         biome: "Grassland",
         attackerType: "army",
         attackerEntityId: 7,
         guards: [],
+        guardSlot: null,
         armyAttacker: army,
         defender: army,
-        totalDefenders: 100,
-        hasTarget: true,
         defenderAlt: false,
+      },
+      forecast: {
+        outcome: "refused",
+        refusal: "cooldown",
+        sides: {
+          attacker: { tile: { col: 0, row: 0, alt: false }, guarding: false },
+          defender: { tile: { col: 1, row: 0, alt: false }, guarding: false },
+          queued: [],
+        },
       },
       target: { id: 8, addressOwner: BigInt(owner), hex: { x: 1, y: 0 }, targetType: "Army" },
       targetResources: [],
-      attackerRelicEffects: [],
-      targetRelicEffects: [],
       isLoading: false,
     };
     const host = document.createElement("div"),

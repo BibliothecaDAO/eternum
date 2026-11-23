@@ -83,16 +83,14 @@ const blitzStartingResources = buildArenaStartingResources({
   [ResourcesIds.Donkey]: 500,
 });
 
-// Percents of the army's strength up to the 3,000 cap: an army at the cap finds 150, 300 or 600 Essence, 300 or 600
-// labor, or 300 donkeys.
-const blitzExplorationRewards = [
-  { rewardId: ResourcesIds.Essence, percent: 5, probabilityBps: 3_500 },
-  { rewardId: ResourcesIds.Essence, percent: 10, probabilityBps: 2_500 },
-  { rewardId: ResourcesIds.Essence, percent: 20, probabilityBps: 1_500 },
-  { rewardId: ResourcesIds.Labor, percent: 10, probabilityBps: 1_500 },
-  { rewardId: ResourcesIds.Labor, percent: 20, probabilityBps: 500 },
-  { rewardId: ResourcesIds.Donkey, percent: 10, probabilityBps: 500 },
-] as const;
+export const blitzExplorationRewards: { resource_type: number; percent: number; weight: number }[] = [
+  { resource_type: ResourcesIds.Essence, percent: 5, weight: 3_500 },
+  { resource_type: ResourcesIds.Essence, percent: 10, weight: 2_500 },
+  { resource_type: ResourcesIds.Essence, percent: 20, weight: 1_500 },
+  { resource_type: ResourcesIds.Labor, percent: 10, weight: 1_500 },
+  { resource_type: ResourcesIds.Labor, percent: 20, weight: 500 },
+  { resource_type: ResourcesIds.Donkey, percent: 10, weight: 500 },
+];
 
 function buildBlitzResourceOutputs() {
   return {
@@ -110,7 +108,7 @@ const blitzStaminaConfig = {
   staminaExploreWheatCost: 0.05,
 };
 
-export const blitzVictoryPointConfig = {
+const blitzVictoryPointConfig = {
   pointsForTileExploration: 5n * BigInt(VICTORY_POINTS_MULTIPLIER),
   pointsForNonHyperstructureClaimAgainstBandits: 250n * BigInt(VICTORY_POINTS_MULTIPLIER),
   pointsForRelicDiscovery: 250n * BigInt(VICTORY_POINTS_MULTIPLIER),
@@ -123,11 +121,6 @@ export const blitzBalance: ConfigPatch = {
   },
   season: {
     durationSeconds: BLITZ_DURATION_SECONDS,
-  },
-  blitz: {
-    exploration: {
-      rewards: [...blitzExplorationRewards],
-    },
   },
   resources: {
     productionByComplexRecipe: buildOfficialArenaComplexRecipes(2),

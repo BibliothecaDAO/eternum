@@ -1,7 +1,8 @@
+import { AspectPicker } from "@/ui/features/game-entry/aspect-picker";
+import type { AspectId } from "@bibliothecadao/types";
 import { BLITZ_WORDS, SIGN_IN_PROVIDER_NAMES, SIGN_IN_WORDS, WORDS } from "@/ui/design-system/kit/words";
 import { failureSentence } from "@/ui/modules/identity/identity-failures";
 import { IdentityRequestError, SOCIAL_PROVIDERS } from "@realms-world/identity";
-import { CAMPAIGNS } from "@realms-world/identity";
 import { useState, type ReactNode } from "react";
 import { useParams } from "react-router-dom";
 
@@ -9,20 +10,31 @@ import { Pill } from "@/ui/design-system/kit/pill";
 import { DoorwayScreen } from "@/ui/features/game-entry/doorway/doorway-screen";
 import { FoundButton, PlaysAs } from "@/ui/features/game-entry/game-entry-modal";
 import { HomeSourcePicker } from "@/ui/features/game-entry/home-source-picker";
+import { RealmSideWarning } from "@/ui/features/game-entry/realm-side-warning";
+import { DayShareSheet } from "@/ui/features/frontier/rollover/day-share-sheet";
 
 import { ClockChip } from "@/ui/design-system/kit/clock-chip";
 
 import { PlayPage } from "../play/play-page";
 import { PageAddress } from "../frame/page-address";
-import { ShellWindow } from "../frame/shell-window";
-import { DEVCON } from "../join/devcon";
+import type { SharedDay } from "../share/day-card";
+import { SignInStage } from "../sign-in/sign-in-stage";
 import { HandoffStep } from "../sign-in/handoff-step";
 import { NotFoundPage } from "../not-found";
 import { CodeStep } from "../sign-in/code-step";
 import { ProfileStep } from "../sign-in/profile-step";
 import { StartStep } from "../sign-in/start-step";
 import { useNowSeconds } from "../use-now";
-import { LAB_DOORWAYS, LAB_NEW_ACCOUNTS, LAB_SIGN_IN_EMAIL, LAB_SEASON_WAIT, labCodeExpiry } from "./app-lab-fixtures";
+import {
+  LAB_CHAIN,
+  LAB_DOORWAYS,
+  LAB_INVITE,
+  LAB_NEW_ACCOUNTS,
+  LAB_PLAYER,
+  LAB_SIGN_IN_EMAIL,
+  LAB_SEASON_WAIT,
+  labCodeExpiry,
+} from "./app-lab-fixtures";
 
 const noop = () => undefined;
 
@@ -110,18 +122,24 @@ export const LabConnect = () => {
   const shown = labConnectStep(step);
   if (!shown) return <NotFoundPage />;
   // Play is at its own address under the window, so its place is lit as in the app.
+  const isStart = step === "start" || step === "start-refused" || step === "opening";
   return (
     <PageAddress.Provider value="/">
       <PlayPage />
-      <ShellWindow title={shown.title} onClose={noop}>
+      <SignInStage
+        title={shown.title}
+        heading={isStart ? SIGN_IN_WORDS.enterHeading : undefined}
+        subtitle={isStart ? SIGN_IN_WORDS.enterSubtitle : undefined}
+        onClose={noop}
+      >
         {shown.body}
-      </ShellWindow>
+      </SignInStage>
     </PageAddress.Provider>
   );
 };
 
 /** The Frontier game the lab's doorway enters: the campaign's season, as the home step's picker reads it. */
-const LAB_FRONTIER = { mode: "frontier", preset_id: CAMPAIGNS[DEVCON.campaign].presets[0] } as const;
+const LAB_FRONTIER = { mode: "frontier", day_index: 5 } as const;
 
 /** The doorway into Frontier at one of its holds (/lab/app/<screen>/doorway/<state>), as entering a game draws it. */
 export const LabDoorway = () => {
@@ -137,15 +155,54 @@ export const LabDoorway = () => {
       onRetry={noop}
       onOpenRealm={noop}
       onSignIn={noop}
-      onSpectate={noop}
-      results="/lab/app/reward-sealed/results/0x5245414c4d53-7"
-      asking={state === "home"}
-      verb={state === "home" ? <FoundButton founding={false} ready onFound={noop} /> : undefined}
+      results="/lab/app/season-over/results/0x5245414c4d53-3"
+      asking={
+        state === "home" ||
+        state === "aspect" ||
+        state === "aspect-realm" ||
+        state === "aspect-kept" ||
+        state === "realm-side"
+      }
+      wide={state === "home" || state === "aspect" || state === "aspect-realm" || state === "aspect-kept"}
+      verb={undefined}
     >
       {/* The entry's own chips at the realm step, as game-entry-modal passes them. */}
       {state === "waiting" && <ClockChip prefix="starts" at={now + LAB_SEASON_WAIT} now={now} />}
       {state === "preparing" && <Pill icon="hourglass">{`${BLITZ_WORDS.preparing} 17/24`}</Pill>}
       {state === "home" && <LabHomeStep />}
+      {state === "aspect" && <LabAspectStep />}
+      {state === "aspect-realm" && (
+        <AspectPicker
+          members={LAB_ASPECT_MEMBERS}
+          realmOrder={4}
+          keptOrder={null}
+          chosen={null}
+          joining={null}
+          offered={null}
+          onChoose={noop}
+          onFound={noop}
+        />
+      )}
+      {state === "aspect-kept" && (
+        <AspectPicker
+          members={LAB_ASPECT_MEMBERS}
+          realmOrder={null}
+          keptOrder={LAB_INVITE.order}
+          chosen={null}
+          joining={null}
+          offered={null}
+          onChoose={noop}
+          onFound={noop}
+        />
+      )}
+      {state === "realm-side" && (
+        <RealmSideWarning
+          side={{ kind: "invited", offer: { aspect: LAB_INVITE.moment, sender: LAB_INVITE.name } }}
+          realmId={LAB_HARMONY_REALM}
+          onPlayRealm={noop}
+          onJoinFree={noop}
+        />
+      )}
     </DoorwayScreen>
   );
 };
@@ -156,14 +213,53 @@ const LabHomeStep = () => {
   return (
     <>
       <HomeSourcePicker
-        presetId={LAB_FRONTIER.preset_id}
         registered={null}
         value={value}
         onChange={setValue}
         onSettled={noop}
         disabled={false}
+        action={<FoundButton founding={false} ready onFound={noop} />}
       />
       <PlaysAs />
     </>
+  );
+};
+
+const LAB_SHARED_DAY: SharedDay = {
+  player: LAB_PLAYER,
+  game: { chainId: LAB_CHAIN, gameId: 1 },
+  day: 6,
+  totals: { reveals: 31, cleared: 6, essence: 420, labor: 1_200 },
+  rank: { from: 5, to: 4 },
+  trail: ["Ruin", "Rift", "Camp", "Beasts"],
+  best: { kind: "clear", site: "Ruin", guard: 640, paid: { resource: "essence", amount: 420 } },
+  realm: { name: "Temtinos", order: 5 },
+};
+
+export const LabDayShare = () => (
+  <PageAddress.Provider value="/">
+    <PlayPage />
+    <div data-hud-mode="frontier">
+      <DayShareSheet shared={LAB_SHARED_DAY} onClose={noop} />
+    </div>
+  </PageAddress.Provider>
+);
+
+const LAB_ASPECT_MEMBERS = { 1: 38, 2: 21, 3: 1, 4: 0 };
+const LAB_HARMONY_REALM = 2;
+const LabAspectStep = () => {
+  const [chosen, setChosen] = useState<AspectId | null>(null);
+  const [joining, setJoining] = useState<number | null>(null);
+  return (
+    <AspectPicker
+      members={LAB_ASPECT_MEMBERS}
+      realmOrder={null}
+      keptOrder={null}
+      chosen={chosen}
+      joining={joining}
+      offered={null}
+      onChoose={setChosen}
+      onFound={setJoining}
+    />
   );
 };

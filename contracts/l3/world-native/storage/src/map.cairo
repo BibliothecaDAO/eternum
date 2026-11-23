@@ -9,8 +9,8 @@ pub struct MapStateStorage {
 
 #[starknet::storage_node]
 pub struct MapDomainStorage {
+    pub expedition_spires: Map<(u32, u64, u64, u8), Option<(u8, Option<(u32, u32)>)>>,
     pub empty_reveals: Map<(u32, u64, u64), Option<u8>>,
     pub ruin_cleared: Map<(u32, u64, u64), bool>,
-    pub last_relic_discovery: Map<u32, u64>,
     pub cleared_ruin_depths: Map<(u32, u64, u64), u8>,
 }

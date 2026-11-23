@@ -1,11 +1,30 @@
 import { describe, expect, it } from "vitest";
 import schemaJson from "../../../../contracts/l3/world-native/schema/schema.json";
+import wireIds from "../../../../contracts/l3/world-native/schema/wire-ids.json";
 import type { NativeMember, NativeSchema } from "./schema";
-import { decodeMembers } from "./serde";
+import { decodeMembers, encodeMembers } from "./serde";
+import { toJsonValue } from "../model-registry";
 
 const schema = schemaJson as unknown as NativeSchema;
 
 describe("native member decoding", () => {
+  it("decodes and re-encodes permanent story IDs without modifying the received frame", () => {
+    const members = [{ name: "story", type: "world_native::ownership::Story" }];
+    const felts = ["1", "2"];
+    const decoded = decodeMembers(schema, members, felts);
+    expect(toJsonValue(decoded)).toEqual({ story: { StructureLevelUpStory: { new_level: "0x2" } } });
+    expect(encodeMembers(schema, members, decoded)).toEqual(felts);
+    expect(felts).toEqual(["1", "2"]);
+  });
+
+  it.each([...wireIds.stories.filter(({ retired }) => retired).map(({ id }) => id), wireIds.stories.length])(
+    "rejects retired or unallocated story ID %s",
+    (id) => {
+      const members = [{ name: "story", type: "world_native::ownership::Story" }];
+      expect(() => decodeMembers(schema, members, [String(id), "2"])).toThrow("Invalid native enum");
+    },
+  );
+
   it("decodes successive rows and member updates without retaining earlier values", () => {
     const members = [{ name: "balance", type: "core::integer::u128" }];
     const first = decodeMembers(schema, members, ["7"]);

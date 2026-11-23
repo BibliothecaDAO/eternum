@@ -152,54 +152,6 @@
     "atlasSize": 1024
   },
   {
-    "id": "workers-hut-1",
-    "label": "Workers' hut I",
-    "group": "workers-hut",
-    "path": "/models/frontier/painted/workers-hut-1.glb",
-    "architectureTriangles": 8000,
-    "atlasSize": 1024
-  },
-  {
-    "id": "workers-hut-2",
-    "label": "Workers' hut II",
-    "group": "workers-hut",
-    "path": "/models/frontier/painted/workers-hut-2.glb",
-    "architectureTriangles": 8000,
-    "atlasSize": 1024
-  },
-  {
-    "id": "workers-hut-3",
-    "label": "Workers' hut III",
-    "group": "workers-hut",
-    "path": "/models/frontier/painted/workers-hut-3.glb",
-    "architectureTriangles": 8000,
-    "atlasSize": 1024
-  },
-  {
-    "id": "workers-hut-4",
-    "label": "Workers' hut IV",
-    "group": "workers-hut",
-    "path": "/models/frontier/painted/workers-hut-4.glb",
-    "architectureTriangles": 8000,
-    "atlasSize": 1024
-  },
-  {
-    "id": "workers-hut-5",
-    "label": "Workers' hut V",
-    "group": "workers-hut",
-    "path": "/models/frontier/painted/workers-hut-5.glb",
-    "architectureTriangles": 8000,
-    "atlasSize": 1024
-  },
-  {
-    "id": "war-hall",
-    "label": "War hall",
-    "group": "training",
-    "path": "/models/frontier/painted/war-hall.glb",
-    "architectureTriangles": 8000,
-    "atlasSize": 1024
-  },
-  {
     "id": "supply-yard",
     "label": "Supply yard",
     "group": "training",

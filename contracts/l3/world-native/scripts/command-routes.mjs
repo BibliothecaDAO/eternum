@@ -1,16 +1,28 @@
-import { commandRoutes } from "../schema/command-routes.mjs";
+import { blitzCommandRoutes, commandRoutes } from "../schema/command-routes.mjs";
+import { assignWireIds, familyWireIds, renderWireSerde } from "./wire-ids.mjs";
 
 // Replaces separately maintained command payload types, discriminants and the dispatch match.
-export function compileCommandRoutes(artifacts, types, feltLength) {
-  const logic = types.get("games_storage::release::LogicClasses").members.map(({ name }) => name);
-  const routes = commandRoutes.map((route) => compileRoute(route, artifacts, types, logic, feltLength));
-  if (new Set(routes.map(({ name }) => name)).size !== routes.length) throw new Error("Duplicate command name");
+export function compileCommandRoutes(artifacts, types, feltLength, logicClasses) {
+  const logic = logicClasses.map(({ name }) => name);
+  const routes = assignWireIds("commands", commandRoutes).map((route) =>
+    compileRoute(route, artifacts, types, logic, feltLength),
+  );
   const command = {
     type: "enum",
     name: "world_native::commands::Command",
-    variants: routes.map(({ name, payload }) => ({ name, type: payload })),
+    variants: routes.map(({ name, payload, wireId }) => ({ name, type: payload, wireId })),
   };
-  return { command, cairo: renderRoutes(routes, logic) };
+  return { command, cairo: renderRoutes(routes, "frontier") };
+}
+
+export function compileBlitzCommandRoutes(frontier, blitz, logicClasses) {
+  const logic = logicClasses.map(({ name }) => name);
+  const blitzNames = new Set(blitzCommandRoutes.map(({ name }) => name));
+  const routes = assignWireIds("commands", [...commandRoutes, ...blitzCommandRoutes], "blitz").map((route) => {
+    const build = blitzNames.has(route.name) ? blitz : frontier;
+    return compileRoute(route, build.artifacts, build.types, logic, build.feltLength);
+  });
+  return renderRoutes(routes, "blitz");
 }
 
 function compileRoute(route, artifacts, types, logic, feltLength) {
@@ -57,18 +69,19 @@ function itemOffset(route, payload, types, feltLength) {
 
 const isSpan = (type) => /^core::array::(?:Span|Array)::</.test(type);
 
-function renderRoutes(routes, logic) {
-  const definitions = routes.map(
-    ({ classIndex, entrypoint, itemsOffset, batch }) =>
-      `    CommandRoute { logic: ${classIndex}, selector: selector!("${entrypoint}"), items_offset: ${itemsOffset === null ? "None" : `Some(${itemsOffset})`}, batch: ${Boolean(batch)} },`,
-  );
+function renderRoutes(routes, family) {
+  const definitions = familyWireIds("commands", family).map(({ id }) => {
+    const route = routes.find(({ wireId }) => wireId === id);
+    if (!route) return "    None,";
+    const { classIndex, entrypoint, itemsOffset, batch } = route;
+    return `    Some(CommandRoute { logic: ${classIndex}, selector: selector!("${entrypoint}"), items_offset: ${itemsOffset === null ? "None" : `Some(${itemsOffset})`}, batch: ${Boolean(batch)} }),`;
+  });
   const variants = routes.map(({ name, payload }) =>
     payload === "()"
       ? `    ${name},`
       : `    ${name}: ${payload.replaceAll("world_native::", "crate::").replaceAll("core::starknet::", "starknet::")},`,
   );
-  return `// Generated from schema/command-routes.mjs and production logic ABIs.
-use starknet::storage::StoragePointerReadAccess;
+  return `// @generated from schema/command-routes.mjs and the production logic ABIs. DO NOT EDIT.
 
 #[derive(Copy, Drop)]
 pub struct CommandRoute {
@@ -78,23 +91,18 @@ pub struct CommandRoute {
     pub batch: bool,
 }
 
-pub const SETTLE_BLITZ_ROSTER: u32 = ${routes.findIndex(({ name }) => name === "SettleBlitzRoster")};
-
-pub const COMMAND_ROUTES: [CommandRoute; ${routes.length}] = [
+pub const COMMAND_IDS: [u32; ${routes.length}] = [${routes.map(({ wireId }) => wireId).join(", ")}];
+pub const COMMAND_ROUTES: [Option<CommandRoute>; ${definitions.length}] = [
 ${definitions.join("\n")}
 ];
 
-pub fn logic_class(classes: starknet::storage::StoragePointer<games_storage::release::LogicClasses>, index: u8) -> starknet::ClassHash {
-    match index {
-${logic.map((name, index) => `        ${index} => classes.${name}.read(),`).join("\n")}
-        _ => panic!("unknown command logic"),
-    }
-}
-
-// Decode the complete command before reading a roll; routes retain the same wire discriminants.
-#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+#[derive(Copy, Drop, Debug, PartialEq)]
 pub enum Command {
 ${variants.join("\n")}
 }
-`;
+
+${renderWireSerde(
+  "Command",
+  routes.map(({ name, payload, wireId }) => ({ name, type: payload, wireId })),
+)}`;
 }

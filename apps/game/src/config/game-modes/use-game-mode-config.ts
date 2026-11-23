@@ -5,18 +5,18 @@ import { useMemo } from "react";
 import { getGameModeConfig } from "./index";
 import { type ResolvedGameMode } from "./resolved-mode";
 
-const usePresetId = () => {
+const useFamily = () => {
   const game = useNativeRow("GameRegistry", { game_id: configManager.getActiveGameId() });
   if (!game) throw new Error("Native game rules are not synchronized");
-  return game.preset_id;
+  return game.family;
 };
 export const useResolvedWorldGameMode = (): ResolvedGameMode => useGameModeConfig().id;
 
 export const useGameModeConfig = () => {
-  const presetId = usePresetId();
+  const family = useFamily();
   const { setup } = useGame();
   return useMemo(() => {
-    const mode = getGameModeConfig(presetId);
+    const mode = getGameModeConfig(family);
     return {
       ...mode,
       structure: {
@@ -25,5 +25,5 @@ export const useGameModeConfig = () => {
           mode.structure.getName(structure, setup.store),
       },
     };
-  }, [presetId, setup.store]);
+  }, [family, setup.store]);
 };

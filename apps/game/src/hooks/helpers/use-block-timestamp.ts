@@ -45,9 +45,9 @@ export const useNowMs = (enabled: boolean = true) =>
 export const useNowSeconds = (enabled: boolean = true) =>
   useChainTimeStore((state) => (enabled ? Math.floor(requireChainNowMs(state.nowMs) / 1000) : 0));
 
-/** Chain-time seconds floored to a window, for consumers that only need to wake every so often. */
-export const useCoarseNowSeconds = (windowSeconds: number) =>
+export const useCoarseNowSeconds = (windowSeconds: number, enabled: boolean = true) =>
   useChainTimeStore((state) => {
+    if (!enabled) return 0;
     const window = normalizeCoarseTickWindow(windowSeconds);
     return Math.floor(requireChainNowMs(state.nowMs) / 1000 / window) * window;
   });

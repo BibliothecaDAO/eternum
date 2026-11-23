@@ -3,6 +3,7 @@ import { computeEffectiveStaminaCost } from "@/lib/army-stamina/path-cost";
 import { staminaShortfall } from "@/ui/design-system/kit/reasons";
 import {
   ATTACK,
+  ATTACK_REFUSAL_WORDS,
   EXPLORE,
   MOVE,
   REINFORCE,
@@ -10,9 +11,7 @@ import {
   STAMINA,
   TRANSFER,
   UNEXPLORED,
-  USE,
 } from "@/ui/design-system/kit/words";
-import { type MapSiteKind, siteGainLine } from "../sites/map-site-plan";
 import {
   type ActionPath,
   ActionPaths,
@@ -37,10 +36,6 @@ type TileOrder = {
   staminaWait: number | undefined;
   /** The stamina the army holds now, for a refused stamina need; undefined when that is unknown. */
   staminaHeld: number | undefined;
-  /** The site a Use order uses: its kind, what one use gives, and the army's bar a Well fills; undefined elsewhere. */
-  site:
-    | { kind: MapSiteKind; gain: number | undefined; stamina: { current: number; max: number } | undefined }
-    | undefined;
   /** The selection is the player's realm, not an army: its Help raises troops into the army beside it. */
   byRealm: boolean;
 };
@@ -63,40 +58,30 @@ export type OrderTip = {
  */
 export const orderTip = (order: TileOrder): OrderTip | null => {
   const ordered = orderOf(order);
-  const reward = order.site ? siteGainLine(order.site.kind, order.site.gain, order.site.stamina) : null;
   if (ordered) return ordered;
 
   const refused = refusalLine(order);
-  return refused === null ? (reward ? { line: reward, cost: null } : null) : { line: refused, cost: reward };
+  return refused === null ? null : { line: refused, cost: null };
 };
-
-const OPEN_CRATE = "Open crate";
 
 const ORDERS: Partial<Record<ActionType, string>> = {
   [ActionType.Explore]: EXPLORE,
   [ActionType.Move]: MOVE,
   [ActionType.Attack]: ATTACK,
-  [ActionType.Chest]: OPEN_CRATE,
   [ActionType.Help]: `${TRANSFER} troops`,
-  [ActionType.SpireTravel]: "Travel through the spire",
+  [ActionType.SpireTravel]: "Enter the Spire",
   [ActionType.EnterDepth]: SPIRE_WORDS.order,
-  [ActionType.UseSite]: USE,
 };
 
-const orderOf = ({ path, exploreStamina, food, site, byRealm }: TileOrder): OrderTip | null => {
+const orderOf = ({ path, exploreStamina, food, byRealm }: TileOrder): OrderTip | null => {
   const actionType = path && path.length >= 2 ? ActionPaths.getActionType(path) : undefined;
   // The realm's Help is a reinforcement, priced on its sheet.
   if (path && byRealm && actionType === ActionType.Help) return { line: REINFORCE.verb, cost: null };
   const line = actionType === undefined ? undefined : ORDERS[actionType];
   if (!path || line === undefined) return null;
-  // A crate costs nothing; the spire's entry is free, and its card picks the Ethereal layer to enter.
-  if (actionType === ActionType.Chest || actionType === ActionType.EnterDepth) return { line, cost: null };
-  if (actionType === ActionType.UseSite)
-    return { line, cost: site ? siteGainLine(site.kind, site.gain, site.stamina) : null };
+  if (actionType === ActionType.EnterDepth) return { line, cost: null };
   const stamina = computeEffectiveStaminaCost(path.slice(1), actionType, exploreStamina);
-  const gain = site ? siteGainLine(site.kind, site.gain, site.stamina) : null;
   const pieces = [
-    ...(gain ? [gain] : []),
     ...(stamina > 0 ? [`${formatCharge(stamina)} ${STAMINA}`] : []),
     ...(food.wheat > 0 ? [`${formatCharge(food.wheat)} wheat`] : []),
     ...(food.fish > 0 ? [`${formatCharge(food.fish)} fish`] : []),
@@ -110,20 +95,15 @@ const joinPieces = (pieces: readonly (RankedWords | string)[]): RankedWords | st
     ? pieces.join(" · ")
     : pieces.flatMap((piece, index) => [...(index > 0 ? [" · "] : []), ...asRanked(piece)]);
 
-/**
- * The order a tile the planner refused would take, by what it holds: troops passed to the player's own army, an attack
- * on a target, a crate's opening, else a move onto revealed land or an explore into the fog.
- */
 export const refusedOrderVerb = ({
   holds,
   explored,
 }: {
-  holds: "friend" | "target" | "crate" | null;
+  holds: "friend" | "target" | null;
   explored: boolean;
 }): string => {
   if (holds === "friend") return ORDERS[ActionType.Help]!;
   if (holds === "target") return ATTACK;
-  if (holds === "crate") return OPEN_CRATE;
   return explored ? MOVE : EXPLORE;
 };
 
@@ -133,14 +113,14 @@ export const refusedOrderVerb = ({
  */
 const refusalLine = ({ refusal, staminaWait, staminaHeld, explored }: TileOrder): string | null => {
   if (refusal?.reason === "stamina") return staminaShortfall(staminaHeld, refusal.need, staminaWait);
-  if (refusal) return REFUSALS[refusal.reason];
+  if (refusal) return orderRefusalWords[refusal.reason];
   return explored ? null : UNEXPLORED;
 };
 
-const REFUSALS: Record<Exclude<OrderRefusal["reason"], "stamina">, string> = {
+const orderRefusalWords: Record<Exclude<OrderRefusal["reason"], "stamina">, string> = {
   food: "Not enough food for the army",
-  "off-limits": "Only unclaimed structures can be attacked",
-  "no-attack": "This game allows no attack here",
+  "off-limits": ATTACK_REFUSAL_WORDS["target-must-be-unowned"],
+  "no-attack": ATTACK_REFUSAL_WORDS["no-attack"],
   "no-transfer": "This game allows no transfer here",
   occupied: "No army can enter this tile",
   "too-far": "Too far: move closer",

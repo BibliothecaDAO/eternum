@@ -1,15 +1,9 @@
-import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
+import { resolveExplorerTroops, STAMINA_MODELS } from "@bibliothecadao/eternum/troop-stamina";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { getExplorerStaminaSnapshot } from "@/utils/explorer-stamina";
 import { usePlayerDisplayName } from "@/hooks/use-player-profile";
-import {
-  configManager,
-  getExplorerOwner,
-  getArmyRelicEffects,
-  getGuildFromPlayerAddress,
-  isViewerOwner,
-} from "@bibliothecadao/eternum";
+import { configManager, getExplorerOwner, getGuildFromPlayerAddress, isViewerOwner } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRow, useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
@@ -60,21 +54,15 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
   );
   const structureResources = useResourceManager(explorer ? safeInteger(explorer.owner) : 0);
   const ownershipFacts = useNativeFacts(["GuildMember", "Guild", "EntityName"]);
-  const slotFacts = useNativeFacts(["ArmySlot"]);
+  const slotFacts = useNativeFacts(STAMINA_MODELS);
   const owner = explorer ? getExplorerOwner(store, explorer) : 0n;
 
   const staminaSnapshot = useMemo(() => {
     return getExplorerStaminaSnapshot({
       timestamp,
-      liveTroops: explorer ? resolveExplorerTroops(slotFacts.store, explorer) : undefined,
+      liveTroops: explorer ? resolveExplorerTroops(slotFacts.store, explorer, timestamp) : undefined,
     });
   }, [timestamp, explorer, slotFacts]);
-
-  const currentTroops = staminaSnapshot?.troops ?? null;
-  const relicEffects = useMemo(
-    () => (currentTroops ? getArmyRelicEffects(currentTroops, timestamp) : []),
-    [currentTroops, timestamp],
-  );
 
   const addressName = usePlayerDisplayName(owner) ?? "";
   const derivedData: DerivedArmyData | undefined = useMemo(() => {
@@ -126,7 +114,6 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
     explorerResources,
     structure,
     structureResources,
-    relicEffects,
     derivedData,
     isLoadingExplorer: explorer === undefined,
     isLoadingStructure: explorer?.owner !== undefined && structure === undefined,

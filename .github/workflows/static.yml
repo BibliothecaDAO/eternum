@@ -53,6 +53,11 @@ jobs:
 
       - uses: oven-sh/setup-bun@v2
 
+      - name: Require a local landing kind for every validation job and its inputs
+        run: |
+          bun scripts/ci/flow.ts --check
+          bun test scripts/ci
+
       - name: Check workflows cannot read stored secrets
         run: bun test ./.github/scripts/workflow-credentials.test.ts
 
@@ -69,8 +74,14 @@ jobs:
       - name: Check Worker code asks fetch for no option the Workers runtime refuses
         run: pnpm check:worker-fetch
 
+      - name: Check every GameRegistry fixture row comes from its one builder
+        run: pnpm check:game-registry-rows
+
       - name: Check the Realms X account is written in one place
         run: pnpm check:realms-x
+
+      - name: Check Herald and the value relay decode with identifiers, never balance numbers
+        run: pnpm check:decoders-balance
 
       - name: Check formatting
         run: pnpm run format:check

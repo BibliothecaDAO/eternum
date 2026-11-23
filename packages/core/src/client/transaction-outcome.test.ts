@@ -1,4 +1,4 @@
-import { TransactionNotSentError, TransactionType } from "@bibliothecadao/provider";
+import { TransactionNotSentError } from "@bibliothecadao/provider";
 import { byteArray, hash, shortString } from "starknet";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -140,47 +140,6 @@ describe("an action's outcome", () => {
     });
   });
 
-  it("settles an applied action once Herald has applied it, with what a batch still has to do", async () => {
-    let applied!: (status: { block: number; hash: string; status: string }) => void;
-    const runtime = runtimeWith(new Promise((resolve) => (applied = resolve)));
-    const progress = {
-      from_address: GAMES,
-      keys: [hash.getSelectorFromName("BatchProgress"), "0x7"],
-      data: ["0x111", TX, "3"],
-    };
-    const outcome = waitForActionOutcome(
-      runtime,
-      rpcAnswering(receipt({ events: [progress] })),
-      GAMES,
-      TX,
-      running,
-      undefined,
-      TransactionType.END_GAME,
-    );
-    await vi.waitFor(() => expect(runtime.waitForTransaction).toHaveBeenCalledWith(TX));
-    applied({ block: 12, hash: TX, status: "PRE_CONFIRMED" });
-    await expect(outcome).resolves.toEqual({ hash: TX, block: 12, status: "SUCCEEDED", batchRemaining: "3" });
-  });
-
-  it("retains the receipt grace only for a batch whose progress Herald does not carry", async () => {
-    vi.useFakeTimers();
-    const runtime = runtimeWith(Promise.resolve({ block: 12, hash: TX, status: "PRE_CONFIRMED" }));
-    const progress = {
-      from_address: GAMES,
-      keys: [hash.getSelectorFromName("BatchProgress"), "0x7"],
-      data: ["0x111", TX, "3"],
-    };
-    const rpc = {
-      getTransactionReceipt: vi.fn(
-        () => new Promise<never>((resolve) => setTimeout(() => resolve(receipt({ events: [progress] }) as never), 500)),
-      ),
-    };
-    const outcome = waitForActionOutcome(runtime, rpc, GAMES, TX, running, undefined, TransactionType.END_GAME);
-    await vi.advanceTimersByTimeAsync(500);
-    await expect(outcome).resolves.toMatchObject({ status: "SUCCEEDED", batchRemaining: "3" });
-    vi.useRealTimers();
-  });
-
   it("settles an applied action from a fresh snapshot that covers its receipt's block", async () => {
     const runtime = runtimeWith(new Promise(() => {}));
     const outcome = waitForActionOutcome(runtime, rpcAnswering(receipt({ block_number: 12 })), GAMES, TX, running);
@@ -302,7 +261,7 @@ describe("an action's outcome", () => {
         missing === "receipt never answers"
           ? { getTransactionReceipt: vi.fn(() => new Promise<never>(() => {})) }
           : rpcAnswering(receipt());
-      const outcome = waitForActionOutcome(runtime, rpc, GAMES, TX, running, undefined, undefined, startedAt);
+      const outcome = waitForActionOutcome(runtime, rpc, GAMES, TX, running, undefined, startedAt);
       const ended = expect(outcome).rejects.toThrow("No answer");
       await vi.advanceTimersByTimeAsync(2_000);
       await ended;

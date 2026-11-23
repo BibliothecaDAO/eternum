@@ -7,11 +7,10 @@ import {
   ESSENCE,
   LABOR,
   revealLine,
-  xpGainedLine,
 } from "@/ui/design-system/kit/words";
-import { siteClearXp, configManager, findGain, readRevealXp } from "@bibliothecadao/eternum";
+import { findGain } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { formatExact, LORDS, type RankedWords, ResourcesIds, scaledToUnits } from "@bibliothecadao/types";
+import { LORDS, type RankedWords, ResourcesIds, scaledToUnits } from "@bibliothecadao/types";
 
 import { frontierBuildingName } from "../build/building-names";
 import { armyLabel } from "../hud/dock-armies";
@@ -35,24 +34,15 @@ const REVEAL_WORDS: Partial<Record<number, string>> = {
   [ResourcesIds.Lords]: LORDS,
 };
 
-/**
- * The day log's line for one of the player's actions, by its story, in the names the rest of Frontier uses: a fight by
- * its site and how it ended, a reveal's pay as a whole number, a building by its build card's name, an army by its
- * number; any other story keeps its title. A clear is one line with the attack that won it (`fight`, the one
- * fightConcludedBy finds): what the attack cost. Each story that moved XP says how much, as the contract counted it: a
- * reveal's `reveal_xp`, a clear's XP from the guard its site started with, a point spent keeps XP unchanged.
- */
 export const dayLogLine = (story: LoggedStory, store: NativeFactStore, fight?: LoggedStory): RankedWords | string => {
   const payload = story.storyPayload;
   switch (story.story) {
     case "BattleEvent":
       return fightLogLine(story, store) ?? story.presentation.title;
     case "ExplorationReward":
-      return withRevealXp(revealPayLine(payload) ?? story.presentation.title, payload.coord, store);
+      return revealPayLine(payload) ?? story.presentation.title;
     case "SitePayout":
-      return withClearXp(withFightCost(story.presentation.title, fight), payload.site_id, store);
-    case "SkillPointSpent":
-      return titleOf(story);
+      return withFightCost(story.presentation.title, fight);
     case "BuildingPaymentStory":
       return builtLineOf(payload) ?? story.presentation.title;
     case "ExplorerCreateStory":
@@ -68,20 +58,6 @@ export const dayLogLine = (story: LoggedStory, store: NativeFactStore, fight?: L
 const withFightCost = (line: string, fight: LoggedStory | undefined): string => {
   const lost = fight && fightCost(fight);
   return lost ? clearCostLine(line, lost) : line;
-};
-
-/** The recorded tile keeps historical XP correct after an army changes depth or leaves the map. */
-const withRevealXp = (line: string, coord: unknown, store: NativeFactStore): string => {
-  if (!coord || typeof coord !== "object" || !("y" in coord)) return line;
-  const xp = readRevealXp(store, configManager.getActiveGameId(), { y: Number(coord.y) });
-  return xp === undefined ? line : xpGainedLine(line, formatExact(xp));
-};
-
-/** A clear's line with the XP it paid: the site's starting guard sets it, so it needs the site's row; else the title. */
-const withClearXp = (line: string, siteId: unknown, store: NativeFactStore): string => {
-  if (siteId === undefined) return line;
-  const site = store.get("ExpeditionSite", { game_id: configManager.getActiveGameId(), entity_id: Number(siteId) });
-  return site ? xpGainedLine(line, formatExact(siteClearXp(store, site))) : line;
 };
 
 /** "Farm built": the building by the name on its build card. */

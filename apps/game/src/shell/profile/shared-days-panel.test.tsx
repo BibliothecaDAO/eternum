@@ -52,23 +52,69 @@ const figures = () =>
   ]);
 
 it("counts each step a friend took through the player's shared days", async () => {
-  service.shareTally.mockResolvedValue({ links: 6, posted: 5, visits: 1_240, joined: 31, activated: 12 });
+  service.shareTally.mockResolvedValue({
+    links: 6,
+    posted: 5,
+    visits: 1_240,
+    joined: 31,
+    activated: 12,
+    friendsPaid: 0,
+    fragmentsEarned: 0,
+  });
   await draw();
   expect(host.querySelector("section")?.getAttribute("aria-label")).toBe("Your shared days");
   expect(figures()).toEqual([
     ["5", "Days posted"],
     ["1.2K", "Opened by friends"],
     ["31", "Friends who joined"],
-    ["12", "Cleared a site"],
+    ["12", "Reached 100 Glory"],
+    ["0/10", "Friends paid"],
+    ["0", "Fragments earned"],
   ]);
 });
 
-it("stands only once the player has posted a day, and says nothing when identity cannot tell", async () => {
-  service.shareTally.mockResolvedValue({ links: 0, posted: 0, visits: 0, joined: 0, activated: 0 });
+it("counts the friends an Aspect link brought who were paid, the Fragments they earned, and the rule that pays them", async () => {
+  service.shareTally.mockResolvedValue({
+    links: 1,
+    posted: 0,
+    visits: 40,
+    joined: 9,
+    activated: 8,
+    friendsPaid: 8,
+    fragmentsEarned: 800,
+  });
+  await draw();
+  expect(figures().slice(-2)).toEqual([
+    ["8/10", "Friends paid"],
+    ["800", "Fragments earned"],
+  ]);
+  expect(host.textContent).toContain(
+    "A friend who joins by your Aspect link and reaches 100 Glory pays you 100 Fragments. Your 10th adds 1,000.",
+  );
+});
+
+it("stands only once the player has posted a day or a friend joined, and says nothing when identity cannot tell", async () => {
+  service.shareTally.mockResolvedValue({
+    links: 0,
+    posted: 0,
+    visits: 0,
+    joined: 0,
+    activated: 0,
+    friendsPaid: 0,
+    fragmentsEarned: 0,
+  });
   await draw();
   expect(host.textContent).toBe("");
   // A sheet opened and closed without a post made a link, but shared no day.
-  service.shareTally.mockResolvedValue({ links: 1, posted: 0, visits: 0, joined: 0, activated: 0 });
+  service.shareTally.mockResolvedValue({
+    links: 1,
+    posted: 0,
+    visits: 0,
+    joined: 0,
+    activated: 0,
+    friendsPaid: 0,
+    fragmentsEarned: 0,
+  });
   await draw();
   expect(host.textContent).toBe("");
   service.shareTally.mockRejectedValue(new Error("identity unavailable"));
@@ -78,9 +124,17 @@ it("stands only once the player has posted a day, and says nothing when identity
 
 it("never shows the account before's counts to the next account on the same app, while its own are read or refused", async () => {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  service.shareTally.mockResolvedValue({ links: 6, posted: 5, visits: 1_240, joined: 31, activated: 12 });
+  service.shareTally.mockResolvedValue({
+    links: 6,
+    posted: 5,
+    visits: 1_240,
+    joined: 31,
+    activated: 12,
+    friendsPaid: 0,
+    fragmentsEarned: 0,
+  });
   await draw(client);
-  expect(figures()).toHaveLength(4);
+  expect(figures()).toHaveLength(6);
 
   // A signs out, then B signs in; B's read is slow, then refused.
   identity.session = null;

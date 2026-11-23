@@ -33,9 +33,10 @@ async (page) => {
           const receipt = page.getByRole("complementary", { name: "Selected site" });
           await receipt.getByRole("region", { name: "Clear reward" }).waitFor();
           const rewards = (await receipt.locator("[data-site-rewards]").innerText()).replace(/\s+/g, " ").trim();
-          const expected = kind === "camp" ? "550 Labor 82 XP" : "82 XP";
+          const expected = kind === "camp" ? "550 Labor" : "";
           if (rewards !== expected) throw new Error(`Expected ${expected}; selected site showed ${rewards}`);
-          const standing = kind === "camp" ? "/models/outposts/camp.glb" : "/models/frontier/beast-cyclops.glb";
+          const herd = await page.locator(".cleared-site-lab").getAttribute("data-herd-model");
+          const standing = kind === "camp" ? "/models/outposts/camp.glb" : `/models/frontier/beast-${herd}.glb`;
           for (const path of [standing, "/models/outposts/cleared-standard.glb"]) {
             if (!requests.some((request) => request.url.endsWith(path) && request.status === 200))
               throw new Error(`Missing delivered model ${path}`);

@@ -40,8 +40,7 @@ export interface WaveGame {
   dispose(): void;
 }
 export interface WaveFixturePort {
-  /** `create`: the harness creates the game as the shard's launcher (measurement shards); else the directory's. */
-  createGame(players: number, create: boolean): Promise<WaveGame>;
+  prepareGame(players: number): Promise<WaveGame>;
 }
 export interface WaveOptions {
   players: number;
@@ -53,8 +52,6 @@ export interface WaveOptions {
   closeLog?: string;
   offsetMs?: number;
   receiptCheckpoint?: string;
-  /** Create the wave's game as the shard's launcher instead of playing the directory's (measurement shards). */
-  createGame: boolean;
 }
 
 async function runWave(port: WaveFixturePort, options: WaveOptions) {
@@ -72,7 +69,7 @@ async function runWave(port: WaveFixturePort, options: WaveOptions) {
   // Where a failed wave stopped, named without request bodies or credentials.
   let stage = "creating the game and its players";
   try {
-    game = await port.createGame(options.players, options.createGame);
+    game = await port.prepareGame(options.players);
     validateWave(game, options);
     const fixture = game;
     result = { ...result, ...waveHeader(game) };
@@ -197,7 +194,7 @@ async function prepareWavePayloads(game: WaveGame) {
     const pin = player.client.setup.store.require("GameRelease", { game_id: game.gameId });
     return signPlayerInvoke(
       player.account,
-      buildPlayCall(game.games, game.gameId, pin.release_id, pin.preset_commitment, command),
+      buildPlayCall(game.games, game.gameId, pin.release_id, command),
       game.bounds,
     );
   });
@@ -317,7 +314,6 @@ if (import.meta.main) {
         "offset-ms": { type: "string" },
         "ready-file": { type: "string" },
         "receipt-checkpoint": { type: "string" },
-        "create-game": { type: "boolean", default: false },
         "herald-url": { type: "string" },
       },
     });
@@ -349,7 +345,6 @@ if (import.meta.main) {
       offsetMs: Number(values["offset-ms"] ?? "0"),
       readyFile: values["ready-file"],
       receiptCheckpoint: values["receipt-checkpoint"],
-      createGame: values["create-game"] === true,
     });
     console.log(
       JSON.stringify({

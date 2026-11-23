@@ -1,3 +1,4 @@
+import { GUARD_MODELS } from "@bibliothecadao/eternum/game-client";
 import { type IconMeaning } from "@/ui/design-system/icon";
 
 import { useFactView } from "@/hooks/use-fact-view";
@@ -70,7 +71,7 @@ export const useEmpireSuggestions = (): EmpireSuggestion[] => {
     setup: { systemCalls },
   } = useGame();
   const mode = useGameModeConfig();
-  const facts = useNativeFacts(["Guard", "ResourceBalance", "ResourceProduction", "ResourceWeight"]);
+  const facts = useNativeFacts([...GUARD_MODELS, "ResourceBalance", "ResourceProduction", "ResourceWeight"]);
   const resolvedWorldGameMode = useResolvedWorldGameMode();
   // Every surface that shows the steps reads the account's orders: the desktop panel and the phone's Attention alike.
   useBuildOrderAccount();

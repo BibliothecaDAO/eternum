@@ -1,52 +1,42 @@
 use crate::resources::ResourceKey;
 
-// Two-sided rows store two independent three-bit counts. Scouts retains its ordered kind choices; other rows
-// store their tier. This next-season layout is part of the release schema, not a migration of existing knowledge.
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct RealmKnowledge {
     pub learned: u64,
 }
 
-// The rows of the castle's tree. A building row climbs from 0 to Legendary V for every building of its type; the
-// castle rows unlock shrines, wells and the three depths.
 pub const ROW_FARM: u8 = 0;
 pub const ROW_WORKSHOP: u8 = 1;
-pub const ROW_BARRACKS: u8 = 2;
-pub const ROW_HUT: u8 = 3;
-pub const ROW_WAR_HALL: u8 = 4;
+pub const ROW_CONSCRIPTION: u8 = 2;
+pub const ROW_RATIONS: u8 = 4;
 pub const ROW_SUPPLY_YARD: u8 = 5;
-pub const ROW_SCOUTS_LODGE: u8 = 6;
-pub const ROW_HEARTH: u8 = 7;
-pub const ROW_SHRINE: u8 = 8;
-pub const ROW_WELL: u8 = 9;
-pub const ROW_DEPTH: u8 = 10;
-pub const ROW_COUNT: u8 = 11;
+pub const ROW_KNIGHT_OATHS: u8 = 6;
+pub const ROW_SCOUT_OATHS: u8 = 7;
+pub const ROW_CROSSBOW_OATHS: u8 = 11;
+pub const OATH_SLOTS_BASE: u8 = 2;
+pub const OATH_SLOTS_STEPS: u8 = 3;
+pub const ROW_LORE: u8 = 10;
+pub const LORE_WELLS: u8 = 1;
+pub const LORE_SHRINES: u8 = 2;
+pub const LORE_SPIRES: u8 = 3;
 
-// Farm and Workshop tiers make more (Fields, Tools) or store more (Granary, Storeroom); Barracks tiers make more troops
-// (Drill) or deploy them for less wheat (Rations).
-pub const CHOICE_MAKE: u8 = 0;
-pub const CHOICE_STORE: u8 = 1;
-pub const CHOICE_DRILL: u8 = 0;
-pub const CHOICE_RATIONS: u8 = 1;
-// The kind each Scouts' lodge tier finds more of.
-pub const KIND_CAMPS: u8 = 0;
-pub const KIND_RIFTS: u8 = 1;
-pub const KIND_SANCTUARIES: u8 = 2;
 
-pub fn scouting_available(learned: u64, kind: u8) -> bool {
-    assert!(kind < choice_count(ROW_SCOUTS_LODGE), "invalid Scouting kind");
-    kind != KIND_SANCTUARIES || tier(learned, ROW_SHRINE) != 0 || tier(learned, ROW_WELL) != 0
-}
-
-// Building categories with a row; the four training buildings are unique on a realm board.
-pub const HUT: u8 = 1;
+// Building categories used by construction and research.
+pub const STOREROOM: u8 = 2;
+pub const STOREROOM_LEVEL: u8 = 1;
 pub const WORKSHOP: u8 = 25;
 pub const BARRACKS: u8 = 28;
+pub const RANGE: u8 = 31;
+pub const RATIONS_DEPOT: u8 = 41;
+pub const CONSCRIPTION_CAMP: u8 = 44;
+pub const RANGE_LEVEL: u8 = 1;
+pub const CONSCRIPTION_CAMP_LEVEL: u8 = 1;
+pub const RATIONS_DEPOT_LEVEL: u8 = 2;
 pub const FARM: u8 = 37;
-pub const WAR_HALL: u8 = 41;
 pub const SUPPLY_YARD: u8 = 42;
+pub const SUPPLY_YARD_LEVEL: u8 = 2;
 pub const SCOUTS_LODGE: u8 = 43;
-pub const HEARTH: u8 = 44;
+pub const SCOUTS_LODGE_LEVEL: u8 = 1;
 
 // A tier's price at the castle. Building rows charge Essence and labor; castle rows charge Essence only.
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
@@ -56,59 +46,92 @@ pub struct ResearchPrice {
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
-pub struct ResearchPriceConfig {
-    pub row: u8,
-    pub tier: u8,
-    pub price: ResearchPrice,
-}
-
-// Buys the next tier of a row. `choice` picks the tier's side on Farm, Workshop and Barracks rows and the kind on the
-// Scouts' lodge row; every other row takes 0.
-#[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct Research {
     pub structure_id: u64,
     pub row: u8,
-    pub choice: u8,
 }
 
 pub fn row_category(row: u8) -> u8 {
-    match row {
-        0 => FARM,
-        1 => WORKSHOP,
-        2 => BARRACKS,
-        3 => HUT,
-        4 => WAR_HALL,
-        5 => SUPPLY_YARD,
-        6 => SCOUTS_LODGE,
-        7 => HEARTH,
-        _ => {
-            assert!(row < ROW_COUNT, "invalid research row");
-            0
-        },
+    if row == ROW_FARM {
+        FARM
+    } else if row == ROW_WORKSHOP {
+        WORKSHOP
+    } else if row == ROW_CONSCRIPTION {
+        CONSCRIPTION_CAMP
+    } else if row == ROW_RATIONS {
+        RATIONS_DEPOT
+    } else if row == ROW_SUPPLY_YARD {
+        SUPPLY_YARD
+    } else if row == ROW_KNIGHT_OATHS {
+        BARRACKS
+    } else if row == ROW_SCOUT_OATHS {
+        SCOUTS_LODGE
+    } else if row == ROW_CROSSBOW_OATHS {
+        RANGE
+    } else if row == ROW_LORE {
+        0
+    } else {
+        panic!("invalid research row")
     }
 }
 
 pub fn is_training(category: u8) -> bool {
-    category >= WAR_HALL && category <= HEARTH
+    category == SUPPLY_YARD || category == CONSCRIPTION_CAMP || category == RATIONS_DEPOT
 }
 
-pub fn max_tier(row: u8) -> u8 {
-    match row {
-        8 | 9 => 1,
-        10 => 3,
-        _ => {
-            assert!(row < ROW_COUNT, "invalid research row");
-            5
-        },
+pub fn one_per_realm(category: u8) -> bool {
+    is_training(category) || category == STOREROOM
+}
+
+pub fn opens_at_level(category: u8) -> u8 {
+    if category == SCOUTS_LODGE {
+        SCOUTS_LODGE_LEVEL
+    } else if category == RANGE {
+        RANGE_LEVEL
+    } else if category == CONSCRIPTION_CAMP {
+        CONSCRIPTION_CAMP_LEVEL
+    } else if category == STOREROOM {
+        STOREROOM_LEVEL
+    } else if category == RATIONS_DEPOT {
+        RATIONS_DEPOT_LEVEL
+    } else if category == SUPPLY_YARD {
+        SUPPLY_YARD_LEVEL
+    } else {
+        0
     }
 }
 
-// How many sides a row's choice has: two for Farm, Workshop and Barracks, three kinds for the Scouts' lodge.
-pub fn choice_count(row: u8) -> u8 {
-    match row {
-        0 | 1 | 2 => 2,
-        6 => 3,
-        _ => 1,
+pub const ROWS: [u8; 9] = [
+    ROW_FARM, ROW_WORKSHOP, ROW_CONSCRIPTION, ROW_RATIONS, ROW_SUPPLY_YARD, ROW_KNIGHT_OATHS, ROW_SCOUT_OATHS,
+    ROW_CROSSBOW_OATHS, ROW_LORE,
+];
+
+pub fn is_oath_row(row: u8) -> bool {
+    row == ROW_KNIGHT_OATHS || row == ROW_SCOUT_OATHS || row == ROW_CROSSBOW_OATHS
+}
+
+pub fn oath_slots(learned: u64, category: crate::troops::TroopType) -> u8 {
+    let row = match category {
+        crate::troops::TroopType::Knight => ROW_KNIGHT_OATHS,
+        crate::troops::TroopType::Crossbowman => ROW_CROSSBOW_OATHS,
+        crate::troops::TroopType::Paladin => ROW_SCOUT_OATHS,
+    };
+    OATH_SLOTS_BASE + tier(learned, row)
+}
+
+pub fn max_tier(row: u8) -> u8 {
+    if row == ROW_FARM
+        || row == ROW_WORKSHOP
+        || row == ROW_SUPPLY_YARD
+        || row == ROW_CONSCRIPTION
+        || row == ROW_RATIONS {
+        5
+    } else if is_oath_row(row) {
+        OATH_SLOTS_STEPS
+    } else if row == ROW_LORE {
+        LORE_SPIRES
+    } else {
+        panic!("invalid research row")
     }
 }
 
@@ -118,130 +141,37 @@ fn tier_slot(row: u8) -> (u64, u64) {
         0 => (0x1, 8),
         1 => (0x80, 8),
         2 => (0x4000, 8),
-        3 => (0x200000, 8),
         4 => (0x1000000, 8),
         5 => (0x8000000, 8),
-        6 => (0x40000000, 8),
-        7 => (0x200000000, 8),
-        8 => (0x400000000000, 2),
-        9 => (0x800000000000, 2),
+        6 => (0x40000000, 4),
+        7 => (0x100000000, 4),
+        11 => (0x400000000, 4),
         10 => (0x1000000000000, 4),
         _ => panic!("invalid research row"),
     }
 }
 
-// Where a row's choices sit: the first tier's scale and the field size of one choice. Later tiers follow in order.
-fn choice_slot(row: u8) -> (u64, u64) {
-    match row {
-        6 => (0x1000000000, 4),
-        _ => panic!("research row has no choice"),
-    }
-}
-
-pub fn independent_sides(row: u8) -> bool {
-    row <= ROW_BARRACKS
-}
-
 pub fn tier(learned: u64, row: u8) -> u8 {
     let (scale, size) = tier_slot(row);
-    let first = (learned / scale % size).try_into().unwrap();
-    if independent_sides(row) {
-        let second = (learned / (scale * size) % size).try_into().unwrap();
-        core::cmp::max(first, second)
-    } else {
-        first
-    }
-}
-
-// The choice made at a tier, from 1 (Common) up to the row's tier.
-pub fn choice(learned: u64, row: u8, at: u8) -> u8 {
-    assert!(at > 0 && at <= tier(learned, row), "tier is not learned");
-    let (mut scale, size) = choice_slot(row);
-    for _ in 1..at {
-        scale *= size;
-    }
     (learned / scale % size).try_into().unwrap()
 }
 
-// The upgrades bought on one side; Scouts still counts its ordered kind selections.
-pub fn picks(learned: u64, row: u8, side: u8) -> u8 {
-    assert!(side < choice_count(row), "invalid research choice");
-    if independent_sides(row) {
-        let (scale, _) = tier_slot(row);
-        let scale = if side == 0 {
-            scale
-        } else {
-            scale * 8
-        };
-        return (learned / scale % 8).try_into().unwrap();
-    }
-    if choice_count(row) == 1 {
-        return tier(learned, row);
-    }
-    let mut count = 0;
-    for at in 1..tier(learned, row) + 1 {
-        if choice(learned, row, at) == side {
-            count += 1;
-        }
-    }
-    count
-}
-
-// The Fields, Tools or Drill picks of a building type; a type without a make-or-store row has none.
 pub fn make_picks(learned: u64, category: u8) -> u8 {
     if category == FARM {
-        picks(learned, ROW_FARM, CHOICE_MAKE)
+        tier(learned, ROW_FARM)
     } else if category == WORKSHOP {
-        picks(learned, ROW_WORKSHOP, CHOICE_MAKE)
-    } else if category == BARRACKS {
-        picks(learned, ROW_BARRACKS, CHOICE_DRILL)
+        tier(learned, ROW_WORKSHOP)
+    } else if category == BARRACKS || category == RANGE || category == SCOUTS_LODGE {
+        tier(learned, ROW_CONSCRIPTION)
     } else {
         0
     }
 }
 
-// Total purchases open training even when the Barracks improvements are split across sides.
-pub fn purchases(learned: u64, row: u8) -> u8 {
-    if independent_sides(row) {
-        picks(learned, row, 0) + picks(learned, row, 1)
-    } else {
-        tier(learned, row)
-    }
-}
-
-pub fn side_tier(learned: u64, row: u8, side: u8) -> u8 {
-    if independent_sides(row) {
-        picks(learned, row, side)
-    } else {
-        tier(learned, row)
-    }
-}
-
-// Adds one upgrade to the chosen side, or the next shared tier for Scouts and single-sided rows.
-pub fn learn(learned: u64, row: u8, side: u8) -> u64 {
-    assert!(side < choice_count(row), "invalid research choice");
-    if row == ROW_SCOUTS_LODGE {
-        assert!(scouting_available(learned, side), "research Shrine or Well first");
-    }
-    let next = side_tier(learned, row, side) + 1;
-    assert!(next <= max_tier(row), "research side is complete");
+pub fn learn(learned: u64, row: u8) -> u64 {
+    assert!(tier(learned, row) < max_tier(row), "research row is complete");
     let (scale, _) = tier_slot(row);
-    if independent_sides(row) {
-        return learned + if side == 0 {
-            scale
-        } else {
-            scale * 8
-        };
-    }
-    let mut learned = learned + scale;
-    if choice_count(row) > 1 {
-        let (mut scale, size) = choice_slot(row);
-        for _ in 1..next {
-            scale *= size;
-        }
-        learned += Into::<u8, u64>::into(side) * scale;
-    }
-    learned
+    learned + scale
 }
 
 #[starknet::interface]
@@ -254,6 +184,4 @@ pub trait IResearch<T> {
         context: crate::commands::ActionContext,
     );
     fn realm_knowledge(self: @T, key: ResourceKey) -> Option<RealmKnowledge>;
-    #[cfg(feature: "test_support")]
-    fn research_price(self: @T, game_id: u32, row: u8, tier: u8) -> ResearchPrice;
 }

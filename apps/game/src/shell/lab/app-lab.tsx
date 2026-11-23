@@ -3,24 +3,23 @@ import { useEffect, useState } from "react";
 import { Navigate, Route, Routes, useParams } from "react-router-dom";
 
 import { identityClient, useIdentitySessionStore } from "@/hooks/context/identity-session";
-import { IdentityRequestError, SOCIAL_PROVIDERS } from "@realms-world/identity";
+import { IdentityRequestError, SOCIAL_PROVIDERS, type SealCodeRefusal } from "@realms-world/identity";
+import { answerLabBuildOrders } from "./lab-build-orders";
 
-import { BlitzLobbyPage } from "../blitz/blitz-pages";
 import { BuildOrdersPage } from "../build-orders/build-orders-page";
-import { entryTermsKey, refundOwedKey, registeredSlotsKey, slotRegisteredKey } from "../blitz/entry";
-import { seasonPrizeKey } from "../season-tab/blitz-season";
-import { rewardKey } from "../season-tab/reward";
 import { PageAddress } from "../frame/page-address";
 import { CreditsPage, PrivacyPage, TermsPage } from "../legal";
 import { WhatsNewPage } from "../news/news";
-import { JoinDevconPage } from "../join/join-devcon-page";
 import { NotFoundPage } from "../not-found";
+import { STANDING_PROMPTS } from "../standing-prompts";
 import { PlayPage } from "../play/play-page";
+import { SharedLinkPage } from "../share/shared-link-page";
+import { FragmentsPage } from "../shop/fragments-page";
+import { answerAvnuRead, answerTokenBalances, isAvnuRead } from "./lab-pay-tokens";
 import { PlayerPage, ProfilePage, SettingsPage } from "../profile/profile-pages";
 import { ResultsPage } from "../season-tab/results-page";
 import { SeasonPage } from "../season-tab/season-page";
 import {
-  LAB_BLITZ_BOARD,
   LAB_CHAIN,
   LAB_FINISHED_BLITZ,
   LAB_FRONTIER_BOARD,
@@ -28,10 +27,6 @@ import {
   LAB_FINAL_BOARDS,
   LAB_FRONTIER_FINAL_BOARD,
   LAB_FRONTIER_UNPUBLISHED_BOARD,
-  LAB_DEVCON_TICKETS,
-  LAB_FIRST_REFERRAL,
-  LAB_REFERRALS,
-  LAB_REFERRER,
   LAB_NO_SHARES,
   LAB_SHARE_TALLIES,
   LAB_GUARDIAN,
@@ -39,43 +34,31 @@ import {
   LAB_PLAYER,
   LAB_PROFILES,
   LAB_CHAT_PROFILES,
-  LAB_RATING_TOP,
   LAB_SHARD_MANIFEST,
   labFrontierBoard,
-  labRatingTop,
   LAB_NO_HISTORY_SCREENS,
   LAB_SCREENS,
-  LAB_SEAT_PROFILES,
   LAB_SESSION,
-  LAB_CHAT,
   LAB_GLOBAL_CHAT,
   LAB_EMAIL_CODE,
-  LAB_ENTRY_TERMS,
-  LAB_GAME_KEYS,
   LAB_NAMES,
-  LAB_REWARDS,
-  LAB_SEASON_PRIZES,
   LAB_PAYOUT_WALLETS,
-  LAB_SLOT_KEY,
-  LAB_SLOT_REGISTERED,
-  LAB_WALLET,
   labRatings,
   labCalendar,
-  labSlots,
+  labOrderIntent,
+  LAB_INVITE,
+  labJoinedShare,
+  labSealCode,
+  LAB_FRAGMENT_QUOTE,
+  LAB_SEAL_CODE,
+  LAB_SHARE_CODE,
   type LabScreen,
 } from "./app-lab-fixtures";
-import { LabConnect, LabDoorway } from "./app-lab-flows";
-import { LabSeasonEndDevcon } from "./season-end-devcon-lab";
+import { LabConnect, LabDayShare, LabDoorway } from "./app-lab-flows";
 import { answerLabChat } from "./lab-chat";
 import { AppChatConnection } from "../chat/app-chat";
 import { ChatPage } from "../chat/chat-page";
 
-/**
- * The dev build's app lab: the real pages over one fixture state per screen, for the painted pass's captures of states
- * the dev stack cannot hold (Day 12 of a season, a full lobby, a season just over). Opened as /lab/app/<screen>/<page>;
- * the lab answers the app's own /api reads and seeds the shard boards, so nothing leaves the tab. Beside the pages:
- * Connect's steps, the doorway's holds (app-lab-flows.tsx), the reading pages and an unknown path's.
- */
 export const AppLabView = () => {
   const { screen } = useParams();
   if (!isLabScreen(screen)) return <Navigate to="/lab/app/home" replace />;
@@ -116,7 +99,6 @@ const LabPages = ({ screen }: { screen: LabScreen }) => {
       <Routes>
         <Route index element={<PlayPage />} />
         <Route path="blitz/build-orders" element={<BuildOrdersPage />} />
-        <Route path="blitz/:id" element={<BlitzLobbyPage />} />
         <Route path="season" element={<SeasonPage />} />
         <Route path="results/:id" element={<ResultsPage />} />
         <Route path="profile" element={<ProfilePage />} />
@@ -129,10 +111,9 @@ const LabPages = ({ screen }: { screen: LabScreen }) => {
         <Route path="credits" element={<CreditsPage />} />
         <Route path="connect/:step" element={<LabConnect />} />
         <Route path="doorway/:state" element={<LabDoorway />} />
-        <Route path="season-end-devcon/:step/:who" element={<LabSeasonEndDevcon />} />
-        <Route path="join/devcon" element={<JoinDevconPage />} />
-        <Route path="join/devcon/:code" element={<JoinDevconPage />} />
-        <Route path="join/devcon/r/:referral" element={<JoinDevconPage />} />
+        <Route path="s/:code" element={<SharedLinkPage />} />
+        <Route path="share/day" element={<LabDayShare />} />
+        <Route path="shop/fragments" element={<FragmentsPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </PageAddress.Provider>
@@ -155,11 +136,6 @@ const useLabSession = (screen: LabScreen) => {
   }, [screen]);
 };
 
-/**
- * The field the lab's Season boards hold: `?field=<players>` sizes Frontier's board and the Blitz rating to that many,
- * Frontier's read through Herald's own route on its refresh (its shard listed with its manifest, so it opens with no
- * read of its own), to measure a board of many players (prove:app board-load). Without it, the painted boards.
- */
 const labField = (): number | null => {
   const field = Number(new URLSearchParams(window.location.search).get("field"));
   return Number.isSafeInteger(field) && field >= LAB_FIELD_MIN ? field : null;
@@ -177,20 +153,6 @@ const createLabClient = (screen: LabScreen, field: number | null) => {
       screen === "season-unpublished" ? LAB_FRONTIER_UNPUBLISHED_BOARD : LAB_FRONTIER_BOARD,
     );
   client.setQueryData(["shell", "leaderboard", LAB_CHAIN, 3], LAB_FINAL_BOARDS[screen] ?? LAB_FRONTIER_FINAL_BOARD);
-  client.setQueryData(["shell", "leaderboard", LAB_CHAIN, 7], LAB_BLITZ_BOARD);
-  const wallet = LAB_PAYOUT_WALLETS[screen];
-  const terms = LAB_ENTRY_TERMS[screen];
-  if (terms && wallet) client.setQueryData(entryTermsKey(LAB_SLOT_KEY, wallet), terms);
-  client.setQueryData(slotRegisteredKey(LAB_SLOT_KEY), LAB_SLOT_REGISTERED);
-  // The list's refund row: the closed slot owes the wallet on the screen that left it unseated.
-  if (wallet) {
-    client.setQueryData(registeredSlotsKey(wallet), [LAB_SLOT_KEY]);
-    client.setQueryData(refundOwedKey(LAB_SLOT_KEY, wallet), screen === "entry-unseated");
-  }
-  const reward = LAB_REWARDS[screen];
-  const prize = LAB_SEASON_PRIZES[screen];
-  if (reward) client.setQueryData(rewardKey(LAB_GAME_KEYS, LAB_WALLET), reward);
-  if (prize) client.setQueryData(seasonPrizeKey([{ slot: LAB_SLOT_KEY, wallet: LAB_WALLET }]), prize);
   return client;
 };
 
@@ -206,20 +168,22 @@ function installLabFixtures(screen: LabScreen, field: number | null): () => void
     "linkWallet",
     "getBuildOrders",
     "saveBuildOrders",
-    "redeemCampaignTicket",
-    "campaignReferral",
-    "campaignReferrer",
     "shareTally",
     "readDefaultWallet",
     "deleteAccount",
+    "priceFragments",
+    "payFragments",
+    "fragmentPayment",
   ];
   const descriptors = identityMethods.map(
     (name) => [name, Object.getOwnPropertyDescriptor(identityClient, name)] as const,
   );
   answerAppReads(screen, field);
-  answerChat(screen);
+  answerLabChat({ history: () => LAB_GLOBAL_CHAT });
   answerIdentity(screen);
+  const restoreBalances = answerTokenBalances();
   return () => {
+    restoreBalances();
     window.fetch = previousFetch;
     window.WebSocket = previousWebSocket;
     for (const [name, descriptor] of descriptors) {
@@ -241,9 +205,9 @@ const json = (body: unknown) =>
 const answerAppReads = (screen: LabScreen, field: number | null) => {
   const network = window.fetch.bind(window);
   let boardReads = 0;
-  const shard = { url: "https://lab.invalid", chainId: LAB_CHAIN, status: "active", games: LAB_SCREENS[screen].games };
+  const shard = { url: "https://lab.invalid", chainId: LAB_CHAIN, games: LAB_SCREENS[screen].games };
   const answers: Record<string, (url: URL) => Response> = {
-    "/api/directory": () => json({ shards: [field === null ? shard : { ...shard, manifest: LAB_SHARD_MANIFEST }] }),
+    "/api/directory": () => json({ shard: field === null ? shard : { ...shard, manifest: LAB_SHARD_MANIFEST } }),
     // The player's own finished Blitz.
     "/api/directory/history": () =>
       json({
@@ -252,11 +216,9 @@ const answerAppReads = (screen: LabScreen, field: number | null) => {
         failures: [],
       }),
     "/api/guardian": () => json(LAB_GUARDIAN),
-    "/api/slots": () => json(labSlots(screen)),
     "/api/factory/calendar": () => json(labCalendar(screen)),
     "/api/profiles": (url) =>
       json({ profiles: profilesOf(screen, url.searchParams.get("accounts")?.split(",") ?? []) }),
-    "/api/ratings/top": () => json(field === null ? LAB_RATING_TOP : labRatingTop(field)),
     "/api/ratings": (url) => json(labRatings(url.searchParams.get("players")?.split(",") ?? [])),
     "/api/value/held-realms": () => {
       const held = LAB_HELD_REALMS[screen] ?? [];
@@ -266,17 +228,12 @@ const answerAppReads = (screen: LabScreen, field: number | null) => {
   if (field !== null) answers["/games/1/leaderboard"] = () => json(labFrontierBoard(field, boardReads++));
   window.fetch = (input, init) => {
     const url = new URL(input instanceof Request ? input.url : String(input), window.location.origin);
+    if (isAvnuRead(url)) return Promise.resolve(answerAvnuRead(url, init?.body?.toString()));
     const answer = answers[url.pathname];
     return answer ? Promise.resolve(answer(url)) : network(input, init);
   };
 };
 
-/**
- * The identity service's answers for the account page: a code is always sent, and a wallet change or the account's
- * deletion spends the lab's one code and refuses any other, as the service refuses it. A Devcon screen's account holds its ticket, or opens it
- * with any flyer's code, as the service answers a first redemption. The client holds its own fetch, so its calls are
- * answered on the client itself.
- */
 const answerIdentity = (screen: LabScreen) => {
   identityClient.listSignInProviders = async () => ["discord"];
   identityClient.availableSignInProviders = async () => [...SOCIAL_PROVIDERS];
@@ -284,90 +241,46 @@ const answerIdentity = (screen: LabScreen) => {
   const spend = async (code: unknown) => {
     if (code !== LAB_EMAIL_CODE) throw new IdentityRequestError(400, "INVALID_OTP");
   };
-  const ticket = LAB_DEVCON_TICKETS[screen];
-  let held = ticket?.held === true;
-  identityClient.redeemCampaignTicket = async (campaign, opening) => {
-    if (!ticket || (opening === null && !held)) throw new IdentityRequestError(400, "invalid_redemption");
-    held = true;
-    return { campaign, tier: ticket.tier };
-  };
-  identityClient.campaignReferral = async () => LAB_REFERRALS[screen] ?? LAB_FIRST_REFERRAL;
-  identityClient.campaignReferrer = async () => LAB_REFERRER;
   identityClient.shareTally = async () => LAB_SHARE_TALLIES[screen] ?? LAB_NO_SHARES;
+  let intent = labOrderIntent(screen);
+  identityClient.getOrderIntent = async () => intent;
+  identityClient.chooseOrder = async (order) => {
+    intent = { ...intent, order };
+    return intent;
+  };
+  identityClient.createShare = async () => LAB_SHARE_CODE;
+  identityClient.joinedShare = async () => labJoinedShare(screen);
+  identityClient.openShare = async (code) => {
+    if (code !== LAB_SHARE_CODE) throw new IdentityRequestError(404, "share_unknown");
+    return LAB_INVITE;
+  };
+  let sealCode = labSealCode(screen);
+  identityClient.getSealCode = async () => sealCode;
+  identityClient.redeemSealCode = async (code) => {
+    if (code.trim().toUpperCase() !== LAB_SEAL_CODE)
+      throw new IdentityRequestError(410, "code_unavailable" satisfies SealCodeRefusal);
+    sealCode = { held: true };
+    return sealCode;
+  };
+  identityClient.priceFragments = async (_game, fragments) => ({
+    fragments,
+    cents: fragments,
+    quote: {
+      ...LAB_FRAGMENT_QUOTE,
+      lordsWei: String((BigInt(LAB_FRAGMENT_QUOTE.lordsWei) * BigInt(fragments)) / 1_000n),
+    },
+  });
+  identityClient.payFragments = async () => ({ state: "delivering" });
+  identityClient.fragmentPayment = async () => ({ state: "delivered", fragments: 1_000 });
   // The lab's player has made no Realms wallet, so the payout window offers Create my wallet.
   identityClient.readDefaultWallet = async () => null;
-  // The account's build orders, kept in the tab: each save is held, and read back, at the next revision.
-  let orders = { revision: 3, book: LAB_BUILD_ORDERS as unknown };
-  const buildOrders = () => ({ owner: useIdentitySessionStore.getState().session?.user.realmsId ?? "", ...orders });
+  identityClient.addOpeningProgress = async () => ({ reached: [], seen: STANDING_PROMPTS });
+  answerLabBuildOrders();
   Object.assign(identityClient, {
-    getBuildOrders: async () => buildOrders(),
-    saveBuildOrders: async ({ book }: { book: unknown }) => {
-      orders = { revision: orders.revision + 1, book };
-      return buildOrders();
-    },
     unlinkWallet: spend,
     linkWallet: async ({ code }: { code?: string }) => spend(code).then(() => LAB_PLAYER),
     deleteAccount: spend,
   });
-};
-
-/** The chat's rooms, answered in the tab: Global writes, and a lobby's room for a wallet registered in its slot, not refunded. */
-const answerChat = (screen: LabScreen) => {
-  const registration = LAB_ENTRY_TERMS[screen]?.registration;
-  const canWrite =
-    LAB_ENTRY_TERMS[screen]?.cancelled !== true &&
-    registration?.registered === true &&
-    registration.paid > 0n &&
-    !registration.refundable;
-  // A lobby's room has its lobby's lines, Global its own.
-  answerLabChat({
-    lobbyWrites: canWrite,
-    history: (zoneId) => (zoneId.startsWith("slot:") ? LAB_CHAT : LAB_GLOBAL_CHAT),
-  });
-};
-
-/** Three orders a player saved, Coal rush the one followed. */
-const LAB_BUILD_ORDERS = {
-  active: "coal-rush",
-  orders: [
-    {
-      id: "coal-rush",
-      order: {
-        name: "Coal rush",
-        steps: [
-          { rank: "Settlement", goal: "farm", count: 2 },
-          { rank: "Settlement", goal: "levelUp" },
-          { rank: "City", goal: "coal", count: 2 },
-          { rank: "City", goal: "copper", count: 2 },
-          { rank: "City", goal: "barracks", count: 1 },
-          { rank: "City", goal: "levelUp" },
-          { rank: "Kingdom", goal: "army", count: 1 },
-          { rank: "Kingdom", goal: "farm", count: 4 },
-          { rank: "Empire", goal: "army", count: 3 },
-        ],
-      },
-    },
-    {
-      id: "wood-first",
-      order: {
-        name: "Wood first",
-        steps: [
-          { rank: "Settlement", goal: "wood", count: 2 },
-          { rank: "City", goal: "farm", count: 4 },
-        ],
-      },
-    },
-    {
-      id: "early-army",
-      order: {
-        name: "Early army",
-        steps: [
-          { rank: "Settlement", goal: "barracks", count: 1 },
-          { rank: "Settlement", goal: "army", count: 1 },
-        ],
-      },
-    },
-  ],
 };
 
 /** The screen's player by name: the one their session carries and the one identity answers for them. */
@@ -379,7 +292,7 @@ const profilesOf = (screen: LabScreen, accounts: readonly string[]) =>
       const profile =
         BigInt(account) === BigInt(LAB_PLAYER)
           ? { name: labPlayerName(screen), portrait: LAB_SESSION.user.image }
-          : (LAB_PROFILES[account] ?? LAB_SEAT_PROFILES[account] ?? LAB_CHAT_PROFILES.get(BigInt(account)));
+          : (LAB_PROFILES[account] ?? LAB_CHAT_PROFILES.get(BigInt(account)));
       return profile ? [[account, profile]] : [];
     }),
   );

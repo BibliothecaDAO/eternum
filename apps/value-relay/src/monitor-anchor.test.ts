@@ -70,16 +70,15 @@ const monitorWithStorage = () => {
       { storage } as unknown as DurableObjectState,
       {
         L2_RPC_URL: "https://ledger.test",
-        IDENTITY: { l2ChainId: async () => "0x1", shards: async () => [] },
+        IDENTITY: { l2ChainId: async () => "0x1", shard: async () => null },
       } as never,
     ),
     { data },
   );
 };
 
-/** Where each audited stream (paid claims, posted results) started reading on this tick. */
 const auditStarts = () =>
-  ["WithdrawalPaid", "ResultsApplied"].map(
+  ["WithdrawalPaid", "WithdrawalReported"].map(
     (name) => ledger.reads.find((read) => read.keys.includes(hash.getSelectorFromName(name)))?.from,
   );
 

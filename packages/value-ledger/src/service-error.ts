@@ -46,6 +46,10 @@ export function serviceFailure(error: unknown, codes: readonly string[], fallbac
   const chain = failureChain(error);
   const cause = chain[0];
   const redact = (text: string) => {
+    text = text.replace(
+      /\b(https?:\/\/)(?:[^\s\/"'@]*@)?([^\s\/"'?#,;@]+)([\/?#][^\s"',;]*)?/gi,
+      (_, scheme: string, host: string, rest?: string) => `${scheme}${host}${rest ? "/[redacted]" : ""}`,
+    );
     for (const secret of secrets) if (secret) text = text.replaceAll(secret, "[redacted]");
     return text
       .replace(/\b(?:Bearer|Basic)\s+[^\s"',;]+/gi, "[redacted]")
@@ -53,7 +57,9 @@ export function serviceFailure(error: unknown, codes: readonly string[], fallbac
         /\b(?:token|secret|password|private[_-]?key|authorization)["']?\s*[:=]\s*["']?[^\s"',;}]+/gi,
         "[redacted]",
       )
-      .replace(/0x[0-9a-f]{32,}|\b[A-Za-z0-9_+\/-]{32,}={0,2}\b/gi, "[redacted]");
+      .replace(/0x[0-9a-f]{32,}|\b[A-Za-z0-9_+\/-]{32,}={0,2}\b/g, (token) =>
+        /^[a-z_]+$/.test(token) ? token : "[redacted]",
+      );
   };
   return {
     code: declaredCode(chain, codes, fallback),

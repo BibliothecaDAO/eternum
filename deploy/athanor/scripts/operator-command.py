@@ -8,10 +8,7 @@ import season
 import teardown
 from operator_token import operator_environment
 
-COMMANDS = {
-    "deploy": "deploy.py", "runner": "shard.py",
-    "stop": "stop.py", "measure": "measures.py", "teardown": "teardown.py", "season": "season.py",
-}
+COMMANDS = {"deploy": "deploy.py", "teardown": "teardown.py", "season": "season.py"}
 
 
 def run(command, arguments):
@@ -27,5 +24,5 @@ def run(command, arguments):
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
-        raise SystemExit("Usage: python3 deploy/athanor/scripts/operator-command.py deploy|runner|stop|measure|teardown|season ARGUMENTS")
+        raise SystemExit("Usage: python3 deploy/athanor/scripts/operator-command.py deploy|teardown|season ARGUMENTS")
     run(sys.argv[1], sys.argv[2:])

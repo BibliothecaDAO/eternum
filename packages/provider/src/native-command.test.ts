@@ -17,11 +17,11 @@ function example(type: string): unknown {
   return 7n;
 }
 describe("compiled native commands", () => {
-  it.each(command.variants.map((variant, index) => [variant.name, variant.type, index] as const))(
-    "encodes %s with the ABI discriminant and decodes its payload",
-    (kind, type, index) => {
+  it.each(command.variants.map((variant, index) => [variant.name, variant.type, variant.wireId, index] as const))(
+    "encodes %s with its permanent wire ID and decodes its payload",
+    (kind, type, wireId, index) => {
       const fields = encodeNativeCommand(abi, { kind, value: example(type) } as NativeCommand);
-      expect(BigInt(fields[0])).toBe(BigInt(index));
+      expect(BigInt(fields[0])).toBe(BigInt(wireId));
       const decodeAbi = [
         ...abi,
         {
@@ -32,13 +32,19 @@ describe("compiled native commands", () => {
           state_mutability: "view",
         },
       ];
-      const decoded = new CallData(decodeAbi).parse("decode_command", fields) as {
+      const abiFields = [String(index), ...fields.slice(1)];
+      const decoded = new CallData(decodeAbi).parse("decode_command", abiFields) as {
         command: { activeVariant(): string };
       };
       expect(decoded.command.activeVariant()).toBe(kind);
-      expect(new CallData(abi).compile("command_commitment", decoded)).toEqual(fields);
+      expect(new CallData(abi).compile("command_commitment", decoded)).toEqual(abiFields);
     },
   );
+  it("preserves command IDs on both sides of retired holes", () => {
+    expect(encodeNativeCommand(abi, { kind: "LevelUp", value: 7 })).toEqual(["6", "7"]);
+    expect(encodeNativeCommand(abi, { kind: "ProvisionRealm", value: 9 })).toEqual(["8", "9"]);
+    expect(encodeNativeCommand(abi, { kind: "MarkGameSettled", value: undefined })).toEqual(["58"]);
+  });
   it("rejects unknown variants and missing or extra named fields", () => {
     expect(() => encodeNativeCommand(abi, { kind: "Invented", value: undefined } as unknown as NativeCommand)).toThrow(
       "Unknown",
@@ -49,5 +55,24 @@ describe("compiled native commands", () => {
     expect(() =>
       encodeNativeCommand(abi, { kind: "Explore", value: { explorer_id: 1, direction: 0, extra: 3 } } as NativeCommand),
     ).toThrow("Fields do not match");
+  });
+});
+
+describe("Order settlement", () => {
+  it("puts the chosen Order after the optional canonical Realm", () => {
+    const command = {
+      kind: "SettleSeason",
+      value: {
+        selected_realm: { kind: "None", value: undefined },
+        order: { kind: "Some", value: 3 },
+      },
+    } as const;
+    expect(encodeNativeCommand(abi, command)).toEqual(["10", "1", "0", "3"]);
+    expect(
+      encodeNativeCommand(abi, {
+        ...command,
+        value: { selected_realm: { kind: "Some", value: 711 }, order: { kind: "None", value: undefined } },
+      }),
+    ).toEqual(["10", "0", "711", "1"]);
   });
 });

@@ -41,7 +41,9 @@ it("offers three levels, lights the saved one with what it brings, and saves the
     expect(levels.filter((level) => level.getAttribute("aria-selected") === "true").map((l) => l.textContent)).toEqual([
       "Important",
     ]);
-    expect(container.textContent).toContain("Each day's opening, rested armies, fights, results and messages");
+    expect(container.textContent).toContain(
+      "Each day's opening, Deep sites you can take, rested armies, fights, results and messages",
+    );
     await act(async () => (levels[2] as HTMLButtonElement).click());
     expect(save).toHaveBeenCalledWith("all");
     expect(container.textContent).toContain("This device");
@@ -52,7 +54,7 @@ it("offers three levels, lights the saved one with what it brings, and saves the
 
 it("says what each level brings in words the server delivers by", () => {
   expect(levelMeaning("off")).toBe("No alerts");
-  expect(levelMeaning("all")).toBe("Important, plus deliveries and trades, Bitcoin payouts and Hyperstructure points");
+  expect(levelMeaning("all")).toBe("Important, plus deliveries");
 });
 
 /** Every kind a level's line names, with the lines of the levels below it, which it carries too. */

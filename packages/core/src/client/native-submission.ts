@@ -63,8 +63,10 @@ export function nativePlay(
     const commands = input.bindings.commandAbi.find(
       (type) => type.type === "enum" && type.name === "world_native::commands::Command",
     );
-    if (!commands || commands.variants[Number(command[0])]?.name !== call.entrypoint)
-      throw new Error("Native command discriminant mismatch");
+    const selected = commands?.variants.find(
+      (variant: { name: string; wireId?: number }) => variant.wireId === Number(command[0]),
+    );
+    if (selected?.name !== call.entrypoint) throw new Error("Native command discriminant mismatch");
     await input.release.ready();
     stage("release-ready");
     const release = store.require("GameRelease", { game_id: gameId });
@@ -80,13 +82,7 @@ export function nativePlay(
       calls: {
         contractAddress: games,
         entrypoint: "play",
-        calldata: [
-          String(gameId),
-          String(release.release_id),
-          String(release.preset_commitment),
-          String(command.length),
-          ...command,
-        ],
+        calldata: [String(gameId), String(release.release_id), String(command.length), ...command],
       },
     });
     return { transaction_hash, inBlock };

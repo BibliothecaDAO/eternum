@@ -1,19 +1,25 @@
-import { frontierPreset } from "../../../../config/source/frontier/native";
-import { FRONTIER_DAY_UNIT_SECONDS } from "../../../../config/source/frontier/clock";
-import { previewRiftGuardBound } from "../../../../contracts/l3/world-native/schema/site-previews.gen";
+import { frontierPreset as historicalFrontierPreset } from "../../../../config/source/frontier/native";
+import { nativePresetForId, nativePresetIdFor } from "../../../../config/source/native";
+import { seasonDayUnitSeconds } from "../../../../config/source/common/season-clock";
+import {
+  RELICS_PER_LAYER,
+  previewRuinGuardBounds,
+} from "../../../../contracts/l3/world-native/schema/site-previews.gen";
 import {
   nativeResearchConstants as research,
   nativeRuleConstants as rule,
-} from "../../../../contracts/l3/world-native/schema/client.gen";
-import { BEAST_NAMES, FALLEN_REALM_DEPTHS, ROAMING_BEASTS, SITE_GUARDS, resourceName } from "@bibliothecadao/types";
+} from "../../../../contracts/l3/world-native/schema/balance.gen";
+import { logisticsStamina } from "../../../../packages/core/src/utils/attribute-tiers";
+import { LAYER_NAMES, beastOf, buildingName, rankName, TIER_WORDS, resourceName } from "@bibliothecadao/types";
 import { ETERNUM_CONFIG } from "./config";
 import { CONTRACT } from "./contract-constants";
 
 /**
  * Frontier's rules as its pages state them, read from the preset the game is launched with (the generated config for
- * the board, troops and stamina; the native preset for days, sites, chests and research) and the contract's rule
+ * the board, troops and stamina; the active native preset for days, sites and research) and the contract's rule
  * constants. A page never writes one of these numbers by hand.
  */
+const frontierPreset = nativePresetForId(nativePresetIdFor("frontier"));
 const config = ETERNUM_CONFIG("frontier");
 const stamina = config.troop.stamina;
 const limit = config.troop.limit;
@@ -24,9 +30,8 @@ const n = (value: number) => value.toLocaleString("en-US");
 const pct = (bps: number) => `${n(bps / 100)}%`;
 const range = (lower: number, upper: number) => `${n(lower)}–${n(upper)}`;
 
-const DEPTH_NAMES = ["Surface", "Ethereal I", "Ethereal II", "Ethereal III"] as const;
 const TIERS = ["common", "uncommon", "rare", "epic", "legendary"] as const;
-const hoursOf = (units: number) => (units * FRONTIER_DAY_UNIT_SECONDS) / 3600;
+const hoursOf = (units: number) => (units * seasonDayUnitSeconds(frontierPreset)) / 3600;
 
 // A bag of days holds one day of each length, 2 to 6 units (contracts/l3/world-native/src/days.cairo).
 export const SHORT_DAY_UNITS = 2;
@@ -34,13 +39,9 @@ export const LONG_DAY_UNITS = 6;
 const DAYS_PER_BAG = CONTRACT.daysPerBag;
 const UNITS_PER_BAG = CONTRACT.unitsPerBag;
 
-const EXPLORE_CHEST_ONE_IN = 10_000 / CONTRACT.frontierChestFindBps;
-// Refill's price, from logic/relics.cairo: 1 LORDS per missing point.
-const REFILL_LORDS_PER_POINT = 1;
-
 const tickMinutes = config.tick.armiesTickIntervalInSeconds / 60;
 
-// What one troop costs to deploy, in wheat: the Knight recipe's wheat over its output (Frontier deploys Knights only).
+// What one troop costs to deploy, in wheat: the Knight recipe's wheat over its output (Scouts have the same base price).
 // Each Rations pick takes the preset's rationStep off it, in whole wheat (resources_domain.cairo `ration_cut`).
 const KNIGHT = 26;
 const WHEAT = 35;
@@ -81,9 +82,7 @@ export const FRONTIER = {
     ].map(n),
     castleLabor: [1, 2, 3].map((level) => n(config.realmUpgradeCosts[level][0].amount)),
     demolitionRefund: pct(frontierPreset.board.demolitionRefundBps),
-    hutHouses: n(config.buildings.buildingCapacity[1]),
     deployWheat: n(config.resources.productionBySimpleRecipe[26][0].amount),
-    /** The wheat and labor a realm stores at each castle level, before Granary and Storeroom research. */
     storage: frontierPreset.board.resourceStoreCaps.map(n),
   },
   stamina: {
@@ -92,127 +91,89 @@ export const FRONTIER = {
     tickMinutes: n(tickMinutes),
     fullHours: n(((stamina.staminaKnightMax / stamina.staminaGainPerTick) * tickMinutes) / 60),
     reveal: n(stamina.staminaExploreStaminaCost),
+    scoutReveal: n(rule.SCOUT_EXPLORE_STAMINA),
     step: n(stamina.staminaTravelStaminaCost),
     attack: n(stamina.staminaAttackReq),
     wheatPerTroop: n(stamina.staminaExploreWheatCost),
-    well: `${n(100 / rule.WELL_STAMINA_DIVISOR)}% of its maximum`,
-    pointRefills: [1, 2, 3, 4, 5].map((rank) => n(rule.SKILL_POINT_REFILL_BASE + rank * rule.SKILL_POINT_REFILL_STEP)),
-    refillLords: n(REFILL_LORDS_PER_POINT),
-    logisticsMax: n(rule.LOGISTICS_LEGENDARY_STAMINA),
+    well: `${n(rule.WELL_REFILL_PERCENT)}% of its maximum`,
+    logisticsMax: n(logisticsStamina(stamina.staminaKnightMax, rule.ATTRIBUTE_CAP)),
   },
   discovery: {
     beasts: pct(frontierPreset.discovery.beastsBps),
+    bandsPerHerd: n(rule.BEAST_BAND_SHARE / rule.BEAST_HERD_SHARE),
     camp: pct(frontierPreset.discovery.campBps),
     rift: pct(frontierPreset.discovery.riftBps),
     ruin: pct(frontierPreset.discovery.ruinBps),
     shrine: pct(frontierPreset.discovery.shrineBps),
     well: pct(frontierPreset.discovery.wellBps),
     emptyRevealLimit: n(frontierPreset.discovery.emptyRevealLimit),
-    exploreChestOneIn: n(EXPLORE_CHEST_ONE_IN),
-    /** A Shrine's skill point on the surface, Common to Legendary; each depth below lifts it one rank. */
-    shrineRanks: [
-      rule.SHRINE_COMMON_BPS,
-      rule.SHRINE_UNCOMMON_BPS,
-      rule.SHRINE_RARE_BPS,
-      rule.SHRINE_EPIC_BPS,
-      rule.SHRINE_LEGENDARY_BPS,
-    ].map(pct),
   },
   depths: frontierPreset.depths.map((depth, index) => ({
-    name: DEPTH_NAMES[index],
-    ruinGuardName: BEAST_NAMES[FALLEN_REALM_DEPTHS[index]!.beast],
+    name: LAYER_NAMES[index],
     revealPercent: `${depth.revealPercent}%`,
-    campGuard: range(depth.siteGuardLower, depth.siteGuardUpper),
-    riftGuard: range(
-      previewRiftGuardBound(depth.siteGuardLower, depth.guardStep),
-      previewRiftGuardBound(depth.siteGuardUpper, depth.guardStep),
-    ),
-    ruinGuard: range(depth.ruinGuardLower, depth.ruinGuardUpper),
-    beastWeak: range(depth.beastWeakLower, depth.beastWeakUpper),
-    beastStrong: range(depth.beastStrongLower, depth.beastStrongUpper),
-    chest: TIERS.map((tier) => pct(depth.chest[tier])),
+    campGuard: `${beastOf("camp", index).name} ${range(depth.siteGuardLower, depth.siteGuardUpper)}`,
+    riftGuard: `${beastOf("rift", index).name} ${range(depth.riftGuardLower, depth.riftGuardUpper)}`,
+    beastWeak: `${beastOf("herd", index).name} ${range(depth.beastWeakLower, depth.beastWeakUpper)}`,
+    beastStrong: `${beastOf("band", index).name} ${range(depth.beastStrongLower, depth.beastStrongUpper)}`,
+    ruinGuard: beastOf("ruin", index).name,
   })),
-  guards: {
-    camp: BEAST_NAMES[SITE_GUARDS.camp.beast],
-    rift: BEAST_NAMES[SITE_GUARDS.rift.beast],
-    weakBeast: BEAST_NAMES[ROAMING_BEASTS.lowly.beast],
-    strongBeast: BEAST_NAMES[ROAMING_BEASTS.stronger.beast],
-  },
-  xp: {
-    reveal: frontierPreset.depths.map((_, depth) =>
-      n(frontierPreset.progression.revealXp + depth * frontierPreset.progression.revealXpPerDepth),
-    ),
-    pointThresholds: [
-      frontierPreset.progression.commonXp,
-      frontierPreset.progression.uncommonXp,
-      frontierPreset.progression.rareXp,
-      frontierPreset.progression.epicXp,
-      frontierPreset.progression.legendaryXp,
-    ].map(n),
-  },
-  chests: {
-    shares: TIERS.map((tier) => n(frontierPreset.chests.shares[tier])),
-    priceCeiling: n(frontierPreset.chests.priceCeiling),
-  },
-  buildings: [
-    ["Farm", research.FARM, "Wheat"],
-    ["Barracks", research.BARRACKS, "Troops"],
-    ["Workshop", research.WORKSHOP, "Labor"],
-    ["Workers' hut", research.HUT, "Population"],
-    ["War hall, Supply yard, Scouts' lodge, Hearth", research.WAR_HALL, "A tier for every new army"],
-  ].map(([name, id, makes]) => ({
-    name: name as string,
-    makes: makes as string,
-    price: priceOf(config.buildings.simpleBuildingCost[id as number]),
-    // A hut takes no population: a page says so in words rather than as a zero.
-    population:
-      config.buildings.buildingPopulation[id as number] === 0
-        ? "None"
-        : n(config.buildings.buildingPopulation[id as number]),
+  ruinGuards: LAYER_NAMES.slice(0, 3).flatMap((layer, depth) =>
+    TIER_WORDS.slice(depth, depth + RELICS_PER_LAYER).map((name, place) => ({
+      layer,
+      name,
+      count: range(...previewRuinGuardBounds(depth + place + 1, depth)),
+    })),
+  ),
+  buildings: (
+    [
+      [research.FARM, "Wheat"],
+      [research.BARRACKS, "Troops"],
+      [research.WORKSHOP, "Labor"],
+      [research.SUPPLY_YARD, "Logistics training"],
+      [research.SCOUTS_LODGE, "Scouts"],
+      [research.STOREROOM, "Wheat and labor storage"],
+    ] as const
+  ).map(([id, makes]) => ({
+    name: buildingName(id, true),
+    makes,
+    price: priceOf(config.buildings.simpleBuildingCost[id]),
   })),
+  names: {
+    farm: buildingName(research.FARM, true),
+    workshop: buildingName(research.WORKSHOP, true),
+    supplyYard: buildingName(research.SUPPLY_YARD, true),
+    storeroom: buildingName(research.STOREROOM, true),
+  },
+  storeroom: {
+    opens: rankName(research.STOREROOM_LEVEL),
+    storageStep: pct(frontierPreset.board.storageStepBps),
+  },
+  supplyYardOpens: rankName(research.SUPPLY_YARD_LEVEL),
   research: {
     farm: researchRow(research.ROW_FARM),
     workshop: researchRow(research.ROW_WORKSHOP),
-    barracks: researchRow(research.ROW_BARRACKS),
-    hut: researchRow(research.ROW_HUT),
-    training: researchRow(research.ROW_WAR_HALL),
-    shrine: researchRow(research.ROW_SHRINE)[0],
-    well: researchRow(research.ROW_WELL)[0],
-    depths: researchRow(research.ROW_DEPTH),
-    trainingGate: frontierPreset.board.trainingGateTier,
+    training: researchRow(research.ROW_SUPPLY_YARD),
+    lore: researchRow(research.ROW_LORE),
     outputStep: pct(frontierPreset.board.outputStepBps),
-    storageStep: pct(frontierPreset.board.storageStepBps),
-    rationWheat: n(frontierPreset.board.rationStep),
     troopWheat: n(wheatPerTroop),
-    populationStep: pct(frontierPreset.board.populationStepBps),
   },
   attributes: {
-    battleMax: pct(rule.BATTLE_LEGENDARY_BPS),
-    scouting: [
-      rule.SCOUTING_COMMON_BPS,
-      rule.SCOUTING_UNCOMMON_BPS,
-      rule.SCOUTING_RARE_BPS,
-      rule.SCOUTING_EPIC_BPS,
-      rule.SCOUTING_LEGENDARY_BPS,
-    ].map(pct),
-    scoutingOneKind: pct(
-      rule.SCOUTING_COMMON_BPS +
-        rule.SCOUTING_UNCOMMON_BPS +
-        rule.SCOUTING_RARE_BPS +
-        rule.SCOUTING_EPIC_BPS +
-        rule.SCOUTING_LEGENDARY_BPS,
-    ),
+    lightDamageReduction: `${100 - rule.FRONTIER_LIGHT_DAMAGE_PERCENT}%`,
+    knightGuardReduction: `${100 - rule.FRONTIER_KNIGHT_GUARD_DAMAGE_PERCENT}%`,
   },
-  /** The season's pool: the chests' share, and the rest to the board's top places among realms with a site cleared. */
-  claimWindow: {
-    days: n(Math.floor(frontierPreset.chests.claimWindowSeconds / 86400)),
+  quest: {
+    labor: n(frontierPreset.dailyQuest.labor),
+    essence: n(frontierPreset.dailyQuest.essence),
   },
-  labor: { perRealm: n(frontierPreset.labor.amount) },
-  homecoming: [
-    rule.HOMECOMING_COMMON_BPS,
-    rule.HOMECOMING_UNCOMMON_BPS,
-    rule.HOMECOMING_RARE_BPS,
-    rule.HOMECOMING_EPIC_BPS,
-    rule.HOMECOMING_LEGENDARY_BPS,
-  ].map(pct),
+};
+
+/** Retired paying seasons; only the historical chest page reads these values. */
+export const HISTORICAL_FRONTIER_CHESTS = {
+  depths: historicalFrontierPreset.depths.map((depth, index) => ({
+    name: LAYER_NAMES[index],
+    chest: TIERS.map((tier) => pct(depth.chest[tier])),
+  })),
+  shares: TIERS.map((tier) => n(historicalFrontierPreset.chests.shares[tier])),
+  priceCeiling: n(historicalFrontierPreset.chests.priceCeiling),
+  claimDays: n(Math.floor(historicalFrontierPreset.chests.claimWindowSeconds / 86400)),
 };

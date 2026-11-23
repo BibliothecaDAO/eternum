@@ -27,7 +27,7 @@ export const clockLine = (prefix: ClockPrefix | null, at: number | undefined, no
 };
 
 /** A moment alone, with no time left: its local clock time within a day ("16:30"), else its date too ("14 Oct, 18:00"). */
-export const clockAt = (at: number | undefined, now: number): string =>
+const clockAt = (at: number | undefined, now: number): string =>
   at === undefined || isWithinADay(at, now) ? formatClockTime(at) : `${formatDate(at, now)}, ${formatClockTime(at)}`;
 
 type ClockMoment = { prefix: ClockPrefix | null; at: number | undefined; now: number };
@@ -39,6 +39,13 @@ const clockIcon = ({ prefix, at, now }: ClockMoment) =>
 /** A moment as the shell kit's chip. */
 export const ClockChip = (moment: ClockMoment) => (
   <Pill icon={clockIcon(moment)}>{clockLine(moment.prefix, moment.at, moment.now)}</Pill>
+);
+
+export const countdownLine = (prefix: ClockPrefix, at: number, now: number): string =>
+  `${CLOCK_WORDS[prefix]} ${countdown(prefix, at - now)}`;
+
+export const AppCountdownChip = ({ prefix, at, now }: { prefix: ClockPrefix; at: number; now: number }) => (
+  <AppChip icon="hourglass">{countdownLine(prefix, at, now)}</AppChip>
 );
 
 /** A moment as the app sheet's chip. */

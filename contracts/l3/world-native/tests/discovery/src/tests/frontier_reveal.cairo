@@ -4,10 +4,7 @@ pub use world_test_support::tests::frontier_reveal::*;
 #[test]
 fn frontier_reveal_keeps_scaled_precision_and_ignores_boosts() {
     let limits = crate::rules::TroopLimitConfig {
-        t1_tier_strength: 1,
-        t2_tier_strength: 3,
-        t3_tier_strength: 9,
-        ..super::play_fixture::rules().troop_limit_config,
+        t1_tier_strength: 1, t2_tier_strength: 3, t3_tier_strength: 9, ..crate::balance::rules::TROOP_LIMIT_CONFIG,
     };
     let mut troops = Troops {
         count: 1500 * RESOURCE_PRECISION + RESOURCE_PRECISION / 2, tier: TroopTier::T1, ..Default::default(),
@@ -26,7 +23,7 @@ fn frontier_reveal_keeps_scaled_precision_and_ignores_boosts() {
 
 #[test]
 fn frontier_reveal_draws_only_essence_or_labor_evenly_over_ten_thousand_reveals() {
-    let limits = super::play_fixture::rules().troop_limit_config;
+    let limits = crate::balance::rules::TROOP_LIMIT_CONFIG;
     let troops = Troops { count: 1500 * RESOURCE_PRECISION, tier: TroopTier::T1, ..Default::default() };
     let mut essence = 0_u32;
     let mut labor = 0_u32;
@@ -52,7 +49,7 @@ fn site_payout_keeps_initial_scaled_guard_count_and_has_no_clock_factor() {
         category: camp_category, initial_guard_count: initial, alt: false, col: 1, row: 1, clear: None,
     };
     assert_eq!(
-        site_reward(camp_category, site, 0).unwrap(),
+        site_reward(camp_category, site, 0, false).unwrap(),
         crate::resources::ResourceAmount { resource_type: LABOR, amount: initial / 2 },
     );
     assert_eq!(
@@ -62,18 +59,19 @@ fn site_payout_keeps_initial_scaled_guard_count_and_has_no_clock_factor() {
                 clear: Some(crate::expeditions::SiteClear { explorer_id: 7, home_id: 1, reward: None }), ..site,
             },
             0,
+            false,
         ),
-        site_reward(camp_category, site, 0),
+        site_reward(camp_category, site, 0, false),
     );
     assert_eq!(
-        site_reward(RIFT_CATEGORY, site, 0).unwrap(),
+        site_reward(RIFT_CATEGORY, site, 0, false).unwrap(),
         crate::resources::ResourceAmount { resource_type: ESSENCE, amount: initial * 3 },
     );
     assert_eq!(
-        site_reward(BEASTS_CATEGORY, site, 0).unwrap(),
-        crate::resources::ResourceAmount { resource_type: LABOR, amount: initial / 4 },
+        site_reward(BEASTS_CATEGORY, site, 0, false).unwrap(),
+        crate::resources::ResourceAmount { resource_type: crate::resources::WHEAT, amount: initial * 4 },
     );
-    assert!(site_reward(RUIN_CATEGORY, site, 0).is_none());
+    assert!(site_reward(RUIN_CATEGORY, site, 0, false).is_none());
 }
 
 #[test]
@@ -96,7 +94,9 @@ fn site_payout_counts_all_initial_guard_troops_without_tier_weighting() {
         crate::logic::expeditions::create_site(key, guards.span());
         let site = crate::logic::expeditions::expedition_site(key).unwrap();
         assert_eq!(site.initial_guard_count, 1100 * RESOURCE_PRECISION);
-        assert_eq!(site_reward(crate::taxonomy::CAMP_CATEGORY, site, 0).unwrap().amount, 550 * RESOURCE_PRECISION);
+        assert_eq!(
+            site_reward(crate::taxonomy::CAMP_CATEGORY, site, 0, false).unwrap().amount, 550 * RESOURCE_PRECISION,
+        );
         let receipt = crate::expeditions::SiteClear { explorer_id: 7, home_id: 1, reward: None };
         crate::logic::expeditions::clear_site(key, receipt);
         let cleared = crate::logic::expeditions::expedition_site(key).unwrap();
@@ -107,24 +107,26 @@ fn site_payout_counts_all_initial_guard_troops_without_tier_weighting() {
         crate::logic::map::MapState::vacate(tile, 100);
         assert_eq!(crate::logic::expeditions::expedition_site(key), Some(cleared));
         assert_eq!(cleared.initial_guard_count, site.initial_guard_count);
-        assert_eq!(site_reward(RIFT_CATEGORY, cleared, 0).unwrap().amount, 3300 * RESOURCE_PRECISION);
+        assert_eq!(site_reward(RIFT_CATEGORY, cleared, 0, false).unwrap().amount, 3300 * RESOURCE_PRECISION);
     }
 }
 
 #[test]
 fn every_guarded_site_keeps_terrain_and_receipt_and_removes_structure_and_guards() {
     let d = super::setup(true);
+    let unallocated: u64 = super::registrar::next_setup_entity(d, 1).into();
     snforge_std::interact_with_state(
         d.games,
         || {
-            for (entity_id, category, occupier) in array![
-                (1_u64, crate::taxonomy::CAMP_CATEGORY, crate::taxonomy::CAMP_OCCUPIER),
-                (2_u64, crate::taxonomy::RIFT_CATEGORY, crate::taxonomy::RIFT_OCCUPIER),
-                (3_u64, crate::taxonomy::RUIN_CATEGORY, crate::taxonomy::RUIN_OCCUPIER),
-                (4_u64, crate::taxonomy::BEASTS_CATEGORY, crate::taxonomy::BEASTS_OCCUPIER),
+            for (x, category, occupier) in array![
+                (1_u32, crate::taxonomy::CAMP_CATEGORY, crate::taxonomy::CAMP_OCCUPIER),
+                (2_u32, crate::taxonomy::RIFT_CATEGORY, crate::taxonomy::RIFT_OCCUPIER),
+                (3_u32, crate::taxonomy::RUIN_CATEGORY, crate::taxonomy::RUIN_OCCUPIER),
+                (4_u32, crate::taxonomy::BEASTS_CATEGORY, crate::taxonomy::BEASTS_OCCUPIER),
             ] {
+                let entity_id = unallocated + x.into();
                 let key = crate::resources::ResourceKey { game_id: 1, entity_id };
-                let coord = crate::troops::Coord { alt: false, x: entity_id.try_into().unwrap(), y: 10 };
+                let coord = crate::troops::Coord { alt: false, x, y: 10 };
                 let tile = crate::geometry::tile_key(key.game_id, coord);
                 crate::logic::map::MapState::reveal(tile, 5);
                 let terrain = crate::logic::map::tile(tile);
@@ -157,9 +159,10 @@ fn every_guarded_site_keeps_terrain_and_receipt_and_removes_structure_and_guards
                 }
                 assert_eq!((site.col, site.row, site.alt), (coord.x, coord.y, coord.alt));
                 assert!(crate::logic::map::occupancy(tile).is_none());
-                crate::logic::map::MapState::occupy(tile, 20, crate::taxonomy::EXPLORER_KNIGHT_T1_OCCUPIER, false);
+                let army = unallocated + 5;
+                crate::logic::map::MapState::occupy(tile, army, crate::taxonomy::EXPLORER_KNIGHT_T1_OCCUPIER, false);
                 assert_eq!(crate::logic::expeditions::expedition_site(key), Some(site));
-                crate::logic::map::MapState::vacate(tile, 20);
+                crate::logic::map::MapState::vacate(tile, army);
             }
         },
     );
@@ -182,23 +185,23 @@ fn a_site_cannot_clear_again_after_an_army_enters_its_tile() {
 }
 
 #[test]
-fn beast_labor_matches_recorded_surface_guards() {
-    for (guards, labor) in array![
-        (309_u128, 77250000000_u128), (537, 134250000000), (300, 75000000000), (350, 87500000000), (900, 225000000000),
-        (1050, 262500000000), (2400, 600000000000), (2800, 700000000000), (6000, 1500000000000), (7000, 1750000000000),
-    ] {
+fn herd_pays_wheat_and_band_pays_no_resources() {
+    for (depth, strength, wheat) in array![(0_u8, 350_u128, 1400_u128), (1, 700, 4200), (2, 1400, 11200)] {
         let site = ExpeditionSite {
             category: BEASTS_CATEGORY,
+            initial_guard_count: strength * RESOURCE_PRECISION,
             alt: false,
             col: 0,
             row: 0,
-            initial_guard_count: guards * RESOURCE_PRECISION,
             clear: None,
         };
         assert_eq!(
-            site_reward(BEASTS_CATEGORY, site, 0).unwrap(),
-            crate::resources::ResourceAmount { resource_type: LABOR, amount: labor },
+            site_reward(BEASTS_CATEGORY, site, depth, false).unwrap(),
+            crate::resources::ResourceAmount {
+                resource_type: crate::resources::WHEAT, amount: wheat * RESOURCE_PRECISION,
+            },
         );
+        assert!(site_reward(BEASTS_CATEGORY, site, depth, true).is_none());
     }
 }
 
@@ -207,9 +210,11 @@ fn site_resources_scale_by_depth_after_the_base_integer_payout() {
     let site = ExpeditionSite {
         category: BEASTS_CATEGORY, alt: false, col: 0, row: 0, initial_guard_count: 1001, clear: None,
     };
-    for (depth, labor, essence) in array![(0_u8, 250_u128, 3003_u128), (1, 375, 4504), (2, 500, 6006), (3, 625, 7507)] {
-        assert_eq!(site_reward(BEASTS_CATEGORY, site, depth).unwrap().amount, labor);
-        assert_eq!(site_reward(RIFT_CATEGORY, site, depth).unwrap().amount, essence);
-        assert!(site_reward(RUIN_CATEGORY, site, depth).is_none());
+    for (depth, wheat, essence) in array![
+        (0_u8, 4004_u128, 3003_u128), (1, 6006, 4504), (2, 8008, 6006), (3, 10010, 7507),
+    ] {
+        assert_eq!(site_reward(BEASTS_CATEGORY, site, depth, false).unwrap().amount, wheat);
+        assert_eq!(site_reward(RIFT_CATEGORY, site, depth, false).unwrap().amount, essence);
+        assert!(site_reward(RUIN_CATEGORY, site, depth, false).is_none());
     }
 }

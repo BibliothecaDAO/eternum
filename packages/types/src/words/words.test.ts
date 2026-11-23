@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   formatAmount,
+  formatDollars,
   formatGain,
   formatCharge,
   formatExact,
@@ -27,6 +28,7 @@ import { ageLine } from "./modes";
 import {
   asRanked,
   buildingName,
+  frontierTroopName,
   guardSlotName,
   rankedText,
   rankName,
@@ -35,10 +37,19 @@ import {
   structureName,
   troopPlural,
 } from "./nouns";
-import { TROOP_TIERS, TROOP_TYPES, troopTierIndex } from "../types/common";
-import { BuildingType } from "../constants/structures";
-import { formatAgo, formatClockTime, formatDuration, formatGameClock, formatMoment, formatShortDuration } from "./time";
-import { VOICE_RULES } from "./voice";
+import { TROOP_TIERS, TROOP_TYPES, TroopType, troopTierIndex } from "../types/common";
+import { BuildingType, BuildingTypeToString } from "../constants/structures";
+import {
+  formatAgo,
+  formatClockTime,
+  formatDate,
+  formatDuration,
+  formatGameClock,
+  formatLongDate,
+  formatMoment,
+  formatShortDuration,
+} from "./time";
+import { BANNED_WORDS, PLAIN_WORDS, VOICE_RULES } from "./voice";
 
 describe("numbers", () => {
   it("writes an amount held but under a unit as <1, never as nothing", () => {
@@ -84,6 +95,28 @@ describe("numbers", () => {
     expect(formatPercent(undefined)).toBe("—");
   });
 
+  it("writes a price in cents as dollars and cents", () => {
+    expect([660, 90, 1, 100_000].map(formatDollars)).toEqual(["$6.60", "$0.90", "$0.01", "$1,000.00"]);
+  });
+
+  it("writes a minute's rate whole from 1 a minute up, and to two figures below 1 (owner's rule of 26 October)", () => {
+    expect([6.3, 8.6, 12.4, 1, 1.4, 1.6, 66].map((perMinute) => formatRate(perMinute / 60))).toEqual([
+      "+6/min",
+      "+9/min",
+      "+12/min",
+      "+1/min",
+      "+1/min",
+      "+2/min",
+      "+66/min",
+    ]);
+    expect([0.6, 0.25, 0.05].map((perMinute) => formatRate(perMinute / 60))).toEqual([
+      "+0.6/min",
+      "+0.25/min",
+      "+0.05/min",
+    ]);
+    expect(formatRate(-0.25)).toBe("-15/min");
+  });
+
   it("writes every rate a minute's, never a second's or an hour's", () => {
     // The owner's two screenshots read +1.1/s and +54/min side by side (3 November).
     expect(formatRate(1.1)).toBe("+66/min");
@@ -91,9 +124,6 @@ describe("numbers", () => {
     expect(formatRate(2.5)).toBe("+150/min");
     expect(formatRate(1_000)).toBe("+60,000/min");
     expect(formatRate(0.5)).toBe("+30/min");
-    // A minute's rate from one up is whole: a game, not a math demo (owner, 26 October).
-    expect(formatRate(6.3 / 60)).toBe("+6/min");
-    expect(formatRate(8.6 / 60)).toBe("+9/min");
     expect(formatRate(0.01)).toBe("+0.6/min");
     expect(formatRate(-0.25)).toBe("-15/min");
     expect(formatRate(0)).toBe("0/min");
@@ -159,6 +189,15 @@ describe("times", () => {
   it("writes a moment as the device's 24-hour clock, two digits each", () => {
     expect(formatClockTime(new Date(2026, 8, 9, 14, 5).getTime() / 1000)).toBe("14:05");
     expect(formatClockTime(new Date(2026, 8, 9, 9, 7).getTime() / 1000)).toBe("09:07");
+  });
+
+  it("writes a day short in a line and spelled out in a title, with the year only when it is not this year's", () => {
+    const opening = new Date(2026, 11, 1, 18).getTime() / 1000;
+    const thisYear = new Date(2026, 10, 18).getTime() / 1000;
+    const lastYear = new Date(2025, 10, 18).getTime() / 1000;
+    expect(formatDate(opening, thisYear)).toBe("1 Dec");
+    expect(formatLongDate(opening, thisYear)).toBe("1 December");
+    expect(formatLongDate(opening, lastYear)).toBe("1 December 2026");
   });
 
   it("writes days from a day up, and Frontier's durations in hours", () => {
@@ -240,8 +279,13 @@ describe("nouns", () => {
   it("names a building as its game does, one name for each", () => {
     expect(buildingName(BuildingType.ResourceKnightT1, true)).toBe("Barracks");
     expect(buildingName(BuildingType.ResourceKnightT1, false)).toBe("Knight T1");
-    expect(buildingName(BuildingType.WorkersHut, true)).toBe("Hut");
-    expect(buildingName(BuildingType.WorkersHut, false)).toBe("Workers Hut");
+    for (const type of [BuildingType.RationsDepot, BuildingType.ConscriptionCamp])
+      expect(buildingName(type, true)).toBe(BuildingTypeToString[type]);
+    expect(buildingName(BuildingType.ResourceCrossbowmanT1, true)).toBe("Range");
+    expect([true, false].map((frontier) => buildingName(BuildingType.WorkersHut, frontier))).toEqual([
+      "Workers Hut",
+      "Workers Hut",
+    ]);
     expect([true, false].map((frontier) => buildingName(BuildingType.ResourceLabor, frontier))).toEqual([
       "Workshop",
       "Workshop",
@@ -276,6 +320,63 @@ describe("the voice rules", () => {
       expect(refused(words)).toEqual({ words, refused: true });
     for (const words of ["+66/min", "points +120/min", "FP rate", "then per minute", "a second press", "3/4 · 13m"])
       expect(refused(words)).toEqual({ words, refused: false });
+  });
+
+  it("matches every banned word on its bad example and passes its good one", () => {
+    expect(BANNED_WORDS[0]?.banned).toBe("found (a Realm)");
+    expect(BANNED_WORDS[0]?.use).toBe("create");
+    expect(BANNED_WORDS[0]?.bad).toBe("Found your home");
+    expect(BANNED_WORDS[0]?.good).toBe("Create your Realm");
+    expect(BANNED_WORDS[0]?.zeroTolerance).toBe(true);
+    expect(BANNED_WORDS.find((entry) => entry.banned === "Far-Eye")?.zeroTolerance).toBe(true);
+    for (const { banned, bad, good, pattern } of BANNED_WORDS) {
+      expect({ banned, bad: pattern.test(bad) }).toEqual({ banned, bad: true });
+      expect({ banned, good: pattern.test(good) }).toEqual({ banned, good: false });
+    }
+    const foundRule = BANNED_WORDS[0]!;
+    for (const allowed of ["Not found", "Sites are found at 100%", "No Realm found", "Create your Realm"])
+      expect({ allowed, refused: foundRule.pattern.test(allowed) }).toEqual({ allowed, refused: false });
+    const plainTokens = new Set(
+      PLAIN_WORDS.flatMap(({ word }) => word.split(" / ").map((token) => token.trim().toLowerCase())),
+    );
+    for (const entry of PLAIN_WORDS) {
+      expect(entry.concept.length).toBeGreaterThan(0);
+      expect(entry.word.length).toBeGreaterThan(0);
+      for (const banned of BANNED_WORDS) {
+        expect({ word: entry.word, banned: banned.banned, matched: banned.pattern.test(entry.word) }).toEqual({
+          word: entry.word,
+          banned: banned.banned,
+          matched: false,
+        });
+      }
+    }
+    for (const banned of BANNED_WORDS) {
+      if (banned.use.startsWith("(")) continue;
+      for (const token of banned.use.split(" / ").map((part) => part.trim().toLowerCase())) {
+        expect({ banned: banned.banned, token, inPlainWords: plainTokens.has(token) }).toEqual({
+          banned: banned.banned,
+          token,
+          inPlainWords: true,
+        });
+      }
+    }
+    for (const voiceRule of VOICE_RULES) {
+      for (const banned of BANNED_WORDS) {
+        if (voiceRule.forbidden) {
+          expect({
+            voice: voiceRule.rule,
+            banned: banned.banned,
+            overlap: voiceRule.forbidden.test(banned.bad),
+          }).toEqual({ voice: voiceRule.rule, banned: banned.banned, overlap: false });
+        }
+        expect({ voice: voiceRule.rule, banned: banned.banned, duplicate: banned.pattern.test(voiceRule.bad) }).toEqual(
+          { voice: voiceRule.rule, banned: banned.banned, duplicate: false },
+        );
+        expect({ voice: voiceRule.rule, banned: banned.banned, conflict: banned.pattern.test(voiceRule.good) }).toEqual(
+          { voice: voiceRule.rule, banned: banned.banned, conflict: false },
+        );
+      }
+    }
   });
 });
 
@@ -386,8 +487,18 @@ describe("time", () => {
 
 describe("troops", () => {
   it("names many of every troop type the schema allows, by its type or its table name", () => {
-    expect(TROOP_TYPES.map((troop) => troopPlural(troop))).toEqual(["Knights", "Crossbowmen", "Paladins"]);
+    expect(Object.fromEntries(TROOP_TYPES.map((troop) => [troop, troopPlural(troop)]))).toEqual({
+      [TroopType.Knight]: "Knights",
+      [TroopType.Paladin]: "Paladins",
+      [TroopType.Crossbowman]: "Crossbowmen",
+    });
     expect(troopPlural("Dragon")).toBeUndefined();
+    expect(Object.fromEntries(TROOP_TYPES.map((troop) => [troop, frontierTroopName(troop)]))).toEqual({
+      [TroopType.Knight]: "Knights",
+      [TroopType.Paladin]: "Scouts",
+      [TroopType.Crossbowman]: "Crossbowmen",
+    });
+    expect(frontierTroopName("Dragon")).toBeUndefined();
     expect(resourceName(ResourcesIds.CrossbowmanT2)).toBe("Crossbowman T2");
   });
 

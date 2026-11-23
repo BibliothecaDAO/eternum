@@ -1,8 +1,7 @@
-import type { ReactNode } from "react";
-import { StructureType, structureName } from "@bibliothecadao/types";
+import { StructureType, structureName, eternumMapName } from "@bibliothecadao/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { HudButton, HudPill, HudTabs, type MenuItem } from "@/ui/design-system/kit/hud-elements";
 import { WORLD } from "@/ui/design-system/kit/words";
+import { HudButton, HudPill, HudTabs } from "@/ui/design-system/kit/hud-elements";
 
 interface MapViewControlsProps {
   compact: boolean;
@@ -10,17 +9,9 @@ interface MapViewControlsProps {
   canOpenLocal: boolean;
   mapLayer: boolean;
   showLayerSwitch: boolean;
-  worldTab?: WorldTab;
   onNavigate: (world: boolean) => void;
   onLayerChange: (alt: boolean) => void;
 }
-
-/**
- * What the World tab shows on the map where a mode has layers below it (Frontier's Ethereal layers): the layer shown,
- * opening the list of every layer (owner, 4 November 2026: "disagree here since we'll have more depth layers").
- */
-/** The World tab over the map's layers: the layer shown, its list, and what it carries before the list opens. */
-export type WorldTab = { label: string; menu?: readonly MenuItem[]; badge?: ReactNode };
 
 /** Primary map navigation, with one space-saving layer toggle in the mobile HUD. */
 export function MapViewControls({
@@ -29,19 +20,12 @@ export function MapViewControls({
   canOpenLocal,
   mapLayer,
   showLayerSwitch,
-  worldTab,
   onNavigate,
   onLayerChange,
 }: MapViewControlsProps) {
   return (
     <div className="flex min-w-0 items-center gap-2">
-      <MapViewSwitch
-        compact={compact}
-        isLocalView={isLocalView}
-        canOpenLocal={canOpenLocal}
-        worldTab={worldTab}
-        onNavigate={onNavigate}
-      />
+      <MapViewSwitch compact={compact} isLocalView={isLocalView} canOpenLocal={canOpenLocal} onNavigate={onNavigate} />
       {showLayerSwitch &&
         (compact ? (
           <CompactLayerSwitch mapLayer={mapLayer} onLayerChange={onLayerChange} />
@@ -56,13 +40,11 @@ const MapViewSwitch = ({
   compact,
   isLocalView,
   canOpenLocal,
-  worldTab,
   onNavigate,
 }: {
   compact: boolean;
   isLocalView: boolean;
   canOpenLocal: boolean;
-  worldTab?: WorldTab;
   onNavigate: (world: boolean) => void;
 }) => (
   <HudPill label="Map view" role="group" className={cn("pointer-events-auto", compact ? "px-1" : "px-2")}>
@@ -76,13 +58,12 @@ const MapViewSwitch = ({
             disabled: !canOpenLocal,
             title: canOpenLocal ? undefined : "Select a structure first",
           },
-          { key: "world", label: worldTab?.label ?? WORLD, menu: worldTab?.menu },
+          { key: "world", label: WORLD },
         ]}
         size="sm"
         value={isLocalView ? "realm" : "world"}
         onChange={(view) => onNavigate(view === "world")}
       />,
-      ...(worldTab?.badge ? [<span key="badge">{worldTab.badge}</span>] : []),
     ]}
   </HudPill>
 );
@@ -94,8 +75,8 @@ const CompactLayerSwitch = ({
   mapLayer: boolean;
   onLayerChange: (alt: boolean) => void;
 }) => {
-  const currentLayer = mapLayer ? "Ethereal" : "Surface";
-  const nextLayer = mapLayer ? "Surface" : "Ethereal";
+  const currentLayer = eternumMapName(mapLayer);
+  const nextLayer = eternumMapName(!mapLayer);
   return (
     <HudPill label="Map layer" role="group" className="pointer-events-auto px-1">
       {[
@@ -121,8 +102,8 @@ const LayerSwitch = ({ mapLayer, onLayerChange }: { mapLayer: boolean; onLayerCh
       <HudTabs
         key="layer"
         tabs={[
-          { key: "surface", label: "Surface", icon: "mountain" },
-          { key: "ethereal", label: "Ethereal", icon: "travel" },
+          { key: "surface", label: eternumMapName(false), icon: "mountain" },
+          { key: "ethereal", label: eternumMapName(true), icon: "travel" },
         ]}
         size="sm"
         value={mapLayer ? "ethereal" : "surface"}

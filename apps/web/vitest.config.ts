@@ -4,6 +4,7 @@ export default {
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
+      env: fileURLToPath(new URL("./env.ts", import.meta.url)),
     },
   },
   test: {

@@ -1,0 +1,130 @@
+{
+  "0x123": {
+    "confirmed_block": 10,
+    "models": {
+      "ExplorerTroops": [
+        {
+          "value": {
+            "owner": "0x7",
+            "troops": {
+              "category": "Knight",
+              "tier": "T1",
+              "count": "0x61c9f36800",
+              "stamina": {
+                "Slot": "0x0"
+              },
+              "boosts": {
+                "incr_damage_dealt_percent_num": "0x0",
+                "incr_damage_dealt_end_at": "0x0",
+                "decr_damage_gotten_percent_num": "0x0",
+                "decr_damage_gotten_end_at": "0x0",
+                "incr_stamina_regen_percent_num": "0x0",
+                "incr_stamina_regen_seconds_left": "0x0",
+                "incr_explore_reward_percent_num": "0x0",
+                "incr_explore_reward_end_at": "0x0"
+              },
+              "battle_cooldown_end": "0x0"
+            },
+            "game_id": "0x1",
+            "explorer_id": "0x11"
+          }
+        }
+      ],
+      "ArmyProgress": [
+        {
+          "value": {
+            "game_id": "0x1",
+            "explorer_id": "0x11",
+            "logistics": "0x2",
+            "oath_slots": "0x1",
+            "oaths": "0x0",
+            "oath_pick": "0x0"
+          }
+        }
+      ],
+      "ArmyCombat": [
+        {
+          "value": {
+            "game_id": "0x1",
+            "explorer_id": "0x11",
+            "last_target": "0x21"
+          }
+        }
+      ],
+      "ArmyDay": [
+        {
+          "value": {
+            "game_id": "0x1",
+            "explorer_id": "0x11",
+            "day": "0x0"
+          }
+        }
+      ],
+      "ArmySlot": [
+        {
+          "value": {
+            "game_id": "0x1",
+            "structure_id": "0x7",
+            "epoch": "0x0",
+            "slot": "0x0",
+            "explorer_id": "0x11",
+            "stamina": {
+              "amount": "0x5a",
+              "settled_at": "0x168",
+              "remainder": "0x0"
+            }
+          }
+        }
+      ],
+      "ExpeditionDiscovery": [
+        {
+          "value": {
+            "game_id": "0x1",
+            "structure_id": "0x7",
+            "epoch": "0x0",
+            "empty_reveals": "0x2",
+            "ruin_cleared": false
+          }
+        }
+      ],
+      "ExpeditionSite": [
+        {
+          "value": {
+            "game_id": "0x1",
+            "entity_id": "0x21",
+            "category": "0x7",
+            "initial_guard_count": "0x174876e800",
+            "alt": false,
+            "col": "0xa",
+            "row": "0xb",
+            "clear": null
+          }
+        }
+      ],
+      "ResourceBalance": [
+        {
+          "value": {
+            "game_id": "0x1",
+            "entity_id": "0x7",
+            "resource_type": "0x17",
+            "balance": "0x15d3ef79800"
+          }
+        }
+      ],
+      "ResourceProduction": [
+        {
+          "value": {
+            "game_id": "0x1",
+            "entity_id": "0x7",
+            "resource_type": "0x1a",
+            "building_count": "0x1",
+            "production_rate": "0x3b9aca00",
+            "output_amount_left": "0xffffffffffffffffffffffffffffffff",
+            "last_settled_at": "0x168",
+            "remainder": "0x0"
+          }
+        }
+      ]
+    }
+  }
+}

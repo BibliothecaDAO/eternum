@@ -1,61 +1,29 @@
-import { relicLine, relicShortName } from "@/ui/design-system/kit/words";
-import { useRelicPayerEssence } from "@/ui/features/relics/hooks/use-relic-activation";
+import { memo, useMemo } from "react";
 
-import { memo, useCallback, useMemo } from "react";
-
-import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { resourceMeaning } from "@/ui/design-system/icon-meaning";
-import { HudChip, HudRelic } from "@/ui/design-system/kit/hud-elements";
-import { RELIC_KIND } from "./relic-kind";
+import { HudChip } from "@/ui/design-system/kit/hud-elements";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import type { RelicHolderPreview } from "@/ui/features/relics/components/relic-activation-selector";
-import { RelicActivationSelector } from "@/ui/features/relics/components/relic-activation-selector";
-import { divideByPrecision, ResourceManager, configManager } from "@bibliothecadao/eternum";
-import {
-  EntityType,
-  getRelicInfo,
-  ID,
-  isRelic,
-  RelicRecipientType,
-  ResourcesIds,
-  formatAmount,
-  resourceName,
-  formatShort,
-} from "@bibliothecadao/types";
-import { safeInteger } from "@bibliothecadao/eternum/game-client";
+import { divideByPrecision, ResourceManager } from "@bibliothecadao/eternum";
+import { ResourcesIds, resourceName, formatShort } from "@bibliothecadao/types";
 
 interface CompactEntityInventoryProps {
   resources?: ResourceManager | null;
-  activeRelicIds?: number[];
-  recipientType: RelicRecipientType;
-  entityId?: ID;
-  entityType?: EntityType;
   className?: string;
-  allowRelicActivation?: boolean;
   maxItems?: number;
-  filter?: CompactInventoryFilter;
   emptyMessage?: string;
   showHiddenCount?: boolean;
 }
 
-type CompactInventoryFilter = "all" | "resources" | "relics" | "usableRelics";
-
 interface DisplayItem {
   resourceId: number;
   amount: number;
-  isRelic: boolean;
-  isActive: boolean;
-  canActivate: boolean;
 }
 
 export const buildDisplayItems = (
   resourceComponent?: ResourceManager | null,
   currentDefaultTick?: number,
-  activeRelicIds: number[] = [],
-  recipientType?: RelicRecipientType,
   resourceTiers?: Record<string, ResourcesIds[]>,
 ) => {
   if (!resourceComponent) return [] as DisplayItem[];
@@ -65,7 +33,6 @@ export const buildDisplayItems = (
   if (!knownBalances) return [] as DisplayItem[];
   const balances = knownBalances.filter((resource) => resource.amount > 0);
 
-  const activeRelicSet = new Set(activeRelicIds);
   const tiers = resourceTiers ?? {};
   const tierOrder = [
     "lords",
@@ -105,16 +72,7 @@ export const buildDisplayItems = (
       const amount = divideByPrecision(Number(resource.amount));
       if (amount <= 0) return null;
 
-      const resourceId = Number(resource.resourceId);
-      const relicInfo = isRelic(resourceId) ? getRelicInfo(resourceId) : undefined;
-
-      return {
-        resourceId,
-        amount,
-        isRelic: Boolean(relicInfo),
-        isActive: activeRelicSet.has(resourceId),
-        canActivate: relicInfo ? relicInfo.recipientType === recipientType : false,
-      } as DisplayItem;
+      return { resourceId: Number(resource.resourceId), amount } as DisplayItem;
     })
     .filter(Boolean) as DisplayItem[];
 
@@ -129,82 +87,26 @@ export const buildDisplayItems = (
   });
 };
 
-const filterDisplayItems = (items: DisplayItem[], filter: CompactInventoryFilter = "all") => {
-  if (filter === "resources") return items.filter((item) => !item.isRelic);
-  if (filter === "relics") return items.filter((item) => item.isRelic);
-  if (filter === "usableRelics") return items.filter((item) => item.isRelic && item.canActivate && !item.isActive);
-  return items;
-};
-
-export const countDisplayItems = (items: DisplayItem[]) => {
-  const relics = items.filter((item) => item.isRelic);
-
-  return {
-    total: items.length,
-    resources: items.length - relics.length,
-    relics: relics.length,
-    activeRelics: relics.filter((item) => item.isActive).length,
-    totalRelics: sumDisplayItemAmounts(relics),
-    usableRelics: sumDisplayItemAmounts(relics.filter((item) => item.canActivate && !item.isActive)),
-  };
-};
-
-const sumDisplayItemAmounts = (items: DisplayItem[]) =>
-  items.reduce((total, item) => total + Math.max(0, Math.floor(item.amount)), 0);
-
 export const CompactEntityInventory = memo(
   ({
     resources,
-    activeRelicIds,
-    recipientType,
-    entityId,
-    entityType,
     className,
-    allowRelicActivation = false,
     maxItems,
-    filter = "all",
     emptyMessage = "No inventory.",
     showHiddenCount = true,
   }: CompactEntityInventoryProps) => {
-    const openSurface = usePopoverStore((state) => state.openSurface);
-    const closeSurface = usePopoverStore((state) => state.closeSurface);
     const mode = useGameModeConfig();
     const currentDefaultTick = useCurrentDefaultTick();
-    const payerEssence = useRelicPayerEssence(
-      allowRelicActivation ? entityId : undefined,
-      recipientType === RelicRecipientType.Explorer,
-    );
     const resourceTiers = useMemo(() => mode.resources.getTiers(), [mode]);
-    const items = useMemo(
-      () => buildDisplayItems(resources, currentDefaultTick, activeRelicIds, recipientType, resourceTiers),
-      [resources, currentDefaultTick, activeRelicIds, recipientType, resourceTiers],
+    const displayItems = useMemo(
+      () => buildDisplayItems(resources, currentDefaultTick, resourceTiers),
+      [resources, currentDefaultTick, resourceTiers],
     );
-    const displayItems = useMemo(() => filterDisplayItems(items, filter), [filter, items]);
 
     const hasLimit = maxItems !== undefined && Number.isFinite(maxItems);
     const limit = hasLimit ? Math.max(0, Number(maxItems)) : undefined;
     const visibleItems = hasLimit && limit !== undefined ? displayItems.slice(0, limit) : displayItems;
     const hiddenCount = hasLimit && limit !== undefined ? Math.max(displayItems.length - limit, 0) : 0;
-
-    const handleRelicClick = useCallback(
-      (item: DisplayItem) => {
-        if (!allowRelicActivation || !item.isRelic || item.isActive || !item.canActivate) return;
-        if (!entityId || entityType === undefined) return;
-
-        const holder: RelicHolderPreview = {
-          entityId: safeInteger(entityId),
-          held: Math.floor(item.amount),
-          recipientType,
-          entityType,
-        };
-
-        openSurface({
-          id: "relic-activation",
-          content: <RelicActivationSelector resourceId={item.resourceId} holders={[holder]} onClose={closeSurface} />,
-        });
-      },
-      [allowRelicActivation, entityId, entityType, recipientType, openSurface, closeSurface],
-    );
 
     if (displayItems.length === 0) {
       return <p className="text-hud-label text-hud-muted italic">{emptyMessage}</p>;
@@ -213,18 +115,9 @@ export const CompactEntityInventory = memo(
     return (
       <div className={cn("flex flex-col gap-2", className)}>
         <div className="flex flex-wrap justify-start gap-1.5">
-          {visibleItems.map((item) =>
-            item.isRelic ? (
-              <InventoryRelic
-                key={`inventory-item-${item.resourceId}`}
-                item={item}
-                payerEssence={payerEssence}
-                onActivate={allowRelicActivation && entityId && entityType != null ? handleRelicClick : null}
-              />
-            ) : (
-              <InventoryResource key={`inventory-item-${item.resourceId}`} item={item} />
-            ),
-          )}
+          {visibleItems.map((item) => (
+            <InventoryResource key={`inventory-item-${item.resourceId}`} item={item} />
+          ))}
         </div>
         {showHiddenCount && hiddenCount > 0 && (
           <span className="text-hud-label text-hud-muted">
@@ -235,51 +128,6 @@ export const CompactEntityInventory = memo(
     );
   },
 );
-
-/**
- * A held relic: its painting, its short name and how many are held, in its kind's colour; working, ready to set to work
- * (pressable when its holder can pay), or only held (pressable but short, or not usable by this holder).
- */
-const InventoryRelic = ({
-  item,
-  payerEssence,
-  onActivate,
-}: {
-  item: DisplayItem;
-  payerEssence: number | undefined;
-  onActivate: ((item: DisplayItem) => void) | null;
-}) => {
-  const relicInfo = getRelicInfo(item.resourceId as ResourcesIds);
-  const name = relicInfo?.name ?? ResourcesIds[item.resourceId] ?? "relic";
-  const pressable = onActivate !== null && item.canActivate && !item.isActive;
-  const state = item.isActive
-    ? "active"
-    : pressable &&
-        payerEssence !== undefined &&
-        payerEssence >= configManager.getRelicActivation(item.resourceId).essenceCost
-      ? "ready"
-      : pressable || !item.canActivate
-        ? "held"
-        : undefined;
-  return (
-    <HudRelic
-      icon={resourceMeaning(item.resourceId as ResourcesIds)}
-      kind={relicInfo ? RELIC_KIND[relicInfo.type] : "stamina"}
-      gives={relicShortName(item.resourceId)}
-      trail={formatAmount(Math.floor(item.amount))}
-      state={state}
-      onPress={pressable ? () => onActivate(item) : undefined}
-      label={pressable ? `Activate ${name}` : undefined}
-      tip={
-        pressable
-          ? `Activate · ${relicLine(item.resourceId, configManager.getRelicActivation(item.resourceId), payerEssence)}`
-          : item.canActivate
-            ? relicLine(item.resourceId, configManager.getRelicActivation(item.resourceId))
-            : `${relicLine(item.resourceId, configManager.getRelicActivation(item.resourceId))} It cannot be used by this holder.`
-      }
-    />
-  );
-};
 
 /** A carried resource: its painting and how much, named on hover. */
 const InventoryResource = ({ item }: { item: DisplayItem }) => {

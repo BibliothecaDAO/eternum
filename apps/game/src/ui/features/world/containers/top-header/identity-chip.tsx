@@ -14,24 +14,20 @@ import { getActiveGame } from "@/runtime/world";
 import { HudButton, HudPill } from "@/ui/design-system/kit/hud-elements";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Popover } from "@/ui/design-system/molecules/popover";
-import { normalizeLeaderboardAddress } from "@/ui/features/social/player/finalized-blitz-leaderboard";
-import { useInGameLeaderboard } from "@/ui/features/social/player/use-in-game-leaderboard";
 import { isExplicitSpectateSession } from "@/utils/spectator-session";
-import { ContractAddress, formatPoints } from "@bibliothecadao/types";
+import { ContractAddress } from "@bibliothecadao/types";
 
 import { type ReactNode, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   countOwnedStructures,
   type IdentityChipState,
-  type IdentityStanding,
   NO_OWNED_STRUCTURES,
   resolveIdentityChipState,
 } from "./identity-chip-state";
 import { LEADERBOARD_POPOVER_ID, LeaderboardSurface } from "@/ui/features/social/components/social-board";
 import { useSocialStore } from "@/ui/features/social/components/use-social-store";
 import { SEASON } from "@/ui/design-system/kit/words";
-import { usePointsGoal } from "@/ui/features/world/hud/points-goal";
 
 const useIdentityChipState = (): IdentityChipState => {
   const { status, session } = useIdentitySession();
@@ -39,7 +35,6 @@ const useIdentityChipState = (): IdentityChipState => {
   const provisioningError = useAccountStore((state) => state.provisioningError);
   const players = usePlayers();
   const structures = useFactView(gameStructuresView);
-  const { standingsByAddress } = useInGameLeaderboard();
   // The player's account is known from the session alone, before (or without) joining it on this shard: a spectator
   // who owns realms here is counted as their owner, and offered Play.
   const { data: player } = useRealmsPlayer();
@@ -52,16 +47,15 @@ const useIdentityChipState = (): IdentityChipState => {
       gameplayAccount: { address: gameplayAddress, provisioningError },
       playerName: owner === null ? null : (players.find((player) => player.address === owner)?.name ?? null),
       owned: owner === null ? NO_OWNED_STRUCTURES : countOwnedStructures(structures, owner),
-      standing: owner === null ? null : (standingsByAddress.get(normalizeLeaderboardAddress(owner)) ?? null),
     });
-  }, [gameplayAddress, player, players, provisioningError, session, standingsByAddress, status, structures]);
+  }, [gameplayAddress, player, players, provisioningError, session, status, structures]);
 };
 
 /**
  * What a mode whose players are ranked over a season (Frontier) puts in the chip in place of the game's points goal:
  * the player's place on the season's board, and the way to that board.
  */
-export type SeasonGoal = { rank: string; onOpen: () => void };
+export type SeasonGoal = { rank: string | null; onOpen: () => void };
 
 /**
  * Player identity opens the leaderboard (or, given a `season`, the season's board), a session without a name opens the
@@ -94,7 +88,7 @@ export const IdentityChip = ({ compact = false, season }: { compact?: boolean; s
 /** A season's player's chip: their name and place on the season's board, which it opens. */
 const SeasonChip = ({ name, season }: { name: string; season: SeasonGoal }) => (
   <HudPill
-    label={`${name}, ${SEASON} ${season.rank}`}
+    label={season.rank ? `${name}, ${SEASON} ${season.rank}` : `${name}, ${SEASON}`}
     onPress={season.onOpen}
     className="pointer-events-auto min-w-0 max-w-full whitespace-nowrap"
   >
@@ -104,25 +98,20 @@ const SeasonChip = ({ name, season }: { name: string; season: SeasonGoal }) => (
         <span className="max-w-36 truncate">{name}</span>
       </span>,
       ...(season.rank ? [<span key="rank">{season.rank}</span>] : []),
-      <span key="goal" className="text-hud-muted">
-        {SEASON}
-      </span>,
     ]}
   </HudPill>
 );
 
-/** A player's chip: name, rank and points; its hover says how the game is won and scored, and it opens the leaderboard. */
 const PlayerChipTrigger = (props: {
   state: Extract<IdentityChipState, { kind: "player" }>;
   isOpen: boolean;
   compact: boolean;
 }) => {
-  const goal = usePointsGoal();
-  const readings = playerReadings(props.state.name, props.state.standing);
+  const readings = playerReadings(props.state.name);
   return (
     <IdentityChipTrigger
       {...props}
-      label={goal}
+      label={props.state.name}
       readings={props.compact ? [<CompactPlayer key="player" state={props.state} />] : readings}
     />
   );
@@ -169,7 +158,6 @@ const IdentityChipTrigger = ({
 const CompactPlayer = ({ state }: { state: Extract<IdentityChipState, { kind: "player" }> }) => (
   <span className="flex min-w-0 items-center gap-1.5">
     <span className="min-w-0 truncate">{state.name}</span>
-    {state.standing && <span className="shrink-0 text-hud-muted">#{state.standing.rank}</span>}
   </span>
 );
 
@@ -226,22 +214,12 @@ const stateReadings = (state: Exclude<IdentityChipState, { kind: "player" }>): R
   }
 };
 
-/** The player's name, then their rank and points as one reading of the top line, always on screen; the goal is its hover. */
-export const playerReadings = (name: string, standing: IdentityStanding | null) => {
-  return [
-    <span key="name" className="flex items-center gap-1.5">
-      <SemanticIcon name="guild" alt="" aria-hidden="true" className="h-4 w-4 object-contain" />
-      <span className="max-w-36 truncate">{name}</span>
-    </span>,
-    ...(standing
-      ? [
-          <span key="standing">
-            #{standing.rank} · {formatPoints(standing.points)}
-          </span>,
-        ]
-      : []),
-  ];
-};
+export const playerReadings = (name: string) => [
+  <span key="name" className="flex items-center gap-1.5">
+    <SemanticIcon name="guild" alt="" aria-hidden="true" className="h-4 w-4 object-contain" />
+    <span className="max-w-36 truncate">{name}</span>
+  </span>,
+];
 
 const compactLabel = (kind: Exclude<IdentityChipState["kind"], "player">): string => {
   switch (kind) {

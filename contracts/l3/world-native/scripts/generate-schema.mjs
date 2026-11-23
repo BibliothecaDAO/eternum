@@ -1,14 +1,21 @@
 import { tupleTypes } from "../../../../apps/herald/src/native/serde.ts";
 import { compileCommandRoutes } from "./command-routes.mjs";
-import { readRuleConstants, readReleaseConstants } from "./rule-constants.mjs";
+import { feltLengths, sumLengths } from "./felt-length.mjs";
+import { writeCairo } from "./write-cairo.mjs";
+import { assignWireIds, renderWireSerde, wireIds } from "./wire-ids.mjs";
+import {
+  balanceIdentity,
+  identifierConstants,
+  readBalanceConstants,
+  readLogicSlots,
+  readReleaseConstants,
+} from "./rule-constants.mjs";
+import { wireRoots, wireTypeNames } from "./wire-types.mjs";
 import { generateSitePreviews } from "./generate-site-previews.mjs";
-import { execFileSync } from "node:child_process";
-import { mkdtemp, rm } from "node:fs/promises";
-import { join } from "node:path";
 import { eventLayouts, uniqueEventLayouts } from "./event-layouts.mjs";
 import { readCheckedTaxonomy } from "./taxonomy.mjs";
 import { defineFactModels, factWireTypes, syncScopes } from "../schema/fact-models.mjs";
-import { createHash } from "node:crypto";
+import { schemaIdentity } from "../../../../apps/herald/src/native/schema.ts";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { hash, shortString } from "starknet";
@@ -20,15 +27,11 @@ const { CallData } = await import(
   Bun.resolveSync("starknet", fileURLToPath(new URL("../../../../apps/herald/src/", import.meta.url)))
 );
 const gamesAbi = await readContractAbi("Games");
-const logicClasses = Object.fromEntries(
-  gamesAbi
-    .find((item) => item.name === "games_storage::release::LogicClasses")
-    .members.map(({ name }) => [name, `${name[0].toUpperCase()}${name.slice(1)}Logic`]),
-);
+const logicClasses = await readLogicSlots(root);
 const artifacts = {
   games: gamesAbi,
   ...Object.fromEntries(
-    await Promise.all(Object.entries(logicClasses).map(async ([logic, name]) => [logic, await readContractAbi(name)])),
+    await Promise.all(logicClasses.map(async ({ name, contract }) => [name, await readContractAbi(contract)])),
   ),
 };
 
@@ -49,9 +52,16 @@ for (const abi of [...Object.values(artifacts), factWireTypes]) {
   }
 }
 
-const routes = compileCommandRoutes(artifacts, types, feltLength);
+const feltLength = feltLengths(types);
+const routes = compileCommandRoutes(artifacts, types, feltLength, logicClasses);
 types.set(routes.command.name, routes.command);
 await writeCairo("src/command_routes.cairo", routes.cairo);
+const story = types.get("world_native::ownership::Story");
+story.variants = assignWireIds("stories", story.variants);
+await writeCairo(
+  "src/story_serde.cairo",
+  `// Generated from the permanent wire registry and production Story ABI.\nuse crate::ownership::Story;\n\n${renderWireSerde("Story", story.variants)}`,
+);
 
 // Serialization projections use the types carried by the production gameplay and preset ABIs.
 // These bindings do not add entrypoints to Games.
@@ -85,35 +95,12 @@ for (const method of commandInterface.items) {
 }
 const commandAbi = [commandInterface, ...[...commandTypes].map((name) => types.get(name))];
 
+const modelStructs = new Set();
 function struct(name) {
+  modelStructs.add(`world_native::${name}`);
   const item = types.get(`world_native::${name}`);
   if (item?.type !== "struct") throw new Error(`Missing ABI struct ${name}`);
   return item.members;
-}
-
-function feltLength(type) {
-  if (type === "()") return 0;
-  if (type.startsWith("(")) return sumLengths(tupleTypes(type).map(feltLength));
-  if (/^core::array::(Span|Array)::</.test(type)) return null;
-  const item = types.get(type);
-  if (item?.type === "struct") return sumLengths(item.members.map((member) => feltLength(member.type)));
-  if (item?.type === "enum") {
-    const lengths = item.variants.map((variant) => feltLength(variant.type));
-    if (lengths.includes(null) || new Set(lengths).size !== 1) return null;
-    return 1 + lengths[0];
-  }
-  if (
-    /^core::(felt252|integer::u(8|16|32|64|128)|starknet::(contract_address::ContractAddress|class_hash::ClassHash))$/.test(
-      type,
-    )
-  ) {
-    return 1;
-  }
-  throw new Error(`Unsupported row type ${type}`);
-}
-
-function sumLengths(lengths) {
-  return lengths.includes(null) ? null : lengths.reduce((sum, length) => sum + length, 0);
 }
 
 function model(name, scope, keys, members, emitterKey) {
@@ -151,29 +138,9 @@ for (const model of models) {
   );
 }
 
-const ruleConstants = await readRuleConstants(root);
-const releaseConstants = await readReleaseConstants(root);
 await generateSitePreviews(process.argv.includes("--check"));
 
-// Research rows, tier choices and the building categories that have a row.
-const researchSource = await readFile(new URL("src/research.cairo", root), "utf8");
-const researchConstants = Object.fromEntries(
-  [...researchSource.matchAll(/^pub const ([A-Z][A-Z0-9_]*): u8 = ([0-9]+);$/gm)].map(([, name, value]) => [
-    name,
-    Number(value),
-  ]),
-);
-
 const taxonomy = await readCheckedTaxonomy(fileURLToPath(new URL("src/", root)));
-// The schema identity hashes these four, and every shard release pins that identity. They leave the schema at its next
-// declared shape change; readers take the full taxonomy from the generated enums.
-
-const tileOccupierConstants = Object.fromEntries(
-  ["Chest", "Spire", "Shrine", "Well"].map((member) => [
-    `${member.toUpperCase()}_OCCUPIER`,
-    taxonomy.tileOccupiers[member],
-  ]),
-);
 
 const mapSource = await readFile(new URL("src/map.cairo", root), "utf8");
 
@@ -189,10 +156,10 @@ const tilePackingConstants = Object.fromEntries(
 const gamesEvents = uniqueEventLayouts(Object.values(artifacts).flatMap(eventLayouts));
 const productionAbi = Object.values(artifacts).flat();
 
+const balance = await readBalanceConstants(root);
+const releaseConstants = await readReleaseConstants(root);
 const schema = {
-  ruleConstants,
-  researchConstants,
-  tileOccupierConstants,
+  identifierConstants: identifierConstants(balance),
   tilePackingConstants,
   logicClasses,
   version: 2,
@@ -226,12 +193,6 @@ const schema = {
       ),
     },
     {
-      name: "PointsAwarded",
-      scope: "game",
-      version: 1,
-      event: productionAbi.find((item) => item.type === "event" && item.name === "world_native::game::PointsAwarded"),
-    },
-    {
       name: "StoryEvent",
       scope: "game",
       version: 2,
@@ -243,38 +204,15 @@ const schema = {
       version: 2,
       event: productionAbi.find((item) => item.type === "event" && item.name === "world_native::troops::BattleEvent"),
     },
-    {
-      name: "RaidEvent",
-      scope: "game",
-      version: 2,
-      event: productionAbi.find(
-        (item) => item.type === "event" && item.name === "world_native::combat_actions::RaidEvent",
-      ),
-    },
   ],
-  types: Object.fromEntries([...types].sort(([left], [right]) => left.localeCompare(right))),
 };
-schema.identity = createHash("sha256").update(JSON.stringify(schema)).digest("hex");
+const wire = wireTypeNames(types, wireRoots(schema, commandAbi, modelStructs));
+schema.types = Object.fromEntries(
+  [...types].filter(([name]) => wire.has(name)).sort(([left], [right]) => left.localeCompare(right)),
+);
+schema.identity = schemaIdentity(schema);
 await writeJson("schema/schema.json", schema);
 await writeFixtures(schema);
-
-async function writeCairo(path, value) {
-  const temporary = await mkdtemp(fileURLToPath(new URL("src/.command-routes-", root)));
-  try {
-    const input = join(temporary, "routes.cairo");
-    await writeFile(input, value);
-    execFileSync("scarb", ["fmt", input], { cwd: fileURLToPath(root), encoding: "utf8" });
-    const formatted = await readFile(input, "utf8");
-    const target = new URL(path, root);
-    if (process.argv.includes("--check")) {
-      if ((await readFile(target, "utf8")) !== formatted) throw new Error(`Generated artifact differs: ${path}`);
-    } else {
-      await writeFile(target, formatted);
-    }
-  } finally {
-    await rm(temporary, { recursive: true });
-  }
-}
 
 async function writeJson(path, value) {
   const url = new URL(path, root);
@@ -438,12 +376,16 @@ function storyVariants() {
   if (!story?.variants) throw new Error("No Story enum in the contract ABIs");
   return story.variants.map(({ name }) => name);
 }
+const troopType = schema.types["world_native::troops::TroopType"];
+if (!troopType?.variants?.every(({ type }) => type === "()")) throw new Error("Missing unit troop categories");
+const troopTypes = Object.fromEntries(troopType.variants.map(({ name }) => [name, name]));
+
 const declarations = [
   "// Generated from native fact models and contract ABIs. Run the native schema generator to update.",
+  `export const NativeTroopType = ${JSON.stringify(troopTypes, null, 2)} as const;`,
   `export const nativeFactSchemaIdentity = ${JSON.stringify(schema.identity)};`,
+  `export const nativeIdentifiers = ${JSON.stringify(schema.identifierConstants, null, 2)} as const;`,
   `export const nativeReleaseConstants = ${JSON.stringify(releaseConstants, null, 2)} as const;`,
-  `export const nativeRuleConstants = ${JSON.stringify(ruleConstants, null, 2)} as const;`,
-  `export const nativeResearchConstants = ${JSON.stringify(researchConstants, null, 2)} as const;`,
   typeScriptEnum(
     "NativeStructureCategory",
     "Structure categories named in src/taxonomy.cairo.",
@@ -478,6 +420,16 @@ const declarations = [
   `export const nativeSyncScopes = ${JSON.stringify(validatedSyncScopes(), null, 2)} as const;`,
 ];
 await writeText("schema/client.gen.ts", declarations.join("\n") + "\n");
+await writeText(
+  "schema/balance.gen.ts",
+  [
+    "// @generated from the Cairo balance constants, which a release may tune. Run the native schema generator to update.",
+    ...Object.entries(balance).map(
+      ([name, constants]) => `export const ${name} = ${JSON.stringify(constants, null, 2)} as const;`,
+    ),
+    `export const nativeBalanceIdentity = ${JSON.stringify(balanceIdentity(balance))};`,
+  ].join("\n") + "\n",
+);
 
 function typeScriptEnum(name, summary, members) {
   const lines = Object.entries(members).map(([member, value]) => `  ${member} = ${value},`);
@@ -507,14 +459,24 @@ function commandType(type) {
 }
 const command = types.get("world_native::commands::Command");
 const commandBits = Object.fromEntries(
-  command.variants.map(({ name }, index) => [name, (1n << BigInt(index)).toString()]),
+  command.variants.map(({ name, wireId }) => [name, (1n << BigInt(wireId)).toString()]),
 );
+const blitzCommandBits = Object.fromEntries(
+  wireIds.commands
+    .filter(({ retired, family }) => !retired && family === "blitz")
+    .map(({ name, id }) => [name, (1n << BigInt(id)).toString()]),
+);
+const gamesWrites = schema.games.entrypoints
+  .filter((entry) => entry.state_mutability === "external")
+  .map((entry) => entry.name);
 await writeText(
   "schema/commands.gen.ts",
   [
     "// Generated from command routes and production payload ABIs. Run the native schema generator to update.",
     'import type { BigNumberish } from "starknet";',
     `export const nativeCommandBits = ${JSON.stringify(commandBits, null, 2)} as const;`,
+    `export const nativeBlitzCommandBits = ${JSON.stringify(blitzCommandBits, null, 2)} as const;`,
+    `export const nativeGamesWrites = ${JSON.stringify(gamesWrites, null, 2)} as const;`,
     "export interface NativeCommandPayloads {",
     ...command.variants.map(({ name, type }) => `  ${name}: ${commandType(type)};`),
     "}",

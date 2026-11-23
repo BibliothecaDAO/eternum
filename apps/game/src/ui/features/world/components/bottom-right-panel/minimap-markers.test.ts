@@ -1,6 +1,3 @@
-import { homeIcon } from "@/ui/design-system/home-icons";
-import { REALM_SKIN_MODELS, readRealmSkin } from "@/three/structures/realm-skins";
-import { shortString } from "starknet";
 // @vitest-environment jsdom
 import { setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { ContractAddress, RESOURCE_PRECISION, StructureType } from "@bibliothecadao/types";
@@ -10,6 +7,7 @@ import { setActiveGame } from "@/runtime/world";
 import { setOpenGameSeats } from "@/utils/entity-ownership";
 import { overrideSpectateIntent } from "@/utils/spectator-session";
 import { minimapMarkersView } from "./minimap-markers";
+import { GAME_FAMILIES } from "../../../../../../../../config/source/common/native-preset-modes";
 
 afterEach(() => {
   setBlockTimestampSource(null);
@@ -18,14 +16,14 @@ afterEach(() => {
 });
 
 describe("minimap icon meanings from game facts", () => {
-  it("uses the Troll in Frontier and the camp structure in Blitz", () => {
+  it("uses the Golem in Frontier and the camp structure in Blitz", () => {
     const { store } = campBeside();
     const game = store.require("GameRegistry", { game_id: 1 });
-    for (const [preset, expected] of [
-      [5, "beast-troll"],
-      [2, "camp"],
+    for (const [family, expected] of [
+      [GAME_FAMILIES.frontier, "beast-golem"],
+      [GAME_FAMILIES.blitz, "camp"],
     ] as const) {
-      store.applyFacts([{ model: "GameRegistry", key: "0x3", value: { ...game, preset_id: preset } }]);
+      store.applyFacts([{ model: "GameRegistry", key: "0x3", value: { ...game, family } }]);
       expect(minimapMarkersView.read(store, null).get(String(SITE))?.name).toBe(expected);
     }
   });
@@ -46,12 +44,12 @@ describe("minimap icon meanings from game facts", () => {
     const { store } = campBeside();
     const markers = minimapMarkersView.read(store, ContractAddress("0x111"));
     expect(markers.get("7")).toEqual({ name: "map-realm-0", owner: "own", value: "0" });
-    expect(markers.get(String(SITE))).toEqual({ name: "camp", owner: "neutral", value: undefined });
+    expect(markers.get(String(SITE))).toEqual({ name: "beast-golem", owner: "neutral", value: undefined });
     expect(markers.get("201")).toEqual({ name: "map-army", owner: "own", value: "••" });
     expect(minimapMarkersView.read(store, null).get("201")?.owner).toBe("enemy");
     expect(minimapMarkersView.read(store, ContractAddress("0x222")).get("201")?.owner).toBe("enemy");
   });
-  it("updates the badge when troops, a site or guild membership changes", () => {
+  it("updates troops and sites while tribe members remain enemies", () => {
     const { store } = campBeside();
     const row = store.require("Structure", { game_id: 1, entity_id: SITE });
     const army = store.require("ExplorerTroops", { game_id: 1, explorer_id: 201 });
@@ -67,7 +65,7 @@ describe("minimap icon meanings from game facts", () => {
     ]);
     const markers = minimapMarkersView.read(store, ContractAddress("0x222"));
     expect(markers.get(String(SITE))?.name).toBe("map-village");
-    expect(markers.get("201")).toEqual({ name: "map-army", owner: "ally", value: "•••" });
+    expect(markers.get("201")).toEqual({ name: "map-army", owner: "enemy", value: "•••" });
   });
 });
 
@@ -75,7 +73,7 @@ describe("the minimap to a watching viewer (side-colours-4)", () => {
   it("marks each player's things in their seat, nobody's in grey, whatever the viewer's account", () => {
     const { store } = campBeside();
     // The open game's players in the order they joined it: 0x111 holds realm 7 and army 201.
-    setActiveGame({ chainId: "SHARD", gameId: 1, presetId: 1, name: "SHARD" });
+    setActiveGame({ chainId: "SHARD", gameId: 1, name: "SHARD" });
     setOpenGameSeats({ chainId: "SHARD", gameId: 1 }, [ContractAddress("0x111"), ContractAddress("0x222")]);
     overrideSpectateIntent(true);
     for (const viewer of [null, ContractAddress("0x111"), ContractAddress("0x222")]) {
@@ -86,33 +84,3 @@ describe("the minimap to a watching viewer (side-colours-4)", () => {
     }
   });
 });
-
-it.each(REALM_SKIN_MODELS)(
-  "shows $skin level $level on the minimap as CampaignHome arrives and is removed",
-  ({ skin, level }) => {
-    const { store } = campBeside();
-    const realm = store.require("Structure", { game_id: 1, entity_id: 7 });
-    store.applyFacts([{ model: "Structure", key: "0x7", value: { ...realm, base: { ...realm.base, level } } }]);
-    expect(minimapMarkersView.read(store, null).get("7")?.name).toBe(`map-realm-${level}`);
-    store.applyFacts([
-      {
-        model: "CampaignHome",
-        key: "0xc",
-        value: {
-          game_id: 1,
-          home: 7,
-          campaign_id: shortString.encodeShortString("devcon-2026"),
-          tier: skin === "devcon" ? 1 : 2,
-        },
-      },
-    ]);
-    expect(readRealmSkin(store, realm)).toBe(skin);
-    expect(minimapMarkersView.read(store, ContractAddress("0x111")).get("7")).toEqual({
-      name: homeIcon(skin, level),
-      owner: "own",
-      value: String(level),
-    });
-    store.applyFacts([{ model: "CampaignHome", key: "0xc", value: null }]);
-    expect(minimapMarkersView.read(store, null).get("7")?.name).toBe(`map-realm-${level}`);
-  },
-);

@@ -10,10 +10,13 @@ interface WorldAppearanceState {
   haptics: boolean;
   /** Next up's tips (the empire's suggestions); off, it still shows alerts and the selected realm's own step. */
   nextUpTips: boolean;
+  /** The Frontier HUD shows every part from the start, not as the player reaches each. */
+  showEverything: boolean;
   setFogStyle: (fogStyle: TerrainFogStyle) => void;
   setReducedMotion: (reducedMotion: boolean) => void;
   setHaptics: (haptics: boolean) => void;
   setNextUpTips: (nextUpTips: boolean) => void;
+  setShowEverything: (showEverything: boolean) => void;
 }
 
 /** Presentation preferences only (persisted); explored cells continue to come from the world snapshot. */
@@ -28,15 +31,18 @@ export const useWorldAppearanceStore = create<WorldAppearanceState>()(
       setHaptics: (haptics) => set({ haptics }),
       nextUpTips: true,
       setNextUpTips: (nextUpTips) => set({ nextUpTips }),
+      showEverything: false,
+      setShowEverything: (showEverything) => set({ showEverything }),
     }),
     {
       name: "eternum-world-appearance",
       storage: createJSONStorage(() => localStorage),
-      partialize: ({ fogStyle, reducedMotion, haptics, nextUpTips }) => ({
+      partialize: ({ fogStyle, reducedMotion, haptics, nextUpTips, showEverything }) => ({
         fogStyle,
         reducedMotion,
         haptics,
         nextUpTips,
+        showEverything,
       }),
     },
   ),

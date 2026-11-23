@@ -54,8 +54,6 @@ const toggle = (word) => ({ kind: "toggle", word });
 const firstRow = () => ({ kind: "first-row", live: true });
 const finishedGame = () => ({ kind: "finished-game", live: true });
 const link = (word) => ({ kind: "link", word });
-/** Play's Join, on a Blitz slot the live data may not hold. */
-const joinSlot = () => ({ kind: "press", word: "Join", live: true });
 /** An emailed code typed into the code boxes, as a player types it. */
 const code = (digits) => ({ kind: "code", digits });
 /** A step that leads only once the page shows `shown` (a check in the page). */
@@ -76,7 +74,6 @@ const CONNECT_OPEN = `document.querySelector('[role="dialog"][aria-label="Connec
 const END = {
   // A board is shown when its panel holds its first place, or says it has no one on it yet.
   frontierBoard: `location.pathname === "/season" && ${boardShown("Frontier", `[...panel.querySelectorAll(".app-board__row .app-rank")].some((rank) => rank.innerText.trim() === "1")`)}`,
-  blitzBoard: `location.pathname === "/season" && ${boardShown("Blitz", `panel.querySelector("ol li")`)}`,
   // A page opened from a list has no Back: the place that leads back to the list is lit.
   player: `location.pathname.startsWith("/p/") && ${placeLit("Season")} && document.querySelector('[data-band="body"] .app-panel') !== null`,
   results: `location.pathname.startsWith("/results/") && (${placeLit("You")} || ${placeLit("Connect")}) && document.querySelector("h1")?.innerText.trim() === "Results"`,
@@ -92,19 +89,14 @@ const END = {
   terms: `location.pathname === "/terms" && document.querySelectorAll('[data-role="tab"][aria-current="page"]').length === 0`,
   // Connect, open over the page it was asked from: Play from the bar, the lobby from its Sign in.
   connect: `location.pathname === "/" && ${CONNECT_OPEN}`,
-  lobby: `location.pathname.startsWith("/blitz/") && document.querySelector('[data-band="body"]')`,
-  lobbyConnect: `location.pathname.startsWith("/blitz/") && ${CONNECT_OPEN}`,
 };
 
 /** Season's rating board, as it says its service did not answer (ui/design-system/kit/service-failure.tsx). */
-const RATINGS_DOWN = "Ratings did not answer.";
 
 /** The flows, as the shell viewer's direction Q draws them; Blitz's board is a switch away on a phone. */
 const flows = (layout, persona) => {
-  const blitz = layout === "phone" ? [tab("Season"), view("Blitz")] : [tab("Season")];
   const shared = {
     standing: { steps: [tab("Season")], end: END.frontierBoard },
-    blitzboard: { steps: blitz, end: END.blitzBoard, outage: RATINGS_DOWN },
     rival: { steps: [tab("Season"), firstRow()], end: END.player },
     terms: { steps: [link("Terms of Service")], end: END.terms },
   };
@@ -116,7 +108,6 @@ const flows = (layout, persona) => {
       market: { steps: [link("Market")], end: END.market },
       news: { steps: [link("What's new"), view("Blitz")], end: END.news },
       signin: { steps: [tab("Connect")], end: END.connect },
-      join: { steps: [joinSlot(), press("Sign in")], end: END.lobbyConnect },
     };
   return {
     ...shared,
@@ -127,7 +118,6 @@ const flows = (layout, persona) => {
     alerts: { steps: [tab("You"), press("Settings"), view("Important")], end: END.important, setting: "level" },
     music: { steps: [tab("You"), press("Settings"), toggle("Music")], end: END.musicOn, setting: "music" },
     signout: { steps: [tab("You"), press("Settings"), press("Sign out")], end: END.signOutAsked },
-    join: { steps: [joinSlot()], end: END.lobby },
   };
 };
 
@@ -186,14 +176,11 @@ export const labFlows = (labCode = labEmailCode(), wrongCode = labCode === "2222
  * signed-in player without an emailed code, Connect's steps, the doorway's holds), opened in the app lab over its
  * fixtures (`?capture=1`: the lab's own header off) and measured at rest, with the reading pages and an unknown path's.
  */
-const LAB_GAME = "0x5245414c4d53-7";
 const LAB_PAGES = [
   ["first-visit", ""],
   ["home", ""],
   ["season-running", "season"],
-  ["season-claim", "season"],
-  ["reward-sealed", `results/${LAB_GAME}`],
-  ["entry-choose", "blitz/slot-blitz-1630"],
+  ["season-over", "results/0x5245414c4d53-3"],
   ["home", "profile"],
   ["home", "profile/settings"],
   ["home", "scroll"],

@@ -1,11 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { ETHEREAL_DEPTH_LOOKS, etherealSurfaceAt } from "./ethereal-depths";
+import { etherealSurfaceAt } from "./ethereal-depths";
 
-const rules = { spacing: 100, dayUnitSeconds: 3600, startMainAt: 0, endAt: 999999, seed: 1n };
+const rules = { spacing: 100, dayUnitSeconds: 3600, startMainAt: 0, scheduledEndAt: 999999, endAt: 999999, seed: 1n };
 
 describe("Frontier depth presentation", () => {
-  it("selects the approved look from contract rows across days and band boundaries", () => {
-    expect(Object.keys(ETHEREAL_DEPTH_LOOKS)).toEqual(["1", "2", "3"]);
+  it("selects the layer from contract rows across days and band boundaries", () => {
     for (const day of [0, 1, 20]) {
       const surface = day * 400;
       expect(etherealSurfaceAt(rules, { row: surface + 99, alt: false }, false)).toBeUndefined();

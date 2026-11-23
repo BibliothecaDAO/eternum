@@ -27,7 +27,7 @@ const NEWCOMER_STEPS: NextStep[] = [
   {
     key: "coach:explore",
     kind: "order",
-    line: "Your army can explore: +5 points a tile.",
+    line: "Your army can explore.",
     verb: "Select the army",
     busy: false,
     run,
@@ -158,7 +158,7 @@ export const BuildOrderLab = () => {
     <div className="flex min-h-screen flex-wrap items-start gap-8 bg-[#0b1418] p-6">
       <Shown
         name="Next up, for a newcomer"
-        line="How to play: the points coach (raise an army, explore, a crate). The build order's steps are the panel's alone (owner, 10-20: remove build steps in Next up)."
+        line="How to play: the points coach (raise an army, explore, a camp). The build order's steps are the panel's alone (owner, 10-20: remove build steps in Next up)."
       >
         <NextUpView steps={NEWCOMER_STEPS} />
       </Shown>

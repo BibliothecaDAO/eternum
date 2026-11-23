@@ -55,9 +55,8 @@ const capture = (id: string, at: number, taker: string, holder: string, extra: P
     },
   );
 
-/** The ids Events shows for these stories, as viewer 0x1, with structure 900 a Hyperstructure when `hyper`. */
-const ids = (stories: ProcessedStoryEvent[], filter: EventsFilter, hyper = false) =>
-  selectEventStories(stories, filter, "0x1", (structureId) => hyper && structureId === 900).map(({ id }) => id);
+const ids = (stories: ProcessedStoryEvent[], filter: EventsFilter) =>
+  selectEventStories(stories, filter, "0x1").map(({ id }) => id);
 
 it("shows the player's fights under Important, another player's only under All, newest first", () => {
   const stories = [
@@ -69,23 +68,19 @@ it("shows the player's fights under Important, another player's only under All, 
   expect(ids(stories, "all")).toEqual(["theirs", "mine", "defended"]);
 });
 
-it("shows under Important a crate the player opened and their captures, not a level-up or another's crate", () => {
+it("shows under Important the player's captures, not a level-up", () => {
   const stories = [
-    story("crate", 50, "RelicChestOpened", "0x1", {}),
-    story("their-crate", 40, "RelicChestOpened", "0x2", {}),
     capture("took", 30, "0x1", "0x0"),
     capture("lost", 20, "0x2", "0x1"),
     story("up", 10, "StructureLevelUpStory", "0x1", {}),
   ];
-  expect(ids(stories, "important")).toEqual(["crate", "took", "lost"]);
+  expect(ids(stories, "important")).toEqual(["took", "lost"]);
 });
 
-it("shows a Hyperstructure taken by two other players under Important and All, as one row", () => {
+it("shows another player's capture under All, not under Important", () => {
   const taken = capture("seized", 30, "0xb", "0xc");
-  expect(ids([taken], "important", true)).toEqual(["seized"]);
-  expect(ids([taken], "all", true)).toEqual(["seized"]);
-  // Another player's camp is not everyone's news.
-  expect(ids([taken], "important", false)).toEqual([]);
+  expect(ids([taken], "all")).toEqual(["seized"]);
+  expect(ids([taken], "important")).toEqual([]);
 });
 
 /** A story's place: transaction `tx`, at `index` in its receipt. */
@@ -236,7 +231,6 @@ it("tells each capture of a structure on its own, however often it changes the s
     capture("first", 100, "0xb", "0xc"),
   ];
   expect(ids(stories, "all")).toEqual(["again", "back", "first"]);
-  expect(ids(stories, "important", true)).toEqual(["again", "back", "first"]);
 });
 
 it("shows under All the world's history as it came, every player's routine too, and none of it under Important", () => {
@@ -271,28 +265,21 @@ it("lists a building placed and paid for in one transaction once, and two buildi
   expect(oneStoryPerAction(stories).map((event) => event.id)).toEqual(["b4", "b2"]);
 });
 
-it("reads under Important the player's fights, raids, captures, crates and relic activations, and each Hyperstructure's captures", () => {
-  expect(eventsReads("important", "0x1", [900, 901])).toEqual([
+it("reads under Important the player's fights, raids and captures", () => {
+  expect(eventsReads("important", "0x1")).toEqual([
     { limit: 100, story: "BattleEvent", owner: "0x1" },
     { limit: 100, story: "RaidEvent", owner: "0x1" },
     { limit: 100, story: "StructureCapturedStory", owner: "0x1" },
-    { limit: 100, story: "RelicChestOpened", owner: "0x1" },
-    { limit: 100, story: "RelicActivated", owner: "0x1" },
-    { limit: 100, story: "RewardChestOpened", owner: "0x1" },
-    { limit: 100, story: "StructureCapturedStory", entityId: 900 },
-    { limit: 100, story: "StructureCapturedStory", entityId: 901 },
   ]);
-  expect(eventsReads("important", null, [900])).toEqual([
-    { limit: 100, story: "StructureCapturedStory", entityId: 900 },
-  ]);
+  expect(eventsReads("important", null)).toEqual([]);
 });
 
 it("reads under All one read of the world's newest stories, whoever the viewer is", () => {
-  expect(eventsReads("all", "0x1", [900])).toEqual([{ limit: 350 }]);
-  expect(eventsReads("all", null, [])).toEqual([{ limit: 350 }]);
+  expect(eventsReads("all", "0x1")).toEqual([{ limit: 350 }]);
+  expect(eventsReads("all", null)).toEqual([{ limit: 350 }]);
 });
 
-it("shows in the Feed's Important anyone's fights, clears and chests, and in Mine the player's own, routine too", () => {
+it("shows in the Feed's Important anyone's fights, clears and captures, and in Mine the player's own, routine too", () => {
   // Owner, 27 October: "All / Important (battles but not just mine), then mine".
   const stories = [
     fight("their-fight", 60, "0x7", "0x8"),
@@ -300,7 +287,7 @@ it("shows in the Feed's Important anyone's fights, clears and chests, and in Min
     story("my-explore", 40, "ExplorationReward", "0x1", {}),
     fight("my-fight", 30, "0x1", "0x2"),
     story("their-explore", 20, "ExplorationReward", "0x7", {}),
-    story("their-chest", 10, "RewardChestOpened", "0x9", {}),
+    capture("their-capture", 10, "0x9", "0x8"),
   ];
   expect(feedIds(stories, "all")).toEqual([
     "their-fight",
@@ -308,10 +295,10 @@ it("shows in the Feed's Important anyone's fights, clears and chests, and in Min
     "my-explore",
     "my-fight",
     "their-explore",
-    "their-chest",
+    "their-capture",
   ]);
   // Notable stories, anyone's; never a routine explore, the player's or another's.
-  expect(feedIds(stories, "important")).toEqual(["their-fight", "their-clear", "my-fight", "their-chest"]);
+  expect(feedIds(stories, "important")).toEqual(["their-fight", "their-clear", "my-fight", "their-capture"]);
   // The player's own, whatever it is: their explore and their fight, nobody else's.
   expect(feedIds(stories, "mine")).toEqual(["my-explore", "my-fight"]);
   // A fight the player was attacked in is theirs too.
@@ -325,8 +312,6 @@ it("reads for the Feed's lenses the world, each notable kind from anyone, or the
     ["RaidEvent", undefined],
     ["StructureCapturedStory", undefined],
     ["SitePayout", undefined],
-    ["RewardChestOpened", undefined],
-    ["RelicChestOpened", undefined],
   ]);
   expect(feedReads("mine", "0x1")).toEqual([{ limit: 100, owner: "0x1" }]);
   // A spectator holds nothing of their own to read.

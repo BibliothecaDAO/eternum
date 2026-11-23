@@ -128,8 +128,8 @@ const scenario = async (
     bindings.commandAbi as Abi,
     () => 9,
   );
-  provider.setTransactionStreamWaiter((hash, inBlock, type, startedAt) =>
-    waitForActionOutcome(runtime as never, rpc as never, GAMES, hash, stopped.signal, inBlock, type, startedAt),
+  provider.setTransactionStreamWaiter((hash, inBlock, startedAt) =>
+    waitForActionOutcome(runtime as never, rpc as never, GAMES, hash, stopped.signal, inBlock, startedAt),
   );
   for (const name of ["transactionComplete", "transactionFailed", "transactionChecking"] as const)
     provider.on(
@@ -140,7 +140,7 @@ const scenario = async (
         ),
     );
   const click = (value: number) =>
-    provider.claim_wonder_points({ signer: account, value }).then(
+    provider.upgrade_realm({ signer: account, realm_entity_id: value }).then(
       () => undefined,
       (error) =>
         timeline.push(`${at()}  click ${value} REJECTED at send: ${String(error?.message ?? error).slice(0, 80)}`),

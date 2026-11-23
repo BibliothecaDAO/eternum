@@ -274,7 +274,7 @@
   align-items: stretch;
   justify-content: space-evenly;
   gap: 10px;
-  padding: 58px 16px 18px;
+  padding: 54px 16px 14px;
   overflow: hidden;
   border: 1px solid var(--app-line-strong);
   border-radius: 18px;
@@ -283,30 +283,31 @@
 }
 .season-card[data-card="place"] {
   background: radial-gradient(
-    circle at 50% 35%,
-    color-mix(in srgb, rgb(var(--app-gold)) 35%, var(--app-surface)),
-    var(--app-surface) 70%
+    circle at 50% 25%,
+    color-mix(in srgb, rgb(var(--app-gold)) 26%, var(--app-surface)),
+    var(--app-surface) 74%
   );
+  border-color: rgb(var(--app-gold) / 0.45);
 }
 .season-card[data-card="podium"] {
   background: radial-gradient(
     circle at 50% 20%,
-    color-mix(in srgb, var(--app-age-to) 60%, var(--app-surface)),
-    var(--app-surface) 70%
+    color-mix(in srgb, rgb(var(--app-gold)) 18%, var(--app-surface)),
+    var(--app-surface) 74%
   );
 }
 .season-card[data-card="sites"] {
   background: radial-gradient(
-    circle at 50% 30%,
-    color-mix(in srgb, var(--app-good) 30%, var(--app-surface)),
-    var(--app-surface) 72%
+    circle at 50% 22%,
+    color-mix(in srgb, rgb(var(--app-gold)) 16%, var(--app-surface)),
+    var(--app-surface) 74%
   );
 }
 .season-card[data-card="haul"] {
   background: radial-gradient(
-    circle at 50% 30%,
-    color-mix(in srgb, rgb(var(--app-accent)) 25%, var(--app-surface)),
-    var(--app-surface) 72%
+    circle at 50% 22%,
+    color-mix(in srgb, rgb(var(--app-gold)) 20%, var(--app-surface)),
+    var(--app-surface) 74%
   );
 }
 .season-card__step {
@@ -490,9 +491,11 @@
 }
 .season-card__tile b {
   font-size: 24px;
+  line-height: 1.15;
 }
 .season-card__tile small {
   font-size: 19px;
+  line-height: 1.15;
   color: var(--app-muted);
 }
 .season-card__depth {

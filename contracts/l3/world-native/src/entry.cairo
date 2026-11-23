@@ -2,7 +2,6 @@ use starknet::ContractAddress;
 
 #[starknet::interface]
 pub trait ILedgerOperator<T> {
-    fn configure_deposits(ref self: T, game_id: u32, source: crate::deposits::DepositSource);
     fn deposit_source(self: @T, game_id: u32) -> Option<crate::deposits::DepositSource>;
     fn deliver_deposit(
         ref self: T, game_id: u32, deposit: crate::deposits::LordsDeposit, r: felt252, s: felt252, cancel: bool,
@@ -14,28 +13,19 @@ pub trait ILedgerOperator<T> {
     ) -> Option<crate::deposits::PrincipalWithdrawal>;
     fn ledger_operator(self: @T) -> ContractAddress;
     fn set_ledger_operator(ref self: T, operator: ContractAddress);
-    fn publish_frontier_pool(ref self: T, game_id: u32, amount: u128, prize_pool: u128);
-    fn post_frontier_top(ref self: T, game_id: u32, winners: Array<ContractAddress>);
     fn sweep_lords(ref self: T, game_id: u32, structure_id: u64);
-    fn award_frontier_prize(ref self: T, game_id: u32, rank: u16);
     fn frontier_prize(self: @T, game_id: u32) -> FrontierPrize;
-    fn grant_labor(ref self: T, home: LaborHome, day: u64, account: ContractAddress) -> LaborGrant;
-    fn labor_grant(self: @T, home: LaborHome, day: u64) -> Option<LaborGrant>;
 }
 
-// One game-day grant belongs to the home's immutable entry source.
-#[derive(Copy, Drop, Serde, Debug, PartialEq)]
-pub struct LaborHome {
-    pub game_id: u32,
-    pub home: u64,
+#[starknet::interface]
+pub trait IHomeGrants<T> {
+    fn grant_seal(ref self: T, game_id: u32, account: ContractAddress);
+    fn credit_fragments(ref self: T, game_id: u32, credit: crate::fragments::FragmentCredit);
 }
 
-#[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
-pub struct LaborRules {
-    pub amount: u128,
-    pub campaign_essence: u128,
-    pub golden_amount: u128,
-    pub golden_essence: u128,
+#[starknet::interface]
+pub trait IResourceContext<T> {
+    fn resource_context(self: @T, game_id: u32) -> crate::commands::ResourceContext;
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]

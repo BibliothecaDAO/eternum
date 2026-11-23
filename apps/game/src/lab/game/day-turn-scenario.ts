@@ -143,6 +143,7 @@ export const withoutArmies = (store: NativeFactStore): NativeFactStore => {
   const armies = new Set([...store.entries("ExplorerTroops")].map(([, army]) => army.explorer_id));
   const standing = (fact: LabFact) =>
     fact.model === "ExplorerTroops" ||
+    fact.model === "ArmyDay" ||
     (fact.model === "TileOccupancy" && armies.has(BigInt((fact.value as { entity_id: string }).entity_id)));
   const kept = new NativeFactStore();
   kept.applyFacts(rowsOf(store).filter((fact) => !standing(fact)) as never);

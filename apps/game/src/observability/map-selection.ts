@@ -20,6 +20,10 @@ interface MapSelectionSnapshot {
   hovered: { id: number; ownedByViewer: boolean; selectedHolding: boolean } | null;
   /** The camera target in contract hexes, used to check map links and the realm site after a day turn. */
   camera: { col: number; row: number } | null;
+  /** How many of each site kind the map draws a model for (the Deep's sites by `deep:<position>`), for the sites' proof. */
+  drawnSites: Record<string, number>;
+  /** The contract hex each drawn Deep site model stands on, by the same keys (the proof walks the camera to each). */
+  siteHexes: Record<string, { col: number; row: number }>;
   /** The layer the map shows: the depth below (true) or the surface. */
   layer: boolean;
   /** Where the screen draws the selected hex (page px): a tapped chest, once a phone's camera has framed it. */

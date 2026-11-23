@@ -2,7 +2,7 @@ import { safeInteger } from "../utils/safe-integer";
 import { nativeModelDefinition } from "./native-models";
 import { nativePlay } from "./native-submission";
 import { invalidateGameplayNonce } from "./submit";
-import { EternumProvider, type TransactionType } from "@bibliothecadao/provider";
+import { EternumProvider } from "@bibliothecadao/provider";
 import { NativeFactStore } from "./native-fact-store";
 import {
   ContractAddress,
@@ -28,7 +28,7 @@ import { setGameScope } from "./game-scope";
 import { createHeraldGameSyncSession, type GameClientObserver } from "./herald-session";
 import type { PlayerNameResolver } from "../utils/entities";
 import { createGameViews, type GameViews } from "./views";
-import { type Shard } from "./shard";
+import { type Shard, type ShardReleaseMismatchError } from "./shard";
 import { followGameRelease } from "./game-release";
 import { waitForActionOutcome, type ActionOutcome } from "./transaction-outcome";
 
@@ -44,7 +44,6 @@ export interface CreateGameClientInput {
   bindings: NativeWorldBindings;
   shard: Shard;
   gameId: number;
-  presetId: number;
   authHandler?: SystemCallAuthHandler;
   scheduler: GameSyncScheduler;
   socketFactory?: (url: string) => HeraldSocket;
@@ -62,7 +61,6 @@ export interface CreateGameClientInput {
 export interface GameClient {
   shard: Shard;
   gameId: number;
-  presetId: number;
   setup: GameClientSetup;
   runtime: GameSyncRuntime;
   projection: WorldSpatialProjection;
@@ -110,8 +108,8 @@ export async function createGameClient(input: CreateGameClientInput): Promise<Ga
 }
 
 /** setActiveGame disposes the previous game's runtime, so it must run before this game's session starts. */
-const selectGame = ({ gameId, presetId }: CreateGameClientInput): void => {
-  configManager.setActiveGame(gameId, presetId);
+const selectGame = ({ gameId }: CreateGameClientInput): void => {
+  configManager.setActiveGame(gameId);
   setGameScope(gameId);
 };
 
@@ -134,10 +132,12 @@ const startSync = async (
   transport: HeraldGameSyncTransport;
   waitForAction: GameClient["waitForAction"];
 }> => {
+  let releaseFailure: ShardReleaseMismatchError | undefined;
   const release = followGameRelease(
     setupResult.store,
     { gameId: input.gameId, shard: input.shard, schemaIdentity: input.bindings.schemaIdentity },
     (error) => {
+      releaseFailure = error;
       input.observer?.onLiveApplyFailed?.(error);
       disposeRuntime(runtime);
     },
@@ -169,8 +169,12 @@ const startSync = async (
     outcomes.abort(new Error("Game client disposed"));
   };
   runtime.subscribeResynced(() => input.observer?.onResynced?.());
-  await runtime.startSession(session);
-  await release.ready();
+  try {
+    await runtime.startSession(session);
+    await release.ready();
+  } catch (error) {
+    throw releaseFailure ?? error;
+  }
   // Chain time must be known before the first spatial projection reads it.
   await runtime.waitForConfirmedHead();
   const submit = nativePlay(
@@ -208,12 +212,7 @@ const routeActionOutcomes = (
   stopped: AbortSignal,
 ): GameClient["waitForAction"] => {
   const { provider } = setupResult.network;
-  const wait = (
-    transactionHash: string,
-    inBlock?: Promise<void>,
-    transactionType?: TransactionType,
-    startedAt?: number,
-  ) =>
+  const wait = (transactionHash: string, inBlock?: Promise<void>, startedAt?: number) =>
     waitForActionOutcome(
       runtime,
       provider.provider,
@@ -221,7 +220,6 @@ const routeActionOutcomes = (
       transactionHash,
       stopped,
       inBlock,
-      transactionType,
       startedAt,
     );
   provider.setTransactionStreamWaiter(wait, (transactionHash) => runtime.recordSubmittedTransaction(transactionHash));
@@ -258,7 +256,6 @@ const buildGameClient = (
   const client: GameClient = {
     shard: input.shard,
     gameId: input.gameId,
-    presetId: input.presetId,
     setup: setupResult,
     runtime,
     projection,

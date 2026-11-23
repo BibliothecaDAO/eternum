@@ -1,9 +1,17 @@
 import { nativeResearchConstants as research } from "@bibliothecadao/eternum/game-client";
 import { describe, expect, it } from "vitest";
 
-import { readArmyDetail } from "../army/army-detail";
-import { EARLY_ARMY, EARLY_REALM, MID_REALM, VETERAN_ARMY } from "./progression-fixture";
-import { canResearchNow, firstMissing, needLine, readResearchTree, type RealmResearchFacts } from "./research-tree";
+import { EARLY_REALM, MID_REALM } from "./progression-fixture";
+import {
+  canResearchNow,
+  firstMissing,
+  needLine,
+  readResearchTree,
+  researchActionName,
+  researchEffectLine,
+  researchVerb,
+  type RealmResearchFacts,
+} from "./research-tree";
 
 const node = (realm: RealmResearchFacts, key: string) => readResearchTree(realm).find((item) => item.key === key)!;
 const why = (realm: RealmResearchFacts, key: string) => {
@@ -16,145 +24,58 @@ describe("the castle's tree as the contract rules it", () => {
     expect(readResearchTree(EARLY_REALM).map(({ key, state }) => [key, state])).toEqual([
       ["row-0", "short"],
       ["row-1", "locked"],
-      ["row-3", "ready"],
-      ["row-2", "short"],
+      ["row-2", "locked"],
       ["row-4", "locked"],
-      ["row-5", "locked"],
       ["row-6", "locked"],
-      ["row-7", "locked"],
-      ["shrine", "short"],
+      ["row-5", "locked"],
       ["well", "short"],
-      ["reach-1", "short"],
-      ["reach-2", "locked"],
-      ["reach-3", "locked"],
+      ["shrine", "locked"],
+      ["spire", "locked"],
     ]);
-    expect(why(EARLY_REALM, "row-0")).toBe("Essence 300 / 500");
-    expect(why(EARLY_REALM, "row-1")).toBe("Build a Workshop");
-    // A training building can only stand once the Barracks row is rare.
-    expect(why(EARLY_REALM, "row-4")).toBe("Barracks 0/2 purchases first");
-    expect(why(EARLY_REALM, "reach-2")).toBe("Ethereal I first");
-    expect(canResearchNow(readResearchTree(EARLY_REALM))).toBe(true);
+    expect(why(EARLY_REALM, "row-0")).toBe("Needs 500 Essence");
+    expect(why(EARLY_REALM, "row-1")).toBe("Needs a Workshop");
+    expect(why(EARLY_REALM, "row-2")).toBe("Needs the Realm at City");
+    expect(why(EARLY_REALM, "row-4")).toBe("Needs the Realm at Kingdom");
+    expect(why(EARLY_REALM, "row-5")).toBe("Needs the Realm at Kingdom");
+    expect(why({ ...EARLY_REALM, castleLevel: 2 }, "row-5")).toBe("Needs a Supply yard");
+    expect(why(EARLY_REALM, "well")).toBe("Needs 2,500 Essence");
+    expect(why(EARLY_REALM, "shrine")).toBe("Needs Well lore first");
+    expect(why(EARLY_REALM, "spire")).toBe("Needs Shrine lore first");
+    expect(canResearchNow(readResearchTree(EARLY_REALM))).toBe(false);
   });
 
-  it("locks a tier whose labor the castle's store cannot hold, naming the level that holds it", () => {
-    // Barracks epic costs 24,000 labor; a City's labor store holds 18,000, a Kingdom's 50,000.
-    const barracks = node(MID_REALM, "row-2");
-    expect(barracks.state).toBe("ready");
-    expect(barracks.sides?.[0].state).toBe("ready");
-    expect(barracks.sides?.[0].price).toEqual({ essence: 16000, labor: 9000 });
-    expect(barracks.sides?.[1]).toMatchObject({ state: "ready", price: { essence: 2000, labor: 1500 } });
-  });
-
-  it("opens the training rows once the Barracks is rare, and prices each next tier from the game's prices", () => {
-    const warHall = node(MID_REALM, "row-4");
-    expect([warHall.state, warHall.price]).toEqual(["ready", { essence: 16_000, labor: 3_000 }]);
-    expect(why(MID_REALM, "row-5")).toBe("Build a Supply yard");
+  it("prices Logistics from the active preset without a Barracks prerequisite", () => {
+    const supplyYard = node(MID_REALM, "row-5");
+    expect([supplyYard.state, supplyYard.price]).toEqual(["ready", { essence: 10_000, labor: 2_500 }]);
     expect([node(MID_REALM, "row-0").state, node(MID_REALM, "row-0").price]).toEqual([
       "ready",
       { essence: 1_000, labor: 1_000 },
     ]);
-    expect(node(MID_REALM, "shrine").state).toBe("done");
-    expect(node(MID_REALM, "row-2").gate).toEqual({
-      name: "Barracks 2/2 purchases",
-      met: true,
-      line: "Training buildings open",
-    });
+    expect([node(MID_REALM, "well").state, node(MID_REALM, "shrine").state]).toEqual(["done", "done"]);
+    expect([node(MID_REALM, "spire").name, node(MID_REALM, "spire").price]).toEqual([
+      "Spire lore",
+      { essence: 10_000, labor: 0 },
+    ]);
     expect(canResearchNow(readResearchTree(MID_REALM))).toBe(true);
   });
 
-  it("counts the owner's one Barracks purchase toward the training gate, and opens it on a second on either side", () => {
-    // Prod, 4 November: Drill I bought, Rations none; the contract refuses a War hall until a second purchase.
-    const barracks = (sides: number[]) => ({
-      ...EARLY_REALM,
-      learned: { ...EARLY_REALM.learned, [research.ROW_BARRACKS]: { tier: 1, sides } },
-    });
-    expect(why(barracks([0]), "row-4")).toBe("Barracks 1/2 purchases first");
-    expect(node(barracks([0]), "row-2").gate).toMatchObject({ name: "Barracks 1/2 purchases", met: false });
-    expect(node(barracks([0, 1]), "row-2").gate).toMatchObject({ name: "Barracks 2/2 purchases", met: true });
+  it("gives a Farm tier its output figure now and with the next tier", () => {
+    const farm = node(MID_REALM, "row-0");
+    expect(farm.gives).toEqual({ line: "Farm wheat", now: "120%", next: "140%" });
+    expect(farm.figures).toEqual([{ icon: "fields", name: "Fields", line: "Farm wheat", now: "120%", next: "140%" }]);
+    expect(researchEffectLine(farm)).toBe("120% → 140%");
   });
 
-  it("gives a Farm tier's two sides their figures now and with one more pick, and the lodge its three kinds", () => {
-    // Fields and Granary taken once each: +25% wheat and +50% store; one more of either adds a step.
-    expect(node(MID_REALM, "row-0").sides?.map(({ name, now, next }) => [name, now, next])).toEqual([
-      ["Fields", "+20%", "+40%"],
-      ["Granary", "+40%", "+80%"],
-    ]);
-    // The lodge's uncommon went to rifts (+10%); its rare adds 20% more to the kind picked.
-    expect(node(MID_REALM, "row-6").sides?.map(({ name, now, next }) => [name, now, next])).toEqual([
-      ["Rifts", "+10%", "+25%"],
-      ["Trolls", "0%", "+15%"],
-      ["Sanctuaries", "0%", "+15%"],
-    ]);
+  it("says what a finished Farm gives, with nothing left to buy", () => {
+    const farm = node({ ...MID_REALM, learned: { ...MID_REALM.learned, 0: { tier: 5 } } }, "row-0");
+    expect([farm.state, farm.price, farm.nextTier]).toEqual(["done", undefined, undefined]);
+    expect(farm.gives).toEqual({ line: "Farm wheat", now: "200%", next: undefined });
+    expect(researchEffectLine(farm)).toBe("200%");
   });
-
-  it("says what a finished Farm's picks give, read from its two sides", () => {
-    // Both Farm sides are complete: four Fields picks and four Granary picks.
-    const legendary = {
-      ...MID_REALM,
-      learned: { ...MID_REALM.learned, 0: { tier: 5, sides: [0, 0, 0, 0, 0, 1, 1, 1, 1, 1] } },
-    };
-    const farm = node(legendary, "row-0");
-    expect(farm.state).toBe("done");
-    expect(farm.sides?.map((side) => side.state)).toEqual(["done", "done"]);
-    expect(farm.gives).toEqual({ line: "Fields +100%", now: "Granary +200%" });
-  });
-});
-
-describe("Frontier's camp is its Troll on the progression views (the shared structure naming rule)", () => {
-  it("names the Scouts' lodge's camp kind Trolls, and nothing in the tree Camp", () => {
-    const lodge = node(MID_REALM, "row-6");
-    expect(lodge.sides?.find(({ name }) => name === "Trolls")?.line).toBe("Found more");
-    // Internal keys and icons stay "camp"; no word a player reads says Camp.
-    expect(JSON.stringify(readResearchTree(MID_REALM))).not.toMatch(/Camp/);
-  });
-
-  it("names the army's Scouting kind by the Troll", () => {
-    const army = readArmyDetail({ ...VETERAN_ARMY, progress: { ...VETERAN_ARMY.progress, scoutingKinds: ["camp"] } });
-    expect(army.attributes.find(({ key }) => key === "scouting")?.now).toBe("+10% discovery on Trolls");
-    expect(JSON.stringify(army)).not.toMatch(/Camp/);
-  });
-});
-
-describe("an army's detail as progression rules it", () => {
-  it("reads the owner's army: 12 of the 75 XP its first point needs, nothing to buy yet", () => {
-    const army = readArmyDetail(EARLY_ARMY);
-    expect([army.goal, army.available]).toEqual([{ rank: 1, at: 75, from: 0, share: 0.16 }, 0]);
-    expect(army.attributes.map(({ name, now, next }) => [name, now, next?.change])).toEqual([
-      ["Battle", "0% damage", "0% → +10% damage"],
-      ["Logistics", "120 max stamina", "120 → 140 max stamina"],
-      ["Scouting", "0% discovery", "0% discovery · +10% on the kind you pick"],
-      ["Homecoming", "0% come home", "0% → 3% come home"],
-    ]);
-  });
-
-  it("prices each attribute's next level by its own level, and counts what the XP buys now", () => {
-    const army = readArmyDetail(VETERAN_ARMY);
-    expect(army.attributes.map(({ name, next }) => [name, next?.point])).toEqual([
-      ["Battle", 3],
-      ["Logistics", 1],
-      ["Scouting", 1],
-      ["Homecoming", 1],
-    ]);
-    expect(army.available).toBe(2);
-  });
-});
-
-it("keeps the cheaper side open after the other reaches Legendary and displays the highest tier", () => {
-  const realm = { ...MID_REALM, learned: { ...MID_REALM.learned, 0: { tier: 5, sides: [0, 0, 0, 0, 0] } } };
-  const farm = node(realm, "row-0");
-  expect(farm).toMatchObject({ tier: 5, state: "ready", price: { essence: 500, labor: 500 } });
-  expect(farm.sides?.map(({ tier, state }) => [tier, state])).toEqual([
-    [5, "done"],
-    [0, "ready"],
-  ]);
-  expect(
-    node({ ...realm, learned: { ...realm.learned, 0: { tier: 5, sides: [0, 0, 0, 0, 0, 1, 1, 1, 1, 1] } } }, "row-0")
-      .state,
-  ).toBe("done");
 });
 
 it("requires construction for the first training level, with no separate research purchase", () => {
-  for (const row of [4, 5, 6, 7]) {
+  for (const row of [research.ROW_SUPPLY_YARD, research.ROW_CONSCRIPTION, research.ROW_RATIONS]) {
     const training = node(EARLY_REALM, `row-${row}`);
     expect(training.price).toBeUndefined();
     expect(training.nextTier).toBe(1);
@@ -164,14 +85,77 @@ it("requires construction for the first training level, with no separate researc
   }
 });
 
-// Owner, 30 October 2026: "bit loo long on mobile as well". A side's or figure's line stands on one line in a phone's
-// side button (measured at 390 px: "Barracks troops" and "Wheat per troop" fit), the gate's in one short line.
 it("keeps every research line short enough for one line on a phone", () => {
   for (const realm of [EARLY_REALM, MID_REALM]) {
     for (const each of readResearchTree(realm)) {
-      for (const line of [...(each.sides ?? []), ...each.figures].map((figure) => figure.line))
-        expect(line.length, line).toBeLessThanOrEqual(16);
-      if (each.gate) expect(each.gate.line.length, each.gate.line).toBeLessThanOrEqual(30);
+      for (const line of each.figures.map((figure) => figure.line)) expect(line.length, line).toBeLessThanOrEqual(16);
     }
   }
+});
+
+it("offers independent Camp and Depot upgrades with their exact next output and wheat cost", () => {
+  const realm: RealmResearchFacts = {
+    ...MID_REALM,
+    castleLevel: 2,
+    standing: { ...MID_REALM.standing, [research.ROW_CONSCRIPTION]: 1, [research.ROW_RATIONS]: 1 },
+    learned: {
+      ...MID_REALM.learned,
+      [research.ROW_CONSCRIPTION]: { tier: 1 },
+      [research.ROW_RATIONS]: { tier: 3 },
+    },
+  };
+  expect(node(realm, `row-${research.ROW_CONSCRIPTION}`)).toMatchObject({
+    name: "Conscription Camp",
+    tier: 1,
+    price: { essence: 5000, labor: 1000 },
+    gives: { now: "120 troops an hour", next: "140 troops an hour" },
+    figures: [{ name: "Troops an hour", line: "At each Barracks", now: "120", next: "140" }],
+  });
+  expect(node(realm, `row-${research.ROW_RATIONS}`)).toMatchObject({
+    name: "Rations Depot",
+    tier: 3,
+    price: { essence: 25000, labor: 5000 },
+    gives: { now: "1.4 wheat per troop", next: "1.2 wheat per troop", direction: "lower" },
+    figures: [{ name: "Wheat per troop", line: "On each deploy", now: "1.4", next: "1.2" }],
+  });
+  expect(researchEffectLine(node(realm, `row-${research.ROW_CONSCRIPTION}`))).toBe(
+    "120 troops an hour → 140 troops an hour",
+  );
+  expect(researchEffectLine(node(realm, `row-${research.ROW_RATIONS}`))).toBe(
+    "1.4 wheat per troop → 1.2 wheat per troop (less)",
+  );
+  expect(researchEffectLine(node(EARLY_REALM, "well"))).toBe("None → 40% max stamina each");
+  expect(researchEffectLine(node({ ...EARLY_REALM, essence: 2_500 }, "well"))).toBe("None → 40% max stamina each");
+  expect(researchEffectLine(node(MID_REALM, "spire"))).toBe("Closed → Open");
+});
+
+it("shows only Knight slots at Settlement and each troop's three exact purchases at City", () => {
+  const rows = [research.ROW_KNIGHT_OATHS, research.ROW_SCOUT_OATHS, research.ROW_CROSSBOW_OATHS];
+  expect(
+    readResearchTree(EARLY_REALM)
+      .filter(({ row }) => rows.some((value) => value === row))
+      .map(({ row }) => row),
+  ).toEqual([research.ROW_KNIGHT_OATHS]);
+  for (const row of rows) {
+    const realm = { ...MID_REALM, essence: 200000, labor: 40000, laborStore: () => 80000, standing: { [row]: 1 } };
+    for (let tier = 0; tier <= 3; tier++) {
+      const result = node({ ...realm, learned: { [row]: { tier } } }, `row-${row}`);
+      expect(result.maxTier).toBe(3);
+      expect(result.gives.now).toBe(`${tier + 2} Oath slots`);
+      expect(result.gives.next).toBe(tier === 3 ? undefined : `${tier + 3} Oath slots`);
+      expect(result.price).toEqual(
+        [{ essence: 5000, labor: 1000 }, { essence: 35000, labor: 7500 }, { essence: 150000, labor: 35000 }, undefined][
+          tier
+        ],
+      );
+      expect(result.state).toBe(tier === 3 ? "done" : "ready");
+    }
+  }
+});
+
+it("uses one Upgrade verb across building and oath rows while naming Oath slots explicitly", () => {
+  expect(researchVerb(research.ROW_FARM)).toBe("Upgrade");
+  expect(researchVerb(research.ROW_KNIGHT_OATHS)).toBe("Upgrade Oath slots");
+  expect(researchActionName({ row: research.ROW_FARM, name: "Farm" })).toBe("Upgrade Farm");
+  expect(researchActionName({ row: research.ROW_KNIGHT_OATHS, name: "Barracks" })).toBe("Upgrade Barracks Oath slots");
 });

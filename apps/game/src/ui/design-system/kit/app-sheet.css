@@ -387,6 +387,9 @@
 }
 .app-tabs__tab {
   position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: theme(spacing[1.5]);
   height: calc(var(--app-control) - 10px);
   border-radius: calc(var(--app-radius-control) - 4px);
   padding: 0 clamp(theme(spacing.2), 3vw, theme(spacing.5));
@@ -403,6 +406,13 @@
   background: var(--app-surface-2);
   color: var(--app-ink);
   box-shadow: inset 0 0 0 1px var(--app-line-strong);
+}
+.app-tabs__tab[data-aspect-id]:is(:hover, [data-state="hover"]) {
+  box-shadow: inset 0 0 0 1px rgb(var(--app-aspect) / 0.7);
+}
+.app-tabs__tab[data-aspect-id][aria-selected="true"] {
+  background: rgb(var(--app-aspect) / 0.16);
+  box-shadow: inset 0 0 0 1px rgb(var(--app-aspect));
 }
 .app-tabs__dot {
   position: absolute;
@@ -1068,6 +1078,19 @@ button.app-board__row:is(:hover, [data-state="hover"]) {
   white-space: normal;
   text-align: center;
 }
+.app-choice__tag {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
+  border-radius: var(--app-radius-control);
+  background: rgb(var(--app-gold));
+  padding: 0 theme(spacing.2);
+  color: var(--app-dark);
+  font-size: var(--app-text-label);
+  font-weight: var(--app-weight-strong);
+}
 .app-choice__title {
   font-family: var(--app-face-strong);
   font-size: var(--app-text-strong);
@@ -1307,111 +1330,119 @@ button.app-board__row:is(:hover, [data-state="hover"]) {
   padding: theme(spacing.2) theme(spacing.5) theme(spacing.5);
 }
 
-/* ── Ticket: a campaign's flyer in small, sealed, then turned over once; gold under rays when golden. ── */
-/* The ticket's room: as wide as its column, where the golden rays end at the sides, so they never push a phone's page
-   sideways; above and below they spread free. */
-.app-ticket-room {
-  display: flex;
-  width: 100%;
-  justify-content: center;
-  overflow-x: clip;
-}
-.app-ticket {
-  position: relative;
-  isolation: isolate;
-  width: min(100%, 20rem);
-  perspective: 900px;
-}
-.app-ticket[data-face="golden"]::before {
-  content: "";
-  position: absolute;
-  inset: -50%;
-  z-index: -1;
-  /* The rays spread past the ticket, over its window's head on a phone: a press there reaches the window's cross. */
-  pointer-events: none;
-  background: repeating-conic-gradient(rgb(var(--app-gold) / 0.22) 0deg 8deg, transparent 8deg 22deg);
-  mask-image: radial-gradient(closest-side, black 30%, transparent);
-  animation: app-ticket-rays 600ms var(--app-ease) both;
-}
-.app-ticket__card {
-  overflow: hidden;
-  border-radius: var(--app-radius-panel);
-  background: var(--app-ink);
-  color: var(--app-dark);
-  box-shadow: var(--app-shadow-dialog);
-  text-align: center;
-}
-.app-ticket:not([data-face="sealed"]) .app-ticket__card {
-  animation: app-ticket-turn 520ms var(--app-ease) both;
-}
-.app-ticket[data-face="golden"] .app-ticket__card {
-  background: linear-gradient(160deg, color-mix(in srgb, rgb(var(--app-gold)) 70%, white), rgb(var(--app-gold)));
-}
-.app-ticket__art {
-  display: grid;
-  place-items: center;
-  padding: theme(spacing.3);
-  background: var(--app-surface);
-}
-.app-ticket__line {
-  padding: theme(spacing.5) theme(spacing.4) theme(spacing.4);
-  font-family: var(--app-face-title);
-  font-size: var(--app-text-heading);
-  line-height: var(--app-leading-heading);
-}
-/* A short phone (a browser's toolbars showing): the art draws smaller, so the ticket, what it claims and its verb fit one
-   screen. */
-@media (max-height: 720px) {
-  .app-ticket__art {
-    padding: theme(spacing.2);
-  }
-  .app-ticket__art img {
-    width: auto;
-    height: 5.5rem;
-  }
-  .app-ticket__line {
-    padding: theme(spacing.3) theme(spacing.4) theme(spacing.3);
-  }
-}
-@media (max-height: 640px) {
-  .app-ticket__art img {
-    height: 4rem;
-  }
-}
-.app-ticket__stub {
-  border-top: 2px dashed rgb(0 0 0 / 0.45);
-  padding: theme(spacing.2) theme(spacing.4) theme(spacing.3);
-  font-family: var(--app-face-label);
-  font-size: var(--app-text-label);
-  font-weight: var(--app-weight-label);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-@keyframes app-ticket-turn {
-  0% {
-    transform: rotateY(90deg);
-  }
-  100% {
-    transform: rotateY(0deg);
-  }
-}
-@keyframes app-ticket-rays {
-  0% {
-    opacity: 0;
-    transform: scale(0.6);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .app-skeleton > i {
     animation: none;
   }
-  .app-ticket[data-face="golden"]::before,
-  .app-ticket:not([data-face="sealed"]) .app-ticket__card {
-    animation: none;
+}
+
+.app-aspect-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: theme(spacing[2.5]);
+  padding-top: theme(spacing.1);
+}
+@media (min-width: 1024px) {
+  .app-aspect-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: theme(spacing.4);
   }
+}
+.app-aspect-card {
+  position: relative;
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  justify-content: flex-start;
+  overflow: hidden;
+  border: 2px solid rgb(var(--app-aspect) / 0.45);
+  border-radius: var(--app-radius-panel);
+  background: var(--app-ground);
+  box-shadow: inset 0 3px 0 rgb(var(--app-aspect));
+  text-align: center;
+  transition:
+    border-color var(--app-fast) var(--app-ease),
+    transform var(--app-fast) var(--app-ease);
+}
+.app-aspect-card:is(:hover, [data-state="hover"]):not(:disabled) {
+  border-color: rgb(var(--app-aspect) / 0.85);
+  transform: translateY(-2px);
+}
+.app-aspect-card[aria-pressed="true"] {
+  border-color: rgb(var(--app-aspect));
+  box-shadow:
+    0 0 0 1px rgb(var(--app-aspect)),
+    inset 0 3px 0 rgb(var(--app-aspect));
+}
+.app-aspect-card:disabled:not([aria-pressed="true"]) {
+  opacity: 0.45;
+}
+.app-aspect-card:focus-visible {
+  outline: none;
+  box-shadow: var(--app-focus);
+}
+.app-aspect-card .app-choice__tag {
+  top: theme(spacing.2);
+  z-index: 2;
+  transform: translateX(-50%);
+}
+.app-aspect-card__art {
+  display: block;
+  width: 100%;
+  height: 3.5rem;
+  flex: none;
+  object-fit: cover;
+  object-position: center 22%;
+  mask-image: linear-gradient(180deg, black 72%, transparent 100%);
+}
+@media (min-width: 1024px) {
+  .app-aspect-card__art {
+    height: 15.5rem;
+  }
+}
+.app-aspect-card__body {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: 100%;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 2px theme(spacing.2) theme(spacing.2);
+}
+@media (min-width: 1024px) {
+  .app-aspect-card__body {
+    gap: theme(spacing.2);
+    padding: theme(spacing.2) theme(spacing.3) theme(spacing.4);
+  }
+}
+.app-aspect-card__name {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: theme(spacing[1.5]);
+  font-family: var(--app-face-title);
+  font-size: var(--app-text-heading);
+  line-height: var(--app-leading-heading);
+  color: var(--app-ink);
+}
+@media (min-width: 1024px) {
+  .app-aspect-card__name {
+    font-size: var(--app-text-title);
+    line-height: var(--app-leading-title);
+  }
+}
+.app-aspect-card__orders {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: theme(spacing.1);
+}
+.app-aspect-card__meta {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  align-items: center;
+  gap: theme(spacing[0.5]);
 }

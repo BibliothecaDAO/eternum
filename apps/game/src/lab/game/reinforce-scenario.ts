@@ -1,3 +1,4 @@
+import { reinforcementSource } from "@/ui/features/frontier/army/reinforce-plan";
 import { SPIRE_ARMY, SPIRE_ARMY_TILE_KEY, SPIRE_DAY_NOW } from "@/ui/features/frontier/spire-fixture";
 import {
   expeditionSpireTile,
@@ -54,8 +55,11 @@ const RECRUIT_EXPLORER = 2n;
 /** A ManageTroops RecruitExplorer, as its span reads: [command, RecruitExplorer, explorer, amount]; null otherwise. */
 const readRecruit = (command: LabCommand) => {
   if (command.kind !== "ManageTroops") return null;
-  const [, variant, explorerId, amount] = command.calldata.slice(4).map(BigInt);
-  return variant === RECRUIT_EXPLORER ? { explorerId, amount } : null;
+  const [, variant, explorerId, amount, option, site] = command.span.map(BigInt);
+  if (variant !== RECRUIT_EXPLORER) return null;
+  if (option !== 0n && option !== 1n) throw new Error("Missing reinforcement source");
+  if (option === 0n && site === undefined) throw new Error("Missing supply post id");
+  return { explorerId, amount, supplyPost: option === 0n ? Number(site) : undefined };
 };
 
 /** recruit_explorer: the army holds what is added; its realm pays the troops from its stock and their raise. */
@@ -63,6 +67,9 @@ const answerRecruit = (command: LabCommand, chain: NativeFactStore, now: number)
   const recruit = readRecruit(command);
   if (!recruit) return null;
   const [key, army] = [...chain.entries("ExplorerTroops")].find(([, row]) => row.explorer_id === recruit.explorerId)!;
+  const realm = chain.require("Structure", { game_id: army.game_id, entity_id: army.owner });
+  if (!reinforcementSource(chain, realm, Number(army.explorer_id), now, recruit.supplyPost))
+    throw new Error("Army is not beside its supply source");
   const troop = getTroopResourceId(army.troops.category as TroopType, army.troops.tier as TroopTier);
   const whole = Number(recruit.amount / BigInt(RESOURCE_PRECISION));
   const raise = readTroopRaiseCost(chain, 1, Number(army.owner), troop, whole, now);

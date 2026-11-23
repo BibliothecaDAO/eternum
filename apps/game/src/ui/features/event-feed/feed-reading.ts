@@ -1,12 +1,11 @@
 import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
 import { troopMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { type IconMeaning, resourceMeaning } from "@/ui/design-system/icon-meaning";
-import { attributeMark, type AttributeKey } from "@/ui/features/frontier/army/army-detail";
+
 import { configManager, findGain, siteDisplayName } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import {
   buildingName,
-  CHEST_EARNED,
   fightVerdict,
   formatCharge,
   formatGain,
@@ -14,7 +13,6 @@ import {
   resourceName,
   type ResourcesIds,
   scaledToUnits,
-  StructureType,
   VERDICT_WORDS,
 } from "@bibliothecadao/types";
 
@@ -38,8 +36,6 @@ export interface ToldReading {
   outcome?: { word: string; tone: "good" | "bad" | "neutral" };
   /** What it paid, as its story's rule writes it: a find under a unit pays nothing to show (findGain). */
   reward?: { amountText: string; icon: IconMeaning; name: string };
-  /** The site whose clear this is: the row also says the XP the clear paid, as the site's receipt does. */
-  clearOf?: number;
 }
 
 /**
@@ -83,9 +79,7 @@ export const readFeedStory = (story: ProcessedStoryEvent, store: NativeFactStore
         actor,
         verb: "cleared",
         object: siteObject(payload.site_id),
-        outcome: Number(payload.category) === StructureType.Ruin ? { word: CHEST_EARNED, tone: "good" } : undefined,
         reward: reward ? paid(reward.resource_type, reward.amount, formatGain) : undefined,
-        clearOf: Number(payload.site_id),
       };
     }
     case "BattleEvent": {
@@ -112,16 +106,6 @@ export const readFeedStory = (story: ProcessedStoryEvent, store: NativeFactStore
         object: {
           name: story.presentation.description ?? "an army",
           icon: troopMeaning({ category: String(payload.category), tier: String(payload.tier) }),
-        },
-      };
-    case "SkillPointSpent":
-      return {
-        actor,
-        verb: "spent a point on",
-        // The attribute and its rank as the story says them: "Logistics [II]".
-        object: {
-          name: story.presentation.ranked?.title ?? story.presentation.title,
-          icon: skillPointIcon(payload.choice),
         },
       };
     case "TroopsTransferred":
@@ -185,9 +169,4 @@ const siteAt = (coord: unknown, store: NativeFactStore) => {
 const siteObject = (entityId: unknown): ToldReading["object"] => {
   const id = Number(entityId);
   return { name: siteDisplayName(id), site: id };
-};
-
-const skillPointIcon = (choice: unknown): IconMeaning => {
-  const name = typeof choice === "string" ? choice : Object.keys((choice ?? {}) as object)[0];
-  return name === "Stamina" ? "stamina" : attributeMark(String(name).toLowerCase() as AttributeKey);
 };

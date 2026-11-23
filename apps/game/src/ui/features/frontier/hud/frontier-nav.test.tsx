@@ -4,13 +4,12 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 import { useUIStore } from "@/hooks/store/use-ui-store";
 
-import { FrontierNav, type HudSurface } from "./frontier-nav";
+import { PhoneWorldActions, type HudSurface } from "./frontier-nav";
 import { useOnePanel } from "./one-panel";
+import { SurfaceDeepSwitch } from "./surface-deep-switch";
 
-vi.mock("@/hooks/helpers/use-home-kind", () => ({ useHomeKind: () => "realm" }));
 vi.mock("@/hooks/helpers/use-query", () => ({ useQuery: () => ({ isMapView: true }) }));
 vi.mock("../frontier-home", () => ({ useGoToFrontierPlace: () => vi.fn() }));
-vi.mock("../realm-stores", () => ({ useRealmStores: () => null, realmDot: () => undefined }));
 vi.mock("../research/research-facts", () => ({ useResearchTree: () => null }));
 vi.mock("../research/research-tree", () => ({ canResearchNow: () => false }));
 
@@ -39,16 +38,8 @@ function PhoneHud({ open }: { open: HudSurface }) {
   return (
     <>
       <output data-page>{surface ?? "map"}</output>
-      <FrontierNav
-        rules={{} as never}
-        realm={null}
-        board={null}
-        layers={{ layers: [0, 1, 2], shown: 2, go }}
-        surface={surface}
-        onSurface={openSurface}
-        events={0}
-        unread={0}
-      />
+      <SurfaceDeepSwitch layers={{ layers: [0, 1, 2], shown: 2, go }} onSwitch={() => openSurface(null)} />
+      <PhoneWorldActions surface={surface} onSurface={openSurface} events={0} unread={0} />
       <button onClick={() => openSurface(open)}>Open page</button>
     </>
   );
@@ -71,20 +62,29 @@ it.each(["research", "feed", "chat", "menu"] as const)(
     act(() => root.render(<PhoneHud open={open} />));
     press("Open page");
     expect(page()).toBe(open);
-    press("Ethereal II");
-    choose("World");
-    expect(go).toHaveBeenCalledWith(0);
+    press("Hollow");
+    choose("Veil");
+    expect(go).toHaveBeenCalledWith(1);
     expect(document.querySelector('[role="menu"]')).toBeNull();
     expect(page()).toBe("map");
   },
 );
 
+it("pressing Surface puts the open page away and returns to Surface", () => {
+  go.mockClear();
+  act(() => root.render(<PhoneHud open="research" />));
+  press("Open page");
+  press("Surface");
+  expect(go).toHaveBeenCalledWith(0);
+  expect(page()).toBe("map");
+});
+
 it("choosing the layer already shown puts the page away without moving the map", () => {
   go.mockClear();
   act(() => root.render(<PhoneHud open="research" />));
   press("Open page");
-  press("Ethereal II");
-  choose("Ethereal II");
+  press("Hollow");
+  choose("Hollow");
   expect(go).not.toHaveBeenCalled();
   expect(document.querySelector('[role="menu"]')).toBeNull();
   expect(page()).toBe("map");

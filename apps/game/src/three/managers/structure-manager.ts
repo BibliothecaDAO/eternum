@@ -1,15 +1,17 @@
-import {
-  readRealmSkin,
-  realmSkinModel,
-  isRealmSkinPath,
-  DEVCON_BANNER_ART,
-  type RealmSkin,
-} from "../structures/realm-skins";
-import { FrontierModel, frontierModelKind } from "../structures/frontier-model";
+import { GUARD_MODELS } from "@bibliothecadao/eternum/game-client";
+import { FrontierModel, frontierModelKind, type BeastLayer } from "../structures/frontier-model";
+import type { BeastMotionAction } from "../structures/beast-motion";
 import { nextFrameOrTimeout } from "@/utils/frame-or-timeout";
 import { realmModelIndex, isWonderModelPath } from "../structures/realm-design";
-import { MineKinds, structureName, troopTierIndex } from "@bibliothecadao/types";
-import { configManager, siteDisplayName, siteKindOf, type SiteKind } from "@bibliothecadao/eternum";
+import { MineKinds, orderAspect, structureName, troopTierIndex } from "@bibliothecadao/types";
+import {
+  configManager,
+  expeditionDepth,
+  readExpeditionRules,
+  siteDisplayName,
+  siteKindOf,
+  type SiteKind,
+} from "@bibliothecadao/eternum";
 import {
   FALLEN_REALM_RUIN_MODEL_INDEX,
   frontierBeastModelIndex,
@@ -28,8 +30,8 @@ import { resolveStructureRotationY } from "../structures/structure-orientation";
 import { SettlementModel } from "../structures/settlement-model";
 import { resolveSettlementRelationship } from "../structures/settlement-appearance";
 import { RiftModelPath, isRealmModelPath, isSettlementModelPath } from "../constants/scene-constants";
-import { arePlayersAllied, onSidesChanged, watchedSide } from "@/utils/entity-ownership";
-import { accountAddress, useAccountStore } from "@/hooks/store/use-account-store";
+import { onSidesChanged, watchedSide } from "@/utils/entity-ownership";
+import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { getGameModeConfig } from "@/config/game-modes";
 import type { GameModeConfig } from "@/config/game-modes";
@@ -64,6 +66,7 @@ import type {
   WorldSpatialProjection,
 } from "@bibliothecadao/eternum/game-sync";
 import { BuildingType, ID, StructureType } from "@bibliothecadao/types";
+import { STRUCTURE_GROUND_LIGHTS } from "../structures/structure-ground-lights";
 import { Box3, Euler, Object3D, Scene, Sphere, Vector3 } from "three";
 import type { AttachmentTransform, CosmeticAttachmentTemplate } from "../cosmetics";
 import {
@@ -130,7 +133,6 @@ import {
 } from "../frame-budget-work-queue";
 
 import { HyperstructureModel } from "../structures/hyperstructure-model";
-import { readHyperstructureConstruction } from "../structures/hyperstructure-state";
 
 type StructureModel = InstancedModel | RewardTileModel;
 
@@ -292,8 +294,6 @@ export class StructureManager {
   private pendingVisibleStructureTransitionToken?: number;
   private previousVisibleIds: Set<ID> = new Set(); // Committed visible ownership; also drives point cleanup.
   private visibleStructureWindow?: VisibleStructureWindow;
-  private readonly pendingHyperstructureBuilds = new Set<ID>();
-  // Per-entity StructureInfo; a Structure, StructureBuildings, Hyperstructure, or projection change deletes the entry.
   private readonly structureInfoCache = new Map<ID, StructureInfo>();
   private readonly unpresentableStructures = new Set<ID>();
   private readonly metrics: StructureManagerMetrics = {
@@ -369,7 +369,6 @@ export class StructureManager {
   }
 
   private removeStructurePresentation(entityId: ID): void {
-    this.pendingHyperstructureBuilds.delete(entityId);
     const entityNumericId = safeInteger(entityId);
     this.attachmentManager.removeAttachments(entityNumericId);
     this.activeStructureAttachmentEntities.delete(entityNumericId);
@@ -382,7 +381,6 @@ export class StructureManager {
   }
 
   private handleStructureProjectionChanges(changes: readonly StructureSpatialProjectionChange[]): void {
-    this.trackClaimedHyperstructureSites(changes);
     changes.forEach(({ previous, current }) => {
       this.invalidateStructureInfo(previous?.entityId);
       this.invalidateStructureInfo(current?.entityId);
@@ -395,22 +393,6 @@ export class StructureManager {
     this.metrics.visibleStructureChangeSetUpdates += 1;
     if (refreshEntityIds.size > 0) {
       void this.requestVisibleStructuresRefresh({ refreshEntityIds });
-    }
-  }
-
-  private trackClaimedHyperstructureSites(changes: readonly StructureSpatialProjectionChange[]): void {
-    const bounds = this.visibleStructureWindow?.bounds;
-    if (!bounds) return;
-    const claimedSites = changes.flatMap(({ previous, current }) =>
-      previous?.reserved && !current && isWithinBounds(previous.hexCoords, bounds) ? [previous.hexCoords] : [],
-    );
-    if (claimedSites.length === 0) return;
-    for (const { previous, current } of changes) {
-      if (previous || !current || current.reserved) continue;
-      const { alt, col, row } = current.hexCoords;
-      if (claimedSites.some((site) => site.alt === alt && site.col === col && site.row === row)) {
-        this.pendingHyperstructureBuilds.add(current.entityId);
-      }
     }
   }
 
@@ -431,7 +413,6 @@ export class StructureManager {
         structureWindow.structures.set(entityId, visibleRenderable);
       } else {
         structureWindow.structures.delete(entityId);
-        this.pendingHyperstructureBuilds.delete(entityId);
       }
       if (wasVisible || visibleRenderable) touchedEntityIds.add(entityId);
     });
@@ -452,16 +433,17 @@ export class StructureManager {
     this.storeUnsubscribes.push(
       this.store.subscribe((changes) => {
         const touched = new Set<number>();
-        let refreshAll = changes.length === 0;
+        const refreshAll =
+          changes.length === 0 ||
+          changes.some(
+            (change) =>
+              change.model !== "Guard" &&
+              change.model !== "Structure" &&
+              change.model !== "ExpeditionSite" &&
+              GUARD_MODELS.some((model) => model === change.model),
+          );
         for (const change of changes) {
-          if (change.model === "GuildMember") {
-            if ((change.current ?? change.previous)?.game_id === configManager.getActiveGameId()) refreshAll = true;
-            continue;
-          }
-          if (change.model === "CampaignHome") {
-            const home = change.current ?? change.previous;
-            if (home?.game_id === configManager.getActiveGameId()) touched.add(safeInteger(home.home));
-          } else if (change.model === "Guard") {
+          if (change.model === "Guard") {
             const guard = change.current ?? change.previous;
             if (!guard || guard.game_id !== configManager.getActiveGameId()) continue;
             const structureId = safeInteger(guard.structure_id);
@@ -474,10 +456,7 @@ export class StructureManager {
           } else if (
             change.model === "Structure" ||
             change.model === "ExpeditionSite" ||
-            change.model === "StructureBuildings" ||
-            change.model === "Hyperstructure" ||
-            change.model === "HyperstructureProgress" ||
-            change.model === "HyperstructureShares"
+            change.model === "StructureBuildings"
           ) {
             const row = change.current ?? change.previous;
             if (row?.game_id === configManager.getActiveGameId()) touched.add(safeInteger(row.entity_id));
@@ -511,7 +490,6 @@ export class StructureManager {
         isMine: boolean;
         ownerAddress: bigint;
         structureType: StructureType;
-        realmSkin?: RealmSkin;
         hasWonder: boolean;
       }
     | undefined {
@@ -522,7 +500,6 @@ export class StructureManager {
       isMine: structure.isMine,
       ownerAddress: structure.owner.address,
       structureType: structure.structureType,
-      realmSkin: structure.realmSkin,
       hasWonder: structure.hasWonder,
     };
   }
@@ -581,7 +558,6 @@ export class StructureManager {
         },
         stage: 0,
         level: 0,
-        initialized: false,
         isMine: false,
         isAlly: false,
         owner: { address: 0n, ownerName: "", guildName: "" },
@@ -602,7 +578,6 @@ export class StructureManager {
     const ownerName = this.resolveLiveStructureOwnerName(ownerAddress, "");
     const cosmetic = this.resolveStructureCosmeticSelection({
       owner: ownerAddress,
-      realm: structureComponent,
       structureType: renderInfo.type,
       stage: renderInfo.stage,
     });
@@ -622,10 +597,9 @@ export class StructureManager {
         row: renderable.hexCoords.row - FELT_CENTER(),
       },
       stage: renderInfo.stage,
-      initialized: this.resolveHyperstructureInitialized(renderable.entityId, renderInfo.type),
       level: renderInfo.level,
       isMine: isAddressEqualToAccount(ownerAddress),
-      isAlly: arePlayersAllied(this.store, accountAddress(), ownerAddress),
+      isAlly: false,
       owner: { address: ownerAddress, ownerName, guildName: "" },
       structureType: renderInfo.type,
       mineKind: structureComponent ? presentedMineKind(structureComponent) : undefined,
@@ -633,10 +607,6 @@ export class StructureManager {
       frontierBeast: this.store
         ? readStandingFrontierBeast(this.store, configManager.getActiveGameId(), renderable.entityId)
         : undefined,
-      realmSkin:
-        renderInfo.type === StructureType.Realm && this.store
-          ? readRealmSkin(this.store, structureComponent)
-          : undefined,
       realmOrder: renderInfo.type === StructureType.Realm ? structureComponent?.metadata.order : undefined,
       cosmeticId: cosmetic.skin.cosmeticId,
       cosmeticAssetPaths: cosmetic.skin.assetPaths,
@@ -659,12 +629,6 @@ export class StructureManager {
     return site && !site.clear ? siteKindOf(structureType) : undefined;
   }
 
-  private resolveHyperstructureInitialized(entityId: ID, structureType: StructureType): boolean {
-    if (structureType !== StructureType.Hyperstructure || !this.store) return false;
-    const row = this.store.get("Hyperstructure", { game_id: configManager.getActiveGameId(), entity_id: entityId });
-    return row !== undefined && row.stage !== "Foundation";
-  }
-
   private resolveActiveProductions(entityId: ID): Array<{ buildingCount: number; buildingType: BuildingType }> {
     if (!this.store) return [];
     const buildings = this.store.get("StructureBuildings", {
@@ -683,21 +647,15 @@ export class StructureManager {
     );
   }
 
-  private readGuards(entityId: ID): NativeRows["Guard"][] | undefined {
+  private readGuards(entityId: ID): ReturnType<typeof getGuardsByStructure> {
     if (!this.store) return undefined;
-    const game = configManager.getActiveGameId();
-    const structure = this.store.get("Structure", { game_id: game, entity_id: entityId });
-    // A structure this client cannot see shows no guards.
-    if (!structure) return undefined;
-    const slots = Array.from({ length: structure.base.troop_max_guard_count }, (_, slot) =>
-      this.store!.requireOrAbsent("Guard", { game_id: game, structure_id: entityId, slot }),
-    );
-    const guards = slots.flatMap((slot) => (slot.known ? [slot.known] : []));
-    if (guards.length !== slots.length) return undefined;
-    return guards.filter((guard) => guard.troops.count !== 0n || guard.destroyed_tick !== 0);
+    const structure = this.store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: entityId });
+    return structure && getGuardsByStructure(structure, this.store);
   }
 
-  private resolveGuardArmies(guards: readonly NativeRows["Guard"][]): GuardArmy[] {
+  private resolveGuardArmies(
+    guards: readonly { slot: number; troops: Pick<NativeRows["Guard"]["troops"], "category" | "tier" | "count"> }[],
+  ): GuardArmy[] {
     return guards.map(({ slot, troops }) => ({
       slot,
       category: troops.category,
@@ -706,30 +664,33 @@ export class StructureManager {
     }));
   }
 
-  /**
-   * A structure as its plate says it now: each guard slot with its stamina at the chain's second, read when the plate
-   * is said and never cached, as a holding is (owner, map labels 2026-10-19: "we do need to see army stamina on structure
-   * hover"). The guards are read through `getGuardsByStructure`, the one rule that resolves a guard's inline bar and its
-   * game's cap (Frontier's, with no tier bonus). The plates are said again each second (`refreshLivePlates`), so it
-   * follows regeneration. A Frontier site's guards tell none (tellsGuardStamina), so theirs is never read.
-   */
-  private withGuardStamina(structure: StructureInfo): StructureInfo {
-    if (!this.store || !structure.guardArmies?.length || !tellsGuardStamina(structure)) return structure;
-    const row = this.store.get("Structure", {
-      game_id: configManager.getActiveGameId(),
-      entity_id: structure.entityId,
-    });
-    const guards = row && getGuardsByStructure(row, this.store);
-    if (!guards) return structure;
+  /** Live strength and stamina follow the chain clock through the shared guard reader. */
+  private withLiveGuards(structure: StructureInfo): StructureInfo {
+    if (!this.store) return structure;
+    const guards = this.readGuards(structure.entityId);
+    if (!guards) return { ...structure, guardArmies: undefined };
+    const armies = guardsToTell(this.resolveGuardArmies(guards), configManager.hasGuardSlots());
+    if (!tellsGuardStamina(structure)) return { ...structure, guardArmies: armies };
     const now = getBlockTimestamp().currentDefaultTick;
-    const bySlot = new Map(guards.map(({ slot, troops }) => [slot, getGuardStaminaSnapshot(troops, now)]));
-    const perExplore = configManager.getExploreStaminaCost();
+    const bySlot = new Map(
+      guards.map(({ slot, troops }) => {
+        const stamina = getGuardStaminaSnapshot(troops, now);
+        return [slot, stamina && { ...stamina, perExplore: configManager.getExploreStaminaCost(troops.category, 0) }];
+      }),
+    );
     return {
       ...structure,
-      guardArmies: structure.guardArmies.map((guard) => {
+      guardArmies: armies?.map((guard) => {
         const stamina = bySlot.get(guard.slot);
         return stamina && stamina.max > 0
-          ? { ...guard, stamina: { current: stamina.current, max: stamina.max, perExplore } }
+          ? {
+              ...guard,
+              stamina: {
+                current: stamina.current,
+                max: stamina.max,
+                perExplore: stamina.perExplore,
+              },
+            }
           : guard;
       }),
     };
@@ -835,8 +796,7 @@ export class StructureManager {
   }
 
   private updateShadowFlags(): void {
-    const shadowsEnabled = this.hexagonScene?.getShadowsEnabled() ?? true;
-    const enableCasting = this.currentCameraView === CameraView.Close && shadowsEnabled;
+    const enableCasting = this.hexagonScene?.getShadowsEnabled() ?? true;
     const enableContactShadows = !enableCasting;
 
     this.forEachStructureModel((model) => {
@@ -864,7 +824,6 @@ export class StructureManager {
     this.structureInfoCache.clear();
     this.chunkAssetPrewarmPromises.clear();
     this.visibleStructureWindow = undefined;
-    this.pendingHyperstructureBuilds.clear();
     this.visibleStructureCount = 0;
     this.pendingVisibleStructureRefreshIds.clear();
     this.pendingVisibleStructureTransitionToken = undefined;
@@ -926,7 +885,6 @@ export class StructureManager {
     this.previousVisibleIds.clear();
     this.structureInfoCache.clear();
     this.visibleStructureWindow = undefined;
-    this.pendingHyperstructureBuilds.clear();
 
     this.plates.dispose();
     this.compactLabelIds.clear();
@@ -1100,27 +1058,7 @@ export class StructureManager {
       registryEntry: findCosmeticById(cosmeticId),
     });
 
-    return Promise.all(
-      gltfs.map(async (gltf, index) => {
-        if (!isRealmSkinPath(assetPaths[index]))
-          return new InstancedModel(gltf, STRUCTURE_INSTANCE_CAPACITY, false, cosmeticId, "cache");
-        const model = new SettlementModel(
-          gltf,
-          STRUCTURE_INSTANCE_CAPACITY,
-          "realm",
-          false,
-          DEVCON_BANNER_ART,
-          "cache",
-        );
-        try {
-          await model.prepare();
-          return model;
-        } catch (error) {
-          model.dispose();
-          throw error;
-        }
-      }),
-    );
+    return gltfs.map((gltf) => new InstancedModel(gltf, STRUCTURE_INSTANCE_CAPACITY, false, cosmeticId, "cache"));
   }
 
   private resolveLiveStructureOwnerName(ownerAddress: bigint, fallbackOwnerName: string): string {
@@ -1130,23 +1068,17 @@ export class StructureManager {
 
   private resolveStructureCosmeticSelection(input: {
     owner: bigint;
-    realm: NativeRows["Structure"];
     structureType: StructureType;
     stage: number;
   }): ReturnType<typeof resolveStructureCosmetic> {
     const enumName = StructureType[input.structureType as unknown as keyof typeof StructureType];
     const defaultModelKey = typeof enumName === "string" ? enumName : String(input.structureType);
-    const selection = resolveStructureCosmetic({
+    return resolveStructureCosmetic({
       owner: input.owner,
       structureType: input.structureType,
       stage: input.stage,
       defaultModelKey,
     });
-    const skin =
-      input.structureType === StructureType.Realm && this.store ? readRealmSkin(this.store, input.realm) : undefined;
-    if (!skin) return selection;
-    const model = realmSkinModel(skin, input.realm.base.level);
-    return { ...selection, skin: { cosmeticId: model.cosmeticId, assetPaths: [model.path], isFallback: false } };
   }
 
   /** Contract-space bounds of the structures presented for a chunk, matching the projection's coordinates. */
@@ -1355,7 +1287,12 @@ export class StructureManager {
       return index;
     }
     return structure.structureType === StructureType.Realm
-      ? realmModelIndex(structure.level, structure.hasWonder, structure.entityId)
+      ? realmModelIndex(
+          structure.level,
+          structure.hasWonder,
+          structure.entityId,
+          this.mode.id === "frontier" && structure.realmOrder ? orderAspect(structure.realmOrder) : null,
+        )
       : structure.stage;
   }
 
@@ -1622,17 +1559,18 @@ export class StructureManager {
   ): void {
     const rotationY = this.resolveVisibleStructureRotationY(structure);
     this.syncVisibleStructurePresentation(structure, rotationY, attachmentRetain);
+    this.lightGroundAround(structure, this.scratchPosition);
 
     const bindings = this.hasCosmeticSkin(structure)
       ? this.addVisibleCosmeticStructureInstances(structure, dirtyModels)
       : this.addVisibleBaseStructureInstances(structure, dirtyModels);
     for (const binding of bindings) {
-      if (binding.model instanceof HyperstructureModel && this.store) {
-        binding.model.setConstructionAt(
-          binding.instanceIndex,
-          readHyperstructureConstruction(this.store, safeInteger(structure.entityId)),
-          this.pendingHyperstructureBuilds.delete(structure.entityId),
-        );
+      if (binding.model instanceof HyperstructureModel) {
+        binding.model.setConstructionAt(binding.instanceIndex, {
+          entityId: structure.entityId,
+          progress: 100,
+          completed: true,
+        });
       }
       if (binding.model instanceof SettlementModel) {
         binding.model.setRelationshipAt(binding.instanceIndex, resolveSettlementRelationship(structure.isMine));
@@ -1668,18 +1606,31 @@ export class StructureManager {
         this.bindSitePart(model, structure.entityId, dirtyModels, composition.baseScale, composition.baseZ),
       );
     const beastModel = models.get(frontierBeastModelIndex(structure.frontierBeast.beast));
-    if (beastModel)
-      bindings.push(
-        this.bindSitePart(
-          beastModel,
-          structure.entityId,
-          dirtyModels,
-          structure.frontierBeast.scale,
-          composition.beastZ,
-          composition.beastY,
-        ),
+    if (beastModel) {
+      const beast = this.bindSitePart(
+        beastModel,
+        structure.entityId,
+        dirtyModels,
+        structure.frontierBeast.scale,
+        composition.beastZ,
+        composition.beastY,
       );
+      if (beast && beastModel instanceof FrontierModel) {
+        beastModel.setIdleAt(beast.instanceIndex, structure.frontierBeast.idle);
+        beastModel.setLayerAt(beast.instanceIndex, this.beastLayerOf(structure));
+      }
+      bindings.push(beast);
+    }
     return bindings.filter(isBoundStructureInstance);
+  }
+
+  private beastLayerOf(structure: StructureInfo): BeastLayer {
+    if (!this.store) return 0;
+    const gameId = configManager.getActiveGameId();
+    const rules = readExpeditionRules(this.store, gameId);
+    const site = this.store.get("ExpeditionSite", { game_id: gameId, entity_id: structure.entityId });
+    const depth = rules && site ? expeditionDepth(rules, { y: site.row }) : 0;
+    return (depth <= 0 ? 0 : depth >= 3 ? 3 : depth) as BeastLayer;
   }
 
   /** Compose both models in the site's local coordinates, restoring the common instance transform afterward. */
@@ -1767,7 +1718,14 @@ export class StructureManager {
     return freeSlot;
   }
 
+  private lightGroundAround(structure: StructureInfo, position: Vector3): void {
+    const light = STRUCTURE_GROUND_LIGHTS[structure.structureType];
+    if (light)
+      this.hexagonScene?.getGroundLights()?.set(groundLightKey(structure.entityId), position.x, position.z, light);
+  }
+
   private removeVisibleStructureInstance(entityId: ID, dirtyModels: Set<StructureModel>): void {
+    this.hexagonScene?.getGroundLights()?.remove(groundLightKey(entityId));
     const bindings = this.structureInstanceBindings.get(entityId);
     if (!bindings) {
       return;
@@ -1837,7 +1795,7 @@ export class StructureManager {
       entityId: structure.entityId,
       position,
       plate: buildStructurePlate(
-        { ...this.withGuardStamina(structure), watched: watchedSide(this.store, structure.owner.address) },
+        { ...this.withLiveGuards(structure), watched: watchedSide(structure.owner.address) },
         useChainTimeStore.getState().getNowSeconds(),
         this.store && readPlateReward(this.store, structure),
       ),
@@ -1886,9 +1844,6 @@ export class StructureManager {
     this.queryStructuresInBounds(bounds).forEach((renderable) => {
       if (!renderable.reserved) structures.set(renderable.entityId, renderable);
     });
-    for (const id of this.pendingHyperstructureBuilds) {
-      if (!structures.has(id)) this.pendingHyperstructureBuilds.delete(id);
-    }
     this.visibleStructureWindow = { chunkKey, bounds, structures };
     return this.visibleStructureWindow;
   }
@@ -2058,13 +2013,36 @@ export class StructureManager {
 
     const structure = this.resolveStructureInfoByEntityId(normalizedEntityId);
     if (structure) this.refreshStructurePlate(structure);
+    if (degrees !== undefined) {
+      this.playBeastMotion(normalizedEntityId, role === "attacker" ? "attack" : "hit");
+    }
+  }
+
+  private playBeastMotion(entityId: ID, action: BeastMotionAction): void {
+    const bindings = this.structureInstanceBindings.get(entityId);
+    if (!bindings) return;
+    for (const binding of bindings) {
+      if (binding.model instanceof FrontierModel) {
+        binding.model.playMotionAt(binding.instanceIndex, action);
+      }
+    }
   }
 
   private playStructureGuardDifferenceFx(entityId: ID, previousGuards: GuardArmy[], currentGuards: GuardArmy[]) {
-    if (previousGuards.length === 0 || currentGuards.length === 0) return;
+    if (previousGuards.length === 0) return;
 
     const structure = this.resolveStructureInfoByEntityId(entityId);
     if (!structure) return;
+
+    const previousTotal = previousGuards.reduce((sum, guard) => sum + Math.max(0, guard.count), 0);
+    const currentTotal = currentGuards.reduce((sum, guard) => sum + Math.max(0, guard.count), 0);
+    if (previousTotal > 0 && currentTotal <= 0) {
+      this.playBeastMotion(entityId, "death");
+    } else if (currentTotal < previousTotal) {
+      this.playBeastMotion(entityId, "hit");
+    }
+
+    if (currentGuards.length === 0) return;
 
     for (const newGuard of currentGuards) {
       const oldGuard = previousGuards.find((guard) => guard.slot === newGuard.slot);
@@ -2073,7 +2051,6 @@ export class StructureManager {
       }
 
       const diff = newGuard.count - oldGuard.count;
-
       const worldPos = getWorldPositionForHex(structure.hexCoords);
       placePositionOnTerrain(worldPos, this.resolveTerrainSurface());
       this.fxManager.playTroopDiffFx(diff, worldPos.x, worldPos.y + 3, worldPos.z);
@@ -2195,3 +2172,5 @@ export class StructureManager {
     }
   }
 }
+
+const groundLightKey = (entityId: ID) => `structure:${entityId}`;

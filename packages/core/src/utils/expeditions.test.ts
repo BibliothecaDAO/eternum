@@ -3,12 +3,13 @@ import { ResourcesIds, StructureType } from "@bibliothecadao/types";
 import * as timestamp from "./timestamp";
 import {
   armyEtherealLayer,
+  cameraLayer,
   dayOf,
   entityHomeNamespace,
+  hasSharedDeep,
   seasonDay,
   expeditionDayEndsAt,
   expeditionRealmSite,
-  expeditionSpires,
   expeditionSpireTile,
   isArmyCrossing,
   isAtExpeditionSpire,
@@ -17,7 +18,6 @@ import {
   structureMapPosition,
   structureLocalPosition,
   siteReward,
-  siteClearXp,
   spireEtherealView,
   viewInLayer,
   regionSpire,
@@ -33,11 +33,24 @@ const structure = (overrides: { realm_id?: number; category?: StructureType } = 
   }) as never;
 
 // Four-hour units from t=86400, days drawn from seed 1; spacing 10, so day d's regions are rows 40d..40d+39.
-const rules = { dayUnitSeconds: 14_400, spacing: 10, startMainAt: 86_400, endAt: 86_400 + 21 * 20 * 14_400, seed: 1n };
+const rules = {
+  dayUnitSeconds: 14_400,
+  spacing: 10,
+  startMainAt: 86_400,
+  scheduledEndAt: 86_400 + 21 * 20 * 14_400,
+  endAt: 86_400 + 21 * 20 * 14_400,
+  seed: 1n,
+};
 const expeditionRules = {
+  DepthRules: { beast_weak_lower: 300, beast_weak_upper: 395, beast_strong_lower: 400, beast_strong_upper: 500 },
   SliceRules: { day_unit_seconds: rules.dayUnitSeconds },
   SettlementRules: { spacing: rules.spacing },
-  GameRegistry: { start_main_at: BigInt(rules.startMainAt), end_at: BigInt(rules.endAt), seed: rules.seed },
+  GameRegistry: {
+    start_main_at: BigInt(rules.startMainAt),
+    scheduled_end_at: BigInt(rules.endAt),
+    end_at: BigInt(rules.endAt),
+    seed: rules.seed,
+  },
 };
 /** The first second of season day `index`. */
 const dayStart = (index: number) => {
@@ -105,7 +118,8 @@ describe("structureMapPosition", () => {
 describe("liveHomeArmies", () => {
   afterEach(() => vi.restoreAllMocks());
 
-  const army = (explorer_id: number, y: number, count = 1_000n, owner = 42) => ({
+  const army = (explorer_id: number, y: number, count = 1_000n, owner = 42, day = 0) => ({
+    day,
     explorer_id,
     owner,
     position: { x: 25, y, alt: false },
@@ -113,6 +127,10 @@ describe("liveHomeArmies", () => {
   });
   const armiesStore = (rules: Record<string, unknown>, armies: ReturnType<typeof army>[]) => ({
     ...storeWith(rules),
+    require: (model: string, keys: { explorer_id: number }) =>
+      model === "ArmyDay"
+        ? { day: armies.find((army) => army.explorer_id === keys.explorer_id)!.day }
+        : storeWith(rules).require(model),
     armiesAtHome: (_game: number, home: number) => armies.filter((army) => army.owner === home),
     entityOccupancy: (_game: number, id: number) => {
       const army = armies.find((army) => army.explorer_id === id);
@@ -129,6 +147,14 @@ describe("liveHomeArmies", () => {
     expect(liveHomeArmies(store as never, 42, 7).map(({ explorer_id }) => explorer_id)).toEqual([1, 2]);
 
     atFloor(dayStart(1) + 1);
+    expect(liveHomeArmies(store as never, 42, 7)).toEqual([]);
+  });
+
+  it("uses allocation days when two days' armies share the same map tile", () => {
+    const store = armiesStore(expeditionRules, [army(1, 35, 1_000n, 42, 0), army(2, 35, 1_000n, 42, 1)]);
+    atFloor(dayStart(1));
+    expect(liveHomeArmies(store as never, 42, 7).map(({ explorer_id }) => explorer_id)).toEqual([2]);
+    atFloor(dayStart(2));
     expect(liveHomeArmies(store as never, 42, 7)).toEqual([]);
   });
 
@@ -156,7 +182,7 @@ describe("liveHomeArmies", () => {
       expect(spireEtherealView(store as never, spire)).toEqual({ col: 25, row: 25 });
     });
 
-    it("goes to Ethereal I straight below the spire while none of the realm's armies is there", () => {
+    it("goes to Veil straight below the spire while none of the realm's armies is there", () => {
       const store = armiesStore(expeditionRules, [army(1, 6), army(2, 25, 1_000n, 99)]);
       atFloor(rules.startMainAt + 60);
       expect(spireEtherealView(store as never, spire)).toEqual({ col: 24, row: 15 });
@@ -212,24 +238,10 @@ describe("expedition spire", () => {
     expect(isAtExpeditionSpire(spire, { x: 26, y: 46 })).toBe(true);
     expect(isAtExpeditionSpire(spire, { x: 27, y: 46 })).toBe(false);
   });
-
-  it("lights a spire only for a realm with depth research", () => {
-    const store = {
-      ...storeWith(expeditionRules),
-      get: (model: string, key: { structure_id: number }) =>
-        model === "RealmKnowledge"
-          ? { learned: key.structure_id === 3 ? 1n << 48n : 0n }
-          : storeWith(expeditionRules).get(model),
-      inGame: (model: string) => (model === "Structure" ? [realm(1), realm(3)] : [])[Symbol.iterator](),
-    };
-    expect(expeditionSpires(store as never, 7, dayStart(1) + 10)).toEqual([
-      { col: 25, row: 46, deepest: 1, realm: realm(3) },
-    ]);
-  });
 });
 
 describe("isEtherealTile", () => {
-  it("draws Ethereal I to III with the ethereal surface, and each day's surface without it", () => {
+  it("draws Veil to III with the ethereal surface, and each day's surface without it", () => {
     // Spacing 10: day 1's surface is rows 40..49, its Ethereal I to III rows 50..79, day 2's surface rows 80..89.
     expect([45, 49, 50, 65, 79, 80].map((row) => isEtherealTile(rules, { row, alt: false }))).toEqual([
       false,
@@ -293,9 +305,9 @@ it("counts season days from the exact start, whatever the time of day", () => {
 
 describe("siteReward", () => {
   it.each([
-    [548n, 137n],
-    [320n, 80n],
-  ])("previews the Beasts Labor for %s starting troops", (troops, labor) => {
+    [350n, 1400n],
+    [320n, 1280n],
+  ])("previews the Cyclops wheat for %s starting troops", (troops, wheat) => {
     expect(
       siteReward(storeWith(expeditionRules) as never, {
         game_id: 7,
@@ -304,7 +316,7 @@ describe("siteReward", () => {
         initial_guard_count: troops * 1_000_000_000n,
         clear: null,
       }),
-    ).toEqual({ resourceType: ResourcesIds.Labor, amount: labor * 1_000_000_000n });
+    ).toEqual({ resourceType: ResourcesIds.Wheat, amount: wheat * 1_000_000_000n });
   });
   it("pays as the contract does: a camp half its first guard in labor, a rift three times it in Essence", () => {
     const guard = 1_100n * 1_000_000_000n;
@@ -347,13 +359,10 @@ describe("siteReward", () => {
         game_id: 7,
         row: 0,
         category: StructureType.Beasts,
-        initial_guard_count: guard,
+        initial_guard_count: 450n * 1_000_000_000n,
         clear: null,
       }),
-    ).toEqual({
-      resourceType: ResourcesIds.Labor,
-      amount: guard / 4n,
-    });
+    ).toBeNull();
     expect(
       siteReward(storeWith(expeditionRules) as never, {
         game_id: 7,
@@ -388,48 +397,6 @@ describe("siteReward", () => {
   });
 });
 
-describe("siteClearXp", () => {
-  it.each([
-    [430n, 51],
-    [1300n, 90],
-    [3000n, 136],
-    [25000n, 395],
-    [49500n, 556],
-  ])("matches the contract's clear vector for %s troops", (troops, xp) => {
-    expect(
-      siteClearXp(storeWith(expeditionRules) as never, {
-        game_id: 7,
-        row: 0,
-        initial_guard_count: troops * 1_000_000_000n,
-      }),
-    ).toBe(xp);
-  });
-
-  it("floors fractional troops and keeps integer square-root boundaries exact", () => {
-    expect(
-      siteClearXp(storeWith(expeditionRules) as never, { game_id: 7, row: 0, initial_guard_count: 999_999_999n }),
-    ).toBe(0);
-    expect(
-      siteClearXp(storeWith(expeditionRules) as never, { game_id: 7, row: 0, initial_guard_count: 1_999_999_999n }),
-    ).toBe(2);
-    const square = (2n * 30_000_000n) ** 2n;
-    expect(
-      siteClearXp(storeWith(expeditionRules) as never, {
-        game_id: 7,
-        row: 0,
-        initial_guard_count: (square - 1n) * 1_000_000_000n,
-      }),
-    ).toBe(149_999_999);
-    expect(
-      siteClearXp(storeWith(expeditionRules) as never, {
-        game_id: 7,
-        row: 0,
-        initial_guard_count: square * 1_000_000_000n,
-      }),
-    ).toBe(150_000_000);
-  });
-});
-
 it("has no season day or map site before the exact start", () => {
   const late = { ...rules, startMainAt: 86400 + 3600 };
   for (const now of [0, 86400, late.startMainAt - 1]) {
@@ -441,7 +408,12 @@ it("has no season day or map site before the exact start", () => {
       structureMapPosition(
         storeWith({
           ...expeditionRules,
-          GameRegistry: { start_main_at: BigInt(late.startMainAt), end_at: BigInt(late.endAt), seed: late.seed },
+          GameRegistry: {
+            start_main_at: BigInt(late.startMainAt),
+            scheduled_end_at: BigInt(late.endAt),
+            end_at: BigInt(late.endAt),
+            seed: late.seed,
+          },
         }),
         structure(),
       ),
@@ -471,7 +443,7 @@ it.each([
   [1, 1.5, 76],
   [2, 2, 102],
   [3, 2.5, 127],
-])("previews depth %s resources and XP from the site's day band", (depth, multiplier, xp) => {
+])("previews depth %s resources from the site's day band", (depth, multiplier) => {
   const store = storeWith(expeditionRules) as never;
   const site = {
     game_id: 7,
@@ -484,5 +456,37 @@ it.each([
     resourceType: ResourcesIds.Essence,
     amount: BigInt(1290 * multiplier) * 1_000_000_000n,
   });
-  expect(siteClearXp(store, site)).toBe(xp);
+});
+
+it("distinguishes a Band without resources from a Herd with wheat", () => {
+  const store = storeWith(expeditionRules) as never;
+  const site = {
+    game_id: 7,
+    row: 0,
+    category: StructureType.Beasts,
+    initial_guard_count: 450_000_000_000n,
+    clear: null,
+  };
+  expect(siteReward(store, site)).toBeNull();
+  expect(siteReward(store, { ...site, initial_guard_count: 350_000_000_000n })).toEqual({
+    resourceType: ResourcesIds.Wheat,
+    amount: 1400_000_000_000n,
+  });
+});
+
+it("resolves the camera layer from expedition bands and shared Deep rules", () => {
+  const withoutDeep = storeWith(expeditionRules);
+  const deepRules = { game_id: 7, gate_distance: 4, rings: [{ radius: 5, realms: 0 }] };
+  const withDeep = storeWith({ ...expeditionRules, DeepRules: deepRules });
+  expect(hasSharedDeep(null, 7)).toBe(false);
+  expect(hasSharedDeep(withoutDeep, 7)).toBe(false);
+  expect(hasSharedDeep(withDeep, 7)).toBe(true);
+  expect(cameraLayer(null, null, 7, { col: 5, row: 15, alt: false })).toBe(0);
+  expect(cameraLayer(rules, null, 7, null)).toBe(0);
+  expect(cameraLayer(rules, withoutDeep, 7, { col: 5, row: 5, alt: false })).toBe(0);
+  expect(cameraLayer(rules, withoutDeep, 7, { col: 5, row: 15, alt: false })).toBe(1);
+  expect(cameraLayer(rules, withoutDeep, 7, { col: 5, row: 25, alt: false })).toBe(2);
+  expect(cameraLayer(rules, withoutDeep, 7, { col: 5, row: 35, alt: false })).toBe(2);
+  expect(cameraLayer(rules, withDeep, 7, { col: 5, row: 35, alt: false })).toBe(3);
+  expect(cameraLayer(rules, withDeep, 7, { col: 5, row: 15, alt: true })).toBe(0);
 });

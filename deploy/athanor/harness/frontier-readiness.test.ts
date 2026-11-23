@@ -1,27 +1,23 @@
+import { gameRegistryRow } from "../../../packages/core/src/test-support/game-registry";
 import { expect, it } from "bun:test";
 import { ResourceManager, type GameClient } from "@bibliothecadao/eternum";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { ResourcesIds, RESOURCE_PRECISION } from "@bibliothecadao/types";
-import preset from "../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
+import { seasonOneReleaseDefinition } from "../../../config/deployer/clean/config/native-preset";
 import { waitForWheatState } from "./frontier";
+
+const rules = seasonOneReleaseDefinition().rules;
 
 function realm() {
   const store = new NativeFactStore();
   const values: Record<string, Record<string, unknown>> = {
-    SliceRules: { ...preset.rules, game_id: 1, mode_rules: 0 },
-    GameRegistry: {
-      game_id: 1,
-      name: 1n,
-      preset_id: 5,
-      settled: false,
-      ready: true,
-      dev_mode_on: false,
-      start_settling_at: 0n,
-      start_main_at: 200n,
-      end_at: 86_600n,
-      end_grace_seconds: 0,
-      seed: 1n,
-    },
+    SliceRules: { ...rules, game_id: 1, mode_rules: 0 },
+    GameRegistry: gameRegistryRow({
+      start_settling_at: "0",
+      start_main_at: "200",
+      scheduled_end_at: "86600",
+      end_at: "86600",
+    }),
     SettlementRules: { game_id: 1, registration_start: 1, registration_limit: 0, spacing: 100, mode: "Single" },
     PlayerEntry: { game_id: 1, owner: 0x111n, player: 0xaaan },
     Structure: {
@@ -77,10 +73,4 @@ it("a shard that never completes wheat synchronization fails with its state, not
   const { client, snapshot } = realm();
   snapshot(false);
   await expect(waitForWheatState(client, 7, 10)).rejects.toThrow("wheat=unknown");
-});
-
-it("the readiness fixture keeps the registered preset's rule and calendar values", () => {
-  const expected = new NativeFactStore();
-  expected.applyFacts([{ model: "SliceRules", key: "0x1", value: { ...preset.rules, game_id: 1, mode_rules: 0 } }]);
-  expect(realm().store.get("SliceRules", { game_id: 1 })).toEqual(expected.get("SliceRules", { game_id: 1 }));
 });

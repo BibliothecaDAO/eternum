@@ -152,7 +152,6 @@
                 <category android:name="android.intent.category.BROWSABLE"/>
                 <data android:scheme="https" android:host="@string/hostName" />
                 <data android:pathPrefix="/g/" />
-                <data android:pathPrefix="/join/devcon/" />
                 <data android:pathPrefix="/results/" />
             </intent-filter>
 

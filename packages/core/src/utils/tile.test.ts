@@ -7,11 +7,22 @@ import { entityMapPosition, storedBiomeAt } from "./tile";
 // A far-east tile a playtest army stood on (shard C game 1, realm 7,603's column): the chain stored Shrubland (9) where
 // the client's own noise said Ocean, and drew the army as a boat.
 const FAR_EAST = { col: 760245, row: 52, data: 0x20017336a0000006812000000aa1en };
-const storeWith = (row: object | undefined) => ({ get: () => row }) as unknown as NativeFactStore;
+const storeWith = (data: bigint | undefined) => {
+  const store = new NativeFactStore();
+  if (data !== undefined)
+    store.applyFacts([
+      {
+        model: "TileOpt",
+        key: "0x11",
+        value: { game_id: 1, alt: false, col: FAR_EAST.col, row: FAR_EAST.row, data },
+      },
+    ]);
+  return store;
+};
 
 describe("stored biome", () => {
   it("reads a revealed tile's biome from the row the chain stored", () => {
-    const store = storeWith({ game_id: 1, alt: false, col: FAR_EAST.col, row: FAR_EAST.row, data: FAR_EAST.data });
+    const store = storeWith(FAR_EAST.data);
     expect(storedBiomeAt(store, false, FAR_EAST.col, FAR_EAST.row, 1)).toBe(BiomeType.Shrubland);
   });
 
@@ -42,19 +53,12 @@ it("accepts safe numeric native keys with the same identity as bigint and refuse
       model: "ArmyProgress",
       key: "0x13",
       value: {
-        common_points: 0,
-        uncommon_points: 0,
-        rare_points: 0,
-        epic_points: 0,
-        legendary_points: 0,
         game_id: 1,
         explorer_id: id,
-        xp: 0,
-        battle: 0,
         logistics: 0,
-        scouting: 0,
-        scouting_kinds: 0,
-        homecoming: 0,
+        oath_slots: 1,
+        oaths: 0,
+        oath_pick: 0,
       },
     },
   ]);

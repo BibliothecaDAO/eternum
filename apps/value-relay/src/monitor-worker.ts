@@ -1,10 +1,8 @@
-import { auditDeposits, auditDepositCustody, DepositConservationFault } from "./deposit-conservation";
 import { readMonitorFeeBalance, type MonitorFeeBalance } from "./monitor-balance";
 import { decodeMonitorSettings, type MonitorSettings } from "./monitor-env";
-import { checkSlotRoster, slotRosterReads } from "./roster-monitor";
 import { ledgerAddress, ledgerContractOf } from "./environment";
 import { bindLedgerState, ledgerOrNull, ledgerStateName } from "./ledger-state";
-import { activeShards, isDevShardChain, readRegisteredShard, type ShardDirectory } from "@realms-world/value-ledger";
+import { officialChain, readRegisteredShard, type ShardDirectory } from "@realms-world/value-ledger";
 import { processSeasonTops } from "./season-tops";
 import { seasonLedgerReads, challengeSeason } from "./season-ledger";
 import { isLedgerReadTick, LEDGER_READ_STALE_SECONDS } from "@realms-world/chain";
@@ -18,19 +16,16 @@ import { ledgerPauserAdapter } from "./chain";
 import { ShardReader, shardConnection } from "./shard-rpc";
 import { shardConservationPort } from "./shard-conservation";
 import { frontierReceiptBindings } from "./frontier-binding";
-import { shardResultPort } from "./shard-results";
 import { shardWithdrawalPorts } from "./shard-withdrawals";
 import { relayOperation, type MonitorPorts } from "./ports";
 import { runMonitor, resetMonitorRow, type MonitorProgress } from "./monitor";
 
 interface MonitorEnv extends MonitorSettings {
-  LAUNCH: import("@realms-world/value-ledger").LaunchCohorts;
-  IDENTITY: ShardDirectory &
-    import("@realms-world/value-ledger").RegistrationIdentity & {
-      l2ChainId(): Promise<string>;
-      realmsIdForAccount(account: string): Promise<string | null>;
-      matchesPayDecision(decision: import("@realms-world/identity").LedgerPayDecision): Promise<boolean>;
-    };
+  IDENTITY: ShardDirectory & {
+    l2ChainId(): Promise<string>;
+    realmsIdForAccount(account: string): Promise<string | null>;
+    matchesPayDecision(decision: import("@realms-world/identity").LedgerPayDecision): Promise<boolean>;
+  };
   RELAY_REPORT: {
     held(): Promise<{ kind: string; reason: string; transactionHash: string | null }[]>;
     recoverHeld(): Promise<void>;
@@ -45,13 +40,11 @@ const auditFinished = (observation: {
   value: { halted: string | null; cursors?: Record<string, { page: string | null } | undefined> } | null;
   value_error: string | null;
   season_error: string | null;
-  deposit_error?: string | null;
 }) =>
   observation.value?.halted
     ? true
     : observation.value !== null &&
       observation.value_error === null &&
-      !observation.deposit_error &&
       (observation.season_error === null || observation.season_error.startsWith("season_review_pending")) &&
       Object.values(observation.value.cursors ?? {}).every((cursor) => !cursor?.page);
 
@@ -151,44 +144,6 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
               }),
             ),
           );
-          const deposits = yield* Effect.result(
-            relayOperation("audit deposited LORDS", async () => {
-              const observations = [];
-              const ledger = {
-                rpcUrl: monitor.env.L2_RPC_URL,
-                address: ledgerAddress(monitor.env.ENVIRONMENT),
-                chainId: await monitor.env.IDENTITY.l2ChainId(),
-              };
-              try {
-                const journal = await auditDepositCustody(ledger, monitor.ctx.storage);
-                if (!journal) return { enabled: false, games: [] };
-                for (const shard of await activeShards(monitor.env.IDENTITY)) {
-                  const registered = await readRegisteredShard(monitor.env.IDENTITY, shard.chainId);
-                  observations.push({
-                    chainId: shard.chainId,
-                    games: await auditDeposits(shardConnection(registered), registered.url, ledger, journal),
-                  });
-                }
-                return {
-                  enabled: true,
-                  principal: journal.principal,
-                  returned: journal.returned,
-                  games: observations,
-                };
-              } catch (error) {
-                if (error instanceof DepositConservationFault) {
-                  const row = `deposits:${error.message}`;
-                  await monitor.ctx.storage.put("progress", {
-                    ...(await monitor.status()),
-                    halted: row,
-                    fault: { row },
-                  });
-                  await Effect.runPromise(ports.ledger.pause());
-                }
-                throw error;
-              }
-            }),
-          );
           const held = yield* Effect.result(
             relayOperation("read relay held obligations", () => monitor.env.RELAY_REPORT.held()),
           );
@@ -209,8 +164,6 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
             season_error: Result.isSuccess(seasonAudit) ? seasonAudit.success : seasonAudit.failure.operation,
             value_error: Result.isFailure(value) ? value.failure.operation : null,
             held: Result.isSuccess(held) ? held.success : null,
-            deposits: Result.isSuccess(deposits) ? deposits.success : null,
-            deposit_error: Result.isFailure(deposits) ? deposits.failure.operation : null,
           };
           yield* relayOperation("publish value monitor", () => monitor.ctx.storage.put("observation", observation));
           return observation;
@@ -218,58 +171,11 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
       ),
     );
   }
-  /** The slot that paid for a game, its roster verified; null when the launch directory declares it outside any slot. */
-  async verifyRoster(chainId: string, gameId: number): Promise<number | null> {
-    return Effect.runPromise(
-      this.checking.withPermit(
-        onIdentityChain(
-          this.env.L2_RPC_URL,
-          this.env.IDENTITY,
-          relayOperation("verify paid roster before results", async () => {
-            if ((await this.status()).halted) throw new Error("monitor_halted");
-            const cohorts = await this.env.LAUNCH.rosterCohorts();
-            const cohort = cohorts.find(
-              (row) => BigInt(row.chainId) === BigInt(chainId) && row.games.some((game) => game.gameId === gameId),
-            );
-            if (cohort) {
-              await this.checkRoster(cohort);
-              return cohort.slotId;
-            }
-            if (await this.isDeclaredOutsideSlot(chainId, gameId)) return null;
-            throw new Error("paid_game_slot_missing");
-          }),
-        ),
-      ),
-    );
-  }
-  /**
-   * Only a dev shard runs games outside any slot, and only the directory's positive declaration of the exact game frees
-   * its result from a slot; any other game stays unposted.
-   */
-  private async isDeclaredOutsideSlot(chainId: string, gameId: number) {
-    if (!isDevShardChain(chainId)) return false;
-    const chains = await this.env.LAUNCH.directoryGames();
-    const chain = chains.find((row) => BigInt(row.chainId) === BigInt(chainId));
-    return chain?.games.some((game) => game.gameId === gameId && game.slotId === null) ?? false;
-  }
-  private async checkRoster(cohort: import("@realms-world/value-ledger").SlotCohort) {
-    await checkSlotRoster(cohort, {
-      ...slotRosterReads(cohort, this.env.L2_RPC_URL, ledgerAddress(this.env.ENVIRONMENT), this.env.IDENTITY),
-      pause: async () => {
-        const row = `roster:${cohort.chainId}:${cohort.slotId}`;
-        // A roster check has no fact to waive: its reset re-observes the roster.
-        const halted: MonitorProgress = { ...(await this.status()), halted: row, fault: { row } };
-        await this.ctx.storage.put("progress", halted);
-        await Effect.runPromise(monitorPortsOf(this.env, this.ctx.storage).ledger.pause());
-      },
-    });
-  }
   async health() {
     const observation = await this.ctx.storage.get<{
       checked_at: number;
       fee_balance?: MonitorFeeBalance | null;
       fee_balance_error?: string | null;
-      deposit_error?: string | null;
       value: MonitorProgress | null;
       value_error: string | null;
       season_error: string | null;
@@ -287,7 +193,6 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
         observation?.value !== undefined &&
         observation.season_error === null &&
         observation.value_error === null &&
-        observation.deposit_error === null &&
         observation.fee_balance_error === null &&
         observation.fee_balance?.warning === null &&
         !progress.halted,
@@ -336,36 +241,16 @@ const legacyFault = async (
   row: string,
 ): Promise<NonNullable<MonitorProgress["fault"]>> => {
   const paid = /^paid_(?:claim|wallet)_mismatch:(0x[0-9a-f]+)$/i.exec(previous.halted ?? "");
-  const result = /^blitz_result_mismatch:(\d+)$/.exec(previous.halted ?? "");
-  const stream = paid ? "paidClaims" : result ? "postedResults" : null;
-  if (!stream) {
+  if (!paid) {
     throw new Error("fault_row_unavailable");
   }
-  const cursor = previous.cursors?.[stream] ?? { page: null };
+  const cursor = previous.cursors?.paidClaims ?? { page: null };
   const reads = ledgerMonitorReads(env.L2_RPC_URL, ledgerContractOf(env.ENVIRONMENT));
-  const page =
-    stream === "paidClaims"
-      ? await Effect.runPromise(
-          onIdentityChain(env.L2_RPC_URL, env.IDENTITY, reads.paidClaims(cursor.page, cursor.fromBlock, cursor.anchor)),
-        )
-      : await Effect.runPromise(
-          onIdentityChain(
-            env.L2_RPC_URL,
-            env.IDENTITY,
-            reads.postedResults(cursor.page, cursor.fromBlock, cursor.anchor),
-          ),
-        );
-  const index = page.rows.findIndex((value) =>
-    paid
-      ? "transactionHash" in value && BigInt(value.transactionHash) === BigInt(paid[1]!)
-      : "gameId" in value && value.gameId === Number(result![1]),
+  const page = await Effect.runPromise(
+    onIdentityChain(env.L2_RPC_URL, env.IDENTITY, reads.paidClaims(cursor.page, cursor.fromBlock, cursor.anchor)),
   );
-  const value = page.rows[index];
-  if (
-    !value ||
-    row !== `${stream}:${value.chainId}:${"transactionHash" in value ? value.transactionHash : value.gameId}`
-  )
-    throw new Error("fault_row_mismatch");
+  const value = page.rows.find((claim) => BigInt(claim.transactionHash) === BigInt(paid[1]!));
+  if (!value || row !== `paidClaims:${value.chainId}:${value.transactionHash}`) throw new Error("fault_row_mismatch");
   // The halt names the row but never recorded what the operator saw, so its reset waives nothing and re-observes.
   return { row };
 };
@@ -405,20 +290,12 @@ const monitorPortsOf = (env: MonitorEnv, storage: DurableObjectStorage): Monitor
         relayOperation("audit registered shard recipient", async () =>
           Effect.runPromise((await withdrawalPorts(chainId)).withdrawal(chainId, hash)),
         ),
-      result: (chainId: string, gameId: number) =>
-        relayOperation("audit registered shard result", async () => {
-          const { reader } = await shardPorts(chainId);
-          return Effect.runPromise(shardResultPort(reader)(chainId, gameId));
-        }),
       conservation: () =>
         relayOperation("audit official shard conservation", async () => {
-          const balances = [];
-          for (const row of await activeShards(env.IDENTITY)) {
-            const { reader, shard } = await shardPorts(row.chainId);
-            const rows = await Effect.runPromise(shardConservationPort(reader.connection, shard.url, fetch, storage)());
-            balances.push(...rows);
-          }
-          return balances;
+          const official = await officialChain(env.IDENTITY);
+          if (!official) return [];
+          const { reader, shard } = await shardPorts(official.chainId);
+          return Effect.runPromise(shardConservationPort(reader.connection, shard.url, fetch, storage)());
         }),
     },
     ledger: {
@@ -507,9 +384,6 @@ export default {
 export class RosterMonitor extends WorkerEntrypoint<MonitorEnv> {
   override fetch() {
     return new Response(null, { status: 404 });
-  }
-  verifyRoster(chainId: string, gameId: number) {
-    return monitorOf(this.env).verifyRoster(chainId, gameId);
   }
   ledgerWritten() {
     return monitorOf(this.env).ledgerWritten();

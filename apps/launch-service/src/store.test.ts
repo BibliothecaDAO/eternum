@@ -1,11 +1,9 @@
 import { D1CalendarStore } from "./calendar-store";
-import { frontierPreset } from "../../../config/source/frontier/native";
-import { seasonSeconds } from "../../../packages/core/src/utils/days";
 import { frontierSeasonEnd } from "./test-dates";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { scheduleFrontierSeason } from "./schedule";
 import { D1LaunchStore } from "./store";
-import { completeFreeFixture, createLaunchTestDatabase, testChain } from "./test-database";
+import { completeFreeFixture, createLaunchTestDatabase, testChain, TEST_CHAIN } from "./test-database";
 
 let database: Awaited<ReturnType<typeof createLaunchTestDatabase>>;
 beforeEach(async () => {
@@ -31,80 +29,46 @@ const frontierSummary = (gameName: string, seasonStart: string) => ({
 
 test("supports both launch formats and refuses an unknown environment", async () => {
   const store = new D1LaunchStore(database.db, testChain());
-  const blitz = await store.enqueue("game", { environment: "madara.blitz", gameName: "existing-blitz" });
-  const eternum = await store.enqueue("game", { environment: "madara.eternum", gameName: "new-eternum" });
-  expect((await store.find("game", "madara.blitz", blitz.name))?.id).toBe(blitz.id);
-  expect((await store.list("madara.eternum")).map((run) => run.id)).toEqual([eternum.id]);
-  expect("version" in eternum.request && eternum.request.version).toBe("3");
+  const blitz = await store.enqueue({ environment: "madara.blitz", gameName: "existing-blitz" });
+  const frontier = await store.enqueue({ environment: "madara.frontier", gameName: "new-frontier" });
+  expect((await store.find("madara.blitz", blitz.name))?.id).toBe(blitz.id);
+  expect((await store.list("madara.frontier")).map((run) => run.id)).toEqual([frontier.id]);
   await expect(
-    database.db.prepare("UPDATE launch_runs SET environment = 'unsupported' WHERE id = ?").bind(eternum.id).run(),
+    database.db.prepare("UPDATE launch_runs SET environment = 'unsupported' WHERE id = ?").bind(frontier.id).run(),
   ).rejects.toThrow("CHECK constraint failed");
 });
 
-test("creation and delayed finalization are one durable write and survive a restart", async () => {
+test("a stored Blitz result run is never started, listed or reported", async () => {
   const store = new D1LaunchStore(database.db, testChain());
-  const queued = await store.enqueue("game", { environment: "madara.blitz", gameName: "native-results" });
-  const started = (await store.startNext(Date.now()))!;
-  const summary = {
-    environment: "madara.blitz" as const,
-    chain: "madara" as const,
-    gameType: "blitz" as const,
-    gameName: queued.name,
-    gameId: 7,
-    startTime: 100,
-    startTimeIso: "1970-01-01T00:01:40Z",
-    rpcUrl: "http://rpc.test",
-    configMode: "batched" as const,
-    configSteps: [],
-    dryRun: false,
-    finalizeAt: Math.floor(Date.now() / 1_000) + 3_600,
-  };
-  await expect(completeFreeFixture(store, started.id, { ...summary, finalizeAt: undefined })).rejects.toThrow(
-    "schedule",
-  );
-  expect((await store.find("game", "madara.blitz", queued.name))?.status).toBe("running");
-  await completeFreeFixture(store, started.id, summary);
-
-  const restarted = new D1LaunchStore(database.db, testChain());
-  expect((await restarted.find("result", "madara.blitz", queued.name))?.request).toEqual({
-    environment: "madara.blitz",
-    gameName: queued.name,
-    gameId: 7,
-  });
-  expect(await restarted.startNext(Date.now())).toBeNull();
-  expect(await restarted.nextDue()).toBe(summary.finalizeAt * 1_000);
-  const result = (await restarted.startNext(summary.finalizeAt * 1_000))!;
-  expect(result.kind).toBe("result");
-  await restarted.retry(result.id, "interrupted", 0);
-  const recovered = (await restarted.startNext(summary.finalizeAt * 1_000))!;
-  expect(recovered).toMatchObject({ id: result.id, attempts: 2 });
-  await completeFreeFixture(restarted, recovered.id, {
-    environment: "madara.blitz",
-    gameName: queued.name,
-    gameId: 7,
-    resultCommitment: "0x123",
-  });
-  expect(await restarted.startNext(Number.MAX_SAFE_INTEGER)).toBeNull();
-  expect(await restarted.list("madara.blitz")).toHaveLength(2);
+  await database.db
+    .prepare(
+      `INSERT INTO launch_runs (id, chain_id, kind, environment, name, request, status, available_at, created_at, updated_at)
+       VALUES ('stored-result', ?, 'result', 'madara.blitz', 'bltz-played', '{}', 'queued', 0, 0, 0)`,
+    )
+    .bind(await store.targetChain())
+    .run();
+  expect(await store.startNext(Date.now())).toBeNull();
+  expect(await store.nextDue()).toBeNull();
+  expect(await store.pending()).toEqual([]);
+  expect(await store.list("madara.blitz")).toEqual([]);
+  expect(await store.find("madara.blitz", "bltz-played")).toBeNull();
 });
 
 test("a launch interrupted while running is resumed, not queued twice", async () => {
   const store = new D1LaunchStore(database.db, testChain());
-  const queued = await store.enqueue("game", { environment: "madara.blitz", gameName: "interrupted" });
+  const queued = await store.enqueue({ environment: "madara.blitz", gameName: "interrupted" });
   expect((await store.startNext(Date.now()))?.id).toBe(queued.id);
   const resumed = await new D1LaunchStore(database.db, testChain()).startNext(Date.now());
   expect(resumed).toMatchObject({ id: queued.id, status: "running", attempts: 2 });
-  expect(await store.enqueue("game", { environment: "madara.blitz", gameName: "interrupted" })).toMatchObject({
+  expect(await store.enqueue({ environment: "madara.blitz", gameName: "interrupted" })).toMatchObject({
     id: queued.id,
     status: "running",
   });
   expect(await store.list("madara.blitz")).toHaveLength(1);
 });
 
-/** The calendar uses the Frontier preset season length. */
 const season = (startsAt: string) => ({
   phase: "frontier" as const,
-  presetId: 5,
   startsAt,
   endsAt: frontierSeasonEnd(startsAt),
 });
@@ -118,9 +82,8 @@ test("one Frontier season is created once by every tick and continued like any f
   expect(await scheduleFrontierSeason(store, season(seasonStart))).toMatchObject({ id: queued.id, status: "queued" });
   const run = (await store.startNext(Date.now()))!;
   expect(run.request).toMatchObject({
-    version: "5",
     gameStartTime: seasonStart,
-    durationSeconds: seasonSeconds(21, frontierPreset.dayUnitSeconds),
+    durationSeconds: (Date.parse(frontierSeasonEnd(seasonStart)) - Date.parse(seasonStart)) / 1000,
   });
   await store.retry(run.id, "rpc down", 60_000);
   // A tick while the season waits to retry must not reset its attempts or its delay.
@@ -132,7 +95,7 @@ test("one Frontier season is created once by every tick and continued like any f
 
   await database.db.prepare("UPDATE launch_runs SET status = 'failed' WHERE id = ?").bind(run.id).run();
   expect(await scheduleFrontierSeason(store, season(seasonStart))).toMatchObject({ id: run.id, status: "failed" });
-  const continued = await store.enqueue("game", run.request);
+  const continued = await store.enqueue(run.request);
   expect(continued).toMatchObject({ name: queued.name, status: "queued", attempts: 0 });
   expect(continued.errorMessage).toBeUndefined();
   const retried = (await store.startNext(Date.now()))!;
@@ -158,7 +121,7 @@ test("every game run's name is listed per environment and chain, whatever its st
   await completeFreeFixture(chain, (await chain.startNext(Date.now()))!.id, frontierSummary(done.name, seasonStart));
   await new D1CalendarStore(database.db).set(season("2027-04-30T00:00:00.000Z"), Date.parse("2027-04-29T00:00:00Z"));
   const next = await scheduleFrontierSeason(chain, season("2027-04-30T00:00:00.000Z"));
-  await chain.enqueue("game", { environment: "madara.blitz", gameName: "bltz-7" });
+  await chain.enqueue({ environment: "madara.blitz", gameName: "bltz-7" });
   const elsewhere = await scheduleFrontierSeason(other, season("2027-04-30T00:00:00.000Z"));
   expect((await chain.gameNames("madara.frontier")).sort()).toEqual([done.name, next.name].sort());
   expect(await other.gameNames("madara.frontier")).toEqual([elsewhere.name]);
@@ -167,36 +130,24 @@ test("every game run's name is listed per environment and chain, whatever its st
 test("retirement preserves history while unfinished live work remains observable", async () => {
   const seasonStart = "2027-01-01T00:00:00.000Z";
   const oldChain = new D1LaunchStore(database.db, testChain("0x1"));
-  const launched = await oldChain.enqueue("game", { environment: "madara.blitz", gameName: "bltz-7" });
+  const launched = await oldChain.enqueue({ environment: "madara.blitz", gameName: "bltz-7" });
   const started = (await oldChain.startNext(Date.now()))!;
   await completeFreeFixture(oldChain, started.id, {
     ...frontierSummary(launched.name, seasonStart),
     environment: "madara.blitz",
     gameType: "blitz",
     gameId: 7,
-    finalizeAt: Math.floor(Date.now() / 1_000) - 1,
   });
   await new D1CalendarStore(database.db).set(season(seasonStart), Date.parse(seasonStart) - 1);
   const oldSeason = await scheduleFrontierSeason(oldChain, season(seasonStart));
 
-  // Another official chain shares the D1; its work remains isolated.
-  const live = ["0x1", "0x2"];
-  const newChain = new D1LaunchStore(database.db, testChain("0x2"), async () => live);
+  const newChain = new D1LaunchStore(database.db, testChain("0x2"));
   expect(await newChain.playerDirectoryGames()).toEqual([
     { chainId: "0x1", games: [7].map((gameId) => ({ gameId, slotId: null })) },
   ]);
   expect(await newChain.startNext(Date.now())).toBeNull();
-  expect((await newChain.pending()).map(({ chainId }) => chainId)).toEqual(["0x1", "0x1"]);
-  live.shift();
   expect(await newChain.pending()).toEqual([]);
-  live.unshift("0x1");
-  const result = (await oldChain.startNext(Date.now()))!;
-  await completeFreeFixture(oldChain, result.id, {
-    environment: "madara.blitz",
-    gameName: launched.name,
-    gameId: 7,
-    resultCommitment: "0x1",
-  });
+  expect((await oldChain.pending()).map(({ chainId }) => chainId)).toEqual(["0x1"]);
   const frontier = (await oldChain.startNext(Date.now()))!;
   await completeFreeFixture(oldChain, frontier.id, frontierSummary(oldSeason.name, seasonStart));
   expect(await newChain.pending()).toEqual([]);
@@ -214,10 +165,10 @@ test("retirement preserves history while unfinished live work remains observable
 
 test("pre-chain migration archives neither block a cutover nor enter the directory", async () => {
   const store = new D1LaunchStore(database.db, testChain());
-  const archived = await store.enqueue("game", { environment: "madara.blitz", gameName: "archive" });
+  const archived = await store.enqueue({ environment: "madara.blitz", gameName: "archive" });
   await database.db.prepare("UPDATE launch_runs SET chain_id = '' WHERE id = ?").bind(archived.id).run();
   expect(await store.pending()).toEqual([]);
-  expect(await store.enqueue("game", { environment: "madara.blitz", gameName: "new" })).toMatchObject({
+  expect(await store.enqueue({ environment: "madara.blitz", gameName: "new" })).toMatchObject({
     status: "queued",
   });
   await database.db
@@ -225,6 +176,33 @@ test("pre-chain migration archives neither block a cutover nor enter the directo
     .bind(JSON.stringify({ gameId: 7 }), archived.id)
     .run();
   expect(await store.playerDirectoryGames()).toEqual([]);
+});
+
+test("a completed game, paid or free, cannot be deleted out of the directory", async () => {
+  const store = new D1LaunchStore(database.db, testChain());
+  await database.db.batch(
+    [
+      { name: "blitz-20261016-1400-1", slot: 3, gameId: 7 },
+      { name: "free-game", slot: null, gameId: 9 },
+    ].map(({ name, slot, gameId }) =>
+      database.db
+        .prepare(
+          `INSERT INTO launch_runs (id, chain_id, kind, environment, name, request, status, available_at, created_at, updated_at, summary, slot_id) VALUES (?, ?, 'game', 'madara.blitz', ?, '{}', 'complete', 0, 0, 0, ?, ?)`,
+        )
+        .bind(name, TEST_CHAIN, name, JSON.stringify({ gameId }), slot),
+    ),
+  );
+  expect(await store.delete("madara.blitz", "blitz-20261016-1400-1")).toBe(false);
+  expect(await store.delete("madara.blitz", "free-game")).toBe(false);
+  expect(await store.playerDirectoryGames()).toEqual([
+    {
+      chainId: TEST_CHAIN,
+      games: [
+        { gameId: 7, slotId: 3 },
+        { gameId: 9, slotId: null },
+      ],
+    },
+  ]);
 });
 
 test("directory reads retain both chains and log invalid summaries without reading a manifest", async () => {

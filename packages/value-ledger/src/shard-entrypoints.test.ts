@@ -3,9 +3,14 @@ import { ShardOperator } from "./shard";
 import { GAME_ENTRYPOINTS } from "./shard-entrypoints";
 
 describe("shard entrypoints", () => {
-  it("lists the Frontier close's sweep beside its prize writes", () => {
-    const admin = GAME_ENTRYPOINTS.filter((entry) => !entry.stamp).map((entry) => entry.name);
-    expect(admin).toEqual(expect.arrayContaining(["publish_frontier_pool", "award_frontier_prize", "sweep_lords"]));
+  it("forwards no Season 0 money write and no authority route", () => {
+    const forwarded = GAME_ENTRYPOINTS.map((entry) => entry.name) as string[];
+    for (const refused of ["deliver_deposit", "sweep_lords", "authority_call", "initialize_realm_traits"])
+      expect(forwarded).not.toContain(refused);
+  });
+
+  it("stamps play alone", () => {
+    expect(GAME_ENTRYPOINTS.filter((entry) => entry.stamp).map((entry) => entry.name)).toEqual(["play"]);
   });
 
   it("names each entrypoint once, so two branches adding the same write cannot both keep it", () => {
@@ -19,9 +24,9 @@ describe("shard entrypoints", () => {
     const unlisted = (operator: ShardOperator) =>
       // @ts-expect-error not on GAME_ENTRYPOINTS
       operator.admin("not_on_the_proxy_list", {});
-    const play = (operator: ShardOperator, nonce: bigint) =>
+    const play = (operator: ShardOperator) =>
       // @ts-expect-error play is stamped by the proxy, never sent as an administrative call
-      operator.sendAdmin("play", {}, nonce);
+      operator.admin("play", {});
     expect([unlisted, play].every((call) => typeof call === "function")).toBe(true);
   });
 });

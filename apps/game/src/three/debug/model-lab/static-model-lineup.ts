@@ -9,10 +9,11 @@ import { configureRendererColorOutput } from "../../renderer-color-output";
 import { gltfLoader } from "../../utils/utils";
 import { ModelLabEnvironment } from "./model-lab-environment";
 import { readModelLabSettings } from "./model-lab-settings";
+import type { BeastIdle } from "@bibliothecadao/types";
 import { FrontierModel, frontierModelKind } from "../../structures/frontier-model";
 import { RewardTileModel } from "../../rewards/reward-tile-model";
 import { SettlementModel } from "../../structures/settlement-model";
-import { isRealmModelPath, isSettlementModelPath } from "../../constants/scene-constants";
+import { HEX_SIZE, RiftModelPath, isRealmModelPath, isSettlementModelPath } from "../../constants/scene-constants";
 import { bakeLineupTransforms } from "./bake-lineup-transforms";
 import {
   resolveWorldmapCameraFieldOfViewDegrees,
@@ -23,8 +24,7 @@ import {
 export interface LineupAsset {
   label: string;
   position?: { x: number; z: number };
-  rotationY?: number;
-  parts: readonly { path: string; scale?: number; z?: number; y?: number }[];
+  parts: readonly { path: string; scale?: number; z?: number; y?: number; idle?: BeastIdle }[];
 }
 export interface LineupSettings {
   distance: number;
@@ -33,6 +33,10 @@ export interface LineupSettings {
   lighting: "day" | "sunset";
   camera?: "worldmap";
 }
+
+const HEX_APOTHEM = (HEX_SIZE * Math.sqrt(3)) / 2;
+const isWithinPointyHex = (dx: number, dz: number) =>
+  Math.abs(dx) <= HEX_APOTHEM && Math.abs(dx) + Math.sqrt(3) * Math.abs(dz) <= 2 * HEX_APOTHEM;
 
 /** The same instancing, materials, terrain and lighting as the game, at scale one. */
 export async function mountStaticLineup(
@@ -60,6 +64,7 @@ export async function mountStaticLineup(
   const positions: Vector3[] = [];
   const heights: number[] = [];
   const parts: {
+    path: string;
     scale: number;
     z: number;
     y: number;
@@ -88,29 +93,20 @@ export async function mountStaticLineup(
   };
   const drawnAssets = new Set<string>();
   const drawnParts = new Set<number>();
-  let beastCalls = 0,
-    beastTriangles = 0;
+  const instanceMatrix = new Matrix4();
+  const instancePosition = new Vector3();
+  const isDrawnAtSlot = (part: (typeof parts)[number], slot: number) => {
+    const mesh = part.model.instancedMeshes[0];
+    if (!mesh) return false;
+    mesh.getMatrixAt(part.index, instanceMatrix);
+    instancePosition.setFromMatrixPosition(instanceMatrix).applyMatrix4(mesh.matrixWorld);
+    return isWithinPointyHex(instancePosition.x - positions[slot].x, instancePosition.z - positions[slot].z);
+  };
   let current = settings;
   let frame = 0;
   let last = performance.now();
   let disposed = false;
   let capturePending = true;
-  let sampling:
-    | {
-        remaining: number;
-        gl: WebGL2RenderingContext;
-        frames: number[];
-        resolve: (value: {
-          frames: number[];
-          calls: number;
-          triangles: number;
-          beastCalls: number;
-          beastTriangles: number;
-          gpu: string;
-        }) => void;
-        reject: (reason: Error) => void;
-      }
-    | undefined;
   const resize = () => {
     const { width, height } = container.getBoundingClientRect();
     if (!width || !height) return;
@@ -122,8 +118,6 @@ export async function mountStaticLineup(
   const dispose = () => {
     if (disposed) return;
     disposed = true;
-    sampling?.reject(new Error("Lab closed during frame measurement"));
-    sampling = undefined;
     cancelAnimationFrame(frame);
     observer.disconnect();
     labels.forEach((label) => label?.remove());
@@ -138,7 +132,7 @@ export async function mountStaticLineup(
     current = next;
     capturePending = true;
     parts.forEach((part) => {
-      const matrix = new Matrix4().makeRotationY((lineup[part.slot].rotationY ?? 0) + (next.yaw * Math.PI) / 180);
+      const matrix = new Matrix4().makeRotationY((next.yaw * Math.PI) / 180);
       matrix.setPosition(positions[part.slot]);
       matrix.multiply(new Matrix4().makeTranslation(0, part.y, part.z));
       matrix.scale(new Vector3(part.scale, part.scale, part.scale));
@@ -178,7 +172,7 @@ export async function mountStaticLineup(
           const kind = frontierModelKind(part.path);
           const model = kind
             ? new FrontierModel(gltf, capacity, kind)
-            : part.path === "/models/reward-tiles/rift.glb"
+            : part.path === RiftModelPath
               ? new RewardTileModel(gltf, capacity)
               : isSettlementModelPath(part.path)
                 ? new SettlementModel(gltf, capacity, isRealmModelPath(part.path) ? "realm" : "village")
@@ -199,11 +193,6 @@ export async function mountStaticLineup(
             const afterRender = mesh.onAfterRender;
             mesh.onAfterRender = (...args) => {
               afterRender.apply(mesh, args);
-              if (kind && kind !== "ruin") {
-                beastCalls++;
-                const indices = mesh.geometry.index?.count ?? mesh.geometry.getAttribute("position").count;
-                beastTriangles += (Math.min(indices, mesh.geometry.drawRange.count) / 3) * mesh.count;
-              }
               drawnAssets.add(part.path);
               active.parts.forEach((index) => drawnParts.add(index));
             };
@@ -211,15 +200,18 @@ export async function mountStaticLineup(
         }
         heights[slot] = Math.max(heights[slot], batch.model.height * (part.scale ?? 1) + (part.y ?? 0));
         batch.parts.push(parts.length);
+        const index = batch.count++;
         parts.push({
+          path: part.path,
           scale: part.scale ?? 1,
           z: part.z ?? 0,
           y: part.y ?? 0,
           slot,
           model: batch.model,
-          index: batch.count++,
+          index,
         });
         batch.model.setCount(batch.count);
+        if (part.idle && batch.model instanceof FrontierModel) batch.model.setIdleAt(index, part.idle);
       }
     }
     update(settings);
@@ -234,41 +226,25 @@ export async function mountStaticLineup(
       controls.update();
       drawnAssets.clear();
       drawnParts.clear();
-      beastCalls = 0;
-      beastTriangles = 0;
       renderer.render(scene, camera);
-      if (sampling) {
-        sampling.gl.finish();
-        sampling.frames.push(performance.now() - now);
-        if (--sampling.remaining === 0) {
-          const extension = sampling.gl.getExtension("WEBGL_debug_renderer_info");
-          sampling.resolve({
-            frames: sampling.frames,
-            calls: renderer.info.render.drawCalls ?? renderer.info.render.calls,
-            triangles: renderer.info.render.triangles,
-            beastCalls,
-            beastTriangles,
-            gpu: String(sampling.gl.getParameter(extension?.UNMASKED_RENDERER_WEBGL ?? sampling.gl.RENDERER)),
-          });
-          sampling = undefined;
-        }
-      }
       placeLabels();
       const selectionDrawn =
         current.focus === "lineup"
           ? drawnParts.size === parts.length
           : lineup[current.focus].parts.every((part) => drawnAssets.has(part.path));
       if (capturePending && selectionDrawn) {
+        const { focus } = current;
         container.dataset.lineupRendered = JSON.stringify({
           ...current,
           models: parts.length,
           drawnAssets: [...drawnAssets],
           drawnParts: [...drawnParts],
+          focusParts:
+            focus === "lineup" ? null : parts.filter((part) => isDrawnAtSlot(part, focus)).map((part) => part.path),
           cameraDistance: camera.position.distanceTo(controls.target),
           cameraPosition: camera.position.toArray(),
           cameraTarget: controls.target.toArray(),
           fieldOfView: camera.fov,
-          rotations: lineup.map((asset) => (asset.rotationY ?? 0) + (current.yaw * Math.PI) / 180),
           calls: renderer.info.render.drawCalls ?? renderer.info.render.calls,
         });
         capturePending = false;
@@ -279,32 +255,6 @@ export async function mountStaticLineup(
     return {
       dispose,
       update,
-      setMistVisible(visible: boolean) {
-        models.forEach((model) => {
-          if (model instanceof FrontierModel) model.setMistVisible(visible);
-        });
-      },
-      setBeastMotionEnabled(enabled: boolean) {
-        models.forEach((model) => {
-          if (model instanceof FrontierModel) model.setBeastMotionEnabled(enabled);
-        });
-      },
-      measureFrames(count: number) {
-        const backend = (renderer as unknown as { backend: { getContext?: () => WebGL2RenderingContext } }).backend;
-        const gl = backend.getContext?.();
-        if (!gl?.finish) return Promise.reject(new Error("Synchronized frame measurement requires the WebGL renderer"));
-        if (sampling) return Promise.reject(new Error("A frame measurement is already running"));
-        return new Promise<{
-          frames: number[];
-          calls: number;
-          triangles: number;
-          beastCalls: number;
-          beastTriangles: number;
-          gpu: string;
-        }>((resolve, reject) => {
-          sampling = { remaining: count, gl, frames: [], resolve, reject };
-        });
-      },
       assets: lineup.flatMap((asset) => asset.parts.map((part) => part.path)),
     };
   } catch (error) {

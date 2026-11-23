@@ -1,3 +1,5 @@
+import "./profile-view.css";
+
 import { LORE_LINE, PROFILE_WORDS, SIGN_IN_WORDS, WORDS } from "@/ui/design-system/kit/words";
 import { useEffect, type ReactNode } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
@@ -18,10 +20,9 @@ import { useRequestSignIn } from "../sign-in/connect";
 import { AccountCard, SignOut } from "./account-card";
 import { DeleteAccount } from "./account-deletion";
 import { DevicesCard } from "./devices-page";
-import { InvitePanel } from "./invite-panel";
 import { SharedDaysPanel } from "./shared-days-panel";
 import { NotificationsCard } from "./notifications";
-import { PlayerCard, ProfileView, RecentGames } from "./profile-view";
+import { PlayerCard, ProfileView, RealmsShowcase, RecentGames, WalletPanel } from "./profile-view";
 import { SETTINGS_PATH } from "./settings-route";
 import { HOW_TO_PLAY, MARKET } from "../community";
 import { WHATS_NEW_PATH } from "../frame/tabs";
@@ -124,7 +125,7 @@ export const PlayerPage = () => {
  * The page for a signed-in player, the player's account known from the session; else the card that says why not
  * (signed out, a name still to claim with Sign out under it, or this device removed), placed by the page.
  */
-const SignedInOnly = ({
+export const SignedInOnly = ({
   fallback,
   children,
 }: {
@@ -174,29 +175,27 @@ const SignInCard = ({ line, verb }: { line: string | null; verb: string }) => {
   );
 };
 
-/**
- * The player's own page: on desktop their card and the rows in the left column, their invite link, what their shared
- * days brought and their games at the right.
- */
 const OwnProfile = ({ account }: { account: string }) => {
   if (useLayout() === "phone")
     return (
       <div className="flex flex-col gap-4">
         <ProfileView account={account} own />
-        <InvitePanel />
         <SharedDaysPanel />
         <Rows />
       </div>
     );
   return (
-    <div className="grid grid-cols-[theme(width.rail)_minmax(0,1fr)] items-start gap-6">
-      <div className="flex flex-col gap-5">
+    <div className="you-grid">
+      <div className="flex min-w-0 flex-col gap-5">
         <PlayerCard account={account} own />
+      </div>
+      <div className="flex min-w-0 flex-col gap-5">
+        <RealmsShowcase />
+        <SharedDaysPanel />
         <Rows />
       </div>
       <div className="flex min-w-0 flex-col gap-5">
-        <InvitePanel />
-        <SharedDaysPanel />
+        <WalletPanel />
         <RecentGames account={account} own />
       </div>
     </div>

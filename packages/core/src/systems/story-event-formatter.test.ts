@@ -1,8 +1,9 @@
-import { RELICS, relicChestRelics, siteName, StructureType } from "@bibliothecadao/types";
+import { siteName, StructureType } from "@bibliothecadao/types";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { hash } from "starknet";
 import { NativeFactStore } from "../client/native-fact-store";
 import explorerFixture from "../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
+// The package index first, so the config singleton the utils read through it is evaluated before any story runs.
 // The package index first, so the config singleton the utils read through it is evaluated before any story runs.
 import { configManager } from "..";
 import { buildStoryEventPresentation, findGain } from "./story-event-formatter";
@@ -13,14 +14,6 @@ vi.stubGlobal("localStorage", { getItem: () => null });
 beforeEach(() => {
   vi.spyOn(configManager, "getMapCenter").mockReturnValue(2147483647);
   vi.spyOn(configManager, "getActiveGameId").mockReturnValue(1);
-  vi.spyOn(configManager, "getVictoryPointGrants").mockReturnValue({
-    exploreTile: 5,
-    openRelicCrate: 250,
-    claimCampFromBandits: 250,
-    claimHyperstructureFromBandits: 1000,
-    hyperstructurePerSecond: 1,
-    hyperstructureScale: "flat",
-  });
 });
 
 type Event = Parameters<typeof buildStoryEventPresentation>[0];
@@ -33,7 +26,7 @@ const buildStore = () => {
     {
       model: "GameRelease",
       key: hash.computePoseidonHashOnElements([1]),
-      value: { game_id: 1, release_id: 3, created_release_id: 3, preset_commitment: 0x1abn },
+      value: { game_id: 1, release_id: 3, created_release_id: 3 },
     },
   ]);
   const setHeldRealm = (id: number, realmId: number, level: number) => {
@@ -130,13 +123,6 @@ describe("owner naming", () => {
       named("djizus"),
     );
     expect(withdrawn).toMatchObject({ title: "djizus withdrew LORDS", owner: "djizus", ownerAt: 0 });
-    const chest = { pack: "Produce", lucky: false } as const;
-    const opened = buildStoryEventPresentation(
-      story("RelicChestOpened", { explorer_id: 7, chest, relics: relicChestRelics(chest) }),
-      undefined,
-      named("realm"),
-    );
-    expect(opened).toMatchObject({ title: "Crate opened: 3 relics to its realm", owner: "realm", ownerAt: null });
   });
 });
 
@@ -179,6 +165,42 @@ it("formats native battle sides and positive Ethereal rolls without a legacy row
   expect(presentation.description).toContain("Outcome: Lord 0123 wins");
   expect(presentation.description).toContain("Attacker d20: 20 (+20% damage)");
   expect(presentation.description).toContain("Defender d20: 1 (+1% damage)");
+});
+
+it("formats Frontier battle stories with Frontier troop names, no tier prefix and no d20 line", () => {
+  const frontierStore = {
+    get: (model: string) => {
+      if (model === "SliceRules") return { day_unit_seconds: 14_400 };
+      if (model === "GameRegistry")
+        return { start_main_at: 100, end_at: 1_000_000, scheduled_end_at: 1_000_000, seed: 1n };
+      if (model === "SettlementRules") return { spacing: 1024 };
+      return undefined;
+    },
+  } as unknown as Parameters<typeof buildStoryEventPresentation>[1];
+  const presentation = buildStoryEventPresentation(
+    story("BattleEvent", {
+      attacker_id: 20,
+      defender_id: 21,
+      attacker_owner: 10,
+      defender_owner: 11,
+      winner_id: 10,
+      attacker: {
+        player: "0x123",
+        category: "Paladin",
+        tier: "T1",
+        before: "10000000000",
+        after: "9000000000",
+        roll: 20,
+      },
+      defender: { player: "0x456", category: "Knight", tier: "T1", before: "10000000000", after: "0", roll: 1 },
+    }),
+    frontierStore,
+  );
+  expect(presentation.description).toContain("Attacker forces: Scouts [ 10 ]");
+  expect(presentation.description).toContain("Defender forces: Knights [ 10 ]");
+  expect(presentation.description).not.toContain("T1");
+  expect(presentation.description).not.toContain("Paladin");
+  expect(presentation.description).not.toContain("d20");
 });
 
 /**
@@ -330,7 +352,7 @@ it("names a cleared site by its map name, with its recorded kind and payout, wit
     }),
   );
   expect(result.title).toBe(`${siteName(9)} cleared`);
-  expect(result.description).toMatch(/^Troll · Lord 0123's army · .*500/);
+  expect(result.description).toMatch(/^Camp · Lord 0123's army · .*500/);
   expect(
     buildStoryEventPresentation(
       own("SitePayout", {
@@ -341,7 +363,7 @@ it("names a cleared site by its map name, with its recorded kind and payout, wit
         reward: null,
       }),
     ),
-  ).toMatchObject({ title: `${siteName(9)} cleared`, description: "Beasts · Lord 0123's army · XP only" });
+  ).toMatchObject({ title: `${siteName(9)} cleared`, description: "Beasts · Lord 0123's army · No resource reward" });
   // The name its holder gave it, as the rename control writes it.
   const named = vi
     .spyOn(localStorage, "getItem")
@@ -363,7 +385,7 @@ it("names a cleared site by its map name, with its recorded kind and payout, wit
   }
 });
 
-it("names another player's clear by the player, and a ruin's clear as the chest it earns", () => {
+it("names another player's clear by the player", () => {
   const cleared = (category: number, view: (type: string, payload: Record<string, unknown>) => Event) =>
     buildStoryEventPresentation(
       view("SitePayout", {
@@ -375,15 +397,7 @@ it("names another player's clear by the player, and a ruin's clear as the chest 
       }),
     ).title;
   expect(cleared(StructureType.Camp, story)).toBe(`Lord 0123 cleared ${siteName(9)}`);
-  expect(cleared(StructureType.Ruin, story)).toBe(`Lord 0123 cleared ${siteName(9)}: chest earned`);
-  expect(cleared(StructureType.Ruin, own)).toBe(`${siteName(9)} cleared: chest earned`);
-});
-
-it("names another player's opened chest by the player, the LORDS it paid or its expiry", () => {
-  const opened = (amount: string) =>
-    buildStoryEventPresentation(story("RewardChestOpened", { explorer_id: 7, structure_id: 3, coord: {}, amount }));
-  expect(opened("50")).toMatchObject({ title: "Lord 0123 opened a chest: 50 LORDS", description: "Lord 0123's army" });
-  expect(opened("0").title).toBe("Lord 0123's chest expired: no LORDS paid");
+  expect(cleared(StructureType.Ruin, own)).toBe(`${siteName(9)} cleared`);
 });
 
 describe("every story the chain can tell", () => {
@@ -409,17 +423,7 @@ describe("every story the chain can tell", () => {
     ProductionStory: { resource_type: 35, amount },
     BuildingPlacementStory: { coord: { alt: false, x: 11, y: 10 }, category: 37, change: "Created" },
     BuildingPaymentStory: { category: 37, cost: [{ resource_type: 23, amount }] },
-    BitcoinAwardStory: {
-      phase: 1,
-      mine_id: 9,
-      winner: "0x123",
-      owner: "0x456",
-      winner_destination: 5,
-      owner_destination: 6,
-      winner_paid: amount,
-      owner_paid: amount,
-    },
-    StructureCapturedStory: { previous_owner: "0x0", new_owner: "0x123", points: 10 },
+    StructureCapturedStory: { previous_owner: "0x0", new_owner: "0x123" },
     TradeCreated: {
       trade_id: 1,
       order: {
@@ -455,22 +459,11 @@ describe("every story the chain can tell", () => {
       buy: true,
     },
     BankLiquidity: { resource_type: 23, add: true },
-    HyperstructurePoints: { player: "0x123", points: 5 },
-    RelicChestOpened: {
-      explorer_id: 7,
-      coord,
-      chest: { pack: "War", lucky: false },
-      relics: [41, 43, 39],
-      points: 1000,
-    },
     ExplorationReward: { explorer_id: 7, receiver: 5, coord, resource_type: 38, amount: "150000000000" },
     SpireDiscovered: { explorer_id: 7, receiver: 5, coord, resource_type: 38, amount: "3000000000000" },
-    SeasonEnded: { value: "0x123" },
     FaithPledged: { structure_id: 5, wonder_id: 6, owner_rate: 1, pledger_rate: 1 },
     FaithRemoved: { structure_id: 5, wonder_id: 6 },
     BlitzFinalized: { value: "0x1" },
-    RelicCrafted: { value: 39 },
-    RelicActivated: { relic_id: 41, recipient: "Explorer", rate_bps: 2000, duration_seconds: 1800, radius: 0 },
     ExplorerCreateStory: {
       structure_id: 5,
       explorer_id: 7,
@@ -486,7 +479,6 @@ describe("every story the chain can tell", () => {
     LordsWithdrawn: { account: "0x111", amount },
     SiteUsed: { explorer_id: 7, coord, benefit: { Shrine: 200 } },
     SkillPointSpent: { explorer_id: 7, choice: "Battle", tier: 2, point_rank: 2, stamina: 30 },
-    RewardChestOpened: { explorer_id: 7, structure_id: 5, coord, amount: 17 },
     SitePayout: {
       structure_id: 5,
       explorer_id: 7,
@@ -533,11 +525,9 @@ describe("every story the chain can tell", () => {
     "TradeCancelled",
     "BankSwap",
     "BankLiquidity",
-    "RelicChestOpened",
     "FaithPledged",
     "FaithRemoved",
     "BlitzFinalized",
-    "RelicCrafted",
     "RaidEvent",
   ]);
 
@@ -578,121 +568,21 @@ describe("every story the chain can tell", () => {
   });
 });
 
-it("says where an opened chest's relics went, and lists them as their panel does", () => {
-  expect(new Set(RELICS.map((relic) => relic.name)).size).toBe(RELICS.length);
-  vi.spyOn(configManager, "getPresetId").mockReturnValue(2);
-  const { store, setHeldRealm, setExplorer } = buildStore();
-  setHeldRealm(5, 1, 1);
-  setExplorer(7, 5, "T1");
-  const opened = (chest: { pack: "War" | "Explore" | "Produce" | "Fortress"; lucky: boolean }) =>
-    buildStoryEventPresentation(
-      story("RelicChestOpened", { explorer_id: 7, chest, relics: relicChestRelics(chest) }),
-      store,
-    );
-  expect(opened({ pack: "Explore", lucky: true })).toMatchObject({
-    title: "Crate opened: 3 relics to the army Stolsli T1",
-    description: "Exploration Relic II, Exploration Reward Relic II, Stamina Relic II",
-  });
-  expect(opened({ pack: "Produce", lucky: false }).title).toBe("Crate opened: 3 relics to Stolsli");
-  expect(opened({ pack: "Fortress", lucky: false }).title).toBe(
-    "Crate opened: 1 relic to the army Stolsli T1, 2 to Stolsli",
-  );
-});
-
-it("names a gone army's chest delivery without its names", () => {
-  const chest = { pack: "Produce", lucky: false } as const;
-  const { title } = buildStoryEventPresentation(
-    story("RelicChestOpened", { explorer_id: 7, chest, relics: relicChestRelics(chest) }),
-  );
-  expect(title).toBe("Crate opened: 3 relics to its realm");
-});
-
-describe("a relic activation", () => {
-  const effects = [
-    "Increases stamina regeneration by 50%",
-    "Increases stamina regeneration by 100%",
-    "Increases damage by 20%",
-    "Increases damage by 40%",
-    "Reduces damage taken by 20%",
-    "Reduces damage taken by 40%",
-    "Instantly explores a 1-tile radius",
-    "Instantly explores a 2-tile radius",
-    "Increases exploration rewards by 100%",
-    "Increases exploration rewards by 200%",
-    "Reduces attacker damage to the structure by 15%",
-    "Reduces attacker damage to the structure by 30%",
-    "Increases resource production rate by 20%",
-    "Increases resource production rate by 40%",
-    "Increases labor production rate by 20%",
-    "Increases labor production rate by 40%",
-    "Increases troop production rate by 15%",
-    "Increases troop production rate by 30%",
-  ];
-
-  it.each(RELICS)("names $name, its actor, recipient and effect in the Events line", (relic) => {
-    vi.spyOn(configManager, "getPresetId").mockReturnValue(2);
-    const { store, setHeldRealm, setExplorer } = buildStore();
-    setHeldRealm(5, 1, 1);
-    setExplorer(7, 5, "T1");
-    const reveal = relic.id === 45 || relic.id === 46;
-    const recipient = relic.id < 49 ? "Explorer" : relic.id < 51 ? "StructureGuard" : "StructureProduction";
-    const target = relic.id < 49 ? "Stolsli T1 army" : relic.id < 51 ? "Stolsli's guards" : "Stolsli";
-    const presentation = buildStoryEventPresentation(
-      story(
-        "RelicActivated",
-        {
-          relic_id: relic.id,
-          recipient,
-          rate_bps: relic.rateBps,
-          duration_seconds: reveal ? 0 : 1800,
-          radius: reveal ? relic.id - 44 : 0,
-        },
-        relic.id < 49 ? 7 : 5,
-      ),
-      store,
-      () => "Ada",
-    );
-    expect(presentation.title).toBe(
-      `Ada activated ${relic.name} on ${target} · ${effects[relic.id - 39]}${reveal ? "" : relic.id < 41 ? " for 30m of regeneration" : " for 30m"}`,
-    );
-  });
-
-  it("retains the applied effect after the target is gone and without looking up an active boost", () => {
-    expect(
-      buildStoryEventPresentation(
-        story(
-          "RelicActivated",
-          {
-            relic_id: 41,
-            recipient: "Explorer",
-            rate_bps: 1250,
-            duration_seconds: 1800,
-            radius: 0,
-          },
-          7,
-        ),
-        undefined,
-        () => "Ada",
-      ).title,
-    ).toBe("Ada activated Damage Relic I on Army · Increases damage by 12.5% for 30m");
-  });
-});
-
 describe("a capture", () => {
   const names = (address: string) => ({ "0xc1": "clientlane", "0xa1": "uxplay" })[address] ?? null;
-  const captured = (previousOwner: string, viewerAddress: string | null, points = 0n) => {
+  const captured = (previousOwner: string, viewerAddress: string | null) => {
     const { store, setHeldRealm } = buildStore();
     setHeldRealm(5, 1, 1);
     const realm = buildStoryEventPresentation(story("RealmCreatedStory", { coord: { x: 1, y: 1 } }, 5), store).title;
     const presentation = buildStoryEventPresentation(
       {
-        ...story("StructureCapturedStory", { previous_owner: previousOwner, new_owner: "0xc1", points }, 5),
+        ...story("StructureCapturedStory", { previous_owner: previousOwner, new_owner: "0xc1" }, 5),
         viewerAddress,
       },
       store,
       names,
     );
-    return { ...presentation, realm: realm.replace(/ founded$/, "") };
+    return { ...presentation, realm: realm.replace(/ created$/, "") };
   };
 
   const aftermath = "Its armies and deliveries went with it";
@@ -709,9 +599,9 @@ describe("a capture", () => {
     expect(captured("0xa1", "0xc1").title).toBe(`clientlane took ${realm} from uxplay. ${aftermath}`);
   });
 
-  it("has nothing that went with it when no player held it, and the points taking it from The Vanguard paid", () => {
-    const { title, realm } = captured("0x0", "0xc1", 250_000_000n);
-    expect(title).toBe(`clientlane took ${realm} from The Vanguard · +250 points`);
+  it("has nothing that went with it when no player held it", () => {
+    const { title, realm } = captured("0x0", "0xc1");
+    expect(title).toBe(`clientlane took ${realm} from The Vanguard`);
   });
 });
 
@@ -730,7 +620,7 @@ describe("a story's subject", () => {
     setHeldRealm(5, 1, 1);
     const title = (storyType: string, payload: Record<string, unknown>) =>
       buildStoryEventPresentation(story(storyType, payload, 5), store).title;
-    const name = title("RealmCreatedStory", { coord: { x: 1, y: 1 } }).replace(/ founded$/, "");
+    const name = title("RealmCreatedStory", { coord: { x: 1, y: 1 } }).replace(/ created$/, "");
     expect(name).not.toMatch(/^A realm$|\d{6,}/);
     expect(title("ResourceReceiveArrivalStory", { resources: [] })).toBe(`Resources arrived at ${name}`);
     expect(title("ResourceReceiveArrivalStory", { resources: [{ resource_type: 35, amount: "900000000000" }] })).toBe(
@@ -769,7 +659,7 @@ describe("a story's subject", () => {
     expect(title("ExplorerDeleteStory", { explorer_id: 7 })).toBe("djizus disbanded an army");
     expect(title("StructureLevelUpStory", { new_level: 1 })).toBe("djizus's realm became a City");
     expect(title("ResourceBurnStory", { resources: [] })).toBe("djizus spent resources");
-    expect(title("RealmCreatedStory", { coord: { x: 1, y: 1 } })).toBe("djizus founded a realm");
+    expect(title("RealmCreatedStory", { coord: { x: 1, y: 1 } })).toBe("djizus created a Realm");
     expect(title("ResourceReceiveArrivalStory", { resources: [] })).toBe("Resources arrived at djizus's realm");
     for (const line of [
       title("ProductionStory", { received_resource_type: 35, received_amount: "1", cost: [] }),
@@ -795,7 +685,6 @@ describe("a story's subject", () => {
 
 describe("a resource transfer", () => {
   it("names each end as the structure or the army it is, and leaves out an end the store no longer holds", () => {
-    vi.spyOn(configManager, "getPresetId").mockReturnValue(2);
     const { store, setHeldRealm, setExplorer } = buildStore();
     setHeldRealm(5, 1, 1);
     setExplorer(7, 5, "T1");
@@ -823,7 +712,6 @@ describe("a delivery's story", () => {
   /** QA run 3: wheat sent at 02:50:57 local with 27 s on the road landed at 02:54. */
   const sentAt = (hours: number, minutes: number, seconds: number) => new Date(2026, 9, 17, hours, minutes, seconds);
   const told = (sent: Date, travel: number) => {
-    vi.spyOn(configManager, "getPresetId").mockReturnValue(2);
     vi.spyOn(configManager, "getTick").mockReturnValue(180);
     const { store } = buildStore();
     return buildStoryEventPresentation(
@@ -903,34 +791,6 @@ it("writes a small army's find rounded, and one under a unit with no amount, as 
   expect(findGain(0.4)).toBeNull();
   expect(findGain(1)).toBe("+1");
   expect(findGain(undefined)).toBe("—");
-});
-
-it("adds the points an opened crate scored", () => {
-  const chest = { pack: "War", lucky: false } as const;
-  const { title } = buildStoryEventPresentation(
-    story("RelicChestOpened", { explorer_id: 7, chest, relics: relicChestRelics(chest), points: 250_000_000n }),
-  );
-  expect(title).toBe("Crate opened: 3 relics to the army · +250 points");
-});
-
-it("tells the recorded whole LORDS payment and names its home even after the opening army is gone", () => {
-  vi.spyOn(configManager, "getPresetId").mockReturnValue(5);
-  const { store, setHeldRealm } = buildStore();
-  setHeldRealm(5, 1, 1);
-  expect(
-    buildStoryEventPresentation(story("RewardChestOpened", { explorer_id: 7, structure_id: 5, amount: 17 }), store)
-      .title,
-  ).toBe("Chest opened: 17 LORDS to Stolsli");
-  expect(
-    buildStoryEventPresentation(story("RewardChestOpened", { explorer_id: 7, structure_id: 5, amount: 0 }), store)
-      .title,
-  ).toBe("Chest expired: no LORDS paid");
-});
-
-it("writes a hyperstructure share's points whole, from the contract's millionths", () => {
-  expect(
-    buildStoryEventPresentation(story("HyperstructurePoints", { player: "0x0", points: "5000000000" })).description,
-  ).toMatch(/ \+5,000 points$/);
 });
 
 it.each([

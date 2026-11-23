@@ -22,7 +22,6 @@ vi.mock("./hud-chat-window", () => ({ HudChatWindow: () => null }));
 vi.mock("./left-facets/empire-cockpit", () => ({ EmpireCockpit: () => null }));
 vi.mock("./left-facets/structure-list-column", () => ({ StructureListColumn: () => null }));
 vi.mock("./left-facets/use-structure-actions", () => ({ useStructureActions: () => null }));
-vi.mock("./spectator-standings", () => ({ SpectatorStandingsBody: () => null }));
 // The line for a player whose last realm fell (its reading is out-of-game.test.tsx's); here, only where it shows.
 vi.mock("@/ui/features/world/hud/out-of-game", () => ({
   OutOfGameLine: () => (viewer.outOfGame ? <p>You hold no realm.</p> : null),
@@ -84,25 +83,16 @@ it("names each tab in words under its painting, and paints Chat as chat, not as 
   expect(host.querySelector('[data-icon="discord"]')).toBeNull();
 });
 
-it("names a spectator's Standings sheet once, in its head", () => {
-  viewer.ordersAllowed = false;
-  act(() => useUIStore.setState({}));
-  act(() => tab("Standings").click());
-  const sheet = host.querySelector('section[aria-label="HUD sheet"]')!;
-  expect(sheet.textContent?.match(/Standings/g)).toEqual(["Standings"]);
-  expect(sheet.querySelector('section[aria-label="Standings"]')).not.toBeNull();
-});
-
-it("tells a player out of the game so in the Empire sheet, and again in Standings once the HUD watches", () => {
+it("tells a player out of the game so in the Empire sheet, which a spectator has no tab for", () => {
   viewer.outOfGame = true;
   act(() => useUIStore.setState({}));
   act(() => tab("Empire").click());
-  const sheet = () => host.querySelector('section[aria-label="HUD sheet"]')!;
-  expect(sheet().textContent).toContain("You hold no realm.");
+  expect(host.querySelector('section[aria-label="HUD sheet"]')!.textContent).toContain("You hold no realm.");
   viewer.ordersAllowed = false;
   act(() => useUIStore.setState({}));
-  expect(sheet().querySelector('section[aria-label="Standings"]')).not.toBeNull();
-  expect(sheet().textContent).toContain("You hold no realm.");
+  const tabs = [...host.querySelectorAll('nav[aria-label="HUD tabs"] button')].map((button) => button.textContent);
+  expect(tabs).toEqual(["Map", "Log", "Chat", "Details"]);
+  expect(host.querySelector('section[aria-label="HUD sheet"]')).toBeNull();
 });
 
 it("offers the minimap on the world map only: the realm view has no Map tab, and an open Map sheet closes there", () => {

@@ -1,5 +1,5 @@
 import { HudButton, HudField, HudPanel } from "@/ui/design-system/kit/hud-elements";
-import { CombatParameters, CombatSimulator } from "@bibliothecadao/eternum";
+import { CombatParameters, configManager } from "@bibliothecadao/eternum";
 
 interface CombatParametersPanelProps {
   parameters: CombatParameters;
@@ -31,19 +31,19 @@ export const CombatParametersPanel = ({ parameters, onParametersChange, show }: 
               <HudField
                 type="number"
                 aria-label={parameterLabel(key)}
-                value={String(Number(value))}
+                value={String(value)}
                 onChange={(text) => {
-                  const next = parseFloat(text);
-                  if (!Number.isNaN(next)) onParametersChange({ ...parameters, [key]: next });
+                  if (!/^\d+$/.test(text)) return;
+                  const next = typeof value === "bigint" ? BigInt(text) : Number(text);
+                  onParametersChange({ ...parameters, [key]: next });
                 }}
                 min={0}
-                max={1000}
-                step={0.01}
+                step={1}
               />
             </label>
           ))}
           <div className="grid pt-2">
-            <HudButton kind="secondary" onClick={() => onParametersChange(CombatSimulator.getDefaultParameters())}>
+            <HudButton kind="secondary" onClick={() => onParametersChange(configManager.getCombatConfig())}>
               Reset to defaults
             </HudButton>
           </div>

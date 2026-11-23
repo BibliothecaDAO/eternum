@@ -1,9 +1,9 @@
-import { readExpeditionRules, setBlockTimestampSource, spawnRing } from "@bibliothecadao/eternum";
-import { TroopTier, TroopType } from "@bibliothecadao/types";
+import { seedScouts } from "@/lab/game/scouts-scenario";
+import { computeExploreFoodCosts, setBlockTimestampSource, spawnRing } from "@bibliothecadao/eternum";
+import { RESOURCE_PRECISION, TroopTier, TroopType } from "@bibliothecadao/types";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import rowFixture from "../../../../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
 import { frontierDay } from "./deploy-fixture";
-import { deployArmy, deployDirection, deployRange, previewDeploy, readDeployPlan } from "./deploy-plan";
+import { deployArmy, deployDirection, deployRange, marchOn, previewDeploy, readDeployPlan } from "./deploy-plan";
 
 /** The realm's wheat set to this much, at the chain's precision. */
 const holdWheat = (store: Parameters<typeof readDeployPlan>[0], wheat: number) =>
@@ -15,22 +15,11 @@ const holdWheat = (store: Parameters<typeof readDeployPlan>[0], wheat: number) =
     },
   ] as never);
 
-/** One Rations pick on the Barracks row, a quarter wheat off each troop's 2: a knight raises for 1.75 wheat. */
-const withOneRations = (store: Parameters<typeof readDeployPlan>[0]) => {
-  const board = store.require("BoardRules", { game_id: 1 });
-  store.applyFacts([
-    { model: "BoardRules", key: "0xa", value: { ...board, ration_step: "250000000" } },
-    {
-      model: "RealmKnowledge",
-      key: "0xd",
-      value: { game_id: 1, structure_id: 7, learned: String((1n << 14n) | (1n << 17n)) },
-    },
-  ] as never);
-};
-
 /** The deploy plan at the fixture's moment: t=350, default tick 3. */
 const planOf = (store: Parameters<typeof readDeployPlan>[0], row: Parameters<typeof readDeployPlan>[1]) =>
-  readDeployPlan(store, row, readExpeditionRules(store, 1)!, { now: 350, defaultTick: 3 });
+  readDeployPlan(store, row, { now: 350, defaultTick: 3 });
+
+const rangeOf = (plan: NonNullable<ReturnType<typeof planOf>>) => deployRange(plan, marchOn(plan.open[0]!.start!, 0));
 
 afterEach(() => {
   setBlockTimestampSource(null);
@@ -41,12 +30,11 @@ describe("Frontier's deploy", () => {
   it("reads the troops at home as one count, the slot the next army fills, and the wheat each troop costs", () => {
     const { store, row } = frontierDay();
     const plan = planOf(store, row)!;
-    // The fixture's preset explores for 30 stamina: a 150 bar is five explores.
     expect(plan.open[0]).toEqual({
       slot: 1,
       number: 2,
       inherited: false,
-      start: { current: 150, max: 150, perExplore: 30 },
+      start: { current: 150, max: 150, perExplore: 20 },
     });
     expect(plan.troops).toMatchObject({ type: TroopType.Knight, tier: TroopTier.T1, atHome: 420 });
     expect(plan.raise!.wheatFor(1)).toBe(2);
@@ -56,72 +44,53 @@ describe("Frontier's deploy", () => {
   it("caps the count at the troops at home, the castle's cap or the wheat, whichever comes first", () => {
     const { store, row } = frontierDay();
     const plan = planOf(store, row)!;
-    expect(deployRange(plan)).toMatchObject({ troopsMax: Math.min(420, plan.troops!.cap) });
-    expect(deployRange({ ...plan, troops: { ...plan.troops!, cap: 300 } }).max).toBe(300);
+    expect(rangeOf(plan)).toMatchObject({ troopsMax: Math.min(420, plan.troops!.cap) });
+    expect(rangeOf({ ...plan, troops: { ...plan.troops!, cap: 300 } }).max).toBe(300);
     holdWheat(store, 100);
-    expect(deployRange(planOf(store, row)!)).toMatchObject({ wheatMax: 50, max: 50 });
-    expect(deployRange({ ...plan, troops: null }).max).toBe(0);
+    expect(rangeOf(planOf(store, row)!)).toMatchObject({ wheatMax: 50, max: 46 });
+    expect(rangeOf({ ...plan, troops: null }).max).toBe(0);
+    expect(deployRange(plan, undefined).max).toBe(0);
   });
 
-  it("prices the whole batch with Rations' cut, from the wheat held to the unit: never one troop's price rounded", () => {
+  it("sends only the whole troops the held wheat pays for", () => {
     const { store, row } = frontierDay();
-    withOneRations(store);
-    holdWheat(store, 7);
+    holdWheat(store, 8);
     const plan = planOf(store, row)!;
-    expect(deployRange(plan)).toMatchObject({ wheatMax: 4, max: 4 });
-    expect(plan.raise!.wheatFor(4)).toBe(7);
-    holdWheat(store, 3.5);
-    expect(deployRange(planOf(store, row)!).max).toBe(2);
+    expect(rangeOf(plan)).toMatchObject({ wheatMax: 4, max: 3 });
+    expect(plan.raise!.wheatFor(4)).toBe(8);
+    holdWheat(store, 4.5);
+    expect(rangeOf(planOf(store, row)!).max).toBe(2);
   });
 
   it("previews the whole troops a count sends and the wheat they cost", () => {
     const { store, row } = frontierDay();
     const plan = planOf(store, row)!;
-    expect(previewDeploy(plan, 120.7)).toEqual({ count: 120, wheatCost: 240 });
+    expect(previewDeploy(plan, marchOn(plan.open[0]!.start!, 0), 120.7)).toEqual({ count: 120, wheatCost: 240 });
   });
 
-  it("counts Homecoming's return from an army whose day has ended among the troops this deploy finds", () => {
+  it("keeps at Max the wheat the army burns revealing its whole bar, so it never leaves unable to take a step", () => {
     const { store, row } = frontierDay();
-    expect(planOf(store, row)!.troops!.atHome).toBe(420);
+    holdWheat(store, 5_940);
     store.applyFacts([
       {
-        model: "ExplorerTroops",
-        key: "0x80",
-        value: {
-          game_id: 1,
-          explorer_id: 80,
-          owner: 7,
-          troops: { ...rowFixture.expected.value.troops, count: String(100n * 1_000_000_000n) },
-        },
-      },
-      // On the ethereal plane: never in today's region, so its day has ended.
-      {
-        model: "TileOccupancy",
-        key: "0x81",
-        value: { game_id: 1, alt: true, col: 3, row: 4, entity_id: 80, category: 15, is_structure: false },
-      },
-      {
-        model: "ArmyProgress",
-        key: "0x82",
-        value: {
-          common_points: 0,
-          uncommon_points: 0,
-          rare_points: 0,
-          epic_points: 0,
-          legendary_points: 0,
-          game_id: 1,
-          explorer_id: 80,
-          xp: 0,
-          battle: 1,
-          logistics: 1,
-          scouting: 0,
-          scouting_kinds: 0,
-          homecoming: 4,
-        },
+        model: "ResourceBalance",
+        key: "0x8",
+        value: { game_id: 1, entity_id: 7, resource_type: 26, balance: String(2_970n * BigInt(RESOURCE_PRECISION)) },
       },
     ] as never);
-    // An epic Homecoming returns 21% of its 100 whole troops.
-    expect(planOf(store, row)!.troops!.atHome).toBe(441);
+    const plan = planOf(store, row)!;
+    const bar = plan.open[0]!.start!;
+    const reveals = Math.floor(bar.current / bar.perExplore);
+    const range = deployRange(plan, marchOn(bar, 0));
+    expect([reveals, range.troopsMax, range.wheatMax, range.max]).toEqual([7, 2_970, 2_970, 2_775]);
+    const left = plan.raise!.wheat - previewDeploy(plan, marchOn(bar, 0), range.max).wheatCost;
+    const perReveal = (troops: number) =>
+      computeExploreFoodCosts({ category: TroopType.Knight, count: BigInt(troops) * BigInt(RESOURCE_PRECISION) })
+        .wheatPayAmount;
+    expect(left).toBe(390);
+    expect(left).toBeGreaterThanOrEqual(perReveal(range.max) * reveals);
+    expect(plan.raise!.wheat - plan.raise!.wheatFor(range.max + 1)).toBeLessThan(perReveal(range.max + 1) * reveals);
+    expect(previewDeploy(plan, marchOn(bar, 0), 2_970)).toEqual({ count: 2_970, wheatCost: 5_940 });
   });
 
   it("deploys onto the picked tile while it stays open, else the first open one, never onto unknown or taken ground", () => {
@@ -160,5 +129,30 @@ describe("Frontier's deploy", () => {
       spawnDirection: 2,
       slot: 2,
     });
+  });
+});
+
+it("selects Scouts from their own stock, price and Scouting bar without taking Knights", () => {
+  const { store, row } = frontierDay();
+  seedScouts(store);
+  const plan = readDeployPlan(store, row, { now: 350, defaultTick: 3 }, TroopType.Paladin)!;
+  expect(plan.choices.map(({ type, atHome }) => ({ type, atHome }))).toEqual([
+    { type: TroopType.Knight, atHome: 420 },
+    { type: TroopType.Paladin, atHome: 600 },
+  ]);
+  expect(plan.troops).toMatchObject({ type: TroopType.Paladin, atHome: 600 });
+  expect(plan.open[0]?.start).toEqual({ current: 150, max: 150, perExplore: 10 });
+  const march = marchOn(plan.open[0]!.start!, 0);
+  expect(previewDeploy(plan, march, 400)).toEqual({ count: 400, wheatCost: 800 });
+  expect(deployRange(plan, march).max).toBe(434);
+  const actions = { createExplorerArmy: vi.fn() };
+  deployArmy(actions, row, plan.troops!, 400, 0, 1);
+  expect(actions.createExplorerArmy).toHaveBeenCalledWith({
+    structureId: 7,
+    troopType: TroopType.Paladin,
+    troopTier: TroopTier.T1,
+    troopCount: 400,
+    spawnDirection: 0,
+    slot: 1,
   });
 });

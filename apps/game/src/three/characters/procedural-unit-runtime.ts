@@ -116,6 +116,7 @@ export interface ProceduralUnitActor {
   fireRangedAttack(targetWorld: Readonly<Vector3>): boolean;
   onRangedRelease(listener: (event: ProceduralRangedReleaseEvent) => void): () => void;
   onMeleeContact(listener: (event: ProceduralMeleeContactEvent) => void): () => void;
+  playDeath?(): void;
   reset(): void;
   startRagdoll(): Promise<void>;
   setRangedTarget(targetWorld?: Readonly<Vector3>): void;
@@ -463,6 +464,11 @@ class HumanoidUnitActor implements ProceduralUnitActor {
 
   public applyImpulse(partId?: CharacterPartId): Promise<void> {
     return this.actor.applyImpulse(partId);
+  }
+
+  public playDeath(): void {
+    this.clearActionsForRagdoll();
+    this.actor.playDeath();
   }
 
   public reset(): void {

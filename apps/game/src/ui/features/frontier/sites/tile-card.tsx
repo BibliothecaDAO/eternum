@@ -11,16 +11,9 @@ import { useWorldSpatialTiles } from "@/hooks/use-world-spatial-tiles";
 import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
 import { toast } from "@/ui/features/event-feed/notify";
 
-import type { Tier } from "@/ui/design-system/kit/words";
 import { extractReadableErrorMessage } from "@/utils/error-message";
-import {
-  biomeTypeOf,
-  configManager,
-  getStructureName,
-  isViewerOwner,
-  ruinDisappeared,
-  ruinLimitPerDepth,
-} from "@bibliothecadao/eternum";
+import { ATTACK_FORECAST_MODELS, configManager, getStructureName, isViewerOwner } from "@bibliothecadao/eternum";
+import { ATTACK_REFUSAL_WORDS } from "@/ui/design-system/kit/words";
 import {
   safeInteger,
   type GameClientSetup,
@@ -29,7 +22,8 @@ import {
 } from "@bibliothecadao/eternum/game-client";
 import type { TileSpatialRenderable } from "@bibliothecadao/eternum/game-sync";
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
-import { useMemo, type ReactNode } from "react";
+import { useEffect, useMemo, type ReactNode } from "react";
+import { reachMoments } from "../opening/opening-store";
 
 import { useFrontierRealm, useGoToFrontierPlace } from "../frontier-home";
 import { type ArmyOrder, type Cost, isCovered, useArmyStamina, useOrderAt } from "../hud/army-order";
@@ -39,17 +33,15 @@ import { fightIsSent, fightWasNotSent, useFightRefusal } from "./fight-refusal";
 import { useSelectedOwnArmy } from "./selected-army";
 import { readArmyCard, readSiteCard, type SiteAttack, type SiteCardPlan } from "./site-card-plan";
 import { SiteCardView, type SiteVerb } from "./site-card-view";
+import { readPickEffectBase } from "../pick-effect-text";
+import { useRuinRelicChoice } from "../relics/ruin-relic-choice";
+import { RelicReplacement } from "../relics/relic-replacement";
 
 const SITE_MODELS = [
+  ...ATTACK_FORECAST_MODELS,
   "ExpeditionSite",
   "ExpeditionDiscovery",
   "GameRelease",
-  "LordsBudget",
-  "SiteChest",
-  "ExplorerTroops",
-  "ArmyProgress",
-  "ArmySlot",
-  "Guard",
   "Structure",
   "TileOccupancy",
   "ResourceBalance",
@@ -90,7 +82,7 @@ export const useSelectedTarget = (): AttackTarget | null => {
 const standingSite = (store: NativeFactStore, tile: TileSpatialRenderable): AttackTarget | null => {
   const key = { game_id: configManager.getActiveGameId(), entity_id: tile.occupierId };
   const site = store.get("ExpeditionSite", key);
-  if (!site || site.clear || ruinDisappeared(store, site)) return null;
+  if (!site || site.clear) return null;
   return { kind: "site", site, structure: store.require("Structure", key), tile };
 };
 
@@ -106,23 +98,12 @@ const otherArmy = (store: NativeFactStore, tile: TileSpatialRenderable, viewer: 
 /** The card's reading of its target for an attack: a site's by its guard, an army's by its troops. */
 const readTarget = (store: NativeFactStore, target: AttackTarget, attack: SiteAttack | null): SiteCardPlan =>
   target.kind === "site"
-    ? readSiteCard(store, target.site, target.structure, target.tile.hexCoords, attack)
-    : readArmyCard(store, target.army, target.tile.hexCoords, attack);
+    ? readSiteCard(store, target.site, target.structure, attack)
+    : readArmyCard(store, target.army, attack);
 
 const targetId = (target: AttackTarget): number =>
   safeInteger(target.kind === "site" ? target.site.entity_id : target.army.explorer_id);
 
-/**
- * A target's card over the game's facts: the selected army's matchup and exact forecast, what a clear pays and its
- * XP, then Attack in reach, Move until the army arrives, or the stamina it lacks. With no army selected, what the site
- * is and pays, and its guard. The card stays between attacks and closes when the target falls. It is the one surface an
- * army's attack is confirmed on, whatever it attacks.
- *
- * Once an attack settles, applied or refused, the panel is the still-selected army's again, not this card (owner, 30
- * October 2026: "when I fight, since the army stays selected, I'd like the army panel to be opened after the fight
- * ends"): the HUD's one panel hands it back (useOnePanel). Selecting the target later shows its card. An army lost lets
- * go of the map itself.
- */
 export const TileCard = ({
   selected,
   onClose,
@@ -134,10 +115,15 @@ export const TileCard = ({
 }) => {
   const { setup, account } = useGame();
   const actor = useSelectedOwnArmy();
-  const attack = useSiteAttack(selected.tile, actor);
+  const attack = useSiteAttack(actor);
   const facts = useNativeFacts(SITE_MODELS);
   const siteTile = selected.tile.hexCoords;
   const plan = useMemo(() => readTarget(facts.store, selected, attack), [attack, facts, selected]);
+  // Finding a guard opens the fight preview's line; the account keeps it, so a guard met once is never met afresh.
+  const metGuard = plan.guard !== undefined;
+  useEffect(() => {
+    if (metGuard) void reachMoments(["guard"]);
+  }, [metGuard]);
   const approach = useOrderAt(useApproachTile(siteTile, actor !== null && !plan.inReach));
   const stamina = useArmyStamina(actor ? safeInteger(actor.army.explorer_id) : null, plan.attackStamina);
   const realm = useFrontierRealm();
@@ -145,21 +131,21 @@ export const TileCard = ({
   const armyId = actor ? safeInteger(actor.army.explorer_id) : null;
   const inFlight = useInFlight("army", armyId)?.order;
   const refused = useFightRefusal(armyId, targetId(selected));
+  const relics = useRuinRelicChoice(selected.kind === "site" ? selected.site : null, armyId);
 
   const attackSite = async () => {
     if (!attack || !account.account || armyId === null) return;
     const signer = account.account;
     let sent = false;
     try {
-      if (selected.kind === "site" && ruinDisappeared(setup.store, selected.site))
-        throw new Error("This ruin has disappeared.");
-      if (readTarget(setup.store, selected, attack).chest?.funded === false)
-        throw new Error("Today's LORDS budget cannot fund this ruin.");
+      // The relic slot read from the facts as Attack goes: a choice the slot no longer bears, or relics not yet known,
+      // keep the order home with the card's own reason.
+      const relicSlot = relics?.dispatchSlot();
       await sendOnce("army", armyId, { order: "attack" }, () => {
         sent = true;
         fightIsSent();
         playUnitCommandSound("attack");
-        return sendAttack(setup.systemCalls, signer, armyId, selected);
+        return sendAttack(setup.systemCalls, signer, armyId, selected, relicSlot);
       });
     } catch (error) {
       fightWasNotSent({
@@ -173,9 +159,10 @@ export const TileCard = ({
     }
   };
 
-  const verb: SiteVerb | null =
-    plan.chest?.funded === false
-      ? { kind: "blocked", reason: "Today's LORDS budget cannot fund this ruin." }
+  const verb: SiteVerb | null = plan.blocked
+    ? { kind: "blocked", reason: ATTACK_REFUSAL_WORDS[plan.blocked] }
+    : relics?.hold && actor !== null
+      ? { kind: "blocked", reason: relics.hold }
       : siteVerb({
           hasArmy: actor !== null,
           inReach: plan.inReach,
@@ -190,17 +177,30 @@ export const TileCard = ({
       site={plan.kind}
       name={selected.kind === "site" ? getStructureName(selected.structure, setup.store).name : undefined}
       beast={plan.beast && plan.guard ? { ...plan.beast, combatClass: plan.guard.type } : undefined}
-      army={actor && { art: armyArt(actor.army.troops), troops: wholeTroops(actor.army) }}
+      army={
+        actor && {
+          art: armyArt(actor.army.troops),
+          troops: wholeTroops(actor.army),
+          category: actor.army.troops.category,
+        }
+      }
       guard={plan.guard === undefined ? undefined : (plan.guard?.count ?? null)}
       fight={plan.fight}
+      firstStrike={plan.firstStrike}
       pay={sitePay(plan)}
-      chest={plan.chest ? { tier: (plan.chest.tier + 1) as Tier, lords: plan.chest.amount } : undefined}
-      ruinChoice={
-        plan.chest
-          ? { depth: plan.chest.depth, perDepth: ruinLimitPerDepth(facts.store, configManager.getActiveGameId()) }
-          : undefined
+      holdsOath={plan.holdsOath}
+      relic={(relics && "relic" in relics.state && relics.state.relic) || undefined}
+      cache={relics?.state.kind === "cache" ? relics.state.fragments : undefined}
+      replacement={
+        relics?.state.kind === "full" && (
+          <RelicReplacement
+            carried={relics.state.carried}
+            chosen={relics.state.chosen}
+            pickBase={readPickEffectBase(setup.store, configManager.getActiveGameId())}
+            onChoose={relics.replace}
+          />
+        )
       }
-      xp={plan.xp}
       verb={verb}
       onRealm={() => {
         onClose();
@@ -217,9 +217,15 @@ const sendAttack = (
   signer: NonNullable<ReturnType<typeof useGame>["account"]["account"]>,
   explorerId: number,
   target: AttackTarget,
+  relicSlot: 0 | 1 | 2 | undefined,
 ) =>
   target.kind === "site"
-    ? systemCalls.attack_explorer_vs_guard({ signer, explorer_id: explorerId, structure_id: targetId(target) })
+    ? systemCalls.attack_explorer_vs_guard({
+        signer,
+        explorer_id: explorerId,
+        structure_id: targetId(target),
+        relic_slot: relicSlot,
+      })
     : systemCalls.attack_explorer_vs_explorer({
         signer,
         aggressor_id: explorerId,
@@ -261,16 +267,11 @@ const siteVerb = ({
   return { kind: "attack", ...attack };
 };
 
-/** The selected army's attack on this site: where it stands, on the site's biome, at the current clocks. */
-const useSiteAttack = (
-  siteTile: TileSpatialRenderable,
-  actor: ReturnType<typeof useSelectedOwnArmy>,
-): SiteAttack | null => {
+const useSiteAttack = (actor: ReturnType<typeof useSelectedOwnArmy>): SiteAttack | null => {
   const timestamp = useCurrentDefaultTick();
-  return actor && { ...actor, biome: biomeTypeOf(siteTile.biome), timestamp };
+  return actor && { army: actor.army, timestamp };
 };
 
-/** What a cleared site pays home and what fits; a ruin pays its chest. */
 const sitePay = (plan: SiteCardPlan) => {
   return plan.payout
     ? { icon: resourceMeaning(plan.payout.resourceId), amount: plan.payout.amount, fits: plan.payout.fits }

@@ -2,30 +2,23 @@ import { type RankedWords, rankedText, skillPointGain } from "@bibliothecadao/ty
 import {
   siteUsedLine,
   buildingName,
-  CHEST_EARNED,
   fightVerdict,
   formatCharge,
   formatClockTime,
-  formatDuration,
   formatExact,
   formatGain,
-  formatPoints,
-  frontierSiteName,
+  FRONTIER_TROOP_NAMES,
+  guardedSiteKind,
   GuardSlot,
   guardSlotName,
   LORDS,
   rankName,
   RealmLevels,
-  relicChestDelivery,
-  relicEffect,
-  relicName,
   resourceName,
   scaledToUnits,
-  StructureType,
   troopPlural,
-  type ResourcesIds,
+  type TroopType,
   VERDICT_WORDS,
-  wholePoints,
 } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import { displayPlayerName, getStructureName, siteDisplayName, type PlayerNameResolver } from "../utils/entities";
@@ -93,11 +86,86 @@ const rankedStory = (
 /** What a story model other than StoryEvent's own variants reaches the feed as. */
 type StoryEventModel = "BattleEvent" | "RaidEvent";
 
+/** Historical stories remain readable after their commands retire from the current release. */
+const archivedFormatters = {
+  TradeCreated: (_event, payload) => {
+    const order = payload.order as Record<string, unknown>;
+    return {
+      title: "Trade listed",
+      description: `${resourceName(Number(order.offered_resource))} for ${resourceName(Number(order.requested_resource))}`,
+      icon: "resource",
+    };
+  },
+  TradeAccepted: (_event, payload) => ({
+    title: "Trade filled",
+    description: `${formatResourceAmount(payload.offered_amount) ?? "—"} ${resourceName(Number(payload.offered_resource))} for ${formatResourceAmount(payload.requested_amount) ?? "—"} ${resourceName(Number(payload.requested_resource))}`,
+    icon: "resource",
+  }),
+  TradeCancelled: (_event, payload) => ({
+    title: "Trade cancelled",
+    description: `Trade ${formatNumber(payload.value) ?? "—"}`,
+    icon: "resource",
+  }),
+  BankSwap: (_event, payload) => ({
+    title: payload.buy ? "Bought at the bank" : "Sold at the bank",
+    description: `${formatResourceAmount(payload.resource_amount) ?? "—"} ${resourceName(Number(payload.resource_type))} for ${formatResourceAmount(payload.lords_amount) ?? "—"} ${LORDS}`,
+    icon: "resource",
+  }),
+  BankLiquidity: (_, payload) => ({
+    title: payload.add ? "Liquidity added" : "Liquidity withdrawn",
+    description: `${resourceName(Number(payload.resource_type))} / Lords`,
+    icon: "resource",
+  }),
+  FaithPointsClaimedStory: (_event, payload, components) => ({
+    title: "Faith points claimed",
+    description: joinPieces([
+      describeStructureName(payload.wonder_id, components),
+      `+${formatNumber(payload.new_points) ?? "—"} (${formatNumber(payload.total_points) ?? "—"} in all)`,
+    ]),
+    icon: "prize",
+  }),
+  FaithPledged: (_event, payload, components) => ({
+    title: "Faith pledged",
+    description: `${describeStructureName(payload.structure_id, components) ?? "—"} → ${describeStructureName(payload.wonder_id, components) ?? "—"}`,
+    icon: "realm",
+  }),
+  FaithRemoved: (_event, payload, components) => ({
+    title: "Faith withdrawn",
+    description: `${describeStructureName(payload.structure_id, components) ?? "—"} from ${describeStructureName(payload.wonder_id, components) ?? "—"}`,
+    icon: "realm",
+  }),
+  TierBought: (event, payload, components, resolvePlayerName) => {
+    const attribute = formatEnum(payload.attribute);
+    const tier = rankOf(toNumber(payload.tier));
+    const price = toNumber(payload.price);
+    if (!attribute || !tier || price === null) throw new Error("Incomplete tier purchase story");
+    const army = describeExplorer(payload.explorer_id, components, playerOf(event, components, resolvePlayerName));
+    return rankedStory([`${attribute} `, tier], [`${army} · ${price} XP`], "scroll");
+  },
+  SkillPointSpent: (event, payload, components, resolvePlayerName) => {
+    const choice = formatEnum(payload.choice);
+    const point = toNumber(payload.point_rank);
+    const stamina = toNumber(payload.stamina);
+    const tier = rankOf(toNumber(payload.tier));
+    const pointRank = rankOf(point);
+    if (!choice || !pointRank || stamina === null || (choice !== "Stamina" && !tier))
+      throw new Error("Incomplete skill point story");
+    const army = describeExplorer(payload.explorer_id, components, playerOf(event, components, resolvePlayerName));
+    return rankedStory(
+      choice === "Stamina" || !tier ? [`Stamina +${stamina}`] : [`${choice} `, tier],
+      [`${army} · `, pointRank, ` point · +${stamina} stamina`],
+      "scroll",
+    );
+  },
+} satisfies Record<string, StoryFormatter>;
+export type ArchivedStoryVariant = keyof typeof archivedFormatters;
+
 /**
  * One presentation for every story the chain can tell: each generated Story variant and each story model. A new
  * variant is a type error here until it has its line, so no story ever reaches the feed as raw fields.
  */
-const formatters: Record<NativeStoryVariant | StoryEventModel | "TierBought", StoryFormatter> = {
+const formatters: Record<NativeStoryVariant | StoryEventModel | ArchivedStoryVariant, StoryFormatter> = {
+  ...archivedFormatters,
   ExplorationReward: (event, payload, components, resolvePlayerName) => {
     const site = discoveredSite(payload, components);
     return {
@@ -128,138 +196,34 @@ const formatters: Record<NativeStoryVariant | StoryEventModel | "TierBought", St
     ]),
     icon: "prize",
   }),
-  RelicChestOpened: (_event, payload, components) => ({
-    title: withPoints(describeRelicChestOpening(payload, components), payload.points),
-    description: chestRelics(payload)
-      .map((relic) => resourceName(relic))
-      .join(", "),
-    icon: "prize",
-  }),
-  RewardChestOpened: (event, payload, components, resolvePlayerName) => {
-    const player = playerOf(event, components, resolvePlayerName);
-    return {
-      title: describeRewardChestOpening(payload, components, player),
-      description: describeExplorer(payload.explorer_id, components, player),
-      icon: "prize",
-    };
-  },
-  RelicCrafted: (_event, payload) => ({
-    title: "Relic crafted",
-    description: resourceName(Number(payload.value)),
-    icon: "prize",
-  }),
-  RelicActivated: (event, payload, components, resolvePlayerName) => {
-    const relicId = Number(payload.relic_id) as ResourcesIds;
-    const recipient = formatEnum(payload.recipient);
-    const target =
-      recipient === "Explorer"
-        ? describeExplorer(event.entityId, components)
-        : `${subjectOf(event.entityId, components)}${recipient === "StructureGuard" ? "'s guards" : ""}`;
-    const effect = relicEffect(relicId, { rateBps: Number(payload.rate_bps), radius: Number(payload.radius) });
-    const duration = Number(payload.duration_seconds);
-    const stamina = relicId === 39 || relicId === 40;
-    const applied =
-      duration > 0 ? `${effect} for ${formatDuration(duration)}${stamina ? " of regeneration" : ""}` : effect;
-    const actor = nameOwner(event.ownerAddress, components, resolvePlayerName) ?? "Someone";
-    return {
-      title: `${actor} activated ${relicName(relicId)} on ${target} · ${applied}`,
-      icon: "prize",
-    };
-  },
-  // Who took what from whom; from a player, what went with it; from a guard, the points it paid.
   StructureCapturedStory: (event, payload, components, resolvePlayerName) => ({
-    title: withPoints(
-      [
-        `${nameOwner(payload.new_owner, components, resolvePlayerName) ?? "Someone"} took ${subjectOf(event.entityId, components)} from ${
-          isViewer(payload.previous_owner, event.viewerAddress)
-            ? "you"
-            : (nameOwner(payload.previous_owner, components, resolvePlayerName) ?? "its holder")
-        }`,
-        toBigIntSafe(payload.previous_owner) ? CAPTURE_AFTERMATH : null,
-      ]
-        .filter(Boolean)
-        .join(". "),
-      payload.points,
-    ),
+    title: [
+      `${nameOwner(payload.new_owner, components, resolvePlayerName) ?? "Someone"} took ${subjectOf(event.entityId, components)} from ${
+        isViewer(payload.previous_owner, event.viewerAddress)
+          ? "you"
+          : (nameOwner(payload.previous_owner, components, resolvePlayerName) ?? "its holder")
+      }`,
+      toBigIntSafe(payload.previous_owner) ? CAPTURE_AFTERMATH : null,
+    ]
+      .filter(Boolean)
+      .join(". "),
     icon: "battle",
-  }),
-  TradeCreated: (_event, payload) => {
-    const order = payload.order as Record<string, unknown>;
-    return {
-      title: "Trade listed",
-      description: `${resourceName(Number(order.offered_resource))} for ${resourceName(Number(order.requested_resource))}`,
-      icon: "resource",
-    };
-  },
-  TradeAccepted: (_event, payload) => ({
-    title: "Trade filled",
-    description: `${formatResourceAmount(payload.offered_amount) ?? "—"} ${resourceName(Number(payload.offered_resource))} for ${formatResourceAmount(payload.requested_amount) ?? "—"} ${resourceName(Number(payload.requested_resource))}`,
-    icon: "resource",
-  }),
-  TradeCancelled: (_event, payload) => ({
-    title: "Trade cancelled",
-    description: `Trade ${formatNumber(payload.value) ?? "—"}`,
-    icon: "resource",
-  }),
-  BankSwap: (_event, payload) => ({
-    title: payload.buy ? "Bought at the bank" : "Sold at the bank",
-    description: `${formatResourceAmount(payload.resource_amount) ?? "—"} ${resourceName(Number(payload.resource_type))} for ${formatResourceAmount(payload.lords_amount) ?? "—"} ${LORDS}`,
-    icon: "resource",
-  }),
-  HyperstructurePoints: (_event, payload, components, resolvePlayerName) => ({
-    title: "Hyperstructure points",
-    // Story points are at the contract's precision (a millionth of a point); a player reads whole points.
-    description: `${nameOwner(payload.player, components, resolvePlayerName) ?? "—"} +${formatPoints(Math.floor(wholePoints(BigInt(String(payload.points)))))}`,
-    icon: "prize",
-  }),
-  BitcoinAwardStory: (_event, payload, components, resolvePlayerName) => ({
-    title: "Bitcoin mine paid",
-    description: joinPieces([
-      `${nameOwner(payload.winner, components, resolvePlayerName) ?? "—"} +${formatResourceAmount(payload.winner_paid) ?? "—"}`,
-      `${nameOwner(payload.owner, components, resolvePlayerName) ?? "—"} +${formatResourceAmount(payload.owner_paid) ?? "—"}`,
-    ]),
-    icon: "prize",
-  }),
-  FaithPointsClaimedStory: (_event, payload, components) => ({
-    title: "Faith points claimed",
-    description: joinPieces([
-      describeStructureName(payload.wonder_id, components),
-      `+${formatNumber(payload.new_points) ?? "—"} (${formatNumber(payload.total_points) ?? "—"} in all)`,
-    ]),
-    icon: "prize",
-  }),
-  FaithPledged: (_event, payload, components) => ({
-    title: "Faith pledged",
-    description: `${describeStructureName(payload.structure_id, components) ?? "—"} → ${describeStructureName(payload.wonder_id, components) ?? "—"}`,
-    icon: "realm",
-  }),
-  FaithRemoved: (_event, payload, components) => ({
-    title: "Faith withdrawn",
-    description: `${describeStructureName(payload.structure_id, components) ?? "—"} from ${describeStructureName(payload.wonder_id, components) ?? "—"}`,
-    icon: "realm",
-  }),
-  SeasonEnded: (_event, payload, components, resolvePlayerName) => ({
-    title: "Season ended",
-    description: nameOwner(payload.value, components, resolvePlayerName),
-    icon: "scroll",
   }),
   BlitzFinalized: () => ({ title: "Blitz finalized", icon: "scroll" }),
   SitePayout: (event, payload, components, resolvePlayerName) => {
     const category = toNumber(payload.category);
     if (category === null || payload.reward === undefined) throw new Error("Incomplete site payout story");
-    const label = frontierSiteName(category);
-    const reward = payload.reward === null ? "XP only" : formatResourceList([payload.reward]);
+    const label = guardedSiteKind(category, fightBeast(payload.site_id, components));
+    const reward = payload.reward === null ? "No resource reward" : formatResourceList([payload.reward]);
     if (!reward) throw new Error("Incomplete site resource reward");
     const siteId = toNumber(payload.site_id);
     if (siteId === null) throw new Error("Site payout story names no site");
     const player = playerOf(event, components, resolvePlayerName);
-    // The site's Structure goes with its clear; its id names it, as the receipt and the map do. Another player's clear
-    // names them; a ruin's clear earns its chest.
     const cleared = isViewer(event.ownerAddress, event.viewerAddress ?? null)
       ? `${siteDisplayName(siteId)} cleared`
       : `${player} cleared ${siteDisplayName(siteId)}`;
     return {
-      title: category === StructureType.Ruin ? `${cleared}: ${CHEST_EARNED}` : cleared,
+      title: cleared,
       description: joinPieces([label, describeExplorer(payload.explorer_id, components, player), reward]),
       icon: "prize",
     };
@@ -280,29 +244,6 @@ const formatters: Record<NativeStoryVariant | StoryEventModel | "TierBought", St
       description: describeExplorer(payload.explorer_id, components, playerOf(event, components, resolvePlayerName)),
       icon: "scroll",
     };
-  },
-  SkillPointSpent: (event, payload, components, resolvePlayerName) => {
-    const choice = formatEnum(payload.choice);
-    const point = toNumber(payload.point_rank);
-    const stamina = toNumber(payload.stamina);
-    const tier = rankOf(toNumber(payload.tier));
-    const pointRank = rankOf(point);
-    if (!choice || !pointRank || stamina === null || (choice !== "Stamina" && !tier))
-      throw new Error("Incomplete skill point story");
-    const army = describeExplorer(payload.explorer_id, components, playerOf(event, components, resolvePlayerName));
-    return rankedStory(
-      choice === "Stamina" || !tier ? [`Stamina +${stamina}`] : [`${choice} `, tier],
-      [`${army} · `, pointRank, ` point · +${stamina} stamina`],
-      "scroll",
-    );
-  },
-  TierBought: (event, payload, components, resolvePlayerName) => {
-    const attribute = formatEnum(payload.attribute);
-    const tier = rankOf(toNumber(payload.tier));
-    const price = toNumber(payload.price);
-    if (!attribute || !tier || price === null) throw new Error("Incomplete tier purchase story");
-    const army = describeExplorer(payload.explorer_id, components, playerOf(event, components, resolvePlayerName));
-    return rankedStory([`${attribute} `, tier], [`${army} · ${price} XP`], "scroll");
   },
   LordsWithdrawn: (event, payload, components, resolvePlayerName) => {
     const amount = toNumber(payload.amount);
@@ -325,7 +266,7 @@ const formatters: Record<NativeStoryVariant | StoryEventModel | "TierBought", St
     const realm = describeStructureName(event.entityId, components);
     return {
       // Another player's realm, which this client never synced, is told by its settler.
-      title: realm ? `${realm} founded` : `${ownerLabel ?? "Someone"} founded a realm`,
+      title: realm ? `${realm} created` : `${ownerLabel ?? "Someone"} created a Realm`,
       description: joinPieces([
         realm && ownerLabel ? `Settled by ${ownerLabel}` : undefined,
         coord ? `at ${coord}` : undefined,
@@ -398,12 +339,14 @@ const formatters: Record<NativeStoryVariant | StoryEventModel | "TierBought", St
     // A beast guarding an ownerless Frontier site fights as its species ("Troll"), never the troop row the chain keeps.
     const forces = (value: Record<string, unknown>, entityId: unknown) =>
       (frontier && toBigIntSafe(value.player) === 0n ? fightBeast(entityId, store)?.name : undefined) ??
-      formatTroopDescriptor(value.category, value.tier);
+      (frontier ? formatFrontierTroop(value.category) : formatTroopDescriptor(value.category, value.tier));
     const side = (label: string, value: Record<string, unknown>, entityId: unknown) => [
       `${label} forces: ${forces(value, entityId)} [ ${formatUnitAmount(value.before)} ]`,
       `${label} losses: ${formatResourceAmount(BigInt(String(value.before)) - BigInt(String(value.after)))}`,
       `${label} Troops Left: ${formatResourceAmount(value.after)}`,
-      Number(value.roll) > 0 ? `${label} d20: ${Number(value.roll)} (+${Number(value.roll)}% damage)` : undefined,
+      !frontier && Number(value.roll) > 0
+        ? `${label} d20: ${Number(value.roll)} (+${Number(value.roll)}% damage)`
+        : undefined,
     ];
     const sides = `${attackerName ?? "Attacker"} vs ${defenderName ?? "Defender"}`;
     // The viewer's own loss leads: who won is then plain, and the army it cost is what they need to read.
@@ -425,11 +368,6 @@ const formatters: Record<NativeStoryVariant | StoryEventModel | "TierBought", St
     title: `Raid on ${subjectOf(payload.structure_id, components)} ${payload.success ? "succeeded" : "repelled"}`,
     description: payload.success ? formatResourceList(payload.requested_loot) : "Nothing taken",
     icon: "battle",
-  }),
-  BankLiquidity: (_, payload) => ({
-    title: payload.add ? "Liquidity added" : "Liquidity withdrawn",
-    description: `${resourceName(Number(payload.resource_type))} / Lords`,
-    icon: "resource",
   }),
   // Either end may be a structure or an army; one no longer in the store is left unsaid rather than guessed.
   ResourceTransferStory: (event, payload, components) => {
@@ -704,44 +642,6 @@ function describeArmyName(explorerId: unknown, components?: NativeFactStore, hom
   return home && tier ? `${home} ${tier}` : null;
 }
 
-const chestRelics = (payload: Record<string, unknown>): ResourcesIds[] => {
-  if (!Array.isArray(payload.relics)) throw new Error("Incomplete relic chest story");
-  return payload.relics.map((relic) => Number(relic) as ResourcesIds);
-};
-
-/**
- * An opened chest as a player reads it: where its relics went ("Crate opened: 3 relics to Stolsli"). The home is the
- * opening army's; once that army is gone its row no longer names it.
- */
-export function describeRelicChestOpening(payload: Record<string, unknown>, components?: NativeFactStore): string {
-  const explorer = readExplorer(payload.explorer_id, components);
-  const home = describeStructureName(explorer?.owner, components);
-  const delivery = relicChestDelivery(chestRelics(payload), {
-    army: explorer && home ? describeArmyName(payload.explorer_id, components) : null,
-    home: home ?? "its realm",
-  });
-  return `Crate opened: ${delivery}`;
-}
-
-/**
- * An opened chest: the LORDS it paid and the realm they went to; another player's realm, which this client never
- * synced, is told by its player ("djizus opened a chest: 50 LORDS").
- */
-export function describeRewardChestOpening(
-  payload: Record<string, unknown>,
-  components?: NativeFactStore,
-  player?: string,
-): string {
-  const amount = BigInt(payload.amount as string | number | bigint);
-  const home = describeStructureName(payload.structure_id, components);
-  if (!home && player)
-    return amount === 0n
-      ? `${player}'s chest expired: no LORDS paid`
-      : `${player} opened a chest: ${formatExact(amount)} LORDS`;
-  if (amount === 0n) return "Chest expired: no LORDS paid";
-  return `Chest opened: ${formatExact(amount)} LORDS to ${home ?? "its realm"}`;
-}
-
 /** A structure by name, else an explorer by home and tier, else nothing. */
 function describeEntity(entityId: unknown, components?: NativeFactStore): string | undefined {
   const structureName = describeStructureName(entityId, components);
@@ -786,6 +686,12 @@ function normalizeResourceEntries(value: unknown): Array<{ id: number; amount: u
       return null;
     })
     .filter((value): value is { id: number; amount: unknown } => value !== null);
+}
+
+function formatFrontierTroop(type: unknown): string | undefined {
+  const typeLabel = formatEnum(type);
+  if (!typeLabel) return undefined;
+  return typeLabel in FRONTIER_TROOP_NAMES ? FRONTIER_TROOP_NAMES[typeLabel as TroopType] : typeLabel;
 }
 
 function formatTroopDescriptor(type: unknown, tier: unknown): string | undefined {
@@ -962,12 +868,6 @@ function formatLanding(sentAtMs: number, travelSeconds: unknown): string | undef
  * a draw; neither is both falling. The event's `winner_id` is not read: it records the winner as a home structure, a
  * guarded structure or an attacking structure depending on who attacked whom.
  */
-/** A line and the points it scored, when it scored any: "… · +250 points". Story points are at contract precision. */
-const withPoints = (line: string, points: unknown): string => {
-  const whole = points === undefined || points === null ? 0 : wholePoints(BigInt(String(points)));
-  return whole > 0 ? `${line} · +${formatPoints(whole)}` : line;
-};
-
 /**
  * What a find gave, as every reader writes it (the feed's story, the day log, the reveal's rise): its gain from one
  * unit up ("+12"), and nothing below one, so a find under a unit says no amount at all (owner, 26 October: "djizus
@@ -1063,11 +963,5 @@ function discoveredSite(
     (site) => site.col === toNumber(coord.x) && site.row === toNumber(coord.y) && site.alt === coord.alt,
   );
   if (!site) return undefined;
-  const beast = fightBeast(site.entity_id, store);
-  const label = frontierSiteName(site.category, beast);
-  const named =
-    beast && (site.category === StructureType.Rift || site.category === StructureType.Ruin)
-      ? `${beast.name} ${label}`
-      : label;
-  return { id: Number(site.entity_id), kind: named };
+  return { id: Number(site.entity_id), kind: guardedSiteKind(site.category, fightBeast(site.entity_id, store)) };
 }

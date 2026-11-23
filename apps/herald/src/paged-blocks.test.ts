@@ -34,8 +34,10 @@ describe("paged block ingestion", () => {
     const { rpc, calls } = node(block);
     const { native, fold } = setup();
     await native.replay({ fold, rpc, fromBlock: 10, toBlock: 10 });
-    expect(fold.modelRows("PlayerPoints")).toHaveLength(4100);
-    expect(BigInt(String(fold.modelRows("PointsTotal")[0].value.total))).toBe(24600n);
+    expect(fold.modelRows("Fragments")).toHaveLength(4100);
+    expect(new Set(fold.modelRows("Fragments").map(({ value }) => BigInt(String(value.balance))))).toEqual(
+      new Set([6n]),
+    );
     const pages = calls.filter((call) => call.method === "starknet_getEvents");
     expect(pages.length).toBeGreaterThan(1);
     expect(pages[0].params[0]).toMatchObject({
@@ -66,8 +68,10 @@ describe("paged block ingestion", () => {
     expect(
       calls.filter((call) => call.method === "starknet_getEvents" && !call.params[0].continuation_token),
     ).toHaveLength(1);
-    expect(fold.modelRows("PlayerPoints")).toHaveLength(200);
-    expect(BigInt(String(fold.modelRows("PointsTotal")[0].value.total))).toBe(1200n);
+    expect(fold.modelRows("Fragments")).toHaveLength(200);
+    expect(new Set(fold.modelRows("Fragments").map(({ value }) => BigInt(String(value.balance))))).toEqual(
+      new Set([6n]),
+    );
   });
 
   it("keeps receipt event positions and checkpoint commitments despite filtered foreign events", async () => {
@@ -90,7 +94,7 @@ describe("paged block ingestion", () => {
     const overlay = setup();
     const pending = await rpc.readBlock("pre_confirmed", manifest.world.address);
     pending.transactions.forEach(({ receipt, transaction }, index) =>
-      overlay.native.applyReceipt(overlay.fold, receipt, null, index, transaction.calldata),
+      overlay.native.applyReceipt(overlay.fold, receipt, null, index),
     );
     expect(overlay.fold.checkpoint()).toEqual(expected.fold.checkpoint());
   });
@@ -141,7 +145,7 @@ it("bounds transaction/status reads across a failed batch and its retry", async 
   expect(failed).toBe(true);
   expect(peak).toBeLessThanOrEqual(16);
   expect(active).toBe(0);
-  expect(fold.modelRows("PlayerPoints")).toHaveLength(40);
+  expect(fold.modelRows("Fragments")).toHaveLength(40);
 });
 
 it("reads a captured pre-confirmed prefix while later transactions append", async () => {
@@ -176,7 +180,7 @@ it("discards a changed header and retries without applying the inconsistent bloc
   });
   await native.replay({ fold, rpc, fromBlock: 10, toBlock: 10 });
   expect(headers).toBe(4);
-  expect(fold.modelRows("PlayerPoints")).toHaveLength(1);
+  expect(fold.modelRows("Fragments")).toHaveLength(1);
 });
 
 it("shutdown cancels retries without applying or skipping the unread block", async () => {
@@ -211,7 +215,7 @@ it("folds a recorded GameplayRejected without inventing applied game state", asy
     statusClass: "GAMEPLAY_REJECTED",
     reason: "explorer is dead",
   });
-  expect(fold.modelRows("PlayerPoints")).toEqual([]);
+  expect(fold.modelRows("Fragments")).toEqual([]);
 });
 
 it("finishes a pre-confirmed prefix when its block seals during the read", async () => {
@@ -250,7 +254,7 @@ it("refuses a repeated continuation token and retries before any fold", async ()
   });
   await native.replay({ fold, rpc, fromBlock: 10, toBlock: 10 });
   expect(failed).toBe(true);
-  expect(fold.modelRows("PlayerPoints")).toHaveLength(200);
+  expect(fold.modelRows("Fragments")).toHaveLength(200);
 });
 
 it("accepts spec-shaped pre-confirmed events without a block number or hash", async () => {
@@ -357,24 +361,4 @@ it("logs RPC method and numeric code without node payloads on bounded failure", 
     warn.mockRestore();
     error.mockRestore();
   }
-});
-
-it("cold replay still fetches the exact preset preimage calldata without a status read", async () => {
-  const { presetRegistration } = await import("./native/preset-fixtures");
-  const preset = presetRegistration(2),
-    { native, fold } = setup();
-  const block: RpcBlockWithReceipts = {
-    block_number: 10,
-    timestamp: 1800,
-    transactions: [
-      { transaction: { type: "INVOKE", calldata: preset.calldata }, receipt: receipt([preset.event], "0xabc") },
-    ],
-  };
-  const { rpc, calls } = node(block);
-  await native.replay({ fold, rpc, fromBlock: 10, toBlock: 10, retainTransactions: false });
-  expect(fold.presetPreimage(preset.commitment)).toEqual(
-    preset.calldata.slice(5).map((felt) => BigInt(felt).toString()),
-  );
-  expect(calls.filter((call) => call.method === "starknet_getTransactionByHash")).toHaveLength(1);
-  expect(calls.some((call) => call.method === "starknet_getTransactionStatus")).toBe(false);
 });

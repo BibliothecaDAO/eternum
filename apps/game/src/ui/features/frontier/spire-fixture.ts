@@ -1,5 +1,6 @@
 import { expeditionSpireTile, readExpeditionRules } from "@bibliothecadao/eternum";
-import { getNeighborHexes } from "@bibliothecadao/types";
+import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import { getNeighborHexes, TileOccupier } from "@bibliothecadao/types";
 
 import { campBeside } from "./sites/site-fixture";
 
@@ -18,10 +19,10 @@ const depthRules = (depth: number) => ({
     reveal_percent: 100,
     site_guard_lower: 1,
     site_guard_upper: 2,
+    rift_guard_lower: 1,
+    rift_guard_upper: 2,
     reveal_site_neighbors: false,
     chest: { common: 10000, uncommon: 0, rare: 0, epic: 0, legendary: 0 },
-    ruin_guard_lower: 1,
-    ruin_guard_upper: 2,
     guard_step: 1,
     beast_weak_lower: 300,
     beast_weak_upper: 350,
@@ -58,8 +59,7 @@ export const spireDay = ({
     away: { col: spire.col + 3, row: spire.row },
   }[standing];
   store.applyFacts([
-    // research.cairo: the depth row's tier sits at bit 46; Ethereal I and II are researched.
-    { model: "RealmKnowledge", key: "0xd", value: { game_id: 1, structure_id: 7, learned: String(2n << 48n) } },
+    { model: "RealmKnowledge", key: "0xd", value: { game_id: 1, structure_id: 7, learned: String(3n << 48n) } },
     depthRules(1),
     depthRules(2),
     depthRules(3),
@@ -72,3 +72,49 @@ export const spireDay = ({
   ] as never);
   return { store, rules, spire, armyTile };
 };
+
+/** A recorded discovery replaces the home-ring portal on the selected expedition layer. */
+export const applySpireDiscovery = (store: NativeFactStore, depth: 0 | 1 | 2) => {
+  const rules = readExpeditionRules(store, 1)!;
+  const surface = expeditionSpireTile(rules, store.require("Structure", { game_id: 1, entity_id: 7 }), SPIRE_DAY_NOW)!;
+  const spire = { col: surface.col + 2, row: surface.row + depth * rules.spacing };
+  const [armyTile] = getNeighborHexes(spire.col, spire.row);
+  const occupancy = store.entityOccupancy(1, SPIRE_ARMY)!;
+  store.applyFacts([
+    {
+      model: "ExpeditionSpire",
+      key: "0x5f01",
+      value: {
+        game_id: 1,
+        structure_id: 7,
+        epoch: 0,
+        depth,
+        reveals: 3,
+        location: { x: spire.col, y: spire.row, alt: false },
+      },
+    },
+    {
+      model: "TileOccupancy",
+      key: "0x5f02",
+      value: { game_id: 1, entity_id: 801, category: TileOccupier.Spire, is_structure: false, alt: false, ...spire },
+    },
+    { model: "TileOccupancy", key: store.wireKeyOf("TileOccupancy", occupancy)!, value: null },
+    {
+      model: "TileOccupancy",
+      key: "0x5f03",
+      value: {
+        game_id: 1,
+        entity_id: SPIRE_ARMY,
+        category: TileOccupier.ExplorerKnightT1,
+        is_structure: false,
+        alt: false,
+        col: armyTile.col,
+        row: armyTile.row,
+      },
+    },
+  ] as never);
+  return { store, rules, spire, armyTile };
+};
+
+export const discoveredSpireDay = (depth: 0 | 1 | 2 = 0) =>
+  applySpireDiscovery(spireDay({ spacing: 100 }).store, depth);

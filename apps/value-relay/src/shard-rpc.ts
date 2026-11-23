@@ -2,6 +2,7 @@ import { normalizeStarknetAddress, isSameStarknetAddress } from "../../../packag
 import { RelayFailure } from "./failure";
 import { SHARD_PAGE_BLOCKS } from "./shard-page";
 import { hash, shortString, type RpcProvider } from "starknet";
+import { nativeIdentifiers } from "../../../contracts/l3/world-native/schema/client.gen";
 import { readClassAbi, readShardAbi } from "../../../packages/value-ledger/src/shard-abi";
 import { rpcAt, rpcBatch } from "../../../packages/value-ledger/src/rpc";
 import { SHARD_RPC_MAX_BATCH_CALLS } from "../../../packages/value-ledger/src/shard-rpc-limits";
@@ -19,29 +20,29 @@ export const shardConnection = (shard: {
   rpcUrl: string;
   chainId: string;
   contracts: Record<string, string>;
-  releaseSchemas: Record<string, string>;
+  releases: Record<string, unknown>;
 }): ShardConnection => ({
   rpcUrl: shard.rpcUrl,
   gamesAddress: shard.contracts.games!,
   chainId: shard.chainId,
-  firstRelease: firstReleaseOf(shard.releaseSchemas),
+  firstRelease: firstReleaseOf(shard.releases),
 });
 
 /** The first release of the shard a Herald serves, from its manifest, refused when Herald names another chain. */
 export const readFirstRelease = async (heraldUrl: string, chainId: string, network: typeof fetch = fetch) => {
   const response = await network(new URL("/manifest", heraldUrl), { signal: AbortSignal.timeout(10_000) });
   if (!response.ok) throw new Error("herald_manifest_unavailable");
-  const manifest = (await response.json()) as { chainId: string; releaseSchemas: Record<string, string> };
+  const manifest = (await response.json()) as { chainId: string; releases: Record<string, unknown> };
   if (BigInt(manifest.chainId) !== BigInt(chainId)) throw new Error("herald_manifest_chain_differs");
-  return firstReleaseOf(manifest.releaseSchemas);
+  return firstReleaseOf(manifest.releases);
 };
 
 /** Releases are registered one after another from the chain's first, so the manifest's lowest is where it began. */
-export const firstReleaseOf = (releaseSchemas: Record<string, string>) => {
-  const releases = Object.keys(releaseSchemas ?? {}).map(Number);
-  if (!releases.length || !releases.every((release) => Number.isSafeInteger(release) && release > 0))
+const firstReleaseOf = (releases: Record<string, unknown>) => {
+  const ids = Object.keys(releases ?? {}).map(Number);
+  if (!ids.length || !ids.every((release) => Number.isSafeInteger(release) && release > 0))
     throw new Error("invalid_shard_manifest_releases");
-  return Math.min(...releases);
+  return Math.min(...ids);
 };
 interface ShardEvent {
   from_address: string;
@@ -71,7 +72,7 @@ export interface ValueRow {
   values: string[];
   transactionHash: string;
 }
-const VALUE_MODELS = ["LordsWithdrawal", "BlitzResult"] as const;
+const VALUE_MODELS = ["LordsWithdrawal"] as const;
 /** Header batches in flight at once: a Worker holds at most six connections. */
 const HEADER_BATCHES_IN_FLIGHT = 4;
 
@@ -323,16 +324,21 @@ const releaseClasses = async (
 ): Promise<string[]> => {
   const call = (entrypoint: string, calldata: string[]) =>
     provider.callContract({ contractAddress: address, entrypoint, calldata }, number);
-  const [current] = await call("current_release", []);
-  const latest = BigInt(current ?? "0");
-  if (latest > 0n && latest < BigInt(firstRelease)) throw new Error("shard_release_before_manifest");
+  const registered = async (release: bigint) =>
+    BigInt((await call("release_registered", [release.toString()]))[0] ?? "0") === 1n;
+  const [current] = await call("open_release_of", [String(nativeIdentifiers.family.FRONTIER)]);
+  const open = BigInt(current ?? "0");
+  if (open > 0n && open < BigInt(firstRelease)) throw new Error("shard_release_before_manifest");
   const classes = new Set<string>();
-  const layout = latest > 0n ? releaseLayout(games) : null;
-  for (let release = BigInt(firstRelease); layout && release <= latest; release++) {
+  const layout = open > 0n ? releaseLayout(games) : null;
+  for (let release = BigInt(firstRelease); layout && (await registered(release)); release++) {
     const answer = await call("release", [release.toString()]);
     if (answer.length !== layout.size) throw new Error("invalid_release_classes");
     // A zero migration class is a release that migrates nothing.
     for (const position of layout.classes) if (BigInt(answer[position]!) !== 0n) classes.add(felt(answer[position]!));
+    const [count, ...logic] = await call("release_classes", [release.toString()]);
+    if (logic.length !== Number(count)) throw new Error("invalid_release_classes");
+    for (const classHash of logic) classes.add(felt(classHash));
   }
   return [...classes];
 };

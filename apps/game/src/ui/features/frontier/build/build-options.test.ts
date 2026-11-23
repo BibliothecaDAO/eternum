@@ -2,7 +2,6 @@ import { setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { nativeResearchConstants } from "@bibliothecadao/eternum/game-client";
 import { BuildingType, ResourcesIds } from "@bibliothecadao/types";
 import { afterEach, describe, expect, it } from "vitest";
-import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
 import { HOUR, realmBoard } from "./build-fixture";
 import { readBuildOptions } from "./build-options";
 
@@ -13,25 +12,20 @@ describe("Frontier's build options", () => {
     const { store, realm } = realmBoard();
     const options = new Map(readBuildOptions(store, realm, true, 350)!.map((option) => [option.category, option]));
 
-    const farmRate =
-      (Number(store.require("ResourceRule", { game_id: 1, resource_type: ResourcesIds.Wheat }).realm_rate) / 1e9) *
-      HOUR;
+    const farmASecond =
+      Number(store.require("ResourceRule", { game_id: 1, resource_type: ResourcesIds.Wheat }).realm_rate) / 1e9;
     expect(options.get(BuildingType.ResourceWheat)?.effect).toEqual({
       kind: "produces",
       resource: ResourcesIds.Wheat,
-      perHour: farmRate,
+      perHour: farmASecond * HOUR,
       // Nothing researched: the output is its base, with no share added.
-      output: { base: farmRate / HOUR, total: farmRate / HOUR },
+      output: { base: farmASecond, total: farmASecond },
     });
     expect(options.get(BuildingType.ResourceLabor)?.effect).toMatchObject({ resource: ResourcesIds.Labor });
     expect((options.get(BuildingType.ResourceLabor)?.effect as { perHour: number }).perHour).toBeCloseTo(50, 0);
-    expect(options.has(BuildingType.Storehouse)).toBe(false);
-    const hut = preset.buildings.find(({ category }) => category === BuildingType.WorkersHut)!.rule.capacity_grant;
-    expect(options.get(BuildingType.WorkersHut)?.effect).toEqual({ kind: "population", amount: hut });
+    expect(options.get(BuildingType.Storehouse)?.effect).toEqual({ kind: "stores", shareBps: 5000 });
+    expect(options.has(BuildingType.WorkersHut)).toBe(false);
     expect(options.get(BuildingType.ResourceWheat)?.cost.length).toBeGreaterThan(0);
-    expect(options.get(BuildingType.ResourceWheat)?.populationCost).toBe(
-      preset.buildings.find(({ category }) => category === BuildingType.ResourceWheat)!.rule.population_cost,
-    );
   });
 
   it("forecasts the realm's wheat once a building stands: a farm adds, a barracks takes none", () => {
@@ -45,19 +39,17 @@ describe("Frontier's build options", () => {
     expect(barracks.wheat.after).toBeCloseTo(300, 3);
   });
 
-  it("gives each Fields pick a quarter more output, and the next Hut its grant and the bonus its tiers add, at no extra price", () => {
+  it("gives each Farm tier a quarter more output at no extra price", () => {
     const { store, realm } = realmBoard();
     const option = (category: BuildingType) =>
       readBuildOptions(store, realm, true, 350)!.find((candidate) => candidate.category === category)!;
     const farm = option(BuildingType.ResourceWheat);
-    const hut = option(BuildingType.WorkersHut);
     expect(farm.tier).toBe(0);
-    // One upgrade on each Farm side; Hut epic at bit 21.
     store.applyFacts([
       {
         model: "RealmKnowledge",
         key: "0x77",
-        value: { game_id: 1, structure_id: 7, learned: 1n | (1n << 3n) | (3n << 21n) },
+        value: { game_id: 1, structure_id: 7, learned: 1n },
       },
     ] as never);
     const farmAfter = option(BuildingType.ResourceWheat);
@@ -67,12 +59,6 @@ describe("Frontier's build options", () => {
       6,
     );
     expect(farmAfter.cost).toEqual(farm.cost);
-    // No Hut stands: the first adds its grant and its share of the epic tier's bonus, rounded down as the contract
-    // rounds it (6 + floor(6 × 3 × 2,500 / 10,000) = 6 + 4), never a fraction.
-    const grant = (hut.effect as { amount: number }).amount;
-    expect((option(BuildingType.WorkersHut).effect as { amount: number }).amount).toBe(
-      grant + Math.floor((grant * 3 * 2_500) / 10_000),
-    );
   });
 
   it("offers every building the contract's tree names for a board, from its generated constants", () => {
@@ -80,7 +66,13 @@ describe("Frontier's build options", () => {
     // research.cairo names each board building by its category (FARM, WORKSHOP, …): a building it adds is offered,
     // or this fails (the catalog rule, audit 10-27 F7), never a hand-written list missing it.
     const named = Object.entries(nativeResearchConstants)
-      .filter(([name]) => !/^(ROW_|CHOICE_|KIND_)/.test(name))
+      .filter(
+        ([name]) =>
+          !name.startsWith("ROW_") &&
+          !name.startsWith("OATH_SLOTS_") &&
+          !name.startsWith("LORE_") &&
+          !name.endsWith("_LEVEL"),
+      )
       .map(([, category]) => category)
       .sort((a, b) => a - b);
     const offered = readBuildOptions(store, realm, true, 350)!.map(({ category }) => category);
@@ -93,27 +85,75 @@ describe("Frontier's build options", () => {
     expect(readBuildOptions(store, realm, true, 350)).toBeUndefined();
   });
 
-  it("opens training after mixed Barracks purchases, trained at the training building’s own tier", () => {
+  it("opens Logistics training at Kingdom without a Barracks research gate", () => {
     const { store, realm } = realmBoard();
-    const warHall = () =>
-      readBuildOptions(store, realm, true, 350)!.find(({ category }) => category === BuildingType.WarHall)!;
-    const gate = store.require("BoardRules", { game_id: 1 }).training_gate_tier;
-    expect(warHall()).toMatchObject({
-      standing: { gate, bought: 0 },
-      effect: { kind: "trains", attribute: "Battle" },
+    const supplyYard = (level: number) =>
+      readBuildOptions(store, { ...realm, base: { ...realm.base, level } }, true, 350)!.find(
+        ({ category }) => category === BuildingType.SupplyYard,
+      )!;
+    expect(supplyYard(1).standing).toEqual({ level: 2 });
+    expect(supplyYard(2)).toMatchObject({
+      standing: "open",
+      effect: { kind: "trains", attribute: "Logistics" },
       tier: 1,
     });
-    const learn = (learned: bigint) =>
-      store.applyFacts([
-        { model: "RealmKnowledge", key: "0x77", value: { game_id: 1, structure_id: realm.entity_id, learned } },
-      ] as never);
-    // The owner's realm on prod (4 November): Drill I, no Rations. The contract refuses a training building.
-    learn(1n << 14n);
-    expect(warHall().standing).toEqual({ gate: 2, bought: 1 });
-    // One Drill and one Rations purchase meet the two-purchase gate, as two Drill purchases do.
-    learn((1n << 14n) | (1n << 17n));
-    expect(warHall().standing).toBe("open");
-    learn(2n << 14n);
-    expect(warHall().standing).toBe("open");
   });
+});
+
+it("opens repeatable Scout production at City without Barracks research", () => {
+  const { store, realm } = realmBoard();
+  const lodge = (level: number) =>
+    readBuildOptions(store, { ...realm, base: { ...realm.base, level } }, true, 350)!.find(
+      ({ category }) => category === BuildingType.ScoutsLodge,
+    )!;
+  expect(lodge(0).standing).toEqual({ level: 1 });
+  expect(lodge(1).standing).toBe("open");
+  expect(lodge(1).effect).toMatchObject({ kind: "produces", resource: ResourcesIds.Paladin });
+  expect(lodge(1).tier).toBe(1);
+});
+
+it("opens the Range and Camp at City, the Depot at Kingdom, and keeps each research building unique", () => {
+  const { store, realm } = realmBoard();
+  const options = (level: number) =>
+    new Map(
+      readBuildOptions(store, { ...realm, base: { ...realm.base, level } }, true, 350)!.map((option) => [
+        option.category,
+        option,
+      ]),
+    );
+  expect(options(0).get(BuildingType.ResourceCrossbowmanT1)?.standing).toEqual({ level: 1 });
+  expect(options(0).get(BuildingType.ConscriptionCamp)?.standing).toEqual({ level: 1 });
+  expect(options(1).get(BuildingType.ResourceCrossbowmanT1)?.standing).toBe("open");
+  expect(options(1).get(BuildingType.ConscriptionCamp)?.standing).toBe("open");
+  expect(options(1).get(BuildingType.RationsDepot)?.standing).toEqual({ level: 2 });
+  expect(options(2).get(BuildingType.RationsDepot)?.standing).toBe("open");
+  const counts = store.require("StructureBuildings", { game_id: 1, entity_id: 7 });
+  store.applyFacts([
+    {
+      model: "StructureBuildings",
+      key: store.wireKeyOf("StructureBuildings", { game_id: 1, entity_id: 7 })!,
+      value: { ...counts, packed_counts_3: (1n << 64n) | (1n << 88n) },
+    },
+  ] as never);
+  expect(options(2).get(BuildingType.ConscriptionCamp)?.standing).toBe("built");
+  expect(options(2).get(BuildingType.RationsDepot)?.standing).toBe("built");
+});
+
+it("opens one Storeroom a Realm at City", () => {
+  const { store, realm } = realmBoard();
+  const storeroom = (level: number) =>
+    readBuildOptions(store, { ...realm, base: { ...realm.base, level } }, true, 350)!.find(
+      ({ category }) => category === BuildingType.Storehouse,
+    )!;
+  expect(storeroom(0).standing).toEqual({ level: 1 });
+  expect(storeroom(1).standing).toBe("open");
+  const counts = store.require("StructureBuildings", { game_id: 1, entity_id: 7 });
+  store.applyFacts([
+    {
+      model: "StructureBuildings",
+      key: store.wireKeyOf("StructureBuildings", { game_id: 1, entity_id: 7 })!,
+      value: { ...counts, packed_counts_1: counts.packed_counts_1 | (1n << 8n) },
+    },
+  ] as never);
+  expect(storeroom(1).standing).toBe("built");
 });

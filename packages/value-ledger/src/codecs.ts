@@ -283,6 +283,24 @@ export const decodeFrontierSeason = (fields: readonly string[]) => {
     seed: fields[9]!,
   };
 };
+export const decodeRaceSeason = (fields: readonly string[]) => {
+  if (fields.length !== 10) throw new Error("invalid_race_season");
+  return {
+    funded: ledgerBool(fields[0]!),
+    pool: BigInt(ledgerU256(fields[1]!, fields[2]!)),
+    posted: ledgerBool(fields[3]!),
+    postedAt: ledgerInteger(fields[4]!),
+    total: BigInt(ledgerU256(fields[5]!, fields[6]!)),
+    paid: BigInt(ledgerU256(fields[7]!, fields[8]!)),
+    closed: ledgerBool(fields[9]!),
+  };
+};
+export const RACE_CLAIM_WINDOW_SECONDS = 604_800;
+export const decodeRaceReward = (fields: readonly string[]) => {
+  if (fields.length !== 3) throw new Error("invalid_race_reward");
+  const amount = BigInt(ledgerU256(fields[1]!, fields[2]!));
+  return amount === 0n ? null : { wallet: fields[0]!, amount };
+};
 /**
  * Preset: entry_fee (2), protocol_cut_bps, chest_lords_bps, paid_fraction_bps, decay_bps, sword_price (2),
  * shield_price (2), mmr (6), day_unit, claim_window, frontier_top_n, frontier_chest_bps.

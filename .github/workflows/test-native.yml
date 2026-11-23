@@ -15,10 +15,6 @@ jobs:
     strategy:
       matrix:
         include:
-          - package: game_ledger
-            directory: contracts/l2/ledger
-            tool-versions: .tool-versions
-            required: GameLedger RealmsCollectible
           - package: realms_vrf_verifier
             directory: contracts/l3/vrf-verifier
             tool-versions: contracts/l3/world-native/.tool-versions
@@ -45,6 +41,35 @@ jobs:
         run: |
           scarb --manifest-path "$CLASS_DIRECTORY/Scarb.toml" build
           node contracts/utils/check-class-sizes.mjs "$CLASS_DIRECTORY/target/dev" "$CLASS_PACKAGE" $REQUIRED_CLASSES
+
+  game-ledger:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/actions
+      - uses: ./.github/actions/checkout-without-media
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - uses: software-mansion/setup-scarb@v1
+        with:
+          tool-versions: .tool-versions
+          scarb-lock: contracts/l2/ledger/Scarb.lock
+      - uses: foundry-rs/setup-snfoundry@v3
+        with:
+          tool-versions: .tool-versions
+      - uses: software-mansion/setup-universal-sierra-compiler@v1
+      - name: Build, size, ABI and test the ledger
+        working-directory: contracts/l2/ledger
+        run: |
+          scarb fmt --check
+          bash check.sh
 
   player-account:
     runs-on: ubuntu-latest
@@ -102,10 +127,13 @@ jobs:
         run: python3 scripts/generate-realm-metadata.py --check
       - name: Check generated configs match the config source
         run: pnpm run config:generate --check
-      - name: Check current preset fixtures match the preset source
+      - uses: software-mansion/setup-scarb@v1
+        with:
+          tool-versions: contracts/l3/world-native/.tool-versions
+      - name: Check the generated balance modules, release record and oath vectors match the Season 1 definition
         run: |
-          pnpm run fixtures:native-presets
-          git diff --exit-code -- contracts/l3/world-native/tests/fixtures/current-presets contracts/l3/world-native/tests/fixtures/frontier-command-mask.txt
+          pnpm run fixtures:native
+          git diff --exit-code -- contracts/l3/world-native/src/balance contracts/l3/world-native/schema/release-definition.json contracts/l3/world-native/tests/fixtures
       - name: Type-check the shard tooling, harness and config
         run: |
           pnpm exec tsc -p deploy/athanor/tsconfig.json

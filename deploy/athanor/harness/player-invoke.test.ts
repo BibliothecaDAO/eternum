@@ -3,6 +3,7 @@ import { Account, byteArray, CallData, hash } from "starknet";
 import { DeviceSigner, deviceKeyOf } from "@bibliothecadao/eternum";
 import { classifyPlayReceipt } from "./action-receipt";
 import { readPlayBounds, signPlayerInvoke } from "./player-invoke";
+import { releaseLine } from "../../../packages/core/src/test-support/releases";
 
 const scope = { games: "0x123", gameId: 4, actor: "0x9", hash: "0x88" };
 test("pending, reverted and successful receipts have distinct action states", () => {
@@ -70,7 +71,7 @@ test("a player-signed shard opens without any gateway endpoint", async () => {
         version: 1,
         chainId: "0x112233",
         l2GasBound: "0x1234",
-        releaseSchemas: { "1": "test-schema" },
+        releases: releaseLine("test-schema", [1]),
         rpcUrl: "http://127.0.0.1:1",
         accountClassHash: "0x123",
         guardianPublicKey: "0x456",

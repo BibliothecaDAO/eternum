@@ -4,17 +4,15 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import type { DirectoryGame } from "./herald";
-import { chooseSeason, directoryDay, seasonTitle } from "./season";
+import { chooseSeason, directoryDay, endedSeasons, seasonTitle } from "./season";
 import { ARCHIVED_SEASONS } from "./season-tab/archive/archive";
 
 const season = (gameId: number, startMainAt: number, ownRealm: boolean): DirectoryGame => ({
-  ready: true,
   dev_mode_on: false,
+  clock_scale: 1,
   expedition: null,
   name: "Season",
-  preset_id: 6,
   player_count: ownRealm ? 1 : 0,
-  roster_count: 0,
   registration: null,
   settlement: null,
   settled_realms_count: ownRealm ? 1 : 0,
@@ -23,11 +21,15 @@ const season = (gameId: number, startMainAt: number, ownRealm: boolean): Directo
   game_id: gameId,
   mode: "frontier",
   status: "Live",
-  clock: { start_settling_at: 0, start_main_at: startMainAt, end_at: 9_000_000_000, end_grace_seconds: 0 },
+  clock: {
+    start_settling_at: 0,
+    start_main_at: startMainAt,
+    scheduled_end_at: 9_000_000_000,
+    end_at: 9_000_000_000,
+  },
   player_state: {
     registered: ownRealm,
     settled: ownRealm,
-    roster_wallet: null,
     held_realm_id: null,
     has_home_source: false,
     taken_realm_ids: [],
@@ -49,6 +51,15 @@ describe("the season a screen shows", () => {
     expect(chooseSeason([season(4, 100, false), season(3, 100, false), season(5, 50, false)], false)?.game_id).toBe(3);
     expect(chooseSeason([season(9, 100, true), season(8, 200, false)], false)?.game_id).toBe(8);
   });
+});
+
+it("never picks a scaled rehearsal as the season, however late it started or whoever holds a realm in it", () => {
+  const playtest = season(1, 100, false);
+  const rehearsal = { ...season(2, 200, true), clock_scale: 4 };
+  for (const signedIn of [false, true]) expect(chooseSeason([rehearsal, playtest], signedIn)?.game_id).toBe(1);
+  expect(chooseSeason([rehearsal], true)).toBeUndefined();
+  const ended = { ...rehearsal, status: "Ended" } as DirectoryGame;
+  expect(endedSeasons([ended], [ended]).map(({ game_id }) => game_id)).not.toContain(2);
 });
 
 it("prefers a live season over a future one, even with realms in both", () => {

@@ -1,9 +1,8 @@
 import { Box3, Color, Matrix4, PerspectiveCamera, Raycaster, Scene, Vector2, Vector3 } from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { initializeProceduralCharacterRendererRuntime } from "../../characters/procedural-character-renderer-runtime";
-import { StructureType } from "@bibliothecadao/types";
 import InstancedModel from "../../managers/instanced-model";
-import { FRONTIER_BEASTS, frontierBeast } from "../../structures/frontier-beast";
+import { FRONTIER_BEASTS, type FrontierBeast } from "../../structures/frontier-beast";
 import { CAMP_MODEL_PATH } from "../../constants/scene-constants";
 import { configureRendererColorOutput } from "../../renderer-color-output";
 import { resetGameEnd } from "../../effects/endgame/state";
@@ -22,7 +21,7 @@ import { CLEARED_SITE_MODEL_PATH } from "../../constants/scene-constants";
 /** Existing world renderer, terrain, camera and ownership material; only the proposed marker is a lab asset. */
 export async function mountClearedSiteStudy(
   container: HTMLElement,
-  settings: { kind: ClearedSiteStudy; distance: number },
+  settings: { kind: ClearedSiteStudy; distance: number; beast: FrontierBeast },
   signal: AbortSignal,
   select: (cleared: boolean) => void,
 ) {
@@ -90,7 +89,7 @@ export async function mountClearedSiteStudy(
     resize();
     await environment.update(readModelLabSettings(new URLSearchParams("family=knight&biome=grassland")));
     signal.throwIfAborted();
-    const beast = frontierBeast(0, StructureType.Beasts, "lowly");
+    const { beast } = settings;
     const paths = [
       settings.kind === "camp" ? CAMP_MODEL_PATH : FRONTIER_BEASTS[beast.beast].path,
       CLEARED_SITE_MODEL_PATH,

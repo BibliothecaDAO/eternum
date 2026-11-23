@@ -1,7 +1,6 @@
 import { type PlayerNames, usePlayerNames } from "@/hooks/use-player-profile";
 import { fetchHeraldGameHistory, requireShard, storyParticipants } from "@bibliothecadao/eternum/game-client";
 import { storyPayloadId } from "@/utils/native-id";
-import { getActiveGame } from "@/runtime/world";
 import { buildStoryEventPresentation, configManager, hasStoryPresentation } from "@bibliothecadao/eternum";
 import * as Sentry from "@sentry/react";
 import type { GameSyncEvent, HeraldHistoryEvent } from "@bibliothecadao/eternum/game-sync";
@@ -404,7 +403,7 @@ export const useStoryReads = (reads: StoryRead[]) => {
   const names = usePlayerNames();
   const viewer = useAccountAddress();
   const viewerAddress = viewer === null ? null : `0x${viewer.toString(16)}`;
-  const shard = requireShard(getActiveGame()?.chainId);
+  const shard = requireShard();
   const scope = { chainId: shard.chainId, worldAddress: shard.worldAddress, gameId: configManager.getActiveGameId() };
   const scopeKey = storyEventScopeKey(scope);
   const handshake = useConnectionStore((state) => state.lastGlobalHandshake);
@@ -525,11 +524,4 @@ export const useStoryEvents = (limit: number = 100, story?: string, owner?: stri
 const holdsSince = (stories: readonly StoryEventData[], limit: number): number => {
   if (stories.length < limit) return 0;
   return Math.min(...stories.map((story) => Number(BigInt(story.timestamp)))) + 1;
-};
-
-/** The season's winner once its SeasonEnded story is in history; null until then. */
-export const useSeasonWinner = (): bigint | null => {
-  const { data: ended } = useStoryEvents(1, "SeasonEnded");
-  const winner = ended[0]?.owner;
-  return winner ? BigInt(winner) : null;
 };

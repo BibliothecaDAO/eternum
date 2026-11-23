@@ -3,6 +3,7 @@ import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { setTimeout as sleep } from "node:timers/promises";
 import { actorKey, type HarnessGameClient, type HeraldConfirmations } from "./game-client";
 import {
+  armyOaths,
   buildArmyPathIndexes,
   configManager,
   createGameActions,
@@ -20,7 +21,7 @@ import {
   waitForWorldState,
 } from "@bibliothecadao/eternum";
 import { type Account } from "starknet";
-import { ResourcesIds, StructureType, TroopType, type ID } from "@bibliothecadao/types";
+import { aspects, ordersOfAspect, ResourcesIds, StructureType, TroopType, type ID } from "@bibliothecadao/types";
 
 export interface Coord {
   x: number;
@@ -87,7 +88,7 @@ export interface HarnessGame {
   explorerStamina(explorerId: ID, timestamp: number): number;
   explorerMaxStamina(explorerId: ID): number;
   /** The cheapest stamina an action of this kind can cost under the game's rulebook. */
-  minimumStaminaFor(kind: "move" | "explore"): number;
+  minimumStaminaFor(explorerId: ID, kind: "move" | "explore"): number;
   production(structureId: ID): ProductionState | undefined;
   armyPathIndexes(): ArmyPathIndexes;
   /** The block the bot's facts were confirmed through, or null before Herald names one. */
@@ -203,8 +204,12 @@ function createClientGame(client: GameClient, heraldConfirmations?: HeraldConfir
       if (!troops) throw new Error(`Explorer ${explorerId} has no synchronized stamina`);
       return StaminaManager.getMaxStamina(troops.category, troops.tier, troops.staminaMax);
     },
-    minimumStaminaFor: (kind) =>
-      kind === "explore" ? configManager.getExploreStaminaCost() : configManager.getMinTravelStaminaCost(),
+    minimumStaminaFor: (explorerId, kind) => {
+      const army = store.require("ExplorerTroops", { game_id, explorer_id: explorerId });
+      return kind === "explore"
+        ? configManager.getExploreStaminaCost(army.troops.category, armyOaths(store, army))
+        : configManager.getMinTravelStaminaCost();
+    },
     production: (structureId) => {
       const resource = new ResourceManager(store, structureId);
       const labor = resource.balance(ResourcesIds.Labor);
@@ -221,12 +226,13 @@ function createClientGame(client: GameClient, heraldConfirmations?: HeraldConfir
       const tile = getTileAt(store, false, x, y, game_id);
       return { explored: Boolean(tile?.biome), occupierId: Number(tile?.occupier_id ?? 0) };
     },
-    settle: (signer) => systemCalls.settle_season({ signer }),
+    settle: (signer) =>
+      systemCalls.settle_season({
+        signer,
+        order: store.get("AspectRules", { game_id }) ? ordersOfAspect(aspects[0].id)[0]!.orderId : undefined,
+      }),
     produceWood: (signer, structureId) => {
-      const produce = !configManager.isCommandEnabled("BurnLaborForResourceProduction")
-        ? systemCalls.burn_resource_for_resource_production
-        : systemCalls.burn_labor_for_resource_production;
-      return produce({
+      return systemCalls.burn_resource_for_resource_production({
         signer,
         from_entity_id: structureId,
         production_cycles: [1],
@@ -249,9 +255,8 @@ async function waitUntilPlaying({ setup: { store }, gameId: game_id }: GameClien
     const timestamp = getBlockTimestamp().currentBlockTimestamp;
     if (current.end_at !== 0n && timestamp >= Number(current.end_at)) throw new Error(`Game ${game_id} has ended`);
     if (
-      current.ready &&
-      (current.dev_mode_on ||
-        (timestamp >= Number(current.start_main_at) && timestamp >= Number(current.start_settling_at)))
+      current.dev_mode_on ||
+      (timestamp >= Number(current.start_main_at) && timestamp >= Number(current.start_settling_at))
     )
       return;
     await sleep(1_000);

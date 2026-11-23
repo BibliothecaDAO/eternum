@@ -31,7 +31,6 @@ const pointer = new PointerOrderTip(
       refusal: tile.refusal,
       staminaWait: undefined,
       staminaHeld: 9,
-      site: undefined,
       byRealm: false,
     });
     return tip && tile.at && { ...tip, at: tile.at };
@@ -51,11 +50,6 @@ const shownLine = (): string | null => {
         .replace(/<[^>]+>/g, "")
     : null;
 };
-
-const crate = (): ActionPath[] => [
-  { hex: { col: 0, row: 0 }, actionType: ActionType.Move },
-  { hex: { col: 1, row: 0 }, actionType: ActionType.Chest },
-];
 
 const move = (staminaCost: number): ActionPath[] => [
   { hex: { col: 0, row: 0 }, actionType: ActionType.Move },
@@ -108,7 +102,7 @@ describe("the line under a still pointer", () => {
     pointer.take();
     expect(shownLine()).toBeNull();
 
-    tile.path = crate();
+    tile.path = move(3);
     pointer.refresh();
     expect(shownLine()).toBeNull();
 
@@ -118,7 +112,7 @@ describe("the line under a still pointer", () => {
 
     pointer.point({ col: 2, row: 0 });
     pointer.point({ col: 1, row: 0 });
-    expect(shownLine()).toBe("Open crate");
+    expect(shownLine()).toBe("Move / 3 stamina");
   });
 
   it("says a refused order at the tile it was sent to, following the tile as the camera moves, until the pointer leaves it", () => {
@@ -256,7 +250,7 @@ describe("the line when the pointer leaves the map for the HUD", () => {
     overHudButton();
     expect(shownLine()).toBe("Wheat");
 
-    tile.path = crate();
+    tile.path = move(3);
     pointer.refresh();
     expect(shownLine()).toBe("Wheat");
   });
@@ -277,8 +271,8 @@ describe("the line when the pointer leaves the map for the HUD", () => {
     leaveCanvas();
     overHudButton();
 
-    tile.path = crate();
+    tile.path = move(3);
     restOnTile();
-    expect(shownLine()).toBe("Open crate");
+    expect(shownLine()).toBe("Move / 3 stamina");
   });
 });

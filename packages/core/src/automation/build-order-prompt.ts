@@ -31,7 +31,7 @@ const goalLine = (goal: BuildOrderGoal): string => {
  */
 export const buildOrderPrompt = (order: BuildOrder): string =>
   [
-    "Help me write a build order for Blitz, a short match in Realms, an onchain strategy game. Blitz is won on points: exploring tiles, opening crates, and holding camps, rifts and Hyperstructures. My realm grows through four ranks: Settlement, City, Kingdom, Empire. Level-ups past City cost resources, Essence among them, which armies find by exploring.",
+    "Help me write a build order for Blitz, a short match in Realms, an onchain strategy game. Blitz is won on points: exploring tiles and taking camps and rifts. My realm grows through four ranks: Settlement, City, Kingdom, Empire. Level-ups past City cost resources, Essence among them, which armies find by exploring.",
     "A build order is the list of steps my realm follows. The game shows the next step only once the realm can take it, so a step has no time. Production and troop training are run by the realm's automation, not by the order.",
     'The order is JSON: {"name": "…", "steps": [{"rank": "Settlement", "goal": "farm", "count": 2}, {"rank": "City", "goal": "levelUp"}]}.',
     "Goals:",

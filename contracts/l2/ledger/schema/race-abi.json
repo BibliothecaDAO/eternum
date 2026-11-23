@@ -1,0 +1,411 @@
+[
+  {
+    "type": "impl",
+    "name": "RaceRewardsImpl",
+    "interface_name": "game_ledger::race::IRaceRewards"
+  },
+  {
+    "type": "struct",
+    "name": "core::integer::u256",
+    "members": [
+      {
+        "name": "low",
+        "type": "core::integer::u128"
+      },
+      {
+        "name": "high",
+        "type": "core::integer::u128"
+      }
+    ]
+  },
+  {
+    "type": "enum",
+    "name": "core::bool",
+    "variants": [
+      {
+        "name": "False",
+        "type": "()"
+      },
+      {
+        "name": "True",
+        "type": "()"
+      }
+    ]
+  },
+  {
+    "type": "struct",
+    "name": "game_ledger::race::RaceSeason",
+    "members": [
+      {
+        "name": "funded",
+        "type": "core::bool"
+      },
+      {
+        "name": "pool",
+        "type": "core::integer::u256"
+      },
+      {
+        "name": "posted",
+        "type": "core::bool"
+      },
+      {
+        "name": "posted_at",
+        "type": "core::integer::u64"
+      },
+      {
+        "name": "total",
+        "type": "core::integer::u256"
+      },
+      {
+        "name": "paid",
+        "type": "core::integer::u256"
+      },
+      {
+        "name": "closed",
+        "type": "core::bool"
+      }
+    ]
+  },
+  {
+    "type": "struct",
+    "name": "game_ledger::race::RaceReward",
+    "members": [
+      {
+        "name": "wallet",
+        "type": "core::starknet::contract_address::ContractAddress"
+      },
+      {
+        "name": "amount",
+        "type": "core::integer::u256"
+      }
+    ]
+  },
+  {
+    "type": "interface",
+    "name": "game_ledger::race::IRaceRewards",
+    "items": [
+      {
+        "type": "function",
+        "name": "ledger",
+        "inputs": [],
+        "outputs": [
+          {
+            "type": "core::starknet::contract_address::ContractAddress"
+          }
+        ],
+        "state_mutability": "view"
+      },
+      {
+        "type": "function",
+        "name": "treasury",
+        "inputs": [],
+        "outputs": [
+          {
+            "type": "core::starknet::contract_address::ContractAddress"
+          }
+        ],
+        "state_mutability": "view"
+      },
+      {
+        "type": "function",
+        "name": "upgrade",
+        "inputs": [
+          {
+            "name": "new_class_hash",
+            "type": "core::starknet::class_hash::ClassHash"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "external"
+      },
+      {
+        "type": "function",
+        "name": "fund_race",
+        "inputs": [
+          {
+            "name": "shard",
+            "type": "core::felt252"
+          },
+          {
+            "name": "season_id",
+            "type": "core::integer::u32"
+          },
+          {
+            "name": "amount",
+            "type": "core::integer::u256"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "external"
+      },
+      {
+        "type": "function",
+        "name": "post_race",
+        "inputs": [
+          {
+            "name": "shard",
+            "type": "core::felt252"
+          },
+          {
+            "name": "season_id",
+            "type": "core::integer::u32"
+          },
+          {
+            "name": "total",
+            "type": "core::integer::u256"
+          },
+          {
+            "name": "signature_r",
+            "type": "core::felt252"
+          },
+          {
+            "name": "signature_s",
+            "type": "core::felt252"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "external"
+      },
+      {
+        "type": "function",
+        "name": "pay_race",
+        "inputs": [
+          {
+            "name": "shard",
+            "type": "core::felt252"
+          },
+          {
+            "name": "season_id",
+            "type": "core::integer::u32"
+          },
+          {
+            "name": "home",
+            "type": "core::integer::u64"
+          },
+          {
+            "name": "wallet",
+            "type": "core::starknet::contract_address::ContractAddress"
+          },
+          {
+            "name": "amount",
+            "type": "core::integer::u256"
+          },
+          {
+            "name": "signature_r",
+            "type": "core::felt252"
+          },
+          {
+            "name": "signature_s",
+            "type": "core::felt252"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "external"
+      },
+      {
+        "type": "function",
+        "name": "close_race",
+        "inputs": [
+          {
+            "name": "shard",
+            "type": "core::felt252"
+          },
+          {
+            "name": "season_id",
+            "type": "core::integer::u32"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "external"
+      },
+      {
+        "type": "function",
+        "name": "get_race",
+        "inputs": [
+          {
+            "name": "shard",
+            "type": "core::felt252"
+          },
+          {
+            "name": "season_id",
+            "type": "core::integer::u32"
+          }
+        ],
+        "outputs": [
+          {
+            "type": "game_ledger::race::RaceSeason"
+          }
+        ],
+        "state_mutability": "view"
+      },
+      {
+        "type": "function",
+        "name": "get_race_reward",
+        "inputs": [
+          {
+            "name": "shard",
+            "type": "core::felt252"
+          },
+          {
+            "name": "season_id",
+            "type": "core::integer::u32"
+          },
+          {
+            "name": "home",
+            "type": "core::integer::u64"
+          }
+        ],
+        "outputs": [
+          {
+            "type": "game_ledger::race::RaceReward"
+          }
+        ],
+        "state_mutability": "view"
+      }
+    ]
+  },
+  {
+    "type": "constructor",
+    "name": "constructor",
+    "inputs": [
+      {
+        "name": "ledger",
+        "type": "core::starknet::contract_address::ContractAddress"
+      },
+      {
+        "name": "treasury",
+        "type": "core::starknet::contract_address::ContractAddress"
+      }
+    ]
+  },
+  {
+    "type": "event",
+    "name": "game_ledger::race::RaceRewards::RaceFunded",
+    "kind": "struct",
+    "members": [
+      {
+        "name": "shard",
+        "type": "core::felt252",
+        "kind": "key"
+      },
+      {
+        "name": "season_id",
+        "type": "core::integer::u32",
+        "kind": "key"
+      },
+      {
+        "name": "amount",
+        "type": "core::integer::u256",
+        "kind": "data"
+      }
+    ]
+  },
+  {
+    "type": "event",
+    "name": "game_ledger::race::RaceRewards::RacePosted",
+    "kind": "struct",
+    "members": [
+      {
+        "name": "shard",
+        "type": "core::felt252",
+        "kind": "key"
+      },
+      {
+        "name": "season_id",
+        "type": "core::integer::u32",
+        "kind": "key"
+      },
+      {
+        "name": "total",
+        "type": "core::integer::u256",
+        "kind": "data"
+      }
+    ]
+  },
+  {
+    "type": "event",
+    "name": "game_ledger::race::RaceRewards::RacePaid",
+    "kind": "struct",
+    "members": [
+      {
+        "name": "shard",
+        "type": "core::felt252",
+        "kind": "key"
+      },
+      {
+        "name": "season_id",
+        "type": "core::integer::u32",
+        "kind": "key"
+      },
+      {
+        "name": "home",
+        "type": "core::integer::u64",
+        "kind": "key"
+      },
+      {
+        "name": "wallet",
+        "type": "core::starknet::contract_address::ContractAddress",
+        "kind": "data"
+      },
+      {
+        "name": "amount",
+        "type": "core::integer::u256",
+        "kind": "data"
+      }
+    ]
+  },
+  {
+    "type": "event",
+    "name": "game_ledger::race::RaceRewards::RaceClosed",
+    "kind": "struct",
+    "members": [
+      {
+        "name": "shard",
+        "type": "core::felt252",
+        "kind": "key"
+      },
+      {
+        "name": "season_id",
+        "type": "core::integer::u32",
+        "kind": "key"
+      },
+      {
+        "name": "treasury",
+        "type": "core::starknet::contract_address::ContractAddress",
+        "kind": "data"
+      },
+      {
+        "name": "returned",
+        "type": "core::integer::u256",
+        "kind": "data"
+      }
+    ]
+  },
+  {
+    "type": "event",
+    "name": "game_ledger::race::RaceRewards::Event",
+    "kind": "enum",
+    "variants": [
+      {
+        "name": "RaceFunded",
+        "type": "game_ledger::race::RaceRewards::RaceFunded",
+        "kind": "nested"
+      },
+      {
+        "name": "RacePosted",
+        "type": "game_ledger::race::RaceRewards::RacePosted",
+        "kind": "nested"
+      },
+      {
+        "name": "RacePaid",
+        "type": "game_ledger::race::RaceRewards::RacePaid",
+        "kind": "nested"
+      },
+      {
+        "name": "RaceClosed",
+        "type": "game_ledger::race::RaceRewards::RaceClosed",
+        "kind": "nested"
+      }
+    ]
+  }
+]

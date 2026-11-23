@@ -14,120 +14,15 @@ pub use crate::tests::state::{GameState, ResourceObservationTrait, StructureObse
 pub use crate::troops::{Coord, ExplorerKey};
 pub use super::{Deployment, context, play_fixture};
 pub fn setup() -> (Deployment, ResourceKey, ResourceKey) {
-    setup_with_rules(play_fixture::rules())
+    setup_in_deployment(super::setup_with_domains(true, "StructuresLogic", "TroopsLogic"))
 }
-pub fn fixture_preset(rules: crate::rules::SliceRules) -> crate::presets::PresetDefinition {
-    let mut preset = play_fixture::fixture_preset(rules);
-    let mut resources = array![];
-    for resource_type in 1_u8..59 {
-        resources
-            .append(
-                ResourceRule {
-                    resource_type, unit_weight: if resource_type == 58 {
-                        0
-                    } else {
-                        1
-                    }, realm_rate: 2, village_rate: 1,
-                },
-            );
-    }
-    preset.resources.resources = resources.span();
-    preset
-}
-pub fn setup_with_rules(rules: crate::rules::SliceRules) -> (Deployment, ResourceKey, ResourceKey) {
-    setup_with_preset(fixture_preset(rules))
-}
-pub fn setup_with_preset(preset: crate::presets::PresetDefinition) -> (Deployment, ResourceKey, ResourceKey) {
-    let deployment = super::setup_with_domains(true, "StructuresLogic", "TroopsLogic");
-    setup_in_deployment(deployment, preset)
-}
-pub fn setup_in_deployment(
-    deployment: Deployment, preset: crate::presets::PresetDefinition,
-) -> (Deployment, ResourceKey, ResourceKey) {
-    let games = IGameDispatcher { contract_address: deployment.games };
-    play_fixture::seed_game_with_preset(
-        deployment.games,
-        3,
-        crate::game::GameRegistry {
-            dev_mode_on: false,
-            start_settling_at: 10,
-            start_main_at: 20,
-            end_at: 200,
-            end_grace_seconds: 10,
-            ..games.game(1),
-        },
-        preset,
-    );
-    let resources = IResourceOperationsDispatcher { contract_address: deployment.games };
-    start_cheat_caller_address(deployment.games, deployment.games);
-    let creation = ISettlementCreationDispatcher { contract_address: deployment.games };
-    let mut ids = array![];
-    for offset in array![0_u32, 10] {
-        let owner = if offset != 0 && preset.settlement.mode != crate::settlement::SettlementMode::Triple {
-            super::authority()
-        } else {
-            deployment.actor
-        };
-        ids
-            .append(
-                creation
-                    .create_settlement(
-                        3,
-                        owner,
-                        Coord { alt: false, x: 2000000 + offset, y: 2000000 },
-                        SettlementCreation::Realm(
-                            RealmCreation {
-                                realm_id: 1,
-                                traits: crate::realms::RealmTraits { wonder: 0, order: 0, resources: array![].span() },
-                                troops: crate::settlement::StartingTroops::None,
-                                activate_economy: false,
-                            },
-                        ),
-                        crate::commands::action_context(
-                            ExecutionContext { timestamp: 30, ..context(deployment.games, 3) },
-                        ),
-                    ),
-            );
-    }
-    let second_id = *ids.at(1);
-    snforge_std::interact_with_state(
-        deployment.games,
-        || {
-            crate::logic::structures::StructureState::transfer_owner(
-                ResourceKey { game_id: 3, entity_id: second_id }, deployment.actor,
-            );
-        },
-    );
-    stop_cheat_caller_address(deployment.games);
-    let source = ResourceKey { game_id: 3, entity_id: *ids.at(0) };
-    start_cheat_caller_address(deployment.games, deployment.games);
-    resources
-        .grant_resource(
-            source,
-            1,
-            100,
-            30,
-            crate::commands::resource_context(
-                crate::commands::ExecutionContext {
-                    timestamp: 30, ..crate::tests::context(deployment.games, (source).game_id),
-                },
-            ),
-        );
-    resources
-        .start_production(
-            source,
-            1,
-            2,
-            100,
-            30,
-            crate::commands::resource_context(
-                crate::commands::ExecutionContext {
-                    timestamp: 30, ..crate::tests::context(deployment.games, (source).game_id),
-                },
-            ),
-        );
-    stop_cheat_caller_address(deployment.games);
-    (deployment, source, ResourceKey { game_id: 3, entity_id: *ids.at(1) })
+pub fn setup_in_deployment(deployment: Deployment) -> (Deployment, ResourceKey, ResourceKey) {
+    let game_id = play_fixture::create_game(deployment.games, play_fixture::fixture_params('resources'));
+    assert!(game_id == 3, "the resource game follows the two fixture games");
+    let (neighbour, _) = super::deploy_player(3, super::GUARDIAN);
+    let source = play_fixture::settled_home(deployment, game_id, deployment.actor, 1, play_fixture::FIXTURE_START);
+    let target = play_fixture::settled_home(deployment, game_id, neighbour, 2, play_fixture::FIXTURE_START);
+    (deployment, source, target)
 }
 pub fn execute(deployment: Deployment, command: Command, timestamp: u64) -> bool {
     execute_in_game(deployment, 3, command, timestamp)
@@ -136,6 +31,12 @@ pub fn execute_in_game(deployment: Deployment, game_id: u32, command: Command, t
     play_fixture::play(
         deployment.games, play_fixture::TestAction { game_id, actor: deployment.actor, command }, 987654321, timestamp,
     )
+}
+pub fn assert_executes(deployment: Deployment, game_id: u32, command: Command, timestamp: u64) {
+    let mut events = snforge_std::spy_events();
+    if !execute_in_game(deployment, game_id, command, timestamp) {
+        panic!("{}", play_fixture::rejection(ref events, deployment.games).reason);
+    }
 }
 pub fn amount(resource_type: u8, amount: u128) -> Span<ResourceAmount> {
     array![ResourceAmount { resource_type, amount }].span()
@@ -147,6 +48,11 @@ pub fn set_fixture<T, +starknet::storage_access::Store<T>, +Drop<T>, +Copy<T>>(
         snforge_std::map_entry_address(core::pedersen::pedersen(node, name), keys),
     );
     snforge_std::interact_with_state(address, || starknet::storage_access::Store::<T>::write(0, base, value).unwrap());
+}
+pub fn size_army(deployment: Deployment, key: ExplorerKey, troops: u128) {
+    let mut army = GameState { contract_address: deployment.games }.resolved_explorer(key).unwrap();
+    army.troops.count = troops * crate::rules::RESOURCE_PRECISION;
+    set_explorer_fixture(deployment.games, key, army);
 }
 pub fn set_explorer_fixture(
     address: starknet::ContractAddress, key: crate::troops::ExplorerKey, explorer: crate::troops::ExplorerTroops,
@@ -192,33 +98,46 @@ pub fn explorer_fixture(deployment: Deployment, id: u64, owner: u64, coord: Coor
     );
     let key = ResourceKey { game_id: 3, entity_id: id };
     start_cheat_caller_address(deployment.games, deployment.games);
-    IResourceOperationsDispatcher { contract_address: deployment.games }
-        .initialize_resources(
-            key,
-            capacity,
-            0,
-            30,
-            crate::commands::action_context(
-                crate::commands::ExecutionContext {
-                    timestamp: 30, ..crate::tests::context(deployment.games, (key).game_id),
-                },
-            ),
-        );
+    IResourceOperationsDispatcher { contract_address: deployment.games }.initialize_resources(key, capacity);
     stop_cheat_caller_address(deployment.games);
     key
 }
+pub fn fund_troops(deployment: Deployment, key: ResourceKey, troop: u8, troops: u128) {
+    stock(deployment, key, troop, troops);
+    let recipe = crate::production::IProductionRulesDispatcherTrait::production_recipe(
+        crate::production::IProductionRulesDispatcher { contract_address: deployment.games },
+        crate::production::RecipeKey { game_id: key.game_id, resource_type: troop },
+    );
+    for input in recipe.simple_inputs {
+        stock(deployment, key, *input.resource_type, *input.amount * troops / recipe.simple_output.into());
+    }
+}
+pub fn stock(deployment: Deployment, key: ResourceKey, resource_type: u8, amount: u128) {
+    let held = IResourceOperationsDispatcher { contract_address: deployment.games }
+        .resource_balance(ResourceSlot { game_id: key.game_id, entity_id: key.entity_id, resource_type });
+    set_fixture(
+        deployment.games,
+        selector!("resources"),
+        selector!("balances"),
+        array![key.game_id.into(), key.entity_id.into(), resource_type.into()].span(),
+        held + amount,
+    );
+}
 pub fn grant(deployment: Deployment, key: ResourceKey, resource_type: u8, amount: u128) {
+    let resources = IResourceOperationsDispatcher { contract_address: deployment.games };
+    let timestamp = resources
+        .resource_production(ResourceSlot { game_id: key.game_id, entity_id: key.entity_id, resource_type })
+        .last_settled_at
+        .into();
     start_cheat_caller_address(deployment.games, deployment.games);
-    IResourceOperationsDispatcher { contract_address: deployment.games }
+    resources
         .grant_resource(
             key,
             resource_type,
             amount,
-            30,
+            timestamp,
             crate::commands::resource_context(
-                crate::commands::ExecutionContext {
-                    timestamp: 30, ..crate::tests::context(deployment.games, (key).game_id),
-                },
+                crate::commands::ExecutionContext { timestamp, ..crate::tests::context(deployment.games, key.game_id) },
             ),
         );
     stop_cheat_caller_address(deployment.games);
@@ -277,94 +196,6 @@ pub fn assert_terminal_rejection(deployment: Deployment, command: Command, times
     assert_eq!(rejected.game_id, 3);
     assert_eq!(rejected.actor, deployment.actor);
     assert!(rejected.reason.len() != 0);
-}
-pub fn troop_deposit_ownership(blitz_mode_on: bool, category: u8) {
-    let (deployment, home, target) = setup_with_rules(
-        crate::rules::SliceRules {
-            mode_rules: if blitz_mode_on {
-                super::play_fixture::BLITZ_RULES
-            } else {
-                super::play_fixture::ETERNUM_RULES
-            },
-            command_mask: if blitz_mode_on {
-                super::play_fixture::BLITZ_COMMAND_MASK
-            } else {
-                super::play_fixture::ETERNUM_COMMAND_MASK
-            },
-            entry_rule: if blitz_mode_on {
-                crate::rules::ENTRY_ROSTER
-            } else {
-                crate::rules::ENTRY_ENTITLEMENT
-            },
-            ..play_fixture::rules(),
-        },
-    );
-    let structures = IStructureOperationsDispatcher { contract_address: deployment.games };
-    let structure = structures.structure(target).unwrap();
-    let explorer = explorer_fixture(deployment, 70, home.entity_id, Coord { alt: false, x: 2000009, y: 2000000 }, 1000);
-    grant(deployment, explorer, 26, 100);
-    grant(deployment, explorer, 1, 100);
-    let coord = if category == crate::taxonomy::BITCOIN_MINE_CATEGORY {
-        Coord { alt: true, x: 1999995, y: 2000000 }
-    } else {
-        Coord { alt: false, x: 2000009, y: 2000000 }
-    };
-    crate::tests::resource_commands::set_explorer_fixture(
-        deployment.games,
-        crate::troops::ExplorerKey { game_id: 3, explorer_id: 70 },
-        crate::troops::ExplorerTroops { owner: home.entity_id, coord, ..Default::default() },
-    );
-    let target_position = structures.position(target).unwrap();
-    snforge_std::interact_with_state(
-        deployment.games,
-        || crate::logic::map::MapState::relocate_fixture(
-            target, Coord { alt: coord.alt, ..target_position }, category, true,
-        ),
-    );
-    for owner in array![deployment.actor, 0x998.try_into().unwrap(), 0x999.try_into().unwrap()] {
-        set_fixture(
-            deployment.games,
-            selector!("structures"),
-            selector!("structures"),
-            array![3, target.entity_id.into()].span(),
-            StructureRecord {
-                owner,
-                base: crate::structures::StructureBase { category, ..structure.base },
-                metadata: crate::structures::StructureMetadata { village_realm: home.entity_id, ..structure.metadata },
-                resources_packed: structure.resources_packed,
-            },
-        );
-        let transfer = crate::resources::ResourceTransfer {
-            from_entity_id: 70,
-            to_entity_id: target.entity_id,
-            resources: array![
-                ResourceAmount { resource_type: 1, amount: 1 }, ResourceAmount { resource_type: 26, amount: 1 },
-            ]
-                .span(),
-        };
-        if owner == deployment.actor {
-            assert!(
-                execute(deployment, Command::TransferExplorerResourcesToStructure(transfer), 40),
-                "owner deposit rejected for category {}",
-                category,
-            );
-        } else {
-            let before_source = resource_facts(deployment, explorer);
-            let before_target = resource_facts(deployment, target);
-            assert_terminal_rejection(deployment, Command::TransferExplorerResourcesToStructure(transfer), 40);
-            assert_eq!(resource_facts(deployment, explorer), before_source);
-            assert_eq!(resource_facts(deployment, target), before_target);
-        }
-        assert!(
-            execute(
-                deployment,
-                Command::TransferExplorerResourcesToStructure(
-                    crate::resources::ResourceTransfer { resources: amount(1, 1), ..transfer },
-                ),
-                40,
-            ),
-        );
-    }
 }
 pub fn village_fixture(deployment: Deployment, key: ResourceKey, owner: starknet::ContractAddress) {
     let structure = IStructureOperationsDispatcher { contract_address: deployment.games }.structure(key).unwrap();

@@ -82,8 +82,6 @@ export type WorldmapRenderCounter =
   | "preparedChunkPrewarmHits"
   | "preparedChunkPrewarmMisses"
   | "projectionTilesSynced"
-  | "postCommitManagerCatchUpImmediate"
-  | "postCommitManagerCatchUpDeferred"
   | "pendingArmyRemovalCancelledByTileRecovery"
   | "pendingArmyRemovalCancelledByDelete"
   | "pendingArmyRemovalCancelledBySuperseded"
@@ -229,8 +227,6 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     preparedChunkPrewarmHits: 0,
     preparedChunkPrewarmMisses: 0,
     projectionTilesSynced: 0,
-    postCommitManagerCatchUpImmediate: 0,
-    postCommitManagerCatchUpDeferred: 0,
     pendingArmyRemovalCancelledByTileRecovery: 0,
     pendingArmyRemovalCancelledByDelete: 0,
     pendingArmyRemovalCancelledBySuperseded: 0,

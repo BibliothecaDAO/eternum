@@ -6,6 +6,7 @@ vi.mock("./environment", async (original) => ({
 import { Effect } from "effect";
 import { expect, it, vi } from "vitest";
 import { ValueRelay } from "./worker";
+import { releaseLine } from "../../../packages/core/src/test-support/releases";
 vi.mock("cloudflare:workers", () => ({
   WorkerEntrypoint: class {},
   DurableObject: class {
@@ -21,17 +22,18 @@ vi.mock("@realms-world/value-ledger", async (original) => ({
     chainId: "0x1",
     rpcUrl: "https://proxy.test/rpc/v0_10_2",
     contracts: { games: "0x77" },
-    releaseSchemas: { "1": "0xs" },
+    releases: releaseLine("0xs", [1]),
     url: "https://shard.test",
-    status: "active",
   }),
   rpcAt: () => ({ getChainId: async () => "0x1" }),
 }));
 const blocked = vi.hoisted(() => ({ run: vi.fn() }));
-vi.mock("./blitz-launch", () => ({ openSlotOnLedger: blocked.run }));
-vi.mock("./shard-labor", () => ({ currentLaborDay: () => Effect.succeed(1) }));
-vi.mock("./relay", () => ({ grantDailyLabor: () => Effect.succeed({ amount: "1" }) }));
-it("lets the shard signer grant labor while the ledger signer awaits confirmation", async () => {
+vi.mock("./blitz-launch", () => ({ refundSlotOnLedger: blocked.run }));
+vi.mock("./realm-entry", async (original) => ({
+  ...(await original<typeof import("./realm-entry")>()),
+  registerHomeSource: async () => ({ realmId: 1 }),
+}));
+it("lets the shard signer register a home source while the ledger signer awaits confirmation", async () => {
   let release!: () => void, started!: () => void;
   const holding = new Promise<void>((resolve) => {
     release = resolve;
@@ -51,25 +53,18 @@ it("lets the shard signer grant labor while the ledger signer awaits confirmatio
     {
       IDENTITY: {
         l2ChainId: async () => "0x1",
-        shards: async () => [{ chainId: "0x1", url: "https://shard.test", status: "active" }],
+        shard: async () => ({ chainId: "0x1", url: "https://shard.test" }),
       },
     } as never,
   );
-  const opening = relay.openSlot({ chainId: "0x1", slotId: 1 }, { start: 1, end: 2 });
+  const refunding = relay.refundSlot({ chainId: "0x1", slotId: 1 });
   await entered;
-  const labor = relay.labor({
-    chainId: "0x1",
-    gameId: 1,
-    home: "1",
-    day: 1,
-    realmsId: "0x1",
-    account: "0x2",
-  });
-  const granted = await Promise.race([
-    labor.then(() => true),
+  const entry = relay.realmEntry({ chainId: "0x1", gameId: 1, realmId: 1, realmsId: "0x1", account: "0x2" });
+  const registered = await Promise.race([
+    entry.then(() => true),
     new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 50)),
   ]);
   release();
-  await Promise.all([opening, labor]);
-  expect(granted).toBe(true);
+  await Promise.all([refunding, entry]);
+  expect(registered).toBe(true);
 });

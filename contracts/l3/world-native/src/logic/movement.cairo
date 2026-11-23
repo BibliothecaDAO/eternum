@@ -1,29 +1,33 @@
 #[starknet::contract]
 pub mod MovementLogic {
     use starknet::ContractAddress;
-    use starknet::storage::StoragePointerReadAccess;
     use crate::commands::{ExecutionContext, Explore};
-    use crate::game::{IPointsDispatcherTrait, IPointsLibraryDispatcher};
     use crate::geometry::{neighbor, spire_neighbor, tile_key};
     use crate::logic::release::ReleaseState;
+    use crate::logic::relics::RelicState;
     use crate::logic::troops::TroopState;
     use crate::map::{BIOME_SCALE, BYTE_RANGE, IMapLogicDispatcherTrait};
     use crate::resources::{IResourceOperationsDispatcherTrait, ResourceKey};
-    use crate::structures::IStructureOperationsDispatcherTrait;
     use crate::troops::{Coord, ExplorerKey};
     component!(path: ReleaseState, storage: release, event: ReleaseEvent);
     impl LifeInternal = ReleaseState::InternalImpl<ContractState>;
     use crate::logic::troops::troop_helpers::TroopHelpersTrait;
     impl Helpers = crate::logic::troops::troop_helpers::TroopHelpers<ContractState>;
+    component!(path: RelicState, storage: relics, event: RelicEvent);
+    #[abi(embed_v0)]
+    impl FrontierSites = RelicState::FrontierSitesImpl<ContractState>;
     #[storage]
     #[allow(starknet::colliding_storage_paths)]
     struct Storage {
+        #[substorage(v0)]
+        relics: RelicState::Storage,
         #[substorage(v0)]
         release: ReleaseState::Storage,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
+        RelicEvent: RelicState::Event,
         GuardEvent: crate::logic::guards::GuardState::Event,
         ReleaseEvent: ReleaseState::Event,
         TroopEvent: TroopState::Event,
@@ -45,13 +49,12 @@ pub mod MovementLogic {
 
             let rules = self.authorize(game_id, context);
             let key = ExplorerKey { game_id, explorer_id: command.explorer_id };
-            let mut explorer = crate::logic::troops::authorized_explorer(key, actor, context.timestamp, context);
+            let mut explorer = crate::logic::troops::field_explorer(key, actor, context.timestamp, context);
             assert!(explorer.troops.count != 0, "explorer is dead");
             crate::logic::map::MapState::vacate(tile_key(game_id, explorer.coord), command.explorer_id);
             let destination = neighbor(explorer.coord, command.direction);
-            if rules.day_unit_seconds != 0 {
-                crate::expeditions::assert_same_region(explorer.coord, destination, self.expedition_spacing(game_id));
-            }
+            crate::logic::deep::assert_step(game_id, explorer.coord, destination);
+            crate::logic::deep::clear_expired_occupant(game_id, destination, context);
             let tile = tile_key(game_id, destination);
             let data = self
                 .map_dispatcher(game_id)
@@ -67,72 +70,28 @@ pub mod MovementLogic {
                 stored_biome
             }
                 .into();
-            self.pay_movement(game_id, ref explorer, rules, biome, exploring, context.timestamp, context);
+            let oaths = crate::logic::progression::held_oaths(key, context);
+            self.pay_movement(game_id, ref explorer, rules, biome, exploring, oaths, context.timestamp, context);
             let mut raw_root = context.raw_root;
             let seed = crate::random::game_root(ref raw_root, game_id);
             let mut discovery = crate::discovery::Discovery::None;
             if exploring {
-                crate::logic::map::MapState::reveal(tile, biome.into());
-                IPointsLibraryDispatcher { class_hash: self.release.classes(game_id).season.read() }
-                    .register_exploration(game_id, actor, crate::commands::action_context(context));
                 discovery =
-                    if rules.day_unit_seconds != 0 {
-                        crate::expeditions::IFrontierDiscoveryDispatcherTrait::discover_frontier_tile(
-                            crate::expeditions::IFrontierDiscoveryLibraryDispatcher {
-                                class_hash: self.release.classes(game_id).map.read(),
-                            },
-                            tile,
-                            command.explorer_id,
-                            seed,
-                            crate::commands::action_context(context),
-                        )
-                    } else {
-                        if !destination.alt {
-                            crate::relics::IRelicMapDispatcherTrait::discover_relic_chest(
-                                crate::relics::IRelicMapLibraryDispatcher {
-                                    class_hash: self.release.classes(game_id).map.read(),
-                                },
-                                game_id,
-                                explorer.owner,
-                                destination,
-                                explorer.coord,
-                                seed,
-                                context.timestamp,
-                                crate::commands::action_context(context),
-                            );
-                        }
-                        self
-                            .map_dispatcher(game_id)
-                            .discovery(
-                                tile,
-                                seed,
-                                crate::hyperstructures::IHyperstructuresDispatcherTrait::hyperstructure_count(
-                                    crate::hyperstructures::IHyperstructuresLibraryDispatcher {
-                                        class_hash: self.release.classes(game_id).economy.read(),
-                                    },
-                                    game_id,
-                                ),
-                                context.timestamp,
-                                crate::commands::action_context(context),
-                            )
-                    };
-                if discovery != crate::discovery::Discovery::None
-                    && crate::discovery::tile_occupier(discovery).is_none() {
-                    self
-                        .structures_dispatcher(game_id)
-                        .create_discovery(
-                            game_id,
-                            explorer.owner,
-                            destination,
-                            discovery,
-                            seed,
-                            context.timestamp,
-                            crate::commands::action_context(context),
-                        );
-                }
+                    crate::discovery::IExpeditionRevealDispatcherTrait::reveal_expedition_tile(
+                        crate::discovery::IExpeditionRevealLibraryDispatcher {
+                            class_hash: crate::logic::release::class_of(game_id, crate::slots::CONSTRUCTION),
+                        },
+                        tile,
+                        command.explorer_id,
+                        seed,
+                        crate::commands::action_context(context),
+                    )
             }
             if discovery == crate::discovery::Discovery::None {
                 explorer.coord = destination;
+            }
+            if discovery == crate::discovery::Discovery::Well {
+                crate::logic::oaths::refill_at_well(key, ref explorer.troops, rules.troop_stamina_config);
             }
             crate::logic::map::MapState::occupy(
                 tile_key(game_id, explorer.coord),
@@ -143,29 +102,15 @@ pub mod MovementLogic {
             crate::logic::troops::TroopState::save(key, crate::troops::ExplorerRecordTrait::into_record(explorer));
 
             let extraction = crate::exploration_rewards::IExtractionLibraryDispatcher {
-                class_hash: self.release.classes(game_id).map.read(),
+                class_hash: crate::logic::release::class_of(game_id, crate::slots::PRIZES),
             };
-            if discovery == crate::discovery::Discovery::Spire {
-                crate::exploration_rewards::IExtractionDispatcherTrait::raise_dormant_spire(
-                    extraction,
-                    game_id,
-                    actor,
-                    command.explorer_id,
-                    destination,
-                    crate::commands::action_context(context),
-                );
-            }
-            if !explorer.coord.alt {
+            if exploring && !explorer.coord.alt && !crate::logic::deep::contains(game_id, explorer.coord) {
                 crate::exploration_rewards::IExtractionDispatcherTrait::extract_exploration_reward(
                     extraction,
                     game_id,
                     actor,
                     command.explorer_id,
-                    if exploring {
-                        Some(destination)
-                    } else {
-                        None
-                    },
+                    destination,
                     crate::commands::action_context(ExecutionContext { raw_root, ..context }),
                 );
             }
@@ -214,33 +159,42 @@ pub mod MovementLogic {
         ) {
             let context = crate::commands::execution_context(game_id, context);
 
-            let rules = self.authorize(game_id, context);
-            assert!(rules.day_unit_seconds != 0, "depth entry requires expeditions");
+            self.authorize(game_id, context);
             let key = ExplorerKey { game_id, explorer_id: command.explorer_id };
-            let mut explorer = crate::logic::troops::authorized_explorer(key, actor, context.timestamp, context);
+            let mut explorer = crate::logic::troops::field_explorer(key, actor, context.timestamp, context);
             assert!(explorer.troops.count != 0, "explorer is dead");
             let _home = crate::logic::troops::owned_structure(game_id, explorer.owner, actor);
             let home_key = crate::resources::ResourceKey { game_id, entity_id: explorer.owner };
             assert!(command.depth > 0 && command.depth < 4, "invalid expedition depth");
             assert!(
                 crate::research::tier(
-                    crate::logic::research::require(home_key).learned, crate::research::ROW_DEPTH,
-                ) >= command
-                    .depth,
-                "depth is not unlocked",
+                    crate::logic::research::require(home_key).learned, crate::research::ROW_LORE,
+                ) >= crate::research::LORE_SPIRES,
+                "Spire lore is not learned",
             );
             let spacing = self.expedition_spacing(game_id);
-            let today = crate::days::day_of(context.game.unbox(), rules.day_unit_seconds, context.timestamp).index;
-            let spire = crate::expeditions::spire(spacing, crate::entity_ids::namespace(explorer.owner), today);
-            assert!(
-                explorer.coord == spire || crate::geometry::adjacent(explorer.coord, spire),
-                "army must be at its realm's spire",
+            let today = crate::days::day_of(
+                context.game.unbox(), crate::clock::day_unit_seconds(context.game.unbox()), context.timestamp,
+            )
+                .index;
+            let source_depth = crate::logic::expeditions::depth_at(game_id, explorer.coord);
+            let origin = crate::logic::spires::descent_origin(
+                crate::spires::ExpeditionSpireKey {
+                    game_id, structure_id: explorer.owner, epoch: today, depth: source_depth,
+                },
+                explorer.coord,
+                command.depth,
             );
-            let destination = Coord {
-                y: explorer.coord.y + Into::<u8, u32>::into(command.depth) * spacing, ..explorer.coord,
+            let destination = if command.depth == 3 {
+                crate::logic::deep_ticks::assert_caught_up(game_id, context);
+                crate::logic::deep::arrival(game_id, crate::logic::aspects::home_aspect(home_key), context)
+            } else {
+                crate::logic::spires::nearest_free_arrival(game_id, Coord { y: origin.y + spacing, ..origin }, spacing)
             };
             let location = tile_key(game_id, destination);
-            self.reveal_depth_arrival(game_id, destination, context);
+            if !crate::logic::deep::contains(game_id, destination) {
+                self.reveal_depth_arrival(game_id, destination, context);
+            }
             crate::logic::map::MapState::vacate(tile_key(game_id, explorer.coord), command.explorer_id);
             crate::logic::map::MapState::occupy(
                 location, command.explorer_id, crate::troops::explorer_occupier(explorer), false,
@@ -248,6 +202,9 @@ pub mod MovementLogic {
             crate::logic::structures::StructureState::record_depth(home_key, command.depth);
             explorer.coord = destination;
             crate::logic::troops::TroopState::save(key, crate::troops::ExplorerRecordTrait::into_record(explorer));
+            if command.depth == 3 {
+                crate::logic::deep_armies::enter(key, explorer.owner, context);
+            }
         }
         fn move_explorer(
             ref self: ContractState,
@@ -261,28 +218,33 @@ pub mod MovementLogic {
             let rules = self.authorize(game_id, context);
             assert!(!command.directions.is_empty(), "empty movement path");
             let key = ExplorerKey { game_id, explorer_id: command.explorer_id };
-            let mut explorer = crate::logic::troops::authorized_explorer(key, actor, context.timestamp, context);
+            let mut explorer = crate::logic::troops::field_explorer(key, actor, context.timestamp, context);
             assert!(explorer.troops.count != 0, "explorer is dead");
+            let oaths = crate::logic::progression::held_oaths(key, context);
             crate::logic::map::MapState::vacate(tile_key(game_id, explorer.coord), command.explorer_id);
+            let last = command.directions.len() - 1;
+            let mut step = 0;
             for direction in command.directions {
                 let destination = neighbor(explorer.coord, *direction);
-                if rules.day_unit_seconds != 0 {
-                    crate::expeditions::assert_same_region(
-                        explorer.coord, destination, self.expedition_spacing(game_id),
-                    );
-                }
+                crate::logic::deep::assert_step(game_id, explorer.coord, destination);
+                crate::logic::deep::clear_expired_occupant(game_id, destination, context);
                 let tile = tile_key(game_id, destination);
                 let data = self
                     .map_dispatcher(game_id)
                     .reveal_destination_tile(tile, crate::commands::biome_context(context))
                     .expect('undiscovered movement tile')
                     .data;
-                assert!(crate::logic::map::occupancy(tile).is_none(), "movement tile occupied");
+                assert!(
+                    crate::logic::map::occupancy(tile).is_none()
+                        || (step != last && crate::logic::deep::passable(game_id, destination)),
+                    "movement tile occupied",
+                );
                 let stored_biome: u8 = (data / BIOME_SCALE % BYTE_RANGE).try_into().unwrap();
                 assert!(stored_biome != 0, "undiscovered movement tile");
                 let biome = stored_biome.into();
-                self.pay_movement(game_id, ref explorer, rules, biome, false, context.timestamp, context);
+                self.pay_movement(game_id, ref explorer, rules, biome, false, oaths, context.timestamp, context);
                 explorer.coord = destination;
+                step += 1;
             }
             crate::logic::map::MapState::occupy(
                 tile_key(game_id, explorer.coord),
@@ -303,7 +265,7 @@ pub mod MovementLogic {
 
             self.authorize(game_id, context);
             let key = ExplorerKey { game_id, explorer_id: command.explorer_id };
-            let mut explorer = crate::logic::troops::authorized_explorer(key, actor, context.timestamp, context);
+            let mut explorer = crate::logic::troops::field_explorer(key, actor, context.timestamp, context);
             assert!(explorer.troops.count != 0, "explorer is dead");
             let spire = crate::logic::map::occupancy(
                 tile_key(game_id, spire_neighbor(explorer.coord, command.spire_direction)),

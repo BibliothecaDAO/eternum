@@ -1,5 +1,5 @@
 const TERRAIN_ARMY_CENTER_RADIUS = 0.34;
-const TERRAIN_ARMY_ROUTE_HALF_WIDTH = 0.22;
+export const TERRAIN_ARMY_ROUTE_HALF_WIDTH = 0.22;
 
 /** Keep prop bases off travel routes and their standing footprint away from the army's destination. */
 export function isTerrainArmySpaceClear(localX: number, localZ: number, standingFootprintRadius = 0): boolean {

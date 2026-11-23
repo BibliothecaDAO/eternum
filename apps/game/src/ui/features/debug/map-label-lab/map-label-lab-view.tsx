@@ -1,6 +1,6 @@
 import { getTroopResourceId, type SiteKind } from "@bibliothecadao/eternum";
 import { StructureType, type ID } from "@bibliothecadao/types";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Vector3 } from "three";
 
@@ -31,7 +31,6 @@ import { seatSide } from "@/tokens";
 import { SeatMark } from "@/ui/design-system/seat-mark";
 
 import { useHudMode } from "@/hooks/use-hud-mode";
-import { SiteUseLab } from "./site-use-lab";
 import { drawPathStudy, PATH_STUDIES, studyFocus, type PathStudy } from "./path-study";
 
 type MapZoom = "play" | "close" | "far";
@@ -87,8 +86,6 @@ export const MapLabelLabView = () => {
     setCounts,
   );
   useOrderLine(world, layer, overlayRef, hovered, selected);
-  // The sites open at the address's zoom, once placed; the zoom buttons aim the camera after.
-  const aimAt = useCallback((target: Vector3) => world && aimCamera(world, target, ZOOM_DISTANCE[zoom]), [world, zoom]);
   const set = (key: string, value: string | null) => {
     const next = new URLSearchParams(params);
     if (value === null) next.delete(key);
@@ -125,7 +122,6 @@ export const MapLabelLabView = () => {
                 set("select", tileUnder(world, canvasRef.current, event.nativeEvent.offsetX, event.nativeEvent.offsetY))
         }
       />
-      {sites && <SiteUseLab world={world} canvasRef={canvasRef} plates={layer} aim={aimAt} />}
       <div ref={overlayRef} className="pointer-events-none absolute inset-0 z-[2] overflow-hidden" />
       <Tooltip />
       <aside

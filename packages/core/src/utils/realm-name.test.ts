@@ -5,6 +5,7 @@ import { getStructureName } from "./entities";
 import { NativeFactStore } from "../client/native-fact-store";
 import { advanceGames } from "../../../../apps/launch-service/src/release";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { releaseLine } from "../test-support/releases";
 vi.stubGlobal("localStorage", { getItem: () => null });
 
 const home: NativeRows["Structure"] = {
@@ -28,7 +29,7 @@ const storeFor = (release: number, settledHome?: bigint) => {
     {
       model: "GameRelease",
       key: "1",
-      value: { game_id: 1, release_id: release, preset_commitment: 1n, created_release_id: release },
+      value: { game_id: 1, release_id: release, created_release_id: release },
     },
     ...(settledHome === undefined
       ? []
@@ -64,7 +65,7 @@ describe("Realm identity", () => {
           {
             model: "GameRelease",
             key: String(game_id),
-            value: { game_id, release_id, created_release_id, preset_commitment: 1n },
+            value: { game_id, release_id, created_release_id },
           },
         ]);
       writeRelease(1, 2, created);
@@ -81,14 +82,22 @@ describe("Realm identity", () => {
       });
       const result = await advanceGames(
         {
-          currentRelease: async () => 4,
-          registeredRelease: async () => ({ logic, migration: "0x0" }),
+          openReleaseOf: async () => 2,
+          latestReleaseOf: async () => 4,
+          releaseRegistered: async (releaseId) => releaseId <= 4,
+          openRelease: async () => "0x0",
+          registeredRelease: async (releaseId) => ({
+            logic: Object.values(logic),
+            migration: "0x0",
+            family: 1,
+            previous: releaseId - 1,
+          }),
           gameId: async (name) => (name === "running" ? 1 : 2),
           gameRelease: async (game_id) => store.require("GameRelease", { game_id }).release_id,
-          isSettled: async () => false,
+          game: async () => ({ settled: false, family: 1n }),
           applyRelease,
         },
-        { releaseSchemas: { "2": schema, "3": schema, "4": schema } },
+        { releases: releaseLine(schema, [2, 3, 4]) },
         { releaseId: 4, schema, logic, migration: "0x0" },
         ["running", "next-season"],
       );

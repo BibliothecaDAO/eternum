@@ -6,10 +6,10 @@ import { relayOperation } from "./ports";
 it("preserves a declared relay failure through the signing boundary", async () => {
   const error = await Effect.runPromise(
     relayOperation("join relay shard account", async () => {
-      throw new Error("relay_shard_inactive");
+      throw new Error("unlisted_shard");
     }).pipe(Effect.mapError((error) => new Error(error.operation))),
   ).catch((error) => error);
-  expect(serviceError(error, ["relay_shard_inactive"], "unavailable")).toBe("relay_shard_inactive");
+  expect(serviceError(error, ["unlisted_shard"], "unavailable")).toBe("unlisted_shard");
 });
 
 it.each(["relay_device_approval_refused: HTTP 401; code unauthorized", "account_join_read_failed"])(
@@ -48,13 +48,10 @@ it.each([
   "shard_abi_unavailable",
   "frontier_funding_missing",
   "frontier_funding_differs_from_game",
-  "invalid_frontier_deposit",
-  "frontier_snapshot_behind_directory",
-  "frontier_pool_confirmation_pending",
   "frontier_pool_differs_from_ledger",
-])("exposes the fixed pool failure %s in the health observation", async (code) => {
+])("keeps the declared failure %s as the operation", async (code) => {
   const failure = await Effect.runPromise(
-    relayOperation("publish Frontier pools", async () => {
+    relayOperation("read ledger payment", async () => {
       throw new Error(code);
     }).pipe(Effect.flip),
   );

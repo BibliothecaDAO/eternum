@@ -11,13 +11,6 @@ pub use crate::tests::resource_commands::execute_in_game;
 pub use crate::tests::state::{
     GameState, MapObservationTrait, ResourceObservationTrait, StructureObservationTrait, TroopObservationTrait,
 };
-pub fn ring_reward_balances(state: IResourceOperationsDispatcher, game_id: u32) -> Array<u128> {
-    let mut balances = array![];
-    for resource_type in array![crate::resources::LABOR, crate::resources::ESSENCE] {
-        balances.append(state.resource_balance(ResourceSlot { game_id, entity_id: 1, resource_type }));
-    }
-    balances
-}
 pub fn assert_biomes_match_terrain(d: super::Deployment, game_id: u32, coords: Span<crate::troops::Coord>) -> u32 {
     let map = IMapLogicDispatcher { contract_address: d.games };
     let context = crate::commands::biome_context(crate::tests::context(d.games, game_id));

@@ -1,3 +1,4 @@
+import { layerName } from "@bibliothecadao/types";
 import { type ComponentType, lazy, type LazyExoticComponent } from "react";
 
 /** The games a page can draw; the lab's Game switch writes one into the address as `mode`. */
@@ -329,6 +330,36 @@ export const ROOMS: LabRoom[] = [
         ],
       },
       {
+        title: "Season 1",
+        modes: FRONTIER,
+        views: [
+          view(
+            `${layerName(3)} site`,
+            "/lab/season-one/deep-site",
+            "season-one/deep-site",
+            load(() => import("./season-one/deep-site-lab"), "DeepSiteLab"),
+          ),
+          view(
+            "Day banner",
+            "/lab/season-one/day-banner",
+            "season-one/day-banner",
+            load(() => import("./season-one/day-banner-lab"), "DayBannerLab"),
+          ),
+          view(
+            "Opening",
+            "/lab/season-one/opening",
+            "season-one/opening",
+            load(() => import("./season-one/opening-lab"), "OpeningLab"),
+          ),
+          view(
+            "Race",
+            "/lab/season-one/race",
+            "season-one/race",
+            load(() => import("./season-one/aspect-page-lab"), "AspectPageLab"),
+          ),
+        ],
+      },
+      {
         title: "Game end",
         modes: BOTH,
         views: [
@@ -337,18 +368,6 @@ export const ROOMS: LabRoom[] = [
             "/lab/endgame",
             "endgame",
             load(() => import("./endgame-mist/view"), "EndgameMistLabView"),
-          ),
-        ],
-      },
-      {
-        title: "Chest opening",
-        modes: BOTH,
-        views: [
-          view(
-            "Chest opening",
-            "/lab/relic-chest",
-            "relic-chest",
-            load(() => import("./relic-chest/view"), "RelicChestLab"),
           ),
         ],
       },
@@ -380,16 +399,10 @@ export const ROOMS: LabRoom[] = [
             load(() => import("../ui/features/debug/procedural-terrain-debug-view"), "ProceduralTerrainDebugView"),
           ),
           view(
-            "Ethereal depths",
-            "/lab/ethereal-depths",
-            "ethereal-depths",
-            load(() => import("./ethereal-depths/view"), "EtherealDepthLabView"),
-          ),
-          view(
-            "Props",
-            "/lab/terrain-props",
-            "terrain-props",
-            load(() => import("../ui/features/debug/terrain-prop-debug-view"), "TerrainPropDebugView"),
+            "Life",
+            "/lab/life",
+            "life",
+            load(() => import("../ui/features/debug/map-life-lab-view"), "MapLifeLabView"),
           ),
         ],
       },
@@ -405,6 +418,28 @@ export const ROOMS: LabRoom[] = [
         ],
       },
       {
+        title: "Beast motion",
+        views: [
+          view(
+            "Beast motion",
+            "/lab/beast-motion",
+            "beast-motion",
+            load(() => import("./beast-motion/beast-motion-view"), "BeastMotionView"),
+          ),
+        ],
+      },
+      {
+        title: "Troop motion",
+        views: [
+          view(
+            "Troop motion",
+            "/lab/troop-motion",
+            "troop-motion",
+            load(() => import("./troop-motion/troop-motion-view"), "TroopMotionView"),
+          ),
+        ],
+      },
+      {
         title: "Characters",
         views: [
           view(
@@ -412,17 +447,6 @@ export const ROOMS: LabRoom[] = [
             "/lab/characters",
             "characters",
             load(() => import("../ui/features/debug/procedural-character-gym-view"), "ProceduralCharacterGymView"),
-          ),
-        ],
-      },
-      {
-        title: "Chests",
-        views: [
-          view(
-            "Chests",
-            "/lab/rewards",
-            "rewards",
-            load(() => import("../ui/features/debug/reward-lab-view"), "RewardLabView"),
           ),
         ],
       },

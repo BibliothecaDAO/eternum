@@ -1,6 +1,6 @@
 export const TERRAIN_BENCHMARK_CONTRACT_VERSION = 2;
 
-export const TERRAIN_BENCHMARK_VARIANTS = Object.freeze(["geometry", "material", "props", "production"] as const);
+export const TERRAIN_BENCHMARK_VARIANTS = Object.freeze(["material", "props", "production"] as const);
 export const TERRAIN_BENCHMARK_EXPLORATION_MODES = Object.freeze(["explored", "frontier"] as const);
 export type TerrainBenchmarkExplorationMode = (typeof TERRAIN_BENCHMARK_EXPLORATION_MODES)[number];
 export type TerrainBenchmarkVariant = (typeof TERRAIN_BENCHMARK_VARIANTS)[number];
@@ -24,13 +24,11 @@ export interface TerrainBenchmarkFrameStats {
 export interface TerrainBenchmarkVariantConfig {
   props: boolean;
   shadows: boolean;
-  texturedGround: boolean;
 }
 
 export interface TerrainBenchmarkSnapshot {
   activeMode: "webgl2-fallback" | "webgpu";
   assets: {
-    groundArrayRequests: number;
     propCatalogRequests: number;
   };
   chunks: {
@@ -105,14 +103,12 @@ export interface TerrainBenchmarkSnapshot {
 
 export function resolveTerrainBenchmarkVariant(variant: TerrainBenchmarkVariant): TerrainBenchmarkVariantConfig {
   switch (variant) {
-    case "geometry":
-      return { props: false, shadows: false, texturedGround: false };
     case "material":
-      return { props: false, shadows: false, texturedGround: true };
+      return { props: false, shadows: false };
     case "props":
-      return { props: true, shadows: false, texturedGround: true };
+      return { props: true, shadows: false };
     case "production":
-      return { props: true, shadows: true, texturedGround: true };
+      return { props: true, shadows: true };
   }
 }
 

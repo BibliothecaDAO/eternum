@@ -52,9 +52,8 @@ describe("rowInGameSyncScope", () => {
     };
     for (const kind of nativeStoryVariants) {
       const row = { owner: "0x1", story: { [kind]: {} } };
-      const shared = kind === "RewardChestOpened";
-      expect(gameSyncRowKeys("StoryEvent", row, SPACING), kind).toEqual(shared ? "shared" : ["*", "owners:1"]);
-      expect(rowInGameSyncScope("StoryEvent", row, peer), kind).toBe(shared);
+      expect(gameSyncRowKeys("StoryEvent", row, SPACING), kind).toEqual(["*", "owners:1"]);
+      expect(rowInGameSyncScope("StoryEvent", row, peer), kind).toBe(false);
     }
     for (const category of [1, 2, 3, 4, 5, 7, 8, 9, 10, 11, "0xa", 10n]) {
       const row = { owner: "0x1", story: { SitePayout: { category } } };
@@ -64,7 +63,7 @@ describe("rowInGameSyncScope", () => {
       expect(rowInGameSyncScope("StoryEvent", row, peer)).toBe(Number(category) === 10);
     }
     expect(
-      gameSyncRowKeys("ExplorerTroops", { explorer_id: "0x1", story: { RewardChestOpened: {} } }, SPACING),
+      gameSyncRowKeys("ExplorerTroops", { explorer_id: "0x1", story: { SitePayout: { category: 10 } } }, SPACING),
     ).toEqual(["*", "entities:1"]);
   });
 

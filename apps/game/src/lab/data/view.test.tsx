@@ -3,9 +3,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, expect, it, vi } from "vitest";
-
-vi.mock("./research-balance/research-balance-lab", () => ({ ResearchBalanceLab: () => <p>Research study</p> }));
-const { DataRoomView, PULL_ADDRESS } = await import("./view");
+import { DataRoomView, PULL_ADDRESS } from "./view";
 
 /** A pull as live-data.py prints it: Frontier's tables, then Blitz's, then the value ledger. */
 const PULL = `# Frontier live data, game 1, pulled 2026-10-25T17:24:19.638439+00:00
@@ -59,20 +57,14 @@ it("shows Frontier's tables from perf's newest pull, with when it was taken, and
   expect(host.textContent).not.toContain("Games listed");
 });
 
-it("shows Blitz's part of the pull for Blitz, with no research study to pick", async () => {
+it("shows Blitz's part of the pull for Blitz", async () => {
   await open("/lab/data?mode=blitz", PULL);
   expect(host.textContent).toContain("Games listed: 13.");
   expect(host.textContent).not.toContain("Players");
-  expect(host.textContent).not.toContain("Research balance");
 });
 
 it("says how to pull when the server has no pull", async () => {
   await open("/lab/data?mode=frontier", undefined);
   expect(host.textContent).toContain("No pull on this server");
   expect(host.textContent).toContain("live-data.py all");
-});
-
-it("opens next season's research balance study on its tab", async () => {
-  await open("/lab/data?mode=frontier&view=balance", PULL);
-  expect(host.textContent).toContain("Research study");
 });

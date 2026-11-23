@@ -1,36 +1,24 @@
 import { resolveDeploymentEnvironment } from "../../../config/deployer/clean/environment";
 import type { GameEnvironmentId } from "../../../config/shared/game-environments";
 import type { LaunchGameSummary } from "../../../config/deployer/clean/types";
-import { isCalendarFrontier, type LaunchJobRequest, type LaunchKind } from "./schemas";
-
-export interface FinalizedGameSummary {
-  environment: "madara.blitz";
-  gameName: string;
-  gameId: number;
-  resultCommitment: string;
-}
+import { isCalendarFrontier, type CreateGameRequest } from "./schemas";
 
 export type LaunchJobStatus = "queued" | "running" | "complete" | "failed";
-export type LaunchSummary = LaunchGameSummary | FinalizedGameSummary;
 
 export interface LaunchRun {
-  slotId: number | null;
   id: string;
-  /** The chain the run launches on or records results from, taken from the shard's /manifest when it was queued. */
   chainId: string;
-  kind: LaunchKind;
   environment: GameEnvironmentId;
   name: string;
-  request: LaunchJobRequest;
+  request: CreateGameRequest;
   status: LaunchJobStatus;
   attempts: number;
-  /** When a queued run is next due: now for a new or retried run, its game's end for a result. */
   dueAt: string;
   createdAt: string;
   updatedAt: string;
   completedAt?: string;
   errorMessage?: string;
-  summary?: LaunchSummary;
+  summary?: LaunchGameSummary;
 }
 
 /** Where a run's request and summary live, as the factory page names them. */
@@ -40,11 +28,6 @@ const GAME_STEPS = [
   ["create-world", "Create game"],
   ["wait-for-factory-index", "Wait for Herald"],
 ] as const;
-
-export const launchName = (kind: LaunchKind, request: LaunchJobRequest): string => {
-  if ("gameName" in request) return request.gameName;
-  throw new Error(`Request does not match launch kind ${kind}`);
-};
 
 /** The stored status as the page shows it: a failed run asks a launcher's attention. */
 const publicStatus = (status: LaunchJobStatus): Exclude<LaunchJobStatus, "failed"> | "attention" =>
@@ -64,10 +47,8 @@ const latestEvent = (run: LaunchRun): string => {
 
 export const toFactoryRunRecord = (run: LaunchRun) => {
   const summary = run.summary;
-  const stepDefinitions = run.kind === "game" ? GAME_STEPS : ([["finalize-results", "Finalize results"]] as const);
   const base = {
     version: 1,
-    kind: run.kind,
     runId: run.id,
     environment: run.environment,
     chain: "madara",
@@ -78,12 +59,12 @@ export const toFactoryRunRecord = (run: LaunchRun) => {
     requestedLaunchStep: "full",
     inputPath: launchRunPath(run.id),
     latestLaunchRequestId: run.id,
-    currentStepId: run.status === "complete" ? null : stepDefinitions[0][0],
+    currentStepId: run.status === "complete" ? null : GAME_STEPS[0][0],
     createdAt: run.createdAt,
     updatedAt: run.updatedAt,
     completedAt: run.completedAt,
     workflow: { workflowName: "box-native" },
-    steps: stepDefinitions.map(([id, title], index) => ({
+    steps: GAME_STEPS.map(([id, title], index) => ({
       id,
       title,
       status: stepStatus(run.status, index),
@@ -94,28 +75,21 @@ export const toFactoryRunRecord = (run: LaunchRun) => {
     recovery: {
       state: run.status === "complete" ? "complete" : run.status === "failed" ? "failed" : "active",
       canDelete:
-        run.kind === "game" &&
-        run.slotId === null &&
-        run.status !== "running" &&
-        run.status !== "complete" &&
-        !isCalendarFrontier(run.environment, run.name),
+        run.status !== "running" && run.status !== "complete" && !isCalendarFrontier(run.environment, run.name),
       canContinue: run.status === "failed",
-      continueStepId: run.status === "failed" ? stepDefinitions[0][0] : null,
+      continueStepId: run.status === "failed" ? GAME_STEPS[0][0] : null,
     },
   };
 
-  const game = summary && "startTime" in summary ? summary : undefined;
-  const result = summary && "resultCommitment" in summary ? summary : undefined;
   return {
     ...base,
     gameName: run.name,
     artifacts: {
-      summaryPath: game?.outputPath,
-      durationSeconds: game?.durationSeconds,
-      gameId: game?.gameId ?? result?.gameId,
-      worldAddress: game?.worldAddress,
-      createGameTxHash: game?.createGameTxHash,
-      resultCommitment: result?.resultCommitment,
+      summaryPath: summary?.outputPath,
+      durationSeconds: summary?.durationSeconds,
+      gameId: summary?.gameId,
+      worldAddress: summary?.worldAddress,
+      createGameTxHash: summary?.createGameTxHash,
     },
   };
 };

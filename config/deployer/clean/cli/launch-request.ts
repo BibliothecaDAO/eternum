@@ -1,7 +1,7 @@
 import {
   DEFAULT_APPCHAIN_GAME_INDEX_POLL_MS,
   DEFAULT_APPCHAIN_GAME_INDEX_TIMEOUT_MS,
-  defaultPresetForEnvironment,
+  presetIdForEnvironment,
 } from "../constants";
 import { resolveDeploymentEnvironment } from "../environment";
 import type {
@@ -161,7 +161,7 @@ function requireGameLaunchArgs(args: Args): {
 
 function resolveSharedLaunchDefaults(environment: DeploymentEnvironment) {
   return {
-    version: defaultPresetForEnvironment(environment.id),
+    version: String(presetIdForEnvironment(environment.id)),
     waitForFactoryIndexTimeoutMs: DEFAULT_APPCHAIN_GAME_INDEX_TIMEOUT_MS,
     waitForFactoryIndexPollMs: DEFAULT_APPCHAIN_GAME_INDEX_POLL_MS,
   };
@@ -176,7 +176,6 @@ function resolveSharedLaunchRequestOptions(args: Args, environment: DeploymentEn
     privateKey: resolveOptionalArg(args, "private-key", ["DEPLOYER_PRIVATE_KEY"]),
     devModeOn: resolveOptionalBooleanArg(args, "dev-mode-on", ["DEV_MODE_ON"]),
     singleRealmMode: resolveOptionalBooleanArg(args, "single-realm-mode", ["SINGLE_REALM_MODE"]),
-    twoPlayerMode: resolveOptionalBooleanArg(args, "two-player-mode", ["TWO_PLAYER_MODE"]),
     durationSeconds: resolveOptionalNumber(
       args["duration-seconds"] || process.env.DURATION_SECONDS,
       "duration seconds",

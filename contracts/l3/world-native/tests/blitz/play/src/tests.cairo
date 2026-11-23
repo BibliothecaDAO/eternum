@@ -1,0 +1,18 @@
+pub use world_test_support::tests::*;
+mod armies;
+mod capture;
+mod combat;
+mod construction;
+mod exploration;
+mod fixture;
+mod guilds;
+mod hyperstructures;
+mod levels;
+mod movement;
+mod names;
+mod pending;
+mod production;
+mod results;
+mod roster;
+mod settlement;
+mod transfers;

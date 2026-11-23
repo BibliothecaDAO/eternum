@@ -1,46 +1,29 @@
-import { heldSkillPoints } from "@bibliothecadao/eternum";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
-import { ATTRIBUTE_LIST } from "./army-detail";
 
 type Progress = NativeRows["ArmyProgress"];
-type Rules = NativeRows["ArmyProgressionRules"];
 
-/** Every transfer keeps the chosen target, within that army's capacity. */
 export const explorerTransferPlan = ({
   sourceCount,
   targetCount,
   targetCap,
   sourceProgress,
   targetProgress,
-  rules,
 }: {
   sourceCount: number;
   targetCount: number;
   targetCap: number | null;
   sourceProgress?: Progress;
   targetProgress?: Progress;
-  rules?: Rules;
 }) => {
-  const known = !!(sourceProgress && targetProgress && rules);
-  const sourceValue = sourceProgress && rules ? sourceProgress.xp : undefined;
-  const targetValue = targetProgress && rules ? targetProgress.xp : undefined;
-  const confirmLoss = !!(
-    sourceProgress &&
-    targetProgress &&
-    rules &&
-    (sourceProgress.xp - targetProgress.xp >= rules.common_xp ||
-      ATTRIBUTE_LIST.some(({ key }) => sourceProgress[key] > targetProgress[key]) ||
-      heldSkillPoints(sourceProgress).some((count, index) => count > heldSkillPoints(targetProgress)[index]!))
-  );
-  const total = sourceCount + targetCount;
-  const fullFits = known && targetCap !== null && total <= targetCap;
-  const partialMax = Math.min(Math.max(0, sourceCount - 1), Math.max(0, (targetCap ?? 0) - targetCount));
+  const known = sourceProgress !== undefined && targetProgress !== undefined;
   return {
     known,
-    confirmLoss,
-    sourceValue,
-    targetValue,
-    partialMax,
-    fullFits,
+    confirmLoss:
+      known &&
+      (sourceProgress.logistics > targetProgress.logistics ||
+        sourceProgress.oath_slots > targetProgress.oath_slots ||
+        sourceProgress.oaths !== 0),
+    fullFits: known && targetCap !== null && sourceCount + targetCount <= targetCap,
+    partialMax: Math.min(Math.max(0, sourceCount - 1), Math.max(0, (targetCap ?? 0) - targetCount)),
   };
 };

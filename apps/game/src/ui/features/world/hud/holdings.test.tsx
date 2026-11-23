@@ -76,20 +76,19 @@ describe("the holdings search", () => {
   afterEach(() => act(() => root.unmount()));
 
   it.each([
-    ["frontier", "Trolls", "beast-troll"],
-    ["blitz", "Camps", "camp"],
-  ])("names and paints the %s list by its encounter", (mode, plural, icon) => {
+    ["frontier", "Troll", "beast-troll"],
+    ["blitz", "Camp", "camp"],
+  ])("names the %s camp list by its family and paints it by its encounter", (mode, name, icon) => {
     facts.mode = mode;
-    facts.structures = [...realms(1), holding(50, StructureType.Camp, plural === "Trolls" ? "Troll" : "Camp")];
+    facts.structures = [...realms(1), holding(50, StructureType.Camp, name)];
     render();
-    const tab = host.querySelector<HTMLButtonElement>(`[role="tab"][aria-label="${plural}, 1"]`);
+    const tab = host.querySelector<HTMLButtonElement>(`[role="tab"][aria-label="Camps, 1"]`);
     expect(tab).not.toBeNull();
     act(() => tab!.click());
-    expect(shownNames()).toEqual([mode === "frontier" ? "Troll" : "Camp"]);
+    expect(shownNames()).toEqual([name]);
     const painting = host.querySelector(`[role="tabpanel"] [role="img"] img`);
     expect(painting?.getAttribute("data-icon")).toBe(icon);
     expect(painting?.getAttribute("src")).toBe(`/icons/facets/64/${icon}.webp`);
-    if (mode === "frontier") expect(host.textContent).not.toMatch(/\bcamps?\b/i);
   });
 
   it("filters only the kind it was typed in: another kind's tab shows all its holdings", () => {

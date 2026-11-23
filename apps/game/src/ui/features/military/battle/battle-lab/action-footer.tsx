@@ -1,14 +1,10 @@
-import { HudButton, HudNotice, HudTabs } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudNotice } from "@/ui/design-system/kit/hud-elements";
 import TwitterShareButton from "@/ui/design-system/molecules/twitter-share-button";
 
 import { BattleCooldownTimer } from "../battle-cooldown-timer";
-import type { AttackMode } from "./use-battle-lab-state";
 
 interface ActionFooterProps {
   mode: "live" | "sim";
-  attackType: AttackMode;
-  showRaidToggle: boolean;
-  onSetAttackType: (mode: AttackMode) => void;
   isEdited: boolean;
   onResetToLive: () => void;
   actionLabel: string;
@@ -23,9 +19,6 @@ interface ActionFooterProps {
 
 export const ActionFooter = ({
   mode,
-  attackType,
-  showRaidToggle,
-  onSetAttackType,
   isEdited,
   onResetToLive,
   actionLabel,
@@ -38,17 +31,6 @@ export const ActionFooter = ({
 }: ActionFooterProps) => {
   return (
     <div className="flex flex-col items-center gap-3">
-      {showRaidToggle && (
-        <HudTabs
-          tabs={[
-            { key: "attack", label: "⚔️ Combat" },
-            { key: "raid", label: "💰 Raid" },
-          ]}
-          value={attackType}
-          onChange={onSetAttackType}
-        />
-      )}
-
       {mode === "live" && isEdited && (
         <HudButton kind="quiet" size="sm" icon="refresh" onClick={onResetToLive}>
           Reset to live

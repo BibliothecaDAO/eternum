@@ -1,55 +1,55 @@
 {
   "knight-t1": {
     "art": "knight-t1",
-    "label": "Knight \u00b7 T1",
+    "label": "Knight · T1",
     "family": "Troops",
     "resourceId": 26
   },
   "knight-t2": {
     "art": "knight-t2",
-    "label": "Knight \u00b7 T2",
+    "label": "Knight · T2",
     "family": "Troops",
     "resourceId": 27
   },
   "knight-t3": {
     "art": "knight-t3",
-    "label": "Knight \u00b7 T3",
+    "label": "Knight · T3",
     "family": "Troops",
     "resourceId": 28
   },
   "crossbowman-t1": {
     "art": "crossbowman-t1",
-    "label": "Crossbowman \u00b7 T1",
+    "label": "Crossbowman · T1",
     "family": "Troops",
     "resourceId": 29
   },
   "crossbowman-t2": {
     "art": "crossbowman-t2",
-    "label": "Crossbowman \u00b7 T2",
+    "label": "Crossbowman · T2",
     "family": "Troops",
     "resourceId": 30
   },
   "crossbowman-t3": {
     "art": "crossbowman-t3",
-    "label": "Crossbowman \u00b7 T3",
+    "label": "Crossbowman · T3",
     "family": "Troops",
     "resourceId": 31
   },
   "paladin-t1": {
     "art": "paladin-t1",
-    "label": "Paladin \u00b7 T1",
+    "label": "Paladin · T1",
     "family": "Troops",
     "resourceId": 32
   },
   "paladin-t2": {
     "art": "paladin-t2",
-    "label": "Paladin \u00b7 T2",
+    "label": "Paladin · T2",
     "family": "Troops",
     "resourceId": 33
   },
   "paladin-t3": {
     "art": "paladin-t3",
-    "label": "Paladin \u00b7 T3",
+    "label": "Paladin · T3",
     "family": "Troops",
     "resourceId": 34
   },
@@ -103,7 +103,7 @@
   },
   "realm": {
     "art": "realm",
-    "label": "Realm \u00b7 level 2",
+    "label": "Realm · level 2",
     "family": "Structures"
   },
   "camp": {
@@ -968,11 +968,6 @@
     "label": "Spire",
     "family": "Structures"
   },
-  "bitcoin-mine": {
-    "art": "bitcoin-mine",
-    "label": "Bitcoin Mine",
-    "family": "Structures"
-  },
   "realm-0": {
     "art": "realm-0",
     "label": "Settlement",
@@ -1173,11 +1168,6 @@
     "label": "Timer",
     "family": "Statuses"
   },
-  "bitcoinMine": {
-    "art": "bitcoin-mine",
-    "label": "Bitcoinmine",
-    "family": "Structures"
-  },
   "storage": {
     "art": "resources",
     "label": "Storage",
@@ -1225,100 +1215,100 @@
     "orderId": 0
   },
   "order-giants": {
-    "art": "order-giants",
     "label": "Order of Giants",
     "family": "Orders",
-    "orderId": 1
+    "orderId": 1,
+    "art": "order-giants"
   },
   "order-perfection": {
-    "art": "order-perfection",
     "label": "Order of Perfection",
     "family": "Orders",
-    "orderId": 2
+    "orderId": 2,
+    "art": "order-perfection"
   },
   "order-rage": {
-    "art": "order-rage",
     "label": "Order of Rage",
     "family": "Orders",
-    "orderId": 3
+    "orderId": 3,
+    "art": "order-rage"
   },
   "order-fox": {
-    "art": "order-fox",
     "label": "Order of the Fox",
     "family": "Orders",
-    "orderId": 4
+    "orderId": 4,
+    "art": "order-fox"
   },
   "order-twins": {
-    "art": "order-twins",
     "label": "Order of the Twins",
     "family": "Orders",
-    "orderId": 5
+    "orderId": 5,
+    "art": "order-twins"
   },
   "order-fury": {
-    "art": "order-fury",
     "label": "Order of Fury",
     "family": "Orders",
-    "orderId": 6
+    "orderId": 6,
+    "art": "order-fury"
   },
   "order-reflection": {
-    "art": "order-reflection",
     "label": "Order of Reflection",
     "family": "Orders",
-    "orderId": 7
+    "orderId": 7,
+    "art": "order-reflection"
   },
   "order-detection": {
-    "art": "order-detection",
     "label": "Order of Detection",
     "family": "Orders",
-    "orderId": 8
+    "orderId": 8,
+    "art": "order-detection"
   },
   "order-skill": {
-    "art": "order-skill",
     "label": "Order of Skill",
     "family": "Orders",
-    "orderId": 9
+    "orderId": 9,
+    "art": "order-skill"
   },
   "order-brilliance": {
-    "art": "order-brilliance",
     "label": "Order of Brilliance",
     "family": "Orders",
-    "orderId": 10
+    "orderId": 10,
+    "art": "order-brilliance"
   },
   "order-protection": {
-    "art": "order-protection",
     "label": "Order of Protection",
     "family": "Orders",
-    "orderId": 11
+    "orderId": 11,
+    "art": "order-protection"
   },
   "order-power": {
-    "art": "order-power",
     "label": "Order of Power",
     "family": "Orders",
-    "orderId": 12
+    "orderId": 12,
+    "art": "order-power"
   },
   "order-titans": {
-    "art": "order-titans",
     "label": "Order of Titans",
     "family": "Orders",
-    "orderId": 13
+    "orderId": 13,
+    "art": "order-titans"
   },
   "order-vitriol": {
-    "art": "order-vitriol",
     "label": "Order of Vitriol",
     "family": "Orders",
-    "orderId": 14
+    "orderId": 14,
+    "art": "order-vitriol"
   },
   "order-anger": {
-    "art": "order-anger",
     "label": "Order of Anger",
     "family": "Orders",
-    "orderId": 15
+    "orderId": 15,
+    "art": "order-anger"
   },
   "order-enlightenment": {
-    "art": "order-enlightenment",
     "label": "Order of Enlightenment",
     "family": "Orders",
-    "orderId": 16
+    "orderId": 16,
+    "art": "order-enlightenment"
   },
   "discord": {
     "art": "discord",
@@ -1372,37 +1362,37 @@
   },
   "reward-chest-0-opened": {
     "rewardChest": "band-0-opened",
-    "label": "Top 10% reward chest \u00b7 opened",
+    "label": "Top 10% reward chest · opened",
     "family": "Rewards"
   },
   "reward-chest-1": {
     "rewardChest": "band-1-sealed",
-    "label": "Top 10\u201325% reward chest",
+    "label": "Top 10–25% reward chest",
     "family": "Rewards"
   },
   "reward-chest-1-opened": {
     "rewardChest": "band-1-opened",
-    "label": "Top 10\u201325% reward chest \u00b7 opened",
+    "label": "Top 10–25% reward chest · opened",
     "family": "Rewards"
   },
   "reward-chest-2": {
     "rewardChest": "band-2-sealed",
-    "label": "Top 25\u201350% reward chest",
+    "label": "Top 25–50% reward chest",
     "family": "Rewards"
   },
   "reward-chest-2-opened": {
     "rewardChest": "band-2-opened",
-    "label": "Top 25\u201350% reward chest \u00b7 opened",
+    "label": "Top 25–50% reward chest · opened",
     "family": "Rewards"
   },
   "reward-chest-3": {
     "rewardChest": "band-3-sealed",
-    "label": "Top 50\u201375% reward chest",
+    "label": "Top 50–75% reward chest",
     "family": "Rewards"
   },
   "reward-chest-3-opened": {
     "rewardChest": "band-3-opened",
-    "label": "Top 50\u201375% reward chest \u00b7 opened",
+    "label": "Top 50–75% reward chest · opened",
     "family": "Rewards"
   },
   "reward-chest-4": {
@@ -1412,7 +1402,7 @@
   },
   "reward-chest-4-opened": {
     "rewardChest": "band-4-opened",
-    "label": "Bottom 25% reward chest \u00b7 opened",
+    "label": "Bottom 25% reward chest · opened",
     "family": "Rewards"
   },
   "beast-troll": {
@@ -1465,6 +1455,16 @@
     "label": "CoinGecko",
     "family": "Brands"
   },
+  "brand-eth": {
+    "token": "brand-eth",
+    "label": "ETH",
+    "family": "Brands"
+  },
+  "brand-usdc": {
+    "token": "brand-usdc",
+    "label": "USDC",
+    "family": "Brands"
+  },
   "brand-google": {
     "token": "brand-google",
     "label": "Google",
@@ -1490,64 +1490,143 @@
     "label": "Dark fey",
     "family": "Beasts"
   },
+  "beast-balrog": {
+    "art": "beast-balrog",
+    "label": "Balrog",
+    "family": "Beasts"
+  },
+  "beast-colossus": {
+    "art": "beast-colossus",
+    "label": "Colossus",
+    "family": "Beasts"
+  },
+  "beast-warlock": {
+    "art": "beast-warlock",
+    "label": "Warlock",
+    "family": "Beasts"
+  },
   "wonder-realm-0": {
-    "label": "Wonder \u00b7 Settlement",
+    "label": "Wonder · Settlement",
     "family": "Structures",
     "art": "wonder-realm-0"
   },
   "wonder-realm-1": {
-    "label": "Wonder \u00b7 City",
+    "label": "Wonder · City",
     "family": "Structures",
     "art": "wonder-realm-1"
   },
   "wonder-realm-2": {
-    "label": "Wonder \u00b7 Kingdom",
+    "label": "Wonder · Kingdom",
     "family": "Structures",
     "art": "wonder-realm-2"
   },
   "wonder-realm-3": {
-    "label": "Wonder \u00b7 Empire",
+    "label": "Wonder · Empire",
     "family": "Structures",
     "art": "wonder-realm-3"
   },
   "devcon-realm-0": {
-    "label": "Devcon \u00b7 Settlement",
+    "label": "Devcon · Settlement",
     "family": "Structures",
     "art": "devcon-realm-0"
   },
   "devcon-realm-1": {
-    "label": "Devcon \u00b7 City",
+    "label": "Devcon · City",
     "family": "Structures",
     "art": "devcon-realm-1"
   },
   "devcon-realm-2": {
-    "label": "Devcon \u00b7 Kingdom",
+    "label": "Devcon · Kingdom",
     "family": "Structures",
     "art": "devcon-realm-2"
   },
   "devcon-realm-3": {
-    "label": "Devcon \u00b7 Empire",
+    "label": "Devcon · Empire",
     "family": "Structures",
     "art": "devcon-realm-3"
   },
   "devcon-golden-realm-0": {
-    "label": "Golden Devcon \u00b7 Settlement",
+    "label": "Golden Devcon · Settlement",
     "family": "Structures",
     "art": "devcon-golden-realm-0"
   },
   "devcon-golden-realm-1": {
-    "label": "Golden Devcon \u00b7 City",
+    "label": "Golden Devcon · City",
     "family": "Structures",
     "art": "devcon-golden-realm-1"
   },
   "devcon-golden-realm-2": {
-    "label": "Golden Devcon \u00b7 Kingdom",
+    "label": "Golden Devcon · Kingdom",
     "family": "Structures",
     "art": "devcon-golden-realm-2"
   },
   "devcon-golden-realm-3": {
-    "label": "Golden Devcon \u00b7 Empire",
+    "label": "Golden Devcon · Empire",
     "family": "Structures",
     "art": "devcon-golden-realm-3"
+  },
+  "aspect-prowess": {
+    "art": "aspect-prowess",
+    "label": "Prowess",
+    "family": "Aspects",
+    "aspectId": 1
+  },
+  "aspect-luminary": {
+    "art": "aspect-luminary",
+    "label": "Luminary",
+    "family": "Aspects",
+    "aspectId": 2
+  },
+  "aspect-havoc": {
+    "art": "aspect-havoc",
+    "label": "Havoc",
+    "family": "Aspects",
+    "aspectId": 3
+  },
+  "aspect-insight": {
+    "art": "aspect-insight",
+    "label": "Insight",
+    "family": "Aspects",
+    "aspectId": 4
+  },
+  "beast-banshee": {
+    "art": "beast-banshee",
+    "label": "Banshee",
+    "family": "Beasts"
+  },
+  "beast-golem": {
+    "art": "beast-golem",
+    "label": "Golem",
+    "family": "Beasts"
+  },
+  "beast-kappa": {
+    "art": "beast-kappa",
+    "label": "Kappa",
+    "family": "Beasts"
+  },
+  "beast-tarrasque": {
+    "art": "beast-tarrasque",
+    "label": "Tarrasque",
+    "family": "Beasts"
+  },
+  "beast-lich": {
+    "art": "beast-lich",
+    "label": "Lich",
+    "family": "Beasts"
+  },
+  "beast-ettin": {
+    "art": "beast-ettin",
+    "label": "Ettin",
+    "family": "Beasts"
+  },
+  "beast-kitsune": {
+    "art": "beast-kitsune",
+    "label": "Kitsune",
+    "family": "Beasts"
+  },
+  "beast-minotaur": {
+    "art": "beast-minotaur",
+    "label": "Minotaur",
+    "family": "Beasts"
   }
 }

@@ -15,7 +15,6 @@ describe("handleWorldmapRefreshCommitRuntime", () => {
       refreshDecision: { shouldCommit: false, shouldDropAsStale: false },
       runImmediateFullManagerCatchUp: vi.fn(async () => undefined),
       runImmediateCriticalManagerCatchUp: vi.fn(async () => undefined),
-      scheduleDeferredNonCriticalManagerCatchUp: vi.fn(),
       stagedPathEnabled: true,
       projectionSyncSucceeded: false,
       transitionToken: 7,
@@ -37,7 +36,6 @@ describe("handleWorldmapRefreshCommitRuntime", () => {
       refreshDecision: { shouldCommit: false, shouldDropAsStale: true },
       runImmediateFullManagerCatchUp: vi.fn(async () => undefined),
       runImmediateCriticalManagerCatchUp: vi.fn(async () => undefined),
-      scheduleDeferredNonCriticalManagerCatchUp: vi.fn(),
       stagedPathEnabled: true,
       projectionSyncSucceeded: true,
       transitionToken: 9,
@@ -60,7 +58,6 @@ describe("handleWorldmapRefreshCommitRuntime", () => {
       refreshDecision: { shouldCommit: false, shouldDropAsStale: true },
       runImmediateFullManagerCatchUp: vi.fn(async () => undefined),
       runImmediateCriticalManagerCatchUp: vi.fn(async () => undefined),
-      scheduleDeferredNonCriticalManagerCatchUp: vi.fn(),
       stagedPathEnabled: true,
       projectionSyncSucceeded: true,
       transitionToken: 9,
@@ -83,7 +80,6 @@ describe("handleWorldmapRefreshCommitRuntime", () => {
       refreshDecision: { shouldCommit: false, shouldDropAsStale: false },
       runImmediateFullManagerCatchUp: vi.fn(async () => undefined),
       runImmediateCriticalManagerCatchUp: vi.fn(async () => undefined),
-      scheduleDeferredNonCriticalManagerCatchUp: vi.fn(),
       stagedPathEnabled: true,
       projectionSyncSucceeded: true,
       transitionToken: 10,
@@ -105,7 +101,6 @@ describe("handleWorldmapRefreshCommitRuntime", () => {
       refreshDecision: { shouldCommit: true, shouldDropAsStale: false },
       runImmediateFullManagerCatchUp: vi.fn(async () => undefined),
       runImmediateCriticalManagerCatchUp: vi.fn(async () => undefined),
-      scheduleDeferredNonCriticalManagerCatchUp: vi.fn(),
       stagedPathEnabled: true,
       projectionSyncSucceeded: true,
       transitionToken: 11,
@@ -114,10 +109,9 @@ describe("handleWorldmapRefreshCommitRuntime", () => {
     expect(result).toBe("committed");
   });
 
-  it("commits terrain, runs immediate critical catch-up, and defers non-critical catch-up when staged rollout is enabled", async () => {
+  it("commits terrain and runs immediate critical catch-up when staged rollout is enabled", async () => {
     const commitPreparedTerrain = vi.fn();
     const runImmediateCriticalManagerCatchUp = vi.fn(async () => undefined);
-    const scheduleDeferredNonCriticalManagerCatchUp = vi.fn();
 
     const result = await handleWorldmapRefreshCommitRuntime({
       chunkKey: "48,48",
@@ -130,7 +124,6 @@ describe("handleWorldmapRefreshCommitRuntime", () => {
       refreshDecision: { shouldCommit: true, shouldDropAsStale: false },
       runImmediateFullManagerCatchUp: vi.fn(async () => undefined),
       runImmediateCriticalManagerCatchUp,
-      scheduleDeferredNonCriticalManagerCatchUp,
       stagedPathEnabled: true,
       projectionSyncSucceeded: true,
       transitionToken: 11,
@@ -139,10 +132,6 @@ describe("handleWorldmapRefreshCommitRuntime", () => {
     expect(result).toBe("committed");
     expect(commitPreparedTerrain).toHaveBeenCalledWith({ chunkKey: "48,48" });
     expect(runImmediateCriticalManagerCatchUp).toHaveBeenCalledWith("48,48", { force: true, transitionToken: 11 });
-    expect(scheduleDeferredNonCriticalManagerCatchUp).toHaveBeenCalledWith("48,48", {
-      force: true,
-      transitionToken: 11,
-    });
   });
 
   it("commits terrain and runs immediate manager catch-up when staged rollout is disabled", async () => {
@@ -159,7 +148,6 @@ describe("handleWorldmapRefreshCommitRuntime", () => {
       refreshDecision: { shouldCommit: true, shouldDropAsStale: false },
       runImmediateFullManagerCatchUp,
       runImmediateCriticalManagerCatchUp: vi.fn(async () => undefined),
-      scheduleDeferredNonCriticalManagerCatchUp: vi.fn(),
       stagedPathEnabled: false,
       projectionSyncSucceeded: true,
       transitionToken: 13,

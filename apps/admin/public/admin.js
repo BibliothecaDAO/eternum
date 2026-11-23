@@ -51,14 +51,12 @@ function renderGames(view) {
   state.phases = phases;
   $("#calendar").innerHTML =
     failed(view.calendar, 3) ??
-    ["frontier", "blitz"]
-      .map((name) => {
-        const phase = phases.find((entry) => entry.phase === name);
-        return `<tr><td>${name === "frontier" ? `Frontier${phase ? ` · Preset ${esc(phase.presetId)}` : ""}` : "Blitz"}</td><td class="quiet-cell">${
-          phase ? `${when(phase.startsAt)} → ${when(phase.endsAt)}` : "Not set"
-        }</td><td class="end"><button class="quiet" data-phase="${name}">${phase ? "Edit" : "Set"}</button></td></tr>`;
-      })
-      .join("");
+    (() => {
+      const phase = phases.find((entry) => entry.phase === "frontier");
+      return `<tr><td>Frontier</td><td class="quiet-cell">${
+        phase ? `${when(phase.startsAt)} → ${when(phase.endsAt)}` : "Not set"
+      }</td><td class="end"><button class="quiet" data-phase="frontier">${phase ? "Edit" : "Set"}</button></td></tr>`;
+    })();
 
   $("#slots").innerHTML =
     failed(view.slots, 3) ??
@@ -67,7 +65,7 @@ function renderGames(view) {
           .map(
             (slot) =>
               `<tr><td>${esc(slot.name)}</td><td><span class="state ${slot.closed ? "complete" : "open"}">${
-                slot.closed ? "closed" : slot.frozenAt ? "frozen" : "open"
+                slot.closed ? "closed" : "open"
               }</span></td><td class="end">${
                 slot.closed ? "" : `<button class="quiet" data-refund="${esc(slot.name)}">Refund</button>`
               }</td></tr>`,
@@ -108,10 +106,7 @@ function renderDeploys(view) {
     row("Shards", view.shards, (shards) =>
       shards.length
         ? shards
-            .map(
-              (shard) =>
-                `<code>${esc(shard.chainId)}</code> <span class="note">${esc(shard.status)} · ${esc(shard.url)}</span>`,
-            )
+            .map((shard) => `<code>${esc(shard.chainId)}</code> <span class="note">${esc(shard.url)}</span>`)
             .join("<br>")
         : "none listed",
     ),
@@ -156,7 +151,6 @@ async function load() {
   if (state.screen === "games") renderGames(data);
   if (state.screen === "deploys") renderDeploys(data);
   if (state.screen === "audit") renderAudit(data);
-  $("[data-kind='test-blitz']").disabled = environment !== "dev";
 }
 
 /**
@@ -168,11 +162,7 @@ function openAction({ title, fields = [], method, route, launchPath, body, note 
   $("#action-error").hidden = true;
   $("#action-form").innerHTML =
     fields
-      .map(([label, name, value, kind]) =>
-        kind === "lines"
-          ? `<label>${label}<textarea name="${name}" rows="4">${esc(value)}</textarea></label>`
-          : `<label>${label}<input name="${name}" value="${esc(value)}"></label>`,
-      )
+      .map(([label, name, value]) => `<label>${label}<input name="${name}" value="${esc(value)}"></label>`)
       .join("") + (note ? `<p class="note">${note}</p>` : "");
   const values = () => Object.fromEntries(new FormData($("#action-form")));
   const preview = () => {
@@ -195,33 +185,7 @@ function openAction({ title, fields = [], method, route, launchPath, body, note 
   $("#action-dialog").showModal();
 }
 
-const lines = (text) => text.split(/\s+/).filter(Boolean);
 const NEW_GAME = {
-  "test-blitz": () =>
-    openAction({
-      title: "Free test Blitz",
-      fields: [
-        ["Name (test-…)", "name", "test-"],
-        ["Player accounts, one per line", "players", "", "lines"],
-      ],
-      method: "POST",
-      route: "test-blitz",
-      launchPath: "/api/factory/test-blitz",
-      body: (v) => ({ name: v.name, players: lines(v.players) }),
-      note: "Live five minutes after this is sent. Sending the same name and players again returns the same game.",
-    }),
-  "open-slot": () =>
-    openAction({
-      title: "Open a paid Blitz slot",
-      fields: [
-        ["Slot name (blitz-YYYYMMDD-HHMM)", "name", ""],
-        ["Registration closes (UTC, ISO)", "closesAt", ""],
-      ],
-      method: "POST",
-      route: "slots",
-      launchPath: "/api/slots",
-      body: (v) => ({ name: v.name, closesAt: v.closesAt }),
-    }),
   frontier: () => setPhase("frontier"),
 };
 
@@ -230,18 +194,13 @@ const setPhase = (phase) => {
   openAction({
     title: `Set the ${phase} phase`,
     fields: [
-      ...(phase === "frontier" ? [["Preset ID", "presetId", current?.presetId ?? ""]] : []),
       ["Starts (UTC, whole second)", "startsAt", current?.startsAt ?? ""],
       ["Ends (UTC, whole second)", "endsAt", current?.endsAt ?? ""],
     ],
     method: "PUT",
     route: `calendar/${phase}`,
     launchPath: `/api/factory/calendar/${phase}`,
-    body: (v) => ({
-      startsAt: v.startsAt,
-      endsAt: v.endsAt,
-      ...(phase === "frontier" ? { presetId: Number(v.presetId) } : {}),
-    }),
+    body: (v) => ({ startsAt: v.startsAt, endsAt: v.endsAt }),
   });
 };
 
@@ -278,7 +237,7 @@ document.addEventListener("click", (event) => {
       method: "POST",
       route: `${kind}/${environment}/${name}/${verb}`,
       launchPath: `/api/factory/${kind}/${environment}/${name}/actions/${verb}`,
-      note: verb === "delete" ? "Only a run that is not active and not in a paid slot can be deleted." : undefined,
+      note: verb === "delete" ? "Only a run that is not active and not a calendar season can be deleted." : undefined,
     });
   }
 });

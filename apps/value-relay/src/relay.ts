@@ -1,6 +1,5 @@
-import { blitzCommitment } from "@realms-world/value-ledger/commitment";
 import { Effect, Result } from "effect";
-import type { ConfirmedBlock, LaborClaim, RelayPorts, Withdrawal, PayableClaim, ClaimOutcome } from "./ports";
+import type { ConfirmedBlock, RelayPorts, Withdrawal, PayableClaim, ClaimOutcome } from "./ports";
 import { RelayFailure, relayOperation } from "./ports";
 import { SHARD_PAGE_BLOCKS } from "./shard-page";
 import type { RelayProgress, RelayStore } from "./state";
@@ -33,7 +32,6 @@ export const runRelay = (chainId: string, ports: RelayPorts, store: RelayStore, 
       more = !!page.next || end < head;
     }
     const payments = yield* payWithdrawals(ports, store);
-    const results = yield* postResults(ports, store);
     const recovered = yield* restoreResolvableReceipts(ports, store, reconcile);
     const proven = reconcile ? yield* proveWithdrawals(ports, store) : true;
     const reconciled = recovered && proven;
@@ -43,7 +41,7 @@ export const runRelay = (chainId: string, ports: RelayPorts, store: RelayStore, 
         ? [{ key: row.receipt.transactionHash, reason: row.reason }]
         : [],
     );
-    return { status: "ready" as const, more, deferred: [...payments, ...results, ...unknown], reconciled };
+    return { status: "ready" as const, more, deferred: [...payments, ...unknown], reconciled };
   });
 
 /**
@@ -144,15 +142,7 @@ const separateInvalidRows = (chainId: string, page: ConfirmedBlock): ConfirmedBl
     held.push({ kind: "payment", withdrawal, reason: "receipt_chain_differs" });
     return false;
   });
-  const results = page.results.filter((result) => {
-    try {
-      if (BigInt(result.chainId) === BigInt(chainId) && BigInt(blitzCommitment(result)) === BigInt(result.commitment))
-        return true;
-    } catch {}
-    held.push({ kind: "result", result, reason: "invalid_result_commitment" });
-    return false;
-  });
-  return { ...page, withdrawals, results, held };
+  return { ...page, withdrawals, held };
 };
 
 /**
@@ -287,27 +277,3 @@ const setAsideOrDefer = (
     : Effect.sync(() => {
         deferred.push({ key: withdrawal.transactionHash, reason });
       });
-
-const postResults = (ports: RelayPorts, store: RelayStore) =>
-  Effect.gen(function* () {
-    const deferred: { key: string; reason: string }[] = [];
-    const results = yield* relayOperation("read pending results", () => store.results());
-    for (const result of results) {
-      const posted = yield* Effect.result(ports.ledger.postResult(result));
-      if (Result.isFailure(posted)) {
-        deferred.push({ key: String(result.gameId), reason: posted.failure.operation });
-        continue;
-      }
-      yield* relayOperation("complete result", () => store.completeResult(result.gameId));
-    }
-    return deferred;
-  });
-
-/** Settlement proves eligibility on the shard; a later NFT transfer cannot move the home's labor. */
-export const grantDailyLabor = (ports: RelayPorts, claim: LaborClaim) =>
-  Effect.gen(function* () {
-    const account = yield* ports.identity.accountForRealmsId(claim.realmsId);
-    if (!account || BigInt(account) !== BigInt(claim.account))
-      return yield* Effect.fail(new RelayFailure({ operation: "labor_account_mismatch" }));
-    return yield* ports.shard.grantLabor(claim);
-  });

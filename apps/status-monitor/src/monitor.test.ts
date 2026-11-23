@@ -1,4 +1,4 @@
-import { LEDGER_READ_STALE_SECONDS } from "@realms-world/chain";
+import { dependencyUp, LEDGER_READ_STALE_SECONDS } from "@realms-world/chain";
 import { disposeWorker } from "../../../packages/value-ledger/test-support/workerd";
 import * as chain from "@realms-world/chain";
 import { expect, it, vi } from "vitest";
@@ -19,13 +19,14 @@ import {
 import { onRequestGet } from "../../status/functions/status.json";
 
 const now = 1791456000;
-const world = { url: "https://shard.public.test", chainId: "0xa", status: "active" };
+const world = { url: "https://shard.public.test", chainId: "0xa" };
 const valueTargets = {
   playUrl: "https://play.realms.party",
   ledgerRpcUrl: "https://ledger-rpc.public.test",
   ledgerAddress: "0x123",
 };
 const response = (value: unknown) => Response.json(value);
+const dependencies = [dependencyUp("store"), dependencyUp("registrar")];
 const network =
   (overrides: Record<string, Response> = {}) =>
   async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -44,10 +45,10 @@ const network =
         result: rpc.method === "starknet_call" ? ["0x0"] : { block_number: 10, timestamp: now },
       });
     }
-    if (url.endsWith("/api/directory")) return response({ shards: [{ ...world, games: [] }] });
+    if (url.endsWith("/api/directory")) return response({ shard: { ...world, games: [] } });
     if (url.endsWith("/api/slots")) return response({ slots: [] });
     if (url.endsWith("/api/factory/health"))
-      return response({ service: "launch", failedRuns: [], joinFailures: [], freezeFailures: [], strandedRuns: [] });
+      return response({ service: "launch", dependencies, failedRuns: [], joinFailure: null, strandedRuns: [] });
     if (url.endsWith("/api/guardian")) return response({ publicKey: "0x1", accountClassHash: "0x2" });
     if (url.endsWith("/api/health/accounts") || url.endsWith("/api/chat/health")) return response({ success: true });
     if (url.endsWith("/manifest"))
@@ -282,7 +283,7 @@ it("treats directory entry-unavailable facts as an outage even if world heads ar
   const result = await probeServices(
     network({
       "https://play.realms.party/api/directory": response({
-        shards: [{ ...world, games: [{ error: "unavailable" }] }],
+        shard: { ...world, games: [{ error: "unavailable" }] },
       }),
     }),
     now,
@@ -291,6 +292,18 @@ it("treats directory entry-unavailable facts as an outage even if world heads ar
   );
   expect(result.probes.find((row) => row.id === "directory")!.status).toBe("down");
   expect(result.probes.find((row) => row.id === "shard:0xa")!.status).toBe("up");
+});
+
+it("probes no world while the directory lists no shard", async () => {
+  const result = await probeServices(
+    network({ "https://play.realms.party/api/directory": response({ shard: null }) }),
+    now,
+    [world],
+    valueTargets,
+  );
+  expect(result.targets).toEqual([]);
+  expect(result.probes.find((row) => row.id === "directory")!.status).toBe("up");
+  expect(result.probes.filter((row) => row.id.startsWith("shard:") || row.id.startsWith("node:"))).toEqual([]);
 });
 
 it("observes the ledger pause flag independently and exposes unknown instead of a false flag", async () => {
@@ -398,11 +411,24 @@ it.each([
   expect(result.probes.find((probe) => probe.id === id)!.status).toBe("down");
 });
 
+it.each([
+  ["names no dependency", {}],
+  ["names one without its state", { dependencies: [{ name: "store" }] }],
+])("reports game launches down when their health %s", async (_, health) => {
+  const result = await probeServices(
+    network({ "https://play.realms.party/api/factory/health": response({ service: "launch", ...health }) }),
+    now,
+    [],
+    valueTargets,
+  );
+  expect(result.probes.find((probe) => probe.id === "launch")).toMatchObject({ status: "down", latency_ms: null });
+});
+
 it("reports game launches down while a run has failed or is stranded", async () => {
   const stranded = await probeServices(
     network({
       "https://play.realms.party/api/factory/health": Response.json(
-        { service: "launch", failedRuns: [], joinFailures: [], freezeFailures: [], strandedRuns: [{ id: 7 }] },
+        { service: "launch", failedRuns: [], joinFailure: null, strandedRuns: [{ id: 7 }] },
         { status: 503 },
       ),
     }),

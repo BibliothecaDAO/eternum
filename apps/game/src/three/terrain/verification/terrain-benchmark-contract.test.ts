@@ -5,10 +5,9 @@ import { TerrainBenchmarkRecorder } from "./terrain-benchmark-recorder";
 
 describe("terrain benchmark contract", () => {
   it("defines cumulative ablations ending at production rendering", () => {
-    expect(resolveTerrainBenchmarkVariant("geometry")).toEqual({ props: false, shadows: false, texturedGround: false });
-    expect(resolveTerrainBenchmarkVariant("material")).toEqual({ props: false, shadows: false, texturedGround: true });
-    expect(resolveTerrainBenchmarkVariant("props")).toEqual({ props: true, shadows: false, texturedGround: true });
-    expect(resolveTerrainBenchmarkVariant("production")).toEqual({ props: true, shadows: true, texturedGround: true });
+    expect(resolveTerrainBenchmarkVariant("material")).toEqual({ props: false, shadows: false });
+    expect(resolveTerrainBenchmarkVariant("props")).toEqual({ props: true, shadows: false });
+    expect(resolveTerrainBenchmarkVariant("production")).toEqual({ props: true, shadows: true });
   });
 
   it("reports frame percentiles, threshold counts, and one-percent-low fps", () => {

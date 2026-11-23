@@ -1,19 +1,18 @@
 import { Effect, Layer } from "effect";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { Registrar } from "./registrar";
+import { releaseLine } from "../../../packages/core/src/test-support/releases";
 const mock = vi.hoisted(() => ({
   account: vi.fn(),
   process: vi.fn(),
   nextDue: vi.fn(),
   target: vi.fn(),
   layer: vi.fn(),
-  slotStore: vi.fn(),
-  freeze: vi.fn(),
-  nextFreeze: vi.fn(),
   launched: vi.fn(),
   manifest: vi.fn(),
   shard: vi.fn(),
   pins: new Map<number, number>(),
+  open: 1,
 }));
 vi.mock("cloudflare:workers", () => ({
   DurableObject: class {
@@ -24,17 +23,7 @@ vi.mock("cloudflare:workers", () => ({
   },
 }));
 vi.mock("./env", () => ({ decodeLaunchEnv: (env: unknown) => env }));
-vi.mock("./launcher-account", () => ({ joinBotAccount: mock.account }));
-vi.mock("./slot-store", () => ({
-  D1SlotStore: class {
-    constructor(...args: unknown[]) {
-      mock.slotStore(...args);
-    }
-    freezeDueSlots = mock.freeze;
-    nextFreeze = mock.nextFreeze;
-  },
-  FREEZE_RETRY_MS: 30_000,
-}));
+vi.mock("./launcher-account", () => ({ joinLauncherAccount: mock.account }));
 vi.mock("@realms-world/value-ledger", async (original) => ({
   ...(await original<typeof import("@realms-world/value-ledger")>()),
   readRegisteredShard: mock.manifest,
@@ -45,11 +34,22 @@ vi.mock("./shard-client", () => ({
     constructor(target: unknown) {
       mock.shard(target);
     }
-    currentRelease = async () => 2;
-    registeredRelease = async () => ({ logic: { season: "0x55e0", troops: "0x77a2" }, migration: "0x0" });
+    openReleaseOf = async () => mock.open;
+    latestReleaseOf = async () => 2;
+    releaseRegistered = async (releaseId: number) => releaseId <= 2;
+    openRelease = async (releaseId: number) => {
+      mock.open = releaseId;
+      return `0x0${releaseId}`;
+    };
+    registeredRelease = async (releaseId: number) => ({
+      logic: ["0x55e0", "0x77a2"],
+      migration: "0x0",
+      family: 1,
+      previous: releaseId - 1,
+    });
     gameId = async (name: string) => (name === "frontier-1" ? 1 : 0);
     gameRelease = async (gameId: number) => mock.pins.get(gameId)!;
-    isSettled = async () => false;
+    game = async () => ({ settled: false, family: 1n });
     applyRelease = async (gameId: number, releaseId: number) => {
       mock.pins.set(gameId, releaseId);
       return `0x${gameId}${releaseId}`;
@@ -72,16 +72,15 @@ vi.mock("./executor", () => ({
 vi.mock("./process-launch", () => ({ processNextLaunch: mock.process }));
 beforeEach(() => {
   vi.clearAllMocks();
+  mock.open = 1;
   vi.spyOn(Date, "now").mockReturnValue(1000);
   mock.account.mockRejectedValue(new Error("launcher_approval_refused"));
   mock.process.mockReturnValue(Effect.void);
   mock.nextDue.mockResolvedValue(2000);
   mock.layer.mockReturnValue(Layer.empty);
-  mock.freeze.mockResolvedValue(undefined);
-  mock.nextFreeze.mockResolvedValue(null);
 });
 afterEach(() => vi.restoreAllMocks());
-const setup = (shards = [{ chainId: "0x1", url: "https://shard.test", status: "active" }]) => {
+const setup = (shard: { chainId: string; url: string } | null = { chainId: "0x1", url: "https://shard.test" }) => {
   const setAlarm = vi.fn(async (_at: number) => {});
   const values = new Map<string, unknown>();
   const context = {
@@ -96,7 +95,7 @@ const setup = (shards = [{ chainId: "0x1", url: "https://shard.test", status: "a
   };
   const registrar = new Registrar(context as unknown as DurableObjectState, {
     DB: {},
-    IDENTITY: { shards: async () => shards },
+    IDENTITY: { shard: async () => shard },
   });
   return { registrar, setAlarm };
 };
@@ -105,18 +104,18 @@ it("retries a failed launcher join beyond platform retries without consuming due
   for (let tick = 0; tick < 8; tick++) await f.registrar.alarm();
   expect(f.setAlarm).toHaveBeenCalledTimes(8);
   expect(f.setAlarm).toHaveBeenLastCalledWith(31_000);
-  expect(await f.registrar.joinFailures()).toEqual([
-    { chainId: "0x1", code: "launcher_approval_refused", checkedAt: 1000 },
-  ]);
+  expect(await f.registrar.joinFailure()).toEqual({
+    chainId: "0x1",
+    code: "launcher_approval_refused",
+    checkedAt: 1000,
+  });
   expect(mock.process).not.toHaveBeenCalled();
   expect(mock.nextDue).not.toHaveBeenCalled();
-  // A closed slot still freezes while the launcher cannot join.
-  expect(mock.freeze).toHaveBeenCalledTimes(8);
   mock.account.mockResolvedValue("0x2");
   await f.registrar.alarm();
-  expect(await f.registrar.joinFailures()).toEqual([]);
+  expect(await f.registrar.joinFailure()).toBeNull();
   expect(mock.process).toHaveBeenCalledOnce();
-  expect(mock.target).toHaveBeenCalledWith(expect.anything(), "0x2", expect.any(Function));
+  expect(mock.target).toHaveBeenCalledWith(expect.anything(), "0x2");
   expect(f.setAlarm).toHaveBeenLastCalledWith(2000);
 });
 it("retries other account failures without consuming due runs", async () => {
@@ -144,42 +143,6 @@ it("reports an executing alarm as awake even after its stored alarm has fired", 
   expect(await f.registrar.wakeAt()).toBeNull();
 });
 
-it("freezes every closed slot first, launches from that same read of the slot, and wakes at the next close", async () => {
-  const f = setup();
-  mock.account.mockResolvedValue("0x2");
-  mock.nextFreeze.mockResolvedValue(1500);
-  await f.registrar.alarm();
-  expect(mock.freeze.mock.invocationCallOrder[0]).toBeLessThan(mock.process.mock.invocationCallOrder[0]!);
-  const [, , , freezeResolver] = mock.slotStore.mock.calls[0]!;
-  const [, launchResolver] = mock.layer.mock.calls[0]!;
-  expect(launchResolver).toBe(freezeResolver);
-  expect(f.setAlarm).toHaveBeenLastCalledWith(1500);
-});
-
-it("still launches when the freeze cannot read its database, and retries the freeze itself without the cron", async () => {
-  const f = setup();
-  mock.account.mockResolvedValue("0x2");
-  mock.nextDue.mockResolvedValue(null);
-  mock.freeze.mockRejectedValueOnce(new Error("d1_unavailable"));
-  vi.spyOn(console, "error").mockImplementation(() => {});
-  await f.registrar.alarm();
-  expect(mock.process).toHaveBeenCalledOnce();
-  expect(f.setAlarm).toHaveBeenLastCalledWith(31_000);
-  // The retry freezes; with no slot left unfrozen and no run due, nothing re-arms.
-  await f.registrar.alarm();
-  expect(mock.freeze).toHaveBeenCalledTimes(2);
-  expect(f.setAlarm).toHaveBeenCalledOnce();
-});
-
-it("wakes again at once for a slot that closed while the alarm ran", async () => {
-  const f = setup();
-  mock.account.mockResolvedValue("0x2");
-  mock.nextDue.mockResolvedValue(null);
-  mock.nextFreeze.mockResolvedValue(900);
-  await f.registrar.alarm();
-  expect(f.setAlarm).toHaveBeenLastCalledWith(1000);
-});
-
 const RELEASE = {
   releaseId: 2,
   schema: "0xs",
@@ -190,18 +153,30 @@ const RELEASE_MANIFEST = {
   chainId: "0x1",
   rpcUrl: "https://rpc.shard.test",
   contracts: { games: "0x9" },
-  releaseSchemas: { "1": RELEASE.schema, "2": RELEASE.schema },
+  releases: releaseLine(RELEASE.schema, [1, 2]),
 };
+const SHARD = { chainId: "0x1", url: "https://shard.test" };
 
-it("advances each running Frontier game as the joined launcher and reports it", async () => {
+it("advances each running Frontier game as the joined launcher, then opens the release for new games", async () => {
   const f = setup();
   mock.account.mockResolvedValue("0x2");
   mock.manifest.mockResolvedValue(RELEASE_MANIFEST);
   mock.launched.mockResolvedValue(["frontier-1"]);
   mock.pins.set(1, 1);
-  expect(await f.registrar.applyRelease(RELEASE)).toEqual({
-    shards: [{ chainId: "0x1", releaseId: 2, games: [{ gameId: 1, from: 1, to: 2, transactions: ["0x12"] }] }],
+  expect(await f.registrar.applyRelease(RELEASE, SHARD)).toEqual({
+    shard: {
+      chainId: "0x1",
+      releaseId: 2,
+      games: [{ gameId: 1, from: 1, to: 2, transactions: ["0x12"] }],
+      opened: ["0x02"],
+    },
   });
+  expect(mock.open).toBe(2);
+  expect(mock.pins.get(1)).toBe(2);
+  const [deployed, chain] = mock.manifest.mock.calls[0]!;
+  expect(chain).toBe("0x1");
+  expect(await deployed.shard()).toEqual(SHARD);
+  expect(mock.account).toHaveBeenCalledWith(expect.anything(), deployed, "0x1");
   expect(mock.launched).toHaveBeenCalledWith("madara.frontier");
   expect(mock.shard).toHaveBeenCalledWith(
     expect.objectContaining({ accountAddress: "0x2", gamesAddress: "0x9", rpcUrl: "https://rpc.shard.test" }),
@@ -223,7 +198,7 @@ it("waits for a running launch before the launcher applies a release", async () 
   mock.pins.set(1, 1);
   const launching = f.registrar.alarm();
   await vi.waitFor(() => expect(mock.account).toHaveBeenCalledOnce());
-  const releasing = f.registrar.applyRelease(RELEASE);
+  const releasing = f.registrar.applyRelease(RELEASE, SHARD);
   await new Promise((resolve) => setTimeout(resolve, 10));
   expect(mock.shard).not.toHaveBeenCalled();
   finish("0x2");
@@ -238,19 +213,32 @@ it("refuses by name and sends nothing when the box half has not registered the r
   mock.manifest.mockResolvedValue(RELEASE_MANIFEST);
   mock.launched.mockResolvedValue(["frontier-1"]);
   mock.pins.set(1, 1);
-  await expect(f.registrar.applyRelease({ ...RELEASE, releaseId: 3 })).rejects.toThrow("release_not_registered");
+  await expect(f.registrar.applyRelease({ ...RELEASE, releaseId: 3 }, SHARD)).rejects.toThrow("release_not_registered");
   expect(mock.pins.get(1)).toBe(1);
+  expect(mock.open).toBe(1);
 });
 
 it("refuses a release step without the commit's release while a shard is active, before joining the launcher", async () => {
   const f = setup();
-  await expect(f.registrar.applyRelease(null)).rejects.toThrow("release_unverified");
+  await expect(f.registrar.applyRelease(null, SHARD)).rejects.toThrow("release_unverified");
   expect(mock.account).not.toHaveBeenCalled();
   expect(mock.shard).not.toHaveBeenCalled();
 });
 
 it("answers no shard to a first deployment's release step, before any shard is active", async () => {
-  const f = setup([]);
-  expect(await f.registrar.applyRelease(null)).toEqual({ shards: [] });
+  const f = setup(null);
+  expect(await f.registrar.applyRelease(null, null)).toEqual({ shard: null });
   expect(mock.account).not.toHaveBeenCalled();
+});
+
+it("refuses a release step whose shard is not the chain its Herald serves, before the launcher joins", async () => {
+  const f = setup();
+  const ledger = await vi.importActual<typeof import("@realms-world/value-ledger")>("@realms-world/value-ledger");
+  mock.manifest.mockImplementation(ledger.readRegisteredShard);
+  vi.spyOn(globalThis, "fetch").mockResolvedValue(Response.json({ ...RELEASE_MANIFEST, version: 1, chainId: "0x2" }));
+  mock.pins.set(1, 1);
+  await expect(f.registrar.applyRelease(RELEASE, SHARD)).rejects.toThrow("directory_manifest_chain_differs");
+  expect(mock.account).not.toHaveBeenCalled();
+  expect(mock.shard).not.toHaveBeenCalled();
+  expect(mock.pins.get(1)).toBe(1);
 });

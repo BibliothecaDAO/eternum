@@ -1,7 +1,6 @@
 import meanings from "../../../asset-sources/facets/semantic-map.json";
 import resources from "../../../asset-sources/facets/resources.json";
-import festival from "../../../asset-sources/festival/manifest.json";
-import type { ResourcesIds } from "@bibliothecadao/types";
+import type { AspectId, ResourcesIds } from "@bibliothecadao/types";
 
 /**
  * The brand's marks the app draws, each the Realms Brand Kit v3 drawing for the size it is shown at (the kit's README:
@@ -31,32 +30,11 @@ export const AGE_LOCKUP = {
  */
 export const LINK_PREVIEW = "/images/covers/link-preview-54d58004.png";
 
-/** A painted sheet of an effect's frames, read row-major (asset-sources/festival/README.md). */
-export type Sprite = { url: string; columns: number; frames: number; fps: number; posterFrame: number };
-
-const festivalSprite = (id: string): Sprite => {
-  const item = festival.items.find((each) => each.id === id);
-  if (!item) throw new Error(`No Diwali sprite ${id} in asset-sources/festival/manifest.json`);
-  const { sheet, columns, frames, fps, posterFrame } = item;
-  return { url: `/images/festival/${sheet}`, columns, frames, fps, posterFrame };
-};
-
-/** Diwali's painted effects for Season 0's end: a firework of each colour, and the diya. */
-export const DIWALI_SPRITES = {
-  fireworks: {
-    gold: festivalSprite("firework-gold"),
-    saffron: festivalSprite("firework-saffron"),
-    pink: festivalSprite("firework-pink"),
-    teal: festivalSprite("firework-teal"),
-  },
-  diya: festivalSprite("diya"),
-} as const;
-
 export type IconMeaning = keyof typeof meanings;
 export type IconPixels = 64 | 128 | 256;
 export const iconMeanings = Object.keys(meanings) as IconMeaning[];
 
-type Meaning = { label: string; family: string; rotation?: number; orderId?: number } & (
+type Meaning = { label: string; family: string; rotation?: number; orderId?: number; aspectId?: number } & (
   | { art: string; token?: never; rewardChest?: never }
   | { token: string; art?: never; rewardChest?: never }
   | { rewardChest: string; art?: never; token?: never }
@@ -65,6 +43,19 @@ export function iconDefinition(name: IconMeaning): Meaning {
   const definition: Meaning = meanings[name];
   if (!definition) throw new Error(`Unknown icon meaning: ${name}`);
   return definition;
+}
+
+const aspectMeanings = new Map(
+  iconMeanings.flatMap((name) => {
+    const entry = iconDefinition(name);
+    return entry.aspectId === undefined ? [] : [[entry.aspectId, name] as const];
+  }),
+);
+
+export function aspectMeaning(aspect: AspectId): IconMeaning {
+  const meaning = aspectMeanings.get(aspect);
+  if (!meaning) throw new Error(`Unknown Aspect icon: ${aspect}`);
+  return meaning;
 }
 
 export function iconUrl(name: IconMeaning, pixels: IconPixels = 64): string {

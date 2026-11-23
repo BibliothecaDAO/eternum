@@ -1,3 +1,5 @@
+import { gameRegistryRow } from "../../../../../../packages/core/src/test-support/game-registry";
+import { GAME_FAMILIES } from "../../../../../../config/source/common/native-preset-modes";
 // @vitest-environment jsdom
 import { afterEach, expect, it, vi } from "vitest";
 import {
@@ -15,7 +17,7 @@ import { ClientConfigManager } from "@bibliothecadao/eternum";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
 import { TileOccupier } from "@bibliothecadao/types";
-import preset from "../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
+import release from "../../../../../../contracts/l3/world-native/schema/release-definition.json";
 import { runRendererFrame } from "../../renderer-frame-runtime";
 import { SpireManager } from "../../managers/spire-manager";
 import { SceneName } from "../../types";
@@ -56,23 +58,18 @@ async function harness(ended = false, discovered = false, revealWhilePreparing =
       {
         model: "GameRegistry",
         key: "1",
-        value: {
+        value: gameRegistryRow({
           game_id: 13,
-          preset_id: 3,
-          name: "1",
-          start_settling_at: "1",
+          family: GAME_FAMILIES.blitz,
           start_main_at: "1",
+          scheduled_end_at: "0",
           end_at: "0",
           settled,
-          ready: true,
-          dev_mode_on: false,
-          end_grace_seconds: 0,
-          seed: "1",
-        },
+        }),
       },
     ]);
   registry(ended);
-  store.applyFacts([{ model: "SliceRules", key: "2", value: { ...preset.rules, game_id: 13 } }]);
+  store.applyFacts([{ model: "SliceRules", key: "2", value: { ...release.definition.rules, game_id: 13 } }]);
   store.applyFacts(
     Array.from({ length: 20 }, (_, i) => ({
       model: "TileOpt",
@@ -97,7 +94,7 @@ async function harness(ended = false, discovered = false, revealWhilePreparing =
       },
     ]);
   const config = new ClientConfigManager();
-  config.setActiveGame(13, 3);
+  config.setActiveGame(13);
   config.setStore(store);
   const projection = new WorldSpatialProjection({ store });
   projection.start();
@@ -122,7 +119,7 @@ async function harness(ended = false, discovered = false, revealWhilePreparing =
         })),
       );
   });
-  const manager = new SpireManager(scene, projection, new Group(), undefined, undefined, undefined, compile);
+  const manager = new SpireManager(scene, projection, new Group(), undefined, undefined, compile);
   owned.push(() => {
     manager.destroy();
     projection.dispose();
@@ -138,7 +135,6 @@ async function harness(ended = false, discovered = false, revealWhilePreparing =
   const controller = {
     getCurrentCameraView: () => undefined,
     getInteractionOverlayScene: () => new Scene(),
-    getRewardStagePasses: () => [],
     getScene: () => scene,
     hasActiveLabelAnimations: () => false,
     setWeatherAtmosphereState: () => {},

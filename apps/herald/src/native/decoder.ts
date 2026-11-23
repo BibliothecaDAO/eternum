@@ -1,6 +1,6 @@
 import { type GameSyncModelDefinition } from "@bibliothecadao/eternum/game-sync-models";
 import { normalizeFelt, type ModelCodec, type ModelRegistry } from "../model-registry";
-import type { DecodedWorldEvent, RawWorldEvent, RpcEvent } from "../types";
+import type { DecodedRecord, DecodedWorldEvent, RawWorldEvent, RpcEvent } from "../types";
 import { nativeRowKey } from "./row-key";
 import { decodeMembers } from "./serde";
 import {
@@ -46,7 +46,13 @@ export class NativeDecoder {
     this.schema = active;
     this.emitter = normalizeFelt(manifest.world.address);
     if (BigInt(this.emitter) === 0n) throw new Error("Zero Games emitter");
-    if (Object.keys(release.logic).sort().join() !== Object.keys(active.logicClasses).sort().join())
+    if (
+      Object.keys(release.logic).sort().join() !==
+      active.logicClasses
+        .map(({ name }) => name)
+        .sort()
+        .join()
+    )
       throw new Error("Native logic class set mismatch");
     this.layouts = active.games.events;
     const codecs = active.models.map((model) => modelCodec(active, model));
@@ -61,19 +67,6 @@ export class NativeDecoder {
   owns(address: string): boolean {
     return normalizeFelt(address) === this.emitter;
   }
-  needsPresetCalldata(events: readonly RpcEvent[]): boolean {
-    const preset = this.schema.models.find((model) => model.name === "Preset");
-    if (!preset) throw new Error("Schema has no Preset model");
-    return events.some((event) =>
-      this.layouts.some(
-        (layout) =>
-          layout.name === "RowSet" &&
-          layout.prefix.every((key, index) => BigInt(key) === BigInt(event.keys[index] ?? -1)) &&
-          BigInt(event.keys[layout.prefix.length + 1] ?? -1) === BigInt(preset.identity),
-      ),
-    );
-  }
-
   /** Decode an off-chain projection with the same typed members, without accepting a chain event. */
   decodeRowSet(model: string, keys: readonly string[], values: readonly string[]): DecodedWorldEvent {
     const row = this.schema.models.find((candidate) => candidate.name === model);
@@ -86,6 +79,20 @@ export class NativeDecoder {
       value: decodeMembers(this.schema, row.members, [...values]),
       position: { blockNumber: null, transactionHash: "0x0", transactionIndex: 0, eventIndex: 0 },
     };
+  }
+  derivedRuleModels(): string[] {
+    return this.schema.models.filter(({ derivedFrom }) => derivedFrom === "preset").map(({ name }) => name);
+  }
+  deleteDerivedRow(
+    model: string,
+    entityId: string,
+    row: DecodedRecord,
+    position: DecodedWorldEvent["position"],
+  ): DecodedWorldEvent {
+    const schemaModel = this.schema.models.find((candidate) => candidate.name === model);
+    if (!schemaModel?.derivedFrom) throw new Error(`Native model ${model} is not derived`);
+    const key = Object.fromEntries(schemaModel.keys.map(({ name }) => [name, row[name]]));
+    return { kind: "delete", model: definition(schemaModel.name, schemaModel.scope), entityId, key, position };
   }
   decode(event: NativeRawEvent): DecodedWorldEvent {
     if (!this.owns(event.from_address)) throw new Error(`Foreign native emitter ${event.from_address}`);
@@ -112,10 +119,6 @@ export class NativeDecoder {
     if (!model) throw new Error("Unknown native model");
     if (model.derivedFrom)
       throw new Error(`Native model ${model.name} is derived-only from ${model.derivedFrom}; row events are forbidden`);
-    if (model.eventProjection)
-      throw new Error(
-        `Native model ${model.name} is projected from ${model.eventProjection}; row events are forbidden`,
-      );
     const memberEvent = layout.name === "RowMemberSet";
     if (header.length !== (memberEvent ? 3 : 2)) throw new Error("Malformed native event header");
     const frame = readFrame(event.data, layout.name !== "RowDeleted");
@@ -142,7 +145,7 @@ export class NativeDecoder {
   }
 
   private requireReleaseSchema(releaseId: string): void {
-    const identity = this.manifest.native.releaseSchemas[releaseId];
+    const identity = this.manifest.native.releases[releaseId]?.schema;
     // This fold's registry and checkpoint use one schema. Refuse before any migration rows enter it.
     if (identity !== this.schema.identity) throw new NativeReleaseSchemaUnavailable(releaseId, identity);
   }
@@ -215,7 +218,7 @@ function decodeEvent(event: NativeRawEvent, schema: NativeSchema, layout: Native
   const versioned = keyMembers[0]?.name === "version";
   const projection = schema.events.find((projection) => projection.name === layout.name);
   if (!projection) throw new Error("Unowned native event");
-  // Each event is read at the version its compiled projection names (Story, Battle and Raid moved to 2).
+  // Each event is read at the version its compiled projection names (Story and Battle use version 2).
   if (versioned && BigInt(header[0] ?? -1) !== BigInt(projection.version))
     throw new Error("Unsupported native event version");
   const position = {

@@ -96,10 +96,10 @@ pub impl ResourceObservation of ResourceObservationTrait {
         })
     }
     fn resource_rule(
-        self: crate::resources::IResourceOperationsDispatcher, game_id: u32, resource_type: u8,
+        self: crate::resources::IResourceOperationsDispatcher, resource_type: u8,
     ) -> crate::resources::ResourceRule {
         interact_with_state(self.contract_address, || {
-            crate::logic::resources::rule(game_id, resource_type)
+            crate::logic::resources::rule(resource_type)
         })
     }
 }
@@ -176,14 +176,6 @@ pub impl TroopObservation of TroopObservationTrait {
     }
 }
 
-#[generate_trait]
-pub impl CombatObservation of CombatObservationTrait {
-    fn village_last_raided(self: GameState, key: crate::resources::ResourceKey) -> u64 {
-        interact_with_state(self.contract_address, || {
-            crate::logic::combat::village_last_raided(key)
-        })
-    }
-}
 pub fn assert_spatial_indexes(
     address: ContractAddress, game_id: u32, entities: Span<u64>, tiles: Span<crate::troops::Coord>,
 ) {
@@ -250,23 +242,4 @@ pub fn assert_spatial_indexes(
             }
         },
     );
-}
-pub fn assert_inline_armies_have_no_progress(address: ContractAddress, game_id: u32, entities: Span<u64>) {
-    for explorer_id in entities {
-        interact_with_state(
-            address,
-            || {
-                let key = crate::troops::ExplorerKey { game_id, explorer_id: *explorer_id };
-                assert!(crate::logic::progression::read(key).is_none());
-                if let Some(explorer) = crate::logic::troops::explorer(key) {
-                    assert!(
-                        match explorer.troops.stamina {
-                            crate::troops::StaminaSource::Inline(_) => true,
-                            crate::troops::StaminaSource::Slot(_) => false,
-                        },
-                    );
-                }
-            },
-        );
-    }
 }

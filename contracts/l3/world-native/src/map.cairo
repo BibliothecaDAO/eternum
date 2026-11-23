@@ -77,14 +77,6 @@ pub fn position_from_bits(data: u128) -> Option<Coord> {
 #[starknet::interface]
 pub trait IMapLogic<T> {
     fn biome(self: @T, key: TileKey, game_context: crate::commands::BiomeContext) -> u8;
-    fn discovery(
-        self: @T,
-        key: TileKey,
-        seed: u256,
-        hyperstructures: u32,
-        timestamp: u64,
-        game_context: crate::commands::ActionContext,
-    ) -> crate::discovery::Discovery;
     fn reveal_structure_surroundings(
         ref self: T, game_id: u32, coord: Coord, game_context: crate::commands::BiomeContext,
     );

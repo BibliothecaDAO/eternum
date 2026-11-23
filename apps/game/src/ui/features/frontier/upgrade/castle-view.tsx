@@ -1,6 +1,7 @@
-import { formatAmount, REALM_LEVELS } from "@bibliothecadao/types";
+import { formatAmount, REALM_LEVELS, ResourcesIds } from "@bibliothecadao/types";
 import type { IconMeaning } from "@/ui/design-system/icon";
 import { Icon } from "@/ui/design-system/icon";
+import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { costLine, type Price } from "@/ui/design-system/kit/price-faces";
 import { HudButton, HudCost, HudSheet, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
 import type { Refusal } from "@/ui/design-system/kit/refusal";
@@ -18,8 +19,8 @@ export type CastleSide = {
   art: IconMeaning;
   plots: number;
   slots: number;
-  /** What the castle holds of each resource at this level, before the Granary and Storeroom; unknown is undefined. */
-  limit: number | undefined;
+  wheatStore: number | undefined;
+  laborStore: number | undefined;
   maxArmySize: number;
 };
 
@@ -105,7 +106,8 @@ const castleRows = (now: CastleSide, next: CastleSide | null) => {
   return [
     row("hexagon", CASTLE_GIVES.plots, (side) => side.plots),
     row("army-capacity", CASTLE_GIVES.armySlots, (side) => side.slots),
-    row("resources", CASTLE_GIVES.storage, (side) => side.limit),
+    row(resourceMeaning(ResourcesIds.Wheat), CASTLE_GIVES.wheatStorage, (side) => side.wheatStore),
+    row(resourceMeaning(ResourcesIds.Labor), CASTLE_GIVES.laborStorage, (side) => side.laborStore),
     row("troops", CASTLE_GIVES.maxArmySize, (side) => side.maxArmySize),
   ];
 };
@@ -117,7 +119,7 @@ const castleRows = (now: CastleSide, next: CastleSide | null) => {
 export const CastleResearch = ({ nodes, onOpen }: { nodes: readonly TreeNode[]; onOpen: (node: string) => void }) => (
   <div className="grid grid-flow-col auto-cols-fr gap-1.5">
     {nodes.map((node) => (
-      <NodeTile key={node.key} node={node} picked={false} compact onPick={() => onOpen(node.key)} />
+      <NodeTile key={node.key} node={node} onPick={() => onOpen(node.key)} />
     ))}
   </div>
 );

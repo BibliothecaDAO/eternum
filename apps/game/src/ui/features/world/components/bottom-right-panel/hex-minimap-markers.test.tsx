@@ -27,8 +27,6 @@ describe("a site the world places with no entity of its own", () => {
   it.each([
     [TileOccupier.Spire, "spire"],
     [TileOccupier.DormantSpire, "spire"],
-    [TileOccupier.Shrine, "shrine"],
-    [TileOccupier.Well, "well"],
     [TileOccupier.ReservedHyperstructure, "hyperstructure"],
     [TileOccupier.Chest, "chest"],
   ])("draws occupier %s as its %s", (type, meaning) => {

@@ -1,0 +1,23 @@
+{
+  "entries": [
+    {
+      "address": "0x123",
+      "rank": 1,
+      "level": 0,
+      "sites_cleared": {
+        "total": 0,
+        "camps": 0,
+        "rifts": 0,
+        "ruins": 0,
+        "beasts": 0
+      },
+      "chests_earned": 0,
+      "rewards": {
+        "lords": "0",
+        "essence": "0",
+        "labor": "50000000000"
+      },
+      "deepest_depth": 0
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 import { heldHeadingCorrection, poleAxisOf, yawOfPlacement } from "../structures/held-heading";
-import { LOCAL_GLOW_MATERIALS, LocalEmissiveGlow } from "../structures/local-emissive-glow";
 import { markShadowCastersChanged } from "../shadow-refresh-policy";
 import { createInstancedMesh } from "../utils/create-instanced-mesh";
+import { createTripoModelMaterial, isTripoModelMesh } from "../materials/tripo-model-material";
 import { MinesMaterialsParams, PREVIEW_BUILD_COLOR_INVALID } from "@/three/constants";
 import { ResourcesIds, StructureType } from "@bibliothecadao/types";
 import {
@@ -14,6 +14,7 @@ import {
   Group,
   InstancedBufferAttribute,
   InstancedMesh,
+  type Material,
   Matrix4,
   Mesh,
   MeshStandardMaterial,
@@ -102,7 +103,7 @@ function measureModelHeight(meshes: InstancedMesh[]): number {
   );
 }
 
-function createAnimatedInstancedMesh(geometry: Mesh["geometry"], material: MeshStandardMaterial, capacity: number) {
+function createAnimatedInstancedMesh(geometry: Mesh["geometry"], material: Material, capacity: number) {
   const mesh = Object.assign(createInstancedMesh(geometry, material, capacity), {
     animated: false,
   }) as AnimatedInstancedMesh;
@@ -130,7 +131,6 @@ export default class InstancedModel {
   readonly height: number;
   timeOffsets: Float32Array;
   private contactShadowMesh?: InstancedMesh;
-  private readonly localGlows: LocalEmissiveGlow[] = [];
   private contactShadowScale = 1;
   private readonly contactShadowMatrix = new Matrix4();
   private readonly contactShadowPosition = new Vector3();
@@ -172,15 +172,20 @@ export default class InstancedModel {
         if (child.scale.x !== 1) {
           return;
         }
-        let material = child.material as MeshStandardMaterial;
-        if (this.sourceAssetOwnership === "cache") {
-          material = material.clone();
+        let material: Material = child.material as MeshStandardMaterial;
+        if (isTripoModelMesh(child) && material instanceof MeshStandardMaterial) {
+          material = createTripoModelMaterial(material);
+        } else {
+          let standard = material as MeshStandardMaterial;
+          if (this.sourceAssetOwnership === "cache") {
+            standard = standard.clone();
+          }
+          applyStructureMaterialOverrides(standard, name);
+          if (name === StructureType[StructureType.Mine] && child.material.name.includes("crystal")) {
+            standard = new MeshStandardMaterial(MinesMaterialsParams[ResourcesIds.AncientFragment]);
+          }
+          material = InstancedModel.materialPool.getStandardMaterial(standard);
         }
-        applyStructureMaterialOverrides(material, name);
-        if (name === StructureType[StructureType.Mine] && child.material.name.includes("crystal")) {
-          material = new MeshStandardMaterial(MinesMaterialsParams[ResourcesIds.AncientFragment]);
-        }
-        material = InstancedModel.materialPool.getStandardMaterial(material);
         const tmp = createAnimatedInstancedMesh(child.geometry, material, this.capacity);
         tmp.renderOrder = 10;
         const isGround = child.name.includes(LAND_NAME) || child.parent?.name.includes(LAND_NAME);
@@ -236,14 +241,6 @@ export default class InstancedModel {
       this.animation = gltf.animations[0];
     }
 
-    // Authored material identity works for both the graphics lab and gameplay model names.
-    for (const mesh of this.instancedMeshes) {
-      const material = mesh.material;
-      if (!(material instanceof MeshStandardMaterial)) continue;
-      const glow = LOCAL_GLOW_MATERIALS[material.name];
-      if (glow) this.localGlows.push(new LocalEmissiveGlow([mesh], this.group, glow));
-    }
-    this.localGlows.forEach((glow) => glow.updateBoundsAndCount());
     this.createContactShadowMesh(gltf);
     this.height = measureModelHeight(this.instancedMeshes);
   }
@@ -323,7 +320,6 @@ export default class InstancedModel {
       resolvedCount = Math.min(resolvedCount, finalCount);
     });
     this.count = resolvedCount;
-    this.localGlows.forEach((glow) => glow.updateBoundsAndCount());
   }
 
   setMatrixAt(index: number, matrix: Matrix4, groundHeight: number = matrix.elements[13]) {
@@ -414,7 +410,6 @@ export default class InstancedModel {
       this.applyWorldBounds(mesh);
     });
 
-    this.localGlows.forEach((glow) => glow.updateBoundsAndCount());
     if (this.contactShadowMesh) {
       if (this.worldBounds) {
         this.applyWorldBounds(this.contactShadowMesh);
@@ -666,7 +661,6 @@ export default class InstancedModel {
         }
       : undefined;
     this.instancedMeshes.forEach((mesh) => this.applyWorldBounds(mesh));
-    this.localGlows.forEach((glow) => glow.updateBoundsAndCount());
     if (this.contactShadowMesh) {
       this.applyWorldBounds(this.contactShadowMesh);
     }
@@ -688,9 +682,6 @@ export default class InstancedModel {
     this.bucketToIndices.clear();
     this.animationBuckets = null;
     this.bucketIndicesBuilt = false;
-
-    this.localGlows.forEach((glow) => glow.dispose());
-    this.localGlows.length = 0;
 
     // Dispose of instanced meshes and their resources
     this.instancedMeshes.forEach((mesh) => {

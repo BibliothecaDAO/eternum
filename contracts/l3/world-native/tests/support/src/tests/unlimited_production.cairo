@@ -33,20 +33,14 @@ pub /// A realm's labor producer as provisioning starts it: no cap on what it ma
     resources(deployment).start_production(home, LABOR, 3, UNLIMITED_OUTPUT, timestamp, context(deployment, home));
     stop_cheat_caller_address(deployment.games);
 }
-pub fn blitz_rules() -> crate::rules::SliceRules {
-    crate::rules::SliceRules {
-        mode_rules: super::play_fixture::BLITZ_RULES,
-        entry_rule: crate::rules::ENTRY_ROSTER,
-        command_mask: super::play_fixture::BLITZ_COMMAND_MASK,
-        ..super::play_fixture::rules(),
-    }
-}
-pub fn labor_stays_unlimited_through_every_settlement(rules: crate::rules::SliceRules) {
-    let (deployment, home, _) = super::resource_commands::setup_with_rules(rules);
-    start_unlimited_labor(deployment, home, 40);
+pub fn labor_stays_unlimited_through_every_settlement() {
+    let (deployment, home, _) = super::resource_commands::setup();
+    let start = super::play_fixture::FIXTURE_START;
+    start_unlimited_labor(deployment, home, start + 40);
+    let rate: u128 = resources(deployment).resource_production(slot(home, LABOR)).production_rate.into();
     let before = resources(deployment).resource_balance(slot(home, LABOR));
-    for timestamp in array![50_u64, 60, 75, 100] {
+    for timestamp in array![start + 50, start + 60, start + 75, start + 100] {
         assert_eq!(settle(deployment, home, LABOR, timestamp).output_amount_left, UNLIMITED_OUTPUT);
     }
-    assert_eq!(resources(deployment).resource_balance(slot(home, LABOR)), before + 3 * 60);
+    assert_eq!(resources(deployment).resource_balance(slot(home, LABOR)), before + rate * 60);
 }

@@ -1,8 +1,10 @@
-const sweep = vi.hoisted(() => vi.fn(async () => {}));
-vi.mock("./frontier-sweep", () => ({ sweepFrontierLords: sweep }));
-vi.mock("./frontier-prizes", () => ({ awardFrontierPrizes: vi.fn(async () => {}) }));
-const pools = vi.hoisted(() => vi.fn(async () => {}));
-vi.mock("./frontier-pools", () => ({ publishFrontierPools: pools }));
+const settleEnded = vi.hoisted(() => vi.fn(async (): Promise<{ game: number; error: unknown }[]> => []));
+vi.mock("./frontier-end", () => ({ settleEndedFrontierGames: settleEnded }));
+const races = vi.hoisted(() => vi.fn(async (): Promise<{ game: number; error: unknown }[]> => []));
+vi.mock("./race-rewards", async (original) => ({
+  ...(await original<typeof import("./race-rewards")>()),
+  settleFinishedRaces: races,
+}));
 const address = vi.hoisted(() => vi.fn(() => "0x10"));
 vi.mock("./environment", async (original) => ({
   ...(await original<typeof import("./environment")>()),
@@ -14,6 +16,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { ValuePlaneAddressMissingError } from "@realms-world/chain";
 import worker, { ValueRelay } from "./worker";
 import { RelayFailure } from "./ports";
+import { releaseLine } from "../../../packages/core/src/test-support/releases";
 
 vi.mock("cloudflare:workers", () => ({
   WorkerEntrypoint: class {},
@@ -29,18 +32,13 @@ vi.mock("@realms-world/value-ledger", async (importOriginal) => ({
   rpcAt: () => ({ getChainId: async () => "0x1" }),
   requireActiveChain: async () => {},
   relayAccountAddress: () => "0x5",
-  activeShards: async () => [{ chainId: "0x1" }],
+  officialChain: async () => ({ chainId: "0x1" }),
   readRegisteredShard: async () => ({
     chainId: "0x1",
     rpcUrl: "https://shard.test",
     contracts: { games: "0x2" },
-    releaseSchemas: { "1": "0xs" },
+    releases: releaseLine("0xs", [1]),
   }),
-}));
-const deposits = vi.hoisted(() => vi.fn());
-vi.mock("./deposits", async (original) => ({
-  ...(await original<typeof import("./deposits")>()),
-  relayDeposits: deposits,
 }));
 const seasons = vi.hoisted(() => vi.fn());
 vi.mock("./season-tops", () => ({ processSeasonTops: seasons }));
@@ -85,7 +83,7 @@ it("runs ledger-wide chest work independently of any configured shard", async ()
   expect(data.has("lastTick")).toBe(true);
 });
 
-const shard = vi.hoisted(() => ({ head: vi.fn(), page: vi.fn(), header: vi.fn(), grant: vi.fn() }));
+const shard = vi.hoisted(() => ({ head: vi.fn(), page: vi.fn(), header: vi.fn(), register: vi.fn() }));
 vi.mock("./shard-rpc", async (original) => ({
   ...(await original<typeof import("./shard-rpc")>()),
   ShardReader: class {
@@ -95,7 +93,10 @@ vi.mock("./shard-rpc", async (original) => ({
     page = shard.page;
   },
 }));
-vi.mock("./shard-labor", () => ({ currentLaborDay: () => Effect.succeed(4), writeLaborGrant: shard.grant }));
+vi.mock("./realm-entry", async (original) => ({
+  ...(await original<typeof import("./realm-entry")>()),
+  registerHomeSource: shard.register,
+}));
 vi.mock("./shard-account", () => ({ joinShardOperator: vi.fn(async () => "0x5") }));
 afterEach(() => {
   vi.useRealTimers();
@@ -106,7 +107,7 @@ beforeEach(() => {
   seasons.mockReturnValue(Effect.fail(new RelayFailure({ operation: "season_unavailable" })));
   address.mockReturnValue("0x10");
 });
-it("records unavailable ledger work while shard ingestion and owned Realm labor continue", async () => {
+it("records unavailable ledger work while shard ingestion and home registration continue", async () => {
   address.mockImplementation(() => {
     throw new ValuePlaneAddressMissingError("ledger", "production");
   });
@@ -145,20 +146,11 @@ it("records unavailable ledger work while shard ingestion and owned Realm labor 
   });
   expect(await relay.tick("0x1")).toMatchObject({ value: { status: "ready" } });
   expect(data.get("progress")).toMatchObject({ nextBlock: 1 });
-  expect((await relay.shardHealth()).success).toBe(false);
-  shard.grant.mockReturnValue(
-    Effect.succeed({ gameId: 7, account: "0x3", home: "0x8", amount: "1", essence: "0", transactionHash: "0xabc" }),
-  );
-  const claim = {
-    gameId: 7,
-    home: "0x8",
-    chainId: "0x1",
-    realmsId: "0x2",
-    account: "0x3",
-    day: 4,
-  };
-  await relay.labor(claim);
-  expect(shard.grant).toHaveBeenCalledWith(expect.anything(), claim);
+  expect((await relay.shardHealth()).success).toBe(true);
+  shard.register.mockResolvedValue({ realmId: 711 });
+  const claim = { gameId: 7, chainId: "0x1", realmId: 711, realmsId: "0x2", account: "0x3" };
+  expect(await relay.realmEntry(claim)).toEqual({ entry: { realmId: 711 } });
+  expect(shard.register).toHaveBeenCalledWith(expect.anything(), claim);
   const tick = vi.fn();
   await worker.scheduled(
     { scheduledTime: 0 } as ScheduledController,
@@ -179,7 +171,6 @@ it("records unavailable ledger work while shard ingestion and owned Realm labor 
   expect(tick).toHaveBeenCalledWith("0x1", true);
 });
 
-const settledDeposits = { enabled: true, processed: 0, next: "1", total: "0", pending: 0, more: false, error: null };
 /** Dies after its `n`th write (n = 0: never), and stays dead: a worker that was killed does nothing more. */
 interface Kill {
   n: number;
@@ -244,7 +235,6 @@ const shardRelay = (data = new Map<string, unknown>(), kill: Kill = { n: 0, writ
   );
 };
 it("asks the ledger about held claims on the next tick after an operator's request, and otherwise on the hour", async () => {
-  deposits.mockResolvedValue(settledDeposits);
   const relay = shardRelay();
   const reconciling = () => runRelayCalls.mock.calls.map((call) => call[3]);
   await relay.tick("0x1");
@@ -266,7 +256,6 @@ it.each([
   async (_, outcome) => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date("2026-11-14T12:00:30Z"));
-    deposits.mockResolvedValue(settledDeposits);
     const relay = shardRelay();
     await relay.tick("0x1");
     runRelayCalls.mockClear();
@@ -290,10 +279,7 @@ async function everyKill(
   const writes = await (async () => {
     const kill = { n: 0, writes: 0, dead: false };
     await work(
-      shardRelay(
-        new Map([["shardTick", { checked_at: 1, deposits: settledDeposits, value: { status: "ready" } }]]),
-        kill,
-      ),
+      shardRelay(new Map([["shardTick", { checked_at: 1, job_failures: [], value: { status: "ready" } }]]), kill),
     );
     return kill.writes;
   })();
@@ -301,10 +287,9 @@ async function everyKill(
   for (let at = 1; at <= writes; at++) {
     // The worker has already published a settled observation: the reviewer's starting state.
     const data = new Map<string, unknown>([
-      ["shardTick", { checked_at: 1, deposits: settledDeposits, value: { status: "ready" } }],
+      ["shardTick", { checked_at: 1, job_failures: [], value: { status: "ready" } }],
     ]);
     const kill = { n: at, writes: 0, dead: false };
-    deposits.mockClear();
     runRelayCalls.mockClear();
     await work(shardRelay(data, kill)).catch((error) => {
       if (!kill.dead) throw error;
@@ -312,26 +297,9 @@ async function everyKill(
     await finish(data);
   }
 }
-it("completes a reported deposit's work after the worker dies after any state write, without another report", async () => {
-  vi.useFakeTimers({ toFake: ["Date"] });
-  vi.setSystemTime(new Date("2026-11-14T12:00:30Z"));
-  deposits.mockResolvedValue(settledDeposits);
-  await everyKill(
-    async (relay) => relay.deliverDeposits("0x1"),
-    async (data) => {
-      const next = shardRelay(data);
-      vi.setSystemTime(new Date(Date.now() + 120_000));
-      await next.tick("0x1");
-      // The report was stored first; whatever died after, the pass ran (before or after the kill) and the cause is gone.
-      expect(deposits.mock.calls.length).toBeGreaterThan(0);
-      expect(data.get("deposits:due")).toBeUndefined();
-    },
-  );
-});
 it("completes an operator's request for held claims after the worker dies after any state write", async () => {
   vi.useFakeTimers({ toFake: ["Date"] });
   vi.setSystemTime(new Date("2026-11-14T12:00:30Z"));
-  deposits.mockResolvedValue(settledDeposits);
   runRelayOutcome.next = () => Effect.succeed({ status: "ready", more: false, deferred: [], reconciled: true });
   await everyKill(
     async (relay) => {
@@ -350,21 +318,16 @@ it("completes an operator's request for held claims after the worker dies after 
 });
 it.each([
   [
-    "a deposit",
-    () =>
-      deposits.mockResolvedValueOnce({
-        ...settledDeposits,
-        error: [{ obligation: "deposit:1:2", error: "node unavailable" }],
-      }),
+    "one game's settlement",
+    () => settleEnded.mockResolvedValueOnce([{ game: 7, error: new Error("shard_receipt_unavailable") }]),
   ],
-  ["the funding and principal returns", () => sweep.mockRejectedValueOnce(new Error("funding unavailable"))],
+  ["the race rewards", () => races.mockRejectedValueOnce(new Error("herald unavailable"))],
 ])(
   "keeps an operator's request while %s failed in the same pass, and completes it once they are healthy",
   async (_, fail) => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date("2026-11-14T12:00:30Z"));
     runRelayOutcome.next = () => Effect.succeed({ status: "ready", more: false, deferred: [], reconciled: true });
-    deposits.mockResolvedValue(settledDeposits);
     const data = new Map<string, unknown>();
     const relay = shardRelay(data);
     await relay.tick("0x1");
@@ -382,7 +345,6 @@ it.each([
 it("asks again after an hourly reconciliation whose recovery read failed", async () => {
   vi.useFakeTimers({ toFake: ["Date"] });
   vi.setSystemTime(new Date("2026-11-14T12:00:30Z"));
-  deposits.mockResolvedValue(settledDeposits);
   const relay = shardRelay();
   await relay.tick("0x1");
   runRelayCalls.mockClear();
@@ -396,113 +358,6 @@ it("asks again after an hourly reconciliation whose recovery read failed", async
   await relay.tick("0x1");
   expect(runRelayCalls.mock.calls.map((call) => call[3])).toEqual([true, false, true, false]);
 });
-it("answers an operator's request to clear a deposit fault, and refuses without the token or a reason", async () => {
-  const clearDepositFault = vi.fn(async () => ({ id: "2", commitment: "0xaa", row: {} }));
-  const env = {
-    ENVIRONMENT: "staging",
-    BASE_URL: "https://app.test",
-    L2_RPC_URL: "https://ledger.test",
-    OPERATOR_TOKEN: "operator-token",
-    SHARD_LEDGER_OPERATOR_PRIVATE_KEY: "0x1",
-    COSIGNER_URL: "https://cosigner.test",
-    COSIGNER_TOKEN: "test-cosigner-token",
-    LEDGER_OPERATOR_ADDRESS: "0x2",
-    LEDGER_OPERATOR_PRIVATE_KEY: "0x3",
-    RELAY: { idFromName: (id: string) => id, get: () => ({ clearDepositFault }) },
-    IDENTITY: {},
-  } as never;
-  const ask = (body: unknown, token = "operator-token") =>
-    worker.fetch(
-      new Request("https://app.test/api/value/operator/deposit-fault", {
-        method: "POST",
-        headers: { authorization: `Bearer ${token}` },
-        body: JSON.stringify(body),
-      }),
-      env,
-    );
-  const good = { chainId: "0x1", commitment: "0xaa", reason: "credit reversed on the shard" };
-  expect((await ask(good, "wrong")).status).toBe(401);
-  expect((await ask({ ...good, reason: " " })).status).toBe(400);
-  expect((await ask({ ...good, extra: 1 })).status).toBe(400);
-  expect((await ask(good)).status).toBe(200);
-  expect(clearDepositFault).toHaveBeenCalledExactlyOnceWith("0x1", "0xaa", "credit reversed on the shard");
-});
-it("looks for deposits on the hour, and between hours only while one is pending", async () => {
-  deposits.mockResolvedValue(settledDeposits);
-  const relay = shardRelay();
-  await relay.tick("0x1");
-  expect(deposits).toHaveBeenCalledTimes(1);
-  for (let minute = 0; minute < 5; minute++) await relay.tick("0x1");
-  expect(deposits).toHaveBeenCalledTimes(1);
-  await relay.tick("0x1", true);
-  expect(deposits).toHaveBeenCalledTimes(2);
-  deposits.mockResolvedValue({ ...settledDeposits, pending: 1, more: true });
-  await relay.tick("0x1", true);
-  await relay.tick("0x1");
-  await relay.tick("0x1");
-  expect(deposits).toHaveBeenCalledTimes(5);
-  deposits.mockResolvedValue({ ...settledDeposits, error: [{ obligation: "deposit:1", error: "offline" }] });
-  await relay.tick("0x1");
-  deposits.mockResolvedValue(settledDeposits);
-  await relay.tick("0x1");
-  await relay.tick("0x1");
-  expect(deposits).toHaveBeenCalledTimes(7);
-});
-it("delivers a landed deposit at once, and a second deposit by the same player right after it", async () => {
-  deposits.mockResolvedValue({ ...settledDeposits, processed: 1 });
-  const relay = shardRelay();
-  await relay.tick("0x1");
-  deposits.mockClear();
-  await relay.deliverDeposits("0x1");
-  await relay.deliverDeposits("0x1");
-  expect(deposits).toHaveBeenCalledTimes(2);
-});
-it("keeps a report that arrives during a pass for the next pass, and lets reports made before a pass share it", async () => {
-  const relay = shardRelay();
-  await relay.tick("0x1");
-  deposits.mockClear();
-  let release!: () => void;
-  const gate = new Promise<void>((resolve) => (release = resolve));
-  deposits.mockImplementationOnce(async () => {
-    await gate;
-    return settledDeposits;
-  });
-  deposits.mockResolvedValue(settledDeposits);
-  const first = relay.deliverDeposits("0x1");
-  while (!deposits.mock.calls.length) await new Promise((resolve) => setTimeout(resolve));
-  const during = relay.deliverDeposits("0x1");
-  release();
-  await Promise.all([first, during]);
-  expect(deposits).toHaveBeenCalledTimes(2);
-  deposits.mockClear();
-  await Promise.all([relay.deliverDeposits("0x1"), relay.deliverDeposits("0x1"), relay.deliverDeposits("0x1")]);
-  expect(deposits.mock.calls.length).toBeLessThan(3);
-  expect(deposits.mock.calls.length).toBeGreaterThan(0);
-});
-it("looks again at the next minute's tick after a reported deposit's first pass failed", async () => {
-  vi.useFakeTimers({ toFake: ["Date"] });
-  vi.setSystemTime(new Date("2026-11-14T12:00:30Z"));
-  try {
-    deposits.mockResolvedValue(settledDeposits);
-    const relay = shardRelay();
-    await relay.tick("0x1");
-    deposits.mockClear();
-    deposits.mockRejectedValueOnce(new Error("ledger unavailable"));
-    await expect(relay.deliverDeposits("0x1")).rejects.toThrow();
-    deposits.mockResolvedValue(settledDeposits);
-    await relay.tick("0x1");
-    expect(deposits).toHaveBeenCalledTimes(1);
-    vi.setSystemTime(new Date(Date.now() + 60_000));
-    await relay.tick("0x1");
-    expect(deposits).toHaveBeenCalledTimes(2);
-    await relay.tick("0x1");
-    await relay.tick("0x1");
-    expect(deposits).toHaveBeenCalledTimes(2);
-  } finally {
-    vi.useRealTimers();
-  }
-});
-
 it.each([
   ["a chest still pending", Effect.succeed({ finished: 0, failed: 0, pending: 1 })],
   ["a failed chest", Effect.succeed({ finished: 0, failed: 1, pending: 0 })],
@@ -630,18 +485,15 @@ it("continues a full confirmed page through its alarm and stops when caught up",
   shard.page.mockResolvedValueOnce({ ...page, next: "cursor" }).mockResolvedValue(page);
   expect(await relay.tick("0x1")).toMatchObject({ value: { status: "ready", more: true } });
   expect(storage.setAlarm).toHaveBeenCalledOnce();
-  expect(pools).toHaveBeenCalledOnce();
-  expect(sweep).toHaveBeenCalledWith(
+  expect(settleEnded).toHaveBeenCalledExactlyOnceWith(
     expect.objectContaining({ chainId: "0x1", accountAddress: "0x5" }),
     undefined,
-    expect.objectContaining({ address: "0x10" }),
-    expect.any(Function),
-    expect.any(Function),
   );
-  expect(pools).toHaveBeenCalledWith(
+  expect(races).toHaveBeenCalledWith(
     expect.objectContaining({ chainId: "0x1", accountAddress: "0x5" }),
     undefined,
-    expect.objectContaining({ address: "0x10" }),
+    expect.objectContaining({ has: expect.any(Function), mark: expect.any(Function) }),
+    expect.any(Function),
   );
   await relay.alarm();
   expect(shard.page).toHaveBeenLastCalledWith(0, 0, "cursor");
@@ -649,7 +501,7 @@ it("continues a full confirmed page through its alarm and stops when caught up",
   expect(data.get("progress")).toMatchObject({ nextBlock: 1 });
 });
 
-it("serializes pool publication with labor on the same shard signer", async () => {
+it("serializes the shard jobs with home registration on the same shard signer", async () => {
   let release!: () => void;
   let entered!: () => void;
   const holding = new Promise<void>((resolve) => {
@@ -658,9 +510,10 @@ it("serializes pool publication with labor on the same shard signer", async () =
   const started = new Promise<void>((resolve) => {
     entered = resolve;
   });
-  pools.mockImplementationOnce(async () => {
+  settleEnded.mockImplementationOnce(async () => {
     entered();
     await holding;
+    return [];
   });
   const data = new Map<string, unknown>();
   const storage = {
@@ -690,27 +543,18 @@ it("serializes pool publication with labor on the same shard signer", async () =
     rows: [],
     next: null,
   });
-  shard.grant.mockReturnValue(
-    Effect.succeed({ gameId: 7, account: "0x3", home: "0x8", amount: "1", essence: "0", transactionHash: "0xabc" }),
-  );
+  shard.register.mockResolvedValue({ realmId: 711 });
   const ticking = relay.tick("0x1");
   await started;
-  const claiming = relay.labor({
-    gameId: 7,
-    home: "0x8",
-    chainId: "0x1",
-    realmsId: "0x2",
-    account: "0x3",
-    day: 4,
-  });
+  const registering = relay.realmEntry({ gameId: 7, chainId: "0x1", realmId: 711, realmsId: "0x2", account: "0x3" });
   try {
     await new Promise((resolve) => setTimeout(resolve, 10));
-    expect(shard.grant).not.toHaveBeenCalled();
+    expect(shard.register).not.toHaveBeenCalled();
   } finally {
     release();
   }
-  await Promise.all([ticking, claiming]);
-  expect(shard.grant).toHaveBeenCalledOnce();
+  await Promise.all([ticking, registering]);
+  expect(shard.register).toHaveBeenCalledOnce();
 });
 
 it("preserves player-facing registration errors across the shard object's RPC boundary", async () => {
@@ -741,109 +585,66 @@ it("preserves player-facing registration errors across the shard object's RPC bo
   expect(await response.json()).toEqual({ error: "realm_not_owned" });
 });
 
-it.each(["recover", "upgrade"])(
-  "authenticates campaign %s and derives its account without accepting a source override",
-  async (action) => {
-    const register = vi.fn(async () => ({ entry: { campaign: "devcon-2026", tier: "regular" } }));
-    const account = vi.fn(async () => "0x3");
-    const env = {
-      ENVIRONMENT: "staging",
-      BASE_URL: "https://app.test",
-      L2_RPC_URL: "https://ledger.test",
-      OPERATOR_TOKEN: "test",
-      SHARD_LEDGER_OPERATOR_PRIVATE_KEY: "0x1",
-      COSIGNER_URL: "https://cosigner.test",
-      COSIGNER_TOKEN: "test-cosigner-token",
-      LEDGER_OPERATOR_ADDRESS: "0x2",
-      LEDGER_OPERATOR_PRIVATE_KEY: "0x3",
-      RELAY: { idFromName: (id: string) => id, get: () => ({ realmEntry: register }) },
-      IDENTITY: { accountForRealmsId: account },
-    };
-    const body = { chainId: "0x1", gameId: 7, realmsId: "0x2" };
-    const send = (payload: unknown, token = "test") =>
-      worker.fetch(
-        new Request(
-          `https://app.test/api/value/operator/${action === "recover" ? "campaign-entry" : "campaign-upgrade"}`,
-          {
-            method: "POST",
-            headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
-            body: JSON.stringify(payload),
-          },
-        ),
-        env as never,
-      );
-    expect((await send(body, "wrong")).status).toBe(401);
-    expect((await send({ ...body, account: "0x9" })).status).toBe(400);
-    expect((await send({ ...body, tier: "golden" })).status).toBe(400);
-    expect(register).not.toHaveBeenCalled();
-    const result = await send(body);
-    expect([result.status, await result.json()]).toEqual([200, { campaign: "devcon-2026", tier: "regular" }]);
-    expect(account).toHaveBeenCalledExactlyOnceWith("0x2");
-    expect(register).toHaveBeenCalledExactlyOnceWith({
-      ...body,
-      account: "0x3",
-      realmId: null,
-      ...(action === "recover" ? { recoverFlyer: true } : { upgradeCampaign: true }),
-    });
-  },
-);
+const operatorEnv = (relay: Record<string, unknown>) => ({
+  ENVIRONMENT: "staging",
+  BASE_URL: "https://app.test",
+  L2_RPC_URL: "https://ledger.test",
+  OPERATOR_TOKEN: "test",
+  SHARD_LEDGER_OPERATOR_PRIVATE_KEY: "0x1",
+  COSIGNER_URL: "https://cosigner.test",
+  COSIGNER_TOKEN: "test-cosigner-token",
+  LEDGER_OPERATOR_ADDRESS: "0x2",
+  LEDGER_OPERATOR_PRIVATE_KEY: "0x3",
+  RELAY: { idFromName: (id: string) => id, get: () => relay },
+  IDENTITY: { accountForRealmsId: vi.fn(async () => "0x3") },
+});
+const operatorSend = (env: unknown, path: string, payload: unknown, token = "test") =>
+  worker.fetch(
+    new Request(`https://app.test/api/value/operator/${path}`, {
+      method: "POST",
+      headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+      body: JSON.stringify(payload),
+    }),
+    env as never,
+  );
 
-it.each([null, "deposit_head_rewritten", [{ obligation: "deposit:1", error: "source unavailable" }]])(
-  "deposit progress participates in shard health: %j",
-  async (error) => {
+it("authenticates a Seal grant and derives its account without accepting a source override", async () => {
+  const register = vi.fn(async () => ({ entry: {} }));
+  const env = operatorEnv({ realmEntry: register });
+  const body = { chainId: "0x1", gameId: 7, realmsId: "0x2" };
+  expect((await operatorSend(env, "seal", body, "wrong")).status).toBe(401);
+  expect((await operatorSend(env, "seal", { ...body, account: "0x9" })).status).toBe(400);
+  expect((await operatorSend(env, "seal", { ...body, realmId: 711 })).status).toBe(400);
+  expect(register).not.toHaveBeenCalled();
+  const result = await operatorSend(env, "seal", body);
+  expect([result.status, await result.json()]).toEqual([200, {}]);
+  expect(register).toHaveBeenCalledExactlyOnceWith({ ...body, account: "0x3", realmId: null, sealOnly: true });
+});
+
+it("authenticates a friend's Fragment credit and passes its id through unchanged", async () => {
+  const credit = vi.fn(async () => ({ entry: { id: "0x77" } }));
+  const env = operatorEnv({ creditFragments: credit });
+  const body = { chainId: "0x1", gameId: 7, realmsId: "0x2", id: "friend:0x1:7:0xabc", amount: 100 };
+  expect((await operatorSend(env, "fragments", body, "wrong")).status).toBe(401);
+  expect((await operatorSend(env, "fragments", { ...body, account: "0x9" })).status).toBe(400);
+  expect((await operatorSend(env, "fragments", { ...body, amount: 0 })).status).toBe(400);
+  expect((await operatorSend(env, "fragments", { ...body, id: "" })).status).toBe(400);
+  expect(credit).not.toHaveBeenCalled();
+  const result = await operatorSend(env, "fragments", body);
+  expect([result.status, await result.json()]).toEqual([200, { id: "0x77" }]);
+  expect(credit).toHaveBeenCalledExactlyOnceWith(body);
+});
+
+it.each([[[]], [[{ job: "pay race rewards", game: 7, code: "race_unfunded", cause: "race_unfunded" }]], [undefined]])(
+  "shard health is green only after a tick whose shard jobs all succeeded: %j",
+  async (job_failures) => {
     const data = new Map<string, unknown>([
-      [
-        "shardTick",
-        {
-          checked_at: Math.floor(Date.now() / 1000),
-          value: { status: "ready" },
-          funding_error: null,
-          deposits: { error },
-        },
-      ],
+      ["shardTick", { checked_at: Math.floor(Date.now() / 1000), value: { status: "ready" }, job_failures }],
     ]);
     const relay = new ValueRelay(
       { storage: { get: async (key: string) => data.get(key) } } as unknown as DurableObjectState,
       {} as never,
     );
-    expect((await relay.shardHealth()).success).toBe(error === null);
+    expect((await relay.shardHealth()).success).toBe(job_failures?.length === 0);
   },
 );
-
-it("authenticates source retirement and refuses source overrides or unresolved obligations", async () => {
-  const retire = vi.fn(async () => ({ chainId: "0x1", gamesAddress: "0x2", retirementReady: true }));
-  const env = {
-    ENVIRONMENT: "staging",
-    BASE_URL: "https://app.test",
-    L2_RPC_URL: "https://ledger.test",
-    OPERATOR_TOKEN: "test",
-    SHARD_LEDGER_OPERATOR_PRIVATE_KEY: "0x1",
-    COSIGNER_URL: "https://cosigner.test",
-    COSIGNER_TOKEN: "test-cosigner-token",
-    LEDGER_OPERATOR_ADDRESS: "0x2",
-    LEDGER_OPERATOR_PRIVATE_KEY: "0x3",
-    RELAY: { idFromName: (id: string) => id, get: () => ({ depositRetirement: retire }) },
-    IDENTITY: {},
-  };
-  const send = (body: unknown, token = "test") =>
-    worker.fetch(
-      new Request("https://app.test/api/value/operator/deposit-retirement", {
-        method: "POST",
-        headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
-        body: JSON.stringify(body),
-      }),
-      env as never,
-    );
-  expect((await send({ chainId: "0x1" }, "wrong")).status).toBe(401);
-  for (const body of [null, { chainId: "0x1", gamesAddress: "0x9" }, { chainId: "bad" }])
-    expect((await send(body)).status).toBe(400);
-  expect(retire).not.toHaveBeenCalled();
-  expect(await (await send({ chainId: "0x1" })).json()).toEqual({
-    chainId: "0x1",
-    gamesAddress: "0x2",
-    retirementReady: true,
-  });
-  expect(retire).toHaveBeenCalledWith("0x1");
-  retire.mockRejectedValue(new Error("principal_return_pending"));
-  expect((await send({ chainId: "0x1" })).status).toBe(409);
-});

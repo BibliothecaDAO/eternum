@@ -14,7 +14,6 @@ describe("applyDeploymentConfigOverrides", () => {
       factoryAddress: "0xabc",
       devModeOn: true,
       singleRealmMode: true,
-      twoPlayerMode: false,
       durationSeconds: 1_800,
     });
 
@@ -23,7 +22,6 @@ describe("applyDeploymentConfigOverrides", () => {
     expect((result as ConfigWithFactoryAddress).factory_address).toBe("0xabc");
     expect(result.dev?.mode?.on).toBe(true);
     expect(result.settlement?.single_realm_mode).toBe(true);
-    expect(result.settlement?.two_player_mode).toBe(false);
   });
 
   test("keeps the base blitz balance for custom durations", () => {
@@ -49,15 +47,15 @@ describe("applyDeploymentConfigOverrides", () => {
       startMainAt: 1_763_112_600,
       factoryAddress: "0xabc",
       mapConfigOverrides: {
-        bitcoinMineWinProbability: 1638,
-        bitcoinMineFailProbability: 63897,
+        campFindProbability: 1638,
+        campFindFailProbability: 63897,
         hyperstructureWinProbAtCenter: 12345,
         hyperstructureFailProbAtCenter: 87655,
       },
     });
 
-    expect(result.exploration.bitcoinMineWinProbability).toBe(1638);
-    expect(result.exploration.bitcoinMineFailProbability).toBe(63897);
+    expect(result.exploration.campFindProbability).toBe(1638);
+    expect(result.exploration.campFindFailProbability).toBe(63897);
     expect(result.exploration.hyperstructureWinProbAtCenter).toBe(12345);
     expect(result.exploration.hyperstructureFailProbAtCenter).toBe(87655);
   });
@@ -143,19 +141,6 @@ describe("applyDeploymentConfigOverrides", () => {
     expect(result.blitz.registration.registration_count_max).toBe(24);
   });
 
-  test("rejects mutually exclusive settlement modes", () => {
-    const baseConfig = loadEnvironmentConfiguration("madara.blitz");
-
-    expect(() =>
-      applyDeploymentConfigOverrides(baseConfig, {
-        startMainAt: 1_763_112_600,
-        factoryAddress: "0xabc",
-        singleRealmMode: true,
-        twoPlayerMode: true,
-      }),
-    ).toThrow("single_realm_mode and two_player_mode cannot both be enabled");
-  });
-
   test("rejects invalid duration overrides", () => {
     const baseConfig = loadEnvironmentConfiguration("madara.blitz");
 
@@ -180,20 +165,5 @@ describe("applyDeploymentConfigOverrides", () => {
         },
       }),
     ).toThrow("Camp chance overrides must include both win and fail values");
-  });
-
-  test("rejects blitz registration overrides in two-player mode", () => {
-    const baseConfig = loadEnvironmentConfiguration("madara.blitz");
-
-    expect(() =>
-      applyDeploymentConfigOverrides(baseConfig, {
-        startMainAt: 1_763_112_600,
-        factoryAddress: "0xabc",
-        twoPlayerMode: true,
-        blitzRegistrationOverrides: {
-          registration_count_max: 12,
-        },
-      }),
-    ).toThrow("blitz registration overrides are not supported when two_player_mode is enabled");
   });
 });

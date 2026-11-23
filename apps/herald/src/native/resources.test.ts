@@ -1,3 +1,4 @@
+import { storyTag } from "./fixtures";
 import { describe, expect, it } from "vitest";
 import { toJsonValue } from "../model-registry";
 import { manifest, raw, seedDerivedRows, receipt, schema, setup, rowEvent } from "./fixtures";
@@ -68,10 +69,32 @@ describe("native resource facts", () => {
     expect(() => native.applyReceipt(fold, receipt([balance, invalid]), 10, 0)).toThrow();
     expect(fold.retainedRowCount()).toBe(0);
   });
+
+  it("folds a dying army's weight to the same rows whether or not a set precedes its deletion", () => {
+    const folded = (death: ReturnType<typeof resourceEvent>[]) => {
+      const { native, fold } = setup();
+      native.applyReceipt(
+        fold,
+        receipt([
+          resourceEvent("ResourceWeight", ["1", "41"], { capacity: 900n, weight: 30n }),
+          resourceEvent("ResourceWeight", ["1", "42"], { capacity: 500n, weight: 0n }),
+        ]),
+        10,
+        0,
+      );
+      native.applyReceipt(fold, receipt(death), 11, 0);
+      return fold.modelRows("ResourceWeight").map((row) => row.value);
+    };
+    const deleted = resourceEvent("ResourceWeight", ["1", "41"]);
+    const shrunk = resourceEvent("ResourceWeight", ["1", "41"], { capacity: 0n, weight: 30n });
+
+    expect(folded([deleted])).toEqual([{ game_id: "0x1", entity_id: "0x2a", capacity: "0x1f4", weight: "0x0" }]);
+    expect(folded([shrunk, deleted])).toEqual(folded([deleted]));
+  });
 });
 
 describe("native production facts", () => {
-  it("folds recipe arrays and full-width bonus end ticks without evaluating them at delivery time", () => {
+  it("folds recipe arrays without evaluating them at delivery time", () => {
     const { native, fold, decoder } = setup();
     native.applyReceipt(
       fold,
@@ -85,14 +108,6 @@ describe("native production facts", () => {
               { resource_type: 35n, amount: 20n },
               { resource_type: 36n, amount: 30n },
             ],
-          }),
-          resourceEvent("ProductionBonus", ["1", "7"], {
-            incr_resource_rate_percent_num: 65535n,
-            incr_labor_rate_percent_num: 2500n,
-            incr_troop_rate_percent_num: 5000n,
-            incr_resource_rate_end_at: 4294967295n,
-            incr_labor_rate_end_at: 31n,
-            incr_troop_rate_end_at: 32n,
           }),
         ]),
       ),
@@ -110,12 +125,6 @@ describe("native production facts", () => {
         { resource_type: "0x24", amount: "0x1e" },
       ],
     });
-    expect(fold.modelRows("ProductionBonus")[0].value).toMatchObject({
-      incr_resource_rate_percent_num: "0xffff",
-      incr_troop_rate_percent_num: "0x1388",
-      incr_resource_rate_end_at: "0xffffffff",
-      incr_troop_rate_end_at: "0x20",
-    });
   });
 
   it("rejects a truncated production recipe atomically with its accompanying balance", () => {
@@ -126,29 +135,16 @@ describe("native production facts", () => {
       simple_inputs: [{ resource_type: 23, amount: 10 }],
       complex_inputs: [{ resource_type: 35, amount: 20 }],
     });
-    const bonus = rowEvent("ProductionBonus", ["1", "7"], {
-      incr_resource_rate_percent_num: 0,
-      incr_labor_rate_percent_num: 0,
-      incr_troop_rate_percent_num: 1,
-      incr_resource_rate_end_at: 0,
-      incr_labor_rate_end_at: 0,
-      incr_troop_rate_end_at: 31,
-    });
-    const invalidBonus = bonus.data.map((felt, index) => (index === bonus.data.length - 4 ? "65536" : felt));
-    for (const invalid of [
-      { ...recipe, data: recipe.data.slice(0, -1) },
-      { ...bonus, data: invalidBonus },
-    ]) {
-      expect(() =>
-        native.applyReceipt(
-          fold,
-          receipt([resourceEvent("ResourceBalance", ["1", "7", "23"], { balance: 90n }), invalid]),
-          10,
-          0,
-        ),
-      ).toThrow();
-      expect(fold.retainedRowCount()).toBe(0);
-    }
+    const truncated = { ...recipe, data: recipe.data.slice(0, -1) };
+    expect(() =>
+      native.applyReceipt(
+        fold,
+        receipt([resourceEvent("ResourceBalance", ["1", "7", "23"], { balance: 90n }), truncated]),
+        10,
+        0,
+      ),
+    ).toThrow();
+    expect(fold.retainedRowCount()).toBe(0);
   });
 
   it("decodes the refill story as history without retaining a second copy of production state", () => {
@@ -158,7 +154,7 @@ describe("native production facts", () => {
       raw({
         from_address: manifest.world.address,
         keys: [...event.prefix, "2", "1", "0", "0x111", "0", "3", "0x55"],
-        data: ["7", "26", "125", "2", "23", "10", "35", "20", "1920"],
+        data: [storyTag("ProductionStory"), "26", "125", "2", "23", "10", "35", "20", "1920"],
       }),
     );
     expect(decoded.kind).toBe("event");
@@ -195,12 +191,12 @@ describe("native building facts", () => {
       if (decoded.kind !== "event") throw new Error("Expected building history event");
       return toJsonValue(decoded.value);
     };
-    expect(decode(["8", "0", "11", "10", "37", "1", "1920"])).toMatchObject({
+    expect(decode([storyTag("BuildingPlacementStory"), "0", "11", "10", "37", "1", "1920"])).toMatchObject({
       story: {
         BuildingPlacementStory: { coord: { alt: false, x: "0xb", y: "0xa" }, category: "0x25", change: "Destroyed" },
       },
     });
-    expect(decode(["9", "0", "11", "10", "37", "1", "23", "100", "1920"])).toMatchObject({
+    expect(decode([storyTag("BuildingPaymentStory"), "0", "11", "10", "37", "1", "23", "100", "1920"])).toMatchObject({
       story: { BuildingPaymentStory: { category: "0x25", cost: [{ resource_type: "0x17", amount: "0x64" }] } },
     });
     expect(fold.retainedRowCount()).toBe(0);

@@ -1,14 +1,10 @@
-import { realmSkinOf } from "@/three/structures/realm-skins";
-import { useGame } from "@/hooks/context/game-context";
 import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
-import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { type PlayerNames, usePlayerDisplayName, usePlayerNames } from "@/hooks/use-player-profile";
-import { getActiveGame } from "@/runtime/world";
 import { startRealmVisit } from "@/sync/active-game-client";
 import { PlayerSeatMark } from "@/hooks/use-watched-side";
 import { LordName } from "./realm-marks";
-import { configManager, dayOf, type ExpeditionRules } from "@bibliothecadao/eternum";
+import { configManager, type ExpeditionRules } from "@bibliothecadao/eternum";
 import { fetchHeraldLeaderboard, requireShard, safeInteger } from "@bibliothecadao/eternum/game-client";
 import type { HeraldFrontierLeaderboard, HeraldFrontierLeaderboardEntry } from "@bibliothecadao/eternum/game-sync";
 import { useQuery } from "@tanstack/react-query";
@@ -17,8 +13,10 @@ import { useState } from "react";
 import { seasonDay } from "../hud/day-clock";
 import { type SeasonDetail, SeasonDetailSheet } from "./season-detail";
 import { SeasonList, type SeasonListRow, type SeasonPodiumPlace } from "./season-list";
-import { type SeasonLords, seasonLordsOf, seasonPodium } from "./season-pool";
+import { seasonPodium } from "./season-pool";
 import { findOwnEntry, ownRank, wholeLords, earnedResource } from "./standings";
+import { FrontierAspectPage, useAspectBoard } from "../aspect/aspect-page";
+import { useRacesAspects } from "../aspect/races-aspects";
 
 type Entry = HeraldFrontierLeaderboardEntry;
 
@@ -28,20 +26,18 @@ const REFRESH_MS = 30_000;
  * Frontier's season board from Herald's read model: sites cleared, then deepest depth, then who reached the count
  * first. Herald ranks; the client only reads, and an unknown board shows as "—".
  */
-export const useSeasonBoard = () => useFrontierBoard((board) => board.entries);
+export const useSeasonBoard = (enabled = true) => useFrontierBoard((board) => board.entries, enabled);
 
 /** Herald's Frontier board for the active game, its entries and prizes, read through `select`. */
-export const useFrontierBoard = <T,>(select: (board: HeraldFrontierLeaderboard) => T) => {
-  const shard = requireShard(getActiveGame()?.chainId);
+export const useFrontierBoard = <T,>(select: (board: HeraldFrontierLeaderboard) => T, enabled = true) => {
+  // A Season 1 game races Aspects: Herald serves no player ranking for it, so nothing asks.
+  const races = useRacesAspects();
+  const shard = requireShard();
   const gameId = configManager.getActiveGameId();
   return useQuery({
+    enabled: enabled && races === false,
     queryKey: ["frontierSeasonBoard", shard.url, gameId],
-    queryFn: async () => {
-      const board = await fetchHeraldLeaderboard(shard, gameId);
-      // The Frontier HUD only mounts in a Frontier game, whose board is always the season's.
-      if (board.mode !== "frontier") throw new Error(`Game ${gameId} ranks points, not a Frontier season`);
-      return board;
-    },
+    queryFn: () => fetchHeraldLeaderboard(shard, gameId),
     select,
     refetchInterval: REFRESH_MS,
   });
@@ -71,16 +67,38 @@ const useSeasonPodium = (own: string | undefined): SeasonPodiumPlace[] | null | 
 export const useSeasonViewer = () => useAccountStore((state) => state.account?.address ?? null);
 
 /** The player's season rank as the Menu's Season row shows it: "—" while unknown, none for a viewer without a realm. */
-export const useSeasonRank = (): string => {
-  const rank = ownRank(useSeasonBoard().data, useSeasonViewer());
-  return rank === undefined ? "—" : rank === null ? "" : `#${rank}`;
+export const useSeasonRank = (): string | null => {
+  const race = useAspectBoard();
+  const legacy = useSeasonBoard();
+  const viewer = useSeasonViewer();
+  if (!race.known) return null;
+  if (race.known.race) {
+    const board = race.known.race;
+    const rank = board.standings.find((row) => row.aspect === board.own?.aspect)?.rank;
+    return rank === undefined ? "" : `#${rank}`;
+  }
+  const rank = ownRank(legacy.data, viewer);
+  return rank === undefined ? null : rank === null ? "" : `#${rank}`;
 };
 
-/**
- * Season over the board: a common chest at today's price with the season's pool behind it, every realm with the
- * player's own lit, a row's detail with Visit. Visiting closes the page for the visited realm.
- */
 export const FrontierSeason = ({
+  rules,
+  onVisited,
+  onClose,
+}: {
+  rules: ExpeditionRules;
+  onVisited: () => void;
+  onClose: () => void;
+}) => {
+  const race = useAspectBoard();
+  return race.known?.race === null ? (
+    <LegacyFrontierSeason rules={rules} onVisited={onVisited} onClose={onClose} />
+  ) : (
+    <FrontierAspectPage onClose={onClose} />
+  );
+};
+
+const LegacyFrontierSeason = ({
   rules,
   onVisited,
   onClose,
@@ -91,7 +109,6 @@ export const FrontierSeason = ({
 }) => {
   const board = useSeasonBoard();
   const viewer = useSeasonViewer();
-  const { pool, chest } = useSeasonLords(rules);
   const [opened, setOpened] = useState<string | null>(null);
   const now = useNowSeconds();
   const entries = board.data ?? [];
@@ -115,8 +132,6 @@ export const FrontierSeason = ({
   return (
     <SeasonList
       rank={ownRank(board.data, viewer)}
-      chest={chest}
-      pool={pool}
       podium={podium}
       rows={rows}
       state={board.isError ? "failed" : board.isPending ? "loading" : "ready"}
@@ -128,28 +143,6 @@ export const FrontierSeason = ({
   );
 };
 
-/**
- * The season's LORDS from the game's own facts: the pool published to its budget row with what today releases of it by
- * the season's day schedule, a share's price today (the budget row's) under the ceiling the chest rules set, and a
- * common chest at that price. The pool is null while nothing is published and undefined until the game itself is known.
- */
-const useSeasonLords = (rules: ExpeditionRules): Partial<SeasonLords> => {
-  const { setup } = useGame();
-  useNativeRevision(LORDS_MODELS);
-  const now = useNowSeconds();
-  const gameId = configManager.getActiveGameId();
-  const game = setup.store.get("GameRegistry", { game_id: gameId });
-  if (!game) return {};
-  const season = { start: Number(game.start_main_at), end: Number(game.end_at) };
-  const facts = {
-    budget: setup.store.get("LordsBudget", { game_id: gameId }),
-    chestRules: setup.store.get("ChestRules", { game_id: gameId }),
-  };
-  return seasonLordsOf(facts, season, now < season.end ? dayOf(rules, now) : null);
-};
-
-const LORDS_MODELS = ["GameRegistry", "LordsBudget", "ChestRules"] as const;
-
 /** Every realm's row as SeasonList draws it, the player's own lit. */
 const useSeasonListRows = (entries: readonly Entry[] | undefined): SeasonListRow[] => {
   const own = findOwnEntry(entries ?? [], useSeasonViewer());
@@ -158,9 +151,6 @@ const useSeasonListRows = (entries: readonly Entry[] | undefined): SeasonListRow
   return (entries ?? []).map((entry) => listRow(entry, entry === own, names));
 };
 
-/**
- * The board carries each realm's rank, depth and founding identity, including homes outside the viewer's scope.
- */
 const listRow = (entry: Entry, own: boolean, names: PlayerNames): SeasonListRow => ({
   key: entry.address,
   rank: entry.rank,
@@ -168,7 +158,6 @@ const listRow = (entry: Entry, own: boolean, names: PlayerNames): SeasonListRow 
   realm: {
     level: entry.level,
     depth: entry.deepest_depth,
-    skin: realmSkinOf(entry.campaign),
     hasWonder: entry.has_wonder,
   },
   name: (

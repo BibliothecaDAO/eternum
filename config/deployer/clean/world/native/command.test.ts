@@ -145,14 +145,13 @@ describe("player-signed administrative gameplay", () => {
     expect(invoke.signature).toHaveLength(3);
     expect(BigInt(invoke.resource_bounds.l2_gas.max_amount)).toBe(0x1234n);
     // Realms Cairo-1 account: one call, target, selector, span length, play(game,pins,command span).
-    expect(invoke.calldata.slice(0, 8).map(BigInt)).toEqual([
+    expect(invoke.calldata.slice(0, 7).map(BigInt)).toEqual([
       1n,
       0x77n,
       BigInt(hash.getSelectorFromName("play")),
-      5n,
+      4n,
       7n,
       2n,
-      4n,
       1n,
     ]);
   });
@@ -204,16 +203,6 @@ describe("player-signed administrative gameplay", () => {
     expect(invokes).toHaveLength(0);
     expect(calls).toHaveLength(0);
   });
-});
-
-it("records shard-derived results once without requiring a caller batch or progress event", async () => {
-  const { input, invokes, transactionHashes, events } = setup();
-  events(() => []);
-  const command = { kind: "RecordBlitzResults", value: undefined } as const;
-  const result = await completeNativeAdminCommand({ ...input, command });
-  expect(result).toEqual({ transactionHash: transactionHashes[0], transactions: 1 });
-  expect(invokes).toHaveLength(1);
-  expect(invokes[0].calldata.slice(-2).map(BigInt)).toEqual([1n, 51n]);
 });
 
 /** Return the submitted frame's hash so status polling cannot confirm a different transaction. */

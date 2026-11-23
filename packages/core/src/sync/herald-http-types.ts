@@ -1,10 +1,10 @@
-import type { PlayerLeaderboardActivityEntry } from "./leaderboard-activity";
+import type { AspectId } from "@bibliothecadao/types";
 
 export type HeraldGameStatus = "Created" | "Registration" | "Live" | "Ended" | "Settled";
 
 export interface HeraldGameClock {
+  scheduled_end_at: number;
   end_at: number;
-  end_grace_seconds: number;
 
   start_main_at: number;
   start_settling_at: number;
@@ -25,7 +25,6 @@ export interface HeraldGameSettlementConfig {
   spires_layer_distance: number;
   spires_max_count: number;
   spires_settled_count: number;
-  two_player_mode: boolean;
 }
 
 /** One structure the requesting player owns in the game. */
@@ -40,21 +39,32 @@ export interface HeraldPlayerStructure {
   resources_packed: string;
 }
 
+export interface HeraldPlayerQuest {
+  quest_id: number;
+  progress: number;
+  target: number;
+  labor: number;
+}
+
+export interface HeraldAspectRace {
+  finish_height: number;
+  heights: Record<AspectId, number>;
+}
+
 /** The requesting player's standing in one game: everything the entry screens read before the player joins. */
 export interface HeraldPlayerGameState {
   registered: boolean;
   settled: boolean;
-  /** The wallet frozen for this account at slot close, or null outside its roster. */
-  roster_wallet: string | null;
   held_realm_id: number | null;
   has_home_source: boolean;
   taken_realm_ids: number[];
   structures: HeraldPlayerStructure[];
+  today_quest?: HeraldPlayerQuest | null;
 }
 
 export interface HeraldGameDirectoryEntry {
-  ready: boolean;
   clock: HeraldGameClock;
+  clock_scale: number;
   dev_mode_on: boolean;
   /** A game with days: its day unit and the seed its bags of days are drawn from (decimal). */
   expedition: { day_unit_seconds: number; seed: string } | null;
@@ -65,15 +75,13 @@ export interface HeraldGameDirectoryEntry {
   /** One-based Frontier registry ordinal on this world, retained across finalization. */
   season_number?: number | null;
   game_id: number;
-  mode: "blitz" | "eternum" | "frontier" | "duel" | null;
+  mode: "blitz" | "eternum" | "frontier";
   name: string;
   player_count: number;
+  /** Homes per Aspect; null without Aspects, absent on archived directory responses. */
+  aspect_members?: Record<AspectId, number> | null;
+  aspect_race?: HeraldAspectRace | null;
   player_state: HeraldPlayerGameState | null;
-  /** Players on a Blitz game's fixed roster; 0 for open-entry games. */
-  roster_count: number;
-  /** Frozen seat account and wallet; prepared means the account has an entry and its own settled realm. */
-  roster?: { account: string; wallet: string; prepared: boolean }[];
-  preset_id: number;
   registration: HeraldGameRegistration | null;
   settled_realms_count: number;
   settled_villages_count: number;
@@ -82,11 +90,13 @@ export interface HeraldGameDirectoryEntry {
   status: HeraldGameStatus;
 }
 
+export type NativeReleases = Readonly<Record<string, { schema: string; family: number; previous: number }>>;
+
 /** GET /manifest: everything a client needs to open a shard beyond the shard's own URL. */
 export interface ShardManifest {
   version: 1;
   chainId: string;
-  releaseSchemas: Record<string, string>;
+  releases: NativeReleases;
   rpcUrl: string;
   accountClassHash: string;
   contracts: Record<string, string>;
@@ -137,22 +147,12 @@ export interface HeraldHistoryPage {
   total: number;
 }
 
-/** A ranked player by address; their name is their identity profile, which the client resolves. */
-export type HeraldLeaderboardEntry = PlayerLeaderboardActivityEntry;
-
-export interface HeraldLeaderboard {
-  mode: "points";
-  game_id: string;
-  entries: HeraldLeaderboardEntry[];
-}
-
 export interface HeraldFrontierLeaderboardEntry {
   /** Native founding trait; absent only in historical boards recorded before home identity was included. */
   has_wonder?: boolean;
   address: string;
   structure_id: string;
   /** Immutable founding identity from the complete game; null explicitly identifies an ordinary home. */
-  campaign: { campaign_id: string; tier: number } | null;
   rank: number;
   sites_cleared: { total: number; camps: number; rifts: number; ruins: number; beasts: number };
   chests_earned: number;
@@ -169,11 +169,6 @@ export interface HeraldFrontierLeaderboard {
   game_id: string;
   mode: "frontier";
   entries: HeraldFrontierLeaderboardEntry[];
-  /**
-   * The season's top prizes, as the game holds them (FrontierPrize, ChestRules, LordsWithdrawal): the prize pool in whole
-   * LORDS, how many places the game pays at most, how many the ledger fixed once the winners are posted, and each
-   * place's award receipt. Null while no prize pool is published.
-   */
   prize: HeraldFrontierPrize | null;
 }
 
@@ -199,8 +194,6 @@ export interface HeraldFrontierDayRanks {
   confirmed_block: number;
   entries: { address: string; structure_id: string; rank: number }[];
 }
-
-export type HeraldGameLeaderboard = HeraldLeaderboard | HeraldFrontierLeaderboard;
 
 /** Herald closes a game stream with this code when the game is finalized; the stream will never serve it again. */
 export const HERALD_GAME_FINALIZED_CLOSE = 4409;

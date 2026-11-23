@@ -30,16 +30,20 @@ export const ChatPage = ({
     ref={pane}
     label={CHAT}
     icon="chat"
-    nav={signedIn ? <RealtimeChatTabs rooms={rooms} /> : undefined}
     cue={signedIn ? <RealtimeChatOnline /> : undefined}
     fills
     onClose={onClose}
     bodyClassName="gap-0 p-0"
   >
     {signedIn ? (
-      <GameChatMap>
-        <RealtimeChatBody rooms={rooms} />
-      </GameChatMap>
+      <>
+        <div className="shrink-0 border-b border-hud-divider px-3 py-2">
+          <RealtimeChatTabs rooms={rooms} />
+        </div>
+        <GameChatMap>
+          <RealtimeChatBody rooms={rooms} />
+        </GameChatMap>
+      </>
     ) : (
       <div className="flex flex-1 items-center justify-center p-4">
         <HudButton kind="primary" onClick={onSignIn}>

@@ -2,21 +2,13 @@ import { completeNativeBatches } from "../../../../../packages/provider/src/nati
 import { batchRemaining, gameplayRejection } from "../../../../../packages/provider/src/native-receipt";
 import { encodeNativeCommand, type NativeCommand } from "../../../../../packages/provider/src/native-command";
 import { executeGameplayAccountTransaction } from "../../../../../packages/core/src/client/submit";
-import { CallData, RpcProvider } from "starknet";
+import { RpcProvider } from "starknet";
 import bindings from "../../../../../contracts/l3/world-native/schema/bindings.json";
 import { createOperatorAccount } from "../../shared/madara-account";
 import { confirmedTransactionReceipt } from "../../shared/transaction";
-import { nativeGamesAbi } from "./manifest";
 import type { RegistrarWorld } from "./types";
 
-const administrativeCommands = new Set<NativeCommand["kind"]>([
-  "SettleBlitzRoster",
-  "CreateBanks",
-  "MarkGameSettled",
-  "RecordBlitzResults",
-]);
-
-const repeatableBatches = new Set<NativeCommand["kind"]>(["SettleBlitzRoster", "MarkGameSettled"]);
+const administrativeCommands = new Set<NativeCommand["kind"]>(["MarkGameSettled"]);
 
 type AdminCommandInput = {
   provider: RpcProvider;
@@ -29,19 +21,15 @@ type AdminCommandInput = {
 
 export interface CompletedAdminCommand {
   transactionHash: string;
-  remaining?: string;
-  /** Transactions the command took to complete: one, or one per batch of a repeatable command. */
+  remaining: string;
   transactions: number;
 }
 
 export async function completeNativeAdminCommand(input: AdminCommandInput): Promise<CompletedAdminCommand> {
-  if (!repeatableBatches.has(input.command.kind))
-    return { ...(await executeNativeAdminCommand(input)), transactions: 1 };
   let transactions = 0;
   const result = await completeNativeBatches(async () => {
     transactions += 1;
     const result = await executeNativeAdminCommand(input);
-    if (result.remaining === undefined) throw new Error("Native administrative batch has no remaining count");
     return { ...result, remaining: BigInt(result.remaining) };
   });
   return { ...result, remaining: result.remaining.toString(), transactions };
@@ -49,7 +37,7 @@ export async function completeNativeAdminCommand(input: AdminCommandInput): Prom
 
 export async function executeNativeAdminCommand(
   input: AdminCommandInput,
-): Promise<{ transactionHash: string; remaining?: string }> {
+): Promise<{ transactionHash: string; remaining: string }> {
   if (!administrativeCommands.has(input.command.kind)) throw new Error("Not an administrative command");
   if (!Number.isSafeInteger(input.gameId) || input.gameId <= 0) throw new Error("Native command requires a game id");
   const games = input.manifest.world.address;
@@ -67,9 +55,8 @@ export async function executeNativeAdminCommand(
     ...scope,
     missing: "allow",
   })?.toString();
-  if (repeatableBatches.has(input.command.kind) && remaining === undefined)
-    throw new Error("Native administrative batch has no remaining count");
-  return { transactionHash: accepted.transaction_hash, ...(remaining !== undefined ? { remaining } : {}) };
+  if (remaining === undefined) throw new Error("Native administrative batch has no remaining count");
+  return { transactionHash: accepted.transaction_hash, remaining };
 }
 
 function adminPlayShard(manifest: RegistrarWorld) {
@@ -83,15 +70,12 @@ async function buildAdminPlay(input: AdminCommandInput) {
   const contractAddress = input.manifest.world.address;
   const read = (entrypoint: string, value: number | bigint) =>
     input.provider.callContract({ contractAddress, entrypoint, calldata: [String(value)] }, "pre_confirmed");
-  const codec = new CallData(nativeGamesAbi(input.manifest));
-  const [game, release] = await Promise.all([read("game", input.gameId), read("game_release", input.gameId)]);
-  const registry = codec.parse("game", game) as { preset_id: bigint };
-  const commitment = await read("preset_commitment", registry.preset_id);
-  if (release.length !== 1 || commitment.length !== 1) throw new Error("Malformed admin release pins");
+  const release = await read("game_release", input.gameId);
+  if (release.length !== 1) throw new Error("Malformed admin release pins");
   const command = encodeNativeCommand(bindings.commandAbi, input.command);
   return {
     contractAddress,
     entrypoint: "play",
-    calldata: [String(input.gameId), release[0]!, commitment[0]!, String(command.length), ...command],
+    calldata: [String(input.gameId), release[0]!, String(command.length), ...command],
   };
 }

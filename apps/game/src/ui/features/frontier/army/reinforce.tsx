@@ -22,9 +22,9 @@ import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { formatExact, formatShortChange } from "@bibliothecadao/types";
 import { useState } from "react";
 
-import { wheatStopsAt } from "../deploy/deploy-plan";
+import { type March, marchOn, wheatStopsAt } from "../deploy/deploy-plan";
 import { type DockArmy, useDockArmies } from "../hud/dock-armies";
-import { homeDirectionOf, readReinforcePlan, type ReinforcePlan, reinforceRange } from "./reinforce-plan";
+import { reinforcementSource, readReinforcePlan, type ReinforcePlan, reinforceRange } from "./reinforce-plan";
 
 const REINFORCE_MODELS = [
   "ExplorerTroops",
@@ -33,6 +33,7 @@ const REINFORCE_MODELS = [
   "ResourceBalance",
   "ResourceProduction",
   "RealmKnowledge",
+  "ExpeditionSite",
 ] as const;
 
 /**
@@ -43,6 +44,7 @@ const REINFORCE_MODELS = [
 export const useSelectedReinforcement = (realm: NativeRows["Structure"] | null): DockArmy | null => {
   const { setup } = useGame();
   const armies = useDockArmies(realm);
+  const timestamp = useCurrentDefaultTick();
   const selection = useUIStore((state) => state.mapSelection);
   const ordersAllowed = useUIStore(canIssueOrders);
   if (!realm || !ordersAllowed || selection?.kind !== "structure" || !selection.tile) return null;
@@ -53,7 +55,9 @@ export const useSelectedReinforcement = (realm: NativeRows["Structure"] | null):
     return at !== undefined && !at.alt && at.col === tile.col && at.row === tile.row;
   };
   return (
-    armies.find((army) => standsThere(army) && homeDirectionOf(setup.store, realm, army.explorerId) !== null) ?? null
+    armies.find(
+      (army) => standsThere(army) && reinforcementSource(setup.store, realm, army.explorerId, timestamp) !== null,
+    ) ?? null
   );
 };
 
@@ -67,19 +71,22 @@ export const useSelectedReinforcement = (realm: NativeRows["Structure"] | null):
 export const ReinforceSheet = ({
   realm,
   army,
+  supplyPost,
   onClose,
 }: {
   realm: NativeRows["Structure"];
   army: DockArmy;
+  supplyPost?: number;
   onClose: () => void;
 }) => {
   const { setup, account } = useGame();
   const defaultTick = useCurrentDefaultTick();
   useNativeRevision(REINFORCE_MODELS);
   const plan = readReinforcePlan(setup.store, realm, army.explorerId, defaultTick);
-  const range = plan ? reinforceRange(plan) : { troopsMax: 0, wheatMax: 0, max: 0 };
+  const march = plan && army.stamina && marchOn(army.stamina, plan.current);
+  const range = plan && march ? reinforceRange(plan, march) : { troopsMax: 0, wheatMax: 0, max: 0 };
   const [count, setCount] = useState<number | "max">(0);
-  const shown = count === "max" ? range.max : Math.min(count, range.max);
+  const shown = count === "max" ? range.max : Math.min(count, range.wheatMax);
   const wheatStop = wheatStopsAt(range, shown);
   const sending = useInFlight("army", army.explorerId) !== undefined;
 
@@ -90,15 +97,15 @@ export const ReinforceSheet = ({
   const reinforce = async () => {
     const signer = account.account;
     // Where the army stands is read again as it is sent: one that has moved off the realm's side sends nothing.
-    const home_direction = homeDirectionOf(setup.store, realm, army.explorerId);
-    if (!signer || home_direction === null || shown <= 0) return;
+    const source = reinforcementSource(setup.store, realm, army.explorerId, defaultTick, supplyPost);
+    if (!signer || source === null || shown <= 0) return;
     try {
       await sendOnce("army", army.explorerId, { order: "use" }, () =>
         setup.systemCalls.explorer_add({
           signer,
           to_explorer_id: army.explorerId,
           amount: multiplyByPrecision(shown),
-          home_direction,
+          supply_post: source.supplyPost,
         }),
       );
     } catch (error) {
@@ -112,10 +119,11 @@ export const ReinforceSheet = ({
         name={TROOPS}
         art={army.art}
         value={shown}
-        most={range.max}
-        held={range.wheatMax < range.troopsMax ? range.max : (plan?.stock ?? 0)}
-        disabled={range.max === 0 || sending}
-        onChange={(next) => setCount(range.max > 0 && next >= range.max ? "max" : next)}
+        most={range.wheatMax}
+        max={range.max}
+        held={range.wheatMax < range.troopsMax ? range.wheatMax : (plan?.stock ?? 0)}
+        disabled={range.wheatMax === 0 || sending}
+        onChange={(next) => setCount(range.max > 0 && next === range.max ? "max" : next)}
       />
       {plan && (
         <div className="flex justify-center">
@@ -124,8 +132,8 @@ export const ReinforceSheet = ({
           </HudChip>
         </div>
       )}
-      {plan && <ReinforceLimit plan={plan} wheatStop={wheatStop} />}
-      {plan && range.max > 0 && (
+      {plan && march && <ReinforceLimit plan={plan} march={march} wheatStop={wheatStop} />}
+      {plan && range.wheatMax > 0 && (
         <HudWindowFoot note={<HudCost line={costLine([{ of: "wheat", amount: plan.raise.wheatFor(shown) }])} />}>
           <HudButton
             kind="primary"
@@ -143,7 +151,15 @@ export const ReinforceSheet = ({
 };
 
 /** Why the count stops where it does: no such troops at home, the army at its cap, or the wheat at the most. */
-const ReinforceLimit = ({ plan, wheatStop }: { plan: ReinforcePlan; wheatStop: ReturnType<typeof wheatStopsAt> }) => {
+const ReinforceLimit = ({
+  plan,
+  march,
+  wheatStop,
+}: {
+  plan: ReinforcePlan;
+  march: March;
+  wheatStop: ReturnType<typeof wheatStopsAt>;
+}) => {
   if (plan.current >= plan.cap) return <HudNotice tone="warn" line={TRANSFER_TROOPS.cap(plan.cap)} />;
   if (plan.stock === 0) return <HudNotice tone="warn" line={NO_TROOPS_AT_HOME} />;
   if (!wheatStop) return null;
@@ -153,7 +169,7 @@ const ReinforceLimit = ({ plan, wheatStop }: { plan: ReinforcePlan; wheatStop: R
           kind: "short",
           of: "wheat",
           held: plan.raise.wheat,
-          need: plan.raise.wheatFor(1),
+          need: plan.raise.wheatToGo(1, march),
           wait: undefined,
         })
       : wheatForOnly(formatExact(wheatStop.troops), formatExact(wheatStop.of));

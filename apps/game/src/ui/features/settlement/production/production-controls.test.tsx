@@ -13,7 +13,7 @@ vi.mock("@/utils/can-issue-orders", () => ({ canIssueOrders: () => true, useActN
 
 import { GameProvider } from "@/hooks/context/game-context";
 import { frontierDay } from "@/ui/features/frontier/deploy/deploy-fixture";
-import { configManager, setBlockTimestampSource } from "@bibliothecadao/eternum";
+import { setBlockTimestampSource } from "@bibliothecadao/eternum";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import {
   ActionRefusedError,
@@ -48,12 +48,7 @@ const balance = (key: string, resource_type: number, amount: number) => ({
   value: { game_id: 1, entity_id: 7, resource_type, balance: units(amount) },
 });
 
-/**
- * QA's Egonal: Blitz Crossbowman T1 makes ten a cycle from 2 wheat and 0.8 copper. Its labor recipe, where a case turns
- * it on, makes six a cycle from 30 labor and 0.8 copper; a troop bonus, where a case runs one, adds a fifth (2,000 of
- * 10,000) to the total output, rounded down as the chain rounds it.
- */
-const egonal = ({ copper, labor = 0, troopBonus = 0 }: { copper: number; labor?: number; troopBonus?: number }) => {
+const egonal = ({ copper }: { copper: number }) => {
   const { store } = frontierDay();
   store.applyFacts([
     {
@@ -76,44 +71,20 @@ const egonal = ({ copper, labor = 0, troopBonus = 0 }: { copper: number; labor?:
     },
     balance("0xc", ResourcesIds.Wheat, 40_000),
     balance("0xc04", ResourcesIds.Copper, copper),
-    balance("0xc23", ResourcesIds.Labor, labor),
-    {
-      model: "ProductionBonus",
-      key: "0xb07",
-      value: {
-        game_id: 1,
-        entity_id: 7,
-        incr_resource_rate_percent_num: 0,
-        incr_resource_rate_end_at: 0,
-        incr_labor_rate_percent_num: 0,
-        incr_labor_rate_end_at: 0,
-        incr_troop_rate_percent_num: troopBonus,
-        incr_troop_rate_end_at: troopBonus > 0 ? 1_000_000 : 0,
-      },
-    },
   ] as never);
   return store;
 };
 
 const realm = { entityId: 7, category: StructureType.Realm } as RealmInfo;
 
-const mount = (
-  holdings: Parameters<typeof egonal>[0],
-  { laborEnabled = false, compact = false, workflow = false } = {},
-) => {
+const mount = (holdings: Parameters<typeof egonal>[0], { compact = false, workflow = false } = {}) => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const store = egonal(holdings);
-  const isCommandEnabled = configManager.isCommandEnabled.bind(configManager);
-  vi.spyOn(configManager, "isCommandEnabled").mockImplementation((command) =>
-    command === "BurnLaborForResourceProduction" ? laborEnabled : isCommandEnabled(command),
-  );
   const burnResources = vi.fn(async () => {});
-  const burnLabor = vi.fn(async () => {});
   const setup = {
     store,
     systemCalls: {
       burn_resource_for_resource_production: burnResources,
-      burn_labor_for_resource_production: burnLabor,
     },
   } as unknown as GameClientSetup;
   const host = document.createElement("div");
@@ -146,7 +117,7 @@ const mount = (
     act(() => root.unmount());
     host.remove();
   };
-  return { host, store, burnResources, burnLabor, button, input, start, type, press, unmount };
+  return { host, store, burnResources, button, input, start, type, press, unmount };
 };
 
 afterEach(() => {
@@ -242,34 +213,6 @@ it("names the least budget of an input a cycle burns under one unit of as it is 
   }
 });
 
-it("runs the labor recipe on its own inputs and output, with the troop bonus on the total", async () => {
-  const view = mount({ copper: 2.4, labor: 100, troopBonus: 2_000 }, { laborEnabled: true });
-  try {
-    const laborTab = [...view.host.querySelectorAll('[role="tab"]')].find(
-      (tab) => tab.textContent === "Labor Production",
-    );
-    await view.press(laborTab!);
-    view.type("Amount of Crossbowman T1", "10");
-    // One cycle makes 6 + 1.2 = 7.2, short of 10; two make 12 + 2.4 = 14.4.
-    expect(view.host.textContent).toContain("14 Crossbowman T1");
-    expect(view.host.textContent).toContain("+20% bonus");
-    expect(view.input("Labor")).toBe("100 / 60");
-    expect(view.input("Copper")).toBe("2 / 2");
-    expect(view.input("Wheat")).toBeUndefined();
-    // 100 labor covers three cycles, and 2.4 copper exactly three of 0.8.
-    await view.press(view.button("Max"));
-    expect(view.input("Labor")).toBe("100 / 90");
-    expect(view.start().textContent).toBe("Start production");
-    await view.press(view.start());
-    expect(view.burnLabor).toHaveBeenCalledWith(
-      expect.objectContaining({ produced_resource_types: [ResourcesIds.Crossbowman], production_cycles: [3] }),
-    );
-    expect(view.burnResources).not.toHaveBeenCalled();
-  } finally {
-    view.unmount();
-  }
-});
-
 it("refuses Max when the holdings cover no whole cycle, and sends nothing", async () => {
   const view = mount({ copper: 0.7 });
   try {
@@ -279,25 +222,6 @@ it("refuses Max when the holdings cover no whole cycle, and sends nothing", asyn
     expect(view.start().disabled).toBe(true);
     await view.press(view.start());
     expect(view.burnResources).not.toHaveBeenCalled();
-    expect(view.burnLabor).not.toHaveBeenCalled();
-  } finally {
-    view.unmount();
-  }
-});
-
-it("refuses labor's Max under one cycle the same way", async () => {
-  const view = mount({ copper: 20, labor: 20 }, { laborEnabled: true });
-  try {
-    const laborTab = [...view.host.querySelectorAll('[role="tab"]')].find(
-      (tab) => tab.textContent === "Labor Production",
-    );
-    await view.press(laborTab!);
-    await view.press(view.button("Max"));
-    expect(view.start().textContent).toBe("Not enough resources");
-    expect(view.start().disabled).toBe(true);
-    await view.press(view.start());
-    expect(view.burnResources).not.toHaveBeenCalled();
-    expect(view.burnLabor).not.toHaveBeenCalled();
   } finally {
     view.unmount();
   }
@@ -311,7 +235,6 @@ it("refuses an amount of nothing in the compact form, saying why", async () => {
     expect(view.start().disabled).toBe(true);
     await view.press(view.start());
     expect(view.burnResources).not.toHaveBeenCalled();
-    expect(view.burnLabor).not.toHaveBeenCalled();
   } finally {
     view.unmount();
   }

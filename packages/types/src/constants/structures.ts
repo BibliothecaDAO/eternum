@@ -10,7 +10,6 @@ export const StructureTypeToNameMapping: Record<StructureType, string> = {
   [StructureType.Mine]: "Mine",
   [StructureType.Village]: "Village",
   [StructureType.Camp]: "Camp",
-  [StructureType.BitcoinMine]: "Bitcoin Mine",
   [StructureType.Rift]: "Rift",
   [StructureType.Ruin]: "Ruin",
   [StructureType.Beasts]: "Beasts",
@@ -74,11 +73,10 @@ export enum BuildingType {
   ResourceFish = 38,
   ResourceEssence = 39,
   ResourceResearch = 40,
-  // Frontier's training buildings, one of each on a realm board: each trains a new army's attribute.
-  WarHall = 41,
+  RationsDepot = 41,
   SupplyYard = 42,
   ScoutsLodge = 43,
-  Hearth = 44,
+  ConscriptionCamp = 44,
 }
 
 export const BuildingTypeToString: Record<BuildingType, string> = {
@@ -123,10 +121,10 @@ export const BuildingTypeToString: Record<BuildingType, string> = {
   [BuildingType.ResourceFish]: "Fishing Village",
   [BuildingType.ResourceEssence]: "Essence Mine",
   [BuildingType.ResourceResearch]: "Research Lab",
-  [BuildingType.WarHall]: "War Hall",
+  [BuildingType.RationsDepot]: "Rations Depot",
   [BuildingType.SupplyYard]: "Supply Yard",
   [BuildingType.ScoutsLodge]: "Scouts' Lodge",
-  [BuildingType.Hearth]: "Hearth",
+  [BuildingType.ConscriptionCamp]: "Conscription Camp",
 };
 
 export function getBuildingFromResource(resourceId: ResourcesIds): BuildingType {
@@ -274,6 +272,7 @@ export function getProducedResource(category: BuildingType): ResourcesIds | unde
     case BuildingType.ResourceCrossbowmanT3:
       return ResourcesIds.CrossbowmanT3;
     case BuildingType.ResourcePaladinT1:
+    case BuildingType.ScoutsLodge:
       return ResourcesIds.Paladin;
     case BuildingType.ResourcePaladinT2:
       return ResourcesIds.PaladinT2;
@@ -301,7 +300,6 @@ export enum CapacityConfig {
   BankStructure = 7,
   FragmentMineStructure = 8,
   CampStructure = 10,
-  BitcoinMineStructure = 11,
 }
 
 export const isEconomyBuilding = (buildingType: BuildingType) => {

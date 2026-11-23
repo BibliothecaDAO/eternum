@@ -11,9 +11,6 @@ const calls = vi.hoisted(() => ({
   pause: vi.fn(),
   balance: vi.fn(),
   season: vi.fn(),
-  cohorts: vi.fn(),
-  directory: vi.fn(),
-  custody: vi.fn<typeof import("./deposit-conservation").auditDepositCustody>(),
 }));
 vi.mock("cloudflare:workers", () => ({
   WorkerEntrypoint: class {},
@@ -29,10 +26,6 @@ vi.mock("./ledger-chain", () => ({
 }));
 vi.mock("./season-tops", () => ({ processSeasonTops: calls.season }));
 vi.mock("./monitor-balance", () => ({ readMonitorFeeBalance: calls.balance }));
-vi.mock("./deposit-conservation", async (original) => ({
-  ...(await original<typeof import("./deposit-conservation")>()),
-  auditDepositCustody: calls.custody,
-}));
 vi.mock("./chain", () => ({ ledgerPauserAdapter: () => calls.pause }));
 const ports = vi.hoisted(() => ({
   reportedClaims: vi.fn(),
@@ -45,7 +38,6 @@ vi.mock("./ledger", () => ({ ledgerMonitorReads: () => ports }));
 beforeEach(() => {
   vi.clearAllMocks();
   calls.pause.mockReturnValue(Effect.void);
-  calls.custody.mockResolvedValue(null);
   calls.balance.mockResolvedValue({
     account: "0x9",
     token: "0x10",
@@ -62,7 +54,6 @@ beforeEach(() => {
   vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-11-14T12:00:30Z"));
   calls.pause.mockReturnValue(Effect.void);
-  calls.custody.mockResolvedValue(null);
   calls.season.mockReturnValue(Effect.succeed(null));
   calls.balance.mockResolvedValue({
     account: "0x9",
@@ -90,18 +81,16 @@ const monitorOver = (data: Map<string, unknown>) =>
       L2_RPC_URL: "https://ledger.test",
       PAUSER_ACCOUNT_ADDRESS: "0x9",
       ENVIRONMENT: "staging",
-      LAUNCH: { rosterCohorts: calls.cohorts, directoryGames: calls.directory },
-      IDENTITY: { l2ChainId: async () => "0x1", shards: async () => [] },
+      IDENTITY: { l2ChainId: async () => "0x1", shard: async () => null },
       RELAY_REPORT: { held: async () => [] },
     } as never,
   );
-/** Every chain read an audit makes: the three ledger streams, the season audit, the deposit custody and the balance. */
 const chainReads = () =>
-  [ports.reportedClaims, ports.paidClaims, ports.postedResults, calls.season, calls.custody, calls.balance].reduce(
+  [ports.reportedClaims, ports.paidClaims, ports.postedResults, calls.season, calls.balance].reduce(
     (total, read) => total + read.mock.calls.length,
     0,
   );
-const AUDIT = 6;
+const AUDIT = 5;
 /** Runs the cron for these minutes, as the Worker does: asks every minute, says `hourly` on the hour. */
 async function minutes(worker: ValueMonitor, from: number, to: number, onMinute?: (minute: number) => Promise<void>) {
   for (let minute = from; minute < to; minute++) {

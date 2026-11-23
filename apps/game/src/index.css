@@ -21,22 +21,6 @@
   animation: scroll 30s linear infinite;
 }
 
-.stamina-recharging-text {
-  animation: staminaRechargeTextPulse 1.8s ease-in-out infinite;
-}
-
-@keyframes staminaRechargeTextPulse {
-  0%,
-  100% {
-    opacity: 0.86;
-    text-shadow: 0 0 0 rgba(255, 226, 147, 0);
-  }
-  50% {
-    opacity: 1;
-    text-shadow: 0 0 10px rgba(255, 226, 147, 0.45);
-  }
-}
-
 /* Add any other global styles or overrides here */
 body {
   overscroll-behavior: none;

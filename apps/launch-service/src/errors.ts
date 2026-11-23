@@ -1,5 +1,4 @@
 import { serviceFailure } from "@realms-world/value-ledger";
-import { RegistrationOpen } from "./blitz-roster";
 import { Data } from "effect";
 
 export class DatabaseFailure extends Data.TaggedError("DatabaseFailure")<{
@@ -33,24 +32,12 @@ export const describeFailure = (cause: unknown): string => {
 /** Public diagnostics are fixed names; private logs retain the redacted underlying failure. */
 export const launchFailure = (error: unknown) => {
   const cause = error instanceof DatabaseFailure ? error.cause : error;
-  const diagnostic = serviceFailure(
+  return serviceFailure(
     cause,
     [
       "ledger_head_unconfirmed",
-      "registration_head_changed",
       "invalid_ledger_slot",
-      "invalid_registration_offset",
-      "invalid_registration_page",
-      "duplicate_registered_wallet",
-      "registration_page_changed",
-      "registration_history_incomplete",
-      "registration_identity_page_incomplete",
-      "registration_identity_page_too_large",
-      "invalid_registration_time",
       "ledger_launch_mutation_reverted",
-      "ledger_slot_window_differs",
-      "ledger_slot_not_recorded",
-      "ledger_season_missing_or_ambiguous",
       "invalid_ledger_integer",
       "invalid_ledger_bool",
       "invalid_u256_limb",
@@ -61,7 +48,4 @@ export const launchFailure = (error: unknown) => {
     "launch_schedule_failed",
     [],
   );
-  return cause instanceof RegistrationOpen
-    ? { ...diagnostic, code: "registration_open", secondsUntilClose: cause.secondsUntilClose }
-    : { ...diagnostic, secondsUntilClose: undefined };
 };

@@ -1,7 +1,12 @@
 // @vitest-environment node
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { getBlockTimestamp, setBlockTimestampSource, setChainProvenTimestampSource } from "./timestamp";
+import {
+  getBlockTimestamp,
+  readDefaultTick,
+  setBlockTimestampSource,
+  setChainProvenTimestampSource,
+} from "./timestamp";
 
 import { configManager } from "../managers/config-manager";
 beforeEach(() => {
@@ -31,5 +36,14 @@ describe("chain time", () => {
     setBlockTimestampSource(() => SOURCE_SECONDS);
     setChainProvenTimestampSource(() => null);
     expect(() => getBlockTimestamp().currentDefaultTick).toThrow("No chain-proven timestamp");
+  });
+
+  it("reads the chain-proven tick for a reader that can wait, and none while either clock is not known", () => {
+    expect(readDefaultTick()).toBeUndefined();
+    setBlockTimestampSource(() => SOURCE_SECONDS + 4);
+    setChainProvenTimestampSource(() => null);
+    expect(readDefaultTick()).toBeUndefined();
+    setChainProvenTimestampSource(() => SOURCE_SECONDS);
+    expect(readDefaultTick()).toBe(SOURCE_SECONDS);
   });
 });

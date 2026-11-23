@@ -1,5 +1,6 @@
 import { plateRows } from "./map-plate-rows";
 import { StructureType, siteName } from "@bibliothecadao/types";
+import { frontierBeast } from "@/three/structures/frontier-beast";
 import { describe, expect, it } from "vitest";
 
 import { HUD_SHEET, SEAT_COLOURS, seatSide } from "@/tokens";
@@ -154,7 +155,7 @@ it("names a Frontier guard by its beast while retaining its combat stack and sit
       structureType: StructureType.Ruin,
       structureName: siteName(29),
       owner: { address: 0n, ownerName: "", guildName: "" },
-      frontierBeast: { beast: "wyvern", name: "Wyvern", scale: 1.35 },
+      frontierBeast: frontierBeast(0),
       guardArmies: [{ slot: 0, category: "Knight", tier: 1, count: 2800 }],
     }),
   );

@@ -12,7 +12,10 @@ vi.mock("@/hooks/context/identity-session", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/hooks/context/identity-session")>()),
   useIdentitySession: () => ({ status: "signed-out", session: null }),
 }));
-vi.mock("../herald", () => ({ useRealmsPlayer: () => ({ data: null }) }));
+vi.mock("../herald", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../herald")>()),
+  useRealmsPlayer: () => ({ data: null }),
+}));
 
 import { setViewportWidth } from "../frame/test-viewport";
 import { HOW_TO_PLAY } from "../community";

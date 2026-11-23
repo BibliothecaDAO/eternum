@@ -58,10 +58,8 @@ describe("story event stream", () => {
     expect(identities(12)).toEqual(identities(null));
   });
 
-  it("leaves persistent rows and point awards out of the activity stream", () => {
-    for (const model of ["PlayerPoints", "PointsAwarded"]) {
-      expect(toStreamStoryEvent({ model, key: "0x1", value: { game_id: 54 } }, scope)).toBeNull();
-    }
+  it("leaves persistent rows out of the activity stream", () => {
+    expect(toStreamStoryEvent({ model: "Structure", key: "0x1", value: { game_id: 54 } }, scope)).toBeNull();
   });
 
   it.each(["BattleEvent", "RaidEvent"])("keeps %s identity when its transaction confirms at another place", (model) => {

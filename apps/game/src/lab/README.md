@@ -4,17 +4,6 @@ A lab proof that starts its own client does it through `scripts/lib/dev-client.m
 stopped whatever happens, or the server `--base-url` names. Proofs of pages that need no dev server take a base URL and
 use `scripts/prove-run.mjs`.
 
-`/lab/relic-chest`: the picked opening-only presentation, using `RewardTileModel`, `ChestTransitions` and
-`ChestTileDetails`. Focus the chest or its held-open hover plate, Open, inspect the reveal/receipt, then Reset. The
-local fixture still supplies the public pack row; its opening is delivered through the native story listener. Pack and
-Lucky are fixture inputs, with no appearance/preview selector. `prove:relic-chest` starts the app, drives the visible
-controls for Blitz and Frontier on WebGPU and WebGL2, saves evidence in a fresh directory and releases its
-browser/server.
-
-`/lab/relic-chest?mode=frontier` uses a 17-LORDS common-share reservation, the real Frontier calendar and the same chest
-panel/model/caller. Advance to day rollover shows the expired zero reward; Open produces the recorded paid amount,
-including zero. This is a local native-fact fixture, not a transaction.
-
 App painting comparison: `/lab/kit/app-art` shows Season and Blitz Results beside their existing reference art. Follow
 each page link to see the painting on its real component with local app fixtures. Run
 `pnpm --dir apps/game prove:app-art --port 4199 --out <fresh-dir>` for comparison and page screenshots, loaded-image
@@ -48,20 +37,33 @@ restore their network and identity overrides when you leave them.
 | Game   | Spire, Realm upgrade, Painted buildings | `/lab/game?scenario=spire`, `realm`, `painted-buildings`: the game itself on a lab chain                          | Owner; `playtest --steps lab-spire`                       |
 | Game   | Day end                                 | `/lab/day-end`                                                                                                    | Owner; `prove:day-end`                                    |
 | Game   | Game end                                | `/lab/endgame`                                                                                                    | `prove:endgame`                                           |
-| Game   | Chest opening                           | `/lab/relic-chest`                                                                                                | `prove:relic-chest`                                       |
 | Game   | Map labels & sites                      | `/lab/map-labels`                                                                                                 | Owner; lanes                                              |
 | Art    | Terrain                                 | Terrain & buildings `/lab/terrain`, Props `/lab/terrain-props`                                                    | Art; `verify:terrain:gallery`                             |
 | Art    | Models                                  | `/lab/models` and its families (`family=`)                                                                        | Art; owner                                                |
 | Art    | Characters                              | `/lab/characters`                                                                                                 | Art; `capture:character-animation`, `smoke:character-gym` |
-| Art    | Chests                                  | `/lab/rewards`                                                                                                    | Art                                                       |
 | Art    | Effects                                 | `/lab/world-fx`                                                                                                   | Art                                                       |
 | Art    | Bench                                   | Characters `/lab/character-benchmark`, World `/lab/world`, Chunks `/lab/chunks`, Terrain `/lab/terrain-benchmark` | The runners below                                         |
-| Data   | Balance & data                          | `/lab/data` (`view` live or balance, `mode`): see Balance & data below                                            | Owner; perf, rules                                        |
+| Data   | Balance & data                          | `/lab/data` (`mode`): see Balance & data below                                                                    | Owner; perf, rules                                        |
 | Studio | Set                                     | `/lab/studio`: see Film studio below                                                                              | Reels; `prove:studio`                                     |
 | Studio | Footage                                 | `/lab/footage`: the footage and marketing pages the showcase serves beside the lab                                | Owner                                                     |
 
 `pnpm --dir apps/game prove:lab-load --port <free> --out <fresh-dir>` opens every page twice and records what each
 fetches (the client's own modules, every script, the bytes), when its last script arrived and whether it drew 3D.
+
+`/lab/kit/standings` shows the Blitz player list. Open a player, then press Players to return; on desktop the list stays
+beside the card. `pnpm --dir apps/game prove:app <base-url> <out-dir> phone` includes this path. The retired long-format
+tribe fixture is removed.
+
+`/lab/game?scenario=deep` opens beside the allied Ethereal mine. Select Army 1, open the mine, Join, then close the site
+card and reopen Army 1 from the dock. Its panel keeps the slot's refilling stamina after the army leaves its personal
+tile. `pnpm --dir apps/game playtest:landing lab-deep-join` drives this path on desktop and phone and records the site's
+visible tick payment, the joined guard and its visible stamina bar. The site's payment reads DeepRules/RaceRules and the
+holder's AltarBar.
+
+With Important notifications enabled, a rival-held Deep site can send one opportunity alert per site and game day.
+Opening it selects the site's map coordinate. `build.sh test-deep-alerts` drives the real notifier worker through a
+confirmed rival change, a timed loss boundary, a reinforcement before retry, restart deduplication and foreground
+suppression; its same forecast tests retain the attacker through every guard slot.
 
 ### HUD room
 
@@ -76,10 +78,7 @@ construction cards, deploy, panels, area D, windows, chat). The picked one (`sho
 
 Data → Balance & data reads perf's newest pull at `/live-data/analysis.md`: the output of `live-data.py all` (in
 `evidence/perf/frontier-live-data-1`), which `showcase.sh` links from the newest analysis. Frontier shows Frontier's
-tables, Blitz shows Blitz's, both the value ledger; a server without a pull says how to make one. On Frontier, the
-second tab is next season's research balance study (`view=balance`, `part` storage, tree or beasts): storage, research
-paths and beast labor with their options, played on the research panel; nothing sends a game command.
-`scripts/frontier/prove-research-balance.playwright.js` drives it through the Playwright connection.
+tables, Blitz shows Blitz's, both the value ledger; a server without a pull says how to make one.
 
 The in-game battle calculator stays in the player interface. Physics behavior is unchanged.
 
@@ -139,8 +138,8 @@ and quality controls still apply. This switch belongs to the dev lab; live games
 synced game mode.
 
 ```sh
-pnpm --dir apps/game verify:terrain:gallery --base-url 'https://127.0.0.1:4194/?mode=blitz' --scenes all-biomes,fog-reveal --ground-modes textured --timing-policy informational --artifact-dir <fresh-blitz-directory>
-pnpm --dir apps/game verify:terrain:gallery --base-url 'https://127.0.0.1:4194/?mode=frontier' --scenes all-biomes,fog-reveal --ground-modes textured --timing-policy informational --artifact-dir <fresh-frontier-directory>
+pnpm --dir apps/game verify:terrain:gallery --base-url 'https://127.0.0.1:4194/?mode=blitz' --scenes all-biomes,fog-reveal --timing-policy informational --artifact-dir <fresh-blitz-directory>
+pnpm --dir apps/game verify:terrain:gallery --base-url 'https://127.0.0.1:4194/?mode=frontier' --scenes all-biomes,fog-reveal --timing-policy informational --artifact-dir <fresh-frontier-directory>
 ```
 
 Both renderer backends are checked by default. Each capture records the requested world mode and the actual terrain
@@ -287,3 +286,24 @@ pnpm --dir apps/game prove:studio --port 4199 --out <fresh-evidence-directory>
 
 `--base-url https://127.0.0.1:<port>` drives a client already served by you; `--size 1080x1920` films vertical;
 `--game frontier` uses Frontier's light; `--takes battle,explore` rolls only those.
+
+`/lab/game?scenario=battle-target` sends Crossbows through two attacks on a blade beast; `deep-battle-target` faces
+Knights in a guard slot. Select the army, open the site card and Attack twice. The landing playtest's
+`lab-battle-target` and `lab-deep-battle-target` drive those paths on desktop and phone, compare the exact preview and
+resulting facts with the native-tested `frontier-marks.txt` receipts, and retain screenshots. Site cards show the
+guard's Blade/Bow mark from its troop fact. These are lab proofs.
+
+Frontier town: open the Realm, tap a free plot and choose Range or Conscription Camp from City, or Rations Depot from
+Kingdom. The Range produces Crossbows for Deploy. Tap the Camp or Depot to buy its next tier: Camp increases all troop
+buildings’ output; Depot reduces deployment and reinforcement wheat. Each is unique and construction buys its first
+tier. Logistics remains on the Supply Yard. The painted-buildings lab includes every town building.
+
+The landing playtest's `lab-town` opens `/lab/game?scenario=town` on desktop and phone, selects Crossbows in Deploy,
+then deploys 400. It checks the new army, the 200 Crossbows left, and the 280 wheat left after the first Depot tier.
+This is a lab proof; the native command suite proves Range production and both town research ladders.
+
+`/lab/game?scenario=oath-battle-target` and `oath-deep-battle-target` repeat those two attacks with Power and Giants.
+The Deep guard holds Power, Giants and Protection. The landing playtest's `lab-oath-battle-target` and
+`lab-oath-deep-battle-target` check both previews and both results against `oath-damage.txt` on desktop and phone,
+retaining screenshots. The ordinary Oath pick and held slots show the three effects from generated contract constants.
+These are lab proofs.

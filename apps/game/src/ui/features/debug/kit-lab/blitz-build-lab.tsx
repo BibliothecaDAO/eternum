@@ -68,7 +68,7 @@ const BuildPanel = ({ stocked, onPlot }: { stocked: boolean; onPlot: boolean }) 
   useState(() => useUIStore.setState({ useSimpleCost: false }));
   return (
     <LabGame
-      preset={2}
+      mode="blitz"
       facts={(store) => {
         installBlitzBuildRealm(store, stocked);
         return [];

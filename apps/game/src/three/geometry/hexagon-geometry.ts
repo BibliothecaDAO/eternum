@@ -60,6 +60,36 @@ export const createCasedHexagonBandGeometry = (
   return geometry;
 };
 
+export const createFilledHexagonOverlayGeometry = (
+  outerRadius: number,
+  innerRadius: number,
+  colors: {
+    fill: readonly [number, number, number, number];
+    rim: readonly [number, number, number, number];
+  },
+): BufferGeometry => {
+  const positions: number[] = [];
+  const vertexColors: number[] = [];
+  for (let corner = 0; corner < 6; corner++) {
+    const innerA = hexagonCorner(innerRadius, corner);
+    const innerB = hexagonCorner(innerRadius, corner + 1);
+    const outerA = hexagonCorner(outerRadius, corner);
+    const outerB = hexagonCorner(outerRadius, corner + 1);
+    for (const [x, y] of [[0, 0] as const, innerA, innerB]) {
+      positions.push(x, y, 0);
+      vertexColors.push(...colors.fill);
+    }
+    for (const [x, y] of [innerA, outerA, outerB, innerA, outerB, innerB]) {
+      positions.push(x, y, 0);
+      vertexColors.push(...colors.rim);
+    }
+  }
+  const geometry = new BufferGeometry();
+  geometry.setAttribute("position", new Float32BufferAttribute(positions, 3));
+  geometry.setAttribute("color", new Float32BufferAttribute(vertexColors, 4));
+  return geometry;
+};
+
 export const createRoundedHexagonShape = (radius: number, cornerRadius: number = radius * 0.15) => {
   const shape = new Shape();
 

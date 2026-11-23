@@ -112,7 +112,7 @@ describe("stamina under one game's rules", () => {
     for (const tier of TROOP_TIERS) {
       const troop = { category: TroopType.Knight, tier };
       expect(musterStamina({ slot: 0, inherited: null }, troop, 101, rules, 0, 60)).toEqual({ amount: 120, max: 120 });
-      expect(musterStamina({ slot: 0, inherited: null }, troop, 101, rules, 2, 60)).toEqual({ amount: 165, max: 165 });
+      expect(musterStamina({ slot: 0, inherited: null }, troop, 101, rules, 2, 60)).toEqual({ amount: 168, max: 168 });
       expect(musterStamina({ slot: 0, inherited: knight(180, 101).stamina }, troop, 102, rules, 0, 60)).toEqual({
         amount: 120,
         max: 120,
@@ -150,5 +150,61 @@ describe("stamina under one game's rules", () => {
     expect(affordableAt(troops, 101, rules, 60, 12)).toBe(106);
     expect(affordableAt(troops, 101, rules, 60, 121)).toBeNull();
     expect(affordableAt(troops, 101, { ...rules, stamina_gain_per_tick: 0 }, 60, 11)).toBeNull();
+  });
+
+  it("settles Mist Tide, its exact quorum end and Second Wind without replaying today's rate over history", () => {
+    const troops: Troops = {
+      ...knight(0, 101),
+      staminaEffects: {
+        until: 300,
+        windows: [
+          { start: 101, end: 131, rateBps: 5_000 },
+          { start: 161, end: 191, rateBps: 20_000 },
+        ],
+      },
+    };
+    expect(staminaAt(troops, 191, rules, 60)).toEqual({
+      amount: 35n,
+      settled_at: 191,
+      remainder: 0,
+      boostSecondsLeft: 0,
+    });
+    expect(affordableAt(troops, 101, rules, 60, 5)).toBe(131);
+    expect(affordableAt(troops, 101, rules, 60, 15)).toBe(161);
+    expect(affordableAt(troops, 101, rules, 60, 35)).toBe(191);
+    expect(affordableAt(troops, 101, rules, 60, 120)).toBeNull();
+    expect(affordableAt(troops, 300, rules, 60, 0)).toBeNull();
+    expect(staminaAt(troops, 301, rules, 60)).toEqual(staminaAt(troops, 300, rules, 60));
+  });
+
+  it("carries the same fraction across effect boundaries, arbitrary reads and boost expiry", () => {
+    const initial: Troops = {
+      ...knight(0, 101, { percent: 3_333, seconds: 17 }),
+      staminaEffects: {
+        until: 300,
+        windows: [
+          { start: 101, end: 111, rateBps: 5_000 },
+          { start: 121, end: 131, rateBps: 20_000 },
+        ],
+      },
+    };
+    const once = settle(initial, 150);
+    let repeated = initial;
+    for (let now = 102; now <= 150; now++) repeated = settle(repeated, now);
+    expect(repeated.stamina).toEqual(once.stamina);
+    expect(repeated.boosts).toEqual(once.boosts);
+    expect(once.stamina).toEqual({ amount: 6n, settled_at: 150, remainder: 459937 });
+  });
+
+  it("inherits a vacated slot's effect-adjusted bar without minting stamina", () => {
+    const slot = {
+      slot: 0,
+      inherited: knight(0, 101).stamina,
+      effects: { until: 300, windows: [{ start: 101, end: 161, rateBps: 5_000 }] },
+    };
+    expect(musterStamina(slot, { category: TroopType.Knight, tier: TroopTier.T1 }, 161, rules, 0, 60)).toEqual({
+      amount: 10,
+      max: 120,
+    });
   });
 });

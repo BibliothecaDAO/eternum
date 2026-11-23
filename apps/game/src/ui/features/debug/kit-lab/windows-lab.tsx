@@ -5,13 +5,9 @@ import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useDocumentClass } from "@/hooks/use-document-class";
 import { SurfaceHost } from "@/ui/design-system/molecules/popover";
 import { Tooltip } from "@/ui/design-system/molecules/tooltip";
-import { CraftRelicPopup } from "@/ui/features/economy/resources/craft-relic-popup";
-import { RelicActivationPopup } from "@/ui/features/economy/resources/relic-activation-popup";
-import { MarketModal } from "@/ui/features/economy/trading/market-modal";
 import { TransferAutomationAdvancedModal } from "@/ui/features/economy/transfers/transfer-automation-modal";
 import { openTransfer } from "@/ui/features/economy/transfers/transfer-window";
 import { RealmNumberPicker } from "@/ui/features/game-entry/realm-number-picker";
-import { RelicActivationSelector } from "@/ui/features/relics/components/relic-activation-selector";
 import { ProductionModal } from "@/ui/features/settlement/production/production-modal-content";
 import { ProductionPopupShell } from "@/ui/features/settlement/production/production-popup-shell";
 import { RealmAutomationPanel } from "@/ui/features/settlement/production/realm-automation-panel";
@@ -20,23 +16,14 @@ import { ConstructionModal } from "@/ui/features/world/containers/construction-m
 import { buildingCounts } from "@/ui/features/frontier/build/build-fixture";
 import { BuildSheet } from "@/ui/features/frontier/build/build-sheet";
 import { HelpModal } from "@/ui/features/military/components/help-modal";
-import { ResourceSwap } from "@/ui/features/economy/banking/swap";
 import { SettingsPanel } from "@/ui/modules/settings/settings";
 import { createGameViews, type GameClient, structureMapPosition } from "@bibliothecadao/eternum";
 import type { GameClientSetup, NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import {
-  ActorType,
-  BuildingType,
-  EntityType,
-  RelicRecipientType,
-  ResourcesIds,
-  StructureType,
-  TileOccupier,
-} from "@bibliothecadao/types";
+import { ActorType, BuildingType, ResourcesIds, StructureType, TileOccupier } from "@bibliothecadao/types";
 import { type ReactNode, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
-import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
+import release from "../../../../../../../contracts/l3/world-native/schema/release-definition.json";
 import { installFixtureGame, PLAYER } from "./fixture-game";
 import { LAB_ARMY_ID, labArmyOut } from "./unified-hud-lab";
 
@@ -105,8 +92,10 @@ const automatedRecipes = () =>
   }));
 
 /** Opens a window on the popover host, as the game's buttons open it. */
+const withBigAmounts = (costs: readonly { resource_type: number; amount: string }[]) =>
+  costs.map((cost) => ({ ...cost, amount: BigInt(cost.amount) }));
+
 const openWindow = (id: string, content: ReactNode) => usePopoverStore.getState().openSurface({ id, content });
-const close = () => usePopoverStore.getState().close();
 
 /** Opens a window that lives on the popover host, the way its button opens it in the game. */
 /** Two realm relics the lab army carries, its load and their weight rules, so its relic tab has something to send home. */
@@ -122,7 +111,7 @@ const armyRelics = (): unknown[] => [
     key: `0x9c${resource}`,
     value: { game_id: 1, entity_id: LAB_ARMY_ID, resource_type: resource, balance: String(2n * 1_000_000_000n) },
   })),
-  ...preset.resources
+  ...release.definition.resources.resources
     .filter((rule) => ARMY_RELICS.includes(rule.resource_type))
     .map((rule) => ({ model: "ResourceRule", key: `0x5${rule.resource_type}`, value: { ...rule, game_id: 1 } })),
 ];
@@ -184,69 +173,11 @@ const secondArmyAndRelics = (store: NativeFactStore): unknown[] => {
       key: `0x9e${resource}`,
       value: { game_id: 1, entity_id: LAB_ARMY_ID, resource_type: resource, balance: String(3n * 1_000_000_000n) },
     })),
-    ...preset.resources
+    ...release.definition.resources.resources
       .filter((rule) => ARMY_ONLY_RELICS.includes(rule.resource_type))
       .map((rule) => ({ model: "ResourceRule", key: `0x5${rule.resource_type}`, value: { ...rule, game_id: 1 } })),
   ];
 };
-
-/** A bank three tiles from the lab realm, its fees, a Wood market, and the realm's LORDS and donkeys to trade with. */
-const BANK_ID = 60;
-const bankBeside = (store: NativeFactStore): unknown[] => {
-  const realm = store.require("Structure", { game_id: 1, entity_id: REALM });
-  const site = structureMapPosition(store, realm)!;
-  const precision = 1_000_000_000n;
-  const held = (resource: number, amount: bigint) => ({
-    model: "ResourceBalance",
-    key: `0x9f${resource}`,
-    value: { game_id: 1, entity_id: REALM, resource_type: resource, balance: String(amount * precision) },
-  });
-  return [
-    {
-      model: "Structure",
-      key: "0x9f0",
-      value: { ...realm, entity_id: BANK_ID, base: { ...realm.base, category: StructureType.Bank } },
-    },
-    {
-      model: "TileOccupancy",
-      key: "0x9f1",
-      value: {
-        game_id: 1,
-        alt: false,
-        col: site.x + 3,
-        row: site.y,
-        entity_id: BANK_ID,
-        category: TileOccupier.Bank,
-        is_structure: true,
-      },
-    },
-    {
-      model: "BankRules",
-      key: "0x9f2",
-      value: { game_id: 1, lp_fee_num: 3, lp_fee_denom: 100, owner_fee_num: 1, owner_fee_denom: 100 },
-    },
-    {
-      model: "Market",
-      key: "0x9f3",
-      value: {
-        game_id: 1,
-        resource_type: ResourcesIds.Wood,
-        lords: String(30_000n * precision),
-        resource: String(1_000_000n * precision),
-        shares: "1",
-      },
-    },
-    held(ResourcesIds.Lords, 5_000n),
-    held(ResourcesIds.Donkey, 40n),
-  ];
-};
-
-/** The bank's swap, as the Market's AMM tab draws it, on the lab realm. */
-const BankSwap = () => (
-  <div className="mx-auto w-[32rem] p-3">
-    <ResourceSwap entityId={REALM} listResourceId={ResourcesIds.Wood} />
-  </div>
-);
 
 /** The transfer between the lab army, out beside the realm's site, and the realm (or, `toArmy`, the army beside it). */
 const ArmyTransfer = ({ toArmy = false }: { toArmy?: boolean }) => {
@@ -310,8 +241,6 @@ const SURFACES: Record<string, { name: string; draw: () => ReactNode }> = {
   "army-transfer": { name: "Army transfer", draw: () => <ArmyTransfer /> },
   // The same window between two of the realm's armies, relics in the first: the receiving army's load bar draws.
   "army-to-army": { name: "Army to army", draw: () => <ArmyTransfer toArmy /> },
-  // The bank's swap on the lab realm, a bank beside it and a Wood market: its price and the donkeys a pickup takes.
-  "bank-swap": { name: "Bank swap", draw: () => <BankSwap /> },
   // Frontier's build sheet on its own realm, two farms standing, so a farm's price is raised above its first.
   "frontier-build": { name: "Frontier build", draw: () => <FrontierBuild /> },
   "structure-edit": {
@@ -326,57 +255,6 @@ const SURFACES: Record<string, { name: string; draw: () => ReactNode }> = {
     ),
   },
   "transfer-automation": { name: "Transfer automation", draw: () => <TransferAutomationAdvancedModal /> },
-  "craft-relic": {
-    name: "Craft relic",
-    draw: () => (
-      <Opened open={() => openWindow("craft-relic", <CraftRelicPopup structureId={REALM} onClose={close} />)} />
-    ),
-  },
-  "activate-relic": {
-    name: "Activate relic",
-    draw: () => (
-      <Opened
-        open={() =>
-          openWindow(
-            "activate-relic",
-            <RelicActivationPopup
-              entityId={REALM}
-              entityOwnerId={REALM}
-              recipientType={RelicRecipientType.Structure}
-              relicId={ResourcesIds.ProductionRelic1}
-              relicBalance={2}
-              onClose={close}
-            />,
-          )
-        }
-      />
-    ),
-  },
-  "relic-target": {
-    name: "Relic target",
-    draw: () => (
-      <Opened
-        open={() =>
-          openWindow(
-            "relic-target",
-            <RelicActivationSelector
-              resourceId={ResourcesIds.ProductionRelic1}
-              holders={[
-                {
-                  entityId: REALM,
-                  held: 2,
-                  recipientType: RelicRecipientType.Structure,
-                  entityType: EntityType.STRUCTURE,
-                },
-              ]}
-              onClose={close}
-            />,
-          )
-        }
-      />
-    ),
-  },
-  market: { name: "Market", draw: () => <Opened open={() => openWindow("market", <MarketModal />)} /> },
   // The header's Settings, at the width and in the look of the popover it opens in.
   settings: {
     name: "Settings",
@@ -402,21 +280,17 @@ export const WindowsLab = () => {
   const { surface = "build" } = useParams();
   const [store] = useState(() => {
     const fixture = installFixtureGame();
-    // What the windows read that the fixture leaves out: the research a relic costs, each building's rule, and the
-    // player's points, which Settings' card ranks.
     fixture.applyFacts([
-      { model: "ArtificerCost", key: "0xa", value: { game_id: 1, research: 500n } },
-      { model: "PlayerPoints", key: "0xc", value: { game_id: 1, address: BigInt(PLAYER), points: 35_000_000n } },
       ...automatedRecipes(),
-      ...preset.buildings.map(({ category, rule }) => ({
+      ...release.definition.structures.buildings.map(({ category, rule }) => ({
         model: "BuildingRule",
         key: `0xb${category}`,
         value: {
           ...rule,
           game_id: 1,
           category,
-          simple_cost: rule.simple_cost.map((cost) => ({ ...cost, amount: BigInt(cost.amount) })),
-          complex_cost: rule.complex_cost.map((cost) => ({ ...cost, amount: BigInt(cost.amount) })),
+          simple_cost: withBigAmounts(rule.simple_cost),
+          complex_cost: withBigAmounts(rule.complex_cost),
         },
       })),
     ] as never);
@@ -424,7 +298,6 @@ export const WindowsLab = () => {
     if (surface === "frontier-build") fixture.applyFacts(twoFarms() as never);
     if (surface === "army-to-army")
       fixture.applyFacts([...labArmyOut(fixture), ...secondArmyAndRelics(fixture)] as never);
-    if (surface === "bank-swap") fixture.applyFacts(bankBeside(fixture) as never);
     if (surface === "army-transfer") fixture.applyFacts([...labArmyOut(fixture), ...armyRelics()] as never);
     installLabGameClient(fixture);
     return fixture;

@@ -1,61 +1,67 @@
 #[starknet::contract]
 pub mod BridgeLogic {
-    #[cfg(feature: "test_support")]
-    use starknet::ContractAddress;
-    use crate::logic::bridge::BridgeState;
+    use crate::logic::banes::BaneState;
     use crate::logic::entry::EntryAdministration;
+    use crate::logic::guilds::GuildState;
+    use crate::logic::quests::QuestState;
     use crate::logic::release::ReleaseState;
-    use crate::logic::withdrawals::WithdrawalState;
     component!(path: ReleaseState, storage: release, event: ReleaseEvent);
-    component!(path: WithdrawalState, storage: withdrawals, event: WithdrawalEvent);
-    component!(path: BridgeState, storage: bridge, event: BridgeEvent);
     impl LifeInternal = ReleaseState::InternalImpl<ContractState>;
-    impl WithdrawalInternal = WithdrawalState::InternalImpl<ContractState>;
-    #[abi(embed_v0)]
-    impl Bridge = BridgeState::BridgeImpl<ContractState>;
-    #[abi(embed_v0)]
-    impl BankWithdrawal = BridgeState::BankWithdrawalImpl<ContractState>;
-    #[abi(embed_v0)]
-    impl PresetWithdrawals of crate::presets::IPresetWithdrawals<ContractState> {
-        fn store_withdrawal_preset(
-            ref self: ContractState, commitment: felt252, withdrawals: crate::presets::WithdrawalPreset,
-        ) {
-            crate::logic::preset_record::store_withdrawals(commitment, withdrawals);
-        }
-    }
+
     component!(path: EntryAdministration, storage: administration, event: AdministrationEvent);
     #[abi(embed_v0)]
     impl LedgerOperator = EntryAdministration::LedgerOperatorImpl<ContractState>;
-    impl AdministrationInternal = EntryAdministration::InternalImpl<ContractState>;
+    #[abi(embed_v0)]
+    impl HomeGrants = EntryAdministration::HomeGrantsImpl<ContractState>;
+    #[abi(embed_v0)]
+    impl ResourceContext = EntryAdministration::ResourceContextImpl<ContractState>;
+    component!(path: BaneState, storage: banes, event: BaneEvent);
+    #[abi(embed_v0)]
+    impl BaneEffects = BaneState::EffectsImpl<ContractState>;
+    #[abi(embed_v0)]
+    impl BaneCalendar = BaneState::CalendarImpl<ContractState>;
+    #[abi(embed_v0)]
+    impl TeamBanes = BaneState::TeamImpl<ContractState>;
+    component!(path: QuestState, storage: quests, event: QuestEvent);
+    #[abi(embed_v0)]
+    impl QuestProgress = QuestState::ProgressImpl<ContractState>;
+    #[abi(embed_v0)]
+    impl DailyQuest = QuestState::DailyQuestImpl<ContractState>;
+    component!(path: GuildState, storage: guilds, event: GuildEvent);
+    #[abi(embed_v0)]
+    impl Guilds = GuildState::GuildsImpl<ContractState>;
+    #[abi(embed_v0)]
+    impl SealShop of crate::fragments::ISealShop<ContractState> {
+        fn buy_seal(
+            ref self: ContractState,
+            game_id: u32,
+            actor: starknet::ContractAddress,
+            context: crate::commands::ActionContext,
+        ) {
+            crate::logic::fragments::buy_seal(game_id, actor, context);
+        }
+    }
     #[storage]
     #[allow(starknet::colliding_storage_paths)]
     struct Storage {
         #[substorage(v0)]
+        guilds: GuildState::Storage,
+        #[substorage(v0)]
         administration: EntryAdministration::Storage,
         #[substorage(v0)]
+        quests: QuestState::Storage,
+        #[substorage(v0)]
+        banes: BaneState::Storage,
+        #[substorage(v0)]
         release: ReleaseState::Storage,
-        #[substorage(v0)]
-        withdrawals: WithdrawalState::Storage,
-        #[substorage(v0)]
-        bridge: BridgeState::Storage,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
+        GuildEvent: GuildState::Event,
         AdministrationEvent: EntryAdministration::Event,
+        QuestEvent: QuestState::Event,
+        BaneEvent: BaneState::Event,
         ReleaseEvent: ReleaseState::Event,
-        WithdrawalEvent: WithdrawalState::Event,
-        BridgeEvent: BridgeState::Event,
-    }
-    #[abi(embed_v0)]
-    impl Withdrawals of crate::withdrawals::IWithdrawals<ContractState> {
-        #[cfg(feature: "test_support")]
-        fn withdrawal_rules(self: @ContractState, game_id: u32) -> crate::withdrawals::WithdrawalRules {
-            self.withdrawals.rules(game_id)
-        }
-        #[cfg(feature: "test_support")]
-        fn resource_token(self: @ContractState, key: crate::market::MarketKey) -> ContractAddress {
-            self.withdrawals.token(key)
-        }
     }
 }

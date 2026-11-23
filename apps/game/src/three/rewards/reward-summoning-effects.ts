@@ -1,12 +1,4 @@
-import {
-  AdditiveBlending,
-  BufferGeometry,
-  Color,
-  DoubleSide,
-  Float32BufferAttribute,
-  Vector3,
-  type MeshStandardMaterial,
-} from "three";
+import { Color, DoubleSide, type MeshStandardMaterial } from "three";
 import { MeshBasicNodeMaterial } from "three/webgpu";
 import { color, mix, positionLocal, smoothstep, uniform, uv, vec3 } from "three/tsl";
 import { FrostedStandardNodeMaterial } from "../effects/game-map-material-library";
@@ -66,41 +58,6 @@ export function createRuneFlameMaterials() {
   return { glyph, flame, clock, density, rise, dissolve, glyphStrength, rarityTint, rarityAmount };
 }
 
-/** Sources are exported rune vertices, so flames follow the actual moving inscriptions. */
-export function buildRuneFlames(sources: Vector3[]): BufferGeometry {
-  const vertices: number[] = [];
-  const coordinates: number[] = [];
-  const indices: number[] = [];
-  for (const [index, source] of sources.entries()) {
-    const angle = Math.atan2(source.z, source.x);
-    const height = 1.6 + 0.15 * Math.sin(index * 2.4);
-    const start = vertices.length / 3;
-    for (let step = 0; step <= 24; step++) {
-      const t = step / 24;
-      const curl = angle + t * 1.8;
-      const radius = Math.hypot(source.x, source.z) * (1 - t * 0.3) + Math.sin(Math.PI * t) * 0.08;
-      const width = 0.006 + Math.sin(Math.PI * t) * 0.24;
-      for (const side of [-1, 1]) {
-        vertices.push(
-          Math.cos(curl) * radius + side * width * Math.sin(curl),
-          source.y + t * height,
-          Math.sin(curl) * radius - side * width * Math.cos(curl),
-        );
-        coordinates.push((side + 1) / 2, t);
-      }
-      if (step < 24) {
-        const a = start + step * 2;
-        indices.push(a, a + 1, a + 2, a + 1, a + 3, a + 2);
-      }
-    }
-  }
-  const geometry = new BufferGeometry();
-  geometry.setAttribute("position", new Float32BufferAttribute(vertices, 3));
-  geometry.setAttribute("uv", new Float32BufferAttribute(coordinates, 2));
-  geometry.setIndex(indices);
-  return geometry;
-}
-
 export function createArcaneStoneMaterial(
   source: MeshStandardMaterial,
   energy: ReturnType<typeof createRuneFlameMaterials>,
@@ -116,41 +73,4 @@ export function createArcaneStoneMaterial(
     energy.glyphStrength.div(0.8),
   );
   return material;
-}
-
-/** The light that pours from an opening chest; `tint` colours it, as a Frontier chest's rarity does. */
-export function createChestRadiance() {
-  const strength = uniform(0);
-  const tint = uniform(new Color(1, 1, 1));
-  // How far the light has turned from its authored lavender to `tint` (0–1).
-  const tinted = uniform(0);
-  // How far the beams reach above the lid (1 is the authored glow) and how bright they burn.
-  const reach = uniform(1);
-  const boost = uniform(1);
-  const material = new MeshBasicNodeMaterial({
-    transparent: true,
-    depthWrite: false,
-    side: DoubleSide,
-    forceSinglePass: true,
-    blending: AdditiveBlending,
-  });
-  const edge = smoothstep(0.05, 0.5, uv().x.sub(0.5).abs()).oneMinus();
-  const authored = mix(color("#edcfff"), color("#913aff"), uv().y);
-  material.colorNode = mix(authored, tint.mul(uv().y.oneMinus().mul(0.6).add(0.7)), tinted);
-  material.opacityNode = edge.mul(uv().y.oneMinus().pow(2)).mul(strength).mul(0.7).mul(boost);
-  const lidHeight = 0.51;
-  material.positionNode = vec3(
-    positionLocal.x,
-    positionLocal.y.sub(lidHeight).mul(reach).add(lidHeight),
-    positionLocal.z,
-  );
-  material.toneMapped = false;
-  const geometry = new BufferGeometry();
-  geometry.setAttribute(
-    "position",
-    new Float32BufferAttribute([-0.36, 0.51, 0, 0.36, 0.51, 0, -0.62, 1.45, 0, 0.62, 1.45, 0], 3),
-  );
-  geometry.setAttribute("uv", new Float32BufferAttribute([0, 0, 1, 0, 0, 1, 1, 1], 2));
-  geometry.setIndex([0, 1, 2, 1, 3, 2]);
-  return { material, geometry, strength, tint, tinted, reach, boost };
 }

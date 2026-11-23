@@ -18,12 +18,14 @@ import { CodeStep } from "./code-step";
 import { claimDefaultName } from "./default-name";
 import { useConnectStore } from "./connect";
 import { ShellWindow } from "../frame/shell-window";
+import { SignInStage } from "./sign-in-stage";
 import { opensDiscordApp } from "./discord-app";
 import { useSocialAttempt } from "./social-attempt";
 import { forgetSocialStart, pendingSocialStart, rememberSocialStart, type SocialPending } from "./social-pending";
 import { HandoffStep } from "./handoff-step";
 import { ProfileStep } from "./profile-step";
 import { PayoutWalletPanel } from "../profile/payout-wallet-panel";
+import { useStandingPrompt } from "../standing-prompts";
 import { StartStep } from "./start-step";
 
 /**
@@ -40,7 +42,7 @@ import { StartStep } from "./start-step";
  */
 export const ConnectFlow = () => {
   const { status, session } = useIdentitySession();
-  const { request, nameDismissed, walletDismissed, close, dismissWallet } = useConnectStore();
+  const { request, nameDismissed, close } = useConnectStore();
   const returned = useReturnedFailure();
   const refresh = useIdentitySessionStore((state) => state.refresh);
   const named = session !== null && identityUsername(session) !== null;
@@ -55,12 +57,13 @@ export const ConnectFlow = () => {
   }, [returned.line, endPending]);
   useGoOnOnceNamed(named, pending, endPending);
   const naming = useDefaultName(session, named, refresh);
+  const invitation = useStandingPrompt("wallet-invitation", named && payoutAddressOf(session.user) === null);
 
   if (status === "loading") return null;
   if (named) {
-    if (walletDismissed || payoutAddressOf(session.user) !== null) return null;
+    if (!invitation.open) return null;
     return (
-      <ShellWindow title={WALLET_WORDS.yourWallet} onClose={dismissWallet}>
+      <ShellWindow title={WALLET_WORDS.yourWallet} onClose={invitation.close}>
         <PayoutWalletPanel wallet={null} email={session.user.email} onChanged={() => void refresh()} />
       </ShellWindow>
     );
@@ -68,9 +71,9 @@ export const ConnectFlow = () => {
   if (session) {
     if (naming !== "refused" || (nameDismissed && !request)) return null;
     return (
-      <ShellWindow title={SIGN_IN_WORDS.yourName} onClose={close}>
+      <SignInStage title={SIGN_IN_WORDS.yourName} onClose={close}>
         <ProfileStep session={session} onClaimed={() => void refresh()} />
-      </ShellWindow>
+      </SignInStage>
     );
   }
   if (!request && !returned.line && !pending) return null;
@@ -183,7 +186,7 @@ const AnonymousConnect = ({
 
   if (step.kind === "handoff")
     return (
-      <ShellWindow title={SIGN_IN_PROVIDER_NAMES[step.provider]} onClose={onClose}>
+      <SignInStage title={SIGN_IN_PROVIDER_NAMES[step.provider]} onClose={onClose}>
         <HandoffStep
           provider={step.provider}
           checking={running === "handoff"}
@@ -194,11 +197,11 @@ const AnonymousConnect = ({
           onBrowser={usesDiscordApp(step.provider) ? () => openWebsite("discord") : undefined}
           onTyping={() => setError(null)}
         />
-      </ShellWindow>
+      </SignInStage>
     );
   if (step.kind === "code")
     return (
-      <ShellWindow title={SIGN_IN_WORDS.codeSent} onClose={onClose}>
+      <SignInStage title={SIGN_IN_WORDS.codeSent} onClose={onClose}>
         <CodeStep
           email={step.email}
           expiresAt={step.expiresAt}
@@ -215,10 +218,15 @@ const AnonymousConnect = ({
             setStep({ kind: "start" });
           }}
         />
-      </ShellWindow>
+      </SignInStage>
     );
   return (
-    <ShellWindow title={WORDS.connect} onClose={onClose}>
+    <SignInStage
+      title={WORDS.connect}
+      heading={SIGN_IN_WORDS.enterHeading}
+      subtitle={SIGN_IN_WORDS.enterSubtitle}
+      onClose={onClose}
+    >
       <StartStep
         sending={running === "send-code" || running === "social"}
         preparing={attempt.asking}
@@ -228,7 +236,7 @@ const AnonymousConnect = ({
         onProvider={(provider) => choose(() => continueWith(provider))}
         onEmail={(email) => choose(() => emailCode(email))}
       />
-    </ShellWindow>
+    </SignInStage>
   );
 };
 

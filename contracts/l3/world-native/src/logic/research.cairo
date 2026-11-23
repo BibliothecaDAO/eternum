@@ -32,6 +32,32 @@ pub fn write(key: ResourceKey, value: RealmKnowledge) {
     crate::logic::structures::StructureState::emit(event);
 }
 
-pub fn price(game_id: u32, row: u8, tier: u8) -> ResearchPrice {
-    crate::logic::preset_record::for_game(game_id).research_prices.read((row, tier)).expect('missing research price')
+#[cfg(feature: "blitz")]
+pub fn ration_discount(_key: ResourceKey, _per_troops: u128) -> u128 {
+    0
+}
+
+#[cfg(not(feature: "blitz"))]
+#[inline(always)]
+pub fn ration_discount(key: ResourceKey, per_troops: u128) -> u128 {
+    let rations: u128 = crate::research::tier(learned(key), crate::research::ROW_RATIONS).into();
+    crate::logic::buildings::board().ration_step * rations * per_troops
+}
+
+#[cfg(feature: "blitz")]
+pub fn price(row: u8, tier: u8) -> ResearchPrice {
+    panic!("Blitz has no research")
+}
+
+#[cfg(not(feature: "blitz"))]
+pub fn price(row: u8, tier: u8) -> ResearchPrice {
+    assert!(tier > 0 && tier <= crate::research::max_tier(row), "invalid research tier");
+    let mut first = 0_u32;
+    for earlier in crate::research::ROWS.span() {
+        if *earlier < row {
+            first += crate::research::max_tier(*earlier).into();
+        }
+    }
+    let prices = crate::balance::structures::RESEARCH_PRICES.span();
+    *prices.at(first + tier.into() - 1)
 }

@@ -1,5 +1,5 @@
 import { handlePayoutIdentity } from "./payout-identity";
-import { presentsOperatorToken, SHARE_PATH, VISIT_RECORD_SECONDS } from "@realms-world/identity";
+import { presentsOperatorToken, SHARE_PATH } from "@realms-world/identity";
 
 import { handleAccountDeletion } from "./account-deletion";
 import type { IdentityAuth } from "./auth";
@@ -8,31 +8,31 @@ import { routeChat } from "./chat/routes";
 import { handleBotDeviceApproval, handleDeviceChange } from "./devices";
 import { claimSocialHandoff, returnFromProvider, startSocialSignIn } from "./social-handoff";
 import {
-  handleAdmitShard,
+  directoryShard,
   handleDirectory,
   handleDirectoryHistory,
-  handleRegisterPendingShard,
-  handleShardStatus,
-  registeredShards,
+  handleRegisterShard,
+  handleRemoveShard,
 } from "./directory";
 import { ACCOUNT_CLASS_HASH, socialProvidersOf, type IdentityEnv } from "./env";
 import { json } from "./http";
 import { keepBrowser, noteBrowser } from "./browsers";
 import { handleBuildOrders } from "./build-orders";
+import { avnuQuote } from "./lords-price";
+import { handleFragmentPrice } from "./fragment-price";
 import {
-  campaignStandings,
-  hasCampaignHomeSource,
-  homeSourceOf,
-  playerAccounts,
-  sitesClearedOn,
-} from "./campaign-entry";
-import {
-  handleCampaignReferral,
-  handleCampaignReferrer,
-  settleReferrals,
-  type ReferralWorld,
-} from "./campaign-referrals";
-import { handleCampaignDraw, handleCampaignRedeem } from "./campaign-tickets";
+  fragmentPaymentWorldOf,
+  handleFragmentPay,
+  handleFragmentPayment,
+  handleShopRefunded,
+  handleShopRefunds,
+  lordsPayeeOf,
+} from "./fragment-payments";
+import { shopAccessOf } from "./shop-game";
+import { handlePurchaseCheck, handleStoreReceipt, storeVerifiersOf } from "./store-receipts";
+import { handleOpeningProgress } from "./opening-progress";
+import { handleOrderIntent } from "./order-intent";
+import { handleSealCode, sealCodeWorldOf } from "./seal-codes";
 import { handleNotificationPreferences } from "./notification-preferences";
 import { handleNewsEmailOptOut, NEWS_EMAIL_OPT_OUT_PATH } from "./news-email-opt-out";
 import { handleProfile, handleProfiles } from "./profiles";
@@ -43,11 +43,12 @@ import { handlePushSubscriptions } from "./push-notifications";
 import { handleShareCard, handleShareCardUpload, handleSharedPage } from "./share-cards";
 import {
   handleCreateShare,
+  handleJoinedShare,
   handleShareReport,
   handleSharePosted,
   handleShareTally,
   handleShareVisit,
-  type ShareWorld,
+  shareWorldOf,
 } from "./shares";
 import { handleWalletCounts } from "./wallet-counts";
 
@@ -62,10 +63,6 @@ interface WorkerPlatform {
   }>;
 }
 
-/**
- * Every /api route: identity under /api/auth, a news email's stop link, then the account's deletion, devices, profiles,
- * chat, notification settings, build orders, campaign tickets and the directory.
- */
 export const routeIdentityRequest = async (
   request: Request,
   env: IdentityEnv,
@@ -114,7 +111,6 @@ export const routeIdentityRequest = async (
   if (pathname === "/api/devices/bots" && request.method === "POST") {
     if (!(await isOperator(env, request))) return json({ error: "unauthorized" }, 401);
     return handleBotDeviceApproval(request, {
-      db: env.DB,
       guardian: env.GUARDIAN,
       accountClassHash: ACCOUNT_CLASS_HASH,
     });
@@ -142,24 +138,32 @@ export const routeIdentityRequest = async (
   if (pathname.startsWith("/api/chat/")) return routeChat(request, env, auth, pathname);
   if (pathname === "/api/notifications/preferences") return handleNotificationPreferences(request, auth, env.DB);
   if (pathname === "/api/build-orders") return handleBuildOrders(request, auth, env.DB);
-  if (pathname === "/api/operator/campaign-draw" && request.method === "POST") {
-    if (!(await isOperator(env, request))) return json({ error: "unauthorized" }, 401);
-    return handleCampaignDraw(request, env.DB, (realmsId, presets) =>
-      hasCampaignHomeSource(env, platform.fetchShard, realmsId, presets),
-    );
-  }
-  if (pathname === "/api/campaigns/redeem") {
-    const world = referralWorld(env, platform);
-    return handleCampaignRedeem(request, auth, env.DB, {
-      hasSource: (realmsId, presets) => hasCampaignHomeSource(env, platform.fetchShard, realmsId, presets),
-      settle: (realmsId, campaign) => settleReferrals(world, campaign, realmsId, Math.floor(Date.now() / 1000)),
+  if (pathname === "/api/opening") return handleOpeningProgress(request, auth, env.DB);
+  if (pathname === "/api/order-intent") return handleOrderIntent(request, auth, env.DB);
+  if (pathname === "/api/seal-code") return handleSealCode(request, auth, sealCodeWorldOf(env, platform.fetchShard));
+  if (pathname === "/api/shop/purchase-check")
+    return handlePurchaseCheck(request, auth, { access: shopAccessOf(env, platform.fetchShard, nowSeconds) });
+  if (pathname === "/api/shop/receipt")
+    return handleStoreReceipt(request, auth, {
+      db: env.DB,
+      access: shopAccessOf(env, platform.fetchShard, nowSeconds),
+      verifiers: storeVerifiersOf(env),
+      now: nowSeconds,
     });
-  }
-  if (pathname === "/api/campaigns/referral" && request.method === "GET")
-    return handleCampaignReferral(request, auth, referralWorld(env, platform));
-  if (pathname.startsWith("/api/campaigns/referral/") && request.method === "GET") {
-    if (!(await withinPublicBudget(env, "referral", request))) return json({ error: "too_many_requests" }, 429);
-    return handleCampaignReferrer(env.DB, new URL(request.url), pathname.slice("/api/campaigns/referral/".length));
+  if (pathname === "/api/shop/fragments")
+    return handleFragmentPrice(request, auth, {
+      db: env.DB,
+      access: shopAccessOf(env, platform.fetchShard, nowSeconds),
+      readLordsQuote: avnuQuote,
+      payee: lordsPayeeOf(env),
+      now: nowSeconds,
+    });
+  if (pathname === "/api/shop/fragments/pay") return handleFragmentPay(request, auth, fragmentPaymentWorldOf(env));
+  if (pathname.startsWith("/api/shop/fragments/pay/"))
+    return handleFragmentPayment(request, auth, fragmentPaymentWorldOf(env));
+  if (pathname === "/api/operator/shop/refunds" && (request.method === "GET" || request.method === "POST")) {
+    if (!(await isOperator(env, request))) return json({ error: "unauthorized" }, 401);
+    return request.method === "GET" ? handleShopRefunds(env.DB) : handleShopRefunded(request, env.DB);
   }
   if (pathname.startsWith("/api/shares") || pathname === "/api/operator/shares")
     return routeShares(request, env, auth, platform, pathname);
@@ -178,27 +182,28 @@ export const routeIdentityRequest = async (
     if (!(await isOperator(env, request))) return json({ error: "unauthorized" }, 401);
     return handleWalletCounts(env.DB);
   }
-  if (pathname === "/api/directory/shards" && request.method === "GET") {
-    if (!(await isOperator(env, request))) return json({ error: "unauthorized" }, 401);
-    return json({ shards: await registeredShards(env.DB) });
-  }
-  if (pathname.startsWith("/api/directory/shards") && request.method === "POST") {
-    if (!(await isOperator(env, request))) return json({ error: "unauthorized" }, 401);
-    if (pathname === "/api/directory/shards" || pathname === "/api/directory/shards/pending") {
-      const admit = pathname.endsWith("/pending") ? handleRegisterPendingShard : handleAdmitShard;
-      return admit(request, env.DB, platform.fetchShard, {
-        accountClassHash: ACCOUNT_CLASS_HASH,
-        guardianPublicKey: await env.GUARDIAN.publicKey(),
-      });
-    }
-    if (pathname === "/api/directory/shards/status") return handleShardStatus(request, env.DB);
-  }
+  if (pathname === "/api/directory/shard") return routeDirectoryShard(request, env, platform);
   if (pathname === "/api/guardian" && request.method === "GET") {
     return json({ publicKey: await env.GUARDIAN.publicKey(), accountClassHash: ACCOUNT_CLASS_HASH });
   }
   if (pathname === "/api/health" && request.method === "GET") {
     return json({ service: "realms-identity", environment: env.ENVIRONMENT, version: env.VERSION.id });
   }
+  return json({ error: "not_found" }, 404);
+};
+
+const routeDirectoryShard = async (request: Request, env: IdentityEnv, platform: WorkerPlatform) => {
+  if (!(await isOperator(env, request))) return json({ error: "unauthorized" }, 401);
+  if (request.method === "GET") return json({ shard: await directoryShard(env.DB) });
+  if (request.method === "PUT")
+    return handleRegisterShard(
+      request,
+      env.DB,
+      platform.fetchShard,
+      { accountClassHash: ACCOUNT_CLASS_HASH, guardianPublicKey: await env.GUARDIAN.publicKey() },
+      env.SHARD_NOTIFIER,
+    );
+  if (request.method === "DELETE") return handleRemoveShard(env.DB, env.SHARD_NOTIFIER);
   return json({ error: "not_found" }, 404);
 };
 
@@ -223,6 +228,8 @@ const codeAccess = async (env: IdentityEnv, request: Request, sendsCode: boolean
   return null;
 };
 
+const nowSeconds = () => Math.floor(Date.now() / 1000);
+
 const isOperator = (env: IdentityEnv, request: Request) => presentsOperatorToken(request, env.OPERATOR_TOKEN);
 
 /**
@@ -239,11 +246,13 @@ const routeShares = async (
   const [, , , code, action] = pathname.split("/");
   if (pathname === "/api/operator/shares" && request.method === "GET") {
     if (!(await isOperator(env, request))) return json({ error: "unauthorized" }, 401);
-    return handleShareReport(shareWorld(env, platform));
+    return handleShareReport(shareWorldOf(env, platform.fetchShard));
   }
-  if (pathname === "/api/shares" && request.method === "POST") return handleCreateShare(request, auth, env.DB);
+  if (pathname === "/api/shares" && request.method === "POST")
+    return handleCreateShare(request, auth, shareWorldOf(env, platform.fetchShard));
+  if (pathname === "/api/shares/joined" && request.method === "GET") return handleJoinedShare(request, auth, env.DB);
   if (pathname === "/api/shares" && request.method === "GET")
-    return handleShareTally(request, auth, shareWorld(env, platform));
+    return handleShareTally(request, auth, shareWorldOf(env, platform.fetchShard));
   if (code && action === "posted" && request.method === "POST") return handleSharePosted(request, auth, env.DB, code);
   if (code && action === "card" && request.method === "PUT")
     return handleShareCardUpload(request, auth, env.DB, env.SHARE_CARDS, code);
@@ -255,38 +264,13 @@ const routeShares = async (
   return json({ error: "not_found" }, 404);
 };
 
-/** What share settlement reaches: each link's season board on its shard's Herald. */
-const shareWorld = (env: IdentityEnv, platform: WorkerPlatform): ShareWorld => ({
-  db: env.DB,
-  sitesCleared: (game) => sitesClearedOn(env, platform.fetchShard, game),
-  accountOf: playerAccounts(env),
-});
-
-/** What referral settlement reaches: the shards' Heralds for home sources and season boards, and the relay. */
-const referralWorld = (env: IdentityEnv, platform: WorkerPlatform): ReferralWorld => ({
-  db: env.DB,
-  homeSource: (realmsId, presets) => homeSourceOf(env, platform.fetchShard, realmsId, presets),
-  standings: (presets) => campaignStandings(env, platform.fetchShard, presets),
-  accountOf: playerAccounts(env),
-  upgradeHome: (home) =>
-    env.VALUE_RELAY.fetch("https://value-relay/api/value/operator/campaign-upgrade", {
-      method: "POST",
-      redirect: "manual",
-      headers: { authorization: `Bearer ${env.OPERATOR_TOKEN}`, "content-type": "application/json" },
-      body: JSON.stringify(home),
-    }),
-});
-
-/** Cookie authority is accepted only from the app itself; operator endpoints authenticate a bearer token below. */
+/**
+ * Cookie authority is accepted only from the app itself; every operator route authenticates a bearer token, which a
+ * browser never attaches on its own, so the whole `/api/operator/` prefix is exempt from the origin rule.
+ */
 const requiresSameOrigin = (request: Request, pathname: string): boolean => {
-  const operatorRoute = [
-    "/api/operator/campaign-draw",
-    "/api/operator/chat-retention",
-    "/api/devices/bots",
-    "/api/directory/shards",
-    "/api/directory/shards/status",
-    "/api/directory/shards/pending",
-  ].includes(pathname);
+  const operatorRoute =
+    pathname.startsWith("/api/operator/") || ["/api/devices/bots", "/api/directory/shard"].includes(pathname);
   if (operatorRoute) return false;
   return (
     !["GET", "HEAD", "OPTIONS"].includes(request.method) ||
@@ -315,10 +299,6 @@ const sendCodeWithExpiry = async (request: Request, auth: IdentityAuth): Promise
   );
 };
 
-/**
- * Sessions always expose the current link, with no cached eligibility state. The app reads its session each time it
- * opens, so this is where the browser gets its id and where the account's visit, and the browser it was on, are written.
- */
 const accountSession = async (request: Request, auth: IdentityAuth, db: D1Database): Promise<Response> => {
   const response = await auth.handler(request);
   const body = await response.text();
@@ -327,14 +307,6 @@ const accountSession = async (request: Request, auth: IdentityAuth, db: D1Databa
   const browser = keepBrowser(request, headers);
   const user = (JSON.parse(body || "null") as { user?: { id?: unknown; realmsId?: unknown } } | null)?.user;
   if (response.ok && typeof user?.id === "string" && typeof user.realmsId === "string")
-    await db.batch([noteVisit(db, user.id, Date.now()), noteBrowser(db, user.realmsId, browser)]);
+    await noteBrowser(db, user.realmsId, browser).run();
   return new Response(body, { status: response.status, headers });
 };
-
-/** Writes the account's last visit, at most once per VISIT_RECORD_SECONDS so a page load costs no write most times. */
-const noteVisit = (db: D1Database, userId: string, now: number) =>
-  db
-    .prepare(
-      `UPDATE "user" SET "lastSeenAt" = ?1 WHERE "id" = ?2 AND ("lastSeenAt" IS NULL OR "lastSeenAt" <= ?1 - ?3)`,
-    )
-    .bind(now, userId, VISIT_RECORD_SECONDS * 1000);

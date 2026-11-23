@@ -42,9 +42,8 @@ const asksFirst = (id: string) => {
   return answer;
 };
 
-it("asks before a loss that cannot be undone only in Frontier; Blitz, Eternum and a Duel act at once", () => {
+it("asks before a loss that cannot be undone only in Frontier; Blitz and Eternum act at once", () => {
   expect(asksFirst("frontier")).toBe("true");
   expect(asksFirst("blitz")).toBe("false");
   expect(asksFirst("eternum")).toBe("false");
-  expect(asksFirst("duel")).toBe("false");
 });

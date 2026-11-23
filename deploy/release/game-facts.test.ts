@@ -2,7 +2,6 @@ import { expect, test } from "bun:test";
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { nativeRuleConstants } from "../../contracts/l3/world-native/schema/client.gen";
 import { NativeDecoder } from "../../apps/herald/src/native/decoder";
 import { manifest } from "../../apps/herald/src/native/fixtures";
 import type { FoldCheckpoint, FoldCheckpointRow } from "../../apps/herald/src/types";
@@ -18,10 +17,10 @@ const registry = (game: number, end: number, settled = false) => ({
   key: { game_id: game },
   value: { name: "frontier", end_at: end, settled },
 });
-const pin = (game: number, release: number, commitment = "0x4a") => ({
+const pin = (game: number, release: number) => ({
   entity_id: `0x${game.toString(16)}`,
   key: { game_id: game },
-  value: { release_id: release, preset_commitment: commitment },
+  value: { release_id: release },
 });
 const army = (game: number, id: number, troops: string) => ({
   entity_id: `0x${game.toString(16)}:0x${id.toString(16)}`,
@@ -36,7 +35,7 @@ const lords = (game: number, owner: string, balance: string) => ({
 
 /** A Herald checkpoint holding two games and a deployment-wide row, as Herald saves it. */
 const checkpoint = (
-  { end = OLD_END, release = 3, commitment = "0x4a", armies = [army(1, 7, "4015")], balance = "91" } = {},
+  { end = OLD_END, release = 3, armies = [army(1, 7, "4015")], balance = "91" } = {},
   world = "0x1",
 ): FoldCheckpoint => ({
   version: 2,
@@ -44,7 +43,7 @@ const checkpoint = (
   world_address: world,
   models: [
     { model: "GameRegistry", rows: [registry(1, end), registry(2, 50)] },
-    { model: "GameRelease", rows: [pin(1, release, commitment), pin(2, 3)] },
+    { model: "GameRelease", rows: [pin(1, release), pin(2, 3)] },
     { model: "ExplorerTroops", rows: [...armies, army(2, 9, "10")] },
     { model: "Resource", rows: [lords(1, "0xa", balance)] },
     { model: "Preset", rows: [{ entity_id: "0x5", key: { preset_id: 5 }, value: { commitment: "0x4a" } }] },
@@ -65,7 +64,7 @@ test("a snapshot keeps the game's rows only, with the chain, world and schema th
     gameId: 1,
     models: {
       GameRegistry: { "0x1": { key: { game_id: 1 }, value: { name: "frontier", end_at: OLD_END, settled: false } } },
-      GameRelease: { "0x1": { key: { game_id: 1 }, value: { release_id: 3, preset_commitment: "0x4a" } } },
+      GameRelease: { "0x1": { key: { game_id: 1 }, value: { release_id: 3 } } },
       ExplorerTroops: { "0x1:0x7": { key: { game_id: "1", explorer_id: 7 }, value: { count: "4015", stamina: 120 } } },
       Resource: { "0x1:0xa": { key: { game_id: 1, owner: "0xa" }, value: { balance: "91" } } },
     },
@@ -93,17 +92,6 @@ test("naming the end alone leaves the release pin unexpected", () => {
   });
 });
 
-test("a release that also moves the preset commitment is unexpected", () => {
-  const moved = gameFacts(checkpoint({ end: NEW_END, release: 4, commitment: "0x4b" }), at(200), 1);
-  expect(diffFacts(before, moved, ["GameRegistry.end_at", "GameRelease.release_id"])).toContainEqual({
-    model: "GameRelease",
-    entity: "0x1",
-    kind: "changed",
-    members: ["preset_commitment", "release_id"],
-    expected: false,
-  });
-});
-
 test("a lost army and a zeroed balance are unexpected", () => {
   const after = gameFacts(checkpoint({ end: NEW_END, armies: [], balance: "0" }), at(200), 1);
   expect(diffFacts(before, after, ["GameRegistry"])).toEqual([
@@ -124,13 +112,10 @@ test("a game the checkpoint does not hold is refused", () => {
   expect(() => gameFacts(checkpoint(), at(100), 99)).toThrow("Game 99 is not in this checkpoint");
 });
 
-/** Game 1 settled under a season-closing rule, folded and evicted by Herald itself. */
 function settledFrontierGame(evict: boolean): FoldCheckpoint {
   const rows: Record<string, FoldCheckpointRow[]> = {
     GameRegistry: [{ ...registry(1, OLD_END, true), key: { game_id: "1" } }],
-    SliceRules: [
-      { entity_id: "0x1", key: { game_id: "1" }, value: { mode_rules: String(nativeRuleConstants.SEASON_CLOSE) } },
-    ],
+    SliceRules: [{ entity_id: "0x1", key: { game_id: "1" }, value: { day_unit_seconds: "3600" } }],
     ExplorerTroops: [army(1, 7, "4015")],
   };
   const registryOfModels = new NativeDecoder(manifest).registry;
@@ -142,7 +127,6 @@ function settledFrontierGame(evict: boolean): FoldCheckpoint {
       model: definition.name,
       rows: rows[definition.name] ?? [],
     })),
-    preset_preimages: [],
   });
   if (evict) fold.evictFinalizedGames();
   return fold.checkpoint();

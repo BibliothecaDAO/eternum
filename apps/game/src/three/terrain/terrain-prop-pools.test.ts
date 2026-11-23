@@ -3,15 +3,18 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { TERRAIN_PROP_ARCHETYPE_IDS, type TerrainPropArchetypeId } from "./terrain-prop-catalog";
 import { TERRAIN_PROP_PAGE_SLOT_CAPACITY } from "./terrain-prop-catalog";
+import { loadTerrainPropCatalog } from "./terrain-prop-asset-cache";
 import { TERRAIN_PROP_POOL_PAGE_SLOTS, TerrainPropPools } from "./terrain-prop-pools";
 import type { TerrainPropInstance } from "./terrain-types";
 
 vi.mock("./terrain-prop-asset-cache", async () => {
   const { createTerrainPropCatalogFixture } = await import("./verification/terrain-prop-catalog-fixture");
   const scene = createTerrainPropCatalogFixture();
-  for (const lod of ["near", "far"]) {
-    (scene.getObjectByName(`grass-tuft-${lod}`) as Mesh).geometry.scale(0.12, 0.12, 0.12);
-  }
+  const { geometry } = scene.getObjectByName("grass-tuft") as Mesh;
+  geometry.scale(0.12, 0.12, 0.12);
+  const heights = geometry.getAttribute("position");
+  const baked = Float32Array.from({ length: heights.count }, (_, index) => (heights.getY(index) + 0.06) / 0.12);
+  geometry.setAttribute("_wind_bend", new BufferAttribute(baked, 1));
   return { loadTerrainPropCatalog: () => Promise.resolve({ scene }) };
 });
 
@@ -25,12 +28,26 @@ describe("TerrainPropPools", () => {
   });
   afterAll(() => pools.dispose());
 
-  it("normalizes grass bend from root to tip using the plant’s actual height", () => {
-    const bend = poolMesh(pools, "grass-tuft").geometry.getAttribute("terrainPropBend");
-    const weights = Array.from({ length: bend.count }, (_, index) => bend.getX(index));
-    expect(Math.min(...weights)).toBe(0);
-    expect(Math.max(...weights)).toBe(1);
-    expect(bend.getY(0)).toBeCloseTo(0.12);
+  it("packs each plant's baked bend, its height, its foliage and its glow into one attribute of the pool", async () => {
+    const { scene } = await loadTerrainPropCatalog();
+    const source = (scene.getObjectByName("grass-tuft") as Mesh).geometry;
+    const plant = poolMesh(pools, "grass-tuft").geometry.getAttribute("terrainPropPlant");
+    for (let index = 0; index < plant.count; index++) {
+      expect(plant.getX(index)).toBeCloseTo(source.getAttribute("_wind_bend").getX(index), 6);
+      expect(plant.getY(index)).toBeCloseTo(0.12, 6);
+      expect(plant.getZ(index)).toBe(source.getAttribute("_wind_weight").getX(index));
+      expect(plant.getW(index)).toBe(source.getAttribute("_glow").getX(index));
+    }
+    expect(Math.min(...Array.from({ length: plant.count }, (_, index) => plant.getX(index)))).toBeCloseTo(0, 6);
+    expect(Math.max(...Array.from({ length: plant.count }, (_, index) => plant.getX(index)))).toBeCloseTo(1, 6);
+  });
+
+  it("binds no more vertex buffers to any pool than WebGPU allows", () => {
+    for (const archetype of TERRAIN_PROP_ARCHETYPE_IDS) {
+      const mesh = poolMesh(pools, archetype);
+      const instanceBuffers = [mesh.instanceMatrix, mesh.instanceColor].filter(Boolean).length;
+      expect(Object.keys(mesh.geometry.attributes).length + instanceBuffers, archetype).toBeLessThanOrEqual(8);
+    }
   });
 
   it("keeps world and local instance data isolated when they load the same cached catalog", async () => {
@@ -43,7 +60,10 @@ describe("TerrainPropPools", () => {
       expect(ecologyAttribute(worldTree)).not.toBe(ecologyAttribute(localTree));
       world.writePage("forest", instances("broadleaf", 1));
       local.writePage("snow", [
-        { ...instances("broadleaf", 1)[0], appearance: { moss: 0, snow: 1, tint: [1, 1, 1], windAmplitude: 0 } },
+        {
+          ...instances("broadleaf", 1)[0],
+          appearance: { glow: [0, 0, 0], moss: 0, snow: 1, tint: [1, 1, 1], windAmplitude: 0 },
+        },
       ]);
       expect(ecologyAttribute(worldTree).getZ(0)).toBe(0);
       expect(ecologyAttribute(localTree).getZ(0)).toBe(1);
@@ -91,7 +111,8 @@ describe("TerrainPropPools", () => {
 
     expect(mesh.instanceMatrix.updateRanges).toEqual([{ count: 5 * MATRIX_FLOATS, start: start * MATRIX_FLOATS }]);
     expect(mesh.instanceColor?.updateRanges).toEqual([{ count: 5 * 3, start: start * 3 }]);
-    expect(ecologyRanges(mesh)).toEqual([{ count: 5 * 3, start: start * 3 }]);
+    const ecologyFloats = ecologyAttribute(mesh).itemSize;
+    expect(ecologyRanges(mesh)).toEqual([{ count: 5 * ecologyFloats, start: start * ecologyFloats }]);
     expect(mesh.count).toBe(8);
     expect(pools.getStats().instances).toBe(8);
     expect(pools.getMetrics()).toMatchObject({ paddingInstances: 0, pageWrites: 3 });
@@ -131,18 +152,27 @@ describe("TerrainPropPools", () => {
     pools.releasePage("third");
   });
 
-  it("preserves following transforms and ecology when an earlier page grows, shrinks, leaves and returns", () => {
+  it("preserves following transforms, ecology and glow when an earlier page grows, shrinks, leaves and returns", () => {
     const follower = instances("shrub", 2).map((instance, index) => ({
       ...instance,
       worldX: 80 + index,
-      appearance: { moss: 0.7, snow: 0.9, tint: [0.2, 0.4, 0.8] as [number, number, number], windAmplitude: 0.3 },
+      appearance: {
+        glow: [0.9, 0.5, 0.1 + index * 0.2] as [number, number, number],
+        moss: 0.7,
+        snow: 0.9,
+        tint: [0.2, 0.4, 0.8] as [number, number, number],
+        windAmplitude: 0.3,
+      },
     }));
     pools.writePage("early", instances("shrub", 1));
     pools.writePage("later", follower);
     const mesh = poolMesh(pools, "shrub");
     const matrix = new Matrix4();
     const color = mesh.instanceColor!.array.slice(3, 6);
-    const ecology = ecologyAttribute(mesh).array.slice(3, 6);
+    const ecologyFloats = ecologyAttribute(mesh).itemSize;
+    const ecology = [1, 2].map((slot) =>
+      ecologyAttribute(mesh).array.slice(slot * ecologyFloats, (slot + 1) * ecologyFloats),
+    );
     for (const size of [5, 2, 0, 3]) {
       if (size === 0) pools.releasePage("early");
       else pools.writePage("early", instances("shrub", size));
@@ -151,7 +181,14 @@ describe("TerrainPropPools", () => {
         mesh.getMatrixAt(size + index, matrix);
         expect(matrix.elements[12]).toBe(80 + index);
         expect(mesh.instanceColor!.array.slice((size + index) * 3, (size + index + 1) * 3)).toEqual(color);
-        expect(ecologyAttribute(mesh).array.slice((size + index) * 3, (size + index + 1) * 3)).toEqual(ecology);
+        const row = ecologyAttribute(mesh).array.slice(
+          (size + index) * ecologyFloats,
+          (size + index + 1) * ecologyFloats,
+        );
+        expect(row).toEqual(ecology[index]);
+        expect([...glowAttribute(mesh).array.slice((size + index) * 3, (size + index + 1) * 3)]).toEqual(
+          [0.9, 0.5, 0.1 + index * 0.2].map(Math.fround),
+        );
       }
       expect(pools.getMetrics().paddingInstances).toBe(0);
     }
@@ -176,7 +213,7 @@ describe("TerrainPropPools", () => {
 
 function instances(archetype: TerrainPropArchetypeId, count: number): TerrainPropInstance[] {
   return Array.from({ length: count }, (_, index) => ({
-    appearance: { moss: 0.2, snow: 0, tint: [0.3, 0.5, 0.2], windAmplitude: 0.5 },
+    appearance: { glow: [0, 0, 0], moss: 0.2, snow: 0, tint: [0.3, 0.5, 0.2], windAmplitude: 0.5 },
     archetype,
     ownerCol: index,
     ownerRow: 0,
@@ -193,6 +230,12 @@ function poolMesh(pools: TerrainPropPools, archetype: TerrainPropArchetypeId): I
   const mesh = pools.object3d.getObjectByName(`terrain-prop-pool:${archetype}`);
   if (!(mesh instanceof InstancedMesh)) throw new Error(`missing pool mesh for ${archetype}`);
   return mesh;
+}
+
+function glowAttribute(mesh: InstancedMesh): BufferAttribute {
+  const attribute = mesh.geometry.getAttribute("terrainPropGlow");
+  if (!(attribute instanceof BufferAttribute)) throw new Error(`${mesh.name} has no glow buffer attribute`);
+  return attribute;
 }
 
 function ecologyAttribute(mesh: InstancedMesh): BufferAttribute {

@@ -1,24 +1,19 @@
 import { botRealmsId } from "@realms-world/identity/account";
 import { joinRealmsAccount, operatorRequest, deviceKeyOf } from "@bibliothecadao/eternum/realms-account";
-import { rpcAt, serviceResponseFailure } from "@realms-world/value-ledger";
+import { LAUNCHER_LABEL, rpcAt, serviceResponseFailure, type ShardDirectory } from "@realms-world/value-ledger";
 import { readLaunchShard } from "./executor";
 import type { LaunchEnv } from "./env";
 
-/**
- * The alarm joins a bot account with the Worker's own device: the launcher the world names, or a seater that games
- * name. A bot's first join deploys its account with this device as its first key.
- */
-export async function joinBotAccount(
-  env: Pick<LaunchEnv, "IDENTITY" | "IDENTITY_HTTP" | "BASE_URL" | "OPERATOR_TOKEN" | "LAUNCH_DEPLOYER_PRIVATE_KEY">,
+export async function joinLauncherAccount(
+  env: Pick<LaunchEnv, "IDENTITY_HTTP" | "BASE_URL" | "OPERATOR_TOKEN" | "LAUNCH_DEPLOYER_PRIVATE_KEY">,
+  directory: ShardDirectory,
   chainId: string,
-  label: string,
 ): Promise<string> {
-  const { shard } = await readLaunchShard(env.IDENTITY, chainId);
-  if (shard.status !== "active") throw new Error("launcher_shard_inactive");
+  const { shard } = await readLaunchShard(directory, chainId);
   const account = await joinRealmsAccount({
     provider: rpcAt(shard.rpcUrl) as unknown as Parameters<typeof joinRealmsAccount>[0]["provider"],
     shard,
-    realmsId: botRealmsId(label),
+    realmsId: botRealmsId(LAUNCHER_LABEL),
     device: deviceKeyOf(env.LAUNCH_DEPLOYER_PRIVATE_KEY),
     approve: async (change) => {
       const response = await operatorRequest(
@@ -27,7 +22,7 @@ export async function joinBotAccount(
         {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ label, ...change }),
+          body: JSON.stringify({ label: LAUNCHER_LABEL, ...change }),
         },
         (url, init) => env.IDENTITY_HTTP.fetch(url, init),
       );

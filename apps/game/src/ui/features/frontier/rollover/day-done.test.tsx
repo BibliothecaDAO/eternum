@@ -4,7 +4,7 @@ import { notifyManager, QueryClient, QueryClientProvider } from "@tanstack/react
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { DAY_END_TIMING, RESTING, useDayEndStore } from "@/hooks/store/use-day-end-store";
-import { useAskMemory } from "@/shell/profile/alerts-ask";
+import { accountAnswers, leaveThePage } from "@/shell/standing-prompts-fixture";
 import { dayOf, Position } from "@bibliothecadao/eternum";
 
 import { endedDay } from "../hud/day-clock";
@@ -19,11 +19,40 @@ const herald = vi.hoisted(() => ({
   /** The chain clock the HUD reads. */
   now: 0,
   /** The game's registry: prod's Playtest ended on 31 Oct 09:46Z, long after day 2. */
+  scheduledEndAt: 1793439960,
   game: { end_at: "1793439960" },
 }));
 /** The game's facts as the HUD and the day's turn read them: its registry, and realm 7 owned by the player. */
+const raceFacts = vi.hoisted(() => ({
+  rules: undefined as { game_id: number; stage_height: number } | undefined,
+  deepRules: undefined as { game_id: number; altar_threshold: number; rings: readonly unknown[] } | undefined,
+  heights: new Map<number, { game_id: number; aspect: number; height: number }>(),
+  ownAspect: undefined as { game_id: number; home: bigint; aspect: number } | undefined,
+  members: undefined as { game_id: number; aspect: number; members: number } | undefined,
+}));
 const facts = vi.hoisted(() => ({
-  get: (model: string) => (model === "GameRegistry" ? herald.game : undefined),
+  get: (model: string, key?: { aspect?: number; home?: bigint; entity_id?: bigint }) => {
+    if (model === "GameRegistry")
+      return { ...herald.game, start_main_at: 0, scheduled_end_at: herald.scheduledEndAt, seed: 1n };
+    if (model === "SliceRules") return { day_unit_seconds: 4 * 3_600 };
+    if (model === "SettlementRules") return { spacing: 100 };
+    if (model === "RaceRules") return raceFacts.rules;
+    if (model === "DeepRules") return raceFacts.deepRules;
+    if (model === "AspectHyperstructure" && key?.aspect !== undefined) return raceFacts.heights.get(key.aspect);
+    if (model === "HomeAspect" && key?.home === 7n) return raceFacts.ownAspect;
+    if (model === "AspectMembers" && key?.aspect === raceFacts.members?.aspect) return raceFacts.members;
+    if (model === "Structure" && key?.entity_id === 7n) return REALM_7;
+    return undefined;
+  },
+  // A game whose complete snapshot holds no race rules ranks players by the sites they cleared.
+  absenceKnown: () => ({ known: {} }),
+  requireOrAbsent: (model: string) =>
+    model === "RaceMember"
+      ? { known: { glory: 0n, contribution: 0n } }
+      : model === "AltarBar"
+        ? { known: { charge: 0 } }
+        : { known: {} },
+  inGame: (model: string) => (model === "HomeAspect" && raceFacts.ownAspect ? [raceFacts.ownAspect] : []),
   structuresOwnedBy: () => [{ entity_id: 7 }],
 }));
 
@@ -33,7 +62,15 @@ const alerts = vi.hoisted(() => ({ owner: null as string | null }));
 const shares = vi.hoisted(() => ({
   createShare: vi.fn(async () => "DAY2LINK"),
   sharePosted: vi.fn(async () => {}),
-  shareTally: vi.fn(async () => ({ links: 4, posted: 3, visits: 12, joined: 3, activated: 1 })),
+  shareTally: vi.fn(async () => ({
+    links: 4,
+    posted: 3,
+    visits: 12,
+    joined: 3,
+    activated: 1,
+    friendsPaid: 0,
+    fragmentsEarned: 0,
+  })),
   uploadShareCard: vi.fn(async () => {}),
 }));
 /** The card's JPEG, as the browser makes it from the drawn card (a canvas jsdom has none of). */
@@ -50,7 +87,10 @@ const SIGNED_IN = vi.hoisted(() => ({ session: { user: { realmsId: "0xa11ce" } }
 vi.mock("@/hooks/context/identity-session", () => ({
   useIdentitySession: () => SIGNED_IN,
   notificationOwnerOf: () => alerts.owner,
-  identityClient: shares,
+  identityClient: {
+    ...shares,
+    addOpeningProgress: (additions: { seen?: string[] }) => answers.add(additions),
+  },
 }));
 vi.mock("@/hooks/use-notification-preferences", () => ({
   useNotificationPreferences: () => ({ status: "ready", saved: { level: "off", revision: 1 }, save: vi.fn() }),
@@ -102,7 +142,12 @@ vi.mock("@bibliothecadao/eternum", async (importOriginal) => {
     // Realm 7's name, as the card writes it.
     getStructureName: () => ({ name: "Temtinos", originalName: "Temtinos" }),
     // The day's turn reads the game's calendar and the realm's site from the facts: realm 7's day-3 site.
-    readExpeditionRules: () => ({ ...recorded.calendar, endAt: Number(herald.game.end_at), spacing: 100 }),
+    readExpeditionRules: () => ({
+      ...recorded.calendar,
+      scheduledEndAt: herald.scheduledEndAt,
+      endAt: Number(herald.game.end_at),
+      spacing: 100,
+    }),
     isExpeditionRealm: () => true,
     expeditionRealmSite: () => ({ col: 650, row: 850 }),
   };
@@ -125,11 +170,12 @@ const { cardJpeg } = await import("@/utils/card-image");
 const { setViewportWidth } = await import("@/shell/frame/test-viewport");
 const { watchDayTurn } = await import("@/ui/features/world/components/expeditions/expedition-rollover");
 
-const RULES = { ...RECORDED_DAY.calendar, spacing: 100 };
-const SUMMARY = "section[aria-label='Day 2 done']";
+const RULES = { ...RECORDED_DAY.calendar, scheduledEndAt: herald.scheduledEndAt, spacing: 100 };
+const SUMMARY = "section[aria-label='Day 2 complete']";
 
 let host: HTMLDivElement;
 let root: Root;
+let answers = accountAnswers();
 
 /** Day 2's summary is the player's until they play on in day 3: the game as it stood a minute before they did. */
 const BEFORE_PLAYING_ON = {
@@ -148,24 +194,23 @@ beforeEach(() => {
   herald.game = { end_at: "1793439960" };
   alerts.owner = null;
   for (const call of Object.values(shares)) call.mockClear();
-  useAskMemory.setState({ notNows: 0, shownAt: null });
+  answers = accountAnswers();
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
 });
 
-afterEach(() => {
+afterEach(async () => {
   act(() => root.unmount());
   host.remove();
+  await leaveThePage("another");
   useDayEndStore.setState(RESTING);
   notifyManager.setNotifyFunction((notify) => notify());
 });
 
-const PROD_DAY_2 = ["35Reveals", "5Sites cleared", "0Chests", "+7.2KEssence", "+524Labor", "+0LORDS"];
-/** Prod's day 1 for the same player, as their own history holds it. */
-const PROD_DAY_1 = ["37Reveals", "6Sites cleared", "0Chests", "+6KEssence", "+2.7KLabor", "+0LORDS"];
-/** Any day's summary. */
-const SUMMARY_SHOWN = "section[aria-label$=' done']";
+const PROD_DAY_2 = ["35Reveals", "5Sites cleared", "+524Labor", "+7.2KEssence"];
+const PROD_DAY_1 = ["37Reveals", "6Sites cleared", "+2.7KLabor", "+6KEssence"];
+const SUMMARY_SHOWN = "section[aria-label$=' complete']";
 
 let client: QueryClient;
 /** Draws the HUD's day end at the clock as it stands. */
@@ -181,7 +226,7 @@ const phase = () => useDayEndStore.getState().phase;
 /** The summary's way into the new day, under Share your day. */
 const continueButton = () =>
   [...(host.querySelector(SUMMARY)?.querySelectorAll("button") ?? [])].find(
-    (button) => button.textContent === "Continue",
+    (button) => button.textContent === "Begin Day 3",
   )!;
 
 /** Opens the game with day 2 ended overnight, before the player played on, and reads the summary's totals. */
@@ -246,8 +291,8 @@ it("shares day 2 as its card and a post: its best moment, the numbers it moved, 
   expect([...shown.querySelectorAll(".day-card__haul small")].map((label) => label.textContent)).toEqual([
     "Reveals",
     "Sites cleared",
-    "Essence",
     "Labor",
+    "Essence",
   ]);
   expect(shares.createShare).toHaveBeenCalledWith({ kind: "frontier-day", chainId: "0x1", gameId: 1, moment: 2 });
 
@@ -265,7 +310,7 @@ it("shares day 2 as its card and a post: its best moment, the numbers it moved, 
   await act(async () => post!.click());
   const intent = new URL(String(open.mock.calls[0]![0]));
   expect(intent.searchParams.get("url")).toBe(`${window.location.origin}/s/DAY2LINK?via=x`);
-  expect(intent.searchParams.get("text")).toBe("Frontier · Day 2 · #1\n🧭 35 · 🚩 5 · 🎁 0\n🐺🐺🛡️🌀🛡️🌀🐺");
+  expect(intent.searchParams.get("text")).toBe("Frontier · Day 2 · #1\n🧭 35 · 🚩 5\n🐺🐺🛡️🌀🛡️🌀🐺");
   expect(shares.sharePosted).toHaveBeenCalledWith("DAY2LINK");
   // The press publishes the card the link unfurls as.
   await act(() => new Promise((resolve) => setTimeout(resolve, 0)));
@@ -301,7 +346,7 @@ it("shares a phone's day through its own share sheet: the card, the post's line 
     await act(async () => system.click());
     expect(share).toHaveBeenLastCalledWith({
       files: [CARD_FILE],
-      text: "Frontier · Day 2 · #1\n🧭 35 · 🚩 5 · 🎁 0\n🐺🐺🛡️🌀🛡️🌀🐺",
+      text: "Frontier · Day 2 · #1\n🧭 35 · 🚩 5\n🐺🐺🛡️🌀🛡️🌀🐺",
       url: `${window.location.origin}/s/DAY2LINK?via=system`,
     });
     expect(shares.sharePosted).toHaveBeenCalledWith("DAY2LINK");
@@ -346,20 +391,24 @@ it("shows a dash for each total, and says why, when the player's history no long
     },
   }));
   herald.history = [...later, ...BEFORE_PLAYING_ON.history];
-  expect(await openTheGame()).toEqual(["—Reveals", "—Sites cleared", "—Chests", "—Essence", "—Labor", "—LORDS"]);
+  expect(await openTheGame()).toEqual(["—Reveals", "—Sites cleared", "—Labor", "—Essence"]);
   expect(host.querySelector(`${SUMMARY} [role="status"]`)?.textContent).toBe("This day's totals are unknown");
 });
 
 it("shows a dash for each total, and says history did not answer, with Try again, when the read fails", async () => {
   herald.withheld = Promise.reject(new Error("Herald is down"));
   herald.withheld.catch(() => undefined);
-  expect(await openTheGame()).toEqual(["—Reveals", "—Sites cleared", "—Chests", "—Essence", "—Labor", "—LORDS"]);
+  expect(await openTheGame()).toEqual(["—Reveals", "—Sites cleared", "—Labor", "—Essence"]);
   expect(host.querySelector(`${SUMMARY} [role="alert"]`)?.textContent).toBe("This day's totals are unknownTry again");
 });
 
 describe("the alerts popup, which waits for the day's end", () => {
   /** Day 3, today: the summary of day 2 opens over it. */
-  const today = () => dayOf({ ...RULES, endAt: Number(herald.game.end_at) }, BEFORE_PLAYING_ON.now)!;
+  const today = () =>
+    dayOf(
+      { ...RULES, scheduledEndAt: herald.scheduledEndAt, endAt: Number(herald.game.end_at) },
+      BEFORE_PLAYING_ON.now,
+    )!;
   const popup = () => document.body.querySelector("[role='dialog'][aria-label='Know when to come back']");
   /** Day 2's end already gone through on this device: the map opens clear. */
   const day2Seen = () => window.localStorage.setItem(`frontier.day-done.1.${RECORDED_DAY.player}`, "2");
@@ -370,7 +419,7 @@ describe("the alerts popup, which waits for the day's end", () => {
     await openTheGame();
     expect(host.querySelector(SUMMARY)).not.toBeNull();
     expect(popup()).toBeNull();
-    expect(useAskMemory.getState().shownAt).toBeNull();
+    expect(answers.seen.size).toBe(0);
   });
 
   it("opens over the player's own map once the day's end is gone through", async () => {
@@ -381,12 +430,12 @@ describe("the alerts popup, which waits for the day's end", () => {
     await settle();
     expect(host.querySelector(SUMMARY)).toBeNull();
     expect(popup()?.textContent).toContain(
-      "A push for each day's opening, rested armies, fights, results and messages.",
+      "A push for each day's opening, Deep sites you can take, rested armies, fights, results and messages.",
     );
-    expect(useAskMemory.getState().shownAt).not.toBeNull();
+    expect([...answers.seen]).toEqual(["alerts-popup"]);
   });
 
-  it("gives the screen to a day's end that begins while it stands unanswered, counting no Not now", async () => {
+  it("gives the screen to a day's end that begins while it stands unanswered", async () => {
     alerts.owner = "0x7";
     day2Seen();
     client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -397,7 +446,6 @@ describe("the alerts popup, which waits for the day's end", () => {
     await act(async () => useDayEndStore.getState().begin("live"));
     expect(phase()).toBe("veil");
     expect(popup()).toBeNull();
-    expect(useAskMemory.getState()).toMatchObject({ notNows: 0, shownAt: expect.any(Number) });
   });
 
   it("opens nothing on another player's realm", async () => {
@@ -586,7 +634,7 @@ describe("a device arriving in a new day", () => {
   });
 
   describe('a player back after a day they skipped (owner, 10 Nov 2026: "I played day 1 but not day 2, its day 3 now")', () => {
-    const DAY_1 = "section[aria-label='Day 1 done']";
+    const DAY_1 = "section[aria-label='Day 1 complete']";
     /** The player's history without their own day-2 stories: they played day 1 and skipped day 2. */
     const skippingDay2 = (history: typeof herald.history) => {
       const day2 = endedDay(RULES, BEFORE_PLAYING_ON.now)!;
@@ -615,7 +663,7 @@ describe("a device arriving in a new day", () => {
 
       act(() =>
         [...card.querySelectorAll<HTMLButtonElement>("button")]
-          .find((button) => button.textContent === "Continue")!
+          .find((button) => button.textContent === "Begin Day 3")!
           .click(),
       );
       await throughTheBlack();
@@ -696,6 +744,34 @@ describe("a device arriving in a new day", () => {
     expect(host.querySelector(SUMMARY)).toBeNull();
     expect(phase()).toBe("day");
     expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it("shows the player's Aspect Facet and race standings when race facts are synchronized", async () => {
+    raceFacts.rules = { game_id: 1, stage_height: 2_000 };
+    raceFacts.deepRules = { game_id: 1, altar_threshold: 1_500, rings: [] };
+    raceFacts.heights = new Map([
+      [1, { game_id: 1, aspect: 1, height: 6_400 }],
+      [2, { game_id: 1, aspect: 2, height: 5_200 }],
+      [3, { game_id: 1, aspect: 3, height: 2_800 }],
+      [4, { game_id: 1, aspect: 4, height: 900 }],
+    ]);
+    raceFacts.ownAspect = { game_id: 1, home: 7n, aspect: 2 };
+    raceFacts.members = { game_id: 1, aspect: 2, members: 1 };
+    try {
+      await openTheGameHere();
+      expect(host.querySelector("[data-aspect-mark='2']")).not.toBeNull();
+      const race = host.querySelector("[data-day-race]");
+      expect(race).not.toBeNull();
+      expect(race?.textContent).toContain("Prowess");
+      expect(race?.textContent).toContain("Luminary");
+      expect(race?.querySelector("[data-own='true']")?.textContent).toContain("Luminary");
+    } finally {
+      raceFacts.rules = undefined;
+      raceFacts.deepRules = undefined;
+      raceFacts.heights = new Map();
+      raceFacts.ownAspect = undefined;
+      raceFacts.members = undefined;
+    }
   });
 });
 

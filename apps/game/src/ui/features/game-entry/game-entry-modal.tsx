@@ -1,12 +1,17 @@
+import { AspectPicker, aspectOfOrder, aspectOffer } from "./aspect-picker";
+import { isRealmElsewhere, RealmSideWarning, seasonSide, sideAspect } from "./realm-side-warning";
+import { canonicalRealm } from "@bibliothecadao/eternum";
+import type { AspectId } from "@bibliothecadao/types";
 import { pageNavigation } from "@/utils/page-navigation";
 import { isRealmNumber, registerHomeSource } from "@/services/realm-entry";
+import { AppButton } from "@/ui/design-system/kit/app-elements";
 import { HudNotice } from "@/ui/design-system/kit/hud-elements";
 /**
  * The entry into a game, drawn as the doorway (design o5): the account, then the realm founded or prepared, then the
  * hand-off to the game's route, where the doorway carries on while the map boots.
  */
 
-import { BLITZ_WORDS, HOME_STEP_WORDS } from "@/ui/design-system/kit/words";
+import { ASPECT_STEP_WORDS, HOME_STEP_WORDS } from "@/ui/design-system/kit/words";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -17,17 +22,20 @@ import { createAutoSettleEntryKey, useAutoSettleStore } from "@/hooks/store/use-
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { identityUsername, useIdentitySession, useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { useRequestSignIn } from "@/shell/sign-in/connect";
+import { useJoinedShare } from "@/shell/share/own-shares";
+import { useOrderIntent } from "@/shell/play/order-intent";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 
 import { useGameEntry } from "@/hooks/use-game-entry";
 
 import { submitSettlement } from "@/services/settlement";
 import { fetchSettlementSnapshot, type SettlementSnapshot } from "@/runtime/world/herald-pre-session-reader";
-import { isGameOver, isMember } from "@/runtime/world/directory";
+import { isGameOver } from "@/runtime/world/directory";
 import { markGameEntryMilestone } from "@/ui/layouts/game-entry-timeline";
 import { resultsHref } from "@/shell/season-tab/results-link";
-import { Pill } from "@/ui/design-system/kit/pill";
+import { seasonRealm } from "@/shell/season";
 import { ClockChip } from "@/ui/design-system/kit/clock-chip";
+import { doorwayRealmFromId, toPaddedFeltAddress } from "./doorway/doorway-realm";
 import { DoorwayScreen } from "./doorway/doorway-screen";
 import { doorwayView } from "./doorway/doorway-view";
 
@@ -35,7 +43,6 @@ import type { GameRef } from "@bibliothecadao/eternum/game-client";
 import { Account } from "starknet";
 import {
   isGameEntryPreflightComplete,
-  resolveBlitzEntry,
   resolveGameEntryBlockingError,
   resolveGameEntryModalPhase,
   type GameEntryModalPhase as ModalPhase,
@@ -46,7 +53,6 @@ import { resolveGameEntryTarget } from "./game-entry-navigation";
 import { isSelectedWorldEntityWaitAborted, waitForSelectedWorldEntityState } from "./selected-world-entity-wait";
 
 const SETTLEMENT_SYNC_TIMEOUT_MS = 90000;
-// An Eternum settlement creates one realm; Blitz realms are settled by the launch service.
 const SEASON_SETTLEMENT_COUNT = 1;
 const ENTRY_DIRECTORY_REFETCH_MS = 10_000;
 
@@ -77,8 +83,6 @@ const deriveSettlementStatus = ({
   };
 };
 
-const toPaddedFeltAddress = (address: string): string => `0x${BigInt(address).toString(16).padStart(64, "0")}`;
-
 interface GameEntryModalProps {
   isOpen: boolean;
   game: GameRef;
@@ -103,6 +107,9 @@ export const GameEntryModal = ({
   const sessionStatus = useIdentitySessionStore((state) => state.status);
   const account = useAccountStore((state) => state.account);
   const [heldRealmNumber, setHeldRealmNumber] = useState("");
+  const [aspect, setAspect] = useState<AspectId | null>(null);
+  const [order, setOrder] = useState<number | null>(null);
+  const [sideAnswer, setSideAnswer] = useState<"realm" | "free" | null>(null);
   const [registeredRealmId, setRegisteredRealmId] = useState<number | null>(null);
   /** The Realm step's pick stands on what the account holds (its reads answered); founding waits for it. */
   const [homeSettled, setHomeSettled] = useState(false);
@@ -118,15 +125,10 @@ export const GameEntryModal = ({
     if (!account?.address) return null;
     return createAutoSettleEntryKey({ ...game, walletAddress: account.address });
   }, [account?.address, game]);
-  const playerFeltAddress = useMemo(() => {
-    if (!account?.address) return null;
-    try {
-      return toPaddedFeltAddress(account.address);
-    } catch {
-      return null;
-    }
-  }, [account?.address]);
+  const playerFeltAddress = useMemo(() => toPaddedFeltAddress(account?.address), [account?.address]);
 
+  const joinedShare = useJoinedShare();
+  const keptIntent = useOrderIntent();
   // The game's directory row is the one source for entry: it is polled while the modal waits on readiness.
   const gameEntry = useGameEntry(game, {
     enabled: isOpen,
@@ -138,11 +140,9 @@ export const GameEntryModal = ({
   const hasWorldMeta = worldMeta !== null;
   const worldName = worldMeta?.name ?? `Game ${game.gameId}`;
   const worldMode = worldMeta?.mode ?? "unknown";
-  const isBlitzMode = worldMode === "blitz";
   const isEternumMode = worldMode === "eternum";
   const isFrontierMode = worldMode === "frontier";
   const gameOver = worldMeta ? isGameOver(worldMeta) : false;
-  // Eternum and Frontier both settle one realm from here; Blitz realms are settled by the launch service.
   const isSeasonMode = isEternumMode || isFrontierMode;
   const isDevMode = worldMeta?.dev_mode_on === true;
   const isEternumDevMode = isEternumMode && isDevMode;
@@ -244,16 +244,10 @@ export const GameEntryModal = ({
   const endAt = worldMeta?.clock.end_at;
   const seasonNotEnded = endAt == null || endAt === 0 || nowSeconds <= endAt;
   const seasonTimingValid = isDevMode || (seasonHasStarted && seasonNotEnded);
-  const blitzEntry = useMemo(() => {
-    if (!isBlitzMode || !worldMeta?.player_state) return null;
-    return resolveBlitzEntry({ isMember: isMember(worldMeta), ready: worldMeta.ready, ended: isGameOver(worldMeta) });
-  }, [isBlitzMode, worldMeta]);
-  // Blitz entry is decided by the roster fact; Eternum entry by the player's own settlement.
-  const checksComplete = isBlitzMode ? blitzEntry != null : settlementCheckComplete;
   const entryPreflightComplete = isGameEntryPreflightComplete({
     isSpectateMode,
     hasAccount: account != null,
-    settlementCheckComplete: checksComplete,
+    settlementCheckComplete,
   });
   const bootstrapStatus: "idle" | "pending-world" | "loading" | "ready" | "error" = preflightError
     ? "error"
@@ -284,15 +278,13 @@ export const GameEntryModal = ({
     const result = resolveGameEntryModalPhase({
       bootstrapStatus,
       hasPhaseError: phaseError != null,
-      isBlitzMode,
-      blitzEntry,
       isSpectateMode,
       worldMode,
       isCheckingWorldAvailability,
       hasWorldMeta: worldMeta != null,
       hasAccount: account != null,
       isSeasonMode,
-      checksComplete,
+      checksComplete: settlementCheckComplete,
       needsSettlement: needsSettlement || choosingSource,
       canPlay: canPlay && !choosingSource,
       isEternumDevMode,
@@ -307,10 +299,8 @@ export const GameEntryModal = ({
     isEternumDevMode,
     devSettlementTarget,
     phaseError,
-    isBlitzMode,
-    blitzEntry,
     isSpectateMode,
-    checksComplete,
+    settlementCheckComplete,
     needsSettlement,
     canPlay,
     choosingSource,
@@ -468,7 +458,6 @@ export const GameEntryModal = ({
     () => enterGame(navigationEntryContext?.intent === "spectate"),
     [enterGame, navigationEntryContext?.intent],
   );
-  const handleSpectate = useCallback(() => enterGame(true), [enterGame]);
 
   const finalizeSuccessfulSettlement = useCallback(() => {
     setSettleStage("done");
@@ -505,90 +494,94 @@ export const GameEntryModal = ({
   }, [beginEntityWait, game, heldRealmNumber, readSettlementSnapshot]);
 
   // Settlement is an authenticated, recorded action.
-  const handleSettle = useCallback(async () => {
-    if (!isSeasonMode) {
-      return;
-    }
-    if (!account) return;
-
-    setSettlementError(null);
-    setIsSettling(true);
-    if (autoSettleEnabled && autoSettleEntryKey) {
-      markSettling(autoSettleEntryKey, Date.now());
-    }
-
-    try {
-      if (!worldMeta) {
-        throw new Error("World configuration is still loading. Please wait a moment and try again.");
+  const handleSettle = useCallback(
+    async (chosenOrder: number | null = null) => {
+      if (!isSeasonMode) {
+        return;
       }
-      const signer = account as unknown as Account;
+      if (!account) return;
 
-      const initialSnapshot = await readSettlementSnapshot();
-      if (isEternumDevMode && !initialSnapshot) throw new Error("Settlement state is still loading.");
-      if (initialSnapshot) {
-        const initialStatus = syncSettlementStateFromSnapshot(initialSnapshot);
-        if (initialStatus.canPlay && !isEternumDevMode) {
-          if (choosingSource && !initialSnapshot.hasHomeSource) {
-            await attachChosenSource();
-          }
-          setSourceLessHome(false);
-          finalizeSuccessfulSettlement();
-          return;
+      setSettlementError(null);
+      setIsSettling(true);
+      if (autoSettleEnabled && autoSettleEntryKey) {
+        markSettling(autoSettleEntryKey, Date.now());
+      }
+
+      try {
+        if (!worldMeta) {
+          throw new Error("World configuration is still loading. Please wait a moment and try again.");
         }
+        const signer = account as unknown as Account;
+
+        const initialSnapshot = await readSettlementSnapshot();
+        if (isEternumDevMode && !initialSnapshot) throw new Error("Settlement state is still loading.");
+        if (initialSnapshot) {
+          const initialStatus = syncSettlementStateFromSnapshot(initialSnapshot);
+          if (initialStatus.canPlay && !isEternumDevMode) {
+            if (choosingSource && !initialSnapshot.hasHomeSource) {
+              await attachChosenSource();
+            }
+            setSourceLessHome(false);
+            finalizeSuccessfulSettlement();
+            return;
+          }
+        }
+
+        const settlementTarget = isEternumDevMode ? (initialSnapshot?.settledCount ?? 0) + 1 : expectedSettlementCount;
+        if (isEternumDevMode) setDevSettlementTarget(settlementTarget);
+        if (isFrontierMode && initialSnapshot?.heldRealmId == null)
+          await registerHomeSource(game, heldRealmNumber === "" ? null : Number(heldRealmNumber));
+        setSettleStage("settling");
+        await submitSettlement(navigationEntryContext, (client) =>
+          client.setup.systemCalls.settle_season({
+            signer,
+            selectedRealm: isEternumDevMode ? Number(devRealmNumber) : undefined,
+            order: chosenOrder ?? undefined,
+          }),
+        );
+        // Known before the indexer answers: its first read can already open the game, which then enters this realm.
+        createdRealmRef.current = isFrontierMode;
+
+        setSettleStage("syncing");
+        const finalSnapshot = await waitForSettlementTarget(settlementTarget);
+
+        const finalStatus = syncSettlementStateFromSnapshot(finalSnapshot);
+        if (!finalStatus.canPlay) {
+          throw new Error("Settlement is still syncing. Please try again if the world does not unlock shortly.");
+        }
+
+        setDevSettlementTarget(null);
+        finalizeSuccessfulSettlement();
+      } catch (error) {
+        if (isSelectedWorldEntityWaitAborted(error)) return;
+        finalizeFailedSettlement(error instanceof Error ? error : new Error("Settlement failed"));
+      } finally {
+        setIsSettling(false);
       }
-
-      const settlementTarget = isEternumDevMode ? (initialSnapshot?.settledCount ?? 0) + 1 : expectedSettlementCount;
-      if (isEternumDevMode) setDevSettlementTarget(settlementTarget);
-      if (isFrontierMode && initialSnapshot?.heldRealmId == null)
-        await registerHomeSource(game, heldRealmNumber === "" ? null : Number(heldRealmNumber));
-      setSettleStage("settling");
-      await submitSettlement(navigationEntryContext, (client) =>
-        client.setup.systemCalls.settle_season({
-          signer,
-          selectedRealm: isEternumDevMode ? Number(devRealmNumber) : undefined,
-        }),
-      );
-      // Known before the indexer answers: its first read can already open the game, which then enters this realm.
-      createdRealmRef.current = isFrontierMode;
-
-      setSettleStage("syncing");
-      const finalSnapshot = await waitForSettlementTarget(settlementTarget);
-
-      const finalStatus = syncSettlementStateFromSnapshot(finalSnapshot);
-      if (!finalStatus.canPlay) {
-        throw new Error("Settlement is still syncing. Please try again if the world does not unlock shortly.");
-      }
-
-      setDevSettlementTarget(null);
-      finalizeSuccessfulSettlement();
-    } catch (error) {
-      if (isSelectedWorldEntityWaitAborted(error)) return;
-      finalizeFailedSettlement(error instanceof Error ? error : new Error("Settlement failed"));
-    } finally {
-      setIsSettling(false);
-    }
-  }, [
-    autoSettleEnabled,
-    autoSettleEntryKey,
-    account,
-    expectedSettlementCount,
-    game,
-    heldRealmNumber,
-    choosingSource,
-    attachChosenSource,
-    isFrontierMode,
-    finalizeFailedSettlement,
-    finalizeSuccessfulSettlement,
-    isSeasonMode,
-    isEternumDevMode,
-    devRealmNumber,
-    markSettling,
-    syncSettlementStateFromSnapshot,
-    waitForSettlementTarget,
-    worldMeta,
-    readSettlementSnapshot,
-    navigationEntryContext,
-  ]);
+    },
+    [
+      autoSettleEnabled,
+      autoSettleEntryKey,
+      account,
+      expectedSettlementCount,
+      game,
+      heldRealmNumber,
+      choosingSource,
+      attachChosenSource,
+      isFrontierMode,
+      finalizeFailedSettlement,
+      finalizeSuccessfulSettlement,
+      isSeasonMode,
+      isEternumDevMode,
+      devRealmNumber,
+      markSettling,
+      syncSettlementStateFromSnapshot,
+      waitForSettlementTarget,
+      worldMeta,
+      readSettlementSnapshot,
+      navigationEntryContext,
+    ],
+  );
 
   useEffect(() => {
     if (!isOpen || !autoSettleEnabled || !autoSettleEntryKey) return;
@@ -599,10 +592,16 @@ export const GameEntryModal = ({
 
   // A Frontier player with nothing to choose (a ticket or a free home, no Realm) has their realm created without a press;
   // an Eternum entry founds by itself when its link asks (autoSettle).
-  const nothingToChoose = useNothingToChoose(worldMeta?.preset_id ?? 0);
+  const nothingToChoose = useNothingToChoose();
+  const choosesAspect = isFrontierMode && worldMeta?.aspect_members != null;
   const foundsOnItsOwn =
     (isEternumMode && autoSettleEnabled) ||
-    (isFrontierMode && worldMeta !== null && nothingToChoose && !choosingSource && registeredRealmId === null);
+    (isFrontierMode &&
+      worldMeta !== null &&
+      nothingToChoose &&
+      !choosingSource &&
+      registeredRealmId === null &&
+      !choosesAspect);
   useEffect(() => {
     if (!foundsOnItsOwn || phase !== "settlement" || isSettling || autoSettleAttemptedRef.current) {
       return;
@@ -627,6 +626,34 @@ export const GameEntryModal = ({
     phase === "settlement" &&
     isSeasonMode &&
     ((!foundsOnItsOwn && settleStage === "idle") || (isFrontierMode && settleStage === "error"));
+  const foundedRealm = worldMeta ? seasonRealm(worldMeta)?.realm_id : undefined;
+  const homeAspect =
+    choosesAspect && foundedRealm !== undefined ? aspectOfOrder(canonicalRealm(foundedRealm).order) : null;
+  const homeRealm = registeredRealmId ?? (heldRealmNumber !== "" && validHeldRealm ? Number(heldRealmNumber) : null);
+  const realmOrder = homeRealm === null ? null : canonicalRealm(homeRealm).order;
+  const tapsAspect = choosesAspect && !choosingSource && realmOrder === null;
+  // A friend's Aspect invite for this game is offered first; identity's answer is read for the signed-in account only.
+  const offered = joinedShare.status === "ready" ? aspectOffer(joinedShare.joined, game) : null;
+  const keptOrder = keptIntent.intent.data?.order ?? null;
+  const side = seasonSide(keptOrder, offered);
+  const keptKnown = !choosesAspect || choosingSource || keptIntent.intent.isSuccess;
+  const inviteKnown = !choosesAspect || choosingSource || joinedShare.status === "ready";
+  const warnsOfSide =
+    choosesAspect &&
+    !choosingSource &&
+    registeredRealmId === null &&
+    sideAnswer === null &&
+    isRealmElsewhere(side, realmOrder);
+  const joinSideFree = (aspect: AspectId) => {
+    setSideAnswer("free");
+    setHeldRealmNumber("");
+    setHomeSettled(true);
+    setAspect(aspect);
+  };
+  const foundInOrder = (chosen: number) => {
+    setOrder(chosen);
+    void handleSettle(chosen);
+  };
   const view = doorwayView({
     source: "entry",
     phase,
@@ -634,52 +661,90 @@ export const GameEntryModal = ({
     signedIn: sessionStatus === "signed-in",
     accountError,
     foundingFailed: settleStage === "error" && !isFrontierMode,
-    blitzEntry,
   });
+
+  const doorwayRealm =
+    foundedRealm !== undefined
+      ? doorwayRealmFromId(foundedRealm)
+      : homeRealm !== null
+        ? doorwayRealmFromId(homeRealm)
+        : null;
+
+  const foundButton =
+    choosingHome && !tapsAspect && !warnsOfSide ? (
+      <FoundButton
+        upgrading={choosingSource}
+        founding={isSettling}
+        ready={
+          (!isEternumDevMode || validDevRealmNumber) &&
+          (!isFrontierMode || (validHeldRealm && homeSettled && keptKnown && inviteKnown))
+        }
+        onFound={() => void handleSettle()}
+      />
+    ) : undefined;
+  const showsHomePicker = choosingHome && !warnsOfSide && isFrontierMode && worldMeta !== null && sideAnswer !== "free";
 
   return (
     <DoorwayScreen
       view={view}
-      realm={null}
+      realm={doorwayRealm}
       game={worldMeta ?? undefined}
       onRetry={
-        accountError ? () => pageNavigation.reload() : settleStage === "error" ? () => void handleSettle() : handleRetry
+        accountError
+          ? () => pageNavigation.reload()
+          : settleStage === "error"
+            ? () => void handleSettle(order)
+            : handleRetry
       }
       onSignIn={() => requestSignIn()}
-      onSpectate={handleSpectate}
       results={resultsHref(game)}
       asking={choosingHome}
-      verb={
-        choosingHome ? (
-          <FoundButton
-            upgrading={choosingSource}
-            founding={isSettling}
-            ready={(!isEternumDevMode || validDevRealmNumber) && (!isFrontierMode || (validHeldRealm && homeSettled))}
-            onFound={() => void handleSettle()}
-          />
-        ) : undefined
-      }
+      wide={choosingHome && !warnsOfSide && (choosesAspect || isFrontierMode) && !choosingSource}
+      verb={showsHomePicker ? undefined : foundButton}
     >
       {phase === "settlement-waiting" && <ClockChip prefix="starts" at={seasonStartAt ?? undefined} now={nowSeconds} />}
-      {phase === "settlement" && isBlitzMode && worldMeta && (
-        <Pill icon="hourglass">
-          {`${BLITZ_WORDS.preparing} ${Math.min(worldMeta.player_count, worldMeta.roster_count)}/${worldMeta.roster_count}`}
-        </Pill>
+      {choosingHome && warnsOfSide && side && homeRealm !== null && (
+        <RealmSideWarning
+          side={side}
+          realmId={homeRealm}
+          onPlayRealm={() => setSideAnswer("realm")}
+          onJoinFree={() => joinSideFree(sideAspect(side))}
+        />
       )}
-      {choosingHome && (
+      {choosingHome && !warnsOfSide && (
         <>
-          {isFrontierMode && worldMeta && (
+          {showsHomePicker && (
             <HomeSourcePicker
-              presetId={worldMeta.preset_id}
               title={choosingSource ? HOME_STEP_WORDS.attachTitle : undefined}
               takenRealmIds={takenRealmIds}
               requireSource={choosingSource}
+              aspect={choosingSource ? homeAspect : null}
               onSourceAvailable={setSourceAvailable}
               registered={registeredRealmId}
               value={heldRealmNumber}
               onChange={setHeldRealmNumber}
               onSettled={setHomeSettled}
               disabled={isSettling}
+              action={foundButton}
+            />
+          )}
+          {choosesAspect && !choosingSource && joinedShare.status === "failed" && (
+            <HudNotice tone="warn" line={ASPECT_STEP_WORDS.inviteUnread} retry={joinedShare.retry} />
+          )}
+          {choosesAspect && !choosingSource && keptIntent.intent.isError && (
+            <HudNotice tone="warn" line={ASPECT_STEP_WORDS.keptUnread} retry={() => void keptIntent.intent.refetch()} />
+          )}
+          {choosesAspect && !choosingSource && (
+            <AspectPicker
+              members={worldMeta?.aspect_members ?? null}
+              realmOrder={realmOrder}
+              keptOrder={keptOrder}
+              chosen={aspect}
+              joining={isSettling ? order : null}
+              waiting={!homeSettled || joinedShare.status === "loading" || !keptKnown}
+              offered={offered}
+              onChoose={setAspect}
+              onFound={foundInOrder}
             />
           )}
           {choosingSource ? <p>{HOME_STEP_WORDS.attachLine}</p> : isFrontierMode && <PlaysAs />}
@@ -743,20 +808,16 @@ export const FoundButton = ({
   onFound: () => void;
   upgrading?: boolean;
 }) => (
-  <button
-    type="button"
-    disabled={founding || !ready}
-    aria-busy={founding || undefined}
+  <AppButton
+    kind="primary"
+    size="lg"
+    icon="realm"
+    step
+    className="w-full"
+    disabled={!ready}
+    busy={founding ? (upgrading ? HOME_STEP_WORDS.attaching : HOME_STEP_WORDS.founding) : undefined}
     onClick={onFound}
-    className="frontier-primary flex w-full items-center justify-center gap-3"
   >
-    {founding && <span className="ui-spinner" aria-hidden="true" />}
-    {upgrading
-      ? founding
-        ? HOME_STEP_WORDS.attaching
-        : HOME_STEP_WORDS.attach
-      : founding
-        ? HOME_STEP_WORDS.founding
-        : HOME_STEP_WORDS.found}
-  </button>
+    {upgrading ? HOME_STEP_WORDS.attach : HOME_STEP_WORDS.found}
+  </AppButton>
 );

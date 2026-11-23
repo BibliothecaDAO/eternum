@@ -1,9 +1,11 @@
 import { createHash } from "node:crypto";
+import type { NativeReleases } from "@bibliothecadao/eternum/game-sync";
 import type { Abi } from "starknet";
 
 export interface NativeMember {
   name: string;
   type: string;
+  wireId?: number;
   id?: string;
   feltLength?: number | null;
 }
@@ -12,7 +14,6 @@ export interface NativeModel {
   identity: string;
   scope: "game" | "deployment";
   emitterKey?: string;
-  eventProjection?: string;
   derivedFrom?: "preset";
   keys: NativeMember[];
   members: NativeMember[];
@@ -29,7 +30,7 @@ export interface NativeSchema {
   identity: string;
   version: number;
   cairoVersion: string;
-  logicClasses: Record<string, string>;
+  logicClasses: { slot: number; name: string; contract: string }[];
   encoding: string;
   games: {
     contract: string;
@@ -57,7 +58,8 @@ export interface NativeRelease {
   verifierClassHash?: string;
   migrationClassHash: string;
   releaseId: number;
-  releaseSchemas: Record<string, string>;
+  releases: NativeReleases;
+  releaseBalances?: Record<string, string>;
   logic: Record<string, string>;
 }
 export interface NativeManifest {

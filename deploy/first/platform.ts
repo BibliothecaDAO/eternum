@@ -323,7 +323,6 @@ export class Platform {
 export default {fetch(){return new Response('Deployment pending',{status:503})}};
 export class ValueIdentity extends WorkerEntrypoint {}
 export class ValueLaunch extends WorkerEntrypoint {}
-export class ValueLaunchDirectory extends WorkerEntrypoint {}
 export class RosterMonitor extends WorkerEntrypoint {}
 export class RelayDiagnostics extends WorkerEntrypoint {}`;
     for (const worker of workers) {

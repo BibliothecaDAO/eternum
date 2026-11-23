@@ -26,6 +26,8 @@ export interface ShardEndpoints {
  */
 export function readShardDocument(json: string): ShardDocument {
   const document = JSON.parse(json) as NativeManifest & { shard?: Partial<ShardRecord> };
+  if (typeof document.native?.releases !== "object" || document.native.releases === null)
+    throw new Error("Deployment document lists no releases with their families; redeploy with the current deployer");
   if (!document.shard) throw new Error("Deployment document has no shard record; redeploy with the current deployer");
   if (!/^0x[0-9a-f]{1,64}$/i.test(document.shard.guardianPublicKey ?? ""))
     throw new Error("Shard record has no guardian public key; initialize the shard with one");
@@ -43,7 +45,7 @@ export function buildShardManifest(document: ShardDocument, endpoints: ShardEndp
   return {
     version: 1,
     chainId: shard.chainId,
-    releaseSchemas: document.native.releaseSchemas,
+    releases: document.native.releases,
     rpcUrl: endpoints.rpcUrl,
     accountClassHash: shard.accountClassHash,
     contracts: {

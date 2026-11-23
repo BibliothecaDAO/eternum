@@ -11,6 +11,9 @@
 // fall: --write-catalog-baseline lowers a count, and writes nothing while any file gains a copy. lint-guards.mjs runs
 // it in CI, and src/catalog-guards.test.mjs holds its controls.
 
+import { readFileSync } from "node:fs";
+import tseslint from "typescript-eslint";
+
 /** The game's catalogs: the enums of @bibliothecadao/types whose members are game content. */
 const CATALOGS = new Set([
   "ResourcesIds",
@@ -21,6 +24,7 @@ const CATALOGS = new Set([
   "RealmLevels",
   "GuardSlot",
   "BiomeType",
+  "AspectId",
 ]);
 
 /** The member of a catalog an expression names (`StructureType.Realm` names StructureType), else undefined. */
@@ -70,9 +74,71 @@ const declaredType = (object) => {
 };
 
 const IMAGE_PATH = /^\/(images|icons|tokens)\//;
+const LAYER_CATALOG = new URL("../../../packages/types/src/words/nouns.ts", import.meta.url);
+const ORDERS_CATALOG = new URL("../../../packages/types/src/constants/orders.ts", import.meta.url);
+const writtenText = (node) => {
+  if (node?.type === "Literal" && typeof node.value === "string") return node.value;
+  if (node?.type === "TemplateLiteral" && node.expressions.length === 0) return node.quasis[0].value.cooked;
+  return undefined;
+};
+const withoutTypeAssertions = (node) =>
+  node?.type === "TSAsExpression" || node?.type === "TSSatisfiesExpression"
+    ? withoutTypeAssertions(node.expression)
+    : node;
+const tupleElements = (declarations, name) => {
+  const tuple = withoutTypeAssertions(declarations.find((each) => each.id.name === name)?.init);
+  return tuple?.type === "ArrayExpression" ? tuple.elements : [];
+};
+const readsLayerName = (node) => node?.type === "MemberExpression" && node.object.name === "LAYER_NAMES";
+const writtenNames = (name, elements) => {
+  const names = elements.map(writtenText);
+  if (names.length === 0 || names.includes(undefined)) {
+    throw new Error(`No ${name} tuple of written names in ${LAYER_CATALOG.pathname}`);
+  }
+  return names;
+};
+const propertyText = (element, key) => {
+  if (element?.type !== "ObjectExpression") return undefined;
+  const prop = element.properties.find(
+    (entry) => entry.type === "Property" && !entry.computed && entry.key.name === key,
+  );
+  return writtenText(prop?.value);
+};
+export const readLayerNames = (source = readFileSync(LAYER_CATALOG, "utf8")) => {
+  const declarations = tseslint.parser
+    .parseForESLint(source)
+    .ast.body.flatMap((node) => node.declaration?.declarations ?? []);
+  const eternumNames = tupleElements(declarations, "ETERNUM_MAP_NAMES").filter((node) => !readsLayerName(node));
+  return [
+    ...writtenNames("LAYER_NAMES", tupleElements(declarations, "LAYER_NAMES")),
+    ...writtenNames("ETERNUM_MAP_NAMES", eternumNames),
+  ];
+};
+export const readAspectAndOrderNames = (source = readFileSync(ORDERS_CATALOG, "utf8")) => {
+  const declarations = tseslint.parser
+    .parseForESLint(source)
+    .ast.body.flatMap((node) => node.declaration?.declarations ?? []);
+  const aspectNames = tupleElements(declarations, "aspects").map((entry) => propertyText(entry, "name"));
+  const orderNames = tupleElements(declarations, "orders").map((entry) => propertyText(entry, "fullOrderName"));
+  if (aspectNames.length === 0 || aspectNames.includes(undefined)) {
+    throw new Error(`No aspects names in ${ORDERS_CATALOG.pathname}`);
+  }
+  if (orderNames.length === 0 || orderNames.includes(undefined)) {
+    throw new Error(`No orders fullOrderName entries in ${ORDERS_CATALOG.pathname}`);
+  }
+  return { aspectNames, orderNames };
+};
+const asPattern = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const LAYER_SPELLING = new RegExp(`\\b(?:${readLayerNames().map(asPattern).join("|")}|Ethereal I{1,3})\\b`);
+const namesLayer = (text) => LAYER_SPELLING.test(text.replace(/\bDeep (?:Ocean|[Cc]rystal)/g, ""));
+const { aspectNames: ASPECT_NAMES, orderNames: ORDER_NAMES } = readAspectAndOrderNames();
+const ASPECT_OR_ORDER_SPELLING = new RegExp(`\\b(?:${[...ASPECT_NAMES, ...ORDER_NAMES].map(asPattern).join("|")})\\b`);
+const namesAspectOrOrder = (text) => ASPECT_OR_ORDER_SPELLING.test(text);
 
 const COPY = "copy";
 const IMAGE = "image";
+const LAYER = "layer";
+const ASPECT_OR_ORDER = "aspectOrOrder";
 
 const oneSource = {
   meta: {
@@ -84,6 +150,10 @@ const oneSource = {
         "its module), or key a whole Record<{{catalog}}, …> the compiler holds to every member: annotated or with " +
         "`satisfies`, never an `as` cast.",
       [IMAGE]: "One source per fact: artwork is named through the icon modules (IconMeaning), never a path.",
+      [LAYER]:
+        "One source per fact: a layer's name is layerName(depth) from @bibliothecadao/types, never spelled again.",
+      [ASPECT_OR_ORDER]:
+        "One source per fact: Aspect and Order names come from @bibliothecadao/types (aspectName / catalogOrder), never spelled again.",
     },
   },
   create: (context) => ({
@@ -105,12 +175,22 @@ const oneSource = {
       if (catalog) context.report({ node, messageId: COPY, data: { catalog } });
     },
     Literal(node) {
-      if (typeof node.value === "string" && IMAGE_PATH.test(node.value)) context.report({ node, messageId: IMAGE });
+      if (typeof node.value !== "string") return;
+      if (IMAGE_PATH.test(node.value)) context.report({ node, messageId: IMAGE });
+      const isDeveloperMessage = node.parent.type === "NewExpression" && node.parent.callee.name === "Error";
+      if (!isDeveloperMessage && namesLayer(node.value)) context.report({ node, messageId: LAYER });
+      if (!isDeveloperMessage && namesAspectOrOrder(node.value)) context.report({ node, messageId: ASPECT_OR_ORDER });
+    },
+    JSXText(node) {
+      if (namesLayer(node.value)) context.report({ node, messageId: LAYER });
+      if (namesAspectOrOrder(node.value)) context.report({ node, messageId: ASPECT_OR_ORDER });
     },
     TemplateElement(node) {
-      if (node.parent.quasis[0] === node && IMAGE_PATH.test(node.value.cooked ?? "")) {
+      const text = node.value.cooked ?? "";
+      if (node.parent.quasis[0] === node && IMAGE_PATH.test(text))
         context.report({ node: node.parent, messageId: IMAGE });
-      }
+      if (namesLayer(text)) context.report({ node: node.parent, messageId: LAYER });
+      if (namesAspectOrOrder(text)) context.report({ node: node.parent, messageId: ASPECT_OR_ORDER });
     },
   }),
 };
@@ -139,6 +219,8 @@ const SCENARIOS = [
   "apps/game/src/three/**/verification/**",
 ];
 
+const RECORDS = ["apps/game/src/shell/generated/patch-notes.ts"];
+
 export const CATALOG_RULE = "catalog/one-source";
 
 /**
@@ -164,7 +246,7 @@ export const planCatalogBaseline = (counts, baseline, { lowering = false } = {})
 export const catalogGuardConfigs = [
   {
     files: ["apps/game/src/**/*.{ts,tsx}", "packages/*/src/**/*.{ts,tsx}"],
-    ignores: [...CATALOG_MODULES, ...SCENARIOS],
+    ignores: [...CATALOG_MODULES, ...SCENARIOS, ...RECORDS],
     plugins: { catalog: { rules: { "one-source": oneSource } } },
     rules: { [CATALOG_RULE]: "error" },
   },

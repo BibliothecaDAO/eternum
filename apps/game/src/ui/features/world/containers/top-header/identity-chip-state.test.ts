@@ -18,7 +18,6 @@ const signedInPlayer = (overrides: Partial<IdentityChipInput> = {}): IdentityChi
   gameplayAccount: { address: "0x1234567890abcdef", provisioningError: null },
   playerName: "raschel",
   owned: { structures: 3, realms: 3 },
-  standing: { rank: 12, points: 4100 },
   ...overrides,
 });
 
@@ -58,7 +57,6 @@ describe("resolveIdentityChipState", () => {
       kind: "player",
       name: "raschel",
       realmCount: 3,
-      standing: { rank: 12, points: 4100 },
     });
   });
 
@@ -84,18 +82,6 @@ describe("resolveIdentityChipState", () => {
       kind: "connecting",
       name: null,
       error: null,
-    });
-  });
-
-  it("hides a rank that means nothing yet and keeps one backed by points or the top 500", () => {
-    expect(resolveIdentityChipState(signedInPlayer({ standing: { rank: 900, points: 0 } }))).toMatchObject({
-      standing: null,
-    });
-    expect(resolveIdentityChipState(signedInPlayer({ standing: { rank: 900, points: 5 } }))).toMatchObject({
-      standing: { rank: 900, points: 5 },
-    });
-    expect(resolveIdentityChipState(signedInPlayer({ standing: { rank: 400, points: 0 } }))).toMatchObject({
-      standing: { rank: 400, points: 0 },
     });
   });
 

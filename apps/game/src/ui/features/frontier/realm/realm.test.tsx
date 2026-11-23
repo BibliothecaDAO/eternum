@@ -49,7 +49,8 @@ describe("the castle", () => {
     art: "realm-1" as const,
     plots: [6, 18, 36, 60][level],
     slots: [3, 4, 5, 6][level],
-    limit: [6_000, 18_000, 50_000, 120_000][level],
+    wheatStore: [6_000, 18_000, 40_000, 80_000][level],
+    laborStore: [5_000, 15_000, 50_000, 100_000][level],
     maxArmySize: [3_000, 9_000, 25_000, 60_000][level],
   });
 
@@ -81,7 +82,8 @@ describe("the castle", () => {
     expect(rows).toEqual([
       ["Plots", "18", "→", "36"],
       ["Army slots", "4", "→", "5"],
-      ["Storage", "18K", "→", "50K"],
+      ["Wheat storage", "18K", "→", "40K"],
+      ["Labor storage", "15K", "→", "50K"],
       ["Max army size", "9,000", "→", "25K"],
     ]);
     expect(host.querySelector(".ui-cost")?.textContent).toBe("15K Labor");

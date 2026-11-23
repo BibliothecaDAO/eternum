@@ -6,9 +6,10 @@ A CI file belongs to the area that runs it: a workflow validation.yml calls belo
 a composite action to the areas whose workflows use it. CI files that only the static job checks, or that validation
 never runs, belong to STATIC. A file under .github that none of these name fails the static job, naming the file."""
 import fnmatch
+import re
 
 # A change to any of these runs every area: every area's checks install from them.
-SHARED = ["package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml", ".npmrc"]
+SHARED = ["package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml", ".npmrc", "scripts/ci/**"]
 # The checkout of every job that reads no media: a change to it runs each of them.
 MEDIA_FREE_CHECKOUT = ".github/actions/checkout-without-media/**"
 # CI files the static job owns. Static runs on every run, so a change to one selects no further area: static tests the
@@ -24,11 +25,21 @@ STATIC = [
     # The iOS app's simulator build, which runs on its own when a file it reads changes (test_ios_workflow_paths.py).
     ".github/workflows/ios.yml",
 ]
-# The payout relay's, co-signer's and monitor's readers, which apps/herald/src/value-readers.test.ts drives against Herald.
 VALUE_READERS = [
     f"apps/value-relay/src/{name}.ts"
-    for name in ("frontier-sweep", "deposit-destination", "frontier-games", "final-facts", "obligations", "shard-conservation", "shard-snapshot", "shard-rpc", "shard-page",
-                 "source-url", "ports", "failure")
+    for name in ("cosigner-client", "failure", "final-facts", "frontier-end", "frontier-games", "ports", "race-amounts", "race-facts", "race-rewards", "shard-jobs",
+                 "shard-page", "shard-rpc", "shard-snapshot", "source-url")
+]
+DEEP_ALERT_READERS = [
+    "apps/realms/server/deep-site-watch.ts",
+    "apps/realms/server/game-facts.ts",
+    "apps/realms/server/fixtures/shard-world.ts",
+]
+NATIVE_FACT_SCHEMA = [
+    "contracts/l3/world-native/schema/**",
+    "contracts/l3/world-native/src/combat.cairo",
+    "contracts/l3/world-native/src/logic/quests.cairo",
+    "contracts/l3/world-native/src/research.cairo",
 ]
 AREAS = {
     "client": [
@@ -49,17 +60,10 @@ AREAS = {
         "apps/android/twa-manifest.json",
         # The other surfaces the brand check (apps/game/src/brand/brand.test.ts) reads, and what the docs config reads.
         "README.md",
-        "apps/game-docs/docs/styles.css",
-        "apps/game-docs/docs/pages/index.mdx",
-        # Each game's How to play guide, which apps/game/src/ui/modules/how-to-play.test.tsx requires to be a page.
-        "apps/game-docs/docs/pages/frontier/index.mdx",
-        "apps/game-docs/docs/pages/blitz/index.mdx",
-        "apps/game-docs/docs/pages/eternum/key-concepts.mdx",
-        "apps/game-docs/docs/brand.gen.json",
-        "apps/game-docs/vocs.config.ts",
-        "apps/game-docs/docs/utils/paths.ts",
-        "apps/game-docs/vite-plugin-llm-txt.mjs",
+        # The client artifact emits its documentation export from the current pages and renderer.
+        "apps/game-docs/**",
         "apps/status/public/index.html",
+        *DEEP_ALERT_READERS,
         # The iOS app's bundle id, which src/app-hosting.test.ts holds the site's apple-app-site-association to.
         "apps/ios/capacitor.config.ts",
         # The client job's own checkers, which its workflow runs through root package.json scripts.
@@ -70,23 +74,26 @@ AREAS = {
         "scripts/check-forbidden-hosts*",
         "apps/herald/src/**",
         *VALUE_READERS,
-        "apps/value-relay/test-support/**",
         "apps/launch-service/src/**",
         "apps/launch-service/migrations/**",
         "apps/launch-service/wrangler.jsonc",
         "packages/**",
         "config/**",
+        "contracts/l3/world-native/scripts/balance-modules.ts",
         "deploy/first/environments.json",
+        "deploy/release/*.json",
+        "deploy/release/native-release.ts",
         "contracts/l2/ledger/scripts/chest-preset.js",
         "contracts/l2/ledger/schema/**",
         "contracts/l2/ledger/src/contract.cairo",
-        "contracts/l3/world-native/schema/**",
+        *NATIVE_FACT_SCHEMA,
         "contracts/l3/world-native/tests/fixtures/**",
         "contracts/l3/world-native/src/tests/fixtures/spatial-replay/**",
         "contracts/common/addresses/**",
         "contracts/utils/**"
     ],
     "herald": [
+        *DEEP_ALERT_READERS,
         ".github/workflows/test-herald.yml",
         MEDIA_FREE_CHECKOUT,
         # deployment.bun.test.ts imports these through a spawned Python interpreter.
@@ -94,15 +101,17 @@ AREAS = {
         "deploy/athanor/scripts/service_requests.py",
         "apps/herald/**",
         *VALUE_READERS,
-        "apps/value-relay/test-support/**",
         "apps/launch-service/src/release.ts",
         "packages/**",
         "config/**",
+        "contracts/l3/world-native/scripts/balance-modules.ts",
         "deploy/first/environments.json",
+        "deploy/release/*.json",
+        "deploy/release/native-release.ts",
         "contracts/l2/ledger/scripts/chest-preset.js",
         "contracts/l2/ledger/schema/**",
         "contracts/l2/ledger/src/contract.cairo",
-        "contracts/l3/world-native/schema/**",
+        *NATIVE_FACT_SCHEMA,
         "contracts/l3/world-native/tests/fixtures/**",
         "contracts/l3/world-native/src/tests/fixtures/spatial-replay/**",
         "contracts/common/addresses/**",
@@ -123,15 +132,22 @@ AREAS = {
         "apps/status/**",
         "apps/guardian/**",
         "apps/web/**",
+        "apps/herald/src/native/release-definition.ts",
         "apps/herald/src/native/schema.ts",
         "apps/herald/src/shard-manifest.ts",
+        "apps/herald/src/types.ts",
         "packages/**",
         "config/**",
+        "contracts/l3/world-native/scripts/balance-modules.ts",
         "deploy/first/environments.json",
+        "deploy/release/*.json",
+        "deploy/release/native-release.ts",
         "contracts/l2/ledger/scripts/chest-preset.js",
         "contracts/l2/ledger/schema/**",
         "contracts/l2/ledger/src/contract.cairo",
-        "contracts/l3/world-native/schema/**",
+        "contracts/l2/ledger/src/race.cairo",
+        "contracts/l3/world-native/src/**",
+        *NATIVE_FACT_SCHEMA,
         "contracts/l3/world-native/tests/fixtures/**",
         "contracts/common/addresses/**",
         "contracts/utils/**"
@@ -146,6 +162,7 @@ AREAS = {
         "contracts/common/addresses/**"
     ],
     "native": [
+        *DEEP_ALERT_READERS,
         ".tool-versions",
         "contracts/l2/ledger/**",
         "contracts/l2/collectibles/**",
@@ -161,6 +178,7 @@ AREAS = {
         "packages/**",
         "config/**",
         "deploy/first/environments.json",
+        "deploy/release/*.json",
         "contracts/l2/ledger/scripts/chest-preset.js",
         "contracts/l2/ledger/schema/**",
         "contracts/l2/ledger/src/contract.cairo",
@@ -172,7 +190,6 @@ AREAS = {
         "contracts/l2/ledger/scripts/commands/deployment/**",
         "contracts/scripts-runtime/**",
         "apps/value-relay/src/**",
-        "apps/value-relay/test-support/**",
         # The relay's Realm-entry test runs the identity Worker's holdings reader, as the IDENTITY binding serves it.
         "apps/realms/server/realm-holdings.ts",
         "apps/realms/server/l2.ts",
@@ -187,9 +204,11 @@ AREAS = {
         MEDIA_FREE_CHECKOUT,
         "apps/agent-runner/**",
         "apps/launch-service/**",
+        "apps/herald/src/native/release-definition.ts",
         "apps/herald/src/native/schema.ts",
         "apps/herald/src/shard-manifest.ts",
-        "contracts/l3/world-native/schema/**",
+        "apps/herald/src/types.ts",
+        *NATIVE_FACT_SCHEMA,
         "contracts/l3/world-native/tests/fixtures/**",
         "contracts/common/addresses/**",
         "contracts/utils/**",
@@ -201,7 +220,6 @@ AREAS = {
         "contracts/l2/ledger/scripts/commands/deployment/**",
         "contracts/scripts-runtime/**",
         "apps/value-relay/src/**",
-        "apps/value-relay/test-support/**",
         # The relay's Realm-entry test runs the identity Worker's holdings reader, as the IDENTITY binding serves it.
         "apps/realms/server/realm-holdings.ts",
         "apps/realms/server/l2.ts",
@@ -213,8 +231,10 @@ AREAS = {
         "deploy/shard/**",
         "packages/**",
         "config/**",
+        "contracts/l3/world-native/scripts/balance-modules.ts",
         "deploy/first/environments.json",
         "contracts/l2/ledger/schema/**",
+        "contracts/l2/ledger/src/race.cairo",
         "contracts/l2/ledger/scripts/chest-preset.js"
     ],
     "amm": [
@@ -247,18 +267,36 @@ AREAS = {
         ".github/workflows/test-docs.yml",
         MEDIA_FREE_CHECKOUT,
         "apps/game-docs/**",
+        # The export regression loads the serving client's actual build configuration.
+        "apps/game/vite.config.ts",
+        "apps/game/build/retired-env.ts",
+        "apps/game/build/pwa-assets.mjs",
+        "apps/game/build/pwa-release.ts",
+        "apps/game/build/hashed-models.ts",
+        "apps/game/build/asset-links.ts",
+        "apps/game/build/lab-artwork.ts",
+        "apps/android/twa-manifest.json",
+        "apps/game/src/three/renderer-vite-config.ts",
+        "apps/game/src/tokens.ts",
+        "apps/game/src/brand/palette.json",
         "apps/launch-service/src/release.ts",
         "packages/**",
         "config/**",
+        "contracts/l3/world-native/scripts/balance-modules.ts",
         "deploy/first/environments.json",
+        "deploy/release/*.json",
+        "deploy/release/native-release.ts",
         "contracts/l2/ledger/scripts/chest-preset.js",
         "contracts/l2/ledger/schema/**",
-        "contracts/l3/world-native/schema/**",
+        *NATIVE_FACT_SCHEMA,
+        "contracts/l3/world-native/src/**",
         "contracts/l3/world-native/tests/fixtures/**",
         "contracts/common/addresses/**",
         "contracts/utils/**",
+        "apps/herald/src/native/release-definition.ts",
         "apps/herald/src/native/schema.ts",
         "apps/herald/src/shard-manifest.ts",
+        "apps/herald/src/types.ts",
         # The game files the docs draw on: its icon set and meanings (with the Diwali sprites' manifest icon-meaning.ts
         # reads), the patch notes the changelog page shows, the LaborRules a preset writes, which the Devcon page states a
         # ticket's claim from, and the link preview's address.
@@ -303,7 +341,7 @@ def selected_areas(files, every_area, landing=False):
     """Select changed inputs; landing pushes additionally require all core areas."""
     return {
         area: (every_area or (landing and area not in PATH_SCOPED)
-               or any(matches(path, SHARED + patterns) for path in files))
+               or any(path.startswith(prefix) for path in files for prefix in path_prefixes(SHARED + patterns)))
         for area, patterns in AREAS.items()
     }
 
@@ -312,3 +350,16 @@ def unowned_ci_files(files):
     """The files under .github that no area, STATIC or SHARED names: a change to one would run no check."""
     owners = SHARED + STATIC + [pattern for patterns in AREAS.values() for pattern in patterns]
     return [path for path in files if path.startswith(".github/") and not matches(path, owners)]
+
+
+def path_prefixes(patterns):
+    """Flow accepts prefixes. Both PR scoping and local landing use this conservative projection."""
+    return sorted({re.split(r"[*?\[]", pattern, maxsplit=1)[0] for pattern in patterns})
+
+
+if __name__ == "__main__":
+    import json
+    import sys
+    if sys.argv[1:] != ["--flow-paths"]:
+        raise SystemExit("usage: validation_areas.py --flow-paths")
+    print(json.dumps({area: path_prefixes(SHARED + patterns) for area, patterns in AREAS.items()}))

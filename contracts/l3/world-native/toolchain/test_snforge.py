@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Exercise installation failures and the supported entrypoints without compiling contracts."""
 
-import importlib.util
 import json
 import os
 from pathlib import Path
@@ -146,16 +145,7 @@ snforge.publish(Path(sys.argv[1]), Path(sys.argv[2]), json.loads(sys.argv[3]))
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("Missing or stale native runner", result.stderr)
         self.assertFalse(marker.exists())
-        producer = snforge.WORLD / "scripts/generate-lords-budget-fixtures.py"
-        module_spec = importlib.util.spec_from_file_location("budget_producer", producer)
-        module = importlib.util.module_from_spec(module_spec)
-        module_spec.loader.exec_module(module)
-        module.INPUT = self.root / "checkpoint-input"
-        with patch.dict(os.environ, env):
-            with self.assertRaises(subprocess.CalledProcessError):
-                module.record_chunk(2000, 0, False, 100, 105, None)
-        self.assertFalse(module.INPUT.exists())
-        self.assertFalse(marker.exists())
+
 
 
 if __name__ == "__main__":

@@ -1,0 +1,162 @@
+// @generated from the Cairo balance constants, which a release may tune. Run the native schema generator to update.
+export const nativeRuleConstants = {
+  "RELIC_BLADE_BPS": 1000,
+  "RELIC_WARD_BPS": 500,
+  "RELIC_PLUNDER_BPS": 2000,
+  "STAMINA_REGEN_RELIC_STEP_PERCENT": 20,
+  "ATTRIBUTE_CAP": 5,
+  "SCOUT_EXPLORE_STAMINA": 10,
+  "FRONTIER_LIGHT_DAMAGE_PERCENT": 75,
+  "FRONTIER_KNIGHT_GUARD_DAMAGE_PERCENT": 75,
+  "LOGISTICS_STEP_PERCENT": 20,
+  "ENTRY_ENTITLEMENT": 0,
+  "ENTRY_OPEN": 1,
+  "ENTRY_ROSTER": 2,
+  "HOME_REWARDS": 1,
+  "DISCOVER_CAMPS": 2,
+  "UNOWNED_TARGETS": 32,
+  "CAPTURE_VILLAGES": 64,
+  "DEPTH_CONTENTS": 128,
+  "REVEAL_SUPPLIES": 262144,
+  "SAME_OWNER_TRANSFER": 256,
+  "DEV_VILLAGE_ENTRY": 8192,
+  "PRODUCTION_START": 131072,
+  "WELL_REFILL_PERCENT": 40,
+  "BEAST_HERD_SHARE": 1,
+  "BEAST_BAND_SHARE": 2,
+  "FRONTIER_REPORT_GRACE_SECONDS": 3600,
+  "SPIRE_REVEAL_LIMIT": 10,
+  "DEEP_MAP_SIZE": 50,
+  "DEEP_FOUNDATION": 0,
+  "DEEP_CORE": 1,
+  "DEEP_MINE": 2,
+  "DEEP_ALTAR": 3,
+  "DEEP_KIND_COUNT": 4,
+  "DEEP_RING_LIMIT": 4,
+  "DEEP_RING_SITES": 6,
+  "DEEP_PLAZA_RADIUS": 4,
+  "DEEP_GUARD_SLOTS": 4
+} as const;
+export const nativeQuestConstants = {
+  "HUNT": 0,
+  "CAMPS": 1,
+  "RIFTS": 2,
+  "RELICS": 3,
+  "VETERANS": 4,
+  "FINDS": 5,
+  "REVEALS": 6,
+  "QUEST_COUNT": 7,
+  "STAND": 7,
+  "LIGHTS": 8,
+  "CULL": 9
+} as const;
+export const nativeBaneConstants = {
+  "BLOOD_MOON": 1,
+  "MIST_TIDE": 2,
+  "ASH_FALL": 3,
+  "BLOOD_MOON_QUEST": 7,
+  "MIST_TIDE_QUEST": 8,
+  "ASH_FALL_QUEST": 9
+} as const;
+export const nativeRaceConstants = {
+  "STAGE_COUNT": 5,
+  "CLEAR_MIST_STAGE": 1,
+  "SECOND_WIND_STAGE": 2,
+  "PALE_MOON_STAGE": 3,
+  "SPOILS_STAGE": 4
+} as const;
+export const nativeArrivalConstants = {
+  "SLOTS_PER_DAY": 48
+} as const;
+export const nativeOathConstants = {
+  "GIANTS": 1,
+  "PERFECTION": 2,
+  "RAGE": 3,
+  "FOX": 4,
+  "TWINS": 5,
+  "FURY": 6,
+  "REFLECTION": 7,
+  "DETECTION": 8,
+  "SKILL": 9,
+  "BRILLIANCE": 10,
+  "PROTECTION": 11,
+  "POWER": 12,
+  "TITANS": 13,
+  "VITRIOL": 14,
+  "ANGER": 15,
+  "ENLIGHTENMENT": 16,
+  "VITRIOL_LOSS_PER_TICK": 100,
+  "PASS_STAMINA": 20,
+  "POWER_DAMAGE_PERCENT": 20,
+  "GIANTS_REDUCTION_PERCENT": 15,
+  "PROTECTION_REDUCTION_PERCENT": 25,
+  "REFLECTION_WELL_PERCENT": 80,
+  "DETECTION_EMPTY_REVEAL_LIMIT": 4,
+  "BRILLIANCE_PAY_PERCENT": 125,
+  "RAGE_PAY_PERCENT": 125,
+  "ANGER_ATTACK_STAMINA": 20,
+  "TITANS_STAMINA": 60,
+  "ENLIGHTENMENT_REGEN_BPS": 13334,
+  "FOX_REVEAL_DISCOUNT_PERCENT": 20,
+  "SKILL_DAMAGE_PERCENT": 30,
+  "SKILL_BELOW_STAMINA": 10,
+  "FURY_REFUND_PERCENT": 50,
+  "PERFECTION_PAY_PERCENT": 150,
+  "PERFECTION_LOSS_PERCENT": 15,
+  "TWINS_DAMAGE_PERCENT": 30,
+  "REROLLED": 4096
+} as const;
+export const nativeResearchConstants = {
+  "ROW_FARM": 0,
+  "ROW_WORKSHOP": 1,
+  "ROW_CONSCRIPTION": 2,
+  "ROW_RATIONS": 4,
+  "ROW_SUPPLY_YARD": 5,
+  "ROW_KNIGHT_OATHS": 6,
+  "ROW_SCOUT_OATHS": 7,
+  "ROW_CROSSBOW_OATHS": 11,
+  "OATH_SLOTS_BASE": 2,
+  "OATH_SLOTS_STEPS": 3,
+  "ROW_LORE": 10,
+  "LORE_WELLS": 1,
+  "LORE_SHRINES": 2,
+  "LORE_SPIRES": 3,
+  "STOREROOM": 2,
+  "STOREROOM_LEVEL": 1,
+  "WORKSHOP": 25,
+  "BARRACKS": 28,
+  "RANGE": 31,
+  "RATIONS_DEPOT": 41,
+  "CONSCRIPTION_CAMP": 44,
+  "RANGE_LEVEL": 1,
+  "CONSCRIPTION_CAMP_LEVEL": 1,
+  "RATIONS_DEPOT_LEVEL": 2,
+  "FARM": 37,
+  "SUPPLY_YARD": 42,
+  "SUPPLY_YARD_LEVEL": 2,
+  "SCOUTS_LODGE": 43,
+  "SCOUTS_LODGE_LEVEL": 1
+} as const;
+export const nativeFragmentConstants = {
+  "WONDER_QUEST_FRAGMENTS": 10,
+  "SEAL_FRAGMENTS": 1000,
+  "OATH_REROLL_FRAGMENTS": 25,
+  "STAMINA_PER_FRAGMENT": 2,
+  "CACHE_TROOPS_PER_FRAGMENT": 100,
+  "SURFACE_CACHE_PERCENT": 19,
+  "VEIL_CACHE_PERCENT": 10,
+  "HOLLOW_CACHE_PERCENT": 5
+} as const;
+export const nativeFamilyConstants = {
+  "FRONTIER": 1,
+  "BLITZ": 2
+} as const;
+export const nativeStructureConstants = {
+  "LABOR_STORES": [
+    5000,
+    15000,
+    50000,
+    100000
+  ]
+} as const;
+export const nativeBalanceIdentity = "c8fef3c5239af21b9710aa3f3b853a7c77e2fbbbacc9e2728fd2947c0502867f";

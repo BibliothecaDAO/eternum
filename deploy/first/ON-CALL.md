@@ -44,23 +44,23 @@ so it grows until the host runs out.
 3. `sudo docker logs --since 1h realms-dev-madara-1 2>&1 | tail -50`; a node that keeps growing is restarted with
    `sudo docker restart realms-dev-madara-1` (Herald reconnects; the chain is kept).
 
-## launch — game launches and seating
+## launch — game launches
 
-The launch Worker reports a failed or stranded run, or a launcher or slot that could not join or freeze. A game is not
-being created or its players are not being seated. A failed run is not retried by itself.
+The launch Worker reports a failed or stranded run, or a launcher that could not join. A game is not being created. A
+failed run is not retried by itself.
 
-1. `curl -s https://play.dev-realms.party/api/factory/health`: `failedRuns`, `strandedRuns`, `joinFailures`,
-   `freezeFailures`, each with its game or slot and code.
+1. `curl -s https://play.dev-realms.party/api/factory/health`: every failure it reports, each with its game or slot and
+   code.
 2. `pnpm --dir apps/launch-service exec wrangler tail realms-launch-staging`: the failing step, live.
 3. `sudo docker logs --since 30m realms-dev-rpc-1 2>&1 | grep rpc_refused | tail`: the RPC's refusals of the launcher's
-   or a seater's writes, each with its reason.
+   writes, each with its reason.
 
 ## relay — value relay
 
-The value relay is halted on a row, its Frontier funding failed, or it has not checked in for five minutes. Rewards and
+The value relay is halted on a row, one of its shard jobs failed, or it has not checked in for five minutes. Rewards and
 chest payouts are not being relayed.
 
-1. `curl -s https://play.dev-realms.party/api/value/health`: each shard's `halted` row and `funding_error`.
+1. `curl -s https://play.dev-realms.party/api/value/health`: each shard's `halted` row and `job_failures`.
 2. `pnpm --dir apps/value-relay exec wrangler tail realms-value-relay-staging`: why it halted.
 3. After fixing the cause, `POST /api/value/operator/reset` with the operator token and `{chainId,row,reason}`
    (`apps/value-relay/README.md`). Reset requires a confirmed paused ledger and refuses if any discarded claim was paid
@@ -95,6 +95,9 @@ any listed world is down.
 2. `pnpm --dir apps/realms exec wrangler tail realms-identity-staging`: identity serves accounts, directory, chat and
    the guardian.
 3. Cloudflare's status page, if several components fail together.
+4. `directory` lists the one shard the last `deploy:cloudflare` listed, and only that command lists one. After the box
+   moves to a new chain, rerun `pnpm run deploy:cloudflare`; to unlist a decommissioned shard without a redeploy, send
+   `DELETE /api/directory/shard` with the operator token.
 
 ## Payout alerts — the owner's Discord channel
 

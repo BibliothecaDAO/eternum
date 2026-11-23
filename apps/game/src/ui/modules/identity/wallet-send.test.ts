@@ -242,6 +242,7 @@ it("signs the prepared execution's hash with the passkey, sends it through the p
   );
   expect(execute).toHaveBeenCalledWith(execution, ["0x4", "0x9"]);
   expect(signed).toHaveBeenCalledOnce();
+  expect(signed).toHaveBeenCalledWith("0xtx");
   // The wallet pays its fee in LORDS, inside the execution: no STRK is read.
   expect(provider.callContract).not.toHaveBeenCalled();
   expect(provider.waitForTransaction).toHaveBeenCalledWith("0xtx", expect.anything());

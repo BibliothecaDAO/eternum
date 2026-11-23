@@ -1,14 +1,11 @@
 import mainnetAddresses from "../../contracts/common/addresses/mainnet.json";
-import { LEDGER_PRESET_FIELD_COUNT } from "../../packages/value-ledger/src/codecs";
 import { readFileSync, writeFileSync, renameSync } from "node:fs";
 import { join } from "node:path";
 import { Account, byteArray, CallData, hash, json, num, type Call, type RpcProvider } from "starknet";
-import { buildLedgerEconomicPreset, chestPresetFor } from "../../config/deployer/clean/ledger/economics";
-import { awardableCosmetics } from "../../contracts/l2/ledger/scripts/chest-preset.js";
-import { addressBook, blitzPresetOf, root, type Environment, type Inputs, type Target } from "./settings";
-import { classAt, isMissing, isContractRevert, confirm, send } from "./chain";
+import { awardableCosmetics, chestPresets } from "../../contracts/l2/ledger/scripts/chest-preset.js";
+import { addressBook, root, type Environment, type Inputs, type Target } from "./settings";
+import { classAt, isMissing, confirm, send } from "./chain";
 import { PublicError } from "./errors";
-import { setupSeason, type BlitzWindow } from "./blitz-season";
 import type { PrivateStore } from "./private-store";
 
 export type Assets = { ledger: string; lords: string; mmr: string; chests: string; cosmetics: string };
@@ -203,17 +200,14 @@ const call = (contractAddress: string, entrypoint: string, values: Parameters<ty
   entrypoint,
   calldata: CallData.compile(values),
 });
-export function setupCalls(
-  target: Target,
-  assets: Assets,
-  pauser: string,
-  frontierPresetId: number,
-  blitz: BlitzWindow | null,
-) {
+function chestPresetFor(target: Target) {
+  const build = chestPresets[target.chests as keyof typeof chestPresets];
+  if (!build) throw new Error(`Unknown chest preset ${target.chests}`);
+  return build();
+}
+export function setupCalls(target: Target, assets: Assets, pauser: string) {
   assertProductionLords(target, assets.lords);
-  const chests = chestPresetFor(target.environment as Environment);
-  // A Frontier-only environment registers no Blitz preset and opens no Blitz season.
-  const blitzPreset = blitz ? blitzPresetOf(target) : null;
+  const chests = chestPresetFor(target);
   const metadata = (collection: string, attributes: number) =>
     call(collection, "set_attrs_raw_to_ipfs_cid", [attributes, byteArray.byteArrayFromString(target.picture), false]);
   return [
@@ -223,26 +217,12 @@ export function setupCalls(
     call(assets.ledger, "grant_role", [hash.getSelectorFromName("PAUSER_ROLE"), pauser]),
     ...chests.bands.map((band) => metadata(assets.chests, band.metadata)),
     ...awardableCosmetics(chests).map((item: number) => metadata(assets.cosmetics, item)),
-    ...(blitzPreset === null
-      ? []
-      : [
-          call(assets.ledger, "register_preset", [
-            blitzPreset,
-            buildLedgerEconomicPreset("blitz", { environment: target.environment as Environment, chests }),
-            chests.bands,
-            chests.items,
-          ]),
-        ]),
-    call(assets.ledger, "register_preset", [
-      frontierPresetId,
-      buildLedgerEconomicPreset("frontier", { chests, presetId: frontierPresetId }),
-      chests.bands,
-      chests.items,
-    ]),
-    ...(blitzPreset === null
-      ? []
-      : [call(assets.ledger, "open_season", [blitz!.seasonId, blitzPreset, blitz!.start, blitz!.end])]),
   ];
+}
+export async function setupHead(provider: RpcProvider) {
+  const head = await provider.getBlockWithTxHashes("latest");
+  if (!("block_number" in head)) throw new PublicError("Confirmed mainnet head required");
+  return head.block_number!;
 }
 /** Find the first block containing this contract; only code 20 means it did not exist yet. */
 export async function deploymentBlock(provider: RpcProvider, address: string, head: number) {
@@ -266,7 +246,7 @@ export async function deploymentBlock(provider: RpcProvider, address: string, he
 export function setupPresenceReader(provider: RpcProvider) {
   const deployments = new Map<string, Promise<number>>();
   return (operation: Call, head: number) => {
-    if (operation.entrypoint !== "set_attrs_raw_to_ipfs_cid") return setupPresent(provider, operation, head);
+    if (operation.entrypoint !== "set_attrs_raw_to_ipfs_cid") return rolePresent(provider, operation, head);
     const address = num.toHex(operation.contractAddress);
     let first = deployments.get(address);
     if (!first) {
@@ -303,72 +283,13 @@ async function metadataPresent(provider: RpcProvider, operation: Call, head: num
   } while (continuation_token);
   return found;
 }
-/**
- * The ledger stores a preset's five chest bands, then its five cosmetic rarities, in the order register_preset's
- * calldata carries them after its economic fields; each read must match the next fields of that same call.
- */
-async function assertRegisteredChestRewards(provider: RpcProvider, operation: Call, head: number) {
-  const args = operation.calldata as string[];
-  let next = 2 + LEDGER_PRESET_FIELD_COUNT;
-  for (const entrypoint of ["get_chest_band", "get_cosmetic_items"]) {
-    for (let index = 0; index < 5; index++) {
-      const fields = await provider.callContract(
-        { contractAddress: operation.contractAddress, entrypoint, calldata: [args[0]!, String(index)] },
-        head,
-      );
-      const expected = args.slice(next, next + fields.length);
-      if (expected.length !== fields.length || fields.some((felt, at) => BigInt(felt) !== BigInt(expected[at]!)))
-        throw new PublicError("Registered chest rewards differ");
-      next += fields.length;
-    }
-    next += 1;
-  }
-}
-async function setupPresent(provider: RpcProvider, operation: Call, head: number) {
-  const args = operation.calldata as string[];
-  const entrypoint =
-    operation.entrypoint === "grant_role"
-      ? "has_role"
-      : operation.entrypoint === "register_preset"
-        ? "get_preset"
-        : "get_season";
-  try {
-    const result = await provider.callContract(
-      {
-        contractAddress: operation.contractAddress,
-        entrypoint,
-        calldata: operation.entrypoint === "grant_role" ? args : [args[0]!],
-      },
-      head,
-    );
-    if (entrypoint === "has_role") {
-      if (result.length !== 1 || ![0n, 1n].includes(BigInt(result[0]!))) throw new PublicError("Invalid role read");
-      return BigInt(result[0]!) === 1n;
-    }
-    if (entrypoint === "get_preset") {
-      const economics = args.slice(1, 1 + LEDGER_PRESET_FIELD_COUNT);
-      if (
-        result.length !== economics.length ||
-        result.slice(0, economics.length).some((felt, index) => BigInt(felt) !== BigInt(economics[index]!))
-      )
-        throw new PublicError("Registered preset differs");
-      await assertRegisteredChestRewards(provider, operation, head);
-    }
-    if (
-      entrypoint === "get_season" &&
-      (result.length !== 16 ||
-        BigInt(result[10]!) !== 1n ||
-        BigInt(result[11]!) !== BigInt(args[1]!) ||
-        BigInt(result[12]!) !== BigInt(args[2]!) ||
-        BigInt(result[13]!) !== BigInt(args[3]!))
-    )
-      throw new PublicError("Existing Blitz season differs");
-    return true;
-  } catch (error) {
-    const reason = entrypoint === "get_preset" ? "Ledger: unknown preset" : "Ledger: unknown Blitz season";
-    if (isContractRevert(error, reason)) return false;
-    throw error;
-  }
+async function rolePresent(provider: RpcProvider, operation: Call, head: number) {
+  const result = await provider.callContract(
+    { contractAddress: operation.contractAddress, entrypoint: "has_role", calldata: operation.calldata as string[] },
+    head,
+  );
+  if (result.length !== 1 || ![0n, 1n].includes(BigInt(result[0]!))) throw new PublicError("Invalid role read");
+  return BigInt(result[0]!) === 1n;
 }
 export async function configureLedger(
   account: Account,
@@ -380,27 +301,16 @@ export async function configureLedger(
   output: (line: string) => void,
   readPresence = setupPresenceReader(account),
 ) {
-  const season = await setupSeason(account, target, assets.ledger, input);
-  const desired = setupCalls(target, assets, pauser, Number(input.frontierPresetId), season.blitz);
+  const head = await setupHead(account);
+  const desired = setupCalls(target, assets, pauser);
   output("Reading collectible metadata on mainnet.");
-  const present = await Promise.all(desired.map((operation) => readPresence(operation, season.head)));
+  const present = await Promise.all(desired.map((operation) => readPresence(operation, head)));
   const missing = desired.filter((_, index) => !present[index]);
   if (!missing.length) return true;
-  if (missing.some((call) => call.entrypoint === "open_season") && season.blitz!.start <= season.now)
-    throw new PublicError(
-      "Blitz start is no longer in the future. Choose new explicit dates in inputs.json before sending setup.",
-    );
   if (target.coldAdmin) {
     store.write("cold-setup.json", { account: input.admin, calls: missing });
     return false;
   }
-  await send(
-    account,
-    missing,
-    store,
-    `setup-${assets.ledger}-${season.blitz?.seasonId ?? "frontier"}`,
-    output,
-    season.head,
-  );
+  await send(account, missing, store, `setup-${assets.ledger}-frontier`, output, head);
   return true;
 }

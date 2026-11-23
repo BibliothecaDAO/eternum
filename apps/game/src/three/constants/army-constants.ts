@@ -1,5 +1,6 @@
 import { TroopTier, TroopType } from "@bibliothecadao/types";
-import { ModelType } from "../types/army";
+import { type ArmyPace, ModelType } from "../types/army";
+import { modelPath } from "../utils/model-url";
 
 export const MAX_INSTANCES = 1000;
 /** The scale every army model is drawn at on the world map (and in the lab's studio, which draws them the same way). */
@@ -15,6 +16,7 @@ export const ARMY_PLATE_HEIGHT = 1.45;
 export const ARMY_MODEL_TOP = 1.28;
 /** The shipped T1 knight's articulated model: authored 0.6135 tall, drawn at the old T1 model's 1.02 height. */
 export const T1_KNIGHT_WORLD_SCALE = 1.67;
+export const ARMY_PACE_SPEED: Record<ArmyPace, number> = { walk: 1, run: 1.5 };
 export const ANIMATION_STATE_IDLE = 0;
 export const ANIMATION_STATE_MOVING = 1;
 
@@ -84,5 +86,5 @@ export const MODEL_TYPE_TO_FILE: Record<ModelType, string> = {
 };
 
 export const buildArmyModelAssetPath = (modelType: ModelType): string => {
-  return `/models/${MODEL_TYPE_TO_FILE[modelType]}`;
+  return modelPath(MODEL_TYPE_TO_FILE[modelType]);
 };

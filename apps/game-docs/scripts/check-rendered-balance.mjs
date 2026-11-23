@@ -2,7 +2,7 @@
 /**
  * Checks the built docs show each mode's own balance: on a page, a label must be followed by the value its mode's
  * generated config holds, and the relic page each relic's cost as the Blitz preset's relic rules set it. Blitz and
- * Eternum differ on these values, so a Blitz component that reads Eternum's config (or a hard-coded number that
+ * Frontier differ on these values, so a Blitz component that reads another mode's config (or a hard-coded number that
  * drifted) fails the build. The text export (llm.txt) must state the same numbers, with no expression left as code.
  * Run after `vocs build`: node scripts/check-rendered-balance.mjs <dist>
  */
@@ -13,170 +13,48 @@ import remarkMdx from "remark-mdx";
 import { readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { resourceName } from "@bibliothecadao/types";
+import { LAYER_NAMES, beastOf, resourceName, BuildingType } from "@bibliothecadao/types";
 
 const here = fileURLToPath(new URL(".", import.meta.url));
-const configOf = (mode) =>
-  JSON.parse(readFileSync(join(here, `../../../config/generated/${mode}.madara.json`), "utf8")).configuration;
-
-const WHEAT = 35;
-const DONKEY = 25;
-const ESSENCE = 38;
-
-/** Each page's expected runs of visible text, each a label then the values its mode's config gives. */
-export const expectedRuns = (blitz, eternum) => {
-  const firstReward = blitz.blitz.exploration.rewards[0];
-  const donkeyWheat = blitz.resources.productionByComplexRecipe[DONKEY].find((input) => input.resource === WHEAT);
-  if (firstReward.rewardId !== ESSENCE) throw new Error("the first Blitz exploration reward is no longer Essence");
-  return [
-    {
-      page: "blitz/map",
-      runs: [
-        [
-          "Essence",
-          `${firstReward.percent}%`,
-          ((firstReward.percent * blitz.troop.limit.exploreRewardStrengthCap) / 100).toLocaleString("en-US"),
-          `${firstReward.probabilityBps / 100}%`,
-        ],
-      ],
-    },
-    {
-      page: "blitz/realms",
-      runs: [
-        [
-          "Donkeys",
-          "Resource",
-          "Input Materials (units/s)",
-          "Output (units/s)",
-          "Donkey",
-          String(donkeyWheat.amount),
-          String(blitz.resources.productionByComplexRecipeOutputs[DONKEY]),
-        ],
-      ],
-    },
-    {
-      page: "eternum/worldmap-movement/movement",
-      runs: [["Stamina on Deployment", String(eternum.troop.stamina.staminaInitial)]],
-    },
-  ];
-};
-
-/**
- * The relic page's runs: each relic's effect, who activates it, and the Essence it costs as the Blitz preset's relic
- * rules (listed from the first relic) set it.
- */
-export const relicRuns = (relics, rules, firstRelicId) => [
-  {
-    page: "blitz/map",
-    runs: relics.map((relic) => [
-      relic.effect,
-      relic.recipientType === "Explorer" ? "Army" : "Realm",
-      String(rules[relic.id - firstRelicId].essence_cost),
-    ]),
-  },
-];
 
 /** Thousands with commas, as the pages write them. */
 const n = (value) => value.toLocaleString("en-US");
 const pct = (bps) => `${n(bps / 100)}%`;
-const DEPTH_NAMES = ["Surface", "Ethereal I", "Ethereal II", "Ethereal III"];
 const TIERS = ["common", "uncommon", "rare", "epic", "legendary"];
-const POINTS_PRECISION = 1_000_000;
-
-/** Stamina as each mode's prose states it: a phase is one armies tick, and a day six of them. */
-const staminaPhrases = (mode, config) => {
-  const stamina = config.troop.stamina;
-  return [
-    {
-      page: `${mode}/military/stamina-and-biomes`,
-      phrases: [
-        `Stamina Regeneration per Phase: ${stamina.staminaGainPerTick} stamina`,
-        `Total Stamina Regeneration per Day: ${stamina.staminaGainPerTick * 6} stamina`,
-        `the attacker must spend ${stamina.staminaAttackReq} stamina`,
-        `The defender simultaneously spends ${stamina.staminaDefenseReq} stamina`,
-      ],
-    },
-    {
-      page: `${mode}/worldmap-movement/movement`,
-      phrases: [
-        `+${stamina.staminaGainPerTick} stamina per Phase`,
-        `Exploring an unknown hex always costs ${stamina.staminaExploreStaminaCost} stamina`,
-      ],
-    },
-    { page: `${mode}/key-concepts`, phrases: [`regenerating at +${stamina.staminaGainPerTick} per Phase`] },
-  ];
-};
-
-/** A tier's damage multiplier over T1's, from its 64.64 fixed-point config value. */
-const tierWeight = (multiplier) => n(Number(BigInt(multiplier) / 2n ** 64n));
-
-/**
- * Blitz's stamina and battle timer as its armies page states them: per army tick, in seconds. A fight adds its time to
- * what is left on each timer; the page's even T1 fight, against a defender with a full timer to run, refunds none of it.
- */
-
-const blitzStaminaPhrases = (config) => {
-  const stamina = config.troop.stamina;
-  const damage = config.troop.damage;
-  const cooldown = config.battle.cooldownSeconds;
-  const rangedCooldown = Math.floor(cooldown / 2);
-  return [
-    {
-      page: "blitz/armies",
-      phrases: [
-        `recovers ${stamina.staminaGainPerTick} every ${config.tick.armiesTickIntervalInSeconds} seconds`,
-        `Exploring a tile costs ${stamina.staminaExploreStaminaCost}`,
-        `Attacking takes ${stamina.staminaAttackReq} stamina`,
-        `The defender spends ${stamina.staminaDefenseReq} stamina`,
-        `adds up to ${n(cooldown)} seconds to each side's timer`,
-        `A ranged attack adds ${n(rangedCooldown)} seconds to both timers.`,
-        `with ${n(cooldown)} seconds left on their timer: the defenders then wait ${n(cooldown * 2)} seconds and the attackers ${n(cooldown)}.`,
-        `the defenders wait ${n(cooldown + rangedCooldown)} seconds and the Crossbowmen ${n(rangedCooldown)}.`,
-        `The tier weights are 1 for T1, ${tierWeight(damage.t2DamageMultiplier)} for T2 and ${tierWeight(damage.t3DamageMultiplier)} for T3.`,
-      ],
-    },
-  ];
-};
 
 /** A building's price as the realm page states it: every resource it takes, by the catalog's name. */
 const buildingPrice = (config, id) =>
   config.buildings.simpleBuildingCost[id]
     .map(({ resource, amount }) => `${n(amount)} ${resourceName(resource)}`)
     .join(" + ");
-const FARM = 37;
-const WAR_HALL = 41;
-
-/** One Knight's wheat, as its recipe takes it per troop made: Frontier deploys Knights only. */
-const wheatPerTroop = (config) =>
-  config.resources.productionBySimpleRecipe[26].find((input) => input.resource === 35).amount /
-  config.resources.productionBySimpleRecipeOutputs[26];
 
 /**
  * Frontier's numbers, from its generated config (stamina, tick, start, castle) and its native preset (days' depths,
  * guards, chests), as its four rules pages state them.
  */
 
-export const frontierGuardPhrases = (preset, riftGuardBound) => {
+export const frontierGuardPhrases = (preset) => {
   const range = (lower, upper) => `${n(lower)}–${n(upper)}`;
   return [
-    "Ground Camps Rifts Ruins Weaker beasts Stronger beasts",
+    "Ground Camps Rifts Weaker beasts Stronger beasts Ruins",
     ...preset.depths.map((depth, index) =>
       [
-        DEPTH_NAMES[index],
+        LAYER_NAMES[index],
+        beastOf("camp", index).name,
         range(depth.siteGuardLower, depth.siteGuardUpper),
-        range(
-          riftGuardBound(depth.siteGuardLower, depth.guardStep),
-          riftGuardBound(depth.siteGuardUpper, depth.guardStep),
-        ),
-        range(depth.ruinGuardLower, depth.ruinGuardUpper),
+        beastOf("rift", index).name,
+        range(depth.riftGuardLower, depth.riftGuardUpper),
+        beastOf("herd", index).name,
         range(depth.beastWeakLower, depth.beastWeakUpper),
+        beastOf("band", index).name,
         range(depth.beastStrongLower, depth.beastStrongUpper),
+        beastOf("ruin", index).name,
       ].join(" "),
     ),
   ];
 };
 
-const frontierPhrases = (config, preset, riftGuardBound) => {
+export const frontierPhrases = (config, preset, nativeRules) => {
   const stamina = config.troop.stamina;
   const tick = config.tick.armiesTickIntervalInSeconds;
   const start = (id) => n(config.startingResources.find((r) => r.resource === id).amount);
@@ -188,120 +66,49 @@ const frontierPhrases = (config, preset, riftGuardBound) => {
     limit.kingdomDeploymentCap,
     limit.empireDeploymentCap,
   ];
-  const revealXp = preset.depths
-    .map((_, depth) => n(preset.progression.revealXp + depth * preset.progression.revealXpPerDepth))
-    .join(" / ");
   return [
     {
       page: "frontier/armies",
       phrases: [
         `An army holds ${n(stamina.staminaKnightMax)} stamina and recovers ${stamina.staminaGainPerTick} every ${tick / 60} minutes, so an empty bar fills in ${((stamina.staminaKnightMax / stamina.staminaGainPerTick) * tick) / 3600} hours.`,
-        `Revealing a tile costs ${stamina.staminaExploreStaminaCost}, a step over known ground ${stamina.staminaTravelStaminaCost}, and an attack needs ${stamina.staminaAttackReq}.`,
-        `An army earns ${revealXp} XP per revealed tile at ${DEPTH_NAMES.join(" / ")}.`,
-        `At ${TIERS.map((tier) => n(preset.progression[`${tier}Xp`])).join(" / ")} XP it earns Common I, Uncommon II, Rare III, Epic IV and Legendary V skill points.`,
-        `The same milestones repeat every ${n(preset.progression.legendaryXp)} XP.`,
+        `Revealing a tile costs ${stamina.staminaExploreStaminaCost} for Knights and ${nativeRules.SCOUT_EXPLORE_STAMINA} for Scouts, a step over known ground ${stamina.staminaTravelStaminaCost}, and an attack needs ${stamina.staminaAttackReq}.`,
       ],
     },
     {
       page: "frontier/expedition",
       phrases: [
-        `Each reveal also gives the army ${revealXp} XP at ${DEPTH_NAMES.join(" / ")}.`,
-        ...frontierGuardPhrases(preset, riftGuardBound),
-        ...preset.depths.map((depth, index) => `${DEPTH_NAMES[index]} ${depth.revealPercent}%`),
-      ],
-    },
-    {
-      page: "frontier/chests",
-      phrases: [
-        ...preset.depths.map(
-          (depth, index) => `${DEPTH_NAMES[index]} ${TIERS.map((tier) => pct(depth.chest[tier])).join(" ")}`,
-        ),
-        `Shares ${TIERS.map((tier) => n(preset.chests.shares[tier])).join(" ")}`,
-        `never exceeds ${n(preset.chests.priceCeiling)} LORDS`,
+        ...frontierGuardPhrases(preset),
+        ...preset.depths.map((depth, index) => `${LAYER_NAMES[index]} ${depth.revealPercent}%`),
       ],
     },
     {
       page: "frontier/realm",
       phrases: [
         `A new realm starts with ${start(26)} troops, ${start(35)} wheat and ${start(23)} labor.`,
-        `take ${n(preset.board.rationStep)} wheat off the ${n(wheatPerTroop(config))} wheat each troop costs to deploy`,
+        `receive ${n(preset.dailyQuest.labor)} Labor and ${n(preset.dailyQuest.essence)} Essence.`,
         ...armies.map((count, index) => `${index + 1} ${n(count)} ${n(caps[index])}`),
         // An ordinary building and a training building: each price whole, by resource (a training building takes two).
-        `Farm Wheat ${buildingPrice(config, FARM)}`,
-        `War hall, Supply yard, Scouts' lodge, Hearth A tier for every new army ${buildingPrice(config, WAR_HALL)}`,
+        `Farm Wheat ${buildingPrice(config, BuildingType.ResourceWheat)}`,
+        `Scouts' lodge Scouts ${buildingPrice(config, BuildingType.ScoutsLodge)}`,
+        `Supply yard Logistics training ${buildingPrice(config, BuildingType.SupplyYard)}`,
       ],
     },
   ];
 };
 
-/**
- * The entry page says a sword and a shield each cost one entry: true only while both registered prices equal the entry
- * fee. Otherwise the page must state the prices themselves, which it does not, so the check fails.
- */
-const flagPrices = (ledger) => {
-  const entry = lordsOf(ledger.entry_fee);
-  const sword = lordsOf(ledger.sword_price);
-  const shield = lordsOf(ledger.shield_price);
-  return sword === entry && shield === entry
-    ? "Each costs one entry."
-    : `A sword costs ${sword} LORDS and a shield ${shield} LORDS.`;
-};
-
-const lordsOf = (amount) => n(Number(BigInt(amount.low) + (BigInt(amount.high) << 128n)) / 1e18);
-
-/** Where an entry goes, as the page states it: all of it to the chest reserve and the treasury. */
-const entrySplit = (ledger) => {
-  if (ledger.chest_lords_bps + ledger.protocol_cut_bps !== 10_000)
-    throw new Error("Blitz's entry also funds the prize pool: the prize page states a two-way split");
-  return `split two ways: ${pct(ledger.chest_lords_bps)} to the chest reserve and ${pct(ledger.protocol_cut_bps)} to the treasury`;
-};
-
-/**
- * The one chest every band draws, as the page states it. The page has no band table and names no cosmetic, so chests
- * whose bands differ, or that can draw a cosmetic, fail here rather than let the page go stale.
- */
-const chestDraw = (chests) => {
-  const [band] = chests.bands;
-  const same = chests.bands.every(
-    (each) => JSON.stringify(each) === JSON.stringify({ ...band, metadata: each.metadata }),
-  );
-  if (!same) throw new Error("Blitz's chest bands differ: the prize page states one chest for every band");
-  if (TIERS.some((tier) => band.odds[tier] > 0))
-    throw new Error("Blitz's chests can draw a cosmetic: the prize page names none");
-  const worth = band.lords_shares === 1 ? "one entry's worth" : `${n(band.lords_shares)} entries' worth`;
-  return `${worth} of LORDS (${pct(band.odds.lords)}), a sword credit (${pct(band.odds.sword)}) or a shield credit (${pct(band.odds.shield)})`;
-};
-
-/**
- * Blitz's entry and prizes, from the ledger and chest presets production registers (config/deployer/clean/ledger/
- * economics.ts, chestPresetFor), as the entry, prize and armies pages state them.
- */
-const blitzLedgerPhrases = (blitz, ledger, chests) => {
-  const reserve = blitz.startingResources.find((stack) => stack.resource === 26).amount;
-  return [
-    {
-      page: "blitz/entry",
-      phrases: [`at the season's entry fee (${lordsOf(ledger.entry_fee)} LORDS this season)`, flagPrices(ledger)],
-    },
-    {
-      page: "blitz/scoring",
-      phrases: [
-        entrySplit(ledger),
-        chestDraw(chests),
-        `Ratings are measured against a reference mean of ${n(ledger.mmr.mean)}`,
-        `A game's base rating change is capped at ${ledger.mmr.max_delta}, less in a small game; then a sword doubles a gain and a shield halves a loss`,
-        `The best ${pct(ledger.paid_fraction_bps)} of the season's players`,
-        `each place after it ${pct(ledger.decay_bps)} of the share above`,
-      ],
-    },
-    {
-      page: "blitz/armies",
-      phrases: [
-        `Each starts with ${n(blitz.troop.limit.startingGuard)} T1 troops of its type garrisoned and ${n(reserve)} in reserve`,
-      ],
-    },
-  ];
-};
+/** The retired chest page remains tied to its historical paying preset. */
+const historicalChestPhrases = (preset) => [
+  {
+    page: "frontier/chests",
+    phrases: [
+      ...preset.depths.map(
+        (depth, index) => `${LAYER_NAMES[index]} ${TIERS.map((tier) => pct(depth.chest[tier])).join(" ")}`,
+      ),
+      `Shares ${TIERS.map((tier) => n(preset.chests.shares[tier])).join(" ")}`,
+      `never exceeds ${n(preset.chests.priceCeiling)} LORDS`,
+    ],
+  },
+];
 
 /** The Payout wallet page's statement of the co-signer's hold on a replaced wallet. */
 export const payoutWalletPhrases = (changeHoldSeconds) => [
@@ -312,54 +119,40 @@ export const payoutWalletPhrases = (changeHoldSeconds) => [
 ];
 
 /** The phrases every rules page that states a stamina, guard, chest or points number must show. */
-export const expectedPhrases = (blitz, eternum, frontier, frontierPreset, ledger, chests, riftGuardBound) => [
-  ...blitzStaminaPhrases(blitz),
-  ...staminaPhrases("eternum", eternum),
-  {
-    page: "blitz/map",
-    phrases: [
-      `Opening a crate scores ${n(Number(blitz.victoryPoints.pointsForRelicDiscovery) / POINTS_PRECISION)} points`,
-    ],
-  },
-  ...frontierPhrases(frontier, frontierPreset, riftGuardBound),
-  ...blitzLedgerPhrases(blitz, ledger, chests),
+export const expectedPhrases = (frontier, frontierPreset, nativeRules) => [
+  ...frontierPhrases(frontier, frontierPreset, nativeRules),
 ];
 
 /**
  * The relic table, the Blitz preset's relic rules, Frontier's native preset, the text export's path, Blitz's ledger and
  * chest presets, and the co-signer's payout-wallet hold, read from their TypeScript sources through Vite.
  */
-const loadBalanceSources = async () => {
+export const loadBalanceSources = async () => {
   const { createServer } = await import("vite");
   const server = await createServer({ configFile: false, logLevel: "silent", appType: "custom" });
   try {
-    const { RELICS, ResourcesIds } = await server.ssrLoadModule(
-      join(here, "../../../packages/types/src/constants/index.ts"),
+    const { nativePresetForId, nativePresetIdFor } = await server.ssrLoadModule(
+      join(here, "../../../config/source/native.ts"),
     );
-    const { blitzPreset } = await server.ssrLoadModule(join(here, "../../../config/source/blitz/native.ts"));
-    const { frontierPreset } = await server.ssrLoadModule(join(here, "../../../config/source/frontier/native.ts"));
-    const { previewRiftGuardBound } = await server.ssrLoadModule(
-      join(here, "../../../contracts/l3/world-native/schema/site-previews.gen.ts"),
+    const frontierPreset = nativePresetForId(nativePresetIdFor("frontier"));
+    const { frontierPreset: historicalFrontierPreset } = await server.ssrLoadModule(
+      join(here, "../../../config/source/frontier/native.ts"),
     );
-    const { llmTxtFile } = await server.ssrLoadModule(join(here, "../docs/utils/paths.ts"));
+    const { loadNativePresetConfiguration } = await server.ssrLoadModule(
+      join(here, "../../../config/deployer/clean/registrar/native-preset.ts"),
+    );
+    const frontierConfig = loadNativePresetConfiguration("madara.frontier", frontierPreset.id);
+    const { nativeRuleConstants: nativeRules } = await server.ssrLoadModule(
+      join(here, "../../../contracts/l3/world-native/schema/balance.gen.ts"),
+    );
     const { PAYOUT_WALLET_CHANGE_SECONDS } = await server.ssrLoadModule(
       join(here, "../../../packages/value-ledger/src/payout-wallet.ts"),
     );
-    const { buildLedgerEconomicPreset, chestPresetFor } = await server.ssrLoadModule(
-      join(here, "../../../config/deployer/clean/ledger/economics.ts"),
-    );
-    // The pages describe production: its chests and ledger preset, as setup registers them.
-    const chests = chestPresetFor("production");
-    const ledger = buildLedgerEconomicPreset("blitz", { environment: "production", chests });
     return {
-      relics: RELICS,
-      rules: blitzPreset.relics,
-      firstRelicId: ResourcesIds.StaminaRelic1,
       frontierPreset,
-      previewRiftGuardBound,
-      llmTxtFile,
-      ledger,
-      chests,
+      frontierConfig,
+      historicalFrontierPreset,
+      nativeRules,
       payoutWalletChangeSeconds: PAYOUT_WALLET_CHANGE_SECONDS,
     };
   } finally {
@@ -382,9 +175,6 @@ export const visibleText = (html) =>
         .trim(),
     )
     .filter(Boolean);
-
-const containsRun = (text, run) =>
-  text.some((_, start) => run.every((expected, offset) => text[start + offset] === expected));
 
 /** A built page's visible text as one line: nodes joined by a space, whitespace collapsed, none before punctuation. */
 export const pageLine = (html) =>
@@ -483,44 +273,17 @@ export const tableSizeOverrides = (dist) =>
       })),
   );
 
-/** The runs a built site does not show, each with its page. */
-export const missingRuns = (dist, pages) =>
-  pages.flatMap(({ page, runs }) => {
-    const text = visibleText(readFileSync(join(dist, page, "index.html"), "utf8"));
-    return runs.filter((run) => !containsRun(text, run)).map((run) => ({ page, run }));
-  });
-
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const dist = resolve(process.argv[2] ?? join(here, "../dist"));
-  const {
-    relics,
-    rules,
-    firstRelicId,
-    frontierPreset,
-    llmTxtFile,
-    ledger,
-    chests,
-    previewRiftGuardBound,
-    payoutWalletChangeSeconds,
-  } = await loadBalanceSources();
-  const llm = readFileSync(llmTxtFile, "utf8");
+  const { frontierPreset, frontierConfig, historicalFrontierPreset, nativeRules, payoutWalletChangeSeconds } =
+    await loadBalanceSources();
+  const llm = readFileSync(join(dist, "llm.txt"), "utf8");
   const phrases = [
-    ...expectedPhrases(
-      configOf("blitz"),
-      configOf("eternum"),
-      configOf("frontier"),
-      frontierPreset,
-      ledger,
-      chests,
-      previewRiftGuardBound,
-    ),
+    ...expectedPhrases(frontierConfig, frontierPreset, nativeRules),
+    ...historicalChestPhrases(historicalFrontierPreset),
     ...payoutWalletPhrases(payoutWalletChangeSeconds),
   ];
   const missing = [
-    ...missingRuns(dist, [
-      ...expectedRuns(configOf("blitz"), configOf("eternum")),
-      ...relicRuns(relics, rules, firstRelicId),
-    ]),
     ...missingPhrases(dist, phrases),
     ...exportProblems(llm, phrases),
     ...forbiddenValues(dist, llm),

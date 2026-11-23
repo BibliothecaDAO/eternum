@@ -3,10 +3,10 @@ import { join, relative } from "node:path";
 import { setTimeout } from "node:timers/promises";
 import { command } from "./process";
 import { Platform, databaseWorkers, workers, type Secrets, type Worker } from "./platform";
-import { clientSite, type PagesSite } from "./settings";
-import { NATIVE_RELEASE_ID } from "../release/native-release";
+import { clientSite, shardInputs, type PagesSite } from "./settings";
+import { NATIVE_RELEASES } from "../release/native-release";
 import { readReleaseIdentity } from "./release-identity";
-import type { ApplyReleaseRequest, ReleaseReport } from "../../apps/launch-service/src/operator-api";
+import type { ApplyReleaseRequest, ReleaseIdentity, ReleaseReport } from "../../apps/launch-service/src/operator-api";
 import { CHAT_RETENTION_BATCH } from "../../apps/realms/server/chat/chat-objects";
 
 async function workerReady(platform: Platform, worker: Worker, revision: string) {
@@ -23,11 +23,14 @@ async function workerReady(platform: Platform, worker: Worker, revision: string)
   const body = (await response.json()) as { environment: string; version: string };
   return body.environment === platform.target.worker && body.version === version.id;
 }
-export async function deployWorkers(platform: Platform, revision: string) {
+export async function buildPackages(platform: Platform) {
   if (!platform.apply) throw new PublicError("Dry run cannot deploy Workers");
   deploymentStage("build packages");
   await command({ argv: ["pnpm", "run", "build:packages"] });
-  for (const worker of workers) {
+}
+export async function deployWorkers(platform: Platform, revision: string, selected: readonly Worker[]) {
+  if (!platform.apply) throw new PublicError("Dry run cannot deploy Workers");
+  for (const worker of selected) {
     deploymentStage(`publish ${worker.id}`);
     if ((await platform.deployedRevision(worker)) !== revision) {
       if (databaseWorkers.some((id) => id === worker.id))
@@ -43,15 +46,19 @@ export async function deployWorkers(platform: Platform, revision: string) {
     if (!ready) throw new PublicError("Worker version did not reach its public route");
   }
 }
-/**
- * The Cloudflare half once setup has created every resource: the Workers, then the running Frontier games' release,
- * then the client and the docs, which go live only once the games run the release they expect.
- */
+const releaseWorkers = workers.filter((worker) => worker.id === "launch");
+const directoryWorkers = workers.filter((worker) => worker.id === "identity");
+const gameReaderWorkers = workers.filter((worker) => worker.id !== "launch");
+
 export async function publishCloudflare(platform: Platform, revision: string) {
-  await deployWorkers(platform, revision);
-  await keepChatRetention(platform);
+  await buildPackages(platform);
+  await listOfficialShard(platform, revision);
+  await deployWorkers(platform, revision, releaseWorkers);
+  await buildClient(platform, revision);
   await advanceFrontierRelease(platform, revision);
-  await deployClient(platform, revision);
+  await deployWorkers(platform, revision, gameReaderWorkers);
+  await keepChatRetention(platform);
+  await publishClient(platform, revision);
   await deployDocs(platform, revision);
 }
 
@@ -87,6 +94,98 @@ async function callChatRetention(platform: Platform, operator: string, call: { c
   if (!response.ok) throw new PublicError(`Chat retention refused ${call.className}: ${response.status}`);
 }
 
+export async function listOfficialShard(platform: Platform, revision: string) {
+  if (!platform.apply) throw new PublicError("Dry run cannot list the shard");
+  deploymentStage("list the official shard");
+  const secrets = platform.store.read<Secrets>("secrets.json");
+  if (!secrets) throw new PublicError("Service credentials are missing; run setup with --apply before publishing");
+  const { shard } = await servedShard(platform, revision);
+  if (!shard) {
+    console.log("The box half has never built: no shard to list.");
+    return;
+  }
+  if (isSameShard(await listedShard(platform, secrets.operator), shard)) {
+    console.log(`The directory already lists ${shard.chainId} at ${shard.url}.`);
+    return;
+  }
+  await deployWorkers(platform, revision, directoryWorkers);
+  await putDirectoryShard(platform, secrets.operator, shard.url, shard.chainId);
+  console.log(`The directory lists ${shard.chainId} at ${shard.url}.`);
+}
+
+type ShardRow = NonNullable<ApplyReleaseRequest["shard"]>;
+
+async function servedShard(platform: Platform, revision: string): Promise<ApplyReleaseRequest> {
+  const { release, chainId } = readReleaseIdentity(platform.store, revision);
+  if (!release) return { release, shard: null };
+  if (!chainId) throw new PublicError("The box half has not prepared its shard; run it (pnpm run deploy) first");
+  const url = shardInputs(platform.target).public_herald_url;
+  await requireHeraldServes(url, chainId, release);
+  return { release, shard: { chainId, url } };
+}
+
+async function listedShard(platform: Platform, operator: string): Promise<ShardRow | null> {
+  const response = await fetch(`${platform.target.origin}/api/directory/shard`, {
+    redirect: "error",
+    headers: { "User-Agent": "realms-deployment/1", Authorization: `Bearer ${operator}` },
+    signal: AbortSignal.timeout(10_000),
+  });
+  if (response.status === 404) return null;
+  if (!response.ok)
+    throw new PublicError(`The directory: HTTP ${response.status}.`, response.status, "directory_unavailable");
+  return ((await response.json()) as { shard: ShardRow | null }).shard;
+}
+
+const isSameShard = (listed: ShardRow | null, shard: ShardRow) =>
+  listed !== null && isSameChain(listed.chainId, shard.chainId) && listed.url === shard.url;
+
+async function requireHeraldServes(herald: string, chainId: string, release: ReleaseIdentity) {
+  const response = await fetch(`${herald}/manifest`, {
+    redirect: "error",
+    headers: { "User-Agent": "realms-deployment/1" },
+    signal: AbortSignal.timeout(10_000),
+  });
+  if (!response.ok)
+    throw new PublicError(`Herald manifest: HTTP ${response.status}.`, response.status, "manifest_unavailable");
+  const manifest = (await response.json().catch(() => null)) as {
+    chainId?: unknown;
+    releases?: Record<string, { schema?: unknown } | undefined>;
+  } | null;
+  if (!isSameChain(manifest?.chainId, chainId))
+    throw new PublicError("Herald serves another chain than the box's; rerun the box half (pnpm run deploy)");
+  if (manifest?.releases?.[String(release.releaseId)]?.schema !== release.schema)
+    throw new PublicError(
+      `Herald does not publish release ${release.releaseId} with the box's schema; rerun the box half (pnpm run deploy)`,
+    );
+}
+
+async function putDirectoryShard(platform: Platform, operator: string, herald: string, chainId: string) {
+  const response = await fetch(`${platform.target.origin}/api/directory/shard`, {
+    method: "PUT",
+    redirect: "error",
+    headers: {
+      "User-Agent": "realms-deployment/1",
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${operator}`,
+    },
+    body: JSON.stringify({ url: herald }),
+    signal: AbortSignal.timeout(60_000),
+  });
+  const body = (await response.json().catch(() => null)) as { shard?: { chainId?: unknown }; error?: unknown } | null;
+  if (!response.ok || !isSameChain(body?.shard?.chainId, chainId)) {
+    const code = typeof body?.error === "string" ? body.error : "directory_listing_failed";
+    throw new PublicError(`The directory refused the shard: ${code}.`, response.status, code);
+  }
+}
+
+function isSameChain(value: unknown, chainId: string) {
+  try {
+    return typeof value === "string" && BigInt(value) === BigInt(chainId);
+  } catch {
+    return false;
+  }
+}
+
 /** What the release route's refusals mean for the person running the deploy. */
 const RELEASE_REFUSALS: Record<string, string> = {
   release_unverified: "the box half has never built this release; run it (pnpm run deploy) first",
@@ -108,7 +207,7 @@ export async function advanceFrontierRelease(platform: Platform, revision: strin
   deploymentStage("advance Frontier release");
   const secrets = platform.store.read<Secrets>("secrets.json");
   if (!secrets) throw new PublicError("Service credentials are missing; run setup with --apply before publishing");
-  const request: ApplyReleaseRequest = { release: readReleaseIdentity(platform.store, revision) };
+  const request = await servedShard(platform, revision);
   const response = await fetch(`${platform.target.origin}/api/factory/release`, {
     method: "POST",
     redirect: "error",
@@ -121,14 +220,21 @@ export async function advanceFrontierRelease(platform: Platform, revision: strin
     signal: AbortSignal.timeout(300_000),
   });
   const body = (await response.json().catch(() => null)) as (ReleaseReport & { error?: string }) | null;
-  if (!response.ok || !body?.shards) {
+  if (!response.ok || body?.shard === undefined) {
     const code = typeof body?.error === "string" ? body.error : "release_apply_failed";
-    throw new PublicError(`Release ${NATIVE_RELEASE_ID}: ${RELEASE_REFUSALS[code] ?? code}.`, response.status, code);
+    throw new PublicError(
+      `Release ${NATIVE_RELEASES.frontier.release}: ${RELEASE_REFUSALS[code] ?? code}.`,
+      response.status,
+      code,
+    );
   }
   platform.store.write("release-advance.json", body);
-  for (const { chainId, games } of body.shards)
+  if (body.shard) {
+    const { chainId, games, opened } = body.shard;
     for (const { gameId, from, to } of games)
       console.log(`Frontier game ${gameId} on ${chainId}: release ${from} → ${to}.`);
+    if (opened.length) console.log(`New games on ${chainId} start on release ${NATIVE_RELEASES.frontier.release}.`);
+  }
 }
 
 export function clientEnvironment(platform: Platform, revision: string) {
@@ -152,9 +258,9 @@ async function verifyPublishedClient(platform: Platform) {
     ],
   });
 }
-export async function deployClient(platform: Platform, revision: string) {
+export async function buildClient(platform: Platform, revision: string) {
   if (!platform.apply) throw new PublicError("Dry run cannot deploy the client");
-  deploymentStage("publish client");
+  deploymentStage("build client");
   const env = clientEnvironment(platform, revision);
   await command({ argv: ["pnpm", "--dir", "apps/game", "test", "src/utils/chunk-load-recovery.test.ts", "src/pwa"] });
   await command({ argv: ["pnpm", "--dir", "apps/game", "verify:assets"] });
@@ -175,6 +281,10 @@ for (const file of await readdir('apps/game/dist', {recursive:true}))
   if (file.endsWith('.js.map')) await unlink('apps/game/dist/' + file);
 `,
   });
+}
+export async function publishClient(platform: Platform, revision: string) {
+  if (!platform.apply) throw new PublicError("Dry run cannot deploy the client");
+  deploymentStage("publish client");
   const cloudflare = await platform.cloudflareEnvironment();
   await command({
     argv: ["node", "apps/game/scripts/ensure-pwa-cache-rule.mjs", platform.target.origin, platform.target.zone],

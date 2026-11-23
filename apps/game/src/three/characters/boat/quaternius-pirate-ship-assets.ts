@@ -3,6 +3,7 @@ import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
 
 import { disposeSkinnedSceneTemplates } from "../skinned-asset-resources";
 import { gltfLoader } from "@/three/utils/gltf-loader";
+import { modelPath } from "@/three/utils/model-url";
 
 export interface LoadedQuaterniusPirateShipAsset {
   animations: readonly unknown[];
@@ -16,7 +17,7 @@ export const QUATERNIUS_PIRATE_SHIP_ASSET = {
   label: "Quaternius Pirate Ship Large",
   sourceForward: "-x",
   targetLength: 3.6,
-  url: "/models/boats/quaternius-pirate/ship-large.glb",
+  url: modelPath("boats/quaternius-pirate/ship-large.glb"),
   waterlineY: 0,
   yawRadians: Math.PI / 2,
 } as const;

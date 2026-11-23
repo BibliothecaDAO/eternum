@@ -67,7 +67,7 @@ export async function runNativeDeployment(args: CliArgs, root: string): Promise<
     l2GasBound: manifest.shard.l2GasBound,
   };
   writeWorldOutputs(
-    buildNativeManifest(local, report.before, shard),
+    buildNativeManifest(local, report, shard),
     manifestPath,
     args["world-address-file"] ?? resolve(root, "deploy/athanor/.lab/native-world-address"),
   );

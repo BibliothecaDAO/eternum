@@ -1,3 +1,4 @@
+import { OrderStandard } from "./order-standard";
 import { RealmLivingAura } from "./realm-living-aura";
 import { BufferGeometry, InstancedBufferAttribute, Mesh, type CanvasTexture, type MeshStandardMaterial } from "three";
 import MeshStandardNodeMaterial from "three/src/materials/nodes/MeshStandardNodeMaterial.js";
@@ -24,6 +25,7 @@ import {
 /** Shared gameplay presentation with independent heraldry on each settlement instance. */
 export class SettlementModel extends InstancedModel {
   private readonly wonderAura?: RealmLivingAura;
+  private readonly orderStandard?: OrderStandard;
   private readonly settlementAnimation: SettlementAnimation;
   private readonly bannerAtlas: CanvasTexture;
   private preparation?: Promise<void>;
@@ -37,7 +39,6 @@ export class SettlementModel extends InstancedModel {
     capacity: number,
     readonly kind: "village" | "realm" = "village",
     wonder = false,
-    private readonly bannerArtwork?: string,
     sourceAssetOwnership: "cache" | "consumer" = "consumer",
   ) {
     super(gltf, capacity, false, kind === "village" ? "Village" : "Realm", sourceAssetOwnership);
@@ -59,6 +60,10 @@ export class SettlementModel extends InstancedModel {
       1,
     );
     this.applyHeraldryMaterials(surfaces);
+    if (kind === "realm") {
+      this.orderStandard = new OrderStandard(this.instancedMeshes[0]);
+      this.group.add(this.orderStandard.group);
+    }
     if (wonder) {
       this.wonderAura = new RealmLivingAura(gltf.scene, this.instancedMeshes[0]);
       this.group.add(this.wonderAura.mesh);
@@ -104,7 +109,10 @@ export class SettlementModel extends InstancedModel {
 
   prepare(): Promise<void> {
     if (this.kind === "village") return Promise.resolve();
-    return (this.preparation ??= prepareRealmBannerAtlas(this.bannerAtlas, this.bannerArtwork));
+    return (this.preparation ??= Promise.all([
+      prepareRealmBannerAtlas(this.bannerAtlas),
+      this.orderStandard?.prepare(),
+    ]).then(() => undefined));
   }
 
   setOrderAt(index: number, orderId: number | undefined): void {
@@ -112,6 +120,7 @@ export class SettlementModel extends InstancedModel {
     const relationship = SETTLEMENT_RELATIONSHIP_ORDER[Math.floor(this.heraldry.getX(index) / REALM_BANNER_GROUP_SIZE)];
     this.heraldry.setX(index, resolveRealmBannerRow(orderId, relationship));
     this.heraldry.needsUpdate = true;
+    this.orderStandard?.setOrderAt(index, orderId);
   }
 
   setRelationshipAt(index: number, relationship: SettlementRelationship): void {
@@ -131,6 +140,7 @@ export class SettlementModel extends InstancedModel {
 
   override setCount(count: number): void {
     super.setCount(count);
+    this.orderStandard?.syncCount();
     this.wonderAura?.syncCount();
   }
 
@@ -147,6 +157,7 @@ export class SettlementModel extends InstancedModel {
   override dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
+    this.orderStandard?.dispose();
     this.wonderAura?.dispose();
     this.settlementAnimation.dispose();
     for (const { mesh, original } of this.clothGeometries) {

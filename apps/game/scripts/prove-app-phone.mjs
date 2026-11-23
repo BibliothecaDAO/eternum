@@ -56,7 +56,6 @@ const SURFACES = [
   { name: "player", kind: "page", before: app("season-running", "season"), path: app("season-running", "p/0xb001") },
   { name: "lobby", kind: "page", before: app("entry-choose", ""), path: app("entry-choose", "blitz/slot-blitz-1630") },
   { name: "build-orders", kind: "page", before: app("home", ""), path: app("home", "blitz/build-orders") },
-  { name: "devcon", kind: "page", before: app("devcon-flyer", ""), path: app("devcon-flyer", "join/devcon/LAB-CODE") },
   {
     name: "settings-portrait",
     kind: "sheet",
@@ -126,33 +125,16 @@ const SURFACES = [
     back: { press: "Messages", shows: `document.querySelectorAll(".ui-row").length > 1` },
   },
   { name: "settings-name", kind: "name", path: app("wallet-ready", "profile/settings") },
-  // A player in an Eternum game's standings, from a tribe's members. A phone's window shows the detail in the list's
-  // place, so the card has no tribe row beside it and no Back: the lit Tribes tab pressed again steps back to the
-  // tribe's members (social-board.tsx's pressTab), and a member opens again from there.
-  {
-    name: "standings-tribe",
-    kind: "flow",
-    path: "/lab/kit/standings?capture=1",
-    ready: "document.querySelector('[role=tab]') !== null",
-    steps: [
-      { press: "Tribes" },
-      { press: "Ironwood: its members", shows: "members", still: "members" },
-      { press: "Lord 0333", shows: "player", still: "player" },
-      { press: "Tribes", shows: "members", still: "members-again" },
-      { press: "Lord 0444", shows: "player", still: "player-again" },
-    ],
-  },
-  // A player in a Blitz game's standings, whose one tab is Players: the tab still shows, lit, and is the card's way back
-  // to the list, as Tribes is in Eternum's.
+  // Players remains visible as the way back from a Blitz player card.
   {
     name: "standings-blitz",
     kind: "flow",
     path: "/lab/kit/standings?mode=blitz&capture=1",
     ready: "document.querySelector('[data-player-address]') !== null",
     steps: [
-      { press: "Lord 0333: their points", shows: "player", still: "player" },
+      { press: "Lord 0333", shows: "player", still: "player" },
       { press: "Players", shows: "players", still: "players-again" },
-      { press: "Lord 0444: their points", shows: "player", still: "player-again" },
+      { press: "Lord 0444", shows: "player", still: "player-again" },
     ],
   },
   // Last: the doorway boots the map behind it, which keeps the tab busy for whatever opens next.
@@ -352,10 +334,6 @@ const NO_CARD = `!document.querySelector('[aria-label="Player details"]')`;
 
 /** What a flow's step must show, in words and as the page answers it. */
 const SHOWS = {
-  members: {
-    words: "the tribe's members",
-    test: `${NO_CARD} && [...document.querySelectorAll("button")].some((each) => each.innerText.trim() === "Lord 0333")`,
-  },
   players: {
     words: "the players' list",
     test: `${NO_CARD} && document.querySelectorAll("[data-player-address]").length > 1`,

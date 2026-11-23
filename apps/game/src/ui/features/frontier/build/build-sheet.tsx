@@ -1,4 +1,4 @@
-import { availableScoutingChoices, type ScoutingSide } from "../progression-choices";
+import { rankName } from "@bibliothecadao/types";
 import { usePlayerNames } from "@/hooks/use-player-profile";
 import { AudioManager } from "@/audio/core/AudioManager";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
@@ -9,21 +9,15 @@ import { useQuery } from "@/hooks/helpers/use-query";
 import { useAllInFlight, useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 
-import type { PriceKind } from "@/ui/design-system/kit/price-faces";
+import { PRICE_FACES, type PriceKind } from "@/ui/design-system/kit/price-faces";
 import type { Refusal } from "@/ui/design-system/kit/refusal";
 import {
-  BARRACKS,
-  BUILD,
   makes,
-  needsResearchPurchases,
   ONE_A_REALM,
-  POPULATION,
   priceRaised,
-  RESEARCH,
-  ROOM_ASK,
   startsNewArmies,
+  storesMore,
   type RankedWords,
-  takesPopulation,
 } from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
 import { knownAmount } from "@/ui/utils/utils";
@@ -33,32 +27,29 @@ import {
   buildableRadius,
   configManager,
   getBalance,
-  getBuildingQuantity,
   getRealmInfo,
-  realmLearned,
-  researchTier,
   resolveUseSimpleCost,
 } from "@bibliothecadao/eternum";
 import { resolveConstructionBuildability } from "@bibliothecadao/eternum/automation";
-import { safeInteger, nativeResearchConstants, type NativeRows } from "@bibliothecadao/eternum/game-client";
+import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import {
   BUILDINGS_CENTER,
   BuildingType,
   formatAmount,
-  formatCharge,
-  formatGain,
+  formatPercent,
   formatRate,
   getHexDistance,
   type HexPosition,
 } from "@bibliothecadao/types";
 import { useEffect, useMemo, useState } from "react";
 
-import { readRealmPopulation } from "../realm/realm-population";
 import { realmPerHour, secondsUntilHeld } from "../hud/army-order";
-import { ATTRIBUTE_MARKS } from "../research/research-tree";
+
 import { FRONTIER_STORES, madeStore, STORE_KINDS } from "../stores";
+import { usePartShown } from "../opening/opening-context";
 import { type BuildOption, readBuildOptions } from "./build-options";
-import { type BuildTile, BuildView, type RoomAskChoices } from "./build-view";
+import { disclosedBuildOptions } from "./first-build";
+import { type BuildTile, BuildView } from "./build-view";
 import { buildingIcon, buildingName } from "./building-names";
 
 const BUILD_MODELS = [
@@ -97,23 +88,14 @@ export const useOpenPlot = (realm: NativeRows["Structure"] | null): HexPosition 
   return building && Number(building.category) !== BuildingType.None ? null : plot;
 };
 
-/**
- * The build sheet over the game's facts: the buildings the plot can hold at the realm's researched tier, the chosen
- * one standing on the plot as a ghost, its gains, and Build, or the price the realm cannot pay yet with its wait. It
- * opens on the realm's first build while it has none (first-build.ts), else on the first building, and keeps the
- * player's pick: with no free population, Build asks (RoomAsk) and offers the
- * Hut on this plot, never picking it for the player.
- */
 export const BuildSheet = ({
   realm,
   plot,
-  onResearch,
   onClose,
 }: {
   realm: NativeRows["Structure"];
   plot: HexPosition;
   /** Opens Research, where two Barracks purchases unlock training buildings. */
-  onResearch?: () => void;
   onClose: () => void;
 }) => {
   const { setup } = useGame();
@@ -122,14 +104,13 @@ export const BuildSheet = ({
   const useSimpleCost = resolveUseSimpleCost(configManager.buildingCostMode, requestedSimpleCost);
   const facts = useNativeFacts(BUILD_MODELS);
   const tick = useCurrentDefaultTick();
+  // Until the first Barracks stands the sheet offers it alone: the list of buildings opens with it.
+  const listOpen = usePartShown("building-list");
   const options = useMemo(
-    () => readBuildOptions(facts.store, realm, useSimpleCost, tick),
-    [realm, facts, tick, useSimpleCost],
+    () => disclosedBuildOptions(readBuildOptions(facts.store, realm, useSimpleCost, tick), listOpen),
+    [realm, facts, tick, useSimpleCost, listOpen],
   );
   const [picked, setPicked] = useState<BuildingType | null>(null);
-  // Build pressed on the pick with no free population: the ask stands until the player answers or picks again.
-  const [asking, setAsking] = useState(false);
-  const [scoutingKind, setScoutingKind] = useState<ScoutingSide>(nativeResearchConstants.KIND_RIFTS);
   const indexOf = (category: BuildingType | null) =>
     options?.findIndex((candidate) => candidate.category === category) ?? -1;
   const firstBuild = useUIStore((state) => state.firstBuild);
@@ -152,22 +133,14 @@ export const BuildSheet = ({
    * The sheet closes as the building leaves, if it still shows this plot; its ghost stays on the plot until the
    * build's own outcome.
    */
-  const build = async (category: BuildingType = option.category) => {
-    if (category === BuildingType.ScoutsLodge) {
-      const learned = realmLearned(setup.store, realm.game_id, realm.entity_id);
-      if (learned === undefined) return;
-      const needsChoice = researchTier(learned, nativeResearchConstants.ROW_SCOUTS_LODGE) === 0;
-      const choices = availableScoutingChoices((row) => researchTier(learned, row));
-      if (needsChoice && !choices.some(({ side }) => side === scoutingKind)) return;
-    }
+  const build = async () => {
     AudioManager.getInstance().play("ui.build_place");
     try {
       await sendBuilding({
         realmId,
-        type: category,
+        type: option.category,
         plot,
         useSimpleCost,
-        scoutingKind: category === BuildingType.ScoutsLodge ? scoutingKind : undefined,
         from: { isOpen: stillShowing, close: onClose },
       });
     } catch (error) {
@@ -177,32 +150,21 @@ export const BuildSheet = ({
 
   const held = (resource: number) =>
     knownAmount(getBalance(safeInteger(realm.entity_id), resource, tick, setup.store).balance);
-  const population = readRealmPopulation(setup.store, realmId);
-  const choose = (category: BuildingType) => {
-    setPicked(category);
-    setAsking(false);
-  };
-  const priceOf = (category: BuildingType) =>
-    options
-      .find((candidate) => candidate.category === category)!
-      .cost.map(({ resource, amount }) => ({ of: priceKind(resource), amount }));
-  /** Where the chosen building stands: open, refused with its reason, or open but for free population. */
-  const standing = (): { refusal?: Refusal; noRoom?: true } => {
-    if (option.standing === "built") return { refusal: { reason: { kind: "failed", line: ONE_A_REALM } } };
-    if (option.standing !== "open") return { refusal: gateRefusal(option.standing) };
+  const standing = (): Refusal | undefined => {
+    if (option.standing === "built") return { reason: { kind: "failed", line: ONE_A_REALM } };
+    if (option.standing !== "open")
+      return { reason: { kind: "failed", line: `Requires ${rankName(option.standing.level)}` } };
     const shortCost = option.cost.find(({ resource, amount }) => (held(resource) ?? 0) < amount);
     if (shortCost) {
       const have = held(shortCost.resource);
       const perHour = realmPerHour(setup.store, realmId, shortCost.resource, tick);
       return {
-        refusal: {
-          reason: {
-            kind: "short",
-            of: priceKind(shortCost.resource),
-            held: have,
-            need: shortCost.amount,
-            wait: secondsUntilHeld(have, shortCost.amount, perHour),
-          },
+        reason: {
+          kind: "short",
+          of: priceKind(shortCost.resource),
+          held: have,
+          need: shortCost.amount,
+          wait: secondsUntilHeld(have, shortCost.amount, perHour),
         },
       };
     }
@@ -215,72 +177,23 @@ export const BuildSheet = ({
       mode,
       targetSpot: plot,
     });
-    if (verdict.canSubmit) return {};
-    if (verdict.code !== "insufficient_population" && verdict.code !== "insufficient_capacity")
-      return { refusal: { reason: { kind: "failed", line: verdict.reason ?? "" } } };
-    return { noRoom: true };
-  };
-  /**
-   * A training building waits for the Barracks purchases (the contract's assert_board_category): Research raises it
-   * once a Barracks stands, and until one does the fix is to build it.
-   */
-  const gateRefusal = ({ gate, bought }: { gate: number; bought: number }): Refusal => {
-    const reason = { kind: "failed", line: needsResearchPurchases(BARRACKS, bought, gate) } as const;
-    if (getBuildingQuantity(realmId, BuildingType.ResourceKnightT1, setup.store) === 0)
-      return {
-        reason,
-        fix: {
-          word: `${BUILD} ${BARRACKS}`,
-          prices: priceOf(BuildingType.ResourceKnightT1),
-          onFix: () => choose(BuildingType.ResourceKnightT1),
-        },
-      };
-    return { reason, fix: onResearch && { icon: "research", word: RESEARCH, onFix: onResearch } };
+    if (verdict.canSubmit) return undefined;
+    return { reason: { kind: "failed", line: verdict.reason ?? "" } };
   };
   const holdings: Holdings = {
     held,
     perHour: (resource) => realmPerHour(setup.store, realmId, resource, tick),
-    free: population && population.total - population.used,
-  };
-  const now = standing();
-  /** The ask's choices while it stands: the Hut built on this plot when the realm can pay it, else picked to show its wait. */
-  const roomAsk = (): RoomAskChoices | undefined => {
-    const hut = options.find(({ category }) => category === BuildingType.WorkersHut);
-    if (!asking || !now.noRoom || !hut) return undefined;
-    const payable =
-      hut.standing === "open" && hut.cost.every(({ resource, amount }) => (held(resource) ?? 0) >= amount);
-    return {
-      hut: buildTile(hut, holdings),
-      hutVerb: payable ? ROOM_ASK.buildHut : ROOM_ASK.chooseHut,
-      onHut: payable ? () => build(BuildingType.WorkersHut) : () => choose(BuildingType.WorkersHut),
-      onAnother: () => setAsking(false),
-    };
   };
   return (
     <BuildView
-      population={population}
       tiles={options.map((candidate) => buildTile(candidate, holdings))}
-      scouting={
-        option.category === BuildingType.ScoutsLodge &&
-        researchTier(
-          realmLearned(facts.store, realm.game_id, realm.entity_id)!,
-          nativeResearchConstants.ROW_SCOUTS_LODGE,
-        ) === 0
-          ? {
-              learned: realmLearned(facts.store, realm.game_id, realm.entity_id)!,
-              kind: scoutingKind,
-              onChoose: setScoutingKind,
-            }
-          : undefined
-      }
       chosen={chosen}
-      onChoose={(index) => choose(options[index]!.category)}
+      onChoose={(index) => setPicked(options[index]!.category)}
       prices={option.cost.map(({ resource, amount }) => ({ of: priceKind(resource), amount }))}
-      refusal={now.refusal}
+      refusal={standing()}
       sending={sending}
-      onBuild={() => (now.noRoom ? setAsking(true) : void build())}
+      onBuild={() => void build()}
       onClose={onClose}
-      ask={roomAsk()}
     />
   );
 };
@@ -288,15 +201,15 @@ export const BuildSheet = ({
 /** A price's resource as the kit draws it, the realm store that holds it; a building priced in anything else is loud. */
 const priceKind = (resource: number): PriceKind => {
   const kind = STORE_KINDS.find((store) => FRONTIER_STORES[store].resource === resource);
-  if (!kind) throw new Error(`A Frontier building is priced in resource ${resource}`);
+  if (!kind || !isPriceKind(kind)) throw new Error(`A Frontier building is priced in resource ${resource}`);
   return kind;
 };
 
-/** What the realm holds that a card weighs its building against: resources and how fast they arrive, and free population. */
+const isPriceKind = (kind: string): kind is PriceKind => kind in PRICE_FACES;
+
 type Holdings = {
   held: (resource: number) => number | undefined;
   perHour: (resource: number) => number | undefined;
-  free: number | undefined;
 };
 
 const buildTile = (option: BuildOption, holdings: Holdings): BuildTile => ({
@@ -306,27 +219,19 @@ const buildTile = (option: BuildOption, holdings: Holdings): BuildTile => ({
   tip: buildingLine(option),
   gives: givesOf(option),
   gems: gemsOf(option),
-  takes: option.populationCost,
   standing: standingOf(option, holdings),
 });
 
-/**
- * Where a building stands for the realm, the first that holds: built (a realm holds one), locked behind the Barracks'
- * purchases, or its price, with a resource shortfall and its wait, or else the population it lacks.
- */
-const standingOf = (option: BuildOption, { held, perHour, free }: Holdings): BuildTile["standing"] => {
+const standingOf = (option: BuildOption, { held, perHour }: Holdings): BuildTile["standing"] => {
   if (option.standing === "built") return { kind: "built" };
-  // Training counts purchases across both Barracks sides.
-  if (option.standing !== "open") return { kind: "locked", ...option.standing };
+  if (option.standing !== "open") return { kind: "level", level: option.standing.level };
   const missing = option.cost.find(({ resource, amount }) => (held(resource) ?? 0) < amount);
   const short: Extract<BuildTile["standing"], { kind: "price" }>["short"] = missing
     ? {
         of: priceKind(missing.resource),
         wait: secondsUntilHeld(held(missing.resource), missing.amount, perHour(missing.resource)),
       }
-    : free !== undefined && free < option.populationCost
-      ? { of: "population" }
-      : undefined;
+    : undefined;
   return {
     kind: "price",
     prices: option.cost.map(({ resource, amount }) => ({
@@ -339,10 +244,6 @@ const standingOf = (option: BuildOption, { held, perHour, free }: Holdings): Bui
   };
 };
 
-/**
- * What a building does, in one line from its real effect: "Farm: +302 wheat an hour, takes 1 population". A training
- * building starts every new army at its type's tier in its attribute.
- */
 const buildingLine = (option: BuildOption): RankedWords => {
   const { effect } = option;
   const does: RankedWords =
@@ -350,26 +251,28 @@ const buildingLine = (option: BuildOption): RankedWords => {
       ? [makes(FRONTIER_STORES[madeStore(effect.resource)].word, formatRate(effect.output.total))]
       : effect.kind === "trains"
         ? startsNewArmies(effect.attribute, option.tier)
-        : [`${formatGain(effect.amount)} ${POPULATION}`];
-  const takes = option.populationCost > 0 ? `, ${takesPopulation(formatCharge(option.populationCost))}` : "";
-  return [`${buildingName(option.category)}: `, ...does, ...(takes ? [takes] : [])];
+        : effect.kind === "research"
+          ? [effect.line]
+          : [storesMore(storageShare(effect.shareBps))];
+  return [`${buildingName(option.category)}: `, ...does];
 };
 
 /** Why a price is above its first: the copies standing raise it. None when no copy stands yet. */
 const riseLine = (option: BuildOption): string | undefined =>
   option.rise.times > 1 ? priceRaised(formatAmount(option.rise.standing)) : undefined;
 
-/** Each independent research side wears its rank, from 0 through V. */
-const gemsOf = ({ sides, tier }: BuildOption): BuildTile["gems"] =>
-  sides ? sides.map(({ icon, picks }) => ({ side: icon, tier: picks })) : [{ tier }];
+const gemsOf = ({ effect, tier }: BuildOption): BuildTile["gems"] => (effect.kind === "stores" ? [] : [{ tier }]);
 
-/** What one more gives: what it makes a minute, the population room it adds, or the attribute new armies start in. */
+const storageShare = (bps: number) => formatPercent(bps / 10_000, { signed: true });
+
 const givesOf = ({ effect }: BuildOption): BuildTile["gives"] =>
   effect.kind === "produces"
     ? { icon: FRONTIER_STORES[madeStore(effect.resource)].icon, value: formatRate(effect.output.total) }
     : effect.kind === "trains"
-      ? { icon: ATTRIBUTE_MARKS[effect.attribute] }
-      : { icon: "person", value: formatGain(effect.amount) };
+      ? { icon: "stamina" }
+      : effect.kind === "research"
+        ? { icon: effect.icon }
+        : { icon: "storehouse", value: storageShare(effect.shareBps) };
 
 /** A realm's plot, as the actions in flight name it. */
 

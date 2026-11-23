@@ -1,5 +1,7 @@
 import { nativePresetForId } from "../../../source/native";
-import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeFamilyOf } from "../../../source/common/native-preset-modes";
+import { gameClockScale } from "../../../source/common/season-clock";
+import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import { CapacityConfig, type Config } from "@bibliothecadao/types";
 import { hash, shortString } from "starknet";
 import { BLITZ_REGISTRATION_COUNT_CAP } from "../constants";
@@ -12,7 +14,6 @@ export interface CreateGamePayloadInput {
   durationSeconds: number;
   devModeOn: boolean;
   singleRealmMode: boolean;
-  twoPlayerMode: boolean;
   useMapOverride: boolean;
 }
 
@@ -26,8 +27,6 @@ export function buildMapConfig(config: Config) {
     shards_mines_fail_probability: config.exploration.shardsMinesFailProbability,
     camp_win_probability: config.exploration.campFindProbability,
     camp_fail_probability: config.exploration.campFindFailProbability,
-    bitcoin_mine_win_probability: config.exploration.bitcoinMineWinProbability,
-    bitcoin_mine_fail_probability: config.exploration.bitcoinMineFailProbability,
     hyps_win_prob: config.exploration.hyperstructureWinProbAtCenter,
     hyps_fail_prob: config.exploration.hyperstructureFailProbAtCenter,
     hyps_fail_prob_increase_p_hex: config.exploration.hyperstructureFailProbIncreasePerHexDistance,
@@ -39,7 +38,6 @@ export function buildMapConfig(config: Config) {
 
 export function buildTroopDamageConfig(config: Config) {
   return {
-    damage_raid_percent_num: config.troop.damage.damageRaidPercentNum,
     damage_biome_bonus_num: config.troop.damage.damageBiomeBonusNum,
     damage_scaling_factor: config.troop.damage.damageScalingFactor,
     t1_damage_value: config.troop.damage.t1DamageValue,
@@ -119,7 +117,6 @@ export function buildStructureCapacityConfig(config: Config) {
     fragment_mine_capacity: config.carryCapacityGram[CapacityConfig.FragmentMineStructure],
     bank_structure_capacity: config.carryCapacityGram[CapacityConfig.BankStructure],
     camp_capacity: config.carryCapacityGram[CapacityConfig.CampStructure],
-    bitcoin_mine_capacity: config.carryCapacityGram[CapacityConfig.BitcoinMineStructure],
   };
 }
 
@@ -142,32 +139,16 @@ function resolveRegistrationSchedule(startMainAt: number, chainTimestamp: number
   return { registrationStartAt: startSettlingAt - 1, startSettlingAt };
 }
 
-function resolveRegistrationCountMax(config: Config, presetId: number, twoPlayerMode: boolean): number {
+function resolveRegistrationCountMax(config: Config, presetId: number): number {
   if (nativePresetForId(presetId).entryRule !== nativeRuleConstants.ENTRY_ROSTER) {
-    if (twoPlayerMode) {
-      throw new Error("Eternum seasons do not support two-player mode");
-    }
     return 0;
   }
 
-  const registrationCountMax = twoPlayerMode ? 2 : config.blitz.registration.registration_count_max;
+  const registrationCountMax = config.blitz.registration.registration_count_max;
   if (registrationCountMax < 1 || registrationCountMax > BLITZ_REGISTRATION_COUNT_CAP) {
     throw new Error(`Blitz registration_count_max must be between 1 and ${BLITZ_REGISTRATION_COUNT_CAP}`);
   }
   return registrationCountMax;
-}
-
-function resolveEndGraceSeconds(config: Config): number {
-  const endGraceSeconds = config.season.endGraceSeconds;
-  if (
-    typeof endGraceSeconds !== "number" ||
-    !Number.isInteger(endGraceSeconds) ||
-    endGraceSeconds < 0 ||
-    endGraceSeconds > 0xffff_ffff
-  ) {
-    throw new Error("Season endGraceSeconds must be an integer between 0 and 4294967295");
-  }
-  return endGraceSeconds;
 }
 
 function deriveGameSeed(input: CreateGamePayloadInput): string {
@@ -179,24 +160,25 @@ export function buildCreateGameParams(config: Config, input: CreateGamePayloadIn
   if (!Number.isSafeInteger(input.durationSeconds) || input.durationSeconds <= 0)
     throw new Error("Game duration must be supplied explicitly and be positive");
   const { registrationStartAt, startSettlingAt } = resolveRegistrationSchedule(input.startMainAt, input.chainTimestamp);
-  const registrationCountMax = resolveRegistrationCountMax(config, input.presetId, input.twoPlayerMode);
+  const registrationCountMax = resolveRegistrationCountMax(config, input.presetId);
+  const clockScale = gameClockScale(nativePresetForId(input.presetId));
+  if (clockScale !== 1 && !input.devModeOn)
+    throw new Error(`Preset ${input.presetId} runs a scaled clock: dev mode only`);
 
   return {
     name: shortString.encodeShortString(input.gameName),
-    preset_id: input.presetId,
+    family: nativeFamilyOf(input.presetId),
     start_settling_at: startSettlingAt,
     start_main_at: input.startMainAt,
     duration_seconds: input.durationSeconds,
-    end_grace_seconds: resolveEndGraceSeconds(config),
-
     dev_mode_on: input.devModeOn,
     single_realm_mode: nativePresetForId(input.presetId).settlementMode === "Single" || input.singleRealmMode,
-    two_player_mode: input.twoPlayerMode,
     registration_count_max: registrationCountMax,
     registration_start_at: registrationStartAt,
     biome_climate_config: buildBiomeClimateConfig(config),
     use_map_override: input.useMapOverride,
     map_override: buildMapConfig(config),
     seed: deriveGameSeed(input),
+    clock_scale: clockScale,
   };
 }

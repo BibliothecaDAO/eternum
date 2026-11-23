@@ -9,7 +9,7 @@ Use this in the first minutes after settling, while the map around me is unexplo
 - `observe_game` with focus `armies` lists my explorer armies: troops, stamina, and position. Each realm starts with one
   explorer standing next to it.
 - `observe_game` with focus `nearby` lists what stands within three hexes of each explorer: explored tiles by biome,
-  other armies, structures, and chests.
+  other armies and structures.
 
 ## The opening, in order
 
@@ -22,8 +22,6 @@ Use this in the first minutes after settling, while the map around me is unexplo
    and fish keep troops fed, labor unlocks the simple building recipe, essence is scarce and valuable.
 4. Fill one guard slot. `act` `addTroopsToGuard` slot 0 with a few dozen troops of the type the realm holds most of.
    Guards defend the realm while the explorer is away.
-5. Grab chests. If `nearby` lists a chest within reach and `armyPaths` shows a `chest` option, take it: chests hand out
-   resources and relics for one move.
 
 ## Signals to stop opening and switch skills
 

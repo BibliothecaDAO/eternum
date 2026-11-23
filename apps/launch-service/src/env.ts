@@ -21,11 +21,8 @@ export interface LaunchEnv extends LaunchVars {
   DB: D1Database;
   /** The identity Worker, which owns sessions; reached by service binding only. */
   IDENTITY_HTTP: Fetcher;
-  IDENTITY: import("@realms-world/value-ledger").ShardDirectory &
-    import("@realms-world/value-ledger").RegistrationIdentity;
-  VALUE_RELAY: import("./paid-blitz").BlitzValuePort & {
-    verifyFrontierExtension(): Promise<unknown>;
-  };
+  IDENTITY: import("@realms-world/value-ledger").ShardDirectory;
+  VALUE_RELAY: import("./paid-blitz").BlitzValuePort;
   /** The one registrar that executes launches, one at a time. */
   REGISTRAR: DurableObjectNamespace<import("./registrar").Registrar>;
   /** The deployed version, so a deploy can tell its own answers from its predecessor's. */

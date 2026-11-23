@@ -1,6 +1,7 @@
-import { gamesAbi, response } from "../test-support/abi";
+import { response } from "../test-support/abi";
 import { ledgerAbi } from "../test-support/ledger-abi";
 import { describe, expect, it, vi } from "vitest";
+import { raceCalldata, raceRewardsAbi } from "./race-rewards-abi";
 import { CallData, type RpcProvider } from "starknet";
 import { readLedgerSlot, readLedgerRegistration } from "./blitz-slots";
 import {
@@ -11,10 +12,11 @@ import {
   decodeFrontierSeason,
   decodeLedgerPreset,
   decodePlayerResult,
+  decodeRaceReward,
+  decodeRaceSeason,
   decodeSeasonWinner,
   decodeWithdrawalPayment,
 } from "./codecs";
-import { readBlitzRoster } from "./shard-roster";
 
 describe("committed contract readbacks", () => {
   it("reads absent registrations, payments, credits and results as the stored defaults", async () => {
@@ -290,16 +292,46 @@ describe("committed contract readbacks", () => {
       seed: "22",
     });
   });
-  it("reads the Games roster serialized by its compiled player type", async () => {
-    const callContract = vi.fn().mockResolvedValue(
-      response(gamesAbi, "blitz_roster", [
-        { account: 17, wallet: 18 },
-        { account: 19, wallet: 20 },
-      ]),
-    );
-    expect(await readBlitzRoster({ callContract } as unknown as RpcProvider, "0x10", 7, 20)).toEqual([
-      { account: "17", wallet: "18" },
-      { account: "19", wallet: "20" },
-    ]);
+  it("reads a race season and a home's reward in the rewards class's compiled field order", () => {
+    const season = response(raceRewardsAbi, "get_race", {
+      funded: true,
+      pool: { low: 500, high: 0 },
+      posted: true,
+      posted_at: 1000,
+      total: { low: 17, high: 1 },
+      paid: { low: 3, high: 0 },
+      closed: false,
+    });
+    expect(decodeRaceSeason(season)).toEqual({
+      funded: true,
+      pool: 500n,
+      posted: true,
+      postedAt: 1000,
+      total: (1n << 128n) + 17n,
+      paid: 3n,
+      closed: false,
+    });
+    expect(() => decodeRaceSeason(season.slice(1))).toThrow("invalid_race_season");
+    expect(() => decodeRaceSeason(["2", ...season.slice(1)])).toThrow("invalid_ledger_bool");
+    const reward = response(raceRewardsAbi, "get_race_reward", { wallet: "0x789", amount: { low: 17, high: 1 } });
+    expect(decodeRaceReward(reward)).toEqual({ wallet: reward[0], amount: 17n + (1n << 128n) });
+    expect(
+      decodeRaceReward(response(raceRewardsAbi, "get_race_reward", { wallet: 0, amount: { low: 0, high: 0 } })),
+    ).toBeNull();
+    expect(() => decodeRaceReward(reward.slice(1))).toThrow("invalid_race_reward");
+  });
+  it("orders race calldata by the rewards class's compiled inputs and refuses a missing one", () => {
+    const pay = {
+      signature_s: "0x456",
+      signature_r: "0x123",
+      amount: { low: 10, high: 0 },
+      wallet: "0xb5",
+      home: 5,
+      season_id: 7,
+      shard: "0x2",
+    };
+    expect(raceCalldata("pay_race", pay)).toEqual(["2", "7", "5", "181", "10", "0", "291", "1110"]);
+    const { wallet: _, ...withoutWallet } = pay;
+    expect(() => raceCalldata("pay_race", withoutWallet)).toThrow("wallet");
   });
 });

@@ -12,13 +12,12 @@ const HOUR = 60 * MINUTE;
  */
 export const NOTIFICATION_KIND_RULES = {
   "day-open": { level: "important", lifetimeMs: 48 * HOUR },
+  "site-vulnerable": { level: "important", lifetimeMs: 48 * HOUR },
   "army-rested": { level: "important", lifetimeMs: 48 * HOUR },
   fights: { level: "important", lifetimeMs: HOUR },
   results: { level: "important", lifetimeMs: 24 * HOUR },
   messages: { level: "important", lifetimeMs: HOUR },
   deliveries: { level: "all", lifetimeMs: HOUR },
-  bitcoin: { level: "all", lifetimeMs: HOUR },
-  points: { level: "all", lifetimeMs: HOUR },
 } as const satisfies Record<string, { level: Exclude<NotificationLevel, "off">; lifetimeMs: number }>;
 
 export type NotificationKind = keyof typeof NOTIFICATION_KIND_RULES;

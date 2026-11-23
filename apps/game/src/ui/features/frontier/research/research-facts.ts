@@ -1,14 +1,10 @@
-import { WELL_REFILL_PERCENT } from "@bibliothecadao/eternum/troop-stamina";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { knownAmount } from "@/ui/utils/utils";
 import {
   getBalance,
-  rationedWheatPerTroop,
   realmLearned,
-  researchChoice,
-  researchHasIndependentSides,
-  researchPicks,
+  RESEARCH_ROWS,
   researchRowCategory,
   researchTier,
   ResourceManager,
@@ -19,7 +15,8 @@ import {
   type NativeFactStore,
   type NativeRows,
 } from "@bibliothecadao/eternum/game-client";
-import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
+import { BuildingType, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
+import { buildingOutput } from "@/ui/shared/lib/building-output";
 import { useMemo } from "react";
 
 import { standingBuildings } from "../production/store-makers";
@@ -28,21 +25,14 @@ import { type LearnedRow, readResearchTree, type RealmResearchFacts, type TreeNo
 const RESEARCH_MODELS = [
   "RealmKnowledge",
   "ResearchPrice",
+  "ResourceRule",
+  "ProductionRecipe",
   "BoardRules",
   "BuildingRule",
   "StructureBuildings",
   "ResourceBalance",
   "ResourceProduction",
-  "ArmyProgressionRules",
 ] as const;
-
-/** The rows whose tiers each pick a side (or the lodge's kind). */
-const CHOOSING_ROWS = new Set<number>([
-  research.ROW_FARM,
-  research.ROW_WORKSHOP,
-  research.ROW_BARRACKS,
-  research.ROW_SCOUTS_LODGE,
-]);
 
 const whole = (amount: bigint): number => Number(amount / BigInt(RESOURCE_PRECISION));
 
@@ -80,11 +70,14 @@ const readResearchFacts = (
   const entity = safeInteger(realm.entity_id);
   const essence = knownAmount(getBalance(entity, ResourcesIds.Essence, tick, store).balance);
   const labor = knownAmount(getBalance(entity, ResourcesIds.Labor, tick, store).balance);
-  // The tree stays unknown until the realm's knowledge, its balances and the game's board and XP rules are all in.
+
   const board = store.get("BoardRules", { game_id: realm.game_id });
   if (learned === undefined || essence === undefined || labor === undefined || !board) return undefined;
+  const recipe = store.require("ProductionRecipe", { game_id: realm.game_id, resource_type: ResourcesIds.Knight });
+  const wheat = recipe.simple_inputs.find((input) => input.resource_type === ResourcesIds.Wheat);
+  if (!wheat || recipe.simple_output === 0n) throw new Error("Missing troop wheat recipe");
   const rows = decodeLearned(learned);
-  const storeroomPicks = (rows[research.ROW_WORKSHOP]?.sides ?? []).filter((side) => side === 1).length;
+  const storerooms = standingBuildings(store, entity, research.STOREROOM);
   return {
     castleLevel: realm.base.level,
     essence,
@@ -98,33 +91,21 @@ const readResearchFacts = (
     },
     board: {
       outputStepBps: board.output_step_bps,
-      storageStepBps: board.storage_step_bps,
-      populationStepBps: board.population_step_bps,
-      trainingGateTier: board.training_gate_tier,
+      rationStep: Number(board.ration_step) / RESOURCE_PRECISION,
+      wheatPerTroop: Number(wheat.amount) / Number(recipe.simple_output),
+      troopsPerHour: buildingOutput(store, realm, BuildingType.ResourceKnightT1, 0).base * 3600,
+      staminaBar: store.require("SliceRules", { game_id: realm.game_id }).troop_stamina_config.stamina_knight_max,
     },
     laborStore: (level) => {
-      const base = ResourceManager.castleStoreLimit(store, realm.game_id, level);
+      const base = ResourceManager.castleStoreLimit(store, realm.game_id, level, ResourcesIds.Labor);
       if (base === undefined) throw new Error(`No castle store at level ${level}`);
-      return (whole(base) * (10_000 + storeroomPicks * board.storage_step_bps)) / 10_000;
+      return (whole(base) * (10_000 + storerooms * board.storage_step_bps)) / 10_000;
     },
-    wheatPerTroop: (rations) => rationedWheatPerTroop(store, realm.game_id, ResourcesIds.Knight, rations),
-    wellRefillPercent: WELL_REFILL_PERCENT,
   };
 };
 
-/** Each row's highest tier and bought sides; only Scouts retains purchase order. */
 const decodeLearned = (learned: bigint): Partial<Record<number, LearnedRow>> =>
-  Object.fromEntries(
-    Array.from({ length: research.ROW_COUNT }, (_, row) => {
-      const tier = researchTier(learned, row);
-      const sides = researchHasIndependentSides(row)
-        ? [0, 1].flatMap((side) => Array.from({ length: researchPicks(learned, row, side) }, () => side))
-        : CHOOSING_ROWS.has(row)
-          ? Array.from({ length: tier }, (_, index) => researchChoice(learned, row, index + 1))
-          : [];
-      return [row, { tier, sides }];
-    }),
-  );
+  Object.fromEntries(RESEARCH_ROWS.map((row) => [row, { tier: researchTier(learned, row) }]));
 
 /** The buildings standing of each building row's type (standingBuildings: the castle's labor is no Workshop). */
 const standingByRow = (store: NativeFactStore, entity: number): Partial<Record<number, number>> =>

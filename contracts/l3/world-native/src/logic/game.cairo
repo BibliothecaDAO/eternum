@@ -9,26 +9,44 @@ pub enum Event {
     RowSet: RowSet,
 }
 
+#[inline(never)]
 pub fn game(game_id: u32) -> GameRegistry {
     let state = crate::state::read();
     let game = state.games.games.read(game_id);
-    assert!(game.preset_id != 0, "game does not exist");
+    assert!(game.family != 0, "game does not exist");
     game
 }
 pub fn rules(game_id: u32) -> SliceRules {
-    let preset = crate::logic::preset_record::for_game(game_id).rules.read();
+    rules_of(game_id, game(game_id))
+}
+pub fn rules_of(game_id: u32, game: GameRegistry) -> SliceRules {
+    let switches = crate::balance::rules::SWITCHES;
     let overrides = crate::state::read().games.overrides.read(game_id);
     SliceRules {
+        battle_config: crate::balance::rules::BATTLE_CONFIG,
+        map_config: overrides.map.unwrap_or(crate::balance::rules::MAP_CONFIG),
         biome_climate_config: overrides.biome_climate,
-        map_config: overrides.map.unwrap_or(preset.map_config),
+        tick_config: crate::clock::tick_config(game),
+        troop_damage_config: crate::balance::rules::TROOP_DAMAGE_CONFIG,
+        troop_stamina_config: crate::balance::rules::TROOP_STAMINA_CONFIG,
+        troop_limit_config: crate::balance::rules::TROOP_LIMIT_CONFIG,
+        capacity_config: crate::balance::rules::CAPACITY_CONFIG,
+        structure_capacity_config: crate::balance::rules::STRUCTURE_CAPACITY_CONFIG,
+        building_config: crate::balance::rules::BUILDING_CONFIG,
         map_center_offset: overrides.map_center_offset,
-        ..preset,
+        spire_travel_essence_cost: crate::balance::rules::SPIRE_TRAVEL_ESSENCE_COST,
+        command_mask: switches.command_mask,
+        mode_rules: switches.mode_rules,
+        day_unit_seconds: crate::clock::day_unit_seconds(game),
+        entry_rule: switches.entry_rule,
+        speed_config: crate::balance::rules::SPEED_CONFIG,
+        relic_seconds_per_rank: crate::clock::relic_seconds_per_rank(game),
     }
 }
 pub fn create(game_id: u32, game: GameRegistry, overrides: GameOverrides) {
     let state = crate::state::write();
     assert!(game_id != 0 && !game_exists(game_id), "game already exists or reserved");
-    assert!(game.preset_id != 0, "invalid game identity");
+    assert!(game.family != 0, "invalid game identity");
     assert!(game.start_main_at >= game.start_settling_at && game.end_at > game.start_main_at, "invalid game times");
     state.games.overrides.write(game_id, overrides);
     state.games.next_entity.write(game_id, 1);
@@ -40,6 +58,7 @@ pub fn create(game_id: u32, game: GameRegistry, overrides: GameOverrides) {
     );
 }
 pub fn write_game(game_id: u32, game: GameRegistry) {
+    assert!(game.end_at <= game.scheduled_end_at, "season end exceeds its calendar");
     let state = crate::state::write();
     state.games.games.write(game_id, game);
     emit_game(game_id, game);
@@ -69,26 +88,10 @@ fn emit_game_fact(row: RowSet) {
 }
 
 pub fn game_exists(game_id: u32) -> bool {
-    crate::state::read().games.games.entry(game_id).preset_id.read() != 0
+    crate::state::read().games.games.entry(game_id).family.read() != 0
 }
 
-/// The last seat opens a fixed-roster game. Its start and end were fixed at creation: a late roster plays a shorter
-/// game.
-pub fn mark_roster_ready(game_id: u32) {
-    let mut game = game(game_id);
-    assert!(!game.ready, "roster already ready");
-    game.ready = true;
-    write_game(game_id, game);
-}
-
-/// The preset id is immutable; every game keeps the definition it launched with.
-pub fn preset_commitment(game: GameRegistry) -> felt252 {
-    let commitment = crate::state::read().registrar.presets.read(game.preset_id);
-    assert!(commitment != 0, "game has no preset");
-    commitment
-}
-
-pub fn emit_release(game_id: u32, release_id: u32, preset_commitment: felt252) {
+pub fn emit_release(game_id: u32, release_id: u32) {
     // Zero identifies games created before creation releases were recorded.
     let created_release_id = crate::state::read().game_creation_releases.read(game_id);
     emit_game_fact(
@@ -96,7 +99,7 @@ pub fn emit_release(game_id: u32, release_id: u32, preset_commitment: felt252) {
             version: 1,
             model: 'GameRelease',
             keys: array![game_id.into()].span(),
-            values: array![release_id.into(), preset_commitment, created_release_id.into()].span(),
+            values: array![release_id.into(), created_release_id.into()].span(),
         },
     );
 }

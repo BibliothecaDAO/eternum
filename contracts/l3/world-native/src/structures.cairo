@@ -128,6 +128,54 @@ pub trait IStructureOperations<T> {
     ) -> u64;
 }
 
+#[starknet::interface]
+pub trait IReservedHyperstructures<T> {
+    fn raise_hyperstructure(
+        ref self: T, game_id: u32, actor: ContractAddress, coord: Coord, context: crate::commands::ActionContext,
+    );
+}
+
+#[cfg(feature: "blitz")]
+pub fn discovered_structure(
+    coord: Coord,
+    discovery: crate::discovery::Discovery,
+    capacities: crate::rules::StructureCapacityConfig,
+    camp_armies: u16,
+    timestamp: u64,
+) -> (StructureRecord, u8, u128) {
+    let (category, occupier, capacity, explorers, guards) = match discovery {
+        Discovery::Mine => (
+            crate::taxonomy::MINE_CATEGORY, crate::taxonomy::MINE_OCCUPIER, capacities.fragment_mine_capacity, 0, 1,
+        ),
+        Discovery::Camp => (
+            crate::taxonomy::CAMP_CATEGORY, crate::taxonomy::CAMP_OCCUPIER, capacities.camp_capacity, camp_armies, 1,
+        ),
+        Discovery::Hyperstructure => (
+            crate::taxonomy::HYPERSTRUCTURE_CATEGORY,
+            crate::taxonomy::HYPERSTRUCTURE_OCCUPIER,
+            capacities.hyperstructure_capacity,
+            0,
+            4,
+        ),
+        _ => panic!("discovery is not a Blitz structure"),
+    };
+    assert!(!coord.alt, "invalid discovery layer");
+    let base = StructureBase {
+        troop_max_guard_count: guards,
+        troop_max_explorer_count: explorers,
+        created_at: timestamp.try_into().unwrap(),
+        category,
+        level: 0,
+        starting_troops_granted: false,
+    };
+    (
+        StructureRecord { owner: 0.try_into().unwrap(), base, resources_packed: 0, metadata: Default::default() },
+        occupier,
+        capacity.into(),
+    )
+}
+
+#[cfg(not(feature: "blitz"))]
 pub fn discovered_structure(
     coord: Coord,
     discovery: crate::discovery::Discovery,
@@ -136,23 +184,8 @@ pub fn discovered_structure(
     timestamp: u64,
 ) -> (StructureRecord, u8, u128) {
     let (category, occupier, level, capacity) = match discovery {
-        Discovery::Mine => (
-            crate::taxonomy::MINE_CATEGORY, crate::taxonomy::MINE_OCCUPIER, 0_u8, capacities.fragment_mine_capacity,
-        ),
-        Discovery::Hyperstructure => (
-            crate::taxonomy::HYPERSTRUCTURE_CATEGORY,
-            crate::taxonomy::HYPERSTRUCTURE_OCCUPIER,
-            3,
-            capacities.hyperstructure_capacity,
-        ),
-        Discovery::BitcoinMine => (
-            crate::taxonomy::BITCOIN_MINE_CATEGORY,
-            crate::taxonomy::BITCOIN_MINE_OCCUPIER,
-            3,
-            capacities.bitcoin_mine_capacity,
-        ),
         Discovery::Camp => (
-            crate::taxonomy::CAMP_CATEGORY, crate::taxonomy::CAMP_OCCUPIER, 0, capacities.camp_capacity,
+            crate::taxonomy::CAMP_CATEGORY, crate::taxonomy::CAMP_OCCUPIER, 0_u8, capacities.camp_capacity,
         ),
         // Frontier's other guarded sites hold nothing; they share the camp's capacity.
         Discovery::Rift => (
@@ -164,19 +197,12 @@ pub fn discovered_structure(
         Discovery::Beasts => (
             crate::taxonomy::BEASTS_CATEGORY, crate::taxonomy::BEASTS_OCCUPIER, 0, capacities.camp_capacity,
         ),
-        Discovery::None | Discovery::Shrine | Discovery::Well | Discovery::Spire |
-        Discovery::Chest => panic!("discovery is not a structure"),
+        Discovery::None | Discovery::Shrine | Discovery::Well |
+        Discovery::Spire => panic!("discovery is not a structure"),
     };
-    assert!(
-        discovery == Discovery::Mine || coord.alt == (discovery == Discovery::BitcoinMine), "invalid discovery layer",
-    );
-    let max_guards = if discovery == Discovery::Hyperstructure || discovery == Discovery::BitcoinMine {
-        4
-    } else {
-        1
-    };
+    assert!(!coord.alt, "invalid discovery layer");
     let base = StructureBase {
-        troop_max_guard_count: max_guards,
+        troop_max_guard_count: 1,
         troop_max_explorer_count: if discovery == Discovery::Camp {
             camp_armies
         } else {

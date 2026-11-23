@@ -3,7 +3,7 @@ import { ContractAddress, ID, Structure, StructureType } from "@bibliothecadao/t
 import type { NativeFactStore } from "../client/native-fact-store";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { displayPlayerName, type PlayerNameResolver } from "./entities";
-import { configManager } from "../managers";
+import { configManager } from "../managers/config-manager";
 import { isViewerOwner } from "./viewer";
 
 export const getStructure = (

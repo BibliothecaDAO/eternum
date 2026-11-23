@@ -10,8 +10,6 @@ export type Environment = "dev" | "production";
 export const root = resolve(import.meta.dir, "../..");
 export { environments };
 export type Target = (typeof environments)[Environment];
-/** The environment's Blitz preset, or null where it runs Frontier only: its book names no Blitz preset. */
-export const blitzPresetOf = (target: Target): number | null => ("blitzPreset" in target ? target.blitzPreset : null);
 /** A static site the Cloudflare half publishes to Pages: its project and the address that serves it. */
 export interface PagesSite {
   pages: string;
@@ -87,10 +85,15 @@ export interface Inputs extends SeasonDates, SignInClients, ApnsKeyInputs {
   avnuPaymasterApiKey?: string;
   /** Where the status monitor emails incidents: production's only, required there and refused on dev. */
   alertEmail?: string;
-  amount: string;
   admin?: string;
   treasury?: string;
 }
+interface ShardInputs {
+  public_rpc_url: string;
+  public_herald_url: string;
+}
+export const shardInputs = (target: Target): ShardInputs =>
+  JSON.parse(readFileSync(resolve(root, "deploy/release", `${target.environment}.json`), "utf8"));
 export function addressBook(target: Target): Record<string, string> {
   return JSON.parse(readFileSync(resolve(root, "contracts/common/addresses", target.book), "utf8"));
 }

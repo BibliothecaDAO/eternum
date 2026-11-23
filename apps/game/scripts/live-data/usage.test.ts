@@ -1,5 +1,7 @@
+import { nativeFactSchemaIdentity } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeResearchConstants as research } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import { describe, expect, it } from "vitest";
-import { type DecodedEvent, nameCommands, researchStep, shareOf } from "./commands";
+import { type DecodedEvent, nameCommands, researchRows, shareOf } from "./commands";
 import { Counts, usageReport } from "./findings";
 
 const PLAYER = "0x5a";
@@ -52,7 +54,7 @@ const balance = (entity: string, resource: number, units: bigint) => ({
 const named = (
   events: DecodedEvent[],
   modes: Record<string, "blitz" | "frontier"> = { "1": "frontier", "2": "blitz", "3": "blitz" },
-) => nameCommands(events, modes);
+) => nameCommands(events, modes, nativeFactSchemaIdentity);
 
 describe("naming a transaction by what it wrote", () => {
   it("names a storyless step to a neighbouring tile a Move by the army's owner", () => {
@@ -63,21 +65,62 @@ describe("naming a transaction by what it wrote", () => {
     expect(rows.at(-1)).toMatchObject({ command: "Move", mode: "frontier", player: PLAYER });
   });
 
-  it("reads the research row and side from the knowledge bitfield", () => {
-    const learn = (learned: bigint) => ({
-      kind: "set" as const,
-      model: "RealmKnowledge",
-      key: { structure_id: "0x1" },
-      value: { learned: hex(learned) },
-    });
-    // Farm tier 1 on the Store side: the tier bit, then side 1 in the first choice slot.
-    const rows = named([...tx(1, structure("0x1", PLAYER), learn(0n)), ...tx(1, learn(0x1n + 0x8n))]);
-    expect(rows.at(-1)).toMatchObject({
-      command: "Research",
-      player: PLAYER,
-      options: { row: "Farm", tier: 1, side: "Store" },
-    });
-    expect(researchStep(0n, 0x400000000000n)).toEqual({ row: "Ethereal", tier: 1, side: null });
+  const learn = (learned: bigint) => ({
+    kind: "set" as const,
+    model: "RealmKnowledge",
+    key: { structure_id: "0x1" },
+    value: { learned: hex(learned) },
+  });
+
+  it.each([
+    [0n, 0x1000000n, "Rations", 1],
+    [0n, 0x40000000n, "Knight Oaths", 1],
+    [0x40000000n, 0x80000000n, "Knight Oaths", 2],
+    [0x80000000n, 0xc0000000n, "Knight Oaths", 3],
+    [0n, 0x100000000n, "Scout Oaths", 1],
+    [0x100000000n, 0x200000000n, "Scout Oaths", 2],
+    [0x200000000n, 0x300000000n, "Scout Oaths", 3],
+    [0n, 0x400000000n, "Crossbow Oaths", 1],
+    [0x400000000n, 0x800000000n, "Crossbow Oaths", 2],
+    [0x800000000n, 0xc00000000n, "Crossbow Oaths", 3],
+    [0n, 1n, "Farm", 1],
+    [1n, 2n, "Farm", 2],
+    [0n, 0x1000000000000n, "Lore", 1],
+  ])("names current knowledge %s → %s as %s purchase %s", (before, after, row, tier) => {
+    const rows = named([...tx(1, structure("0x1", PLAYER), learn(before)), ...tx(1, learn(after))]);
+    expect(rows.at(-1)).toMatchObject({ command: "Research", player: PLAYER, options: { row, tier } });
+  });
+
+  it("refuses a historical interpretation even when its rows have the current wire shape", () => {
+    const events = [...tx(1, structure("0x1", PLAYER), learn(0n)), ...tx(1, learn(9n))];
+    expect(() => nameCommands(events, { "1": "frontier" }, "retired-research-schema")).toThrow(
+      "Unsupported command schema",
+    );
+  });
+
+  it("counts every current research row in the published findings", () => {
+    const rows = named([
+      ...tx(1, learn(0n)),
+      ...tx(1, learn(0x1000000n)),
+      ...tx(1, learn(0x41000000n)),
+      ...tx(1, learn(0x141000000n)),
+      ...tx(1, learn(0x541000000n)),
+    ]);
+    const finding = usageReport(new Counts(rows, [], []), "", 100).findings.find(
+      ({ title }) => title === "Research purchases by row",
+    )!;
+    expect(finding.evidence).toContain("Rations: 1");
+    expect(finding.evidence).toContain("Knight Oaths: 1");
+    expect(finding.evidence).toContain("Scout Oaths: 1");
+    expect(finding.evidence).toContain("Crossbow Oaths: 1");
+    expect(researchRows.map(({ row }) => row).sort((a, b) => a - b)).toEqual(
+      Object.entries(research)
+        .filter(([name]) => name.startsWith("ROW_"))
+        .map(([, row]) => row)
+        .sort((a, b) => a - b),
+    );
+    for (const row of researchRows) expect(finding.evidence).toContain(`${row.name}: `);
+    expect(finding.evidence).not.toMatch(/War Hall|Scouts' Lodge|Hearth|Drill|Beasts/);
   });
 
   it("follows owners per game, since entity ids repeat from one game to the next", () => {

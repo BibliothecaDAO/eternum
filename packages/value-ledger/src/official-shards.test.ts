@@ -1,15 +1,18 @@
 import { expect, it, vi } from "vitest";
-import { activeShards, readRegisteredShard } from "./official-shards";
+import { officialChain, readRegisteredShard, requireActiveChain, type ShardDirectory } from "./official-shards";
 const directory = {
-  shards: vi.fn(async () => [
-    { chainId: "0x1", url: "https://one.test", status: "active" as const },
-    { chainId: "0x2", url: "https://two.test", status: "retired" as const },
-  ]),
+  shard: vi.fn<ShardDirectory["shard"]>(async () => ({ chainId: "0x1", url: "https://one.test" })),
 };
-it("reads official membership anew and never serves a retired shard as playable", async () => {
-  expect(await activeShards(directory)).toEqual([{ chainId: "0x1", url: "https://one.test", status: "active" }]);
-  directory.shards.mockResolvedValueOnce([{ chainId: "0x1", url: "https://one.test", status: "retired" } as never]);
-  expect(await activeShards(directory)).toEqual([]);
+it("names the directory's one chain, read anew, and none when nothing is listed", async () => {
+  expect(await officialChain(directory)).toEqual({ chainId: "0x1", url: "https://one.test" });
+  directory.shard.mockResolvedValueOnce(null);
+  expect(await officialChain(directory)).toBeNull();
+});
+it("accepts only the listed chain when a route names one", async () => {
+  expect(await requireActiveChain(directory, "0x01")).toEqual({ chainId: "0x1", url: "https://one.test" });
+  await expect(requireActiveChain(directory, "0x2")).rejects.toThrow("unlisted_or_inactive_shard");
+  directory.shard.mockResolvedValueOnce(null);
+  await expect(requireActiveChain(directory, "0x1")).rejects.toThrow("unlisted_or_inactive_shard");
 });
 it("uses the directory URL and refuses a mismatched manifest rather than any configured shard", async () => {
   const network = vi.fn<typeof fetch>(async () =>
@@ -28,6 +31,8 @@ it("uses the directory URL and refuses a mismatched manifest rather than any con
     expect.objectContaining({ redirect: "manual" }),
   );
   await expect(readRegisteredShard(directory, "0x99", network)).rejects.toThrow("unlisted_shard");
+  directory.shard.mockResolvedValueOnce(null);
+  await expect(readRegisteredShard(directory, "0x1", network)).rejects.toThrow("unlisted_shard");
 });
 
 it("names a manifest transport failure separately from an HTTP refusal", async () => {

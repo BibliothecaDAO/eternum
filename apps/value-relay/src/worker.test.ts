@@ -7,6 +7,7 @@ import { join } from "node:path";
 import { Miniflare } from "miniflare";
 import { afterAll, beforeAll, expect, it } from "vitest";
 import schema from "../../../contracts/l3/world-native/schema/schema.json";
+import { releaseLine } from "../../../packages/core/src/test-support/releases";
 
 const bundle = mkdtempSync(join(tmpdir(), "relay-bundle-"));
 beforeAll(() => {
@@ -30,7 +31,7 @@ it.each([302, 200])(
       chainId: chain,
       l2GasBound: "0x47868c00",
       vrfPublicKey: { x: "0x1", y: "0x2" },
-      releaseSchemas: { "1": schema.identity },
+      releases: releaseLine(schema.identity, [1]),
       rpcUrl: "https://shard.test/rpc",
       accountClassHash: "0x2",
       guardianPublicKey: "0x9",
@@ -93,29 +94,28 @@ it.each([302, 200])(
           modules: true,
           compatibilityDate: "2026-07-30",
           script: `import {WorkerEntrypoint} from 'cloudflare:workers';
-export class ValueIdentity extends WorkerEntrypoint { shards(){return [{chainId:'${chain}',url:'https://shard.test',status:'active'}]} l2ChainId(){return '0x534e5f4d41494e'} }
-export class RosterMonitor extends WorkerEntrypoint { verifyRoster(){return 0} }
+export class ValueIdentity extends WorkerEntrypoint { shard(){return {chainId:'${chain}',url:'https://shard.test'}} l2ChainId(){return '0x534e5f4d41494e'} }
+export class RosterMonitor extends WorkerEntrypoint {}
 export default {fetch(){return new Response(null,{status:404})}};`,
         },
       ],
     });
     try {
       await (await mf.getWorker("relay")).scheduled({ cron: "* * * * *", scheduledTime: new Date(0) });
-      let health: { shards?: { chainId: string; value?: { reason?: string } }[] } = {};
+      let health: { shard?: { chainId: string; value?: { reason?: string } } | null } = {};
       const deadline = Date.now() + 10_000;
       while (Date.now() < deadline) {
         health = (await (
           await mf.dispatchFetch("https://play.dev-realms.party/api/value/health")
         ).json()) as typeof health;
-        if (status === 200 ? joinRpc.receipts > 0 : health.shards?.[0]?.value?.reason === "operator_redirect_refused")
-          break;
+        if (status === 200 ? joinRpc.receipts > 0 : health.shard?.value?.reason === "operator_redirect_refused") break;
         await new Promise((resolve) => setTimeout(resolve, 100));
       }
       expect(approvals).toBeGreaterThan(0);
       expect(redirects).toBe(0);
       expect(joinRpc.deployed).toBe(status === 200);
       if (status === 200) expect(joinRpc.receipts).toBeGreaterThan(0);
-      else expect(health.shards).toMatchObject([{ chainId: chain, value: { reason: "operator_redirect_refused" } }]);
+      else expect(health.shard).toMatchObject({ chainId: chain, value: { reason: "operator_redirect_refused" } });
     } finally {
       await disposeWorker(mf);
     }
@@ -165,8 +165,8 @@ it("finishes a chest only for a signed-in player's page on our origin, and answe
         modules: true,
         compatibilityDate: "2026-07-30",
         script: `import {WorkerEntrypoint} from 'cloudflare:workers';
-export class ValueIdentity extends WorkerEntrypoint { shards(){return []} authenticate(cookie){return cookie === 'session=player' ? {realmsId:'0x7'} : null} }
-export class RosterMonitor extends WorkerEntrypoint { verifyRoster(){return 0} }
+export class ValueIdentity extends WorkerEntrypoint { shard(){return null} authenticate(cookie){return cookie === 'session=player' ? {realmsId:'0x7'} : null} }
+export class RosterMonitor extends WorkerEntrypoint {}
 export default {fetch(){return new Response(null,{status:404})}};`,
       },
     ],
@@ -181,14 +181,11 @@ export default {fetch(){return new Response(null,{status:404})}};`,
     expect((await ask("41", { ...page, origin: "https://elsewhere.test" })).status).toBe(403);
     expect((await ask("41", { origin: page.origin })).status).toBe(401);
     expect((await ask("0x29", page)).status).toBe(400);
-    const deliver = (chainId: string, headers: Record<string, string>) =>
-      mf.dispatchFetch(`https://play.dev-realms.party/api/value/deposits/deliver?chainId=${chainId}`, {
-        method: "POST",
-        headers,
-      });
-    expect((await deliver("0x1", { ...page, origin: "https://elsewhere.test" })).status).toBe(403);
-    expect((await deliver("0x1", { origin: page.origin })).status).toBe(401);
-    expect((await deliver("one", page)).status).toBe(400);
+    const receipt = (query: string) =>
+      mf.dispatchFetch(`https://play.dev-realms.party/api/value/race-receipt?${query}`);
+    expect((await receipt("chainId=one&gameId=7")).status).toBe(400);
+    const unclosed = await receipt("chainId=0x1&gameId=7");
+    expect([unclosed.status, await unclosed.json()]).toEqual([404, { error: "race_not_closed" }]);
     const drawing = await ask("41", page);
     expect([drawing.status, await drawing.json()]).toEqual([200, { status: "drawing", blocksLeft: 6 }]);
   } finally {

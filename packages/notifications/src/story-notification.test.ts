@@ -4,7 +4,7 @@ import { buildStoryNotification, storyNotificationCopy, storyNotificationCreated
 import { includesStoryNotification } from "./story-policy";
 const input = {
   sourceId: "story:v1:0xa1:0x123:0x7:0xabc:0x64",
-  value: { timestamp: "0x1", story: { SeasonEnded: {} } },
+  value: { timestamp: "0x1", story: { BlitzFinalized: {} } },
   owner: "0x1",
   game: { mode: "frontier" } as const,
   target: "/g/0xa1/7",
@@ -14,7 +14,7 @@ it("builds shared display content from the original event clock, alive while its
   expect(buildStoryNotification(input)).toMatchObject({
     id: input.sourceId,
     kind: "results",
-    title: "The season is over",
+    title: "Your Blitz is settled",
     body: "Frontier: see where you finished.",
     tag: "results:/g/0xa1/7",
     createdAt: 1000,
@@ -30,10 +30,8 @@ it("builds shared display content from the original event clock, alive while its
 });
 
 it.each([
-  ["SeasonEnded", {}, "The season is over"],
   ["BlitzFinalized", {}, "Your Blitz is settled"],
   ["ResourceReceiveArrivalStory", {}, "Your caravan arrived"],
-  ["TradeAccepted", {}, "A trade was filled"],
   ["ResourceTransferStory", { to_entity_id: 11, travel_time: 0 }, "Resources received"],
 ] as const)("gives %s its own words", (story, payload, title) => {
   expect(storyNotificationCopy(story, payload).title).toBe(title);
@@ -82,8 +80,6 @@ const PAYLOADS: Record<string, Record<string, unknown>> = {
   RaidEvent: { player: "0x1", target_owner: "0x2", success: true },
   StructureCapturedStory: { previous_owner: "0x2", new_owner: "0x1" },
   ResourceTransferStory: { to_entity_id: 11, travel_time: 0 },
-  HyperstructurePoints: { points: 40_000_000 },
-  BitcoinAwardStory: { winner_paid: 5 },
 };
 const DELIVERED = [...nativeStoryVariants, "BattleEvent", "RaidEvent"].filter((story) =>
   includesStoryNotification("all", story, "blitz"),
@@ -106,15 +102,11 @@ it("puts every delivered story into its own words, in production as in developme
     expect(DELIVERED.sort()).toEqual(
       [
         "BattleEvent",
-        "BitcoinAwardStory",
         "BlitzFinalized",
-        "HyperstructurePoints",
         "RaidEvent",
         "ResourceReceiveArrivalStory",
         "ResourceTransferStory",
-        "SeasonEnded",
         "StructureCapturedStory",
-        "TradeAccepted",
       ].sort(),
     );
     // No story borrows another's words.
@@ -124,36 +116,12 @@ it("puts every delivered story into its own words, in production as in developme
   }
 });
 
-it.each([
-  // Story points are at the contract's precision: 5,000 whole points arrive as 5,000,000,000.
-  [{ points: "5000000000" }, "your share is 5,000 points."],
-  [{ points: 1_000_000 }, "your share is 1 point."],
-  [{ points: "0x1388" }, "your share is less than a point."],
-] as const)("words a Hyperstructure share by what it brought: %o", (payload, body) => {
-  expect(storyNotificationCopy("HyperstructurePoints", payload)).toEqual({
-    title: "You earned Hyperstructure points",
-    body,
-  });
-});
-
-it.each(["LordsWithdrawn", "BuildingPlacementStory", "ExplorationReward", "SkillPointSpent", "RewardChestOpened"])(
+it.each(["LordsWithdrawn", "BuildingPlacementStory", "ExplorationReward"])(
   "asks no words of %s, which no push tells",
   (story) => {
     expect(() => storyNotificationCopy(story, {})).toThrow(`Not a notified story: ${story}`);
   },
 );
-
-it.each([
-  [{ winner_paid: "1000000", winner_destination: 7 }, "The Bitcoin mine paid you", "your share is in your realm."],
-  // A winner whose contributing realm is no longer theirs is paid nothing, though the mine's owner may be.
-  [
-    { winner_paid: 0, winner_destination: 0, owner_paid: "500000" },
-    "Your Bitcoin share was not paid",
-    "the realm you contributed from is no longer yours.",
-  ],
-] as const)("tells a Bitcoin phase's winner what was actually paid to them: %o", (payload, title, body) => {
-  expect(storyNotificationCopy("BitcoinAwardStory", payload)).toEqual({ title, body });
-});
 
 it.each([
   [{ to_entity_id: 11, travel_time: 0 }, "Resources received", "they are in your stores."],
@@ -163,10 +131,8 @@ it.each([
 });
 
 it.each([
-  ["BitcoinAwardStory", {}],
   ["ResourceTransferStory", { to_entity_id: 11 }],
   ["ResourceTransferStory", { to_entity_id: 11, travel_time: "soon" }],
-  ["HyperstructurePoints", {}],
 ] as const)("refuses to word %s from a payload that does not say it: %o", (story, payload) => {
   expect(() => storyNotificationCopy(story, payload)).toThrow(/^Incomplete /);
 });

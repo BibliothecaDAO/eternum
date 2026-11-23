@@ -1,13 +1,17 @@
 export { ResourcesIds } from "./resource-ids";
 
 export * from "./buildings";
+export * from "./deep-sites";
 export * from "./hex";
 export * from "./market";
 export * from "./misc";
 export * from "./orders";
 export * from "./realmLevels";
 export * from "./relics";
+export * from "./shop";
 export * from "./resources";
 export * from "./structures";
 export * from "./troops";
 export * from "./utils";
+
+export * from "./quests";

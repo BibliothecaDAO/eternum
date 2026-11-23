@@ -3,11 +3,6 @@
       "message": "This file was generated from the composed config source and should not be edited manually",
       "configuration": {
   "spireTravelEssenceCost": 0,
-  "bitcoin": {
-    "prizePerPhase": 1,
-    "minimumLabor": 100,
-    "ownerCutBps": 2000
-  },
   "mines": {
     "kinds": {
       "1": {
@@ -42,8 +37,7 @@
   "tick": {
     "defaultTickIntervalInSeconds": 1,
     "armiesTickIntervalInSeconds": 60,
-    "deliveryTickIntervalInSeconds": 180,
-    "bitcoinPhaseInSeconds": 600
+    "deliveryTickIntervalInSeconds": 180
   },
   "carryCapacityGram": {
     "0": 0,
@@ -55,8 +49,7 @@
     "6": "18446744073709551615",
     "7": "18446744073709551615",
     "8": "18446744073709551615",
-    "10": "18446744073709551615",
-    "11": "18446744073709551615"
+    "10": "18446744073709551615"
   },
   "speed": {
     "donkey_for_resources": 9,
@@ -77,7 +70,6 @@
     "layer_capacity_increment": 6,
     "layer_capacity_bps": 8000,
     "single_realm_mode": false,
-    "two_player_mode": false,
     "spires_layer_distance": 0,
     "spires_max_count": 0,
     "spires_settled_count": 0
@@ -94,8 +86,6 @@
     "startSettlingAfterSeconds": 59,
     "startMainAfterSeconds": 60,
     "durationSeconds": 3600,
-    "endGraceSeconds": 0,
-    "bridgeCloseAfterEndSeconds": 604800,
     "startSettlingAt": 0,
     "startMainAt": 0
   },
@@ -128,8 +118,6 @@
     "shardsMinesWinProbability": 1000,
     "campFindProbability": 1500,
     "campFindFailProbability": 48500,
-    "bitcoinMineWinProbability": 0,
-    "bitcoinMineFailProbability": 1,
     "hyperstructureWinProbAtCenter": 0,
     "hyperstructureFailProbAtCenter": 1,
     "hyperstructureFailProbIncreasePerHexDistance": 9820,
@@ -1332,13 +1320,6 @@
     },
     "buildingFixedCostScalePercent": 1000
   },
-  "hyperstructures": {
-    "hyperstructureInitializationShardsCost": {
-      "resource": 24,
-      "amount": 0
-    },
-    "hyperstructureConstructionCost": []
-  },
   "realmUpgradeCosts": {
     "0": [],
     "1": [],
@@ -1390,7 +1371,6 @@
   "realmMaxLevel": 4,
   "villageMaxLevel": 1,
   "victoryPoints": {
-    "pointsForWin": "0",
     "hyperstructurePointsPerCycle": "1000000",
     "pointsForHyperstructureClaimAgainstBandits": "1000000000",
     "pointsForNonHyperstructureClaimAgainstBandits": "250000000",
@@ -1404,40 +1384,6 @@
       "collectible_timelock_address": "0x0",
       "collectibles_lootchest_address": "0x0",
       "collectibles_elitenft_address": "0x0"
-    },
-    "exploration": {
-      "rewards": [
-        {
-          "rewardId": 38,
-          "percent": 5,
-          "probabilityBps": 3500
-        },
-        {
-          "rewardId": 38,
-          "percent": 10,
-          "probabilityBps": 2500
-        },
-        {
-          "rewardId": 38,
-          "percent": 20,
-          "probabilityBps": 1500
-        },
-        {
-          "rewardId": 23,
-          "percent": 10,
-          "probabilityBps": 1500
-        },
-        {
-          "rewardId": 23,
-          "percent": 20,
-          "probabilityBps": 500
-        },
-        {
-          "rewardId": 25,
-          "percent": 10,
-          "probabilityBps": 500
-        }
-      ]
     }
   },
   "faith": {
@@ -1446,9 +1392,6 @@
     "realm_fp_per_sec": 0,
     "village_fp_per_sec": 0,
     "owner_share_percent": 0
-  },
-  "artificer": {
-    "research_cost_for_relic": 0
   },
   "trade": {
     "maxCount": 0

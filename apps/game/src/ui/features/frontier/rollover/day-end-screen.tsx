@@ -1,3 +1,5 @@
+import "./day-done.css";
+
 import { useEffect, type ReactNode } from "react";
 
 import { DAY_END_TIMING, useDayEndStore, type DayEndPhase } from "@/hooks/store/use-day-end-store";
@@ -27,23 +29,21 @@ const CLEAR_OF_THE_HOME_BAR = { paddingBottom: "env(safe-area-inset-bottom)" };
  * half, Continue under the thumb.
  */
 export const DayEndScreen = ({ summary }: { summary: ReactNode | null }) => {
-  const { phase, arrival, skip } = useDayEndStore();
+  const { phase, skip } = useDayEndStore();
   useSkipKeys(phase === "veil", skip);
   if (phase === "day") return null;
   const black = BLACK[phase];
-  const dark = arrival === "later" && phase === "summary" ? LATER_DARK : 0;
+  const dark = phase === "summary" ? LATER_DARK : 0;
   return (
     <div className="ui pointer-events-auto fixed inset-0 z-50" data-day-end={phase}>
       <div
+        data-day-end-scrim
         className="absolute inset-0 bg-hud-night transition-opacity ease-out"
         style={{ opacity: dark, transitionDuration: `${DAY_END_TIMING.dawn}s` }}
       />
       {phase === "summary" && summary && (
-        <div
-          className="absolute inset-x-2 bottom-2 lg:inset-x-auto lg:bottom-8 lg:left-1/2 lg:w-hud-summary lg:-translate-x-1/2"
-          style={CLEAR_OF_THE_HOME_BAR}
-        >
-          {summary}
+        <div className="absolute inset-0 flex items-center justify-center p-3 lg:p-6" style={CLEAR_OF_THE_HOME_BAR}>
+          <div className="day-end__card">{summary}</div>
         </div>
       )}
       {phase === "veil" && (

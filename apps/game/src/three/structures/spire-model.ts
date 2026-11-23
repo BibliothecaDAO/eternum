@@ -5,7 +5,6 @@ import type { AnimationVisibilityContext } from "../types/animation";
 import { queueInstanceUpdate } from "../utils/instance-update-ranges";
 import { placedModelPhase } from "../utils/placed-model-phase";
 import { isPortalSurface, sortSpirePortals, SpirePortalMaterials } from "./spire-portal";
-import { LocalEmissiveGlow } from "./local-emissive-glow";
 
 interface SpirePlacement {
   matrix: Matrix4;
@@ -42,7 +41,6 @@ export class SpireModel extends InstancedModel {
   private readonly prepared: ReturnType<typeof prepareSpire>;
   private readonly clipMixer: AnimationMixer;
   private readonly portalMaterials: SpirePortalMaterials;
-  private readonly veins: LocalEmissiveGlow;
   private readonly composed = new Matrix4();
   private readonly orbContraction = new Matrix4();
   private readonly coreInverse = new Matrix4();
@@ -74,11 +72,6 @@ export class SpireModel extends InstancedModel {
       mesh.name = prepared.solids[index].name;
       mesh.userData.spirePart = prepared.solids[index].userData.spirePart;
       mesh.frustumCulled = true;
-    });
-    this.veins = new LocalEmissiveGlow(this.instancedMeshes, this.group, {
-      name: "Spire vein light",
-      width: 0.003,
-      opacity: 0.12,
     });
   }
 
@@ -170,7 +163,6 @@ export class SpireModel extends InstancedModel {
     this.clipMixer.stopAllAction();
     this.clipMixer.uncacheRoot(this.prepared.evaluator);
     this.portalMaterials.dispose();
-    this.veins.dispose();
     this.placements.clear();
     super.dispose();
   }
@@ -185,7 +177,6 @@ export class SpireModel extends InstancedModel {
         bounds.union(transformed.copy(this.sweptBounds[part]).applyMatrix4(placement.matrix));
       mesh.boundingSphere = bounds;
     });
-    this.veins?.updateBoundsAndCount();
   }
 
   private measureSweptBounds(): Sphere[] {

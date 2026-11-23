@@ -3,11 +3,7 @@ import { HistoryStore } from "./history-store";
 
 /** A store over a scripted database: the writer can commit a block between the reader's queries. */
 const storeWithWriter = (commitDuringRowRead: boolean) => {
-  const store = new HistoryStore("postgres://unused", "madara", "0x1", {
-    storyModels: ["BattleEvent"],
-    pointsModel: "Points",
-    readPoints: () => null,
-  } as never);
+  const store = new HistoryStore("postgres://unused", "madara", "0x1", { storyModels: ["BattleEvent"] });
   const pool = (store as unknown as { pool: { query: unknown; end: () => Promise<void> } }).pool;
   const committed = [{ block: 30, own: false }];
   const progress = () => Math.max(...committed.map((row) => row.block));

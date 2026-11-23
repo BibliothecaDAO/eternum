@@ -1,4 +1,5 @@
-import { frontierArmyRules } from "../../ui/features/frontier/army/progression-rules-fixture";
+import { learnResearch, RESEARCH_ROWS } from "@bibliothecadao/eternum";
+
 import { readExpeditionRules, setBuildingCount } from "@bibliothecadao/eternum";
 import { nativeResearchConstants as research, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import {
@@ -10,9 +11,11 @@ import {
 } from "@bibliothecadao/types";
 
 import { dayClock } from "@/ui/features/frontier/hud/day-clock";
+import { madePicks } from "@/ui/features/frontier/production/store-makers";
+import type { MadeResource } from "@/ui/features/frontier/stores";
 
 import { type LabFact, type LabScenario, wire } from "./lab-chain";
-import { PROGRESS_KEYS, spireScenario } from "./spire-scenario";
+import { armyProgress, spireScenario } from "./spire-scenario";
 
 /** The rows changed here, under the keys their fixtures write them by (deploy, kit lab and site fixtures). */
 const FIXTURE_KEYS = {
@@ -48,23 +51,11 @@ const STANDING: BuildingType[] = [
 ];
 const BARRACKS = 2;
 
-/**
- * Workshop tier 2 (Tools, Tools), Farm tier 1 (Fields), Barracks tier 1 (Drill), as research.cairo packs them; the
- * Ethereal reaches the spire's realm learned stay.
- */
-const LEARNED = (1n << 0n) | (2n << 7n) | (1n << 14n);
-const PICKS: Partial<Record<number, number>> = {
-  [ResourcesIds.Labor]: 2,
-  [ResourcesIds.Wheat]: 1,
-  [ResourcesIds.Knight]: 1,
-};
+const LEARNED = learnResearch(
+  learnResearch(learnResearch(0n, research.ROW_FARM), research.ROW_WORKSHOP),
+  research.ROW_WORKSHOP,
+);
 
-/**
- * The spire's game in the day's last hour, the realm a City producing at Frontier's rates under its research: three Workshops (Tools twice),
- * three Farms (Fields) and two Barracks (Drill), the castle's own labor producer beside them, each store's rate as
- * buildings.cairo's board_output sums it; the army at Uncommon Logistics and Homecoming, 70 stamina held
- * (/lab/game?scenario=day-end).
- */
 export const dayEndScenario = (): LabScenario => {
   const spire = spireScenario();
   const { store } = spire;
@@ -117,7 +108,6 @@ const realmProducing = (store: NativeFactStore): LabFact[] => {
         packed_counts_1: String(packed[0]),
         packed_counts_2: String(packed[1]),
         packed_counts_3: String(packed[2]),
-        population: { current: 10, max: 12 },
       },
     },
     production(store, ResourcesIds.Labor, 3, true),
@@ -163,16 +153,19 @@ const frontierRates = (store: NativeFactStore): LabFact[] => [
 ];
 
 /** A store's ResourceProduction as board_output sums it: each building's base and its picks, plus the castle's labor. */
-const production = (store: NativeFactStore, resource: ResourcesIds, buildings: number, castle: boolean): LabFact => {
+const production = (store: NativeFactStore, resource: MadeResource, buildings: number, castle: boolean): LabFact => {
   const board = store.require("BoardRules", { game_id: 1 });
   const realmRate = (of: ResourcesIds) => store.require("ResourceRule", { game_id: 1, resource_type: of }).realm_rate;
   const base = resource === ResourcesIds.Labor ? board.workshop_rate : realmRate(resource);
-  const boosted = (base * BigInt(10_000 + (PICKS[resource] ?? 0) * board.output_step_bps)) / 10_000n;
+  const learned = store.require("RealmKnowledge", { game_id: 1, structure_id: 7 }).learned | LEARNED;
+  const boosted = (base * BigInt(10_000 + madePicks(resource, learned) * board.output_step_bps)) / 10_000n;
   const rate = boosted * BigInt(buildings) + (castle ? realmRate(ResourcesIds.Labor) : 0n);
   return {
     model: "ResourceProduction",
     key: `1:7:${resource}`,
     value: {
+      remainder: 0,
+
       game_id: 1,
       entity_id: 7,
       resource_type: resource,
@@ -196,31 +189,13 @@ const armyProgressed = (store: NativeFactStore, startsAt: number): LabFact[] => 
         troops: { ...wired.troops, stamina: { Inline: { amount: "70", settled_at: startsAt, remainder: 0 } } },
       },
     },
-    {
-      model: "ArmyProgress",
-      key: PROGRESS_KEYS.spireArmy,
-      value: {
-        common_points: 0,
-        uncommon_points: 0,
-        rare_points: 0,
-        epic_points: 0,
-        legendary_points: 0,
-        game_id: 1,
-        explorer_id: "201",
-        xp: 40,
-        battle: 1,
-        logistics: 2,
-        scouting: 0,
-        scouting_kinds: 0,
-        homecoming: 3,
-      },
-    },
+    armyProgress(store, Number(army.explorer_id), 2),
   ];
 };
 
-/** The research page's rules: each row's tier priced (Essence 2,000 and labor 1,000 a tier), and XP's prices. */
+/** The research page's rules: each row's tier priced (Essence 2,000 and labor 1,000 a tier), on the surviving research rows. */
 export const researchPriced = (): LabFact[] => [
-  ...Array.from({ length: research.ROW_COUNT }, (_, row) =>
+  ...RESEARCH_ROWS.map((row) =>
     [1, 2, 3, 4].map((tier) => ({
       model: "ResearchPrice",
       key: `0x1ac3${row.toString(16)}${tier}`,
@@ -233,9 +208,4 @@ export const researchPriced = (): LabFact[] => [
       },
     })),
   ).flat(),
-  {
-    model: "ArmyProgressionRules",
-    key: PROGRESS_KEYS.rules,
-    value: frontierArmyRules(),
-  },
 ];

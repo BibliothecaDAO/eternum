@@ -3,6 +3,7 @@ import {
   formatTypedNumber,
   formatExact,
   formatPercent,
+  formatShort,
   formatShortDuration,
   readTypedNumber,
   typedNumberText,
@@ -362,6 +363,7 @@ export const HudTroopAmount = ({
   art,
   value,
   most,
+  max = most,
   held,
   disabled = false,
   onChange,
@@ -372,6 +374,7 @@ export const HudTroopAmount = ({
   value: number;
   /** The most that can go: the troops on hand within the army's room. */
   most: number;
+  max?: number;
   /** How many are on hand; when fewer fit, the count reads "of N that fit". */
   held: number;
   disabled?: boolean;
@@ -388,7 +391,7 @@ export const HudTroopAmount = ({
             +{QUICK_ADD}
           </HudButton>
         )}
-        <HudButton kind="secondary" disabled={full} onClick={() => onChange(most)}>
+        <HudButton kind="secondary" disabled={disabled || value === max} onClick={() => onChange(max)}>
           Max
         </HudButton>
         <span className="ui-amount__of">
@@ -754,7 +757,7 @@ export const HudTabs = <K extends string | number>({
    * wide for its place wraps; no tab ever leaves it.
    */
   tabs: readonly HudTab<K>[];
-  value: K;
+  value: K | null;
   onChange: (key: K) => void;
   /** A strip in a line of body text (the top bar's): its words at the body's size. */
   size?: "md" | "sm";
@@ -805,13 +808,13 @@ const TabFace = <K,>({ tab }: { tab: HudTab<K> }) =>
   tab.icon && !tab.label ? (
     <span className="ui-tab__mark">
       <Icon name={tab.icon} size={22} />
-      {tab.count !== undefined && <HudChip tone={tab.countTone}>{tab.count}</HudChip>}
+      {tab.count !== undefined && <HudChip tone={tab.countTone}>{formatShort(tab.count)}</HudChip>}
     </span>
   ) : (
     <>
       {tab.icon && <Icon name={tab.icon} size={22} />}
       {tab.label}
-      {tab.count !== undefined && <HudChip tone={tab.countTone}>{tab.count}</HudChip>}
+      {tab.count !== undefined && <HudChip tone={tab.countTone}>{formatShort(tab.count)}</HudChip>}
     </>
   );
 
@@ -1127,6 +1130,7 @@ export const HudRow = ({
   tip,
   onClick,
   href,
+  ...data
 }: {
   lead?: ReactNode;
   /** The name of the button that chooses the row, where its words say more than its name (an army's figures). */
@@ -1151,7 +1155,7 @@ export const HudRow = ({
   onClick?: () => void;
   /** An address the row opens in a new tab (a guide on the docs site): the row is then a link, not a button. */
   href?: string;
-}) => {
+} & { [key: `data-${string}`]: string | undefined }) => {
   const face = (
     <>
       <span className="ui-row__words">
@@ -1164,8 +1168,9 @@ export const HudRow = ({
   if (controls !== undefined) {
     return (
       <div
+        {...data}
         className="ui-row"
-        aria-selected={selected ?? false}
+        data-selected={selected || undefined}
         aria-disabled={disabled}
         data-state={state}
         data-tip={tip}
@@ -1192,13 +1197,22 @@ export const HudRow = ({
   }
   if (href)
     return (
-      <a className="ui-row" href={href} target="_blank" rel="noopener noreferrer" data-state={state} data-tip={tip}>
+      <a
+        {...data}
+        className="ui-row"
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        data-state={state}
+        data-tip={tip}
+      >
         {lead}
         {face}
       </a>
     );
   return onClick ? (
     <button
+      {...data}
       type="button"
       className="ui-row"
       aria-label={label}
@@ -1214,9 +1228,9 @@ export const HudRow = ({
     </button>
   ) : (
     <div
+      {...data}
       className="ui-row"
-      role="option"
-      aria-selected={selected ?? false}
+      data-selected={selected || undefined}
       aria-disabled={disabled}
       data-state={state}
       data-tip={tip}
@@ -1343,6 +1357,7 @@ export const HudCard = ({
   disabled = false,
   refusal,
   onClick,
+  ...rest
 }: {
   title: ReactNode;
   picture: ReactNode;
@@ -1355,7 +1370,7 @@ export const HudCard = ({
   disabled?: boolean;
   refusal?: string;
   onClick?: () => void;
-}) => {
+} & Omit<HTMLAttributes<HTMLDivElement>, "title" | "onClick">) => {
   const refusalId = useId();
   const described = refusal === undefined ? undefined : refusalId;
   const face = (
@@ -1376,7 +1391,8 @@ export const HudCard = ({
   );
   return (
     <div
-      className="ui-card ui-pick"
+      {...rest}
+      className={cn("ui-card ui-pick", rest.className)}
       data-size={size}
       data-selected={selected || undefined}
       data-disabled={disabled || undefined}
@@ -1538,22 +1554,25 @@ export const HudWindow = ({
   title,
   icon,
   size,
+  className,
   onClose,
   children,
+  ...rest
 }: {
   title: string;
   icon?: IconMeaning;
   size?: WindowSize;
-  onClose: () => void;
+  className?: string;
+  onClose?: () => void;
   children: ReactNode;
-}) => {
+} & Omit<HTMLAttributes<HTMLElement>, "title" | "children">) => {
   const [foot, setFoot] = useState<HTMLElement | null>(null);
   return (
-    <section className="ui ui-window" role="dialog" aria-label={title} data-size={size}>
-      <header className="ui-window__bar" data-popover-drag-handle>
+    <section {...rest} className={cn("ui ui-window", className)} role="dialog" aria-label={title} data-size={size}>
+      <header className="ui-window__bar" data-popover-drag-handle={onClose ? "" : undefined}>
         {icon && <Icon name={icon} size={22} />}
-        <span>{title}</span>
-        <HudIconButton icon="close" label="Close" kind="quiet" onClick={onClose} />
+        <span className="ui-window__title">{title}</span>
+        {onClose && <HudIconButton icon="close" label="Close" kind="quiet" onClick={onClose} />}
       </header>
       <WindowFootContext.Provider value={foot}>
         <div className="ui-window__body">{children}</div>
@@ -1573,11 +1592,6 @@ export const SheetDock = createContext<HTMLElement | null>(null);
 type FrameParts = {
   label: string;
   icon?: IconMeaning;
-  /**
-   * A page's own places (Chat's rooms), shown in its head row in its name's place: one row for the way between them and
-   * the way out, the label still naming the frame to assistive tech.
-   */
-  nav?: ReactNode;
   /** What the head says or offers beside the name (a lens, the player's rank), before the way out. */
   cue?: ReactNode;
   /** A quiet control right after the name (PanelHead's beside). */
@@ -1597,7 +1611,7 @@ type FrameParts = {
 const SurfaceFrame = forwardRef<
   HTMLElement,
   FrameParts & { bodyClassName?: string } & Omit<HTMLAttributes<HTMLElement>, "children">
->(({ label, icon, nav, cue, beside, onClose, bodyClassName, className, children, ...rest }, ref) => {
+>(({ label, icon, cue, beside, onClose, bodyClassName, className, children, ...rest }, ref) => {
   const [foot, setFoot] = useState<HTMLElement | null>(null);
   useSheetCloses(onClose);
   const drag = useDragDownCloses(onClose);
@@ -1605,8 +1619,8 @@ const SurfaceFrame = forwardRef<
     <section ref={ref} {...rest} aria-label={label} data-kit-frame className={cn("ui ui-panel ui-frame", className)}>
       <div className="ui-frame__head" {...drag.handlers}>
         <PanelHead
-          title={nav ?? label}
-          icon={nav ? undefined : icon}
+          title={label}
+          icon={icon}
           beside={beside}
           cue={
             <span className="flex items-center gap-1">
@@ -1634,11 +1648,13 @@ SurfaceFrame.displayName = "SurfaceFrame";
  */
 export const HudSheet = ({
   label,
+  icon,
   beside,
   onClose,
   children,
 }: {
   label: string;
+  icon?: IconMeaning;
   /** A quiet control right after the sheet's name, out of the body's flow and away from the cross (an army's Delete). */
   beside?: ReactNode;
   onClose: () => void;
@@ -1649,6 +1665,7 @@ export const HudSheet = ({
     <SurfaceFrame
       role="dialog"
       label={label}
+      icon={icon}
       beside={beside}
       onClose={onClose}
       data-kit-sheet=""
@@ -1738,14 +1755,14 @@ export const HudConfirm = ({
  * and inert, the keyboard held in it (useModalLayer, the app's modal behaviour), and `onClose` on a press beside the
  * card, Escape or the system back. It is drawn where the HUD draws it, so the card keeps the HUD's age and sizes.
  */
-export const HudModalLayer = ({ onClose, children }: { onClose: () => void; children: ReactNode }) => {
+export const HudModalLayer = ({ onClose, children }: { onClose?: () => void; children: ReactNode }) => {
   const layer = useRef<HTMLDivElement>(null);
   useModalLayer(layer, onClose);
   return (
     <div
       ref={layer}
       className="ui ui-modal pointer-events-auto fixed inset-0 z-50"
-      onClick={(event) => event.target === event.currentTarget && onClose()}
+      onClick={(event) => event.target === event.currentTarget && onClose?.()}
     >
       {children}
     </div>
@@ -1855,7 +1872,7 @@ const reachableItems = (menu: HTMLElement | null) =>
  * screen has no room below. Arrows move through it, Enter chooses, Escape, Tab and a press outside close it, and so does
  * a choice. A select's (HudSelect), a tab's that opens choices (HudTabs) and the phone's view slot's.
  */
-export const useHudList = (label: string) => {
+const useHudList = (label: string) => {
   const [open, setOpen] = useState(false);
   const [place, setPlace] = useState<ReturnType<typeof menuPlace> | null>(null);
   const trigger = useRef<HTMLButtonElement>(null);

@@ -12,20 +12,20 @@ import { ruinFightScenario } from "./ruin-fight-scenario";
 it("sends a ruin fight through the lab account with its payout events separate from persistent facts", async () => {
   vi.stubGlobal(
     "fetch",
-    vi.fn(async () => Response.json({ shards: [] })),
+    vi.fn(async () => Response.json({ shard: null })),
   );
   const startedAt = Date.now();
   const scenario = await installLabChain(ruinFightScenario, startedAt);
   const span = encodeNativeCommand(nativeBindings.commandAbi, {
     kind: "BattleGuard",
-    value: { attacker_id: SPIRE_ARMY, defender_id: SITE },
+    value: { attacker_id: SPIRE_ARMY, defender_id: SITE, relic_slot: { kind: "None", value: undefined } },
   });
   const errors = vi.spyOn(console, "error");
   vi.useFakeTimers();
   try {
     await executeGameplayAccountTransaction({
       account: useAccountStore.getState().account!,
-      calls: { contractAddress: "0x1ab", entrypoint: "play", calldata: ["1", "3", "0", String(span.length), ...span] },
+      calls: { contractAddress: "0x1ab", entrypoint: "play", calldata: ["1", "3", String(span.length), ...span] },
       shard: { chainId: LAB_GAME.chainId, l2GasBound: BigInt("0x47868c00") },
     });
     await vi.advanceTimersByTimeAsync(300);
@@ -43,7 +43,7 @@ it("sends a ruin fight through the lab account with its payout events separate f
     vi.setSystemTime(startedAt + 1000);
     await executeGameplayAccountTransaction({
       account: useAccountStore.getState().account!,
-      calls: { contractAddress: "0x1ab", entrypoint: "play", calldata: ["1", "3", "0", String(span.length), ...span] },
+      calls: { contractAddress: "0x1ab", entrypoint: "play", calldata: ["1", "3", String(span.length), ...span] },
       shard: { chainId: LAB_GAME.chainId, l2GasBound: BigInt("0x47868c00") },
     });
     expect(window.__labChain!.sent).toHaveLength(1);

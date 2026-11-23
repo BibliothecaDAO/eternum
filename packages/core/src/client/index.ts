@@ -8,11 +8,54 @@ export * from "./shard";
 export * from "./story-participants";
 
 export type { NativeRows, NativeKeys, NativeModelName } from "../../../../contracts/l3/world-native/schema/client.gen";
-export { nativeResearchConstants, nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
+export {
+  nativeResearchConstants,
+  nativeOathConstants,
+  nativeRuleConstants,
+  nativeQuestConstants,
+  nativeBaneConstants,
+  nativeRaceConstants,
+  nativeFragmentConstants,
+  nativeStructureConstants,
+} from "../../../../contracts/l3/world-native/schema/balance.gen";
+export { previewRuinGuardBounds } from "../../../../contracts/l3/world-native/schema/site-previews.gen";
 
 export type { GameClientSetup } from "./game-client";
+export { assertReleaseReadable } from "./game-release";
 
 export { hasSingleTilePosition } from "./native-occupancy";
 
 export { entityMapPosition } from "../utils/tile";
 export { safeInteger } from "../utils/safe-integer";
+
+export { armyCombatRefusal, isAspectAlly, viewerAspects } from "../utils/army-opponents";
+export { spendsFragments } from "../utils/mode-rules";
+export { armyDrain, deepArmyLife, type DeepArmyLife } from "../utils/deep-army-life";
+export {
+  IncompleteDeepSyncError,
+  homeAspect,
+  isBesideDeepSite,
+  isDeepSiteRival,
+  readDeepSite,
+  readDeepBeastTroops,
+  readDeepRingOpening,
+  readDeepSiteDefender,
+  readDeepSites,
+  type DeepSiteView,
+} from "./views/deep-sites";
+export { raceFinishHeight, readRaceBoard, RACE_MODELS, type RaceBoard } from "./views/race";
+export { currentArmy, currentResourceWeight } from "../utils/deep";
+export {
+  deepCenter,
+  deepGateTiles,
+  deepViewFor,
+  deepZoneAt,
+  deepZoneBounds,
+  isDeepTile,
+  type DeepZone,
+} from "../utils/deep-geometry";
+export { questWeek } from "../utils/daily-quest";
+export { readActiveTriumph, TRIUMPH_MODELS } from "./views/triumphs";
+
+export { SITE_EFFECT_MODELS, readSiteEffects, readSiteReward } from "./views/site-effects";
+export { GUARD_MODELS } from "../utils/army";

@@ -1,6 +1,5 @@
-import { getHexDistance, formatCount, formatExact } from "@bibliothecadao/types";
+import { getHexDistance, formatCount } from "@bibliothecadao/types";
 import type { TroopStack } from "@/ui/features/military/components/unified-army-creation-modal/types";
-import type { PointsGrants } from "./points-goal";
 
 /** A hex in contract space, as the map and its facts give it. */
 export interface CoachHex {
@@ -20,9 +19,8 @@ export interface CoachArmy {
   selected: boolean;
 }
 
-/** Something on the map that scores when an army takes it: a relic crate, a camp or rift, or a Hyperstructure. */
 export interface CoachTarget {
-  kind: "crate" | "site" | "hyperstructure";
+  kind: "site";
   name: string;
   hex: CoachHex;
 }
@@ -44,17 +42,11 @@ interface CoachState {
   troopsOnHand: TroopsOnHand | null;
   /** The army is wiped out at any roll attacking the target's guards as they stand. */
   certainLoss: (army: CoachArmy, target: CoachTarget) => boolean;
-  grants: PointsGrants;
 }
 
-/**
- * What a coach step does: raise an army at a realm, open Build to train troops, open a crate beside an army, level a
- * realm up, or select an army on the map with the card of the target it should go for open (none for exploring).
- */
 export type CoachAct =
   | { kind: "raise"; realmId: number; troops: TroopStack }
   | { kind: "build" }
-  | { kind: "open-crate"; armyId: number; hex: CoachHex }
   | { kind: "level-up"; realmId: number; name: string }
   | { kind: "go"; armyId: number; target: CoachHex | null };
 
@@ -66,26 +58,10 @@ export interface CoachStep {
   act: CoachAct | null;
 }
 
-/**
- * What scores most for the player right now, then what scores next. With no army in the field: raise one where troops
- * are on hand, or build a barracks; nothing for a player who holds nothing to build on. Then a crate an army stands
- * beside (+250, opened from here); an army that can explore (+5 a tile: the selected one, else the newest); a crate
- * farther off; The Vanguard's camps and rifts (+250) and Hyperstructures (+1,000, then points every second). A target
- * the nearest army would surely lose to asks for its home realm's level-up first, which raises bigger armies; one whose
- * home is at the top level is out of that army's reach. Once the army a step names is selected, the step says how to
- * take it on the map, and a target's button still frames it.
- */
 export const coachSteps = (state: CoachState): CoachStep[] => {
   if (state.armies.length === 0) return state.holds ? [raiseStep(state)] : [];
-  const besideCrate = nearest("crate", state, (pair) => pair.distance === 1);
   const explorer = armyToExplore(state.armies);
-  return [
-    ...(besideCrate ? [openCrateStep(besideCrate, state.grants)] : []),
-    ...(explorer ? [exploreStep(explorer, state.grants)] : []),
-    ...goFor("crate", state, (pair) => pair.distance > 1),
-    ...goFor("site", state),
-    ...goFor("hyperstructure", state),
-  ];
+  return [...(explorer ? [exploreStep(explorer)] : []), ...goForSite(state)];
 };
 
 /** An army to raise: at the realm with the most troops on hand, or, with none anywhere, a barracks to build first. */
@@ -113,16 +89,8 @@ const armyToExplore = (armies: readonly CoachArmy[]): CoachArmy | undefined => {
   return able.find((army) => army.selected) ?? able.toSorted((left, right) => right.entityId - left.entityId)[0];
 };
 
-const openCrateStep = ({ army, target }: Pair, grants: PointsGrants): CoachStep => ({
-  key: `coach:open-crate:${target.hex.col}:${target.hex.row}`,
-  line: `Beside ${target.name}: +${formatExact(grants.openRelicCrate)} points`,
-  verb: "Open the crate",
-  act: { kind: "open-crate", armyId: army.entityId, hex: target.hex },
-});
-
-const exploreStep = (army: CoachArmy, grants: PointsGrants): CoachStep => {
-  const points = `+${formatExact(grants.exploreTile)} points a tile`;
-  return army.selected
+const exploreStep = (army: CoachArmy): CoachStep =>
+  army.selected
     ? {
         key: `coach:explore:${army.entityId}:selected`,
         line: "Right-click a tile beside your army",
@@ -131,41 +99,25 @@ const exploreStep = (army: CoachArmy, grants: PointsGrants): CoachStep => {
       }
     : {
         key: `coach:explore:${army.entityId}`,
-        line: `Your army can explore: ${points}`,
+        line: "Your army can explore",
         verb: "Select the army",
         act: { kind: "go", armyId: army.entityId, target: null },
       };
-};
 
 type Pair = { target: CoachTarget; army: CoachArmy; distance: number };
 
-/** The nearest target of a kind to any of the armies, among the pairs `admits` lets through. */
-const nearest = (
-  kind: CoachTarget["kind"],
-  { armies, targets }: CoachState,
-  admits: (pair: Pair) => boolean = () => true,
-): Pair | null =>
+const nearest = ({ armies, targets }: CoachState, admits: (pair: Pair) => boolean): Pair | null =>
   targets
-    .filter((target) => target.kind === kind)
     .flatMap((target) => armies.map((army) => ({ target, army, distance: distance(army.hex, target.hex) })))
     .filter(admits)
     .reduce<Pair | null>((best, pair) => (best === null || pair.distance < best.distance ? pair : best), null);
 
-/**
- * The nearest target of a kind, as a step that selects that army with the target's card open; once that army is
- * selected, the step says how to take it on the map and its button still frames the target with the army. A camp, rift
- * or Hyperstructure the army would surely lose to asks for its home realm's level-up first.
- */
-const goFor = (
-  kind: CoachTarget["kind"],
-  state: CoachState,
-  admits: (pair: Pair) => boolean = () => true,
-): CoachStep[] => {
-  const pair = nearest(kind, state, (candidate) => admits(candidate) && !isOutOfReach(candidate, state));
+const goForSite = (state: CoachState): CoachStep[] => {
+  const pair = nearest(state, (candidate) => !isOutOfReach(candidate, state));
   if (!pair) return [];
   const { army, target } = pair;
-  const key = `coach:${kind}:${target.hex.col}:${target.hex.row}`;
-  if (kind !== "crate" && state.certainLoss(army, target)) {
+  const key = `coach:site:${target.hex.col}:${target.hex.row}`;
+  if (state.certainLoss(army, target)) {
     return [
       {
         key: `${key}:level-up`,
@@ -175,39 +127,22 @@ const goFor = (
       },
     ];
   }
-  const words = goWords(kind, target.name, state.grants);
-  // The target is often in the fog, far off: its button frames it with the army, also once the army is selected.
   const go: CoachAct = { kind: "go", armyId: army.entityId, target: target.hex };
+  const verb = `Show ${target.name}`;
   return [
     army.selected
-      ? { key: `${key}:selected`, line: words.onMap, verb: words.verb, act: go }
-      : { key, line: words.line, verb: words.verb, act: go },
+      ? { key: `${key}:selected`, line: `Move beside ${target.name}, then right-click to attack`, verb, act: go }
+      : {
+          key,
+          line: `Take ${target.name} from The Vanguard`,
+          verb,
+          act: go,
+        },
   ];
 };
 
 /** The army would surely lose to the target, and its home is at the top level: no level-up raises a bigger one. */
 const isOutOfReach = ({ army, target }: Pair, state: CoachState): boolean =>
-  !army.home.canLevelUp && target.kind !== "crate" && state.certainLoss(army, target);
-
-/** A target's line, its button's verb, and the line once its army is selected: how to take it on the map. */
-const goWords = (kind: CoachTarget["kind"], name: string, grants: PointsGrants) => {
-  if (kind === "crate") {
-    const points = `+${formatExact(grants.openRelicCrate)} points`;
-    return {
-      line: `Open ${name}: ${points}`,
-      verb: "Show the crate",
-      onMap: `Move beside ${name}, then right-click it`,
-    };
-  }
-  const [line, points] =
-    kind === "site"
-      ? [`Take ${name} from The Vanguard`, `+${formatExact(grants.claimCampFromBandits)} points`]
-      : [`Take ${name}`, `+${formatExact(grants.claimHyperstructureFromBandits)} points`];
-  return {
-    line: `${line}: ${points}`,
-    verb: `Show ${name}`,
-    onMap: `Move beside ${name}, then right-click to attack`,
-  };
-};
+  !army.home.canLevelUp && state.certainLoss(army, target);
 
 const distance = (from: CoachHex, to: CoachHex): number => getHexDistance(from, to, Number.POSITIVE_INFINITY);

@@ -3,56 +3,59 @@ import { resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const root = new URL("../", import.meta.url);
-const sources = ["expeditions", "progression", "taxonomy", "resources", "rules", "troops"];
+const sources = ["expeditions", "taxonomy", "resources", "rules", "army_relics"];
 
 /** Compile the pure site formulas. Unrecognized Cairo must fail, never leave a partial preview. */
 export function compileSitePreviews(source) {
   const rewards = resourceRewards(source);
-  const xp = clearXpRule(source.progression);
   const premium = depthRewardRule(source.expeditions);
-  const precision = constant(source.rules, "RESOURCE_PRECISION");
-  const rift = riftGuardRule(source.troops);
-  return `// From the site reward, clear XP and rift guard formulas in Cairo. Run scripts/generate-site-previews.mjs.
-export function previewRiftGuardBound(camp: number, step: number): number {
-  return Math.floor((camp * ${rift.percent} + step * ${rift.rounding}) / (step * ${rift.divisor})) * step;
+  const ruin = ruinStrengthRule(source.army_relics);
+  return `// @generated from the site reward and ruin guard formulas in Cairo. Run scripts/generate-site-previews.mjs.
+export const RELICS_PER_LAYER = ${ruin.strengths.length};
+
+export function previewRuinGuardBounds(rank: number, depth: number): [number, number] {
+  const place = rank - 1 - depth;
+  const base = [${ruin.strengths.join(", ")}][place];
+  if (base === undefined || place < 0) throw new Error("Relic outside its layer");
+  const strength = base * 2 ** depth;
+  const spread = strength * ${ruin.spread} / 100;
+  return [strength - spread, strength + spread];
 }
 
-export function previewSiteReward(category: number, initialGuardCount: bigint, depth: number): { resourceType: number; amount: bigint } | null {
+export function previewSiteReward(category: number, initialGuardCount: bigint, depth: number, band: boolean): { resourceType: number; amount: bigint } | null {
+  if (band) return null;
 ${rewards.map(({ category, resource, operator, operand }) => `  if (category === ${category}) return { resourceType: ${resource}, amount: depthReward(initialGuardCount ${operator} ${operand}n, depth) };`).join("\n")}
   return null;
-}
-
-export function previewSiteClearXp(initialGuardCount: bigint, depth: number): number {
-  const xp = depthReward(integerSqrt(initialGuardCount / ${precision}n * ${xp.multiplier}n) / ${xp.divisor}n, depth);
-  if (xp > 0xffff_ffffn) throw new Error("Site clear XP exceeds u32");
-  return Number(xp);
 }
 
 function depthReward(amount: bigint, depth: number): bigint {
   return amount * (${premium.base}n + BigInt(depth)) / ${premium.divisor}n;
 }
 
-/** Cairo's integer square root, without converting a scaled troop count to floating point. */
-function integerSqrt(value: bigint): bigint {
-  if (value < 0n) throw new Error("Negative site strength");
-  let root = value;
-  let next = (root + 1n) / 2n;
-  while (next < root) {
-    root = next;
-    next = (root + value / root) / 2n;
-  }
-  return root;
-}
 `;
+}
+
+function ruinStrengthRule(source) {
+  const body = functionBody(source, "ruin_strength", "rank:u8,depth:u8", "u128");
+  const match = body.match(
+    /^assert!\(rank>depth&&rank<=depth\+RELICS_PER_LAYER,"relicoutsideitslayer"\);letbase:u128=matchrank-1-depth\{0=>([0-9_]+),1=>([0-9_]+),_=>([0-9_]+),?\};base\*core::num::traits::Pow::pow\(2_u128,depth.into\(\)\)$/,
+  );
+  if (!match) throw new Error("Unsupported ruin strength rule; update the preview compiler");
+  const strengths = match.slice(1).map(positiveInteger);
+  if (Number(constant(source, "RELICS_PER_LAYER")) !== strengths.length)
+    throw new Error("Ruin strengths must name one size a relic of the layer");
+  return { strengths, spread: constant(source, "RUIN_GUARD_SPREAD_PERCENT") };
 }
 
 function resourceRewards(source) {
   let body = functionBody(
     source.expeditions,
     "site_reward",
-    "category:u8,site:ExpeditionSite,depth:u8",
+    "category:u8,site:ExpeditionSite,depth:u8,band:bool",
     "Option<crate::resources::ResourceAmount>",
   );
+  if (!body.startsWith("ifband{returnNone;}")) throw new Error("Unsupported Band payout rule");
+  body = body.slice("ifband{returnNone;}".length);
   const imports = body.match(/^usecrate::resources::\{([A-Z_a-z,]+)\};/);
   if (!imports) throw new Error("Unsupported site_reward imports");
   body = body.slice(imports[0].length);
@@ -86,15 +89,6 @@ function resourceRewards(source) {
   return rules;
 }
 
-function clearXpRule(source) {
-  const body = functionBody(source, "clear_xp", "strength:u128,depth:u8", "u32");
-  const rule = body.match(
-    /^letroot:u64=core::num::traits::Sqrt::sqrt\(strength\/crate::rules::RESOURCE_PRECISION\*([0-9_]+)\);crate::expeditions::depth_reward\(\(root\/([0-9_]+)\).into\(\),depth\).try_into\(\).unwrap\(\)$/,
-  );
-  if (!rule) throw new Error("Unsupported clear_xp formula; update the preview compiler");
-  return { multiplier: positiveInteger(rule[1]), divisor: positiveInteger(rule[2]) };
-}
-
 function depthRewardRule(source) {
   const body = functionBody(source, "depth_reward", "amount:u128,depth:u8", "u128");
   const rule = body.match(/^amount\*\(([0-9_]+)\+depth.into\(\)\)\/([0-9_]+)$/);
@@ -102,19 +96,10 @@ function depthRewardRule(source) {
   return { base: positiveInteger(rule[1]), divisor: positiveInteger(rule[2]) };
 }
 
-function riftGuardRule(source) {
-  const body = functionBody(source, "rift_guard_bound", "camp:u16,step:u32", "u32");
-  const rule = body.match(
-    /^letscaled:u32=Into::<u16,u32>::into\(camp\)\*([A-Z_]+);\(scaled\+step\*([0-9_]+)\)\/\(step\*([0-9_]+)\)\*step$/,
-  );
-  if (!rule) throw new Error("Unsupported rift_guard_bound formula");
-  return { percent: constant(source, rule[1]), rounding: positiveInteger(rule[2]), divisor: positiveInteger(rule[3]) };
-}
-
 function functionBody(source, name, parameters, returns) {
   const declaration = source.match(new RegExp(`^(?:pub )?fn ${name}\\([^]*?^}`, "m"))?.[0];
   if (!declaration) throw new Error(`Missing Cairo function ${name}`);
-  const header = declaration.slice(0, declaration.indexOf("{")).replace(/\s+/g, "");
+  const header = declaration.slice(0, declaration.indexOf("{")).replace(/\s+/g, "").replace(/,\)/g, ")");
   if (header.replace(/^pub/, "") !== `fn${name}(${parameters})->${returns}`)
     throw new Error(`Unsupported ${name} signature`);
   return declaration

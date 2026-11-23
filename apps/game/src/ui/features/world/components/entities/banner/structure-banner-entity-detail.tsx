@@ -2,15 +2,12 @@ import { categoryCan } from "@/ui/lib/structure-capabilities";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 
 import { IncomingCaravans } from "./incoming-caravans";
-import { StructureOwnershipTransfer } from "./structure-ownership-transfer";
 import { memo, useCallback } from "react";
 
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { CompactDefenseDisplay } from "@/ui/features/military";
 import { HudIconButton, HudPanel, HudPortrait } from "@/ui/design-system/kit/hud-elements";
-import { HyperstructureVPDisplay } from "@/ui/features/world/components/hyperstructures/hyperstructure-vp-display";
-import { HyperstructureConstruction } from "@/ui/features/world/components/hyperstructures/hyperstructure-construction";
-import { useGameModeConfig, useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { openTransfer } from "@/ui/features/economy/transfers/transfer-window";
 import { buildVillageTimerSummary } from "@/ui/shared/lib/village-timers";
@@ -20,19 +17,15 @@ import { safeInteger } from "@bibliothecadao/eternum/game-client";
 import { usePlayerProfile } from "@/hooks/use-player-profile";
 import { playerPortraitUrl } from "@/services/identity/player-portrait";
 
-import { ActiveRelicEffects } from "../active-relic-effects";
 import { useStructureEntityDetail } from "../hooks/use-structure-entity-detail";
 import { useStructureProductionSummary } from "../structure-production-summary";
 import { MergedResourcePanel } from "@/ui/features/world/containers/left-facets/merged-resource-panel";
-import { BitcoinMiningActionPanel } from "../../actions/bitcoin-mining-action-panel";
-import { FaithDevotionActionPanel } from "../../actions/faith-devotion-action-panel";
 
 interface StructureBannerEntityDetailProps {
   structureEntityId: ID;
   className?: string;
   /**
-   * Skip the owner bubble (avatar / player name / structure name / transfer
-   * shortcut). Used on the LeftStructureColumn where the picker pill already
+   * Skip the owner bubble (avatar / player name / structure name). Used on the LeftStructureColumn where the picker pill already
    * names the active structure — the owner header would otherwise duplicate
    * it.
    */
@@ -66,22 +59,9 @@ export const StructureBannerEntityDetail = memo(
     coordsLabel,
     headerAction,
   }: StructureBannerEntityDetailProps) => {
-    const {
-      structure,
-      ownerDisplayName,
-      structureDetails,
-      resources,
-      relicEffects,
-      guards,
-      guardSlots,
-      isMine,
-      hyperstructureRate,
-      isHyperstructure,
-      isLoadingStructure,
-    } = useStructureEntityDetail({ structureEntityId });
+    const { structure, ownerDisplayName, structureDetails, resources, guards, guardSlots, isMine, isLoadingStructure } =
+      useStructureEntityDetail({ structureEntityId });
     const mode = useGameModeConfig();
-    const resolvedWorldMode = useResolvedWorldGameMode();
-    const isEternumMode = resolvedWorldMode === "eternum";
     const currentBlockTimestamp = useCurrentBlockTimestamp();
 
     const productionSummary = useStructureProductionSummary(structure, resources);
@@ -123,27 +103,14 @@ export const StructureBannerEntityDetail = memo(
         ? formatWait(villageTimerSummary.militiaUnlockRemainingSeconds)
         : "Ready"
       : "—";
-    const settlementImmunityLabel = villageTimerSummary
-      ? villageTimerSummary.settlementImmunityRemainingSeconds > 0
-        ? formatWait(villageTimerSummary.settlementImmunityRemainingSeconds)
-        : "Expired"
-      : "—";
-    const postRaidWindowLabel = villageTimerSummary
-      ? villageTimerSummary.postRaidImmunityWindowSeconds > 0
-        ? formatWait(villageTimerSummary.postRaidImmunityWindowSeconds)
-        : "Unavailable"
-      : "—";
-    const showFaithTab = isEternumMode && categoryCan(rawCategory, "pledgesFaith");
     const canOpenTransferPanel =
       isMine &&
       configManager.isCommandEnabled("SendResources") &&
       categoryCan(structureCategory, "holdsInventory") &&
       typeof structure.entity_id !== "undefined";
     const ownerInitial = (ownerDisplayName || "?").charAt(0).toUpperCase();
-    const showHyperstructureVP = isHyperstructure && hyperstructureRate !== undefined;
     const guardCue =
       guards === undefined ? "—" : `${guards.filter((guard) => guard.troops.count > 0n).length}/${guardSlots.length}`;
-    const activeRelicIds = relicEffects.map((effect) => Number(effect.id));
 
     return (
       <HudPanel className={cn("min-w-0", className)} divided bodyClassName="flex flex-col">
@@ -170,22 +137,6 @@ export const StructureBannerEntityDetail = memo(
                 </div>
               </div>
             </div>
-            <StructureOwnershipTransfer key={structureEntityId} structureId={structureEntityId} />
-            {showHyperstructureVP && (
-              <div className="mt-2 border-t border-hud-divider pt-2">
-                <HyperstructureVPDisplay rate={hyperstructureRate} className="w-full" />
-              </div>
-            )}
-          </HudPanel>
-        )}
-
-        {isEternumMode && isHyperstructure && (
-          <HyperstructureConstruction key={structureEntityId} entityId={structureEntityId} />
-        )}
-
-        {relicEffects.length > 0 && (
-          <HudPanel kind="section" title="Active Relics" icon={"relics" as const}>
-            <ActiveRelicEffects relicEffects={relicEffects} entityId={structureEntityId} />
           </HudPanel>
         )}
 
@@ -193,16 +144,6 @@ export const StructureBannerEntityDetail = memo(
           <HudPanel kind="section" title="Village Intel">
             <div className="grid grid-cols-3 gap-1">
               <VillageTimerChip label="Militia" value={militiaUnlockLabel} title="Militia unlock timer" />
-              <VillageTimerChip
-                label="Raid immunity"
-                value={settlementImmunityLabel}
-                title="Settlement raid immunity timer"
-              />
-              <VillageTimerChip
-                label="Post-raid"
-                value={postRaidWindowLabel}
-                title="Post-raid resource immunity window"
-              />
             </div>
           </HudPanel>
         )}
@@ -248,21 +189,11 @@ export const StructureBannerEntityDetail = memo(
               resources={resources}
               productionSummary={productionSummary}
               canBuild={false}
-              isMine={isMine}
-              activeRelicIds={activeRelicIds}
             />
           ) : (
             <p className="text-hud-body text-hud-muted">No resources stored.</p>
           )}
         </HudPanel>
-
-        <BitcoinMiningActionPanel structureEntityId={structureEntityId} />
-
-        {showFaithTab && (
-          <HudPanel kind="section" title="Faith" icon={"relics" as const}>
-            <FaithDevotionActionPanel structureEntityId={structureEntityId} />
-          </HudPanel>
-        )}
       </HudPanel>
     );
   },

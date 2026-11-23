@@ -69,7 +69,7 @@ const NEIGHBOR_OFFSETS_EVEN = [
   { i: -1, j: 0, direction: Direction.WEST },
   { i: 0, j: -1, direction: Direction.SOUTH_WEST },
   { i: 1, j: -1, direction: Direction.SOUTH_EAST },
-];
+] as const;
 
 // if row is odd
 const NEIGHBOR_OFFSETS_ODD = [
@@ -79,7 +79,7 @@ const NEIGHBOR_OFFSETS_ODD = [
   { i: -1, j: 0, direction: Direction.WEST },
   { i: -1, j: -1, direction: Direction.SOUTH_WEST },
   { i: 0, j: -1, direction: Direction.SOUTH_EAST },
-];
+] as const;
 
 enum Steps {
   One = 1,

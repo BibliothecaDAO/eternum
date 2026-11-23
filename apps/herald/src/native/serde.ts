@@ -8,16 +8,21 @@ const decoders = new WeakMap<NativeSchema, Map<string, CallData>>();
 
 /** Check the complete wire frame before the ABI decoder can accept partial or trailing values. */
 export function decodeMembers(schema: NativeSchema, members: NativeMember[], felts: string[]): DecodedRecord {
-  const reader = new SerdeReader(schema, felts);
+  const normalized = [...felts];
+  const reader = new SerdeReader(schema, normalized, "decode");
   members.forEach((member) => reader.read(member.type));
   reader.finish();
   if (members.length === 0) return {};
-  return memberDecoder(schema, members).parse("row", felts) as DecodedRecord;
+  return memberDecoder(schema, members).parse("row", normalized) as DecodedRecord;
 }
 
 /** Serialize a derived row through the same schema that validates its decoded form. */
 export function encodeMembers(schema: NativeSchema, members: NativeMember[], values: DecodedRecord): string[] {
-  return memberDecoder(schema, members).compile("row", values as RawArgs);
+  const felts = memberDecoder(schema, members).compile("row", values as RawArgs);
+  const reader = new SerdeReader(schema, felts, "encode");
+  members.forEach((member) => reader.read(member.type));
+  reader.finish();
+  return felts;
 }
 
 function memberDecoder(schema: NativeSchema, members: NativeMember[]): CallData {
@@ -44,6 +49,7 @@ class SerdeReader {
   constructor(
     private readonly schema: NativeSchema,
     private readonly felts: string[],
+    private readonly direction: "encode" | "decode",
   ) {}
   finish(): void {
     if (this.offset !== this.felts.length) throw new Error("Native row has trailing values");
@@ -78,8 +84,15 @@ class SerdeReader {
       return;
     }
     if (definition?.type === "enum") {
-      const variant = definition.variants[Number(this.scalar())];
+      const offset = this.offset;
+      const tag = this.scalar();
+      const index =
+        this.direction === "encode"
+          ? Number(tag)
+          : definition.variants.findIndex((variant, ordinal) => BigInt(variant.wireId ?? ordinal) === tag);
+      const variant = definition.variants[index];
       if (!variant) throw new Error(`Invalid native enum ${type}`);
+      this.felts[offset] = String(this.direction === "encode" ? (variant.wireId ?? index) : index);
       this.read(variant.type);
       return;
     }

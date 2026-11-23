@@ -12,7 +12,6 @@ vi.mock("@/hooks/context/game-context", () => ({ useGame: () => ({ setup: { stor
 // Names are not what these reads are about: no player has one, and none ever lands.
 const NAMES = vi.hoisted(() => ({ text: () => "", reading: () => ({ state: "waiting" as const, text: "…" }) }));
 vi.mock("@/hooks/use-player-profile", () => ({ usePlayerNames: () => NAMES }));
-vi.mock("@/runtime/world", () => ({ getActiveGame: () => ({ chainId: "0x1" }) }));
 vi.mock("@bibliothecadao/eternum/game-client", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@bibliothecadao/eternum/game-client")>()),
   fetchHeraldGameHistory: history,
@@ -28,7 +27,6 @@ import { useConnectionStore } from "./use-connection-store";
 import {
   acceptGameSyncStoryEvent,
   resetGameSyncStoryEvents,
-  useSeasonWinner,
   useStoryEvents,
   useStoryReads,
 } from "./use-story-events-store";
@@ -69,7 +67,10 @@ const storyAt = (
 const story = (index: number, variant: Record<string, unknown>, owner = "0x0") =>
   storyAt(index, variant, { block: index, transaction: 0 }, owner);
 
-const Winner = () => <p>{useSeasonWinner()?.toString(16) ?? "none"}</p>;
+const Finalized = () => {
+  const owner = useStoryEvents(1, "BlitzFinalized").data[0]?.owner;
+  return <p>{owner ? BigInt(owner).toString(16) : "none"}</p>;
+};
 const Log = () => (
   <ol>
     {useStoryEvents(10).data.map((event) => (
@@ -92,7 +93,7 @@ beforeEach(async () => {
   await act(async () =>
     root.render(
       <QueryClientProvider client={new QueryClient()}>
-        <Winner />
+        <Finalized />
       </QueryClientProvider>,
     ),
   );
@@ -104,63 +105,6 @@ afterEach(() => {
   act(() => root.unmount());
   notifyManager.setNotifyFunction((notify) => notify());
   notifyManager.setScheduler(defaultScheduler);
-});
-
-it("recovers the exact relic activation from history on reload without an active effect or a streamed event", async () => {
-  const payload = {
-    relic_id: "0x29",
-    recipient: "Explorer",
-    rate_bps: "0x4e2",
-    duration_seconds: "0x708",
-    radius: "0x0",
-  };
-  history.mockResolvedValue({
-    items: [
-      {
-        model: "StoryEvent",
-        game_id: "1",
-        block_number: 10,
-        transaction_hash: "0xfeed",
-        transaction_index: 0,
-        event_index: 2,
-        value: {
-          game_id: "0x1",
-          owner: "0xa",
-          entity_id: "0x9",
-          timestamp: "0x64",
-          story: { RelicActivated: payload },
-        },
-      },
-    ],
-    complete_through_block: 10,
-    limit: 1,
-    offset: 0,
-    total: 1,
-  });
-  const RelicLog = () => (
-    <ol>
-      {useStoryEvents(10, "RelicActivated", "0xa").data.map((event) => (
-        <li key={event.id}>
-          {JSON.stringify({ owner: event.owner, target: event.entity_id, effect: event.storyPayload })}
-        </li>
-      ))}
-    </ol>
-  );
-  for (let reload = 0; reload < 2; reload++) {
-    await act(async () => resetGameSyncStoryEvents());
-    const log = document.createElement("div");
-    const logRoot = createRoot(log);
-    await act(async () =>
-      logRoot.render(
-        <QueryClientProvider client={new QueryClient()}>
-          <RelicLog />
-        </QueryClientProvider>,
-      ),
-    );
-    await vi.waitFor(() => expect(log.querySelectorAll("li")).toHaveLength(1));
-    expect(JSON.parse(log.querySelector("li")!.textContent!)).toEqual({ owner: "0xa", target: 9, effect: payload });
-    await act(async () => logRoot.unmount());
-  }
 });
 
 /** A streamed battle: `striker`'s army against `holder`'s structure 7. */
@@ -318,8 +262,8 @@ describe("a story read", () => {
     await act(async () => feed.unmount());
   });
 
-  it("keeps the season's ending the stream delivered after the stream's ring has moved past it", async () => {
-    await act(async () => story(1, { SeasonEnded: {} }, "0x7"));
+  it("keeps the game's finalization the stream delivered after the stream's ring has moved past it", async () => {
+    await act(async () => story(1, { BlitzFinalized: {} }, "0x7"));
     expect(host.textContent).toBe("7");
     await act(async () => {
       for (let index = 2; index < 600; index++) story(index, { ExplorerMove: {} });
@@ -459,8 +403,8 @@ it("asks a failed history read again once on each handshake, never on a remount 
   }
 });
 
-it("reads the world's stories again each time a reader opens, so another player's new chest reaches the Log", async () => {
-  const chestOpened = (block: number, owner: string) => ({
+it("reads the world's stories again each time a reader opens, so another player's new story reaches the Log", async () => {
+  const explored = (block: number, owner: string) => ({
     model: "StoryEvent",
     game_id: "1",
     block_number: block,
@@ -472,17 +416,17 @@ it("reads the world's stories again each time a reader opens, so another player'
       owner,
       entity_id: "0x9",
       timestamp: `0x${(100 + block).toString(16)}`,
-      story: { RewardChestOpened: { explorer_id: "0x7", structure_id: "0x9", coord: {}, amount: "0x32" } },
+      story: { ExplorerMove: {} },
     },
   });
-  const answer = (items: ReturnType<typeof chestOpened>[], through: number) => ({
+  const answer = (items: ReturnType<typeof explored>[], through: number) => ({
     items,
     complete_through_block: through,
     limit: 350,
     offset: 0,
     total: items.length,
   });
-  history.mockResolvedValue(answer([chestOpened(10, "0xd1")], 10));
+  history.mockResolvedValue(answer([explored(10, "0xd1")], 10));
   const client = new QueryClient();
   // All's world history: every player's stories, which a Frontier client's stream never carries.
   const World = () => (
@@ -510,7 +454,7 @@ it("reads the world's stories again each time a reader opens, so another player'
 
   expect(await open()).toEqual(["0xd1"]);
   // Another player opens a chest after the Log closed; nothing streams it to this client.
-  history.mockResolvedValue(answer([chestOpened(12, "0xd2"), chestOpened(10, "0xd1")], 12));
+  history.mockResolvedValue(answer([explored(12, "0xd2"), explored(10, "0xd1")], 12));
   const asked = history.mock.calls.length;
 
   expect(await open()).toEqual(["0xd2", "0xd1"]);

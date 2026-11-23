@@ -1,9 +1,15 @@
+import "./hud-header-layout.css";
+
 import type { CompactLane } from "@/hooks/helpers/use-compact-hud";
 import type { ReactNode } from "react";
 
 interface HudHeaderLayoutProps {
   lane: CompactLane | null;
   identity: ReactNode;
+  places?: ReactNode;
+  quest?: ReactNode;
+  stores?: ReactNode;
+  depthSwitch?: ReactNode;
   clock: ReactNode;
   viewControls: ReactNode;
   attention: ReactNode;
@@ -11,18 +17,37 @@ interface HudHeaderLayoutProps {
 }
 
 /** Small screens keep status and navigation in two bounded rows, never in a horizontal scroller. */
-export function HudHeaderLayout({ lane, identity, clock, viewControls, attention, settings }: HudHeaderLayoutProps) {
+export function HudHeaderLayout({
+  lane,
+  identity,
+  places,
+  quest,
+  stores,
+  depthSwitch,
+  clock,
+  viewControls,
+  attention,
+  settings,
+}: HudHeaderLayoutProps) {
   if (lane === null) {
     return (
       <header
         aria-label="Game controls"
-        className="pointer-events-none fixed inset-x-0 top-0 z-20 flex h-11 items-center justify-center gap-2 px-3"
+        className="hud-topbar pointer-events-auto fixed inset-x-0 top-0 z-20 flex h-hud-header items-center justify-between gap-3 px-4"
       >
-        {identity}
-        {viewControls}
-        {clock}
-        {attention}
-        {settings}
+        <div className="flex min-w-0 items-center gap-3">
+          {identity}
+          {places}
+        </div>
+        <div className="flex min-w-0 items-center gap-2">
+          {quest}
+          {stores}
+          {viewControls}
+          {depthSwitch}
+          {clock}
+          {attention}
+          {settings}
+        </div>
       </header>
     );
   }

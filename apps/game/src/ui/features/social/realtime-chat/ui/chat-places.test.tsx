@@ -1,4 +1,7 @@
 // @vitest-environment jsdom
+// @vitest-environment jsdom
+// @vitest-environment jsdom
+// @vitest-environment jsdom
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -47,8 +50,6 @@ const { layOutChatLists } = await import("@/hooks/use-stick-to-latest.test-suppo
 const { LabGame } = await import("@/ui/features/debug/kit-lab/lab-game");
 const { useUIStore } = await import("@/hooks/store/use-ui-store");
 const { readStructureMeaning } = await import("@/ui/design-system/domain-icon-meaning");
-const { MAP_SITES } = await import("@/config/map-sites");
-const { mapSite } = await import("@/ui/features/frontier/sites/map-site-plan");
 const { useGameChat } = await import("@/ui/features/world/containers/hud-chat-window");
 const { GLOBAL_ROOM } = await import("../model/chat-rooms");
 const { useRealtimeChatStore } = await import("../model/store");
@@ -71,11 +72,6 @@ const FAR_ARMY_TILE = { col: 66, row: 4, alt: true };
 const UNPLACED_CAMP = 712;
 /** The lab game, as the page plays it (LabGame's setActiveGame). */
 const LAB = { chainId: "0x1ab", gameId: 1, name: "Lab" };
-/**
- * The tile each of the map's sites stands on in these tests, in MAP_SITES' order: inside the region the lab player's
- * sync holds (6:0 at the lab's spacing of 10), as a site the player can see and share is.
- */
-const siteTile = (index: number) => ({ col: 61 + index, row: 8, alt: false });
 const sendWorldMessage = vi.fn(() => Promise.resolve());
 
 /**
@@ -170,17 +166,13 @@ let root: Root;
 let undoLayout: () => void;
 let game: { realmName: string; realmIcon: string; store: Store };
 
-/**
- * The lab game, mounted as the game mounts it: Frontier (preset 5, its map built again each day), or a game with one map
- * all game (Blitz, preset 2: no day, the realm on its own tile). Each map site stands on its tile.
- */
 const mount = async (mode: "frontier" | "blitz") => {
   await act(async () =>
     root.render(
       <MemoryRouter>
         <QueryClientProvider client={new QueryClient()}>
           <LabGame
-            preset={mode === "frontier" ? 5 : 2}
+            mode={mode}
             facts={(store) => {
               const realm = store.require("Structure", { game_id: 1, entity_id: REALM });
               const rules = store.require("SliceRules", { game_id: 1 });
@@ -196,17 +188,6 @@ const mount = async (mode: "frontier" | "blitz") => {
                     base: { ...realm.base, category: StructureType.Camp },
                   }),
                 },
-                ...MAP_SITES.map((site, index) => ({
-                  model: "TileOccupancy",
-                  key: `0x5170${index}`,
-                  value: {
-                    game_id: 1,
-                    ...siteTile(index),
-                    entity_id: 900 + index,
-                    category: site.occupier,
-                    is_structure: false,
-                  },
-                })),
                 ...(mode === "blitz"
                   ? [
                       { model: "SliceRules", key: "0x100", value: json({ ...rules, day_unit_seconds: 0 }) },
@@ -279,8 +260,6 @@ const type = (text: string) =>
     field.dispatchEvent(new Event("input", { bubbles: true }));
   });
 const send = () => act(async () => host.querySelector<HTMLButtonElement>('button[type="submit"]')!.click());
-const sentPlace = () =>
-  (sendWorldMessage.mock.calls.at(-1) as unknown as [string, { metadata?: { place?: unknown } }])[1];
 /** A message from Aldric, added last to the room. */
 const arrives = (id: string, content: string, metadata: object) =>
   act(() =>
@@ -448,45 +427,6 @@ describe("places in chat, in a Frontier game", () => {
     act(() => useUIStore.getState().selectOnMap({ kind: "hex", hex: { col: 1, row: 1 } }));
     expect(placeButton().disabled).toBe(true);
   });
-
-  // Every site of the map's own catalog (MAP_SITES, which the renderer draws from): one it adds is covered here.
-  it.each(MAP_SITES.map((entry, index) => [entry.kind, { ...entry, ...mapSite(entry.kind) }, index] as const))(
-    "shares a %s selected on its tile, opens its tile, and marks it gone once spent",
-    async (_, site, index) => {
-      const tile = siteTile(index);
-      act(() => useUIStore.getState().selectOnMap({ kind: "hex", hex: { col: tile.col, row: tile.row } }));
-      expect(placeButton().disabled).toBe(false);
-      act(() => placeButton().click());
-      const picked = host.querySelector<HTMLElement>("form [data-place]")!;
-      expect(picked.textContent).toBe(site.name);
-      await send();
-      const place = {
-        kind: "site",
-        site: site.kind,
-        tile,
-        game: LAB,
-        name: site.name,
-        icon: site.icon,
-        at: expect.any(Number),
-      };
-      expect(sentPlace()).toEqual({ content: site.name, zoneId: GLOBAL_CHAT_CHANNEL_ID, metadata: { place } });
-
-      arrives("m11", site.name, sentPlace().metadata!);
-      expect(chip("m11").textContent).toBe(site.name);
-      expect(chip("m11").getAttribute("data-place-key")).toBe(
-        `0x1ab:1/site:${site.kind}@${tile.col},${tile.row},surface`,
-      );
-      act(() => chip("m11").querySelector("button")!.click());
-      const [position, select] = moved.openOnMap.mock.calls.at(-1)!;
-      expect(position.getContract()).toEqual({ x: tile.col, y: tile.row });
-      expect(select).toBe("tile");
-
-      // Used: its tile empties, and the place it was opens nothing.
-      act(() => game.store.applyFacts([{ model: "TileOccupancy", key: `0x5170${index}`, value: null }] as never));
-      expect(chip("m11").querySelector("button")!.disabled).toBe(true);
-      expect(chip("m11").textContent).toBe(`${site.name} · gone`);
-    },
-  );
 });
 
 describe("places in chat, in a game with one map all game (Blitz)", () => {

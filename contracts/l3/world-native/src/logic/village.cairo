@@ -1,18 +1,11 @@
-use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
 use crate::village::*;
 
-pub fn rules(game_id: u32) -> VillageRules {
-    let preset = crate::logic::preset_record::for_game(game_id);
-    let troop_delay_ticks = preset.village_delay.read();
-    let mut resources = array![];
-    for index in 0..preset.village_grant_count.read() {
-        resources.append(preset.village_grants.read(index));
+pub fn rules() -> VillageRules {
+    VillageRules {
+        troop_delay_ticks: crate::balance::settlement::VILLAGE_TROOP_DELAY_TICK_COUNT,
+        resources: crate::balance::settlement::VILLAGE_GRANTS.span(),
+        resource_pool: crate::balance::settlement::VILLAGE_RESOURCE_POOL.span(),
     }
-    let mut resource_pool = array![];
-    for index in 0..22_u8 {
-        resource_pool.append(preset.village_pool.read(index));
-    }
-    VillageRules { troop_delay_ticks, resources: resources.span(), resource_pool: resource_pool.span() }
 }
 #[starknet::component]
 pub mod VillageState {
@@ -35,7 +28,7 @@ pub mod VillageState {
     #[generate_trait]
     pub impl InternalImpl<TContractState, +HasComponent<TContractState>> of InternalTrait<TContractState> {
         fn rules(self: @ComponentState<TContractState>, game_id: u32) -> VillageRules {
-            crate::logic::village::rules(game_id)
+            crate::logic::village::rules()
         }
         fn pass(self: @ComponentState<TContractState>, key: VillagePassKey) -> Option<VillagePass> {
             self.data.village.village_passes.read((key.game_id, key.pass_id))

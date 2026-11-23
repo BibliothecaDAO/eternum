@@ -1,5 +1,5 @@
 import { nativePresetForId } from "../../../source/native";
-import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import type {
   Config as EternumConfig,
   FactoryBiomeClimateOverrides,
@@ -20,7 +20,6 @@ interface ConfigOverrides {
   factoryAddress: string;
   devModeOn?: boolean;
   singleRealmMode?: boolean;
-  twoPlayerMode?: boolean;
   durationSeconds?: number;
 
   mapConfigOverrides?: FactoryMapConfigOverrides;
@@ -31,7 +30,6 @@ interface ConfigOverrides {
 interface ResolvedConfigOverrides {
   devModeOn: boolean;
   singleRealmMode: boolean;
-  twoPlayerMode: boolean;
   durationSeconds?: number;
 }
 
@@ -52,8 +50,6 @@ const MAP_CONFIG_OVERRIDE_LIMITS = {
   shardsMinesFailProbability: U16_MAX,
   campFindProbability: U16_MAX,
   campFindFailProbability: U16_MAX,
-  bitcoinMineWinProbability: U16_MAX,
-  bitcoinMineFailProbability: U16_MAX,
   hyperstructureWinProbAtCenter: HYPERSTRUCTURE_PAIR_SUM,
   hyperstructureFailProbAtCenter: HYPERSTRUCTURE_PAIR_SUM,
   hyperstructureFailProbIncreasePerHexDistance: U16_MAX,
@@ -73,12 +69,6 @@ const MAP_CONFIG_OVERRIDE_PAIR_GROUPS = [
     label: "Camp chance",
     winKey: "campFindProbability",
     failKey: "campFindFailProbability",
-    sum: U16_MAX,
-  },
-  {
-    label: "Bitcoin Mine chance",
-    winKey: "bitcoinMineWinProbability",
-    failKey: "bitcoinMineFailProbability",
     sum: U16_MAX,
   },
   {
@@ -123,16 +113,10 @@ function resolveDurationSeconds(baseConfig: EternumConfig, overrides: ConfigOver
 
 function resolveBooleanOverrides(baseConfig: EternumConfig, overrides: ConfigOverrides): ResolvedConfigOverrides {
   const singleRealmMode = overrides.singleRealmMode ?? baseConfig.settlement?.single_realm_mode ?? false;
-  const twoPlayerMode = overrides.twoPlayerMode ?? baseConfig.settlement?.two_player_mode ?? false;
-
-  if (singleRealmMode && twoPlayerMode) {
-    throw new Error("single_realm_mode and two_player_mode cannot both be enabled");
-  }
 
   return {
     devModeOn: overrides.devModeOn ?? baseConfig.dev?.mode?.on ?? false,
     singleRealmMode,
-    twoPlayerMode,
     durationSeconds: resolveDurationSeconds(baseConfig, overrides),
   };
 }
@@ -161,7 +145,6 @@ function applyModeOverrides(
   config.settlement = {
     ...(config.settlement ?? {}),
     single_realm_mode: resolvedOverrides.singleRealmMode,
-    two_player_mode: resolvedOverrides.twoPlayerMode,
   };
 }
 
@@ -250,12 +233,6 @@ function applyBiomeClimateOverrides(config: EternumConfig, overrides?: FactoryBi
   };
 }
 
-function validateBlitzRegistrationOverridesAreAllowed(twoPlayerMode: boolean): void {
-  if (twoPlayerMode) {
-    throw new Error("blitz registration overrides are not supported when two_player_mode is enabled");
-  }
-}
-
 function validateRegistrationCountMaxOverride(value: number): void {
   if (!Number.isInteger(value) || value < BLITZ_MAX_PLAYERS_MIN || value > U16_MAX) {
     throw new Error(
@@ -311,7 +288,6 @@ function applyResolvedBlitzRegistrationOverrides(
 function applyBlitzRegistrationOverrides(
   config: EternumConfig,
   overrides: FactoryBlitzRegistrationOverrides | undefined,
-  twoPlayerMode: boolean,
 ): void {
   if (!overrides) {
     return;
@@ -321,7 +297,6 @@ function applyBlitzRegistrationOverrides(
     throw new Error("blitz registration overrides are only supported for blitz environments");
   }
 
-  validateBlitzRegistrationOverridesAreAllowed(twoPlayerMode);
   applyResolvedBlitzRegistrationOverrides(config, resolveBlitzRegistrationOverrides(overrides));
 }
 
@@ -338,7 +313,7 @@ export function applyDeploymentConfigOverrides(baseConfig: EternumConfig, overri
   applyFactoryAddressOverride(config, overrides.factoryAddress);
   applyMapConfigOverrides(config, overrides.mapConfigOverrides);
   applyBiomeClimateOverrides(config, overrides.biomeClimateOverrides);
-  applyBlitzRegistrationOverrides(config, overrides.blitzRegistrationOverrides, resolvedOverrides.twoPlayerMode);
+  applyBlitzRegistrationOverrides(config, overrides.blitzRegistrationOverrides);
 
   return config;
 }

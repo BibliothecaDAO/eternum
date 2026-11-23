@@ -7,10 +7,7 @@ import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
 /** The game as a row reads it: the armies that stand and the view the player is in. */
 const game = vi.hoisted(() => ({
   armies: new Set<number>(),
-  mapView: true,
   navigate: vi.fn(),
-  selectArmy: vi.fn(),
-  goToStructure: vi.fn(),
 }));
 
 vi.mock("@/hooks/context/game-context", () => ({
@@ -33,21 +30,10 @@ vi.mock("@/play/navigation/open-place", async (original) => ({
   ...(await original<typeof import("@/play/navigation/open-place")>()),
   openOnMap: game.navigate,
 }));
-vi.mock("@/hooks/helpers/use-navigate", () => ({
-  useGoToStructure: () => game.goToStructure,
-  useSelectArmyOnMap: () => game.selectArmy,
-}));
-vi.mock("@/hooks/helpers/use-query", () => ({ useQuery: () => ({ isMapView: game.mapView }) }));
 vi.mock("@bibliothecadao/eternum", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@bibliothecadao/eternum")>()),
   configManager: {
     getActiveGameId: () => 1,
-    getVictoryPointGrants: () => ({
-      exploreTile: 5,
-      openRelicCrate: 250,
-      claimCampFromBandits: 250,
-      claimHyperstructureFromBandits: 1000,
-    }),
   },
   entityMapPosition: () => ({ x: 50, y: 60 }),
   structureMapPosition: (_store: unknown, structure: { entity_id: bigint }) =>
@@ -60,7 +46,6 @@ import { StoryFeedRow } from "./story-feed-row";
 import { Tooltip } from "@/ui/design-system/molecules/tooltip";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { buildStoryEventPresentation } from "@bibliothecadao/eternum";
-import { relicChestRelics } from "@bibliothecadao/types";
 
 const PLAYER = "0x1";
 const story = (id: string, kind: string, owner: string, payload: Record<string, unknown>, title: string) =>
@@ -78,81 +63,17 @@ const story = (id: string, kind: string, owner: string, payload: Record<string, 
     storyPayload: payload,
     presentation: { title, description: title },
   }) as unknown as ProcessedStoryEvent;
-/** An opened crate of this pack, by army 9 on the hex (3, 4). */
-const crateOf = (pack: "War" | "Produce" | "Fortress", title: string) =>
-  story(
-    `crate-${pack}`,
-    "RelicChestOpened",
-    PLAYER,
-    { explorer_id: 9, coord: { x: 3, y: 4 }, relics: relicChestRelics({ pack, lucky: false }) },
-    title,
-  );
-const crate = crateOf("War", "Crate opened: 3 relics to the army Stolsli T1");
-
 let host: HTMLDivElement;
 beforeEach(() => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   host = document.createElement("div");
   game.armies = new Set([9]);
-  game.mapView = true;
   game.navigate.mockClear();
-  game.selectArmy.mockClear();
-  game.goToStructure.mockClear();
 });
 afterEach(() => host.remove());
 
 /** The Events stories among these, as the card selects them under Important, its first lens. */
-const eventsRows = (stories: ProcessedStoryEvent[]) => selectEventStories(stories, "important", PLAYER, () => false);
-
-const clickRow = async (event: ProcessedStoryEvent) => {
-  const root = createRoot(host);
-  await act(async () => root.render(<FeedRowLine event={event} />));
-  await act(async () => host.querySelector("button")!.click());
-  await act(async () => root.unmount());
-};
-
-describe("An opened crate in Events", () => {
-  it("holds the player's opened crate, but not another player's, nor routine production", () => {
-    const theirs = story("theirs", "RelicChestOpened", "0x2", { explorer_id: 7 }, "Crate opened: 3 relics to North T1");
-    const production = story("made", "ProductionStory", PLAYER, {}, "Wheat produced");
-    expect(eventsRows([crate, theirs, production]).map((event) => event.id)).toEqual(["crate-War"]);
-  });
-
-  it("names where the crate's relics went", () => {
-    expect(renderToStaticMarkup(<FeedRowLine event={eventsRows([crate])[0]} />)).toContain(
-      "Crate opened: 3 relics to the army Stolsli T1",
-    );
-  });
-
-  it("selects the army holding the relics when its row is clicked, from the world map or the realm view", async () => {
-    await clickRow(eventsRows([crate])[0]);
-    game.mapView = false;
-    await clickRow(eventsRows([crate])[0]);
-    expect(game.selectArmy.mock.calls).toEqual([[9], [9]]);
-    expect(game.navigate).not.toHaveBeenCalled();
-  });
-
-  it("flies to the crate's tile once the army is gone", async () => {
-    game.armies = new Set();
-    await clickRow(eventsRows([crate])[0]);
-    expect(game.selectArmy).not.toHaveBeenCalled();
-    expect(game.navigate.mock.calls[0][0].getContract()).toEqual({ x: 3, y: 4 });
-    expect(game.navigate.mock.calls[0][1]).toBe("tile");
-  });
-});
-
-describe("A structure pack's row", () => {
-  it("selects the realm that got most of the relics, not the army that opened the crate", async () => {
-    await clickRow(eventsRows([crateOf("Produce", "Crate opened: 3 relics to Stolsli")])[0]);
-    expect(game.goToStructure).toHaveBeenCalledWith(5, expect.anything(), true);
-    expect(game.goToStructure.mock.calls[0][1].getContract()).toEqual({ x: 70, y: 80 });
-    expect(game.selectArmy).not.toHaveBeenCalled();
-
-    game.goToStructure.mockClear();
-    await clickRow(eventsRows([crateOf("Fortress", "Crate opened: 1 relic to the army Stolsli T1, 2 to Stolsli")])[0]);
-    expect(game.goToStructure).toHaveBeenCalledWith(5, expect.anything(), true);
-  });
-});
+const eventsRows = (stories: ProcessedStoryEvent[]) => selectEventStories(stories, "important", PLAYER);
 
 describe("A capture in Events", () => {
   it("tells the player who lost a structure who took it from them, and what went with it, under Mine", async () => {
@@ -173,7 +94,7 @@ describe("A capture in Events", () => {
       participants: ["0xc1", PLAYER],
       presentation,
     } as ProcessedStoryEvent;
-    const [event] = selectEventStories([taken], "important", PLAYER, () => false);
+    const [event] = selectEventStories([taken], "important", PLAYER);
     expect(renderToStaticMarkup(<FeedRowLine event={event} />)).toContain(
       "clientlane took a structure from you. Its armies and deliveries went with it",
     );
@@ -213,93 +134,6 @@ describe("A fight in Events", () => {
   });
 });
 
-it("keeps the player's LORDS chest in Events and opens its receiving realm even after the opening army is gone", async () => {
-  game.armies = new Set();
-  const opened = story(
-    "lords",
-    "RewardChestOpened",
-    PLAYER,
-    { explorer_id: 9, structure_id: 5, amount: "17", coord: { x: 3, y: 4 } },
-    "Chest opened: 17 LORDS to Stolsli",
-  );
-  expect(eventsRows([opened])).toEqual([opened]);
-  await clickRow(opened);
-  expect(game.goToStructure).toHaveBeenCalledWith(5, expect.anything(), true);
-  expect(game.selectArmy).not.toHaveBeenCalled();
-});
-
-describe("an activated relic in Events and the Log", () => {
-  it.each([
-    ["important", { limit: 100, story: "RelicActivated", owner: PLAYER }, []],
-    ["all", { limit: 350 }, ["another's"]],
-  ] as const)(
-    "reads and shows the player's activation under %s, with its recorded effect after the army is gone",
-    async (filter, read, others) => {
-      const { buildStoryEventPresentation } = await import("@bibliothecadao/eternum");
-      const { toStreamStoryEvent } = await import("@/hooks/store/use-story-events-store");
-      const activation = toStreamStoryEvent(
-        {
-          model: "StoryEvent",
-          key: "0x1",
-          value: {
-            game_id: 1,
-            owner: PLAYER,
-            entity_id: 9,
-            tx_hash: "0x123",
-            timestamp: 100,
-            story: {
-              RelicActivated: {
-                relic_id: 41,
-                recipient: "Explorer",
-                rate_bps: 1250,
-                duration_seconds: 1800,
-                radius: 0,
-              },
-            },
-            event_position: { block_number: 10, transaction_hash: "0x123", transaction_index: 0, event_index: 2 },
-          },
-        },
-        { chainId: "0x1", worldAddress: "0xabc", gameId: 1 },
-      )!;
-      const presentation = buildStoryEventPresentation(
-        {
-          storyType: activation.story,
-          storyPayload: activation.storyPayload,
-          entityId: activation.entity_id,
-          ownerAddress: activation.owner,
-        } as never,
-        undefined,
-        () => "Ada",
-      );
-      const event: ProcessedStoryEvent = {
-        ...activation,
-        id: activation.event_id,
-        timestampMs: Number(BigInt(activation.timestamp)) * 1000,
-        presentation,
-      };
-      expect(eventsReads(filter, PLAYER, [])).toContainEqual(read);
-      const [row] = selectEventStories([event], filter, PLAYER, () => false);
-      expect(row).toBe(event);
-      // Another player's activation is world history, not the player's must-not-miss.
-      const another = { ...event, id: "another's", owner: "0x2", participants: ["0x2"] };
-      expect(selectEventStories([another], filter, PLAYER, () => false).map(({ id }) => id)).toEqual(others);
-      game.armies = new Set();
-      const root = createRoot(host);
-      await act(async () =>
-        root.render(
-          <>
-            <FeedRowLine event={row} />
-            <StoryFeedRow event={row} />
-          </>,
-        ),
-      );
-      expect(host.textContent).toContain("Ada activated Damage Relic I on Army · Increases damage by 12.5% for 30m");
-      expect(host.textContent!.match(/Ada activated Damage Relic I/g)).toHaveLength(2);
-      await act(async () => root.unmount());
-    },
-  );
-});
-
 it("draws each story in Events and the Log by its act, as Frontier's Feed does, not a castle for all", () => {
   const fight = story(
     "fight",
@@ -313,7 +147,6 @@ it("draws each story in Events and the Log by its act, as Frontier's Feed does, 
   for (const Row of [FeedRowLine, StoryFeedRow]) {
     expect(icons(renderToStaticMarkup(<Row event={fight} />))).toEqual(["attack"]);
     expect(icons(renderToStaticMarkup(<Row event={found} />))).toEqual(["explore"]);
-    expect(icons(renderToStaticMarkup(<Row event={crate} />))).toEqual(["relics"]);
   }
 });
 
@@ -333,10 +166,10 @@ it.each([
       ownerAddress: PLAYER,
       viewerAddress: PLAYER,
     } as never);
-    expect(eventsReads("all", PLAYER, [])).toEqual([{ limit: 350 }]);
-    expect(selectEventStories([event], "all", PLAYER, () => false)).toEqual([event]);
-    expect(selectEventStories([event], "important", PLAYER, () => false)).toEqual([]);
-    const [row] = selectEventStories([event], "all", PLAYER, () => false);
+    expect(eventsReads("all", PLAYER)).toEqual([{ limit: 350 }]);
+    expect(selectEventStories([event], "all", PLAYER)).toEqual([event]);
+    expect(selectEventStories([event], "important", PLAYER)).toEqual([]);
+    const [row] = selectEventStories([event], "all", PLAYER);
     const root = createRoot(host);
     try {
       act(() => root.render(<StoryFeedRow event={row} />));

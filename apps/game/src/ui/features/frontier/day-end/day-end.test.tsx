@@ -17,7 +17,7 @@ const clockAt = (secondsLeft: number): DayClock => ({
   shareLeft: secondsLeft / (16 * HOUR),
   tone: secondsLeft <= HOUR ? "ember" : "calm",
 });
-const EVERYTHING_LEFT = dayEndItems({ claimWaiting: true, camp: { x: 4, y: 9 }, armyCanExplore: true });
+const EVERYTHING_LEFT = dayEndItems({ camp: { x: 4, y: 9 }, armyCanExplore: true });
 
 const render = (view: ReactNode) => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -39,14 +39,11 @@ const render = (view: ReactNode) => {
 describe("the day's end", () => {
   it("lists only what is still to do, today's camp by its Frontier name", () => {
     expect(EVERYTHING_LEFT.map(({ line, verb }) => `${line} · ${verb}`)).toEqual([
-      "Claim today's Labor · Claim",
       `Clear today's ${frontierSiteName(StructureType.Camp)} · Show`,
       "Your army can explore · Select",
     ]);
-    expect(dayEndItems({ claimWaiting: false, camp: null, armyCanExplore: true }).map(({ key }) => key)).toEqual([
-      "explore",
-    ]);
-    expect(dayEndItems({ claimWaiting: false, camp: null, armyCanExplore: false })).toEqual([]);
+    expect(dayEndItems({ camp: null, armyCanExplore: true }).map(({ key }) => key)).toEqual(["explore"]);
+    expect(dayEndItems({ camp: null, armyCanExplore: false })).toEqual([]);
   });
 
   it("says nothing before the last hour, then when the day ends and what is left, red in its last ten minutes", () => {
@@ -77,12 +74,10 @@ describe("the day's end", () => {
     const run = vi.fn();
     const dayEnd: DayEnd = { clock: clockAt(42 * 60), items: EVERYTHING_LEFT, run };
     const block = render(<DayEndBlock dayEnd={dayEnd} />);
-    expect(block.host.querySelector(".ui-notice")!.textContent).toBe(
-      "At day end, today's map, its armies and chests go",
-    );
+    expect(block.host.querySelector(".ui-notice")!.textContent).toBe("At day end, today's map and armies go");
     act(() => block.button("Show")!.click());
-    act(() => block.button("Claim")!.click());
-    expect(run.mock.calls).toEqual([["camp"], ["claim"]]);
+    act(() => block.button("Select")!.click());
+    expect(run.mock.calls).toEqual([["camp"], ["explore"]]);
     block.unmount();
   });
 
@@ -93,7 +88,7 @@ describe("the day's end", () => {
           day={today ? 12 : 11}
           today={today}
           clock={clockAt(42 * 60)}
-          totals={{ reveals: 0, cleared: 0, chests: 0, essence: 0, labor: 0, lords: 0 }}
+          totals={{ reveals: 0, cleared: 0, essence: 0, labor: 0 }}
           dayEnd={<DayEndBlock dayEnd={{ clock: clockAt(42 * 60), items: EVERYTHING_LEFT, run: vi.fn() }} />}
           lines={[]}
           history="whole"
@@ -101,7 +96,7 @@ describe("the day's end", () => {
           onClose={vi.fn()}
         />,
       );
-    const goes = '[aria-label="At day end, today\'s map, its armies and chests go"]';
+    const goes = '[aria-label="At day end, today\'s map and armies go"]';
     const today = sheet(true);
     expect(today.host.querySelector(goes)).not.toBeNull();
     today.unmount();

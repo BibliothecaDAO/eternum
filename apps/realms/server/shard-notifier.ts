@@ -12,6 +12,9 @@ import {
 import { dayOf } from "@bibliothecadao/eternum/expeditions";
 import {
   buildArmyRestedNotification,
+  buildRingOpenNotification,
+  buildSiteVulnerableNotification,
+  includesKind,
   buildDayOpen,
   buildStoryNotification,
   type DayOpenPush,
@@ -34,8 +37,12 @@ import {
   type RestingActor,
   type RestWatch,
 } from "./army-rest";
+import { followDeepSites } from "./deep-site-stream";
+import { ShardReleaseMismatchError } from "@bibliothecadao/eternum/game-client";
+import { readReleaseCatalogue, type ReleaseCatalogue } from "./game-facts";
+import { readDeepAlerts, type DeepRingOpening, type DeepSiteWatch } from "./deep-site-watch";
 import { decodeIdentityEnv, type IdentityEnv } from "./env";
-import { planDayOpenings, readEnrolledAccounts, readHomeClaim, type DayOpening } from "./day-open";
+import { planDayOpenings, readEnrolledAccounts, type DayOpening } from "./day-open";
 import { NotificationPreferenceStore } from "./notification-preference-store";
 import { PushSubscriptionStore, type PushSubscriptionRow } from "./push-subscription-store";
 import { realmsIdsOfAccounts } from "./realms-accounts";
@@ -57,6 +64,7 @@ interface OutboxEntry {
   envelope: PushEnvelope;
   /** A Day open push's facts: it is worded again as it goes, by the phone's clock then. */
   dayOpen?: DayOpenPush;
+  siteWatch?: DeepSiteWatch;
   attempts: number;
   dueAt: number;
 }
@@ -77,17 +85,29 @@ const DAY_MS = 86_400_000;
  * never recreated after. A device that receives a repeated id drops it by its own durable claim.
  */
 export class ShardNotifier extends DurableObject<Record<string, unknown>> {
+  private readonly siteStreams = new Map<number, Map<string | undefined, () => void>>();
+  private readonly changedSiteGames = new Set<number>();
+
+  private closeSiteStreams(): void {
+    for (const streams of this.siteStreams.values()) for (const stop of streams.values()) stop();
+    this.siteStreams.clear();
+    this.changedSiteGames.clear();
+  }
+
   /** Called by the directory's cron for every listed shard; starting an already running notifier changes nothing. */
   async watch(shard: { url: string; chainId: string }): Promise<void> {
     const current = await this.ctx.storage.get<WatchedShard>("shard");
     // Its cursor, wake times and outbox belong to one chain: a new chain at this URL is read from its own head.
-    if (current && BigInt(current.chainId) !== BigInt(shard.chainId)) await this.ctx.storage.deleteAll();
+    if (current && BigInt(current.chainId) !== BigInt(shard.chainId)) {
+      this.closeSiteStreams();
+      await this.ctx.storage.deleteAll();
+    }
     if (current?.url !== shard.url || current.chainId !== shard.chainId) await this.ctx.storage.put("shard", shard);
     if ((await this.ctx.storage.getAlarm()) === null) await this.ctx.storage.setAlarm(Date.now());
   }
 
-  /** A retired shard sends nothing more. */
   async stop(): Promise<void> {
+    this.closeSiteStreams();
     await this.ctx.storage.deleteAlarm();
     await this.ctx.storage.deleteAll();
   }
@@ -103,6 +123,7 @@ export class ShardNotifier extends DurableObject<Record<string, unknown>> {
     let dayOpenWake: number | null = null;
     if (watched) {
       dayOpenWake = (await runStage(shard, "day-open", () => this.prepareDayOpens(env, watched))) ?? null;
+      await runStage(shard, "sites", () => this.watchDeepSites(env, watched));
       await runStage(shard, "wake", () => this.wakeRestedArmies(env, watched));
       await runStage(shard, "deliver", () => this.deliverDue(env, shard));
       morePages = (await runStage(shard, "stories", () => this.readStories(env, watched))) ?? false;
@@ -114,6 +135,8 @@ export class ShardNotifier extends DurableObject<Record<string, unknown>> {
     const now = Date.now();
     let next = now + (morePages ? 0 : POLL_MS);
     if (dayOpenWake !== null && dayOpenWake > now) next = Math.min(next, dayOpenWake);
+    for (const watch of (await this.ctx.storage.list<DeepSiteWatch>({ prefix: "site-watch:" })).values())
+      next = Math.min(next, watch.dueAt);
     for (const entry of (await this.ctx.storage.list<OutboxEntry>({ prefix: "outbox:" })).values())
       next = Math.min(next, entry.dueAt);
     await this.ctx.storage.setAlarm(Math.max(now, next));
@@ -122,6 +145,7 @@ export class ShardNotifier extends DurableObject<Record<string, unknown>> {
   private async prepareDayOpens(env: IdentityEnv, shard: Required<WatchedShard>): Promise<number | null> {
     const directory = await readShard<HeraldGameDirectory>(shard.url, "/games");
     if (BigInt(directory.chain) !== BigInt(shard.chainId)) throw new Error(`${shard.url} changed chain`);
+    await this.syncSiteStreams(shard, directory);
     await this.forgetPastPreparations();
     const plan = planDayOpenings(directory.games, Date.now(), DAY_OPEN_PREPARE_MS);
     for (const opening of plan.prepare) {
@@ -213,6 +237,129 @@ export class ShardNotifier extends DurableObject<Record<string, unknown>> {
     return exhausted;
   }
 
+  private async syncSiteStreams(shard: WatchedShard, directory: HeraldGameDirectory): Promise<void> {
+    const running = new Set(
+      directory.games
+        .filter((game) => game.mode === "frontier" && game.status !== "Ended" && game.status !== "Settled")
+        .map((game) => game.game_id),
+    );
+    for (const [gameId, streams] of this.siteStreams) {
+      if (running.has(gameId)) continue;
+      for (const stop of streams.values()) stop();
+      this.siteStreams.delete(gameId);
+      this.changedSiteGames.delete(gameId);
+    }
+    for (const gameId of running) {
+      if (this.siteStreams.has(gameId)) continue;
+      const stop = followDeepSites(shard.url, gameId, () => {
+        this.changedSiteGames.add(gameId);
+      });
+      this.siteStreams.set(gameId, new Map([[undefined, stop]]));
+    }
+    await this.ctx.storage.transaction(async (txn) => {
+      for (const [key, watch] of await txn.list<DeepSiteWatch>({ prefix: "site-watch:" }))
+        if (!running.has(watch.gameId) || watch.until <= Date.now()) await txn.delete(key);
+      for (const prefix of ["site-notified:", "ring-notified:"])
+        for (const [key, until] of await txn.list<number>({ prefix })) if (until <= Date.now()) await txn.delete(key);
+    });
+  }
+
+  private syncPlayerSiteStreams(shard: WatchedShard, gameId: number, actors: Set<string>): void {
+    const streams = this.siteStreams.get(gameId)!;
+    for (const [actor, stop] of streams) {
+      if (actor === undefined || actors.has(actor)) continue;
+      stop();
+      streams.delete(actor);
+    }
+    for (const actor of actors) {
+      if (streams.has(actor)) continue;
+      streams.set(
+        actor,
+        followDeepSites(
+          shard.url,
+          gameId,
+          () => {
+            this.changedSiteGames.add(gameId);
+          },
+          actor,
+        ),
+      );
+    }
+  }
+
+  /** Public rivals and private research/army changes refresh the eligible cohort, including idle players. */
+  private async watchDeepSites(env: IdentityEnv, shard: Required<WatchedShard>): Promise<void> {
+    for (const gameId of [...this.changedSiteGames]) {
+      this.changedSiteGames.delete(gameId);
+      try {
+        const { watches, rings, actors } = await siteWatchesForGame(env, shard, gameId);
+        this.syncPlayerSiteStreams(shard, gameId, actors);
+        const now = Date.now();
+        const ringAlerts = await Promise.all(
+          rings.map(async (ring) => ({ ring, alerts: await ringOpenAlerts(env, shard, ring, now) })),
+        );
+        await this.ctx.storage.transaction(async (txn) => {
+          await txn.delete([...(await txn.list({ prefix: `site-watch:${gameId}:` })).keys()]);
+          for (const watch of watches)
+            if ((await txn.get(siteNotifiedKey(watch))) === undefined) await txn.put(siteWatchKey(watch), watch);
+          for (const { ring, alerts } of ringAlerts) {
+            if ((await txn.get(ringNotifiedKey(ring))) !== undefined) continue;
+            for (const entry of alerts) await putNewest(txn, entry);
+            await txn.put(ringNotifiedKey(ring), ring.until);
+          }
+        });
+        console.info("deep_site_watches", shard.url, gameId, watches.length);
+      } catch (error) {
+        this.changedSiteGames.add(gameId);
+        throw error;
+      }
+    }
+    const now = Date.now();
+    const due = [...(await this.ctx.storage.list<DeepSiteWatch>({ prefix: "site-watch:" })).values()].filter(
+      (watch) => watch.dueAt <= now,
+    );
+    for (const watch of due) {
+      try {
+        await this.wakeSite(env, shard, watch, now);
+      } catch (error) {
+        const attempts = watch.attempts + 1;
+        console.error(
+          attempts >= MAX_ATTEMPTS ? "deep_site_watch_dropped" : "deep_site_watch_retry",
+          shard.url,
+          siteWatchKey(watch),
+          attempts,
+          error,
+        );
+        if (attempts >= MAX_ATTEMPTS) await this.ctx.storage.delete(siteWatchKey(watch));
+        else
+          await this.ctx.storage.put(siteWatchKey(watch), {
+            ...watch,
+            attempts,
+            dueAt: now + backoffMs(attempts - 1, POLL_MS),
+          });
+      }
+    }
+  }
+
+  private async wakeSite(env: IdentityEnv, shard: Required<WatchedShard>, watch: DeepSiteWatch, now: number) {
+    const fresh = (await readDeepAlerts(shard.url, watch, now, await readReleaseCatalogue(shard.url))).sites
+      .filter((candidate) => siteWatchKey(candidate) === siteWatchKey(watch))
+      .sort((left, right) => left.dueAt - right.dueAt)[0];
+    const ready = fresh && fresh.dueAt <= now;
+    const alerts = ready ? await siteAlerts(env, shard, fresh, now) : [];
+    await this.ctx.storage.transaction(async (txn) => {
+      await txn.delete(siteWatchKey(watch));
+      if (!fresh) return;
+      if (!ready) {
+        await txn.put(siteWatchKey(fresh), fresh);
+        return;
+      }
+      if ((await txn.get(siteNotifiedKey(fresh))) !== undefined) return;
+      for (const entry of alerts) await putNewest(txn, entry);
+      await txn.put(siteNotifiedKey(fresh), fresh.until);
+    });
+  }
+
   /**
    * Each army whose wake time has come is read again: still recovering, it gets a new wake time; gone, or its game over,
    * nothing. Once the last army the player left recovering is full, the player gets one alert for them all.
@@ -244,8 +391,11 @@ export class ShardNotifier extends DurableObject<Record<string, unknown>> {
 
   private async wakeActor(env: IdentityEnv, shard: Required<WatchedShard>, watches: RestWatch[], now: number) {
     const { gameId, actor } = watches[0]!;
-    const armies = await readActorArmies(shard.url, gameId, actor, now);
-    const rested = watches.filter((watch) => armies.find((army) => army.armyId === watch.armyId)?.full);
+    const armies = await readActorArmies(shard.url, gameId, actor, now, await readReleaseCatalogue(shard.url));
+    const rested = watches.flatMap((watch) => {
+      const army = armies.find((army) => army.armyId === watch.armyId);
+      return army?.full && army.fullAt !== null ? [{ ...watch, fullAt: army.fullAt }] : [];
+    });
     const renewed = watches.flatMap((watch) => {
       const army = armies.find((candidate) => candidate.armyId === watch.armyId);
       return !army?.full && army?.fullAt ? [{ ...watch, fullAt: army.fullAt, attempts: 0 }] : [];
@@ -296,18 +446,45 @@ export class ShardNotifier extends DurableObject<Record<string, unknown>> {
     const due = [...(await this.ctx.storage.list<OutboxEntry>({ prefix: "outbox:" }))].filter(
       ([, entry]) => entry.dueAt <= now,
     );
-    const running = due.some(([, entry]) => isDayOpen(entry))
+    const running = due.some(([, entry]) => isDayOpen(entry) || entry.siteWatch)
       ? await runningFrontierGames(shard).catch((error: unknown) => {
           console.error("shard_notifier_day_open_unchecked", shard.url, error);
           return null;
         })
       : new Set<string>();
     for (const [key, entry] of due) {
-      if (!isDayOpen(entry)) await this.deliverEntry(env, key, entry);
+      if (!isDayOpen(entry) && !entry.siteWatch) await this.deliverEntry(env, key, entry);
       else if (!running) await this.ctx.storage.put(key, { ...entry, dueAt: now + POLL_MS });
-      else if (running.has(entry.envelope.notification.target)) await this.deliverEntry(env, key, entry);
-      else await this.ctx.storage.delete(key);
+      else {
+        const target = entry.siteWatch
+          ? gamePath({ chainId: shard.chainId, gameId: entry.siteWatch.gameId })
+          : entry.envelope.notification.target;
+        if (!running.has(target)) await this.ctx.storage.delete(key);
+        else await this.deliverCurrentSite(env, shard, key, entry, now);
+      }
     }
+  }
+
+  private async deliverCurrentSite(
+    env: IdentityEnv,
+    shard: WatchedShard,
+    key: string,
+    entry: OutboxEntry,
+    now: number,
+  ): Promise<void> {
+    try {
+      if (entry.siteWatch && !(await siteStillReady(shard, entry.siteWatch, now))) {
+        await this.ctx.storage.delete(key);
+        return;
+      }
+    } catch (error) {
+      console.error("deep_site_delivery_unchecked", shard.url, key, error);
+      const outcome = retryOrExpire(entry, now);
+      if ("next" in outcome) await this.ctx.storage.put(key, outcome.next);
+      else await this.ctx.storage.delete(key);
+      return;
+    }
+    await this.deliverEntry(env, key, entry);
   }
 
   /** One attempt: sent, tried again later while the alert lives, or ended with its reason, logged when it is a loss. */
@@ -556,13 +733,11 @@ const dayOpenAlerts = async (env: IdentityEnv, shard: Required<WatchedShard>, op
     for (const [account, owner] of realmsIds) {
       const owned = devices.filter((device) => device.owner === owner);
       if (owned.length === 0 || (levels.get(owner) ?? "off") === "off") continue;
-      const claim = await readHomeClaim(shard.url, opening.gameId, account);
       const push: DayOpenPush = {
         ...opening,
         chainId: shard.chainId,
         worldAddress: shard.worldAddress,
         owner,
-        claim,
       };
       for (const device of owned) {
         const notification = buildDayOpen({ ...push, sendAt: push.opensAt, timeZone: device.timeZone });
@@ -604,16 +779,22 @@ const watchRestingArmies = (env: IdentityEnv, shard: Required<WatchedShard>, pag
         const owner = realmsIds.get(actor);
         return owner && wanted.has(owner) ? [{ gameId, actor, owner }] : [];
       });
+      let catalogue: ReleaseCatalogue | undefined;
+      const armiesOf = async ({ gameId, actor }: RestingActor) => {
+        catalogue ??= await readReleaseCatalogue(shard.url);
+        try {
+          return await readActorArmies(shard.url, gameId, actor, now, catalogue);
+        } catch (error) {
+          if (!(error instanceof ShardReleaseMismatchError)) throw error;
+          catalogue = await readReleaseCatalogue(shard.url);
+          return readActorArmies(shard.url, gameId, actor, now, catalogue);
+        }
+      };
       // A player whose armies cannot be read keeps the watches they had; the rest of the page goes on.
       const watched = yield* Effect.forEach(resting, (actor) =>
         Effect.promise(async () => {
           try {
-            return [
-              {
-                actor,
-                watches: restWatchesOf(actor, await readActorArmies(shard.url, actor.gameId, actor.actor, now)),
-              },
-            ];
+            return [{ actor, watches: restWatchesOf(actor, await armiesOf(actor)) }];
           } catch (error) {
             console.error(
               "shard_notifier_armies_unread",
@@ -675,6 +856,7 @@ const restedUntil = (game: Game | undefined, fullAt: number): number => {
   const calendar = {
     seed: BigInt(game.expedition.seed),
     startMainAt: game.clock.start_main_at,
+    scheduledEndAt: game.clock.scheduled_end_at,
     endAt: game.clock.end_at,
     dayUnitSeconds: game.expedition.day_unit_seconds,
   };
@@ -696,3 +878,99 @@ const readShard = async <T>(url: string, path: string): Promise<T> => {
   if (!response.ok) throw new Error(`${url}${path} answered ${response.status}`);
   return (await response.json()) as T;
 };
+
+const siteWatchKey = (watch: DeepSiteWatch) => `site-watch:${watch.gameId}:${watch.owner}:${watch.kind}:${watch.day}`;
+const siteNotifiedKey = (watch: DeepSiteWatch) =>
+  `site-notified:${watch.gameId}:${watch.owner}:${watch.kind}:${watch.day}`;
+const ringNotifiedKey = (ring: DeepRingOpening) =>
+  `ring-notified:${ring.gameId}:${ring.owner}:${ring.ring}:${ring.day}`;
+
+/** Enrollment, consent and current realm facts are read before planning the next threshold. */
+async function siteWatchesForGame(
+  env: IdentityEnv,
+  shard: WatchedShard,
+  gameId: number,
+): Promise<{ watches: DeepSiteWatch[]; rings: DeepRingOpening[]; actors: Set<string> }> {
+  const accounts = await readEnrolledAccounts(shard.url, gameId);
+  let catalogue: ReleaseCatalogue | undefined;
+  const planned = new Map<string, DeepSiteWatch>();
+  const rings = new Map<string, DeepRingOpening>();
+  const actors = new Set<string>();
+  for (let offset = 0; offset < accounts.length; offset += 100) {
+    const owners = await realmsIdsOfAccounts(env.DB, accounts.slice(offset, offset + 100));
+    const wanted = await Effect.runPromise(
+      Effect.gen(function* () {
+        const ids = [...new Set(owners.values())];
+        const levels = yield* (yield* NotificationPreferenceStore).levels(ids);
+        const devices = yield* (yield* PushSubscriptionStore).gameAlertDevices(ids);
+        return new Set(
+          ids.filter(
+            (owner) =>
+              includesKind(levels.get(owner) ?? "off", "site-vulnerable") &&
+              devices.some((device) => device.owner === owner),
+          ),
+        );
+      }).pipe(
+        Effect.provide(NotificationPreferenceStore.layer(env.DB)),
+        Effect.provide(PushSubscriptionStore.layer(env.DB)),
+      ),
+    );
+    for (const [actor, owner] of owners) {
+      if (!wanted.has(owner)) continue;
+      actors.add(actor);
+      catalogue ??= await readReleaseCatalogue(shard.url);
+      const alerts = await readDeepAlerts(shard.url, { gameId, actor, owner }, Date.now(), catalogue);
+      for (const watch of alerts.sites) {
+        const previous = planned.get(siteWatchKey(watch));
+        if (!previous || previous.dueAt > watch.dueAt) planned.set(siteWatchKey(watch), watch);
+      }
+      for (const ring of alerts.rings) rings.set(ringNotifiedKey(ring), ring);
+    }
+  }
+  return { watches: [...planned.values()], rings: [...rings.values()], actors };
+}
+
+async function siteAlerts(
+  env: IdentityEnv,
+  shard: WatchedShard,
+  watch: DeepSiteWatch,
+  now: number,
+): Promise<OutboxEntry[]> {
+  const notification = buildSiteVulnerableNotification({ ...watch, chainId: shard.chainId, now });
+  return (await deepAlerts(env, watch.owner, notification, now)).map((entry) => ({ ...entry, siteWatch: watch }));
+}
+
+async function ringOpenAlerts(
+  env: IdentityEnv,
+  shard: WatchedShard,
+  ring: DeepRingOpening,
+  now: number,
+): Promise<OutboxEntry[]> {
+  return deepAlerts(env, ring.owner, buildRingOpenNotification({ ...ring, chainId: shard.chainId, now }), now);
+}
+
+async function deepAlerts(
+  env: IdentityEnv,
+  owner: string,
+  notification: LocalNotificationPayload | null,
+  now: number,
+): Promise<OutboxEntry[]> {
+  if (!notification) return [];
+  return Effect.runPromise(
+    Effect.gen(function* () {
+      const levels = yield* (yield* NotificationPreferenceStore).levels([owner]);
+      if (!includesKind(levels.get(owner) ?? "off", "site-vulnerable")) return [];
+      const devices = yield* (yield* PushSubscriptionStore).gameAlertDevices([owner]);
+      return alertsForDevices(owner, devices, notification, now);
+    }).pipe(
+      Effect.provide(NotificationPreferenceStore.layer(env.DB)),
+      Effect.provide(PushSubscriptionStore.layer(env.DB)),
+    ),
+  );
+}
+
+async function siteStillReady(shard: WatchedShard, watch: DeepSiteWatch, now: number): Promise<boolean> {
+  return (await readDeepAlerts(shard.url, watch, now, await readReleaseCatalogue(shard.url))).sites.some(
+    (fresh) => siteWatchKey(fresh) === siteWatchKey(watch) && fresh.siteId === watch.siteId && fresh.dueAt <= now,
+  );
+}

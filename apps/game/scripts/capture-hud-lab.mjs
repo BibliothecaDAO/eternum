@@ -72,12 +72,6 @@ const READ_ARMY_LIST = `(() => {
   };
 })()`;
 
-/**
- * Every army and open slot carries a stamina bar, and the bars line up whatever each entry's words say (owner, 27
- * October): one width, and one left edge down a list (or one top along a phone's row of tokens). On a list, each figure
- * (XP, stamina) stands on the line of the words it belongs to, whether the row has one line or two (owner, 28 October:
- * "text alignment with no troop line subtext").
- */
 const armyListProblems = ({ entries, bars, rows }) => {
   if (bars.length < 2 || bars.length !== entries) return [`${bars.length} stamina bars on ${entries} armies and slots`];
   const same = (key) => bars.every((bar) => Math.abs(bar[key] - bars[0][key]) <= 0.5);
@@ -113,7 +107,7 @@ const sheetFitProblems = ({ sheet, scrolls, verb, height }) => {
 const FITS = { read: READ_SHEET_FIT, rule: sheetFitProblems };
 
 /** Each side of the fight on the open card: its box, and the widest any of its words, its mark or its bar reaches. */
-const READ_FIGHT_SIDES = `(() => [...document.querySelectorAll('[role="img"][aria-label*="→"]')].map((side) => {
+const READ_FIGHT_SIDES = `(() => [...document.querySelectorAll('[data-fight-side]')].map((side) => {
   const box = side.getBoundingClientRect();
   // The text itself, not its spans: a span held to its box lets wider words run past it unseen.
   const walker = document.createTreeWalker(side, NodeFilter.SHOW_TEXT);
@@ -169,27 +163,14 @@ const READ_BUILD_CARDS = `(() => [...document.querySelectorAll(".ui-card")].map(
   return {
     name: card.querySelector(".ui-card__title")?.textContent ?? "",
     gems: card.querySelectorAll(".ui-tier").length,
-    sides: [...card.querySelectorAll("[data-side]")].map((side) => side.getAttribute("data-side") + " " + (side.querySelector(".ui-tier")?.textContent ?? "no gem")),
     clipped: [...new Set(clipped.map((part) => part.textContent))],
   };
 }))()`;
 
-/**
- * A build card reads whole at every size (owner, 27 October: its words clipped at the card's edge on a phone), and
- * says its research with gems, never words for it ("why no gems instead of the text ?"): a gem on each side of a row
- * that has two (Farm, Workshop, Barracks), else its type's one gem.
- */
-const SIDED = new Set(["Farm", "Workshop", "Barracks"]);
 const buildCardProblems = (cards) => {
   if (cards.length === 0) return ["no build card drawn"];
-  return cards.flatMap(({ name, gems, sides, clipped }) => [
-    ...(SIDED.has(name)
-      ? sides.length === 2 && gems === 2 && sides.every((side) => !side.endsWith("no gem"))
-        ? []
-        : [`${name} shows ${sides.join(", ") || "no side"} (${gems} gems), not a gem per side`]
-      : gems === 1 && sides.length === 0
-        ? []
-        : [`${name} shows ${gems} gems`]),
+  return cards.flatMap(({ name, gems, clipped }) => [
+    ...(gems === 1 ? [] : [`${name} shows ${gems} gems`]),
     ...clipped.map((part) => `${name}: "${part}" is clipped`),
   ]);
 };
@@ -248,8 +229,12 @@ export const SURFACES = [
     "building-farm",
     "building-workshop-short",
     "building-barracks",
-    "building-war-hall",
+    "building-conscription-camp",
+    "building-rations-depot",
     "building-scouts-lodge",
+    "shop",
+    "shop-ready",
+    "shop-held",
   ].map((state) => ({
     name: `frontier-${state}`,
     path: `/lab/kit/hud/${state}`,
@@ -292,14 +277,14 @@ export const SURFACES = [
     name: "blitz-attack-preview-short",
     path: "/lab/kit/unified/blitz-attack-short",
     mark: "unified",
-    waitFor: '[role="img"][aria-label*="→"]',
+    waitFor: "[data-fight-side]",
     ...FIGHT_FITS,
   },
   {
     name: "blitz-attack-preview",
     path: "/lab/kit/unified/blitz-attack",
     mark: "unified",
-    waitFor: '[role="img"][aria-label*="→"]',
+    waitFor: "[data-fight-side]",
     ...FIGHT_FITS,
   },
   // Twelve-digit sides whose short figures would read alike: exact, set smaller to fit, on the attack card.
@@ -420,9 +405,12 @@ const main = async () => {
           }))`,
             ),
           );
-          const expected = Object.entries(homeIcons).flatMap(([kind, levels]) =>
-            Object.entries(levels).map(([level, icon]) => ({ kind, level: Number(level), icon, decoded: true })),
-          );
+          const shown = new Set(cells.map((cell) => cell.kind));
+          const expected = Object.entries(homeIcons)
+            .filter(([kind]) => shown.has(kind))
+            .flatMap(([kind, levels]) =>
+              Object.entries(levels).map(([level, icon]) => ({ kind, level: Number(level), icon, decoded: true })),
+            );
           if (
             cells.length !== expected.length ||
             expected.some((cell, index) =>
@@ -443,7 +431,7 @@ const main = async () => {
         run("screenshot", join(values.out, `${shot}.png`));
         if (name === "frontier-merge") {
           // Army 1 has 22 unspent XP and two upgrades; Army 3 has 20 unspent XP and one upgrade.
-          const confirmLabel = "Lose 222 XP, merge into Army 3";
+          const confirmLabel = "Confirm merge into Army 3";
           run("find", "role", "button", "click", "--name", "Merge into Army 3", "--exact");
           run("wait", "--text", confirmLabel);
 
@@ -459,7 +447,7 @@ const main = async () => {
               const box = element?.getBoundingClientRect();
               return !!box && box.left >= 0 && box.right <= innerWidth && box.top >= 0 && box.bottom <= innerHeight;
             };
-            return { text: sheet.textContent, totals: [...sheet.querySelectorAll('[role="group"][aria-label$="total XP"]')].map(group => group.textContent), struck: sheet.querySelector('s')?.textContent ?? null, reachable: visible(button), notice: sheet.querySelector('.ui-notice')?.textContent ?? null, typed: sheet.querySelector('input[aria-label^="Troops "]').value, slid: sheet.querySelector('input[type="range"]').value };
+            return { text: sheet.textContent, struck: sheet.querySelector('s')?.textContent ?? null, reachable: visible(button), notice: sheet.querySelector('.ui-notice')?.textContent ?? null, typed: sheet.querySelector('input[aria-label^="Troops "]').value, slid: sheet.querySelector('input[type="range"]').value };
           })()`,
               ),
             );
@@ -467,11 +455,10 @@ const main = async () => {
           writeFileSync(join(values.out, `${shot}-confirmation.json`), JSON.stringify(confirmed, null, 2));
           if (
             !confirmed.reachable ||
-            confirmed.notice !== "Army 1 loses its XP and upgrades." ||
-            confirmed.struck !== null ||
-            JSON.stringify(confirmed.totals) !== JSON.stringify(["Total XP222→0", "Total XP120→120"])
+            confirmed.notice !== "Army 1 loses its Logistics training." ||
+            confirmed.struck !== null
           ) {
-            throw new Error(`${shot}: both total XP values and their outcomes must agree with the loss confirmation`);
+            throw new Error(`${shot}: the Logistics loss must be visible and its confirmation reachable`);
           }
           // It opens at all Army 1 holds: the box and the slider both say 500, what the merge sends.
           if (confirmed.typed !== "500" || confirmed.slid !== "500") {
@@ -483,12 +470,7 @@ const main = async () => {
           run("press", "ArrowLeft");
           run("wait", "--text", "Move 499 to Army 3");
           const partial = readSheet();
-          if (
-            partial.text.includes(confirmLabel) ||
-            partial.struck !== null ||
-            partial.notice !== null ||
-            JSON.stringify(partial.totals) !== JSON.stringify(["Total XP222→222", "Total XP120→120"])
-          ) {
+          if (partial.text.includes(confirmLabel) || partial.struck !== null || partial.notice !== null) {
             throw new Error(`${shot}: changing the amount must clear confirmation and the merge's losses`);
           }
           if (partial.typed !== "499" || partial.slid !== "499") {

@@ -1,16 +1,15 @@
 import { resolveRegistrarExecutionDetails } from "./transaction-details";
 export { resolveRegistrarExecutionDetails } from "./transaction-details";
-import { presetRegistrationCall } from "./native-preset";
 import { confirmedTransactionReceipt } from "../shared/transaction";
 import { nativeGamesAbi, nativeWorldSchema } from "../world/native/manifest";
 import type { RegistrarWorld } from "../world/native/types";
-import type { buildNativePreset } from "../config/native-preset";
 import { worldView } from "@bibliothecadao/eternum";
 import { Account, CallData, shortString, type Call, type RawArgs, RpcProvider } from "starknet";
+import { assertAbiArguments } from "../../../../packages/value-ledger/src/shard-abi";
 import { loadRepoJsonFile } from "../shared/repo";
 import type { DeploymentEnvironmentId } from "../types";
 
-type RegistrarEntrypoint = "register_preset" | "create_game";
+type RegistrarEntrypoint = "create_game";
 
 interface ManifestAbiEntry {
   type?: string;
@@ -192,33 +191,18 @@ export function resolveRegistrarWorldAddress(target: RegistrarTarget = DEFAULT_E
 
 export function assertRegistrarAvailable(target: RegistrarTarget = DEFAULT_ENVIRONMENT_ID): void {
   const context = resolveRegistrarContext(target);
-  const requiredEntrypoints: RegistrarEntrypoint[] = ["register_preset", "create_game"];
-  requiredEntrypoints.forEach((entrypoint) => requireRegistrarContract(context, entrypoint));
+  requireRegistrarContract(context, "create_game");
 }
 
 export async function createRegistrarGame(
   account: Account,
   params: unknown,
   target: RegistrarTarget,
-  nativeDefinition?: ReturnType<typeof buildNativePreset>,
 ): Promise<CreateRegistrarGameResult> {
   const context = resolveRegistrarContext(target);
-  if (!nativeDefinition) throw new Error("Native game creation requires its current preset definition");
-  const presetId = Number((params as { preset_id: number }).preset_id);
-  const registration = presetRegistrationCall(nativeDefinition, presetId, context.manifest);
-  const [commitment] = await account.callContract(
-    {
-      contractAddress: registration.address,
-      entrypoint: registration.commitmentView,
-      calldata: [presetId],
-    },
-    "latest",
-  );
-  if (commitment === undefined || BigInt(commitment) !== BigInt(registration.commitment))
-    throw new Error("Current preset differs from the launch configuration; reload its balance before creating a game");
-  const calldata = new CallData(nativeGamesAbi(context.manifest)).compile("create_game", {
-    params: params as RawArgs,
-  });
+  const abi = nativeGamesAbi(context.manifest);
+  assertAbiArguments(abi, "create_game", { params });
+  const calldata = new CallData(abi).compile("create_game", { params: params as RawArgs });
   const result = await executeRegistrarCall(account, buildRegistrarCall("create_game", calldata, target), target);
   return { ...result, gameId: resolveCreatedGameId(result.receipt, target) };
 }

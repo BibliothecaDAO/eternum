@@ -13,7 +13,6 @@ export interface ArmyPathIndexes {
   structureHexes: HexIndex<HexEntityInfo>;
   armyHexes: HexIndex<HexEntityInfo>;
   exploredHexes: HexIndex<BiomeType>;
-  chestHexes: HexIndex<HexEntityInfo>;
 }
 
 type PathIndexSource = Pick<GameClient, "setup" | "projection">;
@@ -51,11 +50,7 @@ export const buildArmyPathIndexes = (client: PathIndexSource, alt = false): Army
   }
   const exploredHexes: HexIndex<BiomeType> = new Map();
   for (const tile of projection.getTiles(alt)) indexHex(exploredHexes, tile.hexCoords, biomeTypeOf(tile.biome));
-  const chestHexes: HexIndex<HexEntityInfo> = new Map();
-  for (const chest of projection.getChests(alt)) {
-    indexHex(chestHexes, chest.hexCoords, { id: chest.entityId, owner: ContractAddress(0n) });
-  }
-  return { structureHexes, armyHexes, exploredHexes, chestHexes };
+  return { structureHexes, armyHexes, exploredHexes };
 };
 
 const indexHex = <T>(index: HexIndex<T>, hex: { col: number; row: number }, value: T): void => {

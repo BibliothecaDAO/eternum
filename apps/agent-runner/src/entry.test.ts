@@ -9,14 +9,15 @@ import {
   writeFact,
   seedExplorer,
   seedStructure,
+  liveWindow,
   seedGameRegistry,
 } from "./test-support/fake-game";
 
-afterEach(() => ClientConfigManager.instance().setActiveGame(28, 0));
+afterEach(() => ClientConfigManager.instance().setActiveGame(28));
 
 const settledGame = (provisioned: boolean, troops: bigint, hasExplorer: boolean) => {
   const game = createFakeGame();
-  seedGameRegistry(game.store, { status: "Live", startMainAt: 0, endAt: 1000 });
+  seedGameRegistry(game.store, { status: "Live", ...liveWindow() });
   seedStructure(game.store, { entityId: 12, owner: PLAYER, x: 100, y: 100 });
   writeFact(game.store, "PlayerEntry", [28, PLAYER], { game_id: 28, owner: PLAYER, player: PLAYER });
   const packed = setBuildingCount(BuildingType.ResourceLabor, [0n, 0n, 0n], provisioned ? 1 : 0);
@@ -54,18 +55,6 @@ describe("settlement provisioning", () => {
     });
     expect(game.client.setup.systemCalls.provision_realm).toHaveBeenCalledWith({ signer, realm_entity_id: 12 });
     expect(signer.execute).not.toHaveBeenCalled();
-    expect(game.actions.createExplorerArmy).toHaveBeenCalledOnce();
-  });
-  it("waits for the whole roster before acting on an already settled realm", async () => {
-    const { game, signer } = settledGame(true, 100_000_000_000n, false);
-    const row = game.store.require("GameRegistry", { game_id: 28 });
-    writeFact(game.store, "GameRegistry", [28], { ...row, ready: false });
-    const pending = ensureSettled(game, signer as unknown as AccountInterface);
-    await Promise.resolve();
-    expect(game.actions.createExplorerArmy).not.toHaveBeenCalled();
-    writeFact(game.store, "GameRegistry", [28], { ...row, ready: true });
-    game.advanceSnapshot();
-    await pending;
     expect(game.actions.createExplorerArmy).toHaveBeenCalledOnce();
   });
   it("resumes a provisioned realm with an existing explorer after all T1 troops were spent", async () => {

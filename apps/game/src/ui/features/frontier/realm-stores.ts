@@ -7,7 +7,6 @@ import { type ExpeditionRules, getBalance, ResourceManager } from "@bibliothecad
 import { safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { RESOURCE_PRECISION, type ResourcesIds } from "@bibliothecadao/types";
 
-import { troopsAtHome } from "./frontier-home";
 import { realmPerHour, secondsUntilHeld } from "./hud/army-order";
 import { FRONTIER_STORES, STORE_KINDS, type StoreKind } from "./stores";
 
@@ -29,8 +28,7 @@ type RealmStore = {
 
 /**
  * A store of the realm read once for every surface: what it holds, its limit, its rate an hour, when it is full, and
- * its tone (amber within the hour of full, ember at the limit). Troops count what the next deploy finds, with
- * Homecoming's return.
+ * its tone (amber within the hour of full, ember at the limit).
  */
 export const readRealmStore = (
   store: NativeFactStore,
@@ -39,12 +37,8 @@ export const readRealmStore = (
   kind: StoreKind,
   clock: { now: number },
 ): RealmStore => {
-  // The one troop type's stock: the barracks train it, and its limit is every troop stock's.
   const stock = FRONTIER_STORES[kind].resource;
-  const amount =
-    kind === "troops"
-      ? troopsAtHome(store, realm, rules, clock.now, clock.now)
-      : wholeBalance(store, safeInteger(realm.entity_id), stock, clock.now);
+  const amount = wholeBalance(store, safeInteger(realm.entity_id), stock, clock.now);
   const rawLimit = new ResourceManager(store, safeInteger(realm.entity_id), realm.game_id).storeLimit(stock);
   const limit = rawLimit === undefined ? undefined : Number(rawLimit / BigInt(RESOURCE_PRECISION));
   const perHour = realmPerHour(store, safeInteger(realm.entity_id), stock, clock.now);
@@ -83,14 +77,6 @@ const secondsUntilFull = (
 
 const storeTone = (fullIn: number | undefined): Tone =>
   fullIn === undefined ? "calm" : fullIn === 0 ? "ember" : fullIn <= AMBER_SECONDS ? "amber" : "calm";
-
-/** The Realm slot's dot: the worst tone among the stores the realm board spends (wheat, labor, troops). */
-export const realmDot = (stores: readonly Pick<RealmStore, "tone">[]): "amber" | "ember" | undefined =>
-  stores.some(({ tone }) => tone === "ember")
-    ? "ember"
-    : stores.some(({ tone }) => tone === "amber")
-      ? "amber"
-      : undefined;
 
 const STORE_MODELS = [
   "ResourceBalance",

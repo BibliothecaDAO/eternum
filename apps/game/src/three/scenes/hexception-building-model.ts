@@ -1,6 +1,6 @@
-import { realmSkinModel, type RealmSkin } from "../structures/realm-skins";
 import { ResourceIdToMiningType, StructureProgress } from "@bibliothecadao/eternum";
 import {
+  type AspectId,
   BUILDINGS_CENTER,
   BuildingType,
   buildingName,
@@ -54,7 +54,6 @@ const KEEP_NAMES: Record<StructureType, string> = {
   [StructureType.Bank]: "Bank",
   [StructureType.Hyperstructure]: "Hyperstructure",
   [StructureType.Mine]: "Mine",
-  [StructureType.BitcoinMine]: "Mine",
   [StructureType.Rift]: "Rift",
   [StructureType.Ruin]: "Ruin",
   [StructureType.Beasts]: "Beasts",
@@ -95,8 +94,8 @@ export function resolveBuildingModelSelection(
     structureId: number;
     mainStructureType?: StructureType;
     wonder: boolean;
+    aspect?: AspectId | null;
     frontier?: boolean;
-    realmSkin?: RealmSkin;
   },
 ): BuildingModelSelection {
   const { stage, structureId, mainStructureType, wonder } = context;
@@ -128,17 +127,15 @@ export function resolveBuildingModelSelection(
   }
 
   const tierPath =
-    group === BUILDINGS_GROUPS.REALMS && context.realmSkin
-      ? realmSkinModel(context.realmSkin, stage).path
-      : group === BUILDINGS_GROUPS.REALMS && wonder
-        ? REALM_PATHS[realmModelIndex(stage, true, structureId)]
-        : group === BUILDINGS_GROUPS.BUILDINGS
-          ? context.frontier
-            ? (building.tier ?? 1) > 1
-              ? (frontierPaintedBuildingPath(type as BuildingType, building.tier) ??
-                buildingTierModelPath(type as BuildingType, building.tier))
-              : undefined
-            : buildingTierModelPath(type as BuildingType, building.tier)
-          : undefined;
+    group === BUILDINGS_GROUPS.REALMS && wonder
+      ? REALM_PATHS[realmModelIndex(stage, true, structureId, context.frontier ? context.aspect : null)]
+      : group === BUILDINGS_GROUPS.BUILDINGS
+        ? context.frontier
+          ? (building.tier ?? 1) > 1
+            ? (frontierPaintedBuildingPath(type as BuildingType, building.tier) ??
+              buildingTierModelPath(type as BuildingType, building.tier))
+            : undefined
+          : buildingTierModelPath(type as BuildingType, building.tier)
+        : undefined;
   return { group, type, tierPath };
 }

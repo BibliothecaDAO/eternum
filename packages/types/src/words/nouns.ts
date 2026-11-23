@@ -3,6 +3,11 @@
  * troops, structures, ranks, guard walls and the three ages. Never a table's raw value ("KnightT2") or an enum's key
  * ("AncientFragment"); unknown is a dash.
  */
+/**
+ * The game's nouns as a player reads them, each read from the game's own table through one function: resources,
+ * troops, structures, ranks, guard walls and the three ages. Never a table's raw value ("KnightT2") or an enum's key
+ * ("AncientFragment"); unknown is a dash.
+ */
 import { RealmLevelNames } from "../constants/realmLevels";
 import { ResourcesIds } from "../constants/resource-ids";
 import { resources } from "../constants/resources";
@@ -14,18 +19,18 @@ import {
 } from "../constants/structures";
 import { GUARD_SLOT_NAMES, type GuardSlot } from "../constants/troops";
 import { StructureType } from "../constants/structure-type";
+import { deepSites } from "../constants/deep-sites";
 import { TROOP_TYPES, TroopType } from "../types/common";
 
 const UNKNOWN = "—";
 
 export const LORDS = "LORDS";
-export const XP = "XP";
+export const FRAGMENT = "Fragment";
+export const FRAGMENTS = "Fragments";
+export const ANCIENT_SEAL = "Ancient Seal";
 /** A chest's rarity, common to legendary. */
 export const TIER_WORDS = ["Common", "Uncommon", "Rare", "Epic", "Legendary"] as const;
-/**
- * A rank a player levels, by its numeral, I to V: an attribute's tier, a skill point's rank, a research tier. Every
- * surface names ranks this way: the army panel, its level-ups, research, the Feed and the day log.
- */
+
 const TIER_NUMERALS = ["I", "II", "III", "IV", "V"] as const;
 export const tierNumeral = (rank: number): string => {
   const numeral = Number.isInteger(rank) && TIER_NUMERALS[rank - 1];
@@ -46,10 +51,8 @@ export const rankedText = (words: RankedWords | string): string =>
     : words.map((part) => (typeof part === "string" ? part : part.rank === 0 ? "0" : tierNumeral(part.rank))).join("");
 /** What a skill point of a rank gives: the point itself, "[III] +1" (owner, 3 November 2026: "I like B"). */
 export const skillPointGain = (rank: number): RankedWords => [{ rank }, " +1"];
-/** Gains and purchases in both the history Log and Frontier's Today sheet. */
-export const xpGainedLine = (line: string, amount: string) => `${line}, +${amount} ${XP}`;
 export const siteUsedLine = (kind: "Shrine" | "Well", amount: string) =>
-  kind === "Shrine" ? xpGainedLine("Shrine used", amount) : `Well used, +${amount} stamina`;
+  kind === "Shrine" ? `Shrine used, +${amount} XP` : `Well used, +${amount} stamina`;
 /** What scores: "250 points", "1 point" (formatPoints). Never VP or pts. */
 export const POINTS = "points";
 export const POINT = "point";
@@ -76,6 +79,16 @@ export const TROOP_WORDS = {
   [TroopType.Paladin]: { one: "Paladin", many: "Paladins" },
 } as const satisfies Record<TroopType, { one: string; many: string }>;
 
+/** Frontier's troop names; its Scout uses the Paladin category. */
+export const FRONTIER_TROOP_NAMES = {
+  [TroopType.Knight]: TROOP_WORDS[TroopType.Knight].many,
+  [TroopType.Paladin]: "Scouts",
+  [TroopType.Crossbowman]: TROOP_WORDS[TroopType.Crossbowman].many,
+} satisfies Record<TroopType, string>;
+
+export const frontierTroopName = (troop: TroopType | string): string | undefined =>
+  (FRONTIER_TROOP_NAMES as Record<string, string>)[troop];
+
 /** Many of a troop type, by its type or its name in the game's tables: "Crossbowmen". Unknown is undefined. */
 export const troopPlural = (troop: TroopType | string): string | undefined =>
   (TROOP_WORDS as Record<string, { many: string }>)[troop]?.many;
@@ -98,86 +111,166 @@ export const resourceName = (id: ResourcesIds | number | undefined): string => {
   return troop ? troopName(troop[1], troop[2] ?? "T1") : name;
 };
 
-export type StructureNamingMode = "frontier" | "blitz" | "eternum" | "duel";
+export type StructureNamingMode = "frontier" | "blitz" | "eternum";
 
-/** A structure in its game: Frontier replaces the camp category with a Troll; other modes keep their own names. */
-export const structureName = (type: StructureType, mineKind?: number, mode?: StructureNamingMode): string =>
-  mode === "frontier" && type === StructureType.Camp
-    ? BEAST_NAMES.troll
-    : type === StructureType.Mine && mineKind !== undefined
-      ? getMinePresentation(mineKind).name
-      : (StructureTypeToNameMapping[type] ?? UNKNOWN);
+export const structureName = (type: StructureType, mineKind?: number): string =>
+  type === StructureType.Mine && mineKind !== undefined
+    ? getMinePresentation(mineKind).name
+    : (StructureTypeToNameMapping[type] ?? UNKNOWN);
 
 /** The same category names for list headings and discovery choices. */
-export const structurePlural = (type: StructureType, mineKind?: number, mode?: StructureNamingMode): string => {
-  if (type === StructureType.Beasts) return structureName(type, mineKind, mode);
-  if (type === StructureType.BitcoinMine) return "Bitcoin mines";
-  return `${structureName(type, mineKind, mode)}s`;
+export const structurePlural = (type: StructureType, mineKind?: number): string => {
+  if (type === StructureType.Beasts) return structureName(type, mineKind);
+  return `${structureName(type, mineKind)}s`;
 };
 
 /** The buildings Frontier raises, by Frontier's names: its barracks trains knights, its hut houses workers. */
-const FRONTIER_BUILDINGS: Partial<Record<BuildingType, string>> = {
-  [BuildingType.ResourceWheat]: "Farm",
-  [BuildingType.ResourceLabor]: "Workshop",
-  [BuildingType.ResourceKnightT1]: "Barracks",
-  [BuildingType.WorkersHut]: "Hut",
-  [BuildingType.WarHall]: "War hall",
-  [BuildingType.SupplyYard]: "Supply yard",
-  [BuildingType.ScoutsLodge]: "Scouts' lodge",
-  [BuildingType.Hearth]: "Hearth",
-};
+const FRONTIER_BUILDINGS = new Map<BuildingType, string>([
+  [BuildingType.ResourceWheat, "Farm"],
+  [BuildingType.ResourceLabor, "Workshop"],
+  [BuildingType.ConscriptionCamp, BuildingTypeToString[BuildingType.ConscriptionCamp]],
+  [BuildingType.RationsDepot, BuildingTypeToString[BuildingType.RationsDepot]],
+  [BuildingType.SupplyYard, "Supply yard"],
+  [BuildingType.ResourceKnightT1, "Barracks"],
+  [BuildingType.ScoutsLodge, "Scouts' lodge"],
+  [BuildingType.ResourceCrossbowmanT1, "Range"],
+  [BuildingType.Storehouse, "Storeroom"],
+]);
+
+export const FRONTIER_BUILDING_TYPES: readonly BuildingType[] = [...FRONTIER_BUILDINGS.keys()];
 
 /** Whether Frontier raises this building. */
-export const isFrontierBuilding = (category: number): boolean => category in FRONTIER_BUILDINGS;
+export const isFrontierBuilding = (category: number): boolean => FRONTIER_BUILDINGS.has(category as BuildingType);
 
 /**
  * A building as its game's player reads it, the one name every list, panel and story uses: Frontier's own name where
  * Frontier raises it ("Barracks"), else the game's table ("Knight T1", "Farm"). Unknown is a dash.
  */
 export const buildingName = (category: BuildingType | number, frontier: boolean): string =>
-  (frontier ? FRONTIER_BUILDINGS[category as BuildingType] : undefined) ??
+  (frontier ? FRONTIER_BUILDINGS.get(category as BuildingType) : undefined) ??
   BuildingTypeToString[category as BuildingType] ??
   UNKNOWN;
 
 /** A guard slot by its wall, never its internal name: "Castle Wall", not "Gamma". */
 export const guardSlotName = (slot: GuardSlot): string => GUARD_SLOT_NAMES[slot] ?? UNKNOWN;
 
-export const BEAST_NAMES = {
-  troll: "Troll",
-  wyvern: "Wyvern",
-  hydra: "Hydra",
-  wraith: "Wraith",
-  cyclops: "Cyclops",
-  ammit: "Ammit",
-  basilisk: "Basilisk",
-  "dark-fey": "Dark fey",
-} as const;
-type FrontierGuard = { beast: keyof typeof BEAST_NAMES; scale: number };
-/** Who guards a ruin, by depth from the surface to Ethereal III, and at what size its model stands. */
-export const FALLEN_REALM_DEPTHS: readonly FrontierGuard[] = [
-  { beast: "ammit", scale: 1.2 },
-  { beast: "basilisk", scale: 1.2 },
-  { beast: "wyvern", scale: 1.35 },
-  { beast: "hydra", scale: 1.7 },
-];
-/** A roaming band of beasts: the weaker band or the stronger, at every depth. */
-export const ROAMING_BEASTS = {
-  lowly: { beast: "cyclops", scale: 1 },
-  stronger: { beast: "wraith", scale: 1 },
-} as const satisfies Record<string, FrontierGuard>;
-/** A camp's and a rift's guard, the same at every depth. */
-export const SITE_GUARDS = {
-  camp: { beast: "troll", scale: 0.85 },
-  rift: { beast: "dark-fey", scale: 0.75 },
-} as const satisfies Record<string, FrontierGuard>;
+export const LAYER_NAMES = ["Surface", "Veil", "Hollow", "Deep"] as const;
+export type MapLayer = 0 | 1 | 2 | 3;
+export type LayerPlace = "veil" | "hollow" | "deep";
+export const LAYER_PLACES: Readonly<Record<MapLayer, LayerPlace | null>> = Object.freeze({
+  0: null,
+  1: "veil",
+  2: "hollow",
+  3: "deep",
+});
+export const layerName = (depth: number): string => {
+  const name = LAYER_NAMES[depth];
+  if (name === undefined) throw new Error(`No layer at depth ${depth}`);
+  return name;
+};
+export const ETERNUM_MAP_NAMES = [LAYER_NAMES[0], "Ethereal Layer"] as const;
+export const eternumMapName = (alt: boolean): string => ETERNUM_MAP_NAMES[alt ? 1 : 0];
+
+export type BeastModel =
+  | "troll"
+  | "wyvern"
+  | "hydra"
+  | "wraith"
+  | "cyclops"
+  | "ammit"
+  | "basilisk"
+  | "dark-fey"
+  | "balrog"
+  | "colossus"
+  | "warlock"
+  | "banshee"
+  | "golem"
+  | "kappa"
+  | "tarrasque"
+  | "lich"
+  | "ettin"
+  | "kitsune"
+  | "minotaur";
+export type BeastFamily = "herd" | "band" | "camp" | "rift" | "ruin";
+export type BeastIdle = { motion: "breath" | "lift"; speed: number; height: number } | { motion: "hover" };
+type BeastLook = { model: BeastModel };
+export type BeastRow = {
+  name: string;
+  family: BeastFamily;
+  layer: MapLayer;
+  scale: number;
+  idle: BeastIdle;
+} & BeastLook;
+type DeepBeastRow = { name: string; scale: number; idle: BeastIdle } & BeastLook;
+
+const breath = (speed: number, height: number) => ({ motion: "breath", speed, height }) as const;
+const lift = (speed: number, height: number) => ({ motion: "lift", speed, height }) as const;
+const hover = { motion: "hover" } as const;
+
+export const BEASTS = {
+  cyclops: { name: "Cyclops", family: "herd", layer: 0, scale: 1, model: "cyclops", idle: breath(1.5, 0.016) },
+  hydra: { name: "Hydra", family: "herd", layer: 1, scale: 1.2, model: "hydra", idle: breath(0.9, 0.018) },
+  tarrasque: { name: "Tarrasque", family: "herd", layer: 2, scale: 1, model: "tarrasque", idle: breath(1.2, 0.018) },
+  wraith: { name: "Wraith", family: "band", layer: 0, scale: 1, model: "wraith", idle: lift(1.2, 0.028) },
+  banshee: { name: "Banshee", family: "band", layer: 1, scale: 1, model: "banshee", idle: lift(1.5, 0.024) },
+  lich: { name: "Lich", family: "band", layer: 2, scale: 1, model: "lich", idle: lift(0.9, 0.02) },
+  troll: { name: "Troll", family: "camp", layer: 0, scale: 0.85, model: "troll", idle: breath(1.1, 0.014) },
+  golem: { name: "Golem", family: "camp", layer: 1, scale: 0.85, model: "golem", idle: breath(0.7, 0.01) },
+  ettin: { name: "Ettin", family: "camp", layer: 2, scale: 0.85, model: "ettin", idle: breath(1.3, 0.016) },
+  fairy: { name: "Fairy", family: "rift", layer: 0, scale: 0.75, model: "dark-fey", idle: hover },
+  kappa: { name: "Kappa", family: "rift", layer: 1, scale: 0.75, model: "kappa", idle: breath(1.6, 0.012) },
+  kitsune: { name: "Kitsune", family: "rift", layer: 2, scale: 0.75, model: "kitsune", idle: breath(1.3, 0.012) },
+  wyvern: { name: "Wyvern", family: "ruin", layer: 0, scale: 1.35, model: "wyvern", idle: breath(1, 0.018) },
+  ammit: { name: "Ammit", family: "ruin", layer: 1, scale: 1.2, model: "ammit", idle: breath(1.4, 0.01) },
+  minotaur: { name: "Minotaur", family: "ruin", layer: 2, scale: 1.2, model: "minotaur", idle: breath(1.1, 0.012) },
+} as const satisfies Record<string, BeastRow>;
+
+export const DEEP_BEASTS = {
+  foundation: { name: "Colossus", scale: 1.3, model: "colossus", idle: breath(0.8, 0.012) },
+  core: { name: "Warlock", scale: 1.4, model: "warlock", idle: hover },
+  mine: { name: "Balrog", scale: 1.1, model: "balrog", idle: breath(1, 0.016) },
+  altar: { name: "Basilisk", scale: 1.2, model: "basilisk", idle: breath(1.3, 0.014) },
+} as const satisfies Record<(typeof deepSites)[number]["key"], DeepBeastRow>;
+
+const DEEPLESS_FOURTH_LAYER = 3;
+export const DEEPLESS_FOURTH_LAYER_BEASTS = {
+  herd: { ...BEASTS.cyclops, layer: 3 },
+  band: { ...BEASTS.wraith, layer: 3 },
+  camp: { ...BEASTS.troll, layer: 3 },
+  rift: { ...BEASTS.fairy, name: "Dark fey", layer: 3 },
+  ruin: { ...BEASTS.hydra, family: "ruin", layer: 3, scale: 1.2 },
+} as const satisfies Record<BeastFamily, BeastRow>;
+
+export const beastModel = (beast: BeastLook): BeastModel => beast.model;
+
+export const beastOfModel = (model: BeastModel) =>
+  [...Object.values<DeepBeastRow>(BEASTS), ...Object.values<DeepBeastRow>(DEEP_BEASTS)].find(
+    (beast) => beast.model === model,
+  )!;
+
+export const beastOf = (family: BeastFamily, layer: number): BeastRow => {
+  const beast = Object.values<BeastRow>(BEASTS).find((each) => each.family === family && each.layer === layer);
+  if (!beast) throw new Error(`No ${family} beast on layer ${layer}`);
+  return beast;
+};
+
+export const siteBeastOf = (family: BeastFamily, depth: number, gameHasDeep: boolean): BeastRow =>
+  !gameHasDeep && depth === DEEPLESS_FOURTH_LAYER ? DEEPLESS_FOURTH_LAYER_BEASTS[family] : beastOf(family, depth);
+
+export const beastsOfFamily = (family: BeastFamily): BeastRow[] =>
+  Object.values<BeastRow>(BEASTS)
+    .filter((beast) => beast.family === family)
+    .sort((a, b) => a.layer - b.layer);
+
 /** Frontier creatures are the encounter itself; a rift or ruin retains its landmark name. */
 export const frontierSiteName = (type: StructureType, beast?: { name: string }): string =>
-  (type === StructureType.Camp || type === StructureType.Beasts) && beast
-    ? beast.name
-    : structureName(type, undefined, "frontier");
+  (type === StructureType.Camp || type === StructureType.Beasts) && beast ? beast.name : structureName(type);
 
-/** What a player earns with a ruin's clear, as another player's line and their own say it. */
-export const CHEST_EARNED = "chest earned";
+export const guardedSiteKind = (type: StructureType, beast?: { name: string }): string =>
+  beast && (type === StructureType.Rift || type === StructureType.Ruin)
+    ? `${beast.name} ${structureName(type)}`
+    : frontierSiteName(type, beast);
+
 export const VICTORY = "Victory";
 export const ARMY_LOST = "Army lost";
 export const GUARD_HOLDS = "Guard holds";

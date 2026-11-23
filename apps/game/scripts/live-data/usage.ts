@@ -5,6 +5,7 @@ import { createReadStream, readdirSync, readFileSync, renameSync, writeFileSync 
 import { join } from "node:path";
 import { createInterface } from "node:readline";
 import { createGunzip } from "node:zlib";
+import type { NativeReleases } from "../../../../packages/core/src/sync/herald-http-types";
 import { NativeDecoder } from "../../../herald/src/native/decoder";
 import { type DecodedEvent, type Mode, nameCommands, peakHoldings } from "./commands";
 import { Counts, type LeaderboardEntry, usageReport } from "./findings";
@@ -14,7 +15,7 @@ const readJson = (path: string) => JSON.parse(readFileSync(path, "utf8"));
 const plain = (value: unknown) =>
   JSON.parse(JSON.stringify(value, (_, v) => (typeof v === "bigint" ? `0x${v.toString(16)}` : v)));
 
-function decoderFor(schema: any, gamesContract: string, releaseSchemas: Record<string, string>) {
+function decoderFor(schema: any, gamesContract: string, releases: NativeReleases) {
   return new NativeDecoder({
     world: { address: gamesContract },
     native: {
@@ -22,8 +23,8 @@ function decoderFor(schema: any, gamesContract: string, releaseSchemas: Record<s
       deploymentBlock: 0,
       activeSchema: schema.identity,
       schemas: { [schema.identity]: schema },
-      logic: schema.logicClasses,
-      releaseSchemas,
+      logic: Object.fromEntries(schema.logicClasses.map(({ name, contract }) => [name, contract])),
+      releases,
     },
   } as never);
 }
@@ -41,7 +42,8 @@ function segmentsOf(raw: string, gamesContract: string) {
 async function decodeEvents(raw: string, folder: string, throughBlock: number) {
   const manifest = readJson(join(folder, "manifest.json"));
   const contract: string = manifest.contracts.games;
-  const decoder = decoderFor(readJson(join(folder, "schema.json")), contract, manifest.releaseSchemas);
+  const schema = readJson(join(folder, "schema.json"));
+  const decoder = decoderFor(schema, contract, manifest.releases);
   const events: DecodedEvent[] = [];
   const failures = new Map<string, number>();
   for (const segment of segmentsOf(raw, contract)) {
@@ -66,7 +68,7 @@ async function decodeEvents(raw: string, folder: string, throughBlock: number) {
       }
     }
   }
-  return { events: events.sort((a, b) => a.block - b.block), failures };
+  return { events: events.sort((a, b) => a.block - b.block), failures, schemaIdentity: schema.identity };
 }
 
 /** Some events did not decode: counting the rest would read a schema change as a control nobody used. */
@@ -89,9 +91,9 @@ export async function writeUsage(folder: string, raw: string) {
     ]),
   );
   const leaderboard: LeaderboardEntry[] = readJson(join(folder, "leaderboard.json")).entries;
-  const { events, failures } = await decodeEvents(raw, folder, throughBlock);
+  const { events, failures, schemaIdentity } = await decodeEvents(raw, folder, throughBlock);
   if (failures.size) throw new IncompleteDecode(failures);
-  const rows = nameCommands(events, modes);
+  const rows = nameCommands(events, modes, schemaIdentity);
   const counts = new Counts(rows, peakHoldings(events, modes), leaderboard);
   const pulled = readJson(join(folder, "pulled.json")).at.slice(0, 16).replace("T", " ") + " UTC";
   writeFileSync(join(folder, "usage.json.part"), JSON.stringify(usageReport(counts, pulled, throughBlock), null, 1));

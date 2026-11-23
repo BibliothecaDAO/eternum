@@ -3,9 +3,7 @@ import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import { CallData, ValidateType } from "starknet";
 
-const { abi } = JSON.parse(
-  readFileSync(new URL("../../../target/dev/game_ledger_GameLedger.contract_class.json", import.meta.url), "utf8"),
-);
+const abi = JSON.parse(readFileSync(new URL("../../../schema/abi.json", import.meta.url), "utf8"));
 const codec = new CallData(abi);
 const entries = abi.flatMap((entry) => (entry.type === "interface" ? entry.items : [entry]));
 const key = { shard: 17n, slot_id: 7 };

@@ -1,3 +1,4 @@
+import { gameRegistryRow } from "../../../../packages/core/src/test-support/game-registry";
 import {
   ClientConfigManager,
   createGameActions,
@@ -11,8 +12,9 @@ import { WorldSpatialProjection, type HeraldGameDirectoryEntry } from "@biblioth
 import { ContractAddress, StructureType, TileOccupier } from "@bibliothecadao/types";
 import { hash, type AccountInterface } from "starknet";
 import { vi } from "vitest";
-import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
+import release from "../../../../contracts/l3/world-native/schema/release-definition.json";
 import explorer from "../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
+import { nativeFactModels, nativeIdentifiers } from "../../../../contracts/l3/world-native/schema/client.gen";
 import type { RecentStoryEvent, RunnerGame } from "../game";
 
 const GAME_ID = 28;
@@ -38,7 +40,7 @@ interface FakeGame extends RunnerGame {
  * transaction wait are stubs the tests script.
  */
 export const createFakeGame = (signer: AccountInterface | null = PLAYER_SIGNER): FakeGame => {
-  ClientConfigManager.instance().setActiveGame(GAME_ID, 0);
+  ClientConfigManager.instance().setActiveGame(GAME_ID);
   // A booted client always has chain time from a confirmed head; this fake chain's clock is the test's wall clock.
   setBlockTimestampSource(() => Date.now() / 1_000);
   const store = new NativeFactStore();
@@ -49,7 +51,11 @@ export const createFakeGame = (signer: AccountInterface | null = PLAYER_SIGNER):
     timestamp: Math.floor(Date.now() / 1_000),
   });
   let snapshotTimestamp = Math.floor(Date.now() / 1_000);
-  writeFact(store, "SliceRules", [GAME_ID], { ...preset.rules, game_id: GAME_ID, map_center_offset: 2147483646 });
+  writeFact(store, "SliceRules", [GAME_ID], {
+    ...release.definition.rules,
+    game_id: GAME_ID,
+    map_center_offset: 2147483646,
+  });
   writeFact(store, "SettlementRules", [GAME_ID], {
     game_id: GAME_ID,
     registration_start: 0,
@@ -192,7 +198,16 @@ function positionFacts(
 
 export const seedExplorer = (
   store: NativeFactStore,
-  input: { explorerId: number; owner: number; x: number; y: number; stamina?: bigint; count?: bigint; alt?: boolean },
+  input: {
+    explorerId: number;
+    owner: number;
+    x: number;
+    y: number;
+    stamina?: bigint;
+    count?: bigint;
+    alt?: boolean;
+    oaths?: number;
+  },
 ): void => {
   writeFact(
     store,
@@ -213,23 +228,50 @@ export const seedExplorer = (
     },
     positionFacts(store, input.explorerId, input.x, input.y, input.alt ?? false, TileOccupier.ExplorerKnightT1, false),
   );
+  writeFact(store, "ArmyProgress", [GAME_ID, input.explorerId], {
+    game_id: GAME_ID,
+    explorer_id: input.explorerId,
+    logistics: 0,
+    oath_slots: 4,
+    oaths: input.oaths ?? 0,
+    oath_pick: 0,
+  });
+  writeFact(store, "ArmyDay", [GAME_ID, input.explorerId], { game_id: GAME_ID, explorer_id: input.explorerId, day: 0 });
+  for (const [index, kind] of nativeFactModels.ArmyRelicEffect.fields.kind.enum.entries()) {
+    writeFact(store, "ArmyRelicEffect", [GAME_ID, input.explorerId, index], {
+      game_id: GAME_ID,
+      explorer_id: input.explorerId,
+      kind,
+      rank: 0,
+      expires_at: 0,
+    });
+  }
+};
+
+export const liveWindow = (): { startMainAt: number; endAt: number } => {
+  const now = Math.floor(Date.now() / 1_000);
+  return { startMainAt: now - 1, endAt: now + 86_400 };
 };
 
 export const seedGameRegistry = (
   store: NativeFactStore,
   input: { status: string; startMainAt: number; endAt: number },
 ): void => {
-  writeFact(store, "GameRegistry", [GAME_ID], {
-    game_id: GAME_ID,
-    name: 0n,
-    preset_id: 3,
-    settled: input.status === "Ended",
-    ready: true,
-    dev_mode_on: true,
-    start_settling_at: 0n,
-    start_main_at: BigInt(input.startMainAt),
-    end_at: BigInt(input.endAt),
-    end_grace_seconds: 0,
-    seed: 0n,
-  });
+  writeFact(
+    store,
+    "GameRegistry",
+    [GAME_ID],
+    gameRegistryRow({
+      game_id: GAME_ID,
+      name: "0",
+      family: nativeIdentifiers.family.BLITZ,
+      settled: input.status === "Ended",
+      dev_mode_on: true,
+      start_settling_at: "0",
+      start_main_at: String(input.startMainAt),
+      scheduled_end_at: String(input.endAt),
+      end_at: String(input.endAt),
+      seed: "0",
+    }),
+  );
 };

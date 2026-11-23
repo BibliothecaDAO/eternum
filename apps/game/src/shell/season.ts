@@ -1,17 +1,25 @@
-import { formatDate } from "@bibliothecadao/types";
+import { aspectLordsWorth, formatDate } from "@bibliothecadao/types";
+import { raceFinishHeight, spendsFragments } from "@bibliothecadao/eternum/game-client";
 
 import { isGameOver } from "@/runtime/world/directory";
 import { PLAY_WORDS, SEASON } from "@/ui/design-system/kit/words";
 import { type DayClock, dayTone } from "@/ui/features/frontier/hud/day-clock";
 import { isRealmCategory } from "@bibliothecadao/eternum/expeditions";
 
+import release from "../../../../contracts/l3/world-native/schema/release-definition.json";
+import type { SeasonPhase } from "./season-calendar";
 import type { DirectoryGame } from "./herald";
 import { gameKey } from "./play/play-board";
 import { ARCHIVED_SEASONS, archivedSeason } from "./season-tab/archive/archive";
 
 /** The player's realm in the season: the structure the directory lists for them, if they have founded one. */
+export const isRehearsal = (game: Pick<DirectoryGame, "clock_scale">): boolean => game.clock_scale > 1;
+
 export const seasonRealm = (season: Pick<DirectoryGame, "player_state">) =>
   season.player_state?.structures.find((structure) => isRealmCategory(structure.category));
+
+export const seasonRealmId = (season: Pick<DirectoryGame, "player_state"> | null | undefined): number | null =>
+  (season ? seasonRealm(season)?.realm_id : undefined) ?? season?.player_state?.held_realm_id ?? null;
 
 /**
  * The Frontier season a screen shows: the player's own, where their realm stands, else a live one. Among several, the
@@ -19,7 +27,7 @@ export const seasonRealm = (season: Pick<DirectoryGame, "player_state">) =>
  */
 export const chooseSeason = (games: readonly DirectoryGame[], signedIn: boolean): DirectoryGame | undefined => {
   const seasons = games
-    .filter((game) => game.mode === "frontier" && !isGameOver(game))
+    .filter((game) => game.mode === "frontier" && !isRehearsal(game) && !isGameOver(game))
     .toSorted((a, b) => b.clock.start_main_at - a.clock.start_main_at || a.game_id - b.game_id);
   const live = seasons.filter((game) => game.status === "Live");
   const available = live.length > 0 ? live : seasons;
@@ -34,7 +42,7 @@ export const chooseSeason = (games: readonly DirectoryGame[], signedIn: boolean)
 export const endedSeasons = (listed: readonly DirectoryGame[], settled: readonly DirectoryGame[]): DirectoryGame[] => {
   const byGame = new Map([...ARCHIVED_SEASONS, ...settled, ...listed].map((game) => [gameKey(game), game]));
   return [...byGame.values()]
-    .filter((game) => game.mode === "frontier" && isGameOver(game))
+    .filter((game) => game.mode === "frontier" && !isRehearsal(game) && isGameOver(game))
     .toSorted((a, b) => b.clock.end_at - a.clock.end_at || a.game_id - b.game_id);
 };
 
@@ -73,3 +81,20 @@ export const seasonTitle = (season: Pick<DirectoryGame, "season_number" | "chain
 /** An ended season and the day it ended, "Playtest · Ended 31 Oct". */
 export const seasonEnded = (season: DirectoryGame): string =>
   `${seasonTitle(season)} · ${PLAY_WORDS.ended} ${formatDate(season.clock.end_at)}`;
+
+export const SEASON_SPENDS_FRAGMENTS = spendsFragments({ command_mask: BigInt(release.definition.rules.command_mask) });
+
+export type SeasonOpening = { startsAt: number; seasonDays: number | null; aspectLords: number | null };
+
+export const seasonOpening = (phases: readonly SeasonPhase[], now: number): SeasonOpening | null => {
+  const frontier = phases.find((phase) => phase.phase === "frontier");
+  if (frontier?.phase !== "frontier") return null;
+  const startsAt = Date.parse(frontier.startsAt) / 1000;
+  if (!(startsAt > now)) return null;
+  const race = release.definition.economy.race.Some;
+  return {
+    startsAt,
+    seasonDays: Number(race.season_days),
+    aspectLords: aspectLordsWorth(raceFinishHeight(race.stage_height), false),
+  };
+};

@@ -1,20 +1,31 @@
 import {
+  armyOaths,
   entityHomeNamespace,
   expeditionRealmSite,
+  getExplorerInfoFromTileOccupier,
   getTroopResourceId,
   readExpeditionRules,
   readTroopRaiseCost,
+  researchTier,
+  seasonDay,
+  troopOathSlots,
 } from "@bibliothecadao/eternum";
 import {
   BiomeType,
   BUILDINGS_CENTER,
   getNeighborOffsets,
   RESOURCE_PRECISION,
-  TroopTier,
-  TroopType,
+  TileOccupier,
+  TROOP_TYPES,
+  TROOP_TIERS,
 } from "@bibliothecadao/types";
 
-import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import { exploreStaminaCost, musterStamina, openArmySlots } from "@bibliothecadao/eternum/troop-stamina";
+import {
+  nativeResearchConstants as research,
+  safeInteger,
+  type NativeFactStore,
+} from "@bibliothecadao/eternum/game-client";
 
 import { standTheArmyAtTheEdge } from "./explore-scenario";
 import { wire, type LabCommand, type LabFact, type LabScenario } from "./lab-chain";
@@ -48,7 +59,7 @@ export const actionsScenario = (): LabScenario => {
 };
 
 /** A command's span after its variant, as felts: fields and spans in ABI order. */
-const spanOf = (command: LabCommand): bigint[] => command.calldata.slice(5).map((felt) => BigInt(felt));
+const spanOf = (command: LabCommand): bigint[] => command.span.slice(1).map((felt) => BigInt(felt));
 
 /** Where `directions` lead from `from`, one neighbour per step. */
 const walk = (from: Hex, directions: number[]): Hex =>
@@ -87,7 +98,16 @@ const exploreTile: Answer = (command, chain, now) => {
   return [
     revealedTile(`0x1ae${to.col}${to.row}`, to, BiomeType.Grassland),
     ...occupancyMoved(chain, explorerId, to),
-    armySpent(chain, explorerId, staminaRules(chain).stamina_explore_stamina_cost, now),
+    armySpent(
+      chain,
+      explorerId,
+      exploreStaminaCost(
+        chain.require("SliceRules", { game_id: 1 }),
+        chain.require("ExplorerTroops", { game_id: 1, explorer_id: explorerId }).troops.category,
+        armyOaths(chain, { game_id: 1, explorer_id: explorerId }),
+      ),
+      now,
+    ),
   ];
 };
 
@@ -121,12 +141,11 @@ const placeBuilding: Answer = (command) => {
  */
 const deployArmy: Answer = (command, chain, now) => {
   const structureId = BigInt(command.fields.structure_id);
-  const category = Object.keys(TroopType)[Number(command.fields.category)] as TroopType;
-  const tier = Object.keys(TroopTier)[Number(command.fields.tier)] as TroopTier;
+  const category = TROOP_TYPES[Number(command.fields.category)];
+  const tier = TROOP_TIERS[Number(command.fields.tier)];
+  if (!category || !tier) throw new Error("Invalid deployment troop type or tier");
   const amount = BigInt(command.fields.amount);
   const [, first] = [...chain.entries("ExplorerTroops")].find(([, row]) => row.owner === structureId)!;
-  if (first.troops.category !== category || first.troops.tier !== tier)
-    throw new Error(`The lab deploys ${first.troops.category} ${first.troops.tier} only, not ${category} ${tier}`);
   const [, firstAt] = [...chain.entries("TileOccupancy")].find(([, row]) => row.entity_id === first.explorer_id)!;
   const explorerId =
     1n +
@@ -136,12 +155,66 @@ const deployArmy: Answer = (command, chain, now) => {
     );
   const site = expeditionRealmSite(readExpeditionRules(chain, 1)!, entityHomeNamespace(structureId), now)!;
   const to = walk(site, [Number(command.fields.direction)]);
+  const occupier = Object.values(TileOccupier).find((value) => {
+    const troop = typeof value === "number" ? getExplorerInfoFromTileOccupier(value) : undefined;
+    return troop?.troopType === category && troop?.troopTier === tier;
+  });
+  if (typeof occupier !== "number") throw new Error(`Missing occupancy for ${category} ${tier}`);
   const troops = getTroopResourceId(category, tier);
   const whole = Number(amount / BigInt(RESOURCE_PRECISION));
   const raise = readTroopRaiseCost(chain, 1, Number(structureId), troops, whole, now);
   if (!raise) throw new Error(`The lab's realm ${structureId} holds an unknown balance its raise needs`);
-  const stamina = staminaRules(chain)[`stamina_${category.toLowerCase()}_max` as "stamina_knight_max"];
+  const realm = chain.require("Structure", { game_id: 1, entity_id: structureId });
+  const slot = openArmySlots(chain, {
+    game_id: 1,
+    entity_id: structureId,
+    allowedSlots: realm.base.troop_max_explorer_count,
+  })?.find((slot) => slot.slot === Number(command.fields.slot));
+  if (!slot) throw new Error("The lab deployment requires an open army slot");
+  const progress = deploymentProgress(chain, structureId, explorerId, category);
+  const rules = chain.require("SliceRules", { game_id: 1 });
+  const maximum = musterStamina(
+    { ...slot, inherited: null },
+    { category, tier },
+    now,
+    rules.troop_stamina_config,
+    progress.logistics,
+    safeInteger(rules.tick_config.armies_tick_in_seconds),
+  ).max;
+  const stamina = slot.inherited
+    ? { ...slot.inherited, amount: BigInt(Math.min(Number(slot.inherited.amount), maximum)) }
+    : { amount: BigInt(maximum), settled_at: BigInt(now), remainder: 0 };
+  const day = seasonDay(readExpeditionRules(chain, 1)!, now)!;
   return [
+    { model: "ArmyProgress", key: `0xaf${explorerId}`, value: wire(progress) },
+    {
+      model: "ArmyCombat",
+      key: `0xac${explorerId}`,
+      value: wire({
+        game_id: 1,
+        explorer_id: explorerId,
+        last_target: 0,
+      }),
+    },
+    {
+      model: "ArmySlot",
+      key:
+        chain.wireKeyOf("ArmySlot", { game_id: 1, structure_id: structureId, epoch: BigInt(day), slot: slot.slot }) ??
+        `0xae${explorerId}`,
+      value: wire({
+        game_id: 1,
+        structure_id: structureId,
+        epoch: day,
+        slot: slot.slot,
+        explorer_id: explorerId,
+        stamina,
+      }),
+    },
+    {
+      model: "ArmyDay",
+      key: `0xad${explorerId}`,
+      value: wire({ game_id: 1, explorer_id: explorerId, day }),
+    },
     {
       model: "ExplorerTroops",
       key: `0x1b0${explorerId}`,
@@ -150,12 +223,35 @@ const deployArmy: Answer = (command, chain, now) => {
         explorer_id: explorerId,
         troops: {
           ...first.troops,
+          category,
+          tier,
           count: amount,
-          stamina: { Inline: { amount: stamina, settled_at: now, remainder: 0 } },
+          stamina: { Slot: slot.slot },
         },
       }),
     },
-    { model: "TileOccupancy", key: `0x1b1${explorerId}`, value: wire({ ...firstAt, ...to, entity_id: explorerId }) },
+    {
+      model: "TileOccupancy",
+      key: `0x1b1${explorerId}`,
+      value: wire({ ...firstAt, ...to, entity_id: explorerId, category: occupier }),
+    },
     ...balancesPaid(chain, structureId, [{ resource: troops, amount }, ...raise]),
   ];
+};
+
+const deploymentProgress = (
+  chain: NativeFactStore,
+  home: bigint,
+  explorerId: bigint,
+  category: (typeof TROOP_TYPES)[number],
+) => {
+  const { learned } = chain.require("RealmKnowledge", { game_id: 1, structure_id: home });
+  return {
+    game_id: 1,
+    explorer_id: explorerId,
+    logistics: researchTier(learned, research.ROW_SUPPLY_YARD),
+    oath_slots: troopOathSlots(learned, category),
+    oaths: 0,
+    oath_pick: 0,
+  };
 };

@@ -20,6 +20,7 @@ pub struct Explore {
 pub struct Battle {
     pub attacker_id: u64,
     pub defender_id: u64,
+    pub relic_slot: Option<u8>,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
@@ -94,12 +95,13 @@ pub fn action_context(context: ExecutionContext) -> ActionContext {
 
 /// Reads the game where a play or an operator call starts; library calls receive it instead of reading it again.
 pub fn load_context(game_id: u32, raw_root: u256, timestamp: u64) -> ExecutionContext {
+    let game = crate::logic::game::game(game_id);
     ExecutionContext {
         raw_root,
         timestamp,
         game_id,
-        game: BoxTrait::new(crate::logic::game::game(game_id)),
-        rules: BoxTrait::new(crate::logic::game::rules(game_id)),
+        game: BoxTrait::new(game),
+        rules: BoxTrait::new(crate::logic::game::rules_of(game_id, game)),
     }
 }
 
@@ -116,7 +118,6 @@ pub fn execution_context(game_id: u32, context: ActionContext) -> ExecutionConte
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct ResourceContext {
-    pub production_start: u32,
     pub troop_capacity: u32,
     pub spire_fee: u128,
     pub delivery_tick: u64,
@@ -124,11 +125,6 @@ pub struct ResourceContext {
 
 pub fn resource_context(context: ExecutionContext) -> ResourceContext {
     ResourceContext {
-        production_start: if crate::rules::rule_enabled(context.rules.unbox(), crate::rules::PRODUCTION_START) {
-            context.game.unbox().start_main_at.try_into().unwrap()
-        } else {
-            0
-        },
         troop_capacity: context.rules.unbox().capacity_config.troop_capacity,
         spire_fee: context.rules.unbox().spire_travel_essence_cost,
         delivery_tick: context.rules.unbox().tick_config.delivery_tick_in_seconds,
@@ -138,15 +134,15 @@ pub fn resource_context(context: ExecutionContext) -> ResourceContext {
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct BiomeContext {
     pub climate: crate::rules::BiomeClimateConfig,
-    pub day_unit_seconds: u32,
     pub start_main_at: u64,
+    pub day_unit_seconds: u32,
 }
 
 pub fn biome_context(context: ExecutionContext) -> BiomeContext {
     BiomeContext {
         climate: context.rules.unbox().biome_climate_config,
-        day_unit_seconds: context.rules.unbox().day_unit_seconds,
         start_main_at: context.game.unbox().start_main_at,
+        day_unit_seconds: context.rules.unbox().day_unit_seconds,
     }
 }
 
@@ -160,7 +156,7 @@ pub fn route_command(
     }
     let index: u32 = (*arguments.pop_front().ok_or('INVALID_COMMAND')?).try_into().ok_or('INVALID_COMMAND')?;
     let routes = crate::command_routes::COMMAND_ROUTES.span();
-    let route = **routes.get(index).ok_or('INVALID_COMMAND')?;
+    let route = (**routes.get(index).ok_or('INVALID_COMMAND')?).ok_or('INVALID_COMMAND')?;
     if let Some(offset) = route.items_offset {
         let items: u32 = (**arguments.get(offset).ok_or('INVALID_COMMAND')?).try_into().ok_or('INVALID_COMMAND')?;
         if items > MAX_COMMAND_ITEMS {
@@ -229,13 +225,6 @@ pub trait IResourceCommands<T> {
         context: crate::commands::ActionContext,
     );
     fn transfer_explorer_resources(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        command: crate::resources::ResourceTransfer,
-        context: crate::commands::ActionContext,
-    );
-    fn transfer_structure_resources_to_explorer(
         ref self: T,
         game_id: u32,
         actor: ContractAddress,
@@ -323,8 +312,34 @@ pub fn validated_command(
     Ok(route)
 }
 
+#[cfg(feature: "blitz")]
+fn assert_family_admits(game_id: u32, index: u32, route: crate::command_routes::CommandRoute) {
+    assert!(
+        !crate::rules::command_enabled(crate::balance::rules::PENDING_COMMANDS, index.into()), "Blitz logic pending",
+    );
+    assert!(
+        route.selector == selector!("seat_blitz_roster") || !crate::logic::blitz::roster::seating(game_id),
+        "roster not seated",
+    );
+}
+
+#[cfg(not(feature: "blitz"))]
+fn assert_family_admits(_game_id: u32, _index: u32, _route: crate::command_routes::CommandRoute) {}
+
+pub fn admit(game_id: u32, actor: ContractAddress, command: Span<felt252>) {
+    let (index, route, _) = validated_command(command).expect('INVALID_COMMAND');
+    assert!(
+        crate::rules::command_enabled(crate::balance::rules::SWITCHES.command_mask, index.into()), "command disabled",
+    );
+    assert!(crate::logic::game::game_exists(game_id), "game does not exist");
+    assert_family_admits(game_id, index, route);
+    if route.selector == selector!("settle_season") {
+        crate::entity_ids::assign_open_home(game_id, actor);
+    }
+}
+
 #[starknet::interface]
 pub trait ICommandIngress<T> {
-    fn validate_command(self: @T, command: Span<felt252>) -> u32;
-    fn assign_open_home(ref self: T, game_id: u32, actor: ContractAddress);
+    fn admit(ref self: T, game_id: u32, actor: ContractAddress, command: Span<felt252>);
+    fn requires_oath_answer(self: @T, game_id: u32, command: Span<felt252>) -> bool;
 }

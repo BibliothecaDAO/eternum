@@ -16,14 +16,13 @@ import { WhatsNewPage } from "./shell/news/news";
 import { ChatPage } from "./shell/chat/chat-page";
 import { IS_DEV_ENVIRONMENT } from "./shell/frame/environment";
 import { NotFoundPage } from "./shell/not-found";
-import { BlitzLobbyPage } from "./shell/blitz/blitz-pages";
 import { BuildOrdersPage } from "./shell/build-orders/build-orders-page";
-import { JoinDevconPage } from "./shell/join/join-devcon-page";
 import { PlayPage } from "./shell/play/play-page";
 import { PlayerPage, ProfilePage, SettingsPage } from "./shell/profile/profile-pages";
 import { ResultsPage } from "./shell/season-tab/results-page";
 import { SeasonPage } from "./shell/season-tab/season-page";
 import { SharedLinkPage } from "./shell/share/shared-link-page";
+import { FragmentsPage } from "./shell/shop/fragments-page";
 import { FirstFrame } from "./shell/first-frame";
 import { ConnectFlow } from "./shell/sign-in/connect-flow";
 import { LAB_GAME_ROUTE } from "./lab/game/lab-shard";
@@ -65,15 +64,12 @@ export const appRoutes = (
         <Route key={path} path={path.slice(1)} element={<Navigate to="/" replace />} />
       ))}
       <Route path="blitz/build-orders" element={<BuildOrdersPage />} />
-      <Route path="blitz/:id" element={<BlitzLobbyPage />} />
-      <Route path="join/devcon" element={<JoinDevconPage />} />
-      <Route path="join/devcon/:code" element={<JoinDevconPage />} />
-      <Route path="join/devcon/r/:referral" element={<JoinDevconPage />} />
       <Route path={`${SHARE_PATH.slice(1)}/:code`} element={<SharedLinkPage />} />
       <Route path="season" element={<SeasonPage />} />
       <Route path="results/:id" element={<ResultsPage />} />
       <Route path="profile" element={<ProfilePage />} />
       <Route path="profile/settings" element={<SettingsPage />} />
+      <Route path="shop/fragments" element={<FragmentsPage />} />
       <Route path="p/:address" element={<PlayerPage />} />
       <Route path="scroll" element={<WhatsNewPage />} />
       <Route path="chat" element={<ChatPage />} />

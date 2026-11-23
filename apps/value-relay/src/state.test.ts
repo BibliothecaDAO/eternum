@@ -30,7 +30,7 @@ it("persists confirmed obligations, cursor and halt across actual Worker restart
         if (path === '/observe-chests') await this.chests.observe(await request.json());
         if (path === '/complete-chest') await this.chests.complete('7');
         if (path === '/complete') await this.store.completeWithdrawal('0xabc');
-        return Response.json({ progress: await this.store.progress(), withdrawals: await this.store.withdrawals(), results: await this.store.results(), held: await this.store.held(), chestCursor: await this.chests.cursor(), chests: await this.chests.pending() });
+        return Response.json({ progress: await this.store.progress(), withdrawals: await this.store.withdrawals(), held: await this.store.held(), chestCursor: await this.chests.cursor(), chests: await this.chests.pending() });
       }
     }
     export default { fetch: (request, env) => env.TEST.get(env.TEST.idFromName('chain')).fetch(request) };
@@ -75,7 +75,6 @@ it("persists confirmed obligations, cursor and halt across actual Worker restart
     parentHash: "0x0",
     status: "ACCEPTED_ON_L2",
     withdrawals: [withdrawal],
-    results: [],
     held: [
       {
         kind: "receipt",
@@ -103,7 +102,6 @@ it("persists confirmed obligations, cursor and halt across actual Worker restart
     expect(await (await worker.dispatchFetch("https://state.test/read")).json()).toEqual({
       progress: { nextBlock: 1, lastHash: "0xa", halted: null, page: null },
       withdrawals: [withdrawal],
-      results: [],
       held: block.held,
       chestCursor: { fromBlock: 111, page: null },
       chests: [chest],

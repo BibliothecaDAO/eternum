@@ -1,4 +1,3 @@
-import { TileOccupier } from "@bibliothecadao/types";
 import {
   expeditionRealmSite,
   entityHomeNamespace,
@@ -7,11 +6,10 @@ import {
   seasonDay,
   type ExpeditionRules,
 } from "../utils/expeditions";
-import { isTileOccupierUsableSite } from "../utils/map/hex";
 import { hasSingleTilePosition } from "../client/native-occupancy";
-import { gameSyncRegion, syncScalar, type GameSyncScope } from "./model-manifest";
+import { gameSyncRegion, syncScalar, type GameSyncScope, type SCOPE_INPUT_MODELS } from "./model-manifest";
 
-type ScopeInputModel = "PlayerEntry" | "Structure" | "ExplorerTroops" | "TileOccupancy" | "ExpeditionSite";
+type ScopeInputModel = (typeof SCOPE_INPUT_MODELS)[number];
 export type ScopeRowReader = (
   model: ScopeInputModel,
   spacing: number,
@@ -28,7 +26,11 @@ export function deriveGameSyncScope(
 ): GameSyncScope {
   const position = (entity: unknown) => {
     if (!expedition) throw new Error("Position requires expedition rules");
-    const positions = read("TileOccupancy", expedition.spacing, [scopeLookup.occupancyOf(entity)]);
+    const guards = read("DeepGuard", expedition.spacing, [scopeLookup.guard(entity)]);
+    if (guards.length > 1) throw new Error("Multiple Deep memberships for army");
+    const positions = read("TileOccupancy", expedition.spacing, [
+      scopeLookup.occupancyOf(guards[0]?.value.site_id ?? entity),
+    ]);
     if (positions.length !== 1) throw new Error(`Expected one position for scope entity ${syncScalar(entity)}`);
     const row = positions[0].value;
     return { x: Number(row.col), y: Number(row.row), alt: row.alt === true };
@@ -54,14 +56,14 @@ export function deriveGameSyncScope(
     homes.map(({ value }) => syncScalar((value.metadata as Record<string, unknown>).realm_id)),
   );
   const regions = new Set<string>();
+  for (const { value } of read("DeepSite", spacing, [scopeLookup.deepSites])) {
+    regions.add(gameSyncRegion(position(value.entity_id), spacing)!);
+  }
   const armies = read("ExplorerTroops", spacing, [...realms].map(scopeLookup.armiesOf)).filter(({ value }) => {
     if (BigInt((value.troops as Record<string, unknown>).count as string) <= 0n) return false;
-    const coord = position(value.explorer_id);
-    return isCurrentExpeditionArmy(
-      expedition,
-      { x: Number(coord.x), y: Number(coord.y), alt: coord.alt === true },
-      timestamp,
-    );
+    const days = read("ArmyDay", spacing, [scopeLookup.armyDay(value.explorer_id)]);
+    if (days.length !== 1) throw new Error(`Missing army day for scope entity ${syncScalar(value.explorer_id)}`);
+    return isCurrentExpeditionArmy(expedition, days[0].value.day as string, timestamp);
   });
   // The home's surface region today, where the contract raises the realm and Deploy steps out, whatever layer its
   // armies stand in: a realm whose every army went into an Ethereal layer still sees its home and deploys from it.
@@ -76,14 +78,23 @@ export function deriveGameSyncScope(
     if (region !== undefined) regions.add(region);
   }
   const entities = new Set([...realms, ...armies.map(({ value }) => syncScalar(value.explorer_id))]);
+  const memberships = read("HomeAspect", spacing, [...realms].map(scopeLookup.homeAspect));
+  for (const { value } of read(
+    "HomeAspect",
+    spacing,
+    memberships.map(({ value }) => scopeLookup.aspectHomes(value.aspect)),
+  )) {
+    entities.add(syncScalar(value.home));
+  }
   for (const { value } of read("TileOccupancy", spacing, [...regions].map(scopeLookup.occupancyIn))) {
-    if (
-      Number(value.category) === TileOccupier.Chest ||
-      isTileOccupierUsableSite(Number(value.category)) ||
-      (value.is_structure === true &&
-        hasSingleTilePosition({ entity_id: syncScalar(value.entity_id), category: syncScalar(value.category) }))
-    )
+    if (hasSingleTilePosition({ entity_id: syncScalar(value.entity_id), category: syncScalar(value.category) }))
       entities.add(syncScalar(value.entity_id));
+  }
+  for (const { value } of read("DeepGuard", spacing, [...entities].map(scopeLookup.guardsAt))) {
+    entities.add(syncScalar(value.explorer_id));
+  }
+  for (const { value } of read("ExplorerTroops", spacing, [...entities].map(scopeLookup.army))) {
+    entities.add(syncScalar(value.owner));
   }
   for (const { value } of read("ExpeditionSite", spacing, [...regions].map(scopeLookup.sitesIn))) {
     entities.add(syncScalar(value.entity_id));
@@ -110,6 +121,11 @@ function resolveOwners(account: string | undefined, spacing: number, read: Scope
 
 /** The lookups subscriptionScope makes, spelled once: rows are indexed under them and a scope is taken through them. */
 export const scopeLookup = {
+  deepSites: "DeepSite.all",
+  homeAspect: (home: unknown) => `HomeAspect.home:${syncScalar(home)}`,
+  aspectHomes: (aspect: unknown) => `HomeAspect.aspect:${syncScalar(aspect)}`,
+  guard: (entity: unknown) => `DeepGuard.entity:${syncScalar(entity)}`,
+  guardsAt: (entity: unknown) => `DeepGuard.site:${syncScalar(entity)}`,
   entryOf: (player: unknown) => `PlayerEntry.player:${syncScalar(player)}`,
   structuresOf: (owner: unknown) => `Structure.owner:${syncScalar(owner)}`,
   structure: (entity: unknown) => `Structure.entity:${syncScalar(entity)}`,
@@ -117,11 +133,16 @@ export const scopeLookup = {
   occupancyIn: (region: string) => `TileOccupancy.region:${region}`,
   occupancyOf: (entity: unknown) => `TileOccupancy.entity:${syncScalar(entity)}`,
   armiesOf: (home: unknown) => `ExplorerTroops.owner:${syncScalar(home)}`,
+  armyDay: (entity: unknown) => `ArmyDay.entity:${syncScalar(entity)}`,
   army: (entity: unknown) => `ExplorerTroops.entity:${syncScalar(entity)}`,
 };
 
 /** The lookups that can find this row; a region key needs the expedition spacing, and without one there is none. */
 export function scopeInputKeys(model: string, row: Record<string, unknown>, spacing: number | undefined): string[] {
+  if (model === "DeepSite") return [scopeLookup.deepSites];
+  if (model === "HomeAspect") return [scopeLookup.homeAspect(row.home), scopeLookup.aspectHomes(row.aspect)];
+  if (model === "DeepGuard") return [scopeLookup.guard(row.explorer_id), scopeLookup.guardsAt(row.site_id)];
+  if (model === "ArmyDay") return [scopeLookup.armyDay(row.explorer_id)];
   if (model === "PlayerEntry") return [scopeLookup.entryOf(row.player)];
   if (model === "ExplorerTroops") return [scopeLookup.armiesOf(row.owner), scopeLookup.army(row.explorer_id)];
   if (model === "Structure") return [scopeLookup.structuresOf(row.owner), scopeLookup.structure(row.entity_id)];

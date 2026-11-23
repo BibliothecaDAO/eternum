@@ -58,6 +58,7 @@ const labelled = (workers: EventEmitter[]) =>
     }) as unknown as Worker,
   }));
 import { holdsForSite } from "./frontier";
+import { releaseLine } from "../../../packages/core/src/test-support/releases";
 
 const TEST_ENDPOINTS = { RPC_URL: "http://127.0.0.1:28310/rpc/v0_10_2", HERALD_URL: "http://127.0.0.1:28311" };
 const savedEndpoints = { RPC_URL: process.env.RPC_URL, HERALD_URL: process.env.HERALD_URL };
@@ -86,7 +87,7 @@ describe("Madara harness workload", () => {
             accountClassHash: "0x2",
             guardianPublicKey: "0x3",
             l2GasBound: "0x1234",
-            releaseSchemas: { "1": bindings.schemaIdentity },
+            releases: releaseLine(bindings.schemaIdentity, [1]),
             rpcUrl: new URL("/rpc", request.url).href,
           });
         const call = (await request.json()) as { id: number };
@@ -201,7 +202,6 @@ describe("Madara harness workload", () => {
       ({
         structureHexes: new Map(),
         armyHexes: new Map(),
-        chestHexes: new Map(),
         exploredHexes: new Map([1, 2, 3, 11].map((x) => [x, new Map([[0, {}]])])),
       }) as ReturnType<HarnessGame["armyPathIndexes"]>;
     const setupTransactions: TrackedTransaction[] = [];
@@ -218,33 +218,15 @@ describe("Madara harness workload", () => {
     expect(bots[0].explorers.map(({ explorerId }) => explorerId)).toEqual(resumed ? [11, 21] : [11]);
   });
 
-  it("plays the directory's game unless told to create it as a measurement shard's launcher", () => {
-    expect(parseHarnessArgs(["--game-type", "frontier"]).createGame).toBe(false);
-    expect(parseHarnessArgs(["--game-type", "frontier", "--create-game", "--bots", "4"])).toMatchObject({
-      createGame: true,
-      bots: 4,
-    });
-  });
-
-  it("selects Eternum and rejects deferred ledger options", () => {
+  it("rejects retired options and modes", () => {
     expect(() => parseHarnessArgs(["--game-type", "frontier", "--interval-seconds", "30"])).toThrow(
       "--interval-seconds paces a cadence",
     );
     expect(parseHarnessArgs([]).gameType).toBe("frontier");
-    expect(parseHarnessArgs(["--game-type", "eternum"]).gameType).toBe("eternum");
-    expect(parseHarnessArgs(["--game-type", "eternum"])).toMatchObject({ presetId: 3, functional: false });
-    expect(parseHarnessArgs(["--game-type", "eternum", "--preset", "3", "--workload", "burst"])).toMatchObject({
-      presetId: 3,
-      workload: "burst",
-    });
-    expect(() => parseHarnessArgs(["--preset", "9"])).toThrow("Unsupported native preset 9");
-    expect(parseHarnessArgs(["--game-type", "frontier", "--bots", "1"])).toMatchObject({
-      presetId: 5,
-      functional: false,
-    });
-    // The design run plays the accelerated fixture preset; it never edits Frontier's own preset.
+    expect(() => parseHarnessArgs(["--game-type", "eternum"])).toThrow("--game-type must be frontier");
+    expect(() => parseHarnessArgs(["--preset", "7"])).toThrow("Unsupported harness option --preset");
+    expect(parseHarnessArgs(["--game-type", "frontier", "--bots", "1"])).toMatchObject({ functional: false });
     expect(parseHarnessArgs(["--game-type", "frontier", "--bots", "2", "--functional"])).toMatchObject({
-      presetId: 101,
       functional: true,
     });
     expect(() => parseHarnessArgs(["--game-type", "frontier", "--bots", "1", "--functional"])).toThrow(
@@ -253,7 +235,7 @@ describe("Madara harness workload", () => {
     expect(() => parseHarnessArgs(["--game-type", "frontier", "--workload", "burst"])).toThrow(
       "Frontier requires the frontier workload",
     );
-    expect(() => parseHarnessArgs(["--game-type", "unknown"])).toThrow("--game-type must be eternum or frontier");
+    expect(() => parseHarnessArgs(["--game-type", "unknown"])).toThrow("--game-type must be frontier");
     expect(() => parseHarnessArgs(["--game-type", "eternum", "--ledger"])).toThrow(
       "Unsupported harness option --ledger",
     );
@@ -985,7 +967,7 @@ describe("Madara harness CLI and concurrency", () => {
     });
     expect(parseHarnessArgs(["--game-type", "frontier"]).workers).toBe(1);
     expect(() => parseHarnessArgs(["--game-type", "eternum", "--workers", "2"])).toThrow(
-      "--workers splits a Frontier season",
+      "--game-type must be frontier",
     );
     expect(() => parseHarnessArgs(["--game-type", "frontier", "--functional", "--workers", "2"])).toThrow(
       "design run plays both profiles in one process",
@@ -1026,7 +1008,6 @@ describe("Madara harness CLI and concurrency", () => {
         "--burst-window-seconds",
         "15",
       ],
-      ["--game-type", "eternum", "--bots", "8", "--interval-seconds", "5"],
     ]) {
       const options = parseHarnessArgs(run);
       const worker = parseHarnessArgs(workerArguments(options, 4, "/tmp/game.json"));
@@ -1043,19 +1024,8 @@ describe("Madara harness CLI and concurrency", () => {
 
   it("parses an explicit smoke-run configuration", () => {
     expect(
-      parseHarnessArgs([
-        "--game-type",
-        "eternum",
-        "--bots",
-        "4",
-        "--minutes",
-        "0.5",
-        "--interval-seconds",
-        "5",
-        "--game-id",
-        "9",
-      ]),
-    ).toMatchObject({ bots: 4, minutes: 0.5, intervalSeconds: 5, gameId: 9, gameName: "game-9" });
+      parseHarnessArgs(["--game-type", "frontier", "--bots", "4", "--minutes", "0.5", "--game-id", "9"]),
+    ).toMatchObject({ bots: 4, minutes: 0.5, intervalSeconds: 15, gameId: 9 });
   });
 
   it("runs Frontier bursts inside the campaign's windows unless a run names another", () => {
@@ -1068,7 +1038,7 @@ describe("Madara harness CLI and concurrency", () => {
     ).toEqual({ shape: "booth", windowSeconds: 120 });
     expect(parseHarnessArgs(["--game-type", "frontier"]).frontierBurst).toBeUndefined();
     expect(() => parseHarnessArgs(["--game-type", "eternum", "--frontier-burst", "booth"])).toThrow(
-      "--frontier-burst requires --game-type frontier",
+      "--game-type must be frontier",
     );
     expect(parseHarnessArgs(["--game-type", "frontier", "--frontier-burst", "rollover"]).frontierBurst).toEqual({
       shape: "rollover",
@@ -1190,13 +1160,12 @@ function fakeWorld(extraExplorer?: [number, ExplorerRow]): FakeWorld {
     explorer: (explorerId) => explorers.get(explorerId),
     explorerStamina: (explorerId) => Number(explorers.get(explorerId)!.staminaAmount),
     explorerMaxStamina: () => 120,
-    minimumStaminaFor: (kind) => (kind === "explore" ? 30 : 10),
+    minimumStaminaFor: (_, kind) => (kind === "explore" ? 30 : 10),
     production: (structureId) => production.get(structureId),
     armyPathIndexes: () => ({
       structureHexes: new Map(),
       armyHexes: new Map(),
       exploredHexes: new Map(),
-      chestHexes: new Map(),
     }),
     factHeadBlock: () => 1,
     tileView: (coord) => ({ explored: explored.has(key(coord)), occupierId: 0 }),

@@ -19,9 +19,6 @@ import { spendSignInCode } from "./wallet-changes";
  * finishes it from the recorded deletion (`finishAccountDeletions`). Until then the account has no session, so it opens
  * no new socket.
  *
- * The `user` row stays as an anonymous tombstone holding only its id, Realms id and creation time, because rows that
- * must stay reference its Realms id (and `campaign_tickets` would cascade away with it).
- *
  * | Store                                                              | Decision                                       |
  * | ------------------------------------------------------------------ | ---------------------------------------------- |
  * | `user`                                                             | anonymised: email, name, portrait, suggested   |
@@ -31,8 +28,9 @@ import { spendSignInCode } from "./wallet-changes";
  * | `notification_preferences`, `notification_push_subscriptions`      | deleted                                        |
  * | `realms_accounts`, `device_sessions`, `revoked_devices`,           | deleted: no device can be approved again       |
  * | `account_browsers`                                                 |                                                |
- * | `build_order_books`, `news_email_sends`                            | deleted                                        |
- * | `campaign_referrers`, `campaign_referrals` (as friend or referrer) | deleted; an inviter keeps what it earned       |
+ * | `build_order_books`, `opening_progress`, `seal`, `news_email_sends` | deleted                                        |
+ * | `fragment_credits`                                                 | deleted                                        |
+ * | `store_receipts` (the payment ledger)                              | kept, its owner cleared: a receipt stays spent |
  * | `default_wallets`, `wallet_recoveries`, `sponsored_executions`     | deleted: the wallet stays on chain, owned by   |
  * |                                                                    | the player's passkey; email recovery ends      |
  * | `wallet_change_notices`                                            | deleted                                        |
@@ -40,8 +38,6 @@ import { spendSignInCode } from "./wallet-changes";
  * | chat sockets (the inbox's and each room's)                         | closed                                         |
  * | `account_deletions`                                                | written: the Realms id, when, and when chat    |
  * |                                                                    | was closed                                     |
- * | `campaign_tickets`                                                 | kept: a spent flyer code stays spent, and the  |
- * |                                                                    | home it gave its source to is on chain         |
  * | `wallet_link_history`                                              | kept, its open link closed now: it says which  |
  * |                                                                    | account a wallet paid for in a past game       |
  * | `pay_decisions`                                                    | kept: the ledger's record of signed payouts    |
@@ -119,10 +115,12 @@ const DELETED_BY_REALMS_ID = [
   ["revoked_devices", "realmsId"],
   ["account_browsers", "realmsId"],
   ["build_order_books", "owner"],
+  ["opening_progress", "owner"],
+  ["order_intents", "owner"],
+  ["seal_grants", "owner"],
+  ["fragment_credits", "owner"],
   ["news_email_sends", "realmsId"],
-  ["campaign_referrers", "referrer"],
-  ["campaign_referrals", "friend"],
-  ["campaign_referrals", "referrer"],
+  ["share_payouts", "sharer"],
   ["default_wallets", "realms_id"],
   ["wallet_recoveries", "realms_id"],
   ["sponsored_executions", "realms_id"],
@@ -132,10 +130,13 @@ const DELETED_BY_REALMS_ID = [
  * One transaction: the account's rows removed, its wallet link closed, its `user` row left anonymous, and the deletion
  * recorded with its chat still to close.
  */
-const accountDeletion = (db: D1Database, user: User, realmsId: string, now: number): D1PreparedStatement[] => [
+export const accountDeletion = (db: D1Database, user: User, realmsId: string, now: number): D1PreparedStatement[] => [
   ...DELETED_BY_REALMS_ID.map(([table, column]) =>
     db.prepare(`DELETE FROM "${table}" WHERE "${column}" = ?`).bind(realmsId),
   ),
+  db.prepare(`UPDATE "store_receipts" SET "owner" = NULL WHERE "owner" = ?`).bind(realmsId),
+  db.prepare(`DELETE FROM "fragment_quotes" WHERE "owner" = ? AND "transaction_hash" IS NULL`).bind(realmsId),
+  db.prepare(`UPDATE "fragment_quotes" SET "owner" = NULL WHERE "owner" = ?`).bind(realmsId),
   db.prepare(`DELETE FROM "session" WHERE "userId" = ?`).bind(user.id),
   db.prepare(`DELETE FROM "account" WHERE "userId" = ?`).bind(user.id),
   db.prepare(`DELETE FROM "verification" WHERE "identifier" = ?`).bind(`sign-in-otp-${user.email.toLowerCase()}`),
@@ -155,7 +156,7 @@ const anonymiseUser = (db: D1Database, userId: string, now: number) =>
   db
     .prepare(
       `UPDATE "user" SET "email" = 'deleted:' || "id", "emailVerified" = 0, "name" = "id", "image" = NULL,
-       "suggestedName" = NULL, "address" = NULL, "walletLinkedAt" = NULL, "lastSeenAt" = NULL,
+       "suggestedName" = NULL, "address" = NULL, "walletLinkedAt" = NULL,
        "newsEmailOptOutAt" = ?1, "updatedAt" = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE "id" = ?2`,
     )
     .bind(now, userId);

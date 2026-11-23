@@ -11,7 +11,13 @@ import { DayDoneCard } from "./day-done-card";
 import { DayEndScreen } from "./day-end-screen";
 
 describe("the day's end", () => {
-  const rules = { dayUnitSeconds: 4 * 3_600, seed: 1n, startMainAt: 0, endAt: 21 * 20 * 14_400 };
+  const rules = {
+    dayUnitSeconds: 4 * 3_600,
+    seed: 1n,
+    startMainAt: 0,
+    scheduledEndAt: 21 * 20 * 14_400,
+    endAt: 21 * 20 * 14_400,
+  };
 
   it("finds the day that ended last and its bounds, and none on the season's first day or once the season is over", () => {
     const first = dayOf(rules, 0)!;
@@ -40,17 +46,16 @@ describe("the day's end", () => {
             tomorrowSeconds: 20 * 3_600,
             tone: "calm",
           }}
-          totals={{ reveals: 31, cleared: 3, chests: 1, essence: 6_400, labor: 1_150, lords: undefined }}
+          totals={{ reveals: 31, cleared: 3, essence: 6_400, labor: undefined }}
           history="whole"
           onRetry={vi.fn()}
           armies={3}
           troopsLost={6_021}
-          returned={{ sent: 470, fitted: 200 }}
           onContinue={onContinue}
         />,
       ),
     );
-    const card = host.querySelector("section[aria-label='Day 12 done']")!;
+    const card = host.querySelector("section[aria-label='Day 12 complete']")!;
     expect(card.textContent).toContain("Realm kept · Day 13 is open");
     expect(card.textContent).toContain("7h 55m");
     expect(card.textContent).toContain("Tomorrow lasts20h");
@@ -60,7 +65,6 @@ describe("the day's end", () => {
     // The troops the armies took stand under the troops' mark, with no empty portrait beside them.
     expect(card.querySelector('[aria-label="troops"] [data-icon="troops"]')).not.toBeNull();
     expect(card.querySelector(".rounded-full.border")).toBeNull();
-    expect(card.textContent).toContain("+200470");
     act(() => host.querySelector<HTMLButtonElement>("button")!.click());
     expect(onContinue).toHaveBeenCalled();
     act(() => root.unmount());
@@ -77,12 +81,11 @@ describe("the day's end", () => {
           <DayDoneCard
             endedDay={12}
             clock={{ day: 13, endsAt: undefined, secondsLeft: 3_600, tomorrowSeconds: 20 * 3_600, tone: "calm" }}
-            totals={{ reveals: 0, cleared: 0, chests: 0, essence: 0, labor: 0, lords: 0 }}
+            totals={{ reveals: 0, cleared: 0, essence: 0, labor: 0 }}
             history="whole"
             onRetry={vi.fn()}
             armies={armies}
             troopsLost={6_021}
-            returned={undefined}
             onContinue={vi.fn()}
           />,
         ),
@@ -115,6 +118,7 @@ describe("the day's end", () => {
     expect(host.textContent).toBe("Skip");
     show("summary");
     expect(host.textContent).toBe("the summary");
+    expect(host.querySelector<HTMLElement>("[data-day-end-scrim]")!.style.opacity).toBe("0.6");
     expect(black()).toBe("0");
     show("nightfall");
     expect(host.textContent).toBe("");

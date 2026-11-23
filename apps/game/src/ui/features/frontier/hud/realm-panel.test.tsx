@@ -1,5 +1,3 @@
-import { homeIcon } from "@/ui/design-system/home-icons";
-import { REALM_SKIN_MODELS, REALM_SKINS } from "@/three/structures/realm-skins";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
@@ -52,19 +50,8 @@ const named = () => [...host.querySelectorAll("[aria-label]")].map((element) => 
 
 it("reads the player's realm as Blitz's card reads a holding: name, rank, a ring per store and its LORDS", () => {
   const onWithdraw = vi.fn();
-  const onRealms = vi.fn();
   act(() =>
-    root.render(
-      <RealmPanel
-        name="Duskbite"
-        level={1}
-        stores={STORES}
-        lords={1_240}
-        waiting={{ labor: 2_000, essence: 0 }}
-        onWithdraw={onWithdraw}
-        onRealms={onRealms}
-      />,
-    ),
+    root.render(<RealmPanel name="Duskbite" level={1} stores={STORES} lords={1_240} onWithdraw={onWithdraw} />),
   );
   const panel = host.querySelector('section[aria-label="Realm"]')!;
   expect(panel.textContent).toMatch(/^Duskbite.*City/);
@@ -74,14 +61,12 @@ it("reads the player's realm as Blitz's card reads a holding: name, rank, a ring
       "Essence 18,250",
       "Labor 9,640 of 18,000 · +10/min · Full in 2h",
       "Wheat 4,410 of 6,000 · +10/min · Full in 2h",
-      "Troops 1,200 of 6,000 · +10/min · Full in 2h",
+      "Knights 1,200 of 6,000 · +10/min · Full in 2h",
       "LORDS 1,240",
     ]),
   );
   act(() => (host.querySelector('[aria-label="LORDS 1,240"]') as HTMLButtonElement).click());
   expect(onWithdraw).toHaveBeenCalledTimes(1);
-  act(() => (host.querySelector('[aria-label="Realm Labor +2,000 Labor"]') as HTMLButtonElement).click());
-  expect(onRealms).toHaveBeenCalledTimes(1);
 });
 
 it("marks the LORDS of an account with no linked wallet, its name and hover saying why, still opening Withdraw", () => {
@@ -111,16 +96,14 @@ it("marks the LORDS of an account with no linked wallet, its name and hover sayi
   expect(host.querySelector('[aria-label="LORDS 1,240"] [data-icon="warning"]')).toBeNull();
 });
 
-it("takes the map home from its whole header, which never folds, with the rank's steps beside the name", () => {
+it("takes the map home from its whole header, which never folds", () => {
   const onHome = vi.fn();
-  act(() => root.render(<RealmPanel name="Duskbite" level={1} highest={3} stores={STORES} onHome={onHome} />));
+  act(() => root.render(<RealmPanel name="Duskbite" level={1} stores={STORES} onHome={onHome} />));
   const head = host.querySelector<HTMLButtonElement>('button[aria-label="Show my realm"]')!;
   expect(head.textContent).toContain("Duskbite");
-  expect(host.querySelector('[aria-label="City, rank 2 of 4"]')).not.toBeNull();
   act(() => head.click());
   act(() => head.click());
   expect(onHome).toHaveBeenCalledTimes(2);
-  // Pressing the header never folds the stores away.
   expect(named()).toContain("Essence 18,250");
 });
 
@@ -152,73 +135,54 @@ it("opens a store's card under the rings from the ring of a store that has one",
 it("shows a realm watched or visited by its stores alone: no LORDS and no Realms", () => {
   act(() => root.render(<RealmPanel name="Duskbite" level={2} stores={STORES} />));
   expect(host.textContent).toContain("Kingdom");
-  expect(named().filter((name) => name?.startsWith("LORDS") || name?.startsWith("Realm Labor"))).toEqual([]);
+  expect(named().filter((name) => name?.startsWith("LORDS"))).toEqual([]);
   expect(host.querySelectorAll("button.ui-ring")).toHaveLength(0);
 });
 
 it("says the day and the time left in the top bar, and when the day ends and how long tomorrow lasts on hover", () => {
-  const clock = dayClock({ dayUnitSeconds: 4 * 3_600, seed: 1n, startMainAt: 0, endAt: 21 * 20 * 14_400 }, 3_600);
+  const clock = dayClock(
+    { dayUnitSeconds: 4 * 3_600, seed: 1n, startMainAt: 0, scheduledEndAt: 21 * 20 * 14_400, endAt: 21 * 20 * 14_400 },
+    3_600,
+  );
   act(() => root.render(<DayPill clock={clock} />));
   const pill = host.querySelector('[aria-label="Day clock"]')!;
-  expect(pill.textContent).toContain(`Day ${clock.day}`);
-  expect(pill.textContent).toContain("left");
+  expect(pill.textContent).toContain(`Day ${clock.day} ·`);
   expect(pill.getAttribute("data-tip")).toMatch(/^Day ends \d\d:\d\d · Tomorrow lasts /);
 });
 
 it("reads a 24-hour day in hours on the top bar and its hover, as Play does (live-qa-night-1 P3-8)", () => {
-  const day = dayClock({ dayUnitSeconds: 4 * 3_600, seed: 1n, startMainAt: 0, endAt: 21 * 20 * 14_400 }, 3_600);
+  const day = dayClock(
+    { dayUnitSeconds: 4 * 3_600, seed: 1n, startMainAt: 0, scheduledEndAt: 21 * 20 * 14_400, endAt: 21 * 20 * 14_400 },
+    3_600,
+  );
   act(() => root.render(<DayPill clock={{ ...day, secondsLeft: 24 * 3_600, tomorrowSeconds: 24 * 3_600 }} />));
   const pill = host.querySelector('[aria-label="Day clock"]')!;
-  expect(pill.textContent).toContain("24h left");
+  expect(pill.textContent).toContain(`Day ${day.day} · 24h`);
   expect(pill.getAttribute("data-tip")).toMatch(/ · Tomorrow lasts 24h$/);
 });
 
-it("offers a desktop's places, Research, the Feed and the Season, each a panel its press opens and a second press closes", () => {
+it("offers a desktop's five places in order, each a panel its press opens and a second press closes", () => {
   const onSurface = vi.fn();
-  const places = (surface: "research" | "feed" | "season" | null) => {
+  const places = (surface: "research" | "feed" | "season" | "chat" | "relics" | null) => {
     act(() => root.render(<FrontierPlaces surface={surface} onSurface={onSurface} research={false} />));
     return [...host.querySelectorAll("nav button")] as HTMLButtonElement[];
   };
   const closed = places(null);
-  expect(closed.map((button) => [button.getAttribute("aria-label"), button.getAttribute("aria-pressed")])).toEqual([
+  expect(closed.map((button) => [button.getAttribute("aria-label"), button.getAttribute("aria-selected")])).toEqual([
+    ["Season", "false"],
     ["Research", "false"],
     ["Feed", "false"],
-    ["Season", "false"],
+    ["Relics", "false"],
+    ["Chat", "false"],
   ]);
-  // Closed, the Feed counts what is unread, as a phone's place bar does.
-  expect(closed[1].textContent).toContain("2");
-  act(() => closed[1].click());
+  expect(closed[2].textContent).toContain("2");
+  act(() => closed[2].click());
   expect(onSurface).toHaveBeenLastCalledWith("feed");
   const feed = places("feed");
-  expect(feed[1].getAttribute("aria-pressed")).toBe("true");
-  expect(feed[1].textContent).not.toContain("2");
-  act(() => feed[1].click());
-  expect(onSurface).toHaveBeenLastCalledWith(null);
+  expect(feed[2].getAttribute("aria-selected")).toBe("true");
+  expect(feed[2].textContent).not.toContain("2");
   act(() => feed[2].click());
+  expect(onSurface).toHaveBeenLastCalledWith(null);
+  act(() => feed[0].click());
   expect(onSurface).toHaveBeenLastCalledWith("season");
 });
-
-it.each(REALM_SKIN_MODELS)(
-  "shows the $skin painting on the HUD at level $level, its name as a tip",
-  ({ skin, level }) => {
-    const icon = homeIcon(skin, level);
-    act(() =>
-      root.render(
-        <RealmPanel
-          name="Duskbite"
-          level={level}
-          highest={3}
-          stores={STORES}
-          kind={skin}
-          mark={{ line: REALM_SKINS[skin].label, golden: skin === "devcon-golden", icon }}
-        />,
-      ),
-    );
-    const panel = host.querySelector('section[aria-label="Realm"]')!;
-    // The painting alone carries the campaign: no tag spells its name beside the rank, the tip names it.
-    const paintings = [...panel.querySelectorAll(`img[src$="/${icon}.webp"][data-tip]`)];
-    expect(paintings.map((painting) => painting.getAttribute("data-tip"))).toEqual([REALM_SKINS[skin].label]);
-    expect(paintings[0].getAttribute("alt")).toBe(REALM_SKINS[skin].label);
-    expect(panel.textContent).not.toContain(REALM_SKINS[skin].label);
-  },
-);

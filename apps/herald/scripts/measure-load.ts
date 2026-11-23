@@ -10,9 +10,9 @@ import { expeditionRealmSite, expeditionDayEndsAt, seasonDay } from "@bibliothec
 //                     after the run the day rolls over, and every subscriber's scope with it
 // Run: pnpm --dir apps/herald measure:load --shape frontier --players 2000 --minutes 3 --sample-every 1
 import { parseArgs } from "node:util";
-import { presetRegistration, presetLaunch, PRESET_FIXTURE_DURATION_SECONDS } from "../src/native/preset-fixtures";
+import { presetRelease, presetLaunch, PRESET_FIXTURE_DURATION_SECONDS } from "../src/native/preset-fixtures";
 import { LiveWorld } from "../src/live-world";
-import { receipt, rowEvent, schema, setup, manifest, pointsAward } from "../src/native/fixtures";
+import { receipt, rowEvent, schema, setup, manifest } from "../src/native/fixtures";
 import { decodeMembers } from "../src/native/serde";
 import type { StreamSocket } from "../src/game-stream";
 import type { RpcBlockWithReceipts, RpcEvent } from "../src/types";
@@ -32,7 +32,7 @@ const GAMES = FRONTIER ? 1 : 4;
 const PLAYERS_PER_GAME = FRONTIER ? Number(flags.players) : 24;
 const SIMULATED_MINUTES = Number(flags.minutes);
 const TILES_PER_PLAYER = FRONTIER ? 50 : 300;
-const preset = presetRegistration(FRONTIER ? 5 : 2);
+const preset = presetRelease(FRONTIER ? 5 : 2);
 const SPACING = Number(preset.definition.settlement.spacing);
 // presetLaunch's games start now and draw their days from seed 1.
 const expedition = () => ({
@@ -40,6 +40,7 @@ const expedition = () => ({
   seed: 1n,
   spacing: SPACING,
   startMainAt,
+  scheduledEndAt: startMainAt + PRESET_FIXTURE_DURATION_SECONDS,
   endAt: startMainAt + PRESET_FIXTURE_DURATION_SECONDS,
 });
 const MAP_STRUCTURES_PER_GAME = 150;
@@ -74,7 +75,8 @@ function values(type: string, overrides: Record<string, string | string[]> = {},
     return definition.members.flatMap((member) =>
       values(member.type, overrides, path ? `${path}.${member.name}` : member.name),
     );
-  if (definition?.type === "enum") return ["0", ...values(definition.variants[0].type)];
+  if (definition?.type === "enum")
+    return [String(definition.variants[0].wireId ?? 0), ...values(definition.variants[0].type)];
   if (type === "()") return [];
   if (type === "core::bool") return ["1"];
   if (type.includes("core::array::")) return ["0"];
@@ -99,10 +101,6 @@ const row = (model: string, keys: (string | number)[], overrides: Record<string,
 const owner = (game: number, player: number) => 0x1000 + game * 100 + player;
 const realm = (game: number, player: number) => game * 10_000 + player + 1;
 
-function initialPoints(game: number, player: number): RpcEvent {
-  return pointsAward(String(game), String(owner(game, player)), "1000000", "1000000", String((player + 1) * 1000000));
-}
-
 /** One Frontier game: each player's realm, two armies and explored tiles in its own region of today's expedition. */
 function frontierRows(game: number): RpcEvent[] {
   const events = presetLaunch(preset, game, Math.floor(now / 1000));
@@ -112,7 +110,6 @@ function frontierRows(game: number): RpcEvent[] {
     const column = player * SPACING;
     events.push(
       row("PlayerEntry", [game, address], { player: address }),
-      initialPoints(game, player),
       row("Structure", [game, structure], {
         owner: address,
         "base.category": "1",
@@ -171,14 +168,7 @@ const frontierArmy = (game: number, player: number, army: number, x: number) => 
       "troops.count": "1000",
       "troops.stamina": ["1", String(army)],
     }),
-    row("ArmyProgress", [game, entity], {
-      xp: "0",
-      battle: "1",
-      logistics: "1",
-      scouting: "1",
-      scouting_kinds: "0",
-      homecoming: "1",
-    }),
+    row("ArmyProgress", [game, entity], { logistics: "1", oath_slots: "1", oaths: "0", oath_pick: "0" }),
     row("ArmySlot", [game, realm(game, player), seasonDay(expedition(), Math.floor(now / 1000))!, army], {
       explorer_id: String(entity),
       "stamina.amount": String(preset.definition.rules.troop_stamina_config.stamina_initial),
@@ -191,23 +181,16 @@ const frontierArmy = (game: number, player: number, army: number, x: number) => 
 function gameRows(game: number): RpcEvent[] {
   if (FRONTIER) return frontierRows(game);
   // Blitz: no expedition epochs, so every subscriber sees the whole game.
-  const events = presetLaunch(
-    preset,
-    game,
-    Math.floor(now / 1000),
-    Array.from({ length: PLAYERS_PER_GAME }, (_, player) => owner(game, player)),
-  );
+  const events = presetLaunch(preset, game, Math.floor(now / 1000));
   for (let player = 0; player < PLAYERS_PER_GAME; player++) {
     const structure = realm(game, player);
     events.push(
       row("PlayerEntry", [game, owner(game, player)]),
-      initialPoints(game, player),
       row("EntityName", [game, structure]),
       row("Structure", [game, structure]),
       ...place(game, structure, player * 1000, 0, 1, true),
       row("StructureBuildings", [game, structure]),
       row("ResourceWeight", [game, structure]),
-      row("ProductionBonus", [game, structure]),
     );
     for (let index = 0; index < BUILDINGS_PER_REALM; index++)
       events.push(row("Building", [game, structure, index % 7, Math.floor(index / 7)]));
@@ -269,9 +252,8 @@ const heapMb = () => {
   return Math.round(process.memoryUsage().heapUsed / 1_048_576);
 };
 
-const { native, decoder, fold } = setup();
+const { native, decoder, fold } = setup(preset.definitions);
 let block = 10;
-native.applyReceipt(fold, receipt([preset.event]), block, 0, preset.calldata);
 for (let game = 1; game <= GAMES; game++) {
   const events = gameRows(game);
   for (let start = 0; start < events.length; start += 500)
@@ -394,8 +376,8 @@ for (let second = 1; second <= SIMULATED_MINUTES * 60; second++) {
     const ended = activeGames.shift()!;
     sessions.get(ended)!.forEach((session) => live.detach(session));
     sessions.delete(ended);
-    const result = [row("GameRegistry", [ended], { settled: "1" }), row("BlitzResult", [ended], { complete: "1" })];
-    native.applyReceipt(fold, receipt(result, `0x${next().toString(16)}`), block, 0);
+    const settled = [row("GameRegistry", [ended], { settled: "1" })];
+    native.applyReceipt(fold, receipt(settled, `0x${next().toString(16)}`), block, 0);
     const started = Math.max(...activeGames) + 1;
     const events = gameRows(started);
     for (let start = 0; start < events.length; start += 500)

@@ -19,8 +19,8 @@ const directory = () => ({
   world_address: "0x10",
   confirmed_block: 10,
   games: [
-    { game_id: 7, preset_id: 5, mode: "frontier", status: "Live", clock: { end_at: 9000 } },
-    { game_id: 8, preset_id: 2, mode: "blitz" },
+    { game_id: 7, mode: "frontier", status: "Live", clock: { end_at: 9000 } },
+    { game_id: 8, mode: "blitz" },
   ],
 });
 const snapshot = (poolLeft = "83", amount = "17"): ConfirmedSnapshot => ({
@@ -181,11 +181,11 @@ it("rejects previous receipt and budget schemas, duplicate claims, wrong games a
     Effect.runPromise(shardConservationPort(connection, "https://shard.test", network())()),
   ).rejects.toThrow();
 });
-it("binds the directory to the chain/world and the exact preset mode instead of skipping unrecognized games", async () => {
+it("binds the directory to the chain/world and a known game mode instead of skipping unrecognized games", async () => {
   const malformed = [directory(), directory(), directory()];
   malformed[0]!.chain = "0x2";
   malformed[1]!.world_address = "0x20";
-  malformed[2]!.games[0]!.mode = "blitz";
+  malformed[2]!.games[0]!.mode = "eternum";
   for (const games of malformed)
     await expect(
       Effect.runPromise(shardConservationPort(connection, "https://shard.test", network(snapshot(), games))()),
@@ -219,7 +219,6 @@ const monitorFixture = () => {
       withdrawalReceipt: () => Effect.succeed(null),
       conservation: shardConservationPort(connection, "https://shard.test", network(snapshot("84"))),
       withdrawal: () => Effect.fail(new RelayFailure({ operation: "binding_missing" })),
-      result: () => Effect.succeed(null),
     },
     ledger: {
       frontierPool: () => Effect.succeed(String(100n * 10n ** 18n)),
@@ -234,7 +233,7 @@ const monitorFixture = () => {
           rewind: false,
           fromBlock: 0,
         }),
-      paidClaims: () =>
+      postedResults: () =>
         Effect.succeed({
           rows: [],
           next: null,
@@ -243,7 +242,7 @@ const monitorFixture = () => {
           rewind: false,
           fromBlock: 1,
         }),
-      postedResults: () =>
+      paidClaims: () =>
         Effect.succeed({
           rows: [],
           next: null,
@@ -268,22 +267,6 @@ it("persists and pauses a conservation violation before the unavailable paid-cla
   expect(await Effect.runPromise(runMonitor(f.ports, f.store))).toMatchObject({ halted: "lords_conservation:7:10" });
   expect(f.ports.ledger.pause).toHaveBeenCalledOnce();
   expect(f.ports.ledger.paidClaims).not.toHaveBeenCalled();
-});
-it("still detects a posted-result mismatch when conservation and paid-claim reads are unavailable", async () => {
-  const f = monitorFixture();
-  f.ports.shard.conservation = () => Effect.fail(new RelayFailure({ operation: "source_missing" }));
-  f.ports.ledger.paidClaims = () => Effect.fail(new RelayFailure({ operation: "binding_missing" }));
-  f.ports.ledger.postedResults = () =>
-    Effect.succeed({
-      rows: [{ chainId: "0x1", gameId: 8, commitment: "0xabc" }],
-      next: null,
-      head: 1000,
-      anchor: { number: 1000, hash: "0xa" },
-      rewind: false,
-      fromBlock: 1,
-    });
-  expect(await Effect.runPromise(runMonitor(f.ports, f.store))).toMatchObject({ halted: "blitz_result_mismatch:8" });
-  expect(f.ports.ledger.pause).toHaveBeenCalledOnce();
 });
 it("returns an unavailable audit rather than green when no violation is provable", async () => {
   const f = monitorFixture();
@@ -330,7 +313,6 @@ it("bounds first-time conservation snapshots and rotates unfinished games", asyn
   const games = directory();
   games.games = Array.from({ length: 30 }, (_, index) => ({
     game_id: index + 1,
-    preset_id: 5,
     mode: "frontier",
     status: "Live",
     clock: { end_at: 9000 },

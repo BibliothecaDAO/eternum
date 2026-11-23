@@ -1,9 +1,12 @@
 // @vitest-environment jsdom
+// @vitest-environment jsdom
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { sellingFragments } from "../value/fragments-fixture";
 
 // The real Frontier HUD on the lab's game with an army out (the lab's frontier-army view); only the network and the
 // identity stand in.
@@ -21,8 +24,6 @@ const { UnifiedHudLab } = await import("@/ui/features/debug/kit-lab/unified-hud-
 
 /** The lab realm's army out. */
 const ARMY = 90;
-/** Its token: its XP (260), its number (1) and its troops (5,000). */
-const TOKEN = "26015,000";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -37,6 +38,8 @@ const layout = (desktop: boolean) =>
 
 beforeEach(() => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  // These tests play the whole HUD; the opening interface has its own tests.
+  useWorldAppearanceStore.setState({ showEverything: true });
   layout(true);
   vi.stubGlobal(
     "fetch",
@@ -102,15 +105,12 @@ const pickInDock = () =>
 
 /** A phone's picked army in the action row: its token, which opens its card. */
 const details = () => host.querySelector<HTMLButtonElement>('button[aria-label="Army 1: details"]');
-/** Beside the picked army's token: its four sides, its stamina (its refill) and Level up. */
-const sides = () =>
-  [...host.querySelectorAll("[data-picked-army] > * > [role='img']")].map((side) => side.getAttribute("aria-label"));
 const rowButton = (name: RegExp) =>
   [...details()!.parentElement!.querySelectorAll<HTMLButtonElement>("button")].find((button) =>
     name.test(button.getAttribute("aria-label") ?? button.textContent ?? ""),
   )!;
-const staminaButton = () => rowButton(/^Refill /);
-const levelUp = () => rowButton(/^Level/);
+const staminaMeter = () =>
+  details()!.parentElement!.querySelector<HTMLElement>('[role="meter"][aria-label="Stamina"]')!;
 /** The lab realm's LORDS. */
 const realmLords = (lords: number) => ({
   model: "ResourceBalance",
@@ -131,8 +131,9 @@ describe("the army's panel on a phone (owner, 22 October 2026: mobile direction 
     await select(ARMY);
     expect(panel()).toBeNull();
     expect(details()).not.toBeNull();
-    // The picked army takes the dock's place.
-    expect(host.querySelector('nav[aria-label="Armies"]')).toBeNull();
+    expect(
+      host.querySelector('nav[aria-label="Armies"] button[aria-label="Army 1"]')?.getAttribute("aria-pressed"),
+    ).toBe("true");
 
     await act(async () => details()!.click());
     expect(panel()!.textContent).toContain("Full in");
@@ -140,16 +141,13 @@ describe("the army's panel on a phone (owner, 22 October 2026: mobile direction 
     expect(useUIStore.getState().entityActions.selectedEntityId).toBe(ARMY);
   });
 
-  it("shows the picked army's four sides beside its token, its stamina over Level up, and no details button", async () => {
+  it("shows the picked army’s stamina and one way to open its details", async () => {
     await renderHud();
     await select(ARMY);
-    // The fixture has Common attributes except untrained Scouting.
-    expect(sides()).toEqual(["Battle I", "Logistics I", "Scouting 0", "Homecoming I"]);
-    expect(staminaButton().textContent).toBe("90/150");
-    expect(levelUp().textContent).toBe("Level up");
-    // One way to the card: the token, which wears the army's XP, number and troops.
+    expect(staminaMeter().getAttribute("aria-valuenow")).toBe("90");
+    expect(staminaMeter().getAttribute("aria-valuemax")).toBe("150");
     expect(host.querySelectorAll('button[aria-label="Army 1: details"]')).toHaveLength(1);
-    expect(details()!.textContent).toBe(TOKEN);
+    expect(details()!.textContent).toContain("5,000");
   });
 
   it("opens the army's card from its token", async () => {
@@ -160,53 +158,15 @@ describe("the army's panel on a phone (owner, 22 October 2026: mobile direction 
     expect(useUIStore.getState().entityActions.selectedEntityId).toBe(ARMY);
   });
 
-  it("opens the refill's confirm from the stamina, once the realm holds at least one LORDS", async () => {
+  it("reads stamina on its Fragments refill, which a historical LORDS balance neither fills nor unlocks", async () => {
     const store = await renderHud();
+    await act(async () => store.applyFacts(sellingFragments(store) as never));
     await select(ARMY);
-    // The lab realm holds no LORDS: the stamina reads in red and takes no press.
-    expect([staminaButton().disabled, staminaButton().dataset.tone, staminaButton().textContent]).toEqual([
-      true,
-      "bad",
-      "90/150",
-    ]);
-
+    const refill = () => [rowButton(/^Refill /).getAttribute("aria-label"), rowButton(/^Refill /).disabled];
+    expect(refill()).toEqual(["Refill 90/150", true]);
     await act(async () => store.applyFacts([realmLords(40)] as never));
-    expect([staminaButton().disabled, staminaButton().dataset.tone]).toEqual([false, undefined]);
-    await act(async () => staminaButton().click());
-    const confirm = host.querySelector("[data-kit-sheet]")!;
-    expect([...confirm.querySelectorAll("button")].map((button) => button.textContent)).toEqual(
-      expect.arrayContaining(["Cancel", "Refill · 40 LORDS"]),
-    );
-  });
-
-  it("opens the army's card on its level-up choices from Level up, and on its status while no level is bought", async () => {
-    const store = await renderHud();
-    await select(ARMY);
-    await act(async () => levelUp().click());
-    expect(host.querySelector("[data-kit-sheet] [data-army-step='choose']")).not.toBeNull();
-    await closePanel();
-
-    // Its points spent, the button reads Level-ups and opens the card; lifetime XP remains.
-    const progress = store.require("ArmyProgress", { game_id: 1, explorer_id: ARMY });
-    await act(async () =>
-      store.applyFacts([
-        {
-          model: "ArmyProgress",
-          key: "0x9a2",
-          value: {
-            ...progress,
-            common_points: 0,
-            uncommon_points: 0,
-            rare_points: 0,
-            epic_points: 0,
-            legendary_points: 0,
-          },
-        },
-      ] as never),
-    );
-    expect(levelUp().textContent).toBe("Level-ups");
-    await act(async () => levelUp().click());
-    expect(panel()).not.toBeNull();
+    expect(refill()).toEqual(["Refill 90/150", true]);
+    expect(host.querySelector("[data-kit-sheet]")).toBeNull();
   });
 
   it("picks the army from the dock without opening its panel", async () => {
@@ -216,13 +176,21 @@ describe("the army's panel on a phone (owner, 22 October 2026: mobile direction 
     expect(useUIStore.getState().entityActions.selectedEntityId).toBe(ARMY);
   });
 
-  /** A place on the phone's place bar, by its word (a count may stand before it). */
-  const place = (word: string) =>
-    act(async () =>
-      [...host.querySelectorAll<HTMLButtonElement>('nav[aria-label="Places"] button')]
-        .find((button) => button.textContent?.endsWith(word))!
-        .click(),
+  const place = async (word: string) => {
+    const direct = [...host.querySelectorAll<HTMLButtonElement>('nav[aria-label="Places"] button')].find(
+      (button) => button.getAttribute("aria-label") === word || button.textContent?.endsWith(word),
     );
+    if (direct) {
+      await act(async () => direct.click());
+      return;
+    }
+    await act(async () =>
+      host.querySelector<HTMLButtonElement>('nav[aria-label="Places"] button[aria-label="Menu"]')!.click(),
+    );
+    await act(async () =>
+      host.querySelector<HTMLButtonElement>(`section[aria-label="Menu"] button[aria-label="${word}"]`)!.click(),
+    );
+  };
   const openPage = () => host.querySelector("[data-page]");
   const openSheet = () => host.querySelector("[data-kit-sheet]");
 

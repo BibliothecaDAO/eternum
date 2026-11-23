@@ -1,5 +1,6 @@
-import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
-import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
+import { gameRegistryRow } from "../test-support/game-registry";
+import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/balance.gen";
+import release from "../../../../contracts/l3/world-native/schema/release-definition.json";
 import { describe, expect, it } from "vitest";
 import { NativeFactStore } from "../client/native-fact-store";
 import { waitForWorldState } from "../client/wait-for-world-state";
@@ -7,25 +8,17 @@ import { ResourceManager } from "./resource-manager";
 import type { GameSyncFact } from "../sync/game-sync-types";
 import { ResourcesIds } from "@bibliothecadao/types";
 
-const rules = preset.rules;
+const rules = { ...release.definition.rules, day_unit_seconds: 0 };
 const upsert = (key: string, models: Record<string, Record<string, unknown>>): GameSyncFact[] =>
   Object.entries(models).map(([model, value]) => ({ model, key, value }));
 const weight = (game = 1) => ({ game_id: game, entity_id: 7, capacity: 1000n, weight: 0n });
 const balance = (game = 1) => ({ game_id: game, entity_id: 7, resource_type: 23, balance: 9007199254740993n });
-const game = {
-  game_id: 1,
-  name: 1n,
-  preset_id: 1,
-
-  settled: false,
-  ready: false,
-  dev_mode_on: false,
-  start_settling_at: 0n,
-  start_main_at: 200n,
-  end_at: 1100n,
-  end_grace_seconds: 0,
-  seed: 1n,
-};
+const game = gameRegistryRow({
+  start_settling_at: "0",
+  start_main_at: "200",
+  scheduled_end_at: "1100",
+  end_at: "1100",
+});
 const production = {
   game_id: 1,
   entity_id: 7,
@@ -34,6 +27,7 @@ const production = {
   production_rate: 2n,
   output_amount_left: 10n,
   last_settled_at: 100,
+  remainder: 0,
 };
 
 describe("native resource facts", () => {
@@ -114,8 +108,10 @@ describe("native resource facts", () => {
     const store = new NativeFactStore();
     store.setSnapshot({ gameId: 1, complete: false, actor: "0xaaa", timestamp: 350 });
     store.applyFacts([
-      ...upsert("0x100", { SliceRules: { ...preset.rules, game_id: 1, day_unit_seconds: 100, mode_rules: 0 } }),
-      ...upsert("0x101", { GameRegistry: { ...game, ready: true } }),
+      ...upsert("0x100", {
+        SliceRules: { ...release.definition.rules, game_id: 1, day_unit_seconds: 100, mode_rules: 0 },
+      }),
+      ...upsert("0x101", { GameRegistry: game }),
       ...upsert("0x102", {
         SettlementRules: {
           game_id: 1,
@@ -204,7 +200,7 @@ describe("native resource facts", () => {
     expect(observed).toBeUndefined();
     expect(() => second.current(0)).toThrow("Invalid resource");
   });
-  it("starts every Blitz producer at the fixed main clock, even while the roster is still being seated", () => {
+  it("starts every producer at the fixed main clock under the production-start rule", () => {
     const store = new NativeFactStore();
     store.setSnapshot({ gameId: 1, complete: true, actor: null, timestamp: 350 });
     store.applyFacts([
@@ -214,14 +210,15 @@ describe("native resource facts", () => {
       }),
       ...upsert("0x2", {
         SliceRules: { ...rules, game_id: 1, mode_rules: nativeRuleConstants.PRODUCTION_START },
-        GameRegistry: { ...game, ready: false, start_main_at: 1000n },
+        GameRegistry: { ...game, start_main_at: "1000" },
       }),
     ]);
     const manager = new ResourceManager(store, 7, 1);
     expect(manager.balanceWithProduction(1000, 23)!.balance).toBe(0);
     expect(manager.balanceWithProduction(1001, 23)!.balance).toBe(2);
-    expect(manager.getProductionEndsAt(23)).toBe(1005);
-    expect(manager.timeUntilValueReached(1001, 23)).toBe(4);
+    expect(manager.productionData(23, 1000)).toMatchObject({ timeRemainingSeconds: 5 });
+    expect(manager.productionData(23, 1001)).toMatchObject({ timeRemainingSeconds: 4 });
+    expect(manager.productionData(23, 1005)).toMatchObject({ timeRemainingSeconds: 0, isProducing: false });
   });
   it("settles troops and wheat alone against shared storage, and nothing consumes wheat", () => {
     const store = new NativeFactStore();
@@ -285,10 +282,10 @@ it.each([60, 120])("pays every second with an unchanged %s-second armies tick", 
   store.applyFacts([
     ...upsert("0x1", {
       SliceRules: {
-        ...preset.rules,
+        ...release.definition.rules,
         game_id: 1,
         mode_rules: 0,
-        tick_config: { ...preset.rules.tick_config, armies_tick_in_seconds: armiesTick },
+        tick_config: { ...release.definition.rules.tick_config, armies_tick_in_seconds: armiesTick },
       },
     }),
     ...upsert("0x2", { ResourceWeight: { ...weight(), capacity: (1n << 128n) - 1n } }),
@@ -309,7 +306,5 @@ it.each([60, 120])("pays every second with an unchanged %s-second armies tick", 
   expect(manager.balanceWithProduction(239, 35)!.balance).toBe(23_900);
   expect(manager.balanceWithProduction(240, 35)!.balance).toBe(24_000);
   // The hourly figure derives directly from the per-second rate.
-  expect(ResourceManager.calculateResourceProductionData(35, manager.current(35)!, 130).productionPerSecond).toBe(
-    100 / 1e9,
-  );
+  expect(manager.productionData(35, 130)!.productionPerSecond).toBe(100 / 1e9);
 });

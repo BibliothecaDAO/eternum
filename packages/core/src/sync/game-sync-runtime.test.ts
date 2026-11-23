@@ -97,7 +97,7 @@ const createSessionHarness = (input: {
   };
 
   const session: GameSyncSessionStart = {
-    snapshotModels: ["Position", "Stats", "PlayerPoints"],
+    snapshotModels: ["Position", "Stats", "RaceMember"],
     store: input.store ?? createMemoryStore().store,
     transport: {
       transactionStatusChannel: input.transactionStatusChannel,
@@ -307,25 +307,25 @@ describe("GameSyncRuntime recovery", () => {
     expect(late).toHaveBeenCalledWith(40);
   });
 
-  it("keeps shared points rows when the acting account changes", async () => {
+  it("keeps shared race rows when the acting account changes", async () => {
     const memory = createMemoryStore();
     const harness = createSessionHarness({
       store: memory.store,
       snapshot: {
         Structure: [fact("realm", "Structure", { entity_id: 1 })],
-        PlayerPoints: [fact("first", "PlayerPoints", { points: 4 })],
+        RaceMember: [fact("first", "RaceMember", { points: 4 })],
       },
     });
-    harness.session.snapshotModels = ["Structure", "PlayerPoints"];
+    harness.session.snapshotModels = ["Structure", "RaceMember"];
     await new GameSyncRuntime().startSession(harness.session);
 
-    harness.emitScope([fact("second", "PlayerPoints", { points: 0 })]);
+    harness.emitScope([fact("second", "RaceMember", { points: 0 })]);
     await flushMicrotasks();
 
     expect([...memory.rows.entries()]).toEqual([
       ["Structure:realm", { entity_id: 1 }],
-      ["PlayerPoints:first", { points: 4 }],
-      ["PlayerPoints:second", { points: 0 }],
+      ["RaceMember:first", { points: 4 }],
+      ["RaceMember:second", { points: 0 }],
     ]);
   });
 
@@ -426,7 +426,7 @@ describe("GameSyncRuntime recovery", () => {
     const runtime = new GameSyncRuntime();
     await runtime.startSession(harness.session);
     const award = (index: number, hash = "0x123") =>
-      event("award", "PointsAwarded", {
+      event("award", "BattleEvent", {
         points: "0x10",
         event_position: { transaction_hash: hash, event_index: index },
       });
@@ -534,7 +534,7 @@ describe("GameSyncRuntime lifecycle", () => {
     const completed = vi.fn();
     const wait = runtime.waitForTransaction("0xabc").then(completed);
     harness.emitFacts({
-      facts: [fact("player", "PlayerPoints", { points: 2 })],
+      facts: [fact("player", "RaceMember", { points: 2 })],
       preconfirmed: true,
       transactionHash: "0xabc",
     });
@@ -544,7 +544,7 @@ describe("GameSyncRuntime lifecycle", () => {
     expect(published).not.toHaveBeenCalled();
     flush!();
     await wait;
-    expect(memory.rows.get("PlayerPoints:player")).toEqual({ points: 2 });
+    expect(memory.rows.get("RaceMember:player")).toEqual({ points: 2 });
     expect(published).toHaveBeenCalledOnce();
   });
 
@@ -607,7 +607,7 @@ describe("GameSyncRuntime lifecycle", () => {
     const harness = createSessionHarness({});
     await runtime.startSession(harness.session);
 
-    configManager.setActiveGame(14, 6);
+    configManager.setActiveGame(14);
 
     expect(harness.writers[0].cancel).toHaveBeenCalledOnce();
     expect(getActiveGameSyncRuntime()).toBeNull();

@@ -19,6 +19,7 @@
  * - /lab/kit/tokens draws every value from this file; /lab/app and /lab/kit show it in place.
  */
 
+import type { AspectId } from "@bibliothecadao/types";
 import KIT from "./brand/palette.json";
 
 /** The brand kit's colours (Realms Brand Kit v3 `03-Colors/palette.json`), lower-cased as the rest of this file. */
@@ -426,6 +427,7 @@ export const SCREENS = {
  * named by its role. A HUD text takes a role (`text-hud-body`), never a size.
  */
 export const HUD_TYPE = {
+  hero: { size: "28px", line: "32px", weight: "700" },
   /** A window's title, a figure that is the point of its panel. */
   display: { size: "20px", line: "26px", weight: "700" },
   /** A panel's or a tab's title, a place's own name. */
@@ -571,9 +573,9 @@ export const HUD_MODES = {
   },
   /** Frontier: the title's violet on Frontier's ground. */
   frontier: {
-    accent: channels(GAME("frontier", "title")),
-    "surface-from": tint(GAME("frontier", "ground"), GAME("frontier", "title"), 0.06),
-    "surface-to": GAME("frontier", "ground"),
+    accent: channels(BRAND["action-gold"]),
+    "surface-from": BRAND.plate,
+    "surface-to": BRAND.hearth,
   },
   /** Eternum (`eternum-restoration`): the restored tower's gold over warm stone. */
   eternum: { accent: "230 194 122", "surface-from": "#27211a", "surface-to": "#16120d" },
@@ -584,6 +586,7 @@ export type HudMode = keyof typeof HUD_MODES;
 /** What a phone changes: touch targets, and the reading roles a step up; every element keeps its shape. */
 export const HUD_PHONE = {
   control: "44px",
+  "text-hero": "24px",
   "text-title": "17px",
   "text-body": "15px",
   "text-strong": "15px",
@@ -683,6 +686,7 @@ export const hudVariables = (): Record<string, string> =>
       [`--hud-weight-${role}`, weight],
     ]),
     ["--hud-font", FONTS.body],
+    ["--hud-font-display", FONTS.display],
   ]);
 
 /** CSS variables from their names and values, each name written once: two meanings never share a variable. */
@@ -968,3 +972,18 @@ export const appAgeVariables = (age: HudMode): Record<string, string> => ({
   "--app-age-from": HUD_MODES[age]["surface-from"],
   "--app-age-to": HUD_MODES[age]["surface-to"],
 });
+
+export const ASPECT_HEX = {
+  1: KIT.aspects.prowess.gem.toLowerCase(),
+  2: KIT.aspects.luminary.gem.toLowerCase(),
+  3: KIT.aspects.havoc.gem.toLowerCase(),
+  4: KIT.aspects.insight.gem.toLowerCase(),
+} as const satisfies Record<AspectId, string>;
+
+export const aspectVariables = (aspect: AspectId): Record<string, string> => {
+  const value = channels(ASPECT_HEX[aspect]);
+  return {
+    "--hud-aspect": value,
+    "--app-aspect": value,
+  };
+};

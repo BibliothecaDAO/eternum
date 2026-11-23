@@ -16,18 +16,12 @@ const identity = vi.hoisted(() => {
     originalSession,
     state,
     client: { sendSignInCode: vi.fn(), readDefaultWallet: vi.fn() },
-    signedIn: { on: false },
   };
 });
 vi.mock("@/hooks/context/identity-session", () => ({
   identityClient: identity.client,
   useIdentitySessionStore: { getState: () => identity.state },
-  // The frame's notice reads the session; the fixture pages here draw a signed-out visitor, unless a test signs the
-  // screen's player in.
-  useIdentitySession: () =>
-    identity.signedIn.on
-      ? { status: "signed-in", session: identity.state.session }
-      : { status: "signed-out", session: null },
+  useIdentitySession: () => ({ status: "signed-out", session: null }),
   notificationOwnerOf: () => null,
   // The account's chosen name, as the real reader gives it: none while the name is still the account's id.
   identityUsername: (session: { user: { id: string; name: string } }) =>
@@ -35,7 +29,6 @@ vi.mock("@/hooks/context/identity-session", () => ({
 }));
 vi.mock("../play/play-page", () => ({ PlayPage: () => <p>Fixture home</p> }));
 vi.mock("../play/age-pages", () => ({ DominionPage: () => null, EternumPage: () => null, FrontierPage: () => null }));
-vi.mock("../blitz/blitz-pages", () => ({ BlitzLobbyPage: () => null }));
 vi.mock("../profile/profile-pages", () => ({
   PlayerPage: () => null,
   ProfilePage: () => null,
@@ -48,7 +41,6 @@ Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 let root: Root | undefined;
 let container: HTMLDivElement;
 afterEach(async () => {
-  identity.signedIn.on = false;
   await act(async () => root?.unmount());
   container?.remove();
   vi.unstubAllGlobals();
@@ -76,7 +68,7 @@ it("answers fixture reads while mounted and restores the real runtime when leavi
   );
   expect(container.textContent).toContain("Fixture home");
   const directory = await (await window.fetch("/api/directory")).json();
-  expect(directory.shards[0].url).toBe("https://lab.invalid");
+  expect(directory.shard.url).toBe("https://lab.invalid");
   await vi.waitFor(() => expect(identity.state.session).not.toBe(identity.originalSession));
   expect(identity.client.sendSignInCode).not.toBe(sendCode);
   // The lab's player has no Realms wallet: the payout window offers to make one, not a failed read.
@@ -157,37 +149,4 @@ it.each([
   expect(places).toHaveLength(4);
   const current = places.filter((place) => place.getAttribute("aria-current") === "page");
   expect(current.map((place) => place.textContent)).toEqual(lit);
-});
-
-it("opens a Devcon flyer's sealed ticket as the golden ticket the account's first redemption gets", async () => {
-  vi.stubGlobal(
-    "fetch",
-    vi.fn(async () => new Response("{}")),
-  );
-  identity.signedIn.on = true;
-  const lab = await renderLab("/lab/app/devcon-golden/join/devcon/LABCODE1");
-  const open = await vi.waitFor(() => {
-    const button = [...lab.querySelectorAll("button")].find((each) => each.textContent === "Open your ticket");
-    expect(button).toBeDefined();
-    return button!;
-  });
-  expect(lab.textContent).toContain("A realm waits for you");
-  await act(async () => open.click());
-  await vi.waitFor(() => expect(lab.querySelector(".app-ticket")?.getAttribute("data-face")).toBe("golden"));
-  expect(lab.textContent).toContain("Golden Devcon ticket");
-  expect(lab.textContent).toContain("2,000 Labor each day");
-});
-
-it("draws the Devcon game's Realm step with the held golden ticket chosen and Found ready", async () => {
-  vi.stubGlobal(
-    "fetch",
-    vi.fn(async () => new Response("{}")),
-  );
-  identity.signedIn.on = true;
-  const lab = await renderLab("/lab/app/devcon-held/doorway/home");
-  await vi.waitFor(() => expect(lab.textContent).toContain("1 ticket · 1 Realm"));
-  expect(lab.textContent).toContain("Golden Devcon ticket");
-  expect(lab.textContent).toContain("4786");
-  const found = [...lab.querySelectorAll("button")].find((each) => each.textContent === "Create your realm");
-  await vi.waitFor(() => expect(found?.disabled).toBe(false));
 });

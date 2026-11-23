@@ -1,3 +1,4 @@
+import type { AspectId } from "@bibliothecadao/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { AGE_LOCKUP } from "@/ui/design-system/icon-meaning";
@@ -313,15 +314,15 @@ const TAB_KEYS: Record<string, (index: number, count: number) => number> = {
  * A switch between views of one thing (Blitz | Eternum, Off | Important | All); the chosen one raised, and the chosen
  * view below it as its panel. One tab stop: the arrows, Home and End move the choice, as tabs do.
  */
-export const AppTabs = <K extends string>({
+export const AppTabs = <K extends string | number>({
   tabs,
   value,
   onChange,
   label,
   children,
 }: {
-  tabs: readonly { key: K; label: string; dot?: boolean }[];
-  value: K;
+  tabs: readonly { key: K; label: string; dot?: boolean; lead?: ReactNode; aspectId?: AspectId }[];
+  value: K | null;
   onChange?: (key: K) => void;
   label: string;
   /** The chosen view. */
@@ -346,20 +347,22 @@ export const AppTabs = <K extends string>({
             id={tabId(tab.key)}
             type="button"
             role="tab"
+            data-aspect-id={tab.aspectId}
             aria-selected={tab.key === value}
             aria-controls={children === undefined ? undefined : `${id}-panel`}
-            tabIndex={tab.key === value ? 0 : -1}
+            tabIndex={value === null ? (index === 0 ? 0 : -1) : tab.key === value ? 0 : -1}
             className="app-tabs__tab"
             onClick={() => onChange?.(tab.key)}
             onKeyDown={(event) => choose(event, index)}
           >
+            {tab.lead}
             {tab.label}
             {tab.dot && <i className="app-tabs__dot" aria-label="Something of yours" />}
           </button>
         ))}
       </div>
       {children !== undefined && (
-        <div role="tabpanel" id={`${id}-panel`} aria-labelledby={tabId(value)}>
+        <div role="tabpanel" id={`${id}-panel`} aria-labelledby={value === null ? undefined : tabId(value)}>
           {children}
         </div>
       )}
@@ -790,32 +793,6 @@ export const AppChoice = ({
     {detail !== undefined && <span className="app-choice__detail">{detail}</span>}
     {price !== undefined && <span className="app-choice__price">{price}</span>}
   </button>
-);
-
-/**
- * A ticket in the player's hand: a campaign's flyer in small, its art over its line and its stub. It comes sealed;
- * opened, it turns over once, and a golden one lands gold under its rays.
- */
-export const AppTicket = ({
-  art,
-  line,
-  stub,
-  face = "sealed",
-}: {
-  art: ReactNode;
-  line: string;
-  stub: string;
-  face?: "sealed" | "opened" | "golden";
-}) => (
-  <div className="app-ticket-room">
-    <div className="app-ticket" data-face={face}>
-      <div key={face} className="app-ticket__card">
-        <div className="app-ticket__art">{art}</div>
-        <p className="app-ticket__line">{line}</p>
-        <p className="app-ticket__stub">{stub}</p>
-      </div>
-    </div>
-  </div>
 );
 
 /** A player's portrait in its ring; the player's own ring in the accent. An initial where there is no portrait. */

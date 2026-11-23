@@ -12,7 +12,6 @@ export type HoverLabelRecoveryReason =
   | "initial_refresh"
   | "manager_catch_up"
   | "critical_manager_catch_up"
-  | "non_critical_manager_catch_up"
   | "scene_ready"
   | "frame_retry";
 

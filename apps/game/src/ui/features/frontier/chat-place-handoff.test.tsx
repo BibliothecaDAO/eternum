@@ -92,12 +92,6 @@ afterEach(() => {
   act(() => useUIStore.getState().selectOnMap(null));
 });
 
-const LABOR_RULES = {
-  model: "LaborRules",
-  key: "0x1ab",
-  value: { game_id: 1, amount: "1000", campaign_essence: "0", golden_amount: "1000", golden_essence: "0" },
-};
-
 /** The real Frontier HUD over the lab's game. */
 const renderHud = async (width: number) => {
   viewport.set(width);
@@ -105,7 +99,7 @@ const renderHud = async (width: number) => {
     root.render(
       <MemoryRouter>
         <QueryClientProvider client={new QueryClient()}>
-          <LabGame preset={5} facts={() => [LABOR_RULES]}>
+          <LabGame mode="frontier" facts={() => []}>
             {(store) => {
               realmName = getEntityName(REALM, store)!;
               return <FrontierHud seasonOver={SeasonOver} rules={readExpeditionRules(store, 1)!} />;
@@ -154,43 +148,53 @@ const sendWithPlace = async (words: string) => {
   });
 };
 
-it("shares the realm a phone player selected before opening Chat from the place bar, its card put away", async () => {
-  await renderHud(390);
-  await act(async () => useUIStore.getState().selectOnMap({ kind: "structure", entityId: REALM }));
-  const chat = [...host.querySelectorAll<HTMLButtonElement>('nav[aria-label="Places"] button')].find((button) =>
-    button.textContent?.includes("Chat"),
-  )!;
+const openPhoneChat = async () => {
+  await act(async () =>
+    host.querySelector<HTMLButtonElement>('nav[aria-label="Places"] button[aria-label="Menu"]')!.click(),
+  );
+  const chat = host.querySelector<HTMLButtonElement>('section[aria-label="Menu"] button[aria-label="Chat"]')!;
   await act(async () => chat.click());
-  await connect();
-  // One panel at a time: Chat put the realm's card away, and kept the realm to share.
-  expect(useUIStore.getState().mapSelection).toBeNull();
-  expect(share()?.disabled).toBe(false);
-  await sendWithPlace("hold here");
+};
+
+it("shares the realm a phone player selected before opening Chat from Menu, its card put away", async () => {
+  const route = window.location.pathname + window.location.search;
+  window.history.replaceState(null, "", "/g/0x1ab9/1/map?col=1&row=1");
+  try {
+    await renderHud(390);
+    await act(async () => useUIStore.getState().selectOnMap({ kind: "structure", entityId: REALM }));
+    await openPhoneChat();
+    await connect();
+    expect(useUIStore.getState().mapSelection).toBeNull();
+    expect(share()?.disabled).toBe(false);
+    await sendWithPlace("hold here");
+  } finally {
+    window.history.replaceState(null, "", route);
+  }
 });
 
 it("drops what Chat kept once the player picks again: a bare tile is nothing to share", async () => {
-  await renderHud(390);
-  await act(async () => useUIStore.getState().selectOnMap({ kind: "structure", entityId: REALM }));
-  const chat = [...host.querySelectorAll<HTMLButtonElement>('nav[aria-label="Places"] button')].find((button) =>
-    button.textContent?.includes("Chat"),
-  )!;
-  await act(async () => chat.click());
-  await act(async () => useUIStore.getState().selectOnMap({ kind: "hex", hex: { col: 1, row: 1 } }));
-  // The tap on the map put the page away; open Chat again, and the bare tile shares nothing.
-  const again = [...host.querySelectorAll<HTMLButtonElement>('nav[aria-label="Places"] button')].find((button) =>
-    button.textContent?.includes("Chat"),
-  )!;
-  await act(async () => again.click());
-  await connect();
-  expect(share()?.disabled).toBe(true);
+  const route = window.location.pathname + window.location.search;
+  window.history.replaceState(null, "", "/g/0x1ab9/1/map?col=1&row=1");
+  try {
+    await renderHud(390);
+    await act(async () => useUIStore.getState().selectOnMap({ kind: "structure", entityId: REALM }));
+    await openPhoneChat();
+    await act(async () => useUIStore.getState().selectOnMap({ kind: "hex", hex: { col: 1, row: 1 } }));
+    await openPhoneChat();
+    await connect();
+    expect(share()?.disabled).toBe(true);
+  } finally {
+    window.history.replaceState(null, "", route);
+  }
 });
 
-it("shares the realm a desktop player selected, chat opened from its strip beside the map", async () => {
+it("shares the realm a desktop player selected, chat opened from its place in the top bar", async () => {
   await renderHud(1440);
   await act(async () => useUIStore.getState().selectOnMap({ kind: "structure", entityId: REALM }));
-  await act(async () => host.querySelector<HTMLButtonElement>('[aria-label="Chat strip"]')!.click());
+  const chat = host.querySelector<HTMLButtonElement>('nav[aria-label="Places"] button[aria-label="Chat"]')!;
+  await act(async () => chat.click());
   await connect();
-  expect(useUIStore.getState().mapSelection).toEqual({ kind: "structure", entityId: REALM });
+  expect(useUIStore.getState().mapSelection).toBeNull();
   expect(share()?.disabled).toBe(false);
   await sendWithPlace("meet here");
 });

@@ -15,7 +15,7 @@ export const sendResearch = (
   systemCalls: GameClientSetup["systemCalls"],
   signer: AccountInterface,
   realm: NativeRows["Structure"],
-  { row, choice }: { row: number; choice: number },
+  row: number,
   onSent: () => void,
 ): Promise<string | null> =>
   sendOnce("research", researchKey(realm, row), true, async () => {
@@ -23,7 +23,6 @@ export const sendResearch = (
       signer: signer as unknown as Account,
       structureId: realm.entity_id,
       row,
-      choice,
     });
     onSent();
     return sent;

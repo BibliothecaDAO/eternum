@@ -1,17 +1,14 @@
-import {
-  createEmptyActivityBreakdown,
-  type HeraldGameDirectory,
-  type HeraldGameDirectoryEntry,
-  type HeraldLeaderboard,
-  type HeraldPlayerStructure,
-  type PlayerActivityBreakdown,
-  type ShareAllocation,
-  sharePointCutoff,
-  unclaimedSharePoints,
+import type {
+  HeraldAspectRace,
+  HeraldGameDirectory,
+  HeraldGameDirectoryEntry,
+  HeraldPlayerQuest,
+  HeraldPlayerStructure,
 } from "@bibliothecadao/eternum/game-sync";
-import { nativeGameModeOf } from "@bibliothecadao/eternum";
+import { DAILY_QUEST_MODELS, nativeGameModeOfFamily, readDailyQuest } from "@bibliothecadao/eternum";
 import { dayOf, expeditionRealmSite, entityHomeNamespace, isRealmCategory } from "@bibliothecadao/eternum/expeditions";
-import { StructureType } from "@bibliothecadao/types";
+import { NativeFactStore, raceFinishHeight } from "@bibliothecadao/eternum/game-client";
+import { aspects, RESOURCE_PRECISION, type AspectId, StructureType } from "@bibliothecadao/types";
 import { isCheckGame, resolveDirectoryStatus, type DirectoryInput } from "../game-directory";
 import type { FoldRow } from "../types";
 
@@ -24,10 +21,10 @@ export const FINALIZED_GAME_MODELS: ReadonlySet<string> = new Set([
   "Structure",
   "TileOccupancy",
   "PlayerEntry",
-  "BlitzRoster",
-  "BlitzResult",
-  "PlayerPoints",
-  "HyperstructureShares",
+  "AspectRules",
+  "AspectMembers",
+  "RaceRules",
+  "AspectHyperstructure",
   "ChestRules",
   "LordsBudget",
   "FrontierPrize",
@@ -40,6 +37,39 @@ export const FINALIZED_GAME_MODELS: ReadonlySet<string> = new Set([
 
 import { integer, number, address, record, gameRows, required, type Row } from "./values";
 
+type DailyQuestModel = (typeof DAILY_QUEST_MODELS)[number];
+type QuestRowSelector = "game" | "home" | "entity" | "account" | "bane-game" | "bane-aspect" | "unused";
+
+const QUEST_MODEL_SELECTOR = {
+  GameRegistry: "game",
+  SliceRules: "game",
+  SettlementRules: "game",
+  QuestRules: "game",
+  Structure: "entity",
+  QuestProgress: "home",
+  LaborGrant: "home",
+  BaneGrant: "home",
+  Seal: "account",
+  SettledRealm: "home",
+  HomeAspect: "home",
+  BaneRules: "bane-game",
+  FirstTeamBane: "bane-game",
+  WorldBane: "bane-game",
+  TeamBane: "bane-aspect",
+  BaneProgress: "bane-aspect",
+  AspectActivity: "bane-aspect",
+  DeepSite: "unused",
+  AspectHyperstructure: "unused",
+  DeepGuard: "unused",
+  ArmyDay: "unused",
+  PlayerEntry: "unused",
+  ExplorerTroops: "unused",
+  TileOccupancy: "unused",
+  ExpeditionSite: "unused",
+} as const satisfies Record<DailyQuestModel, QuestRowSelector>;
+
+const DAILY_QUEST_MODEL_LIST: readonly DailyQuestModel[] = [...new Set(DAILY_QUEST_MODELS)];
+
 interface DirectoryRows {
   structures: FoldRow[];
   position: DirectoryInput["fold"]["structurePosition"];
@@ -48,7 +78,10 @@ interface DirectoryRows {
   progress: FoldRow[];
   entries: FoldRow[];
   entitlements: FoldRow[];
-  rosters: FoldRow[];
+  aspectRules: FoldRow[];
+  aspectMembers: FoldRow[];
+  raceRules: FoldRow[];
+  aspectHyperstructures: FoldRow[];
 }
 
 export function buildNativeDirectory(input: DirectoryInput): HeraldGameDirectory {
@@ -57,7 +90,7 @@ export function buildNativeDirectory(input: DirectoryInput): HeraldGameDirectory
   // Launcher-created check names are reserved for deployment; they never offer a player a joinable listing.
   const publicGames = rows("GameRegistry").filter(({ value }) => !isCheckGame(value));
   const seasons = publicGames
-    .filter(({ value }) => nativeGameModeOf(number(value.preset_id)) === "frontier")
+    .filter(({ value }) => nativeGameModeOfFamily(number(value.family)) === "frontier")
     .sort((a, b) => number(a.value.game_id) - number(b.value.game_id));
   // A chain's first Frontier season is Season 0 (Devcon's on the Nov 2 chain), the next Season 1 (owner, 2 November
   // 2026: "devcon season is s0").
@@ -98,7 +131,10 @@ function directoryRows(input: DirectoryInput): DirectoryRows {
     progress: rows("SettlementProgress"),
     entries: rows("PlayerEntry"),
     entitlements: rows("EntryEntitlement"),
-    rosters: rows("BlitzRoster"),
+    aspectRules: rows("AspectRules"),
+    aspectMembers: rows("AspectMembers"),
+    raceRules: rows("RaceRules"),
+    aspectHyperstructures: rows("AspectHyperstructure"),
   };
 }
 
@@ -110,8 +146,6 @@ function directoryPlayerState(
   if (!input.playerAddress) return null;
   const player = address(input.playerAddress);
   const structures = gameRows(facts.structures, game.game_id).filter((row) => address(row.owner) === player);
-  const roster = (gameRows(facts.rosters, game.game_id)[0]?.players as Row[] | undefined) ?? [];
-  const seat = roster.find((row) => address(row.account) === player);
   const entitlements = gameRows(facts.entitlements, game.game_id);
   const own = entitlements.find((row) => address(row.owner) === player);
   const held = own && number(own.pass_kind) === 2 ? own : null;
@@ -119,11 +153,74 @@ function directoryPlayerState(
   return {
     registered: gameRows(facts.entries, game.game_id).some((row) => address(row.player) === player),
     settled: structures.some((row) => isRealmCategory(number(record(row.base).category))),
-    roster_wallet: seat ? address(seat.wallet) : null,
     held_realm_id: held ? number(held.realm_id) : null,
     has_home_source: own !== undefined,
     taken_realm_ids: entitlements.filter((row) => number(row.pass_kind) === 2).map((row) => number(row.realm_id)),
     structures: structures.map((row) => playerStructure(row, game, settlement, facts, input.timestamp)),
+    today_quest: todayQuestOf(number(game.game_id), structures, facts, input, player),
+  };
+}
+
+function todayQuestOf(
+  gameId: number,
+  structures: readonly Row[],
+  directory: DirectoryRows,
+  input: DirectoryInput,
+  player: string,
+): HeraldPlayerQuest | null {
+  const realm = structures.find((row) => isRealmCategory(number(record(row.base).category)));
+  if (!realm) return null;
+  const targetGame = BigInt(gameId);
+  const homeId = integer(realm.entity_id);
+  const rowsForGame = (model: DailyQuestModel): FoldRow[] => {
+    const source =
+      model === "Structure"
+        ? directory.structures
+        : model === "SliceRules"
+          ? directory.rules
+          : model === "SettlementRules"
+            ? directory.settlementRules
+            : input.fold.modelRows(model);
+    return source.filter(({ value }) => integer(value.game_id) === targetGame);
+  };
+  if (rowsForGame("QuestRules").length === 0) return null;
+  const hasBaneRules = rowsForGame("BaneRules").length > 0;
+  const homeAspectRow = hasBaneRules
+    ? rowsForGame("HomeAspect").find(({ value }) => integer(value.home) === homeId)
+    : undefined;
+  const aspect = homeAspectRow ? number(homeAspectRow.value.aspect) : null;
+  const facts = DAILY_QUEST_MODEL_LIST.flatMap((model) => {
+    const selector = QUEST_MODEL_SELECTOR[model];
+    if (selector === "unused") return [];
+    if ((selector === "bane-game" || selector === "bane-aspect") && !hasBaneRules) return [];
+    if (selector === "bane-aspect" && aspect === null) return [];
+    const rows = rowsForGame(model).filter(({ value }) => {
+      switch (selector) {
+        case "game":
+        case "bane-game":
+          return true;
+        case "entity":
+          return integer(value.entity_id) === homeId;
+        case "home":
+          return integer(value.home) === homeId;
+        case "account":
+          return address(value.account) === player;
+        case "bane-aspect":
+          return number(value.aspect) === aspect;
+      }
+    });
+    return rows.map(({ key, value }) => ({ model, key, value }));
+  });
+  const store = new NativeFactStore();
+  store.applyFacts(facts);
+  store.setSnapshot({ gameId, complete: true, actor: player, timestamp: input.timestamp });
+  const reading = readDailyQuest(store, gameId, number(realm.entity_id), input.timestamp)?.reading.known;
+  if (!reading) return null;
+  return {
+    quest_id: reading.quest.id,
+    progress: Number(reading.progress),
+    target: Number(reading.target),
+    labor: Number(reading.reward.labor) / RESOURCE_PRECISION,
   };
 }
 
@@ -143,8 +240,14 @@ export function directoryFact(model: string, row: Row | undefined): unknown {
       return row;
     case "PlayerEntry":
       return row.player;
-    case "BlitzRoster":
-      return row.players;
+    case "AspectRules":
+      return row.orders;
+    case "AspectMembers":
+      return [row.aspect, row.members];
+    case "RaceRules":
+      return row.stage_height;
+    case "AspectHyperstructure":
+      return [row.aspect, row.height];
     case "Structure":
       return [
         row.owner,
@@ -159,7 +262,6 @@ export function directoryFact(model: string, row: Row | undefined): unknown {
 }
 
 export function directoryStatus(game: Row, timestamp: number) {
-  if (game.ready !== true) return "Registration";
   return resolveDirectoryStatus(
     game.settled ? "Settled" : "Registration",
     { start_main_at: number(game.start_main_at), end_at: number(game.end_at) },
@@ -170,9 +272,25 @@ export function directoryStatus(game: Row, timestamp: number) {
 
 const SETTLEMENT_CATEGORIES: readonly number[] = [StructureType.Realm, StructureType.Village];
 
+function gameDayOf(game: Row, facts: DirectoryRows, timestamp: number) {
+  const mode = nativeGameModeOfFamily(number(game.family));
+  const dayUnitSeconds = number(required(facts.rules, game.game_id, "SliceRules").day_unit_seconds);
+  if (mode !== "frontier" || dayUnitSeconds === 0) return null;
+  const calendar = {
+    seed: integer(game.seed),
+    scheduledEndAt: number(game.scheduled_end_at),
+    endAt: number(game.end_at),
+    startMainAt: number(game.start_main_at),
+    dayUnitSeconds,
+  };
+  const day = game.settled !== true ? dayOf(calendar, timestamp) : null;
+  const nextDay = day ? dayOf(calendar, day.end) : null;
+  return { day, nextDay };
+}
+
 function directoryEntry(game: Row, facts: DirectoryRows, input: DirectoryInput): HeraldGameDirectoryEntry {
-  const { settlementRules, progress, structures, rosters } = facts;
-  const mode = nativeGameModeOf(number(game.preset_id));
+  const { settlementRules, progress, structures } = facts;
+  const mode = nativeGameModeOfFamily(number(game.family));
   const settlement = required(settlementRules, game.game_id, "SettlementRules");
   const dayUnitSeconds = number(required(facts.rules, game.game_id, "SliceRules").day_unit_seconds);
   const state = gameRows(progress, game.game_id)[0];
@@ -180,45 +298,31 @@ function directoryEntry(game: Row, facts: DirectoryRows, input: DirectoryInput):
     (row) => SETTLEMENT_CATEGORIES.includes(number(record(row.base).category)) && integer(row.owner) !== 0n,
   );
   const realms = settlements.filter((row) => isRealmCategory(number(record(row.base).category)));
-  const roster = (gameRows(rosters, game.game_id)[0]?.players as Row[] | undefined) ?? [];
   const clock = {
     start_settling_at: number(game.start_settling_at),
     start_main_at: number(game.start_main_at),
     end_at: number(game.end_at),
-    end_grace_seconds: number(game.end_grace_seconds),
+    scheduled_end_at: number(game.scheduled_end_at),
   };
-  const calendar =
-    mode === "frontier" && dayUnitSeconds !== 0
-      ? { seed: integer(game.seed), endAt: clock.end_at, startMainAt: clock.start_main_at, dayUnitSeconds }
-      : null;
-  const day = calendar && game.settled !== true ? dayOf(calendar, input.timestamp) : null;
-
-  const nextDay = day ? dayOf(calendar!, day.end) : null;
+  const activeDay = gameDayOf(game, facts, input.timestamp);
+  const day = activeDay?.day ?? null;
+  const nextDay = activeDay?.nextDay ?? null;
   return {
     game_id: number(game.game_id),
     name: shortString(game.name),
-    preset_id: number(game.preset_id),
     mode,
     day_index: day?.index ?? null,
     day_ends_at: day?.end ?? null,
     next_day_length: nextDay ? nextDay.end - nextDay.start : null,
     expedition: dayUnitSeconds === 0 ? null : { day_unit_seconds: dayUnitSeconds, seed: integer(game.seed).toString() },
     dev_mode_on: game.dev_mode_on === true,
-    ready: game.ready === true,
+    clock_scale: number(game.clock_scale),
     status: directoryStatus(game, input.timestamp),
     clock,
     player_count: new Set(settlements.map((row) => address(row.owner))).size,
+    aspect_members: aspectMembersOf(facts, game.game_id),
+    aspect_race: aspectRaceOf(facts, game.game_id),
     player_state: directoryPlayerState(game, facts, input),
-    roster_count: roster.length,
-    roster: roster.map((row) => {
-      const account = address(row.account);
-      const entered = gameRows(facts.entries, game.game_id).some((entry) => address(entry.player) === account);
-      return {
-        account,
-        wallet: address(row.wallet),
-        prepared: entered && realms.some((realm) => address(realm.owner) === account),
-      };
-    }),
     registration: {
       count:
         mode === "frontier"
@@ -234,6 +338,30 @@ function directoryEntry(game: Row, facts: DirectoryRows, input: DirectoryInput):
     // Native placement is described by SettlementRules and SettlementPool in the snapshot.
     settlement: null,
   };
+}
+
+function aspectRaceOf(facts: DirectoryRows, gameId: unknown): HeraldAspectRace | null {
+  const rules = gameRows(facts.raceRules, gameId)[0];
+  if (!rules) return null;
+  const rows = gameRows(facts.aspectHyperstructures, gameId);
+  return {
+    finish_height: raceFinishHeight(number(rules.stage_height)),
+    heights: Object.fromEntries(
+      aspects.map(({ id }) => [id, number(rows.find((row) => number(row.aspect) === id)?.height ?? 0)]),
+    ) as Record<AspectId, number>,
+  };
+}
+
+/**
+ * Each Aspect's homes in a game with Aspects: AspectMembers' count, or 0 where an Aspect has no row yet (its absence
+ * rule under AspectRules); null in a game without them.
+ */
+function aspectMembersOf(facts: DirectoryRows, gameId: unknown): Record<AspectId, number> | null {
+  if (gameRows(facts.aspectRules, gameId).length === 0) return null;
+  const members = gameRows(facts.aspectMembers, gameId);
+  return Object.fromEntries(
+    aspects.map(({ id }) => [id, number(members.find((row) => number(row.aspect) === id)?.members ?? 0)]),
+  ) as Record<AspectId, number>;
 }
 
 function playerStructure(
@@ -270,6 +398,7 @@ function structurePosition(
       {
         dayUnitSeconds,
         spacing: number(settlement.spacing),
+        scheduledEndAt: number(game.scheduled_end_at),
         endAt: number(game.end_at),
         startMainAt: number(game.start_main_at),
         seed: integer(game.seed),
@@ -291,104 +420,6 @@ function structurePosition(
     }),
   );
   return null;
-}
-
-export function buildNativeLeaderboard(
-  modelRows: (model: string) => FoldRow[],
-  gameId: string,
-  timestamp: number,
-  activity: ReadonlyMap<string, PlayerActivityBreakdown> | null,
-): HeraldLeaderboard {
-  const rows = (model: string) => gameRows(modelRows(model), gameId);
-  const game = required(modelRows("GameRegistry"), gameId, "GameRegistry");
-  const rules = required(modelRows("SliceRules"), gameId, "SliceRules");
-  const result = rows("BlitzResult")[0];
-  // Standings carry addresses only: a player's name is their identity profile, resolved by the client.
-  if (result?.complete === true)
-    return finalStandings(
-      gameId,
-      result,
-      rows("BlitzRoster"),
-      registeredPlayerPoints(rows("PlayerEntry"), rows("PlayerPoints")),
-      activity,
-    );
-  const points = registeredPlayerPoints(rows("PlayerEntry"), rows("PlayerPoints"));
-  addUnclaimedSharePoints(points, rows("HyperstructureShares"), game, rules, timestamp);
-  return rankPlayers(gameId, points, activity);
-}
-
-function finalStandings(
-  gameId: string,
-  result: Row,
-  rosters: Row[],
-  points: Map<string, bigint>,
-  activity: ReadonlyMap<string, PlayerActivityBreakdown> | null,
-): HeraldLeaderboard {
-  const roster = (rosters[0]?.players as Row[] | undefined) ?? [];
-  return {
-    mode: "points",
-    game_id: integer(gameId).toString(),
-    entries: (result.players as Row[]).map((player) => {
-      const member = roster.find((row) => address(row.wallet) === address(player.wallet));
-      if (!member) throw new Error(`Final result wallet ${player.wallet} is outside the roster`);
-      const account = address(member.account);
-      const score = points.get(account);
-      if (score === undefined) throw new Error(`Missing final PlayerPoints for ${account}`);
-      return {
-        address: account,
-        totalPoints: Number(score) / 1_000_000,
-        rank: number(player.rank),
-        activityBreakdown: activity?.get(account) ?? createEmptyActivityBreakdown(),
-      };
-    }),
-  };
-}
-
-function registeredPlayerPoints(entries: Row[], registered: Row[]): Map<string, bigint> {
-  const points = new Map<string, bigint>();
-  for (const entry of entries) creditPoints(points, entry.player, 0n);
-  for (const player of registered) creditPoints(points, player.address, integer(player.points));
-  return points;
-}
-
-function addUnclaimedSharePoints(
-  points: Map<string, bigint>,
-  allocations: Row[],
-  game: Row,
-  rules: Row,
-  timestamp: number,
-): void {
-  const cutoff = sharePointCutoff(
-    { dev_mode_on: game.dev_mode_on === true, end_at: integer(game.end_at) },
-    BigInt(timestamp),
-  );
-  const rate = integer(record(rules.victory_points_grant_config).hyp_points_per_second);
-  for (const allocation of allocations)
-    for (const share of unclaimedSharePoints(allocation as unknown as ShareAllocation, rate, cutoff))
-      creditPoints(points, share.player, share.points);
-}
-
-function creditPoints(points: Map<string, bigint>, player: unknown, amount: bigint): void {
-  const key = address(player);
-  points.set(key, (points.get(key) ?? 0n) + amount);
-}
-
-function rankPlayers(
-  gameId: string,
-  points: Map<string, bigint>,
-  activity: ReadonlyMap<string, PlayerActivityBreakdown> | null,
-): HeraldLeaderboard {
-  const ranked = [...points].sort(([left, a], [right, b]) => (a === b ? left.localeCompare(right) : a > b ? -1 : 1));
-  const entries = ranked.map(([player, value], index) => ({
-    address: player,
-    totalPoints: Number(value) / 1_000_000,
-    rank: index + 1,
-    activityBreakdown: activity?.get(player) ?? createEmptyActivityBreakdown(),
-  }));
-  for (let index = 1; index < entries.length; index++) {
-    if (ranked[index][1] === ranked[index - 1][1]) entries[index].rank = entries[index - 1].rank;
-  }
-  return { mode: "points", game_id: integer(gameId).toString(), entries };
 }
 
 function shortString(value: unknown): string {

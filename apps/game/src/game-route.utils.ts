@@ -1,3 +1,5 @@
+import { GameOnOlderNumbersError, ShardReleaseMismatchError } from "@bibliothecadao/eternum/game-client";
+import type { GameRefusal } from "@/ui/features/game-entry/doorway/doorway-view";
 import type { PlayRouteBootPhase } from "@/game-entry/play-route-boot";
 
 type GameRouteView = "error" | "loading" | "ready" | "reconnect" | "redirect";
@@ -35,4 +37,10 @@ export const resolveGameRouteView = ({
   }
 
   return "loading";
+};
+
+export const refusalOf = (error: unknown): GameRefusal | undefined => {
+  if (error instanceof GameOnOlderNumbersError) return "older-numbers";
+  if (error instanceof ShardReleaseMismatchError) return "release";
+  return undefined;
 };

@@ -1,5 +1,5 @@
 import type { SettlementRelationship } from "@/three/structures/settlement-appearance";
-import { ChestModelPath, SPIRE_MODEL_PATH } from "@/three/constants/scene-constants";
+import { SPIRE_MODEL_PATH } from "@/three/constants/scene-constants";
 import type { BiomeType } from "@bibliothecadao/types";
 import { resolveTerrainLabStructureType, type TerrainLabBuilding } from "./terrain-lab-buildings";
 import type { TerrainPageRequest } from "@/three/terrain/terrain-types";
@@ -35,10 +35,9 @@ export function buildTerrainLabRequest(
   buildings: readonly TerrainLabBuilding[] = [],
   localMode = false,
 ): TerrainPageRequest {
-  const structures = buildings.filter((building) => building.path !== ChestModelPath);
-  const occupied = new Set(structures.map((building) => `${building.col}:${building.row}`));
+  const occupied = new Set(buildings.map((building) => `${building.col}:${building.row}`));
   const spires = new Set(
-    structures
+    buildings
       .filter((building) => building.path === SPIRE_MODEL_PATH)
       .map((building) => `${building.col}:${building.row}`),
   );
@@ -75,7 +74,7 @@ export function buildTerrainLabRequest(
     ),
     settlementAnchors: [
       ...anchors,
-      ...structures.flatMap(({ col, row, path }) => {
+      ...buildings.flatMap(({ col, row, path }) => {
         const structureType = resolveTerrainLabStructureType(path);
         return structureType === undefined
           ? []

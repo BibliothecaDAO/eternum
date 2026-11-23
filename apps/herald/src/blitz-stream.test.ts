@@ -2,7 +2,7 @@ import { CairoCustomEnum } from "starknet";
 import { expect, it } from "vitest";
 import { LiveWorld } from "./live-world";
 import type { MadaraRpc } from "./madara-rpc";
-import { seedDerivedRows, receipt, rowEvent, rulesEvent, setup } from "./native/fixtures";
+import { gameRegistryEvent, seedDerivedRows, receipt, rowEvent, rulesEvent, setup } from "./native/fixtures";
 import type { HeraldStreamMessage } from "./stream-protocol";
 import type { RpcBlockWithReceipts } from "./types";
 
@@ -16,18 +16,13 @@ it("preserves the whole Blitz game's facts through snapshot, overlay, confirmati
     fold,
     receipt(
       seedDerivedRows(fold, decoder, [
-        rowEvent("GameRegistry", ["1"], {
-          name: 7n,
-          preset_id: 2n,
-          creator: 10n,
-          settled: false,
-          ready: true,
-          dev_mode_on: false,
-          start_settling_at: 120n,
-          start_main_at: 120n,
-          end_at: 999999n,
-          end_grace_seconds: 0n,
-          seed: 7n,
+        gameRegistryEvent({
+          name: "7",
+          start_settling_at: "120",
+          start_main_at: "120",
+          scheduled_end_at: "999999",
+          end_at: "999999",
+          seed: "7",
         }),
         rulesEvent(),
         rowEvent("SettlementRules", ["1"], {

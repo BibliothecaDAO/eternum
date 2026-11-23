@@ -9,6 +9,7 @@ import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import type { FoldRow } from "../types";
 import { address, gameRows, integer, number, record, required, type Row } from "./values";
 import { frontierRewardOf } from "./frontier-rewards";
+import { isSeasonOneGame } from "./season-one";
 
 interface Standing {
   entry: HeraldFrontierLeaderboardEntry;
@@ -21,7 +22,8 @@ export function buildFrontierLeaderboard(
   history: readonly HeraldHistoryEvent[],
 ): HeraldFrontierLeaderboard {
   required(modelRows("GameRegistry"), gameId, "GameRegistry");
-  const players = settledPlayers(gameRows(modelRows("Structure"), gameId), gameRows(modelRows("CampaignHome"), gameId));
+  if (isSeasonOneGame(modelRows, gameId)) throw new Error("Season 1 ranks Aspects by height, not players by sites");
+  const players = settledPlayers(gameRows(modelRows("Structure"), gameId));
   const receipts = new Set<string>();
   for (const event of history) {
     if (integer(event.game_id) !== integer(gameId)) throw new Error("Frontier history game mismatch");
@@ -70,13 +72,7 @@ function prizeOf(modelRows: (model: string) => FoldRow[], gameId: string): Heral
   };
 }
 
-function settledPlayers(structures: Row[], campaignHomes: Row[]): Map<string, Standing> {
-  const campaigns = new Map(
-    campaignHomes.map((home) => [
-      integer(home.home),
-      { campaign_id: integer(home.campaign_id).toString(), tier: number(home.tier) },
-    ]),
-  );
+function settledPlayers(structures: Row[]): Map<string, Standing> {
   const players = new Map<string, Standing>();
   for (const structure of structures) {
     if (!isRealmCategory(number(record(structure.base).category))) continue;
@@ -89,7 +85,6 @@ function settledPlayers(structures: Row[], campaignHomes: Row[]): Map<string, St
         address: owner,
         structure_id: integer(structure.entity_id).toString(),
         has_wonder: metadata.has_wonder,
-        campaign: campaigns.get(integer(structure.entity_id)) ?? null,
         rank: 0,
         sites_cleared: { total: 0, camps: 0, rifts: 0, ruins: 0, beasts: 0 },
         chests_earned: 0,
@@ -113,20 +108,9 @@ function applyStory(player: Standing, event: HeraldHistoryEvent): void {
     case "ExplorationReward":
       creditResource(player.entry, reward.payload);
       break;
-    case "RewardChestOpened":
-      creditOpenedChest(player.entry, reward.payload);
-      break;
     default:
       throw new Error(`Unhandled Frontier reward: ${reward.kind satisfies never}`);
   }
-}
-
-/** An opening records whole LORDS, including zero for an expired chest; it is never a site clear. */
-function creditOpenedChest(entry: HeraldFrontierLeaderboardEntry, reward: Row): void {
-  const amount = integer(reward.amount);
-  if (amount < 0n) throw new Error("Negative Frontier reward");
-  entry.chests_earned++;
-  entry.rewards.lords = (integer(entry.rewards.lords) + amount).toString();
 }
 
 function creditSiteClear(player: Standing, payout: Row, event: HeraldHistoryEvent): void {

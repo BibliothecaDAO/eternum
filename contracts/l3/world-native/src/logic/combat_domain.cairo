@@ -12,7 +12,6 @@ pub mod CombatLogic {
     #[derive(Drop, starknet::Event)]
     pub enum Event {
         BattleEvent: crate::troops::BattleEvent,
-        RaidEvent: crate::combat_actions::RaidEvent,
         OwnershipRow: crate::events::RowSet,
     }
     #[abi(embed_v0)]

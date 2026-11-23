@@ -30,26 +30,24 @@ describe("aggregateConsumptionPerSecond", () => {
     const result = aggregateConsumptionPerSecond(
       [ResourcesIds.Knight, ResourcesIds.Paladin],
       {
-        [ResourcesIds.Knight]: { resourceToResource: 0, laborToResource: 0 },
+        [ResourcesIds.Knight]: { resourceToResource: 0 },
       },
       { recipes },
     );
     expect(result.size).toBe(0);
   });
 
-  it("sums complex and labor recipe inputs into per-second consumption", () => {
+  it("sums resource recipe inputs into per-second consumption", () => {
     const recipes = makeRecipes();
     // With maxAllocationPercent=90, a slider value of 90 means ratio=1.
     // cycleSeconds=60, so per-cycle `amount` divided by 60 gives per-second.
     // Knight: resource slider 90 -> coal 10/cycle, copper 4/cycle.
-    //         labor slider 90 -> labor 20/cycle.
     // Paladin: resource slider 45 -> coal 2.5/cycle, wood 3/cycle.
-    //          labor slider 0.
     const result = aggregateConsumptionPerSecond(
       [ResourcesIds.Knight, ResourcesIds.Paladin],
       {
-        [ResourcesIds.Knight]: { resourceToResource: 90, laborToResource: 90 },
-        [ResourcesIds.Paladin]: { resourceToResource: 45, laborToResource: 0 },
+        [ResourcesIds.Knight]: { resourceToResource: 90 },
+        [ResourcesIds.Paladin]: { resourceToResource: 45 },
       },
       { recipes, maxAllocationPercent: 90, cycleSeconds: 60 },
     );
@@ -57,14 +55,14 @@ describe("aggregateConsumptionPerSecond", () => {
     expect(result.get(ResourcesIds.Coal)).toBeCloseTo((10 + 2.5) / 60, 10);
     expect(result.get(ResourcesIds.Copper)).toBeCloseTo(4 / 60, 10);
     expect(result.get(ResourcesIds.Wood)).toBeCloseTo(3 / 60, 10);
-    expect(result.get(ResourcesIds.Labor)).toBeCloseTo(20 / 60, 10);
+    expect(result.has(ResourcesIds.Labor)).toBe(false);
   });
 
   it("multiplies out to the original per-cycle values when caller scales by cycleSeconds", () => {
     const recipes = makeRecipes();
     const perSecond = aggregateConsumptionPerSecond(
       [ResourcesIds.Knight],
-      { [ResourcesIds.Knight]: { resourceToResource: 45, laborToResource: 0 } },
+      { [ResourcesIds.Knight]: { resourceToResource: 45 } },
       { recipes, maxAllocationPercent: 90, cycleSeconds: 60 },
     );
 
@@ -81,7 +79,7 @@ describe("aggregateConsumptionPerSecond", () => {
     const recipes = makeRecipes();
     const result = aggregateConsumptionPerSecond(
       [ResourcesIds.Knight],
-      { [ResourcesIds.Knight]: { resourceToResource: 50, laborToResource: 0 } },
+      { [ResourcesIds.Knight]: { resourceToResource: 50 } },
       { recipes, maxAllocationPercent: 100, cycleSeconds: 60 },
     );
 
@@ -93,7 +91,7 @@ describe("aggregateConsumptionPerSecond", () => {
     const recipes = makeRecipes();
     const result = aggregateConsumptionPerSecond(
       [ResourcesIds.Knight],
-      { [ResourcesIds.Knight]: { resourceToResource: 45, laborToResource: 0 } },
+      { [ResourcesIds.Knight]: { resourceToResource: 45 } },
       { recipes, maxAllocationPercent: 0 },
     );
     expect(result.size).toBe(0);
@@ -104,7 +102,7 @@ describe("aggregateConsumptionPerSecond", () => {
     // A percent value above max should be clamped to ratio 1.
     const result = aggregateConsumptionPerSecond(
       [ResourcesIds.Knight],
-      { [ResourcesIds.Knight]: { resourceToResource: 180, laborToResource: 0 } },
+      { [ResourcesIds.Knight]: { resourceToResource: 180 } },
       { recipes, maxAllocationPercent: 90, cycleSeconds: 60 },
     );
     // Clamped to ratio=1, coal per cycle = 10 -> per-second = 10/60.

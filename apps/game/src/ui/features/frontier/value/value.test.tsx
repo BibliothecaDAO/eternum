@@ -2,9 +2,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { planRealmLabor, seasonStrip } from "./realm-labor";
 import { type WithdrawStep, WithdrawSheet } from "./withdraw-sheet";
-import { LordsPurse } from "./lords-purse";
 import { SeasonPayoutRow } from "./season-payout";
 import { withdrawalRefusal, withdrawalsCloseAt, withdrawStepOf } from "./withdrawal";
 
@@ -167,75 +165,5 @@ describe("the realm's LORDS on the season-over card", () => {
     expect(host.textContent).toBe("");
     show(undefined);
     expect(host.textContent).toBe("");
-  });
-});
-
-it("marks a phone's purse while the account has no linked wallet, its name saying why; plain with one", () => {
-  const line = "Link a wallet to receive your LORDS";
-  act(() => root.render(<LordsPurse lords={1_240} linkWalletLine={line} onOpen={() => undefined} />));
-  const purse = host.querySelector("button")!;
-  expect(purse.getAttribute("aria-label")).toBe(`LORDS 1,240. ${line}`);
-  expect(purse.querySelector('[data-icon="warning"]')).not.toBeNull();
-  act(() => root.render(<LordsPurse lords={1_240} onOpen={() => undefined} />));
-  expect(host.querySelector("button")!.getAttribute("aria-label")).toBe("LORDS 1,240");
-  expect(host.querySelector('[data-icon="warning"]')).toBeNull();
-});
-
-describe("the settled Realm's labor", () => {
-  it("gives only an unclaimed held home one daily claim, limited by its store", () => {
-    expect(
-      planRealmLabor({ eligible: true, claimed: false, amount: 1000, essence: 0, held: 17600, limit: 18000 }),
-    ).toEqual({
-      eligible: true,
-      claimed: false,
-      total: 1000,
-      fits: 400,
-      essence: 0,
-      claimable: true,
-    });
-    expect(
-      planRealmLabor({ eligible: false, claimed: false, amount: 1000, essence: 0, held: 0, limit: 18000 }).total,
-    ).toBe(0);
-    expect(
-      planRealmLabor({ eligible: true, claimed: true, amount: 1000, essence: 0, held: 0, limit: 18000 }).total,
-    ).toBe(0);
-  });
-  it("shows the days around today on the strip: five before, today and the next, kept inside the season", () => {
-    const strip = (today: number, last: number | undefined, founded = 0, claimedToday = false) =>
-      seasonStrip({ today, last, founded, claimed: (index) => index % 2 === 0, claimedToday }).map(
-        ({ day, state, today: isToday }) => `${day}${isToday ? "*" : ""}:${state}`,
-      );
-    expect(strip(11, 104)).toEqual([
-      "7:claimed",
-      "8:missed",
-      "9:claimed",
-      "10:missed",
-      "11:claimed",
-      "12*:open",
-      "13:ahead",
-    ]);
-    // Day 1: today first, six days ahead. The last day: the six before it.
-    expect(strip(0, 104, 0, true)).toEqual([
-      "1*:claimed",
-      "2:ahead",
-      "3:ahead",
-      "4:ahead",
-      "5:ahead",
-      "6:ahead",
-      "7:ahead",
-    ]);
-    expect(strip(104, 104)).toEqual([
-      "99:claimed",
-      "100:missed",
-      "101:claimed",
-      "102:missed",
-      "103:claimed",
-      "104:missed",
-      "105*:open",
-    ]);
-    // Days before the home was founded are not missed; a season shorter than the strip shows its days only.
-    expect(strip(3, 104, 2)).toEqual(["1:before", "2:before", "3:claimed", "4*:open", "5:ahead", "6:ahead", "7:ahead"]);
-    expect(strip(1, 2)).toEqual(["1:claimed", "2*:open", "3:ahead"]);
-    expect(strip(11, undefined)).toHaveLength(7);
   });
 });

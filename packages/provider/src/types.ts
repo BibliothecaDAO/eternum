@@ -40,37 +40,28 @@ export type TransactionSubmitGuard = (context: TransactionSubmitGuardContext) =>
 interface TransactionStreamStatus {
   block: number | null;
   hash: string;
-  batchRemaining?: string;
   revertReason?: string;
   status: string;
 }
 
-/**
- * Waits for a transaction's outcome, settled once Herald has applied it; `inBlock`, when the submission reconciles
- * its sends, is a fallback while Herald is silent. Command identity identifies batch receipt requirements.
- */
 export type TransactionStreamWaiter = (
   transactionHash: string,
   inBlock?: Promise<void>,
-  transactionType?: TransactionType,
   startedAt?: number,
 ) => Promise<TransactionStreamStatus>;
 
 export enum TransactionType {
   PROVISION_REALM = "provision_realm",
-  BITCOIN_MINE_CONTRIBUTE_LABOR = "bitcoin_mine_contribute_labor",
-  BITCOIN_MINE_CLAIM_PHASE_REWARD = "bitcoin_mine_claim_phase_reward",
-  BITCOIN_MINE_CLOSE_PHASE = "bitcoin_mine_close_phase",
-  BITCOIN_MINE_BIND_PHASE = "bitcoin_mine_bind_phase",
   // Exploration & Movement
   EXPLORE = "explore",
   TRAVEL_HEX = "travel_hex",
   TOGGLE_ALTERNATE = "toggle_alternate",
   ENTER_DEPTH = "enter_depth",
   RESEARCH = "research",
-  SPEND_SKILL_POINT = "spend_skill_point",
-  REFILL_STAMINA = "refill_stamina",
-  WITHDRAW_LORDS = "withdraw_lords",
+  CHOOSE_OATH = "choose_oath",
+  BUY_STAMINA = "buy_stamina",
+  BUY_SEAL = "buy_seal",
+  REROLL_OATH = "reroll_oath",
   EXPLORER_CREATE = "explorer_create",
   EXPLORER_ADD = "explorer_add",
   EXPLORER_DELETE = "explorer_delete",
@@ -113,8 +104,6 @@ export enum TransactionType {
   SELL = "sell",
   REMOVE = "remove",
   ADD_LIQUIDITY = "add_liquidity",
-  BRIDGE_DEPOSIT = "bridge_deposit",
-  BRIDGE_WITHDRAW = "bridge_withdraw",
 
   // Orders & Marketplace
   CREATE_ORDER = "create_order",
@@ -132,11 +121,6 @@ export enum TransactionType {
   // Structures & Ownership
   SET_ENTITY_NAME = "set_entity_name",
   TRANSFER_STRUCTURE_OWNERSHIP = "transfer_structure_ownership",
-
-  // Hyperstructures
-  CREATE_HYPERSTRUCTURE = "create_hyperstructure",
-  INITIALIZE_HYPERSTRUCTURE = "initialize_hyperstructure",
-  CONTRIBUTE = "contribute",
   CLAIM_WONDER_POINTS = "claim_wonder_points",
   CLAIM_PLAYER_FAITH_POINTS = "claim_player_faith_points",
   PLEDGE_FAITH = "pledge_faith",
@@ -146,19 +130,12 @@ export enum TransactionType {
 
   // Realms & Settlement
   SETTLE = "settle",
-
-  // Lords & Approvals
-  SET_ACCESS = "set_access",
-
-  // Season & Leaderboard
-  END_GAME = "end_game",
+  CLAIM_DAILY_QUEST = "claim_daily_quest",
 
   // Blitz
 
   // Chests & Relics
-  OPEN_CHEST = "open_chest",
   INTERACT_SITE = "interact_site",
-  BURN_RESEARCH_FOR_RELIC = "burn_research_for_relic",
   APPLY_RELIC = "apply_relic",
 
   // Legacy (kept for compatibility)

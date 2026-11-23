@@ -1,221 +1,207 @@
-import { gamesAbi } from "../../../packages/value-ledger/test-support/abi";
-import { CallData, shortString } from "starknet";
-import { expect, it, vi } from "vitest";
+import { Effect, Layer } from "effect";
+import { hash, RpcProvider } from "starknet";
+import { afterEach, beforeEach, expect, test, vi } from "vitest";
+import { gameRegistryRow, type GameRegistryWire } from "../../../packages/core/src/test-support/game-registry";
+import { argument, gamesAbi as abi, response } from "../../../packages/value-ledger/test-support/abi";
+import { createLaunchApp } from "./app";
+import { D1CalendarStore } from "./calendar-store";
+import { launchExecutorLayer } from "./executor";
+import { processNextLaunch } from "./process-launch";
 import { LaunchShard } from "./shard-client";
+import { D1SlotStore } from "./slot-store";
+import { D1LaunchStore, databaseLayer } from "./store";
+import { createLaunchTestDatabase, DEV_CHAIN, slotValueFixture, testChain } from "./test-database";
 
-it("launches a Blitz from its closed slot: creation parameters, settling time, one create, seats and its summary", async () => {
-  const native = new LaunchShard({
-    rpcUrl: "https://shard.test",
-    chainId: "0x1",
-    gamesAddress: "0x77",
-    accountAddress: "0x123",
-    privateKey: "0x1",
+vi.mock("../../../packages/value-ledger/src/rpc", async (original) => ({
+  ...(await original<typeof import("../../../packages/value-ledger/src/rpc")>()),
+  rpcAt: (nodeUrl: string) => new RpcProvider({ nodeUrl, baseFetch: shardNetwork }),
+}));
+
+interface HeldGame {
+  launch: string;
+  row: GameRegistryWire;
+}
+let held: HeldGame[];
+const heldRow = (params: Record<string, bigint | boolean>): GameRegistryWire => {
+  const endAt = String(BigInt(params.start_main_at!) + BigInt(params.duration_seconds!));
+  return gameRegistryRow({
+    name: String(params.name),
+    family: Number(params.family),
+    dev_mode_on: Boolean(params.dev_mode_on),
+    start_settling_at: String(params.start_settling_at),
+    start_main_at: String(params.start_main_at),
+    end_at: endAt,
+    scheduled_end_at: endAt,
+    seed: String(params.seed),
   });
-  const roster = [{ account: "0xa", wallet: "0x1" }];
-  const launch = {
-    request: {
-      environment: "madara.blitz" as const,
-      version: "2",
-      gameName: "paid-retry",
-      gameStartTime: new Date(400000).toISOString(),
-      durationSeconds: 60,
-    },
-    players: roster,
-    createdAt: 100000,
-    seater: "0x5a",
+};
+const createGame = (calldata: string[]) => {
+  const row = heldRow(argument(abi, "create_game", calldata) as Record<string, bigint | boolean>);
+  const launch = calldata.join();
+  const previous = held.find((game) => game.row.name === row.name);
+  if (previous && previous.launch !== launch) throw new Error("conflicting game launch");
+  if (!previous) held.push({ launch, row });
+};
+const VIEWS = ["l2_gas_bound", "game_id_by_name", "game"] as const;
+const viewGames = (selector: string, calldata: string[]) => {
+  const view = VIEWS.find((name) => BigInt(hash.getSelectorFromName(name)) === BigInt(selector));
+  if (view === "l2_gas_bound") return ["0xf4240"];
+  if (view === "game_id_by_name")
+    return [String(held.findIndex((game) => BigInt(game.row.name) === BigInt(calldata[0]!)) + 1)];
+  if (view === "game") return response(abi, "game", held[Number(calldata[0]) - 1]!.row);
+  throw new Error(`unexpected view ${selector}`);
+};
+const receipt = {
+  type: "INVOKE",
+  transaction_hash: "0xabc",
+  actual_fee: { amount: "0x0", unit: "FRI" },
+  finality_status: "ACCEPTED_ON_L2",
+  execution_status: "SUCCEEDED",
+  block_hash: "0xb",
+  block_number: 11,
+  messages_sent: [],
+  events: [],
+  execution_resources: { l1_gas: 0, l1_data_gas: 0, l2_gas: 0 },
+};
+const block = {
+  status: "ACCEPTED_ON_L2",
+  block_number: 10,
+  block_hash: "0xa",
+  parent_hash: "0x9",
+  timestamp: 100,
+  new_root: "0x1",
+  sequencer_address: "0x1",
+  starknet_version: "0.14.0",
+  l1_da_mode: "BLOB",
+  l1_gas_price: { price_in_fri: "0x1", price_in_wei: "0x1" },
+  l1_data_gas_price: { price_in_fri: "0x1", price_in_wei: "0x1" },
+  l2_gas_price: { price_in_fri: "0x1", price_in_wei: "0x1" },
+  transactions: [],
+};
+type RpcParams = {
+  request?: { entry_point_selector: string; calldata: string[] };
+  invoke_transaction?: { calldata: string[] };
+};
+const shardRpc = (method: string, params: RpcParams) => {
+  if (method === "starknet_call") return viewGames(params.request!.entry_point_selector, params.request!.calldata);
+  if (method === "starknet_addInvokeTransaction") {
+    createGame(params.invoke_transaction!.calldata.slice(4));
+    return { transaction_hash: receipt.transaction_hash };
+  }
+  const answers: Record<string, unknown> = {
+    starknet_specVersion: "0.10.0",
+    starknet_chainId: DEV_CHAIN,
+    starknet_getNonce: "0x0",
+    starknet_getBlockWithTxHashes: block,
+    starknet_getClassHashAt: "0xabc",
+    starknet_getClass: { abi: JSON.stringify(abi), sierra_program: [], contract_class_version: "0.1.0" },
+    starknet_getTransactionReceipt: receipt,
   };
-  let params: Record<string, unknown> | undefined;
-  let seated = false;
-  vi.spyOn(native, "gameId").mockImplementation(async () => (params ? 7 : 0));
-  const create = vi.spyOn(native, "sendAdmin").mockImplementation(async (_entry, payload, nonce) => {
-    params = (payload as { params: Record<string, unknown> }).params;
-    const entry = gamesAbi.find((entry) => entry.name === "create_game")!;
-    const fields = gamesAbi.find((type) => type.name === entry.inputs[0].type)!.members;
-    expect(Object.keys(params).sort()).toEqual(fields.map((field: { name: string }) => field.name).sort());
-    expect(new CallData(gamesAbi).compile("create_game", payload as never).length).toBeGreaterThan(0);
-    expect(nonce).toBe(9n);
-    return "0xc";
-  });
-  const closed = vi.spyOn(native, "awaitClosed").mockResolvedValue();
-  vi.spyOn(native, "game").mockImplementation(
-    async () =>
-      ({
-        preset_id: BigInt(String(params!.preset_id)),
-        seed: BigInt(String(params!.seed)),
-        start_settling_at: BigInt(String(params!.start_settling_at)),
-        start_main_at: BigInt(String(params!.start_main_at)),
-        end_at: 460n,
-      }) as never,
+  return answers[method];
+};
+const manifest = {
+  version: 1,
+  chainId: DEV_CHAIN,
+  rpcUrl: "https://shard.test/rpc",
+  accountClassHash: "0x2",
+  guardianPublicKey: "0x9",
+  contracts: { games: "0x77" },
+};
+const shardNetwork: typeof fetch = async (input, init) => {
+  if (String(input instanceof Request ? input.url : input).endsWith("/manifest")) return Response.json(manifest);
+  const { id, method, params } = JSON.parse(String(init?.body)) as { id: number; method: string; params: RpcParams };
+  const result = shardRpc(method, params);
+  return Response.json(
+    result === undefined
+      ? { jsonrpc: "2.0", id, error: { code: -32601, message: `unanswered ${method}` } }
+      : { jsonrpc: "2.0", id, result },
   );
-  vi.spyOn(native, "rosterReady").mockImplementation(async () => seated);
-  vi.spyOn(native, "roster").mockResolvedValue(roster);
-  const head = vi.spyOn(native, "head").mockResolvedValue({ block_number: 10, block_hash: "0x10", timestamp: 99 });
-  await expect(native.launchBlitz([launch])).rejects.toMatchObject({ _tag: "RegistrationOpen", secondsUntilClose: 1 });
-  expect(create).not.toHaveBeenCalled();
-
-  head.mockResolvedValue({ block_number: 11, block_hash: "0x11", timestamp: 100 });
-  const pins = { gameId: 7, release: 1n, commitment: 2n, l2GasBound: 3n };
-  vi.spyOn(native, "pins").mockResolvedValue(pins);
-  vi.spyOn(native, "seaterAccount").mockReturnValue(native);
-  vi.spyOn(native, "view").mockResolvedValue(0x5an);
-  vi.spyOn(native, "pendingNonce").mockResolvedValueOnce(9n).mockResolvedValue(10n);
-  const send = vi.spyOn(native, "sendSeat").mockResolvedValue("0xabc");
-  vi.spyOn(native, "seatOutcome").mockImplementation(async () => {
-    seated = true;
-    return { remaining: 0n };
-  });
-  expect(await native.launchBlitz([launch])).toEqual([
-    expect.objectContaining({
-      gameName: "paid-retry",
-      gameId: 7,
-      startTime: 400,
-      durationSeconds: 60,
-      finalizeAt: 460,
-      settlementTransactions: 1,
-    }),
-  ]);
-  expect(params).toMatchObject({
-    roster,
-    seater: "0x5a",
-    start_settling_at: 100,
-    start_main_at: 400,
-    registration_start: 99,
-  });
-  expect(closed).toHaveBeenCalledWith("0xc");
-  expect(send).toHaveBeenCalledWith(pins, 10n);
-
-  // A retry finds the game and refuses one whose stored roster or seater differs, before any write.
-  await expect(native.launchBlitz([{ ...launch, players: [{ account: "0xb", wallet: "0x1" }] }])).rejects.toThrow(
-    "frozen_roster_differs",
-  );
-  await expect(native.launchBlitz([{ ...launch, seater: "0x5b" }])).rejects.toThrow("game_seater_differs");
-  expect(create).toHaveBeenCalledOnce();
-});
-
-/**
- * A shard whose games keep the release they were created in: `existing` names the games already on it with their
- * release, and a game created now takes `currentRelease`. Each game seats one player; a seat carrying another game's
- * release is refused by the contract, as `games_entry` does.
- */
-const releasedShard = (existing: Record<string, number>, currentRelease: number) => {
-  const native = new LaunchShard({
-    rpcUrl: "https://shard.test",
-    chainId: "0x1",
-    gamesAddress: "0x77",
-    accountAddress: "0x123",
-    privateKey: "0x1",
-  });
-  const roster = [{ account: "0xa", wallet: "0x1" }];
-  const launches = ["game-1", "game-2"].map((gameName) => ({
-    request: {
-      environment: "madara.blitz" as const,
-      version: "2",
-      gameName,
-      gameStartTime: new Date(400000).toISOString(),
-      durationSeconds: 60,
-    },
-    players: roster,
-    createdAt: 100000,
-    seater: "0x5a",
-  }));
-  const games = new Map<string, { id: number; release: number; seed: bigint; ready: boolean }>();
-  const seedOf = (params: unknown) => BigInt(String((params as { seed: unknown }).seed));
-  let nonce = 0n;
-  const seats = new Map<string, { gameId: number; release: bigint }>();
-  return {
-    native,
-    launches,
-    games,
-    /** Puts the games named in `existing` on the shard, unseated, with the seed this launch would give them. */
-    async seedExisting() {
-      for (const launch of launches) {
-        if (existing[launch.request.gameName] === undefined) continue;
-        const params = await (
-          native as unknown as { creationParams: (...args: unknown[]) => Promise<unknown> }
-        ).creationParams(launch.request, launch.createdAt, launch.players);
-        const id = games.size + 1;
-        games.set(launch.request.gameName, {
-          id,
-          release: existing[launch.request.gameName]!,
-          seed: seedOf(params),
-          ready: false,
-        });
-      }
-    },
-    stub() {
-      const byId = (id: number) => [...games.values()].find((game) => game.id === id)!;
-      vi.spyOn(native, "head").mockResolvedValue({ block_number: 10, block_hash: "0xa", timestamp: 100 });
-      vi.spyOn(native, "gameId").mockImplementation(async (name) => games.get(name)?.id ?? 0);
-      vi.spyOn(native, "sendAdmin").mockImplementation(async (_entry, payload) => {
-        const params = (payload as { params: { name: unknown } }).params;
-        const name = shortString.decodeShortString(String(params.name));
-        games.set(name, { id: games.size + 1, release: currentRelease, seed: seedOf(params), ready: false });
-        nonce++;
-        return "0xc";
-      });
-      vi.spyOn(native, "awaitClosed").mockResolvedValue();
-      vi.spyOn(native, "game").mockImplementation(
-        async (id) =>
-          ({
-            preset_id: 2n,
-            seed: byId(id).seed,
-            start_settling_at: 100n,
-            start_main_at: 400n,
-            end_at: 460n,
-          }) as never,
-      );
-      vi.spyOn(native, "rosterReady").mockImplementation(async (id) => byId(id).ready);
-      vi.spyOn(native, "roster").mockResolvedValue(roster);
-      vi.spyOn(native, "seaterAccount").mockReturnValue(native);
-      vi.spyOn(native, "view").mockResolvedValue(0x5an);
-      const pins = vi.spyOn(native, "pins").mockImplementation(async (gameId) => ({
-        gameId,
-        release: BigInt(byId(gameId).release),
-        commitment: 2n,
-        l2GasBound: 3n,
-      }));
-      vi.spyOn(native, "pendingNonce").mockImplementation(async () => nonce);
-      vi.spyOn(native, "sendSeat").mockImplementation(async (pin, sentAt) => {
-        seats.set(`0x${sentAt}`, { gameId: pin.gameId, release: pin.release });
-        nonce = sentAt + 1n;
-        return `0x${sentAt}`;
-      });
-      vi.spyOn(native, "seatOutcome").mockImplementation(async (gameId, hash) => {
-        if (seats.get(hash)!.release !== BigInt(byId(gameId).release)) return "spent";
-        byId(gameId).ready = true;
-        return { remaining: 0n };
-      });
-      return { pins, seats: () => [...seats.values()] };
-    },
-  };
 };
 
-it("seats each recovered game with its own release, however the releases differ", async () => {
-  const shard = releasedShard({ "game-1": 1, "game-2": 2 }, 2);
-  await shard.seedExisting();
-  const { pins, seats } = shard.stub();
-  await shard.native.launchBlitz(shard.launches);
-  expect([...shard.games.values()].map(({ ready }) => ready)).toEqual([true, true]);
-  expect(seats()).toEqual([
-    { gameId: 1, release: 1n },
-    { gameId: 2, release: 2n },
-  ]);
-  expect(pins.mock.calls.map(([gameId]) => gameId).sort()).toEqual([1, 2]);
+const season = {
+  environment: "madara.frontier" as const,
+  gameName: "frontier-fixture",
+  gameStartTime: "2026-11-21T00:00:00.000Z",
+  durationSeconds: 4_320_000,
+};
+const target = {
+  directory: { shard: async () => ({ url: "https://shard.test", chainId: DEV_CHAIN }) },
+  accountAddress: "0x1",
+  privateKey: "0x12345",
+};
+const launchShard = () =>
+  new LaunchShard({ rpcUrl: "https://shard.test/rpc", chainId: DEV_CHAIN, gamesAddress: "0x77", ...target });
+
+let database: Awaited<ReturnType<typeof createLaunchTestDatabase>>;
+beforeEach(async () => {
+  held = [];
+  vi.stubGlobal("fetch", vi.fn(shardNetwork));
+  database = await createLaunchTestDatabase();
+});
+afterEach(async () => {
+  await database.close();
+  vi.unstubAllGlobals();
 });
 
-it("seats an old game with its release beside a game created after a release change", async () => {
-  const shard = releasedShard({ "game-1": 1 }, 2);
-  await shard.seedExisting();
-  const { seats } = shard.stub();
-  await shard.native.launchBlitz(shard.launches);
-  expect(shard.native.sendAdmin).toHaveBeenCalledOnce();
-  expect([...shard.games.values()].map(({ id, release, ready }) => [id, release, ready])).toEqual([
-    [1, 1, true],
-    [2, 2, true],
-  ]);
-  // The new game's seat goes out in the fresh pipeline, the recovered game's in its top-up: each carries its own release.
-  expect(seats()).toEqual([
-    { gameId: 2, release: 2n },
-    { gameId: 1, release: 1n },
-  ]);
+test("a retried launch finds the game its first attempt created", async () => {
+  const createdAt = Date.parse("2026-11-20T00:00:00.000Z");
+  const first = await launchShard().create(season, createdAt);
+  const retried = await launchShard().create(season, createdAt);
+  expect(first).toMatchObject({ gameId: 1, gameName: season.gameName, startTime: 1_795_219_200 });
+  expect(first.durationSeconds).toBe(season.durationSeconds);
+  expect(retried).toEqual(first);
+  expect(held).toHaveLength(1);
+});
+
+test("a retried launch still finds its game after the race ended it early", async () => {
+  const createdAt = Date.parse("2026-11-20T00:00:00.000Z");
+  await launchShard().create(season, createdAt);
+  held[0]!.row = { ...held[0]!.row, end_at: "1795300000" };
+  expect(await launchShard().create(season, createdAt)).toMatchObject({ gameId: 1, durationSeconds: 80_800 });
+});
+
+test("a name the registry holds under another seed is not this launch", async () => {
+  const createdAt = Date.parse("2026-11-20T00:00:00.000Z");
+  await launchShard().create(season, createdAt);
+  held[0]!.row = { ...held[0]!.row, seed: "7" };
+  await expect(launchShard().create(season, createdAt)).rejects.toThrow("game_launch_identity_differs");
+});
+
+test("a failed run whose game the shard holds completes when continued, and the directory lists the game", async () => {
+  const store = new D1LaunchStore(database.db, testChain(DEV_CHAIN));
+  const app = createLaunchApp({
+    config: { operatorToken: "operator-test-token" },
+    deployment: { environment: "dev", version: "test", revision: "abc1234" },
+    store,
+    slots: new D1SlotStore(database.db, store, slotValueFixture()),
+    calendar: new D1CalendarStore(database.db),
+    registrar: {
+      armFor: async () => {},
+      joinFailure: async () => null,
+      wakeAt: async () => 0,
+      applyRelease: async () => ({ shard: null }),
+    },
+  });
+  const operator = { authorization: "Bearer operator-test-token" };
+  const directory = async () => (await app.request("/api/factory/directory-games", { headers: operator })).json();
+  const run = await store.enqueue(season);
+  await launchShard().create(run.request, Date.parse(run.createdAt));
+  await store.startNext(Date.now());
+  await store.fail(run.id, "game_launch_identity_differs");
+  expect(await directory()).toEqual({ chains: [] });
+
+  const continued = await app.request(`/api/factory/runs/${season.environment}/${season.gameName}/actions/continue`, {
+    method: "POST",
+    headers: operator,
+  });
+  expect(continued.status).toBe(202);
+  await Effect.runPromise(
+    processNextLaunch(Date.now()).pipe(
+      Effect.provide(Layer.mergeAll(databaseLayer(store), launchExecutorLayer(target))),
+    ),
+  );
+
+  expect(await store.find(season.environment, season.gameName)).toMatchObject({ status: "complete" });
+  expect(await directory()).toEqual({ chains: [{ chainId: DEV_CHAIN, games: [{ gameId: 1, slotId: null }] }] });
+  expect(held).toHaveLength(1);
 });

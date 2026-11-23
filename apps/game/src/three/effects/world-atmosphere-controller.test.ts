@@ -133,7 +133,7 @@ describe("WorldAtmosphereController", () => {
     expect(fixture.directionalLight.position.y).toBeGreaterThanOrEqual(0.5);
     expect(fixture.directionalLight.target.position.x).toBeCloseTo(10);
     expect(fixture.directionalLight.target.position.y).toBeCloseTo(2);
-    expect(fixture.directionalLight.target.position.z).toBeCloseTo(35.2);
+    expect(fixture.directionalLight.target.position.z).toBeCloseTo(30);
     expect((fixture.scene.background as Color).getHex()).not.toBe(0x111111);
   });
 
@@ -432,39 +432,14 @@ it("lets the biome lab disable the moon through weather updates", () => {
   expect(moon.intensity).toBeCloseTo(0.95);
 });
 
-const cycleSamples = [0, 5, 10, 16.7, 20, 25, 30, 35, 40, 45, 50, 55, 60, 66.7, 75, 85, 95, 99.9];
-
-it.each(cycleSamples)("keeps shipped lighting outside Frontier at cycle %s", (progress) => {
-  const shipped = createFixture();
-  shipped.manager.update(progress);
-  shipped.manager.applyWeatherModulation(0.7, 0.3, 0.5, 0.1);
-  for (const mode of ["blitz", "eternum", "duel"] as const) {
-    const fixture = createFixture(mode);
-    fixture.manager.update(progress);
-    fixture.manager.applyWeatherModulation(0.7, 0.3, 0.5, 0.1);
-    expect(readLighting(fixture)).toEqual(readLighting(shipped));
-    fixture.manager.dispose();
-  }
-  shipped.manager.dispose();
-});
-
-it.each(cycleSamples)("uses Ember colours with the shipped cycle and visibility at %s", (progress) => {
-  const shipped = createFixture();
-  const frontier = createFixture("frontier");
-  shipped.manager.update(progress);
-  frontier.manager.update(progress);
-  expect(readLighting(frontier)).toEqual({
-    ...readLighting(shipped),
-    sky: 0xa4b1cd,
-    background: 0xa4b1cd,
-    ground: 0x514453,
-    sunColor: 0xffbc7f,
-    ambientColor: 0xb0a4b7,
-  });
-  // Ethereal presentation keeps the existing moonlight.
-  shipped.manager.update(progress, undefined, { environment: "ethereal" });
-  frontier.manager.update(progress, undefined, { environment: "ethereal" });
-  expect(readLighting(frontier)).toEqual(readLighting(shipped));
-  frontier.manager.dispose();
-  shipped.manager.dispose();
+it("eases progress smoothly across day rollover without snapping and exposes shownProgress", () => {
+  const fixture = createFixture("frontier");
+  fixture.manager.params.progressSmoothing = 0.05;
+  fixture.manager.params.colorTransitionSpeed = 0.05;
+  fixture.manager.update(66.67);
+  expect(fixture.manager.shownProgress).toBeCloseTo(66.67, 2);
+  fixture.manager.update(33.33);
+  expect(fixture.manager.shownProgress).toBeGreaterThan(60);
+  expect(fixture.manager.shownProgress).toBeLessThan(66.67);
+  fixture.manager.dispose();
 });

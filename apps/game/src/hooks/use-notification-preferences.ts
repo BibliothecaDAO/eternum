@@ -34,9 +34,10 @@ async function reload(owner: string | null, invalidate = false): Promise<void> {
   );
 }
 
-async function save(owner: string | null, level: NotificationLevel): Promise<void> {
+/** Saves the level; true only when the account holds it afterwards. */
+async function save(owner: string | null, level: NotificationLevel): Promise<boolean> {
   const state = useNotificationPreferenceStore.getState();
-  if (state.owner !== owner || state.status !== "ready" || !state.saved) return;
+  if (state.owner !== owner || state.status !== "ready" || !state.saved) return false;
   const revision = state.saved.revision;
   await runPreferenceOperation(owner, "saving", async () => {
     if (!owner) return saveAnonymousPreference(level);
@@ -44,6 +45,8 @@ async function save(owner: string | null, level: NotificationLevel): Promise<voi
     if (saved.owner === owner) publishAccountPreferenceChange(saved);
     return saved;
   });
+  const after = useNotificationPreferenceStore.getState();
+  return after.owner === owner && after.status === "ready" && after.saved?.level === level;
 }
 
 async function runPreferenceOperation(

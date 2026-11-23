@@ -53,3 +53,46 @@ test("first-party endpoints and unrelated patches/dependencies stay prohibited",
     ].sort((a, b) => a.path.localeCompare(b.path)),
   );
 });
+
+test("the old price provider is refused wherever its address is written or assembled; only its permitted links pass", () => {
+  const name = ["coin", "gecko"].join("");
+  const link = `https://www.${name}.com/en/coins/lords`;
+  const display = ["Coin", "Gecko"].join("");
+  const result = checkFixture({
+    "apps/realms/server/contiguous.ts": `fetch("https://api.${name}.com/api/v3/simple/price");`,
+    "apps/realms/server/pro.ts": `fetch("https://pro-api.${name}.com/api/v3/simple/price");`,
+    "apps/realms/server/split.ts": `fetch("https://api." + "${name}.com/api/v3/simple/price");`,
+    "apps/realms/server/parts.ts": `const host = "api." + "${name}" + ".com";`,
+    "apps/web/src/config.ts": `export const market = { subdomain: "api", host: "${name}.com" };`,
+    "apps/web/src/upper.tsx": `const host = { name: "${name.toUpperCase()}.COM" };`,
+    "apps/realms/config/market.json": JSON.stringify({ priceUrl: `https://api.${name}.com/api/v3/simple/price` }),
+    "apps/realms/config/link-and-api.json": JSON.stringify({ page: link, priceUrl: `https://api.${name}.com/api/v3` }),
+    "apps/game/src/shell/community.ts": `const href = "${link}"; fetch("https://api.${name}.com/api/v3/ping");`,
+    "apps/web/src/site/data/socials.ts": `export const socials = [{ id: "${name}", name: "${display}", href: "${link}" }];`,
+    "apps/game/src/shell/new-link-component.tsx": `export const Link = () => <a href="${link}" label="${display}" />;`,
+    "apps/game/asset-sources/facets/verdicts.json": JSON.stringify({
+      logo: `https://assets.${name}.com/coins/images/22171/standard/lords.png`,
+      note: `Nothing shipped for ${display}`,
+    }),
+    "apps/game/src/shell/icon.ts": `export const icon = "brand-${name}";`,
+    "docs/notes.md": `the old reader called api.${name}.com`,
+    [`apps/game/public/tokens/brand-${name}.svg`]: "<svg/>",
+  });
+  assert.equal(result.ok, false);
+  assert.deepEqual(
+    result.violations
+      .map(({ path, rule, line }) => ({ path, rule, line }))
+      .sort((a, b) => a.path.localeCompare(b.path)),
+    [
+      { path: "apps/game/src/shell/community.ts", rule: "forbidden-price-source", line: 1 },
+      { path: "apps/realms/config/link-and-api.json", rule: "forbidden-price-source", line: 1 },
+      { path: "apps/realms/config/market.json", rule: "forbidden-price-source", line: 1 },
+      { path: "apps/realms/server/contiguous.ts", rule: "forbidden-price-source", line: 1 },
+      { path: "apps/realms/server/parts.ts", rule: "forbidden-price-source", line: 1 },
+      { path: "apps/realms/server/pro.ts", rule: "forbidden-price-source", line: 1 },
+      { path: "apps/realms/server/split.ts", rule: "forbidden-price-source", line: 1 },
+      { path: "apps/web/src/config.ts", rule: "forbidden-price-source", line: 1 },
+      { path: "apps/web/src/upper.tsx", rule: "forbidden-price-source", line: 1 },
+    ],
+  );
+});

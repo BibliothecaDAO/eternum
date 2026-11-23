@@ -1,7 +1,8 @@
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { configManager, getEntityInfo, getStructureName, nativeGameModeOf } from "@bibliothecadao/eternum";
+import { configManager, getEntityInfo, getStructureName, nativeGameModeOfFamily } from "@bibliothecadao/eternum";
 import {
   BuildingType,
+  isFrontierBuilding,
   type ContractAddress,
   type ID,
   StructureType,
@@ -12,7 +13,7 @@ import {
 import { BUILDINGS_GROUPS, buildingModelPaths, getStructureModelPaths } from "@/three/constants/scene-constants";
 import { frontierPaintedBuildingPath, frontierPaintedPath } from "@/three/structures/frontier-painted-buildings";
 
-export type GameModeId = "frontier" | "blitz" | "eternum" | "duel";
+export type GameModeId = "frontier" | "blitz" | "eternum";
 
 export interface GameModeConfig {
   id: GameModeId;
@@ -27,8 +28,6 @@ export interface GameModeConfig {
     tickGongSound: string;
   };
   ui: {
-    showAttackTypeSelector: boolean;
-    showEndSeasonButton: boolean;
     showExplorerCapacity: boolean;
     showGuildsTab: boolean;
     showAutomation: boolean;
@@ -61,10 +60,10 @@ export interface GameModeConfig {
 
 const BASE_BUILDING_EXCLUSIONS = new Set<string>([
   // Frontier's training buildings stand only on its realm boards.
-  "WarHall",
+  "RationsDepot",
   "SupplyYard",
   "ScoutsLodge",
-  "Hearth",
+  "ConscriptionCamp",
   "Resource",
   "Castle",
   "Bank",
@@ -86,10 +85,10 @@ function resolveBuildingModelPaths(isBlitz: boolean) {
   return { ...paths, [BUILDINGS_GROUPS.BUILDINGS]: buildings };
 }
 
-const buildStructureHelpers = (mode: GameModeId) => ({
+const buildStructureHelpers = () => ({
   // A mode names the active game's structures, from the active game's facts.
   getName: getStructureName,
-  getTypeName: (type: StructureType, mineKind?: number) => structureName(type, mineKind, mode),
+  getTypeName: (type: StructureType, mineKind?: number) => structureName(type, mineKind),
   getEntityInfo: (entityId: ID, playerAccount: ContractAddress | null, store: NativeFactStore) =>
     getEntityInfo(entityId, playerAccount, store),
 });
@@ -114,8 +113,6 @@ const blitzConfig: GameModeConfig = {
     tickGongSound: "event.blitz_gong",
   },
   ui: {
-    showAttackTypeSelector: false,
-    showEndSeasonButton: false,
     showExplorerCapacity: false,
     showGuildsTab: false,
     showAutomation: true,
@@ -127,7 +124,7 @@ const blitzConfig: GameModeConfig = {
   rules: {
     isBuildingTypeAllowed: buildBuildingRule(BLITZ_BUILDING_EXCLUSIONS),
   },
-  structure: buildStructureHelpers("blitz"),
+  structure: buildStructureHelpers(),
   assets: {
     structureModelPaths: getStructureModelPaths(),
     buildingModelPaths: resolveBuildingModelPaths(true),
@@ -147,8 +144,6 @@ const eternumConfig: GameModeConfig = {
     tickGongSound: "event.gong",
   },
   ui: {
-    showAttackTypeSelector: true,
-    showEndSeasonButton: true,
     showExplorerCapacity: true,
     showGuildsTab: true,
     showAutomation: true,
@@ -160,7 +155,7 @@ const eternumConfig: GameModeConfig = {
   rules: {
     isBuildingTypeAllowed: buildBuildingRule(new Set()),
   },
-  structure: buildStructureHelpers("eternum"),
+  structure: buildStructureHelpers(),
   assets: {
     structureModelPaths: getStructureModelPaths(),
     buildingModelPaths: resolveBuildingModelPaths(false),
@@ -175,11 +170,11 @@ const frontierConfig: GameModeConfig = {
     buildingModelPaths: frontierBuildingModels(),
     structureModelPaths: frontierStructureModels(),
   },
-  structure: buildStructureHelpers("frontier"),
+  structure: buildStructureHelpers(),
   labels: {
     ...blitzConfig.labels,
-    village: structureName(StructureType.Camp, undefined, "frontier"),
-    villages: structurePlural(StructureType.Camp, undefined, "frontier"),
+    village: structureName(StructureType.Camp),
+    villages: structurePlural(StructureType.Camp),
   },
   ui: {
     ...blitzConfig.ui,
@@ -192,16 +187,9 @@ const frontierConfig: GameModeConfig = {
   },
   rules: {
     isBuildingTypeAllowed: (key) =>
-      [
-        "WorkersHut",
-        "ResourceWheat",
-        "ResourceKnightT1",
-        "ResourceLabor",
-        "WarHall",
-        "SupplyYard",
-        "ScoutsLodge",
-        "Hearth",
-      ].includes(key),
+      Object.entries(BuildingType).some(
+        ([name, value]) => name === key && typeof value === "number" && isFrontierBuilding(value),
+      ),
   },
 };
 
@@ -222,19 +210,13 @@ function frontierStructureModels() {
   paths[StructureType.Ruin] = [frontierPaintedPath("fallen-realm-ruin"), ...paths[StructureType.Ruin].slice(1)];
   return paths;
 }
-const duelConfig: GameModeConfig = {
-  ...blitzConfig,
-  id: "duel",
-  displayName: "Duel",
-};
 const GAME_MODE_CONFIGS: Record<GameModeId, GameModeConfig> = {
   frontier: frontierConfig,
   blitz: blitzConfig,
   eternum: eternumConfig,
-  duel: duelConfig,
 };
 
-export function getGameModeConfig(presetId = configManager.getPresetId()): GameModeConfig {
-  return GAME_MODE_CONFIGS[nativeGameModeOf(presetId)];
+export function getGameModeConfig(family = configManager.getFamily()): GameModeConfig {
+  return GAME_MODE_CONFIGS[nativeGameModeOfFamily(family)];
 }
 export const getGameModeId = (): GameModeId => getGameModeConfig().id;

@@ -7,8 +7,11 @@ import { decodeMembers, encodeMembers } from "./serde";
 import { CairoCustomEnum } from "starknet";
 import { NativeDecoder } from "./decoder";
 import { NativeIngestion } from "./ingestion";
+import type { ReleaseDefinitions } from "./release-definition";
 import type { NativeManifest, NativeSchema } from "./schema";
 import { buildShardManifest } from "../shard-manifest";
+import { gameRegistryRow, type GameRegistryWire } from "../../../../packages/core/src/test-support/game-registry";
+import { releaseLine } from "../../../../packages/core/src/test-support/releases";
 export const schema = schemaJson as unknown as NativeSchema;
 export const manifest: NativeManifest = {
   world: { address: setFixture.deployment.games },
@@ -16,12 +19,12 @@ export const manifest: NativeManifest = {
     version: 2,
     deploymentBlock: 10,
     activeSchema: schema.identity,
-    releaseSchemas: { "1": schema.identity },
+    releases: releaseLine(schema.identity, [1]),
     schemas: { [schema.identity]: schema },
     gamesClassHash: "0x123",
     migrationClassHash: "0x0",
     releaseId: 1,
-    logic: Object.fromEntries(Object.keys(schema.logicClasses).map((name) => [name, "0x123"])),
+    logic: Object.fromEntries(schema.logicClasses.map(({ name }) => [name, "0x123"])),
   },
 };
 export const shardManifest = buildShardManifest(
@@ -51,9 +54,9 @@ export const raw = (event: RpcEvent) => ({
   transaction_index: 0,
   event_index: 0,
 });
-export const setup = () => {
+export const setup = (definitions?: ReleaseDefinitions) => {
   const decoder = new NativeDecoder(manifest);
-  return { decoder, fold: new WorldFold(decoder.registry), native: new NativeIngestion(decoder) };
+  return { decoder, fold: new WorldFold(decoder.registry), native: new NativeIngestion(decoder, definitions) };
 };
 
 export function rowEvent(name: string, keys: string[], values: DecodedRecord): RpcEvent {
@@ -65,6 +68,11 @@ export function rowEvent(name: string, keys: string[], values: DecodedRecord): R
     keys: [...layout.prefix, "1", model.identity],
     data: [String(keys.length), ...keys, String(felts.length), ...felts],
   };
+}
+
+export function gameRegistryEvent(overrides: Partial<GameRegistryWire> = {}): RpcEvent {
+  const { game_id, ...values } = gameRegistryRow(overrides);
+  return rowEvent("GameRegistry", [String(game_id)], values);
 }
 
 /** Named synthetic values: encoding always follows the current schema. */
@@ -112,21 +120,6 @@ export function explorerValue(owner: string, count = 0n, amount = 0n, settledAt 
   };
 }
 
-export function pointsAward(
-  game: string,
-  player: string,
-  amount: string,
-  playerPoints: string,
-  seasonPoints: string,
-): RpcEvent {
-  const layout = schema.games.events.find((event) => event.name === "PointsAwarded")!;
-  return {
-    from_address: manifest.world.address,
-    keys: [...layout.prefix, "1", game, player],
-    data: ["4", amount, playerPoints, seasonPoints],
-  };
-}
-
 /** Unit-test projections enter the fold directly; they are never accepted as chain row events. */
 export function seedDerivedRows(fold: WorldFold, decoder: NativeDecoder, events: RpcEvent[]): RpcEvent[] {
   return events.filter((event) => {
@@ -148,20 +141,12 @@ export function rulesEvent(gameId = "1", dayUnitSeconds = "0", modeRules = 0n) {
   const defaults = (type: string): string[] => {
     const definition = schema.types[type];
     if (definition?.type === "struct") return definition.members.flatMap(({ type }) => defaults(type));
-    if (definition?.type === "enum") return ["0", ...defaults(definition.variants[0].type)];
+    if (definition?.type === "enum")
+      return [String(definition.variants[0].wireId ?? 0), ...defaults(definition.variants[0].type)];
     if (type === "()") return [];
     return ["0"];
   };
-  const values = model.members.flatMap((member) => {
-    if (member.name === "victory_points_grant_config") {
-      const definition = schema.types[member.type];
-      if (definition.type !== "struct") throw new Error("Expected point rules");
-      return definition.members.flatMap((field) =>
-        field.name === "hyp_points_per_second" ? ["1000000"] : defaults(field.type),
-      );
-    }
-    return defaults(member.type);
-  });
+  const values = model.members.flatMap((member) => defaults(member.type));
   const decoded = decodeMembers(schema, model.members, values);
   decoded.day_unit_seconds = BigInt(dayUnitSeconds);
   decoded.mode_rules = modeRules;
@@ -194,4 +179,12 @@ export function battleEvent(attacker = "7", defender = "8", timestamp = "1920"):
       timestamp,
     ],
   };
+}
+
+export function storyTag(name: string): string {
+  const type = schema.types["world_native::ownership::Story"];
+  if (type.type !== "enum") throw new Error("Missing compiled story enum");
+  const variant = type.variants.find((variant) => variant.name === name);
+  if (variant?.wireId === undefined) throw new Error(`Unknown story wire ID ${name}`);
+  return String(variant.wireId);
 }

@@ -1,18 +1,18 @@
 import "@/shell/season-tab/season-recap.css";
 import "./day-card.css";
 
-import { formatAmount, formatShort, LORDS } from "@bibliothecadao/types";
+import { formatAmount, orderAspect } from "@bibliothecadao/types";
 import type { Ref } from "react";
 
 import { usePlayerDisplayName, usePlayerProfile } from "@/hooks/use-player-profile";
 import { playerPortraitUrl } from "@/services/identity/player-portrait";
-import { Icon, type IconMeaning } from "@/ui/design-system/icon";
+import { AspectMark } from "@/ui/design-system/aspect-mark";
+import { Icon } from "@/ui/design-system/icon";
 import { AGE_LOCKUP, iconDefinition, orderMeaning } from "@/ui/design-system/icon-meaning";
 import { paintingFile } from "@/ui/design-system/kit/paintings";
-import { DAY, DAY_SHARE_WORDS, ESSENCE, LABOR } from "@/ui/design-system/kit/words";
+import { DAY, DAY_SHARE_WORDS } from "@/ui/design-system/kit/words";
 import { dayTotalCells, type DayTotals } from "@/ui/features/frontier/log/day-totals";
-import { type DayBest, type DayMark, rankMove } from "@/ui/features/frontier/rollover/day-share";
-import { TARGET_MARKS } from "@/ui/features/frontier/sites/site-marks";
+import { dayBestMoment, type DayBest, type DayMark, rankMove } from "@/ui/features/frontier/rollover/day-share";
 import { CARD_CUTS, type CardCut } from "@/utils/card-image";
 
 import { ageOf } from "../play/ages";
@@ -71,17 +71,22 @@ export const DayCard = ({
 const Player = ({ shared }: { shared: SharedDay }) => {
   const profile = usePlayerProfile(shared.player);
   const name = usePlayerDisplayName(shared.player) ?? "";
+  const aspect = shared.realm.order !== undefined ? orderAspect(shared.realm.order) : null;
   return (
     <div className="day-card__who">
       <span className="season-card__who">
         <img className="day-card__portrait" src={playerPortraitUrl(shared.player, profile.portrait)} alt={name} />
         {shared.realm.order !== undefined && (
           <span className="season-card__order">
-            <Icon
-              name={orderMeaning(shared.realm.order)}
-              size={56}
-              alt={iconDefinition(orderMeaning(shared.realm.order)).label}
-            />
+            {aspect ? (
+              <AspectMark aspect={aspect} size={56} decorative />
+            ) : (
+              <Icon
+                name={orderMeaning(shared.realm.order)}
+                size={56}
+                alt={iconDefinition(orderMeaning(shared.realm.order)).label}
+              />
+            )}
           </span>
         )}
       </span>
@@ -100,7 +105,7 @@ const Player = ({ shared }: { shared: SharedDay }) => {
 
 /** The best moment: its painting filling its frame, its headline, and the guard beaten or what it paid. */
 const Hero = ({ best }: { best: DayBest }) => {
-  const hero = heroOf(best);
+  const hero = dayBestMoment(best);
   return (
     <span className="day-card__moment">
       <span className="day-card__art">
@@ -130,36 +135,4 @@ const Haul = ({ totals }: { totals: DayTotals }) => {
   );
 };
 
-type Moment = {
-  icon: IconMeaning;
-  title: string;
-  detail: string | null;
-  paid: { icon: IconMeaning; value: string; name: string } | null;
-};
-
-const PAID: Record<"essence" | "labor" | "lords", { icon: IconMeaning; name: string }> = {
-  essence: { icon: "essence", name: ESSENCE },
-  labor: { icon: "labor", name: LABOR },
-  lords: { icon: "lords", name: LORDS },
-};
-
-const heroOf = (best: DayBest): Moment => {
-  if (best.kind === "chest")
-    return {
-      icon: "reward-chest",
-      title: DAY_SHARE_WORDS.best.chest,
-      detail: null,
-      paid: { ...PAID.lords, value: `+${formatShort(best.lords)}` },
-    };
-  if (best.kind === "clear")
-    return {
-      icon: TARGET_MARKS[best.site].icon,
-      title: DAY_SHARE_WORDS.best.clear(TARGET_MARKS[best.site].word),
-      detail: best.guard ? DAY_SHARE_WORDS.guardBeaten(formatAmount(best.guard)) : null,
-      paid: best.paid && { ...PAID[best.paid.resource], value: `+${formatShort(best.paid.amount)}` },
-    };
-  return { icon: "explore", title: DAY_SHARE_WORDS.best.reveals(formatAmount(best.count)), detail: null, paid: null };
-};
-
-/** What the best moment shows, for its glow's colour: a chest, a site by its kind, or the land. */
 const heroKind = (best: DayBest) => (best.kind === "clear" ? best.site : best.kind);

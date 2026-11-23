@@ -14,7 +14,7 @@ function expectReported(deliver: () => void, message: string) {
 }
 
 function fixture() {
-  configManager.setActiveGame(1, 1);
+  configManager.setActiveGame(1);
   const store = new NativeFactStore();
   return { store, listener: new WorldUpdateListener({ store } as GameClientSetup) };
 }
@@ -364,34 +364,10 @@ describe("native scene updates", () => {
     expect(changed).toHaveBeenCalledTimes(2);
   });
 
-  it("delivers native chest and extraction stories without retaining event rows", () => {
+  it("delivers native extraction stories without retaining event rows", () => {
     const { store, listener } = fixture();
-    const chest = vi.fn();
     const reward = vi.fn();
-    const stop = listener.Chests.onChestOpened(chest);
     listener.ExplorerReward.onExplorerRewardEventUpdate(reward);
-    const opening = {
-      game_id: "0x1",
-      timestamp: "0x64",
-      story: {
-        RelicChestOpened: {
-          explorer_id: "0x7",
-          coord: { alt: true, x: "0xa", y: "0x14" },
-          chest: { pack: "War", lucky: false },
-          relics: ["0x29", "0x2b", "0x27"],
-          points: "0x0",
-        },
-      },
-    };
-    store.applyEvent({ model: "StoryEvent", key: "0x1", value: opening });
-    expect(chest).toHaveBeenCalledWith({
-      kind: "relics",
-      title: "Crate opened: 3 relics to the army",
-      explorerId: 7,
-      hex: { x: 10, y: 20 },
-      relics: [41, 43, 39],
-      timestamp: 100,
-    });
     store.applyEvent({
       model: "StoryEvent",
       key: "0x2",
@@ -419,51 +395,6 @@ describe("native scene updates", () => {
         coord: { x: 10, y: 20 },
       }),
     );
-    store.applyEvent({ model: "StoryEvent", key: "0x3", value: { ...opening, game_id: "0x2" } });
-    expect(chest).toHaveBeenCalledTimes(1);
-    stop();
-    store.applyEvent({ model: "StoryEvent", key: "0x4", value: opening });
-    expect(chest).toHaveBeenCalledTimes(1);
     expect([...store.rows("ExplorerTroops")]).toEqual([]);
   });
-});
-
-it("delivers paid and expired reward chest stories through the one opening subscription, and releases both handlers", () => {
-  const { store, listener } = fixture();
-  const received = vi.fn();
-  const stop = listener.Chests.onChestOpened(received);
-  const emit = (amount: number, game_id = 1) =>
-    store.applyEvent({
-      model: "StoryEvent",
-      key: "0xce",
-      value: {
-        game_id,
-        timestamp: 361,
-        story: { RewardChestOpened: { explorer_id: 7, structure_id: 5, coord: { alt: false, x: 10, y: 20 }, amount } },
-      },
-    });
-  emit(17);
-  emit(0);
-  emit(50, 2);
-  expect(received.mock.calls.map(([value]) => value)).toEqual([
-    {
-      kind: "lords",
-      amount: 17,
-      title: "Chest opened: 17 LORDS to its realm",
-      explorerId: 7,
-      hex: { x: 10, y: 20 },
-      timestamp: 361,
-    },
-    {
-      kind: "lords",
-      amount: 0,
-      title: "Chest expired: no LORDS paid",
-      explorerId: 7,
-      hex: { x: 10, y: 20 },
-      timestamp: 361,
-    },
-  ]);
-  stop();
-  emit(17);
-  expect(received).toHaveBeenCalledTimes(2);
 });

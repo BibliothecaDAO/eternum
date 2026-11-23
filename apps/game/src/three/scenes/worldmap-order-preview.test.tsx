@@ -1,10 +1,13 @@
 // @vitest-environment jsdom
 import { act, type ReactElement } from "react";
+import { deepScenario } from "@/lab/game/deep-scenario";
 import { createRoot } from "react-dom/client";
 import type { ActionPath } from "@bibliothecadao/eternum";
 import { StructureType } from "@bibliothecadao/types";
 import { PerspectiveCamera } from "three";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { GAME_FAMILIES } from "../../../../../config/source/common/native-preset-modes";
+import type { GameType } from "../../../../../config/source/common/types";
 
 vi.mock("@/utils/can-issue-orders", async (original) => ({
   ...(await original<typeof import("@/utils/can-issue-orders")>()),
@@ -23,9 +26,6 @@ const { LeftView } = await import("@/types");
 const { ActorType, Direction } = await import("@bibliothecadao/types");
 
 const { ARMY_DEPLOYMENT_SURFACE_ID } = await import("@/ui/features/military/utils/open-army-deployment");
-
-const FRONTIER_PRESET_ID = 5;
-const BLITZ_PRESET_ID = 2;
 
 const ARMY = 7;
 /** The army's tile and the unexplored tile beside it, as the scene's hexes. */
@@ -262,11 +262,10 @@ describe("a tap on a lit tile beside the realm selected", () => {
     ],
   ];
 
-  /** The game's preset, which picks its deploy surface (openArmyDeployment), with the realm selected and its tiles lit. */
-  const playRealm = (presetId: number) => {
+  const playRealm = (mode: GameType) => {
     const { store } = realmBoard();
     const game = store.require("GameRegistry", { game_id: 1 });
-    store.applyFacts([{ model: "GameRegistry", key: "0x3", value: { ...game, preset_id: presetId } }] as never);
+    store.applyFacts([{ model: "GameRegistry", key: "0x3", value: { ...game, family: GAME_FAMILIES[mode] } }] as never);
     useUIStore.setState((state) => ({
       entityActions: {
         ...state.entityActions,
@@ -294,7 +293,7 @@ describe("a tap on a lit tile beside the realm selected", () => {
   });
 
   it("on a Frontier phone, orders Frontier's Deploy sheet at that tile, and another lit tile aims it again", () => {
-    playRealm(FRONTIER_PRESET_ID);
+    playRealm("frontier");
     screen(false);
     const { scene, sent } = realmMap(true);
 
@@ -313,7 +312,7 @@ describe("a tap on a lit tile beside the realm selected", () => {
   });
 
   it("on a Blitz phone, opens Blitz's deploy picker at that tile, and a tap on another lit tile aims it there", () => {
-    playRealm(BLITZ_PRESET_ID);
+    playRealm("blitz");
     screen(false);
     const { scene, sent } = realmMap(false);
     // The tile under the next finger, as the map's hexes name it.
@@ -344,7 +343,7 @@ describe("a tap on a lit tile beside the realm selected", () => {
   });
 
   it("on a desktop, leaves the click its own tap and opens nothing (owner: right-click deploys there)", () => {
-    playRealm(FRONTIER_PRESET_ID);
+    playRealm("frontier");
     screen(true);
     const { scene, sent } = realmMap(true);
 
@@ -418,7 +417,7 @@ describe("an open preview whose order changes before its verb is pressed", () =>
   });
 });
 
-it.each([ActionType.Explore, ActionType.Move, ActionType.Attack, ActionType.Chest])(
+it.each([ActionType.Explore, ActionType.Move, ActionType.Attack])(
   "on a Frontier phone, a hold on %s shows facts without sending",
   (actionType) => {
     useUIStore.setState((state) => ({
@@ -1026,4 +1025,29 @@ describe("the click matrix: what is selected × what is clicked", () => {
       realm: facts,
     });
   });
+});
+
+it.each([true, false])("opens a Deep site for the selected army on desktop=%s", (desktop) => {
+  screen(desktop);
+  vi.spyOn(configManager, "getActiveGameId").mockReturnValue(1);
+  const scenario = deepScenario();
+  const site = scenario.opensOn!;
+  const normalized = Position.fromContract({ x: site.col, y: site.row }).getNormalized();
+  const target = { col: normalized.x, row: normalized.y };
+  useUIStore.setState((state) => ({
+    mapLayer: false,
+    entityActions: { ...state.entityActions, selectedEntityId: 201, actionPaths: new Map() },
+  }));
+  const { scene } = worldMap(true);
+  const selected: unknown[] = [];
+  Object.assign(scene, {
+    game: { store: scenario.store },
+    state: {
+      selectOnMap: (selection: unknown) => selected.push(selection),
+      updateEntityActionHoveredHex: () => {},
+    },
+  });
+  expect(scene.answerTapWithSelectedOrder(target)).toBe(true);
+  expect(selected).toEqual([{ kind: "army", entityId: 201, tile: { col: site.col, row: site.row } }]);
+  expect(usePopoverStore.getState().surface).toBeNull();
 });

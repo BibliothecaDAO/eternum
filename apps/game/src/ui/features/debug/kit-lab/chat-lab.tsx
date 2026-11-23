@@ -22,7 +22,7 @@ import { EventsPanel } from "@/ui/features/world/hud/events-card";
 import { SelectedWorldmapEntity } from "@/ui/features/world/components/actions/selected-worldmap-entity";
 import { RailFrame, TileDetails } from "@/ui/features/world/hud/guided-rail";
 import { BuildTag } from "@/ui/layouts/build-tag";
-import { GLOBAL_CHAT_CHANNEL_ID, TileOccupier } from "@bibliothecadao/types";
+import { GLOBAL_CHAT_CHANNEL_ID } from "@bibliothecadao/types";
 import { type ReactNode, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { labGameProfile } from "./fixture-game";
@@ -97,23 +97,9 @@ const RoomPlayers = ({ children }: { children: ReactNode }) => {
 const LabPlaces = ({ select = false, children }: { select?: boolean; children: ReactNode }) => {
   const { store } = useGame().setup;
   useState(() => {
-    const profile = labGameProfile(FRONTIER_PRESET);
+    const profile = labGameProfile();
     setActiveGame(profile);
     const game = { chainId: profile.chainId, gameId: profile.gameId, name: profile.name };
-    store.applyFacts([
-      {
-        model: "TileOccupancy",
-        key: "0x1ee",
-        value: {
-          game_id: 1,
-          alt: false,
-          ...LAB_WELL,
-          entity_id: 901,
-          category: TileOccupier.Well,
-          is_structure: false,
-        },
-      },
-    ] as never);
     // Aldric's own realm, owned by his account as the guardian makes it from his Realms id: his card shows it.
     appQueryClient.setQueryData(GUARDIAN_QUERY.queryKey, LAB_GUARDIAN);
     const labRealm = store.require("Structure", { game_id: 1, entity_id: 7 });
@@ -136,15 +122,14 @@ const LabPlaces = ({ select = false, children }: { select?: boolean; children: R
     ] as never);
     const now = getBlockTimestamp().currentBlockTimestamp;
     const realm = sharedPlaceOf(store, game, LAB_REALM, false, now);
-    const well = sharedPlaceOf(store, game, { kind: "hex", hex: LAB_WELL }, false, now);
     const gone = { kind: "army", entityId: 999, game, name: "Iron Wardens", icon: "knight-t2", at: 0 } as const;
     const elsewhere = { ...realm!, game: { chainId: "0x2b", gameId: 4, name: "Frontier 4" }, name: "Moondeep" };
     useRealtimeChatStore.setState((state) => {
       const zone = state.worldZones[GLOBAL_CHAT_CHANNEL_ID];
-      if (!zone || !realm || !well) return state;
+      if (!zone || !realm) return state;
       const placed: Record<string, object> = {
         "lab-29": placeMetadata(elsewhere),
-        "lab-30": placeMetadata(well),
+        "lab-30": placeMetadata(realm),
         "lab-31": placeMetadata(gone),
         "lab-32": placeMetadata(realm),
       };
@@ -158,11 +143,9 @@ const LabPlaces = ({ select = false, children }: { select?: boolean; children: R
   return children;
 };
 
-/** The lab game's realm, as the map selects it; a Well on a tile of its own. */
+/** The lab game's realm, as the map selects it. */
 const LAB_REALM = { kind: "structure" as const, entityId: 7 };
-const LAB_WELL = { col: 12, row: 12 };
 const ALDRIC_REALM = 77;
-const FRONTIER_PRESET = 5;
 
 const noop = () => undefined;
 
@@ -186,7 +169,7 @@ const RailStage = ({ chatOpen }: { chatOpen: boolean }) => (
     <canvas data-lab="map" className="absolute inset-0 z-0 h-full w-full bg-[#0b1418]" />
     <RailFrame chat={<HudChatWindow open={chatOpen} onOpenChange={noop} />} chatOpen={chatOpen}>
       <HudPanel label="Next up" title="Next up" cue="1 of 5">
-        <p className="text-hud-body text-hud-ink">Your army can explore: +5 points a tile.</p>
+        <p className="text-hud-body text-hud-ink">Your army can explore.</p>
         <HudButton kind="primary" className="mt-2 w-full">
           Select the army
         </HudButton>

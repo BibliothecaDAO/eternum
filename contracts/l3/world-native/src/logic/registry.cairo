@@ -1,5 +1,14 @@
 #[starknet::contract]
 pub mod RegistryLogic {
+    #[abi(embed_v0)]
+    impl ReleaseValidation of crate::logic::release::IReleaseValidation<ContractState> {
+        fn validate_release(self: @ContractState, family: u8, classes: Span<starknet::ClassHash>) {
+            crate::logic::release::validate_release(family, classes);
+        }
+    }
+    component!(path: crate::logic::aspects::AspectState, storage: aspects, event: AspectEvent);
+    #[abi(embed_v0)]
+    impl Aspects = crate::logic::aspects::AspectState::AspectsImpl<ContractState>;
     #[cfg(feature: "test_support")]
     use crate::game::GameRegistry;
     use crate::logic::registrar::RegistrarState;
@@ -12,22 +21,12 @@ pub mod RegistryLogic {
     impl Registrar = RegistrarState::RegistrarImpl<ContractState>;
     impl RegistrarInternal = RegistrarState::InternalImpl<ContractState>;
     impl LifeInternal = ReleaseState::InternalImpl<ContractState>;
-    #[abi(embed_v0)]
-    impl PresetValidation of crate::presets::IPresetValidation<ContractState> {
-        fn validated_preset_commitment(self: @ContractState, definition: crate::presets::PresetDefinition) -> felt252 {
-            crate::presets::validate(definition);
-            crate::settlement_grid::validate_spacing(definition.settlement.spacing);
-            if crate::rules::rule_enabled(definition.rules, crate::rules::SPIRES) {
-                crate::spires::validate(definition.settlement.spires.expect('missing season spires'));
-            } else {
-                assert!(definition.settlement.spires.is_none(), "spires are disabled");
-            }
-            crate::presets::commitment(definition)
-        }
-    }
+
     #[storage]
     #[allow(starknet::colliding_storage_paths)]
     struct Storage {
+        #[substorage(v0)]
+        aspects: crate::logic::aspects::AspectState::Storage,
         #[substorage(v0)]
         release: ReleaseState::Storage,
         #[substorage(v0)]
@@ -36,6 +35,7 @@ pub mod RegistryLogic {
     #[event]
     #[derive(Drop, starknet::Event)]
     pub enum Event {
+        AspectEvent: crate::logic::aspects::AspectState::Event,
         GameEvent: crate::logic::game::Event,
         ReleaseEvent: ReleaseState::Event,
         RegistrarEvent: RegistrarState::Event,
@@ -47,7 +47,6 @@ pub mod RegistryLogic {
             crate::logic::game::game(game_id);
             crate::logic::game::write_game(game_id, game);
         }
-
 
         fn game(self: @ContractState, game_id: u32) -> GameRegistry {
             crate::logic::game::game(game_id)

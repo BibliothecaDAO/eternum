@@ -2,7 +2,6 @@ export type HeadlineType =
   | "realm-fall"
   | "hyper-capture"
   | "elimination"
-  | "game-end"
   | "game-start"
   | "five-min-warning"
   | "t3-building";

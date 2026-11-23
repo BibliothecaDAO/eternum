@@ -15,17 +15,18 @@ Your realm makes the troops, wheat and labor your armies need, and grows stronge
 
 Tap an open plot to build there. Each building's price, in labor, and Essence for the training buildings:
 
-| Building                     | Makes                         | Price                         | Population                         |
-| ---------------------------- | ----------------------------- | ----------------------------- | ---------------------------------- |
-| {FRONTIER.buildings[0].name} | {FRONTIER.buildings[0].makes} | {FRONTIER.buildings[0].price} | {FRONTIER.buildings[0].population} |
-| {FRONTIER.buildings[1].name} | {FRONTIER.buildings[1].makes} | {FRONTIER.buildings[1].price} | {FRONTIER.buildings[1].population} |
-| {FRONTIER.buildings[2].name} | {FRONTIER.buildings[2].makes} | {FRONTIER.buildings[2].price} | {FRONTIER.buildings[2].population} |
-| {FRONTIER.buildings[3].name} | {FRONTIER.buildings[3].makes} | {FRONTIER.buildings[3].price} | {FRONTIER.buildings[3].population} |
-| {FRONTIER.buildings[4].name} | {FRONTIER.buildings[4].makes} | {FRONTIER.buildings[4].price} | {FRONTIER.buildings[4].population} |
+| Building                     | Makes                         | Price                         |
+| ---------------------------- | ----------------------------- | ----------------------------- |
+| {FRONTIER.buildings[0].name} | {FRONTIER.buildings[0].makes} | {FRONTIER.buildings[0].price} |
+| {FRONTIER.buildings[1].name} | {FRONTIER.buildings[1].makes} | {FRONTIER.buildings[1].price} |
+| {FRONTIER.buildings[2].name} | {FRONTIER.buildings[2].makes} | {FRONTIER.buildings[2].price} |
+| {FRONTIER.buildings[3].name} | {FRONTIER.buildings[3].makes} | {FRONTIER.buildings[3].price} |
+| {FRONTIER.buildings[4].name} | {FRONTIER.buildings[4].makes} | {FRONTIER.buildings[4].price} |
+| {FRONTIER.buildings[5].name} | {FRONTIER.buildings[5].makes} | {FRONTIER.buildings[5].price} |
 
-Each workers' hut houses {FRONTIER.realm.hutHouses}, and every other building takes the population shown. Each further
-copy of a building costs more than the last, and pulling one down returns {FRONTIER.realm.demolitionRefund} of its
-price. Barracks train for free; deploying costs {FRONTIER.realm.deployWheat} wheat a troop.
+Each castle level opens another ring of plots, and each plot holds one building. Each further copy of a building costs
+more than the last, and pulling one down returns {FRONTIER.realm.demolitionRefund} of its price. Barracks and Scouts’
+lodges train for free; deploying costs {FRONTIER.realm.deployWheat} wheat a troop.
 
 <Shot
   frame="panel"
@@ -48,50 +49,32 @@ at once and stores more wheat and labor:
 
 ## Research
 
-At the castle, each research side climbs from 0 to Common I through Legendary V, paid in Essence and labor. A tier lifts
-every building of its type at once, and each side advances independently: farms and workshops make{" "}
-{FRONTIER.research.outputStep} more or store {FRONTIER.research.storageStep} more, barracks train
-{FRONTIER.research.outputStep} more or take {FRONTIER.research.rationWheat} wheat off the{" "}
-{FRONTIER.research.troopWheat} wheat each troop costs to deploy, and each hut tier houses{" "}
-{FRONTIER.research.populationStep} more.
+At the castle, each research row climbs from 0 to Common I through Legendary V, paid in Essence and labor. A tier lifts
+every building of its type at once. Each Farm and Workshop tier adds {FRONTIER.research.outputStep} more output.
 
-| Type                   | Common I                                                                                     | Uncommon II                                                                                  | Rare III                                                                                     | Epic IV                                                                                      | Legendary V                                                                                  |
-| ---------------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| Farm                   | {FRONTIER.research.farm[0].essence} Essence, {FRONTIER.research.farm[0].labor} labor         | {FRONTIER.research.farm[1].essence} Essence, {FRONTIER.research.farm[1].labor} labor         | {FRONTIER.research.farm[2].essence} Essence, {FRONTIER.research.farm[2].labor} labor         | {FRONTIER.research.farm[3].essence} Essence, {FRONTIER.research.farm[3].labor} labor         | {FRONTIER.research.farm[4].essence} Essence, {FRONTIER.research.farm[4].labor} labor         |
-| Workshop               | {FRONTIER.research.workshop[0].essence} Essence, {FRONTIER.research.workshop[0].labor} labor | {FRONTIER.research.workshop[1].essence} Essence, {FRONTIER.research.workshop[1].labor} labor | {FRONTIER.research.workshop[2].essence} Essence, {FRONTIER.research.workshop[2].labor} labor | {FRONTIER.research.workshop[3].essence} Essence, {FRONTIER.research.workshop[3].labor} labor | {FRONTIER.research.workshop[4].essence} Essence, {FRONTIER.research.workshop[4].labor} labor |
-| Barracks               | {FRONTIER.research.barracks[0].essence} Essence, {FRONTIER.research.barracks[0].labor} labor | {FRONTIER.research.barracks[1].essence} Essence, {FRONTIER.research.barracks[1].labor} labor | {FRONTIER.research.barracks[2].essence} Essence, {FRONTIER.research.barracks[2].labor} labor | {FRONTIER.research.barracks[3].essence} Essence, {FRONTIER.research.barracks[3].labor} labor | {FRONTIER.research.barracks[4].essence} Essence, {FRONTIER.research.barracks[4].labor} labor |
-| Workers' hut           | {FRONTIER.research.hut[0].essence} Essence, {FRONTIER.research.hut[0].labor} labor           | {FRONTIER.research.hut[1].essence} Essence, {FRONTIER.research.hut[1].labor} labor           | {FRONTIER.research.hut[2].essence} Essence, {FRONTIER.research.hut[2].labor} labor           | {FRONTIER.research.hut[3].essence} Essence, {FRONTIER.research.hut[3].labor} labor           | {FRONTIER.research.hut[4].essence} Essence, {FRONTIER.research.hut[4].labor} labor           |
-| Each training building | {FRONTIER.research.training[0].essence} Essence, {FRONTIER.research.training[0].labor} labor | {FRONTIER.research.training[1].essence} Essence, {FRONTIER.research.training[1].labor} labor | {FRONTIER.research.training[2].essence} Essence, {FRONTIER.research.training[2].labor} labor | {FRONTIER.research.training[3].essence} Essence, {FRONTIER.research.training[3].labor} labor | {FRONTIER.research.training[4].essence} Essence, {FRONTIER.research.training[4].labor} labor |
+| Type                        | Common I                                                                                     | Uncommon II                                                                                  | Rare III                                                                                     | Epic IV                                                                                      | Legendary V                                                                                  |
+| --------------------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| {FRONTIER.names.farm}       | {FRONTIER.research.farm[0].essence} Essence, {FRONTIER.research.farm[0].labor} labor         | {FRONTIER.research.farm[1].essence} Essence, {FRONTIER.research.farm[1].labor} labor         | {FRONTIER.research.farm[2].essence} Essence, {FRONTIER.research.farm[2].labor} labor         | {FRONTIER.research.farm[3].essence} Essence, {FRONTIER.research.farm[3].labor} labor         | {FRONTIER.research.farm[4].essence} Essence, {FRONTIER.research.farm[4].labor} labor         |
+| {FRONTIER.names.workshop}   | {FRONTIER.research.workshop[0].essence} Essence, {FRONTIER.research.workshop[0].labor} labor | {FRONTIER.research.workshop[1].essence} Essence, {FRONTIER.research.workshop[1].labor} labor | {FRONTIER.research.workshop[2].essence} Essence, {FRONTIER.research.workshop[2].labor} labor | {FRONTIER.research.workshop[3].essence} Essence, {FRONTIER.research.workshop[3].labor} labor | {FRONTIER.research.workshop[4].essence} Essence, {FRONTIER.research.workshop[4].labor} labor |
+| {FRONTIER.names.supplyYard} | {FRONTIER.research.training[0].essence} Essence, {FRONTIER.research.training[0].labor} labor | {FRONTIER.research.training[1].essence} Essence, {FRONTIER.research.training[1].labor} labor | {FRONTIER.research.training[2].essence} Essence, {FRONTIER.research.training[2].labor} labor | {FRONTIER.research.training[3].essence} Essence, {FRONTIER.research.training[3].labor} labor | {FRONTIER.research.training[4].essence} Essence, {FRONTIER.research.training[4].labor} labor |
 
-**Training buildings.** After {FRONTIER.research.trainingGate} Barracks research purchases, raise a War hall, a Supply
-yard, a Scouts' lodge and a Hearth. Construction includes rank I in Battle, Logistics, Scouting or Homecoming. Research
-raises that starting rank to II–V. Choose the first Scouting kind during construction. Rebuilding grants no extra rank.
+**{FRONTIER.names.storeroom}**: opens at {FRONTIER.storeroom.opens}, one per realm. It adds
+{FRONTIER.storeroom.storageStep} to the wheat and labor your castle stores.
 
-**Shrines and wells.** Research them ({FRONTIER.research.shrine.essence} and {FRONTIER.research.well.essence} Essence)
-before reveals can find them.
+**{FRONTIER.names.supplyYard}**: opens at {FRONTIER.supplyYardOpens}, one per realm. Construction includes Logistics
+rank I for new armies. Research raises that starting rank to II–V. Rebuilding grants no extra rank.
 
-**The Ethereal depths.** Research opens them one at a time, for {FRONTIER.research.depths[0].essence},{" "}
-{FRONTIER.research.depths[1].essence}, then {FRONTIER.research.depths[2].essence} Essence
+**Scouts’ lodges** open at City and can be built more than once. Each produces its own Scouts.
+
+**The castle's lore.** One ladder, in this order: Well lore ({FRONTIER.research.lore[0].essence} Essence) lets reveals
+find wells, Shrine lore ({FRONTIER.research.lore[1].essence}) shrines, and Spire lore
+({FRONTIER.research.lore[2].essence}) spires, which open every Ethereal depth
 ([The expedition](/frontier/expedition#the-spire-and-its-depths)).
 
-<Shot
-  frame="panel"
-  name="frontier/research"
-  caption="Research: each building's ranks, the rank that opens the next building, and the castle's own line."
-/>
+<Shot frame="panel" name="frontier/research" caption="Research: building ranks and the castle's own line." />
 
-## Your home's daily claim
+## Daily quests
 
-Your realm is created on the home you choose when you first enter a season (**Choose your home**, then **Create your
-realm**), and that choice decides what it claims each game day:
-
-- **A Realm your payout wallet holds:** {FRONTIER.labor.perRealm} labor a day. The Realm is checked on Starknet as you
-  found the home, so one just bought counts and one just sold does not. Link a payout wallet first
-  ([Payout wallet](/account/payout-wallet)).
-- **An event ticket**, such as a Devcon ticket: labor and Essence a day ([Devcon season](/frontier/devcon)).
-- **A free home:** no daily claim.
-
-Press **Realm Labor** beside your LORDS (on a phone, in **Menu**), then **Claim**. The sheet shows the season's days
-around today, claimed or missed: a day you do not claim is lost. Labor that does not fit in your storage is lost with
-the claim, and the sheet says how much fits first. Once claimed, **Remind me** sends a notification when the next day
-opens.
+Complete today's quest, then use **Collect** to receive {FRONTIER.quest.labor} Labor and {FRONTIER.quest.essence}
+Essence. Quest progress and collection belong to your home. Daily quests replace the old Realm Labor claim in the
+current season; a held Realm does not add a second daily grant.

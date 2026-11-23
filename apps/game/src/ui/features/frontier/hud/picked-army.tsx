@@ -1,90 +1,66 @@
-import { Icon } from "@/ui/design-system/icon";
-import { HudPanel, HudTier } from "@/ui/design-system/kit/hud-elements";
-import { PICKED_ARMY, type Rank, tierNumeral } from "@/ui/design-system/kit/words";
+import "./phone-hud.css";
+
+import { HudPanel, HudPortrait } from "@/ui/design-system/kit/hud-elements";
+import { PICKED_ARMY, TROOPS } from "@/ui/design-system/kit/words";
+import { formatAmount, frontierTroopName } from "@bibliothecadao/types";
 import type { ReactNode } from "react";
 
-import { ATTRIBUTE_LIST, type AttributeKey } from "../army/army-detail";
-import { LevelUpButton } from "../army/army-panel";
-import { attributeBadgeTarget } from "../attributes/attributes";
-import { ArmyToken } from "./army-token";
+import { DeepDrain, EtherealMark, StaminaReading } from "./army-token";
 import type { DockArmy } from "./dock-armies";
 
-/** What the picked army's row reads of an army: the dock's own, so the lab draws it on its fiction. */
 export type PickedArmyView = Pick<
   DockArmy,
-  | "explorerId"
-  | "label"
-  | "number"
-  | "art"
-  | "xp"
-  | "xpGoal"
-  | "stamina"
-  | "secondsToFull"
-  | "troops"
-  | "canSpendSkillPoint"
-  | "tiers"
-  | "ethereal"
->;
+  "explorerId" | "label" | "number" | "art" | "stamina" | "secondsToFull" | "troops" | "ethereal" | "drain"
+> & {
+  troopsFact?: Pick<DockArmy["troopsFact"], "category">;
+};
 
-/**
- * A phone's picked army, in the dock's place (owner, 22 October 2026: mobile direction A; 27 October: D, its stamina
- * over Level up): its token, a tap opening its card; its four sides with their tiers, which the token does not show;
- * then its stamina, which is its refill, over Level up, and Spire where it stands at its spire. Level up opens the card on its choices while a skill point can be spent, else the card. A tap on an empty tile lets the army go, and the dock comes back.
- */
 export const PickedArmy = ({
   army,
   refill,
   spire,
   onDetails,
-  onLevelUp,
 }: {
   army: PickedArmyView;
-  /** The army's stamina as its refill's button. */
   refill: ReactNode;
-  /** The way to its spire's card, while the army stands on or beside its spire (SpireButton). */
   spire?: ReactNode;
   onDetails: () => void;
-  onLevelUp: () => void;
-}) => (
-  <HudPanel collapsible={false} className="pointer-events-auto" bodyClassName="flex items-center gap-3 pt-3">
-    <ArmyToken
-      label={PICKED_ARMY.details(army.label)}
-      number={army.number}
-      art={army.art}
-      xp={army.xp}
-      xpGoal={army.xpGoal}
-      stamina={army.stamina}
-      troops={army.troops}
-      canSpendSkillPoint={army.canSpendSkillPoint}
-      ethereal={army.ethereal}
-      selected
-      flyTarget={attributeBadgeTarget(army.explorerId)}
-      onPick={onDetails}
-    />
-    <span data-picked-army className="min-w-0 flex-1">
-      {army.tiers && <Sides tiers={army.tiers} />}
-    </span>
-    <span className="grid w-24 shrink-0 gap-1.5">
-      {refill}
-      <LevelUpButton affordable={army.canSpendSkillPoint} onPress={onLevelUp} />
-      {spire}
-    </span>
-  </HudPanel>
-);
-
-/** The army's sides, every attribute the game levels, each its mark over its tier's gem. */
-const Sides = ({ tiers }: { tiers: Record<AttributeKey, number> }) => (
-  <span className="grid grid-cols-4 gap-1">
-    {ATTRIBUTE_LIST.map(({ key, name, mark }) => (
-      <span
-        key={key}
-        role="img"
-        aria-label={`${name} ${tierNumeral(tiers[key] as Rank)}`}
-        className="flex flex-col items-center gap-1"
+}) => {
+  const category = army.troopsFact?.category;
+  const heading = (category && frontierTroopName(category)) ?? army.label;
+  const title = army.troops === undefined ? heading : `${heading} · ${formatAmount(army.troops)}`;
+  return (
+    <HudPanel collapsible={false} className="pointer-events-auto" bodyClassName="frontier-picked-army pt-3">
+      <button
+        type="button"
+        aria-label={PICKED_ARMY.details(army.label)}
+        onClick={onDetails}
+        className="frontier-picked-army__main"
       >
-        <Icon name={mark} size={28} />
-        <HudTier tier={tiers[key] as Rank} />
-      </span>
-    ))}
-  </span>
-);
+        <span className="frontier-picked-army__portrait">
+          {army.art ? (
+            <HudPortrait icon={army.art} label={TROOPS} />
+          ) : (
+            <HudPortrait initial={String(army.number ?? "")} label={army.label} />
+          )}
+          <EtherealMark layer={army.ethereal} />
+        </span>
+        <span className="frontier-picked-army__body">
+          <span className="frontier-picked-army__title">{title}</span>
+          {army.stamina && (
+            <span className="flex items-center text-hud-label text-hud-muted tabular-nums">
+              <StaminaReading stamina={army.stamina} />
+            </span>
+          )}
+          {army.drain && <DeepDrain drain={army.drain} words compact />}
+        </span>
+      </button>
+      {(refill || spire) && (
+        <span className="frontier-picked-army__actions">
+          {refill}
+          {spire}
+        </span>
+      )}
+    </HudPanel>
+  );
+};

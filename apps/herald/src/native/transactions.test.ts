@@ -9,9 +9,8 @@ import { transactionScopes } from "./transactions";
 
 const SENDER = "0x111";
 
-/** One account call of Games.play: game, release, preset commitment, then the command span. */
 function playCall(game: number | string) {
-  const calldata = [String(game), "1", "0x789", "1", "7"];
+  const calldata = [String(game), "1", "1", "7"];
   return [manifest.world.address, hash.getSelectorFromName("play"), String(calldata.length), ...calldata];
 }
 

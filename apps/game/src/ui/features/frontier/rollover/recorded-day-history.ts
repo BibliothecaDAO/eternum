@@ -14,6 +14,7 @@ export const RECORDED_DAY = {
   calendar: {
     seed: 2573676726636859778969854071392817267192924319393663153312707624839662595849n,
     startMainAt: 1792575960,
+    scheduledEndAt: 1793151960,
     endAt: 1793151960,
     dayUnitSeconds: 14400,
   },

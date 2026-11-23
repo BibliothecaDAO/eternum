@@ -1,10 +1,9 @@
-pub use snforge_std::fs::{FileTrait, read_txt};
 pub use snforge_std::{EventSpyTrait, EventsFilterTrait};
 pub use starknet::ContractAddress;
 pub use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
 pub use crate::commands::Command;
-pub use crate::game::GameRegistry;
 pub use crate::registrar::{IRegistrarDispatcher, IRegistrarDispatcherTrait};
+pub use crate::settlement::ISettlementEntryDispatcherTrait;
 
 #[derive(Copy, Drop)]
 pub struct TestAction {
@@ -15,137 +14,44 @@ pub struct TestAction {
 
 #[starknet::interface]
 pub trait IPlayFixture<T> {
-    fn play_with_root(
-        ref self: T, game_id: u32, release_id: u32, preset_commitment: felt252, command: Span<felt252>, root: u256,
-    );
+    fn play_with_root(ref self: T, game_id: u32, release_id: u32, command: Span<felt252>, root: u256);
     fn last_applied(self: @T) -> bool;
 }
-pub const BLITZ_COMMAND_MASK: u128 = 71478916396378193887;
-pub const ETERNUM_COMMAND_MASK: u128 = 73786976294838206463;
-pub const BLITZ_RULES: u32 = crate::rules::HOME_REWARDS
-    + crate::rules::DISCOVER_CAMPS
-    + crate::rules::DISCOVER_CHESTS
-    + crate::rules::CAPTURE_VILLAGES
-    + crate::rules::SAME_OWNER_TRANSFER
-    + crate::rules::RESERVED_HYPERSTRUCTURES
-    + crate::rules::OWNER_ONLY_SHARES
-    + crate::rules::HYPERSTRUCTURE_MULTIPLIERS
-    + crate::rules::PRODUCTION_START
-    + crate::rules::COMBAT_DICE_ETHEREAL
-    + crate::rules::DISCOVER_SPIRES;
-pub const ETERNUM_RULES: u32 = crate::rules::DISCOVER_HYPERSTRUCTURES
-    + crate::rules::SPIRES
-    + crate::rules::SEASON_CLOSE
-    + crate::rules::DEV_VILLAGE_ENTRY
-    + crate::rules::COMBAT_DICE_ETHEREAL;
-pub fn rules() -> crate::rules::SliceRules {
-    let data = read_txt(@FileTrait::new("../fixtures/current-presets/preset-3.txt"));
-    let mut fields = data.span();
-    Serde::deserialize(ref fields).unwrap()
-}
-pub fn create_games(registry: ContractAddress) {
-    for game_id in array![1, 2] {
-        seed_game(
-            registry,
-            game_id,
-            GameRegistry {
-                name: 'fixture',
-                preset_id: 3,
-                settled: false,
-                ready: true,
-                dev_mode_on: true,
-                start_settling_at: 0,
-                start_main_at: 0,
-                end_at: 999999,
-                end_grace_seconds: 0,
-                seed: 1,
-            },
-            rules(),
-        );
-    }
-}
-pub fn fixture_preset(rules: crate::rules::SliceRules) -> crate::presets::PresetDefinition {
-    let mut preset = super::registrar::definition(rules.entry_rule == crate::rules::ENTRY_ROSTER);
-    preset.rules = rules;
-    if rules.day_unit_seconds != 0 {
-        preset
-            .economy
-            .labor =
-                Some(
-                    crate::entry::LaborRules {
-                        amount: 1000, campaign_essence: 0, golden_amount: 1000, golden_essence: 0,
-                    },
-                );
-        preset.economy.progression = Some(super::preset_projection::frontier_progression_rules());
-    }
-    preset.season_win_points = 0;
-    preset.economy.withdrawals = None;
-    preset
-        .settlement
-        .spires =
-            if crate::rules::rule_enabled(rules, crate::rules::SPIRES) {
-                Some(crate::spires::SpireLayout { count: 1, base_distance: 0, layer_distance: 0, max_layer: 0 })
-            } else {
-                None
-            };
-    preset
-}
-pub fn seed_game(registry: ContractAddress, game_id: u32, game: GameRegistry, rules: crate::rules::SliceRules) {
-    seed_game_with_preset(registry, game_id, game, fixture_preset(rules));
-}
-pub fn seed_game_with_preset(
-    registry: ContractAddress, game_id: u32, game: GameRegistry, definition: crate::presets::PresetDefinition,
-) {
-    let registrar = IRegistrarDispatcher { contract_address: registry };
-    let commitment = crate::presets::commitment(definition);
-    let mut preset_id = 10000 + game_id;
-    loop {
-        let existing = registrar.preset_commitment(preset_id);
-        if existing == 0 || existing == commitment {
-            break;
-        }
-        preset_id += 1;
-    }
-    if registrar.preset_commitment(preset_id) == 0 {
-        let authority = snforge_std::interact_with_state(registry, || crate::state::read().authority.read());
-        snforge_std::cheat_caller_address(registry, authority, snforge_std::CheatSpan::TargetCalls(1));
-        registrar.register_preset(preset_id, definition);
-    }
-    let rules = definition.rules;
-    let preset_id = preset_id;
-    snforge_std::interact_with_state(
-        registry,
-        || {
-            let state = crate::state::write();
-            state.game_releases.write(game_id, state.current_release.read());
-            state.games.games.write(game_id, GameRegistry { preset_id, ..game });
-            state
-                .games
-                .overrides
-                .write(
-                    game_id,
-                    crate::game::GameOverrides {
-                        registration_start: 0,
-                        biome_climate: rules.biome_climate_config,
-                        map: None,
-                        map_center_offset: rules.map_center_offset,
-                    },
-                );
-            if state.games.next_entity.read(game_id) == 0 {
-                state.games.next_entity.write(game_id, 1);
-            }
+pub const FIXTURE_START: u64 = 120;
+pub const FIXTURE_SEASON_SECONDS: u64 = 999960;
+pub const FIXTURE_REALM_TRAITS: u32 = 0x4000001;
+pub fn fixture_params(name: felt252) -> crate::registrar::CreateGameParams {
+    crate::registrar::CreateGameParams {
+        name,
+        family: crate::game::FRONTIER,
+        start_settling_at: FIXTURE_START,
+        start_main_at: FIXTURE_START,
+        duration_seconds: FIXTURE_SEASON_SECONDS,
+        dev_mode_on: false,
+        registration_start: 0,
+        biome_climate: crate::rules::BiomeClimateConfig {
+            elevation_scale_bps: 10000,
+            moisture_scale_bps: 10000,
+            elevation_bias_bps: 10000,
+            moisture_bias_bps: 10000,
+            elevation_seed: 0,
+            moisture_seed: 0,
         },
-    );
+        map_override: None,
+        seed: 1,
+        clock_scale: 1,
+    }
 }
-pub fn pins(games: ContractAddress, game_id: u32) -> (u32, felt252) {
-    snforge_std::interact_with_state(
-        games,
-        || {
-            let state = crate::state::read();
-            let game = crate::logic::game::game(game_id);
-            (state.game_releases.read(game_id), crate::logic::game::preset_commitment(game))
-        },
-    )
+pub fn create_game(games: ContractAddress, params: crate::registrar::CreateGameParams) -> u32 {
+    snforge_std::cheat_caller_address(games, super::authority(), snforge_std::CheatSpan::TargetCalls(1));
+    IRegistrarDispatcher { contract_address: games }.create_game(params)
+}
+pub fn create_games(games: ContractAddress) {
+    assert!(create_game(games, fixture_params('fixture-1')) == 1, "the first fixture game is game 1");
+    assert!(create_game(games, fixture_params('fixture-2')) == 2, "the second fixture game is game 2");
+}
+pub fn pins(games: ContractAddress, game_id: u32) -> u32 {
+    snforge_std::interact_with_state(games, || crate::state::read().game_releases.read(game_id))
 }
 pub fn encode(command: Command) -> Span<felt252> {
     let mut encoded = array![];
@@ -159,10 +65,10 @@ pub fn caller(games: ContractAddress, actor: ContractAddress, timestamp: u64) {
     snforge_std::start_cheat_block_timestamp(games, timestamp);
 }
 pub fn play(games: ContractAddress, action: TestAction, root: u256, timestamp: u64) -> bool {
-    let (release, preset) = pins(games, action.game_id);
+    let release = pins(games, action.game_id);
     caller(games, action.actor, timestamp);
     let fixture = IPlayFixtureDispatcher { contract_address: games };
-    fixture.play_with_root(action.game_id, release, preset, encode(action.command), root);
+    fixture.play_with_root(action.game_id, release, encode(action.command), root);
     fixture.last_applied()
 }
 pub fn rejection(ref spy: snforge_std::EventSpy, games: ContractAddress) -> crate::commands::GameplayRejected {
@@ -181,7 +87,7 @@ pub fn rejection(ref spy: snforge_std::EventSpy, games: ContractAddress) -> crat
 
 #[feature("safe_dispatcher")]
 pub fn assert_preflight_rejection(games: ContractAddress, action: TestAction, timestamp: u64) {
-    let (release, preset) = pins(games, action.game_id);
+    let release = pins(games, action.game_id);
     let before = snforge_std::interact_with_state(
         games,
         || {
@@ -193,10 +99,10 @@ pub fn assert_preflight_rejection(games: ContractAddress, action: TestAction, ti
     let mut spy = snforge_std::spy_events();
     assert!(
         IPlayFixtureSafeDispatcher { contract_address: games }
-            .play_with_root(action.game_id, release, preset, encode(action.command), 987654321)
+            .play_with_root(action.game_id, release, encode(action.command), 987654321)
             .is_err(),
     );
-    assert_eq!(pins(games, action.game_id), (release, preset));
+    assert_eq!(pins(games, action.game_id), release);
     assert_eq!(
         snforge_std::interact_with_state(
             games,
@@ -227,19 +133,88 @@ pub fn gameplay_snapshot(games: ContractAddress) -> Array<felt252> {
         },
     )
 }
-pub fn reserve_fixture_homes(games: ContractAddress, game_id: u32, owner: ContractAddress) {
-    snforge_std::interact_with_state(games, || prepare_fixture_home(game_id, owner));
-}
-pub fn prepare_fixture_home(game_id: u32, owner: ContractAddress) {
-    let state = crate::state::write();
-    let rules = crate::logic::game::rules(game_id);
-    if rules.entry_rule == crate::rules::ENTRY_OPEN && rules.day_unit_seconds != 0 {
-        if state.games.open_homes.read((game_id, owner)) == 0 {
-            let first = crate::logic::game::allocate_setup_entity(game_id);
-            state.games.open_homes.write((game_id, owner), first.into());
-            state.games.namespace_owners.write((game_id, first), owner);
-        }
-    } else {
-        crate::entity_ids::reserve_homes(game_id, owner);
+pub fn settled_home(
+    d: super::Deployment, game_id: u32, actor: ContractAddress, realm_id: u32, timestamp: u64,
+) -> crate::resources::ResourceKey {
+    let settle = settle_action(d, game_id, actor, realm_id);
+    let mut spy = snforge_std::spy_events();
+    if !play(d.games, settle, 987654321, timestamp) {
+        panic!("the home does not settle: {}", rejection(ref spy, d.games).reason);
     }
+    let entry = crate::settlement::ISettlementEntryDispatcher { contract_address: d.games };
+    let home = crate::resources::ResourceKey { game_id, entity_id: entry.settled_realm(game_id, realm_id) };
+    deploy_starting_troops(d, actor, home, timestamp);
+    home
+}
+pub fn deploy_starting_troops(
+    d: super::Deployment, actor: ContractAddress, home: crate::resources::ResourceKey, timestamp: u64,
+) {
+    let mut held = None;
+    for category in array![
+        crate::troops::TroopType::Knight, crate::troops::TroopType::Paladin, crate::troops::TroopType::Crossbowman,
+    ] {
+        let troops = balance(d, home, crate::troops::troop_resource(category, 0));
+        if troops > 0 {
+            held = Some((category, troops));
+        }
+    }
+    let (category, troops) = held.expect('the home holds no troops');
+    for slot in 0_u8..2 {
+        let command = Command::CreateExplorer(
+            crate::commands::CreateExplorer {
+                slot,
+                structure_id: home.entity_id,
+                category: category.into(),
+                tier: 0,
+                amount: troops / 2,
+                direction: slot,
+            },
+        );
+        let mut spy = snforge_std::spy_events();
+        if !play(d.games, TestAction { game_id: home.game_id, actor, command }, 987654321, timestamp) {
+            panic!("the starting troops do not deploy: {}", rejection(ref spy, d.games).reason);
+        }
+    }
+}
+pub fn deploy_home_troops(d: super::Deployment, game_id: u32, timestamp: u64) -> crate::resources::ResourceKey {
+    let home = crate::resources::ResourceKey {
+        game_id,
+        entity_id: snforge_std::interact_with_state(d.games, || crate::entity_ids::home_for_actor(game_id, d.actor)),
+    };
+    deploy_starting_troops(d, d.actor, home, timestamp);
+    home
+}
+fn balance(d: super::Deployment, home: crate::resources::ResourceKey, resource_type: u8) -> u128 {
+    crate::tests::state::ResourceObservationTrait::resource_balance(
+        crate::resources::IResourceOperationsDispatcher { contract_address: d.games },
+        crate::resources::ResourceSlot { game_id: home.game_id, entity_id: home.entity_id, resource_type },
+    )
+}
+pub fn settle_action(d: super::Deployment, game_id: u32, actor: ContractAddress, realm_id: u32) -> TestAction {
+    super::resource_commands::set_fixture(
+        d.games,
+        selector!("realms"),
+        selector!("catalogue_count"),
+        array![].span(),
+        crate::realms::CANONICAL_REALM_COUNT,
+    );
+    super::resource_commands::set_fixture(
+        d.games, selector!("realms"), selector!("traits"), array![realm_id.into()].span(), FIXTURE_REALM_TRAITS,
+    );
+    hold_realm(d, game_id, actor, realm_id);
+    let command = Command::SettleSeason(crate::realms::SettleSeason { selected_realm: None, order: None });
+    TestAction { game_id, actor, command }
+}
+pub fn hold_realm(d: super::Deployment, game_id: u32, owner: ContractAddress, realm_id: u32) {
+    super::entry::set_operator(d, super::authority());
+    let held = crate::settlement::EntryEntitlement {
+        realm_id: realm_id.into(),
+        metadata_1: 0,
+        metadata_2: 0,
+        metadata_3: 0,
+        pass_kind: crate::settlement::HELD_REALM_KIND,
+    };
+    snforge_std::cheat_caller_address(d.games, super::authority(), snforge_std::CheatSpan::TargetCalls(1));
+    crate::settlement::ISettlementEntryDispatcher { contract_address: d.games }
+        .register_entitlement(crate::settlement::EntryKey { game_id, owner }, held);
 }

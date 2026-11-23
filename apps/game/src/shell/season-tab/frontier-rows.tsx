@@ -1,10 +1,10 @@
-import { formatAmount, LORDS } from "@bibliothecadao/types";
+import { formatAmount, LORDS, orderAspect } from "@bibliothecadao/types";
 import type { HeraldFrontierLeaderboardEntry } from "@bibliothecadao/eternum/game-sync";
 import { useLocation, useNavigate } from "react-router-dom";
 
+import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { AppBoard, type AppBoardEntry, AppRank } from "@/ui/design-system/kit/app-elements";
 import { RealmBadge } from "@/ui/features/frontier/board/realm-marks";
-import { realmSkinOf } from "@/three/structures/realm-skins";
 import { PlayerName } from "@/ui/design-system/kit/player-name";
 import { SEASON_WORDS } from "@/ui/design-system/kit/words";
 import { wholeLords } from "@/ui/features/frontier/board/standings";
@@ -36,24 +36,23 @@ export const FrontierRows = ({
   );
 };
 
-const frontierEntry = (entry: HeraldFrontierLeaderboardEntry, own: boolean, onClick: () => void): AppBoardEntry => ({
-  key: entry.address,
-  own,
-  onClick,
-  lead: (
-    <>
-      <AppRank rank={entry.rank} medal />
-      <RealmBadge
-        level={entry.level}
-        depth={entry.deepest_depth}
-        skin={realmSkinOf(entry.campaign)}
-        hasWonder={entry.has_wonder}
-      />
-    </>
-  ),
-  name: <PlayerName account={entry.address} you={own} portrait />,
-  figures: [
-    { icon: "explore", value: formatAmount(entry.sites_cleared.total), label: SEASON_WORDS.sitesCleared },
-    { icon: "lords", value: formatAmount(wholeLords(entry.rewards.lords)), tone: "gold", label: LORDS },
-  ],
-});
+const frontierEntry = (entry: HeraldFrontierLeaderboardEntry, own: boolean, onClick: () => void): AppBoardEntry => {
+  const aspect = orderAspect(entry.order);
+  return {
+    key: entry.address,
+    own,
+    onClick,
+    lead: (
+      <>
+        <AppRank rank={entry.rank} medal />
+        {aspect && <AspectMark aspect={aspect} size={20} decorative />}
+        <RealmBadge level={entry.level} depth={entry.deepest_depth} hasWonder={entry.has_wonder} />
+      </>
+    ),
+    name: <PlayerName account={entry.address} you={own} portrait />,
+    figures: [
+      { icon: "explore", value: formatAmount(entry.sites_cleared.total), label: SEASON_WORDS.sitesCleared },
+      { icon: "lords", value: formatAmount(wholeLords(entry.rewards.lords)), tone: "gold", label: LORDS },
+    ],
+  };
+};

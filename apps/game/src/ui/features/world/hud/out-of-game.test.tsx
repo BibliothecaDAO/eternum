@@ -9,7 +9,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("./holdings", () => ({ useHoldings: () => ({}), HoldingsList: () => <p>Holdings list</p> }));
 vi.mock("./realm-card", () => ({ RealmCard: () => null }));
 vi.mock("./minimap", () => ({ HudMinimap: () => null }));
-vi.mock("@/ui/features/world/containers/spectator-standings", () => ({ SpectatorStandingsBody: () => <p>Ranking</p> }));
 // Whether the HUD plays or watches: the spectating flag here, the game never over.
 vi.mock("@/utils/can-issue-orders", () => ({
   canIssueOrders: (state: { isSpectating: boolean }) => !state.isSpectating,
@@ -65,7 +64,7 @@ const enteredGame = () => {
 const takeRealm = (store: NativeFactStore) => store.applyFacts([structure(REALM, StructureType.Realm, RIVAL)] as never);
 
 describe("out of the game", () => {
-  beforeEach(() => configManager.setActiveGame(1, 1));
+  beforeEach(() => configManager.setActiveGame(1));
 
   it("is a player who entered and lost the last realm, though a Hyperstructure of theirs remains", () => {
     const store = enteredGame();
@@ -100,7 +99,7 @@ describe("the desktop column", () => {
 
   beforeEach(() => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-    configManager.setActiveGame(1, 1);
+    configManager.setActiveGame(1);
     host = document.createElement("div");
     root = createRoot(host);
     useAccountStore.getState().setGameplayAccount(signer as never, signer.address);
@@ -122,7 +121,7 @@ describe("the desktop column", () => {
     );
   };
 
-  it("tells the player the last realm fell, over the holdings left and then over the standings they watch", () => {
+  it("tells the player the last realm fell, over the holdings left and then while they watch", () => {
     const store = enteredGame();
     render(store);
     expect(host.textContent).toBe("Holdings list");
@@ -131,7 +130,7 @@ describe("the desktop column", () => {
     expect(host.textContent).toBe(`${OUT_OF_GAME}Holdings list`);
 
     act(() => useUIStore.setState({ isSpectating: true }));
-    expect(host.textContent).toBe(`${OUT_OF_GAME}StandingsRanking`);
+    expect(host.textContent).toBe(OUT_OF_GAME);
   });
 
   it("says nothing of it to a spectator who never entered", () => {
@@ -140,6 +139,6 @@ describe("the desktop column", () => {
     takeRealm(store);
     useUIStore.setState({ isSpectating: true });
     render(store);
-    expect(host.textContent).toBe("StandingsRanking");
+    expect(host.textContent).toBe("");
   });
 });

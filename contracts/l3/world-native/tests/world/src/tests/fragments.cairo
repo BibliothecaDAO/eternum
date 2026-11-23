@@ -1,0 +1,189 @@
+use starknet::storage::StorageMapReadAccess;
+use crate::fragments::{BuyStamina, FragmentCredit};
+use crate::stamina::StaminaSourceTrait;
+use crate::troops::{ExplorerRecordTrait, StaminaSource};
+use super::entry::IHomeGrantsSafeDispatcherTrait;
+use super::play_fixture::FIXTURE_START;
+
+#[feature("safe_dispatcher")]
+fn credit(d: super::Deployment, game_id: u32, credit: FragmentCredit) -> bool {
+    snforge_std::start_cheat_caller_address(d.games, super::authority());
+    let credited = super::entry::IHomeGrantsSafeDispatcher { contract_address: d.games }
+        .credit_fragments(game_id, credit)
+        .is_ok();
+    snforge_std::stop_cheat_caller_address(d.games);
+    credited
+}
+
+fn friend(d: super::Deployment, id: felt252, amount: u128) -> FragmentCredit {
+    FragmentCredit { id, account: d.actor, amount }
+}
+
+fn earn(d: super::Deployment, game_id: u32, amount: u128) {
+    snforge_std::interact_with_state(d.games, || crate::logic::fragments::add(game_id, d.actor, amount));
+}
+
+fn balance(d: super::Deployment, game_id: u32) -> u128 {
+    snforge_std::interact_with_state(d.games, || crate::logic::fragments::balance(game_id, d.actor))
+}
+
+fn set_stamina(d: super::Deployment, key: crate::troops::ExplorerKey, deficit: u64) -> u64 {
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            let original = crate::logic::troops::explorer(key).unwrap();
+            let mut army = crate::logic::army_slot_storage::resolve(key, original, None);
+            let rules = crate::commands::load_context(key.game_id, 0, FIXTURE_START + 10).rules.unbox();
+            let maximum = crate::progression::stamina_max(
+                crate::logic::progression::require(key), army.troops.category, rules.troop_stamina_config,
+            );
+            let mut bar = army.troops.stamina.inline();
+            bar.amount = maximum - deficit;
+            bar.settled_at = (FIXTURE_START + 10).try_into().unwrap();
+            bar.remainder = 0;
+            army.troops.stamina = StaminaSource::Inline(bar);
+            crate::logic::army_slot_storage::persist(key, original.into_record(), army.troops);
+            maximum
+        },
+    )
+}
+
+fn stamina(d: super::Deployment, key: crate::troops::ExplorerKey) -> u64 {
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            crate::logic::army_slot_storage::resolve(key, crate::logic::troops::explorer(key).unwrap(), None)
+                .troops
+                .stamina
+                .inline()
+                .amount
+        },
+    )
+}
+
+fn action(game_id: u32) -> crate::commands::ActionContext {
+    crate::commands::action_context(crate::commands::load_context(game_id, 0, FIXTURE_START + 10))
+}
+
+fn buy_stamina(d: super::Deployment, key: crate::troops::ExplorerKey, fragments: u64) {
+    snforge_std::interact_with_state(
+        d.games,
+        || crate::logic::fragments::buy_stamina(
+            key.game_id, d.actor, BuyStamina { explorer_id: key.explorer_id, fragments }, action(key.game_id),
+        ),
+    );
+}
+
+fn buy_seal(d: super::Deployment, game_id: u32) {
+    snforge_std::interact_with_state(d.games, || crate::logic::fragments::buy_seal(game_id, d.actor, action(game_id)));
+}
+
+#[test]
+fn season_one_s_playtest_release_refuses_every_fragment_spend_and_spends_nothing() {
+    let (d, game_id, key) = super::registrar::setup_frontier_relics();
+    earn(d, game_id, 2000);
+    set_stamina(d, key, 20);
+    for command in array![
+        crate::commands::Command::BuySeal(()),
+        crate::commands::Command::BuyStamina(BuyStamina { explorer_id: key.explorer_id, fragments: 1 }),
+        crate::commands::Command::RerollOath(
+            crate::oaths::RerollOath { explorer_id: key.explorer_id, expected_pick: 1, index: 0 },
+        ),
+    ] {
+        super::play_fixture::assert_preflight_rejection(
+            d.games, super::play_fixture::TestAction { game_id, actor: d.actor, command }, FIXTURE_START + 10,
+        );
+    }
+    assert_eq!(balance(d, game_id), 2000);
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn only_the_ledger_operator_credits_a_friend_s_fragments_once_for_each_credit_id() {
+    let (d, game_id, _) = super::registrar::setup_frontier_relics();
+    super::entry::set_operator(d, super::authority());
+    snforge_std::start_cheat_caller_address(d.games, d.actor);
+    assert!(
+        super::entry::IHomeGrantsSafeDispatcher { contract_address: d.games }
+            .credit_fragments(game_id, friend(d, 'friend-1', 100))
+            .is_err(),
+    );
+    snforge_std::stop_cheat_caller_address(d.games);
+    assert!(credit(d, game_id, friend(d, 'friend-1', 100)));
+    assert!(credit(d, game_id, friend(d, 'friend-1', 100)));
+    assert!(!credit(d, game_id, friend(d, 'friend-1', 1000)));
+    assert!(!credit(d, game_id, friend(d, 'friend-2', 0)));
+    assert!(credit(d, game_id, friend(d, 'friends-10', 1000)));
+    assert_eq!(balance(d, game_id), 1100);
+}
+
+#[test]
+fn a_seal_costs_one_thousand_fragments() {
+    let (d, game_id, _) = super::registrar::setup_frontier_relics();
+    earn(d, game_id, 1001);
+    buy_seal(d, game_id);
+    assert_eq!(balance(d, game_id), 1);
+    assert!(
+        snforge_std::interact_with_state(
+            d.games, || crate::state::read().entry.seals.read((game_id, d.actor)).is_some(),
+        ),
+    );
+}
+
+#[test]
+#[should_panic(expected: "not enough fragments")]
+fn a_seal_is_refused_below_one_thousand_fragments() {
+    let (d, game_id, _) = super::registrar::setup_frontier_relics();
+    earn(d, game_id, 999);
+    buy_seal(d, game_id);
+}
+
+#[test]
+#[should_panic(expected: "seal already held")]
+fn a_seal_is_bought_once() {
+    let (d, game_id, _) = super::registrar::setup_frontier_relics();
+    earn(d, game_id, 2000);
+    buy_seal(d, game_id);
+    buy_seal(d, game_id);
+}
+
+#[test]
+fn a_fragment_refills_two_points_up_to_the_bar() {
+    let (d, game_id, key) = super::registrar::setup_frontier_relics();
+    earn(d, game_id, 100);
+    let maximum = set_stamina(d, key, 7);
+    buy_stamina(d, key, 3);
+    assert_eq!(stamina(d, key), maximum - 1);
+    assert_eq!(balance(d, game_id), 97);
+    buy_stamina(d, key, 1);
+    assert_eq!(stamina(d, key), maximum);
+    assert_eq!(balance(d, game_id), 96);
+}
+
+#[test]
+#[should_panic(expected: "stamina over its bar")]
+fn a_refill_past_the_bar_is_refused() {
+    let (d, game_id, key) = super::registrar::setup_frontier_relics();
+    earn(d, game_id, 100);
+    set_stamina(d, key, 7);
+    buy_stamina(d, key, 5);
+}
+
+#[test]
+#[should_panic(expected: "stamina over its bar")]
+fn a_refill_of_no_fragment_is_refused() {
+    let (d, game_id, key) = super::registrar::setup_frontier_relics();
+    earn(d, game_id, 100);
+    set_stamina(d, key, 7);
+    buy_stamina(d, key, 0);
+}
+
+#[test]
+#[should_panic(expected: "no stamina is sold in the Deep")]
+fn no_stamina_is_sold_in_the_deep() {
+    let (d, game_id, key) = super::registrar::setup_frontier_relics();
+    earn(d, game_id, 100);
+    set_stamina(d, key, 20);
+    super::progression::place_army_at_depth(d, key, 3);
+    buy_stamina(d, key, 1);
+}

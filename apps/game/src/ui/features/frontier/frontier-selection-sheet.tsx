@@ -1,15 +1,10 @@
+import { DeepSiteCard, useSelectedDeepSite } from "./deep/deep-site-card";
 import { ClearedSiteSheet, SiteReceipt, useSelectedClearedSite } from "./sites/site-receipt";
-import { useQuery } from "@/hooks/helpers/use-query";
-import { useChestOpening } from "@/hooks/store/use-chest-opening-store";
-import { ChestTilePanel } from "@/ui/features/military/chest/chest-tile-panel";
-import { formatTilePanelTitle } from "@/ui/features/world/components/bottom-right-panel/tile-panel-title";
 import { RealmSpireSheet, useSelectedSpire } from "./spire-card";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import type { ReactNode } from "react";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { BuildSheet, useOpenPlot } from "./build/build-sheet";
-import { HudSheet } from "@/ui/design-system/kit/hud-elements";
-import { MapSiteCard, useSelectedMapSite } from "./sites/map-site-card";
 import { TileCard, useSelectedTarget } from "./sites/tile-card";
 import { SpireCard, useSelectedTileObject } from "./sites/tile-object-cards";
 import { CastleUpgrade, useKeepSelected } from "./upgrade/castle-upgrade";
@@ -18,21 +13,21 @@ import { ReinforceSheet, useSelectedReinforcement } from "./army/reinforce";
 import { BuildingCard } from "./building/building-card";
 import { useTappedBuilding } from "./research/selected-building";
 
-/**
- * What the player tapped, as its Frontier card, with its key: which card it is and for which tile, so the HUD's one
- * panel (useOnePanel) knows when a card opens; null when the selection opens none. An open plot of the player's realm
- * opens the build sheet, the keep its card, a standing building its own card (read-only for a visitor), an adjacent
- * friendly army its troop transfer, the realm's army beside it (the realm acting on its tile) its reinforcement, a standing site or enemy army its tile card, a Shrine or Well its use card, and a
- * spire or reward chest its own card. Cleared sites and opened
- * chests keep their receipts on the tile.
- * A cleared site shows its receipt when the player selects its tile (owner, 27 October 2026: "this stays of course"),
- * another's army on it too, in that army's card. The player's own army selected where it stands is the army's panel,
- * whatever site it stands on (owner, 28 October 2026: "when I click on a tile that was cleared but an army is standing
- * on it, army panel must be displayed not the cleared one"); the clear's Feed row selects the tile itself, and shows the
- * receipt. Its spire too: Spire on the army's panel, or a tap on the spire's tile, opens the spire's card for it. Other empty tiles and armies the dock already shows open no card. No card outlives the order its army was given
- * from it: once it settles the one panel hands the panel back to the army (useOnePanel), and the Feed tells how a
- * fight went.
- */
+type SelectionCardKind =
+  | "transfer"
+  | "reinforce"
+  | "plot"
+  | "deep-site"
+  | "target"
+  | "cleared"
+  | "realm-spire"
+  | "spire"
+  | "keep"
+  | "building";
+
+export const isRealmBoardCard = (kind: SelectionCardKind): boolean =>
+  kind === "plot" || kind === "keep" || kind === "building";
+
 export const useSelectionCard = ({
   realm,
   onResearch,
@@ -41,16 +36,13 @@ export const useSelectionCard = ({
   realm: NativeRows["Structure"] | null;
   /** Opens Research, on a node where the card names one, for a card whose next step is there. */
   onResearch: (node?: string) => void;
-}): { key: string; sheet: ReactNode } | null => {
-  const { isMapView } = useQuery();
+}): { kind: SelectionCardKind; key: string; sheet: ReactNode } | null => {
   const selectedHex = useUIStore((state) => state.selectedHex);
   const selectedBuildingHex = useUIStore((state) => state.selectedBuildingHex);
-  const mapLayer = useUIStore((state) => state.mapLayer);
-  const opening = useChestOpening(selectedHex);
   const openPlot = useOpenPlot(realm);
   const target = useSelectedTarget();
   const cleared = useSelectedClearedSite();
-  const mapSite = useSelectedMapSite();
+  const deepSite = useSelectedDeepSite();
   const tileObject = useSelectedTileObject();
   const keep = useKeepSelected(realm);
   const building = useTappedBuilding(realm);
@@ -67,34 +59,20 @@ export const useSelectionCard = ({
     setSelectedBuildingHex(null);
   };
   const at = `${selectedHex?.col},${selectedHex?.row}:${selectedBuildingHex?.innerCol},${selectedBuildingHex?.innerRow}`;
-  const card = (kind: string, sheet: ReactNode) => ({ key: `${kind}@${at}`, sheet });
+  const card = (kind: SelectionCardKind, sheet: ReactNode) => ({ kind, key: `${kind}@${at}`, sheet });
   if (realm && transfer) return card("transfer", <TransferTroopsSheet realm={realm} pair={transfer} onClose={close} />);
   if (realm && reinforcing)
     return card("reinforce", <ReinforceSheet realm={realm} army={reinforcing} onClose={close} />);
-  if (realm && openPlot)
-    return card("plot", <BuildSheet realm={realm} plot={openPlot} onResearch={onResearch} onClose={close} />);
+  if (realm && openPlot) return card("plot", <BuildSheet realm={realm} plot={openPlot} onClose={close} />);
+  if (deepSite) return card("deep-site", <DeepSiteCard site={deepSite} onClose={close} />);
   if (target)
     return card(
       "target",
       <TileCard selected={target} onClose={close} receipt={cleared ? <SiteReceipt selected={cleared} /> : undefined} />,
     );
   if (cleared && !armyWhereItStands) return card("cleared", <ClearedSiteSheet selected={cleared} onClose={close} />);
-  if (mapSite) return card("site", <MapSiteCard selected={mapSite} onClose={close} />);
-  if (selectedHex && isMapView && !mapLayer && (tileObject?.kind === "chest" || opening?.kind === "lords"))
-    return card(
-      "chest",
-      <HudSheet label="Reward Chest" onClose={close}>
-        <ChestTilePanel
-          rewardChestId={tileObject?.kind === "chest" ? tileObject.tile.occupierId : undefined}
-          opening={opening}
-          selectedHex={selectedHex}
-          coordsLabel={formatTilePanelTitle("Chest Tile", selectedHex)}
-        />
-      </HudSheet>,
-    );
+  if (spire && !armyWhereItStands) return card("realm-spire", <RealmSpireSheet spire={spire} onClose={close} />);
   if (tileObject?.kind === "spire") return card("spire", <SpireCard onClose={close} />);
-  if (spire && !armyWhereItStands)
-    return card("realm-spire", <RealmSpireSheet spire={spire} onResearch={onResearch} onClose={close} />);
   if (realm && keep) return card("keep", <CastleUpgrade realm={realm} onResearchPage={onResearch} onClose={close} />);
   if (realm && building)
     return card(

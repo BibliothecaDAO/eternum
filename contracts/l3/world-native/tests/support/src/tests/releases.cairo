@@ -11,7 +11,47 @@ pub use crate::tests::state::{
     GameState, MapObservationTrait, ResourceObservationTrait, StructureObservationTrait, TroopObservationTrait,
 };
 pub use crate::troops::ExplorerKey;
-pub use super::{authority, declare_logic};
+pub use super::{assert_refused, authority, declare_logic};
+
+pub fn with_class(
+    classes: Span<starknet::ClassHash>, slot: u8, class_hash: starknet::ClassHash,
+) -> Span<starknet::ClassHash> {
+    let mut replaced = array![];
+    let mut index: u8 = 0;
+    for class in classes {
+        replaced.append(if index == slot {
+            class_hash
+        } else {
+            *class
+        });
+        index += 1;
+    }
+    replaced.span()
+}
+
+#[starknet::contract]
+pub mod NewSlotFixture {
+    #[storage]
+    struct Storage {}
+
+    #[abi(embed_v0)]
+    impl Views of crate::logic::release::ISlotViews<ContractState> {
+        fn slot_view(self: @ContractState, game_id: u32, calldata: Span<felt252>) -> Span<felt252> {
+            let mut answer = array![game_id.into()];
+            answer.append_span(calldata);
+            answer.span()
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl Authority of crate::logic::release::ISlotAuthority<ContractState> {
+        fn slot_authority(ref self: ContractState, family: u8, calldata: Span<felt252>) -> Span<felt252> {
+            let mut answer = array![family.into()];
+            answer.append_span(calldata);
+            answer.span()
+        }
+    }
+}
 
 #[starknet::contract]
 pub mod ReleaseMigrationFixture {
@@ -48,21 +88,32 @@ pub mod FailingReleaseMigrationFixture {
         }
     }
 }
+#[starknet::contract]
+pub mod OverBudgetDeepFixture {
+    #[storage]
+    struct Storage {}
+
+    #[abi(embed_v0)]
+    impl Ticks of crate::deep::IDeepTicks<ContractState> {
+        fn settle_deep(ref self: ContractState, game_id: u32, context: crate::commands::ActionContext) {
+            core::panic_with_felt252('deep boundary over budget');
+        }
+    }
+}
+
 #[starknet::interface]
 pub trait IChangedSweep<T> {
-    fn sweep_lords(ref self: T, game_id: u32, structure_id: u64, context: crate::commands::ActionContext);
+    fn sweep_lords(ref self: T, game_id: u32, structure_id: u64);
 }
 
 #[starknet::contract]
-pub mod ChangedSweepPrizesFixture {
+pub mod ChangedSweepFixture {
     #[storage]
     struct Storage {}
 
     #[abi(embed_v0)]
     impl Sweep of super::IChangedSweep<ContractState> {
-        fn sweep_lords(
-            ref self: ContractState, game_id: u32, structure_id: u64, context: crate::commands::ActionContext,
-        ) {
+        fn sweep_lords(ref self: ContractState, game_id: u32, structure_id: u64) {
             core::panic_with_felt252('sweep release 2');
         }
     }
@@ -115,15 +166,8 @@ pub fn populated_facts(
     }
     facts
 }
-pub fn stored_release_fact(address: starknet::ContractAddress, game_id: u32) -> (u32, felt252) {
-    interact_with_state(
-        address,
-        || {
-            let state = crate::state::read();
-            let game = crate::logic::game::game(game_id);
-            (state.game_releases.read(game_id), state.registrar.presets.read(game.preset_id))
-        },
-    )
+pub fn stored_release_fact(address: starknet::ContractAddress, game_id: u32) -> u32 {
+    interact_with_state(address, || crate::state::read().game_releases.read(game_id))
 }
 pub fn gameplay_facts(address: starknet::ContractAddress) -> Array<felt252> {
     interact_with_state(

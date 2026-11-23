@@ -1,68 +1,69 @@
-import { BLITZ_WORDS, CLOCK_WORDS, LORE_LINE, WORDS } from "@/ui/design-system/kit/words";
+import "./play-page.css";
+
+import type { HeraldAspectRace } from "@bibliothecadao/eternum/game-sync";
+import { aspects, formatExact, questCatalog, type QuestId } from "@bibliothecadao/types";
+import { ASPECT_PAGE_WORDS, BLITZ_WORDS, DAY_BANNER_WORDS, OF, WORDS } from "@/ui/design-system/kit/words";
 import type { CSSProperties, ReactNode } from "react";
 
-import { AppAgeColumn, AppButton, AppGameCard, AppRow } from "@/ui/design-system/kit/app-elements";
-import { clockAt, clockLine } from "@/ui/design-system/kit/clock-chip";
+import { aspectVariables } from "@/tokens";
+import { AspectMark } from "@/ui/design-system/aspect-mark";
+import { Icon } from "@/ui/design-system/icon";
+import { AppAgeColumn, AppButton, AppGameCard, AppLink, AppPanel } from "@/ui/design-system/kit/app-elements";
 import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
+import { dayQuestFace } from "@/ui/features/frontier/day/day-quest-face";
 
+import { BuildOrdersRow } from "../build-orders/build-orders-row";
 import { PageFrame } from "../frame/page-frame";
+import type { DirectoryGame } from "../herald";
 import { Loading } from "../loading";
-import type { NextBlitzGame } from "../blitz-slot";
+import { directoryDay, seasonRealm } from "../season";
 import { ageOf } from "./ages";
-import { idleCard, type PlayBoard, PLAY_MODES, type PlayMode } from "./play-board";
+import { holdsNothing, idleCard, type PlayBoard, PLAY_MODES, type PlayMode } from "./play-board";
 import { type PlayFacts, type SourceGap, usePlayFacts } from "./play-facts";
 import { ItemRows, LeadCard } from "./play-item";
-import { BuildOrdersRow } from "../build-orders/build-orders-row";
+import { PreseasonPlay } from "./preseason-pick";
+import { SeasonCountdown } from "./season-countdown";
 
-/**
- * Play (the owner's pick, B · Ages): the step the player most likely came for, widest, with the page's one gold verb;
- * beside it each age with games of its own, a tall column on its painting, its games under way first, then the next
- * and the finished. Every game appears once. A phone stacks them. A first visit stands on the plains under the lore
- * line.
- */
 export const PlayPage = () => {
   const facts = usePlayFacts();
+  if (facts.opening && isPlayEmpty(facts))
+    return facts.signedIn ? (
+      <PreseasonPlay opening={facts.opening} now={facts.now} />
+    ) : (
+      <SeasonCountdown opening={facts.opening} now={facts.now} />
+    );
   const firstVisit = !facts.signedIn && facts.board?.lead?.verb === "play";
-  const ages = facts.board ? agesShown(facts.board, facts.gaps) : [];
+  const ages = facts.board ? agesShown(facts.board) : [];
+  const leadFrontier = facts.board?.lead?.mode === "frontier" ? facts.board.lead.game : null;
+  const leadRace = leadFrontier?.aspect_race ?? null;
+  const hasActiveRealm = leadFrontier !== null && leadFrontier.status === "Live" && seasonRealm(leadFrontier) !== null;
   return (
     <PageFrame painting={firstVisit ? "dark-plains" : "brooding-plains"} stage={firstVisit} offersInstall>
-      {/* On a short phone (a browser's toolbars showing) the line draws at title size, so Play free stays on the first
-          screen. */}
-      {firstVisit && (
-        <h1 className="mb-6 max-w-[48rem] text-app-display text-app-ink [@media(max-height:720px)]:mb-3 [@media(max-height:720px)]:text-app-title">
-          {LORE_LINE}
-        </h1>
-      )}
-      <div
-        className="grid grid-cols-1 gap-6 lg:min-h-[40rem] lg:[grid-template-columns:var(--play-columns)]"
-        style={{ "--play-columns": `minmax(0,1.5fr) repeat(${ages.length}, minmax(0,1fr))` } as CSSProperties}
-      >
+      <div data-play-page className="play-grid">
         <section className="flex min-w-0 flex-col gap-3">
           <LeadOrState facts={facts} />
           {facts.board && <SourceGaps gaps={facts.gaps} />}
         </section>
-        {facts.board &&
-          ages.map((mode) => (
-            <AgeColumn key={mode} mode={mode} facts={facts} items={(facts.board as PlayBoard).ages[mode]} />
-          ))}
+        {facts.board && (
+          <div className="play-side">
+            {leadFrontier && <AspectRacePreview race={leadRace} />}
+            {hasActiveRealm && <TodayQuestPanel game={leadFrontier} now={facts.now} />}
+            {ages.map((mode) => (
+              <AgeColumn key={mode} mode={mode} facts={facts} items={(facts.board as PlayBoard).ages[mode]} />
+            ))}
+          </div>
+        )}
       </div>
     </PageFrame>
   );
 };
 
-/**
- * The ages holding a game besides the lead, in Play's order; and Blitz's always once its slots and the season's calendar
- * answered (an outage of either stands as its gap, never as "none"), so its way to the build orders is always there, a
- * Blitz in the lead or not.
- */
-const agesShown = (board: PlayBoard, gaps: readonly SourceGap[]): PlayMode[] =>
-  PLAY_MODES.filter(
-    (mode) =>
-      board.ages[mode].length > 0 ||
-      (mode === "blitz" && !gaps.some((gap) => gap.service === "slots" || gap.service === "season")),
-  );
+const isPlayEmpty = (facts: PlayFacts) =>
+  facts.board !== undefined && holdsNothing(facts.board) && facts.gaps.length === 0;
 
-/** The lead; the directory's failure, the wait, or the quiet card in its place. */
+const agesShown = (board: PlayBoard): PlayMode[] =>
+  PLAY_MODES.filter((mode) => board.ages[mode].length > 0 || mode === "blitz");
+
 const LeadOrState = ({ facts }: { facts: PlayFacts }) => {
   if (facts.directory.isError)
     return (
@@ -82,21 +83,15 @@ const LeadOrState = ({ facts }: { facts: PlayFacts }) => {
         </AppButton>
       </QuietLead>
     );
-  // With no lead, the quiet card speaks only once every source answered: a read still out or failed is not "nothing".
   if (!facts.board.lead && facts.gaps.length > 0) return null;
   if (!facts.board.lead) return <QuietLead title={WORDS.noSeason} />;
   return <LeadCard item={facts.board.lead} now={facts.now} signedIn={facts.signedIn} className="h-full" />;
 };
 
-/** The lead's place while there is no lead: Frontier's painting, a line, and what stands in for the verb. */
 const QuietLead = ({ title, children }: { title: string; children?: ReactNode }) => (
   <AppGameCard age="frontier" painting="frontier-mist" size="lead" className="h-full" title={title} verb={children} />
 );
 
-/**
- * The reads Play has not had in full, each in its own words with Try again: Blitz's slots, the player's results. The
- * games that did answer stay usable beside them.
- */
 const SourceGaps = ({ gaps }: { gaps: readonly SourceGap[] }) =>
   gaps.length === 0 ? null : (
     <div className="flex flex-col gap-2">
@@ -110,12 +105,82 @@ const SourceGaps = ({ gaps }: { gaps: readonly SourceGap[] }) =>
     </div>
   );
 
-/**
- * One age's column: its painting and its name, then its games in its well (Blitz's, with none and no Blitz in the lead:
- * the calendar's next game, or none left in the season); Blitz's ends on the way to the player's build orders while a
- * Blitz is on or to come. With nothing to do now it is idle (`idleCard`, as the lead is): dimmed, its one line alone
- * (owner, 29 October 2026: "for blitz if no season dont display the build orders, and maybe dim the panel").
- */
+const AspectRacePreview = ({ race }: { race: HeraldAspectRace | null }) => {
+  const finishHeight = race?.finish_height ?? 0;
+  const showBars = race !== null && finishHeight > 0;
+  return (
+    <AppPanel
+      title={ASPECT_PAGE_WORDS.race}
+      icon="crown"
+      cue={
+        <AppLink to="/season" className="text-app-label text-app-gold">
+          {WORDS.season}
+        </AppLink>
+      }
+    >
+      <ul className="play-aspects">
+        {aspects.map(({ id, name }) => {
+          const height = race?.heights[id] ?? null;
+          const share =
+            height !== null && finishHeight > 0 ? Math.min(100, Math.round((height / finishHeight) * 100)) : 0;
+          return (
+            <li
+              key={id}
+              data-aspect-id={id}
+              aria-label={height !== null ? ASPECT_PAGE_WORDS.height(height, finishHeight) : name}
+              style={aspectVariables(id) as CSSProperties}
+              className="play-aspect"
+            >
+              {showBars && (
+                <div className="play-aspect__tower" aria-hidden="true">
+                  {share > 0 && <div className="play-aspect__column" style={{ height: `${share}%` }} />}
+                </div>
+              )}
+              <AspectMark aspect={id} size={38} decorative />
+              <span className="play-aspect__name">{name}</span>
+              {height !== null && (
+                <span className="play-aspect__height">
+                  <span className="play-aspect__count">{formatExact(height)}</span>
+                  <span className="play-aspect__goal">{`${OF} ${formatExact(finishHeight)}`}</span>
+                </span>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </AppPanel>
+  );
+};
+
+const questIdOf = (id: number): QuestId | null => questCatalog.find((quest) => quest.id === id)?.id ?? null;
+
+const TodayQuestPanel = ({ game, now }: { game: DirectoryGame; now: number }) => {
+  const day = directoryDay(game, now);
+  const quest = game.player_state?.today_quest ?? null;
+  const questId = quest !== null ? questIdOf(quest.quest_id) : null;
+  if (day.day === undefined || quest === null || questId === null) return null;
+  const face = dayQuestFace(questId);
+  const share = quest.target > 0 ? Math.min(100, Math.round((quest.progress / quest.target) * 100)) : 0;
+  return (
+    <AppPanel title={DAY_BANNER_WORDS.today} icon="hourglass" className="play-today">
+      <div className="play-today__quest" data-play-today>
+        <span className="play-today__icon" aria-hidden="true">
+          <Icon name={face.icon} size={34} />
+        </span>
+        <div className="play-today__body">
+          <span className="play-today__name">{face.name}</span>
+          <span className="play-today__summary">
+            {DAY_BANNER_WORDS.summary(face.objective, quest.progress, quest.target, quest.labor)}
+          </span>
+          <div className="play-today__track" aria-hidden="true">
+            <div className="play-today__fill" style={{ width: `${share}%` }} />
+          </div>
+        </div>
+      </div>
+    </AppPanel>
+  );
+};
+
 const AgeColumn = ({
   mode,
   facts,
@@ -127,36 +192,16 @@ const AgeColumn = ({
 }) => {
   const age = ageOf(mode);
   const blitzLeads = facts.board?.lead?.mode === "blitz";
-  const buildOrders = mode === "blitz" && (items.length > 0 || blitzLeads || facts.nextBlitz !== null);
+  const buildOrders = mode === "blitz" && (items.length > 0 || blitzLeads);
   const idle = idleCard(items, buildOrders);
   return (
     <AppAgeColumn age={mode} painting={age.painting} name={age.name} idle={idle}>
       {items.length > 0 ? (
         <ItemRows items={items} now={facts.now} signedIn={facts.signedIn} />
       ) : (
-        !blitzLeads && <NextBlitz next={facts.nextBlitz} now={facts.now} />
+        !blitzLeads && <p className="text-app-body text-app-muted">{BLITZ_WORDS.noneScheduled}</p>
       )}
       {buildOrders && <BuildOrdersRow />}
     </AppAgeColumn>
-  );
-};
-
-/**
- * Blitz's column with no game open (owner, 2026-10-21: the card shows the next start until the game is published): the
- * season calendar's next game, its start and when its entry opens, in the player's local time; "No Blitz" only when the
- * season has none left.
- */
-const NextBlitz = ({ next, now }: { next: NextBlitzGame | null | undefined; now: number }) => {
-  if (next === undefined) return null;
-  if (next === null) return <p className="text-app-body text-app-muted">{BLITZ_WORDS.noneScheduled}</p>;
-  const startsAt = Date.parse(next.startsAt) / 1000;
-  const opensAt = Date.parse(next.opensAt) / 1000;
-  const entry = opensAt > now ? clockLine("entryOpens", opensAt, now) : BLITZ_WORDS.entryOpening;
-  return (
-    <ul className="app-well">
-      <li data-play-item={`next:${next.name}`}>
-        <AppRow title={BLITZ_WORDS.nextRanked} detail={`${CLOCK_WORDS.starts} ${clockAt(startsAt, now)} · ${entry}`} />
-      </li>
-    </ul>
   );
 };

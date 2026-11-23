@@ -61,10 +61,6 @@ export interface GasSummary {
     byStage: Record<TransactionStage, GasTotals>;
   };
   blocks: { first: number | null; last: number | null };
-  /**
-   * The L2 gas of the run's executed transactions in each block, which the host reconciles against the node's own
-   * close-block totals (deploy/athanor/scripts/measures.py).
-   */
   l2GasByBlock: Record<string, number>;
   /**
    * Cairo steps and builtins per action kind, from the receipts. Unavailable, never zero, when the receipts carry no

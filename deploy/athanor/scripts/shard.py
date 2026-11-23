@@ -1,8 +1,5 @@
-#!/usr/bin/env python3
-"""Start a fresh isolated shard through the existing native deployment commands."""
+"""Shard helpers shared by the deploy, teardown and season commands and the shard package's init."""
 
-import argparse
-import hashlib
 import fcntl
 import ipaddress
 import json
@@ -10,18 +7,12 @@ import os
 from pathlib import Path
 import re
 import secrets
-import signal
-import socket
 import subprocess
 import sys
 import tempfile
 import time
 from urllib.request import Request, urlopen
 from urllib.parse import urlparse
-
-import measures
-from directory import directory_status, wait_for_identity
-from deposit_retirement import require_deposit_retirement
 
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -36,50 +27,7 @@ from service_requests import identity_service_base, service_json
 DOCKER = ["sudo", "-n", "docker"]
 # Campaign G's target, not yet a measured ceiling: a larger shard waits for a G measurement that supports it.
 MAX_PLAYER_CAPACITY = 2000
-# The services that hold memory for the shard's lifetime; prepare and init exit once the shard is deployed.
 PRIVATE_NODE_RPC_URL = "http://madara:9944/rpc/v0_10_2"
-LONG_RUNNING = ("madara", "postgres", "herald", "rpc", "metrics")
-
-
-def cpu_numbers(value):
-    numbers = set()
-    for item in value.split(","):
-        ends = item.split("-")
-        if len(ends) > 2 or not all(end.isdigit() for end in ends):
-            raise ValueError("invalid cpuset")
-        first, last = int(ends[0]), int(ends[-1])
-        if first > last:
-            raise ValueError("invalid cpuset range")
-        numbers.update(range(first, last + 1))
-    return numbers
-
-
-def validate_configuration(config, allowed_cpus):
-    if not re.fullmatch(r"[a-z][a-z0-9-]{0,39}", config["shard"]):
-        raise ValueError("shard must be a lowercase identifier")
-    validate_runtime_configuration(config)
-    validate_shard_identity(config)
-    presets = config.get("presets")
-    if not presets or not all(isinstance(preset, int) and preset > 0 for preset in presets):
-        raise ValueError("presets must list the preset ids the shard registers")
-    if "madara_image" in config:
-        raise ValueError("the node image is the package's pin in deploy/shard/compose.yml")
-    for key in ("herald_image", "init_image", "metrics_image"):
-        if not re.fullmatch(r"(?:[^\s]+@)?sha256:[a-f0-9]{64}", config[key]):
-            raise ValueError(f"{key} must be pinned by digest")
-    port = config["port_base"]
-    if not isinstance(port, int) or not 28000 <= port <= 65530:
-        raise ValueError("reserve isolated Herald and RPC ports base+1 and base+5 above 27999")
-    if not cpu_numbers(config["cpuset"]) <= allowed_cpus:
-        raise ValueError("cpuset exceeds the native slice allocation")
-    owned = ("--base-path", "--chain-config", "--rpc", "--name", "--db", "--devnet", "--l1", "--no-charge", "--otel")
-    for flag in config["node_flags"]:
-        if not isinstance(flag, str) or not flag.startswith("--") or flag.startswith(owned):
-            raise ValueError(f"node flag overrides shard ownership: {flag}")
-    if not any(flag.startswith("--enable-native-execution=") for flag in config["node_flags"]):
-        raise ValueError("record the native execution setting explicitly")
-    if not any(flag.startswith("--native-compilation-mode=") for flag in config["node_flags"]):
-        raise ValueError("record the native compilation mode explicitly")
 
 
 def validate_runtime_configuration(config):
@@ -89,6 +37,12 @@ def validate_runtime_configuration(config):
     bound = config.get("l2_gas_bound")
     if not isinstance(bound, str) or not re.fullmatch(r"0x[0-9a-fA-F]{1,16}", bound) or int(bound, 16) == 0:
         raise ValueError("l2_gas_bound must be nonzero hex u64")
+
+
+def run_identity(directory):
+    """The shard a run directory holds: its name and its chain."""
+    values = dict(line.split("=", 1) for line in (directory / ".env").read_text().splitlines() if "=" in line)
+    return {"project": values["SHARD_NAME"], "chain_id": values["CHAIN_ID"]}
 
 
 def validate_shard_identity(config):
@@ -133,56 +87,6 @@ def write_private_environment(path, values):
 def identity_url(config):
     """The identity API whose guardian the shard names; the operator enrols its bots through it."""
     return identity_service_base(config["guardian_url"])
-
-
-def compose_configuration(config, directory):
-    environment = {
-        **os.environ, "SHARD_NAME": f"athanor-{config['shard']}", "CHAIN_ID": config["chain_id"],
-        "BLOCK_TIME": config.get("block_time", "2s"),
-        "SHARD_DATA": str(directory), "SHARD_INIT_IMAGE": config["init_image"],
-        "SHARD_METRICS_IMAGE": config["metrics_image"],
-        "SHARD_HERALD_IMAGE": config["herald_image"],
-        "GUARDIAN_URL": config["guardian_url"], "PUBLIC_RPC_URL": config["public_rpc_url"],
-        "PUBLIC_HERALD_URL": config["public_herald_url"], "PLAYER_CAPACITY": str(config["player_capacity"]),
-        "L2_GAS_BOUND": config["l2_gas_bound"],
-        "TRUSTED_PROXY": config.get("trusted_proxy", ""),
-        "HOST_UID": str(os.getuid()), "HOST_GID": str(os.getgid()), "BIND_ADDRESS": "127.0.0.1",
-        "RPC_PORT": str(config["port_base"] + 5), "HERALD_PORT": str(config["port_base"] + 1),
-        "PRESETS": ",".join(str(preset) for preset in config["presets"]),
-    }
-    compose = json.loads(subprocess.check_output([
-        "docker", "compose", "-f", str(ROOT / "deploy/shard/compose.yml"), "--profile", "harness", "config",
-        "--format", "json",
-    ], env=environment, text=True))
-    budget = {
-        "cgroup_parent": "athanor.slice", "cpuset": config["cpuset"], "pids_limit": 2048,
-        "logging": {"driver": "json-file", "options": {"max-size": "20m", "max-file": "3"}},
-    }
-    # The node uses the host as deployed; only auxiliary measurement services use the slice.
-    for name, service in compose["services"].items():
-        if name not in ("harness", "madara"):
-            service.update(budget)
-    for name in ("prepare", "init"):
-        service = compose["services"][name]
-        service.update({"mem_limit": "8g", "memswap_limit": "8g"})
-        service["environment"]["CHAIN_CONFIG"] = "/template/chain-config.yaml"
-        service["volumes"].append({"type": "bind", "source": str((ROOT / config["chain_config"]).resolve()),
-                                   "target": "/template/chain-config.yaml", "read_only": True})
-    node = compose["services"]["madara"]
-    replaced = {flag.split("=", 1)[0] for flag in config["node_flags"]}
-    node["command"] = [flag for flag in node["command"] if flag.split("=", 1)[0] not in replaced] + config["node_flags"]
-    return compose
-
-
-def ensure_fresh_project(config):
-    project = f"athanor-{config['shard']}"
-    label = f"label=com.docker.compose.project={project}"
-    for command in (["ps", "-aq", "--filter", label], ["volume", "ls", "-q", "--filter", label]):
-        if read([*DOCKER, *command]):
-            raise ValueError(f"{project} already owns state; choose a fresh shard id")
-    for port in [config["port_base"] + offset for offset in (1, 5)]:
-        with socket.socket() as listener:
-            listener.bind(("127.0.0.1", port))
 
 
 def wait_for_endpoint(url, rpc=False):
@@ -281,21 +185,6 @@ def save_harness_environment(directory, environment):
     write_private_environment(directory / "harness.env", {key: environment[key] for key in keys})
 
 
-def deployment_manifest(config, compose, directory, manifest, rpc_rtt, herald_rtt):
-    return {
-        **config, "project": compose["name"], "revision": read(["git", "rev-parse", "HEAD"]),
-        "chainId": manifest["shard"]["chainId"],
-        "slice_limits": {name: Path(f"/sys/fs/cgroup/athanor.slice/{name}").read_text().strip()
-                         for name in ("cpu.max", "cpuset.cpus.effective", "memory.max", "memory.high",
-                                      "memory.swap.max")},
-        "chain_config_sha256": hashlib.sha256((directory / "chain-config.yaml").read_bytes()).hexdigest(),
-        "node_command": compose["services"]["madara"]["command"], "rpc_url": config["public_rpc_url"],
-        "herald_url": config["public_herald_url"],
-        "rtt_ms": {"rpc": rpc_rtt, "herald": herald_rtt},
-        "world": manifest["world"]["address"], "native_schema": manifest["native"]["activeSchema"],
-    }
-
-
 def read_guardian_identity(url):
     identity_service_base(url)
     guardian = service_json(url, timeout=15)
@@ -358,206 +247,3 @@ def build_images():
     return {**facts, "commit": revision, "images": images, "node": node}
 
 
-def resolve_images(config):
-    """Explicit image digests select an existing local build; otherwise build this checkout."""
-    if all(config.get(f"{name}_image") for name in ("init", "herald", "metrics")):
-        return config
-    release = build_images()
-    return {**config, **{f"{name}_image": digest for name, digest in release["images"].items()}}
-
-
-def start_shard(config, directory):
-    config = resolve_images(config)
-    allowed = cpu_numbers(Path("/sys/fs/cgroup/athanor.slice/cpuset.cpus.effective").read_text().strip())
-    validate_configuration(config, allowed)
-    ensure_fresh_project(config)
-    if os.environ.get("LEDGER_ADDRESS") or os.environ.get("LEDGER_RPC_URL"):
-        raise ValueError("shard preparation does not deploy or configure the deferred ledger")
-    directory = directory.resolve()
-    directory.mkdir(mode=0o700, parents=True, exist_ok=False)
-    compose = compose_configuration(config, directory)
-    # The run records the node image it ran: the package pin.
-    config = {**config, "madara_image": compose["services"]["madara"]["image"]}
-    write_json(directory / "configuration.json", config)
-    write_json(directory / "compose.json", compose)
-    command = [*DOCKER, "compose", "-f", str(directory / "compose.json")]
-    try:
-        start_runner_stack(config, directory, command)
-        readiness = record_runner_readiness(config, compose, directory, command)
-        grant_measurement_roles(directory, command)
-        return readiness
-    except BaseException:
-        remove_shard(directory)
-        raise
-
-
-def record_runner_readiness(config, compose, directory, command):
-    manifest = json.loads((directory / "native-world.json").read_text())
-    run([*command, "run", "--rm", "--no-deps", "--entrypoint", "python3", "harness",
-         "/app/deploy/shard/init.py", "probe"], directory, "network-probes")
-    probes = json.loads((directory / "network-probes.json").read_text())
-    rpc_rtt, herald_rtt = probes["rpcRttMs"], probes["heraldRttMs"]
-    result = deployment_manifest(config, compose, directory, manifest, rpc_rtt, herald_rtt)
-    write_json(directory / "manifest.json", result)
-    return result
-
-
-def grant_measurement_roles(directory, command):
-    """A measurement shard's harness creates its own games, so the runner, never an official deployment, makes the
-    harness's operator the launcher and ledger operator. It runs after the readiness probe, which checks the roles the
-    deploy set."""
-    run([*command, "run", "--rm", "--no-deps", "--entrypoint", "python3", "harness",
-         "/app/deploy/shard/init.py", "measurement-roles"], directory, "measurement-roles")
-
-
-def start_runner_stack(config, directory, command):
-    run([*command, "run", "--rm", "--no-deps", "prepare"], directory, "shard-prepare")
-    run([*command, "up", "-d", "herald", "metrics"], directory, "shard-bootstrap")
-    wait_for_identity(config)
-    # Persist the intended identity before the request: its response can be lost after registration succeeds.
-    write_json(directory / "directory-registration.json", {
-        "url": config["public_herald_url"], "chainId": "0x" + config["chain_id"].encode("ascii").hex(),
-    })
-    listing = directory_status(config, "pending")
-    if listing["status"] != "pending":
-        raise RuntimeError("Fresh runner shard must register PENDING")
-    expected_chain = "0x" + config["chain_id"].encode("ascii").hex()
-    if int(listing["chainId"], 16) != int(expected_chain, 16):
-        raise RuntimeError("Directory acknowledged a different shard identity")
-    write_json(directory / "directory-registration-ack.json", {
-        "url": config["public_herald_url"], "chainId": listing["chainId"], "status": "pending",
-    })
-    run([*command, "up", "-d"], directory, "shard-start")
-    run([*command, "wait", "init"], directory, "shard-init-wait")
-    code = subprocess.check_output([*command, "ps", "--all", "--format", "{{.ExitCode}}", "init"], text=True).strip()
-    if code != "0":
-        raise RuntimeError("initialization failed; read private deployment logs")
-
-
-def remove_shard(directory):
-    """A runner shard is never started again: its containers' logs stay in its directory as shard-logs.log, then its
-    containers, volumes and network go. The logs are read even when stopping fails, and the shard goes even when
-    reading them fails."""
-    configuration = directory / "configuration.json"
-    config = json.loads(configuration.read_text()) if configuration.exists() else {}
-    require_deposit_retirement(config, directory, runner=True)
-    command = [*DOCKER, "compose", "-f", str(directory / "compose.json")]
-    try:
-        try:
-            run([*command, "stop"], directory, "shard-stop")
-        finally:
-            keep_shard_logs(directory, command)
-    finally:
-        run([*command, "down", "--volumes", "--remove-orphans"], directory, "shard-down")
-    # Only an acknowledged PENDING registration belongs to this run; intent alone cannot retire a listing.
-    receipt = directory / "directory-registration-ack.json"
-    if receipt.exists():
-        config = json.loads((directory / "configuration.json").read_text())
-        registered = json.loads(receipt.read_text())
-        chain_id = "0x" + config["chain_id"].encode("ascii").hex()
-        if (registered["status"] != "pending" or registered["url"] != config["public_herald_url"]
-                or int(registered["chainId"], 16) != int(chain_id, 16)):
-            raise RuntimeError("Directory registration differs from the runner's shard identity")
-        directory_status(config, "retired")
-
-
-def keep_shard_logs(directory, command):
-    """Reads the containers' logs once: a removal repeated after the containers are gone keeps the first copy."""
-    kept = directory / "shard-logs.log"
-    if kept.exists():
-        return
-    run([*command, "logs", "--no-color"], directory, "shard-logs-reading")
-    (directory / "shard-logs-reading.log").rename(kept)
-
-
-# Each workload key is a harness option (underscores for dashes, true for a bare flag), so a matrix can run every shape
-# the harness runs: a Frontier burst, an Eternum game, a chosen preset. `"wave": true` runs the 2,000-player wave
-# (burst.ts) and `"split": true` the launcher seating a frozen Blitz roster (blitz-split.ts) instead. The harness
-# refuses the rest.
-WORKLOAD_SCRIPTS = {"wave": "burst.ts", "split": "blitz-split.ts"}
-
-
-def workload_command(workload):
-    if not workload:
-        raise ValueError("workload must name the harness run")
-    named = [key for key in WORKLOAD_SCRIPTS if workload.get(key) is True]
-    if len(named) > 1:
-        raise ValueError("a workload runs one script")
-    script = WORKLOAD_SCRIPTS[named[0]] if named else "run.ts"
-    options = []
-    for key, value in workload.items():
-        if key in WORKLOAD_SCRIPTS:
-            continue
-        flag = f"--{key.replace('_', '-')}"
-        options += [flag] if value is True else [flag, str(value)]
-    return ["bun", f"deploy/athanor/harness/{script}", *options]
-
-
-def harness_container_command(compose_file, command):
-    """The workload inside the shard's harness container, its reports in data/workload."""
-    action = next((key for key, script in WORKLOAD_SCRIPTS.items() if command[1].endswith(f"/{script}")), "harness")
-    return [*DOCKER, "compose", "-f", str(compose_file), "run", "--rm", "-e", "HARNESS_OUTPUT_DIRECTORY=/data/workload",
-            "--entrypoint", "python3", "harness", "/app/deploy/shard/init.py", action, *command[2:]]
-
-
-def run_workload(command, directory, environment):
-    """Runs the workload to its end; an interrupted run stops the workload's whole process group."""
-    with (directory / "harness.log").open("w") as output:
-        process = subprocess.Popen(command, cwd=ROOT, env=environment, stdout=output,
-                                   stderr=subprocess.STDOUT, start_new_session=True)
-        try:
-            code = process.wait()
-            if code:
-                raise subprocess.CalledProcessError(code, command)
-            return True
-        finally:
-            if process.poll() is None:
-                os.killpg(process.pid, signal.SIGTERM)
-                try:
-                    process.wait(timeout=10)
-                except subprocess.TimeoutExpired:
-                    os.killpg(process.pid, signal.SIGKILL)
-                    process.wait()
-
-
-def run_matrix(matrix, directory):
-    directory.mkdir(mode=0o700, parents=True, exist_ok=False)
-    write_json(directory / "matrix.json", matrix)
-    for entry in matrix["configurations"]:
-        config = {**matrix.get("defaults", {}), **entry}
-        command = workload_command({**matrix["workload"], **config.pop("workload", {})})
-        target = directory / config["shard"]
-        if target.exists():
-            raise ValueError(f"duplicate run directory: {target}")
-        result = {"passed": False}
-        started = False
-        try:
-            # A start that fails removes its own shard; the arm removes only a shard that started.
-            start_shard(config, target)
-            started = True
-            environment = dict(os.environ)
-            command = harness_container_command(target / "compose.json", command)
-            result.update(measures.measure_workload(
-                DOCKER, lambda: run_workload(command, target, environment), f"athanor-{config['shard']}-madara-1",
-                target / "metrics" / "metrics.jsonl", target / "chain-config.yaml", target / "workload"))
-            result["passed"] = True
-        except Exception as error:
-            result["error"] = str(error)
-            raise
-        finally:
-            if (target / "compose.json").exists():
-                write_json(target / "matrix-result.json", result)
-            if started:
-                remove_shard(target)
-    return {"passed": True, "directory": str(directory)}
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("configuration", type=Path)
-    parser.add_argument("directory", type=Path)
-    parser.add_argument("--matrix", action="store_true", help="run an ordered configuration matrix and workload")
-    args = parser.parse_args()
-    action = run_matrix if args.matrix else start_shard
-    with isolated_stack_lock(f"runner {args.directory.name}"):
-        print(json.dumps(action(json.loads(args.configuration.read_text()), args.directory.resolve())))

@@ -4,16 +4,30 @@ import importlib.util
 import json
 from pathlib import Path
 import resource
+import shutil
 import subprocess
 import tempfile
 import time
 import unittest
 from unittest.mock import patch
 
+import deploy
 import shard
 
 
 NODE_IMAGE = "ghcr.io/madara-alliance/madara@sha256:" + "a" * 64
+
+
+def deployed_compose(config=None, environment=None):
+    config = {**configuration(), **(config or {})}
+    inputs = {**config, "shard_name": f"athanor-{config['shard']}"}
+    images = "".join(f"SHARD_{name.upper()}_IMAGE={config[name + '_image']}\n" for name in ("herald", "init", "metrics"))
+    with tempfile.TemporaryDirectory() as directory:
+        shutil.copy(shard.ROOT / "deploy/shard/compose.yml", Path(directory) / "compose.yml")
+        (Path(directory) / ".env").write_text(deploy.render_environment(inputs, images))
+        return json.loads(subprocess.check_output(
+            ["docker", "compose", "--project-directory", directory, "--profile", "harness", "config", "--format", "json"],
+            env={**shard.os.environ, **(environment or {})}, text=True))
 
 
 def operator_fixture(data, testcase):
@@ -36,14 +50,7 @@ def configuration():
         "public_rpc_url": "https://rpc.test/rpc/v0_10_2",
         "public_herald_url": "https://herald.test", "l2_gas_bound": "0x47868c00",
         "node_flags": ["--enable-native-execution=true", "--native-compilation-mode=async"],
-        "presets": [2],
     }
-
-
-def write_deployed_world(directory):
-    """The deployed owner and public game address."""
-    (directory / "gameplay-contracts.json").write_text(json.dumps({"operatorAccountAddress": "0x1"}))
-    (directory / "native-world.json").write_text(json.dumps({"world": {"address": "0x4"}}))
 
 
 def load_cpu_sampler():
@@ -61,203 +68,23 @@ def load_package_script(name):
     return script
 
 
-
-def compose_verb(command):
-    """The compose subcommand of a `docker compose -f FILE ...` command."""
-    return command[command.index("-f") + 2]
-
-
-class FakeCompose:
-    """`docker compose` at the subprocess boundary: the shard's containers hold their log until `down` removes them."""
-
-    LOG = "madara-1  | the node's last line\n"
-
-    def __init__(self, fail=()):
-        self.commands, self.fail, self.alive = [], set(fail), True
-
-    @property
-    def verbs(self):
-        return [compose_verb(command) for command in self.commands]
-
-    def __call__(self, command, **kwargs):
-        self.commands.append(command)
-        if compose_verb(command) in self.fail:
-            raise subprocess.CalledProcessError(1, command)
-        if compose_verb(command) == "logs" and self.alive:
-            kwargs["stdout"].write(self.LOG)
-        if compose_verb(command) == "down":
-            self.alive = False
-
 class ShardTest(unittest.TestCase):
-    def test_runner_registers_pending_before_initialization_and_never_activates(self):
-        events = []
+
+    def test_identity_and_runtime_validation_refuse_bad_shard_settings(self):
         config = configuration()
-        chain = "0x" + config["chain_id"].encode().hex()
-        with tempfile.TemporaryDirectory() as temporary:
-            data = Path(temporary)
-            with patch.object(shard, "run", side_effect=lambda command, *_: events.append(command[-1])), patch.object(shard, "wait_for_identity", side_effect=lambda *_: events.append("identity")), patch.object(shard, "directory_status", side_effect=lambda _, status: (events.append(status) or {"status": "pending", "chainId": chain})), patch.object(shard.subprocess, "check_output", return_value="0"):
-                shard.start_runner_stack(config, data, ["compose"])
-            self.assertEqual(events[:5], ["prepare", "metrics", "identity", "pending", "-d"])
-            self.assertNotIn("active", events)
-            self.assertEqual(json.loads((data / "directory-registration.json").read_text())["chainId"], chain)
-            self.assertEqual(json.loads((data / "directory-registration-ack.json").read_text())["status"], "pending")
-
-    def test_registration_intent_survives_a_lost_post_response(self):
-        with tempfile.TemporaryDirectory() as temporary:
-            data = Path(temporary)
-            config = configuration()
-            def lost_response(_, status):
-                self.assertEqual(status, "pending")
-                self.assertEqual(json.loads((data / "directory-registration.json").read_text()), {
-                    "url": config["public_herald_url"], "chainId": "0x" + config["chain_id"].encode().hex(),
-                })
-                raise OSError("response lost")
-            with patch.object(shard, "run"), patch.object(shard, "wait_for_identity"), patch.object(shard, "directory_status", side_effect=lost_response):
-                with self.assertRaisesRegex(OSError, "response lost"):
-                    shard.start_runner_stack(config, data, ["compose"])
-            compose = FakeCompose()
-            shard.write_json(data / "configuration.json", config)
-            with patch.object(shard.subprocess, "run", side_effect=compose), patch.object(shard, "directory_status") as directory:
-                shard.remove_shard(data)
-            self.assertEqual(compose.verbs, ["stop", "logs", "down"])
-            directory.assert_not_called()
-            self.assertFalse((data / "directory-registration-ack.json").exists())
-
-    def test_failed_single_start_removes_the_shard_and_retires_its_registration(self):
-        for failure in (RuntimeError("init failed"), KeyboardInterrupt()):
-            with self.subTest(failure=type(failure).__name__), tempfile.TemporaryDirectory() as temporary:
-                directory = Path(temporary) / "trial"
-                read_text = Path.read_text
-                def read(path, *args, **kwargs):
-                    if str(path) == "/sys/fs/cgroup/athanor.slice/cpuset.cpus.effective": return "8-11,20-23"
-                    return read_text(path, *args, **kwargs)
-                def fail_start(config, data, _):
-                    shard.write_json(data / "directory-registration-ack.json", {"url": config["public_herald_url"], "chainId": "0x" + config["chain_id"].encode().hex(), "status": "pending"})
-                    raise failure
-                compose = FakeCompose()
-                with (
-                    patch.object(Path, "read_text", read), patch.object(shard, "ensure_fresh_project"),
-                    patch.object(shard, "compose_configuration", return_value={"services": {"madara": {"image": NODE_IMAGE}}}),
-                    patch.object(shard, "start_runner_stack", side_effect=fail_start),
-                    patch.object(shard.subprocess, "run", side_effect=compose),
-                    patch.object(shard, "directory_status") as directory_status,
-                ):
-                    with self.assertRaises(type(failure)):
-                        shard.start_shard(configuration(), directory)
-                self.assertEqual(compose.verbs, ["stop", "logs", "down"])
-                self.assertEqual([call.args[1] for call in directory_status.call_args_list], ["retired"])
-                self.assertEqual((directory / "shard-logs.log").read_text(), FakeCompose.LOG)
-                self.assertTrue((directory / "compose.json").exists())
-                self.assertTrue((directory / "directory-registration-ack.json").exists())
-
-    def test_a_runner_shard_gives_its_harness_the_game_roles_only_after_the_readiness_probe(self):
-        with tempfile.TemporaryDirectory() as temporary:
-            directory = Path(temporary) / "trial"
-            read_text = Path.read_text
-            def read(path, *args, **kwargs):
-                if str(path) == "/sys/fs/cgroup/athanor.slice/cpuset.cpus.effective": return "8-11,20-23"
-                return read_text(path, *args, **kwargs)
-            steps = []
-            with (
-                patch.object(Path, "read_text", read), patch.object(shard, "ensure_fresh_project"),
-                patch.object(shard, "compose_configuration", return_value={"services": {"madara": {"image": NODE_IMAGE}}}),
-                patch.object(shard, "start_runner_stack", side_effect=lambda *_: steps.append("stack")),
-                patch.object(shard, "record_runner_readiness", side_effect=lambda *_: steps.append("readiness") or {}),
-                patch.object(shard, "run", side_effect=lambda command, _, name, *__: steps.append((name, command[-1]))),
-            ):
-                shard.start_shard(configuration(), directory)
-        self.assertEqual(steps, ["stack", "readiness", ("measurement-roles", "measurement-roles")])
-
-    def test_removing_a_registered_runner_keeps_its_logs_then_retires_without_activation(self):
-        compose = FakeCompose()
-        with tempfile.TemporaryDirectory() as temporary:
-            data = Path(temporary)
-            config = configuration()
-            shard.write_json(data / "configuration.json", config)
-            shard.write_json(data / "directory-registration-ack.json", {"url": config["public_herald_url"], "chainId": "0x" + config["chain_id"].encode().hex(), "status": "pending"})
-            with patch.object(shard.subprocess, "run", side_effect=compose), patch.object(shard, "directory_status") as directory:
-                shard.remove_shard(data)
-            self.assertEqual(compose.verbs, ["stop", "logs", "down"])
-            directory.assert_called_once_with(config, "retired")
-            self.assertEqual((data / "shard-logs.log").read_text(), FakeCompose.LOG)
-
-    def test_a_shard_whose_stop_fails_keeps_its_logs_and_is_still_removed(self):
-        compose = FakeCompose(fail={"stop"})
-        with tempfile.TemporaryDirectory() as temporary:
-            data = Path(temporary)
-            shard.write_json(data / "configuration.json", configuration())
-            with patch.object(shard.subprocess, "run", side_effect=compose), patch.object(shard, "directory_status") as directory:
-                with self.assertRaises(subprocess.CalledProcessError):
-                    shard.remove_shard(data)
-            self.assertEqual(compose.verbs, ["stop", "logs", "down"])
-            self.assertEqual((data / "shard-logs.log").read_text(), FakeCompose.LOG)
-        directory.assert_not_called()
-
-    def test_removing_a_shard_again_keeps_the_logs_its_first_removal_read(self):
-        compose = FakeCompose()
-        with tempfile.TemporaryDirectory() as temporary:
-            data = Path(temporary)
-            shard.write_json(data / "configuration.json", configuration())
-            with patch.object(shard.subprocess, "run", side_effect=compose):
-                shard.remove_shard(data)
-                shard.remove_shard(data)
-            self.assertEqual(compose.verbs, ["stop", "logs", "down", "stop", "down"])
-            self.assertEqual((data / "shard-logs.log").read_text(), FakeCompose.LOG)
-
-    def test_a_matrix_arm_that_fails_to_start_is_removed_once_and_keeps_its_logs(self):
-        read_text = Path.read_text
-
-        def read(path, *args, **kwargs):
-            if str(path) == "/sys/fs/cgroup/athanor.slice/cpuset.cpus.effective": return "8-11,20-23"
-            return read_text(path, *args, **kwargs)
-
-        compose = FakeCompose()
-        with tempfile.TemporaryDirectory() as temporary:
-            output = Path(temporary) / "matrix"
-            with (
-                patch.object(Path, "read_text", read), patch.object(shard, "ensure_fresh_project"),
-                patch.object(shard, "compose_configuration", return_value={"services": {"madara": {"image": NODE_IMAGE}}}),
-                patch.object(shard, "start_runner_stack", side_effect=RuntimeError("initialization failed")),
-                patch.object(shard.subprocess, "run", side_effect=compose),
-            ):
-                with self.assertRaisesRegex(RuntimeError, "initialization failed"):
-                    shard.run_matrix({"configurations": [configuration()], "workload": {"minutes": 1}}, output)
-            self.assertEqual(compose.verbs, ["stop", "logs", "down"])
-            self.assertEqual((output / "smoke" / "shard-logs.log").read_text(), FakeCompose.LOG)
-            self.assertEqual(json.loads((output / "smoke" / "matrix-result.json").read_text()),
-                             {"passed": False, "error": "initialization failed"})
-
-    def test_resource_and_target_validation_precedes_deployment(self):
-        config = configuration()
-        allowed = set(range(8, 12)) | set(range(20, 24))
-        shard.validate_configuration(config, allowed)
+        shard.validate_shard_identity(config)
+        shard.validate_runtime_configuration(config)
         for key, value in (
-            ("chain_id", ""), ("chain_id", "a" * 32), ("chain_id", "a\nb"),
-            ("port_base", 5050), ("cpuset", "0-23"), ("player_capacity", 0),
-            ("madara_image", NODE_IMAGE), ("block_time", 1), ("block_time", "0s"), ("shard", "../live"),
-            ("trusted_proxy", "cloudflared"), ("presets", []), ("presets", ["2"]),
-            ("guardian_url", "https://identity.test/api"),
-            ("node_flags", ["--base-path=/live"]),
-            ("node_flags", [*config["node_flags"], "--db-fsync=false"]),
-            ("node_flags", ["--enable-native-execution=true"]),
+            ("chain_id", ""), ("chain_id", "a" * 32), ("chain_id", "a\nb"), ("player_capacity", 0),
+            ("trusted_proxy", "cloudflared"), ("guardian_url", "https://identity.test/api"),
         ):
             with self.subTest(key=key, value=value), self.assertRaises(ValueError):
-                shard.validate_configuration({**config, key: value}, allowed)
-
-    def test_package_init_refuses_a_preset_outside_the_release_catalogue(self):
-        package = load_package_script("init")
-        facts = {"presets": {"2": "0x2", "3": "0x3", "5": "0x5", "101": "0x65"}}
-        self.assertEqual(package.requested_presets({"PRESETS": "2,5"}, facts), {2: "0x2", 5: "0x5"})
-        with self.assertRaisesRegex(ValueError, r"Presets \[1\] are not in this release's catalogue"):
-            package.requested_presets({"PRESETS": "2,1"}, facts)
-        with self.assertRaisesRegex(ValueError, "PRESETS must name"):
-            package.requested_presets({"PRESETS": ""}, facts)
-
-    def test_package_init_refuses_a_preset_whose_chain_commitment_is_not_the_release(self):
-        package = load_package_script("init")
-        self.assertEqual(package.chain_commitment(2, "0x02", "0x2"), "0x02")
-        with self.assertRaisesRegex(ValueError, "Preset 2 commits to 0x3 on chain; this release's facts say 0x2"):
-            package.chain_commitment(2, "0x3", "0x2")
+                shard.validate_shard_identity({**config, key: value})
+        for key, value in (
+            ("block_time", 1), ("block_time", "0s"), ("l2_gas_bound", "0x0"), ("l2_gas_bound", "0x10000000000000000"),
+        ):
+            with self.subTest(key=key, value=value), self.assertRaises(ValueError):
+                shard.validate_runtime_configuration({**config, key: value})
 
     def test_package_backup_restores_the_node_without_its_collector_and_names_missing_tables(self):
         backup = load_package_script("backup")
@@ -342,8 +169,7 @@ class ShardTest(unittest.TestCase):
                 self.assertEqual(environment[field], str(data / filename))
 
     def test_the_package_harness_runs_as_the_host_user_without_cpu_limits(self):
-        with tempfile.TemporaryDirectory() as temporary:
-            harness = shard.compose_configuration(configuration(), Path(temporary))["services"]["harness"]
+        harness = deployed_compose()["services"]["harness"]
         self.assertEqual(harness["user"], f"{shard.os.getuid()}:{shard.os.getgid()}")
         self.assertNotIn("cpuset", harness)
         self.assertEqual(harness["profiles"], ["harness"])
@@ -397,32 +223,17 @@ class ShardTest(unittest.TestCase):
                         shard.initialize_shard_identity(configuration(), directory, "0x789")
                 self.assertFalse((directory / "native-world.json").exists())
 
-
     def test_the_rendered_shard_keeps_the_operator_token_out_of_its_files(self):
-        rendered = {"name": "athanor-smoke", "services": {
-            name: {"environment": {}, "volumes": []}
-            for name in ("prepare", "init", "harness")
-        } | {name: {"command": [], "environment": {}} for name in ("madara", "postgres", "herald", "rpc")}}
-        with tempfile.TemporaryDirectory() as directory, \
-             patch.object(shard.subprocess, "check_output", return_value=json.dumps(rendered)):
-            compose = shard.compose_configuration(configuration(), Path(directory))
+        compose = deployed_compose(environment={"OPERATOR_TOKEN": "operator-secret"})
         self.assertNotIn("operator-secret", json.dumps(compose))
         for name in ("prepare", "init", "harness"):
             self.assertNotIn("OPERATOR_TOKEN", compose["services"][name]["environment"])
             self.assertNotIn("OPERATOR_TOKEN_FILE", compose["services"][name]["environment"])
 
-    def test_runner_exposes_neither_the_node_nor_postgres(self):
-        compose = shard.compose_configuration(configuration(), Path("/tmp/not-deployed"))
+    def test_the_shard_exposes_neither_the_node_nor_postgres(self):
+        compose = deployed_compose()
         for name in ("madara", "postgres"):
             self.assertFalse(compose["services"][name].get("ports"))
-
-    def test_existing_containers_or_volumes_are_never_reused(self):
-        for replies in (["container"], ["", "volume"]):
-            with (
-                patch.object(shard, "read", side_effect=replies),
-                self.assertRaisesRegex(ValueError, "already owns state"),
-            ):
-                shard.ensure_fresh_project(configuration())
 
     def test_private_outputs_exclude_inherited_credentials(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -463,32 +274,6 @@ class ShardTest(unittest.TestCase):
             self.assertEqual(config["exporters"]["file"]["path"], "/data/metrics.jsonl")
             self.assertEqual((directory / "metrics").stat().st_mode & 0o777, 0o700)
 
-    def test_a_matrix_workload_runs_any_harness_shape(self):
-        frontier = shard.workload_command({"game_type": "frontier", "bots": 2000, "frontier_burst": "booth",
-                                           "preset": 101, "minutes": 30})
-        self.assertEqual(frontier[2:], ["--game-type", "frontier", "--bots", "2000", "--frontier-burst", "booth",
-                                        "--preset", "101", "--minutes", "30"])
-        with self.assertRaisesRegex(ValueError, "must name the harness run"):
-            shard.workload_command({})
-        wave = shard.workload_command({"wave": True, "players": 2000, "create_game": True,
-                                       "out": "/data/workload/wave.json"})
-        self.assertEqual(wave, ["bun", "deploy/athanor/harness/burst.ts", "--players", "2000", "--create-game",
-                                "--out", "/data/workload/wave.json"])
-        self.assertEqual(shard.harness_container_command("c.json", wave)[-7:],
-                         ["/app/deploy/shard/init.py", "wave", "--players", "2000", "--create-game", "--out",
-                          "/data/workload/wave.json"])
-        split = shard.workload_command({"split": True, "players": 2000, "out": "/data/workload/split.json"})
-        self.assertEqual(split, ["bun", "deploy/athanor/harness/blitz-split.ts", "--players", "2000",
-                                 "--out", "/data/workload/split.json"])
-        self.assertEqual(shard.harness_container_command("c.json", split)[-6:],
-                         ["/app/deploy/shard/init.py", "split", "--players", "2000", "--out",
-                          "/data/workload/split.json"])
-        with self.assertRaises(ValueError):
-            shard.workload_command({"split": True, "wave": True})
-        container = shard.harness_container_command("c.json", frontier)
-        init = container.index("/app/deploy/shard/init.py")
-        self.assertEqual(container[init + 1:], ["harness", *frontier[2:]])
-
     def test_player_capacity_stops_at_campaign_g_target(self):
         config = {"chain_id": "REALMS_TEST", "guardian_url": "https://id.test/api/guardian",
                   "public_rpc_url": "https://rpc.test", "public_herald_url": "https://herald.test"}
@@ -520,7 +305,7 @@ class ShardTest(unittest.TestCase):
         self.assertEqual(set(collector["receivers"]), {"otlp"})
         self.assertNotIn("gateway", json.dumps(collector))
 
-    def test_initializer_uses_the_same_runtime_setting_validation_as_the_runner(self):
+    def test_the_initializer_refuses_a_zero_play_gas_bound(self):
         package = load_package_script("init")
         environment = {"CHAIN_ID": "CHECK", "GUARDIAN_URL": "https://id.test/api/guardian",
                        "PUBLIC_RPC_URL": "https://rpc.test", "PUBLIC_HERALD_URL": "https://herald.test",
@@ -536,14 +321,8 @@ class ShardTest(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "owner-only mode 0600"):
                 shard.host_credentials(data)
 
-    def test_the_fixed_play_gas_bound_is_required(self):
-        config = configuration()
-        for changes in ({"l2_gas_bound": "0x0"}, {"l2_gas_bound": "0x10000000000000000"}):
-            with self.assertRaises(ValueError): shard.validate_configuration({**config, **changes}, set(range(8, 12))|set(range(20, 24)))
-
     def test_the_package_runs_its_collector_and_the_node_exports_to_it(self):
-        with tempfile.TemporaryDirectory() as temporary:
-            compose = shard.compose_configuration(configuration(), Path(temporary))
+        compose = deployed_compose()
         node, metrics = compose["services"]["madara"], compose["services"]["metrics"]
         receiver = shard.collector_configuration()["receivers"]["otlp"]["protocols"]["grpc"]["endpoint"]
         self.assertIn(f"--otel-collector-endpoint=http://metrics:{receiver.rsplit(':', 1)[1]}", node["command"])
@@ -728,68 +507,6 @@ class ShardTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary, self.assertRaises(ValueError):
             shard.write_private_environment(Path(temporary) / "private.env", {"KEY": "value\nOTHER=bad"})
 
-    def test_explicit_local_digests_skip_the_build(self):
-        images = {f"{name}_image": "sha256:" + "1" * 64 for name in ("init", "herald", "metrics")}
-        with patch.object(shard, "build_images") as build:
-            self.assertEqual(shard.resolve_images(images), images)
-            build.assert_not_called()
-
-    def test_missing_images_are_built_together_from_the_checkout(self):
-        images = {name: "sha256:" + "1" * 64 for name in ("init", "herald", "metrics")}
-        with patch.object(shard, "build_images", return_value={"images": images}) as build:
-            self.assertEqual(shard.resolve_images({"shard": "test"}), {
-                "shard": "test", **{f"{name}_image": digest for name, digest in images.items()}})
-            build.assert_called_once_with()
-
-    def test_matrix_runs_in_order_and_removes_only_its_own_projects(self):
-        for failure in (None, RuntimeError("workload failed")):
-            with self.subTest(failure=failure), tempfile.TemporaryDirectory() as temporary:
-                root = Path(temporary)
-                matrix = {
-                    "configurations": [configuration(), {**configuration(), "shard": "second",
-                                                          "workload": {"minutes": 30}}],
-                    "workload": {"game_type": "eternum", "bots": 6, "minutes": 1,
-                                 "interval_seconds": 16, "setup_concurrency": 3, "workload": "cadence"},
-                }
-                started = []
-
-                def start(config, directory):
-                    started.append(config["shard"])
-                    directory.mkdir()
-                    (directory / "compose.json").write_text("{}")
-                    (directory / "harness.env").write_text("COMPOSE_PROJECT_NAME=athanor-smoke\n")
-                    shard.write_json(directory / "configuration.json", config)
-                    shard.write_json(directory / "directory-registration-ack.json", {"url": config["public_herald_url"], "chainId": "0x" + config["chain_id"].encode().hex(), "status": "pending"})
-
-                def measure(_docker, run_workload, node, *_paths):
-                    measured.append(node)
-                    run_workload()
-                    return {"blockStats": {"blocks": {"count": 1}}}
-
-                measured = []
-                with patch.object(shard, "start_shard", side_effect=start), \
-                     patch.object(shard.measures, "measure_workload", side_effect=measure), \
-                     patch.object(shard.subprocess, "run", side_effect=FakeCompose()) as docker, \
-                     patch.object(shard, "directory_status") as directory_status, \
-                     patch.object(shard, "run_workload", side_effect=failure) as workload:
-                    output = root / "matrix"
-                    if failure:
-                        with self.assertRaisesRegex(RuntimeError, "workload failed"):
-                            shard.run_matrix(matrix, output)
-                    else:
-                        self.assertTrue(shard.run_matrix(matrix, output)["passed"])
-                    self.assertEqual(started, ["smoke"] if failure else ["smoke", "second"])
-                    minutes = [call.args[0][call.args[0].index("--minutes") + 1] for call in workload.call_args_list]
-                    self.assertEqual(minutes, ["1"] if failure else ["1", "30"])
-                    self.assertEqual(measured, [f"athanor-{name}-madara-1" for name in started])
-                    self.assertEqual([call.args[1] for call in directory_status.call_args_list], ["retired"] * len(started))
-                    removals = [(call.args[0][call.args[0].index("-f") + 1], compose_verb(call.args[0])) for call in docker.call_args_list]
-                    self.assertEqual(removals, [(str(output / name / "compose.json"), verb)
-                                                for name in started for verb in ("stop", "logs", "down")])
-                    for name in started:
-                        result = json.loads((output / name / "matrix-result.json").read_text())
-                        self.assertEqual(result["passed"], failure is None)
-
 
 class PackageStartTest(unittest.TestCase):
     """An initialized shard's data/ started on configuration volumes that hold nothing: a backup restored on a new
@@ -847,7 +564,7 @@ class PackageStartTest(unittest.TestCase):
         with patch.dict(shard.os.environ, {**self.environ, **settings}), redirect_stdout(io.StringIO()):
             config = self.package.configuration()
             self.package.prepare(config)
-            self.package.deploy(config, {})
+            self.package.deploy(config)
 
     def published(self, volume, name):
         return self.volumes[volume] / name
@@ -873,17 +590,6 @@ class PackageStartTest(unittest.TestCase):
             self.package.prepare(config)
         self.assertEqual((self.data / "host-keys.json").read_bytes(), original)
         self.assertTrue((self.data / "init-configuration.json").exists())
-
-    def test_readiness_probes_use_only_internal_service_addresses(self):
-        with patch.object(shard, "wait_for_endpoint", return_value=1) as wait:
-            self.package.probe()
-        self.assertEqual([call.args[0] for call in wait.call_args_list], [
-            "http://madara:9944/rpc/v0_10_2", "http://herald:3003/health", "http://rpc:8080/rpc/v0_10_2",
-        ])
-        commands = [call.args[0] for call in shard.run.call_args_list]
-        self.assertEqual(commands[0][-1], "http://madara:9944/rpc/v0_10_2")
-        self.assertEqual(commands[1][-2:], ["--public-rpc", "http://rpc:8080/rpc/v0_10_2"])
-        self.assertEqual(json.loads((self.data / "network-probes.json").read_text()), {"rpcRttMs": 1, "heraldRttMs": 1})
 
     def test_every_service_configuration_is_published_from_data_on_fresh_volumes(self):
         self.start()
@@ -929,58 +635,8 @@ class PackageStartTest(unittest.TestCase):
         self.assertFalse(any("prepare-authority" in str(call.args[0]) for call in run_calls))
 
 
-
-class LocalEnrollmentTest(unittest.TestCase):
-    def test_local_initialization_never_lists_a_measurement_shard(self):
-        package = load_package_script("init")
-        with tempfile.TemporaryDirectory() as temporary:
-            data = Path(temporary)
-            (data / "native-world.json").write_text(json.dumps({"shard": {"chainId": "0x1"}, "world": {"address": "0x2"}}))
-            with (
-                patch.object(package, "DATA", data),
-                patch("deploy.directory_status") as listing,
-                patch.object(shard, "wait_for_endpoint"),
-                patch.object(shard, "save_harness_environment"),
-                patch.object(shard, "deploy_world"),
-                patch.object(shard, "run"),
-            ):
-                package.deploy_world_once(configuration(), {"RPC_URL": "http://node", "HERALD_URL": "http://herald"})
-            listing.assert_not_called()
-
 if __name__ == "__main__":
     unittest.main()
-
-
-class RegistrationAcknowledgementTest(unittest.TestCase):
-    def test_active_or_draining_response_never_acknowledges_or_retires_another_listing(self):
-        config = configuration()
-        for status in ("active", "draining"):
-            with self.subTest(status=status), tempfile.TemporaryDirectory() as temporary:
-                data = Path(temporary)
-                shard.write_json(data / "configuration.json", config)
-                with patch.object(shard, "run"), patch.object(shard, "keep_shard_logs"), patch.object(shard, "wait_for_identity"), patch.object(shard, "directory_status", return_value={"status": status}) as directory:
-                    with self.assertRaisesRegex(RuntimeError, "must register PENDING"):
-                        shard.start_runner_stack(config, data, ["compose"])
-                    shard.remove_shard(data)
-                directory.assert_called_once_with(config, "pending")
-                self.assertTrue((data / "directory-registration.json").exists())
-                self.assertFalse((data / "directory-registration-ack.json").exists())
-
-    def test_unacknowledged_post_failure_is_preserved_after_cleanup(self):
-        config = configuration()
-        with tempfile.TemporaryDirectory() as temporary:
-            data = Path(temporary)
-            shard.write_json(data / "configuration.json", config)
-            with patch.object(shard, "run"), patch.object(shard, "keep_shard_logs"), patch.object(shard, "wait_for_identity"), patch.object(shard, "directory_status", side_effect=RuntimeError("pending POST failed")) as directory:
-                try:
-                    shard.start_runner_stack(config, data, ["compose"])
-                except RuntimeError as error:
-                    shard.remove_shard(data)
-                    self.assertEqual(str(error), "pending POST failed")
-                else:
-                    self.fail("pending POST should fail")
-            directory.assert_called_once_with(config, "pending")
-            self.assertFalse((data / "directory-registration-ack.json").exists())
 
 
 class OfficialBackupLockTest(unittest.TestCase):
@@ -999,7 +655,6 @@ class OfficialBackupLockTest(unittest.TestCase):
 class ResolvedProxyCapacityTest(unittest.TestCase):
     def test_the_resolved_proxy_and_initialization_use_the_same_shard_capacity(self):
         for capacity in (24, 2000):
-            config = {**configuration(), "player_capacity": capacity}
-            compose = shard.compose_configuration(config, Path("/tmp/not-deployed"))
+            compose = deployed_compose({"player_capacity": capacity})
             values = [compose["services"][name]["environment"]["PLAYER_CAPACITY"] for name in ("prepare", "rpc")]
             self.assertEqual([int(value) for value in values], [capacity, capacity])

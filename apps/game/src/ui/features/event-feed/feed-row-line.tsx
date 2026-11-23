@@ -14,7 +14,6 @@ const HEADLINE_ICONS: Record<HeadlineType, IconMeaning> = {
   "hyper-capture": "hyperstructure",
   elimination: "skull",
   "game-start": "play",
-  "game-end": "victory",
   "five-min-warning": "hourglass",
   "t3-building": "build",
 };

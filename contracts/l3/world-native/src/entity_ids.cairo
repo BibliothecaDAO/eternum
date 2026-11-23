@@ -30,36 +30,6 @@ pub fn allocate_home(game_id: u32, home: EntityId) -> EntityId {
     Into::<u32, u64>::into(home) * LOCAL_RANGE + next.into()
 }
 
-// Reserve once at registration or launch. The first id, count and consumed count fit one private storage word.
-pub fn reserve_homes(game_id: u32, owner: ContractAddress) {
-    assert!(crate::logic::game::game_exists(game_id), "prepare an existing game");
-    assert!(owner.is_non_zero(), "zero home owner");
-    let rules = crate::logic::preset_record::for_game(game_id).rules;
-    if rules.entry_rule.read() == crate::rules::ENTRY_OPEN && rules.day_unit_seconds.read() != 0 {
-        return;
-    }
-    let state = crate::state::write();
-    if state.games.home_reservations.read((game_id, owner)) != 0 {
-        return;
-    }
-    let count: u8 = match crate::logic::settlement::rules(game_id).mode {
-        crate::settlement::SettlementMode::Triple => 3,
-        _ => 1,
-    };
-    let mut first = 0_u32;
-    for index in 0..count {
-        let id = crate::logic::game::allocate_setup_entity(game_id);
-        assert!(id <= MAX_HOME_NAMESPACE, "home namespace exceeds safe entity ids");
-        assert!(state.games.namespace_owners.read((game_id, id)).is_zero(), "setup namespace already assigned");
-        state.games.namespace_owners.write((game_id, id), owner);
-        if index == 0 {
-            first = id;
-        }
-    }
-    let reservation = Into::<u32, u64>::into(first) + Into::<u8, u64>::into(count) * LOCAL_RANGE;
-    state.games.home_reservations.write((game_id, owner), reservation);
-}
-
 // The open game assigns a private block before the roll. Collision probing touches no shared allocator or count.
 pub fn assign_open_home(game_id: u32, owner: ContractAddress) -> EntityId {
     let state = crate::state::write();
@@ -68,7 +38,7 @@ pub fn assign_open_home(game_id: u32, owner: ContractAddress) -> EntityId {
         return previous;
     }
     let digest: u256 = core::poseidon::poseidon_hash_span(array![game_id.into(), owner.into()].span()).into();
-    let spacing = crate::logic::settlement::rules(game_id).spacing;
+    let spacing = crate::logic::settlement::spacing();
     let regions = core::cmp::min(0x7fffffff_u32 / spacing, MAX_HOME_NAMESPACE);
     assert!(regions != 0, "no expedition home regions");
     let first: u32 = (digest % regions.into()).try_into().unwrap();
@@ -88,38 +58,20 @@ pub fn assign_open_home(game_id: u32, owner: ContractAddress) -> EntityId {
 
 pub fn claim_home(game_id: u32, owner: ContractAddress) -> EntityId {
     let assigned = crate::state::read().games.open_homes.read((game_id, owner));
-    if assigned != 0 {
-        return assigned;
-    }
-    let state = crate::state::write();
-    let reservation = state.games.home_reservations.read((game_id, owner));
-    let first = reservation % LOCAL_RANGE;
-    let count = reservation / LOCAL_RANGE % FIELD_RANGE;
-    let used = reservation / LOCAL_RANGE / FIELD_RANGE;
-    assert!(first != 0 && used < count, "home ids must be prepared");
-    state.games.home_reservations.write((game_id, owner), reservation + LOCAL_RANGE * FIELD_RANGE);
-    first + used
+    assert!(assigned != 0, "home ids must be prepared");
+    assigned
 }
 
 pub fn home_for_actor(game_id: u32, actor: ContractAddress) -> EntityId {
     let home = crate::state::read().games.open_homes.read((game_id, actor));
-    if home != 0
-        && crate::logic::structures::structure(crate::resources::ResourceKey { game_id, entity_id: home })
-            .map(|record| record.owner == actor)
-            .unwrap_or(false) {
-        return home;
-    }
-    let reservation = crate::state::read().games.home_reservations.read((game_id, actor));
-    let first = reservation % LOCAL_RANGE;
-    let count = reservation / LOCAL_RANGE % FIELD_RANGE;
-    for index in 0..count {
-        let home = first + index;
-        let key = crate::resources::ResourceKey { game_id, entity_id: home };
-        if crate::logic::structures::structure(key).map(|structure| structure.owner == actor).unwrap_or(false) {
-            return home;
-        }
-    }
-    panic!("actor has no prepared home")
+    assert!(
+        home != 0
+            && crate::logic::structures::structure(crate::resources::ResourceKey { game_id, entity_id: home })
+                .map(|record| record.owner == actor)
+                .unwrap_or(false),
+        "actor has no prepared home",
+    );
+    home
 }
 
 pub fn allocation_home(key: crate::resources::ResourceKey) -> EntityId {

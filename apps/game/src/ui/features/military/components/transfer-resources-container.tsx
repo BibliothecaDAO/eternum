@@ -33,7 +33,8 @@ interface ResourceTransfer {
 interface TransferResourcesContainerProps {
   selectedEntityId: ID;
   targetEntityId: ID;
-  transferDirection: TransferDirection;
+  /** Resources go out of an army, into a structure or another army; none out of a structure to an army. */
+  transferDirection: Exclude<TransferDirection, TransferDirection.StructureToExplorer>;
   onTransferComplete: () => void;
 }
 
@@ -46,11 +47,7 @@ export const TransferResourcesContainer = ({
   const {
     account: { account },
     setup: {
-      systemCalls: {
-        troop_structure_adjacent_transfer,
-        structure_troop_adjacent_transfer,
-        troop_troop_adjacent_transfer,
-      },
+      systemCalls: { troop_structure_adjacent_transfer, troop_troop_adjacent_transfer },
     },
   } = useGame();
   const mode = useGameModeConfig();
@@ -345,13 +342,6 @@ export const TransferResourcesContainer = ({
         await troop_structure_adjacent_transfer({
           signer: account,
           ...calldata,
-        });
-      } else if (transferDirection === TransferDirection.StructureToExplorer) {
-        await structure_troop_adjacent_transfer({
-          signer: account,
-          from_structure_id: selectedEntityId,
-          to_troop_id: targetEntityId,
-          resources: resourcesWithAmounts,
         });
       } else if (transferDirection === TransferDirection.ExplorerToExplorer) {
         await troop_troop_adjacent_transfer({

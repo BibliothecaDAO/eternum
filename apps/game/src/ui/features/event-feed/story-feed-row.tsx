@@ -5,15 +5,12 @@ import {
   normalizePresentationTroops,
   parsePresentationDescription,
 } from "@/ui/features/story-events/story-event-utils";
-import { useGoToStructure, useSelectArmyOnMap } from "@/hooks/helpers/use-navigate";
 import { linkFrom, openOnMap } from "@/play/navigation/open-place";
 import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
-import { safeInteger, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { relicChestShares } from "@bibliothecadao/types";
+import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { Position, configManager, structureMapPosition, entityMapPosition } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
-import { useQuery } from "@/hooks/helpers/use-query";
 import { formatClockTime } from "@bibliothecadao/types";
 import { HudEventRow, HudRanked } from "@/ui/design-system/kit/hud-elements";
 import { storyMeaning } from "@/ui/design-system/domain-icon-meaning";
@@ -37,56 +34,13 @@ function resolveStoryEventPosition(event: ProcessedStoryEvent, store: NativeFact
   return null;
 }
 
-/** Where an opened chest's reward is held: the army or its home structure, whichever got most of them. */
-type ChestHolder = { kind: "army"; id: number } | { kind: "structure"; id: number; position: Position };
-
-/**
- * LORDS go to the recorded home. Relic packs select the army or home that received most of them; that older story
- * needs the surviving army's row to resolve its home.
- */
-function storyChestHolder(event: ProcessedStoryEvent, store: NativeFactStore): ChestHolder | null {
-  if (event.story === "RewardChestOpened" && event.storyPayload.structure_id != null) {
-    const id = storyPayloadId(event.storyPayload.structure_id);
-    const home = store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: id });
-    const site = home && structureMapPosition(store, home);
-    return site ? { kind: "structure", id, position: Position.fromContract(site) } : null;
-  }
-  if (event.story !== "RelicChestOpened" || event.storyPayload.explorer_id == null) return null;
-  const game_id = configManager.getActiveGameId();
-  const explorerId = storyPayloadId(event.storyPayload.explorer_id);
-  const army = store.get("ExplorerTroops", { game_id, explorer_id: explorerId });
-  if (!army) return null;
-  const { toArmy, toHome } = relicChestShares((event.storyPayload.relics as number[]).map(Number));
-  if (toArmy >= toHome) return { kind: "army", id: explorerId };
-  const home = store.get("Structure", { game_id, entity_id: army.owner });
-  const site = home && structureMapPosition(store, home);
-  return site ? { kind: "structure", id: safeInteger(army.owner), position: Position.fromContract(site) } : null;
-}
-
-/**
- * Opens a story where it happened, for the Events card and the log alike. An opened crate's row selects what holds
- * its reward: a LORDS chest's realm, an army pack's army (from the realm view, on the world map once it is shown), a structure pack's realm.
- * Any other row, or a crate whose army is gone, flies to its tile. Null when the story has no place left to show, or
- * none on today's map: a Frontier story from a day that has closed (linkFrom).
- */
 export function useStoryOpener(event: ProcessedStoryEvent): (() => void) | null {
   const {
-    setup,
     setup: { store },
   } = useGame();
   useNativeRevision(["Structure", "ExplorerTroops", "TileOccupancy"]);
-  const selectArmy = useSelectArmyOnMap();
-  const goToStructure = useGoToStructure(setup);
-  const { isMapView } = useQuery();
-  const holder = storyChestHolder(event, store);
   const position = resolveStoryEventPosition(event, store);
-  const open =
-    holder?.kind === "structure"
-      ? () => void goToStructure(holder.id, holder.position, isMapView)
-      : holder
-        ? () => selectArmy(holder.id)
-        : position && (() => openOnMap(position, "tile"));
-  return open ? linkFrom(event.timestampMs / 1000, open) : null;
+  return position ? linkFrom(event.timestampMs / 1000, () => openOnMap(position, "tile")) : null;
 }
 
 /** A world story in the Log: what happened and its line (a fight's sides, forces and rolls), and its time. */

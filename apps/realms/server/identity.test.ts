@@ -12,7 +12,7 @@ import {
 } from "@realms-world/identity";
 import { botRealmsId, deviceChangeHash, realmsAccountAddress } from "@realms-world/identity/account";
 import { createGuardian } from "@realms-world/guardian";
-import { byteArray, CallData, ec, hash, outsideExecution, typedData, type TypedData } from "starknet";
+import { byteArray, CallData, constants, ec, hash, outsideExecution, typedData, type TypedData } from "starknet";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 
 import { Effect } from "effect";
@@ -28,28 +28,15 @@ import { defaultWalletDeployment, passkeySigner, passkeySignerGuid } from "@real
 import { generateKeyPairSync } from "node:crypto";
 import { realmsIdOf } from "./realms-id";
 import { routeIdentityRequest } from "./routes";
-import { campaignCodeHash } from "./campaigns";
-import { CAMPAIGNS } from "@realms-world/identity";
-import { campaignTicketFor } from "./campaign-ticket-store";
-import { createCampaignReferralStore } from "./campaign-referral-store";
-import { accountKey } from "./campaign-entry";
+import { sealCodeHash } from "./public-codes";
+import type { User } from "better-auth";
+import { accountDeletion } from "./account-deletion";
+import { accountKey } from "./player-accounts";
+import { settleShareInvites, shareWorldOf } from "./shares";
 import { ORIGIN } from "./workerd-harness";
 import { createTestD1 } from "./test-d1";
-import { sendCampaign, stillFits, visitRecord } from "../scripts/comeback-campaign";
-
-/**
- * Holds this test's clock an hour short of the Devcon close (2026-11-06 18:00Z), so a campaign test keeps testing the
- * open campaign after the real close; a test of the close sets its own time past it. Only campaign tests take it: the
- * rest keep the real clock their stored timestamps are compared against.
- */
-function holdDevconOpen() {
-  const open = CAMPAIGNS["devcon-2026"].redeemUntil * 1000 - 3_600_000;
-  if (Date.now() <= open) return;
-  vi.useFakeTimers({ toFake: ["Date"], now: open, shouldAdvanceTime: true });
-  onTestFinished(() => {
-    vi.useRealTimers();
-  });
-}
+import { sealCodeFiles } from "../scripts/seal-codes";
+import { aspects, orders } from "@bibliothecadao/types";
 
 const GUARDIAN_KEY = "0x2dccce1da22003777062ee0870e9881b460a8b7eca276870f57c601f182136c";
 const CHAIN_ID = "0x5245414c4d535f53484152445f41";
@@ -107,11 +94,22 @@ const memoryBucket = () => {
   };
 };
 const shareCards = memoryBucket();
-/** The value relay's golden upgrade route, as identity calls it through its service binding. */
-const relay = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
-  Response.json({ campaign: "devcon-2026", tier: "golden" }),
-);
+const relay = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => Response.json({}));
 let env: IdentityEnv;
+const notifierCalls: [string, string][] = [];
+const notifiers = {
+  idFromName: (url: string) => url,
+  get: (url: string) => ({
+    watch: async () => void notifierCalls.push(["watch", url]),
+    stop: async () => void notifierCalls.push(["stop", url]),
+  }),
+};
+const listShard = (url: string, chainId: string) =>
+  env.DB.prepare(
+    "INSERT INTO shards (slot, url, chainId) VALUES (1, ?, ?) ON CONFLICT (slot) DO UPDATE SET url = excluded.url, chainId = excluded.chainId",
+  )
+    .bind(url, chainId)
+    .run();
 let auth: ReturnType<typeof createIdentityAuth>;
 
 /** The default wallets' paymaster, as AVNU answers: it builds what it is asked and submits what it is given; our key lets it sponsor. */
@@ -233,7 +231,7 @@ beforeAll(async () => {
     RESEND_API_KEY: "unused",
     WEB_PUSH_VAPID_PUBLIC_KEY: "unused",
     WEB_PUSH_VAPID_PRIVATE_KEY: "unused",
-    SHARD_NOTIFIER: {} as IdentityEnv["SHARD_NOTIFIER"],
+    SHARD_NOTIFIER: notifiers as unknown as IdentityEnv["SHARD_NOTIFIER"],
     CHAT_ROOM: {} as IdentityEnv["CHAT_ROOM"],
     CHAT_INBOX: {} as IdentityEnv["CHAT_INBOX"],
     DB: database.db,
@@ -542,119 +540,6 @@ describe("identity Worker", () => {
     const browser = createBrowser(["__Secure-better-auth.session_token=another-service.c2lnbmF0dXJl"]);
     expect((await signInWithCode(browser, "shadowed@realms.test")).status).toBe(200);
     expect((await browser.session())?.user.realmsId).toBeTruthy();
-  });
-
-  const now = () => Math.floor(Date.now() / 1000);
-  const lastSeen = async (realmsId: string) =>
-    visitRecord.seconds(
-      ((await database.db.prepare(visitRecord.lastVisit(realmsId)).first()) as { lastSeenAt?: unknown } | null)
-        ?.lastSeenAt,
-    );
-  const setLastSeen = (realmsId: string, seconds: number) =>
-    database.db
-      .prepare('UPDATE "user" SET "lastSeenAt" = ? WHERE "realmsId" = ?')
-      .bind(seconds * 1000, realmsId)
-      .run();
-
-  it("keeps an account's last visit after it signs out, so a news email still sees that it came back", async () => {
-    const DAY = 24 * 60 * 60;
-    /** The sender's own read and rule: a founded Devcon player, no confirmed action, the record long begun. */
-    const stillAway = async (realmsId: string) =>
-      stillFits("D", { lastAction: 0, lastVisit: await lastSeen(realmsId) }, now(), 0);
-
-    // A visit is the app reading its session; signing out deletes the session but not the visit.
-    const researcher = createBrowser();
-    expect((await signInWithCode(researcher, "researcher@realms.test")).status).toBe(200);
-    const { realmsId } = (await researcher.session())!.user;
-    expect(await lastSeen(realmsId)).toBeGreaterThanOrEqual(now() - 5);
-    await setLastSeen(realmsId, now() - 3 * DAY);
-    expect(await stillAway(realmsId)).toBe(true);
-    await researcher.session();
-    expect((await researcher.request("/api/auth/sign-out", { body: {} })).status).toBe(200);
-    expect(await researcher.session()).toBeNull();
-    const sessionsLeft = await database.db
-      .prepare('SELECT count(*) AS n FROM "session" s JOIN "user" u ON u.id = s."userId" WHERE u."realmsId" = ?')
-      .bind(realmsId)
-      .first<{ n: number }>();
-    expect(sessionsLeft?.n).toBe(0);
-    expect(await stillAway(realmsId)).toBe(false);
-
-    // Written at most once an hour: a second load within the hour leaves the time as it was.
-    const reader = createBrowser();
-    expect((await signInWithCode(reader, "reader@realms.test")).status).toBe(200);
-    const reading = (await reader.session())!.user.realmsId;
-    const halfAnHourAgo = now() - 1800;
-    await setLastSeen(reading, halfAnHourAgo);
-    await reader.session();
-    expect(await lastSeen(reading)).toBe(halfAnHourAgo);
-
-    // Between two emails: the second player opens the game and signs out; the run reads D1 again and skips them.
-    const away = [createBrowser(), createBrowser(), createBrowser()];
-    const ids: string[] = [];
-    for (const [index, browser] of away.entries()) {
-      expect((await signInWithCode(browser, `away-${index}@realms.test`)).status).toBe(200);
-      ids.push((await browser.session())!.user.realmsId);
-      await setLastSeen(ids[index]!, now() - 3 * DAY);
-    }
-    const sent: string[] = [];
-    const counts = await sendCampaign({
-      deliveries: ids.map((id) => ({ realmsId: id, variant: "D" as const })),
-      stillAway: async (delivery) => stillAway(delivery.realmsId),
-      reserve: async () => "reserved",
-      send: async (delivery) => {
-        sent.push(delivery.realmsId);
-        if (sent.length === 1) {
-          await away[1]!.session();
-          await away[1]!.request("/api/auth/sign-out", { body: {} });
-        }
-        return { kind: "accepted", id: null };
-      },
-      markSent: async () => {},
-      release: async () => {},
-      pause: async () => {},
-    });
-    expect(sent).toEqual([ids[0], ids[2]]);
-    expect(counts).toMatchObject({ sent: 2, cameBack: 1 });
-  });
-
-  it("counts a player away from the visit record's first full hour, when it began less than a day before", async () => {
-    const HOUR = 60 * 60;
-    // Wrangler's own migrations table, as production has it: the sender reads from it when migration 0026 ran.
-    await database.db
-      .prepare(
-        "CREATE TABLE IF NOT EXISTS d1_migrations (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE, applied_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)",
-      )
-      .run();
-    const recordBegan = (secondsAgo: number) =>
-      database.db
-        .prepare(
-          "INSERT INTO d1_migrations (name, applied_at) VALUES ('0026_last_seen.sql', ?1) ON CONFLICT(name) DO UPDATE SET applied_at = ?1",
-        )
-        .bind(new Date((now() - secondsAgo) * 1000).toISOString().slice(0, 19).replace("T", " "))
-        .run();
-    /** The sender's own reads (when the record began, the account's last visit) and rule, at this moment. */
-    const stillAway = async (realmsId: string, lastAction = 0) => {
-      const { results } = await database.db.prepare(visitRecord.began).all();
-      return stillFits("D", { lastAction, lastVisit: await lastSeen(realmsId) }, now(), visitRecord.beganAt(results));
-    };
-
-    const player = createBrowser();
-    expect((await signInWithCode(player, "early-away@realms.test")).status).toBe(200);
-    const { realmsId } = (await player.session())!.user;
-    // Last seen before the record began 11 hours ago (as the migration seeded it from an older session).
-    await recordBegan(11 * HOUR);
-    await setLastSeen(realmsId, now() - 12 * HOUR);
-    expect(await stillAway(realmsId)).toBe(true);
-    // Away counts from the record's first full hour (10 hours ago), not from 24 hours ago.
-    expect(await stillAway(realmsId, now() - 20 * HOUR)).toBe(true);
-    expect(await stillAway(realmsId, now() - 9 * HOUR)).toBe(false);
-    // In the record's first hour a visit may be missing from it: nobody is away yet.
-    await recordBegan(HOUR / 2);
-    expect(await stillAway(realmsId)).toBe(false);
-    // Opening the game brings the player back.
-    await recordBegan(11 * HOUR);
-    await player.session();
-    expect(await stillAway(realmsId)).toBe(false);
   });
 
   it("creates an account on an email's first sign-in with a code, and signs the same account in after", async () => {
@@ -1085,7 +970,12 @@ describe("identity Worker", () => {
         }),
         env,
         auth,
-        { cache: noCache, fetchPage, fetchShard, readLaunchDirectory: async () => launchDirectory },
+        {
+          cache: noCache,
+          fetchPage,
+          fetchShard,
+          readLaunchDirectory: async () => launchDirectory,
+        },
       );
       expect(posted.status).toBe(302);
       const followed = new URL(posted.headers.get("location")!);
@@ -1126,7 +1016,7 @@ describe("identity Worker", () => {
     expect(await refused.json()).toEqual({ error: "account_not_secured" });
   });
 
-  it("signs player and bot changes only for listed pending, active or draining chains", async () => {
+  it("signs a player's change only for the listed chain, a bot's first device on any shard chain, and neither on Starknet", async () => {
     const browser = createBrowser();
     await signInWithCode(browser, "chain-allow-list@realms.test");
     const player = deviceChangeFor((await browser.session())!.user.realmsId);
@@ -1135,85 +1025,75 @@ describe("identity Worker", () => {
       label: "0xb07",
       account: realmsAccountAddress(botRealmsId("0xb07"), ACCOUNT_CLASS_HASH, await env.GUARDIAN.publicKey()),
     };
-    await env.DB.prepare(`INSERT INTO shards (url, chainId, status, addedAt) VALUES (?, ?, 'active', ?)`)
-      .bind("https://devices.realms.test", CHAIN_ID, Date.now())
-      .run();
     const signing = vi.spyOn(env.GUARDIAN, "signDeviceChange");
+    const ask = async (path: string, change: object, chainId: string) => {
+      signing.mockClear();
+      const response = await browser.request(path, { body: { ...change, chainId }, token: OPERATOR_TOKEN });
+      return { status: response.status, body: await response.json(), signed: signing.mock.calls.length };
+    };
     try {
-      for (const status of ["pending", "active", "draining", "retired"]) {
-        await env.DB.prepare("UPDATE shards SET status = ? WHERE chainId = ?").bind(status, CHAIN_ID).run();
+      await listShard("https://devices.realms.test", CHAIN_ID);
+      const listed = `0x0${CHAIN_ID.slice(2)}`;
+      expect((await ask("/api/devices", player, listed)).signed).toBe(1);
+      expect((await ask("/api/devices/bots", bot, listed)).signed).toBe(1);
+      await env.DB.prepare("DELETE FROM shards").run();
+      expect(await ask("/api/devices", player, listed)).toEqual({
+        status: 403,
+        body: { error: "chain_not_approved" },
+        signed: 0,
+      });
+      const unlisted = await ask("/api/devices/bots", bot, "0x123");
+      expect([unlisted.status, unlisted.signed]).toEqual([200, 1]);
+      for (const chainId of Object.values(constants.StarknetChainId)) {
+        await listShard("https://devices.realms.test", chainId);
         for (const [path, change] of [
           ["/api/devices", player],
           ["/api/devices/bots", bot],
-        ] as const) {
-          signing.mockClear();
-          const response = await browser.request(path, {
-            body: { ...change, chainId: `0x0${CHAIN_ID.slice(2)}` },
-            token: OPERATOR_TOKEN,
+        ] as const)
+          expect(await ask(path, change, chainId)).toEqual({
+            status: 403,
+            body: { error: "chain_not_approved" },
+            signed: 0,
           });
-          const approved = status !== "retired" && (status !== "pending" || path === "/api/devices/bots");
-          expect(response.status).toBe(approved ? 200 : 403);
-          expect(signing).toHaveBeenCalledTimes(approved ? 1 : 0);
-        }
-      }
-      for (const chainId of ["0x123", "0x534e5f4d41494e", "0x534e5f5345504f4c4941"]) {
-        for (const [path, change] of [
-          ["/api/devices", player],
-          ["/api/devices/bots", bot],
-        ] as const) {
-          signing.mockClear();
-          const response = await browser.request(path, { body: { ...change, chainId }, token: OPERATOR_TOKEN });
-          expect(response.status).toBe(403);
-          expect(await response.json()).toEqual({ error: "chain_not_approved" });
-          expect(signing).not.toHaveBeenCalled();
-        }
       }
     } finally {
       signing.mockRestore();
-      await env.DB.prepare("UPDATE shards SET status = 'active' WHERE chainId = ?").bind(CHAIN_ID).run();
+      await listShard("https://devices.realms.test", CHAIN_ID);
     }
   });
 
-  it("enrolls pending shards without exposing them until the deployment activates them", async () => {
+  it("registers one shard in place of any other and removes it, each to the same end when run twice", async () => {
     const operator = createBrowser();
-    const url = "https://pending-shard.test";
-    const chainId = "0x123abc";
-    heralds.set(`${url}/manifest`, shardManifest(chainId));
-    heralds.set(`${url}/games`, { chain: chainId, games: [] });
-    const admit = (path: string) => operator.request(path, { body: { url }, token: OPERATOR_TOKEN });
-    expect((await admit("/api/directory/shards")).status).toBe(409);
-    expect((await operator.request("/api/directory/shards/pending", { body: { url } })).status).toBe(401);
-    expect((await admit("/api/directory/shards/pending")).status).toBe(201);
-    const visible = async (path: string) => JSON.stringify(await (await operator.request(path)).json());
-    expect(await visible("/api/directory")).not.toContain(url);
-    expect(await visible("/api/directory/history")).not.toContain(url);
-    expect((await operator.request("/api/directory/shards")).status).toBe(401);
-    const recorded = await operator.request("/api/directory/shards", { token: OPERATOR_TOKEN });
-    expect(recorded.status).toBe(200);
-    expect(((await recorded.json()) as { shards: unknown[] }).shards).toContainEqual(
-      expect.objectContaining({ url, chainId, status: "pending" }),
-    );
-    const bot = {
-      label: "0xbeef",
-      chainId,
-      account: realmsAccountAddress(botRealmsId("0xbeef"), ACCOUNT_CLASS_HASH, await env.GUARDIAN.publicKey()),
-      action: "ADD",
-      deviceKey: "0x123",
-      counter: 1,
-    };
-    expect((await operator.request("/api/devices/bots", { body: bot, token: OPERATOR_TOKEN })).status).toBe(200);
-    expect(
-      (
-        await operator.request("/api/directory/shards/status", {
-          body: { url, status: "active" },
-          token: OPERATOR_TOKEN,
-        })
-      ).status,
-    ).not.toBe(200);
-    expect((await admit("/api/directory/shards")).status).toBe(201);
-    expect(await visible("/api/directory")).toContain(url);
-    expect((await admit("/api/directory/shards")).status).toBe(200);
-    await env.DB.prepare("DELETE FROM shards WHERE url = ?").bind(url).run();
+    const first = "https://first-shard.test";
+    const second = "https://second-shard.test";
+    heralds.set(`${first}/manifest`, shardManifest("0x123abc"));
+    heralds.set(`${second}/manifest`, shardManifest("0x456def"));
+    const register = (url: string, token?: string) =>
+      operator.request("/api/directory/shard", { method: "PUT", body: { url }, ...(token ? { token } : {}) });
+    const remove = () => operator.request("/api/directory/shard", { method: "DELETE", token: OPERATOR_TOKEN });
+    const listed = async () =>
+      (await (await operator.request("/api/directory/shard", { token: OPERATOR_TOKEN })).json()) as unknown;
+    const rows = async () =>
+      (await env.DB.prepare("SELECT url, chainId FROM shards").all<{ url: string; chainId: string }>()).results;
+    expect((await register(first)).status).toBe(401);
+    expect((await operator.request("/api/directory/shard")).status).toBe(401);
+    expect((await operator.request("/api/directory/shard", { method: "DELETE" })).status).toBe(401);
+    onTestFinished(() => listShard("https://devices.realms.test", CHAIN_ID).then(() => undefined));
+    await env.DB.prepare("DELETE FROM shards").run();
+    notifierCalls.length = 0;
+    for (const url of [first, second, second]) expect((await register(url, OPERATOR_TOKEN)).status).toBe(200);
+    expect(await listed()).toEqual({ shard: { url: second, chainId: "0x456def" } });
+    expect(await rows()).toEqual([{ url: second, chainId: "0x456def" }]);
+    for (let run = 0; run < 2; run += 1) expect(await (await remove()).json()).toEqual({ shard: null });
+    expect(await listed()).toEqual({ shard: null });
+    expect(await rows()).toEqual([]);
+    expect(notifierCalls).toEqual([
+      ["watch", first],
+      ["stop", first],
+      ["watch", second],
+      ["watch", second],
+      ["stop", second],
+    ]);
   });
 
   it("approves only a verified account's own exact change, and never re-adds a revoked key", async () => {
@@ -1396,953 +1276,89 @@ describe("identity Worker", () => {
     expect((await createBrowser().request("/api/build-orders")).status).toBe(401);
   });
 
-  /** A running Devcon season game in a shard's directory, as Herald answers it for one player. */
-  const devconGame = (entered: boolean) => ({
-    game_id: 41,
-    name: "devcon",
-    mode: "frontier",
-    preset_id: 6,
-    status: "Live",
-    player_state: {
-      registered: entered,
-      settled: entered,
-      roster_wallet: null,
-      held_realm_id: null,
-      has_home_source: false,
-      taken_realm_ids: [],
-      structures: [],
-    },
-  });
-  /**
-   * What every listed shard tells the redeem about this account: no running Devcon game entered, except on the shards
-   * named in `devcon`, whose Devcon game this account entered or not.
-   */
-  const heraldsAnswerFor = async (realmsId: string, devcon: Record<string, boolean> = {}) => {
-    const account = realmsAccountAddress(realmsId, ACCOUNT_CLASS_HASH, await env.GUARDIAN.publicKey());
-    const { results } = await env.DB.prepare(
-      `SELECT url, chainId FROM shards WHERE status IN ('active', 'draining')`,
-    ).all<{ url: string; chainId: string }>();
-    for (const { url, chainId } of results) {
-      const games = url in devcon ? [devconGame(devcon[url]!)] : [];
-      heralds.set(`${url}/games?player=${account}`, { chain: chainId, games });
-      if (url in devcon)
-        heralds.set(`${url}/games/41/snapshot?models=EntryEntitlement%2CStructure%2CCampaignHome%2CSettledRealm`, {
-          game_id: "41",
-          confirmed_block: 1,
-          models: [
-            {
-              model: "EntryEntitlement",
-              rows: devcon[url]
-                ? [
-                    {
-                      key: `41:${account}`,
-                      value: {
-                        game_id: 41,
-                        owner: account,
-                        realm_id: "711",
-                        metadata_1: "0",
-                        metadata_2: "0",
-                        metadata_3: "0",
-                        pass_kind: 2,
-                      },
-                    },
-                  ]
-                : [],
-            },
-            { model: "Structure", rows: [] },
-            { model: "CampaignHome", rows: [] },
-            { model: "SettledRealm", rows: [] },
-          ],
-        });
-    }
-  };
+  it("keeps an account's opening progress as sets that any device can add to again, and shows it to its owner only", async () => {
+    const browser = createBrowser();
+    await signInWithCode(browser, "opening@realms.test");
+    const add = (body: unknown) => browser.request("/api/opening", { body });
 
-  describe("flyer redemption", () => {
-    beforeEach(holdDevconOpen);
-    const printed = async (code: string, tier: "regular" | "golden") =>
-      env.DB.prepare('INSERT INTO "campaign_codes" ("campaign", "code_hash", "tier") VALUES (?, ?, ?)')
-        .bind("devcon-2026", await campaignCodeHash("devcon-2026", code), tier)
-        .run();
+    expect(await (await browser.request("/api/opening")).json()).toEqual({ reached: [], seen: [] });
+    expect(await (await add({ reached: ["launch", "barracks"], seen: ["launch"] })).json()).toEqual({
+      reached: ["barracks", "launch"],
+      seen: ["launch"],
+    });
+    expect(await (await add({ reached: ["barracks", "fight"] })).json()).toEqual({
+      reached: ["barracks", "fight", "launch"],
+      seen: ["launch"],
+    });
+    expect((await add({ reached: ["Not A Name"] })).status).toBe(400);
+    expect((await add({ seen: "launch" })).status).toBe(400);
+    expect((await createBrowser().request("/api/opening")).status).toBe(401);
+  });
+
+  it("keeps each account's Order for the coming season, changed only to another Order of its Aspect, and counts every Order's members", async () => {
+    const first = createBrowser();
+    await signInWithCode(first, "order-one@realms.test");
+    const second = createBrowser();
+    await signInWithCode(second, "order-two@realms.test");
+    const choose = (browser: typeof first, body: unknown) => browser.request("/api/order-intent", { body });
+
+    expect(await (await first.request("/api/order-intent")).json()).toEqual({ order: null, members: {} });
+    expect(await (await choose(first, { order: 4 })).json()).toEqual({ order: 4, members: { 4: 1 } });
+    expect(await (await choose(second, { order: 4 })).json()).toEqual({ order: 4, members: { 4: 2 } });
+    expect(await (await choose(first, { order: 5 })).json()).toEqual({ order: 5, members: { 4: 1, 5: 1 } });
+    const otherAspect = await choose(first, { order: 16 });
+    expect([otherAspect.status, await otherAspect.json()]).toEqual([409, { error: "aspect_chosen" }]);
+    expect(await (await second.request("/api/order-intent")).json()).toEqual({ order: 4, members: { 4: 1, 5: 1 } });
+    expect((await choose(first, { order: 17 })).status).toBe(400);
+    expect((await choose(first, { order: 0 })).status).toBe(400);
+    expect((await choose(first, { order: "4" })).status).toBe(400);
+    expect((await createBrowser().request("/api/order-intent")).status).toBe(401);
+  });
+
+  it("holds one free Seal code on an account: case-blind, the same answer again, none from a taken, expired or unknown code, and no code spent on an account that has the Seal", async () => {
+    const { codes, sql } = await sealCodeFiles(
+      { label: "playtest", count: 3, expiresAt: null },
+      "a seed of at least thirty-two secret characters",
+    );
+    const [alpha, brave, charm] = codes as [string, string, string];
+    const runOperatorFile = async () => {
+      for (const statement of sql.split(";\n").filter((each) => each.trim() !== ""))
+        await env.DB.prepare(statement).run();
+    };
+    await runOperatorFile();
+    await runOperatorFile();
+    await env.DB.prepare('INSERT INTO "seal_codes" ("code_hash", "label", "expires_at") VALUES (?, ?, 1)')
+      .bind(await sealCodeHash("LATE2345"), "playtest")
+      .run();
     const player = async (name: string) => {
       const browser = createBrowser();
       await signInWithCode(browser, `${name}@realms.test`);
-      const realmsId = (await browser.session())!.user.realmsId;
-      await heraldsAnswerFor(realmsId);
-      const redeem = async (code?: string, campaign = "devcon-2026") => {
-        const response = await browser.request("/api/campaigns/redeem", { body: { campaign, code } });
+      const redeem = async (code: unknown) => {
+        const response = await browser.request("/api/seal-code", { body: { code } });
         return [response.status, await response.json()];
       };
-      return { redeem, realmsId };
+      const held = async () => (await browser.request("/api/seal-code")).json();
+      return { redeem, held, realmsId: (await browser.session())!.user.realmsId };
     };
-    const ticket = (tier: string) => [200, { campaign: "devcon-2026", tier }];
-    const taken = [410, { error: "ticket_taken" }];
-    /** The tiers of the printed codes no account holds yet, which a shared code draws from. */
-    const unspentTiers = async () =>
-      (
-        await env.DB.prepare(
-          `SELECT "tier" FROM "campaign_codes" AS code WHERE "campaign" = 'devcon-2026'
-           AND NOT EXISTS (SELECT 1 FROM "campaign_tickets" AS ticket WHERE ticket."code_hash" = code."code_hash")`,
-        ).all<{ tier: string }>()
-      ).results.map(({ tier }) => tier);
-    type Player = Awaited<ReturnType<typeof player>>;
-    let first: Player, second: Player, regular: Player, other: Player, late: Player;
-    let goldenRacers: [Player, Player], regularRacers: [Player, Player];
+    const first = await player("seal-one");
+    const second = await player("seal-two");
+    const third = await player("seal-three");
 
-    beforeAll(async () => {
-      [first, second, regular, other, late] = await Promise.all([
-        player("golden-first"),
-        player("golden-second"),
-        player("regular-flyer"),
-        player("other-campaign"),
-        player("after-devcon"),
-      ]);
-      [goldenRacers, regularRacers] = await Promise.all([
-        Promise.all([player("race-a-golden"), player("race-b-golden")]),
-        Promise.all([player("race-a-regular"), player("race-b-regular")]),
-      ]);
-    });
-
-    it("gives each flyer's ticket to its first account only and keeps retries from spending another code", async () => {
-      await printed("T9HW3NPB", "golden");
-      await printed("K7M2QX4R", "regular");
-      expect(await first.redeem("t9hw3npb")).toEqual(ticket("golden"));
-      expect(await first.redeem("T9HW3NPB")).toEqual(ticket("golden"));
-      expect(await first.redeem("K7M2QX4R")).toEqual(ticket("golden"));
-      expect(await first.redeem()).toEqual(ticket("golden"));
-      expect(await second.redeem("T9HW3NPB")).toEqual(taken);
-      expect(await regular.redeem("K7M2QX4R")).toEqual(ticket("regular"));
-      expect(await second.redeem("K7M2QX4R")).toEqual(taken);
-      expect(await campaignTicketFor(env.DB, first.realmsId, 6)).toEqual({ campaign: "devcon-2026", tier: "golden" });
-      expect(await campaignTicketFor(env.DB, regular.realmsId, 6)).toEqual({
-        campaign: "devcon-2026",
-        tier: "regular",
-      });
-      expect(await campaignTicketFor(env.DB, second.realmsId, 6)).toBeNull();
-      expect(await campaignTicketFor(env.DB, first.realmsId, 5)).toBeNull();
-    });
-
-    it("refuses bare links, unknown codes, other campaigns and signed-out redemption", async () => {
-      expect(await other.redeem()).toEqual([400, { error: "invalid_redemption" }]);
-      expect(await other.redeem("ZZZZZZZZ")).toEqual(taken);
-      expect(await other.redeem("T9HW3NPB", "devcon-2025")).toEqual([400, { error: "invalid_redemption" }]);
-      const signedOut = await createBrowser().request("/api/campaigns/redeem", {
-        body: { campaign: "devcon-2026", code: "K7M2QX4R" },
-      });
-      expect(signedOut.status).toBe(401);
-    });
-
-    it.each(["golden", "regular"] as const)("gives a raced %s flyer to exactly one account", async (tier) => {
-      const code = tier === "golden" ? "GQ2MZ7XA" : "R8VNC4TW";
-      await printed(code, tier);
-      const racers = tier === "golden" ? goldenRacers : regularRacers;
-      const raced = await Promise.all(racers.map((racer) => racer.redeem(code)));
-      expect(raced.map(([status]) => status).sort()).toEqual([200, 410]);
-      expect(raced.find(([status]) => status === 200)).toEqual(ticket(tier));
-    });
-
-    it("draws each account bringing a shared code one unspent printed ticket, at its tier, until none is left", async () => {
-      const shared = "SH4R3DQX";
-      // The operator's script writes the shared code's SQL from its environment; loading it twice changes nothing.
-      const out = join(mkdtempSync(join(tmpdir(), "campaign-shared-")), "shared.sql");
-      execFileSync("pnpm", ["campaign-shared-code", "devcon-2026", out], {
-        cwd: new URL("..", import.meta.url),
-        env: { ...process.env, CAMPAIGN_SHARED_CODE: shared.toLowerCase() },
-      });
-      const sql = readFileSync(out, "utf8");
-      expect(sql).not.toContain(shared);
-      await env.DB.batch([sql, sql].map((statement) => env.DB.prepare(statement)));
-      rmSync(dirname(out), { recursive: true, force: true });
-      await Promise.all([
-        printed("D2AWG8LD", "golden"),
-        printed("P5YKE3MV", "regular"),
-        printed("U7CJ9TFB", "regular"),
-      ]);
-      const pool = await unspentTiers();
-      expect(pool.length).toBeGreaterThanOrEqual(3);
-      const drawers = await Promise.all(pool.map((_, index) => player(`shared-${index}`)));
-      // Every account draws at once: each gets a different printed code, so the drawn tiers are exactly the pool's.
-      const drawn = await Promise.all(drawers.map((drawer) => drawer.redeem(shared)));
-      expect(drawn.map(([status]) => status)).toEqual(pool.map(() => 200));
-      expect(drawn.map(([, body]) => (body as { tier: string }).tier).sort()).toEqual([...pool].sort());
-      expect(await unspentTiers()).toEqual([]);
-      // A retry, with the shared code or none, answers the ticket drawn.
-      expect(await drawers[0]!.redeem(shared)).toEqual(drawn[0]);
-      expect(await drawers[0]!.redeem()).toEqual(drawn[0]);
-      expect(await campaignTicketFor(env.DB, drawers[0]!.realmsId, 6)).toEqual(drawn[0]![1]);
-      // Once every printed ticket is drawn, the shared code gives a regular ticket, from no printed code.
-      const late = await player("shared-late");
-      expect(await late.redeem(shared)).toEqual(ticket("regular"));
-      expect(await campaignTicketFor(env.DB, late.realmsId, 6)).toEqual({ campaign: "devcon-2026", tier: "regular" });
-      expect(await unspentTiers()).toEqual([]);
-    });
-
-    it("refuses a new ticket after the season but still answers a held ticket", async () => {
-      await printed("M3XKP7HQ", "regular");
-      await printed("Z9X2M4NH", "golden");
-      expect(await late.redeem("Z9X2M4NH")).toEqual(ticket("golden"));
-      const now = vi.spyOn(Date, "now").mockReturnValue(CAMPAIGNS["devcon-2026"].redeemUntil * 1000);
-      try {
-        expect(await other.redeem("M3XKP7HQ")).toEqual([410, { error: "campaign_closed" }]);
-        expect(await late.redeem("Z9X2M4NH")).toEqual(ticket("golden"));
-      } finally {
-        now.mockRestore();
-      }
-    });
-  });
-
-  it("recovers a founded free home through the operator draw, preserving the ticket on retry", async () => {
-    holdDevconOpen();
-    const shard = "https://recovery-season.test";
-    onTestFinished(async () => {
-      await env.DB.prepare("DELETE FROM shards WHERE url = ?").bind(shard).run();
-    });
-    await env.DB.prepare(`INSERT INTO shards (url, chainId, status, addedAt) VALUES (?, '0xdd', 'active', ?)`)
-      .bind(shard, Date.now())
-      .run();
-    await env.DB.prepare('INSERT INTO "campaign_codes" ("campaign", "code_hash", "tier") VALUES (?, ?, ?)')
-      .bind("devcon-2026", await campaignCodeHash("devcon-2026", "H9MP3QWA"), "regular")
-      .run();
-    const browser = createBrowser();
-    await signInWithCode(browser, "recovered-home@realms.test");
-    const realmsId = (await browser.session())!.user.realmsId;
-    await heraldsAnswerFor(realmsId, { [shard]: false });
-    const account = realmsAccountAddress(realmsId, ACCOUNT_CLASS_HASH, await env.GUARDIAN.publicKey());
-    heralds.set(`${shard}/games?player=${account}`, { chain: "0xdd", games: [devconGame(true)] });
-    const operator = createBrowser();
-    const path = "/api/operator/campaign-draw";
-    const body = { campaign: "devcon-2026", realmsId };
-    const send = (token?: string, extra = {}) =>
-      operator.request(path, { body: { ...body, ...extra }, ...(token ? { token } : {}) });
-    expect((await send()).status).toBe(401);
-    expect((await send(OPERATOR_TOKEN, { tier: "golden" })).status).toBe(400);
-    const first = await send(OPERATOR_TOKEN);
-    const ticket = await first.json();
-    expect(first.status).toBe(200);
-    expect(ticket).toEqual({ campaign: "devcon-2026", tier: expect.stringMatching(/^(regular|golden)$/) });
-    expect(await (await send(OPERATOR_TOKEN)).json()).toEqual(ticket);
-    expect(await campaignTicketFor(env.DB, realmsId, 6)).toEqual(ticket);
-  });
-
-  it("prints flyers whose codes, once loaded, give exactly the print run's golden count of golden tickets", async () => {
-    holdDevconOpen();
-    const out = mkdtempSync(join(tmpdir(), "campaign-codes-"));
-    const generate = () =>
-      execFileSync("pnpm", ["campaign-codes", "devcon-2026", "24", "https://play.dev-realms.party", out], {
-        cwd: new URL("..", import.meta.url),
-        env: { ...process.env, CAMPAIGN_CODE_SEED: "campaign-test-seed-campaign-test-seed" },
-      });
-    generate();
-    const sql = readFileSync(join(out, "codes.sql"), "utf8");
-    const pages = readFileSync(join(out, "print.csv"), "utf8").trim().split("\n").slice(1);
-    generate();
-    // The same seed makes the same print file and the same codes again, and loading them twice changes nothing.
-    expect([readFileSync(join(out, "codes.sql"), "utf8"), readdirSync(join(out, "qr")).length]).toEqual([sql, 25]);
-    // The posters' QR is the game's own address: it grants nothing.
-    expect(readFileSync(join(out, "qr", "game.svg"), "utf8")).toContain("<svg");
-    const statements = (sql + sql)
-      .split(";")
-      .map((statement) => statement.trim())
-      .filter(Boolean);
-    await env.DB.batch(statements.map((statement) => env.DB.prepare(statement)));
-
-    const tiers: string[] = [];
-    for (const [index, page] of pages.entries()) {
-      const [, qr, url] = page.split(",");
-      expect([qr, url]).toEqual([
-        `qr/${String(index + 1).padStart(4, "0")}.svg`,
-        expect.stringMatching(/^https:\/\/play\.dev-realms\.party\/join\/devcon\/[A-HJ-NP-Z2-9]{8}$/),
-      ]);
-      const browser = createBrowser();
-      await signInWithCode(browser, `flyer-${index}@realms.test`);
-      await heraldsAnswerFor((await browser.session())!.user.realmsId);
-      const code = url!.slice(url!.lastIndexOf("/") + 1);
-      // The database gets hashes only.
-      expect(sql).not.toContain(code);
-      const response = await browser.request("/api/campaigns/redeem", { body: { campaign: "devcon-2026", code } });
-      tiers.push(((await response.json()) as { tier: string }).tier);
-    }
-    // The generator prints exactly the print run's golden count.
-    expect(tiers.filter((tier) => tier === "golden")).toHaveLength(CAMPAIGNS["devcon-2026"].printedGolden);
-    expect(tiers.filter((tier) => tier === "regular")).toHaveLength(24 - CAMPAIGNS["devcon-2026"].printedGolden);
-    // Our private list names exactly the pages that opened golden.
-    const goldenPages = pages
-      .filter((_, index) => tiers[index] === "golden")
-      .map((page) => page.replace(/,qr\/\d+\.svg,/, ","));
-    expect(readFileSync(join(out, "golden.csv"), "utf8")).toBe(`page,url\n${goldenPages.join("\n")}\n`);
-    // A flyer passed on after use opens nothing for the next account.
-    const next = createBrowser();
-    await signInWithCode(next, "flyer-passed-on@realms.test");
-    await heraldsAnswerFor((await next.session())!.user.realmsId);
-    const firstCode = pages[0]!.slice(pages[0]!.lastIndexOf("/") + 1);
-    const again = await next.request("/api/campaigns/redeem", { body: { campaign: "devcon-2026", code: firstCode } });
-    expect([again.status, await again.json()]).toEqual([410, { error: "ticket_taken" }]);
-    rmSync(out, { recursive: true, force: true });
-  }, 60_000);
-
-  it("keeps a flyer unspent for a home with a source, or while a shard cannot say", async () => {
-    holdDevconOpen();
-    const shard = "https://devcon-season.test";
-    await env.DB.prepare(`INSERT INTO shards (url, chainId, status, addedAt) VALUES (?, '0xdc', 'active', ?)`)
-      .bind(shard, Date.now())
-      .run();
-    await env.DB.prepare('INSERT INTO "campaign_codes" ("campaign", "code_hash", "tier") VALUES (?, ?, ?)')
-      .bind("devcon-2026", await campaignCodeHash("devcon-2026", "F7QZ2KHM"), "golden")
-      .run();
-    const player = async (name: string, entered: boolean) => {
-      const browser = createBrowser();
-      await signInWithCode(browser, `${name}@realms.test`);
-      const realmsId = (await browser.session())!.user.realmsId;
-      await heraldsAnswerFor(realmsId, { [shard]: entered });
-      return async (code?: string) => {
-        const response = await browser.request("/api/campaigns/redeem", { body: { campaign: "devcon-2026", code } });
-        return [response.status, await response.json()];
-      };
-    };
-
-    // Founded with a held Realm: refused, and the flyer is not spent.
-    const founded = await player("founded-first", true);
-    expect(await founded("F7QZ2KHM")).toEqual([409, { error: "realm_founded" }]);
-    expect(await founded("F7QZ2KHM")).toEqual([409, { error: "realm_founded" }]);
-    // A shared code draws nothing for it either.
-    await env.DB.prepare('INSERT INTO "campaign_shared_codes" ("campaign", "code_hash") VALUES (?, ?)')
-      .bind("devcon-2026", await campaignCodeHash("devcon-2026", "SH4R3DW7"))
-      .run();
-    expect(await founded("SH4R3DW7")).toEqual([409, { error: "realm_founded" }]);
-    // The friend it is passed to, not yet in the game, opens it at its tier.
-    const friend = await player("flyer-friend", false);
-    for (const [url, body] of heralds) {
-      if (
-        url.startsWith(`${shard}/games?`) &&
-        (body as { games?: { player_state?: { settled: boolean } }[] }).games?.[0]?.player_state?.settled === false
-      )
-        heralds.set(url, { chain: "0xdc", games: [devconGame(true)] });
-    }
-    expect(await friend("F7QZ2KHM")).toEqual([200, { campaign: "devcon-2026", tier: "golden" }]);
-    expect(await founded("F7QZ2KHM")).toEqual([410, { error: "ticket_taken" }]);
-
-    // A shard that cannot answer, answers for another chain, or stalls past the shard timeout leaves the flyer
-    // unspent: the account is told to try again, and the same code opens once the shard answers for its own chain.
-    await env.DB.prepare('INSERT INTO "campaign_codes" ("campaign", "code_hash", "tier") VALUES (?, ?, ?)')
-      .bind("devcon-2026", await campaignCodeHash("devcon-2026", "B4NW8RXC"), "regular")
-      .run();
-    const unsure = createBrowser();
-    await signInWithCode(unsure, "shard-unsure@realms.test");
-    const unsureId = (await unsure.session())!.user.realmsId;
-    const account = realmsAccountAddress(unsureId, ACCOUNT_CLASS_HASH, await env.GUARDIAN.publicKey());
-    const redeem = async () => {
-      const response = await unsure.request("/api/campaigns/redeem", {
-        body: { campaign: "devcon-2026", code: "B4NW8RXC" },
-      });
-      return [response.status, await response.json()];
-    };
-    const retry = [503, { error: "campaigns_unavailable" }];
-    await heraldsAnswerFor(unsureId, { [shard]: false });
-    heralds.delete(`${shard}/games?player=${account}`);
-    expect(await redeem()).toEqual(retry);
-    heralds.set(`${shard}/games?player=${account}`, { chain: "0xdead", games: [devconGame(false)] });
-    expect(await redeem()).toEqual(retry);
-    heralds.set(`${shard}/games?player=${account}`, STALLED);
-    const stalledAt = Date.now();
-    expect(await redeem()).toEqual(retry);
-    expect(Date.now() - stalledAt).toBeLessThan(15_000);
-    await heraldsAnswerFor(unsureId, { [shard]: false });
-    expect(await redeem()).toEqual([200, { campaign: "devcon-2026", tier: "regular" }]);
-    await env.DB.prepare("UPDATE shards SET status = 'retired' WHERE url = ?").bind(shard).run();
-  }, 30_000);
-
-  describe("referrals", () => {
-    beforeEach(holdDevconOpen);
-    const shard = "https://referral-season.test";
-    const campaign = "devcon-2026";
-    /** Homes founded in the referral shard's Devcon game, by account: their source and the season board's view of them. */
-    const founded = new Map<string, { source: "free" | "realm" | "campaign"; sites: number; tier: number | null }>();
-    let boardAnswers = true;
-    /** The next tiers referral links draw, oldest first; regular once none is queued. */
-    const draws: ("regular" | "golden")[] = [];
-    const getRandomValues = crypto.getRandomValues.bind(crypto);
-
-    beforeAll(async () => {
-      await env.DB.prepare(`INSERT INTO shards (url, chainId, status, addedAt) VALUES (?, '0xd5', 'active', ?)`)
-        .bind(shard, Date.now())
-        .run();
-      // A link's draw reads one 32-bit value; everything else keeps its own randomness.
-      vi.spyOn(crypto, "getRandomValues").mockImplementation(<T extends ArrayBufferView | null>(array: T): T => {
-        if (array instanceof Uint32Array && array.length === 1) {
-          array[0] = draws.shift() === "golden" ? 0 : 0xffffffff;
-          return array;
-        }
-        return getRandomValues(array as never) as T;
-      });
-    });
-    afterAll(async () => {
-      vi.mocked(crypto.getRandomValues).mockRestore();
-      await env.DB.prepare("UPDATE shards SET status = 'retired' WHERE url = ?").bind(shard).run();
-    });
-
-    /** What the shards' Heralds answer now: the Devcon game's home facts and season board, from `founded`. */
-    const publishHeralds = async () => {
-      const { results } = await env.DB.prepare(
-        `SELECT url, chainId FROM shards WHERE status IN ('active', 'draining')`,
-      ).all<{ url: string; chainId: string }>();
-      for (const { url, chainId } of results)
-        heralds.set(`${url}/games`, { chain: chainId, games: url === shard ? [devconGame(true)] : [] });
-      const entitled = [...founded].filter(([, home]) => home.source !== "free");
-      heralds.set(`${shard}/games/41/snapshot?models=EntryEntitlement%2CStructure%2CCampaignHome%2CSettledRealm`, {
-        game_id: "41",
-        confirmed_block: 1,
-        models: [
-          {
-            model: "EntryEntitlement",
-            rows: entitled.map(([account, home]) => ({
-              key: `41:${account}`,
-              value: {
-                game_id: 41,
-                owner: account,
-                realm_id: home.source === "realm" ? "711" : "0",
-                metadata_1: "0",
-                metadata_2: "0",
-                metadata_3: "0",
-                pass_kind: home.source === "realm" ? 2 : 3,
-              },
-            })),
-          },
-          { model: "Structure", rows: [] },
-          { model: "CampaignHome", rows: [] },
-          { model: "SettledRealm", rows: [] },
-        ],
-      });
-      const board = `${shard}/games/41/leaderboard`;
-      if (!boardAnswers) return void heralds.delete(board);
-      heralds.set(board, {
-        game_id: "41",
-        mode: "frontier",
-        prize: null,
-        entries: [...founded].map(([address, home], index) => ({
-          address,
-          structure_id: String(index + 1),
-          campaign: home.tier === null ? null : { campaign_id: "0x646576636f6e2d32303236", tier: home.tier },
-          rank: index + 1,
-          sites_cleared: { total: home.sites, camps: home.sites, rifts: 0, ruins: 0, beasts: 0 },
-          chests_earned: 0,
-          rewards: { lords: "0", essence: "0", labor: "0" },
-          deepest_depth: 0,
-          level: 0,
-          order: 1,
-        })),
-      });
-    };
-
-    /** A browser the app opened in before, under the id it was given there: another account signing in on it. */
-    const sameBrowserAs = (browserId: string) => createBrowser([`realms-identity.browser=${browserId}`]);
-    /**
-     * A signed-in player, each by default with their own mailbox on their own browser, which the app opens by reading
-     * its session. `email` shares another's mailbox; `on` signs in on another player's browser; `opened: false` signs
-     * in on a browser the app has not opened in since, so no browser is known for the account yet.
-     */
-    const player = async (
-      name: string,
-      { email, on, opened = true }: { email?: string; on?: string; opened?: boolean } = {},
-    ) => {
-      const address = email ?? `${name}@realms.test`;
-      const browser = on ? sameBrowserAs(on) : createBrowser();
-      await signInWithCode(browser, address);
-      const realmsId = opened
-        ? (await browser.session())!.user.realmsId
-        : (await env.DB.prepare('SELECT "realmsId" FROM "user" WHERE "email" = ?')
-            .bind(address.toLowerCase())
-            .first<{ realmsId: string }>())!.realmsId;
-      await heraldsAnswerFor(realmsId, { [shard]: false });
-      const account = accountKey(realmsAccountAddress(realmsId, ACCOUNT_CLASS_HASH, await env.GUARDIAN.publicKey()));
-      const call = async (path: string, body?: unknown) => {
-        await publishHeralds();
-        const response = await browser.request(path, body === undefined ? {} : { body });
-        return [response.status, await response.json()] as [number, any];
-      };
-      return {
-        browser,
-        realmsId,
-        /** The id of the browser this player signed in on first; null until the app opens there. */
-        browserId: async () =>
-          (
-            await env.DB.prepare('SELECT "browser" FROM "account_browsers" WHERE "realmsId" = ? ORDER BY rowid LIMIT 1')
-              .bind(realmsId)
-              .first<{ browser: string }>()
-          )?.browser ?? null,
-        /** The app opens in this player's browser, reading its session. */
-        open: () => browser.session(),
-        /** Signs in on another player's browser too, where the app opens. */
-        signInOn: async (browserId: string) => {
-          const other = sameBrowserAs(browserId);
-          await signInWithCode(other, address);
-          await other.session();
-        },
-        /** Signs out, as the client does: the session goes, and the browser keeps its id. */
-        signOut: async () => expect((await browser.request("/api/auth/sign-out", { body: {} })).status).toBe(200),
-        signIn: () => signInWithCode(browser, address),
-        redeem: (body: Record<string, unknown> = {}) => call("/api/campaigns/redeem", { campaign, ...body }),
-        referral: () => call(`/api/campaigns/referral?campaign=${campaign}`),
-        code: async () => (await call(`/api/campaigns/referral?campaign=${campaign}`))[1].code as string,
-        found: (source: "free" | "realm" | "campaign", sites = 0, tier: number | null = null) =>
-          void founded.set(account, { source, sites, tier: source === "campaign" ? (tier ?? 1) : tier }),
-        clear: (sites = 1) => void founded.set(account, { ...founded.get(account)!, sites }),
-      };
-    };
-    type Player = Awaited<ReturnType<typeof player>>;
-    const ticket = (tier: string) => [200, { campaign, tier }];
-    /** A friend as the inviter's panel lists them: their state, and whether their ticket is golden. */
-    type Listed = string | { state: string; golden: true };
-    const answer = (
-      home: string,
-      friends: Listed[],
-      {
-        tier = null,
-        goldenPending = false,
-        linkGolden = false,
-        earned = {},
-      }: {
-        tier?: string | null;
-        goldenPending?: boolean;
-        linkGolden?: boolean;
-        earned?: { ticket?: boolean; golden?: boolean };
-      } = {},
-    ) => {
-      const listed = friends.map((friend) =>
-        typeof friend === "string" ? { name: null, state: friend, golden: false } : { name: null, ...friend },
-      );
-      return {
-        code: expect.stringMatching(/^[A-HJ-NP-Z2-9]{8}$/),
-        home,
-        tier,
-        goldenPending,
-        link: { counted: listed.filter(({ state }) => state === "counted").length, golden: linkGolden },
-        friends: listed,
-        earned: { ticket: false, golden: false, ...earned },
-      };
-    };
-    /** Friends that each take a ticket through the inviter's link, at the tier drawn, found a Devcon home and clear a site. */
-    const countedFriends = async (inviter: Player, names: string[], tier: "regular" | "golden" = "regular") => {
-      const code = await inviter.code();
-      const friends: Player[] = [];
-      for (const name of names) {
-        const friend = await player(name);
-        draws.push(tier);
-        expect(await friend.redeem({ referral: code })).toEqual(ticket(tier));
-        friend.found("campaign", 1, tier === "golden" ? 2 : 1);
-        friends.push(friend);
-      }
-      return friends;
-    };
-    const referralRows = async (friend: Player) =>
-      (
-        await env.DB.prepare('SELECT "referrer" FROM "campaign_referrals" WHERE "friend" = ?')
-          .bind(friend.realmsId)
-          .all<{ referrer: string }>()
-      ).results.map(({ referrer }) => referrer);
-
-    it("gives a friend a ticket from their inviter's link, from no printed code, and records them once", async () => {
-      const inviter = await player("ref-inviter");
-      const [status, first] = await inviter.referral();
-      expect([status, first]).toEqual([200, answer("free", [])]);
-      expect(await inviter.code()).toBe(first.code);
-      const friend = await player("ref-friend");
-      expect(await friend.redeem({ referral: first.code.toLowerCase() })).toEqual(ticket("regular"));
-      expect(await friend.redeem({ referral: first.code })).toEqual(ticket("regular"));
-      expect(await friend.redeem()).toEqual(ticket("regular"));
-      const given = await env.DB.prepare('SELECT "code_hash" FROM "campaign_tickets" WHERE "owner" = ?')
-        .bind(friend.realmsId)
-        .first<{ code_hash: string | null }>();
-      expect(given).toEqual({ code_hash: null });
-      expect(await referralRows(friend)).toEqual([inviter.realmsId]);
-      expect((await inviter.referral())[1]).toEqual(answer("free", ["signed"]));
-
-      // The inviter's own link, a second link for a friend already holding a ticket, a friend whose home has a source,
-      // a code no link carries and a body naming both a flyer and a link record no one.
-      expect(await inviter.redeem({ referral: first.code })).toEqual([409, { error: "self_referral" }]);
-      const other = await player("ref-other");
-      expect(await friend.redeem({ referral: await other.code() })).toEqual(ticket("regular"));
-      expect((await other.referral())[1]).toEqual(answer("free", []));
-      expect(await referralRows(friend)).toEqual([inviter.realmsId]);
-      const held = await player("ref-held-friend");
-      held.found("realm");
-      expect(await held.redeem({ referral: first.code })).toEqual([409, { error: "realm_founded" }]);
-      expect(await held.redeem({ referral: "ZZZZZZZZ" })).toEqual([404, { error: "referral_unknown" }]);
-      expect(await held.redeem({ referral: first.code, code: "K7M2QX4R" })).toEqual([
-        400,
-        { error: "invalid_redemption" },
-      ]);
-      expect((await inviter.referral())[1]).toEqual(answer("free", ["signed"]));
-      const signedOut = await createBrowser().request(`/api/campaigns/referral?campaign=${campaign}`);
-      expect(signedOut.status).toBe(401);
-    });
-
-    it("gives one ticket and records one inviter when two links, or a link and a flyer, race for one friend", async () => {
-      const [first, second] = [await player("ref-race-a"), await player("ref-race-b")];
-      const [a, b] = [await first.code(), await second.code()];
-      const friend = await player("ref-race-friend");
-      const [one, two] = await Promise.all([friend.redeem({ referral: a }), friend.redeem({ referral: b })]);
-      expect(one).toEqual(ticket("regular"));
-      expect(two).toEqual(ticket("regular"));
-      expect(await referralRows(friend)).toHaveLength(1);
-      expect([first.realmsId, second.realmsId]).toContain((await referralRows(friend))[0]);
-
-      const flyer = await player("ref-race-flyer");
-      await env.DB.prepare(`INSERT INTO "campaign_codes" ("campaign", "code_hash", "tier") VALUES (?, ?, 'regular')`)
-        .bind(campaign, await campaignCodeHash(campaign, "R4CE7FLY"))
-        .run();
-      const [byFlyer, byLink] = await Promise.all([flyer.redeem({ code: "R4CE7FLY" }), flyer.redeem({ referral: a })]);
-      expect(byFlyer).toEqual(ticket("regular"));
-      expect(byLink).toEqual(ticket("regular"));
-      const won = await env.DB.prepare('SELECT "code_hash" FROM "campaign_tickets" WHERE "owner" = ?')
-        .bind(flyer.realmsId)
-        .first<{ code_hash: string | null }>();
-      // The link records its friend only when its own write gave the ticket.
-      expect(await referralRows(flyer)).toEqual(won!.code_hash === null ? [first.realmsId] : []);
-    });
-
-    it("names the inviter to a friend's landing by their chosen name only", async () => {
-      const inviter = await player("ref-named");
-      const code = await inviter.code();
-      const landing = async (path: string) => {
-        const response = await createBrowser().request(path);
-        return [response.status, await response.json()];
-      };
-      expect(await landing(`/api/campaigns/referral/${code}?campaign=${campaign}`)).toEqual([200, { name: null }]);
-      expect((await inviter.browser.request("/api/auth/update-user", { body: { name: "Maelis Vane" } })).status).toBe(
-        200,
-      );
-      expect(await landing(`/api/campaigns/referral/${code.toLowerCase()}?campaign=${campaign}`)).toEqual([
-        200,
-        { name: "Maelis Vane" },
-      ]);
-      expect(await landing(`/api/campaigns/referral/ZZZZZZZZ?campaign=${campaign}`)).toEqual([
-        404,
-        { error: "referral_unknown" },
-      ]);
-      expect(await landing(`/api/campaigns/referral/${code}`)).toEqual([404, { error: "referral_unknown" }]);
-    });
-
-    it("counts a friend who founds and clears a site, and gives a free-home inviter one regular ticket", async () => {
-      const inviter = await player("ref-free-home");
-      inviter.found("free");
-      const code = await inviter.code();
-      const friend = await player("ref-free-friend");
-      expect(await friend.redeem({ referral: code })).toEqual(ticket("regular"));
-      expect((await inviter.referral())[1]).toEqual(answer("free", ["signed"]));
-      friend.found("campaign");
-      expect((await inviter.referral())[1]).toEqual(answer("free", ["founded"]));
-      expect(await campaignTicketFor(env.DB, inviter.realmsId, 6)).toBeNull();
-
-      // A board that cannot answer counts no one; once it answers, the friend counts.
-      friend.clear();
-      boardAnswers = false;
-      try {
-        expect((await inviter.referral())[1]).toEqual(answer("free", ["signed"]));
-      } finally {
-        boardAnswers = true;
-      }
-      expect(await campaignTicketFor(env.DB, inviter.realmsId, 6)).toBeNull();
-      const [one, two] = await Promise.all([inviter.referral(), inviter.referral()]);
-      expect(one[1]).toEqual(answer("ticket", ["counted"], { tier: "regular", earned: { ticket: true } }));
-      expect(two[1]).toEqual(one[1]);
-      expect(await campaignTicketFor(env.DB, inviter.realmsId, 6)).toEqual({ campaign, tier: "regular" });
-      expect(await inviter.redeem()).toEqual(ticket("regular"));
-      expect(relay).not.toHaveBeenCalled();
-    });
-
-    it("settles on the held-ticket read, so the home source picker offers a ticket friends earned", async () => {
-      const inviter = await player("ref-picker");
-      inviter.found("free");
-      await countedFriends(inviter, ["ref-picker-friend"]);
-      expect(await inviter.redeem()).toEqual(ticket("regular"));
-    });
-
-    it("counts one person once: a friend sharing a mailbox or browser with the inviter or a counted friend is excluded", async () => {
-      const inviter = await player("ref-alts", { email: "Ref.Alts@gmail.com" });
-      inviter.found("free");
-      const code = await inviter.code();
-      const join = async (name: string, options: { email?: string; on?: string; opened?: boolean }) => {
-        const friend = await player(name, options);
-        expect(await friend.redeem({ referral: code })).toEqual(ticket("regular"));
-        friend.found("campaign", 1);
-        return friend;
-      };
-      // The inviter's own inbox by Gmail's dots and +tags, and the inviter's own browser: neither counts.
-      await join("ref-alts-mail", { email: "refalts+two@googlemail.com" });
-      await join("ref-alts-browser", { on: (await inviter.browserId())! });
-      expect((await inviter.referral())[1]).toEqual(answer("free", ["excluded", "excluded"]));
-      expect(await campaignTicketFor(env.DB, inviter.realmsId, 6)).toBeNull();
-      // A friend of their own counts; another on that friend's browser does not; one whose browser the app has not
-      // opened in yet waits for it.
-      const real = await join("ref-alts-real", {});
-      await join("ref-alts-copy", { on: (await real.browserId())! });
-      const later = await join("ref-alts-later", { opened: false });
-      expect((await inviter.referral())[1]).toEqual(
-        answer("ticket", ["excluded", "excluded", "counted", "excluded", "founded"], {
-          tier: "regular",
-          earned: { ticket: true },
-        }),
-      );
-      await later.open();
-      expect((await inviter.referral())[1].friends.map(({ state }: { state: string }) => state)).toEqual([
-        "excluded",
-        "excluded",
-        "counted",
-        "excluded",
-        "counted",
-      ]);
-    });
-
-    it("excludes a second account on the inviter's browser through sign-outs, and never counts two accounts for each other", async () => {
-      // The owner's test: two accounts on one browser, each taking the other's link.
-      const first = await player("ref-same-first");
-      first.found("free");
-      const firstCode = await first.code();
-      const shared = (await first.browserId())!;
-      await first.signOut();
-      const second = await player("ref-same-second", { on: shared });
-      expect(await second.redeem({ referral: firstCode })).toEqual(ticket("regular"));
-      second.found("campaign", 1);
-      // Back on its browser after signing out, the first account finds it under the same one id.
-      await first.signIn();
-      await first.open();
-      const browsers = await env.DB.prepare('SELECT "browser" FROM "account_browsers" WHERE "realmsId" = ?')
-        .bind(first.realmsId)
-        .all<{ browser: string }>();
-      expect(browsers.results).toEqual([{ browser: shared }]);
-      expect((await first.referral())[1]).toEqual(answer("free", ["excluded"]));
-      expect(await campaignTicketFor(env.DB, first.realmsId, 6)).toBeNull();
-      // The older account takes the newer one's link: it gets its ticket, but brought the newer one no friend.
-      expect(await first.redeem({ referral: await second.code() })).toEqual(ticket("regular"));
-      expect(await referralRows(first)).toEqual([]);
-      expect((await second.referral())[1].friends).toEqual([]);
-      // So does an older account on a browser of its own.
-      const elder = await player("ref-same-elder");
-      const newcomer = await player("ref-same-newcomer");
-      expect(await elder.redeem({ referral: await newcomer.code() })).toEqual(ticket("regular"));
-      expect(await referralRows(elder)).toEqual([]);
-    });
-
-    it("counts one person once when settlements race, each deciding from its own snapshot", async () => {
-      const inviter = await player("ref-racing");
-      inviter.found("free");
-      const code = await inviter.code();
-      const inviterBrowser = (await inviter.browserId())!;
-      const own = { mailbox: "ref-racing@realms.test", browsers: [inviterBrowser] };
-      const store = createCampaignReferralStore(env.DB);
-      const join = async (name: string, options: { email?: string; on?: string }) => {
-        const friend = await player(name, options);
-        expect(await friend.redeem({ referral: code })).toEqual(ticket("regular"));
-        friend.found("campaign", 1);
-        return friend;
-      };
-      // Shared browser: an older read decided to count the later friend, a newer one the earlier; both writes land.
-      const first = await join("ref-racing-a", {});
-      const shared = (await first.browserId())!;
-      const second = await join("ref-racing-b", { on: shared });
-      await store.markCounted(campaign, inviter.realmsId, own, [{ friend: second.realmsId, browser: shared }], 1);
-      await store.markCounted(campaign, inviter.realmsId, own, [{ friend: first.realmsId, browser: shared }], 2);
-      // Shared mailbox: the same race between two aliases of one inbox, on their own browsers.
-      const third = await join("ref-racing-c", { email: "racer@gmail.com" });
-      const fourth = await join("ref-racing-d", { email: "ra.cer+alt@gmail.com" });
-      await store.markCounted(
-        campaign,
-        inviter.realmsId,
-        own,
-        [{ friend: fourth.realmsId, browser: (await fourth.browserId())! }],
-        3,
-      );
-      await store.markCounted(
-        campaign,
-        inviter.realmsId,
-        own,
-        [{ friend: third.realmsId, browser: (await third.browserId())! }],
-        4,
-      );
-      const counted = await env.DB.prepare(
-        `SELECT "friend" FROM "campaign_referrals" WHERE "referrer" = ? AND "counted_at" IS NOT NULL ORDER BY "counted_at"`,
-      )
-        .bind(inviter.realmsId)
-        .all<{ friend: string }>();
-      expect(counted.results.map(({ friend }) => friend)).toEqual([second.realmsId, fourth.realmsId]);
-      // A settling read keeps that: two counted, the others excluded, and one ticket for the inviter.
-      expect((await inviter.referral())[1]).toEqual(
-        answer("ticket", ["excluded", "counted", "excluded", "counted"], { tier: "regular", earned: { ticket: true } }),
-      );
-      // Nor does a write for the inviter's own mailbox or browser count anyone.
-      const self = await join("ref-racing-self", { on: inviterBrowser });
-      await store.markCounted(campaign, inviter.realmsId, own, [{ friend: self.realmsId, browser: inviterBrowser }], 5);
-      expect((await inviter.referral())[1].link.counted).toBe(2);
-    });
-
-    it("compares every browser each friend was signed in on, not only the one kept, in sequence and when writes race", async () => {
-      const inviter = await player("ref-allbrowsers");
-      inviter.found("free");
-      const code = await inviter.code();
-      const own = { mailbox: "ref-allbrowsers@realms.test", browsers: [(await inviter.browserId())!] };
-      const [a1, a2, c1, c2, c3] = Array.from({ length: 5 }, () => crypto.randomUUID());
-      const join = async (name: string, browsers: string[]) => {
-        const friend = await player(name, { on: browsers[0]! });
-        for (const browser of browsers.slice(1)) await friend.signInOn(browser);
-        expect(await friend.redeem({ referral: code })).toEqual(ticket("regular"));
-        return friend;
-      };
-      // In sequence: A was on a1 and a2 and is kept on a1; it counts. B, on a2 alone, qualifies on a later read.
-      const a = await join("ref-allbrowsers-a", [a1!, a2!]);
-      a.found("campaign", 1);
-      expect((await inviter.referral())[1].friends.map(({ state }: { state: string }) => state)).toEqual(["counted"]);
-      const b = await join("ref-allbrowsers-b", [a2!]);
-      b.found("campaign", 1);
-      expect((await inviter.referral())[1]).toEqual(
-        answer("ticket", ["counted", "excluded"], { tier: "regular", earned: { ticket: true } }),
-      );
-      // Racing writes, the shared c3 neither friend's kept browser: the second write counts no one.
-      const store = createCampaignReferralStore(env.DB);
-      const c = await join("ref-allbrowsers-c", [c1!, c3!]);
-      const d = await join("ref-allbrowsers-d", [c2!, c3!]);
-      c.found("campaign", 1);
-      d.found("campaign", 1);
-      await store.markCounted(campaign, inviter.realmsId, own, [{ friend: d.realmsId, browser: c2! }], 10);
-      await store.markCounted(campaign, inviter.realmsId, own, [{ friend: c.realmsId, browser: c1! }], 11);
-      expect((await inviter.referral())[1]).toEqual(
-        answer("ticket", ["counted", "excluded", "excluded", "counted"], { tier: "regular", earned: { ticket: true } }),
-      );
-    });
-
-    it("gives a held-Realm inviter nothing, while their friends still get tickets", async () => {
-      const inviter = await player("ref-held-inviter");
-      inviter.found("realm");
-      await countedFriends(inviter, ["ref-held-a", "ref-held-b"]);
-      await countedFriends(inviter, ["ref-held-c"], "golden");
-      expect((await inviter.referral())[1]).toEqual(
-        answer("held", ["counted", "counted", { state: "counted", golden: true }]),
-      );
-      expect(await campaignTicketFor(env.DB, inviter.realmsId, 6)).toBeNull();
-      expect(relay).not.toHaveBeenCalled();
-    });
-
-    it("draws a friend's ticket golden by chance, and a golden friend who counts gives a free home a golden ticket", async () => {
-      const inviter = await player("ref-drop-free");
-      inviter.found("free");
-      const code = await inviter.code();
-      const friend = await player("ref-drop-friend");
-      draws.push("golden");
-      expect(await friend.redeem({ referral: code })).toEqual(ticket("golden"));
-      expect(await friend.redeem()).toEqual(ticket("golden"));
-      expect((await inviter.referral())[1]).toEqual(answer("free", [{ state: "signed", golden: true }]));
-      friend.found("campaign", 1, 2);
-      relay.mockClear();
-      expect((await inviter.referral())[1]).toEqual(
-        answer("ticket", [{ state: "counted", golden: true }], {
-          tier: "golden",
-          earned: { ticket: true, golden: true },
-        }),
-      );
-      expect(await campaignTicketFor(env.DB, inviter.realmsId, 6)).toEqual({ campaign, tier: "golden" });
-      expect(relay).not.toHaveBeenCalled();
-    });
-
-    it("upgrades a regular Devcon home through the relay, and says golden only once the board shows it", async () => {
-      const inviter = await player("ref-drop-home");
-      inviter.found("free");
-      await countedFriends(inviter, ["ref-drop-home-a"]);
-      expect((await inviter.referral())[1]).toEqual(
-        answer("ticket", ["counted"], { tier: "regular", earned: { ticket: true } }),
-      );
-      // The inviter adds the earned ticket to their free home: the board shows a regular Devcon home.
-      inviter.found("campaign", 0, 1);
-      expect((await inviter.referral())[1]).toEqual(
-        answer("devcon", ["counted"], { tier: "regular", earned: { ticket: true } }),
-      );
-      await countedFriends(inviter, ["ref-drop-home-b"], "golden");
-      relay.mockClear();
-      relay.mockResolvedValueOnce(Response.json({ error: "upgrade_requires_release_8" }, { status: 409 }));
-      const pending = answer("devcon", ["counted", { state: "counted", golden: true }], {
-        tier: "golden",
-        goldenPending: true,
-        earned: { ticket: true, golden: true },
-      });
-      expect((await inviter.referral())[1]).toEqual(pending);
-      expect(await campaignTicketFor(env.DB, inviter.realmsId, 6)).toEqual({ campaign, tier: "golden" });
-      expect(relay).toHaveBeenCalledTimes(1);
-      const [url, init] = relay.mock.calls[0]!;
-      expect(new URL(String(url)).pathname).toBe("/api/value/operator/campaign-upgrade");
-      expect(new Headers(init!.headers).get("authorization")).toBe(`Bearer ${OPERATOR_TOKEN}`);
-      expect(JSON.parse(String(init!.body))).toEqual({ chainId: "0xd5", gameId: 41, realmsId: inviter.realmsId });
-      // Refused, unreachable, or accepted but not on the board yet: still pending, and the next read asks again.
-      relay.mockRejectedValueOnce(new Error("relay unreachable"));
-      expect((await inviter.referral())[1]).toEqual(pending);
-      expect((await inviter.referral())[1]).toEqual(pending);
-      expect(relay).toHaveBeenCalledTimes(3);
-      // Once the board shows the home golden, it is golden and no read asks.
-      inviter.found("campaign", 0, 2);
-      const golden = { ...pending, home: "golden", goldenPending: false };
-      expect((await inviter.referral())[1]).toEqual(golden);
-      expect(await inviter.redeem()).toEqual(ticket("golden"));
-      expect(relay).toHaveBeenCalledTimes(3);
-    });
-
-    it("turns the link golden at ten counted friends: the inviter, every friend before and after, each home upgraded on its own read", async () => {
-      const inviter = await player("ref-link");
-      inviter.found("campaign", 0, 1);
-      await env.DB.prepare(
-        `INSERT INTO "campaign_tickets" ("campaign", "owner", "code_hash", "tier", "redeemed_at") VALUES (?, ?, NULL, 'regular', 1)`,
-      )
-        .bind(campaign, inviter.realmsId)
-        .run();
-      const code = await inviter.code();
-      const early = await player("ref-link-signed");
-      expect(await early.redeem({ referral: code })).toEqual(ticket("regular"));
-      const names = Array.from({ length: CAMPAIGNS[campaign].referral.goldenLinkAt - 1 }, (_, i) => `ref-link-${i}`);
-      const friends = await countedFriends(inviter, names);
-      const nine = (await inviter.referral())[1];
-      expect(nine.link).toEqual({ counted: 9, golden: false });
-      expect(nine.tier).toBe("regular");
-      const [last] = await countedFriends(inviter, ["ref-link-tenth"]);
-      relay.mockClear();
-      const linked = (await inviter.referral())[1];
-      expect(linked).toMatchObject({
-        home: "devcon",
-        tier: "golden",
-        goldenPending: true,
-        link: { counted: 10, golden: true },
-        earned: { golden: true },
-      });
-      expect(linked.friends.every(({ golden }: { golden: boolean }) => golden)).toBe(true);
-      expect(relay).toHaveBeenCalledTimes(1);
-      // Every friend's ticket is golden, counted or not; a founded friend's home upgrades on that friend's own read.
-      for (const friend of [early, last!, ...friends])
-        expect(await campaignTicketFor(env.DB, friend.realmsId, 6)).toEqual({ campaign, tier: "golden" });
-      relay.mockClear();
-      expect(await last!.redeem()).toEqual(ticket("golden"));
-      expect(relay).toHaveBeenCalledTimes(1);
-      expect(JSON.parse(String(relay.mock.calls[0]![1]!.body))).toEqual({
-        chainId: "0xd5",
-        gameId: 41,
-        realmsId: last!.realmsId,
-      });
-      // A ticket the link gives later is golden, whatever the draw.
-      const later = await player("ref-link-later");
-      expect(await later.redeem({ referral: code })).toEqual(ticket("golden"));
-    }, 30_000);
-
-    it("gives no referral ticket and counts no friend after the season", async () => {
-      const inviter = await player("ref-closing");
-      inviter.found("free");
-      const code = await inviter.code();
-      const early = await player("ref-closing-early");
-      expect(await early.redeem({ referral: code })).toEqual(ticket("regular"));
-      early.found("campaign", 1);
-      const late = await player("ref-closing-late");
-      const now = vi.spyOn(Date, "now").mockReturnValue(CAMPAIGNS[campaign].redeemUntil * 1000);
-      try {
-        expect(await late.redeem({ referral: code })).toEqual([410, { error: "campaign_closed" }]);
-        expect((await inviter.referral())[1]).toEqual(answer("free", ["signed"]));
-        expect(await early.redeem()).toEqual(ticket("regular"));
-      } finally {
-        now.mockRestore();
-      }
-      expect(await campaignTicketFor(env.DB, inviter.realmsId, 6)).toBeNull();
-    });
+    expect(await first.held()).toEqual({ held: false });
+    expect(await first.redeem(` ${alpha.toLowerCase()} `)).toEqual([200, { held: true }]);
+    expect(await first.redeem(alpha)).toEqual([200, { held: true }]);
+    expect(await first.redeem(brave)).toEqual([200, { held: true }]);
+    expect(await first.held()).toEqual({ held: true });
+    expect(await second.redeem(alpha)).toEqual([410, { error: "code_unavailable" }]);
+    expect(await second.held()).toEqual({ held: false });
+    expect(await second.redeem(brave)).toEqual([200, { held: true }]);
+    expect(await third.redeem("LATE2345")).toEqual([410, { error: "code_unavailable" }]);
+    expect(await third.redeem("UNKN2345")).toEqual([410, { error: "code_unavailable" }]);
+    expect(await third.redeem("NOPE")).toEqual([400, { error: "invalid_code" }]);
+    expect(await third.redeem(42)).toEqual([400, { error: "invalid_code" }]);
+    expect(await first.redeem(charm)).toEqual([200, { held: true }]);
+    expect(await third.redeem(charm)).toEqual([200, { held: true }]);
+    expect((await createBrowser().request("/api/seal-code")).status).toBe(401);
   });
 
   it("saves preferences by revision, caps devices per account and revokes a device only with its token", async () => {
@@ -2382,93 +1398,61 @@ describe("identity Worker", () => {
     expect(await status()).toBe(false);
   });
 
-  it("lists each shard's live games under that shard, settled ones in a paged history, with a player's standing when asked, names a shard it cannot read, and refuses a listed chain id or another guardian's shard", async () => {
-    await env.DB.prepare("DELETE FROM shards WHERE url = ?").bind("https://devices.realms.test").run();
+  it("lists the shard's live games, its settled ones in a paged history, a player's standing when asked, names the shard while it cannot be read, refuses another guardian's shard, and lists a replacing shard", async () => {
     const operator = createBrowser();
+    const register = (url: string) =>
+      operator.request("/api/directory/shard", { method: "PUT", body: { url }, token: OPERATOR_TOKEN });
     const game = (gameId: number, name: string) => ({
       game_id: gameId,
       name,
       status: "Running",
       slotId: null,
     });
+    const settled = (gameId: number, name: string, endAt: number) => ({
+      ...game(gameId, name),
+      status: "Settled",
+      slotId: null,
+      clock: { end_at: endAt },
+    });
+    const live = { ...game(1, "calendar-season"), clock: { end_at: 900 } };
     launchDirectory = {
-      chains: [{ chainId: "0xa", games: [1, 3].map((gameId) => ({ gameId, slotId: null })) }],
+      chains: [{ chainId: "0xa", games: [1, 3, 4, 5].map((gameId) => ({ gameId, slotId: null })) }],
     };
     heralds.set("https://shard-a.test/manifest", shardManifest("0xa"));
-    heralds.set("https://shard-a.test/games", {
-      chain: "0xa",
-      games: [game(1, "calendar-season"), game(2, "harness-game"), game(3, "blitz-slot")],
+    expect(await (await register("https://shard-a.test")).json()).toEqual({
+      shard: { url: "https://shard-a.test", chainId: "0xa" },
     });
-    heralds.set("https://shard-b.test/manifest", shardManifest("0xb"));
-    heralds.set("https://shard-c.test/manifest", shardManifest("0x0a"));
-
-    expect((await operator.request("/api/directory/shards", { body: { url: "https://shard-a.test" } })).status).toBe(
-      401,
-    );
-    for (const url of ["https://shard-a.test", "https://shard-b.test"]) {
-      expect(
-        (await operator.request("/api/directory/shards/pending", { body: { url }, token: OPERATOR_TOKEN })).status,
-      ).toBe(201);
-      const admitted = await operator.request("/api/directory/shards", { body: { url }, token: OPERATOR_TOKEN });
-      expect(admitted.status).toBe(201);
-    }
-    const duplicate = await operator.request("/api/directory/shards", {
-      body: { url: "https://shard-c.test" },
-      token: OPERATOR_TOKEN,
-    });
-    expect(await duplicate.json()).toEqual({ error: "chain_id_listed", url: "https://shard-a.test" });
-    // A shard whose accounts sit under another guardian would place the same player at another address.
     heralds.set("https://shard-f.test/manifest", { ...shardManifest("0xf"), guardianPublicKey: "0x5eed" });
-    const foreign = await operator.request("/api/directory/shards", {
-      body: { url: "https://shard-f.test" },
-      token: OPERATOR_TOKEN,
-    });
-    expect(await foreign.json()).toEqual({ error: "account_identity_differs" });
+    expect(await (await register("https://shard-f.test")).json()).toEqual({ error: "account_identity_differs" });
 
     const list = async (query = "") =>
-      ((await (await createBrowser().request(`/api/directory${query}`)).json()) as { shards: unknown[] }).shards;
-    expect(await list()).toEqual([
-      {
-        url: "https://shard-a.test",
-        chainId: "0xa",
-        status: "active",
-        manifest: { ...shardManifest("0xa"), chainId: normalizeStarknetAddress("0xa") },
-        games: [game(1, "calendar-season"), game(3, "blitz-slot")],
-      },
-      {
-        url: "https://shard-b.test",
-        chainId: "0xb",
-        status: "active",
-        games: null,
-        manifest: null,
-        error: "unavailable",
-      },
-    ]);
-
-    heralds.set("https://shard-b.test/games", { chain: "0xb", games: [game(1, "blitz-b")] });
-    launchDirectory.chains.push({
-      chainId: "0xb",
-      games: [1].map((gameId) => ({ gameId, slotId: null })),
+      ((await (await createBrowser().request(`/api/directory${query}`)).json()) as { shard: unknown }).shard;
+    expect(await list()).toEqual({
+      url: "https://shard-a.test",
+      chainId: "0xa",
+      games: null,
+      manifest: null,
+      error: "unavailable",
     });
-    const listed = [
-      {
-        url: "https://shard-a.test",
-        chainId: "0xa",
-        status: "active",
-        manifest: { ...shardManifest("0xa"), chainId: normalizeStarknetAddress("0xa") },
-        games: [game(1, "calendar-season"), game(3, "blitz-slot")],
-      },
-      {
-        url: "https://shard-b.test",
-        chainId: "0xb",
-        status: "active",
-        manifest: { ...shardManifest("0xb"), chainId: normalizeStarknetAddress("0xb") },
-        games: [game(1, "blitz-b")],
-      },
-    ];
+
+    heralds.set("https://shard-a.test/games", {
+      chain: "0xa",
+      games: [
+        live,
+        game(2, "harness-game"),
+        game(3, "blitz-slot"),
+        settled(4, "a-first", 100),
+        settled(5, "a-last", 300),
+      ],
+    });
+    const listed = {
+      url: "https://shard-a.test",
+      chainId: "0xa",
+      manifest: { ...shardManifest("0xa"), chainId: normalizeStarknetAddress("0xa") },
+      games: [live, game(3, "blitz-slot")],
+    };
     expect(await list()).toEqual(listed);
 
-    // A player's standing comes from each shard as it answers that player; shard B cannot answer, and says so.
     const standing = {
       registered: true,
       settled: false,
@@ -2481,138 +1465,57 @@ describe("identity Worker", () => {
     heralds.set("https://shard-a.test/games?player=0xabc", {
       chain: "0xa",
       games: [
-        { ...game(1, "calendar-season"), player_state: standing },
+        { ...live, player_state: standing },
         { ...game(2, "harness-game"), player_state: standing },
+        { ...game(3, "blitz-slot"), player_state: standing },
+        { ...settled(4, "a-first", 100), player_state: { ...standing, registered: false } },
+        { ...settled(5, "a-last", 300), player_state: standing },
+      ],
+    });
+    expect(await list("?player=0xabc")).toEqual({
+      ...listed,
+      games: [
+        { ...live, player_state: standing },
         { ...game(3, "blitz-slot"), player_state: standing },
       ],
     });
-    expect(await list("?player=0xabc")).toEqual([
-      {
-        ...listed[0],
-        games: [
-          { ...game(1, "calendar-season"), player_state: standing },
-          { ...game(3, "blitz-slot"), player_state: standing },
-        ],
-      },
-      {
-        url: "https://shard-b.test",
-        chainId: "0xb",
-        status: "active",
-        games: null,
-        manifest: null,
-        error: "unavailable",
-      },
-    ]);
     expect(await list()).toEqual(listed);
     expect((await createBrowser().request("/api/directory?player=nobody")).status).toBe(400);
 
-    // A settled game leaves the live list; the history serves it, newest end first across shards, a page at a time.
-    const settled = (gameId: number, name: string, endAt: number) => ({
-      ...game(gameId, name),
-      status: "Settled",
-      slotId: null,
-      clock: { end_at: endAt },
-    });
-    const live = { ...game(1, "blitz-d"), clock: { end_at: 900 } };
-    heralds.set("https://shard-d.test/manifest", shardManifest("0xd"));
-    heralds.set("https://shard-d.test/games", { chain: "0xd", games: [live, settled(2, "blitz-d-old", 200)] });
-    heralds.set("https://shard-e.test/manifest", shardManifest("0xe"));
-    heralds.set("https://shard-e.test/games", {
-      chain: "0xe",
-      games: [settled(1, "e-first", 100), settled(2, "e-last", 300)],
-    });
-    for (const url of ["https://shard-d.test", "https://shard-e.test"]) {
-      expect(
-        (await operator.request("/api/directory/shards/pending", { body: { url }, token: OPERATOR_TOKEN })).status,
-      ).toBe(201);
-      expect((await operator.request("/api/directory/shards", { body: { url }, token: OPERATOR_TOKEN })).status).toBe(
-        201,
-      );
-    }
-    launchDirectory.chains.push(
-      { chainId: "0xd", games: [1, 2].map((gameId) => ({ gameId, slotId: null })) },
-      { chainId: "0xe", games: [1, 2].map((gameId) => ({ gameId, slotId: null })) },
-    );
-    expect(await list()).toEqual([
-      ...listed,
-      {
-        url: "https://shard-d.test",
-        chainId: "0xd",
-        status: "active",
-        manifest: { ...shardManifest("0xd"), chainId: normalizeStarknetAddress("0xd") },
-        games: [live],
-      },
-      {
-        url: "https://shard-e.test",
-        chainId: "0xe",
-        status: "active",
-        manifest: { ...shardManifest("0xe"), chainId: normalizeStarknetAddress("0xe") },
-        games: [],
-      },
-    ]);
     const history = async (query: string) =>
       (await (await createBrowser().request(`/api/directory/history${query}`)).json()) as {
         games: { name: string; chainId: string; shardUrl: string }[];
         next: string | null;
         failures: { url: string }[];
       };
-    const first = await history("?limit=2");
+    const first = await history("?limit=1");
     expect(first.games.map(({ name, chainId, shardUrl }) => [name, chainId, shardUrl])).toEqual([
-      ["e-last", "0xe", "https://shard-e.test"],
-      ["blitz-d-old", "0xd", "https://shard-d.test"],
+      ["a-last", "0xa", "https://shard-a.test"],
     ]);
-    expect(first.next).toBe("200:0xd:2");
-    const second = await history(`?limit=2&cursor=${first.next}`);
-    expect(second.games.map(({ name }) => name)).toEqual(["e-first"]);
+    expect(first.next).toBe("300:0xa:5");
+    const second = await history(`?limit=1&cursor=${first.next}`);
+    expect(second.games.map(({ name }) => name)).toEqual(["a-first"]);
     expect(second.next).toBeNull();
     expect(second.failures).toEqual([]);
-
-    // With a player, only the games they entered; a shard that cannot answer that player is named.
-    heralds.set("https://shard-e.test/games?player=0xabc", {
-      chain: "0xe",
-      games: [
-        { ...settled(1, "e-first", 100), player_state: { ...standing, registered: false } },
-        { ...settled(2, "e-last", 300), player_state: standing },
-      ],
+    expect((await history("?player=0xabc")).games.map(({ name }) => name)).toEqual(["a-last"]);
+    heralds.delete("https://shard-a.test/games?player=0xabc");
+    expect(await history("?player=0xabc")).toEqual({
+      games: [],
+      next: null,
+      failures: [{ url: "https://shard-a.test", error: "unavailable" }],
     });
-    const mine = await history("?player=0xabc");
-    expect(mine.games.map(({ name }) => name)).toEqual(["e-last"]);
-    expect(mine.failures.map(({ url }) => url)).toEqual(["https://shard-b.test", "https://shard-d.test"]);
     for (const query of ["?limit=0", "?limit=101", "?cursor=bogus", "?player=nobody"]) {
       expect((await createBrowser().request(`/api/directory/history${query}`)).status).toBe(400);
     }
 
-    // A live shard's URL cannot take a new chain; once retired, it is listed again under the chain its manifest names.
-    heralds.set("https://shard-e.test/manifest", shardManifest("0xee"));
-    heralds.set("https://shard-e.test/games", { chain: "0xee", games: [live] });
-    const admitE = () =>
-      operator.request("/api/directory/shards", { body: { url: "https://shard-e.test" }, token: OPERATOR_TOKEN });
-    expect(await (await admitE()).json()).toEqual({ error: "shard_not_pending" });
-    const retired = await operator.request("/api/directory/shards/status", {
-      body: { url: "https://shard-e.test", status: "retired" },
-      token: OPERATOR_TOKEN,
-    });
-    expect(retired.status).toBe(200);
-    expect(
-      (
-        await operator.request("/api/directory/shards/pending", {
-          body: { url: "https://shard-e.test" },
-          token: OPERATOR_TOKEN,
-        })
-      ).status,
-    ).toBe(201);
-    const relisted = await admitE();
-    expect(relisted.status).toBe(201);
-    expect(await relisted.json()).toEqual({ url: "https://shard-e.test", chainId: "0xee", status: "active" });
-    launchDirectory.chains.push({
-      chainId: "0xee",
-      games: [1].map((gameId) => ({ gameId, slotId: null })),
-    });
-    expect((await list()).at(-1)).toEqual({
+    heralds.set("https://shard-e.test/manifest", shardManifest("0xe"));
+    heralds.set("https://shard-e.test/games", { chain: "0xe", games: [live] });
+    launchDirectory.chains.push({ chainId: "0xe", games: [{ gameId: 1, slotId: null }] });
+    expect((await register("https://shard-e.test")).status).toBe(200);
+    expect(await list()).toEqual({
       url: "https://shard-e.test",
-      chainId: "0xee",
-      status: "active",
-      manifest: { ...shardManifest("0xee"), chainId: normalizeStarknetAddress("0xee") },
+      chainId: "0xe",
+      manifest: { ...shardManifest("0xe"), chainId: normalizeStarknetAddress("0xe") },
       games: [live],
     });
   });
@@ -2993,6 +1896,96 @@ describe("identity Worker", () => {
     } finally {
       again.mockRestore();
     }
+  });
+
+  it("keeps every shared link, visit and join through 0052, and then lets an Aspect invite, and only one, name no game", async () => {
+    const fresh = createTestD1();
+    try {
+      await applyPendingMigrations(fresh.db, "0051_seal_codes.sql");
+      const user = (id: string, realmsId: string) =>
+        fresh.db
+          .prepare(
+            `INSERT INTO "user" ("id", "name", "email", "emailVerified", "createdAt", "updatedAt", "realmsId") VALUES (?1, ?1, ?1 || '@realms.test', 1, 1, 1, ?2)`,
+          )
+          .bind(id, realmsId);
+      await fresh.db.batch([
+        user("sharer", "0x1"),
+        user("friend", "0x2"),
+        fresh.db.prepare(
+          `INSERT INTO "share_links" ("code", "sharer", "kind", "chain_id", "game_id", "moment", "created_at", "posted_at") VALUES ('DAYL1NK2', '0x1', 'frontier-day', '0x5', 7, 3, 10, 11)`,
+        ),
+        fresh.db.prepare(
+          `INSERT INTO "share_visits" ("code", "browser", "at", "via") VALUES ('DAYL1NK2', 'browser-1', '2026-11-01T00:00:00.000Z', 'x')`,
+        ),
+        fresh.db.prepare(`INSERT INTO "share_joins" ("friend", "code", "joined_at") VALUES ('0x2', 'DAYL1NK2', 12)`),
+      ]);
+
+      expect(await applyPendingMigrations(fresh.db, "0052_season_invites.sql")).toEqual(["0052_season_invites.sql"]);
+      expect((await fresh.db.prepare(`SELECT * FROM "share_links"`).all()).results).toEqual([
+        {
+          code: "DAYL1NK2",
+          sharer: "0x1",
+          kind: "frontier-day",
+          chain_id: "0x5",
+          game_id: 7,
+          moment: 3,
+          created_at: 10,
+          posted_at: 11,
+        },
+      ]);
+      expect((await fresh.db.prepare(`SELECT * FROM "share_visits"`).all()).results).toEqual([
+        { code: "DAYL1NK2", browser: "browser-1", at: "2026-11-01T00:00:00.000Z", via: "x" },
+      ]);
+      expect((await fresh.db.prepare(`SELECT * FROM "share_joins"`).all()).results).toEqual([
+        { friend: "0x2", code: "DAYL1NK2", joined_at: 12, activated_at: null },
+      ]);
+
+      const link = (code: string, kind: string, chainId: string | null, gameId: number | null) =>
+        fresh.db
+          .prepare(
+            `INSERT INTO "share_links" ("code", "sharer", "kind", "chain_id", "game_id", "moment", "created_at") VALUES (?, '0x1', ?, ?, ?, 1, 20)`,
+          )
+          .bind(code, kind, chainId, gameId)
+          .run();
+      await link("SEASON22", "aspect", null, null);
+      await expect(link("SEASON33", "aspect", null, null)).rejects.toThrow(/UNIQUE/);
+      await expect(link("SEASON44", "frontier-day", null, null)).rejects.toThrow(/CHECK/);
+      await expect(link("SEASON55", "aspect", "0x5", null)).rejects.toThrow(/CHECK/);
+    } finally {
+      await fresh.close();
+    }
+  });
+
+  it("folds the directory to its one serving row at 0053, and to none when two chains serve", async () => {
+    const directoryAfter0053 = async (rows: [url: string, chainId: string, status: string][]) => {
+      const fresh = createTestD1();
+      try {
+        await applyPendingMigrations(fresh.db, "0052_season_invites.sql");
+        await fresh.db.batch(
+          rows.map(([url, chainId, status]) =>
+            fresh.db
+              .prepare(`INSERT INTO "shards" ("url", "chainId", "status", "addedAt") VALUES (?1, ?2, ?3, 1)`)
+              .bind(url, chainId, status),
+          ),
+        );
+        expect(await applyPendingMigrations(fresh.db, "0053_one_shard.sql")).toEqual(["0053_one_shard.sql"]);
+        return (await fresh.db.prepare(`SELECT "slot", "chainId", "url" FROM "shards"`).all()).results;
+      } finally {
+        await fresh.close();
+      }
+    };
+    expect(
+      await directoryAfter0053([
+        ["https://herald.dev.test", "0xd0", "active"],
+        ["https://herald-s1.dev.test", "0x51", "active"],
+      ]),
+    ).toEqual([]);
+    expect(
+      await directoryAfter0053([
+        ["https://herald.dev.test", "0xd0", "retired"],
+        ["https://herald-s1.dev.test", "0x51", "draining"],
+      ]),
+    ).toEqual([{ slot: 1, chainId: "0x51", url: "https://herald-s1.dev.test" }]);
   });
 
   it("leaves 0031 nothing to change where the corrected 0030 ran, on a database brought up fresh, and again on a repeat", async () => {
@@ -3984,35 +2977,42 @@ describe("shared links", () => {
   const shard = "https://share-season.test";
   const chainId = "0x5348415245";
   const gameId = 52;
-  /** The season board of the shared game: sites cleared by account. */
-  const board = new Map<string, number>();
-  const publishBoard = () =>
-    heralds.set(`${shard}/games/${gameId}/leaderboard`, {
+  const raceUrl = `${shard}/games/${gameId}/snapshot?models=RaceMember%2CStructure`;
+  const glory = new Map<string, number>();
+  const publishRace = () =>
+    heralds.set(raceUrl, {
       game_id: String(gameId),
-      mode: "frontier",
-      prize: null,
-      entries: [...board].map(([address, sites], index) => ({
-        address,
-        structure_id: String(index + 1),
-        campaign: null,
-        rank: index + 1,
-        sites_cleared: { total: sites, camps: sites, rifts: 0, ruins: 0, beasts: 0 },
-        chests_earned: 0,
-        rewards: { lords: "0", essence: "0", labor: "0" },
-        deepest_depth: 0,
-        level: 0,
-        order: 1,
-      })),
+      confirmed_block: 1,
+      models: [
+        {
+          model: "RaceMember",
+          rows: [...glory].map(([, points], index) => ({
+            key: `${gameId}:${index + 1}`,
+            value: { game_id: gameId, entity_id: String(index + 1), glory: String(points * 1e9), contribution: "0" },
+          })),
+        },
+        {
+          model: "Structure",
+          rows: [...glory].map(([account], index) => ({
+            key: `${gameId}:${index + 1}`,
+            value: { game_id: gameId, entity_id: String(index + 1), owner: account },
+          })),
+        },
+      ],
+    });
+  const publishGames = () =>
+    heralds.set(`${shard}/games`, {
+      chain: chainId,
+      games: [{ game_id: gameId, name: "season", mode: "frontier", status: "Live", clock: { end_at: 0 } }],
     });
 
   beforeAll(async () => {
-    await env.DB.prepare(`INSERT INTO shards (url, chainId, status, addedAt) VALUES (?, ?, 'active', ?)`)
-      .bind(shard, chainId, Date.now())
-      .run();
-    publishBoard();
+    await listShard(shard, chainId);
+    publishGames();
+    publishRace();
   });
   afterAll(async () => {
-    await env.DB.prepare("UPDATE shards SET status = 'retired' WHERE url = ?").bind(shard).run();
+    await env.DB.prepare("DELETE FROM shards WHERE url = ?").bind(shard).run();
   });
 
   /** A player signed in on their own browser, which the app opened (so the browser is known for the account). */
@@ -4023,6 +3023,7 @@ describe("shared links", () => {
     return {
       browser,
       realmsId,
+      account,
       share: async (moment: number) => {
         const response = await browser.request("/api/shares", {
           body: { kind: "frontier-day", chainId, gameId, moment },
@@ -4037,10 +3038,12 @@ describe("shared links", () => {
           visits: number;
           joined: number;
           activated: number;
+          friendsPaid: number;
+          fragmentsEarned: number;
         },
-      clear: (sites = 1) => {
-        board.set(account, sites);
-        publishBoard();
+      earn: (points: number) => {
+        glory.set(account, points);
+        publishRace();
       },
     };
   };
@@ -4074,9 +3077,17 @@ describe("shared links", () => {
     ).toBe(401);
   });
 
-  it("counts a friend who opened the link, then joined, then founded and cleared a site", async () => {
+  it("counts a friend who opened the link, then joined, then earned 100 Glory", async () => {
     const sharer = await player("sharer-funnel");
-    expect(await sharer.tally()).toEqual({ links: 0, posted: 0, visits: 0, joined: 0, activated: 0 });
+    expect(await sharer.tally()).toEqual({
+      links: 0,
+      posted: 0,
+      visits: 0,
+      joined: 0,
+      activated: 0,
+      friendsPaid: 0,
+      fragmentsEarned: 0,
+    });
     const code = await sharer.share(3);
     expect((await sharer.browser.request(`/api/shares/${code}/posted`, { method: "POST" })).status).toBe(204);
 
@@ -4085,28 +3096,52 @@ describe("shared links", () => {
     const friendBrowser = createBrowser();
     await visit(friendBrowser, code);
     await visit(friendBrowser, code);
-    expect(await sharer.tally()).toEqual({ links: 1, posted: 1, visits: 1, joined: 0, activated: 0 });
+    expect(await sharer.tally()).toEqual({
+      links: 1,
+      posted: 1,
+      visits: 1,
+      joined: 0,
+      activated: 0,
+      friendsPaid: 0,
+      fragmentsEarned: 0,
+    });
 
     const friend = await player("friend-funnel", friendBrowser);
-    expect(await sharer.tally()).toEqual({ links: 1, posted: 1, visits: 1, joined: 1, activated: 0 });
-    friend.clear(0);
+    expect(await sharer.tally()).toEqual({
+      links: 1,
+      posted: 1,
+      visits: 1,
+      joined: 1,
+      activated: 0,
+      friendsPaid: 0,
+      fragmentsEarned: 0,
+    });
+    friend.earn(99);
     expect((await sharer.tally()).activated).toBe(0);
-    friend.clear(1);
-    expect(await sharer.tally()).toEqual({ links: 1, posted: 1, visits: 1, joined: 1, activated: 1 });
+    friend.earn(100);
+    expect(await sharer.tally()).toEqual({
+      links: 1,
+      posted: 1,
+      visits: 1,
+      joined: 1,
+      activated: 1,
+      friendsPaid: 0,
+      fragmentsEarned: 0,
+    });
   });
 
-  it("dates a join from the account's making, and counts a clear on the link's board however late it is first read", async () => {
+  it("dates a join from the account's making, and counts Glory earned in the link's game however late it is first read", async () => {
     const sharer = await player("sharer-late-read");
     const friendBrowser = createBrowser();
     await visit(friendBrowser, await sharer.share(6));
     const friend = await player("friend-late-read", friendBrowser);
-    friend.clear(2);
+    friend.earn(200);
     // Nobody reads the tally until three weeks later, past any window counted from the read.
     vi.useFakeTimers({ toFake: ["Date"], now: Date.now() + 21 * 24 * 3_600_000, shouldAdvanceTime: true });
     onTestFinished(() => {
       vi.useRealTimers();
     });
-    expect(await sharer.tally()).toMatchObject({ joined: 1, activated: 1 });
+    expect(await sharer.tally()).toMatchObject({ joined: 1, activated: 1, friendsPaid: 0, fragmentsEarned: 0 });
     const row = await env.DB.prepare(
       `SELECT j."joined_at" AS "joinedAt", CAST(strftime('%s', u."createdAt") AS INTEGER) AS "madeAt"
        FROM "share_joins" j JOIN "user" u ON u."realmsId" = j."friend" WHERE j."friend" = ?`,
@@ -4116,13 +3151,13 @@ describe("shared links", () => {
     expect(row!.joinedAt).toBe(row!.madeAt);
   });
 
-  it("settles a join whose board stayed silent for weeks once it answers, and a sharer's read settles only their own", async () => {
+  it("settles a join whose Herald stayed silent for weeks once it answers, and a sharer's read settles only their own", async () => {
     const sharer = await player("sharer-silent-board");
     const other = await player("sharer-other-reader");
     const friendBrowser = createBrowser();
     await visit(friendBrowser, await sharer.share(7));
     const friend = await player("friend-silent-board", friendBrowser);
-    friend.clear(1);
+    friend.earn(100);
     const activatedAt = async () =>
       (
         await env.DB.prepare(`SELECT "activated_at" AS "at" FROM "share_joins" WHERE "friend" = ?`)
@@ -4133,15 +3168,15 @@ describe("shared links", () => {
     await other.tally();
     expect(await activatedAt()).toBeNull();
 
-    heralds.delete(`${shard}/games/${gameId}/leaderboard`);
-    expect(await sharer.tally()).toMatchObject({ joined: 1, activated: 0 });
+    heralds.delete(raceUrl);
+    expect(await sharer.tally()).toMatchObject({ joined: 1, activated: 0, friendsPaid: 0, fragmentsEarned: 0 });
     vi.useFakeTimers({ toFake: ["Date"], now: Date.now() + 28 * 24 * 3_600_000, shouldAdvanceTime: true });
     onTestFinished(() => {
       vi.useRealTimers();
-      publishBoard();
+      publishRace();
     });
-    publishBoard();
-    expect(await sharer.tally()).toMatchObject({ joined: 1, activated: 1 });
+    publishRace();
+    expect(await sharer.tally()).toMatchObject({ joined: 1, activated: 1, friendsPaid: 0, fragmentsEarned: 0 });
   });
 
   it("gives a new account to the first link its browser opened, and never an account older than the visit", async () => {
@@ -4165,6 +3200,316 @@ describe("shared links", () => {
     await visit(sharer.browser, code);
     await player("sharer-alt-second", sharer.browser);
     expect((await sharer.tally()).joined).toBe(0);
+  });
+
+  /** The shared game's facts Herald answers for an account: its realm, and every home's Aspect. */
+  const publishAspects = (account: string, aspectOfRealm: number | null) =>
+    heralds.set(`${shard}/games/${gameId}/snapshot?models=Structure%2CHomeAspect&owner=${account}`, {
+      game_id: String(gameId),
+      confirmed_block: 1,
+      models: [
+        { model: "Structure", rows: [{ key: "7", value: { entity_id: "7", owner: account } }] },
+        {
+          model: "HomeAspect",
+          rows:
+            aspectOfRealm === null
+              ? [{ key: "8", value: { game_id: gameId, home: "8", aspect: 1 } }]
+              : [{ key: "7", value: { game_id: gameId, home: "7", aspect: aspectOfRealm } }],
+        },
+      ],
+    });
+  const invite = (who: Awaited<ReturnType<typeof player>>, aspect: unknown) =>
+    who.browser.request("/api/shares", { body: { kind: "aspect", chainId, gameId, moment: aspect } });
+
+  it("invites to the sharer's own Aspect only, as the game's Herald names it", async () => {
+    const sharer = await player("inviter-luminary");
+    await env.DB.prepare(`UPDATE "user" SET "name" = 'Linden' WHERE "realmsId" = ?`).bind(sharer.realmsId).run();
+    publishAspects(sharer.account, 2);
+    const made = await invite(sharer, 2);
+    expect(made.status).toBe(200);
+    const code = ((await made.json()) as { code: string }).code;
+    expect(((await (await invite(sharer, 2)).json()) as { code: string }).code).toBe(code);
+    await sharer.browser.request("/api/order-intent", { body: { order: 13 } });
+    expect(await visit(createBrowser(), code)).toEqual([
+      200,
+      { kind: "aspect", moment: 2, name: "Linden", order: null, members: null },
+    ]);
+
+    // Another Aspect, or one outside the catalog, is no invite of theirs.
+    expect([(await invite(sharer, 3)).status, await (await invite(sharer, 3)).json()]).toEqual([
+      403,
+      { error: "not_in_aspect" },
+    ]);
+    expect((await invite(sharer, 5)).status).toBe(400);
+    // A Herald that cannot answer refuses the invite; it never reads as no Aspect.
+    heralds.delete(`${shard}/games/${gameId}/snapshot?models=Structure%2CHomeAspect&owner=${sharer.account}`);
+    expect([(await invite(sharer, 2)).status, await (await invite(sharer, 2)).json()]).toEqual([
+      503,
+      { error: "aspect_unavailable" },
+    ]);
+  });
+
+  it("invites to the coming season before any game, to the Aspect of the Order the sharer chose, and records the friend who came by it as joined", async () => {
+    const sharer = await player("season-inviter");
+    await env.DB.prepare(`UPDATE "user" SET "name" = 'Dana' WHERE "realmsId" = ?`).bind(sharer.realmsId).run();
+    const seasonInvite = (body: Record<string, unknown>) =>
+      sharer.browser.request("/api/shares", { body: { kind: "aspect", chainId: null, gameId: null, ...body } });
+    const titans = orders.find(({ fullOrderName }) => fullOrderName === "Order of Titans")!;
+
+    expect((await seasonInvite({ moment: titans.aspect })).status).toBe(403);
+    await sharer.browser.request("/api/order-intent", { body: { order: titans.orderId } });
+    const made = await seasonInvite({ moment: titans.aspect });
+    expect(made.status).toBe(200);
+    const code = ((await made.json()) as { code: string }).code;
+    expect(((await (await seasonInvite({ moment: titans.aspect })).json()) as { code: string }).code).toBe(code);
+    const another = aspects.find(({ id }) => id !== titans.aspect)!.id;
+    expect([
+      (await seasonInvite({ moment: another })).status,
+      await (await seasonInvite({ moment: another })).json(),
+    ]).toEqual([403, { error: "not_in_aspect" }]);
+    expect((await seasonInvite({ kind: "frontier-day", moment: 1 })).status).toBe(400);
+    expect((await seasonInvite({ gameId, moment: titans.aspect })).status).toBe(400);
+
+    const friendBrowser = createBrowser();
+    const [status, seen] = await visit(friendBrowser, code);
+    expect([status, seen]).toEqual([
+      200,
+      { kind: "aspect", moment: titans.aspect, name: "Dana", order: titans.orderId, members: expect.any(Number) },
+    ]);
+    const ally = await player("season-ally");
+    const giants = orders.find(({ fullOrderName }) => fullOrderName === "Order of Giants")!;
+    await ally.browser.request("/api/order-intent", { body: { order: giants.orderId } });
+    expect((await visit(createBrowser(), code))[1]).toEqual({ ...seen, members: seen.members + 1 });
+    const friend = await player("season-invited", friendBrowser);
+    expect(await (await friend.browser.request("/api/shares/joined")).json()).toEqual({
+      kind: "aspect",
+      chainId: null,
+      gameId: null,
+      moment: titans.aspect,
+      name: "Dana",
+    });
+    expect(await sharer.tally()).toEqual({
+      links: 1,
+      posted: 0,
+      visits: 2,
+      joined: 1,
+      activated: 0,
+      friendsPaid: 0,
+      fragmentsEarned: 0,
+    });
+  });
+
+  const inviteCode = async (who: Awaited<ReturnType<typeof player>>, aspect: number) =>
+    ((await (await invite(who, aspect)).json()) as { code: string }).code;
+  const joinBy = async (code: string, name: string) => {
+    const browser = createBrowser();
+    await visit(browser, code);
+    return player(name, browser);
+  };
+  const minuteCron = () => settleShareInvites(shareWorldOf(env, fetchShard));
+  const fragmentCredits = () =>
+    relay.mock.calls
+      .filter(([url]) => String(url).endsWith("/api/value/operator/fragments"))
+      .map(([, init]) => JSON.parse(String(init!.body)) as Record<string, unknown>);
+
+  it("pays an Aspect invite's sharer 100 Fragments for each of the first 10 friends at 100 Glory, and 1,000 more at the 10th", async () => {
+    const sharer = await player("payout-sharer");
+    publishAspects(sharer.account, 2);
+    const code = await inviteCode(sharer, 2);
+    const friends = [];
+    for (let index = 0; index < 11; index++) friends.push(await joinBy(code, `payout-friend-${index}`));
+    relay.mockClear();
+    for (const friend of friends.slice(0, 9)) friend.earn(100);
+    expect(await sharer.tally()).toMatchObject({ activated: 9, friendsPaid: 0, fragmentsEarned: 0 });
+    await minuteCron();
+    expect(await sharer.tally()).toMatchObject({ activated: 9, friendsPaid: 9, fragmentsEarned: 900 });
+    for (const friend of friends.slice(9)) friend.earn(150);
+    await minuteCron();
+    await minuteCron();
+    expect(await sharer.tally()).toMatchObject({ activated: 11, friendsPaid: 10, fragmentsEarned: 2000 });
+    const credits = fragmentCredits();
+    expect(credits.filter(({ amount }) => amount === 100)).toHaveLength(10);
+    expect(credits.filter(({ amount }) => amount === 1000)).toEqual([
+      {
+        id: `friends:${chainId}:${gameId}:${sharer.realmsId}`,
+        realmsId: sharer.realmsId,
+        chainId,
+        gameId,
+        amount: 1000,
+      },
+    ]);
+  });
+
+  it("pays nothing for a friend on the sharer's own mailbox, and the minute cron retries a credit the relay refused until it takes it, once", async () => {
+    const sharer = await player("mailbox-sharer");
+    publishAspects(sharer.account, 3);
+    const code = await inviteCode(sharer, 3);
+    const alt = await joinBy(code, "mailbox-sharer+alt");
+    const friend = await joinBy(code, "mailbox-friend");
+    alt.earn(100);
+    friend.earn(100);
+    relay.mockClear();
+    relay.mockResolvedValueOnce(Response.json({ error: "fragment_credit_unavailable" }, { status: 503 }));
+    await minuteCron();
+    expect(await sharer.tally()).toMatchObject({ activated: 2, friendsPaid: 0, fragmentsEarned: 0 });
+    await minuteCron();
+    await minuteCron();
+    expect(await sharer.tally()).toMatchObject({ activated: 2, friendsPaid: 1, fragmentsEarned: 100 });
+    const paid = {
+      id: `friend:${chainId}:${gameId}:${friend.realmsId}`,
+      realmsId: sharer.realmsId,
+      chainId,
+      gameId,
+      amount: 100,
+    };
+    expect(fragmentCredits()).toEqual([paid, paid]);
+  });
+
+  it("pays a pre-season invite in the season's open game where the friend earns 100 Glory", async () => {
+    const sharer = await player("preseason-sharer");
+    const titans = orders.find(({ fullOrderName }) => fullOrderName === "Order of Titans")!;
+    await sharer.browser.request("/api/order-intent", { body: { order: titans.orderId } });
+    const made = await sharer.browser.request("/api/shares", {
+      body: { kind: "aspect", chainId: null, gameId: null, moment: titans.aspect },
+    });
+    const friend = await joinBy(((await made.json()) as { code: string }).code, "preseason-friend");
+    relay.mockClear();
+    friend.earn(100);
+    await minuteCron();
+    expect(await sharer.tally()).toMatchObject({ activated: 1, friendsPaid: 1, fragmentsEarned: 100 });
+    expect(fragmentCredits()).toEqual([
+      { id: `friend:${chainId}:${gameId}:${friend.realmsId}`, realmsId: sharer.realmsId, chainId, gameId, amount: 100 },
+    ]);
+  });
+
+  it("counts a sharer's paid friends in the newest game that paid them, never in one whose credit still waits", async () => {
+    const otherGame = gameId + 1;
+    heralds.set(`${shard}/games`, {
+      chain: chainId,
+      games: [gameId, otherGame].map((id) => ({
+        game_id: id,
+        name: "season",
+        mode: "frontier",
+        status: "Live",
+        clock: { end_at: 0 },
+      })),
+    });
+    onTestFinished(() => {
+      publishGames();
+      heralds.delete(`${shard}/games/${otherGame}/snapshot?models=RaceMember%2CStructure`);
+    });
+    const sharer = await player("two-games-sharer");
+    const titans = orders.find(({ fullOrderName }) => fullOrderName === "Order of Titans")!;
+    await sharer.browser.request("/api/order-intent", { body: { order: titans.orderId } });
+    const made = await sharer.browser.request("/api/shares", {
+      body: { kind: "aspect", chainId: null, gameId: null, moment: titans.aspect },
+    });
+    const code = ((await made.json()) as { code: string }).code;
+    const first = await joinBy(code, "two-games-first");
+    const third = await joinBy(code, "two-games-third");
+    const second = await joinBy(code, "two-games-second");
+    first.earn(100);
+    third.earn(100);
+    await minuteCron();
+    expect(await sharer.tally()).toMatchObject({ friendsPaid: 2, fragmentsEarned: 200 });
+    heralds.set(`${shard}/games/${otherGame}/snapshot?models=RaceMember%2CStructure`, {
+      game_id: String(otherGame),
+      confirmed_block: 1,
+      models: [
+        {
+          model: "RaceMember",
+          rows: [{ key: "1", value: { game_id: otherGame, entity_id: "1", glory: String(100e9) } }],
+        },
+        {
+          model: "Structure",
+          rows: [{ key: "1", value: { game_id: otherGame, entity_id: "1", owner: second.account } }],
+        },
+      ],
+    });
+    relay.mockClear();
+    relay.mockResolvedValueOnce(Response.json({ error: "fragment_credit_unavailable" }, { status: 503 }));
+    expect(await sharer.tally()).toMatchObject({ activated: 3, friendsPaid: 2, fragmentsEarned: 200 });
+    await minuteCron();
+    expect(await sharer.tally()).toMatchObject({ friendsPaid: 2, fragmentsEarned: 200 });
+    await minuteCron();
+    expect(await sharer.tally()).toMatchObject({ friendsPaid: 1, fragmentsEarned: 100 });
+    expect(fragmentCredits().map(({ gameId: paidIn }) => paidIn)).toEqual([otherGame, otherGame]);
+  });
+
+  it("pays nothing to a sharer who deleted their account, however late their friend earns the Glory", async () => {
+    const sharer = await player("deleted-sharer");
+    publishAspects(sharer.account, 4);
+    const friend = await joinBy(await inviteCode(sharer, 4), "deleted-sharer-friend");
+    const user = await env.DB.prepare('SELECT * FROM "user" WHERE "realmsId" = ?').bind(sharer.realmsId).first<User>();
+    await env.DB.batch(accountDeletion(env.DB, user!, sharer.realmsId, Date.now()));
+    relay.mockClear();
+    friend.earn(100);
+    await minuteCron();
+    expect(fragmentCredits()).toEqual([]);
+    expect(
+      await env.DB.prepare('SELECT COUNT(*) AS "rows" FROM "share_payouts" WHERE "sharer" = ?')
+        .bind(sharer.realmsId)
+        .first<{ rows: number }>(),
+    ).toEqual({ rows: 0 });
+  });
+
+  it("tells a new account the invite it came by, and nothing to an account no link brought", async () => {
+    const sharer = await player("inviter-havoc");
+    await env.DB.prepare(`UPDATE "user" SET "name" = 'Cael' WHERE "realmsId" = ?`).bind(sharer.realmsId).run();
+    publishAspects(sharer.account, 3);
+    const code = ((await (await invite(sharer, 3)).json()) as { code: string }).code;
+    const friendBrowser = createBrowser();
+    await visit(friendBrowser, code);
+    const friend = await player("invited-to-havoc", friendBrowser);
+    expect(await (await friend.browser.request("/api/shares/joined")).json()).toEqual({
+      kind: "aspect",
+      chainId,
+      gameId,
+      moment: 3,
+      name: "Cael",
+    });
+    const alone = await player("came-alone");
+    expect(await (await alone.browser.request("/api/shares/joined")).json()).toBeNull();
+    expect((await createBrowser().request("/api/shares/joined")).status).toBe(401);
+  });
+
+  it("offers an account made before it opened a friend's invite that invite's Aspect, the latest it opened, and counts no join for it", async () => {
+    const sharer = await player("inviter-of-old-hand");
+    await env.DB.prepare(`UPDATE "user" SET "name" = 'Maren' WHERE "realmsId" = ?`).bind(sharer.realmsId).run();
+    publishAspects(sharer.account, 2);
+    const code = ((await (await invite(sharer, 2)).json()) as { code: string }).code;
+    const oldHand = await player("old-hand");
+    expect(await (await oldHand.browser.request("/api/shares/joined")).json()).toBeNull();
+    await visit(sharer.browser, code);
+    expect(await (await sharer.browser.request("/api/shares/joined")).json()).toBeNull();
+    await visit(oldHand.browser, code);
+    const offered = { kind: "aspect", chainId, gameId, moment: 2, name: "Maren" };
+    expect(await (await oldHand.browser.request("/api/shares/joined")).json()).toEqual(offered);
+    expect(await sharer.tally()).toMatchObject({ visits: 1, joined: 0 });
+
+    const later = await player("later-inviter-of-old-hand");
+    await env.DB.prepare(`UPDATE "user" SET "name" = 'Corin' WHERE "realmsId" = ?`).bind(later.realmsId).run();
+    publishAspects(later.account, 4);
+    const laterCode = ((await (await invite(later, 4)).json()) as { code: string }).code;
+    await visit(oldHand.browser, laterCode);
+    const future = `UPDATE "share_visits" SET "at" = '2099-01-01T00:00:00.000Z' WHERE "code" = ?`;
+    await env.DB.prepare(future).bind(laterCode).run();
+    expect(await sharer.tally()).toMatchObject({ visits: 1, joined: 0 });
+    expect(await (await oldHand.browser.request("/api/shares/joined")).json()).toEqual({
+      ...offered,
+      moment: 4,
+      name: "Corin",
+    });
+  });
+
+  it("unfurls an invite as the sharer inviting to their Aspect", async () => {
+    const sharer = await player("inviter-unfurl");
+    await env.DB.prepare(`UPDATE "user" SET "name" = 'Orrin' WHERE "realmsId" = ?`).bind(sharer.realmsId).run();
+    publishAspects(sharer.account, 4);
+    const code = ((await (await invite(sharer, 4)).json()) as { code: string }).code;
+    const [status, html] = await page(code);
+    expect(status).toBe(200);
+    expect(tag(html, "og:title")).toBe("Orrin invites you to Insight in Frontier");
   });
 
   /** A JPEG as the share sheet's browser makes it: its start marker, then the rest of its bytes. */
@@ -4269,7 +3614,7 @@ describe("shared links", () => {
     expect([added("x"), added("system"), added(null)]).toEqual([1, 2, 1]);
   });
 
-  it("reports every moment's funnel to the operator only, and leaves joins whose board cannot answer for later", async () => {
+  it("reports every moment's funnel to the operator only, and leaves joins whose Herald cannot answer for later", async () => {
     const sharer = await player("sharer-report");
     const code = await sharer.share(9);
     const friendBrowser = createBrowser();
@@ -4277,14 +3622,14 @@ describe("shared links", () => {
     await player("friend-report", friendBrowser);
     expect((await createBrowser().request("/api/operator/shares")).status).toBe(401);
 
-    heralds.delete(`${shard}/games/${gameId}/leaderboard`);
+    heralds.delete(raceUrl);
     const waiting = (await (
       await createBrowser().request("/api/operator/shares", { token: OPERATOR_TOKEN })
     ).json()) as {
       unsettledJoins: number;
     };
     expect(waiting.unsettledJoins).toBeGreaterThan(0);
-    publishBoard();
+    publishRace();
 
     const report = (await (
       await createBrowser().request("/api/operator/shares", { token: OPERATOR_TOKEN })

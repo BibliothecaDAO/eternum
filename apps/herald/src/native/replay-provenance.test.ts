@@ -3,16 +3,15 @@ import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { WorldFold } from "../world-fold";
 import { NativeDecoder } from "./decoder";
 import { NativeIngestion } from "./ingestion";
-import { manifest, schema, pointsAward, receipt } from "./fixtures";
+import { manifest, schema, receipt, rowEvent } from "./fixtures";
 
 describe("native replay provenance", () => {
   it.each(["model", "event", "nested type"])("refuses a changed %s under an unchanged schema commitment", (kind) => {
     const changed = structuredClone(manifest);
     const provenance = changed.native.schemas[schema.identity]!;
     if (kind === "model")
-      provenance.models.find((row) => row.name === "PlayerPoints")!.members[0]!.type = "core::integer::u64";
-    if (kind === "event")
-      provenance.games.events.find((row) => row.name === "PointsAwarded")!.members[0]!.kind = "data";
+      provenance.models.find((row) => row.name === "Fragments")!.members[0]!.type = "core::integer::u64";
+    if (kind === "event") provenance.games.events.find((row) => row.name === "BattleEvent")!.members[0]!.kind = "data";
     if (kind === "nested type") {
       const battle = provenance.types["world_native::rules::BattleConfig"]!;
       if (battle.type !== "struct") throw new Error("Expected BattleConfig struct");
@@ -21,11 +20,11 @@ describe("native replay provenance", () => {
     expect(() => new NativeDecoder(changed)).toThrow("Native schema identity mismatch");
   });
 
-  it("rebuilds the same points in the overlay, replay, checkpoint and client snapshot", async () => {
+  it("rebuilds the same row in the overlay, replay, checkpoint and client snapshot", async () => {
     const decoder = new NativeDecoder(manifest);
     const ingestion = new NativeIngestion(decoder);
     const fold = new WorldFold(decoder.registry);
-    const observed = receipt([pointsAward("1", "0x111", "100", "100", "100")]);
+    const observed = receipt([rowEvent("Fragments", ["1", "0x111"], { balance: 100n })]);
     const overlay = fold.overlay();
     ingestion.applyReceipt(overlay, observed, null, 0);
     ingestion.applyReceipt(fold, observed, 10, 0);
@@ -47,9 +46,7 @@ describe("native replay provenance", () => {
     const restored = WorldFold.restore(decoder.registry, replay.checkpoint());
     const store = new NativeFactStore();
     store.setSnapshot({ gameId: 1, complete: true, actor: "0x111", timestamp: 1800 });
-    for (const model of ["PlayerPoints", "PointsTotal"] as const)
-      store.applyFacts(restored.modelRows(model).map(({ key, value }) => ({ model, key, value })));
-    expect(store.require("PlayerPoints", { game_id: 1, address: 273n }).points).toBe(100n);
-    expect(store.require("PointsTotal", { game_id: 1 }).total).toBe(100n);
+    store.applyFacts(restored.modelRows("Fragments").map(({ key, value }) => ({ model: "Fragments", key, value })));
+    expect(store.require("Fragments", { game_id: 1, account: 273n }).balance).toBe(100n);
   });
 });

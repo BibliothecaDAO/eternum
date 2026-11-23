@@ -13,8 +13,8 @@ export const artifactFiles = [
 ].flatMap(([packageName, base]) =>
   ["contract_class.json", "compiled_contract_class.json"].map((suffix) => ({ packageName, file: `${base}.${suffix}` })),
 );
-export const remoteCheckout = (revision: string) => `/home/ubuntu/cairo-suite/first-release-${revision}`;
-export function releaseDirectory(target: Target) {
+const remoteCheckout = (revision: string) => `/home/ubuntu/cairo-suite/first-release-${revision}`;
+function releaseDirectory(target: Target) {
   return target.runDirectory;
 }
 /** One non-interactive SSH command on the target's box: a pinned host key, no shared connection. */
@@ -87,8 +87,8 @@ export const valueSources = [
   "contracts/l2/mmr",
   "contracts/l2/collectibles",
   "contracts/l3/world-native/src/days.cairo",
+  "contracts/l3/world-native/src/day_schedule.cairo",
   "contracts/l3/world-native/src/approved_frontier_extension.cairo",
-  "contracts/l3/world-native/src/frontier_prizes.cairo",
 ];
 export async function artifactsReady(store: PrivateStore, revision: string) {
   const built = store.read<{ revision: string }>("build.json");

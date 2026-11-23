@@ -1,89 +1,21 @@
-pub const SHRINE_COMMON_BPS: u32 = 5000;
-pub const SHRINE_UNCOMMON_BPS: u32 = 3000;
-pub const SHRINE_RARE_BPS: u32 = 1500;
-pub const SHRINE_EPIC_BPS: u32 = 400;
-pub const SHRINE_LEGENDARY_BPS: u32 = 100;
+pub const RELIC_BLADE_BPS: u32 = 1000;
+pub const RELIC_WARD_BPS: u32 = 500;
+pub const RELIC_PLUNDER_BPS: u32 = 2000;
+pub const STAMINA_REGEN_RELIC_STEP_PERCENT: u32 = 20;
 pub const ATTRIBUTE_CAP: u8 = 5;
-pub const SKILL_POINT_REFILL_BASE: u8 = 10;
-pub const SKILL_POINT_REFILL_STEP: u8 = 10;
-// Rank 0 is untrained; Common I through Legendary V retain the original ceilings.
-pub const BATTLE_COMMON_BPS: u32 = 1000;
-pub const BATTLE_UNCOMMON_BPS: u32 = 2500;
-pub const BATTLE_RARE_BPS: u32 = 4500;
-pub const BATTLE_EPIC_BPS: u32 = 7000;
-pub const BATTLE_LEGENDARY_BPS: u32 = 10000;
+pub const SCOUT_EXPLORE_STAMINA: u8 = 10;
+pub const FRONTIER_LIGHT_DAMAGE_PERCENT: u8 = 75;
+pub const FRONTIER_KNIGHT_GUARD_DAMAGE_PERCENT: u8 = 75;
+pub const LOGISTICS_STEP_PERCENT: u8 = 20;
 
-pub fn battle_bonus_bps(tier: u8) -> u32 {
-    match tier {
-        0 => 0,
-        1 => BATTLE_COMMON_BPS,
-        2 => BATTLE_UNCOMMON_BPS,
-        3 => BATTLE_RARE_BPS,
-        4 => BATTLE_EPIC_BPS,
-        5 => BATTLE_LEGENDARY_BPS,
-        _ => panic!("invalid attribute tier"),
-    }
-}
-
-pub const LOGISTICS_COMMON_STAMINA: u32 = 20;
-pub const LOGISTICS_UNCOMMON_STAMINA: u32 = 45;
-pub const LOGISTICS_RARE_STAMINA: u32 = 75;
-pub const LOGISTICS_EPIC_STAMINA: u32 = 110;
-pub const LOGISTICS_LEGENDARY_STAMINA: u32 = 150;
-
-pub fn logistics_stamina(tier: u8) -> u32 {
-    match tier {
-        0 => 0,
-        1 => LOGISTICS_COMMON_STAMINA,
-        2 => LOGISTICS_UNCOMMON_STAMINA,
-        3 => LOGISTICS_RARE_STAMINA,
-        4 => LOGISTICS_EPIC_STAMINA,
-        5 => LOGISTICS_LEGENDARY_STAMINA,
-        _ => panic!("invalid attribute tier"),
-    }
-}
-
-pub const SCOUTING_COMMON_BPS: u32 = 1000;
-pub const SCOUTING_UNCOMMON_BPS: u32 = 1500;
-pub const SCOUTING_RARE_BPS: u32 = 2000;
-pub const SCOUTING_EPIC_BPS: u32 = 2500;
-pub const SCOUTING_LEGENDARY_BPS: u32 = 3000;
-
-pub fn scouting_increment_bps(tier: u8) -> u32 {
-    match tier {
-        0 => 0,
-        1 => SCOUTING_COMMON_BPS,
-        2 => SCOUTING_UNCOMMON_BPS,
-        3 => SCOUTING_RARE_BPS,
-        4 => SCOUTING_EPIC_BPS,
-        5 => SCOUTING_LEGENDARY_BPS,
-        _ => panic!("invalid attribute tier"),
-    }
-}
-
-pub const HOMECOMING_COMMON_BPS: u32 = 300;
-pub const HOMECOMING_UNCOMMON_BPS: u32 = 800;
-pub const HOMECOMING_RARE_BPS: u32 = 1400;
-pub const HOMECOMING_EPIC_BPS: u32 = 2100;
-pub const HOMECOMING_LEGENDARY_BPS: u32 = 3000;
-
-pub fn homecoming_bps(tier: u8) -> u32 {
-    match tier {
-        0 => 0,
-        1 => HOMECOMING_COMMON_BPS,
-        2 => HOMECOMING_UNCOMMON_BPS,
-        3 => HOMECOMING_RARE_BPS,
-        4 => HOMECOMING_EPIC_BPS,
-        5 => HOMECOMING_LEGENDARY_BPS,
-        _ => panic!("invalid attribute tier"),
-    }
+pub fn logistics_stamina(bar: u64, tier: u8) -> u64 {
+    bar * LOGISTICS_STEP_PERCENT.into() * tier.into() / 100
 }
 
 pub const RESOURCE_PRECISION: u128 = 1000000000;
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 pub struct TroopDamageConfig {
-    pub damage_raid_percent_num: u16,
     // Combat modifiers. Used for biome damage calculations
     pub damage_biome_bonus_num: u16,
     // Used in damage calculations for troop scaling
@@ -172,8 +104,6 @@ pub struct MapConfig {
     pub shards_mines_fail_probability: u16,
     pub camp_win_probability: u16,
     pub camp_fail_probability: u16,
-    pub bitcoin_mine_win_probability: u16, // 1/50 = 2% = 200 (out of 10000)
-    pub bitcoin_mine_fail_probability: u16, // 9800
     pub hyps_win_prob: u32,
     pub hyps_fail_prob: u32,
     // fail probability increase per hex distance from center
@@ -189,7 +119,6 @@ pub struct MapConfig {
 pub struct TickConfig {
     pub armies_tick_in_seconds: u64,
     pub delivery_tick_in_seconds: u64,
-    pub bitcoin_phase_in_seconds: u64 // 600 = 10 minutes
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
@@ -206,16 +135,7 @@ pub struct StructureCapacityConfig {
     pub hyperstructure_capacity: u64, // grams
     pub fragment_mine_capacity: u64, // grams
     pub bank_structure_capacity: u64,
-    pub camp_capacity: u64, // grams
-    pub bitcoin_mine_capacity: u64 // grams
-}
-
-#[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
-pub struct BitcoinMineConfig {
-    pub enabled: bool,
-    pub prize_per_phase: u128, // Amount of SATOSHI awarded per phase
-    pub min_labor_per_contribution: u128, // Minimum labor required per contribution
-    pub owner_cut_bps: u16,
+    pub camp_capacity: u64,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
@@ -224,15 +144,12 @@ pub struct BuildingConfig {
     pub base_cost_percent_increase: u16,
 }
 
-#[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
-pub struct VictoryPointsGrantConfig {
-    pub hyp_points_per_second: u32,
-    // Only granted when claim hyperstructure from bandits
-    pub claim_hyperstructure_points: u32,
-    // Only granted when claim non hyperstructure from bandits
-    pub claim_otherstructure_points: u32,
-    pub explore_tiles_points: u32,
-    pub relic_open_points: u32,
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct ReleaseSwitches {
+    pub command_mask: u128,
+    pub mode_rules: u32,
+    pub day_unit_seconds: u32,
+    pub entry_rule: u8,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
@@ -247,49 +164,37 @@ pub struct SliceRules {
     pub capacity_config: CapacityConfig,
     pub structure_capacity_config: StructureCapacityConfig,
     pub building_config: BuildingConfig,
-    pub bitcoin_mine_config: BitcoinMineConfig,
-    pub victory_points_grant_config: VictoryPointsGrantConfig,
     pub map_center_offset: u32,
     pub spire_travel_essence_cost: u128,
     pub command_mask: u128,
     pub mode_rules: u32,
     pub day_unit_seconds: u32,
     pub entry_rule: u8,
-    pub faith_enabled: bool,
     pub speed_config: SpeedConfig,
+    pub relic_seconds_per_rank: u32,
 }
 
-pub const MAX_BLITZ_ROSTER_PLAYERS: u32 = crate::roster_limits::MAX_BLITZ_ROSTER_PLAYERS;
-pub const DUEL_ROSTER_PLAYERS: u32 = crate::roster_limits::DUEL_ROSTER_PLAYERS;
 pub const ENTRY_ENTITLEMENT: u8 = 0;
 pub const ENTRY_OPEN: u8 = 1;
 pub const ENTRY_ROSTER: u8 = 2;
 
 pub const HOME_REWARDS: u32 = 1;
 pub const DISCOVER_CAMPS: u32 = 2;
-pub const DISCOVER_CHESTS: u32 = 4;
-pub const DISCOVER_HYPERSTRUCTURES: u32 = 8;
-pub const SPIRES: u32 = 16;
 pub const UNOWNED_TARGETS: u32 = 32;
 pub const CAPTURE_VILLAGES: u32 = 64;
 pub const DEPTH_CONTENTS: u32 = 128;
 pub const REVEAL_SUPPLIES: u32 = 262144;
-// Every battle rolls a d20 per side.
-pub const COMBAT_DICE: u32 = 524288;
-pub const COMBAT_DICE_ETHEREAL: u32 = 1048576;
-// One reveal in two hundred finds a dormant spire that pays its finder Essence once.
-pub const DISCOVER_SPIRES: u32 = 2097152;
 pub const SAME_OWNER_TRANSFER: u32 = 256;
-pub const SEASON_CLOSE: u32 = 1024;
-pub const RESERVED_HYPERSTRUCTURES: u32 = 2048;
 pub const DEV_VILLAGE_ENTRY: u32 = 8192;
-pub const OWNER_ONLY_SHARES: u32 = 16384;
-pub const HYPERSTRUCTURE_MULTIPLIERS: u32 = 32768;
 pub const PRODUCTION_START: u32 = 131072;
 
-pub fn rule_enabled(rules: SliceRules, rule: u32) -> bool {
-    rules.mode_rules & rule != 0
-}
+pub const ONLY_UNOWNED_TARGETS: bool = crate::balance::rules::SWITCHES.mode_rules & UNOWNED_TARGETS != 0;
+pub const NO_VILLAGE_CAPTURE: bool = crate::balance::rules::SWITCHES.mode_rules & CAPTURE_VILLAGES == 0;
+pub const DEEP_IN_PLAY: bool = crate::balance::rules::SWITCHES.mode_rules & DEPTH_CONTENTS != 0;
+pub const SAME_OWNER_TRANSFERS: bool = crate::balance::rules::SWITCHES.mode_rules & SAME_OWNER_TRANSFER != 0;
+pub const DAYS_IN_PLAY: bool = crate::balance::rules::SWITCHES.day_unit_seconds != 0;
+pub const ROSTER_ENTRY: bool = crate::balance::rules::SWITCHES.entry_rule == ENTRY_ROSTER;
+pub const PRODUCTION_FROM_MAIN: bool = crate::balance::rules::SWITCHES.mode_rules & PRODUCTION_START != 0;
 
 pub fn command_enabled(mask: u128, index: u128) -> bool {
     // Cairo lowers a dense integer match to a jump table.
@@ -431,7 +336,6 @@ pub fn command_enabled(mask: u128, index: u128) -> bool {
 pub struct BattleConfig {
     pub regular_immunity_ticks: u8,
     pub village_immunity_ticks: u8,
-    pub village_raid_immunity_ticks: u8,
     pub cooldown_seconds: u32,
 }
 
@@ -569,9 +473,7 @@ pub impl MapConfigPacking of starknet::storage_access::StorePacking<MapConfig, P
                 + value.camp_fail_probability.into() * 0x1000000000000,
             // Bits 64-79 of the first word and 0-15 of the second held a dead site lottery; they stay empty so stored
             // map configs keep their layout.
-            second: value.bitcoin_mine_win_probability.into() * 0x10000
-                + value.bitcoin_mine_fail_probability.into() * 0x100000000
-                + value.hyps_win_prob.into() * 0x1000000000000
+            second: value.hyps_win_prob.into() * 0x1000000000000
                 + value.hyps_fail_prob.into() * 0x100000000000000000000
                 + value.hyps_fail_prob_increase_p_hex.into() * 0x10000000000000000000000000000,
             // Bits 40-47 of the third word held a chest's relic count before chests held packs; they stay empty.
@@ -586,8 +488,6 @@ pub impl MapConfigPacking of starknet::storage_access::StorePacking<MapConfig, P
             shards_mines_fail_probability: (value.first / 0x10000 % 0x10000).try_into().unwrap(),
             camp_win_probability: (value.first / 0x100000000 % 0x10000).try_into().unwrap(),
             camp_fail_probability: (value.first / 0x1000000000000 % 0x10000).try_into().unwrap(),
-            bitcoin_mine_win_probability: (value.second / 0x10000 % 0x10000).try_into().unwrap(),
-            bitcoin_mine_fail_probability: (value.second / 0x100000000 % 0x10000).try_into().unwrap(),
             hyps_win_prob: (value.second / 0x1000000000000 % 0x100000000).try_into().unwrap(),
             hyps_fail_prob: (value.second / 0x100000000000000000000 % 0x100000000).try_into().unwrap(),
             hyps_fail_prob_increase_p_hex: (value.second / 0x10000000000000000000000000000).try_into().unwrap(),
@@ -604,6 +504,24 @@ pub struct SpeedConfig {
     pub donkey_sec_per_km_troops: u16,
 }
 
-pub const WELL_STAMINA_DIVISOR: u8 = 2;
+pub const WELL_REFILL_PERCENT: u8 = 40;
+pub const BEAST_HERD_SHARE: u8 = 1;
+pub const BEAST_BAND_SHARE: u8 = 2;
 
 pub const FRONTIER_REPORT_GRACE_SECONDS: u32 = crate::days::FRONTIER_REPORT_GRACE_SECONDS;
+
+pub const SPIRE_REVEAL_LIMIT: u8 = 10;
+
+pub const DEEP_MAP_SIZE: u32 = 50;
+pub const DEEP_FOUNDATION: u8 = 0;
+pub const DEEP_CORE: u8 = 1;
+pub const DEEP_MINE: u8 = 2;
+pub const DEEP_ALTAR: u8 = 3;
+pub const DEEP_KIND_COUNT: u8 = 4;
+pub const DEEP_RING_LIMIT: u8 = 4;
+pub const DEEP_RING_SITES: u8 = 6;
+pub const DEEP_PLAZA_RADIUS: u32 = 4;
+pub const DEEP_SITE_SPACING: u128 = 3;
+pub const DEEP_GUARD_SLOTS: u8 = 4;
+pub const DEEP_CATCH_UP_GUARD_TICKS: u64 = 900;
+pub const DEEP_CATCH_UP_DEATH_TICKS: u64 = 60;

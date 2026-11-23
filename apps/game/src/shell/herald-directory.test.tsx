@@ -23,7 +23,7 @@ vi.stubGlobal("fetch", async (input: string) => {
     await new Promise<void>((resolve) => (guardianAnswer.release = resolve));
     return Response.json(GUARDIAN);
   }
-  if (input.startsWith("/api/directory")) return Response.json({ shards: [] });
+  if (input.startsWith("/api/directory")) return Response.json({ shard: null });
   return new Response(null, { status: 401 });
 });
 

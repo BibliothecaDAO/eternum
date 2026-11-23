@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { lordsInfoQueryOptions, treasuryBalanceQueryOptions } from "@/site/lib/query-options";
 import { useVelords } from "@/site/hooks/use-velords";
-import { LORDS_TOTAL_SUPPLY } from "@/site/lib/constants";
+import { treasurySupply } from "@/site/lib/treasury-supply";
 import { Button } from "@/site/components/ui/button";
 import { ExternalLink, Coins, Landmark, TrendingUp } from "lucide-react";
 import { LordsFlywheel } from "@/site/components/ui/LordsFlywheel";
@@ -16,9 +16,7 @@ function EconomicsSectionContent() {
   const { data: lordsInfo } = useQuery(lordsInfoQueryOptions());
   const { data: treasuryBalance } = useQuery(treasuryBalanceQueryOptions());
 
-  const treasuryLords = treasuryBalance?.LORDS.amount || 0;
-  const treasuryPercentage = ((treasuryLords / LORDS_TOTAL_SUPPLY) * 100).toFixed(1);
-  const marketPercentage = (100 - parseFloat(treasuryPercentage)).toFixed(1);
+  const supply = treasurySupply(treasuryBalance);
 
   const parsedLordsPrice = Number.parseFloat(lordsInfo?.price?.rate ?? "");
   const lordsLockedUsd =
@@ -54,13 +52,13 @@ function EconomicsSectionContent() {
     },
     {
       label: "Treasury",
-      value: treasuryLords > 0 ? `${treasuryPercentage}%` : "~40%",
-      sub: treasuryLords > 0 ? "Onchain" : "Estimated",
+      value: supply.treasury,
+      sub: supply.treasurySub,
       icon: Landmark,
     },
     {
       label: "Circulating",
-      value: treasuryLords > 0 ? `${marketPercentage}%` : "~60%",
+      value: supply.circulating,
       sub: "Freely liquid",
       icon: TrendingUp,
     },

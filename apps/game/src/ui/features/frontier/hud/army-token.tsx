@@ -1,23 +1,14 @@
-import { formatAmount, formatCharge, formatExact, formatGain } from "@bibliothecadao/types";
+import { formatAmount, formatDuration, formatExact, layerName, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
-import { HudStamina, type StaminaBar, rankedTip } from "@/ui/design-system/kit/hud-elements";
-import {
-  comesHomeAtDayEnd,
-  DEPTH_NUMERALS,
-  depthName,
-  type RankedWords,
-  TROOPS,
-  XP,
-  xpTowardTip,
-} from "@/ui/design-system/kit/words";
+import { HudMeter, HudStamina, type StaminaBar } from "@/ui/design-system/kit/hud-elements";
+import { DEEP_WORDS, TROOPS } from "@/ui/design-system/kit/words";
 import type { EtherealLayer } from "@bibliothecadao/eternum";
+import type { DeepArmyLife } from "@bibliothecadao/eternum/game-client";
 
 import { reachMark } from "../depth-art";
 
-// A token grows past its height only for the last hour's Homecoming line. Its parts stack from the top, so every
-// token's portrait or ring, and the stamina bar under it, stand at one height along the dock.
 const TOKEN_FRAME = "relative flex w-14 shrink-0 flex-col items-center justify-start gap-1 rounded-xl py-1";
 const TOKEN = `min-h-hud-frontier-token ${TOKEN_FRAME}`;
 
@@ -59,70 +50,44 @@ export const GuardToken = ({
   </div>
 );
 
-/**
- * The Ethereal layer an army stands in, on its portrait's left: the layer's painting and its numeral, named on its tip
- * ("Ethereal II"); nothing on the surface (owner, 4 November 2026: "add the little depth icon to the army so we know if
- * its an eth layer and if so which one"). A row and the panel wear it on the lower corner; a token, whose foot holds its
- * XP, under its number.
- */
 export const EtherealMark = ({ layer, at = "corner" }: { layer: EtherealLayer | undefined; at?: "corner" | "side" }) =>
   layer === undefined ? null : (
     <span
       role="img"
-      aria-label={depthName(layer)}
-      data-tip={depthName(layer)}
+      aria-label={layerName(layer)}
+      data-tip={layerName(layer)}
       className={cn(
         "absolute flex h-5 items-center gap-0.5 rounded-full border border-hud-line-strong bg-hud-dark pl-0.5 pr-1 text-hud-strong leading-none text-hud-ink",
         at === "corner" ? "-bottom-1.5 -left-2.5" : "-left-2.5 top-3.5",
       )}
     >
       <SemanticIcon name={reachMark(layer)} size={14} />
-      {DEPTH_NUMERALS[layer - 1]}
+      {layerName(layer)}
     </span>
   );
 
-/** The next cumulative XP milestone and the point it awards. */
-export type XpGoal = { at: number; rank: number };
-
-/** An army's XP for its tooltip: what it holds against the next point's milestone, the point's rank as its gem. */
-export const xpLine = (xp: number | undefined, goal: XpGoal | undefined): RankedWords | string =>
-  goal ? xpTowardTip(formatAmount(xp), formatCharge(goal.at), goal.rank) : `${XP} ${formatAmount(xp)}`;
-
-/**
- * One army on a phone's dock: its number, the one its map plate carries; its portrait with its XP balance as the badge,
- * a card fan when a tier is affordable now, what its Homecoming sends home in the day's last hour, its stamina in
- * segments, and its troops; the badge says what the XP buys next when asked. A desktop lists the armies as rows
- * (ArmyRow). Read-only on a visit.
- */
 export const ArmyToken = ({
   label,
   number,
   art,
-  xp,
-  xpGoal,
   stamina,
   troops,
-  returnsHome,
-  canSpendSkillPoint,
+  drain,
   ethereal,
   selected,
   flyTarget,
   onPick,
 }: {
   label: string;
+  /** What its Deep site costs it: its troops fall each tick. None while it holds none. */
+  drain?: DeepArmyLife;
   /** The army's number among its realm's; absent where a token stands for no numbered army. */
   number?: number;
   /** The Ethereal layer it stands in; none on the surface. */
   ethereal?: EtherealLayer;
   art: IconMeaning | undefined;
-  xp: number | undefined;
-  /** The attribute tier the XP buys next; none once every attribute is legendary, or while unknown. */
-  xpGoal?: XpGoal;
   stamina: StaminaBar | undefined;
   troops: number | undefined;
-  /** In the day's last hour, the troops its Homecoming sends home when the day ends; none otherwise. */
-  returnsHome?: number;
-  canSpendSkillPoint: boolean;
   selected: boolean;
   /** Where a gain flies into the portrait. */
   flyTarget?: string;
@@ -133,22 +98,9 @@ export const ArmyToken = ({
     <>
       <span data-fly-target={flyTarget} className="relative size-10 shrink-0">
         <Portrait art={art} />
-        <span
-          role="img"
-          aria-label={`${XP} ${formatAmount(xp)}`}
-          {...rankedTip(xpLine(xp, xpGoal))}
-          className="absolute -bottom-1 -right-2.5 flex h-5 min-w-5 items-center justify-center rounded-full border border-hud-line bg-hud-dark px-1 text-hud-body leading-none text-hud-gold tabular-nums"
-        >
-          {formatAmount(xp)}
-        </span>
         {number !== undefined && (
           <span className="absolute -left-2.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full border border-hud-line-strong bg-hud-dark px-1 text-hud-strong leading-none text-hud-ink tabular-nums">
             {number}
-          </span>
-        )}
-        {canSpendSkillPoint && (
-          <span className="absolute -right-2 -top-1.5 size-5">
-            <SemanticIcon name="picks" className="size-full" />
           </span>
         )}
         <EtherealMark layer={ethereal} at="side" />
@@ -161,7 +113,7 @@ export const ArmyToken = ({
       >
         {formatAmount(troops)}
       </span>
-      {returnsHome !== undefined && <HomecomingReturn troops={returnsHome} />}
+      {drain && <DeepDrain drain={drain} />}
     </>
   );
   return onPick ? (
@@ -193,6 +145,7 @@ export const OpenSlot = ({
   pulse,
   filling,
   start,
+  stock,
   selected,
   onDeploy,
 }: {
@@ -204,6 +157,7 @@ export const OpenSlot = ({
   filling?: string;
   /** The bar the slot starts its army on, and that in words ("Army 2 starts on 7/150 stamina…"); none while unknown. */
   start?: { bar: StaminaBar; words: string };
+  stock?: { count: string; label: string };
   onDeploy: () => void;
 }) => (
   <button
@@ -214,10 +168,16 @@ export const OpenSlot = ({
     disabled={filling !== undefined}
     data-tip={filling === undefined ? start?.words : undefined}
     onClick={onDeploy}
-    className={cn("ui-pick", TOKEN_LOOK)}
+    className={cn("ui-pick", TOKEN_LOOK, "border-dashed")}
   >
     <SlotRing pulse={pulse} filling={filling} />
     {start && filling === undefined && <TokenStamina stamina={start.bar} />}
+    <span className="text-hud-label leading-none text-hud-muted">{filling ?? label}</span>
+    {stock && filling === undefined && (
+      <span role="img" aria-label={stock.label} className="text-hud-body leading-none text-hud-ink tabular-nums">
+        {stock.count}
+      </span>
+    )}
   </button>
 );
 
@@ -235,21 +195,42 @@ export const SlotRing = ({ pulse, filling }: { pulse: boolean; filling?: string 
 );
 
 /**
- * In the day's last hour, what an army's Homecoming sends home when the day ends, by the army it is about, not a bubble
- * repeating the troops (player, 25 October): on a phone's token, under its troops, its mark and figure; on a desktop's
- * row, where there is room, in words ("450 come home at day end").
+ * What a Deep guard's site costs it: its troops fall each tick, so the chip says how many ticks it holds and its bar
+ * how much of the day those troops last for. On a desktop's row, where there is room, in words.
  */
-export const HomecomingReturn = ({ troops, words = false }: { troops: number; words?: boolean }) => (
-  <span
-    role="img"
-    aria-label={comesHomeAtDayEnd(formatExact(troops))}
-    data-tip={words ? undefined : comesHomeAtDayEnd(formatExact(troops))}
-    className="flex h-5 shrink-0 items-center self-start rounded-full border border-hud-line bg-hud-dark pr-1.5 text-hud-label leading-none text-hud-good tabular-nums"
-  >
-    <SemanticIcon name="order-enlightenment" size={16} />
-    {words ? comesHomeAtDayEnd(formatExact(troops)) : formatGain(troops)}
-  </span>
-);
+export const DeepDrain = ({
+  drain,
+  words = false,
+  compact = false,
+}: {
+  drain: DeepArmyLife;
+  words?: boolean;
+  compact?: boolean;
+}) => {
+  const loss = formatExact(Number(drain.lossPerTick) / RESOURCE_PRECISION);
+  const time = formatDuration(drain.secondsLeft);
+  const line = `${DEEP_WORDS.drain(loss)}; ${DEEP_WORDS.lasts(drain.ticksLeft, time)}`;
+  const shown = compact
+    ? DEEP_WORDS.drainShort(loss, drain.ticksLeft, time)
+    : words
+      ? line
+      : formatExact(drain.ticksLeft);
+  return (
+    <span
+      data-deep-drain
+      role="img"
+      aria-label={line}
+      data-tip={words && !compact ? undefined : line}
+      className="flex min-w-0 shrink-0 flex-col gap-0.5 self-stretch text-hud-label leading-none text-hud-bad tabular-nums"
+    >
+      <span className="flex min-w-0 items-center gap-1">
+        <SemanticIcon name="flame" size={16} />
+        <span className={cn(compact && "truncate whitespace-nowrap")}>{shown}</span>
+      </span>
+      <HudMeter label={line} tone="warn" share={drain.ticksInDay === 0 ? 0 : drain.ticksToEmpty / drain.ticksInDay} />
+    </span>
+  );
+};
 
 /**
  * A desktop row's stamina: the bar in segments, and its exact count beside it ("58/120") in a column wide enough for

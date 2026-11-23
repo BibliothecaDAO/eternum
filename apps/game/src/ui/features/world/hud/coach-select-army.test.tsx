@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { act } from "react";
+import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
@@ -8,9 +9,17 @@ const ARMY = 7;
 const CENTER = 2147483646;
 const ARMY_TILE = { col: CENTER + 4, row: CENTER + 5 };
 const CRATE_TILE = { col: CENTER + 9, row: CENTER + 5 };
+const store = new NativeFactStore();
+store.applyFacts([
+  {
+    model: "TileOccupancy",
+    key: "0x7",
+    value: { game_id: 1, entity_id: ARMY, ...ARMY_TILE, alt: false, category: 1, is_structure: false },
+  },
+]);
 
 vi.mock("@/hooks/context/game-context", () => ({
-  useGame: () => ({ setup: { store: { entityOccupancy: () => ({ ...ARMY_TILE, alt: false }) } } }),
+  useGame: () => ({ setup: { store } }),
 }));
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({
   useCurrentDefaultTick: () => 1000,
@@ -77,14 +86,6 @@ beforeEach(() => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   vi.spyOn(configManager, "getMapCenter").mockReturnValue(CENTER);
   vi.spyOn(configManager, "getActiveGameId").mockReturnValue(1);
-  vi.spyOn(configManager, "getVictoryPointGrants").mockReturnValue({
-    exploreTile: 5,
-    openRelicCrate: 250,
-    claimCampFromBandits: 250,
-    claimHyperstructureFromBandits: 1000,
-    hyperstructurePerSecond: 1,
-    hyperstructureScale: "per-realm",
-  });
   worldMap.taken = [];
   window.addEventListener(ARMY_SELECT_REQUEST_EVENT, takeIfShown);
 });

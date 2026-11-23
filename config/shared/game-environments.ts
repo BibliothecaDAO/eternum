@@ -3,7 +3,6 @@ type GameEnvironmentGameType = import("../source/common/types").GameType;
 
 export const GAME_ENVIRONMENTS = [
   { id: "madara.blitz", chain: "madara", gameType: "blitz" },
-  { id: "madara.eternum", chain: "madara", gameType: "eternum" },
   { id: "madara.frontier", chain: "madara", gameType: "frontier" },
 ] as const satisfies readonly { id: string; chain: string; gameType: GameEnvironmentGameType }[];
 

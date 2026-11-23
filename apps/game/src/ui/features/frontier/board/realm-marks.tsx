@@ -1,14 +1,12 @@
-import type { RealmSkin } from "@/three/structures/realm-skins";
 import { usePlayerName, usePlayerProfile } from "@/hooks/use-player-profile";
 import { playerPortraitUrl } from "@/services/identity/player-portrait";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon } from "@/ui/design-system/icon";
-import { iconDefinition, orderMeaning } from "@/ui/design-system/icon-meaning";
 import { HudPortrait } from "@/ui/design-system/kit/hud-elements";
-import { DEPTH_NUMERALS, depthName, YOU } from "@/ui/design-system/kit/words";
+import { YOU } from "@/ui/design-system/kit/words";
 import { HOME_KINDS, homeKind } from "@/ui/design-system/home-icons";
 import { realmMeaning } from "@/ui/design-system/domain-icon-meaning";
-import { rankName } from "@bibliothecadao/types";
+import { layerName, rankName } from "@bibliothecadao/types";
 
 /** Each depth's painting, I to III. */
 const DEPTH_ICONS = ["depth-1", "depth-2", "depth-3"] as const;
@@ -21,21 +19,19 @@ const DEPTH_ICONS = ["depth-1", "depth-2", "depth-3"] as const;
 export const RealmBadge = ({
   level,
   depth,
-  skin,
   hasWonder = false,
 }: {
   level: number;
   depth: number;
-  skin?: RealmSkin;
   hasWonder?: boolean;
 }) => {
-  const step = Math.min(depth, DEPTH_NUMERALS.length) as 0 | 1 | 2 | 3;
-  const kind = homeKind(skin, hasWonder);
+  const step = Math.min(depth, 3);
+  const kind = homeKind(hasWonder);
   const name = kind === "realm" ? rankName(level) : `${HOME_KINDS[kind].label} · ${rankName(level)}`;
-  const line = step === 0 ? name : `${name} · ${depthName(step)}`;
+  const line = step === 0 ? name : `${name} · ${layerName(step)}`;
   return (
     <span role="img" aria-label={line} data-tip={line} className="relative inline-flex size-7 shrink-0">
-      <Icon name={realmMeaning(level, skin, hasWonder)} size={28} />
+      <Icon name={realmMeaning(level, hasWonder)} size={28} />
       {step > 0 && (
         <span
           aria-hidden
@@ -47,11 +43,6 @@ export const RealmBadge = ({
     </span>
   );
 };
-
-/** A realm's Order, as its painting named for assistive technology. */
-export const OrderMark = ({ order, size = 24 }: { order: number; size?: number }) => (
-  <Icon name={orderMeaning(order)} size={size} alt={iconDefinition(orderMeaning(order)).label} />
-);
 
 /**
  * A lord by the one name rule: the claimed name; else "Lord" and the account's last four, muted; "You" on the

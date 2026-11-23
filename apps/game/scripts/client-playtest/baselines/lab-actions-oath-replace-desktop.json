@@ -1,0 +1,31 @@
+{
+  "measured": {
+    "commit": "fd0bb33ea862ee7a07b180329b66caf06076b691",
+    "steps": "lab-actions-oath-replace",
+    "device": "desktop",
+    "run": "/home/djizus/.local/state/flow/eternum/results/4e2f3fd37cc946d9385617b48c210dd7ed287635/playtest-oath-pick.c56aa6a7/playtest/1920x1080/lab-actions-oath-replace/2026-11-19T22-00-37-054Z-spectator",
+    "machine": "Flow worker on tower; headless Chromium, 1920x1080, WebGPU forced to WebGL; lab reply delay 300 ms"
+  },
+  "byMode": {
+    "webgpu-force-webgl": {
+      "steps": {
+        "choose-oath": {
+          "verdict.clickToResult.totalMs": {
+            "n": 3,
+            "median": 316.9,
+            "min": 315.7,
+            "max": 320.8
+          }
+        },
+        "reroll-oath": {
+          "verdict.clickToResult.totalMs": {
+            "n": 3,
+            "median": 320.1,
+            "min": 318.2,
+            "max": 327
+          }
+        }
+      }
+    }
+  }
+}

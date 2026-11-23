@@ -47,7 +47,6 @@ export interface LaunchGameRequest {
   privateKey?: string;
   devModeOn?: boolean;
   singleRealmMode?: boolean;
-  twoPlayerMode?: boolean;
   durationSeconds?: number;
 
   mapConfigOverrides?: FactoryMapConfigOverrides;

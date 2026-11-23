@@ -42,7 +42,6 @@ describe("existing history progress", () => {
       expect(readBlock).not.toHaveBeenCalled();
       expect(checkpointStore.save).not.toHaveBeenCalled();
       expect(await store.historyProgress()).toBe(500001);
-      expect(store.activity("7")).not.toBeNull();
       expect(
         (await store.queryEvents({ gameId: "7", model: "StoryEvent", limit: 10, offset: 0 })).complete_through_block,
       ).toBe(500001);
@@ -101,7 +100,7 @@ describe("confirmed story cursor", () => {
 });
 
 describe("native confirmed history", () => {
-  it("rebuilds native activity, combat history and review across restart without mirroring state", async () => {
+  it("rebuilds combat history and review across restart without mirroring state", async () => {
     const { createNativeHistoryCodec } = await import("./native/history");
     const { setup, receipt, battleEvent, schema: nativeSchema, manifest } = await import("./native/fixtures");
     const nativeHistoryCodec = createNativeHistoryCodec(nativeSchema);
@@ -116,20 +115,7 @@ describe("native confirmed history", () => {
       await store.appendEvents([], 9);
       const cursor = (await store.queryStoryCursor(null, 2)).next_cursor;
       const { native, fold } = setup();
-      const award = nativeSchema.games.events.find(({ name }) => name === "PointsAwarded")!;
-      const result = native.applyReceipt(
-        fold,
-        receipt([
-          {
-            from_address: manifest.world.address,
-            keys: [...award.prefix, "1", "1", "0x111"],
-            data: ["0", "5000000", "5000000", "5000000"],
-          },
-          battleEvent(),
-        ]),
-        10,
-        0,
-      );
+      const result = native.applyReceipt(fold, receipt([battleEvent()]), 10, 0);
       await admin.query(`
         CREATE FUNCTION ${namespace}.reject_history_commit() RETURNS trigger LANGUAGE plpgsql AS $$
           BEGIN RAISE EXCEPTION 'history commit rejected'; END $$;
@@ -137,25 +123,18 @@ describe("native confirmed history", () => {
           DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION ${namespace}.reject_history_commit()
       `);
       await expect(store.appendEvents(result.events, 10)).rejects.toThrow("history commit rejected");
-      expect(store.activity("1").size).toBe(0);
       expect(await store.historyProgress()).toBe(9);
       expect((await store.queryStoryCursor(cursor, 10)).items).toEqual([]);
       await admin.query(`DROP TRIGGER reject_history_commit ON ${namespace}.herald_history_events;
         DROP FUNCTION ${namespace}.reject_history_commit()`);
       await store.appendEvents(result.events, 10);
       await store.appendEvents(result.events, 10);
-      const before = store.activity("1");
-      expect([...before.values()][0].exploration).toEqual({ count: 1, points: 5 });
-      expect((await store.queryStoryCursor(cursor, 10)).items.map(({ model }) => model)).toEqual([
-        "PointsAwarded",
-        "BattleEvent",
-      ]);
+      expect((await store.queryStoryCursor(cursor, 10)).items.map(({ model }) => model)).toEqual(["BattleEvent"]);
       const snapshot = fold.reviewSnapshot(1, 10);
       await store.freezeReviewSnapshot(snapshot.game_id, () => snapshot);
       await store.close();
       store = new HistoryStore(url.toString(), "madara", manifest.world.address, nativeHistoryCodec);
       await store.initialize();
-      expect(store.activity("1")).toEqual(before);
       expect(await store.reviewSnapshot("1")).toEqual(snapshot);
       const repeated = vi.fn(() => {
         throw new Error("Finalized review must not be rebuilt");
@@ -181,6 +160,14 @@ describe("native confirmed history", () => {
       expect(
         (await store.queryEvents({ gameId: "1", model: "BattleEvent", owner: "0x999", limit: 10, offset: 0 })).total,
       ).toBe(0);
+      const either = await store.queryEvents({
+        gameId: "1",
+        model: "BattleEvent",
+        owner: ["0x999", "0x222"],
+        limit: 10,
+        offset: 0,
+      });
+      expect(either.total).toBe(1);
       expect(battles.items[0].value).toMatchObject({
         attacker: { player: "0x111", before: "0x64", after: "0x5a" },
         defender: { player: "0x222", after: "0x0" },
@@ -210,6 +197,7 @@ describe("Frontier confirmed season history", () => {
         (index) =>
           new CairoCustomEnum({
             SitePayout: {
+              xp: 85,
               structure_id: 1,
               explorer_id: 7,
               site_id: 20 + index,
@@ -221,6 +209,7 @@ describe("Frontier confirmed season history", () => {
       stories.push(
         new CairoCustomEnum({
           SitePayout: {
+            xp: 85,
             structure_id: 1,
             explorer_id: 7,
             site_id: 9,
@@ -229,13 +218,6 @@ describe("Frontier confirmed season history", () => {
           },
         }),
       );
-      for (const amount of [50, 0]) {
-        stories.push(
-          new CairoCustomEnum({
-            RewardChestOpened: { explorer_id: 7, structure_id: 1, coord: { alt: false, x: 40, y: 12 }, amount },
-          }),
-        );
-      }
       const events = stories.map((story, index) => {
         const values = {
           version: 2,
@@ -269,25 +251,7 @@ describe("Frontier confirmed season history", () => {
       await expect(store.frontierHistory("1", 11)).rejects.toThrow("incomplete");
       expect(await store.frontierHistory("1", 9)).toEqual([]);
       const history = await store.frontierHistory("1", 10);
-      expect(history).toHaveLength(7);
-      expect(history.slice(5).map((event) => event.value.story)).toEqual([
-        {
-          RewardChestOpened: {
-            explorer_id: "0x7",
-            structure_id: "0x1",
-            coord: { alt: false, x: "0x28", y: "0xc" },
-            amount: "0x32",
-          },
-        },
-        {
-          RewardChestOpened: {
-            explorer_id: "0x7",
-            structure_id: "0x1",
-            coord: { alt: false, x: "0x28", y: "0xc" },
-            amount: "0x0",
-          },
-        },
-      ]);
+      expect(history).toHaveLength(5);
       const values: Record<string, Record<string, unknown>> = {
         GameRegistry: {},
         Structure: {
@@ -300,10 +264,9 @@ describe("Frontier confirmed season history", () => {
       const read = (model: string) => (values[model] ? [{ key: "1", value: { game_id: "1", ...values[model] } }] : []);
       const board = buildFrontierLeaderboard(read, "1", history);
       expect(board.entries[0]).toMatchObject({
-        campaign: null,
-        chests_earned: 6,
+        chests_earned: 4,
         sites_cleared: { total: 5, camps: 1, ruins: 4 },
-        rewards: { lords: "8050", labor: "500000000000", essence: "0" },
+        rewards: { lords: "8000", labor: "500000000000", essence: "0" },
       });
       await store.close();
       store = open();

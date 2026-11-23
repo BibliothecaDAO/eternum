@@ -8,17 +8,28 @@ import { showDeployOnMap } from "@/three/scenes/worldmap-deploy-request";
 import { toast } from "@/ui/features/event-feed/notify";
 import { openArmyDeployment } from "@/ui/features/military/utils/open-army-deployment";
 import { useDeployRing } from "@/ui/features/military/components/unified-army-creation-modal/use-deploy-ring";
-import { type ExpeditionRules, ResourceManager } from "@bibliothecadao/eternum";
+import { type ExpeditionRules, getTroopResourceId, ResourceManager } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
-import type { Direction } from "@bibliothecadao/types";
+import { FRONTIER_TROOP_NAMES, TROOP_TYPES, TroopTier, type TroopType, type Direction } from "@bibliothecadao/types";
 import { useEffect, useRef, useState } from "react";
 
+import { DEPLOY_WORDS } from "@/ui/design-system/kit/words";
 import { useGoToFrontierPlace } from "../frontier-home";
 import { useRealmStores } from "../realm-stores";
+import { madeStoreOf } from "../stores";
 import { secondsUntilHeld } from "../hud/army-order";
 import { armyArt } from "../hud/dock-armies";
-import { deployArmy, deployDirection, deployRange, previewDeploy, wheatStopsAt } from "./deploy-plan";
-import { DeployView } from "./deploy-view";
+import {
+  deployArmy,
+  deployDirection,
+  deployRange,
+  marchOn,
+  previewDeploy,
+  troopRange,
+  wheatStopsAt,
+} from "./deploy-plan";
+import { TroopOathSlots } from "../army/oath-slots";
+import { DeployView, type DeployTroopChoiceView } from "./deploy-view";
 import { useDeployPlan } from "./use-deploy-plan";
 
 /**
@@ -38,22 +49,20 @@ export const DeploySheet = ({
 }) => {
   const { setup } = useGame();
   const defaultTick = useCurrentDefaultTick();
-  const plan = useDeployPlan(realm);
-  const range = plan ? deployRange(plan) : { troopsMax: 0, wheatMax: 0, max: 0 };
-  const [count, setCount] = useState<number | "max" | null>(null);
-  // The sheet opens at no troops, so +500 gives exactly 500 (owner, 26 October 2026: "it should be 0 so I can press 500
-  // and get 500"); Max is one tap away. A count being set survives fact revisions, and a count at the most stays at the
-  // most as the farms raise it: the label and the count read the one figure.
-  const shown = count === "max" ? range.max : Math.min(count ?? 0, range.max);
-  const preview = plan ? previewDeploy(plan, shown) : null;
-  const wheatStop = wheatStopsAt(range, shown);
+  const [troopType, setTroopType] = useState<TroopType>();
+  const plan = useDeployPlan(realm, troopType);
+  const [count, setCount] = useState<number | "max">("max");
   const { center, ring } = useDeployRing(realm);
   const ordered = useUIStore((state) => state.pendingMilitaryAction?.direction ?? null);
   const direction = deployDirection(ring, ordered);
-  // The slot pressed, else (opened from the map or a store) the first open one; a slot pressed that an army
-  // has since filled leaves none, never another the player did not choose.
   const pickedSlot = useUIStore((state) => state.pendingMilitaryAction?.slot);
   const start = pickedSlot === undefined ? plan?.open[0] : plan?.open.find((slot) => slot.slot === pickedSlot);
+  const march = start?.start && marchOn(start.start, 0);
+  const range = plan ? deployRange(plan, march) : { troopsMax: 0, wheatMax: 0, max: 0 };
+  const shown = count === "max" ? range.max : Math.min(count, range.wheatMax);
+  const isFullStack = count === "max" || (range.max > 0 && shown === range.max);
+  const preview = plan ? previewDeploy(plan, march, shown) : null;
+  const wheatStop = wheatStopsAt(range, shown);
   const pickSlot = (slot: number) =>
     openArmyDeployment({
       structureId: safeInteger(realm.entity_id),
@@ -67,7 +76,13 @@ export const DeploySheet = ({
   useDeployOnMap(realmId, direction);
   const deploying = useInFlight("deploy", realmId) !== undefined;
   const wheatPerHour = new ResourceManager(setup.store, realmId).wheatPerHour(defaultTick);
-  const nextTroopIn = useRealmStores(realm, rules)?.troops.nextIn;
+  const stores = useRealmStores(realm, rules);
+  const troopWaits = TROOP_TYPES.flatMap((type) => {
+    const kind = madeStoreOf(getTroopResourceId(type, TroopTier.T1));
+    const wait = kind ? stores?.[kind].nextIn : undefined;
+    return wait === undefined ? [] : [wait];
+  });
+  const nextTroopIn = troopWaits.length ? Math.min(...troopWaits) : undefined;
 
   /** The sheet closes as the army leaves; its slot on the dock carries the wait, and a refusal says why there. */
   const deploy = async () => {
@@ -91,13 +106,49 @@ export const DeploySheet = ({
     }
   };
 
+  const troopChoices: DeployTroopChoiceView[] =
+    plan?.choices.map((troops) => {
+      const choiceBar = start?.start ? { ...start.start, perExplore: troops.exploreStamina } : undefined;
+      const choiceRange = choiceBar
+        ? troopRange(Math.min(troops.atHome, troops.cap), troops.raise, marchOn(choiceBar, 0))
+        : { troopsMax: 0, wheatMax: 0, max: 0 };
+      const selected = plan.troops?.type === troops.type;
+      const custom = selected && !isFullStack;
+      const displayCount = custom ? (preview?.count ?? 0) : choiceRange.max;
+      return {
+        category: troops.type,
+        name: FRONTIER_TROOP_NAMES[troops.type],
+        art: armyArt({ category: troops.type, tier: troops.tier }),
+        role: DEPLOY_WORDS.troopRoles[troops.type](troops.exploreStamina),
+        atHome: troops.atHome,
+        displayCount,
+        displayWheat: troops.raise.wheatFor(displayCount),
+        isCustom: custom,
+      };
+    }) ?? [];
+
   return (
     <DeployView
+      oathSlots={plan?.troops && <TroopOathSlots category={plan.troops.type} homeId={realmId} />}
+      troopSelection={{
+        choices: troopChoices,
+        selected: plan?.troops?.type,
+        onPick: (type) => {
+          setTroopType(type);
+          setCount("max");
+        },
+      }}
       art={plan?.troops ? armyArt({ category: plan.troops.type, tier: plan.troops.tier }) : undefined}
       troopsAtHome={plan ? (plan.troops?.atHome ?? 0) : undefined}
       count={preview?.count}
-      amount={{ most: range.max, held: range.wheatMax < range.troopsMax ? range.max : (plan?.troops?.atHome ?? 0) }}
-      onCount={(next) => setCount(range.max > 0 && next >= range.max ? "max" : next)}
+      isFullStack={isFullStack}
+      allowedSlots={plan?.allowedSlots}
+      amount={{
+        most: range.wheatMax,
+        max: range.max,
+        held: range.wheatMax < range.troopsMax ? range.wheatMax : (plan?.troops?.atHome ?? 0),
+      }}
+      onCount={(next) => setCount(range.max > 0 && next === range.max ? "max" : next)}
       start={start}
       slots={{ open: plan?.open, onPick: pickSlot }}
       troopsWait={nextTroopIn}
@@ -107,12 +158,12 @@ export const DeploySheet = ({
       sending={deploying}
       onDeploy={() => void deploy()}
       wheatLimit={
-        plan?.raise && wheatStop
+        plan?.raise && march && wheatStop
           ? {
               ...wheatStop,
               held: plan.raise.wheat,
-              perTroop: plan.raise.wheatFor(1),
-              wait: secondsUntilHeld(plan.raise.wheat, plan.raise.wheatFor(1), wheatPerHour),
+              perTroop: plan.raise.wheatToGo(1, march),
+              wait: secondsUntilHeld(plan.raise.wheat, plan.raise.wheatToGo(1, march), wheatPerHour),
             }
           : undefined
       }

@@ -10,9 +10,9 @@ fn stamina_rates_are_one_per_two_three_or_120_seconds_and_boosted_blitz_is_three
         let mut boosts = TroopBoosts {
             incr_stamina_regen_percent_num: percent, incr_stamina_regen_seconds_left: 180, ..Default::default(),
         };
-        stamina.refill_to_max(ref boosts, 120, rules(gain), period, 102);
+        stamina.refill_to_max(ref boosts, 120, rules(gain), period, 102, 10000);
         assert_eq!(stamina.amount, 0);
-        stamina.refill_to_max(ref boosts, 120, rules(gain), period, 101 + seconds);
+        stamina.refill_to_max(ref boosts, 120, rules(gain), period, 101 + seconds, 10000);
         assert_eq!(stamina.amount, expected);
     }
 }
@@ -32,14 +32,14 @@ fn settling_once_or_in_any_partition_pays_the_same_stamina() {
         for now in 102_u64..239 {
             let mut once = initial;
             let mut once_boost = boost;
-            once.refill_to_max(ref once_boost, 120, config, 60, now);
-            repeated.refill_to_max(ref repeated_boost, 120, config, 60, now);
+            once.refill_to_max(ref once_boost, 120, config, 60, now, 10000);
+            repeated.refill_to_max(ref repeated_boost, 120, config, 60, now, 10000);
             if now % 7 == 0 {
-                irregular.refill_to_max(ref irregular_boost, 120, config, 60, now);
+                irregular.refill_to_max(ref irregular_boost, 120, config, 60, now, 10000);
             }
             let mut observed = irregular;
             let mut observed_boost = irregular_boost;
-            observed.refill_to_max(ref observed_boost, 120, config, 60, now);
+            observed.refill_to_max(ref observed_boost, 120, config, 60, now, 10000);
             assert_eq!(once.amount, repeated.amount);
             assert_eq!(once.amount, observed.amount);
         }
@@ -52,22 +52,23 @@ fn a_boost_starting_and_ending_inside_the_span_pays_the_same_stamina() {
     let mut repeated = once;
     let mut once_boost: TroopBoosts = Default::default();
     let mut repeated_boost = once_boost;
-    once.refill_to_max(ref once_boost, 120, rules(7), 60, 106);
-    let rule = crate::relics::RelicRule { rate_bps: 3333, uses: 1, duration: 0, essence_cost: 0, draw_weight: 0 };
-    crate::relics::boost_explorer(ref once_boost, 39, rule, 1, 60);
-    once.refill_to_max(ref once_boost, 120, rules(7), 60, 180);
+    once.refill_to_max(ref once_boost, 120, rules(7), 60, 106, 10000);
+    once_boost.incr_stamina_regen_percent_num = 3333;
+    once_boost.incr_stamina_regen_seconds_left = 60;
+    once.refill_to_max(ref once_boost, 120, rules(7), 60, 180, 10000);
     for now in 102_u64..181 {
-        repeated.refill_to_max(ref repeated_boost, 120, rules(7), 60, now);
+        repeated.refill_to_max(ref repeated_boost, 120, rules(7), 60, now, 10000);
         if now == 106 {
-            crate::relics::boost_explorer(ref repeated_boost, 39, rule, 1, 60);
+            repeated_boost.incr_stamina_regen_percent_num = 3333;
+            repeated_boost.incr_stamina_regen_seconds_left = 60;
         }
     }
     assert_eq!(once.amount, repeated.amount);
     assert_eq!(once.amount, 11);
     let config = rules(7);
     for now in 181_u64..241 {
-        once.refill_to_max(ref once_boost, 120, config, 60, now);
-        repeated.refill_to_max(ref repeated_boost, 120, config, 60, now);
+        once.refill_to_max(ref once_boost, 120, config, 60, now, 10000);
+        repeated.refill_to_max(ref repeated_boost, 120, config, 60, now, 10000);
         assert_eq!(once.amount, repeated.amount);
     }
     assert_eq!(once.amount, 18);
@@ -80,20 +81,20 @@ fn a_full_bar_never_banks_stamina_or_an_unused_boost() {
     let mut boosts = TroopBoosts {
         incr_stamina_regen_percent_num: 5000, incr_stamina_regen_seconds_left: 180, ..Default::default(),
     };
-    stamina.refill_to_max(ref boosts, 120, config, 60, 106);
+    stamina.refill_to_max(ref boosts, 120, config, 60, 106, 10000);
     assert_eq!(stamina.amount, 120);
     stamina
         .spend(ref boosts, crate::troops::TroopType::Knight, crate::troops::TroopTier::T1, config, 120, 60, 106, true);
-    stamina.refill_to_max(ref boosts, 120, config, 60, 107);
+    stamina.refill_to_max(ref boosts, 120, config, 60, 107, 10000);
     assert_eq!(stamina.amount, 0);
-    stamina.refill_to_max(ref boosts, 120, config, 60, 108);
+    stamina.refill_to_max(ref boosts, 120, config, 60, 108, 10000);
     assert_eq!(stamina.amount, 1);
 
     let mut unused = bar(120);
     let mut unused_boost = TroopBoosts {
         incr_stamina_regen_percent_num: 5000, incr_stamina_regen_seconds_left: 3, ..Default::default(),
     };
-    unused.refill_to_max(ref unused_boost, 120, config, 60, 110);
+    unused.refill_to_max(ref unused_boost, 120, config, 60, 110, 10000);
     unused
         .spend(
             ref unused_boost,
@@ -106,7 +107,7 @@ fn a_full_bar_never_banks_stamina_or_an_unused_boost() {
             true,
         );
     for (now, amount) in array![(111_u64, 0_u64), (112, 1), (113, 1), (114, 2)] {
-        unused.refill_to_max(ref unused_boost, 120, config, 60, now);
+        unused.refill_to_max(ref unused_boost, 120, config, 60, now, 10000);
         assert_eq!(unused.amount, amount);
     }
 }
@@ -115,7 +116,7 @@ fn a_full_bar_never_banks_stamina_or_an_unused_boost() {
 fn adding_to_the_cap_drops_credit_and_a_never_initialized_bar_gets_its_initial_amount() {
     let mut stamina: Stamina = Default::default();
     let mut boosts: TroopBoosts = Default::default();
-    stamina.refill_to_max(ref boosts, 120, rules(30), 60, 101);
+    stamina.refill_to_max(ref boosts, 120, rules(30), 60, 101, 10000);
     assert_eq!(stamina.amount, 35);
     stamina.add(ref boosts, 120, rules(30), 85, 60, 102);
     assert_eq!(stamina.amount, 120);
@@ -123,28 +124,41 @@ fn adding_to_the_cap_drops_credit_and_a_never_initialized_bar_gets_its_initial_a
         .spend(
             ref boosts, crate::troops::TroopType::Knight, crate::troops::TroopTier::T1, rules(30), 120, 60, 102, true,
         );
-    stamina.refill_to_max(ref boosts, 120, rules(30), 60, 103);
+    stamina.refill_to_max(ref boosts, 120, rules(30), 60, 103, 10000);
     assert_eq!(stamina.amount, 0);
-    stamina.refill_to_max(ref boosts, 120, rules(30), 60, 104);
+    stamina.refill_to_max(ref boosts, 120, rules(30), 60, 104, 10000);
     assert_eq!(stamina.amount, 1);
 }
 
 #[test]
-#[should_panic(expected: "stamina remainder overflow")]
-fn a_preset_cannot_overflow_the_carried_remainder() {
-    let (_, definition) = super::preset_projection::current_definition("blitz");
-    let mut preset = definition;
-    preset.rules.tick_config.armies_tick_in_seconds = 429497;
-    crate::presets::validate(preset);
-}
-
-#[test]
-#[should_panic(expected: "stamina boost duration overflow")]
-fn a_preset_cannot_overflow_boosted_seconds() {
-    let (_, definition) = super::preset_projection::current_definition("blitz");
-    let mut preset = definition;
-    preset.rules.tick_config.armies_tick_in_seconds = 30000;
-    crate::presets::validate(preset);
+fn effect_boundaries_keep_fractional_stamina_and_boost_expiry_independent_of_read_frequency() {
+    let mut once = bar(0);
+    let mut once_boost = TroopBoosts {
+        incr_stamina_regen_percent_num: 3333, incr_stamina_regen_seconds_left: 17, ..Default::default(),
+    };
+    let mut repeated = once;
+    let mut repeated_boost = once_boost;
+    once.refill_to_max(ref once_boost, 120, rules(7), 60, 111, 5000);
+    once.refill_to_max(ref once_boost, 120, rules(7), 60, 121, 10000);
+    once.refill_to_max(ref once_boost, 120, rules(7), 60, 131, 20000);
+    once.refill_to_max(ref once_boost, 120, rules(7), 60, 150, 10000);
+    for now in 102_u64..151 {
+        let rate = if now <= 111 {
+            5000
+        } else if now <= 121 {
+            10000
+        } else if now <= 131 {
+            20000
+        } else {
+            10000
+        };
+        repeated.refill_to_max(ref repeated_boost, 120, rules(7), 60, now, rate);
+    }
+    assert_eq!(once.amount, 6);
+    assert_eq!(once.remainder, 459937);
+    assert_eq!(repeated.amount, once.amount);
+    assert_eq!(repeated.remainder, once.remainder);
+    assert_eq!(repeated_boost.incr_stamina_regen_seconds_left, 0);
 }
 
 #[test]

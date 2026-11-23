@@ -2,10 +2,14 @@ import { act } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRoot } from "react-dom/client";
 import { MemoryRouter } from "react-router-dom";
+import { ordersOfAspect } from "@bibliothecadao/types";
 import { afterEach, expect, it, vi } from "vitest";
 
 const state = vi.hoisted(() => ({
   settled: false,
+  entryLoading: false,
+  /** What each founding asked the chain for: settle_season's props, the signer left out. */
+  founded: [] as { order?: number; selectedRealm?: number }[],
   navigate: vi.fn(),
   milestone: vi.fn(),
   entry: {
@@ -13,9 +17,8 @@ const state = vi.hoisted(() => ({
     name: "frontier",
     mode: "frontier",
     dev_mode_on: false,
-    preset_id: 5,
-    ready: true,
-    clock: { start_settling_at: 1, start_main_at: 1, end_at: 9999999999 },
+    clock: { start_settling_at: 1, start_main_at: 1, scheduled_end_at: 9999999999, end_at: 9999999999 },
+    aspect_members: undefined as Record<number, number> | undefined,
   },
 }));
 vi.mock("react-router-dom", async (original) => ({
@@ -26,7 +29,9 @@ vi.mock("@/hooks/context/identity-session", async (original) => {
   const identity = await original<typeof import("@/hooks/context/identity-session")>();
   return { ...identity, useIdentitySession: () => identity.useIdentitySessionStore() };
 });
-vi.mock("@/hooks/use-game-entry", () => ({ useGameEntry: () => ({ data: state.entry, error: null }) }));
+vi.mock("@/hooks/use-game-entry", () => ({
+  useGameEntry: () => ({ data: state.entryLoading ? undefined : state.entry, error: null }),
+}));
 vi.mock("@/runtime/world/herald-pre-session-reader", () => ({
   fetchSettlementSnapshot: async () => ({
     heldRealmId: null,
@@ -45,14 +50,27 @@ vi.mock("./selected-world-entity-wait", () => ({
   isSelectedWorldEntityWaitAborted: () => false,
 }));
 vi.mock("@/services/settlement", () => ({
-  submitSettlement: async () => {
+  submitSettlement: async (
+    _context: unknown,
+    submit: (client: { setup: { systemCalls: { settle_season: (props: never) => Promise<void> } } }) => Promise<void>,
+  ) => {
+    await submit({
+      setup: {
+        systemCalls: {
+          settle_season: async ({ order, selectedRealm }: { order?: number; selectedRealm?: number }) => {
+            state.founded.push({ order, selectedRealm });
+          },
+        },
+      },
+    });
     state.settled = true;
   },
 }));
 vi.mock("@/ui/layouts/game-entry-timeline", () => ({ markGameEntryMilestone: state.milestone }));
 
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import { useIdentitySessionStore } from "@/hooks/context/identity-session";
+import { identityClient, useIdentitySessionStore } from "@/hooks/context/identity-session";
+import { ASPECT_STEP_WORDS } from "@/ui/design-system/kit/words";
 import { GameEntryModal } from "./game-entry-modal";
 
 afterEach(() => {
@@ -107,7 +125,7 @@ it.each(["play", "settle"] as const)(
     state.settled = false;
     const { host, close } = await openEntry(entryIntent);
     try {
-      expect([...host.querySelectorAll("button")].some((button) => button.textContent === "Create your realm")).toBe(
+      expect([...host.querySelectorAll("button")].some((button) => button.textContent === "Create your Realm")).toBe(
         false,
       );
       expect(state.navigate).toHaveBeenCalledTimes(1);
@@ -130,5 +148,70 @@ it("opens a returning player's session on the map: only the entry that created t
     expect(enteredAt()).toBe("/g/0xa1/8/map");
   } finally {
     await close();
+  }
+});
+
+it("asks a Season 1 free home for its Aspect, then its Order, and founds in the Order tapped", async () => {
+  state.settled = false;
+  state.founded = [];
+  const joined = vi.spyOn(identityClient, "joinedShare").mockResolvedValue(null);
+  const kept = vi.spyOn(identityClient, "getOrderIntent").mockResolvedValue({ order: null, members: {} });
+  // Herald's directory row counts each Aspect's homes (AspectMembers), every Aspect named.
+  state.entry = { ...state.entry, aspect_members: { 1: 12, 2: 9, 3: 0, 4: 31 } };
+  const { host, close } = await openEntry("settle");
+  try {
+    await act(async () => vi.advanceTimersByTimeAsync(100));
+    const cards = [...host.querySelectorAll<HTMLButtonElement>(".app-aspect-card")];
+    expect(cards.map((card) => card.getAttribute("aria-label"))).toEqual([
+      "Join Prowess",
+      "Join Luminary",
+      "Join Havoc",
+      "Join Insight",
+    ]);
+    expect(cards.map((card) => card.querySelector(".aspect-picker__members")?.textContent)).toEqual([
+      ASPECT_STEP_WORDS.members(12),
+      ASPECT_STEP_WORDS.members(9),
+      ASPECT_STEP_WORDS.members(0),
+      ASPECT_STEP_WORDS.members(31),
+    ]);
+    expect(state.founded).toEqual([]);
+    expect(state.navigate).not.toHaveBeenCalled();
+    // No other verb stands beside the cards: the tap is the founding.
+    expect([...host.querySelectorAll("button")].some((button) => button.textContent === "Create your Realm")).toBe(
+      false,
+    );
+
+    await act(async () => cards[2]!.click());
+    await act(async () => vi.advanceTimersByTimeAsync(100));
+    expect(state.founded).toEqual([]);
+    const havoc = ordersOfAspect(3);
+    const orderButtons = [...host.querySelectorAll<HTMLButtonElement>(".aspect-picker__order")];
+    expect(orderButtons.map((button) => Number(button.dataset.order))).toEqual(havoc.map(({ orderId }) => orderId));
+    await act(async () => orderButtons[2]!.click());
+    await act(async () => vi.advanceTimersByTimeAsync(100));
+    expect(state.founded).toEqual([{ order: havoc[2]!.orderId, selectedRealm: undefined }]);
+    expect(state.navigate).toHaveBeenCalledTimes(1);
+  } finally {
+    await close();
+    joined.mockRestore();
+    kept.mockRestore();
+    state.entry = { ...state.entry, aspect_members: undefined };
+  }
+});
+
+it("waits for the game preset without inventing a preset or founding a home", async () => {
+  state.entryLoading = true;
+  state.settled = false;
+  state.founded = [];
+  const errors = vi.spyOn(console, "error");
+  const { close } = await openEntry("play");
+  try {
+    expect(state.founded).toEqual([]);
+    expect(state.navigate).not.toHaveBeenCalled();
+    expect(errors).not.toHaveBeenCalled();
+  } finally {
+    await close();
+    errors.mockRestore();
+    state.entryLoading = false;
   }
 });

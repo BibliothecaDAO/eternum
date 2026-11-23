@@ -1,91 +1,15 @@
-import { resolveRegistrarExecutionDetails } from "./transaction-details";
-import { assertNativeOwnerSigner } from "../shared/native-owner";
-import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import { resolveDeploymentEnvironment } from "../environment";
 import { mergeConfigPatches } from "../../../source/common/merge-config";
 import { nativePresetForId } from "../../../source/native";
 import { configurationOf, type StoredConfiguration } from "../config/config-loader";
 import blitz from "../../../generated/blitz.madara.json";
-import duel from "../../../generated/duel.madara.json";
-import eternum from "../../../generated/eternum.madara.json";
 import frontier from "../../../generated/frontier.madara.json";
 import type { DeploymentEnvironmentId } from "../types";
-import { readFileSync } from "node:fs";
-import { CallData, CairoOption, CairoOptionVariant, hash, shortString, type Account } from "starknet";
+import { CairoOption, CairoOptionVariant } from "starknet";
 import type { Config } from "@bibliothecadao/types";
-import { worldView } from "@bibliothecadao/eternum";
 import { buildCreateGameParams, type CreateGamePayloadInput } from "./preset";
-import { buildNativePreset } from "../config/native-preset";
-import { clockScaled } from "../../../source/common/season-clock";
-import { waitForSuccess } from "../shared/declare";
-import type { NativeWorldManifest, RegistrarWorld } from "../world/native/types";
-import { nativeGamesAbi, nativeWorldSchema } from "../world/native/manifest";
-
-export function buildNativePresetRegistration(
-  definition: ReturnType<typeof buildNativePreset>,
-  presetId: number,
-  target: string | NativeWorldManifest,
-) {
-  const manifest =
-    typeof target === "string" ? (JSON.parse(readFileSync(target, "utf8")) as NativeWorldManifest) : target;
-  const call = presetRegistrationCall(definition, presetId, manifest);
-  const contract = manifest.contracts.find((entry) => entry.address === call.address);
-  if (!contract) throw new Error("Manifest has no native registrar");
-  return { ...call, classHash: contract.class_hash };
-}
-
-/** The register_preset call for a definition and the commitment the registrar keeps for it. */
-export function presetRegistrationCall(
-  definition: ReturnType<typeof buildNativePreset>,
-  presetId: number,
-  world: RegistrarWorld,
-) {
-  const address = world.world.address;
-  const codec = new CallData(nativeGamesAbi(world));
-  const calldata = codec.compile("register_preset", { preset_id: presetId, definition });
-  const commitment = hash.computePoseidonHashOnElements([
-    shortString.encodeShortString("NATIVE_PRESET"),
-    1,
-    ...calldata.slice(1),
-  ]);
-  return { address, calldata, commitment, commitmentView: worldView(nativeWorldSchema(world), "preset_commitment") };
-}
-
-export async function registerNativePreset(
-  account: Account,
-  presetId: number,
-  registration: ReturnType<typeof buildNativePresetRegistration>,
-) {
-  const block = await account.getBlockNumber();
-  const classHash = await account.getClassHashAt(registration.address, block);
-  if (BigInt(classHash) !== BigInt(registration.classHash))
-    throw new Error("Native registrar class differs from manifest");
-  const [existing] = await account.callContract(
-    {
-      contractAddress: registration.address,
-      entrypoint: registration.commitmentView,
-      calldata: [presetId],
-    },
-    block,
-  );
-  if (BigInt(existing) === BigInt(registration.commitment)) return null;
-  // A registered id is immutable on chain; a different definition under it would only revert there.
-  if (BigInt(existing) !== 0n)
-    throw new Error(
-      `Preset ${presetId} is registered with commitment ${existing}; this definition commits to ${registration.commitment}`,
-    );
-  await assertNativeOwnerSigner(account, registration.address, block);
-  const receipt = await account.execute(
-    {
-      contractAddress: registration.address,
-      entrypoint: "register_preset",
-      calldata: registration.calldata,
-    },
-    await resolveRegistrarExecutionDetails(account, registration.address),
-  );
-  await waitForSuccess(account, receipt.transaction_hash);
-  return receipt.transaction_hash;
-}
+import { clockScaled, gameClockScale } from "../../../source/common/season-clock";
 
 /** Open-entry games only: a fixed roster is frozen and launched by the launch service when its slot closes. */
 export function buildNativeGameParams(config: Config, input: CreateGamePayloadInput) {
@@ -94,14 +18,11 @@ export function buildNativeGameParams(config: Config, input: CreateGamePayloadIn
   const common = buildCreateGameParams(config, { ...input, startMainAt: nativeSeasonStart(config, input) });
   return {
     name: common.name,
-    preset_id: common.preset_id,
+    family: common.family,
     start_settling_at: common.start_settling_at,
     start_main_at: common.start_main_at,
     duration_seconds: common.duration_seconds,
-    end_grace_seconds: common.end_grace_seconds,
     dev_mode_on: common.dev_mode_on,
-    roster: [],
-    seater: "0x0",
     registration_start: common.registration_start_at,
     biome_climate: common.biome_climate_config,
     map_override: new CairoOption(
@@ -110,6 +31,7 @@ export function buildNativeGameParams(config: Config, input: CreateGamePayloadIn
     ),
     // Calendar and map layout metadata; gameplay draws use the stamped transaction root.
     seed: common.seed,
+    clock_scale: common.clock_scale,
   };
 }
 
@@ -120,13 +42,13 @@ export function buildNativeGameParams(config: Config, input: CreateGamePayloadIn
 function nativeSeasonStart(config: Config, input: Pick<CreateGamePayloadInput, "presetId" | "startMainAt">): number {
   const preset = nativePresetForId(input.presetId);
   if (preset.dayUnitSeconds === 0) return input.startMainAt;
-  const tick = clockScaled(config.tick.armiesTickIntervalInSeconds, preset.clockScale?.activity ?? 1, "armies tick");
+  const tick = clockScaled(config.tick.armiesTickIntervalInSeconds, gameClockScale(preset), "armies tick");
   return Math.ceil(input.startMainAt / tick) * tick;
 }
 
 // Imported rather than read from disk, so the launch Worker carries the same preset configurations as the CLIs. Each
 // load is a copy, as a file read was: launches apply their overrides to the configuration they get.
-const NATIVE_CONFIGURATIONS = { blitz, duel, eternum, frontier } as unknown as Record<string, StoredConfiguration>;
+const NATIVE_CONFIGURATIONS = { blitz, frontier } as unknown as Record<string, StoredConfiguration>;
 
 export function loadNativePresetConfiguration(environment: DeploymentEnvironmentId, presetId: number): Config {
   const target = resolveDeploymentEnvironment(environment);
@@ -137,11 +59,6 @@ export function loadNativePresetConfiguration(environment: DeploymentEnvironment
   const loaded = configurationOf(structuredClone(stored), `config/generated/${preset.gameType}.madara.json`);
   const config = preset.balance ? mergeConfigPatches<Config>(loaded, preset.balance) : loaded;
   // A scaled preset's season lasts as many of its shorter bags as its mode's: the length scales with the day unit.
-  if (preset.clockScale !== undefined)
-    config.season.durationSeconds = clockScaled(
-      config.season.durationSeconds,
-      preset.clockScale.days,
-      "season duration",
-    );
+  config.season.durationSeconds = clockScaled(config.season.durationSeconds, gameClockScale(preset), "season duration");
   return config;
 }

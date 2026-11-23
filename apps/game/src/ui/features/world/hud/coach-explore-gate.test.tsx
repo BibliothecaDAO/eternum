@@ -8,9 +8,7 @@ const world = vi.hoisted(() => ({
   holdings: [] as unknown[],
   projection: {
     getArmy: () => ({ hexCoords: { col: 4, row: 5, alt: false } }),
-    getChests: () => [],
     subscribeArmies: () => () => {},
-    subscribeChests: () => () => {},
   },
 }));
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({ useCurrentDefaultTick: () => 350, useNowMs: () => 350_000 }));
@@ -56,6 +54,12 @@ const realmWithExplorer = (food: { wheat: string; fish: string }) => {
   world.holdings = [{ entityId: 7, structure: row }];
   const { troops } = explorerFixture.expected.value;
   store.applyFacts([
+    { model: "ArmyDay", key: "0xad70", value: { game_id: 1, explorer_id: 70, day: 0 } },
+    {
+      model: "ArmyProgress",
+      key: "0xaf70",
+      value: { game_id: 1, explorer_id: 70, logistics: 0, oath_slots: 2, oaths: 0, oath_pick: 0 },
+    },
     {
       model: "ExplorerTroops",
       key: "0x70",
@@ -86,6 +90,8 @@ const realmWithExplorer = (food: { wheat: string; fish: string }) => {
       model: "ResourceProduction",
       key: `0xf${resource_type}`,
       value: {
+        remainder: 0,
+
         game_id: 1,
         entity_id: 7,
         resource_type,

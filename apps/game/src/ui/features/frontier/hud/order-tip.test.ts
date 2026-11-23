@@ -13,7 +13,6 @@ const tip = (
     staminaWait: number;
     staminaHeld: number;
     food: { wheat: number; fish: number };
-    site: Parameters<typeof orderTip>[0]["site"];
     byRealm: boolean;
   }> = {},
 ) =>
@@ -25,7 +24,6 @@ const tip = (
     refusal: undefined,
     staminaWait: undefined,
     staminaHeld: undefined,
-    site: undefined,
     byRealm: false,
     ...more,
   });
@@ -36,31 +34,15 @@ describe("what a right-click on a tile does, said before the click", () => {
   it("names the order alone: no gesture, no description, no payoff", () => {
     expect(line([step(ActionType.Move), step(ActionType.Explore)])).toBe("Explore");
     expect(line([step(ActionType.Move), step(ActionType.Move, 1), step(ActionType.Move, 1)])).toBe("Move");
-    expect(line([step(ActionType.Move), step(ActionType.Chest)])).toBe("Open crate");
     expect(line([step(ActionType.Move), step(ActionType.Attack, 30)])).toBe("Attack");
     expect(line([step(ActionType.Move), step(ActionType.Help)])).toBe("Transfer troops");
-    expect(line([step(ActionType.Move), step(ActionType.SpireTravel)])).toBe("Travel through the spire");
-    expect(line([step(ActionType.Move), step(ActionType.UseSite, 0)])).toBe("Use");
+    expect(line([step(ActionType.Move), step(ActionType.SpireTravel)])).toBe("Enter the Spire");
   });
 
   it("names the realm's Help on its army beside it a reinforcement, priced on its sheet", () => {
     const help = [step(ActionType.Move), step(ActionType.Help)];
     expect(tip(help, { byRealm: true })).toEqual({ line: "Reinforce", cost: null });
     expect(line([step(ActionType.Move), step(ActionType.CreateArmy)], { byRealm: true })).toBeNull();
-  });
-
-  it("says under a site's Use what it gives, which costs nothing: a Shrine's point, the stamina a Well lands", () => {
-    const use = [step(ActionType.Move), step(ActionType.UseSite, 0)];
-    const at = (site: NonNullable<Parameters<typeof tip>[1]>["site"]) => cost(use, { site });
-    expect(at({ kind: "Shrine", gain: 3, stamina: undefined })).toEqual([{ rank: 3 }, " +1"]);
-    expect(at({ kind: "Well", gain: 60, stamina: { current: 30, max: 120 } })).toBe("+60 stamina");
-    // A Well never fills past the bar: what lands, and nothing at a full bar, which the line warns of.
-    expect(at({ kind: "Well", gain: 60, stamina: { current: 100, max: 120 } })).toBe("+20 stamina, to full");
-    expect(at({ kind: "Well", gain: 60, stamina: { current: 120, max: 120 } })).toBe(
-      "Stamina full: the well would be wasted",
-    );
-    // A Shrine whose reward has not synced names no gain rather than a wrong one.
-    expect(at({ kind: "Shrine", gain: undefined, stamina: undefined })).toBeNull();
   });
 
   it("puts what the order costs on one compact line under it, rounded as every charge reads", () => {
@@ -78,11 +60,7 @@ describe("what a right-click on a tile does, said before the click", () => {
     expect(cost([step(ActionType.Move), step(ActionType.Attack, 30)])).toBe("30 stamina");
   });
 
-  it("says a crate as its action alone, and an order that costs nothing with no cost line", () => {
-    expect(tip([step(ActionType.Move), step(ActionType.Chest, 5)], { food: { wheat: 10, fish: 0 } })).toEqual({
-      line: "Open crate",
-      cost: null,
-    });
+  it("says an order that costs nothing with no cost line", () => {
     expect(cost([step(ActionType.Move), step(ActionType.Help)])).toBeNull();
   });
 
@@ -93,7 +71,7 @@ describe("what a right-click on a tile does, said before the click", () => {
     expect(line(undefined, { ...short, staminaWait: 3_600 })).toBe("Needs 21 stamina, have 9 · in 1h");
     expect(line(undefined, { refusal: { reason: "stamina", need: 21 } })).toBe("Needs 21 stamina, have —");
     expect(line(undefined, { refusal: { reason: "food" } })).toBe("Not enough food for the army");
-    expect(line(undefined, { refusal: { reason: "off-limits" } })).toBe("Only unclaimed structures can be attacked");
+    expect(line(undefined, { refusal: { reason: "off-limits" } })).toBe("Only neutral structures can be attacked");
     expect(line(undefined, { refusal: { reason: "no-transfer" } })).toBe("This game allows no transfer here");
     expect(line(undefined, { refusal: { reason: "occupied" } })).toBe("No army can enter this tile");
     expect(line(undefined, { refusal: { reason: "too-far" } })).toBe("Too far: move closer");

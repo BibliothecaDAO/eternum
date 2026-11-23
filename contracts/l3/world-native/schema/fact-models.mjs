@@ -1,6 +1,489 @@
+import { readFileSync } from "node:fs";
+
+const combatSource = readFileSync(new URL("../src/combat.cairo", import.meta.url), "utf8");
+const combatBody = /pub struct ArmyCombat \{([^}]+)\}/.exec(combatSource)?.[1];
+if (!combatBody) throw new Error("Missing ArmyCombat declaration");
+const combatMembers = combatBody
+  .split(",")
+  .filter((field) => field.trim())
+  .map((field) => {
+    const member = /^\s*pub (\w+): (u(?:8|16|32|64|128)),?\s*$/.exec(field);
+    if (!member)
+      throw new Error("ArmyCombat wire fields must be unsigned integers; extend the source decoder for this field");
+    return { name: member[1], type: `core::integer::${member[2]}` };
+  });
+
 // Fact-only Cairo wire types replace the removed fixture getter ABIs.
 // Production definitions, when present, must agree exactly with these fields.
 export const factWireTypes = [
+  {
+    type: "struct",
+    name: "world_native::mines::MineWeight",
+    members: [
+      { name: "kind", type: "core::integer::u8" },
+      { name: "weight", type: "core::integer::u32" },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::buildings::BuildingRule",
+    members: [
+      { name: "population_cost", type: "core::integer::u8" },
+      { name: "capacity_grant", type: "core::integer::u8" },
+      { name: "simple_cost", type: "core::array::Span::<world_native::resources::ResourceAmount>" },
+      { name: "complex_cost", type: "core::array::Span::<world_native::resources::ResourceAmount>" },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::expeditions::DepthRules",
+    members: [
+      { name: "reveal_percent", type: "core::integer::u16" },
+      { name: "site_guard_lower", type: "core::integer::u16" },
+      { name: "site_guard_upper", type: "core::integer::u16" },
+      { name: "rift_guard_lower", type: "core::integer::u16" },
+      { name: "rift_guard_upper", type: "core::integer::u16" },
+      { name: "reveal_site_neighbors", type: "core::bool" },
+      { name: "chest", type: "world_native::relics::ChestTiers" },
+      { name: "guard_step", type: "core::integer::u32" },
+      { name: "beast_weak_lower", type: "core::integer::u16" },
+      { name: "beast_weak_upper", type: "core::integer::u16" },
+      { name: "beast_strong_lower", type: "core::integer::u16" },
+      { name: "beast_strong_upper", type: "core::integer::u16" },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::production::ProductionRecipe",
+    members: [
+      { name: "simple_output", type: "core::integer::u64" },
+      { name: "complex_output", type: "core::integer::u64" },
+      { name: "simple_inputs", type: "core::array::Span::<world_native::resources::ResourceAmount>" },
+      { name: "complex_inputs", type: "core::array::Span::<world_native::resources::ResourceAmount>" },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::realms::RealmTraits",
+    members: [
+      { name: "wonder", type: "core::integer::u8" },
+      { name: "order", type: "core::integer::u8" },
+      { name: "resources", type: "core::array::Span::<core::integer::u8>" },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::relics::ChestTiers",
+    members: [
+      { name: "common", type: "core::integer::u16" },
+      { name: "uncommon", type: "core::integer::u16" },
+      { name: "rare", type: "core::integer::u16" },
+      { name: "epic", type: "core::integer::u16" },
+      { name: "legendary", type: "core::integer::u16" },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::relics::LordsWithdrawal",
+    members: [
+      { name: "account", type: "core::starknet::contract_address::ContractAddress" },
+      { name: "amount", type: "core::integer::u128" },
+      { name: "prize_rank", type: "core::integer::u16" },
+      { name: "prize_count", type: "core::integer::u16" },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::settlement::RealmGrants",
+    members: [
+      { name: "resources", type: "core::array::Span::<world_native::resources::ResourceAmount>" },
+      { name: "starting_troops", type: "core::array::Span::<world_native::troops::TroopType>" },
+      { name: "realm_resources", type: "core::array::Span::<core::integer::u8>" },
+    ],
+  },
+  {
+    type: "enum",
+    name: "world_native::settlement::SettlementMode",
+    variants: [
+      { name: "Single", type: "()" },
+      { name: "Triple", type: "()" },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::village::VillageResource",
+    members: [
+      { name: "resource_type", type: "core::integer::u8" },
+      { name: "weight", type: "core::integer::u128" },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::village::VillageRules",
+    members: [
+      { name: "troop_delay_ticks", type: "core::integer::u16" },
+      { name: "resources", type: "core::array::Span::<world_native::resources::ResourceAmount>" },
+      { name: "resource_pool", type: "core::array::Span::<world_native::village::VillageResource>" },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::banes::BaneRules",
+    members: [
+      { name: "chance_step", type: "core::integer::u16" },
+      { name: "quorum_percent", type: "core::integer::u16" },
+      { name: "beast_percent", type: "core::integer::u16" },
+      { name: "stamina_percent", type: "core::integer::u16" },
+      { name: "production_percent", type: "core::integer::u16" },
+      { name: "quest_counts", type: "core::array::Span::<core::integer::u128>" },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::quests::QuestRules",
+    members: [
+      { name: "base_counts", type: "core::array::Span::<core::integer::u32>" },
+      { name: "labor", type: "core::integer::u128" },
+      { name: "essence", type: "core::integer::u128" },
+      { name: "bonus_percent", type: "core::integer::u16" },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::buildings::BoardRules",
+    members: [
+      { name: "demolition_refund_bps", type: "core::integer::u16" },
+      { name: "workshop_rate", type: "core::integer::u64" },
+      { name: "output_step_bps", type: "core::integer::u16" },
+      { name: "storage_step_bps", type: "core::integer::u16" },
+      { name: "ration_step", type: "core::integer::u128" },
+      { name: "troop_store_deploys", type: "core::integer::u8" },
+      { name: "settlement_resource_cap", type: "core::integer::u32" },
+      { name: "city_resource_cap", type: "core::integer::u32" },
+      { name: "kingdom_resource_cap", type: "core::integer::u32" },
+      { name: "empire_resource_cap", type: "core::integer::u32" },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::expeditions::FrontierDiscoveryRules",
+    members: [
+      { name: "beasts_bps", type: "core::integer::u16" },
+      { name: "camp_bps", type: "core::integer::u16" },
+      { name: "rift_bps", type: "core::integer::u16" },
+      { name: "ruin_bps", type: "core::integer::u16" },
+      { name: "shrine_bps", type: "core::integer::u16" },
+      { name: "well_bps", type: "core::integer::u16" },
+      { name: "empty_reveal_limit", type: "core::integer::u8" },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::race::RaceRules",
+    members: [
+      { name: "season_days", type: "core::integer::u64" },
+      { name: "stage_height", type: "core::integer::u32" },
+      { name: "clear_mist_percent", type: "core::integer::u16" },
+      { name: "second_wind_percent", type: "core::integer::u16" },
+      { name: "pale_moon_percent", type: "core::integer::u16" },
+      { name: "spoils_percent", type: "core::integer::u16" },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::research::ResearchPrice",
+    members: [
+      { name: "essence", type: "core::integer::u128" },
+      { name: "labor", type: "core::integer::u128" },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::resources::ResourceRule",
+    members: [
+      { name: "resource_type", type: "core::integer::u8" },
+      { name: "unit_weight", type: "core::integer::u128" },
+      { name: "realm_rate", type: "core::integer::u64" },
+      { name: "village_rate", type: "core::integer::u64" },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::upgrades::UpgradeLimits",
+    members: [
+      { name: "realm_max", type: "core::integer::u8" },
+      { name: "village_max", type: "core::integer::u8" },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::upgrades::UpgradeRecipe",
+    members: [{ name: "costs", type: "core::array::Span::<world_native::resources::ResourceAmount>" }],
+  },
+  {
+    type: "struct",
+    name: "world_native::deep::DeepRing",
+    members: [
+      { name: "radius", type: "core::integer::u32" },
+      { name: "realms", type: "core::integer::u32" },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::deep::DeepBeast",
+    members: [
+      { name: "count", type: "core::integer::u128" },
+      { name: "bow", type: "core::bool" },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::deep::DeepPay",
+    members: [
+      { name: "alone", type: "core::integer::u32" },
+      { name: "pair", type: "core::integer::u32" },
+      { name: "crowd", type: "core::integer::u32" },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::deep::DeepRules",
+    members: [
+      { name: "gate_distance", type: "core::integer::u32" },
+      { name: "rings", type: "core::array::Span::<world_native::deep::DeepRing>" },
+      { name: "beasts", type: "core::array::Span::<world_native::deep::DeepBeast>" },
+      { name: "loss_per_tick", type: "core::integer::u128" },
+      { name: "core_per_tick", type: "core::integer::u128" },
+      { name: "mine_per_tick", type: "core::integer::u128" },
+      { name: "building_pay", type: "world_native::deep::DeepPay" },
+      { name: "altar_threshold", type: "core::integer::u32" },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::combat::ArmyCombat",
+    members: combatMembers,
+  },
+  {
+    type: "struct",
+    name: "world_native::spires::ExpeditionSpireKey",
+    members: [
+      {
+        name: "game_id",
+        type: "core::integer::u32",
+      },
+      {
+        name: "structure_id",
+        type: "core::integer::u64",
+      },
+      {
+        name: "epoch",
+        type: "core::integer::u64",
+      },
+      {
+        name: "depth",
+        type: "core::integer::u8",
+      },
+    ],
+  },
+  {
+    type: "enum",
+    name: "core::option::Option::<world_native::troops::Coord>",
+    variants: [
+      {
+        name: "Some",
+        type: "world_native::troops::Coord",
+      },
+      {
+        name: "None",
+        type: "()",
+      },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::spires::ExpeditionSpire",
+    members: [
+      {
+        name: "reveals",
+        type: "core::integer::u8",
+      },
+      {
+        name: "location",
+        type: "core::option::Option::<world_native::troops::Coord>",
+      },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::banes::WorldBane",
+    members: [
+      {
+        name: "kind",
+        type: "core::integer::u8",
+      },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::banes::FirstTeamBane",
+    members: [
+      {
+        name: "issued_day",
+        type: "core::integer::u64",
+      },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::banes::BaneProgress",
+    members: [
+      {
+        name: "completed",
+        type: "core::integer::u32",
+      },
+      {
+        name: "ended_at",
+        type: "core::integer::u64",
+      },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::deep::TeamBane",
+    members: [
+      {
+        name: "source",
+        type: "core::integer::u8",
+      },
+      {
+        name: "issued_day",
+        type: "core::integer::u64",
+      },
+      {
+        name: "quest",
+        type: "core::integer::u8",
+      },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::deep::AltarBar",
+    members: [
+      {
+        name: "charge",
+        type: "core::integer::u32",
+      },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::quests::QuestProgress",
+    members: [
+      { name: "progress", type: "core::integer::u128" },
+      { name: "completed_level", type: "core::integer::u8" },
+    ],
+  },
+  {
+    type: "enum",
+    name: "world_native::army_relics::RelicKind",
+    variants: [
+      {
+        name: "Blade",
+        type: "()",
+      },
+      {
+        name: "Ward",
+        type: "()",
+      },
+      {
+        name: "Plunder",
+        type: "()",
+      },
+      {
+        name: "StaminaRegen",
+        type: "()",
+      },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::army_relics::ArmyRelic",
+    members: [
+      {
+        name: "kind",
+        type: "world_native::army_relics::RelicKind",
+      },
+      {
+        name: "rank",
+        type: "core::integer::u8",
+      },
+    ],
+  },
+  {
+    type: "enum",
+    name: "core::option::Option::<world_native::army_relics::ArmyRelic>",
+    variants: [
+      {
+        name: "Some",
+        type: "world_native::army_relics::ArmyRelic",
+      },
+      {
+        name: "None",
+        type: "()",
+      },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::army_relics::ArmyRelics",
+    members: [
+      {
+        name: "first",
+        type: "core::option::Option::<world_native::army_relics::ArmyRelic>",
+      },
+      {
+        name: "second",
+        type: "core::option::Option::<world_native::army_relics::ArmyRelic>",
+      },
+      {
+        name: "third",
+        type: "core::option::Option::<world_native::army_relics::ArmyRelic>",
+      },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::army_relics::ArmyRelicEffectKey",
+    members: [
+      {
+        name: "game_id",
+        type: "core::integer::u32",
+      },
+      {
+        name: "explorer_id",
+        type: "core::integer::u64",
+      },
+      {
+        name: "kind",
+        type: "world_native::army_relics::RelicKind",
+      },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::army_relics::ArmyRelicEffect",
+    members: [
+      {
+        name: "rank",
+        type: "core::integer::u8",
+      },
+      {
+        name: "expires_at",
+        type: "core::integer::u64",
+      },
+    ],
+  },
   {
     type: "struct",
     name: "world_native::settlement::SettlementPool",
@@ -23,6 +506,28 @@ export const factWireTypes = [
     type: "struct",
     name: "core::array::Span::<world_native::troops::Coord>",
     members: [{ name: "snapshot", type: "@core::array::Array::<world_native::troops::Coord>" }],
+  },
+  {
+    type: "struct",
+    name: "world_native::deep::DeepArmy",
+    members: [{ name: "last_tick", type: "core::integer::u64" }],
+  },
+  {
+    type: "struct",
+    name: "world_native::deep::DeepGuard",
+    members: [
+      { name: "site_id", type: "core::integer::u64" },
+      { name: "slot", type: "core::integer::u8" },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::deep::DeepSite",
+    members: [
+      { name: "kind", type: "core::integer::u8" },
+      { name: "ring", type: "core::integer::u8" },
+      { name: "day", type: "core::integer::u64" },
+    ],
   },
   {
     type: "struct",
@@ -76,25 +581,13 @@ export const factWireTypes = [
   },
   {
     type: "struct",
-    name: "world_native::faith::WonderFaith",
+    name: "world_native::entry::LaborGrant",
     members: [
-      { name: "last_recorded_owner", type: "core::starknet::contract_address::ContractAddress" },
-      { name: "claimed_points", type: "core::integer::u128" },
-      { name: "claim_per_sec", type: "core::integer::u32" },
-      { name: "claim_last_at", type: "core::integer::u64" },
-      { name: "owner_claim_per_sec", type: "core::integer::u32" },
-      { name: "num_structures_pledged", type: "core::integer::u32" },
-    ],
-  },
-  {
-    type: "struct",
-    name: "world_native::faith::FaithfulStructure",
-    members: [
-      { name: "wonder_id", type: "core::integer::u64" },
-      { name: "faithful_since", type: "core::integer::u64" },
-      { name: "fp_to_wonder_owner_per_sec", type: "core::integer::u16" },
-      { name: "fp_to_struct_owner_per_sec", type: "core::integer::u16" },
-      { name: "last_recorded_owner", type: "core::starknet::contract_address::ContractAddress" },
+      { name: "game_id", type: "core::integer::u32" },
+      { name: "account", type: "core::starknet::contract_address::ContractAddress" },
+      { name: "home", type: "core::integer::u64" },
+      { name: "amount", type: "core::integer::u128" },
+      { name: "essence", type: "core::integer::u128" },
     ],
   },
   {
@@ -126,132 +619,6 @@ export const factWireTypes = [
       {
         name: "slot",
         type: "core::integer::u8",
-      },
-    ],
-  },
-  {
-    type: "struct",
-    name: "world_native::bitcoin::ClaimKey",
-    members: [
-      {
-        name: "game_id",
-        type: "core::integer::u32",
-      },
-      {
-        name: "phase",
-        type: "core::integer::u64",
-      },
-      {
-        name: "mine_id",
-        type: "core::integer::u64",
-      },
-    ],
-  },
-  {
-    type: "struct",
-    name: "world_native::bitcoin::Contribution",
-    members: [
-      {
-        name: "labor",
-        type: "core::integer::u128",
-      },
-      {
-        name: "structure_id",
-        type: "core::integer::u64",
-      },
-    ],
-  },
-  {
-    type: "struct",
-    name: "world_native::bitcoin::ContributionKey",
-    members: [
-      {
-        name: "game_id",
-        type: "core::integer::u32",
-      },
-      {
-        name: "phase",
-        type: "core::integer::u64",
-      },
-      {
-        name: "player",
-        type: "core::starknet::contract_address::ContractAddress",
-      },
-    ],
-  },
-  {
-    type: "struct",
-    name: "world_native::bitcoin::MineFunding",
-    members: [
-      {
-        name: "eligible_from",
-        type: "core::integer::u64",
-      },
-      {
-        name: "next_phase",
-        type: "core::integer::u64",
-      },
-      {
-        name: "unsplit_carry",
-        type: "core::integer::u128",
-      },
-      {
-        name: "winner_carry",
-        type: "core::integer::u128",
-      },
-    ],
-  },
-  {
-    type: "struct",
-    name: "world_native::bitcoin::Phase",
-    members: [
-      {
-        name: "total_labor",
-        type: "core::integer::u128",
-      },
-      {
-        name: "contributors",
-        type: "core::integer::u32",
-      },
-      {
-        name: "state",
-        type: "world_native::bitcoin::PhaseStatus",
-      },
-      {
-        name: "root",
-        type: "core::integer::u256",
-      },
-    ],
-  },
-  {
-    type: "enum",
-    name: "world_native::bitcoin::PhaseStatus",
-    variants: [
-      {
-        name: "Open",
-        type: "()",
-      },
-      {
-        name: "Closed",
-        type: "()",
-      },
-      {
-        name: "Bound",
-        type: "()",
-      },
-    ],
-  },
-  {
-    type: "struct",
-    name: "world_native::bitcoin::PhaseKey",
-    members: [
-      {
-        name: "game_id",
-        type: "core::integer::u32",
-      },
-      {
-        name: "phase",
-        type: "core::integer::u64",
       },
     ],
   },
@@ -347,46 +714,6 @@ export const factWireTypes = [
   },
   {
     type: "struct",
-    name: "world_native::faith::PlayerFaithKey",
-    members: [
-      {
-        name: "game_id",
-        type: "core::integer::u32",
-      },
-      {
-        name: "player",
-        type: "core::starknet::contract_address::ContractAddress",
-      },
-      {
-        name: "wonder_id",
-        type: "core::integer::u64",
-      },
-    ],
-  },
-  {
-    type: "struct",
-    name: "world_native::faith::PlayerFaithPoints",
-    members: [
-      {
-        name: "points_claimed",
-        type: "core::integer::u128",
-      },
-      {
-        name: "points_per_sec_as_owner",
-        type: "core::integer::u32",
-      },
-      {
-        name: "points_per_sec_as_pledger",
-        type: "core::integer::u32",
-      },
-      {
-        name: "last_updated_at",
-        type: "core::integer::u64",
-      },
-    ],
-  },
-  {
-    type: "struct",
     name: "world_native::game::GameRegistry",
     members: [
       {
@@ -394,15 +721,11 @@ export const factWireTypes = [
         type: "core::felt252",
       },
       {
-        name: "preset_id",
-        type: "core::integer::u32",
+        name: "family",
+        type: "core::integer::u8",
       },
       {
         name: "settled",
-        type: "core::bool",
-      },
-      {
-        name: "ready",
         type: "core::bool",
       },
       {
@@ -422,12 +745,16 @@ export const factWireTypes = [
         type: "core::integer::u64",
       },
       {
-        name: "end_grace_seconds",
-        type: "core::integer::u32",
-      },
-      {
         name: "seed",
         type: "core::felt252",
+      },
+      {
+        name: "scheduled_end_at",
+        type: "core::integer::u64",
+      },
+      {
+        name: "clock_scale",
+        type: "core::integer::u8",
       },
     ],
   },
@@ -460,24 +787,6 @@ export const factWireTypes = [
   },
   {
     type: "struct",
-    name: "world_native::market::LiquidityKey",
-    members: [
-      {
-        name: "game_id",
-        type: "core::integer::u32",
-      },
-      {
-        name: "owner",
-        type: "core::starknet::contract_address::ContractAddress",
-      },
-      {
-        name: "resource_type",
-        type: "core::integer::u8",
-      },
-    ],
-  },
-  {
-    type: "struct",
     name: "world_native::mines::MineKindKey",
     members: [
       {
@@ -502,31 +811,83 @@ export const factWireTypes = [
   },
   {
     type: "struct",
-    name: "world_native::production::ProductionBonus",
+    name: "world_native::relics::ChestRules",
     members: [
       {
-        name: "incr_resource_rate_percent_num",
-        type: "core::integer::u16",
+        name: "price_ceiling",
+        type: "core::integer::u128",
       },
       {
-        name: "incr_labor_rate_percent_num",
-        type: "core::integer::u16",
+        name: "shares",
+        type: "world_native::relics::ChestTiers",
       },
       {
-        name: "incr_troop_rate_percent_num",
-        type: "core::integer::u16",
-      },
-      {
-        name: "incr_resource_rate_end_at",
+        name: "claim_window_seconds",
         type: "core::integer::u32",
       },
       {
-        name: "incr_labor_rate_end_at",
+        name: "pool_bps",
+        type: "core::integer::u16",
+      },
+      {
+        name: "top_n",
+        type: "core::integer::u16",
+      },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::relics::LordsBudget",
+    members: [
+      {
+        name: "pool",
+        type: "core::integer::u128",
+      },
+      {
+        name: "pool_left",
+        type: "core::integer::u128",
+      },
+      {
+        name: "open",
+        type: "core::integer::u128",
+      },
+      {
+        name: "day",
+        type: "core::integer::u64",
+      },
+      {
+        name: "price",
+        type: "core::integer::u128",
+      },
+      {
+        name: "rolled_shares",
+        type: "core::integer::u128",
+      },
+      {
+        name: "yesterday_shares",
+        type: "core::integer::u128",
+      },
+      {
+        name: "yesterday_ticks",
+        type: "core::integer::u64",
+      },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::resources::ResourceSlot",
+    members: [
+      {
+        name: "game_id",
         type: "core::integer::u32",
       },
       {
-        name: "incr_troop_rate_end_at",
-        type: "core::integer::u32",
+        name: "entity_id",
+        type: "core::integer::u64",
+      },
+      {
+        name: "resource_type",
+        type: "core::integer::u8",
       },
     ],
   },
@@ -564,6 +925,7 @@ export const factWireTypes = [
         name: "last_settled_at",
         type: "core::integer::u32",
       },
+      { name: "remainder", type: "core::integer::u8" },
     ],
   },
   {
@@ -688,20 +1050,6 @@ export const factWireTypes = [
   },
   {
     type: "struct",
-    name: "world_native::trade::TradeKey",
-    members: [
-      {
-        name: "game_id",
-        type: "core::integer::u32",
-      },
-      {
-        name: "trade_id",
-        type: "core::integer::u64",
-      },
-    ],
-  },
-  {
-    type: "struct",
     name: "world_native::village::VillagePass",
     members: [
       {
@@ -720,6 +1068,10 @@ export const factWireTypes = [
 const presetDerivedModels = new Set([
   "SliceRules",
   "SettlementRules",
+  "AspectRules",
+  "QuestRules",
+  "BaneRules",
+  "RaceRules",
   "ResourceRule",
   "ProductionRecipe",
   "MineKindConfig",
@@ -727,28 +1079,13 @@ const presetDerivedModels = new Set([
   "BuildingRule",
   "BoardRules",
   "ResearchPrice",
-  "CampRules",
-  "FaithRules",
   "UpgradeLimits",
   "UpgradeRecipe",
   "RealmGrants",
   "VillageRules",
   "DepthRules",
-  "SpireLayout",
-  "TradeRules",
-  "BankRules",
-  "HyperstructureRules",
-  "RelicRules",
   "ChestRules",
-  "LaborRules",
-  "ArmyProgressionRules",
-  "FrontierDiscoveryRules",
-  "ArtificerCost",
-  "DepositRules",
-  "WithdrawalRules",
-  "ResourceToken",
-  "ExtractionRewards",
-  "SeasonWinThreshold",
+  "DeepRules",
 ]);
 
 export function defineFactModels({ struct, model: declare }) {
@@ -761,18 +1098,33 @@ export function defineFactModels({ struct, model: declare }) {
         meaning:
           "Zero balance or inactive production while the resource owner exists; no resource owner after its weight row is deleted.",
       };
-    if (row.name === "HyperstructureProgress")
+    if (row.name === "RaceMember")
       row.absence = {
-        parent: "Hyperstructure",
+        parent: "Structure",
         value: "zero",
-        meaning: "No resource contribution to this hyperstructure.",
+        meaning: "This home has earned no Glory or height contribution yet.",
       };
-    if (row.name === "ExpeditionDiscovery")
+    if (row.name === "ExpeditionDiscovery" || row.name === "ExpeditionSpire")
       row.absence = {
         parent: "Structure",
         parentKeys: { entity_id: "structure_id" },
         value: "zero",
-        meaning: "No empty player reveals in this expedition yet.",
+        meaning:
+          row.name === "ExpeditionSpire"
+            ? "No eligible Spire reveals on this home, day and layer yet."
+            : "No empty player reveals in this expedition yet.",
+      };
+    if (row.name === "ArmyRelics" || row.name === "ArmyRelicEffect")
+      row.absence = {
+        parent: "ExplorerTroops",
+        value: "zero",
+        meaning: "No carried relics or running relic of this kind while the army exists.",
+      };
+    if (row.name === "AspectActivity")
+      row.absence = {
+        parent: "GameRegistry",
+        value: "zero",
+        meaning: "No home in this Aspect allocated an army on this day.",
       };
     if (row.name === "ArmySlot")
       row.absence = {
@@ -788,37 +1140,39 @@ export function defineFactModels({ struct, model: declare }) {
         value: "zero",
         meaning: "No troops or resurrection delay in this guard slot.",
       };
+    if (row.name === "BaneProgress")
+      row.absence = {
+        parent: "BaneRules",
+        value: "zero",
+        meaning: "No member of this Aspect has completed the bane quest on this day.",
+      };
+    if (row.name === "DeepEntries")
+      row.absence = { parent: "DeepRules", value: "zero", meaning: "No Realm has entered the Deep on this day." };
+    if (row.name === "AltarBar")
+      row.absence = {
+        parent: "DeepRules",
+        value: "zero",
+        meaning: "This Aspect has not received an Altar charge in this game.",
+      };
+    if (row.name === "QuestProgress")
+      row.absence = {
+        parent: "Structure",
+        parentKeys: { entity_id: "home" },
+        value: "zero",
+        meaning: "This home has made no daily quest progress on this day.",
+      };
+    if (row.name === "AspectMembers")
+      row.absence = { parent: "AspectRules", value: "zero", meaning: "No home has joined this Aspect in this game." };
     if (row.name === "SettlementProgress")
       row.absence = {
         parent: "SettlementRules",
         value: "zero",
         meaning: "No players have settled or registered realms in this game.",
       };
-    if (row.name === "VillageRaid")
-      row.absence = { parent: "Structure", value: "zero", meaning: "The village has not been successfully raided." };
-    if (row.name === "PlayerPoints")
-      row.absence = {
-        value: "zero",
-        meaning: "The chain writes a player's points on their first award; no row means the player has scored nothing.",
-      };
-    if (row.name === "ProductionBonus")
-      row.absence = {
-        parent: "Structure",
-        value: "zero",
-        meaning: "No production bonus has been granted to this structure.",
-      };
     const observation = behaviouralFacts[row.name];
     return observation ? { ...row, observation } : row;
   };
   return [
-    model(
-      "Preset",
-      "deployment",
-      [{ name: "preset_id", type: "core::integer::u32" }],
-      [{ name: "commitment", type: "core::felt252" }],
-    ),
-    model("SpireLayout", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("spires::SpireLayout")),
-    model("CampRules", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("camps::CampRules")),
     model(
       "Guild",
       "game",
@@ -839,48 +1193,12 @@ export function defineFactModels({ struct, model: declare }) {
     ),
     model("GuildWhitelist", "game", struct("guilds::WhitelistKey"), [{ name: "allowed", type: "core::bool" }]),
     model(
-      "ArtificerCost",
+      "DepositSource",
       "game",
       [{ name: "game_id", type: "core::integer::u32" }],
-      [{ name: "research", type: "core::integer::u128" }],
+      struct("deposits::DepositSource"),
     ),
-    model(
-      "BlitzResult",
-      "game",
-      [{ name: "game_id", type: "core::integer::u32" }],
-      struct("blitz_results::BlitzResult"),
-    ),
-    model("FaithRules", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("faith::FaithRules")),
-    model(
-      "SeasonWinThreshold",
-      "game",
-      [{ name: "game_id", type: "core::integer::u32" }],
-      [{ name: "points", type: "core::integer::u128" }],
-    ),
-    model(
-      "ExtractionRewards",
-      "game",
-      [{ name: "game_id", type: "core::integer::u32" }],
-      [{ name: "rewards", type: "core::array::Span::<world_native::exploration_rewards::ExplorationReward>" }],
-    ),
-    model(
-      "RelicRules",
-      "game",
-      [{ name: "game_id", type: "core::integer::u32" }],
-      [{ name: "rules", type: "core::array::Span::<world_native::relics::RelicRule>" }],
-    ),
-    model(
-      "ArmyProgressionRules",
-      "game",
-      [{ name: "game_id", type: "core::integer::u32" }],
-      struct("progression::ArmyProgressionRules"),
-    ),
-    model(
-      "FrontierDiscoveryRules",
-      "game",
-      [{ name: "game_id", type: "core::integer::u32" }],
-      struct("expeditions::FrontierDiscoveryRules"),
-    ),
+    model("ExpeditionSpire", "game", struct("spires::ExpeditionSpireKey"), struct("spires::ExpeditionSpire")),
     model(
       "ExpeditionDiscovery",
       "game",
@@ -888,10 +1206,31 @@ export function defineFactModels({ struct, model: declare }) {
       struct("expeditions::ExpeditionDiscovery"),
     ),
     model(
-      "DepositSource",
+      "FragmentCredit",
       "game",
-      [{ name: "game_id", type: "core::integer::u32" }],
-      struct("deposits::DepositSource"),
+      [
+        { name: "game_id", type: "core::integer::u32" },
+        { name: "id", type: "core::felt252" },
+      ],
+      struct("fragments::FragmentCredit").filter(({ name }) => name !== "id"),
+    ),
+    model(
+      "Fragments",
+      "game",
+      [
+        { name: "game_id", type: "core::integer::u32" },
+        { name: "account", type: "core::starknet::contract_address::ContractAddress" },
+      ],
+      [{ name: "balance", type: "core::integer::u128" }],
+    ),
+    model(
+      "Seal",
+      "game",
+      [
+        { name: "game_id", type: "core::integer::u32" },
+        { name: "account", type: "core::starknet::contract_address::ContractAddress" },
+      ],
+      [{ name: "granted_at", type: "core::integer::u64" }],
     ),
     model(
       "SpendLords",
@@ -920,7 +1259,73 @@ export function defineFactModels({ struct, model: declare }) {
       ],
       struct("deposits::DepositReceipt"),
     ),
-    model("LaborRules", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("entry::LaborRules")),
+    model("RaceRules", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("race::RaceRules")),
+    model("RaceMember", "game", struct("resources::ResourceKey"), struct("race::RaceMember")),
+    model("AspectHyperstructure", "game", struct("race::AspectKey"), struct("race::AspectHyperstructure")),
+    model("TriumphDay", "game", struct("race::TriumphKey"), [{ name: "day", type: "core::integer::u64" }]),
+    model("RaceResult", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("race::RaceResult")),
+    model("BaneRules", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("banes::BaneRules")),
+    model("QuestRules", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("quests::QuestRules")),
+    model(
+      "QuestProgress",
+      "game",
+      [
+        { name: "game_id", type: "core::integer::u32" },
+        { name: "home", type: "core::integer::u64" },
+        { name: "day", type: "core::integer::u64" },
+      ],
+      struct("quests::QuestProgress"),
+    ),
+    model(
+      "WorldBane",
+      "game",
+      [
+        { name: "game_id", type: "core::integer::u32" },
+        { name: "day", type: "core::integer::u64" },
+      ],
+      struct("banes::WorldBane"),
+    ),
+    model("FirstTeamBane", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("banes::FirstTeamBane")),
+    model(
+      "BaneProgress",
+      "game",
+      [
+        { name: "game_id", type: "core::integer::u32" },
+        { name: "aspect", type: "core::integer::u8" },
+        { name: "day", type: "core::integer::u64" },
+      ],
+      struct("banes::BaneProgress"),
+    ),
+    model(
+      "TeamBane",
+      "game",
+      [
+        { name: "game_id", type: "core::integer::u32" },
+        { name: "aspect", type: "core::integer::u8" },
+        { name: "day", type: "core::integer::u64" },
+      ],
+      struct("deep::TeamBane"),
+    ),
+    model(
+      "AltarBar",
+      "game",
+      [
+        { name: "game_id", type: "core::integer::u32" },
+        { name: "aspect", type: "core::integer::u8" },
+      ],
+      struct("deep::AltarBar"),
+    ),
+    model(
+      "BaneGrant",
+      "game",
+      [
+        { name: "game_id", type: "core::integer::u32" },
+        { name: "home", type: "core::integer::u64" },
+        { name: "day", type: "core::integer::u64" },
+      ],
+      struct("entry::LaborGrant").filter(({ name }) => name !== "game_id" && name !== "home"),
+    ),
+    model("DeepRules", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("deep::DeepRules")),
     model(
       "LaborGrant",
       "game",
@@ -931,12 +1336,9 @@ export function defineFactModels({ struct, model: declare }) {
       ],
       struct("entry::LaborGrant").filter(({ name }) => name !== "game_id" && name !== "home"),
     ),
-    model("ChestRules", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("relics::ChestRules")),
     model("FrontierPrize", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("entry::FrontierPrize")),
+    model("ChestRules", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("relics::ChestRules")),
     model("LordsBudget", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("relics::LordsBudget")),
-    model("SiteChest", "game", struct("resources::ResourceKey"), struct("relics::SiteChest")),
-    model("ShrineReward", "game", struct("resources::ResourceKey"), struct("relics::ShrineReward")),
-    model("RelicChest", "game", struct("resources::ResourceKey"), struct("relics::RelicChest")),
     model(
       "LordsWithdrawal",
       "game",
@@ -946,34 +1348,7 @@ export function defineFactModels({ struct, model: declare }) {
       ],
       struct("relics::LordsWithdrawal"),
     ),
-    model(
-      "RelicDiscovery",
-      "game",
-      [{ name: "game_id", type: "core::integer::u32" }],
-      [{ name: "last_at", type: "core::integer::u64" }],
-    ),
-    model("DepositRules", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("bridge::DepositRules")),
-    model(
-      "WithdrawalRules",
-      "game",
-      [{ name: "game_id", type: "core::integer::u32" }],
-      struct("withdrawals::WithdrawalRules"),
-    ),
-    model("ResourceToken", "game", struct("market::MarketKey"), [
-      { name: "token", type: struct("withdrawals::ResourceToken")[1].type },
-    ]),
-    model("BankRules", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("market::BankRules")),
-    model("BankName", "game", struct("resources::ResourceKey"), [{ name: "name", type: "core::felt252" }]),
-    model("Market", "game", struct("market::MarketKey"), struct("market::Market")),
-    model("Liquidity", "game", struct("market::LiquidityKey"), [{ name: "shares", type: "core::integer::u128" }]),
-    model("TradeOrder", "game", struct("trade::TradeKey"), struct("trade::TradeOrder")),
-    model("TradeRules", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("trade::TradeRules")),
     model("Guard", "game", struct("guards::GuardKey"), struct("guards::Guard")),
-    model("VillageRaid", "game", struct("resources::ResourceKey"), [{ name: "last_tick", type: "core::integer::u64" }]),
-    model("BitcoinMine", "game", struct("resources::ResourceKey"), struct("bitcoin::MineFunding")),
-    model("BitcoinClaim", "game", struct("bitcoin::ClaimKey"), [{ name: "claimed", type: "core::bool" }]),
-    model("BitcoinPhase", "game", struct("bitcoin::PhaseKey"), struct("bitcoin::Phase")),
-    model("BitcoinContribution", "game", struct("bitcoin::ContributionKey"), struct("bitcoin::Contribution")),
     model("MineKindConfig", "game", struct("mines::MineKindKey"), struct("mines::MineKindConfig")),
     model("MinePool", "game", struct("mines::MinePoolKey"), [
       { name: "weights", type: "core::array::Span::<world_native::mines::MineWeight>" },
@@ -984,25 +1359,7 @@ export function defineFactModels({ struct, model: declare }) {
       [{ name: "realm_id", type: "core::integer::u32" }],
       struct("realms::RealmTraits"),
     ),
-    model(
-      "BlitzSettlementOrder",
-      "game",
-      [{ name: "game_id", type: "core::integer::u32" }],
-      [{ name: "players", type: "core::array::Span::<core::integer::u8>" }],
-    ),
-    model(
-      "BlitzRoster",
-      "game",
-      [{ name: "game_id", type: "core::integer::u32" }],
-      [{ name: "players", type: "core::array::Span::<world_native::registrar::RosterPlayer>" }],
-    ),
     model("RealmGrants", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("settlement::RealmGrants")),
-    model(
-      "HyperstructureReservations",
-      "game",
-      [{ name: "game_id", type: "core::integer::u32" }],
-      [{ name: "placed", type: "core::integer::u32" }],
-    ),
     model(
       "SettlementRules",
       "game",
@@ -1038,23 +1395,69 @@ export function defineFactModels({ struct, model: declare }) {
       ],
       [{ name: "home", type: "core::integer::u64" }],
     ),
+    model("EntryEntitlement", "game", struct("settlement::EntryKey"), struct("settlement::EntryEntitlement")),
+    model("PlayerEntry", "game", struct("settlement::EntryKey"), struct("settlement::PlayerEntry")),
     model(
-      "CampaignHome",
+      "AspectRules",
+      "game",
+      [{ name: "game_id", type: "core::integer::u32" }],
+      [{ name: "orders", type: "core::array::Span::<core::integer::u8>" }],
+    ),
+    model(
+      "HomeAspect",
       "game",
       [
         { name: "game_id", type: "core::integer::u32" },
         { name: "home", type: "core::integer::u64" },
       ],
-      [
-        { name: "campaign_id", type: "core::felt252" },
-        { name: "tier", type: "core::integer::u8" },
-      ],
+      [{ name: "aspect", type: "core::integer::u8" }],
     ),
-    model("EntryEntitlement", "game", struct("settlement::EntryKey"), struct("settlement::EntryEntitlement")),
-    model("PlayerEntry", "game", struct("settlement::EntryKey"), struct("settlement::PlayerEntry")),
+    model(
+      "AspectMembers",
+      "game",
+      [
+        { name: "game_id", type: "core::integer::u32" },
+        { name: "aspect", type: "core::integer::u8" },
+      ],
+      [{ name: "members", type: "core::integer::u32" }],
+    ),
     model("TileOpt", "game", struct("map::TileKey"), struct("map::TileOpt")),
     model("TileOccupancy", "game", struct("map::TileKey"), struct("map::TileOccupancy")),
+    model("ArmyRelics", "game", struct("troops::ExplorerKey"), struct("army_relics::ArmyRelics")),
+    model("ArmyRelicEffect", "game", struct("army_relics::ArmyRelicEffectKey"), struct("army_relics::ArmyRelicEffect")),
+    model("RuinRelic", "game", struct("resources::ResourceKey"), struct("army_relics::ArmyRelic")),
+    model("RuinCache", "game", struct("resources::ResourceKey"), [{ name: "fragments", type: "core::integer::u128" }]),
+    model("ArmyCombat", "game", struct("troops::ExplorerKey"), struct("combat::ArmyCombat")),
     model("ArmyProgress", "game", struct("troops::ExplorerKey"), struct("progression::ArmyProgress")),
+    model("ArmyDay", "game", struct("troops::ExplorerKey"), [{ name: "day", type: "core::integer::u64" }]),
+    model(
+      "DeepTick",
+      "game",
+      [{ name: "game_id", type: "core::integer::u32" }],
+      [{ name: "paid_tick", type: "core::integer::u64" }],
+    ),
+    model("DeepSite", "game", struct("resources::ResourceKey"), struct("deep::DeepSite")),
+    model(
+      "DeepEntries",
+      "game",
+      [
+        { name: "game_id", type: "core::integer::u32" },
+        { name: "day", type: "core::integer::u64" },
+      ],
+      [{ name: "count", type: "core::integer::u32" }],
+    ),
+    model("DeepGuard", "game", struct("troops::ExplorerKey"), struct("deep::DeepGuard")),
+    model("DeepArmy", "game", struct("troops::ExplorerKey"), struct("deep::DeepArmy")),
+    model(
+      "AspectActivity",
+      "game",
+      [
+        { name: "game_id", type: "core::integer::u32" },
+        { name: "aspect", type: "core::integer::u8" },
+        { name: "day", type: "core::integer::u64" },
+      ],
+      [{ name: "active", type: "core::integer::u32" }],
+    ),
     model("ArmySlot", "game", struct("troops::ArmySlotKey"), struct("troops::ArmySlot")),
     model("ExplorerTroops", "game", struct("troops::ExplorerKey"), struct("troops::ExplorerRecord")),
     model("ExpeditionSite", "game", struct("resources::ResourceKey"), struct("expeditions::ExpeditionSite")),
@@ -1063,7 +1466,6 @@ export function defineFactModels({ struct, model: declare }) {
       { name: "balance", type: "core::integer::u128" },
     ]),
     model("ResourceProduction", "game", struct("resources::ResourceSlot"), struct("resources::Production")),
-    model("ProductionBonus", "game", struct("resources::ResourceKey"), struct("production::ProductionBonus")),
     model("ProductionRecipe", "game", struct("production::RecipeKey"), struct("production::ProductionRecipe")),
     model("ResourceWeight", "game", struct("resources::ResourceKey"), struct("resources::Weight")),
     model("ResourceArrival", "game", struct("arrivals::ArrivalKey"), struct("arrivals::Arrival")),
@@ -1087,30 +1489,7 @@ export function defineFactModels({ struct, model: declare }) {
     model("BuildingRule", "game", struct("buildings::BuildingRuleKey"), struct("buildings::BuildingRule")),
     model("Building", "game", struct("buildings::BuildingKey"), struct("buildings::Building")),
     model("StructureBuildings", "game", struct("resources::ResourceKey"), struct("buildings::StructureBuildings")),
-    model("Hyperstructure", "game", struct("resources::ResourceKey"), struct("hyperstructures::Hyperstructure")),
-    model("HyperstructureProgress", "game", struct("resources::ResourceSlot"), [
-      { name: "contributed", type: "core::integer::u128" },
-    ]),
-    model("HyperstructureShares", "game", struct("resources::ResourceKey"), struct("hyperstructures::ShareAllocation")),
-    model(
-      "HyperstructureRules",
-      "game",
-      [{ name: "game_id", type: "core::integer::u32" }],
-      struct("hyperstructures::HyperstructureRules"),
-    ),
     model("EntityName", "game", struct("resources::ResourceKey"), struct("names::EntityName")),
-    ...["WonderFaith", "FaithfulStructure"].map((name) =>
-      model(
-        name,
-        "game",
-        [
-          struct("resources::ResourceKey")[0],
-          { name: name === "WonderFaith" ? "wonder_id" : "structure_id", type: "core::integer::u32" },
-        ],
-        struct(`faith::${name}`),
-      ),
-    ),
-    model("PlayerFaithPoints", "game", struct("faith::PlayerFaithKey"), struct("faith::PlayerFaithPoints")),
 
     model(
       "ResourceRule",
@@ -1148,59 +1527,18 @@ export function defineFactModels({ struct, model: declare }) {
       [{ name: "game_id", type: "core::integer::u32" }],
       [
         { name: "release_id", type: "core::integer::u32" },
-        { name: "preset_commitment", type: "core::felt252" },
         { name: "created_release_id", type: "core::integer::u32" },
       ],
     ),
     model("GameRegistry", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("game::GameRegistry")),
     model("GameOverrides", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("game::GameOverrides")),
     model("SliceRules", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("rules::SliceRules")),
-    {
-      ...model(
-        "PlayerPoints",
-        "game",
-        [
-          { name: "game_id", type: "core::integer::u32" },
-          { name: "actor", type: "core::starknet::contract_address::ContractAddress" },
-        ].map((key) => ({
-          ...key,
-          name: key.name === "actor" ? "address" : key.name,
-        })),
-        [{ name: "points", type: "core::integer::u128" }],
-      ),
-      eventProjection: "PointsAwarded",
-    },
-    {
-      ...model(
-        "PointsTotal",
-        "game",
-        [{ name: "game_id", type: "core::integer::u32" }],
-        [{ name: "total", type: "core::integer::u128" }],
-      ),
-      eventProjection: "PointsAwarded",
-    },
   ].map((fact) => (presetDerivedModels.has(fact.name) ? { ...fact, derivedFrom: "preset" } : fact));
 }
 
 // Paths describe observable values, not serialized row positions.
 const behaviouralFacts = {
-  VillageRaid: { domain: "combat", fields: { lastRaidedAtTick: "last_tick" } },
   Guard: { domain: "troops", fields: { troops: "troops", destroyedAt: "destroyed_tick" } },
-  BitcoinMine: {
-    domain: "bitcoin",
-    fields: {
-      eligibleFrom: "eligible_from",
-      nextClaim: "next_phase",
-      unsplitCarry: "unsplit_carry",
-      winnerCarry: "winner_carry",
-    },
-  },
-  BitcoinClaim: { domain: "bitcoin", fields: { claimed: "claimed" } },
-  BitcoinPhase: {
-    domain: "bitcoin",
-    fields: { labor: "total_labor", contributors: "contributors", state: "state", root: "root" },
-  },
-  BitcoinContribution: { domain: "bitcoin", fields: { labor: "labor", destination: "structure_id" } },
   RealmTraits: { domain: "realm/season", fields: { wonder: "wonder", order: "order", resources: "resources" } },
   ResourceBalance: { domain: "resources", fields: { balance: "balance" } },
   ResourceProduction: {
@@ -1213,17 +1551,6 @@ const behaviouralFacts = {
       rate: "production_rate",
       outputRemaining: "output_amount_left",
       settledAt: "last_settled_at",
-    },
-  },
-  ProductionBonus: {
-    domain: "production",
-    fields: {
-      resourcePercent: "incr_resource_rate_percent_num",
-      laborPercent: "incr_labor_rate_percent_num",
-      troopPercent: "incr_troop_rate_percent_num",
-      resourceEndAt: "incr_resource_rate_end_at",
-      laborEndAt: "incr_labor_rate_end_at",
-      troopEndAt: "incr_troop_rate_end_at",
     },
   },
   ProductionRecipe: {
@@ -1251,7 +1578,6 @@ const behaviouralFacts = {
     domain: "blitz-settlement",
     fields: { resources: "resources", startingTroops: "starting_troops", realmResources: "realm_resources" },
   },
-  HyperstructureReservations: { domain: "blitz-settlement", fields: { placed: "placed" } },
   SettlementRules: {
     domain: "realm/blitz",
     fields: {
@@ -1267,8 +1593,8 @@ const behaviouralFacts = {
       revealPercent: "reveal_percent",
       siteGuardLower: "site_guard_lower",
       siteGuardUpper: "site_guard_upper",
-      ruinGuardLower: "ruin_guard_lower",
-      ruinGuardUpper: "ruin_guard_upper",
+      riftGuardLower: "rift_guard_lower",
+      riftGuardUpper: "rift_guard_upper",
       guardStep: "guard_step",
       beastWeakLower: "beast_weak_lower",
       beastWeakUpper: "beast_weak_upper",
@@ -1286,8 +1612,6 @@ const behaviouralFacts = {
   },
   VillagePass: { domain: "village", fields: { owner: "owner", consumedBy: "village_id" } },
   VillagePool: { domain: "village", fields: { availableLocations: "available" } },
-  BlitzSettlementOrder: { domain: "realm/blitz", fields: { players: "players" } },
-  BlitzRoster: { domain: "realm/blitz", fields: { players: "players" } },
   PlayerEntry: { domain: "realm/blitz", fields: { player: "player" } },
   UpgradeLimits: { domain: "structure", fields: { realmMaximum: "realm_max", villageMaximum: "village_max" } },
   UpgradeRecipe: { domain: "structure", fields: { costs: "costs" } },
@@ -1310,9 +1634,6 @@ const behaviouralFacts = {
       counts3: "packed_counts_3",
     },
   },
-  Hyperstructure: { domain: "hyperstructures", fields: { stage: "stage", access: "access", constructionSeed: "seed" } },
-  PointsTotal: { domain: "points", fields: { registered: "total" } },
-  PlayerPoints: { domain: "points", fields: { registered: "points" } },
   MineKindConfig: {
     domain: "mines",
     fields: {
@@ -1342,34 +1663,6 @@ const behaviouralFacts = {
       resourceTraits: "resources_packed",
     },
   },
-  WonderFaith: {
-    domain: "faith",
-    fields: {
-      points: "claimed_points",
-      pointsPerSecond: "claim_per_sec",
-      settledAt: "claim_last_at",
-      ownerPointsPerSecond: "owner_claim_per_sec",
-      pledgedStructures: "num_structures_pledged",
-    },
-  },
-  FaithfulStructure: {
-    domain: "faith",
-    fields: {
-      wonder: "wonder_id",
-      pledgedAt: "faithful_since",
-      wonderOwnerPointsPerSecond: "fp_to_wonder_owner_per_sec",
-      structureOwnerPointsPerSecond: "fp_to_struct_owner_per_sec",
-    },
-  },
-  PlayerFaithPoints: {
-    domain: "faith",
-    fields: {
-      points: "points_claimed",
-      ownershipPointsPerSecond: "points_per_sec_as_owner",
-      pledgePointsPerSecond: "points_per_sec_as_pledger",
-      settledAt: "last_updated_at",
-    },
-  },
 };
 
 // Which rows a player's subscription carries. "shared" rows reach every subscriber and "actor" rows only the selected
@@ -1387,36 +1680,14 @@ export const syncScopes = {
   BatchProgress: "actor",
   ...Object.fromEntries(
     [
-      "Preset",
-      "SpireLayout",
-      "CampRules",
-      "ArtificerCost",
-      "BlitzResult",
-      "FaithRules",
-      "SeasonWinThreshold",
-      "ExtractionRewards",
-      "RelicRules",
       "ChestRules",
-      "LaborRules",
-      "ArmyProgressionRules",
+      "DeepRules",
       "LordsBudget",
       "FrontierPrize",
-      "FrontierDiscoveryRules",
-      "RelicDiscovery",
-      "DepositRules",
       "DepositSource",
-      "WithdrawalRules",
-      "ResourceToken",
-      "BankRules",
-      "Market",
-      "TradeRules",
-      "BitcoinPhase",
       "MineKindConfig",
       "MinePool",
-      "BlitzSettlementOrder",
-      "BlitzRoster",
       "RealmGrants",
-      "HyperstructureReservations",
       "SettlementRules",
       "SettlementProgress",
       "SettlementPool",
@@ -1426,7 +1697,6 @@ export const syncScopes = {
       "BoardRules",
       "ResearchPrice",
       "BuildingRule",
-      "HyperstructureRules",
       "ResourceRule",
       "UpgradeLimits",
       "UpgradeRecipe",
@@ -1434,61 +1704,71 @@ export const syncScopes = {
       "GameRegistry",
       "GameRelease",
       "SliceRules",
-      "PointsTotal",
     ].map((name) => [name, shared]),
   ),
-  PlayerPoints: { owners: ["address"] },
   RealmTraits: { realmTraits: ["realm_id"] },
   SettledRealm: { entities: ["home"] },
-  CampaignHome: { entities: ["home"] },
   EntryEntitlement: byOwner,
   PlayerEntry: byOwner,
+  AspectRules: "shared",
+  QuestRules: "shared",
+  BaneRules: "shared",
+  RaceRules: "shared",
+  RaceMember: "shared",
+  AspectHyperstructure: "shared",
+  TriumphDay: "shared",
+  RaceResult: "shared",
+  WorldBane: "shared",
+  FirstTeamBane: "shared",
+  BaneProgress: "shared",
+  TeamBane: "shared",
+  AltarBar: "shared",
+  BaneGrant: { owners: ["account"] },
+  QuestProgress: { entities: ["home"] },
+  HomeAspect: "shared",
+  AspectMembers: "shared",
   VillagePass: byOwner,
-  Liquidity: byOwner,
   StoryEvent: byOwner,
   Guild: { owners: ["guild_id"] },
   GuildMember: { owners: ["actor"] },
   GuildWhitelist: byPlayer,
-  BitcoinContribution: byPlayer,
-  PlayerFaithPoints: byPlayer,
-  PointsAwarded: byPlayer,
   LordsWithdrawal: { owners: ["account"] },
   LaborGrant: { owners: ["account"] },
+  FragmentCredit: { owners: ["account"] },
+  Fragments: { owners: ["account"] },
+  Seal: { owners: ["account"] },
   SpendLords: { owners: ["account"] },
   PrincipalWithdrawal: { owners: ["account"] },
   DepositReceipt: { owners: ["account"] },
-  RaidEvent: { owners: ["player", "target_owner"] },
-  WonderFaith: { owners: ["last_recorded_owner"] },
   TileOpt: { regions: [{ alt: "alt", x: "col", y: "row" }] },
   TileOccupancy: { regions: [{ alt: "alt", x: "col", y: "row" }], entities: ["entity_id"] },
   Building: { realms: ["structure_id"] },
   RealmKnowledge: { realms: ["structure_id"] },
   ExpeditionSite: { regions: [{ alt: "alt", x: "col", y: "row" }], entities: ["entity_id"] },
-  SiteChest: { entities: ["entity_id"] },
-  ShrineReward: { entities: ["entity_id"] },
-  // A relic chest's pack is public: anyone may open the chest, so every player sees what it holds.
-  RelicChest: shared,
+  ArmyCombat: { entities: ["explorer_id"] },
   ArmyProgress: { entities: ["explorer_id"] },
+  ArmyRelics: { entities: ["explorer_id"] },
+  ArmyRelicEffect: { entities: ["explorer_id"] },
+  RuinRelic: { entities: ["entity_id"] },
+  RuinCache: { entities: ["entity_id"] },
   ExpeditionDiscovery: { realms: ["structure_id"], epoch: "epoch" },
-  ArmySlot: { realms: ["structure_id"], epoch: "epoch" },
+  ExpeditionSpire: { realms: ["structure_id"], epoch: "epoch" },
+  ArmyDay: { entities: ["explorer_id"] },
+  AspectActivity: shared,
+  DeepTick: shared,
+  DeepSite: shared,
+  DeepEntries: shared,
+  DeepGuard: shared,
+  DeepArmy: shared,
+  ArmySlot: { entities: ["structure_id"], epoch: "epoch" },
   ExplorerTroops: { entities: ["explorer_id"] },
   Guard: { entities: ["structure_id"] },
-  FaithfulStructure: { entities: ["structure_id"] },
-  BitcoinClaim: { entities: ["mine_id"] },
-  TradeOrder: { entities: ["maker_id", "taker_id"] },
   BattleEvent: { entities: ["attacker_id", "defender_id"] },
   ResourceProduction: { entities: ["entity_id"] },
   Structure: byEntity,
-  BankName: byEntity,
-  VillageRaid: byEntity,
-  BitcoinMine: byEntity,
   ResourceBalance: byEntity,
-  ProductionBonus: byEntity,
   ResourceWeight: byEntity,
   ResourceArrival: byEntity,
   StructureBuildings: byEntity,
-  Hyperstructure: byEntity,
-  HyperstructureProgress: byEntity,
-  HyperstructureShares: byEntity,
   EntityName: byEntity,
 };

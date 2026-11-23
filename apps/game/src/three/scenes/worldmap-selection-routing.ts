@@ -6,16 +6,11 @@ interface OwnedEntitySummary {
   owner?: bigint;
 }
 
-interface ChestSummary {
-  id: ID;
-}
-
 interface ResolveWorldmapHexClickPlanInput {
   hexCoords: HexPosition | null;
   accountAddress?: bigint | null;
   army?: OwnedEntitySummary;
   structure?: OwnedEntitySummary;
-  chest?: ChestSummary;
 }
 
 type WorldmapHexClickPlan =
@@ -31,7 +26,6 @@ export function resolveWorldmapHexClickPlan({
   accountAddress,
   army,
   structure,
-  chest,
 }: ResolveWorldmapHexClickPlanInput): WorldmapHexClickPlan {
   if (!hexCoords) {
     return { kind: "ignore" };
@@ -59,16 +53,6 @@ export function resolveWorldmapHexClickPlan({
       selection: {
         type: "structure",
         entityId: structure.id,
-      },
-    };
-  }
-
-  if (chest || !army || !structure) {
-    return {
-      kind: "select",
-      isMine,
-      selection: {
-        type: "clear",
       },
     };
   }

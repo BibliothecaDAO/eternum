@@ -1,11 +1,12 @@
 // @vitest-environment jsdom
+// @vitest-environment jsdom
 import { setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { StructureType, TileOccupier } from "@bibliothecadao/types";
 import { Vector3 } from "three";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import rowFixture from "../../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
-import preset from "../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
+import release from "../../../../../contracts/l3/world-native/schema/release-definition.json";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { frontierDay } from "@/ui/features/frontier/deploy/deploy-fixture";
 import type { StructurePlate } from "../map-plates/map-plate-model";
@@ -32,21 +33,9 @@ const chainAt = (seconds: number) => {
   });
 };
 
-/**
- * The fixture realm with one guard slot, as the chain sends it (its bar still wrapped, `{ Inline }`), in an Eternum game
- * (preset 3: knights capped at 120, a tier adds 20, 20 stamina a 60 s tick, 30 an explore: a segment of its bar) or a
- * Frontier game (`frontierDay`: knights capped at 150, no tier bonus).
- */
-const realmWithGuard = (
-  game: "eternum" | "frontier",
-  tier: "T2" | "T3",
-  stamina: { amount: number; settledAt: number },
-) => {
+const realmWithGuard = (tier: "T2" | "T3", stamina: { amount: number; settledAt: number }) => {
   const { store, row } = frontierDay();
   store.applyFacts([
-    ...(game === "eternum"
-      ? [{ model: "SliceRules", key: "0x100", value: { ...preset.rules, game_id: 1, day_unit_seconds: 0 } }]
-      : []),
     { model: "Structure", key: "0x7", value: { ...row, base: { ...row.base, troop_max_guard_count: 1 } } },
     {
       model: "Guard",
@@ -111,25 +100,19 @@ const managerOver = (store: ReturnType<typeof realmWithGuard>, tier: number) => 
 };
 
 describe("a structure's guard stamina on its map plate, as the chain's time runs on", () => {
-  it("keeps an Eternum realm guard's stamina on its plate: its balance, its regeneration, its cap with its tier's bonus", () => {
-    const store = realmWithGuard("eternum", "T2", { amount: 60, settledAt: 100 });
-    const { said } = managerOver(store, 2);
-    chainAt(100);
-    expect(said()).toEqual({ current: 60, max: 140, perExplore: 30 });
-    // A minute later, one tick: 20 more, with no guard row changed and the cached facts untouched.
-    chainAt(160);
-    expect(said()).toEqual({ current: 80, max: 140, perExplore: 30 });
-    chainAt(400);
-    expect(said()).toEqual({ current: 140, max: 140, perExplore: 30 });
-  });
+  const { stamina_gain_per_tick: gain, stamina_explore_stamina_cost: perExplore } =
+    release.definition.rules.troop_stamina_config;
+  const tick = Number(release.definition.rules.tick_config.armies_tick_in_seconds);
 
-  it("caps a Frontier guard at its game's maximum, with no tier bonus, however high its tier", () => {
-    const store = realmWithGuard("frontier", "T3", { amount: 60, settledAt: 290 });
+  it("regenerates a Frontier guard each armies tick and caps it at its game's maximum, with no tier bonus", () => {
+    const store = realmWithGuard("T3", { amount: 60, settledAt: 2 * tick });
     const { said } = managerOver(store, 3);
-    chainAt(350);
-    expect(said()).toEqual({ current: 80, max: 150, perExplore: 30 });
-    chainAt(1_000);
-    expect(said()).toEqual({ current: 150, max: 150, perExplore: 30 });
+    chainAt(3 * tick - 1);
+    expect(said()).toEqual({ current: 60, max: 150, perExplore });
+    chainAt(3 * tick);
+    expect(said()).toEqual({ current: 60 + gain, max: 150, perExplore });
+    chainAt((2 + 150) * tick);
+    expect(said()).toEqual({ current: 150, max: 150, perExplore });
   });
 });
 
@@ -253,11 +236,18 @@ describe("a Frontier site's guards on its map plate", () => {
   it.each(Object.keys(SITE_TYPES) as SiteKind[])(
     "tells no stamina on a standing %s's guard, only its count",
     (kind) => {
-      expect(guardOnPlate(kind, kind)).toEqual({ type: "knight", tier: 1, count: 1_100 });
+      expect(guardOnPlate(kind, kind)).toEqual({
+        type: kind === "Rift" ? "crossbowman" : "knight",
+        tier: 1,
+        count: kind === "Beasts" ? 1_000 : 1_100,
+      });
     },
   );
 
   it("reads the same guard's stamina for a structure that is not a standing site", () => {
-    expect(guardOnPlate("Camp", undefined).stamina).toMatchObject({ current: 13, max: 120 });
+    expect(guardOnPlate("Camp", undefined).stamina).toMatchObject({
+      current: 0,
+      max: release.definition.rules.troop_stamina_config.stamina_knight_max,
+    });
   });
 });

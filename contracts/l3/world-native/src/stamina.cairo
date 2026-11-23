@@ -35,6 +35,7 @@ pub impl StaminaImpl of StaminaTrait {
                 troop_stamina_config,
                 tick_seconds,
                 timestamp,
+                10000,
             );
     }
 
@@ -45,6 +46,7 @@ pub impl StaminaImpl of StaminaTrait {
         troop_stamina_config: TroopStaminaConfig,
         tick_seconds: u64,
         timestamp: u64,
+        rate_bps: u32,
     ) {
         let now: u32 = timestamp.try_into().unwrap();
         // Slot resolution already used the army's Logistics maximum at this second.
@@ -58,15 +60,17 @@ pub impl StaminaImpl of StaminaTrait {
             let elapsed: u64 = (now - self.settled_at).into();
             let boosted = core::cmp::min(elapsed, troop_boosts.incr_stamina_regen_seconds_left.into());
             let denominator = tick_seconds * PercentageValueImpl::_100();
-            let gain: u64 = troop_stamina_config.stamina_gain_per_tick.into();
-            // Below the cap, partitioning a time span never changes its gain or remainder,
-            // including across boost activation and expiry. The same denominator carries both rates.
-            let numerator = Into::<u32, u64>::into(self.remainder)
+            let gain: u128 = troop_stamina_config.stamina_gain_per_tick.into();
+            let rate: u128 = rate_bps.into();
+            let boosted_rate = rate
+                * (10000 + Into::<u16, u128>::into(troop_boosts.incr_stamina_regen_percent_num))
+                / 10000;
+            let numerator = Into::<u32, u128>::into(self.remainder)
                 + gain
-                    * (elapsed * PercentageValueImpl::_100()
-                        + boosted * Into::<u16, u64>::into(troop_boosts.incr_stamina_regen_percent_num));
-            self.amount += numerator / denominator;
-            self.remainder = (numerator % denominator).try_into().unwrap();
+                    * (Into::<u64, u128>::into(elapsed - boosted) * rate
+                        + Into::<u64, u128>::into(boosted) * boosted_rate);
+            self.amount += (numerator / denominator.into()).try_into().unwrap();
+            self.remainder = (numerator % denominator.into()).try_into().unwrap();
             troop_boosts.incr_stamina_regen_seconds_left -= boosted.try_into().unwrap();
         }
         self.amount = core::cmp::min(self.amount, maximum);
@@ -110,7 +114,7 @@ pub impl StaminaImpl of StaminaTrait {
         tick_seconds: u64,
         timestamp: u64,
     ) {
-        self.refill_to_max(ref troop_boosts, maximum, troop_stamina_config, tick_seconds, timestamp);
+        self.refill_to_max(ref troop_boosts, maximum, troop_stamina_config, tick_seconds, timestamp, 10000);
         self.amount = core::cmp::min(self.amount + amount, maximum);
         self.clamp(maximum);
     }

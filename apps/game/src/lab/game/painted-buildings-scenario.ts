@@ -1,12 +1,12 @@
 import {
   BUILDINGS_CENTER,
   BuildingType,
+  isFrontierBuilding,
   getHexesWithinRadius,
   getNeighborHexes,
   TileOccupier,
   StructureType,
 } from "@bibliothecadao/types";
-import { MAP_SITES } from "@/config/map-sites";
 import { type LabFact, type LabScenario, wire } from "./lab-chain";
 import { spireScenario, type LabGround } from "./spire-scenario";
 
@@ -15,16 +15,9 @@ const GUARD_PRECISION = 1_000_000_000n;
 /** A built Kingdom and its nearby sites, using the game's own board, map and placement controls, on the given ground. */
 export const paintedBuildingsScenario = (ground?: LabGround): LabScenario => {
   const game = spireScenario(ground);
-  const types = [
-    BuildingType.ResourceWheat,
-    BuildingType.ResourceLabor,
-    BuildingType.ResourceKnightT1,
-    BuildingType.WorkersHut,
-    BuildingType.WarHall,
-    BuildingType.SupplyYard,
-    BuildingType.ScoutsLodge,
-    BuildingType.Hearth,
-  ];
+  const types = Object.values(BuildingType).filter(
+    (type): type is BuildingType => typeof type === "number" && isFrontierBuilding(type),
+  );
   const plots = getHexesWithinRadius(BUILDINGS_CENTER[0], BUILDINGS_CENTER[1], 2).filter(
     ({ col, row }) => col !== BUILDINGS_CENTER[0] || row !== BUILDINGS_CENTER[1],
   );
@@ -93,7 +86,7 @@ export const paintedBuildingsScenario = (ground?: LabGround): LabScenario => {
     },
     ...types.map((category, index) => ({
       model: "Building",
-      key: `0x1ab8${index}`,
+      key: `0x1abb${index}`,
       value: {
         game_id: 1,
         structure_id: "7",
@@ -104,30 +97,6 @@ export const paintedBuildingsScenario = (ground?: LabGround): LabScenario => {
         labor_paid: "0",
       },
     })),
-    ...MAP_SITES.flatMap(({ occupier: category }, index) => [
-      {
-        model: "TileOccupancy",
-        key: `0x1ab6${index}`,
-        value: {
-          game_id: 1,
-          alt: false,
-          col: neighbors[index + 2].col,
-          row: neighbors[index + 2].row,
-          entity_id: 901 + index,
-          category,
-          is_structure: false,
-        },
-      },
-      ...(category === TileOccupier.Shrine
-        ? [
-            {
-              model: "ShrineReward",
-              key: `0x1ad6${index}`,
-              value: { game_id: 1, entity_id: 901 + index, rank: 3 },
-            },
-          ]
-        : []),
-    ]),
   ];
   const occupied = new Set([...game.store.rows("TileOccupancy")].map((tile) => `${tile.col},${tile.row}`));
   const sitePlots = getHexesWithinRadius(game.opensOn.col, game.opensOn.row, 2).filter(

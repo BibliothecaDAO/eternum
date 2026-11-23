@@ -3,24 +3,31 @@ import { createRoot, type Root } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Sheet } from "@/ui/design-system/kit/sheet";
 import { dayOf } from "@bibliothecadao/eternum";
+import { TroopType } from "@bibliothecadao/types";
 
+import { OpeningProvider } from "../opening/opening-context";
 import { EARLY_REALM, MID_REALM } from "../research/progression-fixture";
 import { canResearchNow, readResearchTree } from "../research/research-tree";
 import { secondsUntilHeld } from "./army-order";
-import { ArmyRow } from "./army-row";
-import { OpenSlotRow } from "./army-row";
-import { ArmyToken, OpenSlot, xpLine } from "./army-token";
+import { ArmyCard, OpenSlotCard } from "./army-row";
+import { ArmyToken, OpenSlot } from "./army-token";
 import { useChatKey } from "./chat-key";
 import { dayClock, dayBounds, endedDay, seasonDay } from "./day-clock";
 import { HudBands } from "./hud-bands";
 import { useOnePanel } from "./one-panel";
 import { MenuPage } from "./menu-page";
 import { OrderBar } from "./order-bar";
-import { PlaceNav } from "./place-nav";
-import { StatusStrip, type StoreReading, storeLine } from "./status-strip";
+import { PickedArmy } from "./picked-army";
+import { DayPill } from "./day-pill";
+import { HeaderStores } from "./header-stores";
+import { PhoneWorldActions } from "./frontier-nav";
+import { HUD_PLACES, resolveMenuPlaces } from "./hud-places";
+import { OfflineBanner, OfflineNotice } from "./offline-notice";
+import { type StoreReading, storeLine } from "./status-strip";
 
 const text = (markup: string) => new DOMParser().parseFromString(markup, "text/html").body.textContent ?? "";
 
@@ -43,7 +50,13 @@ afterEach(() => {
 });
 
 describe("the day clock", () => {
-  const rules = { dayUnitSeconds: 4 * 3_600, seed: 1n, startMainAt: 0, endAt: 21 * 20 * 14_400 };
+  const rules = {
+    dayUnitSeconds: 4 * 3_600,
+    seed: 1n,
+    startMainAt: 0,
+    scheduledEndAt: 21 * 20 * 14_400,
+    endAt: 21 * 20 * 14_400,
+  };
 
   it("counts days from one on the season's calendar, ends today with its day and says how long tomorrow lasts", () => {
     const eleventh = dayOf(rules, 0)!;
@@ -90,49 +103,67 @@ describe("the status strip", () => {
     flyTarget: `test-${kind}`,
   });
 
-  it("reads a 24-hour day in hours on the dial, as Play does: never '1d' (live-qa-night-1 P3-8)", () => {
-    const day = dayClock({ dayUnitSeconds: 4 * 3_600, seed: 1n, startMainAt: 0, endAt: 21 * 20 * 14_400 }, 3_600);
+  it("reads a 24-hour day in hours on the day pill, as Play does: never '1d' (live-qa-night-1 P3-8)", () => {
+    const day = dayClock(
+      {
+        dayUnitSeconds: 4 * 3_600,
+        seed: 1n,
+        startMainAt: 0,
+        scheduledEndAt: 21 * 20 * 14_400,
+        endAt: 21 * 20 * 14_400,
+      },
+      3_600,
+    );
     const clock = { ...day, secondsLeft: 24 * 3_600, tomorrowSeconds: 24 * 3_600 };
-    const markup = renderToStaticMarkup(<StatusStrip clock={clock} stores={[store("essence", 1)]} />);
-    expect(markup).toContain(`aria-label="Day ${day.day} · 24h left"`);
+    const markup = renderToStaticMarkup(<DayPill clock={clock} />);
+    expect(text(markup)).toContain(`Day ${day.day} · 24h`);
     expect(markup).not.toMatch(/\b1d\b/);
   });
 
-  it("keeps the strip to one row: the day's ring runs down through the day and turns red in its last hour", () => {
-    const day = dayClock({ dayUnitSeconds: 4 * 3_600, seed: 1n, startMainAt: 0, endAt: 21 * 20 * 14_400 }, 3_600);
-    const morning = renderToStaticMarkup(
-      <StatusStrip clock={{ ...day, shareLeft: 0.75, tone: "calm" }} stores={[store("essence", 1)]} />,
+  it("turns the day pill red in its last hour", () => {
+    const day = dayClock(
+      {
+        dayUnitSeconds: 4 * 3_600,
+        seed: 1n,
+        startMainAt: 0,
+        scheduledEndAt: 21 * 20 * 14_400,
+        endAt: 21 * 20 * 14_400,
+      },
+      3_600,
     );
-    // The clock line lives in Today now; the strip says no "Day ends" and no "Tomorrow lasts".
+    const morning = renderToStaticMarkup(<DayPill clock={{ ...day, shareLeft: 0.75, tone: "calm" }} />);
     expect(text(morning)).not.toContain("Day ends");
     expect(text(morning)).not.toContain("Tomorrow lasts");
-    expect(morning).toContain('stroke-dashoffset="0.25"');
-    expect(morning).not.toContain('data-tone="bad"');
+    expect(morning).toContain("text-hud-ink");
+    expect(morning).not.toContain("text-hud-bad");
     const lastHour = renderToStaticMarkup(
-      <StatusStrip
-        clock={{ ...day, secondsLeft: 600, shareLeft: 0.05, tone: "ember" }}
-        stores={[store("essence", 1)]}
-      />,
+      <DayPill clock={{ ...day, secondsLeft: 600, shareLeft: 0.05, tone: "ember" }} />,
     );
-    expect(lastHour).toContain('stroke-dashoffset="0.95"');
-    expect(lastHour).toContain('class="ui-dial" data-tone="bad"');
+    expect(text(lastHour)).toContain(`Day ${day.day} · 10m`);
+    expect(lastHour).toContain("text-hud-bad");
   });
 
-  it("shows each store with a limit bar where it has a limit, and dashes the unknown", () => {
-    const clock = dayClock({ dayUnitSeconds: 4 * 3_600, seed: 1n, startMainAt: 0, endAt: 21 * 20 * 14_400 }, 3_600);
-    const markup = renderToStaticMarkup(
-      <StatusStrip
-        clock={clock}
-        stores={[store("essence", 18_250), store("labor", 9_000, 18_000), store("wheat", undefined, 18_000)]}
-      />,
+  it("shows top-bar stores compactly with exact accessible labels and dashes the unknown", () => {
+    act(() =>
+      root.render(
+        <HeaderStores
+          showPopoverCard={false}
+          stores={[
+            store("essence", 125_000),
+            store("labor", 18_000, 18_000),
+            store("wheat", undefined, 6_000),
+            store("troops", 420, 1_500),
+          ]}
+        />,
+      ),
     );
-    expect(markup.match(/role="meter"/g)).toHaveLength(2);
-    expect(markup).toContain("width:50%");
-    // Each plate is one image named by its line, so the tooltip and a screen reader say the same words.
-    expect(markup).toContain('role="img" aria-label="Essence 18,250"');
-    expect(markup).toContain('role="img" aria-label="Labor 9,000 of 18,000"');
-    expect(markup).toContain('role="img" aria-label="Wheat — of 18,000"');
-    expect(text(markup)).toContain("—");
+    const plates = [...host.querySelectorAll('[role="img"]')];
+    expect(plates.map((plate) => plate.textContent)).toEqual(["18K", "—", "125K"]);
+    expect(plates.map((plate) => plate.getAttribute("aria-label"))).toEqual([
+      "Labor 18,000 of 18,000",
+      "Wheat — of 6,000",
+      "Essence 125,000",
+    ]);
   });
 });
 
@@ -143,10 +174,8 @@ describe("the army token", () => {
       <ArmyToken
         label="Army 1"
         art={undefined}
-        xp={260}
         stamina={{ ...stamina, perExplore: 20 }}
         troops={5_000}
-        canSpendSkillPoint
         selected={false}
       />,
     );
@@ -157,9 +186,10 @@ describe("the army token", () => {
       Number(fill),
     ]);
 
-  it("wears the XP balance as its badge, its stamina a segment per explore its maximum holds, and its troops", () => {
+  it("wears no XP number, its stamina a segment per explore its maximum holds, and its troops", () => {
     const markup = token({ current: 60, max: 120 });
-    expect(text(markup)).toBe("2605,000");
+    // The owner, 13 November 2026: no XP number on the army; its way to the next point is a ring.
+    expect(text(markup)).toBe("5,000");
     expect(markup).toContain('role="group"');
     // 120 is six explores: three of them held.
     expect(segments(markup)).toEqual([
@@ -187,56 +217,27 @@ describe("the army token", () => {
     ]);
   });
 
-  it("says what the XP buys next on its badge's tooltip, and the balance alone once nothing is left to buy", () => {
-    expect(xpLine(8, { at: 100, rank: 1 })).toEqual(["XP 8 of 100 · next ", { rank: 1 }, " point"]);
-    expect(xpLine(260, { at: 900, rank: 4 })).toEqual(["XP 260 of 900 · next ", { rank: 4 }, " point"]);
-    expect(xpLine(2_000, undefined)).toBe("XP 2,000");
-    const markup = renderToStaticMarkup(
-      <ArmyToken
-        label="Army 1"
-        art={undefined}
-        xp={8}
-        xpGoal={{ at: 100, rank: 1 }}
-        stamina={undefined}
-        troops={154}
-        canSpendSkillPoint={false}
-        selected={false}
-      />,
-    );
-    // The tip's plain words, and its rank for the tooltip's gem.
-    expect(markup).toContain('data-tip="XP 8 of 100 · next I point"');
-    expect(markup).toContain(
-      `data-tip-ranks="${JSON.stringify(["XP 8 of 100 · next ", { rank: 1 }, " point"]).replaceAll('"', "&quot;")}"`,
-    );
-  });
-
-  it("reads an army on a desktop's list in words: its troops, its stamina exact, its XP with what it buys next", () => {
+  it("reads an army on a desktop's card: its title and its stamina exact", () => {
     const onPick = vi.fn();
     act(() =>
       root.render(
-        <ArmyRow
+        <ArmyCard
           label="Army 2"
           number={2}
           art={undefined}
-          xp={25}
-          xpGoal={{ at: 100, rank: 1 }}
           stamina={{ current: 90, max: 150, perExplore: 20 }}
-          troops={1}
-          canSpendSkillPoint
           selected
           onPick={onPick}
         />,
       ),
     );
-    expect(host.textContent).toBe("22Army 225 XP1 troop90/150");
-    // The meter reads the stamina itself, as the phone's token does, never a rounded share of it.
+    expect(host.textContent).toContain("Army 2");
+    expect(host.textContent).toContain("90/150");
     const meter = host.querySelector('[role="meter"]')!;
     expect([meter.getAttribute("aria-valuenow"), meter.getAttribute("aria-valuemax")]).toEqual(["90", "150"]);
-    expect(host.querySelector('[data-tip="XP 25 of 100 · next I point"]')).not.toBeNull();
-    // The button is named for the army alone, as a phone's token is, so a click by name finds it.
-    const row = host.querySelector<HTMLButtonElement>('button[aria-label="Army 2"]')!;
-    expect(row.getAttribute("aria-pressed")).toBe("true");
-    act(() => row.click());
+    const card = host.querySelector<HTMLButtonElement>('button[aria-label="Army 2"]')!;
+    expect(card.getAttribute("aria-pressed")).toBe("true");
+    act(() => card.click());
     expect(onPick).toHaveBeenCalled();
   });
 
@@ -246,22 +247,13 @@ describe("the army token", () => {
     act(() =>
       root.render(
         <>
-          <ArmyToken
-            label="Army 1"
-            art={undefined}
-            xp={undefined}
-            stamina={undefined}
-            troops={undefined}
-            canSpendSkillPoint={false}
-            selected
-            onPick={onPick}
-          />
+          <ArmyToken label="Army 1" art={undefined} stamina={undefined} troops={undefined} selected onPick={onPick} />
           <OpenSlot label="Deploy" pulse onDeploy={onDeploy} />
         </>,
       ),
     );
     const [token, slot] = host.querySelectorAll("button");
-    expect(token.textContent).toBe("——");
+    expect(token.textContent).toBe("—");
     expect(token.getAttribute("aria-pressed")).toBe("true");
     act(() => token.click());
     act(() => slot.click());
@@ -273,60 +265,94 @@ describe("the army token", () => {
 describe("an open slot whose army is being deployed", () => {
   it("says Deploying…, pulses and cannot be pressed until the deploy's outcome", () => {
     const onDeploy = vi.fn();
-    act(() => root.render(<OpenSlotRow label="Deploy" pulse={false} filling="Deploying…" onDeploy={onDeploy} />));
+    act(() => root.render(<OpenSlotCard label="Deploy" pulse={false} filling="Deploying…" onDeploy={onDeploy} />));
     const slot = host.querySelector("button")!;
     expect(slot.getAttribute("aria-label")).toBe("Deploying…");
     expect(slot.getAttribute("aria-busy")).toBe("true");
-    expect(slot.closest(".ui-row")!.textContent).toBe("…Deploying…");
+    expect(slot.textContent).toBe("…Deploying…");
     act(() => slot.click());
     expect(onDeploy).not.toHaveBeenCalled();
   });
 });
 
-describe("the place bar", () => {
-  it("lights what is open, none on the map, dots Research when it can be bought, counts news, and goes", () => {
-    const onGo = vi.fn();
-    act(() => root.render(<PlaceNav place={null} onRealm={false} onGo={onGo} researchDot events={2} unread={3} />));
-    const slots = [...host.querySelectorAll("button")];
-    expect(slots.map((slot) => slot.textContent)).toEqual(["Realm", "Research", "2Feed", "3Chat", "Menu"]);
-    expect(slots.map((slot) => slot.getAttribute("aria-current"))).toEqual([null, null, null, null, null]);
-    expect(slots[1].querySelector("i")).not.toBeNull();
-    act(() => slots[2].click());
-    expect(onGo).toHaveBeenCalledWith("feed");
-    act(() => slots[4].click());
-    expect(onGo).toHaveBeenCalledWith("menu");
-    act(() => root.render(<PlaceNav place="research" onRealm={false} onGo={onGo} researchDot events={2} unread={3} />));
+describe("the phone world actions", () => {
+  it("shows Season and Menu buttons, dots Menu when something is new without numbers, and lights the open surface", () => {
+    const onSurface = vi.fn();
+    act(() => root.render(<PhoneWorldActions surface={null} onSurface={onSurface} events={2} unread={3} />));
+    const buttons = [...host.querySelectorAll("button")];
+    expect(buttons.map((button) => button.getAttribute("aria-label"))).toEqual(["Season", "Menu"]);
+    expect(buttons.map((button) => button.getAttribute("aria-current"))).toEqual([null, null]);
+    expect(buttons[1].textContent).toBe("");
+    expect(buttons[1].querySelector("[data-dot]")).not.toBeNull();
+    act(() => buttons[0].click());
+    expect(onSurface).toHaveBeenCalledWith("season");
+    act(() => buttons[1].click());
+    expect(onSurface).toHaveBeenCalledWith("menu");
+    act(() => root.render(<PhoneWorldActions surface="menu" onSurface={onSurface} events={0} unread={0} />));
     expect(host.querySelectorAll("button")[1]!.getAttribute("aria-current")).toBe("page");
+    expect(host.querySelectorAll("button")[1]!.querySelector("[data-dot]")).toBeNull();
+    const seasonPlace = HUD_PLACES.find((place) => place.key === "season")!;
+    expect(host.querySelectorAll("button")[0]!.getAttribute("aria-label")).toBe(seasonPlace.label);
+    act(() =>
+      root.render(
+        <OpeningProvider opened={new Set(["launch"])}>
+          <PhoneWorldActions surface={null} onSurface={onSurface} events={0} unread={0} />
+        </OpeningProvider>,
+      ),
+    );
+    expect([...host.querySelectorAll("button")].map((button) => button.getAttribute("aria-label"))).toEqual(["Menu"]);
   });
 
-  it("switches Realm and World: it names where it takes the player, is never lit, and goes there", () => {
-    const onGo = vi.fn();
-    act(() => root.render(<PlaceNav place={null} onRealm={false} onGo={onGo} researchDot events={0} unread={0} />));
-    const onMap = host.querySelector("button")!;
-    expect(onMap.textContent).toBe("Realm");
-    expect(onMap.querySelector("img")?.getAttribute("src")).toContain("realm");
-    act(() => root.render(<PlaceNav place={null} onRealm onGo={onGo} researchDot events={0} unread={0} />));
-    const onBoard = host.querySelector("button")!;
-    expect(onBoard.textContent).toBe("World");
-    expect(onBoard.getAttribute("aria-current")).toBeNull();
-    act(() => onBoard.click());
-    expect(onGo).toHaveBeenCalledWith("realm");
+  it("names a Paladin army Scouts on the picked-army row from Frontier's troop table", () => {
+    act(() =>
+      root.render(
+        <PickedArmy
+          army={{
+            explorerId: 7,
+            label: "Army 1",
+            number: 1,
+            art: "paladin-t1",
+            troops: 400,
+            troopsFact: { category: TroopType.Paladin },
+            stamina: { current: 100, max: 100, perExplore: 10 },
+            secondsToFull: 0,
+            ethereal: undefined,
+          }}
+          refill={null}
+          onDetails={() => undefined}
+        />,
+      ),
+    );
+    expect(host.textContent).toContain("Scouts · 400");
+    expect(host.textContent).not.toContain("Paladins");
   });
 
-  it("draws no divider between its slots, each a toggle alike", () => {
-    act(() => root.render(<PlaceNav place={null} onRealm={false} onGo={vi.fn()} researchDot events={0} unread={0} />));
-    expect(host.querySelectorAll("nav i[aria-hidden]")).toHaveLength(0);
-  });
-
-  it("leaves Research out for a spectator, who has no realm to research", () => {
-    act(() => root.render(<PlaceNav place={null} onRealm onGo={vi.fn()} events={0} unread={0} />));
-    const slots = [...host.querySelectorAll("button")].map((slot) => slot.textContent);
-    expect(slots).toEqual(["World", "Feed", "Chat", "Menu"]);
+  it("reads the four non-Season Menu tiles from HUD_PLACES with Chat fourth and gates Relics on relic-slots", () => {
+    expect(HUD_PLACES.map((place) => place.key)).toEqual(["season", "research", "feed", "relics", "chat"]);
+    const allOpen = resolveMenuPlaces({
+      aspectsOpen: true,
+      researchOpen: true,
+      relicsOpen: true,
+      researchReady: true,
+      feedUnread: 2,
+      chatUnread: 1,
+      hasRealm: true,
+    });
+    expect(allOpen.map((place) => place.key)).toEqual(["research", "feed", "relics", "chat"]);
+    const noRelics = resolveMenuPlaces({
+      aspectsOpen: true,
+      researchOpen: true,
+      relicsOpen: false,
+      researchReady: false,
+      feedUnread: 0,
+      chatUnread: 0,
+      hasRealm: true,
+    });
+    expect(noRelics.map((place) => place.key)).toEqual(["research", "feed", "chat"]);
   });
 
   it("dots Research only while a node can be researched now", () => {
-    // The owner's realm is short of every price; some days in, a Farm tier, the War hall and the Well are in reach.
-    expect(canResearchNow(readResearchTree(EARLY_REALM))).toBe(true);
+    expect(canResearchNow(readResearchTree(EARLY_REALM))).toBe(false);
     expect(canResearchNow(readResearchTree(MID_REALM))).toBe(true);
     expect(canResearchNow(undefined)).toBe(false);
   });
@@ -405,7 +431,6 @@ describe("the order bar", () => {
           wheat={{ cost: 100, held: 4_410, wait: undefined }}
           revealYield={500}
           laborFits={0}
-          xp={2}
           onCancel={() => {}}
           onGo={() => {}}
         />,
@@ -427,7 +452,6 @@ describe("the order bar", () => {
           stamina={covered}
           wheat={{ cost: 100, held: 4_410, wait: undefined }}
           revealYield={500}
-          xp={2}
           onCancel={onCancel}
           onGo={() => {}}
         />,
@@ -441,7 +465,7 @@ describe("the order bar", () => {
       "Wheat −100",
       "Essence, Labor +500",
     ]);
-    expect(host.textContent).toBe("90 → 60−100+500+2 XP");
+    expect(host.textContent).toBe("90 → 60−100+500");
     expect(barButtons()).toEqual(["Cancel"]);
     act(() => host.querySelector("button")!.click());
     expect(onCancel).toHaveBeenCalled();
@@ -456,7 +480,6 @@ describe("the order bar", () => {
           stamina={{ cost: 30, held: 13, wait: 111 }}
           wheat={{ cost: 100, held: 4_410, wait: undefined }}
           revealYield={500}
-          xp={2}
           refill={<button type="button">Refill</button>}
           onCancel={() => {}}
           onGo={() => {}}
@@ -477,7 +500,6 @@ describe("the order bar", () => {
           stamina={covered}
           wheat={{ ...wheat, wait: undefined }}
           revealYield={null}
-          xp={undefined}
           onCancel={() => {}}
           onGo={() => {}}
         />,
@@ -505,7 +527,6 @@ describe("the order bar", () => {
             stamina={{ cost: 21, held: 120, wait: undefined }}
             wheat={{ ...wheat, wait: undefined }}
             revealYield={500}
-            xp={2}
             onCancel={() => {}}
             onGo={onGo}
           />,
@@ -554,7 +575,6 @@ describe("the order bar", () => {
             stamina={covered}
             wheat={{ cost: 4, held: 4_410, wait: undefined }}
             revealYield={null}
-            xp={undefined}
             onCancel={() => {}}
             onGo={onGo}
           />
@@ -579,7 +599,6 @@ describe("the order bar", () => {
           stamina={covered}
           wheat={{ cost: 300, held: 40, wait: 4 * 60 }}
           revealYield={null}
-          xp={undefined}
           onCancel={() => {}}
           onGo={() => {}}
         />,
@@ -652,16 +671,50 @@ describe("the HUD's panels", () => {
 
 it.each([81, 84, 85])("shows the last %ih day with its real countdown and no tomorrow", (hours) => {
   const endAt = hours * 3600;
-  const calendar = { seed: 0x5eedn, startMainAt: 0, endAt, dayUnitSeconds: 7200 };
+  const calendar = { seed: 0x5eedn, startMainAt: 0, scheduledEndAt: endAt, endAt, dayUnitSeconds: 7200 };
   const clock = dayClock(calendar, endAt - 600);
   const day = hours === 81 ? 10 : 11;
   expect(clock).toMatchObject({ day, endsAt: endAt, secondsLeft: 600, tomorrowSeconds: undefined, tone: "ember" });
-  const markup = renderToStaticMarkup(<StatusStrip clock={clock} stores={[]} />);
-  expect(markup).toContain(`aria-label="Day ${day} · 10m left"`);
+  const markup = renderToStaticMarkup(<DayPill clock={clock} />);
+  expect(text(markup)).toContain(`Day ${day} · 10m`);
   expect(markup).not.toContain("Tomorrow");
   expect(seasonDay(calendar, endAt - 1)).toEqual({ day, lastDay: day });
   const start = (hours === 81 ? 68 : 80) * 3600;
   expect(dayBounds(calendar, endAt + 1, day)).toEqual({ start, end: endAt });
   expect(endedDay(calendar, endAt)).toBeNull();
   expect(dayClock(calendar, endAt).day).toBeUndefined();
+});
+
+describe("the offline banner", () => {
+  afterEach(() => {
+    useConnectionStore.getState().setGlobalStatus("connected");
+  });
+
+  it("renders the reconnecting alert with its Retry action", () => {
+    const onRetry = vi.fn();
+    act(() => root.render(<OfflineBanner onRetry={onRetry} />));
+    const banner = host.querySelector<HTMLElement>('[data-offline-banner][role="alert"]')!;
+    expect(banner).not.toBeNull();
+    expect(banner.textContent).toContain("Reconnecting…");
+    const retry = banner.querySelector<HTMLButtonElement>("button")!;
+    expect(retry.textContent).toBe("Retry");
+    act(() => retry.click());
+    expect(onRetry).toHaveBeenCalledTimes(1);
+  });
+
+  it("matches the live stream state: hidden when connected, reconnecting on retry, and no reconnecting claim when failed", () => {
+    useConnectionStore.getState().setGlobalStatus("connected");
+    act(() => root.render(<OfflineNotice />));
+    expect(host.querySelector("[data-offline-banner]")).toBeNull();
+
+    useConnectionStore.getState().setGlobalStatus("reconnecting");
+    act(() => root.render(<OfflineNotice />));
+    expect(host.querySelector("[data-offline-banner]")?.textContent).toContain("Reconnecting…");
+
+    useConnectionStore.getState().setGlobalStatus("failed");
+    act(() => root.render(<OfflineNotice />));
+    const failedText = host.querySelector("[data-offline-banner]")?.textContent ?? "";
+    expect(failedText).toContain("Retry");
+    expect(failedText).not.toContain("Reconnecting…");
+  });
 });

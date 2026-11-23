@@ -24,8 +24,7 @@ const history = vi.hoisted(
       payload?: Record<string, unknown>;
     }[],
 );
-/** The player's lens for Events, and the game's Hyperstructures. */
-const world = vi.hoisted(() => ({ filter: "all" as "important" | "all", hyperstructures: [] as number[] }));
+const world = vi.hoisted(() => ({ filter: "all" as "important" | "all" }));
 
 vi.mock("@/hooks/helpers/use-block-timestamp", async () => {
   const { useChainTimeStore } = await import("@/hooks/store/use-chain-time-store");
@@ -66,7 +65,7 @@ vi.mock("@/hooks/store/use-events-filter-store", () => ({ useEventsFilter: () =>
 vi.mock("@/hooks/context/game-context", () => ({
   useGame: () => ({
     setup: {
-      store: { inGame: () => world.hyperstructures.map((entity_id) => ({ entity_id })) },
+      store: { inGame: () => [] },
     },
   }),
 }));
@@ -101,14 +100,6 @@ const fight = (id: string, at: number, attacker = "0x5", defender = "0x6") => ({
   payload: { defender_id: 900, attacker: { player: attacker }, defender: { player: defender } },
 });
 
-const capture = (id: string, at: number, taker: string, holder: string) => ({
-  id,
-  story: "StructureCapturedStory",
-  owner: taker,
-  participants: [taker, holder],
-  at,
-  payload: { previous_owner: holder, new_owner: taker },
-});
 const othersFights = (count: number, from: number) =>
   Array.from({ length: count }, (_, index) => fight(`theirs${index}`, from + index));
 const routineStories = (count: number, from: number) =>
@@ -165,7 +156,6 @@ beforeEach(() => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   history.length = 0;
   world.filter = "all";
-  world.hyperstructures = [];
   useEventFeedStore.setState({ notices: [] });
   useHeadlineFeedStore.setState({ headlines: [] });
   useChainTimeStore.getState().anchor({ timestamp: 100_000 });
@@ -177,9 +167,9 @@ afterEach(() => act(() => root.unmount()));
 it("shows under All the world's history, newest first: every player's stories, routine ones too", () => {
   history.push(
     fight("battle", 90_000),
-    { id: "crate", story: "RelicChestOpened", owner: PLAYER, participants: [PLAYER], at: 80_000 },
+    { id: "explored", story: "ExplorationReward", owner: PLAYER, participants: [PLAYER], at: 80_000 },
     { id: "made", story: "ProductionStory", owner: PLAYER, participants: [PLAYER], at: 95_000 },
-    { id: "theirs", story: "RelicChestOpened", owner: "0x2", participants: ["0x2"], at: 85_000 },
+    { id: "theirs", story: "ExplorationReward", owner: "0x2", participants: ["0x2"], at: 85_000 },
   );
   const Ids = () => (
     <>
@@ -188,7 +178,7 @@ it("shows under All the world's history, newest first: every player's stories, r
         .join(",")}
     </>
   );
-  expect(renderToStaticMarkup(<Ids />)).toBe("made,battle,theirs,crate");
+  expect(renderToStaticMarkup(<Ids />)).toBe("made,battle,theirs,explored");
 });
 
 it("says so under Important before anything important has happened, and stops once something has", () => {
@@ -223,10 +213,10 @@ it("puts a newer story on top and lets the oldest go; the other two keep their e
   expect([...host.querySelectorAll("i")].slice(1)).toEqual(kept);
 });
 
-it("keeps the player's crate under Important however many routine stories of theirs come after it", () => {
+it("keeps the player's fight under Important however many routine stories of theirs come after it", () => {
   world.filter = "important";
   history.push(
-    { id: "crate", story: "RelicChestOpened", owner: PLAYER, participants: [PLAYER], at: 50_000 },
+    fight("mine", 50_000, PLAYER),
     ...Array.from({ length: 160 }, (_, index) => ({
       id: `made${index}`,
       story: "ProductionStory",
@@ -237,12 +227,11 @@ it("keeps the player's crate under Important however many routine stories of the
     fight("theirs", 99_000),
   );
   draw();
-  expect(rows()).toEqual(["crate"]);
+  expect(rows()).toEqual(["mine"]);
 });
 
-it("shows under Important a Hyperstructure taken by other players, and the player's fight, not others' fights", () => {
+it("shows under Important the player's fight, not others' fights or captures", () => {
   world.filter = "important";
-  world.hyperstructures = [900];
   history.push(fight("mine", 97_000, PLAYER, "0x5"), fight("theirs", 98_000), {
     id: "seized",
     story: "StructureCapturedStory",
@@ -252,7 +241,7 @@ it("shows under Important a Hyperstructure taken by other players, and the playe
     payload: { previous_owner: "0xc", new_owner: "0xb" },
   });
   draw();
-  expect(rows()).toEqual(["seized", "mine"]);
+  expect(rows()).toEqual(["mine"]);
 });
 
 it("keeps the player's three fights under Important through other players' fights and their own routine stories", () => {
@@ -266,20 +255,6 @@ it("keeps the player's three fights under Important through other players' fight
   history.push(fight("newer", 400_000, "0x5", PLAYER));
   draw();
   expect(rows()).toEqual(["newer", "mine3", "mine2"]);
-});
-
-it("keeps a Hyperstructure's capture under Important through other structures' captures", () => {
-  world.filter = "important";
-  world.hyperstructures = [900];
-  history.push(capture("seized", 99_000, "0xb", "0xc"));
-  history.push(
-    ...Array.from({ length: 150 }, (_, index) => ({
-      ...capture(`realm${index}`, 200_000 + index, "0xd", "0xe"),
-      entity: 7,
-    })),
-  );
-  draw();
-  expect(rows()).toEqual(["seized"]);
 });
 
 it("opens the Log on the same Important stories the strip keeps", () => {
@@ -333,11 +308,11 @@ it("shows the client's toasts above the stories, apart from their three: a notic
   useHeadlineFeedStore.setState({
     headlines: [
       {
-        id: "end",
-        type: "game-end",
-        title: "Game over",
-        description: ["The game has ended"],
-        icon: "game-end",
+        id: "start",
+        type: "game-start",
+        title: "The game has begun",
+        description: ["The game has begun"],
+        icon: "game-start",
         timestamp: 100_000,
       },
       {
@@ -351,7 +326,7 @@ it("shows the client's toasts above the stories, apart from their three: a notic
     ],
   });
   draw();
-  expect(toasts()).toEqual(["The game has ended", "Not enough stamina"]);
+  expect(toasts()).toEqual(["The game has begun", "Not enough stamina"]);
   expect(rows()).toEqual(["r0", "r1", "r2"]);
 });
 

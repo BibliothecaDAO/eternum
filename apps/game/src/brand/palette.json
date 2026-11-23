@@ -124,5 +124,27 @@
         "#514F4E"
       ]
     }
+  },
+  "aspects": {
+    "prowess": {
+      "gem": "#F5C43D",
+      "stone": "#3B3838",
+      "trim": "#F3D08A"
+    },
+    "luminary": {
+      "gem": "#F2EFE9",
+      "stone": "#E8E2D4",
+      "trim": "#A8B0B8"
+    },
+    "havoc": {
+      "gem": "#E53E3E",
+      "heart": "#3FAE4E",
+      "stone": "#2C2A2C"
+    },
+    "insight": {
+      "gem": "#A864F5",
+      "secondary": "#4660D0",
+      "stone": "#6E7F96"
+    }
   }
 }

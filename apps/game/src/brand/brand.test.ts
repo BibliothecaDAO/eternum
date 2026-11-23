@@ -3,7 +3,8 @@ import { createHash } from "node:crypto";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { FONT_FACES, HUD_COLORS, SHELL_COLORS } from "@/tokens";
+import { aspects } from "@bibliothecadao/types";
+import { ASPECT_HEX, FONT_FACES, HUD_COLORS, SHELL_COLORS } from "@/tokens";
 import { AGE_LOCKUP, LINK_PREVIEW, REALMS_MARK } from "@/ui/design-system/icon-meaning";
 import { EMAIL_ART_INPUTS } from "../../../../packages/notifications/src/email-art.gen";
 import { inputsDigest } from "../../../../packages/notifications/scripts/email-art-inputs.mjs";
@@ -40,10 +41,9 @@ function standaloneSurfaces(): string[] {
     path("../../index.html"),
     path("../../public/404.html"),
     path("../../public/offline.html"),
-    path("../../public/llm.txt"),
     path("../../../game-docs/vocs.config.ts"),
     path("../../../game-docs/docs/styles.css"),
-    path("../../../game-docs/docs/pages/index.mdx"),
+    ...sourcesUnder(path("../../../game-docs/docs/pages/")),
     path("../../../status/public/index.html"),
     path("../../../../packages/notifications/scripts/build-email-art.mjs"),
     path("../../../../packages/notifications/scripts/email-art-inputs.mjs"),
@@ -92,6 +92,7 @@ const KIT_COLOURS = [
   ...new Set([
     ...Object.values(KIT.brand),
     ...Object.values(KIT.games).flatMap((game) => [game.ground, game.title, game.stamp]),
+    ...Object.values(KIT.aspects).map((aspect) => aspect.gem),
   ]),
 ].map((hex) => {
   const [r, g, b] = [1, 3, 5].map((at) => parseInt(hex.slice(at, at + 2), 16));
@@ -102,7 +103,7 @@ const NAMED_FILE = /\/(?:images\/logos|fonts)\/[\w.-]+/g;
 
 function sourcesUnder(dir: string): string[] {
   return readdirSync(dir, { recursive: true, encoding: "utf8" })
-    .filter((file) => /\.(ts|tsx|css|html)$/.test(file) && !file.endsWith("brand.test.ts"))
+    .filter((file) => /\.(ts|tsx|css|html|mdx)$/.test(file) && !file.endsWith("brand.test.ts"))
     .map((file) => `${dir}${file}`);
 }
 
@@ -131,6 +132,16 @@ describe("the brand comes from the Realms Brand Kit v3", () => {
         gold2: kit("mark-gold"),
       });
     }
+  });
+
+  it("maps every Aspect to its gem colour from the brand palette", () => {
+    const byId = Object.fromEntries(
+      aspects.map(({ id, name }) => [
+        id,
+        KIT.aspects[name.toLowerCase() as keyof typeof KIT.aspects].gem.toLowerCase(),
+      ]),
+    );
+    expect(ASPECT_HEX).toEqual(byId);
   });
 
   it("serves every face and mark it names", () => {

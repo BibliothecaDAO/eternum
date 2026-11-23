@@ -1,19 +1,42 @@
 import { homeIcon, homeKind } from "./home-icons";
-import { readRealmSkin, type RealmSkin } from "@/three/structures/realm-skins";
 import type { FrontierSpecies } from "@/three/structures/frontier-beast";
-import { BuildingType, getProducedResource, StructureType, type StructureNamingMode } from "@bibliothecadao/types";
-import { frontierBeast, isGuardedSite, nativeGameModeOf, readFrontierBeast } from "@bibliothecadao/eternum";
+import {
+  aspectName,
+  BuildingType,
+  getProducedResource,
+  StructureType,
+  type AspectId,
+  type StructureNamingMode,
+} from "@bibliothecadao/types";
+import {
+  frontierBeast,
+  isGuardedSite,
+  nativeGameModeOfFamily,
+  readFrontierBeast,
+  type ArchivedStoryVariant,
+} from "@bibliothecadao/eternum";
 import { safeInteger, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import type { NativeRows, NativeStoryVariant } from "../../../../../contracts/l3/world-native/schema/client.gen";
 import { iconDefinition, type IconMeaning, resourceMeaning } from "./icon-meaning";
 
-/** Every story the game can emit (the schema's story variants, a fight and a raid), by the act it tells. */
-const storyMeanings = {
-  BattleEvent: "attack",
-  RaidEvent: "raid",
+const archivedStoryMeanings = {
   FaithPointsClaimedStory: "shrine",
   FaithPledged: "shrine",
   FaithRemoved: "shrine",
+  TradeCreated: "trade",
+  TradeAccepted: "trade",
+  TradeCancelled: "trade",
+  BankSwap: "swap",
+  BankLiquidity: "bank",
+  TierBought: "research",
+  SkillPointSpent: "research",
+} satisfies Record<ArchivedStoryVariant, IconMeaning>;
+
+/** Every story the game can emit (the schema's story variants, a fight and a raid), by the act it tells. */
+const storyMeanings = {
+  ...archivedStoryMeanings,
+  BattleEvent: "attack",
+  RaidEvent: "raid",
   StructureLevelUpStory: "upgrade",
   RealmCreatedStory: "realm",
   StructureCapturedStory: "flag",
@@ -25,31 +48,17 @@ const storyMeanings = {
   ProductionStory: "produce",
   BuildingPlacementStory: "build",
   BuildingPaymentStory: "build",
-  BitcoinAwardStory: "bitcoin-mine",
-  TradeCreated: "trade",
-  TradeAccepted: "trade",
-  TradeCancelled: "trade",
-  BankSwap: "swap",
-  BankLiquidity: "bank",
-  HyperstructurePoints: "hyperstructure",
-  RelicChestOpened: "relics",
-  RelicCrafted: "relics",
-  RelicActivated: "relics",
   ExplorationReward: "explore",
   SpireDiscovered: "spire",
   SitePayout: "flag",
-  RewardChestOpened: "reward-chest",
-  SeasonEnded: "victory",
   BlitzFinalized: "victory",
   ExplorerCreateStory: "deploy",
   ExplorerAddStory: "deploy",
   ExplorerDeleteStory: "military",
   TroopsTransferred: "military",
   LordsWithdrawn: "lords",
-  TierBought: "research",
-  SkillPointSpent: "research",
   SiteUsed: "claim",
-} satisfies Record<NativeStoryVariant | "BattleEvent" | "RaidEvent" | "TierBought", IconMeaning>;
+} satisfies Record<NativeStoryVariant | "BattleEvent" | "RaidEvent" | keyof typeof archivedStoryMeanings, IconMeaning>;
 
 /** A story's painting, by its kind: the one table every Feed, Events and Log row reads. */
 export function storyMeaning(story: string): IconMeaning {
@@ -64,7 +73,6 @@ const structureMeanings = {
   [StructureType.Mine]: "mine",
   [StructureType.Hyperstructure]: "hyperstructure",
   [StructureType.Bank]: "bank",
-  [StructureType.BitcoinMine]: "bitcoin-mine",
   [StructureType.Rift]: "rift",
   [StructureType.Ruin]: "ruin",
   [StructureType.Beasts]: "beasts",
@@ -89,10 +97,9 @@ export function readStructureMeaning(
   structure: NativeRows["Structure"],
 ): IconMeaning {
   const category = structure.base.category;
-  if (category === StructureType.Realm)
-    return realmMeaning(structure.base.level, readRealmSkin(store, structure), structure.metadata.has_wonder);
+  if (category === StructureType.Realm) return realmMeaning(structure.base.level, structure.metadata.has_wonder);
   if (!isGuardedSite(category)) return structureMeaning(category);
-  const mode = nativeGameModeOf(store.require("GameRegistry", { game_id: structure.game_id }).preset_id);
+  const mode = nativeGameModeOfFamily(store.require("GameRegistry", { game_id: structure.game_id }).family);
   const guard =
     mode === "frontier"
       ? readFrontierBeast(store, structure.game_id, safeInteger(structure.entity_id))?.beast
@@ -105,12 +112,12 @@ export function mineMeaning(kind: number): IconMeaning {
   if (kind === 2) return "mine";
   throw new Error(`Unknown mine icon: ${kind}`);
 }
-export function realmMeaning(level: number, skin?: RealmSkin, hasWonder = false): IconMeaning {
-  return homeIcon(homeKind(skin, hasWonder), level);
+export function realmMeaning(level: number, hasWonder = false): IconMeaning {
+  return homeIcon(homeKind(hasWonder), level);
 }
 
-export function realmMarkerMeaning(level: number, skin?: RealmSkin, hasWonder = false): IconMeaning {
-  if (skin || hasWonder) return realmMeaning(level, skin, hasWonder);
+export function realmMarkerMeaning(level: number, hasWonder = false): IconMeaning {
+  if (hasWonder) return realmMeaning(level, hasWonder);
   return `map-${realmMeaning(level)}` as IconMeaning;
 }
 
@@ -120,14 +127,15 @@ const BUILDING_PAINTINGS: Partial<Record<BuildingType, IconMeaning>> = {
   [BuildingType.ResourceLabor]: "workshop",
   [BuildingType.WorkersHut]: "workers-hut",
   [BuildingType.Storehouse]: "storehouse",
-  [BuildingType.WarHall]: "war-hall",
+  [BuildingType.RationsDepot]: "rations",
   [BuildingType.SupplyYard]: "supply-yard",
   [BuildingType.ScoutsLodge]: "scout-lodge",
-  [BuildingType.Hearth]: "hearth",
+  [BuildingType.ConscriptionCamp]: "camp",
 };
 /** Frontier names its troop building Barracks (buildingName), and paints it so; elsewhere it is "Knight T1". */
 const FRONTIER_BUILDING_PAINTINGS: Partial<Record<BuildingType, IconMeaning>> = {
   [BuildingType.ResourceKnightT1]: "barracks",
+  [BuildingType.ResourceCrossbowmanT1]: "war-hall",
 };
 
 /**
@@ -159,4 +167,8 @@ export function rewardChestMeaning(band?: number, opened = false): IconMeaning {
   if (band === undefined) return "reward-chest";
   if (!Number.isInteger(band) || band < 0 || band > 4) throw new Error(`Unknown reward chest band: ${band}`);
   return `reward-chest-${band}${opened ? "-opened" : ""}` as IconMeaning;
+}
+
+export function aspectCardUrl(aspect: AspectId): string {
+  return `/images/aspects/${aspectName(aspect).toLowerCase()}-card.webp`;
 }

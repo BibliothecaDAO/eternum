@@ -1,3 +1,5 @@
+import type { GroundLights } from "../terrain/ground-lights";
+import { SPIRE_GROUND_LIGHT } from "../structures/structure-ground-lights";
 import { isWithinWorldOriginReach, subscribeWorldOrigin, worldOrigin } from "../world-origin";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { SPIRE_MODEL_PATH } from "@/three/constants/scene-constants";
@@ -17,21 +19,12 @@ import { getWorldPositionForHex } from "../utils";
 import { gltfLoader } from "../utils/utils";
 import { afterWorldInteractive } from "@/game-entry/world-interactive";
 
-/** Spires stood on the surface by a rule rather than a tile: a Frontier realm's spire, lit by depth research. */
-export interface RuleSpires {
-  /** Their hexes on the surface, in contract coordinates. */
-  hexes(): Array<{ col: number; row: number }>;
-  /** Calls back when a rule input changes: a realm's knowledge, or the day turning over. */
-  subscribe(onChange: () => void): () => void;
-}
-
 /** A spire's hex; a dormant one, found by a Blitz reveal, stands without its portal or a name over it, as scenery. */
 type SpireHex = { col: number; row: number; dormant: boolean };
 
 const isSpireTile = (occupierType: number | undefined) =>
   occupierType === TileOccupier.Spire || occupierType === TileOccupier.DormantSpire;
 
-/** Spires belong to tiles or to a rule, so they never require a Structure component. */
 export class SpireManager {
   private readonly dummy = new Object3D();
   private readonly subscriptions: Array<() => void>;
@@ -54,8 +47,8 @@ export class SpireManager {
     private readonly labels: Group,
     private readonly terrain: TerrainSurface = FLAT_TERRAIN_SURFACE,
     private readonly markLabelsDirty: () => void = () => {},
-    private readonly ruleSpires?: RuleSpires,
     private readonly compilePipelines: PipelineCompiler = async () => {},
+    private readonly groundLights: GroundLights | null = null,
   ) {
     this.subscriptions = [
       projection.subscribeTiles((changes) => {
@@ -74,7 +67,6 @@ export class SpireManager {
           this.refresh();
         },
       ),
-      ...(ruleSpires ? [ruleSpires.subscribe(() => this.refresh())] : []),
       subscribeWorldOrigin(() => this.refresh()),
     ];
     this.refresh();
@@ -223,6 +215,7 @@ export class SpireManager {
     this.dummy.updateMatrix();
     this.model!.placeSpire(index, this.dummy.matrix, hex.dormant);
     this.placements.push({ hex, y: position.y, label: hex.dormant ? null : this.addLabel(position) });
+    if (!hex.dormant) this.groundLights?.set(spireLightKey(index), position.x, position.z, SPIRE_GROUND_LIGHT);
   }
 
   private addLabel(position: Vector3): CSS2DObject {
@@ -303,22 +296,19 @@ export class SpireManager {
   }
 
   private nativeSpireHexes(): SpireHex[] {
-    const layer = activeMapLayer();
-    const tileSpires = this.projection
-      .getTiles(layer)
+    return this.projection
+      .getTiles(activeMapLayer())
       .filter((tile) => isSpireTile(tile.occupierType))
       .map((tile) => ({
         col: tile.hexCoords.col,
         row: tile.hexCoords.row,
         dormant: tile.occupierType === TileOccupier.DormantSpire,
       }));
-    // A rule spire stands on the realm's surface ring.
-    if (layer || !this.ruleSpires) return tileSpires;
-    return [...tileSpires, ...this.ruleSpires.hexes().map((hex) => ({ ...hex, dormant: false }))];
   }
 
   private clearLabels(): void {
     this.markLabelsDirty();
+    this.placements.forEach((_, index) => this.groundLights?.remove(spireLightKey(index)));
     this.placements = [];
     for (const child of [...this.labels.children]) {
       if (child instanceof CSS2DObject) child.element.remove();
@@ -326,3 +316,5 @@ export class SpireManager {
     }
   }
 }
+
+const spireLightKey = (index: number) => `spire:${index}`;

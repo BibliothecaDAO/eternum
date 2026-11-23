@@ -1,10 +1,7 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { HUD_COLUMN_MARK, HUD_FOOT_MARK } from "@/three/utils/labels/hud-clearance";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { HudPanel } from "@/ui/design-system/kit/hud-elements";
-import { SpectatorStandingsBody } from "@/ui/features/world/containers/spectator-standings";
 import { canIssueOrders } from "@/utils/can-issue-orders";
-import { useGameFinished } from "@/ui/features/world/containers/top-header/game-clock";
 import { ActionBubbles } from "./action-bubbles";
 import { GuidedRail } from "./guided-rail";
 import { BuildOrderPanel } from "./build-order-panel";
@@ -56,7 +53,7 @@ export const OrdersFoot = () => (
  * The desktop HUD's left column, every mode's: from under the top bar down to the base band, its panels stacked, the
  * minimap pinned to its bottom-left corner. The map's labels keep clear of it.
  */
-export const HudColumn = ({ label, children }: { label: string; children: ReactNode }) => (
+const HudColumn = ({ label, children }: { label: string; children: ReactNode }) => (
   <aside
     {...HUD_COLUMN_MARK}
     aria-label={label}
@@ -78,24 +75,12 @@ export const HudFoot = ({ children }: { children: ReactNode }) => (
 
 export const LeftColumn = () => {
   const ordersAllowed = useUIStore(canIssueOrders);
-  const finished = useGameFinished();
   const account = useAccountStore((state) => state.account);
   if (ordersAllowed && !account) return null;
   return (
     <HudColumn label="Holdings">
       <OutOfGameLine />
-      {ordersAllowed ? (
-        <HoldingsAndCard />
-      ) : (
-        <HudPanel
-          label="Spectator standings"
-          title={finished ? "Final standings" : "Standings"}
-          className="flex max-h-hud-list flex-col"
-          bodyClassName="min-h-0 overflow-y-auto"
-        >
-          <SpectatorStandingsBody />
-        </HudPanel>
-      )}
+      {ordersAllowed && <HoldingsAndCard />}
       <HudMinimap className="mt-auto min-h-hud-minimap w-full shrink" />
     </HudColumn>
   );

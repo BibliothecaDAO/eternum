@@ -26,7 +26,6 @@ const ACTIONS = [
   ActionType.Help,
   ActionType.Build,
   ActionType.CreateArmy,
-  ActionType.Chest,
   ActionType.SpireTravel,
 ];
 const SITE_ICONS: IconMeaning[] = ["camp", "mine", "hyperstructure", "spire", "chest"];

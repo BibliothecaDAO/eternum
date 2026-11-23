@@ -21,7 +21,6 @@ import { readExpeditionRules } from "../../utils/expeditions";
 import type { PlayerNameResolver } from "../../utils/entities";
 
 export type StructureRow = NativeRows["Structure"];
-export type HyperstructureRow = NativeRows["Hyperstructure"];
 export type BuildingTiles = Pick<
   TileManager,
   | "getHexCoords"
@@ -71,11 +70,6 @@ export const readStructureIds = (store: NativeFactStore, owner: ContractAddress,
   [...store.structuresOwnedBy(configManager.getActiveGameId(), owner)]
     .filter((row) => row.base.category === category)
     .map((row) => safeInteger(row.entity_id));
-
-export const readHyperstructureUpdates = (store: NativeFactStore, entityId: ID): HyperstructureRow[] => {
-  const row = store.get("Hyperstructure", { game_id: configManager.getActiveGameId(), entity_id: entityId });
-  return row ? [row] : [];
-};
 
 export const readBuildings = (store: NativeFactStore, structureId: number): Building[] => {
   const frontier = readExpeditionRules(store, configManager.getActiveGameId()) !== null;

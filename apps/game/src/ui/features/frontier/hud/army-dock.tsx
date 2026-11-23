@@ -6,14 +6,16 @@ import { useLayout } from "@/shell/frame/layout";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { openArmyDeployment } from "@/ui/features/military/utils/open-army-deployment";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
-import { DEPLOY, DEPLOYING } from "@/ui/design-system/kit/words";
+import { DEPLOY, DEPLOYING, TROOPS } from "@/ui/design-system/kit/words";
 
-import { attributeBadgeTarget } from "../attributes/attributes";
+import { formatAmount, frontierTroopName, TroopTier } from "@bibliothecadao/types";
+import type { Rank } from "@/ui/design-system/kit/words";
+
 import type { SlotStart } from "../deploy/deploy-plan";
 import { slotStartLine } from "../deploy/slot-start";
 import { useDeployPlan } from "../deploy/use-deploy-plan";
 import { useWellRefill } from "../sites/well-refill";
-import { ArmyList, ArmyRow, OpenSlotRow } from "./army-row";
+import { ArmyCard, ArmyCardDock, OpenSlotCard } from "./army-row";
 import { ArmyToken, OpenSlot } from "./army-token";
 import type { DockArmy } from "./dock-armies";
 
@@ -24,21 +26,26 @@ import type { DockArmy } from "./dock-armies";
 export const ArmyDock = ({
   realm,
   armies,
-  lastHour = false,
   onOpenArmy,
 }: {
   realm: NativeRows["Structure"];
   armies: DockArmy[];
-  /** The day's last hour: each army shows what its Homecoming sends home when the day ends. */
-  lastHour?: boolean;
-  /** An army's panel: its figures, its XP and its level-ups. */
+
   onOpenArmy?: (explorerId: number) => void;
 }) => {
   const ordersAllowed = useUIStore(canIssueOrders);
   const actor = useAccountStore((state) => state.account?.address ?? null);
   // Only the actor's own armies are pan targets: a visited realm's army regions are not streamed.
   const own = actor !== null && BigInt(realm.owner) === BigInt(actor);
-  const openSlots = useDeployPlan(realm)?.open;
+  const plan = useDeployPlan(realm);
+  const openSlots = plan?.open;
+  const readyAtHome =
+    armies.length === 0 && plan?.troops && plan.troops.atHome > 0
+      ? {
+          count: formatAmount(plan.troops.atHome),
+          label: `${formatAmount(plan.troops.atHome)} ${frontierTroopName(plan.troops.type) ?? TROOPS}`,
+        }
+      : undefined;
   const openCount = ordersAllowed
     ? (openSlots?.length ?? Math.max(0, realm.base.troop_max_explorer_count - armies.length))
     : 0;
@@ -54,13 +61,7 @@ export const ArmyDock = ({
     if ("army" in entry) {
       const Army = desktop ? DockArmyRow : DockToken;
       return (
-        <Army
-          key={entry.army.explorerId}
-          army={entry.army}
-          returnsHome={lastHour ? entry.army.returnsHome : undefined}
-          pickable={own}
-          onOpenArmy={own ? onOpenArmy : undefined}
-        />
+        <Army key={entry.army.explorerId} army={entry.army} pickable={own} onOpenArmy={own ? onOpenArmy : undefined} />
       );
     }
     return (
@@ -69,6 +70,7 @@ export const ArmyDock = ({
         realm={realm}
         slot={entry.slot}
         pulse={entry.slot === next && armies.length === 0}
+        stock={entry.slot === next ? readyAtHome : undefined}
         wide={desktop}
       />
     );
@@ -80,10 +82,10 @@ export const ArmyDock = ({
     ));
   if (desktop)
     return (
-      <ArmyList used={armies.length} allowed={armies.length + openCount}>
+      <ArmyCardDock>
         {entries}
         {pending}
-      </ArmyList>
+      </ArmyCardDock>
     );
   return (
     <nav aria-label="Armies" className="pointer-events-auto flex gap-1.5">
@@ -109,12 +111,10 @@ const useDockArmy = (army: DockArmy, pickable: boolean, onOpenArmy: ((explorerId
 
 const DockToken = ({
   army,
-  returnsHome,
   pickable,
   onOpenArmy,
 }: {
   army: DockArmy;
-  returnsHome: number | undefined;
   pickable: boolean;
   onOpenArmy?: (explorerId: number) => void;
 }) => {
@@ -122,48 +122,43 @@ const DockToken = ({
   return (
     <ArmyToken
       label={army.label}
-      returnsHome={returnsHome}
+      drain={army.drain}
       number={army.number}
       art={army.art}
-      xp={army.xp}
-      xpGoal={army.xpGoal}
       stamina={stamina}
       troops={army.troops}
-      canSpendSkillPoint={army.canSpendSkillPoint}
       ethereal={army.ethereal}
       selected={selected}
-      flyTarget={attributeBadgeTarget(army.explorerId)}
       onPick={onPick}
     />
   );
 };
 
+const troopRankOf = (tier: string | undefined): Rank | undefined =>
+  tier === TroopTier.T3 ? 3 : tier === TroopTier.T2 ? 2 : tier === TroopTier.T1 ? 1 : undefined;
+
 const DockArmyRow = ({
   army,
-  returnsHome,
   pickable,
   onOpenArmy,
 }: {
   army: DockArmy;
-  returnsHome: number | undefined;
   pickable: boolean;
   onOpenArmy?: (explorerId: number) => void;
 }) => {
   const { selected, stamina, onPick } = useDockArmy(army, pickable, onOpenArmy);
+  const category = army.troopsFact?.category;
   return (
-    <ArmyRow
+    <ArmyCard
       label={army.label}
-      returnsHome={returnsHome}
+      title={(category && frontierTroopName(category)) ?? army.label}
+      tier={troopRankOf(army.troopsFact?.tier)}
+      drain={army.drain}
       number={army.number}
       art={army.art}
-      troops={army.troops}
       stamina={stamina}
-      xp={army.xp}
-      xpGoal={army.xpGoal}
-      canSpendSkillPoint={army.canSpendSkillPoint}
       ethereal={army.ethereal}
       selected={selected}
-      flyTarget={attributeBadgeTarget(army.explorerId)}
       onPick={onPick}
     />
   );
@@ -184,23 +179,26 @@ const DeploySlot = ({
   realm,
   slot,
   pulse,
+  stock,
   wide = false,
 }: {
   realm: NativeRows["Structure"];
   /** The slot and its start, as the deploy plan reads it; unknown while the plan is. */
   slot: SlotStart | undefined;
   pulse: boolean;
+  stock?: { count: string; label: string };
   wide?: boolean;
 }) => {
   const deploying = useInFlight("deploy", safeInteger(realm.entity_id));
   const line = slot && slotStartLine(slot);
-  const Slot = wide ? OpenSlotRow : OpenSlot;
+  const Slot = wide ? OpenSlotCard : OpenSlot;
   return (
     <Slot
       label={DEPLOY}
       filling={slot && deploying === slot.slot ? DEPLOYING : undefined}
       pulse={pulse}
       start={slot?.start && line ? { bar: slot.start, words: `${line}.` } : undefined}
+      stock={stock}
       onDeploy={() =>
         openArmyDeployment({ structureId: safeInteger(realm.entity_id), isExplorer: true, slot: slot?.slot })
       }

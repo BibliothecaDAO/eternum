@@ -1,4 +1,4 @@
-import type { BlitzResult, ConfirmedBlock, Withdrawal, HeldObligation } from "./ports";
+import type { ConfirmedBlock, Withdrawal, HeldObligation } from "./ports";
 
 export interface RelayProgress {
   nextBlock: number;
@@ -14,7 +14,6 @@ export interface RelayStore {
   progress(): Promise<RelayProgress>;
   observe(block: ConfirmedBlock): Promise<void>;
   withdrawals(): Promise<readonly Withdrawal[]>;
-  results(): Promise<readonly BlitzResult[]>;
   completeWithdrawal(transactionHash: string): Promise<void>;
   /** Claims the head shows paid and the accepted block has not proven yet. */
   awaitingProof(): Promise<readonly Withdrawal[]>;
@@ -23,7 +22,6 @@ export interface RelayStore {
   /** The head no longer shows the claim paid: it is a claim to pay again. */
   requeuePaid(transactionHash: string): Promise<void>;
   markReported(transactionHash: string): Promise<void>;
-  completeResult(gameId: number): Promise<void>;
   halt(reason: string): Promise<void>;
   held(): Promise<readonly HeldObligation[]>;
   heldRecovery(): Promise<readonly HeldObligation[]>;
@@ -60,10 +58,6 @@ export class DurableRelayStore implements RelayStore {
           blockNumber: withdrawal.blockNumber ?? block.number,
         });
       }
-      for (const result of block.results) {
-        await indexObligation(tx, `result:${result.gameId}`, result.blockNumber ?? block.number);
-        await tx.put(`result:${result.gameId}`, { ...result, blockNumber: result.blockNumber ?? block.number });
-      }
       for (const held of block.held ?? []) {
         await indexObligation(tx, heldKey(held), obligationBlock(held) ?? 0);
         await tx.put(heldKey(held), held);
@@ -82,9 +76,6 @@ export class DurableRelayStore implements RelayStore {
   }
   async withdrawals() {
     return this.queuePage<Withdrawal>("withdrawal:");
-  }
-  async results() {
-    return this.queuePage<BlitzResult>("result:");
   }
   async completeWithdrawal(transactionHash: string) {
     await this.storage.transaction(async (tx) => {
@@ -121,13 +112,6 @@ export class DurableRelayStore implements RelayStore {
       const withdrawal = await tx.get<Withdrawal>(`withdrawal:${transactionHash}`);
       if (withdrawal && !withdrawal.reported)
         await tx.put(`withdrawal:${transactionHash}`, { ...withdrawal, reported: true });
-    });
-  }
-  async completeResult(gameId: number) {
-    await this.storage.transaction(async (tx) => {
-      const result = await tx.get<BlitzResult>(`result:${gameId}`);
-      if (result) await tx.delete(obligationIndexKey(`result:${gameId}`, result.blockNumber ?? 0));
-      await tx.delete(`result:${gameId}`);
     });
   }
   async halt(reason: string) {
@@ -265,7 +249,6 @@ export class DurableRelayStore implements RelayStore {
 }
 
 const heldKey = (held: HeldObligation) => {
-  if (held.kind === "result") return `held:result:${held.result.gameId}`;
   if (held.kind === "row") return `held:row:${held.row.transactionHash}:${held.row.model}`;
   return `held:${held.kind === "receipt" ? held.receipt.transactionHash : held.withdrawal.transactionHash}`;
 };
@@ -289,7 +272,7 @@ const obligationBlock = (value: unknown): number | undefined => {
   const row = value as {
     blockNumber?: number;
     withdrawal?: Withdrawal;
-    result?: BlitzResult;
+    result?: { blockNumber?: number };
     receipt?: { blockNumber?: number };
     row?: { blockNumber?: number };
   };

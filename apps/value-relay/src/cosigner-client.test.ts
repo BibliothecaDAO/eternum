@@ -1,7 +1,7 @@
 import { expect, it, vi } from "vitest";
 import { cosignerClient } from "./cosigner-client";
 
-it("requests only exact payment and settlement terms from the independent host", async () => {
+it("requests only exact payment terms from the independent host", async () => {
   const network = vi.fn<typeof fetch>(async () => Response.json({ r: "0x12", s: "0x34" }));
   const client = cosignerClient("https://cosigner.test", "token", network);
   expect(
@@ -19,18 +19,6 @@ it("requests only exact payment and settlement terms from the independent host",
       "0xb",
     ),
   ).toEqual({ r: "0x12", s: "0x34" });
-  expect(
-    await client.settle({
-      chainId: "0x1",
-      gameId: 7,
-      chestWithdrawn: "42",
-      prizeWithdrawn: "9",
-      treasuryAmount: "100",
-    }),
-  ).toEqual({
-    r: "0x12",
-    s: "0x34",
-  });
   expect(
     network.mock.calls.map(([url, options]) => ({
       url: String(url),
@@ -54,12 +42,16 @@ it("requests only exact payment and settlement terms from the independent host",
         count: 2,
       },
     },
-    {
-      url: "https://cosigner.test/sign",
-      headers: { authorization: "Bearer token", "content-type": "application/json" },
-      redirect: "manual",
-      body: { kind: "settle", shard: "0x1", season: 7, chest: "42", prize: "9", treasuryAmount: "100" },
-    },
+  ]);
+});
+it("asks for a race's total and one home's reward under their own kinds", async () => {
+  const network = vi.fn<typeof fetch>(async () => Response.json({ r: "0x12", s: "0x34" }));
+  const client = cosignerClient("https://cosigner.test", "token", network);
+  await client.postRace({ shard: "0x1", season: 7, total: "30" });
+  await client.payRace({ shard: "0x1", season: 7, home: "5", wallet: "0xb", amount: "10" });
+  expect(network.mock.calls.map(([, options]) => JSON.parse(String(options?.body)))).toEqual([
+    { kind: "race-post", shard: "0x1", season: 7, total: "30" },
+    { kind: "race-pay", shard: "0x1", season: 7, home: "5", wallet: "0xb", amount: "10" },
   ]);
 });
 it.each([
@@ -69,7 +61,5 @@ it.each([
   Response.json(null),
 ])("refuses unavailable or malformed signatures", async (response) => {
   const client = cosignerClient("https://cosigner.test", "token", async () => response);
-  await expect(
-    client.settle({ chainId: "0x1", gameId: 7, chestWithdrawn: "0", prizeWithdrawn: "0", treasuryAmount: "100" }),
-  ).rejects.toThrow();
+  await expect(client.postRace({ shard: "0x1", season: 7, total: "100" })).rejects.toThrow();
 });

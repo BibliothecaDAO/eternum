@@ -1,8 +1,6 @@
 import { safeInteger, getScopedGameId } from "@bibliothecadao/eternum/game-client";
-import { useSeasonWinner } from "@/hooks/store/use-story-events-store";
 import { useFactView } from "@/hooks/use-fact-view";
 import { seasonClockView } from "@/sync/fact-views";
-import { resolveGameEndHeadline } from "./game-end-headline";
 import { createBuildingMilestones } from "./building-milestones";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
@@ -13,21 +11,17 @@ import { structureMapPosition } from "@bibliothecadao/eternum";
 import { getActiveGameSyncRuntime } from "@bibliothecadao/eternum/game-sync";
 import { StructureType } from "@bibliothecadao/types";
 import { useGame } from "@/hooks/context/game-context";
-import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 
 import { AudioManager } from "@/audio/core/AudioManager";
 
 import { type Headline, HEADLINE_DISPLAY_MS } from "./headline-types";
 import { NewsHeadlineBanner } from "./news-headline-banner";
-import { useGoalLine } from "@/ui/features/world/hud/points-goal";
 import { buildCaptureHeadline, NEWSWORTHY_CAPTURES } from "./capture-headline";
 import { createWorldEventEntityReader } from "../story-events/world-event-entity-reader";
 import { usePlayerNames } from "@/hooks/use-player-profile";
 
 export function NewsHeadlineBridge() {
   const { setup } = useGame();
-  const winner = useSeasonWinner();
-  const endRevision = useNativeRevision(["BlitzResult", "BlitzRoster", "PlayerPoints"]);
   const names = usePlayerNames();
   const entityReader = useMemo(() => {
     const projection = getActiveGameSyncRuntime()?.getWorldSpatialProjection();
@@ -36,7 +30,6 @@ export function NewsHeadlineBridge() {
 
   const address = useAccountStore((state) => state.account?.address);
   const startAt = useFactView(seasonClockView).gameStartMainAt;
-  const goal = useGoalLine();
   const nowSeconds = useCurrentBlockTimestamp();
   const wasBeforeStart = useRef(false);
 
@@ -114,8 +107,8 @@ export function NewsHeadlineBridge() {
     }
     if (!wasBeforeStart.current) return;
     wasBeforeStart.current = false;
-    enqueue(gameStartHeadline(startAt, goal));
-  }, [startAt, nowSeconds, enqueue, goal]);
+    enqueue(gameStartHeadline(startAt));
+  }, [startAt, nowSeconds, enqueue]);
 
   useEffect(() => {
     const resolveMilestone = createBuildingMilestones([...setup.store.inGame("Building", getScopedGameId())]);
@@ -142,12 +135,6 @@ export function NewsHeadlineBridge() {
     });
   }, [setup.store, entityReader, enqueue]);
 
-  // --- Game end detection ---
-  useEffect(() => {
-    const headline = resolveGameEndHeadline(setup.store, getScopedGameId(), winner);
-    if (headline) enqueue(headline);
-  }, [setup.store, winner, endRevision, enqueue]);
-
   // --- Prune old IDs ---
   useEffect(() => {
     if (shownIdsRef.current.size > 500) {
@@ -162,12 +149,11 @@ export function NewsHeadlineBridge() {
   return <NewsHeadlineBanner headline={currentHeadline} />;
 }
 
-/** The news that the game has begun, with what it is played for: the game's own, and the lab's Blitz start. */
-export const gameStartHeadline = (startAt: number, goal: string): Headline => ({
+export const gameStartHeadline = (startAt: number): Headline => ({
   id: `game-start:${startAt}`,
   type: "game-start",
   icon: "game-start",
   title: "The game has begun",
-  description: [goal],
+  description: [],
   timestamp: Date.now(),
 });

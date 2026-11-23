@@ -68,11 +68,25 @@ const DAY_MONTH = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "sho
 const DAY_MONTH_YEAR = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric" });
 
 /** A day (unix seconds) as the device's local "7 Oct", with the year only when it is not this year's. */
-export const formatDate = (unixSeconds: number | undefined, nowSeconds = Date.now() / 1000): string => {
+export const formatDate = (unixSeconds: number | undefined, nowSeconds = Date.now() / 1000): string =>
+  formatDay(DAY_MONTH, DAY_MONTH_YEAR, unixSeconds, nowSeconds);
+
+const LONG_DAY_MONTH = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long" });
+const LONG_DAY_MONTH_YEAR = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric" });
+
+export const formatLongDate = (unixSeconds: number | undefined, nowSeconds = Date.now() / 1000): string =>
+  formatDay(LONG_DAY_MONTH, LONG_DAY_MONTH_YEAR, unixSeconds, nowSeconds);
+
+const formatDay = (
+  thisYear: Intl.DateTimeFormat,
+  otherYear: Intl.DateTimeFormat,
+  unixSeconds: number | undefined,
+  nowSeconds: number,
+): string => {
   if (unixSeconds === undefined) return DASH;
   const date = new Date(unixSeconds * 1000);
   const sameYear = date.getFullYear() === new Date(nowSeconds * 1000).getFullYear();
-  return (sameYear ? DAY_MONTH : DAY_MONTH_YEAR).format(date);
+  return (sameYear ? thisYear : otherYear).format(date);
 };
 
 /**

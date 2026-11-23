@@ -1,5 +1,4 @@
-import { isRealmSkinPath } from "../structures/realm-skins";
-import { FRONTIER_PAINTED_REALMS } from "../structures/frontier-painted-buildings";
+import { FRONTIER_PAINTED_REALMS, frontierPaintedBuildingPath } from "../structures/frontier-painted-buildings";
 import { REALM_PATHS } from "../structures/realm-design";
 import { StructureProgress } from "@bibliothecadao/eternum";
 import {
@@ -15,13 +14,14 @@ import { Color } from "three";
 import { HyperstructureTypesNames } from "../types";
 import { HYPERSTRUCTURE_MODEL_PATH } from "../structures/hyperstructure-design";
 import { FALLEN_REALM_MODEL_PATHS, FRONTIER_BEAST_PATHS, FRONTIER_BEASTS } from "../structures/frontier-beast";
+import { modelPath } from "../utils/model-url";
 
 export const HEX_SIZE = 1;
 
 export const PREVIEW_BUILD_COLOR_VALID = 0x00a300;
 export const PREVIEW_BUILD_COLOR_INVALID = 0xff0000;
 
-const BUILDINGS_MODELS_PATH = "/models/new-buildings-opt/";
+const BUILDINGS_MODELS_PATH = modelPath("new-buildings-opt/");
 
 const buildUniqueAssetPaths = (assetPaths: readonly string[]) => Object.freeze(Array.from(new Set(assetPaths)));
 
@@ -45,14 +45,12 @@ enum BuildingFilenames {
   Dragonhide = "dragonhide.glb",
 }
 
-export const ChestModelPath = "/models/reward-tiles/chest-c2.glb";
-export const RiftModelPath = "/models/reward-tiles/rift.glb";
-const BITCOIN_MINE_MODEL_PATH = "/models/ethereal/bitcoin-mine.glb";
-const RIFT_MODEL_PATH = "/models/reward-tiles/rift.glb";
+export const RiftModelPath = modelPath("reward-tiles/rift.glb");
+const RIFT_MODEL_PATH = RiftModelPath;
 
-export const VILLAGE_MODEL_PATH = "/models/outposts/village.glb";
-export const CLEARED_SITE_MODEL_PATH = "/models/outposts/cleared-standard.glb";
-export const CAMP_MODEL_PATH = "/models/outposts/camp.glb";
+export const VILLAGE_MODEL_PATH = modelPath("outposts/village.glb");
+export const CLEARED_SITE_MODEL_PATH = modelPath("outposts/cleared-standard.glb");
+export const CAMP_MODEL_PATH = modelPath("outposts/camp.glb");
 export const REALM_MODEL_PATHS = {
   [RealmLevelNames.Settlement]: REALM_PATHS[0],
   [RealmLevelNames.City]: REALM_PATHS[1],
@@ -61,7 +59,7 @@ export const REALM_MODEL_PATHS = {
 } as const;
 
 export function isRealmModelPath(path: string): boolean {
-  return isRealmSkinPath(path) || REALM_PATHS.includes(path) || FRONTIER_PAINTED_REALMS.includes(path);
+  return REALM_PATHS.includes(path) || FRONTIER_PAINTED_REALMS.includes(path);
 }
 
 export function isSettlementModelPath(path: string): boolean {
@@ -71,7 +69,6 @@ export function isSettlementModelPath(path: string): boolean {
 export const SHARED_BUILDING_MODEL_PATHS = buildUniqueAssetPaths([
   ...Object.values(BuildingFilenames).map((fileName) => `${BUILDINGS_MODELS_PATH}${fileName}`),
   RiftModelPath,
-  BITCOIN_MINE_MODEL_PATH,
   ...REALM_PATHS,
   VILLAGE_MODEL_PATH,
   CAMP_MODEL_PATH,
@@ -85,7 +82,6 @@ export const structureTypeToBuildingType: Record<StructureType, BuildingType> = 
   [StructureType.Hyperstructure]: BuildingType.ResourceLabor,
   [StructureType.Village]: BuildingType.ResourceLabor,
   [StructureType.Camp]: BuildingType.ResourceLabor,
-  [StructureType.BitcoinMine]: BuildingType.ResourceLabor,
   [StructureType.Rift]: BuildingType.ResourceEssence,
   [StructureType.Ruin]: BuildingType.ResourceLabor,
   [StructureType.Beasts]: BuildingType.ResourceLabor,
@@ -143,11 +139,10 @@ export const buildingModelPaths = () => {
       [BuildingType.WorkersHut]: BUILDINGS_MODELS_PATH + BuildingFilenames.WorkersHut,
       [BuildingType.ResourceDragonhide]: BUILDINGS_MODELS_PATH + BuildingFilenames.Dragonhide,
       [BuildingType.ResourceResearch]: BUILDINGS_MODELS_PATH + BuildingFilenames.Castle,
-      // Frontier's training buildings stand in on existing models until the art pass draws them.
-      [BuildingType.WarHall]: BUILDINGS_MODELS_PATH + BuildingFilenames.ArcheryRange,
+      [BuildingType.RationsDepot]: frontierPaintedBuildingPath(BuildingType.RationsDepot)!,
       [BuildingType.SupplyYard]: BUILDINGS_MODELS_PATH + BuildingFilenames.Market,
       [BuildingType.ScoutsLodge]: BUILDINGS_MODELS_PATH + BuildingFilenames.Stable,
-      [BuildingType.Hearth]: BUILDINGS_MODELS_PATH + BuildingFilenames.WorkersHut,
+      [BuildingType.ConscriptionCamp]: BUILDINGS_MODELS_PATH + BuildingFilenames.Barracks,
     },
     [BUILDINGS_GROUPS.RESOURCES_MINING]: {
       [ResourceMiningTypes.Forge]: BUILDINGS_MODELS_PATH + BuildingFilenames.Forge,
@@ -176,7 +171,6 @@ export function getStructureModelPaths(): Record<StructureType, string[]> {
     [StructureType.Mine]: Object.values(MineKinds).map((kind) => kind.model),
     [StructureType.Village]: [VILLAGE_MODEL_PATH],
     [StructureType.Camp]: [CAMP_MODEL_PATH, ...FRONTIER_BEAST_PATHS, CLEARED_SITE_MODEL_PATH],
-    [StructureType.BitcoinMine]: [BITCOIN_MINE_MODEL_PATH],
     [StructureType.Rift]: [RIFT_MODEL_PATH, ...FRONTIER_BEAST_PATHS, CLEARED_SITE_MODEL_PATH],
     [StructureType.Ruin]: [...FALLEN_REALM_MODEL_PATHS, CLEARED_SITE_MODEL_PATH],
     [StructureType.Beasts]: [FRONTIER_BEASTS.cyclops.path, ...FRONTIER_BEAST_PATHS, CLEARED_SITE_MODEL_PATH],
@@ -276,4 +270,4 @@ export const MinesMaterialsParams: Record<number, { color: Color; emissive: Colo
   },
 };
 
-export const SPIRE_MODEL_PATH = "/models/ethereal/spire.glb";
+export const SPIRE_MODEL_PATH = modelPath("ethereal/spire.glb");

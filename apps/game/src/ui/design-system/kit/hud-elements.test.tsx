@@ -85,14 +85,13 @@ describe("a verb and what it costs (owner, sheet 2026-10-18: a button carries it
             line={costLine([
               { of: "stamina", amount: 20 },
               { of: "wheat", amount: 2.5 },
-              { of: "xp", amount: 100 },
             ])}
           />
         </>,
       ),
     );
     expect(host.querySelector(".ui-button")!.textContent).toBe("Move");
-    expect(host.querySelector(".ui-cost")!.textContent).toBe("20 stamina · 3 Wheat · 100 XP");
+    expect(host.querySelector(".ui-cost")!.textContent).toBe("20 stamina · 3 Wheat");
   });
 
   it("writes an unknown amount as a dash, and draws nothing for a verb that costs nothing", () => {
@@ -310,6 +309,26 @@ describe("a row pressed to choose it", () => {
     act(() => chosen.click());
     act(() => sender.click());
     expect(pick.mock.calls).toEqual([["Hetokamohuti"]]);
+  });
+
+  it("renders a display-only row without an interactive option role or row button", () => {
+    act(() =>
+      root.render(
+        <>
+          <HudRow title="Farm" detail="+6.3/min" />
+          <HudRow title="Workshop" detail="+0.83/min" controls={<button type="button">Upgrade</button>} />
+          <HudRow title="Brek" selected />
+        </>,
+      ),
+    );
+    const rows = [...host.querySelectorAll(".ui-row")];
+    expect(rows).toHaveLength(3);
+    for (const row of rows) {
+      expect(row.getAttribute("role")).toBeNull();
+      expect(row.getAttribute("aria-selected")).toBeNull();
+      expect(row.querySelector("button.ui-row__choose")).toBeNull();
+    }
+    expect(rows[2]!.hasAttribute("data-selected")).toBe(true);
   });
 });
 

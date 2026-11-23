@@ -4,56 +4,32 @@ import { fetchApi } from "@/runtime/app-api";
 /** A shard game whose launch records may temporarily be unavailable. */
 export interface DirectoryEntry extends HeraldGameDirectoryEntry {
   error?: "unavailable";
-  /** A paid Blitz game's slot on the ledger, from its launch record; null for every other game. */
-  slotId?: number | null;
 }
-
-export type DirectoryShardStatus = "active" | "draining" | "retired";
 
 /** One shard as our directory lists it; `games` and `manifest` are null when the Worker could not read that shard. */
 export interface DirectoryShard {
   url: string;
   chainId: string;
-  status: DirectoryShardStatus;
   games: DirectoryEntry[] | null;
   /** The shard's manifest, which the app opens it from without asking the shard again. */
   manifest: ShardManifest | null;
   error?: "unavailable";
 }
 
-/**
- * Our directory: the shards we list and every game on them, served by the identity Worker under the app's own /api
- * with its caching and per-shard partial failures. The client never fans in shard Heralds itself; a shard the Worker
- * could not read stays listed by name with no games. With a player, each game also carries that player's state on
- * its shard (registered, on the roster), which the Worker reads from the shard for that request.
- */
-export const fetchDirectory = async (player: string | null = null): Promise<DirectoryShard[]> => {
+export const fetchDirectory = async (player: string | null = null): Promise<DirectoryShard | null> => {
   const query = player ? `?player=${encodeURIComponent(player)}` : "";
   const response = await fetchApi(`/api/directory${query}`, { cache: "no-store" });
   if (!response.ok) throw new Error(`Directory answered ${response.status}`);
-  const { shards } = (await response.json()) as { shards: DirectoryShard[] };
-  return shards;
+  const { shard } = (await response.json()) as { shard: DirectoryShard | null };
+  return shard;
 };
-
-/** Blitz membership is the roster fact; open-entry modes count anyone registered. Needs the entry read for a player. */
-export const isMember = (game: HeraldGameDirectoryEntry): boolean =>
-  game.mode === "blitz" ? rosterWalletOf(game) !== null : game.player_state?.registered === true;
-
-/** The wallet the player's Blitz seat was frozen with at slot close (it holds the seat's result and chest); null off the roster. */
-export const rosterWalletOf = (game: HeraldGameDirectoryEntry): string | null =>
-  game.player_state?.roster_wallet ?? null;
 
 /** Over at Herald's chain clock: ended, or settled with its recorded result. */
 export const isGameOver = (game: HeraldGameDirectoryEntry): boolean =>
   game.status === "Ended" || game.status === "Settled";
 
-/** Whether the player can enter the game now: ready, not over, and theirs to play; a Frontier season is open to all. */
 export const canEnterGame = (game: DirectoryEntry): boolean =>
-  !game.error && game.ready && !isGameOver(game) && (isMember(game) || game.mode === "frontier");
-
-/** The shards the directory still serves: retired ones are history. */
-export const listedShards = (shards: readonly DirectoryShard[]): DirectoryShard[] =>
-  shards.filter((shard) => shard.status !== "retired");
+  !game.error && !isGameOver(game) && game.mode === "frontier";
 
 /** A finished game in our history, with the shard it lives on. */
 interface HistoryGame extends DirectoryEntry {

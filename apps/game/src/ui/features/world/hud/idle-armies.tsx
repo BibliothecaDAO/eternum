@@ -1,4 +1,3 @@
-import { useGame } from "@/hooks/context/game-context";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { useAllInFlight } from "@/hooks/store/use-actions-in-flight";
@@ -8,7 +7,8 @@ import { selectableArmiesView } from "@/sync/fact-views";
 import { requestArmySelection } from "@/three/scenes/worldmap-army-select-request";
 import { getExplorerStaminaSnapshot } from "@/utils/explorer-stamina";
 import { configManager } from "@bibliothecadao/eternum";
-import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
+import { resolveExplorerTroops, STAMINA_MODELS } from "@bibliothecadao/eternum/troop-stamina";
+import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { useMemo } from "react";
 
 /** One of the player's armies as the idle rule reads it: its stamina now, and whether an order is out or queued. */
@@ -52,7 +52,7 @@ export interface IdleArmies {
 
 export const useIdleArmies = (): IdleArmies => {
   const { isMapView } = useQuery();
-  const { setup } = useGame();
+  const staminaFacts = useNativeFacts(STAMINA_MODELS);
   const armies = useFactView(selectableArmiesView);
   const timestamp = useCurrentDefaultTick();
   const inFlight = useAllInFlight("army");
@@ -61,12 +61,15 @@ export const useIdleArmies = (): IdleArmies => {
     () =>
       idleArmyIds(
         armies.map(({ entityId }) => {
-          const explorer = setup.store.get("ExplorerTroops", {
+          const explorer = staminaFacts.store.get("ExplorerTroops", {
             game_id: configManager.getActiveGameId(),
             explorer_id: entityId,
           });
           const snapshot = explorer
-            ? getExplorerStaminaSnapshot({ timestamp, liveTroops: resolveExplorerTroops(setup.store, explorer) })
+            ? getExplorerStaminaSnapshot({
+                timestamp,
+                liveTroops: resolveExplorerTroops(staminaFacts.store, explorer, timestamp),
+              })
             : null;
           return {
             entityId,
@@ -75,7 +78,7 @@ export const useIdleArmies = (): IdleArmies => {
           };
         }),
       ),
-    [armies, setup.store, timestamp, inFlight, queued],
+    [armies, timestamp, inFlight, queued, staminaFacts],
   );
   const refusal = idleArmiesRefusal(isMapView, ids.length);
   return { ids, refusal };

@@ -193,7 +193,6 @@ export const ProceduralTerrainBenchmarkView = () => {
             value={variant}
             onChange={(value) => setOption("variant", value)}
             options={[
-              ["geometry", "Flat geometry"],
               ["material", "Textured ground"],
               ["props", "Ground + props"],
               ["production", "Production + shadows"],
@@ -373,7 +372,7 @@ function createEmptySnapshot(
 ): TerrainBenchmarkSnapshot {
   return {
     activeMode: "webgpu",
-    assets: { groundArrayRequests: 0, propCatalogRequests: 0 },
+    assets: { propCatalogRequests: 0 },
     chunks: {
       builtPages: 0,
       cachePages: 0,

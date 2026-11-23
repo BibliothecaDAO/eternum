@@ -95,6 +95,8 @@ function sameFelt(left: unknown, right: unknown): boolean {
 export function notificationMatchesGame(clientUrl: string, target: string, origin: string): boolean {
   const client = new URL(clientUrl);
   if (client.origin !== origin) return false;
+  const destination = new URL(target, origin);
+  if (destination.search) return client.pathname === destination.pathname && client.search === destination.search;
   return client.pathname === target || notificationTargetForGameClient(clientUrl, origin) === target;
 }
 
@@ -136,6 +138,7 @@ export const lobbyPath = (slot: string): string => `/blitz/slot-${slot}`;
 function isNotificationTarget(target: string): boolean {
   if (target === "/" || target === CHAT_PATH) return true;
   return (
-    /^\/g\/0x[0-9a-f]{1,64}\/[1-9][0-9]{0,15}$/.test(target) || /^\/blitz\/slot-[a-z0-9][a-z0-9-]{0,23}$/.test(target)
+    /^\/g\/0x[0-9a-f]{1,64}\/[1-9][0-9]{0,15}(?:\/map\?col=-?\d{1,10}&row=-?\d{1,10})?$/.test(target) ||
+    /^\/blitz\/slot-[a-z0-9][a-z0-9-]{0,23}$/.test(target)
   );
 }

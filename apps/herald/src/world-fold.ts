@@ -1,13 +1,9 @@
 import { expeditionDayEndsAt, readExpeditionRules, type ExpeditionRules } from "@bibliothecadao/eternum/expeditions";
 import { hasSingleTilePosition } from "@bibliothecadao/eternum/game-client";
 import {
-  NativePresetPreimageUnavailable,
-  presetPreimageCommitment,
-  type VerifiedPreset,
-} from "./native/preset-preimages";
-import {
   deriveGameSyncScope,
   scopeInputKeys,
+  SCOPE_INPUT_MODELS,
   gameSyncRowKeys,
   gameSyncScopeKeys,
   isClientGameSyncModel,
@@ -15,10 +11,8 @@ import {
   rowInGameSyncScope,
   type GameSyncScope,
 } from "@bibliothecadao/eternum/game-sync-models";
-import { nativeRuleConstants } from "../../../contracts/l3/world-native/schema/client.gen";
 import { toJsonValue, type ModelRegistry } from "./model-registry";
 import { directoryFact, FINALIZED_GAME_MODELS } from "./native/read-models";
-import { nativeRowKey } from "./native/row-key";
 import { rowStreamKeys } from "./subscription-keys";
 import type {
   DecodedRecord,
@@ -72,25 +66,9 @@ const checkpointRow = ([entityId, row]: [string, StoredModelRow]): FoldCheckpoin
   value: asJsonRecord(row.value),
 });
 
-/**
- * The games whose results are final: settled, and closed by their season rule or by a complete Blitz result. The fold
- * evicts their gameplay rows once their review snapshot is frozen. `rows` reads one model's rows, keys and values merged.
- */
 export function finalizedGames(rows: (model: string) => readonly DecodedRecord[]): string[] {
-  const rules = new Map(rows("SliceRules").map((value) => [BigInt(value.game_id as string).toString(), value]));
-  const results = new Set(
-    rows("BlitzResult")
-      .filter((value) => value.complete === true)
-      .map((value) => BigInt(value.game_id as string).toString()),
-  );
   return rows("GameRegistry")
-    .filter((value) => {
-      if (value.settled !== true) return false;
-      const gameId = BigInt(value.game_id as string).toString();
-      const config = rules.get(gameId);
-      if (!config) throw new Error(`Finalized game ${gameId} has no rules`);
-      return (Number(config.mode_rules) & nativeRuleConstants.SEASON_CLOSE) !== 0 || results.has(gameId);
-    })
+    .filter((value) => value.settled === true)
     .map((value) => BigInt(value.game_id as string).toString());
 }
 
@@ -106,11 +84,6 @@ export const checkpointModelMismatch = (registry: ModelRegistry, checkpoint: Fol
   const restoredModels = new Set(checkpoint.models.map(({ model }) => model));
   const missing = [...expectedModels].filter((model) => !restoredModels.has(model));
   const unexpected = [...restoredModels].filter((model) => !expectedModels.has(model));
-  if (
-    checkpoint.models.some(({ model, rows }) => model === "Preset" && rows.length > 0) &&
-    !checkpoint.preset_preimages
-  )
-    return "preset registration preimages are absent";
   if (missing.length === 0 && unexpected.length === 0) return undefined;
   return `missing=${missing.join(",") || "none"}, unexpected=${unexpected.join(",") || "none"}`;
 };
@@ -131,6 +104,8 @@ const orderSnapshotModelsForStreaming = <TDefinition extends { name: string }>(
 
 /** The index owner of deployment-wide rows, beside one per game. */
 const DEPLOYMENT_ROWS = "deployment";
+const scopeInputs = new Set<string>(SCOPE_INPUT_MODELS);
+const isScopeIndexModel = (model: string) => isScopedGameSyncModel(model, true) || scopeInputs.has(model);
 
 /** The keys a row is indexed by: the lookups subscriptionScope makes, and the keys a scope holds rows by. */
 const indexKeys = (model: string, row: StoredModelRow, spacing: number): string[] => {
@@ -159,8 +134,6 @@ export class WorldFold {
   private readonly registry: ModelRegistry;
 
   private readonly parent?: WorldFold;
-
-  private readonly presetPreimages = new Map<string, readonly string[]>();
 
   private readonly rowsByModel = new Map<string, Map<string, StoredModelRow | null>>();
 
@@ -258,20 +231,13 @@ export class WorldFold {
         fold.updateDirectoryIndex(model.model, row.entity_id, undefined, stored);
       }
     }
-    for (const preset of checkpoint.preset_preimages ?? []) {
-      if (presetPreimageCommitment(preset.felts) !== BigInt(preset.commitment).toString())
-        throw new Error("Checkpoint preset preimage commitment mismatch");
-      fold.rememberPreset(preset);
-    }
-    for (const { value } of fold.modelRows("Preset")) fold.presetPreimage(String(value.commitment));
     // A checkpoint may predate a game's eviction, but no write after its finalization is kept.
     for (const gameId of fold.finalizedGameIds()) fold.evictedGames.add(gameId);
     return fold;
   }
 
-  public apply(event: DecodedWorldEvent, onDerivedRow?: (change: FoldChange) => void): FoldChange | undefined {
+  public apply(event: DecodedWorldEvent): FoldChange | undefined {
     if (event.kind === "event") {
-      this.applyEventRows(event).forEach((change) => onDerivedRow?.(change));
       return {
         event: true,
         gameId: this.eventGameId(event),
@@ -330,26 +296,10 @@ export class WorldFold {
           .map(checkpointRow)
           .sort((left, right) => compareRowKeys(left.entity_id, right.entity_id)),
       })),
-      preset_preimages: [...this.allPresetPreimages()].map(([commitment, felts]) => ({ commitment, felts })),
       version: 2,
       native_schema_identity: this.registry.nativeSchemaIdentity,
       world_address: this.registry.worldAddress,
     };
-  }
-
-  public rememberPreset({ commitment, felts }: VerifiedPreset): void {
-    this.presetPreimages.set(BigInt(commitment).toString(), Object.freeze([...felts]));
-  }
-
-  public presetPreimage(commitment: string): readonly string[] {
-    const key = BigInt(commitment).toString();
-    const felts = this.presetPreimages.get(key) ?? this.parent?.presetPreimage(key);
-    if (!felts) throw new NativePresetPreimageUnavailable(key);
-    return felts;
-  }
-
-  private allPresetPreimages(): Map<string, readonly string[]> {
-    return new Map([...(this.parent?.allPresetPreimages() ?? []), ...this.presetPreimages]);
   }
 
   public overlay(): WorldFold {
@@ -602,7 +552,7 @@ export class WorldFold {
     const index: ScopeIndex = { spacing, entityIds: new Map() };
     this.scopeIndexes.set(owner, index);
     for (const { definition } of this.registry.persistent) {
-      if (!isScopedGameSyncModel(definition.name, true)) continue;
+      if (!isScopeIndexModel(definition.name)) continue;
       if ((definition.scope === "deployment") !== (owner === DEPLOYMENT_ROWS)) continue;
       for (const [entityId, row] of this.ownRows(definition.name, owner))
         this.addToScopeIndex(definition.name, entityId, row);
@@ -628,7 +578,7 @@ export class WorldFold {
     current: StoredModelRow | null | undefined,
   ): void {
     if (this.scopeIndexes.size === 0) return;
-    if (!isScopedGameSyncModel(model, true)) return;
+    if (!isScopeIndexModel(model)) return;
     if (previous) this.removeFromScopeIndex(model, entityId, previous);
     if (current) this.addToScopeIndex(model, entityId, current);
   }
@@ -772,36 +722,5 @@ export class WorldFold {
       }),
     );
     return undefined;
-  }
-
-  private applyEventRows(event: Extract<DecodedWorldEvent, { kind: "event" }>): FoldChange[] {
-    if (event.model.name === "PointsAwarded") return this.applyPointsAward(event);
-    return [];
-  }
-
-  private applyPointsAward(event: Extract<DecodedWorldEvent, { kind: "event" }>): FoldChange[] {
-    const { game_id, player } = event.key;
-    const { player_points, season_points } = event.value;
-    return [
-      {
-        model: "PlayerPoints",
-        keys: [game_id, player],
-        key: { game_id, address: player },
-        value: { points: player_points },
-      },
-      { model: "PointsTotal", keys: [game_id], key: { game_id }, value: { total: season_points } },
-    ].flatMap(({ model, keys, key, value }) => {
-      const codec = this.registry.persistent.find(({ definition }) => definition.name === model);
-      if (!codec) throw new Error(`Missing native points schema: ${model}`);
-      const change = this.apply({
-        kind: "set",
-        model: codec.definition,
-        entityId: nativeRowKey(keys.map(String)),
-        position: event.position,
-        key,
-        value,
-      });
-      return change ? [change] : [];
-    });
   }
 }

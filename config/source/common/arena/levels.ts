@@ -4,7 +4,7 @@ import type { ConfigPatch } from "../merge-config";
 
 const REALM_MAX_LEVEL = Object.keys(RealmLevels).length / 2;
 const VILLAGE_MAX_LEVEL = 1;
-export const REALM_UPGRADE_COSTS: Record<number, ResourceCost[]> = {
+const REALM_UPGRADE_COSTS: Record<number, ResourceCost[]> = {
   [RealmLevels.Settlement]: [],
   [RealmLevels.City]: [
     { resource: ResourcesIds.Labor, amount: 180 },

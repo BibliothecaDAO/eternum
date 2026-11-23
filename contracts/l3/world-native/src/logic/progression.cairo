@@ -1,10 +1,7 @@
-use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
-use crate::progression::{ArmyProgress, ArmyProgressionRules, XpAward};
+use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
+use crate::progression::ArmyProgress;
 use crate::troops::ExplorerKey;
 
-pub fn rules(game_id: u32) -> Option<ArmyProgressionRules> {
-    crate::logic::preset_record::for_game(game_id).progression_rules.read()
-}
 
 #[inline(never)]
 pub fn read(key: ExplorerKey) -> Option<ArmyProgress> {
@@ -16,10 +13,20 @@ pub fn require(key: ExplorerKey) -> ArmyProgress {
     read(key).expect('missing army progress')
 }
 
-pub fn create(key: ExplorerKey, learned: u64) -> ArmyProgress {
+#[cfg(not(feature: "blitz"))]
+#[inline(never)]
+pub fn held_oaths(key: ExplorerKey, context: crate::commands::ExecutionContext) -> u16 {
+    require(key).oaths
+}
+
+#[cfg(feature: "blitz")]
+pub fn held_oaths(_key: ExplorerKey, _context: crate::commands::ExecutionContext) -> u16 {
+    0
+}
+
+pub fn create(key: ExplorerKey, learned: u64, category: crate::troops::TroopType) -> ArmyProgress {
     assert!(read(key).is_none(), "army progress already exists");
-    rules(key.game_id).expect('missing progression rules');
-    let progress = crate::progression::trained(learned);
+    let progress = crate::progression::trained(learned, category);
     write(key, progress);
     progress
 }
@@ -58,24 +65,4 @@ pub fn own_stamina_max(
         Some(progress) => crate::progression::stamina_max(progress, troops.category, rules),
         None => crate::stamina::StaminaImpl::max(troops.category, troops.tier, rules),
     }
-}
-
-pub fn award_xp(key: ExplorerKey, award: XpAward) {
-    let rules = rules(key.game_id).expect('missing progression rules');
-    let mut progress = require(key);
-    let amount = match award {
-        XpAward::Reveal(coord) => {
-            let depth: u32 = crate::logic::expeditions::depth_at(key.game_id, coord).into();
-            rules.reveal_xp + depth * rules.reveal_xp_per_depth
-        },
-        XpAward::Clear(amount) => amount,
-    };
-    crate::progression::earn_xp(ref progress, rules, amount);
-    write(key, progress);
-}
-
-pub fn grant_point(key: ExplorerKey, rank: u8) {
-    let mut progress = require(key);
-    crate::progression::earn_point(ref progress, rank);
-    write(key, progress);
 }

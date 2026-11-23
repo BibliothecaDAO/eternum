@@ -82,6 +82,22 @@ it("keeps the HTTP status and stage when the failed response is not JSON", async
   expect(failure).toMatchObject({ status: 502, stage: "relay_device_approval_refused", code: "invalid_service_error" });
 });
 
+it("keeps the host of a failing URL and drops the path, query and login that can hold its key", () => {
+  const stored = (text: string) => serviceFailure(new Error(text), [], "fallback", []).message;
+  expect(stored("HTTP 429 from https://rpc.provider.test/v2/shortkey1 (rate limited)")).toBe(
+    "HTTP 429 from https://rpc.provider.test/[redacted] (rate limited)",
+  );
+  expect(stored("fetch failed: http://user:pass@127.0.0.1:8545?apikey=k1")).toBe(
+    "fetch failed: http://127.0.0.1:8545/[redacted]",
+  );
+  expect(stored("unreachable https://herald.test")).toBe("unreachable https://herald.test");
+  expect(stored("fetch failed: https://user:k1@rpc.provider.test")).toBe("fetch failed: https://rpc.provider.test");
+  const configured = "https://rpc.provider.test";
+  expect(
+    serviceFailure(new Error(`HTTP 429 from ${configured}/v2/shortkey1`), [], "fallback", [configured]).message,
+  ).toBe("HTTP 429 from [redacted]/[redacted]");
+});
+
 it("recognizes only a leading legacy code before diagnostic text", () => {
   const error = new Error("ledger_head_unconfirmed: Bearer secret-value");
   expect(serviceFailure(error, ["ledger_head_unconfirmed"], "fallback", [])).toEqual({
@@ -89,4 +105,18 @@ it("recognizes only a leading legacy code before diagnostic text", () => {
     type: "Error",
     message: "ledger_head_unconfirmed: [redacted]",
   });
+});
+
+it("keeps a long lower-case error code readable while a long key beside it is redacted", () => {
+  const error = new Error("confirmed_herald_read_unavailable_for_this_game key 0123456789abcdefABCDEF0123456789abcdef");
+  expect(serviceFailure(error, [], "fallback", []).message).toBe(
+    "confirmed_herald_read_unavailable_for_this_game key [redacted]",
+  );
+});
+
+it("redacts a long key whose first segment is lower-case", () => {
+  const error = new Error(
+    "fetch failed key abcdefghijklmn+OPQRSTUVWXYZ0123456789ab and abcdefghijklmnop-QRSTUVWXYZ0123456789",
+  );
+  expect(serviceFailure(error, [], "fallback", []).message).toBe("fetch failed key [redacted] and [redacted]");
 });

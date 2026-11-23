@@ -1,46 +1,69 @@
-import { nativeRuleConstants as rule } from "../../../contracts/l3/world-native/schema/client.gen";
-import { nativeCommandBits } from "../../../contracts/l3/world-native/schema/commands.gen";
+import { nativeRuleConstants as rule } from "../../../contracts/l3/world-native/schema/balance.gen";
+import { nativeBlitzCommandBits, nativeCommandBits } from "../../../contracts/l3/world-native/schema/commands.gen";
 
 export const arenaModeRules =
-  rule.HOME_REWARDS |
-  rule.DISCOVER_CAMPS |
-  rule.DISCOVER_CHESTS |
-  rule.CAPTURE_VILLAGES |
-  rule.SAME_OWNER_TRANSFER |
-  rule.RESERVED_HYPERSTRUCTURES |
-  rule.OWNER_ONLY_SHARES |
-  rule.HYPERSTRUCTURE_MULTIPLIERS |
-  rule.PRODUCTION_START |
-  rule.COMBAT_DICE_ETHEREAL;
+  rule.HOME_REWARDS | rule.DISCOVER_CAMPS | rule.CAPTURE_VILLAGES | rule.SAME_OWNER_TRANSFER | rule.PRODUCTION_START;
 
-export function commandMask(disabled: Array<keyof typeof nativeCommandBits>): bigint {
-  let mask = Object.values(nativeCommandBits).reduce((mask, bit) => mask | BigInt(bit), 0n);
-  for (const command of disabled) mask &= ~BigInt(nativeCommandBits[command]);
-  return mask;
+type NativeCommand = keyof typeof nativeCommandBits;
+
+function commandBits(commands: NativeCommand[]): bigint {
+  return commands.reduce((mask, command) => mask | BigInt(nativeCommandBits[command]), 0n);
 }
 
-export const arenaCommandMask = commandMask([
-  "TransferStructureOwnership",
-  "TransferStructureResourcesToExplorer",
-  "BurnLaborForResourceProduction",
-  "CreateTradeOrder",
-  "AcceptTradeOrder",
-  "CancelTradeOrder",
-  "CreateBanks",
-  "BuyFromBank",
-  "SellToBank",
-  "AddBankLiquidity",
-  "RemoveBankLiquidity",
-  "PledgeFaith",
-  "RemoveFaith",
-  "UpdateWonderOwnership",
-  "UpdateFaithfulOwnership",
-  "ClaimWonderPoints",
-  "ClaimPlayerFaithPoints",
-  "Raid",
+const allCommands = Object.keys(nativeCommandBits) as NativeCommand[];
+const arenaClosedCommands: NativeCommand[] = [
   "EnterDepth",
   "Research",
   "InteractSite",
-  "RefillStamina",
-  "WithdrawLords",
-]);
+  "BuySeal",
+  "BuyStamina",
+  "ChooseOath",
+  "RerollOath",
+  "ClaimDailyQuest",
+  "ProvisionRealm",
+  "ProvisionAndUpgradeRealm",
+  "SettleSeason",
+  "ToggleAlternate",
+];
+const blitzReturnedCommands: NativeCommand[] = [
+  "CreateBuilding",
+  "DestroyBuilding",
+  "PauseBuildingProduction",
+  "ResumeBuildingProduction",
+  "CreateExplorer",
+  "ManageTroops",
+  "Move",
+  "CreateGuild",
+  "JoinGuild",
+  "LeaveGuild",
+  "SetGuildWhitelist",
+  "RemoveGuildMember",
+  "SetEntityName",
+  "LevelUp",
+  "SendResources",
+  "OffloadArrival",
+  "BurnStructureResources",
+  "TransferExplorerResources",
+  "TransferExplorerResourcesToStructure",
+  "BurnResourceForResourceProduction",
+  "Explore",
+  "BattleGuard",
+  "Battle",
+  "GuardAttack",
+  "SettleVillage",
+  "MarkGameSettled",
+];
+
+const blitzOnlyCommandMask = Object.values(nativeBlitzCommandBits).reduce((mask, bit) => mask | BigInt(bit), 0n);
+
+export const arenaCommandMask = (commandBits(allCommands) & ~commandBits(arenaClosedCommands)) | blitzOnlyCommandMask;
+
+const blitzCommandsWithoutRoute = ["OpenRelicChest", "CraftRelic"];
+
+const blitzPendingRoutedCommands = allCommands.filter(
+  (command) => !arenaClosedCommands.includes(command) && !blitzReturnedCommands.includes(command),
+);
+
+export const blitzPendingCommands = [...blitzPendingRoutedCommands, ...blitzCommandsWithoutRoute];
+
+export const blitzPendingCommandMask = commandBits(blitzPendingRoutedCommands);

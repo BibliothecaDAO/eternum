@@ -34,7 +34,6 @@ x-init: &init
     PUBLIC_HERALD_URL: ${PUBLIC_HERALD_URL:?Set the official Herald URL}
     L2_GAS_BOUND: ${L2_GAS_BOUND:?Set the fixed play gas bound}
     PLAYER_CAPACITY: ${PLAYER_CAPACITY:-96}
-    PRESETS: ${PRESETS:?Name the preset ids this shard registers}
     TRUSTED_PROXY: ${TRUSTED_PROXY:-}
     BIND_ADDRESS: ${BIND_ADDRESS:-127.0.0.1}
     HOST_UID: ${HOST_UID:?Set HOST_UID to the host user that owns data/ (id -u)}

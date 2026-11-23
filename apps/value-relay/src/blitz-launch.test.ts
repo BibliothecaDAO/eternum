@@ -1,7 +1,7 @@
-import { absentLedgerSlot, ledgerCall, ledgerEvent } from "../../../packages/value-ledger/test-support/ledger-abi";
+import { absentLedgerSlot, ledgerCall } from "../../../packages/value-ledger/test-support/ledger-abi";
 import { Effect } from "effect";
 import { beforeEach, expect, it, vi } from "vitest";
-import { openSlotOnLedger, refundSlotOnLedger, markSlotRefundable } from "./blitz-launch";
+import { refundSlotOnLedger } from "./blitz-launch";
 
 const rpc = vi.hoisted(() => ({
   block: vi.fn(),
@@ -50,45 +50,6 @@ beforeEach(() => {
     return "0xc1a55";
   });
 });
-it("opens the created shard key under the containing season's economic preset, then recognizes an identical retry", async () => {
-  let opened = false;
-  rpc.execute.mockImplementation(async () => {
-    opened = true;
-    return { transaction_hash: "0xabc" };
-  });
-  rpc.events.mockResolvedValue({
-    events: [
-      { from_address: "0x10", ...ledgerEvent("SeasonOpened", { season_id: 3, preset_id: 9, start: 60, end: 1000 }) },
-    ],
-  });
-  rpc.call.mockImplementation(async (query) =>
-    query.entrypoint === "get_season"
-      ? ["0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "1", "9", "60", "1000", "0", "0"]
-      : opened
-        ? game()
-        : absentLedgerSlot(),
-  );
-  const open = () => Effect.runPromise(openSlotOnLedger(credentials, key, { start: 100, end: 160 }));
-  await open();
-  // The season lookup reads the ledger's history from its deployment block, not block 0.
-  expect(rpc.events.mock.calls[0]![0].from_block).toEqual({ block_number: 5 });
-  expect(rpc.execute.mock.calls[0]![0].calldata.map(BigInt)).toEqual(
-    ledgerCall("open_slot", {
-      key: { shard: key.chainId, slot_id: key.slotId },
-      season_id: 3,
-      preset_id: 9,
-      close: 100,
-      end: 160,
-    }).map(BigInt),
-  );
-  await open();
-  expect(rpc.execute).toHaveBeenCalledOnce();
-  expect(rpc.execute).toHaveBeenCalledWith({
-    contractAddress: "0x10",
-    entrypoint: "open_slot",
-    calldata: ["0x1", "7", "3", "9", "100", "160"],
-  });
-});
 it("cancels before start and automatically waits until the earliest legal abort after start", async () => {
   let cancelled = false;
   rpc.call.mockImplementation(async () => game(cancelled));
@@ -112,59 +73,8 @@ it("cancels before start and automatically waits until the earliest legal abort 
   );
 });
 
-it("encodes refunds with the committed SlotKey and wallet array", async () => {
-  await Effect.runPromise(markSlotRefundable(credentials, key, ["0xa", "0xb"]));
-  expect(rpc.execute.mock.calls[0]![0].calldata.map(BigInt)).toEqual(
-    ledgerCall("mark_refundable", { key: { shard: key.chainId, slot_id: key.slotId }, wallets: ["0xa", "0xb"] }).map(
-      BigInt,
-    ),
-  );
-});
-
-it.each([
-  ["close before season start", 59, 160, false],
-  ["close at season start and 601 seconds to settle", 60, 399, true],
-  ["exactly 600 seconds to settle", 100, 400, false],
-  ["only 599 seconds to settle", 100, 401, false],
-  ["game crosses season end", 100, 1001, false],
-] as const)("checks the confirmed ledger window before signing: %s", async (_, close, end, allowed) => {
-  let opened = false;
-  rpc.execute.mockImplementation(async () => {
-    opened = true;
-    return { transaction_hash: "0xabc" };
-  });
-  rpc.events.mockResolvedValue({
-    events: [
-      { from_address: "0x10", ...ledgerEvent("SeasonOpened", { season_id: 3, preset_id: 9, start: 60, end: 1000 }) },
-    ],
-  });
-  rpc.call.mockImplementation(async ({ entrypoint }) =>
-    entrypoint === "get_season"
-      ? ["0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "1", "9", "60", "1000", "0", "0"]
-      : opened
-        ? ["3", "1", "9", String(close), String(end), "0", "0", "0", "0"]
-        : absentLedgerSlot(),
-  );
-  const result = Effect.runPromise(openSlotOnLedger(credentials, key, { start: close, end }));
-  if (allowed) {
-    await result;
-    expect(rpc.execute).toHaveBeenCalledExactlyOnceWith({
-      contractAddress: "0x10",
-      entrypoint: "open_slot",
-      calldata: ["0x1", "7", "3", "9", String(close), String(end)],
-    });
-  } else {
-    await expect(result).rejects.toMatchObject({ operation: "open ledger Blitz registration" });
-    expect(rpc.execute).not.toHaveBeenCalled();
-  }
-  expect(rpc.call).toHaveBeenCalledWith(expect.objectContaining({ entrypoint: "get_season" }), 10);
-});
-
-it("does not submit an open or refund when the slot view fails", async () => {
+it("does not submit a refund when the slot view fails", async () => {
   rpc.call.mockRejectedValue(new Error("RPC unavailable"));
-  await expect(Effect.runPromise(openSlotOnLedger(credentials, key, { start: 100, end: 160 }))).rejects.toMatchObject({
-    operation: "open ledger Blitz registration",
-  });
   await expect(Effect.runPromise(refundSlotOnLedger(credentials, key))).rejects.toMatchObject({
     operation: "unlock failed Blitz refunds",
   });

@@ -1,5 +1,6 @@
-use starknet::storage::StorageMapReadAccess;
+use starknet::storage::{StorageMapReadAccess, StoragePathEntry, StoragePointerReadAccess};
 use crate::buildings::Building;
+use crate::resources::IResourceOperationsDispatcherTrait;
 
 pub fn building(key: BuildingKey) -> Option<Building> {
     let storage_key = (key.game_id, key.structure_id, key.inner_col, key.inner_row);
@@ -17,12 +18,116 @@ pub fn building_key(key: crate::resources::ResourceKey, coord: Coord) -> Buildin
     BuildingKey { game_id: key.game_id, structure_id: key.entity_id, inner_col: coord.x, inner_row: coord.y }
 }
 
+pub fn assert_building_command(
+    key: crate::resources::ResourceKey,
+    actor: starknet::ContractAddress,
+    timestamp: u64,
+    game_context: crate::commands::ExecutionContext,
+) -> crate::structures::StructureBase {
+    crate::game::assert_playing(game_context.game.unbox(), timestamp);
+    assert!(crate::logic::structures::owner(key) == actor, "actor does not own structure");
+    let base = crate::state::read().structures.structures.entry((key.game_id, key.entity_id)).base.read();
+    assert!(
+        base.category == crate::taxonomy::REALM_CATEGORY
+            || base.category == crate::taxonomy::VILLAGE_CATEGORY
+            || base.category == crate::taxonomy::CAMP_CATEGORY,
+        "structure does not support production",
+    );
+    base
+}
+
+pub fn resolve_building_coord(base: crate::structures::StructureBase, directions: Span<u8>) -> Coord {
+    let limits = crate::logic::upgrades::limits();
+    let maximum = if base.category == crate::taxonomy::REALM_CATEGORY {
+        limits.realm_max
+    } else if base.category == crate::taxonomy::VILLAGE_CATEGORY {
+        limits.village_max
+    } else {
+        0
+    };
+    assert!(!directions.is_empty(), "building path is empty");
+    assert!(directions.len() <= Into::<u8, u32>::into(maximum) + 1, "building outside maximum level");
+    assert!(directions.len() <= Into::<u8, u32>::into(base.level) + 1, "building outside current level");
+    let mut coord = Coord { alt: false, x: 10, y: 10 };
+    for direction in directions {
+        coord = crate::geometry::neighbor(coord, *direction);
+    }
+    coord
+}
+
+pub fn emit_building_change(
+    key: crate::resources::ResourceKey,
+    actor: starknet::ContractAddress,
+    coord: Coord,
+    category: u8,
+    change: crate::ownership::BuildingChange,
+    timestamp: u64,
+) {
+    crate::logic::stories::emit_entity_story(
+        key,
+        actor,
+        crate::ownership::Story::BuildingPlacementStory(
+            crate::ownership::BuildingPlacementStory { coord, category, change },
+        ),
+        timestamp,
+    );
+}
+
+pub fn pay_building_costs(
+    key: crate::resources::ResourceKey,
+    actor: starknet::ContractAddress,
+    coord: Coord,
+    category: u8,
+    count: u8,
+    costs: Span<crate::resources::ResourceAmount>,
+    increase: u16,
+    timestamp: u64,
+    game_context: crate::commands::ExecutionContext,
+) -> u128 {
+    assert!(!costs.is_empty(), "missing building erection cost");
+    let resources = crate::logic::structure_actions::resources_dispatcher(key.game_id);
+    let scale: u128 = (count - 1).into();
+    let mut paid = array![];
+    let mut labor_paid = 0;
+    for cost in costs {
+        let amount = *cost.amount + scale * scale * crate::math::PercentageImpl::get(*cost.amount, increase.into());
+        assert!(amount != 0, "zero building erection cost");
+        resources
+            .spend_resource(
+                key, *cost.resource_type, amount, timestamp, crate::commands::resource_context(game_context),
+            );
+        if *cost.resource_type == crate::resources::LABOR {
+            labor_paid += amount;
+        }
+        paid.append(crate::resources::ResourceAmount { resource_type: *cost.resource_type, amount });
+    }
+    crate::logic::stories::emit_entity_story(
+        key,
+        actor,
+        crate::ownership::Story::BuildingPaymentStory(
+            crate::ownership::BuildingPaymentStory { coord, category, cost: paid.span() },
+        ),
+        timestamp,
+    );
+    labor_paid
+}
+
+#[cfg(feature: "blitz")]
+pub fn board() -> crate::buildings::BoardRules {
+    panic!("Blitz has no realm board")
+}
+
+#[cfg(not(feature: "blitz"))]
+pub fn board() -> crate::buildings::BoardRules {
+    crate::balance::structures::BOARD
+}
+
 #[starknet::component]
 pub mod BuildingState {
-    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
+    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
     use crate::buildings::{Building, BuildingKey, BuildingRule, BuildingRuleKey, StructureBuildings, change_count};
     use crate::events::{RowDeleted, RowSet};
-    use crate::resources::{ResourceAmount, ResourceKey};
+    use crate::resources::ResourceKey;
     use crate::structures::StructureBase;
 
     #[storage]
@@ -39,8 +144,6 @@ pub mod BuildingState {
     }
     #[generate_trait]
     pub impl InternalImpl<TContractState, +HasComponent<TContractState>> of InternalTrait<TContractState> {
-        // One standing building's output on a realm board. Tiers apply to every building of a type, so the output is
-        // the same on every plot: Fields, Tools and Drill each add a share of the type's base rate.
         fn board_output(
             self: @ComponentState<TContractState>,
             key: ResourceKey,
@@ -56,7 +159,7 @@ pub mod BuildingState {
             let base_rate: u64 = if category == crate::research::WORKSHOP {
                 board.workshop_rate
             } else {
-                let rule = crate::logic::resources::rule(key.game_id, resource_type);
+                let rule = crate::logic::resources::rule(resource_type);
                 if base.category == crate::taxonomy::REALM_CATEGORY {
                     rule.realm_rate
                 } else {
@@ -68,98 +171,33 @@ pub mod BuildingState {
             let rate = base_rate * (10000 + makes * board.output_step_bps.into()) / 10000;
             (resource_type, rate.try_into().unwrap())
         }
-        // The population a realm's huts give beyond their base grant: each hut tier adds a share of every hut's.
-        fn hut_bonus(
-            self: @ComponentState<TContractState>,
-            game_id: u32,
-            huts: u8,
-            board: crate::buildings::BoardRules,
-            learned: u64,
-        ) -> u32 {
-            let grant: u32 = self
-                .rule(BuildingRuleKey { game_id, category: crate::research::HUT })
-                .capacity_grant
-                .into();
-            let tiers: u32 = crate::research::tier(learned, crate::research::ROW_HUT).into();
-            Into::<u8, u32>::into(huts) * grant * tiers * board.population_step_bps.into() / 10000
-        }
-        fn change_population_max(
-            ref self: ComponentState<TContractState>, key: ResourceKey, before: u32, after: u32, base_population: u32,
-        ) {
-            if before == after {
-                return;
-            }
-            let mut counts = self.data.buildings.structure_buildings.read((key.game_id, key.entity_id));
-            counts.population.max = counts.population.max + after - before;
-            assert!(
-                counts.population.current <= counts.population.max + base_population, "population exceeds capacity",
-            );
-            self.write_counts(key.game_id, key.entity_id, counts);
-        }
-        fn board(self: @ComponentState<TContractState>, game_id: u32) -> Option<crate::buildings::BoardRules> {
-            crate::logic::preset_record::for_game(game_id).board_terms.read()
-        }
-
         fn rule(self: @ComponentState<TContractState>, key: BuildingRuleKey) -> BuildingRule {
-            let preset = crate::logic::preset_record::for_game(key.game_id);
             assert!(
                 key.category > 0 && key.category <= crate::buildings::BUILDING_CATEGORY_COUNT,
                 "invalid building category",
             );
-            let terms = preset.building_terms.read(key.category);
+            let row = *crate::balance::structures::BUILDINGS.span().at(key.category.into() - 1);
+            let costs = crate::balance::structures::BUILDING_COSTS.span();
             BuildingRule {
-                population_cost: terms.population_cost,
-                capacity_grant: terms.capacity_grant,
-                simple_cost: self.read_costs(key, false, terms.simple_count),
-                complex_cost: self.read_costs(key, true, terms.complex_count),
+                population_cost: row.population_cost,
+                capacity_grant: row.capacity_grant,
+                simple_cost: costs.slice(row.first_cost, row.simple_count),
+                complex_cost: costs.slice(row.first_cost + row.simple_count, row.complex_count),
             }
-        }
-        fn read_costs(
-            self: @ComponentState<TContractState>, key: BuildingRuleKey, complex: bool, count: u8,
-        ) -> Span<ResourceAmount> {
-            let preset = crate::logic::preset_record::for_game(key.game_id);
-            let mut costs = array![];
-            for index in 0..count {
-                costs.append(preset.building_costs.read((key.category, complex, index)));
-            }
-            costs.span()
         }
         fn building(self: @ComponentState<TContractState>, key: BuildingKey) -> Option<Building> {
             super::building(key)
         }
-        fn create(
-            ref self: ComponentState<TContractState>,
-            key: BuildingKey,
-            building: Building,
-            population_cost: u8,
-            capacity_grant: u8,
-            base_population: u32,
-        ) {
+        fn create(ref self: ComponentState<TContractState>, key: BuildingKey, building: Building) {
             assert!(self.building(key).is_none(), "building location occupied");
             let mut counts = self.data.buildings.structure_buildings.read((key.game_id, key.structure_id));
             change_count(ref counts, building.category, true);
-            counts.population.current += population_cost.into();
-            counts.population.max += capacity_grant.into();
-            assert!(
-                counts.population.current <= counts.population.max + base_population, "population exceeds capacity",
-            );
             self.write_building(key, building);
             self.write_counts(key.game_id, key.structure_id, counts);
         }
-        fn remove(
-            ref self: ComponentState<TContractState>,
-            key: BuildingKey,
-            building: Building,
-            rule: BuildingRule,
-            base_population: u32,
-        ) {
+        fn remove(ref self: ComponentState<TContractState>, key: BuildingKey, building: Building) {
             let mut counts = self.data.buildings.structure_buildings.read((key.game_id, key.structure_id));
             change_count(ref counts, building.category, false);
-            counts.population.current -= rule.population_cost.into();
-            counts.population.max -= rule.capacity_grant.into();
-            assert!(
-                counts.population.current <= counts.population.max + base_population, "population exceeds capacity",
-            );
             self.write_counts(key.game_id, key.structure_id, counts);
             self
                 .data

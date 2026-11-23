@@ -1,17 +1,15 @@
 import { siteKindOf, type SiteKind } from "@bibliothecadao/eternum";
-import { fightVerdict, formatShort, scaledToUnits } from "@bibliothecadao/types";
+import { fightVerdict, formatAmount, formatShort, scaledToUnits } from "@bibliothecadao/types";
 
-import { DAY } from "@/ui/design-system/kit/words";
+import type { IconMeaning } from "@/ui/design-system/icon";
+import { DAY, DAY_SHARE_WORDS, ESSENCE, LABOR } from "@/ui/design-system/kit/words";
 
 import type { DayTotals } from "../log/day-totals";
 import { paidResource, someReward } from "../log/today-totals";
 import { battleRecordOf } from "../sites/fight-record";
+import { TARGET_MARKS } from "../sites/site-marks";
 
-/**
- * One mark of a day's trail: a site cleared (by its kind), a chest opened, or a fight that did not clear its site.
- * A won fight is its site's clear, so it has no mark of its own.
- */
-export type DayMark = SiteKind | "chest" | "army-lost" | "guard-holds";
+export type DayMark = SiteKind | "army-lost" | "guard-holds";
 
 /**
  * Each mark as the post writes it, the emoji a post on X carries (Wordle's grid, owner's brief: the day's shape,
@@ -22,7 +20,6 @@ export const DAY_MARKS = {
   Rift: "🌀",
   Ruin: "🏛️",
   Beasts: "🐺",
-  chest: "🎁",
   "army-lost": "💀",
   "guard-holds": "🛡️",
 } as const satisfies Record<DayMark, string>;
@@ -31,7 +28,6 @@ export const DAY_MARKS = {
 const POST_TOTALS = [
   { total: "reveals", emoji: "🧭" },
   { total: "cleared", emoji: "🚩" },
-  { total: "chests", emoji: "🎁" },
 ] as const satisfies readonly { total: keyof DayTotals; emoji: string }[];
 
 /** How many marks a post's line shows before it counts the rest, so it stays one line. */
@@ -52,7 +48,6 @@ export const dayTrail = (stories: readonly DayStory[]): DayMark[] =>
 
 const markOf = ({ story, storyPayload }: DayStory): DayMark | null => {
   if (story === "SitePayout") return siteKindOf(Number(storyPayload.category));
-  if (story === "RewardChestOpened") return "chest";
   if (story !== "BattleEvent") return null;
   const record = battleRecordOf(storyPayload);
   if (!record) return null;
@@ -98,36 +93,49 @@ export const dayPostText = ({
   return [`${game} · ${DAY} ${day}${standing}`, counts, line].filter(Boolean).join("\n");
 };
 
-/**
- * The day's best moment, the one its card is built round: a ruin chest's LORDS, else the clear of the strongest guard
- * (its site, the guard it beat and what it paid), else the land revealed. A day enters no depth in its stories, so a
- * depth is never its best.
- */
 export type DayBest =
-  | { kind: "chest"; lords: number }
   | {
       kind: "clear";
       site: SiteKind;
       guard: number | undefined;
-      paid: { resource: "essence" | "labor" | "lords"; amount: number } | null;
+      paid: { resource: "essence" | "labor"; amount: number } | null;
     }
   | { kind: "reveals"; count: number };
+
+type DayBestMoment = {
+  icon: IconMeaning;
+  title: string;
+  detail: string | null;
+  paid: { icon: IconMeaning; value: string; name: string } | null;
+};
+
+const PAID_LABELS: Record<"essence" | "labor", { icon: IconMeaning; name: string }> = {
+  essence: { icon: "essence", name: ESSENCE },
+  labor: { icon: "labor", name: LABOR },
+};
+
+export const dayBestMoment = (best: DayBest): DayBestMoment => {
+  if (best.kind === "clear")
+    return {
+      icon: TARGET_MARKS[best.site].icon,
+      title: DAY_SHARE_WORDS.best.clear(TARGET_MARKS[best.site].word),
+      detail: best.guard ? DAY_SHARE_WORDS.guardBeaten(formatAmount(best.guard)) : null,
+      paid: best.paid && { ...PAID_LABELS[best.paid.resource], value: `+${formatShort(best.paid.amount)}` },
+    };
+  return { icon: "explore", title: DAY_SHARE_WORDS.best.reveals(formatAmount(best.count)), detail: null, paid: null };
+};
 
 /** Which clear leads when two beat the same guard: the rarer site. */
 const SITE_RANK: Record<SiteKind, number> = { Ruin: 3, Rift: 2, Camp: 1, Beasts: 0 };
 
 /** The day's best moment from the player's own stories of the day (usePlayerDay), and its reveals as the fallback. */
 export const dayBest = (stories: readonly DayStory[], reveals: number): DayBest => {
-  const lords = Math.max(0, ...stories.filter(isChest).map(({ storyPayload }) => Number(storyPayload.amount)));
-  if (lords > 0) return { kind: "chest", lords };
   const clears = stories
     .filter(({ story }) => story === "SitePayout")
     .map(({ storyPayload }) => clearOf(storyPayload, stories));
   const best = clears.sort((a, b) => (b.guard ?? 0) - (a.guard ?? 0) || SITE_RANK[b.site] - SITE_RANK[a.site])[0];
   return best ?? { kind: "reveals", count: reveals };
 };
-
-const isChest = ({ story }: DayStory) => story === "RewardChestOpened";
 
 /** A clear: its site, the guard the fight that won it beat, and what it paid. */
 const clearOf = (payout: Record<string, unknown>, stories: readonly DayStory[]) => {

@@ -90,6 +90,7 @@ export interface StructurePlate {
   inBattle?: boolean;
   /** Its kind's painting, drawn only as the pin of a plate with no room. */
   icon: IconMeaning;
+  crest?: number;
   /** Whose it is to a watching viewer; absent while the viewer plays. */
   watched?: PlateWatched;
 }
@@ -170,7 +171,6 @@ export const buildStructurePlate = (
     | "guardArmies"
     | "incomingTroopArrivals"
     | "frontierBeast"
-    | "realmSkin"
     | "level"
     | "hasWonder"
     | "battleTimerLeft"
@@ -198,7 +198,7 @@ export const buildStructurePlate = (
     name: named
       ? structure.structureName.trim()
       : structure.frontierBeast
-        ? frontierSiteName(structure.structureType)
+        ? frontierSiteName(structure.structureType, structure.frontierBeast)
         : structureName(structure.structureType, structure.mineKind ?? undefined),
     named,
     // A site's name as its holder and every list read it (siteDisplayName, through the manager): the plate never makes one.
@@ -210,7 +210,7 @@ export const buildStructurePlate = (
       : structure.structureType === StructureType.Mine && structure.mineKind !== undefined
         ? mineMeaning(structure.mineKind)
         : structure.structureType === StructureType.Realm
-          ? realmMeaning(structure.level, structure.realmSkin, structure.hasWonder)
+          ? realmMeaning(structure.level, structure.hasWonder)
           : structureMeaning(structure.structureType),
     guards,
     ...(inBattle(structure.battleTimerLeft) ? { inBattle: true } : {}),

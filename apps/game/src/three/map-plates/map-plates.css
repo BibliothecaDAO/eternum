@@ -174,6 +174,12 @@
   top: -6px;
   left: -6px;
 }
+.mp-token__crest {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  display: flex;
+}
 .mp-token__strip {
   display: flex;
   height: 18px;

@@ -7,31 +7,26 @@ import malformedFixture from "../../../../contracts/l3/world-native/schema/fixtu
 import { checkpointModelMismatch, WorldFold } from "../world-fold";
 import { NativeDecoder, NativeReleaseSchemaUnavailable } from "./decoder";
 import { NativeIngestion } from "./ingestion";
+import { releaseLine } from "../../../../packages/core/src/test-support/releases";
 
-import { pointsAward, schema, manifest, receipt, raw, setup, battleEvent, rowEvent } from "./fixtures";
+import { schema, manifest, receipt, raw, setup, battleEvent, rowEvent } from "./fixtures";
 
 describe("native row decoder", () => {
   it("folds a known same-schema hotfix and refuses an unavailable decoder before its migration rows", () => {
     const released = structuredClone(manifest);
-    released.native.releaseSchemas["2"] = schema.identity;
+    released.native.releases = releaseLine(schema.identity, [1, 2]);
     const decoder = new NativeDecoder(released);
     const ingestion = new NativeIngestion(decoder);
     const fold = new WorldFold(decoder.registry);
     ingestion.applyReceipt(
       fold,
-      receipt([
-        rowEvent("GameRelease", ["1"], { release_id: 1n, created_release_id: 1n, preset_commitment: 42n }),
-        setFixture.raw,
-      ]),
+      receipt([rowEvent("GameRelease", ["1"], { release_id: 1n, created_release_id: 1n }), setFixture.raw]),
       10,
       0,
     );
     ingestion.applyReceipt(
       fold,
-      receipt([
-        rowEvent("GameRelease", ["1"], { release_id: 2n, created_release_id: 1n, preset_commitment: 42n }),
-        memberFixture.raw,
-      ]),
+      receipt([rowEvent("GameRelease", ["1"], { release_id: 2n, created_release_id: 1n }), memberFixture.raw]),
       11,
       0,
     );
@@ -40,23 +35,20 @@ describe("native row decoder", () => {
     expect(() =>
       ingestion.applyReceipt(
         fold,
-        receipt([
-          rowEvent("GameRelease", ["1"], { release_id: 3n, created_release_id: 1n, preset_commitment: 42n }),
-          deleteFixture.raw,
-        ]),
+        receipt([rowEvent("GameRelease", ["1"], { release_id: 3n, created_release_id: 1n }), deleteFixture.raw]),
         12,
         0,
       ),
     ).toThrow(NativeReleaseSchemaUnavailable);
     expect(fold.checkpoint()).toEqual(before);
-    released.native.releaseSchemas["3"] = "unavailable-schema";
+    released.native.releases = {
+      ...released.native.releases,
+      "3": { schema: "unavailable-schema", family: 1, previous: 2 },
+    };
     expect(() =>
       ingestion.applyReceipt(
         fold,
-        receipt([
-          rowEvent("GameRelease", ["1"], { release_id: 3n, created_release_id: 1n, preset_commitment: 42n }),
-          deleteFixture.raw,
-        ]),
+        receipt([rowEvent("GameRelease", ["1"], { release_id: 3n, created_release_id: 1n }), deleteFixture.raw]),
         12,
         0,
       ),
@@ -207,15 +199,15 @@ describe("native row decoder", () => {
   });
   it("folds facts from different logic classes at the Games address", () => {
     const { native, fold } = setup();
-    const points = pointsAward("1", "0x111", "42", "42", "42");
-    expect(points.from_address).toBe(setFixture.raw.from_address);
-    const foreign = { ...pointsAward("1", "0x111", "999", "999", "999"), from_address: "0x999" };
-    native.applyReceipt(fold, receipt([setFixture.raw, points, memberFixture.raw, battleEvent(), foreign]), 10, 0);
+    const fragments = rowEvent("Fragments", ["1", "0x111"], { balance: 42n });
+    expect(fragments.from_address).toBe(setFixture.raw.from_address);
+    const foreign = { ...rowEvent("Fragments", ["1", "0x111"], { balance: 999n }), from_address: "0x999" };
+    native.applyReceipt(fold, receipt([setFixture.raw, fragments, memberFixture.raw, battleEvent(), foreign]), 10, 0);
     expect(fold.modelRows("ExplorerTroops")[0].value).toEqual({
       ...memberFixture.expected.key,
       ...memberFixture.expected.value,
     });
-    expect(fold.modelRows("PlayerPoints")[0].value.points).toBe("0x2a");
+    expect(fold.modelRows("Fragments")[0].value.balance).toBe("0x2a");
     const incompatible = structuredClone(memberFixture.raw);
     incompatible.keys[0] = "0x987";
     expect(() => native.applyReceipt(fold, receipt([incompatible]), 11, 0)).toThrow("Unknown native event prefix");
@@ -229,7 +221,8 @@ it("decodes every declared row and member shape from Games", () => {
     if (/^core::array::(?:Span|Array)::</.test(type)) return ["0"];
     const definition = schema.types[type];
     if (definition?.type === "struct") return definition.members.flatMap((member) => value(member.type));
-    if (definition?.type === "enum") return ["0", ...value(definition.variants[0].type)];
+    if (definition?.type === "enum")
+      return [String(definition.variants[0].wireId ?? 0), ...value(definition.variants[0].type)];
     return ["1"];
   };
   for (const model of schema.models) {
@@ -250,14 +243,6 @@ it("decodes every declared row and member shape from Games", () => {
         expect(() => decoder.decode(frame(layout, [], model.members[0]?.id))).toThrow(
           `Native model ${model.name} is derived-only from preset; row events are forbidden`,
         );
-      continue;
-    }
-    if (model.eventProjection) {
-      for (const kind of ["RowSet", "RowMemberSet", "RowDeleted"]) {
-        expect(() =>
-          decoder.decode(frame(kind, [], kind === "RowMemberSet" ? model.members[0].id : undefined)),
-        ).toThrow(`projected from ${model.eventProjection}`);
-      }
       continue;
     }
     expect(

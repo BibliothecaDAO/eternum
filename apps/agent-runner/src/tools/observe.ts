@@ -1,10 +1,4 @@
-import {
-  divideByPrecision,
-  getBlockTimestamp,
-  LeaderboardManager,
-  liveHomeArmies,
-  type GameClient,
-} from "@bibliothecadao/eternum";
+import { divideByPrecision, getBlockTimestamp, liveHomeArmies, type GameClient } from "@bibliothecadao/eternum";
 import {
   type ArmyInfo,
   type BuildingType,
@@ -12,7 +6,6 @@ import {
   type ContractAddress,
   findResourceById,
   type ID,
-  type MarketInterface,
   type RealmInfo,
   ResourcesIds,
   type Structure,
@@ -26,7 +19,7 @@ import { readGameRegistry, resolveGamePhase, type GameRegistryClock } from "../g
 import { clipList, clipText, textResult } from "./result";
 import { StringEnum } from "./schema";
 
-export const OBSERVE_FOCUSES = ["empire", "armies", "nearby", "market", "leaderboard", "events"] as const;
+export const OBSERVE_FOCUSES = ["empire", "armies", "nearby", "events"] as const;
 type ObserveFocus = (typeof OBSERVE_FOCUSES)[number];
 
 /** Summaries stay under this many characters so a turn's context is spent on judgement, not on a dump. */
@@ -37,9 +30,7 @@ export const NEARBY_REACH = 3;
 const STAPLE_RESOURCES = [ResourcesIds.Wheat, ResourcesIds.Fish, ResourcesIds.Labor, ResourcesIds.Essence];
 
 const ObserveParams = Type.Object({
-  focus: Type.Optional(
-    StringEnum(OBSERVE_FOCUSES, "empire (default): my structures. armies, nearby, market, leaderboard, events."),
-  ),
+  focus: Type.Optional(StringEnum(OBSERVE_FOCUSES, "empire (default): my structures. armies, nearby, events.")),
 });
 
 export const createObserveTool = (game: RunnerGame): AgentTool<typeof ObserveParams> => ({
@@ -63,10 +54,6 @@ export const renderFocus = (game: RunnerGame, focus: ObserveFocus): string => {
       return renderArmies(game);
     case "nearby":
       return renderNearby(game);
-    case "market":
-      return renderMarket(game);
-    case "leaderboard":
-      return renderLeaderboard(game);
     case "events":
       return renderEvents(game);
   }
@@ -195,11 +182,8 @@ const renderSurroundings = (game: RunnerGame, army: ArmyInfo): string => {
         ? `reserved site at (${structure.hexCoords.col},${structure.hexCoords.row})`
         : `structure #${structure.entityId} ${describeOwner(game, structure.entityId)} at (${structure.hexCoords.col},${structure.hexCoords.row})`,
     );
-  const chests = projection
-    .getChestsInBounds(bounds)
-    .map((chest) => `chest #${chest.entityId} at (${chest.hexCoords.col},${chest.hexCoords.row})`);
   const explored = `${tiles.length} explored tiles within ${NEARBY_REACH} (${biomes})`;
-  const around = clipList([...structures, ...others, ...chests], 6).join("; ") || "nothing else";
+  const around = clipList([...structures, ...others], 6).join("; ") || "nothing else";
   return `Explorer #${army.entityId} at (${center.x},${center.y}): ${explored}; ${around}`;
 };
 
@@ -209,45 +193,6 @@ const describeOwner = (game: RunnerGame, structureId: ID): string => {
   if (owner === undefined) return "(unknown owner)";
   if (owner === game.viewer()) return "(mine)";
   return `(${playerName(owner)})`;
-};
-
-// Market
-
-const renderMarket = (game: RunnerGame): string => {
-  const { currentBlockTimestamp } = getBlockTimestamp();
-  const market = game.client.views.market(game.viewer(), currentBlockTimestamp);
-  const section = (title: string, trades: MarketInterface[]) =>
-    [`${title} (${trades.length}):`, ...clipList(trades.map(renderTrade), 5)].join("\n");
-  return [
-    section("My open trades", market.userTrades),
-    section("Lords bids", market.bidOffers),
-    section("Lords asks", market.askOffers),
-  ].join("\n");
-};
-
-const renderTrade = (trade: MarketInterface): string => {
-  const gives = trade.makerGets.map((r) => `${r.amount} ${resourceName(r.resourceId)}`).join("+");
-  const wants = trade.takerGets.map((r) => `${r.amount} ${resourceName(r.resourceId)}`).join("+");
-  return `trade #${trade.tradeId} by ${trade.makerName || trade.originName}: gives ${wants} for ${gives}, expires ${new Date(trade.expiresAt * 1000).toISOString()}`;
-};
-
-// Leaderboard
-
-const renderLeaderboard = (game: RunnerGame): string => {
-  const { store } = game.client.setup;
-  const leaderboard = LeaderboardManager.instance(store);
-  const viewer = game.viewer();
-  const ranked = leaderboard.playersByRank;
-  if (ranked.length === 0) return "No points registered yet.";
-  const mine = ranked.findIndex(({ address }) => address === viewer);
-  const rows = ranked
-    .slice(0, 10)
-    .map(
-      ({ address, points }, index) =>
-        `${index + 1}. ${playerName(address)} ${points} pts${address === viewer ? " (me)" : ""}`,
-    );
-  const myLine = mine >= 0 ? `My rank: ${mine + 1} of ${ranked.length}` : "I am not ranked yet.";
-  return [myLine, ...rows].join("\n");
 };
 
 // The runner reads no Realms profiles, so another player is their address.

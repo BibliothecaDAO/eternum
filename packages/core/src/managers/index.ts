@@ -2,8 +2,6 @@ export * from "./army-action-manager";
 export * from "./army-manager";
 export * from "./config-manager";
 export * from "./consumption-utils";
-export * from "./leaderboard-manager";
-export * from "./market-manager";
 export * from "./resource-manager";
 export * from "./stamina-manager";
 export * from "./structure-action-manager";

@@ -51,6 +51,13 @@ which the build stamps into the worker per environment, and the small globe in w
 entry always uses the normal bootstrap. Clicks focus an existing matching game without navigating it, or open a separate
 entry flow; an existing game's transactions are never interrupted by forced navigation.
 
+Deep site alerts use the same Important setting and device foreground lease. With Spire lore, a player gets at most one
+alert per site and game day when their largest army outside the Deep can clear every rival guard in order. Confirmed
+Herald changes replan watches for enrolled players, including idle players; a due watch and a waiting delivery reread
+the current guards. A site link opens its map coordinate through the normal game bootstrap. The notifier retains the
+day's delivery claim across restarts. Run `build.sh test-deep-alerts` for the ordered forecast, route and real notifier
+paths; the notifier logs the number of planned watches as `deep_site_watches`.
+
 Shared logical identity groups paired battle and delayed-transfer records by their action identity. The native emitters
 and notification rules must agree on perspective and ordering; behavior tests cover mirrored records and distinct
 actions. Policy inventory is checked against the compiled native Story enum. Distinct actions in one transaction retain

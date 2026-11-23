@@ -115,7 +115,7 @@ const storageOf = (name: string) => {
 let instances = new Map<string, ValueRelay>();
 const env = {
   ...settings,
-  IDENTITY: { l2ChainId: async () => "0x1", shards: async () => [] },
+  IDENTITY: { l2ChainId: async () => "0x1", shard: async () => null },
   RELAY: {
     idFromName: (name: string) => name,
     get: (name: string) => {

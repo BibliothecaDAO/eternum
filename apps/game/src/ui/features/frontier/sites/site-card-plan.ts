@@ -1,21 +1,33 @@
 import { readStandingFrontierBeast, type FrontierBeast } from "@/three/structures/frontier-beast";
 import {
-  availableRuinLords,
+  armyOaths,
+  armyRelicReward,
   configManager,
+  forecastAttack,
   getBlockTimestamp,
   ResourceManager,
-  resolveExchange,
-  getGuardsByStructure,
+  hasCastleLimit,
+  getDefendingGuards,
+  oathAttackStamina,
+  isCleanWin,
+  oathSitePay,
+  siteHoldsOath,
   siteKindOf,
-  siteReward,
-  siteClearXp,
+  resolveFirstStrike,
+  type AttackForecast,
+  type AttackRefusal,
+  type FirstStrikeSide,
 } from "@bibliothecadao/eternum";
-import { safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
-import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import {
-  type BiomeType,
-  getLayeredAttackDistance,
-  getTroopAttackRange,
+  readSiteReward,
+  safeInteger,
+  type DeepSiteView,
+  type NativeFactStore,
+  type NativeRows,
+} from "@bibliothecadao/eternum/game-client";
+import { resolveExplorerCombatTroops } from "@bibliothecadao/eternum/troop-stamina";
+import {
+  layerName,
   RESOURCE_PRECISION,
   ResourcesIds,
   StructureType,
@@ -24,8 +36,6 @@ import {
   type TroopType,
 } from "@bibliothecadao/types";
 
-import { siteDepthName } from "@/ui/design-system/kit/words";
-
 import { attackTargetName, type AttackTargetKind } from "./site-marks";
 
 const PRECISION = BigInt(RESOURCE_PRECISION);
@@ -33,9 +43,6 @@ const PRECISION = BigInt(RESOURCE_PRECISION);
 /** An army about to attack a site, and the moment it would: everything the exchange depends on beyond the facts. */
 export interface SiteAttack {
   army: NativeRows["ExplorerTroops"];
-  armyTile: { col: number; row: number; alt: boolean };
-  /** The site tile's biome, which both sides fight on. */
-  biome: BiomeType;
   timestamp: number;
 }
 
@@ -49,19 +56,17 @@ export interface SiteCardPlan {
   beast?: FrontierBeast;
   guard: { type: TroopType; tier: TroopTier; count: number } | null | undefined;
   kind: AttackTargetKind;
-  /** The XP a clear pays; another player's army pays none this card can promise. */
-  xp: number | undefined;
-  /** A ruin's stored tier and whole LORDS; unknown until its chest fact arrives. */
-  chest: { tier: number; amount: number; depth: string; funded: boolean } | null | undefined;
-  /**
-   * Whole units paid home and what fits beside what the store holds; null for XP-only sites, undefined until the home's
-   * facts arrive.
-   */
+
+  ruinDepth?: string;
+
   payout: { resourceId: ResourcesIds; amount: number; fits: number } | null | undefined;
   attackStamina: number;
   /** Whether the selected army's troops reach the target from where they stand: Attack now, or Move first. */
   inReach: boolean;
+  firstStrike: FirstStrikeSide;
   fight: SiteFight | undefined;
+  blocked: AttackRefusal | undefined;
+  holdsOath: boolean;
 }
 
 /**
@@ -75,40 +80,45 @@ export const readSiteCard = (
   store: NativeFactStore,
   site: NativeRows["ExpeditionSite"],
   structure: NativeRows["Structure"],
-  siteTile: { col: number; row: number; alt: boolean },
   attack: SiteAttack | null,
 ): SiteCardPlan => {
-  const guards = getGuardsByStructure(structure, store);
-  const guard = guards && guards.find((candidate) => candidate.troops.count > 0n);
+  const guards = getDefendingGuards(structure, store, attack?.timestamp);
+  const guard = guards?.[0];
   const kind = siteKindOf(structure.base.category);
-  const chest = kind === "Ruin" ? store.get("SiteChest", { game_id: site.game_id, entity_id: site.entity_id }) : null;
-  const reward =
-    kind === "Ruin"
-      ? chest && { resourceType: ResourcesIds.Lords, amount: chest.amount * PRECISION }
-      : siteReward(store, site);
+  const baseReward = kind === "Ruin" ? null : readSiteReward(store, site, attack?.timestamp).known?.reward;
+  const planned = attack ? forecastFrom(store, attack, structure.entity_id) : undefined;
+  const clean = clearsCleanly(planned?.forecast, guards?.length ?? 0);
+  const reward = baseReward && attack ? attackerReward(store, attack, baseReward, clean) : baseReward;
   const beast = readStandingFrontierBeast(store, site.game_id, safeInteger(site.entity_id));
   return {
     name: beast?.name ?? attackTargetName(kind),
     beast,
     guard: guards === undefined ? undefined : guard ? troopsOf(guard.troops) : null,
     kind,
-    xp: siteClearXp(store, site),
-    chest: chest && {
-      tier: chest.tier,
-      amount: Number(chest.amount),
-      depth: siteDepthName(
-        Math.floor(site.row / store.require("SettlementRules", { game_id: site.game_id }).spacing) % 4,
-      ),
-      funded:
-        chest.amount > 0n &&
-        availableRuinLords(store, site.game_id, attack?.timestamp ?? getBlockTimestamp().currentDefaultTick) >=
-          chest.amount,
-    },
+    ruinDepth:
+      kind === "Ruin"
+        ? layerName(Math.floor(site.row / store.require("SettlementRules", { game_id: site.game_id }).spacing) % 4)
+        : undefined,
     payout: reward && fittingPayout(store, site.game_id, reward, attack),
-    attackStamina: configManager.getCombatRules().stamina.stamina_attack_req,
-    inReach: attack !== null && reachOf(store, attack, siteTile) !== undefined,
-    fight: guard && attack ? attackNow(store, guard.troops, siteTile, attack, true) : undefined,
+    holdsOath: siteHoldsOath(store, site),
+    attackStamina: attackStaminaOf(store, attack),
+    ...planAttack(planned),
   };
+};
+
+const attackStaminaOf = (store: NativeFactStore, attack: SiteAttack | null): number => {
+  const base = configManager.getCombatRules().stamina.stamina_attack_req;
+  return attack ? oathAttackStamina(armyOaths(store, attack.army), base) : base;
+};
+
+const attackerReward = (
+  store: NativeFactStore,
+  attack: SiteAttack,
+  reward: { resourceType: ResourcesIds; amount: bigint },
+  clean: boolean,
+) => {
+  const paid = { ...reward, amount: oathSitePay(armyOaths(store, attack.army), reward.amount, clean) };
+  return armyRelicReward(store, attack.army, paid, attack.timestamp);
 };
 
 /**
@@ -118,22 +128,48 @@ export const readSiteCard = (
 export const readArmyCard = (
   store: NativeFactStore,
   army: NativeRows["ExplorerTroops"],
-  armyTile: { col: number; row: number; alt: boolean },
   attack: SiteAttack | null,
 ): SiteCardPlan => {
-  const troops = resolveExplorerTroops(store, army);
+  const troops = resolveExplorerCombatTroops(store, army, attack?.timestamp ?? getBlockTimestamp().currentDefaultTick);
   return {
     name: "Army",
     guard: troops === undefined ? undefined : troops.count > 0n ? troopsOf(troops) : null,
     kind: "Army",
-    xp: undefined,
-    chest: null,
     payout: null,
-    attackStamina: configManager.getCombatRules().stamina.stamina_attack_req,
-    inReach: attack !== null && reachOf(store, attack, armyTile) !== undefined,
-    fight: troops && troops.count > 0n && attack ? attackNow(store, troops, armyTile, attack, false) : undefined,
+    holdsOath: false,
+    attackStamina: attackStaminaOf(store, attack),
+    ...planAttack(attack ? forecastFrom(store, attack, army.explorer_id) : undefined),
   };
 };
+
+export interface DeepSiteFight {
+  army: number;
+  defender: number;
+  attackerTroops: Pick<Troops, "category" | "tier">;
+  defenderTroops: Pick<Troops, "category" | "tier">;
+  firstStrike: FirstStrikeSide;
+  result: SiteFight | undefined;
+}
+
+/** One Deep attack faces the highest living guard army, or the site's beast. */
+export function readDeepSiteFight(
+  store: NativeFactStore,
+  site: DeepSiteView,
+  attack: SiteAttack,
+): DeepSiteFight | undefined {
+  const { forecast } = forecastFrom(store, attack, site.id);
+  if (!forecast) return undefined;
+  const sides = forecast.sides;
+  if (!sides?.defender) return undefined;
+  return {
+    army: Number(sides.attacker.troops.count / PRECISION),
+    defender: Number(sides.defender.troops.count / PRECISION),
+    attackerTroops: { category: sides.attacker.troops.category, tier: sides.attacker.troops.tier },
+    defenderTroops: { category: sides.defender.troops.category, tier: sides.defender.troops.tier },
+    firstStrike: forecastFirstStrike(forecast),
+    result: siteFight(forecast),
+  };
+}
 
 /** A capped reward fits only the room left after the home's accrued production settles. */
 const fittingPayout = (
@@ -143,7 +179,7 @@ const fittingPayout = (
   attack: SiteAttack | null,
 ): SiteCardPlan["payout"] => {
   const raw = Number(reward.amount) / Number(PRECISION);
-  if (reward.resourceType !== ResourcesIds.Labor) return { resourceId: reward.resourceType, amount: raw, fits: raw };
+  if (!hasCastleLimit(reward.resourceType)) return { resourceId: reward.resourceType, amount: raw, fits: raw };
   const actor = store.subscriptionScope().known?.actor;
   const home =
     attack?.army.owner ??
@@ -171,56 +207,49 @@ const troopsOf = (troops: Pick<Troops, "category" | "tier" | "count">) => ({
   count: Number(troops.count / PRECISION),
 });
 
-/** The distance the army's troops strike the target from where they stand; undefined out of their reach. */
-const reachOf = (
-  store: NativeFactStore,
-  attack: SiteAttack,
-  target: { col: number; row: number; alt: boolean },
-): number | undefined => {
-  const troops = resolveExplorerTroops(store, attack.army);
-  if (!troops) return undefined;
-  const distance = getLayeredAttackDistance(attack.armyTile, target);
-  return distance <= getTroopAttackRange(troops.category) ? distance : undefined;
+const planAttack = (
+  planned: ReturnType<typeof forecastFrom> | undefined,
+): Pick<SiteCardPlan, "inReach" | "firstStrike" | "fight" | "blocked"> => {
+  if (!planned) return { inReach: false, firstStrike: null, fight: undefined, blocked: undefined };
+  const { inReach, forecast } = planned;
+  const refusal = forecast?.outcome === "refused" ? forecast.refusal : undefined;
+  return {
+    inReach,
+    firstStrike: forecastFirstStrike(forecast),
+    fight: siteFight(forecast),
+    blocked: refusal === undefined || refusal === "insufficient-stamina" ? undefined : refusal,
+  };
 };
 
-/** Where an army out of reach attacks from: the tile beside the target, where its Move leads. */
-const BESIDE = 1;
+const forecastFrom = (store: NativeFactStore, attack: SiteAttack, targetId: bigint) => {
+  const key = (entity_id: bigint) => ({ game_id: attack.army.game_id, entity_id });
+  const forecastAt = (besideTarget: boolean) =>
+    forecastAttack(store, key(attack.army.explorer_id), key(targetId), attack.timestamp, { besideTarget });
+  const now = forecastAt(false);
+  const inReach = !(now?.outcome === "refused" && now.refusal === "out-of-range");
+  return { inReach, forecast: inReach ? now : forecastAt(true) };
+};
 
-/**
- * The attack as the contract would resolve it at the army's clock, with no dice: Frontier's combat is exact. An army
- * out of reach is read from beside the target, with the stamina it holds now: how far it stands decides only whether
- * Attack can be sent yet (owner, 31 October 2026: "I should still have the projection even if I'm too far I think").
- * Both sides' stamina are this moment's, so the guard's (a tired guard strikes at 70%) is the one Attack meets.
- */
-const attackNow = (
-  store: NativeFactStore,
-  guard: Troops,
-  siteTile: { col: number; row: number; alt: boolean },
-  attack: SiteAttack,
-  defenderIsStructureGuard: boolean,
-): SiteFight | undefined => {
-  if (configManager.rollsCombatDice(siteTile.alt))
-    throw new Error("Frontier's site forecast is exact; this game rolls dice");
-  const troops = resolveExplorerTroops(store, attack.army);
-  if (!troops) return undefined;
-  const exchange = resolveExchange(
-    troops,
-    guard,
-    {
-      timestamp: attack.timestamp,
-      attackDistance: reachOf(store, attack, siteTile) ?? BESIDE,
-      attackerBiome: attack.biome,
-      defenderBiome: attack.biome,
-      attackerIsStructureGuard: false,
-      defenderIsStructureGuard,
-      attackerRoll: 0,
-      defenderRoll: 0,
-    },
-    configManager.getCombatRules(),
-  );
-  if (!exchange.ok) return { refused: true };
-  return {
-    troopsLost: Number(exchange.attackerLoss / PRECISION),
-    guardLeft: Number((guard.count - exchange.defenderLoss) / PRECISION),
-  };
+const clearsCleanly = (forecast: AttackForecast | undefined, guardsLeft: number): boolean =>
+  forecast?.outcome === "fights" &&
+  guardsLeft <= 1 &&
+  forecast.exchange.defender.count === 0n &&
+  isCleanWin(forecast.exchange.attacker.count + forecast.exchange.attackerLoss, forecast.exchange.attacker.count);
+
+const forecastFirstStrike = (forecast: AttackForecast | undefined): FirstStrikeSide => {
+  if (!forecast) return null;
+  if (forecast.outcome === "fights") return forecast.exchange.firstStrike;
+  return forecast.sides?.defender
+    ? resolveFirstStrike(forecast.sides.attacker.troops.category, forecast.sides.defender.troops.category)
+    : null;
+};
+
+const siteFight = (forecast: AttackForecast | undefined): SiteFight | undefined => {
+  if (forecast?.outcome === "fights") {
+    return {
+      troopsLost: Number(forecast.exchange.attackerLoss / PRECISION),
+      guardLeft: Number(forecast.exchange.defender.count / PRECISION),
+    };
+  }
+  return forecast?.outcome === "refused" && forecast.sides?.defender ? { refused: true } : undefined;
 };

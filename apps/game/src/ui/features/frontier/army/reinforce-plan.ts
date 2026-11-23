@@ -4,23 +4,18 @@ import {
   getTroopResourceId,
   realmLearned,
   structureMapPosition,
+  isSupplyPost,
 } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import {
-  type Direction,
   getDirectionBetweenAdjacentHexes,
   RESOURCE_PRECISION,
   type TroopTier,
   type TroopType,
 } from "@bibliothecadao/types";
 
-import { readTroopRaise, troopRange, type TroopRaise, type TroopRange } from "../deploy/deploy-plan";
+import { type March, readTroopRaise, troopRange, type TroopRaise, type TroopRange } from "../deploy/deploy-plan";
 
-/**
- * What reinforcing an army from its realm needs, read from facts with no UI of its own: the troops it holds and the
- * most it may hold, the realm's stock of its own troop (the contract's recruit_explorer draws that stock and no other,
- * and credits no Homecoming), and what raising them costs, priced as Deploy prices it.
- */
 export interface ReinforcePlan {
   current: number;
   cap: number;
@@ -52,23 +47,31 @@ export const readReinforcePlan = (
 };
 
 /** The most the army can take: the realm's stock, the room under its cap and the wheat, whichever runs out first. */
-export const reinforceRange = (plan: ReinforcePlan): TroopRange => troopRange(roomFor(plan), plan.raise);
+export const reinforceRange = (plan: ReinforcePlan, march: March): TroopRange =>
+  troopRange(roomFor(plan), plan.raise, march);
 
 /** The troops that could go before the wheat: the realm's stock, within the room under the army's cap. */
 const roomFor = ({ current, cap, stock }: Pick<ReinforcePlan, "current" | "cap" | "stock">): number =>
   Math.max(0, Math.min(stock, cap - current));
 
-/**
- * Where the army stands against its realm's home today: the direction from it to the home when it stands on a tile
- * beside it on the surface, the one place the contract reinforces it; null anywhere else or while unknown.
- */
-export const homeDirectionOf = (
+/** The home or current cleared camp beside the army, checked again before sending. */
+export const reinforcementSource = (
   store: NativeFactStore,
   realm: NativeRows["Structure"],
   explorerId: number,
-): Direction | null => {
+  timestamp: number,
+  supplyPost?: number,
+): { supplyPost?: number } | null => {
   const army = store.entityOccupancy(realm.game_id, explorerId);
+  if (!army || army.alt) return null;
+  if (supplyPost !== undefined) {
+    const site = store.get("ExpeditionSite", { game_id: realm.game_id, entity_id: supplyPost });
+    return site &&
+      isSupplyPost(store, site, realm.entity_id, timestamp) &&
+      getDirectionBetweenAdjacentHexes(army, site) !== null
+      ? { supplyPost }
+      : null;
+  }
   const home = structureMapPosition(store, realm);
-  if (!army || army.alt || !home || home.alt) return null;
-  return getDirectionBetweenAdjacentHexes(army, { col: home.x, row: home.y });
+  return home && !home.alt && getDirectionBetweenAdjacentHexes(army, { col: home.x, row: home.y }) !== null ? {} : null;
 };

@@ -17,12 +17,9 @@ and is sent again is logged, and sent, twice):
 
 | Action                  | Launch route                                                         | Environments |
 | ----------------------- | -------------------------------------------------------------------- | ------------ |
-| Free test Blitz         | `POST /api/factory/test-blitz`                                       | dev only     |
-| Open a paid Blitz slot  | `POST /api/slots`                                                    | both         |
 | Refund a slot           | `POST /api/slots/:name/refund`                                       | both         |
-| Set a phase             | `PUT /api/factory/calendar/frontier\|blitz`                          | both         |
+| Set a phase             | `PUT /api/factory/calendar/frontier`                                 | both         |
 | Continue / delete a run | `POST /api/factory/runs/:environment/:name/actions/continue\|delete` | both         |
-| Continue a result       | `POST /api/factory/results/:environment/:name/actions/continue`      | both         |
 
 The request and answer types come from `@bibliothecadao/launch-service/operator-api`; the status record's from
 `@realms-world/status-monitor/model`.

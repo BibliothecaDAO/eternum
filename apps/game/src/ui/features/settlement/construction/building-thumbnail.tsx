@@ -44,10 +44,10 @@ const BUILDING_IMAGES_PATH = {
   [BuildingType.WorkersHut]: `${BUILD_IMAGES_PREFIX}workers_hut.png`,
   [BuildingType.Storehouse]: `${BUILD_IMAGES_PREFIX}storehouse.png`,
   [BuildingType.ResourceResearch]: `${BUILD_IMAGES_PREFIX}castle.png`,
-  [BuildingType.WarHall]: `${BUILD_IMAGES_PREFIX}archery.png`,
+  [BuildingType.RationsDepot]: `${BUILD_IMAGES_PREFIX}rations-depot.png`,
   [BuildingType.SupplyYard]: `${BUILD_IMAGES_PREFIX}market.png`,
   [BuildingType.ScoutsLodge]: `${BUILD_IMAGES_PREFIX}stable.png`,
-  [BuildingType.Hearth]: `${BUILD_IMAGES_PREFIX}workers_hut.png`,
+  [BuildingType.ConscriptionCamp]: `${BUILD_IMAGES_PREFIX}barracks.png`,
 } satisfies Record<BuildingType, string>;
 
 /** Construction cards show the model a player places; action and resource symbols use the semantic icon renderer. */

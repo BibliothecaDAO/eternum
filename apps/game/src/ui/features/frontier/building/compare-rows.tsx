@@ -4,20 +4,14 @@ import { HudRanked } from "@/ui/design-system/kit/hud-elements";
 import type { RankedWords } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
 
-/**
- * One thing a card compares now and next: its mark and word, its figure now, and next (none at the top). With `onPick`
- * the row is the side the next step takes, framed when picked; the figure that grows is lit.
- */
 type CompareRow = {
   icon: IconMark;
   word: string;
-  /** What the figure is of, under its word, wrapped at any width (a research side's "Wheat from every Farm"). */
   line?: string;
   /** Its figure now and next, a rank in it as its gem ("[I] · +10% damage"). */
   now: RankedWords | string;
   next?: RankedWords | string;
   grows: boolean;
-  onPick?: () => void;
 };
 
 /** One row's cells: the thing's word takes what is left, each figure a fixed column so the rows read across. */
@@ -84,21 +78,7 @@ export const CompareRows = ({
             )}
           </>
         );
-        return row.onPick ? (
-          <button
-            key={row.word}
-            type="button"
-            aria-pressed={row.grows}
-            onClick={row.onPick}
-            className={cn(
-              ROW,
-              "ui-pick rounded-md border border-hud-line px-2 py-1 text-left",
-              !row.grows && "hover:bg-hud-hover",
-            )}
-          >
-            {face}
-          </button>
-        ) : (
+        return (
           <div key={row.word} className={cn(ROW, "px-2 py-0.5")}>
             {face}
           </div>

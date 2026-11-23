@@ -17,15 +17,12 @@ describe("bootstrapRendererStartupRuntime", () => {
     bootstrapRendererStartupRuntime({
       animate: vi.fn(),
       attachInteractionRuntime: vi.fn(),
-      cleanupExpiredTransitions: vi.fn(() => 0),
       document,
       initializeHudScene: vi.fn(),
       initialSceneName: "map" as never,
       isDestroyed: false,
       prepareScenes: vi.fn(),
-      registerCleanupInterval: vi.fn(),
       rendererDomElement: nextCanvas,
-      setIntervalFn: vi.fn(() => 1 as never),
       syncRouteFromLocation: vi.fn(),
       warn: vi.fn(),
     });
@@ -36,72 +33,23 @@ describe("bootstrapRendererStartupRuntime", () => {
     expect(document.body.style.background).toBe("black");
   });
 
-  it("registers transition cleanup polling and logs only when expired records are removed", () => {
-    const registerCleanupInterval = vi.fn();
-    const debug = vi.fn();
-    const setIntervalFn = vi.fn((handler: TimerHandler) => {
-      if (typeof handler === "function") {
-        handler();
-      }
-      return 42 as never;
-    });
-
-    bootstrapRendererStartupRuntime({
-      animate: vi.fn(),
-      attachInteractionRuntime: vi.fn(),
-      cleanupExpiredTransitions: vi.fn(() => 2),
-      debug,
-      document,
-      initializeHudScene: vi.fn(),
-      initialSceneName: "map" as never,
-      isDestroyed: false,
-      prepareScenes: vi.fn(),
-      registerCleanupInterval,
-      rendererDomElement: document.createElement("canvas"),
-      setIntervalFn,
-      syncRouteFromLocation: vi.fn(),
-      warn: vi.fn(),
-    });
-
-    expect(setIntervalFn).toHaveBeenCalledTimes(1);
-    expect(registerCleanupInterval).toHaveBeenCalledWith(42);
-    expect(debug).toHaveBeenCalledWith("Cleaned up 2 expired transition records");
-  });
-
   it("runs startup steps in order after mounting the surface", () => {
     const calls: string[] = [];
 
     bootstrapRendererStartupRuntime({
       animate: () => calls.push("animate"),
       attachInteractionRuntime: () => calls.push("attachInteraction"),
-      cleanupExpiredTransitions: () => 0,
       document,
       initializeHudScene: () => calls.push("initializeHud"),
       initialSceneName: "map" as never,
       isDestroyed: false,
       prepareScenes: (sceneName) => calls.push(`prepareScenes:${sceneName}`),
-      registerCleanupInterval: () => calls.push("registerInterval"),
       rendererDomElement: document.createElement("canvas"),
-      setIntervalFn: ((handler: TimerHandler) => {
-        calls.push("setInterval");
-        if (typeof handler === "function") {
-          handler();
-        }
-        return 7 as never;
-      }) as unknown as typeof setInterval,
       syncRouteFromLocation: () => calls.push("syncRoute"),
       warn: vi.fn(),
     });
 
-    expect(calls).toEqual([
-      "setInterval",
-      "registerInterval",
-      "attachInteraction",
-      "initializeHud",
-      "prepareScenes:map",
-      "syncRoute",
-      "animate",
-    ]);
+    expect(calls).toEqual(["attachInteraction", "initializeHud", "prepareScenes:map", "syncRoute", "animate"]);
   });
 
   it("passes the route-selected initial scene into scene preparation", () => {
@@ -110,15 +58,12 @@ describe("bootstrapRendererStartupRuntime", () => {
     bootstrapRendererStartupRuntime({
       animate: vi.fn(),
       attachInteractionRuntime: vi.fn(),
-      cleanupExpiredTransitions: vi.fn(() => 0),
       document,
       initializeHudScene: vi.fn(),
       initialSceneName: "hex" as never,
       isDestroyed: false,
       prepareScenes,
-      registerCleanupInterval: vi.fn(),
       rendererDomElement: document.createElement("canvas"),
-      setIntervalFn: vi.fn(() => 1 as never),
       syncRouteFromLocation: vi.fn(),
       warn: vi.fn(),
     });
@@ -132,15 +77,12 @@ describe("bootstrapRendererStartupRuntime", () => {
     bootstrapRendererStartupRuntime({
       animate: vi.fn(),
       attachInteractionRuntime,
-      cleanupExpiredTransitions: vi.fn(() => 0),
       document,
       initializeHudScene: vi.fn(),
       initialSceneName: "map" as never,
       isDestroyed: true,
       prepareScenes: vi.fn(),
-      registerCleanupInterval: vi.fn(),
       rendererDomElement: document.createElement("canvas"),
-      setIntervalFn: vi.fn(() => 1 as never),
       syncRouteFromLocation: vi.fn(),
       warn: vi.fn(),
     });

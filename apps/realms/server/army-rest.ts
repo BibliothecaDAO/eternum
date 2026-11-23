@@ -1,23 +1,22 @@
 import { normalizeStarknetAddress as canonicalFelt } from "@realms-world/identity";
 import { safeInteger } from "../../../packages/core/src/utils/safe-integer";
-import {
-  fetchHeraldGameDirectory,
-  fetchHeraldGameSnapshot,
-  NativeFactStore,
-  entityMapPosition,
-} from "@bibliothecadao/eternum/game-client";
+import { readBaneEffects } from "@bibliothecadao/eternum";
+import { fetchHeraldGameDirectory, NativeFactStore, nativeBaneConstants } from "@bibliothecadao/eternum/game-client";
+import { readGameFacts, type ReleaseCatalogue } from "./game-facts";
 import type { HeraldStoryHistoryPage } from "@bibliothecadao/eternum/game-sync";
-import { isCurrentExpeditionArmy, readExpeditionRules } from "@bibliothecadao/eternum/expeditions";
+import { expeditionDepth, isCurrentExpeditionArmy, readExpeditionRules } from "@bibliothecadao/eternum/expeditions";
 import {
+  STAMINA_MODELS,
   affordableAt,
   staminaAt,
   troopStaminaLimits,
   resolveExplorerTroops,
+  type TroopStaminaRules,
 } from "@bibliothecadao/eternum/troop-stamina";
-import type { TroopTier, TroopType } from "@bibliothecadao/types";
+import type { TroopTier, TroopType, Troops } from "@bibliothecadao/types";
 
 /**
- * When one army of one player will be rested; replaced by the player's next action, dropped when the army is gone.
+ * The earliest one army can be rested; confirmed again at that second, replaced by the player's next action.
  * `attempts` counts wakes that failed to read it.
  */
 export interface RestWatch {
@@ -99,29 +98,16 @@ export const readActorArmies = async (
   gameId: number,
   actor: string,
   now: number,
+  catalogue: ReleaseCatalogue,
 ): Promise<ActorArmy[]> => {
-  const snapshot = await fetchHeraldGameSnapshot(
-    { url: shardUrl },
+  const store = await readGameFacts(
+    shardUrl,
     gameId,
-    [
-      "SliceRules",
-      "SettlementRules",
-      "GameRegistry",
-      "Structure",
-      "PlayerEntry",
-      "ExplorerTroops",
-      "ArmySlot",
-      "ArmyProgress",
-      "TileOccupancy",
-    ],
-    actor,
-    actor,
+    [...STAMINA_MODELS, "PlayerEntry", "DeepArmy", "DeepGuard", "DeepRules"],
+    now,
+    { actor, owner: actor },
+    catalogue,
   );
-  const store = new NativeFactStore();
-  store.applyFacts(
-    snapshot.models.flatMap(({ model, rows }) => rows.map((row) => ({ model, key: row.key, value: row.value }))),
-  );
-  store.setSnapshot({ gameId, actor, complete: true, timestamp: Math.floor(now / 1000) });
   const rules = store.require("SliceRules", { game_id: gameId });
   const tickSeconds = Number(rules.tick_config.armies_tick_in_seconds);
   const timestamp = Math.floor(now / 1000);
@@ -129,34 +115,91 @@ export const readActorArmies = async (
   return [...store.inGame("ExplorerTroops", gameId)]
     .filter(
       (army) =>
-        !expedition ||
-        isCurrentExpeditionArmy(expedition, entityMapPosition(store, gameId, army.explorer_id), now / 1000),
+        !store.get("DeepGuard", { game_id: gameId, explorer_id: army.explorer_id }) &&
+        (!expedition ||
+          isCurrentExpeditionArmy(
+            expedition,
+            store.require("ArmyDay", { game_id: gameId, explorer_id: army.explorer_id }).day,
+            timestamp,
+          )),
     )
     .flatMap((army) => {
-      const troops = resolveExplorerTroops(store, army);
-      if (!troops) return [];
+      const troops = resolveExplorerTroops(store, army, timestamp);
+      if (!troops) throw new Error(`Incomplete stamina facts for army ${army.explorer_id}`);
+      if (troops.count === 0n) return [];
       const stamina = staminaAt(troops, timestamp, rules.troop_stamina_config, tickSeconds);
       const { staminaMax } = troopStaminaLimits(
         rules.troop_stamina_config,
         army.troops.category as TroopType,
         army.troops.tier as TroopTier,
       );
-      const fullSecond = affordableAt(
-        troops,
-        timestamp,
-        rules.troop_stamina_config,
-        tickSeconds,
-        troops.staminaMax ?? staminaMax,
-      );
+      const maximum = troops.staminaMax ?? staminaMax;
+      const full = Number(stamina.amount) >= maximum;
+      const position = store.entityOccupancy(gameId, army.explorer_id);
+      const aboveDeep = expedition && position && expeditionDepth(expedition, { y: position.row }) !== 3;
+      const fullSecond = full
+        ? affordableAt(troops, troops.stamina.settled_at || timestamp, rules.troop_stamina_config, tickSeconds, maximum)
+        : earliestRestCheck(
+            store,
+            gameId,
+            army.owner,
+            troops,
+            timestamp,
+            rules.troop_stamina_config,
+            tickSeconds,
+            maximum,
+            Boolean(aboveDeep),
+          );
       return [
         {
           armyId: safeInteger(army.explorer_id),
-          full: Number(stamina.amount) >= (troops.staminaMax ?? staminaMax),
+          full,
           fullAt: fullSecond === null ? null : fullSecond * 1000,
         },
       ];
     });
 };
+
+/** A teammate can end Mist Tide now. Wake at that earliest possibility, then confirm the recorded facts again. */
+function earliestRestCheck(
+  store: NativeFactStore,
+  gameId: number,
+  home: bigint,
+  troops: Troops,
+  now: number,
+  rules: TroopStaminaRules,
+  tickSeconds: number,
+  maximum: number,
+  aboveDeep: boolean,
+): number | null {
+  const effects = troops.staminaEffects;
+  if (!aboveDeep || !effects) return affordableAt(troops, now, rules, tickSeconds, maximum);
+  const reading = readBaneEffects(store, gameId, home, now, effects.until);
+  if (!reading.known) throw new Error(reading.unknown);
+  const { staminaPercent } = reading.known;
+  const mist = reading.known.windows.find(
+    (window) => window.kinds.includes(nativeBaneConstants.MIST_TIDE) && window.start <= now,
+  );
+  if (!mist) return affordableAt(troops, now, rules, tickSeconds, maximum);
+  const boundaries = [
+    ...new Set([
+      troops.stamina.settled_at,
+      now,
+      mist.end,
+      effects.until,
+      ...effects.windows.flatMap((window) => [window.start, window.end]),
+    ]),
+  ].sort((a, b) => a - b);
+  const windows = boundaries.slice(0, -1).map((start, index) => {
+    const rate = effects.windows.find((window) => window.start <= start && start < window.end)?.rateBps ?? 10_000;
+    return {
+      start,
+      end: boundaries[index + 1]!,
+      rateBps: start >= now && start < mist.end ? (rate * 100) / staminaPercent : rate,
+    };
+  });
+  return affordableAt({ ...troops, staminaEffects: { ...effects, windows } }, now, rules, tickSeconds, maximum);
+}
 
 /** A player's armies that are still recovering become watches; a rested or gone army has none. */
 export const restWatchesOf = (actor: RestingActor, armies: ActorArmy[]): RestWatch[] =>

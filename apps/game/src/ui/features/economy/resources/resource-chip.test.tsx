@@ -4,7 +4,6 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@/hooks/helpers/use-native-facts", () => ({ useNativeRevision: () => 0, useNativeRow: () => undefined }));
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({ useCurrentDefaultTick: () => 0 }));
 vi.mock("@/ui/design-system/molecules/resource-icon", () => ({ ResourceIcon: () => null }));
 vi.mock("@/ui/features/economy/transfers/transfer-window", () => ({ openTransfer: vi.fn() }));
@@ -17,8 +16,7 @@ const holding = { balance: 5_000_000_000, hasReachedMaxCapacity: false, amountPr
 const resourceManager = {
   entityId: 1,
   balanceWithProduction: () => holding,
-  current: () => undefined,
-  timeUntilValueReached: () => 0,
+  productionData: () => undefined,
   balance: () => 0,
 } as unknown as ResourceManager;
 
@@ -30,9 +28,7 @@ const renderChip = (resourceId: ResourcesIds) => {
   container = document.createElement("div");
   document.body.append(container);
   root = createRoot(container);
-  act(() =>
-    root?.render(<ResourceChip resourceId={resourceId} resourceManager={resourceManager} activeRelicEffects={[]} />),
-  );
+  act(() => root?.render(<ResourceChip resourceId={resourceId} resourceManager={resourceManager} />));
   return [...container.querySelectorAll("button")].map((button) => button.getAttribute("aria-label"));
 };
 
@@ -47,10 +43,5 @@ afterEach(() => {
 describe("a resource chip's actions", () => {
   it("name the resource they act on: Transfer, and no Burn", () => {
     expect(renderChip(ResourcesIds.Wood)).toEqual(["Transfer Wood"]);
-  });
-
-  it("name the relic they activate", () => {
-    vi.spyOn(configManager, "getRelicActivation").mockReturnValue({ durationSeconds: 3_600, essenceCost: 100 });
-    expect(renderChip(ResourcesIds.StaminaRelic1)).toEqual(["Transfer Stamina Relic I", "Activate Stamina Relic I"]);
   });
 });

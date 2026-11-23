@@ -19,8 +19,8 @@ export function resolveArmyTroopAvailability(available: number, capacityRemainin
 export interface TroopSupply {
   /** The troop as the board names its barracks: "Knight T1". */
   name: string;
-  /** Whole troops trained per hour now; zero when no barracks is training it. */
-  perHour: number;
+  /** Whole troops trained per hour now; unknown while the rate is not known, zero when no barracks trains it. */
+  perHour: number | undefined;
   /** Seconds until a full army is on hand at that rate; null when nothing is training. */
   secondsToFullArmy: number | null;
 }
@@ -95,7 +95,7 @@ export function describeTroopSource(name: string, inputs: readonly { resource: R
 
 /** None on hand: "No Knight T1 on hand.", or while a barracks trains them, when a full army is ready. */
 function describeEmptyTroop(supply: TroopSupply): string {
-  if (supply.perHour > 0 && supply.secondsToFullArmy !== null) {
+  if (supply.perHour !== undefined && supply.perHour > 0 && supply.secondsToFullArmy !== null) {
     return `No ${supply.name} yet: full army in ${formatWait(Math.ceil(supply.secondsToFullArmy))}`;
   }
   return `No ${supply.name} on hand.`;

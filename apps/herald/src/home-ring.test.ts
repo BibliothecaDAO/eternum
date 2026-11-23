@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import releaseFile from "../../../contracts/l3/world-native/schema/release-definition.json";
 import { CairoCustomEnum } from "starknet";
 import { dayOf } from "@bibliothecadao/eternum/expeditions";
 import { GameSubscription } from "./game-subscription";
@@ -13,6 +14,7 @@ import type { MadaraRpc } from "./madara-rpc";
 import {
   structureValue,
   explorerValue,
+  gameRegistryEvent,
   seedDerivedRows,
   raw,
   receipt,
@@ -32,6 +34,7 @@ const MID_DAY = DAY_START + 43_200;
 const CALENDAR = {
   seed: 7n,
   startMainAt: DAY_START + 120,
+  scheduledEndAt: DAY_START + 120 + 21 * 20 * 14_400,
   endAt: DAY_START + 120 + 21 * 20 * 14_400,
   dayUnitSeconds: 14_400,
 };
@@ -90,17 +93,12 @@ const frontierWorld = (homeRingView?: HomeRingView, call?: MadaraRpc["call"]) =>
     fold,
     receipt(
       seedDerivedRows(fold, decoder, [
-        rowEvent("GameRegistry", ["1"], {
+        gameRegistryEvent({
           name: "7",
-          preset_id: "1",
-          creator: "10",
-          settled: false,
-          ready: true,
-          dev_mode_on: false,
           start_settling_at: String(DAY_START + 120),
           start_main_at: String(DAY_START + 120),
+          scheduled_end_at: String(DAY_START + 120 + 2 * 288_000),
           end_at: String(DAY_START + 120 + 2 * 288_000),
-          end_grace_seconds: "0",
           seed: "7",
         }),
         rowEvent("SettlementRules", ["1"], {
@@ -195,61 +193,13 @@ it("streams held Realm identity wherever its home is visible, including to a spe
   live.detach(connection);
 });
 
-it("streams campaign identity with its visible home in snapshots and confirmed diffs", async () => {
-  const { live, fold, native, confirmed } = frontierWorld(async () => []);
-  native.applyReceipt(
-    fold,
-    receipt([
-      rowEvent("CampaignHome", ["1", "1"], { campaign_id: 2026n, tier: 2 }),
-      rowEvent("CampaignHome", ["1", "2"], { campaign_id: 2026n, tier: 1 }),
-      rowEvent("CampaignHome", ["2", "1"], { campaign_id: 2027n, tier: 1 }),
-    ]),
-    9,
-    1,
-  );
-  await live.acceptSubscribedHead({ block_number: 10, timestamp: MID_DAY });
-  const messages: HeraldStreamMessage[] = [];
-  const connection = live.attach("1", { send: (text) => messages.push(JSON.parse(text)) }, undefined, "0xa");
-  live.resume(connection, { type: "resume", epoch: "", seq: 0 });
-  const store = new NativeFactStore();
-  applyMessages(store, messages);
-  expect([...store.rows("CampaignHome")]).toEqual([{ game_id: 1, home: 1n, campaign_id: 2026n, tier: 2 }]);
-  messages.length = 0;
-  confirmed.block_number = 11;
-  confirmed.transactions = [
-    {
-      transaction: { type: "INVOKE" },
-      receipt: receipt([
-        rowEvent("CampaignHome", ["1", "2"], { campaign_id: 2028n, tier: 2 }),
-        rowEvent("CampaignHome", ["1", "1"], { campaign_id: 2028n, tier: 1 }),
-      ]),
-    },
-  ];
-  await live.acceptSubscribedHead({ block_number: 11, timestamp: MID_DAY });
-  applyMessages(store, messages);
-  expect([...store.rows("CampaignHome")]).toEqual([{ game_id: 1, home: 1n, campaign_id: 2028n, tier: 1 }]);
-  live.detach(connection);
-});
-
-it("delivers game labor rules and that game's account grants through snapshots and confirmed diffs", async () => {
+it("delivers that game's account labor grants through snapshots and confirmed diffs", async () => {
   const { live, fold, native, decoder, confirmed } = frontierWorld(async () => []);
   const day = Math.floor(MID_DAY / 86_400);
   native.applyReceipt(
     fold,
     receipt(
       seedDerivedRows(fold, decoder, [
-        rowEvent("LaborRules", ["1"], {
-          amount: 7n,
-          campaign_essence: 1000n,
-          golden_amount: 2000n,
-          golden_essence: 2000n,
-        }),
-        rowEvent("LaborRules", ["2"], {
-          amount: 99n,
-          campaign_essence: 1000n,
-          golden_amount: 2000n,
-          golden_essence: 2000n,
-        }),
         rowEvent("LaborGrant", ["2", "700", String(day)], { account: 10n, amount: 99n, essence: 1000n }),
         rowEvent("LaborGrant", ["1", "1", String(day - 1)], { account: 10n, amount: 33n, essence: 1000n }),
         rowEvent("LaborGrant", ["1", "2", String(day)], { account: 11n, amount: 44n, essence: 1000n }),
@@ -264,9 +214,6 @@ it("delivers game labor rules and that game's account grants through snapshots a
   const store = new NativeFactStore();
   applyMessages(store, messages);
 
-  expect([...store.rows("LaborRules")]).toEqual([
-    { game_id: 1, amount: 7n, campaign_essence: 1000n, golden_amount: 2000n, golden_essence: 2000n },
-  ]);
   expect([...store.rows("LaborGrant")]).toEqual([
     { day: BigInt(day - 1), game_id: 1, account: 10n, home: 1n, amount: 33n, essence: 1000n },
   ]);
@@ -332,7 +279,10 @@ describe("home ring", () => {
       });
       const army = (stamina: bigint) => rowEvent("ExplorerTroops", ["1", "20"], explorerValue("1", 1000n, stamina, 1n));
       const balance = (amount: bigint) => rowEvent("ResourceBalance", ["1", "1", "23"], { balance: amount });
-      const muster = receipt([army(30n), occupancy(51), balance(10n)], "0x71");
+      const muster = receipt(
+        [rowEvent("ArmyDay", ["1", "20"], { day: TODAY.index }), army(30n), occupancy(51), balance(10n)],
+        "0x71",
+      );
       if (!musterDuringStream) native.applyReceipt(fold, muster, 10, 0);
       const messages = connect(live, "0xa");
       const store = new NativeFactStore();
@@ -436,8 +386,14 @@ describe("home ring", () => {
       .map(BigInt);
     expect(values.slice(0, 2)).toEqual([1n, 21n]);
     expect(values).toHaveLength(2 + 21 * 5);
-    // The Cairo test's season draws from seed 42 in 60 s units from t=300, and reads each ring 50 s into its day.
-    const fixtureSeason = { seed: 42n, startMainAt: 300, endAt: 300 + 21 * 20 * 60, dayUnitSeconds: 60 };
+    const fixtureStart = Number(values[2]) - 50;
+    const fixtureSeason = {
+      seed: 1n,
+      startMainAt: fixtureStart,
+      scheduledEndAt: fixtureStart + 999_960,
+      endAt: fixtureStart + 999_960,
+      dayUnitSeconds: releaseFile.definition.rules.day_unit_seconds,
+    };
     let dayStart = fixtureSeason.startMainAt;
     for (let day = 0; day < 3; day++) {
       const wire = ["7"];
@@ -691,6 +647,7 @@ describe("client and Herald subscription scope parity", () => {
             explorer_id: 20,
             stamina: { amount: 30, settled_at: 1, remainder: 0 },
           }),
+          rowEvent("ArmyDay", ["1", "20"], { day: TODAY.index }),
           rowEvent("ExplorerTroops", ["1", "20"], {
             ...army,
             troops: { ...troops, stamina: new CairoCustomEnum({ Slot: 0 }) },
@@ -724,7 +681,7 @@ describe("client and Herald subscription scope parity", () => {
       expect(rowInGameSyncScope(row.model, row.value, afterScope)).toBe(true);
     }
     // The muster's own rows go out; the home rows the client already holds are not sent again.
-    for (const model of ["ArmySlot", "ExplorerTroops", "TileOccupancy"] as const)
+    for (const model of ["ArmyDay", "ArmySlot", "ExplorerTroops", "TileOccupancy"] as const)
       expect(rebase[0].set.some((row) => row.model === model)).toBe(true);
     for (const model of ["Structure", "ResourceWeight", "ResourceBalance", "StructureBuildings", "Building"] as const)
       expect(rebase[0].set.some((row) => row.model === model)).toBe(false);
@@ -768,6 +725,7 @@ describe("client and Herald subscription scope parity", () => {
           explorer_id: 20,
           stamina: { amount: 30, settled_at: 1, remainder: 0 },
         }),
+        rowEvent("ArmyDay", ["1", "20"], { day: TODAY.index }),
         rowEvent("ExplorerTroops", ["1", "20"], {
           ...army,
           troops: { ...(army.troops as Record<string, unknown>), stamina: new CairoCustomEnum({ Slot: 0 }) },
@@ -820,6 +778,7 @@ describe("client and Herald subscription scope parity", () => {
           explorer_id: 20,
           stamina: { amount: 30, settled_at: 1, remainder: 0 },
         }),
+        rowEvent("ArmyDay", ["1", "20"], { day: TODAY.index }),
         rowEvent("ExplorerTroops", ["1", "20"], {
           ...army,
           troops: { ...(army.troops as Record<string, unknown>), stamina: new CairoCustomEnum({ Slot: 0 }) },
@@ -892,24 +851,16 @@ describe("client and Herald subscription scope parity", () => {
         models.flatMap(({ model, rows }) => rows.map((row) => ({ ...row, model }))),
         new Map(models.map(({ model, rows }) => [model, new Set(rows.map(({ key }) => key))])),
       );
-      expect(store.requireOrAbsent("PlayerPoints", { game_id: 1, address: BigInt(actor) }).unknown).toContain(
-        "INCOMPLETE_SNAPSHOT",
-      );
       state(true);
       expect(store.subscriptionScope().known).toEqual(fold.subscriptionScope("1", actor, timestamp));
     };
     snapshot();
-    expect(store.requireOrAbsent("PlayerPoints", { game_id: 1, address: 0xan }).known?.points).toBe(0n);
-    expect(store.requireOrAbsent("PlayerPoints", { game_id: 1, address: 0xbn }).unknown).toContain(
-      "OUTSIDE_SNAPSHOT_SCOPE",
-    );
     actor = "0xb";
     snapshot();
     expect(() => store.require("Structure", { game_id: 1, entity_id: 1n })).toThrow("not synchronized");
     // Clock invalidation cannot block an applied actor snapshot's first action.
     store.setSnapshot({ gameId: 1, actor, complete: true, timestamp: undefined });
     expect(() => store.require("Structure", { game_id: 1, entity_id: 2n })).not.toThrow();
-    expect(store.requireOrAbsent("PlayerPoints", { game_id: 1, address: 0xbn }).unknown).toBe("UNKNOWN_SCOPE_CLOCK");
     state(true);
 
     const result = native.applyReceipt(
@@ -926,9 +877,6 @@ describe("client and Herald subscription scope parity", () => {
             ...body.set.filter(({ model }) => isClientGameSyncModel(model)),
             ...body.del.filter(({ model }) => isClientGameSyncModel(model)).map((row) => ({ ...row, value: null })),
           ]);
-          expect(store.requireOrAbsent("PlayerPoints", { game_id: 1, address: 0xan }).unknown).toBe(
-            "UNKNOWN_SCOPE_CLOCK",
-          );
         } else if (body.type === "head") state(true, timestamp);
       }
     };
@@ -944,7 +892,6 @@ describe("client and Herald subscription scope parity", () => {
     expect(fold.subscriptionScope("1", actor, timestamp).expedition?.owners).toEqual(new Set(["11"]));
     deliver(subscription!.project({ type: "head", block: 11, preconfirmed: true, timestamp }));
     expect(store.subscriptionScope().known).toEqual(overlay.subscriptionScope("1", actor, timestamp));
-    expect(store.requireOrAbsent("PlayerPoints", { game_id: 1, address: 0xan }).known?.points).toBe(0n);
     // The new entry links account 0xb to owner 0xa, so its home must become visible atomically.
     expect(store.require("Structure", { game_id: 1, entity_id: 1n }).owner).toBe(10n);
 
@@ -971,6 +918,7 @@ describe("visited realm subscription", () => {
           paused: false,
           labor_paid: 200000000000n,
         }),
+        rowEvent("ArmyDay", ["1", "20"], { day: TODAY.index }),
         rowEvent("ExplorerTroops", ["1", "20"], explorerValue("2", 1000n, 30n, 1n)),
         rowEvent("TileOccupancy", ["1", "0", "150", "150"], { entity_id: 20, category: 15, is_structure: false }),
         rowEvent("TileOpt", ["1", "0", "150", "150"], { data: 5n << 41n }),

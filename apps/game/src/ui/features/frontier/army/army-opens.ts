@@ -24,20 +24,20 @@ import { useDockArmies } from "../hud/dock-armies";
 export const useArmyPanelOpens = (
   realm: NativeRows["Structure"] | null,
   /** Opens the army's panel, on its level-up choices when `choosing`. */
-  openPanel: (choosing: boolean) => void,
+  openPanel: () => void,
   /**
    * Whether selecting an army opens its panel: a desktop's. A phone keeps the map first (owner, 22 October 2026: mobile
    * direction A): a selection shows in the action row, and the panel opens from its details button or a pick here.
    */
   opensOnSelect: boolean,
-): { pick: (explorerId: number, choosing?: boolean) => void; returnTo: (explorerId: number) => boolean } => {
+): { pick: (explorerId: number) => void; returnTo: (explorerId: number) => boolean } => {
   const { setup } = useGame();
   const armies = useDockArmies(realm);
   const selectedId = useUIStore((state) => state.entityActions.selectedEntityId);
   const selectArmy = useSelectArmyOnMap();
   const seen = useRef(selectedId);
-  const open = (explorerId: number | null, choosing = false) => {
-    if (canIssueOrders() && armies.some((army) => army.explorerId === explorerId)) openPanel(choosing);
+  const open = (explorerId: number | null) => {
+    if (canIssueOrders() && armies.some((army) => army.explorerId === explorerId)) openPanel();
   };
   useEffect(() => {
     if (selectedId === seen.current) return;
@@ -45,10 +45,10 @@ export const useArmyPanelOpens = (
     if (opensOnSelect) open(selectedId);
   });
   return {
-    pick: (explorerId, choosing) => {
+    pick: (explorerId) => {
       const reopen = useUIStore.getState().entityActions.selectedEntityId === explorerId;
       pickArmy(selectArmy, explorerId);
-      if (reopen || !opensOnSelect) open(explorerId, choosing);
+      if (reopen || !opensOnSelect) open(explorerId);
     },
     returnTo: (explorerId) => {
       if (!armyStands(setup.store, explorerId)) return false;

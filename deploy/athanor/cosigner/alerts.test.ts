@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, expect, test } from "bun:test";
-import { mkdtempSync, rmSync, statSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { channelOf, checkPayoutAlerts, postToDiscord } from "./alerts";
@@ -17,7 +18,8 @@ const check = (deliver: (content: string) => Promise<void> = post, to = channel)
 const header = "Production payouts:\n- ";
 const wired =
   "Payout alerts are wired for ledger 0x1234. This channel hears when a wallet change is held, when the ledger is " +
-  "paused, and when the co-signer stops answering, then again when each clears.";
+  "paused, when the co-signer stops answering, when the ledger RPC cannot be read, when the wallet history cannot be " +
+  "read, then again when each clears.";
 const paused = "The ledger is paused. No payout goes out until the ledger admin unpauses it.";
 const failing = async () => {
   throw new Error("discord_webhook_unreachable");
@@ -92,7 +94,7 @@ test("a Realms ID with many accounts names three and counts the rest", async () 
   expect(posts[0]).toContain("Realms ID 0x1 (account 0xa01, 0xb1, 0xb2 and 2 more) asks");
 });
 
-test("a paused ledger posts once and its unpause once; an unreadable minute changes nothing", async () => {
+test("a paused ledger posts once and its unpause once; one unreadable minute changes nothing", async () => {
   box.ledgerPaused = true;
   await check();
   await check();
@@ -127,6 +129,60 @@ test("the co-signer is announced down after three silent minutes, once, and back
     `${header}The co-signer has not answered on the box since 1970-01-01 00:17 UTC. Withdrawals and prizes wait until it is back.`,
     `${header}The co-signer answers again; it was silent from 1970-01-01 00:17 UTC.`,
   ]);
+});
+
+test("a ledger RPC unreadable for ten minutes is announced once, without its address, and once when it reads", async () => {
+  box.ledgerPaused = null;
+  const unreadFrom = now;
+  for (let minute = 0; minute <= 9; minute++) {
+    now = unreadFrom + minute * 60;
+    await check();
+  }
+  expect(posts).toEqual([]);
+  for (let minute = 10; minute <= 60; minute++) {
+    now = unreadFrom + minute * 60;
+    await check();
+  }
+  box.ledgerPaused = true;
+  await check();
+  await check();
+  expect(posts).toEqual([
+    `${header}The box has not read the ledger RPC since 1970-01-01 00:16 UTC. A pause would go unseen, and the co-signer signs nothing it cannot check.`,
+    `${header}${paused}\n- The ledger RPC reads again; it was unreadable from 1970-01-01 00:16 UTC.`,
+  ]);
+});
+
+test("a wallet history unreadable for ten minutes is announced once, and once when it reads", async () => {
+  const unreadable = async () => ({ ...box, wallets: null });
+  for (let minute = 0; minute <= 30; minute++) {
+    now = 1_000 + minute * 60;
+    await checkPayoutAlerts(unreadable, statePath, post, now, channel);
+  }
+  now += 60;
+  await check();
+  await check();
+  expect(posts).toEqual([
+    `${header}The box has not read its wallet history since 1970-01-01 00:16 UTC. A held wallet change would go unseen.`,
+    `${header}The wallet history reads again; it was unreadable from 1970-01-01 00:16 UTC.`,
+  ]);
+});
+
+test("a silence recorded before the sources shared one rule is still closed with its own start", async () => {
+  const recorded = JSON.parse(readFileSync(statePath, "utf8"));
+  delete recorded.silences;
+  writeFileSync(statePath, JSON.stringify({ ...recorded, cosignerSilentSince: 400, cosignerDownAnnounced: true }));
+  await check();
+  await check();
+  expect(posts).toEqual([`${header}The co-signer answers again; it was silent from 1970-01-01 00:06 UTC.`]);
+});
+
+test("a channel wired when it heard fewer alerts is told the list it hears now, once", async () => {
+  const recorded = JSON.parse(readFileSync(statePath, "utf8"));
+  const earlier = createHash("sha256").update("https://discord.com/api/webhooks/1/fixture").digest("hex");
+  writeFileSync(statePath, JSON.stringify({ ...recorded, wiredTo: earlier }));
+  await check();
+  await check();
+  expect(posts).toEqual([`${header}${wired}`]);
 });
 
 test("a busy minute is sent whole, in messages Discord accepts, and each alert once", async () => {

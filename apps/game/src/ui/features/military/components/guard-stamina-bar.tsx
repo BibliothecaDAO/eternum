@@ -1,8 +1,10 @@
 import { HudStamina } from "@/ui/design-system/kit/hud-elements";
+import type { TroopType } from "@bibliothecadao/types";
 import { configManager } from "@bibliothecadao/eternum";
 import { isStaminaRecharging } from "@/ui/shared/lib/stamina-visuals";
 
 interface GuardStaminaBarProps {
+  category: TroopType;
   current?: number | bigint | null;
   max?: number | null;
 }
@@ -11,7 +13,7 @@ interface GuardStaminaBarProps {
 const staminaTone = (current: number, share: number) =>
   current < 40 || share <= 1 / 3 ? "bad" : share > 2 / 3 ? "good" : "warn";
 
-export const GuardStaminaBar = ({ current, max }: GuardStaminaBarProps) => {
+export const GuardStaminaBar = ({ current, max, category }: GuardStaminaBarProps) => {
   const maxValue = Number(max ?? 0);
   if (!Number.isFinite(maxValue) || maxValue <= 0) return null;
 
@@ -24,7 +26,11 @@ export const GuardStaminaBar = ({ current, max }: GuardStaminaBarProps) => {
   return (
     <span title={label} className="block w-full">
       <HudStamina
-        stamina={{ current: clampedCurrent, max: maxValue, perExplore: configManager.getExploreStaminaCost() }}
+        stamina={{
+          current: clampedCurrent,
+          max: maxValue,
+          perExplore: configManager.getExploreStaminaCost(category, 0),
+        }}
         tone={staminaTone(clampedCurrent, share)}
         filling={isStaminaRecharging(clampedCurrent, maxValue)}
       />

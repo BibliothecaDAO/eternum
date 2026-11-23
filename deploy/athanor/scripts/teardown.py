@@ -1,4 +1,4 @@
-"""Remove a shard and retire its directory row; mainnet setup and Cloudflare services survive.
+"""Remove a shard; mainnet setup and Cloudflare services survive.
 
     teardown.py dev [/opt/athanor/backups/NAME]
     teardown.py production /opt/athanor/backups/NAME
@@ -8,7 +8,7 @@ Dev's shard is disposable. Production's is removed only after `backup.py verify`
 since (backup.py quiesce, then capture). Dev takes the same backup when given one, so production's path is rehearsed
 on dev. Once a backup verifies, /opt/athanor/logs/teardown-ENVIRONMENT.json records it with the shard's chain before
 anything is removed. While the chain's volume exists every run verifies again; only a run stopped after the volumes
-are gone resumes from that record, and never from another backup or another chain's. A rerun after the run directory is gone only retires the row; a finished teardown keeps its record as
+are gone resumes from that record, and never from another backup or another chain's. A finished teardown keeps its record as
 teardown-CHAIN.json.
 """
 from contextlib import redirect_stdout, redirect_stderr
@@ -22,8 +22,6 @@ import time
 
 import deploy
 import shard
-from directory import directory_status
-from deposit_retirement import require_deposit_retirement
 
 
 BACKUPS = Path("/opt/athanor/backups")
@@ -39,12 +37,6 @@ def parse_arguments(arguments):
         if backup.is_absolute() and backup.parent == BACKUPS and backup.name not in ("", ".", ".."):
             return arguments[0], backup
     raise ValueError(USAGE)
-
-
-def shard_identity(directory):
-    """The shard this run directory holds: its name and its chain."""
-    values = dict(line.split("=", 1) for line in (directory / ".env").read_text().splitlines() if "=" in line)
-    return {"project": values["SHARD_NAME"], "chain_id": values["CHAIN_ID"]}
 
 
 LOGS = Path("/opt/athanor/logs")
@@ -81,7 +73,7 @@ def require_verified_backup(environment, directory, backup):
             return
         raise ValueError("This shard can no longer be identified and no teardown of it verified this backup; "
                          "nothing more was removed")
-    identity = shard_identity(directory)
+    identity = shard.run_identity(directory)
     expected = {**identity, "backup": str(backup)}
     if not chain_data_exists(identity["project"]):
         if recorded == expected:
@@ -122,33 +114,24 @@ def teardown(arguments, report_stage):
     environment, backup = parse_arguments(arguments)
     target = json.loads((shard.ROOT / "deploy/first/environments.json").read_text())[environment]
     directory = Path(target["runDirectory"])
-    config = deploy.load_inputs(target["environment"])
     with shard.isolated_stack_lock(f"teardown {environment}"):
         if directory.exists() and backup is not None:
             report_stage("verify backup")
             require_verified_backup(environment, directory, backup)
         if directory.exists():
-            report_stage("verify deposit retirement")
-            require_deposit_retirement(config, directory)
             report_stage("stop and remove volumes")
             if (directory / "compose.yml").exists():
                 if (directory / ".env").exists():
-                    remove_strays(shard_identity(directory)["project"])
+                    remove_strays(shard.run_identity(directory)["project"])
                 subprocess.run([*deploy.compose(directory), "down", "--volumes", "--remove-orphans"], check=True,
                                stdout=sys.stdout, stderr=sys.stderr)
             report_stage("keep deployment logs")
             LOGS.mkdir(mode=0o700, exist_ok=True)
-            retirement = directory / "deposit-retirement.json"
-            if retirement.exists():
-                chain = json.loads(retirement.read_text())["chainId"]
-                shutil.copyfile(retirement, LOGS / f"deposit-retirement-{chain}.json")
             for log in directory.glob("deploy-*.log"):
                 shutil.copyfile(log, LOGS / log.name)
                 (LOGS / log.name).chmod(0o600)
             report_stage("remove run directory")
             shutil.rmtree(directory)
-        report_stage("retire directory row")
-        directory_status(config, "retired")
         if backup is not None:
             complete_verification_record(environment)
 

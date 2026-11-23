@@ -1,7 +1,7 @@
-import { batchRemaining, gameplayRejection, TransactionType } from "@bibliothecadao/provider";
+import { gameplayRejection } from "@bibliothecadao/provider";
 import type { GetTransactionReceiptResponse, RpcProvider } from "starknet";
 
-import { pause, transactionAnswer, TransactionNoAnswerError } from "./transaction-answer";
+import { transactionAnswer, TransactionNoAnswerError } from "./transaction-answer";
 
 import type { GameSyncRuntime } from "../sync/game-sync-runtime";
 import type { GameSyncTransaction } from "../sync/game-sync-types";
@@ -13,16 +13,11 @@ export interface ActionOutcome {
   status: "SUCCEEDED" | "REJECTED" | "REVERTED";
   /** The game's reason, or the revert's, for an action that did not apply. */
   revertReason?: string;
-  /** What a batched command still has to do after this transaction. */
-  batchRemaining?: string;
 }
 
 type Runtime = Pick<GameSyncRuntime, "waitForTransaction" | "subscribeResynced">;
 type Rpc = Pick<RpcProvider, "getTransactionReceipt">;
 
-const RECEIPT_POLL_MS = 250;
-/** Batch progress is absent from Herald's status; retain the existing receipt grace only for batch commands. */
-const RECEIPT_GRACE_MS = 2_000;
 /** A source with nothing to say leaves the race to the others; one per wait, so nothing holds on to it. */
 const silent = (): Promise<never> => new Promise<never>(() => {});
 
@@ -34,24 +29,16 @@ export async function waitForActionOutcome(
   transactionHash: string,
   stopped: AbortSignal,
   inBlock?: Promise<void>,
-  transactionType?: TransactionType,
   startedAt?: number,
 ): Promise<ActionOutcome> {
   const settled = new AbortController();
   const until = AbortSignal.any([stopped, settled.signal]);
-  let read: GetTransactionReceiptResponse | undefined;
   let reported: GameSyncTransaction | undefined;
   const herald = runtime
     .waitForTransaction(transactionHash)
     .then((status) => (reported = status))
     .catch(silent);
-  const receipt = () => receiptOf(rpc, transactionHash, until).then((value) => (read = value));
-  const outcome = herald.then(async (status) => {
-    if (!appliedNothing(status) && isBatchCommand(transactionType) && !read) {
-      await Promise.race([receipt().catch(() => undefined), pause(RECEIPT_GRACE_MS, until)]);
-    }
-    return outcomeFromHerald(status, games, transactionHash, read);
-  });
+  const outcome = herald.then((status) => outcomeFromHerald(status, transactionHash));
   try {
     return await Promise.race([
       transactionAnswer(
@@ -76,9 +63,6 @@ export async function waitForActionOutcome(
   }
 }
 
-const isBatchCommand = (type: TransactionType | undefined): boolean =>
-  type === TransactionType.END_GAME || type === TransactionType.BITCOIN_MINE_CLAIM_PHASE_REWARD;
-
 /** The receipt's refusal, or, for an applied receipt, success once an applied snapshot covers its block. */
 async function outcomeFromReceipt(
   runtime: Runtime,
@@ -92,20 +76,14 @@ async function outcomeFromReceipt(
   const refused = refusalIn(read, games, transactionHash);
   if (refused) return refused;
   const block = await coveredBySnapshot(runtime, rpc, transactionHash, blockOf(read), until);
-  return succeeded(transactionHash, block, read, games);
+  return succeeded(transactionHash, block);
 }
 
-/** Herald has already written the facts. Include batch progress only if its receipt is already available. */
-function outcomeFromHerald(
-  status: GameSyncTransaction,
-  games: string,
-  transactionHash: string,
-  receipt: GetTransactionReceiptResponse | undefined,
-): ActionOutcome {
+function outcomeFromHerald(status: GameSyncTransaction, transactionHash: string): ActionOutcome {
   if (appliedNothing(status)) {
     return { hash: transactionHash, block: status.block, status: status.status, revertReason: status.revertReason };
   }
-  return succeeded(transactionHash, status.block, receipt, games);
+  return succeeded(transactionHash, status.block);
 }
 
 /** Reverted before the roll, or refused by the game (rolled back): either way none of it applied. */
@@ -114,37 +92,8 @@ const appliedNothing = (
 ): transaction is GameSyncTransaction & { status: "REVERTED" | "REJECTED" } =>
   transaction.status === "REVERTED" || transaction.status === "REJECTED";
 
-function succeeded(
-  transactionHash: string,
-  block: number | null,
-  receipt: GetTransactionReceiptResponse | undefined,
-  games: string,
-): ActionOutcome {
-  const remaining =
-    receipt && "events" in receipt
-      ? batchRemaining(receipt.events, games, transactionHash, { missing: "allow" })
-      : undefined;
-  return {
-    hash: transactionHash,
-    block,
-    status: "SUCCEEDED",
-    ...(remaining !== undefined ? { batchRemaining: remaining.toString() } : {}),
-  };
-}
-
-/** The transaction's receipt once it is in a block, pre-confirmed or later; a read that fails is retried. */
-async function receiptOf(
-  rpc: Rpc,
-  transactionHash: string,
-  until: AbortSignal,
-): Promise<GetTransactionReceiptResponse> {
-  while (true) {
-    until.throwIfAborted();
-    const receipt = await rpc.getTransactionReceipt(transactionHash).catch(() => undefined);
-    until.throwIfAborted();
-    if (receipt) return receipt;
-    await pause(RECEIPT_POLL_MS, until);
-  }
+function succeeded(transactionHash: string, block: number | null): ActionOutcome {
+  return { hash: transactionHash, block, status: "SUCCEEDED" };
 }
 
 const blockOf = (receipt: GetTransactionReceiptResponse): number | null =>

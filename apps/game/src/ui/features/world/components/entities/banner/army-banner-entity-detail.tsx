@@ -1,7 +1,8 @@
 import { formatFoodBlock, formatTravelBlockedSummary, getArmyFoodRequirementLabel } from "@/ui/design-system/kit/words";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 
-import { configManager } from "@bibliothecadao/eternum";
+import { armyOaths, configManager } from "@bibliothecadao/eternum";
+import { useGame } from "@/hooks/context/game-context";
 import { memo, type ReactNode, useMemo } from "react";
 
 import { useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
@@ -13,11 +14,10 @@ import { HudChip, HudIconButton, HudPanel, HudPortrait, HudStamina } from "@/ui/
 import { TroopChip } from "@/ui/features/military/components/troop-chip";
 import { isStaminaRecharging } from "@/ui/shared/lib/stamina-visuals";
 import { resolveStaminaDisplay } from "@/ui/shared/lib/stamina-display";
-import { EntityType, ID, RelicRecipientType } from "@bibliothecadao/types";
-import { ActiveRelicEffects } from "../active-relic-effects";
+import { ID } from "@bibliothecadao/types";
 import { useArmyMovementReadiness } from "../../armies/army-movement-readiness";
 import { ArmyWarning } from "../../armies/army-warning";
-import { buildDisplayItems, CompactEntityInventory, countDisplayItems } from "../compact-entity-inventory";
+import { buildDisplayItems, CompactEntityInventory } from "../compact-entity-inventory";
 import { useArmyEntityDetail } from "../hooks/use-army-entity-detail";
 import { EntityDetailLayoutVariant } from "../layout";
 import { shouldShowArmyResourceInventoryTab } from "./army-banner-tabs";
@@ -49,20 +49,18 @@ const ArmyBannerEntityDetailContent = memo(
       explorer,
       explorerResources,
       structureResources,
-      relicEffects,
       derivedData,
       isLoadingExplorer,
       isLoadingStructure,
       handleDeleteExplorer,
       isLoadingDelete,
     } = useArmyEntityDetail({ armyEntityId });
-    const activeRelicIds = useMemo(() => relicEffects.map((effect) => Number(effect.id)), [relicEffects]);
     const currentDefaultTick = useCurrentDefaultTick();
+    const { setup } = useGame();
     const inventoryItems = useMemo(
-      () => buildDisplayItems(explorerResources, currentDefaultTick, activeRelicIds, RelicRecipientType.Explorer),
-      [activeRelicIds, currentDefaultTick, explorerResources],
+      () => buildDisplayItems(explorerResources, currentDefaultTick),
+      [currentDefaultTick, explorerResources],
     );
-    const inventoryCounts = useMemo(() => countDisplayItems(inventoryItems), [inventoryItems]);
     const resolvedWorldMode = useResolvedWorldGameMode();
     const movementReadiness = useArmyMovementReadiness(explorer, structureResources);
     const owner = ownerStructure?.owner || null;
@@ -81,12 +79,6 @@ const ArmyBannerEntityDetailContent = memo(
 
     const hasWarnings = Boolean(structureResources && explorerResources);
     const inventoryLimit = compact ? 10 : undefined;
-    const combatRelicActionLimit = compact ? 4 : undefined;
-    // Show every held relic — activatable ones are clickable, the rest render
-    // dimmed/disabled so you can still see what the army carries.
-    // Relics are only worth listing where the game lets an army apply them.
-    const showRelicsInline =
-      derivedData.isMine && inventoryCounts.relics > 0 && configManager.isCommandEnabled("ApplyRelic");
     const ownerDisplay = derivedData.addressName;
     const stationedDisplay = derivedData.structureOwnerName ?? "Field deployment";
     const ownerInitial = (ownerDisplay || "?").charAt(0).toUpperCase();
@@ -102,10 +94,7 @@ const ArmyBannerEntityDetailContent = memo(
           wheatLabel: getArmyFoodRequirementLabel(resolvedWorldMode),
         })
       : null;
-    const showResourceInventoryInline = shouldShowArmyResourceInventoryTab(
-      resolvedWorldMode,
-      inventoryCounts.resources,
-    );
+    const showResourceInventoryInline = shouldShowArmyResourceInventoryTab(resolvedWorldMode, inventoryItems.length);
 
     return (
       <HudPanel
@@ -145,6 +134,10 @@ const ArmyBannerEntityDetailContent = memo(
           <TroopChip troops={explorer.troops} size="sm" className="w-full" />
           {derivedData.stamina && derivedData.maxStamina ? (
             <InlineStaminaBar
+              perExplore={configManager.getExploreStaminaCost(
+                explorer.troops.category,
+                armyOaths(setup.store, explorer),
+              )}
               currentStamina={currentStamina}
               maxStamina={maxStamina}
               isRecharging={derivedData.staminaDisplay?.isRecharging}
@@ -163,30 +156,10 @@ const ArmyBannerEntityDetailContent = memo(
               Rested in {formatRestTime(derivedData.staminaDisplay.secondsUntilFull)}
             </p>
           ) : null}
-          {showRelicsInline && (
-            <CompactEntityInventory
-              resources={explorerResources}
-              activeRelicIds={activeRelicIds}
-              recipientType={RelicRecipientType.Explorer}
-              entityId={armyEntityId}
-              entityType={EntityType.ARMY}
-              allowRelicActivation
-              maxItems={combatRelicActionLimit}
-              filter="relics"
-              showHiddenCount={false}
-              emptyMessage="No relics ready."
-            />
-          )}
-          {relicEffects.length > 0 && <ActiveRelicEffects relicEffects={relicEffects} entityId={armyEntityId} />}
           {showResourceInventoryInline && (
             <CompactEntityInventory
               resources={explorerResources}
-              activeRelicIds={activeRelicIds}
-              recipientType={RelicRecipientType.Explorer}
-              entityId={armyEntityId}
-              entityType={EntityType.ARMY}
               maxItems={inventoryLimit}
-              filter="resources"
               emptyMessage="No resources carried."
               showHiddenCount={false}
             />
@@ -233,6 +206,7 @@ const formatRestTime = (seconds: number): string => {
 };
 
 const InlineStaminaBar = ({
+  perExplore,
   currentStamina,
   maxStamina,
   isRecharging,
@@ -240,6 +214,7 @@ const InlineStaminaBar = ({
   travelBlockedTitle,
   rightAccessory,
 }: {
+  perExplore: number;
   currentStamina: number;
   maxStamina: number;
   isRecharging?: boolean | null;
@@ -266,7 +241,7 @@ const InlineStaminaBar = ({
       <SemanticIcon name="stamina" className="h-3 w-3" />
       <span className="min-w-0 flex-1">
         <HudStamina
-          stamina={{ current: displayedCurrent, max: maxStamina, perExplore: configManager.getExploreStaminaCost() }}
+          stamina={{ current: displayedCurrent, max: maxStamina, perExplore }}
           tone={tone}
           filling={recharging}
         />

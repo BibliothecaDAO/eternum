@@ -20,10 +20,6 @@ interface HandleWorldmapRefreshCommitRuntimeInput {
     chunkKey: string,
     options: { force: boolean; transitionToken: number },
   ) => Promise<void>;
-  scheduleDeferredNonCriticalManagerCatchUp: (
-    chunkKey: string,
-    options: { force: boolean; transitionToken: number },
-  ) => void;
   stagedPathEnabled: boolean;
   projectionSyncSucceeded: boolean;
   transitionToken: number;
@@ -51,10 +47,6 @@ export async function handleWorldmapRefreshCommitRuntime(
   await input.commitPreparedTerrain(input.preparedTerrain);
   if (input.stagedPathEnabled) {
     await input.runImmediateCriticalManagerCatchUp(input.chunkKey, {
-      force: input.force,
-      transitionToken: input.transitionToken,
-    });
-    input.scheduleDeferredNonCriticalManagerCatchUp(input.chunkKey, {
       force: input.force,
       transitionToken: input.transitionToken,
     });

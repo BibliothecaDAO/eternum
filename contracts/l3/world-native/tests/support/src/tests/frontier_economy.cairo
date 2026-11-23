@@ -11,7 +11,6 @@ pub use crate::structures::IStructureOperationsDispatcher;
 pub use crate::tests::state::{ResourceObservationTrait, StructureObservationTrait};
 pub use crate::troop_management::{ManageTroops, RecruitExplorer};
 pub use crate::troops::Coord;
-pub use crate::upgrades::{UpgradeLimits, UpgradeRecipe};
 pub use super::resource_commands::{assert_terminal_rejection, execute, grant, set_fixture};
 pub const KNIGHT: u8 = 26;
 pub const WHEAT: u8 = 35;
@@ -19,40 +18,15 @@ pub const BARRACKS: u8 = 28;
 pub const FARM: u8 = 37;
 pub const EAST: u8 = 0;
 pub const WEST: u8 = 3;
-pub /// A board realm carrying Frontier's own recipes: two wheat for each troop.
- fn frontier_preset() -> crate::presets::PresetDefinition {
-    let mut preset = super::building_commands::building_preset(Some(super::building_commands::board_rules()));
-    let (_, frontier) = super::preset_projection::current_definition("frontier");
-    preset.resources.production = frontier.resources.production;
-    preset
-}
-pub fn with_realm_rate(
-    mut preset: crate::presets::PresetDefinition, resource_type: u8, realm_rate: u64,
-) -> crate::presets::PresetDefinition {
-    let mut rules = array![];
-    for rule in preset.resources.resources {
-        rules.append(if *rule.resource_type == resource_type {
-            ResourceRule { realm_rate, ..*rule }
-        } else {
-            *rule
-        });
-    }
-    preset.resources.resources = rules.span();
-    preset
-}
-pub fn frontier_realm(preset: crate::presets::PresetDefinition) -> (super::Deployment, ResourceKey) {
-    let (deployment, home) = super::building_commands::building_world_with_preset(preset);
-    grant(deployment, home, crate::resources::LABOR, 1000);
+pub fn frontier_realm() -> (super::Deployment, ResourceKey) {
+    let (deployment, home) = super::building_commands::building_world();
+    grant(deployment, home, crate::resources::LABOR, 1000000 * RESOURCE_PRECISION);
     (deployment, home)
 }
 pub fn build(home: ResourceKey, category: u8, direction: u8) -> Command {
     Command::CreateBuilding(
         CreateBuilding {
-            scouting_kind: 0,
-            structure_id: home.entity_id,
-            directions: array![direction].span(),
-            category,
-            use_simple: true,
+            structure_id: home.entity_id, directions: array![direction].span(), category, use_simple: true,
         },
     )
 }
@@ -64,16 +38,18 @@ pub fn demolish(home: ResourceKey, direction: u8) -> Command {
         },
     )
 }
-pub fn raise(home: ResourceKey, troops: u128, direction: u8) -> Command {
+pub fn raise(home: ResourceKey, troops: u128, direction: u8, slot: u8) -> Command {
     Command::CreateExplorer(
         CreateExplorer {
-            slot: 0, structure_id: home.entity_id, category: 0, tier: 0, amount: troops * RESOURCE_PRECISION, direction,
+            slot, structure_id: home.entity_id, category: 0, tier: 0, amount: troops * RESOURCE_PRECISION, direction,
         },
     )
 }
 pub fn reinforce(explorer_id: u64, troops: u128) -> Command {
     Command::ManageTroops(
-        ManageTroops::RecruitExplorer(RecruitExplorer { explorer_id, amount: troops * RESOURCE_PRECISION }),
+        ManageTroops::RecruitExplorer(
+            RecruitExplorer { explorer_id, amount: troops * RESOURCE_PRECISION, supply_post: None },
+        ),
     )
 }
 pub fn resources(deployment: super::Deployment) -> IResourceOperationsDispatcher {
@@ -113,9 +89,8 @@ pub fn spend(deployment: super::Deployment, home: ResourceKey, resource_type: u8
         );
     stop_cheat_caller_address(deployment.games);
 }
-pub /// The castle's limit on each of wheat, labor and troops: two full deploys of its level's cap.
- fn castle_limit(level: u8) -> u128 {
-    let cap = crate::troops::deployment_cap(super::play_fixture::rules().troop_limit_config, level);
+pub fn castle_limit(level: u8) -> u128 {
+    let cap = crate::troops::deployment_cap(crate::balance::rules::TROOP_LIMIT_CONFIG, level);
     2 * Into::<u32, u128>::into(cap) * RESOURCE_PRECISION
 }
 pub /// Stores exactly `amount`, under the limit, to leave a store a known room.
@@ -127,19 +102,6 @@ pub /// Stores exactly `amount`, under the limit, to leave a store a known room.
         array![home.game_id.into(), home.entity_id.into(), resource_type.into()].span(),
         amount,
     );
-}
-pub fn level_up_once(mut preset: crate::presets::PresetDefinition) -> crate::presets::PresetDefinition {
-    preset.structures.upgrade_limits = UpgradeLimits { realm_max: 1, village_max: 1 };
-    preset
-        .structures
-        .upgrades =
-            array![
-                UpgradeRecipe {
-                    costs: array![ResourceAmount { resource_type: crate::resources::LABOR, amount: 17 }].span(),
-                },
-            ]
-        .span();
-    preset
 }
 pub fn allow_armies(deployment: super::Deployment, home: ResourceKey) {
     let original = IStructureOperationsDispatcher { contract_address: deployment.games }.structure(home).unwrap();
@@ -154,15 +116,5 @@ pub fn allow_armies(deployment: super::Deployment, home: ResourceKey) {
             resources_packed: original.resources_packed,
             metadata: original.metadata,
         },
-    );
-}
-pub fn learn_barracks(deployment: super::Deployment, home: ResourceKey, sides: Span<u8>) {
-    let mut learned = 0;
-    for side in sides {
-        learned = crate::research::learn(learned, crate::research::ROW_BARRACKS, *side);
-    }
-    let learned = learned;
-    snforge_std::interact_with_state(
-        deployment.games, || crate::logic::research::write(home, crate::research::RealmKnowledge { learned }),
     );
 }

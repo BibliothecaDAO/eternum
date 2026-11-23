@@ -5,16 +5,7 @@ pub use crate::rules::{RESOURCE_PRECISION, TroopDamageConfig, TroopStaminaConfig
 pub use crate::stamina::StaminaSourceTrait;
 pub use crate::troops::{Stamina, TroopBoosts, TroopTier, TroopType, Troops};
 pub fn context(biome: Biome) -> CombatContext {
-    CombatContext {
-        timestamp: 1,
-        attacker_roll: 0,
-        defender_roll: 0,
-        attacker_biome: biome,
-        defender_biome: biome,
-        attack_distance: 1,
-        attacker_is_structure_guard: false,
-        defender_is_structure_guard: false,
-    }
+    CombatContext { timestamp: 1, attacker_biome: biome, defender_biome: biome, ..Default::default() }
 }
 pub const KNIGHT_MAX_STAMINA: u16 = 120;
 pub const CROSSBOWMAN_MAX_STAMINA: u16 = 120;
@@ -25,8 +16,7 @@ pub fn damage_config() -> TroopDamageConfig {
         t2_damage_multiplier: 46116860184273879040, // 2.5
         t3_damage_multiplier: 129127208515966861312, // 7
         damage_biome_bonus_num: 3_000, // 30%
-        damage_scaling_factor: 55340232221128654848, // 3
-        damage_raid_percent_num: 5,
+        damage_scaling_factor: 55340232221128654848 // 3
     }
 }
 pub fn stamina_config() -> TroopStaminaConfig {
@@ -61,29 +51,7 @@ pub fn troop_boosts() -> TroopBoosts {
         incr_explore_reward_end_at: 0,
     }
 }
-pub fn dice_damage(attacker_roll: u8, defender_roll: u8) -> (u128, u128) {
-    let mut attacker = test_troops(TroopType::Knight, TroopTier::T2, 10000, 100);
-    let mut defender = test_troops(TroopType::Knight, TroopTier::T2, 10000, 100);
-    let (outgoing, incoming, _, _) = attacker
-        .damage_with_context(
-            ref defender,
-            CombatContext {
-                timestamp: 1,
-                attacker_roll,
-                defender_roll,
-                attacker_biome: Biome::Underground,
-                defender_biome: Biome::Underground,
-                attack_distance: 1,
-                attacker_is_structure_guard: false,
-                defender_is_structure_guard: false,
-            },
-            stamina_config(),
-            damage_config(),
-            1,
-            1,
-        );
-    (outgoing, incoming)
-}
+
 pub fn test_troops(category: TroopType, tier: TroopTier, troop_count: u128, stamina: u64) -> Troops {
     Troops {
         category,

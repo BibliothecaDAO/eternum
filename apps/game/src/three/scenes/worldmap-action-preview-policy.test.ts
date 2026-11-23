@@ -3,7 +3,7 @@ import { ActionType } from "@bibliothecadao/eternum";
 import { isMapPreviewAction } from "./worldmap-action-preview-policy";
 
 describe("map action preview reanchoring", () => {
-  it.each([ActionType.Attack, ActionType.Help, ActionType.Chest, ActionType.SpireTravel])(
+  it.each([ActionType.Attack, ActionType.Help, ActionType.SpireTravel])(
     "opens a right-click preview for %s",
     (action) => {
       expect(isMapPreviewAction(2, action)).toBe(true);

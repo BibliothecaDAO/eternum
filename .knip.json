@@ -2,9 +2,7 @@
   "ignoreDependencies": [],
   "ignore": [
     "**/*.js",
-    "apps/game-docs/vocs.config.ts",
     "apps/game-docs/docs/**",
-    "apps/game-docs/vite-plugin-llm-txt.mjs",
     "apps/game-docs/env.ts",
     "scripts/codemod-lucide-imports.mjs",
     "config/generated/**",
@@ -30,8 +28,8 @@
         "deploy/athanor/scripts/warm-native-classes.ts",
         "deploy/athanor/scripts/read-rpc.ts",
         "deploy/athanor/scripts/season-dates.ts",
-        "deploy/athanor/scripts/account-rpc-smoke.ts",
-        "docs/taskmarket/*/check.mjs"
+        "docs/taskmarket/*/check.mjs",
+        "scripts/ci/run.ts"
       ],
       "paths": {
         "@bibliothecadao/eternum": [
@@ -198,13 +196,15 @@
       "entry": [
         "src/main.tsx",
         "src/ui/features/debug/kit-lab/render-model.ts",
-        "scripts/relic-chest-route-fixture.mjs",
         "scripts/frontier-painted/stamp-source.mjs",
         "scripts/lib/page-touch-worker.mjs"
       ]
     },
     "apps/herald": {
       "paths": {
+        "@bibliothecadao/eternum/game-client": [
+          "../../packages/core/src/client/index.ts"
+        ],
         "@bibliothecadao/eternum/game-sync": [
           "../../packages/core/src/sync/index.ts"
         ],
@@ -217,6 +217,7 @@
       }
     },
     "apps/game-docs": {
+      "entry": ["vocs.config.ts"],
       "paths": {
         "@bibliothecadao/types": [
           "../../packages/types/src/index.ts"
@@ -227,7 +228,6 @@
       "entry": [
         "deployer/clean/cli/create.ts",
         "deployer/clean/cli/deploy-world.ts",
-        "deployer/clean/registrar/register-preset.ts",
         "utils/utils.ts"
       ]
     },

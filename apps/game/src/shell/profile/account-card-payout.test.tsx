@@ -67,7 +67,7 @@ const press = (words: string) =>
 
 it("closes the payout wallet's sheet once a change is taken, the row showing the new wallet (review-no-back-1, P3-5)", async () => {
   await draw(sessionWith(null));
-  expect(payoutRow().textContent).toContain("Link wallet");
+  expect(payoutRow().textContent).toContain("No wallet set");
   await act(async () => payoutRow().click());
   expect(sheet()).not.toBeNull();
 

@@ -1,4 +1,3 @@
-import { presetRegistration } from "./native/preset-fixtures";
 import malformedRow from "../../../contracts/l3/world-native/schema/fixtures/malformed-row.json";
 import { CairoCustomEnum } from "starknet";
 import { dayOf } from "@bibliothecadao/eternum/expeditions";
@@ -9,6 +8,7 @@ import type { MadaraRpc } from "./madara-rpc";
 import {
   structureValue,
   explorerValue,
+  gameRegistryEvent,
   seedDerivedRows,
   receipt,
   rowEvent,
@@ -62,7 +62,13 @@ async function expeditionWorld() {
   const dayStart = Date.parse("2026-09-22T00:00:00Z") / 1000;
   // The season's day 0, drawn from the game's seed 7 below; its last second is the eve of the rollover.
   const dayZero = dayOf(
-    { seed: 7n, startMainAt: dayStart + 120, endAt: dayStart + 120 + 21 * 20 * 14_400, dayUnitSeconds: 14_400 },
+    {
+      seed: 7n,
+      startMainAt: dayStart + 120,
+      scheduledEndAt: dayStart + 120 + 21 * 20 * 14_400,
+      endAt: dayStart + 120 + 21 * 20 * 14_400,
+      dayUnitSeconds: 14_400,
+    },
     dayStart + 120,
   )!;
   const beforeMidnight = dayZero.end - 1;
@@ -81,9 +87,10 @@ async function expeditionWorld() {
       metadata: { ...structureValue.metadata, realm_id: id },
     }),
   );
-  const armies = [1, 2].map((id) =>
+  const armies = [1, 2].flatMap((id) => [
     rowEvent("ExplorerTroops", ["1", String(id * 10)], explorerValue(String(id), 1000n, 120n, 1n)),
-  );
+    rowEvent("ArmyDay", ["1", String(id * 10)], { day: 0n }),
+  ]);
   const positions = [1, 2].map((id) =>
     rowEvent("TileOccupancy", ["1", "0", String(id * 100 - 50), "50"], {
       entity_id: String(id * 10),
@@ -95,17 +102,12 @@ async function expeditionWorld() {
     fold,
     receipt(
       seedDerivedRows(fold, decoder, [
-        rowEvent("GameRegistry", ["1"], {
+        gameRegistryEvent({
           name: "7",
-          preset_id: "1",
-          creator: "10",
-          settled: false,
-          ready: true,
-          dev_mode_on: false,
           start_settling_at: String(dayStart + 120),
           start_main_at: String(dayStart + 120),
+          scheduled_end_at: String(dayStart + 120 + 2 * 288_000),
           end_at: String(dayStart + 120 + 2 * 288_000),
-          end_grace_seconds: "0",
           seed: "7",
         }),
         rowEvent("SettlementRules", ["1"], {
@@ -127,12 +129,16 @@ async function expeditionWorld() {
           rowEvent("EntityName", ["1", String(entityId)], { name: String(entityId) }),
         ]),
         rowEvent("ResourceProduction", ["1", "100", "29"], {
+          remainder: 0,
+
           building_count: 1n,
           production_rate: 10n,
           output_amount_left: 100n,
           last_settled_at: 2,
         }),
         rowEvent("ResourceProduction", ["1", "99", "29"], {
+          remainder: 0,
+
           building_count: 1n,
           production_rate: 10n,
           output_amount_left: 100n,
@@ -294,43 +300,33 @@ describe("native live publication", () => {
       live.detach(session);
       return replica(stream);
     };
-    const faith = (owner: bigint) =>
-      rowEvent("WonderFaith", ["1", "5"], {
-        last_recorded_owner: owner,
-        claimed_points: 0n,
-        claim_per_sec: 1,
-        claim_last_at: 0,
-        owner_claim_per_sec: 1,
-        num_structures_pledged: 0,
-      });
+    const pass = (owner: bigint) => rowEvent("VillagePass", ["1", "5"], { owner, village_id: 0 });
     const confirm = async (block: number, owner?: bigint) => {
       confirmed.block_number = block;
       pending.block_number = block + 1;
       confirmed.transactions =
-        owner === undefined
-          ? []
-          : [{ receipt: receipt([faith(owner)], `0x${block}`), transaction: { type: "INVOKE" } }];
+        owner === undefined ? [] : [{ receipt: receipt([pass(owner)], `0x${block}`), transaction: { type: "INVOKE" } }];
       await live.acceptSubscribedHead({ block_number: block, timestamp: beforeMidnight });
     };
     const expectFresh = () =>
       ["0xa", "0xb"].forEach((actor, index) => expect(replica(messages[index]), actor).toEqual(fresh(actor)));
-    const wonder = (rows: Map<string, unknown>) => [...rows.keys()].filter((key) => key.startsWith("WonderFaith:"));
+    const heldPass = (rows: Map<string, unknown>) => [...rows.keys()].filter((key) => key.startsWith("VillagePass:"));
 
-    // The wonder's faith is 0xa's, held by its owner; then it passes to 0xb. Its keys no longer meet 0xa's scope.
+    // The pass moves from 0xa to 0xb; its keys no longer meet 0xa's scope.
     await confirm(11, 10n);
-    expect(wonder(replica(messages[0]))).toHaveLength(1);
-    expect(wonder(replica(messages[1]))).toEqual([]);
+    expect(heldPass(replica(messages[0]))).toHaveLength(1);
+    expect(heldPass(replica(messages[1]))).toEqual([]);
     await confirm(12, 11n);
-    expect(wonder(replica(messages[0]))).toEqual([]);
-    expect(wonder(replica(messages[1]))).toHaveLength(1);
+    expect(heldPass(replica(messages[0]))).toEqual([]);
+    expect(heldPass(replica(messages[1]))).toHaveLength(1);
     expectFresh();
 
     // A pending transfer back to 0xa that the next block drops: 0xa is shown it, then loses it to the revert.
-    live.acceptReceipt({ ...receipt([faith(10n)], "0x99"), finality_status: "PRE_CONFIRMED" });
-    expect(wonder(replica(messages[0]))).toHaveLength(1);
-    expect(wonder(replica(messages[1]))).toEqual([]);
+    live.acceptReceipt({ ...receipt([pass(10n)], "0x99"), finality_status: "PRE_CONFIRMED" });
+    expect(heldPass(replica(messages[0]))).toHaveLength(1);
+    expect(heldPass(replica(messages[1]))).toEqual([]);
     await confirm(13);
-    expect(wonder(replica(messages[0]))).toEqual([]);
+    expect(heldPass(replica(messages[0]))).toEqual([]);
     expectFresh();
   });
 
@@ -510,24 +506,4 @@ it("validates the whole rebuilt overlay before publishing any of its actions", a
   expect(messages.filter((message) => message.type === "diff")).toEqual([]);
   expect(native.receiptFailures).toBe(1);
   expect(live.snapshot("1").models.find((model) => model.model === "TileOpt")!.rows).toEqual([]);
-});
-
-it("publishes an early preset from its validated block calldata after the sender LRU evicts it", async () => {
-  const { live, pending, native } = fixture();
-  const preset = presetRegistration(2);
-  pending.transactions.push({
-    transaction: { type: "INVOKE", calldata: preset.calldata },
-    receipt: receipt([preset.event], "0x100"),
-  });
-  for (let index = 0; index < 2050; index++)
-    pending.transactions.push({
-      transaction: { type: "INVOKE", calldata: ["0x0"] },
-      receipt: receipt([], `0x${(index + 1000).toString(16)}`),
-    });
-  await live.acceptSubscribedHead({ block_number: 10, timestamp: 100 });
-  expect(native.receiptFailures).toBe(0);
-  const visible = live.attach("1", { send() {} });
-  // The rebuild applied the preset, so a later launch can verify its stored preimage without another transaction fetch.
-  expect(() => (live as any).overlayFold.presetPreimage(preset.commitment)).not.toThrow();
-  live.detach(visible);
 });

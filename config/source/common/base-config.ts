@@ -9,7 +9,6 @@ const BASE_POPULATION_CAPACITY = 6;
 const DEFAULT_TICK_INTERVAL_SECONDS = 1;
 const ARMIES_TICK_INTERVAL_SECONDS = ONE_MINUTE_IN_SECONDS;
 const DELIVERY_TICK_INTERVAL_SECONDS = ONE_MINUTE_IN_SECONDS * 3;
-const BITCOIN_PHASE_SECONDS = ONE_MINUTE_IN_SECONDS * 10;
 const DONKEY_SPEED_FOR_RESOURCES = 9;
 const DONKEY_SPEED_FOR_TROOPS = 27;
 const BATTLE_GRACE_TICK_COUNT = 24;
@@ -34,8 +33,6 @@ const SEASON_POOL_FEE_RECIPIENT = "0x04CD21aA3E634E36d6379bdbB3FeF78F7E0A882Eb8a
 const SEASON_SETTLING_AFTER_SECONDS = ONE_DAY_IN_SECONDS;
 const SEASON_START_AFTER_SECONDS = ONE_DAY_IN_SECONDS + ONE_HOUR_IN_SECONDS * 12;
 const SEASON_DURATION_SECONDS = ONE_HOUR_IN_SECONDS * 1.5;
-const SEASON_END_GRACE_SECONDS = ONE_DAY_IN_SECONDS;
-const SEASON_BRIDGE_CLOSE_AFTER_END_SECONDS = ONE_DAY_IN_SECONDS * 7;
 const WONDER_PRODUCTION_BONUS_WITHIN_TILE_DISTANCE = 12;
 const WONDER_PRODUCTION_BONUS_PERCENT_NUM = 0;
 const VILLAGE_TOKEN_MINT_RECIPIENT = "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec";
@@ -43,7 +40,6 @@ const VILLAGE_TOKEN_MINT_RECIPIENT = "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ec
 export function buildCommonBaseConfig(): ConfigPatch {
   return {
     spireTravelEssenceCost: 0,
-    bitcoin: { prizePerPhase: 1, minimumLabor: 100, ownerCutBps: 2000 },
     mines: {
       kinds: {
         1: { resourceType: 38, buildingCategory: 39, productionRate: 5, capMinimum: 36000, capSteps: 1 },
@@ -61,7 +57,6 @@ export function buildCommonBaseConfig(): ConfigPatch {
       defaultTickIntervalInSeconds: DEFAULT_TICK_INTERVAL_SECONDS,
       armiesTickIntervalInSeconds: ARMIES_TICK_INTERVAL_SECONDS,
       deliveryTickIntervalInSeconds: DELIVERY_TICK_INTERVAL_SECONDS,
-      bitcoinPhaseInSeconds: BITCOIN_PHASE_SECONDS,
     },
     carryCapacityGram: {
       [CapacityConfig.None]: 0,
@@ -71,7 +66,6 @@ export function buildCommonBaseConfig(): ConfigPatch {
       [CapacityConfig.BankStructure]: 18446744073709551615n,
       [CapacityConfig.FragmentMineStructure]: 18446744073709551615n,
       [CapacityConfig.CampStructure]: 18446744073709551615n,
-      [CapacityConfig.BitcoinMineStructure]: 18446744073709551615n,
       [CapacityConfig.Donkey]: 50 * 1000,
       [CapacityConfig.Army]: 10 * 1000,
       [CapacityConfig.Storehouse]: 0,
@@ -95,7 +89,6 @@ export function buildCommonBaseConfig(): ConfigPatch {
       layer_capacity_increment: SETTLEMENT_LAYER_CAPACITY_INCREMENT,
       layer_capacity_bps: SETTLEMENT_LAYER_CAPACITY_BPS,
       single_realm_mode: false,
-      two_player_mode: false,
     },
     biomeClimate: {
       elevationScaleBps: NEUTRAL_BIOME_CLIMATE_BPS,
@@ -109,8 +102,6 @@ export function buildCommonBaseConfig(): ConfigPatch {
       startSettlingAfterSeconds: SEASON_SETTLING_AFTER_SECONDS,
       startMainAfterSeconds: SEASON_START_AFTER_SECONDS,
       durationSeconds: SEASON_DURATION_SECONDS,
-      endGraceSeconds: SEASON_END_GRACE_SECONDS,
-      bridgeCloseAfterEndSeconds: SEASON_BRIDGE_CLOSE_AFTER_END_SECONDS,
     },
     bridge: {
       velords_fee_on_dpt_percent: VELORDS_FEE_ON_DEPOSIT,

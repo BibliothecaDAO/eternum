@@ -1,0 +1,15 @@
+{
+  "sourceRevision": "dd1b6330a3022680616fb9c1a54947c4a07e14dd",
+  "schemaIdentity": "8335062023160a37579d5ffd113eac2f33657940fad7964f6887dc075cd4795c",
+  "learned": "0x741004000",
+  "buildings": [
+    {
+      "category": 41,
+      "name": "War Hall"
+    },
+    {
+      "category": 44,
+      "name": "Hearth"
+    }
+  ]
+}

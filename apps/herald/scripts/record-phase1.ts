@@ -8,6 +8,7 @@ import { MadaraRpc } from "../src/madara-rpc";
 import { NativeDecoder } from "../src/native/decoder";
 import { NativeIngestion } from "../src/native/ingestion";
 import { manifest as localManifest } from "../src/native/fixtures";
+import { releaseLine } from "../../../packages/core/src/test-support/releases";
 import { WorldFold } from "../src/world-fold";
 import type { GameSnapshot, RpcBlockWithReceipts, RpcReceipt, RpcTransaction } from "../src/types";
 import type { NativeManifest, NativeSchema } from "../src/native/schema";
@@ -167,8 +168,11 @@ async function run(options: Options): Promise<void> {
   const releaseId = feltDecimal(gameRelease.release_id);
 
   const shardManifest = asRecord(await getJson(`${options.heraldUrl}/manifest`), "Herald manifest");
-  const releaseSchemas = asRecord(shardManifest.releaseSchemas, "manifest releaseSchemas");
-  const schemaIdentity = requiredString(releaseSchemas[releaseId], `schema for release ${releaseId}`);
+  const releases = asRecord(shardManifest.releases, "manifest releases");
+  const schemaIdentity = requiredString(
+    asRecord(releases[releaseId], `release ${releaseId}`).schema,
+    `schema for release ${releaseId}`,
+  );
   const schema = (await getJson(`${options.heraldUrl}/schemas/${schemaIdentity}`)) as NativeSchema;
   if (schema.identity !== schemaIdentity) throw new Error("Deployed schema identity does not match the manifest");
   const worldAddress = requiredString(asRecord(shardManifest.contracts, "manifest contracts").games, "games address");
@@ -197,7 +201,7 @@ async function run(options: Options): Promise<void> {
         ];
       });
       if (!hasRecordingFacts(decoded, options.gameId)) continue;
-      ingestion.applyReceipt(fold, receipt, block.block_number, transactionIndex, transaction.calldata);
+      ingestion.applyReceipt(fold, receipt, block.block_number, transactionIndex);
       records.push({ transaction, receipt: { ...receipt, block_number: block.block_number } });
       if (hasActorNonceWrite(decoded, options.gameId, options.actor))
         actionCheckpoints.push({ transactionHash: receipt.transaction_hash, blockNumber: block.block_number });
@@ -257,11 +261,14 @@ async function contractReadCheck(
   kind: string,
   blockNumber: number,
 ) {
-  const [nonce, playerPoints] = await Promise.all([
-    callFelt(options.rpcUrl, worldAddress, "next_nonce", [options.gameId, options.actor], blockNumber),
-    callFelt(options.rpcUrl, worldAddress, "player_points", [options.gameId, options.actor], blockNumber),
-  ]);
-  return { kind, transactionHash, nonce, playerPoints };
+  const nonce = await callFelt(
+    options.rpcUrl,
+    worldAddress,
+    "next_nonce",
+    [options.gameId, options.actor],
+    blockNumber,
+  );
+  return { kind, transactionHash, nonce };
 }
 
 async function readBlocks(
@@ -289,9 +296,9 @@ function decoderManifest(worldAddress: string, schema: NativeSchema, releaseId: 
       deploymentBlock: 0,
       activeSchema: schema.identity,
       releaseId,
-      releaseSchemas: { [String(releaseId)]: schema.identity },
+      releases: releaseLine(schema.identity, [releaseId]),
       schemas: { [schema.identity]: schema },
-      logic: Object.fromEntries(Object.keys(schema.logicClasses).map((name) => [name, "0x0"])),
+      logic: Object.fromEntries(schema.logicClasses.map(({ name }) => [name, "0x0"])),
     },
   };
 }

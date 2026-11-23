@@ -1,5 +1,8 @@
-import type { IconMeaning } from "@/ui/design-system/icon";
-import { formatExact, formatWait } from "@bibliothecadao/types";
+import "./deploy-view.css";
+
+import { useState, type ReactNode } from "react";
+import { Icon, type IconMeaning } from "@/ui/design-system/icon";
+import { type TroopType, formatAmount, formatExact, formatShort, formatWait } from "@bibliothecadao/types";
 import {
   HudButton,
   HudCost,
@@ -14,6 +17,7 @@ import {
   ARMY,
   BUILD,
   DEPLOY,
+  DEPLOY_WORDS,
   DEPLOYING,
   GET_WHEAT,
   NO_OPEN_TILE,
@@ -23,31 +27,29 @@ import {
   wheatForOnly,
 } from "@/ui/design-system/kit/words";
 
-import { useLayout } from "@/shell/frame/layout";
-
-import { OpenSlotRow } from "../hud/army-row";
 import { OpenSlot } from "../hud/army-token";
 import type { SlotStart } from "./deploy-plan";
 import { slotStartLine } from "./slot-start";
 
-/**
- * Deploy, from its props: the controls, the numbers and the action, with no line explaining them (owner, 26 October
- * 2026: "good UI/UX doesnt need subtext"), all of it in view at once on a phone (owner, 31 October: "I wanna see the
- * slots and army deploy without scrolling"). How many troops go (the troop's painting, the count, +500, Max and out of
- * how many can on one line, a slider under it), the open slots as the Armies card draws them (a row each on a desktop,
- * the dock's tokens side by side on a phone), each with the bar it starts its army on and the one it fills chosen (the
- * owner's pick A, 30 October: "A is what I want for the deploy picker"), and Deploy with its wheat price. The tile is
- * picked on the map itself, where the order's tile is marked among the realm's open ones. A notice shows only where
- * Deploy cannot (no troops at home: when the next is home, or Build with the Barracks' mark while nothing makes them; no
- * open tile) and where the count is at the most and the wheat is what stops it below the troops at home: one red line
- * with the Wheat's mark, how many of them the wheat pays for, or, where it pays for none, what one troop needs against
- * what is held, and Get Wheat on it (the owner's pick A, 31 October: "One red line that names Wheat"; shown only at the
- * most, 1 November). Below the most, its price in the foot is all that names the wheat.
- */
+export interface DeployTroopChoiceView {
+  category: TroopType;
+  name: string;
+  art: IconMeaning;
+  role: string;
+  atHome: number;
+  displayCount: number;
+  displayWheat: number;
+  isCustom: boolean;
+}
+
 export const DeployView = ({
+  troopSelection,
+  oathSlots,
   art,
   troopsAtHome,
   count,
+  isFullStack,
+  allowedSlots,
   amount,
   onCount,
   start,
@@ -62,95 +64,173 @@ export const DeployView = ({
   onGoToRealm,
   onClose,
 }: {
+  oathSlots?: ReactNode;
+  troopSelection?: {
+    choices: readonly DeployTroopChoiceView[];
+    selected: TroopType | undefined;
+    onPick: (category: TroopType) => void;
+  };
   art: IconMeaning | undefined;
   troopsAtHome: number | undefined;
   count: number | undefined;
-  /** The most that can go, and the troops it is counted from: more than the most reads "that fit". */
-  amount: { most: number; held: number };
+  isFullStack: boolean;
+  allowedSlots?: number;
+  amount: { most: number; max: number; held: number };
   onCount: (count: number) => void;
-  /** The slot the army fills and the bar it starts on there; none while every slot holds an army or it is unknown. */
   start: SlotStart | undefined;
-  /** The open slots, a deployed one left out; unknown while the plan is. */
   slots: { open: SlotStart[] | undefined; onPick: (slot: number) => void };
-  /** Seconds until the realm's next troop is home; none while nothing makes troops. */
   troopsWait: number | undefined;
   wheatCost: number | undefined;
-  /** Whether the realm has an open tile to step out on; unknown while its plan or ring is. */
   tile: "open" | "none" | undefined;
   canDeploy: boolean;
   sending: boolean;
   onDeploy: () => void;
-  /**
-   * The count is at the most and the wheat stops it: the troops it pays for, of how many would go without it, the
-   * wheat held against one troop's price, and the farms' wait for the next troop's.
-   */
   wheatLimit: { troops: number; of: number; held: number; perTroop: number; wait: number | undefined } | undefined;
-  /** To the realm, where Barracks make troops and Farms make wheat. */
   onGoToRealm: () => void;
   onClose: () => void;
-}) => (
-  <HudSheet label={DEPLOY} onClose={onClose}>
-    <HudTroopAmount
-      name={TROOPS}
-      art={art}
-      value={count ?? 0}
-      most={amount.most}
-      held={amount.held}
-      disabled={amount.most === 0}
-      onChange={onCount}
-    />
-    {slots.open && slots.open.length > 0 && (
-      <DeploySlots open={slots.open} picked={start?.slot} onPick={slots.onPick} />
-    )}
-    {troopsAtHome === 0 ? (
-      troopsWait === undefined ? (
-        <>
-          <HudNotice tone="warn" line={NO_TROOPS_AT_HOME} />
-          <HudButton kind="primary" icon="barracks" onClick={onGoToRealm}>
-            {BUILD}
-          </HudButton>
-        </>
-      ) : (
-        <HudNotice tone="warn" line={noTroopsUntil(formatWait(troopsWait))} />
-      )
-    ) : (
-      tile === "none" && <HudNotice tone="warn" line={NO_OPEN_TILE} />
-    )}
-    {wheatLimit && (
-      <HudNotice
-        tone="bad"
-        icon="wheat"
-        line={
-          wheatLimit.troops === 0
-            ? shortfallLine({
-                kind: "short",
-                of: "wheat",
-                held: wheatLimit.held,
-                need: wheatLimit.perTroop,
-                wait: wheatLimit.wait,
-              })
-            : wheatForOnly(formatExact(wheatLimit.troops), formatExact(wheatLimit.of))
-        }
-        fix={{ label: GET_WHEAT, onClick: onGoToRealm }}
-      />
-    )}
-    {canDeploy && wheatCost !== undefined && (
-      <HudWindowFoot note={<HudCost line={costLine([{ of: "wheat", amount: wheatCost }])} />}>
-        <HudButton
-          kind="primary"
-          icon="military"
-          disabled={!count}
-          busy={sending ? DEPLOYING : undefined}
-          onClick={onDeploy}
-        >
-          {DEPLOY}
-        </HudButton>
-      </HudWindowFoot>
-    )}
-  </HudSheet>
-);
+}) => {
+  const [adjusting, setAdjusting] = useState(false);
+  const totalSlots = allowedSlots ?? slots.open?.length ?? start?.number ?? 0;
 
-/** The open slots, each as the Armies card draws it, the one Deploy fills chosen as a picked army is. */
+  return (
+    <HudSheet label={DEPLOY} icon="military" onClose={onClose}>
+      {start?.start && totalSlots > 0 && (
+        <div className="deploy-sheet__sub">
+          <span>{DEPLOY_WORDS.slotOf(start.number, totalSlots)}</span>
+          <span aria-hidden="true">·</span>
+          <span className="deploy-sheet__stamina">
+            <Icon name="stamina" size={14} />
+            <span>{`${formatAmount(start.start.current)}/${formatAmount(start.start.max)}`}</span>
+          </span>
+        </div>
+      )}
+      {troopSelection && troopSelection.choices.length > 0 && (
+        <div role="group" aria-label="Troop type" className="deploy-troops">
+          {troopSelection.choices.map((choice) => (
+            <button
+              key={choice.category}
+              type="button"
+              className="ui-pick deploy-troop-card"
+              aria-label={choice.name}
+              aria-pressed={troopSelection.selected === choice.category}
+              onClick={() => {
+                setAdjusting(false);
+                troopSelection.onPick(choice.category);
+              }}
+            >
+              <span className="deploy-troop-card__portrait">
+                <Icon name={choice.art} size={48} />
+              </span>
+              <span className="deploy-troop-card__body">
+                <span className="deploy-troop-card__name">{choice.name}</span>
+                <span className="deploy-troop-card__meta">
+                  <span>{choice.role}</span>
+                  <span aria-hidden="true">·</span>
+                  <span className="deploy-troop-card__count">
+                    <Icon name="attack" size={14} />
+                    <span>{formatExact(choice.displayCount)}</span>
+                  </span>
+                </span>
+              </span>
+              <span className="deploy-troop-card__cost">
+                <span className="deploy-troop-card__wheat">
+                  <span>{formatShort(choice.displayWheat)}</span>
+                  <Icon name="wheat" size={14} />
+                </span>
+                <span className="deploy-troop-card__stack">
+                  {choice.isCustom
+                    ? `${formatExact(choice.displayCount)} / ${formatExact(choice.atHome)}`
+                    : DEPLOY_WORDS.fullStack}
+                </span>
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+      {amount.most > 0 && (
+        <>
+          <div className="deploy-size-bar">
+            <span className="deploy-size-bar__state">
+              {isFullStack ? DEPLOY_WORDS.fullStackReady : DEPLOY_WORDS.customSize(formatExact(count ?? 0))}
+            </span>
+            <button
+              type="button"
+              className="deploy-adjust-toggle"
+              aria-expanded={adjusting}
+              onClick={() => setAdjusting((open) => !open)}
+            >
+              {adjusting ? DEPLOY_WORDS.hideSize : DEPLOY_WORDS.adjustSize}
+            </button>
+          </div>
+          {adjusting && (
+            <HudTroopAmount
+              name={TROOPS}
+              art={art}
+              value={count ?? 0}
+              most={amount.most}
+              max={amount.max}
+              held={amount.held}
+              disabled={amount.most === 0}
+              onChange={onCount}
+            />
+          )}
+        </>
+      )}
+      {slots.open && slots.open.length > 0 && (slots.open.length > 1 || !start) && (
+        <DeploySlots open={slots.open} picked={start?.slot} onPick={slots.onPick} />
+      )}
+      {troopsAtHome === 0 ? (
+        troopsWait === undefined ? (
+          <>
+            <HudNotice tone="warn" line={NO_TROOPS_AT_HOME} />
+            <HudButton kind="primary" icon="barracks" onClick={onGoToRealm}>
+              {BUILD}
+            </HudButton>
+          </>
+        ) : (
+          <HudNotice tone="warn" line={noTroopsUntil(formatWait(troopsWait))} />
+        )
+      ) : (
+        tile === "none" && <HudNotice tone="warn" line={NO_OPEN_TILE} />
+      )}
+      {oathSlots}
+      {wheatLimit && (
+        <HudNotice
+          tone="bad"
+          icon="wheat"
+          line={
+            wheatLimit.troops === 0
+              ? shortfallLine({
+                  kind: "short",
+                  of: "wheat",
+                  held: wheatLimit.held,
+                  need: wheatLimit.perTroop,
+                  wait: wheatLimit.wait,
+                })
+              : wheatForOnly(formatExact(wheatLimit.troops), formatExact(wheatLimit.of))
+          }
+          fix={{ label: GET_WHEAT, onClick: onGoToRealm }}
+        />
+      )}
+      {canDeploy && wheatCost !== undefined && (
+        <HudWindowFoot note={adjusting ? <HudCost line={costLine([{ of: "wheat", amount: wheatCost }])} /> : undefined}>
+          <span className={adjusting ? undefined : "deploy-foot-btn"}>
+            <HudButton
+              kind="primary"
+              icon="military"
+              disabled={!count}
+              busy={sending ? DEPLOYING : undefined}
+              onClick={onDeploy}
+            >
+              {DEPLOY}
+            </HudButton>
+          </span>
+        </HudWindowFoot>
+      )}
+    </HudSheet>
+  );
+};
+
 const DeploySlots = ({
   open,
   picked,
@@ -159,24 +239,20 @@ const DeploySlots = ({
   open: SlotStart[];
   picked: number | undefined;
   onPick: (slot: number) => void;
-}) => {
-  const desktop = useLayout() === "desktop";
-  const Slot = desktop ? OpenSlotRow : OpenSlot;
-  return (
-    <div role="group" aria-label="Army slots" className={desktop ? "flex flex-col" : "flex gap-1.5"}>
-      {open.map((slot) => {
-        const line = slotStartLine(slot);
-        return (
-          <Slot
-            key={slot.slot}
-            label={`${ARMY} ${slot.number}`}
-            pulse={false}
-            start={slot.start && line ? { bar: slot.start, words: `${line}.` } : undefined}
-            selected={slot.slot === picked}
-            onDeploy={() => onPick(slot.slot)}
-          />
-        );
-      })}
-    </div>
-  );
-};
+}) => (
+  <div role="group" aria-label="Army slots" className="flex gap-1.5">
+    {open.map((slot) => {
+      const line = slotStartLine(slot);
+      return (
+        <OpenSlot
+          key={slot.slot}
+          label={`${ARMY} ${slot.number}`}
+          pulse={false}
+          start={slot.start && line ? { bar: slot.start, words: `${line}.` } : undefined}
+          selected={slot.slot === picked}
+          onDeploy={() => onPick(slot.slot)}
+        />
+      );
+    })}
+  </div>
+);

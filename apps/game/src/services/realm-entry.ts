@@ -2,10 +2,6 @@ import { fetchApi } from "@/runtime/app-api";
 import type { GameRef } from "@bibliothecadao/eternum/game-client";
 import type { HeldRealm, HeldRealmsAnswer } from "@realms-world/identity";
 
-/**
- * Registers the source a Frontier home claims from: a held Realm or the campaign ticket
- * their account holds, before or after founding a free home; with neither, nothing.
- */
 export async function registerHomeSource(game: GameRef, realmId: number | null): Promise<void> {
   const response = await fetchApi(`/api/value/realm-entry?chainId=${game.chainId}`, {
     method: "POST",

@@ -3,40 +3,39 @@ use crate::settlement::{EntryKey, PlayerEntry, RealmGrants, SettlementRules};
 
 pub fn rules(game_id: u32) -> SettlementRules {
     let state = crate::state::read();
-    let preset = crate::logic::preset_record::for_game(game_id);
     SettlementRules {
         registration_start: state.games.overrides.entry(game_id).registration_start.read(),
-        registration_limit: state.registrar.roster_sizes.read(game_id).try_into().unwrap(),
-        mode: preset.settlement_mode.read(),
-        spacing: preset.settlement_spacing.read(),
+        registration_limit: 0,
+        mode: crate::settlement::SettlementMode::Single,
+        spacing: spacing(),
     }
 }
 
-pub fn grants(game_id: u32) -> RealmGrants {
-    let preset = crate::logic::preset_record::for_game(game_id);
-    let mut resources = array![];
-    for index in 0..preset.realm_grant_count.read() {
-        resources.append(preset.realm_grants.read(index));
-    }
-    let mut starting_troops = array![];
-    if preset.rules.entry_rule.read() != crate::rules::ENTRY_ROSTER {
-        for biome in 1_u8..18 {
-            starting_troops.append(preset.starting_troops.read(biome));
-        }
-    }
-    let mut realm_resources = array![];
-    for index in 0..preset.realm_resource_count.read() {
-        realm_resources.append(preset.realm_resources.read(index));
-    }
+pub fn spacing() -> u32 {
+    crate::balance::settlement::SETTLEMENT_SPACING_STEPS
+}
+
+#[cfg(feature: "blitz")]
+pub fn grants() -> RealmGrants {
     RealmGrants {
-        resources: resources.span(), starting_troops: starting_troops.span(), realm_resources: realm_resources.span(),
+        resources: crate::balance::settlement::REALM_GRANTS.span(),
+        starting_troops: array![].span(),
+        realm_resources: crate::balance::settlement::REALM_RESOURCES.span(),
     }
 }
 
-pub fn biome_troop(game_id: u32, biome: u8) -> crate::troops::TroopType {
-    let preset = crate::logic::preset_record::for_game(game_id);
-    assert!(preset.rules.entry_rule.read() != crate::rules::ENTRY_ROSTER, "a fixed roster deals its troop types");
-    preset.starting_troops.read(biome)
+#[cfg(not(feature: "blitz"))]
+pub fn grants() -> RealmGrants {
+    RealmGrants {
+        resources: crate::balance::settlement::REALM_GRANTS.span(),
+        starting_troops: crate::balance::settlement::STARTING_TROOPS.span(),
+        realm_resources: crate::balance::settlement::REALM_RESOURCES.span(),
+    }
+}
+
+#[cfg(not(feature: "blitz"))]
+pub fn biome_troop(biome: u8) -> crate::troops::TroopType {
+    *crate::balance::settlement::STARTING_TROOPS.span().at(biome.into() - 1)
 }
 
 pub fn entry(key: EntryKey) -> Option<PlayerEntry> {
@@ -44,23 +43,13 @@ pub fn entry(key: EntryKey) -> Option<PlayerEntry> {
     state.settlements.entries.read((key.game_id, key.owner))
 }
 
-#[cfg(feature: "test_support")]
-pub fn blitz_order(game_id: u32) -> Span<u8> {
-    let state = crate::state::read();
-    let mut players = array![];
-    for index in 0..state.settlements.blitz_order_size.read(game_id) {
-        players.append(state.settlements.blitz_order.read((game_id, index)));
-    }
-    players.span()
-}
-
 #[starknet::component]
 pub mod SettlementPoolState {
     use core::num::traits::CheckedAdd;
     use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
     use crate::events::RowSet;
-    use crate::settlement::{SettlementLocation, SettlementMode, SettlementPool, SettlementRules};
-    use crate::settlement_grid::{settlement_location, target_pool_size};
+    use crate::settlement::{SettlementLocation, SettlementPool, SettlementRules};
+    use crate::settlement_grid::settlement_location;
     use crate::troops::Coord;
 
     #[storage]
@@ -84,7 +73,7 @@ pub mod SettlementPoolState {
         fn village_pool(
             self: @ComponentState<TContractState>, game_id: u32, center: Coord, rules: SettlementRules,
         ) -> SettlementPool {
-            self.project_pool(game_id, true, center, SettlementRules { mode: SettlementMode::Single, ..rules })
+            self.project_pool(game_id, true, center, rules)
         }
         fn project_pool(
             self: @ComponentState<TContractState>, game_id: u32, village: bool, center: Coord, rules: SettlementRules,
@@ -94,12 +83,14 @@ pub mod SettlementPoolState {
                 available
                     .append(
                         SettlementLocation {
-                            coords: settlement_location(
-                                center,
-                                rules.mode,
-                                rules.spacing,
-                                self.data.settlement_pool.candidates.read((game_id, village, index)),
-                            ),
+                            coords: array![
+                                settlement_location(
+                                    center,
+                                    rules.spacing,
+                                    self.data.settlement_pool.candidates.read((game_id, village, index)),
+                                ),
+                            ]
+                                .span(),
                         },
                     );
             }
@@ -107,40 +98,12 @@ pub mod SettlementPoolState {
                 opened: self.data.settlement_pool.opened.read((game_id, village)), available: available.span(),
             }
         }
-        fn claim(
-            ref self: ComponentState<TContractState>,
-            game_id: u32,
-            center: Coord,
-            rules: SettlementRules,
-            registered: u16,
-            seed: u256,
-        ) -> Span<Coord> {
-            let target = target_pool_size(registered, rules.registration_limit, rules.mode);
-            assert!(target != 0, "no open settlements");
-            self.prepare_pool(game_id, false, center, rules, target);
-            self.take_candidate(game_id, false, center, rules, seed)
-        }
         fn claim_village(
-            ref self: ComponentState<TContractState>,
-            game_id: u32,
-            center: Coord,
-            rules: SettlementRules,
-            registered: u16,
-            seed: u256,
+            ref self: ComponentState<TContractState>, game_id: u32, center: Coord, rules: SettlementRules, seed: u256,
         ) -> Coord {
-            // Fixed Blitz spots were reserved at creation; only Eternum entries open a rolling window.
-            let target = if rules.mode == SettlementMode::Triple {
-                0
-            } else {
-                target_pool_size(registered, rules.registration_limit, rules.mode)
-            };
-            if self.prepare_pool(game_id, false, center, rules, target) {
-                self.emit_pool(game_id, false, center, rules);
-            }
-            let single = SettlementRules { mode: SettlementMode::Single, ..rules };
             // Village passes have no registration quota. Six candidates is the planner's initial window.
-            self.prepare_pool(game_id, true, center, single, 6);
-            *self.take_candidate(game_id, true, center, single, seed).at(0)
+            self.prepare_pool(game_id, true, center, rules, 6);
+            self.take_candidate(game_id, true, center, rules, seed)
         }
         fn prepare_pool(
             ref self: ComponentState<TContractState>,
@@ -155,9 +118,9 @@ pub mod SettlementPoolState {
             let previous = count;
             let mut opened = self.data.settlement_pool.opened.read(key);
             while count < target {
-                let coords = settlement_location(center, rules.mode, rules.spacing, opened);
+                let coord = settlement_location(center, rules.spacing, opened);
                 opened = opened.checked_add(1).expect('settlement geometry exhausted');
-                if !self.reserve_location(game_id, coords) {
+                if !self.reserve_location(game_id, coord) {
                     continue;
                 }
                 self.data.settlement_pool.candidates.write((game_id, village, count), opened - 1);
@@ -170,26 +133,11 @@ pub mod SettlementPoolState {
             self.data.settlement_pool.opened.write(key, opened);
             true
         }
-        fn reserve_blitz_locations(
-            ref self: ComponentState<TContractState>, game_id: u32, center: Coord, rules: SettlementRules,
-        ) {
-            assert!(rules.mode == SettlementMode::Triple, "Regular Blitz required");
-            for index in 0_u32..rules.registration_limit.into() {
-                assert!(
-                    self.reserve_location(game_id, settlement_location(center, rules.mode, rules.spacing, index)),
-                    "overlapping Blitz settlement",
-                );
+        fn reserve_location(ref self: ComponentState<TContractState>, game_id: u32, coord: Coord) -> bool {
+            if self.data.settlement_pool.reserved.read((game_id, coord.x, coord.y)) {
+                return false;
             }
-        }
-        fn reserve_location(ref self: ComponentState<TContractState>, game_id: u32, coords: Span<Coord>) -> bool {
-            for coord in coords {
-                if self.data.settlement_pool.reserved.read((game_id, *coord.x, *coord.y)) {
-                    return false;
-                }
-            }
-            for coord in coords {
-                self.data.settlement_pool.reserved.write((game_id, *coord.x, *coord.y), true);
-            }
+            self.data.settlement_pool.reserved.write((game_id, coord.x, coord.y), true);
             true
         }
         fn take_candidate(
@@ -199,7 +147,7 @@ pub mod SettlementPoolState {
             center: Coord,
             rules: SettlementRules,
             seed: u256,
-        ) -> Span<Coord> {
+        ) -> Coord {
             let count = self.data.settlement_pool.available_count.read((game_id, village));
             assert!(count != 0, "no open settlements");
             let selected: u16 = crate::random::range(seed, 98139, count.into()).try_into().unwrap();
@@ -217,7 +165,7 @@ pub mod SettlementPoolState {
             }
             self.data.settlement_pool.available_count.write((game_id, village), remaining);
             self.emit_pool(game_id, village, center, rules);
-            settlement_location(center, rules.mode, rules.spacing, candidate)
+            settlement_location(center, rules.spacing, candidate)
         }
         fn emit_pool(
             ref self: ComponentState<TContractState>,
@@ -270,20 +218,12 @@ pub mod SettlementState {
         ) {
             let previous = self.data.settlements.entitlements.read((key.game_id, key.owner));
             if let Some(previous) = previous {
-                if previous == entitlement {
-                    return;
-                }
-                if entitlement.metadata_3 == 'devcon-upgrade' {
-                    self.upgrade_campaign_home(key, previous, entitlement);
-                } else {
-                    self.recover_registered_ticket(key, previous, entitlement);
-                }
+                assert!(previous == entitlement, "conflicting entry entitlement");
+                return;
             } else if self.data.settlements.entries.read((key.game_id, key.owner)).is_some() {
                 self.attach_source_to_founded_home(key, entitlement);
             } else if entitlement.pass_kind == crate::settlement::HELD_REALM_KIND {
                 self.reserve_held_realm(key, entitlement);
-            } else if entitlement.pass_kind == crate::settlement::CAMPAIGN_KIND {
-                self.validate_campaign_entry(key, entitlement);
             }
             self.data.settlements.entitlements.write((key.game_id, key.owner), Some(entitlement));
             let mut values = array![];
@@ -298,59 +238,6 @@ pub mod SettlementState {
                     },
                 );
         }
-        fn upgrade_campaign_home(
-            ref self: ComponentState<TContractState>,
-            key: EntryKey,
-            previous: EntryEntitlement,
-            entitlement: EntryEntitlement,
-        ) {
-            self.validate_campaign_entry(key, previous);
-            assert!(
-                previous.metadata_1 == 'devcon-2026'
-                    && previous.metadata_2 == crate::settlement::CAMPAIGN_NORMAL.into()
-                    && entitlement == EntryEntitlement {
-                        metadata_2: crate::settlement::CAMPAIGN_GOLDEN.into(), metadata_3: 'devcon-upgrade', ..previous,
-                    },
-                "invalid campaign upgrade",
-            );
-            crate::game::assert_playing(crate::logic::game::game(key.game_id), starknet::get_block_timestamp());
-            assert!(self.data.settlements.entries.read((key.game_id, key.owner)).is_some(), "home is not founded");
-            let home = self.owned_open_home(key);
-            assert!(
-                self
-                    .data
-                    .settlements
-                    .campaign_homes
-                    .read((key.game_id, home)) == Some(('devcon-2026', crate::settlement::CAMPAIGN_NORMAL)),
-                "home source differs",
-            );
-            self.write_campaign_home(key, home, entitlement);
-        }
-        fn recover_registered_ticket(
-            ref self: ComponentState<TContractState>,
-            key: EntryKey,
-            previous: EntryEntitlement,
-            entitlement: EntryEntitlement,
-        ) {
-            assert!(
-                entitlement.metadata_3 == 'devcon-recovery'
-                    && previous == EntryEntitlement { metadata_3: 0, ..entitlement },
-                "conflicting entry entitlement",
-            );
-            self.validate_campaign_entry(key, entitlement);
-            let home = self.owned_open_home(key);
-            assert!(
-                self
-                    .data
-                    .settlements
-                    .campaign_homes
-                    .read(
-                        (key.game_id, home),
-                    ) == Some((entitlement.metadata_1, entitlement.metadata_2.try_into().unwrap())),
-                "home source differs",
-            );
-            self.recover_flyer_days(key, home, entitlement);
-        }
         fn owned_open_home(self: @ComponentState<TContractState>, key: EntryKey) -> u64 {
             let home = self.data.games.open_homes.read((key.game_id, key.owner));
             assert!(home != 0, "owner has no open home");
@@ -362,117 +249,16 @@ pub mod SettlementState {
             ref self: ComponentState<TContractState>, key: EntryKey, entitlement: EntryEntitlement,
         ) {
             let home = self.owned_open_home(key);
-            assert!(self.data.settlements.campaign_homes.read((key.game_id, home)).is_none(), "home source is fixed");
-            if entitlement.pass_kind == crate::settlement::HELD_REALM_KIND {
-                self.reserve_held_realm(key, entitlement);
-                self.claim_held_realm(key, entitlement.realm_id.try_into().unwrap(), home);
-            } else {
-                assert!(entitlement.pass_kind == crate::settlement::CAMPAIGN_KIND, "invalid home source");
-                self.claim_campaign_home(key, home, entitlement);
-                if entitlement.metadata_3 == 'devcon-recovery' {
-                    self.recover_flyer_days(key, home, entitlement);
-                }
-            }
+            assert!(entitlement.pass_kind == crate::settlement::HELD_REALM_KIND, "invalid home source");
+            self.reserve_held_realm(key, entitlement);
+            self.claim_held_realm(key, entitlement.realm_id.try_into().unwrap(), home);
         }
-        fn recover_flyer_days(
-            ref self: ComponentState<TContractState>, key: EntryKey, home: u64, entitlement: EntryEntitlement,
-        ) {
-            let timestamp = starknet::get_block_timestamp();
-            let game = crate::logic::game::game(key.game_id);
-            let preset = crate::logic::preset_record::for_game(key.game_id);
-            crate::game::assert_playing(game, timestamp);
-            let created_at = self.data.structures.structures.entry((key.game_id, home)).base.read().created_at;
-            let unit = preset.rules.day_unit_seconds.read();
-            let founded = core::cmp::max(created_at.into(), game.start_main_at);
-            let first = crate::days::day_of(game, unit, founded).index;
-            let today = crate::days::day_of(game, unit, timestamp).index;
-            let rules = preset.labor_rules.read().expect('labor is disabled');
-            let resource_context = crate::commands::ResourceContext {
-                production_start: if preset.rules.mode_rules.read() & crate::rules::PRODUCTION_START != 0 {
-                    game.start_main_at.try_into().unwrap()
-                } else {
-                    0
-                },
-                troop_capacity: preset.rules.capacity_config.read().troop_capacity,
-                spire_fee: preset.rules.spire_travel_essence_cost.read(),
-                delivery_tick: preset.rules.tick_config.read().delivery_tick_in_seconds,
-            };
-            let release_id = self.data.game_releases.read(key.game_id);
-            let resources = self.data.releases.read(release_id).classes.resources;
-            for day in first..today {
-                if self.data.entry.home_labor_grants.read((key.game_id, home, day)).is_some() {
-                    continue;
-                }
-                let (amount, essence) = crate::logic::entry::grant_home_amounts(
-                    crate::entry::LaborHome { game_id: key.game_id, home },
-                    Some(entitlement.metadata_2.try_into().unwrap()),
-                    rules,
-                    resource_context,
-                    resources,
-                );
-                crate::logic::entry::record_labor_grant(
-                    day, crate::entry::LaborGrant { game_id: key.game_id, account: key.owner, home, amount, essence },
-                );
-            }
-        }
-        fn validate_campaign_entry(
-            self: @ComponentState<TContractState>, key: EntryKey, entitlement: EntryEntitlement,
-        ) {
-            assert!(entitlement.pass_kind == crate::settlement::CAMPAIGN_KIND, "campaign source required");
-            assert!(entitlement.realm_id == 0, "campaign has no NFT");
-            assert!(
-                entitlement.metadata_3 == 0
-                    || (entitlement.metadata_3 == 'devcon-recovery'
-                        && entitlement.metadata_1 == 'devcon-2026'
-                        && self.data.settlements.entries.read((key.game_id, key.owner)).is_some()),
-                "invalid campaign recovery",
-            );
-            assert!(entitlement.metadata_1 != 0, "campaign id is required");
-            assert!(
-                entitlement.metadata_2 == crate::settlement::CAMPAIGN_NORMAL.into()
-                    || entitlement.metadata_2 == crate::settlement::CAMPAIGN_GOLDEN.into(),
-                "invalid campaign tier",
-            );
-            let preset = crate::logic::preset_record::for_game(key.game_id);
-            assert!(
-                preset.rules.entry_rule.read() == crate::rules::ENTRY_OPEN
-                    && preset.rules.day_unit_seconds.read() != 0
-                    && preset.labor_rules.read().is_some(),
-                "campaign requires Frontier",
-            );
-        }
-        fn claim_campaign_home(
-            ref self: ComponentState<TContractState>, key: EntryKey, home: u64, entitlement: EntryEntitlement,
-        ) {
-            self.validate_campaign_entry(key, entitlement);
-            assert!(self.data.settlements.campaign_homes.read((key.game_id, home)).is_none(), "home source is fixed");
-            self.write_campaign_home(key, home, entitlement);
-        }
-        fn write_campaign_home(
-            ref self: ComponentState<TContractState>, key: EntryKey, home: u64, entitlement: EntryEntitlement,
-        ) {
-            let tier: u8 = entitlement.metadata_2.try_into().unwrap();
-            self.data.settlements.campaign_homes.write((key.game_id, home), Some((entitlement.metadata_1, tier)));
-            self
-                .emit(
-                    RowSet {
-                        version: 1,
-                        model: 'CampaignHome',
-                        keys: array![key.game_id.into(), home.into()].span(),
-                        values: array![entitlement.metadata_1, tier.into()].span(),
-                    },
-                );
-        }
+
         fn reserve_held_realm(ref self: ComponentState<TContractState>, key: EntryKey, entitlement: EntryEntitlement) {
             assert!(entitlement.realm_id > 0 && entitlement.realm_id <= 8000, "invalid canonical realm");
             assert!(
                 entitlement.metadata_1 == 0 && entitlement.metadata_2 == 0 && entitlement.metadata_3 == 0,
                 "held Realm uses catalogue",
-            );
-            let rules = crate::logic::preset_record::for_game(key.game_id).rules;
-            assert!(
-                rules.entry_rule.read() == crate::rules::ENTRY_OPEN && rules.day_unit_seconds.read() != 0,
-                "held Realm requires Frontier",
             );
             let realm_id: u32 = entitlement.realm_id.try_into().unwrap();
             assert!(
@@ -484,6 +270,14 @@ pub mod SettlementState {
         }
         fn claim_held_realm(ref self: ComponentState<TContractState>, key: EntryKey, realm_id: u32, home: u64) {
             let game_id = key.game_id;
+            let joined = self.data.settlements.home_aspects.read((game_id, home));
+            if joined != 0 {
+                let orders = crate::logic::aspects::rules();
+                let traits = crate::realms::decode_traits(self.data.realms.traits.read(realm_id));
+                assert!(
+                    crate::aspects::order_aspect(orders, traits.order) == joined, "Realm belongs to another Aspect",
+                );
+            }
             assert!(
                 self.data.settlements.held_realm_owners.read((game_id, realm_id)) == key.owner,
                 "Realm reserved for another owner",
@@ -526,26 +320,6 @@ pub mod SettlementState {
                         model: 'PlayerEntry',
                         keys: array![key.game_id.into(), key.owner.into()].span(),
                         values: array![player.into()].span(),
-                    },
-                );
-        }
-
-        fn initialize_blitz_order(ref self: ComponentState<TContractState>, game_id: u32, count: u32, root: u256) {
-            assert!(self.data.settlements.blitz_order_size.read(game_id) == 0, "settlement order already fixed");
-            let players = crate::settlement::shuffle_roster(count, root);
-            for index in 0..players.len() {
-                self.data.settlements.blitz_order.write((game_id, index), *players.at(index));
-            }
-            self.data.settlements.blitz_order_size.write(game_id, count);
-            let mut values = array![];
-            players.serialize(ref values);
-            self
-                .emit(
-                    RowSet {
-                        version: 1,
-                        model: 'BlitzSettlementOrder',
-                        keys: array![game_id.into()].span(),
-                        values: values.span(),
                     },
                 );
         }

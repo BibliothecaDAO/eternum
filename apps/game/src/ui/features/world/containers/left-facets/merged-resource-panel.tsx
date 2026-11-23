@@ -15,7 +15,6 @@ import {
   buildRealmBuilding,
   resolveRealmHasAvailableBuildingTile,
 } from "@/ui/features/settlement/construction/realm-build-actions";
-import { CompactEntityInventory } from "@/ui/features/world/components/entities/compact-entity-inventory";
 import {
   divideByPrecision,
   getRealmInfo,
@@ -24,16 +23,7 @@ import {
   resolveUseSimpleCost,
 } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
-import {
-  BuildingType,
-  EntityType,
-  getBuildingFromResource,
-  type ID,
-  isRelic,
-  RelicRecipientType,
-  ResourcesIds,
-  formatAmount,
-} from "@bibliothecadao/types";
+import { BuildingType, getBuildingFromResource, type ID, ResourcesIds, formatAmount } from "@bibliothecadao/types";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
 type ProductionItem = StructureProductionSummary["items"][number];
@@ -46,10 +36,6 @@ interface MergedResourcePanelProps {
   productionSummary: StructureProductionSummary;
   /** Show the build "+" action. Only meaningful for owned structures. */
   canBuild?: boolean;
-  /** Owned structures can activate held relics from the dedicated relic row. */
-  isMine?: boolean;
-  /** Currently-active relic effect ids, so the relic row can flag them. */
-  activeRelicIds?: number[];
 }
 
 /**
@@ -64,14 +50,7 @@ interface MergedResourcePanelProps {
  * (economic → T1 → T2 → T3).
  */
 export const MergedResourcePanel = memo(
-  ({
-    structureEntityId,
-    resources,
-    productionSummary,
-    canBuild = true,
-    isMine = false,
-    activeRelicIds,
-  }: MergedResourcePanelProps) => {
+  ({ structureEntityId, resources, productionSummary, canBuild = true }: MergedResourcePanelProps) => {
     const game = useGame();
     const store = game.setup.store;
     const mode = useGameModeConfig();
@@ -125,20 +104,10 @@ export const MergedResourcePanel = memo(
       return map;
     }, [productionSummary]);
 
-    // The classic tier order (resource-tier-order.ts): relics have their own row above the grid.
     const ringOrder = useMemo(
       () => resourcesInTierOrder(mode.resources.getTiers() as Record<string, ResourcesIds[]>),
       [mode],
     );
-
-    // Whether the structure holds any relic, so an empty token grid still keeps
-    // the panel (and its relic row) visible.
-    const hasRelics = useMemo(() => {
-      for (const [id, balance] of balanceMap) {
-        if (balance > 0 && isRelic(id)) return true;
-      }
-      return false;
-    }, [balanceMap]);
 
     // Read on every render, which the clock brings at least once a second, as building occupancy syncs.
     const hasAvailableBuildingTile = resolveRealmHasAvailableBuildingTile({ entityId, realmPosition: realm?.position });
@@ -242,33 +211,13 @@ export const MergedResourcePanel = memo(
     // troop resources), no section split.
     const tokens = useMemo(() => ringOrder.map(renderToken).filter(Boolean), [ringOrder, renderToken]);
 
-    if (tokens.length === 0 && !hasRelics) {
+    if (tokens.length === 0) {
       return <p className="text-hud-label italic text-hud-muted">No resources yet.</p>;
     }
 
-    // Relics first, on their own dedicated, clickable row. Then the resource +
-    // military token grid, left-aligned.
     return (
-      <div className="flex flex-col gap-2">
-        {hasRelics && (
-          <CompactEntityInventory
-            resources={resources}
-            activeRelicIds={activeRelicIds}
-            recipientType={RelicRecipientType.Structure}
-            entityId={structureEntityId}
-            entityType={EntityType.STRUCTURE}
-            allowRelicActivation={isMine}
-            filter="relics"
-            emptyMessage=""
-            showHiddenCount={false}
-          />
-        )}
-        {tokens.length > 0 && (
-          // Two token rows stay visible; more scroll inside. The inner padding keeps rings and badges off the clip edge.
-          <div className="max-h-hud-ring-rows overflow-y-auto overscroll-contain">
-            <div className="flex max-w-full flex-wrap justify-start gap-x-4 gap-y-5 px-5 pb-3 pt-3">{tokens}</div>
-          </div>
-        )}
+      <div className="max-h-hud-ring-rows overflow-y-auto overscroll-contain">
+        <div className="flex max-w-full flex-wrap justify-start gap-x-4 gap-y-5 px-5 pb-3 pt-3">{tokens}</div>
       </div>
     );
   },

@@ -9,17 +9,13 @@ import remarkMdx from "remark-mdx";
 import remarkStringify from "remark-stringify";
 import { createServer } from "vite";
 
-import { docsAliases, docsDir, llmTxtFile, publicDir } from "./docs/utils/paths.ts";
+import { docsAliases, docsDir } from "./paths.ts";
 
 const processor = remark().use(remarkMdx).use(remarkInclude).use(remarkGfm).use(remarkStringify);
 
 const EXPRESSION_TYPES = new Set(["mdxTextExpression", "mdxFlowExpression"]);
 
-const stableDocumentationPath = (file) =>
-  path
-    .relative(docsDir, file)
-    .replace("pages/blitz/military/", "pages/blitz/0-military/")
-    .replace("pages/blitz/materials/", "pages/blitz/1-materials/");
+const stableDocumentationPath = (file) => path.relative(docsDir, file);
 
 /** Every `{expression}` in a page, with the node that holds it, in document order. */
 const expressionsOf = (tree) => {
@@ -158,9 +154,7 @@ export const renderLlmTxt = async (files, root) => {
 export default function llmTxtPlugin() {
   return {
     name: "vite-plugin-llm-txt",
-    async buildStart() {
-      console.log("Generating llm.txt...");
-      await fs.promises.mkdir(publicDir, { recursive: true });
+    async generateBundle() {
       const files = await fg([`${docsDir}/**/*.mdx`], { absolute: true });
       files.sort((left, right) => {
         const leftPath = stableDocumentationPath(left);
@@ -168,9 +162,7 @@ export default function llmTxtPlugin() {
         const depthDifference = leftPath.split(path.sep).length - rightPath.split(path.sep).length;
         return depthDifference || leftPath.localeCompare(rightPath);
       });
-      console.log(`Found ${files.length} mdx files.`);
-      await fs.promises.writeFile(llmTxtFile, await renderLlmTxt(files, docsDir));
-      console.log(`Successfully generated llm.txt at ${llmTxtFile}`);
+      this.emitFile({ type: "asset", fileName: "llm.txt", source: await renderLlmTxt(files, docsDir) });
     },
   };
 }

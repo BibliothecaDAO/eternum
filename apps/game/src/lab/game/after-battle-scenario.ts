@@ -218,17 +218,18 @@ export const fightLostScenario = (): LabScenario => {
 };
 
 const answerLostFight = (command: LabCommand, chain: NativeFactStore): LabFact[] => {
-  const [attackerId] = command.calldata.slice(5).map((felt) => BigInt(felt));
+  const [attackerId] = command.span.slice(1).map((felt) => BigInt(felt));
   const [armyKey] = [...chain.entries("ExplorerTroops")].find(([, row]) => row.explorer_id === attackerId)!;
   const [tileKey] = [...chain.entries("TileOccupancy")].find(([, row]) => row.entity_id === attackerId)!;
   return [
     { model: "TileOccupancy", key: tileKey, value: null },
     { model: "ExplorerTroops", key: armyKey, value: null },
+    { model: "ArmyDay", key: chain.wireKeyOf("ArmyDay", { game_id: 1, explorer_id: attackerId })!, value: null },
   ];
 };
 
 const answerFight = (command: LabCommand, chain: NativeFactStore, now: number): LabFact[] => {
-  const [attackerId, defenderId] = command.calldata.slice(5).map((felt) => BigInt(felt));
+  const [attackerId, defenderId] = command.span.slice(1).map((felt) => BigInt(felt));
   const [guardKey, guard] = [...chain.entries("Guard")].find(([, row]) => row.structure_id === defenderId)!;
   const [armyKey, army] = [...chain.entries("ExplorerTroops")].find(([, row]) => row.explorer_id === attackerId)!;
   const rules = chain.require("SliceRules", { game_id: 1 });

@@ -9,15 +9,9 @@ import { useShareTally } from "../share/own-shares";
 /** The funnel's steps a player sees, each with its count from identity's tally, in the order a friend takes them. */
 const STEPS = ["posted", "visits", "joined", "activated"] as const satisfies readonly (keyof ShareTally)[];
 
-/**
- * What the player's shared days brought, on their own page once they have posted one (identity's tally, settled as it
- * is read): days posted, how often friends opened them, the friends who joined through them, and those who went on to
- * clear a site on the season board the day was shared from. Credit for bringing players, never a reward for posting.
- * A sheet opened and closed without a post is no shared day.
- */
 export const SharedDaysPanel = () => {
   const tally = useShareTally();
-  if (!tally || tally.posted === 0) return null;
+  if (!tally || (tally.posted === 0 && tally.joined === 0)) return null;
   return (
     <AppPanel title={SHARED_DAYS_WORDS.title} label={SHARED_DAYS_WORDS.title} icon="share">
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -25,6 +19,11 @@ export const SharedDaysPanel = () => {
           <AppFigure key={step} value={formatShort(tally[step])} label={SHARED_DAYS_WORDS.steps[step]} />
         ))}
       </div>
+      <div data-shared-friends className="grid grid-cols-2 gap-4">
+        <AppFigure value={SHARED_DAYS_WORDS.ofLimit(tally.friendsPaid)} label={SHARED_DAYS_WORDS.friendsPaid} />
+        <AppFigure value={formatShort(tally.fragmentsEarned)} label={SHARED_DAYS_WORDS.fragmentsEarned} />
+      </div>
+      <p className="text-app-label text-app-muted">{SHARED_DAYS_WORDS.friendRule}</p>
     </AppPanel>
   );
 };

@@ -23,31 +23,6 @@ export const raidStoryCopy: StoryCopy = ({ payload, recipient }) => raidCopy(pay
 export const captureStoryCopy: StoryCopy = ({ payload, recipient }) => captureCopy(payload, recipient);
 export const transferStoryCopy: StoryCopy = ({ payload }) => transferCopy(payload);
 
-/** Story points are at the contract's precision (a millionth of a point); a player reads whole points. */
-const POINTS_PRECISION = 1_000_000n;
-
-export const hyperstructurePointsCopy: StoryCopy = ({ payload }) => {
-  const points = integer(payload.points);
-  if (points === null) throw new Error("Incomplete hyperstructure points story");
-  const whole = points / POINTS_PRECISION;
-  return {
-    title: "You earned Hyperstructure points",
-    body:
-      whole === 0n
-        ? "your share is less than a point."
-        : `your share is ${groupThousands(whole.toString())} ${whole === 1n ? "point" : "points"}.`,
-  };
-};
-
-/** The mine pays a phase's winner into the realm they contributed from; nothing when that realm is no longer theirs. */
-export const bitcoinAwardCopy: StoryCopy = ({ payload }) => {
-  const paid = integer(payload.winner_paid);
-  if (paid === null) throw new Error("Incomplete Bitcoin award story");
-  return paid > 0n
-    ? { title: "The Bitcoin mine paid you", body: "your share is in your realm." }
-    : { title: "Your Bitcoin share was not paid", body: "the realm you contributed from is no longer yours." };
-};
-
 /** A native battle names each side's player; the recipient's side tells victory from defeat. */
 function nativeBattleCopy(payload: Record<string, unknown>, recipient: string | undefined): NotificationCopy {
   const attacker = compareInteger(record(payload.attacker).player, recipient) === true;
@@ -106,8 +81,4 @@ function compareInteger(left: unknown, right: unknown): boolean | null {
 
 function record(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
-}
-
-function groupThousands(digits: string): string {
-  return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }

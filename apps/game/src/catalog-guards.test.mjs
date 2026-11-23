@@ -2,11 +2,17 @@
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { aspects, ETERNUM_MAP_NAMES, LAYER_NAMES, orders } from "@bibliothecadao/types";
 import { ESLint } from "eslint";
 import tseslint from "typescript-eslint";
 import { describe, expect, it } from "vitest";
 
-import { catalogGuardConfigs, planCatalogBaseline } from "../scripts/catalog-guards.mjs";
+import {
+  catalogGuardConfigs,
+  planCatalogBaseline,
+  readAspectAndOrderNames,
+  readLayerNames,
+} from "../scripts/catalog-guards.mjs";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 const BASE = {
@@ -26,13 +32,50 @@ const hits = async (path, source) => {
 const SCREEN = "apps/game/src/ui/features/world/zz-guard-probe.tsx";
 const CORE = "packages/core/src/utils/zz-guard-probe.ts";
 
+describe("the layer names the guard refuses", () => {
+  const ETERNUM = "\nexport const ETERNUM_MAP_NAMES = [LAYER_NAMES[0], 'Ethereal Layer'] as const;";
+  it("are read from the catalog's source, so the guard needs no build and never checks stale names", () => {
+    expect(readLayerNames()).toEqual([...LAYER_NAMES, ETERNUM_MAP_NAMES[1]]);
+    expect(() => readLayerNames(`export const LAYER_NAMES = layers;${ETERNUM}`)).toThrow("No LAYER_NAMES tuple");
+    expect(() => readLayerNames(`export const LAYER_NAMES = [SURFACE, 'Veil'] as const;${ETERNUM}`)).toThrow(
+      "No LAYER_NAMES tuple",
+    );
+    expect(
+      readLayerNames(
+        `export const LAYER_NAMES = ['Surface', \`Veil\`] as const satisfies readonly string[];${ETERNUM}`,
+      ),
+    ).toEqual(["Surface", "Veil", "Ethereal Layer"]);
+    expect(
+      readLayerNames(`export const LAYER_NAMES =\n  [\n    'Surface',\n    "Veil",\n  ] as const;${ETERNUM}`),
+    ).toEqual(["Surface", "Veil", "Ethereal Layer"]);
+  });
+
+  it("include Eternum's other map name, so its tuple cannot be renamed or emptied out of the guard's sight", () => {
+    const layers = "export const LAYER_NAMES = ['Surface'] as const;";
+    expect(() => readLayerNames(layers)).toThrow("No ETERNUM_MAP_NAMES tuple");
+    expect(() => readLayerNames(`${layers}\nexport const ETERNUM_MAP_NAMES = [LAYER_NAMES[0]] as const;`)).toThrow(
+      "No ETERNUM_MAP_NAMES tuple",
+    );
+    expect(() => readLayerNames(`${layers}\nexport const ETERNUM_MAP_NAMES = [LAYER_NAMES[0], ALT] as const;`)).toThrow(
+      "No ETERNUM_MAP_NAMES tuple",
+    );
+  });
+
+  it("reads Aspect and Order names directly from orders.ts", () => {
+    expect(readAspectAndOrderNames()).toEqual({
+      aspectNames: aspects.map((aspect) => aspect.name),
+      orderNames: orders.map((order) => order.fullOrderName),
+    });
+  });
+});
+
 describe("one source per fact: no copy of a catalog outside its modules", () => {
   it.each([
     ["a list of two structure kinds", "export const BUILDERS = [StructureType.Realm, StructureType.Village];"],
     ["a set of troop tiers", "export const LOW = new Set([TroopTier.T1, TroopTier.T2]);"],
     [
       "a partial map of buildings",
-      "export const ICONS: Partial<Record<BuildingType, string>> = { [BuildingType.WarHall]: 'a' };",
+      "export const ICONS: Partial<Record<BuildingType, string>> = { [BuildingType.RationsDepot]: 'a' };",
     ],
     [
       "an untyped map keyed by resources",
@@ -51,7 +94,17 @@ describe("one source per fact: no copy of a catalog outside its modules", () => 
       "export const M: Record<StructureType, number> = { [StructureType.Realm]: 1, [StructureType.Village]: 2 } as Record<StructureType, number>;",
     ],
     ["an image path", "export const art = '/images/biomes/ocean.png';"],
+    ...LAYER_NAMES.map((name) => [
+      `the layer ${name} before a qualification`,
+      `export const word = ${JSON.stringify(`${name} (locked)`)};`,
+    ]),
+    ["a layer's old name", "export const word = 'Ethereal II';"],
+    ["Eternum's other map name", `export const word = ${JSON.stringify(`Enter the ${ETERNUM_MAP_NAMES[1]}`)};`],
+    ["a layer's name in a template", `export const line = (n: string) => \`\${n} · ${LAYER_NAMES[2]}\`;`],
     ["an image path built in a template", "export const art = (name: string) => `/icons/facets/64/${name}.webp`;"],
+    ["a partial map of Aspects", "export const COLORS: Partial<Record<AspectId, string>> = { 1: 'red' };"],
+    ["a spelled Aspect name", "export const word = 'Prowess';"],
+    ["a spelled Order name", "export const word = 'Order of Giants';"],
   ])("refuses %s", async (_, source) => {
     expect(await hits(SCREEN, source)).toEqual([expect.stringMatching(/^One source per fact/)]);
   });
@@ -72,6 +125,9 @@ describe("one source per fact: no copy of a catalog outside its modules", () => 
     ["one member", "export const ONLY = [StructureType.Realm];"],
     ["a comparison", "export const isRealm = (c: number) => c === StructureType.Realm || c === StructureType.Village;"],
     ["a route that is not artwork", "export const page = '/play/blitz';"],
+    ["a resource named Deep Crystal", "export const word = 'Deep Crystal';"],
+    ["a resource's description in sentence case", "export const tip = 'Deep crystal hums underground';"],
+    ["a resource in the plural", "export const tip = 'Collect two Deep Crystals';"],
   ])("allows %s", async (_, source) => {
     expect(await hits(SCREEN, source)).toEqual([]);
   });

@@ -1,5 +1,4 @@
 import { HOME_KINDS, homeIcon, type HomeKind } from "@/ui/design-system/home-icons";
-import { REALM_SKIN_MODELS } from "@/three/structures/realm-skins";
 // @vitest-environment jsdom
 import { act, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
@@ -18,7 +17,8 @@ vi.mock("@/hooks/use-player-profile", async () => {
   };
 });
 
-import { LordName, OrderMark, RealmBadge } from "./realm-marks";
+import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
+import { LordName, RealmBadge } from "./realm-marks";
 
 const render = (node: ReactNode) => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -47,7 +47,7 @@ describe("a lord and a realm's Order on the HUD", () => {
 
   it("shows a realm's rank by its castle, with its depth's painting as a badge, no numeral, and none before the first", () => {
     const deep = render(<RealmBadge level={1} depth={2} />);
-    expect(deep.querySelector('[role="img"]')?.getAttribute("aria-label")).toBe("City · Ethereal II");
+    expect(deep.querySelector('[role="img"]')?.getAttribute("aria-label")).toBe("City · Hollow");
     expect(deep.querySelector('[data-icon="depth-2"]')).not.toBeNull();
     expect(deep.textContent).toBe("");
     const home = render(<RealmBadge level={0} depth={0} />);
@@ -56,14 +56,9 @@ describe("a lord and a realm's Order on the HUD", () => {
   });
 
   it("names the Order its painting shows", () => {
-    const host = render(<OrderMark order={1} />);
-    expect(host.querySelector("img")?.getAttribute("alt")).toBeTruthy();
+    const host = render(<OrderEmblem order={1} />);
+    expect(host.querySelector("img")?.getAttribute("alt")).toBe("Order of Giants");
   });
-});
-
-it.each(REALM_SKIN_MODELS)("shows $skin at level $level on the season list", ({ skin, level }) => {
-  const badge = render(<RealmBadge level={level} depth={0} skin={skin} />);
-  expect(badge.querySelector(`img[src$="/${homeIcon(skin, level)}.webp"]`)).not.toBeNull();
 });
 
 it.each([0, 1, 2, 3])("shows a jade Wonder at level %s, including its depth", (level) => {
@@ -73,11 +68,11 @@ it.each([0, 1, 2, 3])("shows a jade Wonder at level %s, including its depth", (l
   expect(badge.querySelector('[data-icon="depth-2"]')).not.toBeNull();
 });
 
-it("draws every home kind at every level with sixteen distinct paintings", () => {
+it("draws every home kind at every level with eight distinct paintings", () => {
   const drawn = Object.keys(HOME_KINDS).flatMap((kind) =>
     [0, 1, 2, 3].map((level) => homeIcon(kind as HomeKind, level)),
   );
-  expect(new Set(drawn).size).toBe(16);
+  expect(new Set(drawn).size).toBe(8);
   expect(() => homeIcon("wonder", 4)).toThrow("Unknown realm level");
-  expect(() => homeIcon("devcon", 1.5)).toThrow("Unknown realm level");
+  expect(() => homeIcon("realm", 1.5)).toThrow("Unknown realm level");
 });

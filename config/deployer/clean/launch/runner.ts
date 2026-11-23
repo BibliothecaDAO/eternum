@@ -1,5 +1,4 @@
 import { buildNativeGameParams, loadNativePresetConfiguration } from "../registrar/native-preset";
-import { buildNativePreset } from "../config/native-preset";
 import { setTimeout as sleep } from "node:timers/promises";
 import { type Account, RpcProvider, shortString } from "starknet";
 import { createOperatorAccount } from "../shared/madara-account";
@@ -8,7 +7,7 @@ import { applyDeploymentConfigOverrides } from "../config/config-loader";
 import {
   DEFAULT_APPCHAIN_GAME_INDEX_POLL_MS,
   DEFAULT_APPCHAIN_GAME_INDEX_TIMEOUT_MS,
-  defaultPresetForEnvironment,
+  presetIdForEnvironment,
 } from "../constants";
 import { resolveDeploymentEnvironment } from "../environment";
 import {
@@ -68,7 +67,7 @@ function createRuntime(request: LaunchGameRequest): LaunchRuntime {
     provider: new RpcProvider({ nodeUrl: rpcUrl }),
     rpcUrl,
     startTime: parseStartTime(request.startTime),
-    presetId: resolvePresetId(request.version ?? defaultPresetForEnvironment(request.environmentId)),
+    presetId: resolvePresetId(request.version ?? String(presetIdForEnvironment(request.environmentId))),
     progress: createProgressReporter(),
   };
 }
@@ -79,7 +78,6 @@ function resolveLaunchConfig(runtime: LaunchRuntime, request: LaunchGameRequest)
     factoryAddress: "",
     devModeOn: request.devModeOn,
     singleRealmMode: request.singleRealmMode,
-    twoPlayerMode: request.twoPlayerMode,
     durationSeconds: request.durationSeconds,
 
     mapConfigOverrides: request.mapConfigOverrides,
@@ -167,7 +165,6 @@ async function buildRegistrarGameParams(launch: PreparedLaunch) {
     durationSeconds: launch.config.season.durationSeconds,
     devModeOn: launch.config.dev.mode.on,
     singleRealmMode: launch.config.settlement.single_realm_mode,
-    twoPlayerMode: launch.config.settlement.two_player_mode ?? false,
     useMapOverride: Boolean(
       launch.request.mapConfigOverrides && Object.keys(launch.request.mapConfigOverrides).length > 0,
     ),
@@ -222,16 +219,7 @@ async function createGame(launch: PreparedLaunch): Promise<void> {
   const params = await buildRegistrarGameParams(launch);
   const result = await launch.runtime.progress.run(
     "create_game",
-    () =>
-      createRegistrarGame(
-        createLaunchAccount(launch),
-        params,
-        launch.request.manifest,
-        buildNativePreset(
-          loadNativePresetConfiguration(launch.runtime.environment.id, launch.runtime.presetId),
-          launch.runtime.presetId,
-        ),
-      ),
+    () => createRegistrarGame(createLaunchAccount(launch), params, launch.request.manifest),
     {
       start: `Creating "${launch.request.gameName}" through the persistent registrar`,
       success: (created, elapsedMs) =>

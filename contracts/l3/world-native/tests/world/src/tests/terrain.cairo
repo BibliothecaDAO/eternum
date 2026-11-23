@@ -1,48 +1,38 @@
 pub use world_test_support::tests::terrain::*;
+use crate::balance::settlement::SETTLEMENT_SPACING_STEPS;
+use super::play_fixture::FIXTURE_START;
 
 
 #[test]
 fn settlement_terrain_keeps_map_biomes_and_daily_home_rings() {
     let d = super::registrar::setup();
-    let (game_id, preset, _) = super::registrar::expedition_home(d);
+    let (game_id, home, _) = super::registrar::expedition_home(d);
     let map = IMapLogicDispatcher { contract_address: d.games };
-    let game = IGameDispatcher { contract_address: d.games }.game(game_id);
+    let region = crate::entity_ids::namespace(home.entity_id);
+    let context = biome_context(d, game_id);
     for day in 0_u64..3 {
         let timestamp = super::registrar::day_start(d, game_id, day) + 50;
-        let site = crate::expeditions::site(preset.settlement.spacing, 1, day, 0);
-        let ring = map.expedition_home_ring(game_id, 1, timestamp);
+        let site = crate::expeditions::site(SETTLEMENT_SPACING_STEPS, region, day, 0);
+        let ring = map.expedition_home_ring(game_id, region, timestamp);
         assert_eq!(ring.len(), 7);
         let (center, _) = *ring.at(0);
         assert_eq!(center, site);
-        let context = crate::commands::BiomeContext {
-            climate: preset.rules.biome_climate_config,
-            day_unit_seconds: preset.rules.day_unit_seconds,
-            start_main_at: game.start_main_at,
-        };
         for index in 0_u32..7 {
             let (coord, biome) = *ring.at(index);
             if index != 0 {
                 assert_eq!(coord, crate::geometry::neighbor(site, (index - 1).try_into().unwrap()));
             }
             let climate = crate::expeditions::climate(
-                context.climate, coord, context.start_main_at, context.day_unit_seconds, preset.settlement.spacing,
+                context.climate,
+                coord,
+                context.start_main_at,
+                crate::balance::rules::SWITCHES.day_unit_seconds,
+                SETTLEMENT_SPACING_STEPS,
             );
             let expected: u8 = crate::biome::get_biome_with_climate(coord.alt, coord.x.into(), coord.y.into(), climate)
                 .into();
             assert_eq!(biome, expected);
             assert_eq!(map.biome(crate::geometry::tile_key(game_id, coord), context), expected);
-        }
-        // The same coordinates under an ordinary climate: the terrain derivation itself, since the map answers a
-        // revealed tile with the biome its own game stored.
-        let ordinary = crate::commands::BiomeContext { day_unit_seconds: 0, ..context };
-        for alt in array![false, true] {
-            let coord = crate::troops::Coord { alt, ..site };
-            let expected: u8 = crate::biome::get_biome_with_climate(
-                alt, coord.x.into(), coord.y.into(), ordinary.climate,
-            )
-                .into();
-            let key = crate::geometry::tile_key(game_id, coord);
-            assert_eq!(interact_with_state(d.games, || crate::logic::terrain::biome(key, ordinary)), expected);
         }
     }
 }
@@ -50,18 +40,17 @@ fn settlement_terrain_keeps_map_biomes_and_daily_home_rings() {
 #[test]
 fn a_revealed_tile_answers_its_stored_biome_and_an_unrevealed_one_derives_it() {
     let d = super::registrar::setup();
-    let (game_id, preset, _) = super::registrar::expedition_home(d);
+    let (game_id, _, _) = super::registrar::expedition_home(d);
     let map = IMapLogicDispatcher { contract_address: d.games };
-    let game = IGameDispatcher { contract_address: d.games }.game(game_id);
-    let context = crate::commands::BiomeContext {
-        climate: preset.rules.biome_climate_config,
-        day_unit_seconds: preset.rules.day_unit_seconds,
-        start_main_at: game.start_main_at,
-    };
+    let context = biome_context(d, game_id);
     let coord = crate::troops::Coord { alt: false, x: 3000, y: 3000 };
     let key = crate::geometry::tile_key(game_id, coord);
     let climate = crate::expeditions::climate(
-        context.climate, coord, context.start_main_at, context.day_unit_seconds, preset.settlement.spacing,
+        context.climate,
+        coord,
+        context.start_main_at,
+        crate::balance::rules::SWITCHES.day_unit_seconds,
+        SETTLEMENT_SPACING_STEPS,
     );
     let derived: u8 = crate::biome::get_biome_with_climate(coord.alt, coord.x.into(), coord.y.into(), climate).into();
     assert_eq!(map.biome(key, context), derived);
@@ -77,32 +66,29 @@ fn a_revealed_tile_answers_its_stored_biome_and_an_unrevealed_one_derives_it() {
 #[test]
 fn home_ring_materializes_once_each_day_and_all_six_deployments_work() {
     let d = super::registrar::setup();
-    let (game_id, preset, category) = super::registrar::expedition_home(d);
+    let (game_id, home, category) = super::registrar::expedition_home(d);
     let map = IMapLogicDispatcher { contract_address: d.games };
-    let game = IGameDispatcher { contract_address: d.games }.game(game_id);
-    let home = ResourceKey { game_id, entity_id: 1 };
+    let region = crate::entity_ids::namespace(home.entity_id);
     let structures = IStructureOperationsDispatcher { contract_address: d.games };
     let state = GameState { contract_address: d.games };
-    let context = crate::commands::BiomeContext {
-        climate: preset.rules.biome_climate_config,
-        day_unit_seconds: preset.rules.day_unit_seconds,
-        start_main_at: game.start_main_at,
-    };
+    let context = biome_context(d, game_id);
+    let troop = crate::troops::troop_resource(super::registrar::held_troop(d, home), 0);
+    super::resource_commands::grant(d, home, troop, 18 * crate::rules::RESOURCE_PRECISION);
+    send_starting_armies_home(d, home, FIXTURE_START + 1);
     let mut serialized = array![1_felt252, 21];
     for day in 0_u64..3 {
         let timestamp = super::registrar::day_start(d, game_id, day) + 50;
-        let ring = map.expedition_home_ring(game_id, 1, timestamp);
+        let ring = map.expedition_home_ring(game_id, region, timestamp);
         let (center, _) = *ring.at(0);
         let mut spy = snforge_std::spy_events();
-        let resources = IResourceOperationsDispatcher { contract_address: d.games };
-        let before = ring_reward_balances(resources, game_id);
+        let before = super::resource_commands::resource_facts(d, home);
         interact_with_state(
             d.games,
             || {
                 crate::logic::terrain::raise_expedition_home(crate::geometry::tile_key(game_id, center), context);
             },
         );
-        assert_eq!(before, ring_reward_balances(resources, game_id));
+        assert_eq!(before, super::resource_commands::resource_facts(d, home));
         for (_, event) in spy.get_events().emitted_by(d.games).events {
             assert_eq!(*event.keys.at(0), selector!("RowSet"));
             assert_eq!(*event.keys.at(2), 'TileOpt');
@@ -130,7 +116,7 @@ fn home_ring_materializes_once_each_day_and_all_six_deployments_work() {
         assert_eq!(repeated.get_events().emitted_by(d.games).events.len(), 0);
         for direction in 0_u8..6 {
             let action_at = timestamp + 1 + Into::<u8, u64>::into(direction) * 2;
-            assert!(execute_in_game(d, game_id, muster_command(category, direction), action_at));
+            assert!(execute_in_game(d, game_id, muster_command(home, category, direction, 0), action_at));
             let id = *structures.home_armies(home).at(0);
             let explorer = state.resolved_explorer(crate::troops::ExplorerKey { game_id, explorer_id: id }).unwrap();
             assert_eq!(explorer.coord, crate::geometry::neighbor(center, direction));
@@ -150,9 +136,9 @@ fn home_ring_materializes_once_each_day_and_all_six_deployments_work() {
 #[test]
 fn deploy_refuses_a_missing_neighbour_after_the_ring_is_materialized() {
     let d = super::registrar::setup();
-    let (game_id, _, category) = super::registrar::expedition_home(d);
+    let (game_id, home, category) = super::registrar::expedition_home(d);
     let map = IMapLogicDispatcher { contract_address: d.games };
-    let ring = map.expedition_home_ring(game_id, 1, 350);
+    let ring = map.expedition_home_ring(game_id, crate::entity_ids::namespace(home.entity_id), FIXTURE_START);
     let (coord, _) = *ring.at(1);
     let key = crate::geometry::tile_key(game_id, coord);
     interact_with_state(
@@ -164,25 +150,24 @@ fn deploy_refuses_a_missing_neighbour_after_the_ring_is_materialized() {
     let resources = IResourceOperationsDispatcher { contract_address: d.games };
     let troops = ResourceSlot {
         game_id,
-        entity_id: 1,
+        entity_id: home.entity_id,
         resource_type: crate::troops::troop_resource(
             IGuardsDispatcher { contract_address: d.games }
-                .guard(GuardKey { game_id, structure_id: 1, slot: 0 })
+                .guard(GuardKey { game_id, structure_id: home.entity_id, slot: 0 })
                 .troops
                 .category,
             0,
         ),
     };
+    super::resource_commands::grant(d, home, troops.resource_type, crate::rules::RESOURCE_PRECISION);
+    send_starting_armies_home(d, home, FIXTURE_START + 1);
     let before = resources.resource_balance(troops);
-    assert!(!execute_in_game(d, game_id, muster_command(category, 0), 351));
+    let mut refused = snforge_std::spy_events();
+    assert!(!execute_in_game(d, game_id, muster_command(home, category, 0, 0), FIXTURE_START + 1));
+    assert_eq!(super::play_fixture::rejection(ref refused, d.games).reason, "deployment tile unexplored");
     assert_eq!(resources.resource_balance(troops), before);
     assert!(map.tile(key).is_none());
-    assert_eq!(
-        IStructureOperationsDispatcher { contract_address: d.games }
-            .home_armies(ResourceKey { game_id, entity_id: 1 })
-            .len(),
-        0,
-    );
+    assert_eq!(IStructureOperationsDispatcher { contract_address: d.games }.home_armies(home).len(), 0);
 }
 
 #[test]
@@ -204,9 +189,6 @@ fn tile_presence_follows_terrain_or_occupancy_on_both_layers() {
                 let revealed = crate::map::TileOpt {
                     data: crate::map::coordinate_bits(key) + 11 * crate::map::BIOME_SCALE,
                 };
-                assert_eq!(crate::logic::map::tile(key), Some(revealed));
-                crate::logic::map::MapState::reserve_hyperstructure(key);
-                crate::logic::map::MapState::release_hyperstructure(key);
                 assert_eq!(crate::logic::map::tile(key), Some(revealed));
                 assert_eq!(crate::logic::map::occupancy(key), None);
                 crate::logic::map::MapState::mark_reward_extracted(key);
@@ -274,22 +256,16 @@ fn reverse_positions_preserve_origin_full_coordinates_and_clear_on_vacate() {
 }
 
 #[test]
-fn tile_only_occupants_and_reservations_have_no_reverse_position() {
+fn a_tile_only_spire_has_no_reverse_position() {
     let d = super::registrar::setup();
     interact_with_state(
         d.games,
         || {
             let key = crate::map::TileKey { game_id: 7, alt: false, col: 120, row: 130 };
-            for category in array![crate::taxonomy::CHEST_OCCUPIER, crate::taxonomy::SPIRE_OCCUPIER] {
-                crate::logic::map::MapState::occupy(key, 99, category, false);
-                assert_eq!(crate::logic::map::entity_coord(ResourceKey { game_id: 7, entity_id: 99 }), None);
-                assert!(crate::logic::map::occupancy(key).is_some());
-                crate::logic::map::MapState::vacate(key, 99);
-            }
-            crate::logic::map::MapState::reveal(key, 11);
-            crate::logic::map::MapState::reserve_hyperstructure(key);
-            assert_eq!(crate::logic::map::entity_coord(ResourceKey { game_id: 7, entity_id: 0 }), None);
-            crate::logic::map::MapState::release_hyperstructure(key);
+            crate::logic::map::MapState::occupy(key, 99, crate::taxonomy::SPIRE_OCCUPIER, false);
+            assert_eq!(crate::logic::map::entity_coord(ResourceKey { game_id: 7, entity_id: 99 }), None);
+            assert!(crate::logic::map::occupancy(key).is_some());
+            crate::logic::map::MapState::vacate(key, 99);
             assert_eq!(crate::logic::map::occupancy(key), None);
         },
     );
@@ -309,4 +285,24 @@ fn an_entity_at_the_origin_cannot_be_placed_twice() {
             );
         },
     );
+}
+
+fn send_starting_armies_home(d: super::Deployment, home: ResourceKey, timestamp: u64) {
+    let armies = IStructureOperationsDispatcher { contract_address: d.games }.home_armies(home);
+    for army in armies {
+        let remove = crate::commands::Command::ManageTroops(
+            crate::troop_management::ManageTroops::RemoveExplorer(*army),
+        );
+        assert!(execute_in_game(d, home.game_id, remove, timestamp));
+    }
+}
+
+fn biome_context(d: super::Deployment, game_id: u32) -> crate::commands::BiomeContext {
+    let games = IGameDispatcher { contract_address: d.games };
+    let rules = games.rules(game_id);
+    crate::commands::BiomeContext {
+        climate: rules.biome_climate_config,
+        start_main_at: games.game(game_id).start_main_at,
+        day_unit_seconds: rules.day_unit_seconds,
+    }
 }

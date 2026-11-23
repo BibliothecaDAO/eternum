@@ -1,10 +1,8 @@
 import { resourceMeaning, iconUrl } from "@/ui/design-system/icon-meaning";
-import { formatCharge, formatGain, ResourcesIds, type HexPosition } from "@bibliothecadao/types";
-import type { ChestReward } from "@bibliothecadao/eternum";
+import { formatCharge, formatGain } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { createWorldFxBackend, type WorldFxBackend, type WorldFxHandle } from "../fx/world-fx-backends";
 import type { RendererFxCapabilities } from "../renderer-fx-capabilities";
-import { FLAT_TERRAIN_SURFACE, placePositionOnTerrain, type TerrainSurface } from "../terrain/terrain-surface";
 import { snapshotRendererFxCapabilities } from "../renderer-fx-capabilities";
 
 interface ResourceFXOptions {
@@ -18,7 +16,6 @@ interface ResourceFXOptions {
 interface ResourceFXManagerOptions {
   backendFactory?: typeof createWorldFxBackend;
   capabilities?: RendererFxCapabilities;
-  terrainSurface?: TerrainSurface;
 }
 
 interface ActiveResourceFx {
@@ -33,13 +30,11 @@ export class ResourceFXManager {
   private readonly defaultSize: number;
   private readonly textureLoader: THREE.TextureLoader;
   private readonly backend: WorldFxBackend;
-  private readonly terrainSurface: TerrainSurface;
 
   constructor(scene: THREE.Scene, defaultSize: number = 1.2, options: ResourceFXManagerOptions = {}) {
     this.scene = scene;
     this.defaultSize = defaultSize;
     this.textureLoader = new THREE.TextureLoader();
-    this.terrainSurface = options.terrainSurface ?? FLAT_TERRAIN_SURFACE;
     this.backend = (options.backendFactory ?? createWorldFxBackend)({
       capabilities: options.capabilities ?? snapshotRendererFxCapabilities(),
       scene,
@@ -137,37 +132,6 @@ export class ResourceFXManager {
     });
 
     return promise;
-  }
-
-  /** A crate burst: every relic rises from the hex at once, fanned out sideways and staggered by a beat. */
-  private async playRelicBurst(relicIds: number[], col: number, row: number): Promise<void> {
-    const { getWorldPositionForHex } = await import("../utils/utils");
-    const position = getWorldPositionForHex({ col, row } as HexPosition);
-    placePositionOnTerrain(position, this.terrainSurface);
-    const spread = 1.1;
-    await Promise.all(
-      relicIds.map(
-        (relicId, index) =>
-          new Promise<void>((resolve) => {
-            setTimeout(() => {
-              const offset = (index - (relicIds.length - 1) / 2) * spread;
-              void this.playResourceFxAtCoords(relicId, 1, position.x + offset, position.y + 2.5, position.z, {
-                duration: 2.6,
-                floatHeight: 3,
-              }).then(resolve, () => resolve());
-            }, index * 180);
-          }),
-      ),
-    );
-  }
-
-  public async playChestRewardBurst(reward: ChestReward, col: number, row: number): Promise<void> {
-    if (reward.kind === "relics") return this.playRelicBurst(reward.relics, col, row);
-    if (reward.amount === 0) return;
-    const { getWorldPositionForHex } = await import("../utils/utils");
-    const position = getWorldPositionForHex({ col, row } as HexPosition);
-    placePositionOnTerrain(position, this.terrainSurface);
-    await this.playResourceFxAtCoords(ResourcesIds.Lords, reward.amount, position.x, position.y + 2.5, position.z);
   }
 
   public destroy(): void {

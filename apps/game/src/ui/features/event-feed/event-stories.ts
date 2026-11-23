@@ -9,9 +9,6 @@ import { logicalStoryIdentity } from "@bibliothecadao/notifications";
  */
 export type EventsFilter = "important" | "all";
 
-/** Whether a structure is a Hyperstructure, as the game's facts hold it: a capture of one is everyone's news. */
-type IsHyperstructure = (structureId: number) => boolean;
-
 export const involvesPlayer = (event: ProcessedStoryEvent, address: string | null): boolean =>
   event.participants.some((owner) => feltEquals(owner, address));
 
@@ -95,24 +92,10 @@ const concludedTarget = (event: ToldStory): number | null => {
 /** A transaction's key, the same however its hash is written (case, leading zeros). */
 const transactionKey = (hash: string): string => hash.toLowerCase().replace(/^0x0*/, "");
 
-/** The stories that are important when they name the player: a fight, a raid, a capture, a crate opened, a relic used. */
-const IMPORTANT_STORIES = [
-  "BattleEvent",
-  "RaidEvent",
-  "StructureCapturedStory",
-  "RelicChestOpened",
-  "RelicActivated",
-  "RewardChestOpened",
-];
+const IMPORTANT_STORIES = ["BattleEvent", "RaidEvent", "StructureCapturedStory"];
 
-/**
- * Whether a story is important, the default lens of Events and the Log: what the player must not miss. Their fights (an
- * army lost, a realm under attack), raids and captures, by them or of theirs, the crates they opened, and a
- * Hyperstructure taken by anyone, the race for points.
- */
-const isImportantStory = (event: ProcessedStoryEvent, address: string | null, isHyperstructure: IsHyperstructure) =>
-  (IMPORTANT_STORIES.includes(event.story) && involvesPlayer(event, address)) ||
-  (event.story === "StructureCapturedStory" && event.entity_id !== null && isHyperstructure(event.entity_id));
+const isImportantStory = (event: ProcessedStoryEvent, address: string | null) =>
+  IMPORTANT_STORIES.includes(event.story) && involvesPlayer(event, address);
 
 /**
  * What a lens shows, newest first, each action once (a fight and the capture it won told by the capture): under All the
@@ -123,13 +106,12 @@ export const selectEventStories = (
   stories: ProcessedStoryEvent[],
   filter: EventsFilter,
   address: string | null,
-  isHyperstructure: IsHyperstructure,
 ): ProcessedStoryEvent[] =>
   filter === "all"
     ? oneStoryPerAction(stories)
     : oneStoryPerAction(
         stories
-          .filter((event) => isImportantStory(event, address, isHyperstructure))
+          .filter((event) => isImportantStory(event, address))
           .toSorted((left, right) => right.timestampMs - left.timestampMs),
       );
 
@@ -139,19 +121,9 @@ const READ_LIMIT = 100;
 /** How far back All reads the world's history: its newest stories. */
 const WORLD_STORIES = 350;
 
-/**
- * The history reads a lens needs: under All one read of the world's newest stories; under Important the player's
- * fights, raids, captures and crates and each Hyperstructure's captures, each its own read, so what one leaves out never
- * takes another's room.
- */
-export const eventsReads = (filter: EventsFilter, address: string | null, hyperstructures: number[]): StoryRead[] => {
+export const eventsReads = (filter: EventsFilter, address: string | null): StoryRead[] => {
   if (filter === "all") return [{ limit: WORLD_STORIES }];
-  const players =
-    address === null ? [] : IMPORTANT_STORIES.map((story) => ({ limit: READ_LIMIT, story, owner: address }));
-  return [
-    ...players,
-    ...hyperstructures.map((entityId) => ({ limit: READ_LIMIT, story: "StructureCapturedStory", entityId })),
-  ];
+  return address === null ? [] : IMPORTANT_STORIES.map((story) => ({ limit: READ_LIMIT, story, owner: address }));
 };
 
 /**
@@ -161,19 +133,7 @@ export const eventsReads = (filter: EventsFilter, address: string | null, hypers
  */
 export type FeedLens = "all" | "important" | "mine";
 
-/**
- * What the Feed's Important holds, from every player: a fight (with a player, a beast or a site's guard), a raid, a
- * capture, a site cleared, and a chest opened. Exploring, raising an army, training, moving troops and building are
- * the routine left to All and Mine.
- */
-const NOTABLE_STORIES = [
-  "BattleEvent",
-  "RaidEvent",
-  "StructureCapturedStory",
-  "SitePayout",
-  "RewardChestOpened",
-  "RelicChestOpened",
-] as const;
+const NOTABLE_STORIES = ["BattleEvent", "RaidEvent", "StructureCapturedStory", "SitePayout"] as const;
 
 const isNotable = (event: ProcessedStoryEvent) => (NOTABLE_STORIES as readonly string[]).includes(event.story);
 

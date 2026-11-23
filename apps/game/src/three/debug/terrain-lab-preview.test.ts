@@ -1,4 +1,4 @@
-import { ChestModelPath, SHARED_BUILDING_MODEL_PATHS, SPIRE_MODEL_PATH } from "@/three/constants/scene-constants";
+import { SHARED_BUILDING_MODEL_PATHS, SPIRE_MODEL_PATH } from "@/three/constants/scene-constants";
 import { describe, expect, it } from "vitest";
 import { TerrainField } from "@/three/terrain/terrain-field";
 import { prepareTerrainPage } from "@/three/terrain/terrain-page-builder";
@@ -100,7 +100,7 @@ describe("terrain lab previews", () => {
     },
   );
 
-  it("adds and removes building ground while chests preserve the original surface", () => {
+  it("adds and removes building ground", () => {
     const source = createTerrainVerificationRequest("tropical-coast");
     const selected = source.cells.find((cell) => !cell.occupied)!;
     const building = { col: selected.col, row: selected.row, path: SHARED_BUILDING_MODEL_PATHS[0], yaw: 0 };
@@ -111,9 +111,6 @@ describe("terrain lab previews", () => {
       ...source,
       surfacePresentation: "world",
     });
-    expect(
-      buildTerrainLabRequest(source, DEFAULT_TERRAIN_LAB_PREVIEW, selected, [{ ...building, path: ChestModelPath }]),
-    ).toEqual({ ...source, surfacePresentation: "world" });
   });
 
   it("does not turn an army tile into a building pad", () => {

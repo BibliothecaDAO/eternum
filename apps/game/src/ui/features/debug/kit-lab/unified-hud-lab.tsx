@@ -1,5 +1,5 @@
 import { SeasonOver } from "@/shell/season-tab/season-over";
-import { frontierArmyRules } from "../../frontier/army/progression-rules-fixture";
+
 import { useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { LAB_SESSION } from "@/shell/lab/app-lab-fixtures";
 import { answerLabChat } from "@/shell/lab/lab-chat";
@@ -10,16 +10,10 @@ import { SurfaceHost } from "@/ui/design-system/molecules/popover";
 import { FrontierHud } from "@/ui/features/frontier/frontier-hud";
 import { QuickAttackPreview } from "@/ui/features/military/battle/quick-attack-preview";
 import { ArenaHud } from "@/ui/features/world/hud/arena-hud";
-import { useGoalLine } from "@/ui/features/world/hud/points-goal";
 import { gameStartHeadline } from "@/ui/features/news-headlines/news-headline-bridge";
 import { NewsHeadlineBanner } from "@/ui/features/news-headlines/news-headline-banner";
-import {
-  nativeGameModeOf,
-  readExpeditionRules,
-  structureMapPosition,
-  type SkillPointChoice,
-} from "@bibliothecadao/eternum";
-import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import { readExpeditionRules, structureMapPosition } from "@bibliothecadao/eternum";
+import { nativeResearchConstants, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { ActorType, RESOURCE_PRECISION, ResourcesIds, StructureType, TileOccupier } from "@bibliothecadao/types";
 import { useEffect } from "react";
 import { useParams } from "react-router-dom";
@@ -28,17 +22,11 @@ import ROW_SET from "../../../../../../../contracts/l3/world-native/schema/fixtu
 import { PLAYER } from "./fixture-game";
 import { LabGame } from "./lab-game";
 
-/**
- * The views the lab draws: each mode's player (Blitz's, its Build order panel read from the lab realm, and its army's
- * attack forecast on an enemy army beside it, or stocked for its build steps, also as the game begins with its news
- * over the HUD; Frontier's, and with an army out holding skill points), a spectator
- * of a game running and of one finished, and a Blitz player whose last realm fell, still holding a Hyperstructure, then watching.
- */
 const VIEWS = {
-  blitz: { preset: 2, spectating: false, finished: false, army: false, attack: false },
-  "blitz-build": { preset: 2, spectating: false, finished: false, army: false, attack: false, stocked: true },
+  blitz: { mode: "blitz", spectating: false, finished: false, army: false, attack: false },
+  "blitz-build": { mode: "blitz", spectating: false, finished: false, army: false, attack: false, stocked: true },
   "blitz-start": {
-    preset: 2,
+    mode: "blitz",
     spectating: false,
     finished: false,
     army: false,
@@ -46,29 +34,27 @@ const VIEWS = {
     stocked: true,
     start: true,
   },
-  "blitz-attack": { preset: 2, spectating: false, finished: false, army: true, attack: true },
+  "blitz-attack": { mode: "blitz", spectating: false, finished: false, army: true, attack: true },
   // The same attack with the army at 5 stamina: no forecast, the sides with a dash and the shortfall under them.
-  "blitz-attack-short": { preset: 2, spectating: false, finished: false, army: true, attack: true, tired: true },
-  frontier: { preset: 5, spectating: false, finished: false, army: false, attack: false },
-  // Eternum's player on the same HUD as Blitz's, in Eternum's own age colours.
-  eternum: { preset: 3, spectating: false, finished: false, army: false, attack: false },
-  "frontier-army": { preset: 5, spectating: false, finished: false, army: true, attack: false },
-  "blitz-spectator": { preset: 2, spectating: true, finished: false, army: false, attack: false },
-  "blitz-finished": { preset: 2, spectating: true, finished: true, army: false, attack: false },
-  "blitz-out": { preset: 2, spectating: false, finished: false, army: false, attack: false, out: true },
-  "blitz-out-watching": { preset: 2, spectating: true, finished: false, army: false, attack: false, out: true },
+  "blitz-attack-short": { mode: "blitz", spectating: false, finished: false, army: true, attack: true, tired: true },
+  frontier: { mode: "frontier", spectating: false, finished: false, army: false, attack: false },
+  "frontier-army": { mode: "frontier", spectating: false, finished: false, army: true, attack: false },
+  "blitz-spectator": { mode: "blitz", spectating: true, finished: false, army: false, attack: false },
+  "blitz-finished": { mode: "blitz", spectating: true, finished: true, army: false, attack: false },
+  "blitz-out": { mode: "blitz", spectating: false, finished: false, army: false, attack: false, out: true },
+  "blitz-out-watching": { mode: "blitz", spectating: true, finished: false, army: false, attack: false, out: true },
 } as const;
 
 type View = keyof typeof VIEWS;
 /** Every view, by the name in its address, with the game it plays: the HUD room lists them. */
 export const UNIFIED_VIEWS = (Object.keys(VIEWS) as View[]).map((name) => ({
   name,
-  frontier: VIEWS[name].preset === VIEWS.frontier.preset,
+  frontier: VIEWS[name].mode === "frontier",
 }));
 
 /**
  * Dev only: the in-game HUD as the game mounts it (a desktop's columns, a phone's compact HUD), every mode's, on the
- * lab's game, at /lab/kit/unified/<view>: blitz, blitz-attack, blitz-attack-short, blitz-build, blitz-start, eternum, frontier, frontier-army,
+ * lab's game, at /lab/kit/unified/<view>: blitz, blitz-attack, blitz-attack-short, blitz-build, blitz-start, frontier, frontier-army,
  * blitz-spectator, blitz-finished, blitz-out, blitz-out-watching. Frontier's states on the same HUD are the Frontier HUD
  * lab's, /lab/kit/hud/<state>.
  */
@@ -79,15 +65,14 @@ export const UnifiedHudLab = () => {
 };
 
 const ViewLab = ({ view }: { view: View }) => {
-  const { preset, spectating, finished, army, attack } = VIEWS[view];
+  const { mode, spectating, finished, army, attack } = VIEWS[view];
   const stocked = "stocked" in VIEWS[view];
   const start = "start" in VIEWS[view];
   const out = "out" in VIEWS[view];
   const tired = "tired" in VIEWS[view];
-  const mode = nativeGameModeOf(preset);
   const frontier = mode === "frontier";
   useDocumentClass(frontier ? "frontier-hud" : "classic-hud");
-  useHudMode(mode === "eternum" ? "eternum" : frontier ? "frontier" : "blitz");
+  useHudMode(mode);
   // The lab's player is signed in, as a player in a game is, and chat connects to the lab's chat server, in the tab.
   useEffect(() => {
     const restore = answerLabChat({});
@@ -102,7 +87,7 @@ const ViewLab = ({ view }: { view: View }) => {
         className="fixed inset-0 bg-[radial-gradient(ellipse_at_center,theme(colors.kit.line),theme(colors.kit.ground))]"
       />
       <LabGame
-        preset={preset}
+        mode={mode}
         spectating={spectating}
         finished={finished}
         facts={
@@ -117,7 +102,6 @@ const ViewLab = ({ view }: { view: View }) => {
                 ? lastRealmLost
                 : undefined
         }
-        systemCalls={army ? () => ({ spend_skill_point: recordSkillPointSpent }) : undefined}
       >
         {(store) => {
           const rules = frontier ? readExpeditionRules(store, 1) : null;
@@ -143,10 +127,7 @@ const ViewLab = ({ view }: { view: View }) => {
 };
 
 /** The news that the game has begun, as the game shows it over the HUD. */
-const GameStartNews = () => {
-  const goal = useGoalLine();
-  return <NewsHeadlineBanner headline={gameStartHeadline(0, goal)} />;
-};
+const GameStartNews = () => <NewsHeadlineBanner headline={gameStartHeadline(0)} />;
 
 /**
  * The lab realm stocked with the building inputs it lacks, 50,000 of each (it holds wheat already), so the build order's
@@ -211,6 +192,7 @@ export const labArmyOut = (store: NativeFactStore, stamina = LAB_ARMY_STAMINA): 
   const site = structureMapPosition(store, store.require("Structure", { game_id: 1, entity_id: 7 }));
   if (!site) throw new Error("The lab realm has no site today");
   return [
+    { model: "ArmyDay", key: "0x9ad", value: { game_id: 1, explorer_id: LAB_ARMY_ID, day: "0" } },
     {
       model: "ExplorerTroops",
       key: "0x9a0",
@@ -239,7 +221,6 @@ export const labArmyOut = (store: NativeFactStore, stamina = LAB_ARMY_STAMINA): 
       },
     },
     { model: "ArmyProgress", key: "0x9a2", value: { ...LAB_PROGRESS, explorer_id: LAB_ARMY_ID } },
-    { model: "ArmyProgressionRules", key: "0x9a3", value: LAB_PROGRESSION_RULES },
   ];
 };
 
@@ -252,6 +233,8 @@ const enemyArmyBeside = (store: NativeFactStore): unknown[] => {
   const site = structureMapPosition(store, realm)!;
   return [
     { model: "Structure", key: "0x9b0", value: { ...realm, entity_id: ENEMY_REALM_ID, owner: ENEMY } },
+    { model: "ArmyDay", key: "0x9bd", value: { game_id: 1, explorer_id: ENEMY_ARMY_ID, day: "0" } },
+    { model: "ArmyProgress", key: "0x9b3", value: { ...LAB_PROGRESS, explorer_id: ENEMY_ARMY_ID } },
     {
       model: "ExplorerTroops",
       key: "0x9b1",
@@ -307,25 +290,9 @@ const AttackForecast = ({ store }: { store: NativeFactStore }) => {
 };
 
 const LAB_PROGRESS = {
-  common_points: 1,
-  uncommon_points: 1,
-  rare_points: 0,
-  epic_points: 0,
-  legendary_points: 0,
   game_id: 1,
-  xp: 260,
-  battle: 1,
   logistics: 1,
-  scouting: 0,
-  scouting_kinds: 0,
-  homecoming: 1,
-};
-const LAB_PROGRESSION_RULES = frontierArmyRules();
-
-/** Records the army panel's command at the network boundary; native tests prove its state changes. */
-const recordSkillPointSpent = (call: { explorerId: number; choice: SkillPointChoice }) => {
-  const sent = { explorerId: call.explorerId, choice: call.choice };
-  const target = window as unknown as { __labSkillPointSpent?: unknown[] };
-  target.__labSkillPointSpent = [...(target.__labSkillPointSpent ?? []), sent];
-  return Promise.resolve();
+  oath_slots: nativeResearchConstants.OATH_SLOTS_BASE,
+  oaths: 0,
+  oath_pick: 0,
 };
