@@ -307,6 +307,7 @@ const answerDirectory = (
     mode: nativeGameModeOfFamily(registry.family),
     status: "Live",
     dev_mode_on: false,
+    clock_scale: registry.clock_scale,
     expedition: rules.day_unit_seconds
       ? { day_unit_seconds: rules.day_unit_seconds, seed: String(registry.seed) }
       : null,

@@ -19,6 +19,7 @@ import {
   WORDS,
   dayEnds,
   dayLeft,
+  gameSpeed,
   phraseText,
   tomorrowLasts,
 } from "@/ui/design-system/kit/words";
@@ -109,6 +110,11 @@ const ItemVerbButton = ({ item, signedIn, lead }: { item: PlayItem; signedIn: bo
 
 type ItemProps = { item: PlayItem; now: number; signedIn: boolean };
 
+const GameSpeed = ({ game }: { game: DirectoryGame }) => {
+  const speed = gameSpeed(game.clock_scale);
+  return speed ? <AppChip tone="gold">{speed}</AppChip> : null;
+};
+
 export const LeadCard = ({ item, now, signedIn, className }: ItemProps & { className?: string }) => {
   const age = ageOf(item.mode);
   if (item.mode === "frontier" && item.verb !== "results") {
@@ -153,6 +159,7 @@ const FrontierHeroCard = ({ item, now, signedIn, className }: ItemProps & { clas
           <h2 className="play-hero__title">
             <img src={AGE_LOCKUP.frontier} alt={age.name} className="play-hero__lockup" />
           </h2>
+          <GameSpeed game={item.game} />
         </div>
         <div className="play-hero__plate">
           {realm && (
@@ -206,6 +213,7 @@ const ItemRow = ({ item, now, signedIn }: ItemProps) => (
       detail={<ItemLine item={item} now={now} />}
       trail={
         <>
+          <GameSpeed game={item.game} />
           {item.when === "now" && (
             <AppChip tone="good" live>
               {WORDS.live}

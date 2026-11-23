@@ -14,6 +14,7 @@ const game = (mode: DirectoryGame["mode"], over: Partial<DirectoryGame> = {}): D
     name: `${mode}-1`,
     mode,
     status: "Live",
+    clock_scale: 1,
     expedition: null,
     clock: { start_settling_at: 0, start_main_at: 100, scheduled_end_at: 9_000, end_at: 9_000 },
     player_count: 10,
@@ -56,6 +57,22 @@ const leadOf = (input: PlayBoardFacts) => {
   const { lead } = playBoard(input);
   return lead ? `${lead.mode} ${lead.verb ?? "—"}` : "none";
 };
+
+describe("a rehearsal beside the season", () => {
+  const rehearsal = game("frontier", { game_id: 4, clock_scale: 4, clock: { ...frontier.clock, start_main_at: 200 } });
+
+  it("keeps the real-speed season as the lead and lists the rehearsal as its own Frontier game", () => {
+    const board = playBoard(facts({ games: [rehearsal, frontier] }));
+    expect([board.lead?.game.game_id, board.lead?.verb]).toEqual([2, "play"]);
+    expect(board.ages.frontier.map((item) => [item.game.game_id, item.verb])).toEqual([[4, "play"]]);
+  });
+
+  it("resumes the rehearsal where the player holds a realm in it, after their season", () => {
+    const board = playBoard(facts({ games: [withRealm(rehearsal), withRealm(frontier)] }));
+    expect([board.lead?.game.game_id, board.lead?.verb]).toEqual([2, "resume"]);
+    expect(board.ages.frontier.map((item) => [item.game.game_id, item.verb])).toEqual([[4, "resume"]]);
+  });
+});
 
 describe("the lead: the one gold verb, first match wins", () => {
   it.each<[string, PlayBoardFacts, string]>([

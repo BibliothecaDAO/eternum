@@ -429,6 +429,7 @@ export const CLOCK_WORDS = {
   /** Before the time left to a beginning: "Starts 16:30 · in 2h 4m". */
   in: "in",
 } as const;
+export const gameSpeed = (clockScale: number): string | undefined => (clockScale > 1 ? `${clockScale}x` : undefined);
 export const COUNTDOWN_WORDS = {
   opens: (date: string) => `The season opens ${date}`,
   line: (aspectCount: number, days: number | null) =>

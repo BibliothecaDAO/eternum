@@ -55,6 +55,6 @@ const switchOn = (command: LabCommand, chain: LabScenario["store"], now: number)
   const relic = slots[slot];
   if (!relic || RELIC_KINDS.indexOf(relic.kind) * 5 + relic.rank !== relicId) return [];
   slots[slot] = null;
-  const seconds = relicSeconds(relic);
+  const seconds = relicSeconds(relic, chain.require("SliceRules", { game_id: 1 }));
   return [armyRelics(slots), effect(relic, now + seconds)];
 };

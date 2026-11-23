@@ -13,6 +13,8 @@ import { gameKey } from "./play/play-board";
 import { ARCHIVED_SEASONS, archivedSeason } from "./season-tab/archive/archive";
 
 /** The player's realm in the season: the structure the directory lists for them, if they have founded one. */
+export const isRehearsal = (game: Pick<DirectoryGame, "clock_scale">): boolean => game.clock_scale > 1;
+
 export const seasonRealm = (season: Pick<DirectoryGame, "player_state">) =>
   season.player_state?.structures.find((structure) => isRealmCategory(structure.category));
 
@@ -25,7 +27,7 @@ export const seasonRealmId = (season: Pick<DirectoryGame, "player_state"> | null
  */
 export const chooseSeason = (games: readonly DirectoryGame[], signedIn: boolean): DirectoryGame | undefined => {
   const seasons = games
-    .filter((game) => game.mode === "frontier" && !isGameOver(game))
+    .filter((game) => game.mode === "frontier" && !isRehearsal(game) && !isGameOver(game))
     .toSorted((a, b) => b.clock.start_main_at - a.clock.start_main_at || a.game_id - b.game_id);
   const live = seasons.filter((game) => game.status === "Live");
   const available = live.length > 0 ? live : seasons;
@@ -40,7 +42,7 @@ export const chooseSeason = (games: readonly DirectoryGame[], signedIn: boolean)
 export const endedSeasons = (listed: readonly DirectoryGame[], settled: readonly DirectoryGame[]): DirectoryGame[] => {
   const byGame = new Map([...ARCHIVED_SEASONS, ...settled, ...listed].map((game) => [gameKey(game), game]));
   return [...byGame.values()]
-    .filter((game) => game.mode === "frontier" && isGameOver(game))
+    .filter((game) => game.mode === "frontier" && !isRehearsal(game) && isGameOver(game))
     .toSorted((a, b) => b.clock.end_at - a.clock.end_at || a.game_id - b.game_id);
 };
 

@@ -1,7 +1,7 @@
 import { isGameOver } from "@/runtime/world/directory";
 
 import type { DirectoryGame } from "../herald";
-import { chooseSeason, seasonRealm } from "../season";
+import { chooseSeason, isRehearsal, seasonRealm } from "../season";
 
 /** The modes Play offers, in the order its ages stand side by side. */
 export const PLAY_MODES = ["blitz", "frontier", "eternum"] as const;
@@ -84,7 +84,9 @@ const gameItem = (
 ): PlayItem => ({ key: gameKey(game), mode, when, verb, mine, game });
 
 /** Frontier's season: the player's day to resume, else the season to play (free when signed out). */
-const frontierItems = ({ games, signedIn }: PlayBoardFacts): PlayItem[] => {
+const frontierItems = (facts: PlayBoardFacts): PlayItem[] => [...seasonItems(facts), ...rehearsalItems(facts)];
+
+const seasonItems = ({ games, signedIn }: PlayBoardFacts): PlayItem[] => {
   const season = chooseSeason(games, signedIn);
   if (!season) return [];
   const live = season.status === "Live";
@@ -92,13 +94,24 @@ const frontierItems = ({ games, signedIn }: PlayBoardFacts): PlayItem[] => {
   return [gameItem(season, "frontier", live ? "now" : "next", "play", false)];
 };
 
+const rehearsalItems = ({ games, signedIn }: PlayBoardFacts): PlayItem[] =>
+  games
+    .filter((game) => game.mode === "frontier" && isRehearsal(game) && !isGameOver(game))
+    .map((game) => {
+      const live = game.status === "Live";
+      const mine = signedIn && seasonRealm(game) !== undefined;
+      return gameItem(game, "frontier", live ? "now" : "next", live && mine ? "resume" : "play", mine);
+    });
+
 /**
  * The player's results not yet opened on this device, the newest per mode: a Frontier season over where they founded a
  * realm (still in the directory), and their finished games from the history. Signed out, there are none.
  */
 const resultItems = ({ signedIn, games, finished, seenResults }: PlayBoardFacts): PlayItem[] => {
   if (!signedIn) return [];
-  const endedSeasons = games.filter((game) => game.mode === "frontier" && isGameOver(game) && seasonRealm(game));
+  const endedSeasons = games.filter(
+    (game) => game.mode === "frontier" && !isRehearsal(game) && isGameOver(game) && seasonRealm(game),
+  );
   const unseen = [...endedSeasons, ...finished].filter((game) => !seenResults.has(gameKey(game)));
   return PLAY_MODES.flatMap((mode) => {
     const newest = unseen.find((game) => modeOf(game) === mode);

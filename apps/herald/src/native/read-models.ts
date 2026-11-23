@@ -316,6 +316,7 @@ function directoryEntry(game: Row, facts: DirectoryRows, input: DirectoryInput):
     next_day_length: nextDay ? nextDay.end - nextDay.start : null,
     expedition: dayUnitSeconds === 0 ? null : { day_unit_seconds: dayUnitSeconds, seed: integer(game.seed).toString() },
     dev_mode_on: game.dev_mode_on === true,
+    clock_scale: number(game.clock_scale),
     status: directoryStatus(game, input.timestamp),
     clock,
     player_count: new Set(settlements.map((row) => address(row.owner))).size,
