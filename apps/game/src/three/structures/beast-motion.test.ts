@@ -143,6 +143,13 @@ describe("Pure-maths beast motion module", () => {
       expect(dead.progress).toBe(1);
       const fallenDisp = evaluateBeastMotionDisplacement("minotaur", [0, 0.9, 0], dead);
       expect(fallenDisp[1]).toBeLessThan(-0.5);
+
+      model.removeInstance(0);
+      model.setMatrixAt(0, new Matrix4().makeTranslation(4, 0, 4));
+      const reused = model.getMotionStateAt(0, mapAnimationTime.value);
+      expect(reused.action).toBe("idle");
+      expect(reused.progress).toBe(0);
+      expect(reused.active).toBe(true);
     } finally {
       model.dispose();
     }

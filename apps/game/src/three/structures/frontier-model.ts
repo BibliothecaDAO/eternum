@@ -184,10 +184,20 @@ export class FrontierModel extends InstancedModel {
     super.updateAnimations(deltaTime, visibility);
   }
 
+  override removeInstance(index: number): void {
+    super.removeInstance(index);
+    this.motionController?.resetSlot(index);
+  }
+
   override setCount(count: number): void {
+    const previous = this.instancedMeshes[0]?.count ?? 0;
     super.setCount(count);
-    if (this.mist) this.mist.count = this.instancedMeshes[0].count;
-    if (this.embers) this.embers.count = this.instancedMeshes[0].count;
+    const next = this.instancedMeshes[0].count;
+    for (let i = next; i < previous; i++) {
+      this.motionController?.resetSlot(i);
+    }
+    if (this.mist) this.mist.count = next;
+    if (this.embers) this.embers.count = next;
   }
 
   override dispose(): void {

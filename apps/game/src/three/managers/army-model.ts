@@ -562,6 +562,9 @@ export class ArmyModel {
       this.clearSlotFromEveryRenderable(matrixIndex);
     }
 
+    this.models.forEach((modelData) => {
+      modelData.troopMotion?.resetSlot(matrixIndex);
+    });
     this.shadows.clear(matrixIndex);
     this.setAnimationState(matrixIndex, false);
   }

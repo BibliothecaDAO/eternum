@@ -109,6 +109,23 @@ export class InstancedMotionController<TAction extends string> {
     this.positions[base + 2] = matrix.elements[14];
   }
 
+  public resetSlot(index: number): void {
+    if (index < 0 || index >= this.capacity) return;
+    const idleCode = this.config.actionCodes[this.config.idleAction];
+    const wasCleared = this.activeOneShots.delete(index);
+    const alreadyClean =
+      Math.round(this.attribute.getX(index)) === idleCode &&
+      this.attribute.getY(index) === 0 &&
+      this.attribute.getZ(index) === 1 &&
+      this.attribute.getW(index) === 1;
+    if (!alreadyClean) {
+      this.attribute.setXYZW(index, idleCode, 0, 1, 1);
+      this.attribute.needsUpdate = true;
+    } else if (wasCleared) {
+      this.attribute.needsUpdate = true;
+    }
+  }
+
   public playActionAt(index: number, action: TAction, nowSeconds = this.currentTime): void {
     if (index < 0 || index >= this.capacity) return;
     if (this.attribute.getW(index) <= 0.5 && action !== this.config.idleAction) return;

@@ -67,6 +67,13 @@ describe("Pure-maths Scout and Crossbow motion module", () => {
       expect(controller.getStateAt(0, 5).action).toBe("death");
       expect(controller.getStateAt(0, 5).progress).toBe(1);
 
+      controller.resetSlot(0);
+      expect(controller.getStateAt(0, 5).action).toBe("idle");
+      expect(controller.getStateAt(0, 5).progress).toBe(0);
+      expect(controller.getStateAt(0, 5).active).toBe(true);
+      controller.setLoopActionAt(0, "march");
+      expect(controller.getStateAt(0, 5).action).toBe("march");
+
       const offscreenContext: AnimationVisibilityContext = {
         cameraPosition: new Vector3(0, 10, 10),
         maxDistance: 40,
