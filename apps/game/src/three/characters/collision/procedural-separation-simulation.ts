@@ -22,7 +22,7 @@ export interface ProceduralSeparationInput {
   yaw: number;
 }
 
-export interface ProceduralSeparationBodySnapshot {
+interface ProceduralSeparationBodySnapshot {
   anchorX: number;
   anchorZ: number;
   contactCount: number;

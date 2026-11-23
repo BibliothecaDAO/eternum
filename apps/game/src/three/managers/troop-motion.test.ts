@@ -1,11 +1,13 @@
 import { BiomeType } from "@bibliothecadao/types";
-import { Matrix4, Scene, Vector3 } from "three";
+import { BoxGeometry, Group, InstancedMesh, Matrix4, Mesh, MeshStandardMaterial, Scene, Texture, Vector3 } from "three";
 import { float } from "three/tsl";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { mapAnimationTime } from "../effects/endgame/state";
-import { ModelType, type ModelData } from "../types/army";
+import type { FrostedStandardNodeMaterial } from "../effects/game-map-material-library";
+import { ModelType } from "../types/army";
 import type { AnimationVisibilityContext } from "../types/animation";
+import { gltfLoader } from "../utils/utils";
 import { ArmyModel } from "./army-model";
 import {
   createTroopMotionController,
@@ -16,6 +18,10 @@ import {
 } from "./troop-motion";
 
 vi.mock("@/ui/config", async (importOriginal) => ({ ...(await importOriginal<object>()), FELT_CENTER: () => 0 }));
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 describe("Pure-maths Scout and Crossbow motion module", () => {
   it("maps Paladin1 to scout and Crossbowman1 to crossbow", () => {
@@ -113,69 +119,40 @@ describe("Pure-maths Scout and Crossbow motion module", () => {
     },
   );
 
-  it("reads walking state from ArmyModel.animationStates on late load, model switch, purge and reuse", () => {
-    const model = new ArmyModel(new Scene(), () => BiomeType.Grassland);
-    const internals = model as unknown as {
-      animationStates: Float32Array;
-      models: Map<ModelType, Partial<ModelData>>;
-      activeBaseModelByEntity: Map<number, ModelType>;
-      reapplyInstancesForModel(modelType: ModelType, modelData: Partial<ModelData>): void;
-    };
-
-    const firstSlot = model.allocateInstanceSlot(11);
-    model.assignModelToEntity(11, ModelType.Paladin1);
-    model.updateInstance(11, firstSlot, new Vector3(1, 0, 2), new Vector3(1, 1, 1));
-    model.setAnimationState(firstSlot, true);
-
-    const scoutMotion = createTroopMotionController("scout", 8, (slot) =>
-      internals.animationStates[slot] === 1 ? "march" : "idle",
-    );
-    const scoutModelData: Partial<ModelData> = {
-      instancedMeshes: [],
-      activeInstances: new Set(),
-      dirtySlots: { min: Infinity, max: -1 },
-      troopMotion: scoutMotion,
-    };
-    internals.models.set(ModelType.Paladin1, scoutModelData);
-    internals.reapplyInstancesForModel(ModelType.Paladin1, scoutModelData);
-    expect(scoutMotion.getStateAt(firstSlot, mapAnimationTime.value).action).toBe("march");
-
-    const crossbowMotion = createTroopMotionController("crossbow", 8, (slot) =>
-      internals.animationStates[slot] === 1 ? "march" : "idle",
-    );
-    internals.models.set(ModelType.Crossbowman1, {
-      instancedMeshes: [],
-      activeInstances: new Set(),
-      dirtySlots: { min: Infinity, max: -1 },
-      troopMotion: crossbowMotion,
+  it("renders placed Scout and Crossbow armies in rest pose with no vertex motion shader", async () => {
+    vi.spyOn(gltfLoader, "load").mockImplementation((_url, onLoad) => {
+      const material = new MeshStandardMaterial({ map: new Texture(), roughness: 0.9, metalness: 0 });
+      material.userData.tripoMaterial = true;
+      material.userData.ownershipCloth = true;
+      const root = new Group();
+      root.add(new Mesh(new BoxGeometry(0.5, 1, 0.5), material));
+      onLoad?.({ scene: root, animations: [] } as never);
     });
-    model.assignModelToEntity(11, ModelType.Crossbowman1);
-    model.updateInstance(11, firstSlot, new Vector3(1, 0, 2), new Vector3(1, 1, 1));
-    expect(crossbowMotion.getStateAt(firstSlot, mapAnimationTime.value).action).toBe("march");
+    const scene = new Scene();
+    const model = new ArmyModel(scene, () => BiomeType.Grassland);
+    try {
+      await model.preloadModels(new Set([ModelType.Paladin1, ModelType.Crossbowman1]));
+      const scoutSlot = model.allocateInstanceSlot(11);
+      const crossbowSlot = model.allocateInstanceSlot(22);
+      model.assignModelToEntity(11, ModelType.Paladin1);
+      model.assignModelToEntity(22, ModelType.Crossbowman1);
+      model.updateInstance(11, scoutSlot, new Vector3(1, 0, 2), new Vector3(1, 1, 1));
+      model.updateInstance(22, crossbowSlot, new Vector3(3, 0, 4), new Vector3(1, 1, 1));
+      model.setVisibleSlots([scoutSlot, crossbowSlot]);
 
-    model.assignModelToEntity(11, ModelType.Paladin1);
-    model.updateInstance(11, firstSlot, new Vector3(1, 0, 2), new Vector3(1, 1, 1));
-    model.playTroopAction(firstSlot, "death");
-    expect(scoutMotion.getStateAt(firstSlot, mapAnimationTime.value).action).toBe("death");
-
-    model.purgeDrawnSlot(firstSlot);
-    expect(scoutMotion.getStateAt(firstSlot, mapAnimationTime.value).action).toBe("idle");
-
-    const reusedAfterPurge = model.allocateInstanceSlot(22);
-    expect(reusedAfterPurge).toBe(firstSlot);
-    internals.activeBaseModelByEntity.set(22, ModelType.Paladin1);
-    model.setAnimationState(reusedAfterPurge, true);
-    expect(scoutMotion.getStateAt(reusedAfterPurge, mapAnimationTime.value).action).toBe("march");
-
-    model.playTroopAction(reusedAfterPurge, "death");
-    expect(scoutMotion.getStateAt(reusedAfterPurge, mapAnimationTime.value).action).toBe("death");
-    model.freeInstanceSlot(22, reusedAfterPurge);
-
-    const reusedAfterFree = model.allocateInstanceSlot(33);
-    expect(reusedAfterFree).toBe(firstSlot);
-    internals.activeBaseModelByEntity.set(33, ModelType.Paladin1);
-    expect(scoutMotion.getStateAt(reusedAfterFree, mapAnimationTime.value).action).toBe("idle");
-    model.setAnimationState(reusedAfterFree, true);
-    expect(scoutMotion.getStateAt(reusedAfterFree, mapAnimationTime.value).action).toBe("march");
+      const drawn: InstancedMesh[] = [];
+      scene.traverse((object) => {
+        if (object instanceof InstancedMesh && object.count > 0 && object.userData.gameEndFrost) {
+          drawn.push(object);
+        }
+      });
+      expect(drawn).toHaveLength(2);
+      for (const mesh of drawn) {
+        expect(mesh.geometry.getAttribute("troopMotion")).toBeUndefined();
+        expect((mesh.material as FrostedStandardNodeMaterial).positionNode).toBeNull();
+      }
+    } finally {
+      model.dispose();
+    }
   });
 });

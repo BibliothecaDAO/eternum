@@ -5,7 +5,7 @@ const { load, models, mode, beasts, beastTroops, openings, clock, publish, viewe
   mode: { id: "frontier" },
   load: vi.fn(),
   models: [] as Array<{ name: string; scene: string; count: number; setCount: (count: number) => void }>,
-  beasts: [] as Array<{ species: string; count: number; scales: number[]; idles: unknown[]; layers: number[] }>,
+  beasts: [] as Array<{ species: string; count: number; scales: number[]; layers: number[] }>,
   beastTroops: new Map<number, bigint>(),
   openings: new Map<number, unknown>(),
   clock: { tick: 0 as number | undefined, day: 86_400 },
@@ -32,7 +32,6 @@ vi.mock("../structures/frontier-model", async () => {
       group = new Group();
       count = 0;
       scales: number[] = [];
-      idles: unknown[] = [];
       layers: number[] = [];
       constructor(
         _gltf: unknown,
@@ -44,7 +43,6 @@ vi.mock("../structures/frontier-model", async () => {
       getCount = () => this.count;
       setCount = (count: number) => void (this.count = count);
       setMatrixAt = (index: number, matrix: { elements: number[] }) => void (this.scales[index] = matrix.elements[0]);
-      setIdleAt = (index: number, idle: unknown) => void (this.idles[index] = idle);
       setLayerAt = (index: number, layer: number) => void (this.layers[index] = layer);
       removeInstance = () => {};
       needsUpdate = () => {};
@@ -203,7 +201,6 @@ describe("the Deep's sites on the map", () => {
     const basilisk = beasts.find(({ species }) => species === "basilisk")!;
     expect(basilisk.count).toBe(1);
     expect(basilisk.scales[0]).toBeCloseTo(DEEP_BEASTS.altar.scale);
-    expect(basilisk.idles[0]).toEqual(DEEP_BEASTS.altar.idle);
     expect(basilisk.layers[0]).toBe(3);
     expect(models.map(({ name }) => name)).toEqual(["Essence core"]);
     const altarPlate = plates.setLabel.mock.calls.findLast(([plate]) => plate.entityId === altar)![0];

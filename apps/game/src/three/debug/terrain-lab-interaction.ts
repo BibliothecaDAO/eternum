@@ -141,13 +141,11 @@ export class TerrainLabInteraction {
               entityId: 1,
               isNaval: false,
               primaryColor: "#4268b5",
-              distanceToCameraSquared: this.camera.position.distanceToSquared(this.armyPosition),
               position: this.armyPosition,
               rotation: this.armyRotation.set(0, this.spinAngle, 0),
             },
           ]
         : [],
-      delta,
     );
     if (!this.army) return;
     if (moved || this.preview.spin) {

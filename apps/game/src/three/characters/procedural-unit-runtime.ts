@@ -70,7 +70,7 @@ interface ProceduralUnitActorStats extends Omit<ProceduralCharacterActorStats, "
 }
 
 export type ProceduralUnitMode = ProceduralCharacterMode | "sinking";
-export interface ProceduralProjectileReleaseSpec {
+interface ProceduralProjectileReleaseSpec {
   count: number;
   flightSeconds: number;
   kind: BallisticProjectileKind;
@@ -78,7 +78,7 @@ export interface ProceduralProjectileReleaseSpec {
   targetRadius: number;
 }
 
-export interface ProceduralRangedReleaseEvent {
+interface ProceduralRangedReleaseEvent {
   direction: Vector3;
   origin: Vector3;
   origins: readonly Vector3[];

@@ -1,6 +1,5 @@
 import { GUARD_MODELS } from "@bibliothecadao/eternum/game-client";
 import { FrontierModel, frontierModelKind, type BeastLayer } from "../structures/frontier-model";
-import type { BeastMotionAction } from "../structures/beast-motion";
 import { nextFrameOrTimeout } from "@/utils/frame-or-timeout";
 import { realmModelIndex, isWonderModelPath } from "../structures/realm-design";
 import { MineKinds, orderAspect, structureName, troopTierIndex } from "@bibliothecadao/types";
@@ -1616,7 +1615,6 @@ export class StructureManager {
         composition.beastY,
       );
       if (beast && beastModel instanceof FrontierModel) {
-        beastModel.setIdleAt(beast.instanceIndex, structure.frontierBeast.idle);
         beastModel.setLayerAt(beast.instanceIndex, this.beastLayerOf(structure));
       }
       bindings.push(beast);
@@ -2013,36 +2011,13 @@ export class StructureManager {
 
     const structure = this.resolveStructureInfoByEntityId(normalizedEntityId);
     if (structure) this.refreshStructurePlate(structure);
-    if (degrees !== undefined) {
-      this.playBeastMotion(normalizedEntityId, role === "attacker" ? "attack" : "hit");
-    }
-  }
-
-  private playBeastMotion(entityId: ID, action: BeastMotionAction): void {
-    const bindings = this.structureInstanceBindings.get(entityId);
-    if (!bindings) return;
-    for (const binding of bindings) {
-      if (binding.model instanceof FrontierModel) {
-        binding.model.playMotionAt(binding.instanceIndex, action);
-      }
-    }
   }
 
   private playStructureGuardDifferenceFx(entityId: ID, previousGuards: GuardArmy[], currentGuards: GuardArmy[]) {
-    if (previousGuards.length === 0) return;
+    if (previousGuards.length === 0 || currentGuards.length === 0) return;
 
     const structure = this.resolveStructureInfoByEntityId(entityId);
     if (!structure) return;
-
-    const previousTotal = previousGuards.reduce((sum, guard) => sum + Math.max(0, guard.count), 0);
-    const currentTotal = currentGuards.reduce((sum, guard) => sum + Math.max(0, guard.count), 0);
-    if (previousTotal > 0 && currentTotal <= 0) {
-      this.playBeastMotion(entityId, "death");
-    } else if (currentTotal < previousTotal) {
-      this.playBeastMotion(entityId, "hit");
-    }
-
-    if (currentGuards.length === 0) return;
 
     for (const newGuard of currentGuards) {
       const oldGuard = previousGuards.find((guard) => guard.slot === newGuard.slot);

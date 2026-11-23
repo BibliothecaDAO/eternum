@@ -1,4 +1,3 @@
-import type { ArrowImpactEvent } from "@/three/projectiles/arrow-projectile-system";
 import { TroopTier, TroopType, type ID } from "@bibliothecadao/types";
 import { Color, Euler, Vector3, type Scene } from "three";
 
@@ -115,7 +114,6 @@ export class StudioArmies {
   defeat(entityId: number): boolean {
     const army = this.armies.get(entityId);
     if (!army) return false;
-    if (this.characters.playDefeat(entityId)) this.articulated.delete(entityId);
     const at = this.hexPosition(army.hex);
     this.withdraw(entityId);
     void this.fx.playFxAtCoords("skull", at.x, at.y + 2, at.z, 1, "Defeated!").promise.catch(() => {});
@@ -126,11 +124,6 @@ export class StudioArmies {
   roster() {
     return {
       getArmy: (entityId: ID) => this.armies.get(Number(entityId)),
-      playProceduralAttack: (entityId: ID, target: Readonly<Vector3>, targetId?: ID) =>
-        this.characters.playAttack(Number(entityId), target, targetId === undefined ? undefined : Number(targetId)),
-      presentProceduralProjectileImpact: (event: ArrowImpactEvent) => this.characters.presentProjectileImpact(event),
-      onProceduralMeleeContact: this.characters.onMeleeContact.bind(this.characters),
-      onProceduralRangedRelease: this.characters.onRangedRelease.bind(this.characters),
     };
   }
 
@@ -157,8 +150,7 @@ export class StudioArmies {
 
   update(delta: number): void {
     this.model.updateMovements(delta);
-    this.model.updateAnimations(delta);
-    this.characters.sync(this.articulatedPresentations(), delta);
+    this.characters.sync(this.articulatedPresentations());
     this.ready.clear();
     for (const id of this.armies.keys()) if (this.characters.hasActor(id)) this.ready.add(id);
     reconcileProceduralArmyRepresentations({
@@ -192,7 +184,6 @@ export class StudioArmies {
           category: army.category,
           tier: army.tier,
           isNaval: false,
-          pace: this.model.getEntityPace(army.entityId),
           position: instance.position,
           rotation: instance.rotation,
           primaryColor: army.color,

@@ -161,7 +161,7 @@ describe("Tripo unified model material setup", () => {
     legacyModel.dispose();
   });
 
-  it("composes FrontierModel beast idle and phoenix glow onto a Tripo beast without dropping Tripo shading nodes", () => {
+  it("composes FrontierModel phoenix glow onto a Tripo beast in rest pose without dropping Tripo shading nodes", () => {
     const mesh = new Mesh(
       new BoxGeometry(0.5, 0.5, 0.5),
       new MeshStandardMaterial({ map: new Texture(), roughness: 0.9, metalness: 0 }),
@@ -177,7 +177,7 @@ describe("Tripo unified model material setup", () => {
     expect(material.aoNode).not.toBeNull();
     expect(material.roughnessNode).not.toBeNull();
     expect(material.normalNode).not.toBeNull();
-    expect(material.positionNode).not.toBeNull();
+    expect(material.positionNode).toBeNull();
     expect(material.emissiveNode).not.toBeNull();
     beast.dispose();
   });

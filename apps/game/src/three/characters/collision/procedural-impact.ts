@@ -22,12 +22,6 @@ export interface ProceduralUnitImpact extends ProceduralUnitReactionInput {
   target: ProceduralImpactTarget;
 }
 
-export interface ProceduralCombatImpactRecord extends ProceduralUnitImpact {
-  authority: ProceduralImpactAuthority;
-  expiresAtSeconds: number;
-  targetEntityId: number;
-}
-
 export function normalizeProceduralReaction(input: ProceduralUnitReactionInput): ProceduralUnitReactionInput {
   const length = Math.hypot(input.directionX, input.directionY, input.directionZ);
   const inverseLength = length > 1e-8 ? 1 / length : 0;

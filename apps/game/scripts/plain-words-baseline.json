@@ -5,7 +5,6 @@
   "apps/game/src/runtime/app-api.ts": 1,
   "apps/game/src/services/realm-entry.ts": 1,
   "apps/game/src/shell/legal.tsx": 3,
-  "apps/game/src/three/managers/army-model.ts": 1,
   "apps/game/src/three/managers/fx-manager.ts": 1,
   "apps/game/src/three/managers/troop-motion.ts": 1,
   "apps/game/src/three/scenes/worldmap-spire-travel-policy.ts": 1,

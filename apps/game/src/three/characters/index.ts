@@ -31,7 +31,6 @@ export type { ProceduralMeleeConfig } from "./melee/procedural-melee-config";
 export {
   ProceduralUnitRuntime,
   type ProceduralMeleeContactEvent,
-  type ProceduralRangedReleaseEvent,
   type ProceduralUnitActor,
 } from "./procedural-unit-runtime";
 export { PROCEDURAL_HORSE_APPEARANCES, type ProceduralHorseAppearanceId } from "./horse/procedural-horse-appearance";

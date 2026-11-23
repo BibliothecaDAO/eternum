@@ -4,45 +4,30 @@ import { FELT_CENTER } from "@/ui/config";
 import { SHIP_WORLD_SCALE } from "@/three/characters/ships/ship-design";
 import { BiomeType, TroopTier, TroopType } from "@bibliothecadao/types";
 import {
-  AnimationAction,
-  AnimationMixer,
   BufferGeometry,
   Color,
   Euler,
   Group,
   InstancedBufferAttribute,
+  InstancedMesh,
   Matrix4,
   Mesh,
   Object3D,
   Scene,
   Vector3,
 } from "three";
-import { writeMorphWeightsIfChanged } from "./morph-texture-dirty-state";
 import { incrementWorldmapRenderCounter } from "../perf/worldmap-render-diagnostics";
 import { createSlotDirtyRange, flushSlotDirtyRange, markSlotDirty } from "../utils/instance-update-ranges";
 import { env } from "../../../env";
 import { VERBOSE_LOGS_ENABLED } from "@/utils/dev-mode";
 import {
-  ANIMATION_STATE_IDLE,
-  ANIMATION_STATE_MOVING,
   ARMY_PACE_SPEED,
   buildArmyModelAssetPath,
-  MAX_INSTANCES,
   TROOP_TO_MODEL,
   TROOP_TO_SHIP_MODEL,
   isShipModel,
 } from "../constants";
-import {
-  AnimatedInstancedMesh,
-  ArmyInstanceData,
-  type ArmyPace,
-  ModelData,
-  ModelType,
-  MovementData,
-  SplineMovementData,
-} from "../types/army";
-import type { AnimationVisibilityContext } from "../types/animation";
-import { isAnimationPositionVisible } from "../utils/animation-visibility";
+import { ArmyInstanceData, type ArmyPace, ModelData, ModelType, MovementData, SplineMovementData } from "../types/army";
 import { getHexForWorldPosition } from "../utils";
 import { applyEasing, EasingType } from "../utils/easing";
 import { getArmyGroundOffset, groundModelMatrix } from "../utils/model-grounding";
@@ -50,17 +35,6 @@ import { MaterialPool } from "../utils/material-pool";
 import { MemoryMonitor } from "../utils/memory-monitor";
 import { createPooledInstancedMaterial, releasePooledInstancedMaterial } from "./army-model-materials";
 import { ArmyContactShadows } from "./army-contact-shadow";
-import { float, positionLocal } from "three/tsl";
-import { FrostedStandardNodeMaterial } from "../effects/game-map-material-library";
-import { mapAnimationTime } from "../effects/endgame/state";
-import {
-  createTroopMotionController,
-  createTroopMotionNode,
-  resolveAnimatedTroopKind,
-  type AnimatedTroopKind,
-  type TroopMotionController,
-  type TroopShaderAction,
-} from "./troop-motion";
 import type { ResolvedCosmeticSkin } from "../cosmetics/types";
 import { resolvePrimarySkinGltf } from "../cosmetics/skin-asset-source";
 import {
@@ -166,19 +140,8 @@ export class ArmyModel {
   private readonly tempVector1: Vector3 = new Vector3();
   private readonly tempVector3: Vector3 = new Vector3();
 
-  // Animation and state management
-  private readonly animationStates: Float32Array;
-  private readonly animationBuckets: Uint8Array;
   private instanceCount = 0;
   private currentVisibleCount: number = 0;
-  private readonly ANIMATION_BUCKETS = 10;
-  private animationFrameOffset = 0;
-  private lastBucketStride = 1;
-  private idleWeightsBuffer: Float32Array | null = null;
-  private movingWeightsBuffer: Float32Array | null = null;
-  private bucketToIndices: Map<number, Uint16Array> = new Map();
-  private bucketIndicesBuilt = false;
-  private bucketIndicesMaxCount = 0;
   private readonly freeSlots: number[] = [];
   private readonly freeSlotSet: Set<number> = new Set();
   private nextInstanceIndex = 0;
@@ -191,7 +154,6 @@ export class ArmyModel {
   private readonly zeroScale = new Vector3(0, 0, 0);
   private readonly normalScale = new Vector3(1, 1, 1);
   private readonly zeroInstanceMatrix = new Matrix4().makeScale(0, 0, 0);
-  private readonly MODEL_ANIMATION_UPDATE_INTERVAL = 1000 / 20; // 20 FPS per model
   // Fixed for the mesh's whole life. The renderer's node pipeline captures
   // instanceMatrix/instanceColor at the mesh's first draw and uploads from the
   // captured objects forever (three r184 InstanceNode) — replacing an attribute
@@ -248,20 +210,6 @@ export class ArmyModel {
         },
       });
     }
-
-    // Initialize animation arrays
-    // this.timeOffsets = new Float32Array(0); // Unused, keep for API compatibility if referenced elsewhere, otherwise can be removed
-    this.animationBuckets = new Uint8Array(MAX_INSTANCES);
-    this.animationStates = new Float32Array(MAX_INSTANCES);
-    this.initializeAnimationArrays();
-  }
-
-  // Initialization methods
-  private initializeAnimationArrays(): void {
-    for (let i = 0; i < MAX_INSTANCES; i++) {
-      this.animationBuckets[i] = Math.floor(Math.random() * this.ANIMATION_BUCKETS);
-      this.animationStates[i] = ANIMATION_STATE_IDLE;
-    }
   }
 
   private async ensureModel(modelType: ModelType): Promise<ModelData> {
@@ -282,7 +230,7 @@ export class ArmyModel {
         async (gltf) => {
           try {
             if (isShipModel(modelType)) bakeShipWorldScale(gltf.scene);
-            const modelData = this.createModelData(gltf, true, modelType);
+            const modelData = this.createModelData(gltf, true);
             await this.compilePipelines?.(modelData.group, this.scene);
             this.scene.add(modelData.group);
             this.models.set(modelType, modelData);
@@ -421,93 +369,39 @@ export class ArmyModel {
     });
   }
 
-  private createModelData(gltf: any, ownsGeometry: boolean = true, modelType?: ModelType): ModelData {
+  private createModelData(gltf: any, ownsGeometry: boolean = true): ModelData {
     const group = new Group();
-    const instancedMeshes: AnimatedInstancedMesh[] = [];
-    const baseMeshes: Mesh[] = [];
-    const troopKind = modelType ? resolveAnimatedTroopKind(modelType) : undefined;
-    const troopMotion = troopKind
-      ? createTroopMotionController(troopKind, this.ARMY_INSTANCE_CAPACITY, (slot) =>
-          this.animationStates[slot] === ANIMATION_STATE_MOVING ? "march" : "idle",
-        )
-      : undefined;
+    const instancedMeshes: InstancedMesh[] = [];
 
-    this.processGLTFScene(gltf, group, instancedMeshes, baseMeshes, troopKind, troopMotion);
+    this.processGLTFScene(gltf, group, instancedMeshes);
 
     group.visible = this.modelsVisible;
-
-    const mixer = new AnimationMixer(gltf.scene);
 
     return {
       group,
       instancedMeshes,
-      baseMeshes,
-      mixer,
-      animations: {
-        idle: gltf.animations[0],
-        moving: gltf.animations[1] || gltf.animations[0]?.clone(),
-      },
-      animationActions: new Map(),
       activeInstances: new Set(),
       dirtySlots: createSlotDirtyRange(),
-      targetScales: new Map(),
-      currentScales: new Map(),
-      lastAnimationUpdate: 0,
-      animationUpdateInterval: this.MODEL_ANIMATION_UPDATE_INTERVAL,
       ownsGeometry,
-      ...(troopMotion && { troopMotion }),
     };
   }
 
-  private processGLTFScene(
-    gltf: any,
-    group: Group,
-    instancedMeshes: AnimatedInstancedMesh[],
-    baseMeshes: Mesh[],
-    troopKind?: AnimatedTroopKind,
-    troopMotion?: TroopMotionController,
-  ): void {
+  private processGLTFScene(gltf: any, group: Group, instancedMeshes: InstancedMesh[]): void {
     let meshIndex = 0;
 
     gltf.scene.traverse((child: Object3D) => {
       if (child instanceof Mesh) {
-        const instancedMesh = this.createInstancedMesh(child, gltf.animations, meshIndex, troopKind, troopMotion);
+        const instancedMesh = this.createInstancedMesh(child, meshIndex);
         group.add(instancedMesh);
         instancedMeshes.push(instancedMesh);
-        baseMeshes.push(child);
         meshIndex++;
       }
     });
   }
 
-  private createInstancedMesh(
-    mesh: Mesh,
-    animations: any[],
-    meshIndex: number,
-    troopKind?: AnimatedTroopKind,
-    troopMotion?: TroopMotionController,
-  ): AnimatedInstancedMesh {
-    const geometry = troopMotion ? mesh.geometry.clone() : mesh.geometry;
+  private createInstancedMesh(mesh: Mesh, meshIndex: number): InstancedMesh {
     const pooledMaterial = createPooledInstancedMaterial(mesh.material);
-    if (troopKind && troopMotion) {
-      geometry.setAttribute("troopMotion", troopMotion.attribute);
-      geometry.computeBoundingBox();
-      geometry.boundingBox?.expandByScalar(0.28);
-      geometry.computeBoundingSphere();
-      if (geometry.boundingSphere) geometry.boundingSphere.radius += 0.28;
-      const materials = Array.isArray(pooledMaterial.material) ? pooledMaterial.material : [pooledMaterial.material];
-      const displacement = createTroopMotionNode(troopKind, float(mapAnimationTime));
-      for (const material of materials) {
-        if (material instanceof FrostedStandardNodeMaterial) {
-          material.positionNode = positionLocal.add(displacement);
-        }
-      }
-    }
-    const instancedMesh = createInstancedMesh(
-      geometry,
-      pooledMaterial.material,
-      this.ARMY_INSTANCE_CAPACITY,
-    ) as AnimatedInstancedMesh;
+    const instancedMesh = createInstancedMesh(mesh.geometry, pooledMaterial.material, this.ARMY_INSTANCE_CAPACITY);
 
     instancedMesh.frustumCulled = true;
     instancedMesh.userData.gameEndFrost = true;
@@ -517,10 +411,6 @@ export class ArmyModel {
     if (pooledMaterial.usesInstanceColor) {
       instancedMesh.instanceColor = new InstancedBufferAttribute(new Float32Array(this.ARMY_INSTANCE_CAPACITY * 3), 3);
       instancedMesh.instanceColor.needsUpdate = true;
-    }
-
-    if (animations.length > 0) {
-      this.setupMeshAnimation(instancedMesh, mesh, animations);
     }
 
     instancedMesh.count = 0;
@@ -544,25 +434,6 @@ export class ArmyModel {
     return false;
   }
 
-  private setupMeshAnimation(instancedMesh: AnimatedInstancedMesh, mesh: Mesh, animations: any[]): void {
-    const hasAnimation = animations[0].tracks.find((track: any) => track.name.split(".")[0] === mesh.name);
-
-    if (hasAnimation) {
-      instancedMesh.animated = true;
-      for (let i = 0; i < this.ARMY_INSTANCE_CAPACITY; i++) {
-        instancedMesh.setMorphAt(i, mesh as any);
-      }
-      instancedMesh.morphTexture!.name = `army-morph:${mesh.name || "mesh"}`;
-      instancedMesh.morphTexture!.needsUpdate = true;
-    }
-  }
-
-  private resetTroopMotionSlot(slot: number): void {
-    this.models.forEach((modelData) => {
-      modelData.troopMotion?.resetSlot(slot);
-    });
-  }
-
   private clearInstanceSlot(matrixIndex: number): void {
     const entityId = this.matrixIndexOwners.get(matrixIndex);
 
@@ -572,9 +443,7 @@ export class ArmyModel {
       this.clearSlotFromEveryRenderable(matrixIndex);
     }
 
-    this.resetTroopMotionSlot(matrixIndex);
     this.shadows.clear(matrixIndex);
-    this.setAnimationState(matrixIndex, false);
   }
 
   private clearKnownOwnerSlot(entityId: number, matrixIndex: number): void {
@@ -766,7 +635,6 @@ export class ArmyModel {
     if (reusedSlot !== undefined) {
       this.freeSlotSet.delete(reusedSlot);
     }
-    this.resetTroopMotionSlot(slot);
     this.matrixIndexOwners.set(slot, entityId);
     return slot;
   }
@@ -812,7 +680,6 @@ export class ArmyModel {
     }
 
     this.takeFreedSlot(newSlot);
-    const wasWalking = this.animationStates[previousSlot] === ANIMATION_STATE_MOVING;
     this.updateInstance(
       entityId,
       newSlot,
@@ -821,11 +688,9 @@ export class ArmyModel {
       instanceData.rotation,
       instanceData.color,
     );
-    this.setAnimationState(newSlot, wasWalking);
     this.clearInstanceSlot(previousSlot);
     this.matrixIndexOwners.delete(previousSlot);
     instanceData.matrixIndex = newSlot;
-    this.rebindMovementMatrixIndex(entityId, newSlot);
     return newSlot;
   }
 
@@ -947,7 +812,6 @@ export class ArmyModel {
     modelData.activeInstances.add(index);
     this.updateInstanceTransform(state.position, visibleScale, state.rotation);
     this.updateInstanceMeshes(modelData, index, entityId, state.position, state.color);
-    modelData.troopMotion?.syncLoopActionAt(index);
     // Bump count so the just-added slot draws now, not only after the next
     // setVisibleSlots (see extendModelDrawCount).
     this.extendModelDrawCount(modelData, index);
@@ -992,10 +856,8 @@ export class ArmyModel {
   public purgeDrawnSlot(slot: number): void {
     this.clearMovementStateForSlot(slot);
     this.clearSlotFromEveryRenderable(slot);
-    this.resetTroopMotionSlot(slot);
     this.shadows.clear(slot);
     this.matrixIndexOwners.delete(slot);
-    this.setAnimationState(slot, false);
     if (!this.freeSlotSet.has(slot)) {
       this.freeSlotSet.add(slot);
       this.freeSlots.push(slot);
@@ -1161,283 +1023,7 @@ export class ArmyModel {
       mesh.userData.entityIdMap.set(index, entityId);
     });
 
-    modelData.troopMotion?.setPlacementAt(index, this.dummyObject.matrix);
     markSlotDirty(modelData.dirtySlots, index);
-  }
-
-  public updateAnimations(deltaTime: number, visibility?: AnimationVisibilityContext): void {
-    if (!this.modelsVisible) return;
-    const now = performance.now();
-    const time = now * 0.001;
-
-    this.models.forEach((modelData) => {
-      if (modelData.troopMotion) {
-        modelData.troopMotion.update(mapAnimationTime.value, modelData.activeInstances, visibility);
-      }
-      if (!this.shouldAnimateModel(modelData, visibility)) {
-        return;
-      }
-      this.updateModelAnimations(modelData, time, now);
-    });
-
-    // Also update cosmetic model animations
-    this.cosmeticModels.forEach((modelData) => {
-      if (!this.shouldAnimateModel(modelData, visibility)) {
-        return;
-      }
-      this.updateModelAnimations(modelData, time, now);
-    });
-  }
-
-  private shouldAnimateModel(modelData: ModelData, visibility?: AnimationVisibilityContext): boolean {
-    if (!visibility) {
-      return true;
-    }
-
-    if (modelData.activeInstances.size === 0) {
-      return false;
-    }
-
-    for (const slot of modelData.activeInstances) {
-      const entityId = this.matrixIndexOwners.get(slot);
-      if (entityId === undefined) {
-        continue;
-      }
-
-      const instance = this.instanceData.get(entityId);
-      if (!instance?.position) {
-        continue;
-      }
-
-      if (isAnimationPositionVisible(instance.position, visibility)) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  private updateModelAnimations(modelData: ModelData, time: number, now: number): void {
-    // OPTIMIZATION: Early exit if no instanced meshes or no visible instances
-    // This prevents unnecessary animation work for loaded but invisible models
-    if (modelData.instancedMeshes.length === 0) {
-      return;
-    }
-
-    const primaryMesh = modelData.instancedMeshes[0];
-    if (!primaryMesh || primaryMesh.count === 0) {
-      return;
-    }
-
-    // Throttling: Calculate update frequency based on instance count
-    // More instances = more aggressive throttling to maintain FPS
-    const totalInstances = primaryMesh.count;
-    const updateFrequency = this.getAnimationUpdateFrequency(totalInstances);
-
-    // Skip update if throttled
-    // Use a deterministic frame counter simulation based on time
-    const frameCounter = Math.floor(now / 16.66); // Approx 60fps frames
-    if (frameCounter % updateFrequency !== 0) {
-      return;
-    }
-
-    if (now - modelData.lastAnimationUpdate < modelData.animationUpdateInterval) {
-      return;
-    }
-
-    const bucketStride = this.getAnimationBucketStride(totalInstances);
-    if (bucketStride !== this.lastBucketStride) {
-      this.animationFrameOffset = 0;
-      this.lastBucketStride = bucketStride;
-    }
-    const bucketOffset = this.animationFrameOffset;
-    this.animationFrameOffset = (this.animationFrameOffset + 1) % bucketStride;
-
-    this.buildBucketIndices(totalInstances);
-
-    let performedUpdate = false;
-    let hasAnimatedInstances = false;
-
-    modelData.instancedMeshes.forEach((mesh, meshIndex) => {
-      if (!mesh.animated) return;
-      if (mesh.count === 0) return;
-      hasAnimatedInstances = true;
-
-      const instanceCount = mesh.count;
-
-      // Determine which animation states are actually needed by scanning instances
-      let needsIdleWeights = false;
-      let needsMovingWeights = false;
-      for (let i = 0; i < instanceCount; i++) {
-        const state = this.animationStates[i];
-        if (state === ANIMATION_STATE_IDLE) needsIdleWeights = true;
-        else if (state === ANIMATION_STATE_MOVING) needsMovingWeights = true;
-        if (needsIdleWeights && needsMovingWeights) break;
-      }
-
-      // Early exit if no animations needed
-      if (!needsIdleWeights && !needsMovingWeights) return;
-
-      const actions = this.getOrCreateAnimationActions(modelData, 0); // Shared actions
-
-      const baseMesh = modelData.baseMeshes[meshIndex];
-      const morphInfluences = baseMesh.morphTargetInfluences;
-      if (!morphInfluences || morphInfluences.length === 0) {
-        return;
-      }
-
-      const morphCount = morphInfluences.length;
-      const requiredSize = this.ANIMATION_BUCKETS * morphCount;
-
-      if (needsIdleWeights) {
-        if (!this.idleWeightsBuffer || this.idleWeightsBuffer.length < requiredSize) {
-          this.idleWeightsBuffer = new Float32Array(requiredSize);
-        }
-
-        this.updateAnimationState(actions, ANIMATION_STATE_IDLE);
-        for (let b = bucketOffset; b < this.ANIMATION_BUCKETS; b += bucketStride) {
-          const t = time + (b * 3.0) / this.ANIMATION_BUCKETS;
-          modelData.mixer.setTime(t);
-          const offset = b * morphCount;
-          for (let m = 0; m < morphCount; m++) {
-            this.idleWeightsBuffer[offset + m] = morphInfluences[m];
-          }
-        }
-      }
-
-      if (needsMovingWeights) {
-        if (!this.movingWeightsBuffer || this.movingWeightsBuffer.length < requiredSize) {
-          this.movingWeightsBuffer = new Float32Array(requiredSize);
-        }
-
-        this.updateAnimationState(actions, ANIMATION_STATE_MOVING);
-        for (let b = bucketOffset; b < this.ANIMATION_BUCKETS; b += bucketStride) {
-          const t = time + (b * 3.0) / this.ANIMATION_BUCKETS;
-          modelData.mixer.setTime(t);
-          const offset = b * morphCount;
-          for (let m = 0; m < morphCount; m++) {
-            this.movingWeightsBuffer[offset + m] = morphInfluences[m];
-          }
-        }
-      }
-
-      const morphTexture = mesh.morphTexture;
-      if (morphTexture && morphTexture.image && morphTexture.image.data) {
-        const textureData = morphTexture.image.data as unknown as Float32Array;
-        const textureWidth = morphTexture.image.width;
-        let textureChanged = false;
-
-        for (let bucket = bucketOffset; bucket < this.ANIMATION_BUCKETS; bucket += bucketStride) {
-          const indices = this.bucketToIndices.get(bucket);
-          if (!indices || indices.length === 0) continue;
-
-          const idleOffset = bucket * morphCount;
-          const movingOffset = bucket * morphCount;
-
-          for (let idx = 0; idx < indices.length; idx++) {
-            const i = indices[idx];
-            if (i >= instanceCount) continue;
-            const state = this.animationStates[i];
-
-            let sourceWeights: Float32Array | null = null;
-            let sourceOffset = 0;
-            if (state === ANIMATION_STATE_MOVING) {
-              if (!needsMovingWeights || !this.movingWeightsBuffer) continue;
-              sourceWeights = this.movingWeightsBuffer;
-              sourceOffset = movingOffset;
-            } else {
-              if (!needsIdleWeights || !this.idleWeightsBuffer) continue;
-              sourceWeights = this.idleWeightsBuffer;
-              sourceOffset = idleOffset;
-            }
-            if (sourceWeights) {
-              textureChanged =
-                writeMorphWeightsIfChanged(textureData, i, textureWidth, sourceWeights, sourceOffset, morphCount) ||
-                textureChanged;
-            }
-          }
-        }
-
-        if (textureChanged) {
-          morphTexture.needsUpdate = true;
-        }
-        performedUpdate = true;
-      }
-    });
-
-    if (performedUpdate || !hasAnimatedInstances) {
-      modelData.lastAnimationUpdate = now;
-    }
-  }
-
-  private getAnimationUpdateFrequency(instanceCount: number): number {
-    let updateFrequency = 1;
-
-    if (instanceCount > 15) updateFrequency = 2;
-    if (instanceCount > 40) updateFrequency = 3;
-    if (instanceCount > 80) updateFrequency = 4;
-    if (instanceCount > 150) updateFrequency = 5;
-
-    return updateFrequency;
-  }
-
-  private getAnimationBucketStride(instanceCount: number): number {
-    let stride = 1;
-    if (instanceCount > 150) stride = 2;
-    if (instanceCount > 300) stride = 4;
-    return stride;
-  }
-
-  private buildBucketIndices(instanceCount: number): void {
-    if (this.bucketIndicesBuilt && instanceCount <= this.bucketIndicesMaxCount) {
-      return;
-    }
-
-    const bucketCounts = new Uint16Array(this.ANIMATION_BUCKETS);
-    for (let i = 0; i < instanceCount; i++) {
-      bucketCounts[this.animationBuckets[i]]++;
-    }
-
-    this.bucketToIndices.clear();
-    const bucketCurrentIndex = new Uint16Array(this.ANIMATION_BUCKETS);
-
-    for (let b = 0; b < this.ANIMATION_BUCKETS; b++) {
-      if (bucketCounts[b] > 0) {
-        this.bucketToIndices.set(b, new Uint16Array(bucketCounts[b]));
-      }
-    }
-
-    for (let i = 0; i < instanceCount; i++) {
-      const bucket = this.animationBuckets[i];
-      const indices = this.bucketToIndices.get(bucket);
-      if (indices) {
-        indices[bucketCurrentIndex[bucket]++] = i;
-      }
-    }
-
-    this.bucketIndicesBuilt = true;
-    this.bucketIndicesMaxCount = instanceCount;
-  }
-
-  private getOrCreateAnimationActions(modelData: ModelData, instanceIndex: number) {
-    if (!modelData.animationActions.has(instanceIndex)) {
-      const idleAction = modelData.mixer.clipAction(modelData.animations.idle);
-      const movingAction = modelData.mixer.clipAction(modelData.animations.moving);
-      modelData.animationActions.set(instanceIndex, { idle: idleAction, moving: movingAction });
-    }
-    return modelData.animationActions.get(instanceIndex)!;
-  }
-
-  private updateAnimationState(actions: { idle: AnimationAction; moving: AnimationAction }, state: number): void {
-    if (state === ANIMATION_STATE_IDLE) {
-      actions.idle.setEffectiveTimeScale(1);
-      actions.moving.setEffectiveTimeScale(0);
-    } else if (state === ANIMATION_STATE_MOVING) {
-      actions.idle.setEffectiveTimeScale(0);
-      actions.moving.setEffectiveTimeScale(1);
-    }
-    actions.idle.play();
-    actions.moving.play();
   }
 
   // Movement Methods
@@ -1468,7 +1054,6 @@ export class ArmyModel {
     // one (the reported "duplicate at the old position after a move").
     const liveSlot = this.instanceData.get(entityId)?.matrixIndex ?? matrixIndex;
     this.initializeMovement(entityId, currentPos, nextPos, path, liveSlot, category, tier);
-    this.setAnimationState(liveSlot, true);
     this.updateInstanceDirection(entityId, currentPos, nextPos);
 
     // Build spline for smooth whole-path movement
@@ -1910,13 +1495,7 @@ export class ArmyModel {
 
   private clearMovementState(entityId: number): void {
     const instanceData = this.instanceData.get(entityId);
-    const movement = this.movingInstances.get(entityId);
-    if (movement) {
-      if (instanceData?.matrixIndex !== undefined) {
-        this.setAnimationState(instanceData.matrixIndex, false);
-      }
-      this.movingInstances.delete(entityId);
-    }
+    this.movingInstances.delete(entityId);
     // Tear down spline state too (parity with stopMovement/cancelMovement) so a
     // freed slot never strands an orphaned spline entry.
     this.splineMovingInstances.delete(entityId);
@@ -1934,10 +1513,6 @@ export class ArmyModel {
     if (!this.movingInstances.delete(entityId)) return;
 
     const instanceData = this.instanceData.get(entityId);
-    if (instanceData?.matrixIndex !== undefined) {
-      this.setAnimationState(instanceData.matrixIndex, false);
-    }
-
     if (instanceData) {
       instanceData.isMoving = false;
       instanceData.path = undefined;
@@ -2002,20 +1577,6 @@ export class ArmyModel {
       return;
     }
     this.movementCompleteCallbacks.set(entityId, callback);
-  }
-
-  // Keeps a moving entity's animation flag aligned with its CURRENT instance slot
-  // after a slot reassignment. The slot itself lives in instanceData.matrixIndex
-  // (the single source of truth) and is updated by the caller before this runs;
-  // the caller also clears the previous slot (moveInstanceSlot -> clearInstanceSlot).
-  // This only re-asserts the walking/idle animation flag on the new slot.
-  public rebindMovementMatrixIndex(entityId: number, newMatrixIndex: number): void {
-    if (!this.movingInstances.has(entityId)) return;
-    this.setAnimationState(newMatrixIndex, true);
-  }
-
-  public getEntityPace(entityId: number): ArmyPace | undefined {
-    return this.splineMovingInstances.get(entityId)?.pace;
   }
 
   public isEntityMoving(entityId: number): boolean {
@@ -2219,25 +1780,6 @@ export class ArmyModel {
     this.setVisibleSlots(slots);
   }
 
-  public setAnimationState(index: number, isWalking: boolean): void {
-    this.animationStates[index] = isWalking ? ANIMATION_STATE_MOVING : ANIMATION_STATE_IDLE;
-    const entityId = this.matrixIndexOwners.get(index);
-    if (entityId !== undefined) {
-      const modelType = this.activeBaseModelByEntity.get(entityId) ?? this.entityModelMap.get(entityId);
-      if (modelType) {
-        this.models.get(modelType)?.troopMotion?.syncLoopActionAt(index);
-      }
-    }
-  }
-
-  public playTroopAction(index: number, action: TroopShaderAction): void {
-    const entityId = this.matrixIndexOwners.get(index);
-    if (entityId === undefined) return;
-    const modelType = this.activeBaseModelByEntity.get(entityId) ?? this.entityModelMap.get(entityId);
-    if (!modelType) return;
-    this.models.get(modelType)?.troopMotion?.playActionAt(index, action, mapAnimationTime.value);
-  }
-
   public requestBoundsUpdate(): void {
     this.hasPendingBounds = true;
   }
@@ -2286,9 +1828,6 @@ export class ArmyModel {
         this.scene.remove(mesh);
       });
 
-      // Dispose animations
-      modelData.mixer.stopAllAction();
-
       // Remove group from scene
       this.scene.remove(modelData.group);
     });
@@ -2300,7 +1839,6 @@ export class ArmyModel {
         mesh.dispose();
         this.scene.remove(mesh);
       });
-      modelData.mixer.stopAllAction();
       this.scene.remove(modelData.group);
     });
 
@@ -2316,11 +1854,6 @@ export class ArmyModel {
     this.hiddenEntityRepresentations.clear();
     this.matrixIndexOwners.clear();
     this.movementCompleteCallbacks.clear();
-    this.idleWeightsBuffer = null;
-    this.movingWeightsBuffer = null;
-    this.bucketToIndices.clear();
-    this.bucketIndicesBuilt = false;
-    this.bucketIndicesMaxCount = 0;
   }
 
   private invokeMovementComplete(entityId: number) {

@@ -1,6 +1,6 @@
 import type { ProceduralUnitKind } from "../procedural-unit-config";
 
-export interface ProceduralCollisionBudget {
+interface ProceduralCollisionBudget {
   maxActivePresentationBodies: number;
   maxActiveRagdolls: number;
   maxNeighborsPerBody: number;

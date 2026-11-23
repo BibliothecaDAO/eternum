@@ -1,18 +1,6 @@
 import { TroopTier, TroopType } from "@bibliothecadao/types";
 import type { SlotDirtyRange } from "../utils/instance-update-ranges";
-import type { TroopMotionController } from "../managers/troop-motion";
-import {
-  Vector3,
-  Euler,
-  Color,
-  CatmullRomCurve3,
-  InstancedMesh,
-  Group,
-  Mesh,
-  AnimationMixer,
-  AnimationClip,
-  AnimationAction,
-} from "three";
+import { Vector3, Euler, Color, CatmullRomCurve3, InstancedMesh, Group } from "three";
 import { EasingType } from "../utils/easing";
 
 export interface MovementData {
@@ -82,33 +70,11 @@ export enum ModelType {
   ShipPaladin3 = "ship-paladin3",
 }
 
-export interface AnimatedInstancedMesh extends InstancedMesh {
-  animated?: boolean;
-}
-
 export interface ModelData {
   group: Group;
-  instancedMeshes: AnimatedInstancedMesh[];
-  baseMeshes: Mesh[];
-  mixer: AnimationMixer;
-  animations: {
-    idle: AnimationClip;
-    moving: AnimationClip;
-  };
-  animationActions: Map<
-    number,
-    {
-      idle: AnimationAction;
-      moving: AnimationAction;
-    }
-  >;
+  instancedMeshes: InstancedMesh[];
   activeInstances: Set<number>;
   /** Slots written since the last upload flush. */
   dirtySlots: SlotDirtyRange;
-  targetScales: Map<number, Vector3>;
-  currentScales: Map<number, Vector3>;
-  lastAnimationUpdate: number;
-  animationUpdateInterval: number;
   ownsGeometry: boolean;
-  troopMotion?: TroopMotionController;
 }

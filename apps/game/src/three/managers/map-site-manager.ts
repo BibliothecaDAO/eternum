@@ -34,7 +34,6 @@ import {
   type AspectId,
   deepSites,
   TileOccupier,
-  type BeastIdle,
   type BeastModel,
 } from "@bibliothecadao/types";
 import type { MapPlateInput, MapPlateScope } from "../map-plates/map-plate-layer";
@@ -68,7 +67,6 @@ type DrawnSite = {
   stands: (tile: TileSpatialRenderable) => boolean;
   model: () => Promise<{ model: InstancedModel; height: number }>;
   scale: number;
-  idle?: BeastIdle;
 };
 type SiteHex = { col: number; row: number };
 
@@ -120,7 +118,6 @@ export class MapSiteManager {
         stands: (tile: TileSpatialRenderable) => this.isDeepSiteOf(tile, kind.id) && this.beastStands(tile.occupierId),
         model: () => beastModelOf(beastModel(beast)),
         scale: beast.scale,
-        idle: beast.idle,
       };
     }),
   ];
@@ -249,8 +246,7 @@ export class MapSiteManager {
       const previous = model.getCount();
       hexes.forEach((hex, index) => {
         model.setMatrixAt(index, this.placement(hex, site.scale));
-        if (site.idle && model instanceof FrontierModel) {
-          model.setIdleAt(index, site.idle);
+        if (model instanceof FrontierModel) {
           model.setLayerAt(index, DEEP_DEPTH);
         }
         if (model instanceof DeepLandmarkModel) {
