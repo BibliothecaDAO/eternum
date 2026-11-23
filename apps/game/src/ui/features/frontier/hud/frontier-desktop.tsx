@@ -30,6 +30,7 @@ export const FrontierDesktop = ({
   quest,
   stores,
   depthSwitch,
+  banner,
   realm,
   replaceRealmWithSheet = false,
   armies,
@@ -45,6 +46,7 @@ export const FrontierDesktop = ({
   quest?: ReactNode;
   stores?: ReactNode;
   depthSwitch?: ReactNode;
+  banner?: ReactNode;
   realm?: ReactNode;
   replaceRealmWithSheet?: boolean;
   armies?: ReactNode;
@@ -67,17 +69,22 @@ export const FrontierDesktop = ({
         depthSwitch={depthSwitch}
         clock={clock}
       />
-      <aside
-        {...HUD_COLUMN_MARK}
-        aria-label={REALM}
-        className="pointer-events-none fixed bottom-hud-base left-4 top-hud-frontier-page-top z-hud-column flex w-hud-frontier-rail flex-col gap-2"
-      >
-        {!replaceRealmWithSheet && realm}
-        <div ref={setLeftPanel} data-realm-slot className="flex min-h-0 flex-1 flex-col gap-2 empty:hidden" />
-      </aside>
+      <div className="pointer-events-none fixed inset-x-4 bottom-hud-base top-hud-frontier-page-top z-hud-rail flex flex-col gap-2">
+        {banner && <div className="pointer-events-none flex shrink-0 justify-center empty:hidden">{banner}</div>}
+        <div className="pointer-events-none flex min-h-0 flex-1 items-stretch justify-between gap-4">
+          <aside
+            {...HUD_COLUMN_MARK}
+            aria-label={REALM}
+            className="pointer-events-none flex min-h-0 w-hud-frontier-rail flex-col gap-2"
+          >
+            {!replaceRealmWithSheet && realm}
+            <div ref={setLeftPanel} data-realm-slot className="flex min-h-0 flex-1 flex-col gap-2 empty:hidden" />
+          </aside>
+          <FrontierRail page={page} onPanel={setRailPanel} />
+        </div>
+      </div>
       {armies && <div className="pointer-events-none fixed bottom-4 left-4 z-hud-column">{armies}</div>}
       {aspectChip && <div className="pointer-events-none fixed bottom-4 right-4 z-hud-column">{aspectChip}</div>}
-      <FrontierRail page={page} onPanel={setRailPanel} />
       <HudFoot>
         <div className="pointer-events-none flex flex-col items-center gap-3">{foot}</div>
       </HudFoot>
@@ -92,7 +99,7 @@ const FrontierRail = ({ page, onPanel }: { page?: ReactNode; onPanel: (panel: HT
     aria-label="Guided rail"
     data-hud-rail
     data-frontier-rail
-    className="pointer-events-none fixed bottom-hud-base right-4 top-hud-frontier-page-top z-hud-rail flex flex-col gap-2"
+    className="pointer-events-none flex min-h-0 flex-col gap-2"
   >
     <div aria-label="Notices" className="ui ui-panel pointer-events-auto shrink-0 px-3 py-2 empty:hidden">
       <FeedToasts />

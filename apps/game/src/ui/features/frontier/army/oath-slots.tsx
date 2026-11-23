@@ -15,7 +15,7 @@ import {
   oathSlotResearchTier,
   troopOathSlots,
 } from "@bibliothecadao/eternum";
-import { orderOathJob, RESOURCE_PRECISION, type TroopType } from "@bibliothecadao/types";
+import { RESOURCE_PRECISION, type TroopType } from "@bibliothecadao/types";
 
 export function OathSlotPips({ held, slots }: { held: readonly number[]; slots: number }) {
   return (
@@ -28,7 +28,6 @@ export function OathSlotPips({ held, slots }: { held: readonly number[]; slots: 
               key={index}
               className="oath-pip"
               data-filled={oath ? "" : undefined}
-              data-oath-job={oath ? orderOathJob(oath) : undefined}
               title={oath ? `${oathName(oath)} — ${oathEffectDescription(oath)}` : RESEARCH_TREE.oathOpen}
             >
               {oath && <Icon name={orderMeaning(oath)} size={20} />}
@@ -77,7 +76,7 @@ export function TroopOathSlots({
           return (
             <div
               key={index}
-              data-oath-job={oath ? orderOathJob(oath) : undefined}
+              data-filled={oath ? "" : undefined}
               aria-label={`${RESEARCH_TREE.oathSlots(index + 1)} · ${open ? RESEARCH_TREE.oathOpen : RESEARCH_TREE.oathLocked}`}
               className="oath-slot flex flex-col gap-1 rounded border border-hud-line p-1 text-hud-label text-hud-muted"
             >

@@ -1,6 +1,6 @@
 import { expect, it } from "vitest";
 import { nativeOathConstants as oaths } from "@bibliothecadao/eternum/game-client";
-import { orderOathJob, orders, type OathJob } from "@bibliothecadao/types";
+import { orders } from "@bibliothecadao/types";
 import { oathEffectDescription, oathName } from "./oath-details";
 
 it("explains the implemented Deep loss on both Oath surfaces", () => {
@@ -30,25 +30,14 @@ it("explains the implemented Deep loss on both Oath surfaces", () => {
   );
 });
 
-it("describes every playable Oath consistently with its catalog job and rejects unknown ids", () => {
-  const jobEffectPattern = {
-    fight: /\b(?:damage|troops|Deals)\b/,
-    stamina: /^(?!.*\b(?:Deals|refills)\b).*\bstamina\b/,
-    prize: /\b(?:find|pays?|refills)\b/,
-  } satisfies Record<OathJob, RegExp>;
+it("describes every playable Oath and rejects unknown ids", () => {
   const playable = orders.filter((order) => order.orderId > 0);
   expect(playable).toHaveLength(16);
   expect(oathName(oaths.VITRIOL)).toBe("Vitriol");
   for (const order of playable) {
-    const job = orderOathJob(order.orderId);
-    const description = oathEffectDescription(order.orderId);
-    expect(description).toMatch(jobEffectPattern[job]);
-    for (const [other, pattern] of Object.entries(jobEffectPattern)) {
-      if (other !== job) expect(description).not.toMatch(pattern);
-    }
+    expect(oathName(order.orderId)).toBe(order.orderName);
+    expect(oathEffectDescription(order.orderId).length).toBeGreaterThan(0);
   }
   expect(() => oathName(0)).toThrow();
   expect(() => oathEffectDescription(17)).toThrow();
-  expect(() => orderOathJob(0)).toThrow();
-  expect(() => orderOathJob(17)).toThrow();
 });

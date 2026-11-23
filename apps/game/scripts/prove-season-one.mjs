@@ -53,6 +53,7 @@ const PAGES = [
   { file: "hud-build", url: "/lab/kit/hud/build", shown: "[data-build-sheet]" },
   { file: "hud-research", url: "/lab/kit/hud/research", shown: 'section[aria-label="Research"]' },
   { file: "hud-day-done", url: "/lab/kit/hud/day-done", shown: ".day-done" },
+  { file: "hud-offline", url: "/lab/kit/hud/offline", shown: "[data-offline-banner]" },
   {
     file: "hud-map",
     url: "/lab/kit/unified/frontier-army",

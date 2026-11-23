@@ -21,6 +21,7 @@ import { OrderBar } from "./order-bar";
 import { DayPill } from "./day-pill";
 import { HeaderStores } from "./header-stores";
 import { PhoneWorldActions } from "./frontier-nav";
+import { OfflineBanner } from "./offline-notice";
 import { type StoreReading, storeLine } from "./status-strip";
 
 const text = (markup: string) => new DOMParser().parseFromString(markup, "text/html").body.textContent ?? "";
@@ -617,4 +618,18 @@ it.each([81, 84, 85])("shows the last %ih day with its real countdown and no tom
   expect(dayBounds(calendar, endAt + 1, day)).toEqual({ start, end: endAt });
   expect(endedDay(calendar, endAt)).toBeNull();
   expect(dayClock(calendar, endAt).day).toBeUndefined();
+});
+
+describe("the offline banner", () => {
+  it("renders the reconnecting alert with its Retry action", () => {
+    const onRetry = vi.fn();
+    act(() => root.render(<OfflineBanner onRetry={onRetry} />));
+    const banner = host.querySelector<HTMLElement>('[data-offline-banner][role="alert"]')!;
+    expect(banner).not.toBeNull();
+    expect(banner.textContent).toContain("Reconnecting…");
+    const retry = banner.querySelector<HTMLButtonElement>("button")!;
+    expect(retry.textContent).toBe("Retry");
+    act(() => retry.click());
+    expect(onRetry).toHaveBeenCalledTimes(1);
+  });
 });

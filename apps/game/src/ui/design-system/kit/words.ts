@@ -491,6 +491,11 @@ export const NO_END = "no end";
 export const OF = "of";
 
 export const OFFLINE = "Offline";
+export const OFFLINE_BANNER = {
+  connectionLost: "Connection lost · Reconnecting…",
+  reconnecting: "Reconnecting…",
+  retry: "Retry",
+} as const;
 export const TRY_AGAIN = "Try again";
 export const LATER = "Later";
 export const CLOSE = "Close";

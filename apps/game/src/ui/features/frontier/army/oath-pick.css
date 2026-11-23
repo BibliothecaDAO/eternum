@@ -48,13 +48,9 @@
   min-width: 0;
   align-items: center;
   gap: theme(spacing.2);
-  border: 1px solid color-mix(in srgb, var(--oath-tone) 58%, transparent);
+  border: 1px solid var(--hud-line-strong);
   border-radius: var(--hud-radius-panel);
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--oath-tone) 18%, var(--hud-surface-from)),
-    color-mix(in srgb, var(--oath-tone) 6%, var(--hud-surface-to))
-  );
+  background: linear-gradient(135deg, var(--hud-surface-from), var(--hud-surface-to));
   padding: theme(spacing[2.5]) theme(spacing.3);
 }
 .oath-card__choose {
@@ -149,13 +145,9 @@
     justify-content: center;
     gap: theme(spacing.3);
     min-height: 15.5rem;
-    border: 1px solid color-mix(in srgb, var(--oath-tone) 62%, transparent);
+    border: 1px solid var(--hud-line-strong);
     border-radius: var(--hud-radius-panel);
-    background: linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--oath-tone) 22%, var(--hud-surface-from)),
-      color-mix(in srgb, var(--oath-tone) 6%, var(--hud-surface-to))
-    );
+    background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
     padding: theme(spacing.5) theme(spacing.4);
     text-align: center;
     transition:
@@ -163,7 +155,7 @@
       transform var(--hud-fast) var(--hud-ease);
   }
   .oath-pick__cards > .oath-card .oath-card__choose:hover:not(:disabled) {
-    border-color: var(--oath-tone);
+    border-color: rgb(var(--hud-gold));
     transform: translateY(-2px);
   }
   .oath-pick__cards > .oath-card .oath-card__picture {

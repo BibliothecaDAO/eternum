@@ -288,7 +288,6 @@ const FrontierHudBody = ({
           {opening.offer && <OpeningOffer offer={opening.offer} />}
         </div>
       )}
-      <OfflineNotice />
       <SceneFailureNotice />
       {own && <DayEndNotice dayEnd={dayEnd} onOpen={() => setSurface("today")} />}
     </>
@@ -392,6 +391,7 @@ const FrontierHudBody = ({
         ) : undefined
       }
       depthSwitch={isMapView ? depthSwitch : undefined}
+      banner={<OfflineNotice />}
       realm={realmOpen ? realmPanel : null}
       replaceRealmWithSheet={replaceRealmWithSheet}
       armies={isMapView && !deployOpen ? dock : null}
@@ -423,6 +423,7 @@ const FrontierHudBody = ({
   ) : (
     <HudBands
       strip={phoneStrip}
+      banner={<OfflineNotice />}
       page={page}
       notices={notices}
       action={action}

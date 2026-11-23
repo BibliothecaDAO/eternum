@@ -29,7 +29,6 @@ import {
   FRAGMENT,
   FRAGMENTS,
   FRONTIER_TROOP_NAMES,
-  orderOathJob,
   type TroopType,
 } from "@bibliothecadao/types";
 import { useFragmentsHeld } from "../value/fragments";
@@ -86,7 +85,7 @@ function OathChoiceCard({
 }) {
   const name = oathName(id);
   return (
-    <div className="oath-card" data-oath-job={orderOathJob(id)} data-oath-id={replace ? undefined : id}>
+    <div className="oath-card" data-oath-id={replace ? undefined : id}>
       <button
         type="button"
         className="oath-card__choose"

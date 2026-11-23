@@ -13,14 +13,13 @@ import { TransferTroopsSheet, useSelectedTransfer } from "@/ui/features/frontier
 import { useGame } from "@/hooks/context/game-context";
 import { realmMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { homeIcon } from "@/ui/design-system/home-icons";
-import { HudIconButton, HudNotice, HudSheet } from "@/ui/design-system/kit/hud-elements";
+import { HudIconButton, HudSheet } from "@/ui/design-system/kit/hud-elements";
 import {
   ARMY,
   ARMY_MANAGEMENT,
   DEPLOY_WORDS,
   EVENTS_WORDS,
   LINK_WALLET_FOR_LORDS,
-  OFFLINE,
   PAYOUTS_PAUSED,
   type Rank,
   WITHDRAWALS_CLOSED,
@@ -33,6 +32,7 @@ import { HeaderStores } from "@/ui/features/frontier/hud/header-stores";
 import { HudBands } from "@/ui/features/frontier/hud/hud-bands";
 import { FrontierDesktop, FrontierPlaces } from "@/ui/features/frontier/hud/frontier-desktop";
 import { PhoneWorldActions, type HudSurface } from "@/ui/features/frontier/hud/frontier-nav";
+import { OfflineBanner } from "@/ui/features/frontier/hud/offline-notice";
 import { PhoneTopBarView } from "@/ui/features/frontier/hud/phone-top-bar";
 import { RealmHeaderChip } from "@/ui/features/frontier/hud/realm-header-chip";
 import { LabGame, useLabPlayer } from "./lab-game";
@@ -1238,12 +1238,8 @@ export const HudLab = () => {
             )
           ) : undefined
         }
-        notices={
-          <>
-            {lab.offline && <HudNotice tone="bad" line={OFFLINE} retry={noop} />}
-            {!lab.visiting && <DayEndNotice dayEnd={labDayEnd(lab.clock)} onOpen={noop} />}
-          </>
-        }
+        banner={lab.offline ? <OfflineBanner onRetry={noop} /> : undefined}
+        notices={!lab.visiting ? <DayEndNotice dayEnd={labDayEnd(lab.clock)} onOpen={noop} /> : undefined}
         action={
           <>
             {lab.order && !desktop && (
@@ -1612,6 +1608,7 @@ const LabBands = ({ desktop, lab, ...slots }: ComponentProps<typeof HudBands> & 
           season={{ rank: "#12", onOpen: noop }}
           clock={<DayPill clock={lab.clock} />}
           stores={<HeaderStores stores={lab.stores} showPopoverCard={false} />}
+          banner={slots.banner}
           realm={
             <RealmPanel
               name={LAB_REALM_NAME}

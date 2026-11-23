@@ -154,7 +154,7 @@ it("shows the army's captured Oath capacity rather than later home research", ()
   expect(host.querySelector("[data-oath-slots]")?.textContent).not.toContain("Locked");
 });
 
-it("draws each offered Oath with its Order crest, effect line, job colour, army header and held slot pips", async () => {
+it("draws each offered Oath with its Order crest, effect line, army header and held slot pips without job colours", async () => {
   const { FrontierOathPick } = await import("./oath-pick");
   const { nativeOathConstants: oaths } = await import("@bibliothecadao/eternum/game-client");
   game.progress.oath_slots = 2;
@@ -163,7 +163,8 @@ it("draws each offered Oath with its Order crest, effect line, job colour, army 
   act(() => root.render(<FrontierOathPick realm={{ game_id: 1 } as never} />));
   const cards = [...host.querySelectorAll<HTMLElement>("[data-oath-id]")];
   expect(cards).toHaveLength(3);
-  expect(cards.map((card) => card.dataset.oathJob)).toEqual(["fight", "stamina", "prize"]);
+  expect(cards.map((card) => Number(card.dataset.oathId))).toEqual([oaths.POWER, oaths.FOX, oaths.RAGE]);
+  expect(cards.every((card) => !("oathJob" in card.dataset))).toBe(true);
   expect(cards.every((card) => card.querySelector("img, svg") !== null)).toBe(true);
   expect(host.textContent).toContain("Army 1 · 1,500 Knights");
   expect(host.querySelector('[aria-label="Slots 1 of 2"]')).not.toBeNull();
