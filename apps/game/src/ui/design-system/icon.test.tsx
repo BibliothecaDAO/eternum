@@ -5,7 +5,8 @@ import { describe, expect, it } from "vitest";
 import { Icon, SvgIcon } from "./icon";
 import { AspectMark } from "./aspect-mark";
 import {
-  aspectArtUrl,
+  aspectCardUrl,
+  aspectMeaning,
   iconDefinition,
   iconMeanings,
   iconUrl,
@@ -126,27 +127,27 @@ it("keeps reward rank artwork separate from map crates at every display size", (
     expect(() => rewardChestMeaning(invalid)).toThrow("Unknown reward chest band");
 });
 
-it("serves the 16 approved Order Facets and 4 Aspect Facets from shipped artwork", () => {
+it("serves the 16 approved Order Facets and 4 Aspect Facets through the facets webp pipeline", () => {
   for (const { orderId, orderName } of orders.filter((order) => order.orderId > 0)) {
     const slug = orderName.toLowerCase();
     const meaning = orderMeaning(orderId);
-    expect(iconUrl(meaning, 64)).toBe(`/images/oaths/${slug}-badge-64.png`);
-    expect(iconUrl(meaning, 128)).toBe(`/images/oaths/${slug}-badge.png`);
-    expect(existsSync(resolve("public", iconUrl(meaning, 64).slice(1)))).toBe(true);
-    expect(existsSync(resolve("public", iconUrl(meaning, 128).slice(1)))).toBe(true);
+    for (const pixels of [64, 128, 256] as const) {
+      expect(iconUrl(meaning, pixels)).toBe(`/icons/facets/${pixels}/order-${slug}.webp`);
+      expect(existsSync(resolve("public", iconUrl(meaning, pixels).slice(1)))).toBe(true);
+    }
   }
   for (const { id, name } of aspects) {
-    for (const url of [
-      aspectArtUrl(id, "emblem", 32),
-      aspectArtUrl(id, "emblem", 64),
-      aspectArtUrl(id, "emblem", 128),
-      aspectArtUrl(id, "card"),
-    ]) {
-      expect(existsSync(resolve("public", url.slice(1)))).toBe(true);
+    const slug = name.toLowerCase();
+    const meaning = aspectMeaning(id);
+    for (const pixels of [64, 128, 256] as const) {
+      expect(iconUrl(meaning, pixels)).toBe(`/icons/facets/${pixels}/aspect-${slug}.webp`);
+      expect(existsSync(resolve("public", iconUrl(meaning, pixels).slice(1)))).toBe(true);
     }
+    expect(aspectCardUrl(id)).toBe(`/images/aspects/${slug}-card.webp`);
+    expect(existsSync(resolve("public", aspectCardUrl(id).slice(1)))).toBe(true);
     const html = renderToStaticMarkup(<AspectMark aspect={id} size={48} />);
     expect(html).toContain(`data-aspect-mark="${id}"`);
     expect(html).toContain(`alt="${name}"`);
-    expect(html).toContain(aspectArtUrl(id, "emblem", 48));
+    expect(html).toContain(iconUrl(meaning, 128));
   }
 });

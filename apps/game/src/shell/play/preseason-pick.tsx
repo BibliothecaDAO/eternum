@@ -15,7 +15,7 @@ import { IdentityRequestError, type OrderIntent } from "@realms-world/identity";
 import { identityClient } from "@/hooks/context/identity-session";
 import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { Icon } from "@/ui/design-system/icon";
-import { aspectArtUrl } from "@/ui/design-system/icon-meaning";
+import { aspectCardUrl } from "@/ui/design-system/icon-meaning";
 import { AppButton, AppNotice } from "@/ui/design-system/kit/app-elements";
 import { AppCountdownChip } from "@/ui/design-system/kit/clock-chip";
 import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
@@ -175,7 +175,7 @@ const AspectCards = ({
             onClick={() => onPick(id)}
             className="app-aspect-card"
           >
-            <img src={aspectArtUrl(id, "card")} alt="" aria-hidden className="app-aspect-card__art" />
+            <img src={aspectCardUrl(id)} alt="" aria-hidden className="app-aspect-card__art" />
             {offered?.aspect === id && (
               <span data-aspect-invited className="app-choice__tag">
                 {ASPECT_STEP_WORDS.invitedBy(offered.sender)}

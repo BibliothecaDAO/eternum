@@ -1,6 +1,6 @@
 import { aspectName, type AspectId } from "@bibliothecadao/types";
-import { cn } from "./atoms/lib/utils";
-import { aspectArtUrl } from "./icon-meaning";
+import { Icon } from "./icon";
+import { aspectMeaning } from "./icon-meaning";
 
 export function AspectMark({
   aspect,
@@ -13,17 +13,13 @@ export function AspectMark({
   decorative?: boolean;
   className?: string;
 }) {
-  const name = aspectName(aspect);
   return (
-    <img
-      src={aspectArtUrl(aspect, "emblem", size)}
+    <Icon
+      name={aspectMeaning(aspect)}
+      size={size}
       data-aspect-mark={aspect}
-      alt={decorative ? "" : name}
-      aria-hidden={decorative || undefined}
-      width={size}
-      height={size}
-      draggable={false}
-      className={cn("inline-block aspect-square shrink-0 object-contain", className)}
+      alt={decorative ? "" : aspectName(aspect)}
+      className={className}
     />
   );
 }

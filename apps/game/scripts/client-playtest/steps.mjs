@@ -471,16 +471,7 @@ function battleTargetSteps(attack, place, withOaths = false) {
 
 const ORDER_ART = Object.fromEntries(
   Object.values(iconMeanings).flatMap((meaning) =>
-    meaning.orderId === undefined
-      ? []
-      : [
-          [
-            meaning.orderId,
-            meaning.oathBadge
-              ? [`/images/oaths/${meaning.oathBadge}-badge-64.png`, `/images/oaths/${meaning.oathBadge}-badge.png`]
-              : [`/${meaning.art}.webp`],
-          ],
-        ],
+    meaning.orderId === undefined ? [] : [[meaning.orderId, [`/${meaning.art}.webp`]]],
   ),
 );
 

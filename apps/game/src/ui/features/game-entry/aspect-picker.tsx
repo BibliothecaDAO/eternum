@@ -12,7 +12,7 @@ import {
 import type { JoinedShare } from "@realms-world/identity";
 
 import { AspectMark } from "@/ui/design-system/aspect-mark";
-import { aspectArtUrl } from "@/ui/design-system/icon-meaning";
+import { aspectCardUrl } from "@/ui/design-system/icon-meaning";
 import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
 import { ASPECT_STEP_WORDS, PRESEASON_WORDS } from "@/ui/design-system/kit/words";
 
@@ -176,7 +176,7 @@ const AspectCard = ({
     disabled={disabled}
     onClick={onJoin}
   >
-    <img src={aspectArtUrl(aspect, "card")} alt="" aria-hidden className="aspect-picker__art" />
+    <img src={aspectCardUrl(aspect)} alt="" aria-hidden className="aspect-picker__art" />
     {invited && <span className="aspect-picker__invite">{ASPECT_STEP_WORDS.invited}</span>}
     <span className="aspect-picker__card-body">
       <AspectMark aspect={aspect} size={56} decorative />
