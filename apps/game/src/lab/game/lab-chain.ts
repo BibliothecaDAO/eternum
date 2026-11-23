@@ -337,7 +337,7 @@ const answerDirectory = (
       if (!race) return null;
       return {
         finish_height: raceFinishHeight(race.stage_height),
-        season_days: race.season_days,
+        season_days: Number(race.season_days),
         heights: Object.fromEntries(
           aspects.map(({ id }) => [
             id,
