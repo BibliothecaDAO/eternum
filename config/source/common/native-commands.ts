@@ -57,12 +57,7 @@ const blitzOnlyCommandMask = Object.values(nativeBlitzCommandBits).reduce((mask,
 
 export const arenaCommandMask = (commandBits(allCommands) & ~commandBits(arenaClosedCommands)) | blitzOnlyCommandMask;
 
-const blitzCommandsWithoutRoute = [
-  "AllocateHyperstructureShares",
-  "OpenRelicChest",
-  "RecordBlitzResults",
-  "CraftRelic",
-];
+const blitzCommandsWithoutRoute = ["OpenRelicChest", "RecordBlitzResults", "CraftRelic"];
 
 const blitzPendingRoutedCommands = allCommands.filter(
   (command) => !arenaClosedCommands.includes(command) && !blitzReturnedCommands.includes(command),

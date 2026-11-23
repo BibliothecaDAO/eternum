@@ -14,4 +14,5 @@ pub struct StructuresDomainStorage {
 #[starknet::storage_node]
 pub struct HyperstructureStorage {
     pub counts: Map<u32, u32>,
+    pub held_since: Map<(u32, u64), u64>,
 }

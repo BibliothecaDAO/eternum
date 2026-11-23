@@ -36,6 +36,7 @@ pub struct GameOverrides {
 pub enum PointActivity {
     Exploration,
     StructureCapture,
+    HyperstructureHolding,
 }
 
 #[cfg(feature: "blitz")]

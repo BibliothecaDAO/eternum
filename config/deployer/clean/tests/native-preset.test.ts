@@ -1082,6 +1082,12 @@ test("the Blitz balance holds its own switches and spacing, and none of the tabl
   expect(Object.keys(modules)).toEqual(["resources", "structures", "rules", "settlement", "points", "exploration"]);
   expect(modules.points).toContain(`pub const EXPLORE_POINTS: u128 = ${blitzPointRules().explore_points};`);
   expect(modules.points).toContain(`pub const CAPTURE_POINTS: u128 = ${blitzPointRules().capture_points};`);
+  expect(modules.points).toContain(
+    `pub const HYPERSTRUCTURE_CAPTURE_POINTS: u128 = ${blitzPointRules().hyperstructure_capture_points};`,
+  );
+  expect(modules.points).toContain(
+    `pub const HOLD_POINTS_PER_SECOND: u128 = ${blitzPointRules().hold_points_per_second};`,
+  );
   expect(modules.exploration).toContain(`EXPLORATION_REWARDS: [ExplorationReward; ${blitzExplorationRewards.length}]`);
   expect(modules.rules).toContain("day_unit_seconds: 0");
   expect(modules.rules).toContain("entry_rule: 2");

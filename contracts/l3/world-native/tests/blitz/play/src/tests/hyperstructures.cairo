@@ -1,8 +1,9 @@
+use starknet::storage::StorageMapReadAccess;
 pub use world_test_support::tests::troop_management::*;
 use crate::map::TileOccupancy;
 use crate::troops::Coord;
-use super::fixture::{REALM_COORD, blitz_game, record_roster};
-use super::play_fixture::FIXTURE_START;
+use super::fixture::{EAST, REALM_COORD, RESTED_AT, blitz_game, found_realm, record_roster};
+use super::play_fixture::{FIXTURE_START, TestAction, play};
 use super::resource_commands::{assert_executes, execute_in_game};
 
 const NOW: u64 = FIXTURE_START + 40;
@@ -86,4 +87,90 @@ fn a_site_raises_one_hyperstructure() {
 fn a_tile_without_a_reservation_raises_nothing() {
     let (d, game_id) = seated_pair();
     assert!(!execute_in_game(d, game_id, raise(REALM_COORD), NOW));
+}
+
+const WEST: u8 = 3;
+const HELD: u64 = 1000;
+
+fn player_points(d: super::Deployment, game_id: u32, player: starknet::ContractAddress) -> u128 {
+    snforge_std::interact_with_state(d.games, || crate::state::read().season.player_points.read((game_id, player)))
+}
+
+fn attack(army: u64, target: ResourceKey) -> super::Command {
+    super::Command::BattleGuard(
+        crate::commands::Battle { attacker_id: army, defender_id: target.entity_id, relic_slot: None },
+    )
+}
+
+fn west_of(coord: Coord, steps: u32) -> Coord {
+    let mut at = coord;
+    for _ in 0..steps {
+        at = crate::geometry::neighbor(at, WEST);
+    }
+    at
+}
+
+fn east_of(coord: Coord, steps: u32) -> Coord {
+    super::fixture::step_east(coord, steps)
+}
+
+fn unguarded_hyperstructure() -> (super::Deployment, u32, starknet::ContractAddress, ResourceKey, Coord) {
+    let (d, game_id) = blitz_game();
+    let (rival, _) = super::deploy_player(3, super::GUARDIAN);
+    record_roster(d, game_id, array![d.actor, rival].span());
+    assert_executes(d, game_id, super::Command::SeatBlitzRoster(()), NOW);
+    assert_executes(d, game_id, super::Command::SeatBlitzRoster(()), NOW);
+    let coord = site(d, game_id, 0);
+    assert_executes(d, game_id, raise(coord), NOW);
+    let key = ResourceKey { game_id, entity_id: crate::entity_ids::MAX_HOME_NAMESPACE.into() };
+    snforge_std::interact_with_state(d.games, || crate::logic::guards::GuardState::reset(key));
+    (d, game_id, rival, key, coord)
+}
+
+fn army_beside(
+    d: super::Deployment, game_id: u32, owner: starknet::ContractAddress, realm_id: u64, realm: Coord, toward: u8,
+) -> u64 {
+    let home = ResourceKey { game_id, entity_id: realm_id };
+    found_realm(d, home, owner, realm);
+    super::fixture::raise(d, owner, home, TroopType::Knight, 0, 100, toward)
+}
+
+#[test]
+fn an_army_takes_a_raised_hyperstructure_and_scores_the_hyperstructure_claim() {
+    let (d, game_id, _, key, coord) = unguarded_hyperstructure();
+    let army = army_beside(d, game_id, d.actor, 100, west_of(coord, 2), EAST);
+    let before = player_points(d, game_id, d.actor);
+    assert_executes(d, game_id, attack(army, key), RESTED_AT);
+    assert!(IStructureOperationsDispatcher { contract_address: d.games }.structure(key).unwrap().owner == d.actor);
+    assert_eq!(player_points(d, game_id, d.actor) - before, crate::balance::points::HYPERSTRUCTURE_CAPTURE_POINTS);
+}
+
+#[test]
+fn a_rival_capture_pays_the_holder_for_each_second_held_per_neighbouring_realm() {
+    let (d, game_id, rival, key, coord) = unguarded_hyperstructure();
+    let mine = army_beside(d, game_id, d.actor, 100, west_of(coord, 2), EAST);
+    let theirs = army_beside(d, game_id, rival, 101, east_of(coord, 2), WEST);
+    let neighbours = snforge_std::interact_with_state(
+        d.games, || crate::logic::blitz::hyperstructures::multiplier(key),
+    );
+    let mut placed = 0_u128;
+    let mut id = 200_u64;
+    for point in crate::logic::blitz::hyperstructures::watch_points(coord) {
+        if placed < 2 && occupier(d, game_id, *point).is_none() {
+            found_realm(d, ResourceKey { game_id, entity_id: id }, rival, *point);
+            placed += 1;
+            id += 1;
+        }
+    }
+    assert_eq!(placed, 2);
+    assert_executes(d, game_id, attack(mine, key), RESTED_AT);
+    let held = player_points(d, game_id, d.actor);
+    assert!(
+        play(d.games, TestAction { game_id, actor: rival, command: attack(theirs, key) }, 987654321, RESTED_AT + HELD),
+    );
+    assert!(IStructureOperationsDispatcher { contract_address: d.games }.structure(key).unwrap().owner == rival);
+    assert_eq!(
+        player_points(d, game_id, d.actor) - held,
+        HELD.into() * crate::balance::points::HOLD_POINTS_PER_SECOND * (neighbours + 2),
+    );
 }

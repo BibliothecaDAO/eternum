@@ -158,10 +158,18 @@ function structuresModule(structures: PresetDefinition["structures"], labor: rea
   ].join("\n\n");
 }
 
-function blitzPointsModule({ explore_points, capture_points }: ReturnType<typeof blitzPointRules>): string {
-  return [number("EXPLORE_POINTS", "u128", explore_points), number("CAPTURE_POINTS", "u128", capture_points)].join(
-    "\n\n",
-  );
+function blitzPointsModule({
+  explore_points,
+  capture_points,
+  hyperstructure_capture_points,
+  hold_points_per_second,
+}: ReturnType<typeof blitzPointRules>): string {
+  return [
+    number("EXPLORE_POINTS", "u128", explore_points),
+    number("CAPTURE_POINTS", "u128", capture_points),
+    number("HYPERSTRUCTURE_CAPTURE_POINTS", "u128", hyperstructure_capture_points),
+    number("HOLD_POINTS_PER_SECOND", "u128", hold_points_per_second),
+  ].join("\n\n");
 }
 
 function blitzExplorationModule(rewards: typeof blitzExplorationRewards): string {

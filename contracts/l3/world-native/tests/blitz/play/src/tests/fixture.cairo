@@ -108,7 +108,7 @@ pub fn second_realm(
     second
 }
 
-fn found_realm(
+pub fn found_realm(
     deployment: super::Deployment,
     home: crate::resources::ResourceKey,
     owner: starknet::ContractAddress,

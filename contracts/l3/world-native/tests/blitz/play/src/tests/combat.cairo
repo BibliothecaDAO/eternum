@@ -1,7 +1,7 @@
 pub use world_test_support::tests::combat_formula::{context, damage_config, stamina_config, test_troops};
 pub use world_test_support::tests::troop_management::*;
 use crate::biome::Biome;
-use crate::combat::{CombatContext, TroopsTrait};
+use crate::combat::CombatContext;
 use super::fixture::{RAISED_AT, REALM_COORD, RESTED_AT, blitz_realm, raise, rival_realm_at, step_east};
 use super::resource_commands::{assert_executes, grant};
 

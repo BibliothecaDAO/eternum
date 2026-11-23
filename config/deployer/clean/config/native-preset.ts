@@ -321,6 +321,8 @@ export function blitzPointRules() {
   return {
     explore_points: BigInt(victoryPoints.pointsForTileExploration),
     capture_points: BigInt(victoryPoints.pointsForNonHyperstructureClaimAgainstBandits),
+    hyperstructure_capture_points: BigInt(victoryPoints.pointsForHyperstructureClaimAgainstBandits),
+    hold_points_per_second: BigInt(victoryPoints.hyperstructurePointsPerCycle),
   };
 }
 
