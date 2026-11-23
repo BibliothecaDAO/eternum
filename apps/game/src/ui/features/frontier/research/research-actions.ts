@@ -33,6 +33,8 @@ export const useResearchActions = (realm: NativeRows["Structure"], openNode: (ke
       case "essence":
       case "labor":
         return undefined;
+      case "level":
+        return { icon: "realm", word: RESEARCH_TREE.levelUpCastle, onFix: () => goToPlace(false) };
       case "stands":
         return { icon: need.icon, word: RESEARCH_TREE.build(need.building), onFix: () => goToPlace(false) };
       case "store":
