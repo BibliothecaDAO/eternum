@@ -182,7 +182,7 @@ describe("the tile card", () => {
       expect(button("Attack")).toBeUndefined();
 
       act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: null }));
-      expect(card!.querySelectorAll('[data-icon="beast-troll"]')).toHaveLength(1);
+      expect(card!.querySelectorAll('[data-icon="beast-golem"]')).toHaveLength(1);
       expect(button("Attack")?.disabled).toBe(false);
       await act(async () => button("Attack")!.click());
       expect(attack).toHaveBeenCalledWith(expect.objectContaining({ explorer_id: 201, structure_id: SITE }));
