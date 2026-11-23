@@ -12,12 +12,13 @@ import {
   VectorKeyframeTrack,
 } from "three";
 import { FRONTIER_BEASTS } from "@/three/structures/frontier-beast";
+import { type BeastLayer } from "@/three/structures/frontier-model";
 import { HEX_SIZE } from "@/three/constants/scene-constants";
 
 export type BeastMotionAction = "idle" | "walk" | "attack" | "hit" | "death";
 export type BeastMotionWay = "maths" | "rig" | "hybrid";
 export type BeastMotionCount = 1 | 20 | 100;
-export type BeastMotionLayer = 0 | 1 | 2 | 3;
+export type BeastMotionLayer = BeastLayer;
 export type BeastMotionMode = "compare" | "bench";
 export type BeastMotionCamera = "threeQuarter" | "phoneMap" | "close";
 

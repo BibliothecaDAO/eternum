@@ -429,9 +429,14 @@ class BeastMotionStage implements BeastMotionRendererHandle {
   resetCamera(): void {
     const groundY = this.environment.terrain.sampleSurface(0, 0).height;
     if (this.state.mode === "bench") {
-      const dist = this.state.count === 100 ? 25 : this.state.count === 20 ? 12.5 : 4.2;
-      this.controls.target.set(0, groundY + 0.55, 0);
-      this.camera.position.set(dist * 0.35, groundY + dist * 0.72, dist * 0.82);
+      if (this.state.count === 1 && this.state.camera === "close") {
+        this.controls.target.set(0, groundY + 0.52, 0);
+        this.camera.position.set(0.35, groundY + 1.85, 3.2);
+      } else {
+        const dist = this.state.count === 100 ? 25 : this.state.count === 20 ? 12.5 : 4.2;
+        this.controls.target.set(0, groundY + 0.55, 0);
+        this.camera.position.set(dist * 0.35, groundY + dist * 0.72, dist * 0.82);
+      }
     } else if (this.state.camera === "phoneMap") {
       this.controls.target.set(0, groundY + 0.55, 0);
       this.camera.position.set(0, groundY + 15.8, 13.6);

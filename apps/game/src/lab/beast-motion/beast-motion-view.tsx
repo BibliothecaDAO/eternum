@@ -318,7 +318,7 @@ export const BeastMotionView = () => {
 
       {!capture && stats && (
         <div className="flex flex-wrap items-center gap-4 border border-white/10 bg-stone-900/60 px-3 py-2 font-mono text-xs text-stone-200">
-          <span>Model: beast-wyvern.glb (17,903 tris)</span>
+          <span>Model: beast-wyvern.glb</span>
           <span>Backend: {stats.rendererMode}</span>
           <span>Beasts: {stats.beastCount}</span>
           <span>Draws: {stats.drawCalls}</span>

@@ -1,3 +1,4 @@
+import type Node from "three/src/nodes/core/Node.js";
 import {
   AdditiveBlending,
   Box3,
@@ -109,8 +110,8 @@ export class FrontierModel extends InstancedModel {
       }
       const bounds = new Box3().setFromObject(gltf.scene);
       this.embers = createInstancedMeshWithSharedMatrices(
-        emberGeometry(bounds, this.layer),
-        emberMaterial(),
+        createBeastEmberGeometry(bounds, this.layer),
+        createBeastEmberMaterial(),
         this.instancedMeshes[0],
       );
       this.embers.name = "Beast phoenix embers";
@@ -160,7 +161,8 @@ function beastMaterial(source: MeshStandardMaterial | FrostedStandardNodeMateria
     const authoredGlow = source.emissiveMap
       ? texture(source.emissiveMap).rgb.mul(color(source.emissive)).mul(source.emissiveIntensity)
       : color(source.emissive).mul(source.emissiveIntensity);
-    source.emissiveNode = source.emissiveIntensity > 0 ? beastPhoenixGlow().add(authoredGlow) : beastPhoenixGlow();
+    source.emissiveNode =
+      source.emissiveIntensity > 0 ? createBeastPhoenixGlow().add(authoredGlow) : createBeastPhoenixGlow();
     return source;
   }
   const material = new FrostedStandardNodeMaterial();
@@ -172,7 +174,7 @@ function beastMaterial(source: MeshStandardMaterial | FrostedStandardNodeMateria
   material.metalness = source.metalness;
   material.side = source.side;
   material.positionNode = positionLocal.add(vec3(0, beastIdle(), 0));
-  material.emissiveNode = beastPhoenixGlow();
+  material.emissiveNode = createBeastPhoenixGlow();
   return material;
 }
 
@@ -181,9 +183,8 @@ const IDLE_MOTIONS = { breath: 0, lift: 1, hover: 2 } as const satisfies Record<
 const phase = float(instanceIndex).mul(2.399963);
 
 const beastLayerNode = () => varying(attribute<"float">("beastLayer", "float")).setInterpolation("flat");
-type BeastLayerNode = ReturnType<typeof beastLayerNode>;
 
-function selectLayerNumber(layer: BeastLayerNode, values: Record<BeastLayer, number>) {
+function selectLayerNumber(layer: Node<"float">, values: Record<BeastLayer, number>) {
   return select(
     layer.greaterThan(2.5),
     float(values[3]),
@@ -195,7 +196,7 @@ function selectLayerNumber(layer: BeastLayerNode, values: Record<BeastLayer, num
   );
 }
 
-function layerColour(layer: BeastLayerNode, stop: "low" | "mid" | "hot") {
+function layerColour(layer: Node<"float">, stop: "low" | "mid" | "hot") {
   return select(
     layer.greaterThan(2.5),
     color(new Color(BEAST_LAYER_RAMPS[3][stop])),
@@ -211,12 +212,15 @@ function layerColour(layer: BeastLayerNode, stop: "low" | "mid" | "hot") {
   );
 }
 
-function beastPhoenixGlow() {
-  const layer = beastLayerNode();
+export function createBeastPhoenixGlow(
+  layer: Node<"float"> = beastLayerNode(),
+  phaseOffset: Node<"float"> = phase,
+  clock: Node<"float"> = time,
+) {
   const rim = normalView.dot(positionViewDirection).abs().clamp(0, 1).oneMinus().pow(2.4);
   const flameSample = vec3(
     positionGeometry.x.mul(5.2),
-    positionGeometry.y.mul(4.2).sub(time.mul(1.75)).add(phase),
+    positionGeometry.y.mul(4.2).sub(clock.mul(1.75)).add(phaseOffset),
     positionGeometry.z.mul(5.2),
   );
   const scrollNoise = mx_noise_float(flameSample).mul(0.5).add(0.5);
@@ -233,7 +237,11 @@ function beastPhoenixGlow() {
   return ramped.mul(heat).mul(strength);
 }
 
-function emberMaterial() {
+export function createBeastEmberMaterial(
+  layer: Node<"float"> = beastLayerNode(),
+  clock: Node<"float"> = time,
+  strengthScale: Node<"float"> = float(1),
+) {
   const material = new MeshBasicNodeMaterial({
     transparent: true,
     depthTest: true,
@@ -243,10 +251,9 @@ function emberMaterial() {
     blending: AdditiveBlending,
     toneMapped: false,
   });
-  const layer = beastLayerNode();
   const seed = attribute<"float">("emberSeed", "float");
   const lift = attribute<"float">("emberLift", "float");
-  const age = time.mul(0.32).add(seed).add(phase.mul(0.17)).fract();
+  const age = clock.mul(0.32).add(seed).add(phase.mul(0.17)).fract();
   const sway = age
     .mul(Math.PI * 2)
     .add(seed.mul(12.5))
@@ -261,11 +268,11 @@ function emberMaterial() {
     3: BEAST_LAYER_RAMPS[3].embers,
   });
   material.colorNode = mix(layerColour(layer, "mid"), layerColour(layer, "hot"), age.oneMinus());
-  material.opacityNode = edge.mul(age.mul(Math.PI).sin()).mul(strength);
+  material.opacityNode = edge.mul(age.mul(Math.PI).sin()).mul(strength).mul(strengthScale);
   return material;
 }
 
-function emberGeometry(bounds: Box3, layer: InstancedBufferAttribute): BufferGeometry {
+export function createBeastEmberGeometry(bounds: Box3, layer?: InstancedBufferAttribute): BufferGeometry {
   const top = Math.max(0.45, bounds.isEmpty() ? 0.85 : bounds.max.y);
   const span = Math.max(
     0.24,
@@ -304,7 +311,7 @@ function emberGeometry(bounds: Box3, layer: InstancedBufferAttribute): BufferGeo
   geometry.setAttribute("uv", new Float32BufferAttribute(coords, 2));
   geometry.setAttribute("emberSeed", new Float32BufferAttribute(seeds, 1));
   geometry.setAttribute("emberLift", new Float32BufferAttribute(lifts, 1));
-  geometry.setAttribute("beastLayer", layer);
+  if (layer) geometry.setAttribute("beastLayer", layer);
   geometry.setIndex(indices);
   return geometry;
 }
