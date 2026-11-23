@@ -146,6 +146,7 @@ it("shows one invite control and one primary button on /profile#referrals when t
     {
       chainId: "0x52",
       game_id: 1,
+      name: "frontier-100",
       mode: "frontier",
       status: "Live",
       clock_scale: 1,

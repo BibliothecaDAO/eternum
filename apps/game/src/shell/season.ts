@@ -1,4 +1,11 @@
-import { aspectLordsWorth, aspects, catalogOrder, formatDate, type AspectId } from "@bibliothecadao/types";
+import {
+  aspectLordsWorth,
+  aspects,
+  catalogOrder,
+  formatDate,
+  isSeasonGame,
+  type AspectId,
+} from "@bibliothecadao/types";
 import { canonicalRealm } from "@bibliothecadao/eternum";
 import {
   nativeFragmentConstants,
@@ -22,8 +29,9 @@ import type { DirectoryGame } from "./herald";
 import { gameKey } from "./play/play-board";
 import { ARCHIVED_SEASONS, archivedSeason } from "./season-tab/archive/archive";
 
+export const isRehearsal = (game: Pick<DirectoryGame, "name">): boolean => !isSeasonGame(game.name);
+
 /** The player's realm in the season: the structure the directory lists for them, if they have founded one. */
-export const isRehearsal = (game: Pick<DirectoryGame, "clock_scale">): boolean => game.clock_scale > 1;
 
 export const seasonRealm = (season: Pick<DirectoryGame, "player_state">) =>
   season.player_state?.structures.find((structure) => isRealmCategory(structure.category));

@@ -117,6 +117,7 @@ const FRONTIER_END = Math.floor(Date.now() / 1000) + 30 * 86_400;
 const FRONTIER = {
   chainId: "0x52",
   game_id: 1,
+  name: "frontier-1",
   mode: "frontier",
   status: "Live",
   clock_scale: 1,
@@ -246,6 +247,7 @@ const PLAYTEST_RESULTS = "/results/0x50524f44554354494f4e5f313865303764353233306
 const ended = (game_id: number, season_number: number, end_at: number, status = "Settled") => ({
   ...FRONTIER,
   game_id,
+  name: `frontier-${game_id}`,
   season_number,
   status,
   day_index: null,

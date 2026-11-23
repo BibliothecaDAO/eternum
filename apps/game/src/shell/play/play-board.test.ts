@@ -59,7 +59,12 @@ const leadOf = (input: PlayBoardFacts) => {
 };
 
 describe("a rehearsal beside the season", () => {
-  const rehearsal = game("frontier", { game_id: 4, clock_scale: 4, clock: { ...frontier.clock, start_main_at: 200 } });
+  const rehearsal = game("frontier", {
+    game_id: 4,
+    name: "testnet-200",
+    clock_scale: 4,
+    clock: { ...frontier.clock, start_main_at: 200 },
+  });
 
   it("keeps the real-speed season as the lead and lists the rehearsal under rehearsals", () => {
     const board = playBoard(facts({ games: [rehearsal, frontier] }));
@@ -71,6 +76,13 @@ describe("a rehearsal beside the season", () => {
     const board = playBoard(facts({ games: [withRealm(rehearsal), withRealm(frontier)] }));
     expect([board.lead?.game.game_id, board.lead?.verb]).toEqual([2, "resume"]);
     expect(board.rehearsals.map((item) => [item.game.game_id, item.verb])).toEqual([[4, "resume"]]);
+  });
+
+  it("lists the real-speed final testnet under rehearsals too: its name, not its speed, says it is not the season", () => {
+    const testnet = game("frontier", { game_id: 5, name: "testnet-1795521600", clock_scale: 1 });
+    const board = playBoard(facts({ games: [testnet, frontier] }));
+    expect([board.lead?.game.game_id, board.lead?.verb]).toEqual([2, "play"]);
+    expect(board.rehearsals.map((item) => [item.game.game_id, item.verb])).toEqual([[5, "play"]]);
   });
 
   it("never places a rehearsal in the lead slot even when it is the only Frontier game, and keeps Play non-empty", () => {

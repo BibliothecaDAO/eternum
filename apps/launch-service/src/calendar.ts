@@ -1,6 +1,7 @@
 import { DAYS_PER_BAG, seasonSeconds } from "../../../packages/core/src/utils/days";
 import { frontierSeasonOnePreset } from "../../../config/source/frontier/season-one";
-import { seasonDayUnitSeconds } from "../../../config/source/common/season-clock";
+import { clockScaled, gameClockScale, seasonDayUnitSeconds } from "../../../config/source/common/season-clock";
+import type { NativePreset } from "../../../config/source/common/native-preset";
 import { FRONTIER_ARMIES_TICK_SECONDS } from "../../../config/source/frontier/clock";
 
 /**
@@ -26,10 +27,13 @@ export class CalendarConflict extends Error {}
 
 export const PHASE_END_ERROR = "A phase must end in the future";
 
-export const assertFrontierSeason = (startsAt: number, endsAt: number) => {
-  const preset = frontierSeasonOnePreset;
-  const tickMs = FRONTIER_ARMIES_TICK_SECONDS * 1_000;
+export const assertFrontierSeason = (startsAt: number, endsAt: number) =>
+  assertFrontierDates(frontierSeasonOnePreset, startsAt, endsAt);
+
+export const assertFrontierDates = (preset: NativePreset, startsAt: number, endsAt: number) => {
+  const tickMs = clockScaled(FRONTIER_ARMIES_TICK_SECONDS, gameClockScale(preset), "armies tick") * 1_000;
   if (tickMs <= 0) throw new Error("Frontier has no armies tick");
+  if (!preset.race) throw new Error(`Preset ${preset.id} runs no season race`);
   if (![startsAt, endsAt].every(Number.isSafeInteger)) throw new CalendarConflict("Invalid season dates");
   if (startsAt % tickMs !== 0) throw new CalendarConflict(`A Frontier season starts on a ${tickMs / 1_000} s tick`);
   if (endsAt <= startsAt) throw new CalendarConflict("A Frontier season must end after it starts");

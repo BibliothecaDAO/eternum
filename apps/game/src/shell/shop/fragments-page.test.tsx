@@ -26,6 +26,7 @@ const directoryGames = vi.hoisted(() => ({
   games: [] as {
     chainId: string;
     game_id: number;
+    name: string;
     season_number?: number;
     mode: string;
     status: string;
@@ -245,6 +246,7 @@ it("resolves the active Frontier season on /shop, supports custom amounts >= 100
     {
       chainId: GAME.chainId,
       game_id: GAME.gameId,
+      name: "frontier-1795248000",
       season_number: 3,
       mode: "frontier",
       status: "Live",
