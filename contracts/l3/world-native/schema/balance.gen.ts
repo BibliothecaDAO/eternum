@@ -3,7 +3,6 @@ export const nativeRuleConstants = {
   "RELIC_BLADE_BPS": 1000,
   "RELIC_WARD_BPS": 500,
   "RELIC_PLUNDER_BPS": 2000,
-  "RELIC_SECONDS_PER_RANK": 1800,
   "STAMINA_REGEN_RELIC_STEP_PERCENT": 20,
   "ATTRIBUTE_CAP": 5,
   "SCOUT_EXPLORE_STAMINA": 10,
@@ -160,4 +159,4 @@ export const nativeStructureConstants = {
     100000
   ]
 } as const;
-export const nativeBalanceIdentity = "099eeea91919a31beec1afecbe601587e7e28c5a587a1492a27a241c82759687";
+export const nativeBalanceIdentity = "c8fef3c5239af21b9710aa3f3b853a7c77e2fbbbacc9e2728fd2947c0502867f";

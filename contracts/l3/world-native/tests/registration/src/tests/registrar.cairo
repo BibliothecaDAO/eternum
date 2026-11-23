@@ -1,3 +1,4 @@
+use snforge_std::fs::{FileTrait, read_txt};
 pub use world_test_support::tests::registrar::*;
 use crate::tests::army_merge::{progress, slot_at_home, timers, write_progress};
 
@@ -464,4 +465,27 @@ fn each_castle_level_stores_the_next_level_price() {
             assert!(store >= *cost.amount, "a castle level cannot hold the next level's price");
         }
     }
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn a_rehearsal_runs_its_release_clocks_by_its_scale_and_only_in_dev_mode() {
+    let d = setup();
+    let vectors = read_txt(@FileTrait::new("../fixtures/clock-scale.txt"));
+    let scale: u8 = (*vectors.at(0)).try_into().unwrap();
+    let request = CreateGameParams {
+        clock_scale: scale, duration_seconds: 720000, ..super::play_fixture::fixture_params('rehearsal'),
+    };
+    assert!(safe(d, super::authority()).create_game(request).is_err());
+    assert!(safe(d, super::authority()).create_game(CreateGameParams { clock_scale: 0, ..request }).is_err());
+    let game_id = registry(d).create_game(CreateGameParams { dev_mode_on: true, ..request });
+    let rules = IGameDispatcher { contract_address: d.games }.rules(game_id);
+    assert_eq!(rules.tick_config.armies_tick_in_seconds.into(), *vectors.at(1));
+    assert_eq!(rules.day_unit_seconds.into(), *vectors.at(2));
+    assert_eq!(rules.relic_seconds_per_rank.into(), *vectors.at(3));
+    let wheat = snforge_std::interact_with_state(
+        d.games,
+        || crate::clock::per_second(game_id, crate::logic::resources::rule(crate::resources::WHEAT).realm_rate),
+    );
+    assert_eq!(wheat.into(), *vectors.at(4));
 }

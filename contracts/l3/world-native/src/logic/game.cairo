@@ -17,13 +17,16 @@ pub fn game(game_id: u32) -> GameRegistry {
     game
 }
 pub fn rules(game_id: u32) -> SliceRules {
+    rules_of(game_id, game(game_id))
+}
+pub fn rules_of(game_id: u32, game: GameRegistry) -> SliceRules {
     let switches = crate::balance::rules::SWITCHES;
     let overrides = crate::state::read().games.overrides.read(game_id);
     SliceRules {
         battle_config: crate::balance::rules::BATTLE_CONFIG,
         map_config: overrides.map.unwrap_or(crate::balance::rules::MAP_CONFIG),
         biome_climate_config: overrides.biome_climate,
-        tick_config: crate::balance::rules::TICK_CONFIG,
+        tick_config: crate::clock::tick_config(game),
         troop_damage_config: crate::balance::rules::TROOP_DAMAGE_CONFIG,
         troop_stamina_config: crate::balance::rules::TROOP_STAMINA_CONFIG,
         troop_limit_config: crate::balance::rules::TROOP_LIMIT_CONFIG,
@@ -34,9 +37,10 @@ pub fn rules(game_id: u32) -> SliceRules {
         spire_travel_essence_cost: crate::balance::rules::SPIRE_TRAVEL_ESSENCE_COST,
         command_mask: switches.command_mask,
         mode_rules: switches.mode_rules,
-        day_unit_seconds: switches.day_unit_seconds,
+        day_unit_seconds: crate::clock::day_unit_seconds(game),
         entry_rule: switches.entry_rule,
         speed_config: crate::balance::rules::SPEED_CONFIG,
+        relic_seconds_per_rank: crate::clock::relic_seconds_per_rank(game),
     }
 }
 pub fn create(game_id: u32, game: GameRegistry, overrides: GameOverrides) {

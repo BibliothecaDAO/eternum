@@ -110,7 +110,8 @@
       "speed_config": {
         "donkey_sec_per_km": 9,
         "donkey_sec_per_km_troops": 27
-      }
+      },
+      "relic_seconds_per_rank": 1800
     },
     "resources": {
       "resources": [

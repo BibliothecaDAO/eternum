@@ -452,7 +452,7 @@ fn game_registry_wire_contains_only_game_configuration() {
         encoded.span(),
         array![
             game.name, game.family.into(), 0, 0, game.start_settling_at.into(), game.start_main_at.into(),
-            game.end_at.into(), game.seed, game.scheduled_end_at.into(),
+            game.end_at.into(), game.seed, game.scheduled_end_at.into(), 1,
         ]
             .span(),
     );

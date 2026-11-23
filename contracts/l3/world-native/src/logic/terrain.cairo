@@ -14,7 +14,7 @@ pub fn biome(key: TileKey, game_context: crate::commands::BiomeContext) -> u8 {
         game_context.climate,
         crate::troops::Coord { alt: key.alt, x: key.col, y: key.row },
         game_context.start_main_at,
-        crate::balance::rules::SWITCHES.day_unit_seconds,
+        game_context.day_unit_seconds,
         crate::logic::settlement::spacing(),
     );
     crate::biome::get_biome_with_climate(key.alt, key.col.into(), key.row.into(), climate).into()
@@ -23,10 +23,16 @@ pub fn biome(key: TileKey, game_context: crate::commands::BiomeContext) -> u8 {
 // A view outside any play: it reads the facts a ring is drawn from, not the whole rule set.
 pub fn expedition_home_ring(game_id: u32, region_id: u32, timestamp: u64) -> Span<(Coord, u8)> {
     let game = crate::logic::game::game(game_id);
-    let today = crate::days::day_of(game, crate::balance::rules::SWITCHES.day_unit_seconds, timestamp).index;
+    let today = crate::days::day_of(game, crate::clock::day_unit_seconds(game), timestamp).index;
     let site = crate::expeditions::site(crate::logic::settlement::spacing(), region_id, today, 0);
     let climate = crate::state::read().games.overrides.entry(game_id).biome_climate.read();
-    home_ring(game_id, site, crate::commands::BiomeContext { climate, start_main_at: game.start_main_at })
+    home_ring(
+        game_id,
+        site,
+        crate::commands::BiomeContext {
+            climate, start_main_at: game.start_main_at, day_unit_seconds: crate::clock::day_unit_seconds(game),
+        },
+    )
 }
 
 fn home_ring(game_id: u32, site: Coord, context: crate::commands::BiomeContext) -> Span<(Coord, u8)> {

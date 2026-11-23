@@ -181,7 +181,9 @@ pub mod RelicState {
         ) {
             let key = ExplorerKey { game_id, explorer_id: command.entity_id };
             let explorer = crate::logic::troops::command_explorer(key, Some(actor), context.timestamp, context);
-            let relic = crate::logic::army_relics::activate(key, command.slot, command.relic_id, context.timestamp);
+            let relic = crate::logic::army_relics::activate(
+                key, command.slot, command.relic_id, context.timestamp, context.rules.unbox().relic_seconds_per_rank,
+            );
             if relic.kind == crate::army_relics::RelicKind::StaminaRegen {
                 crate::logic::army_relics::start_stamina_regen(key, explorer);
             }

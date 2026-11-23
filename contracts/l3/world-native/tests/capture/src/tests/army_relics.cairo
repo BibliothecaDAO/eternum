@@ -106,7 +106,7 @@ fn ruins_fill_replace_and_activate_an_armys_relics_through_commands() {
         ),
         Some(
             crate::army_relics::ArmyRelicEffect {
-                rank: 1, expires_at: START + 400 + crate::rules::RELIC_SECONDS_PER_RANK.into(),
+                rank: 1, expires_at: START + 400 + crate::balance::rules::RELIC_SECONDS_PER_RANK.into(),
             },
         ),
     );
@@ -311,7 +311,7 @@ fn level_three_regen_percent() -> u64 {
 #[test]
 fn a_level_three_stamina_relic_regenerates_its_step_times_three_faster_for_its_duration_then_normally() {
     let (d, key) = stamina_regen_army(0);
-    let duration: u64 = (crate::rules::RELIC_SECONDS_PER_RANK * 3).into();
+    let duration: u64 = (crate::balance::rules::RELIC_SECONDS_PER_RANK * 3).into();
     let ticks = duration / regen_tick();
     let during = stamina_at(d, key, regen_start() + duration);
     assert_eq!(during, ticks * level_three_regen_percent() / 100);
@@ -322,7 +322,7 @@ fn a_level_three_stamina_relic_regenerates_its_step_times_three_faster_for_its_d
 #[test]
 fn a_stamina_relic_multiplies_the_enlightened_regen_rate() {
     let (d, key) = stamina_regen_army(crate::oaths::bit(crate::oaths::ENLIGHTENMENT));
-    let duration: u64 = (crate::rules::RELIC_SECONDS_PER_RANK * 3).into();
+    let duration: u64 = (crate::balance::rules::RELIC_SECONDS_PER_RANK * 3).into();
     let enlightened: u64 = crate::oaths::ENLIGHTENMENT_REGEN_BPS.into();
     let during = stamina_at(d, key, regen_start() + duration);
     assert_eq!(during, duration * enlightened * level_three_regen_percent() / 100 / (regen_tick() * 10000));
@@ -339,7 +339,7 @@ fn a_switched_on_stamina_relic_leaves_its_effect_for_its_duration() {
             },
         ),
     );
-    let duration: u64 = (crate::rules::RELIC_SECONDS_PER_RANK * 3).into();
+    let duration: u64 = (crate::balance::rules::RELIC_SECONDS_PER_RANK * 3).into();
     assert_eq!(effect, Some(crate::army_relics::ArmyRelicEffect { rank: 3, expires_at: regen_start() + duration }));
     assert_eq!(read_loadout(d, key).first, None);
 }

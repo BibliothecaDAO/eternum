@@ -1,7 +1,6 @@
 pub const RELIC_BLADE_BPS: u32 = 1000;
 pub const RELIC_WARD_BPS: u32 = 500;
 pub const RELIC_PLUNDER_BPS: u32 = 2000;
-pub const RELIC_SECONDS_PER_RANK: u32 = 1800;
 pub const STAMINA_REGEN_RELIC_STEP_PERCENT: u32 = 20;
 pub const ATTRIBUTE_CAP: u8 = 5;
 pub const SCOUT_EXPLORE_STAMINA: u8 = 10;
@@ -172,6 +171,7 @@ pub struct SliceRules {
     pub day_unit_seconds: u32,
     pub entry_rule: u8,
     pub speed_config: SpeedConfig,
+    pub relic_seconds_per_rank: u32,
 }
 
 pub const ENTRY_ENTITLEMENT: u8 = 0;

@@ -7,6 +7,7 @@ pub mod biome;
 #[cfg(feature: "blitz")]
 pub mod blitz_command_routes;
 pub mod buildings;
+pub mod clock;
 pub mod combat;
 pub mod combat_actions;
 #[cfg(feature: "blitz")]

@@ -1,12 +1,12 @@
 import { frontierSeasonOnePreset } from "./frontier/season-one";
 import { buildingIds, frontierPreset } from "./frontier/native";
-import { frontierDevconPreset } from "./frontier/devcon";
 import { blitzPreset } from "./blitz/native";
 import type { NativePreset } from "./common/native-preset";
 import {
   FRONTIER_ACCELERATED_PRESET_ID,
   FRONTIER_FIXTURE_PRESET_ID,
   FRONTIER_PLAYGROUND_PRESET_ID,
+  FRONTIER_REHEARSAL_PRESET_ID,
   nativeGameModeOf,
 } from "./common/native-preset-modes";
 import { ResourcesIds } from "../../packages/types/src/constants";
@@ -23,7 +23,13 @@ const modes: Record<GameType, NativePreset> = {
 const frontierAcceleratedPreset: NativePreset = {
   ...frontierPreset,
   id: FRONTIER_ACCELERATED_PRESET_ID,
-  clockScale: { days: 120, activity: 120 },
+  clockScale: 120,
+};
+
+const frontierRehearsalPreset: NativePreset = {
+  ...frontierSeasonOnePreset,
+  id: FRONTIER_REHEARSAL_PRESET_ID,
+  clockScale: 4,
 };
 
 const frontierFixturePreset: NativePreset = {
@@ -73,10 +79,10 @@ export const nativePresets: Record<number, NativePreset> = Object.fromEntries(
   [
     ...Object.values(modes),
     frontierPreset,
-    frontierDevconPreset,
     frontierAcceleratedPreset,
     frontierFixturePreset,
     frontierPlaygroundPreset,
+    frontierRehearsalPreset,
   ].map((preset) => {
     if (nativeGameModeOf(preset.id) !== preset.gameType)
       throw new Error(`Native preset ${preset.id} plays ${preset.gameType}, not ${nativeGameModeOf(preset.id)}`);

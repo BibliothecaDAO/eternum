@@ -1,5 +1,6 @@
 import { nativePresetForId } from "../../../source/native";
 import { nativeFamilyOf } from "../../../source/common/native-preset-modes";
+import { gameClockScale } from "../../../source/common/season-clock";
 import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import { CapacityConfig, type Config } from "@bibliothecadao/types";
 import { hash, shortString } from "starknet";
@@ -160,6 +161,9 @@ export function buildCreateGameParams(config: Config, input: CreateGamePayloadIn
     throw new Error("Game duration must be supplied explicitly and be positive");
   const { registrationStartAt, startSettlingAt } = resolveRegistrationSchedule(input.startMainAt, input.chainTimestamp);
   const registrationCountMax = resolveRegistrationCountMax(config, input.presetId);
+  const clockScale = gameClockScale(nativePresetForId(input.presetId));
+  if (clockScale !== 1 && !input.devModeOn)
+    throw new Error(`Preset ${input.presetId} runs a scaled clock: dev mode only`);
 
   return {
     name: shortString.encodeShortString(input.gameName),
@@ -175,5 +179,6 @@ export function buildCreateGameParams(config: Config, input: CreateGamePayloadIn
     use_map_override: input.useMapOverride,
     map_override: buildMapConfig(config),
     seed: deriveGameSeed(input),
+    clock_scale: clockScale,
   };
 }

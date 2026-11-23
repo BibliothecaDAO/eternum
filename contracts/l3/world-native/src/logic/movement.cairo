@@ -174,7 +174,7 @@ pub mod MovementLogic {
             );
             let spacing = self.expedition_spacing(game_id);
             let today = crate::days::day_of(
-                context.game.unbox(), crate::balance::rules::SWITCHES.day_unit_seconds, context.timestamp,
+                context.game.unbox(), crate::clock::day_unit_seconds(context.game.unbox()), context.timestamp,
             )
                 .index;
             let source_depth = crate::logic::expeditions::depth_at(game_id, explorer.coord);

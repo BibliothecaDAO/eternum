@@ -95,12 +95,13 @@ pub fn action_context(context: ExecutionContext) -> ActionContext {
 
 /// Reads the game where a play or an operator call starts; library calls receive it instead of reading it again.
 pub fn load_context(game_id: u32, raw_root: u256, timestamp: u64) -> ExecutionContext {
+    let game = crate::logic::game::game(game_id);
     ExecutionContext {
         raw_root,
         timestamp,
         game_id,
-        game: BoxTrait::new(crate::logic::game::game(game_id)),
-        rules: BoxTrait::new(crate::logic::game::rules(game_id)),
+        game: BoxTrait::new(game),
+        rules: BoxTrait::new(crate::logic::game::rules_of(game_id, game)),
     }
 }
 
@@ -134,11 +135,14 @@ pub fn resource_context(context: ExecutionContext) -> ResourceContext {
 pub struct BiomeContext {
     pub climate: crate::rules::BiomeClimateConfig,
     pub start_main_at: u64,
+    pub day_unit_seconds: u32,
 }
 
 pub fn biome_context(context: ExecutionContext) -> BiomeContext {
     BiomeContext {
-        climate: context.rules.unbox().biome_climate_config, start_main_at: context.game.unbox().start_main_at,
+        climate: context.rules.unbox().biome_climate_config,
+        start_main_at: context.game.unbox().start_main_at,
+        day_unit_seconds: context.rules.unbox().day_unit_seconds,
     }
 }
 

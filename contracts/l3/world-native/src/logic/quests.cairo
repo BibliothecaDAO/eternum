@@ -72,7 +72,7 @@ pub mod QuestState {
                 return;
             }
             let game = crate::logic::game::game(home.game_id);
-            let day = crate::days::day_of(game, crate::balance::rules::SWITCHES.day_unit_seconds, timestamp).index;
+            let day = crate::days::day_of(game, crate::clock::day_unit_seconds(game), timestamp).index;
             let selected = crate::logic::banes::quest_kind(home, day);
             if selected != kind {
                 return;
@@ -119,7 +119,7 @@ pub mod QuestState {
                 "quest requires an owned Realm",
             );
             let day = crate::days::day_of(
-                context.game.unbox(), crate::balance::rules::SWITCHES.day_unit_seconds, context.timestamp,
+                context.game.unbox(), crate::clock::day_unit_seconds(context.game.unbox()), context.timestamp,
             )
                 .index;
             assert!(command.day == day, "incorrect quest day");

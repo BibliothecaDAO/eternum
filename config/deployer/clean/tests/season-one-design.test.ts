@@ -10,6 +10,9 @@ import {
 } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import { RESOURCE_PRECISION, ResourcesIds } from "../../../../packages/types/src/constants";
 import { seasonOneDesign } from "../../../source/frontier/season-one-design";
+import { FRONTIER_S1_PRESET_ID } from "../../../source/common/native-preset-modes";
+import { gameClockScale } from "../../../source/common/season-clock";
+import { nativePresetForId } from "../../../source/native";
 
 type Amount = { resource_type: number; amount: string };
 type Design = typeof seasonOneDesign;
@@ -97,6 +100,7 @@ function generatedSeasonOne(): Design {
       dayUnitSeconds: definition.rules.day_unit_seconds,
       seasonDays: Number(seasonRace.season_days),
       baneChanceStepPercent: banes.chance_step,
+      speed: gameClockScale(nativePresetForId(FRONTIER_S1_PRESET_ID)),
     },
     realm: {
       upgradeLabor: definition.structures.upgrades.map(({ costs }) => amountOf(costs, ResourcesIds.Labor)),
@@ -197,7 +201,7 @@ function generatedSeasonOne(): Design {
       wardPercentPerTier: percent(rules.RELIC_WARD_BPS),
       plunderPercentPerTier: percent(rules.RELIC_PLUNDER_BPS),
       staminaRegenPercentPerTier: rules.STAMINA_REGEN_RELIC_STEP_PERCENT,
-      secondsPerTier: rules.RELIC_SECONDS_PER_RANK,
+      secondsPerTier: definition.rules.relic_seconds_per_rank,
       tiers: rules.ATTRIBUTE_CAP,
       oddsPercentByLayer: layers.map(({ chest }) =>
         [chest.common, chest.uncommon, chest.rare, chest.epic, chest.legendary].map(percent),

@@ -752,6 +752,10 @@ export const factWireTypes = [
         name: "scheduled_end_at",
         type: "core::integer::u64",
       },
+      {
+        name: "clock_scale",
+        type: "core::integer::u8",
+      },
     ],
   },
   {

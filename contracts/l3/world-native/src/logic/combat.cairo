@@ -81,7 +81,7 @@ fn guard_target(
     if crate::rules::DEEP_IN_PLAY {
         if let Some(site) = crate::logic::deep_sites::site(key) {
             let day = crate::days::day_of(
-                context.game.unbox(), crate::balance::rules::SWITCHES.day_unit_seconds, context.timestamp,
+                context.game.unbox(), crate::clock::day_unit_seconds(context.game.unbox()), context.timestamp,
             );
             assert!(site.day == day.index, "Deep is settling, try again");
             crate::logic::deep_sites::assert_open(key.game_id, site);

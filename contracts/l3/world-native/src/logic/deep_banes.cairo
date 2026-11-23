@@ -137,7 +137,7 @@ fn day(game_id: u32, timestamp: u64) -> Option<crate::days::Day> {
     if timestamp < game.start_main_at || timestamp >= game.end_at {
         return None;
     }
-    Some(crate::days::day_of(game, crate::balance::rules::SWITCHES.day_unit_seconds, timestamp))
+    Some(crate::days::day_of(game, crate::clock::day_unit_seconds(game), timestamp))
 }
 
 pub fn team_quest(home: crate::resources::ResourceKey, day: u64) -> Option<u8> {

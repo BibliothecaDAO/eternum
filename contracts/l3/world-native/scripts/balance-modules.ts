@@ -36,7 +36,7 @@ const GAME_OVERRIDES = new Set(["biome_climate_config", "map_center_offset"]);
 const SWITCHES = new Set(["command_mask", "mode_rules", "day_unit_seconds", "entry_rule"]);
 const LOGIC_MODE_RULES = ["HOME_REWARDS", "UNOWNED_TARGETS", "DEPTH_CONTENTS", "REVEAL_SUPPLIES"];
 const CHOOSE_OATH = wireIds.commands.find(({ name }) => name === "ChooseOath")!.id;
-const RULE_SCALARS: Record<string, string> = { spire_travel_essence_cost: "u128" };
+const RULE_SCALARS: Record<string, string> = { spire_travel_essence_cost: "u128", relic_seconds_per_rank: "u32" };
 
 export function balanceModules(definition: PresetDefinition): Record<string, string> {
   assertPayWithinStage(definition.economy);

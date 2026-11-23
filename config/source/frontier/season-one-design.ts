@@ -11,6 +11,7 @@ export const seasonOneDesign = {
     dayUnitSeconds: 14400,
     seasonDays: 50,
     baneChanceStepPercent: 20,
+    speed: 1,
   },
   realm: {
     upgradeLabor: [2500, 15000, 50000],

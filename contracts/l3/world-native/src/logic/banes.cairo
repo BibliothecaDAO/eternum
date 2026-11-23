@@ -124,7 +124,7 @@ pub fn read_effects(home: ResourceKey, from: u64, until: u64) -> BaneEffects {
     let game = crate::logic::game::game(home.game_id);
     let start = game.start_main_at;
     let end = game.end_at;
-    let unit = crate::balance::rules::SWITCHES.day_unit_seconds;
+    let unit = crate::clock::day_unit_seconds(game);
     let mut cursor = core::cmp::max(from, start);
     let until = core::cmp::min(until, end);
     let mut windows = array![];

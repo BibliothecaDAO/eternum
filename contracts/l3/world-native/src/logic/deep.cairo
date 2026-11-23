@@ -73,7 +73,7 @@ pub fn clear_expired_occupant(game_id: u32, coord: Coord, context: ExecutionCont
         return;
     };
     let today = crate::days::day_of(
-        context.game.unbox(), crate::balance::rules::SWITCHES.day_unit_seconds, context.timestamp,
+        context.game.unbox(), crate::clock::day_unit_seconds(context.game.unbox()), context.timestamp,
     )
         .index;
     if crate::logic::army_days::require(key) != today {

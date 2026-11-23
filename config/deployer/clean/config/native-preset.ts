@@ -6,7 +6,7 @@ import { DAYS_PER_BAG } from "@bibliothecadao/eternum/expeditions";
 import { buildingIds } from "../../../source/frontier/native";
 import { nativePresetForId, nativePresetIdFor } from "../../../source/native";
 import { loadNativePresetConfiguration } from "../registrar/native-preset";
-import { clockScaled, seasonDayUnitSeconds } from "../../../source/common/season-clock";
+import { RELIC_SECONDS_PER_RANK } from "../../../source/common/season-clock";
 import { RESOURCE_PRECISION, ResourcesIds, deepSites, type Config } from "@bibliothecadao/types";
 import { CairoCustomEnum, CairoOption, CairoOptionVariant } from "starknet";
 import {
@@ -69,13 +69,14 @@ function buildRules(config: Config, preset: ReturnType<typeof nativePresetForId>
     map_center_offset: config.settlement.center,
     spire_travel_essence_cost: scaled(config.spireTravelEssenceCost),
     command_mask: preset.commandMask,
-    day_unit_seconds: seasonDayUnitSeconds(preset),
+    day_unit_seconds: preset.dayUnitSeconds,
     mode_rules: preset.modeRules,
     entry_rule: preset.entryRule,
     speed_config: {
       donkey_sec_per_km: config.speed.donkey_for_resources,
       donkey_sec_per_km_troops: config.speed.donkey_for_troops,
     },
+    relic_seconds_per_rank: RELIC_SECONDS_PER_RANK,
   };
 }
 
@@ -338,27 +339,7 @@ export function buildNativePreset(config: Config, presetId: number) {
     settlement: buildSettlement(config, preset),
     economy: buildEconomy(config, preset, bridgeTokens),
   };
-  if (preset.clockScale !== undefined) scaleActivityClocks(definition, preset.clockScale.activity);
   return definition;
-}
-
-/** Activity scales stamina recovery and production without changing the day calendar. */
-function scaleActivityClocks(definition: ReturnType<typeof buildNativePreset>, scale: number): void {
-  definition.rules.tick_config.armies_tick_in_seconds = clockScaled(
-    definition.rules.tick_config.armies_tick_in_seconds,
-    scale,
-    "armies_tick_in_seconds",
-  );
-  for (const resource of definition.resources.resources) {
-    resource.realm_rate *= BigInt(scale);
-    resource.village_rate *= BigInt(scale);
-  }
-  definition.structures.camps.labor_rate *= BigInt(scale);
-  const board = definition.structures.board.unwrap();
-  if (!board || typeof board !== "object" || !("workshop_rate" in board) || typeof board.workshop_rate !== "bigint")
-    throw new Error("A scaled season requires a workshop rate");
-  board.workshop_rate *= BigInt(scale);
-  for (const mine of definition.resources.mine_kinds) mine.config.production_rate *= BigInt(scale);
 }
 
 function validateMineConfig(config: Config): void {

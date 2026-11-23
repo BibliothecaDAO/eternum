@@ -301,6 +301,8 @@ fn biome_context(d: super::Deployment, game_id: u32) -> crate::commands::BiomeCo
     let games = IGameDispatcher { contract_address: d.games };
     let rules = games.rules(game_id);
     crate::commands::BiomeContext {
-        climate: rules.biome_climate_config, start_main_at: games.game(game_id).start_main_at,
+        climate: rules.biome_climate_config,
+        start_main_at: games.game(game_id).start_main_at,
+        day_unit_seconds: rules.day_unit_seconds,
     }
 }
