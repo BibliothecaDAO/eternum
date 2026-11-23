@@ -10,3 +10,8 @@ pub struct StructureStateStorage<TStructureRecord, TExpeditionSite> {
 pub struct StructuresDomainStorage {
     pub entity_names: Map<(u32, u64), felt252>,
 }
+
+#[starknet::storage_node]
+pub struct HyperstructureStorage {
+    pub counts: Map<u32, u32>,
+}

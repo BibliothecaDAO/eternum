@@ -1,22 +1,12 @@
 use starknet::ContractAddress;
 pub use world_test_support::tests::troop_management::*;
-use crate::games::{IGamesSlotsDispatcher, IGamesSlotsDispatcherTrait};
-use super::fixture::{blitz_game, blitz_game_from};
+use super::fixture::{blitz_game, blitz_game_from, record_roster};
 use super::play_fixture::{FIXTURE_START, encode, fixture_params};
 use super::resource_commands::{assert_executes, execute_in_game};
 use super::unlimited_production::settle;
 
 const NOW: u64 = FIXTURE_START + 40;
 const MAIN: u64 = FIXTURE_START + 3600;
-
-fn record_roster(d: super::Deployment, game_id: u32, players: Span<ContractAddress>) {
-    let mut calldata = array![];
-    (game_id, players).serialize(ref calldata);
-    start_cheat_caller_address(d.games, super::authority());
-    IGamesSlotsDispatcher { contract_address: d.games }
-        .authority_call(crate::game::BLITZ, crate::slots::SETTLEMENT, calldata.span());
-    stop_cheat_caller_address(d.games);
-}
 
 fn two_player_roster() -> (super::Deployment, u32, ContractAddress) {
     let (d, game_id) = blitz_game();

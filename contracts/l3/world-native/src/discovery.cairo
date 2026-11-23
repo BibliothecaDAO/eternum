@@ -23,6 +23,7 @@ pub enum Discovery {
     Well,
     Spire,
     Mine,
+    Hyperstructure,
 }
 
 // One categorical draw per reveal. After `empty_reveal_limit` empty reveals in a row the draw covers only the kinds

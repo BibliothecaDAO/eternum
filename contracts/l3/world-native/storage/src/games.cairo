@@ -45,6 +45,7 @@ pub struct GamesStorage<
     pub games: crate::game::GameStateStorage<TGameRegistry, TGameOverrides>,
     pub guards: crate::guards::GuardStateStorage<TGuard>,
     pub guilds: crate::guilds::GuildStateStorage<TGuild>,
+    pub hyperstructures: crate::structures::HyperstructureStorage,
     pub map: crate::map::MapStateStorage,
     pub map_rules: crate::map::MapDomainStorage,
     pub realms: crate::realms::RealmStateStorage,

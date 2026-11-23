@@ -8,11 +8,11 @@ pub struct CommandRoute {
     pub batch: bool,
 }
 
-pub const COMMAND_IDS: [u32; 41] = [
+pub const COMMAND_IDS: [u32; 42] = [
     74, 75, 73, 76, 72, 0, 1, 2, 3, 4, 6, 8, 10, 11, 12, 13, 14, 16, 17, 18, 20, 21, 22, 23, 24, 29, 43, 53, 54, 55, 56,
-    57, 58, 59, 60, 64, 65, 66, 67, 69, 77,
+    57, 58, 59, 60, 64, 65, 66, 67, 69, 77, 78,
 ];
-pub const COMMAND_ROUTES: [Option<CommandRoute>; 78] = [
+pub const COMMAND_ROUTES: [Option<CommandRoute>; 79] = [
     Some(CommandRoute { logic: 6, selector: selector!("create_explorer"), items_offset: None, batch: false }),
     Some(CommandRoute { logic: 15, selector: selector!("explore"), items_offset: None, batch: false }),
     Some(CommandRoute { logic: 12, selector: selector!("battle"), items_offset: Some(2), batch: false }),
@@ -80,6 +80,7 @@ pub const COMMAND_ROUTES: [Option<CommandRoute>; 78] = [
     Some(CommandRoute { logic: 14, selector: selector!("buy_stamina"), items_offset: None, batch: false }),
     Some(CommandRoute { logic: 14, selector: selector!("reroll_oath"), items_offset: None, batch: false }),
     Some(CommandRoute { logic: 7, selector: selector!("seat_blitz_roster"), items_offset: None, batch: true }),
+    Some(CommandRoute { logic: 5, selector: selector!("raise_hyperstructure"), items_offset: None, batch: false }),
 ];
 
 #[derive(Copy, Drop, Debug, PartialEq)]
@@ -125,6 +126,7 @@ pub enum Command {
     Research: crate::research::Research,
     InteractSite: crate::relics::InteractSite,
     SeatBlitzRoster,
+    RaiseHyperstructure: crate::troops::Coord,
 }
 
 pub impl CommandSerde of Serde<Command> {
@@ -282,6 +284,10 @@ pub impl CommandSerde of Serde<Command> {
                 Serde::serialize(value, ref output);
             },
             Command::SeatBlitzRoster(_) => { output.append(77); },
+            Command::RaiseHyperstructure(value) => {
+                output.append(78);
+                Serde::serialize(value, ref output);
+            },
         }
     }
 
@@ -366,6 +372,7 @@ pub impl CommandSerde of Serde<Command> {
             75 => Some(Command::BuyStamina(Serde::deserialize(ref serialized)?)),
             76 => Some(Command::RerollOath(Serde::deserialize(ref serialized)?)),
             77 => Some(Command::SeatBlitzRoster(())),
+            78 => Some(Command::RaiseHyperstructure(Serde::deserialize(ref serialized)?)),
             _ => None,
         }
     }

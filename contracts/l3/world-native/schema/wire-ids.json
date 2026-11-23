@@ -390,6 +390,12 @@
       "name": "SeatBlitzRoster",
       "retired": false,
       "family": "blitz"
+    },
+    {
+      "id": 78,
+      "name": "RaiseHyperstructure",
+      "retired": false,
+      "family": "blitz"
     }
   ],
   "stories": [

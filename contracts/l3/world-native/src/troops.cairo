@@ -427,6 +427,19 @@ pub fn light_guard(seed: u256, rules: crate::rules::SliceRules, timestamp: u64) 
     )
 }
 
+pub fn hyperstructure_guards(seed: u256, rules: crate::rules::SliceRules, timestamp: u64) -> Span<Troops> {
+    let limits = rules.troop_limit_config;
+    let lower: u128 = limits.heavy_guard_lower_bound.into();
+    let upper: u128 = limits.heavy_guard_upper_bound.into();
+    let categories = array![TroopType::Paladin, TroopType::Knight, TroopType::Crossbowman];
+    let mut guards = array![];
+    for slot in 0..categories.len() {
+        let count = lower + crate::random::range(seed + slot.into(), 1, upper - lower + 1);
+        guards.append(discovered_guard(*categories.at(slot), TroopTier::T2, count, rules, timestamp));
+    }
+    guards.span()
+}
+
 fn discovered_guard(
     category: TroopType, tier: TroopTier, count: u128, rules: crate::rules::SliceRules, timestamp: u64,
 ) -> Troops {

@@ -291,6 +291,26 @@ pub mod StructuresLogic {
         }
     }
 
+    #[cfg(feature: "blitz")]
+    #[abi(embed_v0)]
+    impl ReservedHyperstructures of crate::structures::IReservedHyperstructures<ContractState> {
+        fn raise_hyperstructure(
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            coord: Coord,
+            context: crate::commands::ActionContext,
+        ) {
+            let context = crate::commands::execution_context(game_id, context);
+            let game = context.game.unbox();
+            assert!(game.end_at == 0 || context.timestamp < game.end_at, "game ended");
+            crate::logic::map::MapState::release_hyperstructure(tile_key(game_id, coord));
+            let mut root = context.raw_root;
+            let seed = crate::random::game_root(ref root, game_id);
+            self.place_discovery(game_id, 0, coord, Discovery::Hyperstructure, seed, context.timestamp, context);
+        }
+    }
+
     #[abi(embed_v0)]
     impl SettlementCreation of crate::settlement::ISettlementCreation<ContractState> {
         fn create_settlement(
@@ -542,8 +562,12 @@ pub mod StructuresLogic {
             game_context: crate::commands::ExecutionContext,
         ) -> u64 {
             let rules = game_context.rules.unbox();
-            let id = crate::entity_ids::allocate_home(game_id, home_id);
-            let key = ResourceKey { game_id, entity_id: id };
+            let key = if discovery == Discovery::Hyperstructure {
+                crate::logic::blitz::hyperstructures::claim_id(game_id)
+            } else {
+                ResourceKey { game_id, entity_id: crate::entity_ids::allocate_home(game_id, home_id) }
+            };
+            let id = key.entity_id;
             let (mut record, occupier, capacity) = crate::structures::discovered_structure(
                 coord, discovery, rules.structure_capacity_config, rules.troop_limit_config.camp_armies, timestamp,
             );
@@ -556,7 +580,7 @@ pub mod StructuresLogic {
                 .initialize_resources(key, capacity * RESOURCE_PRECISION);
             if discovery == Discovery::Mine {
                 record.metadata.mine_kind = self.open_mine(key, seed, timestamp, game_context);
-            } else {
+            } else if discovery == Discovery::Camp {
                 self.stock_camp(key, timestamp, game_context);
             }
             crate::logic::structures::StructureState::create(key, record);

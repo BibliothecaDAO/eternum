@@ -128,6 +128,13 @@ pub trait IStructureOperations<T> {
     ) -> u64;
 }
 
+#[starknet::interface]
+pub trait IReservedHyperstructures<T> {
+    fn raise_hyperstructure(
+        ref self: T, game_id: u32, actor: ContractAddress, coord: Coord, context: crate::commands::ActionContext,
+    );
+}
+
 #[cfg(feature: "blitz")]
 pub fn discovered_structure(
     coord: Coord,
@@ -136,18 +143,25 @@ pub fn discovered_structure(
     camp_armies: u16,
     timestamp: u64,
 ) -> (StructureRecord, u8, u128) {
-    let (category, occupier, capacity, explorers) = match discovery {
+    let (category, occupier, capacity, explorers, guards) = match discovery {
         Discovery::Mine => (
-            crate::taxonomy::MINE_CATEGORY, crate::taxonomy::MINE_OCCUPIER, capacities.fragment_mine_capacity, 0,
+            crate::taxonomy::MINE_CATEGORY, crate::taxonomy::MINE_OCCUPIER, capacities.fragment_mine_capacity, 0, 1,
         ),
         Discovery::Camp => (
-            crate::taxonomy::CAMP_CATEGORY, crate::taxonomy::CAMP_OCCUPIER, capacities.camp_capacity, camp_armies,
+            crate::taxonomy::CAMP_CATEGORY, crate::taxonomy::CAMP_OCCUPIER, capacities.camp_capacity, camp_armies, 1,
+        ),
+        Discovery::Hyperstructure => (
+            crate::taxonomy::HYPERSTRUCTURE_CATEGORY,
+            crate::taxonomy::HYPERSTRUCTURE_OCCUPIER,
+            capacities.hyperstructure_capacity,
+            0,
+            4,
         ),
         _ => panic!("discovery is not a Blitz structure"),
     };
     assert!(!coord.alt, "invalid discovery layer");
     let base = StructureBase {
-        troop_max_guard_count: 1,
+        troop_max_guard_count: guards,
         troop_max_explorer_count: explorers,
         created_at: timestamp.try_into().unwrap(),
         category,

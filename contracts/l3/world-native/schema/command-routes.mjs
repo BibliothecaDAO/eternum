@@ -196,4 +196,9 @@ export const blitzCommandRoutes = [
     entrypoint: "seat_blitz_roster",
     batch: true,
   },
+  {
+    name: "RaiseHyperstructure",
+    logic: "structures",
+    entrypoint: "raise_hyperstructure",
+  },
 ];

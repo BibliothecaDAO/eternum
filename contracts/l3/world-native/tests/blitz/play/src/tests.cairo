@@ -6,6 +6,7 @@ mod construction;
 mod exploration;
 mod fixture;
 mod guilds;
+mod hyperstructures;
 mod levels;
 mod movement;
 mod names;

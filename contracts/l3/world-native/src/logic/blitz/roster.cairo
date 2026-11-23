@@ -19,6 +19,7 @@ pub fn record(game_id: u32, players: Span<ContractAddress>) {
         state.roster.players.write((game_id, index), player);
     }
     state.roster.sizes.write(game_id, players.len());
+    crate::logic::blitz::hyperstructures::reserve_sites(game_id, players.len());
 }
 
 pub fn size(game_id: u32) -> u32 {

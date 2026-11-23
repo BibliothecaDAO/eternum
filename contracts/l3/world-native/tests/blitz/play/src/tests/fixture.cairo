@@ -14,6 +14,19 @@ pub fn blitz_game_from(params: crate::registrar::CreateGameParams) -> (super::De
     (deployment, game_id)
 }
 
+pub fn record_roster(d: super::Deployment, game_id: u32, players: Span<starknet::ContractAddress>) {
+    let mut calldata = array![];
+    (game_id, players).serialize(ref calldata);
+    snforge_std::start_cheat_caller_address(d.games, super::authority());
+    crate::games::IGamesSlotsDispatcherTrait::authority_call(
+        crate::games::IGamesSlotsDispatcher { contract_address: d.games },
+        crate::game::BLITZ,
+        crate::slots::SETTLEMENT,
+        calldata.span(),
+    );
+    snforge_std::stop_cheat_caller_address(d.games);
+}
+
 pub const WOOD: u8 = 3;
 pub const GRASSLAND: u8 = 11;
 pub const REALM_COORD: crate::troops::Coord = crate::troops::Coord { alt: false, x: 2000, y: 2000 };

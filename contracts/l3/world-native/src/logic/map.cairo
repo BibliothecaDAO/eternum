@@ -113,6 +113,24 @@ pub mod MapState {
         write_occupancy(key, Some(TileOccupancy { entity_id, category, is_structure }));
     }
 
+    pub fn reserve_hyperstructure(key: TileKey) {
+        assert!(crate::logic::map::occupancy(key).is_none(), "occupied reservation tile");
+        write_occupancy(
+            key,
+            Some(
+                TileOccupancy {
+                    entity_id: 0, category: crate::taxonomy::RESERVED_HYPERSTRUCTURE_OCCUPIER, is_structure: true,
+                },
+            ),
+        );
+    }
+
+    pub fn release_hyperstructure(key: TileKey) {
+        let reservation = crate::logic::map::occupancy(key).expect('missing reservation');
+        assert!(reservation.category == crate::taxonomy::RESERVED_HYPERSTRUCTURE_OCCUPIER, "missing reservation");
+        write_occupancy(key, None);
+    }
+
     pub fn vacate(key: TileKey, entity_id: u64) {
         let previous = crate::logic::map::occupancy(key).expect('undiscovered tile');
         assert!(!previous.is_structure, "cannot vacate structure");
@@ -249,16 +267,24 @@ pub mod MapLogic {
             rules: crate::rules::SliceRules,
         ) {
             let category = crate::logic::structures::record(key).base.category;
-            assert!(
-                category == crate::taxonomy::MINE_CATEGORY || category == crate::taxonomy::CAMP_CATEGORY,
-                "invalid guarded structure category",
-            );
-            let guard_key = crate::guards::GuardKey { game_id: key.game_id, structure_id: key.entity_id, slot: 0 };
-            assert!(crate::logic::guards::guard(guard_key) == Default::default(), "guards already initialized");
-            crate::logic::guards::GuardState::save(
-                guard_key,
-                crate::guards::Guard { troops: crate::troops::light_guard(seed, rules, timestamp), destroyed_tick: 0 },
-            );
+            let guards = if category == crate::taxonomy::HYPERSTRUCTURE_CATEGORY {
+                crate::troops::hyperstructure_guards(seed, rules, timestamp)
+            } else {
+                assert!(
+                    category == crate::taxonomy::MINE_CATEGORY || category == crate::taxonomy::CAMP_CATEGORY,
+                    "invalid guarded structure category",
+                );
+                array![crate::troops::light_guard(seed, rules, timestamp)].span()
+            };
+            for slot in 0..guards.len() {
+                let guard_key = crate::guards::GuardKey {
+                    game_id: key.game_id, structure_id: key.entity_id, slot: slot.try_into().unwrap(),
+                };
+                assert!(crate::logic::guards::guard(guard_key) == Default::default(), "guards already initialized");
+                crate::logic::guards::GuardState::save(
+                    guard_key, crate::guards::Guard { troops: *guards.at(slot), destroyed_tick: 0 },
+                );
+            }
         }
         #[cfg(not(feature: "blitz"))]
         fn initialize_structure_guards(
