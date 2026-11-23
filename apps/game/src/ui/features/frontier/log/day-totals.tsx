@@ -34,8 +34,8 @@ const TotalsGrid = ({ cells }: { cells: readonly TotalCell[] }) => (
           aria-label={`${cell.name} ${cell.value}`}
           className="flex flex-col items-center gap-1.5 tabular-nums text-hud-ink"
         >
-          <Icon name={cell.icon} size={28} />
-          <b className="text-hud-title leading-none">{cell.value}</b>
+          <Icon name={cell.icon} size={32} />
+          <b className="text-hud-display leading-none lg:text-hud-hero">{cell.value}</b>
         </span>
         <span className="text-hud-label text-hud-muted">{cell.name}</span>
       </span>

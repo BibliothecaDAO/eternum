@@ -172,8 +172,8 @@ it("offers a desktop's five places in order, each a panel its press opens and a 
     ["Season", "false"],
     ["Research", "false"],
     ["Feed", "false"],
-    ["Chat", "false"],
     ["Relics", "false"],
+    ["Chat", "false"],
   ]);
   expect(closed[2].textContent).toContain("2");
   act(() => closed[2].click());

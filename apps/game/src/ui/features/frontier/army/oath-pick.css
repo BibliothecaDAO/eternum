@@ -95,14 +95,14 @@
 .oath-card__title {
   color: rgb(var(--hud-ink));
   font-family: var(--hud-font-display);
-  font-size: var(--hud-text-title);
-  line-height: var(--hud-leading-title);
+  font-size: var(--hud-text-display);
+  line-height: var(--hud-leading-display);
   font-weight: var(--hud-weight-display);
 }
 .oath-card__detail {
   color: var(--hud-muted);
-  font-size: var(--hud-text-label);
-  line-height: var(--hud-leading-label);
+  font-size: var(--hud-text-body);
+  line-height: var(--hud-leading-body);
 }
 .oath-card__below {
   flex: none;
@@ -111,6 +111,8 @@
   display: inline-flex;
   align-items: center;
   gap: theme(spacing.1);
+  font-size: var(--hud-text-label);
+  line-height: var(--hud-leading-label);
 }
 .oath-pick__pass-max {
   display: none;

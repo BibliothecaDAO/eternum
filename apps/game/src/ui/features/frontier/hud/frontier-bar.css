@@ -269,6 +269,11 @@ button.frontier-store:hover {
   color: var(--hud-muted);
   font-variant-numeric: tabular-nums;
 }
+.frontier-army-card__hint {
+  color: rgb(var(--hud-gold));
+  font-size: var(--hud-text-label);
+  line-height: var(--hud-leading-label);
+}
 .frontier-army-card[data-open-slot="true"] {
   min-width: 210px;
   border-style: dashed;

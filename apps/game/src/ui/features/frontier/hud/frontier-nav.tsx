@@ -2,10 +2,11 @@ import "./phone-hud.css";
 
 import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { Icon } from "@/ui/design-system/icon";
-import { MENU, SEASON, unreadChatMessages, unreadFeedEvents } from "@/ui/design-system/kit/words";
+import { MENU } from "@/ui/design-system/kit/words";
 import type { AspectId } from "@bibliothecadao/types";
 
 import { usePartShown } from "../opening/opening-context";
+import { resolveHudPlaces } from "./hud-places";
 
 export type HudSurface =
   | "research"
@@ -24,30 +25,47 @@ export const PhoneWorldActions = ({
   aspect,
   surface,
   onSurface,
+  researchReady = false,
   events,
   unread,
 }: {
   aspect?: AspectId;
   surface: HudSurface | null;
   onSurface: (surface: HudSurface | null) => void;
+  researchReady?: boolean;
   events: number;
   unread: number;
 }) => {
   const aspectsOpen = usePartShown("aspects");
+  const researchOpen = usePartShown("research");
+  const relicsOpen = usePartShown("relic-slots");
+  const places = resolveHudPlaces({
+    aspectsOpen,
+    researchOpen,
+    relicsOpen,
+    researchReady,
+    feedUnread: events,
+    chatUnread: unread,
+  });
+  const season = places.find((place) => place.key === "season");
+  const menuPlaces = places.filter((place) => place.key !== "season");
+  const newPlace =
+    menuPlaces.find((place) => place.key === "chat" && place.count && place.count > 0) ??
+    menuPlaces.find((place) => place.key === "feed" && place.count && place.count > 0) ??
+    menuPlaces.find((place) => place.count && place.count > 0);
   const toggle = (target: "season" | "menu") => onSurface(surface === target ? null : target);
-  const badge = unread > 0 ? unread : events > 0 ? events : undefined;
 
   return (
     <nav aria-label="Places" className="frontier-phone-actions pointer-events-auto">
-      {aspectsOpen && (
+      {season && (
         <button
           type="button"
-          aria-label={SEASON}
+          aria-label={season.ariaLabel}
           aria-current={surface === "season" ? "page" : undefined}
           className="frontier-phone-action"
           onClick={() => toggle("season")}
         >
-          <Icon name="victory" size={24} />
+          <Icon name={season.icon} size={24} />
           {aspect && (
             <span className="frontier-phone-action__facet">
               <AspectMark aspect={aspect} size={14} decorative />
@@ -63,13 +81,12 @@ export const PhoneWorldActions = ({
         onClick={() => toggle("menu")}
       >
         <Icon name="menu" size={24} />
-        {badge !== undefined && (
+        {newPlace && (
           <span
-            className="frontier-phone-action__badge"
-            aria-label={unread > 0 ? unreadChatMessages(unread) : unreadFeedEvents(events)}
-          >
-            {badge}
-          </span>
+            className="frontier-phone-action__dot"
+            data-dot=""
+            aria-label={newPlace.countLabel ?? newPlace.ariaLabel}
+          />
         )}
       </button>
     </nav>

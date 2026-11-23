@@ -477,7 +477,6 @@ export const SEAL_CODE_WORDS = {
 export const DAY_DONE = "complete";
 export const DAY_DONE_WORDS = {
   bestMoment: (day: number) => `Best moment of ${DAY} ${formatExact(day)}`,
-  dawnOf: (day: number) => `Dawn of ${DAY} ${formatExact(day)}`,
   beginDay: (day: number) => `Begin ${DAY} ${formatExact(day)}`,
 } as const;
 export const REALM_KEPT = "Realm kept";
@@ -893,6 +892,7 @@ export interface OpeningRules {
   deepTickSeconds: number;
   deepLossPerTick: number;
   oathPassStamina: number;
+  spireDepthFactor: number;
   staminaPerSecond: number;
   staminaPerFragment: number;
   relicMinutesPerTier: number;
@@ -917,7 +917,8 @@ export const OPENING_WORDS = {
     "shrine-lore": () => "Your armies can now find shrines.",
     city: (rules: OpeningRules) =>
       `Scouts reveal for ${formatAmount(rules.scoutExploreStamina)} stamina, not ${formatAmount(rules.exploreStamina)}.`,
-    spire: () => "Guards are x2 on each layer down. A cleared camp refills your armies.",
+    spire: (rules: OpeningRules) =>
+      `Guards are x${formatAmount(rules.spireDepthFactor)} on each layer down. A cleared camp refills your armies.`,
     deep: (rules: OpeningRules) =>
       `Every tick (${formatAmount(rules.deepTickSeconds)} seconds) here, each army loses ${formatAmount(rules.deepLossPerTick)} troops. Hold a site to earn.`,
     bane: () => "A bane. Today's quest is the bane quest. Your Aspect ends the bane when enough members finish it.",
@@ -1078,6 +1079,7 @@ export const REINFORCE = {
 } as const;
 /** A realm's armies, as a list's name. */
 export const ARMIES = "Armies";
+export const ARMY_MOVE_HINT = "Press a hex to move";
 /** The day-done card's count of the armies that ended with the day. */
 export const ARMIES_ENDED = "Armies ended with the day";
 /** The sources of a store's production, each with its combined rate. */

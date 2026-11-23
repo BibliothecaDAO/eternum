@@ -88,7 +88,6 @@ export const DayDoneCard = ({
         )}
         <div className="day-done__main">
           <header className="day-done__header">
-            {clock.day !== undefined && <span className="day-done__kicker">{DAY_DONE_WORDS.dawnOf(clock.day)}</span>}
             {aspect && (
               <span className="day-done__aspect">
                 <AspectMark aspect={aspect} size={44} decorative />

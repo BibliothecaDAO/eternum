@@ -2,7 +2,7 @@ import "./frontier-bar.css";
 
 import { type IconMeaning } from "@/ui/design-system/icon";
 import { HudPortrait, HudTier } from "@/ui/design-system/kit/hud-elements";
-import { ARMIES, TROOPS, type Rank } from "@/ui/design-system/kit/words";
+import { ARMIES, ARMY_MOVE_HINT, TROOPS, type Rank } from "@/ui/design-system/kit/words";
 import type { StaminaBar } from "@/ui/design-system/kit/hud-elements";
 import type { ReactNode } from "react";
 
@@ -55,6 +55,7 @@ export const ArmyCard = ({
         <StaminaReading stamina={stamina} />
         {drain && <DeepDrain drain={drain} words compact />}
       </span>
+      {selected && <span className="frontier-army-card__hint">{ARMY_MOVE_HINT}</span>}
     </span>
   </button>
 );

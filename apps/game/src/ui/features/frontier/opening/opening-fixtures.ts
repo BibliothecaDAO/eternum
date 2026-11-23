@@ -5,6 +5,7 @@ export const OPENING_RULES: OpeningRules = {
   deepTickSeconds: 120,
   deepLossPerTick: 200,
   oathPassStamina: 20,
+  spireDepthFactor: 2,
   staminaPerSecond: 1 / 60,
   staminaPerFragment: 2,
   relicMinutesPerTier: 30,

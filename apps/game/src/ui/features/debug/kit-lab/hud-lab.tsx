@@ -1271,6 +1271,7 @@ export const HudLab = () => {
                         : null
               }
               onSurface={noop}
+              researchReady={!lab.offline}
               events={lab.offline ? 0 : 2}
               unread={lab.offline ? 0 : 3}
             />

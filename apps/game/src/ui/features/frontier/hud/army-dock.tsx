@@ -8,7 +8,7 @@ import { openArmyDeployment } from "@/ui/features/military/utils/open-army-deplo
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { DEPLOY, DEPLOYING } from "@/ui/design-system/kit/words";
 
-import { troopPlural, TroopTier } from "@bibliothecadao/types";
+import { frontierTroopName, TroopTier } from "@bibliothecadao/types";
 import type { Rank } from "@/ui/design-system/kit/words";
 
 import type { SlotStart } from "../deploy/deploy-plan";
@@ -142,7 +142,7 @@ const DockArmyRow = ({
   return (
     <ArmyCard
       label={army.label}
-      title={(category && troopPlural(category)) ?? army.label}
+      title={(category && frontierTroopName(category)) ?? army.label}
       tier={troopRankOf(army.troopsFact?.tier)}
       drain={army.drain}
       number={army.number}

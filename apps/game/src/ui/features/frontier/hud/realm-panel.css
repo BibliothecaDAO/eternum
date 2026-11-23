@@ -85,8 +85,18 @@ button.realm-tile:hover {
   height: 44px;
 }
 @media (max-width: 1023px) {
+  .realm-panel--sheet {
+    max-height: 54dvh;
+  }
+  .realm-tiles {
+    gap: theme(spacing.1);
+  }
+  .realm-tile {
+    gap: theme(spacing[0.5]);
+    padding: theme(spacing.1) theme(spacing.1);
+  }
   .realm-building__row {
-    min-height: 52px;
+    min-height: 44px;
     padding: theme(spacing[0.5]) theme(spacing.1);
   }
   .realm-tile__label {

@@ -28,6 +28,7 @@ import { ageLine } from "./modes";
 import {
   asRanked,
   buildingName,
+  frontierTroopName,
   guardSlotName,
   rankedText,
   rankName,
@@ -492,6 +493,12 @@ describe("troops", () => {
       [TroopType.Crossbowman]: "Crossbowmen",
     });
     expect(troopPlural("Dragon")).toBeUndefined();
+    expect(Object.fromEntries(TROOP_TYPES.map((troop) => [troop, frontierTroopName(troop)]))).toEqual({
+      [TroopType.Knight]: "Knights",
+      [TroopType.Paladin]: "Scouts",
+      [TroopType.Crossbowman]: "Crossbowmen",
+    });
+    expect(frontierTroopName("Dragon")).toBeUndefined();
     expect(resourceName(ResourcesIds.CrossbowmanT2)).toBe("Crossbowman T2");
   });
 

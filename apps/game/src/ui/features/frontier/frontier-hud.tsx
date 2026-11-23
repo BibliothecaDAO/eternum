@@ -193,9 +193,10 @@ const FrontierHudBody = ({
   const headerStores = useStoreReadings(shown, rules);
   const headerFacts = useNativeFacts(REALM_HEADER_MODELS);
   const relicNow = useCurrentBlockTimestamp();
-  const shownArmies = useDockArmies(shown);
-  const relicCount = shown
-    ? countRealmRelics(readRealmArmyRelics(headerFacts.store, shown.game_id, shownArmies, relicNow))
+  const own = realm && !visit ? realm : null;
+  const ownArmies = useDockArmies(own);
+  const relicCount = own
+    ? countRealmRelics(readRealmArmyRelics(headerFacts.store, own.game_id, ownArmies, relicNow))
     : 0;
   const modeConfig = useGameModeConfig();
   const goToPlace = useGoToFrontierPlace(shown);
@@ -208,7 +209,6 @@ const FrontierHudBody = ({
   const shownAspect = shownAspectId !== undefined ? catalogAspectId(shownAspectId) : undefined;
   if (showBlankOverlay) return null;
   const close = () => setSurface(null);
-  const own = realm && !visit ? realm : null;
   const storeCards = own
     ? {
         kinds: CARD_STORE_KINDS,
@@ -263,14 +263,13 @@ const FrontierHudBody = ({
         pane={chatPane}
         onClose={close}
       />
-    ) : surface === "relics" && shown ? (
-      <FrontierRelics realm={shown} onClose={close} />
+    ) : surface === "relics" && own ? (
+      <FrontierRelics realm={own} onClose={close} />
     ) : surface === "menu" ? (
       <HudMenu
         onOpen={setSurface}
         onClose={close}
         hasRealm={Boolean(own)}
-        hasShown={Boolean(shown)}
         researchReady={own ? canResearchNow(research?.nodes) : false}
         events={feedUnread}
         chatUnread={chat.unread}
@@ -301,9 +300,16 @@ const FrontierHudBody = ({
     </>
   );
   const deployOpen = Boolean(own) && leftView === LeftView.MilitaryView;
+  const leftSurfaceSheet =
+    surface === "army" ||
+    surface === "army-lost" ||
+    surface === "shop" ||
+    surface === "settings" ||
+    surface === "today";
   const replaceRealmWithSheet =
-    desktop && (deployOpen || (!isMapView && showsCard && card !== null && isRealmBoardCard(card.kind)));
-  const realmVisible = Boolean(shown) && realmOpen && !replaceRealmWithSheet;
+    desktop &&
+    (deployOpen || leftSurfaceSheet || (!isMapView && showsCard && card !== null && isRealmBoardCard(card.kind)));
+  const realmVisible = Boolean(shown) && realmOpen && !replaceRealmWithSheet && !page;
   const realmPanel = shown && (
     <FrontierRealmPanel
       rules={rules}
@@ -357,6 +363,7 @@ const FrontierHudBody = ({
       aspect={shownAspect}
       surface={surface}
       onSurface={setSurface}
+      researchReady={own ? canResearchNow(research?.nodes) : false}
       events={feedUnread}
       unread={chat.unread}
     />
@@ -394,7 +401,7 @@ const FrontierHudBody = ({
       banner={<OfflineNotice />}
       realm={realmOpen ? realmPanel : null}
       replaceRealmWithSheet={replaceRealmWithSheet}
-      armies={isMapView && !deployOpen ? dock : null}
+      armies={isMapView && !deployOpen && !page ? dock : null}
       aspectChip={
         isMapView && shown ? (
           <AspectStandingChip orderId={shown.metadata.order} onOpenSeason={() => setSurface("season")} />
@@ -414,7 +421,7 @@ const FrontierHudBody = ({
           research={own ? canResearchNow(research?.nodes) : undefined}
           chatUnread={chat.unread}
           relics={relicCount}
-          hasRealm={Boolean(shown)}
+          hasRealm={Boolean(own)}
         />
       }
     >
@@ -537,7 +544,6 @@ const HudMenu = ({
   onOpen,
   onClose,
   hasRealm,
-  hasShown,
   researchReady,
   events,
   chatUnread,
@@ -546,7 +552,6 @@ const HudMenu = ({
   onOpen: (surface: HudSurface | null) => void;
   onClose: () => void;
   hasRealm: boolean;
-  hasShown: boolean;
   researchReady: boolean;
   events: number;
   chatUnread: number;
@@ -561,7 +566,7 @@ const HudMenu = ({
       onResearch={hasRealm ? () => onOpen("research") : undefined}
       onFeed={() => onOpen("feed")}
       onChat={() => onOpen("chat")}
-      onRelics={hasShown ? () => onOpen("relics") : undefined}
+      onRelics={hasRealm ? () => onOpen("relics") : undefined}
       onShop={fragments !== null ? () => onOpen("shop") : undefined}
       researchReady={researchReady}
       events={events}
