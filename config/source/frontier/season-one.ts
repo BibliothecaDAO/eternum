@@ -78,7 +78,7 @@ export const frontierSeasonOnePreset = {
     },
   },
   orderAspects,
-  depths: frontierPreset.depths.map((depth, index) => ({
+  depths: frontierPreset.depths.slice(0, layerRuinOdds.length).map((depth, index) => ({
     ...depth,
     siteGuardLower: 1170 * 2 ** index,
     siteGuardUpper: 1430 * 2 ** index,

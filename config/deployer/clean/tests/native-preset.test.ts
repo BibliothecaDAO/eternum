@@ -151,6 +151,7 @@ describe("native presets", () => {
         { common: 5000, uncommon: 2700, rare: 1400, epic: 600, legendary: 300 },
         { common: 0, uncommon: 5000, rare: 2833, epic: 1500, legendary: 667 },
         { common: 0, uncommon: 0, rare: 5500, epic: 3000, legendary: 1500 },
+        { common: 0, uncommon: 0, rare: 0, epic: 6400, legendary: 3600 },
       ]);
       for (const [depth, table] of tables.entries()) {
         const weights = [table.common, table.uncommon, table.rare, table.epic, table.legendary];
@@ -328,6 +329,7 @@ describe("native presets", () => {
       [1200, 1400, 100],
       [2400, 2800, 100],
       [4700, 5700, 100],
+      [9300, 11500, 100],
     ]);
     for (const depth of preset.settlement.depths) {
       expect(depth.site_guard_lower).toBeLessThanOrEqual(depth.site_guard_upper);
@@ -361,6 +363,7 @@ describe("native presets", () => {
       [380, 420, 430, 470],
       [760, 840, 860, 940],
       [1520, 1680, 1720, 1880],
+      [3040, 3360, 3440, 3760],
     ]);
     expect(preset.economy.discovery.unwrap()).toMatchObject({ beasts_bps: 600 });
   });
@@ -757,6 +760,7 @@ test("Frontier discoveries use the approved narrow guard ranges at every depth",
     [1200, 1400],
     [2400, 2800],
     [4700, 5700],
+    [9300, 11500],
   ]);
   for (const row of preset.settlement.depths) {
     expect(row).not.toHaveProperty("entry_stamina");
