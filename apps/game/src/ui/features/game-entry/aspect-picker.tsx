@@ -11,7 +11,7 @@ import {
 } from "@bibliothecadao/types";
 import type { JoinedShare } from "@realms-world/identity";
 
-import { AppAspectCard } from "@/ui/design-system/kit/aspect-card";
+import { AppAspectCard, AppAspectGrid } from "@/ui/design-system/kit/aspect-card";
 import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
 import { ASPECT_STEP_WORDS, PRESEASON_WORDS } from "@/ui/design-system/kit/words";
 
@@ -76,7 +76,7 @@ export function AspectPicker({
               : ASPECT_STEP_WORDS.line}
         </p>
       </header>
-      <ul className="app-aspect-grid">
+      <AppAspectGrid>
         {invitedFirst(invite).map(({ id, name }) => {
           const isJoining = foundingAspect === id;
           const memberCount = members?.[id] ?? null;
@@ -99,7 +99,7 @@ export function AspectPicker({
             </li>
           );
         })}
-      </ul>
+      </AppAspectGrid>
       {ordersOf !== null && (
         <OrderChoices aspect={ordersOf} joining={joining} disabled={waiting || joining !== null} onFound={onFound} />
       )}

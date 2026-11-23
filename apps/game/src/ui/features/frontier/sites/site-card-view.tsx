@@ -144,7 +144,7 @@ export const SiteCardView = ({
             guardIcon={guardIcon}
             earns={reward !== null}
           />
-          {reward && <div className="ui-fight-spoils">{reward}</div>}
+          {reward && <div className="fight-spoils">{reward}</div>}
         </>
       )}
       {receipt}
@@ -303,14 +303,16 @@ const Verb = ({
             busy={verb.kind === "attack" ? inFlightWord(verb.inFlight, "attack", ATTACKING) : undefined}
             disabled={verb.kind !== "attack"}
             onClick={verb.kind === "attack" ? verb.onAttack : undefined}
+            cost={
+              verb.kind === "attack" && (
+                <span className="contents" data-attack-stamina={verb.stamina}>
+                  · {formatCharge(verb.stamina)}
+                  <SemanticIcon name="stamina" size={14} />
+                </span>
+              )
+            }
           >
             {ATTACK}
-            {verb.kind === "attack" && (
-              <span className="ui-button__cost" data-attack-stamina={verb.stamina}>
-                · {formatCharge(verb.stamina)}
-                <SemanticIcon name="stamina" size={14} />
-              </span>
-            )}
           </HudButton>
         )}
       </HudWindowFoot>

@@ -1,3 +1,5 @@
+import "./deep-site.css";
+
 import { heldOaths } from "@bibliothecadao/eternum";
 import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { orderMeaning } from "@/ui/design-system/icon-meaning";
@@ -95,14 +97,14 @@ export const DeepSiteView = ({ site, pay, guard, fight, attackerName, order, onC
   const face = DEEP_SITE_FACES[site];
   return (
     <HudSheet label={siteName(site)} onClose={onClose}>
-      <div className="ui-deep-head">
-        <span className="ui-deep-head__mark">
+      <div className="deep-head">
+        <span className="deep-head__mark">
           <Icon name={face.icon} size={40} />
         </span>
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           {guard.kind === "held" ? (
             <div
-              className="ui-deep-holder"
+              className="deep-holder"
               data-aspect-holder={guard.aspectId}
               data-aspect-id={guard.aspectId}
               data-side={guard.ally ? "ally" : "rival"}
@@ -227,8 +229,8 @@ const GuardStrip = ({ site, guard }: { site: DeepSiteProps["site"]; guard: DeepG
   const frontGuard = filled.find((each) => each.armyId === guard.next) ?? filled[0];
   return (
     <div data-deep-slots className="flex flex-col gap-2">
-      <div className="ui-deep-guards">
-        <div className="ui-deep-guards__row">
+      <div className="deep-guards">
+        <div className="deep-guards__row">
           {filled.map((held) => {
             const isNext = held.armyId === guard.next;
             const tip = slotTip(held, isNext);
@@ -241,14 +243,14 @@ const GuardStrip = ({ site, guard }: { site: DeepSiteProps["site"]; guard: DeepG
                 data-tip={tip}
                 role="img"
                 aria-label={tip}
-                className="ui-deep-guard-portrait"
+                className="deep-guard-portrait"
               >
                 <Icon
                   name={troopMeaning({ category: held.category, tier: held.tier })}
                   size={44}
                   className="size-full"
                 />
-                <span className="ui-deep-guard-portrait__aspect" aria-hidden="true">
+                <span className="deep-guard-portrait__aspect" aria-hidden="true">
                   <AspectMark aspect={guard.aspectId} size={16} decorative />
                 </span>
               </span>
@@ -260,14 +262,14 @@ const GuardStrip = ({ site, guard }: { site: DeepSiteProps["site"]; guard: DeepG
               data-deep-slot="empty"
               aria-label={DEEP_WORDS.freeSlot}
               data-tip={DEEP_WORDS.freeSlot}
-              className="ui-deep-guard-empty"
+              className="deep-guard-empty"
             >
               <Icon name="plus" size={16} />
             </span>
           ))}
         </div>
         {guardDrainLabel(guard.slots) && (
-          <span data-deep-drain className="ui-deep-drain">
+          <span data-deep-drain className="deep-drain">
             <Icon name="attack" size={16} />
             <span className="tabular-nums text-hud-bad">{guardDrainLabel(guard.slots)}</span>
           </span>
@@ -305,14 +307,17 @@ const OrderFoot = ({ order }: { order: DeepOrder | DeepBlock }) => {
           aria-label={order.busy ? undefined : DEEP_WORDS[order.verb]}
           busy={order.busy}
           onClick={order.onAct}
+          cost={
+            order.stamina !== undefined &&
+            order.stamina > 0 && (
+              <span className="contents" data-attack-stamina={order.stamina}>
+                · {formatCharge(order.stamina)}
+                <Icon name="stamina" size={14} />
+              </span>
+            )
+          }
         >
           {DEEP_WORDS[order.verb]}
-          {order.stamina !== undefined && order.stamina > 0 && (
-            <span className="ui-button__cost" data-attack-stamina={order.stamina}>
-              · {formatCharge(order.stamina)}
-              <Icon name="stamina" size={14} />
-            </span>
-          )}
         </HudButton>
       )}
       {order.kind === "short" && (

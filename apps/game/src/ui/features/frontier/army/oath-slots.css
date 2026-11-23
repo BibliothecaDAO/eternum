@@ -1,0 +1,39 @@
+[data-oath-job="fight"] {
+  --oath-tone: var(--hud-bad);
+}
+[data-oath-job="stamina"] {
+  --oath-tone: var(--hud-ally);
+}
+[data-oath-job="prize"] {
+  --oath-tone: rgb(var(--hud-gold));
+}
+
+.oath-slot[data-oath-job] {
+  border-color: color-mix(in srgb, var(--oath-tone) 55%, transparent);
+  background: color-mix(in srgb, var(--oath-tone) 10%, var(--hud-well));
+}
+
+.oath-pips {
+  display: flex;
+  align-items: center;
+}
+.oath-pips__row {
+  display: flex;
+  align-items: center;
+  gap: theme(spacing.1);
+}
+.oath-pip {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed var(--hud-line-strong);
+  border-radius: var(--hud-radius-round);
+  background: var(--hud-well);
+}
+.oath-pip[data-filled] {
+  border-style: solid;
+  border-color: color-mix(in srgb, var(--oath-tone) 75%, transparent);
+  background: color-mix(in srgb, var(--oath-tone) 18%, var(--hud-well));
+}

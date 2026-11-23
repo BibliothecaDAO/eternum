@@ -1,3 +1,5 @@
+import "./realm-panel.css";
+
 import {
   aspectName,
   catalogOrder,
@@ -104,7 +106,7 @@ export const RealmPanel = ({
             alt={kind === "wonder" ? HOME_KINDS[kind].label : undefined}
             data-tip={kind === "wonder" ? HOME_KINDS[kind].label : undefined}
           />
-          <span className="ui-realm-panel__name">{name}</span>
+          <span className="realm-panel__name">{name}</span>
           {level !== undefined && highest !== undefined && <RankSteps level={level} highest={highest} kind={kind} />}
         </span>
       }
@@ -113,7 +115,7 @@ export const RealmPanel = ({
       className="pointer-events-auto"
       bodyClassName="flex flex-col gap-2.5"
     >
-      <div className="ui-realm-panel__sub">
+      <div className="realm-panel__sub">
         {level !== undefined && <span className="text-hud-label text-hud-muted">{rankName(level)}</span>}
         {aspect && (
           <span className="inline-flex items-center gap-1 text-hud-label text-hud-ink">
@@ -128,7 +130,7 @@ export const RealmPanel = ({
           </span>
         )}
       </div>
-      <ul aria-label="Stores" className="ui-realm-tiles">
+      <ul aria-label="Stores" className="realm-tiles">
         {visibleStores.map((store) => (
           <li key={store.kind} data-store={store.kind} className="relative min-w-0">
             <StoreTile
@@ -140,11 +142,11 @@ export const RealmPanel = ({
         {armies && (
           <li className="min-w-0">
             <span
-              className="ui-realm-tile"
+              className="realm-tile"
               aria-label={`${ARMY} ${formatExact(armies.active)} / ${formatExact(armies.limit)}`}
             >
-              <span className="ui-realm-tile__label">{ARMY}</span>
-              <span className="ui-realm-tile__value tabular-nums">
+              <span className="realm-tile__label">{ARMY}</span>
+              <span className="realm-tile__value tabular-nums">
                 <SemanticIcon name="knight-t1" size={16} />
                 {`${formatExact(armies.active)} / ${formatExact(armies.limit)}`}
               </span>
@@ -158,11 +160,11 @@ export const RealmPanel = ({
               tip={linkWalletLine ?? LORDS}
               onClick={onWithdraw}
             >
-              <span className="ui-realm-tile__label">
+              <span className="realm-tile__label">
                 {LORDS}
                 {linkWalletLine && <SemanticIcon name="warning" size={12} />}
               </span>
-              <span className="ui-realm-tile__value tabular-nums">
+              <span className="realm-tile__value tabular-nums">
                 <SemanticIcon name="lords" size={16} />
                 {formatAmount(lords)}
               </span>
@@ -172,8 +174,8 @@ export const RealmPanel = ({
         {fragments !== undefined && (
           <li data-store="fragments" className="min-w-0">
             <TileShell label={SHOP_WORDS.fragments(fragments)} tip={SHOP_WORDS.title} onClick={onShop}>
-              <span className="ui-realm-tile__label">{SHOP_WORDS.title}</span>
-              <span className="ui-realm-tile__value tabular-nums">
+              <span className="realm-tile__label">{SHOP_WORDS.title}</span>
+              <span className="realm-tile__value tabular-nums">
                 <SemanticIcon name="fragment" size={16} />
                 {formatAmount(fragments)}
               </span>
@@ -215,7 +217,7 @@ export const RealmPanel = ({
         </ul>
       )}
       {(onResearch || onDeploy) && (
-        <div className="ui-realm-foot">
+        <div className="realm-foot">
           {onResearch && (
             <HudButton kind="secondary" size="sm" icon="research" onClick={onResearch}>
               {RESEARCH}
@@ -244,11 +246,11 @@ const TileShell = ({
   children: ReactNode;
 }) =>
   onClick ? (
-    <button type="button" className="ui-realm-tile" aria-label={label} data-tip={tip} onClick={onClick}>
+    <button type="button" className="realm-tile" aria-label={label} data-tip={tip} onClick={onClick}>
       {children}
     </button>
   ) : (
-    <span role="img" className="ui-realm-tile" aria-label={label} data-tip={tip}>
+    <span role="img" className="realm-tile" aria-label={label} data-tip={tip}>
       {children}
     </span>
   );
@@ -261,8 +263,8 @@ const StoreTile = ({ store, onOpen }: { store: StoreReading; onOpen?: () => void
     <>
       <LandingDelta target={store.flyTarget} />
       <TileShell label={line} tip={line} onClick={onOpen}>
-        <span className="ui-realm-tile__label">{meta.word}</span>
-        <span className="ui-realm-tile__value tabular-nums">
+        <span className="realm-tile__label">{meta.word}</span>
+        <span className="realm-tile__value tabular-nums">
           <SemanticIcon name={meta.icon} size={16} />
           <span data-fly-target={store.flyTarget} className={STORE_TONES[store.tone].text}>
             {shown === undefined ? "—" : <TickNumber value={shown} format={formatAmount} />}

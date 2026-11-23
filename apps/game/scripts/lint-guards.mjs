@@ -9,6 +9,7 @@ import { fileURLToPath } from "node:url";
 import reactHooks from "eslint-plugin-react-hooks";
 import tseslint from "typescript-eslint";
 import { CATALOG_RULE, catalogGuardConfigs, planCatalogBaseline } from "./catalog-guards.mjs";
+import { findUnownedKitSheetClasses } from "./kit-sheet-guards.mjs";
 import { nameGuardConfigs } from "./name-guards.mjs";
 import { noBackGuardConfigs } from "./no-back-guards.mjs";
 import { threeDebugGuardConfigs } from "./three-debug-guards.mjs";
@@ -290,7 +291,11 @@ const catalogHits = [
   ),
 ];
 
-const hits = [...errors.filter((error) => !isCatalogCopy(error)).map(line), ...catalogHits];
+const hits = [
+  ...errors.filter((error) => !isCatalogCopy(error)).map(line),
+  ...catalogHits,
+  ...findUnownedKitSheetClasses(),
+];
 for (const hit of hits) console.log(hit);
 console.log(`lint guards: ${hits.length} hit(s)`);
 process.exitCode = hits.length > 0 ? 1 : 0;

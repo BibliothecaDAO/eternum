@@ -1,3 +1,5 @@
+import "./play-page.css";
+
 import { aspects, formatLongDate, ordersOfAspect } from "@bibliothecadao/types";
 
 import { AspectMark } from "@/ui/design-system/aspect-mark";
@@ -25,11 +27,11 @@ export const SeasonCountdown = ({ opening, now }: { opening: SeasonOpening; now:
 );
 
 const AspectCrests = () => (
-  <ul className="app-countdown-aspects">
+  <ul className="countdown-aspects">
     {aspects.map(({ id, name }) => (
-      <li key={id} data-aspect={name} data-aspect-id={id} className="app-countdown-aspect">
+      <li key={id} data-aspect={name} data-aspect-id={id} className="countdown-aspect">
         <AspectMark aspect={id} size={72} decorative />
-        <span className="app-countdown-aspect__name">{name}</span>
+        <span className="countdown-aspect__name">{name}</span>
         <span className="flex items-center justify-center gap-1.5">
           {ordersOfAspect(id).map(({ orderId }) => (
             <Icon key={orderId} name={orderMeaning(orderId)} size={22} />

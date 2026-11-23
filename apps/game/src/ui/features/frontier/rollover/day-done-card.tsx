@@ -1,3 +1,5 @@
+import "./day-done.css";
+
 import { formatShort, type AspectId } from "@bibliothecadao/types";
 import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
@@ -58,7 +60,7 @@ export const DayDoneCard = ({
   <HudPanel
     label={`${DAY} ${endedDay} ${DAY_DONE}`}
     collapsible={false}
-    className="ui-day-done"
+    className="day-done"
     bodyClassName="flex flex-col gap-3 overflow-y-auto p-4 lg:p-5"
   >
     <div className="flex items-start justify-between gap-3">
@@ -72,7 +74,7 @@ export const DayDoneCard = ({
       </div>
       {aspect && <AspectMark aspect={aspect} size={44} decorative />}
     </div>
-    <div className={race ? "ui-day-done__grid" : "flex flex-col gap-3"}>
+    <div className={race ? "day-done__grid" : "flex flex-col gap-3"}>
       <div className="flex flex-col gap-2.5">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-hud-label text-hud-muted">
           <DayEnds endsAt={clock.endsAt} secondsLeft={clock.secondsLeft} tone={clock.tone} />
@@ -112,7 +114,7 @@ export const DayDoneCard = ({
 );
 
 const RaceStandings = ({ race }: { race: DayDoneRace }) => (
-  <div data-day-race className="ui-day-race">
+  <div data-day-race className="day-race">
     <span className="text-hud-label uppercase tracking-wider text-hud-muted">{ASPECT_PAGE_WORDS.race}</span>
     <AspectStandings standings={race.standings} finishHeight={race.finishHeight} />
   </div>

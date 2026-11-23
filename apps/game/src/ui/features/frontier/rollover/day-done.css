@@ -1,0 +1,29 @@
+.day-end__card {
+  width: 100%;
+  max-width: 24rem;
+}
+.day-done {
+  max-height: calc(100dvh - 2rem);
+}
+.day-done__grid {
+  display: grid;
+  gap: theme(spacing.3);
+}
+@media (min-width: 1024px) {
+  .day-end__card {
+    max-width: 44rem;
+  }
+  .day-done__grid {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    align-items: start;
+  }
+}
+.day-race {
+  display: flex;
+  flex-direction: column;
+  gap: theme(spacing.2);
+  border: 1px solid var(--hud-divider);
+  border-radius: var(--hud-radius-panel);
+  background: var(--hud-well);
+  padding: theme(spacing.3);
+}

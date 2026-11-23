@@ -135,7 +135,7 @@ describe("a Deep site's card", () => {
       },
       order: { kind: "act", verb: "attack", stamina: 30, onAct: () => {} },
     });
-    const sides = [...document.querySelectorAll(".ui-fight-side")];
+    const sides = [...document.querySelectorAll(".fight-side")];
     expect(sides).toHaveLength(2);
     expect(sides[0]!.querySelector('[data-icon="crossbowman-t1"]')).not.toBeNull();
     expect(sides[0]!.textContent).toContain("Army 1");

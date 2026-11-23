@@ -5,6 +5,8 @@ import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { aspectCardUrl } from "@/ui/design-system/icon-meaning";
 import { OrderEmblem } from "./order-emblem";
 
+export const AppAspectGrid = ({ children }: { children: ReactNode }) => <ul className="app-aspect-grid">{children}</ul>;
+
 export const AppAspectCard = ({
   aspect,
   name,

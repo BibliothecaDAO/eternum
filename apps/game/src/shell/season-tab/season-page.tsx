@@ -1,3 +1,5 @@
+import "./season-page.css";
+
 import { aspects, formatAmount, formatDate, orderAspect, type AspectId } from "@bibliothecadao/types";
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -48,7 +50,7 @@ export const SeasonPage = () => {
     <PageFrame title={WORDS.season} painting="season-citadel">
       <div className="flex flex-col gap-6">
         {phone && <h1 className="text-app-title text-app-ink">{WORDS.season}</h1>}
-        <div className="app-season-grid">
+        <div className="season-grid">
           <FrontierPanel rows={phone ? BOARD_ROWS.phone : BOARD_ROWS.desktop} />
           <SeasonAside />
         </div>

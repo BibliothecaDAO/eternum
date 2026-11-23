@@ -1,3 +1,5 @@
+import "./aspect-standings.css";
+
 import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { HudChip, HudMeter } from "@/ui/design-system/kit/hud-elements";
 import { ASPECT_PAGE_WORDS as WORDS } from "@/ui/design-system/kit/words";
@@ -53,7 +55,7 @@ const AspectStandingRow = ({
       data-aspect-col={standing.aspectId}
       data-aspect-id={standing.aspectId}
       data-own={standing.own || undefined}
-      className="ui-race-row"
+      className="race-row"
     >
       <AspectMark aspect={standing.aspectId} size={24} decorative />
       <div className="flex min-w-0 flex-1 flex-col gap-1">

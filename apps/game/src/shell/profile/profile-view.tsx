@@ -1,3 +1,5 @@
+import "./profile-view.css";
+
 import { PROFILE_WORDS, SEASON_WORDS } from "@/ui/design-system/kit/words";
 import { aspectName, catalogOrder, formatAmount } from "@bibliothecadao/types";
 import { useIdentitySession } from "@/hooks/context/identity-session";
@@ -100,14 +102,14 @@ export const PlayerCard = ({ account, own }: { account: string; own: boolean }) 
           <PlayerName account={account} profile={profile.known ? profile : undefined} />
         </h2>
         {standing && standingOrder && (
-          <div className="app-profile-crests">
+          <div className="profile-crests">
             {standingAspect && (
-              <span className="app-profile-crest">
+              <span className="profile-crest">
                 <AspectMark aspect={standingAspect} size={32} decorative />
                 <span className="text-app-label text-app-ink">{aspectName(standingAspect)}</span>
               </span>
             )}
-            <span className="app-profile-crest">
+            <span className="profile-crest">
               <OrderEmblem order={standingOrder.orderId} size={32} />
               <span className="text-app-label text-app-ink">{standingOrder.orderName}</span>
             </span>

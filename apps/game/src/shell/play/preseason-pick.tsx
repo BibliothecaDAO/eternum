@@ -16,7 +16,7 @@ import { identityClient } from "@/hooks/context/identity-session";
 import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { Icon } from "@/ui/design-system/icon";
 import { AppButton, AppNotice } from "@/ui/design-system/kit/app-elements";
-import { AppAspectCard } from "@/ui/design-system/kit/aspect-card";
+import { AppAspectCard, AppAspectGrid } from "@/ui/design-system/kit/aspect-card";
 import { AppCountdownChip } from "@/ui/design-system/kit/clock-chip";
 import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
 import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
@@ -162,7 +162,7 @@ const AspectCards = ({
   offered: AspectOffer | null;
   onPick: (aspect: AspectId) => void;
 }) => (
-  <ul className="app-aspect-grid">
+  <AppAspectGrid>
     {invitedFirst(offered).map(({ id, name }) => {
       const count = aspectMembers(members, id);
       return (
@@ -189,7 +189,7 @@ const AspectCards = ({
         </li>
       );
     })}
-  </ul>
+  </AppAspectGrid>
 );
 
 const OrderRows = ({
@@ -206,7 +206,7 @@ const OrderRows = ({
   <section className="flex flex-col gap-2" aria-label={PRESEASON_WORDS.orderTitle}>
     <h2 className="text-app-heading text-app-ink">{PRESEASON_WORDS.orderTitle}</h2>
     <p className="text-app-label text-app-muted">{PRESEASON_WORDS.orderLine(aspectName(aspect))}</p>
-    <ul className="app-aspect-orders">
+    <ul className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
       {ordersOfAspect(aspect).map(({ orderId, fullOrderName }) => (
         <li key={orderId}>
           <button

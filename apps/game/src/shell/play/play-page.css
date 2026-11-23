@@ -1,0 +1,69 @@
+.play-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: theme(spacing.5);
+}
+@media (min-width: 1024px) {
+  .play-grid {
+    min-height: 38rem;
+    grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr);
+    gap: theme(spacing.6);
+  }
+}
+.play-side {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: theme(spacing.4);
+}
+.play-side .app-age-column {
+  min-height: 13rem;
+  flex: 1;
+}
+.play-aspects {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: theme(spacing.2);
+}
+.play-aspect {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: theme(spacing.1);
+  border: 1px solid rgb(var(--app-aspect) / 0.45);
+  border-radius: var(--app-radius-control);
+  background: var(--app-well);
+  box-shadow: inset 0 2px 0 rgb(var(--app-aspect));
+  padding: theme(spacing.2);
+  text-align: center;
+}
+
+.countdown-aspects {
+  display: grid;
+  width: 100%;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: theme(spacing.3);
+}
+@media (min-width: 1024px) {
+  .countdown-aspects {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: theme(spacing.4);
+  }
+}
+.countdown-aspect {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: theme(spacing.2);
+  border: 1px solid rgb(var(--app-aspect) / 0.45);
+  border-radius: var(--app-radius-panel);
+  background: color-mix(in srgb, var(--app-surface) 88%, transparent);
+  box-shadow: inset 0 3px 0 rgb(var(--app-aspect));
+  padding: theme(spacing.4) theme(spacing.3);
+}
+.countdown-aspect__name {
+  font-family: var(--app-face-title);
+  font-size: var(--app-text-heading);
+  line-height: var(--app-leading-heading);
+  color: var(--app-ink);
+}

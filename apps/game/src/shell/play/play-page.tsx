@@ -1,3 +1,5 @@
+import "./play-page.css";
+
 import { aspects } from "@bibliothecadao/types";
 import { ASPECT_PAGE_WORDS, BLITZ_WORDS, LORE_LINE, WORDS } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
@@ -41,13 +43,13 @@ export const PlayPage = () => {
           {LORE_LINE}
         </h1>
       )}
-      <div className="app-play-grid">
+      <div className="play-grid">
         <section className="flex min-w-0 flex-col gap-3">
           <LeadOrState facts={facts} />
           {facts.board && <SourceGaps gaps={facts.gaps} />}
         </section>
         {facts.board && (
-          <div className="app-play-side">
+          <div className="play-side">
             {facts.board.lead?.mode === "frontier" && <AspectRacePreview />}
             {ages.map((mode) => (
               <AgeColumn key={mode} mode={mode} facts={facts} items={(facts.board as PlayBoard).ages[mode]} />
@@ -119,9 +121,9 @@ const AspectRacePreview = () => (
       </AppLink>
     }
   >
-    <ul className="app-play-aspects">
+    <ul className="play-aspects">
       {aspects.map(({ id, name }) => (
-        <li key={id} data-aspect-id={id} className="app-play-aspect">
+        <li key={id} data-aspect-id={id} className="play-aspect">
           <AspectMark aspect={id} size={44} decorative />
           <span className="text-app-label text-app-ink">{name}</span>
         </li>

@@ -1,3 +1,5 @@
+import "./day-done.css";
+
 import { useEffect, type ReactNode } from "react";
 
 import { DAY_END_TIMING, useDayEndStore, type DayEndPhase } from "@/hooks/store/use-day-end-store";
@@ -41,7 +43,7 @@ export const DayEndScreen = ({ summary }: { summary: ReactNode | null }) => {
       />
       {phase === "summary" && summary && (
         <div className="absolute inset-0 flex items-center justify-center p-3 lg:p-6" style={CLEAR_OF_THE_HOME_BAR}>
-          <div className="ui-day-end__card">{summary}</div>
+          <div className="day-end__card">{summary}</div>
         </div>
       )}
       {phase === "veil" && (

@@ -49,8 +49,8 @@ describe("a guarded site's card", () => {
         />,
       ),
     );
-    expect(document.querySelector(".ui-fight-vs")?.textContent).toContain("This attack earns");
-    expect(document.querySelector(".ui-fight-spoils")?.textContent).toBe("+5KFull: the rest did not fit+1 site");
+    expect(document.querySelector(".fight-vs")?.textContent).toContain("This attack earns");
+    expect(document.querySelector(".fight-spoils")?.textContent).toBe("+5KFull: the rest did not fit+1 site");
   });
 
   it("heads the attack with what it earns, and reads each side before and after as numbers alone", () => {
@@ -73,10 +73,10 @@ describe("a guarded site's card", () => {
       ),
     );
     const card = document.querySelector("section[aria-label='Troll']")!;
-    expect(card.querySelector(".ui-fight-vs")?.textContent).toContain("This attack earns");
+    expect(card.querySelector(".fight-vs")?.textContent).toContain("This attack earns");
     expect(card.textContent?.match(/(?<!−)1,100/g)).toHaveLength(1);
-    expect(card.querySelector(".ui-fight-spoils .opacity-50")).toBeNull();
-    const sides = [...card.querySelectorAll('.ui-fight-arena [role="img"]')].map((side) =>
+    expect(card.querySelector(".fight-spoils .opacity-50")).toBeNull();
+    const sides = [...card.querySelectorAll('.fight-arena [role="img"]')].map((side) =>
       side.getAttribute("aria-label"),
     );
     expect(sides).toEqual(["Army 5,000 → 4,820, −180 · 4% lost", "Troll 1,100 → 0, −1,100 · 100% lost"]);
@@ -138,8 +138,8 @@ describe("a guarded site's card", () => {
     );
     const card = document.querySelector("section[aria-label='Ruin']")!;
     expect(card.querySelectorAll('[data-icon="beast-ammit"]')).toHaveLength(1);
-    expect(card.querySelector(".ui-fight-vs")?.textContent).toContain("Your army is lost");
-    expect(card.querySelector(".ui-fight-spoils .opacity-50")?.textContent).toBe("+1 site");
+    expect(card.querySelector(".fight-vs")?.textContent).toContain("Your army is lost");
+    expect(card.querySelector(".fight-spoils .opacity-50")?.textContent).toBe("+1 site");
     expect(card.querySelector('[data-icon="troops"]')).toBeNull();
     expect(card.querySelector('[data-combat-mark="Blade"]')?.textContent).toBe("Blade");
     expect(card.textContent).toContain("2,300");
@@ -167,15 +167,15 @@ describe("a guarded site's card", () => {
       ),
     );
     const card = document.querySelector("section[aria-label='Blightglow Rift']")!;
-    expect(card.querySelector(".ui-fight-vs")?.textContent).toContain("The guard holds");
-    expect(card.querySelector(".ui-fight-spoils .opacity-50")?.textContent).toBe("+4.2K+1 site");
+    expect(card.querySelector(".fight-vs")?.textContent).toContain("The guard holds");
+    expect(card.querySelector(".fight-spoils .opacity-50")?.textContent).toBe("+4.2K+1 site");
     expect(card.textContent).toContain("794");
     expect(card.textContent).toContain("193");
     expect(card.textContent).toContain("1,400");
     expect(card.textContent).toContain("1,033");
     expect(card.textContent).not.toContain("Army will be lost");
     expect(document.querySelector('[role="status"]')).toBeNull();
-    const sides = [...card.querySelectorAll('.ui-fight-arena [role="img"]')].map((side) =>
+    const sides = [...card.querySelectorAll('.fight-arena [role="img"]')].map((side) =>
       side.getAttribute("aria-label"),
     );
     expect(sides).toEqual(["Army 794 → 193, −601 · 76% lost", "Wyvern 1,400 → 1,033, −367 · 26% lost"]);
@@ -203,7 +203,7 @@ describe("a guarded site's card", () => {
         />,
       ),
     );
-    expect(document.querySelector(".ui-fight-vs")?.textContent).toContain("This attack earns");
+    expect(document.querySelector(".fight-vs")?.textContent).toContain("This attack earns");
     expect(document.querySelector('[aria-label="Sites cleared +1 site"]')?.getAttribute("data-tip")).toBe(
       "Ranked by sites cleared, then deepest depth",
     );
@@ -221,7 +221,7 @@ describe("a guarded site's card", () => {
         />,
       ),
     );
-    expect(document.querySelector(".ui-fight-vs")?.textContent).toContain("This attack clears it");
+    expect(document.querySelector(".fight-vs")?.textContent).toContain("This attack clears it");
   });
 
   it("earns what fits, marked Full, when the store would overflow, with Realm to make room; never blocks the attack", () => {
@@ -244,7 +244,7 @@ describe("a guarded site's card", () => {
         />,
       ),
     );
-    const spoils = document.querySelector(".ui-fight-spoils")!;
+    const spoils = document.querySelector(".fight-spoils")!;
     expect(spoils.textContent).toBe("+120Full: the rest did not fit+1 site");
     expect(spoils.querySelector('[data-tip*="did not fit"]')).toBeNull();
     act(() =>
@@ -509,7 +509,7 @@ it("shows who hits first only when the core forecast reports it", () => {
       />,
     ),
   );
-  const sides = [...document.querySelectorAll(".ui-fight-side")];
+  const sides = [...document.querySelectorAll(".fight-side")];
   expect(sides[0]?.textContent).toContain("Hits first");
   expect(sides[1]?.textContent).not.toContain("Hits first");
   act(() =>
@@ -611,7 +611,7 @@ describe("one fight panel for every state of every target (owner, 10-27: 'this p
             />,
           ),
         );
-        const sides = [...document.querySelectorAll('section[role=dialog] .ui-fight-arena [role="img"]')].map((side) =>
+        const sides = [...document.querySelectorAll('section[role=dialog] .fight-arena [role="img"]')].map((side) =>
           side.getAttribute("aria-label"),
         );
         const heard = (said: string, lost: string | undefined) => (lost ? `${said}, ${lost}` : said);

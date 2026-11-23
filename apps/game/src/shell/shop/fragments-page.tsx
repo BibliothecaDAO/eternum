@@ -1,3 +1,5 @@
+import "./fragments-page.css";
+
 import { useEffect, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -81,7 +83,7 @@ const Choose = ({ game, onPriced }: { game: ShopGame; onPriced: (paying: Paying)
     });
   return (
     <div className="flex flex-col gap-5">
-      <div className="app-shop-packs" data-fragment-packs>
+      <div className="shop-packs" data-fragment-packs>
         {PACKS.map((pack) => (
           <AppChoice
             key={pack}

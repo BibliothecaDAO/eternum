@@ -1,3 +1,5 @@
+import "./build-view.css";
+
 import { rankName } from "@bibliothecadao/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { formatExact, formatCharge, formatShort, formatShortDuration } from "@bibliothecadao/types";
@@ -90,7 +92,7 @@ export const BuildView = ({
     </span>
   );
   const choice = (
-    <div data-build-sheet className="ui-build-sheet">
+    <div data-build-sheet className="build-sheet">
       <div data-build-grid className="grid grid-cols-3 gap-1.5 lg:gap-2">
         {unlocked.map(({ tile, index }) => (
           <TileButton key={tile.key} tile={tile} chosen={index === chosen} onChoose={() => onChoose(index)} />
@@ -141,7 +143,7 @@ type IndexedTile = { tile: BuildTile; index: number };
 const ChosenSummary = ({ tile }: { tile: BuildTile }) => {
   const hasTip = typeof tile.tip === "string" ? tile.tip.trim().length > 0 : tile.tip.length > 0;
   return (
-    <div data-build-chosen className="ui-build-chosen">
+    <div data-build-chosen className="build-chosen">
       <SemanticIcon name={tile.icon} size={18} />
       <span className="min-w-0 flex-1 truncate">
         {hasTip ? (
@@ -177,11 +179,11 @@ const LockedUnlocks = ({
   chosen: number;
   onChoose: (index: number) => void;
 }) => (
-  <div data-build-locked className="ui-build-locked">
+  <div data-build-locked className="build-locked">
     {groupLockedByLevel(items).map(([level, group]) => (
-      <div key={level} className="ui-build-locked__group">
+      <div key={level} className="build-locked__group">
         <HudChip icons={["lock"]}>{rankName(level)}</HudChip>
-        <span className="ui-build-locked__items">
+        <span className="build-locked__items">
           {group.map(({ tile, index }) => (
             <span key={tile.key} {...rankedTip(tile.tip)}>
               <HudButton

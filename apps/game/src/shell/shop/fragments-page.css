@@ -1,0 +1,17 @@
+.shop-packs {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: theme(spacing.3);
+}
+@media (min-width: 1024px) {
+  .shop-packs {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: theme(spacing.5);
+  }
+  .shop-packs .app-choice {
+    min-height: 18rem;
+    justify-content: center;
+    gap: theme(spacing.3);
+    padding: theme(spacing.6) theme(spacing.5);
+  }
+}

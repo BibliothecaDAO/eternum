@@ -1,0 +1,62 @@
+.realm-panel__name {
+  font-family: var(--hud-font-display);
+  font-size: var(--hud-text-title);
+  line-height: var(--hud-leading-title);
+  color: rgb(var(--hud-ink));
+}
+.realm-panel__sub {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: theme(spacing.2);
+}
+.realm-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: theme(spacing[1.5]);
+}
+.realm-tile {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  gap: theme(spacing[0.5]);
+  border: 1px solid var(--hud-line);
+  border-radius: var(--hud-radius-control);
+  background: var(--hud-well);
+  padding: theme(spacing[1.5]) theme(spacing.2);
+  color: rgb(var(--hud-ink));
+}
+button.realm-tile {
+  cursor: pointer;
+}
+button.realm-tile:hover {
+  border-color: rgb(var(--hud-accent));
+}
+.realm-tile__label {
+  display: inline-flex;
+  align-items: center;
+  gap: theme(spacing.1);
+  color: var(--hud-muted);
+  font-size: var(--hud-text-badge);
+  line-height: var(--hud-leading-badge);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.realm-tile__value {
+  display: inline-flex;
+  align-items: center;
+  gap: theme(spacing.1);
+  font-size: var(--hud-text-strong);
+  line-height: var(--hud-leading-strong);
+}
+.realm-foot {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: theme(spacing.2);
+  padding-top: theme(spacing.1);
+}
+.realm-foot > .ui-button {
+  width: 100%;
+}

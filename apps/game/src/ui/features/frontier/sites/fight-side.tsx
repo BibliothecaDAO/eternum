@@ -1,3 +1,5 @@
+import "./fight-side.css";
+
 import { formatExact, formatShort, type Troops } from "@bibliothecadao/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HudPanel } from "@/ui/design-system/kit/hud-elements";
@@ -37,7 +39,7 @@ export const FightArena = ({
 }) => {
   if (!ours && !theirs) return null;
   return (
-    <div className="ui-fight-arena">
+    <div className="fight-arena">
       {ours && (
         <FightSide
           label={ours.label}
@@ -49,8 +51,8 @@ export const FightArena = ({
           side="ours"
         />
       )}
-      <div className="ui-fight-vs">
-        <span className="ui-fight-vs__word" aria-hidden="true">
+      <div className="fight-vs">
+        <span className="fight-vs__word" aria-hidden="true">
           VS
         </span>
         {outcome}
@@ -97,23 +99,23 @@ export const FightSide = ({
     >
       <HudPanel
         collapsible={false}
-        className={cn("min-w-0 flex-1 ui-fight-side", `ui-fight-side--${side}`)}
-        bodyClassName="ui-fight-side__body [container-type:inline-size]"
+        className={cn("min-w-0 flex-1 fight-side", `fight-side--${side}`)}
+        bodyClassName="fight-side__body [container-type:inline-size]"
       >
         {mark && (
-          <span aria-hidden className="ui-fight-side__portrait">
+          <span aria-hidden className="fight-side__portrait">
             {mark}
           </span>
         )}
-        <span aria-hidden className={cn("ui-fight-side__name", side === "ours" ? "text-hud-good" : "text-hud-bad")}>
+        <span aria-hidden className={cn("fight-side__name", side === "ours" ? "text-hud-good" : "text-hud-bad")}>
           {title}
         </span>
         {subtitle && (
-          <span aria-hidden className="ui-fight-side__role">
+          <span aria-hidden className="fight-side__role">
             {subtitle}
           </span>
         )}
-        <span aria-hidden className="ui-fight-side__nums tabular-nums">
+        <span aria-hidden className="fight-side__nums tabular-nums">
           <span
             className="whitespace-nowrap text-hud-label text-hud-muted"
             style={{ fontSize: fittedSize("label", `${figures.before} → ${figures.kept}`) }}

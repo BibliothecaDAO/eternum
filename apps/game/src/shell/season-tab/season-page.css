@@ -1,0 +1,11 @@
+.season-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: theme(spacing.6);
+}
+@media (min-width: 1024px) {
+  .season-grid {
+    grid-template-columns: minmax(0, 1.8fr) minmax(0, 1fr);
+  }
+}
