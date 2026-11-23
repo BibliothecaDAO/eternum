@@ -29,6 +29,7 @@ export { entityMapPosition } from "../utils/tile";
 export { safeInteger } from "../utils/safe-integer";
 
 export { armyCombatRefusal, isAspectAlly, viewerAspects } from "../utils/army-opponents";
+export { spendsFragments } from "../utils/mode-rules";
 export { armyDrain, deepArmyLife, type DeepArmyLife } from "../utils/deep-army-life";
 export {
   IncompleteDeepSyncError,

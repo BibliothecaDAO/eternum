@@ -15,6 +15,7 @@ import { nativeReleaseConstants } from "../../../../../../../contracts/l3/world-
 import { GameProvider } from "@/hooks/context/game-context";
 import type { DockArmy } from "../hud/dock-armies";
 import { ArmyRefill, sellsStamina } from "./army-refill";
+import { sellingFragments } from "../value/fragments-fixture";
 import { transferArmies } from "./transfer-fixture";
 
 const PLAYER = "0x111";
@@ -42,9 +43,11 @@ const render = (
   shown: DockArmy,
   look: "price" | "reading" | "button" = "price",
   release: number = nativeReleaseConstants.SEAL_RELEASE,
+  selling = true,
 ) => {
   const store = transferArmies();
   store.applyFacts([
+    ...(selling ? sellingFragments(store) : []),
     {
       model: "Fragments",
       key: "0xf7a1",
@@ -55,7 +58,7 @@ const render = (
       key: "0x1ab0",
       value: { game_id: 1, release_id: release, created_release_id: release },
     },
-  ]);
+  ] as never);
   const buy = vi.fn().mockResolvedValue({ transaction_hash: "0x2" });
   act(() =>
     root.render(
@@ -97,6 +100,11 @@ it("sells no stamina in the Deep or to a full bar", () => {
   expect(sellsStamina(army({ stamina: { current: 150, max: 150, perExplore: 20 } }), 40)).toBe(false);
   expect(sellsStamina(army({ stamina: { current: 149, max: 150, perExplore: 20 } }), 40)).toBe(true);
   render(40, army({ ethereal: 3 }));
+  expect(host.querySelectorAll("button")).toHaveLength(0);
+});
+
+it("sells no stamina in a game whose rules take no Fragment spend, as the Season 1 playtest's release", () => {
+  render(40, army(), "price", nativeReleaseConstants.SEAL_RELEASE, false);
   expect(host.querySelectorAll("button")).toHaveLength(0);
 });
 

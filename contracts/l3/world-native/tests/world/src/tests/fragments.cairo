@@ -61,13 +61,40 @@ fn stamina(d: super::Deployment, key: crate::troops::ExplorerKey) -> u64 {
     )
 }
 
-fn buy_stamina(d: super::Deployment, key: crate::troops::ExplorerKey, fragments: u64) -> bool {
-    super::resource_commands::execute_in_game(
-        d,
-        key.game_id,
-        crate::commands::Command::BuyStamina(BuyStamina { explorer_id: key.explorer_id, fragments }),
-        FIXTURE_START + 10,
-    )
+fn action(game_id: u32) -> crate::commands::ActionContext {
+    crate::commands::action_context(crate::commands::load_context(game_id, 0, FIXTURE_START + 10))
+}
+
+fn buy_stamina(d: super::Deployment, key: crate::troops::ExplorerKey, fragments: u64) {
+    snforge_std::interact_with_state(
+        d.games,
+        || crate::logic::fragments::buy_stamina(
+            key.game_id, d.actor, BuyStamina { explorer_id: key.explorer_id, fragments }, action(key.game_id),
+        ),
+    );
+}
+
+fn buy_seal(d: super::Deployment, game_id: u32) {
+    snforge_std::interact_with_state(d.games, || crate::logic::fragments::buy_seal(game_id, d.actor, action(game_id)));
+}
+
+#[test]
+fn season_one_s_playtest_release_refuses_every_fragment_spend_and_spends_nothing() {
+    let (d, game_id, key) = super::registrar::setup_frontier_relics();
+    earn(d, game_id, 2000);
+    set_stamina(d, key, 20);
+    for command in array![
+        crate::commands::Command::BuySeal(()),
+        crate::commands::Command::BuyStamina(BuyStamina { explorer_id: key.explorer_id, fragments: 1 }),
+        crate::commands::Command::RerollOath(
+            crate::oaths::RerollOath { explorer_id: key.explorer_id, expected_pick: 1, index: 0 },
+        ),
+    ] {
+        super::play_fixture::assert_preflight_rejection(
+            d.games, super::play_fixture::TestAction { game_id, actor: d.actor, command }, FIXTURE_START + 10,
+        );
+    }
+    assert_eq!(balance(d, game_id), 2000);
 }
 
 #[test]
@@ -91,39 +118,72 @@ fn only_the_ledger_operator_credits_a_friend_s_fragments_once_for_each_credit_id
 }
 
 #[test]
-fn a_seal_costs_one_thousand_fragments_and_is_bought_once() {
+fn a_seal_costs_one_thousand_fragments() {
     let (d, game_id, _) = super::registrar::setup_frontier_relics();
-    let buy = crate::commands::Command::BuySeal(());
-    earn(d, game_id, 999);
-    assert!(!super::resource_commands::execute_in_game(d, game_id, buy, FIXTURE_START + 10));
     earn(d, game_id, 1001);
-    assert!(super::resource_commands::execute_in_game(d, game_id, buy, FIXTURE_START + 10));
-    assert_eq!(balance(d, game_id), 1000);
+    buy_seal(d, game_id);
+    assert_eq!(balance(d, game_id), 1);
     assert!(
         snforge_std::interact_with_state(
             d.games, || crate::state::read().entry.seals.read((game_id, d.actor)).is_some(),
         ),
     );
-    assert!(!super::resource_commands::execute_in_game(d, game_id, buy, FIXTURE_START + 10));
-    assert_eq!(balance(d, game_id), 1000);
 }
 
 #[test]
-fn a_fragment_refills_two_points_above_the_deep_never_past_the_bar_and_none_in_the_deep() {
+#[should_panic(expected: "not enough fragments")]
+fn a_seal_is_refused_below_one_thousand_fragments() {
+    let (d, game_id, _) = super::registrar::setup_frontier_relics();
+    earn(d, game_id, 999);
+    buy_seal(d, game_id);
+}
+
+#[test]
+#[should_panic(expected: "seal already held")]
+fn a_seal_is_bought_once() {
+    let (d, game_id, _) = super::registrar::setup_frontier_relics();
+    earn(d, game_id, 2000);
+    buy_seal(d, game_id);
+    buy_seal(d, game_id);
+}
+
+#[test]
+fn a_fragment_refills_two_points_up_to_the_bar() {
     let (d, game_id, key) = super::registrar::setup_frontier_relics();
     earn(d, game_id, 100);
     let maximum = set_stamina(d, key, 7);
-    assert!(!buy_stamina(d, key, 5));
-    assert!(!buy_stamina(d, key, 0));
-    assert!(buy_stamina(d, key, 3));
+    buy_stamina(d, key, 3);
     assert_eq!(stamina(d, key), maximum - 1);
     assert_eq!(balance(d, game_id), 97);
-    assert!(buy_stamina(d, key, 1));
+    buy_stamina(d, key, 1);
     assert_eq!(stamina(d, key), maximum);
     assert_eq!(balance(d, game_id), 96);
-    assert!(!buy_stamina(d, key, 1));
+}
+
+#[test]
+#[should_panic(expected: "stamina over its bar")]
+fn a_refill_past_the_bar_is_refused() {
+    let (d, game_id, key) = super::registrar::setup_frontier_relics();
+    earn(d, game_id, 100);
+    set_stamina(d, key, 7);
+    buy_stamina(d, key, 5);
+}
+
+#[test]
+#[should_panic(expected: "stamina over its bar")]
+fn a_refill_of_no_fragment_is_refused() {
+    let (d, game_id, key) = super::registrar::setup_frontier_relics();
+    earn(d, game_id, 100);
+    set_stamina(d, key, 7);
+    buy_stamina(d, key, 0);
+}
+
+#[test]
+#[should_panic(expected: "no stamina is sold in the Deep")]
+fn no_stamina_is_sold_in_the_deep() {
+    let (d, game_id, key) = super::registrar::setup_frontier_relics();
+    earn(d, game_id, 100);
     set_stamina(d, key, 20);
     super::progression::place_army_at_depth(d, key, 3);
-    assert!(!buy_stamina(d, key, 1));
-    assert_eq!(balance(d, game_id), 96);
+    buy_stamina(d, key, 1);
 }

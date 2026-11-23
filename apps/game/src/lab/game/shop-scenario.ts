@@ -1,4 +1,6 @@
 import { nativeFragmentConstants, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import { FRAGMENT_SPEND_COMMANDS } from "@bibliothecadao/types";
+import { nativeCommandBits } from "../../../../../contracts/l3/world-native/schema/commands.gen";
 import { SPIRE_ARMY } from "@/ui/features/frontier/spire-fixture";
 
 import { wire, type LabCommand, type LabFact, type LabScenario } from "./lab-chain";
@@ -52,7 +54,17 @@ const sealBought = (chain: NativeFactStore, player: string, now: number): LabFac
 };
 
 export const holdFragments = (store: NativeFactStore, player: string, balance: bigint) => {
-  store.applyFacts([fragmentsHeld(player, balance)] as never);
+  store.applyFacts([fragmentSpendsOpen(store), fragmentsHeld(player, balance)] as never);
+};
+
+export const fragmentSpendsOpen = (store: NativeFactStore): LabFact => {
+  const rules = store.require("SliceRules", { game_id: 1 });
+  const spends = FRAGMENT_SPEND_COMMANDS.reduce((mask, command) => mask | BigInt(nativeCommandBits[command]), 0n);
+  return {
+    model: "SliceRules",
+    key: store.wireKeyOf("SliceRules", rules)!,
+    value: wire({ ...rules, command_mask: BigInt(rules.command_mask) | spends }),
+  };
 };
 
 export const fragmentsSpent = (chain: NativeFactStore, player: string, fragments: bigint): LabFact => {

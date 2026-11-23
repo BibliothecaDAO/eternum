@@ -5,6 +5,7 @@ export const FRIEND_GLORY = 100;
 export const FRIEND_FRAGMENTS = 100;
 export const FRIENDS_LIMIT = 10;
 export const FRIENDS_BONUS_FRAGMENTS = 1_000;
+export const FRAGMENT_SPEND_COMMANDS = ["BuySeal", "BuyStamina", "RerollOath"] as const;
 
 /** Every LORDS amount the shop shows or charges is a multiple of this, so a price ends in 5 or 0. */
 const LORDS_STEP = 5;

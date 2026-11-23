@@ -1,4 +1,4 @@
-import { orders, ResourcesIds } from "../../../packages/types/src/constants";
+import { FRAGMENT_SPEND_COMMANDS, orders, ResourcesIds } from "../../../packages/types/src/constants";
 import { nativeCommandBits } from "../../../contracts/l3/world-native/schema/commands.gen";
 import { nativeResearchConstants as research } from "../../../contracts/l3/world-native/schema/balance.gen";
 import type { NativePreset } from "../common/native-preset";
@@ -139,5 +139,8 @@ export const frontierSeasonOnePreset = {
   },
   chests: null,
   commandMask:
-    frontierPreset.commandMask | BigInt(nativeCommandBits.ApplyRelic) | BigInt(nativeCommandBits.ClaimDailyQuest),
+    (frontierPreset.commandMask &
+      ~FRAGMENT_SPEND_COMMANDS.reduce((mask, command) => mask | BigInt(nativeCommandBits[command]), 0n)) |
+    BigInt(nativeCommandBits.ApplyRelic) |
+    BigInt(nativeCommandBits.ClaimDailyQuest),
 } satisfies NativePreset;

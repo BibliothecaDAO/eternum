@@ -9,7 +9,7 @@ import { MemoryRouter } from "react-router-dom";
 import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { deepViewFor, type GameClientSetup, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { nativeReleaseConstants } from "../../../../../../contracts/l3/world-native/schema/client.gen";
+import { sellingFragments } from "./value/fragments-fixture";
 import type { HudSurface } from "./hud/frontier-nav";
 
 // The real Frontier HUD on the lab's game. Only the network, the identity and the chat pane's own drawing stand in: the
@@ -126,7 +126,7 @@ const renderHud = () =>
     root.render(
       <MemoryRouter>
         <QueryClientProvider client={new QueryClient()}>
-          <LabGame mode="frontier" facts={(store) => [sealRelease(store)]}>
+          <LabGame mode="frontier" facts={(store) => sellingFragments(store)}>
             {(store) => {
               shownStore = store;
               return <FrontierHud seasonOver={SeasonOver} rules={readExpeditionRules(store, 1)!} />;
@@ -136,19 +136,6 @@ const renderHud = () =>
       </MemoryRouter>,
     ),
   );
-
-const sealRelease = (store: NativeFactStore) => {
-  const release = store.require("GameRelease", { game_id: 1 });
-  return {
-    model: "GameRelease",
-    key: store.wireKeyOf("GameRelease", release),
-    value: {
-      ...release,
-      release_id: nativeReleaseConstants.SEAL_RELEASE,
-      created_release_id: nativeReleaseConstants.SEAL_RELEASE,
-    },
-  };
-};
 
 it("keeps one chat connection and its unread count from desktop to phone and back, through the Frontier HUD", async () => {
   viewport.set(1440);

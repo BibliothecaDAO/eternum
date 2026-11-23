@@ -4,6 +4,7 @@ import { nativeQuestConstants } from "../../../../../contracts/l3/world-native/s
 import { nativeReleaseConstants, type NativeRows } from "../../../../../contracts/l3/world-native/schema/client.gen";
 import type { NativeFactResult, NativeFactStore } from "../native-fact-store";
 import { dayOf } from "../../utils/days";
+import { spendsFragments } from "../../utils/mode-rules";
 import { dailyQuest } from "../../utils/daily-quest";
 import { heldRealmForHome } from "../../utils/home-claim";
 import { BANE_MODELS, readBaneDay, type BaneDay } from "./banes";
@@ -153,7 +154,13 @@ export function readLaborBonus(
 
 export function fragmentsSold(store: NativeFactStore, gameId: number): boolean {
   const release = store.get("GameRelease", { game_id: gameId });
-  return release !== undefined && release.release_id >= nativeReleaseConstants.SEAL_RELEASE;
+  const rules = store.get("SliceRules", { game_id: gameId });
+  return (
+    release !== undefined &&
+    release.release_id >= nativeReleaseConstants.SEAL_RELEASE &&
+    rules !== undefined &&
+    spendsFragments(rules)
+  );
 }
 
 export function readSeasonPass(

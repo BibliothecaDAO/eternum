@@ -1,5 +1,5 @@
 {
-  "release": 20,
+  "release": 21,
   "definition": {
     "rules": {
       "battle_config": {
@@ -103,7 +103,7 @@
       },
       "map_center_offset": 2147483646,
       "spire_travel_essence_cost": "0",
-      "command_mask": "147242775896274732319819",
+      "command_mask": "15016514375924666336331",
       "day_unit_seconds": 14400,
       "mode_rules": 262305,
       "entry_rule": 1,

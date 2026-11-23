@@ -2,7 +2,9 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 import { realmsAccountAddress } from "@realms-world/identity/account";
 
+import { nativeCommandBits } from "../../../contracts/l3/world-native/schema/commands.gen";
 import { readEnrolledAccounts } from "./day-open";
+import { readGameFacts, readReleaseCatalogue } from "./game-facts";
 import { ACCOUNT_CLASS_HASH, type IdentityEnv } from "./env";
 import { enteredGamesOf, namedGame, shopAccessOf } from "./shop-game";
 import { createTestD1 } from "./test-d1";
@@ -11,6 +13,11 @@ import { migrationStatements } from "./workerd-harness";
 vi.mock("./day-open", async (original) => ({
   ...(await original<typeof import("./day-open")>()),
   readEnrolledAccounts: vi.fn(),
+}));
+vi.mock("./game-facts", async (original) => ({
+  ...(await original<typeof import("./game-facts")>()),
+  readGameFacts: vi.fn(),
+  readReleaseCatalogue: vi.fn(),
 }));
 
 /** The shop's rule, read from a shard's games directory and its confirmed enrollment. Times are seconds. */
@@ -33,17 +40,19 @@ const gameOf = (id: number, status = "Live", mode = "frontier") => ({
   expedition: { seed: calendar.seed.toString(), day_unit_seconds: UNIT },
 });
 const NOW = START + UNIT * 4;
+const SEASON_ONE_SPENDS = BigInt(nativeCommandBits.BuySeal) | BigInt(nativeCommandBits.BuyStamina);
 const accountOf = (realmsId: string) => realmsAccountAddress(realmsId, ACCOUNT_CLASS_HASH, GUARDIAN_KEY);
 
 const databases: { close(): Promise<void> }[] = [];
 beforeEach(() => {
   vi.mocked(readEnrolledAccounts).mockReset();
+  vi.mocked(readGameFacts).mockReset();
 });
 afterEach(async () => {
   for (const database of databases.splice(0)) await database.close();
 });
 
-const envOn = async (games: unknown[], enrolled: string[] | Error) => {
+const envOn = async (games: unknown[], enrolled: string[] | Error, commandMask = SEASON_ONE_SPENDS) => {
   const database = createTestD1();
   databases.push(database);
   await database.db.batch(migrationStatements().map((sql) => database.db.prepare(sql)));
@@ -54,13 +63,21 @@ const envOn = async (games: unknown[], enrolled: string[] | Error) => {
     if (enrolled instanceof Error) throw enrolled;
     return enrolled;
   });
+  vi.mocked(readReleaseCatalogue).mockResolvedValue({} as never);
+  vi.mocked(readGameFacts).mockImplementation(async () => {
+    if (enrolled instanceof Error) throw enrolled;
+    return {
+      require: () => ({ command_mask: commandMask }),
+      inGame: () => enrolled.map((owner) => ({ owner: BigInt(owner) })),
+    } as never;
+  });
   const fetchShard = (async () => Response.json({ chain: CHAIN, games })) as typeof fetch;
   const env = { DB: database.db, GUARDIAN: { publicKey: async () => GUARDIAN_KEY } } as unknown as IdentityEnv;
   return { env, fetchShard };
 };
 
-const shopOn = async (games: unknown[], enrolled: string[] | Error) => {
-  const { env, fetchShard } = await envOn(games, enrolled);
+const shopOn = async (games: unknown[], enrolled: string[] | Error, commandMask = SEASON_ONE_SPENDS) => {
+  const { env, fetchShard } = await envOn(games, enrolled, commandMask);
   return shopAccessOf(env, fetchShard, () => NOW);
 };
 
@@ -87,7 +104,22 @@ it("lists a Frontier game the account entered before its first day, and none tha
 it("seats an enrolled player of a running Frontier game", async () => {
   const access = await shopOn([gameOf(1)], [accountOf("0xa1")]);
   expect(await access("0xa1", { chainId: CHAIN, gameId: 1 })).toBe(true);
-  expect(readEnrolledAccounts).toHaveBeenCalledWith("https://shard.test", 1);
+  expect(readGameFacts).toHaveBeenCalledWith(
+    "https://shard.test",
+    1,
+    ["PlayerEntry", "SliceRules"],
+    NOW * 1000,
+    { actor: accountOf("0xa1") },
+    {},
+  );
+});
+
+it("opens no shop in a game whose rules take no Fragment spend, and opens it once one spend is on", async () => {
+  expect(await (await shopOn([gameOf(1)], [accountOf("0xa1")], 0n))("0xa1", { chainId: CHAIN, gameId: 1 })).toBe(false);
+  const reroll = BigInt(nativeCommandBits.RerollOath);
+  expect(await (await shopOn([gameOf(1)], [accountOf("0xa1")], reroll))("0xa1", { chainId: CHAIN, gameId: 1 })).toBe(
+    true,
+  );
 });
 
 it("seats no one who is not enrolled in that game, and no one in a game that does not run", async () => {

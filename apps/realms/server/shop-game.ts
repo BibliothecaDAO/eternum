@@ -1,7 +1,9 @@
 import type { IdentityAuth } from "./auth";
+import { spendsFragments } from "@bibliothecadao/eternum/game-client";
 import { openFrontierGameIds, readEnrolledAccounts, runningFrontierGameIds } from "./day-open";
 import { directoryShard, directoryShardOf, fetchShardGames, gamesUrl } from "./directory";
 import type { IdentityEnv } from "./env";
+import { readGameFacts, readReleaseCatalogue } from "./game-facts";
 import { json } from "./http";
 import { playerAccounts } from "./player-accounts";
 
@@ -24,10 +26,6 @@ export const namedGame = (chain: unknown, game: unknown): NamedGame | null => {
   }
 };
 
-/**
- * The one rule of the shop: the account plays in a running Frontier game. True when the game runs and the account is one
- * of its players; throws while its shard cannot say.
- */
 export type ShopAccess = (realmsId: string, game: NamedGame) => Promise<boolean>;
 
 export type EnteredGames = (realmsId: string) => Promise<NamedGame[]>;
@@ -61,6 +59,8 @@ export async function openFrontierGames(
   }));
 }
 
+const SHOP_MODELS = ["PlayerEntry", "SliceRules"] as const;
+
 /** The shop's rule, read from the game's shard: its directory says the game runs, its enrollment says who plays. */
 export const shopAccessOf = (
   env: Pick<IdentityEnv, "DB" | "GUARDIAN">,
@@ -73,7 +73,11 @@ export const shopAccessOf = (
     if (!shard) return false;
     const running = runningFrontierGameIds(await fetchShardGames(shard, gamesUrl(shard, null), fetchShard), now());
     if (!running.includes(gameId)) return false;
-    return isEnrolled(shard.url, gameId, await accountOf(realmsId));
+    const account = await accountOf(realmsId);
+    const catalogue = await readReleaseCatalogue(shard.url);
+    const facts = await readGameFacts(shard.url, gameId, SHOP_MODELS, now() * 1000, { actor: account }, catalogue);
+    if (!spendsFragments(facts.require("SliceRules", { game_id: gameId }))) return false;
+    return [...facts.inGame("PlayerEntry", gameId)].some((entry) => entry.owner === BigInt(account));
   };
 };
 
