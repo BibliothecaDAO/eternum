@@ -252,7 +252,8 @@ function useOpeningContext(
   const hasEssence = (stores?.essence.amount ?? 0) > 0;
   const canResearch = canResearchNow(researchTree?.nodes);
   const hasExplored =
-    (!replayed?.has("explore") && reached.has("explore")) || countExploredBeyondHomeRing(setup.store, realm, rules, now) > 0;
+    (!replayed?.has("explore") && reached.has("explore")) ||
+    countExploredBeyondHomeRing(setup.store, realm, rules, now) > 0;
   const clock = dayClock(rules, now);
   const dayEndingSoon = clock.tone === "ember" && clock.secondsLeft !== undefined;
 
