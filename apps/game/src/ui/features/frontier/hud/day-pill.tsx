@@ -90,7 +90,11 @@ export const DayMedallion = ({ clock }: { clock: DayClock }) => {
       data-tone={clock.tone}
       className={cn("frontier-day-dial pointer-events-auto tabular-nums", STORE_TONES[clock.tone].text)}
     >
-      <img src={DAY_MEDALLION[clock.tone]} alt="" className="frontier-day-dial__bezel" />
+      <img
+        src={clock.tone === "ember" ? DAY_MEDALLION.ember : DAY_MEDALLION.calm}
+        alt=""
+        className="frontier-day-dial__bezel"
+      />
       <ProgressRing share={dayElapsedShare(clock)} tone={clock.tone} className="frontier-day-dial__ring">
         <span className="frontier-day-stack">
           <span className="frontier-day-kicker">{DAY}</span>
