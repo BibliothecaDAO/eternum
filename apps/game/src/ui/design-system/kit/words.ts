@@ -1166,6 +1166,8 @@ export const TRANSFER_TROOPS = {
 export const REINFORCE = {
   verb: "Reinforce",
   title: (army: string) => `Reinforce ${army}`,
+  titleAmount: (army: string, amount: string) => `Reinforce ${army} (+${amount})`,
+  fromHome: (amount: string, troops: string) => `+${amount} ${troops} from home`,
   sending: "Reinforcing…",
   failed: "The army could not be reinforced.",
 } as const;
