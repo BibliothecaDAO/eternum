@@ -1190,7 +1190,8 @@ export const HudLab = () => {
             }
             quest={<LabDailyQuest layout="phone" />}
             places={tablet && !lab.visiting ? <TabletPlaces {...labPlaces(lab)} /> : undefined}
-            storeCard={lab.storeCard && <StoreCard line={lab.storeCard} onSpend={noop} onBuild={noop} />}
+            storeCard={!tablet && lab.storeCard && <StoreCard line={lab.storeCard} onSpend={noop} onBuild={noop} />}
+            realmCard={tablet ? <LabRealmCard lab={lab} /> : undefined}
             onOpenRealm={noop}
           />
         }
@@ -1594,6 +1595,27 @@ const LabDailyQuest = ({ layout = "desktop" }: { layout?: "desktop" | "phone" })
 
 const labQuestFacts = () => [labQuestRulesFact()];
 
+const LabRealmCard = ({ lab }: { lab: LabState }) => (
+  <RealmCard
+    name={LAB_REALM_NAME}
+    kind="realm"
+    level={lab.realm?.level ?? 1}
+    nextRank={rankName((lab.realm?.level ?? 1) + 1)}
+    aspect={LAB_ASPECT}
+    orderId={LAB_ORDER_ID}
+    population={LAB_POPULATION}
+    stores={everyStore(lab.stores)}
+    fragments={LAB_FRAGMENTS}
+    lords={lab.visiting ? null : (lab.purse?.lords ?? LAB_LORDS)}
+    buildings={lab.realmView === undefined ? undefined : LAB_REALM_BUILDINGS}
+    storeCard={lab.storeCard && <StoreCard line={lab.storeCard} onSpend={noop} onBuild={noop} />}
+    onStore={noop}
+    onShop={noop}
+    onHome={noop}
+    onUpgradeCastle={lab.visiting ? undefined : noop}
+  />
+);
+
 const LabBands = ({
   desktop,
   lab,
@@ -1614,26 +1636,7 @@ const LabBands = ({
             />
           }
           banner={slots.banner}
-          realm={
-            <RealmCard
-              name={LAB_REALM_NAME}
-              kind="realm"
-              level={lab.realm?.level ?? 1}
-              nextRank={rankName((lab.realm?.level ?? 1) + 1)}
-              aspect={LAB_ASPECT}
-              orderId={LAB_ORDER_ID}
-              population={LAB_POPULATION}
-              stores={everyStore(lab.stores)}
-              fragments={LAB_FRAGMENTS}
-              lords={lab.visiting ? null : (lab.purse?.lords ?? LAB_LORDS)}
-              buildings={lab.realmView === undefined ? undefined : LAB_REALM_BUILDINGS}
-              storeCard={lab.storeCard && <StoreCard line={lab.storeCard} onSpend={noop} onBuild={noop} />}
-              onStore={noop}
-              onShop={noop}
-              onHome={noop}
-              onUpgradeCastle={lab.visiting ? undefined : noop}
-            />
-          }
+          realm={<LabRealmCard lab={lab} />}
           armies={slots.dock}
           page={slots.page}
           widePage={Boolean(lab.research)}
