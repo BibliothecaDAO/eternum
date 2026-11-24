@@ -188,6 +188,23 @@ export interface HeraldFrontierAward {
   lords: string;
 }
 
+export interface HeraldAspectRoster {
+  game_id: string;
+  aspect: number;
+  total: number;
+  offset: number;
+  limit: number;
+  members: HeraldAspectRosterMember[];
+}
+
+export interface HeraldAspectRosterMember {
+  rank: number;
+  entity_id: string;
+  realm_id: number;
+  owner: string;
+  glory: string;
+}
+
 /** Immutable ranks at a seeded day's end; confirmed_block is the last block strictly before that instant. */
 export interface HeraldFrontierDayRanks {
   game_id: string;
