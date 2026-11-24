@@ -693,8 +693,6 @@ export const heldAgainstNeed = (held: number | undefined, need: number): string 
 };
 /** A training building already standing: a realm holds one of each. */
 export const ONE_A_REALM = "Built. A realm holds one.";
-/** The arrow beside a price that has risen (a screen reader's words). */
-export const PRICE_UP = "price raised";
 /** Why a price is above its first, on the arrow beside it, in one line and no sum: "Costs more with each one standing: 2". */
 export const priceRaised = (standing: string) => `Costs more with each one standing: ${standing}`;
 /** What a building does, in one line on its card's tooltip: "Wheat +5/min". */
@@ -1137,6 +1135,8 @@ export const ARMY = "Army";
 /** A phone's picked army, in its action row (owner, 22 October 2026: mobile direction A): its token opens its card. */
 export const PICKED_ARMY = {
   details: (army: string) => `${army}: details`,
+  title: (army: string, troops: number | undefined, troop: string | undefined) =>
+    troops === undefined ? army : `${army} · ${formatAmount(troops)}${troop ? ` ${troop}` : ""}`,
 } as const;
 
 /** Troops between two of the realm's armies side by side (Frontier's Transfer troops, desktop and phone). */
@@ -2202,6 +2202,7 @@ export const RESEARCH_TREE = {
   oathSlots: (count: number) => `${count} Oath ${count === 1 ? "slot" : "slots"}`,
   oathOpen: "Open",
   oathLocked: "Locked",
+  oathEarn: "Clear a site to swear an Oath",
   oathResearch: "Research for new armies",
   conscriptionLine: "More troops from every troop building.",
   rationsLine: "Armies cost less wheat to deploy.",

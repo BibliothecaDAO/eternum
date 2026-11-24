@@ -45,3 +45,50 @@
   border-color: color-mix(in srgb, rgb(var(--hud-gold)) 78%, transparent);
   background: color-mix(in srgb, rgb(var(--hud-gold)) 20%, var(--hud-well));
 }
+
+.oath-sockets {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: theme(spacing.1);
+}
+.oath-socket {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--hud-line);
+  border-radius: var(--hud-radius-control);
+  background: var(--hud-well);
+  color: rgb(var(--hud-muted));
+}
+.oath-socket[data-filled] {
+  border-color: color-mix(in srgb, rgb(var(--hud-gold)) 55%, transparent);
+}
+.oath-socket[data-open] {
+  border-style: dashed;
+  border-color: rgb(var(--hud-gold));
+  color: rgb(var(--hud-gold));
+  font-size: var(--hud-text-body);
+  cursor: pointer;
+}
+.oath-socket[data-locked] {
+  opacity: 0.6;
+}
+.oath-sockets__hint {
+  position: absolute;
+  bottom: calc(100% + theme(spacing[1.5]));
+  left: 0;
+  z-index: 1;
+  margin: 0;
+  border: 1px solid var(--hud-line-strong);
+  border-radius: var(--hud-radius-control);
+  background: rgb(var(--hud-dark));
+  padding: theme(spacing.1) theme(spacing.2);
+  color: rgb(var(--hud-ink));
+  font-size: var(--hud-text-label);
+  line-height: var(--hud-leading-label);
+  white-space: nowrap;
+}

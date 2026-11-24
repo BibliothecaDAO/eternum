@@ -65,6 +65,7 @@ import { OfflineNotice } from "./hud/offline-notice";
 import { SceneFailureNotice } from "./hud/scene-failure-notice";
 import { NextOrderBar, OrderBar } from "./hud/order-bar";
 import { PickedArmy } from "./hud/picked-army";
+import { ArmyOathSockets } from "./army/oath-slots";
 import { ArmyRefill, sellsStamina } from "./army/army-refill";
 import { useArmySpireStatus } from "./spire-card";
 import { OpeningProvider, usePartShown } from "./opening/opening-context";
@@ -327,7 +328,9 @@ const FrontierHudBody = ({
   const action = (
     <>
       {shown && !desktop && isMapView && (
-        <ArmyAction rules={rules} realm={shown} onOpenArmy={visit ? undefined : openArmy} />
+        <div data-army-action className="contents">
+          <ArmyAction rules={rules} realm={shown} onOpenArmy={visit ? undefined : openArmy} />
+        </div>
       )}
       <RealmVisitFoot home={realm} />
     </>
@@ -503,9 +506,11 @@ const ActingArmy = ({ army, onOpenArmy }: { army: DockArmy; onOpenArmy: (explore
   return (
     <PickedArmy
       army={army}
-      refill={sellsStamina(army, held) ? <ArmyRefill army={army} look="reading" /> : undefined}
+      oaths={<ArmyOathSockets explorerId={army.explorerId} />}
+      refill={sellsStamina(army, held) ? <ArmyRefill army={army} look="price" /> : undefined}
       spire={spire}
       onDetails={() => onOpenArmy(army.explorerId)}
+      onClose={() => useUIStore.getState().deselectEntity()}
     />
   );
 };

@@ -18,6 +18,7 @@ import {
   troopOathSlots,
 } from "@bibliothecadao/eternum";
 import { formatExact, RESOURCE_PRECISION, type TroopType } from "@bibliothecadao/types";
+import { useState } from "react";
 
 export function OathSlotPips({
   held,
@@ -124,6 +125,59 @@ export function TroopOathSlots({
       </div>
       {count < OATH_SLOTS_MAX && (
         <span className="min-w-0 break-words text-hud-label text-hud-muted">{RESEARCH_TREE.oathResearch}</span>
+      )}
+    </div>
+  );
+}
+
+export function ArmyOathSockets({ explorerId }: { explorerId: number }) {
+  const { store } = useNativeFacts(["ArmyProgress"]);
+  const pickBase = usePickEffectBase();
+  const [hint, setHint] = useState(false);
+  const progress = store.get("ArmyProgress", { game_id: configManager.getActiveGameId(), explorer_id: explorerId });
+  if (!progress) return null;
+  const held = heldOaths(progress.oaths);
+  return (
+    <div role="group" aria-label={RESEARCH_TREE.oathSlots(progress.oath_slots)} className="oath-sockets">
+      {Array.from({ length: OATH_SLOTS_MAX }, (_, index) => {
+        const oath = held[index];
+        if (oath)
+          return (
+            <span
+              key={index}
+              role="img"
+              aria-label={oathName(oath)}
+              data-tip={`${oathName(oath)} — ${oathEffectDescription(oath, pickBase)}`}
+              className="oath-socket"
+              data-filled=""
+            >
+              <Icon name={orderMeaning(oath)} size={22} />
+            </span>
+          );
+        if (index < progress.oath_slots)
+          return (
+            <button
+              key={index}
+              type="button"
+              aria-label={RESEARCH_TREE.oathEarn}
+              aria-expanded={hint}
+              className="oath-socket"
+              data-open=""
+              onClick={() => setHint((shown) => !shown)}
+            >
+              +
+            </button>
+          );
+        return (
+          <span key={index} role="img" aria-label={RESEARCH_TREE.oathLocked} className="oath-socket" data-locked="">
+            <Icon name="lock" size={14} />
+          </span>
+        );
+      })}
+      {hint && (
+        <p role="status" className="oath-sockets__hint">
+          {RESEARCH_TREE.oathEarn}
+        </p>
       )}
     </div>
   );
