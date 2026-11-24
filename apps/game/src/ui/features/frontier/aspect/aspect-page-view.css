@@ -27,3 +27,20 @@
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
 }
+
+.aspect-glory-board {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: theme(spacing.1);
+  border: 1px solid var(--hud-divider);
+  border-radius: var(--hud-radius-card);
+  background: var(--hud-well);
+  padding: theme(spacing.2) theme(spacing[2.5]);
+}
+
+.aspect-glory-board__rank {
+  min-width: 2ch;
+  color: rgb(var(--hud-gold));
+  font-variant-numeric: tabular-nums;
+}

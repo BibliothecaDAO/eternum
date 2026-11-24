@@ -1052,6 +1052,7 @@ export const ASPECT_PAGE_WORDS = {
   baneBar: "Bane bar",
   baneCharge: (charge: number, threshold: number) => `${formatExact(charge)} of ${formatExact(threshold)}`,
   members: "Members",
+  gloryBoard: "Glory leaderboard",
   glory: "Glory",
   guards: (site: string) => `Guards the ${site}`,
   noAspect: "Join an Aspect to see its members",
