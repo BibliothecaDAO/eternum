@@ -8,33 +8,33 @@ import { GameIcon } from "@/components/GameIcon";
 
 # Oaths
 
-Oaths power up an individual army for the current game day. Every Oath has one flat rule and no levels. Any army of any
-Aspect can draw any of the {FRONTIER.oaths.count} Oaths. All Oaths reset when the day ends.
+Oaths improve an individual army for the current game day. Every Oath has one fixed rule and no levels. Any army of any
+Aspect can be offered any of the {FRONTIER.oaths.count} Oaths. All Oaths reset when the day ends.
 
 ## How you get an Oath pick
 
 There are two ways an army triggers an Oath pick on the {FRONTIER.layers.personalOr}:
 
-1. **<GameIcon name="shrine" /> Reveal a Shrine.** Research **Shrine lore** at your castle to find Shrines
-   ({FRONTIER.discovery.shrine} chance per reveal). Revealing a Shrine opens a pick of {FRONTIER.oaths.drawCount} Oaths
+1. **<GameIcon name="shrine" /> Reveal a shrine.** Research **Shrine lore** at your castle to find shrines
+   ({FRONTIER.discovery.shrine} chance per reveal). Revealing a shrine opens a pick of {FRONTIER.oaths.drawCount} Oaths
    immediately for that army.
-2. **<GameIcon name={FRONTIER.beastFamilies[1].icon} /> Clear a Band.** Bands ({FRONTIER.beastFamilies[1].surface},
-   {FRONTIER.beastFamilies[1].veil}, {FRONTIER.beastFamilies[1].hollow}; {FRONTIER.discovery.band} chance per reveal)
-   award a pick of {FRONTIER.oaths.drawCount} Oaths to the army that lands the last hit.
+2. **<GameIcon name={FRONTIER.beastFamilies[1].icon} /> Clear a band.** Bands — {FRONTIER.oaths.bandSummary}
+   ({FRONTIER.discovery.band} chance per reveal) — award a pick of {FRONTIER.oaths.drawCount} Oaths to the army that
+   lands the last hit.
 
 ## Rules of the pick
 
-- **Drawn from what you do not hold:** the contract draws {FRONTIER.oaths.drawCount} distinct Oaths at random from the
-  {FRONTIER.oaths.count} Orders that the army does not already hold. An army never holds two copies of the same Oath.
+- **Offered from what you do not hold:** each pick offers {FRONTIER.oaths.drawCount} distinct Oaths at random from the
+  {FRONTIER.oaths.count} Oaths that the army does not already hold. An army never holds two copies of the same Oath.
 - **One pick at a time:** while an Oath pick is open on an army, that army must choose an Oath, replace an existing one,
   or pass before it can move, reveal, attack, or enter a Spire.
 - **Full slots:** when an army's Oath slots are full, picking a new Oath replaces an Oath you choose.
-- **Pass for stamina:** passing skips the Oaths and gives that army +{FRONTIER.oaths.passStamina} stamina immediately
-  (up to its bar maximum).
-- **Reroll:** {FRONTIER.oaths.rerollNote} The redrawn card is always an Oath the army does not hold and that is not
-  already shown. See [Shop and referrals](/frontier/shop-and-referrals) for current Shop status.
+- **Pass for stamina:** passing skips the offered Oaths and gives that army +{FRONTIER.oaths.passStamina} stamina
+  immediately (up to its bar maximum).
+- **Reroll:** {FRONTIER.oaths.rerollNote} The replacement Oath is always an Oath the army does not hold and that is not
+  already offered. See [Shop and referrals](/frontier/shop-and-referrals) for current Shop status.
 - **In the Deep and at day's end:** an army keeps its Oaths when it enters [the Deep](/frontier/deep); its Order icons
-  show on the site guard card and count in rival fight previews. All Oaths clear when the army ends with the day.
+  show on the site panel and count in rival fight previews. All Oaths clear when the army ends with the day.
 
 ## Oath slots
 
@@ -76,6 +76,26 @@ Each Oath is named after one of the {FRONTIER.oaths.count} Orders and changes on
 
 The Detection Oath lowers the guaranteed-find limit from {FRONTIER.discovery.emptyRevealLimit} empty reveals to
 {FRONTIER.oaths.detectionLimit}.
+
+### How key Oaths work
+
+- **Fury:** refunds {FRONTIER.oaths.furyPercent} of the winning attack's cost only — {FRONTIER.oaths.furyRefundBase}
+  stamina on a normal attack, or {FRONTIER.oaths.furyRefundAnger} stamina with Anger. Earlier attacks on the same target
+  are not refunded ({FRONTIER.oaths.furyExampleAttacks} attacks on a camp cost {FRONTIER.oaths.furyExampleTotal} stamina
+  and refund {FRONTIER.oaths.furyRefundBase}, not {FRONTIER.oaths.furyExampleWrong}).
+- **Skill and Fury together:** Skill checks the army's stamina after paying the attack cost and before any Fury refund.
+  An army attacking from {FRONTIER.oaths.skillExampleStart} stamina drops to {FRONTIER.oaths.skillExampleAfter} (below
+  {FRONTIER.oaths.skillThreshold}), gains Skill's {FRONTIER.oaths.skillDamagePercent} damage, and if that attack clears
+  the target, Fury refunds {FRONTIER.oaths.furyRefundBase} stamina so the army ends on {FRONTIER.oaths.skillExampleEnd}.
+- **Twins:** does not stack across multiple adjacent armies. It checks the six tiles around the attacking army, picks
+  the single largest living army of the **same owner** from the same day (a teammate's army never counts), and adds
+  {FRONTIER.oaths.twinsPercent} of **that adjacent army's** damage against the target with no Oaths and no stamina cost
+  on the helper.
+- **Titans and Logistics:** Titans adds a flat {FRONTIER.oaths.titansBonus} to the stamina bar on top of Logistics (it
+  does not double the bar and is not capped at {FRONTIER.oaths.titansBaseMax}). Logistics scales only the base
+  {FRONTIER.stamina.max} bar ({FRONTIER.stamina.logisticsStepAmount} per rank), so an army with Titans holds
+  {FRONTIER.oaths.titansBaseMax} max stamina at Logistics 0 up to {FRONTIER.oaths.titansLogisticsMax} at Logistics V,
+  and gains {FRONTIER.oaths.titansBonus} stamina immediately up to the new maximum.
 
 ## Strong Oath pairs
 

@@ -8,24 +8,24 @@ import { GameIcon } from "@/components/GameIcon";
 
 # Relics
 
-<GameIcon name="ruin" /> Relics give an army a timed burst you switch on when you need it. Clearing a Ruin that does not
+<GameIcon name="ruin" /> Relics give an army a timed bonus you activate when you need it. Clearing a ruin that does not
 hold a Fragment cache gives 1 relic to the army that lands the last hit.
 
 ## How relics work
 
-- **Loadout:** an army carries up to {FRONTIER.relics.slots} relics at once. When full, winning another relic lets you
+- **Slots:** an army carries up to {FRONTIER.relics.slots} relics at once. When full, winning another relic lets you
   pick which slot to replace.
 - **Activation:** activating a relic is free and works anywhere, including inside [the Deep](/frontier/deep). An army
   can have one active effect per relic kind at a time.
 - **Duration:** an active relic lasts {FRONTIER.relics.minutesPerTier} minutes per tier, from
-  {FRONTIER.relics.minutesPerTier} minutes for {FRONTIER.relics.firstTier} I up to {FRONTIER.relics.maxMinutes} minutes
-  for {FRONTIER.relics.lastTier} V.
-- **Bound to the army:** relics cannot be sold, traded, or passed to another army, and end when the army ends with the
-  day.
+  {FRONTIER.relics.minutesPerTier} minutes for {FRONTIER.relics.firstTier} (I) up to {FRONTIER.relics.maxMinutes}
+  minutes for {FRONTIER.relics.lastTier} (V).
+- **Bound to the army:** relics cannot be sold, traded, or passed to another army (even when merging), and end when the
+  army ends with the day.
 
 ## Relic tiers by layer
 
-Relics come in {FRONTIER.relics.tiersCount} tiers ({FRONTIER.relics.firstTier} I to {FRONTIER.relics.lastTier} V), and
+Relics come in {FRONTIER.relics.tiersCount} tiers ({FRONTIER.relics.firstTier} through {FRONTIER.relics.lastTier}), and
 deeper layers drop higher tiers (see [Beasts](/frontier/beasts) for ruin guard sizes per tier):
 
 - {FRONTIER.relics.layerOdds[0].layer}: {FRONTIER.relics.layerOdds[0].odds}
@@ -34,7 +34,9 @@ deeper layers drop higher tiers (see [Beasts](/frontier/beasts) for ruin guard s
 
 ## All {FRONTIER.relics.count} relic kinds
 
-| Relic                                                                               | {FRONTIER.relics.firstTier} I    | {FRONTIER.relics.lastTier} V        |
+These are the only {FRONTIER.relics.count} relic kinds in Season 1. No relic or Oath reveals more than 1 tile at a time.
+
+| Relic                                                                               | {FRONTIER.relics.firstTier}      | {FRONTIER.relics.lastTier}          |
 | ----------------------------------------------------------------------------------- | -------------------------------- | ----------------------------------- |
 | <GameIcon name={FRONTIER.relics.rows[0].icon} /> **{FRONTIER.relics.rows[0].name}** | {FRONTIER.relics.rows[0].common} | {FRONTIER.relics.rows[0].legendary} |
 | <GameIcon name={FRONTIER.relics.rows[1].icon} /> **{FRONTIER.relics.rows[1].name}** | {FRONTIER.relics.rows[1].common} | {FRONTIER.relics.rows[1].legendary} |

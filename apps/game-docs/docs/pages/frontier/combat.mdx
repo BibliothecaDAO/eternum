@@ -7,52 +7,60 @@ import { FRONTIER } from "@/utils/frontier";
 
 # Combat
 
-Combat uses no dice and no luck, so the fight preview is exact before you commit. Terrain gives no combat bonus or
-penalty. Guards keep their losses and never recover troops, so two or more armies can wear a tough guard down one after
-another.
+Combat uses a fixed formula with no random rolls, so the fight preview is exact before you commit. Terrain gives no
+combat bonus or penalty. Guards keep their losses and never recover troops, so two or more armies can weaken a strong
+guard across several attacks.
 
 Nobody can attack your realm or your armies on the {FRONTIER.layers.personalOr}. Player-against-player fights happen
 only in [the Deep](/frontier/deep), and allies of the same Aspect can never attack each other.
 
 ## The combat formula
 
-In each attack exchange, each side starts with base damage:
+Each attack costs {FRONTIER.stamina.attack} stamina ({FRONTIER.oaths.angerAttack} with the Anger Oath). Extra stamina
+above {FRONTIER.stamina.attack} adds no damage; defenders need {FRONTIER.stamina.defenseReq} stamina and take no
+low-stamina penalty. The only stamina-linked damage effect is the Skill Oath, which adds
+{FRONTIER.oaths.skillDamagePercent} damage when the attacking army has less than {FRONTIER.oaths.skillThreshold} stamina
+left after paying the attack cost ([Oaths](/frontier/oaths#how-key-oaths-work)).
+
+In each attack, each side starts with base damage:
 
 **{FRONTIER.combat.formula}**
 
-Here the damage factor is {FRONTIER.combat.damageFactor} and the total-troops exponent is {FRONTIER.combat.beta}. Then
-four multipliers apply:
+Here the damage factor is {FRONTIER.combat.damageFactor} and the combined-troops exponent is {FRONTIER.combat.beta}.
+Then four modifiers apply:
 
 1. **Troop kind:** {FRONTIER.troops.crossbowman} and {FRONTIER.troops.scout} deal
    {FRONTIER.attributes.lightDamageReduction} less damage than {FRONTIER.troops.knight}.
 2. **Deep guard protection:** {FRONTIER.troops.knight} holding a Deep site slot take
-   {FRONTIER.attributes.knightGuardReduction} less damage. Unowned beasts never get this reduction.
+   {FRONTIER.attributes.knightGuardReduction} less damage. Wild beasts never get this reduction.
 3. **Active relics:** a Blade relic adds to damage dealt and a Ward relic lowers damage taken
    ([Relics](/frontier/relics)).
-4. **Oaths:** combat Oaths (Power, Skill, Giants, Protection) multiply together; the Twins adds damage from an adjacent
-   friendly army ([Oaths](/frontier/oaths)).
+4. **Oaths:** combat Oaths (Power, Skill, Giants, Protection) multiply together; the Twins adds
+   {FRONTIER.oaths.twinsPercent} of the largest adjacent own army's damage against the target
+   ([Oaths](/frontier/oaths#how-key-oaths-work)).
 
 ## Blade vs bow
 
-Every troop and every guard carries a **blade** or a **bow**:
+Every troop and every guard carries a **mark**: either **blade** or **bow**.
 
 - **Bow against blade:** the bow strikes first, and the blade hits back only with the troops that survive that strike.
 - **Same mark:** two blades or two bows strike at the same time.
 
 Because of first strike, bring **{FRONTIER.troops.crossbowman}** (bow) against blade enemies (herds, camps, ruins,
 {FRONTIER.combat.bladeDeepBeasts}) and **{FRONTIER.troops.knight}** (blade) against bow enemies (bands, rifts,
-{FRONTIER.combat.bowDeepBeasts}).
+{FRONTIER.combat.bowDeepBeasts}). As a rule of thumb, clearing a guard with no Oaths or relics takes about
+{FRONTIER.combat.exampleRatio} the guard's troops with the matching mark.
 
 ## Worked example
 
 Suppose you attack a {FRONTIER.combat.exampleLabel} ({FRONTIER.combat.exampleGuard} blade troops) with a
 {FRONTIER.combat.exampleRatio} army ({FRONTIER.combat.exampleSent} troops) and no Oaths or relics:
 
-- **{FRONTIER.combat.exampleSent} {FRONTIER.troops.crossbowman} (bow vs blade):** they shoot first each exchange, clear
-  the camp in {FRONTIER.combat.exampleCrossbowsExchanges} exchanges, lose {FRONTIER.combat.exampleCrossbowsLost} troops,
+- **{FRONTIER.combat.exampleSent} {FRONTIER.troops.crossbowman} (bow vs blade):** they shoot first on each attack, clear
+  the camp in {FRONTIER.combat.exampleCrossbowsExchanges} attacks, lose {FRONTIER.combat.exampleCrossbowsLost} troops,
   and keep **{FRONTIER.combat.exampleCrossbowsKept}**.
-- **{FRONTIER.combat.exampleSent} {FRONTIER.troops.knight} (blade vs blade):** both sides hit together each exchange,
-  clearing the camp in {FRONTIER.combat.exampleKnightsExchanges} exchanges, losing {FRONTIER.combat.exampleKnightsLost}
+- **{FRONTIER.combat.exampleSent} {FRONTIER.troops.knight} (blade vs blade):** both sides hit together on each attack,
+  clearing the camp in {FRONTIER.combat.exampleKnightsExchanges} attacks, losing {FRONTIER.combat.exampleKnightsLost}
   troops, and keeping **{FRONTIER.combat.exampleKnightsKept}**.
 
 ## Troop against mark
@@ -66,4 +74,4 @@ Surviving troops when sending a {FRONTIER.combat.exampleRatio} army with no Oath
 | {FRONTIER.combat.markRows[2].target} | {FRONTIER.combat.markRows[2].sent} | {FRONTIER.combat.markRows[2].knights}     | **{FRONTIER.combat.markRows[2].crossbows}** | {FRONTIER.combat.markRows[2].scouts} |
 | {FRONTIER.combat.markRows[3].target} | {FRONTIER.combat.markRows[3].sent} | **{FRONTIER.combat.markRows[3].knights}** | {FRONTIER.combat.markRows[3].crossbows}     | {FRONTIER.combat.markRows[3].scouts} |
 
-Power up your armies further with [Oaths](/frontier/oaths) and [Relics](/frontier/relics).
+Improve your armies further with [Oaths](/frontier/oaths) and [Relics](/frontier/relics).

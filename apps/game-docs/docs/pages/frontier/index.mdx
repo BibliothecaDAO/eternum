@@ -10,7 +10,7 @@ import { Video } from "@/components/Media";
 # Frontier
 
 Frontier is free to play. Every game day opens a fresh map around your realm. You build up your town, send armies into
-the mist to clear beasts and sites, take Oaths and relics for the day, and enter the Deep to raise your Aspect's
+the fog to clear beasts and sites, take Oaths and relics for the day, and enter the Deep to raise your Aspect's
 hyperstructure for LORDS rewards.
 
 <Video
@@ -30,15 +30,15 @@ hyperstructure for LORDS rewards.
 Every army shares one clock:
 
 - **Army tick:** {FRONTIER.stamina.tickMinutes} minutes. Every tick gives +{FRONTIER.stamina.perTick} stamina
-  ({FRONTIER.stamina.perHour} per hour, filling a {FRONTIER.stamina.max}-stamina bar in {FRONTIER.stamina.fullHours}
-  hours). Inside the Deep, each tick also removes {FRONTIER.deep.lossPerTick} troops per army and pays held sites.
-- **Day lengths:** every {FRONTIER.day.daysPerBag}-day bag holds one day each of {FRONTIER.day.lengths} hours
-  ({FRONTIER.day.bagHours} hours total, {FRONTIER.day.averageHours} hours on average) in shuffled order. No bag starts
-  with an {FRONTIER.day.shortestHours}-hour day, and two {FRONTIER.day.shortestHours}-hour days never run in a row. An
-  {FRONTIER.day.shortestHours}-hour day gives an army {FRONTIER.stamina.day8h} total stamina; a
-  {FRONTIER.day.longestHours}-hour day gives {FRONTIER.stamina.day24h}.
-- **Season length:** {FRONTIER.day.seasonDays} game days at most ({FRONTIER.day.bagsPerSeason} bags, about
-  {FRONTIER.day.seasonRealDays} real days). The season ends earlier as soon as one Aspect finishes its hyperstructure.
+  ({FRONTIER.stamina.perMinute}, filling a {FRONTIER.stamina.max}-stamina bar in {FRONTIER.stamina.fullHours} hours).
+  Inside the Deep, each tick also removes {FRONTIER.deep.lossPerTick} troops per army and pays held sites.
+- **Day lengths:** every {FRONTIER.day.daysPerBag}-day cycle holds one day each of {FRONTIER.day.lengths} hours
+  ({FRONTIER.day.bagHours} hours total, {FRONTIER.day.averageHours} hours on average) in shuffled order. No
+  {FRONTIER.day.daysPerBag}-day cycle starts with an {FRONTIER.day.shortestHours}-hour day, and two
+  {FRONTIER.day.shortestHours}-hour days never run in a row. An {FRONTIER.day.shortestHours}-hour day gives an army
+  {FRONTIER.stamina.day8h} total stamina; a {FRONTIER.day.longestHours}-hour day gives {FRONTIER.stamina.day24h}.
+- **Season length:** {FRONTIER.day.seasonDays} game days at most (about {FRONTIER.day.seasonRealDays} real days). The
+  season ends earlier as soon as one Aspect finishes its hyperstructure.
 
 Each day follows four steps:
 
@@ -66,6 +66,9 @@ Entry is free and stays open all season, so players who join later start with th
 with {FRONTIER.realm.troops} {FRONTIER.troops.knight} waiting at home, {FRONTIER.realm.wheat} wheat, and
 {FRONTIER.realm.labor} labor. Your starting labor buys one of each starter building right away:
 {FRONTIER.realm.firstMinuteSummary}. Build on your open plots, then deploy your first army into the fog.
+
+New panels appear as your realm unlocks what they use. Open **Settings** and turn on **Show everything** under
+**Interface** to show every panel right away.
 
 ## Guides
 

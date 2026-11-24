@@ -12,7 +12,7 @@ import { PipeTable } from "@/components/PipeTable";
 Tap an open plot on your realm to build. Your castle makes {FRONTIER.realm.castleLaborRates[0]} labor per hour at
 {FRONTIER.realm.castleLevelInline[0]}, multiplying by {FRONTIER.realm.castleLaborStep} at each castle level up to
 {FRONTIER.realm.castleLaborRates[3]}/h at {FRONTIER.realm.castleLevelInline[3]}. Each of the {FRONTIER.buildingsCount}
-buildings opens at its castle level and costs labor (plus Essence for special buildings):
+buildings opens at its castle level and costs labor (plus Essence for unique buildings):
 
 | Building                                                                    | Makes                         | Opens at                      | First copy price              |
 | --------------------------------------------------------------------------- | ----------------------------- | ----------------------------- | ----------------------------- |
@@ -26,9 +26,9 @@ buildings opens at its castle level and costs labor (plus Essence for special bu
 | <GameIcon name={FRONTIER.buildings[7].icon} /> {FRONTIER.buildings[7].name} | {FRONTIER.buildings[7].makes} | {FRONTIER.buildings[7].opens} | {FRONTIER.buildings[7].price} |
 | <GameIcon name={FRONTIER.buildings[8].icon} /> {FRONTIER.buildings[8].name} | {FRONTIER.buildings[8].makes} | {FRONTIER.buildings[8].opens} | {FRONTIER.buildings[8].price} |
 
-There is no population cap in Frontier. Each plot holds one building, and demolishing a building refunds
-{FRONTIER.realm.demolitionRefund} of the labor you paid for it. Training buildings produce troops for free; deploying
-troops into an army costs {FRONTIER.realm.deployWheat} wheat per troop before Rations discounts.
+Each plot holds one building, and demolishing a building refunds {FRONTIER.realm.demolitionRefund} of the labor you paid
+for it. {FRONTIER.names.barracks}, {FRONTIER.names.range}s, and {FRONTIER.names.scoutsLodge}s produce troops for free;
+deploying troops into an army costs {FRONTIER.realm.deployWheat} wheat per troop before Rations discounts.
 
 ## Repeat copy prices
 

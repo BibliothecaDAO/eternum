@@ -14,10 +14,10 @@ season.
 
 ## The {FRONTIER.aspectsCount} Aspects and their {FRONTIER.oaths.count} Orders
 
-If you create your realm with a **Realm NFT** held in your payout wallet, your Aspect is fixed by that Realm NFT's
-Order. If you start with a free home, you pick your Aspect and an Order inside it when you enter. No Aspect is ever
-closed, you cannot switch Aspects mid-season, and all {FRONTIER.oaths.count} Orders grant their [Oaths](/frontier/oaths)
-to every army regardless of Aspect.
+If you create your realm with a **Realm NFT** (a Realms collection NFT held in your linked payout wallet), your Aspect
+is fixed by that Realm NFT's Order. If you start with a free realm, you pick your Aspect and an Order inside it when you
+enter. No Aspect is ever closed, you cannot switch Aspects mid-season, and all {FRONTIER.oaths.count} Orders grant their
+[Oaths](/frontier/oaths) to every army regardless of Aspect.
 
 | Aspect                                                                      | Orders                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -38,8 +38,11 @@ directly.
   ([Banes and Triumphs](/frontier/banes#stage-triumphs)).
 - The season lasts {FRONTIER.day.seasonDays} game days at most. If no Aspect finishes by day {FRONTIER.day.seasonDays},
   nobody receives the finish bonus, and every Aspect still earns LORDS for the height it built.
-- While a rival Team Bane is active on your Aspect, your hyperstructure stops gaining height until your Aspect breaks
-  the bane ([Banes and Triumphs](/frontier/banes#rival-team-banes)).
+- While a rival Team Bane is active on your Aspect, your hyperstructure stops gaining height until your Aspect ends the
+  bane, though Archive guards still earn Glory ([Banes and Triumphs](/frontier/banes#rival-team-banes)).
+
+Open **Aspect Race** in the game to follow all four hyperstructures, their stages, active Stage Triumphs, your Aspect's
+bane bar charge, your Aspect's members ranked by Glory (and which Deep site they guard), and recent fights in the Deep.
 
 ## Glory and LORDS rewards
 
@@ -53,7 +56,8 @@ on its own hyperstructure height when the season ends:
 - LORDS for unbuilt height and any unearned finish bonus return to the treasury when the season closes.
 - Inside each Aspect, the pool splits by **Glory** share among members who earned at least {FRONTIER.race.gloryToShare}
   Glory during the season, with no Realm NFT, ticket, Seal, or per-player cap required.
-- You earn Glory only by holding **Hyperstructure archives** and **Bane altars** in [the Deep](/frontier/deep). Essence
-  cores, Ethereal mines, and beaten troops give no Glory.
+- You earn Glory only by holding **Hyperstructure archives** and **Bane altars** in [the Deep](/frontier/deep). Archive
+  Glory goes only to the guards holding that Archive (split by troop count), while the whole Aspect gains the
+  hyperstructure height. Essence cores, Ethereal mines, and beaten troops give no Glory.
 
 Your linked [Payout wallet](/account/payout-wallet) receives your LORDS after the season ends.

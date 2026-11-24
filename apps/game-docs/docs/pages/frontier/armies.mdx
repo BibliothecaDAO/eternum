@@ -26,22 +26,28 @@ Each army holds one of these troop kinds:
 ## Deploying
 
 Open **Deploy** to place troops on a tile beside your realm in an open army slot: {FRONTIER.realm.armies[0]} slots at
-{FRONTIER.realm.castleLevelInline[0]}, up to {FRONTIER.realm.armies[3]} at {FRONTIER.realm.castleLevelInline[3]}. Each
-troop costs {FRONTIER.realm.deployWheat} wheat to deploy (reduced by {FRONTIER.realm.rationStep} per Rations rank), and
-each castle level raises the max troops per deploy ([Realm and research](/frontier/realm#the-castle)).
+{FRONTIER.realm.castleLevelInline[0]}, up to {FRONTIER.realm.armies[3]} at {FRONTIER.realm.castleLevelInline[3]}, and
+from {FRONTIER.realm.deployCaps[0]} troops per deploy at {FRONTIER.realm.castleLevelInline[0]} up to
+{FRONTIER.realm.deployCaps[3]} at {FRONTIER.realm.castleLevelInline[3]}. Each troop costs {FRONTIER.realm.deployWheat}
+wheat to deploy (reduced by {FRONTIER.realm.rationStep} per Rations rank; see
+[Realm and research](/frontier/realm#the-castle) for the full castle table).
 
 ## Stamina
 
 An army holds {FRONTIER.stamina.max} stamina and recovers {FRONTIER.stamina.perTick} every
-{FRONTIER.stamina.tickMinutes} minutes ({FRONTIER.stamina.perHour} per hour), so an empty bar fills in
+{FRONTIER.stamina.tickMinutes} minutes ({FRONTIER.stamina.perMinute}), so an empty bar fills in
 {FRONTIER.stamina.fullHours} hours. Revealing a tile costs {FRONTIER.stamina.reveal} for {FRONTIER.troops.knight} and
 {FRONTIER.troops.crossbowman}, and {FRONTIER.stamina.scoutReveal} for {FRONTIER.troops.scout}. A step on an explored
 tile costs {FRONTIER.stamina.step}, and an attack needs {FRONTIER.stamina.attack}. Every step and every reveal also
 costs {FRONTIER.stamina.wheatPerTroop} wheat per troop, so a large army needs many farms.
 
 - <GameIcon name={FRONTIER.buildingIcons.supplyYard} /> A {FRONTIER.names.supplyYard} gives new armies Logistics rank I,
-  and research raises it to rank V. Each rank adds {FRONTIER.stamina.logisticsStep} max stamina, adding
-  {FRONTIER.stamina.logisticsBonus} bonus stamina at rank V for {FRONTIER.stamina.logisticsMax} max stamina total.
+  and research raises it to rank V. Each rank adds {FRONTIER.stamina.logisticsStep} (
+  {FRONTIER.stamina.logisticsStepAmount}) to the base {FRONTIER.stamina.max} bar, adding
+  {FRONTIER.stamina.logisticsBonus} bonus stamina at rank V for
+  {FRONTIER.stamina.logisticsMax} max stamina total. The Titans Oath adds a flat {FRONTIER.oaths.titansBonus} on top of
+  Logistics ({FRONTIER.oaths.titansBaseMax} max stamina at Logistics 0 up to {FRONTIER.oaths.titansLogisticsMax} at
+  Logistics V; [Oaths](/frontier/oaths#how-key-oaths-work)).
 - <GameIcon name="well" /> Revealing a Well refills {FRONTIER.stamina.well} immediately ({FRONTIER.stamina.wellBase} on
   a {FRONTIER.stamina.max} bar, or {FRONTIER.stamina.wellLogisticsBase} at Logistics V). With the Reflection Oath, a
   Well refills {FRONTIER.oaths.reflectionWell} ({FRONTIER.stamina.wellReflection} on a {FRONTIER.stamina.max} bar, or
@@ -61,9 +67,11 @@ another before deploying.
 
 ## Merging, reinforcing, and disbanding
 
-Two armies of the same troop kind standing side by side can merge, keeping the lower stamina and the receiving army's
-Logistics rank. You can also reinforce an army beside your realm or beside any camp your realm cleared today (supply
-post) on the {FRONTIER.layers.personalOr} using troops and wheat from home. Disbanding an army deletes its troops after
-you confirm.
+Two adjacent armies of the same troop kind can merge, moving **troops only**. The receiving army keeps its own Oaths,
+relics, and Logistics rank and takes the lower of the two stamina values. Nothing copies from the giving army, even into
+empty slots; if the giving army reaches 0 troops, it is destroyed and its Oaths and relics are deleted with it.
+
+You can also reinforce an army beside your realm or beside any camp your realm cleared today (supply post) on the
+{FRONTIER.layers.personalOr} using troops and wheat from home. Disbanding an army deletes its troops after you confirm.
 
 Next: [Combat](/frontier/combat), [Oaths](/frontier/oaths), and [Relics](/frontier/relics).

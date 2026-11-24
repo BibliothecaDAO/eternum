@@ -124,6 +124,9 @@ const seasonRealDays = Math.round((racePreset.seasonDays * averageDayHours) / 24
 
 const tickMinutes = config.tick.armiesTickIntervalInSeconds / 60;
 const staminaPerHour = Math.round((stamina.staminaGainPerTick * 3600) / config.tick.armiesTickIntervalInSeconds);
+const staminaPerMinute = Number(
+  ((stamina.staminaGainPerTick * 60) / config.tick.armiesTickIntervalInSeconds).toFixed(2),
+);
 
 const KNIGHT = 26;
 const WHEAT = 35;
@@ -191,6 +194,7 @@ const commandEnabled = (name: keyof typeof nativeCommandBits) =>
 
 const anySpendEnabled = FRAGMENT_SPEND_COMMANDS.some((name) => commandEnabled(name));
 const barFragments = n(Math.ceil(stamina.staminaKnightMax / fragments.STAMINA_PER_FRAGMENT));
+const logisticsStepValue = logisticsStamina(stamina.staminaKnightMax, 1);
 const logisticsBonusValue = logisticsStamina(stamina.staminaKnightMax, rule.ATTRIBUTE_CAP);
 const logisticsMaxValue = stamina.staminaKnightMax + logisticsBonusValue;
 
@@ -243,7 +247,7 @@ const buildingMeta: Partial<Record<BuildingType, { makes: string; level: number;
   [research.STOREROOM]: { makes: "Wheat and labor storage", level: research.STOREROOM_LEVEL, order: 5 },
   [research.CONSCRIPTION_CAMP]: { makes: "Faster troop training", level: research.CONSCRIPTION_CAMP_LEVEL, order: 6 },
   [research.RATIONS_DEPOT]: { makes: "Lower wheat cost to deploy", level: research.RATIONS_DEPOT_LEVEL, order: 7 },
-  [research.SUPPLY_YARD]: { makes: "Logistics training", level: research.SUPPLY_YARD_LEVEL, order: 8 },
+  [research.SUPPLY_YARD]: { makes: "Max stamina (Logistics)", level: research.SUPPLY_YARD_LEVEL, order: 8 },
 };
 
 const frontierBuildings = [...FRONTIER_BUILDING_TYPES]
@@ -451,7 +455,12 @@ const netAttackCost = (mask: number) => {
   return cost - oathFuryRefund(mask, cost);
 };
 const baseAttackCost = netAttackCost(0);
+const angerAttackCost = oathAttackStamina(oathMask(oaths.ANGER), stamina.staminaAttackReq);
 const angerCost = netAttackCost(oathMask(oaths.ANGER));
+const furyRefundBaseValue = oathFuryRefund(oathMask(oaths.FURY), stamina.staminaAttackReq);
+const furyRefundAngerValue = oathFuryRefund(oathMask(oaths.FURY, oaths.ANGER), angerAttackCost);
+const furyExampleAttacks = 3;
+const skillExampleAfterValue = Math.floor(oaths.SKILL_BELOW_STAMINA / 2);
 const baseFuryCost = netAttackCost(oathMask(oaths.FURY));
 const angerFuryCost = netAttackCost(oathMask(oaths.ANGER, oaths.FURY));
 const sitePayPct = (mask: number, clean: boolean) => Number(oathSitePay(mask, 1000n, clean)) / 10;
@@ -486,7 +495,7 @@ const beastFamilies = [
     icon: beastMeaning(beastOf("band", 0).model),
     weapon: "Bow",
     bring: FRONTIER_TROOP_NAMES[TroopType.Knight],
-    pays: `Draw ${n(CONTRACT.oathDrawCount)} Oaths`,
+    pays: `Oath pick (${n(CONTRACT.oathDrawCount)} Oaths)`,
     surface: `${beastOf("band", 0).name} (${range(frontierPreset.depths[0].beastStrongLower, frontierPreset.depths[0].beastStrongUpper)})`,
     veil: `${beastOf("band", 1).name} (${range(frontierPreset.depths[1].beastStrongLower, frontierPreset.depths[1].beastStrongUpper)})`,
     hollow: `${beastOf("band", 2).name} (${range(frontierPreset.depths[2].beastStrongLower, frontierPreset.depths[2].beastStrongUpper)})`,
@@ -571,6 +580,7 @@ export const FRONTIER = {
   stamina: {
     max: n(stamina.staminaKnightMax),
     perTick: n(stamina.staminaGainPerTick),
+    perMinute: `+${staminaPerMinute}/min`,
     perHour: n(staminaPerHour),
     tickMinutes: n(tickMinutes),
     fullHours: n(((stamina.staminaKnightMax / stamina.staminaGainPerTick) * tickMinutes) / 60),
@@ -580,6 +590,7 @@ export const FRONTIER = {
     scoutReveal: n(rule.SCOUT_EXPLORE_STAMINA),
     step: n(stamina.staminaTravelStaminaCost),
     attack: n(stamina.staminaAttackReq),
+    defenseReq: n(stamina.staminaDefenseReq),
     wheatPerTroop: n(stamina.staminaExploreWheatCost),
     well: `${n(rule.WELL_REFILL_PERCENT)}% of its maximum`,
     wellBase: n(Math.round((stamina.staminaKnightMax * rule.WELL_REFILL_PERCENT) / 100)),
@@ -587,6 +598,7 @@ export const FRONTIER = {
     wellLogisticsBase: n(Math.round((logisticsMaxValue * rule.WELL_REFILL_PERCENT) / 100)),
     wellLogisticsReflection: n(Math.round((logisticsMaxValue * oaths.REFLECTION_WELL_PERCENT) / 100)),
     logisticsStep: `${n(rule.LOGISTICS_STEP_PERCENT)}%`,
+    logisticsStepAmount: `+${n(logisticsStepValue)}`,
     logisticsBonus: `+${n(logisticsBonusValue)}`,
     logisticsMax: n(logisticsMaxValue),
     perFragment: n(fragments.STAMINA_PER_FRAGMENT),
@@ -774,8 +786,12 @@ export const FRONTIER = {
     gates: aspects.map((aspect, index) => `${aspect.name} (${deepCompass[index]})`).join(", "),
     guardSlots: n(rule.DEEP_GUARD_SLOTS),
     sitesPerRing: n(rule.DEEP_RING_SITES),
+    randomSitesPerRing: n(rule.DEEP_RING_SITES - deepSites.length),
+    maxSameKindPerRing: n(1 + (rule.DEEP_RING_SITES - deepSites.length)),
     sitesTotal: n(deepPreset.rings.length * rule.DEEP_RING_SITES),
     lossPerTick: n(deepPreset.lossPerTick),
+    corePerTick: n(deepPreset.corePerTick),
+    minePerTick: n(deepPreset.minePerTick),
     payAlone: n(deepPreset.buildingPay.alone),
     payPair: n(deepPreset.buildingPay.pair),
     payCrowd: n(deepPreset.buildingPay.crowd),
@@ -829,38 +845,55 @@ export const FRONTIER = {
     maxSlots: n(research.OATH_SLOTS_BASE + research.OATH_SLOTS_STEPS),
     passStamina: n(oaths.PASS_STAMINA),
     rerollFragments: n(fragments.OATH_REROLL_FRAGMENTS),
-    rerollNote: `Spend ${n(fragments.OATH_REROLL_FRAGMENTS)} Fragments to replace one of the ${n(CONTRACT.oathDrawCount)} drawn cards once per draw on the ${personalLayersAnd}.`,
+    rerollNote: `Spend ${n(fragments.OATH_REROLL_FRAGMENTS)} Fragments to reroll one offered Oath once per pick on the ${personalLayersAnd}.`,
     vitriolLoss: n(oaths.VITRIOL_LOSS_PER_TICK),
     reflectionWell: `${n(oaths.REFLECTION_WELL_PERCENT)}%`,
     detectionLimit: n(oaths.DETECTION_EMPTY_REVEAL_LIMIT),
+    angerAttack: n(angerAttackCost),
+    furyPercent: `${n(oaths.FURY_REFUND_PERCENT)}%`,
+    furyRefundBase: n(furyRefundBaseValue),
+    furyRefundAnger: n(furyRefundAngerValue),
+    furyExampleAttacks: n(furyExampleAttacks),
+    furyExampleTotal: n(furyExampleAttacks * stamina.staminaAttackReq),
+    furyExampleWrong: n(furyExampleAttacks * furyRefundBaseValue),
+    skillThreshold: n(oaths.SKILL_BELOW_STAMINA),
+    skillDamagePercent: `+${n(oaths.SKILL_DAMAGE_PERCENT)}%`,
+    skillExampleStart: n(stamina.staminaAttackReq + skillExampleAfterValue),
+    skillExampleAfter: n(skillExampleAfterValue),
+    skillExampleEnd: n(skillExampleAfterValue + furyRefundBaseValue),
+    twinsPercent: `${n(oaths.TWINS_DAMAGE_PERCENT)}%`,
+    titansBonus: `+${n(oaths.TITANS_STAMINA)}`,
+    titansBaseMax: n(stamina.staminaKnightMax + oaths.TITANS_STAMINA),
+    titansLogisticsMax: n(logisticsMaxValue + oaths.TITANS_STAMINA),
+    bandSummary: `${beastOf("band", 0).name} ${range(frontierPreset.depths[0].beastStrongLower, frontierPreset.depths[0].beastStrongUpper)}, ${beastOf("band", 1).name} ${range(frontierPreset.depths[1].beastStrongLower, frontierPreset.depths[1].beastStrongUpper)}, ${beastOf("band", 2).name} ${range(frontierPreset.depths[2].beastStrongLower, frontierPreset.depths[2].beastStrongUpper)}`,
     rows: oathRows,
     pairs: [
       {
-        job: `Break ${n(breakTarget)} ${FRONTIER_TROOP_NAMES[TroopType.Knight]} guarding a Deep site (attacking ${FRONTIER_TROOP_NAMES[TroopType.Knight]}; ${oathName(oaths.TWINS)} uses a ${n(twinsAllyCount)}-troop adjacent ally that takes 0 losses)`,
-        none: n(minKnightsToClear(breakTarget, { defenderGuard: true })),
-        first: `${oathName(oaths.POWER)}: ${n(minKnightsToClear(breakTarget, { defenderGuard: true, attackerOaths: powerMask }))}`,
-        second: `${oathName(oaths.TWINS)}: ${n(minKnightsToClear(breakTarget, { defenderGuard: true, attackerOaths: twinsMask, twinCount: twinsAllyCount }))}`,
-        both: n(
+        job: `Clear ${n(breakTarget)} ${FRONTIER_TROOP_NAMES[TroopType.Knight]} guarding a Deep site (attacking ${FRONTIER_TROOP_NAMES[TroopType.Knight]}; ${oathName(oaths.TWINS)} uses a ${n(twinsAllyCount)}-troop adjacent own army that takes 0 losses)`,
+        none: `${n(minKnightsToClear(breakTarget, { defenderGuard: true }))} ${FRONTIER_TROOP_NAMES[TroopType.Knight]}`,
+        first: `${oathName(oaths.POWER)}: ${n(minKnightsToClear(breakTarget, { defenderGuard: true, attackerOaths: powerMask }))} ${FRONTIER_TROOP_NAMES[TroopType.Knight]}`,
+        second: `${oathName(oaths.TWINS)}: ${n(minKnightsToClear(breakTarget, { defenderGuard: true, attackerOaths: twinsMask, twinCount: twinsAllyCount }))} ${FRONTIER_TROOP_NAMES[TroopType.Knight]}`,
+        both: `${n(
           minKnightsToClear(breakTarget, {
             defenderGuard: true,
             attackerOaths: powerMask | twinsMask,
             twinCount: twinsAllyCount,
           }),
-        ),
+        )} ${FRONTIER_TROOP_NAMES[TroopType.Knight]}`,
       },
       {
-        job: `Hold a Deep site with ${n(holdStart)} ${FRONTIER_TROOP_NAMES[TroopType.Knight]} after ${holdTicks} ticks (rival ${FRONTIER_TROOP_NAMES[TroopType.Knight]} to clear)`,
-        none: n(minKnightsToClear(holdBaseRemaining, { defenderGuard: true })),
-        first: `${oathName(oaths.PROTECTION)}: ${n(minKnightsToClear(holdBaseRemaining, { defenderGuard: true, defenderOaths: protectionMask }))}`,
-        second: `${oathName(oaths.VITRIOL)}: ${n(minKnightsToClear(holdVitriolRemaining, { defenderGuard: true }))}`,
-        both: n(minKnightsToClear(holdVitriolRemaining, { defenderGuard: true, defenderOaths: protectionMask })),
+        job: `Hold a Deep site with ${n(holdStart)} ${FRONTIER_TROOP_NAMES[TroopType.Knight]} after ${holdTicks} ticks (rival ${FRONTIER_TROOP_NAMES[TroopType.Knight]} needed to clear)`,
+        none: `${n(minKnightsToClear(holdBaseRemaining, { defenderGuard: true }))} ${FRONTIER_TROOP_NAMES[TroopType.Knight]}`,
+        first: `${oathName(oaths.PROTECTION)}: ${n(minKnightsToClear(holdBaseRemaining, { defenderGuard: true, defenderOaths: protectionMask }))} ${FRONTIER_TROOP_NAMES[TroopType.Knight]}`,
+        second: `${oathName(oaths.VITRIOL)}: ${n(minKnightsToClear(holdVitriolRemaining, { defenderGuard: true }))} ${FRONTIER_TROOP_NAMES[TroopType.Knight]}`,
+        both: `${n(minKnightsToClear(holdVitriolRemaining, { defenderGuard: true, defenderOaths: protectionMask }))} ${FRONTIER_TROOP_NAMES[TroopType.Knight]}`,
       },
       {
         job: `Stamina spent across ${attackChainCount} won attacks`,
-        none: n(attackChainCount * baseAttackCost),
-        first: `${oathName(oaths.ANGER)}: ${n(attackChainCount * angerCost)}`,
-        second: `${oathName(oaths.FURY)}: ${n(attackChainCount * baseFuryCost)}`,
-        both: n(attackChainCount * angerFuryCost),
+        none: `${n(attackChainCount * baseAttackCost)} stamina`,
+        first: `${oathName(oaths.ANGER)}: ${n(attackChainCount * angerCost)} stamina`,
+        second: `${oathName(oaths.FURY)}: ${n(attackChainCount * baseFuryCost)} stamina`,
+        both: `${n(attackChainCount * angerFuryCost)} stamina`,
       },
       {
         job: `Cleared-site payout on a clean win (<${n(oaths.PERFECTION_LOSS_PERCENT)}% lost)`,

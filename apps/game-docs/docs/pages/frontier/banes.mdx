@@ -9,41 +9,48 @@ import { PipeTable } from "@/components/PipeTable";
 
 # Banes and Triumphs
 
-Some game days bring a special day for your Aspect: a **World Bane** from the mist, a **Team Bane** sent by a rival
+Some game days bring a special day for your Aspect: a **World Bane** from the fog, a **Team Bane** sent by a rival
 Aspect from [the Deep](/frontier/deep), or a **Stage Triumph** earned by raising your Aspect's hyperstructure. On bane
-days, a bane quest replaces your normal [daily quest](/frontier/quests).
+days, a bane quest replaces your normal [daily quest](/frontier/quests). A bane lasts at most that one game day.
 
 ## World Banes
 
-From day 2 onward, World Banes can strike all {FRONTIER.aspectsCount} Aspects at the start of a game day. The chance is
-0% the day after a World Bane, and each day without a World Bane adds +{FRONTIER.banes.chanceStep} to the chance of one
-on the next day. Once any Aspect issues the season's first Team Bane, World Banes stop for the rest of the season. An
-Aspect never has a World Bane and a Team Bane on the same day.
+From day 2 onward, World Banes can start for all {FRONTIER.aspectsCount} Aspects at the start of a game day. The chance
+is 0% the day after a World Bane, and each day without a World Bane adds +{FRONTIER.banes.chanceStep} to the chance of
+one on the next day. Once any Aspect issues the season's first Team Bane, World Banes stop for the rest of the season.
+An Aspect never has a World Bane and a Team Bane on the same day.
 
-| World Bane                                                                          | Effect while active              | Bane quest to break it                                                            | Target (Levels 1 / 2 / 3 / 4)     |
+| World Bane                                                                          | Effect while active              | Bane quest to end it                                                              | Target (Levels 1 / 2 / 3 / 4)     |
 | ----------------------------------------------------------------------------------- | -------------------------------- | --------------------------------------------------------------------------------- | --------------------------------- |
 | <GameIcon name={FRONTIER.banes.world[0].icon} /> **{FRONTIER.banes.world[0].name}** | {FRONTIER.banes.world[0].effect} | **{FRONTIER.banes.world[0].questName}:** {FRONTIER.banes.world[0].questObjective} | {FRONTIER.banes.world[0].targets} |
 | <GameIcon name={FRONTIER.banes.world[1].icon} /> **{FRONTIER.banes.world[1].name}** | {FRONTIER.banes.world[1].effect} | **{FRONTIER.banes.world[1].questName}:** {FRONTIER.banes.world[1].questObjective} | {FRONTIER.banes.world[1].targets} |
 | <GameIcon name={FRONTIER.banes.world[2].icon} /> **{FRONTIER.banes.world[2].name}** | {FRONTIER.banes.world[2].effect} | **{FRONTIER.banes.world[2].questName}:** {FRONTIER.banes.world[2].questObjective} | {FRONTIER.banes.world[2].targets} |
 
-Each Aspect tracks its own progress, and progress counts on every layer. Finishing the bane quest pays your normal daily
-quest reward. Once {FRONTIER.banes.quorum} of your Aspect's members who were active on the previous day finish the bane
-quest, the bane ends for your Aspect, and everyone who finished can press **Collect again** for a second daily quest
-payout.
+**Ash Fall** slows all realm building production (wheat, labor, and troop training) until the bane ends, and **Mist
+Tide** slows army stamina recovery.
+
+Each player receives a personal bane quest — there is no single shared quest, and progress counts on every layer. Only
+players who finish their own quest and press **Collect** that same day receive the daily quest reward. Once
+{FRONTIER.banes.quorum} of your Aspect's members who deployed at least one army on the previous game day finish theirs,
+the World Bane ends for your Aspect and finishers can press **Collect again** for a second equal reward (World Banes
+only, not Team Banes). Players who did not finish receive no reward, only the bane's penalties removed.
 
 ## Rival Team Banes
 
 <GameIcon name="hyperstructure" /> When an Aspect fills its **Bane altar** bar ({FRONTIER.deep.altarThreshold} charge)
-in [the Deep](/frontier/deep), a **Team Bane** hits the rival Aspect with the tallest hyperstructure on the next game
+in [the Deep](/frontier/deep), a **Team Bane** targets the rival Aspect with the tallest hyperstructure on the next game
 day, skipping any rival already blocked or already targeted for tomorrow. No Team Bane is issued on the last day of the
 season.
 
-- The targeted Aspect's hyperstructure stops gaining height while the Team Bane lasts. Height missed while blocked is
-  not returned when the bane lifts.
+- The targeted Aspect's hyperstructure stops gaining height (and guards gain no build contribution) while the Team Bane
+  lasts, and missed height is not returned when the bane ends. **Archive guards still earn their full Glory**
+  ({FRONTIER.deep.payAlone} / {FRONTIER.deep.payPair} / {FRONTIER.deep.payCrowd} per tick, split by troop count) during
+  a Team Bane.
 - The targeted Aspect gets one of the {FRONTIER.banes.count} bane quests ({FRONTIER.banes.questNames}), never the same
   quest two times in a row.
-- Finishing the bane quest pays the daily quest reward. Once {FRONTIER.banes.quorum} of the Aspect's members who were
-  active on the previous day finish the quest, the Team Bane lifts and height growth resumes.
+- Finishing your own bane quest and pressing **Collect** that same day pays the daily quest reward. Once
+  {FRONTIER.banes.quorum} of the Aspect's members who deployed at least one army on the previous game day finish theirs,
+  the Team Bane ends and height growth resumes (with no second quest reward).
 
 ## Stage Triumphs
 
