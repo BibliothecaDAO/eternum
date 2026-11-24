@@ -4146,13 +4146,9 @@ function raceBoardSteps(result) {
       name: "read-aspect-race",
       play: async ({ browser, extraScreenshot }) => {
         if (result === null) {
-          if (
-            browser.read(
-              `JSON.stringify(Boolean(document.querySelector('[data-daily-quest]') && document.querySelector('[data-daily-quest-chip]')))`,
-            )
-          ) {
-            browser.run(["click", "[data-daily-quest-chip]"]);
-          }
+          browser.read(
+            `(() => { document.querySelector('[data-daily-quest] button[aria-label="${HUD_WORDS.close}"]')?.click(); return true; })()`,
+          );
           await openPlace(browser, HUD_WORDS.season);
         }
         const race = await readUntil(
