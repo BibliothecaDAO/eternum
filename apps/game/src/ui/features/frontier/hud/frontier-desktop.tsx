@@ -78,7 +78,7 @@ export const FrontierDesktop = ({
         </HudFoot>
         <FollowingArmyPill />
         <SheetDock.Provider value={railPanel}>{children}</SheetDock.Provider>
-        <div ref={setPopoverNode} />
+        <div ref={setPopoverNode} className="frontier-popover-room" />
       </div>
     </HudPopoverRoot.Provider>
   );

@@ -1,7 +1,10 @@
+.frontier-crown,
+.frontier-notices {
+  left: calc(50% + (theme(spacing.hud-frontier-left) - theme(spacing.hud-frontier-rail)) / 2);
+}
 .frontier-crown {
   position: fixed;
   top: theme(spacing.4);
-  left: 50%;
   z-index: theme(zIndex.hud-rail);
   display: flex;
   align-items: center;
@@ -19,12 +22,18 @@
 .frontier-notices {
   position: fixed;
   top: 112px;
-  left: 50%;
   z-index: theme(zIndex.hud-notice);
   width: max-content;
   max-width: 440px;
   transform: translateX(-50%);
   padding: theme(spacing.2) theme(spacing.3);
+}
+.frontier-popover-room {
+  position: fixed;
+  inset: 0 calc(theme(spacing.hud-frontier-rail) + theme(spacing.4)) 0 0;
+  z-index: theme(zIndex.hud-popover);
+  transform: translateZ(0);
+  pointer-events: none;
 }
 .frontier-quest-popover[data-layout="desktop"] {
   margin-top: 10px;
@@ -568,6 +577,13 @@ button.frontier-stock__face:hover {
 }
 .frontier-corner--right[data-wide="true"] [data-wide-page] {
   margin-top: 20px;
+}
+.frontier-corner--right [data-wide-page] .race-stage {
+  height: 13rem;
+  min-height: 0;
+}
+.frontier-corner--right [data-wide-page] .aspect-race-page {
+  max-height: 25rem;
 }
 
 [data-frontier-rail] [data-build-grid] .ui-card__title {
