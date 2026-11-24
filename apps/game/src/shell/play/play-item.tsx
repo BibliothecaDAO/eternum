@@ -186,9 +186,7 @@ const FrontierHeroCard = ({ item, now, signedIn, className }: ItemProps & { clas
             )}
           </div>
           <h2 className="play-hero__title">
-            <span className="play-hero__lockup-frame">
-              <img src={AGE_LOCKUP.frontier} alt={age.name} className="play-hero__lockup" />
-            </span>
+            <img src={AGE_LOCKUP.frontier} alt={age.name} className="play-hero__lockup" />
           </h2>
         </div>
         <div className="play-hero__plate">

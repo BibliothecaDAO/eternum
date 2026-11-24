@@ -78,18 +78,11 @@
   margin: 0;
 }
 
-.play-hero__lockup-frame {
-  display: block;
-  width: min(17rem, 72vw);
-  aspect-ratio: 640 / 432;
-  overflow: hidden;
-  filter: drop-shadow(0 8px 24px rgb(0 0 0 / 0.7));
-}
-
 .play-hero__lockup {
   display: block;
-  width: 100%;
+  width: min(17rem, 72vw);
   height: auto;
+  filter: drop-shadow(0 8px 24px rgb(0 0 0 / 0.7));
 }
 
 .play-hero__plate {
@@ -691,7 +684,7 @@
     justify-content: flex-start;
   }
 
-  .play-hero__lockup-frame {
+  .play-hero__lockup {
     width: min(21rem, 28vw);
   }
 
