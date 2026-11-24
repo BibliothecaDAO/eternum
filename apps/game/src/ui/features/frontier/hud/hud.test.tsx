@@ -318,41 +318,16 @@ describe("the army token", () => {
       />,
     );
   /** The bar's segments as drawn: each one's length (its flex-grow) and fill. */
-  const segments = (markup: string) =>
-    [...markup.matchAll(/flex-grow:([\d.]+);flex-basis:0[^>]*><i[^>]*width:([\d.]+)%/g)].map(([, size, fill]) => [
-      Number(size),
-      Number(fill),
-    ]);
+  const staminaFills = (markup: string) =>
+    [...markup.matchAll(/role="meter"[^>]*><i[^>]*width:([\d.]+)%/g)].map(([, fill]) => Number(fill));
 
-  it("wears no XP number, its stamina a segment per explore its maximum holds, and its troops", () => {
+  it("wears no XP number, its stamina one unbroken bar, and its troops", () => {
     const markup = token({ current: 60, max: 120 });
     // The owner, 13 November 2026: no XP number on the army; its way to the next point is a ring.
     expect(text(markup)).toBe("5,000");
     expect(markup).toContain('role="group"');
-    // 120 is six explores: three of them held.
-    expect(segments(markup)).toEqual([
-      [1, 100],
-      [1, 100],
-      [1, 100],
-      [1, 0],
-      [1, 0],
-      [1, 0],
-    ]);
-  });
-
-  it("adds a segment for each explore's worth of maximum its Logistics adds, a short one for a part", () => {
-    expect(segments(token({ current: 140, max: 140 }))).toHaveLength(7);
-    // 90 of 150: four explores held and half the fifth, then seven and a half explores long.
-    expect(segments(token({ current: 90, max: 150 }))).toEqual([
-      [1, 100],
-      [1, 100],
-      [1, 100],
-      [1, 100],
-      [1, 50],
-      [1, 0],
-      [1, 0],
-      [0.5, 0],
-    ]);
+    expect(staminaFills(markup)).toEqual([50]);
+    expect(staminaFills(token({ current: 90, max: 150 }))).toEqual([60]);
   });
 
   it("reads an army on a desktop's card: its title and its stamina exact", () => {
