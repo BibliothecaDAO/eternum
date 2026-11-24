@@ -3,7 +3,9 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { orderMeaning } from "@/ui/design-system/icon-meaning";
-import { aspects, orders } from "@bibliothecadao/types";
+import { DAY_BANNER_WORDS } from "@/ui/design-system/kit/words";
+import { aspects, orders, questCatalog } from "@bibliothecadao/types";
+import { nativeQuestConstants } from "@bibliothecadao/eternum/game-client";
 
 import { DAY_BANNER_CASES } from "./day-banner-fixtures";
 import { DayBannerView, type DayBannerProps, type DayLayout } from "./day-banner-view";
@@ -28,13 +30,14 @@ const reward = (resource: "Labor" | "Essence") => host.querySelector(`[data-rewa
 const button = (name: string) => [...host.querySelectorAll("button")].find((each) => each.textContent?.includes(name));
 
 describe("the day's banner", () => {
-  it("shows the quest's count, its reward and the claim waiting, with no Collect while it runs", () => {
+  it("shows the quest's plain-word objective, count, named rewards and claim waiting, with no Collect while it runs", () => {
     draw(DAY_BANNER_CASES["Quest running"]);
     expect(text()).toContain("Camp-breakers");
+    expect(host.querySelector("[data-quest-objective]")?.textContent).toBe("Clear 2 camps today");
     expect(text()).toContain("1 of 2 camps");
-    // a City's quest (the level that doubles a Settlement's count and reward), no labor bonus
-    expect(reward("Labor")).toBe("2,000");
-    expect(reward("Essence")).toBe("3,000");
+    expect(text()).toContain("Reward");
+    expect(reward("Labor")).toBe("2,000 Labor");
+    expect(reward("Essence")).toBe("3,000 Essence");
     expect(button("Collect")).toBeUndefined();
     expect(button("1K")).toBeDefined();
   });
@@ -54,29 +57,36 @@ describe("the day's banner", () => {
     expect(button("Collect again")).toBeDefined();
     expect(text()).toContain("Your Aspect ended the bane");
     expect(text()).toContain("The Lights");
+    expect(host.querySelector("[data-quest-objective]")?.textContent).toBe("Reveal 60 tiles today");
     expect(text()).toContain("60 of 60 tiles");
-    // a Kingdom's Lights, no bonus: 4,000 labor and 6,000 Essence
-    expect(reward("Labor")).toBe("4,000");
-    expect(reward("Essence")).toBe("6,000");
+    expect(reward("Labor")).toBe("4,000 Labor");
+    expect(reward("Essence")).toBe("6,000 Essence");
   });
 
-  it("heads the panel with the bane and how many members are at it", () => {
+  it("heads the panel with the bane, members at it, and labels the Altar bane bar with what happens at full", () => {
     draw(DAY_BANNER_CASES["World bane day, members at it"]);
     expect(text()).toContain("Blood Moon");
     expect(text()).toContain("The Stand");
+    expect(host.querySelector("[data-quest-objective]")?.textContent).toBe("Clear 3 guarded sites today");
     expect(text()).toContain("1 of 3 sites");
-    // a Settlement's Stand with the labor bonus: 150% of 1,000 labor, 1,500 Essence
-    expect(reward("Labor")).toBe("1,500");
-    expect(reward("Essence")).toBe("1,500");
+    expect(reward("Labor")).toBe("1,500 Labor");
+    expect(reward("Essence")).toBe("1,500 Essence");
     expect(text()).toContain("4 of 6 members");
+    const bar = host.querySelector("[data-day-bane-bar]")!;
+    expect(bar.textContent).toContain("Your Aspect's Altar bane bar");
+    expect(bar.textContent).toContain("30 of 100");
+    expect(bar.textContent).toContain(
+      "Hold a Deep Altar to charge. At full, sends a bane to the leading rival Aspect tomorrow.",
+    );
   });
 
   it("a rival's bane comes with the Cull, counted in troops, and exactly the sender Aspect's four crests", () => {
     draw(DAY_BANNER_CASES["Rival bane and Triumph"]);
     expect(text()).toContain("The Cull");
+    expect(host.querySelector("[data-quest-objective]")?.textContent).toBe("Defeat 6,000 guard troops today");
     expect(text()).toContain("0 of 6,000 troops");
-    expect(reward("Labor")).toBe("2,000");
-    expect(reward("Essence")).toBe("3,000");
+    expect(reward("Labor")).toBe("2,000 Labor");
+    expect(reward("Essence")).toBe("3,000 Essence");
     const orderIcons = new Set(orders.map(({ orderId }) => orderMeaning(orderId)));
     const shown = [...host.querySelectorAll("[data-icon]")]
       .map((each) => each.getAttribute("data-icon")!)
@@ -99,8 +109,12 @@ describe("the day's banner", () => {
     expect(button("Collect")).toBeUndefined();
   });
 
-  it("is lighter on a phone: the news is chips, and a press opens the bane's line", () => {
+  it("is lighter on a phone while keeping the plain-word objective, named rewards, and labeled Altar bane bar", () => {
     draw(DAY_BANNER_CASES["World bane day, members at it"], "phone");
+    expect(host.querySelector("[data-quest-objective]")?.textContent).toBe("Clear 3 guarded sites today");
+    expect(reward("Labor")).toBe("1,500 Labor");
+    expect(reward("Essence")).toBe("1,500 Essence");
+    expect(host.querySelector("[data-day-bane-bar]")?.textContent).toContain("Your Aspect's Altar bane bar");
     expect(text()).not.toContain("Guarded sites have 150% strength while the bane lasts");
     expect(text()).toContain("4 of 6");
     act(() => button("Blood Moon")!.click());
@@ -111,6 +125,16 @@ describe("the day's banner", () => {
     for (const props of Object.values(DAY_BANNER_CASES)) {
       draw(props);
       expect(text().toLowerCase()).not.toContain("lords");
+    }
+  });
+
+  it("writes a plain-word objective with target for every quest in the catalog", () => {
+    const reveals = questCatalog.find((entry) => entry.id === nativeQuestConstants.REVEALS)!;
+    expect(DAY_BANNER_WORDS.objectiveLine(reveals.objective, 15)).toBe("Reveal 15 tiles today");
+    for (const entry of questCatalog) {
+      const line = DAY_BANNER_WORDS.objectiveLine(entry.objective, 15);
+      expect(line).toContain("15");
+      expect(line.endsWith(" today")).toBe(true);
     }
   });
 });

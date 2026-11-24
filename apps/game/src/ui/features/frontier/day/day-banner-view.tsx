@@ -4,13 +4,12 @@ import type { IconMeaning } from "@/ui/design-system/icon-meaning";
 import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { HudButton, HudChip, HudLoading, HudMeter, HudPanel } from "@/ui/design-system/kit/hud-elements";
 import { DAY_BANNER_WORDS as WORDS } from "@/ui/design-system/kit/words";
-import { formatAmount, formatShort, ResourcesIds, type AspectId } from "@bibliothecadao/types";
+import { formatShort, ResourcesIds, type AspectId } from "@bibliothecadao/types";
 import { useState } from "react";
 
 type Tone = "good" | "bad" | "warn";
 export type DayLayout = "desktop" | "phone";
 
-/** What heads the panel: the day's bane or Triumph, in its tone, with its eyebrow, name and what it does. */
 export interface DayHead {
   tone: Tone;
   icon: IconMeaning;
@@ -18,40 +17,32 @@ export interface DayHead {
   name: string;
   rule: string;
   aspectId?: AspectId;
-  /** A rival Aspect's crests, for a team bane. */
   crests?: readonly IconMeaning[];
 }
 
-/** Today's quest, resolved by its caller: its painting, its name and the unit its count is in. */
 export interface DayQuestFace {
   icon: IconMeaning;
   name: string;
   unit: string;
-  objective?: string;
+  objective: string;
 }
 
-/** How far the quest is, what it pays, and what the player can do about it. */
 export interface DayQuestReading {
   progress: number;
   target: number;
   reward: { labor: number; essence: number };
-  /** running: nothing to press; done: Collect; collected: a check; again: a world bane ended, a second reward waits. */
   state: "running" | "done" | "collected" | "again";
 }
 
-/** The Aspect's members at ending the bane: how many finished, or what ending it brought. */
 export type DayMembers = { completed: number; required: number } | { ended: string; endedShort: string };
 
 export interface DayBannerProps {
   layout: DayLayout;
   quest: DayQuestFace | null;
-  /** Null while the facts the day rests on are not settled: the banner says it is reading and offers nothing. */
   reading: DayQuestReading | null;
   heads: readonly DayHead[];
   members: DayMembers | null;
-  /** The Aspect's Altar bane bar: what it holds against the threshold that issues a bane; null where the game has none. */
   bar: { charge: number; threshold: number } | null;
-  /** The home's daily claim waiting today (its Labor), which opens Realms; null once claimed. */
   claim: { labor: number } | null;
   collecting: boolean;
   onCollect: () => void;
@@ -60,11 +51,6 @@ export interface DayBannerProps {
 
 const TONE_TEXT: Record<Tone, string> = { good: "text-hud-good", bad: "text-hud-bad", warn: "text-hud-warn" };
 
-/**
- * The day's banner (the owner's pick A): the day's news heads the panel, then the quest with its count over a meter and
- * its reward, the Aspect's members and the claim waiting. No LORDS anywhere. A phone gets the lighter panel: the quest on
- * one row, one foot row, and the news as chips that open their line on a press.
- */
 export const DayBannerView = ({ quest, ...props }: DayBannerProps) => {
   if (!quest)
     return (
@@ -88,33 +74,47 @@ const DesktopDay = ({
   onCollect,
   onOpenClaim,
 }: KnownQuestProps) => (
-  <HudPanel label={WORDS.today} collapsible={false} className="pointer-events-auto" bodyClassName="flex flex-col gap-2">
+  <HudPanel
+    label={WORDS.today}
+    collapsible={false}
+    className="pointer-events-auto"
+    bodyClassName="flex flex-col gap-2.5"
+  >
     {heads.map((head) => (
       <HeadRow key={head.eyebrow} head={head} />
     ))}
-    <span className="flex items-center gap-3">
-      <Icon name={quest.icon} size={44} />
-      <span className="flex min-w-0 flex-1 flex-col gap-1">
-        <span className="flex items-baseline justify-between gap-2">
-          <span className="truncate text-hud-strong text-hud-ink">{quest.name}</span>
-          {reading && <Count quest={quest} reading={reading} />}
-        </span>
-        {reading ? (
-          <>
-            <Meter quest={quest} reading={reading} />
+    <div className="flex flex-col gap-2">
+      <div className="flex items-start gap-3">
+        <Icon name={quest.icon} size={40} className="shrink-0" />
+        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <div className="flex items-baseline justify-between gap-2">
+            <span className="truncate text-hud-strong text-hud-ink">{quest.name}</span>
+            {reading && <Count quest={quest} reading={reading} />}
+          </div>
+          <span data-quest-objective className="text-hud-body text-hud-muted">
+            {reading ? WORDS.objectiveLine(quest.objective, reading.target) : quest.objective}
+          </span>
+        </div>
+      </div>
+      {reading ? (
+        <>
+          <Meter quest={quest} reading={reading} />
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <Rewards reading={reading} />
-          </>
-        ) : (
-          <HudLoading line={WORDS.reading} />
-        )}
-      </span>
-      {reading && <End state={reading.state} collecting={collecting} onCollect={onCollect} />}
-    </span>
+            <End state={reading.state} collecting={collecting} onCollect={onCollect} />
+          </div>
+        </>
+      ) : (
+        <HudLoading line={WORDS.reading} />
+      )}
+    </div>
+    {(members || claim) && (
+      <div className="flex items-center justify-between gap-2 border-t border-hud-divider pt-2">
+        <span className="min-w-0 flex-1">{members && <Members members={members} />}</span>
+        <Claim claim={claim} onOpen={onOpenClaim} />
+      </div>
+    )}
     {bar && <BaneBar bar={bar} />}
-    <span className="flex items-center justify-between gap-2">
-      <span className="min-w-0 flex-1">{members && <Members members={members} />}</span>
-      <Claim claim={claim} onOpen={onOpenClaim} />
-    </span>
   </HudPanel>
 );
 
@@ -136,27 +136,42 @@ const PhoneDay = ({
       label={WORDS.today}
       collapsible={false}
       className="pointer-events-auto"
-      bodyClassName="flex flex-col gap-1.5"
+      bodyClassName="flex flex-col gap-2"
     >
-      <span className="flex items-center gap-2">
-        <Icon name={quest.icon} size={32} />
-        <span className="flex min-w-0 flex-1 flex-col">
-          <span className="flex items-baseline justify-between gap-2">
-            <span className="truncate text-hud-strong text-hud-ink">{quest.name}</span>
-            {reading && <Count quest={quest} reading={reading} />}
-          </span>
-          {reading ? <Meter quest={quest} reading={reading} /> : <HudLoading line={WORDS.reading} />}
-        </span>
-        {reading && <End state={reading.state} collecting={collecting} onCollect={onCollect} />}
-      </span>
-      <span className="flex items-center justify-between gap-2 text-hud-label tabular-nums text-hud-ink">
-        {reading ? <Rewards reading={reading} /> : <span />}
-        {members && <MembersShort members={members} />}
-        <Claim claim={claim} onOpen={onOpenClaim} />
-      </span>
+      <div className="flex flex-col gap-1.5">
+        <div className="flex items-start gap-2.5">
+          <Icon name={quest.icon} size={32} className="shrink-0" />
+          <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+            <div className="flex items-baseline justify-between gap-2">
+              <span className="truncate text-hud-strong text-hud-ink">{quest.name}</span>
+              {reading && <Count quest={quest} reading={reading} />}
+            </div>
+            <span data-quest-objective className="text-hud-label text-hud-muted">
+              {reading ? WORDS.objectiveLine(quest.objective, reading.target) : quest.objective}
+            </span>
+          </div>
+        </div>
+        {reading ? (
+          <>
+            <Meter quest={quest} reading={reading} />
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <Rewards reading={reading} />
+              <End state={reading.state} collecting={collecting} onCollect={onCollect} />
+            </div>
+          </>
+        ) : (
+          <HudLoading line={WORDS.reading} />
+        )}
+      </div>
+      {(members || claim) && (
+        <div className="flex items-center justify-between gap-2 border-t border-hud-divider pt-1.5 text-hud-label tabular-nums text-hud-ink">
+          {members ? <MembersShort members={members} /> : <span />}
+          <Claim claim={claim} onOpen={onOpenClaim} />
+        </div>
+      )}
       {bar && <BaneBar bar={bar} />}
       {heads.length > 0 && (
-        <span className="flex flex-wrap items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5">
           {heads.map((head) => (
             <HudChip
               key={head.eyebrow}
@@ -167,7 +182,7 @@ const PhoneDay = ({
               {head.name}
             </HudChip>
           ))}
-        </span>
+        </div>
       )}
       {opened && <span className="text-hud-label text-hud-muted">{opened.rule}</span>}
     </HudPanel>
@@ -204,16 +219,17 @@ const Meter = ({ quest, reading }: { quest: DayQuestFace; reading: DayQuestReadi
 );
 
 const Rewards = ({ reading }: { reading: DayQuestReading }) => (
-  <span className="flex items-center gap-3 text-hud-label tabular-nums text-hud-ink">
+  <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-hud-label tabular-nums text-hud-ink">
+    <span className="text-hud-muted">{WORDS.reward}</span>
     <Amount resource={ResourcesIds.Labor} amount={reading.reward.labor} />
     <Amount resource={ResourcesIds.Essence} amount={reading.reward.essence} />
   </span>
 );
 
 const Amount = ({ resource, amount }: { resource: ResourcesIds; amount: number }) => (
-  <span data-reward={ResourcesIds[resource]} className="flex items-center gap-1">
-    <Icon name={resourceMeaning(resource)} size={20} />
-    {formatAmount(amount)}
+  <span data-reward={ResourcesIds[resource]} className="inline-flex items-center gap-1">
+    <Icon name={resourceMeaning(resource)} size={18} />
+    {WORDS.rewardAmount(amount, resource)}
   </span>
 );
 
@@ -241,15 +257,23 @@ const End = ({
 };
 
 const BaneBar = ({ bar }: { bar: NonNullable<DayBannerProps["bar"]> }) => {
-  const line = `${WORDS.baneBar}: ${WORDS.barCharge(bar.charge, bar.threshold)}`;
+  const charge = WORDS.barCharge(bar.charge, bar.threshold);
+  const line = `${WORDS.baneBar}: ${charge}`;
   return (
-    <span data-day-bane-bar className="flex items-center gap-2 text-hud-label tabular-nums text-hud-ink">
-      <Icon name="flame" size={20} />
-      <span className="shrink-0">{WORDS.barCharge(bar.charge, bar.threshold)}</span>
-      <span className="min-w-0 flex-1">
-        <HudMeter share={Math.min(1, bar.charge / bar.threshold)} label={line} />
-      </span>
-    </span>
+    <div
+      data-day-bane-bar
+      className="flex flex-col gap-1 border-t border-hud-divider pt-2 text-hud-label tabular-nums text-hud-ink"
+    >
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="inline-flex min-w-0 items-center gap-1.5 text-hud-ink">
+          <Icon name="flame" size={16} className="shrink-0" />
+          <span className="truncate">{WORDS.baneBar}</span>
+        </span>
+        <span className="shrink-0 text-hud-muted">{charge}</span>
+      </div>
+      <HudMeter share={Math.min(1, bar.charge / bar.threshold)} label={line} />
+      <span className="text-hud-label text-hud-muted">{WORDS.baneBarHint}</span>
+    </div>
   );
 };
 

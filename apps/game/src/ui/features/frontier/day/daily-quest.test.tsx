@@ -165,7 +165,7 @@ describe.each(["desktop", "phone"] as const)("bane collection on %s", (layout) =
     expect(host.querySelector('[aria-label="Collected"]')).not.toBeNull();
     act(game.win);
     expect(collectAgain()?.disabled).toBe(false);
-    expect(reward("Labor")).toBe("1,000");
+    expect(reward("Labor")).toBe("1,000 Labor");
     await act(async () => collectAgain()!.click());
     expect(game.submit).toHaveBeenCalledTimes(1);
     expect(game.submit).toHaveBeenCalledWith(expect.objectContaining({ home: 7, day: 1 }));
@@ -176,8 +176,8 @@ describe.each(["desktop", "phone"] as const)("bane collection on %s", (layout) =
     });
     expect(host.querySelector('[aria-label="Collected"]')).not.toBeNull();
     expect(collectAgain()).toBeUndefined();
-    expect(reward("Labor")).toBe("1,250");
-    expect(reward("Essence")).toBe("2,000");
+    expect(reward("Labor")).toBe("1,250 Labor");
+    expect(reward("Essence")).toBe("2,000 Essence");
   });
 
   it("offers both rewards for a first collection after quorum and waits for both receipts", async () => {
@@ -185,8 +185,8 @@ describe.each(["desktop", "phone"] as const)("bane collection on %s", (layout) =
     game.win();
     game.draw();
     expect(collect()?.disabled).toBe(false);
-    expect(reward("Labor")).toBe("2,000");
-    expect(reward("Essence")).toBe("3,000");
+    expect(reward("Labor")).toBe("2,000 Labor");
+    expect(reward("Essence")).toBe("3,000 Essence");
     await act(async () => collect()!.click());
     expect(game.submit).toHaveBeenCalledTimes(1);
     expect(host.querySelector('[aria-label="Collected"]')).toBeNull();
@@ -196,7 +196,7 @@ describe.each(["desktop", "phone"] as const)("bane collection on %s", (layout) =
     });
     expect(host.querySelector('[aria-label="Collected"]')).not.toBeNull();
     expect(collectAgain()).toBeUndefined();
-    expect(reward("Labor")).toBe("2,000");
+    expect(reward("Labor")).toBe("2,000 Labor");
   });
 
   it("does not invent an ordinary quest while the recorded day is missing", () => {
@@ -238,9 +238,10 @@ describe.each(["desktop", "phone"] as const)("bane collection on %s", (layout) =
     game.draw();
     expect(host.textContent).toContain(`${source.name}'s bane`);
     expect(host.textContent).toContain("The Stand");
+    expect(host.querySelector("[data-quest-objective]")?.textContent).toBe("Clear 3 guarded sites today");
     expect(host.querySelector('[aria-label="Collected"]')).not.toBeNull();
     expect(collectAgain()).toBeUndefined();
-    expect(reward("Labor")).toBe("1,000");
+    expect(reward("Labor")).toBe("1,000 Labor");
   });
   it("shows a received sub-unit reward as less than one, never zero", () => {
     const game = worldDay(layout);
@@ -252,7 +253,7 @@ describe.each(["desktop", "phone"] as const)("bane collection on %s", (layout) =
     ]);
     game.draw();
     expect(host.querySelector('[aria-label="Collected"]')).not.toBeNull();
-    expect(reward("Labor")).toBe("<1");
-    expect(reward("Essence")).toBe("<1");
+    expect(reward("Labor")).toBe("<1 Labor");
+    expect(reward("Essence")).toBe("<1 Essence");
   });
 });
