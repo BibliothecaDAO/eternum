@@ -468,9 +468,9 @@ export const payoutWalletPhrases = (changeHoldSeconds, claimWindowSeconds) => [
 ];
 
 /** The phrases every rules page that states a stamina, guard, chest or points number must show. */
-export const publicDataPhrases = (release, heraldLimits, dashboardOrigins, publicRoutes) => {
+export const publicDataPhrases = (release, heraldLimits, dashboardOrigins, publicData) => {
   const aspectMapLiteral = `{ ${aspects.map((aspect) => `${aspect.id}: "${aspect.name}"`).join(", ")} }`;
-  const routeChecks = publicRoutes.map((route) =>
+  const routeChecks = publicData.routes.map((route) =>
     route.base === "herald"
       ? `${route.method} ${release.public_herald_url}${route.path}`
       : `${route.method} ${release.public_rpc_url}`,
@@ -493,8 +493,11 @@ export const publicDataPhrases = (release, heraldLimits, dashboardOrigins, publi
         `Shard Starknet JSON-RPC URL is ${release.public_rpc_url}`,
         `Read-only only: never send write calls, transactions, or mutations.`,
         `Show the top Glory earners per Aspect today.`,
+        publicData.leaderboardRule,
+        publicData.snapshotModelsList,
+        ...publicData.rateEtiquette,
         ...routeChecks,
-        ...publicRoutes.map((route) => `${route.method} ${route.path}`),
+        ...publicData.routes.map((route) => `${route.method} ${route.path}`),
         `curl -sS ${release.public_herald_url}/games`,
         `curl -sS -X POST ${release.public_rpc_url}`,
         `const ASPECTS = ${aspectMapLiteral};`,
@@ -656,7 +659,18 @@ export const loadBalanceSources = async () => {
       identityOrigin: (devBuild ? environments.dev : environments.production).origin,
     };
     const heraldLimits = await server.ssrLoadModule(join(here, "../../herald/src/http-limits.ts"));
-    const { PUBLIC_ROUTES: publicRoutes } = await server.ssrLoadModule(join(here, "../docs/utils/public-data.ts"));
+    const {
+      LEADERBOARD_RULE: leaderboardRule,
+      PUBLIC_ROUTES: publicRoutes,
+      RATE_ETIQUETTE: rateEtiquette,
+      SNAPSHOT_MODELS: snapshotModels,
+    } = await server.ssrLoadModule(join(here, "../docs/utils/public-data.ts"));
+    const publicData = {
+      routes: publicRoutes,
+      leaderboardRule,
+      rateEtiquette,
+      snapshotModelsList: snapshotModels.join(", "),
+    };
     return {
       frontierPreset,
       frontierConfig,
@@ -698,7 +712,7 @@ export const loadBalanceSources = async () => {
       productionRelease,
       dashboardOrigins,
       heraldLimits,
-      publicRoutes,
+      publicData,
       payoutWalletChangeSeconds: PAYOUT_WALLET_CHANGE_SECONDS,
       raceClaimWindowSeconds: RACE_CLAIM_WINDOW_SECONDS,
     };
@@ -879,12 +893,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const phrases = [
     ...expectedPhrases(frontierConfig, frontierPreset, nativeRules, nativeFragments, nativeOaths, nativeRace, sources),
     ...payoutWalletPhrases(payoutWalletChangeSeconds, raceClaimWindowSeconds),
-    ...publicDataPhrases(
-      sources.productionRelease,
-      sources.heraldLimits,
-      sources.dashboardOrigins,
-      sources.publicRoutes,
-    ),
+    ...publicDataPhrases(sources.productionRelease, sources.heraldLimits, sources.dashboardOrigins, sources.publicData),
   ];
   const missing = [
     ...missingPhrases(dist, phrases),

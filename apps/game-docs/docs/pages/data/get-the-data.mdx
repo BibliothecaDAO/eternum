@@ -187,14 +187,13 @@ Live response:
 }
 ```
 
-### 4. Current state snapshot (`GET /games/<id>/snapshot?models=...`)
+### 4. Current state snapshot (`GET /games/:id/snapshot?models=...`)
 
 Returns current confirmed rows for the models you name in `models` (comma-separated). Always pass `?models=...` so you
 only download the tables you need. You can also pass `&actor=0x...` or `&owner=0x...` to narrow rows to one player.
 
-Useful Season 1 model names are `AspectHyperstructure`, `AspectMembers`, `AspectActivity`, `HomeAspect`, `RaceMember`,
-`RaceResult`, `ExplorerTroops`, `DeepArmy`, `DeepSite`, `DeepGuard`, `AltarBar`, `WorldBane`, `TeamBane`, `Seal`, and
-`Structure`. Numeric values inside snapshot rows are hex strings (`"0x..."`), which `BigInt(value)` parses cleanly.
+Useful Season 1 model names are {PUBLIC_DATA.snapshotModelsList}. Numeric values inside snapshot rows are hex strings
+(`"0x..."`), which `BigInt(value)` parses cleanly.
 
 <CopyCode>{PUBLIC_DATA.snippets.snapshotCurl}</CopyCode>
 
@@ -228,10 +227,9 @@ Shortened live response:
 }
 ```
 
-### 5. Aspect Glory roster (`GET /games/<id>/aspects/<aspect_id>/members`)
+### 5. Aspect Glory roster (`GET /games/:id/aspects/:aspect_id/members`)
 
-Season 1 ranks players by Glory inside each Aspect. Calling `/games/<id>/leaderboard` on a Season 1 game returns
-`404 {"error":"season_one_ranks_aspects"}`, so read `/aspects/<aspect_id>/members` instead.
+Season 1 ranks players by Glory inside each Aspect. {PUBLIC_DATA.leaderboardRule}
 
 Page size `limit` defaults to {PUBLIC_DATA.limits.rosterDefault} and accepts 1 to {PUBLIC_DATA.limits.rosterMax}. Use
 `offset` to walk the full roster. The response also includes an `X-Confirmed-Block` header.
@@ -264,7 +262,7 @@ Live response:
 Each entry in `members` has `rank` (1-based integer), `entity_id` (realm entity ID string), `realm_id` (integer),
 `owner` (Starknet address hex string), and `glory` (decimal string).
 
-### 6. Story history (`GET /games/<id>/history`)
+### 6. Story history (`GET /games/:id/history`)
 
 Returns confirmed immutable events ordered newest first, with `complete_through_block` and `total`. Filter by
 `model=StoryEvent` with an optional `story` variant (`RealmCreatedStory`, `ExplorationReward`, `SitePayout`,
@@ -308,7 +306,7 @@ Live response:
 Each item in `items` has `block_number`, `transaction_index`, `event_index`, `transaction_hash`, `game_id`, `model`, and
 `value` (where `value.timestamp` holds the Unix timestamp in seconds as a hex or decimal string).
 
-### 7. Single expedition site (`GET /games/<id>/sites/<entity_id>`)
+### 7. Single expedition site (`GET /games/:id/sites/:entity_id`)
 
 Looks up one expedition site by decimal `entity_id`. Returns `404 {"error":"unknown_site"}` when no site exists for that
 ID. When a site exists, it returns the `ExpeditionSite` row (`game_id`, `entity_id`, `category`, `initial_guard_count`,
@@ -354,22 +352,18 @@ Shortened live responses:
 }
 ```
 
-Herald also exposes `GET /games/updates` (a Server-Sent Events stream that emits `data: changed` when the game directory
-changes), `GET /games/<id>/days/<day>/ranks` (closed Frontier day ranks, `404` until a day closes), and
-`GET /games/<id>/review/snapshot` (frozen snapshot after a game ends, `404` while live).
+Herald also exposes `GET /games/:id/stats` (game KPIs and daily transaction counts), `GET /games/updates` (a Server-Sent
+Events stream that emits `data: changed` when the game directory changes), `GET /games/:id/days/:day/ranks` (closed
+Frontier day ranks, `404` until a day closes), and `GET /games/:id/review/snapshot` (frozen snapshot after a game ends,
+`404` while live).
 
 ## Rate etiquette
 
-Herald serves public reads with `Cache-Control: no-store`, so every request reaches the server. Keep your script polite:
-
-- Cache responses on your side for at least 60 seconds (or 1 hour for dashboards and spreadsheets).
-- Always pass `?models=` on `/snapshot` instead of requesting the whole world.
-- Use the maximum page size (`limit=`{PUBLIC_DATA.limits.rosterMax} on `/members`,
-  `limit=`{PUBLIC_DATA.limits.historyMax} on `/history`) and page sequentially rather than firing dozens of concurrent
-  offsets.
-- Subscribe to `GET /games/updates` (SSE) instead of polling `/games` every second.
-- Do not scan tens of thousands of historical blocks over RPC from a browser; read Herald's folded `/snapshot` and
-  `/history` routes instead.
+- {PUBLIC_DATA.rateEtiquette[0]}
+- {PUBLIC_DATA.rateEtiquette[1]}
+- {PUBLIC_DATA.rateEtiquette[2]}
+- {PUBLIC_DATA.rateEtiquette[3]}
+- {PUBLIC_DATA.rateEtiquette[4]}
 
 ## Three runnable recipes
 

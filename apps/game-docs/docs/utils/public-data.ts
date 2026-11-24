@@ -5,6 +5,7 @@ import {
   HISTORY_PAGE_LIMIT,
   ROSTER_PAGE_DEFAULT,
   ROSTER_PAGE_LIMIT,
+  STATS_CACHE_SECONDS,
 } from "../../../herald/src/http-limits";
 import { aspectMeaning } from "../../../game/src/ui/design-system/icon-meaning";
 
@@ -23,6 +24,36 @@ const aspectMapLiteral = `{ ${aspects.map((aspect) => `${aspect.id}: "${aspect.n
 const aspectListLine = aspects.map((aspect) => `${aspect.id} = ${aspect.name}`).join(", ");
 const sampleAspectId = aspects[1].id;
 const precisionText = RESOURCE_PRECISION.toLocaleString("en-US");
+const statsCacheText = STATS_CACHE_SECONDS.toLocaleString("en-US");
+
+export const SNAPSHOT_MODELS = [
+  "AspectHyperstructure",
+  "AspectMembers",
+  "AspectActivity",
+  "HomeAspect",
+  "RaceMember",
+  "RaceResult",
+  "ExplorerTroops",
+  "DeepArmy",
+  "DeepSite",
+  "DeepGuard",
+  "AltarBar",
+  "WorldBane",
+  "TeamBane",
+  "Seal",
+  "Structure",
+] as const;
+
+export const LEADERBOARD_RULE =
+  "Calling /games/:id/leaderboard on a Season 1 game returns 404 season_one_ranks_aspects, so read /games/:id/aspects/:aspect_id/members instead.";
+
+export const RATE_ETIQUETTE = [
+  `Most Herald routes set Cache-Control: no-store (/games/:id/stats sets public, max-age=${STATS_CACHE_SECONDS}), so cache responses on your side for at least 60 seconds (or 1 hour for dashboards and spreadsheets).`,
+  "Always pass ?models=... on /snapshot instead of requesting the whole world.",
+  `Use the maximum page size (limit=${ROSTER_PAGE_LIMIT} on /members, limit=${HISTORY_PAGE_LIMIT} on /history) and page sequentially rather than firing dozens of concurrent offsets.`,
+  "Subscribe to GET /games/updates (SSE) instead of polling /games every second.",
+  "Do not scan tens of thousands of historical blocks over RPC from a browser; read Herald's folded /snapshot and /history routes instead.",
+] as const;
 
 export const PUBLIC_ROUTES: readonly PublicRouteSpec[] = [
   {
@@ -50,37 +81,37 @@ export const PUBLIC_ROUTES: readonly PublicRouteSpec[] = [
   {
     method: "GET",
     base: "herald",
-    path: "/games/<id>/snapshot",
+    path: "/games/:id/snapshot",
     params: "?models=Name1,Name2 (optional &actor=0x..., &owner=0x...)",
     returns: "game_id, confirmed_block, and models[] with hex-encoded row values",
   },
   {
     method: "GET",
     base: "herald",
-    path: "/games/<id>/aspects/<aspect_id>/members",
+    path: "/games/:id/aspects/:aspect_id/members",
     params: `?limit=1..${ROSTER_PAGE_LIMIT} (default ${ROSTER_PAGE_DEFAULT})&offset=0`,
     returns: "total, limit, offset, and members[] (rank, entity_id, realm_id, owner, unscaled decimal glory)",
   },
   {
     method: "GET",
     base: "herald",
-    path: "/games/<id>/history",
+    path: "/games/:id/history",
     params: `?model=StoryEvent or BattleEvent, optional &story=..., &owner=0x..., &entity_id=..., &limit=0..${HISTORY_PAGE_LIMIT} (default ${HISTORY_PAGE_DEFAULT})&offset=0`,
     returns: "complete_through_block, total, limit, offset, and items[] newest first",
   },
   {
     method: "GET",
     base: "herald",
-    path: "/games/<id>/sites/<entity_id>",
+    path: "/games/:id/sites/:entity_id",
     params: "decimal site entity_id in path",
     returns: "ExpeditionSite row or 404 unknown_site",
   },
   {
     method: "GET",
     base: "herald",
-    path: "/games/<id>/stats",
+    path: "/games/:id/stats",
     params: "none",
-    returns: "pre-folded game KPIs, daily activity series, and race summary",
+    returns: `game_id, players, realms, and transactions ({ total, days: [{ day, transactions }] }); Cache-Control: public, max-age=${STATS_CACHE_SECONDS} (${statsCacheText}s)`,
   },
   {
     method: "GET",
@@ -92,14 +123,14 @@ export const PUBLIC_ROUTES: readonly PublicRouteSpec[] = [
   {
     method: "GET",
     base: "herald",
-    path: "/games/<id>/days/<day>/ranks",
+    path: "/games/:id/days/:day/ranks",
     params: "closed day number in path",
     returns: "closed Frontier day ranks (404 until the day closes)",
   },
   {
     method: "GET",
     base: "herald",
-    path: "/games/<id>/review/snapshot",
+    path: "/games/:id/review/snapshot",
     params: "none",
     returns: "frozen end-of-game snapshot (404 while the game is live)",
   },
@@ -114,11 +145,13 @@ export const PUBLIC_ROUTES: readonly PublicRouteSpec[] = [
 
 const routeUrl = (route: PublicRouteSpec) => (route.base === "herald" ? `${heraldUrl}${route.path}` : rpcUrl);
 
+const snapshotModelsList = SNAPSHOT_MODELS.join(", ");
+
 const routesTable = PUBLIC_ROUTES.map(
   (route) => `${route.method} ${route.path} | ${route.params} | ${route.returns}`,
 ).join("\n");
 
-const buildAgentPrompt = (routes: readonly PublicRouteSpec[]) => {
+export const buildAgentPrompt = (routes: readonly PublicRouteSpec[]) => {
   const routeLines = routes.map(
     (route) => `- ${route.method} ${routeUrl(route)} (${route.params}) -> ${route.returns}`,
   );
@@ -137,22 +170,20 @@ const buildAgentPrompt = (routes: readonly PublicRouteSpec[]) => {
     "",
     "Units and encoding:",
     `- Snapshot row numbers are hex strings ("0x..."). Parse with BigInt(value) and divide raw resource, troop, or raw Glory amounts by ${precisionText} (10^9).`,
-    "- /games/<id>/aspects/<aspect_id>/members already returns glory as an unscaled decimal string.",
+    "- /games/:id/aspects/:aspect_id/members already returns glory as an unscaled decimal string.",
     "- History item.value.timestamp values are Unix timestamps in seconds (hex or decimal string).",
+    `- Useful /snapshot models: ${snapshotModelsList}.`,
     "",
     "Public routes:",
     ...routeLines,
     "",
     "Rate limits and caching etiquette:",
-    "- Herald sets Cache-Control: no-store, so cache responses locally for at least 60 seconds (or 1 hour for dashboards and spreadsheets).",
-    "- Always pass ?models=... on /snapshot (useful models: AspectHyperstructure, AspectMembers, AspectActivity, HomeAspect, RaceMember, RaceResult, ExplorerTroops, DeepArmy, DeepSite, DeepGuard, AltarBar, WorldBane, TeamBane, Seal, Structure).",
-    `- Page sequentially with the max page size (limit=${ROSTER_PAGE_LIMIT} on /members, limit=${HISTORY_PAGE_LIMIT} on /history) instead of firing concurrent offset bursts.`,
-    "- Use GET /games/updates (SSE) instead of tight polling on /games, and read Herald instead of scanning historical blocks over RPC.",
+    ...RATE_ETIQUETTE.map((rule) => `- ${rule}`),
     "",
     "What NOT to do:",
     "- Read-only only: never send write calls, transactions, or mutations.",
     "- Never ask for private keys, API keys, or private endpoints.",
-    "- Do not call /games/<id>/leaderboard on Season 1 games (it returns 404 season_one_ranks_aspects); use /games/<id>/aspects/<aspect_id>/members instead.",
+    `- ${LEADERBOARD_RULE}`,
     "",
     "Example questions you can answer for me:",
     "1. Show the top Glory earners per Aspect today.",
@@ -179,6 +210,9 @@ export const PUBLIC_DATA = {
     historyDefault: String(HISTORY_PAGE_DEFAULT),
     historyMax: String(HISTORY_PAGE_LIMIT),
   },
+  snapshotModelsList,
+  leaderboardRule: LEADERBOARD_RULE,
+  rateEtiquette: RATE_ETIQUETTE,
   routesTable,
   agentPrompt: buildAgentPrompt(PUBLIC_ROUTES),
   snippets: {
