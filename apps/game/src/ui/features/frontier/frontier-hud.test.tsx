@@ -1420,7 +1420,13 @@ it.each([
       expect(confirmed?.textContent).toContain(OPENING_WORDS.completed.explore.title);
 
       const closeConfirmed = confirmed!.querySelector<HTMLButtonElement>('button[aria-label="Close"]');
-      await act(async () => (closeConfirmed ? closeConfirmed.click() : clearConfirmedTutorial()));
+      if (layout === "desktop") {
+        expect(closeConfirmed).not.toBeNull();
+        await act(async () => closeConfirmed!.click());
+      } else {
+        expect(closeConfirmed).toBeNull();
+        await act(async () => clearConfirmedTutorial());
+      }
       const raceNext = host.querySelector<HTMLElement>(
         '[data-tutorial-dock="aspects"][data-tutorial-status="showing"]',
       );

@@ -32,7 +32,7 @@ it("opens named menu actions independently of their badges, with their own seman
       ),
     );
     for (const [label, name, callback] of [
-      ["Today", "clock", onToday],
+      ["Today", "calendar", onToday],
       ["Feed", "chronicles", onFeed],
       ["Settings", "settings", onSettings],
     ] as const) {
@@ -40,7 +40,7 @@ it("opens named menu actions independently of their badges, with their own seman
         (b) => b.getAttribute("aria-label") === label,
       )!;
       expect(button).toBeTruthy();
-      expect(button.closest(".ui-row")?.querySelector("img")?.getAttribute("src")).toBe(
+      expect(button.querySelector("img")?.getAttribute("src")).toBe(
         `/icons/facets/64/${name}.webp`,
       );
       await act(async () => button.click());
