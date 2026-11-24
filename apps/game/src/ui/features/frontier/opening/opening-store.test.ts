@@ -1,3 +1,4 @@
+import { OPENING_MOMENT_KEY_PATTERN } from "@realms-world/identity";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 const identity = vi.hoisted(() => ({
@@ -5,16 +6,17 @@ const identity = vi.hoisted(() => ({
 }));
 vi.mock("@/hooks/context/identity-session", () => ({ identityClient: { addOpeningProgress: identity.add } }));
 
+import { OPENING_MOMENTS } from "./opening";
 import { accountProgress, TUTORIAL_SKIPPED } from "./opening-state";
 import {
   clearConfirmedTutorial,
-  completeLines,
+  commitTutorialStep,
   flush,
   loadOpening,
+  openingCacheKey,
   reachMoments,
   replayTutorial,
   seeLine,
-  setTutorialView,
   skipTutorial,
   useOpeningStore,
 } from "./opening-store";
@@ -231,9 +233,8 @@ it("persists skipTutorial and clears tutorial seen keys on replayTutorial withou
 });
 
 it("persists completed, dismissed, skipped, and replayed tutorial state across reloads for a signed-out player", async () => {
-  await completeLines(["barracks", "explore"]);
+  await commitTutorialStep({ completed: ["barracks", "explore"], showing: "explore", confirmed: "barracks" });
   await seeLine("deep");
-  setTutorialView("explore", "barracks");
   clearConfirmedTutorial();
   expect(useOpeningStore.getState().confirmed).toBeNull();
 
@@ -266,4 +267,28 @@ it("persists completed, dismissed, skipped, and replayed tutorial state across r
   expect(afterReplayReload.seen.has("barracks")).toBe(false);
   expect(afterReplayReload.seen.has("explore")).toBe(false);
   expect(afterReplayReload.seen.has(TUTORIAL_SKIPPED)).toBe(false);
+});
+
+it("uses only server-valid opening keys and migrates legacy tutorial:skipped out of localStorage before POST /opening", async () => {
+  for (const moment of [...OPENING_MOMENTS, TUTORIAL_SKIPPED]) {
+    expect(moment).toMatch(OPENING_MOMENT_KEY_PATTERN);
+  }
+
+  localStorage.setItem(
+    openingCacheKey("a"),
+    JSON.stringify({
+      reached: ["barracks"],
+      seen: ["tutorial:skipped"],
+      unsent: { reached: [], seen: ["tutorial:skipped"] },
+      complete: true,
+    }),
+  );
+
+  const calls = deferred();
+  void loadOpening("a");
+  await settle();
+  expect(calls[0]!.sent).toEqual({ reached: [], seen: [TUTORIAL_SKIPPED] });
+  calls[0]!.answer({ reached: ["barracks"], seen: [TUTORIAL_SKIPPED] });
+  await settle();
+  expect(accountProgress("a", useOpeningStore.getState()).seen.has(TUTORIAL_SKIPPED)).toBe(true);
 });

@@ -1121,16 +1121,265 @@ it("moves to the World map at the Deep hex when Go to Deep is pressed from the R
   }
 });
 
-it("keeps the active tutorial visible across view switches and army selection, confirms completion, persists across reload, and returns after Replay", async () => {
+it.each([
+  ["desktop", 1440],
+  ["phone", 390],
+] as const)(
+  "keeps the active tutorial visible on %s (%i px) across view switches and army selection, confirms completion, persists across reload, and returns after Replay",
+  async (layout, width) => {
+    const { useBlockTimestampStore } = await import("@/hooks/store/use-block-timestamp-store");
+    const { OPENING_WORDS } = await import("@/ui/design-system/kit/words");
+    const { replayTutorial, useOpeningStore } = await import("./opening/opening-store");
+    const { entityHomeNamespace, expeditionRealmSite, setBuildingCount } = await import("@bibliothecadao/eternum");
+    const { nativeResearchConstants } = await import("@bibliothecadao/eternum/game-client");
+    const { ResourcesIds, TileOccupier, RESOURCE_PRECISION } = await import("@bibliothecadao/types");
+    const { default: rowFixture } =
+      await import("../../../../../../contracts/l3/world-native/schema/fixtures/row-set.json");
+    const [packed1, packed2, packed3] = setBuildingCount(BuildingType.ResourceKnightT1, [0n, 0n, 0n], 1);
+    const previousTicks = {
+      currentBlockTimestamp: useBlockTimestampStore.getState().currentBlockTimestamp,
+      currentDefaultTick: useBlockTimestampStore.getState().currentDefaultTick,
+      currentArmiesTick: useBlockTimestampStore.getState().currentArmiesTick,
+    };
+    useBlockTimestampStore.setState({ currentBlockTimestamp: 350, currentDefaultTick: 350, currentArmiesTick: 350 });
+
+    const route = window.location.pathname + window.location.search;
+    viewport.set(width);
+    localStorage.clear();
+    useWorldAppearanceStore.setState({ showEverything: false });
+    useOpeningStore.setState({
+      owner: null,
+      loaded: false,
+      status: "signed-out",
+      reached: new Set(),
+      seen: new Set(),
+      unsent: { reached: new Set(), seen: new Set() },
+      replayed: new Set(),
+      showing: null,
+      confirmed: null,
+      onDevice: false,
+    });
+
+    let siteHex = { col: 2, row: 2 };
+    const mountTutorialHud = async (explored = false) => {
+      await act(async () => root.render(null));
+      await act(async () =>
+        root.render(
+          <MemoryRouter>
+            <QueryClientProvider client={new QueryClient()}>
+              <LabGame
+                mode="frontier"
+                facts={(store) => {
+                  const baseRules = readExpeditionRules(store, 1)!;
+                  const longRules = { ...baseRules, dayUnitSeconds: 3_600, endAt: 200_000, scheduledEndAt: 200_000 };
+                  siteHex = expeditionRealmSite(longRules, entityHomeNamespace(7n), 350)!;
+                  const facts: unknown[] = [
+                    ...sellingFragments(store),
+                    {
+                      model: "GameRegistry",
+                      key: "0x3",
+                      value: wireRow({
+                        ...store.require("GameRegistry", { game_id: 1 }),
+                        end_at: "200000",
+                        scheduled_end_at: "200000",
+                      }),
+                    },
+                    {
+                      model: "SliceRules",
+                      key: "0x100",
+                      value: wireRow({
+                        ...store.require("SliceRules", { game_id: 1 }),
+                        day_unit_seconds: 3_600,
+                      }),
+                    },
+                    { model: "HomeAspect", key: "0x8a01", value: { game_id: 1, home: "7", aspect: 1 } },
+                    standing("0x8a02", 7, BuildingType.ResourceKnightT1),
+                    {
+                      model: "StructureBuildings",
+                      key: "0xb7",
+                      value: {
+                        game_id: 1,
+                        entity_id: "7",
+                        packed_counts_1: String(packed1),
+                        packed_counts_2: String(packed2),
+                        packed_counts_3: String(packed3),
+                        population: { current: 2, max: 6 },
+                      },
+                    },
+                    {
+                      model: "ResourceProduction",
+                      key: "0x8a0a",
+                      value: {
+                        game_id: 1,
+                        entity_id: 7,
+                        resource_type: ResourcesIds.Knight,
+                        building_count: 1,
+                        production_rate: String(RESOURCE_PRECISION),
+                        output_amount_left: "0",
+                        last_settled_at: 350,
+                        remainder: 0,
+                      },
+                    },
+                    {
+                      model: "TileOpt",
+                      key: "0x8a04",
+                      value: { game_id: 1, alt: false, col: siteHex.col, row: siteHex.row, data: "0" },
+                    },
+                    {
+                      model: "ExplorerTroops",
+                      key: "0x8a05",
+                      value: {
+                        game_id: 1,
+                        explorer_id: 70,
+                        owner: 7,
+                        troops: {
+                          ...rowFixture.expected.value.troops,
+                          count: String(100n * BigInt(RESOURCE_PRECISION)),
+                          stamina: { Inline: { amount: "100", settled_at: "360", remainder: 0 } },
+                        },
+                      },
+                    },
+                    { model: "ArmyDay", key: "0x8a06", value: { game_id: 1, explorer_id: 70, day: 0 } },
+                    {
+                      model: "ArmyProgress",
+                      key: "0x8a09",
+                      value: {
+                        game_id: 1,
+                        explorer_id: 70,
+                        logistics: 0,
+                        oath_slots: nativeResearchConstants.OATH_SLOTS_BASE,
+                        oaths: 0,
+                        oath_pick: 0,
+                      },
+                    },
+                    {
+                      model: "TileOccupancy",
+                      key: "0x8a07",
+                      value: {
+                        game_id: 1,
+                        alt: false,
+                        col: siteHex.col + 1,
+                        row: siteHex.row,
+                        entity_id: 70,
+                        category: TileOccupier.ExplorerKnightT1,
+                        is_structure: false,
+                      },
+                    },
+                  ];
+                  if (explored) {
+                    facts.push({
+                      model: "TileOpt",
+                      key: "0x8a08",
+                      value: { game_id: 1, alt: false, col: siteHex.col + 2, row: siteHex.row, data: "0" },
+                    });
+                  }
+                  return facts;
+                }}
+              >
+                {(store) => {
+                  shownStore = store;
+                  return <FrontierHud seasonOver={SeasonOver} rules={readExpeditionRules(store, 1)!} />;
+                }}
+              </LabGame>
+            </QueryClientProvider>
+          </MemoryRouter>,
+        ),
+      );
+      await act(async () => new Promise((settled) => setTimeout(settled, 20)));
+    };
+
+    try {
+      window.history.replaceState(null, "", "/g/0x1ab9/1/hex?col=2&row=2");
+      await mountTutorialHud(false);
+
+      expect(useOpeningStore.getState().showing).toBe("explore");
+      const initialDock = host.querySelector<HTMLElement>(
+        '[data-tutorial-dock="explore"][data-tutorial-status="showing"]',
+      );
+      expect(initialDock).not.toBeNull();
+      expect(initialDock?.dataset.tutorialLayout).toBe(layout);
+      expect(initialDock?.querySelector(".emissary-dock__action")?.textContent).toContain(
+        OPENING_WORDS.actions.explore,
+      );
+
+      await act(async () => {
+        window.history.replaceState(null, "", "/g/0x1ab9/1/map?col=2&row=2");
+        window.dispatchEvent(new Event("urlChanged"));
+      });
+      expect(useOpeningStore.getState().showing).toBe("explore");
+      expect(host.querySelector('[data-tutorial-dock="explore"][data-tutorial-status="showing"]')).not.toBeNull();
+
+      const armyButton = host.querySelector<HTMLButtonElement>('[aria-label="Armies"] button');
+      expect(armyButton).not.toBeNull();
+      await act(async () => armyButton!.click());
+      if (layout === "desktop") {
+        expect(host.querySelector('[data-rail-panel] section[aria-label="Army 1"]')).not.toBeNull();
+      }
+      expect(useOpeningStore.getState().showing).toBe("explore");
+      expect(host.querySelector('[data-tutorial-dock="explore"][data-tutorial-status="showing"]')).not.toBeNull();
+
+      await act(async () =>
+        shownStore.applyFacts([
+          {
+            model: "TileOpt",
+            key: "0x8a08",
+            value: { game_id: 1, alt: false, col: siteHex.col + 2, row: siteHex.row, data: "0" },
+          },
+        ] as never),
+      );
+      await act(async () => new Promise((settled) => setTimeout(settled, 20)));
+
+      const confirmed = host.querySelector<HTMLElement>(
+        '[data-tutorial-dock="explore"][data-tutorial-status="completed"]',
+      );
+      expect(confirmed).not.toBeNull();
+      expect(confirmed?.textContent).toContain(OPENING_WORDS.completedLabel);
+      expect(confirmed?.textContent).toContain(OPENING_WORDS.completed.explore);
+
+      await act(async () => confirmed!.querySelector<HTMLButtonElement>('button[aria-label="Close"]')!.click());
+      expect(host.querySelector("[data-tutorial-dock]")).toBeNull();
+
+      await act(async () => {
+        window.history.replaceState(null, "", "/g/0x1ab9/1/hex?col=2&row=2");
+        window.dispatchEvent(new Event("urlChanged"));
+      });
+      expect(host.querySelector("[data-tutorial-dock]")).toBeNull();
+
+      useOpeningStore.setState({
+        owner: null,
+        loaded: false,
+        status: "signed-out",
+        reached: new Set(),
+        seen: new Set(),
+        unsent: { reached: new Set(), seen: new Set() },
+        replayed: new Set(),
+        showing: null,
+        confirmed: null,
+        onDevice: false,
+      });
+      await mountTutorialHud(false);
+      expect(host.querySelector("[data-tutorial-dock]")).toBeNull();
+
+      await act(async () => replayTutorial());
+      await act(async () => new Promise((settled) => setTimeout(settled, 20)));
+      expect(useOpeningStore.getState().showing).toBe("barracks");
+      expect(host.querySelector('[data-tutorial-dock="barracks"][data-tutorial-status="showing"]')).not.toBeNull();
+    } finally {
+      useBlockTimestampStore.setState(previousTicks);
+      useWorldAppearanceStore.setState({ showEverything: true });
+      localStorage.clear();
+      window.history.replaceState(null, "", route);
+      window.dispatchEvent(new Event("urlChanged"));
+    }
+  },
+);
+
+it("shows the day-end tutorial once in the last hour with own Aspect and reads non-zero Barracks output on a fresh realm", async () => {
+  const { formatRate } = await import("@bibliothecadao/types");
   const { useBlockTimestampStore } = await import("@/hooks/store/use-block-timestamp-store");
   const { OPENING_WORDS } = await import("@/ui/design-system/kit/words");
+  const { buildingOutput } = await import("@/ui/shared/lib/building-output");
   const { replayTutorial, useOpeningStore } = await import("./opening/opening-store");
-  const { setBuildingCount } = await import("@bibliothecadao/eternum");
-  const { nativeResearchConstants } = await import("@bibliothecadao/eternum/game-client");
-  const { ResourcesIds, TileOccupier, RESOURCE_PRECISION } = await import("@bibliothecadao/types");
-  const { default: rowFixture } =
-    await import("../../../../../../contracts/l3/world-native/schema/fixtures/row-set.json");
-  const [packed1, packed2, packed3] = setBuildingCount(BuildingType.ResourceKnightT1, [0n, 0n, 0n], 1);
   const previousTicks = {
     currentBlockTimestamp: useBlockTimestampStore.getState().currentBlockTimestamp,
     currentDefaultTick: useBlockTimestampStore.getState().currentDefaultTick,
@@ -1139,23 +1388,25 @@ it("keeps the active tutorial visible across view switches and army selection, c
   useBlockTimestampStore.setState({ currentBlockTimestamp: 350, currentDefaultTick: 350, currentArmiesTick: 350 });
 
   const route = window.location.pathname + window.location.search;
-  viewport.set(1440);
+  viewport.set(390);
   localStorage.clear();
   useWorldAppearanceStore.setState({ showEverything: false });
-  useOpeningStore.setState({
-    owner: null,
-    loaded: false,
-    status: "signed-out",
-    reached: new Set(),
-    seen: new Set(),
-    unsent: { reached: new Set(), seen: new Set() },
-    replayed: new Set(),
-    showing: null,
-    confirmed: null,
-    onDevice: false,
-  });
+  const resetMemory = () =>
+    useOpeningStore.setState({
+      owner: null,
+      loaded: false,
+      status: "signed-out",
+      reached: new Set(),
+      seen: new Set(),
+      unsent: { reached: new Set(), seen: new Set() },
+      replayed: new Set(),
+      showing: null,
+      confirmed: null,
+      onDevice: false,
+    });
 
-  const mountTutorialHud = async (explored = false) => {
+  let shownStore: NativeFactStore | null = null;
+  const mountWithDayUnit = async (dayUnitSeconds: number) => {
     await act(async () => root.render(null));
     await act(async () =>
       root.render(
@@ -1163,105 +1414,26 @@ it("keeps the active tutorial visible across view switches and army selection, c
           <QueryClientProvider client={new QueryClient()}>
             <LabGame
               mode="frontier"
-              facts={(store) => {
-                const facts: unknown[] = [
-                  ...sellingFragments(store),
-                  { model: "HomeAspect", key: "0x8a01", value: { game_id: 1, home: "7", aspect: 1 } },
-                  standing("0x8a02", 7, BuildingType.ResourceKnightT1),
-                  {
-                    model: "StructureBuildings",
-                    key: "0xb7",
-                    value: {
-                      game_id: 1,
-                      entity_id: "7",
-                      packed_counts_1: String(packed1),
-                      packed_counts_2: String(packed2),
-                      packed_counts_3: String(packed3),
-                      population: { current: 2, max: 6 },
-                    },
-                  },
-                  {
-                    model: "ResourceProduction",
-                    key: "0x8a0a",
-                    value: {
-                      game_id: 1,
-                      entity_id: 7,
-                      resource_type: ResourcesIds.Knight,
-                      building_count: 1,
-                      production_rate: String(RESOURCE_PRECISION),
-                      output_amount_left: "0",
-                      last_settled_at: 350,
-                      remainder: 0,
-                    },
-                  },
-                  {
-                    model: "TileOccupancy",
-                    key: "0x8a03",
-                    value: {
-                      game_id: 1,
-                      alt: false,
-                      col: 2,
-                      row: 2,
-                      entity_id: "7",
-                      category: TileOccupier.RealmRegularLevel1,
-                      is_structure: true,
-                    },
-                  },
-                  {
-                    model: "TileOpt",
-                    key: "0x8a04",
-                    value: { game_id: 1, alt: false, col: 2, row: 2, data: "0" },
-                  },
-                  {
-                    model: "ExplorerTroops",
-                    key: "0x8a05",
-                    value: {
-                      game_id: 1,
-                      explorer_id: 70,
-                      owner: 7,
-                      troops: {
-                        ...rowFixture.expected.value.troops,
-                        count: String(100n * BigInt(RESOURCE_PRECISION)),
-                        stamina: { Inline: { amount: "100", settled_at: "360", remainder: 0 } },
-                      },
-                    },
-                  },
-                  { model: "ArmyDay", key: "0x8a06", value: { game_id: 1, explorer_id: 70, day: 0 } },
-                  {
-                    model: "ArmyProgress",
-                    key: "0x8a09",
-                    value: {
-                      game_id: 1,
-                      explorer_id: 70,
-                      logistics: 0,
-                      oath_slots: nativeResearchConstants.OATH_SLOTS_BASE,
-                      oaths: 0,
-                      oath_pick: 0,
-                    },
-                  },
-                  {
-                    model: "TileOccupancy",
-                    key: "0x8a07",
-                    value: {
-                      game_id: 1,
-                      alt: false,
-                      col: 3,
-                      row: 2,
-                      entity_id: 70,
-                      category: TileOccupier.ExplorerKnightT1,
-                      is_structure: false,
-                    },
-                  },
-                ];
-                if (explored) {
-                  facts.push({
-                    model: "TileOpt",
-                    key: "0x8a08",
-                    value: { game_id: 1, alt: false, col: 4, row: 2, data: "0" },
-                  });
-                }
-                return facts;
-              }}
+              facts={(store) => [
+                {
+                  model: "GameRegistry",
+                  key: "0x3",
+                  value: wireRow({
+                    ...store.require("GameRegistry", { game_id: 1 }),
+                    end_at: "200000",
+                    scheduled_end_at: "200000",
+                  }),
+                },
+                {
+                  model: "SliceRules",
+                  key: "0x100",
+                  value: wireRow({
+                    ...store.require("SliceRules", { game_id: 1 }),
+                    day_unit_seconds: dayUnitSeconds,
+                  }),
+                },
+                { model: "HomeAspect", key: "0x8a01", value: { game_id: 1, home: "7", aspect: 1 } },
+              ]}
             >
               {(store) => {
                 shownStore = store;
@@ -1277,67 +1449,57 @@ it("keeps the active tutorial visible across view switches and army selection, c
 
   try {
     window.history.replaceState(null, "", "/g/0x1ab9/1/hex?col=2&row=2");
-    await mountTutorialHud(false);
-
-    expect(useOpeningStore.getState().showing).toBe("explore");
-    expect(host.querySelector('[data-tutorial-dock="explore"][data-tutorial-status="showing"]')).not.toBeNull();
-
-    await act(async () => {
-      window.history.replaceState(null, "", "/g/0x1ab9/1/map?col=2&row=2");
-      window.dispatchEvent(new Event("urlChanged"));
-    });
-    expect(useOpeningStore.getState().showing).toBe("explore");
-    expect(host.querySelector('[data-tutorial-dock="explore"][data-tutorial-status="showing"]')).not.toBeNull();
-
-    const armyButton = host.querySelector<HTMLButtonElement>('[aria-label="Armies"] button');
-    expect(armyButton).not.toBeNull();
-    await act(async () => armyButton!.click());
-    expect(host.querySelector('[data-rail-panel] section[aria-label="Army 1"]')).not.toBeNull();
-    expect(useOpeningStore.getState().showing).toBe("explore");
-    expect(host.querySelector('[data-tutorial-dock="explore"][data-tutorial-status="showing"]')).not.toBeNull();
-
-    await act(async () =>
-      shownStore.applyFacts([
-        { model: "TileOpt", key: "0x8a08", value: { game_id: 1, alt: false, col: 4, row: 2, data: "0" } },
-      ] as never),
+    resetMemory();
+    await mountWithDayUnit(3_600);
+    const barracksDock = host.querySelector<HTMLElement>('[data-tutorial-dock="barracks"]');
+    expect(barracksDock).not.toBeNull();
+    const expectedRate = formatRate(
+      buildingOutput(
+        shownStore!,
+        shownStore!.require("Structure", { game_id: 1, entity_id: 7 }),
+        BuildingType.ResourceKnightT1,
+        0,
+      ).total,
     );
+    expect(expectedRate).not.toBe("0/min");
+    expect(barracksDock?.textContent).toContain(`${expectedRate} Knights`);
+
+    resetMemory();
+    localStorage.clear();
+    await act(async () => {
+      const { seeLine } = await import("./opening/opening-store");
+      await seeLine("barracks");
+      await seeLine("deploy");
+      await seeLine("explore");
+    });
+    await mountWithDayUnit(100);
+    const dayEndDock = host.querySelector<HTMLElement>(
+      '[data-tutorial-dock="day-end"][data-tutorial-status="showing"]',
+    );
+    expect(dayEndDock).not.toBeNull();
+    expect(dayEndDock?.dataset.tutorialAspect).toBe("1");
+    expect(dayEndDock?.textContent).toContain(OPENING_WORDS.titles["day-end"]);
+
+    await act(async () => host.querySelector<HTMLButtonElement>('button[aria-label="Today"]')!.click());
     await act(async () => new Promise((settled) => setTimeout(settled, 20)));
-
-    const confirmed = host.querySelector<HTMLElement>(
-      '[data-tutorial-dock="explore"][data-tutorial-status="completed"]',
+    expect(useOpeningStore.getState().confirmed).toBe("day-end");
+    await act(async () =>
+      document.querySelector<HTMLButtonElement>('section[aria-label="Today"] button[aria-label="Close"]')!.click(),
     );
-    expect(confirmed).not.toBeNull();
-    expect(confirmed?.textContent).toContain(OPENING_WORDS.completedLabel);
-    expect(confirmed?.textContent).toContain(OPENING_WORDS.completed.explore);
+    const dayEndConfirmed = host.querySelector<HTMLElement>(
+      '[data-tutorial-dock="day-end"][data-tutorial-status="completed"]',
+    );
+    expect(dayEndConfirmed).not.toBeNull();
+    await act(async () => dayEndConfirmed!.querySelector<HTMLButtonElement>('button[aria-label="Close"]')!.click());
+    expect(host.querySelector('[data-tutorial-dock="day-end"]')).toBeNull();
 
-    await act(async () => confirmed!.querySelector<HTMLButtonElement>('button[aria-label="Close"]')!.click());
-    expect(host.querySelector("[data-tutorial-dock]")).toBeNull();
-
-    await act(async () => {
-      window.history.replaceState(null, "", "/g/0x1ab9/1/hex?col=2&row=2");
-      window.dispatchEvent(new Event("urlChanged"));
-    });
-    expect(host.querySelector("[data-tutorial-dock]")).toBeNull();
-
-    useOpeningStore.setState({
-      owner: null,
-      loaded: false,
-      status: "signed-out",
-      reached: new Set(),
-      seen: new Set(),
-      unsent: { reached: new Set(), seen: new Set() },
-      replayed: new Set(),
-      showing: null,
-      confirmed: null,
-      onDevice: false,
-    });
-    await mountTutorialHud(false);
-    expect(host.querySelector("[data-tutorial-dock]")).toBeNull();
+    resetMemory();
+    await mountWithDayUnit(100);
+    expect(host.querySelector('[data-tutorial-dock="day-end"]')).toBeNull();
 
     await act(async () => replayTutorial());
     await act(async () => new Promise((settled) => setTimeout(settled, 20)));
-    expect(useOpeningStore.getState().showing).toBe("explore");
-    expect(host.querySelector('[data-tutorial-dock="explore"][data-tutorial-status="showing"]')).not.toBeNull();
+    expect(host.querySelector('[data-tutorial-dock="barracks"][data-tutorial-status="showing"]')).not.toBeNull();
   } finally {
     useBlockTimestampStore.setState(previousTicks);
     useWorldAppearanceStore.setState({ showEverything: true });
@@ -1346,3 +1508,113 @@ it("keeps the active tutorial visible across view switches and army selection, c
     window.dispatchEvent(new Event("urlChanged"));
   }
 });
+
+it.each([1920, 390])(
+  "opens the real Deep race scenario on the Deep lesson at %d px with Research still waiting on Essence, tells each line once, and stays clear after reload",
+  async (width) => {
+    const { useBlockTimestampStore } = await import("@/hooks/store/use-block-timestamp-store");
+    const { useOpeningStore } = await import("./opening/opening-store");
+    const previousTicks = {
+      currentBlockTimestamp: useBlockTimestampStore.getState().currentBlockTimestamp,
+      currentDefaultTick: useBlockTimestampStore.getState().currentDefaultTick,
+      currentArmiesTick: useBlockTimestampStore.getState().currentArmiesTick,
+    };
+    const route = window.location.pathname + window.location.search;
+    viewport.set(width);
+    localStorage.clear();
+    useWorldAppearanceStore.setState({ showEverything: false });
+    const resetMemory = () =>
+      useOpeningStore.setState({
+        owner: null,
+        loaded: false,
+        status: "signed-out",
+        reached: new Set(),
+        seen: new Set(),
+        unsent: { reached: new Set(), seen: new Set() },
+        replayed: new Set(),
+        showing: null,
+        confirmed: null,
+        onDevice: false,
+      });
+
+    const mountRace = async () => {
+      const scenario = raceScenario(false);
+      scenario.store.setSnapshot({ gameId: 1, actor: scenario.player, timestamp: scenario.startsAt, complete: true });
+      configManager.setActiveGame(1);
+      configManager.setStore(scenario.store);
+      setBlockTimestampSource(() => scenario.startsAt);
+      useBlockTimestampStore.setState({
+        currentBlockTimestamp: scenario.startsAt,
+        currentDefaultTick: scenario.startsAt,
+        currentArmiesTick: scenario.startsAt,
+      });
+      useAccountStore.setState({ account: { address: scenario.player } as never });
+      await act(async () => root.render(null));
+      await act(async () =>
+        root.render(
+          <MemoryRouter>
+            <QueryClientProvider client={new QueryClient()}>
+              <GameProvider
+                value={{ store: scenario.store } as unknown as GameClientSetup}
+                account={{ address: scenario.player } as never}
+              >
+                <FrontierHud seasonOver={SeasonOver} rules={readExpeditionRules(scenario.store, 1)!} />
+              </GameProvider>
+            </QueryClientProvider>
+          </MemoryRouter>,
+        ),
+      );
+      await act(async () => new Promise((settled) => setTimeout(settled, 20)));
+    };
+
+    try {
+      window.history.replaceState(null, "", "/g/0x1ab9/1/map?col=50&row=350");
+      window.dispatchEvent(new Event("urlChanged"));
+      resetMemory();
+      await mountRace();
+
+      const deepDock = host.querySelector<HTMLElement>('[data-tutorial-dock="deep"][data-tutorial-status="showing"]');
+      expect(deepDock).not.toBeNull();
+      expect(deepDock?.textContent).toContain("Hold sites to earn");
+      if (width >= 1024) {
+        const places = [...(host.querySelector('nav[aria-label="Places"]')?.querySelectorAll("button") ?? [])].map(
+          (node) => node.getAttribute("aria-label") ?? node.textContent ?? "",
+        );
+        expect(places).toContain("Season");
+        expect(places).not.toContain("Research");
+      } else {
+        await act(async () => host.querySelector<HTMLButtonElement>('button[aria-label="Menu"]')!.click());
+        const menuPlaces = [...document.querySelectorAll('section[aria-label="Menu"] .menu-place-tile')].map(
+          (node) => node.getAttribute("aria-label") ?? node.textContent ?? "",
+        );
+        expect(menuPlaces).toContain("Feed");
+        expect(menuPlaces).not.toContain("Research");
+        await act(async () =>
+          document.querySelector<HTMLButtonElement>('section[aria-label="Menu"] button[aria-label="Close"]')!.click(),
+        );
+      }
+
+      const told: string[] = [];
+      for (let attempt = 0; attempt < 16; attempt += 1) {
+        const dock = host.querySelector<HTMLElement>("[data-tutorial-dock]");
+        if (!dock) break;
+        told.push(dock.dataset.tutorialDock ?? "");
+        await act(async () => dock.querySelector<HTMLButtonElement>('button[aria-label="Close"]')!.click());
+        await act(async () => new Promise((settled) => setTimeout(settled, 20)));
+      }
+      expect(told[0]).toBe("deep");
+      expect(told.length).toBeGreaterThanOrEqual(2);
+      expect(new Set(told).size).toBe(told.length);
+
+      resetMemory();
+      await mountRace();
+      expect(host.querySelector("[data-tutorial-dock]")).toBeNull();
+    } finally {
+      useBlockTimestampStore.setState(previousTicks);
+      useWorldAppearanceStore.setState({ showEverything: true });
+      localStorage.clear();
+      window.history.replaceState(null, "", route);
+      window.dispatchEvent(new Event("urlChanged"));
+    }
+  },
+);

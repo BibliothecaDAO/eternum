@@ -1,3 +1,4 @@
+import { OPENING_MOMENT_KEY_PATTERN } from "@realms-world/identity";
 import { Data, Effect } from "effect";
 
 import type { IdentityAuth } from "./auth";
@@ -5,7 +6,6 @@ import { json, readBody } from "./http";
 
 const BODY_BYTES = 4 * 1024;
 const MAX_MOMENTS = 64;
-const MOMENT_NAME = /^[a-z][a-z0-9-]{0,39}$/;
 const KINDS = ["reached", "seen"] as const;
 
 type OpeningProgress = Record<(typeof KINDS)[number], string[]>;
@@ -52,7 +52,7 @@ const readAdditions = (value: unknown): OpeningProgress | null => {
   for (const kind of KINDS) {
     const moments = body[kind] ?? [];
     if (!Array.isArray(moments) || moments.length > MAX_MOMENTS) return null;
-    if (!moments.every((moment) => typeof moment === "string" && MOMENT_NAME.test(moment))) return null;
+    if (!moments.every((moment) => typeof moment === "string" && OPENING_MOMENT_KEY_PATTERN.test(moment))) return null;
     additions[kind] = moments;
   }
   return additions;

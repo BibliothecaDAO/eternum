@@ -29,9 +29,13 @@ export function AspectEmissaryDock({
   if (aspectId === null) return null;
   const emissary = resolveAspectEmissary(aspectId);
   const phone = layout === "phone";
-  const completed = status === "completed";
+  const completedLine =
+    moment in OPENING_WORDS.completed
+      ? OPENING_WORDS.completed[moment as keyof typeof OPENING_WORDS.completed]
+      : undefined;
+  const completed = status === "completed" && completedLine !== undefined;
   const title = OPENING_WORDS.titles[moment];
-  const line = completed ? OPENING_WORDS.completed[moment] : OPENING_WORDS.lines[moment](rules);
+  const line = completed ? completedLine : OPENING_WORDS.lines[moment](rules);
   const action = OPENING_WORDS.actions[moment];
 
   return (
@@ -94,7 +98,7 @@ export function AspectEmissaryDock({
 
         <p className="emissary-dock__speech">
           <span>{line}</span>
-          {!phone && !completed && (
+          {!completed && (
             <span className="emissary-dock__action">
               <Icon name={spec.icon} size={15} />
               <span>{action}</span>

@@ -141,6 +141,8 @@ const preparedWalletCallSchema = Schema.Struct({
   fee: Schema.NullOr(Schema.Struct({ estimated: Schema.String, max: Schema.String })),
 });
 export type PreparedWalletCall = typeof preparedWalletCallSchema.Type;
+export const OPENING_MOMENT_KEY_PATTERN = /^[a-z][a-z0-9-]{0,39}$/;
+
 /** The moments an account's interface has opened to and the lines it has been told, as sets of the game's own names. */
 const openingProgressSchema = Schema.Struct({
   reached: Schema.Array(Schema.String),

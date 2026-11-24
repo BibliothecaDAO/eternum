@@ -8,6 +8,8 @@ import { isSeasonZeroPlayer } from "@/shell/season-tab/archive/archive";
 import {
   type ExpeditionRules,
   DAILY_QUEST_MODELS,
+  entityHomeNamespace,
+  expeditionRealmSite,
   fragmentsSold,
   getBuildingQuantity,
   readDailyQuest,
@@ -26,20 +28,27 @@ import {
   type NativeFactStore,
   type NativeRows,
 } from "@bibliothecadao/eternum/game-client";
-import { catalogAspectId, getNeighborHexes, RealmLevels } from "@bibliothecadao/types";
-import { useEffect } from "react";
+import { catalogAspectId, getNeighborHexes, RealmLevels, ResourcesIds } from "@bibliothecadao/types";
+import { useEffect, useRef } from "react";
 
 import type { OpeningRules } from "@/ui/design-system/kit/words";
+import { buildingOutput } from "@/ui/shared/lib/building-output";
 import { FIRST_BUILD } from "../build/first-build";
+import { dayClock } from "../hud/day-clock";
 import { useDockArmies } from "../hud/dock-armies";
+import type { HudSurface } from "../hud/frontier-nav";
 import { useRacesAspects } from "../aspect/races-aspects";
 import { readPickEffectBase } from "../pick-effect-text";
+import { madePicks } from "../production/store-makers";
 import { useRealmStores } from "../realm-stores";
+import { useResearchTree } from "../research/research-facts";
+import { canResearchNow } from "../research/research-tree";
 import { type Opened, type OpeningContext } from "./opening";
 import {
   accountProgress,
   openedMoments,
   reachedOnContext,
+  type ReplayBaseline,
   siteAlertOfferDue,
   stepTutorialMachine,
   type TutorialDisplay,
@@ -47,12 +56,11 @@ import {
 import { SITE_ALERT_OFFER } from "./use-site-alert-offer";
 import {
   clearConfirmedTutorial,
-  completeLines,
+  commitTutorialStep,
   flush,
   loadOpening,
   reachMoments,
   seeLine,
-  setTutorialView,
   skipTutorial,
   useOpeningStore,
 } from "./opening-store";
@@ -64,6 +72,7 @@ const CONFIRM_MS = 3_500;
 export function useOpening(
   rules: ExpeditionRules,
   realm: NativeRows["Structure"] | null,
+  openedSurface: HudSurface | null = null,
 ): {
   opened: Opened;
   line: TutorialDisplay | null;
@@ -91,7 +100,18 @@ export function useOpening(
   const showEverything = useWorldAppearanceStore((state) => state.showEverything);
   const storeState = useOpeningStore((state) => state);
   const progress = accountProgress(owner, storeState);
-  const ctx = useOpeningContext(rules, realm);
+  const replayed = storeState.owner === owner ? storeState.replayed : undefined;
+  const ctx = useOpeningContext(rules, realm, progress.reached, replayed, openedSurface);
+  const replayBaselineRef = useRef<ReplayBaseline | undefined>(undefined);
+  if (!replayed || replayed.size === 0) {
+    replayBaselineRef.current = undefined;
+  } else if (ctx && replayBaselineRef.current === undefined) {
+    replayBaselineRef.current = {
+      barracksCount: ctx.barracksCount,
+      deployedArmies: ctx.deployedArmies,
+      exploredTiles: ctx.exploredTiles,
+    };
+  }
   const onState = reachedOnContext(ctx);
   const key = onState.join();
   useEffect(() => {
@@ -108,18 +128,22 @@ export function useOpening(
         ctx,
         rules: lineRules,
         seen: progress.seen,
-        replayed: storeState.owner === owner ? storeState.replayed : undefined,
+        replayed,
+        replayBaseline: replayBaselineRef.current,
       })
     : { nextShowing: null, confirmedMoment: null, newlyCompleted: [] };
 
   const completedKey = transition.newlyCompleted.join();
   useEffect(() => {
     if (!canEvaluate) {
-      if (showEverything) setTutorialView(null, null);
+      if (showEverything) void commitTutorialStep({ completed: [], showing: null, confirmed: null });
       return;
     }
-    if (completedKey.length > 0) void completeLines(completedKey.split(","));
-    setTutorialView(transition.nextShowing, transition.confirmedMoment);
+    void commitTutorialStep({
+      completed: completedKey.length > 0 ? completedKey.split(",") : [],
+      showing: transition.nextShowing,
+      confirmed: transition.confirmedMoment,
+    });
   }, [canEvaluate, showEverything, completedKey, transition.nextShowing, transition.confirmedMoment]);
 
   useEffect(() => {
@@ -153,20 +177,32 @@ export function useOpening(
 
 function useOpeningRules(rules: ExpeditionRules, realm: NativeRows["Structure"] | null): OpeningRules | null {
   const { setup } = useGame();
-  useNativeRevision(["HomeAspect"]);
+  const now = useNowSeconds();
+  useNativeRevision(["HomeAspect", "RealmKnowledge", "BoardRules", "ResourceRule"]);
   const stores = useRealmStores(realm, rules);
-  const troopsPerHour = stores?.troops.perHour;
-  if (!realm || troopsPerHour === undefined) return null;
-  const barracks = getBuildingQuantity(safeInteger(realm.entity_id), FIRST_BUILD, setup.store);
+  if (!realm) return null;
   const slice = setup.store.get("SliceRules", { game_id: realm.game_id });
   const pickBase = readPickEffectBase(setup.store, realm.game_id);
-  if (!slice || pickBase.staminaPerSecond === undefined || pickBase.revealStamina === undefined) return null;
+  const hasOutputRules =
+    setup.store.get("BoardRules", { game_id: realm.game_id }) !== undefined &&
+    setup.store.get("ResourceRule", { game_id: realm.game_id, resource_type: ResourcesIds.Knight }) !== undefined;
+  if (!slice || !hasOutputRules || pickBase.staminaPerSecond === undefined || pickBase.revealStamina === undefined)
+    return null;
+  const home = safeInteger(realm.entity_id);
+  const learned = setup.store.get("RealmKnowledge", { game_id: realm.game_id, structure_id: home })?.learned ?? 0n;
+  const knightsPerSecond = buildingOutput(
+    setup.store,
+    realm,
+    FIRST_BUILD,
+    madePicks(ResourcesIds.Knight, learned),
+  ).total;
   const tickSeconds = Number(slice.tick_config.armies_tick_in_seconds);
   const rawAspect = setup.store.get("HomeAspect", { game_id: realm.game_id, home: realm.entity_id })?.aspect;
   const ownAspect = rawAspect !== undefined ? catalogAspectId(rawAspect) : undefined;
+  const clock = dayClock(rules, now);
   return {
     ownAspect,
-    knightsPerSecond: troopsPerHour / Math.max(1, barracks) / 3_600,
+    knightsPerSecond,
     troopsAtHome: stores?.troops.amount ?? 0,
     deepTickSeconds: tickSeconds,
     deepLossPerTick: pickBase.deepLossPerTick,
@@ -177,10 +213,17 @@ function useOpeningRules(rules: ExpeditionRules, realm: NativeRows["Structure"] 
     relicMinutesPerTier: slice.relic_seconds_per_rank / 60,
     scoutExploreStamina: nativeRuleConstants.SCOUT_EXPLORE_STAMINA,
     exploreStamina: pickBase.revealStamina,
+    tomorrowSeconds: clock.tomorrowSeconds,
   };
 }
 
-function useOpeningContext(rules: ExpeditionRules, realm: NativeRows["Structure"] | null): OpeningContext | null {
+function useOpeningContext(
+  rules: ExpeditionRules,
+  realm: NativeRows["Structure"] | null,
+  reached: ReadonlySet<string>,
+  replayed: ReadonlySet<string> | undefined,
+  openedSurface: HudSurface | null,
+): OpeningContext | null {
   const { setup } = useGame();
   const now = useNowSeconds();
   useNativeRevision(DAILY_QUEST_MODELS);
@@ -188,6 +231,7 @@ function useOpeningContext(rules: ExpeditionRules, realm: NativeRows["Structure"
   useNativeRevision(CONTEXT_MODELS);
   const armies = useDockArmies(realm);
   const stores = useRealmStores(realm, rules);
+  const researchTree = useResearchTree(realm);
   const playerAddress = useAccountStore((state) => state.account?.address ?? null);
 
   if (!realm) return null;
@@ -215,23 +259,34 @@ function useOpeningContext(rules: ExpeditionRules, realm: NativeRows["Structure"
     return tile !== undefined && isDeepTile(spacing, tile);
   });
   const questReading = readDailyQuest(setup.store, realm.game_id, home, now)?.reading.known;
-  const hasActiveBane = questReading?.bane !== undefined && questReading?.bane !== null;
+  const bane = questReading?.bane;
+  const hasBaneQuorum = bane !== undefined && bane !== null && bane.required > 0;
+  const hasBrokenBane = hasBaneQuorum && bane.endedAt !== 0 && bane.endedAt <= now;
+  const hasActiveBane = hasBaneQuorum && !hasBrokenBane;
   const dailyQuestClaimable = questReading?.state === "done" || questReading?.state === "again";
   const dailyQuestClaimed = questReading?.state === "collected";
   const race = readRaceBoard(setup.store, realm.game_id, BigInt(home), now).known?.race;
   const hyperstructureAdvanced = (race?.standings.find((row) => row.aspect === race.own?.aspect)?.stage ?? 1) > 1;
   const hasEssence = (stores?.essence.amount ?? 0) > 0;
-  const hasExplored = hasExploredBeyondHomeRing(setup.store, realm, spacing);
+  const canResearch = canResearchNow(researchTree?.nodes);
+  const barracksCount = getBuildingQuantity(home, FIRST_BUILD, setup.store);
+  const exploredTiles = countExploredBeyondHomeRing(setup.store, realm, rules, now);
+  const hasExplored = (!replayed?.has("explore") && reached.has("explore")) || exploredTiles > 0;
+  const clock = dayClock(rules, now);
+  const dayEndingSoon = clock.tone === "ember" && clock.secondsLeft !== undefined;
 
   return {
     hasRealm: true,
-    hasBarracks: getBuildingQuantity(home, FIRST_BUILD, setup.store) > 0,
+    hasBarracks: barracksCount > 0,
+    barracksCount,
     troopsAtHome: stores?.troops.amount ?? 0,
     deployedArmies: armies.length,
     hasExplored,
+    exploredTiles,
     hasOpenOathPick,
     hasSwornOath,
     hasEssence,
+    canResearch,
     hasResearched: learned > 0n,
     dailyQuestClaimable,
     dailyQuestClaimed,
@@ -241,28 +296,43 @@ function useOpeningContext(rules: ExpeditionRules, realm: NativeRows["Structure"
     inEthereal,
     inDeep,
     hasActiveBane,
+    hasBrokenBane,
+    dayEndingSoon,
     hyperstructureAdvanced,
     fragmentsSold: fragmentsSold(setup.store, realm.game_id),
     outOfStamina,
     hasRelic,
+    openedToday: openedSurface === "today",
+    openedSeason: openedSurface === "season",
+    openedShop: openedSurface === "shop",
+    openedArmy: openedSurface === "army",
     isSeasonZeroVeteran: isSeasonZeroPlayer(playerAddress),
   };
 }
 
-function hasExploredBeyondHomeRing(store: NativeFactStore, realm: NativeRows["Structure"], spacing: number): boolean {
-  const homeTile = store.entityOccupancy(realm.game_id, realm.entity_id);
-  if (!homeTile) return false;
+function countExploredBeyondHomeRing(
+  store: NativeFactStore,
+  realm: NativeRows["Structure"],
+  rules: ExpeditionRules,
+  now: number,
+): number {
+  const spacing = rules.spacing;
+  const dailySite = expeditionRealmSite(rules, entityHomeNamespace(realm.entity_id), now);
+  const homeTile = dailySite ?? store.entityOccupancy(realm.game_id, realm.entity_id);
+  if (!homeTile) return 0;
+  const homeRegionCol = Math.floor(homeTile.col / spacing);
+  const homeRegionRow = Math.floor(homeTile.row / spacing);
   const ring = new Set<string>([
     `${homeTile.col},${homeTile.row}`,
     ...getNeighborHexes(homeTile.col, homeTile.row).map((hex) => `${hex.col},${hex.row}`),
   ]);
-  const halfSlice = spacing / 2;
+  let count = 0;
   for (const tile of store.inGame("TileOpt", realm.game_id)) {
     if (tile.alt || isDeepTile(spacing, tile)) continue;
-    if (Math.abs(tile.col - homeTile.col) >= halfSlice || Math.abs(tile.row - homeTile.row) >= halfSlice) continue;
-    if (!ring.has(`${tile.col},${tile.row}`)) return true;
+    if (Math.floor(tile.col / spacing) !== homeRegionCol || Math.floor(tile.row / spacing) !== homeRegionRow) continue;
+    if (!ring.has(`${tile.col},${tile.row}`)) count += 1;
   }
-  return false;
+  return count;
 }
 
 const carriesRelic = (relics: Pick<NativeRows["ArmyRelics"], "first" | "second" | "third"> | undefined): boolean =>
