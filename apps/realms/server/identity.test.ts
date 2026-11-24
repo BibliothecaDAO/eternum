@@ -3209,7 +3209,7 @@ describe("shared links", () => {
     ((await (await ownInvite(who)).json()) as { code: string }).code;
   const withoutSeasonGame = () => {
     heralds.set(`${shard}/games`, { chain: chainId, games: [] });
-    onTestFinished(() => publishGames());
+    onTestFinished(() => void publishGames());
   };
 
   it("invites to the Aspect the game's Herald names for the sharer, whatever Order they pledge, and by no other route", async () => {
@@ -3412,7 +3412,7 @@ describe("shared links", () => {
 
   it("keeps the pre-season invite while only a testnet game runs, and its Glory neither pays the sharer nor uses up the friend", async () => {
     publishGames(testnetGameName(1_801_000_000));
-    onTestFinished(() => publishGames());
+    onTestFinished(() => void publishGames());
     const sharer = await player("testnet-sharer");
     const titans = orders.find(({ fullOrderName }) => fullOrderName === "Order of Titans")!;
     await sharer.browser.request("/api/order-intent", { body: { order: titans.orderId } });
