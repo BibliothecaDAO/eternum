@@ -312,6 +312,8 @@ button.frontier-stock-chip {
   padding-top: 4px;
 }
 .frontier-tablet-bar__centre .frontier-day-dial {
+  width: 58px;
+  height: 58px;
   margin: 0 0 -14px;
 }
 .frontier-tablet-bar__centre .frontier-place-pill {
@@ -382,6 +384,10 @@ button.frontier-stock-chip {
   max-height: calc(100dvh - 160px);
 }
 @media (max-width: 380px) {
+  .frontier-phone-cornice .frontier-day-dial {
+    width: 48px;
+    height: 48px;
+  }
   .frontier-phone-cornice {
     gap: 5px;
     padding: 0 6px;
