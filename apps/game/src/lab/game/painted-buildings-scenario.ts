@@ -8,13 +8,13 @@ import {
   StructureType,
 } from "@bibliothecadao/types";
 import { type LabFact, type LabScenario, wire } from "./lab-chain";
-import { spireScenario, type LabGround } from "./spire-scenario";
+import { spireScenario } from "./spire-scenario";
 
 const GUARD_PRECISION = 1_000_000_000n;
 
 /** A built Kingdom and its nearby sites, using the game's own board, map and placement controls, on the given ground. */
-export const paintedBuildingsScenario = (ground?: LabGround): LabScenario => {
-  const game = spireScenario(ground);
+export const paintedBuildingsScenario = (): LabScenario => {
+  const game = spireScenario();
   const types = Object.values(BuildingType).filter(
     (type): type is BuildingType => typeof type === "number" && isFrontierBuilding(type),
   );
