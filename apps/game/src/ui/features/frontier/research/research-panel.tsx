@@ -114,6 +114,11 @@ const ResearchHeaderCue = ({ essence, labor, readyCount }: { essence: number; la
   </span>
 );
 
+const SCROLL_CUE_THRESHOLD_PX = 4;
+
+const hasMoreBelow = (element: Pick<HTMLElement, "scrollHeight" | "clientHeight" | "scrollTop">): boolean =>
+  element.scrollHeight - element.clientHeight - element.scrollTop > SCROLL_CUE_THRESHOLD_PX;
+
 const ResearchTreeCanvas = ({
   nodes,
   links,
@@ -127,60 +132,80 @@ const ResearchTreeCanvas = ({
   pickedKey: string | null;
   onPick: (key: string) => void;
 }) => {
+  const scrollRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
   const [measured, setMeasured] = useState<MeasuredLinks | null>(null);
+  const [moreBelow, setMoreBelow] = useState(false);
 
   useLayoutEffect(() => {
+    const scroll = scrollRef.current;
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const update = () => setMeasured(measureResearchLinks(canvas, links));
+    const updateScroll = () => setMoreBelow(scroll ? hasMoreBelow(scroll) : false);
+    const update = () => {
+      setMeasured(measureResearchLinks(canvas, links));
+      updateScroll();
+    };
     update();
-    if (typeof ResizeObserver === "undefined") return;
-    const observer = new ResizeObserver(update);
-    observer.observe(canvas);
-    for (const nodeEl of canvas.querySelectorAll("[data-node]")) observer.observe(nodeEl);
-    return () => observer.disconnect();
+    scroll?.addEventListener("scroll", updateScroll, { passive: true });
+    window.addEventListener("resize", updateScroll);
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(update);
+    if (scroll) observer?.observe(scroll);
+    observer?.observe(canvas);
+    for (const nodeEl of canvas.querySelectorAll("[data-node]")) observer?.observe(nodeEl);
+    return () => {
+      scroll?.removeEventListener("scroll", updateScroll);
+      window.removeEventListener("resize", updateScroll);
+      observer?.disconnect();
+    };
   }, [nodes, links, pickedKey]);
 
   return (
-    <div className="research-tree-scroll overflow-y-auto">
-      <div ref={canvasRef} className="research-tree-canvas" data-research-tree>
-        <div className="research-tree__backdrop" aria-hidden="true">
-          <div className="research-tree__backdrop-rail" />
-          {RESEARCH_ERAS.map((era) => (
-            <div
-              key={era}
-              className="research-tree__backdrop-era"
-              data-current-era={currentEra === era ? "" : undefined}
-            />
-          ))}
-        </div>
-        {measured && measured.paths.length > 0 && <ResearchLinksSvg measured={measured} />}
-        <div className="research-tree__eras" data-research-eras>
-          <div className="research-era-rail-label">{RESEARCH_TREE.branchColumn}</div>
-          {RESEARCH_ERAS.map((era) => (
-            <div
-              key={era}
-              className="research-era-head"
-              data-era={era}
-              data-current-era={currentEra === era ? "" : undefined}
-            >
-              <HudTier tier={(era + 1) as Rank} />
-              <span className="research-era-head__name">{rankName(era)}</span>
-              {currentEra === era && <span className="research-era-head__current">{RESEARCH_TREE.currentEra}</span>}
-            </div>
-          ))}
-        </div>
-        <div className="research-tree__tracks">
-          {BRANCHES.map((branch) => {
-            const branchNodes = nodes.filter((item) => item.branch === branch);
-            if (branchNodes.length === 0) return null;
-            return (
-              <ResearchTrack key={branch} branch={branch} nodes={branchNodes} pickedKey={pickedKey} onPick={onPick} />
-            );
-          })}
+    <div className="research-tree-viewport">
+      <div ref={scrollRef} className="research-tree-scroll overflow-y-auto">
+        <div ref={canvasRef} className="research-tree-canvas" data-research-tree>
+          <div className="research-tree__backdrop" aria-hidden="true">
+            <div className="research-tree__backdrop-rail" />
+            {RESEARCH_ERAS.map((era) => (
+              <div
+                key={era}
+                className="research-tree__backdrop-era"
+                data-current-era={currentEra === era ? "" : undefined}
+              />
+            ))}
+          </div>
+          {measured && measured.paths.length > 0 && <ResearchLinksSvg measured={measured} />}
+          <div className="research-tree__eras" data-research-eras>
+            <div className="research-era-rail-label">{RESEARCH_TREE.branchColumn}</div>
+            {RESEARCH_ERAS.map((era) => (
+              <div
+                key={era}
+                className="research-era-head"
+                data-era={era}
+                data-current-era={currentEra === era ? "" : undefined}
+              >
+                <HudTier tier={(era + 1) as Rank} />
+                <span className="research-era-head__name">{rankName(era)}</span>
+                {currentEra === era && <span className="research-era-head__current">{RESEARCH_TREE.currentEra}</span>}
+              </div>
+            ))}
+          </div>
+          <div className="research-tree__tracks">
+            {BRANCHES.map((branch) => {
+              const branchNodes = nodes.filter((item) => item.branch === branch);
+              if (branchNodes.length === 0) return null;
+              return (
+                <ResearchTrack key={branch} branch={branch} nodes={branchNodes} pickedKey={pickedKey} onPick={onPick} />
+              );
+            })}
+          </div>
         </div>
       </div>
+      {moreBelow && (
+        <div className="research-scroll-cue" data-research-scroll-cue aria-hidden="true">
+          <span className="research-scroll-cue__pill">{`${RESEARCH_TREE.moreBelow} ▾`}</span>
+        </div>
+      )}
     </div>
   );
 };
@@ -260,7 +285,7 @@ const TreeNodeCard = ({ node, picked, onPick }: { node: TreeNode; picked: boolea
             <span
               data-research-effect
               className={cn(
-                "research-node__delta tabular-nums",
+                "research-node__delta research-node__delta--desktop tabular-nums",
                 node.state === "ready"
                   ? "text-hud-good"
                   : node.state === "done" || node.tier > 0
@@ -269,6 +294,20 @@ const TreeNodeCard = ({ node, picked, onPick }: { node: TreeNode; picked: boolea
               )}
             >
               <HudRanked words={researchEffectLine(node)} />
+            </span>
+            <span
+              data-research-effect-short
+              aria-hidden="true"
+              className={cn(
+                "research-node__delta research-node__delta--phone tabular-nums",
+                node.state === "ready"
+                  ? "text-hud-good"
+                  : node.state === "done" || node.tier > 0
+                    ? "text-hud-gold"
+                    : "text-hud-muted",
+              )}
+            >
+              {node.shortEffect}
             </span>
             <TierPips node={node} />
           </div>
@@ -286,7 +325,7 @@ const TreeNodeCard = ({ node, picked, onPick }: { node: TreeNode; picked: boolea
               missing && (
                 <span data-lock-reason className="research-node__reason">
                   <Icon name={needIcon(missing)} size={12} />
-                  <span className="truncate">{needLine(missing)}</span>
+                  <span>{needLine(missing)}</span>
                 </span>
               )
             )}
@@ -459,7 +498,7 @@ const STATE_LOOK: Record<NodeState, { icon?: IconMeaning; frame: string; text: s
   done: { icon: "check", frame: "border-hud-line bg-hud-well", text: "text-hud-ink" },
   ready: { icon: "research", frame: "border-hud-good bg-hud-chosen", text: "text-hud-ink" },
   short: { frame: "border-hud-line", text: "text-hud-ink" },
-  locked: { icon: "lock", frame: "border-hud-divider opacity-60", text: "text-hud-muted" },
+  locked: { icon: "lock", frame: "border-hud-divider opacity-60", text: "research-node__title--locked" },
 };
 
 const BRANCH_ICONS: Record<Branch, IconMeaning> = { economy: "farm", army: "barracks", castle: "spire" };

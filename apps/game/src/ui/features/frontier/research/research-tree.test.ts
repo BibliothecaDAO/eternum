@@ -181,3 +181,48 @@ it("assigns every node its contract era and derives prerequisite link states fro
     { key: "shrine->spire", from: "shrine", to: "spire", state: "ready" },
   ]);
 });
+
+it("gives every research node a concise shortEffect label from one source that fits phone cards without truncation", () => {
+  const early = Object.fromEntries(readResearchTree(EARLY_REALM).map((item) => [item.key, item.shortEffect]));
+  expect(early).toEqual({
+    "row-0": "100% → 120%",
+    "row-1": "100% → 120%",
+    "row-2": "100 → 120/hr",
+    "row-4": "2 → 1.8 wheat",
+    "row-5": "180 → 216 ⚡",
+    "row-6": "2 → 3 Oaths",
+    well: "+40% ⚡",
+    shrine: "Opens",
+    spire: "Opens",
+  });
+
+  const mid = Object.fromEntries(readResearchTree(MID_REALM).map((item) => [item.key, item.shortEffect]));
+  expect(mid).toMatchObject({
+    "row-0": "120% → 140%",
+    "row-6": "2 → 3 Oaths",
+    "row-7": "2 → 3 Oaths",
+    "row-11": "2 → 3 Oaths",
+    "row-5": "216 → 252 ⚡",
+    well: "+40% ⚡",
+    shrine: "Open",
+    spire: "Opens",
+  });
+
+  const maxed = readResearchTree({
+    ...MID_REALM,
+    learned: {
+      [research.ROW_FARM]: { tier: 5 },
+      [research.ROW_WORKSHOP]: { tier: 5 },
+      [research.ROW_CONSCRIPTION]: { tier: 5 },
+      [research.ROW_RATIONS]: { tier: 5 },
+      [research.ROW_SUPPLY_YARD]: { tier: 5 },
+      [research.ROW_KNIGHT_OATHS]: { tier: 3 },
+      [research.ROW_SCOUT_OATHS]: { tier: 3 },
+      [research.ROW_CROSSBOW_OATHS]: { tier: 3 },
+      [research.ROW_LORE]: { tier: 3 },
+    },
+  });
+  for (const item of [...readResearchTree(EARLY_REALM), ...readResearchTree(MID_REALM), ...maxed]) {
+    expect(item.shortEffect.length, `${item.key}: ${item.shortEffect}`).toBeLessThanOrEqual(15);
+  }
+});

@@ -2172,6 +2172,8 @@ const RESEARCH_STATES = {
   locked: "Locked",
 } as const;
 
+const RESEARCH_OPEN = "Open";
+
 export const RESEARCH_TREE = {
   /** Said while the realm's knowledge, balances, prices or board rules have not all arrived. */
   onItsWay: "Loading research…",
@@ -2196,7 +2198,7 @@ export const RESEARCH_TREE = {
   },
   oaths: "Oath slots",
   oathSlots: (count: number) => `${count} Oath ${count === 1 ? "slot" : "slots"}`,
-  oathOpen: "Open",
+  oathOpen: RESEARCH_OPEN,
   oathLocked: "Locked",
   oathResearch: "Research for new armies",
   conscriptionLine: "More troops from every troop building.",
@@ -2215,12 +2217,23 @@ export const RESEARCH_TREE = {
     rations: (value: string) => `${value} wheat per troop`,
     troops: (value: string) => `${value} troops an hour`,
   },
+  shortEffects: {
+    oaths: (now: number, next?: number) =>
+      next !== undefined ? `${figureStep(String(now), String(next))} Oaths` : `${now} Oaths`,
+    troops: (now: string, next?: string) => (next !== undefined ? `${figureStep(now, next)}/hr` : `${now}/hr`),
+    rations: (now: string, next?: string) =>
+      next !== undefined ? `${figureStep(now, next)} ${WHEAT.toLowerCase()}` : `${now} ${WHEAT.toLowerCase()}`,
+    logistics: (now: string, next?: string) => (next !== undefined ? `${figureStep(now, next)} ⚡` : `${now} ⚡`),
+    well: (percent: string) => `+${percent}% ⚡`,
+    open: (done: boolean) => (done ? RESEARCH_OPEN : "Opens"),
+  },
+  moreBelow: "More",
   nouns: { essence: ESSENCE, labor: LABOR },
   armiesFind: (site: string) => `Armies find ${site}s`,
   each: (gain: string) => `${gain} each`,
   lore: loreOf,
   opensLayers: `Opens every layer under the ${layerName(0)}`,
-  opens: "Open",
+  opens: RESEARCH_OPEN,
   closed: "Closed",
   none: "None",
   build: (building: string) => `Build a ${building}`,

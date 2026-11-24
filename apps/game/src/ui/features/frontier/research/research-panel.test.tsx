@@ -568,3 +568,30 @@ it("renders the 3-track Era tree with measured SVG prerequisite links on desktop
     Element.prototype.getBoundingClientRect = originalRect;
   }
 });
+
+it("renders concise phone short effects, legible locked titles, and a bottom scroll cue that hides at the end", () => {
+  draw(null);
+  expect(host.querySelector("[data-node='row-6'] [data-research-effect-short]")?.textContent).toBe("2 → 3 Oaths");
+  expect(host.querySelector("[data-node='row-2'] [data-research-effect-short]")?.textContent).toBe("100 → 120/hr");
+  expect(host.querySelector("[data-node='row-4'] [data-research-effect-short]")?.textContent).toBe("2 → 1.8 wheat");
+  expect(host.querySelector("[data-node='well'] [data-research-effect-short]")?.textContent).toBe("+40% ⚡");
+  expect(host.querySelector("[data-node='row-6'] .research-node__title--locked")).not.toBeNull();
+
+  const scroll = host.querySelector<HTMLDivElement>(".research-tree-scroll")!;
+  let scrollTop = 0;
+  Object.defineProperties(scroll, {
+    scrollHeight: { value: 700, configurable: true },
+    clientHeight: { value: 320, configurable: true },
+    scrollTop: { get: () => scrollTop, set: (v: number) => (scrollTop = v), configurable: true },
+  });
+  act(() => {
+    scroll.dispatchEvent(new Event("scroll"));
+  });
+  expect(host.querySelector("[data-research-scroll-cue]")?.textContent).toContain("More");
+
+  act(() => {
+    scrollTop = 380;
+    scroll.dispatchEvent(new Event("scroll"));
+  });
+  expect(host.querySelector("[data-research-scroll-cue]")).toBeNull();
+});
