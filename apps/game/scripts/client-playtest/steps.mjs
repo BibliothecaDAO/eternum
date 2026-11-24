@@ -3150,13 +3150,6 @@ const DISCOVERED_SPIRE_STEPS = [
   },
 ];
 
-/**
- * The map's share of the page on an odd device (owner, 4 November: "on some weird mobile devices with weird shapes the
- * map is like 15%"), on the lab's sites game: the map at rest, the army picked, its panel, a site's card beside it,
- * Chat and the Menu. Each step reads the share as a player sees it (MAP_SHARE_EXPRESSION) and which HUD part takes
- * the rest, and fails under MAP_LEAST_SHARE (Chat, which fills the band, excepted); a step that could not reach its
- * state is blocked, never read as the map's. Run it at each device's size with --viewport.
- */
 const HUD_SHEETS = [
   ["research", (browser) => browser.tapPlace(HUD_WORDS.research)],
   ["season", (browser) => browser.tapPlace(HUD_WORDS.season)],
@@ -3188,6 +3181,13 @@ const HUD_SHEET_STEPS = [
   })),
 ];
 
+/**
+ * The map's share of the page on an odd device (owner, 4 November: "on some weird mobile devices with weird shapes the
+ * map is like 15%"), on the lab's sites game: the map at rest, the army picked, its panel, a site's card beside it,
+ * Chat and the Menu. Each step reads the share as a player sees it (MAP_SHARE_EXPRESSION) and which HUD part takes
+ * the rest, and fails under MAP_LEAST_SHARE (Chat, which fills the band, excepted); a step that could not reach its
+ * state is blocked, never read as the map's. Run it at each device's size with --viewport.
+ */
 const HUD_DEVICE_STEPS = [
   { name: "map", play: readTheMapShare, settleMs: 3_000, verify: mapShareRead },
   {

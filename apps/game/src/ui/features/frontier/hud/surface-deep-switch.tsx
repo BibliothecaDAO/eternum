@@ -147,10 +147,16 @@ export const FrontierPlaceSwitch = (props: PlaceSwitchProps) => (
   </div>
 );
 
-export const PlaceMenu = ({ realm, ...props }: PlaceSwitchProps & { realm?: { name: string; mark: IconMeaning } }) => {
-  const entries = placeEntries(props).map((entry) =>
-    entry.key === "realm" && realm ? { ...entry, mark: realm.mark, line: realm.name } : entry,
-  );
+export const PlaceMenu = ({
+  realm,
+  lines,
+  ...props
+}: PlaceSwitchProps & { realm?: { mark: IconMeaning }; lines?: Partial<Record<PlaceTabKey, string>> }) => {
+  const entries = placeEntries(props).map((entry) => ({
+    ...entry,
+    mark: entry.key === "realm" && realm ? realm.mark : entry.mark,
+    line: entry.locked ? entry.line : lines?.[entry.key],
+  }));
   const shown = entries.find((entry) => entry.selected) ?? entries[1]!;
   const { open, close, triggerProps, popover } = useHudPopover();
   return (

@@ -79,12 +79,12 @@ button.frontier-stock-chips[aria-expanded="true"] {
 .frontier-day-disc {
   position: relative;
   display: flex;
-  width: 56px;
-  height: 56px;
+  width: 58px;
+  height: 58px;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  margin: -4px 0;
+  margin: -5px 0;
   border-radius: var(--hud-radius-round);
   background: conic-gradient(rgb(var(--hud-gold)) 0 var(--day-gone), var(--hud-well) var(--day-gone) 100%);
   box-shadow: var(--hud-shadow-control);
@@ -94,7 +94,7 @@ button.frontier-stock-chips[aria-expanded="true"] {
 .frontier-day-disc::before {
   content: "";
   position: absolute;
-  inset: 6px;
+  inset: 7px;
   border-radius: inherit;
   background: url(/images/hud/day-disc-calm.webp) center / cover;
 }
@@ -109,8 +109,9 @@ button.frontier-stock-chips[aria-expanded="true"] {
 }
 .frontier-day-disc__day {
   color: rgb(var(--hud-gold));
-  font-family: var(--hud-font-display);
+  font-family: var(--hud-font);
   font-size: var(--hud-text-display);
+  font-weight: var(--hud-weight-display);
 }
 .frontier-day-disc__left {
   color: rgb(var(--hud-ink));
@@ -269,11 +270,9 @@ button.frontier-stock-chips[aria-expanded="true"] {
   overflow: hidden;
   max-width: 100%;
   font-family: theme(fontFamily.ui);
-  font-size: var(--hud-text-badge);
+  font-size: var(--hud-text-label);
   line-height: 1;
   font-weight: var(--hud-weight-strong);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
   text-overflow: ellipsis;
   white-space: nowrap;
 }

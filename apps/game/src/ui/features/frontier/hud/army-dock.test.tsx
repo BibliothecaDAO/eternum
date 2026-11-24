@@ -38,62 +38,64 @@ afterEach(() => {
   useUIStore.getState().setPendingMilitaryAction(null);
 });
 
-it.each(["phone", "desktop"])("shows every open slot and its bar on %s, and opens the chosen slot", (mode) => {
-  layout.current = mode;
-  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-  const { store, row } = frontierDay();
-  // Slot 2 is fresh today; slot 3's army was released this second with 7 stamina left.
-  store.applyFacts([
-    {
-      model: "ArmySlot",
-      key: "0x92",
-      value: {
-        game_id: 1,
-        structure_id: 7,
-        epoch: "0",
-        slot: 2,
-        explorer_id: 0,
-        stamina: { amount: "7", settled_at: "3", remainder: 0 },
+it.each(["phone", "desktop"])(
+  "shows every open slot and the stamina it starts on, on %s, and opens the chosen slot",
+  (mode) => {
+    layout.current = mode;
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    const { store, row } = frontierDay();
+    // Slot 2 is fresh today; slot 3's army was released this second with 7 stamina left.
+    store.applyFacts([
+      {
+        model: "ArmySlot",
+        key: "0x92",
+        value: {
+          game_id: 1,
+          structure_id: 7,
+          epoch: "0",
+          slot: 2,
+          explorer_id: 0,
+          stamina: { amount: "7", settled_at: "3", remainder: 0 },
+        },
       },
-    },
-  ] as never);
-  const host = document.createElement("div");
-  document.body.append(host);
-  const root = createRoot(host);
-  act(() =>
-    root.render(
-      <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: "0x111" } as never}>
-        <ArmyDock realm={row} armies={[]} />
-      </GameProvider>,
-    ),
-  );
-  try {
-    const slots = [...host.querySelectorAll<HTMLButtonElement>('button[aria-label="Deploy"]')];
-    const startOf = (slot: HTMLButtonElement) => {
-      const row = slot.closest<HTMLElement>(".frontier-slot") ?? slot;
-      const meter = row.querySelector('[role="meter"]');
-      return mode === "desktop"
-        ? [row.dataset.tip, row.querySelector(".frontier-slot__detail")?.textContent]
-        : [row.dataset.tip, meter?.getAttribute("aria-valuenow"), meter?.getAttribute("aria-valuemax")];
-    };
-    expect(slots.map(startOf)).toEqual(
-      mode === "desktop"
-        ? [
-            ["Army 2 starts full: 150/150 stamina.", "420 Knights ready at home"],
-            ["Army 3 starts on 7/150 stamina.", "Any troop type · 7"],
-          ]
-        : [
-            ["Army 2 starts full: 150/150 stamina.", "150", "150"],
-            ["Army 3 starts on 7/150 stamina.", "7", "150"],
-          ],
+    ] as never);
+    const host = document.createElement("div");
+    document.body.append(host);
+    const root = createRoot(host);
+    act(() =>
+      root.render(
+        <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: "0x111" } as never}>
+          <ArmyDock realm={row} armies={[]} />
+        </GameProvider>,
+      ),
     );
-    act(() => slots[1].click());
-    expect(useUIStore.getState().pendingMilitaryAction).toMatchObject({ structureId: 7, slot: 2 });
-  } finally {
-    act(() => root.unmount());
-    host.remove();
-  }
-});
+    try {
+      const slots = [...host.querySelectorAll<HTMLButtonElement>('button[aria-label="Deploy"]')];
+      const startOf = (slot: HTMLButtonElement) => {
+        const row = slot.closest<HTMLElement>(".frontier-slot") ?? slot;
+        return mode === "desktop"
+          ? [row.dataset.tip, row.querySelector(".frontier-slot__detail")?.textContent]
+          : [row.dataset.tip, row.textContent];
+      };
+      expect(slots.map(startOf)).toEqual(
+        mode === "desktop"
+          ? [
+              ["Army 2 starts full: 150/150 stamina.", "420 Knights ready at home"],
+              ["Army 3 starts on 7/150 stamina.", "Any troop type · 7"],
+            ]
+          : [
+              ["Army 2 starts full: 150/150 stamina.", "+Deploy"],
+              ["Army 3 starts on 7/150 stamina.", "+Deploy"],
+            ],
+      );
+      act(() => slots[1].click());
+      expect(useUIStore.getState().pendingMilitaryAction).toMatchObject({ structureId: 7, slot: 2 });
+    } finally {
+      act(() => root.unmount());
+      host.remove();
+    }
+  },
+);
 
 /**
  * Two armies out, as useDockArmies reads them: 1,498 troops whose Homecoming returns 134, through the spire in

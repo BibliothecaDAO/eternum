@@ -246,6 +246,13 @@ const DeploySlot = ({
       onDeploy={onDeploy}
     />
   ) : (
-    <OpenSlot label={DEPLOY} filling={filling} pulse={pulse} start={start} stock={stock} onDeploy={onDeploy} />
+    <OpenSlot
+      label={DEPLOY}
+      filling={filling}
+      pulse={pulse}
+      start={start && { words: start.words }}
+      stock={stock}
+      onDeploy={onDeploy}
+    />
   );
 };

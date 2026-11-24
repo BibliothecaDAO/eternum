@@ -618,7 +618,7 @@ export const HUD_LAYOUT = {
   /** The phone's minimap tab. */
   "phone-minimap": "clamp(180px, 35dvh, 320px)",
   "phone-tray": "22dvh",
-  "phone-sheet": "52dvh",
+  "phone-sheet": `min(52dvh, calc(100dvh - var(--hud-phone-top, 0px) - var(--hud-phone-foot, 0px) - ${HUD_MAP_LEAST_SHARE}dvh))`,
   "phone-browse": "72dvh",
   "tablet-rail": "248px",
   "chat-width": "800px",

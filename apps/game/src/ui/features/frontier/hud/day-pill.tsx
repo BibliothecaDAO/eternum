@@ -67,7 +67,7 @@ export const DayRing = ({ clock }: { clock: DayClock }) => {
       data-tip={dayTip(clock)}
       data-tone={clock.tone}
       className="frontier-day-disc pointer-events-auto"
-      style={{ "--day-gone": `${Math.round(dayElapsedShare(clock) * 100)}%` } as CSSProperties}
+      style={{ "--day-gone": `${Math.round((dayElapsedShare(clock) ?? 0) * 100)}%` } as CSSProperties}
     >
       <span className="frontier-day-disc__day">{clock.day ?? "—"}</span>
       {left && <span className="frontier-day-disc__left">{left}</span>}

@@ -14,7 +14,15 @@ import { useGame } from "@/hooks/context/game-context";
 import { realmMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { homeIcon } from "@/ui/design-system/home-icons";
 import { HudIconButton, HudSheet, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
-import { ARMY, ARMY_MANAGEMENT, EVENTS_WORDS, LINK_WALLET_FOR_LORDS, YOU } from "@/ui/design-system/kit/words";
+import {
+  ARMY,
+  ARMY_MANAGEMENT,
+  armiesHere,
+  EVENTS_WORDS,
+  LINK_WALLET_FOR_LORDS,
+  plotsUsed,
+  YOU,
+} from "@/ui/design-system/kit/words";
 import { readArmySlots } from "@/ui/features/frontier/hud/army-dock";
 import { ArmyCard, ArmySlotsCard, LockedSlotCard, OpenSlotCard } from "@/ui/features/frontier/hud/army-row";
 import { ArmyToken, OpenSlot } from "@/ui/features/frontier/hud/army-token";
@@ -849,7 +857,14 @@ export const HudLab = () => {
                 layers={LAB_MAP_LAYERS}
                 onGoRealm={noop}
                 onGoSurface={noop}
-                realm={{ name: LAB_REALM_NAME, mark: homeIcon("realm", 1) }}
+                realm={{ mark: homeIcon("realm", 1) }}
+                lines={{
+                  realm: plotsUsed(2, 6),
+                  surface: armiesHere(1),
+                  1: armiesHere(1),
+                  2: armiesHere(0),
+                  3: armiesHere(0),
+                }}
               />
             }
             quest={<LabDailyQuest />}

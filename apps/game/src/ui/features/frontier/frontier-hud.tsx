@@ -8,7 +8,7 @@ import { canIssueOrders, isWatching } from "@/utils/can-issue-orders";
 import { useRealmVisit } from "@/sync/active-game-client";
 import { dropNextOrder } from "@/three/scenes/worldmap-next-order";
 import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
-import { SETTINGS } from "@/ui/design-system/kit/words";
+import { armiesHere, plotsUsed, SETTINGS } from "@/ui/design-system/kit/words";
 import { useGameChat } from "@/ui/features/world/containers/hud-chat-window";
 import { IdentityChip } from "@/ui/features/world/containers/top-header/identity-chip";
 import { HudSheet } from "@/ui/design-system/kit/hud-elements";
@@ -78,7 +78,7 @@ import { CARD_STORE_KINDS, type CardStore, FrontierStoreCard, isCardStore } from
 import { FrontierResearch } from "./research/frontier-research";
 
 import { useBuildOpensOnEntering } from "./build/build-button";
-import { BuildingsInFlight } from "./build/build-sheet";
+import { BuildingsInFlight, useRealmPlots } from "./build/build-sheet";
 import { readBuildOptions } from "./build/build-options";
 import { buildingIcon, buildingName } from "./build/building-names";
 import { FRONTIER_STORES, madeStore, STORE_KINDS } from "./stores";
@@ -195,6 +195,8 @@ const FrontierHudBody = ({
   const headerStores = useStoreReadings(shown, rules);
   const headerFacts = useNativeFacts(REALM_HEADER_MODELS);
   const own = realm && !visit ? realm : null;
+  const ownArmies = useDockArmies(own);
+  const ownPlots = useRealmPlots(own);
   const modeConfig = useGameModeConfig();
   const goToPlace = useGoToFrontierPlace(shown);
   const feedUnread = useUnreadImportantCount(surface === "feed");
@@ -304,11 +306,8 @@ const FrontierHudBody = ({
       placeMenu={
         <PlaceMenu
           {...placeChoices}
-          realm={
-            shown && shownName
-              ? { name: shownName, mark: homeIcon(homeKind(shown.metadata.has_wonder), shown.base.level) }
-              : undefined
-          }
+          realm={shown ? { mark: homeIcon(homeKind(shown.metadata.has_wonder), shown.base.level) } : undefined}
+          lines={own ? placeLines(ownArmies, ownPlots) : undefined}
         />
       }
       quest={own ? <DailyQuestChip realm={own} /> : undefined}
@@ -420,6 +419,17 @@ const FrontierHudBody = ({
 };
 
 const REALM_HEADER_MODELS = ["RaceRules"] as const;
+
+const placeLines = (armies: readonly DockArmy[], plots: { used: number; total: number } | undefined) => {
+  const on = (layer: DockArmy["ethereal"]) => armiesHere(armies.filter((army) => army.ethereal === layer).length);
+  return {
+    realm: plots && plotsUsed(plots.used, plots.total),
+    surface: on(undefined),
+    1: on(1),
+    2: on(2),
+    3: on(3),
+  };
+};
 
 /**
  * A phone's action row, the one row over the place bar that says what the pick lets the player do now (owner, 22 October
