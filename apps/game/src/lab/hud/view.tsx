@@ -20,7 +20,7 @@ interface Group {
 const MOMENTS: { title: string; test: RegExp }[] = [
   { title: "Sites & fights", test: /^(site|fight|clear)-/ },
   { title: "Deploy", test: /^deploy/ },
-  { title: "Realm & build", test: /^(build|castle|realm-full|stores)/ },
+  { title: "Realm & build", test: /^(build|castle|stores)/ },
   { title: "Research", test: /^research/ },
   { title: "The day", test: /^(last-|day-done|night|today|notice)/ },
   { title: "Season & purse", test: /^(season|value-|purse|withdraw|realms)/ },

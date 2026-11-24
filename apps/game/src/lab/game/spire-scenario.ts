@@ -19,15 +19,12 @@ import { LAB_GAME_ENDS_AT, type LabFact, type LabScenario, wire } from "./lab-ch
 const tileData = (biome: BiomeType) => BigInt(BiomeTypeToId[biome]) * BigInt(nativeTilePackingConstants.BIOME_SCALE);
 
 /** The biome each revealed tile of a lab game lies in, by its position. */
-export type LabGround = (hex: { col: number; row: number }) => BiomeType;
+type LabGround = (hex: { col: number; row: number }) => BiomeType;
 
 const GRASSLAND: LabGround = () => BiomeType.Grassland;
 /** Snow, bare rock and tundra in turn: the highest ground the map draws, as the playtest's snow fields rise. */
 const HIGH_GROUND: LabGround = ({ col, row }) =>
   [BiomeType.Snow, BiomeType.Bare, BiomeType.Tundra][(((col + 2 * row) % 3) + 3) % 3];
-/** Beach sand, where palms grow: the owner's desert realm with its palms (28 October 2026, "shadows are weird ??"). */
-export const SANDS: LabGround = () => BiomeType.Beach;
-
 /**
  * The fixture's rules as Frontier plays them: hour-long day units, so a day outlasts a session; Frontier's own commands
  * and mode rules (config/source/frontier/native.ts), so the lab offers only what a Frontier game takes (an army fights a

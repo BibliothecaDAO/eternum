@@ -1,9 +1,7 @@
 import { expect, it } from "vitest";
 import { buildingTypeTier, readFrontierBeast } from "@bibliothecadao/eternum";
-import { BiomeType, BiomeTypeToId, BuildingType, isFrontierBuilding, StructureType } from "@bibliothecadao/types";
-import { nativeTilePackingConstants } from "../../../../../contracts/l3/world-native/schema/client.gen";
+import { BuildingType, isFrontierBuilding, StructureType } from "@bibliothecadao/types";
 import { paintedBuildingsScenario } from "./painted-buildings-scenario";
-import { SANDS } from "./spire-scenario";
 
 const townCategories = Object.values(BuildingType).filter(
   (type): type is BuildingType => typeof type === "number" && isFrontierBuilding(type),
@@ -36,13 +34,4 @@ it("opens a Kingdom with every town building, tier III production and guarded ma
   for (const entityId of [711, 712, 713]) {
     expect([...store.rows("TileOccupancy")].filter((tile) => tile.entity_id === BigInt(entityId))).toHaveLength(1);
   }
-});
-
-it("lays the same Kingdom on beach sand, where palms grow, for the sands lab game", () => {
-  const { store } = paintedBuildingsScenario(SANDS);
-  const tiles = [...store.rows("TileOpt")];
-  expect(tiles.length).toBeGreaterThan(0);
-  const beach = BigInt(BiomeTypeToId[BiomeType.Beach]) * BigInt(nativeTilePackingConstants.BIOME_SCALE);
-  expect(tiles.every((tile) => BigInt(tile.data) === beach)).toBe(true);
-  expect([...store.rows("Building")]).toHaveLength(townCategories.length + 1);
 });
