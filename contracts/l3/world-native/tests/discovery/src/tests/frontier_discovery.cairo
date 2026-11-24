@@ -12,7 +12,11 @@ fn frontier_draws_the_ruled_odds_over_100k_reveals() {
         counts.insert(key, count + 1);
     }
     // 100,000 reveals hold each rate within 0.2 percentage points.
-    for (index, expected) in array![(0_u8, 9000_u32), (1, 4000), (2, 4000), (3, 3000), (4, 3000), (5, 3000)] {
+    for (index, bps) in array![
+        (0_u8, preset.beasts_bps), (1, preset.camp_bps), (2, preset.rift_bps), (3, preset.ruin_bps),
+        (4, preset.shrine_bps), (5, preset.well_bps),
+    ] {
+        let expected: u32 = Into::<u16, u32>::into(bps) * 10;
         let value = counts.get(index.into());
         println!("kind {} of 100000: {}", index, value);
         assert!(within(value, expected, 200), "discovery odds drift");

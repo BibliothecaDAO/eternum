@@ -144,7 +144,19 @@ pub mod MapState {
         let key = TileKey { game_id: site_key.game_id, alt: site.alt, col: site.col, row: site.row };
         let previous = crate::logic::map::occupancy(key).expect('missing site blocker');
         assert!(previous.is_structure && previous.entity_id == site_key.entity_id, "site blocker mismatch");
-        write_occupancy(key, None);
+        write_occupancy(key, cleared_site_occupancy(site_key.entity_id, site.category));
+    }
+
+    fn cleared_site_occupancy(site_id: u64, category: u8) -> Option<TileOccupancy> {
+        if category == crate::taxonomy::CAMP_CATEGORY {
+            Some(
+                TileOccupancy {
+                    entity_id: site_id, category: crate::taxonomy::SUPPLY_POST_OCCUPIER, is_structure: true,
+                },
+            )
+        } else {
+            None
+        }
     }
 
     fn write_terrain(key: TileKey, data: u128) {

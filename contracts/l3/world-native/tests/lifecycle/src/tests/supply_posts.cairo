@@ -10,7 +10,7 @@ use crate::rules::RESOURCE_PRECISION;
 use crate::troop_management::{ManageTroops, RecruitExplorer};
 
 #[test]
-fn a_cleared_camp_reinforces_from_home_on_each_layer_above_the_deep() {
+fn a_cleared_camp_holds_its_hex_and_reinforces_from_home_on_each_layer_above_the_deep() {
     for depth in 0_u8..3 {
         let (d, game_id, key) = setup_frontier_relics();
         let home = ResourceKey { game_id, entity_id: super::army_activity::army(d, key).owner };
@@ -94,6 +94,27 @@ fn a_cleared_camp_reinforces_from_home_on_each_layer_above_the_deep() {
                 ),
             );
         }
+        let standing = super::army_activity::army(d, key).coord;
+        let mut toward_post = 0_u8;
+        while crate::geometry::neighbor(standing, toward_post) != destination {
+            toward_post += 1;
+        }
+        interact_with_state(
+            d.games,
+            || {
+                let post = crate::logic::map::occupancy(crate::geometry::tile_key(game_id, destination)).unwrap();
+                assert_eq!(post.category, crate::taxonomy::SUPPLY_POST_OCCUPIER);
+                assert_eq!(post.entity_id, site_key.entity_id);
+            },
+        );
+        let onto_post = Command::Move(
+            crate::commands::Move { explorer_id: key.explorer_id, directions: array![toward_post].span() },
+        );
+        let mut refused = snforge_std::spy_events();
+        assert!(!execute_in_game(d, game_id, onto_post, FIXTURE_START + 3));
+        assert_eq!(
+            world_test_support::tests::play_fixture::rejection(ref refused, d.games).reason, "movement tile occupied",
+        );
         let mut survivors = super::army_activity::army(d, key);
         survivors.troops.count = size;
         set_explorer_fixture(d.games, key, survivors);

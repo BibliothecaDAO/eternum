@@ -73,7 +73,8 @@ type TileOccupantKind =
   | "chest"
   | "spire"
   | "dormant-spire"
-  | "deep-site";
+  | "deep-site"
+  | "supply-post";
 
 /** What stands on a tile, for every occupier the contract names: a new id does not compile until it is placed here. */
 const TILE_OCCUPANT_KINDS: Record<TileOccupier, TileOccupantKind> = {
@@ -108,6 +109,7 @@ const TILE_OCCUPANT_KINDS: Record<TileOccupier, TileOccupantKind> = {
   [TileOccupier.Beasts]: "structure",
   [TileOccupier.DeepSite]: "deep-site",
   [TileOccupier.DormantSpire]: "dormant-spire",
+  [TileOccupier.SupplyPost]: "supply-post",
 };
 
 const tileOccupantKind = (tileOccupier: number): TileOccupantKind | undefined =>
@@ -124,7 +126,7 @@ export const isTileOccupierArmy = (tileOccupier: number) => tileOccupantKind(til
 /** A shrine, a well or a dormant spire: a tile object with no Structure, which no army may enter. */
 export const isTileOccupierMapSite = (tileOccupier: number) => {
   const kind = tileOccupantKind(tileOccupier);
-  return kind === "dormant-spire" || kind === "deep-site";
+  return kind === "dormant-spire" || kind === "deep-site" || kind === "supply-post";
 };
 
 export const isTileOccupierReservedHyperstructure = (tileOccupier: TileOccupier) => {
