@@ -13,11 +13,11 @@ import { Shot } from "@/components/Media";
 
 Frontier has three troop kinds:
 
-| Troop                                          | Trained at                                                 | Weapon | Role                                                                                                                                                                      |
-| ---------------------------------------------- | ---------------------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| <GameIcon name="knight-t1" /> Knights          | {FRONTIER.names.barracks}                                  | Blade  | Full damage. Takes {FRONTIER.attributes.knightGuardReduction} less damage when guarding a Deep site.                                                                      |
-| <GameIcon name="crossbowman-t1" /> Crossbowmen | {FRONTIER.names.range} ({FRONTIER.rangeOpens})             | Bow    | Strikes first against blades. Deals {FRONTIER.attributes.lightDamageReduction} less damage than Knights.                                                                  |
-| <GameIcon name="paladin-t1" /> Scouts          | {FRONTIER.names.scoutsLodge} ({FRONTIER.scoutsLodgeOpens}) | Bow    | Reveals tiles for {FRONTIER.stamina.scoutReveal} stamina instead of {FRONTIER.stamina.reveal}. Deals {FRONTIER.attributes.lightDamageReduction} less damage than Knights. |
+| Troop                                                            | Trained at                                                 | Weapon | Role                                                                                                                                                                                       |
+| ---------------------------------------------------------------- | ---------------------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| <GameIcon name="knight-t1" /> {FRONTIER.troops.knight}           | {FRONTIER.names.barracks}                                  | Blade  | Full damage. Takes {FRONTIER.attributes.knightGuardReduction} less damage when guarding a Deep site.                                                                                       |
+| <GameIcon name="crossbowman-t1" /> {FRONTIER.troops.crossbowman} | {FRONTIER.names.range} ({FRONTIER.rangeOpens})             | Bow    | Strikes first against blades. Deals {FRONTIER.attributes.lightDamageReduction} less damage than {FRONTIER.troops.knight}.                                                                  |
+| <GameIcon name="paladin-t1" /> {FRONTIER.troops.scout}           | {FRONTIER.names.scoutsLodge} ({FRONTIER.scoutsLodgeOpens}) | Bow    | Reveals tiles for {FRONTIER.stamina.scoutReveal} stamina instead of {FRONTIER.stamina.reveal}. Deals {FRONTIER.attributes.lightDamageReduction} less damage than {FRONTIER.troops.knight}. |
 
 ## Deploying
 
@@ -36,9 +36,10 @@ each castle level raises the max troops per deploy ([Your realm](/frontier/realm
 
 An army holds {FRONTIER.stamina.max} stamina and recovers {FRONTIER.stamina.perTick} every
 {FRONTIER.stamina.tickMinutes} minutes, so an empty bar fills in {FRONTIER.stamina.fullHours} hours. Revealing a tile
-costs {FRONTIER.stamina.reveal} for Knights and {FRONTIER.stamina.scoutReveal} for Scouts, a step on an explored tile
-costs {FRONTIER.stamina.step}, and an attack needs {FRONTIER.stamina.attack}. Every step and every reveal also costs
-{FRONTIER.stamina.wheatPerTroop} wheat per troop, so a large army needs many farms.
+costs {FRONTIER.stamina.reveal} for {FRONTIER.troops.knight} and {FRONTIER.stamina.scoutReveal} for
+{FRONTIER.troops.scout}, a step on an explored tile costs {FRONTIER.stamina.step}, and an attack needs
+{FRONTIER.stamina.attack}. Every step and every reveal also costs {FRONTIER.stamina.wheatPerTroop} wheat per troop, so a
+large army needs many farms.
 
 - <GameIcon name={FRONTIER.buildingIcons.supplyYard} /> A {FRONTIER.names.supplyYard} gives new armies Logistics rank I,
   and research raises it to rank V. Each rank adds {FRONTIER.stamina.logisticsStep} max stamina, adding
@@ -61,8 +62,9 @@ another before deploying.
 ## Merging, reinforcing, and disbanding
 
 Two armies of the same troop kind standing side by side can merge, keeping the lower stamina and the receiving army's
-Logistics rank. You can also reinforce an army beside your realm or beside any cleared camp (supply post) using troops
-and wheat from home. Disbanding an army deletes its troops after you confirm.
+Logistics rank. You can also reinforce an army beside your realm or beside any camp your realm cleared today (supply
+post) on the Surface, Veil, or Hollow using troops and wheat from home. Disbanding an army deletes its troops after you
+confirm.
 
 ## Fights
 
@@ -73,8 +75,9 @@ Every enemy carries a **blade** or a **bow**.
 
 - Bows strike first against blades, and only surviving blades hit back.
 - Two blades or two bows strike at the same time.
-- Crossbowmen and Scouts deal {FRONTIER.attributes.lightDamageReduction} less damage than Knights.
-- Knights holding a Deep guard slot take {FRONTIER.attributes.knightGuardReduction} less damage, and blade beasts do not
-  get this bonus.
+- {FRONTIER.troops.crossbowman} and {FRONTIER.troops.scout} deal {FRONTIER.attributes.lightDamageReduction} less damage
+  than {FRONTIER.troops.knight}.
+- {FRONTIER.troops.knight} holding a Deep guard slot take {FRONTIER.attributes.knightGuardReduction} less damage, and
+  blade beasts do not get this bonus.
 
 Power up your armies further with [Oaths and relics](/frontier/oaths-and-relics).

@@ -27,14 +27,17 @@ import {
   ASPECT_REWARD,
   BuildingType,
   FRAGMENT_CENTS,
+  FRAGMENT_SPEND_COMMANDS,
   FRAGMENTS_A_DAY,
   FRIEND_FRAGMENTS,
   FRIEND_GLORY,
   FRONTIER_BUILDING_TYPES,
+  FRONTIER_TROOP_NAMES,
   LAYER_NAMES,
   MIN_FRAGMENTS,
   STORE_PRODUCTS,
   TIER_WORDS,
+  TroopType,
   aspectLordsWorth,
   aspectName,
   aspects,
@@ -160,10 +163,7 @@ const buildingRate = (id: BuildingType): string | null => {
 const commandEnabled = (name: keyof typeof nativeCommandBits) =>
   (frontierPreset.commandMask & BigInt(nativeCommandBits[name])) !== 0n;
 
-const sealEnabled = commandEnabled("BuySeal");
-const staminaEnabled = commandEnabled("BuyStamina");
-const rerollEnabled = commandEnabled("RerollOath");
-const anySpendEnabled = sealEnabled || staminaEnabled || rerollEnabled;
+const anySpendEnabled = FRAGMENT_SPEND_COMMANDS.some((name) => commandEnabled(name));
 const barFragments = n(Math.ceil(stamina.staminaKnightMax / fragments.STAMINA_PER_FRAGMENT));
 const logisticsBonusValue = logisticsStamina(stamina.staminaKnightMax, rule.ATTRIBUTE_CAP);
 
@@ -172,9 +172,13 @@ const castleLevelInline = (level: number) => `castle level ${level + 1} (${rankN
 
 const buildingMeta: Partial<Record<BuildingType, { makes: string; level: number; order: number }>> = {
   [research.FARM]: { makes: "Wheat", level: 0, order: 0 },
-  [research.BARRACKS]: { makes: "Knights", level: 0, order: 1 },
-  [research.RANGE]: { makes: "Crossbowmen", level: research.RANGE_LEVEL, order: 2 },
-  [research.SCOUTS_LODGE]: { makes: "Scouts", level: research.SCOUTS_LODGE_LEVEL, order: 3 },
+  [research.BARRACKS]: { makes: FRONTIER_TROOP_NAMES[TroopType.Knight], level: 0, order: 1 },
+  [research.RANGE]: { makes: FRONTIER_TROOP_NAMES[TroopType.Crossbowman], level: research.RANGE_LEVEL, order: 2 },
+  [research.SCOUTS_LODGE]: {
+    makes: FRONTIER_TROOP_NAMES[TroopType.Paladin],
+    level: research.SCOUTS_LODGE_LEVEL,
+    order: 3,
+  },
   [research.WORKSHOP]: { makes: "Labor", level: 0, order: 4 },
   [research.STOREROOM]: { makes: "Wheat and labor storage", level: research.STOREROOM_LEVEL, order: 5 },
   [research.CONSCRIPTION_CAMP]: { makes: "Faster troop training", level: research.CONSCRIPTION_CAMP_LEVEL, order: 6 },
@@ -304,6 +308,11 @@ export const FRONTIER = {
     veil: `${fragments.VEIL_CACHE_PERCENT}%`,
     hollow: `${fragments.HOLLOW_CACHE_PERCENT}%`,
     troopsPerFragment: n(fragments.CACHE_TROOPS_PER_FRAGMENT),
+  },
+  troops: {
+    knight: FRONTIER_TROOP_NAMES[TroopType.Knight],
+    crossbowman: FRONTIER_TROOP_NAMES[TroopType.Crossbowman],
+    scout: FRONTIER_TROOP_NAMES[TroopType.Paladin],
   },
   buildingsCount: n(FRONTIER_BUILDING_TYPES.length),
   buildings: frontierBuildings,
@@ -494,7 +503,7 @@ export const FRONTIER = {
     lordsNote: `The Shop takes ${MAINNET_TOKENS.lords.symbol} (or swaps ${swapPayTokens} into ${MAINNET_TOKENS.lords.symbol} through AVNU) for Fragments.`,
     statusNote: anySpendEnabled
       ? "Spending Fragments is on."
-      : `Spending Fragments is turned off during the final testnet (${SEASON_ONE_CALENDAR.testnetDates} UTC).`,
+      : `Spending Fragments is currently turned off (final testnet: ${SEASON_ONE_CALENDAR.testnetDates} UTC).`,
     sealRule: `Lasts the whole season. Gives ${n(questPreset.bonusPercent)}% daily quest labor and the Season 1 Realm skin. You can also get the Seal with a code.`,
     staminaRule: `Refills ${n(fragments.STAMINA_PER_FRAGMENT)} stamina per Fragment on the Surface, Veil, and Hollow (${barFragments} Fragments for a full ${n(stamina.staminaKnightMax)} bar). Does not work inside the Deep.`,
     fragmentPrice: dollars(FRAGMENT_CENTS),

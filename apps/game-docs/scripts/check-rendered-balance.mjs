@@ -16,13 +16,16 @@ import { fileURLToPath } from "node:url";
 import {
   ASPECT_REWARD,
   FRAGMENT_CENTS,
+  FRAGMENT_SPEND_COMMANDS,
   FRAGMENTS_A_DAY,
   FRIEND_FRAGMENTS,
   FRIEND_GLORY,
   FRONTIER_BUILDING_TYPES,
+  FRONTIER_TROOP_NAMES,
   LAYER_NAMES,
   MIN_FRAGMENTS,
   TIER_WORDS,
+  TroopType,
   aspects,
   baneQuests,
   beastOf,
@@ -117,10 +120,7 @@ export const frontierPhrases = (
     (_, level) => `${n(contract.questLevelStep ** level)}x at castle level ${level + 1} (${rankName(level)})`,
   ).join(", ");
   const commandOn = (name) => (preset.commandMask & BigInt(commandBits[name])) !== 0n;
-  const sealEnabled = commandOn("BuySeal");
-  const staminaEnabled = commandOn("BuyStamina");
-  const rerollEnabled = commandOn("RerollOath");
-  const anySpendEnabled = sealEnabled || staminaEnabled || rerollEnabled;
+  const anySpendEnabled = FRAGMENT_SPEND_COMMANDS.some((name) => commandOn(name));
   const logisticsBonus = logisticsStamina(stamina.staminaKnightMax, nativeRules.ATTRIBUTE_CAP);
   const staminaRule = `Refills ${n(nativeFragments.STAMINA_PER_FRAGMENT)} stamina per Fragment on the Surface, Veil, and Hollow`;
   const oathSlotPrices = preset.research
@@ -156,11 +156,13 @@ export const frontierPhrases = (
     {
       page: "frontier/armies",
       phrases: [
-        `${buildingName(nativeResearch.RANGE, true)} (castle level ${nativeResearch.RANGE_LEVEL + 1} (${rankName(nativeResearch.RANGE_LEVEL)}))`,
-        `${buildingName(nativeResearch.SCOUTS_LODGE, true)} (castle level ${nativeResearch.SCOUTS_LODGE_LEVEL + 1} (${rankName(nativeResearch.SCOUTS_LODGE_LEVEL)}))`,
+        `${FRONTIER_TROOP_NAMES[TroopType.Knight]} ${buildingName(nativeResearch.BARRACKS, true)}`,
+        `${FRONTIER_TROOP_NAMES[TroopType.Crossbowman]} ${buildingName(nativeResearch.RANGE, true)} (castle level ${nativeResearch.RANGE_LEVEL + 1} (${rankName(nativeResearch.RANGE_LEVEL)}))`,
+        `${FRONTIER_TROOP_NAMES[TroopType.Paladin]} ${buildingName(nativeResearch.SCOUTS_LODGE, true)} (castle level ${nativeResearch.SCOUTS_LODGE_LEVEL + 1} (${rankName(nativeResearch.SCOUTS_LODGE_LEVEL)}))`,
         `An army holds ${n(stamina.staminaKnightMax)} stamina and recovers ${stamina.staminaGainPerTick} every ${tick / 60} minutes, so an empty bar fills in ${((stamina.staminaKnightMax / stamina.staminaGainPerTick) * tick) / 3600} hours.`,
-        `Revealing a tile costs ${stamina.staminaExploreStaminaCost} for Knights and ${nativeRules.SCOUT_EXPLORE_STAMINA} for Scouts, a step on an explored tile costs ${stamina.staminaTravelStaminaCost}, and an attack needs ${stamina.staminaAttackReq}.`,
+        `Revealing a tile costs ${stamina.staminaExploreStaminaCost} for ${FRONTIER_TROOP_NAMES[TroopType.Knight]} and ${nativeRules.SCOUT_EXPLORE_STAMINA} for ${FRONTIER_TROOP_NAMES[TroopType.Paladin]}, a step on an explored tile costs ${stamina.staminaTravelStaminaCost}, and an attack needs ${stamina.staminaAttackReq}.`,
         `adding +${n(logisticsBonus)} bonus stamina at rank V for ${n(stamina.staminaKnightMax + logisticsBonus)} max stamina total.`,
+        `beside any camp your realm cleared today (supply post) on the Surface, Veil, or Hollow`,
         staminaRule,
       ],
     },
@@ -187,9 +189,9 @@ export const frontierPhrases = (
             `Level ${index + 1} (${rankName(index)}) ${n(count)} ${n(caps[index])} ${castleLaborRate(index)} ${n(preset.board.resourceStoreCaps[index])} ${n(preset.board.laborStoreCaps[index])}`,
         ),
         `Farm Wheat (${rateOf(BuildingType.ResourceWheat)}/h) Level 1 (${rankName(0)}) ${buildingPrice(config, BuildingType.ResourceWheat)}`,
-        `Barracks Knights (${rateOf(BuildingType.ResourceKnightT1)}/h) Level 1 (${rankName(0)}) ${buildingPrice(config, BuildingType.ResourceKnightT1)}`,
-        `Range Crossbowmen (${rateOf(BuildingType.ResourceCrossbowmanT1)}/h) Level 2 (${rankName(1)}) ${buildingPrice(config, BuildingType.ResourceCrossbowmanT1)}`,
-        `Scouts' lodge Scouts (${rateOf(BuildingType.ScoutsLodge)}/h) Level 2 (${rankName(1)}) ${buildingPrice(config, BuildingType.ScoutsLodge)}`,
+        `${buildingName(BuildingType.ResourceKnightT1, true)} ${FRONTIER_TROOP_NAMES[TroopType.Knight]} (${rateOf(BuildingType.ResourceKnightT1)}/h) Level 1 (${rankName(0)}) ${buildingPrice(config, BuildingType.ResourceKnightT1)}`,
+        `${buildingName(BuildingType.ResourceCrossbowmanT1, true)} ${FRONTIER_TROOP_NAMES[TroopType.Crossbowman]} (${rateOf(BuildingType.ResourceCrossbowmanT1)}/h) Level 2 (${rankName(1)}) ${buildingPrice(config, BuildingType.ResourceCrossbowmanT1)}`,
+        `${buildingName(BuildingType.ScoutsLodge, true)} ${FRONTIER_TROOP_NAMES[TroopType.Paladin]} (${rateOf(BuildingType.ScoutsLodge)}/h) Level 2 (${rankName(1)}) ${buildingPrice(config, BuildingType.ScoutsLodge)}`,
         `Supply yard Logistics training Level 3 (${rankName(2)}) ${buildingPrice(config, BuildingType.SupplyYard)}`,
         `Price per troop kind: ${oathSlotPrices}.`,
       ],
@@ -276,7 +278,9 @@ export const frontierPhrases = (
     {
       page: "frontier/shop-and-referrals",
       phrases: [
-        ...(anySpendEnabled ? [] : [calendar.testnetDates]),
+        anySpendEnabled
+          ? `Spending Fragments is on.`
+          : `Spending Fragments is currently turned off (final testnet: ${calendar.testnetDates} UTC).`,
         `Custom amounts cost $${(FRAGMENT_CENTS / 100).toFixed(2)} per Fragment, from ${n(MIN_FRAGMENTS)} up to ${n(FRAGMENTS_A_DAY)} Fragments per day.`,
         `You pay with ${allPayTokens} from your linked`,
         `${n(nativeFragments.SEAL_FRAGMENTS)} Fragments`,
