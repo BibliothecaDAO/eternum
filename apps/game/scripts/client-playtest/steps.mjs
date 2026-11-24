@@ -7011,13 +7011,10 @@ export const STEP_SETS = {
           played.realmHud.hasCastleHead &&
           everyStock(played.realmHud.stocks)
             ? completed(played)
-            : failed(
-                "Realm view must render the realm card with its next rank and its eight stocks",
-                {
-                  seen,
-                  played,
-                },
-              ),
+            : failed("Realm view must render the realm card with its next rank and its eight stocks", {
+                seen,
+                played,
+              }),
       },
       {
         name: "realm-build-sheet",

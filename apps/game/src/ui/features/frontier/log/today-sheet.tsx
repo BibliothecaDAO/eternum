@@ -45,7 +45,7 @@ export const TodaySheet = ({
         : `${DAY} ${formatAmount(day)}`
     }
     beside={
-      <HudChip tone="warn" icons={["hourglass"]} label={phraseText(dayLeft(clock.secondsLeft))}>
+      <HudChip tone="warn" icons={["hourglass"]} tip={phraseText(dayLeft(clock.secondsLeft))}>
         {dayLeft(clock.secondsLeft).reading}
       </HudChip>
     }

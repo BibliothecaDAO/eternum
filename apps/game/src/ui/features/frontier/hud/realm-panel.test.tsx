@@ -99,7 +99,7 @@ it("offers a desktop's four cornice places in order, each a panel its press open
   expect(onSurface).toHaveBeenLastCalledWith("season");
 });
 
-it("renders the Aspect medallion tinted in the Aspect color and Order of Power below the Realm name on the realm card and the phone's emblem", () => {
+it("renders the Aspect medallion tinted in the Aspect color, the rank and Order of Power beside the Realm name on the realm card and the phone's emblem", () => {
   const onHome = vi.fn();
   act(() =>
     root.render(
@@ -108,6 +108,7 @@ it("renders the Aspect medallion tinted in the Aspect color and Order of Power b
           name="Duskbite"
           kind="realm"
           level={1}
+          rank="Kingdom"
           aspect={1}
           orderId={12}
           stores={STORES}
@@ -123,7 +124,7 @@ it("renders the Aspect medallion tinted in the Aspect color and Order of Power b
   expect(identity.querySelector('[data-aspect-mark="1"]')).not.toBeNull();
   expect(identity.querySelector(".frontier-aspect-medallion")?.getAttribute("style")).toContain("--hud-aspect");
   expect(identity.querySelector('img[src*="portraits"]')).toBeNull();
-  expect(card.querySelector(".frontier-realm-card__order")?.textContent).toBe("Order of Power");
+  expect(card.querySelector(".frontier-realm-card__sub")?.textContent).toBe("KingdomOrder of Power");
   expect(card.querySelector('[data-order-id="12"] img')).not.toBeNull();
   act(() => identity.click());
   expect(onHome).toHaveBeenCalledTimes(1);
@@ -139,8 +140,8 @@ it("renders the Aspect medallion tinted in the Aspect color and Order of Power b
   expect(host.querySelector(".frontier-phone-emblem")?.getAttribute("aria-label")).toBe(label);
 });
 
-it("shows every stock on the desktop realm card, Fragments opening the shop and the next rank upgrading the castle", () => {
-  const onUpgradeCastle = vi.fn();
+it("shows every stock with its rate, Fragments opening the shop, and the next rank's Upgrade when the realm can pay", () => {
+  const onUpgrade = vi.fn();
   const onShop = vi.fn();
   act(() =>
     root.render(
@@ -148,18 +149,14 @@ it("shows every stock on the desktop realm card, Fragments opening the shop and 
         name="Duskbite"
         kind="realm"
         level={0}
-        rankUp={{ name: "City" }}
+        rank="Settlement"
+        rankUp={{ name: "City", gives: "+1 army slot", sending: false, onUpgrade }}
         aspect={1}
         orderId={12}
         stores={STORE_KINDS.map((kind) => store(kind, 0, 6_000))}
         fragments={250}
         lords={320}
         onShop={onShop}
-        onUpgradeCastle={onUpgradeCastle}
-        buildings={[
-          { key: "farm", icon: "farm", name: "Farm", tier: 2, rateIcon: "wheat", rate: "+20/min" },
-          { key: "barracks", icon: "barracks", name: "Barracks", tier: 5, rateIcon: "troops", rate: "+3/min" },
-        ]}
       />,
     ),
   );
@@ -173,60 +170,41 @@ it("shows every stock on the desktop realm card, Fragments opening the shop and 
     ...STORE_KINDS.filter(isTroopStore),
   ]);
   expect(card.textContent).not.toContain("Pop");
+  expect(card.querySelector('[data-store="labor"]')?.textContent).toBe("0+10/min");
   expect(card.querySelector('[data-store="lords"]')?.textContent).toBe("320LORDS");
-  expect(card.querySelectorAll("[data-realm-buildings] li")).toHaveLength(2);
-  expect([...card.querySelectorAll("[data-realm-buildings] button")]).toEqual([]);
+  expect(card.querySelector('[data-store="fragments"]')?.textContent).toBe("250Shop");
   act(() => card.querySelector<HTMLButtonElement>('[aria-label="Fragments 250"]')!.click());
   expect(onShop).toHaveBeenCalledTimes(1);
-  const rankUp = card.querySelector<HTMLButtonElement>("[data-realm-castle]")!;
-  expect(rankUp.textContent).toBe("City");
-  act(() => rankUp.click());
-  expect(onUpgradeCastle).toHaveBeenCalledTimes(1);
+  expect(card.querySelector(".frontier-realm-card__next")?.textContent).toBe("Next rank City · +1 army slotUpgrade");
+  act(() => card.querySelector<HTMLButtonElement>("[data-realm-castle]")!.click());
+  expect(onUpgrade).toHaveBeenCalledTimes(1);
 
   act(() =>
     root.render(
-      <RealmCard
-        name="Duskbite"
-        kind="realm"
-        level={3}
-        stores={STORES}
-        fragments={null}
-        lords={null}
-        onUpgradeCastle={onUpgradeCastle}
-      />,
+      <RealmCard name="Duskbite" kind="realm" level={3} rank="Empire" stores={STORES} fragments={null} lords={null} />,
     ),
   );
   expect(host.querySelector("[data-realm-castle]")).toBeNull();
   expect(host.querySelector('[data-store="fragments"] button')).toBeNull();
 });
 
-it("offers the next rank only when the realm can take it now, else names what is missing", () => {
-  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-  const host = document.createElement("div");
-  document.body.append(host);
-  const root = createRoot(host);
-  const onUpgradeCastle = vi.fn();
+it("locks the next rank, with the price it needs, until the realm can pay it", () => {
   act(() =>
     root.render(
       <RealmCard
         name="Duskbite"
         kind="realm"
         level={2}
-        rankUp={{ name: "Empire", missing: "Needs 15,000 Labor, have 9,640" }}
+        rank="Kingdom"
+        rankUp={{ name: "Empire", need: { of: "labor", amount: 12_000 }, sending: false }}
         stores={STORES}
         fragments={null}
         lords={null}
-        onUpgradeCastle={onUpgradeCastle}
       />,
     ),
   );
-  const rankUp = host.querySelector<HTMLButtonElement>("[data-realm-castle]")!;
-  expect([rankUp.disabled, rankUp.getAttribute("aria-label")]).toEqual([
-    true,
-    "Upgrade · Empire: Needs 15,000 Labor, have 9,640",
-  ]);
-  act(() => rankUp.click());
-  expect(onUpgradeCastle).not.toHaveBeenCalled();
-  act(() => root.unmount());
-  host.remove();
+  const rankUp = host.querySelector<HTMLElement>("[data-realm-castle]")!;
+  expect(rankUp.tagName).toBe("SPAN");
+  expect(rankUp.textContent).toBe("Needs 12K");
+  expect(rankUp.getAttribute("aria-label")).toBe("Upgrade · Empire: Needs 12K Labor");
 });
