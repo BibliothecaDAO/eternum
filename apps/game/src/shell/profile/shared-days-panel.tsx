@@ -1,12 +1,5 @@
 import type { InvitedFriends, InvitedFriendState, ShareTally } from "@realms-world/identity";
-import {
-  aspectName,
-  formatShort,
-  FRIEND_FRAGMENTS,
-  FRIENDS_BONUS_FRAGMENTS,
-  FRIENDS_LIMIT,
-  type AspectId,
-} from "@bibliothecadao/types";
+import { aspectName, formatShort, type AspectId } from "@bibliothecadao/types";
 
 import { useIdentitySession } from "@/hooks/context/identity-session";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
@@ -39,7 +32,6 @@ export const SharedDaysPanel = ({
   const tally = useShareTally();
   const friends = useInvitedFriends();
   if (!session || !tally) return null;
-  const paid = Math.min(FRIENDS_LIMIT, Math.max(0, tally.friendsPaid));
   return (
     <AppPanel title={SHARED_DAYS_WORDS.title} label={SHARED_DAYS_WORDS.title} icon="share">
       <div className="flex flex-col gap-5" data-referrals-panel>
@@ -48,30 +40,9 @@ export const SharedDaysPanel = ({
         ) : !aspectPending ? (
           <p className="text-app-label text-app-muted">{PROFILE_WORDS.noAspectInvite}</p>
         ) : null}
-        <div className="referrals-track" data-referrals-track>
-          <div className="referrals-track__head">
-            <span className="text-app-strong text-app-ink">{PROFILE_WORDS.friendsProgress(paid, FRIENDS_LIMIT)}</span>
-            <span className="text-app-label text-app-gold">
-              {PROFILE_WORDS.friendMilestone(FRIEND_FRAGMENTS, FRIENDS_BONUS_FRAGMENTS, FRIENDS_LIMIT)}
-            </span>
-          </div>
-          <ol className="referrals-slots" aria-label={PROFILE_WORDS.friendsProgress(paid, FRIENDS_LIMIT)}>
-            {Array.from({ length: FRIENDS_LIMIT }, (_, index) => {
-              const reached = index < paid;
-              const isFinal = index === FRIENDS_LIMIT - 1;
-              return (
-                <li
-                  key={index}
-                  className="referrals-slot"
-                  data-reached={reached || undefined}
-                  data-final={isFinal || undefined}
-                >
-                  {reached ? <Icon name="check" size={14} /> : index + 1}
-                </li>
-              );
-            })}
-          </ol>
-        </div>
+        <p className="text-app-strong text-app-gold" data-referrals-reward>
+          {PROFILE_WORDS.friendReward}
+        </p>
         <InvitedFriendsList friends={friends} />
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           {STEPS.map((step) => (
@@ -79,10 +50,9 @@ export const SharedDaysPanel = ({
           ))}
         </div>
         <div data-shared-friends className="grid grid-cols-2 gap-4">
-          <AppFigure value={SHARED_DAYS_WORDS.ofLimit(tally.friendsPaid)} label={SHARED_DAYS_WORDS.friendsPaid} />
+          <AppFigure value={formatShort(tally.friendsPaid)} label={SHARED_DAYS_WORDS.friendsPaid} />
           <AppFigure value={formatShort(tally.fragmentsEarned)} label={SHARED_DAYS_WORDS.fragmentsEarned} />
         </div>
-        <p className="text-app-label text-app-muted">{SHARED_DAYS_WORDS.friendRule}</p>
       </div>
     </AppPanel>
   );

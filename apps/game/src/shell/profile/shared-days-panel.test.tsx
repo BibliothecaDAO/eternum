@@ -68,32 +68,32 @@ it("counts each step a friend took through the player's shared days", async () =
     ["1.2K", "Opened by friends"],
     ["31", "Friends who joined"],
     ["12", "Reached 100 Glory"],
-    ["0/10", "Friends paid"],
+    ["0", "Friends paid"],
     ["0", "Fragments earned"],
   ]);
 });
 
-it("counts the friends an Aspect link brought who were paid, the Fragments they earned, and the rule that pays them", async () => {
+it("counts the friends an Aspect link brought who were paid past ten, the Fragments they earned, and the rule that pays them", async () => {
   service.shareTally.mockResolvedValue({
     links: 1,
     posted: 0,
     visits: 40,
-    joined: 9,
-    activated: 8,
-    friendsPaid: 8,
-    fragmentsEarned: 800,
+    joined: 16,
+    activated: 15,
+    friendsPaid: 14,
+    fragmentsEarned: 1_400,
   });
   await draw();
   expect(figures().slice(-2)).toEqual([
-    ["8/10", "Friends paid"],
-    ["800", "Fragments earned"],
+    ["14", "Friends paid"],
+    ["1.4K", "Fragments earned"],
   ]);
-  expect(host.textContent).toContain(
-    "A friend who joins by your Aspect link and reaches 100 Glory pays you 100 Fragments. Your 10th adds 1,000.",
+  expect(host.querySelector("[data-referrals-reward]")?.textContent).toBe(
+    "+100 Fragments for each friend who reaches 100 Glory",
   );
 });
 
-it("stays visible with 0 shares and a 10-slot progress track, and hides only when identity fails", async () => {
+it("stays visible with 0 shares and its reward line, and hides only when identity fails", async () => {
   service.shareTally.mockResolvedValue({
     links: 0,
     posted: 0,
@@ -105,8 +105,7 @@ it("stays visible with 0 shares and a 10-slot progress track, and hides only whe
   });
   await draw();
   expect(host.querySelector("[data-referrals-panel]")).not.toBeNull();
-  expect(host.querySelectorAll(".referrals-slot")).toHaveLength(10);
-  expect(host.textContent).toContain("0 of 10 friends");
+  expect(host.querySelector("[data-referrals-reward]")).not.toBeNull();
   service.shareTally.mockRejectedValue(new Error("identity unavailable"));
   await draw();
   expect(host.textContent).toBe("");

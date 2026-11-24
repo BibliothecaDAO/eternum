@@ -89,7 +89,7 @@ opening that season's Results), or the archived Playtest board (`src/shell/seaso
 (`/lab/app/no-season/season`); Shop (`/shop`) pairs Spend Fragments (Ancient Seal, seal code redemption, in-game
 Fragment uses) with Buy Fragments (packs, custom amount, linked wallet tokens); You (`/profile`, `/profile/settings`) is
 a single-page hub with an anchored identity rail switching Overview & Realms, Referrals & Invite (`/profile#referrals`:
-the invite link, the 10-friend track and the friends the player brought, each with its state and Glory), Wallet &
+the invite link, the reward per friend and the friends the player brought, each with its state and Glory), Wallet &
 Devices, and Settings inline; Results (`/results/:id`, with **See the end map**) shows a Frontier season's 4-card
 chronicle recap (Season 1 Aspect race or archived Playtest overview); What's new (`/scroll`) shows a release's patch
 notes, a tab per section, and every release. `/lab/kit/panels` the HUD's holdings and selected-realm panels as a player
@@ -941,11 +941,11 @@ gets **Share** above the two steps: the tall card's PNG, the post's line and the
 stays X only). Each link carries the button that made it (`?via=x`, `?via=system`), which its landing hands identity
 with the visit. What a player's shared days brought stands on You as **Your shared days** once they posted one or a
 friend joined: days posted, opened by friends, friends who joined, and those who reached the Glory; then **Friends
-paid** (of `FRIENDS_LIMIT`), **Fragments earned** and the payout rule (`SHARED_DAYS_WORDS`). Dev:
-`/lab/kit/hud/day-share` (a rich day), `day-share-thin`; `/lab/kit/hud/day-done` and `today-earlier` show the button;
-`/lab/app/shared-days/profile`. Code: `rollover/day-share.ts` (best moment, trail and post),
-`rollover/day-share-sheet.tsx` (the sheet, and `useDayShare`, which both places open it through) and `system-share.tsx`,
-`shell/share/` (its steps, the account's links in `own-shares.ts`, and the landing),
+paid** (a count, no cap) and **Fragments earned** (`SHARED_DAYS_WORDS`), under the reward line
+(`PROFILE_WORDS.friendReward`). Dev: `/lab/kit/hud/day-share` (a rich day), `day-share-thin`; `/lab/kit/hud/day-done`
+and `today-earlier` show the button; `/lab/app/shared-days/profile`. Code: `rollover/day-share.ts` (best moment, trail
+and post), `rollover/day-share-sheet.tsx` (the sheet, and `useDayShare`, which both places open it through) and
+`system-share.tsx`, `shell/share/` (its steps, the account's links in `own-shares.ts`, and the landing),
 `shell/profile/shared-days-panel.tsx`.
 
 Coming back to a tab the browser put away (a phone's, mostly): a lost GPU (WebGL's context, which phones take from a tab

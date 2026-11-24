@@ -68,14 +68,13 @@ listed shard's open Frontier games, the first to reach it deciding. Only games t
 cannot answer leaves its joins for the next read. A sharer's tally read settles that sharer's joins; the operator's
 report and the minute cron settle every join.
 
-An Aspect invite pays its sharer in the friend's game: `FRIEND_FRAGMENTS` for each of the first `FRIENDS_LIMIT` friends,
-and `FRIENDS_BONUS_FRAGMENTS` more at the last of them (all in `packages/types/src/constants/shop.ts`). A friend on the
-sharer's mailbox, or on one an already paid friend has, activates but pays nothing (one person counts once). Each payout
-is a `share_payouts` row whose id is the credit's id on chain; settlement sends unpaid rows to the relay's
-`/api/value/operator/fragments`, which calls `credit_fragments`, and marks a row paid once the relay accepts it. A
-refused or lost delivery is retried on the next settle, and the chain pays an id once. A visit from the sharer's own
-browsers is never counted. A friend who opens the link in one browser (X's in-app browser) and signs up in another is
-not the link's: the browser id is the only tie.
+An Aspect invite pays its sharer in the friend's game: `FRIEND_FRAGMENTS` for each activated friend, with no cap (in
+`packages/types/src/constants/shop.ts`). A friend on the sharer's mailbox, or on one an already paid friend has,
+activates but pays nothing (one person counts once). Each payout is a `share_payouts` row whose id is the credit's id on
+chain; settlement sends unpaid rows to the relay's `/api/value/operator/fragments`, which calls `credit_fragments`, and
+marks a row paid once the relay accepts it. A refused or lost delivery is retried on the next settle, and the chain pays
+an id once. A visit from the sharer's own browsers is never counted. A friend who opens the link in one browser (X's
+in-app browser) and signs up in another is not the link's: the browser id is the only tie.
 
 The link unfurls as its own. The Worker also takes the app's `/s/*` route. It serves the page the host serves, with its
 title, description and address saying who shared which moment (`SHARED_MOMENT_WORDS`), and its `og:image` and
