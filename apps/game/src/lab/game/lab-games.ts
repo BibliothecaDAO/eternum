@@ -17,12 +17,7 @@ import { panelsScenario } from "./panels-scenario";
 import { relicsScenario } from "./relics-scenario";
 import { etherealDepthsScenario } from "./ethereal-depths-scenario";
 import { dayEndScenario } from "./day-end-scenario";
-import {
-  afterBattleScenario,
-  fightLostScenario,
-  fightScenario,
-  pointSpentScenario,
-} from "./after-battle-scenario";
+import { afterBattleScenario, fightLostScenario, fightScenario, pointSpentScenario } from "./after-battle-scenario";
 import { campScenario } from "./camp-scenario";
 import { clearedCampScenario } from "./cleared-camp-scenario";
 import { dayTurnScenario } from "./day-turn-scenario";

@@ -149,7 +149,6 @@ const fight = (
   };
 };
 
-
 /** The guard's losses and the attacker's, in the lab's fight: the guard falls, the attacker loses a third of its count. */
 const ATTACKER_LOSS_DIVISOR = 3n;
 
