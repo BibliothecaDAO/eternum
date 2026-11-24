@@ -237,9 +237,6 @@
   font-weight: var(--hud-weight-title);
   letter-spacing: 0.05em;
   color: rgb(var(--hud-gold));
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .emissary-dock__controls {
@@ -331,9 +328,27 @@
   gap: 3px;
 }
 
+.emissary-dock--phone .emissary-dock__head {
+  flex-wrap: wrap;
+  row-gap: 4px;
+}
+
+.emissary-dock--phone .emissary-dock__speaker {
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+}
+
 .emissary-dock--phone .emissary-dock__speech {
   font-size: var(--hud-text-label);
   line-height: var(--hud-leading-label);
+}
+
+.emissary-dock--phone .emissary-dock__action {
+  display: flex;
+  margin-left: 0;
+  margin-top: 2px;
+  font-size: var(--hud-text-badge);
+  line-height: var(--hud-leading-badge);
 }
 
 .emissary-dock--completed {

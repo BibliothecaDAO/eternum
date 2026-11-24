@@ -1298,7 +1298,13 @@ describe("identity Worker", () => {
       seen: ["launch"],
     });
     expect((await add({ reached: ["Not A Name"] })).status).toBe(400);
+    expect((await add({ seen: ["tutorial:skipped"] })).status).toBe(400);
     expect((await add({ seen: "launch" })).status).toBe(400);
+    const hyphenatedKeys = ["tutorial-skipped", "day-end", "season0-welcome", "daily-quest", "site-alert"];
+    const saved = await add({ reached: hyphenatedKeys, seen: hyphenatedKeys });
+    expect(saved.status).toBe(200);
+    const body = (await saved.json()) as { reached: string[]; seen: string[] };
+    expect(body.seen).toEqual(expect.arrayContaining(hyphenatedKeys));
     expect((await createBrowser().request("/api/opening")).status).toBe(401);
   });
 

@@ -918,6 +918,7 @@ export interface OpeningRules {
   relicMinutesPerTier: number;
   scoutExploreStamina: number;
   exploreStamina: number;
+  tomorrowSeconds?: number;
 }
 
 const ownAspectLabel = (aspect: AspectId | undefined): string => (aspect !== undefined ? aspectName(aspect) : "");
@@ -927,6 +928,7 @@ export const OPENING_WORDS = {
     "season0-welcome": "Welcome Back",
     oath: "Swear an Oath",
     bane: "Break the Bane",
+    "day-end": "Day Ending",
     deep: `The ${DEEP}`,
     aspects: "Aspect Race",
     spire: `Enter the ${layerName(1)}`,
@@ -947,6 +949,10 @@ export const OPENING_WORDS = {
     oath: (rules: OpeningRules) =>
       `Your Orders grant power today. Swear one Oath, or pass for ${formatGain(rules.oathPassStamina)} ${STAMINA}.`,
     bane: () => "A bane strikes today. Your Aspect breaks it when enough members finish.",
+    "day-end": (rules: OpeningRules) =>
+      rules.tomorrowSeconds !== undefined
+        ? `Map and armies clear soon; Realm, buildings, Research, Glory stay. ${phraseText(tomorrowLasts(rules.tomorrowSeconds))}.`
+        : "Today's map and armies clear soon. Your Realm, buildings, Research, and Glory stay.",
     deep: (rules: OpeningRules) =>
       `Every ${formatExact(rules.deepTickSeconds)} seconds here, armies lose ${formatAmount(rules.deepLossPerTick)} troops. Hold sites to earn.`,
     aspects: (rules: OpeningRules) =>
@@ -974,13 +980,14 @@ export const OPENING_WORDS = {
     "season0-welcome": "Open Season to check the race.",
     oath: "Pick one Oath or pass.",
     bane: "Open Today to see the bane quest.",
+    "day-end": "Tap the Day medallion anytime for Today's recap.",
     deep: `Hold a ${DEEP} site or withdraw in time.`,
     aspects: "Open Season to check standings.",
     spire: "Clear camps to refill stamina and troops.",
     "daily-quest": "Press the quest chip to collect.",
     essence: "Open Research to learn a node.",
     shop: "Open Shop or wait for stamina.",
-    relic: "Open Relics to inspect slots.",
+    relic: "Open your army to inspect relic slots.",
     "well-lore": "Explore mist hexes to find wells.",
     "shrine-lore": "Explore mist hexes to find shrines.",
     city: "Train scouts for cheaper mist reveals.",
@@ -989,22 +996,18 @@ export const OPENING_WORDS = {
     explore: "Select your army and click dark mist.",
   },
   completed: {
-    "season0-welcome": "Welcome back to Season 1.",
-    oath: "Oath settled. Your army carries its power today.",
-    bane: "Bane cleared. Your Aspect stands free.",
-    deep: `Entered the ${DEEP}.`,
-    aspects: "Aspect standings noted.",
-    spire: `Entered the ${layerName(1)}.`,
-    "daily-quest": "Quest reward collected. Labor and Essence added.",
-    essence: "Upgrade learned. Your Realm grows stronger.",
-    shop: "Shop noted.",
-    relic: "Relics noted.",
-    "well-lore": "Well lore noted.",
-    "shrine-lore": "Shrine lore noted.",
-    city: "Scouts noted.",
+    "season0-welcome": "Season standings opened. Welcome back to Season 1.",
     barracks: "Barracks built. Knights are training now.",
     deploy: `Army deployed onto the ${layerName(0)}.`,
     explore: "Mist revealed. Sites and Essence await.",
+    oath: "Oath choice settled.",
+    "daily-quest": "Quest reward collected. Labor and Essence added.",
+    essence: "Research opened. Learn any node marked ready.",
+    "day-end": "Day ending noted. Tap the Day medallion anytime for Today.",
+    bane: "Bane checked. Help your Aspect break it today.",
+    aspects: "Season standings opened. Track your Aspect race here.",
+    shop: "Shop opened. Refill stamina or unlock seals anytime.",
+    relic: "Army relics checked. Equip relics on your armies here.",
   },
   completedLabel: "Completed",
   skipTutorial: "Skip tutorial",

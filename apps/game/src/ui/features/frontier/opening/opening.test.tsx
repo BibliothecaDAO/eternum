@@ -57,8 +57,16 @@ describe("the interface that opens as you play", () => {
   });
 
   it("keeps every contextual line within the word budget and free of banned or numeric depth jargon", () => {
+    const ruleVariants = [OPENING_RULES, { ...OPENING_RULES, tomorrowSeconds: undefined }];
+    const completableMoments = OPENING_MOMENTS.filter(
+      (moment) => "completesWhen" in OPENING[moment] || "completesWhileShowing" in OPENING[moment],
+    );
+    expect(Object.keys(OPENING_WORDS.completed).sort()).toEqual([...completableMoments].sort());
     for (const moment of OPENING_MOMENTS) {
-      const texts = [OPENING_WORDS.lines[moment](OPENING_RULES), OPENING_WORDS.completed[moment]];
+      const texts = ruleVariants.map((variant) => OPENING_WORDS.lines[moment](variant));
+      if (moment in OPENING_WORDS.completed) {
+        texts.push(OPENING_WORDS.completed[moment as keyof typeof OPENING_WORDS.completed]);
+      }
       for (const text of texts) {
         const words = text.trim().split(/\s+/).filter(Boolean);
         expect(words.length, `${moment}: "${text}"`).toBeLessThanOrEqual(TUTORIAL_WORD_BUDGET);
@@ -82,6 +90,9 @@ describe("the interface that opens as you play", () => {
     expect(renderMoment("city")).toContain("Scouts reveal mist for 10 stamina instead of 20.");
     expect(renderMoment("spire")).toContain("In the Veil, guards are 2x stronger and camps refill your armies.");
     expect(renderMoment("deep")).toContain("Every 120 seconds here, armies lose 200 troops. Hold sites to earn.");
+    expect(renderMoment("day-end")).toContain(
+      "Map and armies clear soon; Realm, buildings, Research, Glory stay. Tomorrow lasts 4h.",
+    );
     expect(renderMoment("bane")).toContain("A bane strikes today.");
     expect(renderMoment("aspects")).toContain("Prowess races to finish its hyperstructure first.");
     expect(renderMoment("daily-quest")).toContain("Today's quest is done.");

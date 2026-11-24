@@ -1,4 +1,5 @@
 import { identityClient } from "@/hooks/context/identity-session";
+import { OPENING_MOMENT_KEY_PATTERN } from "@realms-world/identity";
 import { create } from "zustand";
 import { OPENING_MOMENTS, type OpeningMoment } from "./opening";
 import { TUTORIAL_SKIPPED } from "./opening-state";
@@ -37,11 +38,27 @@ const storageOwnerOf = (owner: string | null) => owner || "guest";
 const replayCacheKey = (owner: string | null) => `eternum:tutorial-replay:${storageOwnerOf(owner)}`;
 
 const TUTORIAL_KEYS = new Set<string>([...OPENING_MOMENTS, TUTORIAL_SKIPPED]);
+const LEGACY_TUTORIAL_SKIPPED = "tutorial:skipped";
+
+const normalizeKey = (key: string): string | null => {
+  const mapped = key === LEGACY_TUTORIAL_SKIPPED ? TUTORIAL_SKIPPED : key;
+  return OPENING_MOMENT_KEY_PATTERN.test(mapped) ? mapped : null;
+};
+
+const sanitizeKeys = (items: Iterable<string>): ReadonlySet<string> => {
+  const cleaned = new Set<string>();
+  for (const item of items) {
+    if (typeof item !== "string") continue;
+    const key = normalizeKey(item);
+    if (key !== null) cleaned.add(key);
+  }
+  return cleaned;
+};
 
 const keptReplay = (owner: string | null): ReadonlySet<string> => {
   try {
     const raw = JSON.parse(localStorage.getItem(replayCacheKey(owner)) ?? "[]");
-    return Array.isArray(raw) ? new Set(raw.filter((item): item is string => typeof item === "string")) : new Set();
+    return Array.isArray(raw) ? sanitizeKeys(raw) : new Set();
   } catch {
     return new Set();
   }
@@ -65,8 +82,8 @@ const kept = (owner: string | null): { sets: Sets; unsent: Sets; onDevice: boole
     if (!stored) return { sets: none(), unsent: none(), onDevice: false };
     return {
       onDevice: stored.complete === true,
-      sets: { reached: new Set(stored.reached), seen: new Set(stored.seen) },
-      unsent: { reached: new Set(stored.unsent.reached), seen: new Set(stored.unsent.seen) },
+      sets: { reached: sanitizeKeys(stored.reached ?? []), seen: sanitizeKeys(stored.seen ?? []) },
+      unsent: { reached: sanitizeKeys(stored.unsent?.reached ?? []), seen: sanitizeKeys(stored.unsent?.seen ?? []) },
     };
   } catch {
     return { sets: none(), unsent: none(), onDevice: false };
@@ -140,12 +157,31 @@ export const seeLine = (moment: string): Promise<void> => {
   return record({ reached: [], seen: [moment] });
 };
 
-export const completeLines = (moments: readonly string[]): Promise<void> => record({ reached: [], seen: moments });
-
-export const setTutorialView = (showing: OpeningMoment | null, confirmed: OpeningMoment | null): void => {
+export const commitTutorialStep = (step: {
+  completed: readonly string[];
+  showing: OpeningMoment | null;
+  confirmed: OpeningMoment | null;
+}): Promise<void> => {
   const state = useOpeningStore.getState();
-  if (state.showing === showing && state.confirmed === confirmed) return;
-  useOpeningStore.setState({ showing, confirmed });
+  const cleanSeen = [...sanitizeKeys(step.completed)];
+  const nextReplayed = cleanSeen.length > 0 ? without(state.replayed, cleanSeen) : state.replayed;
+  const replayChanged = nextReplayed.size !== state.replayed.size;
+  const freshSeen = cleanSeen.filter((moment) => !state.seen.has(moment));
+  const viewChanged = state.showing !== step.showing || state.confirmed !== step.confirmed;
+  if (freshSeen.length === 0 && !replayChanged && !viewChanged) return Promise.resolve();
+  if (replayChanged) keepReplay(state.owner, nextReplayed);
+  useOpeningStore.setState({
+    seen: freshSeen.length > 0 ? union(state.seen, freshSeen) : state.seen,
+    unsent:
+      state.owner && freshSeen.length > 0
+        ? { reached: state.unsent.reached, seen: union(state.unsent.seen, freshSeen) }
+        : state.unsent,
+    replayed: nextReplayed,
+    showing: step.showing,
+    confirmed: step.confirmed,
+  });
+  if (freshSeen.length > 0 || replayChanged) keep();
+  return state.owner && freshSeen.length > 0 ? flush() : Promise.resolve();
 };
 
 export const clearConfirmedTutorial = (): void => {
@@ -166,11 +202,13 @@ export const replayTutorial = (): void => {
 
 const record = (additions: { reached: readonly string[]; seen: readonly string[] }): Promise<void> => {
   const state = useOpeningStore.getState();
-  const nextReplayed = additions.seen.length > 0 ? without(state.replayed, additions.seen) : state.replayed;
+  const cleanReached = [...sanitizeKeys(additions.reached)];
+  const cleanSeen = [...sanitizeKeys(additions.seen)];
+  const nextReplayed = cleanSeen.length > 0 ? without(state.replayed, cleanSeen) : state.replayed;
   const replayChanged = nextReplayed.size !== state.replayed.size;
   const fresh = {
-    reached: additions.reached.filter((moment) => !state.reached.has(moment)),
-    seen: additions.seen.filter((moment) => !state.seen.has(moment)),
+    reached: cleanReached.filter((moment) => !state.reached.has(moment)),
+    seen: cleanSeen.filter((moment) => !state.seen.has(moment)),
   };
   if (fresh.reached.length === 0 && fresh.seen.length === 0 && !replayChanged) return Promise.resolve();
   if (replayChanged) keepReplay(state.owner, nextReplayed);
@@ -219,7 +257,11 @@ const hasUnsent = (): boolean => {
 
 const sendOnce = async (owner: string): Promise<"sent" | "failed" | "stale"> => {
   const store = useOpeningStore;
-  const snapshot = { reached: [...store.getState().unsent.reached], seen: [...store.getState().unsent.seen] };
+  const currentUnsent = store.getState().unsent;
+  const snapshot = {
+    reached: [...sanitizeKeys(currentUnsent.reached)],
+    seen: [...sanitizeKeys(currentUnsent.seen)],
+  };
   try {
     const held = await identityClient.addOpeningProgress(snapshot);
     const state = store.getState();
