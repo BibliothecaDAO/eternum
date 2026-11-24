@@ -329,7 +329,8 @@ const siteCounts = (panel: Element) =>
 it.each([390, 1440])(
   "with nothing listed or settled, shows prod's archived Season 0 as it ended, from its saved board, and the Playtest under Past seasons, at %ipx",
   async (width) => {
-    const { default: seasonZero } = await import("../../../../../packages/core/src/sync/season-archives/season-zero.json");
+    const { default: seasonZero } =
+      await import("../../../../../packages/core/src/sync/season-archives/season-zero.json");
     reads.directory = { data: { games: [] }, isError: false, isPending: false };
     const { container, unmount } = await mount(width);
     try {
@@ -337,7 +338,12 @@ it.each([390, 1440])(
       expect(frontier.querySelector(".app-panel__cue")?.textContent).toBe("Season 0 · Ended 6 Nov");
       expect(frontier.textContent).not.toContain("No season running");
       const counts = siteCounts(frontier);
-      expect(counts.slice(0, 4)).toEqual(["331 sites cleared", "318 sites cleared", "313 sites cleared", "312 sites cleared"]);
+      expect(counts.slice(0, 4)).toEqual([
+        "331 sites cleared",
+        "318 sites cleared",
+        "313 sites cleared",
+        "312 sites cleared",
+      ]);
       expect(counts.slice(0, 4)).toEqual(
         seasonZero.leaderboard.entries.slice(0, 4).map(({ sites_cleared }) => `${sites_cleared.total} sites cleared`),
       );
