@@ -411,10 +411,6 @@ export const DAY_END = {
     `${DAY} ${day ?? "—"} ends in ${dayLength(secondsLeft)}`,
   open: "Open",
   goes: "At day end, today's map and armies go",
-  site: (name: string) => `Clear today's ${name}`,
-  siteVerb: "Show",
-  explore: "Your army can explore",
-  exploreVerb: "Select",
 } as const;
 
 /** ClockChip's prefix words: a moment that begins something, or one that ends it. */

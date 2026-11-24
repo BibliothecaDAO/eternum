@@ -178,17 +178,7 @@ const FrontierHudBody = ({
   });
   const openArmy = armyPanel.pick;
   const pickArmy = usePickArmy();
-  // The day's end speaks to a player in their own realm: a visit or a spectator has none. Its army is picked as the
-  // dock picks one: a desktop opens the army's panel in Today's place, even for the army already selected; a phone puts
-  // Today away and shows the army in the action row, the map first.
-  const dayEnd = useDayEnd(rules, visit ? null : realm, {
-    onPickArmy: desktop
-      ? openArmy
-      : (explorerId) => {
-          pickArmy(explorerId);
-          setSurface(null);
-        },
-  });
+  const dayEnd = useDayEnd(rules);
   const seasonRank = useSeasonRank();
   const fragmentsHeld = useFragmentsHeld();
   const ordersAllowed = useUIStore(canIssueOrders);
@@ -368,7 +358,7 @@ const FrontierHudBody = ({
       <FrontierToday
         rules={rules}
         realm={realm ?? visited}
-        dayEnd={own && <DayEndBlock dayEnd={dayEnd} />}
+        dayEnd={own && <DayEndBlock />}
         own={Boolean(own)}
         onClose={close}
       />
