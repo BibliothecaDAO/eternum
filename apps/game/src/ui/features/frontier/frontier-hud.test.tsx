@@ -1234,11 +1234,11 @@ it.each([
   ["desktop", 1440],
   ["phone", 390],
 ] as const)(
-  "keeps the active tutorial visible on %s (%i px) across view switches and army selection, confirms completion, persists across reload, and returns after Replay",
+  "keeps the active tutorial visible on %s (%i px) across view switches and army selection, confirms completion, and persists across reload",
   async (layout, width) => {
     const { useBlockTimestampStore } = await import("@/hooks/store/use-block-timestamp-store");
     const { OPENING_WORDS } = await import("@/ui/design-system/kit/words");
-    const { replayTutorial, useOpeningStore } = await import("./opening/opening-store");
+    const { useOpeningStore } = await import("./opening/opening-store");
     const { entityHomeNamespace, expeditionRealmSite, setBuildingCount } = await import("@bibliothecadao/eternum");
     const { nativeResearchConstants } = await import("@bibliothecadao/eternum/game-client");
     const { ResourcesIds, TileOccupier, RESOURCE_PRECISION } = await import("@bibliothecadao/types");
@@ -1263,7 +1263,6 @@ it.each([
       reached: new Set(),
       seen: new Set(),
       unsent: { reached: new Set(), seen: new Set() },
-      replayed: new Set(),
       showing: null,
       confirmed: null,
       onDevice: false,
@@ -1466,21 +1465,12 @@ it.each([
         reached: new Set(),
         seen: new Set(),
         unsent: { reached: new Set(), seen: new Set() },
-        replayed: new Set(),
         showing: null,
         confirmed: null,
         onDevice: false,
       });
       await mountTutorialHud(false);
       expect(host.querySelector("[data-tutorial-dock]")).toBeNull();
-
-      await act(async () => replayTutorial());
-      await act(async () => new Promise((settled) => setTimeout(settled, 20)));
-      expect(useOpeningStore.getState().confirmed).toBe("barracks");
-      const alreadyBuilt = host.querySelector<HTMLElement>(
-        '[data-tutorial-dock="barracks"][data-tutorial-status="completed"]',
-      );
-      expect(alreadyBuilt?.textContent).toContain(OPENING_WORDS.completed.barracks);
     } finally {
       useBlockTimestampStore.setState(previousTicks);
       useWorldAppearanceStore.setState({ showEverything: true });
@@ -1496,7 +1486,7 @@ it("shows the day-end tutorial once in the last hour with own Aspect and reads n
   const { useBlockTimestampStore } = await import("@/hooks/store/use-block-timestamp-store");
   const { OPENING_WORDS } = await import("@/ui/design-system/kit/words");
   const { buildingOutput } = await import("@/ui/shared/lib/building-output");
-  const { replayTutorial, useOpeningStore } = await import("./opening/opening-store");
+  const { useOpeningStore } = await import("./opening/opening-store");
   const previousTicks = {
     currentBlockTimestamp: useBlockTimestampStore.getState().currentBlockTimestamp,
     currentDefaultTick: useBlockTimestampStore.getState().currentDefaultTick,
@@ -1516,7 +1506,6 @@ it("shows the day-end tutorial once in the last hour with own Aspect and reads n
       reached: new Set(),
       seen: new Set(),
       unsent: { reached: new Set(), seen: new Set() },
-      replayed: new Set(),
       showing: null,
       confirmed: null,
       onDevice: false,
@@ -1613,10 +1602,6 @@ it("shows the day-end tutorial once in the last hour with own Aspect and reads n
     resetMemory();
     await mountWithDayUnit(100);
     expect(host.querySelector('[data-tutorial-dock="day-end"]')).toBeNull();
-
-    await act(async () => replayTutorial());
-    await act(async () => new Promise((settled) => setTimeout(settled, 20)));
-    expect(host.querySelector('[data-tutorial-dock="barracks"][data-tutorial-status="showing"]')).not.toBeNull();
   } finally {
     useBlockTimestampStore.setState(previousTicks);
     useWorldAppearanceStore.setState({ showEverything: true });
@@ -1648,7 +1633,6 @@ it.each([1920, 390])(
         reached: new Set(),
         seen: new Set(),
         unsent: { reached: new Set(), seen: new Set() },
-        replayed: new Set(),
         showing: null,
         confirmed: null,
         onDevice: false,

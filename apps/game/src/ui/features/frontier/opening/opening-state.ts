@@ -54,12 +54,6 @@ export const reachedOnContext = (ctx: OpeningContext | null): OpeningMoment[] =>
 export const openedMoments = (kept: ReadonlySet<string>, onState: readonly OpeningMoment[]): Set<OpeningMoment> =>
   new Set([...OPENING_MOMENTS.filter((moment) => kept.has(moment)), ...onState]);
 
-const isDueOnContext = (moment: OpeningMoment, ctx: OpeningContext, replayed?: ReadonlySet<string>): boolean => {
-  const entry = OPENING[moment];
-  if (entry.showsWhen(ctx)) return true;
-  return Boolean(replayed?.has(moment) && "replayDueWhen" in entry && entry.replayDueWhen(ctx));
-};
-
 const isCompletedOnContext = (moment: OpeningMoment, ctx: OpeningContext, isShowing: boolean): boolean => {
   const entry = OPENING[moment];
   if ("completesWhen" in entry && entry.completesWhen(ctx)) return true;
@@ -70,32 +64,31 @@ const completedOnContext = (
   ctx: OpeningContext,
   showing: OpeningMoment | null,
   seen: ReadonlySet<string>,
-  replayed?: ReadonlySet<string>,
 ): OpeningMoment[] =>
-  OPENING_MOMENTS.filter((moment) => {
-    if (seen.has(moment)) return false;
-    const isShowing = moment === showing;
-    if (!isShowing && replayed?.has(moment)) return false;
-    return isCompletedOnContext(moment, ctx, isShowing);
-  });
+  OPENING_MOMENTS.filter((moment) => !seen.has(moment) && isCompletedOnContext(moment, ctx, moment === showing));
+
+const isReady = (moment: OpeningMoment, rules: OpeningRules): boolean => {
+  const entry = OPENING[moment];
+  return !("readyWhen" in entry) || entry.readyWhen(rules);
+};
+
+const skipsVeteran = (moment: OpeningMoment, ctx: OpeningContext): boolean => {
+  const entry = OPENING[moment];
+  return "skipForVeteran" in entry && entry.skipForVeteran && ctx.isSeasonZeroVeteran;
+};
 
 export const activeOpeningMoment = (
   ctx: OpeningContext | null,
   rules: OpeningRules | null,
   seen: ReadonlySet<string>,
-  replayed?: ReadonlySet<string>,
 ): OpeningMoment | null => {
   if (ctx === null || rules === null || seen.has(TUTORIAL_SKIPPED)) return null;
-  for (const moment of OPENING_MOMENTS) {
-    if (seen.has(moment)) continue;
-    const entry = OPENING[moment];
-    if ("skipForVeteran" in entry && entry.skipForVeteran && ctx.isSeasonZeroVeteran && !replayed?.has(moment))
-      continue;
-    if (!isDueOnContext(moment, ctx, replayed)) continue;
-    if ("readyWhen" in entry && !entry.readyWhen(rules)) continue;
-    return moment;
-  }
-  return null;
+  return (
+    OPENING_MOMENTS.find(
+      (moment) =>
+        !seen.has(moment) && !skipsVeteran(moment, ctx) && OPENING[moment].showsWhen(ctx) && isReady(moment, rules),
+    ) ?? null
+  );
 };
 
 export interface TutorialTransition {
@@ -110,44 +103,24 @@ export function stepTutorialMachine(input: {
   ctx: OpeningContext | null;
   rules: OpeningRules | null;
   seen: ReadonlySet<string>;
-  replayed?: ReadonlySet<string>;
 }): TutorialTransition {
-  const { showing, confirmed, ctx, rules, seen, replayed } = input;
+  const { showing, confirmed, ctx, rules, seen } = input;
   if (ctx === null || rules === null || seen.has(TUTORIAL_SKIPPED)) {
     return { nextShowing: null, confirmedMoment: null, newlyCompleted: [] };
   }
-  const newlyCompleted = completedOnContext(ctx, showing, seen, replayed);
-  const completedSet = new Set<string>(seen);
-  for (const moment of newlyCompleted) completedSet.add(moment);
-
+  const newlyCompleted = completedOnContext(ctx, showing, seen);
   if (showing !== null && newlyCompleted.includes(showing)) {
     return { nextShowing: null, confirmedMoment: showing, newlyCompleted };
   }
   if (confirmed !== null) {
     return { nextShowing: null, confirmedMoment: confirmed, newlyCompleted };
   }
-  if (showing !== null && !completedSet.has(showing)) {
-    const entry = OPENING[showing];
-    const ready = !("readyWhen" in entry) || entry.readyWhen(rules);
-    if (ready && isDueOnContext(showing, ctx, replayed)) {
-      return { nextShowing: showing, confirmedMoment: null, newlyCompleted };
-    }
+  if (showing !== null && !seen.has(showing) && OPENING[showing].showsWhen(ctx) && isReady(showing, rules)) {
+    return { nextShowing: showing, confirmedMoment: null, newlyCompleted };
   }
-  const nextShowing = activeOpeningMoment(ctx, rules, completedSet, replayed);
-  if (nextShowing !== null && replayed?.has(nextShowing) && isCompletedOnContext(nextShowing, ctx, true)) {
-    return { nextShowing: null, confirmedMoment: nextShowing, newlyCompleted: [...newlyCompleted, nextShowing] };
-  }
+  const nextShowing = activeOpeningMoment(ctx, rules, new Set([...seen, ...newlyCompleted]));
   return { nextShowing, confirmedMoment: null, newlyCompleted };
 }
-
-export const effectiveSeen = (seen: ReadonlySet<string>, replayed: ReadonlySet<string>): ReadonlySet<string> => {
-  if (replayed.size === 0) return seen;
-  const result = new Set<string>();
-  for (const item of seen) {
-    if (!replayed.has(item)) result.add(item);
-  }
-  return result;
-};
 
 export function accountProgress(
   owner: string | null,
@@ -156,18 +129,15 @@ export function accountProgress(
     status: "signed-out" | "loading" | "ready" | "error";
     reached: ReadonlySet<string>;
     seen: ReadonlySet<string>;
-    replayed?: ReadonlySet<string>;
     onDevice: boolean;
   },
 ): { reached: ReadonlySet<string>; seen: ReadonlySet<string>; known: boolean; ownsParts: boolean } {
   const normalizedOwner = owner || null;
   const mine = (store.owner || null) === normalizedOwner;
-  const rawSeen = mine ? store.seen : new Set<string>();
-  const replaying = mine && (store.replayed?.size ?? 0) > 0;
   return {
     reached: mine ? store.reached : new Set(),
-    seen: mine && store.replayed ? effectiveSeen(rawSeen, store.replayed) : rawSeen,
-    known: normalizedOwner === null || replaying || (mine && store.status === "ready"),
+    seen: mine ? store.seen : new Set(),
+    known: normalizedOwner === null || (mine && store.status === "ready"),
     ownsParts: normalizedOwner === null || (mine && (store.status === "ready" || store.onDevice)),
   };
 }

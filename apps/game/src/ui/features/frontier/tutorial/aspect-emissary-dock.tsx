@@ -1,6 +1,6 @@
 import "./aspect-emissary-dock.css";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { Icon } from "@/ui/design-system/icon";
@@ -31,6 +31,7 @@ export function AspectEmissaryDock({
   const spec = OPENING[moment];
   const aspectId = teacherAspectOf(moment, rules.ownAspect);
   const dock = useRetireOnceSeen(status === "completed" ? moment : null, onDismiss);
+  const [skipAskedOn, setSkipAskedOn] = useState<OpeningMoment | null>(null);
   if (aspectId === null) return null;
   const emissary = resolveAspectEmissary(aspectId);
   const phone = layout === "phone";
@@ -39,8 +40,9 @@ export function AspectEmissaryDock({
       ? OPENING_WORDS.completed[moment as keyof typeof OPENING_WORDS.completed]
       : undefined;
   const completed = status === "completed" && completedLine !== undefined;
+  const askingSkip = !completed && onSkipAll !== undefined && skipAskedOn === moment;
   const title = OPENING_WORDS.titles[moment];
-  const line = completed ? completedLine : OPENING_WORDS.lines[moment](rules);
+  const line = completed ? completedLine : askingSkip ? OPENING_WORDS.skipFinal : OPENING_WORDS.lines[moment](rules);
   const action = OPENING_WORDS.actions[moment];
 
   return (
@@ -92,19 +94,29 @@ export function AspectEmissaryDock({
               </span>
             )}
             {!completed && onSkipAll && (
-              <button type="button" className="emissary-dock__btn" onClick={onSkipAll}>
+              <button
+                type="button"
+                className="emissary-dock__btn"
+                onClick={askingSkip ? onSkipAll : () => setSkipAskedOn(moment)}
+              >
                 {OPENING_WORDS.skipTutorial}
               </button>
             )}
-            <button type="button" className="emissary-dock__btn" aria-label={CLOSE} onClick={onDismiss}>
-              ✕
-            </button>
+            {askingSkip ? (
+              <button type="button" className="emissary-dock__btn" onClick={() => setSkipAskedOn(null)}>
+                {OPENING_WORDS.keepTutorial}
+              </button>
+            ) : (
+              <button type="button" className="emissary-dock__btn" aria-label={CLOSE} onClick={onDismiss}>
+                ✕
+              </button>
+            )}
           </span>
         </div>
 
         <p className="emissary-dock__speech">
           <span>{line}</span>
-          {!completed && (
+          {!completed && !askingSkip && (
             <span className="emissary-dock__action">
               <Icon name={spec.icon} size={15} />
               <span>{action}</span>

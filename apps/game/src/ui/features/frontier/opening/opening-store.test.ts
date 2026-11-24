@@ -10,13 +10,11 @@ import { STANDING_PROMPTS } from "@/shell/standing-prompts";
 import { OPENING_MOMENTS } from "./opening";
 import { accountProgress, TUTORIAL_SKIPPED } from "./opening-state";
 import {
-  clearConfirmedTutorial,
   commitTutorialStep,
   flush,
   loadOpening,
   openingCacheKey,
   reachMoments,
-  replayTutorial,
   seeLine,
   skipTutorial,
   useOpeningStore,
@@ -62,7 +60,6 @@ beforeEach(async () => {
     reached: new Set(),
     seen: new Set(),
     unsent: { reached: new Set(), seen: new Set() },
-    replayed: new Set(),
     showing: null,
     confirmed: null,
     onDevice: false,
@@ -208,70 +205,77 @@ it("does not take a cache of this device's own additions for the account's progr
   expect(accountProgress("a", useOpeningStore.getState()).ownsParts).toBe(true);
 });
 
-it("persists skipTutorial and clears tutorial seen keys on replayTutorial without losing reached parts or non-tutorial prompts", async () => {
+it("keeps a skip final: no reload, sign-in or later lesson brings the tutorial back", async () => {
   const calls = deferred();
   void loadOpening("a");
   await settle();
-  calls[0]!.answer({ reached: ["essence"], seen: ["barracks", "site-alert"] });
+  calls[0]!.answer({ reached: [], seen: ["barracks"] });
   await settle();
-
   void skipTutorial();
   await settle();
-  calls[1]!.answer({ reached: ["essence"], seen: ["barracks", "site-alert", TUTORIAL_SKIPPED] });
+  calls[1]!.answer({ reached: [], seen: ["barracks", TUTORIAL_SKIPPED] });
   await settle();
 
+  useOpeningStore.setState({ owner: null, loaded: false, status: "signed-out", reached: new Set(), seen: new Set() });
+  void loadOpening("a");
+  await settle();
+  calls[2]!.answer({ reached: [], seen: ["barracks", TUTORIAL_SKIPPED] });
+  await settle();
+  void seeLine("deploy");
+  await settle();
   expect(accountProgress("a", useOpeningStore.getState()).seen.has(TUTORIAL_SKIPPED)).toBe(true);
+});
 
-  replayTutorial();
-  const replayed = accountProgress("a", useOpeningStore.getState());
-  expect(replayed.seen.has(TUTORIAL_SKIPPED)).toBe(false);
-  expect(replayed.seen.has("barracks")).toBe(false);
-  expect(replayed.seen.has("site-alert")).toBe(true);
-  expect(replayed.reached.has("essence")).toBe(true);
-
+it("follows the account, not the device: a second device shows no lesson until the server answers, then holds what the first completed", async () => {
+  const calls = deferred();
+  void loadOpening("a");
+  await settle();
+  calls[0]!.answer({ reached: [], seen: [] });
+  await settle();
   void seeLine("barracks");
   await settle();
-  expect(accountProgress("a", useOpeningStore.getState()).seen.has("barracks")).toBe(true);
+  calls[1]!.answer({ reached: [], seen: ["barracks"] });
+  await settle();
+
+  localStorage.clear();
+  useOpeningStore.setState({ owner: null, loaded: false, status: "signed-out", reached: new Set(), seen: new Set() });
+  void loadOpening("a");
+  await settle();
+  expect(accountProgress("a", useOpeningStore.getState()).known).toBe(false);
+  calls[2]!.answer({ reached: [], seen: ["barracks", "deploy"] });
+  await settle();
+  const secondDevice = accountProgress("a", useOpeningStore.getState());
+  expect(secondDevice.known).toBe(true);
+  expect([...secondDevice.seen].sort()).toEqual(["barracks", "deploy"]);
 });
 
-it("persists completed, dismissed, skipped, and replayed tutorial state across reloads for a signed-out player", async () => {
-  await commitTutorialStep({ completed: ["barracks", "explore"], showing: "explore", confirmed: "barracks" });
-  await seeLine("deep");
-  clearConfirmedTutorial();
-  expect(useOpeningStore.getState().confirmed).toBeNull();
+it("never lets a device's stale cache take away a lesson the server holds", async () => {
+  localStorage.setItem(
+    openingCacheKey("a"),
+    JSON.stringify({ reached: [], seen: [], unsent: { reached: [], seen: [] }, complete: true }),
+  );
+  const calls = deferred();
+  void loadOpening("a");
+  await settle();
+  expect(accountProgress("a", useOpeningStore.getState()).known).toBe(false);
+  calls[0]!.answer({ reached: [], seen: ["explore"] });
+  await settle();
+  expect(accountProgress("a", useOpeningStore.getState()).seen.has("explore")).toBe(true);
+});
 
-  useOpeningStore.setState({
-    owner: null,
-    loaded: false,
-    status: "signed-out",
-    reached: new Set(),
-    seen: new Set(),
-    unsent: { reached: new Set(), seen: new Set() },
-    replayed: new Set(),
-    showing: null,
-    confirmed: null,
-    onDevice: false,
+it("keeps a signed-out player's completed and dismissed lessons on this device alone, across a reload", async () => {
+  await commitTutorialStep({ completed: ["explore"], showing: null, confirmed: "explore" });
+  await seeLine("barracks");
+  useOpeningStore.setState({ owner: null, loaded: false, status: "signed-out", reached: new Set(), seen: new Set() });
+  await loadOpening(null);
+  expect(identity.add).not.toHaveBeenCalled();
+  expect(accountProgress(null, useOpeningStore.getState())).toMatchObject({
+    known: true,
+    seen: new Set(["explore", "barracks"]),
   });
-  await loadOpening(null);
-
-  const reloaded = accountProgress(null, useOpeningStore.getState());
-  expect(reloaded.seen.has("barracks")).toBe(true);
-  expect(reloaded.seen.has("explore")).toBe(true);
-  expect(reloaded.seen.has("deep")).toBe(true);
-
-  await skipTutorial();
-  expect(accountProgress(null, useOpeningStore.getState()).seen.has(TUTORIAL_SKIPPED)).toBe(true);
-
-  replayTutorial();
-  useOpeningStore.setState({ owner: null, loaded: false, replayed: new Set(), seen: new Set() });
-  await loadOpening(null);
-  const afterReplayReload = accountProgress(null, useOpeningStore.getState());
-  expect(afterReplayReload.seen.has("barracks")).toBe(false);
-  expect(afterReplayReload.seen.has("explore")).toBe(false);
-  expect(afterReplayReload.seen.has(TUTORIAL_SKIPPED)).toBe(false);
 });
 
-it("sends only bodies the identity service's own validator takes, through every lesson, skip, replay and a legacy key", async () => {
+it("sends only bodies the identity service's own validator takes, through every lesson, skip and a legacy key", async () => {
   const held = { reached: new Set<string>(), seen: new Set<string>() };
   const sent: unknown[] = [];
   identity.add.mockImplementation(async (body) => {
@@ -292,7 +296,6 @@ it("sends only bodies the identity service's own validator takes, through every 
   await reachMoments(OPENING_MOMENTS);
   for (const moment of OPENING_MOMENTS) await seeLine(moment);
   await skipTutorial();
-  replayTutorial();
   await commitTutorialStep({ completed: OPENING_MOMENTS, showing: null, confirmed: "barracks" });
   for (const prompt of [SITE_ALERT_OFFER, ...STANDING_PROMPTS]) await seeLine(prompt);
   await flush();
