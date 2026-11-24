@@ -6667,7 +6667,7 @@ async function fightOnTheSurface(context) {
     }
     if (fight.declined.length > 0 && !raised) {
       raised = await deployAnArmy(context, Infinity);
-      if (raised.blocked || raised.failed) return { reveals, ...fight, raised, ...outcomeOf(raised) };
+      if (raised.failed) return { reveals, ...fight, raised, failed: raised.failed };
     }
     if (reveal === SITE_SEARCH_REVEALS)
       return { reveals, raised, ...fight, blocked: `no site beside an army forecasts a win after ${reveal} reveals` };
@@ -6676,8 +6676,6 @@ async function fightOnTheSurface(context) {
     reveals.push(revealed.receipt);
   }
 }
-
-const outcomeOf = ({ blocked, failed }) => (failed ? { failed } : { blocked });
 
 const FIGHT_FORECAST = `JSON.stringify(${JSON.stringify(Object.values(REHEARSAL_WORDS.forecasts))}
   .find((word) => document.querySelector("[data-kit-sheet]")?.textContent.includes(word)) ?? null)`;
