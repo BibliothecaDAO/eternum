@@ -91,6 +91,7 @@ export const frontierPhrases = (
     relicKinds,
     commandBits,
     calendar,
+    seasonDayUnitSeconds,
     nativeQuest,
     nativeResearch,
     contract,
@@ -176,6 +177,12 @@ export const frontierPhrases = (
       phrases: [
         calendar.testnetDates,
         `Opens ${calendar.seasonStart}`,
+        (() => {
+          const perHour = Math.round((stamina.staminaGainPerTick * 3600) / tick);
+          const shortHours = Math.round((2 * seasonDayUnitSeconds(preset.dayUnitSeconds)) / 3600);
+          const longHours = Math.round((6 * seasonDayUnitSeconds(preset.dayUnitSeconds)) / 3600);
+          return `An ${n(shortHours)}-hour day gives an army ${n(stamina.staminaInitial + shortHours * perHour)} total stamina; a ${n(longHours)}-hour day gives ${n(stamina.staminaInitial + longHours * perHour)}.`;
+        })(),
         `all ${FRONTIER_BUILDING_TYPES.length} buildings`,
         `the ${aspects.length} Aspects`,
         `${deepSites.length} site kinds`,
@@ -553,6 +560,9 @@ export const loadBalanceSources = async () => {
     const { SEASON_ONE_CALENDAR: calendar } = await server.ssrLoadModule(
       join(here, "../docs/utils/season-calendar.ts"),
     );
+    const { seasonDayUnitSeconds } = await server.ssrLoadModule(
+      join(here, "../../../config/source/common/season-clock.ts"),
+    );
     const { CONTRACT: contract, depthRewardPercent } = await server.ssrLoadModule(
       join(here, "../docs/utils/contract-constants.ts"),
     );
@@ -600,6 +610,7 @@ export const loadBalanceSources = async () => {
       iconUrl,
       relicMeaning,
       calendar,
+      seasonDayUnitSeconds,
       contract,
       buildablePlotCount,
       isOnePerRealm,
