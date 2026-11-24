@@ -1,4 +1,4 @@
-import { aspects } from "@bibliothecadao/types";
+import { RESOURCE_PRECISION, aspects } from "@bibliothecadao/types";
 import productionRelease from "../../../../deploy/release/production.json";
 import {
   HISTORY_PAGE_DEFAULT,
@@ -8,10 +8,161 @@ import {
 } from "../../../herald/src/http-limits";
 import { aspectMeaning } from "../../../game/src/ui/design-system/icon-meaning";
 
+export interface PublicRouteSpec {
+  readonly method: "GET" | "POST";
+  readonly base: "herald" | "rpc";
+  readonly path: string;
+  readonly params: string;
+  readonly returns: string;
+}
+
 const heraldUrl = productionRelease.public_herald_url;
 const rpcUrl = productionRelease.public_rpc_url;
+const rpcPath = new URL(rpcUrl).pathname;
 const aspectMapLiteral = `{ ${aspects.map((aspect) => `${aspect.id}: "${aspect.name}"`).join(", ")} }`;
+const aspectListLine = aspects.map((aspect) => `${aspect.id} = ${aspect.name}`).join(", ");
 const sampleAspectId = aspects[1].id;
+const precisionText = RESOURCE_PRECISION.toLocaleString("en-US");
+
+export const PUBLIC_ROUTES: readonly PublicRouteSpec[] = [
+  {
+    method: "GET",
+    base: "herald",
+    path: "/games",
+    params: "optional ?player=0x...",
+    returns:
+      "confirmed_block, world_address, and games[] (game_id, name, mode, status, player_count, settled_realms_count, aspect_members, aspect_race, clock)",
+  },
+  {
+    method: "GET",
+    base: "herald",
+    path: "/manifest",
+    params: "none",
+    returns: "version, chainId, rpcUrl, and contracts.games",
+  },
+  {
+    method: "GET",
+    base: "herald",
+    path: "/health",
+    params: "none",
+    returns: "confirmed_block, decoded_models, service, success, undecodable_events",
+  },
+  {
+    method: "GET",
+    base: "herald",
+    path: "/games/<id>/snapshot",
+    params: "?models=Name1,Name2 (optional &actor=0x..., &owner=0x...)",
+    returns: "game_id, confirmed_block, and models[] with hex-encoded row values",
+  },
+  {
+    method: "GET",
+    base: "herald",
+    path: "/games/<id>/aspects/<aspect_id>/members",
+    params: `?limit=1..${ROSTER_PAGE_LIMIT} (default ${ROSTER_PAGE_DEFAULT})&offset=0`,
+    returns: "total, limit, offset, and members[] (rank, entity_id, realm_id, owner, unscaled decimal glory)",
+  },
+  {
+    method: "GET",
+    base: "herald",
+    path: "/games/<id>/history",
+    params: `?model=StoryEvent or BattleEvent, optional &story=..., &owner=0x..., &entity_id=..., &limit=0..${HISTORY_PAGE_LIMIT} (default ${HISTORY_PAGE_DEFAULT})&offset=0`,
+    returns: "complete_through_block, total, limit, offset, and items[] newest first",
+  },
+  {
+    method: "GET",
+    base: "herald",
+    path: "/games/<id>/sites/<entity_id>",
+    params: "decimal site entity_id in path",
+    returns: "ExpeditionSite row or 404 unknown_site",
+  },
+  {
+    method: "GET",
+    base: "herald",
+    path: "/games/<id>/stats",
+    params: "none",
+    returns: "pre-folded game KPIs, daily activity series, and race summary",
+  },
+  {
+    method: "GET",
+    base: "herald",
+    path: "/games/updates",
+    params: "Server-Sent Events stream",
+    returns: "data: changed whenever the game directory updates",
+  },
+  {
+    method: "GET",
+    base: "herald",
+    path: "/games/<id>/days/<day>/ranks",
+    params: "closed day number in path",
+    returns: "closed Frontier day ranks (404 until the day closes)",
+  },
+  {
+    method: "GET",
+    base: "herald",
+    path: "/games/<id>/review/snapshot",
+    params: "none",
+    returns: "frozen end-of-game snapshot (404 while the game is live)",
+  },
+  {
+    method: "POST",
+    base: "rpc",
+    path: rpcPath,
+    params: "JSON-RPC 2.0 body (e.g. starknet_blockNumber, starknet_getBlockWithTxHashes)",
+    returns: "standard Starknet JSON-RPC response",
+  },
+];
+
+const routeUrl = (route: PublicRouteSpec) => (route.base === "herald" ? `${heraldUrl}${route.path}` : rpcUrl);
+
+const routesTable = PUBLIC_ROUTES.map(
+  (route) => `${route.method} ${route.path} | ${route.params} | ${route.returns}`,
+).join("\n");
+
+const buildAgentPrompt = (routes: readonly PublicRouteSpec[]) => {
+  const routeLines = routes.map(
+    (route) => `- ${route.method} ${routeUrl(route)} (${route.params}) -> ${route.returns}`,
+  );
+  return [
+    "You are helping me read public Realms: Frontier onchain game data. All data is read-only and public; no API key, wallet, or account is needed.",
+    "",
+    "Base URLs (CORS enabled for browsers; send a standard User-Agent header if using Python urllib):",
+    `- Herald HTTP API: ${heraldUrl}`,
+    `- Shard Starknet JSON-RPC: ${rpcUrl}`,
+    "",
+    "Finding the active game_id:",
+    `- Call GET ${heraldUrl}/games first.`,
+    "- Pick the game whose name matches /^frontier-\\d+$/ for Season 1, or fall back to the active testnet-* game (currently game_id 1 during Final Testnet).",
+    "",
+    `Aspect IDs: ${aspectListLine}.`,
+    "",
+    "Units and encoding:",
+    `- Snapshot row numbers are hex strings ("0x..."). Parse with BigInt(value) and divide raw resource, troop, or raw Glory amounts by ${precisionText} (10^9).`,
+    "- /games/<id>/aspects/<aspect_id>/members already returns glory as an unscaled decimal string.",
+    "- History item.value.timestamp values are Unix timestamps in seconds (hex or decimal string).",
+    "",
+    "Public routes:",
+    ...routeLines,
+    "",
+    "Rate limits and caching etiquette:",
+    "- Herald sets Cache-Control: no-store, so cache responses locally for at least 60 seconds (or 1 hour for dashboards and spreadsheets).",
+    "- Always pass ?models=... on /snapshot (useful models: AspectHyperstructure, AspectMembers, AspectActivity, HomeAspect, RaceMember, RaceResult, ExplorerTroops, DeepArmy, DeepSite, DeepGuard, AltarBar, WorldBane, TeamBane, Seal, Structure).",
+    `- Page sequentially with the max page size (limit=${ROSTER_PAGE_LIMIT} on /members, limit=${HISTORY_PAGE_LIMIT} on /history) instead of firing concurrent offset bursts.`,
+    "- Use GET /games/updates (SSE) instead of tight polling on /games, and read Herald instead of scanning historical blocks over RPC.",
+    "",
+    "What NOT to do:",
+    "- Read-only only: never send write calls, transactions, or mutations.",
+    "- Never ask for private keys, API keys, or private endpoints.",
+    "- Do not call /games/<id>/leaderboard on Season 1 games (it returns 404 season_one_ranks_aspects); use /games/<id>/aspects/<aspect_id>/members instead.",
+    "",
+    "Example questions you can answer for me:",
+    "1. Show the top Glory earners per Aspect today.",
+    "2. Show my Aspect's standing (hyperstructure height, member count, top 10 Glory).",
+    "3. Export all Aspect rosters as a CSV.",
+    "4. Count realms created per UTC day.",
+    "",
+    "My question: Show the top Glory earners per Aspect today.",
+  ].join("\n");
+};
 
 export const PUBLIC_DATA = {
   heraldUrl,
@@ -28,6 +179,8 @@ export const PUBLIC_DATA = {
     historyDefault: String(HISTORY_PAGE_DEFAULT),
     historyMax: String(HISTORY_PAGE_LIMIT),
   },
+  routesTable,
+  agentPrompt: buildAgentPrompt(PUBLIC_ROUTES),
   snippets: {
     gamesCurl: `curl -sS ${heraldUrl}/games`,
     gamesJs: `const directory = await fetch("${heraldUrl}/games").then((r) => r.json());

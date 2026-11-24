@@ -789,6 +789,12 @@ article.vocs_Content,
   box-shadow: none !important;
 }
 
+.vocs_Content .docs-snippet-wrap pre,
+.docs-snippet-wrap pre {
+  white-space: pre-wrap !important;
+  word-break: break-word !important;
+}
+
 .docs-snippet-copy {
   position: absolute;
   top: 0.6rem;

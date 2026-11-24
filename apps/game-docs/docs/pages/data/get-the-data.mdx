@@ -5,6 +5,7 @@ description: Public Herald HTTP routes, Starknet RPC calls, field meanings, rate
 
 import { CopyCode } from "@/components/CopyCode";
 import { GameIcon } from "@/components/GameIcon";
+import { PipeTable } from "@/components/PipeTable";
 import { PUBLIC_DATA } from "@/utils/public-data";
 
 # Get the data
@@ -17,6 +18,61 @@ straight from Herald over HTTP, or query the shard RPC without an API key or acc
 
 Both endpoints work from `curl`, Node.js, Python, and browser pages. If you use Python's `urllib`, send a standard
 `User-Agent` header so edge filters accept your request.
+
+## Copy-paste agent prompt
+
+Paste this prompt into any coding assistant to query live Realms game data without writing scripts by hand. Replace the
+final line with your own question.
+
+<CopyCode wrap>{PUBLIC_DATA.agentPrompt}</CopyCode>
+
+### Worked example: top Glory earners per Aspect today
+
+Running the prompt's default question read-only against the live shard on 24 November 2026 (`confirmed_block: 82485`,
+Final Testnet `game_id: 1`, `testnet-1795521600`) returns (shortened to top 2 per Aspect):
+
+```json
+{
+  "game": "testnet-1795521600",
+  "game_id": 1,
+  "status": "Live",
+  "confirmed_block": 82485,
+  "aspects": {
+    "Titan": {
+      "height": 0,
+      "members": 8,
+      "top_glory": [
+        { "rank": 1, "realm_id": 2182, "glory": "0" },
+        { "rank": 2, "realm_id": 3280, "glory": "0" }
+      ]
+    },
+    "Luminary": {
+      "height": 0,
+      "members": 4,
+      "top_glory": [
+        { "rank": 1, "realm_id": 2077, "glory": "0" },
+        { "rank": 2, "realm_id": 382, "glory": "0" }
+      ]
+    },
+    "Shadow": {
+      "height": 0,
+      "members": 5,
+      "top_glory": [
+        { "rank": 1, "realm_id": 93, "glory": "0" },
+        { "rank": 2, "realm_id": 266, "glory": "0" }
+      ]
+    },
+    "Fury": {
+      "height": 0,
+      "members": 6,
+      "top_glory": [
+        { "rank": 1, "realm_id": 7181, "glory": "0" },
+        { "rank": 2, "realm_id": 4800, "glory": "0" }
+      ]
+    }
+  }
+}
+```
 
 ## Aspect IDs
 
@@ -31,6 +87,8 @@ Herald identifies the {PUBLIC_DATA.aspectsCount} Aspects by number across `/game
 | {PUBLIC_DATA.aspects[3].id} | <GameIcon name={PUBLIC_DATA.aspects[3].icon} /> **{PUBLIC_DATA.aspects[3].name}** |
 
 ## Public routes
+
+<PipeTable headers={["Route", "Parameters", "Returns"]}>{PUBLIC_DATA.routesTable}</PipeTable>
 
 All examples below were run against the live Frontier shard on 24 November 2026 during Final Testnet (`game_id: 1`,
 `testnet-1795521600`), with long responses shortened. Once Season 1 opens, pick the game whose `name` starts with
