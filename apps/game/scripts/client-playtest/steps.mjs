@@ -6574,6 +6574,7 @@ async function deployWhenTheDockIsEmpty(context) {
 
 async function deployAnArmy(context, atMost) {
   const { browser, extraScreenshot } = context;
+  if (!browser.read(buttonLabelled("^Deploy"))) return { blocked: "the dock has no open slot to deploy into" };
   const docked = browser.armies().length;
   const before = browser.read(SENT_ACTIONS);
   const deploy = await deployFromTheDock(context, undefined, undefined, atMost);
