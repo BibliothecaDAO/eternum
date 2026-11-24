@@ -127,9 +127,9 @@ describe("the season's number", () => {
     expect(readers).toEqual(["shell/lab/app-lab-fixtures.ts", "shell/season.ts"]);
   });
 
-  it("names Devcon's season by its number, zero", () => {
-    expect(seasonTitle({ chainId: "0x52", game_id: 4, name: "frontier-4", season_number: 0, clock_scale: 1 })).toBe(
-      "Season 0",
+  it("names a season by the number the directory serves: a chain's first season is Season 1", () => {
+    expect(seasonTitle({ chainId: "0x52", game_id: 4, name: "frontier-4", season_number: 1, clock_scale: 1 })).toBe(
+      "Season 1",
     );
   });
 
