@@ -286,6 +286,7 @@ describe("an Aspect's members in a Season 1 game, ranked by Glory", () => {
     expect((await read("/games/7/aspects/9/members")).slice(0, 2)).toEqual([400, { error: "unknown_aspect" }]);
     expect((await read("/games/7/aspects/1/members?limit=100"))[0]).toBe(200);
     rows = { ...seasonRows(), RaceRules: [] };
+    head += 1;
     expect((await read("/games/7/aspects/1/members")).slice(0, 2)).toEqual([404, { error: "no_aspect_race" }]);
   });
 

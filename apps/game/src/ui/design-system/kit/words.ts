@@ -1590,6 +1590,7 @@ export const DOORWAY_WORDS = {
 
 export const SEASON_WORDS = {
   views: "Season views",
+  aspectRoster: (members: number) => `Your Aspect's top players · ${formatExact(members)} members`,
   sitesCleared: "sites cleared",
   share: "Share",
   of: "of",

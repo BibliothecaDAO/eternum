@@ -44,6 +44,7 @@ export {
   type DeepSiteView,
 } from "./views/deep-sites";
 export {
+  compareAspectMembers,
   raceFinishHeight,
   raceStage,
   raceStageHeight,

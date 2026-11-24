@@ -1,5 +1,6 @@
 import {
   HeraldHttpError,
+  type HeraldAspectRoster,
   type HeraldGameDirectory,
   type HeraldFrontierDayRanks,
   type HeraldFrontierLeaderboard,
@@ -155,6 +156,17 @@ export const fetchHeraldLeaderboard = async (shard: Shard, gameId: number): Prom
   );
   return board;
 };
+
+export const fetchHeraldAspectRoster = async (
+  shard: Shard,
+  gameId: number,
+  aspect: number,
+  page: { offset: number; limit: number },
+): Promise<HeraldAspectRoster> =>
+  fetchHeraldJson<HeraldAspectRoster>(
+    buildHeraldUrl(shard, `/games/${gameId}/aspects/${aspect}/members?offset=${page.offset}&limit=${page.limit}`),
+    `Herald Aspect ${aspect} members for ${shard.url} game ${gameId}`,
+  );
 
 /**
  * A Frontier day's closing ranks, frozen at the block before it ended; null while the day has not closed (Herald's

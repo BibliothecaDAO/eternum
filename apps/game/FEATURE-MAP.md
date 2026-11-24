@@ -83,8 +83,8 @@ Name, You with no finished game (`/lab/app/no-games`) and a session with no name
 card and a Results board (see `boards`). The pages: Play (`/`) leads with Frontier (the player's active Realm, day
 countdown, Enter Realm and Season Race) beside the 4-Aspect Hyperstructures grid, Today's quest, Aspect invite strip,
 and any unseen ended-season results (Blitz and retired Eternum games are not offered on Play); Season (`/season`) shows
-the Season 1 4-Hyperstructure Aspect race stage, Aspect standings, Triumph milestones, Your Standing, and **Past
-seasons** (each row opening that season's Results), or the archived Playtest board (`src/shell/season-tab/archive/`)
+the Season 1 4-Hyperstructure Aspect race stage, Aspect standings, Triumph milestones, Your Standing (with the top 10 of
+the player's Aspect by Glory, from Herald's `/games/:id/aspects/:aspect/members`), and **Past seasons** (each row opening that season's Results), or the archived Playtest board (`src/shell/season-tab/archive/`)
 while no season runs (`/lab/app/no-season/season`); Shop (`/shop`) pairs Spend Fragments (Ancient Seal, seal code
 redemption, in-game Fragment uses) with Buy Fragments (packs, custom amount, linked wallet tokens); You (`/profile`,
 `/profile/settings`) is a single-page hub with an anchored identity rail switching Overview & Realms, Referrals & Invite
