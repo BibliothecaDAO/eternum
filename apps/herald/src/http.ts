@@ -27,6 +27,20 @@ import {
   ROSTER_PAGE_LIMIT,
   STATS_CACHE_SECONDS,
 } from "./http-limits";
+import {
+  HERALD_DAY_RANKS_PATH,
+  HERALD_DIRECTORY_PATH,
+  HERALD_HEALTH_PATH,
+  HERALD_HISTORY_PATH,
+  HERALD_LEADERBOARD_PATH,
+  HERALD_MANIFEST_PATH,
+  HERALD_REVIEW_SNAPSHOT_PATH,
+  HERALD_ROSTER_PATH,
+  HERALD_SITE_PATH,
+  HERALD_SNAPSHOT_PATH,
+  HERALD_STATS_PATH,
+  HERALD_UPDATES_PATH,
+} from "./http-routes";
 
 interface SnapshotSource extends GameDirectorySource {
   /** A site's row by its entity, outside any player's scope: the Feed names a fight's beast far from the player. */
@@ -133,15 +147,15 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
   const leaderboard = cachedLeaderboard(state);
   const roster = cachedAspectRosters(state);
   const transactions = cachedGameTransactions(state);
-  const directoryPath = "/games";
-  const snapshotPath = /^\/games\/([0-9]+)\/snapshot$/;
-  const historyPath = /^\/games\/([0-9]+)\/history$/;
-  const reviewSnapshotPath = /^\/games\/([0-9]+)\/review\/snapshot$/;
-  const dayRanksPath = /^\/games\/([0-9]+)\/days\/([0-9]+)\/ranks$/;
-  const leaderboardPath = /^\/games\/([0-9]+)\/leaderboard$/;
-  const rosterPath = /^\/games\/([0-9]+)\/aspects\/([0-9]+)\/members$/;
-  const sitePath = /^\/games\/([0-9]+)\/sites\/([0-9]+)$/;
-  const statsPath = /^\/games\/([0-9]+)\/stats$/;
+  const directoryPath = HERALD_DIRECTORY_PATH;
+  const snapshotPath = HERALD_SNAPSHOT_PATH;
+  const historyPath = HERALD_HISTORY_PATH;
+  const reviewSnapshotPath = HERALD_REVIEW_SNAPSHOT_PATH;
+  const dayRanksPath = HERALD_DAY_RANKS_PATH;
+  const leaderboardPath = HERALD_LEADERBOARD_PATH;
+  const rosterPath = HERALD_ROSTER_PATH;
+  const sitePath = HERALD_SITE_PATH;
+  const statsPath = HERALD_STATS_PATH;
 
   // Browsers hide a cross-origin request's connect, TLS and wait timings unless the response allows it. Only a dev chain
   // shows them: the chain identity, not a setting, decides, so no production deploy can carry it.
@@ -201,16 +215,16 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
   const answer = async (request: Request): Promise<Response> => {
     const url = new URL(request.url);
     if (request.method === "OPTIONS") return new Response(null, { headers: PUBLIC_READ_HEADERS, status: 204 });
-    if (request.method === "GET" && url.pathname === `${directoryPath}/updates`) {
+    if (request.method === "GET" && url.pathname === HERALD_UPDATES_PATH) {
       return streamDirectoryUpdates(request, state, directory.revision);
     }
-    if (request.method === "GET" && url.pathname === "/manifest") return jsonResponse(state.manifest);
+    if (request.method === "GET" && url.pathname === HERALD_MANIFEST_PATH) return jsonResponse(state.manifest);
     if (request.method === "GET" && url.pathname.startsWith("/schemas/")) {
       const identity = url.pathname.slice("/schemas/".length);
       const schema = Object.hasOwn(state.schemas, identity) ? state.schemas[identity] : undefined;
       return schema ? jsonResponse(schema) : jsonResponse({ error: "UNKNOWN_RELEASE_SCHEMA" }, 404);
     }
-    if (request.method === "GET" && url.pathname === "/health") {
+    if (request.method === "GET" && url.pathname === HERALD_HEALTH_PATH) {
       const failure = state.ingestionFailure?.();
       return jsonResponse(
         {

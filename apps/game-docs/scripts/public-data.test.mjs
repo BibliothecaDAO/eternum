@@ -7,36 +7,23 @@ import { createServer } from "vite";
 import { RESOURCE_PRECISION, aspects } from "@bibliothecadao/types";
 
 const here = fileURLToPath(new URL(".", import.meta.url));
-const heraldHttpSource = readFileSync(join(here, "../../herald/src/http.ts"), "utf8");
 const heraldTypesSource = readFileSync(join(here, "../../../packages/core/src/sync/herald-http-types.ts"), "utf8");
-const INTERNAL_OR_NON_S1_HERALD_PATHS = new Set(["/schemas/", "/history/story-events", "leaderboardPath"]);
 
 const loadPublicData = async () => {
   const server = await createServer({ configFile: false, logLevel: "silent", appType: "custom" });
   try {
     const publicData = await server.ssrLoadModule(join(here, "../docs/utils/public-data.ts"));
     const limits = await server.ssrLoadModule(join(here, "../../herald/src/http-limits.ts"));
+    const { HERALD_PUBLIC_GET_ROUTES } = await server.ssrLoadModule(join(here, "../../herald/src/http-routes.ts"));
     const { buildAspectRoster } = await server.ssrLoadModule(join(here, "../../herald/src/native/aspect-roster.ts"));
-    return { ...publicData, limits, buildAspectRoster };
+    return { ...publicData, limits, HERALD_PUBLIC_GET_ROUTES, buildAspectRoster };
   } finally {
     await server.close();
   }
 };
 
 const concreteSamplePath = (routePath) => routePath.replace(/:[a-z_]+/g, "1");
-
-const heraldRegexRoutes = () =>
-  [...heraldHttpSource.matchAll(/const\s+(\w+Path)\s*=\s*\/([^;]+)\/;/g)]
-    .filter(([, name]) => !INTERNAL_OR_NON_S1_HERALD_PATHS.has(name))
-    .map(([, name, pattern]) => ({ name, regex: new RegExp(pattern) }));
-
-const heraldLiteralRoutes = () => [
-  "/games",
-  "/games/updates",
-  ...[...heraldHttpSource.matchAll(/url\.pathname\s*===\s*"([^"]+)"/g)]
-    .map(([, path]) => path)
-    .filter((path) => !INTERNAL_OR_NON_S1_HERALD_PATHS.has(path)),
-];
+const matchesRoute = (matcher, sample) => (typeof matcher === "string" ? matcher === sample : matcher.test(sample));
 
 const interfaceFields = (source, name) => {
   const match = source.match(new RegExp(`export interface ${name}\\s*\\{([\\s\\S]*?)\\n\\}`));
@@ -44,25 +31,23 @@ const interfaceFields = (source, name) => {
   return [...match[1].matchAll(/^\s*([a-z_]+)\??:/gm)].map(([, field]) => field);
 };
 
-test("PUBLIC_ROUTES matches every public GET route in apps/herald/src/http.ts", async () => {
-  const { PUBLIC_ROUTES } = await loadPublicData();
+test("PUBLIC_ROUTES matches every public GET route in apps/herald/src/http-routes.ts", async () => {
+  const { HERALD_PUBLIC_GET_ROUTES, PUBLIC_ROUTES } = await loadPublicData();
   const heraldDocsRoutes = PUBLIC_ROUTES.filter((route) => route.base === "herald");
   const samples = heraldDocsRoutes.map((route) => concreteSamplePath(route.path));
 
-  for (const literal of heraldLiteralRoutes()) {
-    assert.ok(samples.includes(literal), `missing Herald literal route ${literal} from PUBLIC_ROUTES`);
-  }
-  for (const { name, regex } of heraldRegexRoutes()) {
+  for (const matcher of HERALD_PUBLIC_GET_ROUTES) {
     assert.ok(
-      samples.some((sample) => regex.test(sample)),
-      `missing Herald regex route ${name} (${regex}) from PUBLIC_ROUTES`,
+      samples.some((sample) => matchesRoute(matcher, sample)),
+      `missing Herald public route ${String(matcher)} from PUBLIC_ROUTES`,
     );
   }
   for (const route of heraldDocsRoutes) {
     const sample = concreteSamplePath(route.path);
-    const recognized =
-      heraldLiteralRoutes().includes(sample) || heraldRegexRoutes().some(({ regex }) => regex.test(sample));
-    assert.ok(recognized, `documented route ${route.path} does not match any route in apps/herald/src/http.ts`);
+    assert.ok(
+      HERALD_PUBLIC_GET_ROUTES.some((matcher) => matchesRoute(matcher, sample)),
+      `documented route ${route.path} does not match any route in HERALD_PUBLIC_GET_ROUTES`,
+    );
   }
 });
 
