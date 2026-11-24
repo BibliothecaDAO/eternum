@@ -59,9 +59,15 @@ vi.mock("@/hooks/context/identity-session", async (importOriginal) => ({
       reads.intent = { order, members: nextMembers };
       return reads.intent;
     },
-    createShare: async (moment: unknown) => {
-      reads.shared.push(moment);
-      return "MRGHT234";
+    createInvite: async () => {
+      const { orders } = await import("@bibliothecadao/types");
+      const aspect = orders.find(({ orderId }) => orderId === reads.intent.order)?.aspect ?? null;
+      if (aspect === null) {
+        const { IdentityRequestError } = await import("@realms-world/identity");
+        throw new IdentityRequestError(409, "no_aspect");
+      }
+      reads.shared.push(aspect);
+      return { code: "MRGHT234", aspect, chainId: null, gameId: null };
     },
     getSealCode: async () => ({ held: reads.sealHeld }),
     redeemSealCode: async (code: string) => {
@@ -569,7 +575,7 @@ describe("the season's countdown, while its first day is ahead and Play has no g
     expect(prowessCard.getAttribute("aria-pressed")).toBe("true");
     expect(prowessCard.querySelector("[data-aspect-joined]")?.textContent).toBe("Joined");
     expect(prowessCard.querySelector("[data-chosen-order]")?.textContent).toContain(giants!.fullOrderName);
-    expect(reads.shared).toEqual([{ kind: "aspect", chainId: null, gameId: null, moment: 1 }]);
+    expect(reads.shared).toEqual([1]);
     expect(page.container.querySelector("[data-season-invite]")?.textContent).toContain(
       "Copy your Prowess link. A friend who opens it starts in Prowess.",
     );
@@ -595,10 +601,7 @@ describe("the season's countdown, while its first day is ahead and Play has no g
     expect(luminaryCard.getAttribute("aria-pressed")).toBe("true");
     expect(luminaryCard.querySelector("[data-aspect-joined]")?.textContent).toBe("Joined");
     expect(luminaryCard.querySelector("[data-chosen-order]")?.textContent).toContain(perfection!.fullOrderName);
-    expect(reads.shared).toEqual([
-      { kind: "aspect", chainId: null, gameId: null, moment: 1 },
-      { kind: "aspect", chainId: null, gameId: null, moment: 2 },
-    ]);
+    expect(reads.shared).toEqual([1, 2]);
     expect(page.container.querySelector("[data-season-invite]")?.textContent).toContain(
       "Copy your Luminary link. A friend who opens it starts in Luminary.",
     );

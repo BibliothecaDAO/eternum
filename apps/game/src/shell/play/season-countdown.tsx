@@ -325,7 +325,7 @@ const InviteStripFrame = ({ rewardLine, children }: { rewardLine: string; childr
 const PreseasonInviteStrip = ({ signedIn, aspect }: { signedIn: boolean; aspect: AspectId | null }) => {
   const requestSignIn = useRequestSignIn();
   const rewardLine = PROFILE_WORDS.friendMilestone(FRIEND_FRAGMENTS, FRIENDS_BONUS_FRAGMENTS, FRIENDS_LIMIT);
-  if (signedIn && aspect !== null) return <SignedInAspectInvite aspect={aspect} rewardLine={rewardLine} />;
+  if (signedIn && aspect !== null) return <SignedInAspectInvite rewardLine={rewardLine} />;
   return (
     <InviteStripFrame rewardLine={rewardLine}>
       <div className="preseason-invite-strip__row">
@@ -342,12 +342,14 @@ const PreseasonInviteStrip = ({ signedIn, aspect }: { signedIn: boolean; aspect:
   );
 };
 
-const SignedInAspectInvite = ({ aspect, rewardLine }: { aspect: AspectId; rewardLine: string }) => {
-  const invite = useSeasonInvite(aspect);
+const SignedInAspectInvite = ({ rewardLine }: { rewardLine: string }) => {
+  const invite = useSeasonInvite();
   return (
     <InviteStripFrame rewardLine={rewardLine}>
       <div className="preseason-invite-strip__row">
-        <p className="text-app-label text-app-ink">{SEASON_INVITE_WORDS.line(aspectName(aspect))}</p>
+        {invite.aspect !== null && (
+          <p className="text-app-label text-app-ink">{SEASON_INVITE_WORDS.line(aspectName(invite.aspect))}</p>
+        )}
         <CopySeasonInvite invite={invite} size="md" />
       </div>
       <SeasonInviteAlerts invite={invite} />

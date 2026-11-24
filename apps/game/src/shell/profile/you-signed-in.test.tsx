@@ -164,7 +164,18 @@ it("shows one invite control and one primary button on /profile#referrals when t
     friendsPaid: 1,
     fragmentsEarned: 25,
   });
-  vi.spyOn(identityClient, "createShare").mockResolvedValue("CODE1234");
+  vi.spyOn(identityClient, "createInvite").mockResolvedValue({
+    code: "CODE1234",
+    aspect: 1,
+    chainId: null,
+    gameId: null,
+  });
+  vi.spyOn(identityClient, "invitedFriends").mockResolvedValue({
+    friends: [
+      { name: null, joinedAt: 2, glory: 120, state: "reached" },
+      { name: "Rowan", joinedAt: 1, glory: 100, state: "paid" },
+    ],
+  });
   const page = await open("/profile#referrals", 1440);
   await vi.waitFor(() =>
     expect([...page.querySelectorAll("button")].some((button) => button.textContent === SEASON_INVITE_WORDS.copy)).toBe(
@@ -183,6 +194,11 @@ it("shows one invite control and one primary button on /profile#referrals when t
   expect(page.querySelectorAll('button[data-kind="primary"], a[data-kind="primary"]')).toHaveLength(
     SEASON_SPENDS_FRAGMENTS ? 1 : 0,
   );
+  await vi.waitFor(() => expect(page.querySelectorAll("[data-friend-state]")).toHaveLength(2));
+  expect([...page.querySelectorAll("[data-friend-state]")].map((row) => row.textContent)).toEqual([
+    "A friendReached 100 Glory120 Glory",
+    "RowanPaid you 100 Fragments100 Glory",
+  ]);
 });
 
 describe("a session with no name claimed yet", () => {

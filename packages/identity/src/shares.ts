@@ -8,8 +8,11 @@ export const DAY_SHARE_KINDS = ["frontier-day"] as const;
 export const SHARE_KINDS = [...DAY_SHARE_KINDS, "aspect"] as const;
 export type ShareKind = (typeof SHARE_KINDS)[number];
 
-export const isShareKind = (value: unknown): value is ShareKind =>
-  typeof value === "string" && (SHARE_KINDS as readonly string[]).includes(value);
+export const INVITED_FRIEND_STATES = ["joined", "reached", "paid"] as const;
+export type InvitedFriendState = (typeof INVITED_FRIEND_STATES)[number];
+
+export const isDayShareKind = (value: unknown): value is (typeof DAY_SHARE_KINDS)[number] =>
+  typeof value === "string" && (DAY_SHARE_KINDS as readonly string[]).includes(value);
 
 /** The game's address a shared link opens, with the link's code after it. */
 export const SHARE_PATH = "/s";

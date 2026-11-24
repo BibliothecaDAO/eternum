@@ -244,6 +244,12 @@ const answerIdentity = (screen: LabScreen) => {
     return intent;
   };
   identityClient.createShare = async () => LAB_SHARE_CODE;
+  identityClient.createInvite = async () => ({
+    code: LAB_SHARE_CODE,
+    aspect: LAB_INVITE.moment,
+    chainId: null,
+    gameId: null,
+  });
   identityClient.joinedShare = async () => labJoinedShare(screen);
   identityClient.openShare = async (code) => {
     if (code !== LAB_SHARE_CODE) throw new IdentityRequestError(404, "share_unknown");

@@ -1,7 +1,7 @@
 import "./profile-view.css";
 
 import { canonicalRealm } from "@bibliothecadao/eternum";
-import { aspectName, catalogOrder, formatAmount, type AspectId } from "@bibliothecadao/types";
+import { aspectName, catalogOrder, formatAmount } from "@bibliothecadao/types";
 import { profileOfIdentityUser } from "@realms-world/identity";
 import { useState, type CSSProperties } from "react";
 
@@ -197,7 +197,7 @@ export const PlayerCard = ({
               )}
               {!hideInvite &&
                 (aspect !== null ? (
-                  <InviteAction aspect={aspect} />
+                  <InviteAction />
                 ) : (
                   <AppButton kind="secondary" icon="share" to="/season" className="w-full">
                     {INVITE_WORDS.copy}
@@ -211,8 +211,8 @@ export const PlayerCard = ({
   );
 };
 
-const InviteAction = ({ aspect }: { aspect: AspectId }) => {
-  const invite = useSeasonInvite(aspect);
+const InviteAction = () => {
+  const invite = useSeasonInvite();
   return (
     <div className="flex flex-col gap-2">
       <CopySeasonInvite invite={invite} size="md" icon="share" label={INVITE_WORDS.copy} className="w-full" />

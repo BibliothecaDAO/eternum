@@ -1,7 +1,7 @@
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { getActiveGame } from "@/runtime/world";
-import { useShareLink } from "@/shell/share/own-shares";
+import { useOwnInvite } from "@/shell/share/own-shares";
 import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { Icon } from "@/ui/design-system/icon";
 import { orderMeaning } from "@/ui/design-system/icon-meaning";
@@ -9,7 +9,7 @@ import { HudButton, HudNotice, HudPanel } from "@/ui/design-system/kit/hud-eleme
 import { INVITE_WORDS } from "@/ui/design-system/kit/words";
 import { openXPost } from "@/utils/x-post";
 import { type NativeRows } from "@bibliothecadao/eternum/game-client";
-import { aspectName, aspects, ordersOfAspect, type AspectId } from "@bibliothecadao/types";
+import { aspectName, ordersOfAspect, type AspectId } from "@bibliothecadao/types";
 import { useState } from "react";
 
 const INVITE_MODELS = ["HomeAspect"] as const;
@@ -23,14 +23,18 @@ export const AspectInvite = ({ realm }: { realm: NativeRows["Structure"] }) => {
   const { setup } = useGame();
   useNativeRevision(INVITE_MODELS);
   const joined = setup.store.get("HomeAspect", { game_id: realm.game_id, home: realm.entity_id });
-  const aspect = joined && aspects.find(({ id }) => id === joined.aspect)?.id;
-  const game = getActiveGame();
-  if (!aspect || !game) return null;
-  return <InviteToAspect aspect={aspect} chainId={game.chainId} gameId={realm.game_id} />;
+  if (!joined || !getActiveGame()) return null;
+  return <InviteToAspect />;
 };
 
-const InviteToAspect = ({ aspect, chainId, gameId }: { aspect: AspectId; chainId: string; gameId: number }) => {
-  const link = useShareLink({ kind: "aspect", chainId, gameId, moment: aspect });
+const InviteToAspect = () => {
+  const link = useOwnInvite();
+  if (link.aspect === null)
+    return link.failed ? <HudNotice tone="bad" line={INVITE_WORDS.failed} retry={link.retry} /> : null;
+  return <InviteLink link={link} aspect={link.aspect} />;
+};
+
+const InviteLink = ({ link, aspect }: { link: ReturnType<typeof useOwnInvite>; aspect: AspectId }) => {
   const [copied, setCopied] = useState<"copied" | "failed" | null>(null);
   const name = aspectName(aspect);
   const waiting = link.code === undefined && !link.failed ? INVITE_WORDS.making : undefined;

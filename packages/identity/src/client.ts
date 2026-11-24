@@ -8,7 +8,14 @@ import {
   type PushRegistration,
 } from "@bibliothecadao/notifications";
 import { SOCIAL_PROVIDERS, type SocialProvider } from "./account-rules";
-import { DAY_SHARE_KINDS, SHARE_CARD, SHARE_KINDS, type ShareChannel, type ShareKind } from "./shares";
+import {
+  DAY_SHARE_KINDS,
+  INVITED_FRIEND_STATES,
+  SHARE_CARD,
+  SHARE_KINDS,
+  type ShareChannel,
+  type ShareKind,
+} from "./shares";
 import type { SiwsTypedData } from "./siws";
 import { buildSiwsMessage, payoutWalletStatement } from "./siws";
 import type { IdentityChainId, Session } from "./types";
@@ -159,6 +166,12 @@ type SealCode = typeof sealCodeSchema.Type;
 export type ShareMoment =
   | { kind: ShareKind; chainId: string; gameId: number; moment: number }
   | { kind: "aspect"; chainId: null; gameId: null; moment: number };
+export type DayShareMoment = {
+  kind: (typeof DAY_SHARE_KINDS)[number];
+  chainId: string;
+  gameId: number;
+  moment: number;
+};
 /** A shared link as a friend who opened it sees it: what it shares and who shared it (null: no public name). */
 const sharedLinkFields = { moment: Schema.Number, name: Schema.NullOr(Schema.String) };
 const openedShareSchema = Schema.Union([
@@ -201,6 +214,24 @@ const shareTallySchema = Schema.Struct({
   fragmentsEarned: Schema.Number,
 });
 export type ShareTally = typeof shareTallySchema.Type;
+const ownInviteSchema = Schema.Struct({
+  code: Schema.String,
+  aspect: Schema.Number,
+  chainId: Schema.NullOr(Schema.String),
+  gameId: Schema.NullOr(Schema.Number),
+});
+export type OwnInvite = typeof ownInviteSchema.Type;
+const invitedFriendsSchema = Schema.Struct({
+  friends: Schema.Array(
+    Schema.Struct({
+      name: Schema.NullOr(Schema.String),
+      joinedAt: Schema.Number,
+      glory: Schema.NullOr(Schema.Number),
+      state: Schema.Literals(INVITED_FRIEND_STATES),
+    }),
+  ),
+});
+export type InvitedFriends = typeof invitedFriendsSchema.Type;
 const fragmentPriceSchema = Schema.Struct({
   fragments: Schema.Number,
   cents: Schema.Number,
@@ -531,7 +562,7 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
     readJson(await request("/seal-code", { method: "POST", body: JSON.stringify({ code }) }), decode(sealCodeSchema));
 
   /** The account's link for one moment, made on first ask and the same ever after. */
-  const createShare = async (moment: ShareMoment): Promise<string> =>
+  const createShare = async (moment: DayShareMoment): Promise<string> =>
     (
       await readJson(
         await request("/shares", { method: "POST", body: JSON.stringify(moment) }),
@@ -594,6 +625,12 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
   const shareTally = async (): Promise<ShareTally> =>
     readJson(await request("/shares", { method: "GET", cache: "no-store" }), decode(shareTallySchema));
 
+  const createInvite = async (): Promise<OwnInvite> =>
+    readJson(await request("/shares/invite", { method: "POST" }), decode(ownInviteSchema));
+
+  const invitedFriends = async (): Promise<InvitedFriends> =>
+    readJson(await request("/shares/friends", { method: "GET", cache: "no-store" }), decode(invitedFriendsSchema));
+
   const pushRequest = async <T>(
     action: string,
     decode: (value: unknown) => T,
@@ -651,6 +688,8 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
     openShare,
     joinedShare,
     shareTally,
+    createInvite,
+    invitedFriends,
     priceFragments,
     payFragments,
     fragmentPayment,

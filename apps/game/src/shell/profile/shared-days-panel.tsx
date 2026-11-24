@@ -1,4 +1,4 @@
-import type { ShareTally } from "@realms-world/identity";
+import type { InvitedFriendState, ShareTally } from "@realms-world/identity";
 import {
   aspectName,
   formatShort,
@@ -9,14 +9,24 @@ import {
 } from "@bibliothecadao/types";
 
 import { useIdentitySession } from "@/hooks/context/identity-session";
-import { Icon } from "@/ui/design-system/icon";
+import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { AppFigure, AppPanel } from "@/ui/design-system/kit/app-elements";
-import { PROFILE_WORDS, SEASON_INVITE_WORDS, SHARED_DAYS_WORDS } from "@/ui/design-system/kit/words";
+import {
+  INVITED_FRIENDS_WORDS,
+  PROFILE_WORDS,
+  SEASON_INVITE_WORDS,
+  SHARED_DAYS_WORDS,
+} from "@/ui/design-system/kit/words";
 
 import { CopySeasonInvite, SeasonInviteAlerts, useSeasonInvite } from "../play/season-invite";
-import { useShareTally } from "../share/own-shares";
+import { useInvitedFriends, useShareTally } from "../share/own-shares";
 
 const STEPS = ["posted", "visits", "joined", "activated"] as const satisfies readonly (keyof ShareTally)[];
+
+const FRIEND_STATE_ICONS = { joined: "person", reached: "check", paid: "fragment" } satisfies Record<
+  InvitedFriendState,
+  IconMeaning
+>;
 
 export const SharedDaysPanel = ({ aspect = null }: { aspect?: AspectId | null }) => {
   const { session } = useIdentitySession();
@@ -27,7 +37,7 @@ export const SharedDaysPanel = ({ aspect = null }: { aspect?: AspectId | null })
     <AppPanel title={SHARED_DAYS_WORDS.title} label={SHARED_DAYS_WORDS.title} icon="share">
       <div className="flex flex-col gap-5" data-referrals-panel>
         {aspect !== null ? (
-          <InviteStrip aspect={aspect} />
+          <InviteStrip />
         ) : (
           <p className="text-app-label text-app-muted">{PROFILE_WORDS.noAspectInvite}</p>
         )}
@@ -55,6 +65,7 @@ export const SharedDaysPanel = ({ aspect = null }: { aspect?: AspectId | null })
             })}
           </ol>
         </div>
+        <InvitedFriendsList />
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           {STEPS.map((step) => (
             <AppFigure key={step} value={formatShort(tally[step])} label={SHARED_DAYS_WORDS.steps[step]} />
@@ -70,14 +81,44 @@ export const SharedDaysPanel = ({ aspect = null }: { aspect?: AspectId | null })
   );
 };
 
-const InviteStrip = ({ aspect }: { aspect: AspectId }) => {
-  const invite = useSeasonInvite(aspect);
+const InvitedFriendsList = () => {
+  const friends = useInvitedFriends();
+  if (!friends || friends.length === 0) return null;
+  return (
+    <section className="flex flex-col gap-2" data-invited-friends>
+      <span className="text-app-strong text-app-ink">{INVITED_FRIENDS_WORDS.title}</span>
+      <ul className="flex flex-col gap-2">
+        {friends.map((friend) => (
+          <li
+            key={`${friend.joinedAt}:${friend.name ?? ""}`}
+            className="app-well flex items-center gap-3 p-3"
+            data-friend-state={friend.state}
+          >
+            <Icon name={FRIEND_STATE_ICONS[friend.state]} size={28} />
+            <span className="flex min-w-0 flex-1 flex-col">
+              <span className="text-app-label text-app-ink">{friend.name ?? INVITED_FRIENDS_WORDS.unnamed}</span>
+              <span className="text-app-label text-app-muted">{INVITED_FRIENDS_WORDS.states[friend.state]}</span>
+            </span>
+            {friend.glory !== null && (
+              <span className="text-app-label text-app-gold">{INVITED_FRIENDS_WORDS.glory(friend.glory)}</span>
+            )}
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+};
+
+const InviteStrip = () => {
+  const invite = useSeasonInvite();
   return (
     <div className="flex flex-col gap-3">
       <div className="referrals-invite">
         <div className="flex min-w-0 flex-col gap-0.5">
           <span className="text-app-strong text-app-ink">{SEASON_INVITE_WORDS.title}</span>
-          <span className="text-app-label text-app-muted">{SEASON_INVITE_WORDS.line(aspectName(aspect))}</span>
+          {invite.aspect !== null && (
+            <span className="text-app-label text-app-muted">{SEASON_INVITE_WORDS.line(aspectName(invite.aspect))}</span>
+          )}
         </div>
         <CopySeasonInvite invite={invite} size="md" />
       </div>

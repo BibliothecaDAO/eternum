@@ -269,14 +269,14 @@ const AspectPlayerStanding = ({
             <span className="season-stat__label">{ASPECT_PAGE_WORDS.stage(ownStanding.stage, RACE_STAGE_COUNT)}</span>
           </div>
         </div>
-        <AspectStandingActions season={season} aspect={aspect} />
+        <AspectStandingActions season={season} />
       </div>
     </AppPanel>
   );
 };
 
-const AspectStandingActions = ({ season, aspect }: { season: AspectSeasonGame; aspect: AspectId }) => {
-  const invite = useSeasonInvite(aspect);
+const AspectStandingActions = ({ season }: { season: AspectSeasonGame }) => {
+  const invite = useSeasonInvite();
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap gap-2">
