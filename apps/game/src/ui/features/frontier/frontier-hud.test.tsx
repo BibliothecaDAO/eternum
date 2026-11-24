@@ -191,16 +191,24 @@ it("treats the desktop's Feed as any other panel: closed at start, opened from i
   const route = window.location.pathname + window.location.search;
   const { selectedBuildingHex } = useUIStore.getState();
   await renderHud();
-  const panel = () => host.querySelector("[data-realm-slot]");
+  const panel = () => host.querySelector("[data-right-page]");
+  const rail = () => host.querySelector("[data-frontier-rail]")!;
+  const leftColumn = () => host.querySelector('aside[aria-label="Realm"]')!;
   const open = (name: string) => Boolean(panel()?.querySelector(`section[aria-label="${name}"]`));
   const place = (name: string) =>
     host.querySelector<HTMLButtonElement>(`nav[aria-label="Places"] button[aria-label="${name}"]`)!;
   const press = (name: string) => act(async () => place(name).click());
   try {
-    expect(panel()!.childElementCount).toBe(0);
+    expect(panel()).toBeNull();
     expect(place("Feed").getAttribute("aria-selected")).toBe("false");
     await press("Feed");
-    expect([open("Feed"), place("Feed").getAttribute("aria-selected")]).toEqual([true, "true"]);
+    expect([
+      open("Feed"),
+      rail().contains(panel()),
+      leftColumn().contains(panel()),
+      leftColumn().querySelector('[aria-label="Armies"]') !== null,
+      place("Feed").getAttribute("aria-selected"),
+    ]).toEqual([true, true, false, true, "true"]);
     await press("Season");
     expect([
       open("Feed"),
@@ -209,22 +217,24 @@ it("treats the desktop's Feed as any other panel: closed at start, opened from i
       place("Feed").getAttribute("aria-selected"),
     ]).toEqual([false, true, true, "false"]);
     await press("Season");
-    expect(panel()!.childElementCount).toBe(0);
+    expect(panel()).toBeNull();
     await act(async () =>
       shownStore.applyFacts([{ model: "RaceRules", key: "0xa500", value: wireFact(raceRules()) }] as never),
     );
     await press("Season");
-    expect(host.querySelector('[data-wide-page] section[aria-label="Aspect Race"]')).not.toBeNull();
-    expect(host.querySelector('[aria-label="Armies"]')).toBeNull();
+    expect(
+      host.querySelector('[data-frontier-rail][data-wide="true"] [data-wide-page] section[aria-label="Aspect Race"]'),
+    ).not.toBeNull();
+    expect(leftColumn().querySelector('[aria-label="Armies"]')).not.toBeNull();
     await press("Season");
-    expect(panel()!.childElementCount).toBe(0);
+    expect(panel()).toBeNull();
     expect(host.querySelector("[data-wide-page]")).toBeNull();
     await press("Feed");
     await press("Feed");
     expect(open("Feed")).toBe(false);
     await press("Feed");
     await act(async () => panel()!.querySelector<HTMLButtonElement>('button[aria-label="Close"]')!.click());
-    expect(panel()!.childElementCount).toBe(0);
+    expect(panel()).toBeNull();
     await press("Feed");
     window.history.replaceState(null, "", "/g/0x1ab9/1/hex?col=1&row=1");
     await act(async () =>
@@ -239,7 +249,9 @@ it("treats the desktop's Feed as any other panel: closed at start, opened from i
       place("Feed").getAttribute("aria-selected"),
     ]).toEqual([false, true, true, "false"]);
     await press("Research");
-    expect(host.querySelector('[data-wide-page] section[aria-label="Research"]')).not.toBeNull();
+    expect(
+      host.querySelector('[data-frontier-rail][data-wide="true"] [data-wide-page] section[aria-label="Research"]'),
+    ).not.toBeNull();
     await press("Research");
     expect(host.querySelector("[data-wide-page]")).toBeNull();
   } finally {
@@ -258,17 +270,18 @@ it("keeps a refused order in sight on a desktop, over the feed and over a panel 
     await act(async () => toast.error("Not enough stamina"));
     const feed = host.querySelector<HTMLButtonElement>('nav[aria-label="Places"] button[aria-label="Feed"]')!;
     await act(async () => feed.click());
-    expect(host.querySelector('[data-realm-slot] section[aria-label="Feed"]')).not.toBeNull();
+    expect(host.querySelector('[data-frontier-rail] [data-right-page] section[aria-label="Feed"]')).not.toBeNull();
     expect(rail().querySelector('[aria-label="Notices"]')?.textContent).toContain("Not enough stamina");
-    // The Season stands in the rail's panel, the feed steps aside; the notice stays.
     const season = host.querySelector<HTMLButtonElement>('nav[aria-label="Places"] button[aria-label="Season"]')!;
     await act(async () => season.click());
-    expect(host.querySelector('[data-realm-slot] section[aria-label="Season"]')).not.toBeNull();
+    expect(host.querySelector('[data-frontier-rail] [data-right-page] section[aria-label="Season"]')).not.toBeNull();
     expect(rail().querySelector('[aria-label="Notices"]')?.textContent).toContain("Not enough stamina");
     await act(async () =>
       shownStore.applyFacts([{ model: "RaceRules", key: "0xa500", value: wireFact(raceRules()) }] as never),
     );
-    expect(host.querySelector('[data-wide-page] section[aria-label="Aspect Race"]')).not.toBeNull();
+    expect(
+      host.querySelector('[data-frontier-rail] [data-wide-page] section[aria-label="Aspect Race"]'),
+    ).not.toBeNull();
     expect(rail().querySelector('[aria-label="Notices"]')?.textContent).toContain("Not enough stamina");
   } finally {
     useEventFeedStore.getState().dismiss();

@@ -6,6 +6,7 @@ import { resolveHyperstructureDesign } from "@/three/structures/hyperstructure-d
 import { terrainHexToWorld } from "@/three/terrain/terrain-coordinates";
 import { prepareTerrainPage } from "@/three/terrain/terrain-page-builder";
 import { TERRAIN_PROP_PAGE_SLOT_CAPACITY } from "@/three/terrain/terrain-prop-catalog";
+import { setWorldOrigin, worldOrigin } from "@/three/world-origin";
 import {
   ASPECT_HYPERSTRUCTURE_SEEDS,
   createAspectRaceTerrainRequests,
@@ -62,7 +63,7 @@ describe("the Aspect race 3D world layout", () => {
     for (const aspect of [4.2, 1.8]) {
       const camera = new PerspectiveCamera(30, aspect, 0.1, 200);
       frameAspectRaceCamera(camera);
-      const anchors = projectRacePlateAnchors(camera, entries, () => 0.4);
+      const anchors = projectRacePlateAnchors(camera, entries, [0.4, 0.4, 0.4, 0.4]);
       expect(anchors).toHaveLength(aspects.length);
       for (let index = 1; index < anchors.length; index += 1) {
         expect(anchors[index]!.leftPercent).toBeGreaterThan(anchors[index - 1]!.leftPercent);
@@ -103,6 +104,34 @@ describe("the Aspect race 3D world layout", () => {
         expect(hit.z).toBeGreaterThan(minZ);
         expect(hit.z).toBeLessThan(maxZ);
       }
+    }
+  });
+
+  it("anchors terrain geometry, camera, and plate projections near the floating world origin when playing deep in Frontier", () => {
+    const previous = worldOrigin();
+    const originCamera = new PerspectiveCamera(30, 3.6, 0.1, 200);
+    frameAspectRaceCamera(originCamera);
+    const entries = aspects.map(({ id }, index) => ({ aspectId: id, height: (4 - index) * 2_000, finished: false }));
+    const originAnchors = projectRacePlateAnchors(originCamera, entries, [0.4, 0.4, 0.4, 0.4]);
+    try {
+      setWorldOrigin({ col: -1_236_511_808, row: -1_269_605_120 });
+      const pages = createAspectRaceTerrainRequests();
+      expect(pages.length).toBeGreaterThan(0);
+      for (const page of pages) {
+        const prepared = prepareTerrainPage(page);
+        const positions = prepared.buffers.positions;
+        expect(positions.length).toBeGreaterThan(0);
+        for (let index = 0; index < positions.length; index += 3) {
+          expect(Math.abs(positions[index]!)).toBeLessThan(100);
+          expect(Math.abs(positions[index + 2]!)).toBeLessThan(100);
+        }
+      }
+      const shiftedCamera = new PerspectiveCamera(30, 3.6, 0.1, 200);
+      frameAspectRaceCamera(shiftedCamera);
+      expect(shiftedCamera.position.distanceTo(originCamera.position)).toBeLessThan(1e-6);
+      expect(projectRacePlateAnchors(shiftedCamera, entries, [0.4, 0.4, 0.4, 0.4])).toEqual(originAnchors);
+    } finally {
+      setWorldOrigin(previous);
     }
   });
 });

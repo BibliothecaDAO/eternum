@@ -7164,7 +7164,7 @@ export const STEP_SETS = {
           const ready = await readUntil(
             () =>
               browser.read(`JSON.stringify({
-                open: Boolean(document.querySelector('${onADesktop() ? "[data-realm-slot] " : ""}section[aria-label="${HUD_WORDS.feed}"]')),
+                open: Boolean(document.querySelector('${onADesktop() ? "[data-right-page] " : ""}section[aria-label="${HUD_WORDS.feed}"]')),
                 rows: document.querySelectorAll('section[aria-label="${HUD_WORDS.feed}"] [data-feed-line]').length,
               })`),
             (state) => state.open && state.rows > 0,
@@ -7185,7 +7185,7 @@ export const STEP_SETS = {
           const ready = await readUntil(
             () =>
               browser.read(`JSON.stringify({
-                open: Boolean(document.querySelector('${onADesktop() ? "[data-realm-slot] " : ""}section[aria-label="${HUD_WORDS.chat}"]')),
+                open: Boolean(document.querySelector('${onADesktop() ? "[data-right-page] " : ""}section[aria-label="${HUD_WORDS.chat}"]')),
               })`),
             (state) => state.open,
             SHEET_WAIT_MS,

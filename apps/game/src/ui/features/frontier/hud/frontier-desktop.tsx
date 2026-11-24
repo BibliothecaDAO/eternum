@@ -63,36 +63,19 @@ export const FrontierDesktop = ({
       />
       <div className="pointer-events-none fixed inset-x-4 bottom-hud-base top-hud-frontier-page-top z-hud-rail flex flex-col gap-2">
         {banner && <div className="pointer-events-none flex shrink-0 justify-center empty:hidden">{banner}</div>}
-        {showWide ? (
-          <div className="pointer-events-none flex min-h-0 flex-1 flex-col gap-2">
-            <div className="pointer-events-none flex shrink-0 justify-end empty:hidden">
-              <FrontierRail onPanel={setRailPanel} />
-            </div>
-            <div
-              data-wide-page
-              className="pointer-events-none flex min-h-0 flex-1 flex-col [&>[data-kit-frame]]:pointer-events-auto [&>[data-kit-frame]]:max-h-full [&>[data-kit-frame]]:w-full [&>[data-kit-frame]]:flex-1"
-            >
-              {page}
-            </div>
-          </div>
-        ) : (
-          <div className="pointer-events-none flex min-h-0 flex-1 items-stretch justify-between gap-4">
-            <aside
-              {...HUD_COLUMN_MARK}
-              aria-label={REALM}
-              className="pointer-events-none flex min-h-0 w-hud-frontier-rail flex-col gap-2"
-            >
-              {!page && realm && <div className="pointer-events-none flex min-h-0 shrink flex-col">{realm}</div>}
-              {!page && armies && <div className="pointer-events-none shrink-0">{armies}</div>}
-              <div data-realm-slot className="flex min-h-0 flex-1 flex-col gap-2 empty:hidden">
-                {page}
-              </div>
-            </aside>
-            <FrontierRail onPanel={setRailPanel} />
-          </div>
-        )}
+        <div className="pointer-events-none flex min-h-0 flex-1 items-stretch justify-between gap-4">
+          <aside
+            {...HUD_COLUMN_MARK}
+            aria-label={REALM}
+            className="pointer-events-none flex min-h-0 w-hud-frontier-rail flex-col gap-2"
+          >
+            {realm && <div className="pointer-events-none flex min-h-0 shrink flex-col">{realm}</div>}
+            {armies && <div className="pointer-events-none shrink-0">{armies}</div>}
+          </aside>
+          <FrontierRail onPanel={setRailPanel} page={page} wide={showWide} />
+        </div>
       </div>
-      {!showWide && aspectChip && (
+      {!page && aspectChip && (
         <div className="pointer-events-none fixed bottom-4 right-4 z-hud-column">{aspectChip}</div>
       )}
       <HudFoot>
@@ -103,18 +86,40 @@ export const FrontierDesktop = ({
   );
 };
 
-const FrontierRail = ({ onPanel }: { onPanel: (panel: HTMLElement | null) => void }) => (
+const FrontierRail = ({
+  onPanel,
+  page,
+  wide = false,
+}: {
+  onPanel: (panel: HTMLElement | null) => void;
+  page?: ReactNode;
+  wide?: boolean;
+}) => (
   <aside
     {...HUD_COLUMN_MARK}
     aria-label="Guided rail"
     data-hud-rail
     data-frontier-rail
+    data-wide={wide || undefined}
     className="pointer-events-none flex min-h-0 flex-col gap-2"
   >
     <div aria-label="Notices" className="ui ui-panel pointer-events-auto shrink-0 px-3 py-2 empty:hidden">
       <FeedToasts />
     </div>
     <div ref={onPanel} data-rail-panel className="flex min-h-0 flex-1 flex-col gap-2 empty:hidden" />
+    {page && (
+      <div
+        data-right-page
+        data-wide-page={wide ? "" : undefined}
+        className={
+          wide
+            ? "pointer-events-none flex min-h-0 flex-1 flex-col [&>[data-kit-frame]]:pointer-events-auto [&>[data-kit-frame]]:max-h-full [&>[data-kit-frame]]:w-full [&>[data-kit-frame]]:flex-1"
+            : "pointer-events-none flex min-h-0 flex-1 flex-col gap-2 [&>[data-kit-frame]]:pointer-events-auto"
+        }
+      >
+        {page}
+      </div>
+    )}
   </aside>
 );
 
