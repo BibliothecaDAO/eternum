@@ -1,15 +1,13 @@
 ---
-title: The expedition and beasts
-description:
-  Surface, Veil, and Hollow maps, reveal odds, all five beast families, guard sizes, ruin caches, supply posts, and
-  Spires
+title: The expedition
+description: Surface, Veil, and Hollow maps, reveal pay, reveal odds, Fragment caches in ruins, supply posts, and Spires
 ---
 
 import { FRONTIER } from "@/utils/frontier";
 import { GameIcon } from "@/components/GameIcon";
 import { Video } from "@/components/Media";
 
-# The expedition and beasts
+# The expedition
 
 ## Today's map
 
@@ -35,7 +33,8 @@ layers:
 
 ## What a reveal can find
 
-Every reveal rolls what stands on that tile at the moment you reveal it:
+Every reveal rolls what stands on that tile at the moment you reveal it (see [Beasts](/frontier/beasts) for every family
+and guard size by layer):
 
 | Find                                                    | Odds each reveal                                                                           | What happens                                                                                                                                                                                                                                                                                                         |
 | ------------------------------------------------------- | ------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -51,41 +50,6 @@ Every reveal rolls what stands on that tile at the moment you reveal it:
 
 After {FRONTIER.discovery.emptyRevealLimit} empty reveals in a row (or {FRONTIER.oaths.detectionLimit} with the
 Detection Oath), the next reveal is guaranteed to find a discovery.
-
-## The five beast families
-
-Every guard above the Deep belongs to one of five families. The beast species changes as you go deeper, while its mark
-and reward stay the same. Camp, rift, herd, and band guards double in size on each deeper layer (each guard varies by
-10%). Ruin guards follow the ruin's relic tier instead.
-
-| Family                                                                                  | Mark                               | Bring                             | Pays                             | {FRONTIER.depths[0].name}           | {FRONTIER.depths[1].name}        | {FRONTIER.depths[2].name}          |
-| --------------------------------------------------------------------------------------- | ---------------------------------- | --------------------------------- | -------------------------------- | ----------------------------------- | -------------------------------- | ---------------------------------- |
-| <GameIcon name={FRONTIER.beastFamilies[0].icon} /> **{FRONTIER.beastFamilies[0].name}** | {FRONTIER.beastFamilies[0].weapon} | {FRONTIER.beastFamilies[0].bring} | {FRONTIER.beastFamilies[0].pays} | {FRONTIER.beastFamilies[0].surface} | {FRONTIER.beastFamilies[0].veil} | {FRONTIER.beastFamilies[0].hollow} |
-| <GameIcon name={FRONTIER.beastFamilies[1].icon} /> **{FRONTIER.beastFamilies[1].name}** | {FRONTIER.beastFamilies[1].weapon} | {FRONTIER.beastFamilies[1].bring} | {FRONTIER.beastFamilies[1].pays} | {FRONTIER.beastFamilies[1].surface} | {FRONTIER.beastFamilies[1].veil} | {FRONTIER.beastFamilies[1].hollow} |
-| <GameIcon name={FRONTIER.beastFamilies[2].icon} /> **{FRONTIER.beastFamilies[2].name}** | {FRONTIER.beastFamilies[2].weapon} | {FRONTIER.beastFamilies[2].bring} | {FRONTIER.beastFamilies[2].pays} | {FRONTIER.beastFamilies[2].surface} | {FRONTIER.beastFamilies[2].veil} | {FRONTIER.beastFamilies[2].hollow} |
-| <GameIcon name={FRONTIER.beastFamilies[3].icon} /> **{FRONTIER.beastFamilies[3].name}** | {FRONTIER.beastFamilies[3].weapon} | {FRONTIER.beastFamilies[3].bring} | {FRONTIER.beastFamilies[3].pays} | {FRONTIER.beastFamilies[3].surface} | {FRONTIER.beastFamilies[3].veil} | {FRONTIER.beastFamilies[3].hollow} |
-| <GameIcon name={FRONTIER.beastFamilies[4].icon} /> **{FRONTIER.beastFamilies[4].name}** | {FRONTIER.beastFamilies[4].weapon} | {FRONTIER.beastFamilies[4].bring} | {FRONTIER.beastFamilies[4].pays} | {FRONTIER.beastFamilies[4].surface} | {FRONTIER.beastFamilies[4].veil} | {FRONTIER.beastFamilies[4].hollow} |
-
-Bands appear {FRONTIER.discovery.bandsPerHerd} times as often as herds ({FRONTIER.discovery.beasts} total beast chance).
-For the four Deep beasts, see [The Deep](/frontier/deep).
-
-### Guard summary by layer
-
-| Layer                     | Camps                          | Rifts                          | Herds                          | Bands                            | Ruins                          |
-| ------------------------- | ------------------------------ | ------------------------------ | ------------------------------ | -------------------------------- | ------------------------------ |
-| {FRONTIER.depths[0].name} | {FRONTIER.depths[0].campGuard} | {FRONTIER.depths[0].riftGuard} | {FRONTIER.depths[0].beastWeak} | {FRONTIER.depths[0].beastStrong} | {FRONTIER.depths[0].ruinGuard} |
-| {FRONTIER.depths[1].name} | {FRONTIER.depths[1].campGuard} | {FRONTIER.depths[1].riftGuard} | {FRONTIER.depths[1].beastWeak} | {FRONTIER.depths[1].beastStrong} | {FRONTIER.depths[1].ruinGuard} |
-| {FRONTIER.depths[2].name} | {FRONTIER.depths[2].campGuard} | {FRONTIER.depths[2].riftGuard} | {FRONTIER.depths[2].beastWeak} | {FRONTIER.depths[2].beastStrong} | {FRONTIER.depths[2].ruinGuard} |
-
-Ruin guard sizes by layer and relic tier:
-
-| Layer                              | Lowest tier                      | Middle tier                      | Highest tier                      |
-| ---------------------------------- | -------------------------------- | -------------------------------- | --------------------------------- |
-| {FRONTIER.ruinGuardTable[0].layer} | {FRONTIER.ruinGuardTable[0].low} | {FRONTIER.ruinGuardTable[0].mid} | {FRONTIER.ruinGuardTable[0].high} |
-| {FRONTIER.ruinGuardTable[1].layer} | {FRONTIER.ruinGuardTable[1].low} | {FRONTIER.ruinGuardTable[1].mid} | {FRONTIER.ruinGuardTable[1].high} |
-| {FRONTIER.ruinGuardTable[2].layer} | {FRONTIER.ruinGuardTable[2].low} | {FRONTIER.ruinGuardTable[2].mid} | {FRONTIER.ruinGuardTable[2].high} |
-
-A site pays once. A cleared site leaves a flag showing what it paid, and armies can walk across it.
 
 ## Fragment caches in ruins
 
@@ -104,9 +68,9 @@ paying the same wheat cost as deploying at home. Supply posts work on the {FRONT
 
 ## The Spire and deeper layers
 
-Spire lore ([Your realm](/frontier/realm#castle-lore)) lets you find one Spire per personal layer each day, starting at
-{FRONTIER.discovery.spireStep} on your first reveal of that layer and rising by {FRONTIER.discovery.spireStep} each
-reveal until guaranteed on reveal {FRONTIER.discovery.spireRevealLimit}.
+Spire lore ([Realm and research](/frontier/realm#castle-lore)) lets you find one Spire per personal layer each day,
+starting at {FRONTIER.discovery.spireStep} on your first reveal of that layer and rising by
+{FRONTIER.discovery.spireStep} each reveal until guaranteed on reveal {FRONTIER.discovery.spireRevealLimit}.
 
 Each Spire leads one layer down ({FRONTIER.depths[0].name} to {FRONTIER.depths[1].name}, {FRONTIER.depths[1].name} to
 {FRONTIER.depths[2].name}, and {FRONTIER.depths[2].name} to [the {FRONTIER.names.deep}](/frontier/deep)). Move an army

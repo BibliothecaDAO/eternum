@@ -808,3 +808,31 @@ article.vocs_Content,
   background: var(--gold2);
   color: var(--ink);
 }
+
+.docs-home-quick {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.6rem;
+  max-width: 680px;
+  margin-top: 1.5rem;
+}
+
+.docs-home-quick a {
+  padding: 0.5rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid var(--realm-border-strong);
+  background: color-mix(in srgb, var(--plate) 88%, transparent);
+  color: var(--gold2);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  transition:
+    background 120ms ease,
+    color 120ms ease;
+}
+
+.docs-home-quick a:hover {
+  background: var(--gold2);
+  color: var(--ink);
+}

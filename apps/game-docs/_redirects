@@ -35,6 +35,10 @@
 /devcon/ /frontier 301
 /frontier/devcon /frontier 301
 /frontier/devcon/ /frontier 301
+/frontier/oaths-and-relics /frontier/oaths 301
+/frontier/oaths-and-relics/ /frontier/oaths 301
+/frontier/quests-and-banes /frontier/quests 301
+/frontier/quests-and-banes/ /frontier/quests 301
 /blitz /frontier 301
 /blitz/ /frontier 301
 /blitz/entry /frontier 301

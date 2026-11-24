@@ -92,27 +92,53 @@ export default defineConfig({
       ],
     },
     {
-      text: "Frontier",
+      text: "Start here",
+      items: [{ text: "Frontier", link: "/frontier" }],
+    },
+    {
+      text: "Your realm",
       items: [
-        { text: "Frontier", link: "/frontier" },
-        { text: "Your realm", link: "/frontier/realm" },
-        { text: "Armies and combat", link: "/frontier/armies" },
-        { text: "The expedition and beasts", link: "/frontier/expedition" },
-        { text: "Oaths and relics", link: "/frontier/oaths-and-relics" },
-        { text: "Quests and banes", link: "/frontier/quests-and-banes" },
-        { text: "The Deep", link: "/frontier/deep" },
-        { text: "Aspects and the race", link: "/frontier/aspects" },
-        { text: "Shop and referrals", link: "/frontier/shop-and-referrals" },
+        { text: "Realm and research", link: "/frontier/realm" },
+        { text: "Buildings", link: "/frontier/buildings" },
+        { text: "Daily quests", link: "/frontier/quests" },
       ],
     },
     {
-      text: "Data",
-      items: [{ text: "Get the data", link: "/data/get-the-data" }],
+      text: "Armies",
+      items: [
+        { text: "Troops and stamina", link: "/frontier/armies" },
+        { text: "Combat", link: "/frontier/combat" },
+        { text: "Oaths", link: "/frontier/oaths" },
+        { text: "Relics", link: "/frontier/relics" },
+      ],
     },
     {
-      text: "Developers",
+      text: "Exploring",
+      items: [
+        { text: "The expedition", link: "/frontier/expedition" },
+        { text: "Beasts", link: "/frontier/beasts" },
+      ],
+    },
+    {
+      text: "The Deep",
+      items: [
+        { text: "The Deep", link: "/frontier/deep" },
+        { text: "Banes and Triumphs", link: "/frontier/banes" },
+      ],
+    },
+    {
+      text: "The season",
+      items: [{ text: "Aspects and rewards", link: "/frontier/aspects" }],
+    },
+    {
+      text: "Shop and friends",
+      items: [{ text: "Shop and referrals", link: "/frontier/shop-and-referrals" }],
+    },
+    {
+      text: "Data and developers",
       collapsed: true,
       items: [
+        { text: "Get the data", link: "/data/get-the-data" },
         { text: "Getting started", link: "/development/getting-started" },
         { text: "Client", link: "/development/client" },
         { text: "Contracts", link: "/development/contracts" },

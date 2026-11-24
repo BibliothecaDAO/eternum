@@ -1,0 +1,44 @@
+---
+title: Beasts
+description: All five Surface beast families, guard sizes by layer, and ruin guard tiers
+---
+
+import { FRONTIER } from "@/utils/frontier";
+import { GameIcon } from "@/components/GameIcon";
+
+# Beasts
+
+Every guard above the Deep belongs to one of five families. The beast species changes as you go deeper, while its mark
+and reward stay the same. Camp, rift, herd, and band guards double in size on each deeper layer (each guard varies by
+10%). Ruin guards follow the ruin's relic tier instead.
+
+## The five beast families
+
+| Family                                                                                  | Mark                               | Bring                             | Pays                             | {FRONTIER.depths[0].name}           | {FRONTIER.depths[1].name}        | {FRONTIER.depths[2].name}          |
+| --------------------------------------------------------------------------------------- | ---------------------------------- | --------------------------------- | -------------------------------- | ----------------------------------- | -------------------------------- | ---------------------------------- |
+| <GameIcon name={FRONTIER.beastFamilies[0].icon} /> **{FRONTIER.beastFamilies[0].name}** | {FRONTIER.beastFamilies[0].weapon} | {FRONTIER.beastFamilies[0].bring} | {FRONTIER.beastFamilies[0].pays} | {FRONTIER.beastFamilies[0].surface} | {FRONTIER.beastFamilies[0].veil} | {FRONTIER.beastFamilies[0].hollow} |
+| <GameIcon name={FRONTIER.beastFamilies[1].icon} /> **{FRONTIER.beastFamilies[1].name}** | {FRONTIER.beastFamilies[1].weapon} | {FRONTIER.beastFamilies[1].bring} | {FRONTIER.beastFamilies[1].pays} | {FRONTIER.beastFamilies[1].surface} | {FRONTIER.beastFamilies[1].veil} | {FRONTIER.beastFamilies[1].hollow} |
+| <GameIcon name={FRONTIER.beastFamilies[2].icon} /> **{FRONTIER.beastFamilies[2].name}** | {FRONTIER.beastFamilies[2].weapon} | {FRONTIER.beastFamilies[2].bring} | {FRONTIER.beastFamilies[2].pays} | {FRONTIER.beastFamilies[2].surface} | {FRONTIER.beastFamilies[2].veil} | {FRONTIER.beastFamilies[2].hollow} |
+| <GameIcon name={FRONTIER.beastFamilies[3].icon} /> **{FRONTIER.beastFamilies[3].name}** | {FRONTIER.beastFamilies[3].weapon} | {FRONTIER.beastFamilies[3].bring} | {FRONTIER.beastFamilies[3].pays} | {FRONTIER.beastFamilies[3].surface} | {FRONTIER.beastFamilies[3].veil} | {FRONTIER.beastFamilies[3].hollow} |
+| <GameIcon name={FRONTIER.beastFamilies[4].icon} /> **{FRONTIER.beastFamilies[4].name}** | {FRONTIER.beastFamilies[4].weapon} | {FRONTIER.beastFamilies[4].bring} | {FRONTIER.beastFamilies[4].pays} | {FRONTIER.beastFamilies[4].surface} | {FRONTIER.beastFamilies[4].veil} | {FRONTIER.beastFamilies[4].hollow} |
+
+Bands appear {FRONTIER.discovery.bandsPerHerd} times as often as herds ({FRONTIER.discovery.beasts} total beast chance).
+For the four Deep beasts, see [The Deep](/frontier/deep).
+
+## Guard summary by layer
+
+| Layer                     | Camps                          | Rifts                          | Herds                          | Bands                            | Ruins                          |
+| ------------------------- | ------------------------------ | ------------------------------ | ------------------------------ | -------------------------------- | ------------------------------ |
+| {FRONTIER.depths[0].name} | {FRONTIER.depths[0].campGuard} | {FRONTIER.depths[0].riftGuard} | {FRONTIER.depths[0].beastWeak} | {FRONTIER.depths[0].beastStrong} | {FRONTIER.depths[0].ruinGuard} |
+| {FRONTIER.depths[1].name} | {FRONTIER.depths[1].campGuard} | {FRONTIER.depths[1].riftGuard} | {FRONTIER.depths[1].beastWeak} | {FRONTIER.depths[1].beastStrong} | {FRONTIER.depths[1].ruinGuard} |
+| {FRONTIER.depths[2].name} | {FRONTIER.depths[2].campGuard} | {FRONTIER.depths[2].riftGuard} | {FRONTIER.depths[2].beastWeak} | {FRONTIER.depths[2].beastStrong} | {FRONTIER.depths[2].ruinGuard} |
+
+## Ruin guards by layer and tier
+
+| Layer                              | Lowest tier                      | Middle tier                      | Highest tier                      |
+| ---------------------------------- | -------------------------------- | -------------------------------- | --------------------------------- |
+| {FRONTIER.ruinGuardTable[0].layer} | {FRONTIER.ruinGuardTable[0].low} | {FRONTIER.ruinGuardTable[0].mid} | {FRONTIER.ruinGuardTable[0].high} |
+| {FRONTIER.ruinGuardTable[1].layer} | {FRONTIER.ruinGuardTable[1].low} | {FRONTIER.ruinGuardTable[1].mid} | {FRONTIER.ruinGuardTable[1].high} |
+| {FRONTIER.ruinGuardTable[2].layer} | {FRONTIER.ruinGuardTable[2].low} | {FRONTIER.ruinGuardTable[2].mid} | {FRONTIER.ruinGuardTable[2].high} |
+
+A site pays once. A cleared site leaves a flag showing what it paid, and armies can walk across it.

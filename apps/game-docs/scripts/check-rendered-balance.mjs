@@ -177,10 +177,10 @@ export const frontierPhrases = (
         calendar.testnetDates,
         `Opens ${calendar.seasonStart}`,
         `all ${FRONTIER_BUILDING_TYPES.length} buildings`,
-        `the ${aspects.length} Aspects, ${aspectOrderCount} Orders`,
-        `${deepSites.length} site kinds and their beasts`,
+        `the ${aspects.length} Aspects`,
+        `${deepSites.length} site kinds`,
         `all ${aspectOrderCount} Oaths`,
-        `all ${relicKinds.length} relic kinds from ruins.`,
+        `all ${relicKinds.length} relic kinds`,
       ],
     },
     {
@@ -193,6 +193,12 @@ export const frontierPhrases = (
         `Revealing a tile costs ${stamina.staminaExploreStaminaCost} for ${FRONTIER_TROOP_NAMES[TroopType.Knight]} and ${FRONTIER_TROOP_NAMES[TroopType.Crossbowman]}, and ${nativeRules.SCOUT_EXPLORE_STAMINA} for ${FRONTIER_TROOP_NAMES[TroopType.Paladin]}. A step on an explored tile costs ${stamina.staminaTravelStaminaCost}, and an attack needs ${stamina.staminaAttackReq}.`,
         `adding +${n(logisticsBonus)} bonus stamina at rank V for ${n(stamina.staminaKnightMax + logisticsBonus)} max stamina total.`,
         `beside any camp your realm cleared today (supply post) on the ${personalLayersOr}`,
+        staminaRule,
+      ],
+    },
+    {
+      page: "frontier/combat",
+      phrases: [
         `round(${n(Number(BigInt(config.troop.damage.damageScalingFactor) / 2n ** 64n))} × troops ÷ (both sides' troops)^${(contract.combatBetaTenths / 10).toFixed(1)})`,
         deepSites
           .filter((site) => !preset.deep.beasts[site.key].bow)
@@ -202,13 +208,11 @@ export const frontierPhrases = (
           .filter((site) => preset.deep.beasts[site.key].bow)
           .map((site) => DEEP_BEASTS[site.key].name)
           .join(", "),
-        staminaRule,
       ],
     },
     {
       page: "frontier/expedition",
       phrases: [
-        ...frontierGuardPhrases(preset),
         ...preset.depths.map((depth, index) => `${LAYER_NAMES[index]} ${depth.revealPercent}%`),
         `${n(contract.herdGuardMultiplier)}x its starting guard on the ${LAYER_NAMES[0]}`,
         `${n(100 / contract.campGuardDivisor)}% of its starting guard on the ${LAYER_NAMES[0]}, ${n(depthRewardPercent(1))}% of that in the ${LAYER_NAMES[1]}, ${n(depthRewardPercent(2))}% in the ${LAYER_NAMES[2]}`,
@@ -216,6 +220,12 @@ export const frontierPhrases = (
         `Immediately draws ${n(contract.oathDrawCount)} Oaths for the revealing army, or lets you pass for +${n(nativeOaths.PASS_STAMINA)} stamina.`,
         `Each ruin holds either a relic or a Fragment cache, never both.`,
         `${nativeFragments.SURFACE_CACHE_PERCENT}% on the ${LAYER_NAMES[0]}`,
+      ],
+    },
+    {
+      page: "frontier/beasts",
+      phrases: [
+        ...frontierGuardPhrases(preset),
         ...[0, 1, 2].map((depth) => {
           const low = previewRuinGuardBounds(depth + 1, depth);
           const high = previewRuinGuardBounds(depth + relicsPerLayer, depth);
@@ -227,8 +237,18 @@ export const frontierPhrases = (
       page: "frontier/realm",
       phrases: [
         `A new realm starts with ${start(26)} ${FRONTIER_TROOP_NAMES[TroopType.Knight]} waiting at home (no army is deployed yet), ${start(35)} wheat, and ${start(23)} labor.`,
-        `Your castle makes ${castleLaborRate(0)} labor per hour at castle level 1 (${rankName(0)}), multiplying by ${n(contract.castleLaborStep)} at each castle level up to ${castleLaborRate(3)}/h at castle level 4 (${rankName(3)}).`,
         `receive ${n(preset.dailyQuest.labor)} Labor and ${n(preset.dailyQuest.essence)} Essence at castle level 1 (${rankName(0)}), multiplying by ${n(contract.questLevelStep)} at each higher castle level.`,
+        ...armies.map(
+          (count, index) =>
+            `Level ${index + 1} (${rankName(index)}) ${n(buildablePlotCount(index))} ${n(count)} ${n(caps[index])} ${castleLaborRate(index)} ${n(preset.board.resourceStoreCaps[index])} ${n(preset.board.laborStoreCaps[index])}`,
+        ),
+        `Price per troop kind: ${oathSlotPrices}.`,
+      ],
+    },
+    {
+      page: "frontier/buildings",
+      phrases: [
+        `Your castle makes ${castleLaborRate(0)} labor per hour at castle level 1 (${rankName(0)}), multiplying by ${n(contract.castleLaborStep)} at each castle level up to ${castleLaborRate(3)}/h at castle level 4 (${rankName(3)}).`,
         ...FRONTIER_BUILDING_TYPES.map((id) => buildingName(id, true)),
         `base + (n - 1)² × ${n(config.buildings.buildingFixedCostScalePercent / 100)}% of base`,
         ...[
@@ -246,16 +266,11 @@ export const frontierPhrases = (
               )
               .join(" ")}`,
         ),
-        ...armies.map(
-          (count, index) =>
-            `Level ${index + 1} (${rankName(index)}) ${n(buildablePlotCount(index))} ${n(count)} ${n(caps[index])} ${castleLaborRate(index)} ${n(preset.board.resourceStoreCaps[index])} ${n(preset.board.laborStoreCaps[index])}`,
-        ),
         `Farm Wheat (${rateOf(BuildingType.ResourceWheat)}/h) Level 1 (${rankName(0)}) ${buildingPrice(config, BuildingType.ResourceWheat)}`,
         `${buildingName(BuildingType.ResourceKnightT1, true)} ${FRONTIER_TROOP_NAMES[TroopType.Knight]} (${rateOf(BuildingType.ResourceKnightT1)}/h) Level 1 (${rankName(0)}) ${buildingPrice(config, BuildingType.ResourceKnightT1)}`,
         `${buildingName(BuildingType.ResourceCrossbowmanT1, true)} ${FRONTIER_TROOP_NAMES[TroopType.Crossbowman]} (${rateOf(BuildingType.ResourceCrossbowmanT1)}/h) Level 2 (${rankName(1)}) ${buildingPrice(config, BuildingType.ResourceCrossbowmanT1)}`,
         `${buildingName(BuildingType.ScoutsLodge, true)} ${FRONTIER_TROOP_NAMES[TroopType.Paladin]} (${rateOf(BuildingType.ScoutsLodge)}/h) Level 2 (${rankName(1)}) ${buildingPrice(config, BuildingType.ScoutsLodge)}`,
         `Supply yard Logistics training Level 3 (${rankName(2)}) ${buildingPrice(config, BuildingType.SupplyYard)}`,
-        `Price per troop kind: ${oathSlotPrices}.`,
       ],
     },
     {
@@ -269,18 +284,6 @@ export const frontierPhrases = (
         `+${n(ASPECT_REWARD.finishBonus)} LORDS`,
         `at least ${n(ASPECT_REWARD.gloryToShare)} Glory`,
         `Essence cores, Ethereal mines, and beaten troops give no Glory.`,
-        ...Object.entries(aspectWords.triumph).map(([stageKey]) => {
-          const stage = Number(stageKey);
-          const percent = {
-            [nativeRace.CLEAR_MIST_STAGE]: preset.race.clearMistPercent,
-            [nativeRace.SECOND_WIND_STAGE]: preset.race.secondWindPercent,
-            [nativeRace.PALE_MOON_STAGE]: preset.race.paleMoonPercent,
-            [nativeRace.SPOILS_STAGE]: preset.race.spoilsPercent,
-          }[stage];
-          if (percent === undefined) throw new Error(`Missing Triumph check for stage ${stageKey}`);
-          const head = triumphHead(stage, percent);
-          return `${head.name} ${head.rule}.`;
-        }),
       ],
     },
     {
@@ -300,7 +303,7 @@ export const frontierPhrases = (
       ],
     },
     {
-      page: "frontier/oaths-and-relics",
+      page: "frontier/oaths",
       phrases: [
         `Revealing a Shrine opens a pick of ${n(contract.oathDrawCount)} Oaths immediately for that army.`,
         `award a pick of ${n(contract.oathDrawCount)} Oaths to the army that lands the last hit.`,
@@ -331,6 +334,11 @@ export const frontierPhrases = (
           ).toFixed(1);
           return `${rage}: ${n(Number(oathSitePay(bit(nativeOaths.RAGE), 1000n, true)) / 10)}% ${perfection}: ${n(Number(oathSitePay(bit(nativeOaths.PERFECTION), 1000n, true)) / 10)}% ${both}%`;
         })(),
+      ],
+    },
+    {
+      page: "frontier/relics",
+      phrases: [
         `Relics come in ${TIER_WORDS.length} tiers`,
         `All ${relicKinds.length} relic kinds`,
         ...relicKinds.map(
@@ -351,7 +359,7 @@ export const frontierPhrases = (
       ],
     },
     {
-      page: "frontier/quests-and-banes",
+      page: "frontier/quests",
       phrases: [
         `Each of the ${dailyQuests.length} daily quests comes once every ${dailyQuests.length} days`,
         ...dailyQuests.map((quest) => `${quest.name} ${quest.objective}`),
@@ -359,6 +367,11 @@ export const frontierPhrases = (
         `${n(preset.dailyQuest.labor)} Labor and ${n(preset.dailyQuest.essence)} Essence`,
         `to ${n(preset.dailyQuest.bonusPercent)}%.`,
         `+${n(nativeFragments.WONDER_QUEST_FRAGMENTS)} Fragments`,
+      ],
+    },
+    {
+      page: "frontier/banes",
+      phrases: [
         `Once ${n(preset.banes.quorumPercent)}% of your Aspect's members who were active on the previous day`,
         `World Banes stop for the rest of the season.`,
         ...worldBanes.map((entry) => {
@@ -370,6 +383,18 @@ export const frontierPhrases = (
             .map(n)
             .join(" / ");
           return `${head.name} ${head.rule}. ${q.name}: ${q.objective} ${targets}`;
+        }),
+        ...Object.entries(aspectWords.triumph).map(([stageKey]) => {
+          const stage = Number(stageKey);
+          const percent = {
+            [nativeRace.CLEAR_MIST_STAGE]: preset.race.clearMistPercent,
+            [nativeRace.SECOND_WIND_STAGE]: preset.race.secondWindPercent,
+            [nativeRace.PALE_MOON_STAGE]: preset.race.paleMoonPercent,
+            [nativeRace.SPOILS_STAGE]: preset.race.spoilsPercent,
+          }[stage];
+          if (percent === undefined) throw new Error(`Missing Triumph check for stage ${stageKey}`);
+          const head = triumphHead(stage, percent);
+          return `${head.name} ${head.rule}.`;
         }),
       ],
     },
@@ -456,15 +481,15 @@ export const expectedPageIcons = ({
   };
   return [
     {
-      page: "frontier/realm",
+      page: "frontier/buildings",
       icons: FRONTIER_BUILDING_TYPES.map((id) => iconUrl(buildingMeaning(id, true), 128)),
     },
     {
-      page: "frontier/oaths-and-relics",
+      page: "frontier/relics",
       icons: relicKinds.map((kind) => iconUrl(relicMeaning(kind), 128)),
     },
     {
-      page: "frontier/quests-and-banes",
+      page: "frontier/banes",
       icons: worldBanes.map((entry) => iconUrl(worldBaneHead(entry.id, baneRules).icon, 128)),
     },
   ];

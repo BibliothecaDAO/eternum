@@ -1,0 +1,55 @@
+---
+title: Banes and Triumphs
+description: World Banes, rival Team Banes, bane quests, and hyperstructure Stage Triumphs
+---
+
+import { FRONTIER } from "@/utils/frontier";
+import { GameIcon } from "@/components/GameIcon";
+import { PipeTable } from "@/components/PipeTable";
+
+# Banes and Triumphs
+
+Some game days bring a special day for your Aspect: a **World Bane** from the mist, a **Team Bane** sent by a rival
+Aspect from [the Deep](/frontier/deep), or a **Stage Triumph** earned by raising your Aspect's hyperstructure. On bane
+days, a bane quest replaces your normal [daily quest](/frontier/quests).
+
+## World Banes
+
+From day 2 onward, World Banes can strike all {FRONTIER.aspectsCount} Aspects at the start of a game day. The chance is
+0% the day after a World Bane, and each day without a World Bane adds +{FRONTIER.banes.chanceStep} to the chance of one
+on the next day. Once any Aspect issues the season's first Team Bane, World Banes stop for the rest of the season. An
+Aspect never has a World Bane and a Team Bane on the same day.
+
+| World Bane                                                                          | Effect while active              | Bane quest to break it                                                            | Target (Levels 1 / 2 / 3 / 4)     |
+| ----------------------------------------------------------------------------------- | -------------------------------- | --------------------------------------------------------------------------------- | --------------------------------- |
+| <GameIcon name={FRONTIER.banes.world[0].icon} /> **{FRONTIER.banes.world[0].name}** | {FRONTIER.banes.world[0].effect} | **{FRONTIER.banes.world[0].questName}:** {FRONTIER.banes.world[0].questObjective} | {FRONTIER.banes.world[0].targets} |
+| <GameIcon name={FRONTIER.banes.world[1].icon} /> **{FRONTIER.banes.world[1].name}** | {FRONTIER.banes.world[1].effect} | **{FRONTIER.banes.world[1].questName}:** {FRONTIER.banes.world[1].questObjective} | {FRONTIER.banes.world[1].targets} |
+| <GameIcon name={FRONTIER.banes.world[2].icon} /> **{FRONTIER.banes.world[2].name}** | {FRONTIER.banes.world[2].effect} | **{FRONTIER.banes.world[2].questName}:** {FRONTIER.banes.world[2].questObjective} | {FRONTIER.banes.world[2].targets} |
+
+Each Aspect tracks its own progress, and progress counts on every layer. Finishing the bane quest pays your normal daily
+quest reward. Once {FRONTIER.banes.quorum} of your Aspect's members who were active on the previous day finish the bane
+quest, the bane ends for your Aspect, and everyone who finished can press **Collect again** for a second daily quest
+payout.
+
+## Rival Team Banes
+
+<GameIcon name="hyperstructure" /> When an Aspect fills its **Bane altar** bar ({FRONTIER.deep.altarThreshold} charge)
+in [the Deep](/frontier/deep), a **Team Bane** hits the rival Aspect with the tallest hyperstructure on the next game
+day, skipping any rival already blocked or already targeted for tomorrow. No Team Bane is issued on the last day of the
+season.
+
+- The targeted Aspect's hyperstructure stops gaining height while the Team Bane lasts. Height missed while blocked is
+  not returned when the bane lifts.
+- The targeted Aspect gets one of the {FRONTIER.banes.count} bane quests ({FRONTIER.banes.questNames}), never the same
+  quest two times in a row.
+- Finishing the bane quest pays the daily quest reward. Once {FRONTIER.banes.quorum} of the Aspect's members who were
+  active on the previous day finish the quest, the Team Bane lifts and height growth resumes.
+
+## Stage Triumphs
+
+<GameIcon name="star" /> Completing hyperstructure stages 1 through 4 activates a **Triumph** for every member of your
+Aspect on the next game day ([Aspects and rewards](/frontier/aspects)). Each Triumph lasts for that one game day only,
+applies above the Deep only (Deep beasts, sites, and troop drain are unchanged), and no Triumph is scheduled on the last
+day of the season. A Triumph and a World Bane on the same day multiply together.
+
+<PipeTable headers={["Stage reached", "Triumph", "Effect for your Aspect"]}>{FRONTIER.race.triumphTable}</PipeTable>
