@@ -135,14 +135,14 @@ describe("ownership rings", () => {
     setBlockTimestampSource(() => DAY * 11 + 100);
     world.projection.rebuild();
     expect(useUIStore.getState().selectedHex).toEqual(hex(328, 72));
-    expect(rings.shown()).toEqual([hex(328, 72), hex(330, 10), hex(344, 72)]);
+    expect(rings.shown()).toEqual([hex(328, 72), hex(344, 72)]);
 
     world.click(328, 8);
     expect(rings.shown()).toEqual([]);
     world.click(328, 8);
     expect(rings.shown()).toEqual([]);
     world.click(344, 72);
-    expect(rings.shown()).toEqual([hex(328, 72), hex(330, 10), hex(344, 72)]);
+    expect(rings.shown()).toEqual([hex(328, 72), hex(344, 72)]);
   });
 
   it("name whatever structure stands on the selected hex now, as the tile panel does", () => {
@@ -375,12 +375,14 @@ function createWorld(options: { expedition?: { dayUnitSeconds: number; spacing: 
       at,
       alt = false,
       count = 100n,
+      day = 0,
     }: {
       id: number;
       home: number;
       at: [number, number];
       alt?: boolean;
       count?: bigint;
+      day?: number;
     }) =>
       facts.applyFacts([
         {
@@ -394,6 +396,9 @@ function createWorld(options: { expedition?: { dayUnitSeconds: number; spacing: 
             troops: { ...explorerFixture.expected.value.troops, count },
           },
         },
+        ...(options.expedition
+          ? [{ model: "ArmyDay", key: key(GAME, id), value: { game_id: GAME, explorer_id: id, day: BigInt(day) } }]
+          : []),
         ...standOn(id, alt, at, TileOccupier.ExplorerKnightT1),
       ]),
     /** An army gone from the facts (fallen, or a pre-confirmed one rolled back), with the tile it held. */
