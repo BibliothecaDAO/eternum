@@ -3,27 +3,19 @@ layout: landing
 ---
 
 import { HomePage } from "vocs/components";
-import { HomeQuickLinks } from "@/components/HomeQuickLinks";
+import { RealmsHome } from "@/components/RealmsHome";
 
 <HomePage.Root>
   <div className="realms-homepage-background" aria-hidden="true">
     <img src="/images/covers/twilight-tundra.png" alt="" />
   </div>
 
-<img src="/images/logos/realms-lettered.webp" alt="Realms" width="240" />
+<img src="/images/logos/realms-lettered.webp" alt="Realms" width="220" />
 <HomePage.Description>
-  Realms: Frontier Season 1 is free to play onchain. Each game day opens a fresh map around your realm, and your Aspect
-  races others in the Deep for LORDS.
+  Realms is a home for free-to-play onchain strategy games. One Realms account and payout wallet works across every
+  game.
 </HomePage.Description>
-<HomePage.Buttons>
-  <HomePage.Button href="/frontier" variant="primary">
-    Start here
-  </HomePage.Button>
-  <HomePage.Button href="https://play.realms.party" variant="outline">
-    Play
-  </HomePage.Button>
-</HomePage.Buttons>
 
-<HomeQuickLinks />
+<RealmsHome />
 
 </HomePage.Root>

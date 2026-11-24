@@ -1,15 +1,31 @@
-import SIDEBAR from "../../sidebar.json";
+import { APP_ADDRESS } from "../../../game/src/config/app-address";
+import { leavesForKind, quickLinksForGame } from "../utils/sidebar-tree";
 
-const HOME_QUICK_LINKS = SIDEBAR.flatMap((section) => section.items.filter((item) => "quick" in item && item.quick));
-
-export function HomeQuickLinks() {
+export function HomeQuickLinks({ game = "frontier" }: { game?: string }) {
+  const items = quickLinksForGame(game);
+  const dashboard = leavesForKind("data")[0];
   return (
-    <nav className="docs-home-quick" aria-label="Game catalogs">
-      {HOME_QUICK_LINKS.map((item) => (
-        <a key={item.link} href={item.link}>
-          {item.text}
+    <div className="docs-frontier-landing-nav">
+      <div className="docs-game-actions">
+        <a href="#your-first-minute" className="docs-btn-primary">
+          Start here
         </a>
-      ))}
-    </nav>
+        <a href={APP_ADDRESS} className="docs-btn-outline">
+          Play
+        </a>
+        {dashboard ? (
+          <a href={dashboard.link} className="docs-btn-outline">
+            {dashboard.text}
+          </a>
+        ) : null}
+      </div>
+      <nav className="docs-home-quick docs-frontier-quick" aria-label="Game catalogs">
+        {items.map((item) => (
+          <a key={item.link} href={item.link}>
+            {item.text}
+          </a>
+        ))}
+      </nav>
+    </div>
   );
 }
