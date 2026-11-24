@@ -25,7 +25,7 @@ const aspectListLine = aspects.map((aspect) => `${aspect.id} = ${aspect.name}`).
 const sampleAspectId = aspects[1].id;
 const precisionText = RESOURCE_PRECISION.toLocaleString("en-US");
 const statsCacheText = STATS_CACHE_SECONDS.toLocaleString("en-US");
-const gloryUnitNote = `decimal string scaled by ${precisionText} — divide by ${precisionText} for whole Glory`;
+const gloryUnitNote = `season-total decimal string scaled by ${precisionText} — divide by ${precisionText} for whole Glory`;
 
 export const SNAPSHOT_MODELS = [
   "AspectHyperstructure",
@@ -187,12 +187,12 @@ export const buildAgentPrompt = (routes: readonly PublicRouteSpec[]) => {
     `- ${LEADERBOARD_RULE}`,
     "",
     "Example questions you can answer for me:",
-    "1. Show the top Glory earners per Aspect today.",
+    "1. Show the top Glory earners per Aspect this season.",
     "2. Show my Aspect's standing (hyperstructure height, member count, top 10 Glory).",
     "3. Export all Aspect rosters as a CSV.",
     "4. Count realms created per UTC day.",
     "",
-    "My question: Show the top Glory earners per Aspect today.",
+    "My question: Show the top Glory earners per Aspect this season.",
   ].join("\n");
 };
 

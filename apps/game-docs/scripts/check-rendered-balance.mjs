@@ -492,7 +492,7 @@ export const publicDataPhrases = (release, heraldLimits, dashboardOrigins, publi
         `Herald base URL is ${release.public_herald_url}`,
         `Shard Starknet JSON-RPC URL is ${release.public_rpc_url}`,
         `Read-only only: never send write calls, transactions, or mutations.`,
-        `Show the top Glory earners per Aspect today.`,
+        `Show the top Glory earners per Aspect this season.`,
         publicData.leaderboardRule,
         publicData.snapshotModelsList,
         ...publicData.rateEtiquette,
