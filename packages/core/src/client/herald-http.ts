@@ -166,7 +166,10 @@ export const fetchHeraldAspectRoster = async (
   const url = new URL(buildHeraldUrl(shard, `/games/${gameId}/aspects/${aspect}/members`));
   url.searchParams.set("offset", String(page.offset));
   url.searchParams.set("limit", String(page.limit));
-  return fetchHeraldJson<HeraldAspectRoster>(url.toString(), `Herald Aspect ${aspect} members for ${shard.url} game ${gameId}`);
+  return fetchHeraldJson<HeraldAspectRoster>(
+    url.toString(),
+    `Herald Aspect ${aspect} members for ${shard.url} game ${gameId}`,
+  );
 };
 
 /**
