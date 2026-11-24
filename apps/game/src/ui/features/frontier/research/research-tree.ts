@@ -41,6 +41,8 @@ export interface RealmResearchFacts {
 export type Branch = keyof typeof RESEARCH_TREE.branches;
 type ResearchEra = 0 | 1 | 2;
 export const RESEARCH_ERAS: readonly ResearchEra[] = [0, 1, 2];
+export const researchEraForLevel = (level: number): ResearchEra =>
+  RESEARCH_ERAS[Math.min(RESEARCH_ERAS.length - 1, Math.max(0, level))]!;
 /** done: nothing left to buy; ready: buyable now; short: open, the Essence or labor not held yet; locked: waits on a step. */
 export type NodeState = keyof typeof RESEARCH_TREE.states;
 
@@ -165,7 +167,7 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
         : needs;
     };
     const needs = next === undefined ? [] : nextNeeds(next);
-    const era = Math.min(2, buildingOpensAtLevel(category)) as ResearchEra;
+    const era = researchEraForLevel(buildingOpensAtLevel(category));
     return {
       key: `row-${row}`,
       row,

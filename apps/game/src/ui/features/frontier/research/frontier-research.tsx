@@ -25,7 +25,7 @@ export const FrontierResearch = ({
         <HudLoading line={RESEARCH_TREE.onItsWay} />
       </HudPage>
     );
-  const { nodes } = tree;
+  const { nodes, essence, labor } = tree;
   const sending = new Set(nodes.filter(actions.sending).map(({ row }) => row));
 
   return (
@@ -37,6 +37,9 @@ export const FrontierResearch = ({
       fixFor={(need, node) => actions.fixFor(need, node, nodes)}
       onResearch={actions.research}
       onClose={onClose}
+      essence={essence}
+      labor={labor}
+      castleLevel={realm.base.level}
     />
   );
 };
