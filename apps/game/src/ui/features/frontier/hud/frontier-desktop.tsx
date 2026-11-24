@@ -12,6 +12,7 @@ import { type ReactNode, useState } from "react";
 
 import type { HudSurface } from "./frontier-nav";
 import { useHudPlaces } from "./hud-places";
+import { HudPopoverRoot } from "./hud-popover";
 import { useHudScale } from "./hud-scale";
 
 export const FrontierDesktop = ({
@@ -40,34 +41,46 @@ export const FrontierDesktop = ({
   children?: ReactNode;
 }) => {
   const [railPanel, setRailPanel] = useState<HTMLElement | null>(null);
+  const [popoverNode, setPopoverNode] = useState<HTMLElement | null>(null);
+  const scale = useHudScale();
   return (
-    <div style={{ zoom: useHudScale() }}>
-      <header aria-label="Game controls" className="frontier-crown pointer-events-auto">
-        {placeSwitch}
-        {clock}
-        {quest}
-      </header>
-      <aside
-        {...HUD_COLUMN_MARK}
-        aria-label={REALM}
-        className="frontier-corner frontier-corner--left pointer-events-none"
-      >
-        {realm}
-        {armies}
-      </aside>
-      <FrontierRail
-        onPanel={setRailPanel}
-        places={places}
-        banner={banner}
-        page={page}
-        wide={widePage && Boolean(page)}
-      />
-      <HudFoot>
-        <div className="pointer-events-none flex flex-col items-center gap-3">{foot}</div>
-      </HudFoot>
-      <FollowingArmyPill />
-      <SheetDock.Provider value={railPanel}>{children}</SheetDock.Provider>
-    </div>
+    <HudPopoverRoot.Provider value={{ node: popoverNode, scale }}>
+      <div style={{ zoom: scale }}>
+        <header aria-label="Game controls" className="frontier-crown pointer-events-auto">
+          {placeSwitch}
+          {clock}
+          {quest}
+        </header>
+        <div
+          aria-label="Notices"
+          role="status"
+          className="ui ui-panel frontier-notices pointer-events-auto empty:hidden"
+        >
+          <FeedToasts />
+        </div>
+        <aside
+          {...HUD_COLUMN_MARK}
+          aria-label={REALM}
+          className="frontier-corner frontier-corner--left pointer-events-none"
+        >
+          {realm}
+          {armies}
+        </aside>
+        <FrontierRail
+          onPanel={setRailPanel}
+          places={places}
+          banner={banner}
+          page={page}
+          wide={widePage && Boolean(page)}
+        />
+        <HudFoot>
+          <div className="pointer-events-none flex flex-col items-center gap-3">{foot}</div>
+        </HudFoot>
+        <FollowingArmyPill />
+        <SheetDock.Provider value={railPanel}>{children}</SheetDock.Provider>
+        <div ref={setPopoverNode} />
+      </div>
+    </HudPopoverRoot.Provider>
   );
 };
 
@@ -94,9 +107,6 @@ const FrontierRail = ({
   >
     {places}
     {banner && <div className="pointer-events-none flex shrink-0 justify-center empty:hidden">{banner}</div>}
-    <div aria-label="Notices" className="ui ui-panel pointer-events-auto shrink-0 px-3 py-2 empty:hidden">
-      <FeedToasts />
-    </div>
     <div ref={onPanel} data-rail-panel className="flex min-h-0 flex-1 flex-col gap-2 empty:hidden" />
     {page && (
       <div

@@ -16,6 +16,20 @@
   padding: 4px 14px 4px 12px;
 }
 
+.frontier-notices {
+  position: fixed;
+  top: 112px;
+  left: 50%;
+  z-index: theme(zIndex.hud-popover);
+  width: max-content;
+  max-width: 440px;
+  transform: translateX(-50%);
+  padding: theme(spacing.2) theme(spacing.3);
+}
+.frontier-quest-popover[data-layout="desktop"] {
+  margin-top: 10px;
+}
+
 .frontier-crown .frontier-place-switch .ui-tabs {
   display: flex;
   flex-wrap: nowrap;

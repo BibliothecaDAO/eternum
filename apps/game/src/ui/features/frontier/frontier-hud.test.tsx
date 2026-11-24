@@ -267,24 +267,25 @@ it("keeps a refused order in sight on a desktop, over the feed and over a panel 
   const { useEventFeedStore } = await import("@/ui/features/event-feed/event-feed-store");
   viewport.set(1920);
   await renderHud();
-  const rail = () => host.querySelector("[data-frontier-rail]")!;
+  const notices = () => host.querySelector('[aria-label="Notices"]');
   try {
     await act(async () => toast.error("Not enough stamina"));
+    expect(notices()?.closest("[data-frontier-rail]")).toBeNull();
     const feed = host.querySelector<HTMLButtonElement>('nav[aria-label="Places"] button[aria-label="Feed"]')!;
     await act(async () => feed.click());
     expect(host.querySelector('[data-frontier-rail] [data-right-page] section[aria-label="Feed"]')).not.toBeNull();
-    expect(rail().querySelector('[aria-label="Notices"]')?.textContent).toContain("Not enough stamina");
+    expect(notices()?.textContent).toContain("Not enough stamina");
     const season = host.querySelector<HTMLButtonElement>('nav[aria-label="Places"] button[aria-label="Season"]')!;
     await act(async () => season.click());
     expect(host.querySelector('[data-frontier-rail] [data-right-page] section[aria-label="Season"]')).not.toBeNull();
-    expect(rail().querySelector('[aria-label="Notices"]')?.textContent).toContain("Not enough stamina");
+    expect(notices()?.textContent).toContain("Not enough stamina");
     await act(async () =>
       shownStore.applyFacts([{ model: "RaceRules", key: "0xa500", value: wireFact(raceRules()) }] as never),
     );
     expect(
       host.querySelector('[data-frontier-rail] [data-wide-page] section[aria-label="Aspect Race"]'),
     ).not.toBeNull();
-    expect(rail().querySelector('[aria-label="Notices"]')?.textContent).toContain("Not enough stamina");
+    expect(notices()?.textContent).toContain("Not enough stamina");
   } finally {
     useEventFeedStore.getState().dismiss();
   }

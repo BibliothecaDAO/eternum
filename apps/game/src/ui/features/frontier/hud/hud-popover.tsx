@@ -4,7 +4,9 @@ import {
   type KeyboardEvent,
   type ReactNode,
   type RefObject,
+  createContext,
   useCallback,
+  useContext,
   useEffect,
   useId,
   useLayoutEffect,
@@ -23,7 +25,10 @@ export const popoverAnchor = (trigger: Pick<DOMRect, "left" | "bottom" | "width"
   top: Math.round(trigger.bottom + POPOVER_GAP),
 });
 
+export const HudPopoverRoot = createContext<{ node: HTMLElement | null; scale: number }>({ node: null, scale: 1 });
+
 export const useHudPopover = () => {
+  const root = useContext(HudPopoverRoot);
   const id = useId();
   const open = useOpenPopover((state) => state.open === id);
   const trigger = useRef<HTMLButtonElement>(null);
@@ -32,7 +37,7 @@ export const useHudPopover = () => {
     () => useOpenPopover.setState((state) => (state.open === id ? { open: null } : state)),
     [id],
   );
-  const anchor = useTriggerAnchor(trigger, open);
+  const anchor = useTriggerAnchor(trigger, open, root.scale);
   useClosesOnPressOutside(open, close, trigger, layer);
   useEffect(() => {
     return close;
@@ -57,7 +62,7 @@ export const useHudPopover = () => {
       <PopoverLayer id={id} layer={layer} anchor={anchor} onClose={close} onKeyDown={closeOnEscape} {...attributes}>
         {children}
       </PopoverLayer>,
-      document.body,
+      root.node ?? document.body,
     );
   return { open, close, triggerProps, popover };
 };
@@ -104,7 +109,7 @@ const PopoverLayer = ({
   );
 };
 
-const useTriggerAnchor = (trigger: RefObject<HTMLElement>, open: boolean) => {
+const useTriggerAnchor = (trigger: RefObject<HTMLElement>, open: boolean, scale: number) => {
   const [anchor, setAnchor] = useState<{ x: number; top: number } | null>(null);
   useLayoutEffect(() => {
     if (!open) {
@@ -113,7 +118,9 @@ const useTriggerAnchor = (trigger: RefObject<HTMLElement>, open: boolean) => {
     }
     const update = () => {
       const rect = trigger.current?.getBoundingClientRect();
-      if (rect) setAnchor(popoverAnchor(rect));
+      if (!rect) return;
+      const { x, top } = popoverAnchor(rect);
+      setAnchor({ x: x / scale, top: top / scale });
     };
     update();
     window.addEventListener("resize", update);
@@ -122,7 +129,7 @@ const useTriggerAnchor = (trigger: RefObject<HTMLElement>, open: boolean) => {
       window.removeEventListener("resize", update);
       window.removeEventListener("scroll", update, true);
     };
-  }, [open, trigger]);
+  }, [open, trigger, scale]);
   return anchor;
 };
 

@@ -5,9 +5,8 @@
 }
 .oath-board__head {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: theme(spacing.2);
+  flex-direction: column;
+  gap: 2px;
 }
 .oath-board__title {
   font-family: var(--hud-font-display);
@@ -20,7 +19,6 @@
   font-size: var(--hud-text-label);
   font-weight: var(--hud-weight-strong);
   color: var(--hud-good);
-  text-align: right;
 }
 .oath-board__row {
   display: grid;
