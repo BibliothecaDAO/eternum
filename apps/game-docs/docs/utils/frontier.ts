@@ -16,7 +16,7 @@ import { nativeCommandBits } from "../../../../contracts/l3/world-native/schema/
 import { MAINNET_TOKENS } from "../../../../packages/chain/src/tokens";
 import { logisticsStamina } from "../../../../packages/core/src/utils/attribute-tiers";
 import { buildablePlotCount } from "../../../../packages/core/src/utils/castle-reach";
-import { isOnePerRealm } from "../../../../packages/core/src/utils/realm-research";
+import { isOnePerRealm } from "@bibliothecadao/eternum";
 import { forecastFight, type CombatRules, type ExchangeTroops } from "@bibliothecadao/eternum/combat-exchange";
 import { aspectMeaning, orderMeaning } from "../../../game/src/ui/design-system/icon-meaning";
 import {
