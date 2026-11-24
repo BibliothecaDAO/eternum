@@ -199,6 +199,14 @@ const AspectSeasonView = ({ season, past }: { season: AspectSeasonGame; past: re
                 </li>
               ))}
             </ul>
+            {selectedAspect !== 0 && (
+              <AspectRoster
+                season={season}
+                aspect={selectedAspect}
+                ownRealmId={seasonRealmId(season)}
+                ownAspect={selectedAspect === ownAspect}
+              />
+            )}
             <div className="season-triumphs">
               <span className="text-app-label text-app-muted">{SEASON_WORDS.stageMilestones}</span>
               <div className="season-triumphs__list">
@@ -212,7 +220,12 @@ const AspectSeasonView = ({ season, past }: { season: AspectSeasonGame; past: re
           </div>
         </AppPanel>
         <div className="flex min-w-0 flex-col gap-6">
-          <AspectPlayerStanding season={season} finishHeight={finishHeight} byAspect={byAspect} />
+          <AspectPlayerStanding
+            season={season}
+            finishHeight={finishHeight}
+            byAspect={byAspect}
+            showRoster={selectedAspect !== ownAspect}
+          />
           {past.length > 0 && <PastSeasons seasons={past} />}
         </div>
       </div>
@@ -224,10 +237,12 @@ const AspectPlayerStanding = ({
   season,
   finishHeight,
   byAspect,
+  showRoster = true,
 }: {
   season: AspectSeasonGame;
   finishHeight: number;
   byAspect: Record<AspectId, AspectRaceStanding>;
+  showRoster?: boolean;
 }) => {
   const { realm, order, aspect } = seasonPlayerHome(season);
   if (!realm || aspect === null) {
@@ -271,7 +286,7 @@ const AspectPlayerStanding = ({
             <span className="season-stat__label">{ASPECT_PAGE_WORDS.stage(ownStanding.stage, RACE_STAGE_COUNT)}</span>
           </div>
         </div>
-        <AspectRoster season={season} aspect={aspect} ownRealmId={seasonRealmId(season)} />
+        {showRoster && <AspectRoster season={season} aspect={aspect} ownRealmId={seasonRealmId(season)} ownAspect />}
         <AspectStandingActions season={season} />
       </div>
     </AppPanel>

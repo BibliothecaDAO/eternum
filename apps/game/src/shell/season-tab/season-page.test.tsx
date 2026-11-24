@@ -34,7 +34,10 @@ vi.hoisted(() =>
       // Prod's archived Playtest: its first place.
       "0x4c21ba6f5c8e24182ee0eefd56de97ade5f7570041dd0ec7d7d8ece2195cc4": "Volcanic",
     };
-    if (url.pathname.includes("/aspects/")) return Promise.resolve(Response.json(rosterAnswer(url)));
+    if (url.pathname.includes("/aspects/")) {
+      if (roster.fail) return Promise.resolve(new Response("down", { status: 503 }));
+      return Promise.resolve(Response.json(rosterAnswer(url)));
+    }
     const accounts = url.searchParams.get("accounts")?.split(",") ?? [];
     if (!accounts.some((account) => names[account])) return new Promise<Response>(() => {});
     return Promise.resolve(
@@ -43,9 +46,17 @@ vi.hoisted(() =>
   }),
 );
 
-const roster = vi.hoisted(() => ({ asked: [] as string[] }));
+const roster = vi.hoisted(() => ({
+  asked: [] as string[],
+  fail: false,
+  byAspect: {} as Record<
+    number,
+    { total: number; members: { rank: number; owner: string; realm: number; glory: number }[] }
+  >,
+}));
 const rosterAnswer = (url: URL) => {
   roster.asked.push(`${url.pathname}${url.search}`);
+  const aspect = Number(url.pathname.match(/\/aspects\/(\d+)\/members/)?.[1] ?? 1);
   const member = (rank: number, owner: string, realm: number, glory: number) => ({
     rank,
     entity_id: String(realm + 1000),
@@ -53,13 +64,18 @@ const rosterAnswer = (url: URL) => {
     owner,
     glory: String(BigInt(glory) * 1_000_000_000n),
   });
+  const custom = roster.byAspect[aspect];
+  const entries = custom?.members ?? [
+    { rank: 1, owner: "0x4c21", realm: 7, glory: 120 },
+    { rank: 2, owner: "0x510f", realm: 1, glory: 40 },
+  ];
   return {
     game_id: "1",
-    aspect: 1,
-    total: 12,
+    aspect,
+    total: custom?.total ?? 12,
     offset: 0,
     limit: 10,
-    members: [member(1, "0x4c21", 7, 120), member(2, "0x510f", 1, 40)],
+    members: entries.map(({ rank, owner, realm, glory }) => member(rank, owner, realm, glory)),
   };
 };
 
@@ -89,6 +105,9 @@ afterEach(() => {
   reads.boards = {};
   reads.player = null;
   reads.useRealBoard = false;
+  roster.asked = [];
+  roster.fail = false;
+  roster.byAspect = {};
   shards.open.mockClear();
 });
 reads.directory = DIRECTORY_DOWN;
@@ -109,11 +128,12 @@ const mount = async (width: number) => {
   const root = createRoot(container);
   await act(async () =>
     root.render(
-      <QueryClientProvider client={new QueryClient()}>
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
         <MemoryRouter initialEntries={["/season"]}>
           <Routes>
             <Route path="/season" element={<SeasonPage />} />
             <Route path="/results/:id" element={<Opened />} />
+            <Route path="/p/:address" element={<Opened />} />
           </Routes>
         </MemoryRouter>
       </QueryClientProvider>,
@@ -465,10 +485,13 @@ it("lists the top of the player's Aspect outside the game, by Glory, from Herald
   };
   const { container, unmount } = await mount(1440);
   try {
-    await vi.waitFor(() => expect(container.querySelector("[data-aspect-roster]")).not.toBeNull());
+    await vi.waitFor(() =>
+      expect(container.querySelector("[data-aspect-roster]")?.textContent).toContain(
+        "Your Aspect's top players · 12 members",
+      ),
+    );
     expect(roster.asked).toEqual([`/games/1/aspects/${aspect}/members?offset=0&limit=10`]);
     const section = container.querySelector("[data-aspect-roster]")!;
-    expect(section.textContent).toContain("Your Aspect's top players · 12 members");
     await vi.waitFor(() => expect(section.textContent).toContain("Volcanic"));
     const items = [...section.querySelectorAll("li.app-board__item")];
     expect(items.map((item) => item.hasAttribute("data-own"))).toEqual([false, true]);
@@ -515,6 +538,170 @@ it("renders Season 1 Aspect race from directory without calling the Season 0 lea
     expect(container.textContent).not.toContain("LORDS per height point");
     expect(container.textContent).not.toContain("LORDS");
   } finally {
+    await unmount();
+  }
+});
+
+it.each([
+  [390, true],
+  [1440, true],
+  [390, false],
+  [1440, false],
+])(
+  "shows any clicked Aspect tab's member Glory roster at %ipx (signedIn=%s) and opens /p/<owner> on click",
+  async (width, signedIn) => {
+    shards.open.mockImplementation(async () => ({ url: "http://herald.test", chainId: "0x52" }) as never);
+    roster.byAspect = {
+      2: {
+        total: 18,
+        members: [
+          { rank: 1, owner: "0x6481", realm: 21, glory: 340 },
+          { rank: 2, owner: "0x4c21", realm: 22, glory: 190 },
+        ],
+      },
+    };
+    reads.directory = {
+      data: {
+        games: [
+          {
+            ...FRONTIER,
+            aspect_members: { 1: 12, 2: 18, 3: 5, 4: 0 },
+            aspect_race: { finish_height: 7_500, season_days: 30, heights: { 1: 100, 2: 200, 3: 50, 4: 0 } },
+            player_state: signedIn
+              ? {
+                  structures: [
+                    {
+                      entity_id: 1001,
+                      category: 1,
+                      level: 1,
+                      realm_id: 1,
+                      coord_x: 0,
+                      coord_y: 0,
+                      resources_packed: "0",
+                    },
+                  ],
+                }
+              : null,
+          },
+        ],
+      },
+      isError: false,
+      isPending: false,
+    };
+    const { container, unmount } = await mount(width);
+    try {
+      const luminaryTab = [...container.querySelectorAll<HTMLButtonElement>('[role="tab"]')].find(
+        (tab) => tab.textContent === "Luminary",
+      )!;
+      await act(async () => luminaryTab.click());
+      await vi.waitFor(() =>
+        expect(container.querySelector('[data-aspect-roster="2"]')?.textContent).toContain("Canzi"),
+      );
+      expect(roster.asked).toContain("/games/1/aspects/2/members?offset=0&limit=10");
+      const section = container.querySelector('[data-aspect-roster="2"]')!;
+      expect(section.textContent).toContain("Luminary's top players · 18 members");
+      expect(section.textContent).toContain("340");
+      expect(section.textContent).toContain("Volcanic");
+      expect(section.textContent).toContain("190");
+      const firstRow = section.querySelector<HTMLButtonElement>("button.app-board__row")!;
+      await act(async () => firstRow.click());
+      expect(container.querySelector("[data-opened]")?.textContent).toBe("/p/0x6481");
+    } finally {
+      shards.open.mockImplementation(async () => {
+        throw new Error("unexpected shard read");
+      });
+      await unmount();
+    }
+  },
+);
+
+it("renders the player's own Aspect roster once when their own Aspect tab is selected and shows an honest empty line for an empty Aspect", async () => {
+  const { canonicalRealm } = await import("@bibliothecadao/eternum");
+  const { aspectName, catalogOrder } = await import("@bibliothecadao/types");
+  const ownAspect = catalogOrder(canonicalRealm(1).order).aspect!;
+  shards.open.mockImplementation(async () => ({ url: "http://herald.test", chainId: "0x52" }) as never);
+  roster.byAspect = { 4: { total: 0, members: [] } };
+  reads.directory = {
+    data: {
+      games: [
+        {
+          ...FRONTIER,
+          aspect_members: { 1: 12, 2: 8, 3: 5, 4: 0 },
+          aspect_race: { finish_height: 7_500, season_days: 30, heights: { 1: 100, 2: 80, 3: 50, 4: 0 } },
+          player_state: {
+            structures: [
+              { entity_id: 1001, category: 1, level: 1, realm_id: 1, coord_x: 0, coord_y: 0, resources_packed: "0" },
+            ],
+          },
+        },
+      ],
+    },
+    isError: false,
+    isPending: false,
+  };
+  const { container, unmount } = await mount(1440);
+  try {
+    await vi.waitFor(() => expect(container.querySelectorAll("[data-aspect-roster]")).toHaveLength(1));
+    const ownTab = [...container.querySelectorAll<HTMLButtonElement>('[role="tab"]')].find(
+      (tab) => tab.textContent === aspectName(ownAspect),
+    )!;
+    await act(async () => ownTab.click());
+    await vi.waitFor(() => {
+      const rosters = container.querySelectorAll("[data-aspect-roster]");
+      expect(rosters).toHaveLength(1);
+      expect(rosters[0]?.textContent).toContain("Your Aspect's top players · 12 members");
+    });
+    const insightTab = [...container.querySelectorAll<HTMLButtonElement>('[role="tab"]')].find(
+      (tab) => tab.textContent === "Insight",
+    )!;
+    await act(async () => insightTab.click());
+    await vi.waitFor(() =>
+      expect(container.querySelector('[data-aspect-roster="4"]')?.textContent).toContain("No realms in Insight yet."),
+    );
+  } finally {
+    shards.open.mockImplementation(async () => {
+      throw new Error("unexpected shard read");
+    });
+    await unmount();
+  }
+});
+
+it("shows ServiceFailure with Try again in Your standing when Herald's roster read fails, and recovers on retry", async () => {
+  shards.open.mockImplementation(async () => ({ url: "http://herald.test", chainId: "0x52" }) as never);
+  roster.fail = true;
+  reads.directory = {
+    data: {
+      games: [
+        {
+          ...FRONTIER,
+          aspect_members: { 1: 12, 2: 0, 3: 0, 4: 0 },
+          aspect_race: { finish_height: 7_500, season_days: 30, heights: { 1: 100, 2: 0, 3: 0, 4: 0 } },
+          player_state: {
+            structures: [
+              { entity_id: 1001, category: 1, level: 1, realm_id: 1, coord_x: 0, coord_y: 0, resources_packed: "0" },
+            ],
+          },
+        },
+      ],
+    },
+    isError: false,
+    isPending: false,
+  };
+  const { container, unmount } = await mount(1440);
+  try {
+    const section = () => container.querySelector("[data-aspect-roster]")!;
+    await vi.waitFor(() => expect(section().textContent).toContain("Season did not answer."));
+    const retry = [...section().querySelectorAll<HTMLButtonElement>("button")].find(
+      (button) => button.textContent === "Try again",
+    )!;
+    expect(retry).toBeDefined();
+    roster.fail = false;
+    await act(async () => retry.click());
+    await vi.waitFor(() => expect(section().textContent).toContain("Your Aspect's top players · 12 members"));
+  } finally {
+    shards.open.mockImplementation(async () => {
+      throw new Error("unexpected shard read");
+    });
     await unmount();
   }
 });
