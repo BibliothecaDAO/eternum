@@ -400,9 +400,10 @@ each closed by its cross, a tap outside, a swipe down or `Escape`. A right-click
   and, for signed-in players, a compact collapsible **Have an Ancient Seal code? Redeem** disclosure (`/api/seal-code`
   with a secondary submit button; once held, a quiet **Your Ancient Seal is held** pill). Operator codes: `apps/realms`
   README, Free Ancient Seal codes. Lab: `/lab/app/preseason` (signed out), `/lab/app/preseason-member` (signed in, no
-  Aspect yet), `/lab/app/preseason-chosen` (Aspect kept; code SEAL2345 redeems), `/lab/app/preseason-sealed` (code held)
-  and `/lab/app/preseason-invited-pick` (invited to Prowess); proof: `build.sh prove-season-one` (each, desktop and
-  phone).
+  Aspect yet), `/lab/app/preseason-chosen` (Aspect kept; code SEAL2345 redeems), `/lab/app/preseason-sealed` (code
+  held), `/lab/app/preseason-invited-pick` (invited to Prowess), `/lab/app/preseason-testnet` (signed out with live
+  Final testnet) and `/lab/app/preseason-testnet-chosen` (signed in with Aspect kept and live Final testnet); proof:
+  `build.sh prove-season-one` (each, desktop and phone).
 - Creating a Frontier home (the game's entry): with nothing to choose (no Realm held, so a free home) the realm is
   created without a press, the doorway's bar saying **Preparing your realm**; a failure asks with the picker below. A
   Realm holder gets **Choose your home**, **You play as <name>** (changed on You), then **Create your realm**, pinned in
