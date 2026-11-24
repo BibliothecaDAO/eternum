@@ -412,7 +412,7 @@ export const frontierPhrases = (
       phrases: [
         anySpendEnabled
           ? `Spending Fragments is on.`
-          : `Spending Fragments is turned off during the final testnet (${calendar.testnetDates} UTC) and remains turned off until enabled.`,
+          : `Spending Fragments is turned off during the final testnet (${calendar.testnetDates} UTC).`,
         `Custom amounts cost $${(FRAGMENT_CENTS / 100).toFixed(2)} per Fragment, from ${n(MIN_FRAGMENTS)} up to ${n(FRAGMENTS_A_DAY)} Fragments per day.`,
         `You pay with ${allPayTokens} from your linked`,
         `${n(nativeFragments.SEAL_FRAGMENTS)} Fragments`,

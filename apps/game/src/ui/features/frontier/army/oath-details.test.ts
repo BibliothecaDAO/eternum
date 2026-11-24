@@ -30,12 +30,14 @@ it("contextualizes every Oath effect against the game's live rules", () => {
   expect(oathEffectDescription(oaths.TITANS, SEASON_ONE_BASE)).toBe("+60 stamina now; max stamina: 180 → 240");
   expect(oathEffectDescription(oaths.ENLIGHTENMENT, SEASON_ONE_BASE)).toBe("Stamina recovery: +0.5/min → +0.67/min");
   expect(oathEffectDescription(oaths.FOX, SEASON_ONE_BASE)).toBe("Reveal cost: 20 → 16 stamina (Scouts 10 → 8)");
-  expect(oathEffectDescription(oaths.SKILL, SEASON_ONE_BASE)).toBe("Low-stamina (<10) attack damage: 100% → 130%");
+  expect(oathEffectDescription(oaths.SKILL, SEASON_ONE_BASE)).toBe(
+    "Attack damage when the army has less than 10 stamina left after the attack: 100% → 130%",
+  );
   expect(oathEffectDescription(oaths.FURY, SEASON_ONE_BASE)).toBe(
     "Won battle stamina refund: 0 → 15 stamina (50% of 30)",
   );
   expect(oathEffectDescription(oaths.PERFECTION, SEASON_ONE_BASE)).toBe("Clean-win (<15% lost) rewards: 100% → 150%");
-  expect(oathEffectDescription(oaths.TWINS, SEASON_ONE_BASE)).toBe("Nearby ally bonus damage: 0% → 30%");
+  expect(oathEffectDescription(oaths.TWINS, SEASON_ONE_BASE)).toBe("Adjacent own army's damage added: 0% → 30%");
 });
 
 it("builds scannable hero stat badges for every Oath from shared rule calculations and handles missing base rules", () => {
@@ -114,7 +116,7 @@ it("builds scannable hero stat badges for every Oath from shared rule calculatio
   expect(oathStatBadge(oaths.SKILL, SEASON_ONE_BASE)).toEqual({
     hero: "+30%",
     unit: "Damage dealt",
-    sub: "Low-stamina (<10) attack damage",
+    sub: "Attack damage when the army has less than 10 stamina left after the attack",
     icon: "attack",
   });
   expect(oathStatBadge(oaths.FURY, SEASON_ONE_BASE)).toEqual({
@@ -125,7 +127,7 @@ it("builds scannable hero stat badges for every Oath from shared rule calculatio
   });
   expect(oathStatBadge(oaths.TWINS, SEASON_ONE_BASE)).toEqual({
     hero: "+30%",
-    unit: "Nearby ally bonus damage",
+    unit: "Adjacent own army's damage added",
     sub: "0% → 30%",
     icon: "people",
   });

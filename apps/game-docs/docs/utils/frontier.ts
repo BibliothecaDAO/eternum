@@ -898,7 +898,7 @@ export const FRONTIER = {
     lordsNote: `The Shop takes ${MAINNET_TOKENS.lords.symbol} (or swaps ${swapPayTokens} into ${MAINNET_TOKENS.lords.symbol} through AVNU) for Fragments.`,
     statusNote: anySpendEnabled
       ? "Spending Fragments is on."
-      : `Spending Fragments is turned off during the final testnet (${SEASON_ONE_CALENDAR.testnetDates} UTC) and remains turned off until enabled.`,
+      : `Spending Fragments is turned off during the final testnet (${SEASON_ONE_CALENDAR.testnetDates} UTC).`,
     sealRule: `Lasts the whole season. Gives ${n(questPreset.bonusPercent)}% daily quest labor and the Season 1 Realm skin. You can also get the Seal with a code.`,
     staminaRule: `Refills ${n(fragments.STAMINA_PER_FRAGMENT)} stamina per Fragment on the ${personalLayersAnd} (${barFragments} Fragments for a full ${n(stamina.staminaKnightMax)} bar). Does not work inside the ${LAYER_NAMES[3]}.`,
     fragmentPrice: dollars(FRAGMENT_CENTS),
