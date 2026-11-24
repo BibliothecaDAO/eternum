@@ -1,3 +1,56 @@
+.frontier-realm-chip {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 4px;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: rgb(var(--hud-ink));
+  cursor: pointer;
+  text-align: left;
+  transition: opacity var(--hud-fast) var(--hud-ease);
+}
+.frontier-realm-chip:hover {
+  opacity: 0.92;
+}
+.frontier-realm-chip .frontier-aspect-medallion[data-size="lg"] {
+  width: 34px;
+  height: 40px;
+  margin-bottom: -6px;
+}
+.frontier-realm-chip .frontier-aspect-medallion[data-size="lg"] img {
+  width: 24px;
+  height: 24px;
+}
+.frontier-realm-chip__text {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+.frontier-realm-chip__name {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: var(--hud-font-display);
+  font-size: var(--hud-text-label);
+  line-height: 1.05;
+  color: rgb(var(--hud-ink));
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.frontier-realm-chip__order {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--hud-text-badge);
+  line-height: 1.15;
+  color: var(--hud-muted);
+  white-space: nowrap;
+}
 .frontier-aspect-medallion {
   position: relative;
   display: inline-flex;
@@ -88,50 +141,24 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
-.frontier-quest-popover {
-  --quest-edge: theme(spacing.4);
-  --quest-width: min(theme(spacing.hud-frontier-page), calc(100vw - var(--quest-edge) * 2));
+.frontier-popover {
+  --popover-edge: theme(spacing.4);
+  --popover-width: min(theme(spacing.hud-frontier-page), calc(100vw - var(--popover-edge) * 2));
   position: fixed;
-  top: var(--quest-top, 0px);
+  top: var(--popover-top, 0px);
   left: clamp(
-    var(--quest-edge),
-    calc(var(--quest-x, 50vw) - var(--quest-width) / 2),
-    calc(100vw - var(--quest-width) - var(--quest-edge))
+    var(--popover-edge),
+    calc(var(--popover-x, 50vw) - var(--popover-width) / 2),
+    calc(100vw - var(--popover-width) - var(--popover-edge))
   );
   z-index: theme(zIndex.hud-popover);
-  width: var(--quest-width);
-  max-height: calc(100dvh - var(--quest-top, 0px) - var(--quest-edge));
+  width: var(--popover-width);
+  max-height: calc(100dvh - var(--popover-top, 0px) - var(--popover-edge));
   overflow-y: auto;
+  outline: none;
 }
-.frontier-quest-popover[data-layout="phone"] {
-  --quest-edge: theme(spacing.2);
-}
-.frontier-store-liquid {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  z-index: 0;
-  background: color-mix(in srgb, rgb(var(--hud-gold)) 28%, transparent);
-  transition: width var(--hud-fast) var(--hud-ease);
-}
-.frontier-store-liquid[data-store="essence"] {
-  background: rgb(var(--hud-t3) / 0.36);
-}
-.frontier-store-liquid[data-store="labor"] {
-  background: color-mix(in srgb, var(--hud-warn) 34%, transparent);
-}
-.frontier-store-liquid[data-store="wheat"] {
-  background: color-mix(in srgb, rgb(var(--hud-gold)) 34%, transparent);
-}
-.frontier-store-liquid[data-store="troops"] {
-  background: rgb(var(--hud-t1) / 0.36);
-}
-.frontier-store-liquid[data-tone="warn"] {
-  background: color-mix(in srgb, var(--hud-warn) 44%, transparent);
-}
-.frontier-store-liquid[data-tone="bad"] {
-  background: color-mix(in srgb, var(--hud-bad) 44%, transparent);
+.frontier-popover[data-layout="phone"] {
+  --popover-edge: theme(spacing.2);
 }
 .frontier-fragments-socket {
   display: inline-flex;

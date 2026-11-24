@@ -5,29 +5,12 @@ import { SHOP_WORDS } from "@/ui/design-system/kit/words";
 import { formatShort } from "@bibliothecadao/types";
 
 import type { StoreKind } from "../stores";
-import { STORE_TONES, storeCapacityShare, type StoreReading } from "./status-strip";
-
-export const TOP_BAR_STORE_KINDS: readonly StoreKind[] = ["essence", "labor", "wheat", "troops"];
+import type { StoreReading } from "./status-strip";
 
 export const pickStores = (stores: readonly StoreReading[], kinds: readonly StoreKind[]): StoreReading[] =>
   kinds
     .map((kind) => stores.find((store) => store.kind === kind))
     .filter((store): store is StoreReading => store !== undefined);
-
-export const StoreLiquidFill = ({ store }: { store: StoreReading }) => {
-  const share = storeCapacityShare(store);
-  if (share === undefined) return null;
-  return (
-    <span
-      className="frontier-store-liquid"
-      data-store={store.kind}
-      data-tone={STORE_TONES[store.tone].meter}
-      data-fill-share={String(Math.round(share * 100))}
-      style={{ width: `${share * 100}%` }}
-      aria-hidden="true"
-    />
-  );
-};
 
 export const FragmentsSocket = ({
   fragments,

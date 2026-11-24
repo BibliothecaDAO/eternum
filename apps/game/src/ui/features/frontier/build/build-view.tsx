@@ -1,8 +1,7 @@
 import "./build-view.css";
 
-import { rankName } from "@bibliothecadao/types";
+import { formatCharge, formatExact, formatShortDuration, rankName } from "@bibliothecadao/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { formatExact, formatCharge, formatShortDuration } from "@bibliothecadao/types";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import {
   HudButton,
@@ -12,32 +11,34 @@ import {
   HudNotice,
   HudRanked,
   HudSheet,
-  HudTier,
   HudWindowFoot,
   rankedTip,
 } from "@/ui/design-system/kit/hud-elements";
 import type { Refusal } from "@/ui/design-system/kit/refusal";
-import { BUILD, BUILDING, PRICE_UP, type Rank, type RankedWords } from "@/ui/design-system/kit/words";
+import {
+  BUILD,
+  BUILDING,
+  BUILT,
+  buildNamed,
+  moreBelow,
+  plotsUsed,
+  type RankedWords,
+} from "@/ui/design-system/kit/words";
 
 import { PRICE_FACES, costLine, type Price } from "@/ui/design-system/kit/price-faces";
-import type { ReactNode } from "react";
+import { type ReactNode, type RefObject, useEffect, useRef, useState } from "react";
 import { reasonLine } from "@/ui/design-system/kit/reasons";
 
 export type BuildTile = {
   key: string;
   icon: IconMeaning;
   name: string;
-  /** What the building does, in one line, on the card's tooltip. */
-  /** Its hover line ("War hall: new armies start with Battle [I]"), a rank in it as its gem. */
-  tip: RankedWords | string;
+  does: RankedWords | string;
   gives: { icon: IconMeaning; value?: ReactNode };
-  gems: { tier: Rank }[];
   standing:
     | {
         kind: "price";
-        /** Each price, and whether the realm holds less than it: each line reads its own, white or red. */
         prices: readonly (Price & { short: boolean })[];
-        /** Why the price is above its base, when it is. */
         raised?: string;
         short?: { of: Price["of"]; wait: number | undefined };
       }
@@ -48,6 +49,7 @@ export type BuildTile = {
 export const BuildView = ({
   tiles,
   chosen,
+  plots,
   onChoose,
   prices,
   refusal,
@@ -57,6 +59,7 @@ export const BuildView = ({
 }: {
   tiles: BuildTile[];
   chosen: number;
+  plots?: { used: number; total: number };
   onChoose: (index: number) => void;
   prices: readonly Price[];
   refusal: Refusal | undefined;
@@ -65,131 +68,111 @@ export const BuildView = ({
   onClose: () => void;
 }) => {
   const chosenTile = tiles[chosen];
-  const chosenStanding = chosenTile?.standing;
-  const indexed = tiles.map((tile, index) => ({ tile, index }));
-  const unlocked = indexed.filter(({ tile }) => tile.standing.kind !== "level");
-  const locked = indexed.filter(({ tile }) => tile.standing.kind === "level");
-  const footerCost = chosenStanding?.kind !== "built" && !refusal?.fix?.prices && <HudCost line={costLine(prices)} />;
-  const raised = chosenStanding?.kind === "price" && chosenStanding.raised && (
-    <span data-price-raised className="text-hud-label text-hud-warn">
-      {chosenStanding.raised}
-    </span>
-  );
-  const choice = (
-    <div data-build-sheet className="build-sheet">
-      <div data-build-grid className="grid grid-cols-3 gap-1.5 lg:gap-2">
-        {unlocked.map(({ tile, index }) => (
-          <TileButton key={tile.key} tile={tile} chosen={index === chosen} onChoose={() => onChoose(index)} />
-        ))}
-      </div>
-      {chosenTile && <ChosenSummary tile={chosenTile} />}
-      {locked.length > 0 && <LockedUnlocks items={locked} chosen={chosen} onChoose={onChoose} />}
-      {refusal ? (
-        <HudWindowFoot
-          note={
-            <span className="flex flex-col items-start gap-1">
-              <RefusalNote refusal={refusal} />
-              {footerCost}
-              {raised}
-            </span>
-          }
-        >
-          {refusal.fix && (
-            <HudButton kind="primary" icon={refusal.fix.icon} onClick={refusal.fix.onFix}>
-              {refusal.fix.word}
-            </HudButton>
-          )}
-        </HudWindowFoot>
-      ) : (
-        <HudWindowFoot
-          note={
-            <span className="flex flex-col items-start gap-1">
-              {footerCost}
-              {raised}
-            </span>
-          }
-        >
-          <HudButton kind="primary" busy={sending ? BUILDING : undefined} onClick={onBuild}>
-            {BUILD}
-          </HudButton>
-        </HudWindowFoot>
-      )}
-    </div>
-  );
+  const ordered = orderedTiles(tiles);
+  const grid = useRef<HTMLDivElement>(null);
+  const below = useTilesOutOfView(grid, ordered.length).map((index) => ordered[index]!.tile.name);
   return (
-    <HudSheet label={BUILD} onClose={onClose}>
-      {choice}
+    <HudSheet label={BUILD} beside={plots && <HudChip>{plotsUsed(plots.used, plots.total)}</HudChip>} onClose={onClose}>
+      <div data-build-sheet className="build-sheet">
+        <div ref={grid} data-build-grid className="build-grid">
+          {ordered.map(({ tile, index }) => (
+            <TileButton key={tile.key} tile={tile} chosen={index === chosen} onChoose={() => onChoose(index)} />
+          ))}
+        </div>
+        {below.length > 0 && (
+          <p data-build-more className="build-more">
+            <span aria-hidden="true">↓</span> {moreBelow(below)}
+          </p>
+        )}
+        {chosenTile && (
+          <ChosenFoot tile={chosenTile} prices={prices} refusal={refusal} sending={sending} onBuild={onBuild} />
+        )}
+      </div>
     </HudSheet>
   );
 };
 
 type IndexedTile = { tile: BuildTile; index: number };
 
-const ChosenSummary = ({ tile }: { tile: BuildTile }) => {
-  const hasTip = typeof tile.tip === "string" ? tile.tip.trim().length > 0 : tile.tip.length > 0;
-  return (
-    <div data-build-chosen className="build-chosen">
-      <SemanticIcon name={tile.icon} size={18} />
-      <span className="min-w-0 flex-1 truncate">
-        {hasTip ? (
-          <HudRanked words={tile.tip} />
-        ) : (
-          <span className="inline-flex items-center gap-1.5">
-            <span className="text-hud-ink">{tile.name}</span>
-            {tile.gives.value !== undefined && <span className="text-hud-muted">{tile.gives.value}</span>}
-          </span>
-        )}
+const useTilesOutOfView = (grid: RefObject<HTMLDivElement>, count: number): readonly number[] => {
+  const [outOfView, setOutOfView] = useState<readonly number[]>([]);
+  useEffect(() => {
+    const element = grid.current;
+    if (!element || typeof IntersectionObserver === "undefined") return;
+    const tiles = [...element.children];
+    const below = new Map<Element, boolean>();
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries)
+          below.set(entry.target, entry.boundingClientRect.bottom > (entry.rootBounds?.bottom ?? Infinity) + 1);
+        setOutOfView(tiles.flatMap((tile, index) => (below.get(tile) ? [index] : [])));
+      },
+      { root: element.closest(".ui-frame__body"), threshold: [0, 0.5, 0.99] },
+    );
+    for (const tile of tiles) observer.observe(tile);
+    return () => observer.disconnect();
+  }, [grid, count]);
+  return outOfView;
+};
+
+const orderedTiles = (tiles: readonly BuildTile[]): IndexedTile[] => {
+  const indexed = tiles.map((tile, index) => ({ tile, index }));
+  const levelOf = ({ tile }: IndexedTile) => (tile.standing.kind === "level" ? tile.standing.level : 0);
+  return indexed.toSorted((left, right) => levelOf(left) - levelOf(right));
+};
+
+const ChosenFoot = ({
+  tile,
+  prices,
+  refusal,
+  sending,
+  onBuild,
+}: {
+  tile: BuildTile;
+  prices: readonly Price[];
+  refusal: Refusal | undefined;
+  sending: boolean;
+  onBuild: () => void;
+}) => {
+  const standing = tile.standing;
+  const raised = standing.kind === "price" ? standing.raised : undefined;
+  const cost = standing.kind !== "built" && !refusal?.fix?.prices && (
+    <span className="inline-flex items-center gap-1">
+      <HudCost line={costLine(prices)} />
+      {raised && (
+        <span role="img" aria-label={raised} data-price-raised={raised} data-tip={raised} className="text-hud-warn">
+          ↑
+        </span>
+      )}
+    </span>
+  );
+  const note = (
+    <span className="flex flex-col items-start gap-0.5">
+      {refusal && <RefusalNote refusal={refusal} />}
+      {cost}
+      <span data-build-does className="build-does">
+        <HudRanked words={tile.does} />
       </span>
-    </div>
+    </span>
+  );
+  if (refusal)
+    return (
+      <HudWindowFoot note={note}>
+        {refusal.fix && (
+          <HudButton kind="primary" icon={refusal.fix.icon} onClick={refusal.fix.onFix}>
+            {refusal.fix.word}
+          </HudButton>
+        )}
+      </HudWindowFoot>
+    );
+  return (
+    <HudWindowFoot note={note}>
+      <HudButton kind="primary" icon="build" busy={sending ? BUILDING : undefined} onClick={onBuild}>
+        {buildNamed(tile.name)}
+      </HudButton>
+    </HudWindowFoot>
   );
 };
-
-const groupLockedByLevel = (items: readonly IndexedTile[]): [number, IndexedTile[]][] => {
-  const groups = new Map<number, IndexedTile[]>();
-  for (const item of items) {
-    if (item.tile.standing.kind !== "level") continue;
-    const list = groups.get(item.tile.standing.level) ?? [];
-    list.push(item);
-    groups.set(item.tile.standing.level, list);
-  }
-  return [...groups.entries()].toSorted(([left], [right]) => left - right);
-};
-
-const LockedUnlocks = ({
-  items,
-  chosen,
-  onChoose,
-}: {
-  items: readonly IndexedTile[];
-  chosen: number;
-  onChoose: (index: number) => void;
-}) => (
-  <div data-build-locked className="build-locked">
-    {groupLockedByLevel(items).map(([level, group]) => (
-      <div key={level} className="build-locked__group">
-        <HudChip icons={["lock"]}>{rankName(level)}</HudChip>
-        <span className="build-locked__items">
-          {group.map(({ tile, index }) => (
-            <span key={tile.key} {...rankedTip(tile.tip)}>
-              <HudButton
-                kind="secondary"
-                size="sm"
-                icon={tile.icon}
-                aria-pressed={index === chosen}
-                onClick={() => onChoose(index)}
-              >
-                <span>{tile.name}</span>
-                {tile.standing.kind === "level" && (
-                  <PriceAmounts prices={tile.standing.prices} className="build-locked__price" iconSize={12} />
-                )}
-              </HudButton>
-            </span>
-          ))}
-        </span>
-      </div>
-    ))}
-  </div>
-);
 
 const RefusalNote = ({ refusal }: { refusal: Refusal }) => (
   <span className="flex flex-col items-start gap-1">
@@ -199,73 +182,62 @@ const RefusalNote = ({ refusal }: { refusal: Refusal }) => (
 );
 
 const TileButton = ({ tile, chosen, onChoose }: { tile: BuildTile; chosen: boolean; onChoose: () => void }) => (
-  <span {...rankedTip(tile.tip)} className="min-w-0">
+  <span {...rankedTip([`${tile.name}: `, ...asWords(tile.does)])} className="min-w-0">
     <HudCard
       size="sm"
       title={tile.name}
-      picture={<SemanticIcon name={tile.icon} size={26} />}
+      picture={<SemanticIcon name={tile.icon} size={40} />}
+      corner={tileBadge(tile.standing)}
       detail={
-        <span className="flex w-full flex-col items-center gap-1">
-          <Gives tile={tile} />
-          <Band standing={tile.standing} />
+        <span className="flex w-full flex-col items-center gap-0.5">
+          {tile.gives.value !== undefined && <Gives gives={tile.gives} />}
+          {tile.standing.kind !== "built" && <TilePrice standing={tile.standing} />}
         </span>
       }
       selected={chosen}
+      data-locked={tile.standing.kind === "level" || undefined}
       onClick={onChoose}
     />
   </span>
 );
 
-const Gives = ({ tile }: { tile: BuildTile }) => (
-  <span className="build-tile-gives flex flex-col items-center gap-0.5">
-    <span className="flex items-center gap-1 whitespace-nowrap tabular-nums">
-      <SemanticIcon name={tile.gives.icon} size={14} />
-      {tile.gives.value}
-    </span>
-    <span className="flex items-center justify-center gap-x-1.5 whitespace-nowrap">
-      {tile.gems.map((gem, index) => (
-        <HudTier key={index} tier={gem.tier} />
-      ))}
-    </span>
+const asWords = (words: RankedWords | string): RankedWords => (typeof words === "string" ? [words] : words);
+
+const tileBadge = (standing: BuildTile["standing"]) =>
+  standing.kind === "built" ? (
+    <HudChip tone="good">{BUILT}</HudChip>
+  ) : standing.kind === "level" ? (
+    <HudChip>{rankName(standing.level)}</HudChip>
+  ) : undefined;
+
+const Gives = ({ gives }: { gives: BuildTile["gives"] }) => (
+  <span className="build-tile-gives">
+    <SemanticIcon name={gives.icon} size={14} />
+    {gives.value}
   </span>
 );
 
-const bandTone = (standing: BuildTile["standing"]) =>
-  standing.kind === "built" ? "good" : standing.kind === "price" && standing.short ? "bad" : undefined;
-
-/**
- * Where a building stands, along its card's foot: its price and what it lacks, the Barracks purchases it waits for (its
- * refusal names the Barracks), or a tick.
- */
-const Band = ({ standing }: { standing: BuildTile["standing"] }) => (
-  <HudChip tone={bandTone(standing)}>
-    <span className="flex items-center gap-1 whitespace-nowrap tabular-nums">
-      {standing.kind === "level" && (
-        <>
-          <SemanticIcon name="lock" size={14} />
-          {rankName(standing.level)}
-        </>
+const TilePrice = ({ standing }: { standing: Exclude<BuildTile["standing"], { kind: "built" }> }) => {
+  const short = standing.kind === "price" ? standing.short : undefined;
+  return (
+    <span data-build-price className="build-tile-price">
+      <PriceAmounts prices={standing.prices} />
+      {short?.wait !== undefined && (
+        <span className="flex items-center gap-0.5 text-hud-muted">
+          <SemanticIcon name="hourglass" size={12} />
+          {formatShortDuration(short.wait)}
+        </span>
       )}
-      {standing.kind === "built" && <SemanticIcon name="check" size={16} />}
-      {standing.kind === "price" && <Price standing={standing} />}
     </span>
-  </HudChip>
-);
+  );
+};
 
 type PriceTag = Price & { short?: boolean };
 
-const PriceAmounts = ({
-  prices,
-  className,
-  iconSize = 14,
-}: {
-  prices: readonly PriceTag[];
-  className?: string;
-  iconSize?: number;
-}) => {
-  if (prices.length === 0) return <span className={cn("text-hud-ink", className)}>{costLine(prices)}</span>;
+const PriceAmounts = ({ prices }: { prices: readonly PriceTag[] }) => {
+  if (prices.length === 0) return <span className="text-hud-ink">{costLine(prices)}</span>;
   return (
-    <span className={cn("inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5 tabular-nums", className)}>
+    <span className="inline-flex flex-wrap items-center justify-center gap-x-1.5 gap-y-0.5 tabular-nums">
       {prices.map(({ of, amount, short }) => (
         <span
           key={of}
@@ -273,27 +245,10 @@ const PriceAmounts = ({
           className={cn("inline-flex items-center gap-1", short ? "text-hud-bad" : "text-hud-ink")}
           aria-label={`${formatExact(amount)} ${PRICE_FACES[of].word}`}
         >
-          {PRICE_FACES[of].icon && <SemanticIcon name={PRICE_FACES[of].icon!} size={iconSize} />}
+          {PRICE_FACES[of].icon && <SemanticIcon name={PRICE_FACES[of].icon!} size={14} />}
           {formatCharge(amount)}
         </span>
       ))}
     </span>
   );
 };
-
-const Price = ({ standing }: { standing: Extract<BuildTile["standing"], { kind: "price" }> }) => (
-  <>
-    <PriceAmounts prices={standing.prices} className="justify-center" />
-    {standing.raised && (
-      <span role="img" aria-label={PRICE_UP} data-tip={standing.raised} className="leading-none text-hud-warn">
-        ↑
-      </span>
-    )}
-    {standing.short?.wait !== undefined && (
-      <span className="flex items-center gap-0.5">
-        <SemanticIcon name="hourglass" size={12} />
-        {formatShortDuration(standing.short.wait)}
-      </span>
-    )}
-  </>
-);

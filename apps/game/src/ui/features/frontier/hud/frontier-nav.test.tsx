@@ -4,10 +4,10 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 import { useUIStore } from "@/hooks/store/use-ui-store";
 
-import { PhoneWorldActions, type HudSurface } from "./frontier-nav";
+import { PhoneTabBar, type HudSurface } from "./frontier-nav";
 import { selectLayer } from "./map-layers";
 import { useOnePanel } from "./one-panel";
-import { FrontierPlaceSwitch } from "./surface-deep-switch";
+import { PlaceMenu } from "./surface-deep-switch";
 
 vi.mock("@/hooks/helpers/use-query", () => ({ useQuery: () => ({ isMapView: true }) }));
 vi.mock("../frontier-home", () => ({ useGoToFrontierPlace: () => vi.fn() }));
@@ -40,15 +40,14 @@ function PhoneHud({ open }: { open: HudSurface }) {
   return (
     <>
       <output data-page>{surface ?? "map"}</output>
-      <FrontierPlaceSwitch
+      <PlaceMenu
         isMapView
-        variant="phone"
         layers={layers}
         onGoRealm={() => openSurface(null)}
         onGoSurface={() => selectLayer(layers, 0, () => openSurface(null))}
         onSwitch={() => openSurface(null)}
       />
-      <PhoneWorldActions surface={surface} onSurface={openSurface} events={0} unread={0} />
+      <PhoneTabBar isMapView surface={surface} onSurface={openSurface} feedUnread={0} chatUnread={0} />
       <button onClick={() => openSurface(open)}>Open page</button>
     </>
   );
@@ -59,6 +58,10 @@ const press = (word: string) =>
       .find((button) => button.getAttribute("aria-label") === word || button.textContent === word)!
       .click(),
   );
+const choosePlace = (word: string) => {
+  act(() => document.querySelector<HTMLButtonElement>("[data-place-pill]")!.click());
+  act(() => document.querySelector<HTMLButtonElement>(`[role="tab"][aria-label="${word}"]`)!.click());
+};
 const page = () => host.querySelector("[data-page]")!.textContent;
 
 it.each(["research", "feed", "chat", "menu"] as const)(
@@ -68,7 +71,7 @@ it.each(["research", "feed", "chat", "menu"] as const)(
     act(() => root.render(<PhoneHud open={open} />));
     press("Open page");
     expect(page()).toBe(open);
-    press("Veil");
+    choosePlace("Veil");
     expect(go).toHaveBeenCalledWith(1);
     expect(page()).toBe("map");
   },
@@ -78,7 +81,7 @@ it("pressing Surface puts the open page away and returns to Surface", () => {
   go.mockClear();
   act(() => root.render(<PhoneHud open="research" />));
   press("Open page");
-  press("Surface");
+  choosePlace("Surface");
   expect(go).toHaveBeenCalledWith(0);
   expect(page()).toBe("map");
 });
@@ -87,7 +90,25 @@ it("choosing the layer already shown puts the page away without moving the map",
   go.mockClear();
   act(() => root.render(<PhoneHud open="research" />));
   press("Open page");
-  press("Hollow");
+  choosePlace("Hollow");
   expect(go).not.toHaveBeenCalled();
   expect(page()).toBe("map");
+});
+
+it("names the place shown on its pill and lists every place, the locked ones with what opens them", () => {
+  act(() => root.render(<PhoneHud open="research" />));
+  const pill = document.querySelector<HTMLButtonElement>("[data-place-pill]")!;
+  expect([pill.dataset.place, pill.getAttribute("aria-expanded")]).toEqual(["Hollow", "false"]);
+  act(() => pill.click());
+  const rows = [...document.querySelectorAll<HTMLButtonElement>('[data-surface-deep-switch] [role="tab"]')];
+  expect(rows.map((row) => [row.getAttribute("aria-label"), row.getAttribute("aria-selected"), row.disabled])).toEqual([
+    ["Realm", "false", false],
+    ["Surface", "false", false],
+    ["Veil", "false", false],
+    ["Hollow", "true", false],
+    ["Deep", "false", true],
+  ]);
+  expect(rows[4]!.textContent).toBe("DeepSpire III");
+  act(() => pill.click());
+  expect(document.querySelector("[data-surface-deep-switch]")).toBeNull();
 });

@@ -1,4 +1,6 @@
 import type { IconMeaning } from "@/ui/design-system/icon";
+
+import { usePartShown } from "../opening/opening-context";
 import {
   CHAT,
   EVENTS_WORDS,
@@ -8,7 +10,7 @@ import {
   unreadFeedEvents,
 } from "@/ui/design-system/kit/words";
 
-export type HudPlaceKey = "research" | "season" | "feed" | "chat";
+type HudPlaceKey = "research" | "season" | "feed" | "chat";
 
 interface HudPlaceItem {
   key: HudPlaceKey;
@@ -21,8 +23,6 @@ interface HudPlaceItem {
 }
 
 interface HudPlacesState {
-  aspectsOpen: boolean;
-  researchOpen: boolean;
   researchReady?: boolean;
   feedUnread: number;
   chatUnread: number;
@@ -36,14 +36,13 @@ export const HUD_PLACES = [
   { key: "chat", label: CHAT, icon: "chat" },
 ] as const satisfies readonly { key: HudPlaceKey; label: string; icon: IconMeaning }[];
 
-export const resolveHudPlaces = ({
-  aspectsOpen,
-  researchOpen,
-  researchReady,
-  feedUnread,
-  chatUnread,
-  chatOpen = false,
-}: HudPlacesState): HudPlaceItem[] =>
+export const useHudPlaces = (state: HudPlacesState): HudPlaceItem[] =>
+  resolveHudPlaces(state, usePartShown("research"));
+
+const resolveHudPlaces = (
+  { researchReady, feedUnread, chatUnread, chatOpen = false }: HudPlacesState,
+  researchOpen: boolean,
+): HudPlaceItem[] =>
   HUD_PLACES.flatMap((place): HudPlaceItem[] => {
     switch (place.key) {
       case "research":
@@ -58,7 +57,7 @@ export const resolveHudPlaces = ({
             ]
           : [];
       case "season":
-        return aspectsOpen ? [{ ...place, ariaLabel: place.label }] : [];
+        return [{ ...place, ariaLabel: place.label }];
       case "feed":
         return [
           {
@@ -79,6 +78,3 @@ export const resolveHudPlaces = ({
         ];
     }
   });
-
-export const resolveMenuPlaces = (state: HudPlacesState): HudPlaceItem[] =>
-  resolveHudPlaces(state).filter((place) => place.key !== "season");

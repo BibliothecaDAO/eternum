@@ -1972,6 +1972,7 @@ const PLACE_TABS = { Map: ["World", layerName(0)], Realm: ["Realm"] };
  * and in the realm alike: the place is then chosen from that list.
  */
 function pressPlace(browser, place) {
+  openThePlaceMenu(browser);
   const presses = [
     () => browser.click(place),
     ...PLACE_TABS[place].flatMap((name) => [() => browser.clickTab(name), () => browser.click(name)]),
@@ -1986,6 +1987,11 @@ function pressPlace(browser, place) {
   }
   browser.clickTab(PLACE_TABS[place].at(-1));
 }
+
+const openThePlaceMenu = (browser) =>
+  browser.read(
+    `(() => { const pill = document.querySelector('[data-place-pill][aria-expanded="false"]'); pill?.click(); return Boolean(pill); })()`,
+  );
 
 /** Where the HUD's standing parts sit on the map at rest. */
 async function readTheHudLayout({ browser }) {
@@ -2148,19 +2154,14 @@ function recordedStill(onMap) {
   };
 }
 
-/**
- * The season's board as a player reads it: a desktop's Season place opens it in the rail and a second press closes it;
- * a phone opens it from the Menu and closes it with the board's ×, as a phone has no Escape key.
- */
-async function readTheSeason(input) {
-  if (!onADesktop()) return { desktop: false, ...(await readTheSeasonInTheMenu(input)) };
-  const { browser } = input;
+async function readTheSeason({ browser }) {
   await openPlace(browser, HUD_WORDS.season);
   await sleep(2_000);
   const opened = browser.observe();
-  await openPlace(browser, HUD_WORDS.season);
+  if (onADesktop()) await openPlace(browser, HUD_WORDS.season);
+  else browser.click(HUD_WORDS.close);
   await sleep(1_000);
-  return { desktop: true, opened, closed: browser.observe() };
+  return { desktop: onADesktop(), opened, closed: browser.observe() };
 }
 
 /** The route's hex as the address names it: normalized, the same place on every client. */
@@ -2327,24 +2328,9 @@ function visitMissed(visit) {
 function seasonReadAndClosed({ played }) {
   if (played.desktop && !played.opened.pressed.includes(HUD_WORDS.season))
     return failed("the Season place was not lit", played);
-  if (!played.desktop && !played.menu.includes(HUD_WORDS.menu))
-    return failed(`the ${HUD_WORDS.menu} did not open`, played);
   if (!played.opened.panels.includes(HUD_WORDS.season)) return failed("the Season's board was not drawn", played);
   if (played.closed.panels.includes(HUD_WORDS.season)) return failed("the Season's board did not close", played);
   return completed(played);
-}
-
-async function readTheSeasonInTheMenu({ browser }) {
-  browser.click(HUD_WORDS.menu);
-  await sleep(1_500);
-  // The Menu is a page of the place bar, drawn as a panel over the map.
-  const menu = browser.observe().panels;
-  browser.click(HUD_WORDS.season);
-  await sleep(2_000);
-  const opened = browser.observe();
-  browser.click(HUD_WORDS.close);
-  await sleep(1_000);
-  return { menu, opened, closed: browser.observe() };
 }
 
 /** A Wheat ring or phone plate opens its store card; pressing it again closes the same card. */
@@ -3526,6 +3512,7 @@ const LAB_LAYERS_STEPS = [
 function chooseLayer(word) {
   return async ({ browser }) => {
     const before = browser.read(MAP_CAMERA);
+    openThePlaceMenu(browser);
     const choices = word === LAYER_NAMES[0] ? null : browser.viewChoices();
     browser.clickTab(word);
     const moved = (camera) => camera !== null && hexesApart(camera, before) > FRAMED_WITHIN_HEXES;
@@ -3549,7 +3536,7 @@ async function cameraAtRest(browser) {
 }
 
 /** What the switch that opens the views says: the view shown. */
-const VIEW_SWITCH_WORD = `JSON.stringify(document.querySelector('[data-surface-deep-switch] [role="tab"][aria-selected="true"]')?.textContent.trim() ?? null)`;
+const VIEW_SWITCH_WORD = `JSON.stringify(document.querySelector('[data-place-pill]')?.dataset.place ?? document.querySelector('[data-surface-deep-switch] [role="tab"][aria-selected="true"]')?.textContent.trim() ?? null)`;
 
 /** The views a lab realm with Ethereal I and II lists, and the region's rows (Frontier's spacing). */
 const LAB_LAYERS = LAYER_NAMES.slice(1, 3);
@@ -6883,6 +6870,8 @@ export const STEP_SETS = {
           if (browser.read(`JSON.stringify(Boolean(document.querySelector('[aria-label="Close"]')))`))
             browser.click(HUD_WORDS.close);
           await sleep(1_500);
+          const shot = extraScreenshot("world");
+          const menuOpened = openThePlaceMenu(browser);
           const worldHud = browser.read(`(() => ({
             places: [...document.querySelectorAll('nav[aria-label="Places"] button')].map((button) => button.getAttribute('aria-label') || button.textContent?.trim()),
             questChip: Boolean(document.querySelector('[data-daily-quest-chip]')),
@@ -6891,9 +6880,10 @@ export const STEP_SETS = {
             armies: document.querySelectorAll('nav[aria-label="Armies"] button').length,
             desktopStores: document.querySelectorAll('.frontier-realm-card [aria-label="Stores"] [data-store]').length,
             realmCard: Boolean(document.querySelector('.frontier-realm-card')),
-            phonePill: Boolean(document.querySelector('.frontier-phone-pill')),
+            placePill: Boolean(document.querySelector('[data-place-pill]')),
           }))()`);
-          return { shot: extraScreenshot("world"), worldHud };
+          if (menuOpened) browser.press("Escape");
+          return { shot, worldHud };
         },
         verify: ({ seen, played }) => {
           const base = inScene("map", "Deep")({ seen, played });
@@ -6916,7 +6906,7 @@ export const STEP_SETS = {
               h.realmWorld.includes("Deep") &&
               !h.realmWorld.includes("World") &&
               h.armies > 0
-            : h.phonePill &&
+            : h.placePill &&
               h.questChip &&
               h.depthSwitch &&
               h.realmWorld.includes("Realm") &&
@@ -6925,10 +6915,8 @@ export const STEP_SETS = {
               h.realmWorld.includes("Hollow") &&
               h.realmWorld.includes("Deep") &&
               h.armies > 0 &&
-              !h.places.includes("Realm") &&
-              h.places.includes("Season") &&
-              h.places.includes("Menu") &&
-              h.places.length === 2;
+              h.places.join() ===
+                ["World", HUD_WORDS.research, HUD_WORDS.season, HUD_WORDS.chat, HUD_WORDS.menu].join();
           return ok
             ? completed(played)
             : failed("World view must render the full approved HUD parts for this viewport", played);
@@ -6973,7 +6961,7 @@ export const STEP_SETS = {
         name: "realm-screen",
         settleMs: 2_000,
         play: async ({ browser, extraScreenshot }) => {
-          browser.clickTab("Realm");
+          pressPlace(browser, "Realm");
           await sleep(1_500);
           const idleUnobstructed = onADesktop()
             ? true
@@ -6981,7 +6969,7 @@ export const STEP_SETS = {
           const shot = extraScreenshot("realm");
           if (!onADesktop()) {
             browser.read(
-              `(() => { const chip = document.querySelector('.frontier-phone-realm-chip'); if (!chip) return false; chip.click(); return true; })()`,
+              `(() => { const chip = document.querySelector('.frontier-phone-emblem'); if (!chip) return false; chip.click(); return true; })()`,
             );
           }
           const buildings = await readUntil(
@@ -7000,7 +6988,7 @@ export const STEP_SETS = {
           const hasRealmPanel = browser.read(`Boolean(document.querySelector('section[aria-label="Realm"]'))`);
           if (!onADesktop()) {
             browser.read(
-              `(() => { const chip = document.querySelector('.frontier-phone-realm-chip'); if (!chip) return false; chip.click(); return true; })()`,
+              `(() => { const chip = document.querySelector('.frontier-phone-emblem'); if (!chip) return false; chip.click(); return true; })()`,
             );
             await readUntil(
               () => browser.read(`!document.querySelector('section[aria-label="Realm"]')`),
@@ -7087,7 +7075,7 @@ export const STEP_SETS = {
           );
           if (!onADesktop()) {
             browser.read(
-              `(() => { const chip = document.querySelector('.frontier-phone-realm-chip'); if (!chip) return false; chip.click(); return true; })()`,
+              `(() => { const chip = document.querySelector('.frontier-phone-emblem'); if (!chip) return false; chip.click(); return true; })()`,
             );
           }
           const hasDeploy = await readUntil(

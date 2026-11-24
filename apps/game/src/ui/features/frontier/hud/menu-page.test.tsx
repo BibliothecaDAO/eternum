@@ -9,15 +9,14 @@ it("opens named menu actions independently of their badges, with their own seman
   document.body.append(host);
   const root = createRoot(host);
   const onToday = vi.fn(),
-    onSeason = vi.fn(),
+    onFeed = vi.fn(),
     onSettings = vi.fn();
   try {
     await act(async () =>
       root.render(
         <MenuPage
-          rank="#12"
+          onFeed={onFeed}
           onToday={onToday}
-          onSeason={onSeason}
           onSettings={onSettings}
           guide="https://docs.realms.party/frontier/"
           onExit={() => {}}
@@ -27,7 +26,7 @@ it("opens named menu actions independently of their badges, with their own seman
     );
     for (const [label, name, callback] of [
       ["Today", "clock", onToday],
-      ["Season", "victory", onSeason],
+      ["Feed", "chronicles", onFeed],
       ["Settings", "settings", onSettings],
     ] as const) {
       const button = [...host.querySelectorAll<HTMLButtonElement>("nav button")].find(
@@ -57,9 +56,8 @@ it("opens How to play, the game's guide on the docs site, in a new tab with the 
     await act(async () =>
       root.render(
         <MenuPage
-          rank="#12"
+          onFeed={() => {}}
           onToday={() => {}}
-          onSeason={() => {}}
           onSettings={() => {}}
           guide="https://docs.realms.party/frontier/"
           onExit={() => {}}

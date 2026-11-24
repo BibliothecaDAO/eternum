@@ -13,21 +13,12 @@ import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-clien
 import { FRONTIER_TROOP_NAMES, TROOP_TYPES, TroopTier, type TroopType, type Direction } from "@bibliothecadao/types";
 import { useEffect, useRef, useState } from "react";
 
-import { DEPLOY_WORDS } from "@/ui/design-system/kit/words";
 import { useGoToFrontierPlace } from "../frontier-home";
 import { useRealmStores } from "../realm-stores";
 import { madeStoreOf } from "../stores";
 import { secondsUntilHeld } from "../hud/army-order";
 import { armyArt } from "../hud/dock-armies";
-import {
-  deployArmy,
-  deployDirection,
-  deployRange,
-  marchOn,
-  previewDeploy,
-  troopRange,
-  wheatStopsAt,
-} from "./deploy-plan";
+import { deployArmy, deployDirection, deployRange, marchOn, previewDeploy, wheatStopsAt } from "./deploy-plan";
 import { TroopOathSlots } from "../army/oath-slots";
 import { DeployView, type DeployTroopChoiceView } from "./deploy-view";
 import { useDeployPlan } from "./use-deploy-plan";
@@ -108,22 +99,11 @@ export const DeploySheet = ({
 
   const troopChoices: DeployTroopChoiceView[] =
     plan?.choices.map((troops) => {
-      const choiceBar = start?.start ? { ...start.start, perExplore: troops.exploreStamina } : undefined;
-      const choiceRange = choiceBar
-        ? troopRange(Math.min(troops.atHome, troops.cap), troops.raise, marchOn(choiceBar, 0))
-        : { troopsMax: 0, wheatMax: 0, max: 0 };
-      const selected = plan.troops?.type === troops.type;
-      const custom = selected && !isFullStack;
-      const displayCount = custom ? (preview?.count ?? 0) : choiceRange.max;
       return {
         category: troops.type,
         name: FRONTIER_TROOP_NAMES[troops.type],
         art: armyArt({ category: troops.type, tier: troops.tier }),
-        role: DEPLOY_WORDS.troopRoles[troops.type](troops.exploreStamina),
         atHome: troops.atHome,
-        displayCount,
-        displayWheat: troops.raise.wheatFor(displayCount),
-        isCustom: custom,
       };
     }) ?? [];
 

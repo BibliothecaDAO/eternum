@@ -70,6 +70,11 @@ export const DayRing = ({ clock }: { clock: DayClock }) => {
           <span className="frontier-day-label">{clock.day ?? "—"}</span>
         </span>
       </ProgressRing>
+      {left && (
+        <span className="frontier-day-left" aria-hidden="true">
+          {left}
+        </span>
+      )}
     </span>
   );
 };

@@ -90,57 +90,6 @@
   white-space: nowrap;
 }
 
-.frontier-quest-orb {
-  position: relative;
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  border: 0;
-  background: transparent;
-  padding: 0 0 8px;
-  color: rgb(var(--hud-ink));
-  cursor: pointer;
-}
-.frontier-quest-orb .frontier-progress-ring {
-  width: 44px;
-  height: 44px;
-  border-radius: var(--hud-radius-round);
-  background: radial-gradient(circle at 50% 38%, var(--hud-surface-from), var(--hud-well) 74%);
-  box-shadow: 0 0 0 1.5px color-mix(in srgb, rgb(var(--hud-gold)) 60%, transparent);
-}
-.frontier-quest-orb:hover .frontier-progress-ring,
-.frontier-quest-orb[aria-expanded="true"] .frontier-progress-ring {
-  box-shadow: 0 0 0 2px rgb(var(--hud-gold));
-}
-.frontier-quest-orb[data-ready="true"] .frontier-progress-ring {
-  box-shadow:
-    0 0 0 2px rgb(var(--hud-gold)),
-    0 0 14px color-mix(in srgb, rgb(var(--hud-gold)) 70%, transparent);
-}
-.frontier-quest-orb__count {
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  border: 1px solid var(--hud-line-strong);
-  border-radius: var(--hud-radius-round);
-  background: var(--hud-surface-to);
-  padding: 1px 6px;
-  font-size: var(--hud-text-badge);
-  line-height: 14px;
-  font-weight: var(--hud-weight-strong);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-.frontier-quest-orb[data-ready="true"] .frontier-quest-orb__count {
-  border-color: rgb(var(--hud-gold));
-  background: rgb(var(--hud-gold));
-  color: rgb(var(--hud-dark));
-  font-family: var(--hud-font-display);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
 .frontier-corner {
   position: fixed;
   top: theme(spacing.4);

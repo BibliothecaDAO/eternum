@@ -99,7 +99,7 @@ export const ArmyDock = ({
     );
   }
   return (
-    <nav aria-label="Armies" className="pointer-events-auto flex gap-1.5">
+    <nav aria-label="Armies" className="pointer-events-auto flex items-end gap-1.5">
       {entries}
       {pending}
     </nav>

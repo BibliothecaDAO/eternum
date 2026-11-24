@@ -10,7 +10,6 @@ import type { DeepArmyLife } from "@bibliothecadao/eternum/game-client";
 import { reachMark } from "../depth-art";
 
 const TOKEN_FRAME = "relative flex w-14 shrink-0 flex-col items-center justify-start gap-1 rounded-xl py-1";
-const TOKEN = `min-h-hud-frontier-token ${TOKEN_FRAME}`;
 
 /** A token's portrait: the painting in its ring, as every token draws it. */
 const Portrait = ({ art }: { art: IconMeaning | undefined }) => (
@@ -58,11 +57,11 @@ export const EtherealMark = ({ layer, at = "corner" }: { layer: EtherealLayer | 
       data-tip={layerName(layer)}
       className={cn(
         "absolute flex h-5 items-center gap-0.5 rounded-full border border-hud-line-strong bg-hud-dark pl-0.5 pr-1 text-hud-strong leading-none text-hud-ink",
-        at === "corner" ? "-bottom-1.5 -left-2.5" : "-left-2.5 top-3.5",
+        at === "corner" ? "-bottom-1.5 -left-2.5" : "-bottom-1 -right-2.5 pr-0.5",
       )}
     >
       <SemanticIcon name={reachMark(layer)} size={14} />
-      {layerName(layer)}
+      {at === "corner" && layerName(layer)}
     </span>
   );
 
@@ -96,7 +95,7 @@ export const ArmyToken = ({
 }) => {
   const body = (
     <>
-      <span data-fly-target={flyTarget} className="relative size-10 shrink-0">
+      <span data-fly-target={flyTarget} className="relative size-8 shrink-0">
         <Portrait art={art} />
         {number !== undefined && (
           <span className="absolute -left-2.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full border border-hud-line-strong bg-hud-dark px-1 text-hud-strong leading-none text-hud-ink tabular-nums">
@@ -134,7 +133,7 @@ export const ArmyToken = ({
 };
 
 /** A token's frame, an army's and an open slot's alike; the picked one wears the kit's chosen look (ui-pick). */
-const TOKEN_LOOK = cn(TOKEN, "border border-hud-line bg-hud-surface");
+const TOKEN_LOOK = cn(TOKEN_FRAME, "border border-hud-line bg-hud-surface");
 
 /**
  * An open army slot: a plus in a dashed ring that opens Deploy, and under it the stamina the slot starts its army on,
@@ -170,7 +169,7 @@ export const OpenSlot = ({
     onClick={onDeploy}
     className={cn("ui-pick", TOKEN_LOOK, "border-dashed")}
   >
-    <SlotRing pulse={pulse} filling={filling} />
+    <SlotRing pulse={pulse} filling={filling} small />
     {start && filling === undefined && <TokenStamina stamina={start.bar} />}
     <span className="text-hud-label leading-none text-hud-muted">{filling ?? label}</span>
     {stock && filling === undefined && (
@@ -182,11 +181,13 @@ export const OpenSlot = ({
 );
 
 /** An open slot's dashed ring: a plus, "…" while an army is on its way into it. */
-const SlotRing = ({ pulse, filling }: { pulse: boolean; filling?: string }) => (
+export const SlotRing = ({ pulse, filling, small = false }: { pulse: boolean; filling?: string; small?: boolean }) => (
   <span
     className={cn(
-      "flex size-10 shrink-0 items-center justify-center rounded-full border-2 border-dashed border-hud-line text-hud-title",
-      "text-hud-ink",
+      "flex shrink-0 items-center justify-center rounded-full text-hud-ink",
+      small
+        ? "size-6 border border-hud-line-strong bg-hud-dark text-hud-body"
+        : "size-10 border-2 border-dashed border-hud-line text-hud-title",
       (pulse || filling !== undefined) && "animate-pulse border-hud-line-strong",
     )}
   >

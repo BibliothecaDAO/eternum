@@ -331,6 +331,13 @@
   gap: 3px;
 }
 
+.emissary-dock--phone .emissary-dock__btn {
+  min-height: 24px;
+  padding: 0 4px;
+  background: none;
+  border: 0;
+}
+
 .emissary-dock--phone .emissary-dock__speech {
   font-size: var(--hud-text-label);
   line-height: var(--hud-leading-label);
