@@ -56,7 +56,12 @@ export function AspectEmissaryDock({
     expanded: expandedOver === sheetsOver,
   });
   const skip = onSkipAll && !completed && (
-    <SkipControls asking={askingSkip} onAsk={() => setSkipAskedOn(moment)} onKeep={() => setSkipAskedOn(null)} onSkip={onSkipAll} />
+    <SkipControls
+      asking={askingSkip}
+      onAsk={() => setSkipAskedOn(moment)}
+      onKeep={() => setSkipAskedOn(null)}
+      onSkip={onSkipAll}
+    />
   );
   const done = completed && (
     <span className="emissary-dock__done" role="status">
@@ -92,7 +97,12 @@ export function AspectEmissaryDock({
           >
             ▾
           </button>
-          <button type="button" className="emissary-dock__btn emissary-dock__fold-btn" aria-label={CLOSE} onClick={onDismiss}>
+          <button
+            type="button"
+            className="emissary-dock__btn emissary-dock__fold-btn"
+            aria-label={CLOSE}
+            onClick={onDismiss}
+          >
             ✕
           </button>
         </>
