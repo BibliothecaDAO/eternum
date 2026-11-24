@@ -27,20 +27,7 @@ import {
   ROSTER_PAGE_LIMIT,
   STATS_CACHE_SECONDS,
 } from "./http-limits";
-import {
-  HERALD_DAY_RANKS_PATH,
-  HERALD_DIRECTORY_PATH,
-  HERALD_HEALTH_PATH,
-  HERALD_HISTORY_PATH,
-  HERALD_LEADERBOARD_PATH,
-  HERALD_MANIFEST_PATH,
-  HERALD_REVIEW_SNAPSHOT_PATH,
-  HERALD_ROSTER_PATH,
-  HERALD_SITE_PATH,
-  HERALD_SNAPSHOT_PATH,
-  HERALD_STATS_PATH,
-  HERALD_UPDATES_PATH,
-} from "./http-routes";
+import { matchHeraldGetRoute } from "./http-routes";
 
 interface SnapshotSource extends GameDirectorySource {
   /** A site's row by its entity, outside any player's scope: the Feed names a fight's beast far from the player. */
@@ -147,15 +134,6 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
   const leaderboard = cachedLeaderboard(state);
   const roster = cachedAspectRosters(state);
   const transactions = cachedGameTransactions(state);
-  const directoryPath = HERALD_DIRECTORY_PATH;
-  const snapshotPath = HERALD_SNAPSHOT_PATH;
-  const historyPath = HERALD_HISTORY_PATH;
-  const reviewSnapshotPath = HERALD_REVIEW_SNAPSHOT_PATH;
-  const dayRanksPath = HERALD_DAY_RANKS_PATH;
-  const leaderboardPath = HERALD_LEADERBOARD_PATH;
-  const rosterPath = HERALD_ROSTER_PATH;
-  const sitePath = HERALD_SITE_PATH;
-  const statsPath = HERALD_STATS_PATH;
 
   // Browsers hide a cross-origin request's connect, TLS and wait timings unless the response allows it. Only a dev chain
   // shows them: the chain identity, not a setting, decides, so no production deploy can carry it.
@@ -215,16 +193,19 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
   const answer = async (request: Request): Promise<Response> => {
     const url = new URL(request.url);
     if (request.method === "OPTIONS") return new Response(null, { headers: PUBLIC_READ_HEADERS, status: 204 });
-    if (request.method === "GET" && url.pathname === HERALD_UPDATES_PATH) {
+    const route = request.method === "GET" ? matchHeraldGetRoute(url.pathname) : null;
+    if (!route) return jsonResponse({ error: "not_found" }, 404);
+
+    if (route.name === "updates") {
       return streamDirectoryUpdates(request, state, directory.revision);
     }
-    if (request.method === "GET" && url.pathname === HERALD_MANIFEST_PATH) return jsonResponse(state.manifest);
-    if (request.method === "GET" && url.pathname.startsWith("/schemas/")) {
-      const identity = url.pathname.slice("/schemas/".length);
+    if (route.name === "manifest") return jsonResponse(state.manifest);
+    if (route.name === "schema") {
+      const identity = route.params[0];
       const schema = Object.hasOwn(state.schemas, identity) ? state.schemas[identity] : undefined;
       return schema ? jsonResponse(schema) : jsonResponse({ error: "UNKNOWN_RELEASE_SCHEMA" }, 404);
     }
-    if (request.method === "GET" && url.pathname === HERALD_HEALTH_PATH) {
+    if (route.name === "health") {
       const failure = state.ingestionFailure?.();
       return jsonResponse(
         {
@@ -240,7 +221,7 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
       );
     }
 
-    if (request.method === "GET" && url.pathname === directoryPath) {
+    if (route.name === "directory") {
       let player: string | undefined;
       try {
         player = requestedPlayer(url);
@@ -250,22 +231,20 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
       try {
         return jsonResponse({ ...directory.read(player), world_address: state.worldAddress });
       } catch (error) {
-        // Herald's own failure, not the caller's: logged, and answered as a server error.
         const message = error instanceof Error ? error.message : String(error);
         console.error(JSON.stringify({ event: "herald_directory_failed", error: message, player: player ?? null }));
         return jsonResponse({ error: message }, 500);
       }
     }
 
-    const dayRanksMatch = request.method === "GET" ? dayRanksPath.exec(url.pathname) : null;
-    if (dayRanksMatch) {
-      const dayIndex = Number(dayRanksMatch[2]);
+    if (route.name === "dayRanks") {
+      const dayIndex = Number(route.params[1]);
       if (!Number.isSafeInteger(dayIndex)) return jsonResponse({ error: "invalid_day_index" }, 400);
       if (!state.history || state.undecodableEventCount() > 0)
         return jsonResponse({ error: "day_ranks_unavailable" }, 503);
       try {
         const ranks = await state.history.frontierDayRanks(
-          BigInt(dayRanksMatch[1]).toString(),
+          BigInt(route.params[0]).toString(),
           dayIndex,
           state.confirmedBlock(),
         );
@@ -275,18 +254,16 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
       }
     }
 
-    const siteMatch = request.method === "GET" ? sitePath.exec(url.pathname) : null;
-    if (siteMatch) {
-      const site = state.fold.expeditionSite(siteMatch[1], siteMatch[2]);
+    if (route.name === "site") {
+      const site = state.fold.expeditionSite(route.params[0], route.params[1]);
       return site ? jsonResponse(site) : jsonResponse({ error: "unknown_site" }, 404);
     }
 
-    const leaderboardMatch = request.method === "GET" ? leaderboardPath.exec(url.pathname) : null;
-    if (leaderboardMatch) {
-      if (isSeasonOneGame(state.fold.modelRows, leaderboardMatch[1]))
+    if (route.name === "leaderboard") {
+      if (isSeasonOneGame(state.fold.modelRows, route.params[0]))
         return jsonResponse({ error: "season_one_ranks_aspects" }, 404);
       try {
-        const gameId = leaderboardMatch[1];
+        const gameId = route.params[0];
         const head = state.confirmedBlock();
         const board = await leaderboard(gameId);
         const response = jsonResponse(board);
@@ -297,13 +274,11 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
       }
     }
 
-    const statsMatch = request.method === "GET" ? statsPath.exec(url.pathname) : null;
-    if (statsMatch) return answerGameStats(statsMatch[1]);
+    if (route.name === "stats") return answerGameStats(route.params[0]);
 
-    const rosterMatch = request.method === "GET" ? rosterPath.exec(url.pathname) : null;
-    if (rosterMatch) return answerAspectRoster(url, rosterMatch[1], Number(rosterMatch[2]));
+    if (route.name === "roster") return answerAspectRoster(url, route.params[0], Number(route.params[1]));
 
-    if (request.method === "GET" && url.pathname === "/history/story-events") {
+    if (route.name === "storyEvents") {
       if (!state.history || state.undecodableEventCount() > 0)
         return jsonResponse({ error: "story_history_unavailable" }, 503);
       let after, limit;
@@ -321,31 +296,26 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
       }
     }
 
-    const historyMatch = request.method === "GET" ? historyPath.exec(url.pathname) : null;
-    if (historyMatch) {
+    if (route.name === "history") {
       if (!state.history) return jsonResponse({ error: "history_unavailable" }, 503);
       try {
-        return jsonResponse(await state.history.queryEvents(historyQuery(url, historyMatch[1])));
+        return jsonResponse(await state.history.queryEvents(historyQuery(url, route.params[0])));
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         return jsonResponse({ error: message }, 400);
       }
     }
 
-    const reviewSnapshotMatch = request.method === "GET" ? reviewSnapshotPath.exec(url.pathname) : null;
-    if (reviewSnapshotMatch) {
+    if (route.name === "reviewSnapshot") {
       if (!state.history) return jsonResponse({ error: "history_unavailable" }, 503);
-      const snapshot = await state.history.reviewSnapshot(reviewSnapshotMatch[1]);
+      const snapshot = await state.history.reviewSnapshot(route.params[0]);
       return snapshot ? jsonResponse(snapshot) : jsonResponse({ error: "review_snapshot_not_frozen" }, 404);
     }
-
-    const match = request.method === "GET" ? snapshotPath.exec(url.pathname) : null;
-    if (!match) return jsonResponse({ error: "not_found" }, 404);
 
     try {
       const models = requestedModels(url);
       const snapshot = state.fold.snapshot(
-        match[1],
+        route.params[0],
         state.confirmedBlock(),
         models,
         url.searchParams.get("actor") ?? undefined,

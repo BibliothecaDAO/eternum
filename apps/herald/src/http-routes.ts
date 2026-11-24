@@ -1,26 +1,59 @@
-export const HERALD_DIRECTORY_PATH = "/games";
-export const HERALD_UPDATES_PATH = `${HERALD_DIRECTORY_PATH}/updates`;
-export const HERALD_MANIFEST_PATH = "/manifest";
-export const HERALD_HEALTH_PATH = "/health";
-export const HERALD_SNAPSHOT_PATH = /^\/games\/([0-9]+)\/snapshot$/;
-export const HERALD_HISTORY_PATH = /^\/games\/([0-9]+)\/history$/;
-export const HERALD_REVIEW_SNAPSHOT_PATH = /^\/games\/([0-9]+)\/review\/snapshot$/;
-export const HERALD_DAY_RANKS_PATH = /^\/games\/([0-9]+)\/days\/([0-9]+)\/ranks$/;
-export const HERALD_LEADERBOARD_PATH = /^\/games\/([0-9]+)\/leaderboard$/;
-export const HERALD_ROSTER_PATH = /^\/games\/([0-9]+)\/aspects\/([0-9]+)\/members$/;
-export const HERALD_SITE_PATH = /^\/games\/([0-9]+)\/sites\/([0-9]+)$/;
-export const HERALD_STATS_PATH = /^\/games\/([0-9]+)\/stats$/;
+type HeraldRouteName =
+  | "updates"
+  | "manifest"
+  | "schema"
+  | "health"
+  | "directory"
+  | "dayRanks"
+  | "site"
+  | "leaderboard"
+  | "stats"
+  | "roster"
+  | "storyEvents"
+  | "history"
+  | "reviewSnapshot"
+  | "snapshot";
 
-export const HERALD_PUBLIC_GET_ROUTES: readonly (string | RegExp)[] = [
-  HERALD_DIRECTORY_PATH,
-  HERALD_UPDATES_PATH,
-  HERALD_MANIFEST_PATH,
-  HERALD_HEALTH_PATH,
-  HERALD_SNAPSHOT_PATH,
-  HERALD_HISTORY_PATH,
-  HERALD_REVIEW_SNAPSHOT_PATH,
-  HERALD_DAY_RANKS_PATH,
-  HERALD_ROSTER_PATH,
-  HERALD_SITE_PATH,
-  HERALD_STATS_PATH,
+interface HeraldRouteEntry {
+  readonly name: HeraldRouteName;
+  readonly pattern: string | RegExp;
+  readonly publicFrontierDoc: boolean;
+}
+
+const HERALD_GET_ROUTES: readonly HeraldRouteEntry[] = [
+  { name: "updates", pattern: "/games/updates", publicFrontierDoc: true },
+  { name: "manifest", pattern: "/manifest", publicFrontierDoc: true },
+  { name: "schema", pattern: /^\/schemas\/(.*)$/, publicFrontierDoc: false },
+  { name: "health", pattern: "/health", publicFrontierDoc: true },
+  { name: "directory", pattern: "/games", publicFrontierDoc: true },
+  { name: "dayRanks", pattern: /^\/games\/([0-9]+)\/days\/([0-9]+)\/ranks$/, publicFrontierDoc: true },
+  { name: "site", pattern: /^\/games\/([0-9]+)\/sites\/([0-9]+)$/, publicFrontierDoc: true },
+  { name: "leaderboard", pattern: /^\/games\/([0-9]+)\/leaderboard$/, publicFrontierDoc: false },
+  { name: "stats", pattern: /^\/games\/([0-9]+)\/stats$/, publicFrontierDoc: true },
+  { name: "roster", pattern: /^\/games\/([0-9]+)\/aspects\/([0-9]+)\/members$/, publicFrontierDoc: true },
+  { name: "storyEvents", pattern: "/history/story-events", publicFrontierDoc: false },
+  { name: "history", pattern: /^\/games\/([0-9]+)\/history$/, publicFrontierDoc: true },
+  { name: "reviewSnapshot", pattern: /^\/games\/([0-9]+)\/review\/snapshot$/, publicFrontierDoc: true },
+  { name: "snapshot", pattern: /^\/games\/([0-9]+)\/snapshot$/, publicFrontierDoc: true },
 ];
+
+export const HERALD_PUBLIC_GET_ROUTES: readonly (string | RegExp)[] = HERALD_GET_ROUTES.filter(
+  (route) => route.publicFrontierDoc,
+).map((route) => route.pattern);
+
+interface MatchedHeraldRoute {
+  readonly name: HeraldRouteName;
+  readonly params: readonly string[];
+}
+
+export function matchHeraldGetRoute(pathname: string): MatchedHeraldRoute | null {
+  for (const route of HERALD_GET_ROUTES) {
+    if (typeof route.pattern === "string") {
+      if (pathname === route.pattern) return { name: route.name, params: [] };
+      continue;
+    }
+    const match = route.pattern.exec(pathname);
+    if (match) return { name: route.name, params: match.slice(1) };
+  }
+  return null;
+}

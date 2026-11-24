@@ -689,3 +689,9 @@ it("lets browsers read request timings only on a dev chain", async () => {
     }
   }
 });
+
+it("dispatches every GET route through http-routes.ts with no inline pathname branches", async () => {
+  const source = await Bun.file(new URL("./http.ts", import.meta.url)).text();
+  expect(source).not.toMatch(/url\.pathname\s*===/);
+  expect(source).not.toMatch(/url\.pathname\.startsWith\(/);
+});
