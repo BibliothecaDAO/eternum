@@ -187,7 +187,7 @@ describe("the status strip", () => {
     act(() =>
       root.render(
         <PhoneTopBarView
-          realm={{ icon: "realm-1", label: "Duskbite", level: 1, aspect: 1, orderId: 12 }}
+          realm={{ icon: "realm-1", label: "Duskbite", aspect: 1, orderId: 12 }}
           clock={<DayRing clock={day} />}
           stocks={{
             fragments: 0,
@@ -229,21 +229,19 @@ describe("the status strip", () => {
     ]);
   });
 
-  it("gives a tablet its own bar: the realm's name beside its emblem, the day, quest and place in the middle, the places right, the stocks in their card", () => {
+  it("gives a tablet its own bar: the day, quest and place, the places right, and the realm card under it", () => {
     act(() =>
       root.render(
         <TabletTopBarView
-          realm={{ icon: "realm-1", label: "Duskbite", level: 1, aspect: 1, orderId: 12 }}
+          realm={{ icon: "realm-1", label: "Duskbite", aspect: 1, orderId: 12 }}
           clock={<span role="timer">Day</span>}
           stocks={{ fragments: 3, onShop: vi.fn(), stores: [store("essence", 200), store("labor", 2_300)] }}
           placeMenu={<button type="button">Places</button>}
           quest={<button type="button">Quest</button>}
           places={<TabletPlaces surface={null} onSurface={vi.fn()} researchReady feedUnread={0} chatUnread={2} />}
+          realmCard={<section aria-label="Realm" />}
         />,
       ),
-    );
-    expect(host.querySelector(".frontier-tablet-bar__identity .frontier-realm-chip__name")?.textContent).toBe(
-      "Duskbite",
     );
     expect([...host.querySelectorAll(".frontier-tablet-bar__centre > *")].map((part) => part.textContent)).toEqual([
       "Day",
@@ -253,10 +251,7 @@ describe("the status strip", () => {
     expect(
       [...host.querySelectorAll('nav[aria-label="Places"] button')].map((button) => button.getAttribute("aria-label")),
     ).toEqual(["Research", "Season", "Feed", "Chat", "Menu"]);
-    expect(
-      [...host.querySelectorAll(".frontier-tablet-stocks [data-store]")].map((chip) => chip.getAttribute("data-store")),
-    ).toEqual(["essence", "labor"]);
-    expect(host.querySelector(".frontier-tablet-stocks [data-fragments-socket]")).not.toBeNull();
+    expect(host.querySelector('.frontier-tablet-realm > section[aria-label="Realm"]')).not.toBeNull();
   });
 
   it("shows the realm card's stores in order with rates, exact accessible labels and the Fragments tile", () => {

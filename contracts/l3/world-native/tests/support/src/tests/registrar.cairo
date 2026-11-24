@@ -348,7 +348,14 @@ pub fn assert_capture_at(
             ..site_before,
         },
     );
-    assert!(map.occupancy(crate::geometry::tile_key(game_id, coord)).is_none());
+    assert_eq!(
+        map.occupancy(crate::geometry::tile_key(game_id, coord)),
+        Some(
+            crate::map::TileOccupancy {
+                entity_id: camp_id, category: crate::taxonomy::SUPPLY_POST_OCCUPIER, is_structure: true,
+            },
+        ),
+    );
     assert_eq!(map.tile(crate::geometry::tile_key(game_id, coord)).unwrap(), _tile);
     for resource_type in 1_u8..39 {
         let reward = if resource_type == crate::resources::LABOR {
@@ -484,21 +491,16 @@ pub fn assert_capture_at(
         let mut survivors = troops.resolved_explorer(army_key).unwrap();
         survivors.troops.count = count;
         crate::tests::resource_commands::set_explorer_fixture(d.games, army_key, survivors);
-        super::resource_commands::assert_executes(
-            d,
-            game_id,
-            Command::Move(crate::commands::Move { explorer_id, directions: array![0].span() }),
-            capture_at + 140,
-        );
-        assert_eq!(troops.resolved_explorer(army_key).unwrap().coord, coord);
+        let mut refused = snforge_std::spy_events();
         assert!(
-            execute_in_game(
+            !execute_in_game(
                 d,
                 game_id,
-                Command::Move(crate::commands::Move { explorer_id, directions: array![3].span() }),
-                capture_at + 141,
+                Command::Move(crate::commands::Move { explorer_id, directions: array![0].span() }),
+                capture_at + 140,
             ),
         );
+        assert_eq!(super::play_fixture::rejection(ref refused, d.games).reason, "movement tile occupied");
         assert_eq!(troops.resolved_explorer(army_key).unwrap().coord, army.coord);
         let retained = snforge_std::interact_with_state(d.games, || crate::logic::expeditions::expedition_site(camp));
         assert_eq!(retained, Some(site_after));

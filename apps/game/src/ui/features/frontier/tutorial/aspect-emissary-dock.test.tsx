@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { aspectName, aspects } from "@bibliothecadao/types";
 import { iconUrl } from "@/ui/design-system/icon-meaning";
 import { OPENING_WORDS } from "@/ui/design-system/kit/words";
+import { OPENING_MOMENTS, teacherAspectOf } from "../opening/opening";
 import { OPENING_RULES } from "../opening/opening-fixtures";
 import { ASPECT_EMISSARY_PORTRAITS } from "./aspect-emissaries";
 import { AspectEmissaryDock } from "./aspect-emissary-dock";
@@ -73,6 +74,23 @@ describe("AspectEmissaryDock", () => {
     expect(onSkipAll).toHaveBeenCalledTimes(1);
   });
 
+  it("assigns every tutorial lesson an unmistakable catalog Aspect speaker with portrait, medallion, name, and color", () => {
+    const validIds = new Set(aspects.map((aspect) => aspect.id));
+    for (const moment of OPENING_MOMENTS) {
+      const aspectId = teacherAspectOf(moment, OPENING_RULES.ownAspect);
+      expect(aspectId, `${moment} must resolve to a catalog Aspect`).not.toBeNull();
+      expect(validIds.has(aspectId!), `${moment} speaker must be in the Aspect catalog`).toBe(true);
+      act(() => root.render(<AspectEmissaryDock moment={moment} rules={OPENING_RULES} onDismiss={vi.fn()} />));
+      const dock = host.querySelector<HTMLElement>(`[data-tutorial-dock="${moment}"]`);
+      expect(dock, `${moment} must render the dock`).not.toBeNull();
+      expect(dock?.dataset.tutorialAspect).toBe(String(aspectId));
+      expect(dock?.style.getPropertyValue("--hud-aspect").trim().length).toBeGreaterThan(0);
+      expect(host.querySelector(".emissary-dock__aspect")?.textContent).toBe(aspectName(aspectId!));
+      expect(host.querySelector(`img[data-icon="${ASPECT_EMISSARY_PORTRAITS[aspectId!]}"]`)).not.toBeNull();
+      expect(host.querySelector(`[data-aspect-mark="${aspectId}"]`)).not.toBeNull();
+    }
+  });
+
   it("renders each Aspect's distinct emissary portrait and emblem across all four Aspects", () => {
     for (const aspect of aspects) {
       act(() =>
@@ -91,7 +109,7 @@ describe("AspectEmissaryDock", () => {
     }
   });
 
-  it("renders the compact phone layout without the desktop action phrase while keeping Skip tutorial reachable", () => {
+  it("renders the compact phone layout with the action line, full title, portrait, and Skip tutorial", () => {
     const onSkipAll = vi.fn();
     act(() =>
       root.render(
@@ -108,11 +126,12 @@ describe("AspectEmissaryDock", () => {
     const dock = host.querySelector<HTMLElement>("[data-tutorial-dock='explore']");
     expect(dock?.classList.contains("emissary-dock--phone")).toBe(true);
     expect(dock?.textContent).toContain("Insight");
+    expect(dock?.textContent).toContain(OPENING_WORDS.titles.explore);
     expect(dock?.textContent).toContain("Reveal one dark hex for 20 stamina.");
     expect(host.querySelector('img[data-icon="emissary-insight"]')?.getAttribute("src")).toBe(
       "/icons/facets/128/emissary-insight.webp",
     );
-    expect(host.querySelector(".emissary-dock__action")).toBeNull();
+    expect(host.querySelector(".emissary-dock__action")?.textContent).toContain(OPENING_WORDS.actions.explore);
     const skipButton = [...host.querySelectorAll("button")].find((button) => button.textContent === "Skip tutorial");
     expect(skipButton).toBeDefined();
     act(() => skipButton!.click());
@@ -155,5 +174,52 @@ describe("AspectEmissaryDock", () => {
 
     act(() => host.querySelector<HTMLButtonElement>('button[aria-label="Close"]')!.click());
     expect(onDismiss).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps a confirmed line while a panel hides it, and retires it 3.5 s after it is on screen", () => {
+    vi.useFakeTimers();
+    const observers: Array<(entries: Array<{ isIntersecting: boolean }>) => void> = [];
+    vi.stubGlobal(
+      "IntersectionObserver",
+      class {
+        constructor(callback: (entries: Array<{ isIntersecting: boolean }>) => void) {
+          observers.push(callback);
+        }
+        observe() {}
+        disconnect() {}
+      },
+    );
+    try {
+      const onDismiss = vi.fn();
+      act(() =>
+        root.render(
+          <AspectEmissaryDock moment="aspects" rules={OPENING_RULES} status="completed" onDismiss={onDismiss} />,
+        ),
+      );
+      act(() => observers.at(-1)!([{ isIntersecting: false }]));
+      act(() => vi.advanceTimersByTime(60_000));
+      expect(onDismiss).not.toHaveBeenCalled();
+
+      act(() => observers.at(-1)!([{ isIntersecting: true }]));
+      act(() => vi.advanceTimersByTime(3_499));
+      expect(onDismiss).not.toHaveBeenCalled();
+      act(() => vi.advanceTimersByTime(1));
+      expect(onDismiss).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.unstubAllGlobals();
+      vi.useRealTimers();
+    }
+  });
+
+  it("never retires a lesson that is still showing", () => {
+    vi.useFakeTimers();
+    try {
+      const onDismiss = vi.fn();
+      act(() => root.render(<AspectEmissaryDock moment="barracks" rules={OPENING_RULES} onDismiss={onDismiss} />));
+      act(() => vi.advanceTimersByTime(60_000));
+      expect(onDismiss).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

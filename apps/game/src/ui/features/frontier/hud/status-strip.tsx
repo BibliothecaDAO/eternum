@@ -33,12 +33,6 @@ export const STORE_TONES: Record<Tone, { text: string; meter: "warn" | "bad" | u
  * A store in one line, as its plate says it when asked: "Wheat 1,771 of 6,000 · +5/min · Full in 14h". Each part
  * is there only when the game's facts give it; a full store says Full in place of a rate it no longer earns.
  */
-export const storeCapacityShare = (store: StoreReading): number | undefined => {
-  if (store.limit === undefined || store.limit <= 0) return undefined;
-  if (store.amount === undefined) return 0;
-  return Math.min(1, Math.max(0, store.amount / store.limit));
-};
-
 export const storeRateText = (store: StoreReading, { compact = false }: { compact?: boolean } = {}): string | null => {
   if (store.perHour === undefined || store.perHour <= 0 || store.fullIn === 0) return null;
   const rate = formatRate(store.perHour / 3600);

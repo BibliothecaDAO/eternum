@@ -137,6 +137,24 @@ it("bounds a stalled push request with an abort signal", async () => {
   }
 });
 
+it("reads an invite identity cannot make for the account as none, and still throws any other refusal", async () => {
+  const invite = { code: "INVT2345", aspect: 2, chainId: "0x1", gameId: 1 };
+  const fetch = vi
+    .fn<typeof globalThis.fetch>()
+    .mockResolvedValueOnce(Response.json({ error: "no_aspect" }, { status: 409 }))
+    .mockResolvedValueOnce(Response.json(invite))
+    .mockResolvedValueOnce(Response.json({ error: "aspect_unavailable" }, { status: 503 }));
+  const client = createIdentityClient({ apiUrl: "https://realms.test/api", fetch });
+
+  await expect(client.createInvite()).resolves.toBeNull();
+  await expect(client.createInvite()).resolves.toEqual(invite);
+  await expect(client.createInvite()).rejects.toMatchObject({ status: 503, code: "aspect_unavailable" });
+  expect(fetch).toHaveBeenCalledWith(
+    "https://realms.test/api/shares/invite",
+    expect.objectContaining({ method: "POST" }),
+  );
+});
+
 it("returns the service's code expiry to the device", async () => {
   const expiry = { success: true, expires_at: 1800000300.125 };
   const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(Response.json(expiry));

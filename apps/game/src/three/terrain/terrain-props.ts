@@ -1054,8 +1054,8 @@ function resolveTerrainPropDensityUpperBound(layer: TerrainPropPlacementLayer, d
 
 function resolveDensityMultiplier(value: number | undefined): number {
   const multiplier = value ?? PRODUCTION_TERRAIN_PROP_DENSITY_MULTIPLIER;
-  if (!Number.isFinite(multiplier) || multiplier < 0.25 || multiplier > 3) {
-    throw new Error(`Terrain prop density multiplier must be from 0.25 to 3, received ${String(value)}`);
+  if (!Number.isFinite(multiplier) || multiplier < 0.1 || multiplier > 3) {
+    throw new Error(`Terrain prop density multiplier must be from 0.1 to 3, received ${String(value)}`);
   }
   return multiplier;
 }

@@ -11,6 +11,7 @@ import type {
   HeraldHistoryPage,
   HeraldHistoryEvent,
   HeraldFrontierDayRanks,
+  HeraldGameTransactions,
 } from "@bibliothecadao/eternum/game-sync";
 
 import { normalizeFelt, toJsonValue } from "./model-registry";
@@ -329,6 +330,22 @@ export class HistoryStore {
       [this.chain, this.worldAddress, gameId, confirmedBlock, FRONTIER_REWARD_STORIES],
     );
     return result.rows;
+  }
+
+  public async gameTransactions(gameId: string): Promise<HeraldGameTransactions> {
+    const result = await this.pool.query<{ day: string; transactions: string }>(
+      `SELECT ('x' || lpad(substr(value->>'timestamp', 3), 16, '0'))::bit(64)::bigint / 86400 AS day,
+              COUNT(DISTINCT transaction_hash) AS transactions
+       FROM herald_history_events
+       WHERE chain = $1 AND world_address = $2 AND game_id = $3 AND value ? 'timestamp'
+       GROUP BY day ORDER BY day`,
+      [this.chain, this.worldAddress, gameId],
+    );
+    const days = result.rows.map((row) => ({
+      day: new Date(Number(row.day) * 86_400_000).toISOString().slice(0, 10),
+      transactions: Number(row.transactions),
+    }));
+    return { total: days.reduce((sum, { transactions }) => sum + transactions, 0), days };
   }
 
   /** Pages story history forward from a consumer cursor; the progress marker never rewinds. */

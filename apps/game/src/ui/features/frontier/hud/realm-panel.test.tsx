@@ -14,8 +14,7 @@ import { DayPill } from "./day-pill";
 import { FrontierPlaces } from "./frontier-desktop";
 import { isTroopStore, STORE_KINDS } from "../stores";
 import { RealmCard } from "./realm-card";
-import { RealmEmblem, RealmHeaderChip } from "./realm-header-chip";
-import { RealmPanel } from "./realm-panel";
+import { RealmEmblem } from "./realm-header-chip";
 import type { StoreReading } from "./status-strip";
 
 let host: HTMLDivElement;
@@ -49,70 +48,6 @@ const STORES = [
   store("wheat", 4_410, 6_000),
   store("troops", 1_200, 6_000),
 ];
-
-const named = () => [...host.querySelectorAll("[aria-label]")].map((element) => element.getAttribute("aria-label"));
-
-it("reads the player's realm as Blitz's card reads a holding: name, rank and a ring per store", () => {
-  act(() => root.render(<RealmPanel name="Duskbite" level={1} stores={STORES} />));
-  const panel = host.querySelector('section[aria-label="Realm"]')!;
-  expect(panel.textContent).toMatch(/^Duskbite.*City/);
-  expect(panel.querySelectorAll(".frontier-progress-ring")).toHaveLength(4);
-  expect(panel.querySelector('[data-store="wheat"] .frontier-progress-ring__badge')?.textContent).toBe("2h");
-  expect(panel.querySelector('[data-store="wheat"] .frontier-progress-ring__fill')).not.toBeNull();
-  expect(panel.querySelector('[data-store="essence"] .frontier-progress-ring__fill')).toBeNull();
-  expect(panel.querySelector('[data-store="wheat"]')?.textContent).not.toContain("Wheat");
-  expect(named()).toEqual(
-    expect.arrayContaining([
-      "Essence 18,250",
-      "Labor 9,640 of 18,000 · +10/min · Full in 2h",
-      "Wheat 4,410 of 6,000 · +10/min · Full in 2h",
-      "Knights 1,200 of 6,000 · +10/min · Full in 2h",
-    ]),
-  );
-});
-
-it("takes the map home from its whole header, which never folds", () => {
-  const onHome = vi.fn();
-  act(() => root.render(<RealmPanel name="Duskbite" level={1} stores={STORES} onHome={onHome} />));
-  const head = host.querySelector<HTMLButtonElement>('button[aria-label="Show my realm"]')!;
-  expect(head.textContent).toContain("Duskbite");
-  act(() => head.click());
-  act(() => head.click());
-  expect(onHome).toHaveBeenCalledTimes(2);
-  expect(named()).toContain("Essence 18,250");
-});
-
-it("opens a store's card under the rings from the ring of a store that has one", () => {
-  const onToggle = vi.fn();
-  const render = (open: "wheat" | null) =>
-    act(() =>
-      root.render(
-        <RealmPanel
-          name="Duskbite"
-          level={1}
-          stores={STORES}
-          storeCards={{ kinds: ["wheat", "labor", "troops"], open, onToggle, card: <p>wheat card</p> }}
-        />,
-      ),
-    );
-  render(null);
-  expect(host.textContent).not.toContain("wheat card");
-  // Essence has no card: its ring is not a button.
-  expect(host.querySelector('button[aria-label="Essence 18,250"]')).toBeNull();
-  // Pressed by the store it stands for, as the playtest's wheat-store step finds it (steps.mjs).
-  expect(host.querySelector('[data-store="wheat"] button')?.getAttribute("aria-label")).toMatch(/^Wheat 4,410/);
-  act(() => host.querySelector<HTMLButtonElement>('[data-store="wheat"] button')!.click());
-  expect(onToggle).toHaveBeenCalledWith("wheat");
-  render("wheat");
-  expect(host.textContent).toContain("wheat card");
-});
-
-it("shows a realm watched or visited by its stores alone: no LORDS and no Realms", () => {
-  act(() => root.render(<RealmPanel name="Duskbite" level={2} stores={STORES} />));
-  expect(host.textContent).toContain("Kingdom");
-  expect(named().filter((name) => name?.startsWith("LORDS"))).toEqual([]);
-  expect(host.querySelectorAll("button.ui-ring")).toHaveLength(0);
-});
 
 it("says the day and the time left in the top bar, and when the day ends and how long tomorrow lasts on hover", () => {
   const clock = dayClock(
@@ -164,7 +99,7 @@ it("offers a desktop's four cornice places in order, each a panel its press open
   expect(onSurface).toHaveBeenLastCalledWith("season");
 });
 
-it("renders the Aspect medallion tinted in the Aspect color and Order of Power below the Realm name on both the desktop card and panel", () => {
+it("renders the Aspect medallion tinted in the Aspect color and Order of Power below the Realm name on the realm card and the phone's emblem", () => {
   const onHome = vi.fn();
   act(() =>
     root.render(
@@ -180,7 +115,6 @@ it("renders the Aspect medallion tinted in the Aspect color and Order of Power b
           lords={0}
           onHome={onHome}
         />
-        <RealmPanel name="Duskbite" level={1} aspect={1} orderId={12} stores={STORES} />
       </>,
     ),
   );
@@ -194,29 +128,15 @@ it("renders the Aspect medallion tinted in the Aspect color and Order of Power b
   act(() => identity.click());
   expect(onHome).toHaveBeenCalledTimes(1);
 
-  const panel = host.querySelectorAll('section[aria-label="Realm"]')[1]!;
-  expect(panel.querySelector('[data-aspect-mark="1"]')).not.toBeNull();
-  expect(panel.querySelector(".frontier-aspect-medallion")?.getAttribute("data-tip")).toBe(aspectName(1));
-  expect(panel.textContent).toContain("Order of Power");
-  expect(panel.textContent).toContain(aspectName(1));
-
   act(() =>
     root.render(
       <>
-        <RealmHeaderChip name="Duskbite" level={1} aspect={1} orderId={12} onPress={onHome} />
         <RealmEmblem name="Duskbite" fallbackIcon="realm-1" aspect={1} orderId={12} onPress={onHome} />
       </>,
     ),
   );
-  expect(host.querySelector(".frontier-phone-emblem")?.getAttribute("aria-label")).toBe(
-    host.querySelector(".frontier-realm-chip")?.getAttribute("aria-label"),
-  );
-
-  act(() => root.render(<RealmPanel name="Duskbite" kind="wonder" level={1} stores={STORES} />));
-  expect(host.querySelector(".frontier-aspect-medallion")?.getAttribute("data-tip")).toBe("Wonder");
-
-  act(() => root.render(<RealmHeaderChip name="Duskbite" level={1} aspect={1} onPress={onHome} />));
-  expect(host.querySelector(".frontier-realm-chip__order")).toBeNull();
+  const label = `Duskbite, Order of Power, ${aspectName(1)}`;
+  expect(host.querySelector(".frontier-phone-emblem")?.getAttribute("aria-label")).toBe(label);
 });
 
 it("shows every stock on the desktop realm card, Fragments opening the shop and the next rank upgrading the castle", () => {

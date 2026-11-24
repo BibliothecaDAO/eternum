@@ -65,56 +65,6 @@
     "crop": "[...document.querySelectorAll('section.app-window')].find((s) => s.querySelector('h2')?.textContent.trim() === 'Payout wallet')"
   },
   {
-    "name": "frontier/hud",
-    "frame": "game",
-    "setup": [
-      {
-        "open": "/lab/game?scenario=spire"
-      },
-      {
-        "until": "document.querySelector('nav[aria-label=\"Armies\"] button[aria-pressed]')",
-        "ms": 180000
-      },
-      {
-        "wait": 6000
-      }
-    ]
-  },
-  {
-    "name": "frontier/research",
-    "frame": "panel",
-    "setup": [
-      {
-        "open": "/lab/kit/hud/research?capture=1"
-      },
-      {
-        "until": "document.documentElement.dataset.bootState === 'app-ready'",
-        "ms": 120000
-      },
-      {
-        "wait": 4000
-      }
-    ],
-    "crop": "document.querySelector('aside[data-hud-rail=\"true\"]')"
-  },
-  {
-    "name": "frontier/fight-card",
-    "frame": "panel",
-    "setup": [
-      {
-        "open": "/lab/kit/hud/fight-ready?capture=1"
-      },
-      {
-        "until": "document.documentElement.dataset.bootState === 'app-ready'",
-        "ms": 120000
-      },
-      {
-        "wait": 4000
-      }
-    ],
-    "crop": "[...document.querySelectorAll('aside[data-hud-rail=\"true\"] section')].filter((s) => s.getBoundingClientRect().height > 40).at(-1)"
-  },
-  {
     "name": "frontier/explore",
     "frame": "desktop",
     "setup": [
@@ -138,109 +88,6 @@
       }
     ],
     "seconds": 8
-  },
-  {
-    "name": "frontier/build",
-    "frame": "panel",
-    "setup": [
-      {
-        "open": "/lab/kit/hud/build?capture=1"
-      },
-      {
-        "until": "document.documentElement.dataset.bootState === 'app-ready'",
-        "ms": 120000
-      },
-      {
-        "wait": 4000
-      }
-    ],
-    "crop": "[...document.querySelectorAll('aside[data-hud-rail=\"true\"] section')].filter((s) => s.getBoundingClientRect().height > 40).at(-1)"
-  },
-  {
-    "name": "frontier/deploy",
-    "frame": "phone",
-    "setup": [
-      {
-        "open": "/lab/kit/hud/deploy?capture=1"
-      },
-      {
-        "until": "document.documentElement.dataset.bootState === 'app-ready'",
-        "ms": 120000
-      },
-      {
-        "wait": 4000
-      }
-    ]
-  },
-  {
-    "name": "frontier/fight",
-    "frame": "game",
-    "setup": [
-      {
-        "open": "/lab/game?scenario=fight"
-      },
-      {
-        "until": "document.querySelector('nav[aria-label=\"Armies\"] button[aria-pressed]')",
-        "ms": 180000
-      },
-      {
-        "wait": 4000
-      },
-      {
-        "readiestArmy": true
-      },
-      {
-        "findTile": "Attack"
-      },
-      {
-        "waitText": "50 stamina",
-        "ms": 15000
-      },
-      {
-        "wait": 1500
-      }
-    ],
-    "record": [
-      {
-        "wait": 1500
-      },
-      {
-        "clickText": "Attack"
-      },
-      {
-        "wait": 7000
-      }
-    ],
-    "seconds": 10
-  },
-  {
-    "name": "frontier/spire",
-    "frame": "game",
-    "setup": [
-      {
-        "open": "/lab/game?scenario=spire"
-      },
-      {
-        "until": "document.querySelector('nav[aria-label=\"Armies\"] button[aria-pressed]')",
-        "ms": 180000
-      },
-      {
-        "wait": 4000
-      },
-      {
-        "readiestArmy": true
-      },
-      {
-        "findTile": "Enter a depth"
-      },
-      {
-        "until": "document.querySelector('[data-kit-sheet][aria-label=\"Spire\"]')",
-        "ms": 15000
-      },
-      {
-        "wait": 1500
-      }
-    ]
   },
   {
     "name": "account/settings",
@@ -289,24 +136,5 @@
       }
     ],
     "seconds": 7
-  },
-  {
-    "name": "frontier/hud-phone",
-    "frame": "phone",
-    "setup": [
-      {
-        "open": "/lab/game?scenario=spire"
-      },
-      {
-        "until": "document.querySelector('nav[aria-label=\"Armies\"] button[aria-pressed]')",
-        "ms": 180000
-      },
-      {
-        "wait": 4000
-      },
-      {
-        "wait": 10000
-      }
-    ]
   }
 ]

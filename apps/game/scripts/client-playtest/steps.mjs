@@ -6975,15 +6975,14 @@ export const STEP_SETS = {
           const buildings = await readUntil(
             () =>
               browser.read(`document.querySelectorAll('section[aria-label="Realm"] [data-realm-buildings] li').length`),
-            (count) => count >= (onADesktop() ? 3 : 4),
+            (count) => count >= 3,
             PLAYABLE_WAIT_MS,
           );
           const realmHud = browser.read(`(() => ({
-            tiles: document.querySelectorAll('section[aria-label="Realm"] .realm-tile').length,
             stocks: document.querySelectorAll('.frontier-realm-card [aria-label="Stores"] [data-store]').length,
             hasCastleHead: Boolean(document.querySelector('section[aria-label="Realm"] [data-realm-castle]')),
             hasDepthSwitch: Boolean(document.querySelector('[data-surface-deep-switch]')),
-            hasDeploy: Boolean(document.querySelector('section[aria-label="Realm"] .realm-foot button[data-kind="primary"], nav[aria-label="Armies"] button[aria-label="Deploy"][data-kind="primary"]')),
+            hasDeploy: Boolean(document.querySelector('nav[aria-label="Armies"] button[aria-label="Deploy"]')),
           }))()`);
           const hasRealmPanel = browser.read(`Boolean(document.querySelector('section[aria-label="Realm"]'))`);
           if (!onADesktop()) {
@@ -7009,9 +7008,9 @@ export const STEP_SETS = {
           played.idleUnobstructed &&
           played.hasRealmPanel &&
           played.realmHud.hasDeploy &&
-          (onADesktop()
-            ? played.buildings >= 3 && played.realmHud.hasCastleHead && played.realmHud.stocks === 8
-            : played.buildings >= 4 && played.realmHud.tiles >= 3)
+          played.buildings >= 3 &&
+          played.realmHud.hasCastleHead &&
+          played.realmHud.stocks === 8
             ? completed(played)
             : failed(
                 "Realm view must render with Castle, Workshop, Farm and Barracks standing and the desktop realm card's eight stocks",
@@ -7193,9 +7192,10 @@ export const STEP_SETS = {
             () =>
               browser.read(`JSON.stringify({
                 open: Boolean(document.querySelector('[aria-label="${target}"]:not(button)')),
-                tiles: [...document.querySelectorAll('.menu-place-tile')].map((button) => button.getAttribute('aria-label')),
+                rows: [...document.querySelectorAll('section[aria-label="Menu"] .menu-nav [aria-label]')].map((row) => row.getAttribute('aria-label')),
+                places: [...document.querySelectorAll('nav[aria-label="Places"] button')].map((button) => button.getAttribute('aria-label')),
               })`),
-            (state) => state.open && (onADesktop() || state.tiles.length === 3),
+            (state) => state.open && (onADesktop() || state.rows.length > 0),
             SHEET_WAIT_MS,
           );
           return { ...ready, target, shot: extraScreenshot("menu") };
@@ -7203,9 +7203,10 @@ export const STEP_SETS = {
         verify: ({ played }) =>
           played.open &&
           (onADesktop() ||
-            (played.tiles.includes(HUD_WORDS.research) &&
-              played.tiles.includes(HUD_WORDS.feed) &&
-              played.tiles.includes(HUD_WORDS.chat)))
+            (played.rows.includes(HUD_WORDS.feed) &&
+              played.rows.includes(HUD_WORDS.settings) &&
+              played.places.includes(HUD_WORDS.research) &&
+              played.places.includes(HUD_WORDS.chat)))
             ? completed(played)
             : failed("Menu or Settings must open from its control", played),
       },

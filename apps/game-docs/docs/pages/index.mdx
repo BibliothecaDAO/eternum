@@ -3,6 +3,7 @@ layout: landing
 ---
 
 import { HomePage } from "vocs/components";
+import { HomeQuickLinks } from "@/components/HomeQuickLinks";
 
 <HomePage.Root>
   <div className="realms-homepage-background" aria-hidden="true">
@@ -16,11 +17,13 @@ import { HomePage } from "vocs/components";
 </HomePage.Description>
 <HomePage.Buttons>
   <HomePage.Button href="/frontier" variant="primary">
-    Frontier
+    Start here
   </HomePage.Button>
   <HomePage.Button href="https://play.realms.party" variant="outline">
     Play
   </HomePage.Button>
 </HomePage.Buttons>
+
+<HomeQuickLinks />
 
 </HomePage.Root>

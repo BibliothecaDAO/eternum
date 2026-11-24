@@ -1,10 +1,11 @@
 import "./phone-hud.css";
 
+import { useTablet } from "@/shell/frame/layout";
+
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { HudButton, HudPage, HudRow } from "@/ui/design-system/kit/hud-elements";
 import { EXIT, MENU, SETTINGS, SHOP_WORDS, TODAY, unreadFeedEvents } from "@/ui/design-system/kit/words";
 import { HowToPlayRow } from "@/ui/modules/how-to-play";
-import { useTablet } from "@/shell/frame/layout";
 import { formatAmount } from "@bibliothecadao/types";
 import type { ReactNode } from "react";
 
@@ -22,7 +23,7 @@ export const MenuPage = ({
   onExit,
   onClose,
 }: {
-  onFeed?: () => void;
+  onFeed: () => void;
   onShop?: () => void;
   onToday: () => void;
   onSettings: () => void;
@@ -31,11 +32,11 @@ export const MenuPage = ({
   onExit: () => void;
   onClose: () => void;
 }) => {
-  const feedInBar = useTablet();
+  const tablet = useTablet();
   return (
     <HudPage label={MENU} icon="menu" onClose={onClose}>
       <nav className="menu-nav">
-        {onFeed && !feedInBar && (
+        {!tablet && (
           <MenuRow
             icon={FEED.icon}
             label={FEED.label}

@@ -99,7 +99,6 @@ export const frontierSeasonOnePreset = {
   },
   research: frontierPreset.research.map((price) => ({ ...price, ...researchPrices[price.row]?.[price.tier - 1] })),
   labor: null,
-  discovery: { ...frontierPreset.discovery, beastsBps: 900 },
   dailyQuest: { baseCounts: [1, 1, 1, 1, 1, 2, 15], labor: 1000, essence: 1500, bonusPercent: 150 },
   banes: {
     chanceStep: 20,

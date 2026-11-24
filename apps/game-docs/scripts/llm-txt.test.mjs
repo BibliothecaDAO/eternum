@@ -95,16 +95,16 @@ test("NaN and a u64 maximum in the export are forbidden values", () => {
   assert.equal(forbiddenValues(root, llm).length, 2);
 });
 
-test("the expedition page gives camps and rifts their own correct guard column at every depth", async () => {
+test("the beasts page gives camps and rifts their own correct guard column at every depth", async () => {
   const server = await createServer({ configFile: false, logLevel: "silent", appType: "custom" });
   try {
     const { nativePresetForId, nativePresetIdFor } = await server.ssrLoadModule(
       fileURLToPath(new URL("../../../config/source/native.ts", import.meta.url)),
     );
     const frontierPreset = nativePresetForId(nativePresetIdFor("frontier"));
-    const pages = [{ page: "frontier/expedition", phrases: frontierGuardPhrases(frontierPreset) }];
+    const pages = [{ page: "frontier/beasts", phrases: frontierGuardPhrases(frontierPreset) }];
     const docs = fileURLToPath(new URL("../docs", import.meta.url));
-    const llm = await renderLlmTxt([join(docs, "pages/frontier/expedition.mdx")], docs);
+    const llm = await renderLlmTxt([join(docs, "pages/frontier/beasts.mdx")], docs);
     assert.deepEqual(exportProblems(llm, pages), []);
     assert.ok(!new RegExp(`^\\|\\s*${LAYER_NAMES.at(-1)}\\s*\\|`, "m").test(llm), "the export has no Deep row");
     const combined = llm
@@ -126,14 +126,14 @@ test("the expedition page gives camps and rifts their own correct guard column a
   }
 });
 
-test("the expedition export states each layer's three relic tiers and their generated ruin guard ranges", async () => {
+test("the beasts export states each layer's three relic tiers and their generated ruin guard ranges", async () => {
   const server = await createServer({ configFile: false, logLevel: "silent", appType: "custom" });
   try {
     const { RELICS_PER_LAYER, previewRuinGuardBounds } = await server.ssrLoadModule(
       fileURLToPath(new URL("../../../contracts/l3/world-native/schema/site-previews.gen.ts", import.meta.url)),
     );
     const docs = fileURLToPath(new URL("../docs", import.meta.url));
-    const llm = await renderLlmTxt([join(docs, "pages/frontier/expedition.mdx")], docs);
+    const llm = await renderLlmTxt([join(docs, "pages/frontier/beasts.mdx")], docs);
     const tableLines = llm.split("\n").filter((line) => line.startsWith("|"));
     for (const [depth, layer] of LAYER_NAMES.slice(0, 3).entries()) {
       const row = tableLines.find((line) => new RegExp(`^\\|\\s*${layer}\\s*\\|`).test(line) && line.includes(":"));

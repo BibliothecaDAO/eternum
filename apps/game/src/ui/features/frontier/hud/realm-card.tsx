@@ -1,19 +1,39 @@
 import "./frontier-desktop.css";
 
 import { homeIcon, type HomeKind } from "@/ui/design-system/home-icons";
-import { Icon } from "@/ui/design-system/icon";
-import { HudButton, HudChip, HudRow, HudTier } from "@/ui/design-system/kit/hud-elements";
+import { Icon, type IconMeaning } from "@/ui/design-system/icon";
+import { HudButton, HudChip, HudIconButton, HudRow, HudTier } from "@/ui/design-system/kit/hud-elements";
 import { OrderLine, resolvedOrder } from "@/ui/design-system/kit/order-emblem";
-import { MAX_LEVEL, REALM, REALM_POP, SHOP_WORDS, SHOW_MY_REALM, UPGRADE } from "@/ui/design-system/kit/words";
+import {
+  CLOSE,
+  MAX_LEVEL,
+  REALM,
+  REALM_POP,
+  SHOP_WORDS,
+  SHOW_MY_REALM,
+  UPGRADE,
+  type Rank,
+} from "@/ui/design-system/kit/words";
 import { useLandedValue } from "@/ui/motion/landing-hold";
 import { TickNumber } from "@/ui/motion/tick-number";
 import { aspectName, FRAGMENTS, formatShort, LORDS, type AspectId } from "@bibliothecadao/types";
 import type { ReactNode } from "react";
 
 import { FRONTIER_STORES, isMadeStore, isTroopStore, type StoreKind } from "../stores";
-import type { RealmBuildingItem } from "./realm-panel";
 import { AspectMedallion } from "./realm-header-chip";
 import { LandingDelta, STORE_TONES, storeLine, storeRateText, type StoreReading } from "./status-strip";
+
+export interface RealmBuildingItem {
+  key: string;
+  icon: IconMeaning;
+  name: string;
+  tier?: Rank;
+  rankLabel?: string;
+  rateIcon?: IconMeaning;
+  rate?: string;
+  onUpgrade?: () => void;
+  maxed?: boolean;
+}
 
 export const RealmCard = ({
   name,
@@ -32,6 +52,7 @@ export const RealmCard = ({
   onShop,
   onHome,
   onUpgradeCastle,
+  onClose,
 }: {
   name: string;
   kind: HomeKind;
@@ -49,9 +70,10 @@ export const RealmCard = ({
   onShop?: () => void;
   onHome?: () => void;
   onUpgradeCastle?: () => void;
+  onClose?: () => void;
 }) => (
   <section aria-label={REALM} className="frontier-cluster-card frontier-realm-card pointer-events-auto">
-    <header className="frontier-realm-card__head">
+    <header className="frontier-realm-card__head" data-closable={onClose ? "" : undefined}>
       <button
         type="button"
         className="frontier-realm-card__identity"
@@ -87,6 +109,7 @@ export const RealmCard = ({
           <Icon name="arrow-up" size={12} />
         </button>
       )}
+      {onClose && <HudIconButton icon="close" label={CLOSE} kind="quiet" size="sm" onClick={onClose} />}
     </header>
     <div role="group" aria-label="Stores" className="frontier-stocks">
       <ul className="frontier-stocks__row">

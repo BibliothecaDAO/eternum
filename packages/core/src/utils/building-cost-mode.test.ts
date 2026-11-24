@@ -2,7 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import blitz from "../../../../config/generated/blitz.madara.json";
 import frontier from "../../../../config/generated/frontier.madara.json";
-import { buildingCostModeOf, resolveUseSimpleCost } from "./building-cost-mode";
+import {
+  buildingCopyCost,
+  buildingCopyMultiplier,
+  buildingCostModeOf,
+  resolveUseSimpleCost,
+} from "./building-cost-mode";
 
 /** A game's building rules as its generated preset writes them: one row per category, with both cost tables. */
 const rulesOf = (preset: { configuration: { buildings: Record<string, Record<string, unknown[]>> } }) => {
@@ -24,5 +29,12 @@ describe("building cost mode", () => {
     expect(resolveUseSimpleCost("resource", true)).toBe(false);
     expect(resolveUseSimpleCost("choice", true)).toBe(true);
     expect(resolveUseSimpleCost("choice", false)).toBe(false);
+  });
+
+  it("scales each repeat building copy through buildingCopyMultiplier", () => {
+    expect([0, 1, 2, 3].map((standing) => buildingCopyMultiplier(standing, 10_000))).toEqual([1, 2, 5, 10]);
+    for (const standing of [0, 1, 2, 3, 4, 5]) {
+      expect(buildingCopyCost(500, standing, 10_000)).toBe(500 * buildingCopyMultiplier(standing, 10_000));
+    }
   });
 });
