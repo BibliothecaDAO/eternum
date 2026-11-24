@@ -339,3 +339,35 @@ test("holds every Aspect's catalog name to the game nouns no player-read code sp
     [],
   );
 });
+
+test("refuses numeric depth and layer labels in player-facing text while allowing layerName", async () => {
+  const { VOICE_RULES } = await import("@bibliothecadao/types");
+  const layerRule = VOICE_RULES.find(({ rule }) => rule === "A layer by its name");
+  const rules = { ...context, voiceRules: [layerRule] };
+  const source = [
+    "const a = <p>Depth 1</p>;",
+    "const b = `depth ${depth}`;",
+    "const c = `Layer ${index + 1}`;",
+    "const d = 'Deep I–III';",
+    "const e = 'Ethereal II';",
+    "const f = 'Ethereal reach I';",
+    "const ok1 = <p>{layerName(depth)}</p>;",
+    "const ok2 = <Icon name='depth-2' />;",
+    "const ok3 = <HudPill label='Map depth' />;",
+    "throw new Error(`No layer at depth ${depth}`);",
+    "console.warn(`Failed to start ambient sound for layer ${layerId}`);",
+  ].join("\n");
+  assert.deepEqual(
+    scanSource(source, "/repo/apps/game/src/ui/features/probe/probe.tsx", rules).map(
+      ({ category, line }) => `${line} ${category}`,
+    ),
+    [
+      "1 voice: A layer by its name",
+      "2 voice: A layer by its name",
+      "3 voice: A layer by its name",
+      "4 voice: A layer by its name",
+      "5 voice: A layer by its name",
+      "6 voice: A layer by its name",
+    ],
+  );
+});

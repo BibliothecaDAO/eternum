@@ -4,6 +4,8 @@
  * a visible string: the words inventory (scripts/words-inventory.mjs) counts them, and the lab shows each rule beside
  * its example.
  */
+import { LAYER_NAMES } from "./nouns";
+
 interface VoiceRule {
   rule: string;
   /** What a player reads instead. */
@@ -49,6 +51,13 @@ export const VOICE_RULES: readonly VoiceRule[] = [
     bad: "Level 2",
     good: "City",
     forbidden: /\b(?:Level|Lvl|Lv\.?) ?\d/,
+  },
+  {
+    rule: "A layer by its name",
+    instead: `${LAYER_NAMES.join(", ")}, never a depth or layer number`,
+    bad: "Depth 2 · Layer 3 · Deep I",
+    good: `${LAYER_NAMES[2]} · ${LAYER_NAMES[3]} · ${LAYER_NAMES[1]}`,
+    forbidden: /\b(?:[Dd]epth|[Ll]ayer) ?(?:\d|I{1,3}\b)|\b(?:Deep|Ethereal)(?: reach)? I{1,3}\b/,
   },
   {
     rule: "No keys on screen",

@@ -1076,17 +1076,17 @@
     },
     "depth-1": {
       "art": "depth-1",
-      "label": "Ethereal reach I",
+      "label": "Veil",
       "family": "Statuses"
     },
     "depth-2": {
       "art": "depth-2",
-      "label": "Ethereal reach II",
+      "label": "Hollow",
       "family": "Statuses"
     },
     "depth-3": {
       "art": "depth-3",
-      "label": "Ethereal reach III",
+      "label": "Deep",
       "family": "Statuses"
     },
     "reward": {
