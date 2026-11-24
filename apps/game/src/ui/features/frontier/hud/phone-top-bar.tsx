@@ -46,14 +46,15 @@ export const TopBarView = ({ stocks, clock, placeMenu, quest, notice, spectatorC
       <StockChips {...stocks} />
       <div className="frontier-bar__day">{clock}</div>
     </div>
-    <div data-map-cluster className="frontier-phone-float">
-      <div className="frontier-phone-float__lead">
-        {notice}
-        {spectatorChip}
+    {realmCard ?? (
+      <div data-map-cluster className="frontier-phone-float">
+        <div className="frontier-phone-float__lead">
+          {notice}
+          {spectatorChip}
+        </div>
+        {quest && <div className="frontier-phone-float__quest">{quest}</div>}
       </div>
-      {quest && <div className="frontier-phone-float__quest">{quest}</div>}
-    </div>
-    {realmCard}
+    )}
   </div>
 );
 

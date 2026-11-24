@@ -223,6 +223,25 @@ describe("the status strip", () => {
     expect(host.querySelector(".frontier-phone-float__quest")?.textContent).toBe("Quest");
   });
 
+  it("puts the open realm card right under the bar, in the lesson's and the quest's place", () => {
+    act(() =>
+      root.render(
+        <TopBarView
+          clock={<span>Day</span>}
+          stocks={{ stores: [store("essence", 125_000)] }}
+          notice={<aside aria-label="Lesson" />}
+          quest={<button type="button">Quest</button>}
+          realmCard={<section aria-label="Duskbite" />}
+        />,
+      ),
+    );
+    const top = host.querySelector(".frontier-phone-top")!;
+    expect([...top.children].map((part) => part.className || part.getAttribute("aria-label"))).toEqual([
+      "frontier-bar pointer-events-auto",
+      "Duskbite",
+    ]);
+  });
+
   it("shows the realm card's stores in order with rates, exact accessible labels and the Fragments tile", () => {
     const onShop = vi.fn();
     act(() =>
