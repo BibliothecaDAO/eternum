@@ -73,9 +73,11 @@ import {
   seasonEnded,
   seasonPlayerAspect,
   seasonPlayerHome,
+  seasonRealmId,
   seasonTitle,
 } from "../season";
 import { useNowSeconds } from "../use-now";
+import { AspectRoster } from "./aspect-roster";
 import { FrontierRows } from "./frontier-rows";
 import { resultsHref } from "./results-link";
 import { SeasonPodium } from "./season-podium";
@@ -269,6 +271,7 @@ const AspectPlayerStanding = ({
             <span className="season-stat__label">{ASPECT_PAGE_WORDS.stage(ownStanding.stage, RACE_STAGE_COUNT)}</span>
           </div>
         </div>
+        <AspectRoster season={season} aspect={aspect} ownRealmId={seasonRealmId(season)} />
         <AspectStandingActions season={season} />
       </div>
     </AppPanel>

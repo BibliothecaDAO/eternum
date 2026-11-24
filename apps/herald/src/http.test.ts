@@ -206,6 +206,113 @@ it("answers no site ranking for a Season 1 game, whose race is between Aspects",
   expect([other.status, await other.json()]).toEqual([503, { error: "Game 7 has no Frontier leaderboard" }]);
 });
 
+describe("an Aspect's members in a Season 1 game, ranked by Glory", () => {
+  const glory = (whole: number) => String(BigInt(whole) * 1_000_000_000n);
+  let head = 12;
+  let rows: Record<string, { key: string; value: Record<string, unknown> }[]> = {};
+  const seasonRows = () => ({
+    RaceRules: [{ key: "7", value: { game_id: "7" } }],
+    HomeAspect: [
+      { key: "a", value: { game_id: "7", home: "11", aspect: 1 } },
+      { key: "b", value: { game_id: "7", home: "12", aspect: 1 } },
+      { key: "c", value: { game_id: "7", home: "13", aspect: 1 } },
+      { key: "d", value: { game_id: "7", home: "14", aspect: 2 } },
+      { key: "e", value: { game_id: "8", home: "15", aspect: 1 } },
+    ],
+    Structure: [11, 12, 13, 14, 15].map((home) => ({
+      key: String(home),
+      value: {
+        game_id: home === 15 ? "8" : "7",
+        entity_id: String(home),
+        owner: `0x${home}0`,
+        metadata: { realm_id: home + 100 },
+      },
+    })),
+    RaceMember: [
+      { key: "11", value: { game_id: "7", entity_id: "11", glory: glory(40), contribution: "0" } },
+      { key: "12", value: { game_id: "7", entity_id: "12", glory: glory(120), contribution: "0" } },
+      { key: "14", value: { game_id: "7", entity_id: "14", glory: glory(500), contribution: "0" } },
+      { key: "15", value: { game_id: "8", entity_id: "15", glory: glory(900), contribution: "0" } },
+    ],
+  });
+  const roster = createHeraldRequestHandler({
+    ...httpState,
+    confirmedBlock: () => head,
+    fold: { ...httpState.fold, modelRows: (model: string) => rows[model] ?? [] },
+  });
+  const read = async (path: string) => {
+    const response = await roster(new Request(`http://herald${path}`));
+    return [response.status, await response.json(), response.headers.get("X-Confirmed-Block")] as const;
+  };
+
+  it("lists each member of the Aspect in that game once, by Glory then home, with its realm and owner, a page at a time", async () => {
+    rows = seasonRows();
+    const member = (rank: number, home: number, whole: number) => ({
+      rank,
+      entity_id: String(home),
+      realm_id: home + 100,
+      owner: `0x${home}0`,
+      glory: glory(whole),
+    });
+    expect(await read("/games/7/aspects/1/members")).toEqual([
+      200,
+      {
+        game_id: "7",
+        aspect: 1,
+        total: 3,
+        offset: 0,
+        limit: 50,
+        members: [member(1, 12, 120), member(2, 11, 40), member(3, 13, 0)],
+      },
+      "12",
+    ]);
+    expect(await read("/games/7/aspects/1/members?limit=1&offset=1")).toEqual([
+      200,
+      { game_id: "7", aspect: 1, total: 3, offset: 1, limit: 1, members: [member(2, 11, 40)] },
+      "12",
+    ]);
+    expect((await read("/games/7/aspects/1/members?offset=3"))[1]).toMatchObject({ total: 3, members: [] });
+    expect((await read("/games/7/aspects/2/members"))[1]).toMatchObject({ total: 1, members: [member(1, 14, 500)] });
+    expect((await read("/games/7/aspects/3/members"))[1]).toMatchObject({ total: 0, members: [] });
+  });
+
+  it("refuses a page over 100 members, an empty or malformed page, an Aspect outside the catalog, and a game with no Aspect race", async () => {
+    rows = seasonRows();
+    for (const query of ["limit=101", "limit=0", "offset=-1", "limit=two"])
+      expect((await read(`/games/7/aspects/1/members?${query}`)).slice(0, 2)).toEqual([
+        400,
+        { error: "invalid_roster_page" },
+      ]);
+    expect((await read("/games/7/aspects/9/members")).slice(0, 2)).toEqual([400, { error: "unknown_aspect" }]);
+    expect((await read("/games/7/aspects/1/members?limit=100"))[0]).toBe(200);
+    rows = { ...seasonRows(), RaceRules: [] };
+    head += 1;
+    expect((await read("/games/7/aspects/1/members")).slice(0, 2)).toEqual([404, { error: "no_aspect_race" }]);
+  });
+
+  it("ranks once per confirmed head, and anew at the next one", async () => {
+    rows = seasonRows();
+    head = 20;
+    expect((await read("/games/7/aspects/1/members"))[1]).toMatchObject({
+      members: [{ entity_id: "12" }, { entity_id: "11" }, { entity_id: "13" }],
+    });
+    rows.RaceMember = [{ key: "13", value: { game_id: "7", entity_id: "13", glory: glory(999), contribution: "0" } }];
+    expect((await read("/games/7/aspects/1/members"))[1]).toMatchObject({
+      members: [{ entity_id: "12" }, { entity_id: "11" }, { entity_id: "13" }],
+    });
+    head = 21;
+    const [, next, block] = await read("/games/7/aspects/1/members");
+    expect(block).toBe("21");
+    expect(next).toMatchObject({
+      members: [
+        { entity_id: "13", glory: glory(999) },
+        { entity_id: "11", glory: "0" },
+        { entity_id: "12", glory: "0" },
+      ],
+    });
+  });
+});
+
 it("passes a battle-only history filter to the store before pagination", async () => {
   const queryEvents = vi.fn(async () => ({ items: [], total: 0, limit: 350, offset: 0, complete_through_block: 12 }));
   const battleHandler = createHeraldRequestHandler({

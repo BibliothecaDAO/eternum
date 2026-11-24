@@ -1,4 +1,9 @@
-import { fetchHeraldLeaderboard, HeraldHttpError, type GameRef } from "@bibliothecadao/eternum/shard";
+import {
+  fetchHeraldAspectRoster,
+  fetchHeraldLeaderboard,
+  HeraldHttpError,
+  type GameRef,
+} from "@bibliothecadao/eternum/shard";
 import type { HeraldAspectRace } from "@bibliothecadao/eternum/game-sync";
 import { realmsAccountAddress } from "@realms-world/identity/account";
 import { hashKey, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -197,6 +202,21 @@ export const useLeaderboard = (game: GameRef | DirectoryGame | null) => {
     },
     initialData: archived,
     enabled: ref !== null && archived === undefined,
+    refetchInterval: 30_000,
+  });
+};
+
+const ROSTER_TOP = 10;
+
+export const useAspectRoster = (game: DirectoryGame, aspect: number) => {
+  const ref = gameRefOf(game);
+  return useQuery({
+    queryKey: ["shell", "aspect-roster", ref.chainId, ref.gameId, aspect],
+    queryFn: async () =>
+      fetchHeraldAspectRoster(await requireOpenShard(ref.chainId), ref.gameId, aspect, {
+        offset: 0,
+        limit: ROSTER_TOP,
+      }),
     refetchInterval: 30_000,
   });
 };

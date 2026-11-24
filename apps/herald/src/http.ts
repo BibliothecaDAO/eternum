@@ -1,6 +1,12 @@
 import type { NodeHealth } from "./node-health";
 import { buildFrontierLeaderboard } from "./native/frontier-leaderboard";
-import type { HeraldFrontierLeaderboard } from "@bibliothecadao/eternum/game-sync";
+import type {
+  HeraldAspectRoster,
+  HeraldAspectRosterMember,
+  HeraldFrontierLeaderboard,
+} from "@bibliothecadao/eternum/game-sync";
+import { aspects } from "@bibliothecadao/types";
+import { buildAspectRoster } from "./native/aspect-roster";
 import { required, number } from "./native/values";
 import { isSeasonOneGame } from "./native/season-one";
 import { parseStoryHistoryCursor } from "@bibliothecadao/eternum/game-sync";
@@ -51,6 +57,8 @@ interface HeraldHttpState {
 }
 
 const HISTORY_PAGE_LIMIT = 500;
+const ROSTER_PAGE_LIMIT = 100;
+const ROSTER_PAGE_DEFAULT = 50;
 
 const PUBLIC_READ_HEADERS = {
   "access-control-allow-methods": "GET, OPTIONS",
@@ -88,11 +96,16 @@ const requestedPlayer = (url: URL): string | undefined => {
   throw new Error("Herald directory player must be a positive address");
 };
 
-const paginationValue = (url: URL, name: "limit" | "offset", fallback: number): number => {
+const paginationValue = (
+  url: URL,
+  name: "limit" | "offset",
+  fallback: number,
+  pageLimit = HISTORY_PAGE_LIMIT,
+): number => {
   const raw = url.searchParams.get(name);
   if (raw === null) return fallback;
   const value = Number(raw);
-  const maximum = name === "limit" ? HISTORY_PAGE_LIMIT : Number.MAX_SAFE_INTEGER;
+  const maximum = name === "limit" ? pageLimit : Number.MAX_SAFE_INTEGER;
   if (!Number.isSafeInteger(value) || value < 0 || value > maximum) {
     throw new Error(`Herald history ${name} must be an integer from 0 to ${maximum}`);
   }
@@ -113,17 +126,51 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
   const readModels = state.readModels ?? { directory: buildNativeDirectory };
   const directory = cachedDirectory(state, readModels.directory);
   const leaderboard = cachedLeaderboard(state);
+  const roster = cachedAspectRosters(state);
   const directoryPath = "/games";
   const snapshotPath = /^\/games\/([0-9]+)\/snapshot$/;
   const historyPath = /^\/games\/([0-9]+)\/history$/;
   const reviewSnapshotPath = /^\/games\/([0-9]+)\/review\/snapshot$/;
   const dayRanksPath = /^\/games\/([0-9]+)\/days\/([0-9]+)\/ranks$/;
   const leaderboardPath = /^\/games\/([0-9]+)\/leaderboard$/;
+  const rosterPath = /^\/games\/([0-9]+)\/aspects\/([0-9]+)\/members$/;
   const sitePath = /^\/games\/([0-9]+)\/sites\/([0-9]+)$/;
 
   // Browsers hide a cross-origin request's connect, TLS and wait timings unless the response allows it. Only a dev chain
   // shows them: the chain identity, not a setting, decides, so no production deploy can carry it.
   const timingAllowed = isDevShardChain(state.manifest.chainId);
+  const answerAspectRoster = (url: URL, requestedGame: string, aspect: number): Response => {
+    if (!aspects.some(({ id }) => id === aspect)) return jsonResponse({ error: "unknown_aspect" }, 400);
+    let page: { limit: number; offset: number };
+    try {
+      page = {
+        limit: paginationValue(url, "limit", ROSTER_PAGE_DEFAULT, ROSTER_PAGE_LIMIT),
+        offset: paginationValue(url, "offset", 0),
+      };
+      if (page.limit < 1) throw new Error("Roster page size must be positive");
+    } catch {
+      return jsonResponse({ error: "invalid_roster_page" }, 400);
+    }
+    const gameId = BigInt(requestedGame).toString();
+    let members: HeraldAspectRosterMember[] | null;
+    try {
+      members = roster(gameId, aspect);
+    } catch (error) {
+      return jsonResponse({ error: error instanceof Error ? error.message : String(error) }, 503);
+    }
+    if (!members) return jsonResponse({ error: "no_aspect_race" }, 404);
+    const body: HeraldAspectRoster = {
+      game_id: gameId,
+      aspect,
+      total: members.length,
+      ...page,
+      members: members.slice(page.offset, page.offset + page.limit),
+    };
+    const response = jsonResponse(body);
+    response.headers.set("X-Confirmed-Block", String(state.confirmedBlock()));
+    return response;
+  };
+
   const answer = async (request: Request): Promise<Response> => {
     const url = new URL(request.url);
     if (request.method === "OPTIONS") return new Response(null, { headers: PUBLIC_READ_HEADERS, status: 204 });
@@ -208,6 +255,9 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
         return jsonResponse({ error: error instanceof Error ? error.message : String(error) }, 503);
       }
     }
+
+    const rosterMatch = request.method === "GET" ? rosterPath.exec(url.pathname) : null;
+    if (rosterMatch) return answerAspectRoster(url, rosterMatch[1], Number(rosterMatch[2]));
 
     if (request.method === "GET" && url.pathname === "/history/story-events") {
       if (!state.history || state.undecodableEventCount() > 0)
@@ -303,6 +353,24 @@ function cachedLeaderboard(state: HeraldHttpState) {
     }
     if (state.confirmedBlock() === head) responses.set(gameId, response);
     return response;
+  };
+}
+
+function cachedAspectRosters(state: HeraldHttpState) {
+  let block = -1;
+  const rosters = new Map<string, HeraldAspectRosterMember[] | null>();
+  return (gameId: string, aspect: number): HeraldAspectRosterMember[] | null => {
+    const head = state.confirmedBlock();
+    if (block !== head) {
+      rosters.clear();
+      block = head;
+    }
+    const key = `${gameId}:${aspect}`;
+    const cached = rosters.get(key);
+    if (cached !== undefined) return cached;
+    const built = buildAspectRoster(state.fold.modelRows, gameId, aspect);
+    rosters.set(key, built);
+    return built;
   };
 }
 

@@ -34,6 +34,7 @@ vi.hoisted(() =>
       // Prod's archived Playtest: its first place.
       "0x4c21ba6f5c8e24182ee0eefd56de97ade5f7570041dd0ec7d7d8ece2195cc4": "Volcanic",
     };
+    if (url.pathname.includes("/aspects/")) return Promise.resolve(Response.json(rosterAnswer(url)));
     const accounts = url.searchParams.get("accounts")?.split(",") ?? [];
     if (!accounts.some((account) => names[account])) return new Promise<Response>(() => {});
     return Promise.resolve(
@@ -41,6 +42,26 @@ vi.hoisted(() =>
     );
   }),
 );
+
+const roster = vi.hoisted(() => ({ asked: [] as string[] }));
+const rosterAnswer = (url: URL) => {
+  roster.asked.push(`${url.pathname}${url.search}`);
+  const member = (rank: number, owner: string, realm: number, glory: number) => ({
+    rank,
+    entity_id: String(realm + 1000),
+    realm_id: realm,
+    owner,
+    glory: String(BigInt(glory) * 1_000_000_000n),
+  });
+  return {
+    game_id: "1",
+    aspect: 1,
+    total: 12,
+    offset: 0,
+    limit: 10,
+    members: [member(1, "0x4c21", 7, 120), member(2, "0x510f", 1, 40)],
+  };
+};
 
 // Each shard game's board is the test's; an archived season's is the real read, from its file and never a shard.
 vi.mock("../herald", async (importOriginal) => {
@@ -417,6 +438,50 @@ it.each([390, 1440])(
     expect(await pastRow(fixed(0, []))).toEqual(["Season 2", "Ended 20 Nov", undefined, undefined]);
   },
 );
+
+it("lists the top of the player's Aspect outside the game, by Glory, from Herald's roster, with the player's own row lit", async () => {
+  const { canonicalRealm } = await import("@bibliothecadao/eternum");
+  const { catalogOrder } = await import("@bibliothecadao/types");
+  const aspect = catalogOrder(canonicalRealm(1).order).aspect;
+  shards.open.mockImplementation(async () => ({ url: "http://herald.test", chainId: "0x52" }) as never);
+  roster.asked = [];
+  reads.directory = {
+    data: {
+      games: [
+        {
+          ...FRONTIER,
+          aspect_members: { 1: 12, 2: 0, 3: 0, 4: 0 },
+          aspect_race: { finish_height: 7_500, season_days: 30, heights: { 1: 100, 2: 0, 3: 0, 4: 0 } },
+          player_state: {
+            structures: [
+              { entity_id: 1001, category: 1, level: 1, realm_id: 1, coord_x: 0, coord_y: 0, resources_packed: "0" },
+            ],
+          },
+        },
+      ],
+    },
+    isError: false,
+    isPending: false,
+  };
+  const { container, unmount } = await mount(1440);
+  try {
+    await vi.waitFor(() => expect(container.querySelector("[data-aspect-roster]")).not.toBeNull());
+    expect(roster.asked).toEqual([`/games/1/aspects/${aspect}/members?offset=0&limit=10`]);
+    const section = container.querySelector("[data-aspect-roster]")!;
+    expect(section.textContent).toContain("Your Aspect's top players · 12 members");
+    await vi.waitFor(() => expect(section.textContent).toContain("Volcanic"));
+    const items = [...section.querySelectorAll("li.app-board__item")];
+    expect(items.map((item) => item.hasAttribute("data-own"))).toEqual([false, true]);
+    expect(items[0]!.textContent).toContain("Volcanic");
+    expect(items[0]!.textContent).toContain("120");
+    expect(items[1]!.textContent).toContain("40");
+  } finally {
+    shards.open.mockImplementation(async () => {
+      throw new Error("unexpected shard read");
+    });
+    await unmount();
+  }
+});
 
 it("renders Season 1 Aspect race from directory without calling the Season 0 leaderboard", async () => {
   reads.directory = {

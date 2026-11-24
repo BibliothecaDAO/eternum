@@ -1,5 +1,6 @@
 import {
   HeraldHttpError,
+  type HeraldAspectRoster,
   type HeraldGameDirectory,
   type HeraldFrontierDayRanks,
   type HeraldFrontierLeaderboard,
@@ -154,6 +155,21 @@ export const fetchHeraldLeaderboard = async (shard: Shard, gameId: number): Prom
     `Herald leaderboard for ${shard.url} game ${gameId}`,
   );
   return board;
+};
+
+export const fetchHeraldAspectRoster = async (
+  shard: Shard,
+  gameId: number,
+  aspect: number,
+  page: { offset: number; limit: number },
+): Promise<HeraldAspectRoster> => {
+  const url = new URL(buildHeraldUrl(shard, `/games/${gameId}/aspects/${aspect}/members`));
+  url.searchParams.set("offset", String(page.offset));
+  url.searchParams.set("limit", String(page.limit));
+  return fetchHeraldJson<HeraldAspectRoster>(
+    url.toString(),
+    `Herald Aspect ${aspect} members for ${shard.url} game ${gameId}`,
+  );
 };
 
 /**
