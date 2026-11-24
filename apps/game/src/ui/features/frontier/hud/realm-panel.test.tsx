@@ -85,18 +85,18 @@ it("offers a desktop's four places in order, Settings named, each a panel its pr
     closed.map((button) => [button.textContent?.replace(/\d/g, ""), button.getAttribute("aria-selected")]),
   ).toEqual([
     ["Research", "false"],
-    ["Season", "false"],
     ["Feed", "false"],
+    ["Season", "false"],
     ["Settings", "false"],
   ]);
   expect(closed[0].querySelector('[data-shape="diamond"]')).not.toBeNull();
-  expect(closed[2].textContent).toContain("2");
-  act(() => closed[2].click());
+  expect(closed[1].textContent).toContain("2");
+  act(() => closed[1].click());
   expect(onSurface).toHaveBeenLastCalledWith("feed");
   const feed = places("feed");
-  expect(feed[2].getAttribute("aria-selected")).toBe("true");
-  expect(feed[2].textContent).not.toContain("2");
-  act(() => feed[2].click());
+  expect(feed[1].getAttribute("aria-selected")).toBe("true");
+  expect(feed[1].textContent).not.toContain("2");
+  act(() => feed[1].click());
   expect(onSurface).toHaveBeenLastCalledWith(null);
   act(() => feed[3].click());
   expect(onSurface).toHaveBeenLastCalledWith("settings");

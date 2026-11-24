@@ -1065,7 +1065,7 @@ it("keeps Chat reachable from its strip at the bottom right while visiting anoth
   }
 });
 
-it("orders the desktop places as Research, Season, Feed, Settings, lists the five places in the dropdown, and returns to Realm on the crest", async () => {
+it("orders the desktop places as Research, Feed, Season, Settings, lists the five places in the dropdown, and returns to Realm on the crest", async () => {
   viewport.set(1440);
   const route = window.location.pathname + window.location.search;
   window.history.replaceState(null, "", "/g/0x1ab9/1/map?col=1&row=1");
@@ -1074,7 +1074,7 @@ it("orders the desktop places as Research, Season, Feed, Settings, lists the fiv
     const labels = [...host.querySelectorAll('nav[aria-label="Places"] button')].map((button) =>
       button.getAttribute("aria-label"),
     );
-    expect(labels).toEqual(["Research", "Season", "Feed", "Settings"]);
+    expect(labels).toEqual(["Research", "Feed", "Season", "Settings"]);
     expect(host.querySelector('button[aria-label="Relics"]')).toBeNull();
     await act(async () => host.querySelector<HTMLButtonElement>("[data-place-pill]")!.click());
     const placeTabs = [...document.querySelectorAll('[aria-label="Map view"] [role="tab"]')].map((tab) =>

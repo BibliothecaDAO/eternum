@@ -129,7 +129,7 @@ const FrontierRail = ({
   </aside>
 );
 
-const DESKTOP_PLACE_ORDER = ["research", "season", "feed", "settings"] as const satisfies readonly HudSurface[];
+const DESKTOP_PLACE_ORDER = ["research", "feed", "season", "settings"] as const satisfies readonly HudSurface[];
 
 const SETTINGS_PLACE = { key: "settings", label: SETTINGS, ariaLabel: SETTINGS, icon: "settings" } as const;
 
