@@ -18,7 +18,7 @@ import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-clien
 import { catalogAspectId, rankName } from "@bibliothecadao/types";
 import { useLayout, useTablet } from "@/shell/frame/layout";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { type ComponentType, type ReactNode, useEffect, useRef, useState } from "react";
+import { type ComponentProps, type ComponentType, type ReactNode, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { RealmVisitFoot, useRealmVisitNavigation, useVisitedRealm } from "./board/realm-visit";
 import { FrontierSeason, useSeasonRank } from "./board/season-board";
@@ -269,6 +269,7 @@ const FrontierHudBody = ({
       own={own}
       isMapView={isMapView}
       fragments={own ? fragmentsHeld : null}
+      storeCards={storeCards}
       onShop={own ? () => setSurface("shop") : undefined}
       onClose={desktop || tablet ? undefined : close}
     />
@@ -553,6 +554,7 @@ const FrontierRealmCard = ({
   own,
   isMapView,
   fragments,
+  storeCards,
   onShop,
   onClose,
 }: {
@@ -561,6 +563,7 @@ const FrontierRealmCard = ({
   own: NativeRows["Structure"] | null;
   isMapView: boolean;
   fragments: number | null;
+  storeCards: ComponentProps<typeof FrontierTopBar>["storeCards"];
   onShop?: () => void;
   onClose?: () => void;
 }) => {
@@ -581,6 +584,8 @@ const FrontierRealmCard = ({
       stores={stores}
       fragments={fragments}
       lords={own ? lords : null}
+      storeCard={storeCards?.card}
+      onStore={storeCards?.onToggle}
       onShop={onShop}
       onHome={isMapView ? () => goToPlace(false) : undefined}
       onClose={onClose}

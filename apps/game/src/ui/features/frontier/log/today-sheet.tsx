@@ -12,6 +12,7 @@ import {
   LABOR,
   OPENING_WORDS,
   phraseText,
+  TODAY,
   TODAY_WORDS,
   tomorrowLasts,
 } from "@/ui/design-system/kit/words";
@@ -39,7 +40,8 @@ export const TodaySheet = ({
   onClose: () => void;
 }) => (
   <HudSheet
-    label={
+    label={TODAY}
+    title={
       day !== undefined && lastDay !== undefined
         ? dayOfSeason(formatAmount(day), formatAmount(lastDay))
         : `${DAY} ${formatAmount(day)}`

@@ -1572,6 +1572,7 @@ export const SheetDock = createContext<HTMLElement | null>(null);
 /** What a surface's frame holds: its name, the icon and cue its head may carry, its way out and its body. */
 type FrameParts = {
   label: string;
+  title?: string;
   icon?: IconMeaning;
   /** What the head says or offers beside the name (a lens, the player's rank), before the way out. */
   cue?: ReactNode;
@@ -1592,7 +1593,7 @@ type FrameParts = {
 const SurfaceFrame = forwardRef<
   HTMLElement,
   FrameParts & { bodyClassName?: string } & Omit<HTMLAttributes<HTMLElement>, "children">
->(({ label, icon, cue, beside, onClose, bodyClassName, className, children, ...rest }, ref) => {
+>(({ label, title, icon, cue, beside, onClose, bodyClassName, className, children, ...rest }, ref) => {
   const [foot, setFoot] = useState<HTMLElement | null>(null);
   useMarkFrameOpen(label);
   useSheetCloses(onClose);
@@ -1601,7 +1602,7 @@ const SurfaceFrame = forwardRef<
     <section ref={ref} {...rest} aria-label={label} data-kit-frame className={cn("ui ui-panel ui-frame", className)}>
       <div className="ui-frame__head" {...drag.handlers}>
         <PanelHead
-          title={label}
+          title={title ?? label}
           icon={icon}
           beside={beside}
           cue={
@@ -1630,12 +1631,14 @@ SurfaceFrame.displayName = "SurfaceFrame";
  */
 export const HudSheet = ({
   label,
+  title,
   icon,
   beside,
   onClose,
   children,
 }: {
   label: string;
+  title?: string;
   icon?: IconMeaning;
   /** A quiet control right after the sheet's name, out of the body's flow and away from the cross (an army's Delete). */
   beside?: ReactNode;
@@ -1647,6 +1650,7 @@ export const HudSheet = ({
     <SurfaceFrame
       role="dialog"
       label={label}
+      title={title}
       icon={icon}
       beside={beside}
       onClose={onClose}

@@ -1,6 +1,6 @@
-import type { IconMeaning } from "../../../design-system/icon-meaning";
-import { ASPECT_PAGE_WORDS, DAY_BANNER_WORDS as WORDS } from "../../../design-system/kit/words";
-import { worldBanes, type WorldBaneId } from "@bibliothecadao/types";
+import type { IconMeaning } from "../../../game/src/ui/design-system/icon-meaning";
+import { ASPECT_PAGE_WORDS, DAY_BANNER_WORDS as WORDS } from "../../../game/src/ui/design-system/kit/words";
+import { worldBanes } from "@bibliothecadao/types";
 import { nativeBaneConstants as bane, type NativeRows } from "@bibliothecadao/eternum/game-client";
 
 interface DayHead {
@@ -14,7 +14,7 @@ const WORLD_FACES = {
   [bane.BLOOD_MOON]: { icon: "moon", rule: (rules: Rules) => WORDS.beastBane(rules.beast_percent) },
   [bane.MIST_TIDE]: { icon: "waves", rule: (rules: Rules) => WORDS.staminaBane(rules.stamina_percent) },
   [bane.ASH_FALL]: { icon: "flame", rule: (rules: Rules) => WORDS.productionBane(rules.production_percent) },
-} satisfies Record<WorldBaneId, { icon: IconMeaning; rule: (rules: Rules) => string }>;
+} satisfies Record<(typeof worldBanes)[number]["id"], { icon: IconMeaning; rule: (rules: Rules) => string }>;
 
 export function worldBaneHead(kind: number, rules: Rules): DayHead {
   const entry = worldBanes.find((entry) => entry.id === kind);

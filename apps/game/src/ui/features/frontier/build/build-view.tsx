@@ -110,7 +110,8 @@ const ChosenFoot = ({
   const note = (
     <span data-build-chosen className="build-chosen">
       <b className="build-chosen__name">{tile.name}</b>
-      {refusal ? <RefusalNote refusal={refusal} /> : <ChosenLine tile={tile} prices={prices} />}
+      <ChosenLine tile={tile} prices={prices} />
+      {refusal && <RefusalNote refusal={refusal} />}
     </span>
   );
   return (
@@ -134,7 +135,11 @@ const ChosenLine = ({ tile, prices }: { tile: BuildTile; prices: readonly Price[
   const raised = tile.standing.kind === "price" ? tile.standing.raised : undefined;
   return (
     <span className="build-chosen__line">
-      {tile.standing.kind !== "built" && <PriceAmounts prices={prices} />}
+      {tile.standing.kind !== "built" && (
+        <span data-build-cost={costLine(prices)}>
+          <PriceAmounts prices={prices} />
+        </span>
+      )}
       {raised && (
         <span role="img" aria-label={raised} data-price-raised={raised} data-tip={raised} className="text-hud-warn">
           ↑

@@ -11,7 +11,7 @@ import { TickNumber } from "@/ui/motion/tick-number";
 import { aspectName, FRAGMENTS, formatRate, formatShort, LORDS, type AspectId } from "@bibliothecadao/types";
 import type { ReactNode } from "react";
 
-import { FRONTIER_STORES, isTroopStore } from "../stores";
+import { FRONTIER_STORES, isMadeStore, isTroopStore, type StoreKind } from "../stores";
 import { AspectMedallion } from "./realm-header-chip";
 import { LandingDelta, STORE_TONES, storeLine, type StoreReading } from "./status-strip";
 
@@ -34,6 +34,8 @@ export const RealmCard = ({
   stores,
   fragments,
   lords,
+  storeCard,
+  onStore,
   onShop,
   onHome,
   onClose,
@@ -48,6 +50,8 @@ export const RealmCard = ({
   stores: readonly StoreReading[];
   fragments: number | null;
   lords: number | null;
+  storeCard?: ReactNode;
+  onStore?: (kind: StoreKind) => void;
   onShop?: () => void;
   onHome?: () => void;
   onClose?: () => void;
@@ -84,7 +88,7 @@ export const RealmCard = ({
           .filter((store) => !isTroopStore(store.kind))
           .map((store) => (
             <li key={store.kind} data-store={store.kind}>
-              <StoreCell store={store} />
+              <StoreCell store={store} onOpen={onStore} />
             </li>
           ))}
         <li data-store="fragments">
@@ -111,16 +115,25 @@ export const RealmCard = ({
           .filter((store) => isTroopStore(store.kind))
           .map((store) => (
             <li key={store.kind} data-store={store.kind} data-row="">
-              <StoreCell store={store} troop />
+              <StoreCell store={store} troop onOpen={onStore} />
             </li>
           ))}
       </ul>
     </div>
+    {storeCard}
     {rankUp && <NextRank rankUp={rankUp} />}
   </section>
 );
 
-const StoreCell = ({ store, troop = false }: { store: StoreReading; troop?: boolean }) => {
+const StoreCell = ({
+  store,
+  troop = false,
+  onOpen,
+}: {
+  store: StoreReading;
+  troop?: boolean;
+  onOpen?: (kind: StoreKind) => void;
+}) => {
   const rate = store.perHour && store.perHour > 0 && store.fullIn !== 0 ? formatRate(store.perHour / 3600) : null;
   return (
     <>
@@ -135,6 +148,7 @@ const StoreCell = ({ store, troop = false }: { store: StoreReading; troop?: bool
         caption={rate ?? (troop ? undefined : FRONTIER_STORES[store.kind].word)}
         tone={rate ? "good" : undefined}
         label={storeLine(store)}
+        onPress={onOpen && isMadeStore(store.kind) ? () => onOpen(store.kind) : undefined}
       />
     </>
   );

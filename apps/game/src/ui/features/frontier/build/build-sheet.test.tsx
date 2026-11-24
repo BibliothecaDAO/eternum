@@ -69,7 +69,7 @@ describe("the build sheet", () => {
       [...host.querySelectorAll<HTMLButtonElement>(".ui-card__choose")].find(
         (card) => card.querySelector(".ui-card__title")?.textContent === name,
       )!;
-    const build = () => [...host.querySelectorAll("button")].find((button) => button.textContent?.startsWith("Build"));
+    const build = () => [...host.querySelectorAll("button")].find((button) => button.textContent === "Build");
     expect(host.querySelectorAll('.ui-card__choose[aria-pressed="true"]')).toHaveLength(0);
     expect(useUIStore.getState().previewBuilding).toBeNull();
     expect(build()).toBeUndefined();
@@ -77,7 +77,7 @@ describe("the build sheet", () => {
     act(() => card("Barracks").click());
     expect(useUIStore.getState().previewBuilding).toEqual({ type: BuildingType.ResourceKnightT1, plot });
     act(() => card("Farm").click());
-    expect(build()?.textContent).toBe("Build Farm");
+    expect(build()).toBeDefined();
 
     await act(async () => build()!.click());
     expect(placeBuilding).toHaveBeenCalledWith(
@@ -228,7 +228,7 @@ describe("the build sheet", () => {
             .click(),
         );
         await act(async () =>
-          [...host.querySelectorAll("button")].find((button) => button.textContent?.startsWith("Build "))!.click(),
+          [...host.querySelectorAll("button")].find((button) => button.textContent === "Build")!.click(),
         );
       };
       const selected = () => useUIStore.getState().selectedBuildingHex?.innerCol ?? null;
@@ -310,8 +310,8 @@ describe("the build sheet", () => {
       [...host.querySelectorAll<HTMLButtonElement>(".ui-card__choose")].find(
         (card) => card.querySelector(".ui-card__title")?.textContent === name,
       )!;
-    const button = (starts: string) =>
-      [...host.querySelectorAll("button")].find((candidate) => candidate.textContent?.startsWith(starts));
+    const button = (name: string) =>
+      [...host.querySelectorAll("button")].find((candidate) => candidate.textContent === name);
     const close = () => {
       act(() => root.unmount());
       host.remove();
@@ -338,7 +338,7 @@ describe("the build sheet", () => {
     expect(later.button("Build")).toBeUndefined();
     act(() => later.card("Workshop").click());
     expect(pressedOn(later)).toEqual(["Workshop"]);
-    expect(later.button("Build")?.textContent).toBe("Build Workshop");
+    expect(later.button("Build")).toBeDefined();
     later.close();
   });
 
@@ -347,7 +347,7 @@ describe("the build sheet", () => {
     const sheet = open(store, realm);
     const tiles = [...sheet.host.querySelectorAll("[data-build-grid] .ui-card")].map((tile) => [
       tile.querySelector(".ui-card__title")?.textContent,
-      tile.querySelector(".ui-card__corner")?.textContent ?? null,
+      tile.querySelector(".ui-card__corner [aria-label]")?.getAttribute("aria-label") ?? null,
     ]);
     expect(tiles.map(([name]) => name)).toHaveLength(FRONTIER_BUILDING_TYPES.length);
     expect(tiles.slice(0, 3)).toEqual([
@@ -358,20 +358,23 @@ describe("the build sheet", () => {
     expect(tiles).toContainEqual(["Range", "City"]);
     expect(tiles).toContainEqual(["Supply yard", "Kingdom"]);
     act(() => sheet.card("Farm").click());
-    expect(sheet.host.querySelector("[data-build-does]")?.textContent).toMatch(/^Wheat \+/);
-    expect(sheet.button("Build Farm")).toBeDefined();
+    expect(sheet.host.querySelector("[data-build-does]")?.textContent).toMatch(/^\+[\d,.]+\/(?:s|min)$/);
+    expect(sheet.button("Build")).toBeDefined();
 
     act(() => sheet.card("Range").click());
     expect(sheet.card("Range").getAttribute("aria-pressed")).toBe("true");
     expect(sheet.host.querySelector('[role="status"]')?.textContent).toBe("Requires City");
-    expect(sheet.button("Build ")).toBeUndefined();
+    expect(sheet.button("Build")).toBeUndefined();
     sheet.close();
   });
 
   it("names in its head the realm's plots that hold a building, of those its castle opens", () => {
     const { store, realm } = realmBoard();
     const sheet = open(store, realm);
-    expect(sheet.host.querySelector(".ui-frame__head")?.textContent).toMatch(/^Build\d+ \/ \d+ plots/);
+    expect(sheet.host.querySelector(".ui-frame__head")?.textContent).toMatch(/^Build\d+ \/ \d+$/);
+    expect(sheet.host.querySelector(".ui-frame__head [data-tip]")?.getAttribute("data-tip")).toMatch(
+      /^\d+ \/ \d+ plots$/,
+    );
     sheet.close();
   });
 
@@ -403,7 +406,9 @@ describe("the build sheet", () => {
       expect(sheet.host.querySelector('[role="status"]')?.textContent).toBe(
         `Requires ${rankName(buildingOpensAtLevel(category))}`,
       );
-      expect(sheet.host.querySelector(".ui-window__foot .ui-cost")?.textContent).toBe(costLine(expected));
+      expect(sheet.host.querySelector(".ui-window__foot [data-build-cost]")?.getAttribute("data-build-cost")).toBe(
+        costLine(expected),
+      );
     }
     sheet.close();
   });
@@ -418,13 +423,13 @@ describe("the build sheet", () => {
     const sheet = open(store, realm);
     expect(sheet.card("Farm").querySelector("[data-build-price]")?.textContent).toBe(FREE);
     act(() => sheet.card("Farm").click());
-    expect(sheet.host.querySelector(".ui-window__foot .ui-cost")?.textContent).toBe(FREE);
+    expect(sheet.host.querySelector(".ui-window__foot [data-build-cost]")?.getAttribute("data-build-cost")).toBe(FREE);
 
     const rangeButton = sheet.card(buildingName(BuildingType.ResourceCrossbowmanT1, true));
     expect(rangeButton.querySelector("[data-build-price]")?.textContent).toBe(FREE);
     act(() => rangeButton.click());
     expect(sheet.host.querySelector('[role="status"]')?.textContent).toBe("Requires City");
-    expect(sheet.host.querySelector(".ui-window__foot .ui-cost")?.textContent).toBe(FREE);
+    expect(sheet.host.querySelector(".ui-window__foot [data-build-cost]")?.getAttribute("data-build-cost")).toBe(FREE);
     sheet.close();
   });
 
@@ -445,11 +450,12 @@ describe("the build sheet", () => {
     const sheet = open(store, realm);
     act(() => sheet.card("Workshop").click());
     expect(sheet.host.querySelector('[role="status"]')).toBeNull();
-    expect(sheet.button("Build ")!.textContent).toBe("Build Workshop");
-    expect(sheet.host.querySelector(".ui-cost")?.textContent).toBe("2,000 Labor");
+    expect(sheet.button("Build")).toBeDefined();
     // Build and its price stand in the sheet's foot, outside the body that scrolls: the verb never scrolls away.
-    expect(sheet.button("Build ")!.closest(".ui-window__foot")).not.toBeNull();
-    expect(sheet.host.querySelector(".ui-window__foot .ui-cost")?.textContent).toBe("2,000 Labor");
+    expect(sheet.button("Build")!.closest(".ui-window__foot")).not.toBeNull();
+    expect(sheet.host.querySelector(".ui-window__foot [data-build-cost]")?.getAttribute("data-build-cost")).toBe(
+      "2,000 Labor",
+    );
     sheet.close();
   });
 
@@ -522,8 +528,8 @@ describe("the build sheet", () => {
       }),
     ] as never);
     const built = open(store, atKingdom(realm));
-    const corner = built.card("Supply yard").closest(".ui-card")!.querySelector(".ui-card__corner .ui-chip")!;
-    expect([corner.textContent, corner.getAttribute("data-tone")]).toEqual(["Built", "good"]);
+    const corner = built.card("Supply yard").closest(".ui-card")!.querySelector(".ui-card__corner [data-standing]")!;
+    expect([corner.getAttribute("aria-label"), corner.getAttribute("data-standing")]).toEqual(["Built", "built"]);
     expect(price(built, "Supply yard")).toBeNull();
     built.close();
   });
@@ -536,7 +542,7 @@ describe("the build sheet", () => {
     const short = open(store, realm);
     act(() => short.card("Farm").click());
     expect(short.host.querySelector('[role="status"]')!.textContent).toMatch(/^Needs [\d,]+ Labor, have 0$/);
-    expect(short.button("Build ")).toBeUndefined();
+    expect(short.button("Build")).toBeUndefined();
     expect(short.host.textContent).not.toContain("Explore");
     short.close();
     vi.restoreAllMocks();
