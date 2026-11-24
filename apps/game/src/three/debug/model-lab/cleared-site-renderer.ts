@@ -1,9 +1,16 @@
+import { StructureType, type AspectId } from "@bibliothecadao/types";
 import { Box3, Color, Matrix4, PerspectiveCamera, Raycaster, Scene, Vector2, Vector3 } from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { initializeProceduralCharacterRendererRuntime } from "../../characters/procedural-character-renderer-runtime";
 import InstancedModel from "../../managers/instanced-model";
-import { FRONTIER_BEASTS, type FrontierBeast } from "../../structures/frontier-beast";
-import { CAMP_MODEL_PATH } from "../../constants/scene-constants";
+import {
+  FRONTIER_BEASTS,
+  FRONTIER_CAMP_MODEL_PATH,
+  SUPPLY_POST_MODEL_PATH,
+  frontierSiteComposition,
+  type FrontierBeast,
+} from "../../structures/frontier-beast";
+import { CLEARED_SITE_MODEL_PATH, isSettlementModelPath } from "../../constants/scene-constants";
 import { configureRendererColorOutput } from "../../renderer-color-output";
 import { resetGameEnd } from "../../effects/endgame/state";
 import {
@@ -16,7 +23,35 @@ import { ModelLabEnvironment } from "./model-lab-environment";
 import { readModelLabSettings } from "./model-lab-settings";
 
 export type ClearedSiteStudy = "camp" | "beasts";
-import { CLEARED_SITE_MODEL_PATH } from "../../constants/scene-constants";
+
+type StudyPart = {
+  path: string;
+  scale: number;
+  x?: number;
+  y?: number;
+  z?: number;
+  aspect?: AspectId;
+};
+
+function studySlots(kind: ClearedSiteStudy, beast: FrontierBeast): readonly (readonly StudyPart[])[] {
+  if (kind === "beasts") {
+    return [
+      [{ path: FRONTIER_BEASTS[beast.beast].path, scale: beast.scale }],
+      [{ path: CLEARED_SITE_MODEL_PATH, scale: 1 }],
+    ];
+  }
+  const composition = frontierSiteComposition(StructureType.Camp);
+  return [
+    [
+      { path: FRONTIER_CAMP_MODEL_PATH, scale: composition.baseScale, z: composition.baseZ },
+      { path: FRONTIER_BEASTS[beast.beast].path, scale: beast.scale, y: composition.beastY, z: composition.beastZ },
+    ],
+    [
+      { path: SUPPLY_POST_MODEL_PATH, scale: 1 },
+      { path: CLEARED_SITE_MODEL_PATH, ...composition.clearedStandard, aspect: 1 },
+    ],
+  ];
+}
 
 /** Existing world renderer, terrain, camera and ownership material; only the proposed marker is a lab asset. */
 export async function mountClearedSiteStudy(
@@ -90,26 +125,32 @@ export async function mountClearedSiteStudy(
     await environment.update(readModelLabSettings(new URLSearchParams("family=knight&biome=grassland")));
     signal.throwIfAborted();
     const { beast } = settings;
-    const paths = [
-      settings.kind === "camp" ? CAMP_MODEL_PATH : FRONTIER_BEASTS[beast.beast].path,
-      CLEARED_SITE_MODEL_PATH,
-    ];
-    for (const [slot, path] of paths.entries()) {
-      const gltf = await gltfLoader.loadAsync(path);
-      const isBeast = slot === 0 && settings.kind === "beasts";
-      const model = isBeast ? new InstancedModel(gltf, 1, false, beast.name) : new SettlementModel(gltf, 1);
-      models.push(model);
-      if (model instanceof SettlementModel) await model.prepare();
-      signal.throwIfAborted();
+    for (const [slot, parts] of studySlots(settings.kind, beast).entries()) {
       const x = (slot === 0 ? -1 : 1) * Math.sqrt(3);
-      const placement = new Matrix4().makeTranslation(x, environment.terrain.sampleSurface(x, 0).height, 0);
-      if (isBeast) placement.scale(new Vector3().setScalar(beast.scale));
-      model.setMatrixAt(0, placement);
-      model.setCount(1);
-      if (model instanceof SettlementModel) model.setRelationshipAt(0, slot === 0 ? "enemy" : "owned");
+      const ground = environment.terrain.sampleSurface(x, 0).height;
+      const bounds = new Box3();
+      for (const part of parts) {
+        const gltf = await gltfLoader.loadAsync(part.path);
+        const model = isSettlementModelPath(part.path)
+          ? new SettlementModel(gltf, 1)
+          : new InstancedModel(gltf, 1, false, beast.name);
+        models.push(model);
+        if (model instanceof SettlementModel) await model.prepare();
+        signal.throwIfAborted();
+        const placement = new Matrix4()
+          .makeTranslation(x + (part.x ?? 0), ground + (part.y ?? 0), part.z ?? 0)
+          .scale(new Vector3().setScalar(part.scale));
+        model.setMatrixAt(0, placement);
+        model.setCount(1);
+        if (model instanceof SettlementModel) {
+          if (part.aspect) model.setAspectAt(0, part.aspect);
+          else model.setRelationshipAt(0, slot === 0 ? "enemy" : "owned");
+        }
+        bounds.union(new Box3().setFromObject(gltf.scene).applyMatrix4(placement));
+        scene.add(model.group);
+      }
       // The instanced renderer leaves picking to its scene; review uses each delivered model's bounds.
-      targets.push({ bounds: new Box3().setFromObject(gltf.scene).applyMatrix4(placement), cleared: slot === 1 });
-      scene.add(model.group);
+      targets.push({ bounds, cleared: slot === 1 });
     }
     controls.target.set(0, environment.terrain.sampleSurface(0, 0).height + 0.35, 0);
     const pitch = resolveWorldmapCameraPitchRadians(settings.distance);

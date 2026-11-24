@@ -13,7 +13,12 @@ import {
 import { Color } from "three";
 import { HyperstructureTypesNames } from "../types";
 import { HYPERSTRUCTURE_MODEL_PATH } from "../structures/hyperstructure-design";
-import { FALLEN_REALM_MODEL_PATHS, FRONTIER_BEAST_PATHS, FRONTIER_BEASTS } from "../structures/frontier-beast";
+import {
+  FALLEN_REALM_MODEL_PATHS,
+  FRONTIER_BEAST_PATHS,
+  FRONTIER_BEASTS,
+  SUPPLY_POST_MODEL_PATH,
+} from "../structures/frontier-beast";
 import { modelPath } from "../utils/model-url";
 
 export const HEX_SIZE = 1;
@@ -170,7 +175,7 @@ export function getStructureModelPaths(): Record<StructureType, string[]> {
     [StructureType.Bank]: [BUILDINGS_MODELS_PATH + BuildingFilenames.Bank],
     [StructureType.Mine]: Object.values(MineKinds).map((kind) => kind.model),
     [StructureType.Village]: [VILLAGE_MODEL_PATH],
-    [StructureType.Camp]: [CAMP_MODEL_PATH, ...FRONTIER_BEAST_PATHS, CLEARED_SITE_MODEL_PATH],
+    [StructureType.Camp]: [CAMP_MODEL_PATH, ...FRONTIER_BEAST_PATHS, SUPPLY_POST_MODEL_PATH, CLEARED_SITE_MODEL_PATH],
     [StructureType.Rift]: [RIFT_MODEL_PATH, ...FRONTIER_BEAST_PATHS, CLEARED_SITE_MODEL_PATH],
     [StructureType.Ruin]: [...FALLEN_REALM_MODEL_PATHS, CLEARED_SITE_MODEL_PATH],
     [StructureType.Beasts]: [FRONTIER_BEASTS.cyclops.path, ...FRONTIER_BEAST_PATHS, CLEARED_SITE_MODEL_PATH],
