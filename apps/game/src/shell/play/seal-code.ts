@@ -1,9 +1,16 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { IdentityRequestError, isSealCodeRefusal, type SealCodeRefusal } from "@realms-world/identity";
 
 import { identityClient } from "@/hooks/context/identity-session";
 
-export const sealCodeKey = (owner: string | null) => ["sealCode", owner] as const;
+const sealCodeKey = (owner: string | null) => ["sealCode", owner] as const;
+
+export const useSealCode = (owner: string | null) =>
+  useQuery({
+    queryKey: sealCodeKey(owner),
+    queryFn: () => identityClient.getSealCode(),
+    enabled: owner !== null,
+  });
 
 export const useRedeemSealCode = (owner: string | null) => {
   const client = useQueryClient();

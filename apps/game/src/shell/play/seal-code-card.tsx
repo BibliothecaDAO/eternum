@@ -1,20 +1,14 @@
-import { useQuery } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
 
-import { identityClient } from "@/hooks/context/identity-session";
 import { Icon } from "@/ui/design-system/icon";
 import { AppButton, AppField } from "@/ui/design-system/kit/app-elements";
 import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
 import { SEAL_CODE_WORDS } from "@/ui/design-system/kit/words";
 
-import { sealCodeKey, useRedeemSealCode } from "./seal-code";
+import { useRedeemSealCode, useSealCode } from "./seal-code";
 
 export const SealCodeCard = ({ owner, compact = false }: { owner: string | null; compact?: boolean }) => {
-  const held = useQuery({
-    queryKey: sealCodeKey(owner),
-    queryFn: () => identityClient.getSealCode(),
-    enabled: owner !== null,
-  });
+  const held = useSealCode(owner);
   if (held.isError) return <ServiceFailure service="season" error={held.error} retry={() => void held.refetch()} />;
   if (!held.data) return null;
   if (compact) return <CompactSealDisclosure owner={owner} held={held.data.held} />;
