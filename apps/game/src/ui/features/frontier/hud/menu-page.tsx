@@ -3,8 +3,8 @@ import "./phone-hud.css";
 import { useTablet } from "@/shell/frame/layout";
 
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
-import { HudPage, HudRow } from "@/ui/design-system/kit/hud-elements";
-import { EXIT, MENU, MENU_LINES, SETTINGS, SHOP_WORDS, TODAY, unreadFeedEvents } from "@/ui/design-system/kit/words";
+import { HudButton, HudPage, HudRow } from "@/ui/design-system/kit/hud-elements";
+import { EXIT, MENU, SETTINGS, SHOP_WORDS, TODAY, unreadFeedEvents } from "@/ui/design-system/kit/words";
 import { HowToPlayRow } from "@/ui/modules/how-to-play";
 import { formatAmount } from "@bibliothecadao/types";
 import type { ReactNode } from "react";
@@ -40,7 +40,6 @@ export const MenuPage = ({
           <MenuRow
             icon={FEED.icon}
             label={FEED.label}
-            detail={MENU_LINES.feed}
             badge={
               events > 0 ? (
                 <span className="text-hud-body tabular-nums" aria-label={unreadFeedEvents(events)}>
@@ -51,12 +50,18 @@ export const MenuPage = ({
             onClick={onFeed}
           />
         )}
-        <MenuRow icon="clock" label={TODAY} detail={MENU_LINES.today} onClick={onToday} />
-        {onShop && <MenuRow icon="fragment" label={SHOP_WORDS.title} detail={MENU_LINES.shop} onClick={onShop} />}
-        <MenuRow icon="settings" label={SETTINGS} detail={MENU_LINES.settings} onClick={onSettings} />
-        <HowToPlayRow guide={guide} />
-        <MenuRow icon="exit" label={EXIT} detail={MENU_LINES.exit} onClick={onExit} />
+        <MenuRow icon="clock" label={TODAY} onClick={onToday} />
+        {onShop && <MenuRow icon="fragment" label={SHOP_WORDS.title} onClick={onShop} />}
+        <MenuRow icon="settings" label={SETTINGS} onClick={onSettings} />
+        <div className="menu-nav__wide">
+          <HowToPlayRow guide={guide} />
+        </div>
       </nav>
+      <div className="grid">
+        <HudButton kind="secondary" icon="exit" onClick={onExit}>
+          {EXIT}
+        </HudButton>
+      </div>
     </HudPage>
   );
 };
@@ -64,22 +69,13 @@ export const MenuPage = ({
 const MenuRow = ({
   icon,
   label,
-  detail,
   badge,
   onClick,
 }: {
   icon: IconMeaning;
   label: string;
-  detail: string;
   badge?: ReactNode;
   onClick: () => void;
 }) => (
-  <HudRow
-    lead={<SemanticIcon name={icon} size={22} />}
-    label={label}
-    title={label}
-    detail={detail}
-    trail={badge}
-    onClick={onClick}
-  />
+  <HudRow lead={<SemanticIcon name={icon} size={22} />} label={label} title={label} trail={badge} onClick={onClick} />
 );

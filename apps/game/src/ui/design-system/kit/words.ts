@@ -650,13 +650,6 @@ export const SETTINGS_WORDS = {
   show: "Show",
 } as const;
 export const EXIT = "Exit";
-export const MENU_LINES = {
-  feed: "Today's stories",
-  today: "Totals and log",
-  shop: "Fragments",
-  settings: "Audio, tutorial",
-  exit: "Leave the game",
-} as const;
 export const SIGN_IN = "Sign in";
 
 /** An army's two ways across the map, and backing out of an order. */
