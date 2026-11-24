@@ -1467,7 +1467,7 @@ it("shows the day-end tutorial once in the last hour with own Aspect and reads n
   const { useBlockTimestampStore } = await import("@/hooks/store/use-block-timestamp-store");
   const { OPENING_WORDS } = await import("@/ui/design-system/kit/words");
   const { buildingOutput } = await import("@/ui/shared/lib/building-output");
-  const { useOpeningStore } = await import("./opening/opening-store");
+  const { clearConfirmedTutorial, useOpeningStore } = await import("./opening/opening-store");
   const previousTicks = {
     currentBlockTimestamp: useBlockTimestampStore.getState().currentBlockTimestamp,
     currentDefaultTick: useBlockTimestampStore.getState().currentDefaultTick,
@@ -1580,7 +1580,8 @@ it("shows the day-end tutorial once in the last hour with own Aspect and reads n
       '[data-tutorial-dock="day-end"][data-tutorial-status="completed"]',
     );
     expect(dayEndConfirmed).not.toBeNull();
-    await act(async () => dayEndConfirmed!.querySelector<HTMLButtonElement>('button[aria-label="Close"]')!.click());
+    expect(dayEndConfirmed!.querySelector('button[aria-label="Close"]')).toBeNull();
+    await act(async () => clearConfirmedTutorial());
     expect(host.querySelector('[data-tutorial-dock="day-end"]')).toBeNull();
 
     resetMemory();

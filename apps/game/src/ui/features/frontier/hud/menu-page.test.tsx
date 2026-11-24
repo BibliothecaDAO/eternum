@@ -40,7 +40,7 @@ it("opens named menu actions independently of their badges, with their own seman
         (b) => b.getAttribute("aria-label") === label,
       )!;
       expect(button).toBeTruthy();
-      expect(button.querySelector("img")?.getAttribute("src")).toBe(`/icons/facets/64/${name}.webp`);
+      expect(button.querySelector("img")?.getAttribute("src")).toBe(`/icons/facets/128/${name}.webp`);
       await act(async () => button.click());
       expect(callback).toHaveBeenCalledTimes(1);
     }
@@ -77,7 +77,7 @@ it("opens How to play, the game's guide on the docs site, in a new tab with the 
     expect(link.target).toBe("_blank");
     expect(link.rel).toBe("noopener noreferrer");
     expect(link.textContent).toBe("How to playdocs.realms.party");
-    expect(link.querySelector("img")?.getAttribute("src")).toBe("/icons/facets/64/guide.webp");
+    expect(link.querySelector("img")?.getAttribute("src")).toBe("/icons/facets/128/guide.webp");
   } finally {
     await act(async () => root.unmount());
     host.remove();

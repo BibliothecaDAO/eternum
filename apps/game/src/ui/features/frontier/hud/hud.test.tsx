@@ -475,10 +475,10 @@ describe("the Menu", () => {
       onClose: vi.fn(),
     };
     act(() => root.render(<MenuPage events={2} guide="https://docs.realms.party/frontier/" {...handlers} />));
-    const words = [...document.querySelectorAll("section[aria-label='Menu'] nav .ui-row")].map(
-      (row) => row.textContent,
+    const words = [...document.querySelectorAll("section[aria-label='Menu'] nav .menu-tile")].map(
+      (tile) => tile.textContent,
     );
-    expect(words).toEqual(["Feed2", "Today", "Shop", "Settings", "How to playdocs.realms.party"]);
+    expect(words).toEqual(["Feed2", "Today", "Shop", "Settings", "How to playdocs.realms.party", "Exit"]);
     const button = (word: string) =>
       [...document.querySelectorAll<HTMLButtonElement>("section[aria-label='Menu'] button")].find((candidate) =>
         candidate.textContent?.startsWith(word),

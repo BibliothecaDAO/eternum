@@ -510,6 +510,12 @@ button.frontier-stock-chip {
   text-align: center;
   text-transform: uppercase;
 }
+.menu-tile__detail {
+  margin-top: -6px;
+  color: var(--hud-muted);
+  font-size: var(--hud-text-label);
+  line-height: var(--hud-leading-label);
+}
 .menu-tile__badge {
   position: absolute;
   top: theme(spacing.2);
