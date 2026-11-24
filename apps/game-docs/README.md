@@ -30,8 +30,7 @@ publishes it with the client from the same commit (dev: docs.dev-realms.party); 
 The pages say what the game does, read from the game's own code: never a number or a rule written by hand when the code
 holds it.
 
-- **Pages** (`docs/pages`): Start, Your account (sign-in, payout wallet, LORDS), Frontier, and More (What's new, and the
-  developer pages). The retired Frontier chest page is explicitly historical.
+- **Pages** (`docs/pages`): Start, Your account (sign-in, payout wallet, LORDS), Frontier, and Developers.
 - **Numbers** come from each mode's active preset, including its generated configuration overrides:
   `docs/utils/frontier.ts` reads them, `docs/utils/config.ts` fails the build on a key a mode's config lacks, and
   `docs/utils/contract-constants.json` holds the few rules the contracts keep as literals, each beside the Cairo line it
@@ -57,5 +56,4 @@ holds it.
 - checks each page states its mode's own numbers, and the text export (`llm.txt`) the same
   (`scripts/check-rendered-balance.mjs`);
 - runs `scripts/rendered-balance.test.mjs` against the built armies and expedition pages: replacing current XP or beast
-  ranges with the historical values must fail the balance check. Historical chest values stay on their labelled
-  historical page.
+  ranges with the historical values must fail the balance check.

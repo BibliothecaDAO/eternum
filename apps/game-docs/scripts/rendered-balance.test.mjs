@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { after, test } from "node:test";
 import {
+  forbiddenModePages,
   frontierGuardPhrases,
   frontierPhrases,
   loadBalanceSources,
@@ -72,4 +73,20 @@ test("the rendered armies check rejects the Knight reveal cost for Scouts", () =
     `${nativeRules.SCOUT_EXPLORE_STAMINA} for Scouts`,
     `${frontierConfig.troop.stamina.staminaExploreStaminaCost} for Scouts`,
   );
+});
+
+test("no built HTML page or llm.txt names Blitz, Devcon or Season 0, and synthetic regressions fail", () => {
+  const llm = readFileSync(join(dist, "llm.txt"), "utf8");
+  assert.deepEqual(forbiddenModePages(dist, llm), []);
+  for (const term of ["Blitz", "Devcon", "Season 0"]) {
+    const fakeDist = mkdtempSync(join(tmpdir(), "rendered-mode-"));
+    try {
+      mkdirSync(join(fakeDist, "frontier"), { recursive: true });
+      writeFileSync(join(fakeDist, "frontier", "index.html"), `<main>Play ${term} today.</main>`);
+      const hits = forbiddenModePages(fakeDist, "");
+      assert.equal(hits.length, 1, `expected built HTML check to reject ${term}`);
+    } finally {
+      rmSync(fakeDist, { recursive: true, force: true });
+    }
+  }
 });

@@ -19,8 +19,6 @@ const here = fileURLToPath(new URL(".", import.meta.url));
 
 /** Thousands with commas, as the pages write them. */
 const n = (value) => value.toLocaleString("en-US");
-const pct = (bps) => `${n(bps / 100)}%`;
-const TIERS = ["common", "uncommon", "rare", "epic", "legendary"];
 
 /** A building's price as the realm page states it: every resource it takes, by the catalog's name. */
 const buildingPrice = (config, id) =>
@@ -96,25 +94,14 @@ export const frontierPhrases = (config, preset, nativeRules) => {
   ];
 };
 
-/** The retired chest page remains tied to its historical paying preset. */
-const historicalChestPhrases = (preset) => [
-  {
-    page: "frontier/chests",
-    phrases: [
-      ...preset.depths.map(
-        (depth, index) => `${LAYER_NAMES[index]} ${TIERS.map((tier) => pct(depth.chest[tier])).join(" ")}`,
-      ),
-      `Shares ${TIERS.map((tier) => n(preset.chests.shares[tier])).join(" ")}`,
-      `never exceeds ${n(preset.chests.priceCeiling)} LORDS`,
-    ],
-  },
-];
-
-/** The Payout wallet page's statement of the co-signer's hold on a replaced wallet. */
-export const payoutWalletPhrases = (changeHoldSeconds) => [
+export const payoutWalletPhrases = (changeHoldSeconds, claimWindowSeconds) => [
   {
     page: "account/payout-wallet",
     phrases: [`the first Frontier payout to the new wallet waits ${changeHoldSeconds / 3600} hours`],
+  },
+  {
+    page: "account/lords",
+    phrases: [`link one within ${claimWindowSeconds / 86400} days of posting`],
   },
 ];
 
@@ -148,12 +135,16 @@ export const loadBalanceSources = async () => {
     const { PAYOUT_WALLET_CHANGE_SECONDS } = await server.ssrLoadModule(
       join(here, "../../../packages/value-ledger/src/payout-wallet.ts"),
     );
+    const { RACE_CLAIM_WINDOW_SECONDS } = await server.ssrLoadModule(
+      join(here, "../../../packages/value-ledger/src/codecs.ts"),
+    );
     return {
       frontierPreset,
       frontierConfig,
       historicalFrontierPreset,
       nativeRules,
       payoutWalletChangeSeconds: PAYOUT_WALLET_CHANGE_SECONDS,
+      raceClaimWindowSeconds: RACE_CLAIM_WINDOW_SECONDS,
     };
   } finally {
     await server.close();
@@ -273,20 +264,48 @@ export const tableSizeOverrides = (dist) =>
       })),
   );
 
+export const FORBIDDEN_MODE_TERMS = [/\bblitz\b/i, /\bdevcon\b/i, /\bseason\s*0\b/i];
+
+const FORBIDDEN_PLAYER_MODE_TERMS = [...FORBIDDEN_MODE_TERMS, /\beternum\b/i];
+
+const isDeveloperPath = (file) => file.startsWith("development/") || file.startsWith("docs/pages/development/");
+
+export const forbiddenModeMatches = (text, allowEternumName = false) =>
+  (allowEternumName ? FORBIDDEN_MODE_TERMS : FORBIDDEN_PLAYER_MODE_TERMS).flatMap((pattern) => {
+    const match = text.match(pattern);
+    return match ? [`forbidden mode name: …${text.slice(Math.max(0, match.index - 40), match.index + 30)}…`] : [];
+  });
+
+export const forbiddenModePages = (dist, llm) => [
+  ...fg.sync("**/index.html", { cwd: dist }).flatMap((file) =>
+    forbiddenModeMatches(pageLine(readFileSync(join(dist, file), "utf8")), isDeveloperPath(file)).map((found) => ({
+      page: file,
+      run: [found],
+    })),
+  ),
+  ...llm.split("\n\n---\n\n").flatMap((section) => {
+    const file = section.match(/^file: (\S+)/)?.[1] ?? "llm.txt";
+    return forbiddenModeMatches(section, isDeveloperPath(file)).map((found) => ({
+      page: `llm.txt ${file}`,
+      run: [found],
+    }));
+  }),
+];
+
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const dist = resolve(process.argv[2] ?? join(here, "../dist"));
-  const { frontierPreset, frontierConfig, historicalFrontierPreset, nativeRules, payoutWalletChangeSeconds } =
+  const { frontierPreset, frontierConfig, nativeRules, payoutWalletChangeSeconds, raceClaimWindowSeconds } =
     await loadBalanceSources();
   const llm = readFileSync(join(dist, "llm.txt"), "utf8");
   const phrases = [
     ...expectedPhrases(frontierConfig, frontierPreset, nativeRules),
-    ...historicalChestPhrases(historicalFrontierPreset),
-    ...payoutWalletPhrases(payoutWalletChangeSeconds),
+    ...payoutWalletPhrases(payoutWalletChangeSeconds, raceClaimWindowSeconds),
   ];
   const missing = [
     ...missingPhrases(dist, phrases),
     ...exportProblems(llm, phrases),
     ...forbiddenValues(dist, llm),
+    ...forbiddenModePages(dist, llm),
     ...tableSizeOverrides(dist),
   ];
   for (const { page, run } of missing) console.error(`${page}: expected "${run.join(" | ")}"`);
