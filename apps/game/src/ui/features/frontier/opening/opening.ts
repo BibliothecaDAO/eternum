@@ -13,6 +13,7 @@ export interface OpeningContext {
   readonly hasEssence: boolean;
   readonly hasResearched: boolean;
   readonly dailyQuestClaimable: boolean;
+  readonly dailyQuestClaimed: boolean;
   readonly hasWellLore: boolean;
   readonly hasShrineLore: boolean;
   readonly isCity: boolean;
@@ -35,6 +36,8 @@ interface OpeningEntry {
   readonly skipForVeteran?: boolean;
   readonly reachedWhen: (ctx: OpeningContext) => boolean;
   readonly showsWhen: (ctx: OpeningContext) => boolean;
+  readonly completesWhen?: (ctx: OpeningContext) => boolean;
+  readonly completesWhileShowing?: (ctx: OpeningContext) => boolean;
   readonly readyWhen?: (rules: OpeningRules) => boolean;
 }
 
@@ -53,6 +56,8 @@ export const OPENING = {
     parts: [],
     reachedWhen: (ctx) => ctx.hasOpenOathPick || ctx.hasSwornOath,
     showsWhen: (ctx) => ctx.hasOpenOathPick,
+    completesWhen: (ctx) => ctx.hasSwornOath,
+    completesWhileShowing: (ctx) => !ctx.hasOpenOathPick,
     readyWhen: (rules) => rules.ownAspect !== undefined,
   },
   bane: {
@@ -61,6 +66,7 @@ export const OPENING = {
     parts: ["bane-row"],
     reachedWhen: (ctx) => ctx.hasActiveBane,
     showsWhen: (ctx) => ctx.hasActiveBane,
+    completesWhileShowing: (ctx) => !ctx.hasActiveBane,
   },
   deep: {
     icon: "depth-3",
@@ -89,8 +95,9 @@ export const OPENING = {
     icon: "crown",
     teacher: 1,
     parts: [],
-    reachedWhen: (ctx) => ctx.dailyQuestClaimable,
+    reachedWhen: (ctx) => ctx.dailyQuestClaimable || ctx.dailyQuestClaimed,
     showsWhen: (ctx) => ctx.dailyQuestClaimable,
+    completesWhen: (ctx) => ctx.dailyQuestClaimed,
   },
   essence: {
     icon: "essence",
@@ -98,6 +105,7 @@ export const OPENING = {
     parts: ["essence-store", "research", "today"],
     reachedWhen: (ctx) => ctx.hasEssence,
     showsWhen: (ctx) => ctx.hasEssence && !ctx.hasResearched,
+    completesWhen: (ctx) => ctx.hasResearched,
   },
   shop: {
     icon: "fragment",
@@ -141,6 +149,7 @@ export const OPENING = {
     skipForVeteran: true,
     reachedWhen: (ctx) => ctx.hasBarracks,
     showsWhen: (ctx) => ctx.hasRealm && !ctx.hasBarracks,
+    completesWhen: (ctx) => ctx.hasBarracks,
   },
   deploy: {
     icon: "knight-t1",
@@ -149,6 +158,7 @@ export const OPENING = {
     skipForVeteran: true,
     reachedWhen: (ctx) => ctx.deployedArmies > 0,
     showsWhen: (ctx) => ctx.hasRealm && ctx.hasBarracks && ctx.troopsAtHome > 0 && ctx.deployedArmies === 0,
+    completesWhen: (ctx) => ctx.deployedArmies > 0,
   },
   explore: {
     icon: "explore",
@@ -157,6 +167,7 @@ export const OPENING = {
     skipForVeteran: true,
     reachedWhen: (ctx) => ctx.hasExplored,
     showsWhen: (ctx) => ctx.deployedArmies > 0 && !ctx.hasExplored,
+    completesWhen: (ctx) => ctx.hasExplored,
   },
 } as const satisfies Record<string, OpeningEntry>;
 

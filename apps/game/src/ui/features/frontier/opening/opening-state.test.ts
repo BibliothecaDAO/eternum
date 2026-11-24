@@ -1,6 +1,7 @@
 import { expect, it } from "vitest";
 import { isSeasonZeroPlayer } from "@/shell/season-tab/archive/archive";
 
+import { OPENING_MOMENTS, type OpeningContext, type OpeningMoment } from "./opening";
 import { OPENING_RULES } from "./opening-fixtures";
 import {
   accountProgress,
@@ -10,6 +11,7 @@ import {
   openedMoments,
   reachedOnContext,
   siteAlertOfferDue,
+  stepTutorialMachine,
   TUTORIAL_SKIPPED,
 } from "./opening-state";
 
@@ -153,4 +155,244 @@ it("makes the site alert's offer once the Deep is entered, until it is answered,
   expect(siteAlertOfferDue(entered, new Set(), false, "site-alert")).toBe(false);
   expect(siteAlertOfferDue(entered, new Set(["site-alert"]), true, "site-alert")).toBe(false);
   expect(siteAlertOfferDue(openedMoments(new Set(), ["barracks"]), new Set(), true, "site-alert")).toBe(false);
+});
+
+const LIFECYCLE_CASES: Record<OpeningMoment, { due: OpeningContext; completed?: OpeningContext }> = {
+  "season0-welcome": {
+    due: { ...EMPTY_OPENING_CONTEXT, hasRealm: true, isSeasonZeroVeteran: true },
+  },
+  oath: {
+    due: { ...EMPTY_OPENING_CONTEXT, hasRealm: true, hasOpenOathPick: true },
+    completed: { ...EMPTY_OPENING_CONTEXT, hasRealm: true, hasOpenOathPick: false, hasSwornOath: true },
+  },
+  bane: {
+    due: { ...EMPTY_OPENING_CONTEXT, hasRealm: true, hasActiveBane: true },
+    completed: { ...EMPTY_OPENING_CONTEXT, hasRealm: true, hasActiveBane: false },
+  },
+  deep: {
+    due: {
+      ...EMPTY_OPENING_CONTEXT,
+      hasRealm: true,
+      hasBarracks: true,
+      deployedArmies: 1,
+      hasExplored: true,
+      inDeep: true,
+    },
+  },
+  aspects: {
+    due: {
+      ...EMPTY_OPENING_CONTEXT,
+      hasRealm: true,
+      hasBarracks: true,
+      deployedArmies: 1,
+      hasExplored: true,
+      hyperstructureAdvanced: true,
+    },
+  },
+  spire: {
+    due: {
+      ...EMPTY_OPENING_CONTEXT,
+      hasRealm: true,
+      hasBarracks: true,
+      deployedArmies: 1,
+      hasExplored: true,
+      inEthereal: true,
+    },
+  },
+  "daily-quest": {
+    due: {
+      ...EMPTY_OPENING_CONTEXT,
+      hasRealm: true,
+      hasBarracks: true,
+      deployedArmies: 1,
+      hasExplored: true,
+      dailyQuestClaimable: true,
+    },
+    completed: {
+      ...EMPTY_OPENING_CONTEXT,
+      hasRealm: true,
+      hasBarracks: true,
+      deployedArmies: 1,
+      hasExplored: true,
+      dailyQuestClaimed: true,
+    },
+  },
+  essence: {
+    due: {
+      ...EMPTY_OPENING_CONTEXT,
+      hasRealm: true,
+      hasBarracks: true,
+      deployedArmies: 1,
+      hasExplored: true,
+      hasEssence: true,
+    },
+    completed: {
+      ...EMPTY_OPENING_CONTEXT,
+      hasRealm: true,
+      hasBarracks: true,
+      deployedArmies: 1,
+      hasExplored: true,
+      hasEssence: true,
+      hasResearched: true,
+    },
+  },
+  shop: {
+    due: {
+      ...EMPTY_OPENING_CONTEXT,
+      hasRealm: true,
+      hasBarracks: true,
+      deployedArmies: 1,
+      hasExplored: true,
+      fragmentsSold: true,
+      outOfStamina: true,
+    },
+  },
+  relic: {
+    due: {
+      ...EMPTY_OPENING_CONTEXT,
+      hasRealm: true,
+      hasBarracks: true,
+      deployedArmies: 1,
+      hasExplored: true,
+      hasRelic: true,
+    },
+  },
+  "well-lore": {
+    due: {
+      ...EMPTY_OPENING_CONTEXT,
+      hasRealm: true,
+      hasBarracks: true,
+      deployedArmies: 1,
+      hasExplored: true,
+      hasWellLore: true,
+    },
+  },
+  "shrine-lore": {
+    due: {
+      ...EMPTY_OPENING_CONTEXT,
+      hasRealm: true,
+      hasBarracks: true,
+      deployedArmies: 1,
+      hasExplored: true,
+      hasShrineLore: true,
+    },
+  },
+  city: {
+    due: {
+      ...EMPTY_OPENING_CONTEXT,
+      hasRealm: true,
+      hasBarracks: true,
+      deployedArmies: 1,
+      hasExplored: true,
+      isCity: true,
+    },
+  },
+  barracks: {
+    due: { ...EMPTY_OPENING_CONTEXT, hasRealm: true },
+    completed: { ...EMPTY_OPENING_CONTEXT, hasRealm: true, hasBarracks: true },
+  },
+  deploy: {
+    due: { ...EMPTY_OPENING_CONTEXT, hasRealm: true, hasBarracks: true, troopsAtHome: 2_000 },
+    completed: { ...EMPTY_OPENING_CONTEXT, hasRealm: true, hasBarracks: true, troopsAtHome: 1_000, deployedArmies: 1 },
+  },
+  explore: {
+    due: { ...EMPTY_OPENING_CONTEXT, hasRealm: true, hasBarracks: true, deployedArmies: 1, hasExplored: false },
+    completed: { ...EMPTY_OPENING_CONTEXT, hasRealm: true, hasBarracks: true, deployedArmies: 1, hasExplored: true },
+  },
+};
+
+it("runs every lesson through due -> showing -> completed or dismissed -> never again -> replay", () => {
+  for (const moment of OPENING_MOMENTS) {
+    const scenario = LIFECYCLE_CASES[moment];
+    const shown = stepTutorialMachine({
+      showing: null,
+      confirmed: null,
+      ctx: scenario.due,
+      rules: OPENING_RULES,
+      seen: new Set(),
+    });
+    expect(shown.nextShowing, `${moment} should become showing`).toBe(moment);
+    expect(shown.confirmedMoment).toBeNull();
+
+    const persisted = new Set<string>(shown.newlyCompleted);
+    if (scenario.completed) {
+      const finished = stepTutorialMachine({
+        showing: moment,
+        confirmed: null,
+        ctx: scenario.completed,
+        rules: OPENING_RULES,
+        seen: persisted,
+      });
+      expect(finished.confirmedMoment, `${moment} should confirm on completion`).toBe(moment);
+      expect(finished.nextShowing).toBeNull();
+      expect(finished.newlyCompleted).toContain(moment);
+      for (const done of finished.newlyCompleted) persisted.add(done);
+    } else {
+      persisted.add(moment);
+    }
+
+    const afterDone = stepTutorialMachine({
+      showing: null,
+      confirmed: null,
+      ctx: scenario.due,
+      rules: OPENING_RULES,
+      seen: persisted,
+    });
+    expect(afterDone.nextShowing, `${moment} must not return once completed or dismissed`).not.toBe(moment);
+    expect(afterDone.confirmedMoment).toBeNull();
+
+    const replayed = effectiveSeen(persisted, new Set([moment]));
+    const afterReplay = stepTutorialMachine({
+      showing: null,
+      confirmed: null,
+      ctx: scenario.due,
+      rules: OPENING_RULES,
+      seen: replayed,
+      replayed: new Set([moment]),
+    });
+    expect(afterReplay.nextShowing, `${moment} must return after Replay`).toBe(moment);
+  }
+});
+
+it("silently completes actions done before their lesson showed without flashing a confirmation banner, and keeps replay intact", () => {
+  const alreadyDeployed: OpeningContext = {
+    ...EMPTY_OPENING_CONTEXT,
+    hasRealm: true,
+    hasBarracks: true,
+    deployedArmies: 1,
+    hasExplored: false,
+  };
+  const silent = stepTutorialMachine({
+    showing: null,
+    confirmed: null,
+    ctx: alreadyDeployed,
+    rules: OPENING_RULES,
+    seen: new Set(),
+  });
+  expect(silent.confirmedMoment).toBeNull();
+  expect(silent.newlyCompleted).toEqual(["barracks", "deploy"]);
+  expect(silent.nextShowing).toBe("explore");
+
+  const replayed = new Set<string>(["barracks", "deploy", "explore"]);
+  const whileStandingOnDoneRealm = stepTutorialMachine({
+    showing: null,
+    confirmed: null,
+    ctx: { ...alreadyDeployed, hasExplored: true },
+    rules: OPENING_RULES,
+    seen: new Set(),
+    replayed,
+  });
+  expect(whileStandingOnDoneRealm.newlyCompleted).toEqual([]);
+  expect(whileStandingOnDoneRealm.nextShowing).toBeNull();
+});
+
+it("clears showing and confirmed immediately once tutorial is skipped", () => {
+  const skipped = stepTutorialMachine({
+    showing: "explore",
+    confirmed: "barracks",
+    ctx: LIFECYCLE_CASES.explore.due,
+    rules: OPENING_RULES,
+    seen: new Set([TUTORIAL_SKIPPED]),
+  });
+  expect(skipped).toEqual({ nextShowing: null, confirmedMoment: null, newlyCompleted: [] });
 });

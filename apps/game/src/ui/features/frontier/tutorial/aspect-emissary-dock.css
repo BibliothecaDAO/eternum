@@ -297,3 +297,29 @@
   font-size: var(--hud-text-label);
   line-height: var(--hud-leading-label);
 }
+
+.emissary-dock--completed {
+  border-color: var(--hud-good);
+  border-top-color: var(--hud-good);
+  box-shadow:
+    var(--hud-shadow-panel),
+    0 0 24px color-mix(in srgb, var(--hud-good) 28%, transparent);
+}
+
+.emissary-dock__done {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--hud-font-display);
+  font-size: var(--hud-text-badge);
+  line-height: var(--hud-leading-badge);
+  font-weight: var(--hud-weight-title);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--hud-good);
+  padding: 2px 7px;
+  white-space: nowrap;
+  background: color-mix(in srgb, var(--hud-good) 14%, var(--hud-well));
+  border: 1px solid color-mix(in srgb, var(--hud-good) 52%, transparent);
+  border-radius: 2px;
+}

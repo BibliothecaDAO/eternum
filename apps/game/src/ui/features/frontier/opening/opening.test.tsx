@@ -58,14 +58,16 @@ describe("the interface that opens as you play", () => {
 
   it("keeps every contextual line within the word budget and free of banned or numeric depth jargon", () => {
     for (const moment of OPENING_MOMENTS) {
-      const text = OPENING_WORDS.lines[moment](OPENING_RULES);
-      const words = text.trim().split(/\s+/).filter(Boolean);
-      expect(words.length, `${moment}: "${text}"`).toBeLessThanOrEqual(TUTORIAL_WORD_BUDGET);
-      for (const entry of BANNED_WORDS) {
-        expect(text, `${moment} used banned phrase ${entry.banned}`).not.toMatch(entry.pattern);
-      }
-      for (const rule of VOICE_RULES) {
-        if (rule.forbidden) expect(text, `${moment} broke voice rule ${rule.rule}`).not.toMatch(rule.forbidden);
+      const texts = [OPENING_WORDS.lines[moment](OPENING_RULES), OPENING_WORDS.completed[moment]];
+      for (const text of texts) {
+        const words = text.trim().split(/\s+/).filter(Boolean);
+        expect(words.length, `${moment}: "${text}"`).toBeLessThanOrEqual(TUTORIAL_WORD_BUDGET);
+        for (const entry of BANNED_WORDS) {
+          expect(text, `${moment} used banned phrase ${entry.banned}`).not.toMatch(entry.pattern);
+        }
+        for (const rule of VOICE_RULES) {
+          if (rule.forbidden) expect(text, `${moment} broke voice rule ${rule.rule}`).not.toMatch(rule.forbidden);
+        }
       }
     }
   });
