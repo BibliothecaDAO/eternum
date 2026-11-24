@@ -42,7 +42,7 @@ export type BuildTile = {
         short?: { of: Price["of"]; wait: number | undefined };
       }
     | { kind: "built" }
-    | { kind: "level"; level: number };
+    | { kind: "level"; level: number; prices: readonly Price[] };
 };
 
 export const BuildView = ({
@@ -69,6 +69,7 @@ export const BuildView = ({
   const indexed = tiles.map((tile, index) => ({ tile, index }));
   const unlocked = indexed.filter(({ tile }) => tile.standing.kind !== "level");
   const locked = indexed.filter(({ tile }) => tile.standing.kind === "level");
+  const footerCost = chosenStanding?.kind !== "built" && !refusal?.fix?.prices && <HudCost line={costLine(prices)} />;
   const raised = chosenStanding?.kind === "price" && chosenStanding.raised && (
     <span data-price-raised className="text-hud-label text-hud-warn">
       {chosenStanding.raised}
@@ -88,6 +89,7 @@ export const BuildView = ({
           note={
             <span className="flex flex-col items-start gap-1">
               <RefusalNote refusal={refusal} />
+              {footerCost}
               {raised}
             </span>
           }
@@ -102,7 +104,7 @@ export const BuildView = ({
         <HudWindowFoot
           note={
             <span className="flex flex-col items-start gap-1">
-              <HudCost line={costLine(prices)} />
+              {footerCost}
               {raised}
             </span>
           }
@@ -176,7 +178,10 @@ const LockedUnlocks = ({
                 aria-pressed={index === chosen}
                 onClick={() => onChoose(index)}
               >
-                {tile.name}
+                <span>{tile.name}</span>
+                {tile.standing.kind === "level" && (
+                  <PriceAmounts prices={tile.standing.prices} className="build-locked__price" iconSize={12} />
+                )}
               </HudButton>
             </span>
           ))}
@@ -247,21 +252,38 @@ const Band = ({ standing }: { standing: BuildTile["standing"] }) => (
   </HudChip>
 );
 
-const Price = ({ standing }: { standing: Extract<BuildTile["standing"], { kind: "price" }> }) => (
-  <>
-    <span className="flex flex-wrap items-center justify-center gap-x-1.5 gap-y-0.5">
-      {standing.prices.map(({ of, amount, short }) => (
+type PriceTag = Price & { short?: boolean };
+
+const PriceAmounts = ({
+  prices,
+  className,
+  iconSize = 14,
+}: {
+  prices: readonly PriceTag[];
+  className?: string;
+  iconSize?: number;
+}) => {
+  if (prices.length === 0) return <span className={cn("text-hud-ink", className)}>{costLine(prices)}</span>;
+  return (
+    <span className={cn("inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5 tabular-nums", className)}>
+      {prices.map(({ of, amount, short }) => (
         <span
           key={of}
           data-short={short || undefined}
           className={cn("inline-flex items-center gap-1", short ? "text-hud-bad" : "text-hud-ink")}
           aria-label={`${formatExact(amount)} ${PRICE_FACES[of].word}`}
         >
-          {PRICE_FACES[of].icon && <SemanticIcon name={PRICE_FACES[of].icon!} size={14} />}
+          {PRICE_FACES[of].icon && <SemanticIcon name={PRICE_FACES[of].icon!} size={iconSize} />}
           {formatCharge(amount)}
         </span>
       ))}
     </span>
+  );
+};
+
+const Price = ({ standing }: { standing: Extract<BuildTile["standing"], { kind: "price" }> }) => (
+  <>
+    <PriceAmounts prices={standing.prices} className="justify-center" />
     {standing.raised && (
       <span role="img" aria-label={PRICE_UP} data-tip={standing.raised} className="leading-none text-hud-warn">
         ↑

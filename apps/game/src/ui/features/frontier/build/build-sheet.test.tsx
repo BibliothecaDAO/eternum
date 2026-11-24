@@ -11,10 +11,22 @@ import { inFlight } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { toast } from "@/ui/features/event-feed/notify";
 import { disposeGameSyncSession, installActiveGameClient } from "@/sync/active-game-client";
-import { configManager, type GameClient, setBlockTimestampSource } from "@bibliothecadao/eternum";
+import { costLine, PRICE_FACES, type Price } from "@/ui/design-system/kit/price-faces";
+import { FREE } from "@/ui/design-system/kit/words";
+import { buildingOpensAtLevel, configManager, type GameClient, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { type GameClientSetup, nativeResearchConstants } from "@bibliothecadao/eternum/game-client";
-import { buildingName, BuildingType, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
+import {
+  buildingName,
+  BuildingType,
+  formatCharge,
+  formatExact,
+  FRONTIER_BUILDING_TYPES,
+  rankName,
+  RESOURCE_PRECISION,
+  ResourcesIds,
+} from "@bibliothecadao/types";
 import release from "../../../../../../../contracts/l3/world-native/schema/release-definition.json";
+import { FRONTIER_STORES, STORE_KINDS } from "../stores";
 import { buildingCounts, realmBoard } from "./build-fixture";
 import { BuildingsInFlight, BuildSheet } from "./build-sheet";
 
@@ -322,6 +334,62 @@ describe("the build sheet", () => {
     expect(rangeButton.getAttribute("aria-pressed")).toBe("true");
     expect(sheet.host.querySelector("[data-build-chosen]")?.textContent).toContain("Range:");
     expect(sheet.host.querySelector('[role="status"]')?.textContent).toBe("Requires City");
+    sheet.close();
+  });
+
+  it("shows every rank-locked building's rule-row price on its locked button and in the footer beside the rank notice", () => {
+    const { store, realm } = realmBoard();
+    const sheet = open(store, realm);
+    const lockedCategories = FRONTIER_BUILDING_TYPES.filter((category) => buildingOpensAtLevel(category) > 0);
+    expect(lockedCategories).toHaveLength(6);
+
+    const rulePricesOf = (category: BuildingType): Price[] => {
+      const rule = release.definition.structures.buildings.find((entry) => entry.category === category)!.rule;
+      return rule.simple_cost.map(({ resource_type, amount }) => {
+        const of = STORE_KINDS.find((store) => FRONTIER_STORES[store].resource === resource_type)! as Price["of"];
+        return { of, amount: Number(BigInt(amount) / BigInt(RESOURCE_PRECISION)) };
+      });
+    };
+
+    const lockedButtons = [...sheet.host.querySelectorAll<HTMLButtonElement>("[data-build-locked] button")];
+    for (const category of lockedCategories) {
+      const name = buildingName(category, true);
+      const expected = rulePricesOf(category);
+      expect(expected.length).toBeGreaterThan(0);
+      const lockedButton = lockedButtons.find((candidate) => candidate.textContent?.includes(name))!;
+      expect(lockedButton).toBeDefined();
+      for (const { of, amount } of expected) {
+        const label = `${formatExact(amount)} ${PRICE_FACES[of].word}`;
+        const priceEl = lockedButton.querySelector(`[aria-label="${label}"]`);
+        expect(priceEl?.textContent).toBe(formatCharge(amount));
+      }
+      act(() => lockedButton.click());
+      expect(sheet.host.querySelector('[role="status"]')?.textContent).toBe(
+        `Requires ${rankName(buildingOpensAtLevel(category))}`,
+      );
+      expect(sheet.host.querySelector(".ui-window__foot .ui-cost")?.textContent).toBe(costLine(expected));
+    }
+    sheet.close();
+  });
+
+  it("renders Free instead of a blank price when a building rule has no simple cost", () => {
+    const { store, realm } = realmBoard();
+    const freeRule = (category: BuildingType) => {
+      const rule = store.require("BuildingRule", { game_id: 1, category });
+      return fact(`0x6${category}`, "BuildingRule", { ...rule, simple_cost: [] });
+    };
+    store.applyFacts([freeRule(BuildingType.ResourceWheat), freeRule(BuildingType.ResourceCrossbowmanT1)] as never);
+    const sheet = open(store, realm);
+    expect(sheet.card("Farm").querySelector(".ui-chip")?.textContent).toBe(FREE);
+    expect(sheet.host.querySelector(".ui-window__foot .ui-cost")?.textContent).toBe(FREE);
+
+    const rangeButton = [...sheet.host.querySelectorAll<HTMLButtonElement>("[data-build-locked] button")].find(
+      (candidate) => candidate.textContent?.includes(buildingName(BuildingType.ResourceCrossbowmanT1, true)),
+    )!;
+    expect(rangeButton.textContent).toContain(FREE);
+    act(() => rangeButton.click());
+    expect(sheet.host.querySelector('[role="status"]')?.textContent).toBe("Requires City");
+    expect(sheet.host.querySelector(".ui-window__foot .ui-cost")?.textContent).toBe(FREE);
     sheet.close();
   });
 

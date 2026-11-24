@@ -25,6 +25,7 @@ import {
   HudWindowFoot,
 } from "./hud-elements";
 import { costLine } from "./price-faces";
+import { FREE } from "./words";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -94,9 +95,12 @@ describe("a verb and what it costs (owner, sheet 2026-10-18: a button carries it
     expect(host.querySelector(".ui-cost")!.textContent).toBe("20 stamina · 3 Wheat");
   });
 
-  it("writes an unknown amount as a dash, and draws nothing for a verb that costs nothing", () => {
+  it("writes an unknown amount as a dash, Free for an empty price list, and nothing for an empty line", () => {
     expect(costLine([{ of: "lords", amount: undefined }])).toBe("— LORDS");
+    expect(costLine([])).toBe(FREE);
     act(() => root.render(<HudCost line={costLine([])} />));
+    expect(host.querySelector(".ui-cost")!.textContent).toBe(FREE);
+    act(() => root.render(<HudCost line="" />));
     expect(host.innerHTML).toBe("");
   });
 });

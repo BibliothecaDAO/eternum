@@ -1050,6 +1050,7 @@ export const DEPLOY_WORDS = {
   } satisfies Record<TroopType, (exploreStamina: number) => string>,
 } as const;
 export const BUILD = "Build";
+export const FREE = "Free";
 
 /** Default army names: "Army" and its place. */
 export const ARMY = "Army";
