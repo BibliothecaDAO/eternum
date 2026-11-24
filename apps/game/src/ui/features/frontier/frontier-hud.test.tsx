@@ -559,7 +559,7 @@ it("closes a popover first and the page under it next, one Escape each", async (
     const layer = document.querySelector<HTMLElement>("[data-hud-popover]")!;
     await act(async () => layer.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })));
     expect([popovers(), surfaceNamed("Season") !== null]).toEqual([0, true]);
-    await act(async () => window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" })));
+    await act(async () => document.body.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })));
     expect(surfaceNamed("Season")).toBeNull();
   } finally {
     window.history.replaceState(null, "", route);
@@ -591,7 +591,7 @@ it("opens a phone's Menu as a page in the one frame, which its ×, Escape and Me
     await act(async () => page()!.querySelector<HTMLButtonElement>('button[aria-label="Close"]')!.click());
     expect(page()).toBeNull();
     await pressPlace("Menu");
-    await act(async () => window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" })));
+    await act(async () => document.body.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })));
     expect(page()).toBeNull();
     await pressPlace("Menu");
     await pressPlace("Menu");
@@ -1121,6 +1121,26 @@ it("orders the desktop cornice places as Research, Season, Feed, Chat without Re
     await act(async () => crest.click());
     expect(window.location.pathname).toMatch(/\/hex$/);
   } finally {
+    window.history.replaceState(null, "", route);
+  }
+});
+
+it("opens Build in the desktop rail on an open plot as the player enters the Realm, and Escape puts it away", async () => {
+  viewport.set(1440);
+  const route = window.location.pathname + window.location.search;
+  window.history.replaceState(null, "", "/g/0x1ab9/1/map?col=1&row=1");
+  const buildSheet = () => document.querySelector('[data-rail-panel] [data-kit-sheet][aria-label="Build"]');
+  try {
+    await renderHud();
+    expect(buildSheet()).toBeNull();
+    await act(async () => host.querySelector<HTMLButtonElement>(".frontier-realm-card__identity")!.click());
+    expect(window.location.pathname).toMatch(/\/hex$/);
+    expect(buildSheet()).not.toBeNull();
+    expect(useUIStore.getState().selectedBuildingHex).toMatchObject({ structureId: 7 });
+    await act(async () => document.body.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })));
+    expect(buildSheet()).toBeNull();
+  } finally {
+    act(() => useUIStore.getState().setSelectedBuildingHex(null));
     window.history.replaceState(null, "", route);
   }
 });

@@ -76,7 +76,7 @@ import { CARD_STORE_KINDS, type CardStore, FrontierStoreCard, isCardStore } from
 import { castleLabor } from "./production/store-makers";
 import { FrontierResearch } from "./research/frontier-research";
 
-import { BuildButton } from "./build/build-button";
+import { BuildButton, useBuildOpensOnEntering } from "./build/build-button";
 import { BuildingsInFlight } from "./build/build-sheet";
 import { readBuildOptions } from "./build/build-options";
 import { buildingIcon, buildingName } from "./build/building-names";
@@ -193,6 +193,7 @@ const FrontierHudBody = ({
     previousMapView.current = isMapView;
     setSurface(null);
   }, [isMapView, setSurface]);
+  useBuildOpensOnEntering(desktop && !isMapView && ordersAllowed && realm && !visit ? realm : null);
   const chat = useGameChat(surface === "chat");
   const chatPane = useChatKey(() => setSurface("chat"));
   const headerStores = useStoreReadings(shown, rules);

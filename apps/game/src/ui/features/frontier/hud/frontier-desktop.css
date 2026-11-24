@@ -552,3 +552,10 @@ button.frontier-stock__face:hover {
 .frontier-corner--right[data-wide="true"] [data-wide-page] {
   margin-top: 20px;
 }
+
+[data-frontier-rail] [data-build-grid] .ui-card__title {
+  overflow: visible;
+  white-space: normal;
+  text-overflow: clip;
+  text-wrap: balance;
+}
