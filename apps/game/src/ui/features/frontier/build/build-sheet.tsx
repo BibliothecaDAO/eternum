@@ -77,15 +77,32 @@ export const useOpenPlot = (realm: NativeRows["Structure"] | null): HexPosition 
   if (isMapView || !ordersAllowed || !realm || !selected || selected.structureId !== safeInteger(realm.entity_id))
     return null;
   const plot = { col: selected.innerCol, row: selected.innerRow };
-  const distance = getHexDistance({ col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1] }, plot);
-  if (distance === 0 || distance > buildableRadius(realm.base.level)) return null;
-  const building = setup.store.get("Building", {
+  return isOpenPlot(setup.store, realm, plot) ? plot : null;
+};
+
+const CASTLE_PLOT: HexPosition = { col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1] };
+
+type PlotStore = ReturnType<typeof useGame>["setup"]["store"];
+
+const isOpenPlot = (store: PlotStore, realm: NativeRows["Structure"], plot: HexPosition): boolean => {
+  const distance = getHexDistance(CASTLE_PLOT, plot);
+  if (distance === 0 || distance > buildableRadius(realm.base.level)) return false;
+  const building = store.get("Building", {
     game_id: realm.game_id,
     structure_id: realm.entity_id,
     inner_col: plot.col,
     inner_row: plot.row,
   });
-  return building && Number(building.category) !== BuildingType.None ? null : plot;
+  return !building || Number(building.category) === BuildingType.None;
+};
+
+export const openPlots = (store: PlotStore, realm: NativeRows["Structure"]): HexPosition[] => {
+  const radius = buildableRadius(realm.base.level);
+  const plots: HexPosition[] = [];
+  for (let row = CASTLE_PLOT.row - radius; row <= CASTLE_PLOT.row + radius; row += 1)
+    for (let col = CASTLE_PLOT.col - radius; col <= CASTLE_PLOT.col + radius; col += 1)
+      if (isOpenPlot(store, realm, { col, row })) plots.push({ col, row });
+  return plots;
 };
 
 export const BuildSheet = ({

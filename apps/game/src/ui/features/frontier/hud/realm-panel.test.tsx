@@ -12,7 +12,7 @@ vi.mock("@/ui/features/event-feed/quick-feed", async (original) => ({
 import { dayClock } from "./day-clock";
 import { DayPill } from "./day-pill";
 import { FrontierPlaces } from "./frontier-desktop";
-import { RealmHeaderChip } from "./realm-header-chip";
+import { RealmEmblem, RealmHeaderChip } from "./realm-header-chip";
 import { RealmPanel } from "./realm-panel";
 import type { StoreReading } from "./status-strip";
 
@@ -224,13 +224,13 @@ it("renders the Aspect medallion tinted in the Aspect color and Order of Power b
   act(() =>
     root.render(
       <>
-        <RealmHeaderChip name="Duskbite" level={1} aspect={1} orderId={12} variant="desktop" onPress={onPress} />
-        <RealmHeaderChip name="Duskbite" level={1} aspect={1} orderId={12} variant="phone" onPress={onPress} />
+        <RealmHeaderChip name="Duskbite" level={1} aspect={1} orderId={12} onPress={onPress} />
+        <RealmEmblem name="Duskbite" fallbackIcon="realm-1" aspect={1} orderId={12} onPress={onPress} />
       </>,
     ),
   );
   const desktopLabel = host.querySelector(".frontier-realm-chip")?.getAttribute("aria-label");
-  const phoneLabel = host.querySelector(".frontier-phone-realm-chip")?.getAttribute("aria-label");
+  const phoneLabel = host.querySelector(".frontier-phone-emblem")?.getAttribute("aria-label");
   expect(phoneLabel).toBe(desktopLabel);
 
   act(() => root.render(<RealmPanel name="Duskbite" kind="wonder" level={1} stores={STORES} />));

@@ -101,6 +101,29 @@ it("refuses a launch option on one command, which would relaunch the browser wit
   }
 });
 
+it.each([
+  ["Realm", "hex", "Realm"],
+  ["Veil", "map", "World"],
+])("observes the place a phone's pill names (%s) before the tab bar's lit scene", (place, scene, lit) => {
+  const dom = new JSDOM(
+    `<button data-place-pill data-place="${place}" aria-expanded="false">${place}</button><nav aria-label="Places"><button aria-current="page">${lit}</button></nav>`,
+    { url: `https://play.test/game/${scene}`, runScripts: "outside-only" },
+  );
+  dom.window.__rendererDiagnostics = { sceneName: scene };
+  spawnSync.mockImplementationOnce((_command, args) => {
+    const expression = args[args.indexOf("eval") + 1];
+    return { status: 0, stdout: JSON.stringify(dom.window.eval(expression)), stderr: "" };
+  });
+  try {
+    expect(createBrowserSession("pill-proof", { profile: "/tmp/pill-proof" }).observe()).toMatchObject({
+      scene,
+      place,
+    });
+  } finally {
+    dom.window.close();
+  }
+});
+
 it.each(["Deep", "Hollow"])(
   "observes the phone's visible %s layer rather than inferring Map from its switch",
   (layer) => {

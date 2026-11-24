@@ -24,7 +24,7 @@ export const pickStores = (stores: readonly StoreReading[], kinds: readonly Stor
     .map((kind) => stores.find((store) => store.kind === kind))
     .filter((store): store is StoreReading => store !== undefined);
 
-export const StoreLiquidFill = ({ store }: { store: StoreReading }) => {
+const StoreLiquidFill = ({ store }: { store: StoreReading }) => {
   const share = storeCapacityShare(store);
   if (share === undefined) return null;
   return (

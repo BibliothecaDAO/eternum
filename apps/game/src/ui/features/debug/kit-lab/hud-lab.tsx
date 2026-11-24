@@ -31,9 +31,9 @@ import type { DayClock } from "@/ui/features/frontier/hud/day-clock";
 import { HeaderStores } from "@/ui/features/frontier/hud/header-stores";
 import { HudBands } from "@/ui/features/frontier/hud/hud-bands";
 import { FrontierDesktop, FrontierPlaces } from "@/ui/features/frontier/hud/frontier-desktop";
-import { PhoneWorldActions, type HudSurface } from "@/ui/features/frontier/hud/frontier-nav";
+import { PhoneTabBar, TabletPlaces, type HudSurface } from "@/ui/features/frontier/hud/frontier-nav";
 import { OfflineBanner } from "@/ui/features/frontier/hud/offline-notice";
-import { PhoneTopBarView } from "@/ui/features/frontier/hud/phone-top-bar";
+import { PhoneTopBarView, TabletTopBarView } from "@/ui/features/frontier/hud/phone-top-bar";
 import { RealmHeaderChip } from "@/ui/features/frontier/hud/realm-header-chip";
 import { LabGame, useLabPlayer } from "./lab-game";
 import { useHudMode } from "@/hooks/use-hud-mode";
@@ -78,7 +78,7 @@ import { ARCHIVED_SEASONS, archivedSeason } from "@/shell/season-tab/archive/arc
 import { SeasonPayoutRow } from "@/ui/features/frontier/value/season-payout";
 import { linkWalletLine } from "@/ui/features/frontier/value/link-wallet";
 import { VisitFoot } from "@/ui/features/frontier/board/visit-foot";
-import { useLayout } from "@/shell/frame/layout";
+import { useLayout, useTablet } from "@/shell/frame/layout";
 import { type DayEnd, DayEndBlock, dayEndItems, DayEndNotice } from "@/ui/features/frontier/day-end/day-end";
 import { type ComponentProps, useEffect, useRef, useState } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
@@ -96,7 +96,7 @@ import { DayPill, DayRing } from "@/ui/features/frontier/hud/day-pill";
 import { DailyQuestChip } from "@/ui/features/frontier/hud/daily-quest-chip";
 import type { MapLayers } from "@/ui/features/frontier/hud/map-layers";
 import { RealmPanel, type RealmBuildingItem } from "@/ui/features/frontier/hud/realm-panel";
-import { FrontierPlaceSwitch } from "@/ui/features/frontier/hud/surface-deep-switch";
+import { FrontierPlaceSwitch, PlaceMenu } from "@/ui/features/frontier/hud/surface-deep-switch";
 import { type WithdrawStep, WithdrawSheet } from "@/ui/features/frontier/value/withdraw-sheet";
 import { staminaShortfall } from "@/ui/design-system/kit/reasons";
 
@@ -1143,6 +1143,8 @@ export const HudLab = () => {
   const { state = "idle" } = useParams();
   const lab: LabState = STATES[state as keyof typeof STATES] ?? STATES.idle;
   const desktop = useLayout() === "desktop";
+  const tablet = useTablet() && !desktop;
+  const TopBarView = tablet ? TabletTopBarView : PhoneTopBarView;
   // The game wears Frontier's age (world.tsx's useHudMode); the lab draws it the same.
   useHudMode("frontier");
   useLabNotice(lab.notice);
@@ -1177,27 +1179,27 @@ export const HudLab = () => {
         desktop={desktop}
         lab={lab}
         strip={
-          <PhoneTopBarView
+          <TopBarView
             realm={{
               icon: homeIcon("realm", lab.realm?.level ?? 1),
               label: LAB_REALM_NAME,
+              level: lab.realm?.level ?? 1,
               aspect: LAB_ASPECT,
               orderId: LAB_ORDER_ID,
             }}
-            stores={[...lab.stores]}
+            stocks={{ stores: [...lab.stores], fragments: LAB_FRAGMENTS, onShop: noop }}
             clock={<DayRing clock={lab.clock} />}
-            placeSwitch={
-              <FrontierPlaceSwitch
+            placeMenu={
+              <PlaceMenu
                 isMapView={lab.realmView === undefined}
                 layers={LAB_MAP_LAYERS}
-                variant="phone"
                 onGoRealm={noop}
                 onGoSurface={noop}
+                realm={{ name: LAB_REALM_NAME, mark: homeIcon("realm", lab.realm?.level ?? 1) }}
               />
             }
-            quest={<LabDailyQuest layout="phone" />}
-            fragments={LAB_FRAGMENTS}
-            onShop={noop}
+            quest={<LabDailyQuest look="orb" />}
+            places={tablet && !lab.visiting ? <TabletPlaces {...labPlaces(lab)} /> : undefined}
             storeCard={lab.storeCard && <StoreCard line={lab.storeCard} onSpend={noop} onBuild={noop} />}
             onOpenRealm={noop}
           />
@@ -1276,27 +1278,7 @@ export const HudLab = () => {
           </>
         }
         dock={(desktop || !lab.order) && <LabDock lab={lab} />}
-        nav={
-          !lab.visiting && (
-            <PhoneWorldActions
-              surface={
-                lab.chat && !desktop
-                  ? "chat"
-                  : lab.menu
-                    ? "menu"
-                    : lab.season
-                      ? "season"
-                      : lab.research
-                        ? "research"
-                        : null
-              }
-              onSurface={noop}
-              researchReady={!lab.offline}
-              events={lab.offline ? 0 : 2}
-              unread={lab.offline ? 0 : 3}
-            />
-          )
-        }
+        nav={!lab.visiting && !tablet && <PhoneTabBar isMapView={lab.realmView === undefined} {...labPlaces(lab)} />}
       >
         {lab.deploy && <LabDeploySheet deploy={lab.deploy} stores={lab.stores} open={labOpenSlots(lab)} />}
         {lab.results && (
@@ -1623,10 +1605,10 @@ const LabResearch = () => {
  * The HUD's slots in the lab as the game composes them: on a phone today's bands; on a desktop the HUD every mode
  * shares (FrontierDesktop) on the lab's game, its top bar, rail and minimap the game's own, Frontier's panels the lab's.
  */
-const LabDailyQuest = ({ layout = "desktop" }: { layout?: "desktop" | "phone" }) => {
+const LabDailyQuest = ({ look = "chip" }: { look?: "chip" | "orb" }) => {
   const { setup } = useGame();
   const realm = setup.store.get("Structure", { game_id: 1, entity_id: 7 });
-  return realm ? <DailyQuestChip realm={realm} layout={layout} /> : null;
+  return realm ? <DailyQuestChip realm={realm} look={look} /> : null;
 };
 
 const labQuestFacts = () => [labQuestRulesFact()];
@@ -1735,6 +1717,14 @@ const LAB_REALM_BUILDINGS: readonly RealmBuildingItem[] = [
 ];
 
 /** The place a lab state has open, as the desktop's round places light it. */
+const labPlaces = (lab: LabState) => ({
+  surface: lab.chat ? ("chat" as const) : lab.menu ? ("menu" as const) : labSurface(lab),
+  onSurface: noop,
+  researchReady: !lab.offline,
+  feedUnread: lab.offline ? 0 : 2,
+  chatUnread: lab.offline ? 0 : 3,
+});
+
 const labSurface = (lab: LabState): HudSurface | null =>
   lab.season
     ? "season"

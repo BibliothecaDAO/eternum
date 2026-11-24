@@ -1972,6 +1972,7 @@ const PLACE_TABS = { Map: ["World", layerName(0)], Realm: ["Realm"] };
  * and in the realm alike: the place is then chosen from that list.
  */
 function pressPlace(browser, place) {
+  openThePlaceMenu(browser);
   const presses = [
     () => browser.click(place),
     ...PLACE_TABS[place].flatMap((name) => [() => browser.clickTab(name), () => browser.click(name)]),
@@ -1986,6 +1987,11 @@ function pressPlace(browser, place) {
   }
   browser.clickTab(PLACE_TABS[place].at(-1));
 }
+
+const openThePlaceMenu = (browser) =>
+  browser.read(
+    `(() => { const pill = document.querySelector('[data-place-pill][aria-expanded="false"]'); pill?.click(); return Boolean(pill); })()`,
+  );
 
 /** Where the HUD's standing parts sit on the map at rest. */
 async function readTheHudLayout({ browser }) {
@@ -3526,6 +3532,7 @@ const LAB_LAYERS_STEPS = [
 function chooseLayer(word) {
   return async ({ browser }) => {
     const before = browser.read(MAP_CAMERA);
+    openThePlaceMenu(browser);
     const choices = word === LAYER_NAMES[0] ? null : browser.viewChoices();
     browser.clickTab(word);
     const moved = (camera) => camera !== null && hexesApart(camera, before) > FRAMED_WITHIN_HEXES;
@@ -3549,7 +3556,7 @@ async function cameraAtRest(browser) {
 }
 
 /** What the switch that opens the views says: the view shown. */
-const VIEW_SWITCH_WORD = `JSON.stringify(document.querySelector('[data-surface-deep-switch] [role="tab"][aria-selected="true"]')?.textContent.trim() ?? null)`;
+const VIEW_SWITCH_WORD = `JSON.stringify(document.querySelector('[data-place-pill]')?.dataset.place ?? document.querySelector('[data-surface-deep-switch] [role="tab"][aria-selected="true"]')?.textContent.trim() ?? null)`;
 
 /** The views a lab realm with Ethereal I and II lists, and the region's rows (Frontier's spacing). */
 const LAB_LAYERS = LAYER_NAMES.slice(1, 3);
@@ -6883,6 +6890,8 @@ export const STEP_SETS = {
           if (browser.read(`JSON.stringify(Boolean(document.querySelector('[aria-label="Close"]')))`))
             browser.click(HUD_WORDS.close);
           await sleep(1_500);
+          const shot = extraScreenshot("world");
+          const menuOpened = openThePlaceMenu(browser);
           const worldHud = browser.read(`(() => ({
             places: [...document.querySelectorAll('nav[aria-label="Places"] button')].map((button) => button.getAttribute('aria-label') || button.textContent?.trim()),
             questChip: Boolean(document.querySelector('[data-daily-quest-chip]')),
@@ -6892,9 +6901,10 @@ export const STEP_SETS = {
             aspectChip: Boolean(document.querySelector('[data-aspect-standing-chip]')),
             desktopStores: Boolean(document.querySelector('[aria-label="Stores"]')),
             realmChip: Boolean(document.querySelector('.frontier-realm-chip')),
-            phonePill: Boolean(document.querySelector('.frontier-phone-pill')),
+            placePill: Boolean(document.querySelector('[data-place-pill]')),
           }))()`);
-          return { shot: extraScreenshot("world"), worldHud };
+          if (menuOpened) browser.press("Escape");
+          return { shot, worldHud };
         },
         verify: ({ seen, played }) => {
           const base = inScene("map", "Deep")({ seen, played });
@@ -6918,7 +6928,7 @@ export const STEP_SETS = {
               !h.realmWorld.includes("World") &&
               h.armies > 0 &&
               h.aspectChip
-            : h.phonePill &&
+            : h.placePill &&
               h.questChip &&
               h.depthSwitch &&
               h.realmWorld.includes("Realm") &&
@@ -6927,10 +6937,8 @@ export const STEP_SETS = {
               h.realmWorld.includes("Hollow") &&
               h.realmWorld.includes("Deep") &&
               h.armies > 0 &&
-              !h.places.includes("Realm") &&
-              h.places.includes("Season") &&
-              h.places.includes("Menu") &&
-              h.places.length === 2;
+              h.places.join() ===
+                ["World", HUD_WORDS.research, HUD_WORDS.season, HUD_WORDS.chat, HUD_WORDS.menu].join();
           return ok
             ? completed(played)
             : failed("World view must render the full approved HUD parts for this viewport", played);
@@ -6975,7 +6983,7 @@ export const STEP_SETS = {
         name: "realm-screen",
         settleMs: 2_000,
         play: async ({ browser, extraScreenshot }) => {
-          browser.clickTab("Realm");
+          pressPlace(browser, "Realm");
           await sleep(1_500);
           const idleUnobstructed = onADesktop()
             ? true
@@ -6983,7 +6991,7 @@ export const STEP_SETS = {
           const shot = extraScreenshot("realm");
           if (!onADesktop()) {
             browser.read(
-              `(() => { const chip = document.querySelector('.frontier-phone-realm-chip'); if (!chip) return false; chip.click(); return true; })()`,
+              `(() => { const chip = document.querySelector('.frontier-phone-emblem'); if (!chip) return false; chip.click(); return true; })()`,
             );
           }
           const buildings = await readUntil(
@@ -7001,7 +7009,7 @@ export const STEP_SETS = {
           const hasRealmPanel = browser.read(`Boolean(document.querySelector('section[aria-label="Realm"]'))`);
           if (!onADesktop()) {
             browser.read(
-              `(() => { const chip = document.querySelector('.frontier-phone-realm-chip'); if (!chip) return false; chip.click(); return true; })()`,
+              `(() => { const chip = document.querySelector('.frontier-phone-emblem'); if (!chip) return false; chip.click(); return true; })()`,
             );
             await readUntil(
               () => browser.read(`!document.querySelector('section[aria-label="Realm"]')`),
@@ -7088,7 +7096,7 @@ export const STEP_SETS = {
           );
           if (!onADesktop()) {
             browser.read(
-              `(() => { const chip = document.querySelector('.frontier-phone-realm-chip'); if (!chip) return false; chip.click(); return true; })()`,
+              `(() => { const chip = document.querySelector('.frontier-phone-emblem'); if (!chip) return false; chip.click(); return true; })()`,
             );
           }
           const hasDeploy = await readUntil(

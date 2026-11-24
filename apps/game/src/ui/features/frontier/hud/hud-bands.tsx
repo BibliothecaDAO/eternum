@@ -72,7 +72,7 @@ const SidewaysBands = ({ strip, banner, page, notices, action, dock, nav, childr
       className="pointer-events-none fixed inset-x-0 top-0 bottom-hud-keyboard z-30 flex gap-1.5 font-sans [&:has([data-kit-sheet])_[data-under-sheet]]:hidden [&:has([data-kit-sheet],[data-page])_[data-opening-notice]]:hidden [&:has([data-kit-sheet],[data-page])_[data-top-row]]:hidden"
       style={{ ...SAFE_AREA, "--hud-sheet-top": `${sheetTop}px` } as CSSProperties}
     >
-      <div {...HUD_COLUMN_MARK} className="flex">
+      <div {...HUD_COLUMN_MARK} data-side-rail className="flex">
         {nav}
       </div>
       <div className="relative min-w-0 flex-1" />

@@ -411,6 +411,8 @@ export const HUD_MAP_LEAST_SHARE = 40;
 
 export const DESKTOP_MIN_PX = 1024;
 
+export const TABLET_MIN_PX = 768;
+
 export const SCREENS = {
   /** Tailwind's own value, restated so `lg:` and the JS layout read one number. */
   lg: `${DESKTOP_MIN_PX}px`,

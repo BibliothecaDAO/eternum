@@ -213,23 +213,24 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
-.frontier-quest-popover {
-  --quest-edge: theme(spacing.4);
-  --quest-width: min(theme(spacing.hud-frontier-page), calc(100vw - var(--quest-edge) * 2));
+.frontier-popover {
+  --popover-edge: theme(spacing.4);
+  --popover-width: min(theme(spacing.hud-frontier-page), calc(100vw - var(--popover-edge) * 2));
   position: fixed;
-  top: var(--quest-top, 0px);
+  top: var(--popover-top, 0px);
   left: clamp(
-    var(--quest-edge),
-    calc(var(--quest-x, 50vw) - var(--quest-width) / 2),
-    calc(100vw - var(--quest-width) - var(--quest-edge))
+    var(--popover-edge),
+    calc(var(--popover-x, 50vw) - var(--popover-width) / 2),
+    calc(100vw - var(--popover-width) - var(--popover-edge))
   );
   z-index: theme(zIndex.hud-popover);
-  width: var(--quest-width);
-  max-height: calc(100dvh - var(--quest-top, 0px) - var(--quest-edge));
+  width: var(--popover-width);
+  max-height: calc(100dvh - var(--popover-top, 0px) - var(--popover-edge));
   overflow-y: auto;
+  outline: none;
 }
-.frontier-quest-popover[data-layout="phone"] {
-  --quest-edge: theme(spacing.2);
+.frontier-popover[data-layout="phone"] {
+  --popover-edge: theme(spacing.2);
 }
 
 .frontier-stores-wrap {

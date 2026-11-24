@@ -8,10 +8,13 @@ import { OrderLine, resolvedOrder } from "@/ui/design-system/kit/order-emblem";
 import { aspectName, type AspectId } from "@bibliothecadao/types";
 import type { CSSProperties } from "react";
 
-const MEDALLION_ICON_SIZE: Record<"sm" | "md" | "lg", number> = {
+type MedallionSize = "sm" | "md" | "lg" | "emblem";
+
+const MEDALLION_ICON_SIZE: Record<MedallionSize, number> = {
   sm: 19,
   md: 28,
   lg: 30,
+  emblem: 28,
 };
 
 export const AspectMedallion = ({
@@ -27,7 +30,7 @@ export const AspectMedallion = ({
   fallbackAlt?: string;
   tip?: string;
   decorative?: boolean;
-  size?: "sm" | "md" | "lg";
+  size?: MedallionSize;
 }) => {
   const iconSize = MEDALLION_ICON_SIZE[size];
   const style = aspect !== undefined ? (aspectVariables(aspect) as CSSProperties) : undefined;
@@ -49,6 +52,11 @@ export const AspectMedallion = ({
   );
 };
 
+const realmLabel = (name: string, orderId: number | undefined, aspect: AspectId | undefined): string =>
+  [name, resolvedOrder(orderId)?.fullOrderName, aspect !== undefined ? aspectName(aspect) : undefined]
+    .filter(Boolean)
+    .join(", ");
+
 export const RealmHeaderChip = ({
   name,
   level = 0,
@@ -57,7 +65,6 @@ export const RealmHeaderChip = ({
   aspect,
   orderId,
   expanded,
-  variant = "desktop",
   onPress,
 }: {
   name: string;
@@ -67,30 +74,45 @@ export const RealmHeaderChip = ({
   aspect?: AspectId;
   orderId?: number;
   expanded?: boolean;
-  variant?: "desktop" | "phone";
   onPress?: () => void;
-}) => {
-  const order = resolvedOrder(orderId);
-  const parts = [name, order?.fullOrderName, aspect !== undefined ? aspectName(aspect) : undefined].filter(Boolean);
-  const phone = variant === "phone";
-  const prefix = phone ? "frontier-phone-realm-chip" : "frontier-realm-chip";
-  return (
-    <button
-      type="button"
-      className={phone ? `${prefix} pointer-events-auto` : prefix}
-      aria-label={parts.join(", ")}
-      aria-expanded={expanded}
-      onClick={onPress}
-    >
-      <AspectMedallion
-        aspect={aspect}
-        fallbackIcon={fallbackIcon ?? homeIcon(kind, level)}
-        size={phone ? "sm" : "lg"}
-      />
-      <span className={`${prefix}__text`}>
-        <span className={`${prefix}__name`}>{name}</span>
-        <OrderLine orderId={orderId} size={phone ? 12 : 14} className={`${prefix}__order`} />
-      </span>
-    </button>
-  );
-};
+}) => (
+  <button
+    type="button"
+    className="frontier-realm-chip"
+    aria-label={realmLabel(name, orderId, aspect)}
+    aria-expanded={expanded}
+    onClick={onPress}
+  >
+    <AspectMedallion aspect={aspect} fallbackIcon={fallbackIcon ?? homeIcon(kind, level)} size="lg" />
+    <span className="frontier-realm-chip__text">
+      <span className="frontier-realm-chip__name">{name}</span>
+      <OrderLine orderId={orderId} size={14} className="frontier-realm-chip__order" />
+    </span>
+  </button>
+);
+
+export const RealmEmblem = ({
+  name,
+  fallbackIcon,
+  aspect,
+  orderId,
+  expanded,
+  onPress,
+}: {
+  name: string;
+  fallbackIcon: IconMeaning;
+  aspect?: AspectId;
+  orderId?: number;
+  expanded?: boolean;
+  onPress?: () => void;
+}) => (
+  <button
+    type="button"
+    className="frontier-phone-emblem"
+    aria-label={realmLabel(name, orderId, aspect)}
+    aria-expanded={expanded}
+    onClick={onPress}
+  >
+    <AspectMedallion aspect={aspect} fallbackIcon={fallbackIcon} size="emblem" />
+  </button>
+);

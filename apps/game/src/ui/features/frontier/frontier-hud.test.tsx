@@ -149,8 +149,10 @@ it("keeps one chat connection and its unread count from desktop to phone and bac
     expect(chatReading()).toEqual({ connected: true, unread: "3" });
 
     await act(async () => viewport.set(390));
-    expect(chatReading()).toEqual({ connected: true, unread: "" });
-    expect(host.querySelector('[aria-label="Unread chat messages: 3"][data-dot]')).not.toBeNull();
+    expect(chatReading()).toEqual({ connected: true, unread: "3" });
+    expect(
+      host.querySelector('nav[aria-label="Places"] button[aria-label="Chat"] .frontier-tab__badge')?.textContent,
+    ).toBe("3");
 
     await act(async () => viewport.set(1440));
     expect(chatReading()).toEqual({ connected: true, unread: "3" });
@@ -440,38 +442,125 @@ it.each([390, 1440])("opens and closes the Wheat store from its control at %i px
   expect(host.querySelector('section[aria-label="Wheat"]')).toBeNull();
 });
 
-it("gives a phone one inline five-place switch with no duplicate bottom switch, keeps Realm idle unobstructed, and puts a page away", async () => {
+it("gives a phone one place menu under its pill, whose places switch the scene and put a page away", async () => {
   viewport.set(390);
   const route = window.location.pathname + window.location.search;
   window.history.replaceState(null, "", "/g/0x1ab9/1/map?col=1&row=1");
   try {
     await renderHud();
-    expect([...host.querySelectorAll('[aria-label="Map view"] [role="tab"]')].map((tab) => tab.textContent)).toEqual([
-      "Realm",
-      "Surface",
-      "Veil",
-      "Hollow",
-      "Deep",
-    ]);
-    expect(host.querySelector('nav[aria-label="Places"] [data-switch]')).toBeNull();
-    const placeTab = (word: string) =>
-      host.querySelector<HTMLButtonElement>(`[aria-label="Map view"] [role="tab"][aria-label="${word}"]`)!;
-    expect(placeTab("Realm")).not.toBeNull();
-    await act(async () => placeTab("Realm").click());
+    const pill = () => host.querySelector<HTMLButtonElement>("[data-place-pill]")!;
+    const placeTab = async (word: string) => {
+      if (pill().getAttribute("aria-expanded") === "false") await act(async () => pill().click());
+      return document.querySelector<HTMLButtonElement>(
+        `[data-surface-deep-switch] [role="tab"][aria-label="${word}"]`,
+      )!;
+    };
+    expect(pill().dataset.place).toBe("Surface");
+    expect(document.querySelector("[data-surface-deep-switch]")).toBeNull();
+    await act(async () => pill().click());
+    expect(
+      [...document.querySelectorAll('[data-surface-deep-switch] [role="tab"]')].map((tab) =>
+        tab.getAttribute("aria-label"),
+      ),
+    ).toEqual(["Realm", "Surface", "Veil", "Hollow", "Deep"]);
+    const realm = await placeTab("Realm");
+    await act(async () => realm.click());
     expect(window.location.pathname).toMatch(/\/hex$/);
+    expect(document.querySelector("[data-surface-deep-switch]")).toBeNull();
+    expect(pill().dataset.place).toBe("Realm");
     expect(host.querySelector('section[aria-label="Realm"]')).toBeNull();
-    expect(placeTab("Realm").getAttribute("aria-selected")).toBe("true");
-    const realmChip = host.querySelector<HTMLButtonElement>(".frontier-phone-realm-chip")!;
-    await act(async () => realmChip.click());
+    await act(async () => host.querySelector<HTMLButtonElement>(".frontier-phone-emblem")!.click());
     expect(host.querySelector('section[aria-label="Realm"]')).not.toBeNull();
-    await act(async () => placeTab("Surface").click());
+    const surface = await placeTab("Surface");
+    await act(async () => surface.click());
     expect(window.location.pathname).toMatch(/\/map$/);
     expect(host.querySelector('section[aria-label="Realm"]')).toBeNull();
     await fromMenu("Feed");
     expect(surfaceNamed("Feed")).not.toBeNull();
-    await act(async () => placeTab("Realm").click());
+    const realmAgain = await placeTab("Realm");
+    await act(async () => realmAgain.click());
     expect(window.location.pathname).toMatch(/\/hex$/);
     expect(surfaceNamed("Feed")).toBeNull();
+  } finally {
+    window.history.replaceState(null, "", route);
+  }
+});
+
+it("lays a phone's five places on its tab bar, the scene's own first and lit while no page stands", async () => {
+  viewport.set(390);
+  const route = window.location.pathname + window.location.search;
+  window.history.replaceState(null, "", "/g/0x1ab9/1/map?col=1&row=1");
+  try {
+    await renderHud();
+    const tabs = () =>
+      [...host.querySelectorAll<HTMLButtonElement>('nav[aria-label="Places"] button')].map((button) => [
+        button.getAttribute("aria-label"),
+        button.getAttribute("aria-current"),
+      ]);
+    expect(tabs()).toEqual([
+      ["World", "page"],
+      ["Research", null],
+      ["Season", null],
+      ["Chat", null],
+      ["Menu", null],
+    ]);
+    await pressPlace("Research");
+    expect(surfaceNamed("Research")).not.toBeNull();
+    expect(tabs()[1]).toEqual(["Research", "page"]);
+    expect(tabs()[0]).toEqual(["World", null]);
+    await pressPlace("World");
+    expect(surfaceNamed("Research")).toBeNull();
+    await fromMenu("Today");
+    expect(tabs()[4]).toEqual(["Menu", "page"]);
+    await act(async () => {
+      window.history.replaceState(null, "", "/g/0x1ab9/1/hex?col=1&row=1");
+      window.dispatchEvent(new Event("urlChanged"));
+    });
+    expect(tabs()[0]).toEqual(["Realm", "page"]);
+  } finally {
+    window.history.replaceState(null, "", route);
+  }
+});
+
+it("opens the Build sheet on the plot the board lights from a phone's gold Build, in the realm only", async () => {
+  viewport.set(390);
+  const route = window.location.pathname + window.location.search;
+  const { selectedBuildingHex } = useUIStore.getState();
+  window.history.replaceState(null, "", "/g/0x1ab9/1/map?col=1&row=1");
+  try {
+    await renderHud();
+    expect(host.querySelector("[data-build-button]")).toBeNull();
+    await act(async () => {
+      window.history.replaceState(null, "", "/g/0x1ab9/1/hex?col=1&row=1");
+      window.dispatchEvent(new Event("urlChanged"));
+    });
+    const build = host.querySelector<HTMLButtonElement>("[data-build-button]")!;
+    expect(build.textContent).toBe("Build");
+    await act(async () => build.click());
+    expect(surfaceNamed("Build")).not.toBeNull();
+    expect(useUIStore.getState().selectedBuildingHex?.structureId).toBe(7);
+  } finally {
+    window.history.replaceState(null, "", route);
+    await act(async () => useUIStore.setState({ selectedBuildingHex }));
+  }
+});
+
+it("closes a popover first and the page under it next, one Escape each", async () => {
+  viewport.set(390);
+  const route = window.location.pathname + window.location.search;
+  window.history.replaceState(null, "", "/g/0x1ab9/1/map?col=1&row=1");
+  try {
+    await renderHud();
+    const popovers = () => document.querySelectorAll("[data-hud-popover]").length;
+    await pressPlace("Season");
+    expect(surfaceNamed("Season")).not.toBeNull();
+    await act(async () => host.querySelector<HTMLButtonElement>("[data-place-pill]")!.click());
+    expect([popovers(), surfaceNamed("Season") !== null]).toEqual([1, true]);
+    const layer = document.querySelector<HTMLElement>("[data-hud-popover]")!;
+    await act(async () => layer.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })));
+    expect([popovers(), surfaceNamed("Season") !== null]).toEqual([0, true]);
+    await act(async () => window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" })));
+    expect(surfaceNamed("Season")).toBeNull();
   } finally {
     window.history.replaceState(null, "", route);
   }
@@ -592,7 +681,7 @@ it("routes the phone Realm panel through the one-panel state so it replaces Toda
   window.history.replaceState(null, "", "/g/0x1ab9/1/map?col=1&row=1");
   try {
     await renderHud();
-    const realmChip = () => host.querySelector<HTMLButtonElement>(".frontier-phone-realm-chip")!;
+    const realmChip = () => host.querySelector<HTMLButtonElement>(".frontier-phone-emblem")!;
     expect(realmChip().getAttribute("aria-expanded")).toBe("false");
     await act(async () => host.querySelector<HTMLButtonElement>('button[aria-label="Today"]')!.click());
     expect(surfaceNamed("Today")).not.toBeNull();

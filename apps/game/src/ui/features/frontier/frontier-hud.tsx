@@ -16,7 +16,7 @@ import { SettingsPanel } from "@/ui/modules/settings/settings";
 import { configManager, resolveUseSimpleCost } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { BUILDINGS_CENTER, catalogAspectId, formatRate, rankName, ResourcesIds } from "@bibliothecadao/types";
-import { useLayout } from "@/shell/frame/layout";
+import { useLayout, useTablet } from "@/shell/frame/layout";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { type ComponentProps, type ComponentType, type ReactNode, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -45,10 +45,10 @@ import { useResearchTree } from "./research/research-facts";
 import { canResearchNow } from "./research/research-tree";
 import { ChatPage } from "./hud/chat-page";
 import { type DockArmy, useDockArmies } from "./hud/dock-armies";
-import { PhoneWorldActions, type HudSurface } from "./hud/frontier-nav";
+import { PhoneTabBar, TabletPlaces, type HudSurface } from "./hud/frontier-nav";
 import { selectLayer, useMapLayers } from "./hud/map-layers";
-import { PhoneTopBar } from "./hud/phone-top-bar";
-import { FrontierPlaceSwitch } from "./hud/surface-deep-switch";
+import { FrontierTopBar } from "./hud/phone-top-bar";
+import { FrontierPlaceSwitch, PlaceMenu } from "./hud/surface-deep-switch";
 import { useOnePanel, useOrderSettledReturnsToTheArmy } from "./hud/one-panel";
 import { FrontierDayClock } from "./hud/day-pill";
 import { DayEndBlock, DayEndNotice, useDayEnd } from "./day-end/day-end";
@@ -77,6 +77,7 @@ import { CARD_STORE_KINDS, type CardStore, FrontierStoreCard, isCardStore } from
 import { castleLabor } from "./production/store-makers";
 import { FrontierResearch } from "./research/frontier-research";
 
+import { BuildButton } from "./build/build-button";
 import { BuildingsInFlight } from "./build/build-sheet";
 import { readBuildOptions } from "./build/build-options";
 import { buildingIcon, buildingName } from "./build/building-names";
@@ -147,6 +148,7 @@ const FrontierHudBody = ({
     },
   });
   const desktop = useLayout() === "desktop";
+  const tablet = useTablet() && !desktop;
   const { surface, openSurface: setSurface, showsCard } = useOnePanel(card?.key ?? null, !desktop);
   useReturnToShop(() => setSurface("shop"));
   const research = useResearchTree(realm);
@@ -180,7 +182,9 @@ const FrontierHudBody = ({
   });
   const seasonRank = useSeasonRank();
   const aspectsOpen = usePartShown("aspects");
-  const fragments = useFragmentsChip();
+  const fragmentsHeld = useFragmentsHeld();
+  const fragments = usePartShown("fragments-chip") ? fragmentsHeld : null;
+  const ordersAllowed = useUIStore(canIssueOrders);
   const layers = useMapLayers(rules, shown, visit ? null : realm);
   const [openStore, setOpenStore] = useState<CardStore | null>(null);
   const [realmOpen, setRealmOpen] = useState(() => !isMapView);
@@ -223,24 +227,22 @@ const FrontierHudBody = ({
       }
     : undefined;
 
-  const placeSwitch = (
-    <FrontierPlaceSwitch
-      isMapView={isMapView}
-      canOpenRealm={Boolean(shown)}
-      layers={layers}
-      variant={desktop ? "desktop" : "phone"}
-      onGoRealm={() => {
-        if (isMapView) switchView(true);
-        else close();
-      }}
-      onGoSurface={() => {
-        if (!isMapView) switchView(false);
-        else if (layers) selectLayer(layers, 0, close);
-        else close();
-      }}
-      onSwitch={close}
-    />
-  );
+  const placeChoices = {
+    isMapView,
+    canOpenRealm: Boolean(shown),
+    layers,
+    onGoRealm: () => {
+      if (isMapView) switchView(true);
+      else close();
+    },
+    onGoSurface: () => {
+      if (!isMapView) switchView(false);
+      else if (layers) selectLayer(layers, 0, close);
+      else close();
+    },
+    onSwitch: close,
+  };
+  const placeSwitch = <FrontierPlaceSwitch {...placeChoices} />;
   const page =
     surface === "research" && realm ? (
       <FrontierResearch key={researchPick} realm={realm} pick={researchPick} onClose={close} />
@@ -268,18 +270,36 @@ const FrontierHudBody = ({
       />
     ) : undefined;
   const realmVisible = Boolean(shown) && (desktop ? realmOpen : surface === "realm");
-  const phoneStrip = (
-    <PhoneTopBar
+  const placesState = {
+    surface,
+    onSurface: setSurface,
+    researchReady: own ? canResearchNow(research?.nodes) : undefined,
+    feedUnread,
+    chatUnread: chat.unread,
+  };
+  const topBar = (
+    <FrontierTopBar
+      form={tablet ? "tablet" : "phone"}
       rules={rules}
       realm={shown}
       realmName={shownName}
       aspect={shownAspect}
-      own={own}
       stores={headerStores}
       realmOpen={realmVisible}
-      placeSwitch={placeSwitch}
+      placeMenu={
+        <PlaceMenu
+          {...placeChoices}
+          realm={
+            shown && shownName
+              ? { name: shownName, mark: homeIcon(homeKind(shown.metadata.has_wonder), shown.base.level) }
+              : undefined
+          }
+        />
+      }
+      quest={own ? <DailyQuestChip realm={own} look="orb" /> : undefined}
+      places={tablet ? <TabletPlaces {...placesState} /> : undefined}
       spectatorChip={spectating ? <IdentityChip compact /> : undefined}
-      fragments={own ? fragments : null}
+      fragments={own ? fragmentsHeld : null}
       onShop={own ? () => setSurface("shop") : undefined}
       storeCards={storeCards}
       onOpenRealm={() => setSurface(surface === "realm" ? null : "realm")}
@@ -369,18 +389,6 @@ const FrontierHudBody = ({
     </>
   );
 
-  const phoneActions = (
-    <PhoneWorldActions
-      aspect={shownAspect}
-      surface={surface}
-      onSurface={setSurface}
-      researchReady={own ? canResearchNow(research?.nodes) : false}
-      events={feedUnread}
-      unread={chat.unread}
-    />
-  );
-
-  const phoneDockActions = surface === null || surface === "realm";
   return desktop ? (
     <FrontierDesktop
       identity={
@@ -443,7 +451,7 @@ const FrontierHudBody = ({
     </FrontierDesktop>
   ) : (
     <HudBands
-      strip={phoneStrip}
+      strip={topBar}
       banner={<OfflineNotice />}
       page={page}
       notices={notices}
@@ -453,11 +461,11 @@ const FrontierHudBody = ({
           {realmVisible && realmPanel}
           <div className="frontier-phone-foot">
             <div className="min-w-0 flex-1">{armyDock}</div>
-            {phoneDockActions && phoneActions}
+            {own && !isMapView && ordersAllowed && <BuildButton realm={own} />}
           </div>
         </div>
       }
-      nav={!phoneDockActions ? <div className="flex justify-end">{phoneActions}</div> : null}
+      nav={tablet ? null : <PhoneTabBar isMapView={isMapView} {...placesState} />}
     >
       {sheets}
     </HudBands>
@@ -718,10 +726,4 @@ const FrontierRealmPanel = ({
       })}
     />
   );
-};
-
-const useFragmentsChip = (): number | null => {
-  const shown = usePartShown("fragments-chip");
-  const fragments = useFragmentsHeld();
-  return shown ? fragments : null;
 };
