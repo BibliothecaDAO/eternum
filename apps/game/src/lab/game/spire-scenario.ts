@@ -26,7 +26,6 @@ const GRASSLAND: LabGround = () => BiomeType.Grassland;
 const HIGH_GROUND: LabGround = ({ col, row }) =>
   [BiomeType.Snow, BiomeType.Bare, BiomeType.Tundra][(((col + 2 * row) % 3) + 3) % 3];
 /** Beach sand, where palms grow: the owner's desert realm with its palms (28 October 2026, "shadows are weird ??"). */
-export const SANDS: LabGround = () => BiomeType.Beach;
 
 /**
  * The fixture's rules as Frontier plays them: hour-long day units, so a day outlasts a session; Frontier's own commands

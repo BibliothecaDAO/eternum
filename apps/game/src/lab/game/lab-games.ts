@@ -21,7 +21,6 @@ import {
   afterBattleScenario,
   fightLostScenario,
   fightScenario,
-  lowStaminaScenario,
   pointSpentScenario,
 } from "./after-battle-scenario";
 import { campScenario } from "./camp-scenario";
@@ -41,7 +40,7 @@ import { shopScenario } from "./shop-scenario";
 import { ruinFarScenario, ruinFightScenario } from "./ruin-fight-scenario";
 import { seasonOpensScenario } from "./season-opens-scenario";
 import { settleScenario } from "./settle-scenario";
-import { highGroundScenario, discoveredSpireScenario, SANDS, spireScenario } from "./spire-scenario";
+import { highGroundScenario, discoveredSpireScenario, spireScenario } from "./spire-scenario";
 import { upkeepScenario } from "./upkeep-scenario";
 import { visitScenario } from "./visit-scenario";
 
@@ -84,7 +83,6 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   "supply-post": supplyPostScenario,
   "after-battle": afterBattleScenario,
   "point-spent": pointSpentScenario,
-  "low-stamina": lowStaminaScenario,
   "ruin-fight": ruinFightScenario,
   "ruin-far": ruinFarScenario,
   camp: campScenario,
@@ -106,7 +104,6 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   "aspect-settle-invited": aspectSettleInvitedScenario,
   explore: exploreScenario,
   "painted-buildings": () => paintedBuildingsScenario(),
-  "painted-buildings-sands": () => paintedBuildingsScenario(SANDS),
   visit: visitScenario,
   "far-place": farPlaceScenario,
   "day-turn": dayTurnScenario("live"),

@@ -103,8 +103,8 @@ Hyperstructure still held, playing then watching);
 `pnpm --dir apps/game capture:hud-lab --hud-layout --base-url <url> --out <dir>` holds it and Frontier's states at 1024,
 1280, 1440 and 1920 px (every part whole on the page, none over another, none with content past its edge, every control
 reachable, at most seven parts a region); `/lab/kit/hud/realm-claim` is the owner's Kingdom at 27/42 with 1,000 labor to
-claim, the realm card's widest row. `/lab/kit/guidance` the guidance (Next up's route, Events rows with outcomes).
-`/lab/kit/build-order` the Build order panel: Next up for a newcomer (no build steps), and the panel on the game's
+claim, the realm card's widest row. `/lab/kit/guidance` the Events rows with their outcomes, beside the player's pill.
+`/lab/kit/build-order` the Build order panel on the game's
 default build order (each row the game's own rule on a realm's case: population short or not, an army short of full, a
 full army). `/lab/kit/progression` Frontier's Research tree and the army's panel (the owner's picks), the game's own
 panels on the Frontier preset's numbers, on the owner's realm or one some days in (`?realm=mid`); `?part=research|army`
