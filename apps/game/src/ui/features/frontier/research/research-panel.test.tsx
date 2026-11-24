@@ -404,7 +404,7 @@ it("keeps cards free of inline Upgrade buttons and routes upgrading through the 
     root.render(
       <ResearchPanel
         nodes={laborShort}
-        picked={null}
+        picked="row-6"
         onPick={vi.fn()}
         sending={new Set()}
         fixFor={() => undefined}
@@ -414,10 +414,8 @@ it("keeps cards free of inline Upgrade buttons and routes upgrading through the 
       />,
     ),
   );
-  const shortPill = host.querySelector("[data-node='row-6'] [data-phone-pill]")!;
-  expect(shortPill.querySelector("[data-icon='labor']")).not.toBeNull();
-  expect(shortPill.querySelector("[data-icon='essence']")).toBeNull();
-  expect(shortPill.textContent).toBe("1K");
+  expect(host.querySelector("[data-node='row-6'] [data-research-effect-short]")?.textContent).toBe("2 → 3 Oaths");
+  expect(host.querySelector("[data-lab='node-choice'] [data-lock-reason]")?.textContent).toBe("Needs 1,000 Labor");
 });
 
 it("renders the 3-track Era tree with measured SVG prerequisite links on desktop and phone", () => {

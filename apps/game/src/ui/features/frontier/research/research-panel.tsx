@@ -320,15 +320,6 @@ const TreeNodeCard = ({ node, picked, onPick }: { node: TreeNode; picked: boolea
             {badge.text}
           </span>
         </div>
-        <div className="research-node__phone-pill" data-phone-pill data-pill-tone={badge.tone} aria-hidden="true">
-          {node.state === "ready" && price.length > 0 ? (
-            <PhonePriceInline price={price} />
-          ) : node.state === "short" && missing && isPrice(missing) ? (
-            <PhonePriceInline price={[missing]} />
-          ) : (
-            <span>{phoneStatusText(node, missing, badge.text)}</span>
-          )}
-        </div>
       </button>
     </div>
   );
@@ -356,26 +347,6 @@ const nodeBadgeLabel = (
     text: RESEARCH_TREE.states[node.state],
     tone: "calm",
   };
-};
-
-const phoneStatusText = (node: TreeNode, missing: Need | undefined, fallback: string): string => {
-  if (node.state === "done" || node.tier > 0) return fallback;
-  if (missing?.kind === "level") return missing.level;
-  if (missing?.kind === "tier") return missing.node;
-  if (missing?.kind === "stands") return RESEARCH_TREE.buildFirst;
-  if (missing?.kind === "store") return missing.level;
-  return fallback;
-};
-
-const PhonePriceInline = ({ price }: { price: readonly Extract<Need, { kind: "essence" | "labor" }>[] }) => {
-  const nonZero = price.filter((need) => need.need > 0);
-  const shown = nonZero.length > 0 ? nonZero : price.slice(0, 1);
-  return (
-    <span className="research-phone-price tabular-nums">
-      {shown.length === 1 && <Icon name={shown[0]!.kind} size={12} />}
-      <span>{shown.map((need) => formatShort(need.need)).join(" / ")}</span>
-    </span>
-  );
 };
 
 const TierPips = ({ node }: { node: TreeNode }) => (

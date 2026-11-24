@@ -2204,7 +2204,6 @@ export const RESEARCH_TREE = {
   currentEra: "Current",
   readyCount: (count: number) => `${RESEARCH_STATES.ready} (${formatExact(count)})`,
   unlocked: "Unlocked",
-  buildFirst: "Build 1st",
   tierBadge: (numeral: string) => `Tier ${numeral}`,
   eraBadge: (numeral: string) => `Era ${numeral}`,
   promptPick: "Select any node to inspect or upgrade",
