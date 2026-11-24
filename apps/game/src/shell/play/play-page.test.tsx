@@ -862,3 +862,52 @@ it("shows Sign-in did not answer with Try again instead of a stuck skeleton when
   await press(page.container, "Try again");
   expect(retry).toHaveBeenCalledTimes(1);
 });
+
+it("hides TodayQuestPanel for a Live lead season when the player has no realm, and shows it once they have one", async () => {
+  const day = { day_index: 3, day_ends_at: Math.floor(Date.now() / 1000) + 3_600 };
+  const quest = { quest_id: 2, progress: 0, target: 1, labor: 1_500 };
+
+  reads.directory = answered({
+    games: [
+      game({
+        ...day,
+        player_state: {
+          ...game({}).player_state!,
+          today_quest: quest,
+        },
+      }),
+    ],
+  });
+  reads.history = answered({ games: [], next: null, failures: [] });
+  const withoutRealm = await mount();
+  expect(withoutRealm.container.querySelector("[data-play-today]")).toBeNull();
+  expect(withoutRealm.container.querySelector(".play-side")).toBeNull();
+  expect(withoutRealm.text()).not.toContain("Today");
+  await cleanup?.();
+
+  reads.directory = answered({
+    games: [game({ ...day, player_state: null })],
+  });
+  const nullPlayerState = await mount();
+  expect(nullPlayerState.container.querySelector("[data-play-today]")).toBeNull();
+  expect(nullPlayerState.container.querySelector(".play-side")).toBeNull();
+  await cleanup?.();
+
+  reads.directory = answered({
+    games: [
+      game({
+        ...ownSeason,
+        ...day,
+        player_state: {
+          ...ownSeason.player_state!,
+          today_quest: quest,
+        },
+      }),
+    ],
+  });
+  const withRealm = await mount();
+  expect(withRealm.container.querySelector("[data-play-today]")?.textContent).toContain(
+    "Clear rifts · 0 of 1 · +1,500 Labor",
+  );
+  expect(withRealm.text()).toContain("Today");
+});

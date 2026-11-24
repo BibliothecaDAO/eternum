@@ -31,7 +31,7 @@ import { PageFrame } from "../frame/page-frame";
 import { type DirectoryGame, gameRefOf } from "../herald";
 import { Loading } from "../loading";
 import { aspectRaceStandings, directoryDay, seasonEnded, seasonPlayerAspect } from "../season";
-import { seasonRealm } from "../season-pick";
+import { hasSeasonRealm } from "../season-pick";
 import { resultsHref } from "../season-tab/results-link";
 import { useShareTally } from "../share/own-shares";
 import { useRequestSignIn } from "../sign-in/connect";
@@ -56,7 +56,7 @@ export const PlayPage = () => {
   const firstVisit = !facts.signedIn && facts.board?.lead?.verb === "play";
   const leadFrontier = facts.board?.lead?.game ?? null;
   const leadRace = leadFrontier?.aspect_race ?? null;
-  const hasActiveRealm = leadFrontier !== null && leadFrontier.status === "Live" && seasonRealm(leadFrontier) !== null;
+  const hasActiveRealm = leadFrontier !== null && leadFrontier.status === "Live" && hasSeasonRealm(leadFrontier);
   const playerAspect = facts.signedIn ? seasonPlayerAspect(leadFrontier) : null;
   return (
     <PageFrame painting={firstVisit ? "dark-plains" : "brooding-plains"} stage={firstVisit} offersInstall>
