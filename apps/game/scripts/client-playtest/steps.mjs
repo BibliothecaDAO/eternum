@@ -6874,7 +6874,7 @@ export const STEP_SETS = {
             depthSwitch: Boolean(document.querySelector('[data-surface-deep-switch]')),
             realmWorld: [...document.querySelectorAll('[aria-label="Map view"] [role="tab"]')].map((tab) => tab.getAttribute('aria-label') || tab.textContent?.trim()),
             armies: document.querySelectorAll('nav[aria-label="Armies"] button').length,
-            desktopStores: document.querySelectorAll('.frontier-realm-card [aria-label="Stores"] [data-store]').length,
+            desktopStores: [...document.querySelectorAll('.frontier-realm-card [aria-label="Stores"] [data-store]')].map((tile) => tile.dataset.store),
             realmCard: Boolean(document.querySelector('.frontier-realm-card')),
             placePill: Boolean(document.querySelector('[data-place-pill]')),
           }))()`);
@@ -6893,7 +6893,7 @@ export const STEP_SETS = {
               h.places.includes("Chat") &&
               !h.places.includes("Relics") &&
               h.questChip &&
-              h.desktopStores === 8 &&
+              everyStock(h.desktopStores) &&
               h.depthSwitch &&
               h.realmWorld.includes("Realm") &&
               h.realmWorld.includes("Surface") &&
@@ -6975,7 +6975,7 @@ export const STEP_SETS = {
             PLAYABLE_WAIT_MS,
           );
           const realmHud = browser.read(`(() => ({
-            stocks: document.querySelectorAll('.frontier-realm-card [aria-label="Stores"] [data-store]').length,
+            stocks: [...document.querySelectorAll('.frontier-realm-card [aria-label="Stores"] [data-store]')].map((tile) => tile.dataset.store),
             hasCastleHead: Boolean(document.querySelector('section[aria-label="Realm"] [data-realm-castle]')),
             hasDepthSwitch: Boolean(document.querySelector('[data-surface-deep-switch]')),
             hasDeploy: Boolean(document.querySelector('nav[aria-label="Armies"] button[aria-label="Deploy"]')),
@@ -7006,7 +7006,7 @@ export const STEP_SETS = {
           played.realmHud.hasDeploy &&
           played.buildings >= 3 &&
           played.realmHud.hasCastleHead &&
-          played.realmHud.stocks === 8
+          everyStock(played.realmHud.stocks)
             ? completed(played)
             : failed(
                 "Realm view must render with Castle, Workshop, Farm and Barracks standing and the desktop realm card's eight stocks",
@@ -7444,6 +7444,8 @@ const DESKTOP_ORDERS = "a desktop orders from the map at once: the queued next o
 
 /** The run plays at a desktop's width (the HUD's left column and contextual orders). */
 const onADesktop = () => VIEWPORT.width >= DESKTOP_MIN_WIDTH;
+
+const everyStock = (tiles) => tiles.includes("fragments") && tiles.includes("lords") && tiles.length > 2;
 
 /**
  * Centres the army, finds tiles beside it that offer an order, taps and confirms the first (the first order) and, once
