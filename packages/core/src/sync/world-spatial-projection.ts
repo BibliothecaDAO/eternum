@@ -1,7 +1,14 @@
 import { dayAtIndex } from "../utils/days";
 import { currentArmy, deepTiles, deepTerrain } from "../utils/deep";
 import { getBlockTimestamp } from "../utils/timestamp";
-import { readExpeditionRules, isArmyCurrent } from "../utils/expeditions";
+import {
+  isArmyCurrent,
+  isCurrentExpeditionArmy,
+  isExpeditionRealm,
+  readExpeditionRules,
+  siteKindOf,
+  structureMapPosition,
+} from "../utils/expeditions";
 import { activeTileOccupancy } from "../utils/ruins";
 import { safeInteger } from "../utils/safe-integer";
 import type { ID, Tile, TroopTier, TroopType } from "@bibliothecadao/types";
@@ -9,7 +16,6 @@ import { TileOccupier } from "@bibliothecadao/types";
 import type { NativeFactChange, NativeFactStore } from "../client/native-fact-store";
 import { notifyEach } from "../utils/notify-each";
 import type { NativeKeys, NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
-import { isExpeditionRealm, siteKindOf, structureMapPosition } from "../utils/expeditions";
 import { isTileOccupierStructure } from "../utils/map/hex";
 import { tileFactsToTile } from "../utils/tile-facts";
 import { entityMapPosition } from "../utils/tile";
@@ -285,12 +291,12 @@ const resolveArmyRenderable = (
   if (!explorerTroops || explorerTroops.troops.count <= 0n) return undefined;
   const key = { game_id: explorerTroops.game_id, explorer_id: explorerTroops.explorer_id };
   if (store.get("DeepGuard", key)) return undefined;
-  if (
-    store.get("DeepArmy", key) &&
-    (!isArmyCurrent(store, key.game_id, key.explorer_id, getBlockTimestamp().currentDefaultTick) ||
-      currentArmy(store, explorerTroops).troops.count <= 0n)
-  )
-    return undefined;
+  const calendar = readExpeditionRules(store, key.game_id);
+  if (calendar) {
+    const now = getBlockTimestamp().currentDefaultTick;
+    if (!isArmyCurrent(store, key.game_id, key.explorer_id, now)) return undefined;
+    if (store.get("DeepArmy", key) && currentArmy(store, explorerTroops, now).troops.count <= 0n) return undefined;
+  }
 
   const position = entityMapPosition(store, explorerTroops.game_id, explorerTroops.explorer_id);
   const { x: col, y: row, alt } = position;
@@ -600,7 +606,11 @@ export class WorldSpatialProjection {
     }
     if (
       changes.some(
-        (change) => change.model === "DeepArmy" || change.model === "ArmyDay" || change.model === "ArmyProgress",
+        (change) =>
+          change.model === "ExplorerTroops" ||
+          change.model === "DeepArmy" ||
+          change.model === "ArmyDay" ||
+          change.model === "ArmyProgress",
       )
     )
       this.nextTimeRefresh = this.nextTimedChangeAt();
@@ -621,26 +631,21 @@ export class WorldSpatialProjection {
 
   private nextTimedChangeAt(): number {
     let boundary = Infinity;
-    for (const [, deep] of this.store.entries("DeepArmy")) {
-      const army = this.store.get("ExplorerTroops", { game_id: deep.game_id, explorer_id: deep.explorer_id });
-      if (!army) continue;
+    for (const [, birth] of this.store.entries("ArmyDay")) {
+      const key = { game_id: birth.game_id, explorer_id: birth.explorer_id };
+      const army = this.store.get("ExplorerTroops", key);
+      if (!army || army.troops.count <= 0n || this.store.get("DeepGuard", key)) continue;
+      const calendar = readExpeditionRules(this.store, birth.game_id);
+      if (!calendar) continue;
       const now = getBlockTimestamp().currentDefaultTick;
-      if (
-        !isArmyCurrent(this.store, deep.game_id, deep.explorer_id, now) ||
-        currentArmy(this.store, army, now).troops.count === 0n
-      )
-        continue;
-      const birth = this.store.require("ArmyDay", { game_id: deep.game_id, explorer_id: deep.explorer_id });
-      const calendar = readExpeditionRules(this.store, deep.game_id);
-      if (!calendar) throw new Error("Deep projection requires expedition days");
+      if (!isCurrentExpeditionArmy(calendar, birth.day, now)) continue;
+      boundary = Math.min(boundary, dayAtIndex(calendar, Number(birth.day)).end);
+      if (!this.store.get("DeepArmy", key)) continue;
+      if (currentArmy(this.store, army, now).troops.count === 0n) continue;
       const interval = Number(
-        this.store.require("SliceRules", { game_id: deep.game_id }).tick_config.armies_tick_in_seconds,
+        this.store.require("SliceRules", { game_id: birth.game_id }).tick_config.armies_tick_in_seconds,
       );
-      boundary = Math.min(
-        boundary,
-        (Math.floor(now / interval) + 1) * interval,
-        dayAtIndex(calendar, Number(birth.day)).end,
-      );
+      boundary = Math.min(boundary, (Math.floor(now / interval) + 1) * interval);
     }
     return boundary;
   }

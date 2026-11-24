@@ -127,6 +127,7 @@ export default class InstancedModel {
   private animationActions: Map<number, AnimationAction> = new Map();
   private name: string;
   private worldBounds?: { box: Box3; sphere: Sphere };
+  private boundCompanionMeshes: InstancedMesh[] = [];
   /** How high the model stands over its origin: whatever is placed above it (its plate) clears this. */
   readonly height: number;
   timeOffsets: Float32Array;
@@ -653,6 +654,11 @@ export default class InstancedModel {
     }
   }
 
+  protected registerBoundMeshes(...meshes: InstancedMesh[]): void {
+    this.boundCompanionMeshes.push(...meshes);
+    meshes.forEach((mesh) => this.applyWorldBounds(mesh));
+  }
+
   public setWorldBounds(bounds?: { box: Box3; sphere: Sphere }) {
     this.worldBounds = bounds
       ? {
@@ -664,6 +670,7 @@ export default class InstancedModel {
     if (this.contactShadowMesh) {
       this.applyWorldBounds(this.contactShadowMesh);
     }
+    this.boundCompanionMeshes.forEach((mesh) => this.applyWorldBounds(mesh));
   }
 
   public dispose(): void {
@@ -712,6 +719,7 @@ export default class InstancedModel {
       }
     });
     this.instancedMeshes = [];
+    this.boundCompanionMeshes = [];
 
     // Phase 2.5: free the contact-shadow instance buffers. Its geometry/material are
     // shared via getContactShadowResources, so dispose only the mesh, not those.

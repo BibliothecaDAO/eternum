@@ -1,6 +1,13 @@
 import { OrderStandard } from "./order-standard";
 import { RealmLivingAura } from "./realm-living-aura";
-import { BufferGeometry, InstancedBufferAttribute, Mesh, type CanvasTexture, type MeshStandardMaterial } from "three";
+import {
+  BufferGeometry,
+  InstancedBufferAttribute,
+  Mesh,
+  type CanvasTexture,
+  type InstancedMesh,
+  type MeshStandardMaterial,
+} from "three";
 import MeshStandardNodeMaterial from "three/src/materials/nodes/MeshStandardNodeMaterial.js";
 import { attribute, texture, uv, vec2, varying } from "three/tsl";
 import { FrostedStandardNodeMaterial } from "../effects/game-map-material-library";
@@ -63,10 +70,12 @@ export class SettlementModel extends InstancedModel {
     if (kind === "realm") {
       this.orderStandard = new OrderStandard(this.instancedMeshes[0]);
       this.group.add(this.orderStandard.group);
+      this.registerBoundMeshes(this.orderStandard.body, this.orderStandard.cloth, this.orderStandard.emblem);
     }
     if (wonder) {
       this.wonderAura = new RealmLivingAura(gltf.scene, this.instancedMeshes[0]);
       this.group.add(this.wonderAura.mesh);
+      this.registerBoundMeshes(this.wonderAura.mesh as InstancedMesh);
     }
   }
 
@@ -140,6 +149,12 @@ export class SettlementModel extends InstancedModel {
 
   override setCount(count: number): void {
     super.setCount(count);
+    this.orderStandard?.syncCount();
+    this.wonderAura?.syncCount();
+  }
+
+  override setMatricesAndCount(matrices: InstancedBufferAttribute, count: number): void {
+    super.setMatricesAndCount(matrices, count);
     this.orderStandard?.syncCount();
     this.wonderAura?.syncCount();
   }

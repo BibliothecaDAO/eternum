@@ -289,6 +289,8 @@ const createHarness = () => {
       }),
     writeTile,
     writeArmy,
+    writeArmyDay: (explorer: number, day: bigint) =>
+      write("ArmyDay", `day-${explorer}`, [13, explorer], { game_id: 13, explorer_id: explorer, day }, false),
     writeExpeditionRules,
     writeRealm,
     removeTile: (alias: string, options?: { skipUpdateStream: boolean }) =>
@@ -325,6 +327,36 @@ describe("WorldSpatialProjection", () => {
         expect.objectContaining({ entityId: 21, hexCoords: { alt: false, col: 328, row: 72 } }),
         expect.objectContaining({ entityId: 22, hexCoords: { alt: false, col: 344, row: 72 } }),
       ]);
+    } finally {
+      setBlockTimestampSource(null);
+      harness.projection.dispose();
+    }
+  });
+
+  it("drops surface expedition armies from an ended day on rollover refresh and rebuild", () => {
+    const harness = createHarness();
+    setBlockTimestampSource(() => 86_400 * 10 + 100);
+    try {
+      harness.writeExpeditionRules(14_400, 16, 86_400 * 10);
+      harness.writeArmy("day-zero", { explorerId: 51, col: 329, row: 8 });
+      harness.writeArmyDay(51, 0n);
+      harness.projection.start();
+      expect(harness.projection.getArmy(51)).toMatchObject({
+        entityId: 51,
+        hexCoords: { alt: false, col: 329, row: 8 },
+      });
+      setBlockTimestampSource(() => 86_400 * 11 + 100);
+      harness.projection.refreshTime();
+      expect(harness.projection.getArmy(51)).toBeUndefined();
+      expect(harness.projection.getArmies(false)).toEqual([]);
+      harness.projection.rebuild();
+      expect(harness.projection.getArmy(51)).toBeUndefined();
+      harness.writeArmy("day-one", { explorerId: 52, col: 329, row: 72 });
+      harness.writeArmyDay(52, 1n);
+      expect(harness.projection.getArmy(52)).toMatchObject({
+        entityId: 52,
+        hexCoords: { alt: false, col: 329, row: 72 },
+      });
     } finally {
       setBlockTimestampSource(null);
       harness.projection.dispose();
