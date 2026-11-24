@@ -3493,6 +3493,42 @@
         "model": "/models/frontier/beast-minotaur.glb",
         "sha256": "1c2d9582d8a50f2b4b813f6386931fd4374f89cfbf4cac7721eeb7ce23813f10"
       }
+    },
+    {
+      "id": "emissary-prowess",
+      "label": "Prowess Emissary",
+      "family": "Aspects",
+      "source": {
+        "kind": "painted",
+        "sha256": "650c1e98da1149d3655bd251e0a72aa7cac2448a161dafdf9a46a8c3723c268f"
+      }
+    },
+    {
+      "id": "emissary-luminary",
+      "label": "Luminary Emissary",
+      "family": "Aspects",
+      "source": {
+        "kind": "painted",
+        "sha256": "375e083d575335c91a7a7c7d363a3684013232b4d7207450f6c174d3349a71c6"
+      }
+    },
+    {
+      "id": "emissary-havoc",
+      "label": "Havoc Emissary",
+      "family": "Aspects",
+      "source": {
+        "kind": "painted",
+        "sha256": "8ce2dc1265d2e484f75f2619544531bb6724b0820a4aa3e6f3d2ab5270f3afa8"
+      }
+    },
+    {
+      "id": "emissary-insight",
+      "label": "Insight Emissary",
+      "family": "Aspects",
+      "source": {
+        "kind": "painted",
+        "sha256": "ebd355594a27c1c305ef1cf1721c76ade0ba4effdcf8d674b84ae799f45f287c"
+      }
     }
   ]
 }

@@ -3,7 +3,7 @@
   display: flex;
   align-items: center;
   width: min(620px, calc(100vw - 32px));
-  min-height: 70px;
+  min-height: 74px;
   color: rgb(var(--hud-ink));
   font-family: var(--hud-font);
   background:
@@ -73,7 +73,7 @@
 .emissary-dock__crest {
   position: absolute;
   top: -2px;
-  left: 84px;
+  left: 96px;
   right: 28px;
   height: 2px;
   background: linear-gradient(
@@ -100,7 +100,7 @@
 
 .emissary-dock__rivet--tl {
   top: -4px;
-  left: 76px;
+  left: 88px;
 }
 
 .emissary-dock__rivet--tr {
@@ -110,7 +110,7 @@
 
 .emissary-dock__rivet--bl {
   bottom: -4px;
-  left: 76px;
+  left: 88px;
 }
 
 .emissary-dock__rivet--br {
@@ -118,11 +118,11 @@
   right: 18px;
 }
 
-.emissary-dock__emblem-bay {
+.emissary-dock__portrait-bay {
   position: relative;
   align-self: stretch;
-  width: 72px;
-  flex: 0 0 72px;
+  width: 84px;
+  flex: 0 0 84px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -134,12 +134,44 @@
   border-right: 1.5px solid var(--hud-line-strong);
 }
 
-.emissary-dock__emblem-socket {
-  width: 56px;
-  height: 56px;
-  margin-top: -10px;
+.emissary-dock__portrait-frame {
+  width: 72px;
+  height: 72px;
+  margin-top: -12px;
+  padding: 2px;
+  border-radius: var(--hud-radius-control);
+  background: linear-gradient(180deg, rgb(var(--hud-gold)) 0%, var(--hud-line-strong) 48%, var(--hud-surface-to) 100%);
+  border: 1px solid rgb(var(--hud-aspect, var(--hud-gold)) / 0.72);
+  box-shadow:
+    var(--hud-shadow-panel),
+    0 0 18px rgb(var(--hud-aspect, var(--hud-gold)) / 0.34);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  z-index: 8;
+}
+
+.emissary-dock__portrait {
+  width: 100%;
+  height: 100%;
+  border-radius: 2px;
+  background: radial-gradient(
+    circle at 50% 42%,
+    rgb(var(--hud-aspect, var(--hud-gold)) / 0.24) 0%,
+    var(--hud-surface-to) 78%
+  );
+  object-fit: contain;
+}
+
+.emissary-dock__medallion {
+  position: absolute;
+  right: -10px;
+  bottom: 3px;
+  width: 26px;
+  height: 26px;
   border-radius: var(--hud-radius-round);
-  padding: 3px;
+  padding: 2px;
   background: radial-gradient(
     circle at 30% 25%,
     rgb(var(--hud-gold)) 0%,
@@ -147,19 +179,17 @@
     var(--hud-well) 100%
   );
   border: 1px solid rgb(var(--hud-aspect, var(--hud-gold)) / 0.72);
-  box-shadow:
-    var(--hud-shadow-panel),
-    0 0 18px rgb(var(--hud-aspect, var(--hud-gold)) / 0.36);
+  box-shadow: var(--hud-shadow-panel);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 8;
+  z-index: 10;
 }
 
 .emissary-dock__body {
   flex: 1;
   min-width: 0;
-  padding: 9px 14px 10px 14px;
+  padding: 9px 14px 10px 18px;
   display: flex;
   flex-direction: column;
   gap: 5px;
@@ -263,33 +293,41 @@
 
 .emissary-dock--phone {
   width: 100%;
-  min-height: 60px;
+  min-height: 64px;
 }
 
-.emissary-dock--phone .emissary-dock__emblem-bay {
-  width: 56px;
-  flex: 0 0 56px;
+.emissary-dock--phone .emissary-dock__portrait-bay {
+  width: 66px;
+  flex: 0 0 66px;
 }
 
-.emissary-dock--phone .emissary-dock__emblem-socket {
-  width: 44px;
-  height: 44px;
-  margin-top: -6px;
-  padding: 2px;
+.emissary-dock--phone .emissary-dock__portrait-frame {
+  width: 58px;
+  height: 58px;
+  margin-top: -8px;
+  padding: 1.5px;
+}
+
+.emissary-dock--phone .emissary-dock__medallion {
+  right: -8px;
+  bottom: 2px;
+  width: 22px;
+  height: 22px;
+  padding: 1.5px;
 }
 
 .emissary-dock--phone .emissary-dock__crest {
-  left: 66px;
+  left: 76px;
   right: 18px;
 }
 
 .emissary-dock--phone .emissary-dock__rivet--tl,
 .emissary-dock--phone .emissary-dock__rivet--bl {
-  left: 58px;
+  left: 68px;
 }
 
 .emissary-dock--phone .emissary-dock__body {
-  padding: 7px 10px 8px 10px;
+  padding: 7px 10px 8px 14px;
   gap: 3px;
 }
 

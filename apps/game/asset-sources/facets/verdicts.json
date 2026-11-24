@@ -1115,5 +1115,21 @@
   "faceted/beast-minotaur": {
     "verdict": "beats shipped",
     "reason": "Studio portrait of shipped Hollow beast Minotaur model, normalized to the Facets delivery contract."
+  },
+  "faceted/emissary-prowess": {
+    "verdict": "beats shipped",
+    "reason": "Owner-approved Season 1 Prowess lion emissary portrait published through the facets 64/128/256 webp pipeline."
+  },
+  "faceted/emissary-luminary": {
+    "verdict": "beats shipped",
+    "reason": "Owner-approved Season 1 Luminary dove emissary portrait published through the facets 64/128/256 webp pipeline."
+  },
+  "faceted/emissary-havoc": {
+    "verdict": "beats shipped",
+    "reason": "Owner-approved Season 1 Havoc regal ram emissary portrait published through the facets 64/128/256 webp pipeline."
+  },
+  "faceted/emissary-insight": {
+    "verdict": "beats shipped",
+    "reason": "Owner-approved Season 1 Insight octopus emissary portrait published through the facets 64/128/256 webp pipeline."
   }
 }

@@ -49,10 +49,18 @@ export function AspectEmissaryDock({
       <span className="emissary-dock__rivet emissary-dock__rivet--br" aria-hidden="true" />
       <span className="emissary-dock__crest" aria-hidden="true" />
 
-      <div className="emissary-dock__emblem-bay">
-        <div className="emissary-dock__emblem-socket">
-          <AspectMark aspect={aspectId} size={phone ? 34 : 44} decorative />
+      <div className="emissary-dock__portrait-bay">
+        <div className="emissary-dock__portrait-frame">
+          <Icon
+            name={emissary.portrait}
+            size={phone ? 54 : 68}
+            alt={emissary.name}
+            className="emissary-dock__portrait"
+          />
         </div>
+        <span className="emissary-dock__medallion">
+          <AspectMark aspect={aspectId} size={phone ? 16 : 20} decorative />
+        </span>
       </div>
 
       <div className="emissary-dock__body">

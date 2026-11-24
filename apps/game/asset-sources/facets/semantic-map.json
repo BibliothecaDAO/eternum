@@ -1598,5 +1598,25 @@
     "art": "beast-minotaur",
     "label": "Minotaur",
     "family": "Beasts"
+  },
+  "emissary-prowess": {
+    "art": "emissary-prowess",
+    "label": "Prowess Emissary",
+    "family": "Aspects"
+  },
+  "emissary-luminary": {
+    "art": "emissary-luminary",
+    "label": "Luminary Emissary",
+    "family": "Aspects"
+  },
+  "emissary-havoc": {
+    "art": "emissary-havoc",
+    "label": "Havoc Emissary",
+    "family": "Aspects"
+  },
+  "emissary-insight": {
+    "art": "emissary-insight",
+    "label": "Insight Emissary",
+    "family": "Aspects"
   }
 }
