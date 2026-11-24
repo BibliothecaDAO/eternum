@@ -49,8 +49,8 @@ describe("a guarded site's card", () => {
         />,
       ),
     );
-    expect(document.querySelector(".fight-vs")?.textContent).toContain("This attack earns");
-    expect(document.querySelector(".fight-spoils")?.textContent).toBe("+5KFull: the rest did not fit+1 site");
+    expect(document.querySelector("[data-fight-outcome]")?.textContent).toContain("This attack earns");
+    expect(document.querySelector("[data-fight-reward]")?.textContent).toBe("+5KFull: the rest did not fit+1 site");
   });
 
   it("heads the attack with what it earns, and reads each side before and after as numbers alone", () => {
@@ -73,7 +73,7 @@ describe("a guarded site's card", () => {
       ),
     );
     const card = document.querySelector("section[aria-label='Troll']")!;
-    expect(card.querySelector(".fight-vs")?.textContent).toContain("This attack earns");
+    expect(card.querySelector("[data-fight-outcome]")?.textContent).toContain("This attack earns");
     expect(card.textContent?.match(/(?<!−)1,100/g)).toHaveLength(1);
     expect(card.querySelector(".fight-spoils .opacity-50")).toBeNull();
     const sides = [...card.querySelectorAll('.fight-arena [role="img"]')].map((side) =>
@@ -138,7 +138,7 @@ describe("a guarded site's card", () => {
     );
     const card = document.querySelector("section[aria-label='Ruin']")!;
     expect(card.querySelectorAll('[data-icon="beast-ammit"]')).toHaveLength(1);
-    expect(card.querySelector(".fight-vs")?.textContent).toContain("Your army is lost");
+    expect(card.querySelector("[data-fight-outcome]")?.textContent).toContain("Your army is lost");
     expect(card.querySelector(".fight-spoils .opacity-50")?.textContent).toBe("+1 site");
     expect(card.querySelector('[data-icon="troops"]')).toBeNull();
     expect(card.querySelector('[data-combat-mark="Blade"]')?.textContent).toBe("Blade");
@@ -167,7 +167,7 @@ describe("a guarded site's card", () => {
       ),
     );
     const card = document.querySelector("section[aria-label='Blightglow Rift']")!;
-    expect(card.querySelector(".fight-vs")?.textContent).toContain("The guard survives");
+    expect(card.querySelector("[data-fight-outcome]")?.textContent).toContain("The guard survives");
     expect(card.querySelector(".fight-spoils .opacity-50")?.textContent).toBe("+4.2K+1 site");
     expect(card.textContent).toContain("794");
     expect(card.textContent).toContain("193");
@@ -203,7 +203,7 @@ describe("a guarded site's card", () => {
         />,
       ),
     );
-    expect(document.querySelector(".fight-vs")?.textContent).toContain("This attack earns");
+    expect(document.querySelector("[data-fight-outcome]")?.textContent).toContain("This attack earns");
     expect(document.querySelector('[aria-label="Sites cleared +1 site"]')?.getAttribute("data-tip")).toBe(
       "Ranked by sites cleared, then deepest depth",
     );
@@ -221,7 +221,7 @@ describe("a guarded site's card", () => {
         />,
       ),
     );
-    expect(document.querySelector(".fight-vs")?.textContent).toContain("This attack clears it");
+    expect(document.querySelector("[data-fight-outcome]")?.textContent).toContain("This attack clears it");
   });
 
   it("earns what fits, marked Full, when the store would overflow, with Realm to make room; never blocks the attack", () => {
@@ -244,7 +244,7 @@ describe("a guarded site's card", () => {
         />,
       ),
     );
-    const spoils = document.querySelector(".fight-spoils")!;
+    const spoils = document.querySelector("[data-fight-reward]")!;
     expect(spoils.textContent).toBe("+120Full: the rest did not fit+1 site");
     expect(spoils.querySelector('[data-tip*="did not fit"]')).toBeNull();
     act(() =>

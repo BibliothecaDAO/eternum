@@ -71,6 +71,11 @@ export const OrderBar = ({
         )}
         {!isCovered(stamina) && refill}
       </div>
+      {covered && (
+        <HudButton kind="primary" size="sm" icon={kind} onClick={onGo}>
+          {VERBS[kind]}
+        </HudButton>
+      )}
       <HudIconButton icon="close" label={CANCEL} kind="quiet" size="sm" onClick={onCancel} />
     </HudPanel>
   );

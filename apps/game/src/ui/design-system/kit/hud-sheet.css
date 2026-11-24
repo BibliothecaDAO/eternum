@@ -2425,11 +2425,6 @@ button.ui-card__choose:disabled {
 [data-frontier-rail] {
   width: theme(spacing.hud-frontier-rail);
 }
-@media (min-width: 1024px) {
-  [data-frontier-rail] {
-    width: 26.25rem;
-  }
-}
 [data-frontier-rail]:has([data-rail-panel] > *) [data-rail-home] {
   display: none;
 }

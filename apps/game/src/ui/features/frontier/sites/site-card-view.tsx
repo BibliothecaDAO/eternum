@@ -142,9 +142,13 @@ export const SiteCardView = ({
             firstStrike={firstStrike}
             beast={beast}
             guardIcon={guardIcon}
-            earns={reward !== null}
           />
-          {reward && <div className="fight-spoils">{reward}</div>}
+          {(facing || reward) && (
+            <div className="fight-spoils">
+              {facing && <Outcome facing={facing} earns={reward !== null} />}
+              {reward}
+            </div>
+          )}
         </>
       )}
       {receipt}
@@ -186,7 +190,9 @@ const CachePay = ({ fragments }: { fragments: number }) => (
 );
 
 const Reward = ({ dimmed, children }: { dimmed: boolean; children: ReactNode }) => (
-  <span className={cn("flex flex-wrap items-center gap-2", dimmed && "opacity-50")}>{children}</span>
+  <span data-fight-reward className={cn("flex flex-wrap items-center gap-2", dimmed && "opacity-50")}>
+    {children}
+  </span>
 );
 
 const SiteMark = ({ icon, children }: { icon: IconMeaning; children?: ReactNode }) => (
@@ -207,7 +213,6 @@ const FightPanel = ({
   firstStrike,
   beast,
   guardIcon,
-  earns,
 }: {
   army: { art: IconMeaning; troops: number; category?: Troops["category"] } | null;
   guard: number | null | undefined;
@@ -215,7 +220,6 @@ const FightPanel = ({
   firstStrike: FirstStrikeSide;
   beast: (Pick<FrontierBeast, "beast" | "name"> & { combatClass: Troops["category"] }) | undefined;
   guardIcon: IconMeaning;
-  earns: boolean;
 }) => (
   <FightArena
     ours={
@@ -242,14 +246,15 @@ const FightPanel = ({
           }
         : undefined
     }
-    outcome={
-      facing && (
-        <HudChip tone={isArmyLost(facing) ? "bad" : clears(facing) ? "good" : undefined}>
-          {outcomeWord(facing, earns)}
-        </HudChip>
-      )
-    }
   />
+);
+
+const Outcome = ({ facing, earns }: { facing: Facing; earns: boolean }) => (
+  <span data-fight-outcome>
+    <HudChip tone={isArmyLost(facing) ? "bad" : clears(facing) ? "good" : undefined}>
+      {outcomeWord(facing, earns)}
+    </HudChip>
+  </span>
 );
 
 const Pay = ({ pay }: { pay: { icon: IconMeaning; amount: number; fits?: number } }) => {

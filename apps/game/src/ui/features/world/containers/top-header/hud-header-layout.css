@@ -31,26 +31,6 @@
   gap: theme(spacing.1);
 }
 
-.hud-topbar__rivet {
-  position: relative;
-  width: 1px;
-  height: 26px;
-  flex: none;
-  background: linear-gradient(180deg, transparent, var(--hud-line-strong), transparent);
-}
-
-.hud-topbar__rivet::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 6px;
-  height: 6px;
-  transform: translate(-50%, -50%) rotate(45deg);
-  border: 1px solid rgb(var(--hud-gold));
-  background: var(--hud-surface-from);
-}
-
 .hud-topbar__switch {
   display: inline-flex;
   height: 32px;
@@ -140,9 +120,6 @@
   }
   .hud-topbar__bay--right {
     gap: 2px;
-  }
-  .hud-topbar__rivet {
-    display: none;
   }
   .hud-topbar__switch {
     height: 30px;

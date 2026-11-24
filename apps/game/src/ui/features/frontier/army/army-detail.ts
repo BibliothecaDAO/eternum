@@ -5,6 +5,7 @@ import type { StaminaBar } from "@/ui/design-system/kit/hud-elements";
 
 export interface ArmyView {
   name: string;
+  title?: string;
   art: IconMeaning;
   troops: number;
   stamina: StaminaBar;

@@ -203,7 +203,9 @@ describe("the build sheet", () => {
       };
       act(() => root.render(<Hud />));
       const build = () =>
-        act(async () => [...host.querySelectorAll("button")].find((button) => button.textContent === "Build")!.click());
+        act(async () =>
+          [...host.querySelectorAll("button")].find((button) => button.textContent?.startsWith("Build "))!.click(),
+        );
       const selected = () => useUIStore.getState().selectedBuildingHex?.innerCol ?? null;
       const end = () => {
         act(() => root.unmount());
@@ -311,33 +313,39 @@ describe("the build sheet", () => {
     later.close();
   });
 
-  it("separates higher-tier unlocks from the build grid and summarizes the chosen building", () => {
+  it("lays every building in one grid, the open ones first, each locked one under the rank that opens it", () => {
     const { store, realm } = realmBoard();
     const sheet = open(store, realm);
-    const gridTitles = [...sheet.host.querySelectorAll("[data-build-grid] .ui-card__title")].map(
-      (title) => title.textContent,
-    );
-    expect(gridTitles).toContain("Farm");
-    expect(gridTitles).toContain("Barracks");
-    expect(gridTitles).not.toContain("Scouts' lodge");
-    expect(gridTitles).not.toContain("Range");
-    expect(gridTitles).not.toContain("Rations depot");
-    expect(sheet.host.querySelector("[data-build-chosen]")?.textContent).toMatch(/^Farm: Wheat \+/);
+    const tiles = [...sheet.host.querySelectorAll("[data-build-grid] .ui-card")].map((tile) => [
+      tile.querySelector(".ui-card__title")?.textContent,
+      tile.querySelector(".ui-card__corner")?.textContent ?? null,
+    ]);
+    expect(tiles.map(([name]) => name)).toHaveLength(FRONTIER_BUILDING_TYPES.length);
+    expect(tiles.slice(0, 3)).toEqual([
+      ["Farm", null],
+      ["Workshop", null],
+      ["Barracks", null],
+    ]);
+    expect(tiles).toContainEqual(["Range", "City"]);
+    expect(tiles).toContainEqual(["Supply yard", "Kingdom"]);
+    expect(sheet.host.querySelector("[data-build-does]")?.textContent).toMatch(/^Wheat \+/);
+    expect(sheet.button("Build Farm")).toBeDefined();
 
-    const lockedButtons = [...sheet.host.querySelectorAll<HTMLButtonElement>("[data-build-locked] button")];
-    const rangeButton = lockedButtons.find((button) => button.textContent?.includes("Range"))!;
-    expect(rangeButton).toBeDefined();
-    expect(sheet.host.querySelector("[data-build-locked]")?.textContent).toContain("City");
-    expect(sheet.host.querySelector("[data-build-locked]")?.textContent).toContain("Kingdom");
-
-    act(() => rangeButton.click());
-    expect(rangeButton.getAttribute("aria-pressed")).toBe("true");
-    expect(sheet.host.querySelector("[data-build-chosen]")?.textContent).toContain("Range:");
+    act(() => sheet.card("Range").click());
+    expect(sheet.card("Range").getAttribute("aria-pressed")).toBe("true");
     expect(sheet.host.querySelector('[role="status"]')?.textContent).toBe("Requires City");
+    expect(sheet.button("Build ")).toBeUndefined();
     sheet.close();
   });
 
-  it("shows every rank-locked building's rule-row price on its locked button and in the footer beside the rank notice", () => {
+  it("names in its head the realm's plots that hold a building, of those its castle opens", () => {
+    const { store, realm } = realmBoard();
+    const sheet = open(store, realm);
+    expect(sheet.host.querySelector(".ui-frame__head")?.textContent).toMatch(/^Build\d+ \/ \d+ plots/);
+    sheet.close();
+  });
+
+  it("shows every rank-locked building's rule-row price on its tile and in the footer beside the rank notice", () => {
     const { store, realm } = realmBoard();
     const sheet = open(store, realm);
     const lockedCategories = FRONTIER_BUILDING_TYPES.filter((category) => buildingOpensAtLevel(category) > 0);
@@ -351,12 +359,10 @@ describe("the build sheet", () => {
       });
     };
 
-    const lockedButtons = [...sheet.host.querySelectorAll<HTMLButtonElement>("[data-build-locked] button")];
     for (const category of lockedCategories) {
-      const name = buildingName(category, true);
       const expected = rulePricesOf(category);
       expect(expected.length).toBeGreaterThan(0);
-      const lockedButton = lockedButtons.find((candidate) => candidate.textContent?.includes(name))!;
+      const lockedButton = sheet.card(buildingName(category, true));
       expect(lockedButton).toBeDefined();
       for (const { of, amount } of expected) {
         const label = `${formatExact(amount)} ${PRICE_FACES[of].word}`;
@@ -380,13 +386,11 @@ describe("the build sheet", () => {
     };
     store.applyFacts([freeRule(BuildingType.ResourceWheat), freeRule(BuildingType.ResourceCrossbowmanT1)] as never);
     const sheet = open(store, realm);
-    expect(sheet.card("Farm").querySelector(".ui-chip")?.textContent).toBe(FREE);
+    expect(sheet.card("Farm").querySelector("[data-build-price]")?.textContent).toBe(FREE);
     expect(sheet.host.querySelector(".ui-window__foot .ui-cost")?.textContent).toBe(FREE);
 
-    const rangeButton = [...sheet.host.querySelectorAll<HTMLButtonElement>("[data-build-locked] button")].find(
-      (candidate) => candidate.textContent?.includes(buildingName(BuildingType.ResourceCrossbowmanT1, true)),
-    )!;
-    expect(rangeButton.textContent).toContain(FREE);
+    const rangeButton = sheet.card(buildingName(BuildingType.ResourceCrossbowmanT1, true));
+    expect(rangeButton.querySelector("[data-build-price]")?.textContent).toBe(FREE);
     act(() => rangeButton.click());
     expect(sheet.host.querySelector('[role="status"]')?.textContent).toBe("Requires City");
     expect(sheet.host.querySelector(".ui-window__foot .ui-cost")?.textContent).toBe(FREE);
@@ -410,10 +414,10 @@ describe("the build sheet", () => {
     const sheet = open(store, realm);
     act(() => sheet.card("Workshop").click());
     expect(sheet.host.querySelector('[role="status"]')).toBeNull();
-    expect(sheet.button("Build")!.textContent).toBe("Build");
+    expect(sheet.button("Build ")!.textContent).toBe("Build Workshop");
     expect(sheet.host.querySelector(".ui-cost")?.textContent).toBe("2,000 Labor");
     // Build and its price stand in the sheet's foot, outside the body that scrolls: the verb never scrolls away.
-    expect(sheet.button("Build")!.closest(".ui-window__foot")).not.toBeNull();
+    expect(sheet.button("Build ")!.closest(".ui-window__foot")).not.toBeNull();
     expect(sheet.host.querySelector(".ui-window__foot .ui-cost")?.textContent).toBe("2,000 Labor");
     sheet.close();
   });
@@ -431,9 +435,8 @@ describe("the build sheet", () => {
     const ranks = JSON.parse(sheet.card("Supply yard").closest("[data-tip]")!.getAttribute("data-tip-ranks")!);
     expect(ranks.slice(0, 3)).toEqual(["Supply yard: ", "new armies start with Logistics ", { rank: 1 }]);
     // No Farm stands on the board yet (the fixture's wheat comes with the realm): its price is its base.
-    expect(sheet.card("Farm").querySelector('[aria-label="price raised"]')).toBeNull();
     expect(document.querySelector("[data-price-raised]")).toBeNull();
-    const base = sheet.card("Farm").querySelector(".ui-chip")!.textContent;
+    const base = sheet.card("Farm").querySelector("[data-build-price]")!.textContent;
     sheet.close();
 
     store.applyFacts([
@@ -445,12 +448,10 @@ describe("the build sheet", () => {
       }),
     ] as never);
     const risen = open(store, realm);
-    const arrow = risen.card("Farm").querySelector('[aria-label="price raised"]')!;
-    // One line of why, never the sum behind it (owner, 26 October: "its a game not a math demo").
+    const arrow = document.querySelector(".ui-window__foot [data-price-raised]")!;
+    expect(arrow.getAttribute("aria-label")).toBe("Costs more with each one standing: 2");
     expect(arrow.getAttribute("data-tip")).toBe("Costs more with each one standing: 2");
-    // The Farm chosen, its foot says it in sight, for a phone that has no hover (owner, 30 October).
-    expect(document.querySelector("[data-price-raised]")?.textContent).toBe("Costs more with each one standing: 2");
-    expect(risen.card("Farm").querySelector(".ui-chip")!.textContent).not.toBe(base);
+    expect(risen.card("Farm").querySelector("[data-build-price]")!.textContent).not.toBe(base);
     risen.close();
   });
 
@@ -471,16 +472,15 @@ describe("the build sheet", () => {
         last_settled_at: 350,
       }),
     ] as never);
-    const band = (sheet: ReturnType<typeof open>, name: string) => sheet.card(name).querySelector(".ui-chip")!;
+    const price = (sheet: ReturnType<typeof open>, name: string) =>
+      sheet.card(name).querySelector("[data-build-price]");
     const sheet = open(store, atKingdom(realm));
     expect(sheet.card("Farm").textContent).toMatch(/\+[\d,.]+\/(?:s|min)/);
-    expect(band(sheet, "Farm").getAttribute("data-tone")).toBe("bad");
-    expect(band(sheet, "Farm").textContent).toMatch(/\d+[mhd]$/);
-    // Training names its purchases against the gate instead of a building rarity.
-    expect(band(sheet, "Supply yard").textContent).not.toContain("research");
+    expect(price(sheet, "Farm")!.querySelector("[data-short]")).not.toBeNull();
+    expect(price(sheet, "Farm")!.textContent).toMatch(/\d+[mhd]$/);
+    expect(price(sheet, "Supply yard")!.textContent).not.toContain("research");
     sheet.close();
 
-    // A training building standing: a tick on a green band.
     store.applyFacts([
       fact("0x72", "StructureBuildings", {
         game_id: 1,
@@ -490,26 +490,10 @@ describe("the build sheet", () => {
       }),
     ] as never);
     const built = open(store, atKingdom(realm));
-    expect(band(built, "Supply yard").getAttribute("data-tone")).toBe("good");
-    expect(band(built, "Supply yard").querySelector('[data-icon="check"]')).not.toBeNull();
+    const corner = built.card("Supply yard").closest(".ui-card")!.querySelector(".ui-card__corner .ui-chip")!;
+    expect([corner.textContent, corner.getAttribute("data-tone")]).toEqual(["Built", "good"]);
+    expect(price(built, "Supply yard")).toBeNull();
     built.close();
-  });
-
-  it("shows each type's one gem and never words for it, and no gem on the Storeroom, which has no research", () => {
-    const { store, realm } = realmBoard();
-    store.applyFacts([fact("0x77", "RealmKnowledge", { game_id: 1, structure_id: 7, learned: String(2n) })] as never);
-    const gems = (sheet: ReturnType<typeof open>, name: string) =>
-      [...sheet.card(name).querySelectorAll(".ui-tier")].map((gem) =>
-        gem.getAttribute("data-tier") === "0" ? "Untrained" : gem.textContent,
-      );
-    const sheet = open(store, atKingdom(realm));
-    expect(gems(sheet, "Farm")).toEqual(["II"]);
-    expect(gems(sheet, "Workshop")).toEqual(["Untrained"]);
-    expect(gems(sheet, "Barracks")).toEqual(["I"]);
-    expect(gems(sheet, "Supply yard")).toEqual(["I"]);
-    expect(gems(sheet, "Storeroom")).toEqual([]);
-    expect(sheet.host.textContent).not.toMatch(/ from (Fields|Tools)/);
-    sheet.close();
   });
 
   it("says how much labor a building needs against what is held, and sends nobody to the map for it", () => {
@@ -519,7 +503,7 @@ describe("the build sheet", () => {
     vi.spyOn(configManager, "paysRevealSupplies").mockReturnValue(true);
     const short = open(store, realm);
     expect(short.host.querySelector('[role="status"]')!.textContent).toMatch(/^Needs [\d,]+ Labor, have 0$/);
-    expect(short.button("Build")).toBeUndefined();
+    expect(short.button("Build ")).toBeUndefined();
     expect(short.host.textContent).not.toContain("Explore");
     short.close();
     vi.restoreAllMocks();
@@ -574,7 +558,6 @@ it("reds only the price lines the realm holds less of, so a training building sh
     )!;
     const line = (label: string) => {
       const element = card.querySelector(`[aria-label="${label}"]`)!;
-      // Its own color, never the band's: a line without one would take the red band's.
       const color = element.classList.contains("text-hud-bad")
         ? "red"
         : element.classList.contains("text-hud-ink")
@@ -585,7 +568,6 @@ it("reds only the price lines the realm holds less of, so a training building sh
     const state = {
       essence: line("6,000 Essence"),
       labor: line("1,500 Labor"),
-      band: card.querySelector(".ui-chip")!.getAttribute("data-tone"),
     };
     act(() => root.unmount());
     host.remove();
@@ -597,15 +579,12 @@ it("reds only the price lines the realm holds less of, so a training building sh
   expect(lines()).toEqual({
     essence: { short: true, color: "red" },
     labor: { short: false, color: "white" },
-    band: "bad",
   });
 
-  // Both held: every line white, and the band no longer red.
   store.applyFacts([balance(ResourcesIds.Essence, 12_000n)] as never);
   expect(lines()).toEqual({
     essence: { short: false, color: "white" },
     labor: { short: false, color: "white" },
-    band: null,
   });
 
   // Labor short too: both lines red.
@@ -613,6 +592,5 @@ it("reds only the price lines the realm holds less of, so a training building sh
   expect(lines()).toEqual({
     essence: { short: true, color: "red" },
     labor: { short: true, color: "red" },
-    band: "bad",
   });
 });

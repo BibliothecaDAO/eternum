@@ -693,8 +693,6 @@ export const heldAgainstNeed = (held: number | undefined, need: number): string 
 };
 /** A training building already standing: a realm holds one of each. */
 export const ONE_A_REALM = "Built. A realm holds one.";
-/** The arrow beside a price that has risen (a screen reader's words). */
-export const PRICE_UP = "price raised";
 /** Why a price is above its first, on the arrow beside it, in one line and no sum: "Costs more with each one standing: 2". */
 export const priceRaised = (standing: string) => `Costs more with each one standing: ${standing}`;
 /** What a building does, in one line on its card's tooltip: "Wheat +5/min". */
@@ -865,6 +863,7 @@ export const DEEP_WORDS = {
 export const DAY_BANNER_WORDS = {
   today: "Today",
   quest: "Quest",
+  dailyQuest: (quest: string) => `Daily quest · ${quest}`,
   reading: "Loading today's quest…",
   reward: "Reward",
   collect: "Collect",
@@ -1126,18 +1125,19 @@ export const GET_WHEAT = `Get ${WHEAT}`;
 export const DEPLOYING = "Deploying…";
 export const DEPLOY_WORDS = {
   slotOf: (slot: number, total: number) => `Slot ${formatExact(slot)} of ${formatExact(total)}`,
-  fullStack: "Full stack",
-  fullStackReady: "Full stack ready",
   adjustSize: "Adjust size",
   hideSize: "Hide size",
-  customSize: (count: string) => `Custom · ${count}`,
-  troopRoles: {
-    [TroopType.Knight]: () => "Blade · Hold sites",
-    [TroopType.Crossbowman]: () => "Bow · Strikes first",
-    [TroopType.Paladin]: (exploreStamina: number) => `Fast reveal · ${formatExact(exploreStamina)} stam`,
-  } satisfies Record<TroopType, (exploreStamina: number) => string>,
+  ready: (troops: number) => `${formatExact(troops)} ready`,
+  troopCount: "Troop count",
+  countOf: (count: number, of: number, troop: string, max: boolean) =>
+    `${formatExact(count)} / ${formatExact(of)} ${troop}${max ? " (Max)" : ""}`,
+  deployCount: (count: number, troop: string) => `${DEPLOY} ${formatExact(count)} ${troop}`,
 } as const;
 export const BUILD = "Build";
+export const buildNamed = (building: string) => `${BUILD} ${building}`;
+export const BUILT = "Built";
+export const plotsUsed = (used: number, total: number) => `${used} / ${total} plots`;
+export const moreBelow = (names: readonly string[]) => `More below: ${names.join(", ")}`;
 export const FREE = "Free";
 
 /** Default army names: "Army" and its place. */
@@ -1146,6 +1146,8 @@ export const ARMY = "Army";
 /** A phone's picked army, in its action row (owner, 22 October 2026: mobile direction A): its token opens its card. */
 export const PICKED_ARMY = {
   details: (army: string) => `${army}: details`,
+  title: (army: string, troops: number | undefined, troop: string | undefined) =>
+    troops === undefined ? army : `${army} · ${formatAmount(troops)}${troop ? ` ${troop}` : ""}`,
 } as const;
 
 /** Troops between two of the realm's armies side by side (Frontier's Transfer troops, desktop and phone). */
@@ -1175,6 +1177,14 @@ export const REINFORCE = {
 } as const;
 /** A realm's armies, as a list's name. */
 export const ARMIES = "Armies";
+export const ARMY_SLOT_WORDS = {
+  title: "All army slots",
+  count: (active: number, allowed: number, most: number) => `${active} / ${allowed} active (${most} max)`,
+  open: (slot: number) => `Slot ${slot} · Open`,
+  readyAtHome: (troops: string) => `${troops} ready at home`,
+  anyTroop: "Any troop type",
+  unlocksAt: (slot: number, rank: string) => `Slot ${slot} · Unlocks at ${rank}`,
+} as const;
 export const ARMY_MOVE_HINT = "Right-click a hex to move";
 /** The day-done card's count of the armies that ended with the day. */
 export const ARMIES_ENDED = "Armies ended with the day";
@@ -2213,6 +2223,7 @@ export const RESEARCH_TREE = {
   oathSlots: (count: number) => `${count} Oath ${count === 1 ? "slot" : "slots"}`,
   oathOpen: RESEARCH_OPEN,
   oathLocked: "Locked",
+  oathEarn: `Clear a site that holds an ${SITE_OATH.label}, or reveal a ${SHRINE}`,
   oathResearch: "Research for new armies",
   conscriptionLine: "More troops from every troop building.",
   rationsLine: "Armies cost less wheat to deploy.",
@@ -2275,6 +2286,8 @@ export const ARMY_DETAIL = {
    */
   revealPays: (amount: string) => `+${amount} a tile`,
   revealPaysLabel: `${ESSENCE} or ${LABOR},`,
+  stamina: "Stamina",
+  troops: (count: number) => formatCount(count, "troop"),
 } as const;
 
 /** Deleting the picked army, for good. */

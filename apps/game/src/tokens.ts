@@ -411,6 +411,8 @@ export const HUD_MAP_LEAST_SHARE = 40;
 
 export const DESKTOP_MIN_PX = 1024;
 
+export const TABLET_MIN_PX = 768;
+
 export const SCREENS = {
   /** Tailwind's own value, restated so `lg:` and the JS layout read one number. */
   lg: `${DESKTOP_MIN_PX}px`,
@@ -627,6 +629,7 @@ export const HUD_LAYOUT = {
    * and scrolling inside past it.
    */
   "phone-panel": `min(45dvh, max(12rem, calc(100dvh - var(--hud-phone-top, 0px) - var(--hud-phone-foot, 0px) - ${HUD_MAP_LEAST_SHARE}dvh)))`,
+  "tablet-rail": "248px",
   "chat-width": "800px",
   "chat-height": "600px",
   /**
@@ -644,14 +647,9 @@ export const HUD_LAYOUT = {
    * width and top, and the stage between the columns.
    */
   "frontier-page": "440px",
-  /**
-   * Frontier's desktop rail, the one home for everything (the owner, 22 October): one width for the feed at home and
-   * for any panel (a page, a sheet) that stands in it ("feed should have the same width as the other panels").
-   */
-  "frontier-rail": "480px",
+  "frontier-left": "304px",
+  "frontier-rail": "372px",
   "frontier-page-top": "76px",
-  /** The Frontier HUD's cards: an army token, a site card, and the Build sheet's building card (option B's band). */
-  "frontier-token": "72px",
   "frontier-card": "92px",
   "frontier-build-card": "136px",
 } as const;

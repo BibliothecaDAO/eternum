@@ -2,8 +2,8 @@ import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { Icon } from "@/ui/design-system/icon";
 import type { IconMeaning } from "@/ui/design-system/icon-meaning";
 import { resourceMeaning } from "@/ui/design-system/icon-meaning";
-import { HudButton, HudChip, HudLoading, HudMeter, HudPanel } from "@/ui/design-system/kit/hud-elements";
-import { DAY_BANNER_WORDS as WORDS } from "@/ui/design-system/kit/words";
+import { HudButton, HudChip, HudIconButton, HudLoading, HudMeter, HudPanel } from "@/ui/design-system/kit/hud-elements";
+import { CLOSE, DAY_BANNER_WORDS as WORDS } from "@/ui/design-system/kit/words";
 import { formatShort, ResourcesIds } from "@bibliothecadao/types";
 import { useState } from "react";
 import type { DayHead, DayMembers, Tone } from "./day-bane-face";
@@ -35,6 +35,7 @@ export interface DayBannerProps {
   collecting: boolean;
   onCollect: () => void;
   onOpenClaim: () => void;
+  onClose?: () => void;
 }
 
 const TONE_TEXT: Record<Tone, string> = { good: "text-hud-good", bad: "text-hud-bad", warn: "text-hud-warn" };
@@ -116,41 +117,37 @@ const PhoneDay = ({
   collecting,
   onCollect,
   onOpenClaim,
+  onClose,
 }: KnownQuestProps) => {
   const [open, setOpen] = useState<string | null>(null);
   const opened = heads.find((head) => head.eyebrow === open);
+  const done = reading !== null && reading.state !== "running";
   return (
-    <HudPanel
-      label={WORDS.today}
-      collapsible={false}
-      className="pointer-events-auto"
-      bodyClassName="flex flex-col gap-2"
-    >
-      <div className="flex flex-col gap-1.5">
-        <div className="flex items-start gap-2.5">
-          <Icon name={quest.icon} size={32} className="shrink-0" />
-          <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-            <div className="flex items-baseline justify-between gap-2">
-              <span className="truncate text-hud-strong text-hud-ink">{quest.name}</span>
-              {reading && <Count quest={quest} reading={reading} />}
-            </div>
-            <span data-quest-objective className="text-hud-label text-hud-muted">
+    <HudPanel collapsible={false} className="pointer-events-auto" bodyClassName="frontier-quest-card">
+      <div className="frontier-quest-card__head">
+        <Icon name={quest.icon} size={28} className="shrink-0" />
+        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <span className="frontier-quest-card__title">{WORDS.dailyQuest(quest.name)}</span>
+          <span className={`text-hud-label ${done ? "text-hud-good" : "text-hud-muted"}`}>
+            <span data-quest-objective>
               {reading ? WORDS.objectiveLine(quest.objective, reading.target) : quest.objective}
             </span>
-          </div>
-        </div>
-        {reading ? (
-          <>
-            <Meter quest={quest} reading={reading} />
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <Rewards reading={reading} />
-              <End state={reading.state} collecting={collecting} onCollect={onCollect} />
-            </div>
-          </>
-        ) : (
-          <HudLoading line={WORDS.reading} />
-        )}
+            {reading && ` · ${countOf(quest, reading)}`}
+          </span>
+        </span>
+        {onClose && <HudIconButton icon="close" label={CLOSE} kind="quiet" size="sm" onClick={onClose} />}
       </div>
+      {reading ? (
+        <>
+          {reading.state === "running" && <Meter quest={quest} reading={reading} />}
+          <Rewards reading={reading} named={false} />
+          <span className="frontier-quest-card__claim">
+            <End state={reading.state} collecting={collecting} onCollect={onCollect} />
+          </span>
+        </>
+      ) : (
+        <HudLoading line={WORDS.reading} />
+      )}
       {(members || claim) && (
         <div className="flex items-center justify-between gap-2 border-t border-hud-divider pt-1.5 text-hud-label tabular-nums text-hud-ink">
           {members ? <MembersShort members={members} /> : <span />}
@@ -206,9 +203,9 @@ const Meter = ({ quest, reading }: { quest: DayQuestFace; reading: DayQuestReadi
   <HudMeter share={share(reading)} label={countOf(quest, reading)} />
 );
 
-const Rewards = ({ reading }: { reading: DayQuestReading }) => (
+const Rewards = ({ reading, named = true }: { reading: DayQuestReading; named?: boolean }) => (
   <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-hud-label tabular-nums text-hud-ink">
-    <span className="text-hud-muted">{WORDS.reward}</span>
+    {named && <span className="text-hud-muted">{WORDS.reward}</span>}
     <Amount resource={ResourcesIds.Labor} amount={reading.reward.labor} />
     <Amount resource={ResourcesIds.Essence} amount={reading.reward.essence} />
   </span>

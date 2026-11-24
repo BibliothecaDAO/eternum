@@ -12,8 +12,9 @@ vi.mock("@/ui/features/event-feed/quick-feed", async (original) => ({
 import { dayClock } from "./day-clock";
 import { DayPill } from "./day-pill";
 import { FrontierPlaces } from "./frontier-desktop";
-import { RealmHeaderChip } from "./realm-header-chip";
-import { RealmPanel } from "./realm-panel";
+import { isTroopStore, STORE_KINDS } from "../stores";
+import { RealmCard } from "./realm-card";
+import { RealmEmblem } from "./realm-header-chip";
 import type { StoreReading } from "./status-strip";
 
 let host: HTMLDivElement;
@@ -47,104 +48,6 @@ const STORES = [
   store("wheat", 4_410, 6_000),
   store("troops", 1_200, 6_000),
 ];
-
-const named = () => [...host.querySelectorAll("[aria-label]")].map((element) => element.getAttribute("aria-label"));
-
-it("reads the player's realm as Blitz's card reads a holding: name, rank, a ring per store and its LORDS", () => {
-  const onWithdraw = vi.fn();
-  act(() =>
-    root.render(<RealmPanel name="Duskbite" level={1} stores={STORES} lords={1_240} onWithdraw={onWithdraw} />),
-  );
-  const panel = host.querySelector('section[aria-label="Realm"]')!;
-  expect(panel.textContent).toMatch(/^Duskbite.*City/);
-  expect(panel.querySelectorAll(".frontier-progress-ring")).toHaveLength(5);
-  expect(panel.querySelector('[data-store="wheat"] .frontier-progress-ring__badge')?.textContent).toBe("2h");
-  expect(panel.querySelector('[data-store="wheat"] .frontier-progress-ring__fill')).not.toBeNull();
-  expect(panel.querySelector('[data-store="essence"] .frontier-progress-ring__fill')).toBeNull();
-  expect(panel.querySelector('[aria-label="LORDS 1,240"] .frontier-progress-ring__fill')).toBeNull();
-  expect(panel.querySelector('[data-store="wheat"]')?.textContent).not.toContain("Wheat");
-  expect(named()).toEqual(
-    expect.arrayContaining([
-      "Essence 18,250",
-      "Labor 9,640 of 18,000 · +10/min · Full in 2h",
-      "Wheat 4,410 of 6,000 · +10/min · Full in 2h",
-      "Knights 1,200 of 6,000 · +10/min · Full in 2h",
-      "LORDS 1,240",
-    ]),
-  );
-  act(() => (host.querySelector('[aria-label="LORDS 1,240"]') as HTMLButtonElement).click());
-  expect(onWithdraw).toHaveBeenCalledTimes(1);
-});
-
-it("marks the LORDS of an account with no linked wallet, its name and hover saying why, still opening Withdraw", () => {
-  const onWithdraw = vi.fn();
-  const line = "Link a wallet to receive your LORDS";
-  act(() =>
-    root.render(
-      <RealmPanel
-        name="Duskbite"
-        level={1}
-        stores={STORES}
-        lords={1_240}
-        linkWalletLine={line}
-        onWithdraw={onWithdraw}
-      />,
-    ),
-  );
-  const ring = host.querySelector<HTMLButtonElement>(`[aria-label="LORDS 1,240. ${line}"]`)!;
-  expect(ring.getAttribute("data-tip")).toBe(line);
-  expect(ring.querySelector('[data-icon="warning"]')).not.toBeNull();
-  act(() => ring.click());
-  expect(onWithdraw).toHaveBeenCalledTimes(1);
-  // With a linked wallet (no line) the ring is the plain balance.
-  act(() =>
-    root.render(<RealmPanel name="Duskbite" level={1} stores={STORES} lords={1_240} onWithdraw={onWithdraw} />),
-  );
-  expect(host.querySelector('[aria-label="LORDS 1,240"] [data-icon="warning"]')).toBeNull();
-});
-
-it("takes the map home from its whole header, which never folds", () => {
-  const onHome = vi.fn();
-  act(() => root.render(<RealmPanel name="Duskbite" level={1} stores={STORES} onHome={onHome} />));
-  const head = host.querySelector<HTMLButtonElement>('button[aria-label="Show my realm"]')!;
-  expect(head.textContent).toContain("Duskbite");
-  act(() => head.click());
-  act(() => head.click());
-  expect(onHome).toHaveBeenCalledTimes(2);
-  expect(named()).toContain("Essence 18,250");
-});
-
-it("opens a store's card under the rings from the ring of a store that has one", () => {
-  const onToggle = vi.fn();
-  const render = (open: "wheat" | null) =>
-    act(() =>
-      root.render(
-        <RealmPanel
-          name="Duskbite"
-          level={1}
-          stores={STORES}
-          storeCards={{ kinds: ["wheat", "labor", "troops"], open, onToggle, card: <p>wheat card</p> }}
-        />,
-      ),
-    );
-  render(null);
-  expect(host.textContent).not.toContain("wheat card");
-  // Essence has no card: its ring is not a button.
-  expect(host.querySelector('button[aria-label="Essence 18,250"]')).toBeNull();
-  // Pressed by the store it stands for, as the playtest's wheat-store step finds it (steps.mjs).
-  expect(host.querySelector('[data-store="wheat"] button')?.getAttribute("aria-label")).toMatch(/^Wheat 4,410/);
-  act(() => host.querySelector<HTMLButtonElement>('[data-store="wheat"] button')!.click());
-  expect(onToggle).toHaveBeenCalledWith("wheat");
-  render("wheat");
-  expect(host.textContent).toContain("wheat card");
-});
-
-it("shows a realm watched or visited by its stores alone: no LORDS and no Realms", () => {
-  act(() => root.render(<RealmPanel name="Duskbite" level={2} stores={STORES} />));
-  expect(host.textContent).toContain("Kingdom");
-  expect(named().filter((name) => name?.startsWith("LORDS"))).toEqual([]);
-  expect(host.querySelectorAll("button.ui-ring")).toHaveLength(0);
-});
 
 it("says the day and the time left in the top bar, and when the day ends and how long tomorrow lasts on hover", () => {
   const clock = dayClock(
@@ -196,77 +99,66 @@ it("offers a desktop's four cornice places in order, each a panel its press open
   expect(onSurface).toHaveBeenLastCalledWith("season");
 });
 
-it("renders the Aspect medallion tinted in the Aspect color and Order of Power below the Realm name on both top bar and panel", () => {
-  const onPress = vi.fn();
+it("renders the Aspect medallion tinted in the Aspect color and Order of Power below the Realm name on the realm card and the phone's emblem", () => {
+  const onHome = vi.fn();
   act(() =>
     root.render(
       <>
-        <RealmHeaderChip name="Duskbite" level={1} aspect={1} orderId={12} expanded={false} onPress={onPress} />
-        <RealmPanel name="Duskbite" level={1} aspect={1} orderId={12} stores={STORES} />
+        <RealmCard
+          name="Duskbite"
+          kind="realm"
+          level={1}
+          aspect={1}
+          orderId={12}
+          stores={STORES}
+          fragments={0}
+          lords={0}
+          onHome={onHome}
+        />
       </>,
     ),
   );
-  const chip = host.querySelector<HTMLButtonElement>(".frontier-realm-chip")!;
-  expect(chip.querySelector('[data-aspect-mark="1"]')).not.toBeNull();
-  expect(chip.querySelector(".frontier-aspect-medallion")?.getAttribute("style")).toContain("--hud-aspect");
-  expect(chip.querySelector('img[src*="portraits"]')).toBeNull();
-  expect(chip.querySelector(".frontier-realm-chip__order")?.textContent).toBe("Order of Power");
-  expect(chip.querySelector('[data-order-id="12"] img')).not.toBeNull();
-  act(() => chip.click());
-  expect(onPress).toHaveBeenCalledTimes(1);
-
-  const panel = host.querySelector('section[aria-label="Realm"]')!;
-  expect(panel.querySelector('[data-aspect-mark="1"]')).not.toBeNull();
-  expect(panel.querySelector(".frontier-aspect-medallion")?.getAttribute("data-tip")).toBe(aspectName(1));
-  expect(panel.textContent).toContain("Order of Power");
-  expect(panel.textContent).toContain(aspectName(1));
+  const card = host.querySelector<HTMLElement>(".frontier-realm-card")!;
+  const identity = card.querySelector<HTMLButtonElement>(".frontier-realm-card__identity")!;
+  expect(identity.querySelector('[data-aspect-mark="1"]')).not.toBeNull();
+  expect(identity.querySelector(".frontier-aspect-medallion")?.getAttribute("style")).toContain("--hud-aspect");
+  expect(identity.querySelector('img[src*="portraits"]')).toBeNull();
+  expect(card.querySelector(".frontier-realm-card__order")?.textContent).toBe("Order of Power");
+  expect(card.querySelector('[data-order-id="12"] img')).not.toBeNull();
+  act(() => identity.click());
+  expect(onHome).toHaveBeenCalledTimes(1);
 
   act(() =>
     root.render(
       <>
-        <RealmHeaderChip name="Duskbite" level={1} aspect={1} orderId={12} variant="desktop" onPress={onPress} />
-        <RealmHeaderChip name="Duskbite" level={1} aspect={1} orderId={12} variant="phone" onPress={onPress} />
+        <RealmEmblem name="Duskbite" fallbackIcon="realm-1" aspect={1} orderId={12} onPress={onHome} />
       </>,
     ),
   );
-  const desktopLabel = host.querySelector(".frontier-realm-chip")?.getAttribute("aria-label");
-  const phoneLabel = host.querySelector(".frontier-phone-realm-chip")?.getAttribute("aria-label");
-  expect(phoneLabel).toBe(desktopLabel);
-
-  act(() => root.render(<RealmPanel name="Duskbite" kind="wonder" level={1} stores={STORES} />));
-  expect(host.querySelector(".frontier-aspect-medallion")?.getAttribute("data-tip")).toBe("Wonder");
-
-  act(() => root.render(<RealmHeaderChip name="Duskbite" level={1} aspect={1} onPress={onPress} />));
-  expect(host.querySelector(".frontier-realm-chip__order")).toBeNull();
+  const label = `Duskbite, Order of Power, ${aspectName(1)}`;
+  expect(host.querySelector(".frontier-phone-emblem")?.getAttribute("aria-label")).toBe(label);
 });
 
-it("renders the lean desktop RealmPanel without duplicating top-bar identity or 4 resource dials", () => {
+it("shows every stock on the desktop realm card, Fragments opening the shop and the next rank upgrading the castle", () => {
   const onUpgradeCastle = vi.fn();
-  const onWithdraw = vi.fn();
-  const onUpgradeFarm = vi.fn();
+  const onShop = vi.fn();
   act(() =>
     root.render(
-      <RealmPanel
+      <RealmCard
         name="Duskbite"
-        level={1}
+        kind="realm"
+        level={0}
+        nextRank="City"
         aspect={1}
         orderId={12}
         population={{ used: 3, max: 12 }}
-        stores={STORES}
+        stores={STORE_KINDS.map((kind) => store(kind, 0, 6_000))}
+        fragments={250}
         lords={320}
-        lean
+        onShop={onShop}
         onUpgradeCastle={onUpgradeCastle}
-        onWithdraw={onWithdraw}
         buildings={[
-          {
-            key: "farm",
-            icon: "farm",
-            name: "Farm",
-            tier: 2,
-            rateIcon: "wheat",
-            rate: "+20/min",
-            onUpgrade: onUpgradeFarm,
-          },
+          { key: "farm", icon: "farm", name: "Farm", tier: 2, rateIcon: "wheat", rate: "+20/min", onUpgrade: vi.fn() },
           {
             key: "barracks",
             icon: "barracks",
@@ -276,23 +168,43 @@ it("renders the lean desktop RealmPanel without duplicating top-bar identity or 
             rate: "+3/min",
             maxed: true,
           },
-          { key: "workshop", icon: "workshop", name: "Workshop", tier: 1, rateIcon: "labor", rate: "+12/min" },
         ]}
       />,
     ),
   );
-  const panel = host.querySelector('section[aria-label="Realm"]')!;
-  expect(panel.querySelector("[data-realm-castle]")).not.toBeNull();
-  expect(panel.querySelector(".frontier-aspect-medallion")).toBeNull();
-  expect(panel.querySelector(".realm-tiles")).toBeNull();
-  expect(panel.textContent).not.toContain("Duskbite");
-  expect(panel.textContent).not.toContain("Order of Power");
-  expect(panel.textContent).toContain("City");
-  expect(panel.textContent).toContain("Pop 3/12");
-  expect(panel.textContent).toContain("320 LORDS");
-  expect(panel.querySelectorAll(".realm-building__max")).toHaveLength(1);
-  act(() => host.querySelector<HTMLButtonElement>('[aria-label="LORDS 320"]')!.click());
-  expect(onWithdraw).toHaveBeenCalledTimes(1);
-  act(() => host.querySelector<HTMLButtonElement>('section[aria-label="Realm"] .ui-panel__cue button')!.click());
+  const card = host.querySelector<HTMLElement>(".frontier-realm-card")!;
+  expect(
+    [...card.querySelectorAll('[aria-label="Stores"] [data-store]')].map((tile) => tile.getAttribute("data-store")),
+  ).toEqual([
+    ...STORE_KINDS.filter((kind) => !isTroopStore(kind)),
+    "fragments",
+    "lords",
+    ...STORE_KINDS.filter(isTroopStore),
+  ]);
+  expect(card.textContent).toContain("Pop 3/12");
+  expect(card.querySelector('[data-store="lords"]')?.textContent).toBe("320LORDS");
+  expect(card.querySelectorAll("[data-realm-buildings] li")).toHaveLength(2);
+  expect(card.querySelectorAll(".realm-building__max")).toHaveLength(1);
+  act(() => card.querySelector<HTMLButtonElement>('[aria-label="Fragments 250"]')!.click());
+  expect(onShop).toHaveBeenCalledTimes(1);
+  const rankUp = card.querySelector<HTMLButtonElement>("[data-realm-castle]")!;
+  expect(rankUp.textContent).toBe("City");
+  act(() => rankUp.click());
   expect(onUpgradeCastle).toHaveBeenCalledTimes(1);
+
+  act(() =>
+    root.render(
+      <RealmCard
+        name="Duskbite"
+        kind="realm"
+        level={3}
+        stores={STORES}
+        fragments={null}
+        lords={null}
+        onUpgradeCastle={onUpgradeCastle}
+      />,
+    ),
+  );
+  expect(host.querySelector("[data-realm-castle]")).toBeNull();
+  expect(host.querySelector('[data-store="fragments"] button')).toBeNull();
 });

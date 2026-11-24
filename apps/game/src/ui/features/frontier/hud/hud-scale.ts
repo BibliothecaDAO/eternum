@@ -1,17 +1,22 @@
 import { useEffect, useState } from "react";
 
-/** The width the desktop HUD is drawn for at its own size. */
-const DESIGN_WIDTH = 1920;
-/** How far the HUD shrinks on a narrow desktop and grows on a wide one. */
-const SMALLEST = 0.85;
-const LARGEST = 1.33;
+const SCALE_AT_WIDTH: readonly (readonly [width: number, scale: number])[] = [
+  [1_024, 0.71],
+  [1_440, 1],
+  [1_920, 1.12],
+  [2_560, 1.35],
+];
 
-/**
- * How much bigger Frontier's desktop HUD draws on a bigger screen (the owner, 22 October: "the hud should scale a bit
- * more with screen size for desktop"): its own size at 1920 wide, a third bigger at 2560, and down to 0.85 on a
- * 1440-wide laptop, so the map keeps its share of every screen.
- */
-export const hudScaleFor = (width: number): number => Math.min(LARGEST, Math.max(SMALLEST, width / DESIGN_WIDTH));
+export const hudScaleFor = (width: number): number => {
+  const [first] = SCALE_AT_WIDTH;
+  if (width <= first![0]) return first![1];
+  for (let index = 1; index < SCALE_AT_WIDTH.length; index++) {
+    const [fromWidth, fromScale] = SCALE_AT_WIDTH[index - 1]!;
+    const [toWidth, toScale] = SCALE_AT_WIDTH[index]!;
+    if (width <= toWidth) return fromScale + ((width - fromWidth) / (toWidth - fromWidth)) * (toScale - fromScale);
+  }
+  return SCALE_AT_WIDTH[SCALE_AT_WIDTH.length - 1]![1];
+};
 
 /** The HUD's scale for the window's width as it is now, following it as it resizes. */
 export const useHudScale = (): number => {

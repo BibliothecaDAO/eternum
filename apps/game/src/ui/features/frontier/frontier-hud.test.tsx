@@ -149,8 +149,10 @@ it("keeps one chat connection and its unread count from desktop to phone and bac
     expect(chatReading()).toEqual({ connected: true, unread: "3" });
 
     await act(async () => viewport.set(390));
-    expect(chatReading()).toEqual({ connected: true, unread: "" });
-    expect(host.querySelector('[aria-label="Unread chat messages: 3"][data-dot]')).not.toBeNull();
+    expect(chatReading()).toEqual({ connected: true, unread: "3" });
+    expect(
+      host.querySelector('nav[aria-label="Places"] button[aria-label="Chat"] .frontier-tab__badge')?.textContent,
+    ).toBe("3");
 
     await act(async () => viewport.set(1440));
     expect(chatReading()).toEqual({ connected: true, unread: "3" });
@@ -408,7 +410,7 @@ it.each([390, 1440])(
 );
 
 it.each([390, 1440])(
-  "opens Today from the day control at %i px, docking only on desktop and leaving the map uncovered",
+  "opens Today from the day control at %i px, in the desktop's rail or the phone's foot band, the map uncovered",
   async (width) => {
     viewport.set(width);
     await renderHud();
@@ -417,8 +419,8 @@ it.each([390, 1440])(
     await act(async () => day!.click());
     const sheet = host.querySelector<HTMLElement>('section[aria-label="Today"]');
     expect(sheet).not.toBeNull();
-    expect(sheet!.hasAttribute("data-docked")).toBe(width >= 1024);
     expect(sheet!.closest("[data-rail-panel]") !== null).toBe(width >= 1024);
+    expect(sheet!.closest("[data-sheet-band]") !== null).toBe(width < 1024);
     expect(host.querySelector('section[aria-label="Realm"]') !== null).toBe(width >= 1024);
     expect(host.querySelector('nav[aria-label="Places"]')).not.toBeNull();
     expect(host.querySelector(".ui-sheet__backdrop")).toBeNull();
@@ -440,38 +442,125 @@ it.each([390, 1440])("opens and closes the Wheat store from its control at %i px
   expect(host.querySelector('section[aria-label="Wheat"]')).toBeNull();
 });
 
-it("gives a phone one inline five-place switch with no duplicate bottom switch, keeps Realm idle unobstructed, and puts a page away", async () => {
+it("gives a phone one place menu under its pill, whose places switch the scene and put a page away", async () => {
   viewport.set(390);
   const route = window.location.pathname + window.location.search;
   window.history.replaceState(null, "", "/g/0x1ab9/1/map?col=1&row=1");
   try {
     await renderHud();
-    expect([...host.querySelectorAll('[aria-label="Map view"] [role="tab"]')].map((tab) => tab.textContent)).toEqual([
-      "Realm",
-      "Surface",
-      "Veil",
-      "Hollow",
-      "Deep",
-    ]);
-    expect(host.querySelector('nav[aria-label="Places"] [data-switch]')).toBeNull();
-    const placeTab = (word: string) =>
-      host.querySelector<HTMLButtonElement>(`[aria-label="Map view"] [role="tab"][aria-label="${word}"]`)!;
-    expect(placeTab("Realm")).not.toBeNull();
-    await act(async () => placeTab("Realm").click());
+    const pill = () => host.querySelector<HTMLButtonElement>("[data-place-pill]")!;
+    const placeTab = async (word: string) => {
+      if (pill().getAttribute("aria-expanded") === "false") await act(async () => pill().click());
+      return document.querySelector<HTMLButtonElement>(
+        `[data-surface-deep-switch] [role="tab"][aria-label="${word}"]`,
+      )!;
+    };
+    expect(pill().dataset.place).toBe("Surface");
+    expect(document.querySelector("[data-surface-deep-switch]")).toBeNull();
+    await act(async () => pill().click());
+    expect(
+      [...document.querySelectorAll('[data-surface-deep-switch] [role="tab"]')].map((tab) =>
+        tab.getAttribute("aria-label"),
+      ),
+    ).toEqual(["Realm", "Surface", "Veil", "Hollow", "Deep"]);
+    const realm = await placeTab("Realm");
+    await act(async () => realm.click());
     expect(window.location.pathname).toMatch(/\/hex$/);
+    expect(document.querySelector("[data-surface-deep-switch]")).toBeNull();
+    expect(pill().dataset.place).toBe("Realm");
     expect(host.querySelector('section[aria-label="Realm"]')).toBeNull();
-    expect(placeTab("Realm").getAttribute("aria-selected")).toBe("true");
-    const realmChip = host.querySelector<HTMLButtonElement>(".frontier-phone-realm-chip")!;
-    await act(async () => realmChip.click());
+    await act(async () => host.querySelector<HTMLButtonElement>(".frontier-phone-emblem")!.click());
     expect(host.querySelector('section[aria-label="Realm"]')).not.toBeNull();
-    await act(async () => placeTab("Surface").click());
+    const surface = await placeTab("Surface");
+    await act(async () => surface.click());
     expect(window.location.pathname).toMatch(/\/map$/);
     expect(host.querySelector('section[aria-label="Realm"]')).toBeNull();
     await fromMenu("Feed");
     expect(surfaceNamed("Feed")).not.toBeNull();
-    await act(async () => placeTab("Realm").click());
+    const realmAgain = await placeTab("Realm");
+    await act(async () => realmAgain.click());
     expect(window.location.pathname).toMatch(/\/hex$/);
     expect(surfaceNamed("Feed")).toBeNull();
+  } finally {
+    window.history.replaceState(null, "", route);
+  }
+});
+
+it("lays a phone's five places on its tab bar, the scene's own first and lit while no page stands", async () => {
+  viewport.set(390);
+  const route = window.location.pathname + window.location.search;
+  window.history.replaceState(null, "", "/g/0x1ab9/1/map?col=1&row=1");
+  try {
+    await renderHud();
+    const tabs = () =>
+      [...host.querySelectorAll<HTMLButtonElement>('nav[aria-label="Places"] button')].map((button) => [
+        button.getAttribute("aria-label"),
+        button.getAttribute("aria-current"),
+      ]);
+    expect(tabs()).toEqual([
+      ["World", "page"],
+      ["Research", null],
+      ["Season", null],
+      ["Chat", null],
+      ["Menu", null],
+    ]);
+    await pressPlace("Research");
+    expect(surfaceNamed("Research")).not.toBeNull();
+    expect(tabs()[1]).toEqual(["Research", "page"]);
+    expect(tabs()[0]).toEqual(["World", null]);
+    await pressPlace("World");
+    expect(surfaceNamed("Research")).toBeNull();
+    await fromMenu("Today");
+    expect(tabs()[4]).toEqual(["Menu", "page"]);
+    await act(async () => {
+      window.history.replaceState(null, "", "/g/0x1ab9/1/hex?col=1&row=1");
+      window.dispatchEvent(new Event("urlChanged"));
+    });
+    expect(tabs()[0]).toEqual(["Realm", "page"]);
+  } finally {
+    window.history.replaceState(null, "", route);
+  }
+});
+
+it("opens the Build sheet on the plot the board lights from a phone's gold Build, in the realm only", async () => {
+  viewport.set(390);
+  const route = window.location.pathname + window.location.search;
+  const { selectedBuildingHex } = useUIStore.getState();
+  window.history.replaceState(null, "", "/g/0x1ab9/1/map?col=1&row=1");
+  try {
+    await renderHud();
+    expect(host.querySelector("[data-build-button]")).toBeNull();
+    await act(async () => {
+      window.history.replaceState(null, "", "/g/0x1ab9/1/hex?col=1&row=1");
+      window.dispatchEvent(new Event("urlChanged"));
+    });
+    const build = host.querySelector<HTMLButtonElement>("[data-build-button]")!;
+    expect(build.textContent).toBe("Build");
+    await act(async () => build.click());
+    expect(surfaceNamed("Build")).not.toBeNull();
+    expect(useUIStore.getState().selectedBuildingHex?.structureId).toBe(7);
+  } finally {
+    window.history.replaceState(null, "", route);
+    await act(async () => useUIStore.setState({ selectedBuildingHex }));
+  }
+});
+
+it("closes a popover first and the page under it next, one Escape each", async () => {
+  viewport.set(390);
+  const route = window.location.pathname + window.location.search;
+  window.history.replaceState(null, "", "/g/0x1ab9/1/map?col=1&row=1");
+  try {
+    await renderHud();
+    const popovers = () => document.querySelectorAll("[data-hud-popover]").length;
+    await pressPlace("Season");
+    expect(surfaceNamed("Season")).not.toBeNull();
+    await act(async () => host.querySelector<HTMLButtonElement>("[data-place-pill]")!.click());
+    expect([popovers(), surfaceNamed("Season") !== null]).toEqual([1, true]);
+    const layer = document.querySelector<HTMLElement>("[data-hud-popover]")!;
+    await act(async () => layer.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })));
+    expect([popovers(), surfaceNamed("Season") !== null]).toEqual([0, true]);
+    await act(async () => document.body.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })));
+    expect(surfaceNamed("Season")).toBeNull();
   } finally {
     window.history.replaceState(null, "", route);
   }
@@ -502,7 +591,7 @@ it("opens a phone's Menu as a page in the one frame, which its ×, Escape and Me
     await act(async () => page()!.querySelector<HTMLButtonElement>('button[aria-label="Close"]')!.click());
     expect(page()).toBeNull();
     await pressPlace("Menu");
-    await act(async () => window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" })));
+    await act(async () => document.body.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })));
     expect(page()).toBeNull();
     await pressPlace("Menu");
     await pressPlace("Menu");
@@ -513,8 +602,8 @@ it("opens a phone's Menu as a page in the one frame, which its ×, Escape and Me
 });
 
 it.each([
+  ["Feed", "Feed"],
   ["Today", "Today"],
-  ["Season", "Season"],
   ["Settings", "Settings"],
 ])(
   "opens %s from a phone's Menu whichever part of its row is tapped: its icon, its words or its chevron",
@@ -552,9 +641,9 @@ const fromMenu = async (word: string) => {
 };
 
 const PHONE_SURFACES = {
-  research: { label: "Research", open: () => fromMenu("Research") },
+  research: { label: "Research", open: () => pressPlace("Research") },
   feed: { label: "Feed", open: () => fromMenu("Feed") },
-  chat: { label: "Chat", open: () => fromMenu("Chat") },
+  chat: { label: "Chat", open: () => pressPlace("Chat") },
   menu: { label: "Menu", open: () => pressPlace("Menu") },
   today: { label: "Today", open: () => fromMenu("Today") },
   season: { label: "Season", open: () => pressPlace("Season") },
@@ -592,7 +681,7 @@ it("routes the phone Realm panel through the one-panel state so it replaces Toda
   window.history.replaceState(null, "", "/g/0x1ab9/1/map?col=1&row=1");
   try {
     await renderHud();
-    const realmChip = () => host.querySelector<HTMLButtonElement>(".frontier-phone-realm-chip")!;
+    const realmChip = () => host.querySelector<HTMLButtonElement>(".frontier-phone-emblem")!;
     expect(realmChip().getAttribute("aria-expanded")).toBe("false");
     await act(async () => host.querySelector<HTMLButtonElement>('button[aria-label="Today"]')!.click());
     expect(surfaceNamed("Today")).not.toBeNull();
@@ -630,30 +719,31 @@ const closeFrame = (label: string) =>
 
 // Review, 30 October 2026: every page now keeps a history entry, so a page that replaces another in one press (Menu's
 // Season) must take over its entry, or the next back lands on an entry no surface owns and does nothing.
-it("leaves one back to the page before the game once the Menu's Season is opened and closed", async () => {
+it("leaves one back to the page before the game once the Menu's Today is opened and closed", async () => {
   await enterFromAnotherPage();
-  await fromMenu("Season");
-  expect([surfaceNamed("Season") !== null, surfaceNamed("Menu")]).toEqual([true, null]);
-  await closeFrame("Season");
+  await fromMenu("Today");
+  expect([surfaceNamed("Today") !== null, surfaceNamed("Menu")]).toEqual([true, null]);
+  await closeFrame("Today");
   await historySettles();
   await systemBack();
   expect(window.location.pathname).toBe("/before-the-game");
 });
 
-it("closes the Menu's Season with the system back, and the next back leaves the game", async () => {
+it("closes the Menu's Today with the system back, and the next back leaves the game", async () => {
   await enterFromAnotherPage();
-  await fromMenu("Season");
+  await fromMenu("Today");
   await historySettles();
   await systemBack();
-  expect([surfaceNamed("Season"), surfaceNamed("Menu")]).toEqual([null, null]);
+  expect([surfaceNamed("Today"), surfaceNamed("Menu")]).toEqual([null, null]);
   expect(window.location.pathname).toBe("/g/0x1ab9/1/map");
   await systemBack();
   expect(window.location.pathname).toBe("/before-the-game");
 });
 
-it("keeps one entry while Menu swaps pages, and one back closes the last", async () => {
+it("keeps one entry while the places swap pages, and one back closes the last", async () => {
   await enterFromAnotherPage();
-  for (const place of ["Feed", "Chat", "Research"]) await fromMenu(place);
+  await fromMenu("Feed");
+  for (const place of ["Chat", "Research"]) await pressPlace(place);
   await pressPlace("Menu");
   await historySettles();
   expect(surfaceNamed("Menu")).not.toBeNull();
@@ -671,7 +761,7 @@ it("leaves no entry behind however often pages open and close", async () => {
     await pressPlace("Menu");
     await fromMenu("Today");
     await closeFrame("Today");
-    await fromMenu("Season");
+    await pressPlace("Season");
     await fromMenu("Feed");
     await closeFrame("Feed");
     await historySettles();
@@ -841,13 +931,12 @@ it("shows the visited realm on the desktop top bar without duplicating the playe
   viewport.set(1440);
   try {
     const names = await renderVisit();
-    const chip = host.querySelector(".frontier-realm-chip")?.textContent ?? "";
-    const panel = host.querySelector('section[aria-label="Realm"]')!;
+    const card = host.querySelector('section[aria-label="Realm"]')!;
     expect(names.visited).not.toBe(names.own);
-    expect(chip).toContain(names.visited);
-    expect(chip).not.toContain(names.own);
-    expect(panel.querySelector(".realm-tiles")).toBeNull();
-    expect(panel.querySelector("[data-realm-castle]")).not.toBeNull();
+    expect(card.querySelector(".frontier-realm-card__name")?.textContent).toBe(names.visited);
+    expect(host.textContent).not.toContain(names.own);
+    expect(card.querySelector('[aria-label="Stores"]')).not.toBeNull();
+    expect(card.querySelector("[data-realm-castle]")).toBeNull();
   } finally {
     visiting.visit = null;
   }
@@ -1027,11 +1116,31 @@ it("orders the desktop cornice places as Research, Season, Feed, Chat without Re
       ["Hollow", "Hollow"],
       ["Deep", "Deep"],
     ]);
-    const chip = host.querySelector<HTMLButtonElement>(".frontier-realm-chip")!;
-    expect(chip.querySelector('img[src*="portraits"]')).toBeNull();
-    await act(async () => chip.click());
+    const crest = host.querySelector<HTMLButtonElement>(".frontier-realm-card__identity")!;
+    expect(crest.querySelector('img[src*="portraits"]')).toBeNull();
+    await act(async () => crest.click());
     expect(window.location.pathname).toMatch(/\/hex$/);
   } finally {
+    window.history.replaceState(null, "", route);
+  }
+});
+
+it("opens Build in the desktop rail on an open plot as the player enters the Realm, and Escape puts it away", async () => {
+  viewport.set(1440);
+  const route = window.location.pathname + window.location.search;
+  window.history.replaceState(null, "", "/g/0x1ab9/1/map?col=1&row=1");
+  const buildSheet = () => document.querySelector('[data-rail-panel] [data-kit-sheet][aria-label="Build"]');
+  try {
+    await renderHud();
+    expect(buildSheet()).toBeNull();
+    await act(async () => host.querySelector<HTMLButtonElement>(".frontier-realm-card__identity")!.click());
+    expect(window.location.pathname).toMatch(/\/hex$/);
+    expect(buildSheet()).not.toBeNull();
+    expect(useUIStore.getState().selectedBuildingHex).toMatchObject({ structureId: 7 });
+    await act(async () => document.body.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })));
+    expect(buildSheet()).toBeNull();
+  } finally {
+    act(() => useUIStore.getState().setSelectedBuildingHex(null));
     window.history.replaceState(null, "", route);
   }
 });
@@ -1568,23 +1677,11 @@ it.each([1920, 390])(
       const deepDock = host.querySelector<HTMLElement>('[data-tutorial-dock="deep"][data-tutorial-status="showing"]');
       expect(deepDock).not.toBeNull();
       expect(deepDock?.textContent).toContain("Hold sites to earn");
-      if (width >= 1024) {
-        const places = [...(host.querySelector('nav[aria-label="Places"]')?.querySelectorAll("button") ?? [])].map(
-          (node) => node.getAttribute("aria-label") ?? node.textContent ?? "",
-        );
-        expect(places).toContain("Season");
-        expect(places).not.toContain("Research");
-      } else {
-        await act(async () => host.querySelector<HTMLButtonElement>('button[aria-label="Menu"]')!.click());
-        const menuPlaces = [...document.querySelectorAll('section[aria-label="Menu"] .menu-place-tile')].map(
-          (node) => node.getAttribute("aria-label") ?? node.textContent ?? "",
-        );
-        expect(menuPlaces).toContain("Feed");
-        expect(menuPlaces).not.toContain("Research");
-        await act(async () =>
-          document.querySelector<HTMLButtonElement>('section[aria-label="Menu"] button[aria-label="Close"]')!.click(),
-        );
-      }
+      const places = [...(host.querySelector('nav[aria-label="Places"]')?.querySelectorAll("button") ?? [])].map(
+        (node) => node.getAttribute("aria-label") ?? node.textContent ?? "",
+      );
+      expect(places).toContain("Season");
+      expect(places).not.toContain("Research");
 
       const told: string[] = [];
       for (let attempt = 0; attempt < 16; attempt += 1) {
