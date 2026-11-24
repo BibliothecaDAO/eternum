@@ -4,6 +4,8 @@ import type {
   HeraldAspectRoster,
   HeraldAspectRosterMember,
   HeraldFrontierLeaderboard,
+  HeraldGameStats,
+  HeraldGameTransactions,
 } from "@bibliothecadao/eternum/game-sync";
 import { aspects } from "@bibliothecadao/types";
 import { buildAspectRoster } from "./native/aspect-roster";
@@ -49,7 +51,7 @@ interface HeraldHttpState {
   fold: SnapshotSource;
   history?: Pick<
     HistoryStore,
-    "queryStoryCursor" | "queryEvents" | "reviewSnapshot" | "frontierHistory" | "frontierDayRanks"
+    "queryStoryCursor" | "queryEvents" | "reviewSnapshot" | "frontierHistory" | "frontierDayRanks" | "gameTransactions"
   >;
   undecodableEventCount: () => number;
   /** The node's last memory sample (node-health.ts); null while none can be read. */
@@ -59,6 +61,7 @@ interface HeraldHttpState {
 const HISTORY_PAGE_LIMIT = 500;
 const ROSTER_PAGE_LIMIT = 100;
 const ROSTER_PAGE_DEFAULT = 50;
+const STATS_CACHE_SECONDS = 3_600;
 
 const PUBLIC_READ_HEADERS = {
   "access-control-allow-methods": "GET, OPTIONS",
@@ -127,6 +130,7 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
   const directory = cachedDirectory(state, readModels.directory);
   const leaderboard = cachedLeaderboard(state);
   const roster = cachedAspectRosters(state);
+  const transactions = cachedGameTransactions(state);
   const directoryPath = "/games";
   const snapshotPath = /^\/games\/([0-9]+)\/snapshot$/;
   const historyPath = /^\/games\/([0-9]+)\/history$/;
@@ -135,6 +139,7 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
   const leaderboardPath = /^\/games\/([0-9]+)\/leaderboard$/;
   const rosterPath = /^\/games\/([0-9]+)\/aspects\/([0-9]+)\/members$/;
   const sitePath = /^\/games\/([0-9]+)\/sites\/([0-9]+)$/;
+  const statsPath = /^\/games\/([0-9]+)\/stats$/;
 
   // Browsers hide a cross-origin request's connect, TLS and wait timings unless the response allows it. Only a dev chain
   // shows them: the chain identity, not a setting, decides, so no production deploy can carry it.
@@ -168,6 +173,26 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
     };
     const response = jsonResponse(body);
     response.headers.set("X-Confirmed-Block", String(state.confirmedBlock()));
+    return response;
+  };
+
+  const answerGameStats = async (requestedGame: string): Promise<Response> => {
+    const gameId = BigInt(requestedGame).toString();
+    let body: HeraldGameStats;
+    try {
+      const game = directory.read().games.find((entry) => String(entry.game_id) === gameId);
+      if (!game) return jsonResponse({ error: "unknown_game" }, 404);
+      body = {
+        game_id: gameId,
+        players: game.player_count,
+        realms: game.settled_realms_count,
+        transactions: await transactions(gameId),
+      };
+    } catch {
+      return jsonResponse({ error: "stats_unavailable" }, 503);
+    }
+    const response = jsonResponse(body);
+    response.headers.set("cache-control", `public, max-age=${STATS_CACHE_SECONDS}`);
     return response;
   };
 
@@ -256,6 +281,9 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
       }
     }
 
+    const statsMatch = request.method === "GET" ? statsPath.exec(url.pathname) : null;
+    if (statsMatch) return answerGameStats(statsMatch[1]);
+
     const rosterMatch = request.method === "GET" ? rosterPath.exec(url.pathname) : null;
     if (rosterMatch) return answerAspectRoster(url, rosterMatch[1], Number(rosterMatch[2]));
 
@@ -321,6 +349,20 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
     return response;
   };
 };
+
+function cachedGameTransactions(state: HeraldHttpState) {
+  const answers = new Map<string, { readAt: number; transactions: Promise<HeraldGameTransactions> }>();
+  return (gameId: string): Promise<HeraldGameTransactions> => {
+    if (!state.history) return Promise.reject(new Error("history_unavailable"));
+    const now = Date.now();
+    const cached = answers.get(gameId);
+    if (cached && now - cached.readAt < STATS_CACHE_SECONDS * 1_000) return cached.transactions;
+    const transactions = state.history.gameTransactions(gameId);
+    answers.set(gameId, { readAt: now, transactions });
+    transactions.catch(() => answers.get(gameId)?.transactions === transactions && answers.delete(gameId));
+    return transactions;
+  };
+}
 
 /** Only successful known-game results enter the cache; the next head replaces the entire generation. */
 function cachedLeaderboard(state: HeraldHttpState) {

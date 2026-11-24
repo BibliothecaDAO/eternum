@@ -39,6 +39,8 @@ A shard is addressed by its Herald's URL; Herald serves one chain, so routes car
 - `GET /games/<game_id>/review/snapshot`
 - `GET /games/<game_id>/sites/<entity_id>`: one Frontier site's row (kind, place, starting guard) wherever it stands,
   outside any actor's scope; 404 for an entity that is no site. The Feed names a far fight's beast from it
+- `GET /games/<game_id>/stats`: a listed game's public figures, cached an hour: its players and settled realms as `GET
+  /games` counts them, and its confirmed transactions that left a timed story or battle (counted once each), by UTC day
 - `WS /games/<game_id>?actor=<gameplay_account>`
 
 The server sends `hello`. The client answers `resume{epoch,seq}` with its last applied boundary; an empty epoch requests

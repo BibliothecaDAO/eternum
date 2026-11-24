@@ -190,6 +190,18 @@ export interface HeraldFrontierAward {
   lords: string;
 }
 
+export interface HeraldGameStats {
+  game_id: string;
+  players: number;
+  realms: number;
+  transactions: HeraldGameTransactions;
+}
+
+export interface HeraldGameTransactions {
+  total: number;
+  days: { day: string; transactions: number }[];
+}
+
 export interface HeraldAspectRoster {
   game_id: string;
   aspect: number;
