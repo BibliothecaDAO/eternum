@@ -13,7 +13,7 @@ import type { ReactNode } from "react";
 import { FRONTIER_STORES, type StoreKind } from "../stores";
 import { FrontierDayClock } from "./day-pill";
 import { FragmentsSocket, pickStores } from "./header-stores";
-import { RealmEmblem, RealmHeaderChip } from "./realm-header-chip";
+import { RealmEmblem } from "./realm-header-chip";
 import { LandingDelta, STORE_TONES, storeLine, type StoreReading } from "./status-strip";
 
 const BAR_STORE_KINDS: readonly StoreKind[] = ["essence", "labor", "wheat"];
@@ -25,7 +25,7 @@ type StoreCards = {
   card: ReactNode;
 };
 
-type RealmFace = { icon: IconMeaning; label: string; level: number; aspect?: AspectId; orderId?: number };
+type RealmFace = { icon: IconMeaning; label: string; aspect?: AspectId; orderId?: number };
 
 type StocksProps = {
   stores: readonly StoreReading[];
@@ -77,7 +77,6 @@ export const FrontierTopBar = ({
     ? {
         icon: homeIcon(homeKind(realm.metadata.has_wonder), level),
         label: realmName || rankName(level),
-        level,
         aspect,
         orderId: realm.metadata.order,
       }
@@ -99,7 +98,7 @@ export const FrontierTopBar = ({
       quest={quest}
       places={places}
       spectatorChip={spectatorChip}
-      storeCard={!realmOpen && storeCards?.open ? storeCards.card : undefined}
+      storeCard={!realmCard && storeCards?.open ? storeCards.card : undefined}
       realmCard={realmCard}
       onOpenRealm={onOpenRealm}
     />
@@ -158,8 +157,6 @@ export const PhoneTopBarView = ({
 );
 
 export const TabletTopBarView = ({
-  realm,
-  realmOpen = false,
   clock,
   placeMenu,
   quest,
@@ -167,23 +164,9 @@ export const TabletTopBarView = ({
   spectatorChip,
   storeCard,
   realmCard,
-  onOpenRealm,
 }: TopBarViewProps) => (
   <div className="frontier-tablet-top">
     <div className="frontier-tablet-bar pointer-events-auto">
-      <div className="frontier-tablet-bar__identity">
-        {realm && (
-          <RealmHeaderChip
-            name={realm.label}
-            level={realm.level}
-            fallbackIcon={realm.icon}
-            aspect={realm.aspect}
-            orderId={realm.orderId}
-            expanded={realmOpen}
-            onPress={onOpenRealm}
-          />
-        )}
-      </div>
       <div className="frontier-tablet-bar__centre">
         {clock}
         {quest}

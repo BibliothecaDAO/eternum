@@ -339,11 +339,6 @@ button.frontier-stock-chip {
   padding: 0 theme(spacing.3);
   color: rgb(var(--hud-ink));
 }
-.frontier-tablet-bar__identity {
-  display: flex;
-  min-width: 0;
-  flex: 1 1 0;
-}
 .frontier-tablet-bar__centre {
   display: flex;
   align-self: flex-start;
@@ -366,6 +361,7 @@ button.frontier-stock-chip {
 }
 .frontier-tablet-bar__places {
   display: flex;
+  margin-left: auto;
   justify-content: flex-end;
 }
 .frontier-tablet-places {
@@ -575,44 +571,4 @@ button.frontier-stock-chip {
 }
 .frontier-quest-card__claim > .ui-button {
   width: 100%;
-}
-.frontier-realm-chip {
-  display: inline-flex;
-  min-width: 0;
-  align-items: center;
-  gap: theme(spacing.2);
-  border: 0;
-  background: transparent;
-  padding: 0 theme(spacing.1) 0 0;
-  color: rgb(var(--hud-ink));
-  cursor: pointer;
-  text-align: left;
-}
-.frontier-realm-chip__text {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: 2px;
-}
-.frontier-realm-chip__name {
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-family: var(--hud-font-display);
-  font-size: var(--hud-text-title);
-  line-height: 1.05;
-  color: rgb(var(--hud-ink));
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-.frontier-realm-chip__order {
-  display: inline-flex;
-  min-width: 0;
-  align-items: center;
-  gap: 4px;
-  font-size: var(--hud-text-badge);
-  line-height: 1.15;
-  color: var(--hud-muted);
-  white-space: nowrap;
 }

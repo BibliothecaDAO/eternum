@@ -1665,23 +1665,11 @@ it.each([1920, 390])(
       const deepDock = host.querySelector<HTMLElement>('[data-tutorial-dock="deep"][data-tutorial-status="showing"]');
       expect(deepDock).not.toBeNull();
       expect(deepDock?.textContent).toContain("Hold sites to earn");
-      if (width >= 1024) {
-        const places = [...(host.querySelector('nav[aria-label="Places"]')?.querySelectorAll("button") ?? [])].map(
-          (node) => node.getAttribute("aria-label") ?? node.textContent ?? "",
-        );
-        expect(places).toContain("Season");
-        expect(places).not.toContain("Research");
-      } else {
-        await act(async () => host.querySelector<HTMLButtonElement>('button[aria-label="Menu"]')!.click());
-        const menuPlaces = [...document.querySelectorAll('section[aria-label="Menu"] .menu-place-tile')].map(
-          (node) => node.getAttribute("aria-label") ?? node.textContent ?? "",
-        );
-        expect(menuPlaces).toContain("Feed");
-        expect(menuPlaces).not.toContain("Research");
-        await act(async () =>
-          document.querySelector<HTMLButtonElement>('section[aria-label="Menu"] button[aria-label="Close"]')!.click(),
-        );
-      }
+      const places = [...(host.querySelector('nav[aria-label="Places"]')?.querySelectorAll("button") ?? [])].map(
+        (node) => node.getAttribute("aria-label") ?? node.textContent ?? "",
+      );
+      expect(places).toContain("Season");
+      expect(places).not.toContain("Research");
 
       const told: string[] = [];
       for (let attempt = 0; attempt < 16; attempt += 1) {

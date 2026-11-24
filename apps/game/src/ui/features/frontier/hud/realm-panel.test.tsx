@@ -14,7 +14,7 @@ import { DayPill } from "./day-pill";
 import { FrontierPlaces } from "./frontier-desktop";
 import { isTroopStore, STORE_KINDS } from "../stores";
 import { RealmCard } from "./realm-card";
-import { RealmEmblem, RealmHeaderChip } from "./realm-header-chip";
+import { RealmEmblem } from "./realm-header-chip";
 import type { StoreReading } from "./status-strip";
 
 let host: HTMLDivElement;
@@ -99,7 +99,7 @@ it("offers a desktop's four cornice places in order, each a panel its press open
   expect(onSurface).toHaveBeenLastCalledWith("season");
 });
 
-it("renders the Aspect medallion tinted in the Aspect color and Order of Power below the Realm name on the realm card and both realm buttons", () => {
+it("renders the Aspect medallion tinted in the Aspect color and Order of Power below the Realm name on the realm card and the phone's emblem", () => {
   const onHome = vi.fn();
   act(() =>
     root.render(
@@ -131,17 +131,12 @@ it("renders the Aspect medallion tinted in the Aspect color and Order of Power b
   act(() =>
     root.render(
       <>
-        <RealmHeaderChip name="Duskbite" level={1} aspect={1} orderId={12} onPress={onHome} />
         <RealmEmblem name="Duskbite" fallbackIcon="realm-1" aspect={1} orderId={12} onPress={onHome} />
       </>,
     ),
   );
   const label = `Duskbite, Order of Power, ${aspectName(1)}`;
-  expect(host.querySelector(".frontier-realm-chip")?.getAttribute("aria-label")).toBe(label);
   expect(host.querySelector(".frontier-phone-emblem")?.getAttribute("aria-label")).toBe(label);
-
-  act(() => root.render(<RealmHeaderChip name="Duskbite" level={1} aspect={1} onPress={onHome} />));
-  expect(host.querySelector(".frontier-realm-chip__order")).toBeNull();
 });
 
 it("shows every stock on the desktop realm card, Fragments opening the shop and the next rank upgrading the castle", () => {

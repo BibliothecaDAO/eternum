@@ -229,7 +229,7 @@ describe("the status strip", () => {
     ]);
   });
 
-  it("gives a tablet its own bar: the realm's name beside its emblem, the day, quest and place in the middle, the places right, the realm card under it", () => {
+  it("gives a tablet its own bar: the day, quest and place, the places right, and the realm card under it", () => {
     act(() =>
       root.render(
         <TabletTopBarView
@@ -242,9 +242,6 @@ describe("the status strip", () => {
           realmCard={<section aria-label="Realm" />}
         />,
       ),
-    );
-    expect(host.querySelector(".frontier-tablet-bar__identity .frontier-realm-chip__name")?.textContent).toBe(
-      "Duskbite",
     );
     expect([...host.querySelectorAll(".frontier-tablet-bar__centre > *")].map((part) => part.textContent)).toEqual([
       "Day",

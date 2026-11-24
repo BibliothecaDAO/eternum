@@ -2,9 +2,8 @@ import "./frontier-bar.css";
 
 import { aspectVariables } from "@/tokens";
 import { AspectMark } from "@/ui/design-system/aspect-mark";
-import { homeIcon, type HomeKind } from "@/ui/design-system/home-icons";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
-import { OrderLine, resolvedOrder } from "@/ui/design-system/kit/order-emblem";
+import { resolvedOrder } from "@/ui/design-system/kit/order-emblem";
 import { aspectName, type AspectId } from "@bibliothecadao/types";
 import type { CSSProperties } from "react";
 
@@ -56,40 +55,6 @@ const realmLabel = (name: string, orderId: number | undefined, aspect: AspectId 
   [name, resolvedOrder(orderId)?.fullOrderName, aspect !== undefined ? aspectName(aspect) : undefined]
     .filter(Boolean)
     .join(", ");
-
-export const RealmHeaderChip = ({
-  name,
-  level = 0,
-  kind = "realm",
-  fallbackIcon,
-  aspect,
-  orderId,
-  expanded,
-  onPress,
-}: {
-  name: string;
-  level?: number;
-  kind?: HomeKind;
-  fallbackIcon?: IconMeaning;
-  aspect?: AspectId;
-  orderId?: number;
-  expanded?: boolean;
-  onPress?: () => void;
-}) => (
-  <button
-    type="button"
-    className="frontier-realm-chip"
-    aria-label={realmLabel(name, orderId, aspect)}
-    aria-expanded={expanded}
-    onClick={onPress}
-  >
-    <AspectMedallion aspect={aspect} fallbackIcon={fallbackIcon ?? homeIcon(kind, level)} size="lg" />
-    <span className="frontier-realm-chip__text">
-      <span className="frontier-realm-chip__name">{name}</span>
-      <OrderLine orderId={orderId} size={14} className="frontier-realm-chip__order" />
-    </span>
-  </button>
-);
 
 export const RealmEmblem = ({
   name,
