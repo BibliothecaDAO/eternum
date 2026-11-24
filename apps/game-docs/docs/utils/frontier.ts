@@ -476,12 +476,10 @@ export const FRONTIER = {
     })),
   },
   shop: {
-    lordsNote: anySpendEnabled
-      ? "You can buy Fragments in the Shop with LORDS (or swap ETH, STRK, or USDC into LORDS through AVNU)."
-      : "The Shop takes LORDS (or swaps ETH, STRK, or USDC into LORDS through AVNU) for Fragments. Fragment spending is currently turned off.",
+    lordsNote: "The Shop takes LORDS (or swaps ETH, STRK, or USDC into LORDS through AVNU) for Fragments.",
     statusNote: anySpendEnabled
-      ? "Fragment spending is on."
-      : `Fragment spending (the Ancient Seal, stamina refills, and Oath rerolls) is turned off during the Final Testnet (${SEASON_ONE_CALENDAR.testnetDates} UTC) and is currently turned off in the Season 1 rules.`,
+      ? "Spending Fragments is on."
+      : `Spending Fragments is turned off during the final testnet (${SEASON_ONE_CALENDAR.testnetDates} UTC).`,
     sealRule: `Lasts the whole season. Gives ${n(questPreset.bonusPercent)}% daily quest labor and the Season 1 Realm skin. You can also get the Seal with a code.`,
     staminaRule: `Refills ${n(fragments.STAMINA_PER_FRAGMENT)} stamina per Fragment on the Surface, Veil, and Hollow (${barFragments} Fragments for a full ${n(stamina.staminaKnightMax)} bar). Does not work inside the Deep.`,
     fragmentPrice: dollars(FRAGMENT_CENTS),
