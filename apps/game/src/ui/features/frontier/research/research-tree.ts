@@ -39,8 +39,19 @@ export interface RealmResearchFacts {
 }
 
 export type Branch = keyof typeof RESEARCH_TREE.branches;
+type ResearchEra = 0 | 1 | 2;
+export const RESEARCH_ERAS: readonly ResearchEra[] = [0, 1, 2];
 /** done: nothing left to buy; ready: buyable now; short: open, the Essence or labor not held yet; locked: waits on a step. */
 export type NodeState = keyof typeof RESEARCH_TREE.states;
+
+export type ResearchLinkState = "done" | "ready" | "locked";
+
+export interface ResearchLink {
+  key: string;
+  from: string;
+  to: string;
+  state: ResearchLinkState;
+}
 
 /** One thing a node's next tier needs, and whether the realm has it. */
 export type Need =
@@ -66,6 +77,7 @@ export interface TreeNode {
   key: string;
   row: number;
   branch: Branch;
+  era: ResearchEra;
   icon: IconMeaning;
   name: string;
   /** Tiers learned, and the most it can have: 5 for a building row, 1 for a castle node. */
@@ -153,10 +165,12 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
         : needs;
     };
     const needs = next === undefined ? [] : nextNeeds(next);
+    const era = Math.min(2, buildingOpensAtLevel(category)) as ResearchEra;
     return {
       key: `row-${row}`,
       row,
       branch,
+      era,
       icon,
       name,
       tier,
@@ -309,6 +323,7 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
         RESEARCH_TREE.lore(step.site),
         step.icon,
         { line: step.line, now: step.now, next: step.next },
+        index as ResearchEra,
         step.tier,
         before,
         ladder[index + 1] ? [ladder[index + 1]!.key] : [],
@@ -342,6 +357,7 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
     name: string,
     icon: IconMeaning,
     gives: TreeNode["gives"],
+    era: ResearchEra = 0,
     tier = 1,
     before: Need[] = [],
     leadsTo: string[] = [],
@@ -355,6 +371,7 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
       key,
       row,
       branch: "castle",
+      era,
       icon,
       name,
       tier: done ? 1 : 0,
@@ -457,3 +474,27 @@ const formatPickEffectStep = (
 
 export const researchEffectLine = (node: Pick<TreeNode, "gives">): RankedWords | string =>
   formatPickEffectStep(node.gives.now, node.gives.next, node.gives.direction);
+
+const linkStateOf = (from: TreeNode, to: TreeNode): ResearchLinkState => {
+  if (to.state === "done") return "done";
+  if (from.state === "done" && (to.state === "ready" || to.state === "short")) return "ready";
+  return "locked";
+};
+
+export const readResearchLinks = (nodes: readonly TreeNode[]): ResearchLink[] => {
+  const byKey = new Map(nodes.map((node) => [node.key, node]));
+  const links: ResearchLink[] = [];
+  for (const from of nodes) {
+    for (const targetKey of from.leadsTo) {
+      const to = byKey.get(targetKey);
+      if (!to) continue;
+      links.push({
+        key: `${from.key}->${to.key}`,
+        from: from.key,
+        to: to.key,
+        state: linkStateOf(from, to),
+      });
+    }
+  }
+  return links;
+};
