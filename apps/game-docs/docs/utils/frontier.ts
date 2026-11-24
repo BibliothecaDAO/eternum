@@ -17,6 +17,8 @@ import { MAINNET_TOKENS } from "../../../../packages/chain/src/tokens";
 import { logisticsStamina } from "../../../../packages/core/src/utils/attribute-tiers";
 import { buildablePlotCount } from "../../../../packages/core/src/utils/castle-reach";
 import {
+  buildingCopyCost,
+  buildingCopyMultiplier,
   isOnePerRealm,
   oathAttackStamina,
   oathDeepLossPerTick,
@@ -196,13 +198,8 @@ const castleLevelLabel = (level: number) => `Level ${level + 1} (${rankName(leve
 const castleLevelInline = (level: number) => `castle level ${level + 1} (${rankName(level)})`;
 
 const copySurchargeBps = config.buildings.buildingFixedCostScalePercent;
-const copyCost = (base: number, copyNumber: number) =>
-  base + (copyNumber - 1) ** 2 * Math.floor((base * copySurchargeBps) / 10_000);
-const copyMultiplierLabel = (copyNumber: number) => {
-  const ratio = 1 + ((copyNumber - 1) ** 2 * copySurchargeBps) / 10_000;
-  return `${Number(ratio.toFixed(2))}x`;
-};
-const copyFormula = `base + (n - 1)² × ${pct(copySurchargeBps)} of base`;
+const copyMultiplierLabel = (copyNumber: number) =>
+  `${Number(buildingCopyMultiplier(copyNumber - 1, copySurchargeBps).toFixed(2))}x`;
 const damageFactorValue = Number(BigInt(config.troop.damage.damageScalingFactor) / 2n ** 64n);
 const combatBetaValue = (CONTRACT.combatBetaTenths / 10).toFixed(1);
 const combatFormula = `round(${n(damageFactorValue)} × troops ÷ (both sides' troops)^${combatBetaValue})`;
@@ -228,7 +225,8 @@ for (const id of repeatableIds) {
 }
 const copyCostsTable = [...copyCostGroups.entries()]
   .map(
-    ([base, names]) => `${names.join(", ")} | ${[1, 2, 3, 4, 5, 6].map((copy) => n(copyCost(base, copy))).join(" | ")}`,
+    ([base, names]) =>
+      `${names.join(", ")} | ${[1, 2, 3, 4, 5, 6].map((copy) => n(Math.floor(buildingCopyCost(base, copy - 1, copySurchargeBps)))).join(" | ")}`,
   )
   .join("\n");
 
@@ -567,7 +565,6 @@ export const FRONTIER = {
       perHour(config.resources.productionByComplexRecipeOutputs[LABOR] * CONTRACT.castleLaborStep ** level),
     ),
     rationStep: String(frontierPreset.board.rationStep),
-    copyFormula,
     copyMultipliers: [1, 2, 3, 4, 5, 6].map(copyMultiplierLabel).join(", "),
     copyCostsTable,
   },

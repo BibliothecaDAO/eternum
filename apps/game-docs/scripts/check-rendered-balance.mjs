@@ -96,6 +96,8 @@ export const frontierPhrases = (
     nativeResearch,
     contract,
     buildablePlotCount,
+    buildingCopyCost,
+    buildingCopyMultiplier,
     isOnePerRealm,
     oathAttackStamina,
     oathFuryRefund,
@@ -258,7 +260,12 @@ export const frontierPhrases = (
       phrases: [
         `Your castle makes ${castleLaborRate(0)} labor per hour at castle level 1 (${rankName(0)}), multiplying by ${n(contract.castleLaborStep)} at each castle level up to ${castleLaborRate(3)}/h at castle level 4 (${rankName(3)}).`,
         ...FRONTIER_BUILDING_TYPES.map((id) => buildingName(id, true)),
-        `base + (n - 1)² × ${n(config.buildings.buildingFixedCostScalePercent / 100)}% of base`,
+        [1, 2, 3, 4, 5, 6]
+          .map(
+            (copy) =>
+              `${Number(buildingCopyMultiplier(copy - 1, config.buildings.buildingFixedCostScalePercent).toFixed(2))}x`,
+          )
+          .join(", "),
         ...[
           ...new Map(
             FRONTIER_BUILDING_TYPES.filter((id) => !isOnePerRealm(id)).reduce((groups, id) => {
@@ -270,7 +277,7 @@ export const frontierPhrases = (
           ([base, names]) =>
             `${names.join(", ")} ${[1, 2, 3, 4, 5, 6]
               .map((copy) =>
-                n(base + (copy - 1) ** 2 * Math.floor((base * config.buildings.buildingFixedCostScalePercent) / 10000)),
+                n(Math.floor(buildingCopyCost(base, copy - 1, config.buildings.buildingFixedCostScalePercent))),
               )
               .join(" ")}`,
         ),
@@ -570,6 +577,9 @@ export const loadBalanceSources = async () => {
     const { buildablePlotCount } = await server.ssrLoadModule(
       join(here, "../../../packages/core/src/utils/castle-reach.ts"),
     );
+    const { buildingCopyCost, buildingCopyMultiplier } = await server.ssrLoadModule(
+      join(here, "../../../packages/core/src/utils/building-cost-mode.ts"),
+    );
     const { isOnePerRealm } = await server.ssrLoadModule(
       join(here, "../../../packages/core/src/utils/realm-research.ts"),
     );
@@ -614,6 +624,8 @@ export const loadBalanceSources = async () => {
       seasonDayUnitSeconds,
       contract,
       buildablePlotCount,
+      buildingCopyCost,
+      buildingCopyMultiplier,
       isOnePerRealm,
       oathAttackStamina,
       oathFuryRefund,
