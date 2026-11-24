@@ -4,7 +4,7 @@ import { aspects, ordersOfAspect, worldBanes, type AspectId, type WorldBaneId } 
 import { nativeBaneConstants as bane, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import type { BaneDay } from "@bibliothecadao/eternum";
 
-type Tone = "good" | "bad" | "warn";
+export type Tone = "good" | "bad" | "warn";
 
 export interface DayHead {
   tone: Tone;

@@ -6,7 +6,7 @@ import { HudButton, HudChip, HudLoading, HudMeter, HudPanel } from "@/ui/design-
 import { DAY_BANNER_WORDS as WORDS } from "@/ui/design-system/kit/words";
 import { formatShort, ResourcesIds } from "@bibliothecadao/types";
 import { useState } from "react";
-import type { DayHead, DayMembers } from "./day-bane-face";
+import type { DayHead, DayMembers, Tone } from "./day-bane-face";
 
 export type DayLayout = "desktop" | "phone";
 
