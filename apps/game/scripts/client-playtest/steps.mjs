@@ -6000,6 +6000,12 @@ export const REHEARSAL_WORDS = {
   move: "Move",
   explore: "Explore",
   attack: "Attack",
+  forecasts: {
+    lost: "Your army is lost",
+    holds: "The guard survives",
+    earns: "This attack earns",
+    clears: "This attack clears it",
+  },
   take: "Take",
   beast: (name, troops) => `Today's beast: ${name}, ${troops} troops`,
   open: "No guard: the next army takes it",
@@ -6562,18 +6568,23 @@ async function sendOneOrder(context, verb, heldBack = null) {
 const REHEARSAL_ARMY_TROOPS = 500;
 
 async function deployWhenTheDockIsEmpty(context) {
+  if (context.browser.armies().length > 0) return null;
+  return deployAnArmy(context, REHEARSAL_ARMY_TROOPS);
+}
+
+async function deployAnArmy(context, atMost) {
   const { browser, extraScreenshot } = context;
-  if (browser.armies().length > 0) return null;
+  const docked = browser.armies().length;
   const before = browser.read(SENT_ACTIONS);
-  const deploy = await deployFromTheDock(context, undefined, undefined, REHEARSAL_ARMY_TROOPS);
+  const deploy = await deployFromTheDock(context, undefined, undefined, atMost);
   extraScreenshot("deploy");
   if (!deploy.locate) return { deploy, blocked: "the dock offers no Deploy sheet with troops to send" };
   const receipt = await receiptOfTheNextAction(context, before);
   if (!receipt)
     return { offers: browser.read(SHEET_BUTTONS), blocked: "the Deploy sheet sent nothing: no troops at home" };
   if (!receipt.applied) return { receipt, failed: "the chain did not apply the Deploy" };
-  const docked = await readUntil(() => browser.armies().length, Boolean, ORDER_OUTCOME_WAIT_MS);
-  return docked ? { receipt } : { receipt, failed: "the deployed army did not reach the dock" };
+  const arrived = await readUntil(() => browser.armies().length > docked, Boolean, ORDER_OUTCOME_WAIT_MS);
+  return arrived ? { receipt } : { receipt, failed: "the deployed army did not reach the dock" };
 }
 
 const sendOneMove = (context, shared) => sendOneOrder(context, REHEARSAL_WORDS.move, shared.deepArmy);
@@ -6589,6 +6600,7 @@ async function buildABarracksOnce(context) {
 const OATH_PICK = "[data-oath-pick]";
 const OATH_CARD = "[data-oath-id]";
 const OATH_REDRAW = "[data-reroll-oath]";
+const OATH_CARD_TEXTS = `JSON.stringify([...document.querySelectorAll(${JSON.stringify(OATH_CARD)})].map((card) => card.textContent.trim()))`;
 
 const REROLL_OATH = "RerollOath";
 const FRAGMENT_SPENDS = "JSON.stringify(window.__eternumFragmentSpends?.() ?? null)";
@@ -6617,6 +6629,7 @@ async function chooseAnOfferedOath(context) {
   const pick = await readUntil(() => browser.read(elementAt(OATH_PICK)), Boolean, SHEET_WAIT_MS);
   if (!pick) return null;
   extraScreenshot("oath-pick");
+  const cards = browser.read(OATH_CARD_TEXTS);
   const redraw = Boolean(browser.read(elementAt(OATH_REDRAW)));
   if (redraw && !gameSpends(browser).includes(REROLL_OATH))
     return { redraw, refused: "the Oath pick offers a Redraw the game's rules turn off" };
@@ -6624,7 +6637,7 @@ async function chooseAnOfferedOath(context) {
   browser.tap(browser.read(elementAt(OATH_CARD)).offset);
   const receipt = await receiptOfTheNextAction(context, before);
   const closed = await readUntil(() => browser.read(elementAt(OATH_PICK)) === null, Boolean, ORDER_OUTCOME_WAIT_MS);
-  return { receipt, closed, redraw };
+  return { cards, receipt, closed, redraw };
 }
 
 const oathRefusal = (oath) => {
@@ -6643,25 +6656,37 @@ async function answerAStandingOath(context) {
 
 async function fightOnTheSurface(context) {
   const reveals = [];
+  let raised = null;
   for (let reveal = 0; ; reveal += 1) {
     const fight = await attackBesideAnArmy(context);
-    if (fight.failed) return { reveals, ...fight };
+    if (fight.failed) return { reveals, raised, ...fight };
     if (fight.receipt) {
       const oath = await chooseAnOfferedOath(context);
       const refused = oathRefusal(oath);
-      return refused ? { reveals, ...fight, oath, failed: refused } : { reveals, ...fight, oath };
+      return refused ? { reveals, raised, ...fight, oath, failed: refused } : { reveals, raised, ...fight, oath };
+    }
+    if (fight.declined.length > 0 && !raised) {
+      raised = await deployAnArmy(context, Infinity);
+      if (raised.blocked || raised.failed) return { reveals, ...fight, raised, ...outcomeOf(raised) };
     }
     if (reveal === SITE_SEARCH_REVEALS)
-      return { reveals, ...fight, blocked: `no army stands beside a site to attack after ${reveal} reveals` };
+      return { reveals, raised, ...fight, blocked: `no site beside an army forecasts a win after ${reveal} reveals` };
     const revealed = await sendOneOrder(context, REHEARSAL_WORDS.explore);
     if (!revealed.receipt?.applied) return { reveals, ...revealed };
     reveals.push(revealed.receipt);
   }
 }
 
+const outcomeOf = ({ blocked, failed }) => (failed ? { failed } : { blocked });
+
+const FIGHT_FORECAST = `JSON.stringify(${JSON.stringify(Object.values(REHEARSAL_WORDS.forecasts))}
+  .find((word) => document.querySelector("[data-kit-sheet]")?.textContent.includes(word)) ?? null)`;
+const WINNING_FORECASTS = [REHEARSAL_WORDS.forecasts.earns, REHEARSAL_WORDS.forecasts.clears];
+
 async function attackBesideAnArmy(context) {
   const { browser, extraScreenshot } = context;
   const offered = [];
+  const declined = [];
   for (const { label } of browser.armies()) {
     await pickArmy(browser, label);
     const army = browser.observe().selection?.army?.id ?? null;
@@ -6680,13 +6705,19 @@ async function attackBesideAnArmy(context) {
     );
     extraScreenshot("attack-offered");
     if (!attack) return { army, offered, failed: "the site beside the army opened no card offering Attack" };
+    const forecast = browser.read(FIGHT_FORECAST);
+    if (!WINNING_FORECASTS.includes(forecast)) {
+      declined.push({ army, forecast });
+      browser.press("Escape");
+      continue;
+    }
     browser.tap(attack.offset);
     const receipt = await receiptOfTheNextAction(context, before);
     extraScreenshot("after-attack");
-    if (!receipt?.applied) return { army, offered, receipt, failed: "the chain did not apply the attack" };
-    return { army, offered, receipt };
+    if (!receipt?.applied) return { army, offered, forecast, receipt, failed: "the chain did not apply the attack" };
+    return { army, offered, declined, forecast, receipt };
   }
-  return { offered };
+  return { offered, declined };
 }
 
 async function measureTheIdlePlay(context, shared) {
