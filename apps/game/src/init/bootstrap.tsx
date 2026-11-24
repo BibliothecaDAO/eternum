@@ -15,6 +15,7 @@ import { useSyncStore } from "../hooks/store/use-sync-store";
 import { bindChainTime } from "../sync/chain-time-binding";
 import { useTransactionStore } from "../hooks/store/use-transaction-store";
 import { useUIStore } from "../hooks/store/use-ui-store";
+import { installFragmentSpendsReader } from "../observability/fragment-spends";
 import { installHoldingGoodsReader } from "../observability/holding-goods";
 import { disposeGameSyncSession, installActiveGameClient } from "../sync/active-game-client";
 import { createGameSyncObserver } from "../sync/game-sync-observer";
@@ -82,6 +83,7 @@ export const attachGameClient = (
     .then((created) => {
       installActiveGameClient(created);
       installHoldingGoodsReader();
+      installFragmentSpendsReader();
       // Selection follows the client from the moment it exists: settlement attaches it before the game boots, so the
       // entry after founding already names the realm and the world map opens on it instead of re-opening there.
       stopFollowingInitialStructure?.();

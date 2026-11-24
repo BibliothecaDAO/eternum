@@ -2,7 +2,6 @@ import { ECONOMY_STEPS } from "./economy-steps.mjs";
 import {
   DEEP_BEASTS,
   deepSites,
-  FRAGMENT_SPEND_COMMANDS,
   FRONTIER_TROOP_NAMES,
   LAYER_NAMES,
   layerName,
@@ -36,7 +35,6 @@ import {
   nativeOathConstants as oathRules,
   nativeRuleConstants as rules,
 } from "../../../../contracts/l3/world-native/schema/balance.gen.ts";
-import { nativeCommandBits } from "../../../../contracts/l3/world-native/schema/commands.gen.ts";
 import { openOrderSendGate, touchAt, VIEWPORT } from "./browser-session.mjs";
 import { answerStandingPrompts, DAY_SUMMARY_GO_ON, ENTRY_BUTTON, findHomeCardEntry } from "./player-entry.mjs";
 import { allApplied, gameShardOf, receiptsOf, SENT_ACTIONS, sentSince } from "./chain-receipts.mjs";
@@ -6592,17 +6590,18 @@ const OATH_PICK = "[data-oath-pick]";
 const OATH_CARD = "[data-oath-id]";
 const OATH_REDRAW = "[data-reroll-oath]";
 
-const releaseEnables = (command) =>
-  (BigInt(release.definition.rules.command_mask) & BigInt(nativeCommandBits[command])) !== 0n;
-const FRAGMENT_SPENDS_ON = FRAGMENT_SPEND_COMMANDS.some(releaseEnables);
+const REROLL_OATH = "RerollOath";
+const FRAGMENT_SPENDS = "JSON.stringify(window.__eternumFragmentSpends?.() ?? null)";
+const gameSpends = (browser) => browser.read(FRAGMENT_SPENDS) ?? [];
 const FRAGMENT_SPEND_CONTROLS = {
   refill: buttonLabelled("Refill"),
   shop: buttonLabelled("^(Fragments [0-9,]+|Shop)$"),
 };
 
 async function fragmentSpendsAreOff({ browser, extraScreenshot }) {
-  const enabled = FRAGMENT_SPEND_COMMANDS.filter(releaseEnables);
-  if (enabled.length > 0) return { enabled, failed: `the release's command mask enables ${enabled.join(", ")}` };
+  const enabled = browser.read(FRAGMENT_SPENDS);
+  if (enabled === null) return { failed: "the page reports no rules for the game" };
+  if (enabled.length > 0) return { enabled, failed: `the game's rules enable ${enabled.join(", ")}` };
   const army = await focusTheArmyFromItsDock(browser);
   if (!army) return { blocked: "the dock holds no army whose panel would offer a refill" };
   extraScreenshot("army-panel");
@@ -6610,7 +6609,7 @@ async function fragmentSpendsAreOff({ browser, extraScreenshot }) {
   const shown = controls.filter((control) => browser.read(FRAGMENT_SPEND_CONTROLS[control]));
   if (shown.length > 0)
     return { army, shown, failed: `the page offers ${shown.join(" and ")} with Fragment spends off` };
-  return { army, absent: controls, refusedByTheChain: FRAGMENT_SPEND_COMMANDS };
+  return { army, absent: controls, enabledForTheGame: enabled };
 }
 
 async function chooseAnOfferedOath(context) {
@@ -6619,7 +6618,8 @@ async function chooseAnOfferedOath(context) {
   if (!pick) return null;
   extraScreenshot("oath-pick");
   const redraw = Boolean(browser.read(elementAt(OATH_REDRAW)));
-  if (redraw && !FRAGMENT_SPENDS_ON) return { redraw };
+  if (redraw && !gameSpends(browser).includes(REROLL_OATH))
+    return { redraw, refused: "the Oath pick offers a Redraw the game's rules turn off" };
   const before = browser.read(SENT_ACTIONS);
   browser.tap(browser.read(elementAt(OATH_CARD)).offset);
   const receipt = await receiptOfTheNextAction(context, before);
@@ -6629,7 +6629,7 @@ async function chooseAnOfferedOath(context) {
 
 const oathRefusal = (oath) => {
   if (oath === null) return null;
-  if (oath.redraw && !FRAGMENT_SPENDS_ON) return "the Oath pick offers a Redraw with Fragment spends off";
+  if (oath.refused) return oath.refused;
   if (!oath.receipt?.applied) return "the chain did not apply the Oath choice";
   return oath.closed ? null : "the Oath pick stayed open after its choice";
 };

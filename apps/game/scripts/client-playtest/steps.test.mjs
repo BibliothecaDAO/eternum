@@ -1219,17 +1219,20 @@ describe("the Season 1 rehearsal", () => {
     });
   });
 
-  it("refuses an Oath pick that offers a Redraw while the release turns Fragment spends off", async () => {
+  it("refuses an Oath pick that offers a Redraw while the game's rules turn RerollOath off", async () => {
     const shown = ["[data-oath-pick]", "[data-reroll-oath]"];
     const browser = {
-      read: (expression) => (shown.some((selector) => expression.includes(selector)) ? { offset: [0, 0] } : null),
+      read: (expression) => {
+        if (expression.includes("__eternumFragmentSpends")) return ["BuySeal", "BuyStamina"];
+        return shown.some((selector) => expression.includes(selector)) ? { offset: [0, 0] } : null;
+      },
       tap: vi.fn(),
     };
     const answer = step("answer-a-standing-oath");
     const played = await answer.play({ browser, extraScreenshot: () => null });
     expect(answer.verify({ played })).toMatchObject({
       status: "failed",
-      reason: "the Oath pick offers a Redraw with Fragment spends off",
+      reason: "the Oath pick offers a Redraw the game's rules turn off",
     });
     expect(browser.tap).not.toHaveBeenCalled();
   });
