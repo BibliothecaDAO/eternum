@@ -1276,6 +1276,7 @@ describe("the Season 1 rehearsal", () => {
       "build-barracks",
       "back-on-map",
       "send-an-army",
+      "fragment-spends-are-off",
       "fight-on-the-surface",
       "enter-the-deep",
       "fight-a-beast",
