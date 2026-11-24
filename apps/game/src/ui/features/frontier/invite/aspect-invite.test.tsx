@@ -104,6 +104,15 @@ it("names the Aspect the link lands in, the season's, when the home in this game
   expect(panel()!.textContent).not.toContain("Luminary");
 });
 
+it("offers nothing and reports no failure when identity has no invite for the player, asking once", async () => {
+  createInvite.mockResolvedValue(null);
+  await renderInvite(2);
+  await act(async () => new Promise((resolve) => setTimeout(resolve, 1_500)));
+  expect(createInvite).toHaveBeenCalledOnce();
+  expect(panel()).toBeNull();
+  expect(host.textContent).not.toContain("could not be made");
+});
+
 it("says when identity refuses the invite, and asks again on Try again", async () => {
   createInvite.mockRejectedValue(new Error("aspect_unavailable"));
   await renderInvite(3);

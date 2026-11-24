@@ -35,7 +35,7 @@ const useShareOwner = (): string | null => {
  * again gets the same one. `posted` records the post; `publish` hands identity the card the link then unfurls as;
  * `failed` says identity refused or could not make it, and `retry` asks again.
  */
-const useMadeLink = <Made extends { code: string }>(key: readonly unknown[], make: () => Promise<Made>) => {
+const useMadeLink = <Made extends { code: string }>(key: readonly unknown[], make: () => Promise<Made | null>) => {
   const owner = useShareOwner();
   const made = useQuery({
     queryKey: [OWN_SHARES, owner, ...key],
@@ -67,9 +67,9 @@ export const useOwnInvite = () => {
   const pledged = useOrderIntent().intent.data?.order ?? null;
   const invite = useMadeLink(["invite", pledged], async () => {
     const made = await identityClient.createInvite();
-    return { ...made, aspect: catalogAspectId(made.aspect) };
+    return made && { ...made, aspect: catalogAspectId(made.aspect) };
   });
-  return { ...invite, aspect: invite.link?.aspect ?? null };
+  return { ...invite, aspect: invite.link?.aspect ?? null, none: invite.link === null };
 };
 
 /** What the account's shared links brought; null without an account, while it is read, or when identity cannot say. */

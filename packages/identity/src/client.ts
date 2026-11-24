@@ -625,8 +625,10 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
   const shareTally = async (): Promise<ShareTally> =>
     readJson(await request("/shares", { method: "GET", cache: "no-store" }), decode(shareTallySchema));
 
-  const createInvite = async (): Promise<OwnInvite> =>
-    readJson(await request("/shares/invite", { method: "POST" }), decode(ownInviteSchema));
+  const createInvite = async (): Promise<OwnInvite | null> => {
+    const response = await request("/shares/invite", { method: "POST" });
+    return response.status === 409 ? null : await readJson(response, decode(ownInviteSchema));
+  };
 
   const invitedFriends = async (): Promise<InvitedFriends> =>
     readJson(await request("/shares/friends", { method: "GET", cache: "no-store" }), decode(invitedFriendsSchema));
