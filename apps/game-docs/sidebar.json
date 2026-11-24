@@ -19,7 +19,7 @@
         "text": "Your realm",
         "items": [
           { "text": "Realm and research", "link": "/frontier/realm" },
-          { "text": "Buildings", "link": "/frontier/buildings", "quick": true },
+          { "text": "Buildings", "link": "/frontier/buildings" },
           { "text": "Daily quests", "link": "/frontier/quests" }
         ]
       },
@@ -27,16 +27,16 @@
         "text": "Armies",
         "items": [
           { "text": "Troops and stamina", "link": "/frontier/armies" },
-          { "text": "Combat", "link": "/frontier/combat", "quick": true },
-          { "text": "Oaths", "link": "/frontier/oaths", "quick": true },
-          { "text": "Relics", "link": "/frontier/relics", "quick": true }
+          { "text": "Combat", "link": "/frontier/combat" },
+          { "text": "Oaths", "link": "/frontier/oaths" },
+          { "text": "Relics", "link": "/frontier/relics" }
         ]
       },
       {
         "text": "Exploring",
         "items": [
           { "text": "The expedition", "link": "/frontier/expedition" },
-          { "text": "Beasts", "link": "/frontier/beasts", "quick": true }
+          { "text": "Beasts", "link": "/frontier/beasts" }
         ]
       },
       {

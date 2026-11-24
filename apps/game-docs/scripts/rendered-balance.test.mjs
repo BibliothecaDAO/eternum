@@ -99,25 +99,21 @@ test("no built HTML page or llm.txt names Blitz, Devcon or Season 0, and synthet
   }
 });
 
-test("Realms home shows Games, Global, and Data; Frontier landing holds Frontier quick links and dashboard link", () => {
+test("Realms home shows Games card without quick-link panels, and Frontier omits duplicate nav buttons", () => {
   const home = pageLine(readFileSync(join(dist, "index.html"), "utf8"));
   for (const phrase of [
+    "Guides, rules, and live data for Realms games, accounts, and LORDS.",
     "Games",
     "Open Frontier docs",
-    "Global",
-    "Sign in",
-    "Payout wallet",
-    "LORDS",
-    "Data",
-    "Live dashboard",
-    "Get the data",
   ]) {
     assert.ok(home.includes(phrase), `Realms home missing "${phrase}"`);
   }
-  const frontier = pageLine(readFileSync(join(dist, "frontier", "index.html"), "utf8"));
-  for (const phrase of ["Start here", "Live dashboard", "Buildings", "Combat", "Oaths", "Relics", "Beasts"]) {
-    assert.ok(frontier.includes(phrase), `Frontier landing missing "${phrase}"`);
+  for (const removed of ["Payout wallet", "Live dashboard", "Get the data"]) {
+    assert.equal(home.includes(removed), false, `Realms home must not duplicate sidebar link "${removed}"`);
   }
+  const frontierHtml = readFileSync(join(dist, "frontier", "index.html"), "utf8");
+  assert.equal(frontierHtml.includes("docs-frontier-landing-nav"), false);
+  assert.equal(frontierHtml.includes("docs-home-quick"), false);
 });
 
 const parseCssVars = (css) => {
@@ -209,6 +205,7 @@ test("every link and button on home and frontier landing has an accessible name 
     const controls = [...html.matchAll(/<(a|button)\b([^>]*)>([\s\S]*?)<\/\1>/g)];
     assert.ok(controls.length > 0, `expected interactive links/buttons on ${rel}`);
     for (const [, tag, attrs, inner] of controls) {
+      if (/\baria-hidden="true"/.test(attrs)) continue;
       const aria = attrs.match(/\baria-label="([^"]+)"/)?.[1]?.trim() ?? "";
       const title = attrs.match(/\btitle="([^"]+)"/)?.[1]?.trim() ?? "";
       const alt = [...inner.matchAll(/\balt="([^"]+)"/g)].map((m) => m[1].trim()).join(" ");
