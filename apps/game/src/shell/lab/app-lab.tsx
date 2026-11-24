@@ -1,3 +1,4 @@
+import { catalogOrder } from "@bibliothecadao/types";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { Navigate, Route, Routes, useParams } from "react-router-dom";
@@ -11,9 +12,11 @@ import {
 } from "@realms-world/identity";
 
 import { PageAddress } from "../frame/page-address";
+import type { DirectoryGame } from "../herald";
 import { CreditsPage, PrivacyPage, TermsPage } from "../legal";
 import { WhatsNewPage } from "../news/news";
 import { NotFoundPage } from "../not-found";
+import { chooseSeason, seasonPlayerAspect } from "../season";
 import { STANDING_PROMPTS } from "../standing-prompts";
 import { PlayPage } from "../play/play-page";
 import { SharedLinkPage } from "../share/shared-link-page";
@@ -171,6 +174,8 @@ function installLabFixtures(screen: LabScreen, field: number | null): () => void
     "linkWallet",
     "shareTally",
     "invitedFriends",
+    "chooseOrder",
+    "createInvite",
     "readDefaultWallet",
     "deleteAccount",
     "priceFragments",
@@ -241,6 +246,17 @@ const LAB_INVITED_FRIENDS: InvitedFriends["friends"] = [
   { name: "Aldric", joinedAt: 1_763_772_800, glory: 45, state: "joined" },
 ];
 
+const labInviteOf = (screen: LabScreen, order: number | null) => {
+  const games: DirectoryGame[] = LAB_SCREENS[screen].games.map((game) => ({ ...game, chainId: LAB_CHAIN }));
+  const season = chooseSeason(games, LAB_SCREENS[screen].signedIn);
+  const seasonAspect = seasonPlayerAspect(season);
+  if (season && seasonAspect !== null) {
+    return { code: LAB_SHARE_CODE, aspect: seasonAspect, chainId: season.chainId, gameId: season.game_id };
+  }
+  const intentAspect = order !== null ? catalogOrder(order)?.aspect : undefined;
+  return { code: LAB_SHARE_CODE, aspect: intentAspect ?? LAB_INVITE.moment, chainId: null, gameId: null };
+};
+
 const answerIdentity = (screen: LabScreen) => {
   identityClient.listSignInProviders = async () => ["discord"];
   identityClient.availableSignInProviders = async () => [...SOCIAL_PROVIDERS];
@@ -261,12 +277,7 @@ const answerIdentity = (screen: LabScreen) => {
     return intent;
   };
   identityClient.createShare = async () => LAB_SHARE_CODE;
-  identityClient.createInvite = async () => ({
-    code: LAB_SHARE_CODE,
-    aspect: LAB_INVITE.moment,
-    chainId: null,
-    gameId: null,
-  });
+  identityClient.createInvite = async () => labInviteOf(screen, intent.order);
   identityClient.joinedShare = async () => labJoinedShare(screen);
   identityClient.openShare = async (code) => {
     if (code !== LAB_SHARE_CODE) throw new IdentityRequestError(404, "share_unknown");
