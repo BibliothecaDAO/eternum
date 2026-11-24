@@ -1140,7 +1140,8 @@ finisher. Canonical proof: `playtest --steps lab-race-expired`.
 - The day banner heads with the player's active Triumph and shows the Aspect's bane bar.
 - **Season, Aspects**: each Aspect's height with its worth in LORDS (shown only), the Aspect's fights in the Deep with
   wipe-outs, and **Invite a friend to your Aspect** (Post on X, Copy link). A friend who opens the link is offered that
-  Aspect first when founding.
+  Aspect first when founding. The invite (here, on Play, Season, You and before the season) shows only when identity
+  makes one: an account with no Aspect in the season game, or none picked before it, gets no invite and no error.
 - An invite's landing (`/s/<code>`): **<name> invites you**, **Join <Aspect>** with its four Orders' crests and members,
   "Members of one Aspect never fight each other." and the Order the sharer kept; before the season **Starts in …** and,
   signed out, **Create your Realm**. Lab: `/lab/app/preseason-invited/s/MRGHT234`; proof: `build.sh prove-season-one`.
