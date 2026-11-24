@@ -1,7 +1,7 @@
 import "./play-page.css";
 
 import type { HeraldAspectRace } from "@bibliothecadao/eternum/game-sync";
-import { aspectName, aspects, formatExact, questCatalog, type AspectId, type QuestId } from "@bibliothecadao/types";
+import { aspectName, formatExact, questCatalog, type AspectId, type QuestId } from "@bibliothecadao/types";
 import type { ReactNode } from "react";
 
 import { Icon } from "@/ui/design-system/icon";
@@ -26,7 +26,7 @@ import { hasSeasonRealm } from "../season-pick";
 import { resultsHref } from "../season-tab/results-link";
 import { useShareTally } from "../share/own-shares";
 import { useRequestSignIn } from "../sign-in/connect";
-import { HyperstructureTile } from "./hyperstructure-stage";
+import { HyperstructureRaceStage } from "./hyperstructure-stage";
 import type { PlayItem } from "./play-board";
 import { type PlayFacts, type SourceGap, usePlayFacts } from "./play-facts";
 import { LeadCard, RehearsalCard } from "./play-item";
@@ -163,24 +163,7 @@ const AspectRacePreview = ({
         </AppLink>
       }
     >
-      <div className="flex flex-col gap-3">
-        <div className="play-aspects-grid">
-          {aspects.map(({ id }) => {
-            const row = byAspect[id];
-            return (
-              <HyperstructureTile
-                key={id}
-                aspect={id}
-                height={row.height}
-                finishHeight={finishHeight}
-                members={row.members}
-                own={ownAspect === id}
-                compact
-              />
-            );
-          })}
-        </div>
-      </div>
+      <HyperstructureRaceStage byAspect={byAspect} finishHeight={finishHeight} ownAspect={ownAspect} compact />
     </AppPanel>
   );
 };

@@ -102,6 +102,7 @@ vi.mock("@/game-entry-preload", () => ({ primeGameEntry: gameEntryPreload.primeG
 
 import { identityClient } from "@/hooks/context/identity-session";
 
+import { setViewportWidth } from "../frame/test-viewport";
 import { PlayPage } from "./play-page";
 
 import { useConnectStore } from "../sign-in/connect";
@@ -169,8 +170,9 @@ afterEach(async () => {
   useConnectStore.setState({ request: null });
 });
 
-const mount = async () => {
+const mount = async (width = 1440) => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  setViewportWidth(width);
   localStorage.clear();
   const container = document.createElement("div");
   document.body.append(container);
@@ -230,64 +232,97 @@ it.each([
   expect(page.text()).not.toMatch(/\b1 [Pp]layers\b/);
 });
 
-it("renders hex-tile stone foundation artwork at 0 height, stage progression as height rises, today's quest, and never shows Blitz", async () => {
-  reads.directory = answered({ games: [ownSeason] });
-  reads.history = answered({ games: [], next: null, failures: [] });
-  const noRace = await mount();
-  expect(noRace.container.querySelectorAll(".hyper-art__svg")).toHaveLength(0);
-  expect(noRace.container.querySelector('section[aria-label="Blitz"]')).toBeNull();
-  expect(noRace.text()).not.toContain("No Blitz scheduled");
-  await cleanup?.();
+it.each([1440, 390])(
+  "renders one procedural 3D race stage with 4 Aspect stat cards at 0 height and rising stages on %ipx, today's quest, and never shows Blitz",
+  async (width) => {
+    reads.directory = answered({ games: [ownSeason] });
+    reads.history = answered({ games: [], next: null, failures: [] });
+    const noRace = await mount(width);
+    expect(noRace.container.querySelectorAll("[data-race-stage]")).toHaveLength(0);
+    expect(noRace.container.querySelectorAll(".hyper-art__svg")).toHaveLength(0);
+    expect(noRace.container.querySelector('section[aria-label="Blitz"]')).toBeNull();
+    expect(noRace.text()).not.toContain("No Blitz scheduled");
+    await cleanup?.();
 
-  reads.directory = answered({
-    games: [
-      game({
-        ...ownSeason,
-        aspect_race: {
-          finish_height: 10_000,
-          season_days: 50,
-          heights: { 1: 0, 2: 0, 3: 0, 4: 0 },
-          triumph_percents: { 1: 150, 2: 200, 3: 50, 4: 200 },
-        },
-      }),
-    ],
-  });
-  const zero = await mount();
-  expect(zero.container.querySelectorAll(".hyper-art__svg")).toHaveLength(4);
-  await cleanup?.();
+    reads.directory = answered({
+      games: [
+        game({
+          ...ownSeason,
+          aspect_members: { 1: 12, 2: 9, 3: 6, 4: 3 },
+          aspect_race: {
+            finish_height: 10_000,
+            season_days: 50,
+            heights: { 1: 0, 2: 0, 3: 0, 4: 0 },
+            triumph_percents: { 1: 150, 2: 200, 3: 50, 4: 200 },
+          },
+        }),
+      ],
+    });
+    const zero = await mount(width);
+    expect(zero.container.querySelectorAll("[data-race-stage]")).toHaveLength(1);
+    expect(zero.container.querySelector("[data-race-stage]")?.getAttribute("data-race-surface")).toBe("shell-compact");
+    expect(zero.container.querySelectorAll(".hyper-art__svg")).toHaveLength(0);
+    expect(zero.container.querySelectorAll(".hyper-tile")).toHaveLength(4);
+    expect([...zero.container.querySelectorAll(".hyper-tile")].map((node) => node.getAttribute("data-stage"))).toEqual([
+      "0",
+      "0",
+      "0",
+      "0",
+    ]);
+    await cleanup?.();
 
-  reads.directory = answered({
-    games: [
-      game({
-        ...ownSeason,
-        day_index: 11,
-        day_ends_at: Math.floor(Date.now() / 1000) + 3_600,
-        aspect_race: {
-          finish_height: 10_000,
-          season_days: 50,
-          heights: { 1: 7_500, 2: 2_500, 3: 0, 4: 0 },
-          triumph_percents: { 1: 150, 2: 200, 3: 50, 4: 200 },
-        },
-        player_state: {
-          ...ownSeason.player_state!,
-          today_quest: { quest_id: 2, progress: 0, target: 1, labor: 1_500 },
-        },
-      }),
-    ],
-  });
-  const known = await mount();
-  const stages = [...known.container.querySelectorAll("[data-aspect-id] .hyper-art")].map((node) =>
-    node.getAttribute("data-stage"),
-  );
-  expect(stages).toEqual(["3", "1", "0", "0"]);
-  expect(known.container.querySelector('[data-aspect-id="1"] .hyper-tile__count')?.textContent).toBe("7,500");
-  expect(known.container.querySelector("[data-play-today]")?.textContent).toContain(
-    "Clear rifts · 0 of 1 · +1,500 Labor",
-  );
-  expect(known.container.querySelector("[data-play-invite]")).not.toBeNull();
-  expect(known.container.querySelectorAll('[role="timer"]')).toHaveLength(1);
-  expect(known.text()).not.toContain("Tomorrow lasts");
-});
+    reads.directory = answered({
+      games: [
+        game({
+          ...ownSeason,
+          day_index: 11,
+          day_ends_at: Math.floor(Date.now() / 1000) + 3_600,
+          aspect_members: { 1: 42, 2: 31, 3: 18, 4: 9 },
+          aspect_race: {
+            finish_height: 10_000,
+            season_days: 50,
+            heights: { 1: 7_500, 2: 2_500, 3: 0, 4: 0 },
+            triumph_percents: { 1: 150, 2: 200, 3: 50, 4: 200 },
+          },
+          player_state: {
+            ...ownSeason.player_state!,
+            today_quest: { quest_id: 2, progress: 0, target: 1, labor: 1_500 },
+          },
+        }),
+      ],
+    });
+    const known = await mount(width);
+    expect(known.container.querySelectorAll("[data-race-stage]")).toHaveLength(1);
+    expect(known.container.querySelectorAll(".hyper-art__svg")).toHaveLength(0);
+    const tiles = [...known.container.querySelectorAll(".hyper-tile")];
+    expect(tiles.map((node) => node.getAttribute("data-stage"))).toEqual(["3", "1", "0", "0"]);
+    expect(tiles.map((node) => node.querySelectorAll(".hyper-tile__pip[data-filled]").length)).toEqual([3, 1, 0, 0]);
+    expect(tiles.map((node) => node.querySelector(".hyper-tile__count")?.textContent)).toEqual([
+      "7,500",
+      "2,500",
+      "0",
+      "0",
+    ]);
+    expect(tiles.map((node) => node.querySelector(".hyper-tile__goal")?.textContent)).toEqual([
+      "of 10,000",
+      "of 10,000",
+      "of 10,000",
+      "of 10,000",
+    ]);
+    expect(tiles.map((node) => node.querySelector(".hyper-tile__members")?.textContent)).toEqual([
+      "42",
+      "31",
+      "18",
+      "9",
+    ]);
+    expect(known.container.querySelector("[data-play-today]")?.textContent).toContain(
+      "Clear rifts · 0 of 1 · +1,500 Labor",
+    );
+    expect(known.container.querySelector("[data-play-invite]")).not.toBeNull();
+    expect(known.container.querySelectorAll('[role="timer"]')).toHaveLength(1);
+    expect(known.text()).not.toContain("Tomorrow lasts");
+  },
+);
 
 it("renders rehearsal games as compact secondary cards under InviteCard with speed badge and secondary Join/Resume actions", async () => {
   const rehearsal = game({

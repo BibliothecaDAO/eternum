@@ -50,7 +50,7 @@ import {
 } from "../herald";
 import { Loading } from "../loading";
 import { ageOf } from "../play/ages";
-import { HyperstructureTile } from "../play/hyperstructure-stage";
+import { HyperstructureRaceStage } from "../play/hyperstructure-stage";
 import { CopySeasonInvite, SeasonInviteAlerts, useSeasonInvite } from "../play/season-invite";
 import {
   RACE_STAGE_COUNT,
@@ -138,23 +138,7 @@ const AspectSeasonView = ({
           </span>
         }
       >
-        <div className="flex flex-col gap-4">
-          <div className="season-race__grid">
-            {aspects.map(({ id }) => {
-              const row = byAspect[id];
-              return (
-                <HyperstructureTile
-                  key={id}
-                  aspect={id}
-                  height={row.height}
-                  finishHeight={finishHeight}
-                  members={row.members}
-                  own={ownAspect === id}
-                />
-              );
-            })}
-          </div>
-        </div>
+        <HyperstructureRaceStage byAspect={byAspect} finishHeight={finishHeight} ownAspect={ownAspect} />
       </AppPanel>
       <div className="season-grid">
         <AppPanel title={SEASON_WORDS.gloryLeaderboard} icon="leaderboard" flush>

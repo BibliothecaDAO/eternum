@@ -603,6 +603,72 @@ it("combines all four Aspect rosters into the default Global Glory leaderboard w
   }
 });
 
+it.each([1440, 390])(
+  "renders Season 1 procedural race stage and 4 Aspect stat cards from directory without calling the Season 0 leaderboard at %ipx",
+  async (width) => {
+    shards.open.mockImplementation(async () => ({ url: "http://herald.test", chainId: "0x52" }) as never);
+    reads.directory = {
+      data: {
+        games: [
+          {
+            ...FRONTIER,
+            player_count: 142,
+            aspect_members: { 1: 40, 2: 38, 3: 34, 4: 30 },
+            aspect_race: {
+              finish_height: 7_500,
+              season_days: 30,
+              heights: { 1: 6_400, 2: 4_100, 3: 0, 4: 0 },
+              triumph_percents: { 1: 150, 2: 200, 3: 50, 4: 200 },
+            },
+          },
+        ],
+      },
+      isError: false,
+      isPending: false,
+    };
+    reads.useRealBoard = true;
+    const { container, unmount } = await mount(width);
+    try {
+      expect(roster.asked.filter((path) => path.includes("/leaderboard"))).toEqual([]);
+      expect(container.querySelector("[data-season-race]")).not.toBeNull();
+      expect(container.querySelectorAll("[data-race-stage]")).toHaveLength(1);
+      expect(container.querySelector("[data-race-stage]")?.getAttribute("data-race-surface")).toBe("shell");
+      expect(container.querySelectorAll(".hyper-art__svg")).toHaveLength(0);
+      expect(container.textContent).not.toContain("Season did not answer.");
+      const cards = [...container.querySelectorAll(".hyper-tile")];
+      expect(cards).toHaveLength(4);
+      expect(cards.map((card) => card.querySelector(".hyper-tile__count")?.textContent)).toEqual([
+        "6,400",
+        "4,100",
+        "0",
+        "0",
+      ]);
+      expect(cards.map((card) => card.querySelector(".hyper-tile__goal")?.textContent)).toEqual([
+        "of 7,500",
+        "of 7,500",
+        "of 7,500",
+        "of 7,500",
+      ]);
+      expect(cards.map((card) => card.querySelectorAll(".hyper-tile__pip[data-filled]").length)).toEqual([4, 2, 0, 0]);
+      expect(cards.map((card) => card.querySelector(".hyper-tile__members")?.textContent)).toEqual([
+        "40",
+        "38",
+        "34",
+        "30",
+      ]);
+      expect(container.textContent).toContain("Day 4 of 30");
+      expect(container.textContent).toContain("Clear Mist");
+      expect(container.textContent).toContain("1,500 height");
+      expect(container.textContent).not.toContain("LORDS per height point");
+      expect(container.textContent).not.toContain("LORDS");
+    } finally {
+      shards.open.mockImplementation(async () => {
+        throw new Error("unexpected shard read");
+      });
+      await unmount();
+    }
+  },
+);
 it.each([
   [390, true],
   [1440, true],
