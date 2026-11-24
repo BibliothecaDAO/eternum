@@ -449,6 +449,8 @@ const gameAndLobby = {
             held_realm_id: null,
             has_home_source: false,
             taken_realm_ids: [],
+            fragments: null,
+            ancient_seal: false,
           },
         },
       ],

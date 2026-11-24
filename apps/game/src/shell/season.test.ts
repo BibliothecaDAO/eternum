@@ -4,7 +4,8 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import type { DirectoryGame } from "./herald";
-import { chooseSeason, directoryDay, endedSeasons, isAccelerated, isRehearsal, seasonTitle } from "./season";
+import { directoryDay, endedSeasons, isAccelerated, seasonTitle } from "./season";
+import { chooseSeason, isRehearsal } from "./season-pick";
 import { ARCHIVED_SEASONS } from "./season-tab/archive/archive";
 
 const season = (gameId: number, startMainAt: number, ownRealm: boolean): DirectoryGame => ({
@@ -33,6 +34,8 @@ const season = (gameId: number, startMainAt: number, ownRealm: boolean): Directo
     held_realm_id: null,
     has_home_source: false,
     taken_realm_ids: [],
+    fragments: null,
+    ancient_seal: false,
     structures: ownRealm
       ? [{ entity_id: 1, category: 1, level: 1, realm_id: 7, coord_x: 0, coord_y: 0, resources_packed: "0" }]
       : [],

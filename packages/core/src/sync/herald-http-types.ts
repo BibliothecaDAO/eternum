@@ -61,6 +61,8 @@ export interface HeraldPlayerGameState {
   taken_realm_ids: number[];
   structures: HeraldPlayerStructure[];
   today_quest?: HeraldPlayerQuest | null;
+  fragments: number | null;
+  ancient_seal: boolean;
 }
 
 export interface HeraldGameDirectoryEntry {

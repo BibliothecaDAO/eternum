@@ -156,15 +156,17 @@ export function readLaborBonus(
 }
 
 export function fragmentsSold(store: NativeFactStore, gameId: number): boolean {
-  const release = store.get("GameRelease", { game_id: gameId });
-  const rules = store.get("SliceRules", { game_id: gameId });
-  return (
-    release !== undefined &&
-    release.release_id >= nativeReleaseConstants.SEAL_RELEASE &&
-    rules !== undefined &&
-    spendsFragments(rules)
-  );
+  return sellsFragments(store.get("GameRelease", { game_id: gameId }), store.get("SliceRules", { game_id: gameId }));
 }
+
+export const sellsFragments = (
+  release: { readonly release_id: number } | undefined,
+  rules: { readonly command_mask: bigint } | undefined,
+): boolean =>
+  release !== undefined &&
+  release.release_id >= nativeReleaseConstants.SEAL_RELEASE &&
+  rules !== undefined &&
+  spendsFragments(rules);
 
 export function readSeasonPass(
   store: NativeFactStore,

@@ -24,6 +24,8 @@ const game = (mode: DirectoryGame["mode"], over: Partial<DirectoryGame> = {}): D
       held_realm_id: null,
       has_home_source: false,
       taken_realm_ids: [],
+      fragments: null,
+      ancient_seal: false,
       structures: [],
     },
     ...over,
@@ -37,6 +39,8 @@ const withRealm = (base: DirectoryGame): DirectoryGame => ({
     held_realm_id: null,
     has_home_source: false,
     taken_realm_ids: [],
+    fragments: null,
+    ancient_seal: false,
     structures: [REALM],
   },
 });

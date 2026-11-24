@@ -1,7 +1,8 @@
 import { isGameOver } from "@/runtime/world/directory";
 
 import type { DirectoryGame } from "../herald";
-import { chooseSeason, isAccelerated, isRehearsal, seasonRealm } from "../season";
+import { isAccelerated } from "../season";
+import { chooseSeason, isRehearsal, seasonRealm } from "../season-pick";
 
 type PlayVerb = "resume" | "play" | "results";
 

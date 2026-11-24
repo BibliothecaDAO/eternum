@@ -76,6 +76,7 @@ vi.mock("@/services/settlement", () => ({
     return result;
   },
 }));
+vi.mock("@/shell/value/holdings-pill", () => ({ HoldingsPill: () => null }));
 vi.mock("./selected-world-entity-wait", () => ({
   isSelectedWorldEntityWaitAborted: () => false,
   waitForSelectedWorldEntityState: async (input: { read: () => Promise<unknown> }) => input.read(),

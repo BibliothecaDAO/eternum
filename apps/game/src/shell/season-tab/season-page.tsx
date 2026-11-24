@@ -65,7 +65,6 @@ import {
   RACE_TRIUMPHS,
   type AspectRaceStanding,
   aspectRaceStandings,
-  chooseSeason,
   directoryDay,
   endedSeasons,
   seasonDayLabel,
@@ -76,6 +75,7 @@ import {
   seasonRealmId,
   seasonTitle,
 } from "../season";
+import { chooseSeason } from "../season-pick";
 import { useNowSeconds } from "../use-now";
 import { AspectRoster } from "./aspect-roster";
 import { FrontierRows } from "./frontier-rows";

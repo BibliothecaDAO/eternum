@@ -18,6 +18,7 @@ import { Lockup } from "./lockup";
 import { PROFILE_PATH } from "../profile/settings-route";
 import { FRAGMENTS_PATH } from "../shop/fragments-route";
 import { useRequestSignIn } from "../sign-in/connect";
+import { HoldingsPill } from "../value/holdings-pill";
 import { LordsBalancePill } from "../value/lords-balance-pill";
 import { usePageAddress } from "./page-address";
 
@@ -178,7 +179,12 @@ export const DesktopBar = ({ notice }: { notice: ReactNode }) => {
           ? { ...placeOf(tab), onSelect: pane.toggle, current: pane.open, count: unread }
           : placeOf(tab),
       )}
-      balance={<LordsBalancePill />}
+      balance={
+        <>
+          <HoldingsPill />
+          <LordsBalancePill />
+        </>
+      }
       player={{
         ...placeOf(YOU_TAB),
         ...(connect && { label: WORDS.connect, onSelect: connect, action: "connect" as const }),

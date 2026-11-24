@@ -18,7 +18,7 @@ import { NothingHere } from "../not-found";
 import type { Painting } from "@/ui/design-system/kit/paintings";
 import { gameKey } from "../play/play-board";
 import { markResultsSeen } from "../play/seen-results";
-import { seasonRealm } from "../season";
+import { seasonRealm } from "../season-pick";
 import { archivedSeason } from "./archive/archive";
 import { useFinishedGame } from "./finished-game";
 import { gameOfResults } from "./results-link";

@@ -71,6 +71,8 @@ const game = (over: Partial<DirectoryGame>): DirectoryGame => ({
     held_realm_id: null,
     has_home_source: false,
     taken_realm_ids: [],
+    fragments: null,
+    ancient_seal: false,
     structures: [],
   },
   registration: null,
@@ -86,6 +88,8 @@ const owned = {
   held_realm_id: null,
   has_home_source: false,
   taken_realm_ids: [],
+  fragments: null,
+  ancient_seal: false,
   structures: [REALM],
   today_quest: { quest_id: 2, progress: 0, target: 1, labor: 1_500 },
 };
@@ -203,6 +207,8 @@ const openEternum = game({
     held_realm_id: null,
     has_home_source: false,
     taken_realm_ids: [],
+    fragments: null,
+    ancient_seal: false,
     structures: [],
   },
 });

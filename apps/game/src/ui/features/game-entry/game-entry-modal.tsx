@@ -34,7 +34,8 @@ import { fetchSettlementSnapshot, type SettlementSnapshot } from "@/runtime/worl
 import { isGameOver } from "@/runtime/world/directory";
 import { markGameEntryMilestone } from "@/ui/layouts/game-entry-timeline";
 import { resultsHref } from "@/shell/season-tab/results-link";
-import { questBonusPercentOf, seasonRealm } from "@/shell/season";
+import { questBonusPercentOf } from "@/shell/season";
+import { seasonRealm } from "@/shell/season-pick";
 import { ClockChip } from "@/ui/design-system/kit/clock-chip";
 import { doorwayRealmFromId, toPaddedFeltAddress } from "./doorway/doorway-realm";
 import { DoorwayScreen } from "./doorway/doorway-screen";

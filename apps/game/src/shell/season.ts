@@ -1,4 +1,4 @@
-import { aspects, catalogOrder, formatDate, isSeasonGame, type AspectId } from "@bibliothecadao/types";
+import { aspects, catalogOrder, formatDate, type AspectId } from "@bibliothecadao/types";
 import { canonicalRealm } from "@bibliothecadao/eternum";
 import {
   nativeFragmentConstants,
@@ -21,39 +21,19 @@ import {
   gameSpeed,
 } from "@/ui/design-system/kit/words";
 import { type DayClock, dayTone } from "@/ui/features/frontier/hud/day-clock";
-import { isRealmCategory } from "@bibliothecadao/eternum/expeditions";
 
 import release from "../../../../contracts/l3/world-native/schema/release-definition.json";
 import type { SeasonPhase } from "./season-calendar";
 import type { DirectoryGame } from "./herald";
 import { gameKey } from "./play/play-board";
 import { ARCHIVED_SEASONS, archivedSeason } from "./season-tab/archive/archive";
-
-export const isRehearsal = (game: Pick<DirectoryGame, "name">): boolean => !isSeasonGame(game.name);
+import { isRehearsal, seasonRealm } from "./season-pick";
 
 export const isAccelerated = (game: Pick<DirectoryGame, "clock_scale">): boolean =>
   gameSpeed(game.clock_scale) !== undefined;
 
-/** The player's realm in the season: the structure the directory lists for them, if they have founded one. */
-
-export const seasonRealm = (season: Pick<DirectoryGame, "player_state">) =>
-  season.player_state?.structures.find((structure) => isRealmCategory(structure.category));
-
 export const seasonRealmId = (season: Pick<DirectoryGame, "player_state"> | null | undefined): number | null =>
   (season ? seasonRealm(season)?.realm_id : undefined) ?? season?.player_state?.held_realm_id ?? null;
-
-/**
- * The Frontier season a screen shows: the player's own, where their realm stands, else a live one. Among several, the
- * latest to start, then the lowest game id, so the choice never rests on the directory's order.
- */
-export const chooseSeason = (games: readonly DirectoryGame[], signedIn: boolean): DirectoryGame | undefined => {
-  const seasons = games
-    .filter((game) => game.mode === "frontier" && !isRehearsal(game) && !isGameOver(game))
-    .toSorted((a, b) => b.clock.start_main_at - a.clock.start_main_at || a.game_id - b.game_id);
-  const live = seasons.filter((game) => game.status === "Live");
-  const available = live.length > 0 ? live : seasons;
-  return (signedIn ? available.find((game) => seasonRealm(game)) : undefined) ?? available[0];
-};
 
 /**
  * Frontier's seasons that have ended, the last to end first: those the directory still lists until they settle, the

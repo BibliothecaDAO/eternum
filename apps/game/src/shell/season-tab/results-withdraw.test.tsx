@@ -185,6 +185,8 @@ it("offers Withdraw on an ended Aspect season when the player holds a realm ther
       held_realm_id: null,
       has_home_source: false,
       taken_realm_ids: [],
+      fragments: null,
+      ancient_seal: false,
       structures: [
         { entity_id: 1, category: 1, level: 1, realm_id: 3098, coord_x: null, coord_y: null, resources_packed: "0" },
       ],

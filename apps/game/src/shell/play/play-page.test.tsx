@@ -132,6 +132,8 @@ const game = (over: Partial<DirectoryGame>): DirectoryGame =>
       held_realm_id: null,
       has_home_source: false,
       taken_realm_ids: [],
+      fragments: null,
+      ancient_seal: false,
       structures: [],
     },
     ...over,
@@ -143,6 +145,8 @@ const ownSeason = game({
     held_realm_id: null,
     has_home_source: false,
     taken_realm_ids: [],
+    fragments: null,
+    ancient_seal: false,
     structures: [REALM],
   },
 } as Partial<DirectoryGame>);

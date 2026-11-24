@@ -6,7 +6,7 @@ import { answerLabChat } from "@/shell/lab/lab-chat";
 import { gameChatZoneId } from "@/ui/features/world/containers/hud-chat-window";
 import { L2_LEDGER, l2Provider } from "@/runtime/l2-rpc";
 import { getShardRpcProvider } from "@/utils/shard-rpc-provider";
-import { dayOf, nativeGameModeOfFamily, readExpeditionRules } from "@bibliothecadao/eternum";
+import { dayOf, fragmentsSold, nativeGameModeOfFamily, readExpeditionRules } from "@bibliothecadao/eternum";
 import {
   NativeFactStore,
   ordinaryHash,
@@ -278,6 +278,10 @@ const playerState = (chain: NativeFactStore, player: string) => {
     has_home_source: own !== undefined,
     taken_realm_ids: entitlements.filter((row) => row.pass_kind === 2).map((row) => row.realm_id),
     structures,
+    fragments: fragmentsSold(chain, LAB_GAME.gameId)
+      ? Number(chain.get("Fragments", { game_id: LAB_GAME.gameId, account: BigInt(player) })?.balance ?? 0)
+      : null,
+    ancient_seal: chain.get("Seal", { game_id: LAB_GAME.gameId, account: BigInt(player) }) !== undefined,
   };
 };
 

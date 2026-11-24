@@ -10,6 +10,10 @@ import { DAILY_QUEST_MODELS, readDailyQuest } from "@bibliothecadao/eternum";
 import { NativeFactStore, questWeek } from "@bibliothecadao/eternum/game-client";
 import { RESOURCE_PRECISION, worldBanes } from "@bibliothecadao/types";
 import { buildNativeDirectory, directoryFact } from "./read-models";
+import type { FoldRow } from "../types";
+import { gameRegistryRow } from "../../../../packages/core/src/test-support/game-registry";
+import { nativeReleaseConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeCommandBits } from "../../../../contracts/l3/world-native/schema/commands.gen";
 import {
   structureValue,
   explorerValue,
@@ -99,6 +103,44 @@ it("never lists deployment check games or counts them as Frontier seasons", () =
   );
   const directory = buildNativeDirectory({ chain: "madara", confirmedBlock: 11, timestamp: 30, fold });
   expect(directory.games.map(({ game_id }) => game_id)).toEqual([2]);
+});
+
+it("serves the player's Fragments and Ancient Seal per game, and no balance where the game sells no Fragments", () => {
+  const release = nativeReleaseConstants.SEAL_RELEASE;
+  const rows: Record<string, Record<string, unknown>[]> = {
+    GameRegistry: [1, 2].map((game_id) =>
+      gameRegistryRow({ game_id, name: "0x" + Buffer.from(`frontier-${game_id}`).toString("hex") }),
+    ),
+    SliceRules: [
+      { game_id: 1, day_unit_seconds: 0, command_mask: BigInt(nativeCommandBits.BuySeal) },
+      { game_id: 2, day_unit_seconds: 0, command_mask: 0n },
+    ],
+    SettlementRules: [1, 2].map((game_id) => ({
+      game_id,
+      registration_limit: 0,
+      registration_start: 0,
+      mode: "Single",
+      spacing: 8,
+    })),
+    GameRelease: [1, 2].map((game_id) => ({ game_id, release_id: release, created_release_id: release })),
+    Fragments: [{ game_id: 1, account: "0x111", balance: 1_500n }],
+    Seal: [{ game_id: 1, account: "0x111", granted_at: 25n }],
+  };
+  const fold = {
+    modelRows: (model: string) =>
+      (rows[model] ?? []).map((value, index) => ({ key: String(index), value })) as FoldRow[],
+    structurePosition: () => undefined,
+    directoryRevision: () => 0,
+  };
+  const state = (gameId: number, playerAddress: string) =>
+    buildNativeDirectory({ chain: "0xa", confirmedBlock: 10, timestamp: 30, fold, playerAddress }).games.find(
+      (game) => game.game_id === gameId,
+    )!.player_state!;
+  expect([state(1, "0x111").fragments, state(1, "0x111").ancient_seal]).toEqual([1_500, true]);
+  expect([state(1, "0x222").fragments, state(1, "0x222").ancient_seal]).toEqual([0, false]);
+  expect([state(2, "0x111").fragments, state(2, "0x111").ancient_seal]).toEqual([null, false]);
+  rows.GameRelease = [];
+  expect(state(1, "0x111").fragments).toBeNull();
 });
 
 it("restores a player's held Realm registration before a settlement exists", () => {

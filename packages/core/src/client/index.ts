@@ -54,7 +54,7 @@ export {
   RACE_MODELS,
   type RaceBoard,
 } from "./views/race";
-export { questBonusPercent } from "./views/quests";
+export { questBonusPercent, sellsFragments } from "./views/quests";
 export { currentArmy, currentResourceWeight } from "../utils/deep";
 export {
   deepCenter,
