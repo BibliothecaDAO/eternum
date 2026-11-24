@@ -243,7 +243,12 @@ it("renders hex-tile stone foundation artwork at 0 height, stage progression as 
     games: [
       game({
         ...ownSeason,
-        aspect_race: { finish_height: 10_000, season_days: 50, heights: { 1: 0, 2: 0, 3: 0, 4: 0 } },
+        aspect_race: {
+          finish_height: 10_000,
+          season_days: 50,
+          heights: { 1: 0, 2: 0, 3: 0, 4: 0 },
+          triumph_percents: { 1: 150, 2: 200, 3: 50, 4: 200 },
+        },
       }),
     ],
   });
@@ -257,7 +262,12 @@ it("renders hex-tile stone foundation artwork at 0 height, stage progression as 
         ...ownSeason,
         day_index: 11,
         day_ends_at: Math.floor(Date.now() / 1000) + 3_600,
-        aspect_race: { finish_height: 10_000, season_days: 50, heights: { 1: 7_500, 2: 2_500, 3: 0, 4: 0 } },
+        aspect_race: {
+          finish_height: 10_000,
+          season_days: 50,
+          heights: { 1: 7_500, 2: 2_500, 3: 0, 4: 0 },
+          triumph_percents: { 1: 150, 2: 200, 3: 50, 4: 200 },
+        },
         player_state: {
           ...ownSeason.player_state!,
           today_quest: { quest_id: 2, progress: 0, target: 1, labor: 1_500 },
@@ -799,7 +809,12 @@ it("omits a dash on an unnumbered season, hides static LORDS claims, and renders
     day_index: 2,
     day_ends_at: Math.floor(Date.now() / 1000) + 3_600,
     aspect_members: { 1: 4, 2: 3, 3: 2, 4: 1 },
-    aspect_race: { finish_height: 7_500, season_days: 30, heights: { 1: 1_200, 2: 800, 3: 0, 4: 0 } },
+    aspect_race: {
+      finish_height: 7_500,
+      season_days: 30,
+      heights: { 1: 1_200, 2: 800, 3: 0, 4: 0 },
+      triumph_percents: { 1: 150, 2: 200, 3: 50, 4: 200 },
+    },
   });
   reads.directory = answered({ games: [activeSeason] });
   reads.history = answered({ games: [], next: null, failures: [] });
@@ -853,7 +868,12 @@ it("draws the signed-out Play board immediately while identity is pending or fai
     game_id: 1,
     name: "frontier-1",
     season_number: 1,
-    aspect_race: { finish_height: 10_000, season_days: 50, heights: { 1: 400, 2: 200, 3: 0, 4: 0 } },
+    aspect_race: {
+      finish_height: 10_000,
+      season_days: 50,
+      heights: { 1: 400, 2: 200, 3: 0, 4: 0 },
+      triumph_percents: { 1: 150, 2: 200, 3: 50, 4: 200 },
+    },
     player_state: null,
   });
   const retry = vi.fn();

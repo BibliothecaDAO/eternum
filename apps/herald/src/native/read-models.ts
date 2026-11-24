@@ -12,6 +12,7 @@ import {
   questBonusPercent,
   raceFinishHeight,
   sellsFragments,
+  triumphPercentsOf,
 } from "@bibliothecadao/eternum/game-client";
 import { aspects, isSeasonGame, RESOURCE_PRECISION, type AspectId, StructureType } from "@bibliothecadao/types";
 import { isCheckGame, resolveDirectoryStatus, type DirectoryInput } from "../game-directory";
@@ -388,6 +389,12 @@ function aspectRaceOf(facts: DirectoryRows, gameId: unknown): HeraldAspectRace |
     heights: Object.fromEntries(
       aspects.map(({ id }) => [id, number(rows.find((row) => number(row.aspect) === id)?.height ?? 0)]),
     ) as Record<AspectId, number>,
+    triumph_percents: triumphPercentsOf({
+      clear_mist_percent: number(rules.clear_mist_percent),
+      second_wind_percent: number(rules.second_wind_percent),
+      pale_moon_percent: number(rules.pale_moon_percent),
+      spoils_percent: number(rules.spoils_percent),
+    }),
   };
 }
 

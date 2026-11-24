@@ -39,10 +39,23 @@ it("serializes /games and /api/directory cleanly when RaceRules and QuestRules a
   const { LAB_SCENARIOS: freshScenarios } = await import("./lab-games");
   await installFresh(freshScenarios.race!, Date.now());
   const listed = (await (await window.fetch(`${freshGame.url}/games`)).json()) as {
-    games: { aspect_race: { finish_height: number; season_days: number } | null; quest_bonus_percent: number | null }[];
+    games: {
+      aspect_race: {
+        finish_height: number;
+        season_days: number;
+        triumph_percents: Record<1 | 2 | 3 | 4, number>;
+      } | null;
+      quest_bonus_percent: number | null;
+    }[];
   };
   expect(listed.games[0]?.aspect_race?.season_days).toEqual(expect.any(Number));
   expect(listed.games[0]?.aspect_race?.finish_height).toEqual(expect.any(Number));
+  expect(listed.games[0]?.aspect_race?.triumph_percents).toEqual({
+    1: expect.any(Number),
+    2: expect.any(Number),
+    3: expect.any(Number),
+    4: expect.any(Number),
+  });
   expect(listed.games[0]?.quest_bonus_percent).toEqual(expect.any(Number));
   const directory = (await (await window.fetch("/api/directory")).json()) as {
     shard: { games: { aspect_race: { season_days: number } | null }[] };

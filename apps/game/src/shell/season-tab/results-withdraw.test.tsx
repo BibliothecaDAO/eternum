@@ -178,6 +178,7 @@ it("offers Withdraw on an ended Aspect season when the player holds a realm ther
       finish_height: 10_000,
       season_days: 50,
       heights: { 1: 10_000, 2: 5_000, 3: 2_000, 4: 1_000 },
+      triumph_percents: { 1: 150, 2: 200, 3: 50, 4: 200 },
     },
     player_state: {
       registered: true,

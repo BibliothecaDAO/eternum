@@ -1,5 +1,7 @@
 import type { AspectId } from "@bibliothecadao/types";
 
+export type TriumphStage = 1 | 2 | 3 | 4;
+
 export type HeraldGameStatus = "Created" | "Registration" | "Live" | "Ended" | "Settled";
 
 export interface HeraldGameClock {
@@ -50,6 +52,7 @@ export interface HeraldAspectRace {
   finish_height: number;
   season_days: number;
   heights: Record<AspectId, number>;
+  triumph_percents: Record<TriumphStage, number>;
 }
 
 /** The requesting player's standing in one game: everything the entry screens read before the player joins. */

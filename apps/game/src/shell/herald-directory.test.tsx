@@ -182,7 +182,12 @@ it("skips the Season 0 leaderboard for an Aspect directory game without opening 
     settlement: null,
     season_number: 1,
     aspect_members: { 1: 3, 2: 3, 3: 2, 4: 2 },
-    aspect_race: { finish_height: 7_500, season_days: 30, heights: { 1: 100, 2: 0, 3: 0, 4: 0 } },
+    aspect_race: {
+      finish_height: 7_500,
+      season_days: 30,
+      heights: { 1: 100, 2: 0, 3: 0, 4: 0 },
+      triumph_percents: { 1: 150, 2: 200, 3: 50, 4: 200 },
+    },
     player_state: null,
   };
   const probe = await mountLeaderboard(aspectSeason);

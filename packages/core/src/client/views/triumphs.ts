@@ -1,4 +1,5 @@
 import { nativeRaceConstants } from "../../../../../contracts/l3/world-native/schema/balance.gen";
+import type { TriumphStage } from "../../sync/herald-http-types";
 import type { NativeFactResult, NativeFactStore } from "../native-fact-store";
 import type { ExpeditionRules } from "../../utils/expeditions";
 import { dayAtIndex } from "../../utils/days";
@@ -29,7 +30,17 @@ const TRIUMPH_PERCENT = {
   [nativeRaceConstants.SECOND_WIND_STAGE]: "second_wind_percent",
   [nativeRaceConstants.PALE_MOON_STAGE]: "pale_moon_percent",
   [nativeRaceConstants.SPOILS_STAGE]: "spoils_percent",
-} as const;
+} as const satisfies Record<TriumphStage, string>;
+
+export type { TriumphStage };
+
+export function triumphPercentsOf(
+  rules: Record<(typeof TRIUMPH_PERCENT)[TriumphStage], number>,
+): Record<TriumphStage, number> {
+  return Object.fromEntries(
+    (Object.keys(TRIUMPH_PERCENT).map(Number) as TriumphStage[]).map((stage) => [stage, rules[TRIUMPH_PERCENT[stage]]]),
+  ) as Record<TriumphStage, number>;
+}
 
 /** The Triumph in force for the home at `now`, with the percent its rule row sets; null on a day with none. */
 export function readActiveTriumph(

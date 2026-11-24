@@ -151,7 +151,12 @@ it("shows one invite control and one primary button on /profile#referrals when t
       status: "Live",
       clock_scale: 1,
       clock: { start_main_at: 100, end_at: 9_999_999_999 },
-      aspect_race: { finish_height: 10_000, season_days: 50, heights: { 1: 0, 2: 0, 3: 0, 4: 0 } },
+      aspect_race: {
+        finish_height: 10_000,
+        season_days: 50,
+        heights: { 1: 0, 2: 0, 3: 0, 4: 0 },
+        triumph_percents: { 1: 150, 2: 200, 3: 50, 4: 200 },
+      },
       player_state: { structures: [{ entity_id: 7, category: 1, realm_id: 1, level: 1 }] },
     },
   ];

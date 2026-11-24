@@ -1,3 +1,4 @@
+import { triumphPercentsOf } from "@bibliothecadao/eternum/game-client";
 import type { HeraldFrontierLeaderboard } from "@bibliothecadao/eternum/game-sync";
 import { orderAspect, StructureType } from "@bibliothecadao/types";
 import { LORDS_ADDRESS } from "@realms-world/chain";
@@ -11,6 +12,7 @@ import { DEVICE_LIMIT_REACHED } from "@/hooks/context/gameplay-account-sync";
 
 import type { DirectoryGame } from "../herald";
 import { nativeFactSchemaIdentity } from "../../../../../contracts/l3/world-native/schema/client.gen";
+import release from "../../../../../contracts/l3/world-native/schema/release-definition.json";
 import { ARCHIVED_SEASONS, archivedSeason } from "../season-tab/archive/archive";
 
 import { releaseLine } from "../../../../../packages/core/src/test-support/releases";
@@ -117,6 +119,7 @@ const frontier = (withRealm: boolean) =>
       finish_height: 10_000,
       season_days: 50,
       heights: { 1: 6_400, 2: 7_850, 3: 4_100, 4: 2_900 },
+      triumph_percents: triumphPercentsOf(release.definition.economy.race.Some),
     },
     quest_bonus_percent: 50,
     player_state: withRealm ? owned : null,
@@ -139,6 +142,7 @@ const endedFrontier = game({
     finish_height: 10_000,
     season_days: 50,
     heights: { 1: 10_000, 2: 8_420, 3: 6_180, 4: 4_910 },
+    triumph_percents: triumphPercentsOf(release.definition.economy.race.Some),
   },
   quest_bonus_percent: 50,
   player_state: owned,
@@ -554,7 +558,7 @@ const SEASON_ONE_ENTRIES = archivedSeason({ chainId: SEASON_ONE!.chainId, gameId
 export const LAB_FRONTIER_UNPUBLISHED_BOARD: HeraldFrontierLeaderboard = { ...LAB_FRONTIER_BOARD, prize: null };
 
 /** Names for the rivals the identity Worker would serve; the unnamed one reads "Lord" and its last four. */
-export const LAB_PROFILES = Object.fromEntries([
+export const LAB_PROFILES: Record<string, { name: string | null; portrait: string }> = Object.fromEntries([
   ...NAMES.map((name, index) => [rival(index), { name, portrait: `0${(index % 9) + 1}` }]),
   ...SEASON_ONE_NAMES.map((name, index) => [
     SEASON_ONE_ENTRIES[index]!.address,
