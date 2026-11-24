@@ -1,7 +1,7 @@
 import type { StructureType } from "@bibliothecadao/types";
 import { getStructureModelPaths, isSettlementModelPath } from "../constants/scene-constants";
 import { formatStructureCosmeticTarget, getCosmeticRegistry } from "../cosmetics/registry";
-import { FRONTIER_BEAST_PATHS } from "./frontier-beast";
+import { FRONTIER_BEAST_PATHS, FRONTIER_CAMP_MODEL_PATH, SUPPLY_POST_MODEL_PATH } from "./frontier-beast";
 
 const cameraFacingTargets = Object.entries(getStructureModelPaths())
   .filter(([, paths]) => paths.length > 0 && paths.every(isCameraFacingModel))
@@ -13,7 +13,12 @@ export function resolveStructureRotationY(modelPaths: readonly string[], rotatio
 }
 
 function isCameraFacingModel(path: string): boolean {
-  return isSettlementModelPath(path) || FRONTIER_BEAST_PATHS.some((beastPath) => beastPath === path);
+  return (
+    isSettlementModelPath(path) ||
+    path === FRONTIER_CAMP_MODEL_PATH ||
+    path === SUPPLY_POST_MODEL_PATH ||
+    FRONTIER_BEAST_PATHS.some((beastPath) => beastPath === path)
+  );
 }
 
 function isCameraFacingSkin(path: string): boolean {

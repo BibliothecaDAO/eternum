@@ -1,5 +1,6 @@
+import { ASPECT_HEX } from "@/tokens";
 import { iconUrl, orderMeaning } from "@/ui/design-system/icon-meaning";
-import { orders } from "@bibliothecadao/types";
+import { aspects, orders, type AspectId } from "@bibliothecadao/types";
 import {
   CanvasTexture,
   SRGBColorSpace,
@@ -17,6 +18,13 @@ export const SETTLEMENT_RELATIONSHIPS = {
 } as const;
 export type SettlementRelationship = keyof typeof SETTLEMENT_RELATIONSHIPS;
 export const SETTLEMENT_RELATIONSHIP_ORDER = Object.keys(SETTLEMENT_RELATIONSHIPS) as SettlementRelationship[];
+export const VILLAGE_BANNER_ROWS = SETTLEMENT_RELATIONSHIP_ORDER.length + aspects.length;
+
+export function resolveVillageAspectRow(aspect: AspectId): number {
+  const index = aspects.findIndex((entry) => entry.id === aspect);
+  if (index < 0) throw new Error(`Unknown aspect: ${aspect}`);
+  return SETTLEMENT_RELATIONSHIP_ORDER.length + index;
+}
 
 /** Relationship cloth is isolated from pooled materials; the model owns its clones. */
 export class SettlementAppearance {
@@ -202,13 +210,17 @@ function drawStampPolygon(context: CanvasRenderingContext2D, points: readonly (r
 export function createVillageBannerAtlas(): CanvasTexture {
   const canvas = document.createElement("canvas");
   canvas.width = 256;
-  canvas.height = 512 * SETTLEMENT_RELATIONSHIP_ORDER.length;
+  canvas.height = 512 * VILLAGE_BANNER_ROWS;
   const context = canvas.getContext("2d");
   if (!context) throw new Error("Village banner atlas canvas is unavailable");
   const stamp = createBannerTexture();
   for (const [row, relationship] of SETTLEMENT_RELATIONSHIP_ORDER.entries()) {
     paintVillageBanner(stamp, SETTLEMENT_RELATIONSHIPS[relationship].color);
     context.drawImage(stamp.image as HTMLCanvasElement, 0, row * 512);
+  }
+  for (const aspect of aspects) {
+    paintVillageBanner(stamp, ASPECT_HEX[aspect.id]);
+    context.drawImage(stamp.image as HTMLCanvasElement, 0, resolveVillageAspectRow(aspect.id) * 512);
   }
   stamp.dispose();
   const atlas = new CanvasTexture(canvas);

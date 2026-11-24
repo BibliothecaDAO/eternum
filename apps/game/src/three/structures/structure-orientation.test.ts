@@ -1,7 +1,12 @@
 import { StructureType } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
 import { resolveStructureRotationY } from "./structure-orientation";
-import { FALLEN_REALM_RUIN_PATH, FRONTIER_BEASTS } from "./frontier-beast";
+import {
+  FALLEN_REALM_RUIN_PATH,
+  FRONTIER_BEASTS,
+  FRONTIER_CAMP_MODEL_PATH,
+  SUPPLY_POST_MODEL_PATH,
+} from "./frontier-beast";
 import {
   BUILDINGS_GROUPS,
   buildingModelPaths,
@@ -24,16 +29,19 @@ const realmSkins = getCosmeticRegistry().filter(
 );
 
 describe("orientation follows the models drawn", () => {
-  it.each([...Object.values(REALM_MODEL_PATHS), VILLAGE_MODEL_PATH, CAMP_MODEL_PATH])(
-    "faces settlement %s toward the camera for every tile rotation and local template offset",
-    (path) => {
-      for (let direction = 0; direction < 6; direction++) {
-        for (const templateOffset of [0, Math.PI]) {
-          expect(resolveStructureRotationY([path], (direction * Math.PI) / 3 + templateOffset)).toBe(0);
-        }
+  it.each([
+    ...Object.values(REALM_MODEL_PATHS),
+    VILLAGE_MODEL_PATH,
+    CAMP_MODEL_PATH,
+    FRONTIER_CAMP_MODEL_PATH,
+    SUPPLY_POST_MODEL_PATH,
+  ])("faces settlement %s toward the camera for every tile rotation and local template offset", (path) => {
+    for (let direction = 0; direction < 6; direction++) {
+      for (const templateOffset of [0, Math.PI]) {
+        expect(resolveStructureRotationY([path], (direction * Math.PI) / 3 + templateOffset)).toBe(0);
       }
-    },
-  );
+    }
+  });
 
   it.each([StructureType.Camp, StructureType.Rift, StructureType.Ruin, StructureType.Beasts])(
     "faces the cleared standard identically after category %s, without a standing beast",

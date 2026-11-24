@@ -22,6 +22,7 @@ import { GAME_FAMILIES } from "../../../../../config/source/common/native-preset
 import { resolveStructureRotationY } from "./structure-orientation";
 import {
   FRONTIER_BEASTS,
+  SUPPLY_POST_MODEL_INDEX,
   beastBand,
   frontierBeast,
   frontierBeastModelIndex,
@@ -218,22 +219,41 @@ describe("Frontier guard identity", () => {
     [0, BEASTS.troll, BEASTS.fairy],
     [1, BEASTS.golem, BEASTS.kappa],
     [2, BEASTS.ettin, BEASTS.kitsune],
-  ])("keeps camps beast-only and rifts fey-guarded at layer %s", (depth, camp, rift) => {
-    expect(readStandingFrontierBeast(facts(StructureType.Camp, depth), 1, 9)).toEqual({
-      beast: beastModel(camp),
-      name: camp.name,
-      scale: 0.85,
-      idle: camp.idle,
-    });
-    expect(frontierSiteComposition(StructureType.Camp).baseScale).toBe(0);
-    expect(readStandingFrontierBeast(facts(StructureType.Rift, depth), 1, 9)).toEqual({
-      beast: beastModel(rift),
-      name: rift.name,
-      scale: 0.75,
-      idle: rift.idle,
-    });
-    expect(frontierSiteComposition(StructureType.Rift)).toEqual({ baseScale: 1.09, baseZ: 0, beastZ: 0, beastY: 0.2 });
-  });
+  ])(
+    "composes camps with their guard and supply post, and keeps rifts fey-guarded at layer %s",
+    (depth, camp, rift) => {
+      expect(readStandingFrontierBeast(facts(StructureType.Camp, depth), 1, 9)).toEqual({
+        beast: beastModel(camp),
+        name: camp.name,
+        scale: 0.85,
+        idle: camp.idle,
+      });
+      expect(frontierSiteComposition(StructureType.Camp)).toEqual({
+        baseScale: 1,
+        baseZ: 0,
+        beastZ: 0.22,
+        beastY: 0,
+        clearedModelIndex: SUPPLY_POST_MODEL_INDEX,
+        clearedStandard: { scale: 1, x: -0.32, y: 0, z: 0.92 },
+      });
+      expect(readStandingFrontierBeast(facts(StructureType.Rift, depth), 1, 9)).toEqual({
+        beast: beastModel(rift),
+        name: rift.name,
+        scale: 0.75,
+        idle: rift.idle,
+      });
+      expect(frontierSiteComposition(StructureType.Rift)).toEqual({
+        baseScale: 1.09,
+        baseZ: 0,
+        beastZ: 0,
+        beastY: 0.2,
+        clearedModelIndex: null,
+        clearedStandard: { scale: 1, x: 0, y: 0, z: 0 },
+      });
+      expect(frontierSiteComposition(StructureType.Ruin).clearedModelIndex).toBeNull();
+      expect(frontierSiteComposition(StructureType.Beasts).clearedModelIndex).toBeNull();
+    },
+  );
   it.each(DEPTH_BOUNDS.slice(0, 3).map((bounds, depth) => ({ depth, bounds })))(
     "keeps both roaming encounters' identities at layer $depth through casualties",
     ({ depth, bounds }) => {
