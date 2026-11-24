@@ -74,7 +74,7 @@ export const FeedLine = ({ story }: { story: ProcessedStoryEvent }) => {
     >
       {!desktop && (
         <span
-          className={`my-1 w-[3px] shrink-0 self-stretch rounded-full ${CONCERN_RULES[concern]}`}
+          className={`my-1 w-1 shrink-0 self-stretch rounded-full ${CONCERN_RULES[concern]}`}
           aria-hidden="true"
         />
       )}

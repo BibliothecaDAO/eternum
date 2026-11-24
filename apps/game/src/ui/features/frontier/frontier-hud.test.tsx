@@ -43,7 +43,6 @@ vi.mock("@/ui/features/social", async () => ({
   ...(await import("@/ui/features/social/realtime-chat/hooks/use-realtime-chat")),
   RealtimeChatShell: () => <input aria-label="Message" />,
   RealtimeChatTabs: () => <div role="tablist" aria-label="Chat rooms" />,
-  RealtimeChatOnline: () => null,
   RealtimeChatBody: () => <input aria-label="Message" />,
   GameChatMap: ({ children }: { children: ReactNode }) => children,
 }));
