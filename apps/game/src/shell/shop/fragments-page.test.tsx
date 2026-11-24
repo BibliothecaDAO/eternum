@@ -17,7 +17,7 @@ vi.mock("@/hooks/context/starknet-provider", async () => ({
 }));
 vi.mock("@/hooks/context/identity-session", async (original) => ({
   ...(await original<typeof import("@/hooks/context/identity-session")>()),
-  useIdentitySession: () => ({ status: "signed-in", session: { user: { address: WALLET } } }),
+  useIdentitySession: () => ({ status: "signed-in", session: { user: { realmsId: "realms-1", address: WALLET } } }),
 }));
 const defaultWallet = vi.hoisted(() => ({
   read: { wallet: null as null | undefined, failed: false, retry: () => {} },
@@ -59,6 +59,7 @@ import { identityClient } from "@/hooks/context/identity-session";
 import { installWallet } from "@/ui/modules/identity/test-wallet";
 
 import { setViewportWidth } from "../frame/test-viewport";
+import { SEASON_SPENDS_FRAGMENTS } from "../season";
 import { FragmentsPage } from "./fragments-page";
 import { fragmentsHref } from "./fragments-route";
 
@@ -79,7 +80,7 @@ const Where = () => {
   return <output data-where>{`${pathname}${hash}`}</output>;
 };
 
-const mount = async (entry: string = fragmentsHref(GAME, "/g/0x52/7/map#shop")) => {
+const mount = async (entry: string = fragmentsHref(GAME, "/g/0x52/7/map#shop"), spends: boolean | "default" = true) => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const container = document.createElement("div");
   document.body.append(container);
@@ -89,7 +90,10 @@ const mount = async (entry: string = fragmentsHref(GAME, "/g/0x52/7/map#shop")) 
       <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
         <MemoryRouter initialEntries={[entry]}>
           <Routes>
-            <Route path="/shop" element={<FragmentsPage />} />
+            <Route
+              path="/shop"
+              element={spends === "default" ? <FragmentsPage /> : <FragmentsPage spends={spends} />}
+            />
             <Route path="*" element={<Where />} />
           </Routes>
         </MemoryRouter>
@@ -285,4 +289,47 @@ it("shows a retryable failure on /shop when the season directory fails instead o
   expect(page.textContent).not.toContain("No live Frontier season right now");
   await press(page, "Try again");
   expect(refetch).toHaveBeenCalledOnce();
+});
+
+it.each([1440, 390])(
+  "closes Fragment purchases and spends cleanly at %ipx when spends are off, while keeping Ancient Seal code redemption working",
+  async (width) => {
+    setViewportWidth(width);
+    vi.spyOn(identityClient, "getSealCode").mockResolvedValue({ held: false });
+    const redeem = vi.spyOn(identityClient, "redeemSealCode").mockResolvedValue({ held: true });
+    const page = await mount("/shop", false);
+    expect(page.querySelector("[data-shop-page]")).not.toBeNull();
+    expect(page.querySelector("[data-shop-closed]")).not.toBeNull();
+    expect(page.textContent).toContain("Fragments shop closed");
+    expect(page.textContent).toContain(
+      "Fragments purchases and spends are closed right now. You can still use an Ancient Seal code below.",
+    );
+    expect(page.querySelector("[data-fragment-packs]")).toBeNull();
+    expect(page.querySelector("[data-fragment-custom]")).toBeNull();
+    expect(page.querySelector("[data-shop-spend]")).toBeNull();
+    expect(page.querySelector('[role="tablist"]')).toBeNull();
+    expect(page.textContent).not.toContain("Pay $");
+    expect(page.textContent).not.toContain("Refill stamina");
+    expect(page.textContent).not.toContain("Reroll Oath");
+    await vi.waitFor(() => expect(page.querySelector('[data-seal-code="open"]')).not.toBeNull());
+    const input = page.querySelector<HTMLInputElement>('[data-seal-code="open"] input')!;
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, "SEAL2345");
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await act(async () => {
+      page.querySelector<HTMLFormElement>('[data-seal-code="open"] form')!.requestSubmit();
+    });
+    expect(redeem).toHaveBeenCalledWith("SEAL2345");
+    await vi.waitFor(() => expect(page.querySelector('[data-seal-code="held"]')).not.toBeNull());
+    expect(page.textContent).toContain("Your Ancient Seal is held");
+  },
+);
+
+it("defaults FragmentsPage open/closed state from SEASON_SPENDS_FRAGMENTS", async () => {
+  setViewportWidth(1440);
+  vi.spyOn(identityClient, "getSealCode").mockResolvedValue({ held: false });
+  const page = await mount(fragmentsHref(GAME, "/"), "default");
+  expect(page.querySelector("[data-shop-closed]") !== null).toBe(!SEASON_SPENDS_FRAGMENTS);
+  expect(page.querySelector("[data-fragment-packs]") !== null).toBe(SEASON_SPENDS_FRAGMENTS);
 });
