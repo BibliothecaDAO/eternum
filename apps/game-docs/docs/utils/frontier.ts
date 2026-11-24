@@ -16,14 +16,10 @@ import { nativeCommandBits } from "../../../../contracts/l3/world-native/schema/
 import { MAINNET_TOKENS } from "../../../../packages/chain/src/tokens";
 import { logisticsStamina } from "../../../../packages/core/src/utils/attribute-tiers";
 import { aspectMeaning, orderMeaning, type IconMeaning } from "../../../game/src/ui/design-system/icon-meaning";
-import {
-  buildingMeaning,
-  RELIC_KINDS,
-  relicMeaning,
-  type RelicKind,
-} from "../../../game/src/ui/design-system/domain-icon-meaning";
+import { buildingMeaning, RELIC_KINDS, relicMeaning } from "../../../game/src/ui/design-system/domain-icon-meaning";
 import { ASPECT_PAGE_WORDS, DAY_BANNER_WORDS, RELIC_WORDS } from "../../../game/src/ui/design-system/kit/words";
 import { oathEffectDescription } from "../../../game/src/ui/features/frontier/army/oath-details";
+import { relicEffect } from "../../../game/src/ui/features/frontier/relics/relic-catalog";
 import {
   ASPECT_REWARD,
   BuildingType,
@@ -77,6 +73,9 @@ const listAnd = (items: readonly string[]) =>
   items.length > 1 ? `${items.slice(0, -1).join(", ")}, and ${items.at(-1)}` : (items[0] ?? "");
 const listOr = (items: readonly string[]) =>
   items.length > 1 ? `${items.slice(0, -1).join(", ")}, or ${items.at(-1)}` : (items[0] ?? "");
+const personalLayers = LAYER_NAMES.slice(0, 3);
+const personalLayersAnd = listAnd(personalLayers);
+const personalLayersOr = listOr(personalLayers);
 const allPayTokens = listOr(Object.values(MAINNET_TOKENS).map((token) => token.symbol));
 const swapPayTokens = listOr(
   Object.entries(MAINNET_TOKENS)
@@ -206,25 +205,6 @@ const frontierBuildings = [...FRONTIER_BUILDING_TYPES]
   })
   .sort((a, b) => a.order - b.order);
 
-const relicEffects: Record<RelicKind, { step: string; range: string }> = {
-  Blade: {
-    step: `+${pct(rule.RELIC_BLADE_BPS)} damage dealt`,
-    range: `+${pct(rule.RELIC_BLADE_BPS)} → +${pct(rule.RELIC_BLADE_BPS * rule.ATTRIBUTE_CAP)}`,
-  },
-  Ward: {
-    step: `−${pct(rule.RELIC_WARD_BPS)} damage taken`,
-    range: `−${pct(rule.RELIC_WARD_BPS)} → −${pct(rule.RELIC_WARD_BPS * rule.ATTRIBUTE_CAP)}`,
-  },
-  Plunder: {
-    step: `+${pct(rule.RELIC_PLUNDER_BPS)} cleared site rewards`,
-    range: `+${pct(rule.RELIC_PLUNDER_BPS)} → +${pct(rule.RELIC_PLUNDER_BPS * rule.ATTRIBUTE_CAP)}`,
-  },
-  StaminaRegen: {
-    step: `+${n(rule.STAMINA_REGEN_RELIC_STEP_PERCENT)}% stamina recovery`,
-    range: `+${n(rule.STAMINA_REGEN_RELIC_STEP_PERCENT)}% → +${n(rule.STAMINA_REGEN_RELIC_STEP_PERCENT * rule.ATTRIBUTE_CAP)}%`,
-  },
-};
-
 export const FRONTIER = {
   calendar: SEASON_ONE_CALENDAR,
   day: {
@@ -291,6 +271,10 @@ export const FRONTIER = {
     riftPercent: `${n(100 * CONTRACT.riftGuardMultiplier)}%`,
     veilMultiplier: `${n(depthRewardPercent(1))}%`,
     hollowMultiplier: `${n(depthRewardPercent(2))}%`,
+  },
+  layers: {
+    personalAnd: personalLayersAnd,
+    personalOr: personalLayersOr,
   },
   depths: frontierPreset.depths.map((depth, index) => ({
     name: LAYER_NAMES[index],
@@ -458,7 +442,7 @@ export const FRONTIER = {
     maxSlots: n(research.OATH_SLOTS_BASE + research.OATH_SLOTS_STEPS),
     passStamina: n(oaths.PASS_STAMINA),
     rerollFragments: n(fragments.OATH_REROLL_FRAGMENTS),
-    rerollNote: `Spend ${n(fragments.OATH_REROLL_FRAGMENTS)} Fragments to replace one of the ${n(CONTRACT.oathDrawCount)} drawn cards once per draw on the Surface, Veil, and Hollow.`,
+    rerollNote: `Spend ${n(fragments.OATH_REROLL_FRAGMENTS)} Fragments to replace one of the ${n(CONTRACT.oathDrawCount)} drawn cards once per draw on the ${personalLayersAnd}.`,
     vitriolLoss: n(oaths.VITRIOL_LOSS_PER_TICK),
     reflectionWell: `${n(oaths.REFLECTION_WELL_PERCENT)}%`,
     detectionLimit: n(oaths.DETECTION_EMPTY_REVEAL_LIMIT),
@@ -475,7 +459,8 @@ export const FRONTIER = {
     rows: RELIC_KINDS.map((kind) => ({
       name: RELIC_WORDS.kinds[kind],
       icon: relicMeaning(kind),
-      ...relicEffects[kind],
+      common: relicEffect({ kind, rank: 1 }, oathEffectBase),
+      legendary: relicEffect({ kind, rank: rule.ATTRIBUTE_CAP }, oathEffectBase),
     })),
     layerOdds: frontierPreset.depths.map((depth, index) => ({
       layer: LAYER_NAMES[index],
@@ -489,7 +474,7 @@ export const FRONTIER = {
       ? "Spending Fragments is on."
       : `Spending Fragments is turned off during the final testnet (${SEASON_ONE_CALENDAR.testnetDates} UTC) and remains turned off until enabled.`,
     sealRule: `Lasts the whole season. Gives ${n(questPreset.bonusPercent)}% daily quest labor and the Season 1 Realm skin. You can also get the Seal with a code.`,
-    staminaRule: `Refills ${n(fragments.STAMINA_PER_FRAGMENT)} stamina per Fragment on the Surface, Veil, and Hollow (${barFragments} Fragments for a full ${n(stamina.staminaKnightMax)} bar). Does not work inside the Deep.`,
+    staminaRule: `Refills ${n(fragments.STAMINA_PER_FRAGMENT)} stamina per Fragment on the ${personalLayersAnd} (${barFragments} Fragments for a full ${n(stamina.staminaKnightMax)} bar). Does not work inside the ${LAYER_NAMES[3]}.`,
     fragmentPrice: dollars(FRAGMENT_CENTS),
     minFragments: n(MIN_FRAGMENTS),
     dailyCap: n(FRAGMENTS_A_DAY),

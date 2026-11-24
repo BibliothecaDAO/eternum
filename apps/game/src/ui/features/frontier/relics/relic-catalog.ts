@@ -1,8 +1,8 @@
 import { nativeRuleConstants as rule, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { TIER_WORDS } from "@bibliothecadao/types";
 
-import { RELIC_KINDS, type RelicKind } from "@/ui/design-system/domain-icon-meaning";
-import { PICK_EFFECT_WORDS, RELIC_WORDS } from "@/ui/design-system/kit/words";
+import { RELIC_KINDS, type RelicKind } from "../../../design-system/domain-icon-meaning";
+import { PICK_EFFECT_WORDS, RELIC_WORDS } from "../../../design-system/kit/words";
 
 import {
   damageDealtEffect,

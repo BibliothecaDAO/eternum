@@ -97,6 +97,7 @@ export const frontierPhrases = (
     logisticsStamina,
     mainnetTokens,
     oathEffectDescription,
+    relicEffect,
   },
 ) => {
   const stamina = config.troop.stamina;
@@ -124,7 +125,14 @@ export const frontierPhrases = (
   const commandOn = (name) => (preset.commandMask & BigInt(commandBits[name])) !== 0n;
   const anySpendEnabled = FRAGMENT_SPEND_COMMANDS.some((name) => commandOn(name));
   const logisticsBonus = logisticsStamina(stamina.staminaKnightMax, nativeRules.ATTRIBUTE_CAP);
-  const staminaRule = `Refills ${n(nativeFragments.STAMINA_PER_FRAGMENT)} stamina per Fragment on the Surface, Veil, and Hollow`;
+  const listAnd = (items) =>
+    items.length > 1 ? `${items.slice(0, -1).join(", ")}, and ${items.at(-1)}` : (items[0] ?? "");
+  const listOr = (items) =>
+    items.length > 1 ? `${items.slice(0, -1).join(", ")}, or ${items.at(-1)}` : (items[0] ?? "");
+  const personalLayers = LAYER_NAMES.slice(0, 3);
+  const personalLayersAnd = listAnd(personalLayers);
+  const personalLayersOr = listOr(personalLayers);
+  const staminaRule = `Refills ${n(nativeFragments.STAMINA_PER_FRAGMENT)} stamina per Fragment on the ${personalLayersAnd}`;
   const oathSlotPrices = preset.research
     .filter((step) => step.row === nativeResearch.ROW_KNIGHT_OATHS)
     .sort((a, b) => a.tier - b.tier)
@@ -133,15 +141,20 @@ export const frontierPhrases = (
         `Slot ${n(nativeResearch.OATH_SLOTS_BASE + index + 1)}: ${n(step.essenceCost)} Essence, ${n(step.laborCost)} labor`,
     )
     .join("; ");
-  const listOr = (items) =>
-    items.length > 1 ? `${items.slice(0, -1).join(", ")}, or ${items.at(-1)}` : (items[0] ?? "");
   const allPayTokens = listOr(Object.values(mainnetTokens).map((token) => token.symbol));
   const swapPayTokens = listOr(
     Object.entries(mainnetTokens)
       .filter(([key]) => key !== "lords")
       .map(([, token]) => token.symbol),
   );
-  const rerollRule = `Spend ${n(nativeFragments.OATH_REROLL_FRAGMENTS)} Fragments to replace one of the ${n(contract.oathDrawCount)} drawn cards once per draw on the Surface, Veil, and Hollow.`;
+  const rerollRule = `Spend ${n(nativeFragments.OATH_REROLL_FRAGMENTS)} Fragments to replace one of the ${n(contract.oathDrawCount)} drawn cards once per draw on the ${personalLayersAnd}.`;
+  const pickBase = {
+    attackStamina: stamina.staminaAttackReq,
+    revealStamina: stamina.staminaExploreStaminaCost,
+    maxStamina: stamina.staminaKnightMax,
+    staminaPerSecond: stamina.staminaGainPerTick / tick,
+    deepLossPerTick: preset.deep.lossPerTick,
+  };
   return [
     {
       page: "frontier",
@@ -165,7 +178,7 @@ export const frontierPhrases = (
         `An army holds ${n(stamina.staminaKnightMax)} stamina and recovers ${stamina.staminaGainPerTick} every ${tick / 60} minutes, so an empty bar fills in ${((stamina.staminaKnightMax / stamina.staminaGainPerTick) * tick) / 3600} hours.`,
         `Revealing a tile costs ${stamina.staminaExploreStaminaCost} for ${FRONTIER_TROOP_NAMES[TroopType.Knight]} and ${nativeRules.SCOUT_EXPLORE_STAMINA} for ${FRONTIER_TROOP_NAMES[TroopType.Paladin]}, a step on an explored tile costs ${stamina.staminaTravelStaminaCost}, and an attack needs ${stamina.staminaAttackReq}.`,
         `adding +${n(logisticsBonus)} bonus stamina at rank V for ${n(stamina.staminaKnightMax + logisticsBonus)} max stamina total.`,
-        `beside any camp your realm cleared today (supply post) on the Surface, Veil, or Hollow`,
+        `beside any camp your realm cleared today (supply post) on the ${personalLayersOr}`,
         staminaRule,
       ],
     },
@@ -247,23 +260,16 @@ export const frontierPhrases = (
         `All ${aspectOrderCount} Oaths`,
         ...aspectOrders.map(
           (order) =>
-            `${order.orderName} ${aspects.find((a) => a.id === order.aspect).name} ${oathEffectDescription(
-              order.orderId,
-              {
-                attackStamina: stamina.staminaAttackReq,
-                revealStamina: stamina.staminaExploreStaminaCost,
-                maxStamina: stamina.staminaKnightMax,
-                staminaPerSecond: stamina.staminaGainPerTick / tick,
-                deepLossPerTick: preset.deep.lossPerTick,
-              },
-            )}.`,
+            `${order.orderName} ${aspects.find((a) => a.id === order.aspect).name} ${oathEffectDescription(order.orderId, pickBase)}.`,
         ),
         `gives that army +${n(nativeOaths.PASS_STAMINA)} stamina`,
         rerollRule,
         `Relics come in ${TIER_WORDS.length} tiers`,
         `All ${relicKinds.length} relic kinds`,
-        ...relicKinds.map((kind) => relicWords.kinds[kind]),
-        `+${n(nativeRules.RELIC_BLADE_BPS / 100)}% damage dealt`,
+        ...relicKinds.map(
+          (kind) =>
+            `${relicWords.kinds[kind]} ${relicEffect({ kind, rank: 1 }, pickBase)} ${relicEffect({ kind, rank: nativeRules.ATTRIBUTE_CAP }, pickBase)}`,
+        ),
         ...preset.depths.map((depth, index) => {
           const odds = Object.entries(depth.chest)
             .filter(([, bps]) => bps > 0)
@@ -443,6 +449,9 @@ export const loadBalanceSources = async () => {
     const { oathEffectDescription } = await server.ssrLoadModule(
       join(here, "../../game/src/ui/features/frontier/army/oath-details.ts"),
     );
+    const { relicEffect } = await server.ssrLoadModule(
+      join(here, "../../game/src/ui/features/frontier/relics/relic-catalog.ts"),
+    );
     const productionRelease = JSON.parse(readFileSync(join(here, "../../../deploy/release/production.json"), "utf8"));
     const heraldLimits = await server.ssrLoadModule(join(here, "../../herald/src/http-limits.ts"));
     return {
@@ -468,6 +477,7 @@ export const loadBalanceSources = async () => {
       logisticsStamina,
       mainnetTokens,
       oathEffectDescription,
+      relicEffect,
       productionRelease,
       heraldLimits,
       payoutWalletChangeSeconds: PAYOUT_WALLET_CHANGE_SECONDS,

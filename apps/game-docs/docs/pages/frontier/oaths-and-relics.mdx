@@ -13,8 +13,8 @@ Oaths and relics power up individual armies for the current game day. Both reset
 ## Oaths (from Shrines and bands)
 
 <GameIcon name="shrine" /> Research **Shrine lore** at your castle to find Shrines ({FRONTIER.discovery.shrine} chance).
-Step beside a Shrine and open it to draw {FRONTIER.oaths.drawCount} Oaths. Clearing a band on the Surface, Veil, or
-Hollow also draws {FRONTIER.oaths.drawCount} Oaths.
+Step beside a Shrine and open it to draw {FRONTIER.oaths.drawCount} Oaths. Clearing a band on the
+{FRONTIER.layers.personalOr} also draws {FRONTIER.oaths.drawCount} Oaths.
 
 - Every army starts with {FRONTIER.oaths.baseSlots} Oath slots. Researching Oath slots at your castle raises this up to
   {FRONTIER.oaths.maxSlots} slots per troop kind ([Your realm](/frontier/realm#oath-slots)). When an army's slots are
@@ -62,9 +62,9 @@ for {FRONTIER.relics.firstTier} I up to {FRONTIER.relics.maxMinutes} minutes for
 
 ### All {FRONTIER.relics.count} relic kinds
 
-| Relic                                                                               | Effect per tier                | Common I → Legendary V          |
-| ----------------------------------------------------------------------------------- | ------------------------------ | ------------------------------- |
-| <GameIcon name={FRONTIER.relics.rows[0].icon} /> **{FRONTIER.relics.rows[0].name}** | {FRONTIER.relics.rows[0].step} | {FRONTIER.relics.rows[0].range} |
-| <GameIcon name={FRONTIER.relics.rows[1].icon} /> **{FRONTIER.relics.rows[1].name}** | {FRONTIER.relics.rows[1].step} | {FRONTIER.relics.rows[1].range} |
-| <GameIcon name={FRONTIER.relics.rows[2].icon} /> **{FRONTIER.relics.rows[2].name}** | {FRONTIER.relics.rows[2].step} | {FRONTIER.relics.rows[2].range} |
-| <GameIcon name={FRONTIER.relics.rows[3].icon} /> **{FRONTIER.relics.rows[3].name}** | {FRONTIER.relics.rows[3].step} | {FRONTIER.relics.rows[3].range} |
+| Relic                                                                               | {FRONTIER.relics.firstTier} I    | {FRONTIER.relics.lastTier} V        |
+| ----------------------------------------------------------------------------------- | -------------------------------- | ----------------------------------- |
+| <GameIcon name={FRONTIER.relics.rows[0].icon} /> **{FRONTIER.relics.rows[0].name}** | {FRONTIER.relics.rows[0].common} | {FRONTIER.relics.rows[0].legendary} |
+| <GameIcon name={FRONTIER.relics.rows[1].icon} /> **{FRONTIER.relics.rows[1].name}** | {FRONTIER.relics.rows[1].common} | {FRONTIER.relics.rows[1].legendary} |
+| <GameIcon name={FRONTIER.relics.rows[2].icon} /> **{FRONTIER.relics.rows[2].name}** | {FRONTIER.relics.rows[2].common} | {FRONTIER.relics.rows[2].legendary} |
+| <GameIcon name={FRONTIER.relics.rows[3].icon} /> **{FRONTIER.relics.rows[3].name}** | {FRONTIER.relics.rows[3].common} | {FRONTIER.relics.rows[3].legendary} |
