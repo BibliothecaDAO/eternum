@@ -20,6 +20,7 @@ export type IdentitySessionStatus = "loading" | "anonymous" | "signed-in";
 interface IdentitySessionStore {
   status: IdentitySessionStatus;
   session: Session | null;
+  error: unknown;
   applySession: (session: Session | null) => void;
   refresh: () => Promise<void>;
 }
@@ -33,51 +34,78 @@ export const notificationOwnerOf = (session: Session | null): string | null => s
 export const identityUsername = (session: Session | null): string | null =>
   session ? profileOfIdentityUser(session.user).name : null;
 
+const INITIAL_RETRY_MS = 5_000;
+const MAX_RETRY_MS = 30_000;
+const retryDelayMs = (attempt: number) => Math.min(INITIAL_RETRY_MS * 2 ** attempt, MAX_RETRY_MS);
+
 let sessionRevision = 0;
 let retryTimer: ReturnType<typeof setTimeout> | null = null;
+let retryAttempt = 0;
 let initialLoad: Promise<void> | null = null;
 let refreshInFlight: { revision: number; promise: Promise<void> } | null = null;
+
+const clearRetryTimer = () => {
+  if (retryTimer) clearTimeout(retryTimer);
+  retryTimer = null;
+};
+
+const runRefresh = (
+  get: () => IdentitySessionStore,
+  set: (partial: Partial<IdentitySessionStore>) => void,
+  resetRetries: boolean,
+): Promise<void> => {
+  if (refreshInFlight) {
+    return refreshInFlight.revision === sessionRevision
+      ? refreshInFlight.promise
+      : refreshInFlight.promise.then(() => runRefresh(get, set, resetRetries));
+  }
+  const revision = ++sessionRevision;
+  clearRetryTimer();
+  if (resetRetries) {
+    retryAttempt = 0;
+    if (get().error !== null) set({ error: null });
+  }
+  const promise = readSessionRevision(revision, get, set).finally(() => {
+    refreshInFlight = null;
+  });
+  refreshInFlight = { revision, promise };
+  return promise;
+};
 
 export const useIdentitySessionStore = create<IdentitySessionStore>()((set, get) => ({
   status: "loading",
   session: null,
+  error: null,
   applySession: (session) => {
     sessionRevision += 1;
-    if (retryTimer) clearTimeout(retryTimer);
-    retryTimer = null;
+    clearRetryTimer();
+    retryAttempt = 0;
     if (!session) useAccountStore.getState().setGameplayAccount(null, null);
-    set({ session, status: resolveStatus(session) });
+    set({ session, status: resolveStatus(session), error: null });
   },
-  refresh: () => {
-    if (refreshInFlight) {
-      return refreshInFlight.revision === sessionRevision
-        ? refreshInFlight.promise
-        : refreshInFlight.promise.then(() => get().refresh());
-    }
-    const revision = ++sessionRevision;
-    if (retryTimer) clearTimeout(retryTimer);
-    retryTimer = null;
-    const promise = readSessionRevision(revision, get().applySession).finally(() => {
-      refreshInFlight = null;
-    });
-    refreshInFlight = { revision, promise };
-    return promise;
-  },
+  refresh: () => runRefresh(get, set, true),
 }));
 
-async function readSessionRevision(revision: number, applySession: (session: Session | null) => void): Promise<void> {
+async function readSessionRevision(
+  revision: number,
+  get: () => IdentitySessionStore,
+  set: (partial: Partial<IdentitySessionStore>) => void,
+): Promise<void> {
   try {
     const session = await identityClient.getSession();
-    if (revision === sessionRevision) applySession(session);
+    if (revision === sessionRevision) get().applySession(session);
   } catch (error) {
     if (revision !== sessionRevision) return;
     console.error("identity_session_load_failed", error);
-    initialLoad = null;
-    if (!retryTimer)
+    if (get().status === "loading") set({ error });
+    if (!retryTimer) {
+      const delay = retryDelayMs(retryAttempt);
+      retryAttempt += 1;
       retryTimer = setTimeout(() => {
         retryTimer = null;
-        void loadIdentitySessionOnce();
-      }, 5_000);
+        void runRefresh(get, set, false);
+      }, delay);
+    }
   }
 }
 
@@ -98,14 +126,17 @@ export async function deleteIdentityAccount(code: string): Promise<void> {
 
 const loadIdentitySessionOnce = (): Promise<void> => (initialLoad ??= useIdentitySessionStore.getState().refresh());
 
+const retryIdentitySession = () => void useIdentitySessionStore.getState().refresh();
+
 /** Subscribes to the identity session and starts its first load. */
 export const useIdentitySession = () => {
   const status = useIdentitySessionStore((state) => state.status);
   const session = useIdentitySessionStore((state) => state.session);
+  const error = useIdentitySessionStore((state) => state.error);
 
   useEffect(() => {
     void loadIdentitySessionOnce();
   }, []);
 
-  return { status, session };
+  return { status, session, error, retry: retryIdentitySession };
 };

@@ -24,7 +24,7 @@ import {
 
 import { entryHref } from "../game-links";
 import { type DirectoryGame, gameRefOf } from "../herald";
-import { directoryDay, seasonDayLabel, seasonDaysOf, seasonPlayerHome, seasonTitle } from "../season";
+import { directoryDay, isAccelerated, seasonDayLabel, seasonDaysOf, seasonPlayerHome, seasonTitle } from "../season";
 import { gameStart } from "../season-tab/history-row";
 import { resultsHref } from "../season-tab/results-link";
 import { useRequestSignIn } from "../sign-in/connect";
@@ -34,7 +34,7 @@ import { idleCard, type PlayItem } from "./play-board";
 type ItemVerb = { word: string; icon: IconMeaning; to: string; connectFirst?: true; entersGame?: true };
 
 const rehearsalVerbWord = (verb: "play" | "resume", game: DirectoryGame, lead: boolean): string => {
-  if (lead) {
+  if (lead || !isAccelerated(game)) {
     const name = seasonTitle(game);
     return verb === "resume" ? COUNTDOWN_WORDS.resumeRehearsal(name) : COUNTDOWN_WORDS.playRehearsal(name);
   }
