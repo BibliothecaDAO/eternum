@@ -338,11 +338,32 @@ const runFight = (
   );
   if (forecast.outcome === "refused") throw new Error(`Fight refused: ${forecast.refusal}`);
   return {
+    outcome: forecast.outcome,
     wins: forecast.outcome === "wins",
     kept: Number(forecast.attacker.count / PRECISION),
     lost: Number(forecast.attackerLoss / PRECISION),
     exchanges: forecast.exchanges,
   };
+};
+
+const runWinningFight = (
+  attackerCategory: ExchangeTroops["category"],
+  attackerCount: number,
+  defenderCategory: ExchangeTroops["category"],
+  defenderCount: number,
+) => {
+  const result = runFight(attackerCategory, attackerCount, defenderCategory, defenderCount);
+  if (!result.wins) {
+    throw new Error(
+      `${attackerCount} ${attackerCategory} did not clear ${defenderCount} ${defenderCategory} (${result.outcome})`,
+    );
+  }
+  return result;
+};
+
+const formatKept = (result: ReturnType<typeof runFight>) => {
+  if (result.wins) return n(result.kept);
+  return result.outcome === "stalls" ? "Stalls" : "Loses";
 };
 
 const minKnightsToClear = (
@@ -371,8 +392,8 @@ const minKnightsToClear = (
 const exampleMultiplier = 1.5;
 const campMid = Math.round((frontierPreset.depths[0].siteGuardLower + frontierPreset.depths[0].siteGuardUpper) / 2);
 const campAttacker = Math.round(campMid * exampleMultiplier);
-const exampleCrossbows = runFight("Crossbowman", campAttacker, "Knight", campMid);
-const exampleKnights = runFight("Knight", campAttacker, "Knight", campMid);
+const exampleCrossbows = runWinningFight("Crossbowman", campAttacker, "Knight", campMid);
+const exampleKnights = runWinningFight("Knight", campAttacker, "Knight", campMid);
 
 const markRow = (guardCount: number, bow: boolean) => {
   const send = Math.round(guardCount * exampleMultiplier);
@@ -380,9 +401,9 @@ const markRow = (guardCount: number, bow: boolean) => {
   return {
     target: `${n(guardCount)}, ${bow ? "Bow" : "Blade"}`,
     sent: n(send),
-    knights: n(runFight("Knight", send, defender, guardCount).kept),
-    crossbows: n(runFight("Crossbowman", send, defender, guardCount).kept),
-    scouts: n(runFight("Paladin", send, defender, guardCount).kept),
+    knights: formatKept(runFight("Knight", send, defender, guardCount)),
+    crossbows: formatKept(runFight("Crossbowman", send, defender, guardCount)),
+    scouts: formatKept(runFight("Paladin", send, defender, guardCount)),
   };
 };
 
