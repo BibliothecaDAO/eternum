@@ -140,6 +140,26 @@ const endedFrontier = game({
   player_state: owned,
 });
 
+const liveTestnet = game({
+  game_id: 4,
+  name: "testnet-1795479180",
+  mode: "frontier",
+  status: "Live",
+  clock_scale: 1,
+  season_number: null,
+  day_index: 0,
+  day_ends_at: NOW + LEFT_TODAY,
+  next_day_length: DAY,
+  clock: {
+    start_settling_at: NOW - 3600,
+    start_main_at: NOW - 3600,
+    scheduled_end_at: NOW + 7 * DAY,
+    end_at: NOW + 7 * DAY,
+  },
+  player_count: 142,
+  player_state: null,
+});
+
 const liveBlitz = (member: boolean) =>
   game({
     game_id: 7,
@@ -196,6 +216,8 @@ export const LAB_SCREENS = {
   "preseason-sealed": { signedIn: true, games: [] },
   "preseason-invited": { signedIn: false, games: [] },
   "preseason-invited-pick": { signedIn: true, games: [] },
+  "preseason-testnet": { signedIn: false, games: [liveTestnet] },
+  "preseason-testnet-chosen": { signedIn: true, games: [liveTestnet] },
   fragments: { signedIn: true, games: [] },
   home: { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
   // Play for a player with the longest name an account takes (packages/identity account-rules), with the install
@@ -284,6 +306,7 @@ export const LAB_PAYOUT_WALLETS: Partial<Record<keyof typeof LAB_SCREENS, string
   "preseason-chosen": LAB_WALLET,
   "preseason-sealed": LAB_WALLET,
   "preseason-invited-pick": LAB_WALLET,
+  "preseason-testnet-chosen": LAB_WALLET,
   "season-running": LAB_WALLET,
   "realm-held": LAB_WALLET,
   "realm-vault": LAB_WALLET,
@@ -301,6 +324,8 @@ const PRESEASON_SCREENS: readonly LabScreen[] = [
   "preseason-sealed",
   "preseason-invited",
   "preseason-invited-pick",
+  "preseason-testnet",
+  "preseason-testnet-chosen",
 ];
 const LAB_ORDER_MEMBERS: Readonly<Record<number, number>> = {
   1: 12,
@@ -321,7 +346,8 @@ const LAB_ORDER_MEMBERS: Readonly<Record<number, number>> = {
   8: 4,
 };
 export const labOrderIntent = (screen: LabScreen) => ({
-  order: screen === "preseason-chosen" || screen === "preseason-sealed" ? 1 : null,
+  order:
+    screen === "preseason-chosen" || screen === "preseason-sealed" || screen === "preseason-testnet-chosen" ? 1 : null,
   members: LAB_ORDER_MEMBERS,
 });
 export const LAB_SEAL_CODE = "SEAL2345";
@@ -363,6 +389,8 @@ export const LAB_NO_HISTORY_SCREENS: readonly LabScreen[] = [
   "preseason-sealed",
   "preseason-invited",
   "preseason-invited-pick",
+  "preseason-testnet",
+  "preseason-testnet-chosen",
 ];
 
 const NAMES = [

@@ -19,6 +19,8 @@ const PRESEASON_SCREENS = [
   ["preseason-sealed", "[data-seal-code=held]"],
   ["preseason-invited", "[data-shared-invite]", "/s/MRGHT234"],
   ["preseason-invited-pick", "[data-aspect-invited]"],
+  ["preseason-testnet", "[data-preseason-testnet]"],
+  ["preseason-testnet-chosen", "[data-preseason-testnet]"],
 ];
 const ENTRY_STEPS = [
   ["aspect-kept", "[data-order]"],
