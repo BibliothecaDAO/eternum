@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { readNodeHealth } from "./node-health";
@@ -6,6 +6,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { buildNativeDirectory } from "./native/read-models";
 import { createHeraldRequestHandler } from "./http";
+import { HERALD_PUBLIC_GET_ROUTES, matchHeraldGetRoute } from "./http-routes";
 import { shardManifest } from "./native/fixtures";
 import { gameRegistryRow } from "../../../packages/core/src/test-support/game-registry";
 import type { GameSnapshot } from "./types";
@@ -690,8 +691,18 @@ it("lets browsers read request timings only on a dev chain", async () => {
   }
 });
 
-it("dispatches every GET route through http-routes.ts with no inline pathname branches", async () => {
-  const source = await Bun.file(new URL("./http.ts", import.meta.url)).text();
+it("dispatches every GET route through http-routes.ts with no inline pathname branches", () => {
+  const source = readFileSync(new URL("./http.ts", import.meta.url), "utf8");
   expect(source).not.toMatch(/url\.pathname\s*===/);
   expect(source).not.toMatch(/url\.pathname\.startsWith\(/);
+  for (const matcher of HERALD_PUBLIC_GET_ROUTES) {
+    const sample =
+      typeof matcher === "string"
+        ? matcher
+        : matcher.source
+            .replace(/^\^|\$$/g, "")
+            .replaceAll("\\/", "/")
+            .replaceAll("([0-9]+)", "1");
+    expect(matchHeraldGetRoute(sample)).not.toBeNull();
+  }
 });
