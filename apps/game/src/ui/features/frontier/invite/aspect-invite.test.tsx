@@ -71,7 +71,7 @@ const renderInvite = async (aspect?: number, queries = new QueryClient()) => {
   );
 };
 const inviteRead = (queries: QueryClient) =>
-  queries.getQueryCache().find({ predicate: ({ queryKey }) => queryKey.includes("invite") })?.state.status;
+  queries.getQueryCache().findAll({ predicate: ({ queryKey }) => queryKey.includes("invite") })[0]?.state.status;
 const panel = () => host.querySelector('[aria-label^="Invite a friend"]');
 const button = (word: string) => [...host.querySelectorAll("button")].find((each) => each.textContent?.endsWith(word));
 
