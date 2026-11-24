@@ -326,8 +326,8 @@ describe("the Deploy sheet", () => {
     expect(foot(host)).toBe("240Deploy 120");
     expect(host.querySelector('.ui-price [role="img"]')?.getAttribute("aria-label")).toBe("240 Wheat");
     expect(host.textContent!.replace(foot(host), "")).not.toMatch(/wheat/i);
-    const slider = host.querySelector<HTMLInputElement>("input[type=range]");
-    expect([slider?.getAttribute("aria-label"), slider?.max, slider?.value]).toEqual([
+    const range = slider(host);
+    expect([range.getAttribute("aria-label"), range.max, range.value]).toEqual([
       "Knights: how many go",
       "420",
       "120",

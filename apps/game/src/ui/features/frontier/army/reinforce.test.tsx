@@ -148,9 +148,9 @@ it("opens on the army beside the realm at the most it can take, and names the tr
 it.each([
   ["eight Wheat raises four troops", 8, "600 → 604", "8 Wheat"],
   ["four and a half Wheat raises two", 4.5, "600 → 602", null],
-])("prices Max on the whole batch at the recipe cost: %s", async (_case, wheat, after, price) => {
+])("prices Max on the whole batch at the recipe cost: %s", async (_case, held, after, price) => {
   const fixture = armyBesideHome();
-  fixture.holdWheat(wheat);
+  fixture.holdWheat(held);
   render(fixture);
   await press("Max");
   expect(troops()).toBe(after);
