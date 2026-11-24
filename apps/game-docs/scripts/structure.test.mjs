@@ -71,10 +71,15 @@ test("Realms home cards, strips, and Frontier quick links derive from sidebar.js
     ["frontier"],
   );
   for (const game of games) {
-    assert.ok(pageExists(firstLinkOf(game)));
-    assert.ok(pageExists(startLinkForGame(game.id)));
+    const landing = firstLinkOf(game);
+    const start = startLinkForGame(game.id);
+    assert.ok(pageExists(landing));
+    assert.ok(pageExists(start));
+    assert.notEqual(start, landing);
     assert.ok(game.summary.length > 0);
   }
+  assert.equal(firstLinkOf(games[0]), "/frontier");
+  assert.equal(startLinkForGame("frontier"), "/frontier/realm");
   assert.deepEqual(
     leavesForKind("global").map((item) => item.text),
     ["Sign in", "Payout wallet", "LORDS"],

@@ -59,7 +59,9 @@ export const quickLinksForGame = (gameId: GameId): readonly SidebarLeaf[] => {
 
 export const startLinkForGame = (gameId: GameId): string => {
   const game = gameSections().find((section) => section.id === gameId);
-  const target = game ? collectLeaves(game.items)[1] : undefined;
+  if (!game) throw new Error(`Missing sidebar game section "${gameId}"`);
+  const landing = firstLinkOf(game);
+  const target = collectLeaves(game.items).find((leaf) => leaf.link !== landing);
   if (!target) throw new Error(`Sidebar game section "${gameId}" has no first guide page`);
   return target.link;
 };
