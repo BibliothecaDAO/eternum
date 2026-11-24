@@ -64,7 +64,7 @@ test("top-level sidebar follows Realms multi-game order: Global, Frontier, Data,
 });
 
 test("Realms home cards, strips, and Frontier quick links derive from sidebar.json with no empty games", async () => {
-  const { firstLinkOf, gameSections, leavesForKind, quickLinksForGame } = await loadSidebarTree();
+  const { firstLinkOf, gameSections, leavesForKind, quickLinksForGame, startLinkForGame } = await loadSidebarTree();
   const games = gameSections();
   assert.deepEqual(
     games.map((game) => game.id),
@@ -72,6 +72,7 @@ test("Realms home cards, strips, and Frontier quick links derive from sidebar.js
   );
   for (const game of games) {
     assert.ok(pageExists(firstLinkOf(game)));
+    assert.ok(pageExists(startLinkForGame(game.id)));
     assert.ok(game.summary.length > 0);
   }
   assert.deepEqual(
