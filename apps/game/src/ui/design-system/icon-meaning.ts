@@ -1,6 +1,7 @@
 import meanings from "../../../asset-sources/facets/semantic-map.json";
 import resources from "../../../asset-sources/facets/resources.json";
 import type { AspectId, ResourcesIds } from "@bibliothecadao/types";
+import type { Tone } from "./kit/tone";
 
 /**
  * The brand's marks the app draws, each the Realms Brand Kit v3 drawing for the size it is shown at (the kit's README:
@@ -29,6 +30,12 @@ export const AGE_LOCKUP = {
  * SHA-256 (src/brand/brand.test.ts), so a new image is a new address and an unfurl a service has cached refreshes.
  */
 export const LINK_PREVIEW = "/images/covers/link-preview-54d58004.png";
+
+export const DAY_MEDALLION: Record<Tone, string> = {
+  calm: "/images/hud/day-medallion-calm.webp",
+  amber: "/images/hud/day-medallion-calm.webp",
+  ember: "/images/hud/day-medallion-ember.webp",
+};
 
 export type IconMeaning = keyof typeof meanings;
 export type IconPixels = 64 | 128 | 256;

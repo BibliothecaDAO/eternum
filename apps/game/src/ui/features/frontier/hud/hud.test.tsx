@@ -22,7 +22,7 @@ import { useOnePanel } from "./one-panel";
 import { MenuPage } from "./menu-page";
 import { OrderBar } from "./order-bar";
 import { PickedArmy } from "./picked-army";
-import { DayPill, DayRing } from "./day-pill";
+import { DayMedallion, DayRing } from "./day-pill";
 import { RealmCard } from "./realm-card";
 import { PhoneTopBarView, TabletTopBarView } from "./phone-top-bar";
 import { PhoneTabBar, TabletPlaces } from "./frontier-nav";
@@ -116,7 +116,7 @@ describe("the status strip", () => {
       3_600,
     );
     const clock = { ...day, secondsLeft: 24 * 3_600, tomorrowSeconds: 24 * 3_600 };
-    const markup = renderToStaticMarkup(<DayPill clock={clock} />);
+    const markup = renderToStaticMarkup(<DayMedallion clock={clock} />);
     expect(text(markup)).toContain(`Day ${day.day}`);
     expect(text(markup)).toContain("24h");
     expect(markup).not.toMatch(/\b1d\b/);
@@ -133,19 +133,20 @@ describe("the status strip", () => {
       },
       3_600,
     );
-    const morning = renderToStaticMarkup(<DayPill clock={{ ...day, shareLeft: 0.75, tone: "calm" }} />);
+    const morning = renderToStaticMarkup(<DayMedallion clock={{ ...day, shareLeft: 0.75, tone: "calm" }} />);
     expect(text(morning)).not.toContain("Day ends");
     expect(text(morning)).not.toContain("Tomorrow lasts");
     expect(morning).toContain("text-hud-ink");
     expect(morning).not.toContain("text-hud-bad");
     expect(morning).toContain('data-fill-share="25"');
     const lastHour = renderToStaticMarkup(
-      <DayPill clock={{ ...day, secondsLeft: 600, shareLeft: 0.05, tone: "ember" }} />,
+      <DayMedallion clock={{ ...day, secondsLeft: 600, shareLeft: 0.05, tone: "ember" }} />,
     );
     expect(text(lastHour)).toContain(`Day ${day.day}`);
     expect(text(lastHour)).toContain("10m");
     expect(lastHour).toContain("text-hud-bad");
     expect(lastHour).toContain('data-fill-share="95"');
+    expect(lastHour).toContain("/images/hud/day-medallion-ember.webp");
   });
 
   it("renders DayRing with clamped elapsed progress, Day label, time left and ember tone in the last hour", () => {
@@ -778,7 +779,7 @@ it.each([81, 84, 85])("shows the last %ih day with its real countdown and no tom
   const clock = dayClock(calendar, endAt - 600);
   const day = hours === 81 ? 10 : 11;
   expect(clock).toMatchObject({ day, endsAt: endAt, secondsLeft: 600, tomorrowSeconds: undefined, tone: "ember" });
-  const markup = renderToStaticMarkup(<DayPill clock={clock} />);
+  const markup = renderToStaticMarkup(<DayMedallion clock={clock} />);
   expect(text(markup)).toContain(`Day ${day}`);
   expect(text(markup)).toContain("10m");
   expect(markup).not.toContain("Tomorrow");

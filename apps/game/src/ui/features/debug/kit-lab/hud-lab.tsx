@@ -85,11 +85,11 @@ import { fragmentsToFill, RefillButton, RefillConfirm, RefillPrice } from "@/ui/
 import { OathSockets } from "@/ui/features/frontier/army/oath-slots";
 import { ShopCodeField, ShopView } from "@/ui/features/frontier/shop/shop-sheet";
 import { labQuestRulesFact } from "@/lab/game/quest-scenario";
-import { DayPill, DayRing } from "@/ui/features/frontier/hud/day-pill";
+import { DayMedallion, DayRing } from "@/ui/features/frontier/hud/day-pill";
 import { DailyQuestChip } from "@/ui/features/frontier/hud/daily-quest-chip";
 import type { MapLayers } from "@/ui/features/frontier/hud/map-layers";
 import type { RealmBuildingItem } from "@/ui/features/frontier/hud/realm-card";
-import { FrontierPlaceSwitch, PlaceMenu } from "@/ui/features/frontier/hud/surface-deep-switch";
+import { PlaceMenu } from "@/ui/features/frontier/hud/surface-deep-switch";
 import { type WithdrawStep, WithdrawSheet } from "@/ui/features/frontier/value/withdraw-sheet";
 import { staminaShortfall } from "@/ui/design-system/kit/reasons";
 
@@ -1616,10 +1616,10 @@ const LabBands = ({
     {() =>
       desktop ? (
         <FrontierDesktop
-          clock={<DayPill clock={lab.clock} />}
+          clock={<DayMedallion clock={lab.clock} />}
           quest={<LabDailyQuest />}
           placeSwitch={
-            <FrontierPlaceSwitch
+            <PlaceMenu
               isMapView={lab.realmView === undefined}
               layers={LAB_MAP_LAYERS}
               onGoRealm={noop}

@@ -10,6 +10,7 @@ import {
   selectLayer,
   unlockedLayerForTier,
 } from "./map-layers";
+import { useLayout } from "@/shell/frame/layout";
 import { useHudPopover } from "./hud-popover";
 
 type PlaceTabKey = "realm" | "surface" | EtherealLayer;
@@ -100,59 +101,13 @@ const placeEntries = ({
   ];
 };
 
-export const FrontierPlaceSwitch = (props: PlaceSwitchProps) => (
-  <div
-    role="group"
-    aria-label="Map view"
-    data-surface-deep-switch
-    data-variant="desktop"
-    className="frontier-place-switch pointer-events-auto"
-  >
-    <div className="ui-tabs" role="tablist" data-size="sm">
-      {placeEntries(props).map((entry) =>
-        entry.depth === undefined ? (
-          <button
-            key={entry.key}
-            type="button"
-            role="tab"
-            className="ui-tab"
-            aria-label={entry.label}
-            aria-selected={entry.selected}
-            disabled={entry.disabled || undefined}
-            onClick={entry.choose}
-          >
-            {entry.label}
-          </button>
-        ) : (
-          <button
-            key={entry.key}
-            type="button"
-            role="tab"
-            className="ui-tab"
-            data-depth={String(entry.depth)}
-            data-locked={entry.locked || undefined}
-            aria-label={entry.label}
-            aria-selected={entry.selected}
-            disabled={entry.disabled}
-            title={entry.line}
-            data-tip={entry.line}
-            onClick={entry.choose}
-          >
-            <Icon name={entry.locked ? "lock" : entry.mark} size={entry.locked ? 12 : 14} />
-            <span>{entry.label}</span>
-          </button>
-        ),
-      )}
-    </div>
-  </div>
-);
-
 export const PlaceMenu = ({ realm, ...props }: PlaceSwitchProps & { realm?: { name: string; mark: IconMeaning } }) => {
   const entries = placeEntries(props).map((entry) =>
     entry.key === "realm" && realm ? { ...entry, mark: realm.mark, line: realm.name } : entry,
   );
   const shown = entries.find((entry) => entry.selected) ?? entries[1]!;
   const { open, close, triggerProps, popover } = useHudPopover();
+  const layout = useLayout();
   return (
     <div className="frontier-place-menu pointer-events-auto">
       <button
@@ -194,7 +149,7 @@ export const PlaceMenu = ({ realm, ...props }: PlaceSwitchProps & { realm?: { na
             </button>
           ))}
         </div>,
-        { className: "frontier-place-popover", layout: "phone" },
+        { className: "frontier-place-popover", layout },
       )}
     </div>
   );

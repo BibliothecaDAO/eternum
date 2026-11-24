@@ -1,5 +1,6 @@
 import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { DAY_MEDALLION } from "@/ui/design-system/icon-meaning";
 import {
   DAY,
   dayEnds,
@@ -43,7 +44,7 @@ export const FrontierDayClock = ({
   if (finished) return <GameFinishedPill />;
   return (
     <button type="button" aria-label={TODAY} onClick={onOpenToday} className="frontier-day-trigger pointer-events-auto">
-      {compact ? <DayRing clock={clock} /> : <DayPill clock={clock} />}
+      {compact ? <DayRing clock={clock} /> : <DayMedallion clock={clock} />}
     </button>
   );
 };
@@ -79,33 +80,29 @@ export const DayRing = ({ clock }: { clock: DayClock }) => {
   );
 };
 
-export const DayPill = ({ clock }: { clock: DayClock }) => {
+export const DayMedallion = ({ clock }: { clock: DayClock }) => {
   const left = dayLeftCompact(clock.secondsLeft);
-  const tip = dayTip(clock);
   return (
     <span
       role="timer"
       aria-label="Day clock"
-      data-tip={tip}
-      className={cn("frontier-day-cornice pointer-events-auto tabular-nums", STORE_TONES[clock.tone].text)}
+      data-tip={dayTip(clock)}
+      data-tone={clock.tone}
+      className={cn("frontier-day-dial pointer-events-auto tabular-nums", STORE_TONES[clock.tone].text)}
     >
-      <span className="frontier-day-medallion">
-        <ProgressRing
-          size="lg"
-          share={dayElapsedShare(clock)}
-          tone={clock.tone}
-          className="frontier-day-medallion__ring"
-        >
-          <span className="frontier-day-stack">
-            <span className="frontier-day-kicker">{DAY}</span>
-            <span className="frontier-day-label">{clock.day ?? "—"}</span>
-          </span>
-        </ProgressRing>
-      </span>
-      <span className="frontier-day-readout">
-        {left && <span className="frontier-day-readout__left">{left}</span>}
-        <span className="sr-only">{`${DAY} ${clock.day ?? "—"}${left ? ` · ${left} ${LEFT}` : ""}`}</span>
-      </span>
+      <img src={DAY_MEDALLION[clock.tone]} alt="" className="frontier-day-dial__bezel" />
+      <ProgressRing share={dayElapsedShare(clock)} tone={clock.tone} className="frontier-day-dial__ring">
+        <span className="frontier-day-stack">
+          <span className="frontier-day-kicker">{DAY}</span>
+          <span className="frontier-day-label">{clock.day ?? "—"}</span>
+        </span>
+      </ProgressRing>
+      {left && (
+        <span className="frontier-day-dial__plaque" aria-hidden="true">
+          {left}
+        </span>
+      )}
+      <span className="sr-only">{`${DAY} ${clock.day ?? "—"}${left ? ` · ${left} ${LEFT}` : ""}`}</span>
     </span>
   );
 };

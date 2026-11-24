@@ -648,7 +648,8 @@ export const HUD_LAYOUT = {
    */
   "frontier-page": "440px",
   "frontier-left": "304px",
-  "frontier-rail": "372px",
+  "frontier-rail": "384px",
+  "frontier-minimap": "208px",
   "frontier-page-top": "76px",
   "frontier-card": "92px",
   "frontier-build-card": "136px",

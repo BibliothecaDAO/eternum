@@ -10,7 +10,7 @@ vi.mock("@/ui/features/event-feed/quick-feed", async (original) => ({
 }));
 
 import { dayClock } from "./day-clock";
-import { DayPill } from "./day-pill";
+import { DayMedallion } from "./day-pill";
 import { FrontierPlaces } from "./frontier-desktop";
 import { isTroopStore, STORE_KINDS } from "../stores";
 import { RealmCard } from "./realm-card";
@@ -54,10 +54,11 @@ it("says the day and the time left in the top bar, and when the day ends and how
     { dayUnitSeconds: 4 * 3_600, seed: 1n, startMainAt: 0, scheduledEndAt: 21 * 20 * 14_400, endAt: 21 * 20 * 14_400 },
     3_600,
   );
-  act(() => root.render(<DayPill clock={clock} />));
+  act(() => root.render(<DayMedallion clock={clock} />));
   const pill = host.querySelector('[aria-label="Day clock"]')!;
   expect(pill.textContent).toContain(`Day ${clock.day}`);
-  expect(pill.querySelector(".frontier-day-readout__left")?.textContent).toBeTruthy();
+  expect(pill.querySelector(".frontier-day-dial__plaque")?.textContent).toBeTruthy();
+  expect(pill.querySelector("img")?.getAttribute("src")).toBe("/images/hud/day-medallion-calm.webp");
   expect(pill.getAttribute("data-tip")).toMatch(/^Day ends \d\d:\d\d · .+ left · Tomorrow lasts /);
 });
 
@@ -66,25 +67,27 @@ it("reads a 24-hour day in hours on the top bar and its hover, as Play does (liv
     { dayUnitSeconds: 4 * 3_600, seed: 1n, startMainAt: 0, scheduledEndAt: 21 * 20 * 14_400, endAt: 21 * 20 * 14_400 },
     3_600,
   );
-  act(() => root.render(<DayPill clock={{ ...day, secondsLeft: 24 * 3_600, tomorrowSeconds: 24 * 3_600 }} />));
+  act(() => root.render(<DayMedallion clock={{ ...day, secondsLeft: 24 * 3_600, tomorrowSeconds: 24 * 3_600 }} />));
   const pill = host.querySelector('[aria-label="Day clock"]')!;
   expect(pill.textContent).toContain(`Day ${day.day}`);
   expect(pill.textContent).toContain("24h");
   expect(pill.getAttribute("data-tip")).toMatch(/ · Tomorrow lasts 24h$/);
 });
 
-it("offers a desktop's four cornice places in order, each a panel its press opens and a second press closes", () => {
+it("offers a desktop's four places in order, Settings named, each a panel its press opens and a second press closes", () => {
   const onSurface = vi.fn();
-  const places = (surface: "research" | "feed" | "season" | "chat" | null, research = false) => {
+  const places = (surface: "research" | "feed" | "season" | "settings" | null, research = false) => {
     act(() => root.render(<FrontierPlaces surface={surface} onSurface={onSurface} research={research} />));
     return [...host.querySelectorAll("nav button")] as HTMLButtonElement[];
   };
   const closed = places(null, true);
-  expect(closed.map((button) => [button.getAttribute("aria-label"), button.getAttribute("aria-selected")])).toEqual([
+  expect(
+    closed.map((button) => [button.textContent?.replace(/\d/g, ""), button.getAttribute("aria-selected")]),
+  ).toEqual([
     ["Research", "false"],
     ["Season", "false"],
     ["Feed", "false"],
-    ["Chat", "false"],
+    ["Settings", "false"],
   ]);
   expect(closed[0].querySelector('[data-shape="diamond"]')).not.toBeNull();
   expect(closed[2].textContent).toContain("2");
@@ -95,8 +98,9 @@ it("offers a desktop's four cornice places in order, each a panel its press open
   expect(feed[2].textContent).not.toContain("2");
   act(() => feed[2].click());
   expect(onSurface).toHaveBeenLastCalledWith(null);
-  act(() => feed[1].click());
-  expect(onSurface).toHaveBeenLastCalledWith("season");
+  act(() => feed[3].click());
+  expect(onSurface).toHaveBeenLastCalledWith("settings");
+  expect(places("settings")[3].getAttribute("aria-selected")).toBe("true");
 });
 
 it("renders the Aspect medallion tinted in the Aspect color and Order of Power below the Realm name on the realm card and the phone's emblem", () => {

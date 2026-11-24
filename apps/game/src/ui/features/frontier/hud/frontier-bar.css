@@ -102,10 +102,6 @@
   line-height: 1;
   font-weight: var(--hud-weight-badge);
 }
-.frontier-place-switch .ui-tab[data-locked="true"] {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
 .frontier-popover {
   --popover-edge: theme(spacing.4);
   --popover-width: min(theme(spacing.hud-frontier-page), calc(100% - var(--popover-edge) * 2));
