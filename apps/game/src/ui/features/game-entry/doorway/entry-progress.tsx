@@ -21,9 +21,6 @@ export const EntryProgress = ({ view, showTip = false }: { view: DoorwayView; sh
         <div className="doorway-progress__status">
           <span className="doorway-progress__step">
             <span>{DOORWAY_WORDS[running.step]}</span>
-            <span className="doorway-progress__sub">
-              {DOORWAY_WORDS.stepOf(view.steps.indexOf(running) + 1, view.steps.length)}
-            </span>
             {left !== null && (
               <span className="doorway-progress__sub flex items-center gap-1">
                 <Icon name="hourglass" size={14} />

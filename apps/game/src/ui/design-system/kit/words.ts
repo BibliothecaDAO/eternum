@@ -1568,7 +1568,6 @@ export const DOORWAY_WORDS = {
   realm: "Preparing your realm",
   map: "Loading the map",
   play: "Entering the world",
-  stepOf: (step: number, of: number) => `Step ${step} of ${of}`,
   secondsLeft: (seconds: number) => `About ${seconds} s left`,
   /** What the first minutes hold, said while a player's map loads. */
   firstTitle: "First: build a Barracks",
