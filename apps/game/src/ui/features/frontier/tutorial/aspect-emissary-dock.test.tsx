@@ -176,7 +176,7 @@ describe("AspectEmissaryDock", () => {
     expect(onDismiss).toHaveBeenCalledTimes(1);
   });
 
-  it("keeps a confirmed line while a panel hides it, and retires it 3.5 s after it is on screen", () => {
+  it("keeps a confirmed line while a panel hides it, and retires it 6 s after it is on screen", () => {
     vi.useFakeTimers();
     const observers: Array<(entries: Array<{ isIntersecting: boolean }>) => void> = [];
     vi.stubGlobal(
@@ -201,7 +201,7 @@ describe("AspectEmissaryDock", () => {
       expect(onDismiss).not.toHaveBeenCalled();
 
       act(() => observers.at(-1)!([{ isIntersecting: true }]));
-      act(() => vi.advanceTimersByTime(3_499));
+      act(() => vi.advanceTimersByTime(5_999));
       expect(onDismiss).not.toHaveBeenCalled();
       act(() => vi.advanceTimersByTime(1));
       expect(onDismiss).toHaveBeenCalledTimes(1);

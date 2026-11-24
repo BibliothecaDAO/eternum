@@ -43,8 +43,10 @@ function contextForMoment(moment: OpeningMoment): OpeningContext {
       return { ...base, dayEndingSoon: true };
     case "deep":
       return { ...base, inDeep: true };
+    case "quest":
+      return { ...base, questRunning: true };
     case "aspects":
-      return { ...base, hyperstructureAdvanced: true };
+      return { ...base, hasAspectRace: true };
     case "spire":
       return { ...base, inEthereal: true };
     case "daily-quest":

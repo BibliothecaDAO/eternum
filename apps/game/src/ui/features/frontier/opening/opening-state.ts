@@ -11,25 +11,20 @@ export interface TutorialDisplay {
   readonly status: TutorialDisplayStatus;
 }
 
-export interface ReplayBaseline {
-  readonly barracksCount: number;
-  readonly deployedArmies: number;
-  readonly exploredTiles: number;
-}
-
 export const EMPTY_OPENING_CONTEXT: OpeningContext = {
   hasRealm: false,
   hasBarracks: false,
-  barracksCount: 0,
   troopsAtHome: 0,
+  fullArmy: 0,
   deployedArmies: 0,
   hasExplored: false,
-  exploredTiles: 0,
   hasOpenOathPick: false,
   hasSwornOath: false,
   hasEssence: false,
   canResearch: false,
   hasResearched: false,
+  questRunning: false,
+  questProgressed: false,
   dailyQuestClaimable: false,
   dailyQuestClaimed: false,
   hasWellLore: false,
@@ -41,6 +36,7 @@ export const EMPTY_OPENING_CONTEXT: OpeningContext = {
   hasBrokenBane: false,
   dayEndingSoon: false,
   hyperstructureAdvanced: false,
+  hasAspectRace: false,
   fragmentsSold: false,
   outOfStamina: false,
   hasRelic: false,
@@ -64,59 +60,24 @@ const isDueOnContext = (moment: OpeningMoment, ctx: OpeningContext, replayed?: R
   return Boolean(replayed?.has(moment) && "replayDueWhen" in entry && entry.replayDueWhen(ctx));
 };
 
-export const lowestSinceReplay = (baseline: ReplayBaseline | undefined, ctx: OpeningContext): ReplayBaseline => ({
-  barracksCount: Math.min(baseline?.barracksCount ?? ctx.barracksCount, ctx.barracksCount),
-  deployedArmies: Math.min(baseline?.deployedArmies ?? ctx.deployedArmies, ctx.deployedArmies),
-  exploredTiles: Math.min(baseline?.exploredTiles ?? ctx.exploredTiles, ctx.exploredTiles),
-});
-
-const isCompletedDuringReplay = (
-  moment: OpeningMoment,
-  ctx: OpeningContext,
-  baseline: ReplayBaseline | undefined,
-): boolean => {
-  if (!baseline) return false;
-  if (moment === "barracks") return ctx.barracksCount > baseline.barracksCount;
-  if (moment === "deploy") return ctx.deployedArmies > baseline.deployedArmies;
-  if (moment === "explore") return ctx.exploredTiles > baseline.exploredTiles;
-  return false;
-};
-
-const isCompletedOnContext = (
-  moment: OpeningMoment,
-  ctx: OpeningContext,
-  isShowing: boolean,
-  replayed?: ReadonlySet<string>,
-  replayBaseline?: ReplayBaseline,
-): boolean => {
+const isCompletedOnContext = (moment: OpeningMoment, ctx: OpeningContext, isShowing: boolean): boolean => {
   const entry = OPENING[moment];
-  if (replayed?.has(moment) && !entry.showsWhen(ctx)) {
-    if (isShowing && isCompletedDuringReplay(moment, ctx, replayBaseline)) return true;
-    if (isShowing && "completesWhileShowing" in entry && entry.completesWhileShowing(ctx)) return true;
-    return false;
-  }
   if ("completesWhen" in entry && entry.completesWhen(ctx)) return true;
-  if (isShowing && "completesWhileShowing" in entry && entry.completesWhileShowing(ctx)) return true;
-  return false;
+  return isShowing && "completesWhileShowing" in entry && entry.completesWhileShowing(ctx);
 };
 
 const completedOnContext = (
-  ctx: OpeningContext | null,
+  ctx: OpeningContext,
   showing: OpeningMoment | null,
   seen: ReadonlySet<string>,
   replayed?: ReadonlySet<string>,
-  replayBaseline?: ReplayBaseline,
-): OpeningMoment[] => {
-  if (ctx === null || seen.has(TUTORIAL_SKIPPED)) return [];
-  const completed: OpeningMoment[] = [];
-  for (const moment of OPENING_MOMENTS) {
-    if (seen.has(moment)) continue;
+): OpeningMoment[] =>
+  OPENING_MOMENTS.filter((moment) => {
+    if (seen.has(moment)) return false;
     const isShowing = moment === showing;
-    if (!isShowing && replayed?.has(moment)) continue;
-    if (isCompletedOnContext(moment, ctx, isShowing, replayed, replayBaseline)) completed.push(moment);
-  }
-  return completed;
-};
+    if (!isShowing && replayed?.has(moment)) return false;
+    return isCompletedOnContext(moment, ctx, isShowing);
+  });
 
 export const activeOpeningMoment = (
   ctx: OpeningContext | null,
@@ -150,13 +111,12 @@ export function stepTutorialMachine(input: {
   rules: OpeningRules | null;
   seen: ReadonlySet<string>;
   replayed?: ReadonlySet<string>;
-  replayBaseline?: ReplayBaseline;
 }): TutorialTransition {
-  const { showing, confirmed, ctx, rules, seen, replayed, replayBaseline } = input;
+  const { showing, confirmed, ctx, rules, seen, replayed } = input;
   if (ctx === null || rules === null || seen.has(TUTORIAL_SKIPPED)) {
     return { nextShowing: null, confirmedMoment: null, newlyCompleted: [] };
   }
-  const newlyCompleted = completedOnContext(ctx, showing, seen, replayed, replayBaseline);
+  const newlyCompleted = completedOnContext(ctx, showing, seen, replayed);
   const completedSet = new Set<string>(seen);
   for (const moment of newlyCompleted) completedSet.add(moment);
 
@@ -174,6 +134,9 @@ export function stepTutorialMachine(input: {
     }
   }
   const nextShowing = activeOpeningMoment(ctx, rules, completedSet, replayed);
+  if (nextShowing !== null && replayed?.has(nextShowing) && isCompletedOnContext(nextShowing, ctx, true)) {
+    return { nextShowing: null, confirmedMoment: nextShowing, newlyCompleted: [...newlyCompleted, nextShowing] };
+  }
   return { nextShowing, confirmedMoment: null, newlyCompleted };
 }
 
