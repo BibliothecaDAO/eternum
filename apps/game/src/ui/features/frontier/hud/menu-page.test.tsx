@@ -46,7 +46,7 @@ it("opens named menu actions independently of their badges, with their own seman
       await act(async () => button.click());
       expect(callback).toHaveBeenCalledTimes(1);
     }
-    for (const gone of ["Guide", "Production"])
+    for (const gone of ["Production"])
       expect([...host.querySelectorAll("nav button")].some((button) => button.textContent?.includes(gone))).toBe(false);
   } finally {
     await act(async () => root.unmount());
@@ -54,7 +54,7 @@ it("opens named menu actions independently of their badges, with their own seman
   }
 });
 
-it("opens How to play, the game's guide on the docs site, in a new tab with the guide's mark", async () => {
+it("opens the Guide, the game's guide on the docs site, in a new tab with the guide's mark", async () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const host = document.createElement("div");
   document.body.append(host);
@@ -73,7 +73,7 @@ it("opens How to play, the game's guide on the docs site, in a new tab with the 
       ),
     );
     const link = [...host.querySelectorAll<HTMLAnchorElement>("nav a")].find((a) =>
-      a.textContent?.includes("How to play"),
+      a.textContent?.includes("Guide"),
     )!;
     expect(link.href).toBe("https://docs.realms.party/frontier/");
     expect(link.target).toBe("_blank");

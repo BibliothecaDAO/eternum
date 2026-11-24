@@ -507,6 +507,7 @@ button.frontier-stock-chip {
   font-size: var(--hud-text-body);
   line-height: var(--hud-leading-label);
   letter-spacing: 0.06em;
+  text-align: center;
   text-transform: uppercase;
 }
 .menu-tile__badge {
