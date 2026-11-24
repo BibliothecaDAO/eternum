@@ -52,7 +52,7 @@ import { FrontierDayClock } from "./hud/day-pill";
 import { DayEndBlock, DayEndNotice, useDayEnd } from "./day-end/day-end";
 import { useFirstBuild, useMarkFirstBuild } from "./build/first-build";
 import { useStoreReadings } from "./hud/frontier-strip";
-import { RealmPanel, type RealmBuildingItem } from "./hud/realm-panel";
+import type { RealmBuildingItem } from "./hud/realm-card";
 import { HudBands } from "./hud/hud-bands";
 import { MenuPage } from "./hud/menu-page";
 import { useHowToPlay } from "@/ui/modules/how-to-play";
@@ -273,6 +273,23 @@ const FrontierHudBody = ({
     feedUnread,
     chatUnread: chat.unread,
   };
+  const openResearch = (node?: string) => {
+    setResearchPick(node);
+    setSurface("research");
+  };
+  const realmCard = shown && (
+    <FrontierRealmCard
+      rules={rules}
+      realm={shown}
+      own={own}
+      isMapView={isMapView}
+      fragments={own ? fragmentsHeld : null}
+      storeCards={storeCards}
+      onShop={own ? () => setSurface("shop") : undefined}
+      onResearch={openResearch}
+      onClose={desktop || tablet ? undefined : close}
+    />
+  );
   const topBar = (
     <FrontierTopBar
       form={tablet ? "tablet" : "phone"}
@@ -298,6 +315,7 @@ const FrontierHudBody = ({
       fragments={own ? fragmentsHeld : null}
       onShop={own ? () => setSurface("shop") : undefined}
       storeCards={storeCards}
+      realmCard={tablet || realmVisible ? realmCard : undefined}
       onOpenRealm={() => setSurface(surface === "realm" ? null : "realm")}
       onOpenToday={() => setSurface("today")}
     />
@@ -358,21 +376,6 @@ const FrontierHudBody = ({
         onClose={close}
       />
     ) : null;
-  const openResearch = (node?: string) => {
-    setResearchPick(node);
-    setSurface("research");
-  };
-  const realmPanel = shown && (
-    <FrontierRealmPanel
-      rules={rules}
-      realm={shown}
-      own={own}
-      isMapView={isMapView}
-      storeCards={storeCards}
-      onResearch={openResearch}
-      onClose={close}
-    />
-  );
   const armyDock = shown ? <DockFor realm={shown} onOpenArmy={desktop ? openArmy : pickArmy} /> : null;
   const sheets = (
     <>
@@ -392,20 +395,7 @@ const FrontierHudBody = ({
       quest={own ? <DailyQuestChip realm={own} /> : undefined}
       placeSwitch={placeSwitch}
       banner={<OfflineNotice />}
-      realm={
-        shown && (
-          <FrontierRealmCard
-            rules={rules}
-            realm={shown}
-            own={own}
-            isMapView={isMapView}
-            fragments={own ? fragmentsHeld : null}
-            storeCards={storeCards}
-            onShop={own ? () => setSurface("shop") : undefined}
-            onResearch={openResearch}
-          />
-        )
-      }
+      realm={realmCard}
       armies={armyDock}
       page={page}
       widePage={widePage}
@@ -439,12 +429,9 @@ const FrontierHudBody = ({
       notices={notices}
       action={action}
       dock={
-        <div className="flex flex-col gap-1.5">
-          {realmVisible && realmPanel}
-          <div className="frontier-phone-foot">
-            <div className="min-w-0 flex-1">{armyDock}</div>
-            {own && !isMapView && ordersAllowed && <BuildButton realm={own} />}
-          </div>
+        <div className="frontier-phone-foot">
+          <div className="min-w-0 flex-1">{armyDock}</div>
+          {own && !isMapView && ordersAllowed && <BuildButton realm={own} />}
         </div>
       }
       nav={tablet ? null : <PhoneTabBar isMapView={isMapView} {...placesState} />}
@@ -658,54 +645,6 @@ const useRealmFace = (realm: NativeRows["Structure"]) => {
   };
 };
 
-const FrontierRealmPanel = ({
-  rules,
-  realm,
-  own,
-  isMapView,
-  storeCards,
-  onResearch,
-  onClose,
-}: {
-  rules: ExpeditionRules;
-  realm: NativeRows["Structure"];
-  own: NativeRows["Structure"] | null;
-  isMapView: boolean;
-  storeCards: ComponentProps<typeof RealmPanel>["storeCards"];
-  onResearch: (node?: string) => void;
-  onClose: () => void;
-}) => {
-  const { name, kind, aspect } = useRealmFace(realm);
-  const stores = useStoreReadings(realm, rules);
-  const armies = useDockArmies(realm);
-  const goToPlace = useGoToFrontierPlace(realm);
-  const { citadel, standing } = useRealmBuildings(realm, own, onResearch);
-  const openDeploy = () => {
-    if (!own) return;
-    openArmyDeployment({ structureId: safeInteger(own.entity_id), isExplorer: true });
-  };
-  return (
-    <RealmPanel
-      name={name}
-      kind={kind}
-      level={realm.base.level}
-      aspect={aspect}
-      orderId={realm.metadata.order}
-      armies={{ active: armies.length, limit: realm.base.troop_max_explorer_count }}
-      stores={stores}
-      buildings={[citadel, ...standing]}
-      onHome={isMapView ? () => goToPlace(false) : undefined}
-      onClose={onClose}
-      sheetHandle
-      {...(own && {
-        storeCards,
-        onResearch: () => onResearch(),
-        onDeploy: openDeploy,
-      })}
-    />
-  );
-};
-
 const FrontierRealmCard = ({
   rules,
   realm,
@@ -715,15 +654,17 @@ const FrontierRealmCard = ({
   storeCards,
   onShop,
   onResearch,
+  onClose,
 }: {
   rules: ExpeditionRules;
   realm: NativeRows["Structure"];
   own: NativeRows["Structure"] | null;
   isMapView: boolean;
   fragments: number | null;
-  storeCards: ComponentProps<typeof RealmPanel>["storeCards"];
+  storeCards: ComponentProps<typeof FrontierTopBar>["storeCards"];
   onShop?: () => void;
   onResearch: (node?: string) => void;
+  onClose?: () => void;
 }) => {
   const { name, kind, aspect, population } = useRealmFace(realm);
   const stores = useStoreReadings(realm, rules, STORE_KINDS);
@@ -749,6 +690,7 @@ const FrontierRealmCard = ({
       onShop={onShop}
       onHome={isMapView ? () => goToPlace(false) : undefined}
       onUpgradeCastle={own ? openCastle : undefined}
+      onClose={onClose}
     />
   );
 };

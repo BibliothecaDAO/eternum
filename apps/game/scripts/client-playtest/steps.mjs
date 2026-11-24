@@ -6975,15 +6975,14 @@ export const STEP_SETS = {
           const buildings = await readUntil(
             () =>
               browser.read(`document.querySelectorAll('section[aria-label="Realm"] [data-realm-buildings] li').length`),
-            (count) => count >= (onADesktop() ? 3 : 4),
+            (count) => count >= 3,
             PLAYABLE_WAIT_MS,
           );
           const realmHud = browser.read(`(() => ({
-            tiles: document.querySelectorAll('section[aria-label="Realm"] .realm-tile').length,
             stocks: document.querySelectorAll('.frontier-realm-card [aria-label="Stores"] [data-store]').length,
             hasCastleHead: Boolean(document.querySelector('section[aria-label="Realm"] [data-realm-castle]')),
             hasDepthSwitch: Boolean(document.querySelector('[data-surface-deep-switch]')),
-            hasDeploy: Boolean(document.querySelector('section[aria-label="Realm"] .realm-foot button[data-kind="primary"], nav[aria-label="Armies"] button[aria-label="Deploy"][data-kind="primary"]')),
+            hasDeploy: Boolean(document.querySelector('nav[aria-label="Armies"] button[aria-label="Deploy"]')),
           }))()`);
           const hasRealmPanel = browser.read(`Boolean(document.querySelector('section[aria-label="Realm"]'))`);
           if (!onADesktop()) {
@@ -7009,9 +7008,9 @@ export const STEP_SETS = {
           played.idleUnobstructed &&
           played.hasRealmPanel &&
           played.realmHud.hasDeploy &&
-          (onADesktop()
-            ? played.buildings >= 3 && played.realmHud.hasCastleHead && played.realmHud.stocks === 8
-            : played.buildings >= 4 && played.realmHud.tiles >= 3)
+          played.buildings >= 3 &&
+          played.realmHud.hasCastleHead &&
+          played.realmHud.stocks === 8
             ? completed(played)
             : failed(
                 "Realm view must render with Castle, Workshop, Farm and Barracks standing and the desktop realm card's eight stocks",

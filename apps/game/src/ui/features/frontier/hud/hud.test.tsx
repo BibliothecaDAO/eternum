@@ -1,5 +1,3 @@
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -25,7 +23,6 @@ import { MenuPage } from "./menu-page";
 import { OrderBar } from "./order-bar";
 import { PickedArmy } from "./picked-army";
 import { DayPill, DayRing } from "./day-pill";
-import { TOP_BAR_STORE_KINDS } from "./header-stores";
 import { RealmCard } from "./realm-card";
 import { PhoneTopBarView, TabletTopBarView } from "./phone-top-bar";
 import { PhoneTabBar, TabletPlaces } from "./frontier-nav";
@@ -217,7 +214,6 @@ describe("the status strip", () => {
       "9K",
       "3K",
     ]);
-    expect(cornice.querySelector(".frontier-store-liquid")).toBeNull();
     const emblem = cornice.querySelector<HTMLButtonElement>(".frontier-phone-emblem")!;
     expect(emblem.querySelector('[data-aspect-mark="1"]')).not.toBeNull();
     expect(emblem.getAttribute("aria-label")).toContain("Duskbite");
@@ -233,7 +229,7 @@ describe("the status strip", () => {
     ]);
   });
 
-  it("gives a tablet its own bar: the realm's name beside its emblem, the day, quest and place in the middle, the places right, the stocks in their card", () => {
+  it("gives a tablet its own bar: the realm's name beside its emblem, the day, quest and place in the middle, the places right, the realm card under it", () => {
     act(() =>
       root.render(
         <TabletTopBarView
@@ -243,6 +239,7 @@ describe("the status strip", () => {
           placeMenu={<button type="button">Places</button>}
           quest={<button type="button">Quest</button>}
           places={<TabletPlaces surface={null} onSurface={vi.fn()} researchReady feedUnread={0} chatUnread={2} />}
+          realmCard={<section aria-label="Realm" />}
         />,
       ),
     );
@@ -257,10 +254,7 @@ describe("the status strip", () => {
     expect(
       [...host.querySelectorAll('nav[aria-label="Places"] button')].map((button) => button.getAttribute("aria-label")),
     ).toEqual(["Research", "Season", "Feed", "Chat", "Menu"]);
-    expect(
-      [...host.querySelectorAll(".frontier-tablet-stocks [data-store]")].map((chip) => chip.getAttribute("data-store")),
-    ).toEqual(["essence", "labor"]);
-    expect(host.querySelector(".frontier-tablet-stocks [data-fragments-socket]")).not.toBeNull();
+    expect(host.querySelector('.frontier-tablet-realm > section[aria-label="Realm"]')).not.toBeNull();
   });
 
   it("shows the realm card's stores in order with rates, exact accessible labels and the Fragments tile", () => {
@@ -306,15 +300,11 @@ describe("the status strip", () => {
     expect(onShop).toHaveBeenCalledTimes(1);
   });
 
-  it("formats store rates through one helper and defines one shared liquid tint per top-bar store", () => {
+  it("formats store rates through one helper", () => {
     expect(storeRateText({ ...store("labor", 100, 1_000), perHour: 180 })).toBe("+3/min");
     expect(storeRateText({ ...store("labor", 100, 1_000), perHour: 180 }, { compact: true })).toBe("+3");
     expect(storeRateText({ ...store("labor", 1_000, 1_000), perHour: 180, fullIn: 0 })).toBeNull();
     expect(storeRateText({ ...store("labor", 100, 1_000), perHour: 0 })).toBeNull();
-    const css = readFileSync(resolve(__dirname, "frontier-bar.css"), "utf8");
-    for (const kind of TOP_BAR_STORE_KINDS) {
-      expect(css).toContain(`.frontier-store-liquid[data-store="${kind}"]`);
-    }
   });
 });
 

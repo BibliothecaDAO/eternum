@@ -81,19 +81,14 @@ import { type DayEnd, DayEndBlock, dayEndItems, DayEndNotice } from "@/ui/featur
 import { type ComponentProps, useEffect, useRef, useState } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
 import { useEventFeedStore } from "@/ui/features/event-feed/event-feed-store";
-import {
-  fragmentsToFill,
-  RefillButton,
-  RefillConfirm,
-  RefillPrice,
-  StaminaRefill,
-} from "@/ui/features/frontier/army/refill";
+import { fragmentsToFill, RefillButton, RefillConfirm, RefillPrice } from "@/ui/features/frontier/army/refill";
+import { OathSockets } from "@/ui/features/frontier/army/oath-slots";
 import { ShopCodeField, ShopView } from "@/ui/features/frontier/shop/shop-sheet";
 import { labQuestRulesFact } from "@/lab/game/quest-scenario";
 import { DayPill, DayRing } from "@/ui/features/frontier/hud/day-pill";
 import { DailyQuestChip } from "@/ui/features/frontier/hud/daily-quest-chip";
 import type { MapLayers } from "@/ui/features/frontier/hud/map-layers";
-import type { RealmBuildingItem } from "@/ui/features/frontier/hud/realm-panel";
+import type { RealmBuildingItem } from "@/ui/features/frontier/hud/realm-card";
 import { FrontierPlaceSwitch, PlaceMenu } from "@/ui/features/frontier/hud/surface-deep-switch";
 import { type WithdrawStep, WithdrawSheet } from "@/ui/features/frontier/value/withdraw-sheet";
 import { staminaShortfall } from "@/ui/design-system/kit/reasons";
@@ -1418,8 +1413,10 @@ const LabPicked = ({ lab }: { lab: LabState }) => {
   return (
     <PickedArmy
       army={army}
-      refill={<StaminaRefill stamina={army.stamina!} held={fragments} onRefill={noop} />}
+      oaths={<OathSockets oaths={[]} slots={2} />}
+      refill={<RefillPrice price={fragmentsToFill(army.stamina!)} held={fragments} onRefill={noop} />}
       onDetails={noop}
+      onClose={noop}
     />
   );
 };

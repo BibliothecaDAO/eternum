@@ -50,6 +50,7 @@ export const FrontierTopBar = ({
   fragments = null,
   onShop,
   storeCards,
+  realmCard,
   onOpenRealm,
   onOpenToday,
 }: {
@@ -67,6 +68,7 @@ export const FrontierTopBar = ({
   fragments?: number | null;
   onShop?: () => void;
   storeCards?: StoreCards;
+  realmCard?: ReactNode;
   onOpenRealm?: () => void;
   onOpenToday: () => void;
 }) => {
@@ -98,6 +100,7 @@ export const FrontierTopBar = ({
       places={places}
       spectatorChip={spectatorChip}
       storeCard={!realmOpen && storeCards?.open ? storeCards.card : undefined}
+      realmCard={realmCard}
       onOpenRealm={onOpenRealm}
     />
   );
@@ -113,6 +116,7 @@ type TopBarViewProps = {
   places?: ReactNode;
   spectatorChip?: ReactNode;
   storeCard?: ReactNode;
+  realmCard?: ReactNode;
   onOpenRealm?: () => void;
 };
 
@@ -124,6 +128,7 @@ export const PhoneTopBarView = ({
   quest,
   spectatorChip,
   storeCard,
+  realmCard,
   onOpenRealm,
   stocks,
 }: TopBarViewProps) => (
@@ -147,6 +152,7 @@ export const PhoneTopBarView = ({
       {spectatorChip}
       {quest && <div className="frontier-phone-float__quest">{quest}</div>}
     </div>
+    {realmCard}
     {storeCard}
   </div>
 );
@@ -160,8 +166,8 @@ export const TabletTopBarView = ({
   places,
   spectatorChip,
   storeCard,
+  realmCard,
   onOpenRealm,
-  stocks,
 }: TopBarViewProps) => (
   <div className="frontier-tablet-top">
     <div className="frontier-tablet-bar pointer-events-auto">
@@ -186,9 +192,7 @@ export const TabletTopBarView = ({
       <div className="frontier-tablet-bar__places">{places}</div>
     </div>
     <div className="frontier-tablet-float">
-      <div className="frontier-tablet-stocks pointer-events-auto">
-        <StockChips {...stocks} />
-      </div>
+      <div className="frontier-tablet-realm">{realmCard}</div>
       {spectatorChip}
     </div>
     {storeCard}

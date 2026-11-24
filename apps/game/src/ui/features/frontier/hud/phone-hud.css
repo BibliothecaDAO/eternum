@@ -410,23 +410,17 @@ button.frontier-stock-chip {
   justify-content: space-between;
   gap: theme(spacing.2);
 }
-.frontier-tablet-stocks {
-  width: 236px;
-  border: 1px solid var(--hud-line-strong);
-  border-radius: var(--hud-radius-panel);
-  background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
-  box-shadow: var(--hud-shadow-panel);
-  padding: theme(spacing.2);
+.frontier-tablet-realm {
+  width: theme(spacing.hud-frontier-left);
 }
-.frontier-tablet-stocks .frontier-stock-chips {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: theme(spacing[1.5]);
+.frontier-tablet-realm .frontier-realm-card,
+.frontier-phone-top > .frontier-realm-card {
+  overflow-y: auto;
 }
-.frontier-tablet-stocks .frontier-stock-chip,
-.frontier-tablet-stocks .frontier-fragments-socket {
-  height: 34px;
-  justify-content: flex-start;
+.frontier-phone-top > .frontier-realm-card {
+  position: relative;
+  z-index: 1;
+  max-height: calc(100dvh - 160px);
 }
 @media (max-width: 380px) {
   .frontier-phone-cornice {

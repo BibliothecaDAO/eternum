@@ -125,33 +125,6 @@
 .frontier-popover[data-layout="phone"] {
   --popover-edge: theme(spacing.2);
 }
-.frontier-store-liquid {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  z-index: 0;
-  background: color-mix(in srgb, rgb(var(--hud-gold)) 28%, transparent);
-  transition: width var(--hud-fast) var(--hud-ease);
-}
-.frontier-store-liquid[data-store="essence"] {
-  background: rgb(var(--hud-t3) / 0.36);
-}
-.frontier-store-liquid[data-store="labor"] {
-  background: color-mix(in srgb, var(--hud-warn) 34%, transparent);
-}
-.frontier-store-liquid[data-store="wheat"] {
-  background: color-mix(in srgb, rgb(var(--hud-gold)) 34%, transparent);
-}
-.frontier-store-liquid[data-store="troops"] {
-  background: rgb(var(--hud-t1) / 0.36);
-}
-.frontier-store-liquid[data-tone="warn"] {
-  background: color-mix(in srgb, var(--hud-warn) 44%, transparent);
-}
-.frontier-store-liquid[data-tone="bad"] {
-  background: color-mix(in srgb, var(--hud-bad) 44%, transparent);
-}
 .frontier-fragments-socket {
   display: inline-flex;
   height: 28px;

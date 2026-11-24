@@ -1,7 +1,7 @@
 import "./oath-slots.css";
 
 import { heldOaths } from "@bibliothecadao/eternum";
-import { Icon } from "@/ui/design-system/icon";
+import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { orderMeaning } from "@/ui/design-system/icon-meaning";
 import type { PickEffectBase } from "../pick-effect-format";
 import { usePickEffectBase } from "../pick-effect-text";
@@ -133,28 +133,42 @@ export function TroopOathSlots({
 export function ArmyOathSockets({ explorerId }: { explorerId: number }) {
   const { store } = useNativeFacts(["ArmyProgress"]);
   const pickBase = usePickEffectBase();
-  const [hint, setHint] = useState(false);
   const progress = store.get("ArmyProgress", { game_id: configManager.getActiveGameId(), explorer_id: explorerId });
   if (!progress) return null;
-  const held = heldOaths(progress.oaths);
+  const oaths = heldOaths(progress.oaths).map((oath) => ({
+    icon: orderMeaning(oath),
+    name: oathName(oath),
+    effect: oathEffectDescription(oath, pickBase),
+  }));
+  return <OathSockets oaths={oaths} slots={progress.oath_slots} />;
+}
+
+export function OathSockets({
+  oaths,
+  slots,
+}: {
+  oaths: readonly { icon: IconMeaning; name: string; effect: string }[];
+  slots: number;
+}) {
+  const [hint, setHint] = useState(false);
   return (
-    <div role="group" aria-label={RESEARCH_TREE.oathSlots(progress.oath_slots)} className="oath-sockets">
+    <div role="group" aria-label={RESEARCH_TREE.oathSlots(slots)} className="oath-sockets">
       {Array.from({ length: OATH_SLOTS_MAX }, (_, index) => {
-        const oath = held[index];
+        const oath = oaths[index];
         if (oath)
           return (
             <span
               key={index}
               role="img"
-              aria-label={oathName(oath)}
-              data-tip={`${oathName(oath)} — ${oathEffectDescription(oath, pickBase)}`}
+              aria-label={oath.name}
+              data-tip={`${oath.name} — ${oath.effect}`}
               className="oath-socket"
               data-filled=""
             >
-              <Icon name={orderMeaning(oath)} size={22} />
+              <Icon name={oath.icon} size={22} />
             </span>
           );
-        if (index < progress.oath_slots)
+        if (index < slots)
           return (
             <button
               key={index}
