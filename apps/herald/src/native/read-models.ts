@@ -85,6 +85,8 @@ interface DirectoryRows {
   aspectHyperstructures: FoldRow[];
 }
 
+const FIRST_SEASON = 1;
+
 export function buildNativeDirectory(input: DirectoryInput): HeraldGameDirectory {
   const rows = (model: string) => input.fold.modelRows(model);
   const facts = directoryRows(input);
@@ -96,9 +98,7 @@ export function buildNativeDirectory(input: DirectoryInput): HeraldGameDirectory
         nativeGameModeOfFamily(number(value.family)) === "frontier" && isSeasonGame(shortString(value.name)),
     )
     .sort((a, b) => number(a.value.game_id) - number(b.value.game_id));
-  // A chain's first Frontier season is Season 0 (Devcon's on the Nov 2 chain), the next Season 1 (owner, 2 November
-  // 2026: "devcon season is s0").
-  const seasonNumbers = new Map(seasons.map(({ value }, index) => [number(value.game_id), index]));
+  const seasonNumbers = new Map(seasons.map(({ value }, index) => [number(value.game_id), FIRST_SEASON + index]));
   const games = publicGames
     .map(({ value }) => directoryEntry(value, facts, input))
     .map((game) => ({ ...game, season_number: seasonNumbers.get(game.game_id) ?? null }))
