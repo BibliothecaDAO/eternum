@@ -5,6 +5,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { aspectName, aspects } from "@bibliothecadao/types";
 import { iconUrl } from "@/ui/design-system/icon-meaning";
+import { OPENING_WORDS } from "@/ui/design-system/kit/words";
 import { OPENING_RULES } from "../opening/opening-fixtures";
 import { ASPECT_EMISSARY_PORTRAITS } from "./aspect-emissaries";
 import { AspectEmissaryDock } from "./aspect-emissary-dock";
@@ -125,5 +126,34 @@ describe("AspectEmissaryDock", () => {
       ),
     );
     expect(host.querySelector("[data-tutorial-dock]")).toBeNull();
+  });
+
+  it("renders the confirmed completion state with a tick, confirmation copy, and no skip or action cue", () => {
+    const onDismiss = vi.fn();
+    act(() =>
+      root.render(
+        <AspectEmissaryDock
+          moment="explore"
+          rules={OPENING_RULES}
+          status="completed"
+          onDismiss={onDismiss}
+          onSkipAll={vi.fn()}
+        />,
+      ),
+    );
+
+    const dock = host.querySelector<HTMLElement>("[data-tutorial-dock='explore']");
+    expect(dock).not.toBeNull();
+    expect(dock?.dataset.tutorialStatus).toBe("completed");
+    expect(dock?.classList.contains("emissary-dock--completed")).toBe(true);
+    expect(host.querySelector('[role="status"]')?.textContent).toContain(OPENING_WORDS.completedLabel);
+    expect(dock?.textContent).toContain(OPENING_WORDS.completed.explore);
+    expect(host.querySelector(".emissary-dock__action")).toBeNull();
+    expect(
+      [...host.querySelectorAll("button")].find((button) => button.textContent === "Skip tutorial"),
+    ).toBeUndefined();
+
+    act(() => host.querySelector<HTMLButtonElement>('button[aria-label="Close"]')!.click());
+    expect(onDismiss).toHaveBeenCalledTimes(1);
   });
 });

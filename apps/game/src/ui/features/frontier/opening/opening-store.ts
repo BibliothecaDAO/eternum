@@ -1,15 +1,18 @@
 import { identityClient } from "@/hooks/context/identity-session";
 import { create } from "zustand";
-import { OPENING_MOMENTS } from "./opening";
+import { OPENING_MOMENTS, type OpeningMoment } from "./opening";
 import { TUTORIAL_SKIPPED } from "./opening-state";
 
 type Sets = { reached: ReadonlySet<string>; seen: ReadonlySet<string> };
 
 interface OpeningStore extends Sets {
   owner: string | null;
+  loaded: boolean;
   status: "signed-out" | "loading" | "ready" | "error";
   unsent: Sets;
   replayed: ReadonlySet<string>;
+  showing: OpeningMoment | null;
+  confirmed: OpeningMoment | null;
   onDevice: boolean;
 }
 
@@ -17,16 +20,21 @@ const none = (): Sets => ({ reached: new Set(), seen: new Set() });
 
 export const useOpeningStore = create<OpeningStore>(() => ({
   owner: null,
+  loaded: false,
   status: "signed-out",
   ...none(),
   unsent: none(),
   replayed: new Set(),
+  showing: null,
+  confirmed: null,
   onDevice: false,
 }));
 
 export const openingCacheKey = (owner: string) => `eternum:opening:${owner}`;
 
-const replayCacheKey = (owner: string | null) => `eternum:tutorial-replay:${owner ?? "guest"}`;
+const storageOwnerOf = (owner: string | null) => owner || "guest";
+
+const replayCacheKey = (owner: string | null) => `eternum:tutorial-replay:${storageOwnerOf(owner)}`;
 
 const TUTORIAL_KEYS = new Set<string>([...OPENING_MOMENTS, TUTORIAL_SKIPPED]);
 
@@ -46,9 +54,9 @@ const keepReplay = (owner: string | null, replayed: ReadonlySet<string>): void =
   } catch {}
 };
 
-const kept = (owner: string): { sets: Sets; unsent: Sets; onDevice: boolean } => {
+const kept = (owner: string | null): { sets: Sets; unsent: Sets; onDevice: boolean } => {
   try {
-    const stored = JSON.parse(localStorage.getItem(openingCacheKey(owner)) ?? "null") as {
+    const stored = JSON.parse(localStorage.getItem(openingCacheKey(storageOwnerOf(owner))) ?? "null") as {
       reached: string[];
       seen: string[];
       unsent: { reached: string[]; seen: string[] };
@@ -67,10 +75,9 @@ const kept = (owner: string): { sets: Sets; unsent: Sets; onDevice: boolean } =>
 
 const keep = (): void => {
   const { owner, reached, seen, unsent, status, onDevice } = useOpeningStore.getState();
-  if (!owner) return;
   try {
     localStorage.setItem(
-      openingCacheKey(owner),
+      openingCacheKey(storageOwnerOf(owner)),
       JSON.stringify({
         reached: [...reached],
         seen: [...seen],
@@ -87,26 +94,34 @@ const without = (left: ReadonlySet<string>, right: Iterable<string>): ReadonlySe
   return new Set([...left].filter((moment) => !removed.has(moment)));
 };
 
-export const loadOpening = (owner: string | null): Promise<void> => {
-  if (useOpeningStore.getState().owner === owner) return Promise.resolve();
+export const loadOpening = (rawOwner: string | null): Promise<void> => {
+  const owner = rawOwner || null;
+  const current = useOpeningStore.getState();
+  if (current.owner === owner && current.loaded) return Promise.resolve();
+  const device = kept(owner);
   if (!owner) {
     useOpeningStore.setState({
       owner,
+      loaded: true,
       status: "signed-out",
-      ...none(),
+      ...device.sets,
       unsent: none(),
       replayed: keptReplay(null),
+      showing: null,
+      confirmed: null,
       onDevice: false,
     });
     return Promise.resolve();
   }
-  const device = kept(owner);
   useOpeningStore.setState({
     owner,
+    loaded: true,
     status: "loading",
     ...device.sets,
     unsent: device.unsent,
     replayed: keptReplay(owner),
+    showing: null,
+    confirmed: null,
     onDevice: device.onDevice,
   });
   return flush();
@@ -114,15 +129,39 @@ export const loadOpening = (owner: string | null): Promise<void> => {
 
 export const reachMoments = (moments: readonly string[]): Promise<void> => record({ reached: moments, seen: [] });
 
-export const seeLine = (moment: string): Promise<void> => record({ reached: [], seen: [moment] });
+export const seeLine = (moment: string): Promise<void> => {
+  const state = useOpeningStore.getState();
+  if (state.showing === moment || state.confirmed === moment) {
+    useOpeningStore.setState({
+      showing: state.showing === moment ? null : state.showing,
+      confirmed: state.confirmed === moment ? null : state.confirmed,
+    });
+  }
+  return record({ reached: [], seen: [moment] });
+};
 
-export const skipTutorial = (): Promise<void> => seeLine(TUTORIAL_SKIPPED);
+export const completeLines = (moments: readonly string[]): Promise<void> => record({ reached: [], seen: moments });
+
+export const setTutorialView = (showing: OpeningMoment | null, confirmed: OpeningMoment | null): void => {
+  const state = useOpeningStore.getState();
+  if (state.showing === showing && state.confirmed === confirmed) return;
+  useOpeningStore.setState({ showing, confirmed });
+};
+
+export const clearConfirmedTutorial = (): void => {
+  if (useOpeningStore.getState().confirmed !== null) useOpeningStore.setState({ confirmed: null });
+};
+
+export const skipTutorial = (): Promise<void> => {
+  useOpeningStore.setState({ showing: null, confirmed: null });
+  return record({ reached: [], seen: [TUTORIAL_SKIPPED] });
+};
 
 export const replayTutorial = (): void => {
   const state = useOpeningStore.getState();
   const replayed = new Set<string>(TUTORIAL_KEYS);
   keepReplay(state.owner, replayed);
-  useOpeningStore.setState({ replayed });
+  useOpeningStore.setState({ replayed, showing: null, confirmed: null });
 };
 
 const record = (additions: { reached: readonly string[]; seen: readonly string[] }): Promise<void> => {
@@ -138,7 +177,9 @@ const record = (additions: { reached: readonly string[]; seen: readonly string[]
   useOpeningStore.setState({
     reached: union(state.reached, fresh.reached),
     seen: union(state.seen, fresh.seen),
-    unsent: { reached: union(state.unsent.reached, fresh.reached), seen: union(state.unsent.seen, fresh.seen) },
+    unsent: state.owner
+      ? { reached: union(state.unsent.reached, fresh.reached), seen: union(state.unsent.seen, fresh.seen) }
+      : none(),
     replayed: nextReplayed,
   });
   keep();

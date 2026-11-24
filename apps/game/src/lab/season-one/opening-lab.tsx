@@ -75,6 +75,7 @@ export function OpeningLab() {
   const [selectedMoment, setSelectedMoment] = useState<OpeningMoment>(initialMoment);
   const [ownAspect, setOwnAspect] = useState<AspectId>(1);
   const [phone, setPhone] = useState(false);
+  const [completedPreview, setCompletedPreview] = useState(false);
   const [all, setAll] = useState(false);
   const [seen, setSeen] = useState<ReadonlySet<string>>(() => new Set());
 
@@ -85,13 +86,18 @@ export function OpeningLab() {
 
   const dismissActive = () => {
     if (!active) return;
+    setCompletedPreview(false);
     setSeen((prev) => new Set([...prev, active]));
   };
 
-  const skipAll = () => setSeen((prev) => new Set([...prev, TUTORIAL_SKIPPED]));
+  const skipAll = () => {
+    setCompletedPreview(false);
+    setSeen((prev) => new Set([...prev, TUTORIAL_SKIPPED]));
+  };
 
   const selectMoment = (moment: OpeningMoment) => {
     setSelectedMoment(moment);
+    setCompletedPreview(false);
     setSeen((prev) => {
       const next = new Set(prev);
       next.delete(moment);
@@ -127,6 +133,9 @@ export function OpeningLab() {
         <button type="button" aria-pressed={phone} onClick={() => setPhone((was) => !was)}>
           {phone ? "Phone (390)" : "Desktop"}
         </button>
+        <button type="button" aria-pressed={completedPreview} onClick={() => setCompletedPreview((was) => !was)}>
+          {OPENING_WORDS.completedLabel}
+        </button>
       </div>
 
       <div data-opening-line className={phone ? "w-[370px] pt-3" : "pt-4"}>
@@ -135,6 +144,7 @@ export function OpeningLab() {
             moment={active}
             rules={rules}
             layout={phone ? "phone" : "desktop"}
+            status={completedPreview ? "completed" : "showing"}
             onDismiss={dismissActive}
             onSkipAll={skipAll}
           />

@@ -4,12 +4,14 @@ import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { Icon } from "@/ui/design-system/icon";
 import { CLOSE, OPENING_WORDS, type OpeningRules } from "@/ui/design-system/kit/words";
 import { OPENING, teacherAspectOf, type OpeningMoment } from "../opening/opening";
+import type { TutorialDisplayStatus } from "../opening/opening-state";
 import { resolveAspectEmissary } from "./aspect-emissaries";
 
 export interface AspectEmissaryDockProps {
   readonly moment: OpeningMoment;
   readonly rules: OpeningRules;
   readonly layout?: "desktop" | "phone";
+  readonly status?: TutorialDisplayStatus;
   readonly onDismiss: () => void;
   readonly onSkipAll?: () => void;
 }
@@ -18,6 +20,7 @@ export function AspectEmissaryDock({
   moment,
   rules,
   layout = "desktop",
+  status = "showing",
   onDismiss,
   onSkipAll,
 }: AspectEmissaryDockProps) {
@@ -26,8 +29,9 @@ export function AspectEmissaryDock({
   if (aspectId === null) return null;
   const emissary = resolveAspectEmissary(aspectId);
   const phone = layout === "phone";
+  const completed = status === "completed";
   const title = OPENING_WORDS.titles[moment];
-  const line = OPENING_WORDS.lines[moment](rules);
+  const line = completed ? OPENING_WORDS.completed[moment] : OPENING_WORDS.lines[moment](rules);
   const action = OPENING_WORDS.actions[moment];
 
   return (
@@ -35,8 +39,9 @@ export function AspectEmissaryDock({
       data-tutorial-dock={moment}
       data-tutorial-aspect={aspectId}
       data-tutorial-layout={layout}
+      data-tutorial-status={status}
       aria-label={`${emissary.name}: ${title}`}
-      className={`emissary-dock pointer-events-auto${phone ? " emissary-dock--phone" : ""}`}
+      className={`emissary-dock pointer-events-auto${phone ? " emissary-dock--phone" : ""}${completed ? " emissary-dock--completed" : ""}`}
       style={emissary.style}
     >
       <span className="emissary-dock__corner emissary-dock__corner--tl" aria-hidden="true" />
@@ -71,7 +76,12 @@ export function AspectEmissaryDock({
             <span className="emissary-dock__title">· {title}</span>
           </span>
           <span className="emissary-dock__controls">
-            {onSkipAll && (
+            {completed && (
+              <span className="emissary-dock__done" role="status">
+                ✓ {OPENING_WORDS.completedLabel}
+              </span>
+            )}
+            {!completed && onSkipAll && (
               <button type="button" className="emissary-dock__btn" onClick={onSkipAll}>
                 {OPENING_WORDS.skipTutorial}
               </button>
@@ -84,7 +94,7 @@ export function AspectEmissaryDock({
 
         <p className="emissary-dock__speech">
           <span>{line}</span>
-          {!phone && (
+          {!phone && !completed && (
             <span className="emissary-dock__action">
               <Icon name={spec.icon} size={15} />
               <span>{action}</span>

@@ -35,31 +35,43 @@ import { useDockArmies } from "../hud/dock-armies";
 import { useRacesAspects } from "../aspect/races-aspects";
 import { readPickEffectBase } from "../pick-effect-text";
 import { useRealmStores } from "../realm-stores";
-import { type Opened, type OpeningContext, type OpeningMoment } from "./opening";
+import { type Opened, type OpeningContext } from "./opening";
 import {
   accountProgress,
-  activeOpeningMoment,
   openedMoments,
   reachedOnContext,
   siteAlertOfferDue,
+  stepTutorialMachine,
+  type TutorialDisplay,
 } from "./opening-state";
 import { SITE_ALERT_OFFER } from "./use-site-alert-offer";
-import { flush, loadOpening, reachMoments, seeLine, skipTutorial, useOpeningStore } from "./opening-store";
+import {
+  clearConfirmedTutorial,
+  completeLines,
+  flush,
+  loadOpening,
+  reachMoments,
+  seeLine,
+  setTutorialView,
+  skipTutorial,
+  useOpeningStore,
+} from "./opening-store";
 
 const CONTEXT_MODELS = ["RealmKnowledge", "ArmyRelics", "ArmyProgress", "HomeAspect", "TileOpt"] as const;
 const RETRY_MS = 15_000;
+const CONFIRM_MS = 3_500;
 
 export function useOpening(
   rules: ExpeditionRules,
   realm: NativeRows["Structure"] | null,
 ): {
   opened: Opened;
-  line: { moment: OpeningMoment; rules: OpeningRules } | null;
+  line: TutorialDisplay | null;
   dismiss: () => void;
   skipAll: () => void;
   offerDue: boolean;
 } {
-  const owner = notificationOwnerOf(useIdentitySession().session);
+  const owner = notificationOwnerOf(useIdentitySession().session) || null;
   useEffect(() => {
     void loadOpening(owner);
   }, [owner]);
@@ -77,11 +89,9 @@ export function useOpening(
 
   const races = useRacesAspects();
   const showEverything = useWorldAppearanceStore((state) => state.showEverything);
-  const progress = accountProgress(
-    owner,
-    useOpeningStore((state) => state),
-  );
-  const ctx = useOpeningContext(rules, realm, progress.reached);
+  const storeState = useOpeningStore((state) => state);
+  const progress = accountProgress(owner, storeState);
+  const ctx = useOpeningContext(rules, realm);
   const onState = reachedOnContext(ctx);
   const key = onState.join();
   useEffect(() => {
@@ -90,13 +100,50 @@ export function useOpening(
 
   const opened = openedMoments(progress.reached, onState);
   const lineRules = useOpeningRules(rules, realm);
-  const moment = realm && progress.known ? activeOpeningMoment(ctx, lineRules, progress.seen) : null;
+  const canEvaluate = Boolean(realm) && !showEverything && progress.known && storeState.loaded;
+  const transition = canEvaluate
+    ? stepTutorialMachine({
+        showing: storeState.showing,
+        confirmed: storeState.confirmed,
+        ctx,
+        rules: lineRules,
+        seen: progress.seen,
+        replayed: storeState.owner === owner ? storeState.replayed : undefined,
+      })
+    : { nextShowing: null, confirmedMoment: null, newlyCompleted: [] };
+
+  const completedKey = transition.newlyCompleted.join();
+  useEffect(() => {
+    if (!canEvaluate) {
+      if (showEverything) setTutorialView(null, null);
+      return;
+    }
+    if (completedKey.length > 0) void completeLines(completedKey.split(","));
+    setTutorialView(transition.nextShowing, transition.confirmedMoment);
+  }, [canEvaluate, showEverything, completedKey, transition.nextShowing, transition.confirmedMoment]);
+
+  useEffect(() => {
+    if (storeState.confirmed === null) return;
+    const timer = setTimeout(() => clearConfirmedTutorial(), CONFIRM_MS);
+    return () => clearTimeout(timer);
+  }, [storeState.confirmed]);
+
+  const activeLine: TutorialDisplay | null =
+    !canEvaluate || !lineRules
+      ? null
+      : transition.confirmedMoment !== null
+        ? { moment: transition.confirmedMoment, rules: lineRules, status: "completed" }
+        : transition.nextShowing !== null
+          ? { moment: transition.nextShowing, rules: lineRules, status: "showing" }
+          : null;
 
   return {
     opened: showEverything || !realm || races !== true || !progress.ownsParts ? "all" : opened,
-    line: showEverything || !moment || !lineRules ? null : { moment, rules: lineRules },
+    line: activeLine,
     dismiss: () => {
-      if (moment) void seeLine(moment);
+      if (!activeLine) return;
+      if (activeLine.status === "completed") clearConfirmedTutorial();
+      else void seeLine(activeLine.moment);
     },
     skipAll: () => void skipTutorial(),
     offerDue:
@@ -133,11 +180,7 @@ function useOpeningRules(rules: ExpeditionRules, realm: NativeRows["Structure"] 
   };
 }
 
-function useOpeningContext(
-  rules: ExpeditionRules,
-  realm: NativeRows["Structure"] | null,
-  reached: ReadonlySet<string>,
-): OpeningContext | null {
+function useOpeningContext(rules: ExpeditionRules, realm: NativeRows["Structure"] | null): OpeningContext | null {
   const { setup } = useGame();
   const now = useNowSeconds();
   useNativeRevision(DAILY_QUEST_MODELS);
@@ -174,10 +217,11 @@ function useOpeningContext(
   const questReading = readDailyQuest(setup.store, realm.game_id, home, now)?.reading.known;
   const hasActiveBane = questReading?.bane !== undefined && questReading?.bane !== null;
   const dailyQuestClaimable = questReading?.state === "done" || questReading?.state === "again";
+  const dailyQuestClaimed = questReading?.state === "collected";
   const race = readRaceBoard(setup.store, realm.game_id, BigInt(home), now).known?.race;
   const hyperstructureAdvanced = (race?.standings.find((row) => row.aspect === race.own?.aspect)?.stage ?? 1) > 1;
   const hasEssence = (stores?.essence.amount ?? 0) > 0;
-  const hasExplored = reached.has("explore") || hasExploredBeyondHomeRing(setup.store, realm, spacing);
+  const hasExplored = hasExploredBeyondHomeRing(setup.store, realm, spacing);
 
   return {
     hasRealm: true,
@@ -190,6 +234,7 @@ function useOpeningContext(
     hasEssence,
     hasResearched: learned > 0n,
     dailyQuestClaimable,
+    dailyQuestClaimed,
     hasWellLore: researchTier(learned, research.ROW_LORE) >= research.LORE_WELLS,
     hasShrineLore: researchTier(learned, research.ROW_LORE) >= research.LORE_SHRINES,
     isCity: realm.base.level >= RealmLevels.City,

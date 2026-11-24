@@ -286,7 +286,11 @@ const FrontierHudBody = ({
       onOpenToday={() => setSurface("today")}
     />
   );
-  const showOpening = !(desktop && (surface !== null || showsCard));
+  const widePage =
+    surface === "research" ||
+    (surface === "season" &&
+      headerFacts.store.get("RaceRules", { game_id: configManager.getActiveGameId() }) !== undefined);
+  const showOpening = !(desktop && widePage);
   const notices = (
     <>
       {showOpening && (opening.line || opening.offer) && (
@@ -296,6 +300,7 @@ const FrontierHudBody = ({
               moment={opening.line.moment}
               rules={opening.line.rules}
               layout={desktop ? "desktop" : "phone"}
+              status={opening.line.status}
               onDismiss={opening.dismiss}
               onSkipAll={opening.skipAll}
             />
@@ -418,11 +423,7 @@ const FrontierHudBody = ({
         ) : undefined
       }
       page={page}
-      widePage={
-        surface === "research" ||
-        (surface === "season" &&
-          headerFacts.store.get("RaceRules", { game_id: configManager.getActiveGameId() }) !== undefined)
-      }
+      widePage={widePage}
       foot={
         <>
           {notices}

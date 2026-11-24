@@ -7,11 +7,14 @@ vi.mock("@/hooks/context/identity-session", () => ({ identityClient: { addOpenin
 
 import { accountProgress, TUTORIAL_SKIPPED } from "./opening-state";
 import {
+  clearConfirmedTutorial,
+  completeLines,
   flush,
   loadOpening,
   reachMoments,
   replayTutorial,
   seeLine,
+  setTutorialView,
   skipTutorial,
   useOpeningStore,
 } from "./opening-store";
@@ -50,10 +53,15 @@ beforeEach(async () => {
   identity.add.mockReset();
   useOpeningStore.setState({
     owner: null,
+    loaded: false,
     status: "signed-out",
     reached: new Set(),
     seen: new Set(),
     unsent: { reached: new Set(), seen: new Set() },
+    replayed: new Set(),
+    showing: null,
+    confirmed: null,
+    onDevice: false,
   });
   await loadOpening(null);
 });
@@ -220,4 +228,42 @@ it("persists skipTutorial and clears tutorial seen keys on replayTutorial withou
   void seeLine("barracks");
   await settle();
   expect(accountProgress("a", useOpeningStore.getState()).seen.has("barracks")).toBe(true);
+});
+
+it("persists completed, dismissed, skipped, and replayed tutorial state across reloads for a signed-out player", async () => {
+  await completeLines(["barracks", "explore"]);
+  await seeLine("deep");
+  setTutorialView("explore", "barracks");
+  clearConfirmedTutorial();
+  expect(useOpeningStore.getState().confirmed).toBeNull();
+
+  useOpeningStore.setState({
+    owner: null,
+    loaded: false,
+    status: "signed-out",
+    reached: new Set(),
+    seen: new Set(),
+    unsent: { reached: new Set(), seen: new Set() },
+    replayed: new Set(),
+    showing: null,
+    confirmed: null,
+    onDevice: false,
+  });
+  await loadOpening(null);
+
+  const reloaded = accountProgress(null, useOpeningStore.getState());
+  expect(reloaded.seen.has("barracks")).toBe(true);
+  expect(reloaded.seen.has("explore")).toBe(true);
+  expect(reloaded.seen.has("deep")).toBe(true);
+
+  await skipTutorial();
+  expect(accountProgress(null, useOpeningStore.getState()).seen.has(TUTORIAL_SKIPPED)).toBe(true);
+
+  replayTutorial();
+  useOpeningStore.setState({ owner: null, loaded: false, replayed: new Set(), seen: new Set() });
+  await loadOpening(null);
+  const afterReplayReload = accountProgress(null, useOpeningStore.getState());
+  expect(afterReplayReload.seen.has("barracks")).toBe(false);
+  expect(afterReplayReload.seen.has("explore")).toBe(false);
+  expect(afterReplayReload.seen.has(TUTORIAL_SKIPPED)).toBe(false);
 });
