@@ -19,3 +19,11 @@ export const HowToPlayRow = ({ guide }: { guide: string }) => (
     href={guide}
   />
 );
+
+export const HowToPlayTile = ({ guide, className }: { guide: string; className: string }) => (
+  <a className={className} href={guide} target="_blank" rel="noopener noreferrer">
+    <Icon name="guide" size={40} />
+    <span className={`${className}__label`}>{PROFILE_WORDS.howToPlay}</span>
+    <span className={`${className}__detail`}>{new URL(guide).host}</span>
+  </a>
+);

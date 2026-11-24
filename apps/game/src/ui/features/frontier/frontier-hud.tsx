@@ -50,7 +50,6 @@ import { FrontierTopBar } from "./hud/phone-top-bar";
 import { FrontierPlaceSwitch, PlaceMenu } from "./hud/surface-deep-switch";
 import { useOnePanel, useOrderSettledReturnsToTheArmy } from "./hud/one-panel";
 import { FrontierDayClock } from "./hud/day-pill";
-import { DayEndNotice, useDayEnd } from "./day-end/day-end";
 import { useFirstBuild, useMarkFirstBuild } from "./build/first-build";
 import { useStoreReadings } from "./hud/frontier-strip";
 import type { RealmRankUp } from "./hud/realm-card";
@@ -176,7 +175,6 @@ const FrontierHudBody = ({
   });
   const openArmy = armyPanel.pick;
   const pickArmy = usePickArmy();
-  const dayEnd = useDayEnd(rules);
   const seasonRank = useSeasonRank();
   const fragmentsHeld = useFragmentsHeld();
   const ordersAllowed = useUIStore(canIssueOrders);
@@ -328,7 +326,6 @@ const FrontierHudBody = ({
         </div>
       )}
       <SceneFailureNotice />
-      {own && <DayEndNotice dayEnd={dayEnd} onOpen={() => setSurface("today")} />}
     </>
   );
   const action = (

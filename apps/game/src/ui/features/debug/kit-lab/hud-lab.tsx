@@ -74,7 +74,6 @@ import { SeasonPayoutRow } from "@/ui/features/frontier/value/season-payout";
 import { linkWalletLine } from "@/ui/features/frontier/value/link-wallet";
 import { VisitFoot } from "@/ui/features/frontier/board/visit-foot";
 import { useLayout, useTablet } from "@/shell/frame/layout";
-import { type DayEnd, DayEndNotice } from "@/ui/features/frontier/day-end/day-end";
 import { type ComponentProps, useEffect, useRef, useState } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
 import { useEventFeedStore } from "@/ui/features/event-feed/event-feed-store";
@@ -235,7 +234,6 @@ const NIGHT: DayClock = {
 };
 const LAST_HOUR: DayClock = { ...CLOCK, secondsLeft: 42 * 60, shareLeft: 42 / 960, tone: "ember" };
 const FINAL_MINUTES: DayClock = { ...CLOCK, secondsLeft: 9 * 60, shareLeft: 9 / 960, tone: "ember" };
-const labDayEnd = (clock: DayClock): DayEnd => ({ clock });
 const DAY_DONE = {
   endedDay: 12,
   clock: { ...NIGHT, secondsLeft: 7 * HOUR + 55 * 60 },
@@ -917,7 +915,6 @@ export const HudLab = () => {
           ) : undefined
         }
         banner={lab.offline ? <OfflineBanner onRetry={noop} /> : undefined}
-        notices={!lab.visiting ? <DayEndNotice dayEnd={labDayEnd(lab.clock)} onOpen={noop} /> : undefined}
         action={
           <>
             {lab.order && !desktop && (

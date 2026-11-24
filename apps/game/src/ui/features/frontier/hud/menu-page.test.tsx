@@ -32,7 +32,7 @@ it("opens named menu actions independently of their badges, with their own seman
       ),
     );
     for (const [label, name, callback] of [
-      ["Today", "clock", onToday],
+      ["Today", "calendar", onToday],
       ["Feed", "chronicles", onFeed],
       ["Settings", "settings", onSettings],
     ] as const) {
@@ -40,13 +40,11 @@ it("opens named menu actions independently of their badges, with their own seman
         (b) => b.getAttribute("aria-label") === label,
       )!;
       expect(button).toBeTruthy();
-      expect(button.closest(".ui-row")?.querySelector("img")?.getAttribute("src")).toBe(
-        `/icons/facets/64/${name}.webp`,
-      );
+      expect(button.querySelector("img")?.getAttribute("src")).toBe(`/icons/facets/128/${name}.webp`);
       await act(async () => button.click());
       expect(callback).toHaveBeenCalledTimes(1);
     }
-    for (const gone of ["Guide", "Production"])
+    for (const gone of ["Production"])
       expect([...host.querySelectorAll("nav button")].some((button) => button.textContent?.includes(gone))).toBe(false);
   } finally {
     await act(async () => root.unmount());
@@ -79,7 +77,7 @@ it("opens How to play, the game's guide on the docs site, in a new tab with the 
     expect(link.target).toBe("_blank");
     expect(link.rel).toBe("noopener noreferrer");
     expect(link.textContent).toBe("How to playdocs.realms.party");
-    expect(link.querySelector("img")?.getAttribute("src")).toBe("/icons/facets/64/guide.webp");
+    expect(link.querySelector("img")?.getAttribute("src")).toBe("/icons/facets/128/guide.webp");
   } finally {
     await act(async () => root.unmount());
     host.remove();

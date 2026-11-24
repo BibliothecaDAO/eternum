@@ -41,15 +41,16 @@ export function AspectEmissaryDock({
   if (aspectId === null) return null;
   const emissary = resolveAspectEmissary(aspectId);
   const phone = layout === "phone";
-  const completedLine =
+  const confirmation =
     moment in OPENING_WORDS.completed
       ? OPENING_WORDS.completed[moment as keyof typeof OPENING_WORDS.completed]
       : undefined;
-  const completed = status === "completed" && completedLine !== undefined;
+  const completed = status === "completed" && confirmation !== undefined;
   const askingSkip = !completed && onSkipAll !== undefined && skipAskedOn === moment;
   const says = (lessonLine: string | undefined) =>
-    completed ? completedLine : askingSkip ? OPENING_WORDS.skipFinal : lessonLine;
-  const title = OPENING_WORDS.titles[moment];
+    completed ? confirmation.line : askingSkip ? OPENING_WORDS.skipFinal : lessonLine;
+  const title = OPENING_WORDS.titles[moment](rules);
+  const shownTitle = completed ? confirmation.title : title;
   const form = dockForm({
     phone,
     openFrames: openFrames.map((frame) => frame.label),
@@ -90,7 +91,7 @@ export function AspectEmissaryDock({
         <>
           <span className="emissary-dock__fold-portrait">{portrait(22)}</span>
           <span className="emissary-dock__fold-label">{OPENING_WORDS.tutorial}</span>
-          <span className="emissary-dock__fold-title">{title}</span>
+          <span className="emissary-dock__fold-title">{shownTitle}</span>
           <button
             type="button"
             className="emissary-dock__btn emissary-dock__fold-btn"
@@ -112,7 +113,7 @@ export function AspectEmissaryDock({
         <>
           <span className="emissary-dock__fold-portrait">{portrait(32)}</span>
           <span className="emissary-dock__strip-text">
-            <span className="emissary-dock__strip-title">{title}</span>
+            <span className="emissary-dock__strip-title">{shownTitle}</span>
             <span className="emissary-dock__strip-line">
               {says("asks" in spec ? spec.asks.line(rules) : undefined)}
             </span>
@@ -120,6 +121,40 @@ export function AspectEmissaryDock({
           <span className="emissary-dock__controls">
             {done}
             {skip}
+          </span>
+        </>
+      ) : phone ? (
+        <>
+          <span className="emissary-dock__portrait-bay">
+            <span className="emissary-dock__portrait-frame">{portrait(48)}</span>
+            <span className="emissary-dock__medallion">
+              <AspectMark aspect={aspectId} size={16} decorative />
+            </span>
+          </span>
+          <span className="emissary-dock__body">
+            <span className="emissary-dock__head">
+              <span className="emissary-dock__title">
+                {completed && <span className="emissary-dock__tick">✓</span>}
+                {shownTitle}
+              </span>
+              {!completed && (
+                <span className="emissary-dock__controls">
+                  {skip}
+                  {!askingSkip && (
+                    <button type="button" className="emissary-dock__btn" aria-label={CLOSE} onClick={onDismiss}>
+                      ✕
+                    </button>
+                  )}
+                </span>
+              )}
+            </span>
+            <span className="emissary-dock__line">{says(OPENING_WORDS.lines[moment](rules))}</span>
+            {!completed && !askingSkip && (
+              <span className="emissary-dock__action">
+                <Icon name={spec.icon} size={15} />
+                <span>{OPENING_WORDS.actions[moment]}</span>
+              </span>
+            )}
           </span>
         </>
       ) : (
@@ -135,9 +170,9 @@ export function AspectEmissaryDock({
           <span className="emissary-dock__crest" aria-hidden="true" />
 
           <div className="emissary-dock__portrait-bay">
-            <div className="emissary-dock__portrait-frame">{portrait(phone ? 54 : 68)}</div>
+            <div className="emissary-dock__portrait-frame">{portrait(68)}</div>
             <span className="emissary-dock__medallion">
-              <AspectMark aspect={aspectId} size={phone ? 16 : 20} decorative />
+              <AspectMark aspect={aspectId} size={20} decorative />
             </span>
           </div>
 
@@ -146,7 +181,7 @@ export function AspectEmissaryDock({
               <span className="emissary-dock__speaker">
                 <span className="emissary-dock__gem" aria-hidden="true" />
                 <span className="emissary-dock__aspect">{emissary.name}</span>
-                <span className="emissary-dock__title">· {title}</span>
+                <span className="emissary-dock__title">· {shownTitle}</span>
               </span>
               <span className="emissary-dock__controls">
                 {done}
