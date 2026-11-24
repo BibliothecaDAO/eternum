@@ -1604,6 +1604,7 @@ export const SEASON_WORDS = {
   notOnBoard: "Not on Frontier's board yet",
   pastSeasons: "Past seasons",
   playtest: "Playtest",
+  seasonZero: "Season 0",
   allAspects: "All Aspects",
   aspectBreakdown: "Aspect standings",
   yourStanding: "Your standing",
