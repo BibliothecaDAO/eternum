@@ -127,7 +127,7 @@ export const DeployView = ({
         </div>
       )}
       {amount.most > 0 && (
-        <>
+        <div className="deploy-size">
           <div className="deploy-size-bar">
             <span className="deploy-size-bar__state">
               <span>{DEPLOY_WORDS.troopCount}</span>
@@ -164,7 +164,7 @@ export const DeployView = ({
               onChange={onCount}
             />
           )}
-        </>
+        </div>
       )}
       {slots.open && slots.open.length > 0 && (slots.open.length > 1 || !start) && (
         <DeploySlots open={slots.open} picked={start?.slot} onPick={slots.onPick} />

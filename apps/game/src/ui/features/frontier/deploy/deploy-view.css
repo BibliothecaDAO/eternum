@@ -51,6 +51,15 @@
   line-height: var(--hud-leading-label);
   font-variant-numeric: tabular-nums;
 }
+.deploy-size {
+  display: flex;
+  flex-direction: column;
+  gap: theme(spacing[1.5]);
+  border: 1px solid var(--hud-divider);
+  border-radius: var(--hud-radius-control);
+  background: var(--hud-well);
+  padding: theme(spacing.2) theme(spacing.3);
+}
 .deploy-size-bar {
   display: flex;
   align-items: center;
