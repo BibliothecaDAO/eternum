@@ -91,25 +91,8 @@ button.frontier-stock-chip {
   padding: 0 4px 0 5px;
   font-size: var(--hud-text-body);
 }
-.frontier-phone-cornice .frontier-day-medallion--phone {
-  width: 52px;
-  height: 52px;
+.frontier-phone-cornice .frontier-day-dial {
   margin: 3px 0 -12px;
-}
-.frontier-day-left {
-  position: absolute;
-  bottom: -9px;
-  left: 50%;
-  transform: translateX(-50%);
-  border: 1px solid rgb(var(--hud-gold) / 0.75);
-  border-radius: var(--hud-radius-round);
-  background: var(--hud-surface-to);
-  padding: 2px 7px;
-  color: rgb(var(--hud-gold));
-  font-size: var(--hud-text-badge);
-  line-height: 1;
-  font-weight: var(--hud-weight-strong);
-  white-space: nowrap;
 }
 .frontier-phone-float {
   position: absolute;
@@ -328,9 +311,7 @@ button.frontier-stock-chip {
   gap: theme(spacing.3);
   padding-top: 4px;
 }
-.frontier-tablet-bar__centre .frontier-day-medallion--phone {
-  width: 58px;
-  height: 58px;
+.frontier-tablet-bar__centre .frontier-day-dial {
   margin: 0 0 -14px;
 }
 .frontier-tablet-bar__centre .frontier-place-pill {
@@ -410,10 +391,6 @@ button.frontier-stock-chip {
   }
   .frontier-stock-chip {
     padding: 0 5px 0 3px;
-  }
-  .frontier-phone-cornice .frontier-day-medallion--phone {
-    width: 48px;
-    height: 48px;
   }
 }
 .frontier-army-tray {

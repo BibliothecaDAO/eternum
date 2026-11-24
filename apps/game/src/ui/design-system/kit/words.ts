@@ -1173,7 +1173,7 @@ export const ARMY_SLOT_WORDS = {
   open: (slot: number) => `Slot ${slot} · Open`,
   readyAtHome: (troops: string) => `${troops} ready at home`,
   anyTroop: "Any troop type",
-  unlocksAt: (slot: number, rank: string) => `Slot ${slot} · Unlocks at ${rank}`,
+  unlocksAt: (slot: number, rank: string) => `Slot ${slot} unlocks at ${rank}`,
 } as const;
 export const ARMY_MOVE_HINT = "Right-click a hex to move";
 /** The day-done card's count of the armies that ended with the day. */

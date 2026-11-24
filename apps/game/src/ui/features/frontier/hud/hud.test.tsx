@@ -22,7 +22,7 @@ import { useOnePanel } from "./one-panel";
 import { MenuPage } from "./menu-page";
 import { OrderBar } from "./order-bar";
 import { PickedArmy } from "./picked-army";
-import { DayMedallion, DayRing } from "./day-pill";
+import { DayMedallion } from "./day-pill";
 import { RealmCard } from "./realm-card";
 import { PhoneTopBarView, TabletTopBarView } from "./phone-top-bar";
 import { PhoneTabBar, TabletPlaces } from "./frontier-nav";
@@ -117,7 +117,7 @@ describe("the status strip", () => {
     );
     const clock = { ...day, secondsLeft: 24 * 3_600, tomorrowSeconds: 24 * 3_600 };
     const markup = renderToStaticMarkup(<DayMedallion clock={clock} />);
-    expect(text(markup)).toContain(`Day ${day.day}`);
+    expect(markup).toContain(`aria-label="Day ${day.day}`);
     expect(text(markup)).toContain("24h");
     expect(markup).not.toMatch(/\b1d\b/);
   });
@@ -142,14 +142,14 @@ describe("the status strip", () => {
     const lastHour = renderToStaticMarkup(
       <DayMedallion clock={{ ...day, secondsLeft: 600, shareLeft: 0.05, tone: "ember" }} />,
     );
-    expect(text(lastHour)).toContain(`Day ${day.day}`);
+    expect(lastHour).toContain(`aria-label="Day ${day.day}`);
     expect(text(lastHour)).toContain("10m");
     expect(lastHour).toContain("text-hud-bad");
     expect(lastHour).toContain('data-fill-share="95"');
     expect(lastHour).toContain("/images/hud/day-medallion-ember.webp");
   });
 
-  it("renders DayRing with clamped elapsed progress, Day label, time left and ember tone in the last hour", () => {
+  it("draws the phone's day medallion with clamped elapsed progress, the day, the time left and ember in the last hour", () => {
     const day = dayClock(
       {
         dayUnitSeconds: 4 * 3_600,
@@ -160,12 +160,14 @@ describe("the status strip", () => {
       },
       3_600,
     );
-    act(() => root.render(<DayRing clock={{ ...day, secondsLeft: 900, shareLeft: -0.2, tone: "ember" }} />));
+    act(() =>
+      root.render(<DayMedallion clock={{ ...day, secondsLeft: 900, shareLeft: -0.2, tone: "ember" }} size={52} />),
+    );
     const timer = host.querySelector('[role="timer"]')!;
-    expect(timer.className).toContain("frontier-day-medallion");
-    expect(timer.className).not.toContain("frontier-day-saddle");
-    expect(timer.textContent).toBe(`Day${day.day}15m`);
-    expect(timer.querySelector(".frontier-day-left")?.textContent).toBe("15m");
+    expect(timer.getAttribute("data-size")).toBe("52");
+    expect(timer.querySelector("img")?.getAttribute("src")).toBe("/images/hud/day-medallion-ember.webp");
+    expect(timer.querySelector(".frontier-day-dial__numeral")?.textContent).toBe(String(day.day));
+    expect(timer.querySelector(".frontier-day-dial__left")?.textContent).toBe("15m");
     expect(timer.getAttribute("aria-label")).toContain(`Day ${day.day} · 15m left`);
     expect(timer.getAttribute("data-tip")).toContain("15m left");
     expect(timer.className).toContain("text-hud-bad");
@@ -189,7 +191,7 @@ describe("the status strip", () => {
       root.render(
         <PhoneTopBarView
           realm={{ icon: "realm-1", label: "Duskbite", aspect: 1, orderId: 12 }}
-          clock={<DayRing clock={day} />}
+          clock={<DayMedallion clock={day} size={52} />}
           stocks={{
             fragments: 0,
             onShop,
@@ -780,7 +782,7 @@ it.each([81, 84, 85])("shows the last %ih day with its real countdown and no tom
   const day = hours === 81 ? 10 : 11;
   expect(clock).toMatchObject({ day, endsAt: endAt, secondsLeft: 600, tomorrowSeconds: undefined, tone: "ember" });
   const markup = renderToStaticMarkup(<DayMedallion clock={clock} />);
-  expect(text(markup)).toContain(`Day ${day}`);
+  expect(markup).toContain(`aria-label="Day ${day}`);
   expect(text(markup)).toContain("10m");
   expect(markup).not.toContain("Tomorrow");
   expect(seasonDay(calendar, endAt - 1)).toEqual({ day, lastDay: day });

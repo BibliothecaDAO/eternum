@@ -24,7 +24,7 @@ import {
   YOU,
 } from "@/ui/design-system/kit/words";
 import { readArmySlots } from "@/ui/features/frontier/hud/army-dock";
-import { ArmyCard, ArmySlotsCard, LockedSlotCard, OpenSlotCard } from "@/ui/features/frontier/hud/army-row";
+import { ArmyCard, ArmySlotsCard, LockedSlotLine, OpenSlotCard } from "@/ui/features/frontier/hud/army-row";
 import { ArmyToken, OpenSlot } from "@/ui/features/frontier/hud/army-token";
 import type { DayClock } from "@/ui/features/frontier/hud/day-clock";
 import { HudBands } from "@/ui/features/frontier/hud/hud-bands";
@@ -85,7 +85,7 @@ import { fragmentsToFill, RefillButton, RefillConfirm, RefillPrice } from "@/ui/
 import { OathSockets } from "@/ui/features/frontier/army/oath-slots";
 import { ShopCodeField, ShopView } from "@/ui/features/frontier/shop/shop-sheet";
 import { labQuestRulesFact } from "@/lab/game/quest-scenario";
-import { DayMedallion, DayRing } from "@/ui/features/frontier/hud/day-pill";
+import { DayMedallion } from "@/ui/features/frontier/hud/day-pill";
 import { DailyQuestChip } from "@/ui/features/frontier/hud/daily-quest-chip";
 import type { MapLayers } from "@/ui/features/frontier/hud/map-layers";
 import type { RealmBuildingItem } from "@/ui/features/frontier/hud/realm-card";
@@ -1174,7 +1174,7 @@ export const HudLab = () => {
               orderId: LAB_ORDER_ID,
             }}
             stocks={{ stores: [...lab.stores], fragments: LAB_FRAGMENTS, onShop: noop }}
-            clock={<DayRing clock={lab.clock} />}
+            clock={<DayMedallion clock={lab.clock} size={52} />}
             placeMenu={
               <PlaceMenu
                 isMapView={lab.realmView === undefined}
@@ -1720,8 +1720,7 @@ const LabDock = ({ lab }: { lab: LabState }) => {
             onDeploy={noop}
           />
         ))}
-        {!lab.visiting &&
-          slotRule?.locked.map((slot) => <LockedSlotCard key={slot.number} number={slot.number} rank={slot.rank} />)}
+        {!lab.visiting && slotRule?.nextLocked && <LockedSlotLine {...slotRule.nextLocked} />}
       </ArmySlotsCard>
     );
   return (
