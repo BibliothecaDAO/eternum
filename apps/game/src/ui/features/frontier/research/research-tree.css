@@ -14,27 +14,6 @@
   gap: theme(spacing.3);
 }
 
-.research-balance-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: theme(spacing.2);
-  border: 1px solid var(--hud-line);
-  border-radius: var(--hud-radius-round);
-  background: var(--hud-well);
-  padding: 2px theme(spacing[2.5]);
-  color: rgb(var(--hud-ink));
-  font-size: var(--hud-text-label);
-  line-height: var(--hud-leading-label);
-  font-weight: var(--hud-weight-strong);
-}
-
-.research-balance-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  white-space: nowrap;
-}
-
 .research-legend {
   display: none;
   align-items: center;

@@ -31,8 +31,6 @@ export const ResearchPanel = ({
   fixFor,
   onResearch,
   onClose,
-  essence,
-  labor,
   castleLevel,
 }: {
   nodes: readonly TreeNode[];
@@ -42,8 +40,6 @@ export const ResearchPanel = ({
   fixFor: (need: Need, node: TreeNode) => Fix | undefined;
   onResearch: (node: TreeNode) => unknown;
   onClose: () => void;
-  essence: number;
-  labor: number;
   castleLevel: number;
 }) => {
   const node = picked === null ? undefined : nodes.find(({ key }) => key === picked);
@@ -56,7 +52,7 @@ export const ResearchPanel = ({
       label={RESEARCH}
       icon="research"
       fills
-      cue={<ResearchHeaderCue essence={essence} labor={labor} readyCount={readyCount} />}
+      cue={<ResearchHeaderCue readyCount={readyCount} />}
       bodyClassName="research-page-body"
       onClose={onClose}
     >
@@ -85,18 +81,8 @@ export const ResearchPanel = ({
   );
 };
 
-const ResearchHeaderCue = ({ essence, labor, readyCount }: { essence: number; labor: number; readyCount: number }) => (
+const ResearchHeaderCue = ({ readyCount }: { readyCount: number }) => (
   <span className="research-head__cue">
-    <span className="research-balance-pill" data-research-balances>
-      <span className="research-balance-item tabular-nums">
-        <Icon name="essence" size={16} />
-        <span>{formatShort(essence)}</span>
-      </span>
-      <span className="research-balance-item tabular-nums">
-        <Icon name="labor" size={16} />
-        <span>{formatShort(labor)}</span>
-      </span>
-    </span>
     <span className="research-legend" aria-hidden="true">
       <span className="research-legend__item">
         <span className="research-legend__dot" data-state="ready" />
