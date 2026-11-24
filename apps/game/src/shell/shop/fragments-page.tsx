@@ -22,7 +22,7 @@ import { SealCodeCard } from "../play/seal-code-card";
 import { SignedInOnly } from "../profile/profile-pages";
 import { linkWalletHref } from "../profile/settings-route";
 import { nextOf } from "../return-path";
-import { chooseSeason, questBonusPercentOf, seasonTitle } from "../season";
+import { SEASON_SPENDS_FRAGMENTS, chooseSeason, questBonusPercentOf, seasonTitle } from "../season";
 import { lordsOf } from "../value/ledger";
 import { invalidateLordsBalance } from "../value/use-lords-balance";
 import { usePayer } from "../value/use-payer";
@@ -43,7 +43,32 @@ type ShopZone = "buy" | "spend";
 
 type DirectoryFailure = { error: unknown; retry: () => void };
 
-export const FragmentsPage = () => {
+export const FragmentsPage = ({ spends = SEASON_SPENDS_FRAGMENTS }: { spends?: boolean } = {}) => {
+  const { session } = useIdentitySession();
+  if (!spends) {
+    return (
+      <PageFrame title={WORDS.shop}>
+        <SignedInOnly fallback={(card) => card}>
+          {() => <ShopClosed owner={session?.user.realmsId ?? null} />}
+        </SignedInOnly>
+      </PageFrame>
+    );
+  }
+  return <OpenFragmentsPage />;
+};
+
+const ShopClosed = ({ owner }: { owner: string | null }) => (
+  <div className="shop-closed" data-shop-page data-shop-closed>
+    <AppPanel title={FRAGMENTS_PAGE_WORDS.closedTitle} icon="fragment">
+      <div className="flex flex-col gap-4">
+        <AppNotice line={FRAGMENTS_PAGE_WORDS.closedLine} />
+        <SealCodeCard owner={owner} />
+      </div>
+    </AppPanel>
+  </div>
+);
+
+const OpenFragmentsPage = () => {
   const { search } = useLocation();
   const directory = useDirectory();
   const explicitGame = shopGameOf(search);

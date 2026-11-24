@@ -1,8 +1,14 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
+import { spendsFragments } from "@bibliothecadao/eternum/game-client";
 import { createBrowserSession } from "./client-playtest/browser-session.mjs";
 import { withDevClient } from "./lib/dev-client.mjs";
+
+const RELEASE = JSON.parse(
+  readFileSync(new URL("../../../contracts/l3/world-native/schema/release-definition.json", import.meta.url), "utf8"),
+);
+const SEASON_SPENDS_FRAGMENTS = spendsFragments({ command_mask: BigInt(RELEASE.definition.rules.command_mask) });
 
 /** Season 1's client presentations in the lab: each view's every case, on a desktop and on a phone, one still each. */
 const VIEWS = [
@@ -97,13 +103,17 @@ const PAGES = [
     url: "/lab/kit/unified/frontier-army",
     shown: 'header[aria-label="Game controls"], [aria-label="Frontier HUD"]',
   },
-  { file: "fragments-packs", url: FRAGMENTS_URL, shown: "[data-fragment-packs]" },
-  {
-    file: "fragments-pay",
-    url: FRAGMENTS_URL,
-    press: { after: "[data-fragment-packs]", button: "Pay $10.00" },
-    shown: "[data-pay-tokens]",
-  },
+  ...(SEASON_SPENDS_FRAGMENTS
+    ? [
+        { file: "fragments-packs", url: FRAGMENTS_URL, shown: "[data-fragment-packs]" },
+        {
+          file: "fragments-pay",
+          url: FRAGMENTS_URL,
+          press: { after: "[data-fragment-packs]", button: "Pay $10.00" },
+          shown: "[data-pay-tokens]",
+        },
+      ]
+    : []),
 ];
 const SIZES = [
   ["desktop", "1920", "1080"],

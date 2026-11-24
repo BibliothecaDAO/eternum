@@ -1,3 +1,10 @@
+.shop-closed {
+  display: flex;
+  max-width: 40rem;
+  flex-direction: column;
+  gap: theme(spacing.5);
+}
+
 .shop-hub {
   display: grid;
   grid-template-columns: minmax(0, 1fr);

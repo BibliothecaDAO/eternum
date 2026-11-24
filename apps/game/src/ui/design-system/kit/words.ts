@@ -1275,6 +1275,8 @@ export const FRAGMENTS_PAGE_WORDS = {
   inGameStamina: (points: number) =>
     `Refill stamina above the ${DEEP} (+${formatExact(points)} stamina per ${FRAGMENT})`,
   inGameOath: (cost: number) => `Reroll Oath choices (${formatExact(cost)} ${FRAGMENTS})`,
+  closedTitle: `${FRAGMENTS} shop closed`,
+  closedLine: `${FRAGMENTS} purchases and spends are closed right now. You can still use an ${ANCIENT_SEAL} code below.`,
   noLiveSeason: "No live Frontier season right now. Check back when the season opens.",
   pack: (fragments: number) => formatCount(fragments, FRAGMENT, FRAGMENTS),
   sealPack: `The ${ANCIENT_SEAL}`,
