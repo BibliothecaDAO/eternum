@@ -85,9 +85,9 @@ describe("the interface that opens as you play", () => {
   });
 
   it("renders each moment with live rule figures and its desktop action", () => {
-    expect(renderMoment("barracks")).toContain("Build a Barracks on the glowing plot. It raises +2/min Knights.");
+    expect(renderMoment("barracks")).toContain("It raises +2/min Knights.");
     expect(renderMoment("deploy")).toContain("2,000 Knights wait at home. Send an army onto the Surface.");
-    expect(renderMoment("explore")).toContain("Mist hides sites and Essence. Reveal one dark hex for 20 stamina.");
+    expect(renderMoment("explore")).toContain("Reveal a dark hex for 20 stamina.");
     expect(renderMoment("oath")).toContain("Swear one Oath, or pass for +20 stamina.");
     expect(renderMoment("shop")).toContain("Stamina returns +1/min. A Fragment refills 2 now or unlocks Ancient Seal.");
     expect(renderMoment("relic")).toContain("Relics last 30 minutes per tier. Each army carries 3.");

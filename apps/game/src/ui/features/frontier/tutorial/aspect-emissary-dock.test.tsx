@@ -59,8 +59,8 @@ describe("AspectEmissaryDock", () => {
     expect(dock?.dataset.tutorialAspect).toBe("2");
     expect(dock?.dataset.tutorialLayout).toBe("desktop");
     expect(dock?.textContent).toContain("Luminary");
-    expect(dock?.textContent).toContain("Build a Barracks on the glowing plot. It raises +2/min Knights.");
-    expect(dock?.textContent).toContain("Click the lit plot to build.");
+    expect(dock?.textContent).toContain("It raises +2/min Knights.");
+    expect(dock?.textContent).toContain("Tap the lit plot to build.");
     expect(host.querySelector(".emissary-dock__context")).toBeNull();
     expect(host.querySelector(".emissary-dock__well")).toBeNull();
     const portrait = host.querySelector<HTMLImageElement>('img[data-icon="emissary-luminary"]');
@@ -142,7 +142,7 @@ describe("AspectEmissaryDock", () => {
     expect(dock?.classList.contains("emissary-dock--phone")).toBe(true);
     expect(dock?.textContent).toContain("Insight");
     expect(dock?.textContent).toContain(OPENING_WORDS.titles.explore());
-    expect(dock?.textContent).toContain("Reveal one dark hex for 20 stamina.");
+    expect(dock?.textContent).toContain("Reveal a dark hex for 20 stamina.");
     expect(host.querySelector('img[data-icon="emissary-insight"]')?.getAttribute("src")).toBe(
       "/icons/facets/128/emissary-insight.webp",
     );

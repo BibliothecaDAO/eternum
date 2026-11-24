@@ -407,9 +407,6 @@ export const phraseText = ({ words, reading, readingFirst }: ClockPhrase): strin
  * is the contract's: each day is its own map, and an army lives only on its day's map (expeditions.cairo).
  */
 export const DAY_END = {
-  endsIn: (day: number | undefined, secondsLeft: number | undefined) =>
-    `${DAY} ${day ?? "—"} ends in ${dayLength(secondsLeft)}`,
-  open: "Open",
   goes: "At day end, today's map and armies go",
 } as const;
 
@@ -955,12 +952,10 @@ export const OPENING_WORDS = {
     "shrine-lore": () => "Shrine lore is learned. Your armies can now uncover shrines.",
     city: (rules: OpeningRules) =>
       `Scouts reveal mist for ${formatAmount(rules.scoutExploreStamina)} stamina instead of ${formatAmount(rules.exploreStamina)}.`,
-    barracks: (rules: OpeningRules) =>
-      `Build a Barracks on the glowing plot. It raises ${formatRate(rules.knightsPerSecond)} Knights.`,
+    barracks: (rules: OpeningRules) => `It raises ${formatRate(rules.knightsPerSecond)} Knights.`,
     deploy: (rules: OpeningRules) =>
       `${formatExact(rules.troopsAtHome)} Knights wait at home. Send an army onto the ${layerName(0)}.`,
-    explore: (rules: OpeningRules) =>
-      `Mist hides sites and Essence. Reveal one dark hex for ${formatAmount(rules.exploreStamina)} stamina.`,
+    explore: (rules: OpeningRules) => `Reveal a dark hex for ${formatAmount(rules.exploreStamina)} stamina.`,
   },
   actions: {
     "season0-welcome": "Open Season to check the race.",
@@ -978,9 +973,9 @@ export const OPENING_WORDS = {
     "well-lore": "Explore mist hexes to find wells.",
     "shrine-lore": "Explore mist hexes to find shrines.",
     city: "Train scouts for cheaper mist reveals.",
-    barracks: "Click the lit plot to build.",
+    barracks: "Tap the lit plot to build.",
     deploy: "Press Deploy in the Realm panel.",
-    explore: "Select your army and click dark mist.",
+    explore: "Pick an army, tap the mist",
   },
   completed: {
     "season0-welcome": { title: "Standings opened", line: "Welcome back to Season 1." },
