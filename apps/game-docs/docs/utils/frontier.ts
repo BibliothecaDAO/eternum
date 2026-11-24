@@ -14,6 +14,7 @@ import {
 import { nativeCommandBits } from "../../../../contracts/l3/world-native/schema/commands.gen";
 import { MAINNET_TOKENS } from "../../../../packages/chain/src/tokens";
 import { logisticsStamina } from "../../../../packages/core/src/utils/attribute-tiers";
+import { buildablePlotCount } from "../../../../packages/core/src/utils/castle-reach";
 import { forecastFight, type CombatRules, type ExchangeTroops } from "@bibliothecadao/eternum/combat-exchange";
 import { aspectMeaning, orderMeaning } from "../../../game/src/ui/design-system/icon-meaning";
 import {
@@ -189,6 +190,10 @@ const castleLevelInline = (level: number) => `castle level ${level + 1} (${rankN
 const copySurchargeBps = config.buildings.buildingFixedCostScalePercent;
 const copyCost = (base: number, copyNumber: number) =>
   base + (copyNumber - 1) ** 2 * Math.floor((base * copySurchargeBps) / 10_000);
+const copyFormula = `base + (n - 1)² × ${pct(copySurchargeBps)} of base`;
+const damageFactorValue = Number(BigInt(config.troop.damage.damageScalingFactor) / 2n ** 64n);
+const combatBetaValue = (CONTRACT.combatBetaTenths / 10).toFixed(1);
+const combatFormula = `round(${n(damageFactorValue)} × troops ÷ (both sides' troops)^${combatBetaValue})`;
 const farmBaseLabor = config.buildings.simpleBuildingCost[research.FARM][0].amount;
 const workshopBaseLabor = config.buildings.simpleBuildingCost[research.WORKSHOP][0].amount;
 const barracksBaseLabor = config.buildings.simpleBuildingCost[research.BARRACKS][0].amount;
@@ -314,7 +319,7 @@ const runFight = (
 
 const minKnightsToClear = (
   defenderCount: number,
-  options: { defenderGuard?: boolean; attackerOaths?: number; defenderOaths?: number; twin?: boolean },
+  options: { defenderGuard?: boolean; attackerOaths?: number; defenderOaths?: number; twinCount?: number },
 ) => {
   let low = 100;
   let high = 60_000;
@@ -324,7 +329,7 @@ const minKnightsToClear = (
       defenderGuard: options.defenderGuard,
       attackerOaths: options.attackerOaths,
       defenderOaths: options.defenderOaths,
-      twinCount: options.twin ? mid : undefined,
+      twinCount: options.twinCount,
     });
     if (result.wins) high = mid;
     else low = mid + 100;
@@ -402,7 +407,7 @@ export const FRONTIER = {
     firstMinuteSummary: `${buildingName(research.WORKSHOP, true)} (${n(workshopBaseLabor)}) + ${buildingName(research.BARRACKS, true)} (${n(barracksBaseLabor)}) + ${buildingName(research.FARM, true)} (${n(farmBaseLabor)}) = ${n(workshopBaseLabor + barracksBaseLabor + farmBaseLabor)} labor`,
     castleLevels: Array.from({ length: config.realmMaxLevel }, (_, level) => castleLevelLabel(level)),
     castleLevelInline: Array.from({ length: config.realmMaxLevel }, (_, level) => castleLevelInline(level)),
-    plots: Array.from({ length: config.realmMaxLevel }, (_, level) => n(3 * (level + 1) * (level + 2))),
+    plots: Array.from({ length: config.realmMaxLevel }, (_, level) => n(buildablePlotCount(level))),
     armies: [limit.settlementArmies, limit.cityArmies, limit.kingdomArmies, limit.empireArmies].map(n),
     deployCaps: [
       limit.settlementDeploymentCap,
@@ -423,6 +428,7 @@ export const FRONTIER = {
       perHour(config.resources.productionByComplexRecipeOutputs[LABOR] * CONTRACT.castleLaborStep ** level),
     ),
     rationStep: String(frontierPreset.board.rationStep),
+    copyFormula,
     copyMultipliers: [1, 2, 3, 4, 5, 6].map((copy) => `${copyCost(1, copy)}x`).join(", "),
     copyCostsSmall: [1, 2, 3, 4, 5, 6].map((copy) => n(copyCost(farmBaseLabor, copy))),
     copyCostsWorkshop: [1, 2, 3, 4, 5, 6].map((copy) => n(copyCost(workshopBaseLabor, copy))),
@@ -451,8 +457,9 @@ export const FRONTIER = {
     perFragment: n(fragments.STAMINA_PER_FRAGMENT),
   },
   combat: {
-    damageFactor: n(Number(BigInt(config.troop.damage.damageScalingFactor) / 2n ** 64n)),
-    beta: (CONTRACT.combatBetaTenths / 10).toFixed(1),
+    formula: combatFormula,
+    damageFactor: n(damageFactorValue),
+    beta: combatBetaValue,
     exampleLabel: `${LAYER_NAMES[0]} ${beastOf("camp", 0).name} camp`,
     exampleGuard: n(campMid),
     exampleSent: n(campAttacker),
@@ -653,6 +660,7 @@ export const FRONTIER = {
     })),
   },
   banes: {
+    count: n(baneQuests.length),
     chanceStep: `${n(banesPreset.chanceStep)}%`,
     quorum: `${n(banesPreset.quorumPercent)}%`,
     world: worldBanes.map((entry, index) => {
@@ -739,11 +747,17 @@ export const FRONTIER = {
     rows: oathRows,
     pairs: [
       {
-        job: `Break 10,000 ${FRONTIER_TROOP_NAMES[TroopType.Knight]} guarding a Deep site (${FRONTIER_TROOP_NAMES[TroopType.Knight]} needed)`,
+        job: `Break 10,000 ${FRONTIER_TROOP_NAMES[TroopType.Knight]} guarding a Deep site (attacking ${FRONTIER_TROOP_NAMES[TroopType.Knight]}; ${oathName(oaths.TWINS)} uses a 5,000-troop adjacent ally that takes 0 losses)`,
         none: n(minKnightsToClear(10_000, { defenderGuard: true })),
         first: `${oathName(oaths.POWER)}: ${n(minKnightsToClear(10_000, { defenderGuard: true, attackerOaths: powerMask }))}`,
-        second: `${oathName(oaths.TWINS)}: ${n(minKnightsToClear(10_000, { defenderGuard: true, attackerOaths: twinsMask, twin: true }))}`,
-        both: n(minKnightsToClear(10_000, { defenderGuard: true, attackerOaths: powerMask | twinsMask, twin: true })),
+        second: `${oathName(oaths.TWINS)}: ${n(minKnightsToClear(10_000, { defenderGuard: true, attackerOaths: twinsMask, twinCount: 5_000 }))}`,
+        both: n(
+          minKnightsToClear(10_000, {
+            defenderGuard: true,
+            attackerOaths: powerMask | twinsMask,
+            twinCount: 5_000,
+          }),
+        ),
       },
       {
         job: `Hold a Deep site with ${n(holdStart)} ${FRONTIER_TROOP_NAMES[TroopType.Knight]} after ${holdTicks} ticks (rival ${FRONTIER_TROOP_NAMES[TroopType.Knight]} to clear)`,

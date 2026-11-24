@@ -93,6 +93,7 @@ export const frontierPhrases = (
     calendar,
     nativeResearch,
     contract,
+    buildablePlotCount,
     depthRewardPercent,
     logisticsStamina,
     mainnetTokens,
@@ -185,7 +186,7 @@ export const frontierPhrases = (
         `Revealing a tile costs ${stamina.staminaExploreStaminaCost} for ${FRONTIER_TROOP_NAMES[TroopType.Knight]} and ${FRONTIER_TROOP_NAMES[TroopType.Crossbowman]}, and ${nativeRules.SCOUT_EXPLORE_STAMINA} for ${FRONTIER_TROOP_NAMES[TroopType.Paladin]}.`,
         `adding +${n(logisticsBonus)} bonus stamina at rank V for ${n(stamina.staminaKnightMax + logisticsBonus)} max stamina total.`,
         `beside any camp your realm cleared today (supply post) on the ${personalLayersOr}`,
-        `round(2 × troops ÷ (both sides' troops)^0.2)`,
+        `round(${n(Number(BigInt(config.troop.damage.damageScalingFactor) / 2n ** 64n))} × troops ÷ (both sides' troops)^${(contract.combatBetaTenths / 10).toFixed(1)})`,
         staminaRule,
       ],
     },
@@ -209,9 +210,10 @@ export const frontierPhrases = (
         `Your castle makes ${castleLaborRate(0)} labor per hour at castle level 1 (${rankName(0)}), multiplying by ${n(contract.castleLaborStep)} at each castle level up to ${castleLaborRate(3)}/h at castle level 4 (${rankName(3)}).`,
         `receive ${n(preset.dailyQuest.labor)} Labor and ${n(preset.dailyQuest.essence)} Essence at castle level 1 (${rankName(0)}), multiplying by ${n(contract.questLevelStep)} at each higher castle level.`,
         ...FRONTIER_BUILDING_TYPES.map((id) => buildingName(id, true)),
+        `base + (n - 1)² × ${n(config.buildings.buildingFixedCostScalePercent / 100)}% of base`,
         ...armies.map(
           (count, index) =>
-            `Level ${index + 1} (${rankName(index)}) ${n(3 * (index + 1) * (index + 2))} ${n(count)} ${n(caps[index])} ${castleLaborRate(index)} ${n(preset.board.resourceStoreCaps[index])} ${n(preset.board.laborStoreCaps[index])}`,
+            `Level ${index + 1} (${rankName(index)}) ${n(buildablePlotCount(index))} ${n(count)} ${n(caps[index])} ${castleLaborRate(index)} ${n(preset.board.resourceStoreCaps[index])} ${n(preset.board.laborStoreCaps[index])}`,
         ),
         `Farm Wheat (${rateOf(BuildingType.ResourceWheat)}/h) Level 1 (${rankName(0)}) ${buildingPrice(config, BuildingType.ResourceWheat)}`,
         `${buildingName(BuildingType.ResourceKnightT1, true)} ${FRONTIER_TROOP_NAMES[TroopType.Knight]} (${rateOf(BuildingType.ResourceKnightT1)}/h) Level 1 (${rankName(0)}) ${buildingPrice(config, BuildingType.ResourceKnightT1)}`,
@@ -469,6 +471,9 @@ export const loadBalanceSources = async () => {
     const { CONTRACT: contract, depthRewardPercent } = await server.ssrLoadModule(
       join(here, "../docs/utils/contract-constants.ts"),
     );
+    const { buildablePlotCount } = await server.ssrLoadModule(
+      join(here, "../../../packages/core/src/utils/castle-reach.ts"),
+    );
     const { logisticsStamina } = await server.ssrLoadModule(
       join(here, "../../../packages/core/src/utils/attribute-tiers.ts"),
     );
@@ -504,6 +509,7 @@ export const loadBalanceSources = async () => {
       relicMeaning,
       calendar,
       contract,
+      buildablePlotCount,
       depthRewardPercent,
       logisticsStamina,
       mainnetTokens,
