@@ -20,7 +20,6 @@
   "apps/game/src/ui/features/news-headlines/capture-headline.ts": 1,
   "apps/game/src/ui/features/settlement/construction/building-thumbnail.tsx": 1,
   "apps/game/src/ui/features/world/hud/holdings-model.ts": 1,
-  "apps/game/src/ui/features/world/hud/use-coach-steps.ts": 1,
   "packages/core/src/automation/construction.ts": 2,
   "packages/core/src/automation/presets.ts": 7,
   "packages/core/src/automation/types.ts": 1,

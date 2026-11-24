@@ -68,10 +68,10 @@ import { PickedArmy } from "./hud/picked-army";
 import { ArmyRefill, sellsStamina } from "./army/army-refill";
 import { useArmySpireStatus } from "./spire-card";
 import { OpeningProvider, usePartShown } from "./opening/opening-context";
-import { OpeningLineView } from "./opening/opening-line-view";
 import { OpeningOffer } from "./opening/opening-offer";
 import { useOpening } from "./opening/use-opening";
 import { useSiteAlertOffer } from "./opening/use-site-alert-offer";
+import { AspectEmissaryDock } from "./tutorial/aspect-emissary-dock";
 import { FrontierToday } from "./log/frontier-today";
 import { CARD_STORE_KINDS, type CardStore, FrontierStoreCard, isCardStore } from "./production/frontier-store-card";
 import { castleLabor } from "./production/store-makers";
@@ -102,11 +102,11 @@ type FrontierHudProps = {
 export const FrontierHud = (props: FrontierHudProps) => {
   const realm = useFrontierRealm();
   const visit = useRealmVisit();
-  const { opened, line, gotIt, offerDue } = useOpening(props.rules, visit ? null : realm);
+  const { opened, line, dismiss, skipAll, offerDue } = useOpening(props.rules, visit ? null : realm);
   const offer = useSiteAlertOffer(offerDue);
   return (
     <OpeningProvider opened={opened}>
-      <FrontierHudBody {...props} opening={{ line, offer, gotIt }} />
+      <FrontierHudBody {...props} opening={{ line, offer, dismiss, skipAll }} />
     </OpeningProvider>
   );
 };
@@ -116,7 +116,9 @@ const FrontierHudBody = ({
   seasonOver: SeasonOver,
   opening,
 }: FrontierHudProps & {
-  opening: Pick<ReturnType<typeof useOpening>, "line" | "gotIt"> & { offer: ReturnType<typeof useSiteAlertOffer> };
+  opening: Pick<ReturnType<typeof useOpening>, "line" | "dismiss" | "skipAll"> & {
+    offer: ReturnType<typeof useSiteAlertOffer>;
+  };
 }) => {
   // Parts shared with the Blitz and Eternum HUD read upright, untracked and in sentence case here (index.css).
   useDocumentClass("frontier-hud");
@@ -279,7 +281,13 @@ const FrontierHudBody = ({
       {showOpening && (opening.line || opening.offer) && (
         <div data-opening-notice className="flex flex-col gap-1.5 empty:hidden">
           {opening.line && (
-            <OpeningLineView moment={opening.line.moment} rules={opening.line.rules} onGotIt={opening.gotIt} />
+            <AspectEmissaryDock
+              moment={opening.line.moment}
+              rules={opening.line.rules}
+              layout={desktop ? "desktop" : "phone"}
+              onDismiss={opening.dismiss}
+              onSkipAll={opening.skipAll}
+            />
           )}
           {opening.offer && <OpeningOffer offer={opening.offer} />}
         </div>

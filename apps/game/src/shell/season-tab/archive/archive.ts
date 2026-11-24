@@ -61,3 +61,23 @@ export const archivedSeason = (game: GameRef) => {
   const archive = ARCHIVES.find(({ file }) => sameGame(file, game));
   return archive && { board: archive.file.leaderboard, name: archive.name };
 };
+
+const canonicalAddress = (address: string): string | null => {
+  try {
+    return `0x${BigInt(address).toString(16)}`;
+  } catch {
+    return null;
+  }
+};
+
+const SEASON_ZERO_PLAYERS = new Set(
+  (seasonZero as SeasonArchive).leaderboard.entries
+    .map((entry) => canonicalAddress(entry.address))
+    .filter((address): address is string => address !== null),
+);
+
+export const isSeasonZeroPlayer = (address: string | null | undefined): boolean => {
+  if (!address) return false;
+  const canonical = canonicalAddress(address);
+  return canonical !== null && SEASON_ZERO_PLAYERS.has(canonical);
+};

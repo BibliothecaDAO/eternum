@@ -1,5 +1,4 @@
 import { RESOURCE_PRODUCTION_MODELS } from "@bibliothecadao/eternum";
-import { useNextUpHoldsPrimary } from "@/ui/features/world/hud/next-up-shows";
 import { Icon } from "@/ui/design-system/icon";
 import { HudButton, HudChip } from "@/ui/design-system/kit/hud-elements";
 import { canIssueOrders } from "@/utils/can-issue-orders";
@@ -53,7 +52,6 @@ export const RealmUpgradeCompact = () => {
 
   const upgradeInfo = useStructureUpgrade(structureEntityId);
   const levelUp = useRealmLevelUp(structureEntityId);
-  const nextUpHoldsPrimary = useNextUpHoldsPrimary();
   if (!upgradeInfo || !levelUp) return null;
 
   if (!upgradeInfo.isOwner || !ordersAllowed) {
@@ -93,9 +91,8 @@ export const RealmUpgradeCompact = () => {
       {levelUp.nextLevel > 0 && <LevelGains level={levelUp.nextLevel} />}
 
       <div className="flex justify-center pt-1">
-        {/* While Next up shows a step, its button is the screen's one primary; this one is secondary. */}
         <HudButton
-          kind={nextUpHoldsPrimary ? "secondary" : "primary"}
+          kind="primary"
           size="sm"
           icon={levelUp.mode === "provision" ? "pickaxe" : "chevron-up"}
           disabled={!levelUp.ready}

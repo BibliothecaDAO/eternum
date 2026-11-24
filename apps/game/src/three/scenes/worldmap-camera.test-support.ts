@@ -60,7 +60,3 @@ export const worldMapCamera = (army: HexPosition, { drawnAround }: { drawnAround
   };
   return { aimed, openedCards, redrawnAround, scene };
 };
-
-/** How far apart two scene hexes are, in hexes along the larger axis: enough to tell "here" from 2^30 hexes away. */
-export const hexesApart = (left: HexPosition, right: HexPosition): number =>
-  Math.max(Math.abs(left.col - right.col), Math.abs(left.row - right.row));

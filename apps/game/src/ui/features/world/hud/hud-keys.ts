@@ -6,7 +6,6 @@ import {
 import { getShortcutManager } from "@/utils/shortcuts/centralized-shortcut-manager";
 import { useEffect, useRef } from "react";
 import { type IdleArmies, selectNextIdleArmy } from "./idle-armies";
-import { useNextUpShows } from "./next-up-shows";
 
 /** The four workspaces' keys, each the first letter of its order. */
 export const ORDER_KEYS: Partial<Record<StructureAction["id"], string>> = {
@@ -44,13 +43,6 @@ export const useHudKeys = ({ idleArmies }: { idleArmies: IdleArmies }) => {
         action: () => openable(id)?.onClick(),
       });
     }
-    addShortcut({
-      id: `${PREFIX}next-up`,
-      key: " ",
-      description: "Take Next up's step",
-      condition: () => useNextUpShows.getState().act !== null,
-      action: () => useNextUpShows.getState().act?.(),
-    });
     addShortcut({
       id: `${PREFIX}idle-army`,
       key: "i",

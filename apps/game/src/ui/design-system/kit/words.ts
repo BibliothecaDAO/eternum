@@ -331,6 +331,8 @@ import {
 import type { NotificationKind, NotificationLevel } from "@bibliothecadao/notifications";
 import type { AttackRefusal } from "@bibliothecadao/eternum";
 import {
+  aspectName,
+  type AspectId,
   FRAGMENT,
   FRAGMENT_CENTS,
   FRAGMENTS,
@@ -897,7 +899,9 @@ export const DAY_BANNER_WORDS = {
 } as const;
 /** What a moment's one line needs from the game's rules; the caller reads them, the line only names them. */
 export interface OpeningRules {
-  knightsAnHour: number;
+  ownAspect: AspectId | undefined;
+  knightsPerSecond: number;
+  troopsAtHome: number;
   deepTickSeconds: number;
   deepLossPerTick?: number;
   oathPassStamina: number;
@@ -909,32 +913,77 @@ export interface OpeningRules {
   exploreStamina: number;
 }
 
+const ownAspectLabel = (aspect: AspectId | undefined): string => (aspect !== undefined ? aspectName(aspect) : "");
+
 export const OPENING_WORDS = {
-  lines: {
-    launch: () => "This is your Realm. Build on the lit plot, then deploy an army into the mist.",
-    barracks: (rules: OpeningRules) =>
-      `A Barracks raises ${formatAmount(rules.knightsAnHour)} Knights an hour. Knights fill your armies.`,
-    guard: () => "A blade or a bow shows its kind. Send 150% of the guard's troops to win.",
-    oath: (rules: OpeningRules) =>
-      `Take one and your army has it for today. A full army swaps one. You can also pass for ${formatGain(rules.oathPassStamina)} ${STAMINA}.`,
-    shop: (rules: OpeningRules) =>
-      `Stamina refills ${formatRate(rules.staminaPerSecond)}. A ${FRAGMENT} refills ${formatAmount(rules.staminaPerFragment)} points now.`,
-    essence: () => "Essence buys research and lores.",
-    relic: (rules: OpeningRules) =>
-      `A relic works for ${formatAmount(rules.relicMinutesPerTier)} minutes per tier. An army carries ${ARMY_RELIC_SLOTS}.`,
-    "well-lore": () => "Your armies can now find wells.",
-    "shrine-lore": () => "Your armies can now find shrines.",
-    city: (rules: OpeningRules) =>
-      `Scouts reveal for ${formatAmount(rules.scoutExploreStamina)} stamina, not ${formatAmount(rules.exploreStamina)}.`,
-    spire: (rules: OpeningRules) =>
-      `Guards are x${formatAmount(rules.spireDepthFactor)} on each layer down. A cleared camp refills your armies.`,
-    deep: (rules: OpeningRules) =>
-      `Every tick (${formatAmount(rules.deepTickSeconds)} seconds) here, each army loses ${formatAmount(rules.deepLossPerTick)} troops. Hold a site to earn.`,
-    bane: () => "A bane. Today's quest is the bane quest. Your Aspect ends the bane when enough members finish it.",
-    aspects: () => "Your Aspect races to build its hyperstructure. Its page shows where every Aspect stands.",
+  titles: {
+    "season0-welcome": "Welcome Back",
+    oath: "Swear an Oath",
+    bane: "Break the Bane",
+    deep: `The ${DEEP}`,
+    aspects: "Aspect Race",
+    spire: `Enter the ${layerName(1)}`,
+    "daily-quest": "Quest Ready",
+    essence: "Realm Research",
+    shop: "Stamina and Seal",
+    relic: "Army Relics",
+    "well-lore": "Well Lore",
+    "shrine-lore": "Shrine Lore",
+    city: "Scouts Unlocked",
+    barracks: "Build a Barracks",
+    deploy: "Deploy Your Army",
+    explore: "Explore the Mist",
   },
-  gotIt: "Got it",
-  /** The offer that comes with the first Deep line: the site alert, off until the player turns it on. */
+  lines: {
+    "season0-welcome": (rules: OpeningRules) =>
+      `Welcome back. Four Aspects race in the ${DEEP}, and ${ownAspectLabel(rules.ownAspect)} leads you.`,
+    oath: (rules: OpeningRules) =>
+      `Your Orders grant power today. Swear one Oath, or pass for ${formatGain(rules.oathPassStamina)} ${STAMINA}.`,
+    bane: () => "A bane strikes today. Your Aspect breaks it when enough members finish.",
+    deep: (rules: OpeningRules) =>
+      `Every ${formatExact(rules.deepTickSeconds)} seconds here, armies lose ${formatAmount(rules.deepLossPerTick)} troops. Hold sites to earn.`,
+    aspects: (rules: OpeningRules) =>
+      `${ownAspectLabel(rules.ownAspect)} races to finish its hyperstructure first. Standings update live.`,
+    spire: (rules: OpeningRules) =>
+      `In the ${layerName(1)}, guards are ${formatExact(rules.spireDepthFactor)}x stronger and camps refill your armies.`,
+    "daily-quest": () => "Today's quest is done. Collect its Labor and Essence reward.",
+    essence: () => "Essence buys permanent upgrades and lores for your Realm.",
+    shop: (rules: OpeningRules) =>
+      `Stamina returns ${formatRate(rules.staminaPerSecond)}. A ${FRAGMENT} refills ${formatAmount(rules.staminaPerFragment)} now or unlocks ${ANCIENT_SEAL}.`,
+    relic: (rules: OpeningRules) =>
+      `Relics last ${formatAmount(rules.relicMinutesPerTier)} minutes per tier. Each army carries ${ARMY_RELIC_SLOTS}.`,
+    "well-lore": () => "Well lore is learned. Your armies can now uncover wells.",
+    "shrine-lore": () => "Shrine lore is learned. Your armies can now uncover shrines.",
+    city: (rules: OpeningRules) =>
+      `Scouts reveal mist for ${formatAmount(rules.scoutExploreStamina)} stamina instead of ${formatAmount(rules.exploreStamina)}.`,
+    barracks: (rules: OpeningRules) =>
+      `Build a Barracks on the glowing plot. It raises ${formatRate(rules.knightsPerSecond)} Knights.`,
+    deploy: (rules: OpeningRules) =>
+      `${formatExact(rules.troopsAtHome)} Knights wait at home. Send an army onto the ${layerName(0)}.`,
+    explore: (rules: OpeningRules) =>
+      `Mist hides sites and Essence. Reveal one dark hex for ${formatAmount(rules.exploreStamina)} stamina.`,
+  },
+  actions: {
+    "season0-welcome": "Open Season to check the race.",
+    oath: "Pick one Oath or pass.",
+    bane: "Open Today to see the bane quest.",
+    deep: `Hold a ${DEEP} site or withdraw in time.`,
+    aspects: "Open Season to check standings.",
+    spire: "Clear camps to refill stamina and troops.",
+    "daily-quest": "Press the quest chip to collect.",
+    essence: "Open Research to learn a node.",
+    shop: "Open Shop or wait for stamina.",
+    relic: "Open Relics to inspect slots.",
+    "well-lore": "Explore mist hexes to find wells.",
+    "shrine-lore": "Explore mist hexes to find shrines.",
+    city: "Train scouts for cheaper mist reveals.",
+    barracks: "Click the lit plot to build.",
+    deploy: "Press Deploy in the Realm panel.",
+    explore: "Select your army and click dark mist.",
+  },
+  skipTutorial: "Skip tutorial",
+  replayTutorial: "Replay tutorial",
+  tutorial: "Tutorial",
   alertOffer: `Alert me when a ${DEEP} site can be taken`,
   alertOn: "Turn on",
   alertRetry: "Try again",

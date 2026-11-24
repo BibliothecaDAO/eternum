@@ -4057,7 +4057,8 @@ const RACE_BOARD_STATE = `JSON.stringify((() => {
 
 /** What the opening interface shows: the line over the map, the places on the bar and the day banner's parts. */
 const OPENING_STATE = `JSON.stringify({
-  lines: [...document.querySelectorAll(".ui-notice")].map((node) => node.textContent),
+  moment: document.querySelector("[data-tutorial-dock]")?.getAttribute("data-tutorial-dock") ?? null,
+  lines: [...document.querySelectorAll("[data-tutorial-dock]")].map((node) => node.textContent),
   places: [...(document.querySelector('nav[aria-label="Places"]')?.querySelectorAll("button") ?? [])].map((node) => node.getAttribute("aria-label") ?? node.textContent),
   banner: document.querySelector("[data-daily-quest]")?.textContent ?? "",
   bar: Boolean(document.querySelector("[data-day-bane-bar]")),
@@ -4065,7 +4066,7 @@ const OPENING_STATE = `JSON.stringify({
 })`;
 
 /** Turns Show everything on in the page's saved settings and loads the lab game again, as a player's setting persists. */
-const SHOW_EVERYTHING = `JSON.stringify((() => { localStorage.setItem("eternum-world-appearance", JSON.stringify({ state: { showEverything: true, fogStyle: "clear", reducedMotion: false, haptics: true, nextUpTips: true }, version: 0 })); return true; })())`;
+const SHOW_EVERYTHING = `JSON.stringify((() => { localStorage.setItem("eternum-world-appearance", JSON.stringify({ state: { showEverything: true, fogStyle: "clear", reducedMotion: false, haptics: true }, version: 0 })); return true; })())`;
 
 /** The Aspect page's feed: each fight's row, as a player reads it. */
 const ASPECT_FEED = `JSON.stringify((() => {
@@ -4100,12 +4101,13 @@ function raceBoardSteps(result) {
               return { state };
             },
             verify: ({ played }) =>
+              played.state.moment === "deep" &&
               played.state.lines.length > 0 &&
-              played.state.lines[0].includes("This is your Realm") &&
+              played.state.lines[0].includes("Hold sites to earn") &&
               !played.state.places.includes("Research")
                 ? completed(played)
                 : failed(
-                    "The first session must open on the launch line, with Research still waiting on Essence",
+                    "The Deep race session must open on the Deep contextual lesson, with Research still waiting on Essence",
                     played,
                   ),
           },
@@ -4118,8 +4120,8 @@ function raceBoardSteps(result) {
               for (let attempt = 0; attempt < 16; attempt += 1) {
                 const state = browser.read(OPENING_STATE);
                 if (state.lines.length === 0) break;
-                told.push(state.lines[0].replace(/Got it$/, ""));
-                browser.click("Got it");
+                told.push(state.lines[0]);
+                browser.click(HUD_WORDS.close);
                 await sleep(400);
               }
               const back = await reloadOn("Deep", "map", scenario)(context);

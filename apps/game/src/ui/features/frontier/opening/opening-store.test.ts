@@ -5,8 +5,16 @@ const identity = vi.hoisted(() => ({
 }));
 vi.mock("@/hooks/context/identity-session", () => ({ identityClient: { addOpeningProgress: identity.add } }));
 
-import { accountProgress } from "./opening-state";
-import { flush, loadOpening, reachMoments, seeLine, useOpeningStore } from "./opening-store";
+import { accountProgress, TUTORIAL_SKIPPED } from "./opening-state";
+import {
+  flush,
+  loadOpening,
+  reachMoments,
+  replayTutorial,
+  seeLine,
+  skipTutorial,
+  useOpeningStore,
+} from "./opening-store";
 
 /** A request the test answers when it chooses: the service's answer for it, or its failure. */
 const unanswered: Array<() => void> = [];
@@ -186,4 +194,30 @@ it("does not take a cache of this device's own additions for the account's progr
   await settle();
   reload();
   expect(accountProgress("a", useOpeningStore.getState()).ownsParts).toBe(true);
+});
+
+it("persists skipTutorial and clears tutorial seen keys on replayTutorial without losing reached parts or non-tutorial prompts", async () => {
+  const calls = deferred();
+  void loadOpening("a");
+  await settle();
+  calls[0]!.answer({ reached: ["essence"], seen: ["barracks", "site-alert"] });
+  await settle();
+
+  void skipTutorial();
+  await settle();
+  calls[1]!.answer({ reached: ["essence"], seen: ["barracks", "site-alert", TUTORIAL_SKIPPED] });
+  await settle();
+
+  expect(accountProgress("a", useOpeningStore.getState()).seen.has(TUTORIAL_SKIPPED)).toBe(true);
+
+  replayTutorial();
+  const replayed = accountProgress("a", useOpeningStore.getState());
+  expect(replayed.seen.has(TUTORIAL_SKIPPED)).toBe(false);
+  expect(replayed.seen.has("barracks")).toBe(false);
+  expect(replayed.seen.has("site-alert")).toBe(true);
+  expect(replayed.reached.has("essence")).toBe(true);
+
+  void seeLine("barracks");
+  await settle();
+  expect(accountProgress("a", useOpeningStore.getState()).seen.has("barracks")).toBe(true);
 });
