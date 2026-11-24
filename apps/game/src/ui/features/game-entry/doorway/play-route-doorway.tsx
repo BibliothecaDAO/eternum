@@ -10,6 +10,7 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useGameEntry } from "@/hooks/use-game-entry";
 import { parsePlayRoute } from "@/play/navigation/play-route";
+import { isGameNotStarted } from "@/runtime/world/directory";
 import type { DirectoryGame } from "@/shell/herald";
 import { seasonRealmId } from "@/shell/season";
 import { resultsHref } from "@/shell/season-tab/results-link";
@@ -56,6 +57,7 @@ export const PlayRouteDoorway = ({
     realmCanOpen: realm !== null,
     ended,
     refused,
+    waiting: entry !== null && !ended && isGameNotStarted(entry),
     modelShare,
   });
   return (

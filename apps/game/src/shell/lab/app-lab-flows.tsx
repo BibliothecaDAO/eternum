@@ -14,8 +14,6 @@ import { EntryModeSwitch, HomeSourcePicker } from "@/ui/features/game-entry/home
 import { RealmSideWarning } from "@/ui/features/game-entry/realm-side-warning";
 import { DayShareSheet } from "@/ui/features/frontier/rollover/day-share-sheet";
 
-import { ClockChip } from "@/ui/design-system/kit/clock-chip";
-
 import { PlayPage } from "../play/play-page";
 import { PageAddress } from "../frame/page-address";
 import type { SharedDay } from "../share/day-card";
@@ -152,7 +150,7 @@ export const LabDoorway = () => {
     <DoorwayScreen
       view={doorway.view}
       realm={doorway.realm}
-      game={LAB_FRONTIER}
+      game={state === "waiting" ? { ...LAB_FRONTIER, clock: { start_main_at: now + LAB_SEASON_WAIT } } : LAB_FRONTIER}
       onRetry={noop}
       onOpenRealm={noop}
       onSignIn={noop}
@@ -168,7 +166,6 @@ export const LabDoorway = () => {
       verb={undefined}
     >
       {/* The entry's own chips at the realm step, as game-entry-modal passes them. */}
-      {state === "waiting" && <ClockChip prefix="starts" at={now + LAB_SEASON_WAIT} now={now} />}
       {state === "preparing" && <Pill icon="hourglass">{`${BLITZ_WORDS.preparing} 17/24`}</Pill>}
       {state === "home" && <LabHomeStep />}
       {state === "aspect" && <LabAspectStep />}

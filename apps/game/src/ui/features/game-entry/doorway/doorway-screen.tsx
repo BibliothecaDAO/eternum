@@ -5,8 +5,10 @@ import { useLayout } from "@/shell/frame/layout";
 import { PageFrame } from "@/shell/frame/page-frame";
 import { gamePainting } from "@/shell/game-links";
 import { DEVICES_PATH } from "@/shell/profile/settings-route";
+import { useNowSeconds } from "@/shell/use-now";
 import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { AppButton, AppNotice, AppPanel } from "@/ui/design-system/kit/app-elements";
+import { AppClockChip } from "@/ui/design-system/kit/clock-chip";
 import { DOORWAY_WORDS, TRY_AGAIN, WORDS } from "@/ui/design-system/kit/words";
 
 import type { DoorwayView } from "./doorway-view";
@@ -53,7 +55,9 @@ export const DoorwayScreen = ({
     );
   }
 
-  const hold = <Hold view={view} onRetry={onRetry} onOpenRealm={onOpenRealm} onSignIn={onSignIn} results={results} />;
+  const hold = (
+    <Hold view={view} game={game} onRetry={onRetry} onOpenRealm={onOpenRealm} onSignIn={onSignIn} results={results} />
+  );
   return (
     <div data-surface="shell" className="fixed inset-0 z-50 overflow-y-auto bg-app-ground">
       <PageFrame painting={game ? gamePainting(game) : undefined} stage foot={desktop ? undefined : verb}>
@@ -93,12 +97,14 @@ const RealmRising = ({ realm }: { realm: DoorwayRealm }) => (
 
 const Hold = ({
   view,
+  game,
   onRetry,
   onOpenRealm,
   onSignIn,
   results,
 }: {
   view: DoorwayView;
+  game?: DoorwayGame;
   onRetry: () => void;
   onOpenRealm?: () => void;
   onSignIn: () => void;
@@ -125,6 +131,8 @@ const Hold = ({
           {WORDS.signIn}
         </AppButton>,
       );
+    case "waiting":
+      return <WaitingHold startsAt={game?.clock?.start_main_at} />;
     case "retry":
       return view.blocker.openRealm && onOpenRealm
         ? hold(
@@ -159,4 +167,21 @@ const Hold = ({
       </AppButton>,
     );
   return null;
+};
+
+const WaitingHold = ({ startsAt }: { startsAt?: number }) => {
+  const now = useNowSeconds();
+  return (
+    <div className="flex w-full flex-col items-stretch gap-3">
+      <AppNotice line={DOORWAY_WORDS.notStarted} />
+      {startsAt != null && startsAt > 0 && (
+        <div className="flex justify-center">
+          <AppClockChip prefix="starts" at={startsAt} now={now} />
+        </div>
+      )}
+      <AppButton kind="primary" size="lg" icon="play" step to="/">
+        {DOORWAY_WORDS.backToPlay}
+      </AppButton>
+    </div>
+  );
 };

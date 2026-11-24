@@ -2,6 +2,7 @@ import { aspectName, formatCount } from "@bibliothecadao/types";
 import type { CSSProperties } from "react";
 
 import { primeGameEntry } from "@/game-entry-preload";
+import { isGameLive } from "@/runtime/world/directory";
 import { aspectVariables } from "@/tokens";
 import { AspectMark } from "@/ui/design-system/aspect-mark";
 import type { IconMeaning } from "@/ui/design-system/icon";
@@ -81,8 +82,8 @@ const ItemFacts = ({ item, now, firstVisit }: { item: PlayItem; now: number; fir
   const { game } = item;
   if (item.verb === "results")
     return <AppChip icon="victory">{`${PLAY_WORDS.ended} ${clockLine(null, game.clock.end_at, now)}`}</AppChip>;
+  if (!isGameLive(game)) return <AppClockChip prefix="starts" at={game.clock.start_main_at} now={now} />;
   if (firstVisit) return <p className="text-app-body text-app-ink">{PITCH}</p>;
-  if (game.status !== "Live") return <AppClockChip prefix="starts" at={game.clock.start_main_at} now={now} />;
   return <SeasonDay game={game} now={now} />;
 };
 
@@ -111,20 +112,23 @@ export const ItemVerbButton = ({
   if (item.game.error) return <ServiceFailure service="directory" error={item.game.error} />;
   const verb = verbOf(item, signedIn, rehearsal, lead);
   if (!verb) return null;
+  const waiting = Boolean(verb.entersGame && !isGameLive(item.game));
   const prime = verb.entersGame ? primeGameEntry : () => undefined;
-  const press = {
-    ...(verb.connectFirst
-      ? {
-          onClick: () => {
-            prime();
-            requestSignIn(verb.to);
-          },
-        }
-      : { to: verb.to, onClick: prime }),
-    "data-play-verb": item.verb,
-  };
+  const press = waiting
+    ? { disabled: true, "data-play-verb": item.verb }
+    : {
+        ...(verb.connectFirst
+          ? {
+              onClick: () => {
+                prime();
+                requestSignIn(verb.to);
+              },
+            }
+          : { to: verb.to, onClick: prime }),
+        "data-play-verb": item.verb,
+      };
   return lead ? (
-    <AppButton kind="primary" size="lg" icon={verb.icon} {...press} step>
+    <AppButton kind="primary" size="lg" icon={verb.icon} {...press} step={!waiting}>
       {verb.word}
     </AppButton>
   ) : (

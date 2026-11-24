@@ -1,4 +1,4 @@
-import type { HeraldGameDirectoryEntry, ShardManifest } from "@bibliothecadao/eternum/game-sync";
+import type { HeraldGameDirectoryEntry, HeraldGameStatus, ShardManifest } from "@bibliothecadao/eternum/game-sync";
 import { fetchApi } from "@/runtime/app-api";
 
 /** A shard game whose launch records may temporarily be unavailable. */
@@ -24,9 +24,23 @@ export const fetchDirectory = async (player: string | null = null): Promise<Dire
   return shard;
 };
 
+const GAME_STATUS_PHASE: Record<HeraldGameStatus, "upcoming" | "live" | "over"> = {
+  Created: "upcoming",
+  Registration: "upcoming",
+  Live: "live",
+  Ended: "over",
+  Settled: "over",
+};
+
+export const isGameNotStarted = (game: Pick<HeraldGameDirectoryEntry, "status">): boolean =>
+  GAME_STATUS_PHASE[game.status] === "upcoming";
+
+export const isGameLive = (game: Pick<HeraldGameDirectoryEntry, "status">): boolean =>
+  GAME_STATUS_PHASE[game.status] === "live";
+
 /** Over at Herald's chain clock: ended, or settled with its recorded result. */
-export const isGameOver = (game: HeraldGameDirectoryEntry): boolean =>
-  game.status === "Ended" || game.status === "Settled";
+export const isGameOver = (game: Pick<HeraldGameDirectoryEntry, "status">): boolean =>
+  GAME_STATUS_PHASE[game.status] === "over";
 
 export const canEnterGame = (game: DirectoryEntry): boolean =>
   !game.error && !isGameOver(game) && game.mode === "frontier";

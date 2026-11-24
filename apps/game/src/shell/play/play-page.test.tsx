@@ -516,7 +516,9 @@ describe("the season's countdown, while its first day is ahead and Play has no g
     expect(pending.text()).not.toContain("rehearsal-4x");
     expect(pending.text()).not.toContain("live");
     expect(pending.text()).toContain("Rehearsal opens soon.");
-    expect(pending.container.querySelector('button[data-kind="primary"]')?.textContent).toBe("Play Rehearsal");
+    const pendingBtn = pending.container.querySelector<HTMLButtonElement>('button[data-kind="primary"]')!;
+    expect(pendingBtn.textContent).toBe("Play Rehearsal");
+    expect(pendingBtn.disabled).toBe(true);
     await cleanup?.();
 
     const liveRehearsal = { ...registrationRehearsal, status: "Live" as const };
@@ -947,4 +949,132 @@ it("hides TodayQuestPanel for a Live lead season when the player has no realm, a
     "Clear rifts · 0 of 1 · +1,500 Labor",
   );
   expect(withRealm.text()).toContain("Today");
+});
+
+it("disables every game-entry button on Play and Countdown while directory status is not Live, regardless of client clock", async () => {
+  const now = Math.floor(Date.now() / 1000);
+  const seasonStarts = now + 10 * DAY;
+  const calendar: SeasonCalendar = {
+    phases: [
+      {
+        phase: "frontier",
+        startsAt: new Date(seasonStarts * 1000).toISOString(),
+        endsAt: new Date((seasonStarts + 50 * DAY) * 1000).toISOString(),
+      },
+    ],
+  };
+  const futureClock = {
+    start_settling_at: now + 3 * HOUR,
+    start_main_at: now + 3 * HOUR,
+    scheduled_end_at: 4_000_000_000,
+    end_at: 4_000_000_000,
+  };
+  const pastClock = {
+    start_settling_at: now - 60,
+    start_main_at: now - 60,
+    scheduled_end_at: 4_000_000_000,
+    end_at: 4_000_000_000,
+  };
+
+  reads.signedIn = false;
+  reads.calendar = answered(calendar);
+  reads.history = answered({ games: [], next: null, failures: [] });
+  reads.directory = answered({
+    games: [
+      game({
+        game_id: 4,
+        name: "testnet-1795479180",
+        status: "Registration",
+        clock_scale: 1,
+        clock: pastClock,
+      }),
+    ],
+  });
+  const countdownLocked = await mount();
+  const calloutBtn = countdownLocked.container.querySelector<HTMLButtonElement>("[data-preseason-testnet] button")!;
+  expect(calloutBtn.textContent).toBe("Play Final testnet");
+  expect(calloutBtn.disabled).toBe(true);
+  expect(countdownLocked.container.querySelector("[data-preseason-testnet]")?.textContent).toContain("Starts");
+  await act(async () => calloutBtn.click());
+  expect(gameEntryPreload.primeGameEntry).not.toHaveBeenCalled();
+  expect(useConnectStore.getState().request).toBeNull();
+  expect(countdownLocked.container.querySelector("[data-entered-game]")).toBeNull();
+  await cleanup?.();
+
+  reads.signedIn = true;
+  reads.calendar = answered({ phases: [] });
+  reads.directory = answered({
+    games: [
+      game({
+        game_id: 1,
+        name: "frontier-1",
+        status: "Created",
+        clock: futureClock,
+      }),
+      game({
+        game_id: 5,
+        name: "rehearsal-4x",
+        status: "Registration",
+        clock_scale: 4,
+        clock: futureClock,
+      }),
+    ],
+  });
+  const playLocked = await mount();
+  const heroBtn = playLocked.container.querySelector<HTMLButtonElement>(
+    '[data-play-item="0xa:1"] [data-play-verb="play"]',
+  )!;
+  const rehearsalBtn = playLocked.container.querySelector<HTMLButtonElement>(
+    '[data-play-item="0xa:5"] [data-play-verb="play"]',
+  )!;
+  expect(heroBtn.disabled).toBe(true);
+  expect(rehearsalBtn.disabled).toBe(true);
+  expect(playLocked.container.querySelector('[data-play-item="0xa:1"]')?.textContent).toContain("Starts");
+  expect(playLocked.container.querySelector('[data-play-item="0xa:5"]')?.textContent).toContain("Starts");
+  await act(async () => heroBtn.click());
+  await act(async () => rehearsalBtn.click());
+  expect(gameEntryPreload.primeGameEntry).not.toHaveBeenCalled();
+  expect(playLocked.container.querySelector("[data-entered-game]")).toBeNull();
+  await cleanup?.();
+
+  reads.signedIn = false;
+  reads.directory = answered({
+    games: [
+      game({
+        game_id: 1,
+        name: "frontier-1",
+        status: "Registration",
+        clock: futureClock,
+      }),
+    ],
+  });
+  const signedOutHeroLocked = await mount();
+  const signedOutHeroBtn = signedOutHeroLocked.container.querySelector<HTMLButtonElement>(
+    '[data-play-item="0xa:1"] [data-play-verb="play"]',
+  )!;
+  expect(signedOutHeroBtn.disabled).toBe(true);
+  expect(signedOutHeroLocked.container.querySelector('[data-play-item="0xa:1"]')?.textContent).toContain("Starts");
+  await act(async () => signedOutHeroBtn.click());
+  expect(useConnectStore.getState().request).toBeNull();
+  await cleanup?.();
+
+  reads.signedIn = true;
+  reads.directory = answered({
+    games: [
+      game({
+        game_id: 1,
+        name: "frontier-1",
+        status: "Live",
+        clock: futureClock,
+      }),
+    ],
+  });
+  const playLive = await mount();
+  const liveHeroBtn = playLive.container.querySelector<HTMLButtonElement>(
+    '[data-play-item="0xa:1"] [data-play-verb="play"]',
+  )!;
+  expect(liveHeroBtn.disabled).toBe(false);
+  await act(async () => liveHeroBtn.click());
+  expect(gameEntryPreload.primeGameEntry).toHaveBeenCalledTimes(1);
+  expect(playLive.container.querySelector("[data-entered-game]")).not.toBeNull();
 });

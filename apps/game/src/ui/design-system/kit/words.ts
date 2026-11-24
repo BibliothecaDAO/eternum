@@ -1577,6 +1577,8 @@ export const DOORWAY_WORDS = {
   entering: "Entering the game",
   enteringRealm: (name: string) => `Entering ${name}`,
   signInToPlay: "Sign in to play.",
+  notStarted: "This game has not started yet.",
+  backToPlay: "Back to Play",
   ended: "This game has ended.",
   gameRefused: "This game ran on a different version of the game and cannot be opened here.",
   gameOnOlderNumbers:

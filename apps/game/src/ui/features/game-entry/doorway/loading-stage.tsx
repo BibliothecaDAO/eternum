@@ -22,7 +22,8 @@ export interface DoorwayRealm {
   aspect?: AspectId | null;
 }
 
-export type DoorwayGame = Pick<DirectoryGame, "mode"> & Partial<Pick<DirectoryGame, "day_index">>;
+export type DoorwayGame = Pick<DirectoryGame, "mode"> &
+  Partial<Pick<DirectoryGame, "day_index">> & { clock?: Pick<DirectoryGame["clock"], "start_main_at"> };
 
 const DEFAULT_PAINTING: Painting = "frontier-mist";
 

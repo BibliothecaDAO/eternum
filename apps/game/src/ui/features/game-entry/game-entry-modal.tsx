@@ -36,7 +36,6 @@ import { markGameEntryMilestone } from "@/ui/layouts/game-entry-timeline";
 import { resultsHref } from "@/shell/season-tab/results-link";
 import { questBonusPercentOf } from "@/shell/season";
 import { seasonRealm } from "@/shell/season-pick";
-import { ClockChip } from "@/ui/design-system/kit/clock-chip";
 import { doorwayRealmFromId, toPaddedFeltAddress } from "./doorway/doorway-realm";
 import { DoorwayScreen } from "./doorway/doorway-screen";
 import { doorwayView } from "./doorway/doorway-view";
@@ -248,6 +247,7 @@ export const GameEntryModal = ({
   const seasonHasStarted = seasonStartAt != null && seasonStartAt <= nowSeconds;
   const endAt = worldMeta?.clock.end_at;
   const seasonNotEnded = endAt == null || endAt === 0 || nowSeconds <= endAt;
+  const seasonEnded = !isDevMode && (gameOver || (worldMeta != null && !seasonNotEnded));
   const seasonTimingValid = isDevMode || (seasonHasStarted && seasonNotEnded);
   const entryPreflightComplete = isGameEntryPreflightComplete({
     isSpectateMode,
@@ -673,6 +673,7 @@ export const GameEntryModal = ({
     signedIn: sessionStatus === "signed-in",
     accountError,
     foundingFailed: settleStage === "error" && !isFrontierMode,
+    ended: seasonEnded,
   });
 
   const doorwayRealm =
@@ -714,7 +715,6 @@ export const GameEntryModal = ({
       wide={choosingHome && !warnsOfSide && (choosesAspect || isFrontierMode) && !choosingSource}
       verb={showsHomePicker ? undefined : foundButton}
     >
-      {phase === "settlement-waiting" && <ClockChip prefix="starts" at={seasonStartAt ?? undefined} now={nowSeconds} />}
       {choosingHome && warnsOfSide && side && homeRealm !== null && (
         <RealmSideWarning
           side={side}
