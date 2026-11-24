@@ -128,20 +128,14 @@ export const followRealmsPlayer = (onChange: () => void): (() => void) => {
   };
 };
 
-/**
- * Every listed shard's games, for the signed-in player when there is one: each game then says whether the
- * player is in it. The read waits for the session, and a signed-in player's waits for their account address, so no
- * screen of theirs ever reads the anonymous directory in between and mistakes it for their own.
- */
 export const useDirectory = () => {
-  const { status, session } = useIdentitySession();
+  const { session } = useIdentitySession();
   const client = useQueryClient();
   const realmsId = session?.user.realmsId ?? null;
   return useQuery({
     queryKey: [...DIRECTORY_QUERY_KEY, realmsId],
     queryFn: async () =>
       fetchDirectories(realmsId ? realmsPlayerOf(realmsId, await client.fetchQuery(GUARDIAN_QUERY)) : null),
-    enabled: status !== "loading",
     refetchInterval: 15_000,
   });
 };

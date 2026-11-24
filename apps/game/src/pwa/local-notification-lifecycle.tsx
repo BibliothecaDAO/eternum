@@ -14,7 +14,7 @@ import { listenForIosAppPushTaps, reconcileIosAppPush } from "./ios-app-push";
  * once the session is known: a tap from a cold start waits for it.
  */
 export function LocalNotificationLifecycle() {
-  const { session, status } = useIdentitySession();
+  const { session, settled } = useIdentitySession();
   const owner = notificationOwnerOf(session);
   const [detachOwner, setDetachOwner] = useState<string | null>(null);
   const detach = async (owner: string) => {
@@ -39,26 +39,26 @@ export function LocalNotificationLifecycle() {
     });
   }, []);
   useEffect(() => {
-    if (status === "loading") return;
+    if (!settled) return;
     void reconcilePushAccount().catch((error) => {
       setDetachOwner(owner ?? "0x0");
       reportNotificationDeliveryError(error);
     });
-  }, [status, owner]);
+  }, [settled, owner]);
   useEffect(() => {
     if (!owner) return;
     return startPushForegroundLifecycle(owner);
   }, [owner]);
   useEffect(() => {
     const app = iosAppBridge();
-    if (!app || status === "loading") return;
+    if (!app || !settled) return;
     void reconcileIosAppPush(app, owner ?? null).catch(reportNotificationDeliveryError);
     const taps = listenForIosAppPushTaps(app);
     return () => void taps.remove();
-  }, [status, owner]);
+  }, [settled, owner]);
   return (
     <>
-      {status !== "loading" && <LoadPreferences key={owner ?? "anonymous"} owner={owner} />}
+      {settled && <LoadPreferences key={owner ?? "anonymous"} owner={owner} />}
       {detachOwner && (
         <aside
           role="alert"

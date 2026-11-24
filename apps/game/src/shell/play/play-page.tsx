@@ -63,6 +63,13 @@ export const PlayPage = () => {
       <div data-play-page className="play-grid">
         <section className="flex min-w-0 flex-col gap-3">
           <LeadOrState facts={facts} />
+          {facts.identityFailure && (
+            <ServiceFailure
+              service="identity"
+              error={facts.identityFailure.error}
+              retry={facts.identityFailure.retry}
+            />
+          )}
           {facts.board && <SourceGaps gaps={facts.gaps} />}
         </section>
         {facts.board &&
@@ -105,12 +112,6 @@ const isPreseason = (
 } => facts.opening !== null && facts.board !== undefined && facts.board.lead === null && facts.gaps.length === 0;
 
 const LeadOrState = ({ facts }: { facts: PlayFacts }) => {
-  if (facts.identity.status === "loading" && facts.identity.error !== null)
-    return (
-      <QuietLead title={WORDS.play}>
-        <ServiceFailure service="identity" error={facts.identity.error} retry={facts.identity.retry} />
-      </QuietLead>
-    );
   if (facts.directory.isError)
     return (
       <QuietLead title={WORDS.play}>

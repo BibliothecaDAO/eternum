@@ -207,16 +207,18 @@ export const resolveBootPhase = ({
 const resolveReconnectStatus = ({
   hasResolvedAccount,
   identityStatus,
+  identitySettled,
   provisioningError,
 }: {
   hasResolvedAccount: boolean;
   identityStatus: IdentitySessionStatus;
+  identitySettled: boolean;
   provisioningError: string | null;
 }): PlayRouteReconnectStatus => {
   if (hasResolvedAccount) return "connected";
   if (provisioningError) return "failed";
-  if (identityStatus === "loading") return "connecting";
   if (identityStatus === "signed-in") return "restoring";
+  if (!identitySettled) return "connecting";
   return "idle";
 };
 
@@ -241,7 +243,7 @@ export const usePlayRouteBootSnapshot = () => usePlayRouteBootStore();
 export const usePlayRouteBootController = (): PlayRouteBootControllerState => {
   const { pathname, search } = useLocation();
   const gameplayAccount = useAccountStore((state) => state.account);
-  const { status: identityStatus } = useIdentitySession();
+  const { status: identityStatus, settled: identitySettled } = useIdentitySession();
   const setShowBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
   const entryContext = useMemo(() => resolveEntryContextFromPlayRoute({ pathname, search }), [pathname, search]);
   const canonicalEntry = useMemo(() => resolveCanonicalPlayEntry(entryContext), [entryContext]);
@@ -289,6 +291,7 @@ export const usePlayRouteBootController = (): PlayRouteBootControllerState => {
   const reconnectStatus = resolveReconnectStatus({
     hasResolvedAccount: resolvedAccount !== null,
     identityStatus,
+    identitySettled,
     provisioningError: reconnectError,
   });
 

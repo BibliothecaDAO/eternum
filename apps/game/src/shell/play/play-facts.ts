@@ -43,7 +43,7 @@ const resultsGap = (player: Read, history: Read & { data?: { failures: readonly 
     : gapOf("results", history, history.data?.failures.length ? history.data.failures : null);
 
 export const usePlayFacts = () => {
-  const { status, error: identityError, retry: retryIdentity } = useIdentitySession();
+  const { status, settled, error: identityError, retry: retryIdentity } = useIdentitySession();
   const directory = useDirectory();
   const calendar = useSeasonCalendar();
   const now = useNowSeconds();
@@ -52,14 +52,14 @@ export const usePlayFacts = () => {
   const history = useRecentResults(RECENT_FINISHED, player.data, signedIn && player.data !== null, "frontier");
   const games = directory.data?.games ?? [];
   const finished = signedIn ? (history.data?.games ?? []) : [];
-  const known = directory.isSuccess && status !== "loading";
+  const known = directory.isSuccess;
   const board = known ? playBoard({ signedIn, games, finished, seenResults: readSeenResults() }) : undefined;
   const gaps = [gapOf("season", calendar), signedIn ? resultsGap(player, history) : null].filter(
     (gap): gap is SourceGap => gap !== null,
   );
   const opening = calendar.data ? seasonOpening(calendar.data.phases, now) : null;
-  const identity = { status, error: identityError ?? null, retry: retryIdentity };
-  return { identity, directory, now, games, finished, signedIn, board, gaps, opening };
+  const identityFailure = !settled && identityError !== null ? { error: identityError, retry: retryIdentity } : null;
+  return { identityFailure, directory, now, games, finished, signedIn, board, gaps, opening };
 };
 
 export type PlayFacts = ReturnType<typeof usePlayFacts>;

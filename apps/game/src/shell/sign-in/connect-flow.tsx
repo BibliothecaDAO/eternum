@@ -41,7 +41,7 @@ import { StartStep } from "./start-step";
  * shows a one-time code instead, and the provider's step here takes it (apps/realms/server/social-handoff.ts).
  */
 export const ConnectFlow = () => {
-  const { status, session } = useIdentitySession();
+  const { session, settled } = useIdentitySession();
   const { request, nameDismissed, close } = useConnectStore();
   const returned = useReturnedFailure();
   const refresh = useIdentitySessionStore((state) => state.refresh);
@@ -59,7 +59,7 @@ export const ConnectFlow = () => {
   const naming = useDefaultName(session, named, refresh);
   const invitation = useStandingPrompt("wallet-invitation", named && payoutAddressOf(session.user) === null);
 
-  if (status === "loading") return null;
+  if (!settled && !request && !returned.line) return null;
   if (named) {
     if (!invitation.open) return null;
     return (
