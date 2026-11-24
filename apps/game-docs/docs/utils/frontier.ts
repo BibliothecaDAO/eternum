@@ -289,11 +289,11 @@ const combatRules: CombatRules = {
   },
 };
 
-const makeTroops = (category: ExchangeTroops["category"], count: number, staminaAmount = 600): ExchangeTroops => ({
+const makeTroops = (category: ExchangeTroops["category"], count: number): ExchangeTroops => ({
   category,
   tier: "T1",
   count: BigInt(count) * PRECISION,
-  stamina: { amount: BigInt(staminaAmount), settled_at: 0, remainder: 0 },
+  stamina: { amount: BigInt(stamina.staminaInitial), settled_at: 0, remainder: 0 },
   boosts: {
     incr_damage_dealt_percent_num: 0,
     incr_damage_dealt_end_at: 0,
@@ -323,7 +323,7 @@ const runFight = (
 ) => {
   const forecast = forecastFight(
     makeTroops(attackerCategory, attackerCount),
-    makeTroops(defenderCategory, defenderCount, 0),
+    makeTroops(defenderCategory, defenderCount),
     {
       timestamp: 0,
       attackerBiome: BiomeType.Grassland,
