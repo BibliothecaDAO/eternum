@@ -235,8 +235,14 @@
   text-transform: uppercase;
   cursor: pointer;
 }
-.frontier-rank-up:hover {
+.frontier-rank-up:hover:not(:disabled) {
   filter: brightness(1.08);
+}
+.frontier-rank-up:disabled {
+  border-color: var(--hud-line-strong);
+  background: var(--hud-well);
+  color: var(--hud-muted);
+  cursor: not-allowed;
 }
 
 .frontier-stocks {
