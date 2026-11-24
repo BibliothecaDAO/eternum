@@ -7,7 +7,6 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { aspects, ordersOfAspect } from "@bibliothecadao/types";
 
 import release from "../../../../../contracts/l3/world-native/schema/release-definition.json";
-import { formatUtcOpening } from "@/ui/design-system/kit/words";
 
 import type { SeasonCalendar } from "../season-calendar";
 import type { DirectoryGame } from "../herald";
@@ -429,13 +428,16 @@ describe("the season's countdown, while its first day is ahead and Play has no g
   });
 
   it("shows a signed-out visitor the UTC date, live countdown, Create your Realm when no testnet is live, and optional 4 Aspects", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(Date.UTC(2026, 10, 23, 12, 0, 0));
+    const fixedStartsAt = Date.UTC(2026, 11, 2, 12, 0, 0) / 1000;
     reads.signedIn = false;
     reads.directory = answered({ games: [] });
-    reads.calendar = answered(seasonOne(startsAt));
+    reads.calendar = answered(seasonOne(fixedStartsAt));
     quietPlay();
     const page = await mount();
     const countdown = page.container.querySelector("[data-season-countdown]")!;
-    expect(countdown.textContent).toContain(`Opens ${formatUtcOpening(startsAt, now)}`);
+    expect(countdown.textContent).toContain("Opens 2 December, 12:00 UTC");
     expect(countdown.querySelectorAll('[role="timer"]')).toHaveLength(1);
     expect(countdown.textContent).toContain(
       `4 Aspects, ${Number(release.definition.economy.race.Some.season_days)} days, one hyperstructure to build.`,
