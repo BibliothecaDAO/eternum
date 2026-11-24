@@ -10,13 +10,12 @@ import {
   getDefendingGuards,
   oathAttackStamina,
   isCleanWin,
+  isSupplyPost,
   oathSitePay,
   siteHoldsOath,
   siteKindOf,
-  resolveFirstStrike,
   type AttackForecast,
   type AttackRefusal,
-  type FirstStrikeSide,
 } from "@bibliothecadao/eternum";
 import {
   readSiteReward,
@@ -63,10 +62,11 @@ export interface SiteCardPlan {
   attackStamina: number;
   /** Whether the selected army's troops reach the target from where they stand: Attack now, or Move first. */
   inReach: boolean;
-  firstStrike: FirstStrikeSide;
   fight: SiteFight | undefined;
   blocked: AttackRefusal | undefined;
   holdsOath: boolean;
+  /** Whether this army's clear would make the site a supply post its armies refill beside today. */
+  opensPost: boolean;
 }
 
 /**
@@ -101,10 +101,15 @@ export const readSiteCard = (
         : undefined,
     payout: reward && fittingPayout(store, site.game_id, reward, attack),
     holdsOath: siteHoldsOath(store, site),
+    opensPost: attack !== null && clearOpensPost(store, site, attack),
     attackStamina: attackStaminaOf(store, attack),
     ...planAttack(planned),
   };
 };
+
+/** The supply post rule asked of the site as this army's clear would leave it. */
+const clearOpensPost = (store: NativeFactStore, site: NativeRows["ExpeditionSite"], { army, timestamp }: SiteAttack) =>
+  isSupplyPost(store, { ...site, clear: { explorer_id: army.explorer_id, home_id: army.owner, reward: null } }, army.owner, timestamp);
 
 const attackStaminaOf = (store: NativeFactStore, attack: SiteAttack | null): number => {
   const base = configManager.getCombatRules().stamina.stamina_attack_req;
@@ -137,6 +142,7 @@ export const readArmyCard = (
     kind: "Army",
     payout: null,
     holdsOath: false,
+    opensPost: false,
     attackStamina: attackStaminaOf(store, attack),
     ...planAttack(attack ? forecastFrom(store, attack, army.explorer_id) : undefined),
   };
@@ -147,7 +153,6 @@ export interface DeepSiteFight {
   defender: number;
   attackerTroops: Pick<Troops, "category" | "tier">;
   defenderTroops: Pick<Troops, "category" | "tier">;
-  firstStrike: FirstStrikeSide;
   result: SiteFight | undefined;
 }
 
@@ -166,7 +171,6 @@ export function readDeepSiteFight(
     defender: Number(sides.defender.troops.count / PRECISION),
     attackerTroops: { category: sides.attacker.troops.category, tier: sides.attacker.troops.tier },
     defenderTroops: { category: sides.defender.troops.category, tier: sides.defender.troops.tier },
-    firstStrike: forecastFirstStrike(forecast),
     result: siteFight(forecast),
   };
 }
@@ -209,13 +213,12 @@ const troopsOf = (troops: Pick<Troops, "category" | "tier" | "count">) => ({
 
 const planAttack = (
   planned: ReturnType<typeof forecastFrom> | undefined,
-): Pick<SiteCardPlan, "inReach" | "firstStrike" | "fight" | "blocked"> => {
-  if (!planned) return { inReach: false, firstStrike: null, fight: undefined, blocked: undefined };
+): Pick<SiteCardPlan, "inReach" | "fight" | "blocked"> => {
+  if (!planned) return { inReach: false, fight: undefined, blocked: undefined };
   const { inReach, forecast } = planned;
   const refusal = forecast?.outcome === "refused" ? forecast.refusal : undefined;
   return {
     inReach,
-    firstStrike: forecastFirstStrike(forecast),
     fight: siteFight(forecast),
     blocked: refusal === undefined || refusal === "insufficient-stamina" ? undefined : refusal,
   };
@@ -235,14 +238,6 @@ const clearsCleanly = (forecast: AttackForecast | undefined, guardsLeft: number)
   guardsLeft <= 1 &&
   forecast.exchange.defender.count === 0n &&
   isCleanWin(forecast.exchange.attacker.count + forecast.exchange.attackerLoss, forecast.exchange.attacker.count);
-
-const forecastFirstStrike = (forecast: AttackForecast | undefined): FirstStrikeSide => {
-  if (!forecast) return null;
-  if (forecast.outcome === "fights") return forecast.exchange.firstStrike;
-  return forecast.sides?.defender
-    ? resolveFirstStrike(forecast.sides.attacker.troops.category, forecast.sides.defender.troops.category)
-    : null;
-};
 
 const siteFight = (forecast: AttackForecast | undefined): SiteFight | undefined => {
   if (forecast?.outcome === "fights") {

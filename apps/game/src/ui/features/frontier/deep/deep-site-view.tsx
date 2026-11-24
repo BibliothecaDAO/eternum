@@ -156,18 +156,12 @@ const FightPreview = ({
       ours={{
         label: attackerLabel,
         mark: <Icon name={troopMeaning(fight.attackerTroops)} size={96} className="size-full" />,
-        heading: attackerLabel,
-        category: fight.attackerTroops.category,
-        hitsFirst: fight.firstStrike === "attacker",
         before: fight.army,
         kept: result && fight.army - result.troopsLost,
       }}
       theirs={{
         label: defenderLabel,
         mark: <Icon name={defenderArt} size={96} className="size-full" />,
-        heading: defenderLabel,
-        category: fight.defenderTroops.category,
-        hitsFirst: fight.firstStrike === "defender",
         before: fight.defender,
         kept: result?.guardLeft,
       }}

@@ -594,6 +594,14 @@ export const RANK = "Rank";
 export const SITES = "Sites";
 export const SITES_CLEARED = "Sites cleared";
 export const SITE_OATH = { label: "Oath", holds: "Holds an Oath", rule: "Clearing it opens an Oath pick" } as const;
+/** A camp the player's army clears on today's band: their armies refill beside it until the day ends. */
+export const SUPPLY_POST = {
+  title: "Supply Post",
+  chip: "Post",
+  open: "Post open",
+  rule: "Clearing it opens a supply post: your armies refill beside it until the day ends",
+  until: "Open until the day ends",
+} as const;
 /**
  * How the Season board ranks, said where players look (owner, 4 November 2026: "ppl have asked how to increase sites in the
  * leaderboard"): Herald ranks by sites cleared, then deepest depth (frontier-leaderboard.ts compareStandings), and every
@@ -738,7 +746,7 @@ export const FIGHT_WORDS = {
   armyLostNext: "Your troops died in battle. Deploy a new army from your Realm.",
   victory: "Victory likely",
   holds: "The guard survives",
-  hitsFirst: "Hits first",
+  defeated: "Defeated",
 } as const;
 /**
  * What an attack costs a side, under its bar (a player: "# of troops lost, % lost/remaining"; owner, 3 November 2026:
@@ -1156,6 +1164,7 @@ export const TRANSFER_TROOPS = {
 /** Troops raised from the realm's stock into its army beside it (the realm selected, the army right-clicked). */
 export const REINFORCE = {
   verb: "Reinforce",
+  verbAmount: (amount: string) => `Reinforce +${amount}`,
   title: (army: string) => `Reinforce ${army}`,
   titleAmount: (army: string, amount: string) => `Reinforce ${army} (+${amount})`,
   fromHome: (amount: string, troops: string) => `+${amount} ${troops} from home`,
