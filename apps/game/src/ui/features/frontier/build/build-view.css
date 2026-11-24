@@ -3,13 +3,15 @@
   flex-direction: column;
 }
 .build-grid {
+  --build-tile: clamp(64px, calc((theme(spacing.hud-phone-panel) - 140px) / 3), 100px);
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 6px;
 }
 [data-build-sheet] .ui-card[data-size="sm"] {
   min-height: 0;
-  height: 100px;
+  height: var(--build-tile);
+  container-type: size;
   border-radius: 12px;
   background: var(--hud-well);
 }
@@ -107,8 +109,20 @@
 .build-does {
   color: var(--hud-good);
 }
+@container (max-height: 90px) {
+  [data-build-sheet] .ui-card[data-size="sm"] .ui-card__picture,
+  [data-build-sheet] .ui-card[data-size="sm"] .ui-card__picture img {
+    height: 22px;
+    max-height: 22px;
+  }
+  [data-build-sheet] .ui-card[data-size="sm"] .ui-card__title,
+  [data-build-sheet] .ui-card[data-size="sm"] .ui-card__detail {
+    line-height: 13px;
+  }
+}
 @media (min-width: 1024px) {
   .build-grid {
+    --build-tile: 100px;
     gap: 8px;
   }
 }
