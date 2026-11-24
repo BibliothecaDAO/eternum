@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { aspectName, aspects } from "@bibliothecadao/types";
 import { iconUrl } from "@/ui/design-system/icon-meaning";
 import { HudSheet } from "@/ui/design-system/kit/hud-elements";
-import { BUILD, CLOSE, OPENING_WORDS, SETTINGS } from "@/ui/design-system/kit/words";
+import { BUILD, CLOSE, MENU, OPENING_WORDS, SETTINGS } from "@/ui/design-system/kit/words";
 import { OPENING, OPENING_MOMENTS, teacherAspectOf, type OpeningMoment } from "../opening/opening";
 import { OPENING_RULES } from "../opening/opening-fixtures";
 import { ASPECT_EMISSARY_PORTRAITS } from "./aspect-emissaries";
@@ -299,6 +299,14 @@ describe("AspectEmissaryDock", () => {
     renderOverSheet("barracks", SETTINGS);
     expect(dock().dataset.tutorialForm).toBe("reminder");
     expect(onDismiss).not.toHaveBeenCalled();
+  });
+
+  it("folds again when one sheet replaces another in the same moment", () => {
+    const { dock } = renderOverSheet("barracks", SETTINGS);
+    press(OPENING_WORDS.showLesson);
+    expect(dock().dataset.tutorialForm).toBe("card");
+    renderOverSheet("barracks", MENU);
+    expect(dock().dataset.tutorialForm).toBe("reminder");
   });
 
   it("closes the lesson from the reminder's cross", () => {

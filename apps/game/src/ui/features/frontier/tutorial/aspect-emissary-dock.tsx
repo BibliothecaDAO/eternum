@@ -37,9 +37,8 @@ export function AspectEmissaryDock({
   const [skipAskedOn, setSkipAskedOn] = useState<OpeningMoment | null>(null);
   const openFrames = useOpenFrameLabels();
   const [expanded, setExpanded] = useState(false);
-  useEffect(() => {
-    if (openFrames.length === 0) setExpanded(false);
-  }, [openFrames.length]);
+  const framesOpen = openFrames.join("\n");
+  useEffect(() => setExpanded(false), [framesOpen]);
   if (aspectId === null) return null;
   const emissary = resolveAspectEmissary(aspectId);
   const phone = layout === "phone";
