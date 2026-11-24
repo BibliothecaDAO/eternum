@@ -2273,6 +2273,8 @@ export const ARMY_DETAIL = {
    */
   revealPays: (amount: string) => `+${amount} a tile`,
   revealPaysLabel: `${ESSENCE} or ${LABOR},`,
+  stamina: "Stamina",
+  troops: (count: number) => formatCount(count, "troop"),
 } as const;
 
 /** Deleting the picked army, for good. */

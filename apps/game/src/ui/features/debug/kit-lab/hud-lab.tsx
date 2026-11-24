@@ -13,7 +13,7 @@ import { TransferTroopsSheet, useSelectedTransfer } from "@/ui/features/frontier
 import { useGame } from "@/hooks/context/game-context";
 import { realmMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { homeIcon } from "@/ui/design-system/home-icons";
-import { HudIconButton, HudSheet } from "@/ui/design-system/kit/hud-elements";
+import { HudIconButton, HudSheet, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
 import {
   ARMY,
   ARMY_MANAGEMENT,
@@ -1479,14 +1479,12 @@ const LabArmy = ({ army }: { army: LabArmySheet }) => {
       beside={<HudIconButton icon="trash" label={ARMY_MANAGEMENT.remove} kind="danger" size="sm" onClick={noop} />}
       onClose={noop}
     >
-      <ArmyDetail
-        army={view}
-        refill={
-          army.fragments === undefined || full ? undefined : (
-            <RefillPrice price={fragmentsToFill(stamina)} held={army.fragments} onRefill={noop} />
-          )
-        }
-      />
+      <ArmyDetail army={view} />
+      {army.fragments !== undefined && !full && (
+        <HudWindowFoot>
+          <RefillPrice price={fragmentsToFill(stamina)} held={army.fragments} onRefill={noop} />
+        </HudWindowFoot>
+      )}
     </HudSheet>
   );
 };
