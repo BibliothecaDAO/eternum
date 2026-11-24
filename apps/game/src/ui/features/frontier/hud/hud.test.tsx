@@ -28,7 +28,7 @@ import { DayPill, DayRing } from "./day-pill";
 import { HeaderStores, TOP_BAR_STORE_KINDS } from "./header-stores";
 import { PhoneTopBarView, TabletTopBarView } from "./phone-top-bar";
 import { PhoneTabBar, TabletPlaces } from "./frontier-nav";
-import { HUD_PLACES, resolveMenuPlaces } from "./hud-places";
+import { HUD_PLACES } from "./hud-places";
 import { OfflineBanner, OfflineNotice } from "./offline-notice";
 import { type StoreReading, storeLine, storeRateText } from "./status-strip";
 
@@ -457,7 +457,7 @@ describe("the phone tab bar", () => {
     act(() =>
       root.render(<PhoneTabBar isMapView surface="today" onSurface={onSurface} feedUnread={0} chatUnread={0} />),
     );
-    expect(barButtons()).toEqual(["World", "Season", "Chat", "Menu"]);
+    expect(barButtons()).toEqual(["World", "Research", "Season", "Chat", "Menu"]);
     expect(host.querySelector('button[aria-label="Menu"]')!.getAttribute("aria-current")).toBe("page");
     act(() => host.querySelector<HTMLButtonElement>('button[aria-label="Menu"]')!.click());
     expect(onSurface).toHaveBeenLastCalledWith("menu");
@@ -505,16 +505,8 @@ describe("the phone tab bar", () => {
     expect(host.textContent).not.toContain("Paladins");
   });
 
-  it("reads the three non-Season Menu tiles from HUD_PLACES in cornice order", () => {
+  it("orders HUD_PLACES as the cornice does", () => {
     expect(HUD_PLACES.map((place) => place.key)).toEqual(["research", "season", "feed", "chat"]);
-    const allOpen = resolveMenuPlaces({
-      aspectsOpen: true,
-      researchOpen: true,
-      researchReady: true,
-      feedUnread: 2,
-      chatUnread: 1,
-    });
-    expect(allOpen.map((place) => place.key)).toEqual(["research", "feed", "chat"]);
   });
 
   it("dots Research only while a node can be researched now", () => {
@@ -525,45 +517,39 @@ describe("the phone tab bar", () => {
 });
 
 describe("the Menu", () => {
-  it("opens Today, Season with the rank and Settings, leaves for the app on Exit, and closes on its ×, with no Resume", () => {
+  it("holds what the tab bar does not: the Feed with its unread count, Today, Shop, Settings and How to play, then Exit", () => {
     const handlers = {
+      onFeed: vi.fn(),
+      onShop: vi.fn(),
       onToday: vi.fn(),
-      onSeason: vi.fn(),
       onSettings: vi.fn(),
       onExit: vi.fn(),
       onClose: vi.fn(),
     };
-    act(() => root.render(<MenuPage rank="#12" guide="https://docs.realms.party/frontier/" {...handlers} />));
+    act(() => root.render(<MenuPage events={2} guide="https://docs.realms.party/frontier/" {...handlers} />));
+    const words = [...document.querySelectorAll("section[aria-label='Menu'] nav .ui-row")].map(
+      (row) => row.textContent,
+    );
+    expect(words).toEqual(["Feed2", "Today", "Shop", "Settings", "How to playdocs.realms.party"]);
     const button = (word: string) =>
       [...document.querySelectorAll<HTMLButtonElement>("section[aria-label='Menu'] button")].find((candidate) =>
         candidate.textContent?.startsWith(word),
       )!;
-    // The rank sits beside the row's own button, in the row.
-    expect(button("Season").closest(".ui-row")?.textContent).toBe("Season#12");
     for (const [word, handler] of [
+      ["Feed", handlers.onFeed],
+      ["Shop", handlers.onShop],
       ["Today", handlers.onToday],
-      ["Season", handlers.onSeason],
       ["Settings", handlers.onSettings],
       ["Exit", handlers.onExit],
     ] as const) {
       act(() => button(word).click());
       expect(handler).toHaveBeenCalled();
     }
-    // Owner, 30 October 2026: "Ok to cut resume": the frame's × closes the Menu, and nothing else says the same.
     expect(button("Resume")).toBeUndefined();
     act(() =>
       document.querySelector<HTMLButtonElement>("section[aria-label='Menu'] button[aria-label='Close']")!.click(),
     );
     expect(handlers.onClose).toHaveBeenCalled();
-  });
-
-  it("has no Production: each store's card opens from its own plate", () => {
-    const ways = { onToday: vi.fn(), onSeason: vi.fn(), onSettings: vi.fn(), onExit: vi.fn(), onClose: vi.fn() };
-    act(() => root.render(<MenuPage rank="—" guide="https://docs.realms.party/frontier/" {...ways} />));
-    const words = [...document.querySelectorAll("section[aria-label='Menu'] nav .ui-row")].map(
-      (row) => row.textContent,
-    );
-    expect(words).toEqual(["Today", "Season—", "Settings", "How to playdocs.realms.party"]);
   });
 });
 

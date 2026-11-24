@@ -306,7 +306,7 @@ describe("reading the season", () => {
     opened: seen(["Realm", "Season"], ["Season"]),
     closed: seen(["Realm", "Feed"], ["Feed"]),
   };
-  const phone = { desktop: false, menu: ["Menu"], opened: seen(["Season"]), closed: seen([]) };
+  const phone = { desktop: false, opened: seen(["Season"]), closed: seen([]) };
 
   it("completes on a desktop when the Season place lit and its board drew in the rail, then closed", () => {
     expect(verify({ seen: onTheMap, played: desktop }).status).toBe("completed");
@@ -321,9 +321,8 @@ describe("reading the season", () => {
     expect(verify({ seen: onTheMap, played: stayed }).reason).toBe("the Season's board did not close");
   });
 
-  it("reads a phone's season from its Menu: the board drew, then its × closed it", () => {
+  it("reads a phone's season from its tab: the board drew, then its × closed it", () => {
     expect(verify({ seen: onTheMap, played: phone }).status).toBe("completed");
-    expect(verify({ seen: onTheMap, played: { ...phone, menu: [] } }).reason).toBe("the Menu did not open");
     expect(verify({ seen: onTheMap, played: { ...phone, opened: seen([]) } }).reason).toBe(
       "the Season's board was not drawn",
     );

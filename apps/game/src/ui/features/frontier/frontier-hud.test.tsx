@@ -602,8 +602,8 @@ it("opens a phone's Menu as a page in the one frame, which its ×, Escape and Me
 });
 
 it.each([
+  ["Feed", "Feed"],
   ["Today", "Today"],
-  ["Season", "Season"],
   ["Settings", "Settings"],
 ])(
   "opens %s from a phone's Menu whichever part of its row is tapped: its icon, its words or its chevron",
@@ -641,9 +641,9 @@ const fromMenu = async (word: string) => {
 };
 
 const PHONE_SURFACES = {
-  research: { label: "Research", open: () => fromMenu("Research") },
+  research: { label: "Research", open: () => pressPlace("Research") },
   feed: { label: "Feed", open: () => fromMenu("Feed") },
-  chat: { label: "Chat", open: () => fromMenu("Chat") },
+  chat: { label: "Chat", open: () => pressPlace("Chat") },
   menu: { label: "Menu", open: () => pressPlace("Menu") },
   today: { label: "Today", open: () => fromMenu("Today") },
   season: { label: "Season", open: () => pressPlace("Season") },
@@ -719,30 +719,31 @@ const closeFrame = (label: string) =>
 
 // Review, 30 October 2026: every page now keeps a history entry, so a page that replaces another in one press (Menu's
 // Season) must take over its entry, or the next back lands on an entry no surface owns and does nothing.
-it("leaves one back to the page before the game once the Menu's Season is opened and closed", async () => {
+it("leaves one back to the page before the game once the Menu's Today is opened and closed", async () => {
   await enterFromAnotherPage();
-  await fromMenu("Season");
-  expect([surfaceNamed("Season") !== null, surfaceNamed("Menu")]).toEqual([true, null]);
-  await closeFrame("Season");
+  await fromMenu("Today");
+  expect([surfaceNamed("Today") !== null, surfaceNamed("Menu")]).toEqual([true, null]);
+  await closeFrame("Today");
   await historySettles();
   await systemBack();
   expect(window.location.pathname).toBe("/before-the-game");
 });
 
-it("closes the Menu's Season with the system back, and the next back leaves the game", async () => {
+it("closes the Menu's Today with the system back, and the next back leaves the game", async () => {
   await enterFromAnotherPage();
-  await fromMenu("Season");
+  await fromMenu("Today");
   await historySettles();
   await systemBack();
-  expect([surfaceNamed("Season"), surfaceNamed("Menu")]).toEqual([null, null]);
+  expect([surfaceNamed("Today"), surfaceNamed("Menu")]).toEqual([null, null]);
   expect(window.location.pathname).toBe("/g/0x1ab9/1/map");
   await systemBack();
   expect(window.location.pathname).toBe("/before-the-game");
 });
 
-it("keeps one entry while Menu swaps pages, and one back closes the last", async () => {
+it("keeps one entry while the places swap pages, and one back closes the last", async () => {
   await enterFromAnotherPage();
-  for (const place of ["Feed", "Chat", "Research"]) await fromMenu(place);
+  await fromMenu("Feed");
+  for (const place of ["Chat", "Research"]) await pressPlace(place);
   await pressPlace("Menu");
   await historySettles();
   expect(surfaceNamed("Menu")).not.toBeNull();
@@ -760,7 +761,7 @@ it("leaves no entry behind however often pages open and close", async () => {
     await pressPlace("Menu");
     await fromMenu("Today");
     await closeFrame("Today");
-    await fromMenu("Season");
+    await pressPlace("Season");
     await fromMenu("Feed");
     await closeFrame("Feed");
     await historySettles();

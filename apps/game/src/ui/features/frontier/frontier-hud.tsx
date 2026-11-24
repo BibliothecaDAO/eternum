@@ -259,15 +259,7 @@ const FrontierHudBody = ({
         onClose={close}
       />
     ) : surface === "menu" ? (
-      <HudMenu
-        onOpen={setSurface}
-        onClose={close}
-        hasRealm={Boolean(own)}
-        researchReady={own ? canResearchNow(research?.nodes) : false}
-        events={feedUnread}
-        chatUnread={chat.unread}
-        fragments={own ? fragments : null}
-      />
+      <HudMenu onOpen={setSurface} onClose={close} events={feedUnread} shop={Boolean(own) && fragmentsHeld !== null} />
     ) : undefined;
   const realmVisible = Boolean(shown) && (desktop ? realmOpen : surface === "realm");
   const placesState = {
@@ -564,36 +556,22 @@ const PendingOrder = ({
 const HudMenu = ({
   onOpen,
   onClose,
-  hasRealm,
-  researchReady,
   events,
-  chatUnread,
-  fragments,
+  shop,
 }: {
   onOpen: (surface: HudSurface | null) => void;
   onClose: () => void;
-  hasRealm: boolean;
-  researchReady: boolean;
   events: number;
-  chatUnread: number;
-  fragments: number | null;
+  shop: boolean;
 }) => {
   const navigate = useNavigate();
-  const rank = useSeasonRank();
   const guide = useHowToPlay();
   return (
     <MenuPage
-      rank={rank}
-      onResearch={hasRealm ? () => onOpen("research") : undefined}
       onFeed={() => onOpen("feed")}
-      onChat={() => onOpen("chat")}
-      onShop={fragments !== null ? () => onOpen("shop") : undefined}
-      researchReady={researchReady}
+      onShop={shop ? () => onOpen("shop") : undefined}
       events={events}
-      chatUnread={chatUnread}
-      fragments={fragments}
       onToday={() => onOpen("today")}
-      onSeason={() => onOpen("season")}
       onSettings={() => onOpen("settings")}
       guide={guide}
       onExit={() => navigate("/")}

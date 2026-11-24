@@ -79,6 +79,3 @@ export const resolveHudPlaces = ({
         ];
     }
   });
-
-export const resolveMenuPlaces = (state: HudPlacesState): HudPlaceItem[] =>
-  resolveHudPlaces(state).filter((place) => place.key !== "season");

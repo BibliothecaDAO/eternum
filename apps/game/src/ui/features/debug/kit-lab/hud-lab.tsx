@@ -1211,17 +1211,10 @@ export const HudLab = () => {
             <LabResearch />
           ) : lab.menu ? (
             <MenuPage
-              rank="#12"
-              onResearch={noop}
               onFeed={noop}
-              onChat={noop}
               onShop={noop}
-              researchReady={!lab.offline}
               events={lab.offline ? 0 : 2}
-              chatUnread={lab.offline ? 0 : 3}
-              fragments={240}
               onToday={noop}
-              onSeason={noop}
               onSettings={noop}
               guide={HOW_TO_PLAY_BY_MODE.frontier}
               onExit={noop}

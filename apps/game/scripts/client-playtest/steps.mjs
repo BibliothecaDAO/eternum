@@ -2156,17 +2156,16 @@ function recordedStill(onMap) {
 
 /**
  * The season's board as a player reads it: a desktop's Season place opens it in the rail and a second press closes it;
- * a phone opens it from the Menu and closes it with the board's ×, as a phone has no Escape key.
+ * a phone opens it from its tab and closes it with the board's ×, as a phone has no Escape key.
  */
-async function readTheSeason(input) {
-  if (!onADesktop()) return { desktop: false, ...(await readTheSeasonInTheMenu(input)) };
-  const { browser } = input;
+async function readTheSeason({ browser }) {
   await openPlace(browser, HUD_WORDS.season);
   await sleep(2_000);
   const opened = browser.observe();
-  await openPlace(browser, HUD_WORDS.season);
+  if (onADesktop()) await openPlace(browser, HUD_WORDS.season);
+  else browser.click(HUD_WORDS.close);
   await sleep(1_000);
-  return { desktop: true, opened, closed: browser.observe() };
+  return { desktop: onADesktop(), opened, closed: browser.observe() };
 }
 
 /** The route's hex as the address names it: normalized, the same place on every client. */
@@ -2333,24 +2332,9 @@ function visitMissed(visit) {
 function seasonReadAndClosed({ played }) {
   if (played.desktop && !played.opened.pressed.includes(HUD_WORDS.season))
     return failed("the Season place was not lit", played);
-  if (!played.desktop && !played.menu.includes(HUD_WORDS.menu))
-    return failed(`the ${HUD_WORDS.menu} did not open`, played);
   if (!played.opened.panels.includes(HUD_WORDS.season)) return failed("the Season's board was not drawn", played);
   if (played.closed.panels.includes(HUD_WORDS.season)) return failed("the Season's board did not close", played);
   return completed(played);
-}
-
-async function readTheSeasonInTheMenu({ browser }) {
-  browser.click(HUD_WORDS.menu);
-  await sleep(1_500);
-  // The Menu is a page of the place bar, drawn as a panel over the map.
-  const menu = browser.observe().panels;
-  browser.click(HUD_WORDS.season);
-  await sleep(2_000);
-  const opened = browser.observe();
-  browser.click(HUD_WORDS.close);
-  await sleep(1_000);
-  return { menu, opened, closed: browser.observe() };
 }
 
 /** A Wheat ring or phone plate opens its store card; pressing it again closes the same card. */
