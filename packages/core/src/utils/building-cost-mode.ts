@@ -26,4 +26,4 @@ export const buildingCopyMultiplier = (standing: number, increaseBps: number): n
   1 + standing * standing * (increaseBps / 10_000);
 
 export const buildingCopyCost = (base: number, standing: number, increaseBps: number): number =>
-  base + standing * standing * base * (increaseBps / 10_000);
+  base * buildingCopyMultiplier(standing, increaseBps);
