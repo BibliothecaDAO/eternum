@@ -7,7 +7,7 @@ import { aspectName, aspects } from "@bibliothecadao/types";
 import { iconUrl } from "@/ui/design-system/icon-meaning";
 import { HudSheet } from "@/ui/design-system/kit/hud-elements";
 import { BUILD, CLOSE, MENU, OPENING_WORDS, SETTINGS } from "@/ui/design-system/kit/words";
-import { OPENING, OPENING_MOMENTS, teacherAspectOf, type OpeningMoment } from "../opening/opening";
+import { OPENING_MOMENTS, teacherAspectOf, type OpeningMoment } from "../opening/opening";
 import { OPENING_RULES } from "../opening/opening-fixtures";
 import { ASPECT_EMISSARY_PORTRAITS } from "./aspect-emissaries";
 import { AspectEmissaryDock } from "./aspect-emissary-dock";
@@ -318,11 +318,5 @@ describe("AspectEmissaryDock", () => {
   it("keeps the full card on a desktop, where sheets stand in the rail", () => {
     const { dock } = renderOverSheet("barracks", SETTINGS, "desktop");
     expect(dock().dataset.tutorialForm).toBe("card");
-  });
-
-  it("gives every lesson that asks for a sheet its line for inside that sheet", () => {
-    const asking = OPENING_MOMENTS.filter((moment) => "asks" in OPENING[moment]);
-    expect(asking.length).toBeGreaterThan(0);
-    expect(asking.filter((moment) => !(moment in OPENING_WORDS.inSheet))).toEqual([]);
   });
 });

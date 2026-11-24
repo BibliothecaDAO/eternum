@@ -54,7 +54,7 @@ export function AspectEmissaryDock({
   const form = dockForm({
     phone,
     openFrames,
-    asks: "asks" in spec ? spec.asks : undefined,
+    asks: "asks" in spec ? spec.asks.sheet : undefined,
     confirming: status === "completed",
     expanded,
   });
@@ -115,7 +115,7 @@ export function AspectEmissaryDock({
           <span className="emissary-dock__strip-text">
             <span className="emissary-dock__strip-title">{title}</span>
             <span className="emissary-dock__strip-line">
-              {completed ? completedLine : askingSkip ? OPENING_WORDS.skipFinal : sheetLine(moment, rules)}
+              {completed ? completedLine : askingSkip ? OPENING_WORDS.skipFinal : "asks" in spec ? spec.asks.line(rules) : null}
             </span>
           </span>
           <span className="emissary-dock__controls">
@@ -189,11 +189,6 @@ const dockForm = (dock: {
   if (dock.confirming || (dock.asks !== undefined && dock.openFrames.includes(dock.asks))) return "strip";
   return dock.expanded ? "card" : "reminder";
 };
-
-const sheetLine = (moment: OpeningMoment, rules: OpeningRules): string =>
-  moment in OPENING_WORDS.inSheet
-    ? OPENING_WORDS.inSheet[moment as keyof typeof OPENING_WORDS.inSheet](rules)
-    : OPENING_WORDS.actions[moment];
 
 const SkipControls = ({
   asking,
