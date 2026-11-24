@@ -70,6 +70,8 @@ const renderInvite = async (aspect?: number, queries = new QueryClient()) => {
     ),
   );
 };
+const inviteRead = (queries: QueryClient) =>
+  queries.getQueryCache().find({ predicate: ({ queryKey }) => queryKey.includes("invite") })?.state.status;
 const panel = () => host.querySelector('[aria-label^="Invite a friend"]');
 const button = (word: string) => [...host.querySelectorAll("button")].find((each) => each.textContent?.endsWith(word));
 
@@ -109,7 +111,7 @@ it("offers nothing and reports no failure when identity has no invite for the pl
   createInvite.mockResolvedValue(null);
   await renderInvite(2, queries);
   await vi.waitFor(() => expect(createInvite).toHaveBeenCalledOnce());
-  await vi.waitFor(() => expect(queries.isFetching()).toBe(0));
+  await vi.waitFor(() => expect(inviteRead(queries)).toBe("success"));
   expect(createInvite).toHaveBeenCalledOnce();
   expect(panel()).toBeNull();
   expect(host.textContent).not.toContain("could not be made");
@@ -120,7 +122,7 @@ it("asks identity again for an invite it had none for once the panel opens again
   createInvite.mockResolvedValue(null);
   await renderInvite(2, queries);
   await vi.waitFor(() => expect(createInvite).toHaveBeenCalledOnce());
-  await vi.waitFor(() => expect(queries.isFetching()).toBe(0));
+  await vi.waitFor(() => expect(inviteRead(queries)).toBe("success"));
   await act(async () => root.render(<></>));
   createInvite.mockResolvedValue({ code: "INVT2348", aspect: 2, chainId: getActiveGame()!.chainId, gameId: 1 });
   await renderInvite(2, queries);
