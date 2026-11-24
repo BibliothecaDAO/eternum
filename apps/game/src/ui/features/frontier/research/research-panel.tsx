@@ -1,12 +1,11 @@
 import "./research-tree.css";
 
-import { isOathResearch } from "@bibliothecadao/eternum";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
-import { HudButton, HudPage, HudRanked, HudTier, HudTierStep } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudPage, HudRanked, HudTier } from "@/ui/design-system/kit/hud-elements";
 import type { Fix } from "@/ui/design-system/kit/refusal";
-import { CLOSE, RESEARCH, RESEARCH_TREE, RESEARCHING, type Rank, tierNumeral } from "@/ui/design-system/kit/words";
-import { formatAmount, formatExact, formatShort, rankName } from "@bibliothecadao/types";
+import { RESEARCH, RESEARCH_TREE, RESEARCHING, type Rank, tierNumeral } from "@/ui/design-system/kit/words";
+import { formatAmount, formatShort, rankName } from "@bibliothecadao/types";
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   type Branch,
@@ -70,12 +69,9 @@ export const ResearchPanel = ({
           sending={sending.has(node.row)}
           fix={(need) => fixFor(need, node)}
           onResearch={() => onResearch(node)}
-          onClose={() => onPick(null)}
         />
       ) : (
-        <div className="research-bar-idle">
-          <span className="text-hud-label text-hud-muted">{RESEARCH_TREE.promptPick}</span>
-        </div>
+        <div className="research-bar-idle">{RESEARCH_TREE.promptPick}</div>
       )}
     </HudPage>
   );
@@ -494,88 +490,63 @@ const NodeActionBar = ({
   sending,
   fix,
   onResearch,
-  onClose,
 }: {
   node: TreeNode;
   sending: boolean;
   fix: (need: Need) => Fix | undefined;
   onResearch: () => void;
-  onClose: () => void;
 }) => {
   const missing = firstMissing(node);
   const fixing = missing && fix(missing);
-  const price = node.needs.filter(isPrice);
-  const showFooter = node.state !== "done" && (price.length > 0 || fixing || node.state === "ready");
+  const price = node.state === "done" ? [] : node.needs.filter(isPrice);
   return (
     <div data-lab="node-choice" className="research-bar">
-      <div className="research-bar__lead">
-        <span className="research-bar__icon">
-          <Icon name={node.icon} size={32} />
+      <div className="research-bar__copy">
+        <span data-choice-summary className="research-bar__name">
+          {node.name}
+          {" · "}
+          <HudRanked words={researchEffectLine(node)} />
         </span>
-        <div className="research-bar__copy">
-          <div className="research-bar__headline">
-            <span className="research-bar__name">{node.name}</span>
-            <LevelLine node={node} />
-          </div>
-          <div className="research-bar__meta">
-            <span data-choice-summary className="research-bar__line">
-              {node.gives.line}
-              {" · "}
-              <span className="tabular-nums text-hud-good">
-                <HudRanked words={researchEffectLine(node)} />
-              </span>
+        <span className="research-bar__meta">
+          {price.map((need) => (
+            <span
+              key={need.kind}
+              aria-label={needLine(need)}
+              className={cn(
+                "research-bar__price",
+                need.met ? "text-hud-ink" : node.state === "short" ? "text-hud-warn" : "text-hud-bad",
+              )}
+            >
+              <Icon name={need.kind} size={20} />
+              {formatAmount(need.need)}
             </span>
-            {missing && (
-              <span
-                data-lock-reason
-                className={cn("research-bar__reason", node.state === "short" ? "text-hud-warn" : "text-hud-bad")}
-              >
-                <Icon name={needIcon(missing)} size={14} />
-                <span>{needLine(missing)}</span>
-              </span>
-            )}
-          </div>
-        </div>
+          ))}
+          {node.state === "done" && <span className="text-hud-good">{RESEARCH_TREE.states.done}</span>}
+          {missing && !isPrice(missing) && (
+            <span data-lock-reason className="research-bar__reason text-hud-bad">
+              <Icon name={needIcon(missing)} size={16} />
+              <span>{needLine(missing)}</span>
+            </span>
+          )}
+        </span>
       </div>
-      <div className="research-bar__right">
-        {showFooter && (
-          <div data-research-footer className="research-bar__footer">
-            <span className="research-bar__prices">
-              {price.map((need) => (
-                <span
-                  key={need.kind}
-                  aria-label={needLine(need)}
-                  className={cn(
-                    "research-bar__price tabular-nums",
-                    need.met ? "text-hud-ink" : node.state === "short" ? "text-hud-warn" : "text-hud-bad",
-                  )}
-                >
-                  <Icon name={need.kind} size={14} />
-                  {formatAmount(need.need)}
-                </span>
-              ))}
-            </span>
-            {node.state === "ready" ? (
-              <HudButton
-                kind="primary"
-                busy={sending ? RESEARCHING : undefined}
-                aria-label={researchActionName(node)}
-                onClick={onResearch}
-              >
-                {RESEARCH_TREE.upgrade}
-              </HudButton>
-            ) : (
-              fixing && (
-                <HudButton kind="primary" icon={fixing.icon} onClick={fixing.onFix}>
-                  {fixing.word}
-                </HudButton>
-              )
-            )}
-          </div>
+      <div data-research-footer className="research-bar__action">
+        {node.state === "ready" ? (
+          <HudButton
+            kind="primary"
+            busy={sending ? RESEARCHING : undefined}
+            aria-label={researchActionName(node)}
+            onClick={onResearch}
+          >
+            {RESEARCH_TREE.upgrade}
+          </HudButton>
+        ) : (
+          fixing && (
+            <HudButton kind="primary" icon={fixing.icon} onClick={fixing.onFix}>
+              {fixing.word}
+            </HudButton>
+          )
         )}
-        <button type="button" aria-label={CLOSE} onClick={onClose} className="research-bar__dismiss">
-          <Icon name="close" size={16} />
-        </button>
       </div>
     </div>
   );
@@ -598,27 +569,3 @@ const needIcon = (need: Need): IconMeaning => {
       return need.icon;
   }
 };
-
-const LevelLine = ({ node }: { node: TreeNode }) => {
-  if (isOathResearch(node.row))
-    return (
-      <span className="text-hud-label text-hud-muted">
-        <HudRanked words={node.gives.now} />
-      </span>
-    );
-  if (node.maxTier === 5 && node.nextTier) return <HudTierStep from={tierOf(node)} to={node.nextTier} />;
-  if (node.maxTier === 5)
-    return (
-      <span className="flex items-center gap-1.5 text-hud-label text-hud-muted">
-        <HudTier tier={tierOf(node)} />
-        {RESEARCH_TREE.complete}
-      </span>
-    );
-  return (
-    <span className="text-hud-label text-hud-muted">
-      {node.state === "done" ? RESEARCH_TREE.states.done : RESEARCH_TREE.price(formatExact(node.price?.essence ?? 0))}
-    </span>
-  );
-};
-
-const tierOf = (node: TreeNode) => node.tier as Rank;

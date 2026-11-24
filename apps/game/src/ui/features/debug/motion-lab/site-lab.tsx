@@ -2,7 +2,7 @@ import { RealmCard } from "@/ui/features/frontier/hud/realm-card";
 import { bankedCounterTarget } from "@/ui/motion/moments/banked-flight";
 import { playSiteClear } from "@/ui/features/frontier/sites/site-clear-moment";
 import type { SiteClear } from "@/ui/features/frontier/sites/site-outcome";
-import { ResourcesIds } from "@bibliothecadao/types";
+import { rankName, ResourcesIds } from "@bibliothecadao/types";
 import { type ReactNode, useRef, useState } from "react";
 
 /** Site payouts as the world update listener reads them from SitePayout stories, in whole units. */
@@ -45,6 +45,7 @@ export const SiteLab = () => {
             name="Duskbite"
             kind="realm"
             level={1}
+            rank={rankName(1)}
             fragments={null}
             lords={null}
             stores={[

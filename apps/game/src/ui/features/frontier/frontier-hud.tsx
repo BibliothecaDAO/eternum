@@ -1,6 +1,5 @@
 import { useGame } from "@/hooks/context/game-context";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
-import { reasonLine } from "@/ui/design-system/kit/reasons";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -8,18 +7,18 @@ import { canIssueOrders, isWatching } from "@/utils/can-issue-orders";
 import { useRealmVisit } from "@/sync/active-game-client";
 import { dropNextOrder } from "@/three/scenes/worldmap-next-order";
 import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
-import { SETTINGS } from "@/ui/design-system/kit/words";
+import { REALM_CARD_WORDS, SETTINGS } from "@/ui/design-system/kit/words";
 import { useGameChat } from "@/ui/features/world/containers/hud-chat-window";
 import { IdentityChip } from "@/ui/features/world/containers/top-header/identity-chip";
 import { HudSheet } from "@/ui/design-system/kit/hud-elements";
 import { useUnreadImportantCount } from "@/ui/features/event-feed/quick-feed";
 import { SettingsPanel } from "@/ui/modules/settings/settings";
-import { configManager, resolveUseSimpleCost } from "@bibliothecadao/eternum";
+import { configManager } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
-import { BUILDINGS_CENTER, catalogAspectId, formatRate, rankName } from "@bibliothecadao/types";
+import { catalogAspectId, rankName } from "@bibliothecadao/types";
 import { useLayout, useTablet } from "@/shell/frame/layout";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { type ComponentProps, type ComponentType, type ReactNode, useEffect, useRef, useState } from "react";
+import { type ComponentType, type ReactNode, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { RealmVisitFoot, useRealmVisitNavigation, useVisitedRealm } from "./board/realm-visit";
 import { FrontierSeason, useSeasonRank } from "./board/season-board";
@@ -50,10 +49,10 @@ import { FrontierTopBar } from "./hud/phone-top-bar";
 import { FrontierPlaceSwitch, PlaceMenu } from "./hud/surface-deep-switch";
 import { useOnePanel, useOrderSettledReturnsToTheArmy } from "./hud/one-panel";
 import { FrontierDayClock } from "./hud/day-pill";
-import { DayEndBlock, DayEndNotice, useDayEnd } from "./day-end/day-end";
+import { DayEndNotice, useDayEnd } from "./day-end/day-end";
 import { useFirstBuild, useMarkFirstBuild } from "./build/first-build";
 import { useStoreReadings } from "./hud/frontier-strip";
-import type { RealmBuildingItem, RealmRankUp } from "./hud/realm-card";
+import type { RealmRankUp } from "./hud/realm-card";
 import { castleUpgradeRefusal } from "./upgrade/castle-upgrade";
 import { HudBands } from "./hud/hud-bands";
 import { MenuPage } from "./hud/menu-page";
@@ -79,9 +78,7 @@ import { FrontierResearch } from "./research/frontier-research";
 
 import { useBuildOpensOnEntering } from "./build/build-button";
 import { BuildingsInFlight } from "./build/build-sheet";
-import { readBuildOptions } from "./build/build-options";
-import { buildingIcon, buildingName } from "./build/building-names";
-import { FRONTIER_STORES, madeStore, STORE_KINDS } from "./stores";
+import { STORE_KINDS } from "./stores";
 import { useLordsBalance } from "@/shell/value/use-lords-balance";
 import { usePayer } from "@/shell/value/use-payer";
 import { useRealmLevelUp } from "@/ui/modules/entity-details/hooks/use-realm-level-up";
@@ -272,7 +269,6 @@ const FrontierHudBody = ({
       own={own}
       isMapView={isMapView}
       fragments={own ? fragmentsHeld : null}
-      storeCards={storeCards}
       onShop={own ? () => setSurface("shop") : undefined}
       onClose={desktop || tablet ? undefined : close}
     />
@@ -355,13 +351,7 @@ const FrontierHudBody = ({
         <SettingsPanel />
       </HudSheet>
     ) : surface === "today" ? (
-      <FrontierToday
-        rules={rules}
-        realm={realm ?? visited}
-        dayEnd={own && <DayEndBlock />}
-        own={Boolean(own)}
-        onClose={close}
-      />
+      <FrontierToday rules={rules} realm={realm ?? visited} own={Boolean(own)} onClose={close} />
     ) : null;
   const armyDock = shown ? <DockFor realm={shown} onOpenArmy={desktop ? openArmy : pickArmy} /> : null;
   const sheets = (
@@ -545,50 +535,7 @@ const HudMenu = ({
   );
 };
 
-const REALM_PANEL_MODELS = [
-  "Building",
-  "HomeAspect",
-  "RealmKnowledge",
-  "ResourceRule",
-  "Structure",
-  "StructureBuildings",
-  "BoardRules",
-] as const;
-
-const useRealmBuildings = (realm: NativeRows["Structure"], own: NativeRows["Structure"] | null) => {
-  const facts = useNativeFacts(REALM_PANEL_MODELS);
-  const tick = useCurrentDefaultTick();
-  const requestedSimpleCost = useUIStore((state) => state.useSimpleCost);
-  const useSimpleCost = resolveUseSimpleCost(configManager.buildingCostMode, requestedSimpleCost);
-  const options = facts.store.get("BoardRules", { game_id: realm.game_id })
-    ? (readBuildOptions(facts.store, realm, useSimpleCost, tick) ?? [])
-    : [];
-  const isListed = (option: (typeof options)[number]) =>
-    typeof option.standing === "string" && option.rise.standing > 0;
-  const openCastle = () => {
-    if (!own) return;
-    useUIStore.getState().setSelectedBuildingHex({
-      structureId: safeInteger(own.entity_id),
-      innerCol: BUILDINGS_CENTER[0],
-      innerRow: BUILDINGS_CENTER[1],
-    });
-  };
-  const standingBuildings: RealmBuildingItem[] = options
-    .filter(isListed)
-    .slice(0, 4)
-    .map((option) => {
-      return {
-        key: String(option.category),
-        icon: buildingIcon(option.category),
-        name: buildingName(option.category),
-        tier: option.tier,
-        rateIcon:
-          option.effect.kind === "produces" ? FRONTIER_STORES[madeStore(option.effect.resource)].icon : undefined,
-        rate: option.effect.kind === "produces" ? formatRate(option.effect.output.total) : undefined,
-      };
-    });
-  return { standing: standingBuildings, openCastle };
-};
+const REALM_PANEL_MODELS = ["HomeAspect"] as const;
 
 const useRealmFace = (realm: NativeRows["Structure"]) => {
   const facts = useNativeFacts(REALM_PANEL_MODELS);
@@ -601,12 +548,11 @@ const useRealmFace = (realm: NativeRows["Structure"]) => {
 };
 
 const FrontierRealmCard = ({
-  rules,
   realm,
+  rules,
   own,
   isMapView,
   fragments,
-  storeCards,
   onShop,
   onClose,
 }: {
@@ -615,14 +561,12 @@ const FrontierRealmCard = ({
   own: NativeRows["Structure"] | null;
   isMapView: boolean;
   fragments: number | null;
-  storeCards: ComponentProps<typeof FrontierTopBar>["storeCards"];
   onShop?: () => void;
   onClose?: () => void;
 }) => {
   const { name, kind, aspect } = useRealmFace(realm);
   const stores = useStoreReadings(realm, rules, STORE_KINDS);
   const goToPlace = useGoToFrontierPlace(realm);
-  const { standing, openCastle } = useRealmBuildings(realm, own);
   const lords = useWalletLords();
   const rankUp = useRankUp(own);
   return (
@@ -630,18 +574,15 @@ const FrontierRealmCard = ({
       name={name}
       kind={kind}
       level={realm.base.level}
+      rank={rankName(realm.base.level)}
       rankUp={rankUp}
       aspect={aspect}
       orderId={realm.metadata.order}
       stores={stores}
       fragments={fragments}
       lords={own ? lords : null}
-      buildings={isMapView ? undefined : standing}
-      storeCard={storeCards?.card}
-      onStore={storeCards?.onToggle}
       onShop={onShop}
       onHome={isMapView ? () => goToPlace(false) : undefined}
-      onUpgradeCastle={own ? openCastle : undefined}
       onClose={onClose}
     />
   );
@@ -653,7 +594,14 @@ const useRankUp = (own: NativeRows["Structure"] | null): RealmRankUp | undefined
   const levelUp = useRealmLevelUp(own ? safeInteger(own.entity_id) : null);
   if (!own || !levelUp || levelUp.mode === "max") return undefined;
   const refusal = castleUpgradeRefusal(setup.store, own, levelUp, tick);
-  return { name: rankName(levelUp.nextLevel), missing: refusal && reasonLine(refusal.reason) };
+  const slots = configManager.getArmySlots(levelUp.nextLevel) - configManager.getArmySlots(levelUp.currentLevel);
+  return {
+    name: rankName(levelUp.nextLevel),
+    gives: slots > 0 ? REALM_CARD_WORDS.armySlots(slots) : undefined,
+    need: refusal?.reason.kind === "short" ? { of: refusal.reason.of, amount: refusal.reason.need } : undefined,
+    sending: levelUp.loading,
+    onUpgrade: levelUp.ready ? levelUp.run : undefined,
+  };
 };
 
 const useWalletLords = (): number | null => {

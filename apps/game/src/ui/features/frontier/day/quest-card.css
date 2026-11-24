@@ -1,0 +1,61 @@
+.frontier-quest-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 12px 12px;
+}
+.frontier-quest-card__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.frontier-quest-card__words {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+}
+.frontier-quest-card__title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: rgb(var(--hud-ink));
+  font-family: var(--hud-font-display);
+  font-size: 20px;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+.frontier-quest-card__objective {
+  color: var(--hud-muted);
+  font-size: 13px;
+  line-height: 18px;
+}
+.frontier-quest-card__count {
+  flex: none;
+  color: rgb(var(--hud-ink));
+  font-size: 18px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.frontier-quest-card__count[data-done] {
+  color: var(--hud-good);
+}
+.frontier-quest-card__foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.frontier-quest-card__reward {
+  display: inline-flex;
+  height: 26px;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--hud-line-strong);
+  border-radius: var(--hud-radius-control);
+  background: var(--hud-well);
+  padding: 0 8px;
+  color: rgb(var(--hud-ink));
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}

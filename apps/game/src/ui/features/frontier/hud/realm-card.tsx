@@ -1,71 +1,59 @@
-import "./frontier-desktop.css";
+import "./realm-card.css";
 
 import { homeIcon, type HomeKind } from "@/ui/design-system/home-icons";
-import { Icon, type IconMeaning } from "@/ui/design-system/icon";
-import { HudChip, HudIconButton, HudRow, HudTier } from "@/ui/design-system/kit/hud-elements";
+import { Icon } from "@/ui/design-system/icon";
+import { HudButton, HudIconButton } from "@/ui/design-system/kit/hud-elements";
 import { OrderLine } from "@/ui/design-system/kit/order-emblem";
-import { CLOSE, REALM, SHOP_WORDS, SHOW_MY_REALM, UPGRADE, type Rank } from "@/ui/design-system/kit/words";
+import { PRICE_FACES, type Price } from "@/ui/design-system/kit/price-faces";
+import { CLOSE, REALM, REALM_CARD_WORDS, SHOP_WORDS, SHOW_MY_REALM, UPGRADE } from "@/ui/design-system/kit/words";
 import { useLandedValue } from "@/ui/motion/landing-hold";
 import { TickNumber } from "@/ui/motion/tick-number";
-import { aspectName, FRAGMENTS, formatShort, LORDS, type AspectId } from "@bibliothecadao/types";
+import { aspectName, FRAGMENTS, formatRate, formatShort, LORDS, type AspectId } from "@bibliothecadao/types";
 import type { ReactNode } from "react";
 
-import { FRONTIER_STORES, isMadeStore, isTroopStore, type StoreKind } from "../stores";
+import { FRONTIER_STORES, isTroopStore } from "../stores";
 import { AspectMedallion } from "./realm-header-chip";
-import { LandingDelta, STORE_TONES, storeLine, storeRateText, type StoreReading } from "./status-strip";
-
-export interface RealmBuildingItem {
-  key: string;
-  icon: IconMeaning;
-  name: string;
-  tier?: Rank;
-  rankLabel?: string;
-  rateIcon?: IconMeaning;
-  rate?: string;
-}
+import { LandingDelta, STORE_TONES, storeLine, type StoreReading } from "./status-strip";
 
 export interface RealmRankUp {
   name: string;
-  missing?: string;
+  gives?: string;
+  need?: Price;
+  sending: boolean;
+  onUpgrade?: () => void;
 }
 
 export const RealmCard = ({
   name,
   kind,
   level,
+  rank,
   rankUp,
   aspect,
   orderId,
   stores,
   fragments,
   lords,
-  buildings,
-  storeCard,
-  onStore,
   onShop,
   onHome,
-  onUpgradeCastle,
   onClose,
 }: {
   name: string;
   kind: HomeKind;
   level: number;
+  rank: string;
   rankUp?: RealmRankUp;
   aspect?: AspectId;
   orderId?: number;
   stores: readonly StoreReading[];
   fragments: number | null;
   lords: number | null;
-  buildings?: readonly RealmBuildingItem[];
-  storeCard?: ReactNode;
-  onStore?: (kind: StoreKind) => void;
   onShop?: () => void;
   onHome?: () => void;
-  onUpgradeCastle?: () => void;
   onClose?: () => void;
 }) => (
   <section aria-label={REALM} className="frontier-cluster-card frontier-realm-card pointer-events-auto">
-    <header className="frontier-realm-card__head" data-closable={onClose ? "" : undefined}>
+    <header className="frontier-realm-card__head">
       <button
         type="button"
         className="frontier-realm-card__identity"
@@ -83,186 +71,155 @@ export const RealmCard = ({
         <span className="frontier-realm-card__text">
           <span className="frontier-realm-card__name">{name}</span>
           <span className="frontier-realm-card__sub">
-            <OrderLine orderId={orderId} size={14} className="frontier-realm-card__order" />
+            <span>{rank}</span>
+            <OrderLine orderId={orderId} size={16} className="frontier-realm-card__order" />
           </span>
         </span>
       </button>
-      {onUpgradeCastle && rankUp && (
-        <button
-          type="button"
-          data-realm-castle
-          className="frontier-rank-up"
-          aria-label={rankUp.missing ? `${UPGRADE} · ${rankUp.name}: ${rankUp.missing}` : `${UPGRADE} · ${rankUp.name}`}
-          data-tip={rankUp.missing}
-          disabled={rankUp.missing !== undefined}
-          onClick={onUpgradeCastle}
-        >
-          {rankUp.name}
-          <Icon name="arrow-up" size={12} />
-        </button>
-      )}
       {onClose && <HudIconButton icon="close" label={CLOSE} kind="quiet" size="sm" onClick={onClose} />}
     </header>
-    <div role="group" aria-label="Stores" className="frontier-stocks">
-      <ul className="frontier-stocks__row">
+    <div role="group" aria-label={REALM_CARD_WORDS.stores} className="frontier-realm-card__stores">
+      <ul className="frontier-realm-card__cells" data-count="5">
         {stores
           .filter((store) => !isTroopStore(store.kind))
           .map((store) => (
-            <li key={store.kind} data-store={store.kind} className="frontier-stock">
-              <StockTile store={store} onOpen={onStore} />
+            <li key={store.kind} data-store={store.kind}>
+              <StoreCell store={store} />
             </li>
           ))}
-        <li data-store="fragments" className="frontier-stock" data-broad>
-          <FigureTile
-            icon="fragment"
-            value={fragments === null ? "—" : `${formatShort(fragments)} +`}
-            caption={FRAGMENTS}
+        <li data-store="fragments">
+          <Cell
+            icon={<Icon name="fragment" size={30} />}
+            value={fragments === null ? "—" : formatShort(fragments)}
+            caption={SHOP_WORDS.title}
+            tone="gold"
             label={fragments === null ? FRAGMENTS : SHOP_WORDS.fragments(fragments)}
             onPress={fragments === null ? undefined : onShop}
           />
         </li>
-        <li data-store="lords" className="frontier-stock">
-          <FigureTile
-            icon="lords"
+        <li data-store="lords">
+          <Cell
+            icon={<Icon name="lords" size={30} />}
             value={lords === null ? "—" : formatShort(lords)}
             caption={LORDS}
             label={lords === null ? LORDS : `${LORDS} ${formatShort(lords)}`}
           />
         </li>
       </ul>
-      <ul className="frontier-stocks__row">
+      <ul className="frontier-realm-card__cells" data-count="3">
         {stores
           .filter((store) => isTroopStore(store.kind))
           .map((store) => (
-            <li key={store.kind} data-store={store.kind} className="frontier-stock" data-wide>
-              <TroopTile store={store} onOpen={onStore} />
+            <li key={store.kind} data-store={store.kind} data-row="">
+              <StoreCell store={store} />
             </li>
           ))}
       </ul>
     </div>
-    {storeCard}
-    {buildings && buildings.length > 0 && (
-      <ul data-realm-buildings className="frontier-realm-card__buildings">
-        {buildings.map((building) => (
-          <li key={building.key}>
-            <HudRow
-              lead={<Icon name={building.icon} size={28} />}
-              title={
-                <span className="flex items-center gap-1.5">
-                  <span className="truncate">{building.name}</span>
-                  {building.tier !== undefined && <HudTier tier={building.tier} />}
-                  {building.rankLabel && <HudChip>{building.rankLabel}</HudChip>}
-                </span>
-              }
-              detail={
-                building.rate && (
-                  <span className="inline-flex items-center gap-1 tabular-nums text-hud-good">
-                    {building.rateIcon && <Icon name={building.rateIcon} size={14} />}
-                    {building.rate}
-                  </span>
-                )
-              }
-            />
-          </li>
-        ))}
-      </ul>
-    )}
+    {rankUp && <NextRank rankUp={rankUp} />}
   </section>
 );
 
-const StockTile = ({ store, onOpen }: { store: StoreReading; onOpen?: (kind: StoreKind) => void }) => {
-  const rate = storeRateText(store, { compact: true });
+const StoreCell = ({ store }: { store: StoreReading }) => {
+  const rate = store.perHour && store.perHour > 0 && store.fullIn !== 0 ? formatRate(store.perHour / 3600) : null;
   return (
-    <StoreFace store={store} onOpen={onOpen}>
-      <span data-fly-target={store.flyTarget} className="frontier-stock__icon">
-        <Icon name={FRONTIER_STORES[store.kind].icon} size={20} />
-      </span>
-      <StoreValue store={store} />
-      <span className="frontier-stock__caption" data-tone={rate ? "good" : undefined}>
-        {rate ?? FRONTIER_STORES[store.kind].word}
-      </span>
-    </StoreFace>
-  );
-};
-
-const TroopTile = ({ store, onOpen }: { store: StoreReading; onOpen?: (kind: StoreKind) => void }) => {
-  const rate = storeRateText(store, { compact: true });
-  return (
-    <StoreFace store={store} onOpen={onOpen}>
-      <span className="frontier-stock__top">
-        <span data-fly-target={store.flyTarget} className="frontier-stock__icon">
-          <Icon name={FRONTIER_STORES[store.kind].icon} size={20} />
-        </span>
-        <StoreValue store={store} />
-        {rate && (
-          <span className="frontier-stock__caption" data-tone="good">
-            {rate}
+    <>
+      <LandingDelta target={store.flyTarget} />
+      <Cell
+        icon={
+          <span data-fly-target={store.flyTarget} className="inline-flex">
+            <Icon name={FRONTIER_STORES[store.kind].icon} size={30} />
           </span>
-        )}
-      </span>
-      <span className="frontier-stock__caption">{FRONTIER_STORES[store.kind].word}</span>
-    </StoreFace>
+        }
+        value={<StoreValue store={store} />}
+        caption={rate ?? FRONTIER_STORES[store.kind].word}
+        tone={rate ? "good" : undefined}
+        label={storeLine(store)}
+      />
+    </>
   );
 };
-
-const StoreFace = ({
-  store,
-  onOpen,
-  children,
-}: {
-  store: StoreReading;
-  onOpen?: (kind: StoreKind) => void;
-  children: ReactNode;
-}) => (
-  <>
-    <LandingDelta target={store.flyTarget} />
-    <TileFace
-      label={storeLine(store)}
-      onPress={onOpen && isMadeStore(store.kind) ? () => onOpen(store.kind) : undefined}
-    >
-      {children}
-    </TileFace>
-  </>
-);
 
 const StoreValue = ({ store }: { store: StoreReading }) => {
   const shown = useLandedValue(store.flyTarget, store.amount);
   return (
-    <span className={`frontier-stock__value tabular-nums ${STORE_TONES[store.tone].text}`}>
+    <span className={STORE_TONES[store.tone].text}>
       {shown === undefined ? "—" : <TickNumber value={shown} format={formatShort} />}
     </span>
   );
 };
 
-const FigureTile = ({
+const Cell = ({
   icon,
   value,
   caption,
+  tone,
   label,
   onPress,
 }: {
-  icon: "fragment" | "lords";
-  value: string;
+  icon: ReactNode;
+  value: ReactNode;
   caption: string;
+  tone?: "good" | "gold";
   label: string;
   onPress?: () => void;
-}) => (
-  <TileFace label={label} onPress={onPress}>
-    <span className="frontier-stock__icon">
-      <Icon name={icon} size={20} />
-    </span>
-    <span className="frontier-stock__value tabular-nums">{value}</span>
-    <span className="frontier-stock__caption">{caption}</span>
-  </TileFace>
-);
-
-const TileFace = ({ label, onPress, children }: { label: string; onPress?: () => void; children: ReactNode }) =>
-  onPress ? (
-    <button type="button" className="frontier-stock__face" aria-label={label} data-tip={label} onClick={onPress}>
-      {children}
+}) => {
+  const face = (
+    <>
+      {icon}
+      <span className="frontier-realm-card__figures">
+        <b className="frontier-realm-card__value">{value}</b>
+        <span className="frontier-realm-card__caption" data-tone={tone}>
+          {caption}
+        </span>
+      </span>
+    </>
+  );
+  return onPress ? (
+    <button type="button" className="frontier-realm-card__cell" aria-label={label} data-tip={label} onClick={onPress}>
+      {face}
     </button>
   ) : (
-    <span role="img" className="frontier-stock__face" aria-label={label} data-tip={label}>
-      {children}
+    <span role="img" className="frontier-realm-card__cell" aria-label={label} data-tip={label}>
+      {face}
     </span>
   );
+};
+
+const NextRank = ({ rankUp }: { rankUp: RealmRankUp }) => (
+  <footer className="frontier-realm-card__next">
+    <span className="frontier-realm-card__next-line">
+      {REALM_CARD_WORDS.nextRank} <b>{rankUp.name}</b>
+      {rankUp.gives && <span className="text-hud-muted"> · {rankUp.gives}</span>}
+    </span>
+    {rankUp.onUpgrade ? (
+      <HudButton
+        kind="primary"
+        size="sm"
+        icon="upgrade"
+        data-realm-castle=""
+        busy={rankUp.sending ? UPGRADE : undefined}
+        onClick={rankUp.onUpgrade}
+      >
+        {UPGRADE}
+      </HudButton>
+    ) : (
+      <span role="img" data-realm-castle="" className="frontier-realm-card__locked" aria-label={lockedLine(rankUp)}>
+        <Icon name="lock" size={16} />
+        {rankUp.need ? (
+          <>
+            {REALM_CARD_WORDS.needs} {formatShort(rankUp.need.amount)}
+            {PRICE_FACES[rankUp.need.of].icon && <Icon name={PRICE_FACES[rankUp.need.of].icon!} size={18} />}
+          </>
+        ) : (
+          UPGRADE
+        )}
+      </span>
+    )}
+  </footer>
+);
+
+const lockedLine = ({ name, need }: RealmRankUp) =>
+  need
+    ? `${UPGRADE} · ${name}: ${REALM_CARD_WORDS.needs} ${formatShort(need.amount)} ${PRICE_FACES[need.of].word}`
+    : `${UPGRADE} · ${name}`;

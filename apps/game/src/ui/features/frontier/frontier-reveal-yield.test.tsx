@@ -69,29 +69,8 @@ it("writes a reveal's fractional reward the same in the army panel and in the Lo
   expect(panel).toBe("58");
 });
 
-// Today's own line and the day's totals read the same reward (they rewrite the story themselves), and so do a cleared
-// site's payout record and the season board's earned figure.
-it("writes the same 57.6 reveal on Today's line, and keeps its fraction until the day's total is written", async () => {
-  const { dayLogLine } = await import("./log/day-line");
+it("keeps a reveal's fraction until the day's total is written", async () => {
   const { totalToday } = await import("./log/today-totals");
-  const storyPayload = {
-    explorer_id: 7,
-    receiver: 5,
-    coord: { alt: false, x: 1, y: 1 },
-    resource_type: ResourcesIds.Essence,
-    amount: String(PAYOUT),
-  };
-  const presentation = buildStoryEventPresentation({
-    storyType: "ExplorationReward",
-    storyPayload,
-    entityId: null,
-    ownerAddress: "0x1",
-    viewerAddress: null,
-  } as never);
-  const { frontierDay } = await import("./deploy/deploy-fixture");
-  const { store } = frontierDay();
-  expect(dayLogLine({ story: "ExplorationReward", storyPayload, presentation } as never, store)).toBe("+58 Essence");
-
   const fiveReveals = Array.from({ length: 5 }, () => ({
     story: "ExplorationReward",
     storyPayload: { resource_type: ResourcesIds.Essence, amount: String(PAYOUT) },

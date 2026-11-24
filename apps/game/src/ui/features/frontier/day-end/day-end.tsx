@@ -29,9 +29,3 @@ export const DayEndNotice = ({ dayEnd: { clock }, onOpen }: { dayEnd: DayEnd; on
     />
   );
 };
-
-export const DayEndBlock = () => (
-  <section aria-label={DAY_END.goes} className="flex flex-col gap-1">
-    <HudNotice tone="warn" icon="hourglass" line={DAY_END.goes} />
-  </section>
-);

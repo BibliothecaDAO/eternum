@@ -1,0 +1,81 @@
+.today-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.today-sheet__clock {
+  margin: 0;
+  color: var(--hud-muted);
+  font-size: 13px;
+  line-height: 18px;
+  font-variant-numeric: tabular-nums;
+}
+.today-sheet__clock b {
+  color: rgb(var(--hud-ink));
+  font-weight: 700;
+}
+.today-sheet__week {
+  display: flex;
+  gap: 5px;
+}
+.today-sheet__quest {
+  position: relative;
+  display: flex;
+  height: 40px;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--hud-line);
+  border-radius: 10px;
+  background: var(--hud-well);
+}
+.today-sheet__quest img {
+  opacity: 0.55;
+}
+.today-sheet__quest i {
+  position: absolute;
+  right: 4px;
+  bottom: 1px;
+  color: var(--hud-muted);
+  font-size: 10px;
+  font-style: normal;
+}
+.today-sheet__quest[data-collected] {
+  border-color: color-mix(in srgb, var(--hud-good) 60%, transparent);
+}
+.today-sheet__quest[data-week-day="today"] {
+  border-color: var(--hud-selected);
+  box-shadow: 0 0 0 1px var(--hud-selected);
+}
+.today-sheet__quest:is([data-collected], [data-week-day="today"]) img {
+  opacity: 1;
+}
+.today-sheet__gains {
+  display: flex;
+  border-block: 1px solid var(--hud-divider);
+  padding: 8px 0;
+}
+.today-sheet__gain {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+.today-sheet__gain + .today-sheet__gain {
+  border-left: 1px solid var(--hud-divider);
+}
+.today-sheet__gain b {
+  color: rgb(var(--hud-ink));
+  font-size: 18px;
+  line-height: 22px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.today-sheet__gain span {
+  color: var(--hud-muted);
+  font-size: 11px;
+  line-height: 14px;
+}
