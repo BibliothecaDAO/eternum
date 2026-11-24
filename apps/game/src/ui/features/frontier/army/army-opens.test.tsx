@@ -163,10 +163,10 @@ describe("the army's panel on a phone (owner, 22 October 2026: mobile direction 
     await act(async () => store.applyFacts(sellingFragments(store) as never));
     await select(ARMY);
     const refill = () => [rowButton(/^Refill /).getAttribute("aria-label"), rowButton(/^Refill /).disabled];
-    const [label, disabled] = refill();
-    expect([String(label).startsWith("Refill stamina · "), disabled]).toEqual([true, true]);
+    const priced = ["Refill stamina · 30 Fragments · Needs 30 Fragments, have 0", true];
+    expect(refill()).toEqual(priced);
     await act(async () => store.applyFacts([realmLords(40)] as never));
-    expect(refill()).toEqual([label, true]);
+    expect(refill()).toEqual(priced);
     expect(host.querySelector("[data-kit-sheet]")).toBeNull();
   });
 
