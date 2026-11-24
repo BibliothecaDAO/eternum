@@ -1112,16 +1112,13 @@ export const GET_WHEAT = `Get ${WHEAT}`;
 export const DEPLOYING = "Deploying…";
 export const DEPLOY_WORDS = {
   slotOf: (slot: number, total: number) => `Slot ${formatExact(slot)} of ${formatExact(total)}`,
-  fullStack: "Full stack",
-  fullStackReady: "Full stack ready",
   adjustSize: "Adjust size",
   hideSize: "Hide size",
-  customSize: (count: string) => `Custom · ${count}`,
-  troopRoles: {
-    [TroopType.Knight]: () => "Blade · Hold sites",
-    [TroopType.Crossbowman]: () => "Bow · Strikes first",
-    [TroopType.Paladin]: (exploreStamina: number) => `Fast reveal · ${formatExact(exploreStamina)} stam`,
-  } satisfies Record<TroopType, (exploreStamina: number) => string>,
+  ready: (troops: number) => `${formatExact(troops)} ready`,
+  troopCount: "Troop count",
+  countOf: (count: number, of: number, troop: string, max: boolean) =>
+    `${formatExact(count)} / ${formatExact(of)} ${troop}${max ? " (Max)" : ""}`,
+  deployCount: (count: number, troop: string) => `${DEPLOY} ${formatExact(count)} ${troop}`,
 } as const;
 export const BUILD = "Build";
 export const buildNamed = (building: string) => `${BUILD} ${building}`;

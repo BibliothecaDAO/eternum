@@ -258,7 +258,13 @@ const FrontierHudBody = ({
         onClose={close}
       />
     ) : surface === "menu" ? (
-      <HudMenu onOpen={setSurface} onClose={close} events={feedUnread} shop={Boolean(own) && fragmentsHeld !== null} />
+      <HudMenu
+        onOpen={setSurface}
+        onClose={close}
+        events={feedUnread}
+        feed={!tablet}
+        shop={Boolean(own) && fragmentsHeld !== null}
+      />
     ) : undefined;
   const realmVisible = Boolean(shown) && (desktop ? realmOpen : surface === "realm");
   const placesState = {
@@ -560,18 +566,20 @@ const HudMenu = ({
   onOpen,
   onClose,
   events,
+  feed,
   shop,
 }: {
   onOpen: (surface: HudSurface | null) => void;
   onClose: () => void;
   events: number;
+  feed: boolean;
   shop: boolean;
 }) => {
   const navigate = useNavigate();
   const guide = useHowToPlay();
   return (
     <MenuPage
-      onFeed={() => onOpen("feed")}
+      onFeed={feed ? () => onOpen("feed") : undefined}
       onShop={shop ? () => onOpen("shop") : undefined}
       events={events}
       onToday={() => onOpen("today")}

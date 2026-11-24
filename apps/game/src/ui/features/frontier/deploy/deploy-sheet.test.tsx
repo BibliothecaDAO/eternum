@@ -335,8 +335,8 @@ describe("the Deploy sheet", () => {
     expect(outOf(host)).toBe("of 420");
     expect([countField(host).value, host.querySelector(".ui-notice")]).toEqual(["420", null]);
     typeCount(host, 120);
-    expect(deployButton(host)?.textContent).toBe("Deploy");
-    expect(foot(host)).toBe("240 WheatDeploy");
+    expect(deployButton(host)?.textContent).toBe("Deploy 120 Knights");
+    expect(foot(host)).toBe("240 WheatDeploy 120 Knights");
     expect(host.textContent!.replace(foot(host), "")).not.toMatch(/wheat/i);
     const slider = host.querySelector<HTMLInputElement>("input[type=range]");
     expect([slider?.getAttribute("aria-label"), slider?.max, slider?.value]).toEqual([
@@ -412,11 +412,11 @@ describe("the Deploy sheet", () => {
     press(host, "Adjust size");
     expect([outOf(host), countField(host).value]).toEqual(["of 54", "50"]);
     typeCount(host, 30);
-    expect([wheatLine(host), foot(host)]).toEqual([null, "60 WheatDeploy"]);
+    expect([wheatLine(host), foot(host)]).toEqual([null, "60 WheatDeploy 30 Knights"]);
     typeCount(host, 300);
     expect(countField(host).value).toBe("54");
     expect(wheatLine(host)).toEqual({ line: "Wheat for only 54 of 420 troops", press: "Get Wheat" });
-    expect(foot(host)).toBe("108 WheatDeploy");
+    expect(foot(host)).toBe("108 WheatDeploy 54 Knights");
     expect(deployButton(host)?.disabled).toBe(false);
     typeCount(host, 49);
     expect(wheatLine(host)).toBeNull();
@@ -427,7 +427,7 @@ describe("the Deploy sheet", () => {
   });
 
   it.each([
-    ["nine Wheat deploys four troops", 9, "of 4", "8 WheatDeploy"],
+    ["nine Wheat deploys four troops", 9, "of 4", "8 WheatDeploy 4 Knights"],
     ["four and a half Wheat deploys two", 4.5, "of 2", null],
   ])("prices Max on the whole batch at the recipe cost: %s", (_case, wheat, most, price) => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -482,12 +482,12 @@ describe("the Deploy sheet", () => {
     const { host, root, draw } = render(store, row, onClose);
     click(host.querySelector('button[aria-label="Army 2"]')!);
     press(host, "Adjust size");
-    expect([countField(host).value, outOf(host), foot(host)]).toEqual(["8", "of 9", "16 WheatDeploy"]);
+    expect([countField(host).value, outOf(host), foot(host)]).toEqual(["8", "of 9", "16 WheatDeploy 8 Knights"]);
     expect(wheatLine(host)).toEqual({ line: "Wheat for only 8 of 420 troops", press: "Get Wheat" });
 
     clock.tick = 13;
     draw();
-    expect([countField(host).value, outOf(host), foot(host)]).toEqual(["9", "of 10", "18 WheatDeploy"]);
+    expect([countField(host).value, outOf(host), foot(host)]).toEqual(["9", "of 10", "18 WheatDeploy 9 Knights"]);
     expect(wheatLine(host)?.line).toBe("Wheat for only 9 of 420 troops");
 
     typeCount(host, 5);

@@ -17,7 +17,6 @@ import { HudIconButton, HudSheet } from "@/ui/design-system/kit/hud-elements";
 import {
   ARMY,
   ARMY_MANAGEMENT,
-  DEPLOY_WORDS,
   EVENTS_WORDS,
   LINK_WALLET_FOR_LORDS,
   PAYOUTS_PAUSED,
@@ -1384,11 +1383,7 @@ const LabDeploySheet = ({
                   category: TroopType.Knight,
                   name: FRONTIER_TROOP_NAMES[TroopType.Knight],
                   art: "knight-t1",
-                  role: DEPLOY_WORDS.troopRoles[TroopType.Knight](),
                   atHome: troopsAtHome,
-                  displayCount: count,
-                  displayWheat: count * 2,
-                  isCustom: count !== most,
                 },
               ]
             : [],

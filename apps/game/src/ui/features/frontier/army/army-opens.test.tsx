@@ -164,7 +164,7 @@ describe("the army's panel on a phone (owner, 22 October 2026: mobile direction 
     await select(ARMY);
     const refill = () => [rowButton(/^Refill /).getAttribute("aria-label"), rowButton(/^Refill /).disabled];
     const [label, disabled] = refill();
-    expect([String(label).startsWith("Refill Stamina · "), disabled]).toEqual([true, true]);
+    expect([String(label).startsWith("Refill stamina · "), disabled]).toEqual([true, true]);
     await act(async () => store.applyFacts([realmLords(40)] as never));
     expect(refill()).toEqual([label, true]);
     expect(host.querySelector("[data-kit-sheet]")).toBeNull();

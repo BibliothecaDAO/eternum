@@ -21,7 +21,7 @@ export const MenuPage = ({
   onExit,
   onClose,
 }: {
-  onFeed: () => void;
+  onFeed?: () => void;
   onShop?: () => void;
   onToday: () => void;
   onSettings: () => void;
@@ -32,18 +32,20 @@ export const MenuPage = ({
 }) => (
   <HudPage label={MENU} icon="menu" onClose={onClose}>
     <nav className="menu-nav">
-      <MenuRow
-        icon={FEED.icon}
-        label={FEED.label}
-        badge={
-          events > 0 ? (
-            <span className="text-hud-body tabular-nums" aria-label={unreadFeedEvents(events)}>
-              {formatAmount(events)}
-            </span>
-          ) : undefined
-        }
-        onClick={onFeed}
-      />
+      {onFeed && (
+        <MenuRow
+          icon={FEED.icon}
+          label={FEED.label}
+          badge={
+            events > 0 ? (
+              <span className="text-hud-body tabular-nums" aria-label={unreadFeedEvents(events)}>
+                {formatAmount(events)}
+              </span>
+            ) : undefined
+          }
+          onClick={onFeed}
+        />
+      )}
       <MenuRow icon="clock" label={TODAY} onClick={onToday} />
       {onShop && <MenuRow icon="fragment" label={SHOP_WORDS.title} onClick={onShop} />}
       <MenuRow icon="settings" label={SETTINGS} onClick={onSettings} />

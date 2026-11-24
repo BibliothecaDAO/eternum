@@ -2,10 +2,11 @@ import "./deploy-view.css";
 
 import { useState, type ReactNode } from "react";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
-import { type TroopType, formatAmount, formatExact, formatShort, formatWait } from "@bibliothecadao/types";
+import { type TroopType, formatAmount, formatExact, formatWait } from "@bibliothecadao/types";
 import {
   HudButton,
   HudCost,
+  HudMeter,
   HudNotice,
   HudSheet,
   HudTroopAmount,
@@ -35,11 +36,7 @@ export interface DeployTroopChoiceView {
   category: TroopType;
   name: string;
   art: IconMeaning;
-  role: string;
   atHome: number;
-  displayCount: number;
-  displayWheat: number;
-  isCustom: boolean;
 }
 
 export const DeployView = ({
@@ -91,6 +88,8 @@ export const DeployView = ({
 }) => {
   const [adjusting, setAdjusting] = useState(false);
   const totalSlots = allowedSlots ?? slots.open?.length ?? start?.number ?? 0;
+  const troopName =
+    troopSelection?.choices.find(({ category }) => category === troopSelection.selected)?.name ?? TROOPS;
 
   return (
     <HudSheet label={DEPLOY} icon="military" onClose={onClose}>
@@ -119,30 +118,10 @@ export const DeployView = ({
               }}
             >
               <span className="deploy-troop-card__portrait">
-                <Icon name={choice.art} size={48} />
+                <Icon name={choice.art} size={44} />
               </span>
-              <span className="deploy-troop-card__body">
-                <span className="deploy-troop-card__name">{choice.name}</span>
-                <span className="deploy-troop-card__meta">
-                  <span>{choice.role}</span>
-                  <span aria-hidden="true">·</span>
-                  <span className="deploy-troop-card__count">
-                    <Icon name="attack" size={14} />
-                    <span>{formatExact(choice.displayCount)}</span>
-                  </span>
-                </span>
-              </span>
-              <span className="deploy-troop-card__cost">
-                <span className="deploy-troop-card__wheat">
-                  <span>{formatShort(choice.displayWheat)}</span>
-                  <Icon name="wheat" size={14} />
-                </span>
-                <span className="deploy-troop-card__stack">
-                  {choice.isCustom
-                    ? `${formatExact(choice.displayCount)} / ${formatExact(choice.atHome)}`
-                    : DEPLOY_WORDS.fullStack}
-                </span>
-              </span>
+              <span className="deploy-troop-card__name">{choice.name}</span>
+              <span className="deploy-troop-card__ready">{DEPLOY_WORDS.ready(choice.atHome)}</span>
             </button>
           ))}
         </div>
@@ -151,7 +130,10 @@ export const DeployView = ({
         <>
           <div className="deploy-size-bar">
             <span className="deploy-size-bar__state">
-              {isFullStack ? DEPLOY_WORDS.fullStackReady : DEPLOY_WORDS.customSize(formatExact(count ?? 0))}
+              <span>{DEPLOY_WORDS.troopCount}</span>
+              <span className="deploy-size-bar__count">
+                {DEPLOY_WORDS.countOf(count ?? 0, amount.max, troopName, isFullStack)}
+              </span>
             </span>
             <button
               type="button"
@@ -162,6 +144,14 @@ export const DeployView = ({
               {adjusting ? DEPLOY_WORDS.hideSize : DEPLOY_WORDS.adjustSize}
             </button>
           </div>
+          {!adjusting && (
+            <div className="w-full">
+              <HudMeter
+                share={amount.max > 0 ? (count ?? 0) / amount.max : 0}
+                label={DEPLOY_WORDS.countOf(count ?? 0, amount.max, troopName, isFullStack)}
+              />
+            </div>
+          )}
           {adjusting && (
             <HudTroopAmount
               name={TROOPS}
@@ -213,18 +203,17 @@ export const DeployView = ({
         />
       )}
       {canDeploy && wheatCost !== undefined && (
-        <HudWindowFoot note={adjusting ? <HudCost line={costLine([{ of: "wheat", amount: wheatCost }])} /> : undefined}>
-          <span className={adjusting ? undefined : "deploy-foot-btn"}>
-            <HudButton
-              kind="primary"
-              icon="military"
-              disabled={!count}
-              busy={sending ? DEPLOYING : undefined}
-              onClick={onDeploy}
-            >
-              {DEPLOY}
-            </HudButton>
-          </span>
+        <HudWindowFoot note={<HudCost line={costLine([{ of: "wheat", amount: wheatCost }])} />}>
+          <HudButton
+            kind="primary"
+            icon="military"
+            aria-label={sending ? undefined : DEPLOY}
+            disabled={!count}
+            busy={sending ? DEPLOYING : undefined}
+            onClick={onDeploy}
+          >
+            {DEPLOY_WORDS.deployCount(count ?? 0, troopName)}
+          </HudButton>
         </HudWindowFoot>
       )}
     </HudSheet>
