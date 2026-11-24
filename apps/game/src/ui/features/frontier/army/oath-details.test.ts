@@ -3,7 +3,7 @@ import { nativeOathConstants as oaths } from "@bibliothecadao/eternum/game-clien
 import { orders, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import release from "../../../../../../../contracts/l3/world-native/schema/release-definition.json";
 import type { PickEffectBase } from "../pick-effect-text";
-import { oathEffectDescription, oathName } from "./oath-details";
+import { oathEffectDescription, oathName, oathStatBadge } from "./oath-details";
 
 const SEASON_ONE_BASE: PickEffectBase = {
   attackStamina: release.definition.rules.troop_stamina_config.stamina_attack_req,
@@ -38,16 +38,142 @@ it("contextualizes every Oath effect against the game's live rules", () => {
   expect(oathEffectDescription(oaths.TWINS, SEASON_ONE_BASE)).toBe("Nearby ally bonus damage: 0% → 30%");
 });
 
-it("follows tuned game rules and avoids invented base figures when a rule row is absent", () => {
+it("builds scannable hero stat badges for every Oath from shared rule calculations and handles missing base rules", () => {
+  expect(oathStatBadge(oaths.POWER, SEASON_ONE_BASE)).toEqual({
+    hero: "+20%",
+    unit: "Damage dealt",
+    sub: "100% → 120%",
+    icon: "attack",
+  });
+  expect(oathStatBadge(oaths.FOX, SEASON_ONE_BASE)).toEqual({
+    hero: "20 → 16",
+    unit: "Reveal cost",
+    sub: "Scouts 10 → 8",
+    icon: "stamina",
+  });
+  expect(oathStatBadge(oaths.RAGE, SEASON_ONE_BASE)).toEqual({
+    hero: "+25%",
+    unit: "Site and guard rewards",
+    sub: "100% → 125%",
+    icon: "reward",
+  });
+  expect(oathStatBadge(oaths.VITRIOL, SEASON_ONE_BASE)).toEqual({
+    hero: "200 → 100",
+    unit: "Deep troop loss",
+    sub: "100 per tick",
+    icon: "depth-1",
+  });
+  expect(oathStatBadge(oaths.GIANTS, SEASON_ONE_BASE)).toEqual({
+    hero: "-15%",
+    unit: "Damage taken",
+    sub: "100% → 85%",
+    icon: "defend",
+  });
+  expect(oathStatBadge(oaths.PROTECTION, SEASON_ONE_BASE)).toEqual({
+    hero: "-25%",
+    unit: "Damage taken",
+    sub: "guarding a site",
+    icon: "defend",
+  });
+  expect(oathStatBadge(oaths.REFLECTION, SEASON_ONE_BASE)).toEqual({
+    hero: "40% → 80%",
+    unit: "Well stamina refill",
+    sub: "+40%",
+    icon: "well",
+  });
+  expect(oathStatBadge(oaths.DETECTION, SEASON_ONE_BASE)).toEqual({
+    hero: "5th",
+    unit: "4 empty reveals",
+    sub: "Guaranteed find after 4 empty reveals",
+    icon: "eye",
+  });
+  expect(oathStatBadge(oaths.BRILLIANCE, SEASON_ONE_BASE)).toEqual({
+    hero: "+25%",
+    unit: "Explore rewards",
+    sub: "100% → 125%",
+    icon: "explore",
+  });
+  expect(oathStatBadge(oaths.ANGER, SEASON_ONE_BASE)).toEqual({
+    hero: "30 → 20",
+    unit: "Attack cost",
+    sub: "20 stamina",
+    icon: "stamina",
+  });
+  expect(oathStatBadge(oaths.TITANS, SEASON_ONE_BASE)).toEqual({
+    hero: "+60",
+    unit: "max stamina",
+    sub: "+60 stamina now · 180 → 240",
+    icon: "stamina",
+  });
+  expect(oathStatBadge(oaths.ENLIGHTENMENT, SEASON_ONE_BASE)).toEqual({
+    hero: "+0.67/min",
+    unit: "Stamina recovery",
+    sub: "+0.5/min → +0.67/min",
+    icon: "stamina",
+  });
+  expect(oathStatBadge(oaths.SKILL, SEASON_ONE_BASE)).toEqual({
+    hero: "+30%",
+    unit: "Damage dealt",
+    sub: "Low-stamina (<10) attack damage",
+    icon: "attack",
+  });
+  expect(oathStatBadge(oaths.FURY, SEASON_ONE_BASE)).toEqual({
+    hero: "+15",
+    unit: "Won battle stamina refund",
+    sub: "50% of 30",
+    icon: "stamina",
+  });
+  expect(oathStatBadge(oaths.TWINS, SEASON_ONE_BASE)).toEqual({
+    hero: "+30%",
+    unit: "Nearby ally bonus damage",
+    sub: "0% → 30%",
+    icon: "people",
+  });
+  expect(oathStatBadge(oaths.PERFECTION, SEASON_ONE_BASE)).toEqual({
+    hero: "+50%",
+    unit: "Clean-win (<15% lost) rewards",
+    sub: "100% → 150%",
+    icon: "crown",
+  });
+
+  expect(oathStatBadge(oaths.VITRIOL, {}).hero).toBe("100");
+  expect(oathStatBadge(oaths.ANGER, {}).hero).toBe("20");
+  expect(oathStatBadge(oaths.FOX, {})).toEqual({
+    hero: "-20%",
+    unit: "Reveal cost",
+    sub: "less",
+    icon: "stamina",
+  });
+  expect(oathStatBadge(oaths.FURY, {})).toEqual({
+    hero: "50%",
+    unit: "Won battle stamina refund",
+    sub: "0% → 50%",
+    icon: "stamina",
+  });
+  expect(oathStatBadge(oaths.ENLIGHTENMENT, {}).hero).toBe("+33%");
+});
+
+it("follows tuned game rules and keeps badge figures aligned with effect descriptions", () => {
   const customBase: PickEffectBase = {
     ...SEASON_ONE_BASE,
     deepLossPerTick: 400,
     attackStamina: 40,
+    revealStamina: 25,
+    maxStamina: 200,
     staminaPerSecond: 1 / 20,
   };
   expect(oathEffectDescription(oaths.VITRIOL, customBase)).toBe("Deep troop loss: 400 → 100 per tick (less)");
+  expect(oathStatBadge(oaths.VITRIOL, customBase).hero).toBe("400 → 100");
   expect(oathEffectDescription(oaths.ANGER, customBase)).toBe("Attack cost: 40 → 20 stamina (less)");
+  expect(oathStatBadge(oaths.ANGER, customBase).hero).toBe("40 → 20");
+  expect(oathEffectDescription(oaths.FOX, customBase)).toBe("Reveal cost: 25 → 20 stamina (Scouts 10 → 8)");
+  expect(oathStatBadge(oaths.FOX, customBase).hero).toBe("25 → 20");
+  expect(oathEffectDescription(oaths.FURY, customBase)).toBe("Won battle stamina refund: 0 → 20 stamina (50% of 40)");
+  expect(oathStatBadge(oaths.FURY, customBase).hero).toBe("+20");
+  expect(oathEffectDescription(oaths.TITANS, customBase)).toBe("+60 stamina now; max stamina: 200 → 260");
+  expect(oathStatBadge(oaths.TITANS, customBase).sub).toBe("+60 stamina now · 200 → 260");
   expect(oathEffectDescription(oaths.ENLIGHTENMENT, customBase)).toBe("Stamina recovery: +3/min → +4/min");
+  expect(oathStatBadge(oaths.ENLIGHTENMENT, customBase).hero).toBe("+4/min");
   expect(oathEffectDescription(oaths.VITRIOL, {})).toBe("Deep troop loss: 100 per tick");
   expect(oathEffectDescription(oaths.ANGER, {})).toBe("Attack cost: 20 stamina");
   expect(oathEffectDescription(oaths.DETECTION, {})).toBe("Guaranteed find after 4 empty reveals");
@@ -60,7 +186,13 @@ it("describes every playable Oath uniquely with its own rule and rejects unknown
     expect(oathName(order.orderId)).toBe(order.orderName);
     return oathEffectDescription(order.orderId, SEASON_ONE_BASE);
   });
+  const badges = playable.map((order) => {
+    const badge = oathStatBadge(order.orderId, SEASON_ONE_BASE);
+    return `${badge.hero}|${badge.unit}|${badge.sub}`;
+  });
   expect(new Set(descriptions).size).toBe(16);
+  expect(new Set(badges).size).toBe(16);
   expect(() => oathName(0)).toThrow();
   expect(() => oathEffectDescription(17, SEASON_ONE_BASE)).toThrow();
+  expect(() => oathStatBadge(17, SEASON_ONE_BASE)).toThrow();
 });

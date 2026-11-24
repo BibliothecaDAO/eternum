@@ -16,7 +16,7 @@ import {
   oathSlotResearchTier,
   troopOathSlots,
 } from "@bibliothecadao/eternum";
-import { RESOURCE_PRECISION, type TroopType } from "@bibliothecadao/types";
+import { formatExact, RESOURCE_PRECISION, type TroopType } from "@bibliothecadao/types";
 
 export function OathSlotPips({
   held,
@@ -32,14 +32,22 @@ export function OathSlotPips({
       <div className="oath-pips__row">
         {Array.from({ length: slots }, (_, index) => {
           const oath = held[index];
+          const active = oath === undefined && index === held.length;
           return (
             <span
               key={index}
               className="oath-pip"
               data-filled={oath ? "" : undefined}
+              data-active={active ? "" : undefined}
               title={oath ? `${oathName(oath)} — ${oathEffectDescription(oath, pickBase)}` : RESEARCH_TREE.oathOpen}
             >
-              {oath && <Icon name={orderMeaning(oath)} size={20} />}
+              {oath ? (
+                <Icon name={orderMeaning(oath)} size={18} />
+              ) : (
+                <span className="oath-pip__num" aria-hidden="true">
+                  {formatExact(index + 1)}
+                </span>
+              )}
             </span>
           );
         })}

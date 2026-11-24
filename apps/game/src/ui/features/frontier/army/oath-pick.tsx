@@ -1,6 +1,6 @@
 import "./oath-pick.css";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { configManager } from "@bibliothecadao/eternum";
 import { useDockArmies, type DockArmy } from "../hud/dock-armies";
@@ -11,6 +11,7 @@ import { useGame } from "@/hooks/context/game-context";
 import { sendOnce, useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { canIssueOrders } from "@/utils/can-issue-orders";
+import { aspectVariables } from "@/tokens";
 import {
   HudButton,
   HudChip,
@@ -29,11 +30,12 @@ import {
   FRAGMENT,
   FRAGMENTS,
   FRONTIER_TROOP_NAMES,
+  orderAspect,
   type TroopType,
 } from "@bibliothecadao/types";
 import { useFragmentsHeld } from "../value/fragments";
 import { usePickEffectBase, type PickEffectBase } from "../pick-effect-text";
-import { oathEffectDescription, oathName } from "./oath-details";
+import { oathEffectDescription, oathName, oathStatBadge } from "./oath-details";
 import { OathSlotPips } from "./oath-slots";
 
 const REDRAW_COST = nativeFragmentConstants.OATH_REROLL_FRAGMENTS;
@@ -87,8 +89,11 @@ function OathChoiceCard({
   redraw?: { index: number; disabled: boolean; onRedraw: () => void };
 }) {
   const name = oathName(id);
+  const badge = oathStatBadge(id, pickBase);
+  const aspect = orderAspect(id);
+  const aspectStyle = aspect !== null ? (aspectVariables(aspect) as CSSProperties) : undefined;
   return (
-    <div className="oath-card" data-oath-id={replace ? undefined : id}>
+    <div className="oath-card" data-oath-id={replace ? undefined : id} style={aspectStyle}>
       <button
         type="button"
         className="oath-card__choose"
@@ -96,13 +101,24 @@ function OathChoiceCard({
         onClick={onSelect}
         data-replace-oath={replace ? id : undefined}
         aria-label={replace ? `Replace ${name}` : undefined}
+        title={oathEffectDescription(id, pickBase)}
       >
-        <span className="oath-card__picture" aria-hidden="true">
-          <Icon name={orderMeaning(id)} size={105} className="size-full" />
+        <span className="oath-card__medallion" aria-hidden="true">
+          <Icon name={orderMeaning(id)} size={54} className="oath-card__sigil" />
         </span>
         <span className="oath-card__foot">
           <span className="oath-card__title">{name}</span>
-          <span className="oath-card__detail">{oathEffectDescription(id, pickBase)}</span>
+          <span className="oath-card__stat">
+            <span className="oath-card__hero-line">
+              <Icon name={badge.icon} size={18} className="oath-card__stat-icon" />
+              <span className="oath-card__hero">{badge.hero}</span>
+            </span>
+            <span className="oath-card__unit">{badge.unit}</span>
+          </span>
+          <span className="oath-card__sub">{badge.sub}</span>
+        </span>
+        <span className="oath-card__cta" aria-hidden="true">
+          {replace ? `Replace ${name}` : `Swear ${name}`}
         </span>
       </button>
       {redraw && (
@@ -116,9 +132,12 @@ function OathChoiceCard({
             aria-label={`Redraw ${name} for ${REDRAW_PRICE}`}
           >
             <span className="oath-card__redraw-label">
-              <span>Redraw · </span>
-              <Icon name="fragment" size={14} />
-              <span className="tabular-nums">{REDRAW_COST}</span>
+              <Icon name="dice" size={14} className="oath-card__redraw-dice" />
+              <span className="oath-card__redraw-word">Redraw · </span>
+              <span className="oath-card__redraw-price">
+                <Icon name="fragment" size={14} />
+                <span className="tabular-nums">{REDRAW_COST}</span>
+              </span>
             </span>
           </HudButton>
         </div>
@@ -147,7 +166,7 @@ function ArmyOathPick({
   const passResult = stamina && oathPassStamina(stamina.current, stamina.max);
   const troopLabel = FRONTIER_TROOP_NAMES[army.troopsFact.category as TroopType];
   const armyLine = `${army.label} · ${formatAmount(army.troops)} ${troopLabel}`;
-  const heading = picked === null ? "Choose an Oath" : "Choose an Oath to replace";
+  const heading = picked === null ? "Swear an Oath" : "Choose an Oath to replace";
 
   const choose = (oath: number | null, replace: number | null = null) =>
     sendOnce("army", army.explorerId, { order: "use" }, () =>
@@ -186,12 +205,12 @@ function ArmyOathPick({
             <span className="text-hud-label text-hud-muted">{armyLine}</span>
           </span>
           <div className="oath-pick__meta">
+            <OathSlotPips held={held} slots={progress.oath_slots} pickBase={pickBase} />
             {fragments !== null && (
               <HudChip icons={["fragment"]} label={formatCount(fragments, FRAGMENT, FRAGMENTS)}>
                 {formatShort(fragments)}
               </HudChip>
             )}
-            <OathSlotPips held={held} slots={progress.oath_slots} pickBase={pickBase} />
           </div>
         </div>
         {picked === null ? (
@@ -240,6 +259,7 @@ function ArmyOathPick({
         <HudButton
           kind="secondary"
           icon="stamina"
+          className="oath-pick__pass"
           disabled={!allowed || sending || !stamina}
           onClick={() => choose(null)}
           data-oath-pass=""
@@ -247,9 +267,11 @@ function ArmyOathPick({
           data-oath-pass-maximum={stamina?.max}
           data-oath-pass-result={passResult}
         >
-          Pass: +{nativeOathConstants.PASS_STAMINA} stamina
+          <span className="oath-pick__pass-lead">
+            Pass: <span className="oath-pick__pass-gain">+{nativeOathConstants.PASS_STAMINA}</span> stamina
+          </span>
           {stamina && (
-            <span className="text-hud-muted">
+            <span className="oath-pick__pass-preview">
               {stamina.current} → {passResult}
               <span className="oath-pick__pass-max"> / {stamina.max}</span>
             </span>

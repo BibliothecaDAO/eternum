@@ -10,7 +10,7 @@
 .oath-pips__row {
   display: flex;
   align-items: center;
-  gap: theme(spacing.1);
+  gap: theme(spacing[1.5]);
 }
 .oath-pip {
   display: inline-flex;
@@ -21,9 +21,23 @@
   border: 1px dashed var(--hud-line-strong);
   border-radius: var(--hud-radius-round);
   background: var(--hud-well);
+  color: var(--hud-muted);
+}
+.oath-pip__num {
+  font-size: var(--hud-text-badge);
+  line-height: var(--hud-leading-badge);
+  font-weight: var(--hud-weight-badge);
+  font-variant-numeric: tabular-nums;
+}
+.oath-pip[data-active] {
+  border-style: solid;
+  border-color: rgb(var(--hud-gold));
+  background: color-mix(in srgb, rgb(var(--hud-gold)) 18%, var(--hud-well));
+  color: rgb(var(--hud-gold));
+  box-shadow: 0 0 12px rgb(var(--hud-gold) / 0.28);
 }
 .oath-pip[data-filled] {
   border-style: solid;
-  border-color: color-mix(in srgb, rgb(var(--hud-gold)) 75%, transparent);
-  background: color-mix(in srgb, rgb(var(--hud-gold)) 18%, var(--hud-well));
+  border-color: color-mix(in srgb, rgb(var(--hud-gold)) 78%, transparent);
+  background: color-mix(in srgb, rgb(var(--hud-gold)) 20%, var(--hud-well));
 }

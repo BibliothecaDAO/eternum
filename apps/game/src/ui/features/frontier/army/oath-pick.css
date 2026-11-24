@@ -1,5 +1,5 @@
 .oath-pick {
-  width: min(100%, 24rem);
+  width: min(100%, 24.5rem);
   max-height: calc(100dvh - 2rem);
 }
 .oath-pick__body {
@@ -48,10 +48,18 @@
   min-width: 0;
   align-items: center;
   gap: theme(spacing.2);
-  border: 1px solid var(--hud-line-strong);
+  border: 1px solid color-mix(in srgb, rgb(var(--hud-aspect, var(--hud-gold))) 38%, var(--hud-line-strong));
   border-radius: var(--hud-radius-panel);
-  background: linear-gradient(135deg, var(--hud-surface-from), var(--hud-surface-to));
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, rgb(var(--hud-aspect, var(--hud-gold))) 8%, var(--hud-surface-from)),
+    var(--hud-surface-to)
+  );
   padding: theme(spacing[2.5]) theme(spacing.3);
+  transition: border-color var(--hud-fast) var(--hud-ease);
+}
+.oath-card:hover {
+  border-color: rgb(var(--hud-aspect, var(--hud-gold)) / 0.85);
 }
 .oath-card__choose {
   display: flex;
@@ -76,13 +84,23 @@
   outline: none;
   box-shadow: var(--hud-focus);
 }
-.oath-card__picture {
+.oath-card__medallion {
   display: inline-flex;
-  width: 56px;
-  height: 56px;
+  width: 54px;
+  height: 54px;
   flex: none;
   align-items: center;
   justify-content: center;
+  border: 2px solid rgb(var(--hud-aspect, var(--hud-gold)));
+  border-radius: var(--hud-radius-round);
+  background: radial-gradient(circle at 50% 45%, rgb(var(--hud-aspect, var(--hud-gold)) / 0.24), var(--hud-well) 74%);
+  box-shadow:
+    0 0 18px rgb(var(--hud-aspect, var(--hud-gold)) / 0.28),
+    inset 0 0 12px rgb(var(--hud-aspect, var(--hud-gold)) / 0.14);
+}
+.oath-card__sigil {
+  width: 34px;
+  height: 34px;
 }
 .oath-card__foot {
   display: flex;
@@ -95,24 +113,102 @@
 .oath-card__title {
   color: rgb(var(--hud-ink));
   font-family: var(--hud-font-display);
+  font-size: var(--hud-text-title);
+  line-height: var(--hud-leading-title);
+  font-weight: var(--hud-weight-title);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.oath-card__stat {
+  display: flex;
+  min-width: 0;
+  flex-wrap: nowrap;
+  align-items: baseline;
+  gap: theme(spacing[1.5]);
+  max-width: 100%;
+}
+.oath-card__hero-line {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: theme(spacing.1);
+}
+.oath-card__stat-icon {
+  flex: none;
+}
+.oath-card__hero {
+  color: rgb(var(--hud-aspect, var(--hud-gold)));
   font-size: var(--hud-text-display);
   line-height: var(--hud-leading-display);
   font-weight: var(--hud-weight-display);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
-.oath-card__detail {
+.oath-card__unit {
+  overflow: hidden;
+  color: rgb(var(--hud-aspect, var(--hud-gold)));
+  font-size: var(--hud-text-label);
+  line-height: var(--hud-leading-label);
+  font-weight: var(--hud-weight-label);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.oath-card__sub {
+  overflow: hidden;
+  max-width: 100%;
   color: var(--hud-muted);
-  font-size: var(--hud-text-body);
-  line-height: var(--hud-leading-body);
+  font-size: var(--hud-text-label);
+  line-height: var(--hud-leading-label);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.oath-card__cta {
+  display: none;
 }
 .oath-card__below {
   flex: none;
 }
+.oath-card__below > .ui-button {
+  min-width: 3.1rem;
+  height: auto;
+  padding: theme(spacing[1.5]) theme(spacing.2);
+}
 .oath-card__redraw-label {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: theme(spacing[0.5]);
+  font-size: var(--hud-text-label);
+  line-height: var(--hud-leading-label);
+}
+.oath-card__redraw-word {
+  display: none;
+}
+.oath-card__redraw-price {
   display: inline-flex;
   align-items: center;
   gap: theme(spacing.1);
-  font-size: var(--hud-text-label);
-  line-height: var(--hud-leading-label);
+}
+.oath-pick__pass {
+  width: 100%;
+  justify-content: center;
+  gap: theme(spacing.2);
+}
+.oath-pick__pass-lead {
+  display: inline-flex;
+  align-items: center;
+  gap: theme(spacing.1);
+}
+.oath-pick__pass-gain {
+  color: var(--hud-good);
+  font-weight: var(--hud-weight-strong);
+  font-variant-numeric: tabular-nums;
+}
+.oath-pick__pass-preview {
+  color: var(--hud-muted);
+  font-variant-numeric: tabular-nums;
 }
 .oath-pick__pass-max {
   display: none;
@@ -120,7 +216,7 @@
 
 @media (min-width: 640px) {
   .oath-pick {
-    width: min(100%, 60rem);
+    width: min(100%, 58rem);
   }
   .oath-pick__body {
     gap: theme(spacing.4);
@@ -144,35 +240,100 @@
   }
   .oath-pick__cards > .oath-card .oath-card__choose {
     flex-direction: column;
-    justify-content: center;
+    justify-content: space-between;
     gap: theme(spacing.3);
-    min-height: 15.5rem;
-    border: 1px solid var(--hud-line-strong);
+    min-height: 19rem;
+    border: 1px solid color-mix(in srgb, rgb(var(--hud-aspect, var(--hud-gold))) 42%, var(--hud-line-strong));
     border-radius: var(--hud-radius-panel);
-    background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
-    padding: theme(spacing.5) theme(spacing.4);
+    background:
+      radial-gradient(ellipse 80% 42% at 50% 18%, rgb(var(--hud-aspect, var(--hud-gold)) / 0.16), transparent 72%),
+      linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
+    padding: theme(spacing.5) theme(spacing.4) theme(spacing.4);
     text-align: center;
+    box-shadow: inset 0 1px 0 rgb(var(--hud-gold) / 0.14);
     transition:
       border-color var(--hud-fast) var(--hud-ease),
+      box-shadow var(--hud-fast) var(--hud-ease),
       transform var(--hud-fast) var(--hud-ease);
   }
-  .oath-pick__cards > .oath-card .oath-card__choose:hover:not(:disabled) {
+  .oath-pick__cards > .oath-card .oath-card__choose:hover:not(:disabled),
+  .oath-pick__cards > .oath-card .oath-card__choose:focus-visible:not(:disabled) {
     border-color: rgb(var(--hud-gold));
+    box-shadow:
+      0 0 24px rgb(var(--hud-aspect, var(--hud-gold)) / 0.24),
+      inset 0 1px 0 rgb(var(--hud-gold) / 0.35);
     transform: translateY(-2px);
   }
-  .oath-pick__cards > .oath-card .oath-card__picture {
-    width: 105px;
-    height: 105px;
+  .oath-pick__cards > .oath-card .oath-card__medallion {
+    width: 78px;
+    height: 78px;
+  }
+  .oath-pick__cards > .oath-card .oath-card__sigil {
+    width: 48px;
+    height: 48px;
   }
   .oath-pick__cards > .oath-card .oath-card__foot {
-    flex: 0 0 auto;
+    flex: 1 1 auto;
     align-items: center;
+    justify-content: center;
+    gap: theme(spacing.2);
+    width: 100%;
   }
   .oath-pick__cards > .oath-card .oath-card__title {
     font-size: var(--hud-text-display);
     line-height: var(--hud-leading-display);
+    letter-spacing: 0.12em;
+  }
+  .oath-pick__cards > .oath-card .oath-card__stat {
+    flex-direction: column;
+    align-items: center;
+    gap: theme(spacing.1);
+  }
+  .oath-pick__cards > .oath-card .oath-card__hero {
+    font-size: var(--hud-text-hero);
+    line-height: var(--hud-leading-hero);
+    font-weight: var(--hud-weight-hero);
+  }
+  .oath-pick__cards > .oath-card .oath-card__unit {
+    color: rgb(var(--hud-ink));
+    letter-spacing: 0.1em;
+  }
+  .oath-pick__cards > .oath-card .oath-card__cta {
+    display: inline-flex;
+    width: 100%;
+    min-height: var(--hud-control);
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--hud-line-strong);
+    border-radius: var(--hud-radius-control);
+    background: var(--hud-well);
+    padding: 0 theme(spacing.3);
+    color: rgb(var(--hud-ink));
+    font-size: var(--hud-text-strong);
+    line-height: var(--hud-leading-strong);
+    font-weight: var(--hud-weight-strong);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    transition:
+      border-color var(--hud-fast) var(--hud-ease),
+      background-color var(--hud-fast) var(--hud-ease),
+      color var(--hud-fast) var(--hud-ease);
+  }
+  .oath-pick__cards > .oath-card .oath-card__choose:hover:not(:disabled) .oath-card__cta,
+  .oath-pick__cards > .oath-card .oath-card__choose:focus-visible:not(:disabled) .oath-card__cta {
+    border-color: rgb(var(--hud-gold));
+    background: rgb(var(--hud-gold));
+    color: rgb(var(--hud-dark));
   }
   .oath-pick__cards > .oath-card .oath-card__below > .ui-button {
     width: 100%;
+    padding: theme(spacing[1.5]) theme(spacing.3);
+  }
+  .oath-pick__cards > .oath-card .oath-card__redraw-label {
+    flex-direction: row;
+    gap: theme(spacing[1.5]);
+  }
+  .oath-pick__cards > .oath-card .oath-card__redraw-word {
+    display: inline;
   }
 }
