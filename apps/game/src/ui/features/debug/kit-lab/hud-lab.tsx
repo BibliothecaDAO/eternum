@@ -81,7 +81,7 @@ import { DailyQuestChip } from "@/ui/features/frontier/hud/daily-quest-chip";
 import type { MapLayers } from "@/ui/features/frontier/hud/map-layers";
 import type { RealmBuildingItem } from "@/ui/features/frontier/hud/realm-card";
 import { FrontierPlaceSwitch, PlaceMenu } from "@/ui/features/frontier/hud/surface-deep-switch";
-import { type WithdrawStep, WithdrawSheet } from "@/ui/features/frontier/value/withdraw-sheet";
+import { WithdrawSheet } from "@/ui/features/frontier/value/withdraw-sheet";
 import { staminaShortfall } from "@/ui/design-system/kit/reasons";
 
 const HOUR = 3_600;
@@ -187,8 +187,6 @@ type LabOrder = {
 /** A deploy order on the state's realm: the troops it asks for, 2 wheat a troop, against the troops and wheat its stores hold. */
 type LabDeploy = {
   count: number;
-  /** Seconds until the next troop is home; none while nothing makes them. */
-  troopsWait?: number;
 };
 
 const DEPLOY: LabDeploy = { count: 1_000 };
@@ -219,8 +217,8 @@ const RUIN_CARD: LabSite = {
 };
 
 const WALLET_ADDRESS = "0x04a1d2c3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f99f3c";
-type LabWithdraw = { held: number; wallet: string | null; refusal?: string; step: WithdrawStep; amount: number };
-const WITHDRAW_500: LabWithdraw = { held: 1_240, wallet: WALLET_ADDRESS, step: { kind: "pick" }, amount: 500 };
+type LabWithdraw = { held: number; amount: number };
+const WITHDRAW_500: LabWithdraw = { held: 1_240, amount: 500 };
 /** Day 13 at 22:30: an 8-hour day from 21:40 that ends in the night, at 05:40; tomorrow lasts 20h. */
 const NIGHT: DayClock = {
   day: 13,
@@ -359,38 +357,17 @@ type LabArmySheet = {
   ethereal?: EtherealLayer;
 };
 
-const line = (overrides: Partial<StoreLine> & Pick<StoreLine, "kind">): StoreLine => ({
-  perHour: undefined,
-  held: undefined,
+const WHEAT_LINE: StoreLine = {
+  kind: "wheat",
+  perHour: 1_500,
+  tier: 5,
+  held: 4_410,
   limit: 18_000,
   tone: "calm",
-  fullIn: undefined,
+  fullIn: 9 * HOUR + 4 * 60,
   noBuilding: false,
-  ...overrides,
-});
-const STORE_LINES: StoreLine[] = [
-  line({
-    kind: "wheat",
-    perHour: 1_500,
-    tier: 5,
-    held: 4_410,
-    fullIn: 9 * HOUR + 4 * 60,
-    makers: ["9 Farms · +25/min"],
-  }),
-  line({
-    kind: "labor",
-    perHour: 500,
-    tier: 3,
-    held: 9_640,
-    fullIn: 16 * HOUR + 44 * 60,
-  }),
-  line({
-    kind: "troops",
-    perHour: 600,
-    held: 1_200,
-    fullIn: 28 * HOUR,
-  }),
-];
+  makers: ["9 Farms · +25/min"],
+};
 
 /** Today's lines, each written by the day log itself from the owner's 22 October stories (today-log-fixture.ts). */
 let todayLog: ReturnType<typeof ownerDayLog> | undefined;
@@ -692,7 +669,7 @@ const STATES = {
     refill: LAB_FRAGMENTS,
     order: { ...EXPLORE, stamina: { cost: 30, held: 10, wait: 40 * 60 } },
   },
-  stores: { clock: CLOCK, stores: STORES, armies: ARMIES, storeCard: STORE_LINES[0] },
+  stores: { clock: CLOCK, stores: STORES, armies: ARMIES, storeCard: WHEAT_LINE },
   research: { clock: CLOCK, stores: STORES, armies: ARMIES, research: true },
   // A refused order's notice, through the game's own notice store: on a desktop it stands at the rail's top.
   notice: { clock: CLOCK, stores: STORES, armies: ARMIES, notice: staminaShortfall(10, 30) },
@@ -1079,7 +1056,7 @@ const LabDeploySheet = ({
       onCount={setCount}
       start={start}
       slots={{ open, onPick: setSlot }}
-      troopsWait={deploy.troopsWait}
+      troopsWait={undefined}
       wheatCost={count * 2}
       tile="open"
       canDeploy={count > 0 && start !== undefined}
@@ -1140,8 +1117,7 @@ const labPickedArmy = (lab: LabState): { army: PickedArmyView; fragments: number
 const LabArmy = ({ army }: { army: LabArmySheet }) => {
   const base = VETERAN_ARMY;
   const stamina = { ...base.stamina, current: army.stamina ?? base.stamina.current };
-  const full = stamina.current >= stamina.max;
-  const view = { ...base, stamina, ethereal: army.ethereal, ...(full ? { secondsToFull: 0 } : {}) };
+  const view = { ...base, stamina, ethereal: army.ethereal };
   if (army.confirm)
     return <RefillConfirm stamina={stamina} held={army.fragments} sending={false} onRefill={noop} onCancel={noop} />;
   return (
@@ -1151,7 +1127,7 @@ const LabArmy = ({ army }: { army: LabArmySheet }) => {
       onClose={noop}
     >
       <ArmyDetail army={view} />
-      {army.fragments !== undefined && !full && (
+      {army.fragments !== undefined && (
         <HudWindowFoot>
           <RefillPrice price={fragmentsToFill(stamina)} held={army.fragments} onRefill={noop} />
         </HudWindowFoot>
@@ -1503,10 +1479,10 @@ const LabWithdrawSheet = ({ withdraw }: { withdraw: LabWithdraw }) => {
   return (
     <WithdrawSheet
       held={withdraw.held}
-      wallet={withdraw.wallet}
+      wallet={WALLET_ADDRESS}
       linkWalletLine={LINK_WALLET_FOR_LORDS}
-      refusal={withdraw.refusal ?? null}
-      step={withdraw.step}
+      refusal={null}
+      step={{ kind: "pick" }}
       amount={amount}
       onAmount={setAmount}
       onWithdraw={noop}
