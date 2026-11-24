@@ -248,9 +248,7 @@ function useOpeningContext(
   const hyperstructureAdvanced = (race?.standings.find((row) => row.aspect === race.own?.aspect)?.stage ?? 1) > 1;
   const hasEssence = (stores?.essence.amount ?? 0) > 0;
   const canResearch = canResearchNow(researchTree?.nodes);
-  const hasExplored =
-    reached.has("explore") ||
-    countExploredBeyondHomeRing(setup.store, realm, rules, now) > 0;
+  const hasExplored = reached.has("explore") || countExploredBeyondHomeRing(setup.store, realm, rules, now) > 0;
   const clock = dayClock(rules, now);
   const dayEndingSoon = clock.tone === "ember" && clock.secondsLeft !== undefined;
 

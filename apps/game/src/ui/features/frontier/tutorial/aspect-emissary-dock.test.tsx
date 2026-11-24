@@ -77,7 +77,9 @@ describe("AspectEmissaryDock", () => {
     expect(host.querySelector('button[aria-label="Close"]')).toBeNull();
     expect(host.querySelector(".emissary-dock__action")).toBeNull();
 
-    act(() => [...host.querySelectorAll("button")].find((button) => button.textContent === OPENING_WORDS.keepTutorial)!.click());
+    act(() =>
+      [...host.querySelectorAll("button")].find((button) => button.textContent === OPENING_WORDS.keepTutorial)!.click(),
+    );
     expect(dock?.textContent).not.toContain(OPENING_WORDS.skipFinal);
     expect(onSkipAll).not.toHaveBeenCalled();
 
