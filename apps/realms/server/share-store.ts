@@ -1,4 +1,4 @@
-import { FRIEND_FRAGMENTS, FRIENDS_BONUS_FRAGMENTS, FRIENDS_LIMIT } from "@bibliothecadao/types";
+import { FRIEND_FRAGMENTS } from "@bibliothecadao/types";
 import { profileOfIdentityUser } from "@realms-world/identity";
 import type { InvitedFriendState, ShareKind, ShareChannel, ShareMoment, ShareTally } from "@realms-world/identity";
 
@@ -252,24 +252,13 @@ export function createShareStore(db: D1Database) {
 
   const recordFriendPayout = async ({ friend, sharer }: PendingJoin, game: ShareGame, now: number) => {
     if (!(await isOwnMailbox(sharer, friend, game))) return;
-    const friendRow = `friend:${game.chainId}:${game.gameId}:${friend}`;
-    const bonusRow = `friends:${game.chainId}:${game.gameId}:${sharer}`;
-    const friendsPaid = `(SELECT COUNT(*) FROM "share_payouts"
-      WHERE "sharer" = ?2 AND "chain_id" = ?3 AND "game_id" = ?4 AND "friend" IS NOT NULL)`;
-    await db.batch([
-      db
-        .prepare(
-          `INSERT OR IGNORE INTO "share_payouts" ("id", "sharer", "friend", "chain_id", "game_id", "amount", "created_at")
-           SELECT ?1, ?2, ?5, ?3, ?4, ?6, ?7 WHERE ${friendsPaid} < ?8`,
-        )
-        .bind(friendRow, sharer, game.chainId, game.gameId, friend, FRIEND_FRAGMENTS, now, FRIENDS_LIMIT),
-      db
-        .prepare(
-          `INSERT OR IGNORE INTO "share_payouts" ("id", "sharer", "friend", "chain_id", "game_id", "amount", "created_at")
-           SELECT ?1, ?2, NULL, ?3, ?4, ?5, ?6 WHERE ${friendsPaid} >= ?7`,
-        )
-        .bind(bonusRow, sharer, game.chainId, game.gameId, FRIENDS_BONUS_FRAGMENTS, now, FRIENDS_LIMIT),
-    ]);
+    await db
+      .prepare(
+        `INSERT OR IGNORE INTO "share_payouts" ("id", "sharer", "friend", "chain_id", "game_id", "amount", "created_at")
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      )
+      .bind(`friend:${game.chainId}:${game.gameId}:${friend}`, sharer, friend, game.chainId, game.gameId, FRIEND_FRAGMENTS, now)
+      .run();
   };
 
   const isOwnMailbox = async (sharer: string, friend: string, game: ShareGame) => {

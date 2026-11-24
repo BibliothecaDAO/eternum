@@ -461,7 +461,7 @@ describe("the season's countdown, while its first day is ahead and Play has no g
     );
     expect(countdown.querySelector("[data-preseason-testnet]")).toBeNull();
     expect(countdown.textContent).toContain("Free to play");
-    expect(countdown.textContent).toContain("+100 Fragments per friend · +1,000 bonus at 10");
+    expect(countdown.textContent).toContain("+100 Fragments for each friend who reaches 100 Glory");
     expect(countdown.querySelectorAll('button[data-kind="primary"]')).toHaveLength(1);
 
     await act(async () => countdown.querySelector<HTMLButtonElement>('[data-aspect="Luminary"]')!.click());

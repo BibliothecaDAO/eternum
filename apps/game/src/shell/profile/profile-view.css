@@ -258,55 +258,6 @@
   padding: 0.875rem 1rem;
 }
 
-.referrals-track {
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-  border: 1px solid var(--app-line);
-  border-radius: var(--app-radius-control);
-  background: var(--app-well);
-  padding: 0.875rem 1rem;
-}
-
-.referrals-track__head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0.5rem;
-}
-
-.referrals-slots {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 0.45rem;
-}
-
-.referrals-slot {
-  display: grid;
-  height: 2.25rem;
-  place-items: center;
-  border: 1px solid var(--app-line-strong);
-  border-radius: var(--app-radius-control);
-  background: var(--app-surface);
-  font-size: var(--app-text-label);
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  color: var(--app-muted);
-}
-
-.referrals-slot[data-final] {
-  border-style: dashed;
-  border-color: rgb(var(--app-gold) / 0.65);
-  color: var(--gold2);
-}
-
-.referrals-slot[data-reached] {
-  border-color: rgb(var(--app-gold));
-  background: rgb(var(--app-gold) / 0.22);
-  color: var(--gold2);
-}
-
 .referrals-friends {
   display: flex;
   flex-direction: column;
@@ -431,10 +382,6 @@
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
-  }
-
-  .referrals-slots {
-    grid-template-columns: repeat(10, minmax(0, 1fr));
   }
 
   .referrals-friend {

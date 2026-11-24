@@ -4,9 +4,7 @@ import type { HeraldAspectRace } from "@bibliothecadao/eternum/game-sync";
 import {
   aspectName,
   aspects,
-  FRIEND_FRAGMENTS,
-  FRIENDS_BONUS_FRAGMENTS,
-  FRIENDS_LIMIT,
+  formatExact,
   questCatalog,
   type AspectId,
   type QuestId,
@@ -256,7 +254,7 @@ const PlayInviteStrip = () => {
             )}
             {tally && tally.friendsPaid > 0 && (
               <p className="text-app-label text-app-gold">
-                {`${SHARED_DAYS_WORDS.friendsPaid}: ${SHARED_DAYS_WORDS.ofLimit(tally.friendsPaid)}`}
+                {`${SHARED_DAYS_WORDS.friendsPaid}: ${formatExact(tally.friendsPaid)}`}
               </p>
             )}
           </div>
@@ -275,7 +273,7 @@ const SignedOutInviteStrip = () => {
       <div className="play-invite" data-play-invite>
         <div className="play-invite__text">
           <p className="text-app-label text-app-gold">
-            {PROFILE_WORDS.friendMilestone(FRIEND_FRAGMENTS, FRIENDS_BONUS_FRAGMENTS, FRIENDS_LIMIT)}
+            {PROFILE_WORDS.friendReward}
           </p>
           <p className="text-app-label text-app-muted">{PRESEASON_WORDS.inviteSignedOut}</p>
         </div>

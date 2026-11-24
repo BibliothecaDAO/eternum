@@ -89,7 +89,7 @@ opening that season's Results), or the archived Playtest board (`src/shell/seaso
 (`/lab/app/no-season/season`); Shop (`/shop`) pairs Spend Fragments (Ancient Seal, seal code redemption, in-game
 Fragment uses) with Buy Fragments (packs, custom amount, linked wallet tokens); You (`/profile`, `/profile/settings`) is
 a single-page hub with an anchored identity rail switching Overview & Realms, Referrals & Invite (`/profile#referrals`:
-the invite link, the 10-friend track and the friends the player brought, each with its state and Glory), Wallet &
+the invite link, the reward per friend and the friends the player brought, each with its state and Glory), Wallet &
 Devices, and Settings inline; Results (`/results/:id`, with **See the end map**) shows a Frontier season's 4-card
 chronicle recap (Season 1 Aspect race or archived Playtest overview); What's new (`/scroll`) shows a release's patch
 notes, a tab per section, and every release. `/lab/kit/panels` the HUD's holdings and selected-realm panels as a player

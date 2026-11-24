@@ -341,11 +341,8 @@ import {
   formatFigure,
   formatGain,
   formatCount,
-  formatOrdinal,
   FRIEND_FRAGMENTS,
   FRIEND_GLORY,
-  FRIENDS_BONUS_FRAGMENTS,
-  FRIENDS_LIMIT,
   FRONTIER_TROOP_NAMES,
   formatClockTime,
   formatDuration,
@@ -1195,8 +1192,6 @@ export const SHARED_DAYS_WORDS = {
   },
   friendsPaid: "Friends paid",
   fragmentsEarned: `${FRAGMENTS} earned`,
-  ofLimit: (paid: number) => `${formatExact(paid)}/${formatExact(FRIENDS_LIMIT)}`,
-  friendRule: `A friend who joins by your Aspect link and reaches ${formatExact(FRIEND_GLORY)} ${ASPECT_PAGE_WORDS.glory} pays you ${formatCount(FRIEND_FRAGMENTS, FRAGMENT, FRAGMENTS)}. Your ${formatOrdinal(FRIENDS_LIMIT)} adds ${formatExact(FRIENDS_BONUS_FRAGMENTS)}.`,
 } as const;
 
 export const INVITED_FRIENDS_WORDS = {
@@ -1625,9 +1620,7 @@ export const PROFILE_WORDS = {
   settingsShort: "Settings",
   tabsLabel: "Account sections",
   noAspectInvite: "Join an Aspect on Play to get your personal invite link.",
-  friendsProgress: (paid: number, limit: number) => `${formatExact(paid)} of ${formatExact(limit)} friends`,
-  friendMilestone: (perFriend: number, bonus: number, limit: number) =>
-    `+${formatExact(perFriend)} ${FRAGMENTS} per friend · +${formatExact(bonus)} bonus at ${formatExact(limit)}`,
+  friendReward: `+${formatExact(FRIEND_FRAGMENTS)} ${FRAGMENTS} for each friend who reaches ${formatExact(FRIEND_GLORY)} ${ASPECT_PAGE_WORDS.glory}`,
   howToPlay: "How to play",
   account: "Account",
   notifications: "Notifications",

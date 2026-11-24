@@ -1,9 +1,6 @@
 import "./play-page.css";
 
 import {
-  FRIEND_FRAGMENTS,
-  FRIENDS_BONUS_FRAGMENTS,
-  FRIENDS_LIMIT,
   aspectName,
   aspects,
   formatAmount,
@@ -324,7 +321,7 @@ const InviteStripFrame = ({ rewardLine, children }: { rewardLine: string; childr
 
 const PreseasonInviteStrip = ({ signedIn, aspect }: { signedIn: boolean; aspect: AspectId | null }) => {
   const requestSignIn = useRequestSignIn();
-  const rewardLine = PROFILE_WORDS.friendMilestone(FRIEND_FRAGMENTS, FRIENDS_BONUS_FRAGMENTS, FRIENDS_LIMIT);
+  const rewardLine = PROFILE_WORDS.friendReward;
   if (signedIn && aspect !== null) return <SignedInAspectInvite rewardLine={rewardLine} />;
   return (
     <InviteStripFrame rewardLine={rewardLine}>

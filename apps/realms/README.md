@@ -68,8 +68,8 @@ listed shard's open Frontier games, the first to reach it deciding. Only games t
 cannot answer leaves its joins for the next read. A sharer's tally read settles that sharer's joins; the operator's
 report and the minute cron settle every join.
 
-An Aspect invite pays its sharer in the friend's game: `FRIEND_FRAGMENTS` for each of the first `FRIENDS_LIMIT` friends,
-and `FRIENDS_BONUS_FRAGMENTS` more at the last of them (all in `packages/types/src/constants/shop.ts`). A friend on the
+An Aspect invite pays its sharer in the friend's game: `FRIEND_FRAGMENTS` for each activated friend, with no cap (in
+`packages/types/src/constants/shop.ts`). A friend on the
 sharer's mailbox, or on one an already paid friend has, activates but pays nothing (one person counts once). Each payout
 is a `share_payouts` row whose id is the credit's id on chain; settlement sends unpaid rows to the relay's
 `/api/value/operator/fragments`, which calls `credit_fragments`, and marks a row paid once the relay accepts it. A

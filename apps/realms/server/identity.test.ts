@@ -3359,7 +3359,7 @@ describe("shared links", () => {
     expect(delivered.friends.map(({ state }) => state)).toEqual(["paid", "joined", "paid"]);
   });
 
-  it("pays an Aspect invite's sharer 100 Fragments for each of the first 10 friends at 100 Glory, and 1,000 more at the 10th", async () => {
+  it("pays an Aspect invite's sharer 100 Fragments for each friend at 100 Glory, past ten, with no bonus", async () => {
     const sharer = await player("payout-sharer");
     publishAspects(sharer.account, 2);
     const code = await inviteCode(sharer);
@@ -3373,18 +3373,9 @@ describe("shared links", () => {
     for (const friend of friends.slice(9)) friend.earn(150);
     await minuteCron();
     await minuteCron();
-    expect(await sharer.tally()).toMatchObject({ activated: 11, friendsPaid: 10, fragmentsEarned: 2000 });
+    expect(await sharer.tally()).toMatchObject({ activated: 11, friendsPaid: 11, fragmentsEarned: 1100 });
     const credits = fragmentCredits().filter(({ realmsId }) => realmsId === sharer.realmsId);
-    expect(credits.filter(({ amount }) => amount === 100)).toHaveLength(10);
-    expect(credits.filter(({ amount }) => amount === 1000)).toEqual([
-      {
-        id: `friends:${chainId}:${gameId}:${sharer.realmsId}`,
-        realmsId: sharer.realmsId,
-        chainId,
-        gameId,
-        amount: 1000,
-      },
-    ]);
+    expect(credits.map(({ amount }) => amount)).toEqual(Array(11).fill(100));
   });
 
   it("pays nothing for a friend on the sharer's own mailbox, and the minute cron retries a credit the relay refused until it takes it, once", async () => {
