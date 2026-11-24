@@ -1,0 +1,340 @@
+---
+title: Get the data
+description: Public Herald HTTP routes, Starknet RPC calls, field meanings, rate etiquette, and runnable recipes
+---
+
+import { CopyCode } from "@/components/CopyCode";
+import { GameIcon } from "@/components/GameIcon";
+import { PUBLIC_DATA } from "@/utils/public-data";
+
+# Get the data
+
+Every confirmed fact in Frontier is public onchain. You can read game state, Aspect standings, and story history
+straight from Herald over HTTP, or query the shard RPC without an API key or account.
+
+- Herald base URL is **{PUBLIC_DATA.heraldUrl}** (GET requests, `Access-Control-Allow-Origin: *`).
+- Shard Starknet JSON-RPC URL is **{PUBLIC_DATA.rpcUrl}** (POST requests, `Access-Control-Allow-Origin: *`).
+
+Both endpoints work from `curl`, Node.js, Python, and browser pages. If you use Python's `urllib`, send a standard
+`User-Agent` header so edge filters accept your request.
+
+## Aspect IDs
+
+Herald identifies the {PUBLIC_DATA.aspectsCount} Aspects by number across `/games`, `/snapshot`, and
+`/aspects/<id>/members`.
+
+| ID                          | Aspect                                                                            |
+| --------------------------- | --------------------------------------------------------------------------------- |
+| {PUBLIC_DATA.aspects[0].id} | <GameIcon name={PUBLIC_DATA.aspects[0].icon} /> **{PUBLIC_DATA.aspects[0].name}** |
+| {PUBLIC_DATA.aspects[1].id} | <GameIcon name={PUBLIC_DATA.aspects[1].icon} /> **{PUBLIC_DATA.aspects[1].name}** |
+| {PUBLIC_DATA.aspects[2].id} | <GameIcon name={PUBLIC_DATA.aspects[2].icon} /> **{PUBLIC_DATA.aspects[2].name}** |
+| {PUBLIC_DATA.aspects[3].id} | <GameIcon name={PUBLIC_DATA.aspects[3].icon} /> **{PUBLIC_DATA.aspects[3].name}** |
+
+## Public routes
+
+All examples below were run against production on 24 November 2026 during Final Testnet registration (`game_id: 1`,
+`testnet-1795521600`), with long responses shortened. Once Season 1 opens, pick the game whose `name` starts with
+`frontier-` from `/games`.
+
+### 1. Game directory (`GET /games`)
+
+Lists every game on the shard with its clock, player count, Aspect member counts, and hyperstructure heights. Pass an
+optional `?player=0x...` address to include that player's state.
+
+<CopyCode>{PUBLIC_DATA.snippets.gamesCurl}</CopyCode>
+
+<CopyCode>{PUBLIC_DATA.snippets.gamesJs}</CopyCode>
+
+Shortened response from production:
+
+```json
+{
+  "confirmed_block": 49678,
+  "world_address": "0xaadbe833ac33670c8c2aa05ce406a07f44742582def994ae1e601ae84f4a3",
+  "games": [
+    {
+      "game_id": 1,
+      "name": "testnet-1795521600",
+      "mode": "frontier",
+      "status": "Registration",
+      "player_count": 0,
+      "settled_realms_count": 0,
+      "aspect_members": { "1": 0, "2": 0, "3": 0, "4": 0 },
+      "aspect_race": {
+        "finish_height": 10000,
+        "season_days": 50,
+        "heights": { "1": 0, "2": 0, "3": 0, "4": 0 }
+      },
+      "clock": {
+        "start_settling_at": 1795521600,
+        "start_main_at": 1795521600,
+        "end_at": 1796169600,
+        "scheduled_end_at": 1796169600
+      }
+    }
+  ]
+}
+```
+
+| Field                                   | Meaning                                                                             |
+| --------------------------------------- | ----------------------------------------------------------------------------------- |
+| `confirmed_block`                       | Latest confirmed Madara block folded by Herald.                                     |
+| `game_id`                               | Numeric ID used in `/games/<game_id>/...` routes.                                   |
+| `name`                                  | Game slug (`testnet-<timestamp>` for testnet, `frontier-<timestamp>` for Season 1). |
+| `status`                                | Game lifecycle state (`Registration`, `Live`, `Ended`).                             |
+| `player_count` / `settled_realms_count` | Enrolled players and created realms in the game.                                    |
+| `aspect_members`                        | Member count per Aspect ID.                                                         |
+| `aspect_race`                           | `finish_height`, `season_days`, and current `heights` per Aspect ID.                |
+| `clock`                                 | Unix timestamps in seconds for settling start, main start, and end.                 |
+
+### 2. Shard manifest (`GET /manifest`)
+
+Returns the shard chain ID, the public Starknet RPC URL, release schema hashes, and the `games` contract address.
+
+<CopyCode>{PUBLIC_DATA.snippets.manifestCurl}</CopyCode>
+
+<CopyCode>{PUBLIC_DATA.snippets.manifestJs}</CopyCode>
+
+Shortened response from production:
+
+```json
+{
+  "version": 1,
+  "chainId": "0x50524f44554354494f4e5f31386561636232303030656234313063",
+  "rpcUrl": "https://rpc.realms.party/rpc/v0_10_2",
+  "contracts": {
+    "games": "0xaadbe833ac33670c8c2aa05ce406a07f44742582def994ae1e601ae84f4a3"
+  }
+}
+```
+
+### 3. Herald health (`GET /health`)
+
+Reports whether Herald is up, its latest `confirmed_block`, and how many world models it decodes.
+
+<CopyCode>{PUBLIC_DATA.snippets.healthCurl}</CopyCode>
+
+<CopyCode>{PUBLIC_DATA.snippets.healthJs}</CopyCode>
+
+Response from production:
+
+```json
+{
+  "confirmed_block": 49678,
+  "decoded_models": 88,
+  "service": "herald",
+  "success": true,
+  "undecodable_events": 0
+}
+```
+
+### 4. Current state snapshot (`GET /games/<id>/snapshot?models=...`)
+
+Returns current confirmed rows for the models you name in `models` (comma-separated). Always pass `?models=...` so you
+only download the tables you need. You can also pass `&actor=0x...` or `&owner=0x...` to narrow rows to one player.
+
+Useful Season 1 model names are `AspectHyperstructure`, `AspectMembers`, `AspectActivity`, `HomeAspect`, `RaceMember`,
+`RaceResult`, `ExplorerTroops`, `DeepArmy`, `DeepSite`, `DeepGuard`, `AltarBar`, `WorldBane`, `TeamBane`, `Seal`, and
+`Structure`. Numeric values inside snapshot rows are hex strings (`"0x..."`), which `BigInt(value)` parses cleanly.
+
+<CopyCode>{PUBLIC_DATA.snippets.snapshotCurl}</CopyCode>
+
+<CopyCode>{PUBLIC_DATA.snippets.snapshotJs}</CopyCode>
+
+Shortened response from production:
+
+```json
+{
+  "game_id": "1",
+  "confirmed_block": 49679,
+  "models": [
+    {
+      "model": "AspectHyperstructure",
+      "rows": [
+        { "key": "0x1:0x1", "value": { "game_id": "0x1", "aspect": "0x1", "height": "0x0" } },
+        { "key": "0x1:0x2", "value": { "game_id": "0x1", "aspect": "0x2", "height": "0x0" } }
+      ]
+    },
+    {
+      "model": "DeepSite",
+      "rows": [
+        {
+          "key": "0x1:0x1",
+          "value": { "game_id": "0x1", "entity_id": "0x1", "kind": "0x3", "ring": "0x0", "day": "0x0" }
+        }
+      ]
+    },
+    { "model": "AspectActivity", "rows": [] }
+  ]
+}
+```
+
+### 5. Aspect Glory roster (`GET /games/<id>/aspects/<aspect_id>/members`)
+
+Season 1 ranks players by Glory inside each Aspect. Calling `/games/<id>/leaderboard` on a Season 1 game returns
+`404 {"error":"season_one_ranks_aspects"}`, so read `/aspects/<aspect_id>/members` instead.
+
+Page size `limit` defaults to {PUBLIC_DATA.limits.rosterDefault} and accepts 1 to {PUBLIC_DATA.limits.rosterMax}. Use
+`offset` to walk the full roster. The response also includes an `X-Confirmed-Block` header.
+
+<CopyCode>{PUBLIC_DATA.snippets.membersCurl}</CopyCode>
+
+<CopyCode>{PUBLIC_DATA.snippets.membersJs}</CopyCode>
+
+Response from production:
+
+```json
+{
+  "game_id": "1",
+  "aspect": 1,
+  "total": 0,
+  "limit": 50,
+  "offset": 0,
+  "members": []
+}
+```
+
+Each entry in `members` has `rank` (1-based integer), `entity_id` (realm entity ID string), `realm_id` (integer),
+`owner` (Starknet address hex string), and `glory` (decimal string).
+
+### 6. Story history (`GET /games/<id>/history`)
+
+Returns confirmed immutable events ordered newest first, with `complete_through_block` and `total`. Filter by
+`model=StoryEvent` and optional `story` variant (`RealmCreatedStory`, `ExplorationReward`, `BattleEvent`, `SitePayout`,
+`ExplorerCreateStory`, `StructureLevelUpStory`), `owner=0x...`, or `entity_id=<decimal>`.
+
+Page size `limit` defaults to {PUBLIC_DATA.limits.historyDefault} and accepts 0 to {PUBLIC_DATA.limits.historyMax}.
+
+<CopyCode>{PUBLIC_DATA.snippets.historyCurl}</CopyCode>
+
+<CopyCode>{PUBLIC_DATA.snippets.historyJs}</CopyCode>
+
+Response from production:
+
+```json
+{
+  "complete_through_block": 49679,
+  "items": [],
+  "limit": 100,
+  "offset": 0,
+  "total": 0
+}
+```
+
+Each item in `items` has `block_number`, `transaction_index`, `event_index`, `transaction_hash`, `game_id`, `model`, and
+`value` (where `value.timestamp` holds the Unix timestamp in seconds as a hex or decimal string).
+
+### 7. Single expedition site (`GET /games/<id>/sites/<entity_id>`)
+
+Looks up one expedition site by decimal `entity_id`. Returns `404 {"error":"unknown_site"}` when no site exists for that
+ID.
+
+<CopyCode>{PUBLIC_DATA.snippets.siteCurl}</CopyCode>
+
+<CopyCode>{PUBLIC_DATA.snippets.siteJs}</CopyCode>
+
+Response from production (before any expedition sites are revealed):
+
+```json
+{
+  "error": "unknown_site"
+}
+```
+
+### 8. Chain RPC (`POST /rpc/v0_10_2`)
+
+Standard Starknet JSON-RPC endpoint for block numbers, block timestamps, and transaction hashes.
+
+<CopyCode>{PUBLIC_DATA.snippets.rpcCurl}</CopyCode>
+
+<CopyCode>{PUBLIC_DATA.snippets.rpcJs}</CopyCode>
+
+Shortened responses from production:
+
+```json
+{ "jsonrpc": "2.0", "id": 1, "result": 49680 }
+```
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "block_number": 49680,
+    "block_hash": "0x64c7b6a0de6707479d4e20fafb524b90fb8f336fe3194122143a1c6d9fb745a",
+    "status": "ACCEPTED_ON_L2",
+    "timestamp": 1795520902,
+    "transactions": []
+  }
+}
+```
+
+Herald also exposes `GET /games/updates` (a Server-Sent Events stream that emits `data: changed` when the game directory
+changes), `GET /games/<id>/days/<day>/ranks` (closed Frontier day ranks, `404` until a day closes), and
+`GET /games/<id>/review/snapshot` (frozen snapshot after a game ends, `404` while live).
+
+## Rate etiquette
+
+Herald serves public reads with `Cache-Control: no-store`, so every request reaches the server. Keep your script polite:
+
+- Cache responses on your side for at least 60 seconds (or 1 hour for dashboards and spreadsheets).
+- Always pass `?models=` on `/snapshot` instead of requesting the whole world.
+- Use the maximum page size (`limit=`{PUBLIC_DATA.limits.rosterMax} on `/members`, `limit=`
+  {PUBLIC_DATA.limits.historyMax} on `/history`) and page sequentially rather than firing dozens of concurrent offsets.
+- Subscribe to `GET /games/updates` (SSE) instead of polling `/games` every second.
+- Do not scan tens of thousands of historical blocks over RPC from a browser; read Herald's folded `/snapshot` and
+  `/history` routes instead.
+
+## Three runnable recipes
+
+Copy any script below into a `.mjs` file and run it with Node 20+ (`node script.mjs`), or paste the body into a browser
+console. Every recipe was run against production on 24 November 2026.
+
+### My Aspect's standing
+
+Finds the active Season 1 (or testnet) game, reads your Aspect's hyperstructure height and member count, and loads its
+top 10 Glory earners. Change `myAspect` to {PUBLIC_DATA.aspects[0].id} ({PUBLIC_DATA.aspects[0].name}),
+{PUBLIC_DATA.aspects[1].id} ({PUBLIC_DATA.aspects[1].name}), {PUBLIC_DATA.aspects[2].id}
+({PUBLIC_DATA.aspects[2].name}), or {PUBLIC_DATA.aspects[3].id} ({PUBLIC_DATA.aspects[3].name}).
+
+<CopyCode>{PUBLIC_DATA.snippets.recipeStanding}</CopyCode>
+
+Output from production:
+
+```json
+{
+  "game": "testnet-1795521600",
+  "status": "Registration",
+  "aspect": "Prowess",
+  "height": 0,
+  "finish_height": 10000,
+  "members": 0,
+  "top_members": []
+}
+```
+
+### Aspect rosters as CSV
+
+Pages all {PUBLIC_DATA.aspectsCount} Aspects at `limit=`{PUBLIC_DATA.limits.rosterMax} and prints a CSV you can redirect
+to a file (`node rosters.mjs > rosters.csv`) and open in a spreadsheet.
+
+<CopyCode>{PUBLIC_DATA.snippets.recipeCsv}</CopyCode>
+
+Output from production (header only while registration has 0 enrolled players; one row per player once play opens):
+
+```text
+aspect,rank,owner,realm_id,glory
+```
+
+### Realms created per UTC day
+
+Pages `RealmCreatedStory` events at `limit=`{PUBLIC_DATA.limits.historyMax}, converts each `item.value.timestamp` to a
+UTC date (`YYYY-MM-DD`), and prints the daily counts.
+
+<CopyCode>{PUBLIC_DATA.snippets.recipeRealmsPerDay}</CopyCode>
+
+Output from production (empty object before the first realm is created; keys are `"YYYY-MM-DD"` dates once play opens):
+
+```json
+{}
+```

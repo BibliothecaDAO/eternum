@@ -294,6 +294,7 @@ AREAS = {
         "contracts/l3/world-native/tests/fixtures/**",
         "contracts/common/addresses/**",
         "contracts/utils/**",
+        "apps/herald/src/http-limits.ts",
         "apps/herald/src/native/release-definition.ts",
         "apps/herald/src/native/schema.ts",
         "apps/herald/src/shard-manifest.ts",

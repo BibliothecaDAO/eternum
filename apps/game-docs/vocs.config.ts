@@ -106,6 +106,10 @@ export default defineConfig({
       ],
     },
     {
+      text: "Data",
+      items: [{ text: "Get the data", link: "/data/get-the-data" }],
+    },
+    {
       text: "Developers",
       collapsed: true,
       items: [

@@ -277,6 +277,27 @@ export const payoutWalletPhrases = (changeHoldSeconds, claimWindowSeconds) => [
 ];
 
 /** The phrases every rules page that states a stamina, guard, chest or points number must show. */
+export const publicDataPhrases = (release, heraldLimits) => {
+  const aspectMapLiteral = `{ ${aspects.map((aspect) => `${aspect.id}: "${aspect.name}"`).join(", ")} }`;
+  return [
+    {
+      page: "data/get-the-data",
+      phrases: [
+        `Herald base URL is ${release.public_herald_url}`,
+        `Shard Starknet JSON-RPC URL is ${release.public_rpc_url}`,
+        `curl -sS ${release.public_herald_url}/games`,
+        `curl -sS -X POST ${release.public_rpc_url}`,
+        `const ASPECTS = ${aspectMapLiteral};`,
+        `Page size limit defaults to ${heraldLimits.ROSTER_PAGE_DEFAULT} and accepts 1 to ${heraldLimits.ROSTER_PAGE_LIMIT}.`,
+        `Page size limit defaults to ${heraldLimits.HISTORY_PAGE_DEFAULT} and accepts 0 to ${heraldLimits.HISTORY_PAGE_LIMIT}.`,
+        `limit=${heraldLimits.ROSTER_PAGE_LIMIT}&offset=`,
+        `limit=${heraldLimits.HISTORY_PAGE_LIMIT}&offset=`,
+        ...aspects.map((aspect) => `${aspect.id} ${aspect.name}`),
+      ],
+    },
+  ];
+};
+
 export const expectedPhrases = (
   frontier,
   frontierPreset,
@@ -352,6 +373,8 @@ export const loadBalanceSources = async () => {
       join(here, "../docs/utils/season-calendar.ts"),
     );
     const { CONTRACT: contract } = await server.ssrLoadModule(join(here, "../docs/utils/contract-constants.ts"));
+    const productionRelease = JSON.parse(readFileSync(join(here, "../../../deploy/release/production.json"), "utf8"));
+    const heraldLimits = await server.ssrLoadModule(join(here, "../../herald/src/http-limits.ts"));
     return {
       frontierPreset,
       frontierConfig,
@@ -370,6 +393,8 @@ export const loadBalanceSources = async () => {
       relicMeaning,
       calendar,
       contract,
+      productionRelease,
+      heraldLimits,
       payoutWalletChangeSeconds: PAYOUT_WALLET_CHANGE_SECONDS,
       raceClaimWindowSeconds: RACE_CLAIM_WINDOW_SECONDS,
     };
@@ -536,6 +561,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const phrases = [
     ...expectedPhrases(frontierConfig, frontierPreset, nativeRules, nativeFragments, nativeOaths, nativeRace, sources),
     ...payoutWalletPhrases(payoutWalletChangeSeconds, raceClaimWindowSeconds),
+    ...publicDataPhrases(sources.productionRelease, sources.heraldLimits),
   ];
   const missing = [
     ...missingPhrases(dist, phrases),
