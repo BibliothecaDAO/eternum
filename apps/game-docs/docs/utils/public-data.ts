@@ -25,6 +25,7 @@ const aspectListLine = aspects.map((aspect) => `${aspect.id} = ${aspect.name}`).
 const sampleAspectId = aspects[1].id;
 const precisionText = RESOURCE_PRECISION.toLocaleString("en-US");
 const statsCacheText = STATS_CACHE_SECONDS.toLocaleString("en-US");
+const gloryUnitNote = `decimal string scaled by ${precisionText} — divide by ${precisionText} for whole Glory`;
 
 export const SNAPSHOT_MODELS = [
   "AspectHyperstructure",
@@ -90,7 +91,7 @@ export const PUBLIC_ROUTES: readonly PublicRouteSpec[] = [
     base: "herald",
     path: "/games/:id/aspects/:aspect_id/members",
     params: `?limit=1..${ROSTER_PAGE_LIMIT} (default ${ROSTER_PAGE_DEFAULT})&offset=0`,
-    returns: "total, limit, offset, and members[] (rank, entity_id, realm_id, owner, unscaled decimal glory)",
+    returns: `total, limit, offset, and members[] (rank, entity_id, realm_id, owner, glory as ${gloryUnitNote})`,
   },
   {
     method: "GET",
@@ -169,8 +170,8 @@ export const buildAgentPrompt = (routes: readonly PublicRouteSpec[]) => {
     `Aspect IDs: ${aspectListLine}.`,
     "",
     "Units and encoding:",
-    `- Snapshot row numbers are hex strings ("0x..."). Parse with BigInt(value) and divide raw resource, troop, or raw Glory amounts by ${precisionText} (10^9).`,
-    "- /games/:id/aspects/:aspect_id/members already returns glory as an unscaled decimal string.",
+    `- Snapshot row numbers are hex strings ("0x..."). Parse with BigInt(value) and divide raw resource, troop, or Glory amounts by ${precisionText} (10^9).`,
+    `- /games/:id/aspects/:aspect_id/members returns glory as a ${gloryUnitNote} (for example, "${10 * RESOURCE_PRECISION}" is 10 Glory).`,
     "- History item.value.timestamp values are Unix timestamps in seconds (hex or decimal string).",
     `- Useful /snapshot models: ${snapshotModelsList}.`,
     "",
@@ -211,6 +212,7 @@ export const PUBLIC_DATA = {
     historyMax: String(HISTORY_PAGE_LIMIT),
   },
   snapshotModelsList,
+  gloryUnitNote,
   leaderboardRule: LEADERBOARD_RULE,
   rateEtiquette: RATE_ETIQUETTE,
   routesTable,

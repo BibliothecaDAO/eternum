@@ -16,7 +16,8 @@ const loadPublicData = async () => {
   try {
     const publicData = await server.ssrLoadModule(join(here, "../docs/utils/public-data.ts"));
     const limits = await server.ssrLoadModule(join(here, "../../herald/src/http-limits.ts"));
-    return { ...publicData, limits };
+    const { buildAspectRoster } = await server.ssrLoadModule(join(here, "../../herald/src/native/aspect-roster.ts"));
+    return { ...publicData, limits, buildAspectRoster };
   } finally {
     await server.close();
   }
@@ -93,4 +94,32 @@ test("buildAgentPrompt renders dynamically from its route list and shares single
   assert.ok(PUBLIC_DATA.agentPrompt.includes(LEADERBOARD_RULE));
   assert.ok(PUBLIC_DATA.agentPrompt.includes(RESOURCE_PRECISION.toLocaleString("en-US")));
   for (const aspect of aspects) assert.ok(PUBLIC_DATA.agentPrompt.includes(`${aspect.id} = ${aspect.name}`));
+});
+
+test("/members glory encoding matches buildAspectRoster raw RESOURCE_PRECISION scaling", async () => {
+  const { PUBLIC_DATA, PUBLIC_ROUTES, buildAspectRoster } = await loadPublicData();
+  const rawTenGlory = BigInt(10 * RESOURCE_PRECISION);
+  const rows = {
+    RaceRules: [{ key: "0x1", value: { game_id: "0x1" } }],
+    Structure: [
+      {
+        key: "0x1:0x42",
+        value: { game_id: "0x1", entity_id: "0x42", owner: "0xabc", metadata: { realm_id: "0x7" } },
+      },
+    ],
+    HomeAspect: [{ key: "0x1:0x42", value: { game_id: "0x1", home: "0x42", aspect: "0x1" } }],
+    RaceMember: [
+      { key: "0x1:0x42", value: { game_id: "0x1", entity_id: "0x42", glory: `0x${rawTenGlory.toString(16)}` } },
+    ],
+  };
+  const roster = buildAspectRoster((model) => rows[model] ?? [], "1", 1);
+  assert.ok(roster && roster.length === 1);
+  assert.equal(roster[0].glory, rawTenGlory.toString());
+
+  const membersRoute = PUBLIC_ROUTES.find((route) => route.path === "/games/:id/aspects/:aspect_id/members");
+  assert.ok(membersRoute);
+  assert.equal(membersRoute.returns.toLowerCase().includes("unscaled"), false);
+  assert.equal(PUBLIC_DATA.agentPrompt.toLowerCase().includes("unscaled"), false);
+  assert.ok(membersRoute.returns.includes(RESOURCE_PRECISION.toLocaleString("en-US")));
+  assert.ok(PUBLIC_DATA.agentPrompt.includes(rawTenGlory.toString()));
 });
