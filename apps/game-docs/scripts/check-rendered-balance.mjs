@@ -652,7 +652,6 @@ export const loadBalanceSources = async () => {
     const productionRelease = JSON.parse(readFileSync(join(here, "../../../deploy/release/production.json"), "utf8"));
     const environments = JSON.parse(readFileSync(join(here, "../../../deploy/first/environments.json"), "utf8"));
     const { isDevEnvironment } = await server.ssrLoadModule(join(here, "../../game/src/shell/frame/environment.ts"));
-    const { APP_ADDRESS: appAddress } = await server.ssrLoadModule(join(here, "../../game/src/config/app-address.ts"));
     const devBuild = isDevEnvironment(process.env.VITE_PUBLIC_ENVIRONMENT);
     const dashboardOrigins = {
       heraldUrl: (devBuild ? devRelease : productionRelease).public_herald_url,
@@ -711,7 +710,8 @@ export const loadBalanceSources = async () => {
       triumphHead,
       worldBaneHead,
       productionRelease,
-      appAddress,
+      devBuild,
+      productionPlayOrigin: environments.production.origin,
       dashboardOrigins,
       heraldLimits,
       publicData,
