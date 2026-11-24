@@ -119,7 +119,14 @@ const PAGES = [
     shown: "[data-oath-pick]",
     matrix: true,
   },
-  { file: "hud-research", url: "/lab/kit/hud/research", shown: 'section[aria-label="Research"]' },
+  { file: "hud-research", url: "/lab/kit/hud/research", shown: 'section[aria-label="Research"]', matrix: true },
+  {
+    file: "hud-research-realm",
+    url: "/lab/game?scenario=realm-world&renderer=webgpu-force-webgl",
+    openResearch: true,
+    shown: 'section[aria-label="Research"] [data-node="row-6"]',
+    matrix: true,
+  },
   { file: "hud-day-done", url: "/lab/kit/hud/day-done", shown: ".day-done" },
   { file: "hud-offline", url: "/lab/kit/hud/offline", shown: "[data-offline-banner]" },
   {
@@ -177,7 +184,7 @@ for (const group of runGroups) {
       const browser = createBrowserSession(`season-one-${start}-${Date.now()}`, { profile, headed: false });
       let activeViewport = "";
       try {
-        for (const { device, width, height, file, url, shown, press } of batch) {
+        for (const { device, width, height, file, url, shown, press, openResearch } of batch) {
           const viewport = `${width}x${height}`;
           if (viewport !== activeViewport) {
             browser.run(["set", "viewport", width, height]);
@@ -185,6 +192,10 @@ for (const group of runGroups) {
           }
           browser.run(["open", `${baseUrl}${url}`]);
           try {
+            if (openResearch) {
+              browser.run(["wait", "--fn", `!!document.querySelector('nav[aria-label="Places"] button')`]);
+              browser.tapPlace("Research");
+            }
             if (press) {
               browser.run(["wait", "--fn", `!!document.querySelector('${press.after}')`]);
               browser.run(

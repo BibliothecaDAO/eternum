@@ -92,6 +92,7 @@ export interface TreeNode {
   needs: Need[];
   /** What the node does, one line, and its figure now and after the next tier. */
   gives: { line: string; now: RankedWords | string; next?: RankedWords | string; direction?: "higher" | "lower" };
+  shortEffect: string;
   job?: string;
   figures: Figure[];
   /** The nodes this one leads to (the tree's lines). */
@@ -145,6 +146,7 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
     category: BuildingType,
     branch: Branch,
     gives: (tier: number) => TreeNode["gives"],
+    shortEffect: (tier: number) => string,
     options: {
       extra?: Need[];
       figures?: (tier: number) => Figure[];
@@ -182,6 +184,7 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
       price: constructionGrant || next === undefined ? undefined : realm.price(row, next),
       needs,
       gives: gives(tier),
+      shortEffect: shortEffect(tier),
       figures: options.figures?.(tier) ?? [],
       leadsTo: options.leadsTo ?? [],
       job: options.job,
@@ -193,9 +196,19 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
     next: tier < 5 ? totalPercent((tier + 1) * realm.board.outputStepBps) : undefined,
   });
   const outputRow = (row: number, category: BuildingType, icon: IconMeaning, [name, line]: readonly [string, string]) =>
-    buildingNode(row, category, "economy", (tier) => ({ line, ...outputStep(tier) }), {
-      figures: (tier) => [{ icon, name, line, ...outputStep(tier) }],
-    });
+    buildingNode(
+      row,
+      category,
+      "economy",
+      (tier) => ({ line, ...outputStep(tier) }),
+      (tier) => {
+        const step = outputStep(tier);
+        return step.next ? RESEARCH_TREE.step(step.now, step.next) : step.now;
+      },
+      {
+        figures: (tier) => [{ icon, name, line, ...outputStep(tier) }],
+      },
+    );
 
   const rows = {
     ROW_FARM: [outputRow(ROWS.farm, BuildingType.ResourceWheat, "fields", RESEARCH_TREE.outputs.fields)],
@@ -206,6 +219,11 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
         BuildingType.ConscriptionCamp,
         "army",
         (tier) => ({ line: RESEARCH_TREE.conscriptionLine, ...conscriptionStep(tier, realm.board) }),
+        (tier) =>
+          RESEARCH_TREE.shortEffects.troops(
+            troopsAnHourAt(tier, realm.board),
+            tier < 5 ? troopsAnHourAt(tier + 1, realm.board) : undefined,
+          ),
         {
           job: RESEARCH_TREE.conscriptionLine,
           figures: (tier) => [
@@ -225,6 +243,11 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
         BuildingType.RationsDepot,
         "army",
         (tier) => ({ line: RESEARCH_TREE.rationsLine, ...rationsStep(tier, realm.board) }),
+        (tier) =>
+          RESEARCH_TREE.shortEffects.rations(
+            wheatATroopAt(tier, realm.board),
+            tier < 5 ? wheatATroopAt(tier + 1, realm.board) : undefined,
+          ),
         {
           job: RESEARCH_TREE.rationsLine,
           figures: (tier) => [
@@ -253,6 +276,11 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
         BuildingType.SupplyYard,
         "army",
         (tier) => ({ line: RESEARCH_TREE.newArmiesStart("Logistics"), ...logisticsStep(tier, realm.board) }),
+        (tier) =>
+          RESEARCH_TREE.shortEffects.logistics(
+            logisticsStaminaAt(tier, realm.board),
+            tier < 5 ? logisticsStaminaAt(tier + 1, realm.board) : undefined,
+          ),
         {
           figures: (tier) => [
             {
@@ -278,6 +306,7 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
       line: string;
       now: string;
       next: string;
+      shortEffect: (done: boolean) => string;
     }[] = [
       {
         key: "well",
@@ -287,6 +316,7 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
         line: RESEARCH_TREE.armiesFind(WELL),
         now: RESEARCH_TREE.none,
         next: RESEARCH_TREE.each(`${formatExact(nativeRuleConstants.WELL_REFILL_PERCENT)}% max ${STAMINA}`),
+        shortEffect: () => RESEARCH_TREE.shortEffects.well(formatExact(nativeRuleConstants.WELL_REFILL_PERCENT)),
       },
       {
         key: "shrine",
@@ -296,6 +326,7 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
         line: RESEARCH_TREE.armiesFind(SHRINE),
         now: RESEARCH_TREE.closed,
         next: RESEARCH_TREE.opens,
+        shortEffect: (done) => RESEARCH_TREE.shortEffects.open(done),
       },
       {
         key: "spire",
@@ -305,6 +336,7 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
         line: RESEARCH_TREE.opensLayers,
         now: RESEARCH_TREE.closed,
         next: RESEARCH_TREE.opens,
+        shortEffect: (done) => RESEARCH_TREE.shortEffects.open(done),
       },
     ];
     return ladder.map((step, index) => {
@@ -325,6 +357,7 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
         RESEARCH_TREE.lore(step.site),
         step.icon,
         { line: step.line, now: step.now, next: step.next },
+        step.shortEffect,
         index as ResearchEra,
         step.tier,
         before,
@@ -344,6 +377,11 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
         category,
         "army",
         (tier) => ({ line: RESEARCH_TREE.newArmiesStart(RESEARCH_TREE.oaths), ...step(tier) }),
+        (tier) =>
+          RESEARCH_TREE.shortEffects.oaths(
+            tier + research.OATH_SLOTS_BASE,
+            tier < research.OATH_SLOTS_STEPS ? tier + research.OATH_SLOTS_BASE + 1 : undefined,
+          ),
         {
           figures: (tier) => [
             { icon: "troops", name: RESEARCH_TREE.oaths, line: RESEARCH_TREE.everyNewArmy, ...step(tier) },
@@ -359,6 +397,7 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
     name: string,
     icon: IconMeaning,
     gives: TreeNode["gives"],
+    shortEffect: (done: boolean) => string,
     era: ResearchEra = 0,
     tier = 1,
     before: Need[] = [],
@@ -382,6 +421,7 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
       price: done ? undefined : price,
       needs,
       gives: done ? { line: gives.line, now: gives.next ?? gives.now } : gives,
+      shortEffect: shortEffect(done),
       figures: [],
       leadsTo,
     };
@@ -392,6 +432,8 @@ const troopsAnHourAt = (rank: number, board: RealmResearchFacts["board"]) =>
   formatExact((board.troopsPerHour * (10_000 + rank * board.outputStepBps)) / 10_000);
 const wheatATroopAt = (rank: number, board: RealmResearchFacts["board"]) =>
   formatFigure(Math.max(0, board.wheatPerTroop - rank * board.rationStep));
+const logisticsStaminaAt = (level: number, board: RealmResearchFacts["board"]) =>
+  formatFigure(board.staminaBar + logisticsStamina(board.staminaBar, level));
 const conscriptionFigure = (tier: number, board: RealmResearchFacts["board"]): Pick<Figure, "now" | "next"> => ({
   now: troopsAnHourAt(tier, board),
   next: tier < 5 ? troopsAnHourAt(tier + 1, board) : undefined,
@@ -412,8 +454,7 @@ const rationsStep = (
   return { now: at(tier), next: tier < 5 ? at(tier + 1) : undefined, direction: "lower" };
 };
 const logisticsStep = (tier: number, board: RealmResearchFacts["board"]): Pick<Figure, "now" | "next"> => {
-  const effect = (level: number) =>
-    RESEARCH_TREE.effects.logistics(formatFigure(board.staminaBar + logisticsStamina(board.staminaBar, level)));
+  const effect = (level: number) => RESEARCH_TREE.effects.logistics(logisticsStaminaAt(level, board));
   return { now: effect(tier), next: tier < 5 ? effect(tier + 1) : undefined };
 };
 
