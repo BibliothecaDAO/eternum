@@ -818,9 +818,7 @@ export const HudLab = () => {
   // The season's detail closes back to its list, and a row opens it again, as FrontierSeason plays it.
   const [detailShut, setDetailShut] = useState(false);
   const chatPane = useRef<HTMLElement>(null);
-  const chat = lab.chat && (
-    <ChatPage rooms={[GLOBAL_ROOM]} signedIn onSignIn={noop} pane={chatPane} onClose={noop} />
-  );
+  const chat = lab.chat && <ChatPage rooms={[GLOBAL_ROOM]} signedIn onSignIn={noop} pane={chatPane} onClose={noop} />;
   if (lab.merge)
     return (
       <div data-lab="frontier-merge" className="ui min-h-screen bg-hud-surface flex items-center justify-center p-3">
@@ -1504,7 +1502,13 @@ const LabFeed = () => {
   useLabPlayer();
   const [store] = useState(transferTrainedArmies);
   const now = useNowSeconds();
-  const told = (id: string, owner: string, minutesAgo: number, storyType: string, storyPayload: Record<string, unknown>) =>
+  const told = (
+    id: string,
+    owner: string,
+    minutesAgo: number,
+    storyType: string,
+    storyPayload: Record<string, unknown>,
+  ) =>
     ({
       id,
       event_id: id,
@@ -1530,7 +1534,13 @@ const LabFeed = () => {
   const stories = [
     told("rival-well", RIVAL, 2, "SiteUsed", used({ Well: 60 })),
     told("won", PLAYER, 6, "BattleEvent", fight("6500000000000", "0")),
-    told("spent", PLAYER, 11, "SkillPointSpent", { explorer_id: 201, choice: "Battle", point_rank: 3, stamina: 40, tier: 2 }),
+    told("spent", PLAYER, 11, "SkillPointSpent", {
+      explorer_id: 201,
+      choice: "Battle",
+      point_rank: 3,
+      stamina: 40,
+      tier: 2,
+    }),
     told("bought", PLAYER, 18, "TierBought", { explorer_id: 201, attribute: "Logistics", tier: 3, price: 400 }),
     told("lost", PLAYER, 25, "BattleEvent", fight("0", "1028000000000")),
     told("shrine", PLAYER, 31, "SiteUsed", used({ ShrinePoint: 3 })),

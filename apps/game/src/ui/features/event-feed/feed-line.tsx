@@ -28,21 +28,15 @@ export const FeedLine = ({ story }: { story: ProcessedStoryEvent }) => {
   const own = involvesPlayer(story, player);
   const words = (
     <span className="ui-event__text">
-          {"words" in reading ? (
-            <OwnWordsLine
-              words={reading.words}
-              named={reading.named}
-              name={reading.actor && names.text(reading.actor)}
-            />
-          ) : (
-            <>
-              <Name text={names.text(reading.actor)} /> {reading.verb}
-              {reading.object && <ObjectWords object={reading.object} names={names.text} />}
-              {reading.outcome && (
-                <span className={OUTCOME_TONES[reading.outcome.tone]}> · {reading.outcome.word}</span>
-              )}
-            </>
-          )}
+      {"words" in reading ? (
+        <OwnWordsLine words={reading.words} named={reading.named} name={reading.actor && names.text(reading.actor)} />
+      ) : (
+        <>
+          <Name text={names.text(reading.actor)} /> {reading.verb}
+          {reading.object && <ObjectWords object={reading.object} names={names.text} />}
+          {reading.outcome && <span className={OUTCOME_TONES[reading.outcome.tone]}> · {reading.outcome.word}</span>}
+        </>
+      )}
     </span>
   );
   return (

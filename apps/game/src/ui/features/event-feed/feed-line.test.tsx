@@ -207,7 +207,14 @@ it("marks each row with who it concerns, the player's own fights by how they wen
     story(attacker, "BattleEvent", {
       attacker_id: 70,
       defender_id: CAMP,
-      attacker: { player: attacker, category: "Knight", tier: "T1", before: "7000000000000", after: armyAfter, roll: 0 },
+      attacker: {
+        player: attacker,
+        category: "Knight",
+        tier: "T1",
+        before: "7000000000000",
+        after: armyAfter,
+        roll: 0,
+      },
       defender: { player: "0x0", category: "Knight", tier: "T1", before: "1400000000000", after: guardAfter, roll: 0 },
     });
   const rule = async (row: ProcessedStoryEvent) => {
