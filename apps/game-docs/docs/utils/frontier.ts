@@ -5,6 +5,7 @@ import {
   previewRuinGuardBounds,
 } from "../../../../contracts/l3/world-native/schema/site-previews.gen";
 import {
+  nativeBaneConstants as baneConstants,
   nativeFragmentConstants as fragments,
   nativeOathConstants as oaths,
   nativeQuestConstants as questRules,
@@ -540,7 +541,6 @@ export const FRONTIER = {
     averageHours: averageDayHours,
     daysPerBag: DAYS_PER_BAG,
     bagHours: bagHoursValue,
-    bagsPerSeason: n(racePreset.seasonDays / DAYS_PER_BAG),
     lengths: dayLengthsList,
     seasonDays: n(racePreset.seasonDays),
     seasonRealDays: n(seasonRealDays),
@@ -581,7 +581,6 @@ export const FRONTIER = {
     max: n(stamina.staminaKnightMax),
     perTick: n(stamina.staminaGainPerTick),
     perMinute: `+${staminaPerMinute}/min`,
-    perHour: n(staminaPerHour),
     tickMinutes: n(tickMinutes),
     fullHours: n(((stamina.staminaKnightMax / stamina.staminaGainPerTick) * tickMinutes) / 60),
     day8h: n(stamina.staminaKnightMax + dayLengthHours[0]! * staminaPerHour),
@@ -763,6 +762,7 @@ export const FRONTIER = {
     count: n(baneQuests.length),
     chanceStep: `${n(banesPreset.chanceStep)}%`,
     quorum: `${n(banesPreset.quorumPercent)}%`,
+    productionBaneName: worldBaneHead(baneConstants.ASH_FALL, baneRules).name,
     world: worldBanes.map((entry) => {
       const quest = baneQuests.find((q) => q.id === entry.quest);
       if (!quest) throw new Error(`Missing bane quest ${entry.quest}`);

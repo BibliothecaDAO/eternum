@@ -92,6 +92,7 @@ export const frontierPhrases = (
     commandBits,
     calendar,
     seasonDayUnitSeconds,
+    nativeBane,
     nativeQuest,
     nativeResearch,
     contract,
@@ -402,6 +403,7 @@ export const frontierPhrases = (
     {
       page: "frontier/banes",
       phrases: [
+        `${worldBaneHead(nativeBane.ASH_FALL, baneRules).name} applies to all realm building production (wheat, labor, and troop training).`,
         `Once ${n(preset.banes.quorumPercent)}% of your Aspect's members who deployed at least one army on the previous game day finish theirs, the World Bane ends for your Aspect`,
         `Archive guards still earn their full Glory (${n(preset.deep.buildingPay.alone)} / ${n(preset.deep.buildingPay.pair)} / ${n(preset.deep.buildingPay.crowd)} per tick, split by troop count) during a Team Bane.`,
         `World Banes stop for the rest of the season.`,
@@ -566,6 +568,7 @@ export const loadBalanceSources = async () => {
     );
     const frontierConfig = loadNativePresetConfiguration("madara.frontier", frontierPreset.id);
     const {
+      nativeBaneConstants: nativeBane,
       nativeFragmentConstants: nativeFragments,
       nativeOathConstants: nativeOaths,
       nativeQuestConstants: nativeQuest,
@@ -647,6 +650,7 @@ export const loadBalanceSources = async () => {
       frontierPreset,
       frontierConfig,
       historicalFrontierPreset,
+      nativeBane,
       nativeFragments,
       nativeOaths,
       nativeQuest,
@@ -817,6 +821,7 @@ export const FORBIDDEN_RETIRED_HUD_TERMS = [
   /\bworkers\s+hut\b/i,
   /\bwhat\s+you\s+can'?t\s+do\b/i,
   /\bwhat\s+you\s+can\s+do\b/i,
+  /\bfar-eye\b/i,
 ];
 
 const FORBIDDEN_PLAYER_MODE_TERMS = [...FORBIDDEN_MODE_TERMS, /\beternum\b/i, ...FORBIDDEN_RETIRED_HUD_TERMS];
