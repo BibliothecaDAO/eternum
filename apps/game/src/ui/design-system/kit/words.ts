@@ -931,6 +931,7 @@ export const OPENING_WORDS = {
     deep: `The ${DEEP}`,
     aspects: "Aspect Race",
     spire: `Enter the ${layerName(1)}`,
+    quest: "Today's Quest",
     "daily-quest": "Quest Ready",
     essence: "Realm Research",
     shop: "Stamina and Seal",
@@ -958,6 +959,7 @@ export const OPENING_WORDS = {
       `${ownAspectLabel(rules.ownAspect)} races to finish its hyperstructure first. Standings update live.`,
     spire: (rules: OpeningRules) =>
       `In the ${layerName(1)}, guards are ${formatExact(rules.spireDepthFactor)}x stronger and camps refill your armies.`,
+    quest: () => "Each day brings one quest. Finish it for Labor and Essence.",
     "daily-quest": () => "Today's quest is done. Collect its Labor and Essence reward.",
     essence: () => "Essence buys permanent upgrades and lores for your Realm.",
     shop: (rules: OpeningRules) =>
@@ -983,6 +985,7 @@ export const OPENING_WORDS = {
     deep: `Hold a ${DEEP} site or withdraw in time.`,
     aspects: "Open Season to check standings.",
     spire: "Clear camps to refill stamina and troops.",
+    quest: `Press ${DAY_BANNER_WORDS.quest} at the top to see what it asks.`,
     "daily-quest": "Press the quest chip to collect.",
     essence: "Open Research to learn a node.",
     shop: "Open Shop or wait for stamina.",
@@ -1000,6 +1003,7 @@ export const OPENING_WORDS = {
     deploy: `Army deployed onto the ${layerName(0)}.`,
     explore: "Mist revealed. Sites and Essence await.",
     oath: "Oath choice settled.",
+    quest: "Quest started. Finish it, then collect the reward.",
     "daily-quest": "Quest reward collected. Labor and Essence added.",
     essence: "Research opened. Learn any node marked ready.",
     "day-end": "Day ending noted. Tap the Day medallion anytime for Today.",

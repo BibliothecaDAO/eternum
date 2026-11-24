@@ -9,7 +9,7 @@ import { OPENING, teacherAspectOf, type OpeningMoment } from "../opening/opening
 import type { TutorialDisplayStatus } from "../opening/opening-state";
 import { resolveAspectEmissary } from "./aspect-emissaries";
 
-const CONFIRM_MS = 3_500;
+const CONFIRM_MS = 6_000;
 
 export interface AspectEmissaryDockProps {
   readonly moment: OpeningMoment;

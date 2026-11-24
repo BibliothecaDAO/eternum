@@ -1426,6 +1426,11 @@ it.each([
       expect(confirmed?.textContent).toContain(OPENING_WORDS.completed.explore);
 
       await act(async () => confirmed!.querySelector<HTMLButtonElement>('button[aria-label="Close"]')!.click());
+      const raceNext = host.querySelector<HTMLElement>(
+        '[data-tutorial-dock="aspects"][data-tutorial-status="showing"]',
+      );
+      expect(raceNext?.textContent).toContain(OPENING_WORDS.titles.aspects);
+      await act(async () => raceNext!.querySelector<HTMLButtonElement>('button[aria-label="Close"]')!.click());
       expect(host.querySelector("[data-tutorial-dock]")).toBeNull();
 
       await act(async () => {
@@ -1451,8 +1456,11 @@ it.each([
 
       await act(async () => replayTutorial());
       await act(async () => new Promise((settled) => setTimeout(settled, 20)));
-      expect(useOpeningStore.getState().showing).toBe("barracks");
-      expect(host.querySelector('[data-tutorial-dock="barracks"][data-tutorial-status="showing"]')).not.toBeNull();
+      expect(useOpeningStore.getState().confirmed).toBe("barracks");
+      const alreadyBuilt = host.querySelector<HTMLElement>(
+        '[data-tutorial-dock="barracks"][data-tutorial-status="completed"]',
+      );
+      expect(alreadyBuilt?.textContent).toContain(OPENING_WORDS.completed.barracks);
     } finally {
       useBlockTimestampStore.setState(previousTicks);
       useWorldAppearanceStore.setState({ showEverything: true });
