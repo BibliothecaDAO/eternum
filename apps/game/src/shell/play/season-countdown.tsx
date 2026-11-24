@@ -1,13 +1,6 @@
 import "./play-page.css";
 
-import {
-  aspectName,
-  aspects,
-  formatAmount,
-  orders,
-  ordersOfAspect,
-  type AspectId,
-} from "@bibliothecadao/types";
+import { aspectName, aspects, formatAmount, orders, ordersOfAspect, type AspectId } from "@bibliothecadao/types";
 import { IdentityRequestError, type OrderIntent } from "@realms-world/identity";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Fragment, useState, type CSSProperties, type ReactNode } from "react";

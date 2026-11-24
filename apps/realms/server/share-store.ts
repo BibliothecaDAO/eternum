@@ -257,7 +257,15 @@ export function createShareStore(db: D1Database) {
         `INSERT OR IGNORE INTO "share_payouts" ("id", "sharer", "friend", "chain_id", "game_id", "amount", "created_at")
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
       )
-      .bind(`friend:${game.chainId}:${game.gameId}:${friend}`, sharer, friend, game.chainId, game.gameId, FRIEND_FRAGMENTS, now)
+      .bind(
+        `friend:${game.chainId}:${game.gameId}:${friend}`,
+        sharer,
+        friend,
+        game.chainId,
+        game.gameId,
+        FRIEND_FRAGMENTS,
+        now,
+      )
       .run();
   };
 
