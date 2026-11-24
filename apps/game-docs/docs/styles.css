@@ -909,11 +909,6 @@ article.vocs_Content,
   display: block;
 }
 
-.docs-game-name {
-  font-size: 19px;
-  color: var(--cream);
-}
-
 .docs-game-badge {
   font-size: 12px;
   font-weight: 600;

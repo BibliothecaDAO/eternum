@@ -1,4 +1,7 @@
 import SIDEBAR from "../../sidebar.json";
+import BRAND from "../brand.gen.json";
+
+export type GameId = keyof typeof BRAND.marks.lockups;
 
 export interface SidebarLeaf {
   readonly text: string;
@@ -12,14 +15,14 @@ export interface SidebarNode {
   readonly quick?: boolean;
   readonly collapsed?: boolean;
   readonly kind?: "global" | "game" | "data" | "developers";
-  readonly id?: string;
+  readonly id?: GameId;
   readonly summary?: string;
   readonly items?: readonly SidebarNode[];
 }
 
 export interface GameSidebarSection extends SidebarNode {
   readonly kind: "game";
-  readonly id: string;
+  readonly id: GameId;
   readonly summary: string;
   readonly items: readonly SidebarNode[];
 }
@@ -48,8 +51,8 @@ export const firstLinkOf = (section: SidebarNode): string => {
   return first.link;
 };
 
-export const quickLinksForGame = (gameId: string): readonly SidebarLeaf[] => {
+export const quickLinksForGame = (gameId: GameId): readonly SidebarLeaf[] => {
   const game = gameSections().find((section) => section.id === gameId);
-  if (!game) return [];
+  if (!game) throw new Error(`Missing sidebar game section "${gameId}"`);
   return collectLeaves(game.items).filter((item) => item.quick);
 };
