@@ -43,7 +43,6 @@ const AREAS = {
   "A. Panels": [
     "ui/features/world/hud/desktop-hud.tsx",
     "ui/features/world/hud/guided-rail.tsx",
-    "ui/features/world/hud/next-up.tsx",
     "ui/features/world/hud/events-card.tsx",
     "ui/features/world/hud/idle-armies.tsx",
     "ui/features/world/hud/holdings.tsx",

@@ -355,7 +355,7 @@ describe("the phone world actions", () => {
     expect(host.querySelectorAll("button")[0]!.getAttribute("aria-label")).toBe(seasonPlace.label);
     act(() =>
       root.render(
-        <OpeningProvider opened={new Set(["launch"])}>
+        <OpeningProvider opened={new Set()}>
           <PhoneWorldActions surface={null} onSurface={onSurface} events={0} unread={0} />
         </OpeningProvider>,
       ),

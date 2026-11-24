@@ -11,11 +11,8 @@ import { useEventsFilter } from "@/hooks/store/use-events-filter-store";
 import { HudPanel, HudPill } from "@/ui/design-system/kit/hud-elements";
 import { frontierDay } from "@/ui/features/frontier/deploy/deploy-fixture";
 import { playerReadings } from "@/ui/features/world/containers/top-header/identity-chip";
-import { NextUpView } from "@/ui/features/world/hud/next-up";
-import type { NextStep } from "@/ui/features/world/hud/next-step";
-import { type CoachArmy, type CoachStep, type CoachTarget, coachSteps } from "@/ui/features/world/hud/coach";
 import { buildStoryEventPresentation } from "@bibliothecadao/eternum";
-import { ResourcesIds, TroopTier, TroopType } from "@bibliothecadao/types";
+import { ResourcesIds } from "@bibliothecadao/types";
 import type { GameClientSetup, NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { useState } from "react";
 
@@ -132,74 +129,8 @@ const LabEvents = ({ store }: { store: NativeFactStore }) => {
   );
 };
 
-/** The fixture realm's army, standing at (10, 10). */
-const ARMY: CoachArmy = {
-  entityId: 1,
-  hex: { col: 10, row: 10 },
-  home: { realmId: 7, name: "Egonal", canLevelUp: true },
-  canExplore: true,
-  selected: false,
-};
-const CAMP: CoachTarget = { kind: "site", name: "Camp", hex: { col: 14, row: 10 } };
-const TROOPS = {
-  realmId: 7,
-  realmName: "'oak Leukue",
-  stack: { type: TroopType.Knight, tier: TroopTier.T1, count: 1_000 },
-};
-
-/** The coach's steps for a state, as Next up shows them (their buttons do nothing here). */
-const coached = (state: Partial<Parameters<typeof coachSteps>[0]>): NextStep[] =>
-  coachSteps({
-    holds: true,
-    armies: [],
-    targets: [],
-    troopsOnHand: TROOPS,
-    certainLoss: () => false,
-    ...state,
-  }).map(labStep);
-
-const labStep = ({ key, line, verb, act }: CoachStep): NextStep =>
-  act?.kind === "level-up"
-    ? { key, kind: "level-up", realmId: act.realmId, name: act.name, why: line }
-    : { key, kind: "order", line, verb, busy: false, run: act ? () => undefined : null };
-
-/** Next up in each state the coach reads, the step it puts first named above it; read once the fixture game is in. */
-const nextUpStates = (): { label: string; steps: NextStep[]; refusal?: string }[] => [
-  { label: "Before play opens", steps: coached({}), refusal: "Starts in 2m 42s" },
-  {
-    label: "Army lost: raise where troops are",
-    steps: [
-      {
-        key: "lost",
-        kind: "order",
-        line: "Army lost: 1,000 Paladins",
-        verb: "Raise an army",
-        busy: false,
-        run: () => undefined,
-      },
-    ],
-  },
-  { label: "No troops anywhere", steps: coached({ troopsOnHand: null }) },
-  { label: "Army idle, can explore", steps: coached({ armies: [ARMY], targets: [CAMP] }) },
-  { label: "Army selected", steps: coached({ armies: [{ ...ARMY, selected: true }] }) },
-  {
-    label: "Fight unwinnable",
-    steps: coached({
-      armies: [{ ...ARMY, canExplore: false }],
-      targets: [CAMP],
-      certainLoss: () => true,
-    }),
-  },
-];
-
-/** The top bar's player chip as a player reads it: name, rank, points and the game's goal. */
 const LabPlayerPill = () => <HudPill>{playerReadings("clientlane")}</HudPill>;
 
-/**
- * Dev only: the points-first guidance a newcomer sees, the real components on the deploy fixture in the War room skin,
- * at /lab/kit/guidance: the top bar's goal beside the points, Next up in each state its coach reads, and Events rows
- * with their outcomes.
- */
 export const GuidanceLab = () => {
   useDocumentClass("classic-hud");
   const [store] = useState(installFixtureGame);
@@ -208,14 +139,6 @@ export const GuidanceLab = () => {
       <div className="flex min-h-screen flex-col items-start gap-6 bg-[#0b1418] p-6 text-gold">
         <div data-lab="top-bar">
           <LabPlayerPill />
-        </div>
-        <div data-lab="next-up" className="grid grid-cols-4 gap-4">
-          {nextUpStates().map(({ label, steps, refusal }) => (
-            <div key={label} className="flex w-[320px] flex-col gap-1">
-              <span className="text-xs text-gold/60">{label}</span>
-              <NextUpView steps={steps} refusal={refusal} />
-            </div>
-          ))}
         </div>
         <div data-lab="events" className="flex w-[320px] flex-col gap-1">
           <LabEvents store={store} />

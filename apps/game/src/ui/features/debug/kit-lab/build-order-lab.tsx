@@ -1,8 +1,6 @@
 import { useDocumentClass } from "@/hooks/use-document-class";
 import { decorateSuggestion } from "@/ui/features/world/containers/left-facets/use-empire-suggestions";
 import { BuildOrderRow, BuildOrderView, STEP_VERBS } from "@/ui/features/world/hud/build-order-panel";
-import type { NextStep } from "@/ui/features/world/hud/next-step";
-import { NextUpView } from "@/ui/features/world/hud/next-up";
 import {
   type BlitzArmyState,
   type BlitzRealmSuggestionInput,
@@ -20,19 +18,6 @@ import type { ReactNode } from "react";
 
 const run = () => undefined;
 
-/** Next up, kept for a newcomer: the points coach's step first; the default order's next building is one of its pages. */
-const NEWCOMER_STEPS: NextStep[] = [
-  {
-    key: "coach:explore",
-    kind: "order",
-    line: "Your army can explore.",
-    verb: "Select the army",
-    busy: false,
-    run,
-  },
-];
-
-/** A realm whose every build can be paid and has room, as the construction rule would judge it. */
 const BUILDABLE: BlitzRealmSuggestionInput["buildability"] = () => ({ canBuild: true, needsRoom: false });
 const KNIGHTS: BlitzTroop = {
   type: TroopType.Knight,
@@ -140,16 +125,7 @@ export const BuildOrderLab = () => {
   useDocumentClass("classic-hud");
   return (
     <div className="flex min-h-screen flex-wrap items-start gap-8 bg-[#0b1418] p-6">
-      <Shown
-        name="Next up, for a newcomer"
-        line="How to play: the points coach (raise an army, explore, a camp). The build order's steps are the panel's alone (owner, 10-20: remove build steps in Next up)."
-      >
-        <NextUpView steps={NEWCOMER_STEPS} />
-      </Shown>
-      <Shown
-        name="The panel"
-        line="The game's own panel, under Next up in a Blitz's rail. Each row from the game's own rule."
-      >
+      <Shown name="The panel" line="The game's own build order panel. Each row from the game's own rule.">
         <PhaseOnePanel />
       </Shown>
     </div>

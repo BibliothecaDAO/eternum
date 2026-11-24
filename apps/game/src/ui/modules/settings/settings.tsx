@@ -28,6 +28,7 @@ import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { ContractAddress } from "@bibliothecadao/types";
 
 import { getGameModeId } from "@/config/game-modes";
+import { replayTutorial } from "@/ui/features/frontier/opening/opening-store";
 import { hudFor } from "@/ui/layouts/hud-for";
 import { useState } from "react";
 import { shortAddress } from "@/ui/design-system/kit/address";
@@ -58,7 +59,7 @@ export const SettingsPanel = () => {
       <SettingsSection title="Video & Graphics">
         <VideoSettings />
       </SettingsSection>
-      <NextUpSettings />
+      <TutorialSettings />
       <SettingsSection title={PROFILE_WORDS.notifications}>
         <NotificationSettings />
       </SettingsSection>
@@ -188,24 +189,25 @@ function UsernameEditor({ name }: { name: string | null }) {
   );
 }
 
-/**
- * One switch for Next up's tips: off, Next up shows only alerts (attacks, arrivals), and nothing without one. Frontier's
- * HUD has no Next up (owner, 4 November 2026: "Do cut next up indeed for frontier"), so there the switch is not drawn.
- */
-function NextUpSettings() {
-  const { nextUpTips, setNextUpTips, showEverything, setShowEverything } = useWorldAppearanceStore();
-  if (hudFor(getGameModeId(), true) === "frontier")
-    return (
-      <SettingsSection title={OPENING_WORDS.interface}>
-        <HudSetting name={OPENING_WORDS.showEverything}>
-          <HudSwitch on={showEverything} label={OPENING_WORDS.showEverything} onChange={setShowEverything} />
-        </HudSetting>
-      </SettingsSection>
-    );
+function TutorialSettings() {
+  const { showEverything, setShowEverything } = useWorldAppearanceStore();
+  if (hudFor(getGameModeId(), true) !== "frontier") return null;
   return (
-    <SettingsSection title="Next up">
-      <HudSetting name="Tips">
-        <HudSwitch on={nextUpTips} label="Next up tips" onChange={setNextUpTips} />
+    <SettingsSection title={OPENING_WORDS.interface}>
+      <HudSetting name={OPENING_WORDS.showEverything}>
+        <HudSwitch on={showEverything} label={OPENING_WORDS.showEverything} onChange={setShowEverything} />
+      </HudSetting>
+      <HudSetting name={OPENING_WORDS.tutorial}>
+        <HudButton
+          kind="secondary"
+          size="sm"
+          onClick={() => {
+            setShowEverything(false);
+            replayTutorial();
+          }}
+        >
+          {OPENING_WORDS.replayTutorial}
+        </HudButton>
       </HudSetting>
     </SettingsSection>
   );

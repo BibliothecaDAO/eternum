@@ -6,19 +6,11 @@ import { useSelectedTileDetails } from "@/ui/features/world/components/bottom-ri
 import { HudChatWindow } from "@/ui/features/world/containers/hud-chat-window";
 import { type ReactNode, useCallback, useState } from "react";
 import { EventsCard } from "./events-card";
-import { NextUp } from "./next-up";
 
 type Focus = "none" | "chat" | "log";
 
-/**
- * The right rail, every mode's: what leads it on top (each mode's Next up), the build order under it
- * where the mode has one (Blitz: a row per realm whose next step can be taken), the event log, always
- * on, then what the player picked, and chat at the foot, a strip that opens its own window. On the world map
- * the picked tile shows what stands on it and its biome, stacked; in the realm view the picked building shows as one
- * compact panel. A mode whose picked tile opens its own card (Frontier's) leaves `picked` off.
- */
 export const GuidedRail = ({
-  lead = <NextUp />,
+  lead,
   buildOrder,
   picked = true,
 }: {

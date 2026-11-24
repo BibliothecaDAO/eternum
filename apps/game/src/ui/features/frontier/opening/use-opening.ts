@@ -2,7 +2,9 @@ import { useGame } from "@/hooks/context/game-context";
 import { notificationOwnerOf, useIdentitySession } from "@/hooks/context/identity-session";
 import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
+import { isSeasonZeroPlayer } from "@/shell/season-tab/archive/archive";
 import {
   type ExpeditionRules,
   DAILY_QUEST_MODELS,
@@ -21,9 +23,10 @@ import {
   RACE_MODELS,
   readRaceBoard,
   safeInteger,
+  type NativeFactStore,
   type NativeRows,
 } from "@bibliothecadao/eternum/game-client";
-import { RealmLevels } from "@bibliothecadao/types";
+import { catalogAspectId, getNeighborHexes, RealmLevels } from "@bibliothecadao/types";
 import { useEffect } from "react";
 
 import type { OpeningRules } from "@/ui/design-system/kit/words";
@@ -32,40 +35,28 @@ import { useDockArmies } from "../hud/dock-armies";
 import { useRacesAspects } from "../aspect/races-aspects";
 import { readPickEffectBase } from "../pick-effect-text";
 import { useRealmStores } from "../realm-stores";
-import { type Opened, type OpeningMoment } from "./opening";
+import { type Opened, type OpeningContext, type OpeningMoment } from "./opening";
 import {
-  type OpeningHeld,
   accountProgress,
-  nextLine,
-  siteAlertOfferDue,
+  activeOpeningMoment,
   openedMoments,
-  reachedOnState,
+  reachedOnContext,
+  siteAlertOfferDue,
 } from "./opening-state";
 import { SITE_ALERT_OFFER } from "./use-site-alert-offer";
-import { flush, loadOpening, reachMoments, seeLine, useOpeningStore } from "./opening-store";
+import { flush, loadOpening, reachMoments, seeLine, skipTutorial, useOpeningStore } from "./opening-store";
 
-const KNOWLEDGE_MODELS = ["RealmKnowledge"] as const;
-const RELIC_MODELS = ["ArmyRelics"] as const;
-const PROGRESS_MODELS = ["ArmyProgress"] as const;
-
-/** How often a failed read or send is tried again while the HUD is up. */
+const CONTEXT_MODELS = ["RealmKnowledge", "ArmyRelics", "ArmyProgress", "HomeAspect", "TileOpt"] as const;
 const RETRY_MS = 15_000;
 
-/**
- * What the HUD shows and the one line to say now, for the player's own realm in a game that races Aspects (any other
- * game's HUD shows every part): the moments the realm's state reaches, and those the account reached before (kept on its
- * identity account, and on this device meanwhile). Show everything turns every part on. A moment reached is recorded at
- * once, so the part stays when the state that reached it passes; a line waits until the account's progress has been
- * read, so a returning player never meets the first line again.
- */
 export function useOpening(
   rules: ExpeditionRules,
   realm: NativeRows["Structure"] | null,
 ): {
   opened: Opened;
   line: { moment: OpeningMoment; rules: OpeningRules } | null;
-  gotIt: () => void;
-  /** The site alert's first-entry offer is due: the Deep entered, and the offer not yet answered. */
+  dismiss: () => void;
+  skipAll: () => void;
   offerDue: boolean;
 } {
   const owner = notificationOwnerOf(useIdentitySession().session);
@@ -83,43 +74,53 @@ export function useOpening(
       window.removeEventListener("focus", retry);
     };
   }, []);
+
   const races = useRacesAspects();
   const showEverything = useWorldAppearanceStore((state) => state.showEverything);
-  // Only the current account's progress counts: another's, or none yet, is an empty account that is not yet known.
   const progress = accountProgress(
     owner,
     useOpeningStore((state) => state),
   );
-  const onState = reachedOnState(useOpeningHeld(rules, realm));
+  const ctx = useOpeningContext(rules, realm, progress.reached);
+  const onState = reachedOnContext(ctx);
   const key = onState.join();
   useEffect(() => {
-    if (realm && races) void reachMoments(key.split(","));
+    if (realm && races && key.length > 0) void reachMoments(key.split(","));
   }, [realm, races, key]);
+
   const opened = openedMoments(progress.reached, onState);
-  const moment = realm && progress.known ? nextLine(opened, progress.seen) : null;
   const lineRules = useOpeningRules(rules, realm);
-  const missingDeepRule = moment === "deep" && lineRules?.deepLossPerTick === undefined;
+  const moment = realm && progress.known ? activeOpeningMoment(ctx, lineRules, progress.seen) : null;
+
   return {
     opened: showEverything || !realm || races !== true || !progress.ownsParts ? "all" : opened,
-    line: showEverything || !moment || !lineRules || missingDeepRule ? null : { moment, rules: lineRules },
-    gotIt: () => moment && void seeLine(moment),
+    line: showEverything || !moment || !lineRules ? null : { moment, rules: lineRules },
+    dismiss: () => {
+      if (moment) void seeLine(moment);
+    },
+    skipAll: () => void skipTutorial(),
     offerDue:
       Boolean(realm) && races === true && siteAlertOfferDue(opened, progress.seen, progress.known, SITE_ALERT_OFFER),
   };
 }
 
-/** The rules a line names, read from the game's own rows; none while a row is not read, so no line says a made-up figure. */
 function useOpeningRules(rules: ExpeditionRules, realm: NativeRows["Structure"] | null): OpeningRules | null {
   const { setup } = useGame();
-  const troops = useRealmStores(realm, rules)?.troops.perHour;
-  if (!realm || troops === undefined) return null;
+  useNativeRevision(["HomeAspect"]);
+  const stores = useRealmStores(realm, rules);
+  const troopsPerHour = stores?.troops.perHour;
+  if (!realm || troopsPerHour === undefined) return null;
   const barracks = getBuildingQuantity(safeInteger(realm.entity_id), FIRST_BUILD, setup.store);
   const slice = setup.store.get("SliceRules", { game_id: realm.game_id });
   const pickBase = readPickEffectBase(setup.store, realm.game_id);
   if (!slice || pickBase.staminaPerSecond === undefined || pickBase.revealStamina === undefined) return null;
   const tickSeconds = Number(slice.tick_config.armies_tick_in_seconds);
+  const rawAspect = setup.store.get("HomeAspect", { game_id: realm.game_id, home: realm.entity_id })?.aspect;
+  const ownAspect = rawAspect !== undefined ? catalogAspectId(rawAspect) : undefined;
   return {
-    knightsAnHour: troops / Math.max(1, barracks),
+    ownAspect,
+    knightsPerSecond: troopsPerHour / Math.max(1, barracks) / 3_600,
+    troopsAtHome: stores?.troops.amount ?? 0,
     deepTickSeconds: tickSeconds,
     deepLossPerTick: pickBase.deepLossPerTick,
     oathPassStamina: nativeOathConstants.PASS_STAMINA,
@@ -132,54 +133,91 @@ function useOpeningRules(rules: ExpeditionRules, realm: NativeRows["Structure"] 
   };
 }
 
-/** What the realm holds or has done now, from the game's facts, for each moment its state can reach. */
-function useOpeningHeld(rules: ExpeditionRules, realm: NativeRows["Structure"] | null): OpeningHeld | null {
+function useOpeningContext(
+  rules: ExpeditionRules,
+  realm: NativeRows["Structure"] | null,
+  reached: ReadonlySet<string>,
+): OpeningContext | null {
   const { setup } = useGame();
   const now = useNowSeconds();
   useNativeRevision(DAILY_QUEST_MODELS);
   useNativeRevision(RACE_MODELS);
-  useNativeRevision(KNOWLEDGE_MODELS);
-  useNativeRevision(RELIC_MODELS);
-  useNativeRevision(PROGRESS_MODELS);
+  useNativeRevision(CONTEXT_MODELS);
   const armies = useDockArmies(realm);
-  const essence = useRealmStores(realm, rules)?.essence.amount;
+  const stores = useRealmStores(realm, rules);
+  const playerAddress = useAccountStore((state) => state.account?.address ?? null);
+
   if (!realm) return null;
+
   const home = safeInteger(realm.entity_id);
   const learned = setup.store.get("RealmKnowledge", { game_id: realm.game_id, structure_id: home })?.learned ?? 0n;
   const { spacing } = setup.store.require("SettlementRules", { game_id: realm.game_id });
   const travelCost = setup.store.require("SliceRules", { game_id: realm.game_id }).troop_stamina_config
     .stamina_travel_stamina_cost;
   const outOfStamina = armies.some((army) => army.stamina !== undefined && army.stamina.current < travelCost);
-  const oath = armies.some((army) => {
+  const hasOpenOathPick = armies.some((army) => {
     const progress = setup.store.get("ArmyProgress", { game_id: realm.game_id, explorer_id: army.explorerId });
-    return progress !== undefined && (progress.oath_pick !== 0 || progress.oaths !== 0);
+    return progress !== undefined && progress.oath_pick !== 0;
   });
-  const relic = armies.some((army) =>
+  const hasSwornOath = armies.some((army) => {
+    const progress = setup.store.get("ArmyProgress", { game_id: realm.game_id, explorer_id: army.explorerId });
+    return progress !== undefined && progress.oaths !== 0;
+  });
+  const hasRelic = armies.some((army) =>
     carriesRelic(setup.store.get("ArmyRelics", { game_id: realm.game_id, explorer_id: army.explorerId })),
   );
-  const spire = armies.some((army) => army.ethereal !== undefined);
-  const deep = armies.some((army) => {
+  const inEthereal = armies.some((army) => army.ethereal !== undefined);
+  const inDeep = armies.some((army) => {
     const tile = setup.store.entityOccupancy(realm.game_id, army.explorerId);
     return tile !== undefined && isDeepTile(spacing, tile);
   });
-  const bane = readDailyQuest(setup.store, realm.game_id, home, now)?.reading.known?.bane !== undefined;
-  // The Aspect's page opens with the first of the Deep, a bane on the Aspect and the first stage its hyperstructure builds.
+  const questReading = readDailyQuest(setup.store, realm.game_id, home, now)?.reading.known;
+  const hasActiveBane = questReading?.bane !== undefined && questReading?.bane !== null;
+  const dailyQuestClaimable = questReading?.state === "done" || questReading?.state === "again";
   const race = readRaceBoard(setup.store, realm.game_id, BigInt(home), now).known?.race;
-  const stageBuilt = (race?.standings.find((row) => row.aspect === race.own?.aspect)?.stage ?? 1) > 1;
+  const hyperstructureAdvanced = (race?.standings.find((row) => row.aspect === race.own?.aspect)?.stage ?? 1) > 1;
+  const hasEssence = (stores?.essence.amount ?? 0) > 0;
+  const hasExplored = reached.has("explore") || hasExploredBeyondHomeRing(setup.store, realm, spacing);
+
   return {
-    barracks: getBuildingQuantity(home, FIRST_BUILD, setup.store) > 0,
-    oath,
-    shop: fragmentsSold(setup.store, realm.game_id) && outOfStamina,
-    relic,
-    city: realm.base.level >= RealmLevels.City,
-    essence: (essence ?? 0) > 0,
-    "well-lore": researchTier(learned, research.ROW_LORE) >= research.LORE_WELLS,
-    "shrine-lore": researchTier(learned, research.ROW_LORE) >= research.LORE_SHRINES,
-    spire,
-    deep,
-    bane,
-    aspects: deep || bane || stageBuilt,
+    hasRealm: true,
+    hasBarracks: getBuildingQuantity(home, FIRST_BUILD, setup.store) > 0,
+    troopsAtHome: stores?.troops.amount ?? 0,
+    deployedArmies: armies.length,
+    hasExplored,
+    hasOpenOathPick,
+    hasSwornOath,
+    hasEssence,
+    hasResearched: learned > 0n,
+    dailyQuestClaimable,
+    hasWellLore: researchTier(learned, research.ROW_LORE) >= research.LORE_WELLS,
+    hasShrineLore: researchTier(learned, research.ROW_LORE) >= research.LORE_SHRINES,
+    isCity: realm.base.level >= RealmLevels.City,
+    inEthereal,
+    inDeep,
+    hasActiveBane,
+    hyperstructureAdvanced,
+    fragmentsSold: fragmentsSold(setup.store, realm.game_id),
+    outOfStamina,
+    hasRelic,
+    isSeasonZeroVeteran: isSeasonZeroPlayer(playerAddress),
   };
+}
+
+function hasExploredBeyondHomeRing(store: NativeFactStore, realm: NativeRows["Structure"], spacing: number): boolean {
+  const homeTile = store.entityOccupancy(realm.game_id, realm.entity_id);
+  if (!homeTile) return false;
+  const ring = new Set<string>([
+    `${homeTile.col},${homeTile.row}`,
+    ...getNeighborHexes(homeTile.col, homeTile.row).map((hex) => `${hex.col},${hex.row}`),
+  ]);
+  const halfSlice = spacing / 2;
+  for (const tile of store.inGame("TileOpt", realm.game_id)) {
+    if (tile.alt || isDeepTile(spacing, tile)) continue;
+    if (Math.abs(tile.col - homeTile.col) >= halfSlice || Math.abs(tile.row - homeTile.row) >= halfSlice) continue;
+    if (!ring.has(`${tile.col},${tile.row}`)) return true;
+  }
+  return false;
 }
 
 const carriesRelic = (relics: Pick<NativeRows["ArmyRelics"], "first" | "second" | "third"> | undefined): boolean =>

@@ -196,7 +196,6 @@ export const SURFACES = [
   { name: "blitz-realm-castle", path: "/lab/kit/panels?tile=castle", mark: "tile" },
   { name: "blitz-realm-building", path: "/lab/kit/panels?tile=building", mark: "tile" },
   { name: "blitz-realm-production", path: "/lab/kit/panels?tile=production", mark: "tile" },
-  { name: "blitz-next-up-and-events", path: "/lab/kit/guidance", mark: "next-up" },
   { name: "frontier-hud", path: "/lab/kit/hud/idle", mark: "frontier" },
   {
     name: "frontier-armies",

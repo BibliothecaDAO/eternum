@@ -8,14 +8,11 @@ interface WorldAppearanceState {
   reducedMotion: boolean;
   /** Vibration on big moments where the device supports it (Android); in the iOS app, a tap on a confirmed action. */
   haptics: boolean;
-  /** Next up's tips (the empire's suggestions); off, it still shows alerts and the selected realm's own step. */
-  nextUpTips: boolean;
   /** The Frontier HUD shows every part from the start, not as the player reaches each. */
   showEverything: boolean;
   setFogStyle: (fogStyle: TerrainFogStyle) => void;
   setReducedMotion: (reducedMotion: boolean) => void;
   setHaptics: (haptics: boolean) => void;
-  setNextUpTips: (nextUpTips: boolean) => void;
   setShowEverything: (showEverything: boolean) => void;
 }
 
@@ -29,19 +26,16 @@ export const useWorldAppearanceStore = create<WorldAppearanceState>()(
       haptics: true,
       setReducedMotion: (reducedMotion) => set({ reducedMotion }),
       setHaptics: (haptics) => set({ haptics }),
-      nextUpTips: true,
-      setNextUpTips: (nextUpTips) => set({ nextUpTips }),
       showEverything: false,
       setShowEverything: (showEverything) => set({ showEverything }),
     }),
     {
       name: "eternum-world-appearance",
       storage: createJSONStorage(() => localStorage),
-      partialize: ({ fogStyle, reducedMotion, haptics, nextUpTips, showEverything }) => ({
+      partialize: ({ fogStyle, reducedMotion, haptics, showEverything }) => ({
         fogStyle,
         reducedMotion,
         haptics,
-        nextUpTips,
         showEverything,
       }),
     },
