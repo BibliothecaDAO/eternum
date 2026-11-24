@@ -5,29 +5,28 @@ import { HudSlider } from "@/ui/design-system/kit/hud-elements";
 import { MAXIMUM, SIZE_ROW } from "@/ui/design-system/kit/words";
 
 /**
- * How many troops go, in one row: one fewer, the slider, one more, the count when the sheet's button does not carry it,
- * and Max, lit while the count is at the most. Where something runs out before the slider's end (the wheat a march
- * burns), `most` stops the thumb there and Max takes that much.
+ * How many troops go, in one row: one fewer, the slider up to the most that can go, one more, the count when the
+ * sheet's button does not carry it, and Max, lit while the count is at it. Max takes `max`, the most the player should
+ * send (the wheat a march burns kept back); the slider still reaches `most`, what the contract takes.
  */
 export const SizeRow = ({
   label,
   value,
-  max,
-  most = max,
+  most,
+  max = most,
   count = false,
   disabled = false,
   onChange,
 }: {
   label: string;
   value: number;
-  max: number;
-  most?: number;
+  most: number;
+  max?: number;
   count?: boolean;
   disabled?: boolean;
   onChange: (amount: number) => void;
 }) => {
-  const top = Math.min(most, max);
-  const set = (amount: number) => onChange(Math.max(0, Math.min(amount, top)));
+  const set = (amount: number) => onChange(Math.max(0, Math.min(amount, most)));
   return (
     <div className="size-row" data-disabled={disabled ? "" : undefined}>
       <button
@@ -40,20 +39,13 @@ export const SizeRow = ({
         −
       </button>
       <span className="size-row__track">
-        <HudSlider
-          label={label}
-          value={value}
-          max={max}
-          stop={most < max ? most : undefined}
-          disabled={disabled}
-          onChange={set}
-        />
+        <HudSlider label={label} value={value} max={most} disabled={disabled} onChange={set} />
       </span>
       <button
         type="button"
         className="size-row__step"
         aria-label={SIZE_ROW.more}
-        disabled={disabled || value >= top}
+        disabled={disabled || value >= most}
         onClick={() => set(value + 1)}
       >
         +
@@ -62,10 +54,10 @@ export const SizeRow = ({
       <button
         type="button"
         className="ui-pick size-row__max"
-        aria-label={`${MAXIMUM} ${formatExact(top)}`}
-        aria-pressed={value === top && top > 0}
+        aria-label={`${MAXIMUM} ${formatExact(max)}`}
+        aria-pressed={value === max && max > 0}
         disabled={disabled}
-        onClick={() => set(top)}
+        onClick={() => set(max)}
       >
         {SIZE_ROW.max}
       </button>

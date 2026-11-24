@@ -110,24 +110,30 @@ const render = (fixture: ReturnType<typeof armyBesideHome>, tile = fixture.besid
   return { add, close };
 };
 
-const button = (text: string) => [...host.querySelectorAll("button")].find((each) => each.textContent === text);
+/** A button by its words; Reinforce by the verb its words start with, as it names the troops it adds. */
+const button = (text: string) =>
+  [...host.querySelectorAll("button")].find((each) =>
+    text === "Reinforce" ? each.textContent?.startsWith("Reinforce +") : each.textContent === text,
+  );
 const press = async (text: string) => {
   expect(button(text)).toBeDefined();
   await act(async () => button(text)!.click());
 };
-/** The army's troops before and after, as its chip reads them. */
-const troops = () => host.querySelector('[aria-label^="Troops "]:not(input)')?.textContent ?? null;
+/** The army's troops before and after, as its row reads them. */
+const troops = () => host.querySelector(".reinforce-army__troops")?.textContent ?? null;
+/** The wheat the verb pays, as its price beside it names it. */
+const wheat = () => host.querySelector('.ui-price [role="img"]')?.getAttribute("aria-label") ?? null;
 
-it("opens on the army beside the realm at no troops, and raises the most it can take with Max", async () => {
+it("opens on the army beside the realm at the most it can take, and names the troops it adds on Reinforce", async () => {
   const fixture = armyBesideHome();
   const { add, close } = render(fixture);
   expect(host.textContent).toContain("Reinforce Army 1");
-  expect(troops()).toBe("600 → 600");
-  expect(button("Reinforce")?.disabled).toBe(true);
-
+  expect(troops()).toBe("600 → 1,020");
+  expect(button("Reinforce")?.textContent).toBe("Reinforce +420");
+  expect(wheat()).toBe("840 Wheat");
+  await act(async () => host.querySelector<HTMLButtonElement>('button[aria-label="One fewer"]')!.click());
+  expect(button("Reinforce")?.textContent).toBe("Reinforce +419");
   await press("Max");
-  expect(troops()).toBe("600 → 1K");
-  expect(host.textContent).toContain("840 Wheat");
   await press("Reinforce");
   expect(add).toHaveBeenCalledOnce();
   expect(add.mock.calls[0][0]).toMatchObject({
@@ -148,7 +154,7 @@ it.each([
   render(fixture);
   await press("Max");
   expect(troops()).toBe(after);
-  if (price) expect(host.textContent).toContain(price);
+  if (price) expect(wheat()).toBe(price);
 });
 
 it("leaves a newer pick alone when the troops land after it", async () => {
@@ -194,7 +200,7 @@ it("stops Max where the wheat left still feeds the whole army revealing its bar"
   render(fixture);
   await press("Max");
   expect(troops()).toBe("600 → 619");
-  expect(host.textContent).toContain("38 Wheat");
+  expect(wheat()).toBe("38 Wheat");
   expect(host.textContent).toContain("Wheat for only 19 of 420 troops");
 });
 
@@ -218,13 +224,13 @@ it("still sends a count above Max that the wheat pays for, as the contract takes
   const { add } = render(fixture);
   await press("Max");
   expect(troops()).toBe("600 → 600");
-  const field = host.querySelector<HTMLInputElement>(".ui-amount input")!;
+  const slider = host.querySelector<HTMLInputElement>("input[type=range]")!;
   act(() => {
-    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(field, "25");
-    field.dispatchEvent(new Event("input", { bubbles: true }));
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(slider, "25");
+    slider.dispatchEvent(new Event("input", { bubbles: true }));
   });
   expect(troops()).toBe("600 → 625");
-  expect(host.textContent).toContain("50 Wheat");
+  expect(wheat()).toBe("50 Wheat");
   await press("Reinforce");
   expect(add.mock.calls[0][0]).toMatchObject({ to_explorer_id: 201, amount: 25 * RESOURCE_PRECISION });
 });
@@ -293,7 +299,7 @@ it("reinforces through a cleared camp with its id and refuses it after the army 
       <ReinforceSheet
         realm={fixture.realm}
         army={armies.find((army) => army.explorerId === 201)!}
-        supplyPost={711}
+        post={{ id: 711, name: "Titancrag" }}
         onClose={() => {}}
       />
     );

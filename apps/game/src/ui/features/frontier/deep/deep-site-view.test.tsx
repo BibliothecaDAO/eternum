@@ -120,7 +120,7 @@ describe("a Deep site's card", () => {
     expect(tips[1]).toContain(`−${first!.lossPerTick + 150} / tick`);
   });
 
-  it("renders facing portraits, Bow first-strike cue from core, stamina cost on Attack, and 4 guard slots", () => {
+  it("renders facing portraits named by their sides, each before → after, stamina cost on Attack, and 4 guard slots", () => {
     const fixture = DEEP_SITE_CASES["Foundation held, two slots filled"];
     draw({
       ...fixture,
@@ -130,7 +130,6 @@ describe("a Deep site's card", () => {
         defender: 6_000,
         attackerTroops: { category: "Crossbowman", tier: "T1" },
         defenderTroops: { category: "Knight", tier: "T1" },
-        firstStrike: "attacker",
         result: { troopsLost: 330, guardLeft: 5_246 },
       },
       order: { kind: "act", verb: "attack", stamina: 30, onAct: () => {} },
@@ -138,10 +137,10 @@ describe("a Deep site's card", () => {
     const sides = [...document.querySelectorAll(".fight-side")];
     expect(sides).toHaveLength(2);
     expect(sides[0]!.querySelector('[data-icon="crossbowman-t1"]')).not.toBeNull();
-    expect(sides[0]!.textContent).toContain("Army 1");
-    expect(sides[0]!.textContent).toContain("Hits first");
+    expect(sides[0]!.getAttribute("aria-label")).toBe("Army 1 1,000 → 670, −330 · 33% lost");
+    expect(sides[0]!.textContent).toBe("1,000 → 670−330");
     expect(sides[1]!.querySelector('[data-icon="knight-t1"]')).not.toBeNull();
-    expect(sides[1]!.textContent).toContain("Aldor");
+    expect(sides[1]!.getAttribute("aria-label")).toContain("Aldor 6,000 → 5,246");
     expect(document.querySelector("[data-attack-stamina='30']")).not.toBeNull();
     expect(document.querySelector("button[aria-label='Attack']")).not.toBeNull();
     expect(document.querySelectorAll("[data-deep-slot]")).toHaveLength(4);

@@ -146,8 +146,8 @@ export const ReinforceSheet = ({
         <SizeRow
           label={DEPLOY_WORDS.howMany(TROOPS)}
           value={shown}
-          max={range.max}
           most={range.wheatMax}
+          max={range.max}
           disabled={range.wheatMax === 0 || sending}
           onChange={(next) => setCount(range.max > 0 && next === range.max ? "max" : next)}
         />

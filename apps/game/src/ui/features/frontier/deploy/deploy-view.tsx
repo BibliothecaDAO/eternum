@@ -101,8 +101,8 @@ export const DeployView = ({
           <SizeRow
             label={DEPLOY_WORDS.howMany(troopName)}
             value={count ?? 0}
-            max={amount.max}
             most={amount.most}
+            max={amount.max}
             count
             onChange={onCount}
           />
