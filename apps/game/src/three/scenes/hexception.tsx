@@ -1301,6 +1301,8 @@ export default class HexceptionScene extends HexagonScene {
     } else if (!occupied && highlightIndex < 0) {
       this.highlights.push(position);
     }
+    this.interactiveHexManager.setBandBare(position, occupied);
+    this.interactiveHexManager.renderAllHexes();
 
     if (this.buildingPreview?.getPreviewBuilding()) {
       this.renderBuildingPlacementHighlights();
@@ -1748,6 +1750,7 @@ export default class HexceptionScene extends HexagonScene {
         this.interactiveHexManager.addHex({ col: position.col, row: position.row });
 
         const building = existingBuildings.find((value) => value.col === position.col && value.row === position.row);
+        this.interactiveHexManager.setBandBare(position, Boolean(building));
 
         if (building) {
           this.buildings.push({ ...building, matrix: this.createBuildingMatrix(position) });
