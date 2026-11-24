@@ -7072,16 +7072,9 @@ export const STEP_SETS = {
             (name) => name === null,
             SHEET_WAIT_MS,
           );
-          if (!onADesktop()) {
-            browser.read(
-              `(() => { const chip = document.querySelector('.frontier-phone-emblem'); if (!chip) return false; chip.click(); return true; })()`,
-            );
-          }
           const hasDeploy = await readUntil(
             () =>
-              browser.read(
-                `Boolean(document.querySelector('section[aria-label="Realm"] .realm-foot button[data-kind="primary"]'))`,
-              ),
+              browser.read(`Boolean(document.querySelector('nav[aria-label="Armies"] button[aria-label="Deploy"]'))`),
             Boolean,
             SHEET_WAIT_MS,
           );

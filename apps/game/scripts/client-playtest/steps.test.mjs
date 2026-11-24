@@ -1378,3 +1378,47 @@ describe("the Season 1 rehearsal", () => {
     );
   });
 });
+
+describe("the realm world's deploy sheet (lab-realm-world)", () => {
+  const step = STEP_SETS["lab-realm-world"].steps.find(({ name }) => name === "deploy-sheet");
+  const page = () => {
+    const { document } = new JSDOM(
+      `<nav aria-label="Armies"><button aria-label="Deploy" data-kind="primary">Deploy</button></nav>`,
+    ).window;
+    const clicked = [];
+    const browser = {
+      press: () => {},
+      read: (expression) => {
+        const value = runInNewContext(expression, { document });
+        return typeof value === "string" ? JSON.parse(value) : value;
+      },
+      click: (name) => {
+        clicked.push(name);
+        if (name !== "Deploy" || !document.querySelector('nav[aria-label="Armies"] button[aria-label="Deploy"]'))
+          return;
+        document.body.insertAdjacentHTML(
+          "beforeend",
+          `<div data-rail-panel><section data-kit-sheet aria-label="Deploy">
+            <div aria-label="Troop type"><button aria-label="Knights"></button><button aria-label="Crossbowmen"></button><button aria-label="Scouts"></button></div>
+            <button>Adjust size</button>
+            <div class="ui-window__foot"><button data-kind="primary">Deploy</button></div>
+          </section></div>`,
+        );
+      },
+    };
+    return { browser, clicked };
+  };
+
+  it("opens Deploy from the army dock's Deploy, which the realm card no longer carries", async () => {
+    const { browser, clicked } = page();
+    const played = await step.play({ browser, extraScreenshot: () => "deploy.png" });
+    expect(clicked).toEqual(["Deploy"]);
+    expect(played.deployHud).toEqual({
+      troopCards: ["Knights", "Crossbowmen", "Scouts"],
+      hasAdjust: true,
+      deployEnabled: true,
+      inRightRail: true,
+    });
+    expect(step.verify({ played }).status).toBe("completed");
+  });
+});
