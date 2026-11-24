@@ -373,13 +373,14 @@ const minKnightsToClear = (
   return low;
 };
 
+const exampleMultiplier = 1.5;
 const campMid = Math.round((frontierPreset.depths[0].siteGuardLower + frontierPreset.depths[0].siteGuardUpper) / 2);
-const campAttacker = Math.round(campMid * 1.5);
+const campAttacker = Math.round(campMid * exampleMultiplier);
 const exampleCrossbows = runFight("Crossbowman", campAttacker, "Knight", campMid);
 const exampleKnights = runFight("Knight", campAttacker, "Knight", campMid);
 
 const markRow = (guardCount: number, bow: boolean) => {
-  const send = Math.round(guardCount * 1.5);
+  const send = Math.round(guardCount * exampleMultiplier);
   const defender: ExchangeTroops["category"] = bow ? "Crossbowman" : "Knight";
   return {
     target: `${n(guardCount)}, ${bow ? "Bow" : "Blade"}`,
@@ -508,6 +509,7 @@ export const FRONTIER = {
     bladeDeepBeasts,
     bowDeepBeasts,
     exampleLabel: `${LAYER_NAMES[0]} ${beastOf("camp", 0).name} camp`,
+    exampleRatio: `${exampleMultiplier}x`,
     exampleGuard: n(campMid),
     exampleSent: n(campAttacker),
     exampleCrossbowsKept: n(exampleCrossbows.kept),

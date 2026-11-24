@@ -183,8 +183,8 @@ export const frontierPhrases = (
         `${FRONTIER_TROOP_NAMES[TroopType.Knight]} ${buildingName(nativeResearch.BARRACKS, true)} Blade`,
         `${FRONTIER_TROOP_NAMES[TroopType.Crossbowman]} ${buildingName(nativeResearch.RANGE, true)} (castle level ${nativeResearch.RANGE_LEVEL + 1} (${rankName(nativeResearch.RANGE_LEVEL)})) Bow`,
         `${FRONTIER_TROOP_NAMES[TroopType.Paladin]} ${buildingName(nativeResearch.SCOUTS_LODGE, true)} (castle level ${nativeResearch.SCOUTS_LODGE_LEVEL + 1} (${rankName(nativeResearch.SCOUTS_LODGE_LEVEL)})) Blade`,
-        `An army holds ${n(stamina.staminaKnightMax)} stamina and recovers ${stamina.staminaGainPerTick} every ${tick / 60} minutes`,
-        `Revealing a tile costs ${stamina.staminaExploreStaminaCost} for ${FRONTIER_TROOP_NAMES[TroopType.Knight]} and ${FRONTIER_TROOP_NAMES[TroopType.Crossbowman]}, and ${nativeRules.SCOUT_EXPLORE_STAMINA} for ${FRONTIER_TROOP_NAMES[TroopType.Paladin]}.`,
+        `An army holds ${n(stamina.staminaKnightMax)} stamina and recovers ${stamina.staminaGainPerTick} every ${tick / 60} minutes (${n(Math.round((stamina.staminaGainPerTick * 3600) / tick))} per hour), so an empty bar fills in ${((stamina.staminaKnightMax / stamina.staminaGainPerTick) * tick) / 3600} hours.`,
+        `Revealing a tile costs ${stamina.staminaExploreStaminaCost} for ${FRONTIER_TROOP_NAMES[TroopType.Knight]} and ${FRONTIER_TROOP_NAMES[TroopType.Crossbowman]}, and ${nativeRules.SCOUT_EXPLORE_STAMINA} for ${FRONTIER_TROOP_NAMES[TroopType.Paladin]}. A step on an explored tile costs ${stamina.staminaTravelStaminaCost}, and an attack needs ${stamina.staminaAttackReq}.`,
         `adding +${n(logisticsBonus)} bonus stamina at rank V for ${n(stamina.staminaKnightMax + logisticsBonus)} max stamina total.`,
         `beside any camp your realm cleared today (supply post) on the ${personalLayersOr}`,
         `round(${n(Number(BigInt(config.troop.damage.damageScalingFactor) / 2n ** 64n))} × troops ÷ (both sides' troops)^${(contract.combatBetaTenths / 10).toFixed(1)})`,
@@ -215,7 +215,7 @@ export const frontierPhrases = (
     {
       page: "frontier/realm",
       phrases: [
-        `A new realm starts with ${start(26)} ${FRONTIER_TROOP_NAMES[TroopType.Knight]} waiting at home`,
+        `A new realm starts with ${start(26)} ${FRONTIER_TROOP_NAMES[TroopType.Knight]} waiting at home (no army is deployed yet), ${start(35)} wheat, and ${start(23)} labor.`,
         `Your castle makes ${castleLaborRate(0)} labor per hour at castle level 1 (${rankName(0)}), multiplying by ${n(contract.castleLaborStep)} at each castle level up to ${castleLaborRate(3)}/h at castle level 4 (${rankName(3)}).`,
         `receive ${n(preset.dailyQuest.labor)} Labor and ${n(preset.dailyQuest.essence)} Essence at castle level 1 (${rankName(0)}), multiplying by ${n(contract.questLevelStep)} at each higher castle level.`,
         ...FRONTIER_BUILDING_TYPES.map((id) => buildingName(id, true)),
