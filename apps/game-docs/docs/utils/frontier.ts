@@ -29,8 +29,6 @@ import {
   FRAGMENTS_A_DAY,
   FRIEND_FRAGMENTS,
   FRIEND_GLORY,
-  FRIENDS_BONUS_FRAGMENTS,
-  FRIENDS_LIMIT,
   FRONTIER_BUILDING_TYPES,
   LAYER_NAMES,
   MIN_FRAGMENTS,
@@ -78,6 +76,8 @@ export const SHORT_DAY_UNITS = 2;
 export const LONG_DAY_UNITS = 6;
 const DAYS_PER_BAG = CONTRACT.daysPerBag;
 const UNITS_PER_BAG = CONTRACT.unitsPerBag;
+const dayLengthHours = Array.from({ length: DAYS_PER_BAG }, (_, index) => hoursOf(SHORT_DAY_UNITS + index));
+const dayLengthsList = `${dayLengthHours.slice(0, -1).join(", ")}, and ${dayLengthHours.at(-1)}`;
 
 const tickMinutes = config.tick.armiesTickIntervalInSeconds / 60;
 
@@ -110,7 +110,7 @@ const worldBaneMeta: Record<WorldBaneId, { icon: IconMeaning; effect: string }> 
 const oathEffects: Record<number, string> = {
   [oaths.POWER]: `Deals +${n(oaths.POWER_DAMAGE_PERCENT)}% damage.`,
   [oaths.GIANTS]: `Takes ${n(oaths.GIANTS_REDUCTION_PERCENT)}% less damage.`,
-  [oaths.SKILL]: `Deals +${n(oaths.SKILL_DAMAGE_PERCENT)}% damage when stamina after attack is below ${n(oaths.SKILL_BELOW_STAMINA)}.`,
+  [oaths.SKILL]: `Deals +${n(oaths.SKILL_DAMAGE_PERCENT)}% damage when the attack leaves stamina below ${n(oaths.SKILL_BELOW_STAMINA)}.`,
   [oaths.TITANS]: `Gains +${n(oaths.TITANS_STAMINA)} stamina immediately and +${n(oaths.TITANS_STAMINA)} max stamina.`,
   [oaths.PERFECTION]: `Site rewards pay ${n(oaths.PERFECTION_PAY_PERCENT)}% when you lose under ${n(oaths.PERFECTION_LOSS_PERCENT)}% troops.`,
   [oaths.BRILLIANCE]: `Reveal payouts pay ${n(oaths.BRILLIANCE_PAY_PERCENT)}%.`,
@@ -121,7 +121,7 @@ const oathEffects: Record<number, string> = {
   [oaths.VITRIOL]: `Cuts Deep troop drain from ${n(deepPreset.lossPerTick)} to ${n(oaths.VITRIOL_LOSS_PER_TICK)} per tick.`,
   [oaths.ANGER]: `Cuts attack stamina cost from ${n(stamina.staminaAttackReq)} to ${n(oaths.ANGER_ATTACK_STAMINA)}.`,
   [oaths.FOX]: `Cuts tile reveal stamina cost by ${n(oaths.FOX_REVEAL_DISCOUNT_PERCENT)}%.`,
-  [oaths.TWINS]: `Nearby allied army adds +${n(oaths.TWINS_DAMAGE_PERCENT)}% companion damage.`,
+  [oaths.TWINS]: `When another of your armies stands on an adjacent tile, your largest adjacent army adds ${n(oaths.TWINS_DAMAGE_PERCENT)}% of its attack damage.`,
   [oaths.REFLECTION]: `Wells refill ${n(oaths.REFLECTION_WELL_PERCENT)}% of max stamina instead of ${n(rule.WELL_REFILL_PERCENT)}%.`,
   [oaths.DETECTION]: `Guarantees a discovery after ${n(oaths.DETECTION_EMPTY_REVEAL_LIMIT)} empty reveals instead of ${n(frontierPreset.discovery.emptyRevealLimit)}.`,
 };
@@ -154,6 +154,10 @@ const staminaEnabled = commandEnabled("BuyStamina");
 const rerollEnabled = commandEnabled("RerollOath");
 const anySpendEnabled = sealEnabled || staminaEnabled || rerollEnabled;
 const barFragments = n(Math.ceil(stamina.staminaKnightMax / fragments.STAMINA_PER_FRAGMENT));
+const logisticsBonusValue = logisticsStamina(stamina.staminaKnightMax, rule.ATTRIBUTE_CAP);
+
+const castleLevelLabel = (level: number) => `Level ${level + 1} (${rankName(level)})`;
+const castleLevelInline = (level: number) => `castle level ${level + 1} (${rankName(level)})`;
 
 const buildingMeta: Partial<Record<BuildingType, { makes: string; level: number; order: number }>> = {
   [research.FARM]: { makes: "Wheat", level: 0, order: 0 },
@@ -177,7 +181,7 @@ const frontierBuildings = [...FRONTIER_BUILDING_TYPES]
       name: buildingName(id, true),
       makes: rate ? `${meta.makes} (${rate}/h)` : meta.makes,
       icon: buildingMeaning(id, true),
-      opens: rankName(meta.level),
+      opens: castleLevelLabel(meta.level),
       price: priceOf(config.buildings.simpleBuildingCost[id]),
     };
   })
@@ -209,12 +213,15 @@ export const FRONTIER = {
     longestHours: hoursOf(LONG_DAY_UNITS),
     daysPerBag: DAYS_PER_BAG,
     bagHours: hoursOf(UNITS_PER_BAG),
+    lengths: dayLengthsList,
     seasonDays: n(racePreset.seasonDays),
   },
   realm: {
     troops: n(config.startingResources.find((r: { resource: number }) => r.resource === KNIGHT).amount),
     wheat: n(config.startingResources.find((r: { resource: number }) => r.resource === WHEAT).amount),
     labor: n(config.startingResources.find((r: { resource: number }) => r.resource === LABOR).amount),
+    castleNames: Array.from({ length: config.realmMaxLevel }, (_, level) => rankName(level)),
+    castleLevels: Array.from({ length: config.realmMaxLevel }, (_, level) => castleLevelLabel(level)),
     armies: [limit.settlementArmies, limit.cityArmies, limit.kingdomArmies, limit.empireArmies].map(n),
     deployCaps: [
       limit.settlementDeploymentCap,
@@ -245,7 +252,8 @@ export const FRONTIER = {
     wheatPerTroop: n(stamina.staminaExploreWheatCost),
     well: `${n(rule.WELL_REFILL_PERCENT)}% of its maximum`,
     logisticsStep: `${n(rule.LOGISTICS_STEP_PERCENT)}%`,
-    logisticsMax: n(logisticsStamina(stamina.staminaKnightMax, rule.ATTRIBUTE_CAP)),
+    logisticsBonus: n(logisticsBonusValue),
+    logisticsMax: n(stamina.staminaKnightMax + logisticsBonusValue),
     perFragment: n(fragments.STAMINA_PER_FRAGMENT),
   },
   discovery: {
@@ -260,6 +268,12 @@ export const FRONTIER = {
     spireRevealLimit: n(rule.SPIRE_REVEAL_LIMIT),
     revealTroopCap: n(limit.exploreRewardStrengthCap),
   },
+  sitePayouts: {
+    campPercent: `${n(100 / CONTRACT.campGuardDivisor)}%`,
+    riftPercent: `${n(100 * CONTRACT.riftGuardMultiplier)}%`,
+    veilMultiplier: `${n(((CONTRACT.depthRewardDivisor + 1) / CONTRACT.depthRewardDivisor) * 100)}%`,
+    hollowMultiplier: `${n(((CONTRACT.depthRewardDivisor + 2) / CONTRACT.depthRewardDivisor) * 100)}%`,
+  },
   depths: frontierPreset.depths.map((depth, index) => ({
     name: LAYER_NAMES[index],
     revealPercent: `${depth.revealPercent}%`,
@@ -269,13 +283,12 @@ export const FRONTIER = {
     beastStrong: `${beastOf("band", index).name} ${range(depth.beastStrongLower, depth.beastStrongUpper)}`,
     ruinGuard: beastOf("ruin", index).name,
   })),
-  ruinGuards: LAYER_NAMES.slice(0, 3).flatMap((layer, depth) =>
-    TIER_WORDS.slice(depth, depth + RELICS_PER_LAYER).map((name, place) => ({
-      layer,
-      name,
-      count: range(...previewRuinGuardBounds(depth + place + 1, depth)),
-    })),
-  ),
+  ruinGuardTable: LAYER_NAMES.slice(0, 3).map((layer, depth) => {
+    const cells = TIER_WORDS.slice(depth, depth + RELICS_PER_LAYER).map(
+      (name, place) => `${name}: ${range(...previewRuinGuardBounds(depth + place + 1, depth))}`,
+    );
+    return { layer, low: cells[0], mid: cells[1], high: cells[2] };
+  }),
   caches: {
     surface: `${fragments.SURFACE_CACHE_PERCENT}%`,
     veil: `${fragments.VEIL_CACHE_PERCENT}%`,
@@ -305,12 +318,12 @@ export const FRONTIER = {
     deep: LAYER_NAMES[3],
   },
   storeroom: {
-    opens: rankName(research.STOREROOM_LEVEL),
+    opens: castleLevelInline(research.STOREROOM_LEVEL),
     storageStep: pct(frontierPreset.board.storageStepBps),
   },
-  conscriptionOpens: rankName(research.CONSCRIPTION_CAMP_LEVEL),
-  rationsOpens: rankName(research.RATIONS_DEPOT_LEVEL),
-  supplyYardOpens: rankName(research.SUPPLY_YARD_LEVEL),
+  conscriptionOpens: castleLevelInline(research.CONSCRIPTION_CAMP_LEVEL),
+  rationsOpens: castleLevelInline(research.RATIONS_DEPOT_LEVEL),
+  supplyYardOpens: castleLevelInline(research.SUPPLY_YARD_LEVEL),
   research: {
     farm: researchRow(research.ROW_FARM),
     workshop: researchRow(research.ROW_WORKSHOP),
@@ -340,7 +353,7 @@ export const FRONTIER = {
     levelStep: n(CONTRACT.questLevelStep),
     levelScale: Array.from(
       { length: config.realmMaxLevel },
-      (_, level) => `${n(CONTRACT.questLevelStep ** level)}x at ${rankName(level)}`,
+      (_, level) => `${n(CONTRACT.questLevelStep ** level)}x at ${castleLevelInline(level)}`,
     ).join(", "),
     list: dailyQuests.map((quest, index) => ({
       name: quest.name,
@@ -440,9 +453,7 @@ export const FRONTIER = {
     maxSlots: n(research.OATH_SLOTS_BASE + research.OATH_SLOTS_STEPS),
     passStamina: n(oaths.PASS_STAMINA),
     rerollFragments: n(fragments.OATH_REROLL_FRAGMENTS),
-    rerollNote: rerollEnabled
-      ? `Spend ${n(fragments.OATH_REROLL_FRAGMENTS)} Fragments to replace one of the 3 drawn cards once per draw (disabled in the Deep).`
-      : `Turned off while Fragment spending is disabled. When enabled (above the Deep), spending ${n(fragments.OATH_REROLL_FRAGMENTS)} Fragments replaces one of the 3 drawn cards once per draw.`,
+    rerollNote: `Spend ${n(fragments.OATH_REROLL_FRAGMENTS)} Fragments to replace one of the 3 drawn cards once per draw on the Surface, Veil, and Hollow.`,
     vitriolLoss: n(oaths.VITRIOL_LOSS_PER_TICK),
     reflectionWell: `${n(oaths.REFLECTION_WELL_PERCENT)}%`,
     detectionLimit: n(oaths.DETECTION_EMPTY_REVEAL_LIMIT),
@@ -471,29 +482,22 @@ export const FRONTIER = {
   },
   shop: {
     lordsNote: anySpendEnabled
-      ? "The Shop accepts LORDS (or swaps ETH, STRK, or USDC into LORDS through AVNU) to buy Fragments."
-      : "The Shop is built to accept LORDS (or swap ETH, STRK, or USDC into LORDS through AVNU) for Fragments, and Fragment spending is currently turned off in the active Season 1 preset.",
+      ? "You can buy Fragments in the Shop with LORDS (or swap ETH, STRK, or USDC into LORDS through AVNU)."
+      : "The Shop takes LORDS (or swaps ETH, STRK, or USDC into LORDS through AVNU) for Fragments. Fragment spending is currently turned off.",
     statusNote: anySpendEnabled
-      ? "Fragment spending is enabled in the active preset."
-      : `Fragment spending (the Ancient Seal, stamina refills, and Oath rerolls) is currently turned off in the active Season 1 preset, including during the Final Testnet (${SEASON_ONE_CALENDAR.testnetDates} UTC).`,
-    sealRule: sealEnabled
-      ? `Lasts the whole season. Gives ${n(questPreset.bonusPercent)}% daily quest labor and the Season 1 Realm skin. You can also redeem an Ancient Seal code.`
-      : `Turned off while Fragment spending is disabled. When enabled, lasts the whole season, gives ${n(questPreset.bonusPercent)}% daily quest labor and the Season 1 Realm skin, or can be redeemed with an Ancient Seal code.`,
-    staminaRule: staminaEnabled
-      ? `Works on the Surface, Veil, and Hollow (${barFragments} Fragments for a full ${n(stamina.staminaKnightMax)} bar at ${n(fragments.STAMINA_PER_FRAGMENT)} stamina per Fragment). Disabled inside the Deep.`
-      : `Turned off while Fragment spending is disabled. When enabled (above the Deep), refills ${n(fragments.STAMINA_PER_FRAGMENT)} stamina per Fragment (${barFragments} Fragments for a full ${n(stamina.staminaKnightMax)} bar).`,
-    fragmentCents: n(FRAGMENT_CENTS),
+      ? "Fragment spending is on."
+      : `Fragment spending (the Ancient Seal, stamina refills, and Oath rerolls) is turned off during the Final Testnet (${SEASON_ONE_CALENDAR.testnetDates} UTC) and is currently turned off in the Season 1 rules.`,
+    sealRule: `Lasts the whole season. Gives ${n(questPreset.bonusPercent)}% daily quest labor and the Season 1 Realm skin. You can also get the Seal with a code.`,
+    staminaRule: `Refills ${n(fragments.STAMINA_PER_FRAGMENT)} stamina per Fragment on the Surface, Veil, and Hollow (${barFragments} Fragments for a full ${n(stamina.staminaKnightMax)} bar). Does not work inside the Deep.`,
+    fragmentPrice: dollars(FRAGMENT_CENTS),
     minFragments: n(MIN_FRAGMENTS),
     dailyCap: n(FRAGMENTS_A_DAY),
     sealFragments: n(fragments.SEAL_FRAGMENTS),
-    sealDollars: dollars(fragments.SEAL_FRAGMENTS * FRAGMENT_CENTS),
     packs: Object.values(STORE_PRODUCTS).map((pack) => ({
       fragments: n(pack.fragments),
       price: dollars(pack.cents),
     })),
     friendGlory: n(FRIEND_GLORY),
     friendFragments: n(FRIEND_FRAGMENTS),
-    friendsLimit: n(FRIENDS_LIMIT),
-    friendsBonus: n(FRIENDS_BONUS_FRAGMENTS),
   },
 };

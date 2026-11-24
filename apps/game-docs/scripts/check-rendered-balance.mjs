@@ -19,8 +19,6 @@ import {
   FRAGMENTS_A_DAY,
   FRIEND_FRAGMENTS,
   FRIEND_GLORY,
-  FRIENDS_BONUS_FRAGMENTS,
-  FRIENDS_LIMIT,
   FRONTIER_BUILDING_TYPES,
   LAYER_NAMES,
   MIN_FRAGMENTS,
@@ -58,7 +56,7 @@ const buildingPrice = (config, id) =>
 export const frontierGuardPhrases = (preset) => {
   const range = (lower, upper) => `${n(lower)}–${n(upper)}`;
   return [
-    "Ground Camps Rifts Weaker beasts Stronger beasts Ruins",
+    "Layer Camps Rifts Herds Bands Ruins",
     ...preset.depths.map((depth, index) =>
       [
         LAYER_NAMES[index],
@@ -83,7 +81,7 @@ export const frontierPhrases = (
   nativeFragments,
   nativeOaths,
   nativeRace,
-  { aspectWords, relicWords, relicKinds, commandBits, calendar, nativeResearch, contract },
+  { aspectWords, relicWords, relicKinds, commandBits, calendar, nativeResearch, contract, logisticsStamina },
 ) => {
   const stamina = config.troop.stamina;
   const tick = config.tick.armiesTickIntervalInSeconds;
@@ -105,16 +103,15 @@ export const frontierPhrases = (
     n(Math.round(config.resources.productionByComplexRecipeOutputs[23] * contract.castleLaborStep ** level * 3600));
   const questLevelScale = Array.from(
     { length: config.realmMaxLevel },
-    (_, level) => `${n(contract.questLevelStep ** level)}x at ${rankName(level)}`,
+    (_, level) => `${n(contract.questLevelStep ** level)}x at castle level ${level + 1} (${rankName(level)})`,
   ).join(", ");
   const commandOn = (name) => (preset.commandMask & BigInt(commandBits[name])) !== 0n;
   const sealEnabled = commandOn("BuySeal");
   const staminaEnabled = commandOn("BuyStamina");
   const rerollEnabled = commandOn("RerollOath");
   const anySpendEnabled = sealEnabled || staminaEnabled || rerollEnabled;
-  const staminaRule = staminaEnabled
-    ? `Works on the Surface, Veil, and Hollow`
-    : `Turned off while Fragment spending is disabled. When enabled (above the Deep), refills ${n(nativeFragments.STAMINA_PER_FRAGMENT)} stamina per Fragment`;
+  const logisticsBonus = logisticsStamina(stamina.staminaKnightMax, nativeRules.ATTRIBUTE_CAP);
+  const staminaRule = `Refills ${n(nativeFragments.STAMINA_PER_FRAGMENT)} stamina per Fragment on the Surface, Veil, and Hollow`;
   const oathSlotPrices = preset.research
     .filter((step) => step.row === nativeResearch.ROW_KNIGHT_OATHS)
     .sort((a, b) => a.tier - b.tier)
@@ -123,9 +120,7 @@ export const frontierPhrases = (
         `Slot ${n(nativeResearch.OATH_SLOTS_BASE + index + 1)}: ${n(step.essenceCost)} Essence, ${n(step.laborCost)} labor`,
     )
     .join("; ");
-  const rerollRule = rerollEnabled
-    ? `Spend ${n(nativeFragments.OATH_REROLL_FRAGMENTS)} Fragments to replace one of the 3 drawn cards once per draw`
-    : `Turned off while Fragment spending is disabled. When enabled (above the Deep), spending ${n(nativeFragments.OATH_REROLL_FRAGMENTS)} Fragments replaces one of the 3 drawn cards once per draw.`;
+  const rerollRule = `Spend ${n(nativeFragments.OATH_REROLL_FRAGMENTS)} Fragments to replace one of the 3 drawn cards once per draw on the Surface, Veil, and Hollow.`;
   return [
     {
       page: "frontier",
@@ -143,7 +138,8 @@ export const frontierPhrases = (
       page: "frontier/armies",
       phrases: [
         `An army holds ${n(stamina.staminaKnightMax)} stamina and recovers ${stamina.staminaGainPerTick} every ${tick / 60} minutes, so an empty bar fills in ${((stamina.staminaKnightMax / stamina.staminaGainPerTick) * tick) / 3600} hours.`,
-        `Revealing a tile costs ${stamina.staminaExploreStaminaCost} for Knights and ${nativeRules.SCOUT_EXPLORE_STAMINA} for Scouts, a step over known ground ${stamina.staminaTravelStaminaCost}, and an attack needs ${stamina.staminaAttackReq}.`,
+        `Revealing a tile costs ${stamina.staminaExploreStaminaCost} for Knights and ${nativeRules.SCOUT_EXPLORE_STAMINA} for Scouts, a step on an explored tile costs ${stamina.staminaTravelStaminaCost}, and an attack needs ${stamina.staminaAttackReq}.`,
+        `adding +${n(logisticsBonus)} bonus stamina at rank V for ${n(stamina.staminaKnightMax + logisticsBonus)} max stamina total.`,
         staminaRule,
       ],
     },
@@ -152,6 +148,9 @@ export const frontierPhrases = (
       phrases: [
         ...frontierGuardPhrases(preset),
         ...preset.depths.map((depth, index) => `${LAYER_NAMES[index]} ${depth.revealPercent}%`),
+        `${n(100 / contract.campGuardDivisor)}% of its starting guard on the ${LAYER_NAMES[0]}, ${n(((contract.depthRewardDivisor + 1) / contract.depthRewardDivisor) * 100)}% of that in the ${LAYER_NAMES[1]}, ${n(((contract.depthRewardDivisor + 2) / contract.depthRewardDivisor) * 100)}% in the ${LAYER_NAMES[2]}`,
+        `${n(100 * contract.riftGuardMultiplier)}% of its starting guard on the ${LAYER_NAMES[0]}`,
+        `+${n(nativeOaths.PASS_STAMINA)} stamina`,
         `${nativeFragments.SURFACE_CACHE_PERCENT}% chance`,
       ],
     },
@@ -159,18 +158,18 @@ export const frontierPhrases = (
       page: "frontier/realm",
       phrases: [
         `A new realm starts with ${start(26)} troops, ${start(35)} wheat and ${start(23)} labor.`,
-        `Your castle makes ${castleLaborRate(0)} labor per hour at Settlement, multiplying by ${n(contract.castleLaborStep)} at each castle level up to ${castleLaborRate(3)}/h at Empire.`,
+        `Your castle makes ${castleLaborRate(0)} labor per hour at castle level 1 (${rankName(0)}), multiplying by ${n(contract.castleLaborStep)} at each castle level up to ${castleLaborRate(3)}/h at castle level 4 (${rankName(3)}).`,
         `receive ${n(preset.dailyQuest.labor)} Labor and ${n(preset.dailyQuest.essence)} Essence`,
         ...FRONTIER_BUILDING_TYPES.map((id) => buildingName(id, true)),
         ...armies.map(
           (count, index) =>
-            `${index + 1} ${n(count)} ${n(caps[index])} ${castleLaborRate(index)} ${n(preset.board.resourceStoreCaps[index])} ${n(preset.board.laborStoreCaps[index])}`,
+            `Level ${index + 1} (${rankName(index)}) ${n(count)} ${n(caps[index])} ${castleLaborRate(index)} ${n(preset.board.resourceStoreCaps[index])} ${n(preset.board.laborStoreCaps[index])}`,
         ),
-        `Farm Wheat (${rateOf(BuildingType.ResourceWheat)}/h) Settlement ${buildingPrice(config, BuildingType.ResourceWheat)}`,
-        `Barracks Knights (${rateOf(BuildingType.ResourceKnightT1)}/h) Settlement ${buildingPrice(config, BuildingType.ResourceKnightT1)}`,
-        `Range Crossbowmen (${rateOf(BuildingType.ResourceCrossbowmanT1)}/h) City ${buildingPrice(config, BuildingType.ResourceCrossbowmanT1)}`,
-        `Scouts' lodge Scouts (${rateOf(BuildingType.ScoutsLodge)}/h) City ${buildingPrice(config, BuildingType.ScoutsLodge)}`,
-        `Supply yard Logistics training Kingdom ${buildingPrice(config, BuildingType.SupplyYard)}`,
+        `Farm Wheat (${rateOf(BuildingType.ResourceWheat)}/h) Level 1 (${rankName(0)}) ${buildingPrice(config, BuildingType.ResourceWheat)}`,
+        `Barracks Knights (${rateOf(BuildingType.ResourceKnightT1)}/h) Level 1 (${rankName(0)}) ${buildingPrice(config, BuildingType.ResourceKnightT1)}`,
+        `Range Crossbowmen (${rateOf(BuildingType.ResourceCrossbowmanT1)}/h) Level 2 (${rankName(1)}) ${buildingPrice(config, BuildingType.ResourceCrossbowmanT1)}`,
+        `Scouts' lodge Scouts (${rateOf(BuildingType.ScoutsLodge)}/h) Level 2 (${rankName(1)}) ${buildingPrice(config, BuildingType.ScoutsLodge)}`,
+        `Supply yard Logistics training Level 3 (${rankName(2)}) ${buildingPrice(config, BuildingType.SupplyYard)}`,
         `Price per troop kind: ${oathSlotPrices}.`,
       ],
     },
@@ -194,6 +193,7 @@ export const frontierPhrases = (
       page: "frontier/deep",
       phrases: [
         `The Deep has ${preset.deep.rings.length} concentric rings`,
+        `once enough realms have sent an army into the Deep that day:`,
         ...preset.deep.rings.map((ring, index) => `Ring ${index + 1} ${n(ring.radius)} tiles ${n(ring.realms)}`),
         `The ${deepSites.length} site kinds`,
         ...deepSites.map((site) => site.name),
@@ -232,14 +232,15 @@ export const frontierPhrases = (
     {
       page: "frontier/quests-and-banes",
       phrases: [
-        `The ${dailyQuests.length} daily quests are dealt in shuffled ${dailyQuests.length}-day bags`,
+        `Each of the ${dailyQuests.length} daily quests comes once every ${dailyQuests.length} days`,
         ...dailyQuests.map((quest) => `${quest.name} ${quest.objective}`),
         `Rewards multiply by ${n(contract.questLevelStep)} at each castle level (${questLevelScale}).`,
         `${n(preset.dailyQuest.labor)} Labor and ${n(preset.dailyQuest.essence)} Essence.`,
         `to ${n(preset.dailyQuest.bonusPercent)}%.`,
         `+${n(nativeFragments.WONDER_QUEST_FRAGMENTS)} Fragments`,
         `Guarded sites have ${n(preset.banes.beastPercent)}% strength.`,
-        `Once ${n(preset.banes.quorumPercent)}% of your Aspect's active members`,
+        `Once ${n(preset.banes.quorumPercent)}% of your Aspect's members who were active on the previous day`,
+        `World Banes stop for the rest of the season.`,
         ...worldBanes.map((entry) => entry.name),
         ...worldBanes.map((entry) => {
           const q = baneQuests.find((item) => item.id === entry.quest);
@@ -251,15 +252,12 @@ export const frontierPhrases = (
       page: "frontier/shop-and-referrals",
       phrases: [
         ...(anySpendEnabled ? [] : [calendar.testnetDates]),
-        `${n(FRAGMENT_CENTS)} cent per Fragment.`,
-        `from ${n(MIN_FRAGMENTS)} up to ${n(FRAGMENTS_A_DAY)} Fragments per day.`,
+        `Custom amounts cost $${(FRAGMENT_CENTS / 100).toFixed(2)} per Fragment, from ${n(MIN_FRAGMENTS)} up to ${n(FRAGMENTS_A_DAY)} Fragments per day.`,
         `${n(nativeFragments.SEAL_FRAGMENTS)} Fragments`,
-        sealEnabled ? `Lasts the whole season.` : `Turned off while Fragment spending is disabled.`,
+        `Lasts the whole season.`,
         staminaRule,
         rerollRule,
-        `reaches ${n(FRIEND_GLORY)} Glory in the Deep pays you ${n(FRIEND_FRAGMENTS)} Fragments.`,
-        `Up to ${n(FRIENDS_LIMIT)} friends count per season.`,
-        `+${n(FRIENDS_BONUS_FRAGMENTS)} Fragment bonus.`,
+        `reaches ${n(FRIEND_GLORY)} Glory in the Deep pays you ${n(FRIEND_FRAGMENTS)} Fragments, with no cap per season.`,
       ],
     },
   ];
@@ -272,7 +270,7 @@ export const payoutWalletPhrases = (changeHoldSeconds, claimWindowSeconds) => [
   },
   {
     page: "account/lords",
-    phrases: [`link one within ${claimWindowSeconds / 86400} days of posting`],
+    phrases: [`link one within ${claimWindowSeconds / 86400} days after the results are posted`],
   },
 ];
 
@@ -373,6 +371,9 @@ export const loadBalanceSources = async () => {
       join(here, "../docs/utils/season-calendar.ts"),
     );
     const { CONTRACT: contract } = await server.ssrLoadModule(join(here, "../docs/utils/contract-constants.ts"));
+    const { logisticsStamina } = await server.ssrLoadModule(
+      join(here, "../../../packages/core/src/utils/attribute-tiers.ts"),
+    );
     const productionRelease = JSON.parse(readFileSync(join(here, "../../../deploy/release/production.json"), "utf8"));
     const heraldLimits = await server.ssrLoadModule(join(here, "../../herald/src/http-limits.ts"));
     return {
@@ -393,6 +394,7 @@ export const loadBalanceSources = async () => {
       relicMeaning,
       calendar,
       contract,
+      logisticsStamina,
       productionRelease,
       heraldLimits,
       payoutWalletChangeSeconds: PAYOUT_WALLET_CHANGE_SECONDS,

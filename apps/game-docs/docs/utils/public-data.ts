@@ -11,7 +11,7 @@ import { aspectMeaning } from "../../../game/src/ui/design-system/icon-meaning";
 const heraldUrl = productionRelease.public_herald_url;
 const rpcUrl = productionRelease.public_rpc_url;
 const aspectMapLiteral = `{ ${aspects.map((aspect) => `${aspect.id}: "${aspect.name}"`).join(", ")} }`;
-const firstAspectId = aspects[0].id;
+const sampleAspectId = aspects[1].id;
 
 export const PUBLIC_DATA = {
   heraldUrl,
@@ -43,9 +43,9 @@ console.log(health.confirmed_block, health.success);`,
     snapshotJs: `const models = "AspectHyperstructure,AspectActivity,DeepSite";
 const snap = await fetch(\`${heraldUrl}/games/1/snapshot?models=\${models}\`).then((r) => r.json());
 for (const entry of snap.models) console.log(entry.model, entry.rows.length);`,
-    membersCurl: `curl -sS "${heraldUrl}/games/1/aspects/${firstAspectId}/members?limit=${ROSTER_PAGE_DEFAULT}&offset=0"`,
+    membersCurl: `curl -sS "${heraldUrl}/games/1/aspects/${sampleAspectId}/members?limit=${ROSTER_PAGE_DEFAULT}&offset=0"`,
     membersJs: `const roster = await fetch(
-  "${heraldUrl}/games/1/aspects/${firstAspectId}/members?limit=${ROSTER_PAGE_DEFAULT}&offset=0",
+  "${heraldUrl}/games/1/aspects/${sampleAspectId}/members?limit=${ROSTER_PAGE_DEFAULT}&offset=0",
 ).then((r) => r.json());
 console.log(roster.total, roster.members);`,
     historyCurl: `curl -sS "${heraldUrl}/games/1/history?model=StoryEvent&story=RealmCreatedStory&limit=${HISTORY_PAGE_DEFAULT}&offset=0"`,
@@ -71,7 +71,7 @@ const latest = await rpc("starknet_getBlockWithTxHashes", ["latest"]);
 console.log(head.result, latest.result.block_number, latest.result.transactions.length);`,
     recipeStanding: `const HERALD = "${heraldUrl}";
 const ASPECTS = ${aspectMapLiteral};
-const myAspect = ${firstAspectId};
+const myAspect = ${sampleAspectId};
 
 const dir = await fetch(\`\${HERALD}/games\`).then((r) => r.json());
 const game = dir.games.find((g) => /^frontier-\\d+$/.test(g.name)) ?? dir.games[0];

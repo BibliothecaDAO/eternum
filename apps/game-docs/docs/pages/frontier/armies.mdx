@@ -11,19 +11,20 @@ import { Shot } from "@/components/Media";
 
 ## Troop kinds
 
-Frontier has three troop kinds. Every troop fights at Tier 1:
+Frontier has three troop kinds:
 
-| Troop                                          | Trained at                          | Weapon | Role                                                                                                                                                                      |
-| ---------------------------------------------- | ----------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| <GameIcon name="knight-t1" /> Knights          | {FRONTIER.names.barracks}           | Blade  | Full damage. Takes {FRONTIER.attributes.knightGuardReduction} less damage when guarding a Deep site.                                                                      |
-| <GameIcon name="crossbowman-t1" /> Crossbowmen | {FRONTIER.names.range} (City)       | Bow    | Strikes first against blades. Deals {FRONTIER.attributes.lightDamageReduction} less damage than Knights.                                                                  |
-| <GameIcon name="paladin-t1" /> Scouts          | {FRONTIER.names.scoutsLodge} (City) | Bow    | Reveals tiles for {FRONTIER.stamina.scoutReveal} stamina instead of {FRONTIER.stamina.reveal}. Deals {FRONTIER.attributes.lightDamageReduction} less damage than Knights. |
+| Troop                                          | Trained at                                                                     | Weapon | Role                                                                                                                                                                      |
+| ---------------------------------------------- | ------------------------------------------------------------------------------ | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| <GameIcon name="knight-t1" /> Knights          | {FRONTIER.names.barracks}                                                      | Blade  | Full damage. Takes {FRONTIER.attributes.knightGuardReduction} less damage when guarding a Deep site.                                                                      |
+| <GameIcon name="crossbowman-t1" /> Crossbowmen | {FRONTIER.names.range} (castle level 2, {FRONTIER.realm.castleNames[1]})       | Bow    | Strikes first against blades. Deals {FRONTIER.attributes.lightDamageReduction} less damage than Knights.                                                                  |
+| <GameIcon name="paladin-t1" /> Scouts          | {FRONTIER.names.scoutsLodge} (castle level 2, {FRONTIER.realm.castleNames[1]}) | Bow    | Reveals tiles for {FRONTIER.stamina.scoutReveal} stamina instead of {FRONTIER.stamina.reveal}. Deals {FRONTIER.attributes.lightDamageReduction} less damage than Knights. |
 
 ## Deploying
 
 Open **Deploy** to place troops on a tile beside your realm in an open army slot: {FRONTIER.realm.armies[0]} slots at
-Settlement, up to {FRONTIER.realm.armies[3]} at Empire. Each troop costs {FRONTIER.realm.deployWheat} wheat to deploy
-(reduced by {FRONTIER.realm.rationStep} per Rations rank), and each castle level raises the max troops per deploy
+castle level 1 ({FRONTIER.realm.castleNames[0]}), up to {FRONTIER.realm.armies[3]} at castle level 4
+({FRONTIER.realm.castleNames[3]}). Each troop costs {FRONTIER.realm.deployWheat} wheat to deploy (reduced by
+{FRONTIER.realm.rationStep} per Rations rank), and each castle level raises the max troops per deploy
 ([Your realm](/frontier/realm#the-castle)).
 
 <Shot
@@ -34,18 +35,19 @@ Settlement, up to {FRONTIER.realm.armies[3]} at Empire. Each troop costs {FRONTI
 
 ## Stamina
 
-An army holds {FRONTIER.stamina.max} stamina and recovers {FRONTIER.stamina.perTick} every{" "}
+An army holds {FRONTIER.stamina.max} stamina and recovers {FRONTIER.stamina.perTick} every
 {FRONTIER.stamina.tickMinutes} minutes, so an empty bar fills in {FRONTIER.stamina.fullHours} hours. Revealing a tile
-costs {FRONTIER.stamina.reveal} for Knights and {FRONTIER.stamina.scoutReveal} for Scouts, a step over known ground{" "}
-{FRONTIER.stamina.step}, and an attack needs {FRONTIER.stamina.attack}. Every step and every reveal also costs{" "}
-{FRONTIER.stamina.wheatPerTroop} wheat per troop, so a large army needs farms behind it.
+costs {FRONTIER.stamina.reveal} for Knights and {FRONTIER.stamina.scoutReveal} for Scouts, a step on an explored tile
+costs {FRONTIER.stamina.step}, and an attack needs {FRONTIER.stamina.attack}. Every step and every reveal also costs
+{FRONTIER.stamina.wheatPerTroop} wheat per troop, so a large army needs many farms.
 
 - <GameIcon name={FRONTIER.buildingIcons.supplyYard} /> A {FRONTIER.names.supplyYard} gives new armies Logistics rank I,
-  and research lifts it to rank V. Each rank adds {FRONTIER.stamina.logisticsStep} max stamina, up to
-  {FRONTIER.stamina.logisticsMax} at rank V.
+  and research raises it to rank V. Each rank adds {FRONTIER.stamina.logisticsStep} max stamina, adding +
+  {FRONTIER.stamina.logisticsBonus} bonus stamina at rank V for {FRONTIER.stamina.logisticsMax} max stamina total.
 - <GameIcon name="well" /> Visiting a Well refills {FRONTIER.stamina.well} (or {FRONTIER.oaths.reflectionWell} with the
   Reflection Oath).
-- <GameIcon name="fragment" /> {FRONTIER.shop.staminaRule}
+- <GameIcon name="fragment" /> {FRONTIER.shop.staminaRule} See [Shop and referrals](/frontier/shop-and-referrals) for
+  current Shop status.
 
 ### Stamina stays with the slot
 

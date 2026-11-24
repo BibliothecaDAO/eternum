@@ -1,6 +1,6 @@
 ---
 title: Quests and banes
-description: Daily quests, Realm and Wonder bonuses, World Banes, and rival Team Banes
+description: Daily quests, Realm NFT and Wonder bonuses, World Banes, and rival Team Banes
 ---
 
 import { FRONTIER } from "@/utils/frontier";
@@ -15,13 +15,14 @@ today's quest with a bane quest that your whole Aspect clears together.
 
 Complete today's objective and press **Collect** to claim your reward.
 
-- A castle level 1 realm receives {FRONTIER.quest.labor} Labor and {FRONTIER.quest.essence} Essence.
+- A castle level 1 ({FRONTIER.realm.castleNames[0]}) realm receives {FRONTIER.quest.labor} Labor and
+  {FRONTIER.quest.essence} Essence.
 - Rewards multiply by {FRONTIER.quest.levelStep} at each castle level ({FRONTIER.quest.levelScale}).
-- A held Realm or an Ancient Seal boosts daily quest labor to {FRONTIER.quest.bonusPercent}.
-- A held Wonder Realm also grants +{FRONTIER.quest.wonderFragments} Fragments when you collect.
+- A **Realm NFT** or an Ancient Seal boosts daily quest labor to {FRONTIER.quest.bonusPercent}.
+- A **Wonder Realm NFT** also grants +{FRONTIER.quest.wonderFragments} Fragments when you collect.
 
-The {FRONTIER.quest.count} daily quests are dealt in shuffled {FRONTIER.quest.count}-day bags so the same quest never
-repeats back to back:
+Each of the {FRONTIER.quest.count} daily quests comes once every {FRONTIER.quest.count} days in shuffled order, and the
+same quest never runs two days in a row:
 
 | Quest                             | Objective                          | Base target (level 1)              |
 | --------------------------------- | ---------------------------------- | ---------------------------------- |
@@ -35,8 +36,9 @@ repeats back to back:
 
 ## World Banes
 
-World Banes strike the whole world on random days. Each peaceful day adds +{FRONTIER.banes.chanceStep} to the chance of
-a World Bane on the next day.
+World Banes strike the whole world on random days. Each day without a World Bane adds +{FRONTIER.banes.chanceStep} to
+the chance of one on the next day. Once any Aspect issues the season's first Team Bane, World Banes stop for the rest of
+the season.
 
 | World Bane                                                                          | Effect while active              | Bane quest to break it                                                            |
 | ----------------------------------------------------------------------------------- | -------------------------------- | --------------------------------------------------------------------------------- |
@@ -44,14 +46,17 @@ a World Bane on the next day.
 | <GameIcon name={FRONTIER.banes.world[1].icon} /> **{FRONTIER.banes.world[1].name}** | {FRONTIER.banes.world[1].effect} | **{FRONTIER.banes.world[1].questName}:** {FRONTIER.banes.world[1].questObjective} |
 | <GameIcon name={FRONTIER.banes.world[2].icon} /> **{FRONTIER.banes.world[2].name}** | {FRONTIER.banes.world[2].effect} | **{FRONTIER.banes.world[2].questName}:** {FRONTIER.banes.world[2].questObjective} |
 
-Each Aspect tracks its own progress. Once {FRONTIER.banes.quorum} of your Aspect's active members finish the bane quest,
-the bane ends for your Aspect, and everyone who finished can press **Collect again** for a second daily quest payout.
+Each Aspect tracks its own progress. Once {FRONTIER.banes.quorum} of your Aspect's members who were active on the
+previous day finish the bane quest, the bane ends for your Aspect, and everyone who finished can press **Collect again**
+for a second daily quest payout.
 
 ## Rival Team Banes
 
-<GameIcon name="hyperstructure" /> When a rival Aspect fills its **Bane altar** bar ({FRONTIER.deep.altarThreshold}
-charge) in [the Deep](/frontier/deep), a **Team Bane** hits the leading rival Aspect on the next game day.
+<GameIcon name="hyperstructure" /> When an Aspect fills its **Bane altar** bar ({FRONTIER.deep.altarThreshold} charge)
+in [the Deep](/frontier/deep), a **Team Bane** hits the rival Aspect with the tallest hyperstructure on the next game
+day, skipping any rival already blocked or already targeted for tomorrow. No Team Bane is issued on the last day of the
+season.
 
 - The targeted Aspect's hyperstructure stops gaining height while the Team Bane lasts.
-- The targeted Aspect gets a bane quest ({FRONTIER.banes.questNames}). Once {FRONTIER.banes.quorum} of its members
-  finish the quest, the Team Bane lifts and height growth resumes.
+- The targeted Aspect gets a bane quest ({FRONTIER.banes.questNames}). Once {FRONTIER.banes.quorum} of its members who
+  were active on the previous day finish the quest, the Team Bane lifts and height growth resumes.

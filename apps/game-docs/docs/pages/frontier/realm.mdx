@@ -1,6 +1,6 @@
 ---
 title: Your realm
-description: Buildings, hourly rates, castle upgrades, storage caps, and research
+description: Buildings, hourly rates, castle levels, storage caps, and research
 ---
 
 import { FRONTIER } from "@/utils/frontier";
@@ -15,9 +15,10 @@ and opens deeper map layers. A new realm starts with {FRONTIER.realm.troops} tro
 
 ## Buildings
 
-Tap an open plot to build. Your castle makes {FRONTIER.realm.castleLaborRates[0]} labor per hour at Settlement,
-multiplying by {FRONTIER.realm.castleLaborStep} at each castle level up to {FRONTIER.realm.castleLaborRates[3]}/h at
-Empire. Each building opens at its castle level and costs labor (plus Essence for special buildings):
+Tap an open plot to build. Your castle makes {FRONTIER.realm.castleLaborRates[0]} labor per hour at castle level 1
+({FRONTIER.realm.castleNames[0]}), multiplying by {FRONTIER.realm.castleLaborStep} at each castle level up to
+{FRONTIER.realm.castleLaborRates[3]}/h at castle level 4 ({FRONTIER.realm.castleNames[3]}). Each building opens at its
+castle level and costs labor (plus Essence for special buildings):
 
 | Building                                                                    | Makes                         | Opens at                      | Base price                    |
 | --------------------------------------------------------------------------- | ----------------------------- | ----------------------------- | ----------------------------- |
@@ -32,7 +33,7 @@ Empire. Each building opens at its castle level and costs labor (plus Essence fo
 | <GameIcon name={FRONTIER.buildings[8].icon} /> {FRONTIER.buildings[8].name} | {FRONTIER.buildings[8].makes} | {FRONTIER.buildings[8].opens} | {FRONTIER.buildings[8].price} |
 
 Each castle level opens another ring of plots, and each plot holds one building. There is no population cap in Frontier.
-Each extra copy of a repeatable building costs more than the last, and demolishing a building returns{" "}
+Each extra copy of a repeatable building costs more than the last, and demolishing a building returns
 {FRONTIER.realm.demolitionRefund} of its price. Training buildings produce troops for free; deploying troops into an
 army costs {FRONTIER.realm.deployWheat} wheat per troop before Rations discounts.
 
@@ -56,31 +57,31 @@ army costs {FRONTIER.realm.deployWheat} wheat per troop before Rations discounts
 
 ## The castle
 
-Upgrade your castle for {FRONTIER.realm.castleLabor[0]}, {FRONTIER.realm.castleLabor[1]}, then{" "}
+Upgrade your castle for {FRONTIER.realm.castleLabor[0]}, {FRONTIER.realm.castleLabor[1]}, then
 {FRONTIER.realm.castleLabor[2]} labor. Each level opens more plots, adds one army slot, raises the max troops per
 deploy, and expands storage.
 
-| Castle level | Armies in the field        | Troops per deploy              | Castle labor/h                       | Wheat stored                | Labor stored                     |
-| ------------ | -------------------------- | ------------------------------ | ------------------------------------ | --------------------------- | -------------------------------- |
-| 1            | {FRONTIER.realm.armies[0]} | {FRONTIER.realm.deployCaps[0]} | {FRONTIER.realm.castleLaborRates[0]} | {FRONTIER.realm.storage[0]} | {FRONTIER.realm.laborStorage[0]} |
-| 2            | {FRONTIER.realm.armies[1]} | {FRONTIER.realm.deployCaps[1]} | {FRONTIER.realm.castleLaborRates[1]} | {FRONTIER.realm.storage[1]} | {FRONTIER.realm.laborStorage[1]} |
-| 3            | {FRONTIER.realm.armies[2]} | {FRONTIER.realm.deployCaps[2]} | {FRONTIER.realm.castleLaborRates[2]} | {FRONTIER.realm.storage[2]} | {FRONTIER.realm.laborStorage[2]} |
-| 4            | {FRONTIER.realm.armies[3]} | {FRONTIER.realm.deployCaps[3]} | {FRONTIER.realm.castleLaborRates[3]} | {FRONTIER.realm.storage[3]} | {FRONTIER.realm.laborStorage[3]} |
+| Castle level                     | Armies in the field        | Troops per deploy              | Castle labor/h                       | Wheat stored                | Labor stored                     |
+| -------------------------------- | -------------------------- | ------------------------------ | ------------------------------------ | --------------------------- | -------------------------------- |
+| {FRONTIER.realm.castleLevels[0]} | {FRONTIER.realm.armies[0]} | {FRONTIER.realm.deployCaps[0]} | {FRONTIER.realm.castleLaborRates[0]} | {FRONTIER.realm.storage[0]} | {FRONTIER.realm.laborStorage[0]} |
+| {FRONTIER.realm.castleLevels[1]} | {FRONTIER.realm.armies[1]} | {FRONTIER.realm.deployCaps[1]} | {FRONTIER.realm.castleLaborRates[1]} | {FRONTIER.realm.storage[1]} | {FRONTIER.realm.laborStorage[1]} |
+| {FRONTIER.realm.castleLevels[2]} | {FRONTIER.realm.armies[2]} | {FRONTIER.realm.deployCaps[2]} | {FRONTIER.realm.castleLaborRates[2]} | {FRONTIER.realm.storage[2]} | {FRONTIER.realm.laborStorage[2]} |
+| {FRONTIER.realm.castleLevels[3]} | {FRONTIER.realm.armies[3]} | {FRONTIER.realm.deployCaps[3]} | {FRONTIER.realm.castleLaborRates[3]} | {FRONTIER.realm.storage[3]} | {FRONTIER.realm.laborStorage[3]} |
 
 ## Research
 
-At your castle, building research climbs from Common I through Legendary V, paid in Essence and labor. Each tier
-upgrades every building of that type at once. Farms, Workshops, and Conscription add {FRONTIER.research.outputStep} per
-rank; Rations cuts {FRONTIER.realm.rationStep} deploy wheat per rank; Logistics adds {FRONTIER.stamina.logisticsStep}
-max stamina per rank.
+At your castle, building research has 5 ranks (I through V), paid in Essence and labor. Each rank upgrades every
+building of that type at once. Farms, Workshops, and Conscription add {FRONTIER.research.outputStep} per rank; Rations
+cuts {FRONTIER.realm.rationStep} deploy wheat per rank; Logistics adds {FRONTIER.stamina.logisticsStep} max stamina per
+rank.
 
-| Row                                                                               | Common I                                                                                             | Uncommon II                                                                                          | Rare III                                                                                             | Epic IV                                                                                              | Legendary V                                                                                          |
-| --------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| <GameIcon name={FRONTIER.buildingIcons.farm} /> {FRONTIER.names.farm}             | {FRONTIER.research.farm[0].essence} Essence, {FRONTIER.research.farm[0].labor} labor                 | {FRONTIER.research.farm[1].essence} Essence, {FRONTIER.research.farm[1].labor} labor                 | {FRONTIER.research.farm[2].essence} Essence, {FRONTIER.research.farm[2].labor} labor                 | {FRONTIER.research.farm[3].essence} Essence, {FRONTIER.research.farm[3].labor} labor                 | {FRONTIER.research.farm[4].essence} Essence, {FRONTIER.research.farm[4].labor} labor                 |
-| <GameIcon name={FRONTIER.buildingIcons.workshop} /> {FRONTIER.names.workshop}     | {FRONTIER.research.workshop[0].essence} Essence, {FRONTIER.research.workshop[0].labor} labor         | {FRONTIER.research.workshop[1].essence} Essence, {FRONTIER.research.workshop[1].labor} labor         | {FRONTIER.research.workshop[2].essence} Essence, {FRONTIER.research.workshop[2].labor} labor         | {FRONTIER.research.workshop[3].essence} Essence, {FRONTIER.research.workshop[3].labor} labor         | {FRONTIER.research.workshop[4].essence} Essence, {FRONTIER.research.workshop[4].labor} labor         |
-| <GameIcon name={FRONTIER.buildingIcons.conscriptionCamp} /> Conscription          | {FRONTIER.research.conscription[0].essence} Essence, {FRONTIER.research.conscription[0].labor} labor | {FRONTIER.research.conscription[1].essence} Essence, {FRONTIER.research.conscription[1].labor} labor | {FRONTIER.research.conscription[2].essence} Essence, {FRONTIER.research.conscription[2].labor} labor | {FRONTIER.research.conscription[3].essence} Essence, {FRONTIER.research.conscription[3].labor} labor | {FRONTIER.research.conscription[4].essence} Essence, {FRONTIER.research.conscription[4].labor} labor |
-| <GameIcon name={FRONTIER.buildingIcons.rationsDepot} /> Rations                   | {FRONTIER.research.rations[0].essence} Essence, {FRONTIER.research.rations[0].labor} labor           | {FRONTIER.research.rations[1].essence} Essence, {FRONTIER.research.rations[1].labor} labor           | {FRONTIER.research.rations[2].essence} Essence, {FRONTIER.research.rations[2].labor} labor           | {FRONTIER.research.rations[3].essence} Essence, {FRONTIER.research.rations[3].labor} labor           | {FRONTIER.research.rations[4].essence} Essence, {FRONTIER.research.rations[4].labor} labor           |
-| <GameIcon name={FRONTIER.buildingIcons.supplyYard} /> {FRONTIER.names.supplyYard} | {FRONTIER.research.training[0].essence} Essence, {FRONTIER.research.training[0].labor} labor         | {FRONTIER.research.training[1].essence} Essence, {FRONTIER.research.training[1].labor} labor         | {FRONTIER.research.training[2].essence} Essence, {FRONTIER.research.training[2].labor} labor         | {FRONTIER.research.training[3].essence} Essence, {FRONTIER.research.training[3].labor} labor         | {FRONTIER.research.training[4].essence} Essence, {FRONTIER.research.training[4].labor} labor         |
+| Row                                                                           | Rank I                                                                                               | Rank II                                                                                              | Rank III                                                                                             | Rank IV                                                                                              | Rank V                                                                                               |
+| ----------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| <GameIcon name={FRONTIER.buildingIcons.farm} /> {FRONTIER.names.farm}         | {FRONTIER.research.farm[0].essence} Essence, {FRONTIER.research.farm[0].labor} labor                 | {FRONTIER.research.farm[1].essence} Essence, {FRONTIER.research.farm[1].labor} labor                 | {FRONTIER.research.farm[2].essence} Essence, {FRONTIER.research.farm[2].labor} labor                 | {FRONTIER.research.farm[3].essence} Essence, {FRONTIER.research.farm[3].labor} labor                 | {FRONTIER.research.farm[4].essence} Essence, {FRONTIER.research.farm[4].labor} labor                 |
+| <GameIcon name={FRONTIER.buildingIcons.workshop} /> {FRONTIER.names.workshop} | {FRONTIER.research.workshop[0].essence} Essence, {FRONTIER.research.workshop[0].labor} labor         | {FRONTIER.research.workshop[1].essence} Essence, {FRONTIER.research.workshop[1].labor} labor         | {FRONTIER.research.workshop[2].essence} Essence, {FRONTIER.research.workshop[2].labor} labor         | {FRONTIER.research.workshop[3].essence} Essence, {FRONTIER.research.workshop[3].labor} labor         | {FRONTIER.research.workshop[4].essence} Essence, {FRONTIER.research.workshop[4].labor} labor         |
+| <GameIcon name={FRONTIER.buildingIcons.conscriptionCamp} /> Conscription      | {FRONTIER.research.conscription[0].essence} Essence, {FRONTIER.research.conscription[0].labor} labor | {FRONTIER.research.conscription[1].essence} Essence, {FRONTIER.research.conscription[1].labor} labor | {FRONTIER.research.conscription[2].essence} Essence, {FRONTIER.research.conscription[2].labor} labor | {FRONTIER.research.conscription[3].essence} Essence, {FRONTIER.research.conscription[3].labor} labor | {FRONTIER.research.conscription[4].essence} Essence, {FRONTIER.research.conscription[4].labor} labor |
+| <GameIcon name={FRONTIER.buildingIcons.rationsDepot} /> Rations               | {FRONTIER.research.rations[0].essence} Essence, {FRONTIER.research.rations[0].labor} labor           | {FRONTIER.research.rations[1].essence} Essence, {FRONTIER.research.rations[1].labor} labor           | {FRONTIER.research.rations[2].essence} Essence, {FRONTIER.research.rations[2].labor} labor           | {FRONTIER.research.rations[3].essence} Essence, {FRONTIER.research.rations[3].labor} labor           | {FRONTIER.research.rations[4].essence} Essence, {FRONTIER.research.rations[4].labor} labor           |
+| <GameIcon name={FRONTIER.buildingIcons.supplyYard} /> Logistics               | {FRONTIER.research.training[0].essence} Essence, {FRONTIER.research.training[0].labor} labor         | {FRONTIER.research.training[1].essence} Essence, {FRONTIER.research.training[1].labor} labor         | {FRONTIER.research.training[2].essence} Essence, {FRONTIER.research.training[2].labor} labor         | {FRONTIER.research.training[3].essence} Essence, {FRONTIER.research.training[3].labor} labor         | {FRONTIER.research.training[4].essence} Essence, {FRONTIER.research.training[4].labor} labor         |
 
 ### Oath slots
 
@@ -91,18 +92,23 @@ Price per troop kind: {FRONTIER.research.oathSlotsSummary}.
 
 ### Castle lore
 
-One sequential ladder, paid in Essence only.
+Research these three in order. They cost only Essence.
 
 1. **<GameIcon name="well" /> Well lore** ({FRONTIER.research.lore[0].essence} Essence) lets reveals find Wells.
 2. **<GameIcon name="shrine" /> Shrine lore** ({FRONTIER.research.lore[1].essence} Essence) lets reveals find Shrines.
 3. **<GameIcon name="spire" /> Spire lore** ({FRONTIER.research.lore[2].essence} Essence) lets reveals find Spires to
    enter the Veil, Hollow, and [the Deep](/frontier/deep).
 
-<Shot frame="panel" name="frontier/research" caption="Research: building ranks and the castle's own line." />
+<Shot
+  frame="panel"
+  name="frontier/research"
+  caption="Research panel: building ranks at the top and castle lore below."
+/>
 
 ## Daily quests
 
 Complete today's quest, then press **Collect** to receive {FRONTIER.quest.labor} Labor and {FRONTIER.quest.essence}
-Essence at castle level 1 (doubling at each higher castle level). A held Realm or the Ancient Seal boosts quest labor to
-{FRONTIER.quest.bonusPercent}, and a held Wonder adds {FRONTIER.quest.wonderFragments} Fragments. See
-[Quests and banes](/frontier/quests-and-banes) for every quest and bonus.
+Essence at castle level 1 ({FRONTIER.realm.castleNames[0]}), doubling at each higher castle level. A **Realm NFT** or
+the Ancient Seal boosts quest labor to {FRONTIER.quest.bonusPercent}, and a **Wonder Realm NFT** adds
++{FRONTIER.quest.wonderFragments} Fragments. See [Quests and banes](/frontier/quests-and-banes) for every quest and
+bonus.

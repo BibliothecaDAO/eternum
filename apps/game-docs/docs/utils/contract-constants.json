@@ -34,5 +34,23 @@
     "file": "quests.cairo",
     "source": "multiplier *= 2;",
     "value": 2
+  },
+  {
+    "key": "campGuardDivisor",
+    "file": "expeditions.cairo",
+    "source": "Some(ResourceAmount { resource_type: LABOR, amount: site.initial_guard_count / 2 })",
+    "value": 2
+  },
+  {
+    "key": "riftGuardMultiplier",
+    "file": "expeditions.cairo",
+    "source": "Some(ResourceAmount { resource_type: ESSENCE, amount: site.initial_guard_count * 3 })",
+    "value": 3
+  },
+  {
+    "key": "depthRewardDivisor",
+    "file": "expeditions.cairo",
+    "source": "amount * (2 + depth.into()) / 2",
+    "value": 2
   }
 ]

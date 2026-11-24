@@ -10,21 +10,22 @@ import { GameIcon } from "@/components/GameIcon";
 
 Oaths and relics power up individual armies for the current game day. Both reset when the day ends.
 
-## Oaths (from Shrines and beast bands)
+## Oaths (from Shrines and bands)
 
-<GameIcon name="shrine" /> Research **Shrine lore** at your castle so your reveals can find Shrines (
-{FRONTIER.discovery.shrine} chance). Step beside a Shrine and open it to draw 3 Oaths. Clearing a stronger roaming beast
-band on the Surface, Veil, or Hollow also draws 3 Oaths.
+<GameIcon name="shrine" /> Research **Shrine lore** at your castle to find Shrines ({FRONTIER.discovery.shrine} chance).
+Step beside a Shrine and open it to draw 3 Oaths. Clearing a band on the Surface, Veil, or Hollow also draws 3 Oaths.
 
-- Every army starts with {FRONTIER.oaths.baseSlots} Oath slots. Researching Oath slots at your castle raises this up
-  to{" "} {FRONTIER.oaths.maxSlots} slots per troop kind ([Your realm](/frontier/realm#oath-slots)). When an army's
-  slots are full, taking a new Oath replaces one you pick.
+- Every army starts with {FRONTIER.oaths.baseSlots} Oath slots. Researching Oath slots at your castle raises this up to
+  {FRONTIER.oaths.maxSlots} slots per troop kind ([Your realm](/frontier/realm#oath-slots)). When an army's slots are
+  full, taking a new Oath replaces one you pick.
 - Passing on a draw skips the Oaths and gives that army +{FRONTIER.oaths.passStamina} stamina.
-- Rerolls: {FRONTIER.oaths.rerollNote}
+- Rerolls: {FRONTIER.oaths.rerollNote} See [Shop and referrals](/frontier/shop-and-referrals) for current Shop status.
 
 ### All {FRONTIER.oaths.count} Oaths
 
-| Order                                                                               | Aspect                           | Effect for today                 |
+Each Oath is named after one of the {FRONTIER.oaths.count} Orders:
+
+| Oath (Order)                                                                        | Aspect                           | Effect for today                 |
 | ----------------------------------------------------------------------------------- | -------------------------------- | -------------------------------- |
 | <GameIcon name={FRONTIER.oaths.rows[0].icon} /> **{FRONTIER.oaths.rows[0].name}**   | {FRONTIER.oaths.rows[0].aspect}  | {FRONTIER.oaths.rows[0].effect}  |
 | <GameIcon name={FRONTIER.oaths.rows[1].icon} /> **{FRONTIER.oaths.rows[1].name}**   | {FRONTIER.oaths.rows[1].aspect}  | {FRONTIER.oaths.rows[1].effect}  |
@@ -55,8 +56,8 @@ deeper layers drop higher tiers.
 - {FRONTIER.relics.layerOdds[1].layer}: {FRONTIER.relics.layerOdds[1].odds}
 - {FRONTIER.relics.layerOdds[2].layer}: {FRONTIER.relics.layerOdds[2].odds}
 
-Activating a relic lasts {FRONTIER.relics.minutesPerTier} minutes per tier, from {FRONTIER.relics.minutesPerTier}{" "}
-minutes for {FRONTIER.relics.firstTier} I up to {FRONTIER.relics.maxMinutes} minutes for {FRONTIER.relics.lastTier} V.
+An active relic lasts {FRONTIER.relics.minutesPerTier} minutes per tier, from {FRONTIER.relics.minutesPerTier} minutes
+for {FRONTIER.relics.firstTier} I up to {FRONTIER.relics.maxMinutes} minutes for {FRONTIER.relics.lastTier} V.
 
 ### All {FRONTIER.relics.count} relic kinds
 

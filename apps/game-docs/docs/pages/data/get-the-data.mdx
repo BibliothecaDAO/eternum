@@ -32,7 +32,7 @@ Herald identifies the {PUBLIC_DATA.aspectsCount} Aspects by number across `/game
 
 ## Public routes
 
-All examples below were run against production on 24 November 2026 during Final Testnet registration (`game_id: 1`,
+All examples below were run against the live Frontier shard on 24 November 2026 during Final Testnet (`game_id: 1`,
 `testnet-1795521600`), with long responses shortened. Once Season 1 opens, pick the game whose `name` starts with
 `frontier-` from `/games`.
 
@@ -45,21 +45,22 @@ optional `?player=0x...` address to include that player's state.
 
 <CopyCode>{PUBLIC_DATA.snippets.gamesJs}</CopyCode>
 
-Shortened response from production:
+Shortened live response:
 
 ```json
 {
-  "confirmed_block": 49678,
+  "confirmed_block": 50644,
   "world_address": "0xaadbe833ac33670c8c2aa05ce406a07f44742582def994ae1e601ae84f4a3",
   "games": [
     {
       "game_id": 1,
       "name": "testnet-1795521600",
       "mode": "frontier",
-      "status": "Registration",
-      "player_count": 0,
-      "settled_realms_count": 0,
-      "aspect_members": { "1": 0, "2": 0, "3": 0, "4": 0 },
+      "status": "Live",
+      "day_index": 0,
+      "player_count": 1,
+      "settled_realms_count": 1,
+      "aspect_members": { "1": 0, "2": 1, "3": 0, "4": 0 },
       "aspect_race": {
         "finish_height": 10000,
         "season_days": 50,
@@ -85,7 +86,7 @@ Shortened response from production:
 | `player_count` / `settled_realms_count` | Enrolled players and created realms in the game.                                    |
 | `aspect_members`                        | Member count per Aspect ID.                                                         |
 | `aspect_race`                           | `finish_height`, `season_days`, and current `heights` per Aspect ID.                |
-| `clock`                                 | Unix timestamps in seconds for settling start, main start, and end.                 |
+| `clock`                                 | Unix timestamps in seconds for when realm creation opens, main start, and end.      |
 
 ### 2. Shard manifest (`GET /manifest`)
 
@@ -95,7 +96,7 @@ Returns the shard chain ID, the public Starknet RPC URL, release schema hashes, 
 
 <CopyCode>{PUBLIC_DATA.snippets.manifestJs}</CopyCode>
 
-Shortened response from production:
+Shortened live response:
 
 ```json
 {
@@ -116,7 +117,7 @@ Reports whether Herald is up, its latest `confirmed_block`, and how many world m
 
 <CopyCode>{PUBLIC_DATA.snippets.healthJs}</CopyCode>
 
-Response from production:
+Live response:
 
 ```json
 {
@@ -141,12 +142,12 @@ Useful Season 1 model names are `AspectHyperstructure`, `AspectMembers`, `Aspect
 
 <CopyCode>{PUBLIC_DATA.snippets.snapshotJs}</CopyCode>
 
-Shortened response from production:
+Shortened live response:
 
 ```json
 {
   "game_id": "1",
-  "confirmed_block": 49679,
+  "confirmed_block": 50645,
   "models": [
     {
       "model": "AspectHyperstructure",
@@ -181,16 +182,24 @@ Page size `limit` defaults to {PUBLIC_DATA.limits.rosterDefault} and accepts 1 t
 
 <CopyCode>{PUBLIC_DATA.snippets.membersJs}</CopyCode>
 
-Response from production:
+Live response:
 
 ```json
 {
   "game_id": "1",
-  "aspect": 1,
-  "total": 0,
+  "aspect": 2,
+  "total": 1,
   "limit": 50,
   "offset": 0,
-  "members": []
+  "members": [
+    {
+      "rank": 1,
+      "entity_id": "1424507508097025",
+      "realm_id": 2077,
+      "owner": "0x57b9e20b749d8fa23967c0621bccd56ad781984f6620b08a25cda35acb4340",
+      "glory": "0"
+    }
+  ]
 }
 ```
 
@@ -209,15 +218,31 @@ Page size `limit` defaults to {PUBLIC_DATA.limits.historyDefault} and accepts 0 
 
 <CopyCode>{PUBLIC_DATA.snippets.historyJs}</CopyCode>
 
-Response from production:
+Live response:
 
 ```json
 {
-  "complete_through_block": 49679,
-  "items": [],
+  "complete_through_block": 50645,
+  "items": [
+    {
+      "block_number": 50515,
+      "event_index": 29,
+      "game_id": "1",
+      "model": "StoryEvent",
+      "transaction_hash": "0x623f194105005d344a13079a76a67b524771b1e347329153439119d2dce3c88",
+      "transaction_index": 0,
+      "value": {
+        "owner": "0x57b9e20b749d8fa23967c0621bccd56ad781984f6620b08a25cda35acb4340",
+        "story": { "RealmCreatedStory": { "coord": { "x": "0xfffff7e2", "y": "0xffffffff", "alt": false } } },
+        "game_id": "0x1",
+        "entity_id": "0x50f9500000001",
+        "timestamp": "0x6b057cca"
+      }
+    }
+  ],
   "limit": 100,
   "offset": 0,
-  "total": 0
+  "total": 1
 }
 ```
 
@@ -227,13 +252,14 @@ Each item in `items` has `block_number`, `transaction_index`, `event_index`, `tr
 ### 7. Single expedition site (`GET /games/<id>/sites/<entity_id>`)
 
 Looks up one expedition site by decimal `entity_id`. Returns `404 {"error":"unknown_site"}` when no site exists for that
-ID.
+ID. When a site exists, it returns the `ExpeditionSite` row (`game_id`, `entity_id`, `category`, `initial_guard_count`,
+`alt`, `col`, `row`, and `clear`).
 
 <CopyCode>{PUBLIC_DATA.snippets.siteCurl}</CopyCode>
 
 <CopyCode>{PUBLIC_DATA.snippets.siteJs}</CopyCode>
 
-Response from production (before any expedition sites are revealed):
+Live response (for an unused site ID):
 
 ```json
 {
@@ -249,7 +275,7 @@ Standard Starknet JSON-RPC endpoint for block numbers, block timestamps, and tra
 
 <CopyCode>{PUBLIC_DATA.snippets.rpcJs}</CopyCode>
 
-Shortened responses from production:
+Shortened live responses:
 
 ```json
 { "jsonrpc": "2.0", "id": 1, "result": 49680 }
@@ -279,8 +305,9 @@ Herald serves public reads with `Cache-Control: no-store`, so every request reac
 
 - Cache responses on your side for at least 60 seconds (or 1 hour for dashboards and spreadsheets).
 - Always pass `?models=` on `/snapshot` instead of requesting the whole world.
-- Use the maximum page size (`limit=`{PUBLIC_DATA.limits.rosterMax} on `/members`, `limit=`
-  {PUBLIC_DATA.limits.historyMax} on `/history`) and page sequentially rather than firing dozens of concurrent offsets.
+- Use the maximum page size (`limit=`{PUBLIC_DATA.limits.rosterMax} on `/members`,
+  `limit=`{PUBLIC_DATA.limits.historyMax} on `/history`) and page sequentially rather than firing dozens of concurrent
+  offsets.
 - Subscribe to `GET /games/updates` (SSE) instead of polling `/games` every second.
 - Do not scan tens of thousands of historical blocks over RPC from a browser; read Herald's folded `/snapshot` and
   `/history` routes instead.
@@ -288,7 +315,7 @@ Herald serves public reads with `Cache-Control: no-store`, so every request reac
 ## Three runnable recipes
 
 Copy any script below into a `.mjs` file and run it with Node 20+ (`node script.mjs`), or paste the body into a browser
-console. Every recipe was run against production on 24 November 2026.
+console. Every recipe was run against the live shard on 24 November 2026.
 
 ### My Aspect's standing
 
@@ -299,17 +326,25 @@ top 10 Glory earners. Change `myAspect` to {PUBLIC_DATA.aspects[0].id} ({PUBLIC_
 
 <CopyCode>{PUBLIC_DATA.snippets.recipeStanding}</CopyCode>
 
-Output from production:
+Live output:
 
 ```json
 {
   "game": "testnet-1795521600",
-  "status": "Registration",
-  "aspect": "Prowess",
+  "status": "Live",
+  "aspect": "Reason",
   "height": 0,
   "finish_height": 10000,
-  "members": 0,
-  "top_members": []
+  "members": 1,
+  "top_members": [
+    {
+      "rank": 1,
+      "entity_id": "1424507508097025",
+      "realm_id": 2077,
+      "owner": "0x57b9e20b749d8fa23967c0621bccd56ad781984f6620b08a25cda35acb4340",
+      "glory": "0"
+    }
+  ]
 }
 ```
 
@@ -320,10 +355,11 @@ to a file (`node rosters.mjs > rosters.csv`) and open in a spreadsheet.
 
 <CopyCode>{PUBLIC_DATA.snippets.recipeCsv}</CopyCode>
 
-Output from production (header only while registration has 0 enrolled players; one row per player once play opens):
+Live output:
 
 ```text
 aspect,rank,owner,realm_id,glory
+Reason,1,0x57b9e20b749d8fa23967c0621bccd56ad781984f6620b08a25cda35acb4340,2077,0
 ```
 
 ### Realms created per UTC day
@@ -333,8 +369,10 @@ UTC date (`YYYY-MM-DD`), and prints the daily counts.
 
 <CopyCode>{PUBLIC_DATA.snippets.recipeRealmsPerDay}</CopyCode>
 
-Output from production (empty object before the first realm is created; keys are `"YYYY-MM-DD"` dates once play opens):
+Live output:
 
 ```json
-{}
+{
+  "2026-11-24": 1
+}
 ```
