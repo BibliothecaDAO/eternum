@@ -120,7 +120,7 @@ export const frontierPhrases = (
         `Slot ${n(nativeResearch.OATH_SLOTS_BASE + index + 1)}: ${n(step.essenceCost)} Essence, ${n(step.laborCost)} labor`,
     )
     .join("; ");
-  const rerollRule = `Spend ${n(nativeFragments.OATH_REROLL_FRAGMENTS)} Fragments to replace one of the 3 drawn cards once per draw on the Surface, Veil, and Hollow.`;
+  const rerollRule = `Spend ${n(nativeFragments.OATH_REROLL_FRAGMENTS)} Fragments to replace one of the ${n(contract.oathDrawCount)} drawn cards once per draw on the Surface, Veil, and Hollow.`;
   return [
     {
       page: "frontier",
@@ -137,6 +137,8 @@ export const frontierPhrases = (
     {
       page: "frontier/armies",
       phrases: [
+        `${buildingName(nativeResearch.RANGE, true)} (castle level ${nativeResearch.RANGE_LEVEL + 1} (${rankName(nativeResearch.RANGE_LEVEL)}))`,
+        `${buildingName(nativeResearch.SCOUTS_LODGE, true)} (castle level ${nativeResearch.SCOUTS_LODGE_LEVEL + 1} (${rankName(nativeResearch.SCOUTS_LODGE_LEVEL)}))`,
         `An army holds ${n(stamina.staminaKnightMax)} stamina and recovers ${stamina.staminaGainPerTick} every ${tick / 60} minutes, so an empty bar fills in ${((stamina.staminaKnightMax / stamina.staminaGainPerTick) * tick) / 3600} hours.`,
         `Revealing a tile costs ${stamina.staminaExploreStaminaCost} for Knights and ${nativeRules.SCOUT_EXPLORE_STAMINA} for Scouts, a step on an explored tile costs ${stamina.staminaTravelStaminaCost}, and an attack needs ${stamina.staminaAttackReq}.`,
         `adding +${n(logisticsBonus)} bonus stamina at rank V for ${n(stamina.staminaKnightMax + logisticsBonus)} max stamina total.`,
@@ -150,7 +152,7 @@ export const frontierPhrases = (
         ...preset.depths.map((depth, index) => `${LAYER_NAMES[index]} ${depth.revealPercent}%`),
         `${n(100 / contract.campGuardDivisor)}% of its starting guard on the ${LAYER_NAMES[0]}, ${n(((contract.depthRewardDivisor + 1) / contract.depthRewardDivisor) * 100)}% of that in the ${LAYER_NAMES[1]}, ${n(((contract.depthRewardDivisor + 2) / contract.depthRewardDivisor) * 100)}% in the ${LAYER_NAMES[2]}`,
         `${n(100 * contract.riftGuardMultiplier)}% of its starting guard on the ${LAYER_NAMES[0]}`,
-        `+${n(nativeOaths.PASS_STAMINA)} stamina`,
+        `Draws ${n(contract.oathDrawCount)} Oaths to pick from, or lets you pass for +${n(nativeOaths.PASS_STAMINA)} stamina.`,
         `${nativeFragments.SURFACE_CACHE_PERCENT}% chance`,
       ],
     },
@@ -159,7 +161,7 @@ export const frontierPhrases = (
       phrases: [
         `A new realm starts with ${start(26)} troops, ${start(35)} wheat and ${start(23)} labor.`,
         `Your castle makes ${castleLaborRate(0)} labor per hour at castle level 1 (${rankName(0)}), multiplying by ${n(contract.castleLaborStep)} at each castle level up to ${castleLaborRate(3)}/h at castle level 4 (${rankName(3)}).`,
-        `receive ${n(preset.dailyQuest.labor)} Labor and ${n(preset.dailyQuest.essence)} Essence`,
+        `receive ${n(preset.dailyQuest.labor)} Labor and ${n(preset.dailyQuest.essence)} Essence at castle level 1 (${rankName(0)}), multiplying by ${n(contract.questLevelStep)} at each higher castle level.`,
         ...FRONTIER_BUILDING_TYPES.map((id) => buildingName(id, true)),
         ...armies.map(
           (count, index) =>
@@ -208,6 +210,8 @@ export const frontierPhrases = (
     {
       page: "frontier/oaths-and-relics",
       phrases: [
+        `open it to draw ${n(contract.oathDrawCount)} Oaths.`,
+        `also draws ${n(contract.oathDrawCount)} Oaths.`,
         `All ${aspectOrderCount} Oaths`,
         ...aspectOrders.map((order) => order.orderName),
         `gives that army +${n(nativeOaths.PASS_STAMINA)} stamina`,

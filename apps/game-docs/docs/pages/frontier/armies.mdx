@@ -13,19 +13,18 @@ import { Shot } from "@/components/Media";
 
 Frontier has three troop kinds:
 
-| Troop                                          | Trained at                                                                     | Weapon | Role                                                                                                                                                                      |
-| ---------------------------------------------- | ------------------------------------------------------------------------------ | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| <GameIcon name="knight-t1" /> Knights          | {FRONTIER.names.barracks}                                                      | Blade  | Full damage. Takes {FRONTIER.attributes.knightGuardReduction} less damage when guarding a Deep site.                                                                      |
-| <GameIcon name="crossbowman-t1" /> Crossbowmen | {FRONTIER.names.range} (castle level 2, {FRONTIER.realm.castleNames[1]})       | Bow    | Strikes first against blades. Deals {FRONTIER.attributes.lightDamageReduction} less damage than Knights.                                                                  |
-| <GameIcon name="paladin-t1" /> Scouts          | {FRONTIER.names.scoutsLodge} (castle level 2, {FRONTIER.realm.castleNames[1]}) | Bow    | Reveals tiles for {FRONTIER.stamina.scoutReveal} stamina instead of {FRONTIER.stamina.reveal}. Deals {FRONTIER.attributes.lightDamageReduction} less damage than Knights. |
+| Troop                                          | Trained at                                                 | Weapon | Role                                                                                                                                                                      |
+| ---------------------------------------------- | ---------------------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| <GameIcon name="knight-t1" /> Knights          | {FRONTIER.names.barracks}                                  | Blade  | Full damage. Takes {FRONTIER.attributes.knightGuardReduction} less damage when guarding a Deep site.                                                                      |
+| <GameIcon name="crossbowman-t1" /> Crossbowmen | {FRONTIER.names.range} ({FRONTIER.rangeOpens})             | Bow    | Strikes first against blades. Deals {FRONTIER.attributes.lightDamageReduction} less damage than Knights.                                                                  |
+| <GameIcon name="paladin-t1" /> Scouts          | {FRONTIER.names.scoutsLodge} ({FRONTIER.scoutsLodgeOpens}) | Bow    | Reveals tiles for {FRONTIER.stamina.scoutReveal} stamina instead of {FRONTIER.stamina.reveal}. Deals {FRONTIER.attributes.lightDamageReduction} less damage than Knights. |
 
 ## Deploying
 
 Open **Deploy** to place troops on a tile beside your realm in an open army slot: {FRONTIER.realm.armies[0]} slots at
-castle level 1 ({FRONTIER.realm.castleNames[0]}), up to {FRONTIER.realm.armies[3]} at castle level 4
-({FRONTIER.realm.castleNames[3]}). Each troop costs {FRONTIER.realm.deployWheat} wheat to deploy (reduced by
-{FRONTIER.realm.rationStep} per Rations rank), and each castle level raises the max troops per deploy
-([Your realm](/frontier/realm#the-castle)).
+{FRONTIER.realm.castleLevelInline[0]}, up to {FRONTIER.realm.armies[3]} at {FRONTIER.realm.castleLevelInline[3]}. Each
+troop costs {FRONTIER.realm.deployWheat} wheat to deploy (reduced by {FRONTIER.realm.rationStep} per Rations rank), and
+each castle level raises the max troops per deploy ([Your realm](/frontier/realm#the-castle)).
 
 <Shot
   name="frontier/deploy"
