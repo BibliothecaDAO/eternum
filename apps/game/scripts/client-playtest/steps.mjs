@@ -3176,11 +3176,15 @@ const HUD_SHEET_STEPS = [
     play: async ({ browser, extraScreenshot }) => {
       browser.press("Escape");
       await sleep(HOVER_SETTLE_MS);
+      const before = Object.keys(browser.hudLayout()?.parts ?? {});
       open(browser);
       await sleep(SHEET_WAIT_MS);
-      return { layout: browser.hudLayout(), shot: extraScreenshot(name) };
+      return { before, layout: browser.hudLayout(), shot: extraScreenshot(name) };
     },
-    verify: ({ played }) => judgeHudLayout(played.layout),
+    verify: ({ played }) =>
+      Object.keys(played.layout?.parts ?? {}).some((part) => !played.before.includes(part))
+        ? judgeHudLayout(played.layout)
+        : failed(`the ${name} sheet did not open`, played),
   })),
 ];
 

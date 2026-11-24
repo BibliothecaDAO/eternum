@@ -276,9 +276,12 @@ button.frontier-stock-chips[aria-expanded="true"] {
 .frontier-tab__label {
   overflow: hidden;
   max-width: 100%;
-  font-size: var(--hud-text-label);
+  font-family: theme(fontFamily.ui);
+  font-size: var(--hud-text-badge);
   line-height: 1;
   font-weight: var(--hud-weight-strong);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   text-overflow: ellipsis;
   white-space: nowrap;
 }

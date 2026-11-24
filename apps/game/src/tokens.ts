@@ -402,12 +402,7 @@ export const GUTTERS = {
 } as const;
 
 /** The desktop layout's first width: Tailwind's `lg`, and the JS layout's (shell/frame/layout.ts). */
-/**
- * The least share of a phone's screen the map keeps while a sheet or a page is open, in percent (owner, 4 November:
- * "the map is like 15%" on odd shapes). The phone panel's cap follows it; the playtest's lab-hud-devices fails a shape
- * under it (hud-layout.mjs's MAP_LEAST_SHARE, held to this by a test). Chat, which fills the band, is the one exception.
- */
-export const HUD_MAP_LEAST_SHARE = 40;
+export const HUD_MAP_LEAST_SHARE = 25;
 
 export const DESKTOP_MIN_PX = 1024;
 

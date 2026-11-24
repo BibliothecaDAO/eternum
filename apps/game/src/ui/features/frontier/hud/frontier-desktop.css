@@ -580,12 +580,6 @@ button.frontier-stock__face:hover {
 .frontier-corner--right[data-wide="true"] [data-wide-page] {
   margin-top: 20px;
 }
-.realm-building__max {
-  padding: 0 theme(spacing.1);
-  font-size: var(--hud-text-label);
-  line-height: var(--hud-leading-label);
-  color: var(--hud-muted);
-}
 .frontier-corner--right [data-wide-page] .race-stage {
   height: 13rem;
   min-height: 0;
