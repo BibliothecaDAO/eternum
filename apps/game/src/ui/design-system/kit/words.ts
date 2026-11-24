@@ -361,8 +361,6 @@ import {
   type RankedWords,
 } from "@bibliothecadao/types";
 
-/** One scale for chests, building types and attributes. */
-export { TIER_WORDS } from "@bibliothecadao/types";
 /** A step on that scale, common (1) to legendary (5). */
 export type Tier = 1 | 2 | 3 | 4 | 5;
 export type Rank = 0 | Tier;

@@ -101,3 +101,7 @@
   > :last-child {
   flex: 1;
 }
+[data-hud-form="phone"] .fight-spoils {
+  gap: theme(spacing[1.5]);
+  padding-inline: theme(spacing.2);
+}

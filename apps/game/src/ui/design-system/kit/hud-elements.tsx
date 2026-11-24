@@ -33,17 +33,7 @@ import { createPortal } from "react-dom";
 import { useModalLayer } from "./modal-layer";
 import { revealOwnPlace } from "./own-place";
 import { useDragDownCloses, useSheetCloses } from "./sheet-closes";
-import {
-  CLOSE,
-  type RankedWords,
-  rankedText,
-  STAMINA,
-  type Tier,
-  type Rank,
-  tierNumeral,
-  TIER_WORDS,
-  TRY_AGAIN,
-} from "./words";
+import { CLOSE, type RankedWords, rankedText, STAMINA, type Tier, type Rank, tierNumeral, TRY_AGAIN } from "./words";
 
 /**
  * The HUD's elements: everything the game draws over the map, each built only from the HUD scope of the token file
@@ -926,16 +916,6 @@ const textOf = (node: ReactNode): string =>
 export const HudTierChip = ({ tier }: { tier: 1 | 2 | 3 }) => (
   <span className="ui-chip" data-tier={tier}>
     T{tier}
-  </span>
-);
-
-/**
- * A chest's rarity, common to legendary: its word on a plate whose frame thickens and warms with it. Not a tier of
- * something the player levels: a chest is found at its rarity and keeps it.
- */
-export const HudRarity = ({ tier }: { tier: Tier }) => (
-  <span className="ui-rarity" data-tier={tier}>
-    {TIER_WORDS[tier - 1]}
   </span>
 );
 

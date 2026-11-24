@@ -564,45 +564,6 @@ button.ui-chip:disabled {
   color: white;
 }
 
-/* ── Rarity: a chest's rarity, common to legendary; its frame thickens and warms with it. ── */
-.ui-rarity {
-  --rarity: var(--hud-rarity-1);
-  display: inline-flex;
-  height: 26px;
-  flex: none;
-  align-items: center;
-  gap: theme(spacing[1.5]);
-  border: 1px solid var(--rarity);
-  border-radius: var(--hud-radius-control);
-  background: var(--hud-surface-to);
-  padding: 0 theme(spacing.2);
-  color: rgb(var(--hud-ink));
-  font-size: var(--hud-text-label);
-  line-height: var(--hud-leading-label);
-  font-weight: var(--hud-weight-label);
-  white-space: nowrap;
-}
-.ui-rarity[data-tier="2"] {
-  --rarity: var(--hud-rarity-2);
-  border-width: 2px;
-}
-.ui-rarity[data-tier="3"] {
-  --rarity: var(--hud-rarity-3);
-  border-width: 3px;
-  border-style: double;
-}
-.ui-rarity[data-tier="4"] {
-  --rarity: var(--hud-rarity-4);
-  border-width: 4px;
-  border-style: double;
-}
-.ui-rarity[data-tier="5"] {
-  --rarity: var(--hud-rarity-5);
-  border-width: 5px;
-  border-style: double;
-  box-shadow: 0 0 10px var(--hud-rarity-5);
-}
-
 /* ── Tier: a gem in its rarity colour with the tier's numeral, Common I to Legendary V. ── */
 .ui-tier {
   --rarity: var(--hud-rarity-1);
