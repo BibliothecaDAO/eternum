@@ -1,17 +1,20 @@
 import { useEffect } from "react";
 import { create } from "zustand";
 
-const useOpenFrameStore = create<{ labels: readonly string[] }>(() => ({ labels: [] }));
+interface OpenFrame {
+  readonly label: string;
+  readonly opening: number;
+}
 
-export const useOpenFrameLabels = (): readonly string[] => useOpenFrameStore((state) => state.labels);
+const useOpenFrameStore = create<{ frames: readonly OpenFrame[] }>(() => ({ frames: [] }));
+let openings = 0;
+
+export const useOpenFrames = (): readonly OpenFrame[] => useOpenFrameStore((state) => state.frames);
 
 export const useMarkFrameOpen = (label: string): void => {
   useEffect(() => {
-    useOpenFrameStore.setState((state) => ({ labels: [...state.labels, label] }));
-    return () =>
-      useOpenFrameStore.setState((state) => {
-        const index = state.labels.indexOf(label);
-        return { labels: state.labels.filter((_, at) => at !== index) };
-      });
+    const frame = { label, opening: ++openings };
+    useOpenFrameStore.setState((state) => ({ frames: [...state.frames, frame] }));
+    return () => useOpenFrameStore.setState((state) => ({ frames: state.frames.filter((open) => open !== frame) }));
   }, [label]);
 };

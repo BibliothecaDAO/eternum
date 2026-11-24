@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { Icon } from "@/ui/design-system/icon";
-import { useOpenFrameLabels } from "@/ui/design-system/kit/open-frames";
+import { useOpenFrames } from "@/ui/design-system/kit/open-frames";
 import { CLOSE, OPENING_WORDS, type OpeningRules } from "@/ui/design-system/kit/words";
 import { OPENING, teacherAspectOf, type OpeningMoment } from "../opening/opening";
 import type { TutorialDisplayStatus } from "../opening/opening-state";
@@ -35,12 +35,9 @@ export function AspectEmissaryDock({
   const aspectId = teacherAspectOf(moment, rules.ownAspect);
   const dock = useRetireOnceSeen(status === "completed" ? moment : null, onDismiss);
   const [skipAskedOn, setSkipAskedOn] = useState<OpeningMoment | null>(null);
-  const openFrames = useOpenFrameLabels();
-  const [expanded, setExpanded] = useState(false);
-  const framesOpen = openFrames.join("\n");
-  useEffect(() => {
-    setExpanded(false);
-  }, [framesOpen]);
+  const openFrames = useOpenFrames();
+  const framesOpen = openFrames.map((frame) => frame.opening).join();
+  const [expandedOver, setExpandedOver] = useState<string | null>(null);
   if (aspectId === null) return null;
   const emissary = resolveAspectEmissary(aspectId);
   const phone = layout === "phone";
@@ -55,10 +52,10 @@ export function AspectEmissaryDock({
   const title = OPENING_WORDS.titles[moment];
   const form = dockForm({
     phone,
-    openFrames,
+    openFrames: openFrames.map((frame) => frame.label),
     asks: "asks" in spec ? spec.asks.sheet : undefined,
     confirming: status === "completed",
-    expanded,
+    expanded: expandedOver === framesOpen,
   });
   const skip = onSkipAll && !completed && (
     <SkipControls
@@ -98,7 +95,7 @@ export function AspectEmissaryDock({
             type="button"
             className="emissary-dock__btn emissary-dock__fold-btn"
             aria-label={OPENING_WORDS.showLesson}
-            onClick={() => setExpanded(true)}
+            onClick={() => setExpandedOver(framesOpen)}
           >
             ▾
           </button>
