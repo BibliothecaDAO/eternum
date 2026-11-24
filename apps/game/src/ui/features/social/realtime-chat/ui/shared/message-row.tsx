@@ -3,7 +3,6 @@ import { HudButton } from "@/ui/design-system/kit/hud-elements";
 import { CHAT_WORDS } from "@/ui/design-system/kit/words";
 import { type PointerEvent, type ReactNode, useRef, useState } from "react";
 
-
 /** A finger dragged this far right on a message answers it, as a phone's chats do. */
 const SWIPE_PX = 56;
 /** Moved less than this, a press is a click or a tap. */
