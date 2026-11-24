@@ -173,18 +173,19 @@ on SwiftShader), and releases everything it started. Run it from a stopped clien
   builds a Barracks, sends an army into the mist, attacks a site beside one of its armies (revealing up to six tiles to
   find one) and chooses the first card of an Oath pick the fight opens, its cards' texts recorded (one left standing by
   an earlier run is answered first). A surface attack is pressed only on a card that forecasts a win ("This attack
-  earns" or "clears it"); when every site found would be lost, the account deploys its troops at home once with Max and
-  searches on. Then the host enters the Deep through its Spire once the realm knows Spire lore, attacks an open site's
-  beast and so holds it. The host then measures the Deep's catch-up: three Moves of a surface army, the cheaper of the
-  last two being a play with nothing to settle (T0); the tick's pay read on the site's card and the Season board; four
-  ticks passed on the slot's clock with no command; one more Move (T1), which settles them, since the chain settles the
-  Deep only at the next command. T1 must be applied (the chain refuses a play over its event or gas limit) and emit its
-  rows once each, not once per tick; Glory, height and the bane bar must rise by whole ticks of the card's pay; Essence
-  and labor are read from the card only. The friend then enters the Deep, attacks a rival's guard and takes an empty
-  site, which exist only when another Aspect holds a site or a site's guards died. An account whose dock is empty (a new
-  day ends every army) first deploys an army of at most 500 of its troops at home (Max can spend all its wheat on the
-  deploy, leaving none to explore). With an army out, the host's page must offer no Refill and no shop, and an Oath pick
-  no Redraw, while the game's rules as the page holds them (`window.__eternumFragmentSpends()`) enable none of BuySeal,
+  earns" or "clears it"); when no site beside its armies forecasts a win (a loss, a guard that survives, or no forecast
+  read), the account deploys its troops at home once with Max and searches on. Then the host enters the Deep through its
+  Spire once the realm knows Spire lore, attacks an open site's beast and so holds it. The host then measures the Deep's
+  catch-up: three Moves of a surface army, the cheaper of the last two being a play with nothing to settle (T0); the
+  tick's pay read on the site's card and the Season board; four ticks passed on the slot's clock with no command; one
+  more Move (T1), which settles them, since the chain settles the Deep only at the next command. T1 must be applied (the
+  chain refuses a play over its event or gas limit) and emit its rows once each, not once per tick; Glory, height and
+  the bane bar must rise by whole ticks of the card's pay; Essence and labor are read from the card only. The friend
+  then enters the Deep, attacks a rival's guard and takes an empty site, which exist only when another Aspect holds a
+  site or a site's guards died. An account whose dock is empty (a new day ends every army) first deploys an army of at
+  most 500 of its troops at home, keeping the rest for that raise; Max keeps the wheat the army burns revealing its bar,
+  so a raised army explores on. With an army out, the host's page must offer no Refill and no shop, and an Oath pick no
+  Redraw, while the game's rules as the page holds them (`window.__eternumFragmentSpends()`) enable none of BuySeal,
   BuyStamina and RerollOath: the mask the contract refuses them by ("command disabled"). Without Spire lore the Deep
   steps are blocked with the Spire's own row. `--steps s1-testnet` plays the host alone in a testnet game entered from
   its Play card: founding, an army sent, and the same Fragment spends check. An action passes only when its receipt from
