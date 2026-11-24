@@ -106,9 +106,12 @@ const ARMIES_OUT = [
   secondsToFull: undefined,
 }));
 
-it.each(["phone", "desktop"] as const)(
+it.each([
+  ["phone", ""],
+  ["desktop", "Hollow"],
+] as const)(
   "marks on a %s each army in an Ethereal layer with that layer, and an army on the surface with nothing",
-  (size) => {
+  (size, shown) => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     layout.current = size;
     useAccountStore.setState({ account: { address: "0x111" } as never });
@@ -129,7 +132,7 @@ it.each(["phone", "desktop"] as const)(
         const mark = host.querySelector(`button[aria-label="${label}"]`)!.querySelector(BELOW_SURFACE);
         return mark && [mark.getAttribute("aria-label"), mark.textContent, mark.querySelector("img")?.dataset.icon];
       });
-      expect(marks).toEqual([["Hollow", "", "depth-2"], null]);
+      expect(marks).toEqual([["Hollow", shown, "depth-2"], null]);
     } finally {
       act(() => root.unmount());
       host.remove();
