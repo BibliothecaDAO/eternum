@@ -166,9 +166,12 @@ export const DeployView = ({
           )}
         </div>
       )}
-      {slots.open && slots.open.length > 0 && (slots.open.length > 1 || !start) && (
-        <DeploySlots open={slots.open} picked={start?.slot} onPick={slots.onPick} />
-      )}
+      <div className="deploy-slots-row">
+        {slots.open && slots.open.length > 0 && (slots.open.length > 1 || !start) && (
+          <DeploySlots open={slots.open} picked={start?.slot} onPick={slots.onPick} />
+        )}
+        {oathSlots}
+      </div>
       {troopsAtHome === 0 ? (
         troopsWait === undefined ? (
           <>
@@ -183,7 +186,6 @@ export const DeployView = ({
       ) : (
         tile === "none" && <HudNotice tone="warn" line={NO_OPEN_TILE} />
       )}
-      {oathSlots}
       {wheatLimit && (
         <HudNotice
           tone="bad"
