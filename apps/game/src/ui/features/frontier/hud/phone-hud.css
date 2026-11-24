@@ -4,45 +4,23 @@
   flex-direction: column;
   gap: theme(spacing.2);
 }
-.frontier-phone-cornice {
-  position: relative;
+.frontier-bar {
   display: flex;
-  height: 48px;
-  margin: calc(theme(spacing.2) * -1) calc(theme(spacing.2) * -1) 0;
+  height: 52px;
   align-items: center;
-  gap: theme(spacing.2);
-  border-bottom: 2px solid color-mix(in srgb, rgb(var(--hud-gold)) 55%, var(--hud-line-strong));
+  gap: theme(spacing[1.5]);
+  border: 1.5px solid color-mix(in srgb, rgb(var(--hud-gold)) 60%, var(--hud-line-strong));
+  border-radius: var(--hud-radius-panel);
   background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
   box-shadow:
     inset 0 1px 0 color-mix(in srgb, rgb(var(--hud-gold)) 24%, transparent),
     var(--hud-shadow-panel);
-  padding: 0 theme(spacing.2);
+  padding: 0 4px 0 6px;
   color: rgb(var(--hud-ink));
 }
-.frontier-phone-cornice__clock {
+.frontier-bar__day {
   display: inline-flex;
   flex: none;
-  align-self: flex-start;
-  margin-left: auto;
-}
-.frontier-phone-emblem {
-  display: inline-flex;
-  flex: none;
-  border: 0;
-  background: transparent;
-  padding: 0;
-  cursor: pointer;
-}
-.frontier-aspect-medallion[data-size="emblem"] {
-  width: 38px;
-  height: 38px;
-  border-width: 2px;
-  border-radius: 9px;
-}
-.frontier-phone-emblem[aria-expanded="true"] .frontier-aspect-medallion {
-  box-shadow:
-    0 0 0 2px rgb(var(--hud-gold)),
-    0 0 14px rgb(var(--hud-aspect, var(--hud-gold)) / 0.45);
 }
 .frontier-stock-chips {
   display: flex;
@@ -50,29 +28,45 @@
   flex: 1;
   align-items: center;
   justify-content: center;
-  gap: theme(spacing[1.5]);
+  border: 0;
+  border-radius: var(--hud-radius-control);
+  background: transparent;
+  padding: 4px 0;
+  color: inherit;
+}
+button.frontier-stock-chips {
+  cursor: pointer;
+}
+button.frontier-stock-chips[aria-expanded="true"] {
+  background: rgb(var(--hud-gold) / 0.1);
+  box-shadow: 0 0 0 1.5px rgb(var(--hud-gold));
 }
 .frontier-stock-chip {
   position: relative;
   display: inline-flex;
-  height: 28px;
   min-width: 0;
-  flex: 0 1 auto;
   align-items: center;
   gap: 2px;
-  border: 1px solid var(--hud-line-strong);
-  border-radius: 7px;
-  background: var(--hud-well);
-  box-shadow: inset 0 1px 2px var(--hud-surface-to);
-  padding: 0 6px 0 3px;
-  color: rgb(var(--hud-ink));
   font-size: var(--hud-text-body);
   line-height: 1;
   font-weight: var(--hud-weight-strong);
   white-space: nowrap;
 }
-button.frontier-stock-chip {
-  cursor: pointer;
+.frontier-stock-chip {
+  padding: 0 theme(spacing[1.5]);
+}
+.frontier-stock-chip + .frontier-stock-chip {
+  border-left: 1px solid var(--hud-divider);
+}
+.frontier-bar .frontier-place-pill {
+  height: 36px;
+  gap: theme(spacing[1.5]);
+  border-radius: var(--hud-radius-control);
+  box-shadow: none;
+  padding: 0 theme(spacing.2) 0 theme(spacing[1.5]);
+}
+.frontier-bar .frontier-place-pill__name {
+  font-size: var(--hud-text-label);
 }
 .frontier-stock-chip__icon {
   display: inline-flex;
@@ -82,34 +76,57 @@ button.frontier-stock-chip {
   width: 18px;
   height: 18px;
 }
-.frontier-stock-chips .frontier-fragments-socket {
-  height: 28px;
-  gap: 3px;
-  border-radius: 7px;
-  border-color: rgb(var(--hud-gold) / 0.7);
-  background: var(--hud-well);
-  padding: 0 4px 0 5px;
-  font-size: var(--hud-text-body);
-}
-.frontier-phone-cornice .frontier-day-medallion--phone {
-  width: 52px;
-  height: 52px;
-  margin: 3px 0 -12px;
-}
-.frontier-day-left {
-  position: absolute;
-  bottom: -9px;
-  left: 50%;
-  transform: translateX(-50%);
-  border: 1px solid rgb(var(--hud-gold) / 0.75);
+.frontier-day-disc {
+  position: relative;
+  display: flex;
+  width: 56px;
+  height: 56px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: -4px 0;
   border-radius: var(--hud-radius-round);
-  background: var(--hud-surface-to);
-  padding: 2px 7px;
-  color: rgb(var(--hud-gold));
-  font-size: var(--hud-text-badge);
+  background: conic-gradient(rgb(var(--hud-gold)) 0 var(--day-gone), rgb(0 0 0 / 0.75) var(--day-gone) 100%);
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.6);
   line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.frontier-day-disc::before {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  border-radius: inherit;
+  background: url(/images/hud/day-disc-calm.webp) center / cover;
+}
+.frontier-day-disc[data-tone="ember"] {
+  background: conic-gradient(var(--hud-bad) 0 var(--day-gone), rgb(0 0 0 / 0.75) var(--day-gone) 100%);
+}
+.frontier-day-disc[data-tone="ember"]::before {
+  background-image: url(/images/hud/day-disc-ember.webp);
+}
+.frontier-day-disc > span {
+  position: relative;
+}
+.frontier-day-disc__kicker {
+  color: var(--hud-muted);
+  font-family: var(--hud-font-display);
+  font-size: 7px;
   font-weight: var(--hud-weight-strong);
-  white-space: nowrap;
+  letter-spacing: 0.14em;
+}
+.frontier-day-disc__day {
+  color: rgb(var(--hud-gold));
+  font-family: var(--hud-font-display);
+  font-size: 21px;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.8);
+}
+.frontier-day-disc__left {
+  color: rgb(var(--hud-ink));
+  font-size: 9px;
+  font-weight: var(--hud-weight-badge);
+}
+.frontier-day-disc[data-tone="ember"] .frontier-day-disc__left {
+  color: var(--hud-bad);
 }
 .frontier-phone-float {
   display: flex;
@@ -117,6 +134,13 @@ button.frontier-stock-chip {
   align-items: flex-start;
   justify-content: space-between;
   gap: theme(spacing.2);
+}
+.frontier-phone-float__lead {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: theme(spacing[1.5]);
 }
 .frontier-phone-float__quest {
   margin-right: 2px;
@@ -207,15 +231,14 @@ button.frontier-stock-chip {
 }
 .frontier-tab-bar {
   display: grid;
-  margin: 0 calc(max(env(safe-area-inset-right), 0.5rem) * -1)
-    calc(max(calc(env(safe-area-inset-bottom) - var(--keyboard, 0px)), 0.5rem) * -1)
-    calc(max(env(safe-area-inset-left), 0.5rem) * -1);
   grid-auto-columns: minmax(0, 1fr);
   grid-auto-flow: column;
-  border-top: 2px solid color-mix(in srgb, rgb(var(--hud-gold)) 45%, var(--hud-line-strong));
+  gap: 4px;
+  border: 1.5px solid color-mix(in srgb, rgb(var(--hud-gold)) 60%, var(--hud-line-strong));
+  border-radius: var(--hud-radius-panel);
   background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
-  box-shadow: 0 -6px 16px color-mix(in srgb, var(--hud-well) 70%, transparent);
-  padding-bottom: env(safe-area-inset-bottom);
+  box-shadow: 0 -4px 14px color-mix(in srgb, var(--hud-well) 70%, transparent);
+  padding: 4px;
 }
 [data-side-rail] .frontier-tab-bar {
   margin: 0;
@@ -234,25 +257,17 @@ button.frontier-stock-chip {
   align-items: center;
   justify-content: center;
   gap: 3px;
-  border: 0;
+  border: 1px solid transparent;
+  border-radius: var(--hud-radius-control);
   background: transparent;
-  padding: 6px 2px 5px;
+  padding: 5px 2px 4px;
   color: var(--hud-muted);
   cursor: pointer;
 }
 .frontier-tab[aria-current="page"] {
+  border-color: rgb(var(--hud-gold) / 0.7);
+  background: rgb(var(--hud-gold) / 0.12);
   color: rgb(var(--hud-gold));
-}
-.frontier-tab[aria-current="page"]::before {
-  content: "";
-  position: absolute;
-  top: -2px;
-  left: 22%;
-  right: 22%;
-  height: 3px;
-  border-radius: 0 0 3px 3px;
-  background: rgb(var(--hud-gold));
-  box-shadow: 0 0 10px rgb(var(--hud-gold) / 0.7);
 }
 .frontier-tab__icon {
   position: relative;
@@ -299,117 +314,12 @@ button.frontier-stock-chip {
   border-radius: var(--hud-radius-round);
   background: rgb(var(--hud-gold));
 }
-.frontier-tablet-top {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: theme(spacing.3);
-}
-.frontier-tablet-bar {
-  display: flex;
-  height: 52px;
-  margin: calc(theme(spacing.2) * -1) calc(theme(spacing.2) * -1) theme(spacing.2);
-  align-items: center;
-  gap: theme(spacing.3);
-  border-bottom: 2px solid color-mix(in srgb, rgb(var(--hud-gold)) 55%, var(--hud-line-strong));
-  background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
-  box-shadow: var(--hud-shadow-panel);
-  padding: 0 theme(spacing.3);
-  color: rgb(var(--hud-ink));
-}
-.frontier-tablet-bar__centre {
-  display: flex;
-  align-self: flex-start;
-  align-items: flex-start;
-  gap: theme(spacing.3);
-  padding-top: 4px;
-}
-.frontier-tablet-bar__centre .frontier-day-medallion--phone {
-  width: 58px;
-  height: 58px;
-  margin: 0 0 -14px;
-}
-.frontier-tablet-bar__centre .frontier-place-pill {
-  height: 32px;
-  margin-top: 6px;
-  padding: 0 theme(spacing[2.5]) 0 theme(spacing.2);
-}
-.frontier-tablet-bar__centre .frontier-place-pill__name {
-  font-size: var(--hud-text-body);
-}
-.frontier-tablet-bar__places {
-  display: flex;
-  margin-left: auto;
-  justify-content: flex-end;
-}
-.frontier-tablet-places {
-  display: flex;
-  gap: theme(spacing[1.5]);
-}
-.frontier-tablet-places .frontier-tab {
-  min-height: 36px;
-  min-width: 42px;
-  border: 1px solid var(--hud-line-strong);
-  border-radius: var(--hud-radius-chip);
-  background: var(--hud-well);
-  padding: 4px 8px;
-}
-.frontier-tablet-places .frontier-tab[aria-current="page"] {
-  border-color: rgb(var(--hud-gold));
-}
-.frontier-tablet-places .frontier-tab[aria-current="page"]::before {
-  display: none;
-}
-.frontier-tablet-places .frontier-tab__label {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-}
-.frontier-tablet-places .frontier-tab__badge {
-  position: static;
-  margin-left: 6px;
-}
-.frontier-tablet-places .frontier-tab__icon {
-  align-items: center;
-}
-.frontier-tablet-float {
-  position: absolute;
-  top: calc(100% + theme(spacing.3));
-  inset-inline: 0;
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: theme(spacing.2);
-}
-.frontier-tablet-realm {
-  width: theme(spacing.hud-frontier-left);
-}
-.frontier-tablet-realm .frontier-realm-card,
-.frontier-phone-top > .frontier-realm-card {
-  overflow-y: auto;
-}
-.frontier-phone-top > .frontier-realm-card {
-  position: relative;
-  z-index: 1;
-  max-height: calc(100dvh - 160px);
-}
 @media (max-width: 380px) {
-  .frontier-phone-cornice {
-    gap: 5px;
-    padding: 0 6px;
-  }
-  .frontier-stock-chips {
-    gap: 4px;
+  .frontier-stock-chip {
+    font-size: var(--hud-text-label);
   }
   .frontier-stock-chip {
-    padding: 0 5px 0 3px;
-  }
-  .frontier-phone-cornice .frontier-day-medallion--phone {
-    width: 48px;
-    height: 48px;
+    padding: 0 theme(spacing.1);
   }
 }
 .frontier-army-tray {
@@ -546,4 +456,16 @@ button.frontier-stock-chip {
 }
 .frontier-quest-card__claim > .ui-button {
   width: 100%;
+}
+[data-hud-form] .frontier-army-tray-panel {
+  max-height: theme(spacing.hud-phone-tray);
+}
+.frontier-phone-top > .frontier-realm-card {
+  position: relative;
+  z-index: 1;
+  max-height: theme(spacing.hud-phone-sheet);
+  overflow-y: auto;
+}
+[data-hud-form="tablet"] .frontier-phone-top > .frontier-realm-card {
+  width: theme(spacing.hud-frontier-left);
 }

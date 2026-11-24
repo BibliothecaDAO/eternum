@@ -17,9 +17,9 @@ import { SettingsPanel } from "@/ui/modules/settings/settings";
 import { configManager, resolveUseSimpleCost } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { BUILDINGS_CENTER, catalogAspectId, formatRate, rankName } from "@bibliothecadao/types";
-import { useLayout, useTablet } from "@/shell/frame/layout";
+import { useLayout } from "@/shell/frame/layout";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { type ComponentProps, type ComponentType, type ReactNode, useEffect, useRef, useState } from "react";
+import { type ComponentType, type ReactNode, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { RealmVisitFoot, useRealmVisitNavigation, useVisitedRealm } from "./board/realm-visit";
 import { FrontierSeason, useSeasonRank } from "./board/season-board";
@@ -44,7 +44,7 @@ import { useResearchTree } from "./research/research-facts";
 import { canResearchNow } from "./research/research-tree";
 import { ChatPage } from "./hud/chat-page";
 import { type DockArmy, useDockArmies } from "./hud/dock-armies";
-import { PhoneTabBar, TabletPlaces, type HudSurface } from "./hud/frontier-nav";
+import { PhoneTabBar, type HudSurface } from "./hud/frontier-nav";
 import { selectLayer, useMapLayers } from "./hud/map-layers";
 import { FrontierTopBar } from "./hud/phone-top-bar";
 import { FrontierPlaceSwitch, PlaceMenu } from "./hud/surface-deep-switch";
@@ -154,7 +154,6 @@ const FrontierHudBody = ({
     },
   });
   const desktop = useLayout() === "desktop";
-  const tablet = useTablet();
   const { surface, openSurface: setSurface, showsCard } = useOnePanel(card?.key ?? null, !desktop);
   useEffect(() => {
     onSurfaceChange(surface);
@@ -200,10 +199,6 @@ const FrontierHudBody = ({
   const goToPlace = useGoToFrontierPlace(shown);
   const feedUnread = useUnreadImportantCount(surface === "feed");
   const shownName = shown ? modeConfig.structure.getName(shown).name : null;
-  const shownAspectId = shown
-    ? headerFacts.store.get("HomeAspect", { game_id: shown.game_id, home: shown.entity_id })?.aspect
-    : undefined;
-  const shownAspect = shownAspectId !== undefined ? catalogAspectId(shownAspectId) : undefined;
   if (showBlankOverlay) return null;
   const close = () => setSurface(null);
   const switchView = (toRealm: boolean) => {
@@ -274,18 +269,38 @@ const FrontierHudBody = ({
       fragments={own ? fragmentsHeld : null}
       storeCards={storeCards}
       onShop={own ? () => setSurface("shop") : undefined}
-      onClose={desktop || tablet ? undefined : close}
+      onClose={desktop ? undefined : close}
     />
+  );
+  const widePage =
+    surface === "research" ||
+    (surface === "season" &&
+      headerFacts.store.get("RaceRules", { game_id: configManager.getActiveGameId() }) !== undefined);
+  const showOpening = !(desktop && widePage);
+  const openingNotice = showOpening && (opening.line || opening.offer) && (
+    <div data-opening-notice className="flex flex-col gap-1.5 empty:hidden">
+      {opening.line && (
+        <AspectEmissaryDock
+          moment={opening.line.moment}
+          rules={opening.line.rules}
+          layout={desktop ? "desktop" : "phone"}
+          status={opening.line.status}
+          onDismiss={opening.dismiss}
+          onSkipAll={opening.skipAll}
+        />
+      )}
+      {opening.offer && <OpeningOffer offer={opening.offer} />}
+    </div>
   );
   const topBar = (
     <FrontierTopBar
-      form={tablet ? "tablet" : "phone"}
       rules={rules}
-      realm={shown}
-      realmName={shownName}
-      aspect={shownAspect}
-      stores={headerStores}
-      realmOpen={realmVisible}
+      stocks={{
+        stores: headerStores,
+        realmName: shownName,
+        realmOpen: realmVisible,
+        onOpenRealm: () => setSurface(surface === "realm" ? null : "realm"),
+      }}
       placeMenu={
         <PlaceMenu
           {...placeChoices}
@@ -297,38 +312,15 @@ const FrontierHudBody = ({
         />
       }
       quest={own ? <DailyQuestChip realm={own} /> : undefined}
-      places={tablet ? <TabletPlaces {...placesState} /> : undefined}
+      notice={openingNotice}
       spectatorChip={spectating ? <IdentityChip compact /> : undefined}
-      fragments={own ? fragmentsHeld : null}
-      onShop={own ? () => setSurface("shop") : undefined}
-      storeCards={storeCards}
-      realmCard={tablet || realmVisible ? realmCard : undefined}
-      onOpenRealm={() => setSurface(surface === "realm" ? null : "realm")}
+      realmCard={realmVisible ? realmCard : undefined}
       onOpenToday={() => setSurface("today")}
     />
   );
-  const widePage =
-    surface === "research" ||
-    (surface === "season" &&
-      headerFacts.store.get("RaceRules", { game_id: configManager.getActiveGameId() }) !== undefined);
-  const showOpening = !(desktop && widePage);
   const notices = (
     <>
-      {showOpening && (opening.line || opening.offer) && (
-        <div data-opening-notice className="flex flex-col gap-1.5 empty:hidden">
-          {opening.line && (
-            <AspectEmissaryDock
-              moment={opening.line.moment}
-              rules={opening.line.rules}
-              layout={desktop ? "desktop" : "phone"}
-              status={opening.line.status}
-              onDismiss={opening.dismiss}
-              onSkipAll={opening.skipAll}
-            />
-          )}
-          {opening.offer && <OpeningOffer offer={opening.offer} />}
-        </div>
-      )}
+      {desktop && openingNotice}
       <SceneFailureNotice />
       {own && <DayEndNotice dayEnd={dayEnd} onOpen={() => setSurface("today")} />}
     </>
@@ -420,14 +412,14 @@ const FrontierHudBody = ({
           <div className="min-w-0 flex-1">{armyDock}</div>
         </div>
       }
-      nav={tablet ? null : <PhoneTabBar {...placesState} />}
+      nav={<PhoneTabBar {...placesState} />}
     >
       {sheets}
     </HudBands>
   );
 };
 
-const REALM_HEADER_MODELS = ["HomeAspect", "RaceRules"] as const;
+const REALM_HEADER_MODELS = ["RaceRules"] as const;
 
 /**
  * A phone's action row, the one row over the place bar that says what the pick lets the player do now (owner, 22 October
@@ -600,6 +592,13 @@ const useRealmFace = (realm: NativeRows["Structure"]) => {
   };
 };
 
+type StoreCards = {
+  kinds: readonly CardStore[];
+  open: CardStore | null;
+  onToggle: (kind: string) => void;
+  card: ReactNode;
+};
+
 const FrontierRealmCard = ({
   rules,
   realm,
@@ -615,7 +614,7 @@ const FrontierRealmCard = ({
   own: NativeRows["Structure"] | null;
   isMapView: boolean;
   fragments: number | null;
-  storeCards: ComponentProps<typeof FrontierTopBar>["storeCards"];
+  storeCards: StoreCards | undefined;
   onShop?: () => void;
   onClose?: () => void;
 }) => {

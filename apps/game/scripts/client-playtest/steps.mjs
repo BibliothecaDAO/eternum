@@ -2332,18 +2332,16 @@ function seasonReadAndClosed({ played }) {
   return completed(played);
 }
 
-/** A Wheat ring or phone plate opens its store card; pressing it again closes the same card. */
-/**
- * The Wheat store's card opened from its ring (a desktop's realm panel) or its plate (a phone's strip), then closed by
- * the same press: both found by the store they stand for (`data-store`, `data-store-card`), not by words a label may
- * change.
- */
 async function openAndCloseWheatStore({ browser }) {
   const card = () => browser.read(`Boolean(document.querySelector('[data-store-card="wheat"]'))`);
-  browser.run(["click", '[data-store="wheat"]']);
+  browser.read(
+    `(() => { if (!document.querySelector('.frontier-realm-card')) document.querySelector('.frontier-bar button.frontier-stock-chips')?.click(); return true; })()`,
+  );
+  await sleep(1_000);
+  browser.run(["click", '.frontier-realm-card [data-store="wheat"]']);
   await sleep(1_500);
   const opened = card();
-  browser.run(["click", '[data-store="wheat"]']);
+  browser.run(["click", '.frontier-realm-card [data-store="wheat"]']);
   await sleep(1_000);
   return { opened, closed: card() };
 }
@@ -6999,7 +6997,7 @@ export const STEP_SETS = {
           const shot = extraScreenshot("realm");
           if (!onADesktop()) {
             browser.read(
-              `(() => { const chip = document.querySelector('.frontier-phone-emblem'); if (!chip) return false; chip.click(); return true; })()`,
+              `(() => { const chip = document.querySelector('.frontier-bar button.frontier-stock-chips'); if (!chip) return false; chip.click(); return true; })()`,
             );
           }
           const buildings = await readUntil(
@@ -7017,7 +7015,7 @@ export const STEP_SETS = {
           const hasRealmPanel = browser.read(`Boolean(document.querySelector('section[aria-label="Realm"]'))`);
           if (!onADesktop()) {
             browser.read(
-              `(() => { const chip = document.querySelector('.frontier-phone-emblem'); if (!chip) return false; chip.click(); return true; })()`,
+              `(() => { const chip = document.querySelector('.frontier-bar button.frontier-stock-chips'); if (!chip) return false; chip.click(); return true; })()`,
             );
             await readUntil(
               () => browser.read(`!document.querySelector('section[aria-label="Realm"]')`),

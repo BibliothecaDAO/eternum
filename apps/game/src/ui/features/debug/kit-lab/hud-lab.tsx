@@ -29,9 +29,9 @@ import { ArmyToken, OpenSlot } from "@/ui/features/frontier/hud/army-token";
 import type { DayClock } from "@/ui/features/frontier/hud/day-clock";
 import { HudBands } from "@/ui/features/frontier/hud/hud-bands";
 import { FrontierDesktop, FrontierPlaces } from "@/ui/features/frontier/hud/frontier-desktop";
-import { PhoneTabBar, TabletPlaces, type HudSurface } from "@/ui/features/frontier/hud/frontier-nav";
+import { PhoneTabBar, type HudSurface } from "@/ui/features/frontier/hud/frontier-nav";
 import { OfflineBanner } from "@/ui/features/frontier/hud/offline-notice";
-import { PhoneTopBarView, TabletTopBarView } from "@/ui/features/frontier/hud/phone-top-bar";
+import { TopBarView } from "@/ui/features/frontier/hud/phone-top-bar";
 import { RealmCard } from "@/ui/features/frontier/hud/realm-card";
 import { LabGame, useLabPlayer } from "./lab-game";
 import { useHudMode } from "@/hooks/use-hud-mode";
@@ -76,7 +76,7 @@ import { ARCHIVED_SEASONS, archivedSeason } from "@/shell/season-tab/archive/arc
 import { SeasonPayoutRow } from "@/ui/features/frontier/value/season-payout";
 import { linkWalletLine } from "@/ui/features/frontier/value/link-wallet";
 import { VisitFoot } from "@/ui/features/frontier/board/visit-foot";
-import { useLayout, useTablet } from "@/shell/frame/layout";
+import { useLayout } from "@/shell/frame/layout";
 import { type DayEnd, DayEndBlock, DayEndNotice } from "@/ui/features/frontier/day-end/day-end";
 import { type ComponentProps, useEffect, useRef, useState } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
@@ -1130,8 +1130,6 @@ export const HudLab = () => {
   const { state = "idle" } = useParams();
   const lab: LabState = STATES[state as keyof typeof STATES] ?? STATES.idle;
   const desktop = useLayout() === "desktop";
-  const tablet = useTablet();
-  const TopBarView = tablet ? TabletTopBarView : PhoneTopBarView;
   // The game wears Frontier's age (world.tsx's useHudMode); the lab draws it the same.
   useHudMode("frontier");
   useLabNotice(lab.notice);
@@ -1167,13 +1165,7 @@ export const HudLab = () => {
         lab={lab}
         strip={
           <TopBarView
-            realm={{
-              icon: homeIcon("realm", lab.realm?.level ?? 1),
-              label: LAB_REALM_NAME,
-              aspect: LAB_ASPECT,
-              orderId: LAB_ORDER_ID,
-            }}
-            stocks={{ stores: [...lab.stores], fragments: LAB_FRAGMENTS, onShop: noop }}
+            stocks={{ stores: [...lab.stores], realmName: LAB_REALM_NAME, onOpenRealm: noop }}
             clock={<DayRing clock={lab.clock} />}
             placeMenu={
               <PlaceMenu
@@ -1185,10 +1177,7 @@ export const HudLab = () => {
               />
             }
             quest={<LabDailyQuest />}
-            places={tablet && !lab.visiting ? <TabletPlaces {...labPlaces(lab)} /> : undefined}
-            storeCard={!tablet && lab.storeCard && <StoreCard line={lab.storeCard} onSpend={noop} onBuild={noop} />}
-            realmCard={tablet ? <LabRealmCard lab={lab} /> : undefined}
-            onOpenRealm={noop}
+            realmCard={lab.storeCard && <StoreCard line={lab.storeCard} onSpend={noop} onBuild={noop} />}
           />
         }
         page={
@@ -1258,7 +1247,7 @@ export const HudLab = () => {
           </>
         }
         dock={(desktop || !lab.order) && <LabDock lab={lab} />}
-        nav={!lab.visiting && !tablet && <PhoneTabBar {...labPlaces(lab)} />}
+        nav={!lab.visiting && <PhoneTabBar {...labPlaces(lab)} />}
       >
         {lab.deploy && <LabDeploySheet deploy={lab.deploy} stores={lab.stores} open={labOpenSlots(lab)} />}
         {lab.results && (
