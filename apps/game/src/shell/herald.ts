@@ -213,7 +213,10 @@ export const useAspectRoster = (game: DirectoryGame, aspect: number) => {
   return useQuery({
     queryKey: ["shell", "aspect-roster", ref.chainId, ref.gameId, aspect],
     queryFn: async () =>
-      fetchHeraldAspectRoster(await requireOpenShard(ref.chainId), ref.gameId, aspect, { offset: 0, limit: ROSTER_TOP }),
+      fetchHeraldAspectRoster(await requireOpenShard(ref.chainId), ref.gameId, aspect, {
+        offset: 0,
+        limit: ROSTER_TOP,
+      }),
     refetchInterval: 30_000,
   });
 };

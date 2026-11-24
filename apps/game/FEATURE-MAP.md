@@ -84,21 +84,22 @@ card and a Results board (see `boards`). The pages: Play (`/`) leads with Fronti
 countdown, Enter Realm and Season Race) beside the 4-Aspect Hyperstructures grid, Today's quest, Aspect invite strip,
 and any unseen ended-season results (Blitz and retired Eternum games are not offered on Play); Season (`/season`) shows
 the Season 1 4-Hyperstructure Aspect race stage, Aspect standings, Triumph milestones, Your Standing (with the top 10 of
-the player's Aspect by Glory, from Herald's `/games/:id/aspects/:aspect/members`), and **Past seasons** (each row opening that season's Results), or the archived Playtest board (`src/shell/season-tab/archive/`)
-while no season runs (`/lab/app/no-season/season`); Shop (`/shop`) pairs Spend Fragments (Ancient Seal, seal code
-redemption, in-game Fragment uses) with Buy Fragments (packs, custom amount, linked wallet tokens); You (`/profile`,
-`/profile/settings`) is a single-page hub with an anchored identity rail switching Overview & Realms, Referrals & Invite
-(`/profile#referrals`: the invite link, the 10-friend track and the friends the player brought, each with its state and
-Glory), Wallet & Devices, and Settings inline; Results (`/results/:id`, with **See the end map**) shows a Frontier
-season's 4-card chronicle recap (Season 1 Aspect race or archived Playtest overview); What's new (`/scroll`) shows a
-release's patch notes, a tab per section, and every release. `/lab/kit/panels` the HUD's holdings and selected-realm
-panels as a player sees them, on a fixture realm. `/lab/kit/unified/<view>` the in-game HUD every mode shares (a phone's
-width draws the compact HUD), as the game mounts it on the lab's game: `blitz` (the Build order panel under Next up,
-read from the lab realm, which has nothing to build now), `blitz-start` (the same realm stocked to build, as the game
-begins: its news over the HUD, every control under it still taking its clicks), `blitz-attack` (the lab army's attack
-forecast on an enemy army beside it, opened as the map opens it), `frontier`, `frontier-army` (an army’s stamina, troops
-and relics), `blitz-spectator`, `blitz-finished`, `blitz-out` and `blitz-out-watching` (the lab player's last realm
-lost, a Hyperstructure still held, playing then watching);
+the player's Aspect by Glory, from Herald's `/games/:id/aspects/:aspect/members`), and **Past seasons** (each row
+opening that season's Results), or the archived Playtest board (`src/shell/season-tab/archive/`) while no season runs
+(`/lab/app/no-season/season`); Shop (`/shop`) pairs Spend Fragments (Ancient Seal, seal code redemption, in-game
+Fragment uses) with Buy Fragments (packs, custom amount, linked wallet tokens); You (`/profile`, `/profile/settings`) is
+a single-page hub with an anchored identity rail switching Overview & Realms, Referrals & Invite (`/profile#referrals`:
+the invite link, the 10-friend track and the friends the player brought, each with its state and Glory), Wallet &
+Devices, and Settings inline; Results (`/results/:id`, with **See the end map**) shows a Frontier season's 4-card
+chronicle recap (Season 1 Aspect race or archived Playtest overview); What's new (`/scroll`) shows a release's patch
+notes, a tab per section, and every release. `/lab/kit/panels` the HUD's holdings and selected-realm panels as a player
+sees them, on a fixture realm. `/lab/kit/unified/<view>` the in-game HUD every mode shares (a phone's width draws the
+compact HUD), as the game mounts it on the lab's game: `blitz` (the Build order panel under Next up, read from the lab
+realm, which has nothing to build now), `blitz-start` (the same realm stocked to build, as the game begins: its news
+over the HUD, every control under it still taking its clicks), `blitz-attack` (the lab army's attack forecast on an
+enemy army beside it, opened as the map opens it), `frontier`, `frontier-army` (an army’s stamina, troops and relics),
+`blitz-spectator`, `blitz-finished`, `blitz-out` and `blitz-out-watching` (the lab player's last realm lost, a
+Hyperstructure still held, playing then watching);
 `pnpm --dir apps/game capture:hud-lab --hud-layout --base-url <url> --out <dir>` holds it and Frontier's states at 1024,
 1280, 1440 and 1920 px (every part whole on the page, none over another, none with content past its edge, every control
 reachable, at most seven parts a region); `/lab/kit/hud/realm-claim` is the owner's Kingdom at 27/42 with 1,000 labor to

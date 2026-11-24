@@ -53,7 +53,14 @@ const rosterAnswer = (url: URL) => {
     owner,
     glory: String(BigInt(glory) * 1_000_000_000n),
   });
-  return { game_id: "1", aspect: 1, total: 12, offset: 0, limit: 10, members: [member(1, "0x4c21", 7, 120), member(2, "0x510f", 1, 40)] };
+  return {
+    game_id: "1",
+    aspect: 1,
+    total: 12,
+    offset: 0,
+    limit: 10,
+    members: [member(1, "0x4c21", 7, 120), member(2, "0x510f", 1, 40)],
+  };
 };
 
 // Each shard game's board is the test's; an archived season's is the real read, from its file and never a shard.
@@ -446,7 +453,9 @@ it("lists the top of the player's Aspect outside the game, by Glory, from Herald
           aspect_members: { 1: 12, 2: 0, 3: 0, 4: 0 },
           aspect_race: { finish_height: 7_500, season_days: 30, heights: { 1: 100, 2: 0, 3: 0, 4: 0 } },
           player_state: {
-            structures: [{ entity_id: 1001, category: 1, level: 1, realm_id: 1, coord_x: 0, coord_y: 0, resources_packed: "0" }],
+            structures: [
+              { entity_id: 1001, category: 1, level: 1, realm_id: 1, coord_x: 0, coord_y: 0, resources_packed: "0" },
+            ],
           },
         },
       ],
