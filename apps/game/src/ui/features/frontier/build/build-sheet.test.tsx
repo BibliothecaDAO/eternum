@@ -417,6 +417,7 @@ describe("the build sheet", () => {
     store.applyFacts([freeRule(BuildingType.ResourceWheat), freeRule(BuildingType.ResourceCrossbowmanT1)] as never);
     const sheet = open(store, realm);
     expect(sheet.card("Farm").querySelector("[data-build-price]")?.textContent).toBe(FREE);
+    act(() => sheet.card("Farm").click());
     expect(sheet.host.querySelector(".ui-window__foot .ui-cost")?.textContent).toBe(FREE);
 
     const rangeButton = sheet.card(buildingName(BuildingType.ResourceCrossbowmanT1, true));
@@ -478,6 +479,7 @@ describe("the build sheet", () => {
       }),
     ] as never);
     const risen = open(store, realm);
+    act(() => risen.card("Farm").click());
     const arrow = document.querySelector(".ui-window__foot [data-price-raised]")!;
     expect(arrow.getAttribute("aria-label")).toBe("Costs more with each one standing: 2");
     expect(arrow.getAttribute("data-tip")).toBe("Costs more with each one standing: 2");
