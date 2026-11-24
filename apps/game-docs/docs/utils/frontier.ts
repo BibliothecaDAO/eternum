@@ -1,4 +1,3 @@
-import { frontierPreset as historicalFrontierPreset } from "../../../../config/source/frontier/native";
 import { nativePresetForId, nativePresetIdFor } from "../../../../config/source/native";
 import { seasonDayUnitSeconds } from "../../../../config/source/common/season-clock";
 import {
@@ -30,7 +29,6 @@ const n = (value: number) => value.toLocaleString("en-US");
 const pct = (bps: number) => `${n(bps / 100)}%`;
 const range = (lower: number, upper: number) => `${n(lower)}–${n(upper)}`;
 
-const TIERS = ["common", "uncommon", "rare", "epic", "legendary"] as const;
 const hoursOf = (units: number) => (units * seasonDayUnitSeconds(frontierPreset)) / 3600;
 
 // A bag of days holds one day of each length, 2 to 6 units (contracts/l3/world-native/src/days.cairo).
@@ -165,15 +163,4 @@ export const FRONTIER = {
     labor: n(frontierPreset.dailyQuest.labor),
     essence: n(frontierPreset.dailyQuest.essence),
   },
-};
-
-/** Retired paying seasons; only the historical chest page reads these values. */
-export const HISTORICAL_FRONTIER_CHESTS = {
-  depths: historicalFrontierPreset.depths.map((depth, index) => ({
-    name: LAYER_NAMES[index],
-    chest: TIERS.map((tier) => pct(depth.chest[tier])),
-  })),
-  shares: TIERS.map((tier) => n(historicalFrontierPreset.chests.shares[tier])),
-  priceCeiling: n(historicalFrontierPreset.chests.priceCeiling),
-  claimDays: n(Math.floor(historicalFrontierPreset.chests.claimWindowSeconds / 86400)),
 };

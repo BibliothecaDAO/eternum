@@ -98,22 +98,15 @@ export default defineConfig({
         { text: "Your realm", link: "/frontier/realm" },
         { text: "Armies", link: "/frontier/armies" },
         { text: "The expedition", link: "/frontier/expedition" },
-        { text: "Historical chests", link: "/frontier/chests" },
       ],
     },
     {
-      text: "More",
+      text: "Developers",
+      collapsed: true,
       items: [
-        { text: "What's new", link: "/changelog" },
-        {
-          text: "Developers",
-          collapsed: true,
-          items: [
-            { text: "Getting started", link: "/development/getting-started" },
-            { text: "Client", link: "/development/client" },
-            { text: "Contracts", link: "/development/contracts" },
-          ],
-        },
+        { text: "Getting started", link: "/development/getting-started" },
+        { text: "Client", link: "/development/client" },
+        { text: "Contracts", link: "/development/contracts" },
       ],
     },
   ],

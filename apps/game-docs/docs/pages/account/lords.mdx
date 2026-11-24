@@ -1,32 +1,27 @@
 ---
 title: LORDS
-description: Where LORDS come from in each game, and where they go
+description: How LORDS works in Frontier
 ---
 
-import { Shot } from "@/components/Media";
+import { PAYOUT_WALLET } from "@/utils/payout-wallet";
 
 # LORDS
 
-LORDS is the Realms token. Frontier pays in it.
+LORDS is the Realms token. Frontier pays season rewards in LORDS.
 
 ## LORDS and test LORDS
 
-From the Devcon season, play.realms.party pays in LORDS. The dev game (play.dev-realms.party) runs on a test LORDS token
-with no value, and you can mint it for free: under a Blitz entry, **Mint 1,000 test tokens** mints them to your payout
-wallet. It takes one signature, and the wallet pays the network fee.
-
-<Shot name="account/mint" caption="A Blitz entry short of LORDS, with Mint 1,000 test tokens under it." />
+`play.realms.party` pays in LORDS. The dev site (`play.dev-realms.party`) uses a test LORDS token with no value.
 
 ## In Frontier
 
-- **Chests** pay LORDS into your realm ([Chests and LORDS](/frontier/chests)).
-- **Refill** spends your realm's LORDS on stamina ([Armies](/frontier/armies#stamina)).
-- **Withdraw** sends your realm's LORDS to your payout wallet during the season.
-- **The season's end** pays what your realm still holds, and the top places' prizes, to your payout wallet. Payments are
-  automatic once the payout checks complete. With no wallet linked by the claim deadline, they return to the treasury
-  ([Chests and LORDS](/frontier/chests#your-lords)).
-
-<Shot frame="panel" name="account/withdraw" caption="A Frontier realm's LORDS, withdrawn to the payout wallet." />
+- **Season rewards** pay LORDS to your linked payout wallet when the season ends, based on your Aspect's race standing
+  and the Glory you earned in the Deep.
+- **Shop** lets you buy Fragments with LORDS (or swap ETH, STRK or USDC into LORDS through AVNU) to refill stamina or
+  redraw Oaths.
+- **Claim deadline:** Payments are automatic once the season's results are posted and checked. If no payout wallet is
+  linked, link one within {PAYOUT_WALLET.claimWindowDays} days of posting; unpaid rewards after that return to the
+  treasury ([Payout wallet](/account/payout-wallet)).
 
 ## Terms
 

@@ -65,39 +65,6 @@
     "crop": "[...document.querySelectorAll('section.app-window')].find((s) => s.querySelector('h2')?.textContent.trim() === 'Payout wallet')"
   },
   {
-    "name": "account/mint",
-    "frame": "desktop",
-    "setup": [
-      {
-        "open": "/lab/app/entry-short/blitz/slot-blitz-1630?capture=1"
-      },
-      {
-        "until": "document.documentElement.dataset.bootState === 'app-ready'",
-        "ms": 120000
-      },
-      {
-        "wait": 4000
-      }
-    ]
-  },
-  {
-    "name": "account/withdraw",
-    "frame": "panel",
-    "setup": [
-      {
-        "open": "/lab/kit/hud/withdraw-paid?capture=1"
-      },
-      {
-        "until": "document.documentElement.dataset.bootState === 'app-ready'",
-        "ms": 120000
-      },
-      {
-        "wait": 4000
-      }
-    ],
-    "crop": "[...document.querySelectorAll('aside[data-hud-rail=\"true\"] section')].filter((s) => s.getBoundingClientRect().height > 40).at(-1)"
-  },
-  {
     "name": "frontier/hud",
     "frame": "game",
     "setup": [
@@ -136,23 +103,6 @@
     "setup": [
       {
         "open": "/lab/kit/hud/fight-ready?capture=1"
-      },
-      {
-        "until": "document.documentElement.dataset.bootState === 'app-ready'",
-        "ms": 120000
-      },
-      {
-        "wait": 4000
-      }
-    ],
-    "crop": "[...document.querySelectorAll('aside[data-hud-rail=\"true\"] section')].filter((s) => s.getBoundingClientRect().height > 40).at(-1)"
-  },
-  {
-    "name": "frontier/season-pool",
-    "frame": "panel",
-    "setup": [
-      {
-        "open": "/lab/kit/hud/season-pool-unpublished?capture=1"
       },
       {
         "until": "document.documentElement.dataset.bootState === 'app-ready'",
@@ -262,47 +212,6 @@
       }
     ],
     "seconds": 10
-  },
-  {
-    "name": "frontier/ruin-chest",
-    "frame": "game",
-    "setup": [
-      {
-        "open": "/lab/game?scenario=ruin-fight"
-      },
-      {
-        "until": "document.querySelector('nav[aria-label=\"Armies\"] button[aria-pressed]')",
-        "ms": 180000
-      },
-      {
-        "wait": 4000
-      },
-      {
-        "readiestArmy": true
-      },
-      {
-        "findTile": "Attack"
-      },
-      {
-        "waitText": "stamina",
-        "ms": 15000
-      },
-      {
-        "wait": 1500
-      }
-    ],
-    "record": [
-      {
-        "wait": 1200
-      },
-      {
-        "clickText": "Attack"
-      },
-      {
-        "wait": 9500
-      }
-    ],
-    "seconds": 12
   },
   {
     "name": "frontier/spire",
