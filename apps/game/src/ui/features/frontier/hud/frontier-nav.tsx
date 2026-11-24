@@ -1,7 +1,7 @@
 import "./phone-hud.css";
 
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
-import { MENU, REALM, WORLD } from "@/ui/design-system/kit/words";
+import { MENU } from "@/ui/design-system/kit/words";
 
 import { useHudPlaces } from "./hud-places";
 
@@ -36,22 +36,15 @@ const usePlaces = ({ surface, researchReady, feedUnread, chatUnread }: PlacesSta
     chatOpen: surface === "chat",
   });
 
-export const PhoneTabBar = ({ isMapView, ...state }: PlacesState & { isMapView: boolean }) => {
+export const PhoneTabBar = (state: PlacesState) => {
   const { surface, onSurface } = state;
   const places = usePlaces(state);
   const feed = places.find((place) => place.key === "feed");
   const tabs = places.filter((place) => place.key !== "feed");
   const onMenu = surface !== null && MENU_SURFACES.includes(surface);
-  const onTab = tabs.some((place) => place.key === surface);
   const toggle = (target: HudSurface) => onSurface(surface === target ? null : target);
   return (
     <nav aria-label="Places" className="frontier-tab-bar pointer-events-auto">
-      <PlaceTab
-        label={isMapView ? WORLD : REALM}
-        icon={isMapView ? "map" : "realm"}
-        current={!onMenu && !onTab}
-        onPress={() => onSurface(null)}
-      />
       {tabs.map((place) => (
         <PlaceTab
           key={place.key}

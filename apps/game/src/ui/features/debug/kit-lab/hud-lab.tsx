@@ -1262,7 +1262,7 @@ export const HudLab = () => {
           </>
         }
         dock={(desktop || !lab.order) && <LabDock lab={lab} />}
-        nav={!lab.visiting && !tablet && <PhoneTabBar isMapView={lab.realmView === undefined} {...labPlaces(lab)} />}
+        nav={!lab.visiting && !tablet && <PhoneTabBar {...labPlaces(lab)} />}
       >
         {lab.deploy && <LabDeploySheet deploy={lab.deploy} stores={lab.stores} open={labOpenSlots(lab)} />}
         {lab.results && (

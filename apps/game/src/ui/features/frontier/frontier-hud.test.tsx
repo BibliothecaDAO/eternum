@@ -487,7 +487,7 @@ it("gives a phone one place menu under its pill, whose places switch the scene a
   }
 });
 
-it("lays a phone's five places on its tab bar, the scene's own first and lit while no page stands", async () => {
+it("lays a phone's places on its tab bar with no tab for the scene, the place switch alone changing it", async () => {
   viewport.set(390);
   const route = window.location.pathname + window.location.search;
   window.history.replaceState(null, "", "/g/0x1ab9/1/map?col=1&row=1");
@@ -499,7 +499,6 @@ it("lays a phone's five places on its tab bar, the scene's own first and lit whi
         button.getAttribute("aria-current"),
       ]);
     expect(tabs()).toEqual([
-      ["World", "page"],
       ["Research", null],
       ["Season", null],
       ["Chat", null],
@@ -507,42 +506,13 @@ it("lays a phone's five places on its tab bar, the scene's own first and lit whi
     ]);
     await pressPlace("Research");
     expect(surfaceNamed("Research")).not.toBeNull();
-    expect(tabs()[1]).toEqual(["Research", "page"]);
-    expect(tabs()[0]).toEqual(["World", null]);
-    await pressPlace("World");
+    expect(tabs()[0]).toEqual(["Research", "page"]);
+    await pressPlace("Research");
     expect(surfaceNamed("Research")).toBeNull();
     await fromMenu("Today");
-    expect(tabs()[4]).toEqual(["Menu", "page"]);
-    await act(async () => {
-      window.history.replaceState(null, "", "/g/0x1ab9/1/hex?col=1&row=1");
-      window.dispatchEvent(new Event("urlChanged"));
-    });
-    expect(tabs()[0]).toEqual(["Realm", "page"]);
+    expect(tabs()[3]).toEqual(["Menu", "page"]);
   } finally {
     window.history.replaceState(null, "", route);
-  }
-});
-
-it("opens the Build sheet on the plot the board lights from a phone's gold Build, in the realm only", async () => {
-  viewport.set(390);
-  const route = window.location.pathname + window.location.search;
-  const { selectedBuildingHex } = useUIStore.getState();
-  window.history.replaceState(null, "", "/g/0x1ab9/1/map?col=1&row=1");
-  try {
-    await renderHud();
-    expect(host.querySelector("[data-build-button]")).toBeNull();
-    await act(async () => {
-      window.history.replaceState(null, "", "/g/0x1ab9/1/hex?col=1&row=1");
-      window.dispatchEvent(new Event("urlChanged"));
-    });
-    const build = host.querySelector<HTMLButtonElement>("[data-build-button]")!;
-    expect(build.textContent).toBe("Build");
-    await act(async () => build.click());
-    expect(surfaceNamed("Build")).not.toBeNull();
-    expect(useUIStore.getState().selectedBuildingHex?.structureId).toBe(7);
-  } finally {
-    window.history.replaceState(null, "", route);
-    await act(async () => useUIStore.setState({ selectedBuildingHex }));
   }
 });
 

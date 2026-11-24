@@ -77,7 +77,7 @@ import { FrontierToday } from "./log/frontier-today";
 import { CARD_STORE_KINDS, type CardStore, FrontierStoreCard, isCardStore } from "./production/frontier-store-card";
 import { FrontierResearch } from "./research/frontier-research";
 
-import { BuildButton, useBuildOpensOnEntering } from "./build/build-button";
+import { useBuildOpensOnEntering } from "./build/build-button";
 import { BuildingsInFlight } from "./build/build-sheet";
 import { readBuildOptions } from "./build/build-options";
 import { buildingIcon, buildingName } from "./build/building-names";
@@ -428,10 +428,9 @@ const FrontierHudBody = ({
       dock={
         <div className="frontier-phone-foot">
           <div className="min-w-0 flex-1">{armyDock}</div>
-          {own && !isMapView && ordersAllowed && <BuildButton realm={own} />}
         </div>
       }
-      nav={tablet ? null : <PhoneTabBar isMapView={isMapView} {...placesState} />}
+      nav={tablet ? null : <PhoneTabBar {...placesState} />}
     >
       {sheets}
     </HudBands>
