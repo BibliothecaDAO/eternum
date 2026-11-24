@@ -24,15 +24,19 @@ const draw = (props: Omit<AspectPageProps, "onClose">) =>
 const part = (name: string) => document.body.querySelector(`[${name}]`)?.textContent ?? "";
 
 describe("the Aspect page", () => {
-  it("ranks the four hyperstructures by height with their stage, the player's own selected", () => {
+  it("ranks the four hyperstructures by height, each stage built lit among the five, the player's own selected", () => {
     draw(ASPECT_PAGE_CASES["Mid-season, the player's Aspect second"]);
     const race = part("data-aspect-race");
     expect(race.indexOf("Prowess")).toBeLessThan(race.indexOf("Luminary"));
     expect(race.indexOf("Luminary")).toBeLessThan(race.indexOf("Havoc"));
     expect(race.indexOf("Havoc")).toBeLessThan(race.indexOf("Insight"));
-    expect(race).toContain("Stage 4 of 5 · 6,400 of 10,000");
-    expect(race).toContain("Stage 3 of 5 · 5,200 of 10,000");
-    expect(race).toContain("Stage 1 of 5 · 900 of 10,000");
+    const stages = [...document.body.querySelectorAll("[data-aspect-race] .race-steps")].map((row) => [
+      row.getAttribute("aria-label"),
+      row.querySelectorAll("[data-built]").length,
+    ]);
+    expect(stages).toContainEqual(["Stage 4 of 5 · 6,400 of 10,000", 3]);
+    expect(stages).toContainEqual(["Stage 3 of 5 · 5,200 of 10,000", 2]);
+    expect(stages).toContainEqual(["Stage 1 of 5 · 900 of 10,000", 0]);
   });
 
   it("shows no unfunded LORDS figures on the Aspect race standings", () => {

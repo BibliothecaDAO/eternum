@@ -68,15 +68,31 @@ const AspectStandingRow = ({
           </span>
           <span className="shrink-0 text-hud-strong tabular-nums text-hud-ink">{formatExact(standing.height)}</span>
         </div>
-        <HudMeter label={stageText ? heightText : name} share={raceProgress(standing.height, finishHeight)} />
-        {stageText && (
-          <div className="flex flex-wrap items-center justify-between gap-1">
-            <span className="min-w-0 text-hud-label text-hud-muted">
-              {stageText} · {heightText}
-            </span>
-          </div>
+        {stageText && stages !== undefined ? (
+          <StageSegments
+            stages={stages}
+            built={standing.finished ? stages : Math.max(0, (standing.stage ?? 1) - 1)}
+            label={`${stageText} · ${heightText}`}
+          />
+        ) : (
+          <HudMeter label={name} share={raceProgress(standing.height, finishHeight)} />
         )}
       </div>
     </div>
   );
 };
+
+const StageSegments = ({ stages, built, label }: { stages: number; built: number; label: string }) => (
+  <span role="img" aria-label={label} className="race-steps">
+    {Array.from({ length: stages }, (_, index) => (
+      <span
+        key={index}
+        className="race-step"
+        data-built={index < built || undefined}
+        data-current={index === built || undefined}
+      >
+        ★{formatExact(index + 1)}
+      </span>
+    ))}
+  </span>
+);
