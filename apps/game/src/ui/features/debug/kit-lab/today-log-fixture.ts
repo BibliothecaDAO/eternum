@@ -82,20 +82,3 @@ export const ownerDayLog = (now: number) => {
     ),
   }));
 };
-
-/** Next season's recorded site uses, including a well limited by the army's remaining capacity. */
-export const siteUseDayLog = (now: number) => {
-  const { store } = campBeside();
-  return [{ ShrinePoint: 3 }, { Well: 60 }, { Well: 5 }, { Well: 0 }].map((benefit, index) => {
-    const storyPayload = { explorer_id: 201, coord: { x: 41, y: 12 }, benefit };
-    const presentation = buildStoryEventPresentation(
-      { storyType: "SiteUsed", storyPayload, entityId: 201, ownerAddress: "0x111", viewerAddress: "0x111" } as never,
-      store,
-    );
-    return {
-      id: `site-use-${index}`,
-      at: now - index * 60,
-      text: dayLogLine({ story: "SiteUsed", storyPayload, presentation }, store),
-    };
-  });
-};
