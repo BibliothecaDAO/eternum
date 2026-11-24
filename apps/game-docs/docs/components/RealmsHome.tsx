@@ -1,12 +1,9 @@
 import BRAND from "../brand.gen.json";
-import { APP_ADDRESS } from "../../../game/src/config/app-address";
 import { SEASON_ONE_CALENDAR } from "../utils/season-calendar";
-import { firstLinkOf, gameSections, leavesForKind } from "../utils/sidebar-tree";
+import { firstLinkOf, gameSections } from "../utils/sidebar-tree";
 
 export function RealmsHome() {
   const games = gameSections();
-  const globalLinks = leavesForKind("global");
-  const dataLinks = leavesForKind("data");
 
   return (
     <div className="docs-realms-home">
@@ -26,38 +23,11 @@ export function RealmsHome() {
                 <a href={firstLinkOf(game)} className="docs-btn-primary">
                   Open {game.text} docs
                 </a>
-                <a href={APP_ADDRESS} className="docs-btn-outline">
-                  Play
-                </a>
               </div>
             </div>
           ))}
         </div>
       </section>
-
-      <div className="docs-home-strips">
-        <nav className="docs-home-strip" aria-label="Global">
-          <div className="docs-home-kicker">Global</div>
-          <div className="docs-home-pills">
-            {globalLinks.map((item) => (
-              <a key={item.link} href={item.link}>
-                {item.text}
-              </a>
-            ))}
-          </div>
-        </nav>
-
-        <nav className="docs-home-strip" aria-label="Data">
-          <div className="docs-home-kicker">Data</div>
-          <div className="docs-home-pills">
-            {dataLinks.map((item) => (
-              <a key={item.link} href={item.link}>
-                {item.text}
-              </a>
-            ))}
-          </div>
-        </nav>
-      </div>
     </div>
   );
 }

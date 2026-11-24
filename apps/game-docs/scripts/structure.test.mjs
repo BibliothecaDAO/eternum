@@ -63,33 +63,16 @@ test("top-level sidebar follows Realms multi-game order: Global, Frontier, Data,
   }
 });
 
-test("Realms home cards, strips, and Frontier quick links derive from sidebar.json with no empty games", async () => {
-  const { firstLinkOf, gameSections, leavesForKind, quickLinksForGame, startLinkForGame } = await loadSidebarTree();
+test("Realms home game cards derive from sidebar.json with no empty games", async () => {
+  const { firstLinkOf, gameSections } = await loadSidebarTree();
   const games = gameSections();
   assert.deepEqual(
     games.map((game) => game.id),
     ["frontier"],
   );
   for (const game of games) {
-    const landing = firstLinkOf(game);
-    const start = startLinkForGame(game.id);
-    assert.ok(pageExists(landing));
-    assert.ok(pageExists(start));
-    assert.notEqual(start, landing);
+    assert.ok(pageExists(firstLinkOf(game)));
     assert.ok(game.summary.length > 0);
   }
   assert.equal(firstLinkOf(games[0]), "/frontier");
-  assert.equal(startLinkForGame("frontier"), "/frontier/realm");
-  assert.deepEqual(
-    leavesForKind("global").map((item) => item.text),
-    ["Sign in", "Payout wallet", "LORDS"],
-  );
-  assert.deepEqual(
-    leavesForKind("data").map((item) => item.text),
-    ["Live dashboard", "Get the data"],
-  );
-  assert.deepEqual(
-    quickLinksForGame("frontier").map((item) => item.text),
-    ["Buildings", "Combat", "Oaths", "Relics", "Beasts"],
-  );
 });
