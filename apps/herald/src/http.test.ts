@@ -95,6 +95,7 @@ const httpState: Parameters<typeof createHeraldRequestHandler>[0] = {
       total: 1,
     }),
     reviewSnapshot: async () => snapshot,
+    gameTransactions: async () => ({ total: 0, days: [] }),
   },
   undecodableEventCount: () => 2,
   nodeHealth: () => null,
@@ -338,6 +339,7 @@ it("passes a battle-only history filter to the store before pagination", async (
       }),
       queryEvents,
       reviewSnapshot: async () => snapshot,
+      gameTransactions: async () => ({ total: 0, days: [] }),
     },
   });
   const response = await battleHandler(
@@ -586,6 +588,42 @@ it("serves Frontier history at one confirmed head, caches successes only and kee
   frontierHistory.mockResolvedValueOnce([]);
   expect((await read(new Request(url))).status).toBe(200);
   expect(frontierHistory).toHaveBeenCalledTimes(4);
+});
+
+it("serves a listed game's stats for an hour: its players and realms as the directory counts them, and its transactions", async () => {
+  const realm = (entity: number, owner: string) => ({
+    key: `0x${entity}`,
+    value: { game_id: "7", entity_id: entity, owner, base: { category: 1, level: 1 }, metadata: {} },
+  });
+  const gameTransactions = vi
+    .fn()
+    .mockRejectedValueOnce(new Error("pool closed"))
+    .mockResolvedValue({ total: 3, days: [{ day: "2026-11-24", transactions: 3 }] });
+  const read = createHeraldRequestHandler({
+    ...httpState,
+    fold: {
+      ...httpState.fold,
+      modelRows: (model) =>
+        model === "Structure" ? [realm(1, "0xa"), realm(2, "0xb"), realm(3, "0xa")] : httpState.fold.modelRows(model),
+    },
+    history: { ...httpState.history!, gameTransactions },
+  });
+  const stats = () => read(new Request("http://herald/games/7/stats"));
+  expect((await stats()).status).toBe(503);
+  const response = await stats();
+  expect(response.headers.get("cache-control")).toBe("public, max-age=3600");
+  expect(response.headers.get("access-control-allow-origin")).toBe("*");
+  expect(await response.json()).toEqual({
+    game_id: "7",
+    players: 2,
+    realms: 3,
+    transactions: { total: 3, days: [{ day: "2026-11-24", transactions: 3 }] },
+  });
+  await stats();
+  expect(gameTransactions).toHaveBeenCalledTimes(2);
+  expect(gameTransactions).toHaveBeenCalledWith("7");
+  const unlisted = await read(new Request("http://herald/games/8/stats"));
+  expect([unlisted.status, await unlisted.json()]).toEqual([404, { error: "unknown_game" }]);
 });
 
 it("serves immutable per-day ranks, with explicit unavailable and unclosed responses", async () => {

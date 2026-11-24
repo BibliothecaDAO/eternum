@@ -133,3 +133,9 @@ curl -s -H "authorization: Bearer $OPERATOR_TOKEN" https://<identity origin>/api
 curl -s -H "authorization: Bearer $OPERATOR_TOKEN" https://<identity origin>/api/operator/shop/refunds \
   -d '{"transactionHash":"<the payment>","refundTransaction":"<the transfer that refunded it>"}'
 ```
+
+## Public reads for the docs site
+
+`GET /api/stats/accounts` returns one number, `{ "accounts": n }`: the accounts that signed in and were not deleted,
+cached an hour per colo. It, `/api/directory` and `/api/profiles` are readable from the environment's docs site
+(`docs.origin` in `deploy/first/environments.json`).
