@@ -18,7 +18,7 @@ import {
   Vector3,
 } from "three";
 import { WORLD_HEX_SPACE, type HexSpace } from "../utils/utils";
-import { resolveHighlightLayerPalette } from "./worldmap-interaction-palette";
+import { HIGHLIGHT_LAYER_PALETTES, resolveHighlightLayerPalette } from "./worldmap-interaction-palette";
 import { resolveHighlightViewTuning } from "./worldmap-highlight-view-policy";
 
 const FRONTIER_ACCENT_COLOR = new Color(0x84f1ff);
@@ -58,6 +58,11 @@ interface HighlightEntry {
 }
 
 const hexKey = (descriptor: ActionHighlightDescriptor): string => `${descriptor.hex.col},${descriptor.hex.row}`;
+
+const sameOptionalHex = (
+  left: { col: number; row: number } | null,
+  right: { col: number; row: number } | null,
+): boolean => left === right || (left !== null && right !== null && left.col === right.col && left.row === right.row);
 
 /** Whether a drawn hex would be drawn the same way: same layers, colour and scale. */
 const looksTheSame = (drawn: ActionHighlightDescriptor | undefined, next: ActionHighlightDescriptor): boolean =>
@@ -102,11 +107,13 @@ export class HighlightHexManager {
   private routeLayer: HighlightRenderLayer;
   private endpointLayer: HighlightRenderLayer;
   private frontierLayer: HighlightRenderLayer;
+  private teachLayer: HighlightRenderLayer;
   private cameraView = 2;
   private hexGeometryPool: HexGeometryPool;
   private highlightTimeline: gsap.core.Timeline | null = null;
   private activeLaunchGlows: Array<{ mesh: Mesh; material: MeshBasicMaterial }> = [];
   private drawnDescriptors: ActionHighlightDescriptor[] = [];
+  private teachHex: { col: number; row: number } | null = null;
   private readonly rolloutConfig = {
     stepDelay: 0.018,
     entryDuration: 0.18,
@@ -152,6 +159,16 @@ export class HighlightHexManager {
       opacityPulseScale: 1.8,
       targetScale: 0.74,
       lift: 0.05,
+      toneMapped: false,
+    });
+    this.teachLayer = this.createLayer(hexagonGeometry, {
+      color: 0xffffff,
+      opacity: 0.28,
+      renderOrder: 8,
+      baseOpacity: 0.28,
+      opacityPulseScale: 0,
+      targetScale: 0.96,
+      lift: 0.035,
       toneMapped: false,
     });
 
@@ -212,6 +229,49 @@ export class HighlightHexManager {
       isEntering: (descriptor) => !drawn.has(hexKey(descriptor)),
       launchGlow: drawn.size === 0,
     });
+  }
+
+  setTeachHex(hex: { col: number; row: number } | null): void {
+    const next = hex ? { col: hex.col, row: hex.row } : null;
+    if (sameOptionalHex(this.teachHex, next)) {
+      return;
+    }
+    this.teachHex = next;
+    this.renderTeachHex();
+  }
+
+  private renderTeachHex(): void {
+    if (!this.teachHex) {
+      this.resetLayer(this.teachLayer);
+      return;
+    }
+    const palette = HIGHLIGHT_LAYER_PALETTES.teach;
+    const position = this.space.positionForHex(this.teachHex);
+    const groundY = highestGroundAt(this.terrain, position.x, position.z, PLATE_GROUND_SAMPLES);
+    this.teachLayer.mesh.count = 2;
+
+    tempColor.setHex(palette.routeColor);
+    this.teachLayer.mesh.setColorAt(0, tempColor);
+    this.updateInstanceMatrix(
+      this.teachLayer.mesh,
+      0,
+      new Vector3(position.x, groundY + this.teachLayer.lift, position.z),
+      this.teachLayer.targetScale,
+    );
+
+    tempColor.setHex(palette.endpointColor);
+    this.teachLayer.mesh.setColorAt(1, tempColor);
+    this.updateInstanceMatrix(
+      this.teachLayer.mesh,
+      1,
+      new Vector3(position.x, groundY + this.teachLayer.lift + 0.01, position.z),
+      this.endpointLayer.targetScale,
+    );
+
+    if (this.teachLayer.mesh.instanceColor) {
+      this.teachLayer.mesh.instanceColor.needsUpdate = true;
+    }
+    this.teachLayer.mesh.computeBoundingSphere();
   }
 
   private drawLayers(descriptors: ActionHighlightDescriptor[], entry: HighlightEntry): void {
@@ -362,7 +422,7 @@ export class HighlightHexManager {
   }
 
   private applyPulseToLayers(pulseFactor: number): void {
-    [this.routeLayer, this.endpointLayer, this.frontierLayer].forEach((layer) => {
+    [this.routeLayer, this.endpointLayer, this.frontierLayer, this.teachLayer].forEach((layer) => {
       layer.material.opacity = layer.baseOpacity + pulseFactor * layer.opacityPulseScale;
     });
   }
@@ -387,6 +447,7 @@ export class HighlightHexManager {
     if (this.drawnDescriptors.length > 0) {
       this.drawLayers(this.drawnDescriptors, { isEntering: () => false, launchGlow: false });
     }
+    this.renderTeachHex();
   }
 
   /** What is drawn, for the page's dev report: each layer's count and the centre of every plate on every layer. */
@@ -396,7 +457,8 @@ export class HighlightHexManager {
       routeCount: this.routeLayer.mesh.count,
       endpointCount: this.endpointLayer.mesh.count,
       frontierCount: this.frontierLayer.mesh.count,
-      plates: [this.routeLayer, this.endpointLayer, this.frontierLayer].flatMap((layer) =>
+      teachCount: this.teachLayer.mesh.count,
+      plates: [this.routeLayer, this.endpointLayer, this.frontierLayer, this.teachLayer].flatMap((layer) =>
         drawnPlateCentres(layer.mesh),
       ),
     };
@@ -496,7 +558,7 @@ export class HighlightHexManager {
     this.highlightTimeline = null;
     this.cleanupLaunchGlows();
 
-    [this.routeLayer, this.endpointLayer, this.frontierLayer].forEach((layer) => {
+    [this.routeLayer, this.endpointLayer, this.frontierLayer, this.teachLayer].forEach((layer) => {
       if (layer.mesh.parent) {
         layer.mesh.parent.remove(layer.mesh);
       }

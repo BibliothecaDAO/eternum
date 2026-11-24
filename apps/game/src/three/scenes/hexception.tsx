@@ -582,6 +582,7 @@ export default class HexceptionScene extends HexagonScene {
     const radius = this.newRingRadius;
     this.newRingRadius = null;
     if (radius === null) return this.renderRestingHighlights();
+    this.highlightHexManager.setTeachHex(null);
     const center = { col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1] };
     this.highlightHexManager.highlightHexes(
       this.highlights.filter((hex) => getHexDistance(center, hex) === radius).map(plotHighlight),
@@ -595,7 +596,8 @@ export default class HexceptionScene extends HexagonScene {
   /** At rest the board lights one plot, for the realm's first build; else none. */
   private renderRestingHighlights(): void {
     const plot = useUIStore.getState().firstBuild === null ? null : firstBuildPlot(this.highlights);
-    this.highlightHexManager.highlightHexes(plot ? [plotHighlight(plot)] : []);
+    this.highlightHexManager.highlightHexes([]);
+    this.highlightHexManager.setTeachHex(plot);
   }
 
   private async loadBuildingModel(path: string): Promise<{ model: Group; animations: AnimationClip[] }> {
@@ -1310,6 +1312,7 @@ export default class HexceptionScene extends HexagonScene {
 
   private renderBuildingPlacementHighlights(): void {
     // A pinned ghost marks its one plot; a free one shows every plot it may stand on.
+    this.highlightHexManager.setTeachHex(null);
     const plots = this.pinnedPlot ? [this.pinnedPlot] : this.highlights;
     this.highlightHexManager.highlightHexes(plots.map(plotHighlight));
   }
