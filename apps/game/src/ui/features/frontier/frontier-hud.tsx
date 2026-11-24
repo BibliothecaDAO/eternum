@@ -293,7 +293,7 @@ const FrontierHudBody = ({
           }
         />
       }
-      quest={own ? <DailyQuestChip realm={own} look="orb" /> : undefined}
+      quest={own ? <DailyQuestChip realm={own} /> : undefined}
       places={tablet ? <TabletPlaces {...placesState} /> : undefined}
       spectatorChip={spectating ? <IdentityChip compact /> : undefined}
       fragments={own ? fragmentsHeld : null}
@@ -390,7 +390,7 @@ const FrontierHudBody = ({
   return desktop ? (
     <FrontierDesktop
       clock={<FrontierDayClock rules={rules} onOpenToday={() => setSurface("today")} />}
-      quest={own ? <DailyQuestChip realm={own} look="orb" /> : undefined}
+      quest={own ? <DailyQuestChip realm={own} /> : undefined}
       placeSwitch={placeSwitch}
       banner={<OfflineNotice />}
       realm={

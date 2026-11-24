@@ -41,7 +41,7 @@ const army = (over: Partial<DockArmy> = {}): DockArmy =>
 const render = (
   held: number,
   shown: DockArmy,
-  look: "price" | "reading" | "button" = "price",
+  look: "price" | "button" = "price",
   release: number = nativeReleaseConstants.SEAL_RELEASE,
   selling = true,
 ) => {

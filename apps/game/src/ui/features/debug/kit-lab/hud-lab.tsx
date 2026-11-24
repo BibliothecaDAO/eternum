@@ -81,13 +81,7 @@ import { type DayEnd, DayEndBlock, dayEndItems, DayEndNotice } from "@/ui/featur
 import { type ComponentProps, useEffect, useRef, useState } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
 import { useEventFeedStore } from "@/ui/features/event-feed/event-feed-store";
-import {
-  fragmentsToFill,
-  RefillButton,
-  RefillConfirm,
-  RefillPrice,
-  StaminaRefill,
-} from "@/ui/features/frontier/army/refill";
+import { fragmentsToFill, RefillButton, RefillConfirm, RefillPrice } from "@/ui/features/frontier/army/refill";
 import { ShopCodeField, ShopView } from "@/ui/features/frontier/shop/shop-sheet";
 import { labQuestRulesFact } from "@/lab/game/quest-scenario";
 import { DayPill, DayRing } from "@/ui/features/frontier/hud/day-pill";
@@ -1194,7 +1188,7 @@ export const HudLab = () => {
                 realm={{ name: LAB_REALM_NAME, mark: homeIcon("realm", lab.realm?.level ?? 1) }}
               />
             }
-            quest={<LabDailyQuest look="orb" />}
+            quest={<LabDailyQuest />}
             places={tablet && !lab.visiting ? <TabletPlaces {...labPlaces(lab)} /> : undefined}
             storeCard={lab.storeCard && <StoreCard line={lab.storeCard} onSpend={noop} onBuild={noop} />}
             onOpenRealm={noop}
@@ -1418,7 +1412,7 @@ const LabPicked = ({ lab }: { lab: LabState }) => {
   return (
     <PickedArmy
       army={army}
-      refill={<StaminaRefill stamina={army.stamina!} held={fragments} onRefill={noop} />}
+      refill={<RefillPrice price={fragmentsToFill(army.stamina!)} held={fragments} onRefill={noop} />}
       onDetails={noop}
     />
   );
@@ -1588,10 +1582,10 @@ const LabResearch = () => {
  * The HUD's slots in the lab as the game composes them: on a phone today's bands; on a desktop the HUD every mode
  * shares (FrontierDesktop) on the lab's game, its top bar, rail and minimap the game's own, Frontier's panels the lab's.
  */
-const LabDailyQuest = ({ look = "chip" }: { look?: "chip" | "orb" }) => {
+const LabDailyQuest = () => {
   const { setup } = useGame();
   const realm = setup.store.get("Structure", { game_id: 1, entity_id: 7 });
-  return realm ? <DailyQuestChip realm={realm} look={look} /> : null;
+  return realm ? <DailyQuestChip realm={realm} /> : null;
 };
 
 const labQuestFacts = () => [labQuestRulesFact()];
