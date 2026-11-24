@@ -1895,11 +1895,9 @@ async function buildOnAnOpenPlot({ browser }, building) {
     tapped.push({ offset, sheet });
     if (sheet === "Build") {
       const offers = browser.read(SHEET_BUTTONS);
-      if (building) {
-        const choice = browser.read(sheetButton(`^${building}`));
-        if (!choice) throw new Error(`No ${building} in the Build sheet`);
-        browser.tap(choice.offset);
-      }
+      const choice = browser.read(sheetButton(building ? `^${building}` : ".", "[data-build-grid]"));
+      if (!choice) throw new Error(`No ${building ?? "building"} in the Build sheet`);
+      browser.tap(choice.offset);
       browser.click("Build");
       return { tapped, offers, plot: offset, region: tileRegion(offset) };
     }
@@ -4033,7 +4031,8 @@ const RACE_BOARD_STATE = `JSON.stringify((() => {
   const read = (selector) => {
     const node = document.querySelector(selector);
     const rect = node?.getBoundingClientRect();
-    return { text: node?.textContent ?? "", visible: Boolean(rect && rect.width > 0 && rect.height > 0 && rect.top >= 0 && rect.bottom <= innerHeight) };
+    const pictures = [...(node?.querySelectorAll('[role="img"][aria-label]') ?? [])].map((picture) => picture.getAttribute("aria-label"));
+    return { text: [node?.textContent ?? "", ...pictures].join(" "), visible: Boolean(rect && rect.width > 0 && rect.height > 0 && rect.top >= 0 && rect.bottom <= innerHeight) };
   };
   return { race: read('[data-aspect-race]'), members: read('[data-aspect-members]'), triumphs: read('[data-aspect-triumphs]'),
     invite: read('[aria-label^="Invite a friend"]'), banner: read('[data-daily-quest]'),
