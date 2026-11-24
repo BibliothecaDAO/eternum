@@ -1561,7 +1561,9 @@ it("shows the day-end tutorial once in the last hour with own Aspect and reads n
     expect(dayEndDock).not.toBeNull();
     expect(dayEndDock?.dataset.tutorialAspect).toBe("1");
     const { OPENING_RULES } = await import("./opening/opening-fixtures");
-    expect(dayEndDock?.textContent).toContain(OPENING_WORDS.titles["day-end"]({ ...OPENING_RULES, dayLeftSeconds: 60 }));
+    expect(dayEndDock?.textContent).toContain(
+      OPENING_WORDS.titles["day-end"]({ ...OPENING_RULES, dayLeftSeconds: 60 }),
+    );
 
     await act(async () => host.querySelector<HTMLButtonElement>('button[aria-label="Today"]')!.click());
     await act(async () => new Promise((settled) => setTimeout(settled, 20)));
