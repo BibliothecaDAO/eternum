@@ -62,6 +62,7 @@ export class InteractiveHexManager {
   private visibleHexCoordsCount: number = 0;
   private visibleHexCoordsCapacity: number = 0;
   private surfaceVisible = true;
+  private bareHexes: Set<string> = new Set();
 
   constructor(
     scene: THREE.Scene,
@@ -140,6 +141,12 @@ export class InteractiveHexManager {
 
   public applyHoverPalette(palette: HoverVisualPalette) {
     this.hoverHexManager.applyHoverPalette(palette);
+  }
+
+  public setBandBare(hexCoords: { col: number; row: number }, bare: boolean): void {
+    const key = `${hexCoords.col},${hexCoords.row}`;
+    if (bare) this.bareHexes.add(key);
+    else this.bareHexes.delete(key);
   }
 
   public isHexInteractive(hexCoords: { col: number; row: number }): boolean {
@@ -342,6 +349,7 @@ export class InteractiveHexManager {
     this.visibleHexes.clear();
     this.visibleHexCoordsCount = 0;
     this.hexBuckets.clear();
+    this.bareHexes.clear();
     this.isRenderingAllHexes = false;
 
     // Clear typed array cache
@@ -386,24 +394,14 @@ export class InteractiveHexManager {
     if (this.hexCoordsCount > 0 && this.hexCoordsCount === instanceCount) {
       // Fast path: use typed array cache
       for (let i = 0; i < this.hexCoordsCount; i++) {
-        const col = this.hexCoordsCache[i * 2];
-        const row = this.hexCoordsCache[i * 2 + 1];
-        this.space.positionForHexInto(col, row, this.position);
-        this.dummy.position.set(this.position.x, this.bandY(this.position.x, this.position.z), this.position.z);
-        this.dummy.rotation.x = -Math.PI / 2;
-        this.dummy.updateMatrix();
-        mesh.setMatrixAt(i, this.dummy.matrix);
+        this.placeBand(mesh, i, this.hexCoordsCache[i * 2], this.hexCoordsCache[i * 2 + 1]);
       }
     } else {
       // Fallback: use string parsing (when cache is out of sync)
       let index = 0;
       this.allHexes.forEach((hexString) => {
         const [col, row] = hexString.split(",").map(Number);
-        const position = this.space.positionForHex({ col, row });
-        this.dummy.position.set(position.x, this.bandY(position.x, position.z), position.z);
-        this.dummy.rotation.x = -Math.PI / 2;
-        this.dummy.updateMatrix();
-        mesh.setMatrixAt(index, this.dummy.matrix);
+        this.placeBand(mesh, index, col, row);
         index++;
       });
     }
@@ -444,13 +442,7 @@ export class InteractiveHexManager {
 
     PerformanceMonitor.begin("renderHexes.setMatrices");
     for (let i = 0; i < instanceCount; i++) {
-      const col = this.visibleHexCoordsCache[i * 2];
-      const row = this.visibleHexCoordsCache[i * 2 + 1];
-      this.space.positionForHexInto(col, row, this.position);
-      this.dummy.position.set(this.position.x, this.bandY(this.position.x, this.position.z), this.position.z);
-      this.dummy.rotation.x = -Math.PI / 2;
-      this.dummy.updateMatrix();
-      mesh.setMatrixAt(i, this.dummy.matrix);
+      this.placeBand(mesh, i, this.visibleHexCoordsCache[i * 2], this.visibleHexCoordsCache[i * 2 + 1]);
     }
     PerformanceMonitor.end("renderHexes.setMatrices");
 
@@ -464,6 +456,15 @@ export class InteractiveHexManager {
       PerformanceMonitor.end("renderHexes.computeBounds");
     }
     PerformanceMonitor.end("renderHexes");
+  }
+
+  private placeBand(mesh: THREE.InstancedMesh, index: number, col: number, row: number): void {
+    this.space.positionForHexInto(col, row, this.position);
+    this.dummy.position.set(this.position.x, this.bandY(this.position.x, this.position.z), this.position.z);
+    this.dummy.rotation.x = -Math.PI / 2;
+    this.dummy.scale.setScalar(this.bareHexes.has(`${col},${row}`) ? 0 : 1);
+    this.dummy.updateMatrix();
+    mesh.setMatrixAt(index, this.dummy.matrix);
   }
 
   update(deltaTime: number = 0) {
