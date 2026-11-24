@@ -11,62 +11,76 @@
   gap: theme(spacing.3);
 }
 
-.season-breakdown {
-  display: flex;
-  flex-direction: column;
-  gap: 0.625rem;
+.season-board__tabs {
+  border-bottom: 1px solid var(--app-line);
+  padding: theme(spacing.3) theme(spacing.4);
 }
 
-.season-breakdown__row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  border: 1px solid rgb(var(--app-aspect) / 0.35);
-  border-radius: var(--app-radius-control);
-  background: var(--app-well);
-  padding: 0.75rem 0.875rem;
+.season-board__subhead {
+  border-bottom: 1px solid color-mix(in srgb, var(--app-line) 70%, transparent);
+  padding: theme(spacing.2) theme(spacing.4);
 }
 
-.season-breakdown__row[data-own] {
-  border-color: rgb(var(--app-gold));
-  background: color-mix(in srgb, rgb(var(--app-aspect)) 12%, var(--app-well));
-}
-
-.season-breakdown__lead {
+.season-board__identity {
   display: flex;
   min-width: 0;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.season-board__realm {
+  display: inline-flex;
+  min-width: 0;
   align-items: center;
-  gap: 0.65rem;
+  gap: 0.35rem;
+  padding-left: 2.25rem;
+  font-size: var(--app-text-label);
+  line-height: var(--app-leading-label);
+  color: var(--app-muted);
 }
 
-.season-breakdown__name {
-  font-family: var(--app-face-title);
-  font-size: 1.05rem;
-  letter-spacing: 0.04em;
-  color: rgb(var(--app-aspect));
-}
-
-.season-breakdown__metrics {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.45rem;
-}
-
-.season-triumphs {
+.season-triumphs__grid {
   display: flex;
   flex-direction: column;
-  gap: 0.45rem;
-  border-top: 1px solid var(--app-line);
-  padding-top: 0.875rem;
+  gap: 0.5rem;
 }
 
-.season-triumphs__list {
+.season-triumphs__item {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
+  flex-direction: column;
+  gap: 0.15rem;
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-radius-control);
+  background: var(--app-well);
+  padding: 0.625rem 0.75rem;
+}
+
+.season-triumphs__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.season-triumphs__name {
+  font-family: var(--app-face-strong);
+  font-size: var(--app-text-strong);
+  font-weight: var(--app-weight-strong);
+  color: var(--app-ink);
+}
+
+.season-triumphs__height {
+  font-family: var(--app-face-label);
+  font-size: var(--app-text-label);
+  font-variant-numeric: tabular-nums;
+  color: rgb(var(--app-gold));
+  white-space: nowrap;
+}
+
+.season-triumphs__rule {
+  font-size: var(--app-text-label);
+  line-height: var(--app-leading-label);
+  color: var(--app-muted);
 }
 
 .season-stat {

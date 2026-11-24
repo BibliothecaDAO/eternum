@@ -5,8 +5,9 @@ import {
   type GameRef,
 } from "@bibliothecadao/eternum/shard";
 import type { HeraldAspectRace } from "@bibliothecadao/eternum/game-sync";
+import { aspects, type AspectId } from "@bibliothecadao/types";
 import { realmsAccountAddress } from "@realms-world/identity/account";
-import { hashKey, useQuery, useQueryClient } from "@tanstack/react-query";
+import { hashKey, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback } from "react";
 
 import { useIdentitySession, useIdentitySessionStore } from "@/hooks/context/identity-session";
@@ -206,20 +207,28 @@ export const useLeaderboard = (game: GameRef | DirectoryGame | null) => {
   });
 };
 
-const ROSTER_TOP = 10;
+export const ROSTER_TOP = 10;
 
-export const useAspectRoster = (game: DirectoryGame, aspect: number) => {
+const aspectRosterQueryOptions = (game: DirectoryGame, aspect: AspectId) => {
   const ref = gameRefOf(game);
-  return useQuery({
-    queryKey: ["shell", "aspect-roster", ref.chainId, ref.gameId, aspect],
+  return {
+    queryKey: ["shell", "aspect-roster", ref.chainId, ref.gameId, aspect] as const,
     queryFn: async () =>
       fetchHeraldAspectRoster(await requireOpenShard(ref.chainId), ref.gameId, aspect, {
         offset: 0,
         limit: ROSTER_TOP,
       }),
     refetchInterval: 30_000,
-  });
+  };
 };
+
+export const useAspectRoster = (game: DirectoryGame, aspect: AspectId) =>
+  useQuery(aspectRosterQueryOptions(game, aspect));
+
+export const useAllAspectRosters = (game: DirectoryGame) =>
+  useQueries({
+    queries: aspects.map(({ id }) => aspectRosterQueryOptions(game, id)),
+  });
 
 const soonest = (games: readonly DirectoryGame[]): DirectoryGame | undefined =>
   games.toSorted((a, b) => a.clock.start_main_at - b.clock.start_main_at)[0];

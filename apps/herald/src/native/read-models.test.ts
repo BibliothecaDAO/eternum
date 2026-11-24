@@ -457,6 +457,7 @@ describe("native directory", () => {
       finish_height: 10000,
       season_days: 30,
       heights: { 1: 6400, 2: 7850, 3: 0, 4: 0 },
+      triumph_percents: { 1: 120, 2: 120, 3: 80, 4: 120 },
     });
     expect(race(2)).toBeNull();
 
@@ -467,6 +468,7 @@ describe("native directory", () => {
       finish_height: 10000,
       season_days: 30,
       heights: { 1: 6400, 2: 7850, 3: 4100, 4: 0 },
+      triumph_percents: { 1: 120, 2: 120, 3: 80, 4: 120 },
     });
 
     const raceRevision = fold.directoryRevision();

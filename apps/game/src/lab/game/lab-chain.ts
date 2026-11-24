@@ -12,16 +12,24 @@ import {
   ordinaryHash,
   questBonusPercent,
   raceFinishHeight,
+  triumphPercentsOf,
   type PlayFrame,
 } from "@bibliothecadao/eternum/game-client";
 import {
   deriveGameSyncScope,
+  type HeraldAspectRace,
   type HeraldFrontierLeaderboardEntry,
   type HeraldHistoryEvent,
   rowInGameSyncScope,
   scopeInputKeys,
 } from "@bibliothecadao/eternum/game-sync";
-import { aspects, seasonGameName, type NativeWorldBindings, type WorldChatMessage } from "@bibliothecadao/types";
+import {
+  aspects,
+  seasonGameName,
+  type AspectId,
+  type NativeWorldBindings,
+  type WorldChatMessage,
+} from "@bibliothecadao/types";
 import type { AccountInterface, Call } from "starknet";
 
 import { LAB_CHAIN_ID } from "./lab-shard";
@@ -336,7 +344,7 @@ const answerDirectory = (
         ]),
       );
     },
-    get aspect_race() {
+    get aspect_race(): HeraldAspectRace | null {
       const race = chain.get("RaceRules", { game_id: LAB_GAME.gameId });
       if (!race) return null;
       return {
@@ -347,7 +355,8 @@ const answerDirectory = (
             id,
             chain.get("AspectHyperstructure", { game_id: LAB_GAME.gameId, aspect: id })?.height ?? 0,
           ]),
-        ),
+        ) as Record<AspectId, number>,
+        triumph_percents: triumphPercentsOf(race),
       };
     },
     get quest_bonus_percent() {
