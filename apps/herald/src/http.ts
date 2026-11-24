@@ -312,22 +312,27 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
       return snapshot ? jsonResponse(snapshot) : jsonResponse({ error: "review_snapshot_not_frozen" }, 404);
     }
 
-    try {
-      const models = requestedModels(url);
-      const snapshot = state.fold.snapshot(
-        route.params[0],
-        state.confirmedBlock(),
-        models,
-        url.searchParams.get("actor") ?? undefined,
-        url.searchParams.get("owner") ?? undefined,
-      );
-      return jsonResponse(selectModels(snapshot, models));
-    } catch (error) {
-      if (error instanceof GameFinalizedError)
-        return jsonResponse({ error: "game_finalized", game_id: error.gameId, message: error.message }, 409);
-      const message = error instanceof Error ? error.message : String(error);
-      return jsonResponse({ error: message }, 400);
+    if (route.name === "snapshot") {
+      try {
+        const models = requestedModels(url);
+        const snapshot = state.fold.snapshot(
+          route.params[0],
+          state.confirmedBlock(),
+          models,
+          url.searchParams.get("actor") ?? undefined,
+          url.searchParams.get("owner") ?? undefined,
+        );
+        return jsonResponse(selectModels(snapshot, models));
+      } catch (error) {
+        if (error instanceof GameFinalizedError)
+          return jsonResponse({ error: "game_finalized", game_id: error.gameId, message: error.message }, 409);
+        const message = error instanceof Error ? error.message : String(error);
+        return jsonResponse({ error: message }, 400);
+      }
     }
+
+    const unreachable: never = route.name;
+    throw new Error(`Unhandled Herald route: ${unreachable}`);
   };
   return async (request) => {
     const response = await answer(request);
