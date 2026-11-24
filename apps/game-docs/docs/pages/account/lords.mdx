@@ -3,6 +3,7 @@ title: LORDS
 description: How LORDS works in Frontier
 ---
 
+import { FRONTIER } from "@/utils/frontier";
 import { PAYOUT_WALLET } from "@/utils/payout-wallet";
 
 # LORDS
@@ -15,13 +16,11 @@ LORDS is the Realms token. Frontier pays season rewards in LORDS.
 
 ## In Frontier
 
-- **Season rewards** pay LORDS to your linked payout wallet when the season ends, based on your Aspect's race standing
-  and the Glory you earned in the Deep.
-- **Shop** lets you buy Fragments with LORDS (or swap ETH, STRK or USDC into LORDS through AVNU) to refill stamina or
-  redraw Oaths.
-- **Claim deadline:** Payments are automatic once the season's results are posted and checked. If no payout wallet is
-  linked, link one within {PAYOUT_WALLET.claimWindowDays} days of posting; unpaid rewards after that return to the
-  treasury ([Payout wallet](/account/payout-wallet)).
+- After the season ends and the results are posted and checked, LORDS rewards pay out to your linked payout wallet based
+  on your Aspect's race standing and the Glory you earned in the Deep. If you have no payout wallet linked yet, link one
+  within {PAYOUT_WALLET.claimWindowDays} days after the results are posted or unpaid rewards return to the treasury
+  ([Payout wallet](/account/payout-wallet)).
+- {FRONTIER.shop.lordsNote} See [Shop and referrals](/frontier/shop-and-referrals).
 
 ## Terms
 

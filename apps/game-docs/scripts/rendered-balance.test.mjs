@@ -5,10 +5,12 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { after, test } from "node:test";
 import {
+  expectedPageIcons,
   forbiddenModePages,
   frontierGuardPhrases,
   frontierPhrases,
   loadBalanceSources,
+  missingIcons,
   missingPhrases,
   pageLine,
 } from "./check-rendered-balance.mjs";
@@ -17,19 +19,24 @@ import { LAYER_NAMES } from "@bibliothecadao/types";
 const dist = fileURLToPath(new URL("../dist", import.meta.url));
 const scratch = mkdtempSync(join(tmpdir(), "rendered-balance-"));
 after(() => rmSync(scratch, { recursive: true, force: true }));
+const sources = await loadBalanceSources();
 const {
   frontierPreset: current,
   frontierConfig,
   historicalFrontierPreset: historical,
+  nativeFragments,
+  nativeOaths,
+  nativeRace,
   nativeRules,
-} = await loadBalanceSources();
-const pages = frontierPhrases(frontierConfig, current, nativeRules);
+} = sources;
+const pages = frontierPhrases(frontierConfig, current, nativeRules, nativeFragments, nativeOaths, nativeRace, sources);
 const n = (value) => value.toLocaleString("en-US");
 const range = (lower, upper) => `${n(lower)}–${n(upper)}`;
 
 test("built current guides match the active preset, including its balance overrides", () => {
   assert.notEqual(current.id, historical.id, "current guides must not select the historical preset");
   assert.deepEqual(missingPhrases(dist, pages), []);
+  assert.deepEqual(missingIcons(dist, expectedPageIcons(sources)), []);
 });
 
 test("the expedition guide gives reveal pay and guards for the personal depths only, never the shared Deep", () => {

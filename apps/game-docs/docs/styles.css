@@ -761,3 +761,50 @@ article.vocs_Content,
   font-size: 15px;
   line-height: 22px;
 }
+
+.docs-icon {
+  display: inline-block;
+  vertical-align: middle;
+  object-fit: contain;
+  margin-right: 6px;
+}
+
+.docs-snippet {
+  position: relative;
+  margin: 1rem 0;
+  border: 1px solid var(--realm-border-etched);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--ground) 92%, transparent);
+}
+
+.docs-snippet pre {
+  margin: 0;
+  padding: 1rem 4.5rem 1rem 1rem;
+  overflow-x: auto;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--cream);
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.docs-snippet-copy {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
+  border: 1px solid color-mix(in srgb, var(--gold2) 32%, transparent);
+  background: var(--plate2);
+  color: var(--gold2);
+  font-family: var(--docs-font-body);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.docs-snippet-copy:hover {
+  background: var(--gold2);
+  color: var(--ink);
+}

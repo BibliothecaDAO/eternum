@@ -8,45 +8,47 @@ import { PAYOUT_WALLET } from "@/utils/payout-wallet";
 
 # Payout wallet
 
-Your payout wallet is the Starknet wallet linked to your Realms account. Frontier needs none to play. You need one to:
+Your payout wallet is the Starknet wallet linked to your Realms account. You can play Frontier without one. Link a
+wallet when you want to:
 
 - receive your Frontier season rewards in LORDS when the season ends;
-- create your Frontier home with a Realm your wallet holds, for its daily quest bonus and its Order's Aspect;
+- create your Frontier realm with a **Realm NFT** held in your wallet, for its daily quest bonus and its Order's Aspect;
 - buy Fragments in the Shop.
 
 ## Your Realms wallet
 
 Every account can have a Realms wallet, made in one tap. After you choose your name, and at each visit until you have a
-payout wallet, the game offers **Create my wallet**: your device makes a passkey, opened with your face, fingerprint or
-screen lock, and that passkey owns the wallet. It becomes your payout wallet at once. If you signed in more than ten
-minutes ago, you also type the six-digit code sent to your email, as for any wallet change.
+payout wallet, the game shows **Create my wallet**. Your device makes a passkey unlocked with your face, fingerprint, or
+screen lock, and that passkey owns the wallet. It becomes your payout wallet immediately. If you signed in more than ten
+minutes ago, you also type the six-digit code sent to your email. Every wallet change asks for this code.
 
 There is no seed phrase. The passkey syncs to your other devices through your phone's or computer's password manager
-(iCloud Keychain, Google Password Manager). Realms co-signs as the wallet's guardian but can never move your LORDS on
-its own: every send needs your passkey.
+(iCloud Keychain, Google Password Manager). Realms co-signs as the wallet's guardian but cannot move your LORDS on its
+own. Every send needs your passkey.
 
-Your LORDS show in **Settings**, **Payout wallet**, with **Send**: paste an address (an exchange's deposit address, or
-your own wallet), choose the amount, **Review**, then **Confirm with your passkey**. Each send pays its network fee in
-LORDS from the wallet, shown before you confirm: never more than the most shown, and what it does not use comes back.
-**Max** sends everything but that fee.
+Your LORDS show in **Settings**, **Payout wallet**, with **Send**. Paste an address (an exchange deposit address or your
+own wallet), choose the amount, tap **Review**, then **Confirm with your passkey**. Each send pays its network fee in
+LORDS from the wallet, shown before you confirm. You never pay more than the shown maximum, and the unused part comes
+back. **Max** sends everything except that fee.
 
 ### If you lose your passkey
 
 Open **Settings**, **Payout wallet**, **Lost your passkey?** on any device you can sign in on. Make a new passkey there
-and type the code sent to your email. The recovery starts at once and we email you about it; after 7 days your new
-passkey owns the Realms wallet, with everything in it, at the same address.
+and type the code sent to your email. Recovery starts immediately and sends you an email. After 7 days, your new passkey
+owns the Realms wallet and everything in it at the same address.
 
-Until then, the passkey you have now can stop it: the wallet shows **Recovery under way** with the day it ends, and
-**Not you? Cancel it** confirms with that passkey. So if someone else gets into your email, you have a week to cancel.
+Until then, your current passkey can stop recovery. The wallet shows **Recovery under way** with the day it ends. Tap
+**Not you? Cancel it** and confirm with your current passkey to stop it. If someone gets into your email, you have 7
+days to cancel.
 
 ## Linking a wallet you have
 
-Open **Settings**, **Payout wallet**. Every **Link wallet** in the game (your LORDS in Frontier, your card on You) takes
-you there and brings you back once it is linked.
+Open **Settings**, **Payout wallet**. Every **Link wallet** button in the game (your LORDS in Frontier, your card on the
+You tab) takes you there and brings you back once it is linked.
 
-**I have a wallet:** Ready (formerly Argent), Braavos or Controller. Linking takes two steps: the wallet signs a
-message, then you type a six-digit code sent to your account's email. Your Realms wallet keeps what it holds, and its
-Send, after you link another.
+Tap **I have a wallet** to connect Ready (formerly Argent), Braavos, or Controller. Linking takes two steps. First your
+wallet signs a message, then you type a six-digit code sent to your account's email. Your Realms wallet keeps what it
+holds, and its Send button stays available, after you link another wallet.
 
 <Shot
   frame="panel"
@@ -56,15 +58,15 @@ Send, after you link another.
 
 ## Replacing or unlinking
 
-**Replace** links another wallet the same way. **Unlink** takes the emailed code alone, so you can unlink a wallet you
+**Replace** links another wallet the same way. **Unlink** needs only the emailed code, so you can unlink a wallet you
 have lost. Nothing pays out until a wallet is linked.
 
-Your first wallet is paid at once. After you replace it, or unlink it and link another, the first Frontier payout to the
-new wallet waits {PAYOUT_WALLET.changeHoldHours} hours. A second, independent signer checks every Frontier payout, and
-the wait gives you time to notice a change you did not make. Payouts to a wallet you keep never wait.
+Your first wallet is paid immediately. After you replace it, or unlink it and link another, the first Frontier payout to
+the new wallet waits {PAYOUT_WALLET.changeHoldHours} hours. A second, independent signer checks every Frontier payout,
+and the wait gives you time to notice a change you did not make. Payouts to a wallet you keep do not wait.
 
 ## Network fees
 
-From your Realms wallet, the fee is paid in LORDS, inside the same transaction. From a wallet you linked, buying
+From your Realms wallet, the fee is paid in LORDS inside the same transaction. From a wallet you linked, buying
 Fragments is a transaction your wallet signs, and it pays its network fee in STRK. With no STRK for the fee, the page
-offers **Swap on AVNU**.
+shows **Swap on AVNU**.

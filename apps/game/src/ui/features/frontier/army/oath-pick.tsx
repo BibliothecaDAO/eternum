@@ -34,7 +34,8 @@ import {
   type TroopType,
 } from "@bibliothecadao/types";
 import { useFragmentsHeld } from "../value/fragments";
-import { usePickEffectBase, type PickEffectBase } from "../pick-effect-text";
+import type { PickEffectBase } from "../pick-effect-format";
+import { usePickEffectBase } from "../pick-effect-text";
 import { oathEffectDescription, oathName, oathStatBadge } from "./oath-details";
 import { OathSlotPips } from "./oath-slots";
 

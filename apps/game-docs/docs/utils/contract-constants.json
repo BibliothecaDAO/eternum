@@ -10,5 +10,47 @@
     "file": "day_schedule.cairo",
     "source": "pub const UNITS_PER_BAG: u64 = 20;",
     "value": 20
+  },
+  {
+    "key": "relicSecondsPerRank",
+    "file": "balance/rules.cairo",
+    "source": "pub const RELIC_SECONDS_PER_RANK: u32 = 1800;",
+    "value": 1800
+  },
+  {
+    "key": "armyRelicSlots",
+    "file": "army_relics.cairo",
+    "source": "for index in 0_u8..3 {",
+    "value": 3
+  },
+  {
+    "key": "castleLaborStep",
+    "file": "logic/resources.cairo",
+    "source": "rate *= 2;",
+    "value": 2
+  },
+  {
+    "key": "questLevelStep",
+    "file": "quests.cairo",
+    "source": "multiplier *= 2;",
+    "value": 2
+  },
+  {
+    "key": "campGuardDivisor",
+    "file": "expeditions.cairo",
+    "source": "Some(ResourceAmount { resource_type: LABOR, amount: site.initial_guard_count / 2 })",
+    "value": 2
+  },
+  {
+    "key": "riftGuardMultiplier",
+    "file": "expeditions.cairo",
+    "source": "Some(ResourceAmount { resource_type: ESSENCE, amount: site.initial_guard_count * 3 })",
+    "value": 3
+  },
+  {
+    "key": "oathDrawCount",
+    "file": "oaths.cairo",
+    "source": "for index in 0_u8..3 {",
+    "value": 3
   }
 ]

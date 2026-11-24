@@ -18,6 +18,7 @@ import type { GameSnapshot } from "./types";
 import type { HistoryQuery, HistoryStore } from "./history-store";
 import type { ShardManifest } from "@bibliothecadao/eternum/game-sync";
 import { isDevShardChain } from "@realms-world/value-ledger/dev-shard";
+import { HISTORY_PAGE_DEFAULT, HISTORY_PAGE_LIMIT, ROSTER_PAGE_DEFAULT, ROSTER_PAGE_LIMIT } from "./http-limits";
 
 interface SnapshotSource extends GameDirectorySource {
   /** A site's row by its entity, outside any player's scope: the Feed names a fight's beast far from the player. */
@@ -55,10 +56,6 @@ interface HeraldHttpState {
   /** The node's last memory sample (node-health.ts); null while none can be read. */
   nodeHealth: () => NodeHealth | null;
 }
-
-const HISTORY_PAGE_LIMIT = 500;
-const ROSTER_PAGE_LIMIT = 100;
-const ROSTER_PAGE_DEFAULT = 50;
 
 const PUBLIC_READ_HEADERS = {
   "access-control-allow-methods": "GET, OPTIONS",
@@ -115,7 +112,7 @@ const paginationValue = (
 const historyQuery = (url: URL, gameId: string): HistoryQuery => ({
   entityId: url.searchParams.get("entity_id") ?? undefined,
   gameId,
-  limit: paginationValue(url, "limit", 100),
+  limit: paginationValue(url, "limit", HISTORY_PAGE_DEFAULT),
   model: url.searchParams.get("model") ?? undefined,
   story: url.searchParams.get("story") ?? undefined,
   offset: paginationValue(url, "offset", 0),

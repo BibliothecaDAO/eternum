@@ -9,9 +9,9 @@ import {
   damageTakenEffect,
   fromToEffect,
   percentFromTo,
-  readPickEffectBase,
   staminaRecoveryEffect,
-} from "./pick-effect-text";
+} from "./pick-effect-format";
+import { readPickEffectBase } from "./pick-effect-text";
 
 describe("shared pick-effect text builder", () => {
   it("formats contextual from-to and shared stat lines", () => {

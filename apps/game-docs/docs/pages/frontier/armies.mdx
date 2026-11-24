@@ -1,19 +1,30 @@
 ---
 title: Armies
-description: Deploying, stamina, merging and fights
+description: Troop kinds, deploying, stamina, Logistics, merging, and combat rules
 ---
 
 import { FRONTIER } from "@/utils/frontier";
+import { GameIcon } from "@/components/GameIcon";
 import { Shot } from "@/components/Media";
 
 # Armies
 
+## Troop kinds
+
+Frontier has three troop kinds:
+
+| Troop                                                            | Trained at                                                 | Weapon | Role                                                                                                                                                                                       |
+| ---------------------------------------------------------------- | ---------------------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| <GameIcon name="knight-t1" /> {FRONTIER.troops.knight}           | {FRONTIER.names.barracks}                                  | Blade  | Full damage. Takes {FRONTIER.attributes.knightGuardReduction} less damage when guarding a Deep site.                                                                                       |
+| <GameIcon name="crossbowman-t1" /> {FRONTIER.troops.crossbowman} | {FRONTIER.names.range} ({FRONTIER.rangeOpens})             | Bow    | Strikes first against blades. Deals {FRONTIER.attributes.lightDamageReduction} less damage than {FRONTIER.troops.knight}.                                                                  |
+| <GameIcon name="paladin-t1" /> {FRONTIER.troops.scout}           | {FRONTIER.names.scoutsLodge} ({FRONTIER.scoutsLodgeOpens}) | Bow    | Reveals tiles for {FRONTIER.stamina.scoutReveal} stamina instead of {FRONTIER.stamina.reveal}. Deals {FRONTIER.attributes.lightDamageReduction} less damage than {FRONTIER.troops.knight}. |
+
 ## Deploying
 
-Barracks train Knights at your realm. From City, Scouts’ lodges train Scouts. Choose a troop kind in **Deploy** to put
-them on a tile beside the realm as an army, in one of its army slots: {FRONTIER.realm.armies[0]} for a new realm, up to
-{FRONTIER.realm.armies[3]} as its castle rises. Each troop deployed costs {FRONTIER.realm.deployWheat} wheat, and each
-castle level deploys more troops at once ([Your realm](/frontier/realm#the-castle)).
+Open **Deploy** to place troops on a tile beside your realm in an open army slot: {FRONTIER.realm.armies[0]} slots at
+{FRONTIER.realm.castleLevelInline[0]}, up to {FRONTIER.realm.armies[3]} at {FRONTIER.realm.castleLevelInline[3]}. Each
+troop costs {FRONTIER.realm.deployWheat} wheat to deploy (reduced by {FRONTIER.realm.rationStep} per Rations rank), and
+each castle level raises the max troops per deploy ([Your realm](/frontier/realm#the-castle)).
 
 <Shot
   name="frontier/deploy"
@@ -24,45 +35,49 @@ castle level deploys more troops at once ([Your realm](/frontier/realm#the-castl
 ## Stamina
 
 An army holds {FRONTIER.stamina.max} stamina and recovers {FRONTIER.stamina.perTick} every
-{FRONTIER.stamina.tickMinutes}{" "} minutes, so an empty bar fills in {FRONTIER.stamina.fullHours} hours. Revealing a
-tile costs {FRONTIER.stamina.reveal} for Knights and {FRONTIER.stamina.scoutReveal} for Scouts, a step over known ground
-{FRONTIER.stamina.step}, and an attack needs {FRONTIER.stamina.attack}. Every step and every reveal also costs
-{FRONTIER.stamina.wheatPerTroop} wheat per troop, so a big army needs farms behind it.
+{FRONTIER.stamina.tickMinutes} minutes, so an empty bar fills in {FRONTIER.stamina.fullHours} hours. Revealing a tile
+costs {FRONTIER.stamina.reveal} for {FRONTIER.troops.knight} and {FRONTIER.stamina.scoutReveal} for
+{FRONTIER.troops.scout}, a step on an explored tile costs {FRONTIER.stamina.step}, and an attack needs
+{FRONTIER.stamina.attack}. Every step and every reveal also costs {FRONTIER.stamina.wheatPerTroop} wheat per troop, so a
+large army needs many farms.
 
-Logistics training raises an army's maximum by up to {FRONTIER.stamina.logisticsMax}.
+- <GameIcon name={FRONTIER.buildingIcons.supplyYard} /> A {FRONTIER.names.supplyYard} gives new armies Logistics rank I,
+  and research raises it to rank V. Each rank adds {FRONTIER.stamina.logisticsStep} max stamina, adding
+  {FRONTIER.stamina.logisticsBonus} bonus stamina at rank V for {FRONTIER.stamina.logisticsMax} max stamina total.
+- <GameIcon name="well" /> Visiting a Well refills {FRONTIER.stamina.well} (or {FRONTIER.oaths.reflectionWell} with the
+  Reflection Oath).
+- <GameIcon name="fragment" /> {FRONTIER.shop.staminaRule} See [Shop and referrals](/frontier/shop-and-referrals) for
+  current Shop status.
 
 ### Stamina stays with the slot
 
-Stamina belongs to the army slot, not to the army in it. Deploy picks your first open slot; choose another before
-deploying if you like.
+Stamina stays on the army slot rather than on the troops inside it. Deploy picks your first open slot, or you can choose
+another before deploying.
 
-- A slot's first army of the day starts with a full bar: {FRONTIER.stamina.max} stamina, plus what your Supply yard's
-  Logistics adds.
-- When an army dies, is disbanded or merges into another, its slot keeps the stamina it had left, and that stamina keeps
-  recovering.
-- The next army deployed into that slot starts with that stamina, not a full bar. Replacing a tired army never brings a
-  fresh one.
-- The new army's own maximum still caps it. Its Logistics rank starts from your realm's training; only the stamina
-  carries over.
-- When the day ends, every slot is cleared, so each slot's first army tomorrow starts full again.
+- A slot's first army of the day starts with a full bar ({FRONTIER.stamina.max} stamina, plus your Logistics bonus).
+- When an army dies, disbands, or merges into another, its slot keeps the stamina it had left and keeps recovering.
+- The next army deployed into that slot starts with that remaining stamina.
+- When the day ends, every slot resets so tomorrow's first army starts full again.
 
-## Merging and disbanding
+## Merging, reinforcing, and disbanding
 
-Two of your armies standing side by side can merge, keeping the lower of their two staminas. The army you merge into is
-the one that stays; when the other has stronger Logistics training, Frontier asks once more before it is lost. An army
-you disband loses its troops; Frontier asks first.
-
-## Logistics training
-
-A Supply yard grants new armies Logistics rank I. Research raises their starting rank through V. A full merge keeps the
-receiving army's Logistics training.
+Two armies of the same troop kind standing side by side can merge, keeping the lower stamina and the receiving army's
+Logistics rank. You can also reinforce an army beside your realm or beside any camp your realm cleared today (supply
+post) on the {FRONTIER.layers.personalOr} using troops and wheat from home. Disbanding an army deletes its troops after
+you confirm.
 
 ## Fights
 
-No dice are rolled in Frontier, so a fight's forecast is its result. Before you attack, a site's card shows each side's
-troops before and after, and what clearing it pays. The ground does not matter: no biome helps or hurts either side.
+Combat uses no dice, so every fight forecast is exact. Before you attack, the fight card shows both sides' troops before
+and after, plus the reward. Terrain gives no combat bonus or penalty.
 
-Every enemy shows a blade or a bow. Bows hit first in every attack; only the surviving blades hit back. Two blades or
-two bows strike together. Crossbows and Scouts deal {FRONTIER.attributes.lightDamageReduction} less damage than Knights.
-A Knight army holding a guard slot takes {FRONTIER.attributes.knightGuardReduction} less damage; a blade beast has no
-such protection.
+Every enemy carries a **blade** or a **bow**.
+
+- Bows strike first against blades, and only surviving blades hit back.
+- Two blades or two bows strike at the same time.
+- {FRONTIER.troops.crossbowman} and {FRONTIER.troops.scout} deal {FRONTIER.attributes.lightDamageReduction} less damage
+  than {FRONTIER.troops.knight}.
+- {FRONTIER.troops.knight} holding a Deep guard slot take {FRONTIER.attributes.knightGuardReduction} less damage, and
+  blade beasts do not get this bonus.
+
+Power up your armies further with [Oaths and relics](/frontier/oaths-and-relics).

@@ -8,3 +8,5 @@ export const CONTRACT = Object.fromEntries(constants.map(({ key, value }) => [ke
   (typeof constants)[number]["key"],
   number
 >;
+
+export const depthRewardPercent = (depth: number) => Math.round(((2 + depth) / 2) * 100);

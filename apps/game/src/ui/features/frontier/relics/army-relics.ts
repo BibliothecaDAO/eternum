@@ -1,6 +1,7 @@
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 
-import { RELIC_KINDS, type ArmyRelic, type RelicKind } from "./relic-catalog";
+import { RELIC_KINDS, type RelicKind } from "@/ui/design-system/domain-icon-meaning";
+import type { ArmyRelic } from "./relic-catalog";
 
 /** The facts an army's relics are read from: its three slots, and each kind's running effect. */
 export const ARMY_RELIC_MODELS = ["ArmyRelics", "ArmyRelicEffect"] as const;

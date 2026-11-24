@@ -7,8 +7,8 @@ import {
   formatOrdinal,
   formatPercent,
 } from "@bibliothecadao/types";
-import type { IconMeaning } from "@/ui/design-system/icon";
-import { PICK_EFFECT_WORDS } from "@/ui/design-system/kit/words";
+import type { IconMeaning } from "../../../design-system/icon-meaning";
+import { PICK_EFFECT_WORDS } from "../../../design-system/kit/words";
 
 import {
   damageDealtEffect,
@@ -17,7 +17,7 @@ import {
   percentFromTo,
   staminaRecoveryEffect,
   type PickEffectBase,
-} from "../pick-effect-text";
+} from "../pick-effect-format";
 
 interface OathStatBadge {
   hero: string;

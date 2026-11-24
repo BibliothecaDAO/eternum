@@ -15,7 +15,8 @@ import { toast } from "@/ui/features/event-feed/notify";
 import { usePartShown } from "../opening/opening-context";
 import { usePickEffectBase } from "../pick-effect-text";
 import { ARMY_RELIC_MODELS, hasArmyRelics, readArmyRelics } from "./army-relics";
-import { relicEffect, relicIcon, relicId, relicName, type ArmyRelic } from "./relic-catalog";
+import { relicMeaning } from "@/ui/design-system/domain-icon-meaning";
+import { relicEffect, relicId, relicName, type ArmyRelic } from "./relic-catalog";
 
 /**
  * An army's relics on its panel (U4, docs/plans/frontier-season-1.md): the relics running, each with its time left, then
@@ -51,7 +52,7 @@ export const ArmyRelicSlots = ({ explorerId }: { explorerId: number }) => {
       {relics.running.length > 0 && (
         <div className="flex flex-wrap gap-2" data-relics-running>
           {relics.running.map((relic) => (
-            <HudChip key={relic.kind} icons={[relicIcon(relic.kind)]}>
+            <HudChip key={relic.kind} icons={[relicMeaning(relic.kind)]}>
               {RELIC_WORDS.runs(relicName(relic), formatDuration(relic.secondsLeft, { days: false }))}
             </HudChip>
           ))}
@@ -64,7 +65,7 @@ export const ArmyRelicSlots = ({ explorerId }: { explorerId: number }) => {
         return (
           <HudRow
             key={slot}
-            lead={<Icon name={relicIcon(relic.kind)} size={22} />}
+            lead={<Icon name={relicMeaning(relic.kind)} size={22} />}
             title={relicName(relic)}
             detail={
               replaces

@@ -2,7 +2,7 @@ import { expect, it } from "vitest";
 import { nativeOathConstants as oaths } from "@bibliothecadao/eternum/game-client";
 import { orders, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import release from "../../../../../../../contracts/l3/world-native/schema/release-definition.json";
-import type { PickEffectBase } from "../pick-effect-text";
+import type { PickEffectBase } from "../pick-effect-format";
 import { oathEffectDescription, oathName, oathStatBadge } from "./oath-details";
 
 const SEASON_ONE_BASE: PickEffectBase = {

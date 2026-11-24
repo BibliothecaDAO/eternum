@@ -95,10 +95,19 @@ export default defineConfig({
       text: "Frontier",
       items: [
         { text: "Frontier", link: "/frontier" },
+        { text: "Aspects and the race", link: "/frontier/aspects" },
         { text: "Your realm", link: "/frontier/realm" },
         { text: "Armies", link: "/frontier/armies" },
         { text: "The expedition", link: "/frontier/expedition" },
+        { text: "The Deep", link: "/frontier/deep" },
+        { text: "Oaths and relics", link: "/frontier/oaths-and-relics" },
+        { text: "Quests and banes", link: "/frontier/quests-and-banes" },
+        { text: "Shop and referrals", link: "/frontier/shop-and-referrals" },
       ],
+    },
+    {
+      text: "Data",
+      items: [{ text: "Get the data", link: "/data/get-the-data" }],
     },
     {
       text: "Developers",
