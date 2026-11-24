@@ -4,21 +4,11 @@ import type { IconMeaning } from "@/ui/design-system/icon-meaning";
 import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { HudButton, HudChip, HudLoading, HudMeter, HudPanel } from "@/ui/design-system/kit/hud-elements";
 import { DAY_BANNER_WORDS as WORDS } from "@/ui/design-system/kit/words";
-import { formatShort, ResourcesIds, type AspectId } from "@bibliothecadao/types";
+import { formatShort, ResourcesIds } from "@bibliothecadao/types";
 import { useState } from "react";
+import type { DayHead, DayMembers } from "./day-bane-face";
 
-type Tone = "good" | "bad" | "warn";
 export type DayLayout = "desktop" | "phone";
-
-export interface DayHead {
-  tone: Tone;
-  icon: IconMeaning;
-  eyebrow: string;
-  name: string;
-  rule: string;
-  aspectId?: AspectId;
-  crests?: readonly IconMeaning[];
-}
 
 export interface DayQuestFace {
   icon: IconMeaning;
@@ -33,8 +23,6 @@ export interface DayQuestReading {
   reward: { labor: number; essence: number };
   state: "running" | "done" | "collected" | "again";
 }
-
-export type DayMembers = { completed: number; required: number } | { ended: string; endedShort: string };
 
 export interface DayBannerProps {
   layout: DayLayout;

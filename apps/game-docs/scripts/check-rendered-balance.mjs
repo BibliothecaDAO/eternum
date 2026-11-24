@@ -86,7 +86,6 @@ export const frontierPhrases = (
   nativeRace,
   {
     aspectWords,
-    dayBannerWords,
     relicWords,
     relicKinds,
     commandBits,
@@ -98,6 +97,8 @@ export const frontierPhrases = (
     mainnetTokens,
     oathEffectDescription,
     relicEffect,
+    triumphHead,
+    worldBaneHead,
   },
 ) => {
   const stamina = config.troop.stamina;
@@ -154,6 +155,11 @@ export const frontierPhrases = (
     maxStamina: stamina.staminaKnightMax,
     staminaPerSecond: stamina.staminaGainPerTick / tick,
     deepLossPerTick: preset.deep.lossPerTick,
+  };
+  const baneRules = {
+    beast_percent: preset.banes.beastPercent,
+    stamina_percent: preset.banes.staminaPercent,
+    production_percent: preset.banes.productionPercent,
   };
   return [
     {
@@ -222,7 +228,7 @@ export const frontierPhrases = (
         `${n(ASPECT_REWARD.lordsPerHeight)} LORDS per height point reached.`,
         `+${n(ASPECT_REWARD.finishBonus)} LORDS`,
         `at least ${n(ASPECT_REWARD.gloryToShare)} Glory`,
-        ...Object.entries(aspectWords.triumph).map(([stageKey, name]) => {
+        ...Object.entries(aspectWords.triumph).map(([stageKey]) => {
           const stage = Number(stageKey);
           const percent = {
             [nativeRace.CLEAR_MIST_STAGE]: preset.race.clearMistPercent,
@@ -230,9 +236,9 @@ export const frontierPhrases = (
             [nativeRace.PALE_MOON_STAGE]: preset.race.paleMoonPercent,
             [nativeRace.SPOILS_STAGE]: preset.race.spoilsPercent,
           }[stage];
-          const ruleFn = dayBannerWords.triumphRule[stage];
-          if (!ruleFn || percent === undefined) throw new Error(`Missing Triumph check for stage ${stageKey}`);
-          return `${name} ${ruleFn(percent)}.`;
+          if (percent === undefined) throw new Error(`Missing Triumph check for stage ${stageKey}`);
+          const head = triumphHead(stage, percent);
+          return `${head.name} ${head.rule}.`;
         }),
       ],
     },
@@ -292,15 +298,12 @@ export const frontierPhrases = (
         `${n(preset.dailyQuest.labor)} Labor and ${n(preset.dailyQuest.essence)} Essence.`,
         `to ${n(preset.dailyQuest.bonusPercent)}%.`,
         `+${n(nativeFragments.WONDER_QUEST_FRAGMENTS)} Fragments`,
-        `${dayBannerWords.beastBane(preset.banes.beastPercent)}.`,
-        `${dayBannerWords.staminaBane(preset.banes.staminaPercent)}.`,
-        `${dayBannerWords.productionBane(preset.banes.productionPercent)}.`,
         `Once ${n(preset.banes.quorumPercent)}% of your Aspect's members who were active on the previous day`,
         `World Banes stop for the rest of the season.`,
-        ...worldBanes.map((entry) => entry.name),
         ...worldBanes.map((entry) => {
+          const head = worldBaneHead(entry.id, baneRules);
           const q = baneQuests.find((item) => item.id === entry.quest);
-          return `${q.name}: ${q.objective}`;
+          return `${head.name} ${head.rule}. ${q.name}: ${q.objective}`;
         }),
       ],
     },
@@ -371,16 +374,34 @@ export const expectedPhrases = (
   extra,
 ) => [...frontierPhrases(frontier, frontierPreset, nativeRules, nativeFragments, nativeOaths, nativeRace, extra)];
 
-export const expectedPageIcons = ({ buildingMeaning, iconUrl, relicKinds, relicMeaning }) => [
-  {
-    page: "frontier/realm",
-    icons: FRONTIER_BUILDING_TYPES.map((id) => iconUrl(buildingMeaning(id, true), 128)),
-  },
-  {
-    page: "frontier/oaths-and-relics",
-    icons: relicKinds.map((kind) => iconUrl(relicMeaning(kind), 128)),
-  },
-];
+export const expectedPageIcons = ({
+  buildingMeaning,
+  frontierPreset,
+  iconUrl,
+  relicKinds,
+  relicMeaning,
+  worldBaneHead,
+}) => {
+  const baneRules = {
+    beast_percent: frontierPreset.banes.beastPercent,
+    stamina_percent: frontierPreset.banes.staminaPercent,
+    production_percent: frontierPreset.banes.productionPercent,
+  };
+  return [
+    {
+      page: "frontier/realm",
+      icons: FRONTIER_BUILDING_TYPES.map((id) => iconUrl(buildingMeaning(id, true), 128)),
+    },
+    {
+      page: "frontier/oaths-and-relics",
+      icons: relicKinds.map((kind) => iconUrl(relicMeaning(kind), 128)),
+    },
+    {
+      page: "frontier/quests-and-banes",
+      icons: worldBanes.map((entry) => iconUrl(worldBaneHead(entry.id, baneRules).icon, 128)),
+    },
+  ];
+};
 
 export const missingIcons = (dist, pages) =>
   pages.flatMap(({ page, icons }) => {
@@ -423,11 +444,9 @@ export const loadBalanceSources = async () => {
     const { nativeCommandBits: commandBits } = await server.ssrLoadModule(
       join(here, "../../../contracts/l3/world-native/schema/commands.gen.ts"),
     );
-    const {
-      ASPECT_PAGE_WORDS: aspectWords,
-      DAY_BANNER_WORDS: dayBannerWords,
-      RELIC_WORDS: relicWords,
-    } = await server.ssrLoadModule(join(here, "../../game/src/ui/design-system/kit/words.ts"));
+    const { ASPECT_PAGE_WORDS: aspectWords, RELIC_WORDS: relicWords } = await server.ssrLoadModule(
+      join(here, "../../game/src/ui/design-system/kit/words.ts"),
+    );
     const { iconUrl } = await server.ssrLoadModule(join(here, "../../game/src/ui/design-system/icon-meaning.ts"));
     const {
       buildingMeaning,
@@ -452,6 +471,9 @@ export const loadBalanceSources = async () => {
     const { relicEffect } = await server.ssrLoadModule(
       join(here, "../../game/src/ui/features/frontier/relics/relic-catalog.ts"),
     );
+    const { triumphHead, worldBaneHead } = await server.ssrLoadModule(
+      join(here, "../../game/src/ui/features/frontier/day/day-bane-face.ts"),
+    );
     const productionRelease = JSON.parse(readFileSync(join(here, "../../../deploy/release/production.json"), "utf8"));
     const heraldLimits = await server.ssrLoadModule(join(here, "../../herald/src/http-limits.ts"));
     return {
@@ -464,7 +486,6 @@ export const loadBalanceSources = async () => {
       nativeResearch,
       nativeRules,
       aspectWords,
-      dayBannerWords,
       relicWords,
       relicKinds,
       commandBits,
@@ -478,6 +499,8 @@ export const loadBalanceSources = async () => {
       mainnetTokens,
       oathEffectDescription,
       relicEffect,
+      triumphHead,
+      worldBaneHead,
       productionRelease,
       heraldLimits,
       payoutWalletChangeSeconds: PAYOUT_WALLET_CHANGE_SECONDS,

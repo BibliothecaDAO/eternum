@@ -5,7 +5,6 @@ import {
   previewRuinGuardBounds,
 } from "../../../../contracts/l3/world-native/schema/site-previews.gen";
 import {
-  nativeBaneConstants as bane,
   nativeFragmentConstants as fragments,
   nativeOathConstants as oaths,
   nativeRaceConstants as raceRules,
@@ -15,10 +14,11 @@ import {
 import { nativeCommandBits } from "../../../../contracts/l3/world-native/schema/commands.gen";
 import { MAINNET_TOKENS } from "../../../../packages/chain/src/tokens";
 import { logisticsStamina } from "../../../../packages/core/src/utils/attribute-tiers";
-import { aspectMeaning, orderMeaning, type IconMeaning } from "../../../game/src/ui/design-system/icon-meaning";
+import { aspectMeaning, orderMeaning } from "../../../game/src/ui/design-system/icon-meaning";
 import { buildingMeaning, RELIC_KINDS, relicMeaning } from "../../../game/src/ui/design-system/domain-icon-meaning";
-import { ASPECT_PAGE_WORDS, DAY_BANNER_WORDS, RELIC_WORDS } from "../../../game/src/ui/design-system/kit/words";
+import { ASPECT_PAGE_WORDS, RELIC_WORDS } from "../../../game/src/ui/design-system/kit/words";
 import { oathEffectDescription } from "../../../game/src/ui/features/frontier/army/oath-details";
+import { triumphHead, worldBaneHead } from "../../../game/src/ui/features/frontier/day/day-bane-face";
 import { relicEffect } from "../../../game/src/ui/features/frontier/relics/relic-catalog";
 import {
   ASPECT_REWARD,
@@ -49,7 +49,6 @@ import {
   rankName,
   resourceName,
   worldBanes,
-  type WorldBaneId,
 } from "@bibliothecadao/types";
 import { ETERNUM_CONFIG } from "./config";
 import { CONTRACT, depthRewardPercent } from "./contract-constants";
@@ -124,19 +123,19 @@ const triumphPercents: Record<TriumphStage, number> = {
   4: racePreset.spoilsPercent,
 };
 const triumphTable = (Object.entries(ASPECT_PAGE_WORDS.triumph) as [string, string][])
-  .map(([stageKey, name]) => {
+  .map(([stageKey]) => {
     const stage = Number(stageKey) as TriumphStage;
-    const ruleFn = DAY_BANNER_WORDS.triumphRule[stage];
     const percent = triumphPercents[stage];
-    if (!ruleFn || percent === undefined) throw new Error(`Missing Triumph rule for stage ${stageKey}`);
-    return `Stage ${stage} (${n(racePreset.stageHeight * stage)} height) | ${name} | ${ruleFn(percent)}.`;
+    if (percent === undefined) throw new Error(`Missing Triumph percent for stage ${stageKey}`);
+    const head = triumphHead(stage, percent);
+    return `Stage ${stage} (${n(racePreset.stageHeight * stage)} height) | ${head.name} | ${head.rule}.`;
   })
   .join("\n");
 
-const worldBaneMeta: Record<WorldBaneId, { icon: IconMeaning; effect: string }> = {
-  [bane.BLOOD_MOON]: { icon: "moon", effect: `${DAY_BANNER_WORDS.beastBane(banesPreset.beastPercent)}.` },
-  [bane.MIST_TIDE]: { icon: "waves", effect: `${DAY_BANNER_WORDS.staminaBane(banesPreset.staminaPercent)}.` },
-  [bane.ASH_FALL]: { icon: "flame", effect: `${DAY_BANNER_WORDS.productionBane(banesPreset.productionPercent)}.` },
+const baneRules = {
+  beast_percent: banesPreset.beastPercent,
+  stamina_percent: banesPreset.staminaPercent,
+  production_percent: banesPreset.productionPercent,
 };
 
 const oathEffectBase = {
@@ -376,11 +375,11 @@ export const FRONTIER = {
     world: worldBanes.map((entry) => {
       const quest = baneQuests.find((q) => q.id === entry.quest);
       if (!quest) throw new Error(`Missing bane quest ${entry.quest}`);
-      const meta = worldBaneMeta[entry.id];
+      const head = worldBaneHead(entry.id, baneRules);
       return {
-        name: entry.name,
-        icon: meta.icon,
-        effect: meta.effect,
+        name: head.name,
+        icon: head.icon,
+        effect: `${head.rule}.`,
         questName: quest.name,
         questObjective: quest.objective,
       };

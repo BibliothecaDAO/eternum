@@ -1,9 +1,22 @@
-import { orderMeaning, type IconMeaning } from "@/ui/design-system/icon-meaning";
-import { ASPECT_PAGE_WORDS, DAY_BANNER_WORDS as WORDS } from "@/ui/design-system/kit/words";
-import { aspects, ordersOfAspect, worldBanes, type WorldBaneId } from "@bibliothecadao/types";
+import { orderMeaning, type IconMeaning } from "../../../design-system/icon-meaning";
+import { ASPECT_PAGE_WORDS, DAY_BANNER_WORDS as WORDS } from "../../../design-system/kit/words";
+import { aspects, ordersOfAspect, worldBanes, type AspectId, type WorldBaneId } from "@bibliothecadao/types";
 import { nativeBaneConstants as bane, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import type { BaneDay } from "@bibliothecadao/eternum";
-import type { DayHead, DayMembers } from "./day-banner-view";
+
+type Tone = "good" | "bad" | "warn";
+
+export interface DayHead {
+  tone: Tone;
+  icon: IconMeaning;
+  eyebrow: string;
+  name: string;
+  rule: string;
+  aspectId?: AspectId;
+  crests?: readonly IconMeaning[];
+}
+
+export type DayMembers = { completed: number; required: number } | { ended: string; endedShort: string };
 
 type Rules = Pick<NativeRows["BaneRules"], "beast_percent" | "stamina_percent" | "production_percent">;
 const WORLD_FACES = {

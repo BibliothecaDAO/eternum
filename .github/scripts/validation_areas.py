@@ -316,6 +316,7 @@ AREAS = {
         "apps/game/src/ui/design-system/kit/paintings.ts",
         "apps/game/src/ui/design-system/kit/words.ts",
         "apps/game/src/ui/features/frontier/army/oath-details.ts",
+        "apps/game/src/ui/features/frontier/day/day-bane-face.ts",
         "apps/game/src/ui/features/frontier/pick-effect-format.ts",
         "apps/game/src/ui/features/frontier/relics/relic-catalog.ts",
         "apps/game/src/services/home-claim-rules.ts",
