@@ -1,6 +1,8 @@
 ---
 title: Oaths and relics
-description: Oaths from shrines, Oath slots, and army relics from ruins
+description:
+  Full Oath system (shrines, bands, picks of three, Oath slots, all 16 Oaths, rerolls, pairs) and all 4 relic kinds from
+  ruins
 ---
 
 import { FRONTIER } from "@/utils/frontier";
@@ -8,23 +10,56 @@ import { GameIcon } from "@/components/GameIcon";
 
 # Oaths and relics
 
-Oaths and relics power up individual armies for the current game day. Both reset when the day ends.
+Oaths and relics power up individual armies for the current game day. Oaths stay active on the army all day. Relics give
+a timed burst you switch on when you need it. Both reset when the day ends.
 
-## Oaths (from Shrines and bands)
+## Oaths
 
-<GameIcon name="shrine" /> Research **Shrine lore** at your castle to find Shrines ({FRONTIER.discovery.shrine} chance).
-Step beside a Shrine and open it to draw {FRONTIER.oaths.drawCount} Oaths. Clearing a band on the
-{FRONTIER.layers.personalOr} also draws {FRONTIER.oaths.drawCount} Oaths.
+Every Oath has one flat rule and no levels. Any army of any Aspect can draw any of the {FRONTIER.oaths.count} Oaths.
 
-- Every army starts with {FRONTIER.oaths.baseSlots} Oath slots. Researching Oath slots at your castle raises this up to
-  {FRONTIER.oaths.maxSlots} slots per troop kind ([Your realm](/frontier/realm#oath-slots)). When an army's slots are
-  full, taking a new Oath replaces one you pick.
-- Passing on a draw skips the Oaths and gives that army +{FRONTIER.oaths.passStamina} stamina.
-- Rerolls: {FRONTIER.oaths.rerollNote} See [Shop and referrals](/frontier/shop-and-referrals) for current Shop status.
+### How you get an Oath pick
+
+There are two ways an army triggers an Oath pick on the {FRONTIER.layers.personalOr}:
+
+1. **<GameIcon name="shrine" /> Reveal a Shrine.** Research **Shrine lore** at your castle to find Shrines
+   ({FRONTIER.discovery.shrine} chance per reveal). Revealing a Shrine opens a pick of {FRONTIER.oaths.drawCount} Oaths
+   immediately for that army.
+2. **<GameIcon name={FRONTIER.beastFamilies[1].icon} /> Clear a Band.** Bands ({FRONTIER.beastFamilies[1].surface},
+   {FRONTIER.beastFamilies[1].veil}, {FRONTIER.beastFamilies[1].hollow}; {FRONTIER.discovery.band} chance per reveal)
+   award a pick of {FRONTIER.oaths.drawCount} Oaths to the army that lands the last hit.
+
+### Rules of the pick
+
+- **Drawn from what you do not hold:** the contract draws {FRONTIER.oaths.drawCount} distinct Oaths at random from the
+  {FRONTIER.oaths.count} Orders that the army does not already hold. An army never holds two copies of the same Oath.
+- **One pick at a time:** while an Oath pick is open on an army, that army must choose an Oath, replace an existing one,
+  or pass before it can move, reveal, attack, or enter a Spire.
+- **Full slots:** when an army's Oath slots are full, picking a new Oath replaces an Oath you choose.
+- **Pass for stamina:** passing skips the Oaths and gives that army +{FRONTIER.oaths.passStamina} stamina immediately
+  (up to its bar maximum).
+- **Reroll:** {FRONTIER.oaths.rerollNote} The redrawn card is always an Oath the army does not hold and that is not
+  already shown. See [Shop and referrals](/frontier/shop-and-referrals) for current Shop status.
+- **In the Deep and at day's end:** an army keeps its Oaths when it enters [the Deep](/frontier/deep); its Order icons
+  show on the site guard card and count in rival fight previews. All Oaths clear when the army ends with the day.
+
+### Oath slots
+
+Every army starts with {FRONTIER.oaths.baseSlots} Oath slots. You can research {FRONTIER.oaths.extraSlots} extra slots
+separately for {FRONTIER.troops.knight} (at your {FRONTIER.names.barracks}), {FRONTIER.troops.crossbowman} (at your
+{FRONTIER.names.range}), and {FRONTIER.troops.scout} (at your {FRONTIER.names.scoutsLodge}), up to
+{FRONTIER.oaths.maxSlots} slots total. Unlocked slots stay for the whole season and apply to every new army of that
+troop kind.
+
+| Oath slot                             | Essence                                  | Labor                                  |
+| ------------------------------------- | ---------------------------------------- | -------------------------------------- |
+| Slots 1 and 2                         | Free                                     | Free                                   |
+| {FRONTIER.research.oathSlots[0].slot} | {FRONTIER.research.oathSlots[0].essence} | {FRONTIER.research.oathSlots[0].labor} |
+| {FRONTIER.research.oathSlots[1].slot} | {FRONTIER.research.oathSlots[1].essence} | {FRONTIER.research.oathSlots[1].labor} |
+| {FRONTIER.research.oathSlots[2].slot} | {FRONTIER.research.oathSlots[2].essence} | {FRONTIER.research.oathSlots[2].labor} |
 
 ### All {FRONTIER.oaths.count} Oaths
 
-Each Oath is named after one of the {FRONTIER.oaths.count} Orders:
+Each Oath is named after one of the {FRONTIER.oaths.count} Orders and changes one rule for today:
 
 | Oath (Order)                                                                        | Aspect                           | Effect for today                 |
 | ----------------------------------------------------------------------------------- | -------------------------------- | -------------------------------- |
@@ -45,20 +80,42 @@ Each Oath is named after one of the {FRONTIER.oaths.count} Orders:
 | <GameIcon name={FRONTIER.oaths.rows[14].icon} /> **{FRONTIER.oaths.rows[14].name}** | {FRONTIER.oaths.rows[14].aspect} | {FRONTIER.oaths.rows[14].effect} |
 | <GameIcon name={FRONTIER.oaths.rows[15].icon} /> **{FRONTIER.oaths.rows[15].name}** | {FRONTIER.oaths.rows[15].aspect} | {FRONTIER.oaths.rows[15].effect} |
 
+The Detection Oath lowers the guaranteed-find limit from {FRONTIER.discovery.emptyRevealLimit} empty reveals to
+{FRONTIER.oaths.detectionLimit}.
+
+### Strong Oath pairs
+
+No single set of Oaths is best at every job. Match your Oaths to what that army will do today: breaking a rival Deep
+site, holding a Deep slot, clearing camps on the {FRONTIER.layers.personalOr}, or exploring for Spires and ruins.
+
+| Job                           | No Oath                        | One Oath                        | Other Oath                       | Both together                      |
+| ----------------------------- | ------------------------------ | ------------------------------- | -------------------------------- | ---------------------------------- |
+| {FRONTIER.oaths.pairs[0].job} | {FRONTIER.oaths.pairs[0].none} | {FRONTIER.oaths.pairs[0].first} | {FRONTIER.oaths.pairs[0].second} | **{FRONTIER.oaths.pairs[0].both}** |
+| {FRONTIER.oaths.pairs[1].job} | {FRONTIER.oaths.pairs[1].none} | {FRONTIER.oaths.pairs[1].first} | {FRONTIER.oaths.pairs[1].second} | **{FRONTIER.oaths.pairs[1].both}** |
+| {FRONTIER.oaths.pairs[2].job} | {FRONTIER.oaths.pairs[2].none} | {FRONTIER.oaths.pairs[2].first} | {FRONTIER.oaths.pairs[2].second} | **{FRONTIER.oaths.pairs[2].both}** |
+| {FRONTIER.oaths.pairs[3].job} | {FRONTIER.oaths.pairs[3].none} | {FRONTIER.oaths.pairs[3].first} | {FRONTIER.oaths.pairs[3].second} | **{FRONTIER.oaths.pairs[3].both}** |
+
 ## Relics (from Ruins)
 
-<GameIcon name="ruin" /> Clearing a Ruin gives a relic to the attacking army. An army can carry up to
-{FRONTIER.relics.slots} relics at once; when full, you pick which slot to replace.
+<GameIcon name="ruin" /> Clearing a Ruin that does not hold a Fragment cache gives 1 relic to the army that lands the
+last hit.
+
+- **Loadout:** an army carries up to {FRONTIER.relics.slots} relics at once. When full, winning another relic lets you
+  pick which slot to replace.
+- **Activation:** activating a relic is free and works anywhere, including inside [the Deep](/frontier/deep). An army
+  can have one active effect per relic kind at a time.
+- **Duration:** an active relic lasts {FRONTIER.relics.minutesPerTier} minutes per tier, from
+  {FRONTIER.relics.minutesPerTier} minutes for {FRONTIER.relics.firstTier} I up to {FRONTIER.relics.maxMinutes} minutes
+  for {FRONTIER.relics.lastTier} V.
+- **Bound to the army:** relics cannot be sold, traded, or passed to another army, and end when the army ends with the
+  day.
 
 Relics come in {FRONTIER.relics.tiersCount} tiers ({FRONTIER.relics.firstTier} I to {FRONTIER.relics.lastTier} V), and
-deeper layers drop higher tiers.
+deeper layers drop higher tiers:
 
 - {FRONTIER.relics.layerOdds[0].layer}: {FRONTIER.relics.layerOdds[0].odds}
 - {FRONTIER.relics.layerOdds[1].layer}: {FRONTIER.relics.layerOdds[1].odds}
 - {FRONTIER.relics.layerOdds[2].layer}: {FRONTIER.relics.layerOdds[2].odds}
-
-An active relic lasts {FRONTIER.relics.minutesPerTier} minutes per tier, from {FRONTIER.relics.minutesPerTier} minutes
-for {FRONTIER.relics.firstTier} I up to {FRONTIER.relics.maxMinutes} minutes for {FRONTIER.relics.lastTier} V.
 
 ### All {FRONTIER.relics.count} relic kinds
 

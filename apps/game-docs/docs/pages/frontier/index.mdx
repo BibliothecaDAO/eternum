@@ -1,16 +1,17 @@
 ---
 title: Frontier
-description: How Frontier Season 1 works, the season calendar, and where to start
+description: How Frontier Season 1 works, the season calendar, the clock, and where to start
 ---
 
 import { FRONTIER } from "@/utils/frontier";
 import { GameIcon } from "@/components/GameIcon";
-import { Shot, Video } from "@/components/Media";
+import { Video } from "@/components/Media";
 
 # Frontier
 
-Frontier is free to play. Every game day a fresh map opens around your realm. You train armies, explore the fog, clear
-guarded sites, and descend into the Deep to fight for your Aspect's hyperstructure.
+Frontier is free to play. Every game day opens a fresh map around your realm. You build up your town, send armies into
+the mist to clear beasts and sites, take Oaths and relics for the day, and enter the Deep to raise your Aspect's
+hyperstructure for LORDS rewards.
 
 <Video
   name="frontier/realm-tiers"
@@ -19,87 +20,70 @@ guarded sites, and descend into the Deep to fight for your Aspect's hyperstructu
 
 ## Season 1 calendar
 
-| Event                                       | Dates (UTC)                           | Notes                                                                          |
-| ------------------------------------------- | ------------------------------------- | ------------------------------------------------------------------------------ |
-| <GameIcon name="calendar" /> Final Testnet  | {FRONTIER.calendar.testnetDates}      | Shop spending is turned off.                                                   |
-| <GameIcon name="hyperstructure" /> Season 1 | Opens {FRONTIER.calendar.seasonStart} | Lasts {FRONTIER.day.seasonDays} game days. Full Aspect race and LORDS rewards. |
+| Event                                       | Dates (UTC)                           | Notes                                                                                                       |
+| ------------------------------------------- | ------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| <GameIcon name="calendar" /> Final Testnet  | {FRONTIER.calendar.testnetDates}      | Shop spending is turned off.                                                                                |
+| <GameIcon name="hyperstructure" /> Season 1 | Opens {FRONTIER.calendar.seasonStart} | Up to {FRONTIER.day.seasonDays} game days (about {FRONTIER.day.seasonRealDays} real days) and LORDS prizes. |
 
-## How a game day works
+## The clock and a game day
 
-1. **<GameIcon name="deploy" /> Deploy.** Build {FRONTIER.names.barracks}, {FRONTIER.names.range}, and
-   {FRONTIER.names.scoutsLodge} at your realm, then place armies on tiles beside it.
-2. **<GameIcon name="explore" /> Explore.** Reveal hidden tiles on the {FRONTIER.layers.personalAnd}. The game rolls
-   what stands on a tile when your army reveals it, so you cannot scout ahead. Each reveal sends Essence or labor
-   straight home.
-3. **<GameIcon name="attack" /> Clear.** Fight beasts, camps, rifts, and ruins. Every fight card shows the guard and the
-   exact outcome before you attack.
-4. **<GameIcon name="hyperstructure" /> Fight in the Deep.** Research Spire lore and send your strongest armies into the
-   shared Deep to hold sites, earn Glory, and raise your Aspect's hyperstructure.
+Every army shares one clock:
 
-Every {FRONTIER.day.daysPerBag} days contain one day each of {FRONTIER.day.lengths} hours, totaling
-{FRONTIER.day.bagHours} hours. No {FRONTIER.day.daysPerBag}-day cycle starts with an {FRONTIER.day.shortestHours}-hour
-day, and two {FRONTIER.day.shortestHours}-hour days never run in a row. The top bar shows when today ends and how long
-tomorrow lasts. The final day stops at the season's end; if fewer than {FRONTIER.day.shortestHours} hours remain, they
-merge into the day before.
+- **Army tick:** {FRONTIER.stamina.tickMinutes} minutes. Every tick gives +{FRONTIER.stamina.perTick} stamina
+  ({FRONTIER.stamina.perHour} per hour, filling a {FRONTIER.stamina.max}-stamina bar in {FRONTIER.stamina.fullHours}
+  hours). Inside the Deep, each tick also removes {FRONTIER.deep.lossPerTick} troops per army and pays held sites.
+- **Day lengths:** every {FRONTIER.day.daysPerBag}-day bag holds one day each of {FRONTIER.day.lengths} hours
+  ({FRONTIER.day.bagHours} hours total, {FRONTIER.day.averageHours} hours on average) in shuffled order. No bag starts
+  with an {FRONTIER.day.shortestHours}-hour day, and two {FRONTIER.day.shortestHours}-hour days never run in a row. An
+  {FRONTIER.day.shortestHours}-hour day gives an army {FRONTIER.stamina.day8h} total stamina; a
+  {FRONTIER.day.longestHours}-hour day gives {FRONTIER.stamina.day24h}.
+- **Season length:** {FRONTIER.day.seasonDays} game days at most ({FRONTIER.day.bagsPerSeason} bags, about
+  {FRONTIER.day.seasonRealDays} real days). The season ends earlier as soon as one Aspect finishes its hyperstructure.
 
-When a day ends, the game clears the map and all deployed armies. Your realm appears again on the next day's map and
-keeps everything it owns.
+Each day follows four steps:
 
-| Cleared at day's end                            | Kept for the season                             |
-| ----------------------------------------------- | ----------------------------------------------- |
-| The map and fog                                 | Your castle, buildings, and research            |
-| Camps, rifts, ruins, shrines, wells, and beasts | Troops, wheat, labor, and Essence at home       |
-| Deployed armies, their Oaths, and active relics | Your Aspect, Glory, Fragments, and Ancient Seal |
+1. **<GameIcon name="deploy" /> Grow and deploy.** Upgrade your castle and buildings, then deploy
+   {FRONTIER.troops.knight}, {FRONTIER.troops.crossbowman}, and {FRONTIER.troops.scout} on tiles beside your realm.
+2. **<GameIcon name="explore" /> Explore.** Reveal hidden tiles on the {FRONTIER.layers.personalAnd}. Each reveal sends
+   Essence or labor straight home and can uncover beasts, camps, rifts, ruins, shrines, wells, or your Spire.
+3. **<GameIcon name="attack" /> Build today's armies.** Clear bands and reveal shrines to take Oaths, clear ruins for
+   relics or Fragment caches, and finish today's daily quest or bane quest.
+4. **<GameIcon name="hyperstructure" /> Enter the Deep.** Descend through your Spire into the shared Deep to hold sites,
+   earn Glory, and push your Aspect's hyperstructure toward {FRONTIER.race.finishHeight} height.
 
-## What you can do
+When a day ends, the map and every deployed army clear. Your realm appears again on the next day's map and keeps
+everything it owns.
 
-- Create your realm for free on any day of the season, either with a **Realm NFT** held in your payout wallet or with a
-  free home, and join one of the {FRONTIER.aspectsCount} Aspects.
-- Build any of the {FRONTIER.buildingsCount} realm buildings ({FRONTIER.buildingsList}) and raise your castle to
-  {FRONTIER.realm.castleLevelInline[3]}.
-- Send {FRONTIER.troops.knight}, {FRONTIER.troops.crossbowman}, and {FRONTIER.troops.scout} across
-  {FRONTIER.realm.armies[0]} to {FRONTIER.realm.armies[3]} armies.
-- Take Oaths at shrines and equip relics from ruins to power up each army for the day.
-- Complete your daily quest and work with your Aspect to break World Banes and rival Team Banes.
-- Enter the Deep to capture shared sites, earn Glory, and race to build your Aspect's hyperstructure for LORDS rewards.
-- Visit another player's realm from the Season board.
+| Cleared at day's end                            | Kept for the season                              |
+| ----------------------------------------------- | ------------------------------------------------ |
+| The map and fog                                 | Your castle, buildings, research, and Oath slots |
+| Camps, rifts, ruins, shrines, wells, and beasts | Troops, wheat, labor, and Essence at home        |
+| Deployed armies, their Oaths, and active relics | Your Aspect, Order, Glory, Fragments, and Seal   |
 
-## What you can't do
+## Your first minute
 
-- Attack another player's home realm or armies on the {FRONTIER.layers.personalOr}. Player fights happen only in the
-  {FRONTIER.names.deep}.
-- Trade or send resources to another player.
-- Keep your deployed armies, Oaths, or relics after a game day ends.
-- Win or lose a fight by luck. Combat uses no dice, so the fight forecast is exact.
-
-<Shot
-  name="frontier/hud"
-  caption="Frontier on a desktop: your realm and its armies on the left, Next up on the right, the minimap below."
-/>
-
-<Shot
-  frame="phone"
-  name="frontier/hud-phone"
-  caption="Frontier on a phone: your stores on top, your armies above the bar, the map between."
-/>
-
-## Your first day
-
-A new realm starts with {FRONTIER.realm.troops} troops, {FRONTIER.realm.wheat} wheat, and {FRONTIER.realm.labor} labor.
-Entry is free and stays open all season, so players who join late start with the same resources. Build a
-{FRONTIER.names.barracks} and send your first army into the fog.
+Entry is free and stays open all season, so players who join later start with the same resources. A new realm begins
+with {FRONTIER.realm.troops} {FRONTIER.troops.knight} waiting at home, {FRONTIER.realm.wheat} wheat, and
+{FRONTIER.realm.labor} labor. Your starting labor buys one of each starter building right away:
+{FRONTIER.realm.firstMinuteSummary}. Build on your open plots, then deploy your first army into the fog.
 
 ## Guides
 
-- [Aspects and the race](/frontier/aspects): the {FRONTIER.aspectsCount} Aspects, {FRONTIER.oaths.count} Orders,
-  hyperstructures, Triumphs, and LORDS rewards.
-- [Your realm](/frontier/realm): all {FRONTIER.buildingsCount} buildings, hourly output, castle levels, and research.
-- [Armies](/frontier/armies): {FRONTIER.troops.knight}, {FRONTIER.troops.crossbowman}, {FRONTIER.troops.scout}, stamina,
-  Logistics, and combat rules.
-- [The expedition](/frontier/expedition): {FRONTIER.layers.personalAnd}, discoveries, guards, and supply posts.
-- [The Deep](/frontier/deep): the shared fourth layer, rings, {FRONTIER.deep.sitesCount} site kinds, troop drain, and
-  Bane altars.
-- [Oaths and relics](/frontier/oaths-and-relics): all {FRONTIER.oaths.count} Oaths from shrines and all
-  {FRONTIER.relics.count} relic kinds from ruins.
-- [Quests and banes](/frontier/quests-and-banes): daily quests, World Banes, and rival Team Banes.
-- [Shop and referrals](/frontier/shop-and-referrals): Fragments, the Ancient Seal, free caches, and inviting friends.
+Read the guides in the order you meet each system:
+
+1. [Your realm](/frontier/realm): starting resources, all {FRONTIER.buildingsCount} buildings, repeat copy prices,
+   castle levels, Storeroom caps, and research.
+2. [Armies and combat](/frontier/armies): {FRONTIER.troops.knight}, {FRONTIER.troops.crossbowman},
+   {FRONTIER.troops.scout}, stamina, combat formula, blade vs bow, and worked fight examples.
+3. [The expedition and beasts](/frontier/expedition): reveal odds, all five beast families, guard sizes across the
+   {FRONTIER.layers.personalAnd}, ruin caches, supply posts, and Spires.
+4. [Oaths and relics](/frontier/oaths-and-relics): Oath picks from shrines and bands, Oath slots, all
+   {FRONTIER.oaths.count} Oaths, strong pairs, and all {FRONTIER.relics.count} relic kinds from ruins.
+5. [Quests and banes](/frontier/quests-and-banes): the {FRONTIER.quest.count} daily quests, Realm NFT and Wonder
+   bonuses, World Banes, and rival Team Banes.
+6. [The Deep](/frontier/deep): the shared fourth layer, {FRONTIER.deep.ringsCount} rings, {FRONTIER.deep.sitesCount}
+   site kinds and their beasts, guard slots, tick drain, and Bane altars.
+7. [Aspects and the race](/frontier/aspects): the {FRONTIER.aspectsCount} Aspects, {FRONTIER.oaths.count} Orders,
+   hyperstructure stages, Triumphs, Glory, and LORDS payouts.
+8. [Shop and referrals](/frontier/shop-and-referrals): Fragments, the Ancient Seal, free Fragment caches, and inviting
+   friends to your Aspect.

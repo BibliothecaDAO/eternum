@@ -1,6 +1,6 @@
 ---
 title: Quests and banes
-description: Daily quests, Realm NFT and Wonder bonuses, World Banes, and rival Team Banes
+description: Daily quests, castle-level rewards, Realm NFT and Wonder bonuses, World Banes, and rival Team Banes
 ---
 
 import { FRONTIER } from "@/utils/frontier";
@@ -13,18 +13,22 @@ today's quest with a bane quest that your whole Aspect clears together.
 
 ## Daily quests
 
-Complete today's objective and press **Collect** to claim your reward.
+Every realm can complete every daily quest from day 1 without any lore, building, or layer unlock. Complete today's
+objective and press **Collect** to claim your reward.
 
-- A {FRONTIER.realm.castleLevelInline[0]} realm receives {FRONTIER.quest.labor} Labor and {FRONTIER.quest.essence}
-  Essence.
-- Rewards multiply by {FRONTIER.quest.levelStep} at each castle level ({FRONTIER.quest.levelScale}).
+- Each of the {FRONTIER.quest.count} daily quests comes once every {FRONTIER.quest.count} days in shuffled order, and
+  the same quest never runs two days in a row.
+- The target count is the base target multiplied by your castle level (1x at {FRONTIER.realm.castleLevelInline[0]}, up
+  to 4x at {FRONTIER.realm.castleLevelInline[3]}).
+- Rewards start at {FRONTIER.quest.labor} Labor and {FRONTIER.quest.essence} Essence at
+  {FRONTIER.realm.castleLevelInline[0]} and multiply by {FRONTIER.quest.levelStep} at each castle level
+  ({FRONTIER.quest.levelScale}).
 - A **Realm NFT** or an Ancient Seal boosts daily quest labor to {FRONTIER.quest.bonusPercent}.
 - A **Wonder Realm NFT** also grants +{FRONTIER.quest.wonderFragments} Fragments when you collect.
 
-Each of the {FRONTIER.quest.count} daily quests comes once every {FRONTIER.quest.count} days in shuffled order, and the
-same quest never runs two days in a row:
+### The {FRONTIER.quest.count} daily quests
 
-| Quest                             | Objective                          | Base target (level 1)              |
+| Quest                             | Objective                          | Base target (× castle level)       |
 | --------------------------------- | ---------------------------------- | ---------------------------------- |
 | **{FRONTIER.quest.list[0].name}** | {FRONTIER.quest.list[0].objective} | {FRONTIER.quest.list[0].baseCount} |
 | **{FRONTIER.quest.list[1].name}** | {FRONTIER.quest.list[1].objective} | {FRONTIER.quest.list[1].baseCount} |
@@ -34,21 +38,32 @@ same quest never runs two days in a row:
 | **{FRONTIER.quest.list[5].name}** | {FRONTIER.quest.list[5].objective} | {FRONTIER.quest.list[5].baseCount} |
 | **{FRONTIER.quest.list[6].name}** | {FRONTIER.quest.list[6].objective} | {FRONTIER.quest.list[6].baseCount} |
 
+### Daily quest rewards by castle level
+
+| Castle level                     | Base reward                     | Labor with Realm NFT or Seal          |
+| -------------------------------- | ------------------------------- | ------------------------------------- |
+| {FRONTIER.quest.levels[0].level} | {FRONTIER.quest.levels[0].base} | {FRONTIER.quest.levels[0].bonusLabor} |
+| {FRONTIER.quest.levels[1].level} | {FRONTIER.quest.levels[1].base} | {FRONTIER.quest.levels[1].bonusLabor} |
+| {FRONTIER.quest.levels[2].level} | {FRONTIER.quest.levels[2].base} | {FRONTIER.quest.levels[2].bonusLabor} |
+| {FRONTIER.quest.levels[3].level} | {FRONTIER.quest.levels[3].base} | {FRONTIER.quest.levels[3].bonusLabor} |
+
 ## World Banes
 
-World Banes strike the whole world on random days. Each day without a World Bane adds +{FRONTIER.banes.chanceStep} to
-the chance of one on the next day. Once any Aspect issues the season's first Team Bane, World Banes stop for the rest of
-the season.
+From day 2 onward, World Banes can strike all four Aspects at the start of a game day. The chance is 0% the day after a
+World Bane, and each day without a World Bane adds +{FRONTIER.banes.chanceStep} to the chance of one on the next day.
+Once any Aspect issues the season's first Team Bane, World Banes stop for the rest of the season. An Aspect never has a
+World Bane and a Team Bane on the same day.
 
-| World Bane                                                                          | Effect while active              | Bane quest to break it                                                            |
-| ----------------------------------------------------------------------------------- | -------------------------------- | --------------------------------------------------------------------------------- |
-| <GameIcon name={FRONTIER.banes.world[0].icon} /> **{FRONTIER.banes.world[0].name}** | {FRONTIER.banes.world[0].effect} | **{FRONTIER.banes.world[0].questName}:** {FRONTIER.banes.world[0].questObjective} |
-| <GameIcon name={FRONTIER.banes.world[1].icon} /> **{FRONTIER.banes.world[1].name}** | {FRONTIER.banes.world[1].effect} | **{FRONTIER.banes.world[1].questName}:** {FRONTIER.banes.world[1].questObjective} |
-| <GameIcon name={FRONTIER.banes.world[2].icon} /> **{FRONTIER.banes.world[2].name}** | {FRONTIER.banes.world[2].effect} | **{FRONTIER.banes.world[2].questName}:** {FRONTIER.banes.world[2].questObjective} |
+| World Bane                                                                          | Effect while active              | Bane quest to break it                                                            | Target (Levels 1 / 2 / 3 / 4)     |
+| ----------------------------------------------------------------------------------- | -------------------------------- | --------------------------------------------------------------------------------- | --------------------------------- |
+| <GameIcon name={FRONTIER.banes.world[0].icon} /> **{FRONTIER.banes.world[0].name}** | {FRONTIER.banes.world[0].effect} | **{FRONTIER.banes.world[0].questName}:** {FRONTIER.banes.world[0].questObjective} | {FRONTIER.banes.world[0].targets} |
+| <GameIcon name={FRONTIER.banes.world[1].icon} /> **{FRONTIER.banes.world[1].name}** | {FRONTIER.banes.world[1].effect} | **{FRONTIER.banes.world[1].questName}:** {FRONTIER.banes.world[1].questObjective} | {FRONTIER.banes.world[1].targets} |
+| <GameIcon name={FRONTIER.banes.world[2].icon} /> **{FRONTIER.banes.world[2].name}** | {FRONTIER.banes.world[2].effect} | **{FRONTIER.banes.world[2].questName}:** {FRONTIER.banes.world[2].questObjective} | {FRONTIER.banes.world[2].targets} |
 
-Each Aspect tracks its own progress. Once {FRONTIER.banes.quorum} of your Aspect's members who were active on the
-previous day finish the bane quest, the bane ends for your Aspect, and everyone who finished can press **Collect again**
-for a second daily quest payout.
+Each Aspect tracks its own progress, and progress counts on every layer. Finishing the bane quest pays your normal daily
+quest reward. Once {FRONTIER.banes.quorum} of your Aspect's members who were active on the previous day finish the bane
+quest, the bane ends for your Aspect, and everyone who finished can press **Collect again** for a second daily quest
+payout.
 
 ## Rival Team Banes
 
@@ -57,6 +72,9 @@ in [the Deep](/frontier/deep), a **Team Bane** hits the rival Aspect with the ta
 day, skipping any rival already blocked or already targeted for tomorrow. No Team Bane is issued on the last day of the
 season.
 
-- The targeted Aspect's hyperstructure stops gaining height while the Team Bane lasts.
-- The targeted Aspect gets a bane quest ({FRONTIER.banes.questNames}). Once {FRONTIER.banes.quorum} of its members who
-  were active on the previous day finish the quest, the Team Bane lifts and height growth resumes.
+- The targeted Aspect's hyperstructure stops gaining height while the Team Bane lasts. Height missed while blocked is
+  not returned when the bane lifts.
+- The targeted Aspect gets one of the three bane quests ({FRONTIER.banes.questNames}), never the same quest two times in
+  a row.
+- Finishing the bane quest pays the daily quest reward. Once {FRONTIER.banes.quorum} of the Aspect's members who were
+  active on the previous day finish the quest, the Team Bane lifts and height growth resumes.

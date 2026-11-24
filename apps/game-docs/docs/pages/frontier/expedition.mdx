@@ -1,13 +1,15 @@
 ---
-title: The expedition
-description: Surface, Veil, and Hollow maps, reveals, discoveries, guards, Fragment caches, and supply posts
+title: The expedition and beasts
+description:
+  Surface, Veil, and Hollow maps, reveal odds, all five beast families, guard sizes, ruin caches, supply posts, and
+  Spires
 ---
 
 import { FRONTIER } from "@/utils/frontier";
 import { GameIcon } from "@/components/GameIcon";
-import { Shot, Video } from "@/components/Media";
+import { Video } from "@/components/Media";
 
-# The expedition
+# The expedition and beasts
 
 ## Today's map
 
@@ -33,23 +35,41 @@ layers:
 
 ## What a reveal can find
 
-| Find                              | Chance                      | What it gives                                                                                                                                                                                                                                                                                                         |
-| --------------------------------- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| <GameIcon name="beasts" /> Beasts | {FRONTIER.discovery.beasts} | Either a **herd** (clearing it pays wheat) or a larger **band** (clearing it triggers an Oath draw and pays no resources).                                                                                                                                                                                            |
-| <GameIcon name="camp" /> Camp     | {FRONTIER.discovery.camp}   | Guarded camp. Clearing it pays labor ({FRONTIER.sitePayouts.campPercent} of its starting guard on the {FRONTIER.depths[0].name}, {FRONTIER.sitePayouts.veilMultiplier} of that in the {FRONTIER.depths[1].name}, {FRONTIER.sitePayouts.hollowMultiplier} in the {FRONTIER.depths[2].name}) and creates a supply post. |
-| <GameIcon name="rift" /> Rift     | {FRONTIER.discovery.rift}   | Guarded fissure. Clearing it pays Essence ({FRONTIER.sitePayouts.riftPercent} of its starting guard on the {FRONTIER.depths[0].name}, {FRONTIER.sitePayouts.veilMultiplier} of that in the {FRONTIER.depths[1].name}, {FRONTIER.sitePayouts.hollowMultiplier} in the {FRONTIER.depths[2].name}).                      |
-| <GameIcon name="ruin" /> Ruin     | {FRONTIER.discovery.ruin}   | Fallen realm. Clearing it awards its relic and can also hold a Fragment cache.                                                                                                                                                                                                                                        |
-| <GameIcon name="shrine" /> Shrine | {FRONTIER.discovery.shrine} | Needs Shrine lore. Draws {FRONTIER.oaths.drawCount} Oaths to pick from, or lets you pass for +{FRONTIER.oaths.passStamina} stamina.                                                                                                                                                                                   |
-| <GameIcon name="well" /> Well     | {FRONTIER.discovery.well}   | Needs Well lore. Refills {FRONTIER.stamina.well} once.                                                                                                                                                                                                                                                                |
+Every reveal rolls what stands on that tile at the moment you reveal it:
+
+| Find                                                    | Odds each reveal                                                                           | What happens                                                                                                                                                                                                                                                                                                         |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| <GameIcon name={FRONTIER.beastFamilies[0].icon} /> Herd | {FRONTIER.discovery.herd}                                                                  | Blade guard. Clearing it pays wheat ({FRONTIER.sitePayouts.herdMultiplier} its starting guard on the {FRONTIER.depths[0].name}, {FRONTIER.sitePayouts.veilMultiplier} of that in the {FRONTIER.depths[1].name}, {FRONTIER.sitePayouts.hollowMultiplier} in the {FRONTIER.depths[2].name}).                           |
+| <GameIcon name={FRONTIER.beastFamilies[1].icon} /> Band | {FRONTIER.discovery.band}                                                                  | Bow guard. Clearing it opens a draw of {FRONTIER.oaths.drawCount} Oaths for the finishing army and pays no resources.                                                                                                                                                                                                |
+| <GameIcon name="camp" /> Camp                           | {FRONTIER.discovery.camp}                                                                  | Blade guard. Clearing it pays labor ({FRONTIER.sitePayouts.campPercent} of its starting guard on the {FRONTIER.depths[0].name}, {FRONTIER.sitePayouts.veilMultiplier} of that in the {FRONTIER.depths[1].name}, {FRONTIER.sitePayouts.hollowMultiplier} in the {FRONTIER.depths[2].name}) and creates a supply post. |
+| <GameIcon name="rift" /> Rift                           | {FRONTIER.discovery.rift}                                                                  | Bow guard. Clearing it pays Essence ({FRONTIER.sitePayouts.riftPercent} of its starting guard on the {FRONTIER.depths[0].name}, {FRONTIER.sitePayouts.veilMultiplier} of that in the {FRONTIER.depths[1].name}, {FRONTIER.sitePayouts.hollowMultiplier} in the {FRONTIER.depths[2].name}).                           |
+| <GameIcon name="ruin" /> Ruin                           | {FRONTIER.discovery.ruin}                                                                  | Blade guard. Clearing it awards either 1 relic or 1 Fragment cache (never both).                                                                                                                                                                                                                                     |
+| <GameIcon name="shrine" /> Shrine                       | {FRONTIER.discovery.shrine}                                                                | Needs Shrine lore. Immediately draws {FRONTIER.oaths.drawCount} Oaths for the revealing army, or lets you pass for +{FRONTIER.oaths.passStamina} stamina.                                                                                                                                                            |
+| <GameIcon name="well" /> Well                           | {FRONTIER.discovery.well}                                                                  | Needs Well lore. Immediately refills {FRONTIER.stamina.well} for the revealing army ({FRONTIER.oaths.reflectionWell} with Reflection).                                                                                                                                                                               |
+| <GameIcon name="spire" /> Spire                         | {FRONTIER.discovery.spireStep} on 1st reveal (+{FRONTIER.discovery.spireStep} each reveal) | Needs Spire lore. Guaranteed within {FRONTIER.discovery.spireRevealLimit} reveals on each layer. Leads one layer down.                                                                                                                                                                                               |
+| Nothing found                                           | {FRONTIER.discovery.nothing}                                                               | Empty tile. The reveal still pays Essence or labor to your realm.                                                                                                                                                                                                                                                    |
 
 After {FRONTIER.discovery.emptyRevealLimit} empty reveals in a row (or {FRONTIER.oaths.detectionLimit} with the
-Detection Oath), the next reveal is guaranteed to find a discovery. Once you research Spire lore, your Spire is
-guaranteed to appear within {FRONTIER.discovery.spireRevealLimit} reveals.
+Detection Oath), the next reveal is guaranteed to find a discovery.
 
-## Guards
+## The five beast families
 
-You see every guard before you attack. Camp, rift, herd, and band guards double in strength on each deeper layer. Ruin
-guards follow the ruin's relic tier instead.
+Every guard above the Deep belongs to one of five families. The beast species changes as you go deeper, while its mark
+and reward stay the same. Camp, rift, herd, and band guards double in size on each deeper layer (each guard varies by
+10%). Ruin guards follow the ruin's relic tier instead.
+
+| Family                                                                                  | Mark                               | Bring                             | Pays                             | {FRONTIER.depths[0].name}           | {FRONTIER.depths[1].name}        | {FRONTIER.depths[2].name}          |
+| --------------------------------------------------------------------------------------- | ---------------------------------- | --------------------------------- | -------------------------------- | ----------------------------------- | -------------------------------- | ---------------------------------- |
+| <GameIcon name={FRONTIER.beastFamilies[0].icon} /> **{FRONTIER.beastFamilies[0].name}** | {FRONTIER.beastFamilies[0].weapon} | {FRONTIER.beastFamilies[0].bring} | {FRONTIER.beastFamilies[0].pays} | {FRONTIER.beastFamilies[0].surface} | {FRONTIER.beastFamilies[0].veil} | {FRONTIER.beastFamilies[0].hollow} |
+| <GameIcon name={FRONTIER.beastFamilies[1].icon} /> **{FRONTIER.beastFamilies[1].name}** | {FRONTIER.beastFamilies[1].weapon} | {FRONTIER.beastFamilies[1].bring} | {FRONTIER.beastFamilies[1].pays} | {FRONTIER.beastFamilies[1].surface} | {FRONTIER.beastFamilies[1].veil} | {FRONTIER.beastFamilies[1].hollow} |
+| <GameIcon name={FRONTIER.beastFamilies[2].icon} /> **{FRONTIER.beastFamilies[2].name}** | {FRONTIER.beastFamilies[2].weapon} | {FRONTIER.beastFamilies[2].bring} | {FRONTIER.beastFamilies[2].pays} | {FRONTIER.beastFamilies[2].surface} | {FRONTIER.beastFamilies[2].veil} | {FRONTIER.beastFamilies[2].hollow} |
+| <GameIcon name={FRONTIER.beastFamilies[3].icon} /> **{FRONTIER.beastFamilies[3].name}** | {FRONTIER.beastFamilies[3].weapon} | {FRONTIER.beastFamilies[3].bring} | {FRONTIER.beastFamilies[3].pays} | {FRONTIER.beastFamilies[3].surface} | {FRONTIER.beastFamilies[3].veil} | {FRONTIER.beastFamilies[3].hollow} |
+| <GameIcon name={FRONTIER.beastFamilies[4].icon} /> **{FRONTIER.beastFamilies[4].name}** | {FRONTIER.beastFamilies[4].weapon} | {FRONTIER.beastFamilies[4].bring} | {FRONTIER.beastFamilies[4].pays} | {FRONTIER.beastFamilies[4].surface} | {FRONTIER.beastFamilies[4].veil} | {FRONTIER.beastFamilies[4].hollow} |
+
+Bands appear {FRONTIER.discovery.bandsPerHerd} times as often as herds ({FRONTIER.discovery.beasts} total beast chance).
+For the four Deep beasts, see [The Deep](/frontier/deep).
+
+### Guard summary by layer
 
 | Layer                     | Camps                          | Rifts                          | Herds                          | Bands                            | Ruins                          |
 | ------------------------- | ------------------------------ | ------------------------------ | ------------------------------ | -------------------------------- | ------------------------------ |
@@ -57,7 +77,7 @@ guards follow the ruin's relic tier instead.
 | {FRONTIER.depths[1].name} | {FRONTIER.depths[1].campGuard} | {FRONTIER.depths[1].riftGuard} | {FRONTIER.depths[1].beastWeak} | {FRONTIER.depths[1].beastStrong} | {FRONTIER.depths[1].ruinGuard} |
 | {FRONTIER.depths[2].name} | {FRONTIER.depths[2].campGuard} | {FRONTIER.depths[2].riftGuard} | {FRONTIER.depths[2].beastWeak} | {FRONTIER.depths[2].beastStrong} | {FRONTIER.depths[2].ruinGuard} |
 
-Bands appear {FRONTIER.discovery.bandsPerHerd} times as often as herds. Ruin guard sizes by layer and relic tier:
+Ruin guard sizes by layer and relic tier:
 
 | Layer                              | Lowest tier                      | Middle tier                      | Highest tier                      |
 | ---------------------------------- | -------------------------------- | -------------------------------- | --------------------------------- |
@@ -65,36 +85,30 @@ Bands appear {FRONTIER.discovery.bandsPerHerd} times as often as herds. Ruin gua
 | {FRONTIER.ruinGuardTable[1].layer} | {FRONTIER.ruinGuardTable[1].low} | {FRONTIER.ruinGuardTable[1].mid} | {FRONTIER.ruinGuardTable[1].high} |
 | {FRONTIER.ruinGuardTable[2].layer} | {FRONTIER.ruinGuardTable[2].low} | {FRONTIER.ruinGuardTable[2].mid} | {FRONTIER.ruinGuardTable[2].high} |
 
-<Shot
-  frame="panel"
-  name="frontier/fight-card"
-  caption="A site's card before an attack: both sides before and after, and what the attack earns."
-/>
-
 A site pays once. A cleared site leaves a flag showing what it paid, and armies can walk across it.
-
-<Video
-  name="frontier/fight"
-  caption="An army beside a ruin: its card forecasts both sides after the fight, then the army attacks."
-/>
 
 ## Fragment caches in ruins
 
-<GameIcon name="fragment" /> Clearing a ruin can also award free Fragments from a hidden cache:
-{FRONTIER.caches.surface} chance on the {FRONTIER.depths[0].name}, {FRONTIER.caches.veil} in the
-{FRONTIER.depths[1].name}, and {FRONTIER.caches.hollow} in the {FRONTIER.depths[2].name}. A cache pays 1 Fragment per
-{FRONTIER.caches.troopsPerFragment} guard troops of that ruin.
+<GameIcon name="fragment" /> Each ruin holds **either** a relic **or** a Fragment cache, never both. You see whether a
+ruin holds a Fragment cache before you attack it. Cache odds are {FRONTIER.caches.surface} on the
+{FRONTIER.depths[0].name}, {FRONTIER.caches.veil} in the {FRONTIER.depths[1].name}, and {FRONTIER.caches.hollow} in the
+{FRONTIER.depths[2].name}. A cache pays 1 Fragment per {FRONTIER.caches.troopsPerFragment} guard troops of that ruin to
+the account whose army lands the last hit.
 
 ## Supply posts
 
 Select any camp you cleared today and pick an adjacent army to add troops to that army from your home troop stock,
 paying the same wheat cost as deploying at home. Supply posts work on the {FRONTIER.depths[0].name},
-{FRONTIER.depths[1].name}, and {FRONTIER.depths[2].name} until the day ends.
+{FRONTIER.depths[1].name}, and {FRONTIER.depths[2].name} until the day ends. Clearing a camp in the
+{FRONTIER.depths[2].name} lets you top up an army right before it enters [the Deep](/frontier/deep).
 
 ## The Spire and deeper layers
 
-Spire lore ([Your realm](/frontier/realm#castle-lore)) lets you enter the {FRONTIER.depths[1].name},
-{FRONTIER.depths[2].name}, and the shared [{FRONTIER.names.deep}](/frontier/deep). Select an army beside your Spire and
-tap **Enter**. Descending costs no stamina, and the army stays on that layer for the rest of the day.
+Spire lore ([Your realm](/frontier/realm#castle-lore)) lets you find one Spire per personal layer each day, starting at
+{FRONTIER.discovery.spireStep} on your first reveal of that layer and rising by {FRONTIER.discovery.spireStep} each
+reveal until guaranteed on reveal {FRONTIER.discovery.spireRevealLimit}.
 
-<Shot name="frontier/spire" caption="The spire's card: each layer and its Enter button." />
+Each Spire leads one layer down ({FRONTIER.depths[0].name} to {FRONTIER.depths[1].name}, {FRONTIER.depths[1].name} to
+{FRONTIER.depths[2].name}, and {FRONTIER.depths[2].name} to [the {FRONTIER.names.deep}](/frontier/deep)). Move an army
+beside your Spire and tap **Enter**. Descending costs 0 stamina, and the army stays on that layer for the rest of the
+day. Send {FRONTIER.troops.scout} ahead to find each Spire cheaply, then march your fighting armies through it.

@@ -1,23 +1,26 @@
 ---
-title: Armies
-description: Troop kinds, deploying, stamina, Logistics, merging, and combat rules
+title: Armies and combat
+description: Troop kinds, deploying, stamina, Logistics, merging, the combat formula, blade vs bow, and worked examples
 ---
 
 import { FRONTIER } from "@/utils/frontier";
 import { GameIcon } from "@/components/GameIcon";
-import { Shot } from "@/components/Media";
 
-# Armies
+# Armies and combat
+
+Each day you deploy armies from your realm to explore, clear guarded sites, collect Oaths and relics, and fight in the
+Deep. An army holds one troop kind and never mixes troops. When the game day ends, deployed armies, their Oaths, and
+their relics end with the day; no survivors return home, and your realm keeps the Oath slots it has researched.
 
 ## Troop kinds
 
 Frontier has three troop kinds:
 
-| Troop                                                            | Trained at                                                 | Weapon | Role                                                                                                                                                                                       |
-| ---------------------------------------------------------------- | ---------------------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| <GameIcon name="knight-t1" /> {FRONTIER.troops.knight}           | {FRONTIER.names.barracks}                                  | Blade  | Full damage. Takes {FRONTIER.attributes.knightGuardReduction} less damage when guarding a Deep site.                                                                                       |
-| <GameIcon name="crossbowman-t1" /> {FRONTIER.troops.crossbowman} | {FRONTIER.names.range} ({FRONTIER.rangeOpens})             | Bow    | Strikes first against blades. Deals {FRONTIER.attributes.lightDamageReduction} less damage than {FRONTIER.troops.knight}.                                                                  |
-| <GameIcon name="paladin-t1" /> {FRONTIER.troops.scout}           | {FRONTIER.names.scoutsLodge} ({FRONTIER.scoutsLodgeOpens}) | Bow    | Reveals tiles for {FRONTIER.stamina.scoutReveal} stamina instead of {FRONTIER.stamina.reveal}. Deals {FRONTIER.attributes.lightDamageReduction} less damage than {FRONTIER.troops.knight}. |
+| Troop                                                            | Trained at                                                 | Mark  | Role                                                                                                                                                                                       |
+| ---------------------------------------------------------------- | ---------------------------------------------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| <GameIcon name="knight-t1" /> {FRONTIER.troops.knight}           | {FRONTIER.names.barracks}                                  | Blade | Full damage. Takes {FRONTIER.attributes.knightGuardReduction} less damage when guarding a Deep site.                                                                                       |
+| <GameIcon name="crossbowman-t1" /> {FRONTIER.troops.crossbowman} | {FRONTIER.names.range} ({FRONTIER.rangeOpens})             | Bow   | Strikes first against blades. Deals {FRONTIER.attributes.lightDamageReduction} less damage than {FRONTIER.troops.knight}.                                                                  |
+| <GameIcon name="paladin-t1" /> {FRONTIER.troops.scout}           | {FRONTIER.names.scoutsLodge} ({FRONTIER.scoutsLodgeOpens}) | Blade | Reveals tiles for {FRONTIER.stamina.scoutReveal} stamina instead of {FRONTIER.stamina.reveal}. Deals {FRONTIER.attributes.lightDamageReduction} less damage than {FRONTIER.troops.knight}. |
 
 ## Deploying
 
@@ -26,26 +29,22 @@ Open **Deploy** to place troops on a tile beside your realm in an open army slot
 troop costs {FRONTIER.realm.deployWheat} wheat to deploy (reduced by {FRONTIER.realm.rationStep} per Rations rank), and
 each castle level raises the max troops per deploy ([Your realm](/frontier/realm#the-castle)).
 
-<Shot
-  name="frontier/deploy"
-  frame="phone"
-  caption="Deploying on a phone: how many troops, the slot and the stamina it gives them, and the wheat it costs."
-/>
-
 ## Stamina
 
 An army holds {FRONTIER.stamina.max} stamina and recovers {FRONTIER.stamina.perTick} every
-{FRONTIER.stamina.tickMinutes} minutes, so an empty bar fills in {FRONTIER.stamina.fullHours} hours. Revealing a tile
-costs {FRONTIER.stamina.reveal} for {FRONTIER.troops.knight} and {FRONTIER.stamina.scoutReveal} for
-{FRONTIER.troops.scout}, a step on an explored tile costs {FRONTIER.stamina.step}, and an attack needs
-{FRONTIER.stamina.attack}. Every step and every reveal also costs {FRONTIER.stamina.wheatPerTroop} wheat per troop, so a
-large army needs many farms.
+{FRONTIER.stamina.tickMinutes} minutes ({FRONTIER.stamina.perHour} per hour), so an empty bar fills in
+{FRONTIER.stamina.fullHours} hours. Revealing a tile costs {FRONTIER.stamina.reveal} for {FRONTIER.troops.knight} and
+{FRONTIER.troops.crossbowman}, and {FRONTIER.stamina.scoutReveal} for {FRONTIER.troops.scout}. A step on an explored
+tile costs {FRONTIER.stamina.step}, and an attack needs {FRONTIER.stamina.attack}. Every step and every reveal also
+costs {FRONTIER.stamina.wheatPerTroop} wheat per troop, so a large army needs many farms.
 
 - <GameIcon name={FRONTIER.buildingIcons.supplyYard} /> A {FRONTIER.names.supplyYard} gives new armies Logistics rank I,
   and research raises it to rank V. Each rank adds {FRONTIER.stamina.logisticsStep} max stamina, adding
   {FRONTIER.stamina.logisticsBonus} bonus stamina at rank V for {FRONTIER.stamina.logisticsMax} max stamina total.
-- <GameIcon name="well" /> Visiting a Well refills {FRONTIER.stamina.well} (or {FRONTIER.oaths.reflectionWell} with the
-  Reflection Oath).
+- <GameIcon name="well" /> Revealing a Well refills {FRONTIER.stamina.well} immediately ({FRONTIER.stamina.wellBase} on
+  a {FRONTIER.stamina.max} bar, or {FRONTIER.stamina.wellLogisticsBase} at Logistics V). With the Reflection Oath, a
+  Well refills {FRONTIER.oaths.reflectionWell} ({FRONTIER.stamina.wellReflection} on a {FRONTIER.stamina.max} bar, or
+  {FRONTIER.stamina.wellLogisticsReflection} at Logistics V). Stamina above the bar maximum is lost.
 - <GameIcon name="fragment" /> {FRONTIER.shop.staminaRule} See [Shop and referrals](/frontier/shop-and-referrals) for
   current Shop status.
 
@@ -66,18 +65,64 @@ Logistics rank. You can also reinforce an army beside your realm or beside any c
 post) on the {FRONTIER.layers.personalOr} using troops and wheat from home. Disbanding an army deletes its troops after
 you confirm.
 
-## Fights
+## Combat
 
-Combat uses no dice, so every fight forecast is exact. Before you attack, the fight card shows both sides' troops before
-and after, plus the reward. Terrain gives no combat bonus or penalty.
+Combat uses no dice and no luck, so the fight preview is exact before you commit. Terrain gives no combat bonus or
+penalty. Guards keep their losses and never recover troops, so two or more armies can wear a tough guard down one after
+another.
 
-Every enemy carries a **blade** or a **bow**.
+Nobody can attack your realm or your armies on the {FRONTIER.layers.personalOr}. Player-against-player fights happen
+only in [the Deep](/frontier/deep), and allies of the same Aspect can never attack each other.
 
-- Bows strike first against blades, and only surviving blades hit back.
-- Two blades or two bows strike at the same time.
-- {FRONTIER.troops.crossbowman} and {FRONTIER.troops.scout} deal {FRONTIER.attributes.lightDamageReduction} less damage
-  than {FRONTIER.troops.knight}.
-- {FRONTIER.troops.knight} holding a Deep guard slot take {FRONTIER.attributes.knightGuardReduction} less damage, and
-  blade beasts do not get this bonus.
+### The combat formula
+
+In each attack exchange, each side starts with base damage:
+
+`round(2 × troops ÷ (both sides' troops)^0.2)`
+
+Here the damage factor is {FRONTIER.combat.damageFactor} and the total-troops exponent is {FRONTIER.combat.beta}. Then
+four multipliers apply:
+
+1. **Troop kind:** {FRONTIER.troops.crossbowman} and {FRONTIER.troops.scout} deal
+   {FRONTIER.attributes.lightDamageReduction} less damage than {FRONTIER.troops.knight}.
+2. **Deep guard protection:** {FRONTIER.troops.knight} holding a Deep site slot take
+   {FRONTIER.attributes.knightGuardReduction} less damage. Unowned beasts never get this reduction.
+3. **Active relics:** a Blade relic adds to damage dealt and a Ward relic lowers damage taken.
+4. **Oaths:** combat Oaths (Power, Skill, Giants, Protection) multiply together; the Twins adds damage from an adjacent
+   friendly army.
+
+### Blade vs bow
+
+Every troop and every guard carries a **blade** or a **bow**:
+
+- **Bow against blade:** the bow strikes first, and the blade hits back only with the troops that survive that strike.
+- **Same mark:** two blades or two bows strike at the same time.
+
+Because of first strike, bring **{FRONTIER.troops.crossbowman}** (bow) against blade enemies (herds, camps, ruins,
+{FRONTIER.deep.sites[0].beastName}, {FRONTIER.deep.sites[2].beastName}) and **{FRONTIER.troops.knight}** (blade) against
+bow enemies (bands, rifts, {FRONTIER.deep.sites[1].beastName}, {FRONTIER.deep.sites[3].beastName}).
+
+### Worked example
+
+Suppose you attack a {FRONTIER.combat.exampleLabel} ({FRONTIER.combat.exampleGuard} blade troops) with a 1.5x army
+({FRONTIER.combat.exampleSent} troops) and no Oaths or relics:
+
+- **{FRONTIER.combat.exampleSent} {FRONTIER.troops.crossbowman} (bow vs blade):** they shoot first each exchange, clear
+  the camp in {FRONTIER.combat.exampleCrossbowsExchanges} exchanges, lose {FRONTIER.combat.exampleCrossbowsLost} troops,
+  and keep **{FRONTIER.combat.exampleCrossbowsKept}**.
+- **{FRONTIER.combat.exampleSent} {FRONTIER.troops.knight} (blade vs blade):** both sides hit together each exchange,
+  clearing the camp in {FRONTIER.combat.exampleKnightsExchanges} exchanges, losing {FRONTIER.combat.exampleKnightsLost}
+  troops, and keeping **{FRONTIER.combat.exampleKnightsKept}**.
+
+### Troop against mark
+
+Surviving troops when sending a 1.5x army with no Oaths or relics:
+
+| Guard (troops, mark)                 | Army sent                          | {FRONTIER.troops.knight} kept             | {FRONTIER.troops.crossbowman} kept          | {FRONTIER.troops.scout} kept         |
+| ------------------------------------ | ---------------------------------- | ----------------------------------------- | ------------------------------------------- | ------------------------------------ |
+| {FRONTIER.combat.markRows[0].target} | {FRONTIER.combat.markRows[0].sent} | {FRONTIER.combat.markRows[0].knights}     | **{FRONTIER.combat.markRows[0].crossbows}** | {FRONTIER.combat.markRows[0].scouts} |
+| {FRONTIER.combat.markRows[1].target} | {FRONTIER.combat.markRows[1].sent} | **{FRONTIER.combat.markRows[1].knights}** | {FRONTIER.combat.markRows[1].crossbows}     | {FRONTIER.combat.markRows[1].scouts} |
+| {FRONTIER.combat.markRows[2].target} | {FRONTIER.combat.markRows[2].sent} | {FRONTIER.combat.markRows[2].knights}     | **{FRONTIER.combat.markRows[2].crossbows}** | {FRONTIER.combat.markRows[2].scouts} |
+| {FRONTIER.combat.markRows[3].target} | {FRONTIER.combat.markRows[3].sent} | **{FRONTIER.combat.markRows[3].knights}** | {FRONTIER.combat.markRows[3].crossbows}     | {FRONTIER.combat.markRows[3].scouts} |
 
 Power up your armies further with [Oaths and relics](/frontier/oaths-and-relics).
