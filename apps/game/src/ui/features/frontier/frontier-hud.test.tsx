@@ -1406,9 +1406,14 @@ it.each([
       );
       expect(initialDock).not.toBeNull();
       expect(initialDock?.dataset.tutorialLayout).toBe(layout);
-      expect(initialDock?.querySelector(".emissary-dock__action")?.textContent).toContain(
-        OPENING_WORDS.actions.explore,
-      );
+      if (layout === "phone") {
+        expect(initialDock?.dataset.tutorialForm).toBe("reminder");
+        expect(initialDock?.textContent).toContain(OPENING_WORDS.titles.explore);
+      } else {
+        expect(initialDock?.querySelector(".emissary-dock__action")?.textContent).toContain(
+          OPENING_WORDS.actions.explore,
+        );
+      }
 
       await act(async () => {
         window.history.replaceState(null, "", "/g/0x1ab9/1/map?col=2&row=2");
