@@ -47,7 +47,7 @@ export const MenuPage = ({
         <MenuTile icon="settings" label={SETTINGS} onClick={onSettings} />
         <a className="menu-tile" href={guide} target="_blank" rel="noopener noreferrer">
           <SemanticIcon name="guide" size={40} />
-          <span className="menu-tile__label">{PROFILE_WORDS.guide}</span>
+          <span className="menu-tile__label">{PROFILE_WORDS.howToPlay}</span>
         </a>
         <MenuTile icon="exit" label={EXIT} onClick={onExit} />
       </nav>

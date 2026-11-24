@@ -54,7 +54,7 @@ it("opens named menu actions independently of their badges, with their own seman
   }
 });
 
-it("opens the Guide, the game's guide on the docs site, in a new tab with the guide's mark", async () => {
+it("opens How to play, the game's guide on the docs site, in a new tab with the guide's mark", async () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const host = document.createElement("div");
   document.body.append(host);
@@ -73,7 +73,7 @@ it("opens the Guide, the game's guide on the docs site, in a new tab with the gu
       ),
     );
     const link = [...host.querySelectorAll<HTMLAnchorElement>("nav a")].find((a) =>
-      a.textContent?.includes("Guide"),
+      a.textContent?.includes("How to play"),
     )!;
     expect(link.href).toBe("https://docs.realms.party/frontier/");
     expect(link.target).toBe("_blank");

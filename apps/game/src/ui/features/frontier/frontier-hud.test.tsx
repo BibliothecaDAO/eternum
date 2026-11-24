@@ -545,7 +545,7 @@ const pressPlace = (word: string) =>
   );
 const surfaceNamed = (label: string) => document.querySelector<HTMLElement>(`section[aria-label="${label}"]`);
 const menuRow = (word: string) =>
-  [...surfaceNamed("Menu")!.querySelectorAll<HTMLElement>(".menu-place-tile, .ui-row")].find(
+  [...surfaceNamed("Menu")!.querySelectorAll<HTMLElement>(".menu-tile")].find(
     (row) => row.getAttribute("aria-label") === word || row.textContent?.startsWith(word),
   )!;
 
@@ -577,7 +577,7 @@ it.each([
   ["Today", "Today"],
   ["Settings", "Settings"],
 ])(
-  "opens %s from a phone's Menu whichever part of its row is tapped: its icon, its words or its chevron",
+  "opens %s from a phone's Menu whichever part of its tile is tapped: its painting or its word",
   async (row, opens) => {
     viewport.set(390);
     const route = window.location.pathname + window.location.search;
@@ -585,9 +585,8 @@ it.each([
     try {
       await renderHud();
       const parts = {
-        icon: (row: HTMLElement) => row.querySelector("[data-icon]")!,
-        words: (row: HTMLElement) => row.querySelector(".ui-row__title")!,
-        chevron: (row: HTMLElement) => [...row.querySelectorAll("[data-icon]")].at(-1)!,
+        icon: (tile: HTMLElement) => tile.querySelector("[data-icon]")!,
+        words: (tile: HTMLElement) => tile.querySelector(".menu-tile__label")!,
       };
       const opened: Record<string, boolean> = {};
       for (const [part, of] of Object.entries(parts)) {
@@ -599,7 +598,7 @@ it.each([
           surfaceNamed(opens)?.querySelector<HTMLButtonElement>('button[aria-label="Close"]')?.click(),
         );
       }
-      expect(opened).toEqual({ icon: true, words: true, chevron: true });
+      expect(opened).toEqual({ icon: true, words: true });
     } finally {
       window.history.replaceState(null, "", route);
     }

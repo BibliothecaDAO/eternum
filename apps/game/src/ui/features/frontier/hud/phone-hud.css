@@ -504,7 +504,7 @@ button.frontier-stock-chip {
 }
 .menu-tile__label {
   font-family: var(--hud-font-display);
-  font-size: var(--hud-text-body);
+  font-size: var(--hud-text-label);
   line-height: var(--hud-leading-label);
   letter-spacing: 0.06em;
   text-align: center;
