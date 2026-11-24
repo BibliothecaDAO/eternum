@@ -30,7 +30,7 @@ import { DeleteAccount } from "./account-deletion";
 import { DevicesCard } from "./devices-page";
 import { NotificationsCard } from "./notifications";
 import { PayoutWalletPanel } from "./payout-wallet-panel";
-import { PlayerCard, ProfileView, RealmsShowcase, RecentGames, useSeasonStanding } from "./profile-view";
+import { PlayerCard, ProfileView, RealmsShowcase, RecentGames, useOwnSeasonStanding } from "./profile-view";
 import { DELETE_ACCOUNT_HASH, DEVICES_HASH } from "./settings-route";
 import { SharedDaysPanel } from "./shared-days-panel";
 
@@ -94,7 +94,7 @@ const AccountHub = ({ account, tab }: { account: string; tab: HubTab }) => {
   const desktop = useLayout() === "desktop";
   const { hash, search } = useLocation();
   const navigate = useNavigate();
-  const { aspect } = useSeasonStanding(account, true);
+  const standing = useOwnSeasonStanding(account);
   const payout = session ? payoutAddressOf(session.user) : null;
   useReturnOnceLinked(nextOf(search), payout);
   useEffect(() => {
@@ -110,7 +110,7 @@ const AccountHub = ({ account, tab }: { account: string; tab: HubTab }) => {
           <RecentGames account={account} own />
         </>
       )}
-      {tab === "referrals" && <SharedDaysPanel aspect={aspect} />}
+      {tab === "referrals" && <SharedDaysPanel aspect={standing.aspect} aspectPending={standing.aspectPending} />}
       {tab === "wallet" && (
         <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
           <AppPanel title={WALLET_WORDS.payoutWallet} icon="backpack">
@@ -145,7 +145,7 @@ const AccountHub = ({ account, tab }: { account: string; tab: HubTab }) => {
   if (!desktop) {
     return (
       <div className="flex flex-col gap-4" data-you-hub>
-        <PlayerCard account={account} own hideInvite={tab === "referrals"} />
+        <PlayerCard account={account} own standing={standing} hideInvite={tab === "referrals"} />
         <AppTabs
           label={PROFILE_WORDS.tabsLabel}
           value={tab}
@@ -160,7 +160,7 @@ const AccountHub = ({ account, tab }: { account: string; tab: HubTab }) => {
   return (
     <div className="you-hub" data-you-hub>
       <aside className="you-rail">
-        <PlayerCard account={account} own hideInvite={tab === "referrals"} />
+        <PlayerCard account={account} own standing={standing} hideInvite={tab === "referrals"} />
         <nav className="you-rail__nav" role="tablist" aria-label={PROFILE_WORDS.tabsLabel}>
           {HUB_TABS.map(({ key, label, icon }) => (
             <button

@@ -1,4 +1,4 @@
-import type { InvitedFriendState, ShareTally } from "@realms-world/identity";
+import type { InvitedFriends, InvitedFriendState, ShareTally } from "@realms-world/identity";
 import {
   aspectName,
   formatShort,
@@ -28,19 +28,26 @@ const FRIEND_STATE_ICONS = { joined: "person", reached: "check", paid: "fragment
   IconMeaning
 >;
 
-export const SharedDaysPanel = ({ aspect = null }: { aspect?: AspectId | null }) => {
+export const SharedDaysPanel = ({
+  aspect = null,
+  aspectPending = false,
+}: {
+  aspect?: AspectId | null;
+  aspectPending?: boolean;
+}) => {
   const { session } = useIdentitySession();
   const tally = useShareTally();
+  const friends = useInvitedFriends();
   if (!session || !tally) return null;
   const paid = Math.min(FRIENDS_LIMIT, Math.max(0, tally.friendsPaid));
   return (
     <AppPanel title={SHARED_DAYS_WORDS.title} label={SHARED_DAYS_WORDS.title} icon="share">
       <div className="flex flex-col gap-5" data-referrals-panel>
         {aspect !== null ? (
-          <InviteStrip />
-        ) : (
+          <InviteStrip fallbackAspect={aspect} />
+        ) : !aspectPending ? (
           <p className="text-app-label text-app-muted">{PROFILE_WORDS.noAspectInvite}</p>
-        )}
+        ) : null}
         <div className="referrals-track" data-referrals-track>
           <div className="referrals-track__head">
             <span className="text-app-strong text-app-ink">{PROFILE_WORDS.friendsProgress(paid, FRIENDS_LIMIT)}</span>
@@ -65,7 +72,7 @@ export const SharedDaysPanel = ({ aspect = null }: { aspect?: AspectId | null })
             })}
           </ol>
         </div>
-        <InvitedFriendsList />
+        <InvitedFriendsList friends={friends} />
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           {STEPS.map((step) => (
             <AppFigure key={step} value={formatShort(tally[step])} label={SHARED_DAYS_WORDS.steps[step]} />
@@ -81,44 +88,48 @@ export const SharedDaysPanel = ({ aspect = null }: { aspect?: AspectId | null })
   );
 };
 
-const InvitedFriendsList = () => {
-  const friends = useInvitedFriends();
-  if (!friends || friends.length === 0) return null;
+const InvitedFriendsList = ({ friends }: { friends: InvitedFriends["friends"] | null }) => {
+  if (friends === null) return null;
   return (
-    <section className="flex flex-col gap-2" data-invited-friends>
+    <section className="referrals-friends" data-invited-friends>
       <span className="text-app-strong text-app-ink">{INVITED_FRIENDS_WORDS.title}</span>
-      <ul className="flex flex-col gap-2">
-        {friends.map((friend) => (
-          <li
-            key={`${friend.joinedAt}:${friend.name ?? ""}`}
-            className="app-well flex items-center gap-3 p-3"
-            data-friend-state={friend.state}
-          >
-            <Icon name={FRIEND_STATE_ICONS[friend.state]} size={28} />
-            <span className="flex min-w-0 flex-1 flex-col">
-              <span className="text-app-label text-app-ink">{friend.name ?? INVITED_FRIENDS_WORDS.unnamed}</span>
-              <span className="text-app-label text-app-muted">{INVITED_FRIENDS_WORDS.states[friend.state]}</span>
-            </span>
-            {friend.glory !== null && (
-              <span className="text-app-label text-app-gold">{INVITED_FRIENDS_WORDS.glory(friend.glory)}</span>
-            )}
-          </li>
-        ))}
-      </ul>
+      {friends.length === 0 ? (
+        <p className="referrals-friends__empty" data-invited-friends-empty>
+          {INVITED_FRIENDS_WORDS.empty}
+        </p>
+      ) : (
+        <ul className="referrals-friends__list">
+          {friends.map((friend) => (
+            <li
+              key={`${friend.joinedAt}:${friend.name ?? ""}`}
+              className="referrals-friend"
+              data-friend-state={friend.state}
+            >
+              <span className="referrals-friend__icon" aria-hidden="true">
+                <Icon name={FRIEND_STATE_ICONS[friend.state]} size={20} />
+              </span>
+              <span className="referrals-friend__name">{friend.name ?? INVITED_FRIENDS_WORDS.unnamed}</span>
+              <span className="referrals-friend__pill">{INVITED_FRIENDS_WORDS.states[friend.state]}</span>
+              {friend.glory !== null && (
+                <span className="referrals-friend__glory">{INVITED_FRIENDS_WORDS.glory(friend.glory)}</span>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
     </section>
   );
 };
 
-const InviteStrip = () => {
+const InviteStrip = ({ fallbackAspect }: { fallbackAspect: AspectId }) => {
   const invite = useSeasonInvite();
+  const shownAspect = invite.aspect ?? fallbackAspect;
   return (
     <div className="flex flex-col gap-3">
       <div className="referrals-invite">
         <div className="flex min-w-0 flex-col gap-0.5">
           <span className="text-app-strong text-app-ink">{SEASON_INVITE_WORDS.title}</span>
-          {invite.aspect !== null && (
-            <span className="text-app-label text-app-muted">{SEASON_INVITE_WORDS.line(aspectName(invite.aspect))}</span>
-          )}
+          <span className="text-app-label text-app-muted">{SEASON_INVITE_WORDS.line(aspectName(shownAspect))}</span>
         </div>
         <CopySeasonInvite invite={invite} size="md" />
       </div>

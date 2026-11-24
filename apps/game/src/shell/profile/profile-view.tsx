@@ -35,6 +35,7 @@ import { useLayout } from "../frame/layout";
 import { isAspectSeason, useDirectory, useLeaderboard, useRecentResults } from "../herald";
 import { Loading } from "../loading";
 import { ageOf } from "../play/ages";
+import { useOrderIntent } from "../play/order-intent";
 import { CopySeasonInvite, SeasonInviteAlerts, useSeasonInvite } from "../play/season-invite";
 import {
   chooseSeason,
@@ -57,7 +58,7 @@ const useCardProfile = (account: string, own: boolean) => {
 
 const HISTORY = 8;
 
-export const useSeasonStanding = (account: string, own: boolean) => {
+const useSeasonStanding = (account: string, own: boolean) => {
   const games = useDirectory().data?.games ?? [];
   const season = chooseSeason(games, true);
   const aspectSeason = isAspectSeason(season);
@@ -70,30 +71,47 @@ export const useSeasonStanding = (account: string, own: boolean) => {
   return { season, standing, field: entries?.length, order: standingOrder, aspect, realm: home?.realm ?? null };
 };
 
-export const ProfileView = ({ account, own }: { account: string; own: boolean }) =>
-  useLayout() === "phone" ? (
+type SeasonStanding = ReturnType<typeof useSeasonStanding>;
+
+export const useOwnSeasonStanding = (account: string) => {
+  const standing = useSeasonStanding(account, true);
+  const { intent } = useOrderIntent();
+  const chosenOrderId = intent.data?.order ?? null;
+  const chosenOrder = chosenOrderId !== null ? catalogOrder(chosenOrderId) : null;
+  const order = standing.order ?? chosenOrder;
+  const aspect = standing.aspect ?? order?.aspect ?? null;
+  const aspectPending = aspect === null && intent.isPending;
+  return { ...standing, order, aspect, aspectPending };
+};
+
+export const ProfileView = ({ account, own }: { account: string; own: boolean }) => {
+  const standing = useSeasonStanding(account, own);
+  return useLayout() === "phone" ? (
     <div data-you-profile className="flex flex-col gap-4">
-      <PlayerCard account={account} own={own} />
+      <PlayerCard account={account} own={own} standing={standing} />
       <History account={account} own={own} />
     </div>
   ) : (
     <div data-you-profile className="grid grid-cols-[theme(width.rail)_minmax(0,1fr)] items-start gap-6">
-      <PlayerCard account={account} own={own} />
+      <PlayerCard account={account} own={own} standing={standing} />
       <RecentGames account={account} own={own} />
     </div>
   );
+};
 
 export const PlayerCard = ({
   account,
   own,
+  standing: seasonStanding,
   hideInvite = false,
 }: {
   account: string;
   own: boolean;
+  standing: SeasonStanding;
   hideInvite?: boolean;
 }) => {
   const profile = useCardProfile(account, own);
-  const { standing, field, order, aspect, realm } = useSeasonStanding(account, own);
+  const { standing, field, order, aspect, realm } = seasonStanding;
   const frontier = ageOf("frontier");
   const cardStyle = aspect !== null ? (aspectVariables(aspect) as CSSProperties) : undefined;
   return (
