@@ -2155,7 +2155,7 @@ export const HudStamina = ({
     aria-valuenow={stamina?.current}
     aria-valuemin={0}
     aria-valuemax={stamina?.max}
-    className="ui-meter w-full"
+    className="ui-meter block w-full"
     data-tone={tone}
     data-filling={filling || undefined}
   >
