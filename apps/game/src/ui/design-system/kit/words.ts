@@ -1002,7 +1002,7 @@ export const OPENING_WORDS = {
     explore: "Mist revealed. Sites and Essence await.",
     oath: "Oath choice settled.",
     "daily-quest": "Quest reward collected. Labor and Essence added.",
-    essence: "Upgrade learned. Your Realm grows stronger.",
+    essence: "Research opened. Learn any node marked ready.",
     "day-end": "Day ending noted. Tap the Day medallion anytime for Today.",
     bane: "Bane checked. Help your Aspect break it today.",
     aspects: "Season standings opened. Track your Aspect race here.",

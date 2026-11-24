@@ -30,6 +30,7 @@ export interface OpeningContext {
   readonly outOfStamina: boolean;
   readonly hasRelic: boolean;
   readonly openedToday: boolean;
+  readonly openedResearch: boolean;
   readonly openedSeason: boolean;
   readonly openedShop: boolean;
   readonly openedArmy: boolean;
@@ -116,6 +117,7 @@ export const OPENING = {
     reachedWhen: (ctx) => ctx.hasEssence,
     showsWhen: (ctx) => ctx.canResearch && !ctx.hasResearched,
     completesWhen: (ctx) => ctx.hasResearched,
+    completesWhileShowing: (ctx) => ctx.openedResearch,
   },
   "day-end": {
     icon: "hourglass",

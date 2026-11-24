@@ -1,11 +1,15 @@
 import "./aspect-emissary-dock.css";
 
+import { useEffect, useRef } from "react";
+
 import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { Icon } from "@/ui/design-system/icon";
 import { CLOSE, OPENING_WORDS, type OpeningRules } from "@/ui/design-system/kit/words";
 import { OPENING, teacherAspectOf, type OpeningMoment } from "../opening/opening";
 import type { TutorialDisplayStatus } from "../opening/opening-state";
 import { resolveAspectEmissary } from "./aspect-emissaries";
+
+const CONFIRM_MS = 3_500;
 
 export interface AspectEmissaryDockProps {
   readonly moment: OpeningMoment;
@@ -26,6 +30,7 @@ export function AspectEmissaryDock({
 }: AspectEmissaryDockProps) {
   const spec = OPENING[moment];
   const aspectId = teacherAspectOf(moment, rules.ownAspect);
+  const dock = useRetireOnceSeen(status === "completed" ? moment : null, onDismiss);
   if (aspectId === null) return null;
   const emissary = resolveAspectEmissary(aspectId);
   const phone = layout === "phone";
@@ -40,6 +45,7 @@ export function AspectEmissaryDock({
 
   return (
     <aside
+      ref={dock}
       data-tutorial-dock={moment}
       data-tutorial-aspect={aspectId}
       data-tutorial-layout={layout}
@@ -108,4 +114,30 @@ export function AspectEmissaryDock({
       </div>
     </aside>
   );
+}
+
+function useRetireOnceSeen(confirmed: OpeningMoment | null, retire: () => void) {
+  const dock = useRef<HTMLElement>(null);
+  const latestRetire = useRef(retire);
+  latestRetire.current = retire;
+  useEffect(() => {
+    const element = dock.current;
+    if (confirmed === null || !element) return;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const onScreen = (visible: boolean) => {
+      clearTimeout(timer);
+      timer = visible ? setTimeout(() => latestRetire.current(), CONFIRM_MS) : undefined;
+    };
+    const observer =
+      typeof IntersectionObserver === "undefined"
+        ? null
+        : new IntersectionObserver((entries) => onScreen(entries.some((entry) => entry.isIntersecting)));
+    if (observer) observer.observe(element);
+    else onScreen(true);
+    return () => {
+      clearTimeout(timer);
+      observer?.disconnect();
+    };
+  }, [confirmed]);
+  return dock;
 }

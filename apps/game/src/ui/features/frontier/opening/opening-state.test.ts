@@ -457,6 +457,29 @@ it("runs every lesson through due -> showing -> completed or dismissed -> never 
   }
 });
 
+it("completes the Research lesson as Research opens, since the full page covers the dock", () => {
+  const due = LIFECYCLE_CASES.essence.due;
+  const opened = stepTutorialMachine({
+    showing: "essence",
+    confirmed: null,
+    ctx: { ...due, openedResearch: true },
+    rules: OPENING_RULES,
+    seen: new Set(),
+  });
+  expect(opened.confirmedMoment).toBe("essence");
+  expect(opened.newlyCompleted).toEqual(["essence"]);
+
+  const openedBeforeItShowed = stepTutorialMachine({
+    showing: null,
+    confirmed: null,
+    ctx: { ...due, openedResearch: true },
+    rules: OPENING_RULES,
+    seen: new Set(),
+  });
+  expect(openedBeforeItShowed.nextShowing).toBe("essence");
+  expect(openedBeforeItShowed.newlyCompleted).toEqual([]);
+});
+
 it("silently completes actions done before their lesson showed without flashing a confirmation banner, and keeps replay intact", () => {
   const alreadyDeployed: OpeningContext = {
     ...EMPTY_OPENING_CONTEXT,

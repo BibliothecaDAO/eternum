@@ -175,4 +175,51 @@ describe("AspectEmissaryDock", () => {
     act(() => host.querySelector<HTMLButtonElement>('button[aria-label="Close"]')!.click());
     expect(onDismiss).toHaveBeenCalledTimes(1);
   });
+
+  it("keeps a confirmed line while a panel hides it, and retires it 3.5 s after it is on screen", () => {
+    vi.useFakeTimers();
+    const observers: Array<(entries: Array<{ isIntersecting: boolean }>) => void> = [];
+    vi.stubGlobal(
+      "IntersectionObserver",
+      class {
+        constructor(callback: (entries: Array<{ isIntersecting: boolean }>) => void) {
+          observers.push(callback);
+        }
+        observe() {}
+        disconnect() {}
+      },
+    );
+    try {
+      const onDismiss = vi.fn();
+      act(() =>
+        root.render(
+          <AspectEmissaryDock moment="aspects" rules={OPENING_RULES} status="completed" onDismiss={onDismiss} />,
+        ),
+      );
+      act(() => observers.at(-1)!([{ isIntersecting: false }]));
+      act(() => vi.advanceTimersByTime(60_000));
+      expect(onDismiss).not.toHaveBeenCalled();
+
+      act(() => observers.at(-1)!([{ isIntersecting: true }]));
+      act(() => vi.advanceTimersByTime(3_499));
+      expect(onDismiss).not.toHaveBeenCalled();
+      act(() => vi.advanceTimersByTime(1));
+      expect(onDismiss).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.unstubAllGlobals();
+      vi.useRealTimers();
+    }
+  });
+
+  it("never retires a lesson that is still showing", () => {
+    vi.useFakeTimers();
+    try {
+      const onDismiss = vi.fn();
+      act(() => root.render(<AspectEmissaryDock moment="barracks" rules={OPENING_RULES} onDismiss={onDismiss} />));
+      act(() => vi.advanceTimersByTime(60_000));
+      expect(onDismiss).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

@@ -67,7 +67,6 @@ import {
 
 const CONTEXT_MODELS = ["RealmKnowledge", "ArmyRelics", "ArmyProgress", "HomeAspect", "TileOpt"] as const;
 const RETRY_MS = 15_000;
-const CONFIRM_MS = 3_500;
 
 export function useOpening(
   rules: ExpeditionRules,
@@ -145,12 +144,6 @@ export function useOpening(
       confirmed: transition.confirmedMoment,
     });
   }, [canEvaluate, showEverything, completedKey, transition.nextShowing, transition.confirmedMoment]);
-
-  useEffect(() => {
-    if (storeState.confirmed === null) return;
-    const timer = setTimeout(() => clearConfirmedTutorial(), CONFIRM_MS);
-    return () => clearTimeout(timer);
-  }, [storeState.confirmed]);
 
   const activeLine: TutorialDisplay | null =
     !canEvaluate || !lineRules
@@ -303,6 +296,7 @@ function useOpeningContext(
     outOfStamina,
     hasRelic,
     openedToday: openedSurface === "today",
+    openedResearch: openedSurface === "research",
     openedSeason: openedSurface === "season",
     openedShop: openedSurface === "shop",
     openedArmy: openedSurface === "army",

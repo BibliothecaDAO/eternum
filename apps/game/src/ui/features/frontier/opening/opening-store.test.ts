@@ -1,4 +1,4 @@
-import { OPENING_MOMENT_KEY_PATTERN } from "@realms-world/identity";
+import { readOpeningAdditions } from "@realms-world/identity";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 const identity = vi.hoisted(() => ({
@@ -6,6 +6,7 @@ const identity = vi.hoisted(() => ({
 }));
 vi.mock("@/hooks/context/identity-session", () => ({ identityClient: { addOpeningProgress: identity.add } }));
 
+import { STANDING_PROMPTS } from "@/shell/standing-prompts";
 import { OPENING_MOMENTS } from "./opening";
 import { accountProgress, TUTORIAL_SKIPPED } from "./opening-state";
 import {
@@ -20,6 +21,7 @@ import {
   skipTutorial,
   useOpeningStore,
 } from "./opening-store";
+import { SITE_ALERT_OFFER } from "./use-site-alert-offer";
 
 /** A request the test answers when it chooses: the service's answer for it, or its failure. */
 const unanswered: Array<() => void> = [];
@@ -269,26 +271,38 @@ it("persists completed, dismissed, skipped, and replayed tutorial state across r
   expect(afterReplayReload.seen.has(TUTORIAL_SKIPPED)).toBe(false);
 });
 
-it("uses only server-valid opening keys and migrates legacy tutorial:skipped out of localStorage before POST /opening", async () => {
-  for (const moment of [...OPENING_MOMENTS, TUTORIAL_SKIPPED]) {
-    expect(moment).toMatch(OPENING_MOMENT_KEY_PATTERN);
-  }
-
+it("sends only bodies the identity service's own validator takes, through every lesson, skip, replay and a legacy key", async () => {
+  const held = { reached: new Set<string>(), seen: new Set<string>() };
+  const sent: unknown[] = [];
+  identity.add.mockImplementation(async (body) => {
+    const wire = JSON.parse(JSON.stringify(body));
+    sent.push(wire);
+    const additions = readOpeningAdditions(wire);
+    if (!additions) throw new Error("400 invalid_opening_progress");
+    additions.reached.forEach((moment) => held.reached.add(moment));
+    additions.seen.forEach((moment) => held.seen.add(moment));
+    return { reached: [...held.reached], seen: [...held.seen] };
+  });
   localStorage.setItem(
     openingCacheKey("a"),
-    JSON.stringify({
-      reached: ["barracks"],
-      seen: ["tutorial:skipped"],
-      unsent: { reached: [], seen: ["tutorial:skipped"] },
-      complete: true,
-    }),
+    JSON.stringify({ reached: [], seen: ["tutorial:skipped"], unsent: { reached: [], seen: ["tutorial:skipped"] } }),
   );
 
-  const calls = deferred();
-  void loadOpening("a");
-  await settle();
-  expect(calls[0]!.sent).toEqual({ reached: [], seen: [TUTORIAL_SKIPPED] });
-  calls[0]!.answer({ reached: ["barracks"], seen: [TUTORIAL_SKIPPED] });
-  await settle();
-  expect(accountProgress("a", useOpeningStore.getState()).seen.has(TUTORIAL_SKIPPED)).toBe(true);
+  await loadOpening("a");
+  await reachMoments(OPENING_MOMENTS);
+  for (const moment of OPENING_MOMENTS) await seeLine(moment);
+  await skipTutorial();
+  replayTutorial();
+  await commitTutorialStep({ completed: OPENING_MOMENTS, showing: null, confirmed: "barracks" });
+  for (const prompt of [SITE_ALERT_OFFER, ...STANDING_PROMPTS]) await seeLine(prompt);
+  await flush();
+
+  expect(sent.length).toBeGreaterThan(0);
+  expect(sent.filter((body) => readOpeningAdditions(body) === null)).toEqual([]);
+  expect(useOpeningStore.getState().status).toBe("ready");
+  expect(unsent()).toEqual({ reached: [], seen: [] });
+  expect([...held.reached].sort()).toEqual([...OPENING_MOMENTS].sort());
+  expect([...held.seen].sort()).toEqual(
+    [...OPENING_MOMENTS, TUTORIAL_SKIPPED, SITE_ALERT_OFFER, ...STANDING_PROMPTS].sort(),
+  );
 });

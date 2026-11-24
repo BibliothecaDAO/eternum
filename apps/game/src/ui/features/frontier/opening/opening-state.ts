@@ -45,6 +45,7 @@ export const EMPTY_OPENING_CONTEXT: OpeningContext = {
   outOfStamina: false,
   hasRelic: false,
   openedToday: false,
+  openedResearch: false,
   openedSeason: false,
   openedShop: false,
   openedArmy: false,
