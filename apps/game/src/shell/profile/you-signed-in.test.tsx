@@ -27,7 +27,7 @@ vi.mock("../herald", async (importOriginal) => ({
 }));
 
 import { identityClient } from "@/hooks/context/identity-session";
-import { INVITE_WORDS, SEASON_INVITE_WORDS } from "@/ui/design-system/kit/words";
+import { INVITED_FRIENDS_WORDS, INVITE_WORDS, PROFILE_WORDS, SEASON_INVITE_WORDS } from "@/ui/design-system/kit/words";
 import { setViewportWidth } from "../frame/test-viewport";
 import { SEASON_SPENDS_FRAGMENTS } from "../season";
 import { ProfilePage, SettingsRedirect } from "./profile-pages";
@@ -172,8 +172,9 @@ it("shows one invite control and one primary button on /profile#referrals when t
   });
   vi.spyOn(identityClient, "invitedFriends").mockResolvedValue({
     friends: [
-      { name: null, joinedAt: 2, glory: 120, state: "reached" },
-      { name: "Rowan", joinedAt: 1, glory: 100, state: "paid" },
+      { name: null, joinedAt: 3, glory: 120, state: "reached" },
+      { name: "Rowan", joinedAt: 2, glory: 100, state: "paid" },
+      { name: "Aldric", joinedAt: 1, glory: 45, state: "joined" },
     ],
   });
   const page = await open("/profile#referrals", 1440);
@@ -194,11 +195,64 @@ it("shows one invite control and one primary button on /profile#referrals when t
   expect(page.querySelectorAll('button[data-kind="primary"], a[data-kind="primary"]')).toHaveLength(
     SEASON_SPENDS_FRAGMENTS ? 1 : 0,
   );
-  await vi.waitFor(() => expect(page.querySelectorAll("[data-friend-state]")).toHaveLength(2));
+  await vi.waitFor(() => expect(page.querySelectorAll("[data-friend-state]")).toHaveLength(3));
   expect([...page.querySelectorAll("[data-friend-state]")].map((row) => row.textContent)).toEqual([
     "A friendReached 100 Glory120 Glory",
     "RowanPaid you 100 Fragments100 Glory",
+    "AldricJoined45 Glory",
   ]);
+  expect([...page.querySelectorAll("[data-friend-state]")].map((row) => row.getAttribute("data-friend-state"))).toEqual(
+    ["reached", "paid", "joined"],
+  );
+});
+
+it("offers Copy invite link on /profile#referrals for a pre-season player who chose an Order, and shows the empty friends state", async () => {
+  vi.spyOn(identityClient, "shareTally").mockResolvedValue({
+    links: 0,
+    posted: 0,
+    visits: 0,
+    joined: 0,
+    activated: 0,
+    friendsPaid: 0,
+    fragmentsEarned: 0,
+  });
+  vi.spyOn(identityClient, "getOrderIntent").mockResolvedValue({ order: 1, members: { 1: 12 } });
+  vi.spyOn(identityClient, "createInvite").mockResolvedValue({
+    code: "PRE12345",
+    aspect: 1,
+    chainId: null,
+    gameId: null,
+  });
+  vi.spyOn(identityClient, "invitedFriends").mockResolvedValue({ friends: [] });
+  const page = await open("/profile#referrals", 390);
+  await vi.waitFor(() =>
+    expect([...page.querySelectorAll("button")].some((button) => button.textContent === SEASON_INVITE_WORDS.copy)).toBe(
+      true,
+    ),
+  );
+  expect(page.textContent).not.toContain(PROFILE_WORDS.noAspectInvite);
+  expect(page.textContent).toContain("Prowess");
+  await vi.waitFor(() => expect(page.querySelector("[data-invited-friends-empty]")).not.toBeNull());
+  expect(page.querySelector("[data-invited-friends-empty]")?.textContent).toBe(INVITED_FRIENDS_WORDS.empty);
+  expect(page.querySelectorAll("[data-friend-state]")).toHaveLength(0);
+});
+
+it("shows the join-Aspect prompt on /profile#referrals only when the player has neither a Season Aspect nor a chosen Order", async () => {
+  vi.spyOn(identityClient, "shareTally").mockResolvedValue({
+    links: 0,
+    posted: 0,
+    visits: 0,
+    joined: 0,
+    activated: 0,
+    friendsPaid: 0,
+    fragmentsEarned: 0,
+  });
+  vi.spyOn(identityClient, "getOrderIntent").mockResolvedValue({ order: null, members: {} });
+  const createInvite = vi.spyOn(identityClient, "createInvite");
+  vi.spyOn(identityClient, "invitedFriends").mockResolvedValue({ friends: [] });
+  const page = await open("/profile#referrals", 1440);
+  await vi.waitFor(() => expect(page.textContent).toContain(PROFILE_WORDS.noAspectInvite));
+  expect(createInvite).not.toHaveBeenCalled();
 });
 
 describe("a session with no name claimed yet", () => {

@@ -3,7 +3,12 @@ import { useEffect, useState } from "react";
 import { Navigate, Route, Routes, useParams } from "react-router-dom";
 
 import { identityClient, useIdentitySessionStore } from "@/hooks/context/identity-session";
-import { IdentityRequestError, SOCIAL_PROVIDERS, type SealCodeRefusal } from "@realms-world/identity";
+import {
+  IdentityRequestError,
+  SOCIAL_PROVIDERS,
+  type InvitedFriends,
+  type SealCodeRefusal,
+} from "@realms-world/identity";
 
 import { PageAddress } from "../frame/page-address";
 import { CreditsPage, PrivacyPage, TermsPage } from "../legal";
@@ -165,6 +170,7 @@ function installLabFixtures(screen: LabScreen, field: number | null): () => void
     "unlinkWallet",
     "linkWallet",
     "shareTally",
+    "invitedFriends",
     "readDefaultWallet",
     "deleteAccount",
     "priceFragments",
@@ -229,6 +235,12 @@ const answerAppReads = (screen: LabScreen, field: number | null) => {
   };
 };
 
+const LAB_INVITED_FRIENDS: InvitedFriends["friends"] = [
+  { name: "Rowan", joinedAt: 1_763_600_000, glory: 140, state: "paid" },
+  { name: "Rhoswen the Unbowed", joinedAt: 1_763_686_400, glory: 105, state: "reached" },
+  { name: "Aldric", joinedAt: 1_763_772_800, glory: 45, state: "joined" },
+];
+
 const answerIdentity = (screen: LabScreen) => {
   identityClient.listSignInProviders = async () => ["discord"];
   identityClient.availableSignInProviders = async () => [...SOCIAL_PROVIDERS];
@@ -237,7 +249,12 @@ const answerIdentity = (screen: LabScreen) => {
     if (code !== LAB_EMAIL_CODE) throw new IdentityRequestError(400, "INVALID_OTP");
   };
   identityClient.shareTally = async () => LAB_SHARE_TALLIES[screen] ?? LAB_NO_SHARES;
-  let intent = labOrderIntent(screen);
+  identityClient.invitedFriends = async () => ({
+    friends: LAB_SHARE_TALLIES[screen] ? LAB_INVITED_FRIENDS : [],
+  });
+  const baseIntent = labOrderIntent(screen);
+  let intent =
+    LAB_SHARE_TALLIES[screen] && baseIntent.order === null ? { ...baseIntent, order: LAB_INVITE.order } : baseIntent;
   identityClient.getOrderIntent = async () => intent;
   identityClient.chooseOrder = async (order) => {
     intent = { ...intent, order };

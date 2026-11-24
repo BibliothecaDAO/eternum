@@ -1201,6 +1201,7 @@ export const SHARED_DAYS_WORDS = {
 export const INVITED_FRIENDS_WORDS = {
   title: "Friends you brought",
   unnamed: "A friend",
+  empty: `Friends who join with your link appear here with their ${ASPECT_PAGE_WORDS.glory} progress.`,
   glory: DEEP_WORDS.glory,
   states: {
     joined: "Joined",
