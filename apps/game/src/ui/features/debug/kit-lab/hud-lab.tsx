@@ -21,7 +21,6 @@ import {
   EVENTS_WORDS,
   LINK_WALLET_FOR_LORDS,
   PAYOUTS_PAUSED,
-  type Rank,
   WITHDRAWALS_CLOSED,
   YOU,
 } from "@/ui/design-system/kit/words";
@@ -340,10 +339,8 @@ const tile = (
   icon: LabTile["icon"],
   name: string,
   gives: LabTile["gives"],
-  gems: LabTile["gems"],
   standing: LabTile["standing"],
-): LabTile => ({ key, icon, name, tip: "", gives, gems, standing });
-const gem = (tier: Rank): LabTile["gems"] => [{ tier }];
+): LabTile => ({ key, icon, name, does: "", gives, standing });
 const price = (labor: number, short?: Extract<LabTile["standing"], { kind: "price" }>["short"], raised?: string) =>
   ({ kind: "price", prices: [{ of: "labor", amount: labor, short: short?.of === "labor" }], short, raised }) as const;
 
@@ -364,17 +361,17 @@ const essenceShortPrice: LabTile["standing"] = {
   short: { of: "essence", wait: undefined },
 };
 const BUILD_TILES: LabTile[] = [
-  tile("farm", "farm", "Farm", { icon: "wheat", value: "+6.3/min" }, gem(2), price(6_800)),
+  tile("farm", "farm", "Farm", { icon: "wheat", value: "+6.3/min" }, price(6_800)),
   tile(
     "workshop",
     "workshop",
     "Workshop",
     { icon: "labor", value: "+0.83/min" },
-    gem(2),
+
     price(34_000, { of: "labor", wait: 16 * HOUR }, "Costs more with each one standing: 1"),
   ),
-  tile("barracks", "barracks", "Barracks", { icon: "troops", value: "+13/min" }, gem(1), price(6_800)),
-  tile("supply", "supply-yard", buildingName(BuildingType.SupplyYard), { icon: "order-skill" }, gem(1), trainingPrice),
+  tile("barracks", "barracks", "Barracks", { icon: "troops", value: "+13/min" }, price(6_800)),
+  tile("supply", "supply-yard", buildingName(BuildingType.SupplyYard), { icon: "order-skill" }, trainingPrice),
 ];
 const SHORT_TILES: LabTile[] = BUILD_TILES.map((card) =>
   card.key === "farm" || card.key === "workshop" || card.key === "barracks"
@@ -382,10 +379,10 @@ const SHORT_TILES: LabTile[] = BUILD_TILES.map((card) =>
     : { ...card, standing: essenceShortPrice },
 );
 const EARLY_TILES: LabTile[] = [
-  tile("farm", "farm", "Farm", { icon: "wheat", value: "+5/min" }, gem(0), price(800)),
-  tile("workshop", "workshop", "Workshop", { icon: "labor", value: "+0.83/min" }, gem(0), price(2_000)),
-  tile("barracks", "barracks", "Barracks", { icon: "troops", value: "+1.7/min" }, gem(0), price(800)),
-  tile("supply", "supply-yard", buildingName(BuildingType.SupplyYard), { icon: "order-skill" }, gem(1), trainingPrice),
+  tile("farm", "farm", "Farm", { icon: "wheat", value: "+5/min" }, price(800)),
+  tile("workshop", "workshop", "Workshop", { icon: "labor", value: "+0.83/min" }, price(2_000)),
+  tile("barracks", "barracks", "Barracks", { icon: "troops", value: "+1.7/min" }, price(800)),
+  tile("supply", "supply-yard", buildingName(BuildingType.SupplyYard), { icon: "order-skill" }, trainingPrice),
 ];
 const CASTLE_SIDE = (level: number, wheatStore: number) => ({
   level,

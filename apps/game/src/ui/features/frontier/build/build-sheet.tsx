@@ -96,13 +96,23 @@ const isOpenPlot = (store: PlotStore, realm: NativeRows["Structure"], plot: HexP
   return !building || Number(building.category) === BuildingType.None;
 };
 
-export const openPlots = (store: PlotStore, realm: NativeRows["Structure"]): HexPosition[] => {
+const realmPlots = (realm: NativeRows["Structure"]): HexPosition[] => {
   const radius = buildableRadius(realm.base.level);
   const plots: HexPosition[] = [];
   for (let row = CASTLE_PLOT.row - radius; row <= CASTLE_PLOT.row + radius; row += 1)
-    for (let col = CASTLE_PLOT.col - radius; col <= CASTLE_PLOT.col + radius; col += 1)
-      if (isOpenPlot(store, realm, { col, row })) plots.push({ col, row });
+    for (let col = CASTLE_PLOT.col - radius; col <= CASTLE_PLOT.col + radius; col += 1) {
+      const distance = getHexDistance(CASTLE_PLOT, { col, row });
+      if (distance > 0 && distance <= radius) plots.push({ col, row });
+    }
   return plots;
+};
+
+export const openPlots = (store: PlotStore, realm: NativeRows["Structure"]): HexPosition[] =>
+  realmPlots(realm).filter((plot) => isOpenPlot(store, realm, plot));
+
+const plotsHeld = (store: PlotStore, realm: NativeRows["Structure"]) => {
+  const total = realmPlots(realm).length;
+  return { used: total - openPlots(store, realm).length, total };
 };
 
 export const BuildSheet = ({
@@ -205,6 +215,7 @@ export const BuildSheet = ({
     <BuildView
       tiles={options.map((candidate) => buildTile(candidate, holdings))}
       chosen={chosen}
+      plots={plotsHeld(facts.store, realm)}
       onChoose={(index) => setPicked(options[index]!.category)}
       prices={optionPrices(option)}
       refusal={standing()}
@@ -236,9 +247,8 @@ const buildTile = (option: BuildOption, holdings: Holdings): BuildTile => ({
   key: String(option.category),
   icon: buildingIcon(option.category),
   name: buildingName(option.category),
-  tip: buildingLine(option),
+  does: buildingDoes(option),
   gives: givesOf(option),
-  gems: gemsOf(option),
   standing: standingOf(option, holdings),
 });
 
@@ -264,24 +274,18 @@ const standingOf = (option: BuildOption, { held, perHour }: Holdings): BuildTile
   };
 };
 
-const buildingLine = (option: BuildOption): RankedWords => {
-  const { effect } = option;
-  const does: RankedWords =
-    effect.kind === "produces"
-      ? [makes(FRONTIER_STORES[madeStore(effect.resource)].word, formatRate(effect.output.total))]
-      : effect.kind === "trains"
-        ? startsNewArmies(effect.attribute, option.tier)
-        : effect.kind === "research"
-          ? [effect.line]
-          : [storesMore(storageShare(effect.shareBps))];
-  return [`${buildingName(option.category)}: `, ...does];
-};
+const buildingDoes = ({ effect, tier }: BuildOption): RankedWords =>
+  effect.kind === "produces"
+    ? [makes(FRONTIER_STORES[madeStore(effect.resource)].word, formatRate(effect.output.total))]
+    : effect.kind === "trains"
+      ? startsNewArmies(effect.attribute, tier)
+      : effect.kind === "research"
+        ? [effect.line]
+        : [storesMore(storageShare(effect.shareBps))];
 
 /** Why a price is above its first: the copies standing raise it. None when no copy stands yet. */
 const riseLine = (option: BuildOption): string | undefined =>
   option.rise.times > 1 ? priceRaised(formatAmount(option.rise.standing)) : undefined;
-
-const gemsOf = ({ effect, tier }: BuildOption): BuildTile["gems"] => (effect.kind === "stores" ? [] : [{ tier }]);
 
 const storageShare = (bps: number) => formatPercent(bps / 10_000, { signed: true });
 

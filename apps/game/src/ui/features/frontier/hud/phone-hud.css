@@ -464,6 +464,9 @@ button.frontier-stock-chip {
   align-items: center;
 }
 .frontier-tablet-float {
+  position: absolute;
+  top: calc(100% + theme(spacing.2));
+  inset-inline: 0;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -580,5 +583,23 @@ button.frontier-stock-chip {
   }
   .menu-nav .ui-row {
     min-width: 0;
+  }
+}
+@media (min-width: 768px) and (max-width: 1023px) and (orientation: portrait) {
+  .ui-sheet {
+    top: var(--hud-phone-top);
+    right: theme(spacing.2);
+    bottom: auto;
+    left: auto;
+    width: 248px;
+    max-height: calc(100dvh - var(--hud-phone-top) - var(--hud-phone-foot));
+  }
+  .ui-sheet .ui-window__foot {
+    flex-direction: column;
+    align-items: stretch;
+    padding: theme(spacing.2);
+  }
+  .ui-sheet .build-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

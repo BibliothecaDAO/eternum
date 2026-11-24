@@ -3,107 +3,92 @@
   flex-direction: column;
   gap: theme(spacing[1.5]);
 }
-.build-chosen {
-  display: flex;
+.build-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: theme(spacing[1.5]);
+}
+.build-grid .ui-card[data-locked] .ui-card__picture,
+.build-grid .ui-card[data-locked] .ui-card__foot {
+  opacity: 0.55;
+}
+.build-grid .ui-card__corner .ui-chip {
+  min-height: 0;
+  padding: 1px 5px;
+  font-size: var(--hud-text-badge);
+  line-height: var(--hud-leading-badge);
+  text-transform: uppercase;
+}
+.build-tile-gives {
+  display: inline-flex;
   align-items: center;
-  gap: theme(spacing[1.5]);
-  border: 1px solid var(--hud-divider);
-  border-radius: var(--hud-radius-control);
-  background: var(--hud-well);
-  padding: theme(spacing.1) theme(spacing.2);
-  color: rgb(var(--hud-ink));
-  font-size: var(--hud-text-label);
-  line-height: var(--hud-leading-label);
+  gap: theme(spacing.1);
+  color: rgb(var(--hud-good));
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
-.build-locked {
-  display: flex;
-  flex-direction: column;
-  gap: theme(spacing[1.5]);
-  border-top: 1px solid var(--hud-divider);
-  padding-top: theme(spacing[1.5]);
-}
-.build-locked__group {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: theme(spacing[1.5]);
-}
-.build-locked__items {
+.build-tile-price {
   display: inline-flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: center;
   gap: theme(spacing.1);
+  white-space: nowrap;
 }
-.build-locked__items .ui-button {
-  height: auto;
-  min-height: calc(var(--hud-control) - 8px);
-  max-width: 100%;
-  flex-wrap: wrap;
-  padding-block: theme(spacing[0.5]);
-  white-space: normal;
+.build-does {
+  color: rgb(var(--hud-good));
+  font-size: var(--hud-text-label);
+  line-height: var(--hud-leading-label);
 }
-.build-locked__price {
-  border-left: 1px solid var(--hud-divider);
-  padding-left: theme(spacing[1.5]);
-}
-@media (pointer: coarse) {
-  .build-locked__items .ui-button {
-    min-height: var(--hud-control);
-  }
+.build-more {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  margin: 0;
+  border: 1px solid var(--hud-divider);
+  border-radius: var(--hud-radius-control);
+  background: rgb(var(--hud-dark));
+  padding: theme(spacing.1) theme(spacing.2);
+  color: rgb(var(--hud-muted));
+  font-size: var(--hud-text-label);
+  line-height: var(--hud-leading-label);
+  text-align: center;
 }
 @media (max-width: 1023px) {
   .ui-sheet:has([data-build-sheet]) .ui-frame__body {
-    padding: theme(spacing[1.5]) theme(spacing.2) theme(spacing.3);
+    padding: theme(spacing[1.5]) theme(spacing.2) theme(spacing.2);
   }
   [data-build-sheet] .ui-card[data-size="sm"] {
     min-height: 0;
   }
   [data-build-sheet] .ui-card[data-size="sm"] .ui-card__choose {
     gap: 2px;
-    padding: theme(spacing.1) theme(spacing.1) theme(spacing[1.5]);
+    padding: theme(spacing.1);
   }
   [data-build-sheet] .ui-card[data-size="sm"] .ui-card__picture {
-    height: 22px;
+    height: 36px;
   }
   [data-build-sheet] .ui-card[data-size="sm"] .ui-card__picture img {
-    max-height: 22px;
+    max-height: 36px;
     width: auto;
   }
   [data-build-sheet] .ui-card[data-size="sm"] .ui-card__foot {
     padding: 0;
   }
-  [data-build-sheet] .build-tile-gives {
-    flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 2px 3px;
-    font-size: var(--hud-text-badge);
-    line-height: 1.15;
+  [data-build-sheet] .build-tile-gives,
+  [data-build-sheet] .build-tile-price {
+    font-size: var(--hud-text-label);
+    line-height: 1.2;
   }
-  [data-build-sheet] .ui-card[data-size="sm"] .ui-tier {
-    width: 18px;
-    height: 15px;
-    font-size: var(--hud-text-badge);
-  }
-  [data-build-sheet] .ui-card[data-size="sm"] .ui-chip {
-    min-height: 0;
-    padding: 2px 5px;
-    font-size: var(--hud-text-badge);
-    line-height: 1.15;
-  }
-  [data-build-sheet] .ui-card[data-size="sm"] .ui-chip img {
-    width: 12px;
-    height: 12px;
+}
+@media (min-width: 768px) {
+  .build-more {
+    display: none;
   }
 }
 @media (min-width: 1024px) {
-  .build-sheet {
+  .build-sheet,
+  .build-grid {
     gap: theme(spacing.2);
-  }
-  .build-chosen {
-    padding: theme(spacing[1.5]) theme(spacing[2.5]);
-  }
-  .build-locked {
-    padding-top: theme(spacing.2);
   }
 }
