@@ -33,7 +33,6 @@ vi.hoisted(() =>
       "0x6481": "Canzi",
       // Prod's archived Playtest: its first place.
       "0x4c21ba6f5c8e24182ee0eefd56de97ade5f7570041dd0ec7d7d8ece2195cc4": "Volcanic",
-      // Prod's archived Season 0: its first place.
       "0x45d6bd2bb5415e3fca5edd5dc00035510d165af218a92ed4cc44e58126d48d7": "Kestrel",
     };
     if (url.pathname.includes("/aspects/")) {
