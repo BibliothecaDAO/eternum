@@ -6918,8 +6918,7 @@ export const STEP_SETS = {
               h.realmWorld.includes("Hollow") &&
               h.realmWorld.includes("Deep") &&
               h.armies > 0 &&
-              h.places.join() ===
-                ["World", HUD_WORDS.research, HUD_WORDS.season, HUD_WORDS.chat, HUD_WORDS.menu].join();
+              h.places.join() === [HUD_WORDS.research, HUD_WORDS.season, HUD_WORDS.chat, HUD_WORDS.menu].join();
           return ok
             ? completed(played)
             : failed("World view must render the full approved HUD parts for this viewport", played);
