@@ -63,7 +63,7 @@ describe("the day's banner", () => {
     expect(reward("Essence")).toBe("6,000 Essence");
   });
 
-  it("heads the panel with the bane, members at it, and labels the Altar bane bar with what happens at full", () => {
+  it("heads the panel with the bane and members at it, and no bane bar", () => {
     draw(DAY_BANNER_CASES["World bane day, members at it"]);
     expect(text()).toContain("Blood Moon");
     expect(text()).toContain("The Stand");
@@ -72,12 +72,7 @@ describe("the day's banner", () => {
     expect(reward("Labor")).toBe("1,500 Labor");
     expect(reward("Essence")).toBe("1,500 Essence");
     expect(text()).toContain("4 of 6 members");
-    const bar = host.querySelector("[data-day-bane-bar]")!;
-    expect(bar.textContent).toContain("Your Aspect's Altar bane bar");
-    expect(bar.textContent).toContain("30 of 100");
-    expect(bar.textContent).toContain(
-      "Hold a Deep Altar to charge. At full, sends a bane to the leading rival Aspect tomorrow.",
-    );
+    expect(text()).not.toContain("bane bar");
   });
 
   it("a rival's bane comes with the Cull, counted in troops, and exactly the sender Aspect's four crests", () => {
@@ -109,12 +104,11 @@ describe("the day's banner", () => {
     expect(button("Collect")).toBeUndefined();
   });
 
-  it("is lighter on a phone while keeping the plain-word objective, named rewards, and labeled Altar bane bar", () => {
+  it("is lighter on a phone while keeping the plain-word objective and named rewards", () => {
     draw(DAY_BANNER_CASES["World bane day, members at it"], "phone");
     expect(host.querySelector("[data-quest-objective]")?.textContent).toBe("Clear 3 guarded sites today");
     expect(reward("Labor")).toBe("1,500 Labor");
     expect(reward("Essence")).toBe("1,500 Essence");
-    expect(host.querySelector("[data-day-bane-bar]")?.textContent).toContain("Your Aspect's Altar bane bar");
     expect(text()).not.toContain("Guarded sites have 150% strength while the bane lasts");
     expect(text()).toContain("4 of 6");
     act(() => button("Blood Moon")!.click());

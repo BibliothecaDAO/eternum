@@ -8,7 +8,6 @@ import { buildStructurePlate } from "@/three/map-plates/map-plate-model";
 import { kindsHeld } from "@/ui/features/world/hud/holdings-model";
 import { buildStoryEventPresentation, readFrontierBeast, siteDisplayName } from "@bibliothecadao/eternum";
 import { StructureType } from "@bibliothecadao/types";
-import { dayEndItems } from "../day-end/day-end";
 import { attackTargetName } from "./site-marks";
 import { SiteCardView } from "./site-card-view";
 import { SiteReceipt } from "./site-receipt";
@@ -75,11 +74,9 @@ it("names a known camp by its beast on the plate, cards, receipt and Events, and
       store,
     ),
   ];
-  const dayEnd = dayEndItems({ camp: { x: 40, y: 12 }, armyCanExplore: false });
   const kindWords = {
     listHeading: kindsHeld([{ category: StructureType.Camp, structure }], mode.id)[0].plural,
     unknownGuard: attackTargetName("Camp"),
-    dayEnd: dayEnd.map(({ line, verb }) => `${line} ${verb}`).join(" "),
   };
   const words = {
     kindLine: publicText(<Plate plate={plate} />),

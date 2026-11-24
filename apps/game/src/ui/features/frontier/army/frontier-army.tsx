@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { HudSheet, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
+import { frontierTroopName } from "@bibliothecadao/types";
 import { useArmyRevealYield } from "../frontier-reveal-yield";
 import { useArmySpireStatus } from "../spire-card";
 import { type DockArmy, useDockArmies } from "../hud/dock-armies";
@@ -24,6 +25,7 @@ const ArmyPanel = ({ army, onClose }: { army: DockArmy; onClose: () => void }) =
   const [deleting, setDeleting] = useState(false);
   const held = useFragmentsHeld();
   if (!army.stamina) return null;
+  const refill = sellsStamina(army, held) ? <ArmyRefill army={army} look="price" /> : undefined;
   return (
     <HudSheet
       label={army.label}
@@ -31,13 +33,18 @@ const ArmyPanel = ({ army, onClose }: { army: DockArmy; onClose: () => void }) =
       onClose={onClose}
     >
       <ArmyDetail
-        army={{ ...army, name: army.label, stamina: army.stamina, revealYield }}
-        refill={sellsStamina(army, held) ? <ArmyRefill army={army} look="price" /> : undefined}
+        army={{
+          ...army,
+          name: army.label,
+          title: frontierTroopName(army.troopsFact.category) ?? army.label,
+          stamina: army.stamina,
+          revealYield,
+        }}
       />
       <TroopOathSlots category={army.troopsFact.category} explorerId={army.explorerId} />
       <ArmyRelicSlots explorerId={army.explorerId} />
       {deleting && <ArmyDeleteConfirm army={army} onCancel={() => setDeleting(false)} onDeleted={onClose} />}
-      {spire && <HudWindowFoot>{spire}</HudWindowFoot>}
+      {(spire || refill) && <HudWindowFoot note={spire}>{refill}</HudWindowFoot>}
     </HudSheet>
   );
 };

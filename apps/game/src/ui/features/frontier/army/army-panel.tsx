@@ -1,58 +1,54 @@
 import { DeepDrain, EtherealMark } from "../hud/army-token";
 import { formatExact, formatShort } from "@bibliothecadao/types";
 import { Icon } from "@/ui/design-system/icon";
-import { HudChip, HudPortrait, HudStamina } from "@/ui/design-system/kit/hud-elements";
+import "./army-panel.css";
+
+import { HudPortrait, HudStamina } from "@/ui/design-system/kit/hud-elements";
 import { ARMY_DETAIL, TROOPS } from "@/ui/design-system/kit/words";
-import type { ReactNode } from "react";
 import { FullIn } from "../full-in";
 import type { ArmyView } from "./army-detail";
 
-export const ArmyDetail = ({ army, refill }: { army: ArmyView; refill?: ReactNode }) => (
-  <div data-army-step="stats" className="flex flex-col gap-3 pt-1">
-    <div className="flex items-center gap-3">
+export const ArmyDetail = ({ army }: { army: ArmyView }) => (
+  <div data-army-step="stats" className="army-detail">
+    <div className="army-detail__head">
       <span className="relative shrink-0">
         <HudPortrait icon={army.art} label={TROOPS} />
         <EtherealMark layer={army.ethereal} />
       </span>
-      <div className="flex min-w-0 flex-1 flex-col gap-2">
-        <span className="flex items-center gap-2">
-          <StatusChips army={army} />
-          {refill && <span className="ml-auto flex">{refill}</span>}
+      <span className="army-detail__who">
+        <span className="army-detail__title">{army.title ?? army.name}</span>
+        <span className="army-detail__sub">
+          <span>{ARMY_DETAIL.troops(army.troops)}</span>
+          {army.revealYield !== null && (
+            <span
+              role="img"
+              aria-label={`${ARMY_DETAIL.revealPaysLabel} ${army.revealYield === undefined ? "—" : ARMY_DETAIL.revealPays(formatShort(army.revealYield))}`}
+              className="inline-flex items-center gap-1"
+            >
+              <span aria-hidden="true">·</span>
+              <Icon name="essence" size={14} />
+              <Icon name="labor" size={14} />
+              {army.revealYield === undefined ? "—" : ARMY_DETAIL.revealPays(formatShort(army.revealYield))}
+            </span>
+          )}
         </span>
-        <StaminaLine stamina={army.stamina} secondsToFull={army.secondsToFull} />
-        {army.drain && <DeepDrain drain={army.drain} words />}
-      </div>
+      </span>
     </div>
+    <StaminaBlock stamina={army.stamina} secondsToFull={army.secondsToFull} />
+    {army.drain && <DeepDrain drain={army.drain} words />}
   </div>
 );
 
-/** Over the stamina line: the army's troops, and what each tile explored sends home (none where reveals pay none). */
-const StatusChips = ({ army }: { army: ArmyView }) => (
-  <span className="flex flex-wrap items-center gap-1.5">
-    <HudChip icons={["troops"]} label={TROOPS}>
-      {formatShort(army.troops)}
-    </HudChip>
-    {army.revealYield !== null && (
-      <HudChip icons={["essence", "labor"]} label={ARMY_DETAIL.revealPaysLabel}>
-        {army.revealYield === undefined ? "—" : ARMY_DETAIL.revealPays(formatShort(army.revealYield))}
-      </HudChip>
-    )}
-  </span>
-);
-
-/**
- * The stamina on one line (the owner's layout A, 27 October): "96/170", the bar in a segment per explore, and when it is
- * full again.
- */
-const StaminaLine = ({ stamina, secondsToFull }: Pick<ArmyView, "stamina" | "secondsToFull">) => (
-  <span data-stamina-line className="flex items-center gap-2">
-    <span className="flex items-center gap-0.5 whitespace-nowrap text-hud-label tabular-nums text-hud-ink">
-      <Icon name="stamina" size={14} />
-      {`${formatExact(stamina.current)}/${formatExact(stamina.max)}`}
+const StaminaBlock = ({ stamina, secondsToFull }: Pick<ArmyView, "stamina" | "secondsToFull">) => (
+  <div data-stamina-line className="army-detail__stamina">
+    <span className="army-detail__row">
+      <span className="army-detail__label">{ARMY_DETAIL.stamina}</span>
+      <span className="army-detail__figure tabular-nums">
+        {`${formatExact(stamina.current)}/${formatExact(stamina.max)}`}
+        <Icon name="stamina" size={14} />
+        {secondsToFull !== undefined && secondsToFull > 0 && <FullIn seconds={secondsToFull} />}
+      </span>
     </span>
-    <span className="min-w-0 flex-1">
-      <HudStamina stamina={stamina} />
-    </span>
-    {secondsToFull !== undefined && secondsToFull > 0 && <FullIn seconds={secondsToFull} />}
-  </span>
+    <HudStamina stamina={stamina} />
+  </div>
 );

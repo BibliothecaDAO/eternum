@@ -28,7 +28,6 @@ import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { ContractAddress } from "@bibliothecadao/types";
 
 import { getGameModeId } from "@/config/game-modes";
-import { replayTutorial } from "@/ui/features/frontier/opening/opening-store";
 import { hudFor } from "@/ui/layouts/hud-for";
 import { useState } from "react";
 import { shortAddress } from "@/ui/design-system/kit/address";
@@ -59,7 +58,7 @@ export const SettingsPanel = () => {
       <SettingsSection title="Video & Graphics">
         <VideoSettings />
       </SettingsSection>
-      <TutorialSettings />
+      <InterfaceSettings />
       <SettingsSection title={PROFILE_WORDS.notifications}>
         <NotificationSettings />
       </SettingsSection>
@@ -189,25 +188,13 @@ function UsernameEditor({ name }: { name: string | null }) {
   );
 }
 
-function TutorialSettings() {
+function InterfaceSettings() {
   const { showEverything, setShowEverything } = useWorldAppearanceStore();
   if (hudFor(getGameModeId(), true) !== "frontier") return null;
   return (
     <SettingsSection title={OPENING_WORDS.interface}>
       <HudSetting name={OPENING_WORDS.showEverything}>
         <HudSwitch on={showEverything} label={OPENING_WORDS.showEverything} onChange={setShowEverything} />
-      </HudSetting>
-      <HudSetting name={OPENING_WORDS.tutorial}>
-        <HudButton
-          kind="secondary"
-          size="sm"
-          onClick={() => {
-            setShowEverything(false);
-            replayTutorial();
-          }}
-        >
-          {OPENING_WORDS.replayTutorial}
-        </HudButton>
       </HudSetting>
     </SettingsSection>
   );

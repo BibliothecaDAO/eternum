@@ -31,6 +31,7 @@ import {
 import { createPortal } from "react-dom";
 
 import { useModalLayer } from "./modal-layer";
+import { useMarkFrameOpen } from "./open-frames";
 import { revealOwnPlace } from "./own-place";
 import { useDragDownCloses, useSheetCloses } from "./sheet-closes";
 import { CLOSE, type RankedWords, rankedText, STAMINA, type Tier, type Rank, tierNumeral, TRY_AGAIN } from "./words";
@@ -1593,6 +1594,7 @@ const SurfaceFrame = forwardRef<
   FrameParts & { bodyClassName?: string } & Omit<HTMLAttributes<HTMLElement>, "children">
 >(({ label, icon, cue, beside, onClose, bodyClassName, className, children, ...rest }, ref) => {
   const [foot, setFoot] = useState<HTMLElement | null>(null);
+  useMarkFrameOpen(label);
   useSheetCloses(onClose);
   const drag = useDragDownCloses(onClose);
   return (
@@ -2140,13 +2142,6 @@ export const HudMeter = ({
 /** An army's or a guard's stamina as its bar draws it: held, its maximum, and what one explore costs. */
 export type StaminaBar = { current: number; max: number; perExplore: number };
 
-/**
- * Every stamina bar (an army's card, token, row and map plate, a slot's start, a guard): the meter cut into a segment
- * per explore its maximum holds, so a full bar counts the tiles it can explore and each explore's worth of maximum
- * Logistics adds is one more segment (the owner, 26 October: "split the bar in 20 stamina ? like on mobile ?"). A
- * maximum the explore cost does not divide ends in a shorter segment. It reads as the amount itself; an empty track
- * while unknown.
- */
 export const HudStamina = ({
   stamina,
   tone = "good",
@@ -2162,32 +2157,16 @@ export const HudStamina = ({
     aria-valuenow={stamina?.current}
     aria-valuemin={0}
     aria-valuemax={stamina?.max}
-    className="flex w-full gap-0.5"
+    className="ui-meter block w-full"
+    data-tone={tone}
+    data-filling={filling || undefined}
   >
-    {staminaSegments(stamina).map(({ size, fill }, index) => (
-      <span
-        key={index}
-        className="ui-meter"
-        data-tone={tone}
-        data-filling={filling || undefined}
-        style={{ flexGrow: size, flexBasis: 0 }}
-      >
-        <i style={{ width: `${fill * 100}%` }} />
-      </span>
-    ))}
+    <i style={{ width: `${staminaShare(stamina) * 100}%` }} />
   </span>
 );
 
-/** A stamina bar's segments: each one's length (1 is one explore) and fill, 0 to 1; one empty while unknown. */
-const staminaSegments = (stamina: StaminaBar | undefined): { size: number; fill: number }[] => {
-  if (!stamina || stamina.max <= 0 || stamina.perExplore <= 0) return [{ size: 1, fill: 0 }];
-  const { current, max, perExplore } = stamina;
-  return Array.from({ length: Math.ceil(max / perExplore) }, (_, index) => {
-    const start = index * perExplore;
-    const length = Math.min(perExplore, max - start);
-    return { size: length / perExplore, fill: Math.min(1, Math.max(0, (current - start) / length)) };
-  });
-};
+const staminaShare = (stamina: StaminaBar | undefined): number =>
+  !stamina || stamina.max <= 0 ? 0 : Math.min(1, Math.max(0, stamina.current / stamina.max));
 
 /** What a relic works on: its chip takes that kind's colour. */
 type RelicKind = "stamina" | "damage" | "damage-reduction" | "exploration" | "production";

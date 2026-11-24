@@ -141,9 +141,10 @@ export const BuildSheet = ({
   const indexOf = (category: BuildingType | null) =>
     options?.findIndex((candidate) => candidate.category === category) ?? -1;
   const firstBuild = useUIStore((state) => state.firstBuild);
-  const chosen = Math.max(indexOf(picked ?? firstBuild), 0);
+  const sent = useInFlight("plot", plotKey(realmId, plot));
+  const chosen = indexOf(picked ?? sent?.type ?? firstBuild);
   const option = options?.[chosen];
-  const sending = useInFlight("plot", plotKey(realmId, plot)) !== undefined;
+  const sending = sent !== undefined;
   const mode = useGameModeConfig();
   const names = usePlayerNames();
   const realmInfo = useMemo(
@@ -154,13 +155,13 @@ export const BuildSheet = ({
   const stillShowing = useStillShowing(plot);
 
   // Until the realm's research is known, no building's tier or price is.
-  if (!options || !option) return null;
+  if (!options) return null;
 
   /**
    * The sheet closes as the building leaves, if it still shows this plot; its ghost stays on the plot until the
    * build's own outcome.
    */
-  const build = async () => {
+  const build = async (option: BuildOption) => {
     AudioManager.getInstance().play("ui.build_place");
     try {
       await sendBuilding({
@@ -177,7 +178,7 @@ export const BuildSheet = ({
 
   const held = (resource: number) =>
     knownAmount(getBalance(safeInteger(realm.entity_id), resource, tick, setup.store).balance);
-  const standing = (): Refusal | undefined => {
+  const standing = (option: BuildOption): Refusal | undefined => {
     if (option.standing === "built") return { reason: { kind: "failed", line: ONE_A_REALM } };
     if (option.standing !== "open")
       return { reason: { kind: "failed", line: `Requires ${rankName(option.standing.level)}` } };
@@ -217,10 +218,10 @@ export const BuildSheet = ({
       chosen={chosen}
       plots={plotsHeld(facts.store, realm)}
       onChoose={(index) => setPicked(options[index]!.category)}
-      prices={optionPrices(option)}
-      refusal={standing()}
+      prices={option ? optionPrices(option) : []}
+      refusal={option && standing(option)}
       sending={sending}
-      onBuild={() => void build()}
+      onBuild={() => option && void build(option)}
       onClose={onClose}
     />
   );

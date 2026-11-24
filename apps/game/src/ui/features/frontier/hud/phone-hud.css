@@ -205,24 +205,6 @@ button.frontier-stock-chip {
   justify-content: space-between;
   gap: theme(spacing.2);
 }
-.ui-button.frontier-build-button {
-  width: 64px;
-  height: 64px;
-  flex: none;
-  flex-direction: column;
-  gap: 2px;
-  border-width: 2px;
-  border-radius: 12px;
-  padding: 0;
-}
-.frontier-build-button__label {
-  font-family: var(--hud-font-display);
-  font-size: var(--hud-text-label);
-  line-height: 1;
-  font-weight: var(--hud-weight-strong);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
 .frontier-tab-bar {
   display: grid;
   margin: 0 calc(max(env(safe-area-inset-right), 0.5rem) * -1)

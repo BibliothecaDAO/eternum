@@ -13,7 +13,7 @@ import { TransferTroopsSheet, useSelectedTransfer } from "@/ui/features/frontier
 import { useGame } from "@/hooks/context/game-context";
 import { realmMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { homeIcon } from "@/ui/design-system/home-icons";
-import { HudIconButton, HudSheet } from "@/ui/design-system/kit/hud-elements";
+import { HudIconButton, HudSheet, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
 import {
   ARMY,
   ARMY_MANAGEMENT,
@@ -77,7 +77,7 @@ import { SeasonPayoutRow } from "@/ui/features/frontier/value/season-payout";
 import { linkWalletLine } from "@/ui/features/frontier/value/link-wallet";
 import { VisitFoot } from "@/ui/features/frontier/board/visit-foot";
 import { useLayout, useTablet } from "@/shell/frame/layout";
-import { type DayEnd, DayEndBlock, dayEndItems, DayEndNotice } from "@/ui/features/frontier/day-end/day-end";
+import { type DayEnd, DayEndBlock, DayEndNotice } from "@/ui/features/frontier/day-end/day-end";
 import { type ComponentProps, useEffect, useRef, useState } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
 import { useEventFeedStore } from "@/ui/features/event-feed/event-feed-store";
@@ -258,11 +258,7 @@ const NIGHT: DayClock = {
 };
 const LAST_HOUR: DayClock = { ...CLOCK, secondsLeft: 42 * 60, shareLeft: 42 / 960, tone: "ember" };
 const FINAL_MINUTES: DayClock = { ...CLOCK, secondsLeft: 9 * 60, shareLeft: 9 / 960, tone: "ember" };
-const labDayEnd = (clock: DayClock): DayEnd => ({
-  clock,
-  items: dayEndItems({ camp: { x: 4, y: 9 }, armyCanExplore: true }),
-  run: noop,
-});
+const labDayEnd = (clock: DayClock): DayEnd => ({ clock });
 const UNKNOWN_TOTALS = {
   reveals: undefined,
   cleared: undefined,
@@ -1134,7 +1130,7 @@ export const HudLab = () => {
   const { state = "idle" } = useParams();
   const lab: LabState = STATES[state as keyof typeof STATES] ?? STATES.idle;
   const desktop = useLayout() === "desktop";
-  const tablet = useTablet() && !desktop;
+  const tablet = useTablet();
   const TopBarView = tablet ? TabletTopBarView : PhoneTopBarView;
   // The game wears Frontier's age (world.tsx's useHudMode); the lab draws it the same.
   useHudMode("frontier");
@@ -1188,7 +1184,7 @@ export const HudLab = () => {
                 realm={{ name: LAB_REALM_NAME, mark: homeIcon("realm", lab.realm?.level ?? 1) }}
               />
             }
-            quest={<LabDailyQuest layout="phone" />}
+            quest={<LabDailyQuest />}
             places={tablet && !lab.visiting ? <TabletPlaces {...labPlaces(lab)} /> : undefined}
             storeCard={!tablet && lab.storeCard && <StoreCard line={lab.storeCard} onSpend={noop} onBuild={noop} />}
             realmCard={tablet ? <LabRealmCard lab={lab} /> : undefined}
@@ -1262,7 +1258,7 @@ export const HudLab = () => {
           </>
         }
         dock={(desktop || !lab.order) && <LabDock lab={lab} />}
-        nav={!lab.visiting && !tablet && <PhoneTabBar isMapView={lab.realmView === undefined} {...labPlaces(lab)} />}
+        nav={!lab.visiting && !tablet && <PhoneTabBar {...labPlaces(lab)} />}
       >
         {lab.deploy && <LabDeploySheet deploy={lab.deploy} stores={lab.stores} open={labOpenSlots(lab)} />}
         {lab.results && (
@@ -1476,14 +1472,12 @@ const LabArmy = ({ army }: { army: LabArmySheet }) => {
       beside={<HudIconButton icon="trash" label={ARMY_MANAGEMENT.remove} kind="danger" size="sm" onClick={noop} />}
       onClose={noop}
     >
-      <ArmyDetail
-        army={view}
-        refill={
-          army.fragments === undefined || full ? undefined : (
-            <RefillPrice price={fragmentsToFill(stamina)} held={army.fragments} onRefill={noop} />
-          )
-        }
-      />
+      <ArmyDetail army={view} />
+      {army.fragments !== undefined && !full && (
+        <HudWindowFoot>
+          <RefillPrice price={fragmentsToFill(stamina)} held={army.fragments} onRefill={noop} />
+        </HudWindowFoot>
+      )}
     </HudSheet>
   );
 };
@@ -1585,10 +1579,10 @@ const LabResearch = () => {
  * The HUD's slots in the lab as the game composes them: on a phone today's bands; on a desktop the HUD every mode
  * shares (FrontierDesktop) on the lab's game, its top bar, rail and minimap the game's own, Frontier's panels the lab's.
  */
-const LabDailyQuest = ({ layout = "desktop" }: { layout?: "desktop" | "phone" }) => {
+const LabDailyQuest = () => {
   const { setup } = useGame();
   const realm = setup.store.get("Structure", { game_id: 1, entity_id: 7 });
-  return realm ? <DailyQuestChip realm={realm} layout={layout} /> : null;
+  return realm ? <DailyQuestChip realm={realm} /> : null;
 };
 
 const labQuestFacts = () => [labQuestRulesFact()];
@@ -1598,10 +1592,9 @@ const LabRealmCard = ({ lab }: { lab: LabState }) => (
     name={LAB_REALM_NAME}
     kind="realm"
     level={lab.realm?.level ?? 1}
-    nextRank={rankName((lab.realm?.level ?? 1) + 1)}
+    rankUp={{ name: rankName((lab.realm?.level ?? 1) + 1) }}
     aspect={LAB_ASPECT}
     orderId={LAB_ORDER_ID}
-    population={LAB_POPULATION}
     stores={everyStore(lab.stores)}
     fragments={LAB_FRAGMENTS}
     lords={lab.visiting ? null : (lab.purse?.lords ?? LAB_LORDS)}
@@ -1666,11 +1659,10 @@ const LAB_ASPECT: AspectId = 1;
 const LAB_ORDER_ID = 12;
 const LAB_MAP_LAYERS: MapLayers = { layers: [0, 1], shown: 0, go: noop };
 const LAB_LORDS = 320;
-const LAB_POPULATION = { used: 3, max: 12 };
 const LAB_REALM_BUILDINGS: readonly RealmBuildingItem[] = [
-  { key: "farm", icon: "farm", name: "Farm", tier: 2, rateIcon: "wheat", rate: "+20/min", onUpgrade: noop },
-  { key: "workshop", icon: "workshop", name: "Workshop", tier: 2, rateIcon: "labor", rate: "+12/min", onUpgrade: noop },
-  { key: "barracks", icon: "barracks", name: "Barracks", tier: 5, rateIcon: "troops", rate: "+3/min", maxed: true },
+  { key: "farm", icon: "farm", name: "Farm", tier: 2, rateIcon: "wheat", rate: "+20/min" },
+  { key: "workshop", icon: "workshop", name: "Workshop", tier: 2, rateIcon: "labor", rate: "+12/min" },
+  { key: "barracks", icon: "barracks", name: "Barracks", tier: 5, rateIcon: "troops", rate: "+3/min" },
 ];
 
 /** The place a lab state has open, as the desktop's round places light it. */
@@ -1816,7 +1808,7 @@ const LabResults = ({
       today={results !== "today-earlier"}
       clock={clock}
       totals={{ reveals: 19, cleared: 2, essence: 4_150, labor: 550 }}
-      dayEnd={<DayEndBlock dayEnd={labDayEnd(clock)} />}
+      dayEnd={<DayEndBlock />}
       lines={results === "today-sites" ? siteUseDayLog(NOW) : readTodayLog()}
       history={results === "today-failed" ? "failed" : "whole"}
       onRetry={noop}

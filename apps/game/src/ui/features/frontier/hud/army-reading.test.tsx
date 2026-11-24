@@ -9,13 +9,29 @@ import { afterEach, expect, it } from "vitest";
 import { STEP_SETS } from "../../../../../scripts/client-playtest/steps.mjs";
 import { ArmyCard } from "./army-row";
 import { ArmyToken } from "./army-token";
+import { PickedArmy } from "./picked-army";
 
 const source = readFileSync("scripts/client-playtest/browser-session.mjs", "utf8");
 const ARMIES_EXPRESSION = source.match(/const ARMIES_EXPRESSION = `([\s\S]*?)`;/)![1];
 
+HTMLElement.prototype.checkVisibility = function (this: HTMLElement) {
+  return this.closest("[hidden]") === null;
+};
+
 afterEach(() => {
   document.body.innerHTML = "";
 });
+
+const readPage = (expression: string) => JSON.parse(new Function(`return (${expression})`)() ?? "null");
+
+const selectArmy = async () => {
+  const clicked: string[] = [];
+  const step = STEP_SETS.player.steps.find((each: { name: string }) => each.name === "select-army")!;
+  const play = step.play as unknown as (input: { browser: object }) => Promise<unknown>;
+  const armies = readPage(ARMIES_EXPRESSION);
+  await play({ browser: { armies: () => armies, read: readPage, click: (name: string) => clicked.push(name) } });
+  return { armies, clicked };
+};
 
 // Army 1 at 90 of 150 stamina, Army 2 at 100 of 200: Army 2 has more to act with, though less of its maximum.
 const STAMINAS = [
@@ -43,17 +59,36 @@ it.each([
       ))}
     </nav>,
   );
-  const armies = JSON.parse(new Function(`return (${ARMIES_EXPRESSION})`)());
-  const clicked: string[] = [];
-  // The step as the runner plays it, given only the browser it reads and clicks.
-  const step = STEP_SETS.player.steps.find((each: { name: string }) => each.name === "select-army")!;
-  const play = step.play as unknown as (input: { browser: object }) => Promise<unknown>;
-  await play({ browser: { armies: () => armies, click: (name: string) => clicked.push(name) } });
-  expect({ armies, clicked }).toEqual({
+  expect(await selectArmy()).toEqual({
     armies: [
       { label: "Army 1", stamina: 90 },
       { label: "Army 2", stamina: 100 },
     ],
     clicked: ["Army 2"],
   });
+});
+
+it("reads a phone's picked army from its tray while the dock under it is hidden, and leaves it picked", async () => {
+  document.body.innerHTML = renderToStaticMarkup(
+    <>
+      <nav aria-label="Armies" hidden>
+        <ArmyToken label="Army 1" art={undefined} stamina={STAMINAS[0]} troops={500} selected onPick={() => {}} />
+      </nav>
+      <PickedArmy
+        army={{
+          explorerId: 201,
+          label: "Army 1",
+          number: 1,
+          art: "knight-t1",
+          stamina: STAMINAS[0],
+          secondsToFull: undefined,
+          troops: 500,
+          ethereal: undefined,
+        }}
+        refill={null}
+        onDetails={() => {}}
+      />
+    </>,
+  );
+  expect(await selectArmy()).toEqual({ armies: [{ label: "Army 1", stamina: 90 }], clicked: [] });
 });

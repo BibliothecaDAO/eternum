@@ -123,9 +123,6 @@ export function OpeningLab() {
             {moment}
           </button>
         ))}
-        <button type="button" onClick={() => setSeen(new Set())}>
-          {OPENING_WORDS.replayTutorial}
-        </button>
       </nav>
 
       <div className="flex flex-wrap items-center gap-2">

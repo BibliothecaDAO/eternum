@@ -1,6 +1,6 @@
 import type { AspectId } from "@bibliothecadao/types";
 import type { IconMeaning } from "@/ui/design-system/icon";
-import type { OpeningRules } from "@/ui/design-system/kit/words";
+import { BUILD, DEPLOY, OPENING_WORDS, type OpeningRules } from "@/ui/design-system/kit/words";
 
 export interface OpeningContext {
   readonly hasRealm: boolean;
@@ -47,7 +47,7 @@ interface OpeningEntry {
   readonly icon: IconMeaning;
   readonly teacher: OpeningTeacher;
   readonly parts: readonly string[];
-  readonly replayDueWhen?: (ctx: OpeningContext) => boolean;
+  readonly asks?: { readonly sheet: string; readonly line: (rules: OpeningRules) => string };
   readonly skipForVeteran?: boolean;
   readonly reachedWhen: (ctx: OpeningContext) => boolean;
   readonly showsWhen: (ctx: OpeningContext) => boolean;
@@ -70,7 +70,7 @@ export const OPENING = {
     icon: "barracks",
     teacher: 2,
     parts: ["building-list"],
-    replayDueWhen: (ctx) => ctx.hasRealm,
+    asks: { sheet: BUILD, line: OPENING_WORDS.inSheet.barracks },
     skipForVeteran: true,
     reachedWhen: (ctx) => ctx.hasBarracks,
     showsWhen: (ctx) => ctx.hasRealm && !ctx.hasBarracks && !ctx.inDeep && !ctx.inEthereal,
@@ -80,7 +80,7 @@ export const OPENING = {
     icon: "knight-t1",
     teacher: 1,
     parts: [],
-    replayDueWhen: (ctx) => ctx.hasRealm && ctx.hasBarracks && (ctx.deployedArmies > 0 || canFieldAnArmy(ctx)),
+    asks: { sheet: DEPLOY, line: OPENING_WORDS.inSheet.deploy },
     skipForVeteran: true,
     reachedWhen: (ctx) => ctx.deployedArmies > 0,
     showsWhen: (ctx) => ctx.hasRealm && ctx.hasBarracks && canFieldAnArmy(ctx) && ctx.deployedArmies === 0,
@@ -90,7 +90,6 @@ export const OPENING = {
     icon: "explore",
     teacher: 4,
     parts: [],
-    replayDueWhen: (ctx) => ctx.deployedArmies > 0,
     skipForVeteran: true,
     reachedWhen: (ctx) => ctx.hasExplored,
     showsWhen: (ctx) => ctx.deployedArmies > 0 && !ctx.hasExplored,

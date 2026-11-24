@@ -56,12 +56,11 @@ export const EtherealMark = ({ layer, at = "corner" }: { layer: EtherealLayer | 
       aria-label={layerName(layer)}
       data-tip={layerName(layer)}
       className={cn(
-        "absolute flex h-5 items-center gap-0.5 rounded-full border border-hud-line-strong bg-hud-dark pl-0.5 pr-1 text-hud-strong leading-none text-hud-ink",
-        at === "corner" ? "-bottom-1.5 -left-2.5" : "-bottom-1 -right-2.5 pr-0.5",
+        "absolute flex size-5 items-center justify-center rounded-full border border-hud-line-strong bg-hud-dark leading-none",
+        at === "corner" ? "-bottom-1.5 -left-1.5" : "-bottom-1 -right-2.5",
       )}
     >
       <SemanticIcon name={reachMark(layer)} size={14} />
-      {at === "corner" && layerName(layer)}
     </span>
   );
 

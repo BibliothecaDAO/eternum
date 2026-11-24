@@ -98,3 +98,183 @@ test("no built HTML page or llm.txt names Blitz, Devcon or Season 0, and synthet
     }
   }
 });
+
+test("Realms home shows Games card without quick-link panels, and Frontier omits duplicate nav buttons", () => {
+  const home = pageLine(readFileSync(join(dist, "index.html"), "utf8"));
+  for (const phrase of [
+    "Guides, rules, and live data for Realms games, accounts, and LORDS.",
+    "Games",
+    "Open Frontier docs",
+  ]) {
+    assert.ok(home.includes(phrase), `Realms home missing "${phrase}"`);
+  }
+  for (const removed of ["Payout wallet", "Live dashboard", "Get the data"]) {
+    assert.equal(home.includes(removed), false, `Realms home must not duplicate sidebar link "${removed}"`);
+  }
+  const frontierHtml = readFileSync(join(dist, "frontier", "index.html"), "utf8");
+  assert.equal(frontierHtml.includes("docs-frontier-landing-nav"), false);
+  assert.equal(frontierHtml.includes("docs-home-quick"), false);
+  assert.ok(frontierHtml.includes(`href="${sources.appAddress}"`));
+});
+
+const parseCssVars = (css) => {
+  const vars = new Map();
+  for (const [, name, value] of css.matchAll(/(--[a-zA-Z0-9-]+)\s*:\s*([^;}\n]+);/g)) {
+    vars.set(name, value.trim());
+  }
+  return vars;
+};
+
+const resolveHex = (raw, vars, depth = 0) => {
+  if (depth > 8) return null;
+  const trimmed = raw.replace(/!important/g, "").trim();
+  if (/^#[0-9a-fA-F]{6}$/.test(trimmed)) return trimmed.toLowerCase();
+  const varMatch = trimmed.match(/^var\((--[a-zA-Z0-9-]+)\)$/);
+  if (varMatch && vars.has(varMatch[1])) return resolveHex(vars.get(varMatch[1]), vars, depth + 1);
+  return null;
+};
+
+const selectorSpecificity = (selector) => {
+  const cleaned = selector.replace(/:not\([^)]*\)/g, "");
+  const ids = (cleaned.match(/#[a-zA-Z0-9_-]+/g) ?? []).length;
+  const classes = (cleaned.match(/\.[a-zA-Z0-9_-]+|\[[^\]]+\]|:(?!:)[a-zA-Z-]+/g) ?? []).length;
+  const tags = (cleaned.match(/(?:^|[\s>+~])([a-zA-Z][a-zA-Z0-9-]*)/g) ?? []).length;
+  return ids * 10000 + classes * 100 + tags;
+};
+
+const ancestorTokensOf = (html, targetClass) => {
+  const targetIndex = html.indexOf(`class="${targetClass}"`);
+  assert.ok(targetIndex >= 0, `expected element with class="${targetClass}"`);
+  const stack = [];
+  const VOID = new Set(["img", "br", "hr", "input", "meta", "link", "source"]);
+  for (const match of html.slice(0, targetIndex).matchAll(/<(\/?)([a-zA-Z][a-zA-Z0-9-]*)([^>]*)>/g)) {
+    const [, closing, tag, attrs] = match;
+    const lower = tag.toLowerCase();
+    if (closing) {
+      for (let i = stack.length - 1; i >= 0; i -= 1) {
+        if (stack[i].tag === lower) {
+          stack.splice(i);
+          break;
+        }
+      }
+      continue;
+    }
+    if (VOID.has(lower) || attrs.endsWith("/")) continue;
+    const classes = (attrs.match(/\bclass="([^"]*)"/)?.[1] ?? "").split(/\s+/).filter(Boolean);
+    stack.push({ tag: lower, classes: new Set(classes) });
+  }
+  return stack;
+};
+
+const matchesCompound = (part, element) => {
+  if (/:hover|:focus|:active|:visited|:before|:after|::/.test(part)) return false;
+  const withoutNot = part.replace(/:not\([^)]*\)/g, "");
+  const tag = withoutNot.match(/^([a-zA-Z][a-zA-Z0-9-]*)/)?.[1]?.toLowerCase();
+  if (tag && tag !== element.tag) return false;
+  for (const [, cls] of withoutNot.matchAll(/\.([a-zA-Z0-9_-]+)/g)) {
+    if (!element.classes.has(cls)) return false;
+  }
+  return Boolean(tag || withoutNot.includes("."));
+};
+
+const matchesElementInChain = (selector, ancestors, target) => {
+  const parts = selector
+    .trim()
+    .replace(/\s*>\s*/g, " ")
+    .split(/\s+/)
+    .filter(Boolean);
+  if (parts.length === 0) return false;
+  if (!matchesCompound(parts[parts.length - 1], target)) return false;
+  let cursor = ancestors.length - 1;
+  for (let i = parts.length - 2; i >= 0; i -= 1) {
+    let found = false;
+    while (cursor >= 0) {
+      const candidate = ancestors[cursor];
+      cursor -= 1;
+      if (matchesCompound(parts[i], candidate)) {
+        found = true;
+        break;
+      }
+    }
+    if (!found) return false;
+  }
+  return true;
+};
+
+const winningProp = (css, prop, ancestors, target) => {
+  const stripped = css.replace(/\/\*[\s\S]*?\*\//g, "");
+  let best = null;
+  let order = 0;
+  for (const [, header, body] of stripped.matchAll(/([^{}@]+)\{([^{}]+)\}/g)) {
+    for (const selector of header.split(",")) {
+      if (!matchesElementInChain(selector, ancestors, target)) continue;
+      for (const [, name, val] of body.matchAll(/([a-z-]+)\s*:\s*([^;]+);/g)) {
+        if (name !== prop) continue;
+        order += 1;
+        const important = /!important/.test(val) ? 1 : 0;
+        const spec = selectorSpecificity(selector);
+        if (
+          !best ||
+          important > best.important ||
+          (important === best.important && (spec > best.spec || (spec === best.spec && order >= best.order)))
+        ) {
+          best = { important, spec, order, value: val.trim() };
+        }
+      }
+    }
+  }
+  return best?.value ?? null;
+};
+
+const luminance = (hex) => {
+  const channels = [1, 3, 5].map((i) => {
+    const v = parseInt(hex.slice(i, i + 2), 16) / 255;
+    return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
+};
+
+const contrastRatio = (a, b) => {
+  const [l1, l2] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+  return (l1 + 0.05) / (l2 + 0.05);
+};
+
+const primaryButtonContrast = (css, ancestors) => {
+  const target = { tag: "a", classes: new Set(["docs-btn-primary"]) };
+  const vars = parseCssVars(css);
+  const fg = resolveHex(winningProp(css, "color", ancestors, target) ?? "", vars);
+  const bg = resolveHex(winningProp(css, "background", ancestors, target) ?? "", vars);
+  assert.ok(fg && bg, `expected hex foreground and background for .docs-btn-primary, got fg=${fg} bg=${bg}`);
+  return contrastRatio(fg, bg);
+};
+
+test("every link and button on home and frontier landing has an accessible name and readable contrast", () => {
+  for (const rel of ["index.html", "frontier/index.html"]) {
+    const html = readFileSync(join(dist, rel), "utf8");
+    const controls = [...html.matchAll(/<(a|button)\b([^>]*)>([\s\S]*?)<\/\1>/g)];
+    assert.ok(controls.length > 0, `expected interactive links/buttons on ${rel}`);
+    for (const [, tag, attrs, inner] of controls) {
+      if (/\baria-hidden="true"/.test(attrs)) continue;
+      const aria = attrs.match(/\baria-label="([^"]+)"/)?.[1]?.trim() ?? "";
+      const title = attrs.match(/\btitle="([^"]+)"/)?.[1]?.trim() ?? "";
+      const alt = [...inner.matchAll(/\balt="([^"]+)"/g)].map((m) => m[1].trim()).join(" ");
+      const text = inner
+        .replace(/<[^>]+>/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+      assert.ok(aria || title || alt || text, `empty <${tag}> without accessible name on ${rel}: ${attrs}`);
+    }
+  }
+  const homeHtml = readFileSync(join(dist, "index.html"), "utf8");
+  const ancestors = ancestorTokensOf(homeHtml, "docs-btn-primary");
+  const styles = readFileSync(fileURLToPath(new URL("../docs/styles.css", import.meta.url)), "utf8");
+  const ratio = primaryButtonContrast(styles, ancestors);
+  assert.ok(ratio >= 4.5, `primary button contrast too low (${ratio.toFixed(2)}:1); check link color overrides`);
+
+  const ancestorOverrideCss = `${styles}\n.docs-game-actions a { color: var(--gold2) !important; }`;
+  const brokenRatio = primaryButtonContrast(ancestorOverrideCss, ancestors);
+  assert.ok(
+    brokenRatio < 1.5,
+    `expected regression check to detect ancestor gold-on-gold override (${brokenRatio.toFixed(2)}:1)`,
+  );
+});

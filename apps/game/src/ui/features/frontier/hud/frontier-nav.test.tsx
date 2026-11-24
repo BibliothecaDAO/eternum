@@ -47,7 +47,7 @@ function PhoneHud({ open }: { open: HudSurface }) {
         onGoSurface={() => selectLayer(layers, 0, () => openSurface(null))}
         onSwitch={() => openSurface(null)}
       />
-      <PhoneTabBar isMapView surface={surface} onSurface={openSurface} feedUnread={0} chatUnread={0} />
+      <PhoneTabBar surface={surface} onSurface={openSurface} feedUnread={0} chatUnread={0} />
       <button onClick={() => openSurface(open)}>Open page</button>
     </>
   );

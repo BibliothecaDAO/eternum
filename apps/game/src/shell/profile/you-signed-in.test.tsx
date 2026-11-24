@@ -253,16 +253,20 @@ it("offers no invite and no failure on /profile#referrals when identity has no i
     fragmentsEarned: 0,
   });
   vi.spyOn(identityClient, "getOrderIntent").mockResolvedValue({ order: 1, members: { 1: 12 } });
-  const createInvite = vi.spyOn(identityClient, "createInvite").mockResolvedValue(null);
+  let answer!: (invite: null) => void;
+  const createInvite = vi
+    .spyOn(identityClient, "createInvite")
+    .mockReturnValue(new Promise((resolve) => (answer = resolve)));
   vi.spyOn(identityClient, "invitedFriends").mockResolvedValue({ friends: [] });
   const page = await open("/profile#referrals", 390);
-  await vi.waitFor(() => expect(page.querySelector("[data-invited-friends-empty]")).not.toBeNull());
-  await vi.waitFor(() => expect(createInvite).toHaveBeenCalledOnce());
+  await vi.waitFor(() => expect(page.textContent).toContain(INVITE_WORDS.making));
+  await act(async () => answer(null));
+  await vi.waitFor(() => expect(page.textContent).not.toContain(INVITE_WORDS.making));
   expect([...page.querySelectorAll("button")].map((button) => button.textContent)).not.toContain(
     SEASON_INVITE_WORDS.copy,
   );
   expect(page.textContent).not.toContain(INVITE_WORDS.failed);
-  expect(page.textContent).not.toContain(INVITE_WORDS.making);
+  expect(createInvite).toHaveBeenCalledOnce();
 });
 
 it("shows the join-Aspect prompt on /profile#referrals only when the player has neither a Season Aspect nor a chosen Order", async () => {

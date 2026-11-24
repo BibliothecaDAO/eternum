@@ -318,41 +318,16 @@ describe("the army token", () => {
       />,
     );
   /** The bar's segments as drawn: each one's length (its flex-grow) and fill. */
-  const segments = (markup: string) =>
-    [...markup.matchAll(/flex-grow:([\d.]+);flex-basis:0[^>]*><i[^>]*width:([\d.]+)%/g)].map(([, size, fill]) => [
-      Number(size),
-      Number(fill),
-    ]);
+  const staminaFills = (markup: string) =>
+    [...markup.matchAll(/role="meter"[^>]*><i[^>]*width:([\d.]+)%/g)].map(([, fill]) => Number(fill));
 
-  it("wears no XP number, its stamina a segment per explore its maximum holds, and its troops", () => {
+  it("wears no XP number, its stamina one unbroken bar, and its troops", () => {
     const markup = token({ current: 60, max: 120 });
     // The owner, 13 November 2026: no XP number on the army; its way to the next point is a ring.
     expect(text(markup)).toBe("5,000");
     expect(markup).toContain('role="group"');
-    // 120 is six explores: three of them held.
-    expect(segments(markup)).toEqual([
-      [1, 100],
-      [1, 100],
-      [1, 100],
-      [1, 0],
-      [1, 0],
-      [1, 0],
-    ]);
-  });
-
-  it("adds a segment for each explore's worth of maximum its Logistics adds, a short one for a part", () => {
-    expect(segments(token({ current: 140, max: 140 }))).toHaveLength(7);
-    // 90 of 150: four explores held and half the fifth, then seven and a half explores long.
-    expect(segments(token({ current: 90, max: 150 }))).toEqual([
-      [1, 100],
-      [1, 100],
-      [1, 100],
-      [1, 100],
-      [1, 50],
-      [1, 0],
-      [1, 0],
-      [0.5, 0],
-    ]);
+    expect(staminaFills(markup)).toEqual([50]);
+    expect(staminaFills(token({ current: 90, max: 150 }))).toEqual([60]);
   });
 
   it("reads an army on a desktop's card: its title and its stamina exact", () => {
@@ -415,55 +390,29 @@ describe("an open slot whose army is being deployed", () => {
 });
 
 describe("the phone tab bar", () => {
-  it("lays the scene's place, Research, Season, Chat and Menu, each with its count, and lights the open page", () => {
+  it("lays Research, Season, Chat and Menu, each with its count, and lights the open page", () => {
     const onSurface = vi.fn();
     act(() =>
-      root.render(
-        <PhoneTabBar
-          isMapView={false}
-          surface={null}
-          onSurface={onSurface}
-          researchReady
-          feedUnread={2}
-          chatUnread={3}
-        />,
-      ),
+      root.render(<PhoneTabBar surface={null} onSurface={onSurface} researchReady feedUnread={2} chatUnread={3} />),
     );
     const buttons = [...host.querySelectorAll("button")];
-    expect(buttons.map((button) => button.getAttribute("aria-label"))).toEqual([
-      "Realm",
-      "Research",
-      "Season",
-      "Chat",
-      "Menu",
-    ]);
-    expect(buttons.map((button) => button.getAttribute("aria-current"))).toEqual(["page", null, null, null, null]);
+    expect(buttons.map((button) => button.getAttribute("aria-label"))).toEqual(["Research", "Season", "Chat", "Menu"]);
+    expect(buttons.map((button) => button.getAttribute("aria-current"))).toEqual([null, null, null, null]);
     expect(buttons.map((button) => button.querySelector(".frontier-tab__badge")?.textContent ?? null)).toEqual([
-      null,
       "1",
       null,
       "3",
       null,
     ]);
-    expect(buttons[4]!.querySelector("[data-dot]")).not.toBeNull();
-    expect(buttons[0]!.querySelector("img[data-icon='realm']")?.getAttribute("loading")).toBe("eager");
-    act(() => buttons[2]!.click());
+    expect(buttons[3]!.querySelector("[data-dot]")).not.toBeNull();
+    act(() => buttons[1]!.click());
     expect(onSurface).toHaveBeenLastCalledWith("season");
-    act(() => buttons[0]!.click());
-    expect(onSurface).toHaveBeenLastCalledWith(null);
     act(() =>
       root.render(
-        <PhoneTabBar
-          isMapView
-          surface="today"
-          onSurface={onSurface}
-          researchReady={false}
-          feedUnread={0}
-          chatUnread={0}
-        />,
+        <PhoneTabBar surface="today" onSurface={onSurface} researchReady={false} feedUnread={0} chatUnread={0} />,
       ),
     );
-    expect(barButtons()).toEqual(["World", "Research", "Season", "Chat", "Menu"]);
+    expect(barButtons()).toEqual(["Research", "Season", "Chat", "Menu"]);
     expect(host.querySelector('button[aria-label="Menu"]')!.getAttribute("aria-current")).toBe("page");
     act(() => host.querySelector<HTMLButtonElement>('button[aria-label="Menu"]')!.click());
     expect(onSurface).toHaveBeenLastCalledWith("menu");
@@ -473,18 +422,11 @@ describe("the phone tab bar", () => {
     act(() =>
       root.render(
         <OpeningProvider opened={new Set()}>
-          <PhoneTabBar
-            isMapView
-            surface={null}
-            onSurface={vi.fn()}
-            researchReady={false}
-            feedUnread={0}
-            chatUnread={0}
-          />
+          <PhoneTabBar surface={null} onSurface={vi.fn()} researchReady={false} feedUnread={0} chatUnread={0} />
         </OpeningProvider>,
       ),
     );
-    expect(barButtons()).toEqual(["World", "Season", "Chat", "Menu"]);
+    expect(barButtons()).toEqual(["Season", "Chat", "Menu"]);
   });
 
   it("names a Paladin army Scouts on the picked-army row from Frontier's troop table", () => {

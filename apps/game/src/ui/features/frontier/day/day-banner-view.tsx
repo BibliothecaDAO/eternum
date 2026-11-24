@@ -30,7 +30,6 @@ export interface DayBannerProps {
   reading: DayQuestReading | null;
   heads: readonly DayHead[];
   members: DayMembers | null;
-  bar: { charge: number; threshold: number } | null;
   claim: { labor: number } | null;
   collecting: boolean;
   onCollect: () => void;
@@ -52,17 +51,7 @@ export const DayBannerView = ({ quest, ...props }: DayBannerProps) => {
 
 type KnownQuestProps = Omit<DayBannerProps, "quest"> & { quest: DayQuestFace };
 
-const DesktopDay = ({
-  quest,
-  reading,
-  heads,
-  members,
-  bar,
-  claim,
-  collecting,
-  onCollect,
-  onOpenClaim,
-}: KnownQuestProps) => (
+const DesktopDay = ({ quest, reading, heads, members, claim, collecting, onCollect, onOpenClaim }: KnownQuestProps) => (
   <HudPanel
     label={WORDS.today}
     collapsible={false}
@@ -103,7 +92,6 @@ const DesktopDay = ({
         <Claim claim={claim} onOpen={onOpenClaim} />
       </div>
     )}
-    {bar && <BaneBar bar={bar} />}
   </HudPanel>
 );
 
@@ -112,7 +100,6 @@ const PhoneDay = ({
   reading,
   heads,
   members,
-  bar,
   claim,
   collecting,
   onCollect,
@@ -154,7 +141,6 @@ const PhoneDay = ({
           <Claim claim={claim} onOpen={onOpenClaim} />
         </div>
       )}
-      {bar && <BaneBar bar={bar} />}
       {heads.length > 0 && (
         <div className="flex flex-wrap items-center gap-1.5">
           {heads.map((head) => (
@@ -238,27 +224,6 @@ const End = ({
     <HudButton kind="primary" size="sm" busy={collecting ? WORDS.collecting : undefined} onClick={onCollect}>
       {state === "again" ? WORDS.collectAgain : WORDS.collect}
     </HudButton>
-  );
-};
-
-const BaneBar = ({ bar }: { bar: NonNullable<DayBannerProps["bar"]> }) => {
-  const charge = WORDS.barCharge(bar.charge, bar.threshold);
-  const line = `${WORDS.baneBar}: ${charge}`;
-  return (
-    <div
-      data-day-bane-bar
-      className="flex flex-col gap-1 border-t border-hud-divider pt-2 text-hud-label tabular-nums text-hud-ink"
-    >
-      <div className="flex items-baseline justify-between gap-2">
-        <span className="inline-flex min-w-0 items-center gap-1.5 text-hud-ink">
-          <Icon name="flame" size={16} className="shrink-0" />
-          <span className="truncate">{WORDS.baneBar}</span>
-        </span>
-        <span className="shrink-0 text-hud-muted">{charge}</span>
-      </div>
-      <HudMeter share={Math.min(1, bar.charge / bar.threshold)} label={line} />
-      <span className="text-hud-label text-hud-muted">{WORDS.baneBarHint}</span>
-    </div>
   );
 };
 

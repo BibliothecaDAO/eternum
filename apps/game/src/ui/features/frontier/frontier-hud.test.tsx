@@ -267,24 +267,25 @@ it("keeps a refused order in sight on a desktop, over the feed and over a panel 
   const { useEventFeedStore } = await import("@/ui/features/event-feed/event-feed-store");
   viewport.set(1920);
   await renderHud();
-  const rail = () => host.querySelector("[data-frontier-rail]")!;
+  const notices = () => host.querySelector('[aria-label="Notices"]');
   try {
     await act(async () => toast.error("Not enough stamina"));
+    expect(notices()?.closest("[data-frontier-rail]")).toBeNull();
     const feed = host.querySelector<HTMLButtonElement>('nav[aria-label="Places"] button[aria-label="Feed"]')!;
     await act(async () => feed.click());
     expect(host.querySelector('[data-frontier-rail] [data-right-page] section[aria-label="Feed"]')).not.toBeNull();
-    expect(rail().querySelector('[aria-label="Notices"]')?.textContent).toContain("Not enough stamina");
+    expect(notices()?.textContent).toContain("Not enough stamina");
     const season = host.querySelector<HTMLButtonElement>('nav[aria-label="Places"] button[aria-label="Season"]')!;
     await act(async () => season.click());
     expect(host.querySelector('[data-frontier-rail] [data-right-page] section[aria-label="Season"]')).not.toBeNull();
-    expect(rail().querySelector('[aria-label="Notices"]')?.textContent).toContain("Not enough stamina");
+    expect(notices()?.textContent).toContain("Not enough stamina");
     await act(async () =>
       shownStore.applyFacts([{ model: "RaceRules", key: "0xa500", value: wireFact(raceRules()) }] as never),
     );
     expect(
       host.querySelector('[data-frontier-rail] [data-wide-page] section[aria-label="Aspect Race"]'),
     ).not.toBeNull();
-    expect(rail().querySelector('[aria-label="Notices"]')?.textContent).toContain("Not enough stamina");
+    expect(notices()?.textContent).toContain("Not enough stamina");
   } finally {
     useEventFeedStore.getState().dismiss();
   }
@@ -486,7 +487,7 @@ it("gives a phone one place menu under its pill, whose places switch the scene a
   }
 });
 
-it("lays a phone's five places on its tab bar, the scene's own first and lit while no page stands", async () => {
+it("lays a phone's places on its tab bar with no tab for the scene, the place switch alone changing it", async () => {
   viewport.set(390);
   const route = window.location.pathname + window.location.search;
   window.history.replaceState(null, "", "/g/0x1ab9/1/map?col=1&row=1");
@@ -498,7 +499,6 @@ it("lays a phone's five places on its tab bar, the scene's own first and lit whi
         button.getAttribute("aria-current"),
       ]);
     expect(tabs()).toEqual([
-      ["World", "page"],
       ["Research", null],
       ["Season", null],
       ["Chat", null],
@@ -506,42 +506,13 @@ it("lays a phone's five places on its tab bar, the scene's own first and lit whi
     ]);
     await pressPlace("Research");
     expect(surfaceNamed("Research")).not.toBeNull();
-    expect(tabs()[1]).toEqual(["Research", "page"]);
-    expect(tabs()[0]).toEqual(["World", null]);
-    await pressPlace("World");
+    expect(tabs()[0]).toEqual(["Research", "page"]);
+    await pressPlace("Research");
     expect(surfaceNamed("Research")).toBeNull();
     await fromMenu("Today");
-    expect(tabs()[4]).toEqual(["Menu", "page"]);
-    await act(async () => {
-      window.history.replaceState(null, "", "/g/0x1ab9/1/hex?col=1&row=1");
-      window.dispatchEvent(new Event("urlChanged"));
-    });
-    expect(tabs()[0]).toEqual(["Realm", "page"]);
+    expect(tabs()[3]).toEqual(["Menu", "page"]);
   } finally {
     window.history.replaceState(null, "", route);
-  }
-});
-
-it("opens the Build sheet on the plot the board lights from a phone's gold Build, in the realm only", async () => {
-  viewport.set(390);
-  const route = window.location.pathname + window.location.search;
-  const { selectedBuildingHex } = useUIStore.getState();
-  window.history.replaceState(null, "", "/g/0x1ab9/1/map?col=1&row=1");
-  try {
-    await renderHud();
-    expect(host.querySelector("[data-build-button]")).toBeNull();
-    await act(async () => {
-      window.history.replaceState(null, "", "/g/0x1ab9/1/hex?col=1&row=1");
-      window.dispatchEvent(new Event("urlChanged"));
-    });
-    const build = host.querySelector<HTMLButtonElement>("[data-build-button]")!;
-    expect(build.textContent).toBe("Build");
-    await act(async () => build.click());
-    expect(surfaceNamed("Build")).not.toBeNull();
-    expect(useUIStore.getState().selectedBuildingHex?.structureId).toBe(7);
-  } finally {
-    window.history.replaceState(null, "", route);
-    await act(async () => useUIStore.setState({ selectedBuildingHex }));
   }
 });
 
@@ -559,7 +530,7 @@ it("closes a popover first and the page under it next, one Escape each", async (
     const layer = document.querySelector<HTMLElement>("[data-hud-popover]")!;
     await act(async () => layer.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })));
     expect([popovers(), surfaceNamed("Season") !== null]).toEqual([0, true]);
-    await act(async () => window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" })));
+    await act(async () => document.body.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })));
     expect(surfaceNamed("Season")).toBeNull();
   } finally {
     window.history.replaceState(null, "", route);
@@ -591,7 +562,7 @@ it("opens a phone's Menu as a page in the one frame, which its ×, Escape and Me
     await act(async () => page()!.querySelector<HTMLButtonElement>('button[aria-label="Close"]')!.click());
     expect(page()).toBeNull();
     await pressPlace("Menu");
-    await act(async () => window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" })));
+    await act(async () => document.body.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })));
     expect(page()).toBeNull();
     await pressPlace("Menu");
     await pressPlace("Menu");
@@ -1125,6 +1096,26 @@ it("orders the desktop cornice places as Research, Season, Feed, Chat without Re
   }
 });
 
+it("opens Build in the desktop rail on an open plot as the player enters the Realm, and Escape puts it away", async () => {
+  viewport.set(1440);
+  const route = window.location.pathname + window.location.search;
+  window.history.replaceState(null, "", "/g/0x1ab9/1/map?col=1&row=1");
+  const buildSheet = () => document.querySelector('[data-rail-panel] [data-kit-sheet][aria-label="Build"]');
+  try {
+    await renderHud();
+    expect(buildSheet()).toBeNull();
+    await act(async () => host.querySelector<HTMLButtonElement>(".frontier-realm-card__identity")!.click());
+    expect(window.location.pathname).toMatch(/\/hex$/);
+    expect(buildSheet()).not.toBeNull();
+    expect(useUIStore.getState().selectedBuildingHex).toMatchObject({ structureId: 7 });
+    await act(async () => document.body.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })));
+    expect(buildSheet()).toBeNull();
+  } finally {
+    act(() => useUIStore.getState().setSelectedBuildingHex(null));
+    window.history.replaceState(null, "", route);
+  }
+});
+
 it.each([1440, 390])("opens Shop from the %i px top bar Fragments socket once Fragments are held", async (width) => {
   viewport.set(width);
   const route = window.location.pathname + window.location.search;
@@ -1214,11 +1205,11 @@ it.each([
   ["desktop", 1440],
   ["phone", 390],
 ] as const)(
-  "keeps the active tutorial visible on %s (%i px) across view switches and army selection, confirms completion, persists across reload, and returns after Replay",
+  "keeps the active tutorial visible on %s (%i px) across view switches and army selection, confirms completion, and persists across reload",
   async (layout, width) => {
     const { useBlockTimestampStore } = await import("@/hooks/store/use-block-timestamp-store");
     const { OPENING_WORDS } = await import("@/ui/design-system/kit/words");
-    const { replayTutorial, useOpeningStore } = await import("./opening/opening-store");
+    const { useOpeningStore } = await import("./opening/opening-store");
     const { entityHomeNamespace, expeditionRealmSite, setBuildingCount } = await import("@bibliothecadao/eternum");
     const { nativeResearchConstants } = await import("@bibliothecadao/eternum/game-client");
     const { ResourcesIds, TileOccupier, RESOURCE_PRECISION } = await import("@bibliothecadao/types");
@@ -1243,7 +1234,6 @@ it.each([
       reached: new Set(),
       seen: new Set(),
       unsent: { reached: new Set(), seen: new Set() },
-      replayed: new Set(),
       showing: null,
       confirmed: null,
       onDevice: false,
@@ -1387,9 +1377,14 @@ it.each([
       );
       expect(initialDock).not.toBeNull();
       expect(initialDock?.dataset.tutorialLayout).toBe(layout);
-      expect(initialDock?.querySelector(".emissary-dock__action")?.textContent).toContain(
-        OPENING_WORDS.actions.explore,
-      );
+      if (layout === "phone") {
+        expect(initialDock?.dataset.tutorialForm).toBe("reminder");
+        expect(initialDock?.textContent).toContain(OPENING_WORDS.titles.explore);
+      } else {
+        expect(initialDock?.querySelector(".emissary-dock__action")?.textContent).toContain(
+          OPENING_WORDS.actions.explore,
+        );
+      }
 
       await act(async () => {
         window.history.replaceState(null, "", "/g/0x1ab9/1/map?col=2&row=2");
@@ -1446,21 +1441,12 @@ it.each([
         reached: new Set(),
         seen: new Set(),
         unsent: { reached: new Set(), seen: new Set() },
-        replayed: new Set(),
         showing: null,
         confirmed: null,
         onDevice: false,
       });
       await mountTutorialHud(false);
       expect(host.querySelector("[data-tutorial-dock]")).toBeNull();
-
-      await act(async () => replayTutorial());
-      await act(async () => new Promise((settled) => setTimeout(settled, 20)));
-      expect(useOpeningStore.getState().confirmed).toBe("barracks");
-      const alreadyBuilt = host.querySelector<HTMLElement>(
-        '[data-tutorial-dock="barracks"][data-tutorial-status="completed"]',
-      );
-      expect(alreadyBuilt?.textContent).toContain(OPENING_WORDS.completed.barracks);
     } finally {
       useBlockTimestampStore.setState(previousTicks);
       useWorldAppearanceStore.setState({ showEverything: true });
@@ -1476,7 +1462,7 @@ it("shows the day-end tutorial once in the last hour with own Aspect and reads n
   const { useBlockTimestampStore } = await import("@/hooks/store/use-block-timestamp-store");
   const { OPENING_WORDS } = await import("@/ui/design-system/kit/words");
   const { buildingOutput } = await import("@/ui/shared/lib/building-output");
-  const { replayTutorial, useOpeningStore } = await import("./opening/opening-store");
+  const { useOpeningStore } = await import("./opening/opening-store");
   const previousTicks = {
     currentBlockTimestamp: useBlockTimestampStore.getState().currentBlockTimestamp,
     currentDefaultTick: useBlockTimestampStore.getState().currentDefaultTick,
@@ -1496,7 +1482,6 @@ it("shows the day-end tutorial once in the last hour with own Aspect and reads n
       reached: new Set(),
       seen: new Set(),
       unsent: { reached: new Set(), seen: new Set() },
-      replayed: new Set(),
       showing: null,
       confirmed: null,
       onDevice: false,
@@ -1593,10 +1578,6 @@ it("shows the day-end tutorial once in the last hour with own Aspect and reads n
     resetMemory();
     await mountWithDayUnit(100);
     expect(host.querySelector('[data-tutorial-dock="day-end"]')).toBeNull();
-
-    await act(async () => replayTutorial());
-    await act(async () => new Promise((settled) => setTimeout(settled, 20)));
-    expect(host.querySelector('[data-tutorial-dock="barracks"][data-tutorial-status="showing"]')).not.toBeNull();
   } finally {
     useBlockTimestampStore.setState(previousTicks);
     useWorldAppearanceStore.setState({ showEverything: true });
@@ -1628,7 +1609,6 @@ it.each([1920, 390])(
         reached: new Set(),
         seen: new Set(),
         unsent: { reached: new Set(), seen: new Set() },
-        replayed: new Set(),
         showing: null,
         confirmed: null,
         onDevice: false,

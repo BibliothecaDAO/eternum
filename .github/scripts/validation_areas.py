@@ -295,8 +295,12 @@ AREAS = {
         "contracts/common/addresses/**",
         "contracts/utils/**",
         "apps/herald/src/http-limits.ts",
+        "apps/herald/src/http-routes.ts",
+        "apps/herald/src/native/aspect-roster.ts",
         "apps/herald/src/native/release-definition.ts",
         "apps/herald/src/native/schema.ts",
+        "apps/herald/src/native/season-one.ts",
+        "apps/herald/src/native/values.ts",
         "apps/herald/src/shard-manifest.ts",
         "apps/herald/src/types.ts",
         # The game files the docs draw on: its icon set and meanings (with the Diwali sprites' manifest icon-meaning.ts

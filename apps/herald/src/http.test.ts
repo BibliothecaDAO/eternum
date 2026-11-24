@@ -6,6 +6,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { buildNativeDirectory } from "./native/read-models";
 import { createHeraldRequestHandler } from "./http";
+import { HERALD_PUBLIC_GET_ROUTES, matchHeraldGetRoute } from "./http-routes";
 import { shardManifest } from "./native/fixtures";
 import { gameRegistryRow } from "../../../packages/core/src/test-support/game-registry";
 import type { GameSnapshot } from "./types";
@@ -688,4 +689,21 @@ it("lets browsers read request timings only on a dev chain", async () => {
       expect([chain, request.url, response.headers.get("timing-allow-origin")]).toEqual([chain, request.url, allowed]);
     }
   }
+});
+
+it("matches every HERALD_PUBLIC_GET_ROUTES entry to its own route name without shadowing", async () => {
+  for (const { name, pattern } of HERALD_PUBLIC_GET_ROUTES) {
+    const sample =
+      typeof pattern === "string"
+        ? pattern
+        : pattern.source
+            .replace(/^\^|\$$/g, "")
+            .replaceAll("\\/", "/")
+            .replaceAll("([0-9]+)", "1");
+    expect(matchHeraldGetRoute(sample)?.name).toBe(name);
+  }
+  const served = createHeraldRequestHandler(httpState);
+  const missing = await served(new Request("http://herald/games/1/unknown"));
+  expect(missing.status).toBe(404);
+  expect(await missing.json()).toEqual({ error: "not_found" });
 });

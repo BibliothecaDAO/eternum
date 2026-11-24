@@ -1,7 +1,10 @@
+.frontier-crown,
+.frontier-notices {
+  left: calc(50% + (theme(spacing.hud-frontier-left) - theme(spacing.hud-frontier-rail)) / 2);
+}
 .frontier-crown {
   position: fixed;
   top: theme(spacing.4);
-  left: 50%;
   z-index: theme(zIndex.hud-rail);
   display: flex;
   align-items: center;
@@ -14,6 +17,26 @@
     var(--hud-shadow-panel),
     inset 0 1px 0 color-mix(in srgb, rgb(var(--hud-gold)) 30%, transparent);
   padding: 4px 14px 4px 12px;
+}
+
+.frontier-notices {
+  position: fixed;
+  top: 112px;
+  z-index: theme(zIndex.hud-notice);
+  width: max-content;
+  max-width: 440px;
+  transform: translateX(-50%);
+  padding: theme(spacing.2) theme(spacing.3);
+}
+.frontier-popover-room {
+  position: fixed;
+  inset: 0 calc(theme(spacing.hud-frontier-rail) + theme(spacing.4)) 0 0;
+  z-index: theme(zIndex.hud-popover);
+  transform: translateZ(0);
+  pointer-events: none;
+}
+.frontier-quest-popover[data-layout="desktop"] {
+  margin-top: 10px;
 }
 
 .frontier-crown .frontier-place-switch .ui-tabs {
@@ -208,8 +231,14 @@
   text-transform: uppercase;
   cursor: pointer;
 }
-.frontier-rank-up:hover {
+.frontier-rank-up:hover:not(:disabled) {
   filter: brightness(1.08);
+}
+.frontier-rank-up:disabled {
+  border-color: var(--hud-line-strong);
+  background: var(--hud-well);
+  color: var(--hud-muted);
+  cursor: not-allowed;
 }
 
 .frontier-stocks {
@@ -545,6 +574,9 @@ button.frontier-stock__face:hover {
   transform: rotate(-45deg);
 }
 
+.frontier-corner--right[data-wide="true"] {
+  width: min(57.5rem, calc(100% - theme(spacing.hud-frontier-left) - theme(spacing.12)));
+}
 .frontier-corner--right[data-wide="true"] [data-wide-page] {
   margin-top: 20px;
 }
@@ -553,4 +585,18 @@ button.frontier-stock__face:hover {
   font-size: var(--hud-text-label);
   line-height: var(--hud-leading-label);
   color: var(--hud-muted);
+}
+.frontier-corner--right [data-wide-page] .race-stage {
+  height: 13rem;
+  min-height: 0;
+}
+.frontier-corner--right [data-wide-page] .aspect-race-page {
+  max-height: 25rem;
+}
+
+[data-frontier-rail] [data-build-grid] .ui-card__title {
+  overflow: visible;
+  white-space: normal;
+  text-overflow: clip;
+  text-wrap: balance;
 }

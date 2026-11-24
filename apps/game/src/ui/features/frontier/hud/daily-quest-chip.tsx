@@ -10,21 +10,18 @@ import { DAILY_QUEST_MODELS, readDailyQuest } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { formatShort } from "@bibliothecadao/types";
 
+import { useLayout } from "@/shell/frame/layout";
+
 import { DailyQuest } from "../day/daily-quest";
 import { dayQuestFace } from "../day/day-quest-face";
 import { useHudPopover } from "./hud-popover";
 import { ProgressRing } from "./progress-ring";
 
-export const DailyQuestChip = ({
-  realm,
-  layout = "desktop",
-}: {
-  realm: NativeRows["Structure"];
-  layout?: "desktop" | "phone";
-}) => {
+export const DailyQuestChip = ({ realm }: { realm: NativeRows["Structure"] }) => {
   const { setup } = useGame();
   const now = useNowSeconds();
   useNativeRevision(DAILY_QUEST_MODELS);
+  const layout = useLayout();
   const { triggerProps, popover, close } = useHudPopover();
   const tablet = useTablet();
   const today = readDailyQuest(setup.store, realm.game_id, safeInteger(realm.entity_id), now);

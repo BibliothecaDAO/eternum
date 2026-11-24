@@ -223,10 +223,14 @@ const OBSERVE_EXPRESSION = `JSON.stringify({
 
 // The player's army buttons on the HUD, each with the stamina its meter shows. An open slot (Deploy, or one waiting for
 // an earlier slot) is drawn as a row like an army's, its meter the stamina its army would start on: it is no army.
-const ARMIES_EXPRESSION = `JSON.stringify([...document.querySelectorAll('nav[aria-label="Armies"] button[aria-pressed]')].filter((button) => !button.disabled && button.getAttribute("aria-label") !== "Deploy").map((button) => ({
-  label: button.getAttribute("aria-label"),
-  stamina: Number(button.querySelector('[role="meter"]')?.getAttribute("aria-valuenow") ?? NaN),
-})))`;
+const ARMIES_EXPRESSION = `JSON.stringify((() => {
+  const stamina = (element) => Number(element.querySelector('[role="meter"]')?.getAttribute("aria-valuenow") ?? NaN);
+  const docked = [...document.querySelectorAll('nav[aria-label="Armies"] button[aria-pressed]')]
+    .filter((button) => button.checkVisibility() && !button.disabled && button.getAttribute("aria-label") !== "Deploy")
+    .map((button) => ({ label: button.getAttribute("aria-label"), stamina: stamina(button) }));
+  const tray = document.querySelector("[data-picked-army]");
+  return tray && tray.checkVisibility() ? [...docked, { label: tray.dataset.pickedArmy, stamina: stamina(tray) }] : docked;
+})())`;
 
 // A button's text ends with its key hint; the leading words are its name.
 /** The order bar a phone's tap pinned: the order its row names, and whether a cost of it is short; null with none. */

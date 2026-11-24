@@ -76,6 +76,6 @@ const makersLine = (
 };
 
 /** The castle's own labor a second: Labor's realm rate, which research never raises. */
-export const castleLabor = (store: NativeFactStore, realm: NativeRows["Structure"]): number =>
+const castleLabor = (store: NativeFactStore, realm: NativeRows["Structure"]): number =>
   Number(store.require("ResourceRule", { game_id: realm.game_id, resource_type: ResourcesIds.Labor }).realm_rate) /
   RESOURCE_PRECISION;

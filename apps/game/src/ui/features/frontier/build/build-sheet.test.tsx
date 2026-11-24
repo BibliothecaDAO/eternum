@@ -69,15 +69,17 @@ describe("the build sheet", () => {
       [...host.querySelectorAll<HTMLButtonElement>(".ui-card__choose")].find(
         (card) => card.querySelector(".ui-card__title")?.textContent === name,
       )!;
-    expect(card("Farm").getAttribute("aria-pressed")).toBe("true");
-    expect(useUIStore.getState().previewBuilding).toEqual({ type: BuildingType.ResourceWheat, plot });
+    const build = () => [...host.querySelectorAll("button")].find((button) => button.textContent?.startsWith("Build"));
+    expect(host.querySelectorAll('.ui-card__choose[aria-pressed="true"]')).toHaveLength(0);
+    expect(useUIStore.getState().previewBuilding).toBeNull();
+    expect(build()).toBeUndefined();
 
     act(() => card("Barracks").click());
     expect(useUIStore.getState().previewBuilding).toEqual({ type: BuildingType.ResourceKnightT1, plot });
     act(() => card("Farm").click());
+    expect(build()?.textContent).toBe("Build Farm");
 
-    const build = [...host.querySelectorAll("button")].find((button) => button.textContent?.startsWith("Build"))!;
-    await act(async () => build.click());
+    await act(async () => build()!.click());
     expect(placeBuilding).toHaveBeenCalledWith(
       expect.objectContaining({ structureId: 7, buildingType: BuildingType.ResourceWheat, hex: plot }),
     );
@@ -113,13 +115,29 @@ describe("the build sheet", () => {
           </GameProvider>,
         ),
       );
+    const pick = (name: string) =>
+      act(() =>
+        [...host.querySelectorAll<HTMLButtonElement>(".ui-card__choose")]
+          .find((card) => card.querySelector(".ui-card__title")?.textContent === name)!
+          .click(),
+      );
     draw(true);
+    pick("Farm");
     const build = () => [...host.querySelectorAll("button")].find((button) => /^Build/.test(button.textContent ?? ""));
     const unmount = () => {
       act(() => root.unmount());
       host.remove();
     };
-    return { host, plot, placeBuilding, build, draw, unmount, settle: (o: unknown) => act(async () => settle(o)) };
+    return {
+      host,
+      plot,
+      placeBuilding,
+      build,
+      pick,
+      draw,
+      unmount,
+      settle: (o: unknown) => act(async () => settle(o)),
+    };
   };
   const ghost = () => useUIStore.getState().previewBuilding;
 
@@ -154,12 +172,13 @@ describe("the build sheet", () => {
 
   it("says why a refused build did not happen, takes the ghost away and frees the plot", async () => {
     const refused = vi.spyOn(toast, "error").mockImplementation(() => "");
-    const { build, draw, unmount, settle } = buildInFlight();
+    const { build, pick, draw, unmount, settle } = buildInFlight();
     await act(async () => build()!.click());
     await settle({ hash: "0x1", block: 9, status: "REJECTED", revertReason: "Not enough labor" });
     expect(refused.mock.lastCall?.[0]).toBe("Not enough labor");
     expect(ghost()).toBeNull();
     draw(true);
+    pick("Farm");
     expect(build()?.disabled).toBe(false);
     unmount();
     refused.mockRestore();
@@ -202,10 +221,16 @@ describe("the build sheet", () => {
         );
       };
       act(() => root.render(<Hud />));
-      const build = () =>
-        act(async () =>
+      const build = async () => {
+        act(() =>
+          [...host.querySelectorAll<HTMLButtonElement>(".ui-card__choose")]
+            .find((card) => card.querySelector(".ui-card__title")?.textContent === "Farm")!
+            .click(),
+        );
+        await act(async () =>
           [...host.querySelectorAll("button")].find((button) => button.textContent?.startsWith("Build "))!.click(),
         );
+      };
       const selected = () => useUIStore.getState().selectedBuildingHex?.innerCol ?? null;
       const end = () => {
         act(() => root.unmount());
@@ -294,7 +319,7 @@ describe("the build sheet", () => {
     return { host, card, button, close };
   };
 
-  it("opens on the realm's first build while it has none, else on the first building, and keeps a pick over either", () => {
+  it("opens on the realm's first build while it has none, else with nothing picked, and keeps a pick over either", () => {
     const { store, realm } = realmBoard();
     labor(store, 10_000n);
     const pressedOn = (sheet: ReturnType<typeof open>) =>
@@ -309,7 +334,11 @@ describe("the build sheet", () => {
     first.close();
     useUIStore.setState({ firstBuild: null });
     const later = open(store, realm);
-    expect(pressedOn(later)).toEqual(["Farm"]);
+    expect(pressedOn(later)).toEqual([]);
+    expect(later.button("Build")).toBeUndefined();
+    act(() => later.card("Workshop").click());
+    expect(pressedOn(later)).toEqual(["Workshop"]);
+    expect(later.button("Build")?.textContent).toBe("Build Workshop");
     later.close();
   });
 
@@ -328,6 +357,7 @@ describe("the build sheet", () => {
     ]);
     expect(tiles).toContainEqual(["Range", "City"]);
     expect(tiles).toContainEqual(["Supply yard", "Kingdom"]);
+    act(() => sheet.card("Farm").click());
     expect(sheet.host.querySelector("[data-build-does]")?.textContent).toMatch(/^Wheat \+/);
     expect(sheet.button("Build Farm")).toBeDefined();
 
@@ -387,6 +417,7 @@ describe("the build sheet", () => {
     store.applyFacts([freeRule(BuildingType.ResourceWheat), freeRule(BuildingType.ResourceCrossbowmanT1)] as never);
     const sheet = open(store, realm);
     expect(sheet.card("Farm").querySelector("[data-build-price]")?.textContent).toBe(FREE);
+    act(() => sheet.card("Farm").click());
     expect(sheet.host.querySelector(".ui-window__foot .ui-cost")?.textContent).toBe(FREE);
 
     const rangeButton = sheet.card(buildingName(BuildingType.ResourceCrossbowmanT1, true));
@@ -448,6 +479,7 @@ describe("the build sheet", () => {
       }),
     ] as never);
     const risen = open(store, realm);
+    act(() => risen.card("Farm").click());
     const arrow = document.querySelector(".ui-window__foot [data-price-raised]")!;
     expect(arrow.getAttribute("aria-label")).toBe("Costs more with each one standing: 2");
     expect(arrow.getAttribute("data-tip")).toBe("Costs more with each one standing: 2");
@@ -502,6 +534,7 @@ describe("the build sheet", () => {
     // Even in a game whose reveals pay labor, the line is the whole answer: no Explore button (owner, 27 October).
     vi.spyOn(configManager, "paysRevealSupplies").mockReturnValue(true);
     const short = open(store, realm);
+    act(() => short.card("Farm").click());
     expect(short.host.querySelector('[role="status"]')!.textContent).toMatch(/^Needs [\d,]+ Labor, have 0$/);
     expect(short.button("Build ")).toBeUndefined();
     expect(short.host.textContent).not.toContain("Explore");

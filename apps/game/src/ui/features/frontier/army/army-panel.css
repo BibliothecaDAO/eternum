@@ -1,0 +1,57 @@
+.army-detail {
+  display: flex;
+  flex-direction: column;
+  gap: theme(spacing.3);
+  padding-top: theme(spacing.1);
+}
+.army-detail__head {
+  display: flex;
+  align-items: center;
+  gap: theme(spacing.3);
+}
+.army-detail__who {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+.army-detail__title {
+  font-family: var(--hud-font-display);
+  font-size: var(--hud-text-title);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: rgb(var(--hud-ink));
+}
+.army-detail__sub {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: theme(spacing.1);
+  font-size: var(--hud-text-label);
+  color: var(--hud-muted);
+  font-variant-numeric: tabular-nums;
+}
+.army-detail__stamina {
+  display: flex;
+  flex-direction: column;
+  gap: theme(spacing[1.5]);
+}
+.army-detail__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: theme(spacing.2);
+}
+.army-detail__label {
+  font-size: var(--hud-text-label);
+  font-weight: var(--hud-weight-strong);
+  color: rgb(var(--hud-ink));
+}
+.army-detail__figure {
+  display: inline-flex;
+  align-items: center;
+  gap: theme(spacing.1);
+  font-size: var(--hud-text-label);
+  font-weight: var(--hud-weight-strong);
+  color: var(--hud-good);
+}

@@ -411,10 +411,6 @@ export const DAY_END = {
     `${DAY} ${day ?? "—"} ends in ${dayLength(secondsLeft)}`,
   open: "Open",
   goes: "At day end, today's map and armies go",
-  site: (name: string) => `Clear today's ${name}`,
-  siteVerb: "Show",
-  explore: "Your army can explore",
-  exploreVerb: "Select",
 } as const;
 
 /** ClockChip's prefix words: a moment that begins something, or one that ends it. */
@@ -756,8 +752,6 @@ export const UPGRADE = "Upgrade";
 
 /** The realm: its castle and levels, its buildings, and the row that counts a full realm's common buildings. */
 export const CASTLE = "Castle";
-export const MAX_LEVEL = "Max";
-export const REALM_POP = (used: number, limit: number) => `Pop ${formatExact(used)}/${formatExact(limit)}`;
 /** The castle rows that unlock the three depths beyond the spire. */
 export const LAYER = "Layer";
 
@@ -895,9 +889,6 @@ export const DAY_BANNER_WORDS = {
     3: (percent: number) => `Guarded sites have ${formatExact(percent)}% strength`,
     4: (percent: number) => `Site rewards are ${formatExact(percent)}%`,
   },
-  baneBar: "Your Aspect's Altar bane bar",
-  baneBarHint: `Hold a ${DEEP} Altar to charge. At full, sends a bane to the leading rival Aspect tomorrow.`,
-  barCharge: (charge: number, threshold: number) => `${formatExact(charge)} of ${formatExact(threshold)}`,
 } as const;
 /** What a moment's one line needs from the game's rules; the caller reads them, the line only names them. */
 export interface OpeningRules {
@@ -1008,10 +999,16 @@ export const OPENING_WORDS = {
     shop: "Shop opened. Refill stamina or unlock seals anytime.",
     relic: "Army relics checked. Equip relics on your armies here.",
   },
+  inSheet: {
+    barracks: (rules: OpeningRules) => `Pick Barracks below · ${formatRate(rules.knightsPerSecond)} Knights`,
+    deploy: () => `Pick the Knights, then press ${DEPLOY}`,
+  },
+  tutorial: "Tutorial",
+  showLesson: "Show the lesson",
   completedLabel: "Completed",
   skipTutorial: "Skip tutorial",
-  replayTutorial: "Replay tutorial",
-  tutorial: "Tutorial",
+  skipFinal: "The tutorial will not show again.",
+  keepTutorial: "Keep it",
   alertOffer: `Alert me when a ${DEEP} site can be taken`,
   alertOn: "Turn on",
   alertRetry: "Try again",
@@ -2214,7 +2211,7 @@ export const RESEARCH_TREE = {
   oathSlots: (count: number) => `${count} Oath ${count === 1 ? "slot" : "slots"}`,
   oathOpen: RESEARCH_OPEN,
   oathLocked: "Locked",
-  oathEarn: "Clear a site to swear an Oath",
+  oathEarn: `Clear a site that holds an ${SITE_OATH.label}, or reveal a ${SHRINE}`,
   oathResearch: "Research for new armies",
   conscriptionLine: "More troops from every troop building.",
   rationsLine: "Armies cost less wheat to deploy.",
@@ -2277,6 +2274,8 @@ export const ARMY_DETAIL = {
    */
   revealPays: (amount: string) => `+${amount} a tile`,
   revealPaysLabel: `${ESSENCE} or ${LABOR},`,
+  stamina: "Stamina",
+  troops: (count: number) => formatCount(count, "troop"),
 } as const;
 
 /** Deleting the picked army, for good. */

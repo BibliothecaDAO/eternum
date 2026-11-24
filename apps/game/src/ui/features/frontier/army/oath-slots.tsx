@@ -79,9 +79,12 @@ export function TroopOathSlots({ category, explorerId }: { category: TroopType; 
   const count = progress.oath_slots;
   const held = heldOaths(progress.oaths);
   return (
-    <div data-oath-slots={count} className="flex flex-col gap-1">
-      <span className="text-hud-label text-hud-ink">{RESEARCH_TREE.oathSlots(count)}</span>
-      <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${OATH_SLOTS_MAX}, minmax(0, 1fr))` }}>
+    <div data-oath-slots={count} className="oath-board">
+      <div className="oath-board__head">
+        <span className="oath-board__title">{RESEARCH_TREE.oathSlots(count)}</span>
+        {held.length < count && <span className="oath-board__hint">{RESEARCH_TREE.oathEarn}</span>}
+      </div>
+      <div className="oath-board__row">
         {Array.from({ length: OATH_SLOTS_MAX }, (_, index) => {
           const open = index < count;
           const oath = held[index];
@@ -96,35 +99,42 @@ export function TroopOathSlots({ category, explorerId }: { category: TroopType; 
             <div
               key={index}
               data-filled={oath ? "" : undefined}
+              data-open={open && !oath ? "" : undefined}
+              data-locked={open ? undefined : ""}
+              data-tip={oath ? `${oathName(oath)} — ${oathEffectDescription(oath, pickBase)}` : undefined}
               aria-label={`${RESEARCH_TREE.oathSlots(index + 1)} · ${open ? RESEARCH_TREE.oathOpen : RESEARCH_TREE.oathLocked}`}
-              className="oath-slot flex min-w-0 flex-col gap-1 overflow-hidden break-words rounded border border-hud-line p-1 text-hud-label text-hud-muted"
+              className="oath-card"
             >
               {oath ? (
                 <>
-                  <Icon name={orderMeaning(oath)} />
-                  <span>{oathName(oath)}</span>
-                  <span>{oathEffectDescription(oath, pickBase)}</span>
+                  <Icon name={orderMeaning(oath)} size={24} />
+                  <span className="oath-card__word">{oathName(oath)}</span>
                 </>
               ) : open ? (
-                RESEARCH_TREE.oathOpen
+                <>
+                  <span className="oath-card__plus" aria-hidden="true">
+                    +
+                  </span>
+                  <span className="oath-card__word">{RESEARCH_TREE.oathOpen}</span>
+                </>
               ) : (
-                RESEARCH_TREE.oathLocked
-              )}
-              {price && (
-                <HudCost
-                  line={costLine([
-                    { of: "essence", amount: Number(price.essence) / RESOURCE_PRECISION },
-                    { of: "labor", amount: Number(price.labor) / RESOURCE_PRECISION },
-                  ])}
-                />
+                <>
+                  <Icon name="lock" size={16} />
+                  {price && (
+                    <HudCost
+                      line={costLine([
+                        { of: "essence", amount: Number(price.essence) / RESOURCE_PRECISION },
+                        { of: "labor", amount: Number(price.labor) / RESOURCE_PRECISION },
+                      ])}
+                    />
+                  )}
+                </>
               )}
             </div>
           );
         })}
       </div>
-      {count < OATH_SLOTS_MAX && (
-        <span className="min-w-0 break-words text-hud-label text-hud-muted">{RESEARCH_TREE.oathResearch}</span>
-      )}
+      {count < OATH_SLOTS_MAX && <span className="oath-board__more">{RESEARCH_TREE.oathResearch}</span>}
     </div>
   );
 }

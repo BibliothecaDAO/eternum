@@ -7,6 +7,7 @@ import { safeInteger, type NativeFactStore, type NativeRows } from "@bibliotheca
 import { useGame } from "@/hooks/context/game-context";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import type { PriceKind } from "@/ui/design-system/kit/price-faces";
+import type { Refusal } from "@/ui/design-system/kit/refusal";
 import { knownAmount } from "@/ui/utils/utils";
 import { buildablePlotCount, configManager, getBalance, ResourceManager } from "@bibliothecadao/eternum";
 import { BUILDINGS_CENTER, RESOURCE_PRECISION, ResourcesIds, TroopTier, formatRate } from "@bibliothecadao/types";
@@ -71,30 +72,35 @@ const upgradeOrder = (
   levelUp: RealmLevelUp,
   tick: number,
 ): CastleUpgradeOrder => {
-  const realmId = safeInteger(realm.entity_id);
-  const held = (resource: number) => knownAmount(getBalance(realmId, resource, tick, store).balance);
-  const short = levelUp.requirements.find(({ resource, amount }) => (held(resource) ?? 0) < amount);
   return {
     next: castleSide(store, realm.game_id, levelUp.nextLevel, realm.metadata.has_wonder),
     prices: levelUp.requirements.map(({ resource, amount }) => ({ of: castlePriceKind(resource), amount })),
-    refusal:
-      (short && {
-        reason: {
-          kind: "short",
-          of: castlePriceKind(short.resource),
-          held: held(short.resource),
-          need: short.amount,
-          wait: secondsUntilHeld(
-            held(short.resource),
-            short.amount,
-            realmPerHour(store, realmId, short.resource, tick),
-          ),
-        },
-      }) ||
-      (levelUp.refusal ? { reason: { kind: "failed", line: `${levelUp.refusal}.` } } : undefined),
+    refusal: castleUpgradeRefusal(store, realm, levelUp, tick),
     sending: levelUp.loading,
     onUpgrade: levelUp.run,
   };
+};
+
+export const castleUpgradeRefusal = (
+  store: NativeFactStore,
+  realm: NativeRows["Structure"],
+  levelUp: RealmLevelUp,
+  tick: number,
+): Refusal | undefined => {
+  const realmId = safeInteger(realm.entity_id);
+  const held = (resource: number) => knownAmount(getBalance(realmId, resource, tick, store).balance);
+  const short = levelUp.requirements.find(({ resource, amount }) => (held(resource) ?? 0) < amount);
+  if (short)
+    return {
+      reason: {
+        kind: "short",
+        of: castlePriceKind(short.resource),
+        held: held(short.resource),
+        need: short.amount,
+        wait: secondsUntilHeld(held(short.resource), short.amount, realmPerHour(store, realmId, short.resource, tick)),
+      },
+    };
+  return levelUp.refusal ? { reason: { kind: "failed", line: `${levelUp.refusal}.` } } : undefined;
 };
 
 const castleSide = (store: NativeFactStore, gameId: number, level: number, hasWonder = false): CastleSide => {
