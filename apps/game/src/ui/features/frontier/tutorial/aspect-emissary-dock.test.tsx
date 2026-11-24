@@ -140,7 +140,7 @@ describe("AspectEmissaryDock", () => {
 
     const dock = host.querySelector<HTMLElement>("[data-tutorial-dock='explore']");
     expect(dock?.classList.contains("emissary-dock--phone")).toBe(true);
-    expect(dock?.textContent).toContain("Insight");
+    expect(dock?.getAttribute("aria-label")).toContain("Insight");
     expect(dock?.textContent).toContain(OPENING_WORDS.titles.explore());
     expect(dock?.textContent).toContain("Reveal a dark hex for 20 stamina.");
     expect(host.querySelector('img[data-icon="emissary-insight"]')?.getAttribute("src")).toBe(

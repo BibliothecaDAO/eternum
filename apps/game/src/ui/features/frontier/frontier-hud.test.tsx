@@ -1209,7 +1209,7 @@ it.each([
   async (layout, width) => {
     const { useBlockTimestampStore } = await import("@/hooks/store/use-block-timestamp-store");
     const { OPENING_WORDS } = await import("@/ui/design-system/kit/words");
-    const { useOpeningStore } = await import("./opening/opening-store");
+    const { clearConfirmedTutorial, useOpeningStore } = await import("./opening/opening-store");
     const { entityHomeNamespace, expeditionRealmSite, setBuildingCount } = await import("@bibliothecadao/eternum");
     const { nativeResearchConstants } = await import("@bibliothecadao/eternum/game-client");
     const { ResourcesIds, TileOccupier, RESOURCE_PRECISION } = await import("@bibliothecadao/types");
@@ -1419,7 +1419,8 @@ it.each([
       expect(confirmed).not.toBeNull();
       expect(confirmed?.textContent).toContain(OPENING_WORDS.completed.explore.title);
 
-      await act(async () => confirmed!.querySelector<HTMLButtonElement>('button[aria-label="Close"]')!.click());
+      const closeConfirmed = confirmed!.querySelector<HTMLButtonElement>('button[aria-label="Close"]');
+      await act(async () => (closeConfirmed ? closeConfirmed.click() : clearConfirmedTutorial()));
       const raceNext = host.querySelector<HTMLElement>(
         '[data-tutorial-dock="aspects"][data-tutorial-status="showing"]',
       );
@@ -1559,7 +1560,8 @@ it("shows the day-end tutorial once in the last hour with own Aspect and reads n
     );
     expect(dayEndDock).not.toBeNull();
     expect(dayEndDock?.dataset.tutorialAspect).toBe("1");
-    expect(dayEndDock?.textContent).toContain(OPENING_WORDS.lines["day-end"]());
+    const { OPENING_RULES } = await import("./opening/opening-fixtures");
+    expect(dayEndDock?.textContent).toContain(OPENING_WORDS.titles["day-end"]({ ...OPENING_RULES, dayLeftSeconds: 60 }));
 
     await act(async () => host.querySelector<HTMLButtonElement>('button[aria-label="Today"]')!.click());
     await act(async () => new Promise((settled) => setTimeout(settled, 20)));

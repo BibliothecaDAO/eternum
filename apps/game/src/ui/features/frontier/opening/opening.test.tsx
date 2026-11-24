@@ -94,9 +94,7 @@ describe("the interface that opens as you play", () => {
     expect(renderMoment("city")).toContain("Scouts reveal mist for 10 stamina instead of 20.");
     expect(renderMoment("spire")).toContain("In the Veil, guards are 2x stronger and camps refill your armies.");
     expect(renderMoment("deep")).toContain("Every 120 seconds here, armies lose 200 troops. Hold sites to earn.");
-    expect(renderMoment("day-end")).toContain(
-      "Map and armies clear soon; Realm, buildings, Research, Glory stay. Tomorrow lasts 4h.",
-    );
+    expect(renderMoment("day-end")).toContain("Today's map and armies go at day end.");
     expect(renderMoment("bane")).toContain("A bane strikes today.");
     expect(renderMoment("aspects")).toContain("Prowess races to finish its hyperstructure first.");
     expect(renderMoment("daily-quest")).toContain("Today's quest is done.");
