@@ -16,7 +16,13 @@ import { nativeCommandBits } from "../../../../contracts/l3/world-native/schema/
 import { MAINNET_TOKENS } from "../../../../packages/chain/src/tokens";
 import { logisticsStamina } from "../../../../packages/core/src/utils/attribute-tiers";
 import { buildablePlotCount } from "../../../../packages/core/src/utils/castle-reach";
-import { isOnePerRealm } from "@bibliothecadao/eternum";
+import {
+  isOnePerRealm,
+  oathAttackStamina,
+  oathDeepLossPerTick,
+  oathFuryRefund,
+  oathSitePay,
+} from "@bibliothecadao/eternum";
 import { forecastFight, type CombatRules, type ExchangeTroops } from "@bibliothecadao/eternum/combat-exchange";
 import { aspectMeaning, orderMeaning } from "../../../game/src/ui/design-system/icon-meaning";
 import {
@@ -435,12 +441,25 @@ const breakTarget = 10_000;
 const twinsAllyCount = 5_000;
 const holdTicks = 15;
 const holdStart = 9000;
-const holdBaseRemaining = holdStart - holdTicks * deepPreset.lossPerTick;
-const holdVitriolRemaining = holdStart - holdTicks * oaths.VITRIOL_LOSS_PER_TICK;
+const holdBaseLoss = Number(oathDeepLossPerTick(0, BigInt(deepPreset.lossPerTick) * PRECISION) / PRECISION);
+const holdVitriolLoss = Number(
+  oathDeepLossPerTick(oathMask(oaths.VITRIOL), BigInt(deepPreset.lossPerTick) * PRECISION) / PRECISION,
+);
+const holdBaseRemaining = holdStart - holdTicks * holdBaseLoss;
+const holdVitriolRemaining = holdStart - holdTicks * holdVitriolLoss;
 const attackChainCount = 7;
-const angerFuryCost = Math.floor((oaths.ANGER_ATTACK_STAMINA * (100 - oaths.FURY_REFUND_PERCENT)) / 100);
-const baseFuryCost = Math.floor((stamina.staminaAttackReq * (100 - oaths.FURY_REFUND_PERCENT)) / 100);
-const ragePerfectionPct = ((oaths.RAGE_PAY_PERCENT * oaths.PERFECTION_PAY_PERCENT) / 100).toFixed(1);
+const netAttackCost = (mask: number) => {
+  const cost = oathAttackStamina(mask, stamina.staminaAttackReq);
+  return cost - oathFuryRefund(mask, cost);
+};
+const baseAttackCost = netAttackCost(0);
+const angerCost = netAttackCost(oathMask(oaths.ANGER));
+const baseFuryCost = netAttackCost(oathMask(oaths.FURY));
+const angerFuryCost = netAttackCost(oathMask(oaths.ANGER, oaths.FURY));
+const sitePayPct = (mask: number, clean: boolean) => Number(oathSitePay(mask, 1000n, clean)) / 10;
+const ragePct = sitePayPct(oathMask(oaths.RAGE), true);
+const perfectionPct = sitePayPct(oathMask(oaths.PERFECTION), true);
+const ragePerfectionPct = sitePayPct(oathMask(oaths.RAGE, oaths.PERFECTION), true).toFixed(1);
 const bladeDeepBeasts = deepSites
   .filter((site) => !deepPreset.beasts[site.key].bow)
   .map((site) => DEEP_BEASTS[site.key].name)
@@ -837,16 +856,16 @@ export const FRONTIER = {
       },
       {
         job: `Stamina spent across ${attackChainCount} won attacks`,
-        none: n(attackChainCount * stamina.staminaAttackReq),
-        first: `${oathName(oaths.ANGER)}: ${n(attackChainCount * oaths.ANGER_ATTACK_STAMINA)}`,
+        none: n(attackChainCount * baseAttackCost),
+        first: `${oathName(oaths.ANGER)}: ${n(attackChainCount * angerCost)}`,
         second: `${oathName(oaths.FURY)}: ${n(attackChainCount * baseFuryCost)}`,
         both: n(attackChainCount * angerFuryCost),
       },
       {
         job: `Cleared-site payout on a clean win (<${n(oaths.PERFECTION_LOSS_PERCENT)}% lost)`,
-        none: "100%",
-        first: `${oathName(oaths.RAGE)}: ${n(oaths.RAGE_PAY_PERCENT)}%`,
-        second: `${oathName(oaths.PERFECTION)}: ${n(oaths.PERFECTION_PAY_PERCENT)}%`,
+        none: `${n(sitePayPct(0, true))}%`,
+        first: `${oathName(oaths.RAGE)}: ${n(ragePct)}%`,
+        second: `${oathName(oaths.PERFECTION)}: ${n(perfectionPct)}%`,
         both: `${ragePerfectionPct}%`,
       },
     ],

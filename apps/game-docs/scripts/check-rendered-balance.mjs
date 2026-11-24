@@ -96,6 +96,9 @@ export const frontierPhrases = (
     contract,
     buildablePlotCount,
     isOnePerRealm,
+    oathAttackStamina,
+    oathFuryRefund,
+    oathSitePay,
     relicsPerLayer,
     previewRuinGuardBounds,
     depthRewardPercent,
@@ -309,6 +312,25 @@ export const frontierPhrases = (
         `gives that army +${n(nativeOaths.PASS_STAMINA)} stamina`,
         rerollRule,
         `Strong Oath pairs`,
+        (() => {
+          const bit = (id) => 1 << (id - 1);
+          const net = (mask) => {
+            const cost = oathAttackStamina(mask, stamina.staminaAttackReq);
+            return cost - oathFuryRefund(mask, cost);
+          };
+          const anger = orders.find((o) => o.orderId === nativeOaths.ANGER).orderName;
+          const fury = orders.find((o) => o.orderId === nativeOaths.FURY).orderName;
+          return `Stamina spent across 7 won attacks ${n(7 * net(0))} ${anger}: ${n(7 * net(bit(nativeOaths.ANGER)))} ${fury}: ${n(7 * net(bit(nativeOaths.FURY)))} ${n(7 * net(bit(nativeOaths.ANGER) | bit(nativeOaths.FURY)))}`;
+        })(),
+        (() => {
+          const bit = (id) => 1 << (id - 1);
+          const rage = orders.find((o) => o.orderId === nativeOaths.RAGE).orderName;
+          const perfection = orders.find((o) => o.orderId === nativeOaths.PERFECTION).orderName;
+          const both = (
+            Number(oathSitePay(bit(nativeOaths.RAGE) | bit(nativeOaths.PERFECTION), 1000n, true)) / 10
+          ).toFixed(1);
+          return `${rage}: ${n(Number(oathSitePay(bit(nativeOaths.RAGE), 1000n, true)) / 10)}% ${perfection}: ${n(Number(oathSitePay(bit(nativeOaths.PERFECTION), 1000n, true)) / 10)}% ${both}%`;
+        })(),
         `Relics come in ${TIER_WORDS.length} tiers`,
         `All ${relicKinds.length} relic kinds`,
         ...relicKinds.map(
@@ -514,6 +536,9 @@ export const loadBalanceSources = async () => {
     const { isOnePerRealm } = await server.ssrLoadModule(
       join(here, "../../../packages/core/src/utils/realm-research.ts"),
     );
+    const { oathAttackStamina, oathFuryRefund, oathSitePay } = await server.ssrLoadModule(
+      join(here, "../../../packages/core/src/utils/oaths.ts"),
+    );
     const { logisticsStamina } = await server.ssrLoadModule(
       join(here, "../../../packages/core/src/utils/attribute-tiers.ts"),
     );
@@ -552,6 +577,9 @@ export const loadBalanceSources = async () => {
       contract,
       buildablePlotCount,
       isOnePerRealm,
+      oathAttackStamina,
+      oathFuryRefund,
+      oathSitePay,
       relicsPerLayer,
       previewRuinGuardBounds,
       depthRewardPercent,
