@@ -37,9 +37,9 @@ const REAL_SPEED = 1;
  * Prod's October season, the Playtest, torn down with release 4's shard on Nov 2. It goes by its name, never a number
  * (owner, 2 November 2026: "its not season 1 its playtest tbh, and devcon season is s0").
  */
-const ARCHIVES = [
+const ARCHIVES: readonly { file: SeasonArchive; name?: string }[] = [
   { file: playtest as SeasonArchive, name: SEASON_WORDS.playtest },
-  { file: seasonZero as SeasonArchive, name: SEASON_WORDS.seasonZero },
+  { file: seasonZero as SeasonArchive },
 ];
 
 const sameGame = (archive: SeasonArchive, game: GameRef) =>

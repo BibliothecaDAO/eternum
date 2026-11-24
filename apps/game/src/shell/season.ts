@@ -74,7 +74,7 @@ export const seasonTitle = (
   season: Pick<DirectoryGame, "season_number" | "chainId" | "game_id" | "name" | "clock_scale">,
 ): string => {
   const archived = archivedSeason({ chainId: season.chainId, gameId: season.game_id });
-  if (archived) return archived.name;
+  if (archived?.name) return archived.name;
   if (isRehearsal(season)) return isAccelerated(season) ? PLAY_WORDS.rehearsal : PLAY_WORDS.finalTestnet;
   return season.season_number != null ? `${SEASON} ${season.season_number}` : SEASON;
 };
