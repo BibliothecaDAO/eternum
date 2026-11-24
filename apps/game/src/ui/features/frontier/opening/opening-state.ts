@@ -64,6 +64,12 @@ const isDueOnContext = (moment: OpeningMoment, ctx: OpeningContext, replayed?: R
   return Boolean(replayed?.has(moment) && "replayDueWhen" in entry && entry.replayDueWhen(ctx));
 };
 
+export const lowestSinceReplay = (baseline: ReplayBaseline | undefined, ctx: OpeningContext): ReplayBaseline => ({
+  barracksCount: Math.min(baseline?.barracksCount ?? ctx.barracksCount, ctx.barracksCount),
+  deployedArmies: Math.min(baseline?.deployedArmies ?? ctx.deployedArmies, ctx.deployedArmies),
+  exploredTiles: Math.min(baseline?.exploredTiles ?? ctx.exploredTiles, ctx.exploredTiles),
+});
+
 const isCompletedDuringReplay = (
   moment: OpeningMoment,
   ctx: OpeningContext,

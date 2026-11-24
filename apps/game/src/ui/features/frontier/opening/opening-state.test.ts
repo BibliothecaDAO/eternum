@@ -8,6 +8,7 @@ import {
   activeOpeningMoment,
   effectiveSeen,
   EMPTY_OPENING_CONTEXT,
+  lowestSinceReplay,
   openedMoments,
   reachedOnContext,
   siteAlertOfferDue,
@@ -609,6 +610,51 @@ it("lets replayed lessons complete on a new action relative to replayBaseline an
   });
   expect(deployedAnotherArmy.confirmedMoment).toBe("deploy");
   expect(deployedAnotherArmy.newlyCompleted).toEqual(["deploy"]);
+});
+
+it("confirms a replayed deploy and explore after the day clears armies and tiles, since counts that fall lower the baseline", () => {
+  const replayed = new Set<string>(["deploy", "explore"]);
+  const onReplay: OpeningContext = {
+    ...EMPTY_OPENING_CONTEXT,
+    hasRealm: true,
+    hasBarracks: true,
+    barracksCount: 1,
+    troopsAtHome: 500,
+    deployedArmies: 1,
+    hasExplored: true,
+    exploredTiles: 2,
+  };
+  const nextDay: OpeningContext = { ...onReplay, deployedArmies: 0, exploredTiles: 0 };
+  const deployedAgain: OpeningContext = { ...nextDay, deployedArmies: 1 };
+  const exploredAgain: OpeningContext = { ...deployedAgain, exploredTiles: 2 };
+
+  let baseline = lowestSinceReplay(undefined, onReplay);
+  baseline = lowestSinceReplay(baseline, nextDay);
+  baseline = lowestSinceReplay(baseline, deployedAgain);
+  expect(baseline).toEqual({ barracksCount: 1, deployedArmies: 0, exploredTiles: 0 });
+
+  const deploy = stepTutorialMachine({
+    showing: "deploy",
+    confirmed: null,
+    ctx: deployedAgain,
+    rules: OPENING_RULES,
+    seen: new Set(),
+    replayed,
+    replayBaseline: baseline,
+  });
+  expect(deploy.confirmedMoment).toBe("deploy");
+
+  baseline = lowestSinceReplay(baseline, exploredAgain);
+  const explore = stepTutorialMachine({
+    showing: "explore",
+    confirmed: null,
+    ctx: exploredAgain,
+    rules: OPENING_RULES,
+    seen: new Set(["deploy"]),
+    replayed: new Set(["explore"]),
+    replayBaseline: baseline,
+  });
+  expect(explore.confirmedMoment).toBe("explore");
 });
 
 it("completes oath on pass while never flashing false completion on day-end or unbroken bane rollovers", () => {

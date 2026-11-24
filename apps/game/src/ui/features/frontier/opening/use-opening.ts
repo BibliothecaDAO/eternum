@@ -46,6 +46,7 @@ import { canResearchNow } from "../research/research-tree";
 import { type Opened, type OpeningContext } from "./opening";
 import {
   accountProgress,
+  lowestSinceReplay,
   openedMoments,
   reachedOnContext,
   type ReplayBaseline,
@@ -102,15 +103,8 @@ export function useOpening(
   const replayed = storeState.owner === owner ? storeState.replayed : undefined;
   const ctx = useOpeningContext(rules, realm, progress.reached, replayed, openedSurface);
   const replayBaselineRef = useRef<ReplayBaseline | undefined>(undefined);
-  if (!replayed || replayed.size === 0) {
-    replayBaselineRef.current = undefined;
-  } else if (ctx && replayBaselineRef.current === undefined) {
-    replayBaselineRef.current = {
-      barracksCount: ctx.barracksCount,
-      deployedArmies: ctx.deployedArmies,
-      exploredTiles: ctx.exploredTiles,
-    };
-  }
+  if (!replayed || replayed.size === 0) replayBaselineRef.current = undefined;
+  else if (ctx) replayBaselineRef.current = lowestSinceReplay(replayBaselineRef.current, ctx);
   const onState = reachedOnContext(ctx);
   const key = onState.join();
   useEffect(() => {
