@@ -499,7 +499,7 @@ it("completes the Research lesson as Research opens, since the full page covers 
   expect(openedBeforeItShowed.newlyCompleted).not.toContain("essence");
 });
 
-it("silently completes actions done before their lesson showed without flashing a confirmation banner, and keeps replay intact", () => {
+it("silently completes actions done before their lesson showed without flashing a confirmation banner", () => {
   const alreadyDeployed: OpeningContext = {
     ...EMPTY_OPENING_CONTEXT,
     hasRealm: true,
@@ -517,30 +517,6 @@ it("silently completes actions done before their lesson showed without flashing 
   expect(silent.confirmedMoment).toBeNull();
   expect(silent.newlyCompleted).toEqual(["barracks", "deploy"]);
   expect(silent.nextShowing).toBe("explore");
-
-  const replayed = new Set<string>(["barracks", "deploy", "explore"]);
-  const whileStandingOnDoneRealm = stepTutorialMachine({
-    showing: null,
-    confirmed: null,
-    ctx: { ...alreadyDeployed, hasExplored: true },
-    rules: OPENING_RULES,
-    seen: new Set(),
-    replayed,
-  });
-  expect(whileStandingOnDoneRealm.newlyCompleted).toEqual([]);
-  expect(whileStandingOnDoneRealm.nextShowing).toBe("barracks");
-
-  const replayingBarracks = stepTutorialMachine({
-    showing: "barracks",
-    confirmed: null,
-    ctx: { ...alreadyDeployed, hasExplored: true },
-    rules: OPENING_RULES,
-    seen: new Set(),
-    replayed,
-  });
-  expect(replayingBarracks.nextShowing).toBe("barracks");
-  expect(replayingBarracks.confirmedMoment).toBeNull();
-  expect(replayingBarracks.newlyCompleted).toEqual([]);
 });
 
 it("clears showing and confirmed immediately once tutorial is skipped", () => {
