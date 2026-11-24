@@ -16,6 +16,7 @@ import { nativeCommandBits } from "../../../../contracts/l3/world-native/schema/
 import { MAINNET_TOKENS } from "../../../../packages/chain/src/tokens";
 import { logisticsStamina } from "../../../../packages/core/src/utils/attribute-tiers";
 import { buildablePlotCount } from "../../../../packages/core/src/utils/castle-reach";
+import { isOnePerRealm } from "../../../../packages/core/src/utils/realm-research";
 import { forecastFight, type CombatRules, type ExchangeTroops } from "@bibliothecadao/eternum/combat-exchange";
 import { aspectMeaning, orderMeaning } from "../../../game/src/ui/design-system/icon-meaning";
 import {
@@ -213,13 +214,7 @@ for (let level = 0; level < config.realmMaxLevel - 1; level += 1) {
   const cap = frontierPreset.board.laborStoreCaps![level];
   if (cap < upgradeCost) throw new Error(`Level ${level + 1} labor cap (${cap}) cannot hold upgrade (${upgradeCost})`);
 }
-const repeatableIds: readonly BuildingType[] = [
-  research.FARM,
-  research.BARRACKS,
-  research.RANGE,
-  research.SCOUTS_LODGE,
-  research.WORKSHOP,
-];
+const repeatableIds: readonly BuildingType[] = FRONTIER_BUILDING_TYPES.filter((id) => !isOnePerRealm(id));
 const copyCostGroups = new Map<number, string[]>();
 for (const id of repeatableIds) {
   const base = config.buildings.simpleBuildingCost[id][0].amount;

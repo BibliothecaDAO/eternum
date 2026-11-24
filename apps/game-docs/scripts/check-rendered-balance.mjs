@@ -95,6 +95,7 @@ export const frontierPhrases = (
     nativeResearch,
     contract,
     buildablePlotCount,
+    isOnePerRealm,
     depthRewardPercent,
     logisticsStamina,
     mainnetTokens,
@@ -222,13 +223,7 @@ export const frontierPhrases = (
         `base + (n - 1)² × ${n(config.buildings.buildingFixedCostScalePercent / 100)}% of base`,
         ...[
           ...new Map(
-            [
-              nativeResearch.FARM,
-              nativeResearch.BARRACKS,
-              nativeResearch.RANGE,
-              nativeResearch.SCOUTS_LODGE,
-              nativeResearch.WORKSHOP,
-            ].reduce((groups, id) => {
+            FRONTIER_BUILDING_TYPES.filter((id) => !isOnePerRealm(id)).reduce((groups, id) => {
               const base = config.buildings.simpleBuildingCost[id][0].amount;
               return groups.set(base, [...(groups.get(base) ?? []), buildingName(id, true)]);
             }, new Map()),
@@ -506,6 +501,9 @@ export const loadBalanceSources = async () => {
     const { buildablePlotCount } = await server.ssrLoadModule(
       join(here, "../../../packages/core/src/utils/castle-reach.ts"),
     );
+    const { isOnePerRealm } = await server.ssrLoadModule(
+      join(here, "../../../packages/core/src/utils/realm-research.ts"),
+    );
     const { logisticsStamina } = await server.ssrLoadModule(
       join(here, "../../../packages/core/src/utils/attribute-tiers.ts"),
     );
@@ -543,6 +541,7 @@ export const loadBalanceSources = async () => {
       calendar,
       contract,
       buildablePlotCount,
+      isOnePerRealm,
       depthRewardPercent,
       logisticsStamina,
       mainnetTokens,
