@@ -330,7 +330,7 @@
 
 .emissary-dock--phone .emissary-dock__title {
   font-size: var(--hud-text-title);
-  line-height: var(--hud-leading-title);
+  line-height: var(--hud-leading-body);
   font-variant-caps: small-caps;
   letter-spacing: 0.04em;
   color: rgb(var(--hud-ink));
@@ -346,7 +346,7 @@
 
 .emissary-dock__line {
   font-size: var(--hud-text-body);
-  line-height: var(--hud-leading-body);
+  line-height: var(--hud-leading-label);
   color: rgb(var(--hud-ink));
 }
 
@@ -361,7 +361,7 @@
   display: flex;
   margin-left: 0;
   font-size: var(--hud-text-body);
-  line-height: var(--hud-leading-body);
+  line-height: var(--hud-leading-label);
 }
 
 .emissary-dock--completed {
