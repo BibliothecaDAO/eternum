@@ -13,4 +13,5 @@ export const OPENING_RULES: OpeningRules = {
   relicMinutesPerTier: 30,
   scoutExploreStamina: 10,
   exploreStamina: 20,
+  tomorrowSeconds: 14_400,
 };

@@ -1,0 +1,20 @@
+---
+title: Live dashboard
+description: Live Frontier counts for realms, Aspect standings, daily activity, player actions, and top Glory earners
+---
+
+import { LiveDashboard } from "@/components/LiveDashboard";
+import { DASHBOARD_CONFIG } from "@/utils/dashboard-data";
+
+# Live dashboard
+
+This dashboard reads confirmed Frontier counts directly in your browser from **{DASHBOARD_CONFIG.heraldUrl}**,
+**{DASHBOARD_CONFIG.rpcUrl}**, and **{DASHBOARD_CONFIG.identityOrigin}**. Results stay cached in your browser for
+{DASHBOARD_CONFIG.cacheHours} hour, or you can click **Refresh now** to fetch the latest block.
+
+The selector defaults to the Season 1 game once it opens and shows the active testnet before launch. **Player actions**
+count confirmed transactions that recorded a timed story or battle once each.
+
+<LiveDashboard />
+
+Want to query these routes from your own script or spreadsheet? See [Get the data](/data/get-the-data).

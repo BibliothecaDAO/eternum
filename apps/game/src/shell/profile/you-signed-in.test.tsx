@@ -242,6 +242,29 @@ it("offers Copy invite link on /profile#referrals for a pre-season player who ch
   expect(page.querySelectorAll("[data-friend-state]")).toHaveLength(0);
 });
 
+it("offers no invite and no failure on /profile#referrals when identity has no invite for the chosen Order's account", async () => {
+  vi.spyOn(identityClient, "shareTally").mockResolvedValue({
+    links: 0,
+    posted: 0,
+    visits: 0,
+    joined: 0,
+    activated: 0,
+    friendsPaid: 0,
+    fragmentsEarned: 0,
+  });
+  vi.spyOn(identityClient, "getOrderIntent").mockResolvedValue({ order: 1, members: { 1: 12 } });
+  const createInvite = vi.spyOn(identityClient, "createInvite").mockResolvedValue(null);
+  vi.spyOn(identityClient, "invitedFriends").mockResolvedValue({ friends: [] });
+  const page = await open("/profile#referrals", 390);
+  await vi.waitFor(() => expect(page.querySelector("[data-invited-friends-empty]")).not.toBeNull());
+  await vi.waitFor(() => expect(createInvite).toHaveBeenCalledOnce());
+  expect([...page.querySelectorAll("button")].map((button) => button.textContent)).not.toContain(
+    SEASON_INVITE_WORDS.copy,
+  );
+  expect(page.textContent).not.toContain(INVITE_WORDS.failed);
+  expect(page.textContent).not.toContain(INVITE_WORDS.making);
+});
+
 it("shows the join-Aspect prompt on /profile#referrals only when the player has neither a Season Aspect nor a chosen Order", async () => {
   vi.spyOn(identityClient, "shareTally").mockResolvedValue({
     links: 0,

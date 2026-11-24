@@ -39,6 +39,7 @@ pub const RESERVED_HYPERSTRUCTURE_OCCUPIER: u8 = 39;
 // A spire found by a Blitz reveal: it paid its finder once and stands dormant, with no portal and no other use.
 pub const DORMANT_SPIRE_OCCUPIER: u8 = 45;
 pub const DEEP_SITE_OCCUPIER: u8 = 46;
+pub const SUPPLY_POST_OCCUPIER: u8 = 47;
 
 pub const RIFT_CATEGORY: u8 = 9;
 pub const RUIN_CATEGORY: u8 = 10;

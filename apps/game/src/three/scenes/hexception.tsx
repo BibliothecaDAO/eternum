@@ -26,6 +26,7 @@ import {
   createHexceptionTerrainRequest,
   getLocalHexDisk,
   getLocalTerrainRegions,
+  LOCAL_REGION_RADIUS,
   resolveLocalHexOnMap,
 } from "./hexception-terrain";
 import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
@@ -240,7 +241,7 @@ export default class HexceptionScene extends HexagonScene {
     return LOCAL_HEX_SPACE;
   }
 
-  private hexceptionRadius = 4;
+  private readonly hexceptionRadius = LOCAL_REGION_RADIUS;
   private destroyed = false;
   /** Each building model the realm draws, loaded the first time a building or the build preview needs it. */
   private readonly models = new HexceptionModels(
@@ -1301,6 +1302,8 @@ export default class HexceptionScene extends HexagonScene {
     } else if (!occupied && highlightIndex < 0) {
       this.highlights.push(position);
     }
+    this.interactiveHexManager.setBandBare(position, occupied);
+    this.interactiveHexManager.renderAllHexes();
 
     if (this.buildingPreview?.getPreviewBuilding()) {
       this.renderBuildingPlacementHighlights();
@@ -1748,6 +1751,7 @@ export default class HexceptionScene extends HexagonScene {
         this.interactiveHexManager.addHex({ col: position.col, row: position.row });
 
         const building = existingBuildings.find((value) => value.col === position.col && value.row === position.row);
+        this.interactiveHexManager.setBandBare(position, Boolean(building));
 
         if (building) {
           this.buildings.push({ ...building, matrix: this.createBuildingMatrix(position) });

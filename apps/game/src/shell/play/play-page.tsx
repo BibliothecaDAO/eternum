@@ -227,6 +227,7 @@ const UnseenResultsPanel = ({ items }: { items: readonly PlayItem[] }) => (
 const PlayInviteStrip = () => {
   const invite = useSeasonInvite();
   const tally = useShareTally();
+  if (invite.link.none) return null;
   return (
     <AppPanel title={SEASON_INVITE_WORDS.title} icon="people">
       <div className="flex flex-col gap-3" data-play-invite>

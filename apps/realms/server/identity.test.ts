@@ -1245,6 +1245,44 @@ describe("identity Worker", () => {
     expect((await stranger.request(`/api/profiles?accounts=${tooMany}`)).status).toBe(400);
   });
 
+  it("counts the accounts that signed in, a number only, cached an hour, and lets the docs site read the public routes", async () => {
+    const docs = "https://docs.dev-realms.party";
+    const cached = new Map<string, Response>();
+    const cache = {
+      match: async (key: Request) => cached.get(key.url)?.clone(),
+      put: async (key: Request, response: Response) => void cached.set(key.url, response),
+    } as unknown as Cache;
+    const count = async (shared = noCache) => {
+      const response = await routeIdentityRequest(new Request(`${ORIGIN}/api/stats/accounts`), env, auth, {
+        cache: shared,
+        fetchPage,
+        fetchShard,
+        readLaunchDirectory: async () => launchDirectory,
+      });
+      expect(response.headers.get("cache-control")).toBe("public, max-age=3600");
+      expect(response.headers.get("access-control-allow-origin")).toBe(docs);
+      return (await response.json()) as { accounts: number };
+    };
+    const before = await count(cache);
+    expect(Object.keys(before)).toEqual(["accounts"]);
+    const browser = createBrowser();
+    await signInWithCode(browser, "counted@realms.test");
+    const leaving = createBrowser();
+    await signInWithCode(leaving, "leaving@realms.test");
+    expect(await count()).toEqual({ accounts: before.accounts + 2 });
+    await env.DB.prepare("INSERT INTO account_deletions (realms_id, deleted_at) VALUES (?, 1)")
+      .bind((await leaving.session())!.user.realmsId)
+      .run();
+    expect(await count()).toEqual({ accounts: before.accounts + 1 });
+    expect(await count(cache)).toEqual(before);
+
+    const stranger = createBrowser();
+    const realmsId = (await browser.session())!.user.realmsId;
+    for (const path of [`/api/profiles/${realmsId}`, "/api/profiles?accounts=0x1", "/api/directory"])
+      expect((await stranger.request(path)).headers.get("access-control-allow-origin")).toBe(docs);
+    expect((await stranger.request("/api/shares/friends")).headers.get("access-control-allow-origin")).toBeNull();
+  });
+
   it("keeps an account's opening progress as sets that any device can add to again, and shows it to its owner only", async () => {
     const browser = createBrowser();
     await signInWithCode(browser, "opening@realms.test");
@@ -1260,7 +1298,13 @@ describe("identity Worker", () => {
       seen: ["launch"],
     });
     expect((await add({ reached: ["Not A Name"] })).status).toBe(400);
+    expect((await add({ seen: ["tutorial:skipped"] })).status).toBe(400);
     expect((await add({ seen: "launch" })).status).toBe(400);
+    const hyphenatedKeys = ["tutorial-skipped", "day-end", "season0-welcome", "daily-quest", "site-alert"];
+    const saved = await add({ reached: hyphenatedKeys, seen: hyphenatedKeys });
+    expect(saved.status).toBe(200);
+    const body = (await saved.json()) as { reached: string[]; seen: string[] };
+    expect(body.seen).toEqual(expect.arrayContaining(hyphenatedKeys));
     expect((await createBrowser().request("/api/opening")).status).toBe(401);
   });
 

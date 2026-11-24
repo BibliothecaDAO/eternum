@@ -334,6 +334,7 @@ const PreseasonInviteStrip = ({ signedIn, aspect }: { signedIn: boolean; aspect:
 
 const SignedInAspectInvite = ({ rewardLine }: { rewardLine: string }) => {
   const invite = useSeasonInvite();
+  if (invite.link.none) return null;
   return (
     <InviteStripFrame rewardLine={rewardLine}>
       <div className="preseason-invite-strip__row">

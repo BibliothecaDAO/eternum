@@ -209,8 +209,9 @@ Each entry in `members` has `rank` (1-based integer), `entity_id` (realm entity 
 ### 6. Story history (`GET /games/<id>/history`)
 
 Returns confirmed immutable events ordered newest first, with `complete_through_block` and `total`. Filter by
-`model=StoryEvent` and optional `story` variant (`RealmCreatedStory`, `ExplorationReward`, `BattleEvent`, `SitePayout`,
-`ExplorerCreateStory`, `StructureLevelUpStory`), `owner=0x...`, or `entity_id=<decimal>`.
+`model=StoryEvent` with an optional `story` variant (`RealmCreatedStory`, `ExplorationReward`, `SitePayout`,
+`ExplorerCreateStory`, `StructureLevelUpStory`), or query `model=BattleEvent` for battles. You can also filter by
+`owner=0x...` or `entity_id=<decimal>`.
 
 Page size `limit` defaults to {PUBLIC_DATA.limits.historyDefault} and accepts 0 to {PUBLIC_DATA.limits.historyMax}.
 

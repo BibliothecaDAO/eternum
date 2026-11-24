@@ -53,10 +53,14 @@ test("every docs page export omits Blitz, Devcon and Season 0, and Eternum outsi
   assert.deepEqual(violations, []);
 });
 
-test("rendered page guard rejects Blitz, Devcon, Season 0 everywhere and Eternum on player pages", () => {
+test("rendered page guard rejects Blitz, Devcon, Season 0, retired HUD terms, and Eternum on player pages", () => {
   assert.ok(forbiddenModeMatches("Try Blitz for fast matches", false).length > 0);
   assert.ok(forbiddenModeMatches("From the Devcon season", true).length > 0);
   assert.ok(forbiddenModeMatches("Rewards from Season 0", true).length > 0);
   assert.ok(forbiddenModeMatches("Play Eternum onchain", false).length > 0);
+  assert.ok(forbiddenModeMatches("Next up on the right", false).length > 0);
+  assert.ok(forbiddenModeMatches("Up next panel", false).length > 0);
+  assert.ok(forbiddenModeMatches("Build a War hall", false).length > 0);
+  assert.ok(forbiddenModeMatches("What you can't do", false).length > 0);
   assert.deepEqual(forbiddenModeMatches("Eternum runs native Cairo domains on Madara", true), []);
 });

@@ -2,7 +2,12 @@ import { LOCAL_VIEW_REACH } from "@bibliothecadao/eternum/expeditions";
 import { StructureType, getNeighborHexes } from "@bibliothecadao/types";
 import type { TerrainCellInput, TerrainPageRequest } from "@/three/terrain/terrain-types";
 import { resolveSettlementLandCell } from "@/three/terrain/terrain-settlement-ground";
+import { PRODUCTION_TERRAIN_PROP_DENSITY_MULTIPLIER } from "@/three/terrain/terrain-props";
 import { worldOrigin } from "@/three/world-origin";
+
+export const LOCAL_REGION_RADIUS = 4;
+
+const LOCAL_PROP_DENSITY_MULTIPLIER = PRODUCTION_TERRAIN_PROP_DENSITY_MULTIPLIER / (2 * LOCAL_REGION_RADIUS + 1);
 
 const axialColumn = (hex: { col: number; row: number }) => hex.col - Math.floor((hex.row + 1) / 2);
 
@@ -77,6 +82,7 @@ export function createHexceptionTerrainRequest(
     halo: [],
     mapCenter: 0,
     pageKey,
+    propDensityMultiplier: LOCAL_PROP_DENSITY_MULTIPLIER,
     roadSegments: [],
     settlementAnchors: ordered
       .filter((cell) => cell.occupied)

@@ -102,11 +102,12 @@ type FrontierHudProps = {
 export const FrontierHud = (props: FrontierHudProps) => {
   const realm = useFrontierRealm();
   const visit = useRealmVisit();
-  const { opened, line, dismiss, skipAll, offerDue } = useOpening(props.rules, visit ? null : realm);
+  const [openedSurface, setOpenedSurface] = useState<HudSurface | null>(null);
+  const { opened, line, dismiss, skipAll, offerDue } = useOpening(props.rules, visit ? null : realm, openedSurface);
   const offer = useSiteAlertOffer(offerDue);
   return (
     <OpeningProvider opened={opened}>
-      <FrontierHudBody {...props} opening={{ line, offer, dismiss, skipAll }} />
+      <FrontierHudBody {...props} opening={{ line, offer, dismiss, skipAll }} onSurfaceChange={setOpenedSurface} />
     </OpeningProvider>
   );
 };
@@ -115,10 +116,12 @@ const FrontierHudBody = ({
   rules,
   seasonOver: SeasonOver,
   opening,
+  onSurfaceChange,
 }: FrontierHudProps & {
   opening: Pick<ReturnType<typeof useOpening>, "line" | "dismiss" | "skipAll"> & {
     offer: ReturnType<typeof useSiteAlertOffer>;
   };
+  onSurfaceChange: (surface: HudSurface | null) => void;
 }) => {
   // Parts shared with the Blitz and Eternum HUD read upright, untracked and in sentence case here (index.css).
   useDocumentClass("frontier-hud");
@@ -151,6 +154,9 @@ const FrontierHudBody = ({
   const desktop = useLayout() === "desktop";
   const tablet = useTablet() && !desktop;
   const { surface, openSurface: setSurface, showsCard } = useOnePanel(card?.key ?? null, !desktop);
+  useEffect(() => {
+    onSurfaceChange(surface);
+  }, [surface, onSurfaceChange]);
   useReturnToShop(() => setSurface("shop"));
   const research = useResearchTree(realm);
   useEffect(() => {

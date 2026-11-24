@@ -1,79 +1,41 @@
 ---
-title: Your realm
-description: Buildings, hourly rates, castle levels, storage caps, and research
+title: Realm and research
+description: Starting resources, castle levels, Storeroom caps, research ranks, Oath slots, and castle lore
 ---
 
 import { FRONTIER } from "@/utils/frontier";
 import { GameIcon } from "@/components/GameIcon";
-import { Shot } from "@/components/Media";
 
-# Your realm
+# Realm and research
 
-Your realm trains troops, grows wheat, and makes labor for your armies. Research at your castle upgrades your buildings
-and opens deeper map layers. A new realm starts with {FRONTIER.realm.troops} troops, {FRONTIER.realm.wheat} wheat and
-{FRONTIER.realm.labor} labor.
+Your realm trains troops, grows wheat, and makes labor for your armies. Research at your castle upgrades every building
+of a kind at once, unlocks extra Oath slots, and opens deeper map layers. For all {FRONTIER.buildingsCount} buildings
+and copy prices, see [Buildings](/frontier/buildings).
 
-## Buildings
-
-Tap an open plot to build. Your castle makes {FRONTIER.realm.castleLaborRates[0]} labor per hour at
-{FRONTIER.realm.castleLevelInline[0]}, multiplying by {FRONTIER.realm.castleLaborStep} at each castle level up to
-{FRONTIER.realm.castleLaborRates[3]}/h at {FRONTIER.realm.castleLevelInline[3]}. Each building opens at its castle level
-and costs labor (plus Essence for special buildings):
-
-| Building                                                                    | Makes                         | Opens at                      | Base price                    |
-| --------------------------------------------------------------------------- | ----------------------------- | ----------------------------- | ----------------------------- |
-| <GameIcon name={FRONTIER.buildings[0].icon} /> {FRONTIER.buildings[0].name} | {FRONTIER.buildings[0].makes} | {FRONTIER.buildings[0].opens} | {FRONTIER.buildings[0].price} |
-| <GameIcon name={FRONTIER.buildings[1].icon} /> {FRONTIER.buildings[1].name} | {FRONTIER.buildings[1].makes} | {FRONTIER.buildings[1].opens} | {FRONTIER.buildings[1].price} |
-| <GameIcon name={FRONTIER.buildings[2].icon} /> {FRONTIER.buildings[2].name} | {FRONTIER.buildings[2].makes} | {FRONTIER.buildings[2].opens} | {FRONTIER.buildings[2].price} |
-| <GameIcon name={FRONTIER.buildings[3].icon} /> {FRONTIER.buildings[3].name} | {FRONTIER.buildings[3].makes} | {FRONTIER.buildings[3].opens} | {FRONTIER.buildings[3].price} |
-| <GameIcon name={FRONTIER.buildings[4].icon} /> {FRONTIER.buildings[4].name} | {FRONTIER.buildings[4].makes} | {FRONTIER.buildings[4].opens} | {FRONTIER.buildings[4].price} |
-| <GameIcon name={FRONTIER.buildings[5].icon} /> {FRONTIER.buildings[5].name} | {FRONTIER.buildings[5].makes} | {FRONTIER.buildings[5].opens} | {FRONTIER.buildings[5].price} |
-| <GameIcon name={FRONTIER.buildings[6].icon} /> {FRONTIER.buildings[6].name} | {FRONTIER.buildings[6].makes} | {FRONTIER.buildings[6].opens} | {FRONTIER.buildings[6].price} |
-| <GameIcon name={FRONTIER.buildings[7].icon} /> {FRONTIER.buildings[7].name} | {FRONTIER.buildings[7].makes} | {FRONTIER.buildings[7].opens} | {FRONTIER.buildings[7].price} |
-| <GameIcon name={FRONTIER.buildings[8].icon} /> {FRONTIER.buildings[8].name} | {FRONTIER.buildings[8].makes} | {FRONTIER.buildings[8].opens} | {FRONTIER.buildings[8].price} |
-
-Each castle level opens another ring of plots, and each plot holds one building. There is no population cap in Frontier.
-Each extra copy of a repeatable building costs more than the last, and demolishing a building returns
-{FRONTIER.realm.demolitionRefund} of its price. Training buildings produce troops for free; deploying troops into an
-army costs {FRONTIER.realm.deployWheat} wheat per troop before Rations discounts.
-
-- **<GameIcon name={FRONTIER.buildingIcons.storeroom} /> {FRONTIER.names.storeroom}** (one per realm, opens at
-  {FRONTIER.storeroom.opens}) adds {FRONTIER.storeroom.storageStep} to your wheat and labor storage caps.
-- **<GameIcon name={FRONTIER.buildingIcons.conscriptionCamp} /> {FRONTIER.names.conscriptionCamp}** (one per realm,
-  opens at {FRONTIER.conscriptionOpens}) grants Conscription rank I, speeding up troop training by
-  {FRONTIER.research.outputStep} per rank.
-- **<GameIcon name={FRONTIER.buildingIcons.rationsDepot} /> {FRONTIER.names.rationsDepot}** (one per realm, opens at
-  {FRONTIER.rationsOpens}) grants Rations rank I, cutting deploy wheat cost by {FRONTIER.realm.rationStep} wheat per
-  troop per rank.
-- **<GameIcon name={FRONTIER.buildingIcons.supplyYard} /> {FRONTIER.names.supplyYard}** (one per realm, opens at
-  {FRONTIER.supplyYardOpens}) grants new armies Logistics rank I, raising max stamina by
-  {FRONTIER.stamina.logisticsStep} per rank. Rebuilding a unique building does not grant a second rank.
-
-<Shot
-  frame="panel"
-  name="frontier/build"
-  caption="An open plot's build sheet: each building, what one more gives, and its price."
-/>
+A new realm starts with {FRONTIER.realm.troops} {FRONTIER.troops.knight} waiting at home (no army is deployed yet),
+{FRONTIER.realm.wheat} wheat, and {FRONTIER.realm.labor} labor. That starting labor buys
+{FRONTIER.realm.firstMinuteSummary}. You cannot trade or send resources to another player.
 
 ## The castle
 
 Upgrade your castle for {FRONTIER.realm.castleLabor[0]}, {FRONTIER.realm.castleLabor[1]}, then
-{FRONTIER.realm.castleLabor[2]} labor. Each level opens more plots, adds one army slot, raises the max troops per
-deploy, and expands storage.
+{FRONTIER.realm.castleLabor[2]} labor. Each level's labor store holds the full price of the next upgrade. Raising your
+castle opens another ring of plots, adds an army slot, raises the max troops per deploy, raises castle labor, and
+expands storage.
 
-| Castle level                     | Armies in the field        | Troops per deploy              | Castle labor/h                       | Wheat stored                | Labor stored                     |
-| -------------------------------- | -------------------------- | ------------------------------ | ------------------------------------ | --------------------------- | -------------------------------- |
-| {FRONTIER.realm.castleLevels[0]} | {FRONTIER.realm.armies[0]} | {FRONTIER.realm.deployCaps[0]} | {FRONTIER.realm.castleLaborRates[0]} | {FRONTIER.realm.storage[0]} | {FRONTIER.realm.laborStorage[0]} |
-| {FRONTIER.realm.castleLevels[1]} | {FRONTIER.realm.armies[1]} | {FRONTIER.realm.deployCaps[1]} | {FRONTIER.realm.castleLaborRates[1]} | {FRONTIER.realm.storage[1]} | {FRONTIER.realm.laborStorage[1]} |
-| {FRONTIER.realm.castleLevels[2]} | {FRONTIER.realm.armies[2]} | {FRONTIER.realm.deployCaps[2]} | {FRONTIER.realm.castleLaborRates[2]} | {FRONTIER.realm.storage[2]} | {FRONTIER.realm.laborStorage[2]} |
-| {FRONTIER.realm.castleLevels[3]} | {FRONTIER.realm.armies[3]} | {FRONTIER.realm.deployCaps[3]} | {FRONTIER.realm.castleLaborRates[3]} | {FRONTIER.realm.storage[3]} | {FRONTIER.realm.laborStorage[3]} |
+| Castle level                     | Plots                     | Armies in the field        | Troops per deploy              | Castle labor/h                       | Wheat stored                | Labor stored                     | Labor with Storeroom                      |
+| -------------------------------- | ------------------------- | -------------------------- | ------------------------------ | ------------------------------------ | --------------------------- | -------------------------------- | ----------------------------------------- |
+| {FRONTIER.realm.castleLevels[0]} | {FRONTIER.realm.plots[0]} | {FRONTIER.realm.armies[0]} | {FRONTIER.realm.deployCaps[0]} | {FRONTIER.realm.castleLaborRates[0]} | {FRONTIER.realm.storage[0]} | {FRONTIER.realm.laborStorage[0]} | —                                         |
+| {FRONTIER.realm.castleLevels[1]} | {FRONTIER.realm.plots[1]} | {FRONTIER.realm.armies[1]} | {FRONTIER.realm.deployCaps[1]} | {FRONTIER.realm.castleLaborRates[1]} | {FRONTIER.realm.storage[1]} | {FRONTIER.realm.laborStorage[1]} | {FRONTIER.realm.storeroomLaborStorage[1]} |
+| {FRONTIER.realm.castleLevels[2]} | {FRONTIER.realm.plots[2]} | {FRONTIER.realm.armies[2]} | {FRONTIER.realm.deployCaps[2]} | {FRONTIER.realm.castleLaborRates[2]} | {FRONTIER.realm.storage[2]} | {FRONTIER.realm.laborStorage[2]} | {FRONTIER.realm.storeroomLaborStorage[2]} |
+| {FRONTIER.realm.castleLevels[3]} | {FRONTIER.realm.plots[3]} | {FRONTIER.realm.armies[3]} | {FRONTIER.realm.deployCaps[3]} | {FRONTIER.realm.castleLaborRates[3]} | {FRONTIER.realm.storage[3]} | {FRONTIER.realm.laborStorage[3]} | {FRONTIER.realm.storeroomLaborStorage[3]} |
 
 ## Research
 
-At your castle, building research has 5 ranks (I through V), paid in Essence and labor. Each rank upgrades every
-building of that type at once. Farms, Workshops, and Conscription add {FRONTIER.research.outputStep} per rank; Rations
-cuts {FRONTIER.realm.rationStep} deploy wheat per rank; Logistics adds {FRONTIER.stamina.logisticsStep} max stamina per
-rank.
+Research finishes immediately with no timer, and each building research row requires at least one copy of its building
+standing on your realm. Building research has 5 ranks (I through V), paid in Essence and labor. Farms, Workshops, and
+Conscription add {FRONTIER.research.outputStep} per rank; Rations cuts {FRONTIER.realm.rationStep} deploy wheat per
+rank; Logistics adds {FRONTIER.stamina.logisticsStep} max stamina per rank.
 
 | Row                                                                           | Rank I                                                                                               | Rank II                                                                                              | Rank III                                                                                             | Rank IV                                                                                              | Rank V                                                                                               |
 | ----------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
@@ -86,8 +48,10 @@ rank.
 ### Oath slots
 
 Every army starts with {FRONTIER.oaths.baseSlots} Oath slots. You can research {FRONTIER.oaths.extraSlots} extra slots
-for {FRONTIER.troops.knight}, {FRONTIER.troops.crossbowman}, and {FRONTIER.troops.scout} (up to
-{FRONTIER.oaths.maxSlots} total).
+separately for {FRONTIER.troops.knight} (at your {FRONTIER.names.barracks}), {FRONTIER.troops.crossbowman} (at your
+{FRONTIER.names.range}), and {FRONTIER.troops.scout} (at your {FRONTIER.names.scoutsLodge}), up to
+{FRONTIER.oaths.maxSlots} total. Unlocked Oath slots stay for the whole season and apply to every new army of that troop
+kind ([Oaths](/frontier/oaths)).
 
 Price per troop kind: {FRONTIER.research.oathSlotsSummary}.
 
@@ -100,16 +64,10 @@ Research these three in order. They cost only Essence.
 3. **<GameIcon name="spire" /> Spire lore** ({FRONTIER.research.lore[2].essence} Essence) lets reveals find Spires to
    enter the {FRONTIER.depths[1].name}, {FRONTIER.depths[2].name}, and [the {FRONTIER.names.deep}](/frontier/deep).
 
-<Shot
-  frame="panel"
-  name="frontier/research"
-  caption="Research panel: building ranks at the top and castle lore below."
-/>
-
 ## Daily quests
 
-Complete today's quest, then press **Collect** to receive {FRONTIER.quest.labor} Labor and {FRONTIER.quest.essence}
+Complete today's quest, then press **Collect** to receive {FRONTIER.quest.labor} labor and {FRONTIER.quest.essence}
 Essence at {FRONTIER.realm.castleLevelInline[0]}, multiplying by {FRONTIER.quest.levelStep} at each higher castle level.
 A **Realm NFT** or the Ancient Seal boosts quest labor to {FRONTIER.quest.bonusPercent}, and a **Wonder Realm NFT** adds
-+{FRONTIER.quest.wonderFragments} Fragments. See [Quests and banes](/frontier/quests-and-banes) for every quest and
-bonus.
++{FRONTIER.quest.wonderFragments} Fragments. See [Daily quests](/frontier/quests) for all {FRONTIER.quest.count} quests
+and rewards.

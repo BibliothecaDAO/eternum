@@ -8,6 +8,7 @@ import {
   activeOpeningMoment,
   effectiveSeen,
   EMPTY_OPENING_CONTEXT,
+  lowestSinceReplay,
   openedMoments,
   reachedOnContext,
   siteAlertOfferDue,
@@ -33,9 +34,9 @@ it("reaches no moment without a realm context and records lores and deep indepen
   expect(reachedOnContext(null)).toEqual([]);
   expect(reachedOnContext(EMPTY_OPENING_CONTEXT)).toEqual([]);
   expect(reachedOnContext({ ...EMPTY_OPENING_CONTEXT, hasBarracks: true, inDeep: true })).toEqual([
+    "barracks",
     "deep",
     "aspects",
-    "barracks",
   ]);
   expect(reachedOnContext({ ...EMPTY_OPENING_CONTEXT, hasWellLore: true, hasShrineLore: true })).toEqual([
     "well-lore",
@@ -62,16 +63,35 @@ it("shows each contextual lesson only while its context holds and hides it autom
   expect(activeOpeningMoment(afterExplore, OPENING_RULES, new Set())).toBeNull();
 });
 
-it("prioritizes live high-context moments like oath and daily quest over early basics", () => {
+it("opens a Deep race session on the Deep lesson even without a Barracks while keeping Replay starting at barracks", () => {
+  const deepRace: OpeningContext = {
+    ...EMPTY_OPENING_CONTEXT,
+    hasRealm: true,
+    hasBarracks: false,
+    deployedArmies: 1,
+    hasExplored: true,
+    inDeep: true,
+    inEthereal: true,
+    hyperstructureAdvanced: true,
+    hasWellLore: true,
+    hasShrineLore: true,
+  };
+  expect(activeOpeningMoment(deepRace, OPENING_RULES, new Set())).toBe("deep");
+  expect(reachedOnContext(deepRace)).not.toContain("essence");
+  expect(activeOpeningMoment(deepRace, OPENING_RULES, new Set(), new Set(["barracks", "deep"]))).toBe("barracks");
+});
+
+it("puts core onboarding (barracks, deploy, explore) ahead of late-game contextual lessons like bane and aspects", () => {
   const ctx = {
     ...EMPTY_OPENING_CONTEXT,
     hasRealm: true,
+    hasActiveBane: true,
     hasOpenOathPick: true,
     dailyQuestClaimable: true,
   };
-  expect(activeOpeningMoment(ctx, OPENING_RULES, new Set())).toBe("oath");
-  expect(activeOpeningMoment(ctx, OPENING_RULES, new Set(["oath"]))).toBe("daily-quest");
-  expect(activeOpeningMoment(ctx, OPENING_RULES, new Set(["oath", "daily-quest"]))).toBe("barracks");
+  expect(activeOpeningMoment(ctx, OPENING_RULES, new Set())).toBe("barracks");
+  expect(activeOpeningMoment(ctx, OPENING_RULES, new Set(["barracks"]))).toBe("oath");
+  expect(activeOpeningMoment(ctx, OPENING_RULES, new Set(["barracks", "oath"]))).toBe("daily-quest");
 });
 
 it("hides shop on testnet when fragments are not sold, and waits on deep rule data", () => {
@@ -111,9 +131,13 @@ it("auto-skips early basics for Season 0 veterans and welcomes them once", () =>
   const veteran = { ...EMPTY_OPENING_CONTEXT, hasRealm: true, isSeasonZeroVeteran: true };
   expect(activeOpeningMoment(veteran, OPENING_RULES, new Set())).toBe("season0-welcome");
   expect(activeOpeningMoment(veteran, OPENING_RULES, new Set(["season0-welcome"]))).toBeNull();
-  expect(activeOpeningMoment({ ...veteran, hasActiveBane: true }, OPENING_RULES, new Set(["season0-welcome"]))).toBe(
-    "bane",
-  );
+  expect(
+    activeOpeningMoment(
+      { ...veteran, hasActiveBane: true, deployedArmies: 1 },
+      OPENING_RULES,
+      new Set(["season0-welcome"]),
+    ),
+  ).toBe("bane");
 });
 
 it("suppresses every tutorial line once skipped and restores them via effectiveSeen on replay", () => {
@@ -160,43 +184,37 @@ it("makes the site alert's offer once the Deep is entered, until it is answered,
 const LIFECYCLE_CASES: Record<OpeningMoment, { due: OpeningContext; completed?: OpeningContext }> = {
   "season0-welcome": {
     due: { ...EMPTY_OPENING_CONTEXT, hasRealm: true, isSeasonZeroVeteran: true },
+    completed: { ...EMPTY_OPENING_CONTEXT, hasRealm: true, isSeasonZeroVeteran: true, openedSeason: true },
+  },
+  barracks: {
+    due: { ...EMPTY_OPENING_CONTEXT, hasRealm: true },
+    completed: { ...EMPTY_OPENING_CONTEXT, hasRealm: true, hasBarracks: true },
+  },
+  deploy: {
+    due: { ...EMPTY_OPENING_CONTEXT, hasRealm: true, hasBarracks: true, troopsAtHome: 2_000 },
+    completed: { ...EMPTY_OPENING_CONTEXT, hasRealm: true, hasBarracks: true, troopsAtHome: 1_000, deployedArmies: 1 },
+  },
+  explore: {
+    due: { ...EMPTY_OPENING_CONTEXT, hasRealm: true, hasBarracks: true, deployedArmies: 1, hasExplored: false },
+    completed: { ...EMPTY_OPENING_CONTEXT, hasRealm: true, hasBarracks: true, deployedArmies: 1, hasExplored: true },
   },
   oath: {
-    due: { ...EMPTY_OPENING_CONTEXT, hasRealm: true, hasOpenOathPick: true },
-    completed: { ...EMPTY_OPENING_CONTEXT, hasRealm: true, hasOpenOathPick: false, hasSwornOath: true },
-  },
-  bane: {
-    due: { ...EMPTY_OPENING_CONTEXT, hasRealm: true, hasActiveBane: true },
-    completed: { ...EMPTY_OPENING_CONTEXT, hasRealm: true, hasActiveBane: false },
-  },
-  deep: {
     due: {
       ...EMPTY_OPENING_CONTEXT,
       hasRealm: true,
       hasBarracks: true,
       deployedArmies: 1,
       hasExplored: true,
-      inDeep: true,
+      hasOpenOathPick: true,
     },
-  },
-  aspects: {
-    due: {
+    completed: {
       ...EMPTY_OPENING_CONTEXT,
       hasRealm: true,
       hasBarracks: true,
       deployedArmies: 1,
       hasExplored: true,
-      hyperstructureAdvanced: true,
-    },
-  },
-  spire: {
-    due: {
-      ...EMPTY_OPENING_CONTEXT,
-      hasRealm: true,
-      hasBarracks: true,
-      deployedArmies: 1,
-      hasExplored: true,
-      inEthereal: true,
+      hasOpenOathPick: false,
+      hasSwornOath: true,
     },
   },
   "daily-quest": {
@@ -225,6 +243,7 @@ const LIFECYCLE_CASES: Record<OpeningMoment, { due: OpeningContext; completed?: 
       deployedArmies: 1,
       hasExplored: true,
       hasEssence: true,
+      canResearch: true,
     },
     completed: {
       ...EMPTY_OPENING_CONTEXT,
@@ -233,7 +252,85 @@ const LIFECYCLE_CASES: Record<OpeningMoment, { due: OpeningContext; completed?: 
       deployedArmies: 1,
       hasExplored: true,
       hasEssence: true,
+      canResearch: true,
       hasResearched: true,
+    },
+  },
+  "day-end": {
+    due: {
+      ...EMPTY_OPENING_CONTEXT,
+      hasRealm: true,
+      hasBarracks: true,
+      deployedArmies: 1,
+      hasExplored: true,
+      dayEndingSoon: true,
+    },
+    completed: {
+      ...EMPTY_OPENING_CONTEXT,
+      hasRealm: true,
+      hasBarracks: true,
+      deployedArmies: 1,
+      hasExplored: true,
+      dayEndingSoon: true,
+      openedToday: true,
+    },
+  },
+  bane: {
+    due: {
+      ...EMPTY_OPENING_CONTEXT,
+      hasRealm: true,
+      hasBarracks: true,
+      deployedArmies: 1,
+      hasExplored: true,
+      hasActiveBane: true,
+    },
+    completed: {
+      ...EMPTY_OPENING_CONTEXT,
+      hasRealm: true,
+      hasBarracks: true,
+      deployedArmies: 1,
+      hasExplored: true,
+      hasActiveBane: true,
+      openedToday: true,
+    },
+  },
+  deep: {
+    due: {
+      ...EMPTY_OPENING_CONTEXT,
+      hasRealm: true,
+      hasBarracks: true,
+      deployedArmies: 1,
+      hasExplored: true,
+      inDeep: true,
+    },
+  },
+  aspects: {
+    due: {
+      ...EMPTY_OPENING_CONTEXT,
+      hasRealm: true,
+      hasBarracks: true,
+      deployedArmies: 1,
+      hasExplored: true,
+      hyperstructureAdvanced: true,
+    },
+    completed: {
+      ...EMPTY_OPENING_CONTEXT,
+      hasRealm: true,
+      hasBarracks: true,
+      deployedArmies: 1,
+      hasExplored: true,
+      hyperstructureAdvanced: true,
+      openedSeason: true,
+    },
+  },
+  spire: {
+    due: {
+      ...EMPTY_OPENING_CONTEXT,
+      hasRealm: true,
+      hasBarracks: true,
+      deployedArmies: 1,
+      hasExplored: true,
+      inEthereal: true,
     },
   },
   shop: {
@@ -246,6 +343,16 @@ const LIFECYCLE_CASES: Record<OpeningMoment, { due: OpeningContext; completed?: 
       fragmentsSold: true,
       outOfStamina: true,
     },
+    completed: {
+      ...EMPTY_OPENING_CONTEXT,
+      hasRealm: true,
+      hasBarracks: true,
+      deployedArmies: 1,
+      hasExplored: true,
+      fragmentsSold: true,
+      outOfStamina: true,
+      openedShop: true,
+    },
   },
   relic: {
     due: {
@@ -255,6 +362,15 @@ const LIFECYCLE_CASES: Record<OpeningMoment, { due: OpeningContext; completed?: 
       deployedArmies: 1,
       hasExplored: true,
       hasRelic: true,
+    },
+    completed: {
+      ...EMPTY_OPENING_CONTEXT,
+      hasRealm: true,
+      hasBarracks: true,
+      deployedArmies: 1,
+      hasExplored: true,
+      hasRelic: true,
+      openedArmy: true,
     },
   },
   "well-lore": {
@@ -286,18 +402,6 @@ const LIFECYCLE_CASES: Record<OpeningMoment, { due: OpeningContext; completed?: 
       hasExplored: true,
       isCity: true,
     },
-  },
-  barracks: {
-    due: { ...EMPTY_OPENING_CONTEXT, hasRealm: true },
-    completed: { ...EMPTY_OPENING_CONTEXT, hasRealm: true, hasBarracks: true },
-  },
-  deploy: {
-    due: { ...EMPTY_OPENING_CONTEXT, hasRealm: true, hasBarracks: true, troopsAtHome: 2_000 },
-    completed: { ...EMPTY_OPENING_CONTEXT, hasRealm: true, hasBarracks: true, troopsAtHome: 1_000, deployedArmies: 1 },
-  },
-  explore: {
-    due: { ...EMPTY_OPENING_CONTEXT, hasRealm: true, hasBarracks: true, deployedArmies: 1, hasExplored: false },
-    completed: { ...EMPTY_OPENING_CONTEXT, hasRealm: true, hasBarracks: true, deployedArmies: 1, hasExplored: true },
   },
 };
 
@@ -354,6 +458,29 @@ it("runs every lesson through due -> showing -> completed or dismissed -> never 
   }
 });
 
+it("completes the Research lesson as Research opens, since the full page covers the dock", () => {
+  const due = LIFECYCLE_CASES.essence.due;
+  const opened = stepTutorialMachine({
+    showing: "essence",
+    confirmed: null,
+    ctx: { ...due, openedResearch: true },
+    rules: OPENING_RULES,
+    seen: new Set(),
+  });
+  expect(opened.confirmedMoment).toBe("essence");
+  expect(opened.newlyCompleted).toContain("essence");
+
+  const openedBeforeItShowed = stepTutorialMachine({
+    showing: null,
+    confirmed: null,
+    ctx: { ...due, openedResearch: true },
+    rules: OPENING_RULES,
+    seen: new Set(),
+  });
+  expect(openedBeforeItShowed.nextShowing).toBe("essence");
+  expect(openedBeforeItShowed.newlyCompleted).not.toContain("essence");
+});
+
 it("silently completes actions done before their lesson showed without flashing a confirmation banner, and keeps replay intact", () => {
   const alreadyDeployed: OpeningContext = {
     ...EMPTY_OPENING_CONTEXT,
@@ -383,7 +510,19 @@ it("silently completes actions done before their lesson showed without flashing 
     replayed,
   });
   expect(whileStandingOnDoneRealm.newlyCompleted).toEqual([]);
-  expect(whileStandingOnDoneRealm.nextShowing).toBeNull();
+  expect(whileStandingOnDoneRealm.nextShowing).toBe("barracks");
+
+  const replayingBarracks = stepTutorialMachine({
+    showing: "barracks",
+    confirmed: null,
+    ctx: { ...alreadyDeployed, hasExplored: true },
+    rules: OPENING_RULES,
+    seen: new Set(),
+    replayed,
+  });
+  expect(replayingBarracks.nextShowing).toBe("barracks");
+  expect(replayingBarracks.confirmedMoment).toBeNull();
+  expect(replayingBarracks.newlyCompleted).toEqual([]);
 });
 
 it("clears showing and confirmed immediately once tutorial is skipped", () => {
@@ -395,4 +534,177 @@ it("clears showing and confirmed immediately once tutorial is skipped", () => {
     seen: new Set([TUTORIAL_SKIPPED]),
   });
   expect(skipped).toEqual({ nextShowing: null, confirmedMoment: null, newlyCompleted: [] });
+});
+
+it("unlocks Research HUD parts on first Essence but holds the Research lesson until a node can actually be learned", () => {
+  const lowEssence: OpeningContext = {
+    ...EMPTY_OPENING_CONTEXT,
+    hasRealm: true,
+    hasBarracks: true,
+    deployedArmies: 1,
+    hasExplored: true,
+    hasEssence: true,
+    canResearch: false,
+  };
+  expect(reachedOnContext(lowEssence)).toContain("essence");
+  expect(activeOpeningMoment(lowEssence, OPENING_RULES, new Set())).toBeNull();
+  expect(activeOpeningMoment({ ...lowEssence, canResearch: true }, OPENING_RULES, new Set())).toBe("essence");
+});
+
+it("lets replayed lessons complete on a new action relative to replayBaseline and skips deploy when zero troops wait at home", () => {
+  const baseline = { barracksCount: 1, deployedArmies: 1, exploredTiles: 2 };
+  const replayed = new Set<string>(["barracks", "deploy", "explore"]);
+  const standingRealm: OpeningContext = {
+    ...EMPTY_OPENING_CONTEXT,
+    hasRealm: true,
+    hasBarracks: true,
+    barracksCount: 1,
+    troopsAtHome: 0,
+    deployedArmies: 1,
+    hasExplored: true,
+    exploredTiles: 2,
+  };
+
+  const builtAnotherBarracks = stepTutorialMachine({
+    showing: "barracks",
+    confirmed: null,
+    ctx: { ...standingRealm, barracksCount: 2 },
+    rules: OPENING_RULES,
+    seen: new Set(),
+    replayed,
+    replayBaseline: baseline,
+  });
+  expect(builtAnotherBarracks.confirmedMoment).toBe("barracks");
+  expect(builtAnotherBarracks.newlyCompleted).toEqual(["barracks"]);
+
+  const afterBarracksZeroTroops = stepTutorialMachine({
+    showing: null,
+    confirmed: null,
+    ctx: { ...standingRealm, barracksCount: 2, troopsAtHome: 0 },
+    rules: OPENING_RULES,
+    seen: new Set(["barracks"]),
+    replayed,
+    replayBaseline: baseline,
+  });
+  expect(afterBarracksZeroTroops.nextShowing).toBe("explore");
+
+  const withTroopsAtHome = stepTutorialMachine({
+    showing: null,
+    confirmed: null,
+    ctx: { ...standingRealm, barracksCount: 2, troopsAtHome: 500 },
+    rules: OPENING_RULES,
+    seen: new Set(["barracks"]),
+    replayed,
+    replayBaseline: baseline,
+  });
+  expect(withTroopsAtHome.nextShowing).toBe("deploy");
+
+  const deployedAnotherArmy = stepTutorialMachine({
+    showing: "deploy",
+    confirmed: null,
+    ctx: { ...standingRealm, barracksCount: 2, troopsAtHome: 0, deployedArmies: 2 },
+    rules: OPENING_RULES,
+    seen: new Set(["barracks"]),
+    replayed,
+    replayBaseline: baseline,
+  });
+  expect(deployedAnotherArmy.confirmedMoment).toBe("deploy");
+  expect(deployedAnotherArmy.newlyCompleted).toEqual(["deploy"]);
+});
+
+it("confirms a replayed deploy and explore after the day clears armies and tiles, since counts that fall lower the baseline", () => {
+  const replayed = new Set<string>(["deploy", "explore"]);
+  const onReplay: OpeningContext = {
+    ...EMPTY_OPENING_CONTEXT,
+    hasRealm: true,
+    hasBarracks: true,
+    barracksCount: 1,
+    troopsAtHome: 500,
+    deployedArmies: 1,
+    hasExplored: true,
+    exploredTiles: 2,
+  };
+  const nextDay: OpeningContext = { ...onReplay, deployedArmies: 0, exploredTiles: 0 };
+  const deployedAgain: OpeningContext = { ...nextDay, deployedArmies: 1 };
+  const exploredAgain: OpeningContext = { ...deployedAgain, exploredTiles: 2 };
+
+  let baseline = lowestSinceReplay(undefined, onReplay);
+  baseline = lowestSinceReplay(baseline, nextDay);
+  baseline = lowestSinceReplay(baseline, deployedAgain);
+  expect(baseline).toEqual({ barracksCount: 1, deployedArmies: 0, exploredTiles: 0 });
+
+  const deploy = stepTutorialMachine({
+    showing: "deploy",
+    confirmed: null,
+    ctx: deployedAgain,
+    rules: OPENING_RULES,
+    seen: new Set(),
+    replayed,
+    replayBaseline: baseline,
+  });
+  expect(deploy.confirmedMoment).toBe("deploy");
+
+  baseline = lowestSinceReplay(baseline, exploredAgain);
+  const explore = stepTutorialMachine({
+    showing: "explore",
+    confirmed: null,
+    ctx: exploredAgain,
+    rules: OPENING_RULES,
+    seen: new Set(["deploy"]),
+    replayed: new Set(["explore"]),
+    replayBaseline: baseline,
+  });
+  expect(explore.confirmedMoment).toBe("explore");
+});
+
+it("completes oath on pass while never flashing false completion on day-end or unbroken bane rollovers", () => {
+  const passedOath = stepTutorialMachine({
+    showing: "oath",
+    confirmed: null,
+    ctx: { ...EMPTY_OPENING_CONTEXT, hasRealm: true, hasOpenOathPick: false, hasSwornOath: false },
+    rules: OPENING_RULES,
+    seen: new Set(),
+  });
+  expect(passedOath.confirmedMoment).toBe("oath");
+  expect(passedOath.newlyCompleted).toContain("oath");
+
+  const dayEndRollover = stepTutorialMachine({
+    showing: "day-end",
+    confirmed: null,
+    ctx: { ...EMPTY_OPENING_CONTEXT, hasRealm: true, dayEndingSoon: false, openedToday: false },
+    rules: OPENING_RULES,
+    seen: new Set(),
+  });
+  expect(dayEndRollover.confirmedMoment).toBeNull();
+  expect(dayEndRollover.newlyCompleted).not.toContain("day-end");
+
+  const unbrokenBaneRollover = stepTutorialMachine({
+    showing: "bane",
+    confirmed: null,
+    ctx: { ...EMPTY_OPENING_CONTEXT, hasRealm: true, hasActiveBane: false, hasBrokenBane: false },
+    rules: OPENING_RULES,
+    seen: new Set(),
+  });
+  expect(unbrokenBaneRollover.confirmedMoment).toBeNull();
+  expect(unbrokenBaneRollover.newlyCompleted).not.toContain("bane");
+
+  const brokenWhileUnopened = stepTutorialMachine({
+    showing: "bane",
+    confirmed: null,
+    ctx: { ...EMPTY_OPENING_CONTEXT, hasRealm: true, hasActiveBane: false, hasBrokenBane: true, openedToday: false },
+    rules: OPENING_RULES,
+    seen: new Set(),
+  });
+  expect(brokenWhileUnopened.confirmedMoment).toBeNull();
+  expect(brokenWhileUnopened.newlyCompleted).not.toContain("bane");
+
+  const alreadyBrokenBeforeLogin = stepTutorialMachine({
+    showing: null,
+    confirmed: null,
+    ctx: { ...EMPTY_OPENING_CONTEXT, hasRealm: true, hasActiveBane: false, hasBrokenBane: true },
+    rules: OPENING_RULES,
+    seen: new Set(),
+  });
+  expect(alreadyBrokenBeforeLogin.confirmedMoment).toBeNull();
+  expect(alreadyBrokenBeforeLogin.newlyCompleted).not.toContain("bane");
 });

@@ -39,6 +39,8 @@ function contextForMoment(moment: OpeningMoment): OpeningContext {
       return { ...base, hasOpenOathPick: true };
     case "bane":
       return { ...base, hasActiveBane: true };
+    case "day-end":
+      return { ...base, dayEndingSoon: true };
     case "deep":
       return { ...base, inDeep: true };
     case "aspects":
@@ -48,7 +50,7 @@ function contextForMoment(moment: OpeningMoment): OpeningContext {
     case "daily-quest":
       return { ...base, dailyQuestClaimable: true };
     case "essence":
-      return { ...base, hasEssence: true, hasResearched: false };
+      return { ...base, hasEssence: true, canResearch: true, hasResearched: false };
     case "shop":
       return { ...base, fragmentsSold: true, outOfStamina: true };
     case "relic":
@@ -133,9 +135,11 @@ export function OpeningLab() {
         <button type="button" aria-pressed={phone} onClick={() => setPhone((was) => !was)}>
           {phone ? "Phone (390)" : "Desktop"}
         </button>
-        <button type="button" aria-pressed={completedPreview} onClick={() => setCompletedPreview((was) => !was)}>
-          {OPENING_WORDS.completedLabel}
-        </button>
+        {selectedMoment in OPENING_WORDS.completed && (
+          <button type="button" aria-pressed={completedPreview} onClick={() => setCompletedPreview((was) => !was)}>
+            {OPENING_WORDS.completedLabel}
+          </button>
+        )}
       </div>
 
       <div data-opening-line className={phone ? "w-[370px] pt-3" : "pt-4"}>

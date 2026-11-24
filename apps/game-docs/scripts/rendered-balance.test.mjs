@@ -39,12 +39,13 @@ test("built current guides match the active preset, including its balance overri
   assert.deepEqual(missingIcons(dist, expectedPageIcons(sources)), []);
 });
 
-test("the expedition guide gives reveal pay and guards for the personal depths only, never the shared Deep", () => {
+test("the expedition and beasts guides give reveal pay and guards for the personal depths only, never the shared Deep", () => {
   const deepName = LAYER_NAMES.at(-1);
   assert.ok(current.deep, "the current preset has a shared Deep");
-  const page = pageLine(readFileSync(join(dist, "frontier/expedition", "index.html"), "utf8"));
-  assert.ok(!new RegExp(`\\b${deepName} \\d+%`).test(page), "the Deep pays no reveal reward");
-  assert.ok(!new RegExp(`\\b${deepName} (?:\\S+ )?[\\d,]+–`).test(page), "the Deep has no camp or rift guard row");
+  const expedition = pageLine(readFileSync(join(dist, "frontier/expedition", "index.html"), "utf8"));
+  const beasts = pageLine(readFileSync(join(dist, "frontier/beasts", "index.html"), "utf8"));
+  assert.ok(!new RegExp(`\\b${deepName} \\d+%`).test(expedition), "the Deep pays no reveal reward");
+  assert.ok(!new RegExp(`\\b${deepName} (?:\\S+ )?[\\d,]+–`).test(beasts), "the Deep has no camp or rift guard row");
 });
 
 function rejectsStaleValue(page, currentText, historicalText) {
@@ -69,7 +70,7 @@ for (const [index, depth] of current.depths.entries()) {
         range(depth[`beast${strength}Lower`], depth[`beast${strength}Upper`]),
         range(oldDepth[`beast${strength}Lower`], oldDepth[`beast${strength}Upper`]),
       );
-      rejectsStaleValue("frontier/expedition", row, stale);
+      rejectsStaleValue("frontier/beasts", row, stale);
     });
   }
 }
@@ -85,7 +86,7 @@ test("the rendered armies check rejects the Knight reveal cost for Scouts", () =
 test("no built HTML page or llm.txt names Blitz, Devcon or Season 0, and synthetic regressions fail", () => {
   const llm = readFileSync(join(dist, "llm.txt"), "utf8");
   assert.deepEqual(forbiddenModePages(dist, llm), []);
-  for (const term of ["Blitz", "Devcon", "Season 0"]) {
+  for (const term of ["Blitz", "Devcon", "Season 0", "Next up", "Up next"]) {
     const fakeDist = mkdtempSync(join(tmpdir(), "rendered-mode-"));
     try {
       mkdirSync(join(fakeDist, "frontier"), { recursive: true });

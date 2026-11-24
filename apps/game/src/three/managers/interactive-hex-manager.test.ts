@@ -32,6 +32,30 @@ describe("a buildable hex's band", () => {
     expect(bandHeight(manager, scene)).toBeGreaterThan(0.4);
   });
 
+  it("leaves a plot a building stands on bare, still a plot to tap, and draws it again once the building goes", () => {
+    const scene = new THREE.Scene();
+    const manager = new InteractiveHexManager(scene, groundWithRisingEdge(0), AT_ORIGIN as never);
+    manager.addHex({ col: 0, row: 0 });
+    manager.setBandBare({ col: 0, row: 0 }, true);
+    manager.renderAllHexes();
+    const mesh = scene.children.find((child): child is THREE.InstancedMesh => child instanceof THREE.InstancedMesh)!;
+    const drawnScale = () => {
+      const matrix = new THREE.Matrix4();
+      mesh.getMatrixAt(0, matrix);
+      return new THREE.Vector3()
+        .setFromMatrixScale(matrix)
+        .toArray()
+        .map((axis) => Math.round(axis * 1e6) / 1e6 + 0);
+    };
+
+    expect(drawnScale()).toEqual([0, 0, 0]);
+    expect(manager.isHexInteractive({ col: 0, row: 0 })).toBe(true);
+
+    manager.setBandBare({ col: 0, row: 0 }, false);
+    manager.renderAllHexes();
+    expect(drawnScale()).toEqual([1, 1, 1]);
+  });
+
   it("only reads its centre where it is not drawn", () => {
     const scene = new THREE.Scene();
     const manager = new InteractiveHexManager(scene, groundWithRisingEdge(0.4), AT_ORIGIN as never);

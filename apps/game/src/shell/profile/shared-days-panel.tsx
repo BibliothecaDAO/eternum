@@ -163,6 +163,7 @@ const InvitedFriendsList = ({ friends }: { friends: InvitedFriends["friends"] | 
 const InviteStrip = ({ fallbackAspect }: { fallbackAspect: AspectId }) => {
   const invite = useSeasonInvite();
   const shownAspect = invite.aspect ?? fallbackAspect;
+  if (invite.link.none) return null;
   return (
     <div className="flex flex-col gap-3">
       <div className="referrals-invite">
