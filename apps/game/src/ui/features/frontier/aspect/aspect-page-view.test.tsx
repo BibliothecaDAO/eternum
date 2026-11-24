@@ -67,7 +67,11 @@ describe("the Aspect page", () => {
   it("names the Aspect that finished first once the age is won, and finished rows say so", () => {
     draw(ASPECT_PAGE_CASES["Age won by another Aspect"]);
     expect(part("data-aspect-race")).toContain("Prowess finished 1st and won the season");
-    expect(part("data-aspect-race")).toContain("Finished · 10,000 of 10,000");
+    const finished = document.body.querySelector('[data-aspect-race] .race-steps[aria-label^="Finished"]')!;
+    expect([finished.getAttribute("aria-label"), finished.querySelectorAll("[data-built]").length]).toEqual([
+      "Finished · 10,000 of 10,000",
+      5,
+    ]);
     const triumphs = part("data-aspect-triumphs");
     expect(triumphs).toContain("Clear Mist · day 12");
     expect(triumphs).toContain("Second Wind · day 19");
