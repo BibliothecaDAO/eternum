@@ -76,7 +76,7 @@ export interface AspectStandingRow {
   height: number;
   finishHeight: number;
   members: number;
-  gloryTotal: string;
+  gloryTotal: string | null;
 }
 
 export interface TopGloryRow {
@@ -92,6 +92,7 @@ export interface TopGloryRow {
 
 export interface DashboardSnapshot {
   fetchedAt: number;
+  complete: boolean;
   confirmedBlock: number;
   latestBlock: number | null;
   latestBlockTxs: number | null;
@@ -103,22 +104,22 @@ export interface DashboardSnapshot {
   players: number;
   realms: number;
   signedInAccounts: number | null;
-  seals: number;
-  activeToday: number;
+  seals: number | null;
+  activeToday: number | null;
   playerActionsTotal: number | null;
-  tilesExplored: number;
-  battles: number;
-  realmsCreatedTotal: number;
-  totalArmies: number;
-  expeditionArmies: number;
-  deepArmies: number;
-  deepSites: number;
-  activeWorldBanes: number;
+  tilesExplored: number | null;
+  battles: number | null;
+  realmsCreatedTotal: number | null;
+  totalArmies: number | null;
+  expeditionArmies: number | null;
+  deepArmies: number | null;
+  deepSites: number | null;
+  activeWorldBanes: number | null;
   aspectStandings: AspectStandingRow[];
-  activityByDay: ChartPoint[];
-  realmsByUtcDay: ChartPoint[];
-  actionsByUtcDay: ChartPoint[];
-  topGlory: TopGloryRow[];
+  activityByDay: ChartPoint[] | null;
+  realmsByUtcDay: ChartPoint[] | null;
+  actionsByUtcDay: ChartPoint[] | null;
+  topGlory: TopGloryRow[] | null;
 }
 
 export type FetchLike = (input: string, init?: RequestInit) => Promise<{ ok: boolean; json(): Promise<unknown> }>;
@@ -178,7 +179,7 @@ export function readCachedDashboard(
     const raw = storage.getItem(`${CACHE_KEY_PREFIX}${gameId}`);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as DashboardSnapshot;
-    if (!parsed || typeof parsed.fetchedAt !== "number") return null;
+    if (!parsed || parsed.complete !== true || typeof parsed.fetchedAt !== "number") return null;
     if (now - parsed.fetchedAt >= DASHBOARD_CACHE_TTL_MS) return null;
     return parsed;
   } catch {
@@ -187,7 +188,7 @@ export function readCachedDashboard(
 }
 
 export function writeCachedDashboard(storage: StorageLike | null, gameId: number, data: DashboardSnapshot): void {
-  if (!storage) return;
+  if (!storage || !data.complete) return;
   try {
     storage.setItem(`${CACHE_KEY_PREFIX}${gameId}`, JSON.stringify(data));
   } catch {}
@@ -283,14 +284,14 @@ async function fetchAllRosterMembers(
   fetcher: FetchLike,
   gameId: number,
   aspectId: AspectId,
-): Promise<HeraldAspectRosterMember[]> {
+): Promise<HeraldAspectRosterMember[] | null> {
   const all: HeraldAspectRosterMember[] = [];
   for (let offset = 0; ; offset += ROSTER_PAGE_LIMIT) {
     const page = await fetchJsonOrNull<HeraldAspectRoster>(
       fetcher,
       `${DASHBOARD_CONFIG.heraldUrl}/games/${gameId}/aspects/${aspectId}/members?limit=${ROSTER_PAGE_LIMIT}&offset=${offset}`,
     );
-    if (!page || !Array.isArray(page.members)) break;
+    if (!page || !Array.isArray(page.members)) return null;
     all.push(...page.members);
     const step = page.limit || ROSTER_PAGE_LIMIT;
     const total = page.total ?? all.length;
@@ -302,7 +303,7 @@ async function fetchAllRosterMembers(
 async function fetchAllRealmHistory(
   fetcher: FetchLike,
   gameId: number,
-): Promise<{ total: number; items: HeraldHistoryPage["items"] }> {
+): Promise<{ total: number; items: HeraldHistoryPage["items"] } | null> {
   const items: HeraldHistoryPage["items"] = [];
   let total = 0;
   for (let offset = 0; ; offset += HISTORY_PAGE_LIMIT) {
@@ -310,7 +311,7 @@ async function fetchAllRealmHistory(
       fetcher,
       `${DASHBOARD_CONFIG.heraldUrl}/games/${gameId}/history?model=StoryEvent&story=RealmCreatedStory&limit=${HISTORY_PAGE_LIMIT}&offset=${offset}`,
     );
-    if (!page || !Array.isArray(page.items)) break;
+    if (!page || !Array.isArray(page.items)) return null;
     if (typeof page.total === "number") total = page.total;
     items.push(...page.items);
     const step = page.limit || HISTORY_PAGE_LIMIT;
@@ -363,16 +364,19 @@ export async function loadDashboardData(
     ]);
 
   const currentDay = game.day_index ?? null;
-  const snapSummary = summarizeSnapshot(snapshot?.models ?? [], currentDay);
+  const snapSummary = snapshot ? summarizeSnapshot(snapshot.models, currentDay) : null;
   const finishHeight = game.aspect_race?.finish_height ?? 0;
   const seasonDays = game.aspect_race?.season_days ?? null;
 
+  const allRostersLoaded = rosters.every((roster) => roster !== null);
   const rawTopEntries: { aspect: DashboardAspectMeta; member: HeraldAspectRosterMember }[] = [];
   const aspectStandings: AspectStandingRow[] = DASHBOARD_CONFIG.aspects.map((aspect, index) => {
-    const members = rosters[index] ?? [];
-    const gloryTotal = members.reduce((sum, member) => sum + BigInt(member.glory || "0"), 0n);
-    for (const member of members.slice(0, TOP_MEMBERS_PER_ASPECT)) {
-      rawTopEntries.push({ aspect, member });
+    const members = rosters[index];
+    const gloryTotal = members ? members.reduce((sum, member) => sum + BigInt(member.glory || "0"), 0n) : null;
+    if (members) {
+      for (const member of members.slice(0, TOP_MEMBERS_PER_ASPECT)) {
+        rawTopEntries.push({ aspect, member });
+      }
     }
     return {
       id: aspect.id,
@@ -381,8 +385,8 @@ export async function loadDashboardData(
       color: aspect.color,
       height: game.aspect_race?.heights[aspect.id] ?? 0,
       finishHeight,
-      members: game.aspect_members?.[aspect.id] ?? members.length,
-      gloryTotal: gloryTotal.toString(),
+      members: game.aspect_members?.[aspect.id] ?? (members ? members.length : 0),
+      gloryTotal: gloryTotal !== null ? gloryTotal.toString() : null,
     };
   });
 
@@ -396,28 +400,46 @@ export async function loadDashboardData(
       : null;
   const profiles = profileResponse?.profiles ?? {};
 
-  const topGlory: TopGloryRow[] = rawTopEntries.map(({ aspect, member }) => ({
-    aspectId: aspect.id,
-    aspectName: aspect.name,
-    aspectIcon: aspect.icon,
-    rank: member.rank,
-    owner: member.owner,
-    displayName: profiles[member.owner]?.name?.trim() || formatShortAddress(member.owner),
-    realmId: member.realm_id,
-    glory: member.glory,
-  }));
+  const topGlory: TopGloryRow[] | null = allRostersLoaded
+    ? rawTopEntries.map(({ aspect, member }) => ({
+        aspectId: aspect.id,
+        aspectName: aspect.name,
+        aspectIcon: aspect.icon,
+        rank: member.rank,
+        owner: member.owner,
+        displayName: profiles[member.owner]?.name?.trim() || formatShortAddress(member.owner),
+        realmId: member.realm_id,
+        glory: member.glory,
+      }))
+    : null;
 
-  const actionsByUtcDay: ChartPoint[] = (stats?.transactions.days ?? []).map((entry) => ({
-    key: entry.day,
-    label: formatShortUtcDay(entry.day),
-    value: entry.transactions,
-  }));
+  const actionsByUtcDay: ChartPoint[] | null = stats
+    ? stats.transactions.days.map((entry) => ({
+        key: entry.day,
+        label: formatShortUtcDay(entry.day),
+        value: entry.transactions,
+      }))
+    : null;
+
+  const signedInAccounts = typeof accounts?.accounts === "number" ? accounts.accounts : null;
+  const latestBlock = rpcBlock?.result?.block_number ?? null;
+  const latestBlockTxs = rpcBlock?.result?.transactions?.length ?? null;
+  const complete =
+    snapshot !== null &&
+    stats !== null &&
+    signedInAccounts !== null &&
+    realmsHistory !== null &&
+    exploreHistory !== null &&
+    battleHistory !== null &&
+    latestBlock !== null &&
+    allRostersLoaded;
 
   return {
     fetchedAt: now,
+    complete,
     confirmedBlock: snapshot?.confirmed_block ?? confirmedBlock,
-    latestBlock: rpcBlock?.result?.block_number ?? null,
-    latestBlockTxs: rpcBlock?.result?.transactions?.length ?? null,
+    latestBlock,
+    latestBlockTxs,
     gameId,
     gameName: game.name,
     status: game.status,
@@ -425,21 +447,21 @@ export async function loadDashboardData(
     seasonDays,
     players: stats?.players ?? game.player_count,
     realms: stats?.realms ?? game.settled_realms_count,
-    signedInAccounts: typeof accounts?.accounts === "number" ? accounts.accounts : null,
-    seals: snapSummary.seals,
-    activeToday: snapSummary.activeToday,
+    signedInAccounts,
+    seals: snapSummary ? snapSummary.seals : null,
+    activeToday: snapSummary ? snapSummary.activeToday : null,
     playerActionsTotal: stats ? stats.transactions.total : null,
-    tilesExplored: exploreHistory?.total ?? 0,
-    battles: battleHistory?.total ?? 0,
-    realmsCreatedTotal: realmsHistory.total || game.settled_realms_count,
-    totalArmies: snapSummary.totalArmies,
-    expeditionArmies: snapSummary.expeditionArmies,
-    deepArmies: snapSummary.deepArmies,
-    deepSites: snapSummary.deepSites,
-    activeWorldBanes: snapSummary.activeWorldBanes,
+    tilesExplored: exploreHistory ? exploreHistory.total : null,
+    battles: battleHistory ? battleHistory.total : null,
+    realmsCreatedTotal: realmsHistory ? realmsHistory.total : null,
+    totalArmies: snapSummary ? snapSummary.totalArmies : null,
+    expeditionArmies: snapSummary ? snapSummary.expeditionArmies : null,
+    deepArmies: snapSummary ? snapSummary.deepArmies : null,
+    deepSites: snapSummary ? snapSummary.deepSites : null,
+    activeWorldBanes: snapSummary ? snapSummary.activeWorldBanes : null,
     aspectStandings,
-    activityByDay: snapSummary.activityByDay,
-    realmsByUtcDay: aggregateRealmsByUtcDay(realmsHistory.items),
+    activityByDay: snapSummary ? snapSummary.activityByDay : null,
+    realmsByUtcDay: realmsHistory ? aggregateRealmsByUtcDay(realmsHistory.items) : null,
     actionsByUtcDay,
     topGlory,
   };

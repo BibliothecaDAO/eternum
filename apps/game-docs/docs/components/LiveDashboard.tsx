@@ -109,7 +109,7 @@ const initialStandings = DASHBOARD_CONFIG.aspects.map((aspect) => ({
   height: 0,
   finishHeight: 0,
   members: 0,
-  gloryTotal: "0",
+  gloryTotal: null as string | null,
 }));
 
 export function LiveDashboard() {
@@ -243,6 +243,11 @@ export function LiveDashboard() {
       </div>
 
       {error ? <p className="docs-dash-error">{error}</p> : null}
+      {snapshot && !snapshot.complete ? (
+        <p className="docs-dash-error">
+          Some live endpoints did not respond; missing counts show — and were not cached.
+        </p>
+      ) : null}
 
       <section className="docs-dash-tiles" aria-label="Summary counters">
         <article className="docs-dash-tile">
@@ -259,11 +264,11 @@ export function LiveDashboard() {
             </li>
             <li>
               <span>Ancient Seals</span>
-              <span>{snapshot ? n(snapshot.seals) : "—"}</span>
+              <span>{snapshot ? formatMaybe(snapshot.seals) : "—"}</span>
             </li>
             <li>
               <span>Active today</span>
-              <span>{snapshot ? n(snapshot.activeToday) : "—"}</span>
+              <span>{snapshot ? formatMaybe(snapshot.activeToday) : "—"}</span>
             </li>
           </ul>
         </article>
@@ -274,34 +279,34 @@ export function LiveDashboard() {
           <ul>
             <li>
               <span>Tiles explored</span>
-              <span>{snapshot ? n(snapshot.tilesExplored) : "—"}</span>
+              <span>{snapshot ? formatMaybe(snapshot.tilesExplored) : "—"}</span>
             </li>
             <li>
               <span>Battles</span>
-              <span>{snapshot ? n(snapshot.battles) : "—"}</span>
+              <span>{snapshot ? formatMaybe(snapshot.battles) : "—"}</span>
             </li>
             <li>
               <span>Realms created</span>
-              <span>{snapshot ? n(snapshot.realmsCreatedTotal) : "—"}</span>
+              <span>{snapshot ? formatMaybe(snapshot.realmsCreatedTotal) : "—"}</span>
             </li>
           </ul>
         </article>
 
         <article className="docs-dash-tile">
           <div className="docs-dash-label">Live armies</div>
-          <div className="docs-dash-fig">{snapshot ? n(snapshot.totalArmies) : "—"}</div>
+          <div className="docs-dash-fig">{snapshot ? formatMaybe(snapshot.totalArmies) : "—"}</div>
           <ul>
             <li>
               <span>On expedition</span>
-              <span>{snapshot ? n(snapshot.expeditionArmies) : "—"}</span>
+              <span>{snapshot ? formatMaybe(snapshot.expeditionArmies) : "—"}</span>
             </li>
             <li>
               <span>In the Deep</span>
-              <span>{snapshot ? n(snapshot.deepArmies) : "—"}</span>
+              <span>{snapshot ? formatMaybe(snapshot.deepArmies) : "—"}</span>
             </li>
             <li>
               <span>Deep sites</span>
-              <span>{snapshot ? n(snapshot.deepSites) : "—"}</span>
+              <span>{snapshot ? formatMaybe(snapshot.deepSites) : "—"}</span>
             </li>
           </ul>
         </article>
@@ -320,7 +325,7 @@ export function LiveDashboard() {
             </li>
             <li>
               <span>World Banes today</span>
-              <span>{snapshot ? n(snapshot.activeWorldBanes) : "—"}</span>
+              <span>{snapshot ? formatMaybe(snapshot.activeWorldBanes) : "—"}</span>
             </li>
           </ul>
         </article>
@@ -341,7 +346,7 @@ export function LiveDashboard() {
                   <strong>{snapshot ? n(row.height) : "—"}</strong>
                   {row.finishHeight > 0 ? ` / ${n(row.finishHeight)} height` : " height"} ·{" "}
                   {snapshot ? n(row.members) : "—"} members ·{" "}
-                  <strong>{snapshot ? formatBig(row.gloryTotal) : "—"}</strong> Glory
+                  <strong>{snapshot && row.gloryTotal !== null ? formatBig(row.gloryTotal) : "—"}</strong> Glory
                 </span>
               </div>
               <div className="docs-dash-track">
@@ -358,19 +363,29 @@ export function LiveDashboard() {
           title="Active players per Frontier day"
           points={snapshot?.activityByDay ?? []}
           color="var(--gold)"
-          emptyLabel="No active Frontier days recorded yet."
+          emptyLabel={
+            snapshot && snapshot.activityByDay === null
+              ? "Could not load daily activity."
+              : "No active Frontier days recorded yet."
+          }
         />
         <BarChart
           title="Realms created per UTC day"
           points={snapshot?.realmsByUtcDay ?? []}
           color="var(--sage)"
-          emptyLabel="No realms created yet."
+          emptyLabel={
+            snapshot && snapshot.realmsByUtcDay === null ? "Could not load realm history." : "No realms created yet."
+          }
         />
         <BarChart
           title="Player actions per UTC day"
           points={snapshot?.actionsByUtcDay ?? []}
           color="var(--gold2)"
-          emptyLabel="Daily player action rollups appear once actions are recorded."
+          emptyLabel={
+            snapshot && snapshot.actionsByUtcDay === null
+              ? "Could not load daily player actions."
+              : "Daily player action rollups appear once actions are recorded."
+          }
         />
       </div>
 
@@ -387,7 +402,7 @@ export function LiveDashboard() {
             </tr>
           </thead>
           <tbody>
-            {snapshot && snapshot.topGlory.length > 0 ? (
+            {snapshot && snapshot.topGlory && snapshot.topGlory.length > 0 ? (
               snapshot.topGlory.map((row) => (
                 <tr key={`${row.aspectId}-${row.owner}-${row.realmId}`}>
                   <td>
@@ -402,7 +417,13 @@ export function LiveDashboard() {
               ))
             ) : (
               <tr>
-                <td colSpan={5}>{activeGame ? "No ranked Aspect members yet." : "Loading rosters…"}</td>
+                <td colSpan={5}>
+                  {snapshot && snapshot.topGlory === null
+                    ? "Could not load Aspect rosters."
+                    : activeGame
+                      ? "No ranked Aspect members yet."
+                      : "Loading rosters…"}
+                </td>
               </tr>
             )}
           </tbody>

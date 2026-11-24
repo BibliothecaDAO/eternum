@@ -61,10 +61,14 @@ test("1-hour dashboard cache returns fresh entries and expires at TTL", () => {
     getItem: (k) => map.get(k) ?? null,
     setItem: (k, v) => map.set(k, v),
   };
-  const payload = { fetchedAt: 1_000_000, gameId: 1 };
+  const payload = { fetchedAt: 1_000_000, complete: true, gameId: 1 };
   writeCachedDashboard(storage, 1, payload);
   assert.deepEqual(readCachedDashboard(storage, 1, 1_000_000 + DASHBOARD_CACHE_TTL_MS - 1), payload);
   assert.equal(readCachedDashboard(storage, 1, 1_000_000 + DASHBOARD_CACHE_TTL_MS), null);
+
+  map.clear();
+  writeCachedDashboard(storage, 1, { fetchedAt: 1_000_000, complete: false, gameId: 1 });
+  assert.equal(readCachedDashboard(storage, 1, 1_000_000), null);
 });
 
 test("activity and realm history aggregate by Frontier day and UTC day", () => {
@@ -177,6 +181,7 @@ test("loadDashboardData combines Herald, stats, accounts, profiles, and RPC with
   };
 
   const result = await loadDashboardData(game, 499, fetcher, 123456);
+  assert.equal(result.complete, true);
   assert.equal(result.confirmedBlock, 500);
   assert.equal(result.latestBlock, 501);
   assert.equal(result.latestBlockTxs, 1);
@@ -187,4 +192,38 @@ test("loadDashboardData combines Herald, stats, accounts, profiles, and RPC with
   assert.equal(result.actionsByUtcDay[0].value, 42);
   assert.equal(result.topGlory[0].displayName, "Nexonik");
   assert.equal(formatShortAddress(owner), "0x57b9…4340");
+});
+
+test("failed Herald reads return null instead of silent zeros and are never cached", async () => {
+  const game = {
+    game_id: 1,
+    name: "testnet-1795521600",
+    mode: "frontier",
+    status: "Live",
+    day_index: 0,
+    player_count: 2,
+    settled_realms_count: 7,
+    aspect_members: { 1: 1, 2: 1, 3: 0, 4: 0 },
+    aspect_race: { finish_height: 10000, season_days: 50, heights: { 1: 200, 2: 0, 3: 0, 4: 0 } },
+  };
+  const failingFetcher = async () => ({ ok: false, json: async () => ({}) });
+  const degraded = await loadDashboardData(game, 499, failingFetcher, 123456);
+  assert.equal(degraded.complete, false);
+  assert.equal(degraded.seals, null);
+  assert.equal(degraded.activeToday, null);
+  assert.equal(degraded.tilesExplored, null);
+  assert.equal(degraded.battles, null);
+  assert.equal(degraded.realmsCreatedTotal, null);
+  assert.equal(degraded.totalArmies, null);
+  assert.equal(degraded.activityByDay, null);
+  assert.equal(degraded.realmsByUtcDay, null);
+  assert.equal(degraded.actionsByUtcDay, null);
+  assert.equal(degraded.topGlory, null);
+  for (const standing of degraded.aspectStandings) {
+    assert.equal(standing.gloryTotal, null);
+  }
+  const map = new Map();
+  const storage = { getItem: (k) => map.get(k) ?? null, setItem: (k, v) => map.set(k, v) };
+  writeCachedDashboard(storage, 1, degraded);
+  assert.equal(map.size, 0);
 });
