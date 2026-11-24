@@ -1051,11 +1051,11 @@ it.each([1440, 390])("keeps the armies dock visible in both map and Realm views 
   }
 });
 
-it("keeps Chat reachable from the desktop top bar while visiting another realm", async () => {
+it("keeps Chat reachable from its strip at the bottom right while visiting another realm", async () => {
   viewport.set(1440);
   try {
     await renderVisit();
-    const chat = host.querySelector<HTMLButtonElement>('nav[aria-label="Places"] button[aria-label="Chat"]');
+    const chat = host.querySelector<HTMLButtonElement>('.frontier-chat-dock button[aria-label="Chat strip"]');
     expect(chat).not.toBeNull();
     expect(host.querySelector('nav[aria-label="Places"] button[aria-label="Research"]')).toBeNull();
     await act(async () => chat!.click());
@@ -1065,7 +1065,7 @@ it("keeps Chat reachable from the desktop top bar while visiting another realm",
   }
 });
 
-it("orders the desktop cornice places as Research, Season, Feed, Chat without Relics and returns to Realm on top-left crest press", async () => {
+it("orders the desktop places as Research, Season, Feed, Settings, lists the five places in the dropdown, and returns to Realm on the crest", async () => {
   viewport.set(1440);
   const route = window.location.pathname + window.location.search;
   window.history.replaceState(null, "", "/g/0x1ab9/1/map?col=1&row=1");
@@ -1074,19 +1074,14 @@ it("orders the desktop cornice places as Research, Season, Feed, Chat without Re
     const labels = [...host.querySelectorAll('nav[aria-label="Places"] button')].map((button) =>
       button.getAttribute("aria-label"),
     );
-    expect(labels).toEqual(["Research", "Season", "Feed", "Chat"]);
+    expect(labels).toEqual(["Research", "Season", "Feed", "Settings"]);
     expect(host.querySelector('button[aria-label="Relics"]')).toBeNull();
-    const placeTabs = [...host.querySelectorAll('[aria-label="Map view"] [role="tab"]')].map((tab) => [
+    await act(async () => host.querySelector<HTMLButtonElement>("[data-place-pill]")!.click());
+    const placeTabs = [...document.querySelectorAll('[aria-label="Map view"] [role="tab"]')].map((tab) =>
       tab.getAttribute("aria-label"),
-      tab.textContent,
-    ]);
-    expect(placeTabs).toEqual([
-      ["Realm", "Realm"],
-      ["Surface", "Surface"],
-      ["Veil", "Veil"],
-      ["Hollow", "Hollow"],
-      ["Deep", "Deep"],
-    ]);
+    );
+    expect(placeTabs).toEqual(["Realm", "Surface", "Veil", "Hollow", "Deep"]);
+    await act(async () => host.querySelector<HTMLButtonElement>("[data-place-pill]")!.click());
     const crest = host.querySelector<HTMLButtonElement>(".frontier-realm-card__identity")!;
     expect(crest.querySelector('img[src*="portraits"]')).toBeNull();
     await act(async () => crest.click());

@@ -53,6 +53,11 @@ const placeRows = () => {
 
 const tabNamed = (word: string) => placeRows().find((tab) => tab.getAttribute("aria-label") === word)!;
 
+const pressTab = (word: string) => {
+  const tab = tabNamed(word);
+  act(() => tab.click());
+};
+
 const layersShowingII = (go: MapLayers["go"]): MapLayers => ({ layers: [0, 1, 2], shown: 2, go });
 
 describe("the map's layers", () => {
@@ -75,13 +80,13 @@ describe("the map's layers", () => {
     ]);
     expect(tabNamed("Hollow").querySelector("img")?.getAttribute("src")).toContain("depth-2");
 
-    act(() => tabNamed("Veil").click());
+    pressTab("Veil");
     expect(go).toHaveBeenCalledWith(1);
 
-    act(() => tabNamed("Hollow").click());
+    pressTab("Hollow");
     expect(go).toHaveBeenCalledTimes(1);
 
-    act(() => tabNamed("Surface").click());
+    pressTab("Surface");
     expect(go).toHaveBeenLastCalledWith(0);
   });
 });
@@ -174,7 +179,7 @@ describe("the shared Deep in the map layer menu", () => {
         .filter((row) => row.dataset.depth !== undefined)
         .map((row) => row.getAttribute("aria-label")),
     ).toEqual(["Veil", "Hollow", "Deep"]);
-    act(() => tabNamed("Deep").click());
+    pressTab("Deep");
     expect(requestLayerView).toHaveBeenCalledTimes(1);
     expect(requestLayerView).toHaveBeenCalledWith(deepCenter(rules.spacing));
     act(() => useUIStore.setState({ cameraTargetHex: deepCenter(rules.spacing) }));
@@ -196,7 +201,7 @@ describe("the shared Deep in the map layer menu", () => {
     context.mapView = true;
     useUIStore.setState({ cameraTargetHex: { col: 512, row: 512 } });
     act(() => root.render(<LayerSwitch rules={rules} realm={realm} />));
-    act(() => tabNamed("Deep").click());
+    pressTab("Deep");
     expect(requestLayerView).toHaveBeenLastCalledWith({ col: 516, row: 3584 });
   });
 
