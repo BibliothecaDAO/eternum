@@ -10,7 +10,6 @@ import { relicEffect, relicName, type ArmyRelic } from "./relic-catalog";
 export const RelicPay = ({ relic }: { relic: ArmyRelic }) => (
   <span className="flex items-center gap-2" data-ruin-relic aria-label={RELIC_WORDS.guards(relicName(relic))}>
     <Icon name={relicMeaning(relic.kind)} size={22} />
-    <span className="text-hud-body text-hud-ink">{relicName(relic)}</span>
     <HudRarity tier={relic.rank as Tier} />
   </span>
 );
