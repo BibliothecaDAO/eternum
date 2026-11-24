@@ -1,3 +1,3 @@
-import type { GameModeId } from "./index";
+import type { GameModeName } from "@bibliothecadao/types";
 
-export type ResolvedGameMode = GameModeId | "unknown";
+export type ResolvedGameMode = GameModeName | "unknown";

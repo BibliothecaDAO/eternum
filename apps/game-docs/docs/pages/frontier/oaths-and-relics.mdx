@@ -1,0 +1,68 @@
+---
+title: Oaths and relics
+description: Oaths from shrines, Oath slots, and army relics from ruins
+---
+
+import { FRONTIER } from "@/utils/frontier";
+import { GameIcon } from "@/components/GameIcon";
+
+# Oaths and relics
+
+Oaths and relics power up individual armies for the current game day. Both reset when the day ends.
+
+## Oaths (from Shrines and beast bands)
+
+<GameIcon name="shrine" /> Research **Shrine lore** at your castle so your reveals can find Shrines (
+{FRONTIER.discovery.shrine} chance). Step beside a Shrine and open it to draw 3 Oaths. Clearing a stronger roaming beast
+band on the Surface, Veil, or Hollow also draws 3 Oaths.
+
+- Every army starts with {FRONTIER.oaths.baseSlots} Oath slots. Researching Oath slots at your castle raises this up
+  to{" "} {FRONTIER.oaths.maxSlots} slots per troop kind ([Your realm](/frontier/realm#oath-slots)). When an army's
+  slots are full, taking a new Oath replaces one you pick.
+- Passing on a draw skips the Oaths and gives that army +{FRONTIER.oaths.passStamina} stamina.
+- Rerolls: {FRONTIER.oaths.rerollNote}
+
+### All {FRONTIER.oaths.count} Oaths
+
+| Order                                                                               | Aspect                           | Effect for today                 |
+| ----------------------------------------------------------------------------------- | -------------------------------- | -------------------------------- |
+| <GameIcon name={FRONTIER.oaths.rows[0].icon} /> **{FRONTIER.oaths.rows[0].name}**   | {FRONTIER.oaths.rows[0].aspect}  | {FRONTIER.oaths.rows[0].effect}  |
+| <GameIcon name={FRONTIER.oaths.rows[1].icon} /> **{FRONTIER.oaths.rows[1].name}**   | {FRONTIER.oaths.rows[1].aspect}  | {FRONTIER.oaths.rows[1].effect}  |
+| <GameIcon name={FRONTIER.oaths.rows[2].icon} /> **{FRONTIER.oaths.rows[2].name}**   | {FRONTIER.oaths.rows[2].aspect}  | {FRONTIER.oaths.rows[2].effect}  |
+| <GameIcon name={FRONTIER.oaths.rows[3].icon} /> **{FRONTIER.oaths.rows[3].name}**   | {FRONTIER.oaths.rows[3].aspect}  | {FRONTIER.oaths.rows[3].effect}  |
+| <GameIcon name={FRONTIER.oaths.rows[4].icon} /> **{FRONTIER.oaths.rows[4].name}**   | {FRONTIER.oaths.rows[4].aspect}  | {FRONTIER.oaths.rows[4].effect}  |
+| <GameIcon name={FRONTIER.oaths.rows[5].icon} /> **{FRONTIER.oaths.rows[5].name}**   | {FRONTIER.oaths.rows[5].aspect}  | {FRONTIER.oaths.rows[5].effect}  |
+| <GameIcon name={FRONTIER.oaths.rows[6].icon} /> **{FRONTIER.oaths.rows[6].name}**   | {FRONTIER.oaths.rows[6].aspect}  | {FRONTIER.oaths.rows[6].effect}  |
+| <GameIcon name={FRONTIER.oaths.rows[7].icon} /> **{FRONTIER.oaths.rows[7].name}**   | {FRONTIER.oaths.rows[7].aspect}  | {FRONTIER.oaths.rows[7].effect}  |
+| <GameIcon name={FRONTIER.oaths.rows[8].icon} /> **{FRONTIER.oaths.rows[8].name}**   | {FRONTIER.oaths.rows[8].aspect}  | {FRONTIER.oaths.rows[8].effect}  |
+| <GameIcon name={FRONTIER.oaths.rows[9].icon} /> **{FRONTIER.oaths.rows[9].name}**   | {FRONTIER.oaths.rows[9].aspect}  | {FRONTIER.oaths.rows[9].effect}  |
+| <GameIcon name={FRONTIER.oaths.rows[10].icon} /> **{FRONTIER.oaths.rows[10].name}** | {FRONTIER.oaths.rows[10].aspect} | {FRONTIER.oaths.rows[10].effect} |
+| <GameIcon name={FRONTIER.oaths.rows[11].icon} /> **{FRONTIER.oaths.rows[11].name}** | {FRONTIER.oaths.rows[11].aspect} | {FRONTIER.oaths.rows[11].effect} |
+| <GameIcon name={FRONTIER.oaths.rows[12].icon} /> **{FRONTIER.oaths.rows[12].name}** | {FRONTIER.oaths.rows[12].aspect} | {FRONTIER.oaths.rows[12].effect} |
+| <GameIcon name={FRONTIER.oaths.rows[13].icon} /> **{FRONTIER.oaths.rows[13].name}** | {FRONTIER.oaths.rows[13].aspect} | {FRONTIER.oaths.rows[13].effect} |
+| <GameIcon name={FRONTIER.oaths.rows[14].icon} /> **{FRONTIER.oaths.rows[14].name}** | {FRONTIER.oaths.rows[14].aspect} | {FRONTIER.oaths.rows[14].effect} |
+| <GameIcon name={FRONTIER.oaths.rows[15].icon} /> **{FRONTIER.oaths.rows[15].name}** | {FRONTIER.oaths.rows[15].aspect} | {FRONTIER.oaths.rows[15].effect} |
+
+## Relics (from Ruins)
+
+<GameIcon name="ruin" /> Clearing a Ruin gives a relic to the attacking army. An army can carry up to
+{FRONTIER.relics.slots} relics at once; when full, you pick which slot to replace.
+
+Relics come in {FRONTIER.relics.tiersCount} tiers ({FRONTIER.relics.firstTier} I to {FRONTIER.relics.lastTier} V), and
+deeper layers drop higher tiers.
+
+- {FRONTIER.relics.layerOdds[0].layer}: {FRONTIER.relics.layerOdds[0].odds}
+- {FRONTIER.relics.layerOdds[1].layer}: {FRONTIER.relics.layerOdds[1].odds}
+- {FRONTIER.relics.layerOdds[2].layer}: {FRONTIER.relics.layerOdds[2].odds}
+
+Activating a relic lasts {FRONTIER.relics.minutesPerTier} minutes per tier, from {FRONTIER.relics.minutesPerTier}{" "}
+minutes for {FRONTIER.relics.firstTier} I up to {FRONTIER.relics.maxMinutes} minutes for {FRONTIER.relics.lastTier} V.
+
+### All {FRONTIER.relics.count} relic kinds
+
+| Relic                                                                               | Effect per tier                | Common I → Legendary V          |
+| ----------------------------------------------------------------------------------- | ------------------------------ | ------------------------------- |
+| <GameIcon name={FRONTIER.relics.rows[0].icon} /> **{FRONTIER.relics.rows[0].name}** | {FRONTIER.relics.rows[0].step} | {FRONTIER.relics.rows[0].range} |
+| <GameIcon name={FRONTIER.relics.rows[1].icon} /> **{FRONTIER.relics.rows[1].name}** | {FRONTIER.relics.rows[1].step} | {FRONTIER.relics.rows[1].range} |
+| <GameIcon name={FRONTIER.relics.rows[2].icon} /> **{FRONTIER.relics.rows[2].name}** | {FRONTIER.relics.rows[2].step} | {FRONTIER.relics.rows[2].range} |
+| <GameIcon name={FRONTIER.relics.rows[3].icon} /> **{FRONTIER.relics.rows[3].name}** | {FRONTIER.relics.rows[3].step} | {FRONTIER.relics.rows[3].range} |

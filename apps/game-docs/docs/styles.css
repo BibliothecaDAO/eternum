@@ -761,3 +761,10 @@ article.vocs_Content,
   font-size: 15px;
   line-height: 22px;
 }
+
+.docs-icon {
+  display: inline-block;
+  vertical-align: middle;
+  object-fit: contain;
+  margin-right: 6px;
+}

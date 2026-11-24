@@ -318,8 +318,8 @@
  * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
  * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
  */
-import { APP_HOST } from "@/config/app-address";
-import type { ResolvedGameMode } from "@/config/game-modes/resolved-mode";
+import { APP_HOST } from "../../../config/app-address";
+import type { ResolvedGameMode } from "../../../config/game-modes/resolved-mode";
 import {
   PRINTED_CODE_LENGTH,
   SHARED_MOMENT_WORDS,

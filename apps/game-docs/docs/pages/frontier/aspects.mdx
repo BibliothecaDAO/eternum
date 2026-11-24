@@ -1,0 +1,61 @@
+---
+title: Aspects and the race
+description: Aspects, their Orders, hyperstructures, Triumphs, Glory, and LORDS rewards
+---
+
+import { FRONTIER } from "@/utils/frontier";
+import { GameIcon } from "@/components/GameIcon";
+
+# Aspects and the race
+
+Every realm in Frontier Season 1 belongs to one of {FRONTIER.aspectsCount} **Aspects**. Together, an Aspect's players
+race to raise their Aspect's **hyperstructure** in [the Deep](/frontier/deep) and share LORDS rewards at the end of the
+season.
+
+## The {FRONTIER.aspectsCount} Aspects and their {FRONTIER.oaths.count} Orders
+
+If you create your home with a Realm your payout wallet holds, your Aspect is fixed by that Realm's Order. If you start
+with a free home, you pick your Aspect when you enter.
+
+| Aspect                                                                      | Orders                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| <GameIcon name={FRONTIER.aspects[0].icon} /> **{FRONTIER.aspects[0].name}** | <GameIcon name={FRONTIER.aspects[0].orders[0].icon} size={20} /> {FRONTIER.aspects[0].orders[0].name}, <GameIcon name={FRONTIER.aspects[0].orders[1].icon} size={20} /> {FRONTIER.aspects[0].orders[1].name}, <GameIcon name={FRONTIER.aspects[0].orders[2].icon} size={20} /> {FRONTIER.aspects[0].orders[2].name}, <GameIcon name={FRONTIER.aspects[0].orders[3].icon} size={20} /> {FRONTIER.aspects[0].orders[3].name} |
+| <GameIcon name={FRONTIER.aspects[1].icon} /> **{FRONTIER.aspects[1].name}** | <GameIcon name={FRONTIER.aspects[1].orders[0].icon} size={20} /> {FRONTIER.aspects[1].orders[0].name}, <GameIcon name={FRONTIER.aspects[1].orders[1].icon} size={20} /> {FRONTIER.aspects[1].orders[1].name}, <GameIcon name={FRONTIER.aspects[1].orders[2].icon} size={20} /> {FRONTIER.aspects[1].orders[2].name}, <GameIcon name={FRONTIER.aspects[1].orders[3].icon} size={20} /> {FRONTIER.aspects[1].orders[3].name} |
+| <GameIcon name={FRONTIER.aspects[2].icon} /> **{FRONTIER.aspects[2].name}** | <GameIcon name={FRONTIER.aspects[2].orders[0].icon} size={20} /> {FRONTIER.aspects[2].orders[0].name}, <GameIcon name={FRONTIER.aspects[2].orders[1].icon} size={20} /> {FRONTIER.aspects[2].orders[1].name}, <GameIcon name={FRONTIER.aspects[2].orders[2].icon} size={20} /> {FRONTIER.aspects[2].orders[2].name}, <GameIcon name={FRONTIER.aspects[2].orders[3].icon} size={20} /> {FRONTIER.aspects[2].orders[3].name} |
+| <GameIcon name={FRONTIER.aspects[3].icon} /> **{FRONTIER.aspects[3].name}** | <GameIcon name={FRONTIER.aspects[3].orders[0].icon} size={20} /> {FRONTIER.aspects[3].orders[0].name}, <GameIcon name={FRONTIER.aspects[3].orders[1].icon} size={20} /> {FRONTIER.aspects[3].orders[1].name}, <GameIcon name={FRONTIER.aspects[3].orders[2].icon} size={20} /> {FRONTIER.aspects[3].orders[2].name}, <GameIcon name={FRONTIER.aspects[3].orders[3].icon} size={20} /> {FRONTIER.aspects[3].orders[3].name} |
+
+## The hyperstructure race
+
+<GameIcon name="hyperstructure" /> Each Aspect builds its own hyperstructure by holding **Hyperstructure archives** in
+the Deep. The race lasts {FRONTIER.day.seasonDays} game days or ends early as soon as one Aspect reaches full height.
+
+- Each hyperstructure has {FRONTIER.race.stages} stages of {FRONTIER.race.stageHeight} height each, so{" "}
+  {FRONTIER.race.finishHeight} height wins the season.
+- While a rival Team Bane is active on your Aspect, your hyperstructure stops gaining height until your Aspect breaks
+  the bane ([Quests and banes](/frontier/quests-and-banes#rival-team-banes)).
+
+## Stage Triumphs
+
+<GameIcon name="star" /> Completing stages 1 through 4 activates a **Triumph** for every member of your Aspect on the
+next game day.
+
+| Stage reached                        | Triumph                                 | Effect for your Aspect                |
+| ------------------------------------ | --------------------------------------- | ------------------------------------- |
+| {FRONTIER.race.triumphRows[0].stage} | **{FRONTIER.race.triumphRows[0].name}** | {FRONTIER.race.triumphRows[0].effect} |
+| {FRONTIER.race.triumphRows[1].stage} | **{FRONTIER.race.triumphRows[1].name}** | {FRONTIER.race.triumphRows[1].effect} |
+| {FRONTIER.race.triumphRows[2].stage} | **{FRONTIER.race.triumphRows[2].name}** | {FRONTIER.race.triumphRows[2].effect} |
+| {FRONTIER.race.triumphRows[3].stage} | **{FRONTIER.race.triumphRows[3].name}** | {FRONTIER.race.triumphRows[3].effect} |
+
+## Glory and LORDS rewards
+
+<GameIcon name="lords" /> Each Aspect earns a LORDS pool based on the height its hyperstructure reaches when the season
+ends.
+
+- Every Aspect earns {FRONTIER.race.lordsPerHeight} LORDS per height point reached.
+- The first Aspect to reach {FRONTIER.race.finishHeight} height wins a +{FRONTIER.race.finishBonus} LORDS finish bonus
+  (up to {FRONTIER.race.maxFinishLords} LORDS for that Aspect).
+- Inside each Aspect, the pool splits by **Glory** share among members who earned at least {FRONTIER.race.gloryToShare}
+  Glory during the season.
+- You earn Glory only by holding sites in [the Deep](/frontier/deep).
+
+Your linked [Payout wallet](/account/payout-wallet) receives your LORDS after the season ends.

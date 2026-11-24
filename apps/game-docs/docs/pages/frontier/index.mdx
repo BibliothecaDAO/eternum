@@ -1,67 +1,74 @@
 ---
 title: Frontier
-description: What Frontier is, and what you can and can't do in it
+description: How Frontier Season 1 works, the season calendar, and where to start
 ---
 
 import { FRONTIER } from "@/utils/frontier";
+import { GameIcon } from "@/components/GameIcon";
 import { Shot, Video } from "@/components/Media";
 
 # Frontier
 
-Frontier is free to play. Every day a new map opens around your realm. Your armies explore it, clear what guards it, and
-send home what they find.
+Frontier is free to play. Every game day a fresh map opens around your realm. You train armies, explore the fog, clear
+guarded sites, and descend into the Deep to fight for your Aspect's hyperstructure.
 
 <Video
   name="frontier/realm-tiers"
   caption="Your realm grows as its castle rises, and is raised again on every new map with all it holds."
 />
 
-## The day
+## Season 1 calendar
 
-1. **Deploy.** Barracks train troops at your realm. Deploying puts them on a tile beside it as an army.
-2. **Explore.** The map is hidden until you walk it. What sits on a tile is decided the moment an army reveals it, so
-   nobody can scout ahead. Each tile an army reveals sends Essence or labor home.
-3. **Clear.** Camps, rifts, ruins and roaming beasts are guarded. Each shows its guard and what it pays before you
-   attack.
-4. **Bring it home.** Everything a reveal or a clear pays goes straight to your realm. An army never carries anything
-   worth losing.
+| Event                                       | Dates (UTC)                           | Notes                                                                          |
+| ------------------------------------------- | ------------------------------------- | ------------------------------------------------------------------------------ |
+| <GameIcon name="calendar" /> Final Testnet  | {FRONTIER.calendar.testnetDates}      | Runs on production with Shop spending turned off.                              |
+| <GameIcon name="hyperstructure" /> Season 1 | Opens {FRONTIER.calendar.seasonStart} | Lasts {FRONTIER.day.seasonDays} game days. Full Aspect race and LORDS rewards. |
 
-A normal day lasts {FRONTIER.day.shortestHours} to {FRONTIER.day.longestHours} hours. The lengths are drawn for the
-whole season in bags of {FRONTIER.day.daysPerBag} days, one of each length, {FRONTIER.day.bagHours} hours a bag. No bag
-opens with the shortest day, and two shortest days never follow each other. The top bar shows when today ends and how
-long tomorrow lasts. The final day stops at the season’s end. A remaining stub shorter than {FRONTIER.day.shortestHours}
-hours joins the preceding day instead, extending that day through the season’s end. A season shorter than its first day
-has just that one clipped day.
+## How a game day works
 
-When the day ends, the map and every army on it are gone. Your realm is raised again on the next map with everything it
-holds.
+1. **<GameIcon name="deploy" /> Deploy.** Build barracks, ranges, and lodges at your realm, then place armies on tiles
+   beside it.
+2. **<GameIcon name="explore" /> Explore.** Reveal hidden tiles on the Surface, Veil, and Hollow. The game rolls what
+   stands on a tile when your army reveals it, so you cannot scout ahead. Each reveal sends Essence or labor straight
+   home.
+3. **<GameIcon name="attack" /> Clear.** Fight roaming beasts, camps, rifts, and ruins. Every fight card shows the guard
+   and the exact outcome before you attack.
+4. **<GameIcon name="hyperstructure" /> Fight in the Deep.** Research Spire lore and send your strongest armies into the
+   shared Deep to hold sites, earn Glory, and raise your Aspect's hyperstructure.
 
-| Gone when the day ends           | Kept by your realm                   |
-| -------------------------------- | ------------------------------------ |
-| The map and its fog              | Its buildings, castle and research   |
-| Every camp, rift, ruin and beast | Its troops, wheat, labor and Essence |
-| Every army you sent out          | Its LORDS                            |
+A normal day lasts {FRONTIER.day.shortestHours} to {FRONTIER.day.longestHours} hours. Lengths are drawn in bags of{" "}
+{FRONTIER.day.daysPerBag} days, one of each length, totaling {FRONTIER.day.bagHours} hours per bag. No bag starts with
+the shortest day, and two shortest days never run back to back. The top bar shows when today ends and how long tomorrow
+lasts. The final day stops at the season's end, and any stub shorter than {FRONTIER.day.shortestHours} hours merges into
+the day before it.
+
+When a day ends, the game clears the map and all deployed armies. Your realm rises on the next day's map with everything
+it owns.
+
+| Cleared at day's end                            | Kept for the season                             |
+| ----------------------------------------------- | ----------------------------------------------- |
+| The map and fog                                 | Your castle, buildings, and research            |
+| Camps, rifts, ruins, shrines, wells, and beasts | Troops, wheat, labor, and Essence at home       |
+| Deployed armies, their Oaths, and active relics | Your Aspect, Glory, Fragments, and Ancient Seal |
 
 ## What you can do
 
-- Create your realm for free the first time you enter, on any day of the season, on the home you choose: a Realm your
-  payout wallet holds, or a free home.
-- Build farms, barracks, workshops, Supply yards and Scouts' lodges, and raise your castle.
-- Research each building type up to Legendary V, and the castle's lore: wells, then shrines, then spires.
-- Field {FRONTIER.realm.armies[0]} armies of Knights, and up to {FRONTIER.realm.armies[3]} as the castle rises.
-- Explore, move, fight other armies, and clear the guards of camps, rifts, ruins and beasts.
-- Clear ruins to earn relics for your armies.
-- Merge two of your armies standing side by side, or disband one.
-- Complete your home's daily quest and collect its Labor and Essence.
+- Create your realm for free on any day of the season, with a Realm your payout wallet holds or a free home, and join
+  one of the {FRONTIER.aspectsCount} Aspects.
+- Build farms, workshops, storerooms, barracks, ranges, Scouts' lodges, a Conscription camp, a Rations depot, and a
+  Supply yard, and raise your castle to Empire.
+- Field Knights, Crossbowmen, and Scouts across {FRONTIER.realm.armies[0]} to {FRONTIER.realm.armies[3]} armies.
+- Take Oaths at shrines and equip relics from ruins to power up each army for the day.
+- Complete your daily quest and work with your Aspect to break World Banes and rival Team Banes.
+- Enter the Deep to capture shared sites, earn Glory, and race to build your Aspect's hyperstructure for LORDS rewards.
 - Visit another player's realm from the Season board.
 
 ## What you can't do
 
-- Trade, bridge, or send anything to another player.
-- Raise Crossbowmen, Paladins, or troops above T1.
-- Keep the map or your armies after the day ends.
-- Join a tribe, pledge faith, or build a Hyperstructure.
-- Win or lose a fight by luck: no dice are rolled, so a fight's forecast is its result.
+- Attack another player's home realm or armies on the Surface, Veil, or Hollow. Player fights happen only in the Deep.
+- Trade or send resources to another player.
+- Keep your deployed armies, Oaths, or relics after a game day ends.
+- Win or lose a fight by luck. Combat uses no dice, so the fight forecast is exact.
 
 <Shot
   name="frontier/hud"
@@ -76,15 +83,20 @@ holds.
 
 ## Your first day
 
-Your realm is created the first time you enter the Frontier season, on the home you choose, and from then on it is
-raised again on every new map, in its own stretch of wilderness. Entry is free and open for the whole season, so a
-player who arrives late starts the same way as one who arrived on day one.
+A new realm starts with {FRONTIER.realm.troops} troops, {FRONTIER.realm.wheat} wheat, and {FRONTIER.realm.labor} labor.
+Entry is free and stays open all season, so latecomers start on the same footing as day-one players. Build a barracks
+and send your first army into the fog.
 
-A new realm starts with {FRONTIER.realm.troops} troops, {FRONTIER.realm.wheat} wheat and {FRONTIER.realm.labor} labor.
-Build barracks, deploy an army, and walk it into the fog.
+## Guides
 
-## Next
-
-- [Your realm](/frontier/realm): build the realm that feeds your armies.
-- [Armies](/frontier/armies): field your armies, keep them going, and level them up.
-- [The expedition](/frontier/expedition): read the day's map and pick the fights you can win.
+- [Aspects and the race](/frontier/aspects): the {FRONTIER.aspectsCount} Aspects, {FRONTIER.oaths.count} Orders,
+  hyperstructures, Triumphs, and LORDS rewards.
+- [Your realm](/frontier/realm): all {FRONTIER.buildingsCount} buildings, hourly output, castle levels, and research.
+- [Armies](/frontier/armies): Knights, Crossbowmen, Scouts, stamina, Logistics, and combat rules.
+- [The expedition](/frontier/expedition): Surface, Veil, Hollow, discoveries, guards, and supply posts.
+- [The Deep](/frontier/deep): the shared fourth layer, rings, {FRONTIER.deep.sitesCount} site kinds, troop drain, and
+  Bane altars.
+- [Oaths and relics](/frontier/oaths-and-relics): all {FRONTIER.oaths.count} Oaths from shrines and all{" "}
+  {FRONTIER.relics.count} relic kinds from ruins.
+- [Quests and banes](/frontier/quests-and-banes): daily quests, World Banes, and rival Team Banes.
+- [Shop and referrals](/frontier/shop-and-referrals): Fragments, the Ancient Seal, free caches, and inviting friends.

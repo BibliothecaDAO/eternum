@@ -1,0 +1,59 @@
+---
+title: The Deep
+description: The shared fourth layer, rings, site kinds, guard slots, troop drain, Glory, and Bane altars
+---
+
+import { FRONTIER } from "@/utils/frontier";
+import { GameIcon } from "@/components/GameIcon";
+
+# The Deep
+
+The Deep is the shared fourth layer where all {FRONTIER.aspectsCount} Aspects meet. Every player in the season shares
+one {FRONTIER.deep.mapSize} by {FRONTIER.deep.mapSize} Deep map. Holding sites here is the only way to earn **Glory**
+and raise your Aspect's hyperstructure.
+
+## Entering the Deep
+
+1. Research **Spire lore** at your castle ([Your realm](/frontier/realm#castle-lore)).
+2. March an army beside your Spire and tap **Enter** (0 stamina).
+3. Your army arrives at your Aspect's gate, {FRONTIER.deep.gateDistance} tiles from the center. Once inside, the army
+   stays in the Deep for the rest of the day, and Fragment stamina refills do not work inside the Deep.
+
+## Rings and active Realms
+
+The Deep has {FRONTIER.deep.ringsCount} concentric rings around the center, with {FRONTIER.deep.sitesPerRing} sites on
+each ring. Ring 1 is always open, and outer rings open for the day based on how many realms are active today.
+
+| Ring                                 | Distance from center                  | Active Realms needed today                    |
+| ------------------------------------ | ------------------------------------- | --------------------------------------------- |
+| Ring {FRONTIER.deep.rings[0].number} | {FRONTIER.deep.rings[0].radius} tiles | {FRONTIER.deep.rings[0].realms} (always open) |
+| Ring {FRONTIER.deep.rings[1].number} | {FRONTIER.deep.rings[1].radius} tiles | {FRONTIER.deep.rings[1].realms}               |
+| Ring {FRONTIER.deep.rings[2].number} | {FRONTIER.deep.rings[2].radius} tiles | {FRONTIER.deep.rings[2].realms}               |
+| Ring {FRONTIER.deep.rings[3].number} | {FRONTIER.deep.rings[3].radius} tiles | {FRONTIER.deep.rings[3].realms}               |
+
+## The {FRONTIER.deep.sitesCount} site kinds
+
+Every game day, fresh beasts guard every open Deep site. Clear the beast guard (or defeat the rival Aspect holding the
+site) to take it:
+
+| Site                                                                 | Beast guard                            | Weapon                          | What holding it pays                                                                    |
+| -------------------------------------------------------------------- | -------------------------------------- | ------------------------------- | --------------------------------------------------------------------------------------- |
+| <GameIcon name="hyperstructure" /> **{FRONTIER.deep.sites[0].name}** | {FRONTIER.deep.sites[0].troops} troops | {FRONTIER.deep.sites[0].weapon} | Raises your Aspect's hyperstructure height and pays Glory.                              |
+| <GameIcon name="essence" /> **{FRONTIER.deep.sites[1].name}**        | {FRONTIER.deep.sites[1].troops} troops | {FRONTIER.deep.sites[1].weapon} | Sends {FRONTIER.deep.corePerTick} Essence per tick and pays Glory.                      |
+| <GameIcon name="pickaxe" /> **{FRONTIER.deep.sites[2].name}**        | {FRONTIER.deep.sites[2].troops} troops | {FRONTIER.deep.sites[2].weapon} | Sends {FRONTIER.deep.minePerTick} labor per tick and pays Glory.                        |
+| <GameIcon name="flame" /> **{FRONTIER.deep.sites[3].name}**          | {FRONTIER.deep.sites[3].troops} troops | {FRONTIER.deep.sites[3].weapon} | Charges your Aspect's bane bar ({FRONTIER.deep.altarThreshold} to fire) and pays Glory. |
+
+## Guard slots, troop drain, and payouts
+
+- Up to {FRONTIER.deep.guardSlots} armies from the same Aspect can guard one site together. Rival attackers fight the
+  defending guards in order.
+- Every army tick ({FRONTIER.stamina.tickMinutes} minutes), every army in the Deep loses {FRONTIER.deep.lossPerTick}
+  troops (reduced to {FRONTIER.oaths.vitriolLoss} per tick with the Vitriol Oath). When an army reaches 0 troops, it
+  falls.
+- Knight armies guarding a Deep site take {FRONTIER.attributes.knightGuardReduction} less damage.
+- Each tick's payout splits across the guarding armies by their troop count.
+- Each open Hyperstructure archive or Bane altar pays {FRONTIER.deep.payAlone} points per tick if 1 site of that kind is
+  open, {FRONTIER.deep.payPair} if 2 are open, or {FRONTIER.deep.payCrowd} if 3 or more are open.
+- When your Aspect's bane bar reaches {FRONTIER.deep.altarThreshold}, it resets to 0 and sends a Team Bane onto the
+  highest-height rival Aspect for the next game day, blocking their hyperstructure height until they break it
+  ([Quests and banes](/frontier/quests-and-banes#rival-team-banes)).
