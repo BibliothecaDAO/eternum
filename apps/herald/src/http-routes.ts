@@ -1,26 +1,10 @@
-type HeraldRouteName =
-  | "updates"
-  | "manifest"
-  | "schema"
-  | "health"
-  | "directory"
-  | "dayRanks"
-  | "site"
-  | "leaderboard"
-  | "stats"
-  | "roster"
-  | "storyEvents"
-  | "history"
-  | "reviewSnapshot"
-  | "snapshot";
-
 interface HeraldRouteEntry {
-  readonly name: HeraldRouteName;
+  readonly name: string;
   readonly pattern: string | RegExp;
   readonly publicFrontierDoc: boolean;
 }
 
-const HERALD_GET_ROUTES: readonly HeraldRouteEntry[] = [
+const HERALD_GET_ROUTES = [
   { name: "updates", pattern: "/games/updates", publicFrontierDoc: true },
   { name: "manifest", pattern: "/manifest", publicFrontierDoc: true },
   { name: "schema", pattern: /^\/schemas\/(.*)$/, publicFrontierDoc: false },
@@ -35,11 +19,14 @@ const HERALD_GET_ROUTES: readonly HeraldRouteEntry[] = [
   { name: "history", pattern: /^\/games\/([0-9]+)\/history$/, publicFrontierDoc: true },
   { name: "reviewSnapshot", pattern: /^\/games\/([0-9]+)\/review\/snapshot$/, publicFrontierDoc: true },
   { name: "snapshot", pattern: /^\/games\/([0-9]+)\/snapshot$/, publicFrontierDoc: true },
-];
+] as const satisfies readonly HeraldRouteEntry[];
 
-export const HERALD_PUBLIC_GET_ROUTES: readonly Pick<HeraldRouteEntry, "name" | "pattern">[] = HERALD_GET_ROUTES.filter(
-  (route) => route.publicFrontierDoc,
-).map(({ name, pattern }) => ({ name, pattern }));
+type HeraldRouteName = (typeof HERALD_GET_ROUTES)[number]["name"];
+
+export const HERALD_PUBLIC_GET_ROUTES: readonly {
+  readonly name: HeraldRouteName;
+  readonly pattern: string | RegExp;
+}[] = HERALD_GET_ROUTES.filter((route) => route.publicFrontierDoc).map(({ name, pattern }) => ({ name, pattern }));
 
 interface MatchedHeraldRoute {
   readonly name: HeraldRouteName;
