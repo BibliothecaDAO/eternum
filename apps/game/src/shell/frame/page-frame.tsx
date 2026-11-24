@@ -12,7 +12,6 @@ import { useLayout } from "./layout";
 import { Lockup } from "./lockup";
 import { DesktopBar, TabBar, useIsPlace } from "./tabs";
 import { AppChatPane } from "../chat/app-chat";
-import { HoldingsPill } from "../value/holdings-pill";
 import { LordsBalancePill } from "../value/lords-balance-pill";
 
 type PageFrameProps = {
@@ -90,10 +89,7 @@ const PhoneFrame = ({ title, notice, foot, fill = false, painting, stage = false
         className="flex min-h-12 shrink-0 items-center justify-between gap-2 px-gutter pt-[env(safe-area-inset-top)]"
       >
         <PhoneHead title={title} />
-        <span className="flex items-center gap-2">
-          <HoldingsPill />
-          <LordsBalancePill />
-        </span>
+        <LordsBalancePill />
       </header>
       {/* The page fills the first screen at least, so the footer starts below it and no fold falls among its links. */}
       <div

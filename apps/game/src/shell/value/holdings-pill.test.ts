@@ -50,7 +50,8 @@ describe("the top bar's Fragments and Ancient Seal", () => {
     expect(holdingsOf([upcoming])).toEqual({ fragments: 0, ancientSeal: false });
   });
 
-  it("show nothing where the game sells no Fragments, or with no game to read", () => {
+  it("keeps an on-chain Ancient Seal even where the game sells no Fragments, and shows nothing when neither is held", () => {
+    expect(holdingsOf([game(1, "frontier-1", null, true)])).toEqual({ fragments: null, ancientSeal: true });
     expect(holdingsOf([game(1, "frontier-1", null, false)])).toBeNull();
     expect(holdingsOf([])).toBeNull();
   });

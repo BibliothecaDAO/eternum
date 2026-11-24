@@ -10,6 +10,7 @@ const state = vi.hoisted(() => ({
   payer: null as string | null,
   lords: null as number | null,
   sealHeld: false,
+  games: [] as DirectoryGame[],
   getSealCode: vi.fn(),
   redeemSealCode: vi.fn(),
 }));
@@ -29,6 +30,11 @@ vi.mock("@/hooks/context/identity-session", async (importOriginal) => ({
       : { status: "signed-out", session: null },
 }));
 
+vi.mock("../herald", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../herald")>()),
+  useDirectory: () => ({ data: { games: state.games } }),
+}));
+
 vi.mock("./use-payer", () => ({
   usePayer: () => ({ payer: state.payer, passkey: false, failed: false, retry: vi.fn() }),
 }));
@@ -42,7 +48,29 @@ vi.mock("./use-lords-balance", () => ({
 
 import { PageFrame } from "../frame/page-frame";
 import { setViewportWidth } from "../frame/test-viewport";
+import type { DirectoryGame } from "../herald";
 import { useRedeemSealCode } from "../play/seal-code";
+
+const directoryGame = (fragments: number | null, ancient_seal: boolean): DirectoryGame =>
+  ({
+    chainId: "0xa",
+    game_id: 1,
+    name: "frontier-1",
+    mode: "frontier",
+    status: "Live",
+    clock_scale: 1,
+    clock: { start_settling_at: 0, start_main_at: 1, scheduled_end_at: 9_000, end_at: 9_000 },
+    player_state: {
+      registered: true,
+      settled: true,
+      held_realm_id: null,
+      has_home_source: false,
+      taken_realm_ids: [],
+      structures: [],
+      fragments,
+      ancient_seal,
+    },
+  }) as unknown as DirectoryGame;
 
 let root: Root | null = null;
 let container: HTMLDivElement | null = null;
@@ -57,6 +85,7 @@ afterEach(async () => {
   state.payer = null;
   state.lords = null;
   state.sealHeld = false;
+  state.games = [];
   state.getSealCode.mockReset();
   state.redeemSealCode.mockReset();
 });
@@ -108,15 +137,17 @@ describe.each([
     state.payer = "0x123";
     state.lords = 40;
     state.sealHeld = true;
+    state.games = [directoryGame(1_500, true)];
     const { container: rootEl } = await mountFrame(width);
     const bar = topBand(rootEl);
     expect(bar.querySelector("[data-topbar-holdings]")).toBeNull();
     expect(bar.querySelector("[data-lords-balance]")).toBeNull();
+    expect(bar.querySelector("[data-fragments-balance]")).toBeNull();
     expect(bar.querySelector("[data-seal-held]")).toBeNull();
     expect(state.getSealCode).not.toHaveBeenCalled();
   });
 
-  it("shows only the LORDS pill when signed in with a wallet and no Ancient Seal held", async () => {
+  it("shows only the LORDS pill when signed in with a wallet and no Fragments or Ancient Seal held", async () => {
     state.payer = "0x123";
     state.lords = 40;
     state.sealHeld = false;
@@ -124,6 +155,7 @@ describe.each([
     const bar = topBand(rootEl);
     expect(bar.querySelector("[data-lords-balance]")?.textContent).toBe("40");
     expect(bar.querySelector("[data-lords-balance]")?.getAttribute("aria-label")).toBe("40 LORDS");
+    expect(bar.querySelector("[data-fragments-balance]")).toBeNull();
     expect(bar.querySelector("[data-seal-held]")).toBeNull();
   });
 
@@ -134,6 +166,7 @@ describe.each([
     const { container: rootEl } = await mountFrame(width);
     const bar = topBand(rootEl);
     expect(bar.querySelector("[data-lords-balance]")).toBeNull();
+    expect(bar.querySelector("[data-fragments-balance]")).toBeNull();
     const seal = bar.querySelector("[data-seal-held]")!;
     expect(seal).not.toBeNull();
     expect(seal.getAttribute("aria-label")).toBe("Your Ancient Seal is held");
@@ -141,19 +174,43 @@ describe.each([
     expect(seal.textContent).toBe("Ancient Seal");
   });
 
-  it("shows LORDS and Ancient Seal side-by-side without adding interactive controls to the phone header", async () => {
+  it("shows LORDS, Fragments, and exactly one Ancient Seal when both a redeemed code and an on-chain seal are held", async () => {
     state.payer = "0x123";
     state.lords = 2500;
     state.sealHeld = true;
+    state.games = [directoryGame(1_500, true)];
     const { container: rootEl } = await mountFrame(width);
     const bar = topBand(rootEl);
     const holdings = bar.querySelector("[data-topbar-holdings]")!;
     expect(holdings).not.toBeNull();
+    expect(
+      Array.from(holdings.children).map((el) => el.getAttributeNames().find((a) => a.startsWith("data-"))),
+    ).toEqual(["data-lords-balance", "data-fragments-balance", "data-seal-held"]);
     expect(holdings.querySelector("[data-lords-balance]")?.textContent).toBe("2.5K");
+    const fragments = holdings.querySelector("[data-fragments-balance]")!;
+    expect(fragments.textContent).toBe("1.5K");
+    expect(fragments.getAttribute("aria-label")).toBe("1.5K Fragments");
+    expect(fragments.querySelector('[data-icon="final-seal"]')).toBeNull();
+    expect(bar.querySelectorAll("[data-seal-held]")).toHaveLength(1);
+    expect(bar.querySelectorAll('[data-icon="final-seal"]')).toHaveLength(1);
     expect(holdings.querySelector("[data-seal-held]")?.getAttribute("aria-label")).toBe("Your Ancient Seal is held");
     if (bandName === "top") {
       expect(bar.querySelectorAll("a[href], button, input, select, textarea")).toHaveLength(0);
     }
+  });
+
+  it("shows an on-chain Ancient Seal and hides Fragments when the game sells no Fragments", async () => {
+    state.payer = null;
+    state.lords = null;
+    state.sealHeld = false;
+    state.games = [directoryGame(null, true)];
+    const { container: rootEl } = await mountFrame(width);
+    const bar = topBand(rootEl);
+    expect(bar.querySelector("[data-lords-balance]")).toBeNull();
+    expect(bar.querySelector("[data-fragments-balance]")).toBeNull();
+    expect(bar.querySelectorAll("[data-seal-held]")).toHaveLength(1);
+    expect(bar.querySelectorAll('[data-icon="final-seal"]')).toHaveLength(1);
+    expect(bar.querySelector("[data-seal-held]")?.getAttribute("aria-label")).toBe("Your Ancient Seal is held");
   });
 
   it("updates immediately when useRedeemSealCode saves a held seal into the shared query cache", async () => {
