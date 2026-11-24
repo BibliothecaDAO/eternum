@@ -43,13 +43,10 @@ export const DoorwayScreen = ({
 }) => {
   const layout = useLayout();
   const desktop = layout === "desktop";
-  const player = view.steps.some(({ step }) => step === "account");
-  const loadingMap = view.steps.some(({ step, state }) => (step === "map" || step === "play") && state === "running");
-  const showTip = game?.mode === "frontier" && player && loadingMap && view.blocker === null;
 
   if (!asking && view.blocker === null && view.spectating === null) {
     return (
-      <LoadingStage view={view} realm={realm} game={game} showTip={showTip}>
+      <LoadingStage view={view} realm={realm} game={game}>
         {children}
       </LoadingStage>
     );

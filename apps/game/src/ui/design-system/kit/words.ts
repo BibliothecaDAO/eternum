@@ -1570,9 +1570,6 @@ export const DOORWAY_WORDS = {
   map: "Loading the map",
   play: "Entering the world",
   secondsLeft: (seconds: number) => `About ${seconds} s left`,
-  /** What the first minutes hold, said while a player's map loads. */
-  firstTitle: "First: build a Barracks",
-  firstDetail: "Then deploy your first army to explore",
   /** The bar, named for assistive technology. */
   entering: "Entering the game",
   enteringRealm: (name: string) => `Entering ${name}`,

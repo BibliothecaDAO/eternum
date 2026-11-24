@@ -425,8 +425,7 @@ each closed by its cross, a tap outside, a swipe down or `Escape`. A right-click
 - Entering a game (the doorway, `ui/features/game-entry/doorway/`, one screen from the entry to play, the lazy game
   code's wait included): the realm under its Order's emblem, one bar with what runs (**Signing in**, **Preparing your
   realm**, **Loading the map**, **Entering the world**), its percent (the steps' spans, the map's following the opening
-  view's model loads), and **About N s left** once the rate is known; while a Frontier player's map loads, **First:
-  build a Barracks** under it. Lab: `/lab/app/home/doorway/map`.
+  view's model loads), and **About N s left** once the rate is known. Lab: `/lab/app/home/doorway/map`.
 - Returning to a Frontier home with no daily-claim source (Play → **Resume**): when you hold linked-wallet Realms, entry
   reuses the picker as **Choose a daily claim**. Select one Realm, then **Add this daily claim**; nothing is submitted
   before confirmation. Realms already backing a home in this game are marked **Taken** and cannot be selected.
