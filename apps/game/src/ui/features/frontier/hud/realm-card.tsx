@@ -5,15 +5,23 @@ import { Icon } from "@/ui/design-system/icon";
 import { HudButton, HudIconButton } from "@/ui/design-system/kit/hud-elements";
 import { OrderLine } from "@/ui/design-system/kit/order-emblem";
 import { PRICE_FACES, type Price } from "@/ui/design-system/kit/price-faces";
-import { CLOSE, REALM, REALM_CARD_WORDS, SHOP_WORDS, SHOW_MY_REALM, UPGRADE } from "@/ui/design-system/kit/words";
+import {
+  CLOSE,
+  REALM,
+  REALM_CARD_WORDS,
+  SHOP_WORDS,
+  SHOW_MY_REALM,
+  UPGRADE,
+  UPGRADING,
+} from "@/ui/design-system/kit/words";
 import { useLandedValue } from "@/ui/motion/landing-hold";
 import { TickNumber } from "@/ui/motion/tick-number";
-import { aspectName, FRAGMENTS, formatRate, formatShort, LORDS, type AspectId } from "@bibliothecadao/types";
+import { aspectName, FRAGMENTS, formatShort, LORDS, type AspectId } from "@bibliothecadao/types";
 import type { ReactNode } from "react";
 
 import { FRONTIER_STORES, isMadeStore, isTroopStore, type StoreKind } from "../stores";
 import { AspectMedallion } from "./realm-header-chip";
-import { LandingDelta, STORE_TONES, storeLine, type StoreReading } from "./status-strip";
+import { LandingDelta, STORE_TONES, storeLine, storeRateText, type StoreReading } from "./status-strip";
 
 export interface RealmRankUp {
   name: string;
@@ -134,7 +142,7 @@ const StoreCell = ({
   troop?: boolean;
   onOpen?: (kind: StoreKind) => void;
 }) => {
-  const rate = store.perHour && store.perHour > 0 && store.fullIn !== 0 ? formatRate(store.perHour / 3600) : null;
+  const rate = storeRateText(store);
   return (
     <>
       <LandingDelta target={store.flyTarget} />
@@ -214,7 +222,7 @@ const NextRank = ({ rankUp }: { rankUp: RealmRankUp }) => (
         size="sm"
         icon="upgrade"
         data-realm-castle=""
-        busy={rankUp.sending ? UPGRADE : undefined}
+        busy={rankUp.sending ? UPGRADING : undefined}
         onClick={rankUp.onUpgrade}
       >
         {UPGRADE}
