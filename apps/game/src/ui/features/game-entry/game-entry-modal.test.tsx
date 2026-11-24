@@ -76,6 +76,7 @@ vi.mock("@/services/settlement", () => ({
     return result;
   },
 }));
+vi.mock("@/shell/value/lords-balance-pill", () => ({ LordsBalancePill: () => null }));
 vi.mock("./selected-world-entity-wait", () => ({
   isSelectedWorldEntityWaitAborted: () => false,
   waitForSelectedWorldEntityState: async (input: { read: () => Promise<unknown> }) => input.read(),
@@ -113,7 +114,7 @@ afterEach(() => {
   settlement.calls = [];
   settlement.order = [];
   useAccountStore.setState({ account: null });
-  useIdentitySessionStore.setState({ status: "loading", session: null });
+  useIdentitySessionStore.setState({ status: "anonymous", session: null, settled: false });
 });
 
 /** The entry modal on its game, with Settings beside it for the wallet link's detour. */

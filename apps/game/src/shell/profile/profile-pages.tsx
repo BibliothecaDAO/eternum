@@ -195,10 +195,9 @@ export const SignedInOnly = ({
   fallback: (card: ReactNode) => ReactNode;
   children: (account: string) => ReactNode;
 }) => {
-  const { status, session } = useIdentitySession();
+  const { session } = useIdentitySession();
   const { data: account } = useRealmsPlayer();
   const removed = isAccountStatePrompt(useAccountStore((store) => store.provisioningError));
-  if (status === "loading") return <Loading />;
   if (!session) return fallback(<SignInCard line={null} verb={WORDS.signIn} />);
   if (removed) return fallback(<SignInCard line={PROFILE_WORDS.deviceRemoved} verb={WORDS.signIn} />);
   if (identityUsername(session) === null)

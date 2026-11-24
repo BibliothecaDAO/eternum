@@ -1,4 +1,5 @@
-import { catalogOrder } from "@bibliothecadao/types";
+import type { HeraldAspectRoster } from "@bibliothecadao/eternum/game-sync";
+import { aspects, catalogOrder, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { Navigate, Route, Routes, useParams } from "react-router-dom";
@@ -16,7 +17,8 @@ import type { DirectoryGame } from "../herald";
 import { CreditsPage, PrivacyPage, TermsPage } from "../legal";
 import { WhatsNewPage } from "../news/news";
 import { NotFoundPage } from "../not-found";
-import { chooseSeason, seasonPlayerAspect } from "../season";
+import { seasonPlayerAspect, seasonRealmId } from "../season";
+import { chooseSeason } from "../season-pick";
 import { STANDING_PROMPTS } from "../standing-prompts";
 import { PlayPage } from "../play/play-page";
 import { SharedLinkPage } from "../share/shared-link-page";
@@ -151,6 +153,45 @@ const labField = (): number | null => {
  * The lab's own query client: the app's /api answered from the fixtures, the shard boards seeded by game (Frontier's
  * read from Herald's route instead when the lab holds a field).
  */
+const labAspectRoster = (
+  aspectId: number,
+  total: number,
+  ownAspect: number | null,
+  ownRealm: number | null,
+): HeraldAspectRoster => {
+  const rivals = Object.keys(LAB_PROFILES);
+  const start = ((aspectId - 1) * 3) % Math.max(1, rivals.length);
+  const pick = (offset: number) => rivals[(start + offset) % rivals.length]!;
+  const entries =
+    aspectId === ownAspect && ownRealm !== null
+      ? [
+          { owner: pick(0), realmId: 100 + aspectId * 10, glory: 4_850 },
+          { owner: LAB_PLAYER, realmId: ownRealm, glory: 3_420 },
+          { owner: pick(1), realmId: 101 + aspectId * 10, glory: 2_610 },
+          { owner: pick(2), realmId: 102 + aspectId * 10, glory: 1_890 },
+        ]
+      : [
+          { owner: pick(0), realmId: 100 + aspectId * 10, glory: 5_120 - aspectId * 310 },
+          { owner: pick(1), realmId: 101 + aspectId * 10, glory: 3_740 - aspectId * 240 },
+          { owner: pick(2), realmId: 102 + aspectId * 10, glory: 2_380 - aspectId * 190 },
+          { owner: pick(3), realmId: 103 + aspectId * 10, glory: 1_450 - aspectId * 120 },
+        ];
+  return {
+    game_id: "1",
+    aspect: aspectId,
+    total,
+    offset: 0,
+    limit: 10,
+    members: entries.map(({ owner, realmId, glory }, index) => ({
+      rank: index + 1,
+      entity_id: String(realmId + 10_000),
+      realm_id: realmId,
+      owner,
+      glory: String(BigInt(glory) * BigInt(RESOURCE_PRECISION)),
+    })),
+  };
+};
+
 const createLabClient = (screen: LabScreen, field: number | null) => {
   const client = new QueryClient({ defaultOptions: { queries: { staleTime: Infinity, retry: false } } });
   if (field === null)
@@ -159,6 +200,16 @@ const createLabClient = (screen: LabScreen, field: number | null) => {
       screen === "season-unpublished" ? LAB_FRONTIER_UNPUBLISHED_BOARD : LAB_FRONTIER_BOARD,
     );
   client.setQueryData(["shell", "leaderboard", LAB_CHAIN, 3], LAB_FINAL_BOARDS[screen] ?? LAB_FRONTIER_FINAL_BOARD);
+  const season = chooseSeason(
+    LAB_SCREENS[screen].games.map((game) => ({ ...game, chainId: LAB_CHAIN })),
+    LAB_SCREENS[screen].signedIn,
+  );
+  const ownAspect = seasonPlayerAspect(season);
+  const ownRealm = seasonRealmId(season);
+  for (const { id } of aspects) {
+    const total = season?.aspect_members?.[id] ?? 12;
+    client.setQueryData(["shell", "aspect-roster", LAB_CHAIN, 1, id], labAspectRoster(id, total, ownAspect, ownRealm));
+  }
   return client;
 };
 

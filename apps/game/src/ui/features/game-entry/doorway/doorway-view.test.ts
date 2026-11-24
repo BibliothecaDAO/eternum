@@ -12,6 +12,7 @@ describe("the doorway", () => {
     expect(track(entry("loading"))).toBe("account:running realm:waiting map:waiting play:waiting");
     expect(track(entry("settlement"))).toBe("account:done realm:running map:waiting play:waiting");
     expect(track(entry("settlement-waiting"))).toBe("account:done realm:running map:waiting play:waiting");
+    expect(entry("settlement-waiting").blocker).toEqual({ kind: "waiting" });
     expect(track(entry("ready"))).toBe("account:done realm:done map:running play:waiting");
   });
 
@@ -114,5 +115,30 @@ describe("the doorway", () => {
     expect(
       doorwayView({ source: "boot", phase: "wait_worldmap_ready", audience: "spectator", modelShare: 1 }).percent,
     ).toBe(93);
+  });
+
+  it("holds the boot doorway with a waiting blocker when the game has not started yet, yielding to ended or refused", () => {
+    expect(doorwayView({ source: "boot", phase: "select_world", audience: "player", waiting: true }).blocker).toEqual({
+      kind: "waiting",
+    });
+    expect(
+      doorwayView({ source: "boot", phase: "select_world", audience: "player", ended: true, waiting: true }).blocker,
+    ).toBeNull();
+    expect(
+      doorwayView({ source: "boot", phase: "select_world", audience: "player", ended: true, waiting: true }).spectating,
+    ).toBe("results");
+    expect(
+      doorwayView({ source: "boot", phase: "select_world", audience: "player", refused: "release", waiting: true })
+        .blocker?.kind,
+    ).toBe("refused");
+    const endedEntry = doorwayView({
+      source: "entry",
+      phase: "settlement-waiting",
+      audience: "player",
+      signedIn: true,
+      ended: true,
+    });
+    expect(endedEntry.blocker).toBeNull();
+    expect(endedEntry.spectating).toBe("results");
   });
 });

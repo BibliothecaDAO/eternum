@@ -7,7 +7,12 @@ import type {
 } from "@bibliothecadao/eternum/game-sync";
 import { DAILY_QUEST_MODELS, nativeGameModeOfFamily, readDailyQuest } from "@bibliothecadao/eternum";
 import { dayOf, expeditionRealmSite, entityHomeNamespace, isRealmCategory } from "@bibliothecadao/eternum/expeditions";
-import { NativeFactStore, questBonusPercent, raceFinishHeight } from "@bibliothecadao/eternum/game-client";
+import {
+  NativeFactStore,
+  questBonusPercent,
+  raceFinishHeight,
+  sellsFragments,
+} from "@bibliothecadao/eternum/game-client";
 import { aspects, isSeasonGame, RESOURCE_PRECISION, type AspectId, StructureType } from "@bibliothecadao/types";
 import { isCheckGame, resolveDirectoryStatus, type DirectoryInput } from "../game-directory";
 import type { FoldRow } from "../types";
@@ -83,6 +88,9 @@ interface DirectoryRows {
   raceRules: FoldRow[];
   questRules: FoldRow[];
   aspectHyperstructures: FoldRow[];
+  releases: FoldRow[];
+  fragments: FoldRow[];
+  seals: FoldRow[];
 }
 
 const FIRST_SEASON = 1;
@@ -140,6 +148,9 @@ function directoryRows(input: DirectoryInput): DirectoryRows {
     raceRules: rows("RaceRules"),
     questRules: rows("QuestRules"),
     aspectHyperstructures: rows("AspectHyperstructure"),
+    releases: rows("GameRelease"),
+    fragments: rows("Fragments"),
+    seals: rows("Seal"),
   };
 }
 
@@ -163,7 +174,21 @@ function directoryPlayerState(
     taken_realm_ids: entitlements.filter((row) => number(row.pass_kind) === 2).map((row) => number(row.realm_id)),
     structures: structures.map((row) => playerStructure(row, game, settlement, facts, input.timestamp)),
     today_quest: todayQuestOf(number(game.game_id), structures, facts, input, player),
+    fragments: fragmentsOf(game, facts, player),
+    ancient_seal: gameRows(facts.seals, game.game_id).some((row) => address(row.account) === player),
   };
+}
+
+function fragmentsOf(game: Row, facts: DirectoryRows, player: string): number | null {
+  const release = gameRows(facts.releases, game.game_id)[0];
+  const rules = gameRows(facts.rules, game.game_id)[0];
+  const sold =
+    release !== undefined &&
+    rules !== undefined &&
+    sellsFragments({ release_id: number(release.release_id) }, { command_mask: integer(rules.command_mask) });
+  if (!sold) return null;
+  const own = gameRows(facts.fragments, game.game_id).find((row) => address(row.account) === player);
+  return own ? number(own.balance) : 0;
 }
 
 function todayQuestOf(

@@ -61,7 +61,7 @@ const useGameChatRoom = () => {
     () => (signedIn ? { baseUrl: window.location.origin, rooms: rooms.map((room) => room.zoneId) } : null),
     [signedIn, rooms],
   );
-  return { status, rooms, zoneId, initializer };
+  return { rooms, zoneId, initializer };
 };
 
 /**
@@ -94,7 +94,7 @@ export function GameChatConnection() {
  * read while `open`. Every view that shows chat reads it here; the connection itself is GameChatConnection's.
  */
 export function useGameChat(open: boolean) {
-  const { status, rooms, zoneId, initializer } = useGameChatRoom();
+  const { rooms, zoneId, initializer } = useGameChatRoom();
   const requestSignIn = useRequestSignIn();
   const connection = useRealtimeChatSelector((state) => state.connectionStatus);
   const hasGameChat = useRealtimeChatSelector((state) => state.joinedZoneIds.includes(zoneId));
@@ -126,7 +126,7 @@ export function useGameChat(open: boolean) {
       lastMessage &&
       `${people.nameOf(lastMessage.sender.playerId, lastMessage.sender.displayName)}: ${messageWords(lastMessage.content, lastPlace?.name ?? null, lastPlace ? readPlace(lastPlace).name : null)}`,
   });
-  return { status, initializer, requestSignIn, rooms, unread, stripLine };
+  return { initializer, requestSignIn, rooms, unread, stripLine };
 }
 
 /** Where the room's history stands: not answered yet, answered (with or without messages), or failed. */
@@ -174,7 +174,7 @@ export function HudChatWindow({
   onOpenChange: (open: boolean) => void;
   foldToIcon?: boolean;
 }) {
-  const { status, initializer, requestSignIn, rooms, unread, stripLine } = useGameChat(open);
+  const { initializer, requestSignIn, rooms, unread, stripLine } = useGameChat(open);
   const pane = useRef<HTMLDivElement>(null);
   useChatRevealed(() => onOpenChange(true));
 
@@ -239,7 +239,7 @@ export function HudChatWindow({
           aria-expanded={open}
           className="max-w-full"
           // A signed-out spectator's strip is their way into the sign-in flow, which brings them back to this game.
-          onPress={status === "loading" ? undefined : () => (initializer ? onOpenChange(!open) : requestSignIn())}
+          onPress={() => (initializer ? onOpenChange(!open) : requestSignIn())}
         >
           {[
             <span key="last" className="flex min-w-0 items-center gap-1.5">

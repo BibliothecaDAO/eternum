@@ -18,7 +18,7 @@ import { NothingHere } from "../not-found";
 import type { Painting } from "@/ui/design-system/kit/paintings";
 import { gameKey } from "../play/play-board";
 import { markResultsSeen } from "../play/seen-results";
-import { seasonRealm } from "../season";
+import { hasSeasonRealm } from "../season-pick";
 import { archivedSeason } from "./archive/archive";
 import { useFinishedGame } from "./finished-game";
 import { gameOfResults } from "./results-link";
@@ -93,7 +93,7 @@ const AspectSeasonResult = ({
   fromList: boolean;
 }) => {
   const onShard = archivedSeason(gameRef) === undefined;
-  const hasRealm = seasonRealm(game) !== undefined;
+  const hasRealm = hasSeasonRealm(game);
   const actions = (
     <>
       <AppButton kind="secondary" icon="leaderboard" to="/season">

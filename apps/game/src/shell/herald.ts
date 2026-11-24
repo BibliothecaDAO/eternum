@@ -12,7 +12,13 @@ import { useCallback } from "react";
 import { useIdentitySession, useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { appQueryClient } from "@/runtime/query-client";
 
-import { canEnterGame, fetchDirectory, fetchDirectoryHistory, type DirectoryEntry } from "@/runtime/world/directory";
+import {
+  canEnterGame,
+  fetchDirectory,
+  fetchDirectoryHistory,
+  isGameNotStarted,
+  type DirectoryEntry,
+} from "@/runtime/world/directory";
 import { requireOpenShard } from "@/runtime/world/shards";
 import { fetchApi } from "@/runtime/app-api";
 
@@ -128,20 +134,14 @@ export const followRealmsPlayer = (onChange: () => void): (() => void) => {
   };
 };
 
-/**
- * Every listed shard's games, for the signed-in player when there is one: each game then says whether the
- * player is in it. The read waits for the session, and a signed-in player's waits for their account address, so no
- * screen of theirs ever reads the anonymous directory in between and mistakes it for their own.
- */
 export const useDirectory = () => {
-  const { status, session } = useIdentitySession();
+  const { session } = useIdentitySession();
   const client = useQueryClient();
   const realmsId = session?.user.realmsId ?? null;
   return useQuery({
     queryKey: [...DIRECTORY_QUERY_KEY, realmsId],
     queryFn: async () =>
       fetchDirectories(realmsId ? realmsPlayerOf(realmsId, await client.fetchQuery(GUARDIAN_QUERY)) : null),
-    enabled: status !== "loading",
     refetchInterval: 15_000,
   });
 };
@@ -221,8 +221,6 @@ export const useAspectRoster = (game: DirectoryGame, aspect: number) => {
   });
 };
 
-const OPEN_STATUSES = new Set(["Created", "Registration"]);
-
 const soonest = (games: readonly DirectoryGame[]): DirectoryGame | undefined =>
   games.toSorted((a, b) => a.clock.start_main_at - b.clock.start_main_at)[0];
 
@@ -231,4 +229,4 @@ const soonest = (games: readonly DirectoryGame[]): DirectoryGame | undefined =>
  * taking players.
  */
 export const nextOpenGame = (games: readonly DirectoryGame[]): DirectoryGame | undefined =>
-  soonest(games.filter(canEnterGame)) ?? soonest(games.filter((game) => !game.error && OPEN_STATUSES.has(game.status)));
+  soonest(games.filter(canEnterGame)) ?? soonest(games.filter((game) => !game.error && isGameNotStarted(game)));

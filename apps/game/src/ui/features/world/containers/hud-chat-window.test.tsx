@@ -128,18 +128,14 @@ it("stays open while the map is dragged, and goes away on a click on the map", (
   map.remove();
 });
 
-it("keeps a signed-out player's sign-in action, and the strip cannot be pressed while identity loads", () => {
-  fixture.status = "signed-out";
+it("keeps a signed-out player's sign-in action pressable at once", () => {
+  fixture.status = "anonymous";
   draw(false);
   const strip = host.querySelector<HTMLButtonElement>('button[aria-label="Chat strip"]')!;
   expect(strip.textContent).toContain("Sign in to chat");
   act(() => strip.click());
   expect(fixture.signIn).toHaveBeenCalledTimes(1);
   expect(onOpenChange).not.toHaveBeenCalled();
-  fixture.status = "loading";
-  draw(false);
-  expect(host.querySelector('button[aria-label="Chat strip"]')).toBeNull();
-  expect(host.querySelector('[aria-label="Chat strip"]')?.textContent).toContain("Sign in to chat");
 });
 
 const stripLine = () => host.querySelector('[aria-label="Chat strip"] .truncate')?.textContent;

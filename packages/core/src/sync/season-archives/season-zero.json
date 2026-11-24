@@ -1,0 +1,4743 @@
+{
+  "version": 1,
+  "herald": "https://herald.realms.party",
+  "chain_id": "0x50524f44554354494f4e5f31386534326539316432343133646337",
+  "confirmed_block": 1844947,
+  "read_at": "2026-11-23T18:07:16Z",
+  "game": {
+    "game_id": 1,
+    "name": "frontier-1793682000",
+    "preset_id": 6,
+    "mode": "frontier",
+    "day_index": null,
+    "day_ends_at": null,
+    "next_day_length": null,
+    "expedition": {
+      "day_unit_seconds": 7200,
+      "seed": "3286620661979583031199232875686605379684932987835349531891724301093691491459"
+    },
+    "dev_mode_on": false,
+    "ready": true,
+    "status": "Ended",
+    "clock": {
+      "start_settling_at": 1793682000,
+      "start_main_at": 1793682000,
+      "end_at": 1793988000,
+      "end_grace_seconds": 0
+    },
+    "player_count": 187,
+    "player_state": null,
+    "roster_count": 0,
+    "roster": [],
+    "registration": {
+      "count": 187,
+      "max": 0,
+      "start_at": 1793681999
+    },
+    "settled_realms_count": 187,
+    "settled_villages_count": 0,
+    "settlement": null,
+    "season_number": 0
+  },
+  "leaderboard": {
+    "game_id": "1",
+    "mode": "frontier",
+    "entries": [
+      {
+        "address": "0x45d6bd2bb5415e3fca5edd5dc00035510d165af218a92ed4cc44e58126d48d7",
+        "structure_id": "80221399154689",
+        "has_wonder": false,
+        "campaign": null,
+        "rank": 1,
+        "sites_cleared": {
+          "total": 331,
+          "camps": 105,
+          "rifts": 89,
+          "ruins": 7,
+          "beasts": 130
+        },
+        "chests_earned": 9,
+        "rewards": {
+          "lords": "1500",
+          "essence": "1140025500000000",
+          "labor": "593784151000000"
+        },
+        "deepest_depth": 2,
+        "level": 3,
+        "order": 11
+      },
+      {
+        "address": "0x4ce7445b0d51d10c5cedaab6de4f9a15507256101e800f848a56d65d842b181",
+        "structure_id": "6544941748584449",
+        "has_wonder": false,
+        "campaign": null,
+        "rank": 2,
+        "sites_cleared": {
+          "total": 318,
+          "camps": 74,
+          "rifts": 91,
+          "ruins": 13,
+          "beasts": 140
+        },
+        "chests_earned": 14,
+        "rewards": {
+          "lords": "6200",
+          "essence": "1771641700000000",
+          "labor": "981452949200000"
+        },
+        "deepest_depth": 3,
+        "level": 3,
+        "order": 6
+      },
+      {
+        "address": "0x2a6fcf21788eb5fcf9941cdb8e0b1568a2e328384e9c0e194a1883998d79111",
+        "structure_id": "7081623682023425",
+        "has_wonder": false,
+        "campaign": null,
+        "rank": 3,
+        "sites_cleared": {
+          "total": 313,
+          "camps": 82,
+          "rifts": 88,
+          "ruins": 6,
+          "beasts": 137
+        },
+        "chests_earned": 6,
+        "rewards": {
+          "lords": "1250",
+          "essence": "717586200000000",
+          "labor": "381676288000000"
+        },
+        "deepest_depth": 0,
+        "level": 2,
+        "order": 12
+      },
+      {
+        "address": "0x4365ce77fa2b35972ac3a7936267171d77268b1427f0f57b9d9bd4037e991a2",
+        "structure_id": "6344817747427329",
+        "has_wonder": false,
+        "campaign": null,
+        "rank": 4,
+        "sites_cleared": {
+          "total": 312,
+          "camps": 105,
+          "rifts": 63,
+          "ruins": 8,
+          "beasts": 136
+        },
+        "chests_earned": 9,
+        "rewards": {
+          "lords": "900",
+          "essence": "613421800000000",
+          "labor": "425467050000000"
+        },
+        "deepest_depth": 0,
+        "level": 2,
+        "order": 1
+      },
+      {
+        "address": "0x4de71d122cd00c1645c90fcda0b3e533e0333bc4d036b0ba0b99957fa96df91",
+        "structure_id": "4789635859349505",
+        "has_wonder": false,
+        "campaign": null,
+        "rank": 5,
+        "sites_cleared": {
+          "total": 306,
+          "camps": 68,
+          "rifts": 72,
+          "ruins": 6,
+          "beasts": 160
+        },
+        "chests_earned": 7,
+        "rewards": {
+          "lords": "1650",
+          "essence": "661206600000000",
+          "labor": "395391950000000"
+        },
+        "deepest_depth": 0,
+        "level": 2,
+        "order": 12
+      },
+      {
+        "address": "0xb4038389b0790535e2046271508784568b45e3b559bcc65bb21633752e94d6",
+        "structure_id": "2308738195128321",
+        "has_wonder": false,
+        "campaign": null,
+        "rank": 6,
+        "sites_cleared": {
+          "total": 282,
+          "camps": 69,
+          "rifts": 71,
+          "ruins": 5,
+          "beasts": 137
+        },
+        "chests_earned": 5,
+        "rewards": {
+          "lords": "1550",
+          "essence": "815016250000000",
+          "labor": "550787675000000"
+        },
+        "deepest_depth": 1,
+        "level": 3,
+        "order": 3
+      },
+      {
+        "address": "0x772e57edcb58f24548e04f324d851ca839577911ddb6d1db4c06d681a39476",
+        "structure_id": "4979065391939585",
+        "has_wonder": false,
+        "campaign": null,
+        "rank": 7,
+        "sites_cleared": {
+          "total": 265,
+          "camps": 65,
+          "rifts": 76,
+          "ruins": 3,
+          "beasts": 121
+        },
+        "chests_earned": 3,
+        "rewards": {
+          "lords": "350",
+          "essence": "730376650000000",
+          "labor": "472951400000000"
+        },
+        "deepest_depth": 1,
+        "level": 3,
+        "order": 3
+      },
+      {
+        "address": "0x510fa645565fc77a784918630a27d0e1c07255b698fb44966ebd0b801439001",
+        "structure_id": "6477978913472513",
+        "has_wonder": false,
+        "campaign": null,
+        "rank": 8,
+        "sites_cleared": {
+          "total": 237,
+          "camps": 64,
+          "rifts": 53,
+          "ruins": 17,
+          "beasts": 103
+        },
+        "chests_earned": 18,
+        "rewards": {
+          "lords": "6550",
+          "essence": "1821316950000000",
+          "labor": "909032725000000"
+        },
+        "deepest_depth": 3,
+        "level": 3,
+        "order": 10
+      },
+      {
+        "address": "0x6fcc32545a168364a788a94d9bfd793d28bace5ed95c74411751039100bd411",
+        "structure_id": "7979366336167937",
+        "has_wonder": false,
+        "campaign": null,
+        "rank": 9,
+        "sites_cleared": {
+          "total": 213,
+          "camps": 45,
+          "rifts": 51,
+          "ruins": 13,
+          "beasts": 104
+        },
+        "chests_earned": 13,
+        "rewards": {
+          "lords": "5200",
+          "essence": "1349653550000000",
+          "labor": "838245000000000"
+        },
+        "deepest_depth": 2,
+        "level": 3,
+        "order": 5
+      },
+      {
+        "address": "0x4ef41e7b9ad57a515eb7212f89f83a4bf3f9d07efb1f1ba1f9c9774326aa001",
+        "structure_id": "5987446403629057",
+        "has_wonder": false,
+        "campaign": null,
+        "rank": 10,
+        "sites_cleared": {
+          "total": 206,
+          "camps": 56,
+          "rifts": 47,
+          "ruins": 5,
+          "beasts": 98
+        },
+        "chests_earned": 7,
+        "rewards": {
+          "lords": "1400",
+          "essence": "541405300000000",
+          "labor": "355281400000000"
+        },
+        "deepest_depth": 0,
+        "level": 2,
+        "order": 7
+      },
+      {
+        "address": "0xd9de55faa43f2bfd84b6cbc9efc18fcf76240b0cfa2b0caa537e2fc2a4f4fd",
+        "structure_id": "7024788379795457",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 11,
+        "sites_cleared": {
+          "total": 200,
+          "camps": 53,
+          "rifts": 46,
+          "ruins": 10,
+          "beasts": 91
+        },
+        "chests_earned": 10,
+        "rewards": {
+          "lords": "3850",
+          "essence": "535594000000000",
+          "labor": "242432275000000"
+        },
+        "deepest_depth": 2,
+        "level": 3,
+        "order": 6
+      },
+      {
+        "address": "0x57b9e20b749d8fa23967c0621bccd56ad781984f6620b08a25cda35acb4340",
+        "structure_id": "1424507508097025",
+        "has_wonder": false,
+        "campaign": null,
+        "rank": 12,
+        "sites_cleared": {
+          "total": 187,
+          "camps": 41,
+          "rifts": 46,
+          "ruins": 15,
+          "beasts": 85
+        },
+        "chests_earned": 16,
+        "rewards": {
+          "lords": "5200",
+          "essence": "565793200000000",
+          "labor": "238189873600000"
+        },
+        "deepest_depth": 3,
+        "level": 3,
+        "order": 10
+      },
+      {
+        "address": "0x7268b2bdb4b481d46bd00aa61418d21c8fb80c2db1939e40a58cdce1ed4840f",
+        "structure_id": "7826877817290753",
+        "has_wonder": false,
+        "campaign": null,
+        "rank": 13,
+        "sites_cleared": {
+          "total": 184,
+          "camps": 45,
+          "rifts": 52,
+          "ruins": 7,
+          "beasts": 80
+        },
+        "chests_earned": 9,
+        "rewards": {
+          "lords": "3700",
+          "essence": "1110595950000000",
+          "labor": "567282017400000"
+        },
+        "deepest_depth": 3,
+        "level": 3,
+        "order": 2
+      },
+      {
+        "address": "0x3ea24ab59824da3c66c3250a36cdc9edd0d593f2c224351bd8f13f30c7ebc26",
+        "structure_id": "989083723628545",
+        "has_wonder": false,
+        "campaign": null,
+        "rank": 14,
+        "sites_cleared": {
+          "total": 184,
+          "camps": 44,
+          "rifts": 39,
+          "ruins": 3,
+          "beasts": 98
+        },
+        "chests_earned": 3,
+        "rewards": {
+          "lords": "650",
+          "essence": "374050000000000",
+          "labor": "252158450000000"
+        },
+        "deepest_depth": 0,
+        "level": 2,
+        "order": 2
+      },
+      {
+        "address": "0x648174392d94df37bc7d59c3abf22116d20df16ddf0e380c5ff79aff86738c4",
+        "structure_id": "361034950901761",
+        "has_wonder": false,
+        "campaign": null,
+        "rank": 15,
+        "sites_cleared": {
+          "total": 177,
+          "camps": 44,
+          "rifts": 47,
+          "ruins": 5,
+          "beasts": 81
+        },
+        "chests_earned": 5,
+        "rewards": {
+          "lords": "400",
+          "essence": "335198500000000",
+          "labor": "171814241600000"
+        },
+        "deepest_depth": 0,
+        "level": 3,
+        "order": 8
+      },
+      {
+        "address": "0x4c21ba6f5c8e24182ee0eefd56de97ade5f7570041dd0ec7d7d8ece2195cc4",
+        "structure_id": "4390556088139777",
+        "has_wonder": false,
+        "campaign": null,
+        "rank": 16,
+        "sites_cleared": {
+          "total": 166,
+          "camps": 45,
+          "rifts": 41,
+          "ruins": 6,
+          "beasts": 74
+        },
+        "chests_earned": 8,
+        "rewards": {
+          "lords": "1500",
+          "essence": "715794150000000",
+          "labor": "418855296000000"
+        },
+        "deepest_depth": 3,
+        "level": 3,
+        "order": 3
+      },
+      {
+        "address": "0x344cfcfa43038047bba55dcff787e8cd588fee7251e5ec2ddd86f60cd60d8c6",
+        "structure_id": "3467056515121153",
+        "has_wonder": true,
+        "campaign": null,
+        "rank": 17,
+        "sites_cleared": {
+          "total": 129,
+          "camps": 20,
+          "rifts": 38,
+          "ruins": 9,
+          "beasts": 62
+        },
+        "chests_earned": 10,
+        "rewards": {
+          "lords": "2450",
+          "essence": "618899400000000",
+          "labor": "225181775000000"
+        },
+        "deepest_depth": 3,
+        "level": 3,
+        "order": 7
+      },
+      {
+        "address": "0x47af68fae12b22b28da08882f9fa2236d1950ea14fa2e2a6e7335ca444d300f",
+        "structure_id": "4211185368956929",
+        "has_wonder": false,
+        "campaign": null,
+        "rank": 18,
+        "sites_cleared": {
+          "total": 111,
+          "camps": 16,
+          "rifts": 35,
+          "ruins": 13,
+          "beasts": 47
+        },
+        "chests_earned": 14,
+        "rewards": {
+          "lords": "3600",
+          "essence": "735501050000000",
+          "labor": "286180250000000"
+        },
+        "deepest_depth": 3,
+        "level": 3,
+        "order": 14
+      },
+      {
+        "address": "0x3a398720ef27a0db6e419830b22dd4de3c5b3b9506fc8955c6594a2f39fa3b2",
+        "structure_id": "7392454760202241",
+        "has_wonder": false,
+        "campaign": null,
+        "rank": 19,
+        "sites_cleared": {
+          "total": 108,
+          "camps": 30,
+          "rifts": 26,
+          "ruins": 6,
+          "beasts": 46
+        },
+        "chests_earned": 6,
+        "rewards": {
+          "lords": "950",
+          "essence": "241248650000000",
+          "labor": "127220825000000"
+        },
+        "deepest_depth": 2,
+        "level": 2,
+        "order": 11
+      },
+      {
+        "address": "0x7f7c1afd2011c17204a0aa4205c5eb53bacd9e9b498421bd5415c9c613a70fd",
+        "structure_id": "3853148305227777",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 20,
+        "sites_cleared": {
+          "total": 105,
+          "camps": 30,
+          "rifts": 26,
+          "ruins": 5,
+          "beasts": 44
+        },
+        "chests_earned": 6,
+        "rewards": {
+          "lords": "1500",
+          "essence": "216017850000000",
+          "labor": "83966150000000"
+        },
+        "deepest_depth": 1,
+        "level": 3,
+        "order": 12
+      },
+      {
+        "address": "0x36cce818a39c22df2bdb10018ae7ebbc1ca51555428c8dabd853cc46182dc39",
+        "structure_id": "8603257580552193",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 2
+        },
+        "rank": 21,
+        "sites_cleared": {
+          "total": 96,
+          "camps": 18,
+          "rifts": 33,
+          "ruins": 4,
+          "beasts": 41
+        },
+        "chests_earned": 5,
+        "rewards": {
+          "lords": "500",
+          "essence": "261525350000000",
+          "labor": "82735950000000"
+        },
+        "deepest_depth": 2,
+        "level": 2,
+        "order": 5
+      },
+      {
+        "address": "0x3af5b5f3599c7f1927be4aaff0b039a6142f73bab357e1f8d378de5b9e9136e",
+        "structure_id": "1959475749584897",
+        "has_wonder": false,
+        "campaign": null,
+        "rank": 22,
+        "sites_cleared": {
+          "total": 95,
+          "camps": 17,
+          "rifts": 27,
+          "ruins": 10,
+          "beasts": 41
+        },
+        "chests_earned": 10,
+        "rewards": {
+          "lords": "3250",
+          "essence": "304757450000000",
+          "labor": "137871550000000"
+        },
+        "deepest_depth": 2,
+        "level": 3,
+        "order": 9
+      },
+      {
+        "address": "0x490b9567e8a84468372eada53ca0986d5ce01baffd5ce61c4e80fb505564157",
+        "structure_id": "3254794936385537",
+        "has_wonder": false,
+        "campaign": null,
+        "rank": 23,
+        "sites_cleared": {
+          "total": 91,
+          "camps": 26,
+          "rifts": 16,
+          "ruins": 5,
+          "beasts": 44
+        },
+        "chests_earned": 5,
+        "rewards": {
+          "lords": "450",
+          "essence": "177062050000000",
+          "labor": "112875475000000"
+        },
+        "deepest_depth": 2,
+        "level": 2,
+        "order": 12
+      },
+      {
+        "address": "0x6a5faae8b17ccc1ca82aa9d1b56c03192e5b8b767b21ade7114ae19e51d46d4",
+        "structure_id": "9001723171438593",
+        "has_wonder": false,
+        "campaign": null,
+        "rank": 24,
+        "sites_cleared": {
+          "total": 87,
+          "camps": 15,
+          "rifts": 24,
+          "ruins": 12,
+          "beasts": 36
+        },
+        "chests_earned": 13,
+        "rewards": {
+          "lords": "4100",
+          "essence": "341134250000000",
+          "labor": "150620000000000"
+        },
+        "deepest_depth": 2,
+        "level": 3,
+        "order": 10
+      },
+      {
+        "address": "0x41abfe81274fbf8a655be53db6c502fa2f717b27a65deaa2512f1cd4d9ed5f6",
+        "structure_id": "1727332767236097",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 2
+        },
+        "rank": 25,
+        "sites_cleared": {
+          "total": 69,
+          "camps": 10,
+          "rifts": 22,
+          "ruins": 5,
+          "beasts": 32
+        },
+        "chests_earned": 5,
+        "rewards": {
+          "lords": "800",
+          "essence": "120324100000000",
+          "labor": "24789725000000"
+        },
+        "deepest_depth": 1,
+        "level": 2,
+        "order": 15
+      },
+      {
+        "address": "0x3fec9d361eb385bc138055b5fb13351872ad0ccaea3345419a557e5d96e6ad0",
+        "structure_id": "7394821287182337",
+        "has_wonder": false,
+        "campaign": null,
+        "rank": 26,
+        "sites_cleared": {
+          "total": 68,
+          "camps": 17,
+          "rifts": 15,
+          "ruins": 4,
+          "beasts": 32
+        },
+        "chests_earned": 4,
+        "rewards": {
+          "lords": "500",
+          "essence": "95887950000000",
+          "labor": "38579050000000"
+        },
+        "deepest_depth": 1,
+        "level": 3,
+        "order": 16
+      },
+      {
+        "address": "0x55bc1984a27010f5d46139af3212131bd7c26e2882ad2926dcefc9df62fc66",
+        "structure_id": "1678043722547201",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 27,
+        "sites_cleared": {
+          "total": 65,
+          "camps": 17,
+          "rifts": 19,
+          "ruins": 5,
+          "beasts": 24
+        },
+        "chests_earned": 5,
+        "rewards": {
+          "lords": "600",
+          "essence": "164893050000000",
+          "labor": "69314250000000"
+        },
+        "deepest_depth": 2,
+        "level": 3,
+        "order": 9
+      },
+      {
+        "address": "0x17c3456f2b8e0c271896d3e1f44ed4ca0031ae7bde8c2431abaa175bfa2c1d9",
+        "structure_id": "1813476926291969",
+        "has_wonder": false,
+        "campaign": null,
+        "rank": 28,
+        "sites_cleared": {
+          "total": 60,
+          "camps": 18,
+          "rifts": 16,
+          "ruins": 3,
+          "beasts": 23
+        },
+        "chests_earned": 3,
+        "rewards": {
+          "lords": "1050",
+          "essence": "117006100000000",
+          "labor": "73991300000000"
+        },
+        "deepest_depth": 0,
+        "level": 2,
+        "order": 7
+      },
+      {
+        "address": "0x328d3f418fc54ee08012c2ae50def2c4970861c8cd5574134b1aabe34172e54",
+        "structure_id": "602927509012481",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 29,
+        "sites_cleared": {
+          "total": 49,
+          "camps": 11,
+          "rifts": 10,
+          "ruins": 2,
+          "beasts": 26
+        },
+        "chests_earned": 3,
+        "rewards": {
+          "lords": "650",
+          "essence": "65927500000000",
+          "labor": "31672550000000"
+        },
+        "deepest_depth": 1,
+        "level": 2,
+        "order": 12
+      },
+      {
+        "address": "0x67b9e7beb814ba9486ec0ff9df1c24028a52e939081f568dd65f8a74324c297",
+        "structure_id": "7132192626966529",
+        "has_wonder": false,
+        "campaign": null,
+        "rank": 30,
+        "sites_cleared": {
+          "total": 41,
+          "camps": 11,
+          "rifts": 14,
+          "ruins": 3,
+          "beasts": 13
+        },
+        "chests_earned": 4,
+        "rewards": {
+          "lords": "500",
+          "essence": "125357700000000",
+          "labor": "48518700000000"
+        },
+        "deepest_depth": 1,
+        "level": 2,
+        "order": 2
+      },
+      {
+        "address": "0x37feb4912547b97ff0af73c962955fbd0faf8ba646af789d5a0cb6885a919ae",
+        "structure_id": "2100724339048449",
+        "has_wonder": false,
+        "campaign": null,
+        "rank": 31,
+        "sites_cleared": {
+          "total": 40,
+          "camps": 9,
+          "rifts": 11,
+          "ruins": 3,
+          "beasts": 17
+        },
+        "chests_earned": 3,
+        "rewards": {
+          "lords": "1250",
+          "essence": "65084500000000",
+          "labor": "25160350000000"
+        },
+        "deepest_depth": 0,
+        "level": 2,
+        "order": 1
+      },
+      {
+        "address": "0x1c1cf5c9a12ef4e5fedb063ae12f5127b5e2e1fa9d335bd5a7aa1e52d36469",
+        "structure_id": "5075659206426625",
+        "has_wonder": false,
+        "campaign": null,
+        "rank": 32,
+        "sites_cleared": {
+          "total": 33,
+          "camps": 10,
+          "rifts": 10,
+          "ruins": 3,
+          "beasts": 10
+        },
+        "chests_earned": 3,
+        "rewards": {
+          "lords": "350",
+          "essence": "70569750000000",
+          "labor": "31577600000000"
+        },
+        "deepest_depth": 1,
+        "level": 3,
+        "order": 11
+      },
+      {
+        "address": "0x25a4c86d8faa94764da2ed18cebe3e11a06d1b75a49714d379322d9e8bcea37",
+        "structure_id": "4260156586065921",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 33,
+        "sites_cleared": {
+          "total": 30,
+          "camps": 4,
+          "rifts": 10,
+          "ruins": 2,
+          "beasts": 14
+        },
+        "chests_earned": 3,
+        "rewards": {
+          "lords": "800",
+          "essence": "59092300000000",
+          "labor": "18001550000000"
+        },
+        "deepest_depth": 0,
+        "level": 1,
+        "order": 7
+      },
+      {
+        "address": "0x36bbd4eaaf5921547e614f075910645cb90a93bc854b8f515d221384e9097ae",
+        "structure_id": "589389772095489",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 34,
+        "sites_cleared": {
+          "total": 29,
+          "camps": 3,
+          "rifts": 11,
+          "ruins": 2,
+          "beasts": 13
+        },
+        "chests_earned": 2,
+        "rewards": {
+          "lords": "150",
+          "essence": "52756700000000",
+          "labor": "7025950000000"
+        },
+        "deepest_depth": 0,
+        "level": 1,
+        "order": 8
+      },
+      {
+        "address": "0x381006b6bea49c7229744363fdbdd7d393eaa08f808cdbd42f2106148f1432e",
+        "structure_id": "186801012604929",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 35,
+        "sites_cleared": {
+          "total": 25,
+          "camps": 9,
+          "rifts": 6,
+          "ruins": 2,
+          "beasts": 8
+        },
+        "chests_earned": 2,
+        "rewards": {
+          "lords": "150",
+          "essence": "36718500000000",
+          "labor": "16357400000000"
+        },
+        "deepest_depth": 0,
+        "level": 1,
+        "order": 4
+      },
+      {
+        "address": "0x5cd1a6a39109ed6f6acb801831db550ffdbe09f725288af0ec9b127da356fe0",
+        "structure_id": "764645912608769",
+        "has_wonder": false,
+        "campaign": null,
+        "rank": 36,
+        "sites_cleared": {
+          "total": 21,
+          "camps": 7,
+          "rifts": 2,
+          "ruins": 2,
+          "beasts": 10
+        },
+        "chests_earned": 2,
+        "rewards": {
+          "lords": "250",
+          "essence": "10265100000000",
+          "labor": "6618358000000"
+        },
+        "deepest_depth": 0,
+        "level": 1,
+        "order": 13
+      },
+      {
+        "address": "0x78b61bb47ef7a9336eea944ea272d3eaa8a98f43d0a56536989e0984dd6c3d2",
+        "structure_id": "5493134322565121",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 37,
+        "sites_cleared": {
+          "total": 20,
+          "camps": 5,
+          "rifts": 7,
+          "ruins": 4,
+          "beasts": 4
+        },
+        "chests_earned": 5,
+        "rewards": {
+          "lords": "750",
+          "essence": "44053900000000",
+          "labor": "17381500000000"
+        },
+        "deepest_depth": 0,
+        "level": 1,
+        "order": 12
+      },
+      {
+        "address": "0x5618dd03b6ff3e713e159bd1e9508e6b9398d9fa7f63abf536b53267f9d66e3",
+        "structure_id": "3865659544961025",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 38,
+        "sites_cleared": {
+          "total": 19,
+          "camps": 7,
+          "rifts": 5,
+          "ruins": 1,
+          "beasts": 6
+        },
+        "chests_earned": 1,
+        "rewards": {
+          "lords": "500",
+          "essence": "33113600000000",
+          "labor": "17700850000000"
+        },
+        "deepest_depth": 0,
+        "level": 2,
+        "order": 11
+      },
+      {
+        "address": "0x2c453d88404392ec2a11238a3ab766ea10b993b5e7ce9d653595f6309ec1f2d",
+        "structure_id": "1845371353432065",
+        "has_wonder": false,
+        "campaign": null,
+        "rank": 39,
+        "sites_cleared": {
+          "total": 19,
+          "camps": 1,
+          "rifts": 3,
+          "ruins": 2,
+          "beasts": 13
+        },
+        "chests_earned": 2,
+        "rewards": {
+          "lords": "100",
+          "essence": "13989600000000",
+          "labor": "2635350000000"
+        },
+        "deepest_depth": 0,
+        "level": 1,
+        "order": 16
+      },
+      {
+        "address": "0x102f9667277cf0b7a3144f9177f88564061a391c0965b7b126c6733f0bdd5c",
+        "structure_id": "8934781811163137",
+        "has_wonder": false,
+        "campaign": null,
+        "rank": 40,
+        "sites_cleared": {
+          "total": 17,
+          "camps": 7,
+          "rifts": 1,
+          "ruins": 2,
+          "beasts": 7
+        },
+        "chests_earned": 2,
+        "rewards": {
+          "lords": "100",
+          "essence": "24693400000000",
+          "labor": "18191700000000"
+        },
+        "deepest_depth": 0,
+        "level": 2,
+        "order": 6
+      },
+      {
+        "address": "0x3f26e37296f738949d1f534ddb0d65a348c0571b2a42e840e80835aff60f0e5",
+        "structure_id": "4406894143733761",
+        "has_wonder": false,
+        "campaign": null,
+        "rank": 41,
+        "sites_cleared": {
+          "total": 14,
+          "camps": 3,
+          "rifts": 1,
+          "ruins": 1,
+          "beasts": 9
+        },
+        "chests_earned": 1,
+        "rewards": {
+          "lords": "100",
+          "essence": "10673000000000",
+          "labor": "7806900000000"
+        },
+        "deepest_depth": 0,
+        "level": 2,
+        "order": 7
+      },
+      {
+        "address": "0x284115acf41cd443aeb3d72a4090258de21f3f0533d2d8ab79636f5bf2bae47",
+        "structure_id": "5360991063769089",
+        "has_wonder": false,
+        "campaign": null,
+        "rank": 42,
+        "sites_cleared": {
+          "total": 12,
+          "camps": 1,
+          "rifts": 3,
+          "ruins": 1,
+          "beasts": 7
+        },
+        "chests_earned": 1,
+        "rewards": {
+          "lords": "100",
+          "essence": "16932700000000",
+          "labor": "4199200000000"
+        },
+        "deepest_depth": 0,
+        "level": 1,
+        "order": 1
+      },
+      {
+        "address": "0x1813a28bfa7d94c949048d503f610a3e946d9fe6586ce0f04cd6e5609171943",
+        "structure_id": "2445056162136065",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 43,
+        "sites_cleared": {
+          "total": 12,
+          "camps": 5,
+          "rifts": 2,
+          "ruins": 0,
+          "beasts": 5
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "19030900000000",
+          "labor": "8023450000000"
+        },
+        "deepest_depth": 0,
+        "level": 1,
+        "order": 14
+      },
+      {
+        "address": "0x2fc11e9fbd9a9a68629b5dedbd2855f46d3d40689e6fd7034ff69dea92d84d1",
+        "structure_id": "8486271261343745",
+        "has_wonder": false,
+        "campaign": null,
+        "rank": 44,
+        "sites_cleared": {
+          "total": 9,
+          "camps": 3,
+          "rifts": 1,
+          "ruins": 1,
+          "beasts": 4
+        },
+        "chests_earned": 1,
+        "rewards": {
+          "lords": "50",
+          "essence": "7235500000000",
+          "labor": "6983050000000"
+        },
+        "deepest_depth": 0,
+        "level": 2,
+        "order": 9
+      },
+      {
+        "address": "0x697ad488056127e037b5f380803a3dfc09842a66ad7e267057dc20026dd2974",
+        "structure_id": "2151499442421761",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 45,
+        "sites_cleared": {
+          "total": 8,
+          "camps": 2,
+          "rifts": 1,
+          "ruins": 0,
+          "beasts": 5
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "5475300000000",
+          "labor": "2924450000000"
+        },
+        "deepest_depth": 0,
+        "level": 1,
+        "order": 14
+      },
+      {
+        "address": "0x4039fac336e0ff119a6e5844a35d891008eebc1978a772a70d719590e1f10e4",
+        "structure_id": "7830537129426945",
+        "has_wonder": false,
+        "campaign": null,
+        "rank": 46,
+        "sites_cleared": {
+          "total": 6,
+          "camps": 1,
+          "rifts": 1,
+          "ruins": 0,
+          "beasts": 4
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "6923200000000",
+          "labor": "2188800000000"
+        },
+        "deepest_depth": 0,
+        "level": 1,
+        "order": 11
+      },
+      {
+        "address": "0x577dc867d1fc35b3d49d92fb02580944bd1b63ab1f236df89d63a44f34a2355",
+        "structure_id": "7084325216452609",
+        "has_wonder": false,
+        "campaign": null,
+        "rank": 47,
+        "sites_cleared": {
+          "total": 5,
+          "camps": 1,
+          "rifts": 1,
+          "ruins": 1,
+          "beasts": 2
+        },
+        "chests_earned": 1,
+        "rewards": {
+          "lords": "200",
+          "essence": "5780900000000",
+          "labor": "1837300000000"
+        },
+        "deepest_depth": 0,
+        "level": 1,
+        "order": 12
+      },
+      {
+        "address": "0x6b2656586c5305258b35c5e8a1c393c2c82969a17b19099e5fb336ea640c101",
+        "structure_id": "4564790026436609",
+        "has_wonder": false,
+        "campaign": null,
+        "rank": 48,
+        "sites_cleared": {
+          "total": 4,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 4
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "1045800000000",
+          "labor": "2009150000000"
+        },
+        "deepest_depth": 0,
+        "level": 1,
+        "order": 12
+      },
+      {
+        "address": "0x39b874d20af0332d10d878b6fe0c0e645e802b9592d75ba06e40f17bbe4054e",
+        "structure_id": "1860932019945473",
+        "has_wonder": false,
+        "campaign": null,
+        "rank": 49,
+        "sites_cleared": {
+          "total": 4,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 4
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "1140800000000",
+          "labor": "1670250000000"
+        },
+        "deepest_depth": 0,
+        "level": 1,
+        "order": 11
+      },
+      {
+        "address": "0x585285f118ecc78cefad854058db84c0ab0089e31d32b7319651d73858dbfcf",
+        "structure_id": "4105907130597377",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 50,
+        "sites_cleared": {
+          "total": 3,
+          "camps": 1,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 2
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "898800000000",
+          "labor": "1280650000000"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 10
+      },
+      {
+        "address": "0x5a6311872e13138c8bcd5f3b6685bf031f06f65eeea542c2a84ae1214a13cfd",
+        "structure_id": "4097166872150017",
+        "has_wonder": false,
+        "campaign": null,
+        "rank": 51,
+        "sites_cleared": {
+          "total": 3,
+          "camps": 1,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 2
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "276900000000",
+          "labor": "1286650000000"
+        },
+        "deepest_depth": 0,
+        "level": 1,
+        "order": 4
+      },
+      {
+        "address": "0x224c8c9c5144a53cf547bb02fefc283cb19f3915ca6e92714cbea5b9340932f",
+        "structure_id": "8297653477572609",
+        "has_wonder": false,
+        "campaign": null,
+        "rank": 52,
+        "sites_cleared": {
+          "total": 3,
+          "camps": 0,
+          "rifts": 1,
+          "ruins": 0,
+          "beasts": 2
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "5089900000000",
+          "labor": "592050000000"
+        },
+        "deepest_depth": 0,
+        "level": 1,
+        "order": 1
+      },
+      {
+        "address": "0x23aaa234a8c0579ab159fc918dc9250aec7c0f2624cedd3b8b88014036ad76",
+        "structure_id": "1148147837435905",
+        "has_wonder": false,
+        "campaign": null,
+        "rank": 53,
+        "sites_cleared": {
+          "total": 2,
+          "camps": 2,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "15400000000",
+          "labor": "1367400000000"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 14
+      },
+      {
+        "address": "0x630e63e74563bdb230d3c8563803bdfb23821589cc752679ca05e23df72e0a",
+        "structure_id": "5426712653332481",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 54,
+        "sites_cleared": {
+          "total": 1,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 1
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "230100000000",
+          "labor": "337700000000"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 1
+      },
+      {
+        "address": "0x2faddd788de50fe638d28986e94670cbe6d07dd84d365213bd7658f590e8d56",
+        "structure_id": "4835866887323649",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 55,
+        "sites_cleared": {
+          "total": 1,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 1
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "282100000000",
+          "labor": "287100000000"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 3
+      },
+      {
+        "address": "0x668723179acc2014f4d8f61b23c77a4ffbceda866379caa9bd10c37f2c925c8",
+        "structure_id": "8515820636340225",
+        "has_wonder": false,
+        "campaign": null,
+        "rank": 56,
+        "sites_cleared": {
+          "total": 1,
+          "camps": 1,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "8200000000",
+          "labor": "843800000000"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 5
+      },
+      {
+        "address": "0x519e16d2b61537a6f6ebff4cb66c51668cd25382a8c7c93fc3ae3e9c1ad270c",
+        "structure_id": "8670143106252801",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 57,
+        "sites_cleared": {
+          "total": 1,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 1
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "304200000000",
+          "labor": "816650000000"
+        },
+        "deepest_depth": 0,
+        "level": 1,
+        "order": 1
+      },
+      {
+        "address": "0x2858953bda9409487c58c8065516e993442a1c2b2ef33f4f70c11a89261c05e",
+        "structure_id": "3866686042144769",
+        "has_wonder": false,
+        "campaign": null,
+        "rank": 58,
+        "sites_cleared": {
+          "total": 1,
+          "camps": 0,
+          "rifts": 1,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "4200800000000",
+          "labor": "200000000000"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 8
+      },
+      {
+        "address": "0x1dfbbf89846b97059fc1bd894ec2530651d6cc48358b2eb13aa591f2cdc7426",
+        "structure_id": "6467232905297921",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 59,
+        "sites_cleared": {
+          "total": 1,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 1
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "383600000000",
+          "labor": "399600000000"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 14
+      },
+      {
+        "address": "0x7afe1072c31ae08bad04b4eb1c094d58fd18aeafdb82ce9326842992eef57fa",
+        "structure_id": "5187139377561601",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 60,
+        "sites_cleared": {
+          "total": 1,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 1
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "466600000000",
+          "labor": "992400000000"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 14
+      },
+      {
+        "address": "0x677f9c9b265480f5fa51e5a56897aa06843411f85f3f7a1fa0d90dbfc41dad",
+        "structure_id": "2931229280174081",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 61,
+        "sites_cleared": {
+          "total": 1,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 1
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "96700000000",
+          "labor": "114900000000"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 2
+      },
+      {
+        "address": "0x7c6a2ff23328763412392ee245640995e5ca500c04f8937697fe67d90b28b6a",
+        "structure_id": "1678099557122049",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 62,
+        "sites_cleared": {
+          "total": 1,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 1
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "438200000000",
+          "labor": "245500000000"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 15
+      },
+      {
+        "address": "0x6ea5458286eb22d19b2b8d7a23807e5f6f8a4d9cb9eecc01394b18a4bbc43da",
+        "structure_id": "867862566666241",
+        "has_wonder": false,
+        "campaign": null,
+        "rank": 63,
+        "sites_cleared": {
+          "total": 1,
+          "camps": 1,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "99600000000",
+          "labor": "650000000000"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 7
+      },
+      {
+        "address": "0x3f97b284036aa0955030cc46c19919a24294834f4919a353d2e1d588bce132d",
+        "structure_id": "3894603329568769",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 64,
+        "sites_cleared": {
+          "total": 1,
+          "camps": 1,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "300000000000",
+          "labor": "950000000000"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 12
+      },
+      {
+        "address": "0x2141a5246dc34222cd7bc59ec0545d02758e5c02a5b1bacef502037232d45e9",
+        "structure_id": "5421751966105601",
+        "has_wonder": false,
+        "campaign": null,
+        "rank": 65,
+        "sites_cleared": {
+          "total": 1,
+          "camps": 1,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "20400000000",
+          "labor": "617800000000"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 15
+      },
+      {
+        "address": "0x2fdfd3c9c0f9d790e6bc83bdc4b6bb3aaef66b36f02ddb944b27d5784dad47",
+        "structure_id": "1429854742380545",
+        "has_wonder": false,
+        "campaign": null,
+        "rank": 66,
+        "sites_cleared": {
+          "total": 1,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 1
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "251400000000",
+          "labor": "265400000000"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 7
+      },
+      {
+        "address": "0x138db45c5bde45d6dfadb3961cead0308ac6438546c05171b63fd5cb5f74580",
+        "structure_id": "8282341919162369",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 67,
+        "sites_cleared": {
+          "total": 1,
+          "camps": 0,
+          "rifts": 1,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "4666400000000",
+          "labor": "186500000000"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 2
+      },
+      {
+        "address": "0x12473b4cd602e0d33f25b310851cee7ddfeff288c8ed6afbc0450b8e9f5b819",
+        "structure_id": "403383328440321",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 68,
+        "sites_cleared": {
+          "total": 1,
+          "camps": 1,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "600000000",
+          "labor": "1150200000000"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 8
+      },
+      {
+        "address": "0x42ebde9852d6ba631cab7eb518ccbfad8eda4c5293bab85a8dc3bd54efc1c48",
+        "structure_id": "7625113138626561",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 69,
+        "sites_cleared": {
+          "total": 1,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 1
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "404800000000",
+          "labor": "552200000000"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 12
+      },
+      {
+        "address": "0x10829ac6435fd9da4d744a6ce277f4560c9b2cbb86db6ebd3661744b6918346",
+        "structure_id": "4417489828052993",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 1
+      },
+      {
+        "address": "0x10cf41d46ecbe9b2fba0a9a3db60144a1f3d9f6512fe5e09827ce215931a81c",
+        "structure_id": "7300185977782273",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 14
+      },
+      {
+        "address": "0x120485152fd36b8582a7a169301e56a3649c40e0bcf665d2af81e3c84766556",
+        "structure_id": "79783312490497",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "2500000000",
+          "labor": "10000000000"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 16
+      },
+      {
+        "address": "0x126b4c3937aa7a58d771b515868625146ac6a1080e3e1b9a40dd8935ada1a34",
+        "structure_id": "2089815122116609",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 9
+      },
+      {
+        "address": "0x12a0c22b24e1ad4f4ef5429aa0b7f92b8fcd214385272f19dce6af989597775",
+        "structure_id": "8981455220768769",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 15
+      },
+      {
+        "address": "0x13476bac4e2675700883fa69b128a902e9acc1567080f61cb189084cdb0c77a",
+        "structure_id": "8582723341910017",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 1
+      },
+      {
+        "address": "0x142df19147a62e193461a401b305e0fd8efd3e14ce94d46e7ee83092b1325af",
+        "structure_id": "8255038812061697",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 9
+      },
+      {
+        "address": "0x147bb835eeb3f9f5a92219a52a9fcc6fcc63df21b75d5fc5c2b8c8ca58f9b91",
+        "structure_id": "589428426801153",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 2
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 15
+      },
+      {
+        "address": "0x14b91e02eca2ce8ed46c14aa104b905cda6481af3c6b9ad13d89ad6299355d4",
+        "structure_id": "4906433199996929",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 8
+      },
+      {
+        "address": "0x1811c33d2e9effd550a144286896d9992565b0f3d23a68613dbdd9bda38fec4",
+        "structure_id": "1312928552714241",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 15
+      },
+      {
+        "address": "0x185d6020a5733c9b6d6964bdc8e4483a8912dbfb988c3f9823674a417dda7c",
+        "structure_id": "7767976635793409",
+        "has_wonder": false,
+        "campaign": null,
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 9
+      },
+      {
+        "address": "0x1a7fe3f9ee1c01edca0416dcd7f5bfa808a25da80fcb98698d91cbdd82f4fca",
+        "structure_id": "1406533069963265",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 11
+      },
+      {
+        "address": "0x1b80c25454bb2c8660bc8c2146c8dca1812f96f3998fbd17b2fb210f4a6d698",
+        "structure_id": "3409731586621441",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 11
+      },
+      {
+        "address": "0x1c228db7b9ca77388f481e2ea29afd3f2334f91f7bf397f3cbb71c4f0c65abf",
+        "structure_id": "5086491113947137",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "5300000000",
+          "labor": "15900000000"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 10
+      },
+      {
+        "address": "0x1daa0fe6cee67cb8a0c88cbccbbe1effd195c94704f561c21a2796be82cd44f",
+        "structure_id": "620876177342465",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 2
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 15
+      },
+      {
+        "address": "0x20336265feff382a22e6117465754de46ac2e70cad3423cdf9dbe700130e119",
+        "structure_id": "2496192042762241",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "300000000",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 1
+      },
+      {
+        "address": "0x2064048b9607c9a00bec102773dffc1414bbf91ae4e869060545abc3f44c228",
+        "structure_id": "2271865900892161",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 1
+      },
+      {
+        "address": "0x24dfaa615dc1f9cf1c86e7fea6089a59a7e2392ee9348e1821586af04fcb8e",
+        "structure_id": "4637916139618305",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "274400000000",
+          "labor": "200700000000"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 5
+      },
+      {
+        "address": "0x257c37f28d99155b3149620ffe7b162261fbd3cc52b78a7389b3e0d8c81bfa8",
+        "structure_id": "3444074145120257",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "309000000000",
+          "labor": "78000000000"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 5
+      },
+      {
+        "address": "0x266998f0fcce288876e06451174a416a48f77a75617dcc5173bb55694669032",
+        "structure_id": "5872019157549057",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 7
+      },
+      {
+        "address": "0x26fcea38aec008cf6dcdb7705708da3d5be91964addba086a09654104def9c1",
+        "structure_id": "7118607645409281",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 6
+      },
+      {
+        "address": "0x27b6bc03ec5f8f2c7cd379518bc4563706bcffd305df492d4d7bc9770311ac2",
+        "structure_id": "1633693890248705",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 1
+      },
+      {
+        "address": "0x27d0cac52a9e66af7c4142f4737ca009e6c732a6277f8eae4b8ad620dee173e",
+        "structure_id": "968824362893313",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 9
+      },
+      {
+        "address": "0x2a814d0ef481c79e9c31307810593d4ac53458cf65bf076913f517f491acab1",
+        "structure_id": "594191545532417",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 3
+      },
+      {
+        "address": "0x2b5f5199418fd98a2095513f7368d61b0136bdd39f52c999966516755873b1b",
+        "structure_id": "2989142619193345",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "100000000000",
+          "labor": "200000000000"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 3
+      },
+      {
+        "address": "0x2be971436eaf7c38cebeed2c4ccc01e78945b4483f1542a64f61d803613b2d3",
+        "structure_id": "6473117010493441",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "40800000000"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 14
+      },
+      {
+        "address": "0x2d0e0e3e84ae12b8af8b0e08b58d1f213afe1dcf9355bf4da1c9141ff4ee497",
+        "structure_id": "102366250532865",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "523900000000",
+          "labor": "46000000000"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 14
+      },
+      {
+        "address": "0x2f34f3827df11cc10d5b17345f875755309f5eb411502ddb08ab6bfec90c1c",
+        "structure_id": "3964083015516161",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 10
+      },
+      {
+        "address": "0x32326c4ce959ef0b390cc3fcbb43130a7426b2803707895a9554aef77bff7a6",
+        "structure_id": "5081659275739137",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "5800000000",
+          "labor": "10800000000"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 6
+      },
+      {
+        "address": "0x336b4064c49bad253df963edc2a46f2bfeb03e2b1e1dacb758361bf924a1d67",
+        "structure_id": "6300042713366529",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 1
+      },
+      {
+        "address": "0x34451c73996ccbe65fd65265960a45dcd813f2ac36ffdc8435b04b9bcb1406e",
+        "structure_id": "2293589845475329",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 13
+      },
+      {
+        "address": "0x359696494dcb4aac7d07c55d4884236290e0110d3cf0eaa0be9252b54681f55",
+        "structure_id": "8488788112179201",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "176100000000",
+          "labor": "156300000000"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 10
+      },
+      {
+        "address": "0x35a9133a3d0978d7c4b867aab435f24296ab5b242ecc6ff287f6525c242f5e8",
+        "structure_id": "6469827065544705",
+        "has_wonder": false,
+        "campaign": null,
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "301200000000",
+          "labor": "602400000000"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 13
+      },
+      {
+        "address": "0x3665731294db771fbe85213e28cf594eb13a2bf09a9f89e66f402fbda23fee4",
+        "structure_id": "6397787579088897",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 10
+      },
+      {
+        "address": "0x383687fdc54c8214f6ae4e6274b7466431761b49591891fd2099e4c07901374",
+        "structure_id": "7609943314137089",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "500000000",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 8
+      },
+      {
+        "address": "0x38735affcf5cec237115fda1b4f0931248121121e5dbce1c0201fd355e6e96b",
+        "structure_id": "2267674012811265",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 4
+      },
+      {
+        "address": "0x3ad8ddbf4d9d631733148c002bdb35117a71a60c6f65d45583a68dd6c3d5153",
+        "structure_id": "3522800895655937",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 5
+      },
+      {
+        "address": "0x3dc1d34831d9dba5ed674626de9b5f08838d3aecef0f65b915b0d1541794f60",
+        "structure_id": "3237258584915969",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "791200000000",
+          "labor": "561800000000"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 7
+      },
+      {
+        "address": "0x3de9f16a85459346bc5d13d766296be3a9489bf8d2df7b21ef78d6dd824c3e2",
+        "structure_id": "378528352698369",
+        "has_wonder": false,
+        "campaign": null,
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "650000000000",
+          "labor": "400000000000"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 16
+      },
+      {
+        "address": "0x3e4a2404b2d35a49dec4430b29cba0c0934dda75550883b61c3ad299ee55d93",
+        "structure_id": "3187625942843393",
+        "has_wonder": false,
+        "campaign": null,
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 7
+      },
+      {
+        "address": "0x3f22d239314a9d86c32077cf49ec253712c7f88e63ef25fafdcd432a4aca2e",
+        "structure_id": "8188599962959873",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "752500000000"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 2
+      },
+      {
+        "address": "0x3f436a50046edd02e48bbd2dc85c304cd15ceeba0737726d47ea0b3926a902d",
+        "structure_id": "5442221780238337",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 11
+      },
+      {
+        "address": "0x4018b35be8b73c52a639363bbc43f8b556b499d88962c5099d051deaa6dffda",
+        "structure_id": "2575030462447617",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "104900000000",
+          "labor": "193500000000"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 4
+      },
+      {
+        "address": "0x4110beebf0fd9147c6ec6c010c4c6617458ccd27937749f71933681d9277c4a",
+        "structure_id": "593547300438017",
+        "has_wonder": false,
+        "campaign": null,
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 11
+      },
+      {
+        "address": "0x418a51996f2303bb809d63256e7ad3edf9c6154434fff790e8a49bb45722874",
+        "structure_id": "1940603663286273",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 12
+      },
+      {
+        "address": "0x4473b893040be4c58745e407469cb4d4b721da43ddb548dbec96a1b343200fc",
+        "structure_id": "5315180942589953",
+        "has_wonder": false,
+        "campaign": null,
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "232800000000",
+          "labor": "225800000000"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 5
+      },
+      {
+        "address": "0x46f4af458ee30ab8567807a87599ac5387ce4757a62cdccd1c05dd656a43441",
+        "structure_id": "4732663118168065",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 12
+      },
+      {
+        "address": "0x478cd225eda4b7e390bd92d26c9a4554d136f8bca11cbb1652fe4378f225fef",
+        "structure_id": "3033428026982401",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 13
+      },
+      {
+        "address": "0x47939b1d01099ec146ceec4cae328394f464ce0791a42365a1000f4539fe",
+        "structure_id": "4237784101421057",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 11
+      },
+      {
+        "address": "0x47f7a9cb519132d2e338c38dfa5e624321885a189c06a0370d518e45928870b",
+        "structure_id": "1824360373420033",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 15
+      },
+      {
+        "address": "0x49500aa68f6807d75f67d67d3c8fef7f79886425185b78f2a6c51ba27348ba1",
+        "structure_id": "5017982090608641",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "48000000000"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 13
+      },
+      {
+        "address": "0x4996131d8fac7e9d6b9d9f03ddb8af06e11aa0ae6e65687906d6c2c73f09b0a",
+        "structure_id": "1208195775201281",
+        "has_wonder": false,
+        "campaign": null,
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "162300000000",
+          "labor": "118900000000"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 2
+      },
+      {
+        "address": "0x4fa31da8b8e7f0b7adafe03b2133c157663cd32295750c33c200463c2b05812",
+        "structure_id": "654462821597185",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 1
+      },
+      {
+        "address": "0x4fb6e4bda1a4dbf3566b7e1fbb4048b407f7bb6d36cbfbfbde2c4c686dcad89",
+        "structure_id": "5180370509103105",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 2
+      },
+      {
+        "address": "0x51033c170a6470144fb507c4f23d45f9ac474794a5fdfe86a1bea0c0952f0ed",
+        "structure_id": "6367220296843265",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "1000000000",
+          "labor": "700000000"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 10
+      },
+      {
+        "address": "0x520f1c24a8625a90572f8e551eebbb766789a1370e65cee01f1bb0c54b12182",
+        "structure_id": "3598177571700737",
+        "has_wonder": false,
+        "campaign": null,
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 9
+      },
+      {
+        "address": "0x5227c2c76a53f17acd68c5394fbce9707e631471bf552fd824238d3607863a9",
+        "structure_id": "27556510171137",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "250000000000",
+          "labor": "50000000000"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 5
+      },
+      {
+        "address": "0x523f0c168444a1b7c1124d239b9ce4cf1a33276ee82c7824e75af76a5a1ac92",
+        "structure_id": "2938114112749569",
+        "has_wonder": false,
+        "campaign": null,
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 9
+      },
+      {
+        "address": "0x5425c4b937c8235c16e40b84697d92c5e7aed4ab58776bef589b1100e8a1ab3",
+        "structure_id": "3138878064033793",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 7
+      },
+      {
+        "address": "0x555cee02f8dc0e4ba9b46e7db5b626f161a735a9bce4d2032e06f6dff28b607",
+        "structure_id": "6226315304763393",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 3
+      },
+      {
+        "address": "0x576f4a9445e2541ac37af442e959970421a9fff83ff91ca0cdaa8476fddd1cc",
+        "structure_id": "8190661547261953",
+        "has_wonder": false,
+        "campaign": null,
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "1043400000000",
+          "labor": "896700000000"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 9
+      },
+      {
+        "address": "0x5839024900078b9aba7d2cde1c3bd13c095e5cced91f00e4095bc78c05c6f87",
+        "structure_id": "6732365531447297",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 10
+      },
+      {
+        "address": "0x5922499f7757e6ed3ccfccbe4821f0f1daca6e0cfc5c51e8e828b9812a76f04",
+        "structure_id": "5188986213498881",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 2
+      },
+      {
+        "address": "0x5b13d9e7b84ab0fd5bf31e6147368659389648118853e1405a166992dca3c6e",
+        "structure_id": "1256119020290049",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 2
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 9
+      },
+      {
+        "address": "0x5bfbf416289b37aed1848b3f1037d23f56362a1b5a65886de5e4971aaef5583",
+        "structure_id": "7141001604890625",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "138600000000"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 8
+      },
+      {
+        "address": "0x5d9b4a711a20383edc82ce6a79e36bdf31753111b01c0367b450ace7fe237a6",
+        "structure_id": "3616499902185473",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 10
+      },
+      {
+        "address": "0x5df203407a921d317ac5e58a1d6d5f0d162fd643c9d30c122119ab2dff919be",
+        "structure_id": "5258521734021121",
+        "has_wonder": false,
+        "campaign": null,
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "351800000000",
+          "labor": "553600000000"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 3
+      },
+      {
+        "address": "0x604a1ca1c4c37787d24dfda8de1e3e753d76540c2b5636db138be01e6eb839e",
+        "structure_id": "3631695496478721",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "55900000000",
+          "labor": "32600000000"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 16
+      },
+      {
+        "address": "0x612dfcfac0d6f401214866f2c39c8f87431faafeabbc8b3eb99d281734664d6",
+        "structure_id": "4393206082961409",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 12
+      },
+      {
+        "address": "0x6148e2b222affb59debffdb2857df62341a2a5bf8f8f3eeb65fcb33ba71b102",
+        "structure_id": "1903130073628673",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 2
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "40000000000",
+          "labor": "40000000000"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 14
+      },
+      {
+        "address": "0x61cc972224e57a20835d6655ea94e70259d91b3dd3d3805b359553fe9e6e75e",
+        "structure_id": "4574213184684033",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 16
+      },
+      {
+        "address": "0x637a7453f7722a54fb653c138646753e481e38c6191bfe0311d5297eb65d717",
+        "structure_id": "8873698786279425",
+        "has_wonder": false,
+        "campaign": null,
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 9
+      },
+      {
+        "address": "0x64c14402934c7810fe3aedf6850645573ccadd1e317d5756477492a3318c2d6",
+        "structure_id": "4734509954105345",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 16
+      },
+      {
+        "address": "0x65f0451a0beee76a9c05685db67794d07237d3717902f1296c9d268c2b39a1d",
+        "structure_id": "6809601928331265",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "48600000000",
+          "labor": "48600000000"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 15
+      },
+      {
+        "address": "0x6666856f9f6d283c9077e31f484719115dd8a95d199748f4437446111146801",
+        "structure_id": "1384117635645441",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 16
+      },
+      {
+        "address": "0x66b6ab1d615daa314292a93652d2879cbfdcab57f0d0dfd04e5158dbca017aa",
+        "structure_id": "2157911828594689",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "500000000000",
+          "labor": "400000000000"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 11
+      },
+      {
+        "address": "0x67b2f11d622e8541e26f77f913d0238190e69eda3774849eb237b08ee02144",
+        "structure_id": "1989317182357505",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 14
+      },
+      {
+        "address": "0x680b6712f2c6e15c495f7960264ff9b75b79089d57fc969775bffb233cce50f",
+        "structure_id": "1265494933897217",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 4
+      },
+      {
+        "address": "0x6823b5e607d4d519ac87357ba79d76ad02fe3907a40eb73b3d4be20f78305b",
+        "structure_id": "3824595362643969",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "1800000000",
+          "labor": "3600000000"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 12
+      },
+      {
+        "address": "0x68697da4df358254d7d7b7b5949d97a323ba673bc262c7fd37f68bdac72789b",
+        "structure_id": "3103152526065665",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 12
+      },
+      {
+        "address": "0x6b254ef1da1ede696513de267f429777008ff469eb59af045ca11bc32635e57",
+        "structure_id": "402520040013825",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 13
+      },
+      {
+        "address": "0x6bc5fd32102e9a0bdb5acb14ce75e6004e9c63ce03875fd9c492e5576db4366",
+        "structure_id": "3365222840532993",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 5
+      },
+      {
+        "address": "0x6ccea7a0af1adef686f6a1dd4c7073e6e4e4af82e59fe742c084baae68ceb71",
+        "structure_id": "6411754812735489",
+        "has_wonder": false,
+        "campaign": null,
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "41500000000",
+          "labor": "6000000000"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 1
+      },
+      {
+        "address": "0x6da8bba511b006f689683bca32a039f9878e659bff4a7de55897a12bb90030b",
+        "structure_id": "5180731286355969",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 7
+      },
+      {
+        "address": "0x6f8440f691288fa53512b92d53120a81d9086f039fa093de39a92dec97e6eae",
+        "structure_id": "6605118535368705",
+        "has_wonder": false,
+        "campaign": null,
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 9
+      },
+      {
+        "address": "0x70644be7034d078da292d82e1dab4004281b64e3a70528c3b698f1d1629b624",
+        "structure_id": "5009602609414145",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 8
+      },
+      {
+        "address": "0x7358744472d6e1ef5970ac7680ab55157a32535468edc2865635b92a4683160",
+        "structure_id": "1922259857965057",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 3
+      },
+      {
+        "address": "0x745add30dcc110595959fc16072e2d1f9ff23951248b7a8c825dd421746a434",
+        "structure_id": "3471192568627201",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 2
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "972600000000",
+          "labor": "561300000000"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 10
+      },
+      {
+        "address": "0x769c5ebfe2de1ec551aa8aa80da0e4843d52fd8b83f232b7c96d4891c4dcabb",
+        "structure_id": "3958559687573505",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 8
+      },
+      {
+        "address": "0x76c560fb8c9a123dc05e16e09d077667faf6c0857aeeb53ad597763577451a5",
+        "structure_id": "8300964897357825",
+        "has_wonder": false,
+        "campaign": null,
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 12
+      },
+      {
+        "address": "0x77a4c6e7461a3289ae49e9070e9f24670b328485b6be6629a4ee48ca9ba376d",
+        "structure_id": "2615154046926849",
+        "has_wonder": false,
+        "campaign": null,
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "885600000000",
+          "labor": "901100000000"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 4
+      },
+      {
+        "address": "0x784ee3d747953f9a8601f7659182104b15315b97b817aba44f1498b5ed6500e",
+        "structure_id": "5375903190220801",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 7
+      },
+      {
+        "address": "0x788ec6c93f731f5986227bc8f94200b20357d3e7724d6b189585362903700e4",
+        "structure_id": "8831728365862913",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "2100000000"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 2
+      },
+      {
+        "address": "0x7969de2134d04634e3d9095bfbaa15df7a5bb1bad64fb78250c91ca1e57b9b9",
+        "structure_id": "321559906484225",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 2
+      },
+      {
+        "address": "0x798b3b41e52a5eea7f718861085479c0c834b96402a213faf866059f69851eb",
+        "structure_id": "6993662751801345",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 14
+      },
+      {
+        "address": "0x7a1a11c7ecfd563424d3ffc4b01347b6924d373d3fe01c64296757eda64aef2",
+        "structure_id": "5216362335043585",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 1
+      },
+      {
+        "address": "0x7a239700ed0da1067a25ab57a72cdfe1665145f28e5a6dddc15b8571478c0db",
+        "structure_id": "1811406752055297",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 12
+      },
+      {
+        "address": "0x7aaa624c76cd78d9f0146471384f6332382ec3db2aab717b2a737882270f450",
+        "structure_id": "1023134224351233",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 15
+      },
+      {
+        "address": "0x7ae7d7bbdaf9ad10e0f475160ffa45d1a39c733dce9432b4744da8c60ae546e",
+        "structure_id": "5246749228662785",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "2700000000",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 3
+      },
+      {
+        "address": "0x7af207416b2f0bf85b5cb58673a42404686dee48fe6eb056da68f6e2d078290",
+        "structure_id": "105235288686593",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 2
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 1
+      },
+      {
+        "address": "0x7af6de790eb53498bf48b1f057fdf81102e791fa70467d9d531889d26a7511",
+        "structure_id": "722538053238785",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 9
+      },
+      {
+        "address": "0x7be9f85aa5368e38a623bf4ee8f5378f549d192118d3267863348866c14fdf5",
+        "structure_id": "4129722724253697",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 15
+      },
+      {
+        "address": "0x7cf33db3aafe6e0b5cf7dfe5633e491bf38ab50c89e75e8f1cd095e19772e49",
+        "structure_id": "6784918751281153",
+        "has_wonder": false,
+        "campaign": null,
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 15
+      },
+      {
+        "address": "0x7d0a28193b13a3688c4b10bd0691f40516f22d96e4fe39cb9ff802818bdaec6",
+        "structure_id": "2229732271718401",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 10
+      },
+      {
+        "address": "0x7d2bfe37426fef508eb5ae3ff3e05dff990d500a88635e10277fa36e2b347b3",
+        "structure_id": "3195008991625217",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "50000000000",
+          "labor": "100000000000"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 16
+      },
+      {
+        "address": "0x7d9672f0b97de326e69afbc5def21b191d85e73a2c6877653ba2d031fe0506e",
+        "structure_id": "4257064209612801",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 3
+      },
+      {
+        "address": "0x7ddba0110178d2b5e300225bc806308acf7dba3d0fc11bbd6fa9469d62f8a6c",
+        "structure_id": "2644913875320833",
+        "has_wonder": false,
+        "campaign": null,
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "500000000000",
+          "labor": "250000000000"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 16
+      },
+      {
+        "address": "0x7e1e4d2597a4540769ea26f4340ccd6f32c78093736cd5934e321d65d2cf9ae",
+        "structure_id": "1643885847642113",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 10
+      },
+      {
+        "address": "0x7e260fff2f222bb81f79d8958f6372dc5b6fccc7fa5bfbae760f363ec06cf3c",
+        "structure_id": "3362538485972993",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 8
+      },
+      {
+        "address": "0x7f4704dbb78541020578a96f4331aa6756ad0e55ebc49043f2ebc213f9a7ba0",
+        "structure_id": "2638686172741633",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "75300000000",
+          "labor": "178200000000"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 5
+      },
+      {
+        "address": "0x8cfb430465fa66db03b01649fc3630ca5395ad62aba8194c88c6ef29c9627d",
+        "structure_id": "230957571375105",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "350000000000",
+          "labor": "200000000000"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 7
+      },
+      {
+        "address": "0x97e35461f3ded76024d48d4ea306b7f078315940254a37024c3a9154c6f1d6",
+        "structure_id": "8727403610243073",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 8
+      },
+      {
+        "address": "0x9e11581283f60b18b6ff94a0eff94854c057ce63dcccc0445065fa38937f84",
+        "structure_id": "4757002697834497",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 8
+      },
+      {
+        "address": "0x9faf4dc2b108fd1436cd815b08bcfd66e52e7c97ebed6c9761a976c85a9afd",
+        "structure_id": "7802628431937537",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 2
+      },
+      {
+        "address": "0xb570330522b07f51be785bb597e4a429c82de4144c450f035ffd660c2fa09a",
+        "structure_id": "7637864896528385",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 1
+      },
+      {
+        "address": "0xb928dd46f165426d9fa40f4aadb25d6bbb7d27fb8b3e89f984cb3bc1552e98",
+        "structure_id": "5598275121971201",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "0",
+          "labor": "0"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 3
+      },
+      {
+        "address": "0xcf3cafeb66364502a4d9291de680aea266fae363ebf6593c9aadd1e18c7632",
+        "structure_id": "7152310253780993",
+        "has_wonder": false,
+        "campaign": {
+          "campaign_id": "121371724857100121928643126",
+          "tier": 1
+        },
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "430800000000",
+          "labor": "266300000000"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 16
+      },
+      {
+        "address": "0xfbeffade5188d22339e82cbb48faaaccae03c912b8510ffb75397869e22d82",
+        "structure_id": "3920566406873089",
+        "has_wonder": false,
+        "campaign": null,
+        "rank": 70,
+        "sites_cleared": {
+          "total": 0,
+          "camps": 0,
+          "rifts": 0,
+          "ruins": 0,
+          "beasts": 0
+        },
+        "chests_earned": 0,
+        "rewards": {
+          "lords": "0",
+          "essence": "141900000000",
+          "labor": "123000000000"
+        },
+        "deepest_depth": 0,
+        "level": 0,
+        "order": 6
+      }
+    ],
+    "prize": {
+      "pool": "90000",
+      "top_n": 3,
+      "count": 3,
+      "awards": [
+        {
+          "rank": 1,
+          "address": "0x45d6bd2bb5415e3fca5edd5dc00035510d165af218a92ed4cc44e58126d48d7",
+          "lords": "45000"
+        },
+        {
+          "rank": 2,
+          "address": "0x4ce7445b0d51d10c5cedaab6de4f9a15507256101e800f848a56d65d842b181",
+          "lords": "30000"
+        },
+        {
+          "rank": 3,
+          "address": "0x2a6fcf21788eb5fcf9941cdb8e0b1568a2e328384e9c0e194a1883998d79111",
+          "lords": "15000"
+        }
+      ]
+    }
+  }
+}

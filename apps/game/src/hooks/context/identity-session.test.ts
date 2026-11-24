@@ -7,10 +7,19 @@ import { signOutIdentitySession, useIdentitySessionStore } from "./identity-sess
 
 beforeEach(() => vi.resetAllMocks());
 
+it("starts anonymous and unsettled so pages draw signed-out immediately", () => {
+  expect(useIdentitySessionStore.getState()).toMatchObject({
+    status: "anonymous",
+    session: null,
+    settled: false,
+    error: null,
+  });
+});
+
 it("sign-out clears the signer even without a mounted gameplay sync", async () => {
   useAccountStore.setState({ account: { address: "0xabc" } as never, owner: "0x1" });
   await signOutIdentitySession();
-  expect(useIdentitySessionStore.getState().status).toBe("anonymous");
+  expect(useIdentitySessionStore.getState()).toMatchObject({ status: "anonymous", settled: true });
   expect(useAccountStore.getState()).toMatchObject({ account: null, owner: null });
 });
 
@@ -19,40 +28,50 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-it("keeps a failed initial read unknown and retries without another subscriber", async () => {
+it("keeps a failed initial read unsettled and retries without another subscriber", async () => {
   vi.useFakeTimers();
-  useIdentitySessionStore.setState({ session: null, status: "loading", error: null });
+  useIdentitySessionStore.setState({ session: null, status: "anonymous", settled: false, error: null });
   const session = { user: { realmsId: "0x123" } };
   client.getSession.mockRejectedValueOnce(new Error("503")).mockResolvedValueOnce(session);
   await useIdentitySessionStore.getState().refresh();
-  expect(useIdentitySessionStore.getState().status).toBe("loading");
+  expect(useIdentitySessionStore.getState()).toMatchObject({ status: "anonymous", settled: false });
   expect(useIdentitySessionStore.getState().error).toBeInstanceOf(Error);
   await vi.advanceTimersByTimeAsync(5_000);
-  expect(useIdentitySessionStore.getState()).toMatchObject({ status: "signed-in", session, error: null });
+  expect(useIdentitySessionStore.getState()).toMatchObject({
+    status: "signed-in",
+    settled: true,
+    session,
+    error: null,
+  });
 });
 
 it("exposes a TimeoutError immediately, backs off retries without clearing error, and recovers when the service answers", async () => {
   vi.useFakeTimers();
-  useIdentitySessionStore.setState({ session: null, status: "loading", error: null });
+  useIdentitySessionStore.setState({ session: null, status: "anonymous", settled: false, error: null });
   const timeout = Object.assign(new Error("timed out"), {
     cause: new DOMException("The app's service did not answer in time", "TimeoutError"),
   });
   client.getSession.mockRejectedValueOnce(timeout).mockRejectedValueOnce(timeout).mockResolvedValueOnce(null);
   await useIdentitySessionStore.getState().refresh();
-  expect(useIdentitySessionStore.getState()).toMatchObject({ status: "loading", error: timeout });
+  expect(useIdentitySessionStore.getState()).toMatchObject({ status: "anonymous", settled: false, error: timeout });
   await vi.advanceTimersByTimeAsync(5_000);
   expect(client.getSession).toHaveBeenCalledTimes(2);
-  expect(useIdentitySessionStore.getState()).toMatchObject({ status: "loading", error: timeout });
+  expect(useIdentitySessionStore.getState()).toMatchObject({ status: "anonymous", settled: false, error: timeout });
   await vi.advanceTimersByTimeAsync(9_999);
   expect(client.getSession).toHaveBeenCalledTimes(2);
   await vi.advanceTimersByTimeAsync(1);
   expect(client.getSession).toHaveBeenCalledTimes(3);
-  expect(useIdentitySessionStore.getState()).toMatchObject({ status: "anonymous", session: null, error: null });
+  expect(useIdentitySessionStore.getState()).toMatchObject({
+    status: "anonymous",
+    settled: true,
+    session: null,
+    error: null,
+  });
 });
 
 it("cancels pending backoff and clears error on an explicit refresh", async () => {
   vi.useFakeTimers();
-  useIdentitySessionStore.setState({ session: null, status: "loading", error: null });
+  useIdentitySessionStore.setState({ session: null, status: "anonymous", settled: false, error: null });
   const session = { user: { realmsId: "0x456" } };
   let finish!: (value: unknown) => void;
   client.getSession.mockRejectedValueOnce(new Error("503")).mockReturnValueOnce(

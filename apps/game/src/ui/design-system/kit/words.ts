@@ -1577,6 +1577,8 @@ export const DOORWAY_WORDS = {
   entering: "Entering the game",
   enteringRealm: (name: string) => `Entering ${name}`,
   signInToPlay: "Sign in to play.",
+  notStarted: "This game has not started yet.",
+  backToPlay: "Back to Play",
   ended: "This game has ended.",
   gameRefused: "This game ran on a different version of the game and cannot be opened here.",
   gameOnOlderNumbers:
@@ -1593,6 +1595,8 @@ export const DOORWAY_WORDS = {
 export const SEASON_WORDS = {
   views: "Season views",
   aspectRoster: (members: number) => `Your Aspect's top players · ${formatExact(members)} members`,
+  aspectTopPlayers: (aspect: string, members: number) => `${aspect}'s top players · ${formatExact(members)} members`,
+  aspectRosterEmpty: (aspect: string) => `No realms in ${aspect} yet.`,
   sitesCleared: "sites cleared",
   share: "Share",
   of: "of",

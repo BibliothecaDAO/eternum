@@ -21,6 +21,7 @@ export type DoorwayAudience = "player" | "spectator";
  */
 type DoorwayBlocker =
   | { kind: "sign-in" }
+  | { kind: "waiting" }
   | { kind: "retry"; line: string; openRealm?: true }
   | { kind: "refused"; line: string }
   | { kind: "devices" };
@@ -48,6 +49,7 @@ interface EntrySide {
   accountError?: string | null;
   /** Founding the realm failed; its detail is in the console. */
   foundingFailed?: boolean;
+  ended?: boolean;
 }
 
 /** The play route's side: the world map booting, then the hand-off to play. */
@@ -65,6 +67,7 @@ interface BootSide {
   ended?: boolean;
   /** The game ran on a release this client cannot read, which no retry changes. */
   refused?: GameRefusal;
+  waiting?: boolean;
   /** The share of the opening view's model loads and compiles done (model-preparation), while the map waits on them. */
   modelShare?: number;
 }
@@ -136,14 +139,15 @@ const place = (step: DoorwayStep, overrides: Partial<Place> = {}): Place => ({
   ...overrides,
 });
 
-const entryPlace = ({ phase, signedIn, accountError, foundingFailed = false }: EntrySide): Place => {
+const entryPlace = ({ phase, signedIn, accountError, foundingFailed = false, ended = false }: EntrySide): Place => {
+  if (ended) return place("account", { done: true, spectating: "results" });
   switch (phase) {
     case "loading":
       return place("account");
     case "account":
       return place("account", { blocker: accountError ? accountBlocker(accountError) : signedIn ? null : SIGN_IN });
     case "settlement-waiting":
-      return place("realm");
+      return place("realm", { blocker: { kind: "waiting" } });
     case "settlement":
       return place("realm", { blocker: foundingFailed ? WORLD_DID_NOT_ANSWER : null });
     case "ready":
@@ -161,9 +165,11 @@ const bootPlace = ({
   realmCanOpen = false,
   ended = false,
   refused,
+  waiting = false,
 }: BootSide): Place => {
   if (ended) return place("account", { done: true, spectating: "results" });
   if (refused) return place("map", { blocker: { kind: "refused", line: REFUSAL_LINES[refused] } });
+  if (waiting) return place("account", { blocker: { kind: "waiting" } });
   switch (phase) {
     case "normalize_route":
     case "await_account":

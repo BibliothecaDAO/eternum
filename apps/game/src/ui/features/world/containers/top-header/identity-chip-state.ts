@@ -37,7 +37,6 @@ export const resolveIdentityChipState = (input: IdentityChipInput): IdentityChip
     return identity.name === null ? { kind: "unnamed" } : namedState(input, input.playerName ?? identity.name);
   }
   if (input.isExplicitSpectateSession) return { kind: "spectating", name: null, canPlay: false };
-  if (identity.status === "loading") return { kind: "connecting", name: null, error: null };
   return { kind: "signed-out" };
 };
 

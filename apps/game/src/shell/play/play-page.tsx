@@ -30,7 +30,8 @@ import { dayQuestFace } from "@/ui/features/frontier/day/day-quest-face";
 import { PageFrame } from "../frame/page-frame";
 import { type DirectoryGame, gameRefOf } from "../herald";
 import { Loading } from "../loading";
-import { aspectRaceStandings, directoryDay, seasonEnded, seasonPlayerAspect, seasonRealm } from "../season";
+import { aspectRaceStandings, directoryDay, seasonEnded, seasonPlayerAspect } from "../season";
+import { hasSeasonRealm } from "../season-pick";
 import { resultsHref } from "../season-tab/results-link";
 import { useShareTally } from "../share/own-shares";
 import { useRequestSignIn } from "../sign-in/connect";
@@ -55,13 +56,20 @@ export const PlayPage = () => {
   const firstVisit = !facts.signedIn && facts.board?.lead?.verb === "play";
   const leadFrontier = facts.board?.lead?.game ?? null;
   const leadRace = leadFrontier?.aspect_race ?? null;
-  const hasActiveRealm = leadFrontier !== null && leadFrontier.status === "Live" && seasonRealm(leadFrontier) !== null;
+  const hasActiveRealm = leadFrontier !== null && leadFrontier.status === "Live" && hasSeasonRealm(leadFrontier);
   const playerAspect = facts.signedIn ? seasonPlayerAspect(leadFrontier) : null;
   return (
     <PageFrame painting={firstVisit ? "dark-plains" : "brooding-plains"} stage={firstVisit} offersInstall>
       <div data-play-page className="play-grid">
         <section className="flex min-w-0 flex-col gap-3">
           <LeadOrState facts={facts} />
+          {facts.identityFailure && (
+            <ServiceFailure
+              service="identity"
+              error={facts.identityFailure.error}
+              retry={facts.identityFailure.retry}
+            />
+          )}
           {facts.board && <SourceGaps gaps={facts.gaps} />}
         </section>
         {facts.board &&
@@ -104,12 +112,6 @@ const isPreseason = (
 } => facts.opening !== null && facts.board !== undefined && facts.board.lead === null && facts.gaps.length === 0;
 
 const LeadOrState = ({ facts }: { facts: PlayFacts }) => {
-  if (facts.identity.status === "loading" && facts.identity.error !== null)
-    return (
-      <QuietLead title={WORDS.play}>
-        <ServiceFailure service="identity" error={facts.identity.error} retry={facts.identity.retry} />
-      </QuietLead>
-    );
   if (facts.directory.isError)
     return (
       <QuietLead title={WORDS.play}>

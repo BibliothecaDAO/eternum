@@ -25,7 +25,7 @@ const failed = <T,>(): Read<T> => ({
 
 const reads = vi.hoisted(() => ({
   signedIn: true,
-  identity: null as null | { status: string; session: unknown; error?: unknown; retry?: () => void },
+  identity: null as null | { status: string; session: unknown; settled?: boolean; error?: unknown; retry?: () => void },
   directory: null as unknown as Read<{ games: DirectoryGame[] }>,
   calendar: {
     data: { phases: [] },
@@ -83,8 +83,8 @@ vi.mock("@/hooks/context/identity-session", async (importOriginal) => ({
   useIdentitySession: () =>
     reads.identity ??
     (reads.signedIn
-      ? { status: "signed-in", session: { user: { id: "u", realmsId: "0x7" } } }
-      : { status: "signed-out", session: null }),
+      ? { status: "signed-in", session: { user: { id: "u", realmsId: "0x7" } }, settled: true, error: null }
+      : { status: "anonymous", session: null, settled: true, error: null }),
 }));
 vi.mock("../herald", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../herald")>()),
@@ -132,6 +132,8 @@ const game = (over: Partial<DirectoryGame>): DirectoryGame =>
       held_realm_id: null,
       has_home_source: false,
       taken_realm_ids: [],
+      fragments: null,
+      ancient_seal: false,
       structures: [],
     },
     ...over,
@@ -143,6 +145,8 @@ const ownSeason = game({
     held_realm_id: null,
     has_home_source: false,
     taken_realm_ids: [],
+    fragments: null,
+    ancient_seal: false,
     structures: [REALM],
   },
 } as Partial<DirectoryGame>);
@@ -512,7 +516,9 @@ describe("the season's countdown, while its first day is ahead and Play has no g
     expect(pending.text()).not.toContain("rehearsal-4x");
     expect(pending.text()).not.toContain("live");
     expect(pending.text()).toContain("Rehearsal opens soon.");
-    expect(pending.container.querySelector('button[data-kind="primary"]')?.textContent).toBe("Play Rehearsal");
+    const pendingBtn = pending.container.querySelector<HTMLButtonElement>('button[data-kind="primary"]')!;
+    expect(pendingBtn.textContent).toBe("Play Rehearsal");
+    expect(pendingBtn.disabled).toBe(true);
     await cleanup?.();
 
     const liveRehearsal = { ...registrationRehearsal, status: "Live" as const };
@@ -842,19 +848,233 @@ it("renders a real-speed Final testnet card without a speed chip and with Play/R
   expect(resumeBtn.textContent).toBe("Resume Final testnet");
 });
 
-it("shows Sign-in did not answer with Try again instead of a stuck skeleton when the initial identity read fails", async () => {
+it("draws the signed-out Play board immediately while identity is pending or failed, shows retry on failure, and upgrades once signed in", async () => {
+  const openSeason = game({
+    game_id: 1,
+    name: "frontier-1",
+    season_number: 1,
+    aspect_race: { finish_height: 10_000, season_days: 50, heights: { 1: 400, 2: 200, 3: 0, 4: 0 } },
+    player_state: null,
+  });
   const retry = vi.fn();
   reads.identity = {
-    status: "loading",
+    status: "anonymous",
     session: null,
+    settled: false,
+    error: null,
+    retry,
+  };
+  reads.directory = answered({ games: [openSeason] });
+  reads.history = answered({ games: [], next: null, failures: [] });
+  const pending = await mount();
+  expect(pending.text()).toContain("Play free");
+  expect(pending.text()).not.toContain("Sign-in did not answer.");
+  expect(pending.container.querySelector("[data-play-invite]")?.textContent).toContain("Sign in");
+  await cleanup?.();
+
+  reads.identity = {
+    status: "anonymous",
+    session: null,
+    settled: false,
     error: new DOMException("The app's service did not answer in time", "TimeoutError"),
     retry,
   };
-  reads.directory = { data: undefined, isSuccess: false, isError: false, error: null, refetch: vi.fn() };
-  reads.history = answered({ games: [], next: null, failures: [] });
-  const page = await mount();
-  expect(page.text()).toContain("Sign-in did not answer.");
-  expect(page.container.querySelector('button[data-kind="primary"]')).toBeNull();
-  await press(page.container, "Try again");
+  const errored = await mount();
+  expect(errored.text()).toContain("Play free");
+  expect(errored.text()).toContain("Sign-in did not answer.");
+  await press(errored.container, "Try again");
   expect(retry).toHaveBeenCalledTimes(1);
+  await cleanup?.();
+
+  reads.identity = {
+    status: "signed-in",
+    session: { user: { id: "u", realmsId: "0x7" } },
+    settled: true,
+    error: null,
+    retry,
+  };
+  reads.directory = answered({
+    games: [{ ...openSeason, player_state: ownSeason.player_state }],
+  });
+  const upgraded = await mount();
+  expect(upgraded.text()).toContain("Enter Realm");
+  expect(upgraded.text()).not.toContain("Play free");
+  expect(upgraded.text()).not.toContain("Sign-in did not answer.");
+});
+
+it("hides TodayQuestPanel for a Live lead season when the player has no realm, and shows it once they have one", async () => {
+  const day = { day_index: 3, day_ends_at: Math.floor(Date.now() / 1000) + 3_600 };
+  const quest = { quest_id: 2, progress: 0, target: 1, labor: 1_500 };
+
+  reads.directory = answered({
+    games: [
+      game({
+        ...day,
+        player_state: {
+          ...game({}).player_state!,
+          today_quest: quest,
+        },
+      }),
+    ],
+  });
+  reads.history = answered({ games: [], next: null, failures: [] });
+  const withoutRealm = await mount();
+  expect(withoutRealm.container.querySelector("[data-play-today]")).toBeNull();
+  expect(withoutRealm.container.querySelector(".play-side")).toBeNull();
+  expect(withoutRealm.text()).not.toContain("Today");
+  await cleanup?.();
+
+  reads.directory = answered({
+    games: [game({ ...day, player_state: null })],
+  });
+  const nullPlayerState = await mount();
+  expect(nullPlayerState.container.querySelector("[data-play-today]")).toBeNull();
+  expect(nullPlayerState.container.querySelector(".play-side")).toBeNull();
+  await cleanup?.();
+
+  reads.directory = answered({
+    games: [
+      game({
+        ...ownSeason,
+        ...day,
+        player_state: {
+          ...ownSeason.player_state!,
+          today_quest: quest,
+        },
+      }),
+    ],
+  });
+  const withRealm = await mount();
+  expect(withRealm.container.querySelector("[data-play-today]")?.textContent).toContain(
+    "Clear rifts · 0 of 1 · +1,500 Labor",
+  );
+  expect(withRealm.text()).toContain("Today");
+});
+
+it("disables every game-entry button on Play and Countdown while directory status is not Live, regardless of client clock", async () => {
+  const now = Math.floor(Date.now() / 1000);
+  const seasonStarts = now + 10 * DAY;
+  const calendar: SeasonCalendar = {
+    phases: [
+      {
+        phase: "frontier",
+        startsAt: new Date(seasonStarts * 1000).toISOString(),
+        endsAt: new Date((seasonStarts + 50 * DAY) * 1000).toISOString(),
+      },
+    ],
+  };
+  const futureClock = {
+    start_settling_at: now + 3 * HOUR,
+    start_main_at: now + 3 * HOUR,
+    scheduled_end_at: 4_000_000_000,
+    end_at: 4_000_000_000,
+  };
+  const pastClock = {
+    start_settling_at: now - 60,
+    start_main_at: now - 60,
+    scheduled_end_at: 4_000_000_000,
+    end_at: 4_000_000_000,
+  };
+
+  reads.signedIn = false;
+  reads.calendar = answered(calendar);
+  reads.history = answered({ games: [], next: null, failures: [] });
+  reads.directory = answered({
+    games: [
+      game({
+        game_id: 4,
+        name: "testnet-1795479180",
+        status: "Registration",
+        clock_scale: 1,
+        clock: pastClock,
+      }),
+    ],
+  });
+  const countdownLocked = await mount();
+  const calloutBtn = countdownLocked.container.querySelector<HTMLButtonElement>("[data-preseason-testnet] button")!;
+  expect(calloutBtn.textContent).toBe("Play Final testnet");
+  expect(calloutBtn.disabled).toBe(true);
+  expect(countdownLocked.container.querySelector("[data-preseason-testnet]")?.textContent).toContain("Starts");
+  await act(async () => calloutBtn.click());
+  expect(gameEntryPreload.primeGameEntry).not.toHaveBeenCalled();
+  expect(useConnectStore.getState().request).toBeNull();
+  expect(countdownLocked.container.querySelector("[data-entered-game]")).toBeNull();
+  await cleanup?.();
+
+  reads.signedIn = true;
+  reads.calendar = answered({ phases: [] });
+  reads.directory = answered({
+    games: [
+      game({
+        game_id: 1,
+        name: "frontier-1",
+        status: "Created",
+        clock: futureClock,
+      }),
+      game({
+        game_id: 5,
+        name: "rehearsal-4x",
+        status: "Registration",
+        clock_scale: 4,
+        clock: futureClock,
+      }),
+    ],
+  });
+  const playLocked = await mount();
+  const heroBtn = playLocked.container.querySelector<HTMLButtonElement>(
+    '[data-play-item="0xa:1"] [data-play-verb="play"]',
+  )!;
+  const rehearsalBtn = playLocked.container.querySelector<HTMLButtonElement>(
+    '[data-play-item="0xa:5"] [data-play-verb="play"]',
+  )!;
+  expect(heroBtn.disabled).toBe(true);
+  expect(rehearsalBtn.disabled).toBe(true);
+  expect(playLocked.container.querySelector('[data-play-item="0xa:1"]')?.textContent).toContain("Starts");
+  expect(playLocked.container.querySelector('[data-play-item="0xa:5"]')?.textContent).toContain("Starts");
+  await act(async () => heroBtn.click());
+  await act(async () => rehearsalBtn.click());
+  expect(gameEntryPreload.primeGameEntry).not.toHaveBeenCalled();
+  expect(playLocked.container.querySelector("[data-entered-game]")).toBeNull();
+  await cleanup?.();
+
+  reads.signedIn = false;
+  reads.directory = answered({
+    games: [
+      game({
+        game_id: 1,
+        name: "frontier-1",
+        status: "Registration",
+        clock: futureClock,
+      }),
+    ],
+  });
+  const signedOutHeroLocked = await mount();
+  const signedOutHeroBtn = signedOutHeroLocked.container.querySelector<HTMLButtonElement>(
+    '[data-play-item="0xa:1"] [data-play-verb="play"]',
+  )!;
+  expect(signedOutHeroBtn.disabled).toBe(true);
+  expect(signedOutHeroLocked.container.querySelector('[data-play-item="0xa:1"]')?.textContent).toContain("Starts");
+  await act(async () => signedOutHeroBtn.click());
+  expect(useConnectStore.getState().request).toBeNull();
+  await cleanup?.();
+
+  reads.signedIn = true;
+  reads.directory = answered({
+    games: [
+      game({
+        game_id: 1,
+        name: "frontier-1",
+        status: "Live",
+        clock: futureClock,
+      }),
+    ],
+  });
+  const playLive = await mount();
+  const liveHeroBtn = playLive.container.querySelector<HTMLButtonElement>(
+    '[data-play-item="0xa:1"] [data-play-verb="play"]',
+  )!;
+  expect(liveHeroBtn.disabled).toBe(false);
+  await act(async () => liveHeroBtn.click());
+  expect(gameEntryPreload.primeGameEntry).toHaveBeenCalledTimes(1);
+  expect(playLive.container.querySelector("[data-entered-game]")).not.toBeNull();
 });

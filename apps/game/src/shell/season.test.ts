@@ -4,7 +4,8 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import type { DirectoryGame } from "./herald";
-import { chooseSeason, directoryDay, endedSeasons, isAccelerated, isRehearsal, seasonTitle } from "./season";
+import { directoryDay, endedSeasons, isAccelerated, seasonTitle } from "./season";
+import { chooseSeason, hasSeasonRealm, isRehearsal, seasonRealm } from "./season-pick";
 import { ARCHIVED_SEASONS } from "./season-tab/archive/archive";
 
 const season = (gameId: number, startMainAt: number, ownRealm: boolean): DirectoryGame => ({
@@ -33,6 +34,8 @@ const season = (gameId: number, startMainAt: number, ownRealm: boolean): Directo
     held_realm_id: null,
     has_home_source: false,
     taken_realm_ids: [],
+    fragments: null,
+    ancient_seal: false,
     structures: ownRealm
       ? [{ entity_id: 1, category: 1, level: 1, realm_id: 7, coord_x: 0, coord_y: 0, resources_packed: "0" }]
       : [],
@@ -50,6 +53,26 @@ describe("the season a screen shows", () => {
   it("is the latest live season for nobody, then the lowest game id at the same start", () => {
     expect(chooseSeason([season(4, 100, false), season(3, 100, false), season(5, 50, false)], false)?.game_id).toBe(3);
     expect(chooseSeason([season(9, 100, true), season(8, 200, false)], false)?.game_id).toBe(8);
+  });
+
+  it("returns null, never undefined, and reports false from hasSeasonRealm when a game has no player realm", () => {
+    const nonRealm = {
+      player_state: {
+        ...season(1, 100, false).player_state!,
+        structures: [
+          { entity_id: 2, category: 5, level: 1, realm_id: 0, coord_x: 0, coord_y: 0, resources_packed: "0" },
+        ],
+      },
+    };
+    expect(seasonRealm({ player_state: null })).toBeNull();
+    expect(seasonRealm(season(1, 100, false))).toBeNull();
+    expect(seasonRealm(nonRealm)).toBeNull();
+    expect(seasonRealm(season(1, 100, true))?.realm_id).toBe(7);
+
+    expect(hasSeasonRealm({ player_state: null })).toBe(false);
+    expect(hasSeasonRealm(season(1, 100, false))).toBe(false);
+    expect(hasSeasonRealm(nonRealm)).toBe(false);
+    expect(hasSeasonRealm(season(1, 100, true))).toBe(true);
   });
 });
 

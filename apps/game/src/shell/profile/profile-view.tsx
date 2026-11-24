@@ -37,13 +37,8 @@ import { Loading } from "../loading";
 import { ageOf } from "../play/ages";
 import { useOrderIntent } from "../play/order-intent";
 import { CopySeasonInvite, SeasonInviteAlerts, useSeasonInvite } from "../play/season-invite";
-import {
-  chooseSeason,
-  questBonusPercentOf,
-  realmQuestBonus,
-  SEASON_SPENDS_FRAGMENTS,
-  seasonPlayerHome,
-} from "../season";
+import { questBonusPercentOf, realmQuestBonus, SEASON_SPENDS_FRAGMENTS, seasonPlayerHome } from "../season";
+import { chooseSeason } from "../season-pick";
 import { HistoryRow } from "../season-tab/history-row";
 import { FRAGMENTS_PATH } from "../shop/fragments-route";
 import { useNowSeconds } from "../use-now";

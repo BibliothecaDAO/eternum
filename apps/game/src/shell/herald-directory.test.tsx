@@ -111,15 +111,30 @@ it("reads a signed-in player's directory only once their account address is know
   }
 });
 
-it("waits for the session before any read, then reads the anonymous directory for nobody", async () => {
-  useIdentitySessionStore.setState({ status: "loading", session: null });
+it("reads the anonymous directory immediately while session is unsettled, then upgrades to the player directory after guardian answers", async () => {
+  useIdentitySessionStore.setState({ status: "anonymous", session: null, settled: false });
   const unmount = await mount();
   try {
-    await act(async () => {});
-    expect(requests.filter((url) => url.startsWith("/api/directory"))).toEqual([]);
-    await act(async () => useIdentitySessionStore.setState({ status: "anonymous", session: null }));
     await settled();
     expect(requests.filter((url) => url.startsWith("/api/directory"))).toEqual(["/api/directory"]);
+
+    await act(async () =>
+      useIdentitySessionStore.getState().applySession({
+        session: { id: "s", expiresAt: "2099-01-01T00:00:00.000Z", userId: "u" },
+        user: { id: "u", realmsId: REALMS_ID, name: "NightTester", email: "a@example.invalid" },
+      }),
+    );
+    await act(async () => {});
+    expect(requests.filter((url) => url.startsWith("/api/directory"))).toEqual(["/api/directory"]);
+    expect(seen.pending.at(-1)).toBe(true);
+
+    await act(async () => guardianAnswer.release());
+    await settled();
+    expect(requests.filter((url) => url.startsWith("/api/directory"))).toEqual([
+      "/api/directory",
+      `/api/directory?player=${PLAYER}`,
+    ]);
+    expect(seen.pending.at(-1)).toBe(false);
   } finally {
     await unmount();
   }
