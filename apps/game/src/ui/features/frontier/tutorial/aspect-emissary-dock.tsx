@@ -50,6 +50,8 @@ export function AspectEmissaryDock({
       : undefined;
   const completed = status === "completed" && completedLine !== undefined;
   const askingSkip = !completed && onSkipAll !== undefined && skipAskedOn === moment;
+  const says = (lessonLine: string | undefined) =>
+    completed ? completedLine : askingSkip ? OPENING_WORDS.skipFinal : lessonLine;
   const title = OPENING_WORDS.titles[moment];
   const form = dockForm({
     phone,
@@ -115,7 +117,7 @@ export function AspectEmissaryDock({
           <span className="emissary-dock__strip-text">
             <span className="emissary-dock__strip-title">{title}</span>
             <span className="emissary-dock__strip-line">
-              {completed ? completedLine : askingSkip ? OPENING_WORDS.skipFinal : "asks" in spec ? spec.asks.line(rules) : null}
+              {says("asks" in spec ? spec.asks.line(rules) : undefined)}
             </span>
           </span>
           <span className="emissary-dock__controls">
@@ -161,9 +163,7 @@ export function AspectEmissaryDock({
             </div>
 
             <p className="emissary-dock__speech">
-              <span>
-                {completed ? completedLine : askingSkip ? OPENING_WORDS.skipFinal : OPENING_WORDS.lines[moment](rules)}
-              </span>
+              <span>{says(OPENING_WORDS.lines[moment](rules))}</span>
               {!completed && !askingSkip && (
                 <span className="emissary-dock__action">
                   <Icon name={spec.icon} size={15} />
