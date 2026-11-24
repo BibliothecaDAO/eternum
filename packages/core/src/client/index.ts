@@ -45,6 +45,7 @@ export {
 } from "./views/deep-sites";
 export {
   compareAspectMembers,
+  gloryAmount,
   raceFinishHeight,
   raceStage,
   raceStageHeight,

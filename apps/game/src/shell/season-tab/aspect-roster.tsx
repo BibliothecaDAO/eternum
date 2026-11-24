@@ -1,5 +1,6 @@
+import { gloryAmount } from "@bibliothecadao/eternum/game-client";
 import type { HeraldAspectRosterMember } from "@bibliothecadao/eternum/game-sync";
-import { formatAmount, RESOURCE_PRECISION, type AspectId } from "@bibliothecadao/types";
+import { formatAmount, type AspectId } from "@bibliothecadao/types";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { AppBoard, type AppBoardEntry, AppRank } from "@/ui/design-system/kit/app-elements";
@@ -45,7 +46,7 @@ const rosterEntry = (member: HeraldAspectRosterMember, own: boolean, onClick: ()
   figures: [
     {
       icon: "victory",
-      value: formatAmount(Number(BigInt(member.glory) / BigInt(RESOURCE_PRECISION))),
+      value: formatAmount(gloryAmount(member.glory)),
       label: ASPECT_PAGE_WORDS.glory,
     },
   ],
