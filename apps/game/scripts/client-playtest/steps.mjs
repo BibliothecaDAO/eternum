@@ -7192,9 +7192,10 @@ export const STEP_SETS = {
             () =>
               browser.read(`JSON.stringify({
                 open: Boolean(document.querySelector('[aria-label="${target}"]:not(button)')),
-                tiles: [...document.querySelectorAll('.menu-place-tile')].map((button) => button.getAttribute('aria-label')),
+                rows: [...document.querySelectorAll('section[aria-label="Menu"] .menu-nav [aria-label]')].map((row) => row.getAttribute('aria-label')),
+                places: [...document.querySelectorAll('nav[aria-label="Places"] button')].map((button) => button.getAttribute('aria-label')),
               })`),
-            (state) => state.open && (onADesktop() || state.tiles.length === 3),
+            (state) => state.open && (onADesktop() || state.rows.length > 0),
             SHEET_WAIT_MS,
           );
           return { ...ready, target, shot: extraScreenshot("menu") };
@@ -7202,9 +7203,10 @@ export const STEP_SETS = {
         verify: ({ played }) =>
           played.open &&
           (onADesktop() ||
-            (played.tiles.includes(HUD_WORDS.research) &&
-              played.tiles.includes(HUD_WORDS.feed) &&
-              played.tiles.includes(HUD_WORDS.chat)))
+            (played.rows.includes(HUD_WORDS.feed) &&
+              played.rows.includes(HUD_WORDS.settings) &&
+              played.places.includes(HUD_WORDS.research) &&
+              played.places.includes(HUD_WORDS.chat)))
             ? completed(played)
             : failed("Menu or Settings must open from its control", played),
       },
