@@ -29,6 +29,7 @@ import { ArmyLostSheet } from "./army/army-lost";
 import { useArmyPanelOpens, usePickArmy } from "./army/army-opens";
 import { FrontierArmy } from "./army/frontier-army";
 import { FrontierOathPick } from "./army/oath-pick";
+import { FightBanner } from "./sites/fight-banner";
 import { useSelectionCard } from "./frontier-selection-sheet";
 import { useRealmStores } from "./realm-stores";
 import { FrontierSurfaces } from "./frontier-surfaces";
@@ -373,6 +374,7 @@ const FrontierHudBody = ({
       {realm && <DayDone rules={rules} realm={realm} visiting={Boolean(visit)} />}
       <BuildingsInFlight />
       <FrontierOathPick realm={realm} />
+      <FightBanner />
     </>
   );
 

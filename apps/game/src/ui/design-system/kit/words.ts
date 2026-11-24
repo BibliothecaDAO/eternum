@@ -771,6 +771,11 @@ export const FIGHT_WORDS = {
  * What an attack costs a side, under its bar (a player: "# of troops lost, % lost/remaining"; owner, 3 November 2026:
  * "A probably good enough"): "−601 · 76% lost", a range where the dice decide it ("−994–1,100 · 20–22% lost").
  */
+/** A clear's banner over the map: the word, and the site it cleared. */
+export const FIGHT_RESULT = {
+  victory: "Victory",
+  cleared: (site: string) => `${site} cleared`,
+} as const;
 export const fightLost = (lost: string, share: string) => `−${lost} · ${share}% lost`;
 export const NONE_LOST = "None lost";
 
