@@ -5,16 +5,17 @@ import type { OpeningRules } from "@/ui/design-system/kit/words";
 export interface OpeningContext {
   readonly hasRealm: boolean;
   readonly hasBarracks: boolean;
-  readonly barracksCount: number;
   readonly troopsAtHome: number;
+  readonly fullArmy: number;
   readonly deployedArmies: number;
   readonly hasExplored: boolean;
-  readonly exploredTiles: number;
   readonly hasOpenOathPick: boolean;
   readonly hasSwornOath: boolean;
   readonly hasEssence: boolean;
   readonly canResearch: boolean;
   readonly hasResearched: boolean;
+  readonly questRunning: boolean;
+  readonly questProgressed: boolean;
   readonly dailyQuestClaimable: boolean;
   readonly dailyQuestClaimed: boolean;
   readonly hasWellLore: boolean;
@@ -26,6 +27,7 @@ export interface OpeningContext {
   readonly hasBrokenBane: boolean;
   readonly dayEndingSoon: boolean;
   readonly hyperstructureAdvanced: boolean;
+  readonly hasAspectRace: boolean;
   readonly fragmentsSold: boolean;
   readonly outOfStamina: boolean;
   readonly hasRelic: boolean;
@@ -38,6 +40,8 @@ export interface OpeningContext {
 }
 
 type OpeningTeacher = AspectId | "own";
+
+const canFieldAnArmy = (ctx: OpeningContext): boolean => ctx.troopsAtHome > 0 && ctx.troopsAtHome * 2 >= ctx.fullArmy;
 
 interface OpeningEntry {
   readonly icon: IconMeaning;
@@ -76,10 +80,10 @@ export const OPENING = {
     icon: "knight-t1",
     teacher: 1,
     parts: [],
-    replayDueWhen: (ctx) => ctx.hasRealm && ctx.hasBarracks && ctx.troopsAtHome > 0,
+    replayDueWhen: (ctx) => ctx.hasRealm && ctx.hasBarracks && (ctx.deployedArmies > 0 || canFieldAnArmy(ctx)),
     skipForVeteran: true,
     reachedWhen: (ctx) => ctx.deployedArmies > 0,
-    showsWhen: (ctx) => ctx.hasRealm && ctx.hasBarracks && ctx.troopsAtHome > 0 && ctx.deployedArmies === 0,
+    showsWhen: (ctx) => ctx.hasRealm && ctx.hasBarracks && canFieldAnArmy(ctx) && ctx.deployedArmies === 0,
     completesWhen: (ctx) => ctx.deployedArmies > 0,
   },
   explore: {
@@ -144,12 +148,21 @@ export const OPENING = {
     showsWhen: (ctx) => ctx.inDeep,
     readyWhen: (rules) => rules.ownAspect !== undefined && rules.deepLossPerTick !== undefined,
   },
+  quest: {
+    icon: "crown",
+    teacher: 1,
+    parts: [],
+    reachedWhen: (ctx) => ctx.questRunning,
+    showsWhen: (ctx) => ctx.hasExplored && ctx.questRunning && !ctx.questProgressed,
+    completesWhen: (ctx) => ctx.questProgressed || ctx.dailyQuestClaimable || ctx.dailyQuestClaimed,
+  },
   aspects: {
     icon: "hyperstructure",
     teacher: "own",
     parts: ["aspects"],
-    reachedWhen: (ctx) => ctx.inDeep || ctx.hasActiveBane || ctx.hyperstructureAdvanced,
-    showsWhen: (ctx) => ctx.hasExplored && (ctx.inDeep || ctx.hasActiveBane || ctx.hyperstructureAdvanced),
+    reachedWhen: (ctx) =>
+      (ctx.hasExplored && ctx.hasAspectRace) || ctx.inDeep || ctx.hasActiveBane || ctx.hyperstructureAdvanced,
+    showsWhen: (ctx) => ctx.hasExplored && ctx.hasAspectRace,
     completesWhileShowing: (ctx) => ctx.openedSeason,
     readyWhen: (rules) => rules.ownAspect !== undefined,
   },

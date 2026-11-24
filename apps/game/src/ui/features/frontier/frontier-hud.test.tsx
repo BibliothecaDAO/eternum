@@ -1362,8 +1362,9 @@ it.each([
 
       await act(async () => replayTutorial());
       await act(async () => new Promise((settled) => setTimeout(settled, 20)));
-      expect(useOpeningStore.getState().showing).toBe("barracks");
-      expect(host.querySelector('[data-tutorial-dock="barracks"][data-tutorial-status="showing"]')).not.toBeNull();
+      expect(useOpeningStore.getState().confirmed).toBe("barracks");
+      const alreadyBuilt = host.querySelector<HTMLElement>('[data-tutorial-dock="barracks"][data-tutorial-status="completed"]');
+      expect(alreadyBuilt?.textContent).toContain(OPENING_WORDS.completed.barracks);
     } finally {
       useBlockTimestampStore.setState(previousTicks);
       useWorldAppearanceStore.setState({ showEverything: true });

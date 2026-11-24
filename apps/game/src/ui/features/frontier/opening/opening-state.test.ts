@@ -8,7 +8,6 @@ import {
   activeOpeningMoment,
   effectiveSeen,
   EMPTY_OPENING_CONTEXT,
-  lowestSinceReplay,
   openedMoments,
   reachedOnContext,
   siteAlertOfferDue,
@@ -304,14 +303,14 @@ const LIFECYCLE_CASES: Record<OpeningMoment, { due: OpeningContext; completed?: 
       inDeep: true,
     },
   },
-  aspects: {
+  quest: {
     due: {
       ...EMPTY_OPENING_CONTEXT,
       hasRealm: true,
       hasBarracks: true,
       deployedArmies: 1,
       hasExplored: true,
-      hyperstructureAdvanced: true,
+      questRunning: true,
     },
     completed: {
       ...EMPTY_OPENING_CONTEXT,
@@ -319,7 +318,26 @@ const LIFECYCLE_CASES: Record<OpeningMoment, { due: OpeningContext; completed?: 
       hasBarracks: true,
       deployedArmies: 1,
       hasExplored: true,
-      hyperstructureAdvanced: true,
+      questRunning: true,
+      questProgressed: true,
+    },
+  },
+  aspects: {
+    due: {
+      ...EMPTY_OPENING_CONTEXT,
+      hasRealm: true,
+      hasBarracks: true,
+      deployedArmies: 1,
+      hasExplored: true,
+      hasAspectRace: true,
+    },
+    completed: {
+      ...EMPTY_OPENING_CONTEXT,
+      hasRealm: true,
+      hasBarracks: true,
+      deployedArmies: 1,
+      hasExplored: true,
+      hasAspectRace: true,
       openedSeason: true,
     },
   },
@@ -551,110 +569,84 @@ it("unlocks Research HUD parts on first Essence but holds the Research lesson un
   expect(activeOpeningMoment({ ...lowEssence, canResearch: true }, OPENING_RULES, new Set())).toBe("essence");
 });
 
-it("lets replayed lessons complete on a new action relative to replayBaseline and skips deploy when zero troops wait at home", () => {
-  const baseline = { barracksCount: 1, deployedArmies: 1, exploredTiles: 2 };
+it("confirms a replayed lesson whose action already stands, one at a time, and never asks for it again", () => {
   const replayed = new Set<string>(["barracks", "deploy", "explore"]);
   const standingRealm: OpeningContext = {
     ...EMPTY_OPENING_CONTEXT,
     hasRealm: true,
     hasBarracks: true,
-    barracksCount: 1,
-    troopsAtHome: 0,
+    troopsAtHome: 27,
+    fullArmy: 3_000,
     deployedArmies: 1,
     hasExplored: true,
-    exploredTiles: 2,
   };
+  const replay = (seen: string[]) =>
+    stepTutorialMachine({
+      showing: null,
+      confirmed: null,
+      ctx: standingRealm,
+      rules: OPENING_RULES,
+      seen: new Set(seen),
+      replayed: new Set([...replayed].filter((moment) => !seen.includes(moment))),
+    });
 
-  const builtAnotherBarracks = stepTutorialMachine({
-    showing: "barracks",
+  expect(replay([])).toEqual({ nextShowing: null, confirmedMoment: "barracks", newlyCompleted: ["barracks"] });
+  expect(replay(["barracks"])).toEqual({ nextShowing: null, confirmedMoment: "deploy", newlyCompleted: ["deploy"] });
+  expect(replay(["barracks", "deploy"])).toEqual({
+    nextShowing: null,
+    confirmedMoment: "explore",
+    newlyCompleted: ["explore"],
+  });
+
+  const noBarracksYet = stepTutorialMachine({
+    showing: null,
     confirmed: null,
-    ctx: { ...standingRealm, barracksCount: 2 },
+    ctx: { ...EMPTY_OPENING_CONTEXT, hasRealm: true },
     rules: OPENING_RULES,
     seen: new Set(),
     replayed,
-    replayBaseline: baseline,
   });
-  expect(builtAnotherBarracks.confirmedMoment).toBe("barracks");
-  expect(builtAnotherBarracks.newlyCompleted).toEqual(["barracks"]);
-
-  const afterBarracksZeroTroops = stepTutorialMachine({
-    showing: null,
-    confirmed: null,
-    ctx: { ...standingRealm, barracksCount: 2, troopsAtHome: 0 },
-    rules: OPENING_RULES,
-    seen: new Set(["barracks"]),
-    replayed,
-    replayBaseline: baseline,
-  });
-  expect(afterBarracksZeroTroops.nextShowing).toBe("explore");
-
-  const withTroopsAtHome = stepTutorialMachine({
-    showing: null,
-    confirmed: null,
-    ctx: { ...standingRealm, barracksCount: 2, troopsAtHome: 500 },
-    rules: OPENING_RULES,
-    seen: new Set(["barracks"]),
-    replayed,
-    replayBaseline: baseline,
-  });
-  expect(withTroopsAtHome.nextShowing).toBe("deploy");
-
-  const deployedAnotherArmy = stepTutorialMachine({
-    showing: "deploy",
-    confirmed: null,
-    ctx: { ...standingRealm, barracksCount: 2, troopsAtHome: 0, deployedArmies: 2 },
-    rules: OPENING_RULES,
-    seen: new Set(["barracks"]),
-    replayed,
-    replayBaseline: baseline,
-  });
-  expect(deployedAnotherArmy.confirmedMoment).toBe("deploy");
-  expect(deployedAnotherArmy.newlyCompleted).toEqual(["deploy"]);
+  expect(noBarracksYet).toEqual({ nextShowing: "barracks", confirmedMoment: null, newlyCompleted: [] });
 });
 
-it("confirms a replayed deploy and explore after the day clears armies and tiles, since counts that fall lower the baseline", () => {
-  const replayed = new Set<string>(["deploy", "explore"]);
-  const onReplay: OpeningContext = {
+it("asks for a deploy only when half a full army waits at home, the castle's cap read from the rules", () => {
+  const atHome = (troopsAtHome: number): OpeningContext => ({
     ...EMPTY_OPENING_CONTEXT,
     hasRealm: true,
     hasBarracks: true,
-    barracksCount: 1,
-    troopsAtHome: 500,
+    troopsAtHome,
+    fullArmy: 3_000,
+  });
+  expect(activeOpeningMoment(atHome(27), OPENING_RULES, new Set(["barracks"]))).toBeNull();
+  expect(activeOpeningMoment(atHome(27), OPENING_RULES, new Set(["barracks"]), new Set(["deploy"]))).toBeNull();
+  expect(activeOpeningMoment(atHome(1_499), OPENING_RULES, new Set(["barracks"]))).toBeNull();
+  expect(activeOpeningMoment(atHome(1_500), OPENING_RULES, new Set(["barracks"]))).toBe("deploy");
+  expect(activeOpeningMoment(atHome(2_003), OPENING_RULES, new Set(["barracks"]))).toBe("deploy");
+});
+
+it("teaches today's quest after the first reveal, and the Aspect race after it, while neither has been acted on", () => {
+  const explored: OpeningContext = {
+    ...EMPTY_OPENING_CONTEXT,
+    hasRealm: true,
+    hasBarracks: true,
     deployedArmies: 1,
     hasExplored: true,
-    exploredTiles: 2,
+    questRunning: true,
+    hasAspectRace: true,
   };
-  const nextDay: OpeningContext = { ...onReplay, deployedArmies: 0, exploredTiles: 0 };
-  const deployedAgain: OpeningContext = { ...nextDay, deployedArmies: 1 };
-  const exploredAgain: OpeningContext = { ...deployedAgain, exploredTiles: 2 };
+  const seen = new Set(["barracks", "deploy", "explore"]);
+  expect(activeOpeningMoment(explored, OPENING_RULES, seen)).toBe("quest");
+  expect(activeOpeningMoment(explored, OPENING_RULES, new Set([...seen, "quest"]))).toBe("aspects");
+  expect(activeOpeningMoment({ ...explored, hasExplored: false, deployedArmies: 0 }, OPENING_RULES, seen)).toBe(null);
 
-  let baseline = lowestSinceReplay(undefined, onReplay);
-  baseline = lowestSinceReplay(baseline, nextDay);
-  baseline = lowestSinceReplay(baseline, deployedAgain);
-  expect(baseline).toEqual({ barracksCount: 1, deployedArmies: 0, exploredTiles: 0 });
-
-  const deploy = stepTutorialMachine({
-    showing: "deploy",
+  const progressed = stepTutorialMachine({
+    showing: "quest",
     confirmed: null,
-    ctx: deployedAgain,
+    ctx: { ...explored, questProgressed: true },
     rules: OPENING_RULES,
-    seen: new Set(),
-    replayed,
-    replayBaseline: baseline,
+    seen,
   });
-  expect(deploy.confirmedMoment).toBe("deploy");
-
-  baseline = lowestSinceReplay(baseline, exploredAgain);
-  const explore = stepTutorialMachine({
-    showing: "explore",
-    confirmed: null,
-    ctx: exploredAgain,
-    rules: OPENING_RULES,
-    seen: new Set(["deploy"]),
-    replayed: new Set(["explore"]),
-    replayBaseline: baseline,
-  });
-  expect(explore.confirmedMoment).toBe("explore");
+  expect(progressed.confirmedMoment).toBe("quest");
 });
 
 it("completes oath on pass while never flashing false completion on day-end or unbroken bane rollovers", () => {

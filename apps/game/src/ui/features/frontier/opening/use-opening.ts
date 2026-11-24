@@ -7,6 +7,7 @@ import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-stor
 import { isSeasonZeroPlayer } from "@/shell/season-tab/archive/archive";
 import {
   type ExpeditionRules,
+  configManager,
   DAILY_QUEST_MODELS,
   entityHomeNamespace,
   expeditionRealmSite,
@@ -28,8 +29,8 @@ import {
   type NativeFactStore,
   type NativeRows,
 } from "@bibliothecadao/eternum/game-client";
-import { catalogAspectId, getNeighborHexes, RealmLevels, ResourcesIds } from "@bibliothecadao/types";
-import { useEffect, useRef } from "react";
+import { catalogAspectId, getNeighborHexes, RealmLevels, ResourcesIds, TroopTier } from "@bibliothecadao/types";
+import { useEffect } from "react";
 
 import type { OpeningRules } from "@/ui/design-system/kit/words";
 import { buildingOutput } from "@/ui/shared/lib/building-output";
@@ -46,10 +47,8 @@ import { canResearchNow } from "../research/research-tree";
 import { type Opened, type OpeningContext } from "./opening";
 import {
   accountProgress,
-  lowestSinceReplay,
   openedMoments,
   reachedOnContext,
-  type ReplayBaseline,
   siteAlertOfferDue,
   stepTutorialMachine,
   type TutorialDisplay,
@@ -102,9 +101,6 @@ export function useOpening(
   const progress = accountProgress(owner, storeState);
   const replayed = storeState.owner === owner ? storeState.replayed : undefined;
   const ctx = useOpeningContext(rules, realm, progress.reached, replayed, openedSurface);
-  const replayBaselineRef = useRef<ReplayBaseline | undefined>(undefined);
-  if (!replayed || replayed.size === 0) replayBaselineRef.current = undefined;
-  else if (ctx) replayBaselineRef.current = lowestSinceReplay(replayBaselineRef.current, ctx);
   const onState = reachedOnContext(ctx);
   const key = onState.join();
   useEffect(() => {
@@ -122,7 +118,6 @@ export function useOpening(
         rules: lineRules,
         seen: progress.seen,
         replayed,
-        replayBaseline: replayBaselineRef.current,
       })
     : { nextShowing: null, confirmedMoment: null, newlyCompleted: [] };
 
@@ -256,25 +251,25 @@ function useOpeningContext(
   const hyperstructureAdvanced = (race?.standings.find((row) => row.aspect === race.own?.aspect)?.stage ?? 1) > 1;
   const hasEssence = (stores?.essence.amount ?? 0) > 0;
   const canResearch = canResearchNow(researchTree?.nodes);
-  const barracksCount = getBuildingQuantity(home, FIRST_BUILD, setup.store);
-  const exploredTiles = countExploredBeyondHomeRing(setup.store, realm, rules, now);
-  const hasExplored = (!replayed?.has("explore") && reached.has("explore")) || exploredTiles > 0;
+  const hasExplored =
+    (!replayed?.has("explore") && reached.has("explore")) || countExploredBeyondHomeRing(setup.store, realm, rules, now) > 0;
   const clock = dayClock(rules, now);
   const dayEndingSoon = clock.tone === "ember" && clock.secondsLeft !== undefined;
 
   return {
     hasRealm: true,
-    hasBarracks: barracksCount > 0,
-    barracksCount,
+    hasBarracks: getBuildingQuantity(home, FIRST_BUILD, setup.store) > 0,
     troopsAtHome: stores?.troops.amount ?? 0,
+    fullArmy: configManager.getMaxArmySize(realm.base.level, TroopTier.T1),
     deployedArmies: armies.length,
     hasExplored,
-    exploredTiles,
     hasOpenOathPick,
     hasSwornOath,
     hasEssence,
     canResearch,
     hasResearched: learned > 0n,
+    questRunning: questReading?.state === "running",
+    questProgressed: (questReading?.progress ?? 0n) > 0n,
     dailyQuestClaimable,
     dailyQuestClaimed,
     hasWellLore: researchTier(learned, research.ROW_LORE) >= research.LORE_WELLS,
@@ -286,6 +281,7 @@ function useOpeningContext(
     hasBrokenBane,
     dayEndingSoon,
     hyperstructureAdvanced,
+    hasAspectRace: race !== undefined,
     fragmentsSold: fragmentsSold(setup.store, realm.game_id),
     outOfStamina,
     hasRelic,
