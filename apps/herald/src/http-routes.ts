@@ -37,9 +37,9 @@ const HERALD_GET_ROUTES: readonly HeraldRouteEntry[] = [
   { name: "snapshot", pattern: /^\/games\/([0-9]+)\/snapshot$/, publicFrontierDoc: true },
 ];
 
-export const HERALD_PUBLIC_GET_ROUTES: readonly (string | RegExp)[] = HERALD_GET_ROUTES.filter(
+export const HERALD_PUBLIC_GET_ROUTES: readonly Pick<HeraldRouteEntry, "name" | "pattern">[] = HERALD_GET_ROUTES.filter(
   (route) => route.publicFrontierDoc,
-).map((route) => route.pattern);
+).map(({ name, pattern }) => ({ name, pattern }));
 
 interface MatchedHeraldRoute {
   readonly name: HeraldRouteName;

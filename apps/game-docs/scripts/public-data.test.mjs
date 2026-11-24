@@ -36,16 +36,16 @@ test("PUBLIC_ROUTES matches every public GET route in apps/herald/src/http-route
   const heraldDocsRoutes = PUBLIC_ROUTES.filter((route) => route.base === "herald");
   const samples = heraldDocsRoutes.map((route) => concreteSamplePath(route.path));
 
-  for (const matcher of HERALD_PUBLIC_GET_ROUTES) {
+  for (const { name, pattern } of HERALD_PUBLIC_GET_ROUTES) {
     assert.ok(
-      samples.some((sample) => matchesRoute(matcher, sample)),
-      `missing Herald public route ${String(matcher)} from PUBLIC_ROUTES`,
+      samples.some((sample) => matchesRoute(pattern, sample)),
+      `missing Herald public route ${name} (${String(pattern)}) from PUBLIC_ROUTES`,
     );
   }
   for (const route of heraldDocsRoutes) {
     const sample = concreteSamplePath(route.path);
     assert.ok(
-      HERALD_PUBLIC_GET_ROUTES.some((matcher) => matchesRoute(matcher, sample)),
+      HERALD_PUBLIC_GET_ROUTES.some(({ pattern }) => matchesRoute(pattern, sample)),
       `documented route ${route.path} does not match any route in HERALD_PUBLIC_GET_ROUTES`,
     );
   }

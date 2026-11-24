@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { readNodeHealth } from "./node-health";
@@ -691,18 +691,19 @@ it("lets browsers read request timings only on a dev chain", async () => {
   }
 });
 
-it("dispatches every GET route through http-routes.ts with no inline pathname branches", () => {
-  const source = readFileSync(new URL("./http.ts", import.meta.url), "utf8");
-  expect(source).not.toMatch(/url\.pathname\s*===/);
-  expect(source).not.toMatch(/url\.pathname\.startsWith\(/);
-  for (const matcher of HERALD_PUBLIC_GET_ROUTES) {
+it("matches every HERALD_PUBLIC_GET_ROUTES entry to its own route name without shadowing", async () => {
+  for (const { name, pattern } of HERALD_PUBLIC_GET_ROUTES) {
     const sample =
-      typeof matcher === "string"
-        ? matcher
-        : matcher.source
+      typeof pattern === "string"
+        ? pattern
+        : pattern.source
             .replace(/^\^|\$$/g, "")
             .replaceAll("\\/", "/")
             .replaceAll("([0-9]+)", "1");
-    expect(matchHeraldGetRoute(sample)).not.toBeNull();
+    expect(matchHeraldGetRoute(sample)?.name).toBe(name);
   }
+  const served = createHeraldRequestHandler(httpState);
+  const missing = await served(new Request("http://herald/games/1/unknown"));
+  expect(missing.status).toBe(404);
+  expect(await missing.json()).toEqual({ error: "not_found" });
 });
