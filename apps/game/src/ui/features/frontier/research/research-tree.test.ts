@@ -6,6 +6,7 @@ import {
   canResearchNow,
   firstMissing,
   needLine,
+  readResearchLinks,
   readResearchTree,
   researchActionName,
   researchEffectLine,
@@ -158,4 +159,21 @@ it("uses one Upgrade verb across building and oath rows while naming Oath slots 
   expect(researchVerb(research.ROW_KNIGHT_OATHS)).toBe("Upgrade Oath slots");
   expect(researchActionName({ row: research.ROW_FARM, name: "Farm" })).toBe("Upgrade Farm");
   expect(researchActionName({ row: research.ROW_KNIGHT_OATHS, name: "Barracks" })).toBe("Upgrade Barracks Oath slots");
+});
+
+it("assigns every node its contract era and derives prerequisite link states from leadsTo", () => {
+  expect(node(MID_REALM, "row-0").era).toBe(0);
+  expect(node(MID_REALM, "row-6").era).toBe(0);
+  expect(node(MID_REALM, "row-2").era).toBe(1);
+  expect(node(MID_REALM, "row-4").era).toBe(2);
+  expect(node(MID_REALM, "row-5").era).toBe(2);
+  expect([node(MID_REALM, "well").era, node(MID_REALM, "shrine").era, node(MID_REALM, "spire").era]).toEqual([0, 1, 2]);
+  expect(readResearchLinks(readResearchTree(EARLY_REALM))).toEqual([
+    { key: "well->shrine", from: "well", to: "shrine", state: "locked" },
+    { key: "shrine->spire", from: "shrine", to: "spire", state: "locked" },
+  ]);
+  expect(readResearchLinks(readResearchTree(MID_REALM))).toEqual([
+    { key: "well->shrine", from: "well", to: "shrine", state: "done" },
+    { key: "shrine->spire", from: "shrine", to: "spire", state: "ready" },
+  ]);
 });

@@ -55,11 +55,15 @@ const button = (text: RegExp) => [...host.querySelectorAll("button")].find((each
 it("draws every node of the three branches in one panel, each with its state, and picks one in place", () => {
   const onPick = vi.fn();
   draw("row-0", vi.fn(), onPick);
-  expect([...host.querySelectorAll("[data-node]")].map((tile) => tile.getAttribute("data-state"))).toEqual(
-    nodes.map(({ state }) => state),
+  const renderedStates = Object.fromEntries(
+    [...host.querySelectorAll("[data-node]")].map((tile) => [
+      tile.getAttribute("data-node"),
+      tile.getAttribute("data-state"),
+    ]),
   );
+  expect(renderedStates).toEqual(Object.fromEntries(nodes.map(({ key, state }) => [key, state])));
   expect(host.querySelectorAll("[role='dialog']")).toHaveLength(0);
-  act(() => host.querySelector<HTMLButtonElement>("[data-node='row-5']")!.click());
+  act(() => host.querySelector<HTMLElement>("[data-node='row-5']")!.click());
   expect(onPick).toHaveBeenCalledWith("row-5");
 });
 
@@ -279,7 +283,7 @@ it("keeps the chosen Research action outside the tree scroll on every pick, incl
       expect(choice.textContent).toContain(item.name);
       expect(host.querySelector(".overflow-y-auto")!.contains(choice)).toBe(false);
       if (item.state === "ready") {
-        expect(host.querySelector(`[data-node='${row}'] button[aria-label^='Upgrade ']`)).not.toBeNull();
+        expect(choice.querySelector("button[aria-label^='Upgrade ']")).not.toBeNull();
       } else {
         expect(choice.querySelector("[data-research-footer]")).not.toBeNull();
       }
@@ -376,4 +380,135 @@ it("offers an inline Upgrade button on affordable rows with primary gold on the 
   const armyUpgrades = [...host.querySelectorAll<HTMLButtonElement>("button[aria-label^='Upgrade ']")];
   expect(armyUpgrades.length).toBeGreaterThan(0);
   expect(armyUpgrades[0]!.dataset.kind).toBe("primary");
+});
+
+it("renders the 3-track Era tree with measured SVG prerequisite links on desktop and phone, tier pips, and accessible Upgrade CTA", () => {
+  const rectOf = (left: number, top: number, width: number, height: number): DOMRect =>
+    ({
+      left,
+      top,
+      width,
+      height,
+      right: left + width,
+      bottom: top + height,
+      x: left,
+      y: top,
+      toJSON: () => ({}),
+    }) as DOMRect;
+  const desktopRects: Record<string, DOMRect> = {
+    canvas: rectOf(0, 0, 800, 400),
+    well: rectOf(160, 260, 180, 80),
+    shrine: rectOf(380, 260, 180, 80),
+    spire: rectOf(600, 260, 180, 80),
+  };
+  const phoneRects: Record<string, DOMRect> = {
+    canvas: rectOf(0, 0, 360, 500),
+    well: rectOf(240, 40, 110, 120),
+    shrine: rectOf(240, 180, 110, 120),
+    spire: rectOf(240, 320, 110, 120),
+  };
+  let layout = desktopRects;
+  const originalRect = Element.prototype.getBoundingClientRect;
+  Element.prototype.getBoundingClientRect = function (this: Element) {
+    if (this.hasAttribute("data-research-tree")) return layout.canvas!;
+    const key = this.getAttribute("data-node");
+    if (key && layout[key]) return layout[key]!;
+    return rectOf(0, 0, 0, 0);
+  };
+  try {
+    const onResearch = vi.fn();
+    const onPick = vi.fn();
+    draw("spire", onResearch, onPick);
+    expect([...host.querySelectorAll("[data-era]")].map((el) => el.textContent)).toEqual([
+      "ISettlement",
+      "IICity",
+      "IIIKingdom",
+    ]);
+    expect([...host.querySelectorAll("[data-branch]")].map((el) => el.getAttribute("data-branch"))).toEqual([
+      "economy",
+      "army",
+      "castle",
+    ]);
+    const svg = host.querySelector("svg[data-research-links]");
+    expect(svg).not.toBeNull();
+    expect(svg!.getAttribute("viewBox")).toBe("0 0 800 400");
+    expect(
+      [...svg!.querySelectorAll("path[data-link]")].map((path) => [
+        path.getAttribute("data-link"),
+        path.getAttribute("data-link-state"),
+        path.getAttribute("d"),
+      ]),
+    ).toEqual([
+      ["well->shrine", "done", "M 340 300 C 360 300, 360 300, 380 300"],
+      ["shrine->spire", "ready", "M 560 300 C 580 300, 580 300, 600 300"],
+    ]);
+    expect(host.querySelector("[data-node='row-0'] [data-pips]")?.getAttribute("data-pips")).toBe("5");
+    expect(host.querySelector("[data-node='row-6'] [data-pips]")?.getAttribute("data-pips")).toBe("3");
+    expect(host.querySelector("[data-node='well'] [data-pips]")?.getAttribute("data-pips")).toBe("1");
+    expect(host.querySelectorAll("[data-node='row-0'] [data-pips] [data-filled]")).toHaveLength(1);
+    const spireButtons = host.querySelectorAll<HTMLButtonElement>("button[aria-label='Upgrade Spire lore']");
+    expect(spireButtons).toHaveLength(1);
+    expect(spireButtons[0]!.closest("[data-lab='node-choice']")).not.toBeNull();
+    expect(spireButtons[0]!.dataset.kind).toBe("primary");
+    act(() => spireButtons[0]!.click());
+    expect(onResearch).toHaveBeenCalledWith(expect.objectContaining<Partial<TreeNode>>({ key: "spire" }));
+
+    const farmUpgrade = host.querySelector<HTMLButtonElement>("[data-node='row-0'] button[aria-label='Upgrade Farm']")!;
+    const enterEvent = new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true });
+    act(() => farmUpgrade.dispatchEvent(enterEvent));
+    expect(enterEvent.defaultPrevented).toBe(false);
+    expect(onPick).not.toHaveBeenCalled();
+
+    layout = phoneRects;
+    const early = readResearchTree(EARLY_REALM);
+    act(() =>
+      root.render(
+        <ResearchPanel
+          nodes={early}
+          picked={null}
+          onPick={vi.fn()}
+          sending={new Set()}
+          fixFor={() => undefined}
+          onResearch={vi.fn()}
+          onClose={vi.fn()}
+        />,
+      ),
+    );
+    const phoneSvg = host.querySelector("svg[data-research-links]")!;
+    expect(phoneSvg.getAttribute("viewBox")).toBe("0 0 360 500");
+    expect(
+      [...phoneSvg.querySelectorAll("path[data-link]")].map((path) => [
+        path.getAttribute("data-link"),
+        path.getAttribute("data-link-state"),
+        path.getAttribute("d"),
+      ]),
+    ).toEqual([
+      ["well->shrine", "locked", "M 295 160 C 295 170, 295 170, 295 180"],
+      ["shrine->spire", "locked", "M 295 300 C 295 310, 295 310, 295 320"],
+    ]);
+
+    layout = {
+      ...phoneRects,
+      shrine: rectOf(240, 180, 110, 90),
+      spire: rectOf(240, 290, 110, 120),
+    };
+    act(() =>
+      root.render(
+        <ResearchPanel
+          nodes={early}
+          picked="shrine"
+          onPick={vi.fn()}
+          sending={new Set()}
+          fixFor={() => undefined}
+          onResearch={vi.fn()}
+          onClose={vi.fn()}
+        />,
+      ),
+    );
+    expect(host.querySelector("path[data-link='shrine->spire']")?.getAttribute("d")).toBe(
+      "M 295 270 C 295 280, 295 280, 295 290",
+    );
+  } finally {
+    Element.prototype.getBoundingClientRect = originalRect;
+  }
 });
