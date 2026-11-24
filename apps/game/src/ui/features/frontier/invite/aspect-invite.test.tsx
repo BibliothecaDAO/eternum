@@ -50,11 +50,11 @@ afterEach(async () => {
 });
 
 /** The lab realm's invite; `aspect` the Aspect its home joined, none for a game without Aspects. */
-const renderInvite = async (aspect?: number) => {
+const renderInvite = async (aspect?: number, queries = new QueryClient()) => {
   await act(async () =>
     root.render(
       <MemoryRouter>
-        <QueryClientProvider client={new QueryClient()}>
+        <QueryClientProvider client={queries}>
           <LabGame
             mode="frontier"
             facts={() =>
@@ -111,6 +111,18 @@ it("offers nothing and reports no failure when identity has no invite for the pl
   expect(createInvite).toHaveBeenCalledOnce();
   expect(panel()).toBeNull();
   expect(host.textContent).not.toContain("could not be made");
+});
+
+it("asks identity again for an invite it had none for once the panel opens again", async () => {
+  const queries = new QueryClient();
+  createInvite.mockResolvedValue(null);
+  await renderInvite(2, queries);
+  await vi.waitFor(() => expect(createInvite).toHaveBeenCalledOnce());
+  await act(async () => root.render(<></>));
+  createInvite.mockResolvedValue({ code: "INVT2348", aspect: 2, chainId: getActiveGame()!.chainId, gameId: 1 });
+  await renderInvite(2, queries);
+  await vi.waitFor(() => expect(panel()!.textContent).toContain("Invite a friend to Luminary"));
+  expect(createInvite).toHaveBeenCalledTimes(2);
 });
 
 it("says when identity refuses the invite, and asks again on Try again", async () => {

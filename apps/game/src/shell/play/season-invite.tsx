@@ -49,7 +49,8 @@ export const CopySeasonInvite = ({
   icon?: IconMeaning;
   label?: string;
   className?: string;
-}) => (
+}) =>
+  !invite.link.none && (
   <AppButton
     kind="secondary"
     size={size}

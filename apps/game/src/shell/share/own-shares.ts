@@ -41,7 +41,7 @@ const useMadeLink = <Made extends { code: string }>(key: readonly unknown[], mak
     queryKey: [OWN_SHARES, owner, ...key],
     queryFn: make,
     enabled: owner !== null,
-    staleTime: Number.POSITIVE_INFINITY,
+    staleTime: ({ state }) => (state.data === null ? 0 : Number.POSITIVE_INFINITY),
     retry: 1,
   });
   const link = owner === null ? undefined : made.data;
