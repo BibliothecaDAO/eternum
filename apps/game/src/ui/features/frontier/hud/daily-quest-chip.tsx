@@ -15,12 +15,10 @@ import { dayQuestFace } from "../day/day-quest-face";
 
 export const DailyQuestChip = ({
   realm,
-  showTitle = false,
-  align = "right",
+  layout = "desktop",
 }: {
   realm: NativeRows["Structure"];
-  showTitle?: boolean;
-  align?: "left" | "right";
+  layout?: "desktop" | "phone";
 }) => {
   const { setup } = useGame();
   const now = useNowSeconds();
@@ -64,12 +62,13 @@ export const DailyQuestChip = ({
         className="frontier-quest-chip"
         onClick={() => setOpen((was) => !was)}
       >
-        <Icon name={face?.icon ?? "explore"} size={18} />
-        <span>{showTitle && face ? `${face.name} ${count}` : count}</span>
+        <Icon name={face?.icon ?? "explore"} size={16} />
+        <span className="frontier-quest-chip__label">{DAY_BANNER_WORDS.quest}</span>
+        <span className="frontier-quest-chip__count">{count}</span>
       </button>
       {open && (
-        <div className="frontier-quest-popover" data-align={align}>
-          <DailyQuest realm={realm} layout={align === "left" ? "phone" : "desktop"} />
+        <div className="frontier-quest-popover" data-layout={layout}>
+          <DailyQuest realm={realm} layout={layout} />
         </div>
       )}
     </div>

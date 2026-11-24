@@ -1769,7 +1769,7 @@ export const HudModalLayer = ({ onClose, children }: { onClose?: () => void; chi
   );
 };
 
-export type MenuItem =
+type MenuItem =
   | { kind: "rule" }
   | {
       kind?: "item";

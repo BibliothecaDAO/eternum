@@ -112,14 +112,12 @@ export const HUD_WORDS = {
   close: "Close",
   chat: "Chat",
   settings: "Settings",
-  relics: "Relics",
 };
 
 const PHONE_PLACE_PRESSES = {
   [HUD_WORDS.research]: (browser) => browser.tapPlace(HUD_WORDS.research),
   [HUD_WORDS.feed]: (browser) => browser.tapPlace(HUD_WORDS.feed),
   [HUD_WORDS.chat]: (browser) => browser.tapPlace(HUD_WORDS.chat),
-  [HUD_WORDS.relics]: (browser) => browser.tapPlace(HUD_WORDS.relics),
   [HUD_WORDS.season]: (browser) => browser.tapPlace(HUD_WORDS.season),
 };
 
@@ -1976,18 +1974,17 @@ const PLACE_TABS = { Map: ["World", layerName(0)], Realm: ["Realm"] };
 function pressPlace(browser, place) {
   const presses = [
     () => browser.click(place),
-    ...PLACE_TABS[place].flatMap((name) => [() => browser.click(name), () => browser.clickTab(name)]),
+    ...PLACE_TABS[place].flatMap((name) => [() => browser.clickTab(name), () => browser.click(name)]),
   ];
   for (const press of presses) {
     try {
       press();
-      if (browser.viewChoices().length > 0) browser.chooseView(PLACE_TABS[place].at(-1));
       return;
     } catch {
       // Not this button: the next way there.
     }
   }
-  browser.chooseView(PLACE_TABS[place].at(-1));
+  browser.clickTab(PLACE_TABS[place].at(-1));
 }
 
 /** Where the HUD's standing parts sit on the map at rest. */
@@ -3529,15 +3526,8 @@ const LAB_LAYERS_STEPS = [
 function chooseLayer(word) {
   return async ({ browser }) => {
     const before = browser.read(MAP_CAMERA);
-    let choices = null;
-    if (word === LAYER_NAMES[0]) {
-      browser.clickTab(word);
-    } else {
-      browser.openViews();
-      await sleep(LIST_SETTLE_MS);
-      choices = browser.viewChoices();
-      browser.chooseView(word);
-    }
+    const choices = word === LAYER_NAMES[0] ? null : browser.viewChoices();
+    browser.clickTab(word);
     const moved = (camera) => camera !== null && hexesApart(camera, before) > FRAMED_WITHIN_HEXES;
     await readUntil(() => browser.read(MAP_CAMERA), moved, SPIRE_WAIT_MS);
     // The dive passes through the spire on its way: the camera counts once it has come to rest.
@@ -6910,27 +6900,35 @@ export const STEP_SETS = {
           const h = played.worldHud;
           const ok = onADesktop()
             ? h.realmChip &&
-              h.places.includes("Season") &&
               h.places.includes("Research") &&
+              h.places.includes("Season") &&
               h.places.includes("Feed") &&
               h.places.includes("Chat") &&
-              h.places.includes("Relics") &&
+              !h.places.includes("Relics") &&
               h.questChip &&
               h.desktopStores &&
               h.depthSwitch &&
               h.realmWorld.includes("Realm") &&
-              h.realmWorld.includes("World") &&
+              h.realmWorld.includes("Surface") &&
+              h.realmWorld.includes("Veil") &&
+              h.realmWorld.includes("Hollow") &&
+              h.realmWorld.includes("Deep") &&
+              !h.realmWorld.includes("World") &&
               h.armies > 0 &&
               h.aspectChip
             : h.phonePill &&
               h.questChip &&
               h.depthSwitch &&
-              h.realmWorld.length === 0 &&
+              h.realmWorld.includes("Realm") &&
+              h.realmWorld.includes("Surface") &&
+              h.realmWorld.includes("Veil") &&
+              h.realmWorld.includes("Hollow") &&
+              h.realmWorld.includes("Deep") &&
               h.armies > 0 &&
-              h.places.includes("Realm") &&
+              !h.places.includes("Realm") &&
               h.places.includes("Season") &&
               h.places.includes("Menu") &&
-              h.places.length === 3;
+              h.places.length === 2;
           return ok
             ? completed(played)
             : failed("World view must render the full approved HUD parts for this viewport", played);
@@ -6975,8 +6973,7 @@ export const STEP_SETS = {
         name: "realm-screen",
         settleMs: 2_000,
         play: async ({ browser, extraScreenshot }) => {
-          if (onADesktop()) browser.clickTab("Realm");
-          else browser.click("Realm");
+          browser.clickTab("Realm");
           await sleep(1_500);
           const idleUnobstructed = onADesktop()
             ? true
@@ -6990,11 +6987,12 @@ export const STEP_SETS = {
           const buildings = await readUntil(
             () =>
               browser.read(`document.querySelectorAll('section[aria-label="Realm"] [data-realm-buildings] li').length`),
-            (count) => count >= 4,
+            (count) => count >= (onADesktop() ? 3 : 4),
             PLAYABLE_WAIT_MS,
           );
           const realmHud = browser.read(`(() => ({
             tiles: document.querySelectorAll('section[aria-label="Realm"] .realm-tile').length,
+            hasCastleHead: Boolean(document.querySelector('section[aria-label="Realm"] [data-realm-castle]')),
             hasDepthSwitch: Boolean(document.querySelector('[data-surface-deep-switch]')),
             hasDeploy: Boolean(document.querySelector('section[aria-label="Realm"] .realm-foot button[data-kind="primary"]')),
           }))()`);
@@ -7021,15 +7019,18 @@ export const STEP_SETS = {
           seen.scene === "hex" &&
           played.idleUnobstructed &&
           played.hasRealmPanel &&
-          played.buildings >= 4 &&
-          played.realmHud.tiles >= 3 &&
           played.realmHud.hasDeploy &&
-          !played.realmHud.hasDepthSwitch
+          (onADesktop()
+            ? played.buildings >= 3 && played.realmHud.hasCastleHead && played.realmHud.tiles === 0
+            : played.buildings >= 4 && played.realmHud.tiles >= 3)
             ? completed(played)
-            : failed("Realm view must render with Castle, Workshop, Farm and Barracks standing and no depth switch", {
-                seen,
-                played,
-              }),
+            : failed(
+                "Realm view must render with Castle, Workshop, Farm and Barracks standing and lean desktop panel",
+                {
+                  seen,
+                  played,
+                },
+              ),
       },
       {
         name: "realm-build-sheet",
@@ -7205,7 +7206,7 @@ export const STEP_SETS = {
                 open: Boolean(document.querySelector('[aria-label="${target}"]:not(button)')),
                 tiles: [...document.querySelectorAll('.menu-place-tile')].map((button) => button.getAttribute('aria-label')),
               })`),
-            (state) => state.open && (onADesktop() || state.tiles.length === 4),
+            (state) => state.open && (onADesktop() || state.tiles.length === 3),
             SHEET_WAIT_MS,
           );
           return { ...ready, target, shot: extraScreenshot("menu") };
@@ -7215,33 +7216,9 @@ export const STEP_SETS = {
           (onADesktop() ||
             (played.tiles.includes(HUD_WORDS.research) &&
               played.tiles.includes(HUD_WORDS.feed) &&
-              played.tiles.includes(HUD_WORDS.chat) &&
-              played.tiles.includes(HUD_WORDS.relics)))
+              played.tiles.includes(HUD_WORDS.chat)))
             ? completed(played)
             : failed("Menu or Settings must open from its control", played),
-      },
-      {
-        name: "panel-relics",
-        settleMs: 0,
-        play: async ({ browser, extraScreenshot }) => {
-          if (onADesktop()) browser.clickTab(HUD_WORDS.relics);
-          else browser.click(HUD_WORDS.relics);
-          const ready = await readUntil(
-            () =>
-              browser.read(`JSON.stringify({
-                open: Boolean(document.querySelector('${onADesktop() ? "[data-realm-slot] " : ""}section[aria-label="${HUD_WORDS.relics}"]')),
-                ready: document.querySelectorAll('section[aria-label="${HUD_WORDS.relics}"] [data-army-relics] button[aria-label^="Switch on "]').length,
-                running: Boolean(document.querySelector('section[aria-label="${HUD_WORDS.relics}"] [data-relics-running]')),
-              })`),
-            (state) => state.open && state.ready === 3 && state.running,
-            SHEET_WAIT_MS,
-          );
-          return { ...ready, shot: extraScreenshot("relics") };
-        },
-        verify: ({ played }) =>
-          played.open && played.ready === 3 && played.running
-            ? completed(played)
-            : failed("Relics drawer must open showing the army's three carried relics and active effect", played),
       },
     ],
   },

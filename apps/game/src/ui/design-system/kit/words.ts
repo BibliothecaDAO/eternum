@@ -760,6 +760,8 @@ export const UPGRADE = "Upgrade";
 
 /** The realm: its castle and levels, its buildings, and the row that counts a full realm's common buildings. */
 export const CASTLE = "Castle";
+export const MAX_LEVEL = "Max";
+export const REALM_POP = (used: number, limit: number) => `Pop ${formatExact(used)}/${formatExact(limit)}`;
 /** The castle rows that unlock the three depths beyond the spire. */
 export const LAYER = "Layer";
 
@@ -770,6 +772,7 @@ export const LAYER = "Layer";
 export const SPIRE_WORDS = {
   nextReveal: (percent: number) => `Spire · next reveal ${percent}%`,
   title: SPIRE,
+  lockedAt: (tier: Tier) => `${SPIRE} ${tierNumeral(tier)}`,
   enter: "Enter",
   /** The order on the spire's tile; its card then picks the Ethereal layer to enter. */
   order: "Enter the Spire",
@@ -859,6 +862,7 @@ export const DEEP_WORDS = {
 /** The day's banner: today's quest, its count and reward, the bane or Triumph heading it, the Aspect's members. */
 export const DAY_BANNER_WORDS = {
   today: "Today",
+  quest: "Quest",
   reading: "Loading today's quest…",
   reward: "Reward",
   collect: "Collect",

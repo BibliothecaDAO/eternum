@@ -1,3 +1,4 @@
+import { aspectName } from "@bibliothecadao/types";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
@@ -11,6 +12,7 @@ vi.mock("@/ui/features/event-feed/quick-feed", async (original) => ({
 import { dayClock } from "./day-clock";
 import { DayPill } from "./day-pill";
 import { FrontierPlaces } from "./frontier-desktop";
+import { RealmHeaderChip } from "./realm-header-chip";
 import { RealmPanel } from "./realm-panel";
 import type { StoreReading } from "./status-strip";
 
@@ -151,7 +153,8 @@ it("says the day and the time left in the top bar, and when the day ends and how
   );
   act(() => root.render(<DayPill clock={clock} />));
   const pill = host.querySelector('[aria-label="Day clock"]')!;
-  expect(pill.textContent).toContain(`Day ${clock.day} ·`);
+  expect(pill.textContent).toContain(`Day ${clock.day}`);
+  expect(pill.querySelector(".frontier-day-readout__left")?.textContent).toBeTruthy();
   expect(pill.getAttribute("data-tip")).toMatch(/^Day ends \d\d:\d\d · .+ left · Tomorrow lasts /);
 });
 
@@ -162,24 +165,25 @@ it("reads a 24-hour day in hours on the top bar and its hover, as Play does (liv
   );
   act(() => root.render(<DayPill clock={{ ...day, secondsLeft: 24 * 3_600, tomorrowSeconds: 24 * 3_600 }} />));
   const pill = host.querySelector('[aria-label="Day clock"]')!;
-  expect(pill.textContent).toContain(`Day ${day.day} · 24h`);
+  expect(pill.textContent).toContain(`Day ${day.day}`);
+  expect(pill.textContent).toContain("24h");
   expect(pill.getAttribute("data-tip")).toMatch(/ · Tomorrow lasts 24h$/);
 });
 
-it("offers a desktop's five places in order, each a panel its press opens and a second press closes", () => {
+it("offers a desktop's four cornice places in order, each a panel its press opens and a second press closes", () => {
   const onSurface = vi.fn();
-  const places = (surface: "research" | "feed" | "season" | "chat" | "relics" | null) => {
-    act(() => root.render(<FrontierPlaces surface={surface} onSurface={onSurface} research={false} />));
+  const places = (surface: "research" | "feed" | "season" | "chat" | null, research = false) => {
+    act(() => root.render(<FrontierPlaces surface={surface} onSurface={onSurface} research={research} />));
     return [...host.querySelectorAll("nav button")] as HTMLButtonElement[];
   };
-  const closed = places(null);
+  const closed = places(null, true);
   expect(closed.map((button) => [button.getAttribute("aria-label"), button.getAttribute("aria-selected")])).toEqual([
-    ["Season", "false"],
     ["Research", "false"],
+    ["Season", "false"],
     ["Feed", "false"],
-    ["Relics", "false"],
     ["Chat", "false"],
   ]);
+  expect(closed[0].querySelector('[data-shape="diamond"]')).not.toBeNull();
   expect(closed[2].textContent).toContain("2");
   act(() => closed[2].click());
   expect(onSurface).toHaveBeenLastCalledWith("feed");
@@ -188,6 +192,107 @@ it("offers a desktop's five places in order, each a panel its press opens and a 
   expect(feed[2].textContent).not.toContain("2");
   act(() => feed[2].click());
   expect(onSurface).toHaveBeenLastCalledWith(null);
-  act(() => feed[0].click());
+  act(() => feed[1].click());
   expect(onSurface).toHaveBeenLastCalledWith("season");
+});
+
+it("renders the Aspect medallion tinted in the Aspect color and Order of Power below the Realm name on both top bar and panel", () => {
+  const onPress = vi.fn();
+  act(() =>
+    root.render(
+      <>
+        <RealmHeaderChip name="Duskbite" level={1} aspect={1} orderId={12} expanded={false} onPress={onPress} />
+        <RealmPanel name="Duskbite" level={1} aspect={1} orderId={12} stores={STORES} />
+      </>,
+    ),
+  );
+  const chip = host.querySelector<HTMLButtonElement>(".frontier-realm-chip")!;
+  expect(chip.querySelector('[data-aspect-mark="1"]')).not.toBeNull();
+  expect(chip.querySelector(".frontier-aspect-medallion")?.getAttribute("style")).toContain("--hud-aspect");
+  expect(chip.querySelector('img[src*="portraits"]')).toBeNull();
+  expect(chip.querySelector(".frontier-realm-chip__order")?.textContent).toBe("Order of Power");
+  expect(chip.querySelector('[data-order-id="12"] img')).not.toBeNull();
+  act(() => chip.click());
+  expect(onPress).toHaveBeenCalledTimes(1);
+
+  const panel = host.querySelector('section[aria-label="Realm"]')!;
+  expect(panel.querySelector('[data-aspect-mark="1"]')).not.toBeNull();
+  expect(panel.querySelector(".frontier-aspect-medallion")?.getAttribute("data-tip")).toBe(aspectName(1));
+  expect(panel.textContent).toContain("Order of Power");
+  expect(panel.textContent).toContain(aspectName(1));
+
+  act(() =>
+    root.render(
+      <>
+        <RealmHeaderChip name="Duskbite" level={1} aspect={1} orderId={12} variant="desktop" onPress={onPress} />
+        <RealmHeaderChip name="Duskbite" level={1} aspect={1} orderId={12} variant="phone" onPress={onPress} />
+      </>,
+    ),
+  );
+  const desktopLabel = host.querySelector(".frontier-realm-chip")?.getAttribute("aria-label");
+  const phoneLabel = host.querySelector(".frontier-phone-realm-chip")?.getAttribute("aria-label");
+  expect(phoneLabel).toBe(desktopLabel);
+
+  act(() => root.render(<RealmPanel name="Duskbite" kind="wonder" level={1} stores={STORES} />));
+  expect(host.querySelector(".frontier-aspect-medallion")?.getAttribute("data-tip")).toBe("Wonder");
+
+  act(() => root.render(<RealmHeaderChip name="Duskbite" level={1} aspect={1} onPress={onPress} />));
+  expect(host.querySelector(".frontier-realm-chip__order")).toBeNull();
+});
+
+it("renders the lean desktop RealmPanel without duplicating top-bar identity or 4 resource dials", () => {
+  const onUpgradeCastle = vi.fn();
+  const onWithdraw = vi.fn();
+  const onUpgradeFarm = vi.fn();
+  act(() =>
+    root.render(
+      <RealmPanel
+        name="Duskbite"
+        level={1}
+        aspect={1}
+        orderId={12}
+        population={{ used: 3, max: 12 }}
+        stores={STORES}
+        lords={320}
+        lean
+        onUpgradeCastle={onUpgradeCastle}
+        onWithdraw={onWithdraw}
+        buildings={[
+          {
+            key: "farm",
+            icon: "farm",
+            name: "Farm",
+            tier: 2,
+            rateIcon: "wheat",
+            rate: "+20/min",
+            onUpgrade: onUpgradeFarm,
+          },
+          {
+            key: "barracks",
+            icon: "barracks",
+            name: "Barracks",
+            tier: 5,
+            rateIcon: "troops",
+            rate: "+3/min",
+            maxed: true,
+          },
+          { key: "workshop", icon: "workshop", name: "Workshop", tier: 1, rateIcon: "labor", rate: "+12/min" },
+        ]}
+      />,
+    ),
+  );
+  const panel = host.querySelector('section[aria-label="Realm"]')!;
+  expect(panel.querySelector("[data-realm-castle]")).not.toBeNull();
+  expect(panel.querySelector(".frontier-aspect-medallion")).toBeNull();
+  expect(panel.querySelector(".realm-tiles")).toBeNull();
+  expect(panel.textContent).not.toContain("Duskbite");
+  expect(panel.textContent).not.toContain("Order of Power");
+  expect(panel.textContent).toContain("City");
+  expect(panel.textContent).toContain("Pop 3/12");
+  expect(panel.textContent).toContain("320 LORDS");
+  expect(panel.querySelectorAll(".realm-building__max")).toHaveLength(1);
+  act(() => host.querySelector<HTMLButtonElement>('[aria-label="LORDS 320"]')!.click());
+  expect(onWithdraw).toHaveBeenCalledTimes(1);
+  act(() => host.querySelector<HTMLButtonElement>('section[aria-label="Realm"] .ui-panel__cue button')!.click());
+  expect(onUpgradeCastle).toHaveBeenCalledTimes(1);
 });

@@ -6,42 +6,36 @@ import { useLandedValue } from "@/ui/motion/landing-hold";
 import { TickNumber } from "@/ui/motion/tick-number";
 import type { ExpeditionRules } from "@bibliothecadao/eternum";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
-import { formatShort, rankName } from "@bibliothecadao/types";
+import { formatShort, rankName, type AspectId } from "@bibliothecadao/types";
 import type { ReactNode } from "react";
 
-import { FRONTIER_STORES, type StoreKind } from "../stores";
+import { FRONTIER_STORES } from "../stores";
 import { DailyQuestChip } from "./daily-quest-chip";
 import { FrontierDayClock } from "./day-pill";
-import { pickStores } from "./header-stores";
-import { LandingDelta, STORE_TONES, storeCapacityShare, storeLine, type StoreReading } from "./status-strip";
-
-const PHONE_STORE_KINDS: readonly StoreKind[] = ["essence", "labor", "wheat", "troops"];
+import { FragmentsSocket, pickStores, StoreLiquidFill, TOP_BAR_STORE_KINDS } from "./header-stores";
+import { RealmHeaderChip } from "./realm-header-chip";
+import { LandingDelta, STORE_TONES, storeLine, storeRateText, type StoreReading } from "./status-strip";
 
 const PhoneStoreGauge = ({ store, onToggle }: { store: StoreReading; onToggle?: () => void }) => {
   const shown = useLandedValue(store.flyTarget, store.amount);
   const meta = FRONTIER_STORES[store.kind];
   const line = storeLine(store);
-  const share = storeCapacityShare(store);
+  const rate = storeRateText(store, { compact: true });
   const content = (
     <>
       <LandingDelta target={store.flyTarget} />
-      <span className="frontier-phone-gauge__head">
-        <span data-fly-target={store.flyTarget} className="inline-flex shrink-0">
-          <Icon name={meta.icon} size={14} />
-        </span>
-        <span className={STORE_TONES[store.tone].text}>
-          {shown === undefined ? "—" : <TickNumber value={shown} format={formatShort} />}
+      <span data-fly-target={store.flyTarget} className="frontier-phone-gauge__icon">
+        <Icon name={meta.icon} size={20} />
+      </span>
+      <span className="frontier-phone-gauge__well">
+        <StoreLiquidFill store={store} />
+        <span className="frontier-phone-gauge__values">
+          <span className={STORE_TONES[store.tone].text}>
+            {shown === undefined ? "—" : <TickNumber value={shown} format={formatShort} />}
+          </span>
+          {rate && <span className="frontier-phone-gauge__rate">{rate}</span>}
         </span>
       </span>
-      {share !== undefined && (
-        <span className="frontier-phone-gauge__bar" aria-hidden="true">
-          <i
-            className="frontier-phone-gauge__fill"
-            data-tone={STORE_TONES[store.tone].meter}
-            style={{ width: `${share * 100}%` }}
-          />
-        </span>
-      )}
     </>
   );
   return onToggle ? (
@@ -65,24 +59,30 @@ const PhoneStoreGauge = ({ store, onToggle }: { store: StoreReading; onToggle?: 
 export const PhoneTopBar = ({
   rules,
   realm,
+  realmName,
+  aspect,
   own,
   stores,
-  isMapView,
   realmOpen = false,
-  depthSwitch,
+  placeSwitch,
   spectatorChip,
+  fragments = null,
+  onShop,
   storeCards,
   onOpenRealm,
   onOpenToday,
 }: {
   rules: ExpeditionRules;
   realm: NativeRows["Structure"] | null;
+  realmName?: string | null;
+  aspect?: AspectId;
   own: NativeRows["Structure"] | null;
   stores: readonly StoreReading[];
-  isMapView: boolean;
   realmOpen?: boolean;
-  depthSwitch?: ReactNode;
+  placeSwitch?: ReactNode;
   spectatorChip?: ReactNode;
+  fragments?: number | null;
+  onShop?: () => void;
   storeCards?: {
     kinds: readonly StoreReading["kind"][];
     open: StoreReading["kind"] | null;
@@ -97,14 +97,24 @@ export const PhoneTopBar = ({
 
   return (
     <PhoneTopBarView
-      realm={realm ? { icon: homeIcon(kind, level), label: rankName(level) } : undefined}
+      realm={
+        realm
+          ? {
+              icon: homeIcon(kind, level),
+              label: realmName || rankName(level),
+              aspect,
+              orderId: realm.metadata.order,
+            }
+          : undefined
+      }
       realmOpen={realmOpen}
       stores={stores}
       clock={<FrontierDayClock rules={rules} compact onOpenToday={onOpenToday} />}
-      isMapView={isMapView}
-      depthSwitch={depthSwitch}
+      placeSwitch={placeSwitch}
       spectatorChip={spectatorChip}
-      quest={isMapView && own ? <DailyQuestChip realm={own} showTitle align="left" /> : undefined}
+      quest={own ? <DailyQuestChip realm={own} layout="phone" /> : undefined}
+      fragments={fragments}
+      onShop={onShop}
       storeCard={!realmOpen && storeCards?.open ? storeCards.card : undefined}
       toggleableStores={storeCards?.kinds}
       onToggleStore={storeCards?.onToggle}
@@ -118,35 +128,40 @@ export const PhoneTopBarView = ({
   realmOpen = false,
   stores,
   clock,
-  isMapView,
-  depthSwitch,
+  placeSwitch,
   spectatorChip,
   quest,
+  fragments = null,
+  onShop,
   storeCard,
   toggleableStores,
   onToggleStore,
   onOpenRealm,
 }: {
-  realm?: { icon: IconMeaning; label: string };
+  realm?: { icon: IconMeaning; label: string; aspect?: AspectId; orderId?: number };
   realmOpen?: boolean;
   stores: readonly StoreReading[];
   clock: ReactNode;
-  isMapView: boolean;
-  depthSwitch?: ReactNode;
+  placeSwitch?: ReactNode;
   spectatorChip?: ReactNode;
   quest?: ReactNode;
+  fragments?: number | null;
+  onShop?: () => void;
   storeCard?: ReactNode;
   toggleableStores?: readonly StoreReading["kind"][];
   onToggleStore?: (kind: StoreReading["kind"]) => void;
   onOpenRealm?: () => void;
 }) => {
-  const shownStores = pickStores(stores, PHONE_STORE_KINDS);
+  const shownStores = pickStores(stores, TOP_BAR_STORE_KINDS);
+  const hasFragments = fragments !== null && Boolean(onShop);
+  const showSubRow = Boolean(realm || quest || hasFragments);
+  const showUtilityRow = Boolean(placeSwitch || spectatorChip);
 
   return (
     <div className="frontier-phone-top">
-      <div className="frontier-phone-row">
-        {clock}
-        <div role="group" aria-label="Stores" className="frontier-phone-pill pointer-events-auto">
+      <div className="frontier-phone-cornice pointer-events-auto">
+        <div className="frontier-phone-cornice__clock">{clock}</div>
+        <div role="group" aria-label="Stores" className="frontier-phone-pill">
           {shownStores.map((store) => (
             <PhoneStoreGauge
               key={store.kind}
@@ -158,29 +173,33 @@ export const PhoneTopBarView = ({
           ))}
         </div>
       </div>
-      {(realm || (isMapView && depthSwitch) || spectatorChip) && (
-        <div className="frontier-phone-row">
-          <div className="flex min-w-0 items-center gap-1.5">
+      {showSubRow && (
+        <div data-top-row className="frontier-phone-subrow">
+          <div className="frontier-phone-subrow__left">
             {realm && (
-              <button
-                type="button"
-                className="frontier-phone-realm-chip pointer-events-auto"
-                aria-label={realm.label}
-                aria-expanded={realmOpen}
-                onClick={onOpenRealm}
-              >
-                <Icon name={realm.icon} size={18} />
-                <span className="truncate">{realm.label}</span>
-              </button>
+              <RealmHeaderChip
+                variant="phone"
+                name={realm.label}
+                fallbackIcon={realm.icon}
+                aspect={realm.aspect}
+                orderId={realm.orderId}
+                expanded={realmOpen}
+                onPress={onOpenRealm}
+              />
             )}
-            {isMapView && depthSwitch}
           </div>
-          {spectatorChip}
+          {(quest || hasFragments) && (
+            <div className="frontier-phone-subrow__right">
+              {quest}
+              <FragmentsSocket fragments={fragments} onShop={onShop} compact />
+            </div>
+          )}
         </div>
       )}
-      {quest && (
-        <div data-top-row className="frontier-phone-row">
-          {quest}
+      {showUtilityRow && (
+        <div className="frontier-phone-utility">
+          {placeSwitch}
+          {spectatorChip}
         </div>
       )}
       {storeCard}

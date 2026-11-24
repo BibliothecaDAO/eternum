@@ -2,7 +2,7 @@ import "./phone-hud.css";
 
 import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { Icon } from "@/ui/design-system/icon";
-import { MENU, REALM, WORLD } from "@/ui/design-system/kit/words";
+import { MENU } from "@/ui/design-system/kit/words";
 import type { AspectId } from "@bibliothecadao/types";
 
 import { usePartShown } from "../opening/opening-context";
@@ -13,7 +13,6 @@ export type HudSurface =
   | "research"
   | "feed"
   | "chat"
-  | "relics"
   | "menu"
   | "today"
   | "settings"
@@ -26,8 +25,6 @@ export const PhoneWorldActions = ({
   aspect,
   surface,
   onSurface,
-  isMapView,
-  onSwitchView,
   researchReady = false,
   events,
   unread,
@@ -35,19 +32,15 @@ export const PhoneWorldActions = ({
   aspect?: AspectId;
   surface: HudSurface | null;
   onSurface: (surface: HudSurface | null) => void;
-  isMapView?: boolean;
-  onSwitchView?: (toRealm: boolean) => void;
   researchReady?: boolean;
   events: number;
   unread: number;
 }) => {
   const aspectsOpen = usePartShown("aspects");
   const researchOpen = usePartShown("research");
-  const relicsOpen = usePartShown("relic-slots");
   const placesState = {
     aspectsOpen,
     researchOpen,
-    relicsOpen,
     researchReady,
     feedUnread: events,
     chatUnread: unread,
@@ -59,22 +52,9 @@ export const PhoneWorldActions = ({
     menuPlaces.find((place) => place.key === "feed" && place.count && place.count > 0) ??
     menuPlaces.find((place) => place.count && place.count > 0);
   const toggle = (target: "season" | "menu") => onSurface(surface === target ? null : target);
-  const switchLabel = isMapView ? REALM : WORLD;
 
   return (
     <nav aria-label="Places" className="frontier-phone-actions pointer-events-auto">
-      {onSwitchView && (
-        <button
-          type="button"
-          aria-label={switchLabel}
-          data-switch={isMapView ? "realm" : "world"}
-          className="frontier-phone-action frontier-phone-action--view"
-          onClick={() => onSwitchView(Boolean(isMapView))}
-        >
-          <Icon name={isMapView ? "realm" : "map"} size={20} />
-          <span className="frontier-phone-action__label">{switchLabel}</span>
-        </button>
-      )}
       {season && (
         <button
           type="button"

@@ -19,7 +19,6 @@ import {
   MOVE,
   EVENTS_WORDS,
   MENU,
-  RELIC_WORDS,
   RESEARCH,
   SEASON,
   SETTINGS,
@@ -58,7 +57,6 @@ describe("the HUD's words the steps press and read", () => {
       close: CLOSE,
       chat: CHAT,
       settings: SETTINGS,
-      relics: RELIC_WORDS.title,
     });
   });
 });

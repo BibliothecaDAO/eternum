@@ -1,10 +1,11 @@
 .frontier-realm-chip {
   display: inline-flex;
+  min-width: 0;
   align-items: center;
-  gap: theme(spacing[2.5]);
+  gap: theme(spacing.2);
   border: 0;
   background: transparent;
-  padding: theme(spacing.1) theme(spacing.1);
+  padding: 0 theme(spacing.1) 0 0;
   color: rgb(var(--hud-ink));
   cursor: pointer;
   text-align: left;
@@ -13,81 +14,116 @@
 .frontier-realm-chip:hover {
   opacity: 0.92;
 }
-.frontier-realm-chip__avatar {
+.frontier-aspect-medallion {
   position: relative;
-  width: theme(spacing.10);
-  height: theme(spacing.10);
-  flex: none;
-  border: 1px solid var(--hud-line-strong);
-  border-radius: var(--hud-radius-round);
-  background: var(--hud-well);
-}
-.frontier-realm-chip__portrait {
-  width: 100%;
-  height: 100%;
-  border-radius: var(--hud-radius-round);
-  object-fit: cover;
-}
-.frontier-realm-chip__facet {
-  position: absolute;
-  right: calc(theme(spacing.1) * -1);
-  bottom: calc(theme(spacing.1) * -1);
   display: inline-flex;
+  flex: none;
   align-items: center;
   justify-content: center;
-  border: 1px solid var(--hud-line-strong);
-  border-radius: var(--hud-radius-round);
-  background: var(--hud-surface-to);
-  padding: theme(spacing[0.5]);
+  border: 1.5px solid rgb(var(--hud-aspect, var(--hud-gold)));
+  border-radius: 3px 3px 16px 16px;
+  background: radial-gradient(circle at 50% 42%, rgb(var(--hud-aspect, var(--hud-gold)) / 0.36), var(--hud-well) 76%);
+  box-shadow:
+    0 4px 10px color-mix(in srgb, var(--hud-well) 85%, transparent),
+    0 0 14px rgb(var(--hud-aspect, var(--hud-gold)) / 0.28),
+    inset 0 1px 0 rgb(var(--hud-aspect, var(--hud-gold)) / 0.55);
+}
+.frontier-aspect-medallion[data-size="lg"] {
+  width: 40px;
+  height: 46px;
+  margin-bottom: -8px;
+  border-radius: 3px 3px 18px 18px;
+}
+.frontier-aspect-medallion[data-size="md"] {
+  width: 38px;
+  height: 42px;
+}
+.frontier-aspect-medallion[data-size="sm"] {
+  width: 24px;
+  height: 24px;
+  border-radius: 2px 2px 10px 10px;
+  box-shadow:
+    0 0 6px rgb(var(--hud-aspect, var(--hud-gold)) / 0.2),
+    inset 0 1px 0 rgb(var(--hud-aspect, var(--hud-gold)) / 0.4);
+}
+.frontier-realm-chip__text {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
 }
 .frontier-realm-chip__name {
   display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-family: var(--hud-font-display);
-  font-size: var(--hud-text-display);
-  line-height: var(--hud-leading-title);
+  font-size: var(--hud-text-title);
+  line-height: 1.05;
   color: rgb(var(--hud-ink));
-  letter-spacing: 0.03em;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
   white-space: nowrap;
 }
-.frontier-realm-chip__sub {
-  display: block;
-  font-size: var(--hud-text-body);
-  line-height: var(--hud-leading-label);
+.frontier-realm-chip__order {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--hud-text-badge);
+  line-height: 1.15;
   color: var(--hud-muted);
   white-space: nowrap;
 }
 
 .frontier-places {
   display: flex;
-  align-items: center;
-  gap: theme(spacing[1.5]);
+  height: 100%;
+  align-items: stretch;
+  gap: 2px;
 }
 .frontier-place {
   position: relative;
   display: inline-flex;
-  height: var(--hud-control);
+  height: 100%;
+  min-height: var(--hud-control);
   align-items: center;
   gap: theme(spacing[1.5]);
-  border: 1px solid var(--hud-line);
-  border-radius: var(--hud-radius-control);
-  background: var(--hud-well);
-  padding: 0 theme(spacing.3);
-  color: rgb(var(--hud-ink));
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0 theme(spacing.2);
+  color: var(--hud-muted);
   font-family: var(--hud-font-display);
-  font-size: var(--hud-text-title);
-  line-height: var(--hud-leading-body);
+  font-size: var(--hud-text-label);
+  line-height: var(--hud-leading-label);
   font-weight: var(--hud-weight-title);
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   white-space: nowrap;
   cursor: pointer;
   transition:
-    border-color var(--hud-fast) var(--hud-ease),
     background-color var(--hud-fast) var(--hud-ease),
     color var(--hud-fast) var(--hud-ease);
 }
 .frontier-place:hover {
-  border-color: var(--hud-line-strong);
   background: var(--hud-hover);
+  color: rgb(var(--hud-ink));
+}
+.frontier-place[aria-selected="true"] {
+  border-color: transparent;
+  background: linear-gradient(180deg, transparent 20%, color-mix(in srgb, rgb(var(--hud-gold)) 18%, transparent));
+  color: rgb(var(--hud-gold));
+  box-shadow: none;
+}
+.frontier-place[aria-selected="true"]::after {
+  content: "";
+  position: absolute;
+  right: 4px;
+  bottom: -2px;
+  left: 4px;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, rgb(var(--hud-gold)), transparent);
+  box-shadow: 0 0 10px color-mix(in srgb, rgb(var(--hud-gold)) 75%, transparent);
 }
 .frontier-place__badge {
   display: inline-flex;
@@ -95,17 +131,29 @@
   height: theme(spacing.4);
   align-items: center;
   justify-content: center;
-  border-radius: var(--hud-radius-round);
+  border-radius: 2px;
   background: rgb(var(--hud-gold));
   padding: 0 theme(spacing.1);
   color: rgb(var(--hud-dark));
   font-family: var(--hud-font);
   font-size: var(--hud-text-badge);
-  line-height: var(--hud-leading-badge);
+  line-height: 1;
   font-weight: var(--hud-weight-badge);
 }
 .frontier-place__badge[data-tone="good"] {
   background: var(--hud-good);
+}
+.frontier-place__badge[data-shape="diamond"] {
+  width: 16px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0;
+  transform: rotate(45deg);
+  border: 1px solid color-mix(in srgb, rgb(var(--hud-ink)) 45%, transparent);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--hud-good) 55%, transparent);
+}
+.frontier-place__badge[data-shape="diamond"] .frontier-place__badge-value {
+  transform: rotate(-45deg);
 }
 
 .frontier-quest-wrap {
@@ -115,16 +163,17 @@
 }
 .frontier-quest-chip {
   display: inline-flex;
-  height: var(--hud-control);
+  height: 30px;
   align-items: center;
   gap: theme(spacing[1.5]);
-  border: 1px solid var(--hud-line);
-  border-radius: var(--hud-radius-round);
+  border: 1px solid var(--hud-line-strong);
+  border-radius: var(--hud-radius-chip);
   background: var(--hud-well);
-  padding: 0 theme(spacing.3);
+  box-shadow: inset 0 1px 2px var(--hud-surface-to);
+  padding: 0 theme(spacing.2);
   color: rgb(var(--hud-ink));
-  font-size: var(--hud-text-strong);
-  line-height: var(--hud-leading-strong);
+  font-size: var(--hud-text-label);
+  line-height: 1;
   font-weight: var(--hud-weight-strong);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -134,7 +183,7 @@
     background-color var(--hud-fast) var(--hud-ease);
 }
 .frontier-quest-chip:hover {
-  border-color: var(--hud-line-strong);
+  border-color: rgb(var(--hud-gold));
   background: var(--hud-hover);
 }
 .frontier-quest-chip[data-ready="true"] {
@@ -146,6 +195,24 @@
   border-color: rgb(var(--hud-accent));
   background: var(--hud-chosen);
 }
+.frontier-quest-chip__label {
+  font-family: var(--hud-font-display);
+  font-size: var(--hud-text-badge);
+  line-height: 1;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--hud-muted);
+}
+.frontier-quest-chip[data-ready="true"] .frontier-quest-chip__label {
+  color: rgb(var(--hud-gold));
+}
+.frontier-quest-chip__count {
+  color: rgb(var(--hud-ink));
+}
+.frontier-place-switch .ui-tab[data-locked="true"] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 .frontier-quest-popover {
   position: absolute;
   top: calc(100% + theme(spacing.2));
@@ -154,9 +221,7 @@
   width: theme(spacing.hud-frontier-page);
   max-width: calc(100vw - theme(spacing.8));
 }
-.frontier-quest-popover[data-align="left"] {
-  right: auto;
-  left: 0;
+.frontier-quest-popover[data-layout="phone"] {
   max-width: calc(100vw - theme(spacing.4));
 }
 
@@ -167,41 +232,232 @@
 }
 .frontier-stores {
   display: inline-flex;
-  height: var(--hud-control);
   align-items: center;
-  gap: theme(spacing.3);
-  border: 1px solid var(--hud-line);
-  border-radius: var(--hud-radius-control);
-  background: var(--hud-well);
-  padding: 0 theme(spacing.3);
+  gap: theme(spacing.2);
 }
-.frontier-store {
+.frontier-trough {
   position: relative;
   display: inline-flex;
   align-items: center;
-  gap: theme(spacing.1);
   border: 0;
   background: transparent;
   padding: 0;
   color: rgb(var(--hud-ink));
-  font-size: var(--hud-text-strong);
-  line-height: var(--hud-leading-strong);
+  font-size: var(--hud-text-label);
+  line-height: 1;
   font-weight: var(--hud-weight-strong);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
-button.frontier-store {
+button.frontier-trough {
   cursor: pointer;
 }
-button.frontier-store:hover {
-  color: rgb(var(--hud-gold));
+.frontier-trough__icon {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  flex: none;
+  margin-right: -8px;
+  filter: drop-shadow(0 2px 3px color-mix(in srgb, var(--hud-well) 90%, transparent));
+}
+.frontier-trough__well {
+  position: relative;
+  display: inline-flex;
+  height: 26px;
+  min-width: 60px;
+  align-items: center;
+  overflow: hidden;
+  border: 1px solid var(--hud-line-strong);
+  border-radius: 2px;
+  background: var(--hud-well);
+  box-shadow: inset 0 1px 3px var(--hud-surface-to);
+  padding: 0 theme(spacing[1.5]) 0 theme(spacing.3);
+}
+button.frontier-trough:hover .frontier-trough__well {
+  border-color: rgb(var(--hud-gold));
+}
+.frontier-store-liquid {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 0;
+  background: color-mix(in srgb, rgb(var(--hud-gold)) 28%, transparent);
+  transition: width var(--hud-fast) var(--hud-ease);
+}
+.frontier-store-liquid[data-store="essence"] {
+  background: rgb(var(--hud-t3) / 0.36);
+}
+.frontier-store-liquid[data-store="labor"] {
+  background: color-mix(in srgb, var(--hud-warn) 34%, transparent);
+}
+.frontier-store-liquid[data-store="wheat"] {
+  background: color-mix(in srgb, rgb(var(--hud-gold)) 34%, transparent);
+}
+.frontier-store-liquid[data-store="troops"] {
+  background: rgb(var(--hud-t1) / 0.36);
+}
+.frontier-store-liquid[data-tone="warn"] {
+  background: color-mix(in srgb, var(--hud-warn) 44%, transparent);
+}
+.frontier-store-liquid[data-tone="bad"] {
+  background: color-mix(in srgb, var(--hud-bad) 44%, transparent);
+}
+.frontier-trough__values {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: baseline;
+  gap: theme(spacing[1.5]);
+}
+.frontier-trough__rate {
+  font-size: var(--hud-text-badge);
+  line-height: 1;
+  color: var(--hud-good);
+}
+.frontier-cornice-rivet {
+  position: relative;
+  width: 1px;
+  height: 22px;
+  flex: none;
+  background: linear-gradient(180deg, transparent, var(--hud-line-strong), transparent);
+}
+.frontier-cornice-rivet::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 5px;
+  height: 5px;
+  transform: translate(-50%, -50%) rotate(45deg);
+  border: 1px solid rgb(var(--hud-gold));
+  background: var(--hud-surface-from);
+}
+.frontier-fragments-socket {
+  display: inline-flex;
+  height: 28px;
+  align-items: center;
+  gap: theme(spacing[1.5]);
+  border: 1px solid color-mix(in srgb, var(--hud-warn) 72%, var(--hud-line-strong));
+  border-radius: 2px;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--hud-warn) 22%, var(--hud-surface-from)),
+    color-mix(in srgb, var(--hud-warn) 12%, var(--hud-well))
+  );
+  box-shadow: inset 0 1px 0 color-mix(in srgb, rgb(var(--hud-gold)) 25%, transparent);
+  padding: 0 4px 0 5px;
+  color: rgb(var(--hud-ink));
+  font-size: var(--hud-text-label);
+  line-height: 1;
+  font-weight: var(--hud-weight-strong);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color var(--hud-fast) var(--hud-ease);
+}
+.frontier-fragments-socket:hover {
+  border-color: rgb(var(--hud-gold));
+}
+.frontier-fragments-socket[data-compact="true"] {
+  height: 28px;
+  padding: 0 4px;
+}
+.frontier-fragments-socket__icon {
+  display: inline-flex;
+  flex: none;
+}
+.frontier-fragments-socket__amount {
+  color: rgb(var(--hud-ink));
+}
+.frontier-fragments-socket__plus {
+  display: inline-flex;
+  width: 18px;
+  height: 18px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 2px;
+  background: rgb(var(--hud-gold));
+  color: rgb(var(--hud-dark));
+  font-size: var(--hud-text-label);
+  line-height: 1;
+  font-weight: var(--hud-weight-strong);
 }
 .frontier-store-popover {
   position: absolute;
   top: calc(100% + theme(spacing.2));
-  right: 0;
+  left: 0;
   z-index: theme(zIndex.hud-popover);
   width: theme(spacing.hud-column);
+}
+
+.frontier-day-trigger {
+  display: inline-flex;
+  align-items: center;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+}
+.frontier-day-cornice {
+  display: inline-flex;
+  align-items: center;
+  gap: theme(spacing.2);
+}
+.frontier-day-medallion {
+  position: relative;
+  z-index: 3;
+  display: inline-flex;
+  width: 66px;
+  height: 66px;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  margin: 6px 0 -18px;
+  border: 2px solid color-mix(in srgb, rgb(var(--hud-gold)) 78%, var(--hud-line-strong));
+  border-radius: 9999px;
+  background: radial-gradient(circle at 50% 38%, var(--hud-surface-from), var(--hud-well) 74%);
+  box-shadow:
+    0 6px 16px color-mix(in srgb, var(--hud-well) 90%, transparent),
+    0 0 14px color-mix(in srgb, rgb(var(--hud-gold)) 28%, transparent),
+    inset 0 1px 0 color-mix(in srgb, rgb(var(--hud-gold)) 45%, transparent);
+  padding: 3px;
+}
+.frontier-day-medallion--phone {
+  width: 50px;
+  height: 50px;
+  margin: 4px 0 -10px;
+  padding: 2px;
+}
+.frontier-day-medallion__ring {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: transparent;
+}
+.frontier-day-medallion__ring .frontier-progress-ring__track {
+  stroke-width: 3.5;
+  stroke: color-mix(in srgb, var(--hud-line-strong) 80%, transparent);
+}
+.frontier-day-medallion__ring .frontier-progress-ring__fill {
+  stroke-width: 3.5;
+  filter: drop-shadow(0 0 4px color-mix(in srgb, rgb(var(--hud-gold)) 65%, transparent));
+}
+.frontier-day-medallion__ring[data-tone="ember"] .frontier-progress-ring__fill {
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--hud-bad) 75%, transparent));
+}
+.frontier-day-readout {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.1;
+  text-align: left;
+}
+.frontier-day-readout__left {
+  font-size: var(--hud-text-label);
+  line-height: 1.1;
+  font-weight: var(--hud-weight-strong);
+  white-space: nowrap;
 }
 
 .frontier-progress-ring {
@@ -218,15 +474,16 @@ button.frontier-store:hover {
   height: 26px;
 }
 .frontier-progress-ring--md {
-  width: 38px;
-  height: 38px;
+  width: 40px;
+  height: 40px;
   border: 1px solid var(--hud-line-strong);
   background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
-  box-shadow: var(--hud-shadow-panel);
 }
 .frontier-progress-ring--lg {
   width: 44px;
   height: 44px;
+  border: 1px solid var(--hud-line-strong);
+  background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
 }
 .frontier-progress-ring__svg {
   position: absolute;
@@ -290,22 +547,32 @@ button.frontier-store:hover {
   display: flex;
   flex-direction: column;
   align-items: center;
+  gap: 1px;
   line-height: 1;
 }
 .frontier-day-kicker {
   font-family: var(--hud-font);
   font-size: var(--hud-text-badge);
   line-height: 1;
+  transform: scale(0.82);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.12em;
   color: var(--hud-muted);
 }
 .frontier-day-label {
   font-family: var(--hud-font-display);
-  font-size: var(--hud-text-label);
+  font-size: var(--hud-text-display);
   line-height: 1;
   font-weight: var(--hud-weight-strong);
   letter-spacing: 0.02em;
+  color: rgb(var(--hud-ink));
+}
+.frontier-day-medallion--phone .frontier-day-kicker {
+  transform: scale(0.75);
+  letter-spacing: 0.08em;
+}
+.frontier-day-medallion--phone .frontier-day-label {
+  font-size: var(--hud-text-title);
 }
 
 .frontier-army-dock {
@@ -430,4 +697,123 @@ button.frontier-store:hover {
   color: var(--hud-muted);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+
+@media (max-width: 1440px) {
+  .frontier-realm-chip {
+    gap: theme(spacing[1.5]);
+    padding-right: 0;
+  }
+  .frontier-aspect-medallion[data-size="lg"] {
+    width: 34px;
+    height: 40px;
+    margin-bottom: -6px;
+  }
+  .frontier-aspect-medallion[data-size="lg"] img {
+    width: 24px;
+    height: 24px;
+  }
+  .frontier-stores {
+    gap: 4px;
+  }
+  .frontier-trough__icon {
+    margin-right: -10px;
+  }
+  .frontier-trough__icon img {
+    width: 20px;
+    height: 20px;
+  }
+  .frontier-trough__well {
+    min-width: 0;
+    padding: 0 5px 0 11px;
+  }
+  .frontier-trough__values {
+    gap: 3px;
+  }
+  .frontier-cornice-rivet {
+    display: none;
+  }
+  .frontier-fragments-socket {
+    gap: 4px;
+    padding: 0 3px 0 4px;
+  }
+  .frontier-fragments-socket__icon img {
+    width: 18px;
+    height: 18px;
+  }
+  .frontier-day-cornice {
+    gap: 5px;
+  }
+  .frontier-day-medallion {
+    width: 60px;
+    height: 60px;
+    margin: 5px 0 -15px;
+  }
+  .frontier-day-medallion--phone {
+    width: 50px;
+    height: 50px;
+    margin: 4px 0 -10px;
+  }
+  .frontier-quest-chip {
+    gap: 4px;
+    padding: 0 6px;
+  }
+  .frontier-places {
+    gap: 0;
+  }
+  .frontier-place {
+    gap: 4px;
+    padding: 0 6px;
+    letter-spacing: 0.03em;
+  }
+  .frontier-place > img {
+    width: 15px;
+    height: 15px;
+  }
+}
+
+@media (max-width: 1380px) {
+  .frontier-realm-chip {
+    gap: 4px;
+  }
+  .frontier-realm-chip__name {
+    font-size: var(--hud-text-label);
+    letter-spacing: 0.02em;
+  }
+  .frontier-stores {
+    gap: 2px;
+  }
+  .frontier-trough__well {
+    padding: 0 3px 0 9px;
+  }
+  .frontier-trough__rate-unit {
+    display: none;
+  }
+  .frontier-day-cornice {
+    gap: 3px;
+  }
+  .frontier-day-medallion {
+    width: 56px;
+    height: 56px;
+    margin: 5px 0 -13px;
+  }
+  .frontier-day-medallion--phone {
+    width: 50px;
+    height: 50px;
+    margin: 4px 0 -10px;
+  }
+  .frontier-quest-chip {
+    gap: 3px;
+    padding: 0 4px;
+  }
+  .frontier-place {
+    gap: 2px;
+    padding: 0 4px;
+    font-size: var(--hud-text-badge);
+    letter-spacing: 0.01em;
+  }
+  .frontier-place > img {
+    width: 14px;
+    height: 14px;
+  }
 }

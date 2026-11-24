@@ -4,7 +4,7 @@ import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
 import { Tooltip } from "@/ui/design-system/molecules/tooltip";
 import { FeedLine } from "@/ui/features/event-feed/feed-line";
 
-import { BuildingType, FRONTIER_TROOP_NAMES, rankName, TroopType } from "@bibliothecadao/types";
+import { BuildingType, FRONTIER_TROOP_NAMES, TroopType, type AspectId } from "@bibliothecadao/types";
 import type { AlertsPopupAsk } from "@/shell/profile/alerts-ask";
 import { GameProvider } from "@/hooks/context/game-context";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -91,8 +91,12 @@ import {
   StaminaRefill,
 } from "@/ui/features/frontier/army/refill";
 import { ShopCodeField, ShopView } from "@/ui/features/frontier/shop/shop-sheet";
+import { labQuestRulesFact } from "@/lab/game/quest-scenario";
 import { DayPill, DayRing } from "@/ui/features/frontier/hud/day-pill";
-import { RealmPanel } from "@/ui/features/frontier/hud/realm-panel";
+import { DailyQuestChip } from "@/ui/features/frontier/hud/daily-quest-chip";
+import type { MapLayers } from "@/ui/features/frontier/hud/map-layers";
+import { RealmPanel, type RealmBuildingItem } from "@/ui/features/frontier/hud/realm-panel";
+import { FrontierPlaceSwitch } from "@/ui/features/frontier/hud/surface-deep-switch";
 import { type WithdrawStep, WithdrawSheet } from "@/ui/features/frontier/value/withdraw-sheet";
 import { staminaShortfall } from "@/ui/design-system/kit/reasons";
 
@@ -130,10 +134,12 @@ const store = (
   amount: number | undefined,
   limit?: number,
   tone: StoreReading["tone"] = "calm",
+  perHour?: number,
 ) => ({
   kind,
   amount,
   limit,
+  perHour,
   tone,
   flyTarget: `lab-${kind}`,
 });
@@ -141,9 +147,9 @@ const store = (
 /** A city: 18,000 a store; Essence has no limit. */
 const STORES = [
   store("essence", 18_250),
-  store("labor", 9_640, 18_000),
-  store("wheat", 4_410, 18_000),
-  store("troops", 1_200, 18_000),
+  store("labor", 9_640, 18_000, "calm", 720),
+  store("wheat", 4_410, 18_000, "calm", 1_200),
+  store("troops", 1_200, 18_000, "calm", 180),
 ];
 /** The realm's Essence short of its Workshops' next tier (8,000), as the top bar and the Workshop's card both read it. */
 const SHORT_ESSENCE = 6_800;
@@ -1172,10 +1178,26 @@ export const HudLab = () => {
         lab={lab}
         strip={
           <PhoneTopBarView
-            realm={{ icon: homeIcon("realm", lab.realm?.level ?? 1), label: rankName(lab.realm?.level ?? 1) }}
+            realm={{
+              icon: homeIcon("realm", lab.realm?.level ?? 1),
+              label: LAB_REALM_NAME,
+              aspect: LAB_ASPECT,
+              orderId: LAB_ORDER_ID,
+            }}
             stores={[...lab.stores]}
             clock={<DayRing clock={lab.clock} />}
-            isMapView={lab.realmView === undefined}
+            placeSwitch={
+              <FrontierPlaceSwitch
+                isMapView={lab.realmView === undefined}
+                layers={LAB_MAP_LAYERS}
+                variant="phone"
+                onGoRealm={noop}
+                onGoSurface={noop}
+              />
+            }
+            quest={<LabDailyQuest layout="phone" />}
+            fragments={LAB_FRAGMENTS}
+            onShop={noop}
             storeCard={lab.storeCard && <StoreCard line={lab.storeCard} onSpend={noop} onBuild={noop} />}
             onOpenRealm={noop}
           />
@@ -1191,7 +1213,6 @@ export const HudLab = () => {
               onResearch={noop}
               onFeed={noop}
               onChat={noop}
-              onRelics={noop}
               onShop={noop}
               researchReady={!lab.offline}
               events={lab.offline ? 0 : 2}
@@ -1270,8 +1291,6 @@ export const HudLab = () => {
                         : null
               }
               onSurface={noop}
-              isMapView={lab.realmView === undefined}
-              onSwitchView={noop}
               researchReady={!lab.offline}
               events={lab.offline ? 0 : 2}
               unread={lab.offline ? 0 : 3}
@@ -1599,35 +1618,79 @@ const LabResearch = () => {
  * The HUD's slots in the lab as the game composes them: on a phone today's bands; on a desktop the HUD every mode
  * shares (FrontierDesktop) on the lab's game, its top bar, rail and minimap the game's own, Frontier's panels the lab's.
  */
-const LabBands = ({ desktop, lab, ...slots }: ComponentProps<typeof HudBands> & { desktop: boolean; lab: LabState }) =>
-  desktop ? (
-    <LabGame mode="frontier">
-      {() => (
+const LabDailyQuest = ({ layout = "desktop" }: { layout?: "desktop" | "phone" }) => {
+  const { setup } = useGame();
+  const realm = setup.store.get("Structure", { game_id: 1, entity_id: 7 });
+  return realm ? <DailyQuestChip realm={realm} layout={layout} /> : null;
+};
+
+const labQuestFacts = () => [labQuestRulesFact()];
+
+const LabBands = ({
+  desktop,
+  lab,
+  ...slots
+}: ComponentProps<typeof HudBands> & { desktop: boolean; lab: LabState }) => (
+  <LabGame mode="frontier" facts={labQuestFacts}>
+    {() =>
+      desktop ? (
         <FrontierDesktop
           identity={
-            <RealmHeaderChip owner="0x1" name={LAB_REALM_NAME} level={lab.realm?.level ?? 1} expanded onPress={noop} />
+            <RealmHeaderChip
+              name={LAB_REALM_NAME}
+              level={lab.realm?.level ?? 1}
+              aspect={LAB_ASPECT}
+              orderId={LAB_ORDER_ID}
+              expanded
+              onPress={noop}
+            />
           }
           season={{ rank: "#12", onOpen: noop }}
           clock={<DayPill clock={lab.clock} />}
-          stores={<HeaderStores stores={lab.stores} showPopoverCard={false} />}
+          quest={<LabDailyQuest />}
+          placeSwitch={
+            <FrontierPlaceSwitch
+              isMapView={lab.realmView === undefined}
+              layers={LAB_MAP_LAYERS}
+              onGoRealm={noop}
+              onGoSurface={noop}
+            />
+          }
+          stores={
+            <HeaderStores
+              stores={lab.stores}
+              storeCards={
+                lab.storeCard && {
+                  kinds: MADE_STORES,
+                  open: lab.storeCard.kind,
+                  onToggle: noop,
+                  card: <StoreCard line={lab.storeCard} onSpend={noop} onBuild={noop} />,
+                }
+              }
+              showPopoverCard={Boolean(lab.storeCard)}
+              fragments={LAB_FRAGMENTS}
+              onShop={noop}
+            />
+          }
           banner={slots.banner}
           realm={
             <RealmPanel
               name={LAB_REALM_NAME}
               level={lab.realm?.level ?? 1}
+              aspect={LAB_ASPECT}
+              orderId={LAB_ORDER_ID}
+              population={LAB_POPULATION}
               stores={[...lab.stores]}
+              buildings={LAB_REALM_BUILDINGS}
+              lean
               onHome={noop}
-              onClose={noop}
+              onUpgradeCastle={!lab.visiting ? noop : undefined}
               {...(!lab.visiting && {
                 lords: lab.purse?.lords ?? LAB_LORDS,
                 linkWalletLine: lab.noWallet ? LINK_WALLET_FOR_LORDS : null,
-                storeCards: lab.storeCard && {
-                  kinds: MADE_STORES,
-                  open: lab.storeCard.kind,
-                  onToggle: noop,
-                  card: <StoreCard line={lab.storeCard} onSpend={noop} onBuild={noop} />,
-                },
                 onWithdraw: noop,
+                onResearch: noop,
+                onDeploy: noop,
               })}
             />
           }
@@ -1646,15 +1709,25 @@ const LabBands = ({ desktop, lab, ...slots }: ComponentProps<typeof HudBands> & 
         >
           {slots.children}
         </FrontierDesktop>
-      )}
-    </LabGame>
-  ) : (
-    <HudBands {...slots} />
-  );
+      ) : (
+        <HudBands {...slots} />
+      )
+    }
+  </LabGame>
+);
 
 /** The lab realm's name and its LORDS where a state names none, as the desktop's realm panel reads them. */
 const LAB_REALM_NAME = "Duskbite";
+const LAB_ASPECT: AspectId = 1;
+const LAB_ORDER_ID = 12;
+const LAB_MAP_LAYERS: MapLayers = { layers: [0, 1], shown: 0, go: noop };
 const LAB_LORDS = 320;
+const LAB_POPULATION = { used: 3, max: 12 };
+const LAB_REALM_BUILDINGS: readonly RealmBuildingItem[] = [
+  { key: "farm", icon: "farm", name: "Farm", tier: 2, rateIcon: "wheat", rate: "+20/min", onUpgrade: noop },
+  { key: "workshop", icon: "workshop", name: "Workshop", tier: 2, rateIcon: "labor", rate: "+12/min", onUpgrade: noop },
+  { key: "barracks", icon: "barracks", name: "Barracks", tier: 5, rateIcon: "troops", rate: "+3/min", maxed: true },
+];
 
 /** The place a lab state has open, as the desktop's round places light it. */
 const labSurface = (lab: LabState): HudSurface | null =>

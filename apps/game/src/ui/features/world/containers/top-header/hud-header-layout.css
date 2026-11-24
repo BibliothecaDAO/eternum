@@ -1,5 +1,196 @@
 .hud-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: theme(spacing.2);
+  overflow: visible;
   background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
-  border-bottom: 1px solid var(--hud-line-strong);
-  box-shadow: var(--hud-shadow-panel);
+  border-bottom: 2px solid var(--hud-line-strong);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, rgb(var(--hud-gold)) 24%, transparent),
+    inset 0 -1px 0 var(--hud-well),
+    var(--hud-shadow-panel);
+}
+
+.hud-topbar__bay {
+  display: flex;
+  flex: 0 0 auto;
+  height: 100%;
+  align-items: center;
+}
+
+.hud-topbar__bay--left {
+  gap: theme(spacing.2);
+}
+
+.hud-topbar__bay--center {
+  gap: theme(spacing.2);
+}
+
+.hud-topbar__bay--right {
+  gap: theme(spacing.1);
+}
+
+.hud-topbar__rivet {
+  position: relative;
+  width: 1px;
+  height: 26px;
+  flex: none;
+  background: linear-gradient(180deg, transparent, var(--hud-line-strong), transparent);
+}
+
+.hud-topbar__rivet::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  transform: translate(-50%, -50%) rotate(45deg);
+  border: 1px solid rgb(var(--hud-gold));
+  background: var(--hud-surface-from);
+}
+
+.hud-topbar__switch {
+  display: inline-flex;
+  height: 32px;
+  align-items: stretch;
+  border: 1px solid var(--hud-line-strong);
+  border-radius: var(--hud-radius-chip);
+  background: var(--hud-well);
+  box-shadow:
+    inset 0 1px 2px var(--hud-surface-to),
+    0 1px 0 color-mix(in srgb, rgb(var(--hud-gold)) 14%, transparent);
+  padding: 2px;
+  gap: 2px;
+}
+
+.hud-topbar__switch > :not(:first-child) {
+  border-left: 1px solid var(--hud-line);
+  margin-left: 2px;
+  padding-left: 4px;
+}
+
+.hud-topbar__switch .ui-pill {
+  height: auto;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+}
+
+.hud-topbar__switch .ui-tabs {
+  flex-wrap: nowrap;
+  gap: 2px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+}
+
+.hud-topbar__switch .ui-tab {
+  height: 26px;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  background: transparent;
+  padding: 0 theme(spacing.2);
+  font-family: var(--hud-font-display);
+  font-size: var(--hud-text-label);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--hud-muted);
+}
+
+.hud-topbar__switch .ui-tabs .ui-tab.ui-pick[aria-selected="true"],
+.hud-topbar__switch .ui-tabs .ui-tab[aria-selected="true"] {
+  border-color: rgb(var(--hud-gold));
+  background: linear-gradient(
+    180deg,
+    rgb(var(--hud-gold)),
+    color-mix(in srgb, rgb(var(--hud-gold)) 72%, var(--hud-warn))
+  );
+  color: rgb(var(--hud-dark));
+  font-weight: var(--hud-weight-strong);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, rgb(var(--hud-ink)) 38%, transparent),
+    0 1px 4px color-mix(in srgb, var(--hud-well) 60%, transparent);
+}
+
+.hud-topbar__bay--right .ui-button[data-icon-only] {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+
+.hud-topbar__bay--right .ui-button[data-icon-only]:hover {
+  border-color: var(--hud-line);
+  background: var(--hud-hover);
+}
+
+@media (max-width: 1440px) {
+  .hud-topbar {
+    gap: theme(spacing.1);
+    padding-right: theme(spacing.2);
+    padding-left: theme(spacing.2);
+  }
+  .hud-topbar__bay--left,
+  .hud-topbar__bay--center {
+    gap: theme(spacing.1);
+  }
+  .hud-topbar__bay--right {
+    gap: 2px;
+  }
+  .hud-topbar__rivet {
+    display: none;
+  }
+  .hud-topbar__switch {
+    height: 30px;
+    padding: 1px;
+  }
+  .hud-topbar__switch .ui-tab {
+    height: 26px;
+    gap: 3px;
+    padding: 0 5px;
+    letter-spacing: 0.02em;
+  }
+  .hud-topbar__switch .ui-tab img {
+    width: 13px;
+    height: 13px;
+  }
+}
+
+@media (max-width: 1380px) {
+  .hud-topbar {
+    gap: 3px;
+    padding-right: 4px;
+    padding-left: 5px;
+  }
+  .hud-topbar__bay--left,
+  .hud-topbar__bay--center {
+    gap: 3px;
+  }
+  .hud-topbar__bay--right {
+    gap: 1px;
+  }
+  .hud-topbar__bay--right .ui-button[data-icon-only] {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    min-height: 28px;
+    padding: 0;
+  }
+  .hud-topbar__switch .ui-tabs {
+    gap: 1px;
+  }
+  .hud-topbar__switch .ui-tab {
+    gap: 2px;
+    padding: 0 4px;
+    font-size: var(--hud-text-badge);
+    letter-spacing: 0.01em;
+  }
+  .hud-topbar__switch .ui-tab img {
+    width: 12px;
+    height: 12px;
+  }
 }
