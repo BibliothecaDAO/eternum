@@ -194,13 +194,7 @@ type LabDeploy = {
 
 const DEPLOY: LabDeploy = { count: 1_000 };
 
-/** The stores with one of them holding another amount, its limit kept. */
-const holding = (stores: readonly StoreReading[], kind: StoreReading["kind"], amount: number) =>
-  stores.map((each) => (each.kind === kind ? { ...each, amount } : each));
-
 type LabSite = Omit<Parameters<typeof SiteCardView>[0], "onClose" | "onRealm">;
-
-/** A III Shrine's card (owner, 3 November 2026: "ok for D"): Army 2 holding one III point, Army 1 none. */
 
 const ARMY_CHIP = { art: "knight-t1" as const, troops: 5_000 };
 const ATTACK_30 = { kind: "attack" as const, stamina: 30, onAttack: () => undefined };

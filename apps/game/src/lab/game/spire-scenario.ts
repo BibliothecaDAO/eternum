@@ -19,7 +19,7 @@ import { LAB_GAME_ENDS_AT, type LabFact, type LabScenario, wire } from "./lab-ch
 const tileData = (biome: BiomeType) => BigInt(BiomeTypeToId[biome]) * BigInt(nativeTilePackingConstants.BIOME_SCALE);
 
 /** The biome each revealed tile of a lab game lies in, by its position. */
-export type LabGround = (hex: { col: number; row: number }) => BiomeType;
+type LabGround = (hex: { col: number; row: number }) => BiomeType;
 
 const GRASSLAND: LabGround = () => BiomeType.Grassland;
 /** Snow, bare rock and tundra in turn: the highest ground the map draws, as the playtest's snow fields rise. */
