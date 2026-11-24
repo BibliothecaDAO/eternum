@@ -21,7 +21,7 @@ export const FrontierDesktop = ({
   clock,
   quest,
   stores,
-  depthSwitch,
+  placeSwitch,
   banner,
   realm,
   armies,
@@ -37,7 +37,7 @@ export const FrontierDesktop = ({
   clock: ReactNode;
   quest?: ReactNode;
   stores?: ReactNode;
-  depthSwitch?: ReactNode;
+  placeSwitch?: ReactNode;
   banner?: ReactNode;
   realm?: ReactNode;
   armies?: ReactNode;
@@ -58,7 +58,7 @@ export const FrontierDesktop = ({
         places={places}
         quest={quest}
         stores={stores}
-        depthSwitch={depthSwitch}
+        placeSwitch={placeSwitch}
         clock={clock}
       />
       <div className="pointer-events-none fixed inset-x-4 bottom-hud-base top-hud-frontier-page-top z-hud-rail flex flex-col gap-2">
@@ -123,30 +123,22 @@ export const FrontierPlaces = ({
   onSurface,
   research,
   chatUnread = 0,
-  relics = 0,
-  hasRealm = true,
 }: {
   surface: HudSurface | null;
   onSurface: (surface: HudSurface | null) => void;
   research?: boolean;
   chatUnread?: number;
-  relics?: number;
-  hasRealm?: boolean;
 }) => {
   const unread = useUnreadImportantCount(surface === "feed");
   const researchOpen = usePartShown("research");
   const aspectsOpen = usePartShown("aspects");
-  const relicsOpen = usePartShown("relic-slots");
   const tabs = resolveHudPlaces({
     aspectsOpen,
     researchOpen,
-    relicsOpen,
     researchReady: research,
     feedUnread: unread,
     chatUnread,
     chatOpen: surface === "chat",
-    relics,
-    hasRealm,
   });
   return (
     <nav aria-label="Places" role="tablist" className="frontier-places pointer-events-auto">
@@ -163,8 +155,13 @@ export const FrontierPlaces = ({
           <Icon name={tab.icon} size={18} />
           <span>{tab.label}</span>
           {tab.count !== undefined && (
-            <span className="frontier-place__badge" data-tone={tab.countTone} aria-label={tab.countLabel}>
-              {tab.count}
+            <span
+              className="frontier-place__badge"
+              data-tone={tab.countTone}
+              data-shape={tab.countTone === "good" ? "diamond" : undefined}
+              aria-label={tab.countLabel}
+            >
+              <span className="frontier-place__badge-value">{tab.count}</span>
             </span>
           )}
         </button>

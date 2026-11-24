@@ -15,7 +15,6 @@ export const MenuPage = ({
   onResearch,
   onFeed,
   onChat,
-  onRelics,
   onShop,
   onToday,
   onSeason,
@@ -32,7 +31,6 @@ export const MenuPage = ({
   onResearch?: () => void;
   onFeed?: () => void;
   onChat?: () => void;
-  onRelics?: () => void;
   onShop?: () => void;
   onToday: () => void;
   onSeason: () => void;
@@ -47,15 +45,12 @@ export const MenuPage = ({
 }) => {
   const aspectsOpen = usePartShown("aspects");
   const researchOpen = usePartShown("research");
-  const relicsOpen = usePartShown("relic-slots");
   const placesState = {
     aspectsOpen,
     researchOpen,
-    relicsOpen,
     researchReady: onResearch ? Boolean(researchReady) : undefined,
     feedUnread: events,
     chatUnread,
-    hasRealm: Boolean(onRelics),
   };
   const seasonPlace = resolveHudPlaces(placesState).find((place) => place.key === "season");
   const places = resolveMenuPlaces(placesState);
@@ -63,7 +58,6 @@ export const MenuPage = ({
     research: onResearch,
     feed: onFeed,
     chat: onChat,
-    relics: onRelics,
   };
   const tiles = places.flatMap((place) => {
     const onClick = place.key === "season" ? undefined : handlers[place.key];

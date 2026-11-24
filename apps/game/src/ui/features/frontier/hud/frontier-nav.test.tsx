@@ -5,8 +5,9 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 
 import { PhoneWorldActions, type HudSurface } from "./frontier-nav";
+import { selectLayer } from "./map-layers";
 import { useOnePanel } from "./one-panel";
-import { SurfaceDeepSwitch } from "./surface-deep-switch";
+import { FrontierPlaceSwitch } from "./surface-deep-switch";
 
 vi.mock("@/hooks/helpers/use-query", () => ({ useQuery: () => ({ isMapView: true }) }));
 vi.mock("../frontier-home", () => ({ useGoToFrontierPlace: () => vi.fn() }));
@@ -35,22 +36,27 @@ afterEach(() => {
 const go = vi.fn(() => useUIStore.getState().selectOnMap(null));
 function PhoneHud({ open }: { open: HudSurface }) {
   const { surface, openSurface } = useOnePanel(null, true);
+  const layers = { layers: [0, 1, 2] as const, shown: 2 as const, go };
   return (
     <>
       <output data-page>{surface ?? "map"}</output>
-      <SurfaceDeepSwitch layers={{ layers: [0, 1, 2], shown: 2, go }} onSwitch={() => openSurface(null)} />
+      <FrontierPlaceSwitch
+        isMapView
+        variant="phone"
+        layers={layers}
+        onGoRealm={() => openSurface(null)}
+        onGoSurface={() => selectLayer(layers, 0, () => openSurface(null))}
+        onSwitch={() => openSurface(null)}
+      />
       <PhoneWorldActions surface={surface} onSurface={openSurface} events={0} unread={0} />
       <button onClick={() => openSurface(open)}>Open page</button>
     </>
   );
 }
 const press = (word: string) =>
-  act(() => [...document.querySelectorAll("button")].find((button) => button.textContent === word)!.click());
-/** A choice in the open view list, by its word (the slot names the shown layer too). */
-const choose = (word: string) =>
   act(() =>
-    [...document.querySelectorAll<HTMLButtonElement>('[role="menu"] button')]
-      .find((item) => item.textContent === word)!
+    [...document.querySelectorAll("button")]
+      .find((button) => button.getAttribute("aria-label") === word || button.textContent === word)!
       .click(),
   );
 const page = () => host.querySelector("[data-page]")!.textContent;
@@ -62,10 +68,8 @@ it.each(["research", "feed", "chat", "menu"] as const)(
     act(() => root.render(<PhoneHud open={open} />));
     press("Open page");
     expect(page()).toBe(open);
-    press("Hollow");
-    choose("Veil");
+    press("Veil");
     expect(go).toHaveBeenCalledWith(1);
-    expect(document.querySelector('[role="menu"]')).toBeNull();
     expect(page()).toBe("map");
   },
 );
@@ -84,8 +88,6 @@ it("choosing the layer already shown puts the page away without moving the map",
   act(() => root.render(<PhoneHud open="research" />));
   press("Open page");
   press("Hollow");
-  choose("Hollow");
   expect(go).not.toHaveBeenCalled();
-  expect(document.querySelector('[role="menu"]')).toBeNull();
   expect(page()).toBe("map");
 });

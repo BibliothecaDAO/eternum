@@ -427,29 +427,36 @@ it.each([390, 1440])("opens and closes the Wheat store from its control at %i px
   expect(host.querySelector('section[aria-label="Wheat"]')).toBeNull();
 });
 
-it("gives a phone one bottom Realm / World switch, keeps Realm idle unobstructed, and puts a page away", async () => {
+it("gives a phone one inline five-place switch with no duplicate bottom switch, keeps Realm idle unobstructed, and puts a page away", async () => {
   viewport.set(390);
   const route = window.location.pathname + window.location.search;
   window.history.replaceState(null, "", "/g/0x1ab9/1/map?col=1&row=1");
   try {
     await renderHud();
-    expect(host.querySelector('[aria-label="Map view"]')).toBeNull();
-    const viewSwitch = (word: string) =>
-      host.querySelector<HTMLButtonElement>(`nav[aria-label="Places"] button[aria-label="${word}"]`)!;
-    expect(viewSwitch("Realm")).not.toBeNull();
-    await act(async () => viewSwitch("Realm").click());
+    expect([...host.querySelectorAll('[aria-label="Map view"] [role="tab"]')].map((tab) => tab.textContent)).toEqual([
+      "Realm",
+      "Surface",
+      "Veil",
+      "Hollow",
+      "Deep",
+    ]);
+    expect(host.querySelector('nav[aria-label="Places"] [data-switch]')).toBeNull();
+    const placeTab = (word: string) =>
+      host.querySelector<HTMLButtonElement>(`[aria-label="Map view"] [role="tab"][aria-label="${word}"]`)!;
+    expect(placeTab("Realm")).not.toBeNull();
+    await act(async () => placeTab("Realm").click());
     expect(window.location.pathname).toMatch(/\/hex$/);
     expect(host.querySelector('section[aria-label="Realm"]')).toBeNull();
-    expect(viewSwitch("World")).not.toBeNull();
+    expect(placeTab("Realm").getAttribute("aria-selected")).toBe("true");
     const realmChip = host.querySelector<HTMLButtonElement>(".frontier-phone-realm-chip")!;
     await act(async () => realmChip.click());
     expect(host.querySelector('section[aria-label="Realm"]')).not.toBeNull();
-    await act(async () => viewSwitch("World").click());
+    await act(async () => placeTab("Surface").click());
     expect(window.location.pathname).toMatch(/\/map$/);
     expect(host.querySelector('section[aria-label="Realm"]')).toBeNull();
     await fromMenu("Feed");
     expect(surfaceNamed("Feed")).not.toBeNull();
-    await act(async () => viewSwitch("Realm").click());
+    await act(async () => placeTab("Realm").click());
     expect(window.location.pathname).toMatch(/\/hex$/);
     expect(surfaceNamed("Feed")).toBeNull();
   } finally {
@@ -535,7 +542,6 @@ const PHONE_SURFACES = {
   research: { label: "Research", open: () => fromMenu("Research") },
   feed: { label: "Feed", open: () => fromMenu("Feed") },
   chat: { label: "Chat", open: () => fromMenu("Chat") },
-  relics: { label: "Relics", open: () => fromMenu("Relics") },
   menu: { label: "Menu", open: () => pressPlace("Menu") },
   today: { label: "Today", open: () => fromMenu("Today") },
   season: { label: "Season", open: () => pressPlace("Season") },
@@ -818,14 +824,17 @@ const renderVisit = async (facts: unknown[] = []) => {
 
 // Owner, 28 October 2026, visiting another realm: "the selected panel doesnt match the actual building". The board
 // shows the visited realm, so the realm panel does too, never the player's own.
-it("shows the visited realm on a desktop's realm panel, not the player's own", async () => {
+it("shows the visited realm on the desktop top bar without duplicating the player's own identity", async () => {
   viewport.set(1440);
   try {
     const names = await renderVisit();
-    const panel = host.querySelector('section[aria-label="Realm"]')?.textContent ?? "";
+    const chip = host.querySelector(".frontier-realm-chip")?.textContent ?? "";
+    const panel = host.querySelector('section[aria-label="Realm"]')!;
     expect(names.visited).not.toBe(names.own);
-    expect(panel).toContain(names.visited);
-    expect(panel).not.toContain(names.own);
+    expect(chip).toContain(names.visited);
+    expect(chip).not.toContain(names.own);
+    expect(panel.querySelector(".realm-tiles")).toBeNull();
+    expect(panel.querySelector("[data-realm-castle]")).not.toBeNull();
   } finally {
     visiting.visit = null;
   }
@@ -983,21 +992,39 @@ it("keeps Chat reachable from the desktop top bar while visiting another realm",
   }
 });
 
-it("offers Relics for the player's own realm and hides it on a visit", async () => {
+it("orders the desktop cornice places as Research, Season, Feed, Chat without Relics and returns to Realm on top-left crest press", async () => {
   viewport.set(1440);
-  await renderHud();
-  expect(host.querySelector('nav[aria-label="Places"] button[aria-label="Relics"]')).not.toBeNull();
+  const route = window.location.pathname + window.location.search;
+  window.history.replaceState(null, "", "/g/0x1ab9/1/map?col=1&row=1");
   try {
-    await renderVisit();
+    await renderHud();
+    const labels = [...host.querySelectorAll('nav[aria-label="Places"] button')].map((button) =>
+      button.getAttribute("aria-label"),
+    );
+    expect(labels).toEqual(["Research", "Season", "Feed", "Chat"]);
     expect(host.querySelector('button[aria-label="Relics"]')).toBeNull();
-    expect(document.querySelector('section[aria-label="Relics"]')).toBeNull();
+    const placeTabs = [...host.querySelectorAll('[aria-label="Map view"] [role="tab"]')].map((tab) => [
+      tab.getAttribute("aria-label"),
+      tab.textContent,
+    ]);
+    expect(placeTabs).toEqual([
+      ["Realm", "Realm"],
+      ["Surface", "Surface"],
+      ["Veil", "Veil"],
+      ["Hollow", "Hollow"],
+      ["Deep", "Deep"],
+    ]);
+    const chip = host.querySelector<HTMLButtonElement>(".frontier-realm-chip")!;
+    expect(chip.querySelector('img[src*="portraits"]')).toBeNull();
+    await act(async () => chip.click());
+    expect(window.location.pathname).toMatch(/\/hex$/);
   } finally {
-    visiting.visit = null;
+    window.history.replaceState(null, "", route);
   }
 });
 
-it("opens Shop from the desktop top bar Fragments control once Fragments are held", async () => {
-  viewport.set(1440);
+it.each([1440, 390])("opens Shop from the %i px top bar Fragments socket once Fragments are held", async (width) => {
+  viewport.set(width);
   const route = window.location.pathname + window.location.search;
   window.history.replaceState(null, "", "/g/0x1ab9/1/map?col=1&row=1");
   try {

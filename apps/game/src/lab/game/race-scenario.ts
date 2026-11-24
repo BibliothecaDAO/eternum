@@ -3,6 +3,7 @@ import { deepCenter, nativeRuleConstants, type NativeRows } from "@bibliothecada
 import { aspects, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { deepScenario } from "./deep-scenario";
 import { LAB_LINKED_WALLET, wire, type LabScenario } from "./lab-chain";
+import { labQuestRulesFact } from "./quest-scenario";
 import type { GameSyncFact } from "@bibliothecadao/eternum/game-sync";
 
 /** Confirmed race facts on the shared Deep; the production Season surface reads the same snapshot after reconnect. */
@@ -23,11 +24,7 @@ export function raceScenario(finished = false): LabScenario {
       value: { game_id: 1, aspect: 1, members: homes.length },
     },
     // A daily quest on the day banner, which carries the Aspect's bane bar.
-    {
-      model: "QuestRules",
-      key: "0xa505",
-      value: { game_id: 1, base_counts: [1, 1, 1, 1, 1, 2, 15], labor: 1000, essence: 1500, bonus_percent: 150 },
-    },
+    labQuestRulesFact("0xa505"),
     { model: "AltarBar", key: "0xa502", value: { game_id: 1, aspect: 1, charge: 300 } },
     { model: "TriumphDay", key: "0xa503", value: { game_id: 1, aspect: 1, stage: 1, day: 1 } },
     { model: "TriumphDay", key: "0xa504", value: { game_id: 1, aspect: 1, stage: 2, day: 1 } },

@@ -55,10 +55,11 @@ const MapViewSwitch = ({
           {
             key: "realm",
             label: structureName(StructureType.Realm),
+            ariaLabel: structureName(StructureType.Realm),
             disabled: !canOpenLocal,
             title: canOpenLocal ? undefined : "Select a structure first",
           },
-          { key: "world", label: WORLD },
+          { key: "world", label: WORLD, ariaLabel: WORLD },
         ]}
         size="sm"
         value={isLocalView ? "realm" : "world"}

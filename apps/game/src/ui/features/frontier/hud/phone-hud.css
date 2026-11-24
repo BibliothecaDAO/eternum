@@ -3,42 +3,45 @@
   flex-direction: column;
   gap: theme(spacing[1.5]);
 }
-.frontier-phone-row {
+.frontier-phone-cornice {
   display: flex;
+  height: 48px;
+  margin: calc(theme(spacing.2) * -1) calc(theme(spacing.2) * -1) 0;
   align-items: center;
-  justify-content: space-between;
   gap: theme(spacing[1.5]);
+  overflow: visible;
+  border-bottom: 2px solid var(--hud-line-strong);
+  background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, rgb(var(--hud-gold)) 24%, transparent),
+    inset 0 -1px 0 var(--hud-well),
+    var(--hud-shadow-panel);
+  padding: 0 theme(spacing.2);
+  color: rgb(var(--hud-ink));
 }
-.frontier-phone-row .ui-pill {
-  height: 38px;
-  padding: 0 theme(spacing[1.5]);
+.frontier-phone-cornice__clock {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
 }
 .frontier-phone-pill {
   display: grid;
-  height: 38px;
   min-width: 0;
   flex: 1;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   align-items: center;
-  gap: theme(spacing[1.5]);
-  border: 1px solid var(--hud-line-strong);
-  border-radius: var(--hud-radius-round);
-  background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
-  box-shadow: var(--hud-shadow-panel);
-  padding: 0 theme(spacing.3);
-  color: rgb(var(--hud-ink));
+  gap: theme(spacing.1);
 }
 .frontier-phone-gauge {
   position: relative;
   display: flex;
   min-width: 0;
-  flex-direction: column;
-  gap: theme(spacing[0.5]);
+  align-items: center;
   border: 0;
   background: transparent;
   padding: 0;
   color: rgb(var(--hud-ink));
-  font-size: var(--hud-text-label);
+  font-size: var(--hud-text-badge);
   line-height: 1;
   font-weight: var(--hud-weight-strong);
   font-variant-numeric: tabular-nums;
@@ -46,51 +49,189 @@
 button.frontier-phone-gauge {
   cursor: pointer;
 }
-.frontier-phone-gauge__head {
+.frontier-phone-gauge__icon {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  flex: none;
+  margin-right: -6px;
+  filter: drop-shadow(0 1px 2px color-mix(in srgb, var(--hud-well) 90%, transparent));
+}
+.frontier-phone-gauge__well {
+  position: relative;
+  display: flex;
+  height: 24px;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  overflow: hidden;
+  border: 1px solid var(--hud-line-strong);
+  border-radius: 2px;
+  background: var(--hud-well);
+  box-shadow: inset 0 1px 2px var(--hud-surface-to);
+  padding: 0 3px 0 9px;
+}
+.frontier-phone-gauge__values {
+  position: relative;
+  z-index: 1;
   display: inline-flex;
   min-width: 0;
-  align-items: center;
-  gap: theme(spacing[0.5]);
+  align-items: baseline;
+  gap: 2px;
   white-space: nowrap;
 }
-.frontier-phone-gauge__bar {
-  display: block;
+.frontier-phone-gauge__rate {
+  color: var(--hud-good);
+  font-size: var(--hud-text-badge);
+  line-height: 1;
+}
+.frontier-phone-subrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: theme(spacing.1);
+  padding-top: theme(spacing[0.5]);
+}
+.frontier-phone-subrow__left {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: theme(spacing.1);
+}
+.frontier-phone-subrow__right {
+  display: flex;
+  flex: none;
+  margin-left: auto;
+  align-items: center;
+  gap: theme(spacing.1);
+}
+.frontier-phone-utility {
+  display: flex;
   width: 100%;
-  height: 3px;
-  overflow: hidden;
-  border-radius: var(--hud-radius-round);
-  background: var(--hud-line);
+  flex-direction: column;
+  align-items: stretch;
+  gap: theme(spacing.1);
 }
-.frontier-phone-gauge__fill {
-  display: block;
-  height: 100%;
-  border-radius: var(--hud-radius-round);
-  background: rgb(var(--hud-gold));
-  transition: width var(--hud-fast) var(--hud-ease);
+.frontier-phone-utility .frontier-place-switch[data-variant="phone"] {
+  display: flex;
+  width: 100%;
+  border: 1px solid var(--hud-line-strong);
+  border-radius: var(--hud-radius-chip);
+  background: var(--hud-well);
+  box-shadow:
+    inset 0 1px 2px var(--hud-surface-to),
+    var(--hud-shadow-panel);
+  padding: 2px;
 }
-.frontier-phone-gauge__fill[data-tone="warn"] {
-  background: var(--hud-warn);
+.frontier-phone-utility .frontier-place-switch[data-variant="phone"] .ui-tabs {
+  display: grid;
+  width: 100%;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 2px;
+  border: 0;
+  background: transparent;
+  padding: 0;
 }
-.frontier-phone-gauge__fill[data-tone="bad"] {
-  background: var(--hud-bad);
+.frontier-phone-utility .frontier-place-switch[data-variant="phone"] .ui-tab {
+  display: inline-flex;
+  height: 26px;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  background: transparent;
+  padding: 0 2px;
+  color: var(--hud-muted);
+  font-family: var(--hud-font-display);
+  font-size: var(--hud-text-badge);
+  line-height: 1;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.frontier-phone-utility .ui-tabs .ui-tab[aria-selected="true"] {
+  border-color: rgb(var(--hud-gold));
+  background: linear-gradient(
+    180deg,
+    rgb(var(--hud-gold)),
+    color-mix(in srgb, rgb(var(--hud-gold)) 72%, var(--hud-warn))
+  );
+  color: rgb(var(--hud-dark));
+  font-weight: var(--hud-weight-strong);
+}
+@media (max-width: 380px) {
+  .frontier-phone-cornice {
+    gap: 4px;
+    padding: 0 5px;
+  }
+  .frontier-phone-cornice .frontier-day-medallion--phone {
+    width: 46px;
+    height: 46px;
+    margin: 4px 0 -8px;
+  }
+  .frontier-phone-gauge__icon {
+    margin-right: -8px;
+  }
+  .frontier-phone-gauge__icon img {
+    width: 18px;
+    height: 18px;
+  }
+  .frontier-phone-gauge__well {
+    padding: 0 2px 0 8px;
+  }
+  .frontier-phone-utility .frontier-place-switch[data-variant="phone"] .ui-tab {
+    gap: 2px;
+    letter-spacing: 0;
+  }
+}
+.frontier-phone-subrow .frontier-quest-chip {
+  height: 30px;
+  padding: 0 theme(spacing.2);
 }
 .frontier-phone-realm-chip {
   display: inline-flex;
-  height: 34px;
+  min-height: 28px;
   min-width: 0;
   align-items: center;
   gap: theme(spacing[1.5]);
   border: 1px solid var(--hud-line-strong);
-  border-radius: var(--hud-radius-round);
+  border-radius: var(--hud-radius-chip);
   background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
   box-shadow: var(--hud-shadow-panel);
-  padding: 0 theme(spacing[2.5]);
+  padding: 2px theme(spacing.2) 2px 3px;
   color: rgb(var(--hud-ink));
-  font-family: var(--hud-font-display);
-  font-size: var(--hud-text-label);
-  line-height: var(--hud-leading-label);
-  white-space: nowrap;
+  text-align: left;
   cursor: pointer;
+}
+.frontier-phone-realm-chip__text {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 1px;
+}
+.frontier-phone-realm-chip__name {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: var(--hud-font-display);
+  font-size: var(--hud-text-badge);
+  line-height: 1.05;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.frontier-phone-realm-chip__order {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 3px;
+  font-size: var(--hud-text-badge);
+  line-height: 1;
+  color: var(--hud-muted);
+  white-space: nowrap;
 }
 .frontier-phone-realm-chip[aria-expanded="true"] {
   border-color: rgb(var(--hud-gold));
@@ -121,23 +262,6 @@ button.frontier-phone-gauge {
   box-shadow: var(--hud-shadow-panel);
   color: rgb(var(--hud-ink));
   cursor: pointer;
-}
-.frontier-phone-action--view {
-  width: auto;
-  min-width: theme(spacing.14);
-  flex-direction: column;
-  gap: theme(spacing[0.5]);
-  padding: 0 theme(spacing[2.5]);
-  border-color: rgb(var(--hud-gold));
-}
-.frontier-phone-action__label {
-  font-family: var(--hud-font-display);
-  font-size: var(--hud-text-badge);
-  line-height: 1;
-  font-weight: var(--hud-weight-title);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  white-space: nowrap;
 }
 .frontier-phone-action[aria-current="page"] {
   border-color: rgb(var(--hud-gold));
@@ -229,7 +353,7 @@ button.frontier-phone-gauge {
 }
 .menu-place-tiles {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: theme(spacing.2);
 }
 .menu-place-tile {

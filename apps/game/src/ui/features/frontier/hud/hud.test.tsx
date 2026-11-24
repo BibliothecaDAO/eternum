@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -23,12 +25,12 @@ import { MenuPage } from "./menu-page";
 import { OrderBar } from "./order-bar";
 import { PickedArmy } from "./picked-army";
 import { DayPill, DayRing } from "./day-pill";
-import { HeaderStores } from "./header-stores";
+import { HeaderStores, TOP_BAR_STORE_KINDS } from "./header-stores";
 import { PhoneTopBarView } from "./phone-top-bar";
 import { PhoneWorldActions } from "./frontier-nav";
 import { HUD_PLACES, resolveMenuPlaces } from "./hud-places";
 import { OfflineBanner, OfflineNotice } from "./offline-notice";
-import { type StoreReading, storeLine } from "./status-strip";
+import { type StoreReading, storeLine, storeRateText } from "./status-strip";
 
 const text = (markup: string) => new DOMParser().parseFromString(markup, "text/html").body.textContent ?? "";
 
@@ -117,7 +119,8 @@ describe("the status strip", () => {
     );
     const clock = { ...day, secondsLeft: 24 * 3_600, tomorrowSeconds: 24 * 3_600 };
     const markup = renderToStaticMarkup(<DayPill clock={clock} />);
-    expect(text(markup)).toContain(`Day ${day.day} · 24h`);
+    expect(text(markup)).toContain(`Day ${day.day}`);
+    expect(text(markup)).toContain("24h");
     expect(markup).not.toMatch(/\b1d\b/);
   });
 
@@ -141,7 +144,8 @@ describe("the status strip", () => {
     const lastHour = renderToStaticMarkup(
       <DayPill clock={{ ...day, secondsLeft: 600, shareLeft: 0.05, tone: "ember" }} />,
     );
-    expect(text(lastHour)).toContain(`Day ${day.day} · 10m`);
+    expect(text(lastHour)).toContain(`Day ${day.day}`);
+    expect(text(lastHour)).toContain("10m");
     expect(lastHour).toContain("text-hud-bad");
     expect(lastHour).toContain('data-fill-share="95"');
   });
@@ -159,6 +163,8 @@ describe("the status strip", () => {
     );
     act(() => root.render(<DayRing clock={{ ...day, secondsLeft: 900, shareLeft: -0.2, tone: "ember" }} />));
     const timer = host.querySelector('[role="timer"]')!;
+    expect(timer.className).toContain("frontier-day-medallion");
+    expect(timer.className).not.toContain("frontier-day-saddle");
     expect(timer.textContent).toBe(`Day${day.day}`);
     expect(timer.textContent).not.toBe(`D${day.day}`);
     expect(timer.getAttribute("aria-label")).toContain(`Day ${day.day} · 15m left`);
@@ -167,7 +173,7 @@ describe("the status strip", () => {
     expect(timer.querySelector("[data-fill-share]")?.getAttribute("data-fill-share")).toBe("100");
   });
 
-  it("renders PhoneTopBarView with DayRing, four resource capacity gauges and no duplicate Map view tabs", () => {
+  it("renders PhoneTopBarView with DayRing, four resource capacity gauges, and Fragments socket", () => {
     const day = dayClock(
       {
         dayUnitSeconds: 4 * 3_600,
@@ -178,52 +184,86 @@ describe("the status strip", () => {
       },
       3_600,
     );
+    const onShop = vi.fn();
     act(() =>
       root.render(
         <PhoneTopBarView
-          realm={{ icon: "realm-1", label: "City" }}
+          realm={{ icon: "realm-1", label: "Duskbite", aspect: 1, orderId: 12 }}
           clock={<DayRing clock={day} />}
-          isMapView
+          fragments={100}
+          onShop={onShop}
           stores={[
             store("essence", 125_000),
-            store("labor", 9_000, 18_000),
+            { ...store("labor", 9_000, 18_000), perHour: 180 },
             store("wheat", 3_000, 6_000),
             store("troops", 1_500, 3_000),
           ]}
         />,
       ),
     );
-    expect(host.querySelector('[aria-label="Map view"]')).toBeNull();
     expect(host.querySelector('[role="timer"]')?.textContent).toBe(`Day${day.day}`);
     const gauges = [...host.querySelectorAll(".frontier-phone-gauge")];
     expect(gauges.map((gauge) => gauge.getAttribute("data-store"))).toEqual(["essence", "labor", "wheat", "troops"]);
-    expect(gauges.map((gauge) => gauge.textContent)).toEqual(["125K", "9K", "3K", "1.5K"]);
-    expect(host.querySelectorAll(".frontier-phone-gauge__bar")).toHaveLength(3);
-    expect(host.querySelector('[data-store="essence"] .frontier-phone-gauge__bar')).toBeNull();
-    expect(host.querySelector(".frontier-phone-realm-chip")?.textContent).toBe("City");
+    expect(
+      gauges.map((gauge) => gauge.querySelector(".frontier-phone-gauge__values > :first-child")?.textContent),
+    ).toEqual(["125K", "9K", "3K", "1.5K"]);
+    expect(host.querySelector('[data-store="labor"] .frontier-phone-gauge__rate')?.textContent).toBe("+3");
+    expect(host.querySelectorAll(".frontier-store-liquid")).toHaveLength(3);
+    expect(host.querySelector('[data-store="essence"] .frontier-store-liquid')).toBeNull();
+    const realmChip = host.querySelector(".frontier-phone-realm-chip")!;
+    expect(realmChip.querySelector('[data-aspect-mark="1"]')).not.toBeNull();
+    expect(realmChip.textContent).toContain("Duskbite");
+    expect(realmChip.textContent).toContain("Order of Power");
+    const fragmentsSocket = host.querySelector<HTMLButtonElement>("[data-fragments-socket]");
+    expect(fragmentsSocket?.getAttribute("aria-label")).toBe("Fragments 100");
+    act(() => fragmentsSocket!.click());
+    expect(onShop).toHaveBeenCalledTimes(1);
   });
 
-  it("shows top-bar stores compactly with exact accessible labels and dashes the unknown", () => {
+  it("shows top-bar stores in cornice order with rates, capacity fill, exact accessible labels and Fragments socket", () => {
+    const onShop = vi.fn();
     act(() =>
       root.render(
         <HeaderStores
           showPopoverCard={false}
+          fragments={250}
+          onShop={onShop}
           stores={[
             store("essence", 125_000),
             store("labor", 18_000, 18_000),
-            store("wheat", undefined, 6_000),
+            { ...store("wheat", undefined, 6_000), perHour: 300 },
             store("troops", 420, 1_500),
           ]}
         />,
       ),
     );
     const plates = [...host.querySelectorAll('[role="img"]')];
-    expect(plates.map((plate) => plate.textContent)).toEqual(["18K", "—", "125K"]);
+    expect(plates.map((plate) => plate.getAttribute("data-store"))).toEqual(["essence", "labor", "wheat", "troops"]);
     expect(plates.map((plate) => plate.getAttribute("aria-label"))).toEqual([
-      "Labor 18,000 of 18,000",
-      "Wheat — of 6,000",
       "Essence 125,000",
+      "Labor 18,000 of 18,000",
+      "Wheat — of 6,000 · +5/min",
+      "Knights 420 of 1,500",
     ]);
+    expect(host.querySelector('[data-store="wheat"] .frontier-trough__rate')?.textContent).toBe("+5/min");
+    expect(host.querySelector('[data-store="labor"] .frontier-store-liquid')?.getAttribute("data-fill-share")).toBe(
+      "100",
+    );
+    const socket = host.querySelector<HTMLButtonElement>("[data-fragments-socket]");
+    expect(socket?.getAttribute("aria-label")).toBe("Fragments 250");
+    act(() => socket!.click());
+    expect(onShop).toHaveBeenCalledTimes(1);
+  });
+
+  it("formats store rates through one helper and defines one shared liquid tint per top-bar store", () => {
+    expect(storeRateText({ ...store("labor", 100, 1_000), perHour: 180 })).toBe("+3/min");
+    expect(storeRateText({ ...store("labor", 100, 1_000), perHour: 180 }, { compact: true })).toBe("+3");
+    expect(storeRateText({ ...store("labor", 1_000, 1_000), perHour: 180, fullIn: 0 })).toBeNull();
+    expect(storeRateText({ ...store("labor", 100, 1_000), perHour: 0 })).toBeNull();
+    const css = readFileSync(resolve(__dirname, "frontier-bar.css"), "utf8");
+    for (const kind of TOP_BAR_STORE_KINDS) {
+      expect(css).toContain(`.frontier-store-liquid[data-store="${kind}"]`);
+    }
   });
 });
 
@@ -363,44 +403,14 @@ describe("the phone world actions", () => {
     expect([...host.querySelectorAll("button")].map((button) => button.getAttribute("aria-label"))).toEqual(["Menu"]);
   });
 
-  it("renders one Realm/World switch button in PhoneWorldActions showing Realm on World and World in Realm", () => {
+  it("keeps PhoneWorldActions free of duplicate Realm/World buttons now that the 5-place rail sits in the top bar", () => {
     const onSurface = vi.fn();
-    const onSwitchView = vi.fn();
-    act(() =>
-      root.render(
-        <PhoneWorldActions
-          surface={null}
-          onSurface={onSurface}
-          isMapView
-          onSwitchView={onSwitchView}
-          events={0}
-          unread={0}
-        />,
-      ),
-    );
-    const realmButton = host.querySelector<HTMLButtonElement>('button[aria-label="Realm"]')!;
-    expect(realmButton.textContent).toBe("Realm");
-    expect(realmButton.getAttribute("data-switch")).toBe("realm");
-    act(() => realmButton.click());
-    expect(onSwitchView).toHaveBeenLastCalledWith(true);
-
-    act(() =>
-      root.render(
-        <PhoneWorldActions
-          surface={null}
-          onSurface={onSurface}
-          isMapView={false}
-          onSwitchView={onSwitchView}
-          events={0}
-          unread={0}
-        />,
-      ),
-    );
-    const worldButton = host.querySelector<HTMLButtonElement>('button[aria-label="World"]')!;
-    expect(worldButton.textContent).toBe("World");
-    expect(worldButton.getAttribute("data-switch")).toBe("world");
-    act(() => worldButton.click());
-    expect(onSwitchView).toHaveBeenLastCalledWith(false);
+    act(() => root.render(<PhoneWorldActions surface={null} onSurface={onSurface} events={0} unread={0} />));
+    expect([...host.querySelectorAll("button")].map((button) => button.getAttribute("aria-label"))).toEqual([
+      "Season",
+      "Menu",
+    ]);
+    expect(host.querySelector("[data-switch]")).toBeNull();
   });
 
   it("names a Paladin army Scouts on the picked-army row from Frontier's troop table", () => {
@@ -427,28 +437,16 @@ describe("the phone world actions", () => {
     expect(host.textContent).not.toContain("Paladins");
   });
 
-  it("reads the four non-Season Menu tiles from HUD_PLACES with Chat fourth and gates Relics on relic-slots", () => {
-    expect(HUD_PLACES.map((place) => place.key)).toEqual(["season", "research", "feed", "relics", "chat"]);
+  it("reads the three non-Season Menu tiles from HUD_PLACES in cornice order", () => {
+    expect(HUD_PLACES.map((place) => place.key)).toEqual(["research", "season", "feed", "chat"]);
     const allOpen = resolveMenuPlaces({
       aspectsOpen: true,
       researchOpen: true,
-      relicsOpen: true,
       researchReady: true,
       feedUnread: 2,
       chatUnread: 1,
-      hasRealm: true,
     });
-    expect(allOpen.map((place) => place.key)).toEqual(["research", "feed", "relics", "chat"]);
-    const noRelics = resolveMenuPlaces({
-      aspectsOpen: true,
-      researchOpen: true,
-      relicsOpen: false,
-      researchReady: false,
-      feedUnread: 0,
-      chatUnread: 0,
-      hasRealm: true,
-    });
-    expect(noRelics.map((place) => place.key)).toEqual(["research", "feed", "chat"]);
+    expect(allOpen.map((place) => place.key)).toEqual(["research", "feed", "chat"]);
   });
 
   it("dots Research only while a node can be researched now", () => {
@@ -776,7 +774,8 @@ it.each([81, 84, 85])("shows the last %ih day with its real countdown and no tom
   const day = hours === 81 ? 10 : 11;
   expect(clock).toMatchObject({ day, endsAt: endAt, secondsLeft: 600, tomorrowSeconds: undefined, tone: "ember" });
   const markup = renderToStaticMarkup(<DayPill clock={clock} />);
-  expect(text(markup)).toContain(`Day ${day} · 10m`);
+  expect(text(markup)).toContain(`Day ${day}`);
+  expect(text(markup)).toContain("10m");
   expect(markup).not.toContain("Tomorrow");
   expect(seasonDay(calendar, endAt - 1)).toEqual({ day, lastDay: day });
   const start = (hours === 81 ? 68 : 80) * 3600;

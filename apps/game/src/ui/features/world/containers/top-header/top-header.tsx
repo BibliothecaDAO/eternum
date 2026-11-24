@@ -15,11 +15,11 @@ type TopHeaderProps = {
   places?: ReactNode;
   quest?: ReactNode;
   stores?: ReactNode;
-  depthSwitch?: ReactNode;
+  placeSwitch?: ReactNode;
   clock?: ReactNode;
 };
 
-export const TopHeader = memo(({ identity, season, places, quest, stores, depthSwitch, clock }: TopHeaderProps) => {
+export const TopHeader = memo(({ identity, season, places, quest, stores, placeSwitch, clock }: TopHeaderProps) => {
   const lane = useCompactLane();
   const { isLocalView, canOpenLocal, mapLayer, showLayerSwitch, navigateToView, switchLayer } = useTopBarNavigation();
 
@@ -31,22 +31,23 @@ export const TopHeader = memo(({ identity, season, places, quest, stores, depthS
         places={places}
         quest={quest}
         stores={stores}
-        depthSwitch={depthSwitch}
         clock={clock ?? <GameClock compact={lane !== null} />}
         // On a desktop Next up, atop the rail, is the one queue of what needs the player (the owner's ruling, 16
         // October 2026); the phone, which has no Next up yet, keeps the pill.
         attention={lane ? <AttentionPill /> : null}
         settings={<SecondaryMenuItems />}
         viewControls={
-          <MapViewControls
-            compact={lane !== null}
-            isLocalView={isLocalView}
-            canOpenLocal={canOpenLocal}
-            mapLayer={mapLayer}
-            showLayerSwitch={showLayerSwitch}
-            onNavigate={navigateToView}
-            onLayerChange={switchLayer}
-          />
+          placeSwitch ?? (
+            <MapViewControls
+              compact={lane !== null}
+              isLocalView={isLocalView}
+              canOpenLocal={canOpenLocal}
+              mapLayer={mapLayer}
+              showLayerSwitch={showLayerSwitch}
+              onNavigate={navigateToView}
+              onLayerChange={switchLayer}
+            />
+          )
         }
       />
       <FollowingArmyPill />

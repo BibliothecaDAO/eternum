@@ -9,7 +9,6 @@ interface HudHeaderLayoutProps {
   places?: ReactNode;
   quest?: ReactNode;
   stores?: ReactNode;
-  depthSwitch?: ReactNode;
   clock: ReactNode;
   viewControls: ReactNode;
   attention: ReactNode;
@@ -23,7 +22,6 @@ export function HudHeaderLayout({
   places,
   quest,
   stores,
-  depthSwitch,
   clock,
   viewControls,
   attention,
@@ -33,18 +31,21 @@ export function HudHeaderLayout({
     return (
       <header
         aria-label="Game controls"
-        className="hud-topbar pointer-events-auto fixed inset-x-0 top-0 z-20 flex h-hud-header items-center justify-between gap-3 px-4"
+        className="hud-topbar pointer-events-auto fixed inset-x-0 top-0 z-20 h-hud-header px-3"
       >
-        <div className="flex min-w-0 items-center gap-3">
+        <div className="hud-topbar__bay hud-topbar__bay--left">
           {identity}
-          {places}
-        </div>
-        <div className="flex min-w-0 items-center gap-2">
-          {quest}
+          {identity && stores && <span className="hud-topbar__rivet" aria-hidden="true" />}
           {stores}
-          {viewControls}
-          {depthSwitch}
+        </div>
+        <div className="hud-topbar__bay hud-topbar__bay--center">
           {clock}
+          {quest}
+          {viewControls && <div className="hud-topbar__switch">{viewControls}</div>}
+        </div>
+        <div className="hud-topbar__bay hud-topbar__bay--right">
+          {places && <span className="hud-topbar__rivet" aria-hidden="true" />}
+          {places}
           {attention}
           {settings}
         </div>

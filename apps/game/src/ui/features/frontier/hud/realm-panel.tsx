@@ -2,7 +2,6 @@ import "./realm-panel.css";
 
 import {
   aspectName,
-  catalogOrder,
   formatAmount,
   formatExact,
   formatShortDuration,
@@ -10,17 +9,18 @@ import {
   rankName,
   type AspectId,
 } from "@bibliothecadao/types";
-import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { homeIcon, HOME_KINDS, type HomeKind } from "@/ui/design-system/home-icons";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
-import { orderMeaning } from "@/ui/design-system/icon-meaning";
 import { HudButton, HudChip, HudIconButton, HudPanel, HudRow, HudTier } from "@/ui/design-system/kit/hud-elements";
+import { OrderLine, resolvedOrder } from "@/ui/design-system/kit/order-emblem";
 import {
   ARMIES,
   CLOSE,
   DEPLOY,
   FULL,
+  MAX_LEVEL,
   REALM,
+  REALM_POP,
   RESEARCH,
   SHOW_MY_REALM,
   UPGRADE,
@@ -32,6 +32,7 @@ import type { ReactNode } from "react";
 
 import { FRONTIER_STORES } from "../stores";
 import { ProgressRing } from "./progress-ring";
+import { AspectMedallion } from "./realm-header-chip";
 import { LandingDelta, STORE_TONES, storeCapacityShare, type StoreReading, storeLine } from "./status-strip";
 
 export interface RealmBuildingItem {
@@ -43,6 +44,7 @@ export interface RealmBuildingItem {
   rateIcon?: IconMeaning;
   rate?: string;
   onUpgrade?: () => void;
+  maxed?: boolean;
 }
 
 export const RealmPanel = ({
@@ -50,12 +52,15 @@ export const RealmPanel = ({
   level,
   aspect,
   orderId,
+  population,
   armies,
   stores,
   buildings,
   lords,
   linkWalletLine = null,
+  lean = false,
   onHome,
+  onUpgradeCastle,
   storeCards,
   onWithdraw,
   onResearch,
@@ -69,12 +74,15 @@ export const RealmPanel = ({
   level: number | undefined;
   aspect?: AspectId;
   orderId?: number;
+  population?: { used: number; max: number };
   armies?: { active: number; limit: number };
   stores: StoreReading[];
   buildings?: readonly RealmBuildingItem[];
   lords?: number;
   linkWalletLine?: string | null;
+  lean?: boolean;
   onHome?: () => void;
+  onUpgradeCastle?: () => void;
   storeCards?: {
     kinds: readonly StoreReading["kind"][];
     open: StoreReading["kind"] | null;
@@ -87,7 +95,7 @@ export const RealmPanel = ({
   onClose?: () => void;
   sheetHandle?: boolean;
 }) => {
-  const order = orderId && orderId > 0 ? catalogOrder(orderId) : undefined;
+  const order = resolvedOrder(orderId);
   const visibleStores = stores.filter(
     (store) =>
       store.kind === "labor" ||
@@ -96,91 +104,141 @@ export const RealmPanel = ({
       store.amount > 0 ||
       (store.perHour ?? 0) > 0,
   );
+  const wonderLabel = kind === "wonder" ? HOME_KINDS[kind].label : undefined;
+  const medallionTip = aspect !== undefined ? aspectName(aspect) : wonderLabel;
+  const castleRank = level !== undefined ? rankName(level) : REALM;
+  const lordsLabel =
+    lords !== undefined ? [`${LORDS} ${formatExact(lords)}`, linkWalletLine].filter(Boolean).join(". ") : undefined;
+  const leanTitle = (
+    <span data-realm-castle className="inline-flex min-w-0 items-center gap-2.5">
+      <SemanticIcon name={homeIcon(kind, level ?? 0)} size={30} />
+      <span className="flex min-w-0 flex-col">
+        <span className="realm-panel__castle">{castleRank}</span>
+        {(population || lords !== undefined) && (
+          <span className="realm-panel__meta">
+            {population && <span>{REALM_POP(population.used, population.max)}</span>}
+            {population && lords !== undefined && <span aria-hidden="true">·</span>}
+            {lords !== undefined && (
+              <LordsInline
+                lords={lords}
+                label={lordsLabel!}
+                tip={linkWalletLine ?? LORDS}
+                warn={Boolean(linkWalletLine)}
+                onWithdraw={onWithdraw}
+              />
+            )}
+          </span>
+        )}
+      </span>
+    </span>
+  );
+  const fullTitle = (
+    <span className="inline-flex min-w-0 items-center gap-3">
+      <AspectMedallion
+        aspect={aspect}
+        fallbackIcon={homeIcon(kind, level ?? 0)}
+        fallbackAlt={wonderLabel}
+        tip={medallionTip}
+        decorative={false}
+        size="md"
+      />
+      <span className="flex min-w-0 flex-col">
+        <span className="realm-panel__name">{name}</span>
+        {(order || aspect !== undefined || level !== undefined) && (
+          <span className="realm-panel__sub">
+            {order && (
+              <OrderLine
+                orderId={order.orderId}
+                size={15}
+                className="inline-flex min-w-0 items-center gap-1.5 text-hud-label text-hud-muted"
+              />
+            )}
+            {order && aspect !== undefined && <span className="text-hud-label text-hud-muted">·</span>}
+            {aspect !== undefined && <span className="text-hud-label text-hud-ink">{aspectName(aspect)}</span>}
+            {!order && aspect === undefined && level !== undefined && (
+              <span className="text-hud-label text-hud-muted">{rankName(level)}</span>
+            )}
+          </span>
+        )}
+      </span>
+    </span>
+  );
+  const panelCue = lean ? (
+    <span className="inline-flex items-center gap-1.5">
+      {onUpgradeCastle && (
+        <HudButton kind="primary" size="sm" onClick={onUpgradeCastle}>
+          {UPGRADE}
+        </HudButton>
+      )}
+      {onClose && <HudIconButton icon="close" label={CLOSE} kind="secondary" size="sm" onClick={onClose} />}
+    </span>
+  ) : (
+    onClose && <HudIconButton icon="close" label={CLOSE} kind="secondary" size="sm" onClick={onClose} />
+  );
   return (
     <HudPanel
       label={REALM}
-      title={
-        <span className="inline-flex items-center gap-3">
-          <SemanticIcon
-            name={homeIcon(kind, level ?? 0)}
-            size={40}
-            alt={kind === "wonder" ? HOME_KINDS[kind].label : undefined}
-            data-tip={kind === "wonder" ? HOME_KINDS[kind].label : undefined}
-          />
-          <span className="flex min-w-0 flex-col">
-            <span className="realm-panel__name">{name}</span>
-            {(aspect || order || (!aspect && level !== undefined)) && (
-              <span className="realm-panel__sub">
-                {!aspect && level !== undefined && (
-                  <span className="text-hud-label text-hud-muted">{rankName(level)}</span>
-                )}
-                {aspect && (
-                  <span className="inline-flex items-center gap-1 text-hud-label text-hud-ink">
-                    <AspectMark aspect={aspect} size={14} decorative />
-                    {aspectName(aspect)}
-                  </span>
-                )}
-                {aspect && order && <span className="text-hud-label text-hud-muted">·</span>}
-                {order && (
-                  <span className="inline-flex items-center gap-1 text-hud-label text-hud-muted">
-                    <SemanticIcon name={orderMeaning(order.orderId)} size={14} />
-                    {order.orderName}
-                  </span>
-                )}
-              </span>
-            )}
-          </span>
-        </span>
-      }
-      cue={onClose && <HudIconButton icon="close" label={CLOSE} kind="secondary" size="sm" onClick={onClose} />}
-      onTitle={onHome && { label: SHOW_MY_REALM, run: onHome }}
+      title={lean ? leanTitle : fullTitle}
+      cue={panelCue}
+      onTitle={!lean && onHome ? { label: SHOW_MY_REALM, run: onHome } : undefined}
       collapsible={false}
-      className={sheetHandle ? "pointer-events-auto relative realm-panel--sheet" : "pointer-events-auto"}
+      className={
+        sheetHandle
+          ? "pointer-events-auto relative realm-panel--sheet"
+          : lean
+            ? "pointer-events-auto realm-panel--lean"
+            : "pointer-events-auto"
+      }
       bodyClassName="flex min-h-0 flex-1 flex-col gap-2.5 overflow-hidden"
     >
       {sheetHandle && <span className="frontier-phone-handle" aria-hidden="true" />}
       <div className="flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto">
-        <ul aria-label="Stores" className="realm-tiles">
-          {visibleStores.map((store) => (
-            <li key={store.kind} data-store={store.kind} className="relative min-w-0">
-              <StoreTile
-                store={store}
-                onOpen={storeCards?.kinds.includes(store.kind) ? () => storeCards.onToggle(store.kind) : undefined}
-              />
-            </li>
-          ))}
-          {armies && (
-            <li className="min-w-0">
-              <TileShell label={`${ARMIES} ${formatExact(armies.active)} / ${formatExact(armies.limit)}`} tip={ARMIES}>
-                <ProgressRing size="lg" share={armies.limit > 0 ? armies.active / armies.limit : undefined} tone="calm">
-                  <SemanticIcon name="knight-t1" size={20} />
-                </ProgressRing>
-                <span className="realm-tile__value tabular-nums">
-                  {`${formatExact(armies.active)}/${formatExact(armies.limit)}`}
-                </span>
-              </TileShell>
-            </li>
-          )}
-          {lords !== undefined && (
-            <li className="min-w-0">
-              <TileShell
-                label={[`${LORDS} ${formatExact(lords)}`, linkWalletLine].filter(Boolean).join(". ")}
-                tip={linkWalletLine ?? LORDS}
-                onClick={onWithdraw}
-              >
-                <ProgressRing
-                  size="lg"
-                  tone={linkWalletLine ? "amber" : "calm"}
-                  badge={linkWalletLine ? <SemanticIcon name="warning" size={12} /> : undefined}
+        {!lean && (
+          <ul aria-label="Stores" className="realm-tiles">
+            {visibleStores.map((store) => (
+              <li key={store.kind} data-store={store.kind} className="relative min-w-0">
+                <StoreTile
+                  store={store}
+                  onOpen={storeCards?.kinds.includes(store.kind) ? () => storeCards.onToggle(store.kind) : undefined}
+                />
+              </li>
+            ))}
+            {armies && (
+              <li className="min-w-0">
+                <TileShell
+                  label={`${ARMIES} ${formatExact(armies.active)} / ${formatExact(armies.limit)}`}
+                  tip={ARMIES}
                 >
-                  <SemanticIcon name="lords" size={20} />
-                </ProgressRing>
-                <span className="realm-tile__value tabular-nums">{formatAmount(lords)}</span>
-              </TileShell>
-            </li>
-          )}
-        </ul>
-        {storeCards?.open && storeCards.card}
+                  <ProgressRing
+                    size="lg"
+                    share={armies.limit > 0 ? armies.active / armies.limit : undefined}
+                    tone="calm"
+                  >
+                    <SemanticIcon name="knight-t1" size={20} />
+                  </ProgressRing>
+                  <span className="realm-tile__value tabular-nums">
+                    {`${formatExact(armies.active)}/${formatExact(armies.limit)}`}
+                  </span>
+                </TileShell>
+              </li>
+            )}
+            {lords !== undefined && (
+              <li className="min-w-0">
+                <TileShell label={lordsLabel!} tip={linkWalletLine ?? LORDS} onClick={onWithdraw}>
+                  <ProgressRing
+                    size="lg"
+                    tone={linkWalletLine ? "amber" : "calm"}
+                    badge={linkWalletLine ? <SemanticIcon name="warning" size={12} /> : undefined}
+                  >
+                    <SemanticIcon name="lords" size={20} />
+                  </ProgressRing>
+                  <span className="realm-tile__value tabular-nums">{formatAmount(lords)}</span>
+                </TileShell>
+              </li>
+            )}
+          </ul>
+        )}
+        {!lean && storeCards?.open && storeCards.card}
         {buildings && buildings.length > 0 && (
           <ul data-realm-buildings className="flex flex-col gap-1.5">
             {buildings.map((building) => (
@@ -203,11 +261,13 @@ export const RealmPanel = ({
                     )
                   }
                   controls={
-                    building.onUpgrade && (
+                    building.onUpgrade ? (
                       <HudButton kind="secondary" size="sm" onClick={building.onUpgrade}>
                         {UPGRADE}
                       </HudButton>
-                    )
+                    ) : building.maxed ? (
+                      <span className="realm-building__max">{MAX_LEVEL}</span>
+                    ) : undefined
                   }
                 />
               </li>
@@ -230,6 +290,43 @@ export const RealmPanel = ({
         </div>
       )}
     </HudPanel>
+  );
+};
+
+const LordsInline = ({
+  lords,
+  label,
+  tip,
+  warn,
+  onWithdraw,
+}: {
+  lords: number;
+  label: string;
+  tip: string;
+  warn: boolean;
+  onWithdraw?: () => void;
+}) => {
+  const face = (
+    <>
+      {warn && <SemanticIcon name="warning" size={12} />}
+      <span>{`${formatAmount(lords)} ${LORDS}`}</span>
+    </>
+  );
+  return onWithdraw ? (
+    <button
+      type="button"
+      className="realm-panel__lords"
+      data-warn={warn || undefined}
+      aria-label={label}
+      data-tip={tip}
+      onClick={onWithdraw}
+    >
+      {face}
+    </button>
+  ) : (
+    <span role="img" className="realm-panel__lords" data-warn={warn || undefined} aria-label={label} data-tip={tip}>
+      {face}
+    </span>
   );
 };
 
