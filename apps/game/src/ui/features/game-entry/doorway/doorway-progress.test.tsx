@@ -41,13 +41,13 @@ const draw = (view: ReturnType<typeof doorwayView>, { asking = false, mode = "fr
 const loadingMap = () =>
   doorwayView({ source: "boot", phase: "wait_worldmap_ready", audience: "player", modelShare: 0.5 });
 
-it("shows a Frontier player's map loading as one bar with its share and step, and what the first minutes hold", () => {
+it("shows a Frontier player's map loading as one bar with its share and active label, without internal step counters", () => {
   const page = draw(loadingMap());
   const bar = page.querySelector('[role="progressbar"]')!;
   expect(bar.getAttribute("aria-valuenow")).toBe("71");
   expect(page.textContent).toContain("Loading the map");
   expect(page.textContent).toContain("71%");
-  expect(page.textContent).toContain("Step 3 of 4");
+  expect(page.textContent).not.toMatch(/Step \d+ of \d+/);
   expect(page.textContent).toContain("First: build a Barracks");
   // A meter, not a control: nothing on the page but the places can be pressed while it loads.
   expect([...page.querySelectorAll("button")].filter((button) => !button.closest('[data-band="tabs"]'))).toEqual([]);
@@ -59,9 +59,10 @@ it.each(["blitz", "eternum"] as const)("keeps Frontier's first minutes out of a 
   expect(page.textContent).not.toContain("First: build a Barracks");
 });
 
-it("keeps the first minutes to a player: a spectator's doorway shows the bar alone", () => {
+it("keeps the first minutes to a player: a spectator's doorway shows the bar alone without step counters", () => {
   const page = draw(doorwayView({ source: "boot", phase: "wait_worldmap_ready", audience: "spectator" }));
-  expect(page.textContent).toContain("Step 1 of 2");
+  expect(page.textContent).toContain("Loading the map");
+  expect(page.textContent).not.toMatch(/Step \d+ of \d+/);
   expect(page.textContent).not.toContain("First: build a Barracks");
 });
 
