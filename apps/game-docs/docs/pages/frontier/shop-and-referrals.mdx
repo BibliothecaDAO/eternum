@@ -1,6 +1,6 @@
 ---
 title: Shop and referrals
-description: Fragments, the Ancient Seal, free Fragment sources, and inviting friends to your Aspect
+description: Fragments, the Ancient Seal, Realm NFT and Wonder comparison, free Fragment caches, and inviting friends
 ---
 
 import { FRONTIER } from "@/utils/frontier";
@@ -12,8 +12,9 @@ import { GameIcon } from "@/components/GameIcon";
 
 ## Fragments
 
-<GameIcon name="fragment" /> **Fragments** are the optional in-game currency for Season 1. You do not need Fragments to
-play or enter the Deep.
+<GameIcon name="fragment" /> **Fragments** are the optional in-game currency for Season 1. Fragments stay on your
+account, cannot be sent or withdrawn, and never become LORDS. You do not need Fragments to play, enter the Deep, or earn
+LORDS.
 
 - Custom amounts cost {FRONTIER.shop.fragmentPrice} per Fragment, from {FRONTIER.shop.minFragments} up to
   {FRONTIER.shop.dailyCap} Fragments per day. Preset packs are {FRONTIER.shop.packs[0].fragments}
@@ -22,7 +23,7 @@ play or enter the Deep.
 - You pay with {FRONTIER.shop.payTokens} from your linked [Payout wallet](/account/payout-wallet). Non-LORDS tokens swap
   into LORDS through AVNU.
 
-### What you can spend Fragments on
+### What Fragments buy
 
 | Use                                                 | Cost                                                  | Rule                        |
 | --------------------------------------------------- | ----------------------------------------------------- | --------------------------- |
@@ -30,12 +31,19 @@ play or enter the Deep.
 | <GameIcon name="stamina" /> **Stamina refill**      | 1 Fragment per {FRONTIER.stamina.perFragment} stamina | {FRONTIER.shop.staminaRule} |
 | <GameIcon name="shrine" /> **Oath reroll**          | {FRONTIER.oaths.rerollFragments} Fragments            | {FRONTIER.oaths.rerollNote} |
 
-If you created your realm with a **Realm NFT**, it receives the {FRONTIER.quest.bonusPercent} daily quest labor bonus
-without an Ancient Seal.
+Nothing sold adds Glory: troops, army slots, extra quests, and stamina inside the Deep are never sold.
+
+### Ancient Seal, Realm NFT, and Wonder Realm NFT
+
+| Holder                                                             | Daily quest labor             | Extra Fragments per quest         | Season 1 Realm skin         |
+| ------------------------------------------------------------------ | ----------------------------- | --------------------------------- | --------------------------- |
+| **Ancient Seal** ({FRONTIER.shop.sealFragments} Fragments or code) | {FRONTIER.quest.bonusPercent} | None                              | Yes (kept after the season) |
+| **Realm NFT** (held in payout wallet)                              | {FRONTIER.quest.bonusPercent} | None                              | No                          |
+| **Wonder Realm NFT** (held in payout wallet)                       | {FRONTIER.quest.bonusPercent} | +{FRONTIER.quest.wonderFragments} | No                          |
 
 ### Free ways to earn Fragments
 
-- Ruins can drop free Fragment caches ({FRONTIER.caches.surface} on the {FRONTIER.depths[0].name},
+- Ruins hold either a relic or a Fragment cache ({FRONTIER.caches.surface} on the {FRONTIER.depths[0].name},
   {FRONTIER.caches.veil} in the {FRONTIER.depths[1].name}, {FRONTIER.caches.hollow} in the {FRONTIER.depths[2].name}),
   paying 1 Fragment per {FRONTIER.caches.troopsPerFragment} guard troops.
 - A **Wonder Realm NFT** adds +{FRONTIER.quest.wonderFragments} Fragments every time you collect your daily quest.
@@ -45,7 +53,7 @@ without an Ancient Seal.
 ## Referrals (invite friends)
 
 <GameIcon name="share" /> Once you join an Aspect, open **Invite** to copy your personal Aspect link or share it on X.
-Friends who sign up through your link join your Aspect when creating their realm.
+Friends who sign up through your link join your Aspect when creating their realm (an account can have only one inviter).
 
 Each friend who joins through your link and reaches {FRONTIER.shop.friendGlory} Glory in the Deep pays you
 {FRONTIER.shop.friendFragments} Fragments, with no cap per season.

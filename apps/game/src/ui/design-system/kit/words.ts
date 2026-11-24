@@ -2319,10 +2319,11 @@ export const PICK_EFFECT_WORDS = {
   maxStaminaGain: (gain: string) => `${gain} max ${STAMINA}`,
   revealCost: "Reveal cost",
   scoutCostNote: (from: string, to: string) => `${FRONTIER_TROOP_NAMES[TroopType.Paladin]} ${from} → ${to}`,
-  lowStaminaAttackDamage: (threshold: string) => `Low-${STAMINA} (<${threshold}) attack damage`,
+  lowStaminaAttackDamage: (threshold: string) =>
+    `Attack damage when the army has less than ${threshold} ${STAMINA} left after the attack`,
   wonBattleRefund: `Won battle ${STAMINA} refund`,
   shareOf: (percent: string, base: string) => `${percent} of ${base}`,
-  nearbyAllyDamage: "Nearby ally bonus damage",
+  nearbyAllyDamage: "Adjacent own army's damage added",
   cleanWinRewards: (lossLimit: string) => `Clean-win (<${lossLimit} lost) rewards`,
 } as const;
 

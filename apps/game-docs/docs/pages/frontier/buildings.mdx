@@ -1,0 +1,55 @@
+---
+title: Buildings
+description: Frontier buildings, repeat copy prices, and unique buildings
+---
+
+import { FRONTIER } from "@/utils/frontier";
+import { GameIcon } from "@/components/GameIcon";
+import { PipeTable } from "@/components/PipeTable";
+
+# Buildings
+
+Tap an open plot on your realm to build. Your castle makes {FRONTIER.realm.castleLaborRates[0]} labor per hour at
+{FRONTIER.realm.castleLevelInline[0]}, multiplying by {FRONTIER.realm.castleLaborStep} at each castle level up to
+{FRONTIER.realm.castleLaborRates[3]}/h at {FRONTIER.realm.castleLevelInline[3]}. Each of the {FRONTIER.buildingsCount}
+buildings opens at its castle level and costs labor (plus Essence for special buildings):
+
+| Building                                                                    | Makes                         | Opens at                      | First copy price              |
+| --------------------------------------------------------------------------- | ----------------------------- | ----------------------------- | ----------------------------- |
+| <GameIcon name={FRONTIER.buildings[0].icon} /> {FRONTIER.buildings[0].name} | {FRONTIER.buildings[0].makes} | {FRONTIER.buildings[0].opens} | {FRONTIER.buildings[0].price} |
+| <GameIcon name={FRONTIER.buildings[1].icon} /> {FRONTIER.buildings[1].name} | {FRONTIER.buildings[1].makes} | {FRONTIER.buildings[1].opens} | {FRONTIER.buildings[1].price} |
+| <GameIcon name={FRONTIER.buildings[2].icon} /> {FRONTIER.buildings[2].name} | {FRONTIER.buildings[2].makes} | {FRONTIER.buildings[2].opens} | {FRONTIER.buildings[2].price} |
+| <GameIcon name={FRONTIER.buildings[3].icon} /> {FRONTIER.buildings[3].name} | {FRONTIER.buildings[3].makes} | {FRONTIER.buildings[3].opens} | {FRONTIER.buildings[3].price} |
+| <GameIcon name={FRONTIER.buildings[4].icon} /> {FRONTIER.buildings[4].name} | {FRONTIER.buildings[4].makes} | {FRONTIER.buildings[4].opens} | {FRONTIER.buildings[4].price} |
+| <GameIcon name={FRONTIER.buildings[5].icon} /> {FRONTIER.buildings[5].name} | {FRONTIER.buildings[5].makes} | {FRONTIER.buildings[5].opens} | {FRONTIER.buildings[5].price} |
+| <GameIcon name={FRONTIER.buildings[6].icon} /> {FRONTIER.buildings[6].name} | {FRONTIER.buildings[6].makes} | {FRONTIER.buildings[6].opens} | {FRONTIER.buildings[6].price} |
+| <GameIcon name={FRONTIER.buildings[7].icon} /> {FRONTIER.buildings[7].name} | {FRONTIER.buildings[7].makes} | {FRONTIER.buildings[7].opens} | {FRONTIER.buildings[7].price} |
+| <GameIcon name={FRONTIER.buildings[8].icon} /> {FRONTIER.buildings[8].name} | {FRONTIER.buildings[8].makes} | {FRONTIER.buildings[8].opens} | {FRONTIER.buildings[8].price} |
+
+There is no population cap in Frontier. Each plot holds one building, and demolishing a building refunds
+{FRONTIER.realm.demolitionRefund} of the labor you paid for it. Training buildings produce troops for free; deploying
+troops into an army costs {FRONTIER.realm.deployWheat} wheat per troop before Rations discounts.
+
+## Repeat copy prices
+
+Each extra copy of a repeatable building scales up from its base price ({FRONTIER.realm.copyMultipliers} for copies 1
+through 6):
+
+<PipeTable headers={["Repeatable building", "1st", "2nd", "3rd", "4th", "5th", "6th"]}>
+  {FRONTIER.realm.copyCostsTable}
+</PipeTable>
+
+## Unique buildings (one per realm)
+
+- **<GameIcon name={FRONTIER.buildingIcons.storeroom} /> {FRONTIER.names.storeroom}** (opens at
+  {FRONTIER.storeroom.opens}) adds {FRONTIER.storeroom.storageStep} to your wheat and labor storage caps and scales with
+  your castle level ([Realm and research](/frontier/realm#the-castle)).
+- **<GameIcon name={FRONTIER.buildingIcons.conscriptionCamp} /> {FRONTIER.names.conscriptionCamp}** (opens at
+  {FRONTIER.conscriptionOpens}) grants Conscription rank I, speeding up troop training by {FRONTIER.research.outputStep}
+  per rank across every {FRONTIER.names.barracks}, {FRONTIER.names.range}, and {FRONTIER.names.scoutsLodge}.
+- **<GameIcon name={FRONTIER.buildingIcons.rationsDepot} /> {FRONTIER.names.rationsDepot}** (opens at
+  {FRONTIER.rationsOpens}) grants Rations rank I, cutting deploy wheat cost by {FRONTIER.realm.rationStep} wheat per
+  troop per rank.
+- **<GameIcon name={FRONTIER.buildingIcons.supplyYard} /> {FRONTIER.names.supplyYard}** (opens at
+  {FRONTIER.supplyYardOpens}) grants new armies Logistics rank I, raising max stamina by
+  {FRONTIER.stamina.logisticsStep} per rank. Rebuilding a unique building does not grant a second rank.

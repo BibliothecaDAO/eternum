@@ -1,0 +1,45 @@
+---
+title: Daily quests
+description: Daily quests, castle-level rewards, and Realm NFT, Ancient Seal, and Wonder bonuses
+---
+
+import { FRONTIER } from "@/utils/frontier";
+
+# Daily quests
+
+Every game day brings a **daily quest** for your realm. Every realm can complete every daily quest from day 1 without
+any lore, building, or layer unlock. Complete today's objective and press **Collect** to claim your reward.
+
+- Each of the {FRONTIER.quest.count} daily quests comes once every {FRONTIER.quest.count} days in shuffled order, and
+  the same quest never runs two days in a row.
+- The target count is the base target multiplied by your castle level (1x at {FRONTIER.realm.castleLevelInline[0]}, up
+  to {FRONTIER.realm.maxLevel}x at {FRONTIER.realm.castleLevelInline[3]}).
+- Rewards start at {FRONTIER.quest.labor} Labor and {FRONTIER.quest.essence} Essence at
+  {FRONTIER.realm.castleLevelInline[0]} and multiply by {FRONTIER.quest.levelStep} at each castle level
+  ({FRONTIER.quest.levelScale}).
+- A **Realm NFT** or an Ancient Seal boosts daily quest labor to {FRONTIER.quest.bonusPercent}.
+- A **Wonder Realm NFT** also grants +{FRONTIER.quest.wonderFragments} Fragments when you collect.
+
+On World Bane or rival Team Bane days, a bane quest replaces today's daily quest
+([Banes and Triumphs](/frontier/banes)).
+
+## The {FRONTIER.quest.count} daily quests
+
+| Quest                             | Objective                          | Base target (× castle level)       |
+| --------------------------------- | ---------------------------------- | ---------------------------------- |
+| **{FRONTIER.quest.list[0].name}** | {FRONTIER.quest.list[0].objective} | {FRONTIER.quest.list[0].baseCount} |
+| **{FRONTIER.quest.list[1].name}** | {FRONTIER.quest.list[1].objective} | {FRONTIER.quest.list[1].baseCount} |
+| **{FRONTIER.quest.list[2].name}** | {FRONTIER.quest.list[2].objective} | {FRONTIER.quest.list[2].baseCount} |
+| **{FRONTIER.quest.list[3].name}** | {FRONTIER.quest.list[3].objective} | {FRONTIER.quest.list[3].baseCount} |
+| **{FRONTIER.quest.list[4].name}** | {FRONTIER.quest.list[4].objective} | {FRONTIER.quest.list[4].baseCount} |
+| **{FRONTIER.quest.list[5].name}** | {FRONTIER.quest.list[5].objective} | {FRONTIER.quest.list[5].baseCount} |
+| **{FRONTIER.quest.list[6].name}** | {FRONTIER.quest.list[6].objective} | {FRONTIER.quest.list[6].baseCount} |
+
+## Rewards by castle level
+
+| Castle level                     | Base reward                     | Labor with Realm NFT or Seal          |
+| -------------------------------- | ------------------------------- | ------------------------------------- |
+| {FRONTIER.quest.levels[0].level} | {FRONTIER.quest.levels[0].base} | {FRONTIER.quest.levels[0].bonusLabor} |
+| {FRONTIER.quest.levels[1].level} | {FRONTIER.quest.levels[1].base} | {FRONTIER.quest.levels[1].bonusLabor} |
+| {FRONTIER.quest.levels[2].level} | {FRONTIER.quest.levels[2].base} | {FRONTIER.quest.levels[2].bonusLabor} |
+| {FRONTIER.quest.levels[3].level} | {FRONTIER.quest.levels[3].base} | {FRONTIER.quest.levels[3].bonusLabor} |

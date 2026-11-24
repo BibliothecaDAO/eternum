@@ -1,0 +1,42 @@
+---
+title: Relics
+description: How relics work, tier drop odds by layer, and every relic kind from ruins
+---
+
+import { FRONTIER } from "@/utils/frontier";
+import { GameIcon } from "@/components/GameIcon";
+
+# Relics
+
+<GameIcon name="ruin" /> Relics give an army a timed burst you switch on when you need it. Clearing a Ruin that does not
+hold a Fragment cache gives 1 relic to the army that lands the last hit.
+
+## How relics work
+
+- **Loadout:** an army carries up to {FRONTIER.relics.slots} relics at once. When full, winning another relic lets you
+  pick which slot to replace.
+- **Activation:** activating a relic is free and works anywhere, including inside [the Deep](/frontier/deep). An army
+  can have one active effect per relic kind at a time.
+- **Duration:** an active relic lasts {FRONTIER.relics.minutesPerTier} minutes per tier, from
+  {FRONTIER.relics.minutesPerTier} minutes for {FRONTIER.relics.firstTier} I up to {FRONTIER.relics.maxMinutes} minutes
+  for {FRONTIER.relics.lastTier} V.
+- **Bound to the army:** relics cannot be sold, traded, or passed to another army, and end when the army ends with the
+  day.
+
+## Relic tiers by layer
+
+Relics come in {FRONTIER.relics.tiersCount} tiers ({FRONTIER.relics.firstTier} I to {FRONTIER.relics.lastTier} V), and
+deeper layers drop higher tiers (see [Beasts](/frontier/beasts) for ruin guard sizes per tier):
+
+- {FRONTIER.relics.layerOdds[0].layer}: {FRONTIER.relics.layerOdds[0].odds}
+- {FRONTIER.relics.layerOdds[1].layer}: {FRONTIER.relics.layerOdds[1].odds}
+- {FRONTIER.relics.layerOdds[2].layer}: {FRONTIER.relics.layerOdds[2].odds}
+
+## All {FRONTIER.relics.count} relic kinds
+
+| Relic                                                                               | {FRONTIER.relics.firstTier} I    | {FRONTIER.relics.lastTier} V        |
+| ----------------------------------------------------------------------------------- | -------------------------------- | ----------------------------------- |
+| <GameIcon name={FRONTIER.relics.rows[0].icon} /> **{FRONTIER.relics.rows[0].name}** | {FRONTIER.relics.rows[0].common} | {FRONTIER.relics.rows[0].legendary} |
+| <GameIcon name={FRONTIER.relics.rows[1].icon} /> **{FRONTIER.relics.rows[1].name}** | {FRONTIER.relics.rows[1].common} | {FRONTIER.relics.rows[1].legendary} |
+| <GameIcon name={FRONTIER.relics.rows[2].icon} /> **{FRONTIER.relics.rows[2].name}** | {FRONTIER.relics.rows[2].common} | {FRONTIER.relics.rows[2].legendary} |
+| <GameIcon name={FRONTIER.relics.rows[3].icon} /> **{FRONTIER.relics.rows[3].name}** | {FRONTIER.relics.rows[3].common} | {FRONTIER.relics.rows[3].legendary} |

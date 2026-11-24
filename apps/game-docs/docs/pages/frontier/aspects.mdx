@@ -1,13 +1,12 @@
 ---
-title: Aspects and the race
-description: Aspects, their Orders, hyperstructures, Triumphs, Glory, and LORDS rewards
+title: Aspects and rewards
+description: Aspects, their Orders, the hyperstructure race, Glory, and LORDS rewards
 ---
 
 import { FRONTIER } from "@/utils/frontier";
 import { GameIcon } from "@/components/GameIcon";
-import { PipeTable } from "@/components/PipeTable";
 
-# Aspects and the race
+# Aspects and rewards
 
 Every realm in Frontier Season 1 belongs to one of {FRONTIER.aspectsCount} **Aspects**. Together, an Aspect's players
 race to raise their Aspect's **hyperstructure** in [the Deep](/frontier/deep) and share LORDS rewards at the end of the
@@ -16,7 +15,9 @@ season.
 ## The {FRONTIER.aspectsCount} Aspects and their {FRONTIER.oaths.count} Orders
 
 If you create your realm with a **Realm NFT** held in your payout wallet, your Aspect is fixed by that Realm NFT's
-Order. If you start with a free home, you pick your Aspect when you enter.
+Order. If you start with a free home, you pick your Aspect and an Order inside it when you enter. No Aspect is ever
+closed, you cannot switch Aspects mid-season, and all {FRONTIER.oaths.count} Orders grant their [Oaths](/frontier/oaths)
+to every army regardless of Aspect.
 
 | Aspect                                                                      | Orders                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -28,30 +29,31 @@ Order. If you start with a free home, you pick your Aspect when you enter.
 ## The hyperstructure race
 
 <GameIcon name="hyperstructure" /> Each Aspect builds its own hyperstructure by holding **Hyperstructure archives** in
-the Deep. The race lasts {FRONTIER.day.seasonDays} game days or ends early as soon as one Aspect reaches full height.
+the Deep. Hyperstructures are tracked as a race counter rather than a tile on the map, so they cannot be attacked
+directly.
 
 - Each hyperstructure has {FRONTIER.race.stages} stages of {FRONTIER.race.stageHeight} height each, so
-  {FRONTIER.race.finishHeight} height wins the season.
+  {FRONTIER.race.finishHeight} height wins the season immediately.
+- Reaching stages 1 through 4 activates a **Stage Triumph** for your whole Aspect on the next game day
+  ([Banes and Triumphs](/frontier/banes#stage-triumphs)).
+- The season lasts {FRONTIER.day.seasonDays} game days at most. If no Aspect finishes by day {FRONTIER.day.seasonDays},
+  nobody receives the finish bonus, and every Aspect still earns LORDS for the height it built.
 - While a rival Team Bane is active on your Aspect, your hyperstructure stops gaining height until your Aspect breaks
-  the bane ([Quests and banes](/frontier/quests-and-banes#rival-team-banes)).
-
-## Stage Triumphs
-
-<GameIcon name="star" /> Completing stages 1 through 4 activates a **Triumph** for every member of your Aspect on the
-next game day. Each Triumph lasts for that one game day only, and no Triumph is scheduled on the last day of the season.
-
-<PipeTable headers={["Stage reached", "Triumph", "Effect for your Aspect"]}>{FRONTIER.race.triumphTable}</PipeTable>
+  the bane ([Banes and Triumphs](/frontier/banes#rival-team-banes)).
 
 ## Glory and LORDS rewards
 
-<GameIcon name="lords" /> Each Aspect earns a LORDS pool based on the height its hyperstructure reaches when the season
-ends.
+<GameIcon name="lords" /> Season 1 pays up to {FRONTIER.race.maxSeasonLords} LORDS in total. Each Aspect's pool depends
+on its own hyperstructure height when the season ends:
 
-- Every Aspect earns {FRONTIER.race.lordsPerHeight} LORDS per height point reached.
+- Every Aspect earns {FRONTIER.race.lordsPerHeight} LORDS per height point reached, regardless of what other Aspects
+  built.
 - The first Aspect to reach {FRONTIER.race.finishHeight} height wins a +{FRONTIER.race.finishBonus} LORDS finish bonus
   (up to {FRONTIER.race.maxFinishLords} LORDS for that Aspect).
+- LORDS for unbuilt height and any unearned finish bonus return to the treasury when the season closes.
 - Inside each Aspect, the pool splits by **Glory** share among members who earned at least {FRONTIER.race.gloryToShare}
-  Glory during the season.
-- You earn Glory only by holding sites in [the Deep](/frontier/deep).
+  Glory during the season, with no Realm NFT, ticket, Seal, or per-player cap required.
+- You earn Glory only by holding **Hyperstructure archives** and **Bane altars** in [the Deep](/frontier/deep). Essence
+  cores, Ethereal mines, and beaten troops give no Glory.
 
 Your linked [Payout wallet](/account/payout-wallet) receives your LORDS after the season ends.

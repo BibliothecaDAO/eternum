@@ -21,3 +21,9 @@ export const buildingCostModeOf = (
 /** Whether a build pays the labor-only cost: always where that is the only cost, by the player's choice where both exist. */
 export const resolveUseSimpleCost = (mode: BuildingCostMode, requestedSimpleCost: boolean): boolean =>
   mode === "simple" || (mode === "choice" && requestedSimpleCost);
+
+export const buildingCopyMultiplier = (standing: number, increaseBps: number): number =>
+  1 + standing * standing * (increaseBps / 10_000);
+
+export const buildingCopyCost = (base: number, standing: number, increaseBps: number): number =>
+  base * buildingCopyMultiplier(standing, increaseBps);
