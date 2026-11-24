@@ -231,7 +231,13 @@ describe("AspectEmissaryDock", () => {
   it("draws a phone's lesson as the still does: portrait, title, one line, the gold action and its close, no speaker name", () => {
     act(() =>
       root.render(
-        <AspectEmissaryDock moment="explore" rules={OPENING_RULES} layout="phone" onDismiss={vi.fn()} onSkipAll={vi.fn()} />,
+        <AspectEmissaryDock
+          moment="explore"
+          rules={OPENING_RULES}
+          layout="phone"
+          onDismiss={vi.fn()}
+          onSkipAll={vi.fn()}
+        />,
       ),
     );
     const dock = host.querySelector<HTMLElement>("[data-tutorial-dock='explore']")!;
@@ -246,7 +252,13 @@ describe("AspectEmissaryDock", () => {
   it("draws a phone's done lesson with a tick, its confirmation title and line, and nothing to press", () => {
     act(() =>
       root.render(
-        <AspectEmissaryDock moment="barracks" rules={OPENING_RULES} layout="phone" status="completed" onDismiss={vi.fn()} />,
+        <AspectEmissaryDock
+          moment="barracks"
+          rules={OPENING_RULES}
+          layout="phone"
+          status="completed"
+          onDismiss={vi.fn()}
+        />,
       ),
     );
     const dock = host.querySelector<HTMLElement>("[data-tutorial-dock='barracks']")!;
