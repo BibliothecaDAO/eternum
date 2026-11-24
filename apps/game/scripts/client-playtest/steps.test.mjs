@@ -1028,8 +1028,8 @@ describe("lab-hud-devices", () => {
 
   it("fails a state that leaves the map under its least share, and reads Chat's without holding it", () => {
     const menu = steps.find((step) => step.name === "menu").verify;
-    expect(menu(share(39.9)).status).toBe("failed");
-    expect(menu(share(40)).status).toBe("completed");
+    expect(menu(share(24.9)).status).toBe("failed");
+    expect(menu(share(25)).status).toBe("completed");
     expect(steps.find((step) => step.name === "chat").verify(share(8.6)).status).toBe("completed");
     expect(menu({ played: { share: { canvas: false, map: 0 } } }).status).toBe("blocked");
   });

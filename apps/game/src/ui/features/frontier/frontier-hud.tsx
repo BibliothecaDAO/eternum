@@ -74,7 +74,7 @@ import { useOpening } from "./opening/use-opening";
 import { useSiteAlertOffer } from "./opening/use-site-alert-offer";
 import { AspectEmissaryDock } from "./tutorial/aspect-emissary-dock";
 import { FrontierToday } from "./log/frontier-today";
-import { CARD_STORE_KINDS, type CardStore, FrontierStoreCard, isCardStore } from "./production/frontier-store-card";
+import { type CardStore, FrontierStoreCard, isCardStore } from "./production/frontier-store-card";
 import { FrontierResearch } from "./research/frontier-research";
 
 import { useBuildOpensOnEntering } from "./build/build-button";
@@ -209,8 +209,6 @@ const FrontierHudBody = ({
   };
   const storeCards = own
     ? {
-        kinds: CARD_STORE_KINDS,
-        open: openStore,
         onToggle: (kind: string) => {
           if (isCardStore(kind)) setOpenStore((open) => (open === kind ? null : kind));
         },
@@ -592,8 +590,6 @@ const useRealmFace = (realm: NativeRows["Structure"]) => {
 };
 
 type StoreCards = {
-  kinds: readonly CardStore[];
-  open: CardStore | null;
   onToggle: (kind: string) => void;
   card: ReactNode;
 };
