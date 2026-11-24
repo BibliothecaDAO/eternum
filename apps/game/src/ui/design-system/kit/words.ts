@@ -2210,7 +2210,7 @@ export const RESEARCH_TREE = {
   oathSlots: (count: number) => `${count} Oath ${count === 1 ? "slot" : "slots"}`,
   oathOpen: RESEARCH_OPEN,
   oathLocked: "Locked",
-  oathEarn: "Clear a site to swear an Oath",
+  oathEarn: `Clear a site that holds an ${SITE_OATH.label}, or reveal a ${SHRINE}`,
   oathResearch: "Research for new armies",
   conscriptionLine: "More troops from every troop building.",
   rationsLine: "Armies cost less wheat to deploy.",
