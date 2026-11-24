@@ -230,6 +230,21 @@ describe("ArmyActionManager.findActionPaths origin precedence", () => {
     }
   });
 
+  it("offers no move onto a cleared camp's supply post, as the contract keeps its hex held", () => {
+    const { manager, components, structureHexes, armyHexes, exploredHexes, oldFeltStart } = createTestSetup();
+    const [postHex, openHex] = getNeighborHexes(oldFeltStart.col, oldFeltStart.row);
+    components.TileOpt.set(
+      toTileEntityKey(false, postHex.col, postHex.row),
+      buildTileOptData({ ...postHex, biome: 1, occupierType: TileOccupier.SupplyPost, occupierId: 947 }),
+    );
+
+    const actionPaths = manager.findActionPaths(structureHexes, armyHexes, exploredHexes, 0, 0x123n as any);
+
+    expect(ActionPaths.getActionType(actionPaths.get(ActionPaths.posKey(openHex)) ?? [])).toBe(ActionType.Move);
+    expect(actionPaths.get(ActionPaths.posKey(postHex))).toBeUndefined();
+    expect(actionPaths.getRefusals().get(ActionPaths.posKey(postHex))).toEqual({ reason: "occupied" });
+  });
+
   it("routes around a Deep site corner on the straight line to a hex beyond it, one step longer", () => {
     vi.spyOn(StaminaManager.prototype, "getStamina").mockReturnValue({
       amount: 10n,
