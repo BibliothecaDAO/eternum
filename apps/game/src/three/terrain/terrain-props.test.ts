@@ -143,7 +143,7 @@ describe("terrain prop placement", () => {
     );
     const invalid = { ...request([cell(0, 0, BiomeType.Grassland)]), propDensityMultiplier: 3.1 };
     expect(() => prepareTerrainPropInstances(invalid, new TerrainField(invalid))).toThrow(
-      "Terrain prop density multiplier must be from 0.25 to 3",
+      "Terrain prop density multiplier must be from 0.1 to 3",
     );
   });
 
