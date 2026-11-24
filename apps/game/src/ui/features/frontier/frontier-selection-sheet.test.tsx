@@ -175,7 +175,8 @@ describe("Frontier's selection sheet", () => {
           ),
         );
         const sheet = host.querySelector("[data-kit-sheet]")!;
-        expect(sheet.getAttribute("aria-label")).toBe(`Supply post · ${expectedName}`);
+        expect(sheet.getAttribute("aria-label")).toBe("Supply Post");
+        expect(sheet.querySelector(".ui-frame__head .ui-chip")?.textContent).toBe(expectedName);
         expect(sheet.textContent!.split(expectedName).length - 1).toBe(1);
         expect(host.textContent).toContain("Cleared · Golem");
         expect(host.textContent).toContain("550 Labor");
@@ -184,9 +185,7 @@ describe("Frontier's selection sheet", () => {
         await act(async () => close!.click());
         expect(host.querySelector("[data-kit-sheet]")).toBeNull();
         await act(async () => useUIStore.getState().selectOnMap({ kind: "hex", hex: SITE_TILE }));
-        expect(host.querySelector("[data-kit-sheet]")?.getAttribute("aria-label")).toBe(
-          `Supply post · ${expectedName}`,
-        );
+        expect(host.querySelector("[data-kit-sheet]")?.getAttribute("aria-label")).toBe("Supply Post");
         expect(host.querySelector("[data-kit-sheet]")!.textContent).toContain(expectedName);
         expect(host.querySelector("[data-site-rewards]")?.textContent).toBe("550 Labor");
       } finally {
@@ -234,9 +233,8 @@ describe("Frontier's selection sheet", () => {
       expect(host.querySelector("[data-kit-sheet]")).toBeNull();
       // The clear's row in the Feed selects the tile itself, as every match link does (openOnMap's "tile").
       await act(async () => useUIStore.getState().selectOnMap({ kind: "hex", hex: SITE_TILE }));
-      expect(host.querySelector("[data-kit-sheet]")?.getAttribute("aria-label")).toBe(
-        `Supply post · ${siteName(SITE)}`,
-      );
+      expect(host.querySelector("[data-kit-sheet]")?.getAttribute("aria-label")).toBe("Supply Post");
+      expect(host.querySelector("[data-kit-sheet] .ui-frame__head .ui-chip")?.textContent).toBe(siteName(SITE));
       expect(host.textContent).toContain("Cleared · Golem");
     } finally {
       act(() => root.unmount());

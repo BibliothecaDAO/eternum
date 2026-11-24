@@ -154,7 +154,7 @@ it("shows the army's captured Oath capacity rather than later home research", ()
   expect(host.querySelector("[data-oath-slots]")?.textContent).not.toContain("Locked");
 });
 
-it("draws each offered Oath with its Order crest, effect line, army header and held slot pips without job colours", async () => {
+it("draws each offered Oath with its Order crest, effect line and the army's slot in the head, without job colours", async () => {
   const { FrontierOathPick } = await import("./oath-pick");
   const { nativeOathConstants: oaths } = await import("@bibliothecadao/eternum/game-client");
   game.progress.oath_slots = 2;
@@ -166,17 +166,19 @@ it("draws each offered Oath with its Order crest, effect line, army header and h
   expect(cards.map((card) => Number(card.dataset.oathId))).toEqual([oaths.POWER, oaths.FOX, oaths.RAGE]);
   expect(cards.every((card) => !("oathJob" in card.dataset))).toBe(true);
   expect(cards.every((card) => card.querySelector("img, svg") !== null)).toBe(true);
-  expect(host.textContent).toContain("Army 1 · 1,500 Knights");
-  expect(host.querySelector('[aria-label="Slots 1 of 2"]')).not.toBeNull();
+  expect(host.querySelector(".oath-pick__title span")?.textContent).toBe("Slot 2 of 2 · 1,500 Knights");
 });
 
-it("opens the earned pick without a selection and keeps it through Escape and outside presses", async () => {
+it("opens the earned pick once its army is picked and keeps it through Escape and outside presses", async () => {
   const { FrontierOathPick } = await import("./oath-pick");
   const { nativeOathConstants: oaths } = await import("@bibliothecadao/eternum/game-client");
   game.progress.oath_slots = 1;
   game.progress.oaths = 0;
   game.progress.oath_pick = oaths.POWER - 1 + ((oaths.FOX - 1) << 4) + ((oaths.RAGE - 1) << 8);
+  useUIStore.setState((state) => ({ entityActions: { ...state.entityActions, selectedEntityId: null } }));
   act(() => root.render(<FrontierOathPick realm={{ game_id: 1 } as never} />));
+  expect(host.querySelector("[data-oath-pick]")).toBeNull();
+  act(() => useUIStore.setState((state) => ({ entityActions: { ...state.entityActions, selectedEntityId: 12 } })));
   expect(host.querySelectorAll("[data-oath-id]")).toHaveLength(3);
   expect(host.querySelector('button[aria-label="Close"]')).toBeNull();
   act(() => {
@@ -203,19 +205,20 @@ it("opens an earned pick before the army's stamina is known, its cards answerabl
   game.progress.oath_pick = oaths.POWER - 1 + ((oaths.FOX - 1) << 4) + ((oaths.RAGE - 1) << 8);
   act(() => root.render(<FrontierOathPick realm={{ game_id: 1 } as never} />));
   expect(host.querySelectorAll("[data-oath-id]")).toHaveLength(3);
-  const pass = button(/^Pass:/)!;
-  expect(pass.textContent).toBe(`Pass: +${oaths.PASS_STAMINA} stamina`);
-  expect(pass.disabled).toBe(true);
+  const pass = () => host.querySelector<HTMLButtonElement>("[data-oath-pass]")!;
+  expect(pass().textContent).toBe(`Pass · +${oaths.PASS_STAMINA}`);
+  expect(pass().disabled).toBe(true);
   expect(host.querySelector("[data-oath-pass-result]")).toBeNull();
   game.staminaKnown = true;
   act(() => root.render(<FrontierOathPick realm={{ game_id: 1 } as never} />));
-  expect(button(/^Pass:/)!.disabled).toBe(false);
-  expect(button(/^Pass:/)!.textContent).toBe(
-    `Pass: +${oaths.PASS_STAMINA} stamina${army.stamina.current} → ${army.stamina.current + oaths.PASS_STAMINA} / ${army.stamina.max}`,
+  expect(pass().disabled).toBe(false);
+  expect(pass().textContent).toBe(
+    `Pass · +${oaths.PASS_STAMINA}${army.stamina.current} → ${army.stamina.current + oaths.PASS_STAMINA}`,
   );
   game.staminaKnown = false;
   act(() => root.render(<FrontierOathPick realm={{ game_id: 1 } as never} />));
-  await act(async () => host.querySelector<HTMLButtonElement>(`[data-oath-id="${oaths.FOX}"] button`)!.click());
+  await act(async () => host.querySelector<HTMLButtonElement>(`[data-oath-id="${oaths.FOX}"]`)!.click());
+  await act(async () => host.querySelector<HTMLButtonElement>("[data-oath-swear]")!.click());
   expect(game.chooseOath).toHaveBeenCalledWith({
     signer: game.signer,
     explorerId: army.explorerId,
@@ -246,9 +249,9 @@ it("redraws the card at its place for its Fragments, once a pick, never short of
     ["1", false],
     ["2", false],
   ]);
-  const rageRedraw = host.querySelector(`[data-oath-id="${oaths.RAGE}"] [data-reroll-oath]`)!;
-  expect(rageRedraw.getAttribute("aria-label")).toBe(`Redraw Rage for ${formatCount(price, FRAGMENT, FRAGMENTS)}`);
-  expect(rageRedraw.textContent).toBe(`Redraw · ${price}`);
+  const rageRedraw = redraws()[2]!;
+  expect(rageRedraw.getAttribute("aria-label")).toBe(`Swap Rage for ${formatCount(price, FRAGMENT, FRAGMENTS)}`);
+  expect(rageRedraw.textContent).toBe("Swap");
   await act(async () => redraws()[2]!.click());
   expect(game.rerollOath).toHaveBeenCalledWith({
     signer: game.signer,

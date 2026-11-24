@@ -200,10 +200,7 @@ function ArmyOathPick({
         expectedPick: progress.oath_pick,
         index,
       }),
-    ).catch((error: unknown) => {
-      setSwappedAt(null);
-      toast.failed(error, OATH_PICK.notRedrawn);
-    });
+    ).catch((error: unknown) => toast.failed(error, OATH_PICK.notRedrawn));
   };
 
   return (
