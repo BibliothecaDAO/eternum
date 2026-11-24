@@ -562,23 +562,22 @@ On a desktop, Frontier plays on the shared full-width dark bronze top bar
 Realm name in display face, rank and Aspect; pressing it toggles the Realm panel), five places from one source
 (`frontier/hud/hud-places.ts`: **Season**, **Research**, **Feed**, **Relics**, **Chat**), the day's quest chip (opens
 the quest banner popover), the three stores (**Labor**, **Wheat**, **Essence**), **Realm / World**, **Surface / Deep**
-(World only), the compact day clock (`Day N · Xh`, opening **Today**), and the Settings gear alone (Alerts and How to
-play live inside Settings). One panel stands in the left slot under the bar (`[data-realm-slot]`): on the Realm view,
-the Realm panel (Aspect and Order Facets, gated stores including Labor, Wheat, Essence and home troops beside Armies,
-Castle and standing buildings with Upgrade, **Research** and gold **Deploy**); opening a narrow top-bar place
-(**Research**, **Feed**, **Relics**, **Chat**) or sheet (**Build**, **Castle**, building card, **Deploy**, **Army**,
-**Today**, **Shop**, **Settings**) replaces the Realm panel in place, one panel at a time, fitted to its content, and
-its × closes it; **Season** (the 3D Season race) opens full-width below the top bar (`[data-wide-page]`) under the
-notices, hiding the army dock and Aspect standing chip while open. On the World view, the map stays open with no
-minimap, horizontal army cards stand at the bottom left, and the Aspect standing chip stands at the bottom right. The
-right rail (`frontier/hud/frontier-desktop.tsx`) holds client notices (refused orders, warnings, clock milestones) and
-map site cards, with nothing standing there when closed. The **Feed** (`frontier/hud/frontier-feed.tsx`) is a page like
-the others: the world's history live, one line a story (who did what to what, how it went, what it paid at its end; a
-find under one unit is "djizus explored"), your own in gold; each row's painting is its story's act (`storyMeaning`, the
-same table Blitz's Events and Log rows read) and a site's guard as the map draws it, from Herald's row of the site
-(`/games/<id>/sites/<entity>`) when the player's map holds none, under **All** (the world’s history, first and the
-default), **Important**, or **Mine** (your own fights, captures and chests), scrolling inside the left slot. A point
-spent reads "spent a point on Battle IV", ranks by their numeral as the army panel shows them
+(World only), the filling circular day clock (`Day N · Xh`, opening **Today**), and the Settings gear alone (Alerts and
+How to play live inside Settings). On desktop, the left column (`aside[aria-label="Realm"]`) keeps Realm information and
+the vertical **Armies** dock stacked below it: the Realm panel shows circular bronze dials with capacity fill rings and
+time-to-full badges for capped stores, Castle and standing buildings with Upgrade, **Research** and gold **Deploy**.
+Opening a narrow top-bar place (**Feed**, **Relics**, **Chat**) opens in `[data-realm-slot]`, while **Research** and
+**Season** (when `RaceRules` stands) open full-width below the top bar (`[data-wide-page]`) under the notices, hiding
+the army dock and Aspect standing chip while open. All action sheets (**Build**, **Castle**, building card, **Deploy**,
+**Army**, **Today**, **Shop**, **Settings**, and map site cards) dock in the right rail (`[data-rail-panel]`) under
+client notices so the Realm panel and Armies stay visible on the left. On the World view, the map stays open with no
+minimap and the Aspect standing chip stands at the bottom right. The **Feed** (`frontier/hud/frontier-feed.tsx`) is a
+page like the others: the world's history live, one line a story (who did what to what, how it went, what it paid at its
+end; a find under one unit is "djizus explored"), your own in gold; each row's painting is its story's act
+(`storyMeaning`, the same table Blitz's Events and Log rows read) and a site's guard as the map draws it, from Herald's
+row of the site (`/games/<id>/sites/<entity>`) when the player's map holds none, under **All** (the world’s history,
+first and the default), **Important**, or **Mine** (your own fights, captures and chests), scrolling inside the left
+slot. A point spent reads "spent a point on Battle IV", ranks by their numeral as the army panel shows them
 (`/lab/game?scenario=point-spent`, **Feed**). The Feed tells only what the game writes as a story: a research purchase
 has none (it leaves only the realm's current `RealmKnowledge`), so it has no row until the contracts write one. **Feed**
 in the top bar opens it (with the count of what is unread and important while it is closed), a second press or its ×
@@ -592,29 +591,30 @@ Settings draws no Next up switch there. Leaving by a phone's Menu, Exit or by Ba
 map goes to the page it was entered from, and the home card's Resume returns to the map with its labels and plates as
 they were (`/lab/game?scenario=from-home`, `playtest --steps lab-reenter`); Leave game loads the page afresh. Orders go
 from the map as in Blitz: hover a tile for its order, right-click to give it. On a phone it keeps its own bands
-(`frontier/hud/hud-bands.tsx`, `phone-top-bar.tsx`): at the top, one dark bronze strip with rank and Labor/Wheat beside
-the compact day clock, **Surface / Deep** (World only) and **Realm / World** on the row below, and the compact daily
-quest chip under them on World; at the bottom right, exactly two buttons (**Season** and **Menu**, with a single dot on
-**Menu** when any place has something new and no numbers on the map), and **Menu** opens the four non-Season places
-(**Research**, **Feed**, **Relics**, **Chat**) from `hud-places.ts` as tiles. On the Realm view, one dark bronze bottom
-sheet holds the Realm panel (Aspect and Order Facets, three figures **Labor / Wheat / Armies**, Citadel and standing
-buildings with Upgrade, **Research** and gold **Deploy**), replaced in-place by Build/Castle/Building sheets with no
-foot bar underneath. On the World view, the bottom row pairs the armies dock with **Season** and **Menu** buttons (no
-five-tab foot bar); **Menu** reaches Research, Feed, Chat, Relics, Shop, Today, Season, Settings, How to play and Exit.
-A page or a sheet stands over the foot, as tall as what it holds and at most 45% of the screen, and short enough that
-the map keeps at least 40% of it between the strip and the place bar (never under 12rem; past that it scrolls inside),
-under one row (its name and its way out; a drag down on it closes a sheet), its verb in its foot; while one is open, the
-stores' row folds away. Chat alone fills the band. Any screen held sideways below the desktop's width (a phone, a Fold's
-inner screen, a tablet) takes the sideways HUD: the places in a rail at the left, the rest in one column at the right, a
-sheet in that column. The map's share per device: `playtest --steps lab-hud-devices --viewport <w>x<h>`, failing a state
-under 40%. Tapping a build plot keeps the realm camera still. The realm view zooms out until every plot of the castle’s
-reach fits the screen’s width, including an Empire on an upright phone. Chat's tabs are its rooms (Global; a game's own
-only where its mode keeps one, none for now) and **Messages**, the private conversations. One panel at a time, on both
-(`frontier/hud/one-panel.ts`): a page or sheet the HUD opens, the card of what the map selected, or the deploy order;
-the one opened last stands alone and puts the others away, so no panel opens over another. A detail opened from a page
-(a Research row's sheet, a realm on the Season's board) stands in the page's place, and its cross returns to the page.
-Dev: HUD → In game (`/lab/hud?mode=frontier`) draws the HUD as the game mounts it and every Frontier state
-(`/lab/kit/hud/<state>`) on a desktop and a phone side by side.
+(`frontier/hud/hud-bands.tsx`, `phone-top-bar.tsx`): at the top, the filling circular `Day` ring (`Day` / number) at the
+left beside four icon + capacity-bar resource gauges (**Essence**, **Labor**, **Wheat**, **Knights**), the compact Realm
+chip and **Surface / Deep** (World only) on the row below, and the compact daily quest chip under them on World; at the
+bottom right, one thumb-zone action bar (`PhoneWorldActions`) with a single **Realm** / **World** switch button,
+**Season**, and **Menu** (with a single dot on **Menu** when any place has something new and no numbers on the map), and
+**Menu** opens the four non-Season places (**Research**, **Feed**, **Relics**, **Chat**) from `hud-places.ts` as tiles.
+On the Realm view idle, the 3D castle and plots stay unobstructed until the player taps the Realm chip to toggle the
+Realm panel open on demand; the bottom row keeps the armies dock alongside **World**, **Season**, and **Menu**. On the
+World view, the bottom row pairs the armies dock with **Realm**, **Season**, and **Menu**; **Menu** reaches Research,
+Feed, Chat, Relics, Shop, Today, Season, Settings, How to play and Exit. A page or a sheet stands over the foot, as tall
+as what it holds and at most 45% of the screen, and short enough that the map keeps at least 40% of it between the strip
+and the place bar (never under 12rem; past that it scrolls inside), under one row (its name and its way out; a drag down
+on it closes a sheet), its verb in its foot; while one is open, the stores' row folds away. Chat alone fills the band.
+Any screen held sideways below the desktop's width (a phone, a Fold's inner screen, a tablet) takes the sideways HUD:
+the places in a rail at the left, the rest in one column at the right, a sheet in that column. The map's share per
+device: `playtest --steps lab-hud-devices --viewport <w>x<h>`, failing a state under 40%. Tapping a build plot keeps the
+realm camera still. The realm view zooms out until every plot of the castle’s reach fits the screen’s width, including
+an Empire on an upright phone. Chat's tabs are its rooms (Global; a game's own only where its mode keeps one, none for
+now) and **Messages**, the private conversations. One panel at a time, on both (`frontier/hud/one-panel.ts`): a page or
+sheet the HUD opens, the card of what the map selected, or the deploy order; the one opened last stands alone and puts
+the others away, so no panel opens over another. A detail opened from a page (a Research row's sheet, a realm on the
+Season's board) stands in the page's place, and its cross returns to the page. Dev: HUD → In game
+(`/lab/hud?mode=frontier`) draws the HUD as the game mounts it and every Frontier state (`/lab/kit/hud/<state>`) on a
+desktop and a phone side by side.
 
 | Feature                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Where                                                                                                                                                                                                     | How to reach it                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |

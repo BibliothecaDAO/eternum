@@ -234,10 +234,14 @@ it("treats the desktop's Feed as any other panel: closed at start, opened from i
     );
     expect([
       open("Feed"),
-      host.querySelector('[data-realm-slot] section[aria-label="Build"]') !== null,
-      host.querySelector('section[aria-label="Realm"]') === null,
+      host.querySelector('[data-rail-panel] section[aria-label="Build"]') !== null,
+      host.querySelector('section[aria-label="Realm"]') !== null,
       place("Feed").getAttribute("aria-selected"),
     ]).toEqual([false, true, true, "false"]);
+    await press("Research");
+    expect(host.querySelector('[data-wide-page] section[aria-label="Research"]')).not.toBeNull();
+    await press("Research");
+    expect(host.querySelector("[data-wide-page]")).toBeNull();
   } finally {
     window.history.replaceState(null, "", route);
     await act(async () => useUIStore.setState({ selectedBuildingHex }));
@@ -401,7 +405,9 @@ it.each([390, 1440])(
     const sheet = host.querySelector<HTMLElement>('section[aria-label="Today"]');
     expect(sheet).not.toBeNull();
     expect(sheet!.hasAttribute("data-docked")).toBe(width >= 1024);
-    expect(sheet!.closest("[data-realm-slot]") !== null).toBe(width >= 1024);
+    expect(sheet!.closest("[data-rail-panel]") !== null).toBe(width >= 1024);
+    expect(host.querySelector('section[aria-label="Realm"]') !== null).toBe(width >= 1024);
+    expect(host.querySelector('nav[aria-label="Places"]')).not.toBeNull();
     expect(host.querySelector(".ui-sheet__backdrop")).toBeNull();
     await act(async () => sheet!.querySelector<HTMLButtonElement>('button[aria-label="Close"]')!.click());
     expect(host.querySelector('section[aria-label="Today"]')).toBeNull();
@@ -421,25 +427,29 @@ it.each([390, 1440])("opens and closes the Wheat store from its control at %i px
   expect(host.querySelector('section[aria-label="Wheat"]')).toBeNull();
 });
 
-it("gives a phone a Realm / World switch: it switches between the board and the map, and puts a page away", async () => {
+it("gives a phone one bottom Realm / World switch, keeps Realm idle unobstructed, and puts a page away", async () => {
   viewport.set(390);
   const route = window.location.pathname + window.location.search;
   window.history.replaceState(null, "", "/g/0x1ab9/1/map?col=1&row=1");
   try {
     await renderHud();
-    const tab = (word: string) =>
-      [...host.querySelectorAll<HTMLButtonElement>('[aria-label="Map view"] [role="tab"]')].find(
-        (button) => button.textContent === word,
-      )!;
-    expect(tab("World").getAttribute("aria-selected")).toBe("true");
-    await act(async () => tab("Realm").click());
+    expect(host.querySelector('[aria-label="Map view"]')).toBeNull();
+    const viewSwitch = (word: string) =>
+      host.querySelector<HTMLButtonElement>(`nav[aria-label="Places"] button[aria-label="${word}"]`)!;
+    expect(viewSwitch("Realm")).not.toBeNull();
+    await act(async () => viewSwitch("Realm").click());
     expect(window.location.pathname).toMatch(/\/hex$/);
-    expect(tab("Realm").getAttribute("aria-selected")).toBe("true");
-    await act(async () => tab("World").click());
+    expect(host.querySelector('section[aria-label="Realm"]')).toBeNull();
+    expect(viewSwitch("World")).not.toBeNull();
+    const realmChip = host.querySelector<HTMLButtonElement>(".frontier-phone-realm-chip")!;
+    await act(async () => realmChip.click());
+    expect(host.querySelector('section[aria-label="Realm"]')).not.toBeNull();
+    await act(async () => viewSwitch("World").click());
     expect(window.location.pathname).toMatch(/\/map$/);
+    expect(host.querySelector('section[aria-label="Realm"]')).toBeNull();
     await fromMenu("Feed");
     expect(surfaceNamed("Feed")).not.toBeNull();
-    await act(async () => tab("Realm").click());
+    await act(async () => viewSwitch("Realm").click());
     expect(window.location.pathname).toMatch(/\/hex$/);
     expect(surfaceNamed("Feed")).toBeNull();
   } finally {
@@ -531,7 +541,10 @@ const PHONE_SURFACES = {
   season: { label: "Season", open: () => pressPlace("Season") },
   settings: { label: "Settings", open: () => fromMenu("Settings") },
   shop: { label: "Shop", open: () => fromMenu("Shop") },
-} satisfies Record<Exclude<HudSurface, "army" | "army-lost">, { label: string; open: () => Promise<unknown> }>;
+} satisfies Record<
+  Exclude<HudSurface, "army" | "army-lost" | "realm">,
+  { label: string; open: () => Promise<unknown> }
+>;
 
 it.each(Object.entries(PHONE_SURFACES))("stands a phone's %s in the kit's one frame", async (_, { label, open }) => {
   viewport.set(390);
@@ -549,6 +562,30 @@ it.each(Object.entries(PHONE_SURFACES))("stands a phone's %s in the kit's one fr
     expect(outermost.every((panel) => panel.hasAttribute("data-kit-frame"))).toBe(true);
     await act(async () => surface!.querySelector<HTMLButtonElement>('button[aria-label="Close"]')!.click());
     expect(surfaceNamed(label)).toBeNull();
+  } finally {
+    window.history.replaceState(null, "", route);
+  }
+});
+
+it("routes the phone Realm panel through the one-panel state so it replaces Today and closes cleanly", async () => {
+  viewport.set(390);
+  const route = window.location.pathname + window.location.search;
+  window.history.replaceState(null, "", "/g/0x1ab9/1/map?col=1&row=1");
+  try {
+    await renderHud();
+    const realmChip = () => host.querySelector<HTMLButtonElement>(".frontier-phone-realm-chip")!;
+    expect(realmChip().getAttribute("aria-expanded")).toBe("false");
+    await act(async () => host.querySelector<HTMLButtonElement>('button[aria-label="Today"]')!.click());
+    expect(surfaceNamed("Today")).not.toBeNull();
+    await act(async () => realmChip().click());
+    expect(surfaceNamed("Today")).toBeNull();
+    expect(surfaceNamed("Realm")).not.toBeNull();
+    expect(realmChip().getAttribute("aria-expanded")).toBe("true");
+    await act(async () =>
+      surfaceNamed("Realm")!.querySelector<HTMLButtonElement>('button[aria-label="Close"]')!.click(),
+    );
+    expect(surfaceNamed("Realm")).toBeNull();
+    expect(realmChip().getAttribute("aria-expanded")).toBe("false");
   } finally {
     window.history.replaceState(null, "", route);
   }
@@ -909,18 +946,24 @@ it("lights a plot on the player's own board for its first build, the Barracks, a
   expect(own).toBe(BuildingType.ResourceKnightT1);
 });
 
-it.each([1440, 390])("hides the map armies dock in the Realm view and shows it on the map at %i px", async (width) => {
+it.each([1440, 390])("keeps the armies dock visible in both map and Realm views at %i px", async (width) => {
   viewport.set(width);
   const route = window.location.pathname + window.location.search;
   window.history.replaceState(null, "", "/g/0x1ab9/1/map?col=1&row=1");
   try {
     await renderHud();
     expect(host.querySelector('[aria-label="Armies"]')).not.toBeNull();
+    if (width >= 1024) {
+      expect(host.querySelector('aside[aria-label="Realm"] [aria-label="Armies"]')).not.toBeNull();
+    }
     await act(async () => {
       window.history.replaceState(null, "", "/g/0x1ab9/1/hex?col=1&row=1");
       window.dispatchEvent(new Event("urlChanged"));
     });
-    expect(host.querySelector('[aria-label="Armies"]')).toBeNull();
+    expect(host.querySelector('[aria-label="Armies"]')).not.toBeNull();
+    if (width >= 1024) {
+      expect(host.querySelector('aside[aria-label="Realm"] [aria-label="Armies"]')).not.toBeNull();
+    }
   } finally {
     window.history.replaceState(null, "", route);
   }

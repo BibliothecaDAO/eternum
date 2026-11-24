@@ -60,7 +60,7 @@ export const GameClock = memo(({ compact = false }: { compact?: boolean }) => {
 GameClock.displayName = "GameClock";
 
 /** The time spent of what a clock counts (the game, a Frontier day), as a hairline along the clock's foot. */
-export const ClockSpent = ({ label, share }: { label: string; share: number }) => (
+const ClockSpent = ({ label, share }: { label: string; share: number }) => (
   <div
     role="progressbar"
     aria-label={label}

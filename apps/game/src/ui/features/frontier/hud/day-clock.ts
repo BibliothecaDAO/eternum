@@ -48,6 +48,9 @@ const OUTSIDE_THE_SEASON: DayClock = {
  * Today on the season's calendar (core's dayOf, the contract's day bags): when it ends, the time left, the share of
  * today still to run, and how long tomorrow lasts. The shell draws it from the directory's calendar too.
  */
+export const dayElapsedShare = (clock: DayClock): number | undefined =>
+  clock.shareLeft === undefined ? undefined : Math.min(1, Math.max(0, 1 - clock.shareLeft));
+
 export const dayClock = (calendar: SeasonCalendar, now: number): DayClock => {
   const today = dayOf(calendar, now);
   if (!today) return OUTSIDE_THE_SEASON;

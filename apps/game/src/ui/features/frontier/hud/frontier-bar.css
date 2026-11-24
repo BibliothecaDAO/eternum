@@ -204,23 +204,130 @@ button.frontier-store:hover {
   width: theme(spacing.hud-column);
 }
 
+.frontier-progress-ring {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--hud-radius-round);
+  background: var(--hud-well);
+}
+.frontier-progress-ring--sm {
+  width: 26px;
+  height: 26px;
+}
+.frontier-progress-ring--md {
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--hud-line-strong);
+  background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
+  box-shadow: var(--hud-shadow-panel);
+}
+.frontier-progress-ring--lg {
+  width: 44px;
+  height: 44px;
+}
+.frontier-progress-ring__svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.frontier-progress-ring__track {
+  fill: none;
+  stroke: var(--hud-line);
+  stroke-width: 3;
+}
+.frontier-progress-ring__fill {
+  fill: none;
+  stroke: rgb(var(--hud-gold));
+  stroke-width: 3;
+  stroke-linecap: round;
+  transition: stroke-dashoffset var(--hud-fast) var(--hud-ease);
+}
+.frontier-progress-ring[data-tone="amber"] .frontier-progress-ring__fill {
+  stroke: var(--hud-warn);
+}
+.frontier-progress-ring[data-tone="ember"] .frontier-progress-ring__fill {
+  stroke: var(--hud-bad);
+}
+.frontier-progress-ring__center {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.frontier-progress-ring__badge {
+  position: absolute;
+  top: calc(theme(spacing.1) * -1);
+  right: calc(theme(spacing.1) * -1);
+  display: inline-flex;
+  min-width: theme(spacing.4);
+  height: theme(spacing.4);
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--hud-line-strong);
+  border-radius: var(--hud-radius-round);
+  background: var(--hud-surface-to);
+  padding: 0 theme(spacing.1);
+  color: rgb(var(--hud-ink));
+  font-size: var(--hud-text-badge);
+  line-height: 1;
+  font-weight: var(--hud-weight-badge);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.frontier-progress-ring__badge[data-tone="warn"] {
+  border-color: var(--hud-warn);
+  color: var(--hud-warn);
+}
+.frontier-progress-ring__badge[data-tone="bad"] {
+  border-color: var(--hud-bad);
+  color: var(--hud-bad);
+}
+.frontier-day-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1;
+}
+.frontier-day-kicker {
+  font-family: var(--hud-font);
+  font-size: var(--hud-text-badge);
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--hud-muted);
+}
+.frontier-day-label {
+  font-family: var(--hud-font-display);
+  font-size: var(--hud-text-label);
+  line-height: 1;
+  font-weight: var(--hud-weight-strong);
+  letter-spacing: 0.02em;
+}
+
 .frontier-army-dock {
   display: flex;
-  align-items: flex-end;
-  gap: theme(spacing[2.5]);
+  width: 100%;
+  flex-direction: column;
+  align-items: stretch;
+  gap: theme(spacing[1.5]);
 }
 .frontier-army-card {
   position: relative;
-  display: inline-flex;
-  min-width: 280px;
-  min-height: 76px;
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  min-height: 62px;
   align-items: center;
-  gap: theme(spacing.3);
+  gap: theme(spacing[2.5]);
   border: 1px solid var(--hud-line);
   border-radius: var(--hud-radius-panel);
   background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
   box-shadow: var(--hud-shadow-panel);
-  padding: theme(spacing.3) theme(spacing[3.5]);
+  padding: theme(spacing.2) theme(spacing.3);
   color: rgb(var(--hud-ink));
   text-align: left;
   cursor: pointer;
@@ -230,13 +337,13 @@ button.frontier-store:hover {
 }
 .frontier-army-card__portrait {
   position: relative;
-  width: 48px;
-  height: 48px;
+  width: 42px;
+  height: 42px;
   flex: none;
 }
 .frontier-army-card__portrait > .ui-portrait {
-  width: 48px;
-  height: 48px;
+  width: 42px;
+  height: 42px;
 }
 .frontier-army-card:hover {
   border-color: var(--hud-line-strong);
@@ -246,7 +353,7 @@ button.frontier-store:hover {
   min-width: 0;
   flex: 1;
   flex-direction: column;
-  gap: theme(spacing.1);
+  gap: theme(spacing[0.5]);
   overflow: hidden;
 }
 .frontier-army-card__title {
@@ -275,7 +382,6 @@ button.frontier-store:hover {
   line-height: var(--hud-leading-label);
 }
 .frontier-army-card[data-open-slot="true"] {
-  min-width: 210px;
   border-style: dashed;
 }
 

@@ -55,7 +55,12 @@ it("reads the player's realm as Blitz's card reads a holding: name, rank, a ring
   );
   const panel = host.querySelector('section[aria-label="Realm"]')!;
   expect(panel.textContent).toMatch(/^Duskbite.*City/);
-  // Each store is one ring named by its line; the LORDS ring says its balance whole.
+  expect(panel.querySelectorAll(".frontier-progress-ring")).toHaveLength(5);
+  expect(panel.querySelector('[data-store="wheat"] .frontier-progress-ring__badge')?.textContent).toBe("2h");
+  expect(panel.querySelector('[data-store="wheat"] .frontier-progress-ring__fill')).not.toBeNull();
+  expect(panel.querySelector('[data-store="essence"] .frontier-progress-ring__fill')).toBeNull();
+  expect(panel.querySelector('[aria-label="LORDS 1,240"] .frontier-progress-ring__fill')).toBeNull();
+  expect(panel.querySelector('[data-store="wheat"]')?.textContent).not.toContain("Wheat");
   expect(named()).toEqual(
     expect.arrayContaining([
       "Essence 18,250",
@@ -147,7 +152,7 @@ it("says the day and the time left in the top bar, and when the day ends and how
   act(() => root.render(<DayPill clock={clock} />));
   const pill = host.querySelector('[aria-label="Day clock"]')!;
   expect(pill.textContent).toContain(`Day ${clock.day} ·`);
-  expect(pill.getAttribute("data-tip")).toMatch(/^Day ends \d\d:\d\d · Tomorrow lasts /);
+  expect(pill.getAttribute("data-tip")).toMatch(/^Day ends \d\d:\d\d · .+ left · Tomorrow lasts /);
 });
 
 it("reads a 24-hour day in hours on the top bar and its hover, as Play does (live-qa-night-1 P3-8)", () => {
