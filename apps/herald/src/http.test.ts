@@ -221,7 +221,12 @@ describe("an Aspect's members in a Season 1 game, ranked by Glory", () => {
     ],
     Structure: [11, 12, 13, 14, 15].map((home) => ({
       key: String(home),
-      value: { game_id: home === 15 ? "8" : "7", entity_id: String(home), owner: `0x${home}0`, metadata: { realm_id: home + 100 } },
+      value: {
+        game_id: home === 15 ? "8" : "7",
+        entity_id: String(home),
+        owner: `0x${home}0`,
+        metadata: { realm_id: home + 100 },
+      },
     })),
     RaceMember: [
       { key: "11", value: { game_id: "7", entity_id: "11", glory: glory(40), contribution: "0" } },
@@ -251,7 +256,14 @@ describe("an Aspect's members in a Season 1 game, ranked by Glory", () => {
     });
     expect(await read("/games/7/aspects/1/members")).toEqual([
       200,
-      { game_id: "7", aspect: 1, total: 3, offset: 0, limit: 50, members: [member(1, 12, 120), member(2, 11, 40), member(3, 13, 0)] },
+      {
+        game_id: "7",
+        aspect: 1,
+        total: 3,
+        offset: 0,
+        limit: 50,
+        members: [member(1, 12, 120), member(2, 11, 40), member(3, 13, 0)],
+      },
       "12",
     ]);
     expect(await read("/games/7/aspects/1/members?limit=1&offset=1")).toEqual([
@@ -267,7 +279,10 @@ describe("an Aspect's members in a Season 1 game, ranked by Glory", () => {
   it("refuses a page over 100 members, an empty or malformed page, an Aspect outside the catalog, and a game with no Aspect race", async () => {
     rows = seasonRows();
     for (const query of ["limit=101", "limit=0", "offset=-1", "limit=two"])
-      expect((await read(`/games/7/aspects/1/members?${query}`)).slice(0, 2)).toEqual([400, { error: "invalid_roster_page" }]);
+      expect((await read(`/games/7/aspects/1/members?${query}`)).slice(0, 2)).toEqual([
+        400,
+        { error: "invalid_roster_page" },
+      ]);
     expect((await read("/games/7/aspects/9/members")).slice(0, 2)).toEqual([400, { error: "unknown_aspect" }]);
     expect((await read("/games/7/aspects/1/members?limit=100"))[0]).toBe(200);
     rows = { ...seasonRows(), RaceRules: [] };
@@ -277,13 +292,23 @@ describe("an Aspect's members in a Season 1 game, ranked by Glory", () => {
   it("ranks once per confirmed head, and anew at the next one", async () => {
     rows = seasonRows();
     head = 20;
-    expect((await read("/games/7/aspects/1/members"))[1]).toMatchObject({ members: [{ entity_id: "12" }, { entity_id: "11" }, { entity_id: "13" }] });
+    expect((await read("/games/7/aspects/1/members"))[1]).toMatchObject({
+      members: [{ entity_id: "12" }, { entity_id: "11" }, { entity_id: "13" }],
+    });
     rows.RaceMember = [{ key: "13", value: { game_id: "7", entity_id: "13", glory: glory(999), contribution: "0" } }];
-    expect((await read("/games/7/aspects/1/members"))[1]).toMatchObject({ members: [{ entity_id: "12" }, { entity_id: "11" }, { entity_id: "13" }] });
+    expect((await read("/games/7/aspects/1/members"))[1]).toMatchObject({
+      members: [{ entity_id: "12" }, { entity_id: "11" }, { entity_id: "13" }],
+    });
     head = 21;
     const [, next, block] = await read("/games/7/aspects/1/members");
     expect(block).toBe("21");
-    expect(next).toMatchObject({ members: [{ entity_id: "13", glory: glory(999) }, { entity_id: "11", glory: "0" }, { entity_id: "12", glory: "0" }] });
+    expect(next).toMatchObject({
+      members: [
+        { entity_id: "13", glory: glory(999) },
+        { entity_id: "11", glory: "0" },
+        { entity_id: "12", glory: "0" },
+      ],
+    });
   });
 });
 
