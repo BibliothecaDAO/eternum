@@ -86,8 +86,8 @@ button.frontier-stock-chips[aria-expanded="true"] {
   justify-content: center;
   margin: -4px 0;
   border-radius: var(--hud-radius-round);
-  background: conic-gradient(rgb(var(--hud-gold)) 0 var(--day-gone), rgb(0 0 0 / 0.75) var(--day-gone) 100%);
-  box-shadow: 0 2px 6px rgb(0 0 0 / 0.6);
+  background: conic-gradient(rgb(var(--hud-gold)) 0 var(--day-gone), var(--hud-well) var(--day-gone) 100%);
+  box-shadow: var(--hud-shadow-control);
   line-height: 1;
   font-variant-numeric: tabular-nums;
 }
@@ -99,7 +99,7 @@ button.frontier-stock-chips[aria-expanded="true"] {
   background: url(/images/hud/day-disc-calm.webp) center / cover;
 }
 .frontier-day-disc[data-tone="ember"] {
-  background: conic-gradient(var(--hud-bad) 0 var(--day-gone), rgb(0 0 0 / 0.75) var(--day-gone) 100%);
+  background: conic-gradient(var(--hud-bad) 0 var(--day-gone), var(--hud-well) var(--day-gone) 100%);
 }
 .frontier-day-disc[data-tone="ember"]::before {
   background-image: url(/images/hud/day-disc-ember.webp);
@@ -107,22 +107,14 @@ button.frontier-stock-chips[aria-expanded="true"] {
 .frontier-day-disc > span {
   position: relative;
 }
-.frontier-day-disc__kicker {
-  color: var(--hud-muted);
-  font-family: var(--hud-font-display);
-  font-size: 7px;
-  font-weight: var(--hud-weight-strong);
-  letter-spacing: 0.14em;
-}
 .frontier-day-disc__day {
   color: rgb(var(--hud-gold));
   font-family: var(--hud-font-display);
-  font-size: 21px;
-  text-shadow: 0 1px 2px rgb(0 0 0 / 0.8);
+  font-size: var(--hud-text-display);
 }
 .frontier-day-disc__left {
   color: rgb(var(--hud-ink));
-  font-size: 9px;
+  font-size: var(--hud-text-badge);
   font-weight: var(--hud-weight-badge);
 }
 .frontier-day-disc[data-tone="ember"] .frontier-day-disc__left {
