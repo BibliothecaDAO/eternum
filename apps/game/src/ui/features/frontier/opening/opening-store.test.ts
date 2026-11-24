@@ -10,7 +10,6 @@ import { STANDING_PROMPTS } from "@/shell/standing-prompts";
 import { OPENING_MOMENTS } from "./opening";
 import { accountProgress, TUTORIAL_SKIPPED } from "./opening-state";
 import {
-  clearConfirmedTutorial,
   commitTutorialStep,
   flush,
   loadOpening,
@@ -264,12 +263,16 @@ it("never lets a device's stale cache take away a lesson the server holds", asyn
   expect(accountProgress("a", useOpeningStore.getState()).seen.has("explore")).toBe(true);
 });
 
-it("keeps a signed-out player's progress on this device alone", async () => {
+it("keeps a signed-out player's completed and dismissed lessons on this device alone, across a reload", async () => {
+  await commitTutorialStep({ completed: ["explore"], showing: null, confirmed: "explore" });
   await seeLine("barracks");
   useOpeningStore.setState({ owner: null, loaded: false, status: "signed-out", reached: new Set(), seen: new Set() });
   await loadOpening(null);
   expect(identity.add).not.toHaveBeenCalled();
-  expect(accountProgress(null, useOpeningStore.getState())).toMatchObject({ known: true, seen: new Set(["barracks"]) });
+  expect(accountProgress(null, useOpeningStore.getState())).toMatchObject({
+    known: true,
+    seen: new Set(["explore", "barracks"]),
+  });
 });
 
 it("sends only bodies the identity service's own validator takes, through every lesson, skip and a legacy key", async () => {
