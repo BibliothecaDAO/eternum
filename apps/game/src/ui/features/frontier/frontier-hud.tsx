@@ -8,7 +8,7 @@ import { canIssueOrders, isWatching } from "@/utils/can-issue-orders";
 import { useRealmVisit } from "@/sync/active-game-client";
 import { dropNextOrder } from "@/three/scenes/worldmap-next-order";
 import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
-import { armiesHere, plotsUsed, SETTINGS } from "@/ui/design-system/kit/words";
+import { SETTINGS } from "@/ui/design-system/kit/words";
 import { useGameChat } from "@/ui/features/world/containers/hud-chat-window";
 import { IdentityChip } from "@/ui/features/world/containers/top-header/identity-chip";
 import { HudSheet } from "@/ui/design-system/kit/hud-elements";
@@ -419,17 +419,6 @@ const FrontierHudBody = ({
 };
 
 const REALM_HEADER_MODELS = ["RaceRules"] as const;
-
-const placeLines = (armies: readonly DockArmy[], plots: { used: number; total: number } | undefined) => {
-  const on = (layer: DockArmy["ethereal"]) => armiesHere(armies.filter((army) => army.ethereal === layer).length);
-  return {
-    realm: plots && plotsUsed(plots.used, plots.total),
-    surface: on(undefined),
-    1: on(1),
-    2: on(2),
-    3: on(3),
-  };
-};
 
 /**
  * A phone's action row, the one row over the place bar that says what the pick lets the player do now (owner, 22 October

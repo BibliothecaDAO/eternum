@@ -1,5 +1,5 @@
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
-import { REALM, SPIRE_WORDS } from "@/ui/design-system/kit/words";
+import { armiesHere, plotsUsed, REALM, SPIRE_WORDS } from "@/ui/design-system/kit/words";
 import type { EtherealLayer } from "@bibliothecadao/eternum";
 import {
   DEEP_LAYER_TIERS,
@@ -21,6 +21,20 @@ type PlaceSwitchProps = {
   onGoRealm: () => void;
   onGoSurface: () => void;
   onSwitch?: () => void;
+};
+
+export const placeLines = (
+  armies: readonly { ethereal?: EtherealLayer }[],
+  plots: { used: number; total: number } | undefined,
+): Partial<Record<PlaceTabKey, string>> => {
+  const on = (layer: EtherealLayer | undefined) => armiesHere(armies.filter((army) => army.ethereal === layer).length);
+  return {
+    realm: plots && plotsUsed(plots.used, plots.total),
+    surface: on(undefined),
+    1: on(1),
+    2: on(2),
+    3: on(3),
+  };
 };
 
 type PlaceEntry = {

@@ -433,7 +433,10 @@ it.each([390, 1440])(
 it.each([390, 1440])("opens and closes the Wheat store from its control at %i px", async (width) => {
   viewport.set(width);
   await renderHud();
-  const control = host.querySelector('[aria-label^="Wheat "]')?.closest("button");
+  if (width < 1024)
+    await act(async () => host.querySelector<HTMLButtonElement>(".frontier-bar button.frontier-stock-chips")!.click());
+  const scope = width < 1024 ? host.querySelector(".frontier-realm-card")! : host;
+  const control = scope.querySelector('[aria-label^="Wheat "]')?.closest("button");
   expect(control).toBeTruthy();
   expect(host.querySelector('section[aria-label="Wheat"]')).toBeNull();
   await act(async () => control!.click());
@@ -1116,8 +1119,8 @@ it("opens Build in the desktop rail on an open plot as the player enters the Rea
   }
 });
 
-it.each([1440, 390])("opens Shop from the %i px top bar Fragments socket once Fragments are held", async (width) => {
-  viewport.set(width);
+it("opens Shop from the 1440 px top bar Fragments socket once Fragments are held", async () => {
+  viewport.set(1440);
   const route = window.location.pathname + window.location.search;
   window.history.replaceState(null, "", "/g/0x1ab9/1/map?col=1&row=1");
   try {

@@ -274,7 +274,7 @@ button.frontier-stock-chips[aria-expanded="true"] {
 .frontier-tab__label {
   overflow: hidden;
   max-width: 100%;
-  font-family: theme(fontFamily.ui);
+  font-family: var(--hud-font-display);
   font-size: var(--hud-text-badge);
   line-height: 1;
   font-weight: var(--hud-weight-strong);

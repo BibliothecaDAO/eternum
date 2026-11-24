@@ -14,15 +14,7 @@ import { useGame } from "@/hooks/context/game-context";
 import { realmMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { homeIcon } from "@/ui/design-system/home-icons";
 import { HudIconButton, HudSheet, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
-import {
-  ARMY,
-  ARMY_MANAGEMENT,
-  armiesHere,
-  EVENTS_WORDS,
-  LINK_WALLET_FOR_LORDS,
-  plotsUsed,
-  YOU,
-} from "@/ui/design-system/kit/words";
+import { ARMY, ARMY_MANAGEMENT, EVENTS_WORDS, LINK_WALLET_FOR_LORDS, YOU } from "@/ui/design-system/kit/words";
 import { readArmySlots } from "@/ui/features/frontier/hud/army-dock";
 import { ArmyCard, ArmySlotsCard, LockedSlotCard, OpenSlotCard } from "@/ui/features/frontier/hud/army-row";
 import { ArmyToken, OpenSlot } from "@/ui/features/frontier/hud/army-token";
@@ -59,6 +51,7 @@ import { BuildingCardView, type CardMakes } from "@/ui/features/frontier/buildin
 import { buildingIcon, buildingName } from "@/ui/features/frontier/build/building-names";
 import { nativeResearchConstants as research, nativeStructureConstants } from "@bibliothecadao/eternum/game-client";
 import { readResearchTree } from "@/ui/features/frontier/research/research-tree";
+import { useRealmPlots } from "@/ui/features/frontier/build/build-sheet";
 import { StoreCard, type StoreLine } from "@/ui/features/frontier/production/store-card";
 import { FRONTIER_STORES, STORE_KINDS } from "@/ui/features/frontier/stores";
 import { type StoreReading } from "@/ui/features/frontier/hud/status-strip";
@@ -88,7 +81,7 @@ import { DayPill, DayRing } from "@/ui/features/frontier/hud/day-pill";
 import { DailyQuestChip } from "@/ui/features/frontier/hud/daily-quest-chip";
 import type { MapLayers } from "@/ui/features/frontier/hud/map-layers";
 import type { RealmBuildingItem } from "@/ui/features/frontier/hud/realm-card";
-import { FrontierPlaceSwitch, PlaceMenu } from "@/ui/features/frontier/hud/surface-deep-switch";
+import { FrontierPlaceSwitch, PlaceMenu, placeLines } from "@/ui/features/frontier/hud/surface-deep-switch";
 import { WithdrawSheet } from "@/ui/features/frontier/value/withdraw-sheet";
 import { staminaShortfall } from "@/ui/design-system/kit/reasons";
 
@@ -851,22 +844,7 @@ export const HudLab = () => {
           <TopBarView
             stocks={{ stores: [...lab.stores], realmName: LAB_REALM_NAME, onOpenRealm: noop }}
             clock={<DayRing clock={lab.clock} />}
-            placeMenu={
-              <PlaceMenu
-                isMapView={lab.realmView === undefined}
-                layers={LAB_MAP_LAYERS}
-                onGoRealm={noop}
-                onGoSurface={noop}
-                realm={{ mark: homeIcon("realm", 1) }}
-                lines={{
-                  realm: plotsUsed(2, 6),
-                  surface: armiesHere(1),
-                  1: armiesHere(1),
-                  2: armiesHere(0),
-                  3: armiesHere(0),
-                }}
-              />
-            }
+            placeMenu={<LabPlaceMenu lab={lab} />}
             quest={<LabDailyQuest />}
             realmCard={lab.storeCard && <LabRealmCard lab={lab} />}
           />
@@ -1244,6 +1222,21 @@ const LabDailyQuest = () => {
 };
 
 const labQuestFacts = () => [labQuestRulesFact()];
+
+const LabPlaceMenu = ({ lab }: { lab: LabState }) => {
+  const { setup } = useGame();
+  const plots = useRealmPlots(setup.store.get("Structure", { game_id: 1, entity_id: 7 }) ?? null);
+  return (
+    <PlaceMenu
+      isMapView={lab.realmView === undefined}
+      layers={LAB_MAP_LAYERS}
+      onGoRealm={noop}
+      onGoSurface={noop}
+      realm={{ mark: homeIcon("realm", 1) }}
+      lines={placeLines(lab.armies, plots)}
+    />
+  );
+};
 
 const LabRealmCard = ({ lab }: { lab: LabState }) => (
   <RealmCard

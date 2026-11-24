@@ -171,7 +171,9 @@ export const OpenSlot = ({
   >
     <SlotRing pulse={pulse} filling={filling} />
     {bar && filling === undefined && <TokenStamina stamina={bar} />}
-    <span className="font-ui text-hud-badge leading-none text-hud-gold">{filling ?? label}</span>
+    <span className="text-hud-label leading-none text-hud-gold [font-family:var(--hud-font-display)]">
+      {filling ?? label}
+    </span>
     {stock && filling === undefined && (
       <span role="img" aria-label={stock.label} className="text-hud-body leading-none text-hud-ink tabular-nums">
         {stock.count}
