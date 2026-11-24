@@ -252,16 +252,29 @@ button.frontier-phone-gauge {
 .frontier-phone-action {
   position: relative;
   display: inline-flex;
-  width: theme(spacing.12);
+  width: auto;
+  min-width: theme(spacing.14);
   height: theme(spacing.12);
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: theme(spacing[0.5]);
+  padding: 0 theme(spacing[2.5]);
   border: 1px solid var(--hud-line-strong);
   border-radius: var(--hud-radius-panel);
   background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
   box-shadow: var(--hud-shadow-panel);
   color: rgb(var(--hud-ink));
   cursor: pointer;
+}
+.frontier-phone-action__label {
+  font-family: var(--hud-font-display);
+  font-size: var(--hud-text-badge);
+  line-height: 1;
+  font-weight: var(--hud-weight-title);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 .frontier-phone-action[aria-current="page"] {
   border-color: rgb(var(--hud-gold));
@@ -405,4 +418,26 @@ button.frontier-phone-gauge {
   line-height: var(--hud-leading-badge);
   font-weight: var(--hud-weight-badge);
   font-variant-numeric: tabular-nums;
+}
+.menu-nav {
+  display: flex;
+  flex-direction: column;
+}
+@media (max-width: 1023px) {
+  .menu-place-tile {
+    min-height: 58px;
+    gap: theme(spacing.1);
+    padding: theme(spacing[1.5]) theme(spacing.1);
+  }
+  .menu-nav {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: theme(spacing.1) theme(spacing.2);
+  }
+  .menu-nav__wide {
+    grid-column: 1 / -1;
+  }
+  .menu-nav .ui-row {
+    min-width: 0;
+  }
 }

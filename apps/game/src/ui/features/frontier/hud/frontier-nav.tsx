@@ -63,7 +63,8 @@ export const PhoneWorldActions = ({
           className="frontier-phone-action"
           onClick={() => toggle("season")}
         >
-          <Icon name={season.icon} size={24} />
+          <Icon name={season.icon} size={20} loading="eager" decoding="sync" />
+          <span className="frontier-phone-action__label">{season.label}</span>
           {aspect && (
             <span className="frontier-phone-action__facet">
               <AspectMark aspect={aspect} size={14} decorative />
@@ -78,7 +79,8 @@ export const PhoneWorldActions = ({
         className="frontier-phone-action"
         onClick={() => toggle("menu")}
       >
-        <Icon name="menu" size={24} />
+        <Icon name="menu" size={20} loading="eager" decoding="sync" />
+        <span className="frontier-phone-action__label">{MENU}</span>
         {newPlace && (
           <span
             className="frontier-phone-action__dot"

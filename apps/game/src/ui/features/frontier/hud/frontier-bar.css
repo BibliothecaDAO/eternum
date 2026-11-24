@@ -214,15 +214,22 @@
   cursor: not-allowed;
 }
 .frontier-quest-popover {
-  position: absolute;
-  top: calc(100% + theme(spacing.2));
-  right: 0;
+  --quest-edge: theme(spacing.4);
+  --quest-width: min(theme(spacing.hud-frontier-page), calc(100vw - var(--quest-edge) * 2));
+  position: fixed;
+  top: var(--quest-top, 0px);
+  left: clamp(
+    var(--quest-edge),
+    calc(var(--quest-x, 50vw) - var(--quest-width) / 2),
+    calc(100vw - var(--quest-width) - var(--quest-edge))
+  );
   z-index: theme(zIndex.hud-popover);
-  width: theme(spacing.hud-frontier-page);
-  max-width: calc(100vw - theme(spacing.8));
+  width: var(--quest-width);
+  max-height: calc(100dvh - var(--quest-top, 0px) - var(--quest-edge));
+  overflow-y: auto;
 }
 .frontier-quest-popover[data-layout="phone"] {
-  max-width: calc(100vw - theme(spacing.4));
+  --quest-edge: theme(spacing.2);
 }
 
 .frontier-stores-wrap {

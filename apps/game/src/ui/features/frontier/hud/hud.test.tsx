@@ -25,6 +25,7 @@ import { MenuPage } from "./menu-page";
 import { OrderBar } from "./order-bar";
 import { PickedArmy } from "./picked-army";
 import { DayPill, DayRing } from "./day-pill";
+import { questPopoverAnchor } from "./daily-quest-chip";
 import { HeaderStores, TOP_BAR_STORE_KINDS } from "./header-stores";
 import { PhoneTopBarView } from "./phone-top-bar";
 import { PhoneWorldActions } from "./frontier-nav";
@@ -376,14 +377,17 @@ describe("an open slot whose army is being deployed", () => {
 });
 
 describe("the phone world actions", () => {
-  it("shows Season and Menu buttons, dots Menu when something is new without numbers, and lights the open surface", () => {
+  it("shows Season and Menu buttons with eager icons and labels, dots Menu when something is new without numbers, and lights the open surface", () => {
     const onSurface = vi.fn();
+    const seasonPlace = HUD_PLACES.find((place) => place.key === "season")!;
     act(() => root.render(<PhoneWorldActions surface={null} onSurface={onSurface} events={2} unread={3} />));
     const buttons = [...host.querySelectorAll("button")];
     expect(buttons.map((button) => button.getAttribute("aria-label"))).toEqual(["Season", "Menu"]);
     expect(buttons.map((button) => button.getAttribute("aria-current"))).toEqual([null, null]);
-    expect(buttons[1].textContent).toBe("");
-    expect(buttons[1].querySelector("[data-dot]")).not.toBeNull();
+    expect(buttons.map((button) => button.textContent)).toEqual(["Season", "Menu"]);
+    expect(buttons[0]!.querySelector(`img[data-icon='${seasonPlace.icon}']`)?.getAttribute("loading")).toBe("eager");
+    expect(buttons[1]!.querySelector("img[data-icon='menu']")?.getAttribute("loading")).toBe("eager");
+    expect(buttons[1]!.querySelector("[data-dot]")).not.toBeNull();
     act(() => buttons[0].click());
     expect(onSurface).toHaveBeenCalledWith("season");
     act(() => buttons[1].click());
@@ -391,7 +395,6 @@ describe("the phone world actions", () => {
     act(() => root.render(<PhoneWorldActions surface="menu" onSurface={onSurface} events={0} unread={0} />));
     expect(host.querySelectorAll("button")[1]!.getAttribute("aria-current")).toBe("page");
     expect(host.querySelectorAll("button")[1]!.querySelector("[data-dot]")).toBeNull();
-    const seasonPlace = HUD_PLACES.find((place) => place.key === "season")!;
     expect(host.querySelectorAll("button")[0]!.getAttribute("aria-label")).toBe(seasonPlace.label);
     act(() =>
       root.render(
@@ -401,6 +404,11 @@ describe("the phone world actions", () => {
       ),
     );
     expect([...host.querySelectorAll("button")].map((button) => button.getAttribute("aria-label"))).toEqual(["Menu"]);
+  });
+
+  it("anchors the Daily Quest popover below the horizontal center of its trigger chip", () => {
+    expect(questPopoverAnchor({ left: 610, bottom: 44, width: 92 })).toEqual({ x: 656, top: 52 });
+    expect(questPopoverAnchor({ left: 196, bottom: 86, width: 102 })).toEqual({ x: 247, top: 94 });
   });
 
   it("keeps PhoneWorldActions free of duplicate Realm/World buttons now that the 5-place rail sits in the top bar", () => {

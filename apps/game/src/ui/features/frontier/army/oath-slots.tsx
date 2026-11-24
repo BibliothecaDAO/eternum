@@ -97,7 +97,7 @@ export function TroopOathSlots({
               key={index}
               data-filled={oath ? "" : undefined}
               aria-label={`${RESEARCH_TREE.oathSlots(index + 1)} · ${open ? RESEARCH_TREE.oathOpen : RESEARCH_TREE.oathLocked}`}
-              className="oath-slot flex flex-col gap-1 rounded border border-hud-line p-1 text-hud-label text-hud-muted"
+              className="oath-slot flex min-w-0 flex-col gap-1 overflow-hidden break-words rounded border border-hud-line p-1 text-hud-label text-hud-muted"
             >
               {oath ? (
                 <>
@@ -122,7 +122,9 @@ export function TroopOathSlots({
           );
         })}
       </div>
-      {count < OATH_SLOTS_MAX && <span className="text-hud-label text-hud-muted">{RESEARCH_TREE.oathResearch}</span>}
+      {count < OATH_SLOTS_MAX && (
+        <span className="min-w-0 break-words text-hud-label text-hud-muted">{RESEARCH_TREE.oathResearch}</span>
+      )}
     </div>
   );
 }

@@ -89,7 +89,7 @@ export const MenuPage = ({
           ))}
         </div>
       )}
-      <nav className="flex flex-col">
+      <nav className="menu-nav">
         {onShop && fragments !== null && fragments !== undefined && (
           <MenuRow
             icon="fragment"
@@ -108,7 +108,9 @@ export const MenuPage = ({
           />
         )}
         <MenuRow icon="settings" label={SETTINGS} onClick={onSettings} />
-        <HowToPlayRow guide={guide} />
+        <div className="menu-nav__wide">
+          <HowToPlayRow guide={guide} />
+        </div>
       </nav>
       <div className="grid">
         <HudButton kind="secondary" icon="exit" onClick={onExit}>

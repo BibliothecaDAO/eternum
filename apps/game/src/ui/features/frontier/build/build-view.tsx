@@ -217,7 +217,7 @@ const TileButton = ({ tile, chosen, onChoose }: { tile: BuildTile; chosen: boole
 );
 
 const Gives = ({ tile }: { tile: BuildTile }) => (
-  <span className="flex flex-col items-center gap-0.5">
+  <span className="build-tile-gives flex flex-col items-center gap-0.5">
     <span className="flex items-center gap-1 whitespace-nowrap tabular-nums">
       <SemanticIcon name={tile.gives.icon} size={14} />
       {tile.gives.value}
