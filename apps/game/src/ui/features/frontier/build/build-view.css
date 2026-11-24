@@ -53,25 +53,47 @@
 }
 @media (max-width: 1023px) {
   .ui-sheet:has([data-build-sheet]) .ui-frame__body {
-    padding: theme(spacing[1.5]) theme(spacing.2) theme(spacing.2);
+    padding: theme(spacing[1.5]) theme(spacing.2) theme(spacing.3);
   }
   [data-build-sheet] .ui-card[data-size="sm"] {
-    min-height: 112px;
+    min-height: 0;
   }
   [data-build-sheet] .ui-card[data-size="sm"] .ui-card__choose {
     gap: 2px;
-    padding: theme(spacing[1.5]) theme(spacing.1) theme(spacing.1);
+    padding: theme(spacing.1) theme(spacing.1) theme(spacing[1.5]);
   }
   [data-build-sheet] .ui-card[data-size="sm"] .ui-card__picture {
-    height: 24px;
+    height: 22px;
+  }
+  [data-build-sheet] .ui-card[data-size="sm"] .ui-card__picture img {
+    max-height: 22px;
+    width: auto;
   }
   [data-build-sheet] .ui-card[data-size="sm"] .ui-card__foot {
     padding: 0;
   }
-  [data-build-sheet] .ui-card[data-size="sm"] .ui-tier {
-    width: 20px;
-    height: 17px;
+  [data-build-sheet] .build-tile-gives {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 2px 3px;
     font-size: var(--hud-text-badge);
+    line-height: 1.15;
+  }
+  [data-build-sheet] .ui-card[data-size="sm"] .ui-tier {
+    width: 18px;
+    height: 15px;
+    font-size: var(--hud-text-badge);
+  }
+  [data-build-sheet] .ui-card[data-size="sm"] .ui-chip {
+    min-height: 0;
+    padding: 2px 5px;
+    font-size: var(--hud-text-badge);
+    line-height: 1.15;
+  }
+  [data-build-sheet] .ui-card[data-size="sm"] .ui-chip img {
+    width: 12px;
+    height: 12px;
   }
 }
 @media (min-width: 1024px) {

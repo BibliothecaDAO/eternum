@@ -8,10 +8,20 @@ import { DAY_BANNER_WORDS } from "@/ui/design-system/kit/words";
 import { DAILY_QUEST_MODELS, readDailyQuest } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { formatShort } from "@bibliothecadao/types";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
+import { createPortal } from "react-dom";
 
 import { DailyQuest } from "../day/daily-quest";
 import { dayQuestFace } from "../day/day-quest-face";
+
+const QUEST_POPOVER_GAP = 8;
+
+export const questPopoverAnchor = (
+  trigger: Pick<DOMRect, "left" | "bottom" | "width">,
+): { x: number; top: number } => ({
+  x: Math.round(trigger.left + trigger.width / 2),
+  top: Math.round(trigger.bottom + QUEST_POPOVER_GAP),
+});
 
 export const DailyQuestChip = ({
   realm,
@@ -24,12 +34,37 @@ export const DailyQuestChip = ({
   const now = useNowSeconds();
   useNativeRevision(DAILY_QUEST_MODELS);
   const [open, setOpen] = useState(false);
+  const [anchor, setAnchor] = useState<{ x: number; top: number } | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
+  const chipRef = useRef<HTMLButtonElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    if (!open) {
+      setAnchor(null);
+      return;
+    }
+    const update = () => {
+      const trigger = chipRef.current?.getBoundingClientRect();
+      if (!trigger) return;
+      setAnchor(questPopoverAnchor(trigger));
+    };
+    update();
+    window.addEventListener("resize", update);
+    window.addEventListener("scroll", update, true);
+    return () => {
+      window.removeEventListener("resize", update);
+      window.removeEventListener("scroll", update, true);
+    };
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
     const onPointerDown = (event: PointerEvent) => {
-      if (wrapRef.current && !wrapRef.current.contains(event.target as Node)) setOpen(false);
+      const target = event.target as Node;
+      const inChip = Boolean(wrapRef.current?.contains(target));
+      const inPopover = Boolean(popoverRef.current?.contains(target));
+      if (!inChip && !inPopover) setOpen(false);
     };
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") setOpen(false);
@@ -50,10 +85,14 @@ export const DailyQuestChip = ({
   const target = reading ? safeInteger(reading.target) : 0;
   const ready = reading?.state === "done" || reading?.state === "again";
   const count = reading ? `${formatShort(progress)}/${formatShort(target)}` : "—";
+  const popoverStyle: CSSProperties | undefined = anchor
+    ? ({ "--quest-x": `${anchor.x}px`, "--quest-top": `${anchor.top}px` } as CSSProperties)
+    : undefined;
 
   return (
     <div ref={wrapRef} className="frontier-quest-wrap pointer-events-auto">
       <button
+        ref={chipRef}
         type="button"
         data-daily-quest-chip=""
         data-ready={ready || undefined}
@@ -66,11 +105,18 @@ export const DailyQuestChip = ({
         <span className="frontier-quest-chip__label">{DAY_BANNER_WORDS.quest}</span>
         <span className="frontier-quest-chip__count">{count}</span>
       </button>
-      {open && (
-        <div className="frontier-quest-popover" data-layout={layout}>
-          <DailyQuest realm={realm} layout={layout} />
-        </div>
-      )}
+      {open &&
+        createPortal(
+          <div
+            ref={popoverRef}
+            className="ui frontier-quest-popover pointer-events-auto"
+            data-layout={layout}
+            style={popoverStyle}
+          >
+            <DailyQuest realm={realm} layout={layout} />
+          </div>,
+          document.body,
+        )}
     </div>
   );
 };

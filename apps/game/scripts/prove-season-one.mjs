@@ -104,7 +104,21 @@ const PAGES = [
   { file: "state-spectator", url: "/lab/app/home/doorway/spectator?capture=1", shown: "[data-doorway-loading]" },
   { file: "day-share", url: "/lab/app/home/share/day?capture=1", shown: ".day-card" },
   { file: "settings-no-wallet", url: "/lab/app/home/profile?capture=1#wallet", shown: "[data-payout-wallet=none]" },
-  { file: "hud-build", url: "/lab/kit/hud/build", shown: "[data-build-sheet]" },
+  { file: "hud-build", url: "/lab/kit/hud/build", shown: "[data-build-sheet]", matrix: true },
+  { file: "hud-menu", url: "/lab/kit/hud/menu", shown: 'section[aria-label="Menu"]', matrix: true },
+  {
+    file: "hud-quest",
+    url: "/lab/kit/hud/idle",
+    press: { after: "[data-daily-quest-chip]", selector: "[data-daily-quest-chip]" },
+    shown: "[data-daily-quest]",
+    matrix: true,
+  },
+  {
+    file: "hud-oath-pick",
+    url: "/lab/game?scenario=oath-pick&renderer=webgpu-force-webgl",
+    shown: "[data-oath-pick]",
+    matrix: true,
+  },
   { file: "hud-research", url: "/lab/kit/hud/research", shown: 'section[aria-label="Research"]' },
   { file: "hud-day-done", url: "/lab/kit/hud/day-done", shown: ".day-done" },
   { file: "hud-offline", url: "/lab/kit/hud/offline", shown: "[data-offline-banner]" },
@@ -173,7 +187,11 @@ for (const group of runGroups) {
           try {
             if (press) {
               browser.run(["wait", "--fn", `!!document.querySelector('${press.after}')`]);
-              browser.run(["find", "role", "button", "click", "--name", press.button]);
+              browser.run(
+                press.selector
+                  ? ["click", press.selector]
+                  : ["find", "role", "button", "click", "--name", press.button],
+              );
             }
             browser.run(["wait", "--fn", `!!document.querySelector('${shown}')`]);
           } catch (error) {

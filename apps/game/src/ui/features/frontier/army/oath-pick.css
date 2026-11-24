@@ -122,9 +122,9 @@
 .oath-card__stat {
   display: flex;
   min-width: 0;
-  flex-wrap: nowrap;
-  align-items: baseline;
-  gap: theme(spacing[1.5]);
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
   max-width: 100%;
 }
 .oath-card__hero-line {
@@ -145,24 +145,21 @@
   white-space: nowrap;
 }
 .oath-card__unit {
-  overflow: hidden;
+  max-width: 100%;
   color: rgb(var(--hud-aspect, var(--hud-gold)));
   font-size: var(--hud-text-label);
   line-height: var(--hud-leading-label);
   font-weight: var(--hud-weight-label);
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: break-word;
 }
 .oath-card__sub {
-  overflow: hidden;
   max-width: 100%;
   color: var(--hud-muted);
   font-size: var(--hud-text-label);
   line-height: var(--hud-leading-label);
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: break-word;
 }
 .oath-card__cta {
   display: none;
@@ -216,7 +213,7 @@
 
 @media (min-width: 640px) {
   .oath-pick {
-    width: min(100%, 58rem);
+    width: min(100%, 50rem);
   }
   .oath-pick__body {
     gap: theme(spacing.4);
