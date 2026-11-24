@@ -14,11 +14,7 @@ import {
 import { nativeCommandBits } from "../../../../contracts/l3/world-native/schema/commands.gen";
 import { MAINNET_TOKENS } from "../../../../packages/chain/src/tokens";
 import { logisticsStamina } from "../../../../packages/core/src/utils/attribute-tiers";
-import {
-  forecastFight,
-  type CombatRules,
-  type ExchangeTroops,
-} from "../../../../packages/core/src/utils/combat-exchange";
+import { forecastFight, type CombatRules, type ExchangeTroops } from "@bibliothecadao/eternum/combat-exchange";
 import { aspectMeaning, orderMeaning } from "../../../game/src/ui/design-system/icon-meaning";
 import {
   beastMeaning,
@@ -239,10 +235,6 @@ const combatRules: CombatRules = {
     t3_damage_multiplier: BigInt(config.troop.damage.t3DamageMultiplier),
     damage_biome_bonus_num: config.troop.damage.damageBiomeBonusNum,
     damage_scaling_factor: BigInt(config.troop.damage.damageScalingFactor),
-    damage_beta_small: 0n,
-    damage_beta_large: 0n,
-    damage_c0: 0n,
-    damage_delta: 0n,
   },
   stamina: {
     stamina_gain_per_tick: stamina.staminaGainPerTick,
@@ -276,6 +268,8 @@ const makeTroops = (category: ExchangeTroops["category"], count: number, stamina
     decr_damage_gotten_end_at: 0,
     incr_stamina_regen_percent_num: 0,
     incr_stamina_regen_seconds_left: 0,
+    incr_explore_reward_percent_num: 0,
+    incr_explore_reward_end_at: 0,
   },
   battle_cooldown_end: 0,
 });
