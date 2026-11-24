@@ -39,17 +39,14 @@ const whole = (amount: bigint): number => Number(amount / BigInt(RESOURCE_PRECIS
 /** A price the tree reads that the store does not hold yet: the tree stays unknown until it arrives. */
 class PricePending extends Error {}
 
-/** The realm's tree with the Essence and labor it holds, live; none while its knowledge or balances are unknown. */
-export const useResearchTree = (
-  realm: NativeRows["Structure"] | null,
-): { nodes: TreeNode[]; essence: number; labor: number } | undefined => {
+export const useResearchTree = (realm: NativeRows["Structure"] | null): { nodes: TreeNode[] } | undefined => {
   const tick = useCurrentDefaultTick();
   const facts = useNativeFacts(RESEARCH_MODELS);
   return useMemo(() => {
     const research = realm ? readResearchFacts(facts.store, realm, tick) : undefined;
     if (!research) return undefined;
     try {
-      return { nodes: readResearchTree(research), essence: research.essence, labor: research.labor };
+      return { nodes: readResearchTree(research) };
     } catch (error) {
       if (error instanceof PricePending) return undefined;
       throw error;

@@ -1,17 +1,15 @@
 import { Icon } from "@/ui/design-system/icon";
-import { HudRarity, HudRow } from "@/ui/design-system/kit/hud-elements";
-import { RELIC_WORDS, type Tier } from "@/ui/design-system/kit/words";
+import { HudRow } from "@/ui/design-system/kit/hud-elements";
+import { RELIC_WORDS } from "@/ui/design-system/kit/words";
 
 import { type PickEffectBase } from "../pick-effect-format";
 import { relicMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { relicEffect, relicName, type ArmyRelic } from "./relic-catalog";
 
-/** A ruin's relic in what its clear pays: its painting, its tier's rarity and its name. */
 export const RelicPay = ({ relic }: { relic: ArmyRelic }) => (
-  <span className="flex items-center gap-2" data-ruin-relic aria-label={RELIC_WORDS.guards(relicName(relic))}>
-    <Icon name={relicMeaning(relic.kind)} size={22} />
-    <span className="text-hud-body text-hud-ink">{relicName(relic)}</span>
-    <HudRarity tier={relic.rank as Tier} />
+  <span className="flex items-center gap-1.5" data-ruin-relic aria-label={RELIC_WORDS.guards(relicName(relic))}>
+    <Icon name={relicMeaning(relic.kind)} size={20} />
+    <span className="text-hud-label text-hud-ink">{relicName(relic)}</span>
   </span>
 );
 

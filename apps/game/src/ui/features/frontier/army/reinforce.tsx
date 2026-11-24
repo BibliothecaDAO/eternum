@@ -68,6 +68,16 @@ export const useSelectedReinforcement = (realm: NativeRows["Structure"] | null):
  * price. A notice shows only where nothing can go (no such troops at home, the army full) or where the wheat stops the
  * count at the most. The contract adds troops of the army's own kind, so the stock is that kind's alone.
  */
+export const useReinforceRange = (realm: NativeRows["Structure"], army: DockArmy) => {
+  const { setup } = useGame();
+  const defaultTick = useCurrentDefaultTick();
+  useNativeRevision(REINFORCE_MODELS);
+  const plan = readReinforcePlan(setup.store, realm, army.explorerId, defaultTick);
+  const march = plan && army.stamina && marchOn(army.stamina, plan.current);
+  const range = plan && march ? reinforceRange(plan, march) : { troopsMax: 0, wheatMax: 0, max: 0 };
+  return { plan, march, range };
+};
+
 export const ReinforceSheet = ({
   realm,
   army,
@@ -81,10 +91,7 @@ export const ReinforceSheet = ({
 }) => {
   const { setup, account } = useGame();
   const defaultTick = useCurrentDefaultTick();
-  useNativeRevision(REINFORCE_MODELS);
-  const plan = readReinforcePlan(setup.store, realm, army.explorerId, defaultTick);
-  const march = plan && army.stamina && marchOn(army.stamina, plan.current);
-  const range = plan && march ? reinforceRange(plan, march) : { troopsMax: 0, wheatMax: 0, max: 0 };
+  const { plan, march, range } = useReinforceRange(realm, army);
   const [count, setCount] = useState<number | "max">(0);
   const shown = count === "max" ? range.max : Math.min(count, range.wheatMax);
   const wheatStop = wheatStopsAt(range, shown);

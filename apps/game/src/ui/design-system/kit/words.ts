@@ -361,8 +361,6 @@ import {
   type RankedWords,
 } from "@bibliothecadao/types";
 
-/** One scale for chests, building types and attributes. */
-export { TIER_WORDS } from "@bibliothecadao/types";
 /** A step on that scale, common (1) to legendary (5). */
 export type Tier = 1 | 2 | 3 | 4 | 5;
 export type Rank = 0 | Tier;
@@ -1052,6 +1050,7 @@ export const ASPECT_PAGE_WORDS = {
   baneBar: "Bane bar",
   baneCharge: (charge: number, threshold: number) => `${formatExact(charge)} of ${formatExact(threshold)}`,
   members: "Members",
+  gloryBoard: "Glory leaderboard",
   glory: "Glory",
   guards: (site: string) => `Guards the ${site}`,
   noAspect: "Join an Aspect to see its members",
@@ -1166,6 +1165,8 @@ export const TRANSFER_TROOPS = {
 export const REINFORCE = {
   verb: "Reinforce",
   title: (army: string) => `Reinforce ${army}`,
+  titleAmount: (army: string, amount: string) => `Reinforce ${army} (+${amount})`,
+  fromHome: (amount: string, troops: string) => `+${amount} ${troops} from home`,
   sending: "Reinforcing…",
   failed: "The army could not be reinforced.",
 } as const;
@@ -2204,7 +2205,6 @@ export const RESEARCH_TREE = {
   currentEra: "Current",
   readyCount: (count: number) => `${RESEARCH_STATES.ready} (${formatExact(count)})`,
   unlocked: "Unlocked",
-  buildFirst: "Build 1st",
   tierBadge: (numeral: string) => `Tier ${numeral}`,
   eraBadge: (numeral: string) => `Era ${numeral}`,
   promptPick: "Select any node to inspect or upgrade",

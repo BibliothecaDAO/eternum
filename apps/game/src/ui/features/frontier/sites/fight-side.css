@@ -95,3 +95,13 @@
   margin-left: theme(spacing.1);
   font-variant-numeric: tabular-nums;
 }
+[data-hud-form="phone"]
+  .ui-sheet:has(.fight-arena)
+  .ui-actions:has(> .ui-actions__note:empty):not(:has(> :nth-child(3)))
+  > :last-child {
+  flex: 1;
+}
+[data-hud-form="phone"] .fight-spoils {
+  gap: theme(spacing[1.5]);
+  padding-inline: theme(spacing.2);
+}

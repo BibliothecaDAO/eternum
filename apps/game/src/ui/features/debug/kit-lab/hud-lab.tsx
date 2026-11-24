@@ -1574,8 +1574,6 @@ const LabResearch = () => {
       fixFor={() => undefined}
       onResearch={noop}
       onClose={noop}
-      essence={MID_REALM.essence}
-      labor={MID_REALM.labor}
       castleLevel={MID_REALM.castleLevel}
     />
   );

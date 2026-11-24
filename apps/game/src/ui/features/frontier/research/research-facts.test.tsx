@@ -67,7 +67,6 @@ it("keeps the tree unknown while a price it reads is missing, then reads each no
   act(() => store.applyFacts(ALL_PRICES.filter(({ value }) => value.row === research.ROW_LORE) as never));
   const well = tree!.nodes.find(({ key }) => key === "well")!;
   expect(well.price).toEqual({ essence: 2_000, labor: 0 });
-  expect(tree!.essence).toBe(0);
   expect(well.state).toBe("short");
   expect(well.needs).toContainEqual(expect.objectContaining({ kind: "essence", met: false, have: 0, need: 2_000 }));
 });

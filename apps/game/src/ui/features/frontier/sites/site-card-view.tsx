@@ -250,11 +250,15 @@ const FightPanel = ({
 );
 
 const Outcome = ({ facing, earns }: { facing: Facing; earns: boolean }) => (
-  <span data-fight-outcome>
-    <HudChip tone={isArmyLost(facing) ? "bad" : clears(facing) ? "good" : undefined}>
-      {outcomeWord(facing, earns)}
-    </HudChip>
-  </span>
+  <b
+    data-fight-outcome
+    className={cn(
+      "text-hud-label",
+      isArmyLost(facing) ? "text-hud-bad" : clears(facing) ? "text-hud-good" : "text-hud-muted",
+    )}
+  >
+    {outcomeWord(facing, earns)}
+  </b>
 );
 
 const Pay = ({ pay }: { pay: { icon: IconMeaning; amount: number; fits?: number } }) => {

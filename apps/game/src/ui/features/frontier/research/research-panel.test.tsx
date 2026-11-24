@@ -6,6 +6,7 @@
 // @vitest-environment jsdom
 // @vitest-environment jsdom
 // @vitest-environment jsdom
+import { RESEARCH_TREE } from "@/ui/design-system/kit/words";
 import { act, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -47,8 +48,6 @@ const draw = (picked: string | null, onResearch = vi.fn(), onPick = vi.fn(), onF
         fixFor={(need) => (need.kind === "store" ? { icon: "realm", word: "Upgrade the Castle", onFix } : undefined)}
         onResearch={onResearch}
         onClose={onClose}
-        essence={MID_REALM.essence}
-        labor={MID_REALM.labor}
         castleLevel={MID_REALM.castleLevel}
       />,
     ),
@@ -107,8 +106,6 @@ it("holds a locked node's verb, says why, and offers the step that opens it", ()
         fixFor={() => ({ icon: "realm", word: "Upgrade the Castle", onFix })}
         onResearch={vi.fn()}
         onClose={vi.fn()}
-        essence={MID_REALM.essence}
-        labor={MID_REALM.labor}
         castleLevel={MID_REALM.castleLevel}
       />,
     ),
@@ -141,8 +138,6 @@ it("states why each locked or short row is held back in plain words without repe
         fixFor={fixFor}
         onResearch={vi.fn()}
         onClose={vi.fn()}
-        essence={EARLY_REALM.essence}
-        labor={EARLY_REALM.labor}
         castleLevel={EARLY_REALM.castleLevel}
       />,
     ),
@@ -167,8 +162,6 @@ it("states why each locked or short row is held back in plain words without repe
         fixFor={fixFor}
         onResearch={vi.fn()}
         onClose={vi.fn()}
-        essence={EARLY_REALM.essence}
-        labor={EARLY_REALM.labor}
         castleLevel={1}
       />,
     ),
@@ -191,8 +184,6 @@ it("states why each locked or short row is held back in plain words without repe
         fixFor={fixFor}
         onResearch={vi.fn()}
         onClose={vi.fn()}
-        essence={EARLY_REALM.essence}
-        labor={EARLY_REALM.labor}
         castleLevel={EARLY_REALM.castleLevel}
       />,
     ),
@@ -220,8 +211,6 @@ describe("the picked building's choice, at the panel's foot (the owner's pick C)
           fixFor={() => undefined}
           onResearch={vi.fn()}
           onClose={() => undefined}
-          essence={MID_REALM.essence}
-          labor={MID_REALM.labor}
           castleLevel={MID_REALM.castleLevel}
         />,
       ),
@@ -285,8 +274,6 @@ it("keeps the chosen Research action outside the tree scroll on every pick, incl
         fixFor={() => undefined}
         onResearch={vi.fn()}
         onClose={() => undefined}
-        essence={MID_REALM.essence}
-        labor={MID_REALM.labor}
         castleLevel={MID_REALM.castleLevel}
       />
     );
@@ -339,8 +326,6 @@ it.each([
         fixFor={() => undefined}
         onResearch={vi.fn()}
         onClose={vi.fn()}
-        essence={MID_REALM.essence}
-        labor={MID_REALM.labor}
         castleLevel={MID_REALM.castleLevel}
       />,
     ),
@@ -395,13 +380,12 @@ it("keeps cards free of inline Upgrade buttons and routes upgrading through the 
         fixFor={() => undefined}
         onResearch={onResearch}
         onClose={vi.fn()}
-        essence={MID_REALM.essence}
-        labor={MID_REALM.labor}
         castleLevel={MID_REALM.castleLevel}
       />,
     ),
   );
-  expect(host.querySelector("[data-research-balances]")?.textContent).toContain("18.3K");
+  const cue = host.querySelector(".research-head__cue")!.textContent;
+  expect([cue.includes(RESEARCH_TREE.states.done), cue.includes("18.3K")]).toEqual([true, false]);
   expect(host.querySelector("[data-era='1'][data-current-era]")).not.toBeNull();
   const upgrades = [...host.querySelectorAll<HTMLButtonElement>("button[aria-label='Upgrade Barracks Oath slots']")];
   expect(upgrades).toHaveLength(1);
@@ -420,22 +404,18 @@ it("keeps cards free of inline Upgrade buttons and routes upgrading through the 
     root.render(
       <ResearchPanel
         nodes={laborShort}
-        picked={null}
+        picked="row-6"
         onPick={vi.fn()}
         sending={new Set()}
         fixFor={() => undefined}
         onResearch={vi.fn()}
         onClose={vi.fn()}
-        essence={50_000}
-        labor={100}
         castleLevel={MID_REALM.castleLevel}
       />,
     ),
   );
-  const shortPill = host.querySelector("[data-node='row-6'] [data-phone-pill]")!;
-  expect(shortPill.querySelector("[data-icon='labor']")).not.toBeNull();
-  expect(shortPill.querySelector("[data-icon='essence']")).toBeNull();
-  expect(shortPill.textContent).toBe("1K");
+  expect(host.querySelector("[data-node='row-6'] [data-research-effect-short]")?.textContent).toBe("2 → 3 Oaths");
+  expect(host.querySelector("[data-lab='node-choice'] [data-lock-reason]")?.textContent).toBe("Needs 1,000 Labor");
 });
 
 it("renders the 3-track Era tree with measured SVG prerequisite links on desktop and phone", () => {
@@ -521,8 +501,6 @@ it("renders the 3-track Era tree with measured SVG prerequisite links on desktop
           fixFor={() => undefined}
           onResearch={vi.fn()}
           onClose={vi.fn()}
-          essence={EARLY_REALM.essence}
-          labor={EARLY_REALM.labor}
           castleLevel={EARLY_REALM.castleLevel}
         />,
       ),
@@ -555,8 +533,6 @@ it("renders the 3-track Era tree with measured SVG prerequisite links on desktop
           fixFor={() => undefined}
           onResearch={vi.fn()}
           onClose={vi.fn()}
-          essence={EARLY_REALM.essence}
-          labor={EARLY_REALM.labor}
           castleLevel={EARLY_REALM.castleLevel}
         />,
       ),

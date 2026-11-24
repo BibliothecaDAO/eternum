@@ -1,6 +1,6 @@
 import "./aspect-page-view.css";
 
-import { OpeningPartGate } from "../opening/opening-context";
+import { OpeningPartGate, usePartShown } from "../opening/opening-context";
 import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { Icon } from "@/ui/design-system/icon";
 import { HudButton, HudChip, HudMeter, HudPage, HudRow, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
@@ -60,6 +60,7 @@ export const AspectPageView = ({ race, own, fights, invite, onGoToDeep, onClose 
     ) : (
       <div data-aspect-race-page className="aspect-race-page">
         <Race race={race} />
+        {own && <GloryBoard own={own} />}
         <div className="aspect-race-page__board">
           {own ? <YourAspect own={own} invite={invite} /> : <Muted>{WORDS.noAspect}</Muted>}
           {own && fights && <div className="flex min-w-0 flex-col gap-2">{fights}</div>}
@@ -114,28 +115,37 @@ const YourAspect = ({ own, invite }: { own: OwnAspect; invite?: ReactNode }) => 
         </div>
       </OpeningPartGate>
     )}
-    <Heading>{WORDS.members}</Heading>
-    <div data-aspect-members className="flex flex-col gap-1">
-      {own.members.map((member) => (
+    {invite}
+  </section>
+);
+
+const GloryBoard = ({ own }: { own: OwnAspect }) => {
+  const ranked = usePartShown("glory");
+  return (
+    <section data-aspect-members className="aspect-glory-board">
+      <span className="flex items-baseline justify-between gap-2">
+        <Heading>{ranked ? WORDS.gloryBoard : WORDS.members}</Heading>
+        <Muted>{aspectName(own.aspectId)}</Muted>
+      </span>
+      {own.members.map((member, index) => (
         <HudRow
           key={member.id}
-          lead={<Icon name="realm" size={32} />}
+          lead={ranked ? <b className="aspect-glory-board__rank">#{index + 1}</b> : <Icon name="realm" size={32} />}
           title={member.realm}
           selected={member.mine}
           detail={member.guards ? WORDS.guards(member.guards) : undefined}
           trail={
-            <OpeningPartGate part="glory">
+            ranked && (
               <HudChip icons={["crown"]} label={WORDS.glory}>
                 {formatShort(member.glory)}
               </HudChip>
-            </OpeningPartGate>
+            )
           }
         />
       ))}
-    </div>
-    {invite}
-  </section>
-);
+    </section>
+  );
+};
 
 const Heading = ({ children }: { children: ReactNode }) => (
   <span className="text-hud-strong text-hud-ink">{children}</span>
