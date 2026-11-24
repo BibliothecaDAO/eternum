@@ -451,9 +451,18 @@ export const payoutWalletPhrases = (changeHoldSeconds, claimWindowSeconds) => [
 ];
 
 /** The phrases every rules page that states a stamina, guard, chest or points number must show. */
-export const publicDataPhrases = (release, heraldLimits) => {
+export const publicDataPhrases = (release, heraldLimits, dashboardOrigins) => {
   const aspectMapLiteral = `{ ${aspects.map((aspect) => `${aspect.id}: "${aspect.name}"`).join(", ")} }`;
   return [
+    {
+      page: "data/dashboard",
+      phrases: [
+        dashboardOrigins.heraldUrl,
+        dashboardOrigins.rpcUrl,
+        dashboardOrigins.identityOrigin,
+        `Player actions count confirmed transactions that recorded a timed story or battle once each.`,
+      ],
+    },
     {
       page: "data/get-the-data",
       phrases: [
@@ -483,6 +492,7 @@ export const expectedPhrases = (
 ) => [...frontierPhrases(frontier, frontierPreset, nativeRules, nativeFragments, nativeOaths, nativeRace, extra)];
 
 export const expectedPageIcons = ({
+  aspectMeaning,
   buildingMeaning,
   frontierPreset,
   iconUrl,
@@ -507,6 +517,10 @@ export const expectedPageIcons = ({
     {
       page: "frontier/banes",
       icons: worldBanes.map((entry) => iconUrl(worldBaneHead(entry.id, baneRules).icon, 128)),
+    },
+    {
+      page: "data/dashboard",
+      icons: aspects.map((aspect) => iconUrl(aspectMeaning(aspect.id), 128)),
     },
   ];
 };
@@ -559,7 +573,9 @@ export const loadBalanceSources = async () => {
     const { ASPECT_PAGE_WORDS: aspectWords, RELIC_WORDS: relicWords } = await server.ssrLoadModule(
       join(here, "../../game/src/ui/design-system/kit/words.ts"),
     );
-    const { iconUrl } = await server.ssrLoadModule(join(here, "../../game/src/ui/design-system/icon-meaning.ts"));
+    const { aspectMeaning, iconUrl } = await server.ssrLoadModule(
+      join(here, "../../game/src/ui/design-system/icon-meaning.ts"),
+    );
     const {
       buildingMeaning,
       RELIC_KINDS: relicKinds,
@@ -601,7 +617,16 @@ export const loadBalanceSources = async () => {
     const { triumphHead, worldBaneHead } = await server.ssrLoadModule(
       join(here, "../../game/src/ui/features/frontier/day/day-bane-face.ts"),
     );
+    const devRelease = JSON.parse(readFileSync(join(here, "../../../deploy/release/dev.json"), "utf8"));
     const productionRelease = JSON.parse(readFileSync(join(here, "../../../deploy/release/production.json"), "utf8"));
+    const environments = JSON.parse(readFileSync(join(here, "../../../deploy/first/environments.json"), "utf8"));
+    const { isDevEnvironment } = await server.ssrLoadModule(join(here, "../../game/src/shell/frame/environment.ts"));
+    const devBuild = isDevEnvironment(process.env.VITE_PUBLIC_ENVIRONMENT);
+    const dashboardOrigins = {
+      heraldUrl: (devBuild ? devRelease : productionRelease).public_herald_url,
+      rpcUrl: (devBuild ? devRelease : productionRelease).public_rpc_url,
+      identityOrigin: (devBuild ? environments.dev : environments.production).origin,
+    };
     const heraldLimits = await server.ssrLoadModule(join(here, "../../herald/src/http-limits.ts"));
     return {
       frontierPreset,
@@ -617,6 +642,7 @@ export const loadBalanceSources = async () => {
       relicWords,
       relicKinds,
       commandBits,
+      aspectMeaning,
       buildingMeaning,
       iconUrl,
       relicMeaning,
@@ -640,6 +666,7 @@ export const loadBalanceSources = async () => {
       triumphHead,
       worldBaneHead,
       productionRelease,
+      dashboardOrigins,
       heraldLimits,
       payoutWalletChangeSeconds: PAYOUT_WALLET_CHANGE_SECONDS,
       raceClaimWindowSeconds: RACE_CLAIM_WINDOW_SECONDS,
@@ -820,7 +847,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const phrases = [
     ...expectedPhrases(frontierConfig, frontierPreset, nativeRules, nativeFragments, nativeOaths, nativeRace, sources),
     ...payoutWalletPhrases(payoutWalletChangeSeconds, raceClaimWindowSeconds),
-    ...publicDataPhrases(sources.productionRelease, sources.heraldLimits),
+    ...publicDataPhrases(sources.productionRelease, sources.heraldLimits, sources.dashboardOrigins),
   ];
   const missing = [
     ...missingPhrases(dist, phrases),

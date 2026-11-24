@@ -54,6 +54,7 @@
     "text": "Data and developers",
     "collapsed": true,
     "items": [
+      { "text": "Live dashboard", "link": "/data/dashboard" },
       { "text": "Get the data", "link": "/data/get-the-data" },
       { "text": "Getting started", "link": "/development/getting-started" },
       { "text": "Client", "link": "/development/client" },
