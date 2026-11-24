@@ -8,7 +8,7 @@ import {
   unreadFeedEvents,
 } from "@/ui/design-system/kit/words";
 
-export type HudPlaceKey = "research" | "season" | "feed" | "chat";
+type HudPlaceKey = "research" | "season" | "feed" | "chat";
 
 interface HudPlaceItem {
   key: HudPlaceKey;

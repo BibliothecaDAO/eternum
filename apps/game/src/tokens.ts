@@ -652,7 +652,6 @@ export const HUD_LAYOUT = {
    */
   "frontier-rail": "480px",
   "frontier-page-top": "76px",
-  /** The Frontier HUD's cards: a site card, and the Build sheet's building card (option B's band). */
   "frontier-card": "92px",
   "frontier-build-card": "136px",
 } as const;

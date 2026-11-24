@@ -2154,10 +2154,6 @@ function recordedStill(onMap) {
   };
 }
 
-/**
- * The season's board as a player reads it: a desktop's Season place opens it in the rail and a second press closes it;
- * a phone opens it from its tab and closes it with the board's ×, as a phone has no Escape key.
- */
 async function readTheSeason({ browser }) {
   await openPlace(browser, HUD_WORDS.season);
   await sleep(2_000);

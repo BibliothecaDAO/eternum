@@ -112,6 +112,9 @@ button.frontier-stock-chip {
   white-space: nowrap;
 }
 .frontier-phone-float {
+  position: absolute;
+  top: 48px;
+  inset-inline: 0;
   display: flex;
   min-height: 52px;
   align-items: flex-start;

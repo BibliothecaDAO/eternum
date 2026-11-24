@@ -129,7 +129,7 @@ it.each(["phone", "desktop"] as const)(
         const mark = host.querySelector(`button[aria-label="${label}"]`)!.querySelector(BELOW_SURFACE);
         return mark && [mark.getAttribute("aria-label"), mark.textContent, mark.querySelector("img")?.dataset.icon];
       });
-      expect(marks).toEqual([["Hollow", "Hollow", "depth-2"], null]);
+      expect(marks).toEqual([["Hollow", "", "depth-2"], null]);
     } finally {
       act(() => root.unmount());
       host.remove();

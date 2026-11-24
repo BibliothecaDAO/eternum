@@ -455,7 +455,16 @@ describe("the phone tab bar", () => {
     act(() => buttons[0]!.click());
     expect(onSurface).toHaveBeenLastCalledWith(null);
     act(() =>
-      root.render(<PhoneTabBar isMapView surface="today" onSurface={onSurface} feedUnread={0} chatUnread={0} />),
+      root.render(
+        <PhoneTabBar
+          isMapView
+          surface="today"
+          onSurface={onSurface}
+          researchReady={false}
+          feedUnread={0}
+          chatUnread={0}
+        />,
+      ),
     );
     expect(barButtons()).toEqual(["World", "Research", "Season", "Chat", "Menu"]);
     expect(host.querySelector('button[aria-label="Menu"]')!.getAttribute("aria-current")).toBe("page");
