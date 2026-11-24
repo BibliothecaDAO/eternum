@@ -4,7 +4,7 @@ import { heldOaths } from "@bibliothecadao/eternum";
 import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { orderMeaning } from "@/ui/design-system/icon-meaning";
 import { oathEffectDescription, oathName } from "../army/oath-details";
-import type { PickEffectBase } from "../pick-effect-text";
+import type { PickEffectBase } from "../pick-effect-format";
 import { Icon } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import {

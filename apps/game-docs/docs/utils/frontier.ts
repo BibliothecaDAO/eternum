@@ -23,6 +23,7 @@ import {
   type RelicKind,
 } from "../../../game/src/ui/design-system/domain-icon-meaning";
 import { ASPECT_PAGE_WORDS, DAY_BANNER_WORDS, RELIC_WORDS } from "../../../game/src/ui/design-system/kit/words";
+import { oathEffectDescription } from "../../../game/src/ui/features/frontier/army/oath-details";
 import {
   ASPECT_REWARD,
   BuildingType,
@@ -134,41 +135,26 @@ const triumphTable = (Object.entries(ASPECT_PAGE_WORDS.triumph) as [string, stri
   .join("\n");
 
 const worldBaneMeta: Record<WorldBaneId, { icon: IconMeaning; effect: string }> = {
-  [bane.BLOOD_MOON]: { icon: "moon", effect: `Guarded sites have ${n(banesPreset.beastPercent)}% strength.` },
-  [bane.MIST_TIDE]: { icon: "waves", effect: `Stamina recovers at ${n(banesPreset.staminaPercent)}%.` },
-  [bane.ASH_FALL]: { icon: "flame", effect: `Realm production runs at ${n(banesPreset.productionPercent)}%.` },
+  [bane.BLOOD_MOON]: { icon: "moon", effect: `${DAY_BANNER_WORDS.beastBane(banesPreset.beastPercent)}.` },
+  [bane.MIST_TIDE]: { icon: "waves", effect: `${DAY_BANNER_WORDS.staminaBane(banesPreset.staminaPercent)}.` },
+  [bane.ASH_FALL]: { icon: "flame", effect: `${DAY_BANNER_WORDS.productionBane(banesPreset.productionPercent)}.` },
 };
 
-const oathEffects: Record<number, string> = {
-  [oaths.POWER]: `Deals +${n(oaths.POWER_DAMAGE_PERCENT)}% damage.`,
-  [oaths.GIANTS]: `Takes ${n(oaths.GIANTS_REDUCTION_PERCENT)}% less damage.`,
-  [oaths.SKILL]: `Deals +${n(oaths.SKILL_DAMAGE_PERCENT)}% damage when the attack leaves stamina below ${n(oaths.SKILL_BELOW_STAMINA)}.`,
-  [oaths.TITANS]: `Gains +${n(oaths.TITANS_STAMINA)} stamina immediately and +${n(oaths.TITANS_STAMINA)} max stamina.`,
-  [oaths.PERFECTION]: `Site rewards pay ${n(oaths.PERFECTION_PAY_PERCENT)}% when you lose under ${n(oaths.PERFECTION_LOSS_PERCENT)}% troops.`,
-  [oaths.BRILLIANCE]: `Reveal payouts pay ${n(oaths.BRILLIANCE_PAY_PERCENT)}%.`,
-  [oaths.PROTECTION]: `Takes ${n(oaths.PROTECTION_REDUCTION_PERCENT)}% less damage while guarding a site.`,
-  [oaths.ENLIGHTENMENT]: `Recovers stamina ${Math.round((oaths.ENLIGHTENMENT_REGEN_BPS - 10000) / 100)}% faster.`,
-  [oaths.RAGE]: `Site and guard rewards pay ${n(oaths.RAGE_PAY_PERCENT)}%.`,
-  [oaths.FURY]: `Refunds ${n(oaths.FURY_REFUND_PERCENT)}% of attack stamina on a won fight.`,
-  [oaths.VITRIOL]: `Cuts Deep troop drain from ${n(deepPreset.lossPerTick)} to ${n(oaths.VITRIOL_LOSS_PER_TICK)} per tick.`,
-  [oaths.ANGER]: `Cuts attack stamina cost from ${n(stamina.staminaAttackReq)} to ${n(oaths.ANGER_ATTACK_STAMINA)}.`,
-  [oaths.FOX]: `Cuts tile reveal stamina cost by ${n(oaths.FOX_REVEAL_DISCOUNT_PERCENT)}%.`,
-  [oaths.TWINS]: `When another of your armies stands on an adjacent tile, your largest adjacent army adds ${n(oaths.TWINS_DAMAGE_PERCENT)}% of its attack damage.`,
-  [oaths.REFLECTION]: `Wells refill ${n(oaths.REFLECTION_WELL_PERCENT)}% of max stamina instead of ${n(rule.WELL_REFILL_PERCENT)}%.`,
-  [oaths.DETECTION]: `Guarantees a discovery after ${n(oaths.DETECTION_EMPTY_REVEAL_LIMIT)} empty reveals instead of ${n(frontierPreset.discovery.emptyRevealLimit)}.`,
+const oathEffectBase = {
+  attackStamina: stamina.staminaAttackReq,
+  revealStamina: stamina.staminaExploreStaminaCost,
+  maxStamina: stamina.staminaKnightMax,
+  staminaPerSecond: stamina.staminaGainPerTick / config.tick.armiesTickIntervalInSeconds,
+  deepLossPerTick: deepPreset.lossPerTick,
 };
 
 const aspectOrders = orders.filter((order) => order.aspect !== null);
-const oathRows = aspectOrders.map((order) => {
-  const effect = oathEffects[order.orderId];
-  if (!effect) throw new Error(`Missing Oath effect for Order ${order.orderId}`);
-  return {
-    name: order.orderName,
-    icon: orderMeaning(order.orderId),
-    aspect: aspectName(order.aspect!),
-    effect,
-  };
-});
+const oathRows = aspectOrders.map((order) => ({
+  name: order.orderName,
+  icon: orderMeaning(order.orderId),
+  aspect: aspectName(order.aspect!),
+  effect: `${oathEffectDescription(order.orderId, oathEffectBase)}.`,
+}));
 
 const buildingRate = (id: BuildingType): string | null => {
   if (id === research.WORKSHOP) return perHour(frontierPreset.board.workshopRate);

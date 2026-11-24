@@ -96,6 +96,7 @@ export const frontierPhrases = (
     depthRewardPercent,
     logisticsStamina,
     mainnetTokens,
+    oathEffectDescription,
   },
 ) => {
   const stamina = config.troop.stamina;
@@ -244,11 +245,21 @@ export const frontierPhrases = (
         `open it to draw ${n(contract.oathDrawCount)} Oaths.`,
         `also draws ${n(contract.oathDrawCount)} Oaths.`,
         `All ${aspectOrderCount} Oaths`,
-        ...aspectOrders.map((order) => order.orderName),
+        ...aspectOrders.map(
+          (order) =>
+            `${order.orderName} ${aspects.find((a) => a.id === order.aspect).name} ${oathEffectDescription(
+              order.orderId,
+              {
+                attackStamina: stamina.staminaAttackReq,
+                revealStamina: stamina.staminaExploreStaminaCost,
+                maxStamina: stamina.staminaKnightMax,
+                staminaPerSecond: stamina.staminaGainPerTick / tick,
+                deepLossPerTick: preset.deep.lossPerTick,
+              },
+            )}.`,
+        ),
         `gives that army +${n(nativeOaths.PASS_STAMINA)} stamina`,
         rerollRule,
-        `Deals +${n(nativeOaths.POWER_DAMAGE_PERCENT)}% damage.`,
-        `Takes ${n(nativeOaths.GIANTS_REDUCTION_PERCENT)}% less damage.`,
         `Relics come in ${TIER_WORDS.length} tiers`,
         `All ${relicKinds.length} relic kinds`,
         ...relicKinds.map((kind) => relicWords.kinds[kind]),
@@ -275,7 +286,9 @@ export const frontierPhrases = (
         `${n(preset.dailyQuest.labor)} Labor and ${n(preset.dailyQuest.essence)} Essence.`,
         `to ${n(preset.dailyQuest.bonusPercent)}%.`,
         `+${n(nativeFragments.WONDER_QUEST_FRAGMENTS)} Fragments`,
-        `Guarded sites have ${n(preset.banes.beastPercent)}% strength.`,
+        `${dayBannerWords.beastBane(preset.banes.beastPercent)}.`,
+        `${dayBannerWords.staminaBane(preset.banes.staminaPercent)}.`,
+        `${dayBannerWords.productionBane(preset.banes.productionPercent)}.`,
         `Once ${n(preset.banes.quorumPercent)}% of your Aspect's members who were active on the previous day`,
         `World Banes stop for the rest of the season.`,
         ...worldBanes.map((entry) => entry.name),
@@ -427,6 +440,9 @@ export const loadBalanceSources = async () => {
     const { MAINNET_TOKENS: mainnetTokens } = await server.ssrLoadModule(
       join(here, "../../../packages/chain/src/tokens.ts"),
     );
+    const { oathEffectDescription } = await server.ssrLoadModule(
+      join(here, "../../game/src/ui/features/frontier/army/oath-details.ts"),
+    );
     const productionRelease = JSON.parse(readFileSync(join(here, "../../../deploy/release/production.json"), "utf8"));
     const heraldLimits = await server.ssrLoadModule(join(here, "../../herald/src/http-limits.ts"));
     return {
@@ -451,6 +467,7 @@ export const loadBalanceSources = async () => {
       depthRewardPercent,
       logisticsStamina,
       mainnetTokens,
+      oathEffectDescription,
       productionRelease,
       heraldLimits,
       payoutWalletChangeSeconds: PAYOUT_WALLET_CHANGE_SECONDS,
@@ -472,6 +489,8 @@ export const visibleText = (html) =>
       text
         .replace(/&#x27;|&#39;/g, "'")
         .replace(/&quot;/g, '"')
+        .replace(/&lt;/g, "<")
+        .replace(/&gt;/g, ">")
         .replace(/&amp;/g, "&")
         .trim(),
     )
@@ -498,7 +517,7 @@ export const exportPages = (llm) =>
       section.match(/^file: docs\/pages\/(\S+)\.mdx/)?.[1]?.replace(/\/index$/, ""),
       section
         .replace(/\\(.)/g, "$1")
-        .replace(/<[^>]+>/g, " ")
+        .replace(/<\/?[A-Za-z][^>]*>/g, " ")
         .replace(/\*\*|\||`/g, " ")
         .replace(/\s+/g, " ")
         .replace(/ ([:,.;)%])/g, "$1"),

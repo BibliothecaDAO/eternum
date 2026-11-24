@@ -10,7 +10,7 @@ import {
   percentFromTo,
   staminaRecoveryEffect,
   type PickEffectBase,
-} from "../pick-effect-text";
+} from "../pick-effect-format";
 
 export type ArmyRelic = { kind: RelicKind; rank: number };
 

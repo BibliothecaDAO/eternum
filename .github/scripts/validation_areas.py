@@ -315,6 +315,8 @@ AREAS = {
         "apps/game/src/ui/design-system/icon-meaning.ts",
         "apps/game/src/ui/design-system/kit/paintings.ts",
         "apps/game/src/ui/design-system/kit/words.ts",
+        "apps/game/src/ui/features/frontier/army/oath-details.ts",
+        "apps/game/src/ui/features/frontier/pick-effect-format.ts",
         "apps/game/src/services/home-claim-rules.ts",
         "apps/game/src/shell/generated/patch-notes.ts",
         "apps/game/src/shell/news/patch-note.ts"

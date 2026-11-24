@@ -2,7 +2,7 @@ import { Icon } from "@/ui/design-system/icon";
 import { HudRarity, HudRow } from "@/ui/design-system/kit/hud-elements";
 import { RELIC_WORDS, type Tier } from "@/ui/design-system/kit/words";
 
-import { type PickEffectBase } from "../pick-effect-text";
+import { type PickEffectBase } from "../pick-effect-format";
 import { relicMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { relicEffect, relicName, type ArmyRelic } from "./relic-catalog";
 
