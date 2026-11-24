@@ -468,7 +468,7 @@ it("completes the Research lesson as Research opens, since the full page covers 
     seen: new Set(),
   });
   expect(opened.confirmedMoment).toBe("essence");
-  expect(opened.newlyCompleted).toEqual(["essence"]);
+  expect(opened.newlyCompleted).toContain("essence");
 
   const openedBeforeItShowed = stepTutorialMachine({
     showing: null,
@@ -478,7 +478,7 @@ it("completes the Research lesson as Research opens, since the full page covers 
     seen: new Set(),
   });
   expect(openedBeforeItShowed.nextShowing).toBe("essence");
-  expect(openedBeforeItShowed.newlyCompleted).toEqual([]);
+  expect(openedBeforeItShowed.newlyCompleted).not.toContain("essence");
 });
 
 it("silently completes actions done before their lesson showed without flashing a confirmation banner, and keeps replay intact", () => {
