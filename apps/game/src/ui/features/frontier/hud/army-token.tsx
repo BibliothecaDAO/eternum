@@ -142,7 +142,8 @@ export const OpenSlot = ({
   label,
   pulse,
   filling,
-  start,
+  tip,
+  bar,
   stock,
   selected,
   onDeploy,
@@ -153,8 +154,8 @@ export const OpenSlot = ({
   selected?: boolean;
   /** An army is on its way into this slot, by the word that says so: the slot cannot be pressed until it is known. */
   filling?: string;
-  /** The bar the slot starts its army on, and that in words ("Army 2 starts on 7/150 stamina…"); none while unknown. */
-  start?: { bar?: StaminaBar; words: string };
+  tip?: string;
+  bar?: StaminaBar;
   stock?: { count: string; label: string };
   onDeploy: () => void;
 }) => (
@@ -164,13 +165,13 @@ export const OpenSlot = ({
     aria-busy={filling !== undefined}
     aria-pressed={selected}
     disabled={filling !== undefined}
-    data-tip={filling === undefined ? start?.words : undefined}
+    data-tip={filling === undefined ? tip : undefined}
     onClick={onDeploy}
     className={cn("ui-pick", TOKEN_LOOK, "border-dashed")}
   >
     <SlotRing pulse={pulse} filling={filling} />
-    {start?.bar && filling === undefined && <TokenStamina stamina={start.bar} />}
-    <span className="font-ui text-hud-label leading-none text-hud-gold">{filling ?? label}</span>
+    {bar && filling === undefined && <TokenStamina stamina={bar} />}
+    <span className="font-ui text-hud-badge leading-none text-hud-gold">{filling ?? label}</span>
     {stock && filling === undefined && (
       <span role="img" aria-label={stock.label} className="text-hud-body leading-none text-hud-ink tabular-nums">
         {stock.count}

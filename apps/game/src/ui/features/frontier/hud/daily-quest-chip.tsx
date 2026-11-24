@@ -47,7 +47,7 @@ export const DailyQuestChip = ({ realm }: { realm: NativeRows["Structure"] }) =>
         className="frontier-quest-orb"
       >
         <ProgressRing size="lg" share={target > 0 ? progress / target : 0} tone="calm">
-          <Icon name={icon} size={40} />
+          <Icon name={icon} size={36} />
         </ProgressRing>
         <span className="frontier-quest-orb__count">{ready ? DAY_BANNER_WORDS.collect : count}</span>
         {ready && (

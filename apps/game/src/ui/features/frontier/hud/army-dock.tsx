@@ -233,7 +233,7 @@ const DeploySlot = ({
   const deploying = useInFlight("deploy", safeInteger(realm.entity_id));
   const line = slot && slotStartLine(slot);
   const filling = slot && deploying === slot.slot ? DEPLOYING : undefined;
-  const start = slot?.start && line ? { bar: slot.start, words: `${line}.` } : undefined;
+  const start = slot?.start && line ? { bar: slot.start, words: line } : undefined;
   const onDeploy = () =>
     openArmyDeployment({ structureId: safeInteger(realm.entity_id), isExplorer: true, slot: slot?.slot });
   return wide ? (
@@ -246,13 +246,6 @@ const DeploySlot = ({
       onDeploy={onDeploy}
     />
   ) : (
-    <OpenSlot
-      label={DEPLOY}
-      filling={filling}
-      pulse={pulse}
-      start={start && { words: start.words }}
-      stock={stock}
-      onDeploy={onDeploy}
-    />
+    <OpenSlot label={DEPLOY} filling={filling} pulse={pulse} tip={start?.words} stock={stock} onDeploy={onDeploy} />
   );
 };

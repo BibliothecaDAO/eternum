@@ -9,8 +9,4 @@ import type { SlotStart } from "./deploy-plan";
  */
 export const slotStartLine = (slot: SlotStart): string | undefined =>
   slot.start &&
-  startsOn(
-    `${ARMY} ${slot.number}`,
-    `${formatAmount(slot.start.current)}/${formatAmount(slot.start.max)}`,
-    !slot.inherited,
-  );
+  `${startsOn(`${ARMY} ${slot.number}`, `${formatAmount(slot.start.current)}/${formatAmount(slot.start.max)}`, !slot.inherited)}.`;

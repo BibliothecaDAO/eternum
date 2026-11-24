@@ -232,18 +232,16 @@ const DeploySlots = ({
   onPick: (slot: number) => void;
 }) => (
   <div role="group" aria-label="Army slots" className="flex gap-1.5">
-    {open.map((slot) => {
-      const line = slotStartLine(slot);
-      return (
-        <OpenSlot
-          key={slot.slot}
-          label={`${ARMY} ${slot.number}`}
-          pulse={false}
-          start={slot.start && line ? { bar: slot.start, words: `${line}.` } : undefined}
-          selected={slot.slot === picked}
-          onDeploy={() => onPick(slot.slot)}
-        />
-      );
-    })}
+    {open.map((slot) => (
+      <OpenSlot
+        key={slot.slot}
+        label={`${ARMY} ${slot.number}`}
+        pulse={false}
+        tip={slotStartLine(slot)}
+        bar={slot.start}
+        selected={slot.slot === picked}
+        onDeploy={() => onPick(slot.slot)}
+      />
+    ))}
   </div>
 );

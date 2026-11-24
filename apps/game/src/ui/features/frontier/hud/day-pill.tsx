@@ -69,6 +69,7 @@ export const DayRing = ({ clock }: { clock: DayClock }) => {
       className="frontier-day-disc pointer-events-auto"
       style={{ "--day-gone": `${Math.round((dayElapsedShare(clock) ?? 0) * 100)}%` } as CSSProperties}
     >
+      <span className="frontier-day-disc__kicker">{DAY}</span>
       <span className="frontier-day-disc__day">{clock.day ?? "—"}</span>
       {left && <span className="frontier-day-disc__left">{left}</span>}
     </span>

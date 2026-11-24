@@ -1423,7 +1423,7 @@ const labSlots = (lab: LabState) =>
   labOpenSlots(lab).map((slot, index) => ({
     number: slot.number,
     pulse: index === 0 && lab.armies.length === 0,
-    start: { bar: slot.start!, words: `${slotStartLine(slot)}.` },
+    tip: slotStartLine(slot),
   }));
 
 /** The season the lab's season-over shows: prod's Playtest as its archive holds it, read by its third place. */
