@@ -1,0 +1,24 @@
+.order-tray {
+  display: flex;
+  min-height: 2.75rem;
+  align-items: center;
+  gap: theme(spacing[2.5]);
+}
+.order-tray__costs {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: theme(spacing[2.5]);
+}
+.order-tray__cost {
+  display: inline-flex;
+  align-items: center;
+  gap: theme(spacing.1);
+  color: rgb(var(--hud-ink));
+  font-size: var(--hud-text-strong);
+  font-weight: var(--hud-weight-strong);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}

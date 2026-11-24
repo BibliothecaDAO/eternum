@@ -4,13 +4,14 @@ import { getResourceSoundId } from "@/three/sound/utils";
 import type { ResourcesIds } from "@bibliothecadao/types";
 import { riseSprite } from "../motion-layer";
 import { bankedCounterTarget, findBankedCounter, flyToBankedCounter, resourceIcon } from "./banked-flight";
+import { addRevealGain } from "./reveal-gains";
 
 /**
  * Design §3.11 §4, the reveal yield, one rule in every mode. The player's own reveal with its banked counter on screen
  * pops on the revealed tile and flies to the counter, which rolls as it lands; anything else (another player's reveal,
  * or no counter, as in Blitz) pops and rises on the tile with its amount. Only the player's own reveals sound, climbing
- * a semitone each, up to seven, until three idle seconds reset the climb. Flights to one counter within a second merge,
- * and no more than six are in the air.
+ * a semitone each, up to seven, until three idle seconds reset the climb, and add to the gains pill under the bar.
+ * Flights to one counter within a second merge, and no more than six are in the air.
  */
 const POP_MS = 200;
 const MERGE_MS = 1_000;
@@ -38,7 +39,10 @@ export const playRevealYield = ({
   own: boolean;
   now?: number;
 }): void => {
-  if (own) playChainedCollect(resourceId, now);
+  if (own) {
+    playChainedCollect(resourceId, now);
+    addRevealGain(resourceId, amount, now);
+  }
   const counter = own ? findBankedCounter(resourceId) : null;
   if (counter) flyHome(resourceId, counter, from, now);
   // Under a unit a find says no amount (findGain): the resource's icon rises alone.
