@@ -190,7 +190,9 @@ const CachePay = ({ fragments }: { fragments: number }) => (
 );
 
 const Reward = ({ dimmed, children }: { dimmed: boolean; children: ReactNode }) => (
-  <span className={cn("flex flex-wrap items-center gap-2", dimmed && "opacity-50")}>{children}</span>
+  <span data-fight-reward className={cn("flex flex-wrap items-center gap-2", dimmed && "opacity-50")}>
+    {children}
+  </span>
 );
 
 const SiteMark = ({ icon, children }: { icon: IconMeaning; children?: ReactNode }) => (

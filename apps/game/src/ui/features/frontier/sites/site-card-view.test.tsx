@@ -50,9 +50,7 @@ describe("a guarded site's card", () => {
       ),
     );
     expect(document.querySelector("[data-fight-outcome]")?.textContent).toContain("This attack earns");
-    expect(document.querySelector(".fight-spoils")?.textContent).toBe(
-      "This attack earns+5KFull: the rest did not fit+1 site",
-    );
+    expect(document.querySelector("[data-fight-reward]")?.textContent).toBe("+5KFull: the rest did not fit+1 site");
   });
 
   it("heads the attack with what it earns, and reads each side before and after as numbers alone", () => {
@@ -246,7 +244,7 @@ describe("a guarded site's card", () => {
         />,
       ),
     );
-    const spoils = document.querySelector(".fight-spoils")!;
+    const spoils = document.querySelector("[data-fight-reward]")!;
     expect(spoils.textContent).toBe("+120Full: the rest did not fit+1 site");
     expect(spoils.querySelector('[data-tip*="did not fit"]')).toBeNull();
     act(() =>
