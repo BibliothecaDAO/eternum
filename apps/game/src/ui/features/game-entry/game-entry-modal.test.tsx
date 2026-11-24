@@ -98,6 +98,7 @@ beforeEach(() => {
   vi.spyOn(identityClient, "getOrderIntent").mockImplementation(async () => ({ order: keptOrder.order, members: {} }));
   vi.spyOn(identityClient, "joinedShare").mockResolvedValue(null);
   vi.spyOn(identityClient, "readDefaultWallet").mockResolvedValue(null);
+  vi.spyOn(identityClient, "getSealCode").mockResolvedValue({ held: false });
 });
 
 afterEach(() => {
