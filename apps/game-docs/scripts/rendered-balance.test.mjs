@@ -119,3 +119,116 @@ test("Realms home shows Games, Global, and Data; Frontier landing holds Frontier
     assert.ok(frontier.includes(phrase), `Frontier landing missing "${phrase}"`);
   }
 });
+
+const parseCssVars = (css) => {
+  const vars = new Map();
+  for (const [, name, value] of css.matchAll(/(--[a-zA-Z0-9-]+)\s*:\s*([^;}\n]+);/g)) {
+    vars.set(name, value.trim());
+  }
+  return vars;
+};
+
+const resolveHex = (raw, vars, depth = 0) => {
+  if (depth > 8) return null;
+  const trimmed = raw.replace(/!important/g, "").trim();
+  if (/^#[0-9a-fA-F]{6}$/.test(trimmed)) return trimmed.toLowerCase();
+  const varMatch = trimmed.match(/^var\((--[a-zA-Z0-9-]+)\)$/);
+  if (varMatch && vars.has(varMatch[1])) return resolveHex(vars.get(varMatch[1]), vars, depth + 1);
+  return null;
+};
+
+const selectorSpecificity = (selector) => {
+  const cleaned = selector.replace(/:not\([^)]*\)/g, "");
+  const ids = (cleaned.match(/#[a-zA-Z0-9_-]+/g) ?? []).length;
+  const classes = (cleaned.match(/\.[a-zA-Z0-9_-]+|\[[^\]]+\]|:(?!:)[a-zA-Z-]+/g) ?? []).length;
+  const tags = (cleaned.match(/(?:^|[\s>+~])([a-zA-Z][a-zA-Z0-9-]*)/g) ?? []).length;
+  return ids * 10000 + classes * 100 + tags;
+};
+
+const matchesPrimaryButtonInContent = (selector) => {
+  const s = selector.trim();
+  if (/:hover|:focus|:active/.test(s)) return false;
+  return (
+    s === ".vocs_Content a" ||
+    s === ".docs-btn-primary" ||
+    s === "a.docs-btn-primary" ||
+    s === ".vocs_Content a.docs-btn-primary" ||
+    s === ".vocs_Content .docs-btn-primary"
+  );
+};
+
+const winningProp = (css, prop, matcher) => {
+  const stripped = css.replace(/\/\*[\s\S]*?\*\//g, "");
+  let best = null;
+  let order = 0;
+  for (const [, header, body] of stripped.matchAll(/([^{}@]+)\{([^{}]+)\}/g)) {
+    for (const selector of header.split(",")) {
+      if (!matcher(selector)) continue;
+      for (const [, name, val] of body.matchAll(/([a-z-]+)\s*:\s*([^;]+);/g)) {
+        if (name !== prop) continue;
+        order += 1;
+        const important = /!important/.test(val) ? 1 : 0;
+        const spec = selectorSpecificity(selector);
+        if (
+          !best ||
+          important > best.important ||
+          (important === best.important && (spec > best.spec || (spec === best.spec && order >= best.order)))
+        ) {
+          best = { important, spec, order, value: val.trim() };
+        }
+      }
+    }
+  }
+  return best?.value ?? null;
+};
+
+const luminance = (hex) => {
+  const channels = [1, 3, 5].map((i) => {
+    const v = parseInt(hex.slice(i, i + 2), 16) / 255;
+    return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
+};
+
+const contrastRatio = (a, b) => {
+  const [l1, l2] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+  return (l1 + 0.05) / (l2 + 0.05);
+};
+
+const primaryButtonContrast = (css) => {
+  const vars = parseCssVars(css);
+  const fg = resolveHex(winningProp(css, "color", matchesPrimaryButtonInContent) ?? "", vars);
+  const bg = resolveHex(winningProp(css, "background", matchesPrimaryButtonInContent) ?? "", vars);
+  assert.ok(fg && bg, `expected hex foreground and background for .docs-btn-primary, got fg=${fg} bg=${bg}`);
+  return contrastRatio(fg, bg);
+};
+
+test("every link and button on home and frontier landing has an accessible name and readable contrast", () => {
+  for (const rel of ["index.html", "frontier/index.html"]) {
+    const html = readFileSync(join(dist, rel), "utf8");
+    const controls = [...html.matchAll(/<(a|button)\b([^>]*)>([\s\S]*?)<\/\1>/g)];
+    assert.ok(controls.length > 0, `expected interactive links/buttons on ${rel}`);
+    for (const [, tag, attrs, inner] of controls) {
+      const aria = attrs.match(/\baria-label="([^"]+)"/)?.[1]?.trim() ?? "";
+      const title = attrs.match(/\btitle="([^"]+)"/)?.[1]?.trim() ?? "";
+      const alt = [...inner.matchAll(/\balt="([^"]+)"/g)].map((m) => m[1].trim()).join(" ");
+      const text = inner
+        .replace(/<[^>]+>/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+      assert.ok(aria || title || alt || text, `empty <${tag}> without accessible name on ${rel}: ${attrs}`);
+    }
+  }
+  const styles = readFileSync(fileURLToPath(new URL("../docs/styles.css", import.meta.url)), "utf8");
+  const ratio = primaryButtonContrast(styles);
+  assert.ok(ratio >= 4.5, `primary button contrast too low (${ratio.toFixed(2)}:1); check .vocs_Content a override`);
+
+  const brokenCss = styles
+    .replace(
+      ".vocs_Content a {\n  color: var(--realm-accent-brass);\n}",
+      ".vocs_Content a {\n  color: var(--realm-accent-brass) !important;\n}",
+    )
+    .replace(".vocs_Content a.docs-btn-primary", ".unused-btn");
+  const brokenRatio = primaryButtonContrast(brokenCss);
+  assert.ok(brokenRatio < 1.5, `expected regression check to detect gold-on-gold button (${brokenRatio.toFixed(2)}:1)`);
+});

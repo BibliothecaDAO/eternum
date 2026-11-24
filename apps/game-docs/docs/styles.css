@@ -221,11 +221,11 @@ article.vocs_Content,
 }
 
 .vocs_Content a {
-  color: var(--realm-accent-brass) !important;
+  color: var(--realm-accent-brass);
 }
 
 .vocs_Content a:hover {
-  color: var(--realm-accent-ember) !important;
+  color: var(--realm-accent-ember);
 }
 
 .vocs_Content blockquote,
@@ -948,27 +948,31 @@ article.vocs_Content,
     border-color 120ms ease;
 }
 
-.docs-btn-primary {
+.docs-btn-primary,
+.vocs_Content a.docs-btn-primary {
   background: var(--gold2);
   border: 1px solid var(--gold2);
-  color: var(--ink) !important;
+  color: var(--ink);
 }
 
-.docs-btn-primary:hover {
+.docs-btn-primary:hover,
+.vocs_Content a.docs-btn-primary:hover {
   background: var(--gold);
   border-color: var(--gold);
-  color: var(--ink) !important;
+  color: var(--ink);
 }
 
-.docs-btn-outline {
+.docs-btn-outline,
+.vocs_Content a.docs-btn-outline {
   background: color-mix(in srgb, var(--ground) 72%, transparent);
   border: 1px solid var(--realm-border-strong);
-  color: var(--gold2) !important;
+  color: var(--gold2);
 }
 
-.docs-btn-outline:hover {
+.docs-btn-outline:hover,
+.vocs_Content a.docs-btn-outline:hover {
   background: color-mix(in srgb, var(--gold2) 16%, transparent);
-  color: var(--cream) !important;
+  color: var(--cream);
 }
 
 .docs-home-strips {

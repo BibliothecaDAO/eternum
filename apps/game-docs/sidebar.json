@@ -12,7 +12,7 @@
     "text": "Frontier",
     "kind": "game",
     "id": "frontier",
-    "summary": "Season 1 is free to play onchain. Every game day opens a fresh map around your realm, and your Aspect races others in the Deep for LORDS.",
+    "summary": "Build your realm, send armies into a fresh daily map for Oaths and relics, and fight in the Deep to build your Aspect's hyperstructure for LORDS.",
     "items": [
       { "text": "Overview", "link": "/frontier" },
       {
