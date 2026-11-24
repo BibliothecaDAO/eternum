@@ -251,7 +251,7 @@ export const patchNotes = [
           "kind": "balance",
           "icon": "chest",
           "title": "Chests at every depth",
-          "line": "A chest a reveal finds can turn up at any depth, with its layer's chest odds, and deeper ruins pay richer chests: Ethereal I starts at Uncommon, II at Rare, III at Epic."
+          "line": "A chest a reveal finds can turn up at any depth, with its layer's chest odds, and deeper ruins pay richer chests: the Veil starts at Uncommon, the Hollow at Rare, the Deep at Epic."
         },
         {
           "kind": "balance",
@@ -578,7 +578,7 @@ export const patchNotes = [
           "kind": "new",
           "icon": "beast-troll",
           "title": "Beasts",
-          "line": "Beasts roam the land in two strengths, as likely as each other: a Cyclops, 300 to 350 troops on the surface, or a stronger Wraith, 450 to 550, with more of each deeper down. They are the weakest guards and pay only XP. Trolls stand at every depth. A Dark fey hovers above each rift. Ruins are guarded by an Ammit on the surface, a Basilisk in Ethereal I, a Wyvern in Ethereal II and a Hydra in Ethereal III, with low drifting mist across their floors."
+          "line": "Beasts roam the land in two strengths, as likely as each other: a Cyclops, 300 to 350 troops on the surface, or a stronger Wraith, 450 to 550, with more of each deeper down. They are the weakest guards and pay only XP. Trolls stand at every depth. A Dark fey hovers above each rift. Ruins are guarded by an Ammit on the surface, a Basilisk in the Veil, a Wyvern in the Hollow and a Hydra in the Deep, with low drifting mist across their floors."
         },
         {
           "kind": "new",

@@ -15,7 +15,7 @@ import {
 } from "./icon-meaning";
 import { HexMarker } from "./hex-marker";
 import { aspectCardUrl, realmMeaning, realmMarkerMeaning, rewardChestMeaning } from "./domain-icon-meaning";
-import { aspects, orders, type ResourcesIds } from "@bibliothecadao/types";
+import { aspects, LAYER_NAMES, orders, type ResourcesIds } from "@bibliothecadao/types";
 
 describe("semantic icons", () => {
   it("gives every realm level its own portrait and hex emblem", () => {
@@ -55,6 +55,9 @@ describe("semantic icons", () => {
   it("resolves every resource ID and all Orders", () => {
     for (let id = 1; id <= 58; id++) expect(iconDefinition(resourceMeaning(id)).label.length).toBeGreaterThan(0);
     for (let id = 0; id < 17; id++) expect(orderMeaning(id)).toMatch(/^order-/);
+    expect(iconDefinition("depth-1").label).toBe(LAYER_NAMES[1]);
+    expect(iconDefinition("depth-2").label).toBe(LAYER_NAMES[2]);
+    expect(iconDefinition("depth-3").label).toBe(LAYER_NAMES[3]);
     expect(() => resourceMeaning(999 as ResourcesIds)).toThrow("Unknown resource icon");
     expect(() => orderMeaning(999)).toThrow("Unknown Order icon");
   });

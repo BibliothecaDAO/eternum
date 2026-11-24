@@ -2794,7 +2794,7 @@
     },
     {
       "id": "depth-1",
-      "label": "Ethereal reach I",
+      "label": "Veil",
       "family": "Statuses",
       "prompt": "prompts/depth-1.txt",
       "source": {
@@ -2813,7 +2813,7 @@
     },
     {
       "id": "depth-2",
-      "label": "Ethereal reach II",
+      "label": "Hollow",
       "family": "Statuses",
       "prompt": "prompts/depth-2.txt",
       "source": {
@@ -2832,7 +2832,7 @@
     },
     {
       "id": "depth-3",
-      "label": "Ethereal reach III",
+      "label": "Deep",
       "family": "Statuses",
       "prompt": "prompts/depth-3.txt",
       "source": {
