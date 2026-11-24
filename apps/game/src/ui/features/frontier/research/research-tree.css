@@ -447,7 +447,7 @@
   justify-content: center;
   min-height: 70px;
   color: var(--hud-muted);
-  font-size: 13px;
+  font-size: var(--hud-text-label);
 }
 
 .research-bar__copy {
@@ -462,7 +462,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   color: rgb(var(--hud-ink));
-  font-size: 15px;
+  font-size: var(--hud-text-strong);
   line-height: 20px;
   font-weight: 700;
   white-space: nowrap;
@@ -473,7 +473,7 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 4px 12px;
-  font-size: 15px;
+  font-size: var(--hud-text-strong);
   line-height: 22px;
   font-weight: 700;
 }
@@ -490,7 +490,7 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 13px;
+  font-size: var(--hud-text-label);
 }
 
 .research-bar__action:empty {

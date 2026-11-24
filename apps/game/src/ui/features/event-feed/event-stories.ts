@@ -41,7 +41,7 @@ type ToldStory = Pick<ProcessedStoryEvent, "story" | "storyPayload" | "entity_id
  * site's payout or a structure's capture just before the battle that caused it. Its site's clear names the attack's
  * cost.
  */
-export const fightConcludedBy = <Story extends ToldStory>(
+const fightConcludedBy = <Story extends ToldStory>(
   outcome: Story,
   stories: readonly Story[],
 ): Story | undefined => {

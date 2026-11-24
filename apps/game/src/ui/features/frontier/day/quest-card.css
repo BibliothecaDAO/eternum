@@ -20,19 +20,19 @@
   text-overflow: ellipsis;
   color: rgb(var(--hud-ink));
   font-family: var(--hud-font-display);
-  font-size: 20px;
+  font-size: var(--hud-text-display);
   line-height: 1.1;
   white-space: nowrap;
 }
 .frontier-quest-card__objective {
   color: var(--hud-muted);
-  font-size: 13px;
+  font-size: var(--hud-text-label);
   line-height: 18px;
 }
 .frontier-quest-card__count {
   flex: none;
   color: rgb(var(--hud-ink));
-  font-size: 18px;
+  font-size: var(--hud-text-title);
   font-weight: 800;
   font-variant-numeric: tabular-nums;
 }
@@ -54,7 +54,7 @@
   background: var(--hud-well);
   padding: 0 8px;
   color: rgb(var(--hud-ink));
-  font-size: 13px;
+  font-size: var(--hud-text-label);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;

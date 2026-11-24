@@ -6,7 +6,7 @@
 .today-sheet__clock {
   margin: 0;
   color: var(--hud-muted);
-  font-size: 13px;
+  font-size: var(--hud-text-label);
   line-height: 18px;
   font-variant-numeric: tabular-nums;
 }
@@ -38,7 +38,7 @@
   right: 4px;
   bottom: 1px;
   color: var(--hud-muted);
-  font-size: 10px;
+  font-size: var(--hud-text-badge);
   font-style: normal;
 }
 .today-sheet__quest[data-collected] {
@@ -69,13 +69,13 @@
 }
 .today-sheet__gain b {
   color: rgb(var(--hud-ink));
-  font-size: 18px;
+  font-size: var(--hud-text-title);
   line-height: 22px;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
 }
 .today-sheet__gain span {
   color: var(--hud-muted);
-  font-size: 11px;
+  font-size: var(--hud-text-badge);
   line-height: 14px;
 }

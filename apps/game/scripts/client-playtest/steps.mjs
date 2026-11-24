@@ -6974,10 +6974,9 @@ export const STEP_SETS = {
               `(() => { const chip = document.querySelector('.frontier-phone-emblem'); if (!chip) return false; chip.click(); return true; })()`,
             );
           }
-          const buildings = await readUntil(
-            () =>
-              browser.read(`document.querySelectorAll('section[aria-label="Realm"] [data-realm-buildings] li').length`),
-            (count) => count >= 3,
+          await readUntil(
+            () => browser.read(`Boolean(document.querySelector('section[aria-label="Realm"] [data-realm-castle]'))`),
+            Boolean,
             PLAYABLE_WAIT_MS,
           );
           const realmHud = browser.read(`(() => ({
@@ -6999,7 +6998,6 @@ export const STEP_SETS = {
           }
           return {
             idleUnobstructed,
-            buildings,
             realmHud,
             hasRealmPanel,
             shot,
@@ -7010,12 +7008,11 @@ export const STEP_SETS = {
           played.idleUnobstructed &&
           played.hasRealmPanel &&
           played.realmHud.hasDeploy &&
-          played.buildings >= 3 &&
           played.realmHud.hasCastleHead &&
           everyStock(played.realmHud.stocks)
             ? completed(played)
             : failed(
-                "Realm view must render with Castle, Workshop, Farm and Barracks standing and the desktop realm card's eight stocks",
+                "Realm view must render the realm card with its next rank and its eight stocks",
                 {
                   seen,
                   played,

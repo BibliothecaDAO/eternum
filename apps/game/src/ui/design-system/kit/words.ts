@@ -665,7 +665,6 @@ export const CANCEL = "Cancel";
 /** A highlighted tile on its tooltip: ground not yet seen, and troops passed to another of the player's armies. */
 export const UNEXPLORED = "Unexplored";
 /** A reveal that paid under a unit, in the day log: what was done, with no amount (findGain). */
-export const EXPLORED = "Explored";
 export const TRANSFER = "Transfer";
 /** A good held whose weight the game has not given: its donkeys cannot be counted, so it cannot be sent. */
 export const WEIGHT_UNKNOWN = "Weight unknown: cannot be sent";
@@ -730,12 +729,6 @@ export const ON_ITS_WAY = "Sending…";
 /** The order bar while an army's order is in flight and a tile is tapped for it: that tile is its next order. */
 export const NEXT_ORDER = "Next order";
 export const AFTER_THIS_ONE = "After this one";
-/** How an attack ended, the one word on its result: the guard gone, the army gone, or both still standing. */
-/** The day log's line for a fight: "Rift: Army lost, lost 154, guard 1,100 to 1,028". */
-export const fightLine = (site: string, verdict: string, lost: string, guardBefore: string, guardAfter: string) =>
-  `${site}: ${verdict}, lost ${lost}, guard ${guardAfter} left`;
-/** A clear's line with what the attack that won it cost: "Rift cleared, lost 68". */
-export const clearCostLine = (line: string, lost: string) => `${line}, lost ${lost}`;
 /** Why an attack cannot run, or what it costs, in one line under its button. */
 export const tooFarFrom = (site: string) => `Too far from the ${site}`;
 /**
@@ -1180,11 +1173,6 @@ export const STORE_MAKERS = {
   castle: (rate: string) => `${CASTLE} · ${rate}`,
 };
 
-/** The day log's lines for what the player did, in the names the build cards and the dock use. */
-export const revealLine = (gain: string, resource: string) => `${gain} ${resource}`;
-export const builtLine = (building: string) => `${building} built`;
-export const deployedLine = (army: string) => `${army} deployed`;
-export const disbandedLine = (army: string) => `${army} deleted`;
 /** A day's count of tiles explored, on its total. */
 export const REVEALS = "Reveals";
 /** How deep a realm went beyond the spire, I to III. */

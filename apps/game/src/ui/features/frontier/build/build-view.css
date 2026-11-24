@@ -11,7 +11,7 @@
   min-height: 0;
   height: 100px;
   border-radius: 12px;
-  background: rgb(0 0 0 / 0.32);
+  background: var(--hud-well);
 }
 [data-build-sheet] .ui-card[data-size="sm"] .ui-card__choose {
   justify-content: center;
@@ -34,14 +34,14 @@
   overflow: hidden;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
-  font-size: min(13px, 12cqi);
+  font-size: min(var(--hud-text-label), 12cqi);
   line-height: 15px;
   white-space: normal;
   text-wrap: balance;
 }
 [data-build-sheet] .ui-card[data-size="sm"] .ui-card__detail {
   color: rgb(var(--hud-ink));
-  font-size: 12px;
+  font-size: var(--hud-text-label);
   line-height: 15px;
   font-weight: 700;
 }
@@ -91,7 +91,7 @@
 }
 .build-chosen__name {
   color: rgb(var(--hud-ink));
-  font-size: 15px;
+  font-size: var(--hud-text-strong);
   line-height: 20px;
   font-weight: 700;
 }
@@ -100,7 +100,7 @@
   align-items: center;
   gap: 10px;
   color: rgb(var(--hud-ink));
-  font-size: 14px;
+  font-size: var(--hud-text-strong);
   line-height: 20px;
   font-weight: 700;
 }

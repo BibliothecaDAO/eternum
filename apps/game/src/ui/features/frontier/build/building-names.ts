@@ -4,7 +4,7 @@ import { type IconMeaning } from "@/ui/design-system/icon";
 import { BuildingType, buildingName as nameOfBuilding, isFrontierBuilding } from "@bibliothecadao/types";
 
 /** The name of a building read off the chain, where it is one Frontier raises. */
-export const frontierBuildingName = (category: number): string | undefined =>
+const frontierBuildingName = (category: number): string | undefined =>
   isFrontierBuilding(category) ? nameOfBuilding(category, true) : undefined;
 
 /** A Frontier building's name; a building Frontier does not raise is loud. */

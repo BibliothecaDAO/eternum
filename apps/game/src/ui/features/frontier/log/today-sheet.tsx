@@ -19,7 +19,7 @@ import {
 import type { DayClock } from "../hud/day-clock";
 import type { WeekDay } from "./quest-week";
 
-export type DayGains = { essence: number | undefined; labor: number | undefined; glory: number | undefined };
+type DayGains = { essence: number | undefined; labor: number | undefined; glory: number | undefined };
 
 export const TodaySheet = ({
   day,
