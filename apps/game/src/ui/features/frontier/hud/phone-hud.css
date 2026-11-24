@@ -275,7 +275,7 @@ button.frontier-stock-chips[aria-expanded="true"] {
   overflow: hidden;
   max-width: 100%;
   font-family: var(--hud-font-display);
-  font-size: var(--hud-text-badge);
+  font-size: var(--hud-text-label);
   line-height: 1;
   font-weight: var(--hud-weight-strong);
   text-overflow: ellipsis;
