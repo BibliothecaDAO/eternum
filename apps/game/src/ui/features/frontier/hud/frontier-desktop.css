@@ -549,6 +549,9 @@ button.frontier-stock__face:hover {
   transform: rotate(-45deg);
 }
 
+.frontier-corner--right[data-wide="true"] {
+  width: min(57.5rem, calc(100% - theme(spacing.hud-frontier-left) - theme(spacing.12)));
+}
 .frontier-corner--right[data-wide="true"] [data-wide-page] {
   margin-top: 20px;
 }

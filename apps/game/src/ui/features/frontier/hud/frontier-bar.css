@@ -376,10 +376,3 @@
 .frontier-day-medallion--phone .frontier-day-label {
   font-size: var(--hud-text-title);
 }
-
-[data-frontier-rail][data-wide="true"] {
-  width: min(62rem, calc(100% - theme(spacing.hud-frontier-rail) - theme(spacing.4)));
-}
-[data-frontier-rail][data-wide="true"] [data-wide-page] {
-  max-height: min(58rem, 100%);
-}

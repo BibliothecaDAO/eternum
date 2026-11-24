@@ -104,8 +104,8 @@ const FrontierRail = ({
         data-wide-page={wide ? "" : undefined}
         className={
           wide
-            ? "pointer-events-none flex min-h-0 flex-1 flex-col [&>[data-kit-frame]]:pointer-events-auto [&>[data-kit-frame]]:max-h-full [&>[data-kit-frame]]:w-full [&>[data-kit-frame]]:flex-1"
-            : "pointer-events-none flex min-h-0 flex-1 flex-col gap-2 [&>[data-kit-frame]]:pointer-events-auto"
+            ? "pointer-events-none flex min-h-0 flex-col [&>[data-kit-frame]]:pointer-events-auto [&>[data-kit-frame]]:max-h-full [&>[data-kit-frame]]:w-full"
+            : "pointer-events-none flex min-h-0 flex-col gap-2 [&>[data-kit-frame]]:pointer-events-auto [&>[data-kit-frame]]:max-h-full"
         }
       >
         {page}
