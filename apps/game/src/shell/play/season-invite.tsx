@@ -51,15 +51,15 @@ export const CopySeasonInvite = ({
   className?: string;
 }) =>
   !invite.link.none && (
-  <AppButton
-    kind="secondary"
-    size={size}
-    icon={icon}
-    className={className}
-    busy={invite.link.code === undefined && !invite.link.failed ? INVITE_WORDS.making : undefined}
-    disabled={invite.link.code === undefined}
-    onClick={() => void invite.copy()}
-  >
-    {invite.copied === "copied" ? INVITE_WORDS.copied : label}
-  </AppButton>
-);
+    <AppButton
+      kind="secondary"
+      size={size}
+      icon={icon}
+      className={className}
+      busy={invite.link.code === undefined && !invite.link.failed ? INVITE_WORDS.making : undefined}
+      disabled={invite.link.code === undefined}
+      onClick={() => void invite.copy()}
+    >
+      {invite.copied === "copied" ? INVITE_WORDS.copied : label}
+    </AppButton>
+  );

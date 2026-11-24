@@ -149,7 +149,10 @@ it("reads an invite identity cannot make for the account as none, and still thro
   await expect(client.createInvite()).resolves.toBeNull();
   await expect(client.createInvite()).resolves.toEqual(invite);
   await expect(client.createInvite()).rejects.toMatchObject({ status: 503, code: "aspect_unavailable" });
-  expect(fetch).toHaveBeenCalledWith("https://realms.test/api/shares/invite", expect.objectContaining({ method: "POST" }));
+  expect(fetch).toHaveBeenCalledWith(
+    "https://realms.test/api/shares/invite",
+    expect.objectContaining({ method: "POST" }),
+  );
 });
 
 it("returns the service's code expiry to the device", async () => {

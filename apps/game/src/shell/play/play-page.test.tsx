@@ -64,7 +64,8 @@ vi.mock("@/hooks/context/identity-session", async (importOriginal) => ({
       const { orders } = await import("@bibliothecadao/types");
       const { seasonPlayerAspect } = await import("../season");
       const picked = orders.find(({ orderId }) => orderId === reads.intent.order)?.aspect ?? null;
-      const aspect = picked ?? reads.directory.data?.games.map(seasonPlayerAspect).find((each) => each !== null) ?? null;
+      const aspect =
+        picked ?? reads.directory.data?.games.map(seasonPlayerAspect).find((each) => each !== null) ?? null;
       if (aspect === null) return null;
       reads.shared.push(aspect);
       return { code: "MRGHT234", aspect, chainId: null, gameId: null };
