@@ -34,6 +34,23 @@
   align-items: center;
   gap: theme(spacing.1);
 }
+.build-locked__items .ui-button {
+  height: auto;
+  min-height: calc(var(--hud-control) - 8px);
+  max-width: 100%;
+  flex-wrap: wrap;
+  padding-block: theme(spacing[0.5]);
+  white-space: normal;
+}
+.build-locked__price {
+  border-left: 1px solid var(--hud-divider);
+  padding-left: theme(spacing[1.5]);
+}
+@media (pointer: coarse) {
+  .build-locked__items .ui-button {
+    min-height: var(--hud-control);
+  }
+}
 @media (max-width: 1023px) {
   .ui-sheet:has([data-build-sheet]) .ui-frame__body {
     padding: theme(spacing[1.5]) theme(spacing.2) theme(spacing.2);
