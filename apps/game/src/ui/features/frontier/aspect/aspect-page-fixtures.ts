@@ -1,5 +1,5 @@
 import { raceStage } from "@bibliothecadao/eternum/game-client";
-import { aspectLordsWorth, aspects, deepSites, type AspectId } from "@bibliothecadao/types";
+import { aspects, deepSites, type AspectId } from "@bibliothecadao/types";
 
 import type { AspectMember, AspectPageProps, AspectStanding, AspectTriumph, OwnAspect } from "./aspect-page-view";
 
@@ -14,7 +14,7 @@ const BANE_THRESHOLD = 1_500;
 /** Four Aspects ranked by height: the stage being built follows from the height, and an Aspect is finished at 10,000. */
 const aspectIdByName = (name: string): AspectId => aspects.find((each) => each.name === name)!.id;
 
-const standings = (heights: Record<string, number>, own: string, winner?: string): AspectStanding[] =>
+const standings = (heights: Record<string, number>, own: string): AspectStanding[] =>
   Object.entries(heights)
     .toSorted(([, a], [, b]) => b - a)
     .map(([aspect, height], index) => ({
@@ -24,7 +24,6 @@ const standings = (heights: Record<string, number>, own: string, winner?: string
       stage: raceStage(height, STAGE),
       finished: height >= FINISH,
       own: aspect === own,
-      lords: aspectLordsWorth(height, aspect === winner),
     }));
 
 /**
@@ -70,7 +69,7 @@ export const ASPECT_PAGE_CASES = {
   },
   "Age won by another Aspect": {
     race: {
-      standings: standings({ Prowess: 10_000, Luminary: 7_600, Havoc: 4_100, Insight: 3_900 }, "Luminary", "Prowess"),
+      standings: standings({ Prowess: 10_000, Luminary: 7_600, Havoc: 4_100, Insight: 3_900 }, "Luminary"),
       finishHeight: FINISH,
       stages: STAGES,
       result: { winner: "Prowess" },

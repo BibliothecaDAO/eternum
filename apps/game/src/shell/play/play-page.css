@@ -563,21 +563,6 @@
   margin: 0;
 }
 
-.preseason-prize__line {
-  margin: 0;
-  display: flex;
-  align-items: flex-start;
-  gap: 0.5rem;
-  font-size: var(--app-text-label);
-  line-height: 1.4;
-  color: var(--app-muted);
-}
-
-.preseason-prize__line > :first-child {
-  flex: none;
-  margin-top: 0.1rem;
-}
-
 .preseason-orders {
   display: flex;
   flex-direction: column;
@@ -662,7 +647,6 @@
 
 @media (min-width: 1024px) {
   .play-grid {
-    min-height: calc(100dvh - var(--app-bar) - 3.5rem);
     grid-template-columns: minmax(0, 1.45fr) minmax(24rem, 1fr);
     align-items: stretch;
     gap: theme(spacing.6);

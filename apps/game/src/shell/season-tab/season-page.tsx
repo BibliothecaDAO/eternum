@@ -1,7 +1,6 @@
 import "./season-page.css";
 
 import {
-  ASPECT_REWARD,
   aspectName,
   aspects,
   formatAmount,
@@ -17,7 +16,6 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { isGameOver } from "@/runtime/world/directory";
 import { aspectVariables } from "@/tokens";
 import { AspectMark } from "@/ui/design-system/aspect-mark";
-import { Icon } from "@/ui/design-system/icon";
 import {
   AppButton,
   AppChip,
@@ -60,7 +58,7 @@ import {
 } from "../herald";
 import { Loading } from "../loading";
 import { ageOf } from "../play/ages";
-import { HyperstructureTile, RacePoolRuleStrip } from "../play/hyperstructure-stage";
+import { HyperstructureTile } from "../play/hyperstructure-stage";
 import { CopySeasonInvite, SeasonInviteAlerts, useSeasonInvite } from "../play/season-invite";
 import {
   RACE_STAGE_COUNT,
@@ -152,13 +150,10 @@ const AspectSeasonView = ({ season, past }: { season: AspectSeasonGame; past: re
                   finishHeight={finishHeight}
                   members={row.members}
                   own={ownAspect === id}
-                  winner={row.finished}
-                  showWorth
                 />
               );
             })}
           </div>
-          <RacePoolRuleStrip />
         </div>
       </AppPanel>
       <div className="season-grid">
@@ -198,9 +193,6 @@ const AspectSeasonView = ({ season, past }: { season: AspectSeasonGame; past: re
                   </div>
                   <div className="season-breakdown__metrics">
                     {row.members !== null && <AppChip icon="people">{ASPECT_STEP_WORDS.members(row.members)}</AppChip>}
-                    <AppChip icon="lords" tone="gold">
-                      {ASPECT_PAGE_WORDS.lords(row.lords)}
-                    </AppChip>
                   </div>
                 </li>
               ))}
@@ -215,7 +207,6 @@ const AspectSeasonView = ({ season, past }: { season: AspectSeasonGame; past: re
                 ))}
               </div>
             </div>
-            <p className="text-app-label text-app-muted">{SEASON_WORDS.gloryNote(ASPECT_REWARD.gloryToShare)}</p>
           </div>
         </AppPanel>
         <div className="flex min-w-0 flex-col gap-6">
@@ -274,11 +265,8 @@ const AspectPlayerStanding = ({
             <span className="season-stat__label">{ASPECT_PAGE_WORDS.height(ownStanding.height, finishHeight)}</span>
           </div>
           <div className="season-stat">
-            <span className="season-stat__value text-app-gold">
-              <Icon name="lords" size={16} />
-              {formatAmount(ownStanding.lords)}
-            </span>
-            <span className="season-stat__label">{SEASON_WORDS.worthSoFar}</span>
+            <span className="season-stat__value text-app-gold">{`${ownStanding.stage}/${RACE_STAGE_COUNT}`}</span>
+            <span className="season-stat__label">{ASPECT_PAGE_WORDS.stage(ownStanding.stage, RACE_STAGE_COUNT)}</span>
           </div>
         </div>
         <AspectStandingActions season={season} aspect={aspect} />

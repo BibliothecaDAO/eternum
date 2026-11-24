@@ -1,7 +1,7 @@
 import { isGameOver } from "@/runtime/world/directory";
 
 import type { DirectoryGame } from "../herald";
-import { chooseSeason, isRehearsal, seasonRealm } from "../season";
+import { chooseSeason, isAccelerated, isRehearsal, seasonRealm } from "../season";
 
 type PlayVerb = "resume" | "play" | "results";
 
@@ -61,7 +61,12 @@ const frontierItems = ({ games, signedIn }: PlayBoardFacts): PlayItem[] => {
 const rehearsalItems = ({ games, signedIn }: PlayBoardFacts): PlayItem[] =>
   games
     .filter((game) => game.mode === "frontier" && isRehearsal(game) && !isGameOver(game))
-    .toSorted((a, b) => b.clock.start_main_at - a.clock.start_main_at || a.game_id - b.game_id)
+    .toSorted(
+      (a, b) =>
+        Number(isAccelerated(a)) - Number(isAccelerated(b)) ||
+        b.clock.start_main_at - a.clock.start_main_at ||
+        a.game_id - b.game_id,
+    )
     .map((game) => {
       const live = game.status === "Live";
       const mine = signedIn && seasonRealm(game) !== undefined;

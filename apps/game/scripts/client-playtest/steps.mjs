@@ -4219,7 +4219,7 @@ function raceBoardSteps(result) {
           race.text.includes("Insight") &&
           race.text.includes(result === "won" ? "10,000 of 10,000" : "6,400 of 10,000") &&
           (result !== "expired" || race.text.includes("No Aspect finished its hyperstructure")) &&
-          race.text.includes(result === "won" ? "200K" : "64K") &&
+          !race.text.includes("LORDS") &&
           played.invite?.invite.text.includes("Invite a friend to Prowess") &&
           !played.invite?.invite.text.includes("could not be made") &&
           members.text.includes("1.3K") &&

@@ -1,16 +1,8 @@
-import {
-  aspectLordsWorth,
-  aspects,
-  catalogOrder,
-  formatDate,
-  isSeasonGame,
-  type AspectId,
-} from "@bibliothecadao/types";
+import { aspects, catalogOrder, formatDate, isSeasonGame, type AspectId } from "@bibliothecadao/types";
 import { canonicalRealm } from "@bibliothecadao/eternum";
 import {
   nativeFragmentConstants,
   nativeRaceConstants,
-  raceFinishHeight,
   raceStage,
   raceStageHeight,
   rankRaceStandings,
@@ -19,7 +11,15 @@ import {
 import type { HeraldAspectRace } from "@bibliothecadao/eternum/game-sync";
 
 import { isGameOver } from "@/runtime/world/directory";
-import { ASPECT_PAGE_WORDS, DAY, HOME_STEP_WORDS, PLAY_WORDS, SEASON, dayOfSeason } from "@/ui/design-system/kit/words";
+import {
+  ASPECT_PAGE_WORDS,
+  DAY,
+  HOME_STEP_WORDS,
+  PLAY_WORDS,
+  SEASON,
+  dayOfSeason,
+  gameSpeed,
+} from "@/ui/design-system/kit/words";
 import { type DayClock, dayTone } from "@/ui/features/frontier/hud/day-clock";
 import { isRealmCategory } from "@bibliothecadao/eternum/expeditions";
 
@@ -30,6 +30,9 @@ import { gameKey } from "./play/play-board";
 import { ARCHIVED_SEASONS, archivedSeason } from "./season-tab/archive/archive";
 
 export const isRehearsal = (game: Pick<DirectoryGame, "name">): boolean => !isSeasonGame(game.name);
+
+export const isAccelerated = (game: Pick<DirectoryGame, "clock_scale">): boolean =>
+  gameSpeed(game.clock_scale) !== undefined;
 
 /** The player's realm in the season: the structure the directory lists for them, if they have founded one. */
 
@@ -87,14 +90,14 @@ export const directoryDay = (
   };
 };
 
-/**
- * A season's name, the one every surface shows: an archived season's own ("Playtest"), else its number as the directory
- * serves it and the glossary writes it ("Season 0" for Devcon, "Season 1"); a number the directory does not serve is a
- * dash.
- */
-export const seasonTitle = (season: Pick<DirectoryGame, "season_number" | "chainId" | "game_id">): string =>
-  archivedSeason({ chainId: season.chainId, gameId: season.game_id })?.name ??
-  `${SEASON} ${season.season_number ?? "—"}`;
+export const seasonTitle = (
+  season: Pick<DirectoryGame, "season_number" | "chainId" | "game_id" | "name" | "clock_scale">,
+): string => {
+  const archived = archivedSeason({ chainId: season.chainId, gameId: season.game_id });
+  if (archived) return archived.name;
+  if (isRehearsal(season)) return isAccelerated(season) ? PLAY_WORDS.rehearsal : PLAY_WORDS.finalTestnet;
+  return season.season_number != null ? `${SEASON} ${season.season_number}` : SEASON;
+};
 
 /** An ended season and the day it ended, "Playtest · Ended 31 Oct". */
 export const seasonEnded = (season: DirectoryGame): string =>
@@ -103,9 +106,7 @@ export const seasonEnded = (season: DirectoryGame): string =>
 export const SEASON_SPENDS_FRAGMENTS = spendsFragments({ command_mask: BigInt(release.definition.rules.command_mask) });
 
 const SEASON_DAYS = Number(release.definition.economy.race.Some.season_days);
-const RACE_STAGE_HEIGHT = Number(release.definition.economy.race.Some.stage_height);
 export const RACE_STAGE_COUNT = nativeRaceConstants.STAGE_COUNT;
-const RACE_FINISH_HEIGHT = raceFinishHeight(RACE_STAGE_HEIGHT);
 
 export const questBonusPercentOf = (
   game: Pick<DirectoryGame, "quest_bonus_percent"> | null | undefined,
@@ -149,7 +150,6 @@ export type AspectRaceStanding = {
   height: number;
   stage: number;
   finished: boolean;
-  lords: number;
   members: number | null;
 };
 
@@ -179,7 +179,6 @@ export const aspectRaceStandings = (
     height: row.height,
     stage: row.stage,
     finished: row.finished,
-    lords: aspectLordsWorth(row.height, row.finished),
     members: members?.[row.aspect] ?? null,
   }));
   const byAspect = Object.fromEntries(standings.map((row) => [row.id, row])) as Record<AspectId, AspectRaceStanding>;
@@ -198,7 +197,7 @@ export const seasonPlayerHome = (season: Pick<DirectoryGame, "player_state"> | n
 export const seasonPlayerAspect = (season: Pick<DirectoryGame, "player_state"> | null | undefined): AspectId | null =>
   seasonPlayerHome(season).aspect;
 
-export type SeasonOpening = { startsAt: number; seasonDays: number | null; aspectLords: number | null };
+export type SeasonOpening = { startsAt: number; seasonDays: number | null };
 
 export const seasonOpening = (phases: readonly SeasonPhase[], now: number): SeasonOpening | null => {
   const frontier = phases.find((phase) => phase.phase === "frontier");
@@ -208,6 +207,5 @@ export const seasonOpening = (phases: readonly SeasonPhase[], now: number): Seas
   return {
     startsAt,
     seasonDays: SEASON_DAYS,
-    aspectLords: aspectLordsWorth(RACE_FINISH_HEIGHT, false),
   };
 };

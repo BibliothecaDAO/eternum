@@ -493,9 +493,6 @@ export const PRESEASON_WORDS = {
   optionalLine: "Optional — choose your Season 1 Aspect now or later. You can change it any time until Season 1 opens.",
   joined: "Joined",
   pick: "Choose your side",
-  prizesTitle: "Season 1 Rewards",
-  shared: (total: string, finishBonus: string) =>
-    `The Aspect's ${total} LORDS are shared by Glory: your share follows your Glory, not an equal split. The first to finish adds ${finishBonus} more.`,
   orderTitle: "Choose your Order",
   orderLine: (aspect: string) => `Inside ${aspect}. Your Order is your Realm's name and crest.`,
   playAs: (order: string) => `Play as ${order}`,
@@ -959,7 +956,6 @@ export const OPENING_WORDS = {
 export const ASPECT_PAGE_WORDS = {
   title: "Aspect Race",
   race: "The hyperstructures",
-  rateChip: (perHeight: number, bonus: string) => `${formatExact(perHeight)} / pt · +${bonus}`,
   goToDeep: `Go to ${DEEP}`,
   height: (height: number, finish: number) => `${formatExact(height)} of ${formatExact(finish)}`,
   stage: (stage: number, stages: number) => `Stage ${stage} of ${stages}`,
@@ -977,9 +973,6 @@ export const ASPECT_PAGE_WORDS = {
   glory: "Glory",
   guards: (site: string) => `Guards the ${site}`,
   noAspect: "Join an Aspect to see its members",
-  /** What an Aspect's height is worth in LORDS at the game's rate: displayed only, nothing is paid in the game. */
-  lords: (amount: number) => `${formatExact(amount)} LORDS`,
-  worth: "Worth at season end",
   fights: `Fights in the ${DEEP}`,
   noFights: `No fight in the ${DEEP} yet`,
   fight: (winner: string, loser: string) => `${winner} beat ${loser}`,
@@ -1135,7 +1128,7 @@ export const RECAP_WORDS = {
   },
   raceCardNames: {
     towers: "The hyperstructures",
-    pool: "LORDS pool",
+    stages: "Stages reached",
     standing: "Your Realm",
     field: "The field",
     season: "The season",
@@ -1436,6 +1429,7 @@ export const PLAY_WORDS = {
   ended: "Ended",
   /** A season's players, counted by the one plural rule (formatCount): "1 player", "14 players". */
   player: "player",
+  finalTestnet: "Final testnet",
   rehearsal: "Rehearsal",
   rehearsalBadge: (speed: string) => `${speed} Rehearsal`,
   joinRehearsal: "Join rehearsal",
@@ -1595,13 +1589,8 @@ export const SEASON_WORDS = {
   aspectBreakdown: "Aspect standings",
   yourStanding: "Your standing",
   noRealmYet: "Create a Realm on Play to join an Aspect.",
-  poolRule: (perPoint: number, finishBonus: number) =>
-    `${formatExact(perPoint)} LORDS per height point · +${formatExact(finishBonus)} LORDS to first finisher`,
-  gloryNote: (minGlory: number) =>
-    `LORDS are shared by Glory at season end. Hold ${DEEP} sites to earn Glory (${formatExact(minGlory)}+ Glory to share).`,
   stageMilestones: "Stage Triumphs",
   stageAtHeight: (height: number) => `${formatExact(height)} height`,
-  worthSoFar: "Pool so far",
 } as const;
 
 export const PROFILE_WORDS = {

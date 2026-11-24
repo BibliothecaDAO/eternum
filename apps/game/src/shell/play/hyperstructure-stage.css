@@ -53,21 +53,6 @@
   color: rgb(var(--app-aspect));
 }
 
-.hyper-tile__worth {
-  display: inline-flex;
-  flex: none;
-  align-items: center;
-  gap: 0.25rem;
-  border: 1px solid rgb(var(--app-gold) / 0.35);
-  border-radius: var(--app-radius-round);
-  background: rgb(var(--app-gold) / 0.12);
-  padding: 0.1rem 0.45rem;
-  font-size: 0.7rem;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  color: var(--gold2);
-}
-
 .hyper-art {
   display: grid;
   width: 100%;
@@ -264,14 +249,5 @@
   align-items: center;
   gap: 0.2rem;
   font-size: 0.72rem;
-  color: var(--app-muted);
-}
-
-.hyper-rule {
-  margin: 0;
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: var(--app-text-label);
   color: var(--app-muted);
 }

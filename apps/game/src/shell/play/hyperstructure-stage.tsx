@@ -1,20 +1,12 @@
 import "./hyperstructure-stage.css";
 
-import {
-  ASPECT_REWARD,
-  aspectLordsWorth,
-  aspectName,
-  formatExact,
-  formatShort,
-  LORDS,
-  type AspectId,
-} from "@bibliothecadao/types";
+import { aspectName, formatExact, type AspectId } from "@bibliothecadao/types";
 import type { CSSProperties } from "react";
 
 import { aspectVariables } from "@/tokens";
 import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { Icon } from "@/ui/design-system/icon";
-import { ASPECT_PAGE_WORDS, OF, SEASON_WORDS } from "@/ui/design-system/kit/words";
+import { ASPECT_PAGE_WORDS, OF } from "@/ui/design-system/kit/words";
 
 import { RACE_STAGE_COUNT, raceStageOf } from "../season";
 
@@ -124,22 +116,17 @@ export const HyperstructureTile = ({
   finishHeight,
   members,
   own = false,
-  winner = false,
   compact = false,
-  showWorth = false,
 }: {
   aspect: AspectId;
   height: number;
   finishHeight: number;
   members?: number | null;
   own?: boolean;
-  winner?: boolean;
   compact?: boolean;
-  showWorth?: boolean;
 }) => {
   const stage = completedTiersOf(height, finishHeight);
   const name = aspectName(aspect);
-  const worth = aspectLordsWorth(height, winner);
   return (
     <article
       data-aspect-id={aspect}
@@ -153,12 +140,6 @@ export const HyperstructureTile = ({
           <AspectMark aspect={aspect} size={compact ? 22 : 26} decorative />
           <span className="hyper-tile__name">{name}</span>
         </span>
-        {showWorth && (
-          <span className="hyper-tile__worth">
-            <Icon name="lords" size={14} />
-            {`${formatShort(worth)} ${LORDS}`}
-          </span>
-        )}
       </div>
       <HyperstructureArt aspect={aspect} height={height} finishHeight={finishHeight} compact={compact} />
       <div className="hyper-tile__pips" aria-hidden="true">
@@ -181,10 +162,3 @@ export const HyperstructureTile = ({
     </article>
   );
 };
-
-export const RacePoolRuleStrip = () => (
-  <p className="hyper-rule">
-    <Icon name="lords" size={16} />
-    <span>{SEASON_WORDS.poolRule(ASPECT_REWARD.lordsPerHeight, ASPECT_REWARD.finishBonus)}</span>
-  </p>
-);

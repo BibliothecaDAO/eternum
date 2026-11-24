@@ -35,7 +35,7 @@ type ItemVerb = { word: string; icon: IconMeaning; to: string; connectFirst?: tr
 
 const rehearsalVerbWord = (verb: "play" | "resume", game: DirectoryGame, lead: boolean): string => {
   if (lead) {
-    const name = game.name || PLAY_WORDS.rehearsal;
+    const name = seasonTitle(game);
     return verb === "resume" ? COUNTDOWN_WORDS.resumeRehearsal(name) : COUNTDOWN_WORDS.playRehearsal(name);
   }
   return verb === "resume" ? PLAY_WORDS.resumeRehearsal : PLAY_WORDS.joinRehearsal;
@@ -252,7 +252,7 @@ export const RehearsalCard = ({ item, now, signedIn }: ItemProps) => {
   const speed = gameSpeed(game.clock_scale);
   return (
     <AppPanel
-      title={game.name || PLAY_WORDS.rehearsal}
+      title={seasonTitle(game)}
       icon="hourglass"
       cue={speed ? <AppChip>{PLAY_WORDS.rehearsalBadge(speed)}</AppChip> : undefined}
     >

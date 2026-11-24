@@ -269,7 +269,7 @@ it("renders hex-tile stone foundation artwork at 0 height, stage progression as 
 it("renders rehearsal games as compact secondary cards under InviteCard with speed badge and secondary Join/Resume actions", async () => {
   const rehearsal = game({
     game_id: 4,
-    name: "Season 1 Rehearsal",
+    name: "rehearsal-4x",
     clock_scale: 4,
     day_index: 2,
     day_ends_at: Math.floor(Date.now() / 1000) + 3_600,
@@ -281,7 +281,8 @@ it("renders rehearsal games as compact secondary cards under InviteCard with spe
   const sidePanels = [...joinable.container.querySelectorAll(".play-side > *")];
   expect(sidePanels.at(-1)?.querySelector("[data-play-rehearsal]")).not.toBeNull();
   const card = joinable.container.querySelector('[data-play-item="0xa:4"]')!.closest(".app-panel")!;
-  expect(card.textContent).toContain("Season 1 Rehearsal");
+  expect(card.querySelector(".app-panel__head h2")?.textContent).toBe("Rehearsal");
+  expect(card.textContent).not.toContain("rehearsal-4x");
   expect(card.textContent).toContain("4× Rehearsal");
   expect(card.textContent).toContain("Day 3 · 18 players");
   const joinBtn = card.querySelector<HTMLButtonElement>("button")!;
@@ -388,8 +389,8 @@ describe("the season's countdown, while its first day is ahead and Play has no g
   const liveTestnet = (mine = false) =>
     game({
       game_id: 4,
-      name: "Final Testnet",
-      clock_scale: 4,
+      name: "testnet-1795479180",
+      clock_scale: 1,
       player_count: 18,
       ...(mine ? { player_state: ownSeason.player_state } : {}),
     });
@@ -458,31 +459,32 @@ describe("the season's countdown, while its first day is ahead and Play has no g
     expect(useConnectStore.getState().request).toEqual({ next: null });
   });
 
-  it("shows Final Testnet live as the single gold CTA for signed-out visitors when a rehearsal is live", async () => {
+  it("shows Final testnet live as the single gold CTA for signed-out visitors when a testnet is live", async () => {
     reads.signedIn = false;
     reads.directory = answered({ games: [liveTestnet(false)] });
     reads.calendar = answered(seasonOne(startsAt));
     quietPlay();
     const page = await mount();
     const countdown = page.container.querySelector("[data-season-countdown]")!;
-    expect(countdown.textContent).toContain("Final Testnet live");
+    expect(countdown.textContent).toContain("Final testnet live");
+    expect(countdown.textContent).not.toContain("testnet-1795479180");
     expect(countdown.textContent).toContain(
-      "Final Testnet is live. Learn the game before Season 1 opens and get a head start.",
+      "Final testnet is live. Learn the game before Season 1 opens and get a head start.",
     );
     expect(countdown.textContent).toContain("Free to play");
     expect(countdown.textContent).not.toContain("Create your Realm");
     const primaries = countdown.querySelectorAll('button[data-kind="primary"]');
     expect(primaries).toHaveLength(1);
-    expect(primaries[0]?.textContent).toBe("Play Final Testnet");
+    expect(primaries[0]?.textContent).toBe("Play Final testnet");
 
-    await press(page.container, "Play Final Testnet");
+    await press(page.container, "Play Final testnet");
     expect(useConnectStore.getState().request).toEqual({ next: "/g/0xa/4" });
   });
 
-  it("reads rehearsal name and non-live status from the game row and keeps additional rehearsals reachable", async () => {
+  it("labels rehearsals via seasonTitle, keeps Final testnet in the hero callout ahead of newer 4x rehearsals, and keeps additional rehearsals reachable", async () => {
     const registrationRehearsal = game({
       game_id: 5,
-      name: "Autumn Rehearsal",
+      name: "rehearsal-4x",
       status: "Registration",
       clock_scale: 4,
       clock: {
@@ -497,20 +499,24 @@ describe("the season's countdown, while its first day is ahead and Play has no g
     reads.calendar = answered(seasonOne(startsAt));
     quietPlay();
     const pending = await mount();
-    expect(pending.text()).not.toContain("Final Testnet");
+    expect(pending.text()).not.toContain("Final testnet");
+    expect(pending.text()).not.toContain("rehearsal-4x");
     expect(pending.text()).not.toContain("live");
-    expect(pending.text()).toContain("Autumn Rehearsal opens soon.");
-    expect(pending.container.querySelector('button[data-kind="primary"]')?.textContent).toBe("Play Autumn Rehearsal");
+    expect(pending.text()).toContain("Rehearsal opens soon.");
+    expect(pending.container.querySelector('button[data-kind="primary"]')?.textContent).toBe("Play Rehearsal");
     await cleanup?.();
 
-    reads.directory = answered({ games: [liveTestnet(false), registrationRehearsal] });
+    const liveRehearsal = { ...registrationRehearsal, status: "Live" as const };
+    reads.directory = answered({ games: [liveRehearsal, liveTestnet(false)] });
     const both = await mount();
-    expect(both.container.querySelector('button[data-kind="primary"]')?.textContent).toBe("Play Final Testnet");
+    expect(both.container.querySelector('button[data-kind="primary"]')?.textContent).toBe("Play Final testnet");
     expect(both.container.querySelector('[data-play-item="0xa:5"]')).not.toBeNull();
+    expect(both.text()).not.toContain("testnet-1795479180");
+    expect(both.text()).not.toContain("rehearsal-4x");
     expect(both.container.querySelectorAll('button[data-kind="primary"]')).toHaveLength(1);
   });
 
-  it("lands a signed-in player with no Aspect directly on the countdown with Play or Resume Final Testnet and optional Aspect selection", async () => {
+  it("lands a signed-in player with no Aspect directly on the countdown with Play or Resume Final testnet and optional Aspect selection", async () => {
     reads.directory = answered({ games: [liveTestnet(false)] });
     reads.calendar = answered(seasonOne(startsAt));
     const [giants, skill] = ordersOfAspect(1);
@@ -521,7 +527,7 @@ describe("the season's countdown, while its first day is ahead and Play has no g
 
     const countdown = page.container.querySelector("[data-season-countdown]")!;
     expect(countdown.querySelectorAll('[role="timer"]')).toHaveLength(1);
-    expect(countdown.querySelector('button[data-kind="primary"]')?.textContent).toBe("Play Final Testnet");
+    expect(countdown.querySelector('button[data-kind="primary"]')?.textContent).toBe("Play Final testnet");
     expect(countdown.querySelectorAll('button[data-kind="primary"]')).toHaveLength(1);
     expect(countdown.textContent).toContain(
       "Optional — choose your Season 1 Aspect now or later. You can change it any time until Season 1 opens.",
@@ -530,18 +536,17 @@ describe("the season's countdown, while its first day is ahead and Play has no g
       "Pick an Aspect above to unlock your Season 1 invite link — friends start in your Aspect when Season 1 opens.",
     );
     expect(countdown.querySelector('[data-aspect="Prowess"]')?.textContent).toContain("39");
-    expect(countdown.querySelector("[data-aspect-shared]")?.textContent).toBe(
-      "The Aspect's 100,000 LORDS are shared by Glory: your share follows your Glory, not an equal split. The first to finish adds 100,000 more.",
-    );
+    expect(countdown.querySelector("[data-aspect-shared]")).toBeNull();
+    expect(countdown.textContent).not.toContain("100,000 LORDS");
 
-    await press(page.container, "Play Final Testnet");
+    await press(page.container, "Play Final testnet");
     expect(page.container.querySelector("[data-entered-game]")).not.toBeNull();
     await cleanup?.();
 
     reads.directory = answered({ games: [liveTestnet(true)] });
     const resumable = await mount();
     await settle();
-    expect(resumable.container.querySelector('button[data-kind="primary"]')?.textContent).toBe("Resume Final Testnet");
+    expect(resumable.container.querySelector('button[data-kind="primary"]')?.textContent).toBe("Resume Final testnet");
   });
 
   it("lets a signed-in player pick an Aspect and Order, then switch to another Aspect and Order while updating the inline invite link", async () => {
@@ -741,7 +746,7 @@ describe("the season's countdown, while its first day is ahead and Play has no g
       await settle();
       await settle();
       expect(page.container.querySelectorAll('[role="timer"]')).toHaveLength(1);
-      expect(page.container.querySelector('button[data-kind="primary"]')?.textContent).toBe("Play Final Testnet");
+      expect(page.container.querySelector('button[data-kind="primary"]')?.textContent).toBe("Play Final testnet");
       expect(page.container.querySelectorAll("[data-aspect]")).toHaveLength(0);
       expect(page.text()).toContain("Season did not answer.");
     } finally {
@@ -772,4 +777,32 @@ describe("the season's countdown, while its first day is ahead and Play has no g
     expect(page.container.querySelector("[data-season-countdown]")).toBeNull();
     expect(page.text()).toContain("No season");
   });
+});
+
+it("omits a dash on an unnumbered season, hides static LORDS claims, and renders Bring friends below Hyperstructures when signed out", async () => {
+  reads.signedIn = false;
+  const activeSeason = game({
+    season_number: null,
+    clock_scale: 1,
+    day_index: 2,
+    day_ends_at: Math.floor(Date.now() / 1000) + 3_600,
+    aspect_members: { 1: 4, 2: 3, 3: 2, 4: 1 },
+    aspect_race: { finish_height: 7_500, season_days: 30, heights: { 1: 1_200, 2: 800, 3: 0, 4: 0 } },
+  });
+  reads.directory = answered({ games: [activeSeason] });
+  reads.history = answered({ games: [], next: null, failures: [] });
+  const page = await mount();
+  expect(page.text()).toContain("Season · Day 3 of 30");
+  expect(page.text()).not.toContain("Season —");
+  expect(page.text()).not.toContain("LORDS per height point");
+  expect(page.text()).not.toContain("first finisher");
+  const sidePanels = [...page.container.querySelectorAll(".play-side > *")];
+  expect(sidePanels).toHaveLength(2);
+  expect(sidePanels[0]!.querySelectorAll(".hyper-tile")).toHaveLength(4);
+  expect(sidePanels[1]!.querySelector("[data-play-invite]")).not.toBeNull();
+  const signInBtn = sidePanels[1]!.querySelector<HTMLButtonElement>("button")!;
+  expect(signInBtn.textContent).toBe("Sign in");
+  expect(signInBtn.dataset.kind).toBe("secondary");
+  await act(async () => signInBtn.click());
+  expect(useConnectStore.getState().request).not.toBeNull();
 });

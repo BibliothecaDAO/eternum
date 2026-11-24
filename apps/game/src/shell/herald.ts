@@ -138,7 +138,6 @@ export const useDirectory = () => {
       fetchDirectories(realmsId ? realmsPlayerOf(realmsId, await client.fetchQuery(GUARDIAN_QUERY)) : null),
     enabled: status !== "loading",
     refetchInterval: 15_000,
-    retry: 1,
   });
 };
 
@@ -157,7 +156,6 @@ export const useRecentResults = (
     queryFn: () => fetchDirectoryHistory({ limit, player, mode }),
     enabled,
     staleTime: 30_000,
-    retry: 1,
   });
 
 /** Every settled game on the shards we list, newest first, followed to its last page: where a season that ended lives. */
@@ -166,7 +164,6 @@ export const useSettledGames = () =>
     queryKey: ["shell", "history", "all"],
     queryFn: readHistory,
     staleTime: 60_000,
-    retry: 1,
   });
 
 const HISTORY_PAGE = 100;
@@ -201,7 +198,6 @@ export const useLeaderboard = (game: GameRef | DirectoryGame | null) => {
     initialData: archived,
     enabled: ref !== null && archived === undefined,
     refetchInterval: 30_000,
-    retry: 1,
   });
 };
 

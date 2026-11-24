@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import type { DirectoryGame } from "./herald";
-import { chooseSeason, directoryDay, endedSeasons, seasonTitle } from "./season";
+import { chooseSeason, directoryDay, endedSeasons, isAccelerated, isRehearsal, seasonTitle } from "./season";
 import { ARCHIVED_SEASONS } from "./season-tab/archive/archive";
 
 const season = (gameId: number, startMainAt: number, ownRealm: boolean): DirectoryGame => ({
@@ -98,12 +98,23 @@ describe("Frontier's day from the directory", () => {
 
 describe("the season's number", () => {
   it("names the season by the number the directory serves", () => {
-    expect(seasonTitle({ chainId: "0x52", game_id: 3, season_number: 3 })).toBe("Season 3");
+    expect(seasonTitle({ chainId: "0x52", game_id: 3, name: "frontier-3", season_number: 3, clock_scale: 1 })).toBe(
+      "Season 3",
+    );
+    expect(seasonTitle({ chainId: "0x52", game_id: 3, name: "frontier-3", season_number: null, clock_scale: 1 })).toBe(
+      "Season",
+    );
   });
 
-  it("is a dash when the directory serves none, never a zero", () => {
-    expect(seasonTitle({ chainId: "0x52", game_id: 3 })).toBe("Season —");
-    expect(seasonTitle({ chainId: "0x52", game_id: 3, season_number: null })).toBe("Season —");
+  it("names non-season games via isRehearsal and isAccelerated: Final testnet at real speed, Rehearsal when accelerated", () => {
+    const testnet = { chainId: "0x52", game_id: 3, name: "testnet-1795479180", season_number: null, clock_scale: 1 };
+    const rehearsal = { chainId: "0x52", game_id: 3, name: "rehearsal-4x", season_number: null, clock_scale: 4 };
+    expect(isRehearsal(testnet)).toBe(true);
+    expect(isAccelerated(testnet)).toBe(false);
+    expect(seasonTitle(testnet)).toBe("Final testnet");
+    expect(isRehearsal(rehearsal)).toBe(true);
+    expect(isAccelerated(rehearsal)).toBe(true);
+    expect(seasonTitle(rehearsal)).toBe("Rehearsal");
   });
 
   it("is the one rule that reads the directory's number: no other code of the client names a season", () => {
@@ -117,7 +128,9 @@ describe("the season's number", () => {
   });
 
   it("names Devcon's season by its number, zero", () => {
-    expect(seasonTitle({ chainId: "0x52", game_id: 4, season_number: 0 })).toBe("Season 0");
+    expect(seasonTitle({ chainId: "0x52", game_id: 4, name: "frontier-4", season_number: 0, clock_scale: 1 })).toBe(
+      "Season 0",
+    );
   });
 
   it("names prod's archived October season by its archive's name, Playtest, with no number, and only that game", () => {

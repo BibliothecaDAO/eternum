@@ -85,6 +85,23 @@ describe("a rehearsal beside the season", () => {
     expect(board.rehearsals.map((item) => [item.game.game_id, item.verb])).toEqual([[5, "play"]]);
   });
 
+  it("orders real-speed testnets ahead of newer accelerated rehearsals", () => {
+    const testnet = game("frontier", {
+      game_id: 5,
+      name: "testnet-1795479180",
+      clock_scale: 1,
+      clock: { ...frontier.clock, start_main_at: 100 },
+    });
+    const newerRehearsal = game("frontier", {
+      game_id: 6,
+      name: "rehearsal-4x",
+      clock_scale: 4,
+      clock: { ...frontier.clock, start_main_at: 300 },
+    });
+    const board = playBoard(facts({ games: [newerRehearsal, testnet] }));
+    expect(board.rehearsals.map((item) => item.game.game_id)).toEqual([5, 6]);
+  });
+
   it("never places a rehearsal in the lead slot even when it is the only Frontier game, and keeps Play non-empty", () => {
     const board = playBoard(facts({ games: [withRealm(rehearsal)] }));
     expect(board.lead).toBeNull();

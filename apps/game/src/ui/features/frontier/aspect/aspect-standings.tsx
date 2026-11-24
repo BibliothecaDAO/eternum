@@ -1,9 +1,9 @@
 import "./aspect-standings.css";
 
 import { AspectMark } from "@/ui/design-system/aspect-mark";
-import { HudChip, HudMeter } from "@/ui/design-system/kit/hud-elements";
+import { HudMeter } from "@/ui/design-system/kit/hud-elements";
 import { ASPECT_PAGE_WORDS as WORDS } from "@/ui/design-system/kit/words";
-import { aspectName, formatExact, formatShort, type AspectId } from "@bibliothecadao/types";
+import { aspectName, formatExact, type AspectId } from "@bibliothecadao/types";
 
 interface AspectStandingItem {
   aspectId: AspectId;
@@ -11,7 +11,6 @@ interface AspectStandingItem {
   own: boolean;
   stage?: number;
   finished?: boolean;
-  lords?: number;
 }
 
 const raceProgress = (height: number, finishHeight: number): number =>
@@ -70,18 +69,11 @@ const AspectStandingRow = ({
           <span className="shrink-0 text-hud-strong tabular-nums text-hud-ink">{formatExact(standing.height)}</span>
         </div>
         <HudMeter label={stageText ? heightText : name} share={raceProgress(standing.height, finishHeight)} />
-        {(stageText || standing.lords !== undefined) && (
+        {stageText && (
           <div className="flex flex-wrap items-center justify-between gap-1">
-            {stageText && (
-              <span className="min-w-0 text-hud-label text-hud-muted">
-                {stageText} · {heightText}
-              </span>
-            )}
-            {standing.lords !== undefined && (
-              <HudChip icons={["lords"]} label={WORDS.worth}>
-                {formatShort(standing.lords)}
-              </HudChip>
-            )}
+            <span className="min-w-0 text-hud-label text-hud-muted">
+              {stageText} · {heightText}
+            </span>
           </div>
         )}
       </div>

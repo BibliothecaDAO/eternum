@@ -5,7 +5,7 @@ import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { Icon } from "@/ui/design-system/icon";
 import { HudButton, HudChip, HudMeter, HudPage, HudRow, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
 import { ASPECT_PAGE_WORDS as WORDS } from "@/ui/design-system/kit/words";
-import { ASPECT_REWARD, aspectName, formatShort, type AspectId } from "@bibliothecadao/types";
+import { aspectName, formatShort, type AspectId } from "@bibliothecadao/types";
 import type { ReactNode } from "react";
 import { AspectRaceCanvas } from "./aspect-race-canvas";
 import { AspectStandings } from "./aspect-standings";
@@ -17,7 +17,6 @@ export interface AspectStanding {
   stage: number;
   finished: boolean;
   own: boolean;
-  lords: number;
 }
 
 export interface AspectTriumph {
@@ -54,35 +53,28 @@ export interface AspectPageProps {
   onClose: () => void;
 }
 
-export const AspectPageView = ({ race, own, fights, invite, onGoToDeep, onClose }: AspectPageProps) => {
-  const rewardChip = (
-    <HudChip icons={["lords"]}>
-      {WORDS.rateChip(ASPECT_REWARD.lordsPerHeight, formatShort(ASPECT_REWARD.finishBonus))}
-    </HudChip>
-  );
-  return (
-    <HudPage label={WORDS.title} icon="victory" cue={rewardChip} fills onClose={onClose} bodyClassName="gap-3">
-      {race === null ? (
-        <Muted>{WORDS.reading}</Muted>
-      ) : (
-        <div data-aspect-race-page className="aspect-race-page">
-          <Race race={race} />
-          <div className="aspect-race-page__board">
-            {own ? <YourAspect own={own} invite={invite} /> : <Muted>{WORDS.noAspect}</Muted>}
-            {own && fights && <div className="flex min-w-0 flex-col gap-2">{fights}</div>}
-          </div>
-          {onGoToDeep && race.result === null && own !== null && (
-            <HudWindowFoot>
-              <HudButton kind="primary" icon="spire" onClick={onGoToDeep}>
-                {WORDS.goToDeep}
-              </HudButton>
-            </HudWindowFoot>
-          )}
+export const AspectPageView = ({ race, own, fights, invite, onGoToDeep, onClose }: AspectPageProps) => (
+  <HudPage label={WORDS.title} icon="victory" fills onClose={onClose} bodyClassName="gap-3">
+    {race === null ? (
+      <Muted>{WORDS.reading}</Muted>
+    ) : (
+      <div data-aspect-race-page className="aspect-race-page">
+        <Race race={race} />
+        <div className="aspect-race-page__board">
+          {own ? <YourAspect own={own} invite={invite} /> : <Muted>{WORDS.noAspect}</Muted>}
+          {own && fights && <div className="flex min-w-0 flex-col gap-2">{fights}</div>}
         </div>
-      )}
-    </HudPage>
-  );
-};
+        {onGoToDeep && race.result === null && own !== null && (
+          <HudWindowFoot>
+            <HudButton kind="primary" icon="spire" onClick={onGoToDeep}>
+              {WORDS.goToDeep}
+            </HudButton>
+          </HudWindowFoot>
+        )}
+      </div>
+    )}
+  </HudPage>
+);
 
 const Race = ({ race }: { race: NonNullable<AspectPageProps["race"]> }) => (
   <section data-aspect-race className="aspect-race-page__hero">
